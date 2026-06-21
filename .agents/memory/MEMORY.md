@@ -1,2 +1,3 @@
 - [Sparki migration pattern](sparki-migration.md) — fullstack_copy_frontend.sh fails when CLIENT_DIR is blank; write files directly instead.
+- [Sparki Clerk auth wiring](sparki-clerk-auth.md) — Phase 1 complete: cookie auth, JIT sync, roles in own DB, lib/db must be built for tsc.
 - [Vite font loading — Next.js var() trap](vite-font-var-trap.md) — var(--font-geist-sans) undefined in Vite causes entire font-family to fall back to browser serif; always use @fontsource packages.

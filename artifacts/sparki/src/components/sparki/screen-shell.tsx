@@ -1,4 +1,54 @@
 import type { ReactNode } from "react"
+import { useClerk, Show } from "@clerk/react"
+import { useUserProfile, type Role } from "@/contexts/UserContext"
+
+const ROLE_LABEL: Record<Role, string> = {
+  athlete: "ATHLETE",
+  coach: "COACH",
+  parent: "PARENT",
+}
+
+function RoleSwitcher() {
+  const { profile, switchRole } = useUserProfile()
+  const { signOut } = useClerk()
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "")
+
+  if (!profile) return null
+
+  const roles = profile.roles as Role[]
+  const active = profile.activeRole as Role
+
+  const cycleRole = () => {
+    const idx = roles.indexOf(active)
+    const next = roles[(idx + 1) % roles.length]
+    if (next !== active) void switchRole(next)
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      {roles.length > 1 ? (
+        <button
+          type="button"
+          onClick={cycleRole}
+          className="label-xs rounded-full border border-white/10 px-2.5 py-1 text-white/60 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/80"
+          title="Switch role"
+        >
+          {ROLE_LABEL[active]}
+        </button>
+      ) : (
+        <span className="label-xs text-white/30">{ROLE_LABEL[active]}</span>
+      )}
+      <button
+        type="button"
+        onClick={() => signOut({ redirectUrl: basePath || "/" })}
+        className="label-xs text-white/20 transition-colors hover:text-white/50"
+        title="Sign out"
+      >
+        ⏏
+      </button>
+    </div>
+  )
+}
 
 export function ScreenShell({
   section,
@@ -43,7 +93,12 @@ export function ScreenShell({
             </span>
             <span className="label-sm text-white/70">SPARKI</span>
           </div>
-          <span className="label-sm text-white/30">{section.toUpperCase()}</span>
+          <Show when="signed-in">
+            <RoleSwitcher />
+          </Show>
+          <Show when="signed-out">
+            <span className="label-sm text-white/30">{section.toUpperCase()}</span>
+          </Show>
         </header>
 
         {children}

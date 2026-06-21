@@ -41,7 +41,7 @@ export function BottomNav() {
                 strokeWidth={1.75}
               />
               <span
-                className="font-mono text-[9px] uppercase tracking-[0.18em]"
+                className="font-sans text-[9px] uppercase tracking-[0.18em]"
                 style={{
                   color: isActive ? "var(--accent-cyan)" : "rgba(255,255,255,0.35)",
                 }}
