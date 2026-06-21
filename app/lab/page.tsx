@@ -1,193 +1,243 @@
-import Image from "next/image"
-import { SparkiCore } from "@/components/sparki/sparki-core"
-import { BioRadar } from "@/components/sparki/bio-radar"
-import { Sparkline } from "@/components/sparki/primitives"
-import { ConceptSwitcher } from "@/components/sparki/concept-switcher"
+"use client"
+
 import {
   athlete,
-  readiness,
   vitals,
   powerCurve,
-  aiSignals,
+  readinessHistory,
+  ftpHistory,
+  season,
 } from "@/lib/sparki-data"
-
-const ACCENT = "rgba(120,210,230,1)"
+import { ScreenShell } from "@/components/sparki/screen-shell"
+import { SectionLabel, Stat, Divider, Delta, ACCENT } from "@/components/sparki/ui"
+import { BioRadar } from "@/components/sparki/bio-radar"
+import { Sparkline } from "@/components/sparki/primitives"
 
 export default function LabPage() {
-  const opportunity = aiSignals[0]
-  const performance = aiSignals[2]
+  const hrv = vitals.find((v) => v.key === "hrv")!
+  const form = vitals.find((v) => v.key === "form")!
+  const load = vitals.find((v) => v.key === "load")!
+  const maxWatt = Math.max(...powerCurve.peak)
 
   return (
-    <main className="relative min-h-dvh overflow-hidden bg-[#040506] text-white">
-      {/* cinematic backdrop */}
-      <Image
-        src="/concept-lab.png"
-        alt=""
-        fill
-        priority
-        sizes="(max-width: 480px) 100vw, 480px"
-        className="pointer-events-none object-cover object-top opacity-40"
-      />
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(4,5,6,0.4) 0%, rgba(4,5,6,0.1) 22%, rgba(4,5,6,0.7) 55%, #040506 88%)",
-        }}
-      />
-      {/* clinical grid overlay */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.15]"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.18) 1px, transparent 1px)",
-          backgroundSize: "32px 32px",
-          maskImage:
-            "radial-gradient(110% 80% at 50% 30%, black 30%, transparent 80%)",
-        }}
-      />
-      {/* scanning line */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px overflow-hidden">
-        <div
-          className="h-px w-full animate-scan"
-          style={{ background: `linear-gradient(90deg, transparent, ${ACCENT}, transparent)` }}
-        />
+    <ScreenShell section="Lab">
+      {/* INTRO */}
+      <div className="-mt-2">
+        <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
+          PERFORMANCE LAB
+        </p>
+        <h1 className="mt-2 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
+          Begrijp je vorm
+        </h1>
+        <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
+          {athlete.name} · FTP {athlete.ftp}W · {athlete.wkg} W/kg
+        </p>
       </div>
 
-      <div className="relative z-10 mx-auto max-w-md px-6 pb-32 pt-14">
-        {/* header / lab telemetry strip */}
-        <div className="flex items-start justify-between font-mono text-[10px] tracking-[0.2em] text-white/40">
-          <div className="flex flex-col gap-1">
-            <span className="text-cyan-300/80">LAB · SESSION 0428</span>
-            <span>{athlete.name.toUpperCase()}</span>
+      {/* 01 PERFORMANCE RADAR */}
+      <section className="flex flex-col items-center">
+        <div className="flex w-full items-center justify-between">
+          <SectionLabel n="01" title="Performance Radar" />
+        </div>
+        <BioRadar size={260} accent={ACCENT} />
+        <p className="mt-1 max-w-[18rem] text-pretty text-center text-[12px] leading-relaxed text-white/40">
+          Je capaciteitsprofiel over zes signalen. Threshold en herstel zijn je
+          sterkste assen deze cyclus.
+        </p>
+      </section>
+
+      {/* 02 READINESS HISTORY */}
+      <section>
+        <SectionLabel n="02" title="Readiness history" />
+        <div className="mt-4 flex items-baseline justify-between">
+          <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">14 DAGEN</span>
+          <span className="font-mono text-[11px] tabular-nums text-cyan-300/80">+9% trend</span>
+        </div>
+        <div className="mt-3">
+          <Sparkline data={readinessHistory} width={340} height={56} stroke={ACCENT} fill="rgba(120,210,230,0.07)" className="w-full text-cyan-300" />
+        </div>
+        <p className="mt-3 text-pretty text-[12px] leading-relaxed text-white/40">
+          Gestage opbouw richting je piek. Geen dips door overbelasting.
+        </p>
+      </section>
+
+      {/* 03 HRV TREND */}
+      <section>
+        <SectionLabel n="03" title="HRV trend" />
+        <div className="mt-4 flex items-end justify-between">
+          <div className="flex items-baseline gap-1">
+            <span className="font-sans text-4xl font-extralight tabular-nums">{hrv.value}</span>
+            <span className="font-mono text-[11px] text-white/35">{hrv.unit}</span>
           </div>
-          <div className="flex flex-col items-end gap-1">
-            <span>FTP {athlete.ftp}W</span>
-            <span>{athlete.wkg} W/KG</span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] tracking-wide text-white/35">vs baseline</span>
+            <Delta value={hrv.delta} />
           </div>
         </div>
+        <div className="mt-3">
+          <Sparkline data={hrv.trend} width={340} height={48} stroke={ACCENT} fill="rgba(120,210,230,0.07)" className="w-full text-cyan-300" />
+        </div>
+      </section>
 
-        {/* signature core + readiness */}
-        <section className="relative mt-8 flex flex-col items-center">
-          <SparkiCore size={210} accent={ACCENT} readiness={readiness.score / 100} variant="reactor" />
-          <div className="-mt-[148px] flex flex-col items-center">
-            <span className="font-sans text-6xl font-extralight tabular-nums leading-none">
-              {readiness.score}
-            </span>
-            <span className="mt-1 font-mono text-[10px] tracking-[0.35em] text-cyan-300/90">
-              READINESS · {readiness.state}
-            </span>
-          </div>
-          <div className="mt-[92px] flex items-center gap-2 font-mono text-[10px] tracking-[0.2em] text-white/45">
-            <span className="h-1 w-1 animate-blink rounded-full bg-cyan-300" />
-            SPARKI CORE · ANALYZING 6 STREAMS
-          </div>
-        </section>
-
-        {/* AI living insight */}
-        <section className="mt-8 animate-rise rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-md">
-          <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 animate-blink rounded-full bg-cyan-300" />
-            <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/90">
-              {opportunity.label.toUpperCase()}
-            </span>
-          </div>
-          <p className="mt-3 text-pretty text-[15px] font-light leading-snug text-white/90">
-            {opportunity.headline}
-          </p>
-          <p className="mt-2 text-pretty text-xs leading-relaxed text-white/45">
-            {opportunity.detail}
-          </p>
-        </section>
-
-        {/* biometric radar + vitals list */}
-        <section className="mt-10 flex items-center gap-3">
-          <BioRadar size={186} accent={ACCENT} />
-          <div className="flex-1">
-            <span className="font-mono text-[10px] tracking-[0.3em] text-white/40">
-              BIOMETRIC PROFILE
-            </span>
-            <div className="mt-3 flex flex-col gap-3">
-              {vitals.slice(0, 4).map((v) => (
-                <div key={v.key} className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="font-mono text-[10px] tracking-[0.15em] text-white/40">
-                      {v.label.toUpperCase()}
-                    </span>
-                    <span className="font-sans text-base font-light tabular-nums">
-                      {v.value}
-                      <span className="ml-1 text-[10px] text-white/35">{v.unit}</span>
-                    </span>
-                  </div>
-                  <Sparkline
-                    data={v.trend}
-                    width={56}
-                    height={22}
-                    stroke={ACCENT}
-                    strokeWidth={1.2}
+      {/* 04 POWER CURVE */}
+      <section>
+        <SectionLabel n="04" title="Power Curve" />
+        <div className="mt-4 flex items-end gap-2">
+          {powerCurve.watts.map((w, i) => {
+            const h = (w / maxWatt) * 96
+            const peakH = (powerCurve.peak[i] / maxWatt) * 96
+            return (
+              <div key={powerCurve.durations[i]} className="flex flex-1 flex-col items-center gap-1.5">
+                <div className="relative h-24 w-full">
+                  <div className="absolute inset-x-0 bottom-0 rounded-sm border-t border-white/20" style={{ height: `${peakH}px` }} />
+                  <div
+                    className="absolute inset-x-0 bottom-0 rounded-sm"
+                    style={{
+                      height: `${h}px`,
+                      background: `linear-gradient(180deg, ${ACCENT}, rgba(120,210,230,0.15))`,
+                      boxShadow: `0 0 10px rgba(120,210,230,0.4)`,
+                    }}
                   />
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
+                <span className="font-mono text-[8px] tracking-wider text-white/35">{powerCurve.durations[i]}</span>
+                <span className="font-mono text-[9px] tabular-nums text-white/55">{w}</span>
+              </div>
+            )
+          })}
+        </div>
+        <p className="mt-3 text-pretty text-[12px] leading-relaxed text-white/40">
+          Lijn = seizoenspiek · vlak = vandaag. Je 20-min vermogen nadert je beste waarde.
+        </p>
+      </section>
 
-        {/* power curve */}
-        <section className="mt-10">
-          <div className="flex items-end justify-between">
-            <span className="font-mono text-[10px] tracking-[0.3em] text-white/40">
-              MEAN-MAXIMAL POWER
-            </span>
-            <span className="font-mono text-[10px] tracking-[0.2em] text-cyan-300/80">
-              SEASON PEAK
-            </span>
+      {/* 05 FTP DEVELOPMENT */}
+      <section>
+        <SectionLabel n="05" title="FTP development" />
+        <div className="mt-4 flex items-end justify-between">
+          <div className="flex items-baseline gap-1">
+            <span className="font-sans text-4xl font-extralight tabular-nums">{athlete.ftp}</span>
+            <span className="font-mono text-[11px] text-white/35">W</span>
           </div>
-          <div className="mt-4 flex items-end gap-2">
-            {powerCurve.watts.map((w, i) => {
-              const max = Math.max(...powerCurve.peak)
-              const h = (w / max) * 96
-              const peakH = (powerCurve.peak[i] / max) * 96
-              return (
-                <div key={powerCurve.durations[i]} className="flex flex-1 flex-col items-center gap-1.5">
-                  <div className="relative h-24 w-full">
-                    {/* peak ghost */}
-                    <div
-                      className="absolute inset-x-0 bottom-0 rounded-sm border-t border-white/20"
-                      style={{ height: `${peakH}px` }}
-                    />
-                    <div
-                      className="absolute inset-x-0 bottom-0 rounded-sm"
-                      style={{
-                        height: `${h}px`,
-                        background: `linear-gradient(180deg, ${ACCENT}, rgba(120,210,230,0.15))`,
-                        boxShadow: `0 0 10px rgba(120,210,230,0.4)`,
-                      }}
-                    />
-                  </div>
-                  <span className="font-mono text-[8px] tracking-wider text-white/35">
-                    {powerCurve.durations[i]}
-                  </span>
-                  <span className="font-mono text-[9px] tabular-nums text-white/55">{w}</span>
+          <span className="font-mono text-[11px] tabular-nums text-cyan-300/80">+24W sinds sep</span>
+        </div>
+        <div className="mt-4 flex h-20 items-end gap-2">
+          {ftpHistory.values.map((v, i) => {
+            const min = Math.min(...ftpHistory.values) - 6
+            const max = Math.max(...ftpHistory.values)
+            const h = ((v - min) / (max - min)) * 72 + 8
+            const isLast = i === ftpHistory.values.length - 1
+            return (
+              <div key={ftpHistory.months[i]} className="flex flex-1 flex-col items-center gap-1.5">
+                <div className="relative h-20 w-full">
+                  <div
+                    className="absolute inset-x-0 bottom-0 rounded-t-sm"
+                    style={{
+                      height: `${h}px`,
+                      background: isLast
+                        ? `linear-gradient(180deg, ${ACCENT}, rgba(120,210,230,0.2))`
+                        : "rgba(120,210,230,0.25)",
+                      boxShadow: isLast ? `0 0 10px rgba(120,210,230,0.4)` : "none",
+                    }}
+                  />
                 </div>
-              )
-            })}
-          </div>
-        </section>
+                <span className="font-mono text-[8px] tracking-wider text-white/30">{ftpHistory.months[i]}</span>
+              </div>
+            )
+          })}
+        </div>
+      </section>
 
-        {/* expected performance forecast */}
-        <section className="mt-8 flex items-center justify-between rounded-xl border border-cyan-300/20 bg-cyan-300/[0.05] px-5 py-4">
-          <div className="flex flex-col">
-            <span className="font-mono text-[10px] tracking-[0.25em] text-cyan-300/80">
-              {performance.label.toUpperCase()}
-            </span>
-            <span className="mt-1 text-sm font-light text-white/85">
-              {performance.headline}
-            </span>
-          </div>
-        </section>
-      </div>
+      {/* 06 RECOVERY · FATIGUE / FORM */}
+      <section>
+        <SectionLabel n="06" title="Recovery & form" />
+        <div className="mt-4 flex items-center gap-5">
+          <Stat label="Form (TSB)" value={form.value} accent big />
+          <Divider />
+          <Stat label="7d Load" value={`${load.value} TSS`} big />
+          <Divider />
+          <Stat label="Herstel" value="Volledig" />
+        </div>
+        <div className="mt-4">
+          <Sparkline data={form.trend} width={340} height={44} stroke={ACCENT} fill="rgba(120,210,230,0.06)" className="w-full text-cyan-300" />
+        </div>
+        <p className="mt-3 text-pretty text-[12px] leading-relaxed text-white/40">
+          Form is positief gekruist — je bent fris zonder fitness te verliezen.
+        </p>
+      </section>
 
-      <ConceptSwitcher accent={ACCENT} />
-    </main>
+      {/* 07 SEASON PROGRESS */}
+      <section>
+        <SectionLabel n="07" title="Season progress" />
+        <div className="mt-4 flex items-center gap-5">
+          <LegendDot label="Fitness" color={ACCENT} />
+          <LegendDot label="Fatigue" color="rgba(255,200,120,0.9)" />
+          <LegendDot label="Form" color="rgba(255,255,255,0.55)" />
+        </div>
+        <div className="relative mt-4 h-28">
+          <SeasonChart />
+        </div>
+        <p className="mt-3 text-pretty text-[12px] leading-relaxed text-white/40">
+          Fitness (CTL) stijgt gestaag terwijl vermoeidheid onder controle blijft.
+          Periodisering verloopt volgens plan.
+        </p>
+      </section>
+
+      {/* 08 AI ANALYSIS */}
+      <section>
+        <SectionLabel n="08" title="AI Analysis" />
+        <div className="relative mt-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 backdrop-blur-sm">
+          <div
+            className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 animate-breathe rounded-full"
+            style={{ background: `radial-gradient(circle, ${ACCENT}, transparent 70%)`, opacity: 0.18 }}
+          />
+          <span className="font-mono text-[10px] tracking-[0.25em] text-cyan-300/80">SPARKI ANALYSE</span>
+          <p className="mt-3 text-pretty font-sans text-base font-light leading-snug text-white/90">
+            Je duurvermogen is deze cyclus met 8% verbeterd.
+          </p>
+          <p className="mt-2 text-pretty text-[13px] leading-relaxed text-white/45">
+            HRV-stabiliteit en stijgende FTP wijzen op een sterke aerobe basis.
+            Sparki adviseert binnen 10 dagen een nieuwe threshold-test — de data
+            voorspelt een FTP rond 350W.
+          </p>
+        </div>
+      </section>
+    </ScreenShell>
+  )
+}
+
+function LegendDot({ label, color }: { label: string; color: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
+      <span className="font-mono text-[10px] tracking-[0.16em] text-white/45">{label.toUpperCase()}</span>
+    </div>
+  )
+}
+
+function SeasonChart() {
+  const w = 340
+  const h = 112
+  const all = [...season.ctl, ...season.atl, ...season.tsb]
+  const min = Math.min(...all)
+  const max = Math.max(...all)
+  const range = max - min || 1
+  const n = season.ctl.length
+  const x = (i: number) => (i / (n - 1)) * w
+  const y = (v: number) => h - ((v - min) / range) * h
+  const path = (arr: number[]) => arr.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ")
+
+  return (
+    <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+      <polyline points={path(season.tsb)} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+      <polyline points={path(season.atl)} fill="none" stroke="rgba(255,200,120,0.8)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+      <polyline
+        points={path(season.ctl)}
+        fill="none"
+        stroke={ACCENT}
+        strokeWidth="1.8"
+        vectorEffect="non-scaling-stroke"
+        style={{ filter: `drop-shadow(0 0 4px ${ACCENT})` }}
+      />
+    </svg>
   )
 }

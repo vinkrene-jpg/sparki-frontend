@@ -69,7 +69,7 @@ export function TrainingDayHome() {
         />
       </div>
 
-      <div className="relative z-10 mx-auto flex max-w-md flex-col gap-10 px-6 pb-16 pt-12">
+      <div className="relative z-10 mx-auto flex max-w-md flex-col gap-10 px-6 pb-32 pt-12">
         {/* HEADER */}
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-2">
