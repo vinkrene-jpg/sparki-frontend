@@ -1,1 +1,2 @@
 - [Sparki migration pattern](sparki-migration.md) — fullstack_copy_frontend.sh fails when CLIENT_DIR is blank; write files directly instead.
+- [Vite font loading — Next.js var() trap](vite-font-var-trap.md) — var(--font-geist-sans) undefined in Vite causes entire font-family to fall back to browser serif; always use @fontsource packages.
