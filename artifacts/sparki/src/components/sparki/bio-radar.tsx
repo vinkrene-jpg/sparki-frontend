@@ -1,6 +1,5 @@
 import { vitals } from "@/lib/sparki-data"
 
-// Performance radar — plots all vital levels on one polygon.
 export function BioRadar({
   size = 200,
   accent = "rgba(120,210,230,1)",
@@ -34,7 +33,6 @@ export function BioRadar({
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      {/* concentric grid */}
       {[0.25, 0.5, 0.75, 1].map((g) => (
         <polygon
           key={g}
@@ -49,7 +47,6 @@ export function BioRadar({
           strokeWidth="0.5"
         />
       ))}
-      {/* spokes */}
       {axes.map((_, i) => {
         const [ex, ey] = axisEnd(i)
         return (
@@ -64,7 +61,6 @@ export function BioRadar({
           />
         )
       })}
-      {/* data polygon */}
       <polygon
         points={poly}
         fill={accent}
@@ -77,7 +73,6 @@ export function BioRadar({
         const [px, py] = pointFor(v.level, i)
         return <circle key={v.key} cx={px} cy={py} r="2" fill={accent} />
       })}
-      {/* labels */}
       {axes.map((v, i) => {
         const [lx, ly] = labelPos(i)
         return (
@@ -87,10 +82,11 @@ export function BioRadar({
             y={ly}
             textAnchor="middle"
             dominantBaseline="middle"
-            className="font-mono"
+            fontFamily="'Geist', ui-sans-serif, system-ui, sans-serif"
             fontSize="6.5"
-            fill="rgba(255,255,255,0.5)"
-            style={{ letterSpacing: "0.1em" }}
+            fontWeight="500"
+            fill="rgba(255,255,255,0.45)"
+            style={{ letterSpacing: "0.12em" }}
           >
             {v.label.toUpperCase()}
           </text>

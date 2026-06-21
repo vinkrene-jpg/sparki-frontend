@@ -34,13 +34,11 @@ export default function FeedPage() {
     <ScreenShell section="Feed">
       {/* INTRO */}
       <div className="-mt-2">
-        <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
-          RONDOM JOU
-        </p>
+        <p className="label-sm text-white/35">RONDOM JOU</p>
         <h1 className="mt-2 text-balance font-sans text-3xl font-semibold leading-tight tracking-tight">
           Wat er speelt
         </h1>
-        <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
+        <p className="mt-1.5 label-sm text-white/40">
           Coach · Team · Club · Wedstrijden · AI
         </p>
       </div>
@@ -54,7 +52,7 @@ export default function FeedPage() {
               key={f.key}
               type="button"
               onClick={() => setActive(f.key)}
-              className="rounded-full border px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors"
+              className="rounded-full border px-3.5 py-1.5 font-sans text-[10px] font-medium uppercase tracking-[0.16em] transition-colors"
               style={{
                 borderColor: on ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.1)",
                 background: on ? "rgba(120,210,230,0.1)" : "transparent",
@@ -79,7 +77,6 @@ export default function FeedPage() {
                 key={item.id}
                 className="relative flex gap-4 border-b border-white/[0.06] py-5 last:border-0"
               >
-                {/* accent rail */}
                 <span
                   className="absolute left-0 top-5 h-8 w-px"
                   style={{ background: meta.color, boxShadow: `0 0 8px ${meta.color}` }}
@@ -98,21 +95,21 @@ export default function FeedPage() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-[10px] tracking-[0.18em]" style={{ color: meta.color }}>
+                    <span className="label-xs font-semibold" style={{ color: meta.color }}>
                       {meta.label.toUpperCase()}
                     </span>
-                    <span className="font-mono text-[10px] tracking-wide text-white/30">{item.time}</span>
+                    <span className="label-xs text-white/30">{item.time}</span>
                   </div>
                   <h3 className="mt-1.5 text-pretty font-sans text-[15px] font-medium leading-snug text-white/90">
                     {item.title}
                   </h3>
                   <p className="mt-1 text-pretty text-[12px] leading-relaxed text-white/45">{item.body}</p>
                   <div className="mt-2 flex items-center gap-2">
-                    <span className="font-mono text-[10px] tracking-wide text-white/40">{item.author}</span>
+                    <span className="label-xs text-white/40">{item.author}</span>
                     {item.meta ? (
                       <>
                         <span className="h-1 w-1 rounded-full bg-white/20" />
-                        <span className="font-mono text-[10px] tracking-wide text-white/35">{item.meta}</span>
+                        <span className="label-xs text-white/35">{item.meta}</span>
                       </>
                     ) : null}
                   </div>

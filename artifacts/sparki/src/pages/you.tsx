@@ -43,7 +43,7 @@ export default function YouPage() {
         <h1 className="mt-4 text-balance font-sans text-3xl font-semibold leading-tight tracking-tight">
           {athlete.name}
         </h1>
-        <p className="mt-1 font-mono text-[11px] tracking-[0.2em] text-white/40">
+        <p className="mt-1.5 label-sm text-white/40">
           ELITE · {athlete.discipline.toUpperCase()}
         </p>
         <div className="mt-5 flex items-center gap-5">
@@ -62,8 +62,8 @@ export default function YouPage() {
           {goals.map((g) => (
             <div key={g.name} className="border-b border-white/[0.05] py-3.5 last:border-0">
               <div className="flex items-baseline justify-between">
-                <span className="text-[14px] tracking-tight text-white/90">{g.name}</span>
-                <span className="font-mono text-[10px] tracking-wide text-white/40">{g.date}</span>
+                <span className="text-[14px] font-medium tracking-tight text-white/90">{g.name}</span>
+                <span className="label-xs text-white/40">{g.date}</span>
               </div>
               <div className="mt-2 flex items-center gap-3">
                 <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.08]">
@@ -76,7 +76,10 @@ export default function YouPage() {
                     }}
                   />
                 </div>
-                <span className="font-mono text-[10px] tabular-nums text-cyan-300/80">
+                <span
+                  className="font-sans text-[10px] font-semibold tabular-nums text-cyan-300/80"
+                  style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
+                >
                   {Math.round(g.progress * 100)}%
                 </span>
               </div>
@@ -104,8 +107,8 @@ export default function YouPage() {
                   >
                     <Icon className="h-4 w-4 text-white/55" strokeWidth={1.75} />
                   </span>
-                  <span className="flex-1 text-[14px] tracking-tight text-white/85">{row.k}</span>
-                  <span className="font-mono text-[11px] tracking-wide text-white/40">{row.v}</span>
+                  <span className="flex-1 text-[14px] font-medium tracking-tight text-white/85">{row.k}</span>
+                  <span className="label-xs text-white/40">{row.v}</span>
                   <ChevronRight className="h-4 w-4 text-white/25" strokeWidth={1.75} />
                 </button>
               )
@@ -115,9 +118,7 @@ export default function YouPage() {
       ))}
 
       <footer className="pt-2 text-center">
-        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
-          SPARKI AI PERFORMANCE CENTER · v1.0
-        </span>
+        <span className="label-xs text-white/20">SPARKI AI PERFORMANCE CENTER · V1.0</span>
       </footer>
     </ScreenShell>
   )
@@ -125,11 +126,17 @@ export default function YouPage() {
 
 function IdentityStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className="flex flex-col items-center gap-0.5">
-      <span className="font-sans text-lg font-semibold tabular-nums" style={{ color: accent ? ACCENT : "rgba(255,255,255,0.9)" }}>
+    <div className="flex flex-col items-center gap-1">
+      <span
+        className="font-sans text-lg font-semibold tabular-nums"
+        style={{
+          color: accent ? ACCENT : "rgba(255,255,255,0.9)",
+          fontVariantNumeric: "tabular-nums lining-nums",
+        }}
+      >
         {value}
       </span>
-      <span className="font-mono text-[9px] tracking-[0.18em] text-white/35">{label.toUpperCase()}</span>
+      <span className="label-xs text-white/35">{label.toUpperCase()}</span>
     </div>
   )
 }

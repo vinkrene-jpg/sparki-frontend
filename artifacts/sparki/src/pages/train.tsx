@@ -17,13 +17,11 @@ export default function TrainPage() {
     <ScreenShell section="Train">
       {/* INTRO */}
       <div className="-mt-2">
-        <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
-          VANDAAG · UITVOERING
-        </p>
+        <p className="label-sm text-white/35">VANDAAG · UITVOERING</p>
         <h1 className="mt-2 text-balance font-sans text-3xl font-semibold leading-tight tracking-tight">
           {intervals.title}
         </h1>
-        <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
+        <p className="mt-1.5 label-sm text-white/40">
           {intervals.duration} · {intervals.tss} TSS · IF 0.91
         </p>
       </div>
@@ -42,7 +40,7 @@ export default function TrainPage() {
                   boxShadow: b.z === 4 ? "0 0 12px rgba(120,210,230,0.5)" : "none",
                 }}
               />
-              <span className="mt-1.5 font-mono text-[7px] tracking-wider text-white/30">{b.label}</span>
+              <span className="mt-1.5 label-xs text-white/30">{b.label}</span>
             </div>
           ))}
         </div>
@@ -60,8 +58,13 @@ export default function TrainPage() {
         <SectionLabel n="02" title="Doelzones" />
         <div className="mt-4 flex items-end justify-between">
           <div>
-            <span className="font-mono text-[10px] tracking-[0.2em] text-cyan-300/80">TARGET · ZONE 4</span>
-            <p className="mt-1 font-sans text-3xl font-bold tabular-nums">{target.power}</p>
+            <span className="label-sm font-semibold text-cyan-300/80">TARGET · ZONE 4</span>
+            <p
+              className="mt-1.5 font-sans text-3xl font-bold tabular-nums"
+              style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
+            >
+              {target.power}
+            </p>
           </div>
           <div className="flex items-center gap-5">
             <Stat label="HR" value={target.hr} />
@@ -74,12 +77,17 @@ export default function TrainPage() {
             <div
               key={z.z}
               className="flex items-center gap-3 border-b border-white/[0.05] py-2.5 last:border-0"
-              style={{ opacity: z.z === target.zone ? 1 : 0.55 }}
+              style={{ opacity: z.z === target.zone ? 1 : 0.5 }}
             >
               <span className="h-3 w-1 rounded-full" style={{ background: z.color, boxShadow: z.z === 4 ? `0 0 8px ${ACCENT}` : "none" }} />
-              <span className="w-6 font-mono text-[11px] tabular-nums text-white/50">Z{z.z}</span>
-              <span className="flex-1 text-[13px] tracking-tight text-white/85">{z.name}</span>
-              <span className="font-mono text-[11px] tabular-nums text-white/55">{z.power}</span>
+              <span className="label-xs text-white/50">Z{z.z}</span>
+              <span className="flex-1 text-[13px] font-medium tracking-tight text-white/85">{z.name}</span>
+              <span
+                className="font-sans text-[13px] font-semibold tabular-nums text-white/60"
+                style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
+              >
+                {z.power}
+              </span>
             </div>
           ))}
         </div>
@@ -90,11 +98,10 @@ export default function TrainPage() {
         <SectionLabel n="03" title="Route & navigatie" />
         <div className="mt-4 flex items-end justify-between">
           <h2 className="font-sans text-xl font-medium tracking-tight">{route.name}</h2>
-          <span className="font-mono text-[10px] tracking-[0.2em]" style={{ color: ACCENT }}>
+          <span className="label-sm font-semibold" style={{ color: ACCENT }}>
             {route.status.toUpperCase()}
           </span>
         </div>
-        {/* elevation profile */}
         <div className="mt-4 flex h-16 items-end gap-px">
           {route.profile.map((p, i) => (
             <div
@@ -114,12 +121,16 @@ export default function TrainPage() {
           <Divider />
           <Stat label="Ondergrond" value={route.surface} />
         </div>
-        {/* navigation preview */}
         <div className="mt-5 flex flex-col">
           {route.nav.map((n, i) => (
             <div key={i} className="flex items-baseline gap-3 border-b border-white/[0.05] py-2.5 last:border-0">
-              <span className="w-12 font-mono text-[11px] tabular-nums text-cyan-300/70">{n.km}</span>
-              <span className="w-20 text-[13px] tracking-tight text-white/85">{n.dir}</span>
+              <span
+                className="w-12 font-sans text-[11px] font-semibold tabular-nums text-cyan-300/70"
+                style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
+              >
+                {n.km}
+              </span>
+              <span className="w-20 text-[13px] font-medium tracking-tight text-white/85">{n.dir}</span>
               <span className="flex-1 text-[12px] text-white/40">{n.note}</span>
             </div>
           ))}
@@ -135,7 +146,12 @@ export default function TrainPage() {
             const Icon = isDrink ? Droplet : Zap
             return (
               <div key={i} className="flex items-center gap-4 border-b border-white/[0.05] py-3 last:border-0">
-                <span className="w-12 font-mono text-[11px] tabular-nums text-white/40">{f.t}</span>
+                <span
+                  className="font-sans text-[11px] font-semibold tabular-nums text-white/40"
+                  style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
+                >
+                  {f.t}
+                </span>
                 <span
                   className="flex h-7 w-7 items-center justify-center rounded-full border"
                   style={{
@@ -145,7 +161,7 @@ export default function TrainPage() {
                 >
                   <Icon className="h-3.5 w-3.5" style={{ color: isDrink ? ACCENT : "rgba(255,200,120,0.9)" }} strokeWidth={1.75} />
                 </span>
-                <span className="flex-1 text-[13px] tracking-tight text-white/85">{f.text}</span>
+                <span className="flex-1 text-[13px] font-medium tracking-tight text-white/85">{f.text}</span>
               </div>
             )
           })}
@@ -167,8 +183,14 @@ export default function TrainPage() {
               >
                 {p.done ? <Check className="h-3 w-3" style={{ color: ACCENT }} strokeWidth={2.5} /> : null}
               </span>
-              <span className="flex-1 text-[13px] tracking-tight text-white/85">{p.label}</span>
-              <span className="font-mono text-[11px] tabular-nums" style={{ color: p.done ? "rgba(255,255,255,0.55)" : "rgba(255,200,120,0.85)" }}>
+              <span className="flex-1 text-[13px] font-medium tracking-tight text-white/85">{p.label}</span>
+              <span
+                className="font-sans text-[11px] font-semibold tabular-nums"
+                style={{
+                  color: p.done ? "rgba(255,255,255,0.55)" : "rgba(255,200,120,0.85)",
+                  fontVariantNumeric: "tabular-nums lining-nums",
+                }}
+              >
                 {p.value}
               </span>
             </div>
@@ -186,7 +208,7 @@ export default function TrainPage() {
           />
           <div className="flex items-center gap-2">
             <SparkiCore size={28} accent={ACCENT} readiness={0.9} variant="orb" />
-            <span className="font-mono text-[10px] tracking-[0.25em] text-cyan-300/80">AI COACH</span>
+            <span className="label-sm font-semibold text-cyan-300/80">AI COACH</span>
           </div>
           <p className="mt-3 text-pretty font-sans text-base font-medium leading-snug text-white/90">
             Start ingehouden — bouw elk interval op naar het bovenste deel van Zone 4.
@@ -196,8 +218,8 @@ export default function TrainPage() {
             blok 3 en 4 iets sterker dan blok 1. Bij verlies van vermogen op blok 4
             — stoppen, niet forceren. De winst zit in schone uitvoering.
           </p>
-          <p className="mt-3 font-mono text-[11px] tracking-wide text-white/35">
-            Voor: {athlete.name} · FTP {athlete.ftp}W
+          <p className="mt-3 label-xs text-white/30">
+            VOOR: {athlete.name} · FTP {athlete.ftp}W
           </p>
         </div>
       </section>

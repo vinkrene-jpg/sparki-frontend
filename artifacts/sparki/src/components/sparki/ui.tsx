@@ -6,14 +6,15 @@ export function SectionLabel({ n, title }: { n?: string; title: string }) {
   return (
     <div className="flex items-center gap-3">
       {n ? (
-        <span className="font-mono text-[11px] tabular-nums" style={{ color: ACCENT }}>
+        <span
+          className="font-sans text-[11px] font-semibold tabular-nums"
+          style={{ color: ACCENT, fontVariantNumeric: "tabular-nums lining-nums" }}
+        >
           {n}
         </span>
       ) : null}
-      <span className="font-mono text-[11px] tracking-[0.22em] text-white/55">
-        {title.toUpperCase()}
-      </span>
-      <span className="h-px flex-1 bg-gradient-to-r from-white/15 to-transparent" />
+      <span className="label-sm text-white/50">{title.toUpperCase()}</span>
+      <span className="h-px flex-1 bg-gradient-to-r from-white/12 to-transparent" />
     </div>
   )
 }
@@ -23,8 +24,11 @@ export function Delta({ value, invert = false }: { value: number; invert?: boole
   const sign = value > 0 ? "+" : ""
   return (
     <span
-      className="font-mono text-[10px] tabular-nums"
-      style={{ color: positive ? ACCENT : "rgba(255,140,120,0.85)" }}
+      className="font-sans text-[10px] font-semibold tabular-nums"
+      style={{
+        color: positive ? ACCENT : "rgba(255,140,120,0.85)",
+        fontVariantNumeric: "tabular-nums lining-nums",
+      }}
     >
       {sign}
       {value}
@@ -43,18 +47,19 @@ export function Stat({
   big,
 }: {
   label: string
-  value: string
+  value: string | number
   accent?: boolean
   big?: boolean
 }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="font-mono text-[9px] tracking-[0.16em] text-white/35">
-        {label.toUpperCase()}
-      </span>
+    <div className="flex flex-col gap-1">
+      <span className="label-xs text-white/35">{label.toUpperCase()}</span>
       <span
-        className={`font-sans font-semibold tabular-nums ${big ? "text-2xl" : "text-lg"}`}
-        style={{ color: accent ? ACCENT : "rgba(255,255,255,0.9)" }}
+        className={`font-sans font-semibold tabular-nums leading-none ${big ? "text-2xl" : "text-[15px]"}`}
+        style={{
+          color: accent ? ACCENT : "rgba(255,255,255,0.9)",
+          fontVariantNumeric: "tabular-nums lining-nums",
+        }}
       >
         {value}
       </span>

@@ -1,7 +1,5 @@
 import type { ReactNode } from "react"
 
-// The shared cinematic canvas — identical layered background, scan line and
-// header rhythm as the frozen Home screen. Every primary screen wraps in this.
 export function ScreenShell({
   section,
   bg = "/concept-lab.png",
@@ -13,7 +11,6 @@ export function ScreenShell({
 }) {
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#040506] text-white">
-      {/* layered cinematic background */}
       <div className="pointer-events-none absolute inset-0">
         <img
           src={bg}
@@ -44,13 +41,9 @@ export function ScreenShell({
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-300/60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-300" />
             </span>
-            <span className="font-mono text-[11px] tracking-[0.35em] text-white/70">
-              SPARKI
-            </span>
+            <span className="label-sm text-white/70">SPARKI</span>
           </div>
-          <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">
-            {section.toUpperCase()}
-          </span>
+          <span className="label-sm text-white/30">{section.toUpperCase()}</span>
         </header>
 
         {children}

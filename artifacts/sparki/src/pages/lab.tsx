@@ -21,13 +21,11 @@ export default function LabPage() {
     <ScreenShell section="Lab">
       {/* INTRO */}
       <div className="-mt-2">
-        <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
-          PERFORMANCE LAB
-        </p>
+        <p className="label-sm text-white/35">PERFORMANCE LAB</p>
         <h1 className="mt-2 text-balance font-sans text-3xl font-semibold leading-tight tracking-tight">
           Begrijp je vorm
         </h1>
-        <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
+        <p className="mt-1.5 label-sm text-white/40">
           {athlete.name} · FTP {athlete.ftp}W · {athlete.wkg} W/kg
         </p>
       </div>
@@ -48,8 +46,13 @@ export default function LabPage() {
       <section>
         <SectionLabel n="02" title="Readiness history" />
         <div className="mt-4 flex items-baseline justify-between">
-          <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">14 DAGEN</span>
-          <span className="font-mono text-[11px] tabular-nums text-cyan-300/80">+9% trend</span>
+          <span className="label-xs text-white/35">14 DAGEN</span>
+          <span
+            className="font-sans text-[11px] font-semibold tabular-nums text-cyan-300/80"
+            style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
+          >
+            +9% trend
+          </span>
         </div>
         <div className="mt-3">
           <Sparkline data={readinessHistory} width={340} height={56} stroke={ACCENT} fill="rgba(120,210,230,0.07)" className="w-full text-cyan-300" />
@@ -63,12 +66,17 @@ export default function LabPage() {
       <section>
         <SectionLabel n="03" title="HRV trend" />
         <div className="mt-4 flex items-end justify-between">
-          <div className="flex items-baseline gap-1">
-            <span className="font-sans text-4xl font-bold tabular-nums">{hrv.value}</span>
-            <span className="font-mono text-[11px] text-white/35">{hrv.unit}</span>
+          <div className="flex items-baseline gap-1.5">
+            <span
+              className="font-sans text-4xl font-bold"
+              style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
+            >
+              {hrv.value}
+            </span>
+            <span className="label-sm text-white/35">{hrv.unit}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[10px] tracking-wide text-white/35">vs baseline</span>
+            <span className="label-xs text-white/35">VS BASELINE</span>
             <Delta value={hrv.delta} />
           </div>
         </div>
@@ -97,8 +105,13 @@ export default function LabPage() {
                     }}
                   />
                 </div>
-                <span className="font-mono text-[8px] tracking-wider text-white/35">{powerCurve.durations[i]}</span>
-                <span className="font-mono text-[9px] tabular-nums text-white/55">{w}</span>
+                <span className="label-xs text-white/35">{powerCurve.durations[i]}</span>
+                <span
+                  className="font-sans text-[9px] font-semibold tabular-nums text-white/55"
+                  style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
+                >
+                  {w}
+                </span>
               </div>
             )
           })}
@@ -112,11 +125,21 @@ export default function LabPage() {
       <section>
         <SectionLabel n="05" title="FTP development" />
         <div className="mt-4 flex items-end justify-between">
-          <div className="flex items-baseline gap-1">
-            <span className="font-sans text-4xl font-bold tabular-nums">{athlete.ftp}</span>
-            <span className="font-mono text-[11px] text-white/35">W</span>
+          <div className="flex items-baseline gap-1.5">
+            <span
+              className="font-sans text-4xl font-bold"
+              style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
+            >
+              {athlete.ftp}
+            </span>
+            <span className="label-sm text-white/35">W</span>
           </div>
-          <span className="font-mono text-[11px] tabular-nums text-cyan-300/80">+24W sinds sep</span>
+          <span
+            className="font-sans text-[11px] font-semibold tabular-nums text-cyan-300/80"
+            style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
+          >
+            +24W SINDS SEP
+          </span>
         </div>
         <div className="mt-4 flex h-20 items-end gap-2">
           {ftpHistory.values.map((v, i) => {
@@ -138,14 +161,14 @@ export default function LabPage() {
                     }}
                   />
                 </div>
-                <span className="font-mono text-[8px] tracking-wider text-white/30">{ftpHistory.months[i]}</span>
+                <span className="label-xs text-white/30">{ftpHistory.months[i]}</span>
               </div>
             )
           })}
         </div>
       </section>
 
-      {/* 06 RECOVERY · FATIGUE / FORM */}
+      {/* 06 RECOVERY & FORM */}
       <section>
         <SectionLabel n="06" title="Recovery & form" />
         <div className="mt-4 flex items-center gap-5">
@@ -188,7 +211,7 @@ export default function LabPage() {
             className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 animate-breathe rounded-full"
             style={{ background: `radial-gradient(circle, ${ACCENT}, transparent 70%)`, opacity: 0.18 }}
           />
-          <span className="font-mono text-[10px] tracking-[0.25em] text-cyan-300/80">SPARKI ANALYSE</span>
+          <span className="label-sm font-semibold text-cyan-300/80">SPARKI ANALYSE</span>
           <p className="mt-3 text-pretty font-sans text-base font-medium leading-snug text-white/90">
             Je duurvermogen is deze cyclus met 8% verbeterd.
           </p>
@@ -207,7 +230,7 @@ function LegendDot({ label, color }: { label: string; color: string }) {
   return (
     <div className="flex items-center gap-1.5">
       <span className="h-1.5 w-1.5 rounded-full" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
-      <span className="font-mono text-[10px] tracking-[0.16em] text-white/45">{label.toUpperCase()}</span>
+      <span className="label-xs text-white/45">{label.toUpperCase()}</span>
     </div>
   )
 }
