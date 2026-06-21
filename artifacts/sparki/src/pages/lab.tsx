@@ -24,7 +24,7 @@ export default function LabPage() {
         <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
           PERFORMANCE LAB
         </p>
-        <h1 className="mt-2 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
+        <h1 className="mt-2 text-balance font-sans text-3xl font-semibold leading-tight tracking-tight">
           Begrijp je vorm
         </h1>
         <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
@@ -64,7 +64,7 @@ export default function LabPage() {
         <SectionLabel n="03" title="HRV trend" />
         <div className="mt-4 flex items-end justify-between">
           <div className="flex items-baseline gap-1">
-            <span className="font-sans text-4xl font-extralight tabular-nums">{hrv.value}</span>
+            <span className="font-sans text-4xl font-bold tabular-nums">{hrv.value}</span>
             <span className="font-mono text-[11px] text-white/35">{hrv.unit}</span>
           </div>
           <div className="flex items-center gap-2">
@@ -113,7 +113,7 @@ export default function LabPage() {
         <SectionLabel n="05" title="FTP development" />
         <div className="mt-4 flex items-end justify-between">
           <div className="flex items-baseline gap-1">
-            <span className="font-sans text-4xl font-extralight tabular-nums">{athlete.ftp}</span>
+            <span className="font-sans text-4xl font-bold tabular-nums">{athlete.ftp}</span>
             <span className="font-mono text-[11px] text-white/35">W</span>
           </div>
           <span className="font-mono text-[11px] tabular-nums text-cyan-300/80">+24W sinds sep</span>
@@ -189,7 +189,7 @@ export default function LabPage() {
             style={{ background: `radial-gradient(circle, ${ACCENT}, transparent 70%)`, opacity: 0.18 }}
           />
           <span className="font-mono text-[10px] tracking-[0.25em] text-cyan-300/80">SPARKI ANALYSE</span>
-          <p className="mt-3 text-pretty font-sans text-base font-light leading-snug text-white/90">
+          <p className="mt-3 text-pretty font-sans text-base font-medium leading-snug text-white/90">
             Je duurvermogen is deze cyclus met 8% verbeterd.
           </p>
           <p className="mt-2 text-pretty text-[13px] leading-relaxed text-white/45">

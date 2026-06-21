@@ -53,7 +53,7 @@ export function Stat({
         {label.toUpperCase()}
       </span>
       <span
-        className={`font-sans font-light tabular-nums ${big ? "text-2xl" : "text-lg"}`}
+        className={`font-sans font-semibold tabular-nums ${big ? "text-2xl" : "text-lg"}`}
         style={{ color: accent ? ACCENT : "rgba(255,255,255,0.9)" }}
       >
         {value}

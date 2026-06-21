@@ -89,7 +89,7 @@ export function TrainingDayHome() {
           <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
             DINSDAG · TRAINING DAY
           </p>
-          <h1 className="mt-2 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
+          <h1 className="mt-2 text-balance font-sans text-3xl font-semibold leading-tight tracking-tight">
             Goedemorgen, {athlete.name.split(" ")[0]}.
           </h1>
           <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
@@ -103,7 +103,7 @@ export function TrainingDayHome() {
           <div className="mt-4">
             <div className="flex items-end justify-between">
               <div>
-                <h2 className="font-sans text-2xl font-light tracking-tight">
+                <h2 className="font-sans text-2xl font-semibold tracking-tight">
                   {intervals.title}
                 </h2>
                 <p className="mt-1 font-mono text-[11px] tracking-wide text-white/45">
@@ -168,7 +168,7 @@ export function TrainingDayHome() {
                 <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/80">
                   READINESS
                 </span>
-                <span className="font-sans text-7xl font-extralight leading-none tabular-nums">
+                <span className="font-sans text-7xl font-bold leading-none tabular-nums">
                   {readiness.score}
                 </span>
                 <span className="mt-1 font-mono text-[11px] tracking-[0.25em] text-white/50">
@@ -209,7 +209,7 @@ export function TrainingDayHome() {
                     <Delta value={v.delta} invert={isFatigue} />
                   </div>
                   <div className="flex items-baseline gap-1">
-                    <span className="font-sans text-2xl font-light tabular-nums">
+                    <span className="font-sans text-2xl font-semibold tabular-nums">
                       {v.value}
                     </span>
                     <span className="font-mono text-[10px] text-white/35">
@@ -258,7 +258,7 @@ export function TrainingDayHome() {
                 AI COACH
               </span>
             </div>
-            <p className="mt-3 text-pretty font-sans text-base font-light leading-snug text-white/90">
+            <p className="mt-3 text-pretty font-sans text-base font-medium leading-snug text-white/90">
               Drink 500 ml vóór het eerste interval.
             </p>
             <p className="mt-2 text-pretty text-[13px] leading-relaxed text-white/45">
@@ -390,7 +390,7 @@ function AnalysisStat({
       </span>
       {value ? (
         <span
-          className="font-sans text-lg font-light tabular-nums"
+          className="font-sans text-lg font-semibold tabular-nums"
           style={{ color: accent ? ACCENT : "rgba(255,255,255,0.9)" }}
         >
           {value}

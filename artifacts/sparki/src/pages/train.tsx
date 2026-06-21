@@ -20,7 +20,7 @@ export default function TrainPage() {
         <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
           VANDAAG · UITVOERING
         </p>
-        <h1 className="mt-2 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
+        <h1 className="mt-2 text-balance font-sans text-3xl font-semibold leading-tight tracking-tight">
           {intervals.title}
         </h1>
         <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
@@ -61,7 +61,7 @@ export default function TrainPage() {
         <div className="mt-4 flex items-end justify-between">
           <div>
             <span className="font-mono text-[10px] tracking-[0.2em] text-cyan-300/80">TARGET · ZONE 4</span>
-            <p className="mt-1 font-sans text-3xl font-extralight tabular-nums">{target.power}</p>
+            <p className="mt-1 font-sans text-3xl font-bold tabular-nums">{target.power}</p>
           </div>
           <div className="flex items-center gap-5">
             <Stat label="HR" value={target.hr} />
@@ -89,7 +89,7 @@ export default function TrainPage() {
       <section>
         <SectionLabel n="03" title="Route & navigatie" />
         <div className="mt-4 flex items-end justify-between">
-          <h2 className="font-sans text-xl font-light tracking-tight">{route.name}</h2>
+          <h2 className="font-sans text-xl font-medium tracking-tight">{route.name}</h2>
           <span className="font-mono text-[10px] tracking-[0.2em]" style={{ color: ACCENT }}>
             {route.status.toUpperCase()}
           </span>
@@ -188,7 +188,7 @@ export default function TrainPage() {
             <SparkiCore size={28} accent={ACCENT} readiness={0.9} variant="orb" />
             <span className="font-mono text-[10px] tracking-[0.25em] text-cyan-300/80">AI COACH</span>
           </div>
-          <p className="mt-3 text-pretty font-sans text-base font-light leading-snug text-white/90">
+          <p className="mt-3 text-pretty font-sans text-base font-medium leading-snug text-white/90">
             Start ingehouden — bouw elk interval op naar het bovenste deel van Zone 4.
           </p>
           <p className="mt-2 text-pretty text-[13px] leading-relaxed text-white/45">

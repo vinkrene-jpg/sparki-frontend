@@ -37,7 +37,7 @@ export default function FeedPage() {
         <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
           RONDOM JOU
         </p>
-        <h1 className="mt-2 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
+        <h1 className="mt-2 text-balance font-sans text-3xl font-semibold leading-tight tracking-tight">
           Wat er speelt
         </h1>
         <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
@@ -103,7 +103,7 @@ export default function FeedPage() {
                     </span>
                     <span className="font-mono text-[10px] tracking-wide text-white/30">{item.time}</span>
                   </div>
-                  <h3 className="mt-1.5 text-pretty font-sans text-[15px] font-light leading-snug text-white/90">
+                  <h3 className="mt-1.5 text-pretty font-sans text-[15px] font-medium leading-snug text-white/90">
                     {item.title}
                   </h3>
                   <p className="mt-1 text-pretty text-[12px] leading-relaxed text-white/45">{item.body}</p>

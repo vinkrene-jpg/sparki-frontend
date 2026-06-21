@@ -37,10 +37,10 @@ export default function YouPage() {
         <div className="relative flex items-center justify-center">
           <SparkiCore size={132} accent={ACCENT} readiness={0.87} variant="orb" />
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <span className="font-sans text-2xl font-extralight tracking-tight">MV</span>
+            <span className="font-sans text-2xl font-bold tracking-tight">MV</span>
           </div>
         </div>
-        <h1 className="mt-4 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
+        <h1 className="mt-4 text-balance font-sans text-3xl font-semibold leading-tight tracking-tight">
           {athlete.name}
         </h1>
         <p className="mt-1 font-mono text-[11px] tracking-[0.2em] text-white/40">
@@ -126,7 +126,7 @@ export default function YouPage() {
 function IdentityStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <span className="font-sans text-lg font-light tabular-nums" style={{ color: accent ? ACCENT : "rgba(255,255,255,0.9)" }}>
+      <span className="font-sans text-lg font-semibold tabular-nums" style={{ color: accent ? ACCENT : "rgba(255,255,255,0.9)" }}>
         {value}
       </span>
       <span className="font-mono text-[9px] tracking-[0.18em] text-white/35">{label.toUpperCase()}</span>
