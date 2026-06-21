@@ -1,0 +1,1 @@
+- [Sparki migration pattern](sparki-migration.md) — fullstack_copy_frontend.sh fails when CLIENT_DIR is blank; write files directly instead.

@@ -1,0 +1,94 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: var(--font-geist-sans), 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), 'Geist Mono', ui-monospace, monospace;
+
+  --color-background: oklch(0.07 0 0);
+  --color-foreground: oklch(0.98 0 0);
+  --color-border: oklch(1 0 0 / 10%);
+  --color-ring: oklch(0.56 0 0);
+  --color-input: oklch(1 0 0 / 15%);
+
+  --color-card: oklch(0.12 0 0);
+  --color-card-foreground: oklch(0.98 0 0);
+  --color-popover: oklch(0.12 0 0);
+  --color-popover-foreground: oklch(0.98 0 0);
+  --color-primary: oklch(0.92 0 0);
+  --color-primary-foreground: oklch(0.12 0 0);
+  --color-secondary: oklch(0.18 0 0);
+  --color-secondary-foreground: oklch(0.98 0 0);
+  --color-muted: oklch(0.18 0 0);
+  --color-muted-foreground: oklch(0.7 0 0);
+  --color-accent: oklch(0.18 0 0);
+  --color-accent-foreground: oklch(0.98 0 0);
+  --color-destructive: oklch(0.7 0.19 22.2);
+  --color-destructive-foreground: oklch(0.98 0 0);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+  --accent-cyan: oklch(0.82 0.16 200);
+}
+
+@keyframes sparki-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+@keyframes sparki-breathe-slow {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.12); opacity: 0.85; }
+}
+@keyframes sparki-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes sparki-spin-rev {
+  to { transform: rotate(-360deg); }
+}
+@keyframes sparki-scan {
+  0% { transform: translateY(-100%); opacity: 0; }
+  10%, 90% { opacity: 1; }
+  100% { transform: translateY(2000%); opacity: 0; }
+}
+@keyframes sparki-blink {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+@keyframes sparki-rise {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes sparki-drift {
+  0% { transform: translate3d(0,0,0); }
+  50% { transform: translate3d(6px,-10px,0); }
+  100% { transform: translate3d(0,0,0); }
+}
+
+.animate-breathe { animation: sparki-breathe 4s ease-in-out infinite; }
+.animate-breathe-slow { animation: sparki-breathe-slow 6s ease-in-out infinite; }
+.animate-spin-slow { animation: sparki-spin 24s linear infinite; }
+.animate-spin-rev { animation: sparki-spin-rev 18s linear infinite; }
+.animate-scan { animation: sparki-scan 5s linear infinite; }
+.animate-blink { animation: sparki-blink 2.4s ease-in-out infinite; }
+.animate-rise { animation: sparki-rise 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-drift { animation: sparki-drift 9s ease-in-out infinite; }
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-[#050608] text-white antialiased font-sans;
+  }
+  html {
+    @apply font-sans;
+  }
+}
