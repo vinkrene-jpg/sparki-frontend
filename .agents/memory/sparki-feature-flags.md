@@ -31,6 +31,13 @@ No admin role in DB — avoids chicken-and-egg bootstrap problem.
 - `<FeatureGate flag="strava">` component in `src/components/sparki/feature-gate.tsx`
 - `FeatureFlagProvider` sits inside `UserProvider` in `App.tsx`
 
+## Shared constants package
+
+`lib/feature-flags` (`@workspace/feature-flags`) holds FEATURE_KEYS, FeatureKey, FEATURE_DESCRIPTIONS — no drizzle/pg imports.
+Both `@workspace/db` (backend) and `@workspace/sparki` (frontend) import from it.
+Must run `pnpm --filter @workspace/feature-flags run build` before typecheck when constants change.
+Root `tsconfig.json` references it; `lib/db/tsconfig.json` and `artifacts/sparki/tsconfig.json` both reference it.
+
 ## Gotchas
 
 **Express params are `string | string[]`** — always cast with `String(req.params.foo)` before passing to Drizzle `eq()`. Drizzle's `eq()` overloads reject `string | string[]` even though Express params are always `string` at runtime. Never destructure `const { key } = req.params` and pass directly to eq without a cast.

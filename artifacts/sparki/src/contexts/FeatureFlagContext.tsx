@@ -8,32 +8,19 @@ import {
 } from "react";
 import { useUser } from "@clerk/react";
 import { apiFetch } from "@/lib/api";
+import {
+  FEATURE_KEYS,
+  type FeatureKey,
+} from "@workspace/feature-flags";
 
-export const FEATURE_KEYS = [
-  "ai_observations",
-  "strava",
-  "garmin",
-  "route_planner",
-  "coach_portal",
-  "parent_portal",
-  "testing_tools",
-  "premium",
-] as const;
-
-export type FeatureKey = (typeof FEATURE_KEYS)[number];
+export type { FeatureKey };
+export { FEATURE_KEYS };
 
 export type FeatureFlags = Record<FeatureKey, boolean>;
 
-const DEFAULT_FLAGS: FeatureFlags = {
-  ai_observations: false,
-  strava: false,
-  garmin: false,
-  route_planner: false,
-  coach_portal: false,
-  parent_portal: false,
-  testing_tools: false,
-  premium: false,
-};
+const DEFAULT_FLAGS: FeatureFlags = Object.fromEntries(
+  FEATURE_KEYS.map((k) => [k, false]),
+) as FeatureFlags;
 
 interface FeatureFlagContextValue {
   flags: FeatureFlags;

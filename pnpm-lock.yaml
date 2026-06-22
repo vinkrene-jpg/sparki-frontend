@@ -537,6 +537,9 @@ importers:
       '@workspace/api-client-react':
         specifier: workspace:*
         version: link:../../lib/api-client-react
+      '@workspace/feature-flags':
+        specifier: workspace:*
+        version: link:../../lib/feature-flags
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -630,6 +633,9 @@ importers:
 
   lib/db:
     dependencies:
+      '@workspace/feature-flags':
+        specifier: workspace:*
+        version: link:../feature-flags
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.2(@types/pg@8.20.0)(pg@8.20.0)
@@ -652,6 +658,8 @@ importers:
       drizzle-kit:
         specifier: ^0.31.10
         version: 0.31.10
+
+  lib/feature-flags: {}
 
   scripts:
     devDependencies:

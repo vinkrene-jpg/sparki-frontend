@@ -1,7 +1,15 @@
 import { Home, Bike, Radio, FlaskConical, User } from "lucide-react"
 import { Link, useLocation } from "wouter"
+import { useUserProfile } from "@/contexts/UserContext"
+import type { Role } from "@/contexts/UserContext"
 
-const items = [
+type NavItem = {
+  href: string
+  icon: typeof Home
+  label: string
+}
+
+const ATHLETE_NAV: NavItem[] = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/train", icon: Bike, label: "Train" },
   { href: "/feed", icon: Radio, label: "Feed" },
@@ -9,8 +17,27 @@ const items = [
   { href: "/you", icon: User, label: "You" },
 ]
 
+const COACH_NAV: NavItem[] = [
+  { href: "/", icon: Home, label: "Home" },
+  { href: "/you", icon: User, label: "You" },
+]
+
+const PARENT_NAV: NavItem[] = [
+  { href: "/", icon: Home, label: "Home" },
+  { href: "/feed", icon: Radio, label: "Feed" },
+  { href: "/you", icon: User, label: "You" },
+]
+
+function navForRole(role: Role | null | undefined): NavItem[] {
+  if (role === "coach") return COACH_NAV
+  if (role === "parent") return PARENT_NAV
+  return ATHLETE_NAV
+}
+
 export function BottomNav() {
   const [pathname] = useLocation()
+  const { profile } = useUserProfile()
+  const items = navForRole(profile?.activeRole)
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50">

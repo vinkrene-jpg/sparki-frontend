@@ -12,6 +12,7 @@ import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wo
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { BottomNav } from "@/components/sparki/bottom-nav";
 import { TrainingDayHome } from "@/components/sparki/training-day-home";
+import { ErrorBoundary } from "@/components/sparki/error-boundary";
 import NotFound from "@/pages/not-found";
 import FeedPage from "@/pages/feed";
 import TrainPage from "@/pages/train";
@@ -22,8 +23,17 @@ import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
 import { UserProvider } from "@/contexts/UserContext";
 import { FeatureFlagProvider } from "@/contexts/FeatureFlagContext";
+import { STALE } from "@/lib/query-keys";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: STALE.session,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // REQUIRED — copy verbatim
 const clerkPubKey = publishableKeyFromHost(
@@ -181,25 +191,27 @@ function AppRouter() {
         <ClerkQueryClientCacheInvalidator />
         <UserProvider>
           <FeatureFlagProvider>
-          <Switch>
-            <Route path="/" component={HomeRedirect} />
-            {/* REQUIRED — /*? is the only wouter syntax for Clerk OAuth sub-paths */}
-            <Route path="/sign-in/*?" component={SignInPage} />
-            <Route path="/sign-up/*?" component={SignUpPage} />
-            <Route path="/train">
-              <ProtectedPage component={TrainPage} />
-            </Route>
-            <Route path="/feed">
-              <ProtectedPage component={FeedPage} />
-            </Route>
-            <Route path="/lab">
-              <ProtectedPage component={LabPage} />
-            </Route>
-            <Route path="/you">
-              <ProtectedPage component={YouPage} />
-            </Route>
-            <Route component={NotFound} />
-          </Switch>
+            <ErrorBoundary>
+              <Switch>
+                <Route path="/" component={HomeRedirect} />
+                {/* REQUIRED — /*? is the only wouter syntax for Clerk OAuth sub-paths */}
+                <Route path="/sign-in/*?" component={SignInPage} />
+                <Route path="/sign-up/*?" component={SignUpPage} />
+                <Route path="/train">
+                  <ProtectedPage component={TrainPage} />
+                </Route>
+                <Route path="/feed">
+                  <ProtectedPage component={FeedPage} />
+                </Route>
+                <Route path="/lab">
+                  <ProtectedPage component={LabPage} />
+                </Route>
+                <Route path="/you">
+                  <ProtectedPage component={YouPage} />
+                </Route>
+                <Route component={NotFound} />
+              </Switch>
+            </ErrorBoundary>
           </FeatureFlagProvider>
         </UserProvider>
       </QueryClientProvider>

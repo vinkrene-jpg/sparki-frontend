@@ -4,6 +4,9 @@
   "files": [],
   "references": [
     {
+      "path": "./lib/feature-flags"
+    },
+    {
       "path": "./lib/db"
     },
     {
