@@ -7,14 +7,15 @@ import TrainPage from "@/pages/train"
 import FeedPage from "@/pages/feed"
 import LabPage from "@/pages/lab"
 import YouPage from "@/pages/you"
+import RacesPage from "@/pages/races"
 import LandingPage from "@/pages/landing"
 
 const LANDING_PATH = "/_dev/landing"
 
-// Dev-only preview of each core day type (blueprint §4). "Auto" uses the real
-// engine detection; the rest force a specific core-day briefing so every day
-// type is visible without manipulating data. Race/Emergency stay out — their
-// homepages belong to later phases.
+// Dev-only preview of each day type (blueprint §4). "Auto" uses the real engine
+// detection; the rest force a specific day type so every homepage is visible
+// without manipulating data. Race homepages render their real (or empty) race
+// context when forced here.
 const DAY_TYPE_OPTIONS: { label: string; value?: DayType }[] = [
   { label: "Auto" },
   { label: "Coach", value: "coach_training" },
@@ -23,6 +24,11 @@ const DAY_TYPE_OPTIONS: { label: string; value?: DayType }[] = [
   { label: "Rust", value: "rest" },
   { label: "Algemeen", value: "general" },
   { label: "Ziek", value: "emergency" },
+  { label: "Race-week", value: "race_week" },
+  { label: "Dag vóór", value: "day_before_race" },
+  { label: "Racedag", value: "race_day" },
+  { label: "Reisdag", value: "travel_day" },
+  { label: "Na race", value: "post_race" },
 ]
 
 type DevView = {
@@ -138,6 +144,8 @@ export function DevPreview() {
     page = <LabPage />
   } else if (location.startsWith("/you")) {
     page = <YouPage />
+  } else if (location.startsWith("/races")) {
+    page = <RacesPage />
   } else {
     page = <DayHome devDayTypeOverride={dayType} />
     isHome = true

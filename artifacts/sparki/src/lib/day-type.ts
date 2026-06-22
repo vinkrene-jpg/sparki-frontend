@@ -11,11 +11,15 @@
 // (health status on athlete_profiles, races/events table) — they never trigger
 // on invented data.
 
+import type { RacePhase } from "@/lib/race-types";
+
 export type DayType =
   | "emergency"
   | "race_day"
   | "day_before_race"
   | "race_week"
+  | "travel_day"
+  | "post_race"
   | "coach_training"
   | "sparki_training"
   | "recovery"
@@ -33,7 +37,10 @@ export type DayTypeContext = {
   // stay reserved for a later phase (no races/events source yet), keeping those
   // day types dormant without touching the core-day logic.
   healthStatus?: "ok" | "sick" | "injured" | null;
-  race?: { isToday: boolean; isDayBefore: boolean; isThisWeek: boolean } | null;
+  // Resolved race context (typed provider layer) — the nearest relevant race and
+  // its race-week phase. Null when no race is in a live window. Drives the race
+  // homepages; sits just below Emergency in the priority hierarchy.
+  race?: { phase: RacePhase; daysUntil: number; name: string } | null;
 };
 
 function isRecoveryWorkout(type: string): boolean {
@@ -46,6 +53,23 @@ function isRestWorkout(type: string): boolean {
   return t.includes("rest") || t.includes("rust") || t.includes("off");
 }
 
+/** Map a resolved race-week phase to its homepage day type. */
+function raceDayType(phase: RacePhase): DayType {
+  switch (phase) {
+    case "race_day":
+      return "race_day";
+    case "day_before":
+      return "day_before_race";
+    case "race_week_build":
+    case "race_week_taper":
+      return "race_week";
+    case "travel":
+      return "travel_day";
+    case "post_race":
+      return "post_race";
+  }
+}
+
 /**
  * Resolve the day type from context using the blueprint §4 hierarchy
  * (high → low). The first matching rule wins.
@@ -55,10 +79,9 @@ export function detectDayType(ctx: DayTypeContext): DayType {
   if (ctx.healthStatus === "sick" || ctx.healthStatus === "injured") {
     return "emergency";
   }
-  // 2–4. Race window (dormant until a races/events source exists).
-  if (ctx.race?.isToday) return "race_day";
-  if (ctx.race?.isDayBefore) return "day_before_race";
-  if (ctx.race?.isThisWeek) return "race_week";
+  // 2–4. Race window — the resolved race context (typed provider) maps its
+  //       phase to a race homepage. Sits just below Emergency.
+  if (ctx.race) return raceDayType(ctx.race.phase);
 
   const w = ctx.todayWorkout;
   if (w) {
@@ -122,26 +145,49 @@ export const dayTypeRegistry: Record<
     primary: { label: "Bekijk herstel", href: "/you" },
     tone: "alert",
   }),
-  race_day: () => ({
+  race_day: (ctx) => ({
     eyebrow: "WEDSTRIJDDAG",
-    title: "Race Day",
-    why: "Vandaag is het wedstrijddag. Focus op warming-up, voeding en je racestrategie.",
-    primary: { label: "Naar race", href: "/train" },
+    title: ctx.race?.name || "Race Day",
+    why: "Vandaag is het zover. Volg je timings, check je materiaal en focus op je race.",
+    // No briefing action — the single primary action is START RACE MODE on the
+    // race-day homepage (grondregel 5: one primary action).
+    primary: null,
     tone: "race",
   }),
-  day_before_race: () => ({
+  day_before_race: (ctx) => ({
     eyebrow: "DAG VÓÓR RACE",
-    title: "Klaarmaken voor morgen",
-    why: "Taperen, materiaal checken en vroeg rusten. Morgen telt.",
-    primary: { label: "Voorbereiding", href: "/train" },
+    title: ctx.race ? `Morgen: ${ctx.race.name}` : "Klaarmaken voor morgen",
+    why: "Taperen, materiaal checken en vroeg rusten. Loop je checklist na en bereid je logistiek voor.",
+    primary: { label: "Open checklist", href: "#prep-checklist" },
     tone: "race",
   }),
-  race_week: () => ({
-    eyebrow: "RACE WEEK",
-    title: "Aftellen naar je doel",
-    why: "Bouw belasting af en bewaak je vorm richting je doelwedstrijd.",
-    primary: { label: "Bekijk plan", href: "/train" },
+  race_week: (ctx) => {
+    const taper = (ctx.race?.daysUntil ?? 7) <= 3;
+    return {
+      eyebrow: "RACE WEEK",
+      title: ctx.race
+        ? `Nog ${ctx.race.daysUntil} ${ctx.race.daysUntil === 1 ? "dag" : "dagen"} tot ${ctx.race.name}`
+        : "Aftellen naar je doel",
+      why: taper
+        ? "Taperfase: bouw belasting af en kom fris aan de start. Scherp, niet moe."
+        : "Opbouw richting je doelwedstrijd. Kwaliteit boven volume, bewaak je vorm.",
+      primary: { label: "Bekijk race", href: "/races" },
+      tone: "race",
+    };
+  },
+  travel_day: (ctx) => ({
+    eyebrow: "REISDAG",
+    title: ctx.race ? `Op weg naar ${ctx.race.name}` : "Reisdag",
+    why: "Vandaag reizen. Houd je benen los, eet en drink goed, en check je bagage.",
+    primary: { label: "Reisplan", href: "/races" },
     tone: "race",
+  }),
+  post_race: (ctx) => ({
+    eyebrow: "NA DE RACE",
+    title: ctx.race ? `${ctx.race.name} — terugblik` : "Herstel & analyse",
+    why: "Geef je lichaam rust en leg je race vast. Reflecteren maakt je sneller.",
+    primary: { label: "Log je race", href: "/you" },
+    tone: "recovery",
   }),
   coach_training: (ctx) => ({
     eyebrow: "COACH-TRAINING",

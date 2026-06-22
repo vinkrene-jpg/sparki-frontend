@@ -11,7 +11,9 @@ presents — it never detects.
 
 ## Detection precedence (high → low)
 1. Emergency — athlete-set `healthStatus` sick/injured (blocks training).
-2–4. Race window — dormant (no races/events source yet).
+2–4. Race window — LIVE (task #4). `useRaceContext` → `resolveRaceContext` picks the
+   nearest race and its phase; sits just below emergency. Maps to day types:
+   race_day/day_before/race_week_*/travel/post_race homepages.
 5. Explicit **rest** workout → `rest` (rest is NOT training, so it precedes coach/sparki).
 6. Coach-planned workout → `coach_training` (grondregel 4: coach leads, incl. coach recovery).
 7. Non-coach recovery workout → `recovery`.
@@ -34,7 +36,17 @@ explicit rest-type workout; absence of any workout is always `general`.
   homes; `EmergencyDayHome` shows the calm recovery view and a single "mark recovered"
   action that clears the status back to ok.
 
+## Race-context resolver precedence (task #4)
+`resolveRaceContext` builds ALL applicable candidates per race then sorts by a phase
+priority map (race_day < day_before < travel < taper < build < post_race), closest race
+breaking ties. A travel-day candidate (travelDate today + race ahead) must be ADDED
+alongside the normal `phaseFromDaysUntil` candidate — never `continue`/early-return after
+pushing travel, or it suppresses day_before/race_day for the same race.
+**Why:** an early version `continue`d after the travel push, so a race tomorrow with
+travelDate today wrongly resolved to `travel` instead of `day_before`. Caught in review.
+**How to apply:** keep candidate generation additive; let the priority sort decide.
+
 ## Ground rules baked in
-- Grondregel 3: external data (weather/route/departure) is shown as explicit labeled
-  placeholders, never fabricated.
+- Grondregel 3: external/derived data (weather/route/departure, planner timeline, team
+  ETAs) is shown as explicit labeled placeholders or tagged `EST`, never fabricated.
 - Grondregel 5: ≤1 primary action, ≤3 observations/recommendations per home.

@@ -161,6 +161,56 @@ const PREVIEW_DAY_TYPES: { type: DayType; label: string; ctx: DayTypeContext }[]
       label: "GENERAL · NO-TRAINING FALLBACK",
       ctx: { todayWorkout: null, hasProfile: true, healthStatus: "ok" },
     },
+    {
+      type: "race_week",
+      label: "RACE WEEK · 5 DAGEN",
+      ctx: {
+        todayWorkout: null,
+        hasProfile: true,
+        healthStatus: "ok",
+        race: { phase: "race_week_build", daysUntil: 5, name: "Omloop Het Nieuwsblad" },
+      },
+    },
+    {
+      type: "day_before_race",
+      label: "DAG VÓÓR RACE",
+      ctx: {
+        todayWorkout: null,
+        hasProfile: true,
+        healthStatus: "ok",
+        race: { phase: "day_before", daysUntil: 1, name: "Omloop Het Nieuwsblad" },
+      },
+    },
+    {
+      type: "race_day",
+      label: "WEDSTRIJDDAG",
+      ctx: {
+        todayWorkout: null,
+        hasProfile: true,
+        healthStatus: "ok",
+        race: { phase: "race_day", daysUntil: 0, name: "Omloop Het Nieuwsblad" },
+      },
+    },
+    {
+      type: "travel_day",
+      label: "REISDAG",
+      ctx: {
+        todayWorkout: null,
+        hasProfile: true,
+        healthStatus: "ok",
+        race: { phase: "travel", daysUntil: 2, name: "Omloop Het Nieuwsblad" },
+      },
+    },
+    {
+      type: "post_race",
+      label: "NA DE RACE",
+      ctx: {
+        todayWorkout: null,
+        hasProfile: true,
+        healthStatus: "ok",
+        race: { phase: "post_race", daysUntil: -1, name: "Omloop Het Nieuwsblad" },
+      },
+    },
   ]
 
 function DayTypeCatalog() {

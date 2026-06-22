@@ -48,6 +48,11 @@ export const queryKeys = {
     ftpHistory: () => ["athlete", "ftp"] as const,
     brief: () => ["athlete", "ai", "brief"] as const,
   },
+
+  races: {
+    all: () => ["races"] as const,
+    list: () => ["races", "list"] as const,
+  },
 } as const;
 
 /** Default stale times (ms) — import these rather than hardcoding magic numbers. */

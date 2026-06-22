@@ -6,6 +6,7 @@
 
 import type { ReactElement } from "react"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
+import { useRaceContext } from "@/hooks/use-races"
 import {
   detectDayType,
   getDayTypeBriefing,
@@ -20,19 +21,25 @@ import { RecoveryDayHome } from "@/components/sparki/day-homes/recovery-day-home
 import { RestDayHome } from "@/components/sparki/day-homes/rest-day-home"
 import { GeneralDayHome } from "@/components/sparki/day-homes/general-day-home"
 import { EmergencyDayHome } from "@/components/sparki/day-homes/emergency-day-home"
-import { BriefingOnlyHome } from "@/components/sparki/day-homes/briefing-only-home"
+import { RaceWeekHome } from "@/components/sparki/day-homes/race-week-home"
+import { DayBeforeRaceHome } from "@/components/sparki/day-homes/day-before-race-home"
+import { RaceDayHome } from "@/components/sparki/day-homes/race-day-home"
+import { TravelDayHome } from "@/components/sparki/day-homes/travel-day-home"
+import { PostRaceHome } from "@/components/sparki/day-homes/post-race-home"
 
 // DayType → homepage component. Coach/Sparki training share the full training
-// home; recovery/rest/general have their own focused homepages; the dormant
-// high-priority types render a briefing-only home until their data lands.
+// home; recovery/rest/general have their own focused homepages; the race-window
+// types each have a dedicated race homepage driven by the resolved race context.
 const dayHomeRegistry: Record<
   DayType,
   (props: DayHomeComponentProps) => ReactElement
 > = {
   emergency: EmergencyDayHome,
-  race_day: BriefingOnlyHome,
-  day_before_race: BriefingOnlyHome,
-  race_week: BriefingOnlyHome,
+  race_day: RaceDayHome,
+  day_before_race: DayBeforeRaceHome,
+  race_week: RaceWeekHome,
+  travel_day: TravelDayHome,
+  post_race: PostRaceHome,
   coach_training: TrainingDayHome,
   sparki_training: TrainingDayHome,
   recovery: RecoveryDayHome,
@@ -60,6 +67,7 @@ export function DayHome({
   devDayTypeOverride?: DayType
 } = {}) {
   const { data, isLoading } = useAthleteDashboard()
+  const { context: raceContext, isLoading: racesLoading } = useRaceContext()
   const profile = data?.athleteProfile
   const todayWorkout = data?.todayWorkout ?? null
   const ctx: DayTypeContext = {
@@ -72,11 +80,18 @@ export function DayHome({
       : null,
     hasProfile: !!profile,
     healthStatus: profile?.healthStatus ?? null,
+    race: raceContext
+      ? {
+          phase: raceContext.phase,
+          daysUntil: raceContext.daysUntil,
+          name: raceContext.race.name,
+        }
+      : null,
   }
 
-  // Wait for the dashboard before picking a non-override type — otherwise the
-  // first paint would briefly show the wrong day (e.g. "rest" before data loads).
-  if (isLoading && !devDayTypeOverride) {
+  // Wait for the dashboard + races before picking a non-override type — otherwise
+  // the first paint would briefly show the wrong day (e.g. "rest" before data).
+  if ((isLoading || racesLoading) && !devDayTypeOverride) {
     return <DayHomeLoading />
   }
 

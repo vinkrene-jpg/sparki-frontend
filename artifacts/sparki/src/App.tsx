@@ -24,6 +24,7 @@ import FeedPage from "@/pages/feed";
 import TrainPage from "@/pages/train";
 import YouPage from "@/pages/you";
 import LabPage from "@/pages/lab";
+import RacesPage from "@/pages/races";
 import LandingPage from "@/pages/landing";
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
@@ -265,6 +266,9 @@ function AppRouter() {
                 </Route>
                 <Route path="/you">
                   <ProtectedPage component={YouPage} />
+                </Route>
+                <Route path="/races">
+                  <ProtectedPage component={RacesPage} />
                 </Route>
                 {import.meta.env.DEV && PreviewPage && (
                   <Route path="/preview">
