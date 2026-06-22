@@ -99,6 +99,31 @@
   100% { transform: translate3d(0,0,0); }
 }
 
+/* Cinematic scene system — very slow, near-imperceptible atmosphere.
+   All transform/opacity only, so they stay on the compositor (GPU). */
+@keyframes sparki-haze-drift {
+  0%   { transform: translate3d(0, 0, 0) scale(1.05); }
+  50%  { transform: translate3d(-2.2%, -1.6%, 0) scale(1.09); }
+  100% { transform: translate3d(0, 0, 0) scale(1.05); }
+}
+@keyframes sparki-haze-drift-rev {
+  0%   { transform: translate3d(0, 0, 0) scale(1.06); }
+  50%  { transform: translate3d(2%, 1.4%, 0) scale(1.02); }
+  100% { transform: translate3d(0, 0, 0) scale(1.06); }
+}
+@keyframes sparki-beam {
+  0%, 100% { opacity: 0; transform: translateX(-2%) skewX(-2deg); }
+  50%      { opacity: 1; transform: translateX(2%) skewX(-2deg); }
+}
+@keyframes sparki-ambient {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.9; }
+}
+@keyframes sparki-bloom {
+  0%, 88%, 100% { opacity: 0; transform: scale(0.9); }
+  94%           { opacity: 0.5; transform: scale(1); }
+}
+
 .animate-breathe { animation: sparki-breathe 4s ease-in-out infinite; }
 .animate-breathe-slow { animation: sparki-breathe-slow 6s ease-in-out infinite; }
 .animate-spin-slow { animation: sparki-spin 24s linear infinite; }
@@ -107,6 +132,20 @@
 .animate-blink { animation: sparki-blink 2.4s ease-in-out infinite; }
 .animate-rise { animation: sparki-rise 0.7s cubic-bezier(0.16,1,0.3,1) both; }
 .animate-drift { animation: sparki-drift 9s ease-in-out infinite; }
+
+.scene-haze    { animation: sparki-haze-drift 36s ease-in-out infinite; will-change: transform; }
+.scene-haze-2  { animation: sparki-haze-drift-rev 30s ease-in-out infinite; will-change: transform; }
+.scene-beam    { animation: sparki-beam 24s ease-in-out infinite; will-change: opacity, transform; }
+.scene-ambient { animation: sparki-ambient 20s ease-in-out infinite; will-change: opacity; }
+.scene-bloom   { animation: sparki-bloom 32s ease-in-out infinite; will-change: opacity, transform; }
+
+/* Accessibility / battery: kill all scene motion when the user (or a low-end
+   device, handled in JS) prefers reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .scene-haze, .scene-haze-2, .scene-beam, .scene-ambient, .scene-bloom {
+    animation: none !important;
+  }
+}
 
 @layer base {
   * {

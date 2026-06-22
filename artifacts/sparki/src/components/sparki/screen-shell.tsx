@@ -1,6 +1,15 @@
 import type { ReactNode } from "react"
 import { useClerk, Show } from "@clerk/react"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
+import { CinematicScene, type SceneName } from "@/components/sparki/cinematic-scene"
+
+const SECTION_SCENE: Record<string, SceneName> = {
+  home: "home",
+  train: "train",
+  feed: "feed",
+  lab: "lab",
+  you: "you",
+}
 
 const ROLE_LABEL: Record<Role, string> = {
   athlete: "ATHLETE",
@@ -59,68 +68,12 @@ export function ScreenShell({
   bg?: string
   children: ReactNode
 }) {
+  const scene = SECTION_SCENE[section.toLowerCase()] ?? "home"
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#05070e] text-white">
-      {/* Background — fixed so the cyclist stays visible behind the ENTIRE page
-          (subtle parallax) without distorting on long scrolls. Base is a soft
-          blue-black, lifted off pure #000 so it doesn't crush on OLED. */}
-      <div className="pointer-events-none fixed inset-0 z-0">
-        {/* Cyclist — clearly recognizable */}
-        <img
-          src={bg}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover opacity-[0.56]"
-        />
-        {/* Cinematic blue/black gradient — softened so the rider reads through
-            across the whole page, not just the top. */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(6,12,22,0.30) 0%, rgba(5,10,18,0.40) 50%, rgba(4,8,14,0.58) 100%)",
-          }}
-        />
-        {/* Atmospheric haze around the rider — slow drift adds depth */}
-        <div
-          className="absolute inset-0 animate-breathe-slow"
-          style={{
-            background:
-              "radial-gradient(58% 46% at 50% 38%, rgba(140,190,215,0.18), rgba(140,190,215,0.05) 45%, transparent 72%)",
-          }}
-        />
-        {/* Second, lower haze so depth carries further down the page */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(52% 42% at 66% 80%, rgba(90,150,185,0.10), transparent 70%)",
-          }}
-        />
-        {/* Top cyan breathe glow */}
-        <div
-          className="absolute -top-1/4 left-1/2 h-[70vh] w-[130vw] -translate-x-1/2 animate-breathe-slow"
-          style={{
-            background:
-              "radial-gradient(50% 50% at 50% 0%, rgba(120,200,220,0.12), transparent 72%)",
-          }}
-        />
-        {/* Bottom vignette — keeps the navigation legible without crushing to black */}
-        <div
-          className="absolute inset-x-0 bottom-0 h-48"
-          style={{
-            background:
-              "linear-gradient(180deg, transparent, rgba(4,7,12,0.72))",
-          }}
-        />
-        {/* Scan line */}
-        <div
-          className="absolute inset-x-0 top-0 h-px animate-scan"
-          style={{
-            background:
-              "linear-gradient(90deg, transparent, rgba(120,210,230,0.5), transparent)",
-          }}
-        />
-      </div>
+      {/* Per-screen cinematic background — shared structure, scene-specific
+          atmosphere. Fixed + ≤5px parallax so it sits behind the whole page. */}
+      <CinematicScene scene={scene} image={bg} />
 
       <div className="relative z-10 mx-auto flex max-w-md flex-col gap-10 px-6 pb-32 pt-12">
         <header className="flex items-center justify-between">

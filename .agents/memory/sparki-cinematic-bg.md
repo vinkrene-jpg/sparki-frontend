@@ -1,31 +1,43 @@
 ---
-name: Sparki cinematic background treatment
-description: The premium dark visual direction for the Sparki app background and cards, and the constraints behind it.
+name: Sparki cinematic scene system
+description: The premium dark, per-screen cinematic background system for Sparki, plus its motion/accessibility constraints.
 ---
 
-# Cinematic background (Sparki)
+# Cinematic Scene System (Sparki)
 
-All app screens (Home/Train/Feed/Lab/You) share `ScreenShell`, so the background
-treatment is defined once there and propagates. The intended look is a **premium
-cycling performance lab**, not a flat dark app.
+The app background is a reusable system: `CinematicScene` (component) +
+`SCENES` config, rendered once by the shared `ScreenShell`, which maps
+`section` → scene name. Every screen shares the SAME structure (image →
+gradient → haze → beams → ambient → bloom → vignette → scan); only the
+per-screen atmosphere differs (home calm, train energetic, feed lighter, lab
+luminous/futuristic, you warmer/calmer). Nav, cards and components stay
+identical across screens.
 
-## The rules
-- Background is a `fixed` layer so the cyclist photo stays visible behind the ENTIRE
-  page (subtle parallax) and doesn't stretch/distort on long scrolls.
-- Cyclist must be clearly recognizable: image ~0.55–0.56 opacity, NOT achieved by
-  raising brightness alone — paired with a softened **blue-black** gradient overlay
-  (reduced hard black) + drifting atmospheric haze for depth.
-- Base color is `#05070e` (soft blue-black), deliberately lifted off pure `#000` so it
-  doesn't crush on OLED.
-- Text over the background uses soft dark **scrims** (radial/linear, faded edges) and
-  text-shadow — never solid boxes or white surfaces.
-- Cards are frosted glass: `bg-[#070d16]/[0.82] backdrop-blur-md` with subtle light
-  borders (`border-white/[0.08]`), so ~18% of the background shows through.
+## Hard rules (user-driven)
+- Premium cycling-performance-center feel, NOT a flat dark app and NOT a
+  generic card dashboard. Keep cyan/neon accents. No white surfaces, no
+  pastels, no avatars, no hard black blocks.
+- Subject (cyclist) must be clearly recognizable: ~0.5–0.6 image opacity,
+  achieved by reducing the dark overlay (softened blue-black gradient) + haze,
+  NOT by raising brightness alone.
+- Background is `fixed` so it sits behind the WHOLE page (not just the top).
+- OLED-safe: base color lifted off pure #000 (blue-black ~#05070e).
+- Text over background uses soft faded dark scrims (radial, no boxes) +
+  text-shadow. Cards are frosted glass ~82% (`bg-[#070d16]/[0.82]
+  backdrop-blur-md`) with subtle light borders so the bg shows through.
 
-**Why:** user explicitly rejected the flat-black look and asked for a cinematic,
-atmospheric, premium performance-center feel with the rider visible page-wide. Keep
-cyan/neon accents. No pastels, no avatars, no generic card-dashboard styling.
+## Live motion — must stay near-imperceptible
+- Transform/opacity ONLY (compositor/GPU). Slow loops 20–36s; parallax capped
+  at ≤5px via a throttled passive scroll listener.
+- Motion is gated by `useCinematicMotion()`: OFF when
+  `prefers-reduced-motion` OR low-end device (`hardwareConcurrency`/
+  `deviceMemory` <= 2). CSS `@media (prefers-reduced-motion)` also hard-kills
+  the `.scene-*` animations as a belt-and-suspenders.
+- **Why:** user explicitly wants atmosphere you barely notice + battery/perf
+  safety on mobile. "If the movement is clearly noticeable, it's too strong."
 
-**How to apply:** change the treatment in `ScreenShell` (background) to affect all
-pages at once. Match new cards to the glass recipe above. Mobile-first (`max-w-md`);
-verify at ~402px width and keep the fixed `BottomNav` legible.
+## How to apply
+- New per-screen atmosphere = add/edit an entry in `SCENES` (no structural
+  change). Beam intensity lives on the beam WRAPPER opacity (the inner layer
+  animates 0→peak), so scene-specific intensity survives the animation.
+- Verify mobile at ~402px; keep the fixed BottomNav legible (bottom vignette).

@@ -1,0 +1,142 @@
+----------------------------------------
+10. SPARKI CORE PHILOSOPHY
+----------------------------------------
+
+Sparki is not a dashboard.
+
+Sparki is an intelligent performance companion.
+
+The athlete should never have to decide where to go first.
+
+Every time the app opens, Sparki should automatically determine:
+
+- What day is this?
+- What phase of the season is this?
+- Is there a coach?
+- Is there a planned workout?
+- Is there an upcoming race?
+- What is currently most important?
+
+The homepage must adapt automatically.
+
+The athlete should immediately understand:
+
+• What is happening today.
+• Why it matters.
+• What the next action is.
+• How Sparki can help.
+
+----------------------------------------
+11. DECISION HIERARCHY
+----------------------------------------
+
+Always use this priority order:
+
+1. Emergency / Health
+2. Race Day
+3. Day Before Race
+4. Race Week
+5. Coach Training
+6. Sparki Training
+7. Recovery
+8. Rest Day
+9. General Insights
+
+Never show conflicting advice.
+
+If a race takes priority, hide normal training cards.
+
+----------------------------------------
+12. LESS IS MORE
+----------------------------------------
+
+Do not overwhelm the athlete.
+
+Maximum:
+
+- One primary action.
+- Three key observations.
+- Three supporting recommendations.
+
+Everything else must be available deeper in the application.
+
+The homepage is a briefing, not a dashboard.
+
+----------------------------------------
+13. LEARN THE ATHLETE
+----------------------------------------
+
+The homepage should become smarter over time.
+
+Examples:
+
+A beginner needs explanations.
+
+An experienced rider wants concise information.
+
+An elite rider wants performance metrics.
+
+A junior athlete may need more guidance.
+
+A recreational rider may need more motivation.
+
+The homepage should adapt to the athlete's profile.
+
+----------------------------------------
+14. COACH FIRST
+----------------------------------------
+
+When a coach exists:
+
+The coach always owns the training.
+
+Sparki never overrides the coach.
+
+Sparki adds intelligence around the coach:
+
+- explain
+- prepare
+- optimise
+- monitor
+- analyse
+- educate
+
+The coach remains central.
+
+----------------------------------------
+15. LONG-TERM VISION
+----------------------------------------
+
+The final goal is that Sparki becomes the athlete's daily operating system.
+
+Not only for training.
+
+But for:
+
+Training
+
+Recovery
+
+Nutrition
+
+Sleep
+
+Equipment
+
+Travel
+
+Race preparation
+
+Competition
+
+Post-race recovery
+
+Season planning
+
+Team communication
+
+Route planning
+
+Performance analysis
+
+Every new feature should strengthen this vision rather than becoming another isolated module.

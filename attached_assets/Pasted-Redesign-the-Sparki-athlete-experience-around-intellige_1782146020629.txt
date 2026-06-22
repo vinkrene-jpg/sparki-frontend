@@ -1,0 +1,334 @@
+Redesign the Sparki athlete experience around intelligent day types instead of static dashboards.
+
+The athlete must immediately understand:
+- What today is.
+- Why.
+- What Sparki expects.
+- What the next action is.
+
+The UI should adapt automatically depending on the current day type.
+
+Create the following Day Types:
+
+• Training Day
+• Recovery Day
+• Rest Day
+• Day Before Race
+• Race Day
+• Travel Day
+• Sick / Injury Day
+
+Each day type receives its own homepage while using the same visual design language.
+
+----------------------------------------
+1. TRAINING DAY
+----------------------------------------
+
+If Sparki created the training:
+
+Show:
+- Today's training
+- Why this training
+- Expected benefit
+- What Sparki sees
+- Start Training
+
+If an external coach created the training:
+
+Clearly distinguish:
+
+Coach says:
+- Planned training
+- Coach notes (if available)
+
+Sparki explains:
+- Why this training is likely planned
+- Weather advice
+- Nutrition
+- Hydration
+- Recovery status
+- Expected training load
+- Route recommendation
+- Best departure time
+
+Never replace the coach.
+Sparki always supports the coach.
+
+If no coach notes exist,
+state clearly that Sparki is interpreting the purpose of the training.
+
+----------------------------------------
+2. NO TRAINING AVAILABLE
+----------------------------------------
+
+If no training exists:
+
+Do NOT leave the athlete on an empty screen.
+
+Instead show:
+
+- Recovery status
+- Sleep
+- Weather
+- Nutrition
+- Suggestions
+- Recovery advice
+- Mobility
+- Optional training suggestions
+
+----------------------------------------
+3. DAY BEFORE RACE
+----------------------------------------
+
+Completely different homepage.
+
+Show:
+
+Countdown until race
+
+Weather
+
+Preparation checklist
+
+Bike check
+
+Helmet
+
+Shoes
+
+Race number
+
+Transponder
+
+Nutrition packed
+
+Bidons
+
+Pump
+
+CO2
+
+Tools
+
+Clothing
+
+Tyres
+
+Chain
+
+Electronics charged
+
+Nutrition strategy
+
+Hydration strategy
+
+Sleep advice
+
+Weather strategy
+
+Equipment recommendations
+
+Sparki observations
+
+Coach notes (optional)
+
+Everything should reduce stress before race day.
+
+----------------------------------------
+4. RACE DAY
+----------------------------------------
+
+Create a dedicated Race Mode homepage.
+
+Show:
+
+Countdown
+
+Breakfast timing
+
+Departure timing
+
+Arrival timing
+
+Warm-up timing
+
+Call-up timing
+
+Start time
+
+Weather
+
+Wind
+
+Temperature
+
+Race information
+
+Course
+
+Distance
+
+Elevation
+
+Technical sections
+
+Team information
+
+Coach instructions
+
+Sparki observations
+
+Material status
+
+One large button:
+
+START RACE MODE
+
+----------------------------------------
+5. RACE DAY PLANNER
+----------------------------------------
+
+Build a complete logistical planner.
+
+Sparki knows:
+
+Race location
+
+Start time
+
+Travel time
+
+Traffic
+
+Parking
+
+Hotel
+
+Team members
+
+Support crew
+
+Build:
+
+Complete travel schedule
+
+Suggested departure time
+
+Expected arrival
+
+Navigation
+
+Parking location
+
+Registration location
+
+Team area (if known)
+
+Warm-up location
+
+Everything should be presented as a timeline.
+
+----------------------------------------
+6. TEAM MEETING PLANNER
+----------------------------------------
+
+When multiple athletes attend the same race:
+
+Allow Sparki to propose:
+
+Meeting point
+
+Carpool
+
+Shared departure
+
+Shared arrival
+
+ETA for every rider
+
+Shared navigation
+
+Example:
+
+Rider A
+ETA 11:18
+
+Rider B
+ETA 11:22
+
+Rider C
+ETA 11:25
+
+Sparki optimizes departure so everyone arrives together.
+
+----------------------------------------
+7. RACE WEEK
+----------------------------------------
+
+Instead of only Race Day,
+build support for Race Week.
+
+Automatically change guidance:
+
+7–4 days before:
+Training focus
+
+3–2 days:
+Recovery focus
+
+1 day:
+Preparation mode
+
+Race day:
+Competition mode
+
+After race:
+Recovery & analysis
+
+----------------------------------------
+8. HOMEPAGE PRINCIPLE
+----------------------------------------
+
+Every homepage must answer:
+
+What is today?
+
+Why?
+
+What does my coach want?
+
+What does Sparki see?
+
+What should I do next?
+
+One clear primary action only.
+
+The athlete should never feel lost after opening the app.
+
+----------------------------------------
+9. FUTURE READY
+----------------------------------------
+
+Build everything as reusable components.
+
+Later we must be able to add:
+
+TrainingPeaks
+
+Garmin
+
+Strava
+
+Komoot
+
+Coach Portal
+
+Route Planner
+
+Nutrition
+
+Equipment
+
+Recovery
+
+without redesigning the homepage architecture.
