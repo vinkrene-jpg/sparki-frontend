@@ -353,7 +353,7 @@ export function TrainingDayHome() {
 
       {/* 01 WAT GA IK VANDAAG DOEN */}
       <section>
-        <SectionLabel n="01" title="Wat ga ik vandaag doen" />
+        <SectionLabel n="01" title="Wat ga ik vandaag doen" large />
         <div className="mt-4">
           {isLoading ? (
             <Skeleton className="h-28 w-full rounded-2xl" />
@@ -471,7 +471,7 @@ export function TrainingDayHome() {
 
       {/* 02 BEN IK ER KLAAR VOOR */}
       <section>
-        <SectionLabel n="02" title="Ben ik er klaar voor" />
+        <SectionLabel n="02" title="Ben ik er klaar voor" large />
         <div className="mt-4">
           {isLoading ? (
             <div className="flex flex-col items-center gap-4">
@@ -486,7 +486,7 @@ export function TrainingDayHome() {
 
       {/* 03 WAAROM DENKT SPARKI DAT */}
       <section>
-        <SectionLabel n="03" title="Waarom denkt Sparki dat" />
+        <SectionLabel n="03" title="Waarom denkt Sparki dat" large />
         <div className="mt-4">
           {metricsLoading ? (
             <div className="grid grid-cols-2 gap-x-5 gap-y-6">
@@ -526,7 +526,7 @@ export function TrainingDayHome() {
       {/* 04 WAT MOET IK VANDAAG EXTRA WETEN — AI Coach */}
       {aiEnabled && (
         <section>
-          <SectionLabel n="04" title="Wat moet ik vandaag extra weten" />
+          <SectionLabel n="04" title="Wat moet ik vandaag extra weten" large />
           <div className="relative mt-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 backdrop-blur-sm">
             <div
               className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 animate-breathe rounded-full"
@@ -561,7 +561,7 @@ export function TrainingDayHome() {
 
       {/* 05 HOE ONTWIKKEL IK MIJ */}
       <section>
-        <SectionLabel n="05" title="Hoe ontwikkel ik mij" />
+        <SectionLabel n="05" title="Hoe ontwikkel ik mij" large />
 
         {/* laatste training */}
         {lastSession && (

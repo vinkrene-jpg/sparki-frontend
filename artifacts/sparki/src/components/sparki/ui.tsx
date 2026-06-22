@@ -2,12 +2,20 @@
 
 export const ACCENT = "rgba(120,210,230,1)"
 
-export function SectionLabel({ n, title }: { n?: string; title: string }) {
+export function SectionLabel({
+  n,
+  title,
+  large = false,
+}: {
+  n?: string
+  title: string
+  large?: boolean
+}) {
   return (
     <div className="flex items-center gap-3">
       {n ? (
         <span
-          className="font-mono text-[11px] tabular-nums"
+          className={`font-mono tabular-nums ${large ? "text-2xl font-semibold" : "text-[11px]"}`}
           style={{ color: ACCENT, fontVariantNumeric: "tabular-nums lining-nums" }}
         >
           {n}
