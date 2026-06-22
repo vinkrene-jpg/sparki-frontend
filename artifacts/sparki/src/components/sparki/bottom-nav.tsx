@@ -1,4 +1,4 @@
-import { Home, Bike, Radio, FlaskConical, User } from "lucide-react"
+import { Home, Bike, Flag, Radio, FlaskConical, User } from "lucide-react"
 import { Link, useLocation } from "wouter"
 import { useUserProfile } from "@/contexts/UserContext"
 import type { Role } from "@/contexts/UserContext"
@@ -12,6 +12,7 @@ type NavItem = {
 const ATHLETE_NAV: NavItem[] = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/train", icon: Bike, label: "Train" },
+  { href: "/races", icon: Flag, label: "Races" },
   { href: "/feed", icon: Radio, label: "Feed" },
   { href: "/lab", icon: FlaskConical, label: "Lab" },
   { href: "/you", icon: User, label: "You" },

@@ -588,9 +588,7 @@ function RaceForm({
                       inputMode="numeric"
                       value={r.travelDurationMin != null ? String(r.travelDurationMin) : ""}
                       onChange={(e) =>
-                        updateRider(r.id, {
-                          travelDurationMin: e.target.value.trim() === "" ? null : Number(e.target.value),
-                        })
+                        updateRider(r.id, { travelDurationMin: num(e.target.value) })
                       }
                       placeholder="Reistijd (min)"
                     />
