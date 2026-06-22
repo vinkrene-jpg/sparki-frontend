@@ -4,3 +4,4 @@
 - [Vite font loading — Next.js var() trap](vite-font-var-trap.md) — var(--font-geist-sans) undefined in Vite causes entire font-family to fall back to browser serif; always use @fontsource packages.
 - [Sparki Development Preview Mode](sparki-dev-preview.md) — dev-only auth/onboarding bypass; requires NODE_ENV!=production AND DEV_AUTH_BYPASS=true (fails closed).
 - [Sparki cinematic background](sparki-cinematic-bg.md) — shared ScreenShell fixed bg layer; cyclist visible page-wide, glass cards 82%, OLED-safe blue-black, no flat-black/white surfaces.
+- [Sparki Insights origin + migration audit](sparki-insights-origin.md) — original Next.js "Sparki Insights" lives in `.migration-backup/`; it is the content source-of-truth; audit/blueprint docs at repo root.

@@ -6,3 +6,15 @@ id = "iXVmxu4mE3y89Pt9b9iP8"
 uri = "file://.local/phase-2-migration-plan.md"
 type = "text"
 title = "Sparki Phase 2 — Migration Plan"
+
+[[outputs]]
+id = "RKTLV1mgXqB_GDmBSkUeq"
+uri = "file://SPARKI_MIGRATION_AUDIT.md"
+type = "text"
+title = "Sparki Migration Audit"
+
+[[outputs]]
+id = "_OX_LQlsTZzVpQhxn917i"
+uri = "file://SPARKI_MASTER_BLUEPRINT.md"
+type = "text"
+title = "Sparki Master Blueprint"
