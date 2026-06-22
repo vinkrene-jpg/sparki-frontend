@@ -33,10 +33,20 @@ export const queryKeys = {
 
   athlete: {
     all: () => ["athlete"] as const,
-    profile: (clerkId: string) => ["athlete", clerkId, "profile"] as const,
-    sessions: (clerkId: string) => ["athlete", clerkId, "sessions"] as const,
-    readiness: (clerkId: string) =>
-      ["athlete", clerkId, "readiness"] as const,
+    profile: () => ["athlete", "profile"] as const,
+    dashboard: () => ["athlete", "dashboard"] as const,
+    todayWorkout: () => ["athlete", "workout", "today"] as const,
+    sessions: (limit?: number) =>
+      limit != null
+        ? (["athlete", "sessions", limit] as const)
+        : (["athlete", "sessions"] as const),
+    metrics: (days?: number) =>
+      days != null
+        ? (["athlete", "metrics", days] as const)
+        : (["athlete", "metrics"] as const),
+    load: () => ["athlete", "load"] as const,
+    ftpHistory: () => ["athlete", "ftp"] as const,
+    brief: () => ["athlete", "ai", "brief"] as const,
   },
 } as const;
 

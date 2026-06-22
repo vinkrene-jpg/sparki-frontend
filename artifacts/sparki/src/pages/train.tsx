@@ -1,228 +1,544 @@
-import { athlete, intervals, zones, target, route, fueling, prep } from "@/lib/sparki-data"
+import { useState } from "react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
-import { SectionLabel, Stat, Divider, ACCENT } from "@/components/sparki/ui"
-import { SparkiCore } from "@/components/sparki/sparki-core"
-import { Droplet, Zap, Check } from "lucide-react"
+import { SectionLabel, ACCENT } from "@/components/sparki/ui"
+import { useTodayWorkout, useUpdateWorkout } from "@/hooks/use-today-workout"
+import { useSessions, useLogSession } from "@/hooks/use-sessions"
+import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
+import { Plus, CheckCircle2, XCircle, Bike, Activity, Timer, Zap } from "lucide-react"
+import type { TrainingSession } from "@/lib/athlete-types"
 
-const zoneColor: Record<number, string> = {
-  1: "rgba(120,210,230,0.25)",
-  2: "rgba(120,210,230,0.4)",
-  4: "rgba(120,210,230,0.95)",
+type Tab = "plan" | "log"
+
+function Skeleton({ className = "" }: { className?: string }) {
+  return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
 }
 
-export default function TrainPage() {
-  const maxEl = Math.max(...route.profile)
-
+function ZoneRow({
+  zone,
+  label,
+  min,
+  max,
+  active,
+}: {
+  zone: number
+  label: string
+  min: number
+  max: number
+  active?: boolean
+}) {
+  const colors = [
+    "rgba(120,210,230,0.25)",
+    "rgba(120,210,230,0.35)",
+    "rgba(255,220,100,0.5)",
+    "rgba(120,210,230,0.95)",
+    "rgba(255,140,80,0.8)",
+    "rgba(255,80,80,0.75)",
+  ]
+  const color = colors[zone - 1] ?? ACCENT
   return (
-    <ScreenShell section="Train">
-      {/* INTRO */}
-      <div className="-mt-2">
-        <p className="label-sm text-white/35">VANDAAG · UITVOERING</p>
-        <h1 className="mt-2 text-balance font-sans text-3xl font-semibold leading-tight tracking-tight">
-          {intervals.title}
-        </h1>
-        <p className="mt-1.5 label-sm text-white/40">
-          {intervals.duration} · {intervals.tss} TSS · IF 0.91
+    <div
+      className="flex items-center gap-3 border-b border-white/[0.05] py-2.5 last:border-0"
+      style={{ opacity: active ? 1 : 0.45 }}
+    >
+      <span
+        className="h-3 w-1 rounded-full"
+        style={{
+          background: color,
+          boxShadow: active ? `0 0 8px ${color}` : "none",
+        }}
+      />
+      <span className="label-xs text-white/45">Z{zone}</span>
+      <span className="flex-1 text-[13px] font-medium tracking-tight text-white/85">
+        {label}
+      </span>
+      <span
+        className="font-sans text-[12px] tabular-nums text-white/50"
+        style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
+      >
+        {min}–{max}W
+      </span>
+    </div>
+  )
+}
+
+function PlanTab() {
+  const { data: workout, isLoading: workoutLoading } = useTodayWorkout()
+  const { data: profile, isLoading: profileLoading } = useAthleteExtendedProfile()
+  const updateWorkout = useUpdateWorkout()
+  const isLoading = workoutLoading || profileLoading
+
+  const markComplete = () => {
+    if (workout?.id) {
+      updateWorkout.mutate({ id: workout.id, status: "completed" })
+    }
+  }
+
+  const markSkipped = () => {
+    if (workout?.id) {
+      updateWorkout.mutate({ id: workout.id, status: "skipped" })
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-6">
+        <Skeleton className="h-32 w-full rounded-2xl" />
+        <Skeleton className="h-40 w-full rounded-2xl" />
+      </div>
+    )
+  }
+
+  if (!workout) {
+    return (
+      <div className="flex flex-col items-center gap-5 py-12">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/[0.03]">
+          <Bike className="h-7 w-7 text-white/25" strokeWidth={1.5} />
+        </div>
+        <div className="text-center">
+          <p className="text-[15px] font-medium text-white/60">No workout planned today</p>
+          <p className="mt-1 text-[13px] text-white/35">
+            Rest day, or add a workout below
+          </p>
+        </div>
+        <p className="mt-2 text-[12px] text-white/25">
+          Workout planning coming soon
         </p>
       </div>
+    )
+  }
 
-      {/* 01 DE SESSIE */}
-      <section>
-        <SectionLabel n="01" title="De sessie" />
-        <div className="mt-5 flex h-24 items-end gap-1.5">
-          {intervals.blocks.map((b, i) => (
-            <div key={i} className="flex flex-1 flex-col items-center justify-end" style={{ height: "100%" }}>
-              <div
-                className="w-full rounded-t-sm"
-                style={{
-                  height: `${b.w * 100}%`,
-                  background: zoneColor[b.z] ?? "rgba(120,210,230,0.4)",
-                  boxShadow: b.z === 4 ? "0 0 12px rgba(120,210,230,0.5)" : "none",
-                }}
-              />
-              <span className="mt-1.5 label-xs text-white/30">{b.label}</span>
-            </div>
-          ))}
-        </div>
-        <div className="mt-5 flex items-center gap-5 border-t border-white/[0.07] pt-4">
-          <Stat label="Blokken" value="4 × 8 min" />
-          <Divider />
-          <Stat label="Rust" value="4 min" />
-          <Divider />
-          <Stat label="Belasting" value="Hoog" accent />
-        </div>
-      </section>
+  const isPending = workout.status === "planned" || workout.status === "modified"
+  const isCompleted = workout.status === "completed"
 
-      {/* 02 DOELZONES */}
-      <section>
-        <SectionLabel n="02" title="Doelzones" />
-        <div className="mt-4 flex items-end justify-between">
-          <div>
-            <span className="label-sm font-semibold text-cyan-300/80">TARGET · ZONE 4</span>
-            <p
-              className="mt-1.5 font-sans text-3xl font-bold tabular-nums"
-              style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
-            >
-              {target.power}
-            </p>
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Workout header */}
+      <div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <span className="label-xs text-white/35">{workout.type.toUpperCase()}</span>
+            <h2 className="mt-1.5 font-sans text-2xl font-semibold leading-tight tracking-tight">
+              {workout.title}
+            </h2>
           </div>
-          <div className="flex items-center gap-5">
-            <Stat label="HR" value={target.hr} />
-            <Divider />
-            <Stat label="Cadans" value={target.cadence} />
-          </div>
-        </div>
-        <div className="mt-5 flex flex-col">
-          {zones.map((z) => (
-            <div
-              key={z.z}
-              className="flex items-center gap-3 border-b border-white/[0.05] py-2.5 last:border-0"
-              style={{ opacity: z.z === target.zone ? 1 : 0.5 }}
-            >
-              <span className="h-3 w-1 rounded-full" style={{ background: z.color, boxShadow: z.z === 4 ? `0 0 8px ${ACCENT}` : "none" }} />
-              <span className="label-xs text-white/50">Z{z.z}</span>
-              <span className="flex-1 text-[13px] font-medium tracking-tight text-white/85">{z.name}</span>
-              <span
-                className="font-sans text-[13px] font-semibold tabular-nums text-white/60"
-                style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
-              >
-                {z.power}
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 03 ROUTE & NAVIGATIE */}
-      <section>
-        <SectionLabel n="03" title="Route & navigatie" />
-        <div className="mt-4 flex items-end justify-between">
-          <h2 className="font-sans text-xl font-medium tracking-tight">{route.name}</h2>
-          <span className="label-sm font-semibold" style={{ color: ACCENT }}>
-            {route.status.toUpperCase()}
-          </span>
-        </div>
-        <div className="mt-4 flex h-16 items-end gap-px">
-          {route.profile.map((p, i) => (
-            <div
-              key={i}
-              className="flex-1 rounded-t-[1px]"
+          {isCompleted && (
+            <span
+              className="shrink-0 rounded-full px-2.5 py-1 label-xs font-semibold"
               style={{
-                height: `${(p / maxEl) * 100}%`,
-                background: "linear-gradient(180deg, rgba(120,210,230,0.55), rgba(120,210,230,0.08))",
+                color: ACCENT,
+                background: "rgba(120,210,230,0.1)",
+                border: `1px solid rgba(120,210,230,0.3)`,
               }}
-            />
-          ))}
+            >
+              DONE
+            </span>
+          )}
         </div>
-        <div className="mt-4 flex items-center gap-5 border-t border-white/[0.07] pt-4">
-          <Stat label="Afstand" value={route.distance} />
-          <Divider />
-          <Stat label="Hoogtemeters" value={route.elevation} />
-          <Divider />
-          <Stat label="Ondergrond" value={route.surface} />
-        </div>
-        <div className="mt-5 flex flex-col">
-          {route.nav.map((n, i) => (
-            <div key={i} className="flex items-baseline gap-3 border-b border-white/[0.05] py-2.5 last:border-0">
-              <span
-                className="w-12 font-sans text-[11px] font-semibold tabular-nums text-cyan-300/70"
-                style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
-              >
-                {n.km}
-              </span>
-              <span className="w-20 text-[13px] font-medium tracking-tight text-white/85">{n.dir}</span>
-              <span className="flex-1 text-[12px] text-white/40">{n.note}</span>
-            </div>
-          ))}
-        </div>
-      </section>
 
-      {/* 04 VOEDING & HYDRATIE */}
-      <section>
-        <SectionLabel n="04" title="Voeding & hydratie" />
-        <div className="mt-4 flex flex-col">
-          {fueling.map((f, i) => {
-            const isDrink = f.kind === "drink"
-            const Icon = isDrink ? Droplet : Zap
-            return (
-              <div key={i} className="flex items-center gap-4 border-b border-white/[0.05] py-3 last:border-0">
-                <span
-                  className="font-sans text-[11px] font-semibold tabular-nums text-white/40"
-                  style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
-                >
-                  {f.t}
+        {workout.description && (
+          <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/50">
+            {workout.description}
+          </p>
+        )}
+
+        <div className="mt-4 flex items-center gap-5">
+          {workout.targetDurationMin != null && (
+            <>
+              <div className="flex items-center gap-1.5">
+                <Timer className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
+                <span className="font-sans text-[14px] font-medium tabular-nums text-white/80">
+                  {workout.targetDurationMin}min
                 </span>
+              </div>
+              <span className="h-4 w-px bg-white/[0.08]" />
+            </>
+          )}
+          {workout.targetTSS != null && (
+            <div className="flex items-center gap-1.5">
+              <Zap className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
+              <span className="font-sans text-[14px] font-medium tabular-nums text-white/80">
+                {workout.targetTSS} TSS
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Power zones */}
+      {profile?.zones && (
+        <section>
+          <SectionLabel title="Power zones" />
+          <div className="mt-3 flex flex-col">
+            {profile.zones.map((z) => (
+              <ZoneRow
+                key={z.zone}
+                zone={z.zone}
+                label={z.label}
+                min={z.min}
+                max={z.max}
+                active={z.zone === 4}
+              />
+            ))}
+          </div>
+          {profile.ftp && (
+            <p className="mt-2 text-[11px] text-white/25">
+              Based on FTP {profile.ftp}W
+            </p>
+          )}
+        </section>
+      )}
+
+      {/* Actions */}
+      {isPending && (
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={markComplete}
+            disabled={updateWorkout.isPending}
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl py-3.5 font-sans text-[13px] font-semibold transition-opacity disabled:opacity-50"
+            style={{ background: ACCENT, color: "#040506" }}
+          >
+            <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} />
+            Done
+          </button>
+          <button
+            type="button"
+            onClick={markSkipped}
+            disabled={updateWorkout.isPending}
+            className="flex items-center justify-center gap-2 rounded-2xl border border-white/[0.12] px-5 py-3.5 font-sans text-[13px] font-semibold text-white/50 transition-colors hover:border-white/20 disabled:opacity-50"
+          >
+            <XCircle className="h-4 w-4" strokeWidth={1.75} />
+            Skip
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function LogSessionForm({
+  onDone,
+}: {
+  onDone: () => void
+}) {
+  const logSession = useLogSession()
+  const [form, setForm] = useState<{
+    title: string
+    type: string
+    durationMin: string
+    tss: string
+    normalizedPower: string
+    feelScore: string
+    notes: string
+  }>({
+    title: "",
+    type: "ride",
+    durationMin: "",
+    tss: "",
+    normalizedPower: "",
+    feelScore: "3",
+    notes: "",
+  })
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setForm((p) => ({ ...p, [k]: e.target.value }))
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const today = new Date().toISOString().split("T")[0]!
+    logSession.mutate(
+      {
+        sessionDate: today,
+        type: form.type,
+        title: form.title || null,
+        durationMin: form.durationMin ? parseInt(form.durationMin) : undefined,
+        tss: form.tss ? parseInt(form.tss) : undefined,
+        normalizedPower: form.normalizedPower
+          ? parseInt(form.normalizedPower)
+          : undefined,
+        feelScore: parseInt(form.feelScore),
+        notes: form.notes || null,
+      } as Partial<TrainingSession>,
+      { onSuccess: onDone },
+    )
+  }
+
+  const inputClass =
+    "w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="col-span-2">
+          <input
+            className={inputClass}
+            placeholder="Title (optional)"
+            value={form.title}
+            onChange={set("title")}
+          />
+        </div>
+        <select
+          className={inputClass}
+          value={form.type}
+          onChange={set("type")}
+        >
+          <option value="ride">Ride</option>
+          <option value="run">Run</option>
+          <option value="swim">Swim</option>
+          <option value="strength">Strength</option>
+          <option value="other">Other</option>
+        </select>
+        <input
+          className={inputClass}
+          type="number"
+          placeholder="Duration (min)"
+          value={form.durationMin}
+          onChange={set("durationMin")}
+          min={1}
+          max={999}
+        />
+        <input
+          className={inputClass}
+          type="number"
+          placeholder="TSS"
+          value={form.tss}
+          onChange={set("tss")}
+          min={1}
+          max={999}
+        />
+        <input
+          className={inputClass}
+          type="number"
+          placeholder="NP (watts)"
+          value={form.normalizedPower}
+          onChange={set("normalizedPower")}
+          min={50}
+          max={1000}
+        />
+      </div>
+
+      <div>
+        <label className="mb-2 block label-xs text-white/35">HOW DID IT FEEL?</label>
+        <div className="flex gap-2">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setForm((p) => ({ ...p, feelScore: String(n) }))}
+              className="flex flex-1 items-center justify-center rounded-xl border py-2.5 font-sans text-sm font-semibold transition-colors"
+              style={{
+                borderColor:
+                  form.feelScore === String(n)
+                    ? "rgba(120,210,230,0.5)"
+                    : "rgba(255,255,255,0.1)",
+                background:
+                  form.feelScore === String(n)
+                    ? "rgba(120,210,230,0.12)"
+                    : "transparent",
+                color:
+                  form.feelScore === String(n)
+                    ? ACCENT
+                    : "rgba(255,255,255,0.5)",
+              }}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+        <div className="mt-1 flex justify-between px-1 label-xs text-white/20">
+          <span>rough</span>
+          <span>great</span>
+        </div>
+      </div>
+
+      <textarea
+        className={`${inputClass} resize-none`}
+        placeholder="Notes (optional)"
+        rows={2}
+        value={form.notes}
+        onChange={set("notes")}
+      />
+
+      <div className="flex gap-3">
+        <button
+          type="submit"
+          disabled={logSession.isPending}
+          className="flex-1 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
+          style={{ background: ACCENT, color: "#040506" }}
+        >
+          {logSession.isPending ? "Saving…" : "Save session"}
+        </button>
+        <button
+          type="button"
+          onClick={onDone}
+          className="rounded-2xl border border-white/[0.1] px-5 py-3.5 font-sans text-[13px] text-white/50"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  )
+}
+
+function typeIcon(type: string) {
+  if (type === "ride") return Bike
+  if (type === "run") return Activity
+  return Zap
+}
+
+function LogTab() {
+  const { data: sessions, isLoading } = useSessions(20)
+  const [showForm, setShowForm] = useState(false)
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-3">
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} className="h-16 w-full rounded-xl" />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      {!showForm && (
+        <button
+          type="button"
+          onClick={() => setShowForm(true)}
+          className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] py-3.5 font-sans text-[13px] font-medium text-white/50 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/60"
+        >
+          <Plus className="h-4 w-4" strokeWidth={2} />
+          Log a session
+        </button>
+      )}
+
+      {showForm && (
+        <div className="rounded-2xl border border-white/[0.09] bg-white/[0.02] p-5">
+          <p className="mb-4 label-sm font-semibold text-white/70">LOG SESSION</p>
+          <LogSessionForm onDone={() => setShowForm(false)} />
+        </div>
+      )}
+
+      {sessions && sessions.length > 0 ? (
+        <div className="flex flex-col">
+          {sessions.map((s) => {
+            const Icon = typeIcon(s.type)
+            const date = new Date(s.sessionDate + "T12:00:00Z")
+            const dateLabel = date.toLocaleDateString("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            })
+            return (
+              <div
+                key={s.id}
+                className="flex items-center gap-4 border-b border-white/[0.05] py-4 last:border-0"
+              >
                 <span
-                  className="flex h-7 w-7 items-center justify-center rounded-full border"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border"
                   style={{
-                    borderColor: isDrink ? "rgba(120,210,230,0.3)" : "rgba(255,200,120,0.3)",
-                    background: isDrink ? "rgba(120,210,230,0.08)" : "rgba(255,200,120,0.06)",
+                    borderColor: "rgba(255,255,255,0.1)",
+                    background: "rgba(255,255,255,0.03)",
                   }}
                 >
-                  <Icon className="h-3.5 w-3.5" style={{ color: isDrink ? ACCENT : "rgba(255,200,120,0.9)" }} strokeWidth={1.75} />
+                  <Icon
+                    className="h-4 w-4"
+                    style={{ color: ACCENT }}
+                    strokeWidth={1.75}
+                  />
                 </span>
-                <span className="flex-1 text-[13px] font-medium tracking-tight text-white/85">{f.text}</span>
+                <div className="flex-1 overflow-hidden">
+                  <p className="truncate text-[14px] font-medium text-white/85">
+                    {s.title ?? s.type.charAt(0).toUpperCase() + s.type.slice(1)}
+                  </p>
+                  <div className="mt-0.5 flex items-center gap-2">
+                    <span className="label-xs text-white/35">{dateLabel}</span>
+                    {s.durationMin != null && (
+                      <>
+                        <span className="h-1 w-1 rounded-full bg-white/20" />
+                        <span className="label-xs text-white/35">
+                          {s.durationMin}min
+                        </span>
+                      </>
+                    )}
+                    {s.tss != null && (
+                      <>
+                        <span className="h-1 w-1 rounded-full bg-white/20" />
+                        <span className="label-xs text-white/35">
+                          {s.tss} TSS
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                {s.feelScore != null && (
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span
+                      className="font-sans text-base font-semibold tabular-nums"
+                      style={{ color: ACCENT }}
+                    >
+                      {s.feelScore}
+                    </span>
+                    <span className="label-xs text-white/25">FEEL</span>
+                  </div>
+                )}
               </div>
             )
           })}
         </div>
-      </section>
-
-      {/* 05 VOORBEREIDING */}
-      <section>
-        <SectionLabel n="05" title="Voorbereiding" />
-        <div className="mt-4 flex flex-col">
-          {prep.map((p, i) => (
-            <div key={i} className="flex items-center gap-3 border-b border-white/[0.05] py-3 last:border-0">
-              <span
-                className="flex h-5 w-5 items-center justify-center rounded-full border"
-                style={{
-                  borderColor: p.done ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.15)",
-                  background: p.done ? "rgba(120,210,230,0.12)" : "transparent",
-                }}
-              >
-                {p.done ? <Check className="h-3 w-3" style={{ color: ACCENT }} strokeWidth={2.5} /> : null}
-              </span>
-              <span className="flex-1 text-[13px] font-medium tracking-tight text-white/85">{p.label}</span>
-              <span
-                className="font-sans text-[11px] font-semibold tabular-nums"
-                style={{
-                  color: p.done ? "rgba(255,255,255,0.55)" : "rgba(255,200,120,0.85)",
-                  fontVariantNumeric: "tabular-nums lining-nums",
-                }}
-              >
-                {p.value}
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 06 AI COACH UITVOERING */}
-      <section>
-        <SectionLabel n="06" title="AI Coach uitvoering" />
-        <div className="relative mt-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 backdrop-blur-sm">
-          <div
-            className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 animate-breathe rounded-full"
-            style={{ background: `radial-gradient(circle, ${ACCENT}, transparent 70%)`, opacity: 0.18 }}
-          />
-          <div className="flex items-center gap-2">
-            <SparkiCore size={28} accent={ACCENT} readiness={0.9} variant="orb" />
-            <span className="label-sm font-semibold text-cyan-300/80">AI COACH</span>
-          </div>
-          <p className="mt-3 text-pretty font-sans text-base font-medium leading-snug text-white/90">
-            Start ingehouden — bouw elk interval op naar het bovenste deel van Zone 4.
-          </p>
-          <p className="mt-2 text-pretty text-[13px] leading-relaxed text-white/45">
-            Houd je cadans rond 92 rpm en adem ritmisch. Mik op een negatieve split:
-            blok 3 en 4 iets sterker dan blok 1. Bij verlies van vermogen op blok 4
-            — stoppen, niet forceren. De winst zit in schone uitvoering.
-          </p>
-          <p className="mt-3 label-xs text-white/30">
-            VOOR: {athlete.name} · FTP {athlete.ftp}W
+      ) : !showForm ? (
+        <div className="py-8 text-center">
+          <p className="text-[13px] text-white/35">No sessions logged yet</p>
+          <p className="mt-1 text-[12px] text-white/20">
+            Log your first ride to start tracking load
           </p>
         </div>
-      </section>
+      ) : null}
+    </div>
+  )
+}
+
+export default function TrainPage() {
+  const [tab, setTab] = useState<Tab>("plan")
+
+  return (
+    <ScreenShell section="Today">
+      {/* HEADER */}
+      <div className="-mt-2">
+        <p className="label-sm text-white/35">
+          {new Date().toLocaleDateString("en-US", { weekday: "long" }).toUpperCase()} · TRAINING
+        </p>
+        <h1 className="mt-2 font-sans text-3xl font-semibold leading-tight tracking-tight">
+          {tab === "plan" ? "Today's plan" : "Session log"}
+        </h1>
+      </div>
+
+      {/* TABS */}
+      <div className="-mt-4 flex gap-1.5">
+        {(["plan", "log"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTab(t)}
+            className="rounded-full border px-4 py-1.5 font-sans text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors"
+            style={{
+              borderColor:
+                tab === t
+                  ? "rgba(120,210,230,0.45)"
+                  : "rgba(255,255,255,0.1)",
+              background:
+                tab === t ? "rgba(120,210,230,0.1)" : "transparent",
+              color: tab === t ? ACCENT : "rgba(255,255,255,0.4)",
+            }}
+          >
+            {t === "plan" ? "Plan" : "Log"}
+          </button>
+        ))}
+      </div>
+
+      {/* CONTENT */}
+      {tab === "plan" ? <PlanTab /> : <LogTab />}
     </ScreenShell>
   )
 }

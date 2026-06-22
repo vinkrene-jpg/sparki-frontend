@@ -12,6 +12,8 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
   ftp: integer("ftp"),
   weightKg: numeric("weight_kg", { precision: 5, scale: 2 }),
   discipline: text("discipline"),
+  goals: text("goals"),
+  weeklyHourTarget: integer("weekly_hour_target"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

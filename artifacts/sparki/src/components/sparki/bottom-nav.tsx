@@ -1,4 +1,4 @@
-import { Home, Bike, Radio, FlaskConical, User } from "lucide-react"
+import { Home, Zap, Bot, TrendingUp, User } from "lucide-react"
 import { Link, useLocation } from "wouter"
 import { useUserProfile } from "@/contexts/UserContext"
 import type { Role } from "@/contexts/UserContext"
@@ -11,9 +11,9 @@ type NavItem = {
 
 const ATHLETE_NAV: NavItem[] = [
   { href: "/", icon: Home, label: "Home" },
-  { href: "/train", icon: Bike, label: "Train" },
-  { href: "/feed", icon: Radio, label: "Feed" },
-  { href: "/lab", icon: FlaskConical, label: "Lab" },
+  { href: "/train", icon: Zap, label: "Today" },
+  { href: "/feed", icon: Bot, label: "Sparki" },
+  { href: "/lab", icon: TrendingUp, label: "Progress" },
   { href: "/you", icon: User, label: "You" },
 ]
 
@@ -24,7 +24,7 @@ const COACH_NAV: NavItem[] = [
 
 const PARENT_NAV: NavItem[] = [
   { href: "/", icon: Home, label: "Home" },
-  { href: "/feed", icon: Radio, label: "Feed" },
+  { href: "/feed", icon: Bot, label: "Sparki" },
   { href: "/you", icon: User, label: "You" },
 ]
 
