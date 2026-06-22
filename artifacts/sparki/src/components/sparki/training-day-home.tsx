@@ -329,26 +329,41 @@ export function TrainingDayHome() {
   return (
     <ScreenShell section="Home" bg="/concept-lab.png">
       {/* INTRO */}
-      <div className="-mt-2">
-        <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
-          {todayLabel().toUpperCase()} · TRAINING DAY
-        </p>
-        <h1 className="mt-2 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
-          Goedemorgen, {firstName}.
-        </h1>
-        {isLoading ? (
-          <Skeleton className="mt-1.5 h-4 w-40" />
-        ) : profile?.ftp ? (
-          <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
-            {profile.discipline ?? "Wielrenner"} · FTP {profile.ftp}W
-            {profile.wkg ? ` · ${profile.wkg} W/kg` : ""}
+      <div className="relative -mt-2">
+        {/* Soft dark scrim behind the hero text — keeps it readable over the
+            brighter background without a hard black box. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -inset-x-5 -inset-y-4"
+          style={{
+            background:
+              "radial-gradient(115% 130% at 8% 28%, rgba(4,8,14,0.58), rgba(4,8,14,0.22) 55%, transparent 80%)",
+          }}
+        />
+        <div className="relative">
+          <p className="font-mono text-[10px] tracking-[0.28em] text-white/45">
+            {todayLabel().toUpperCase()} · TRAINING DAY
           </p>
-        ) : (
-          <p className="mt-1 font-mono text-[11px] tracking-wide text-white/35">
-            Stel je FTP in bij{" "}
-            <span style={{ color: ACCENT }}>Profiel</span> om te beginnen
-          </p>
-        )}
+          <h1
+            className="mt-2 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight"
+            style={{ textShadow: "0 2px 24px rgba(0,0,0,0.45)" }}
+          >
+            Goedemorgen, {firstName}.
+          </h1>
+          {isLoading ? (
+            <Skeleton className="mt-1.5 h-4 w-40" />
+          ) : profile?.ftp ? (
+            <p className="mt-1 font-mono text-[11px] tracking-wide text-white/50">
+              {profile.discipline ?? "Wielrenner"} · FTP {profile.ftp}W
+              {profile.wkg ? ` · ${profile.wkg} W/kg` : ""}
+            </p>
+          ) : (
+            <p className="mt-1 font-mono text-[11px] tracking-wide text-white/45">
+              Stel je FTP in bij{" "}
+              <span style={{ color: ACCENT }}>Profiel</span> om te beginnen
+            </p>
+          )}
+        </div>
       </div>
 
       {/* 01 WAT GA IK VANDAAG DOEN */}

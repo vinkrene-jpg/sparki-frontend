@@ -179,7 +179,7 @@ export default function FeedPage() {
 
         {/* Thinking skeleton */}
         {ask.isPending && (
-          <div className="mt-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
+          <div className="mt-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
             <div className="mb-3 flex items-center gap-2">
               <SparkiCore size={22} accent={ACCENT} readiness={0.9} variant="orb" />
               <span className="font-mono text-[10px] tracking-[0.18em] text-white/40">

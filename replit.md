@@ -50,11 +50,12 @@ An AI-powered cycling performance app for athletes, coaches, and parents — mig
 - **Sign-in / Sign-up** (`/sign-in`, `/sign-up`) — custom Clerk-themed pages matching the dark Sparki design language (dark bg, cyan accent, Inter Variable font, Sparki bolt logo).
 - **Protected app routes** (`/train`, `/feed`, `/lab`, `/you`) — redirect to `/sign-in` when not authenticated.
 - **Role switcher** — in the `ScreenShell` header for users with multiple roles; cycles through `athlete`/`coach`/`parent`. Sign-out button alongside.
+- **Cinematic background** — lives in `ScreenShell` (shared by Home/Train/Feed/Lab/You). A `fixed` layer keeps the cyclist (`/concept-lab.png`) visible behind the whole page with subtle parallax: image ~0.56 opacity, softened blue-black gradient overlay, drifting atmospheric haze, bottom vignette for nav legibility, OLED-safe base `#05070e`. Text over the background uses soft dark scrims (not boxes). Cards are frosted glass `bg-[#070d16]/[0.82] backdrop-blur-md` with subtle light borders so the background shows through (~18%).
 - **Development Preview Mode** — dev-only. When the Vite dev server runs (`import.meta.env.DEV`), `App.tsx` renders `<DevPreview>` instead of the auth-gated router, mounting the exact production components (no duplication) with a fixed dev switcher bar (Landing/Home/Train/Feed/Lab/You) driven by wouter location. Backend pairs this with `devAuthBypass` middleware that resolves a dev user when no real Clerk session exists. Fully disabled in production: frontend branch is dead-code in prod builds; backend bypass requires BOTH `NODE_ENV !== "production"` AND `DEV_AUTH_BYPASS=true` (fails closed otherwise).
 
 ## User preferences
 
-- Do NOT redesign UI or change the Sparki design language (dark bg #040506, cyan accent oklch(0.82 0.16 200), Inter Variable font).
+- Keep the Sparki design language: dark, premium, cyan/neon accent oklch(0.82 0.16 200), Inter Variable font. The home/app background is a **cinematic blue-black** treatment (NOT flat black) — see "Cinematic background" below. Do not revert it to a flat #040506 wash or add white surfaces / pastel UI / generic card-dashboard styling.
 - Do NOT touch existing training/AI/routes/events/nutrition/recovery/coach/parent feature pages.
 - Phase 1 only: auth, accounts, roles, protected routes, role switching.
 

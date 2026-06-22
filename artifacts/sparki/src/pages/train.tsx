@@ -423,7 +423,7 @@ export default function TrainPage() {
       {aiEnabled && (
         <section>
           <SectionLabel n="06" title="AI Coach uitvoering" />
-          <div className="relative mt-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 backdrop-blur-sm">
+          <div className="relative mt-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
             <div
               className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 animate-breathe rounded-full"
               style={{
@@ -471,7 +471,7 @@ export default function TrainPage() {
         )}
 
         {showLogForm && (
-          <div className="mt-4 rounded-2xl border border-white/[0.09] bg-white/[0.02] p-5">
+          <div className="mt-4 rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
             <LogSessionForm onDone={() => setShowLogForm(false)} />
           </div>
         )}

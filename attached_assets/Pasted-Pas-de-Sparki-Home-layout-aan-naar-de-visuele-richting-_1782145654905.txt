@@ -1,0 +1,83 @@
+Pas de Sparki Home-layout aan naar de visuele richting van de aangeleverde voorbeeldafbeelding én bouw dit als herbruikbaar cinematic scene system.
+
+Doel:
+Sparki moet donker, premium en sportief blijven, maar minder zwart en vlak worden. De wielrenner op de achtergrond moet duidelijk herkenbaar zijn. De app moet voelen als een premium AI Performance Center, niet als een standaard dashboard.
+
+1. Home background
+- Maak de wielrenner/foto ongeveer 30–40% beter zichtbaar.
+- Niet simpelweg brightness verhogen.
+- Gebruik een cinematic blue-black gradient overlay.
+- Verminder de harde zwarte overlay.
+- Voeg subtiele mist/haze toe zodat de achtergrond meer diepte krijgt.
+- De achtergrond moet zichtbaar zijn achter de hele pagina, niet alleen bovenin.
+
+2. Cinematic Scene System
+Bouw een herbruikbaar achtergrond-systeem voor Sparki.
+
+Dit systeem moet later per scherm een eigen sfeer kunnen krijgen:
+- Home: wielrenner in mist, rustig, focus.
+- Train: meer energie, iets meer contrast, subtiele bewegende lichtlijnen.
+- Feed: iets lichtere achtergrond met meer diepte.
+- Lab: futuristisch laboratoriumgevoel, glas, licht, datavisualisaties in de verte.
+- You: persoonlijker, rustiger, iets warmer, minder dramatisch.
+
+Belangrijk:
+- De navigatie, kaarten en componenten blijven consistent.
+- Alleen de scene/background verandert per hoofdscherm.
+- Begin nu met Home, maar bouw het technisch zo dat Train, Feed, Lab en You later dezelfde structuur kunnen gebruiken.
+
+3. Live cinematic background
+Voeg een subtiele live achtergrond toe.
+
+Geen drukke animaties. Het moet bijna onmerkbaar zijn.
+
+Gebruik:
+- Zeer langzaam bewegende atmospheric haze met loops van 20–40 seconden.
+- Zachte volumetric light beams met zeer lage opacity.
+- Subtiele blue ambient light variations.
+- Af en toe een zeer lichte lens flare of light bloom.
+- Zeer lichte parallax bij scroll of device movement, maximaal 2–5 px.
+- Smooth animaties via CSS transforms of GPU-accelerated rendering.
+- Geen zware video backgrounds.
+
+Als de beweging duidelijk opvalt, is hij te sterk.
+
+4. Performance en toegankelijkheid
+- Houd CPU/GPU-gebruik laag.
+- Respecteer prefers-reduced-motion.
+- Zet motion automatisch uit of terug op low-end devices.
+- Zorg dat de app batterijvriendelijk blijft.
+- Doel is 60 fps, maar niet ten koste van mobiel gebruik.
+
+5. Text readability
+- Alle tekst moet goed leesbaar blijven.
+- Gebruik waar nodig zachte dark scrims achter tekstblokken.
+- Geen witte vlakken.
+- Geen pastelkleuren.
+- Geen standaard card-dashboard uitstraling.
+
+6. Cards
+- Maak kaarten semi-transparant met circa 80–85% opacity.
+- Gebruik glass/dark blur effect.
+- Rand subtiel, niet hard zwart.
+- De achtergrond moet licht door de kaarten heen zichtbaar blijven.
+
+7. Premium performance look
+- Behoud cyan/neon accenten.
+- Gebruik meer diepte, atmosferisch licht en subtiele gradients.
+- Geen kinderlijk ontwerp.
+- Geen avatars.
+- Geen pastel UI.
+- Geen harde zwarte vlakken.
+
+8. Mobile test
+- Optimaliseer specifiek voor echte telefoonweergave.
+- Test op small mobile width.
+- Zorg dat de bottom navigation goed zichtbaar blijft.
+- Zorg dat de background image niet te donker wordt op OLED-schermen.
+
+Werkvolgorde:
+1. Maak eerst Home visueel goed.
+2. Bouw de cinematic scene technisch herbruikbaar.
+3. Test performance en leesbaarheid mobiel.
+4. Pas dit daarna pas toe op Train, Feed, Lab en You.
