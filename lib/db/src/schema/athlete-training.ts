@@ -52,6 +52,7 @@ export const plannedWorkoutsTable = pgTable("planned_workouts", {
   targetTSS: integer("target_tss"),
   structure: jsonb("structure"),
   status: text("status").notNull().default("planned"),
+  source: text("source").notNull().default("sparki"),
   sessionId: integer("session_id").references(() => trainingSessionsTable.id, {
     onDelete: "set null",
   }),

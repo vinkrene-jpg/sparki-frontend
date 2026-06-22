@@ -34,6 +34,7 @@ export type PlannedWorkout = {
   targetTSS: number | null;
   structure: unknown;
   status: string;
+  source: string;
   sessionId: number | null;
   createdAt: string;
   updatedAt: string;

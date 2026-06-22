@@ -69,8 +69,8 @@ Insights heeft exact vijf schermen; die blijven de ruggengraat. De features in �
 3. **Dag vóór Race** — taperen, prep, reizen, materiaalcheck.
 4. **Race Week** — aftellen, vormpiek bewaken, belasting afbouwen.
 5. **Coach Training** (extern coach-plan) — coach-plan leidend.
-6. **Sparki Training** (door Sparki gegenereerd) — alleen als er geen coach-plan is.
-7. **Recovery** — actief herstel.
+6. **Sparki Training** (door Sparki gegenereerd) — alleen als er geen coach-plan is; dekt de inspannende/normale sessies.
+7. **Recovery** — actief herstel. Een herstel-workout die niet door de coach is gepland valt hieronder (SparkiTraining dekt de inspannende sessies).
 8. **Rest** — volledige rust.
 9. **General / geen training** — algemene briefing/fallback.
 

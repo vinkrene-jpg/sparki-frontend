@@ -11,6 +11,8 @@ import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useLoad } from "@/hooks/use-load"
 import { useSessions } from "@/hooks/use-sessions"
 import type { AthleteDailyMetric } from "@/lib/athlete-types"
+import { detectDayType, getDayTypeBriefing, type DayType } from "@/lib/day-type"
+import { DayTypeBriefing } from "@/components/sparki/day-type-briefing"
 
 function todayLabel() {
   return new Date().toLocaleDateString("nl-NL", {
@@ -274,7 +276,11 @@ const zoneColor: Record<number, string> = {
   4: "rgba(120,210,230,0.95)",
 }
 
-export function TrainingDayHome() {
+export function TrainingDayHome({
+  devDayTypeOverride,
+}: {
+  devDayTypeOverride?: DayType
+} = {}) {
   const { data, isLoading } = useAthleteDashboard()
   const aiEnabled = useFeatureFlag("ai_observations")
   const { data: brief, isLoading: briefLoading } = useAiBrief(aiEnabled)
@@ -285,6 +291,21 @@ export function TrainingDayHome() {
 
   const firstName = userProfile?.displayName?.split(" ")[0] ?? "Atleet"
   const profile = data?.athleteProfile
+
+  // Day-type engine (blueprint §4): decide what today is and build its briefing.
+  const todayWorkout = data?.todayWorkout ?? null
+  const dayTypeCtx = {
+    todayWorkout: todayWorkout
+      ? {
+          type: todayWorkout.type,
+          source: todayWorkout.source,
+          title: todayWorkout.title,
+        }
+      : null,
+    hasProfile: !!profile,
+  }
+  const dayType = devDayTypeOverride ?? detectDayType(dayTypeCtx)
+  const briefing = getDayTypeBriefing(dayType, dayTypeCtx)
 
   const ctlTrend = loadData?.chartData.map((d) => d.ctl) ?? []
 
@@ -365,6 +386,9 @@ export function TrainingDayHome() {
           )}
         </div>
       </div>
+
+      {/* DAGTYPE BRIEFING — wat is vandaag & waarom (blueprint §4) */}
+      {!isLoading && <DayTypeBriefing config={briefing} />}
 
       {/* 01 WAT GA IK VANDAAG DOEN */}
       <section>

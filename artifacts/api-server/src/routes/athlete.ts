@@ -306,6 +306,7 @@ router.post("/workouts", requireAuth, async (req, res) => {
     targetDurationMin,
     targetTSS,
     structure,
+    source,
   } = req.body as {
     scheduledDate: string;
     type?: string;
@@ -314,12 +315,17 @@ router.post("/workouts", requireAuth, async (req, res) => {
     targetDurationMin?: number;
     targetTSS?: number;
     structure?: unknown;
+    source?: string;
   };
 
   if (!scheduledDate || !title) {
     res.status(400).json({ error: "scheduledDate and title are required" });
     return;
   }
+
+  // Day-type engine distinguishes coach- vs Sparki-planned workouts
+  // (blueprint §4); default to "sparki" for anything else.
+  const workoutSource = source === "coach" ? "coach" : "sparki";
 
   try {
     const [workout] = await db
@@ -334,6 +340,7 @@ router.post("/workouts", requireAuth, async (req, res) => {
         targetTSS: targetTSS ?? null,
         structure: structure ?? null,
         status: "planned",
+        source: workoutSource,
       })
       .returning();
     res.status(201).json(workout);
