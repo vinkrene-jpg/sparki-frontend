@@ -62,12 +62,28 @@ export function ScreenShell({
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#040506] text-white">
       <div className="pointer-events-none absolute inset-0">
+        {/* Cyclist — kept clearly recognizable behind the UI */}
         <img
           src={bg}
           alt=""
-          className="absolute inset-0 h-full w-full object-cover opacity-[0.22]"
+          className="absolute inset-0 h-full w-full object-cover opacity-[0.42]"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#040506]/40 via-[#040506]/80 to-[#040506]" />
+        {/* Cinematic blue/black gradient — replaces the flat black overlay, ~30% lighter */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(7,14,24,0.34) 0%, rgba(6,11,20,0.56) 52%, rgba(4,7,12,0.78) 100%)",
+          }}
+        />
+        {/* Light atmospheric haze around the rider — gives the background depth */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(58% 46% at 50% 40%, rgba(140,190,215,0.16), rgba(140,190,215,0.05) 45%, transparent 72%)",
+          }}
+        />
         <div
           className="absolute -top-1/4 left-1/2 h-[70vh] w-[130vw] -translate-x-1/2 animate-breathe-slow"
           style={{

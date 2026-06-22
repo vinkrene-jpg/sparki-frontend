@@ -452,7 +452,7 @@ export function TrainingDayHome() {
               </div>
             </>
           ) : (
-            <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5">
+            <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-[10px] tracking-[0.2em] text-white/30">
                   GEEN PLAN VANDAAG
@@ -527,7 +527,7 @@ export function TrainingDayHome() {
       {aiEnabled && (
         <section>
           <SectionLabel n="04" title="Wat moet ik vandaag extra weten" large />
-          <div className="relative mt-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 backdrop-blur-sm">
+          <div className="relative mt-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
             <div
               className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 animate-breathe rounded-full"
               style={{
