@@ -168,6 +168,33 @@ function PlanTab() {
       {profile?.zones && (
         <section>
           <SectionLabel title="Power zones" />
+          {profile.ftp != null && profile.zones[3] && (
+            <div className="mt-4 mb-5 flex items-end gap-6">
+              <div>
+                <span
+                  className="font-mono text-[10px] tracking-[0.2em]"
+                  style={{ color: "rgba(120,210,230,0.8)" }}
+                >
+                  TARGET · ZONE 4
+                </span>
+                <p
+                  className="mt-1 font-sans text-3xl font-extralight tabular-nums"
+                  style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
+                >
+                  {profile.zones[3].min}–{profile.zones[3].max}W
+                </p>
+              </div>
+              <div className="mb-1 flex flex-col gap-0.5">
+                <span className="label-xs text-white/35">FTP</span>
+                <span
+                  className="font-sans text-[15px] font-light tabular-nums"
+                  style={{ color: ACCENT, fontVariantNumeric: "tabular-nums lining-nums" }}
+                >
+                  {profile.ftp}W
+                </span>
+              </div>
+            </div>
+          )}
           <div className="mt-3 flex flex-col">
             {profile.zones.map((z) => (
               <ZoneRow

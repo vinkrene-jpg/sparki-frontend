@@ -1,35 +1,37 @@
-import { vitals } from "@/lib/sparki-data"
-
 export function BioRadar({
   size = 200,
   accent = "rgba(120,210,230,1)",
+  axes,
 }: {
   size?: number
   accent?: string
+  axes: Array<{ key: string; label: string; level: number }>
 }) {
-  const axes = vitals
   const n = axes.length
+  if (n < 3) return null
+
   const cx = size / 2
   const cy = size / 2
   const r = size / 2 - 22
 
-  const pointFor = (level: number, i: number) => {
-    const angle = (Math.PI * 2 * i) / n - Math.PI / 2
-    const dist = level * r
-    return [cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist] as const
-  }
-  const axisEnd = (i: number) => {
-    const angle = (Math.PI * 2 * i) / n - Math.PI / 2
-    return [cx + Math.cos(angle) * r, cy + Math.sin(angle) * r] as const
-  }
-  const labelPos = (i: number) => {
-    const angle = (Math.PI * 2 * i) / n - Math.PI / 2
-    return [cx + Math.cos(angle) * (r + 14), cy + Math.sin(angle) * (r + 14)] as const
+  const ang = (i: number) => (Math.PI * 2 * i) / n - Math.PI / 2
+
+  const pt = (level: number, i: number): [number, number] => {
+    const a = ang(i)
+    return [cx + Math.cos(a) * level * r, cy + Math.sin(a) * level * r]
   }
 
-  const poly = axes
-    .map((v, i) => pointFor(v.level, i).join(","))
-    .join(" ")
+  const axisEnd = (i: number): [number, number] => {
+    const a = ang(i)
+    return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]
+  }
+
+  const labelPos = (i: number): [number, number] => {
+    const a = ang(i)
+    return [cx + Math.cos(a) * (r + 14), cy + Math.sin(a) * (r + 14)]
+  }
+
+  const poly = axes.map((v, i) => pt(v.level, i).join(",")).join(" ")
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -38,7 +40,7 @@ export function BioRadar({
           key={g}
           points={axes
             .map((_, i) => {
-              const a = (Math.PI * 2 * i) / n - Math.PI / 2
+              const a = ang(i)
               return `${cx + Math.cos(a) * r * g},${cy + Math.sin(a) * r * g}`
             })
             .join(" ")}
@@ -70,7 +72,7 @@ export function BioRadar({
         style={{ filter: `drop-shadow(0 0 6px ${accent})` }}
       />
       {axes.map((v, i) => {
-        const [px, py] = pointFor(v.level, i)
+        const [px, py] = pt(v.level, i)
         return <circle key={v.key} cx={px} cy={py} r="2" fill={accent} />
       })}
       {axes.map((v, i) => {
@@ -82,11 +84,9 @@ export function BioRadar({
             y={ly}
             textAnchor="middle"
             dominantBaseline="middle"
-            fontFamily="'Geist', ui-sans-serif, system-ui, sans-serif"
             fontSize="6.5"
-            fontWeight="500"
-            fill="rgba(255,255,255,0.45)"
-            style={{ letterSpacing: "0.12em" }}
+            fill="rgba(255,255,255,0.5)"
+            style={{ letterSpacing: "0.1em", fontFamily: "monospace" }}
           >
             {v.label.toUpperCase()}
           </text>

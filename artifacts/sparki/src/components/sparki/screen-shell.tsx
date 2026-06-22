@@ -93,11 +93,14 @@ export function ScreenShell({
             </span>
             <span className="font-mono text-[11px] tracking-[0.35em] text-white/70">SPARKI</span>
           </div>
-          <Show when="signed-in">
-            <RoleSwitcher />
-          </Show>
           <Show when="signed-out">
             <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{section.toUpperCase()}</span>
+          </Show>
+          <Show when="signed-in">
+            <div className="flex flex-col items-end gap-1.5">
+              <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{section.toUpperCase()}</span>
+              <RoleSwitcher />
+            </div>
           </Show>
         </header>
 

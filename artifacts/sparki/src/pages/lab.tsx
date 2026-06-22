@@ -1,5 +1,7 @@
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
+import { BioRadar } from "@/components/sparki/bio-radar"
+import { Sparkline } from "@/components/sparki/primitives"
 import { useLoad } from "@/hooks/use-load"
 import { useFtpHistory } from "@/hooks/use-ftp-history"
 import { useSessions } from "@/hooks/use-sessions"
@@ -140,9 +142,7 @@ function FtpBars({
                     background: isLast
                       ? `linear-gradient(180deg, ${ACCENT}, rgba(120,210,230,0.2))`
                       : "rgba(120,210,230,0.25)",
-                    boxShadow: isLast
-                      ? `0 0 10px rgba(120,210,230,0.4)`
-                      : "none",
+                    boxShadow: isLast ? `0 0 10px rgba(120,210,230,0.4)` : "none",
                   }}
                 />
               </div>
@@ -175,6 +175,50 @@ export default function LabPage() {
     : "Very tired"
 
   const FormIcon = formIcon ?? Minus
+
+  const clamp = (v: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v))
+
+  const feelScores = (sessions ?? [])
+    .filter((s) => s.feelScore != null)
+    .map((s) => s.feelScore!)
+  const avgFeel =
+    feelScores.length > 0
+      ? feelScores.reduce((a, b) => a + b, 0) / feelScores.length / 5
+      : 0.5
+
+  const lastFtp =
+    (ftpHistory ?? []).length > 0
+      ? [...(ftpHistory ?? [])]
+          .sort((a, b) => a.measuredAt.localeCompare(b.measuredAt))
+          .at(-1)?.ftpWatts ?? 0
+      : 0
+
+  const bioAxes = [
+    { key: "fitness", label: "Fitness", level: load ? clamp(load.ctl / 80) : 0.5 },
+    { key: "feel", label: "Feel", level: avgFeel || 0.5 },
+    { key: "form", label: "Form", level: load ? clamp((load.tsb + 30) / 60) : 0.5 },
+    { key: "power", label: "Power", level: lastFtp > 0 ? clamp(lastFtp / 350) : 0.5 },
+    {
+      key: "recovery",
+      label: "Recovery",
+      level: load
+        ? clamp(1 - load.atl / Math.max(load.ctl * 1.5, 60))
+        : 0.5,
+    },
+    {
+      key: "consistency",
+      label: "Consistency",
+      level: clamp((sessions ?? []).length / 10),
+    },
+  ]
+
+  const feelHistory = (sessions ?? [])
+    .filter((s) => s.feelScore != null)
+    .sort((a, b) => a.sessionDate.localeCompare(b.sessionDate))
+    .map((s) => s.feelScore!)
+
+  const showRadar = !loadLoading && !sessionsLoading
+  const showFeelHistory = feelHistory.length >= 2
 
   return (
     <ScreenShell section="Lab">
@@ -242,10 +286,7 @@ export default function LabPage() {
                 <div className="flex items-center gap-1.5">
                   <FormIcon
                     className="h-4 w-4"
-                    style={{
-                      color:
-                        load.tsb >= 0 ? ACCENT : "rgba(255,140,120,0.85)",
-                    }}
+                    style={{ color: load.tsb >= 0 ? ACCENT : "rgba(255,140,120,0.85)" }}
                     strokeWidth={2}
                   />
                   <span
@@ -283,9 +324,25 @@ export default function LabPage() {
         )}
       </section>
 
-      {/* 02 FTP DEVELOPMENT */}
+      {/* 02 PERFORMANCE RADAR */}
+      {showRadar && (
+        <section className="flex flex-col items-center">
+          <div className="flex w-full items-center justify-between">
+            <SectionLabel n="02" title="Performance Radar" />
+            <span className="font-mono text-[10px] tracking-[0.2em] text-white/30">
+              6 SIGNALS
+            </span>
+          </div>
+          <BioRadar size={260} accent={ACCENT} axes={bioAxes} />
+          <p className="mt-1 max-w-[18rem] text-pretty text-center text-[12px] leading-relaxed text-white/40">
+            Composite of fitness, feel, form, power, recovery &amp; consistency.
+          </p>
+        </section>
+      )}
+
+      {/* 03 FTP DEVELOPMENT */}
       <section>
-        <SectionLabel n="02" title="FTP Development" />
+        <SectionLabel n="03" title="FTP Development" />
         <div className="mt-4">
           {ftpLoading ? (
             <Skeleton className="h-24 w-full" />
@@ -295,9 +352,40 @@ export default function LabPage() {
         </div>
       </section>
 
-      {/* 03 RECENT SESSIONS */}
+      {/* 04 FEEL HISTORY */}
+      {showFeelHistory && (
+        <section>
+          <SectionLabel n="04" title="Feel history" />
+          <div className="mt-4 flex items-baseline justify-between">
+            <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+              RECENT SESSIONS
+            </span>
+            <span
+              className="font-mono text-[11px] tabular-nums"
+              style={{ color: ACCENT }}
+            >
+              {feelHistory[feelHistory.length - 1]}/5
+            </span>
+          </div>
+          <div className="mt-3 w-full">
+            <Sparkline
+              data={feelHistory}
+              width={340}
+              height={48}
+              stroke={ACCENT}
+              fill="rgba(120,210,230,0.07)"
+              className="w-full"
+            />
+          </div>
+          <p className="mt-3 text-[12px] leading-relaxed text-white/35">
+            Perceived effort quality across sessions · 1 (rough) → 5 (great)
+          </p>
+        </section>
+      )}
+
+      {/* 05 RECENT SESSIONS */}
       <section>
-        <SectionLabel n="03" title="Recent sessions" />
+        <SectionLabel n="05" title="Recent sessions" />
         {sessionsLoading ? (
           <div className="mt-4 space-y-3">
             {[0, 1, 2].map((i) => (

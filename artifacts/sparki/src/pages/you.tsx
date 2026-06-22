@@ -6,7 +6,7 @@ import { useAthleteExtendedProfile, useUpdateAthleteProfile } from "@/hooks/use-
 import { useLogDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useLogFtp } from "@/hooks/use-ftp-history"
 import { useClerk } from "@clerk/react"
-import { Check, Pencil } from "lucide-react"
+import { Check, Pencil, User, Activity, Bike, Zap, Scale, ChevronRight } from "lucide-react"
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
@@ -403,6 +403,66 @@ export default function YouPage() {
         </p>
         <div className="mt-4">
           <CheckInForm />
+        </div>
+      </section>
+
+      {/* PROFILE */}
+      <section>
+        <SectionLabel n="04" title="Profile" />
+        <div className="mt-3 flex flex-col">
+          {(
+            [
+              { icon: User, label: "Name", value: profile?.displayName ?? "—" },
+              {
+                icon: Activity,
+                label: "Role",
+                value: profile?.activeRole
+                  ? profile.activeRole.charAt(0).toUpperCase() +
+                    profile.activeRole.slice(1)
+                  : "Athlete",
+              },
+              {
+                icon: Bike,
+                label: "Discipline",
+                value: profile?.discipline ?? "Not set",
+              },
+              {
+                icon: Zap,
+                label: "FTP",
+                value: profile?.ftp ? `${profile.ftp}W` : "Not set",
+              },
+              {
+                icon: Scale,
+                label: "Weight",
+                value: profile?.weightKg ? `${profile.weightKg}kg` : "Not set",
+              },
+            ] as const
+          ).map((row) => {
+            const Icon = row.icon
+            return (
+              <div
+                key={row.label}
+                className="flex items-center gap-4 border-b border-white/[0.05] py-3.5 last:border-0"
+              >
+                <span
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border"
+                  style={{
+                    borderColor: "rgba(255,255,255,0.1)",
+                    background: "rgba(255,255,255,0.03)",
+                  }}
+                >
+                  <Icon className="h-4 w-4 text-white/55" strokeWidth={1.75} />
+                </span>
+                <span className="flex-1 text-[14px] tracking-tight text-white/85">
+                  {row.label}
+                </span>
+                <span className="font-mono text-[11px] tracking-wide text-white/40">
+                  {row.value}
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-white/20" strokeWidth={1.75} />
+              </div>
+            )
+          })}
         </div>
       </section>
 

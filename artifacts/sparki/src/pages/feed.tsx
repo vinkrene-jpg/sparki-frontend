@@ -143,35 +143,42 @@ export default function SparkiPage() {
       {history.length > 0 && (
         <section>
           <SectionLabel title="Recent" />
-          <div className="mt-3 flex flex-col gap-4">
+          <div className="mt-2 flex flex-col">
             {history.map((qa) => (
-              <div
+              <article
                 key={qa.id}
-                className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4"
+                className="relative flex gap-4 border-b border-white/[0.06] py-5 last:border-0"
               >
-                <p className="label-xs text-white/45">YOU ASKED</p>
-                <p className="mt-1.5 text-[13px] font-medium text-white/75">
-                  {qa.question}
-                </p>
-                <div
-                  className="my-3 h-px"
+                <span
+                  className="absolute left-0 top-5 h-8 w-px"
                   style={{
-                    background:
-                      "linear-gradient(90deg, rgba(120,210,230,0.2), transparent)",
+                    background: ACCENT,
+                    boxShadow: `0 0 8px ${ACCENT}`,
                   }}
                 />
-                <div className="flex items-start gap-2.5">
+                <div className="pl-4 shrink-0 pt-0.5">
                   <SparkiCore
-                    size={20}
+                    size={34}
                     accent={ACCENT}
                     readiness={0.9}
                     variant="orb"
                   />
-                  <p className="text-pretty text-[13px] leading-relaxed text-white/70">
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span
+                    className="font-mono text-[10px] tracking-[0.18em]"
+                    style={{ color: ACCENT }}
+                  >
+                    SPARKI AI
+                  </span>
+                  <h3 className="mt-1.5 font-sans text-[15px] font-light leading-snug text-white/90">
+                    {qa.question}
+                  </h3>
+                  <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-white/50">
                     {qa.answer}
                   </p>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         </section>

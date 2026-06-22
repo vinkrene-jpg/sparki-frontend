@@ -5,7 +5,6 @@ import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useAiBrief } from "@/hooks/use-ai-brief"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { useUserProfile } from "@/contexts/UserContext"
-import { Zap, BedDouble, HeartPulse, Flame } from "lucide-react"
 
 function todayLabel() {
   return new Date().toLocaleDateString("en-US", {
@@ -17,22 +16,39 @@ function todayLabel() {
 
 function Skeleton({ className = "" }: { className?: string }) {
   return (
-    <div
-      className={`animate-pulse rounded bg-white/[0.06] ${className}`}
-    />
+    <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
   )
 }
 
-function ReadinessWidget({
-  metrics,
-}: {
-  metrics: {
-    feelScore?: number | null
-    sleepQuality?: number | null
-    fatigueScore?: number | null
-    hrv?: number | null
-  } | null
-}) {
+type Metrics = {
+  feelScore?: number | null
+  sleepQuality?: number | null
+  fatigueScore?: number | null
+  hrv?: number | null
+} | null
+
+function computeReadiness(m: Metrics) {
+  if (!m) return null
+  const feel = m.feelScore != null ? m.feelScore / 5 : null
+  const sleep = m.sleepQuality != null ? m.sleepQuality / 5 : null
+  const fatigue = m.fatigueScore != null ? (10 - m.fatigueScore) / 9 : null
+  const parts = [feel, sleep, fatigue].filter((v): v is number => v !== null)
+  if (parts.length === 0) return null
+  const score = Math.round((parts.reduce((s, v) => s + v, 0) / parts.length) * 100)
+  const state =
+    score >= 80 ? "PEAK"
+    : score >= 65 ? "GOOD"
+    : score >= 50 ? "MODERATE"
+    : "LOW"
+  const advice =
+    score >= 80 ? "Maintain full session — conditions are ideal"
+    : score >= 65 ? "Go ahead — manage effort if needed"
+    : score >= 50 ? "Consider lower intensity today"
+    : "Rest recommended — recovery first"
+  return { score, state, advice }
+}
+
+function ReactorReadiness({ metrics }: { metrics: Metrics }) {
   if (!metrics) {
     return (
       <div className="flex flex-col items-center gap-3 py-2">
@@ -47,81 +63,51 @@ function ReadinessWidget({
     )
   }
 
-  const items: Array<{
-    icon: typeof Zap
-    label: string
-    value: string
-    level: number
-  }> = []
+  const result = computeReadiness(metrics)
 
-  if (metrics.feelScore != null)
-    items.push({
-      icon: Zap,
-      label: "Feel",
-      value: `${metrics.feelScore}/5`,
-      level: metrics.feelScore / 5,
-    })
-  if (metrics.sleepQuality != null)
-    items.push({
-      icon: BedDouble,
-      label: "Sleep",
-      value: `${metrics.sleepQuality}/5`,
-      level: metrics.sleepQuality / 5,
-    })
-  if (metrics.fatigueScore != null)
-    items.push({
-      icon: Flame,
-      label: "Fatigue",
-      value: `${metrics.fatigueScore}/10`,
-      level: 1 - metrics.fatigueScore / 10,
-    })
-  if (metrics.hrv != null)
-    items.push({
-      icon: HeartPulse,
-      label: "HRV",
-      value: `${metrics.hrv}ms`,
-      level: Math.min(metrics.hrv / 120, 1),
-    })
-
-  if (items.length === 0) {
+  if (!result) {
     return (
       <p className="text-center text-[12px] text-white/35">
-        Check-in logged · Add more data in You
+        Check-in logged · Add feel, sleep &amp; fatigue data
       </p>
     )
   }
 
+  const { score, state, advice } = result
+
   return (
-    <div className="grid grid-cols-2 gap-x-5 gap-y-4">
-      {items.map(({ icon: Icon, label, value, level }) => (
-        <div key={label} className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Icon className="h-3.5 w-3.5 text-white/40" strokeWidth={1.75} />
-              <span className="label-xs text-white/40">{label.toUpperCase()}</span>
-            </div>
-            <span
-              className="font-sans text-[11px] font-light tabular-nums"
-              style={{
-                color: ACCENT,
-                fontVariantNumeric: "tabular-nums lining-nums",
-              }}
-            >
-              {value}
-            </span>
-          </div>
-          <div className="h-1 overflow-hidden rounded-full bg-white/[0.08]">
-            <div
-              className="h-full rounded-full transition-all"
-              style={{
-                width: `${Math.round(level * 100)}%`,
-                background: ACCENT,
-                boxShadow: `0 0 6px ${ACCENT}`,
-              }}
-            />
-          </div>
+    <div className="flex flex-col items-center">
+      <div className="relative flex items-center justify-center py-2">
+        <SparkiCore
+          size={240}
+          accent={ACCENT}
+          readiness={score / 100}
+          variant="reactor"
+        />
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+          <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/80">
+            READINESS
+          </span>
+          <span
+            className="font-sans text-7xl font-extralight leading-none tabular-nums"
+            style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
+          >
+            {score}
+          </span>
+          <span className="mt-1 font-mono text-[11px] tracking-[0.25em] text-white/50">
+            {state}
+          </span>
         </div>
-      ))}
+      </div>
+      <div className="mt-2 flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/[0.06] px-4 py-2 backdrop-blur-sm">
+        <span
+          className="h-1.5 w-1.5 shrink-0 rounded-full"
+          style={{ background: ACCENT, boxShadow: `0 0 8px ${ACCENT}` }}
+        />
+        <span className="text-sm font-medium leading-tight tracking-tight text-white/90">
+          {advice}
+        </span>
+      </div>
     </div>
   )
 }
@@ -236,20 +222,19 @@ function WeekTSSBars({
                     background: isToday
                       ? `linear-gradient(180deg, ${ACCENT}, rgba(120,210,230,0.15))`
                       : "rgba(120,210,230,0.3)",
-                    boxShadow: isToday
-                      ? `0 0 8px rgba(120,210,230,0.4)`
-                      : "none",
+                    boxShadow: isToday ? `0 0 8px rgba(120,210,230,0.4)` : "none",
                   }}
                 />
               ) : (
-                <div className="w-full rounded-t-sm bg-white/[0.05]" style={{ height: 3 }} />
+                <div
+                  className="w-full rounded-t-sm bg-white/[0.05]"
+                  style={{ height: 3 }}
+                />
               )}
             </div>
             <span
               className="label-xs"
-              style={{
-                color: isToday ? ACCENT : "rgba(255,255,255,0.25)",
-              }}
+              style={{ color: isToday ? ACCENT : "rgba(255,255,255,0.25)" }}
             >
               {day}
             </span>
@@ -266,14 +251,13 @@ export function TrainingDayHome() {
   const { data: brief, isLoading: briefLoading } = useAiBrief(aiEnabled)
   const { profile: userProfile } = useUserProfile()
 
-  const firstName =
-    userProfile?.displayName?.split(" ")[0] ?? "Athlete"
+  const firstName = userProfile?.displayName?.split(" ")[0] ?? "Athlete"
 
   return (
     <ScreenShell section="Home">
       {/* GREETING */}
       <div className="-mt-2">
-        <p className="label-sm text-white/35">
+        <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
           {todayLabel().toUpperCase()} · PERFORMANCE CENTER
         </p>
         <h1 className="mt-2 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
@@ -282,13 +266,13 @@ export function TrainingDayHome() {
         {isLoading ? (
           <Skeleton className="mt-1.5 h-4 w-40" />
         ) : data?.athleteProfile?.ftp ? (
-          <p className="mt-1.5 label-sm text-white/40">
+          <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
             {data.athleteProfile.discipline ?? "Cyclist"} · FTP{" "}
             {data.athleteProfile.ftp}W
             {data.athleteProfile.wkg ? ` · ${data.athleteProfile.wkg} W/kg` : ""}
           </p>
         ) : (
-          <p className="mt-1.5 label-sm text-white/35">
+          <p className="mt-1 font-mono text-[11px] tracking-wide text-white/35">
             Set your FTP in{" "}
             <span style={{ color: ACCENT }}>Profile</span> to get started
           </p>
@@ -312,18 +296,17 @@ export function TrainingDayHome() {
         <SectionLabel n="02" title="Readiness" />
         <div className="mt-4">
           {isLoading ? (
-            <div className="grid grid-cols-2 gap-x-5 gap-y-4">
-              {[0, 1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-10 w-full" />
-              ))}
+            <div className="flex flex-col items-center gap-4">
+              <Skeleton className="h-60 w-60 rounded-full" />
+              <Skeleton className="h-8 w-56 rounded-full" />
             </div>
           ) : (
-            <ReadinessWidget metrics={data?.todayMetrics ?? null} />
+            <ReactorReadiness metrics={data?.todayMetrics ?? null} />
           )}
         </div>
       </section>
 
-      {/* TRAINING LOAD */}
+      {/* 7-DAY LOAD */}
       <section>
         <SectionLabel n="03" title="7-Day Load" />
         <div className="mt-4">
@@ -337,7 +320,10 @@ export function TrainingDayHome() {
                   <span className="label-xs text-white/35">FITNESS (CTL)</span>
                   <span
                     className="font-sans text-[15px] font-light tabular-nums"
-                    style={{ color: ACCENT, fontVariantNumeric: "tabular-nums lining-nums" }}
+                    style={{
+                      color: ACCENT,
+                      fontVariantNumeric: "tabular-nums lining-nums",
+                    }}
                   >
                     {data.load.ctl}
                   </span>
@@ -359,9 +345,7 @@ export function TrainingDayHome() {
                     className="font-sans text-[15px] font-light tabular-nums"
                     style={{
                       color:
-                        data.load.tsb >= 0
-                          ? ACCENT
-                          : "rgba(255,140,120,0.85)",
+                        data.load.tsb >= 0 ? ACCENT : "rgba(255,140,120,0.85)",
                       fontVariantNumeric: "tabular-nums lining-nums",
                     }}
                   >
@@ -412,9 +396,7 @@ export function TrainingDayHome() {
       )}
 
       <footer className="pt-2 text-center">
-        <span className="label-xs text-white/20">
-          SPARKI AI PERFORMANCE CENTER
-        </span>
+        <span className="label-xs text-white/20">SPARKI AI PERFORMANCE CENTER</span>
       </footer>
     </ScreenShell>
   )
