@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   ClerkProvider,
   SignIn,
   SignUp,
   Show,
   useClerk,
+  useUser,
 } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { dark } from "@clerk/themes";
@@ -12,6 +13,7 @@ import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wo
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { BottomNav } from "@/components/sparki/bottom-nav";
 import { TrainingDayHome } from "@/components/sparki/training-day-home";
+import { OnboardingFlow } from "@/components/sparki/onboarding-flow";
 import { ErrorBoundary } from "@/components/sparki/error-boundary";
 import NotFound from "@/pages/not-found";
 import FeedPage from "@/pages/feed";
@@ -21,7 +23,7 @@ import LabPage from "@/pages/lab";
 import LandingPage from "@/pages/landing";
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
-import { UserProvider } from "@/contexts/UserContext";
+import { UserProvider, useUserProfile } from "@/contexts/UserContext";
 import { FeatureFlagProvider } from "@/contexts/FeatureFlagContext";
 import { STALE } from "@/lib/query-keys";
 
@@ -128,14 +130,60 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
+function SignedInHome() {
+  const { user } = useUser();
+  const qc = useQueryClient();
+  const { refetch: refetchUser } = useUserProfile();
+  const [onboarded, setOnboarded] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    const flag = localStorage.getItem(`sparki_onboarded_${user.id}`);
+    setOnboarded(flag === "true");
+  }, [user?.id]);
+
+  const handleComplete = useCallback(() => {
+    if (user) {
+      localStorage.setItem(`sparki_onboarded_${user.id}`, "true");
+    }
+    // Refresh UserContext (picks up new displayName) + all athlete queries
+    void refetchUser();
+    void qc.invalidateQueries();
+    setOnboarded(true);
+  }, [user, qc, refetchUser]);
+
+  // Brief dark flash while checking localStorage
+  if (onboarded === null) {
+    return <div className="min-h-dvh bg-[#040506]" />;
+  }
+
+  if (!onboarded) {
+    return (
+      <OnboardingFlow
+        clerkUser={{
+          id: user?.id ?? "",
+          firstName: user?.firstName ?? null,
+          lastName: user?.lastName ?? null,
+          username: user?.username ?? null,
+        }}
+        onComplete={handleComplete}
+      />
+    );
+  }
+
+  return (
+    <>
+      <TrainingDayHome />
+      <BottomNav />
+    </>
+  );
+}
+
 function HomeRedirect() {
   return (
     <>
       <Show when="signed-in">
-        <>
-          <TrainingDayHome />
-          <BottomNav />
-        </>
+        <SignedInHome />
       </Show>
       <Show when="signed-out">
         <LandingPage />

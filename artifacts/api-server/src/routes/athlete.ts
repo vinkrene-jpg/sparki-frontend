@@ -123,15 +123,23 @@ router.get("/profile", requireAuth, async (req, res) => {
 // ── PUT /api/athlete/profile ─────────────────────────────────────────────────
 router.put("/profile", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
-  const { ftp, weightKg, discipline, goals, weeklyHourTarget } = req.body as {
+  const { ftp, weightKg, discipline, goals, weeklyHourTarget, displayName } = req.body as {
     ftp?: number;
     weightKg?: string;
     discipline?: string;
     goals?: string;
     weeklyHourTarget?: number;
+    displayName?: string;
   };
 
   try {
+    if (displayName != null) {
+      await db
+        .update(userProfilesTable)
+        .set({ displayName, updatedAt: new Date() })
+        .where(eq(userProfilesTable.clerkId, clerkId));
+    }
+
     const [updated] = await db
       .update(athleteProfilesTable)
       .set({
