@@ -2,6 +2,7 @@ import { Router } from "express";
 import { eq } from "drizzle-orm";
 import { db, userProfilesTable, athleteProfilesTable, validRoles, type Role } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { isAdmin } from "../lib/flags";
 
 const router = Router();
 
@@ -55,7 +56,7 @@ router.get("/me", requireAuth, async (req, res) => {
       return;
     }
 
-    res.json(profile);
+    res.json({ ...profile, isAdmin: isAdmin(clerkId) });
   } catch (err) {
     req.log.error({ err }, "auth.me failed");
     res.status(500).json({ error: "Internal server error" });

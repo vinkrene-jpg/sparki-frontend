@@ -8,6 +8,8 @@ import FeedPage from "@/pages/feed"
 import LabPage from "@/pages/lab"
 import YouPage from "@/pages/you"
 import RacesPage from "@/pages/races"
+import InvitationsPage from "@/pages/invitations"
+import InviteAcceptPage from "@/pages/invite-accept"
 import LandingPage from "@/pages/landing"
 
 const LANDING_PATH = "/_dev/landing"
@@ -43,6 +45,7 @@ const VIEWS: DevView[] = [
   { label: "Feed", path: "/feed" },
   { label: "Lab", path: "/lab" },
   { label: "You", path: "/you" },
+  { label: "Invites", path: "/invitations" },
 ]
 
 function isActive(current: string, path: string): boolean {
@@ -146,6 +149,11 @@ export function DevPreview() {
     page = <YouPage />
   } else if (location.startsWith("/races")) {
     page = <RacesPage />
+  } else if (location.startsWith("/invitations")) {
+    page = <InvitationsPage />
+  } else if (location.startsWith("/invite/")) {
+    page = <InviteAcceptPage />
+    showNav = false
   } else {
     page = <DayHome devDayTypeOverride={dayType} />
     isHome = true

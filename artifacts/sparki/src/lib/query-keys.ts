@@ -53,6 +53,12 @@ export const queryKeys = {
     all: () => ["races"] as const,
     list: () => ["races", "list"] as const,
   },
+
+  invitations: {
+    all: () => ["invitations"] as const,
+    list: () => ["invitations", "list"] as const,
+    detail: (token: string) => ["invitations", "detail", token] as const,
+  },
 } as const;
 
 /** Default stale times (ms) — import these rather than hardcoding magic numbers. */

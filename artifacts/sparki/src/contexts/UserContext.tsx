@@ -18,6 +18,7 @@ export interface UserProfile {
   displayName: string | null;
   roles: Role[];
   activeRole: Role;
+  isAdmin?: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -4,4 +4,5 @@ export * from "./athlete-training";
 export * from "./athlete-metrics";
 export * from "./races";
 export * from "./links";
+export * from "./invitations";
 export * from "./feature-flags";

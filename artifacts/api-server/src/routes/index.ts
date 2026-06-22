@@ -4,6 +4,7 @@ import authRouter from "./auth";
 import flagsRouter from "./flags";
 import athleteRouter from "./athlete";
 import racesRouter from "./races";
+import invitationsRouter from "./invitations";
 import aiRouter from "./ai";
 
 const router: IRouter = Router();
@@ -13,6 +14,7 @@ router.use("/auth", authRouter);
 router.use("/flags", flagsRouter);
 router.use("/athlete", athleteRouter);
 router.use("/races", racesRouter);
+router.use("/invitations", invitationsRouter);
 router.use("/ai", aiRouter);
 
 export default router;

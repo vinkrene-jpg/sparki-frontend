@@ -25,6 +25,8 @@ import TrainPage from "@/pages/train";
 import YouPage from "@/pages/you";
 import LabPage from "@/pages/lab";
 import RacesPage from "@/pages/races";
+import InvitationsPage from "@/pages/invitations";
+import InviteAcceptPage from "@/pages/invite-accept";
 import LandingPage from "@/pages/landing";
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
@@ -269,6 +271,12 @@ function AppRouter() {
                 </Route>
                 <Route path="/races">
                   <ProtectedPage component={RacesPage} />
+                </Route>
+                <Route path="/invitations">
+                  <ProtectedPage component={InvitationsPage} />
+                </Route>
+                <Route path="/invite/:token">
+                  <ProtectedPage component={InviteAcceptPage} />
                 </Route>
                 {import.meta.env.DEV && PreviewPage && (
                   <Route path="/preview">
