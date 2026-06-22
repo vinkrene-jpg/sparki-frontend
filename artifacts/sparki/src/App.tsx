@@ -21,6 +21,7 @@ import LandingPage from "@/pages/landing";
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
 import { UserProvider } from "@/contexts/UserContext";
+import { FeatureFlagProvider } from "@/contexts/FeatureFlagContext";
 
 const queryClient = new QueryClient();
 
@@ -179,6 +180,7 @@ function AppRouter() {
       <QueryClientProvider client={queryClient}>
         <ClerkQueryClientCacheInvalidator />
         <UserProvider>
+          <FeatureFlagProvider>
           <Switch>
             <Route path="/" component={HomeRedirect} />
             {/* REQUIRED — /*? is the only wouter syntax for Clerk OAuth sub-paths */}
@@ -198,6 +200,7 @@ function AppRouter() {
             </Route>
             <Route component={NotFound} />
           </Switch>
+          </FeatureFlagProvider>
         </UserProvider>
       </QueryClientProvider>
     </ClerkProvider>
