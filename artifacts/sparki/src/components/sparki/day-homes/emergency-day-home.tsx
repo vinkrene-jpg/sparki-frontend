@@ -1,6 +1,8 @@
-// Rest-day homepage (blueprint §4 #8). Full rest — no training. The day still
-// surfaces readiness + recovery data so nothing is lost vs. the training home,
-// but framed around adaptation. One primary action (briefing) + ≤3 notes.
+// Emergency / Health day homepage (blueprint §4 #1). Highest priority: when the
+// athlete has marked themselves sick or injured, Home switches to this calm,
+// recovery-only view. There is NO training pressure — readiness and recovery
+// data lead, guidance is gentle, and the single action clears the status once
+// the athlete is better. Honours grondregel 5 (one action, ≤3 recommendations).
 
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel } from "@/components/sparki/ui"
@@ -11,31 +13,37 @@ import {
   VitalsGrid,
   Skeleton,
 } from "@/components/sparki/home-sections"
-import { HealthStatusControl } from "@/components/sparki/health-status-control"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
+import { useSetHealthStatus } from "@/hooks/use-health-status"
 import type { DayHomeComponentProps } from "@/lib/day-type"
 
-const REST_GUIDANCE = [
-  "Geen gestructureerde training vandaag — volledige rust.",
-  "Gebruik de dag voor slaap, lichte mobiliteit en goede voeding.",
-  "Adaptatie gebeurt tijdens rust — dit is waar je sterker wordt.",
+const RECOVERY_GUIDANCE = [
+  "Geen training vandaag — geef je lichaam volledige rust om te herstellen.",
+  "Slaap, hydratatie en goede voeding zijn nu je belangrijkste werk.",
+  "Voel je je beter? Markeer jezelf als hersteld om weer op te bouwen.",
 ]
 
-export function RestDayHome({ briefing }: DayHomeComponentProps) {
+export function EmergencyDayHome({ briefing }: DayHomeComponentProps) {
   const { data, isLoading } = useAthleteDashboard()
   const { data: metricsHistory, isLoading: metricsLoading } = useDailyMetrics(14)
+  const setStatus = useSetHealthStatus()
   const profile = data?.athleteProfile
+  const status = profile?.healthStatus
 
   return (
     <ScreenShell section="Home" bg="/concept-lab.png">
-      <HomeIntro kicker="RUSTDAG" profile={profile} isLoading={isLoading} />
+      <HomeIntro
+        kicker={status === "injured" ? "BLESSURE" : "HERSTEL VEREIST"}
+        profile={profile}
+        isLoading={isLoading}
+      />
 
       {!isLoading && <DayTypeBriefing config={briefing} />}
 
-      {/* 01 BEN IK ER KLAAR VOOR — check-in blijft beschikbaar */}
+      {/* 01 HOE STA JE ERVOOR — readiness blijft zichtbaar, zonder druk */}
       <section>
-        <SectionLabel n="01" title="Ben ik er klaar voor" large />
+        <SectionLabel n="01" title="Hoe sta je ervoor" large />
         <div className="mt-4">
           {isLoading ? (
             <div className="flex flex-col items-center gap-4">
@@ -72,16 +80,22 @@ export function RestDayHome({ briefing }: DayHomeComponentProps) {
         </div>
       </section>
 
-      {/* 03 WAAROM RUST — ≤3 (grondregel 5) */}
+      {/* 03 WAT NU — kalme herstelrichtlijnen (≤3, grondregel 5) */}
       <section>
-        <SectionLabel n="03" title="Waarom rust" large />
+        <SectionLabel n="03" title="Wat nu" large />
         <ul className="mt-4 space-y-3">
-          {REST_GUIDANCE.map((tip) => (
+          {RECOVERY_GUIDANCE.map((tip) => (
             <li
               key={tip}
               className="flex gap-3 rounded-xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
             >
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-white/40" />
+              <span
+                className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{
+                  background: "rgba(255,140,120,0.9)",
+                  boxShadow: "0 0 8px rgba(255,140,120,0.9)",
+                }}
+              />
               <span className="text-[13px] leading-relaxed text-white/70">
                 {tip}
               </span>
@@ -90,7 +104,15 @@ export function RestDayHome({ briefing }: DayHomeComponentProps) {
         </ul>
       </section>
 
-      <HealthStatusControl />
+      {/* Herstel-actie — clear de status zodra je weer fit bent */}
+      <button
+        type="button"
+        disabled={setStatus.isPending}
+        onClick={() => setStatus.mutate("ok")}
+        className="w-full rounded-full border border-cyan-300/30 bg-cyan-300/[0.06] px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-cyan-200/90 transition-colors hover:bg-cyan-300/[0.12] disabled:opacity-50"
+      >
+        {setStatus.isPending ? "Bijwerken…" : "Ik ben weer hersteld"}
+      </button>
 
       <footer className="pt-2 text-center">
         <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">

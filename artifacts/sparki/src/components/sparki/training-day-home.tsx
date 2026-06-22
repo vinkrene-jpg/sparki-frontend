@@ -11,6 +11,7 @@ import { useLoad } from "@/hooks/use-load"
 import { useSessions } from "@/hooks/use-sessions"
 import type { DayType, DayTypeBriefingConfig } from "@/lib/day-type"
 import { DayTypeBriefing } from "@/components/sparki/day-type-briefing"
+import { HealthStatusControl } from "@/components/sparki/health-status-control"
 import {
   HomeIntro,
   ReactorReadiness,
@@ -106,41 +107,123 @@ export function TrainingDayHome({
             <Skeleton className="h-28 w-full rounded-2xl" />
           ) : data?.todayWorkout ? (
             <>
-              <div className="flex items-end justify-between">
-                <div>
-                  <h2 className="font-sans text-2xl font-light tracking-tight">
-                    {data.todayWorkout.title}
-                  </h2>
-                  <p className="mt-1 font-mono text-[11px] tracking-wide text-white/45">
-                    {data.todayWorkout.type}
-                    {data.todayWorkout.targetDurationMin
-                      ? ` · ${data.todayWorkout.targetDurationMin}m`
-                      : ""}
-                    {data.todayWorkout.targetTSS
-                      ? ` · ${data.todayWorkout.targetTSS} TSS`
-                      : ""}
-                  </p>
-                  {/* Bron-attributie — coach-plan vs. Sparki (grondregel 4) */}
-                  <p
-                    className="mt-1.5 font-mono text-[10px] tracking-[0.16em]"
+              {isCoachDay ? (
+                <div className="space-y-3">
+                  {/* COACH ZEGT — het plan + notities, of een expliciete
+                      interpretatie-melding wanneer er geen notities zijn. */}
+                  <div
+                    className="rounded-2xl border p-5 backdrop-blur-md"
                     style={{
-                      color: isCoachDay
-                        ? "rgba(170,235,248,0.9)"
-                        : ACCENT,
+                      borderColor: "rgba(170,235,248,0.25)",
+                      background: "rgba(10,20,30,0.82)",
                     }}
                   >
-                    {isCoachDay
-                      ? "COACH ZEGT · door je coach ingepland"
-                      : "SPARKI LEGT UIT · afgestemd op je vorm"}
-                  </p>
+                    <span
+                      className="font-mono text-[10px] tracking-[0.22em]"
+                      style={{ color: "rgba(170,235,248,0.95)" }}
+                    >
+                      COACH ZEGT
+                    </span>
+                    <h2 className="mt-2 font-sans text-2xl font-light tracking-tight">
+                      {data.todayWorkout.title}
+                    </h2>
+                    <p className="mt-1 font-mono text-[11px] tracking-wide text-white/45">
+                      {data.todayWorkout.type}
+                      {data.todayWorkout.targetDurationMin
+                        ? ` · ${data.todayWorkout.targetDurationMin}m`
+                        : ""}
+                      {data.todayWorkout.targetTSS
+                        ? ` · ${data.todayWorkout.targetTSS} TSS`
+                        : ""}
+                    </p>
+                    {data.todayWorkout.description ? (
+                      <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/75">
+                        {data.todayWorkout.description}
+                      </p>
+                    ) : (
+                      <p className="mt-3 text-pretty text-[12px] italic leading-relaxed text-white/45">
+                        Geen notities van je coach — Sparki interpreteert het doel
+                        hieronder.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* SPARKI LEGT UIT — ondersteunt de coach, vervangt nooit
+                      (grondregel 4: coach first). Alleen afgeleide/echte data;
+                      externe bronnen zijn expliciet gelabeld, nooit verzonnen. */}
+                  <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+                    <div className="flex items-center gap-2">
+                      <SparkiCore
+                        size={20}
+                        accent={ACCENT}
+                        readiness={0.9}
+                        variant="orb"
+                      />
+                      <span
+                        className="font-mono text-[10px] tracking-[0.22em]"
+                        style={{ color: ACCENT }}
+                      >
+                        SPARKI LEGT UIT
+                      </span>
+                    </div>
+                    <ul className="mt-3 space-y-2 text-[13px] leading-relaxed text-white/70">
+                      <li>
+                        Verwachte belasting:{" "}
+                        {data.todayWorkout.targetTSS
+                          ? `${data.todayWorkout.targetTSS} TSS`
+                          : "—"}
+                        {data.todayWorkout.targetDurationMin
+                          ? ` · ${data.todayWorkout.targetDurationMin} min`
+                          : ""}
+                        .
+                      </li>
+                      {data?.load != null && (
+                        <li>
+                          Je huidige vorm (TSB) is {data.load.tsb > 0 ? "+" : ""}
+                          {data.load.tsb} —{" "}
+                          {data.load.tsb >= 0
+                            ? "fris genoeg voor kwaliteit"
+                            : "let op vermoeidheid"}
+                          .
+                        </li>
+                      )}
+                      <li className="text-white/45">
+                        Weer, route &amp; beste vertrektijd — externe koppeling
+                        volgt (nog geen live data).
+                      </li>
+                    </ul>
+                  </div>
                 </div>
-                <span
-                  className="font-mono text-[10px] tracking-[0.2em]"
-                  style={{ color: ACCENT }}
-                >
-                  ZONE 4
-                </span>
-              </div>
+              ) : (
+                <div className="flex items-end justify-between">
+                  <div>
+                    <h2 className="font-sans text-2xl font-light tracking-tight">
+                      {data.todayWorkout.title}
+                    </h2>
+                    <p className="mt-1 font-mono text-[11px] tracking-wide text-white/45">
+                      {data.todayWorkout.type}
+                      {data.todayWorkout.targetDurationMin
+                        ? ` · ${data.todayWorkout.targetDurationMin}m`
+                        : ""}
+                      {data.todayWorkout.targetTSS
+                        ? ` · ${data.todayWorkout.targetTSS} TSS`
+                        : ""}
+                    </p>
+                    <p
+                      className="mt-1.5 font-mono text-[10px] tracking-[0.16em]"
+                      style={{ color: ACCENT }}
+                    >
+                      SPARKI LEGT UIT · afgestemd op je vorm
+                    </p>
+                  </div>
+                  <span
+                    className="font-mono text-[10px] tracking-[0.2em]"
+                    style={{ color: ACCENT }}
+                  >
+                    ZONE 4
+                  </span>
+                </div>
+              )}
 
               {/* week TSS bars as session load visualization */}
               {data.weekTSS && data.weekTSS.length > 0 && (
@@ -402,6 +485,8 @@ export function TrainingDayHome({
           )}
         </div>
       </section>
+
+      <HealthStatusControl />
 
       <footer className="pt-2 text-center">
         <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">

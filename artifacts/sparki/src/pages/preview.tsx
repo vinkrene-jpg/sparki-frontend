@@ -3,6 +3,12 @@ import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { SparkiCore } from "@/components/sparki/sparki-core"
 import { BioRadar } from "@/components/sparki/bio-radar"
 import { Sparkline } from "@/components/sparki/primitives"
+import { DayTypeBriefing } from "@/components/sparki/day-type-briefing"
+import {
+  getDayTypeBriefing,
+  type DayType,
+  type DayTypeContext,
+} from "@/lib/day-type"
 import { User, Activity, Bike, Zap, Scale, ChevronRight } from "lucide-react"
 
 const PREVIEW_SCORE = 84
@@ -99,10 +105,88 @@ function ScreenLabel({ label }: { label: string }) {
   )
 }
 
+const PREVIEW_DAY_TYPES: { type: DayType; label: string; ctx: DayTypeContext }[] =
+  [
+    {
+      type: "emergency",
+      label: "EMERGENCY · ZIEK / GEBLESSEERD",
+      ctx: { todayWorkout: null, hasProfile: true, healthStatus: "sick" },
+    },
+    {
+      type: "coach_training",
+      label: "COACH TRAINING",
+      ctx: {
+        todayWorkout: {
+          type: "Threshold",
+          source: "coach",
+          title: "2×20 @ FTP",
+        },
+        hasProfile: true,
+        healthStatus: "ok",
+      },
+    },
+    {
+      type: "sparki_training",
+      label: "SPARKI TRAINING",
+      ctx: {
+        todayWorkout: {
+          type: "VO2",
+          source: "sparki",
+          title: "5×4 VO2max",
+        },
+        hasProfile: true,
+        healthStatus: "ok",
+      },
+    },
+    {
+      type: "recovery",
+      label: "RECOVERY",
+      ctx: {
+        todayWorkout: {
+          type: "Recovery",
+          source: "sparki",
+          title: "Hersteltrap Z1",
+        },
+        hasProfile: true,
+        healthStatus: "ok",
+      },
+    },
+    {
+      type: "rest",
+      label: "REST",
+      ctx: { todayWorkout: null, hasProfile: true, healthStatus: "ok" },
+    },
+    {
+      type: "general",
+      label: "GENERAL · NO-TRAINING FALLBACK",
+      ctx: { todayWorkout: null, hasProfile: true, healthStatus: "ok" },
+    },
+  ]
+
+function DayTypeCatalog() {
+  return (
+    <>
+      <ScreenLabel label="DAY-TYPE BRIEFINGS · §4 ENGINE" />
+      <section className="mx-auto flex max-w-md flex-col gap-5 px-6 pb-10">
+        {PREVIEW_DAY_TYPES.map((d) => (
+          <div key={d.type} className="flex flex-col gap-2">
+            <span className="font-mono text-[9px] tracking-[0.28em] text-white/35">
+              {d.label}
+            </span>
+            <DayTypeBriefing config={getDayTypeBriefing(d.type, d.ctx)} />
+          </div>
+        ))}
+      </section>
+    </>
+  )
+}
+
 export default function PreviewPage() {
   return (
     <div className="min-h-dvh bg-[#040506] text-white">
       <PreviewBanner />
+
+      <DayTypeCatalog />
 
       {/* ── HOME ── */}
       <ScreenLabel label="HOME · READINESS REACTOR" />

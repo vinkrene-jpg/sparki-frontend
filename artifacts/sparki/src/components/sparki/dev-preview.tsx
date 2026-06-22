@@ -22,6 +22,7 @@ const DAY_TYPE_OPTIONS: { label: string; value?: DayType }[] = [
   { label: "Herstel", value: "recovery" },
   { label: "Rust", value: "rest" },
   { label: "Algemeen", value: "general" },
+  { label: "Ziek", value: "emergency" },
 ]
 
 type DevView = {

@@ -29,9 +29,9 @@ export type DayTypeContext = {
     title?: string | null;
   } | null;
   hasProfile: boolean;
-  // Reserved for later phases — absent today, so the matching day types stay
-  // dormant. Wiring these up is the entry point for the Emergency and Race
-  // homepages without touching the core-day logic below.
+  // Athlete-set health status — drives the Emergency homepage. Race fields below
+  // stay reserved for a later phase (no races/events source yet), keeping those
+  // day types dormant without touching the core-day logic.
   healthStatus?: "ok" | "sick" | "injured" | null;
   race?: { isToday: boolean; isDayBefore: boolean; isThisWeek: boolean } | null;
 };
@@ -41,31 +41,41 @@ function isRecoveryWorkout(type: string): boolean {
   return t.includes("recovery") || t.includes("herstel");
 }
 
+function isRestWorkout(type: string): boolean {
+  const t = type.toLowerCase();
+  return t.includes("rest") || t.includes("rust") || t.includes("off");
+}
+
 /**
  * Resolve the day type from context using the blueprint §4 hierarchy
  * (high → low). The first matching rule wins.
  */
 export function detectDayType(ctx: DayTypeContext): DayType {
-  // 1. Emergency / health (dormant until health status exists)
+  // 1. Emergency / health — athlete-set sick/injury blocks training.
   if (ctx.healthStatus === "sick" || ctx.healthStatus === "injured") {
     return "emergency";
   }
-  // 2–4. Race window (dormant until a races/events source exists)
+  // 2–4. Race window (dormant until a races/events source exists).
   if (ctx.race?.isToday) return "race_day";
   if (ctx.race?.isDayBefore) return "day_before_race";
   if (ctx.race?.isThisWeek) return "race_week";
 
-  // 5–7. Training days (blueprint §4 order: coach → sparki → recovery).
-  // Coach plans win over Sparki plans (grondregel 4). SparkiTraining covers the
-  // intense/normal sessions; a recovery-type workout that isn't coach-planned
-  // resolves to Recovery so it gets the "keep it easy" briefing.
   const w = ctx.todayWorkout;
-  if (w && w.source === "coach") return "coach_training";
-  if (w && !isRecoveryWorkout(w.type)) return "sparki_training";
-  if (w) return "recovery";
+  if (w) {
+    // An explicitly planned rest day is "Rest" — it is not training, so it wins
+    // over the coach/sparki branches regardless of who planned it (§4 #8).
+    if (isRestWorkout(w.type)) return "rest";
+    // 5. Coach plans lead (grondregel 4) — including coach-planned recovery
+    //    sessions, per §4 #7 ("a recovery workout NOT planned by the coach").
+    if (w.source === "coach") return "coach_training";
+    // 7. A non-coach recovery workout → Recovery ("keep it easy" briefing).
+    if (isRecoveryWorkout(w.type)) return "recovery";
+    // 6. Everything else is a normal/intense Sparki session.
+    return "sparki_training";
+  }
 
-  // 8–9. No workout planned → rest; no profile at all → general fallback.
-  if (ctx.hasProfile) return "rest";
+  // 9. No workout at all → General / no-training fallback (rich briefing).
+  //    Rest (#8) is reserved for explicitly planned rest days above.
   return "general";
 }
 

@@ -17,6 +17,7 @@ export type AthleteProfile = {
   discipline: string | null;
   goals: string | null;
   weeklyHourTarget: number | null;
+  healthStatus: "ok" | "sick" | "injured";
   zones: Zone[] | null;
   wkg: number | null;
   createdAt: string;

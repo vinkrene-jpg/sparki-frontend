@@ -11,6 +11,7 @@ import {
   VitalsGrid,
   Skeleton,
 } from "@/components/sparki/home-sections"
+import { HealthStatusControl } from "@/components/sparki/health-status-control"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import type { DayHomeComponentProps } from "@/lib/day-type"
@@ -94,6 +95,8 @@ export function RecoveryDayHome({ briefing }: DayHomeComponentProps) {
           ))}
         </ul>
       </section>
+
+      <HealthStatusControl />
 
       <footer className="pt-2 text-center">
         <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">

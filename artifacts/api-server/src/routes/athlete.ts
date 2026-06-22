@@ -171,6 +171,38 @@ router.put("/profile", requireAuth, async (req, res) => {
   }
 });
 
+// ── PUT /api/athlete/health-status ───────────────────────────────────────────
+// Athlete-set health status (blueprint §4 #1). Setting "sick"/"injured" routes
+// Home to the calm Emergency recovery-only view; "ok" clears it.
+router.put("/health-status", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const { healthStatus } = req.body as { healthStatus?: string };
+
+  const allowed = ["ok", "sick", "injured"] as const;
+  if (!healthStatus || !allowed.includes(healthStatus as (typeof allowed)[number])) {
+    res.status(400).json({ error: "healthStatus must be one of: ok, sick, injured" });
+    return;
+  }
+
+  try {
+    const [updated] = await db
+      .update(athleteProfilesTable)
+      .set({ healthStatus, updatedAt: new Date() })
+      .where(eq(athleteProfilesTable.clerkId, clerkId))
+      .returning();
+
+    if (!updated) {
+      res.status(404).json({ error: "Profile not found" });
+      return;
+    }
+
+    res.json({ healthStatus: updated.healthStatus });
+  } catch (err) {
+    req.log.error({ err }, "athlete.health-status PUT failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ── GET /api/athlete/dashboard ───────────────────────────────────────────────
 router.get("/dashboard", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;

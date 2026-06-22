@@ -19,6 +19,7 @@ import { TrainingDayHome } from "@/components/sparki/training-day-home"
 import { RecoveryDayHome } from "@/components/sparki/day-homes/recovery-day-home"
 import { RestDayHome } from "@/components/sparki/day-homes/rest-day-home"
 import { GeneralDayHome } from "@/components/sparki/day-homes/general-day-home"
+import { EmergencyDayHome } from "@/components/sparki/day-homes/emergency-day-home"
 import { BriefingOnlyHome } from "@/components/sparki/day-homes/briefing-only-home"
 
 // DayType → homepage component. Coach/Sparki training share the full training
@@ -28,7 +29,7 @@ const dayHomeRegistry: Record<
   DayType,
   (props: DayHomeComponentProps) => ReactElement
 > = {
-  emergency: BriefingOnlyHome,
+  emergency: EmergencyDayHome,
   race_day: BriefingOnlyHome,
   day_before_race: BriefingOnlyHome,
   race_week: BriefingOnlyHome,
@@ -70,6 +71,7 @@ export function DayHome({
         }
       : null,
     hasProfile: !!profile,
+    healthStatus: profile?.healthStatus ?? null,
   }
 
   // Wait for the dashboard before picking a non-override type — otherwise the

@@ -5,3 +5,4 @@
 - [Sparki Development Preview Mode](sparki-dev-preview.md) — dev-only auth/onboarding bypass; requires NODE_ENV!=production AND DEV_AUTH_BYPASS=true (fails closed).
 - [Sparki cinematic background](sparki-cinematic-bg.md) — shared ScreenShell fixed bg layer; cyclist visible page-wide, glass cards 82%, OLED-safe blue-black, no flat-black/white surfaces.
 - [Sparki Insights origin + migration audit](sparki-insights-origin.md) — original Next.js "Sparki Insights" lives in `.migration-backup/`; it is the content source-of-truth; audit/blueprint docs at repo root.
+- [Sparki day-type engine](sparki-day-type-engine.md) — Home day-type detection precedence (§4); rest=explicit rest workout, no-workout=general fallback; health status end-to-end.

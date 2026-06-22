@@ -14,6 +14,10 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
   discipline: text("discipline"),
   goals: text("goals"),
   weeklyHourTarget: integer("weekly_hour_target"),
+  // Athlete-set health status (blueprint §4 #1 Emergency/Health). When "sick" or
+  // "injured", the day-type engine routes Home to a calm recovery-only view and
+  // blocks training pressure. "ok" (default) is the normal training state.
+  healthStatus: text("health_status").notNull().default("ok"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
