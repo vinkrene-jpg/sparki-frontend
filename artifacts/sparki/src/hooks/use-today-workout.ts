@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@clerk/react";
+import { DEV_PREVIEW } from "@/lib/dev";
 import { apiFetch } from "@/lib/api";
 import { queryKeys, STALE } from "@/lib/query-keys";
 import type { PlannedWorkout } from "@/lib/athlete-types";
@@ -10,7 +11,7 @@ export function useTodayWorkout() {
   return useQuery({
     queryKey: queryKeys.athlete.todayWorkout(),
     queryFn: () => apiFetch<PlannedWorkout | null>("/api/athlete/workouts/today"),
-    enabled: isSignedIn === true,
+    enabled: isSignedIn === true || DEV_PREVIEW,
     staleTime: STALE.live,
   });
 }

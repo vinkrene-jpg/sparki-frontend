@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@clerk/react";
+import { DEV_PREVIEW } from "@/lib/dev";
 import { apiFetch } from "@/lib/api";
 import { queryKeys, STALE } from "@/lib/query-keys";
 import type { TrainingSession } from "@/lib/athlete-types";
@@ -11,7 +12,7 @@ export function useSessions(limit = 20) {
     queryKey: queryKeys.athlete.sessions(limit),
     queryFn: () =>
       apiFetch<TrainingSession[]>(`/api/athlete/sessions?limit=${limit}`),
-    enabled: isSignedIn === true,
+    enabled: isSignedIn === true || DEV_PREVIEW,
     staleTime: STALE.profile,
   });
 }

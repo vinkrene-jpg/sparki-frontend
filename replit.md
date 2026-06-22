@@ -12,6 +12,7 @@ An AI-powered cycling performance app for athletes, coaches, and parents — mig
 - `pnpm --filter @workspace/db run build` — generate TypeScript declarations for lib/db
 - Required env: `DATABASE_URL` — Postgres connection string
 - Required env: `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` — auto-provisioned by Clerk setup
+- Dev-only env: `DEV_AUTH_BYPASS=true` — enables Development Preview Mode (auth/onboarding bypass). Set by the api-server `dev` script. Optional `DEV_AUTH_CLERK_ID` pins which dev user to resolve (defaults to first `user_profiles` row).
 
 ## Stack
 
@@ -49,6 +50,7 @@ An AI-powered cycling performance app for athletes, coaches, and parents — mig
 - **Sign-in / Sign-up** (`/sign-in`, `/sign-up`) — custom Clerk-themed pages matching the dark Sparki design language (dark bg, cyan accent, Inter Variable font, Sparki bolt logo).
 - **Protected app routes** (`/train`, `/feed`, `/lab`, `/you`) — redirect to `/sign-in` when not authenticated.
 - **Role switcher** — in the `ScreenShell` header for users with multiple roles; cycles through `athlete`/`coach`/`parent`. Sign-out button alongside.
+- **Development Preview Mode** — dev-only. When the Vite dev server runs (`import.meta.env.DEV`), `App.tsx` renders `<DevPreview>` instead of the auth-gated router, mounting the exact production components (no duplication) with a fixed dev switcher bar (Landing/Home/Train/Feed/Lab/You) driven by wouter location. Backend pairs this with `devAuthBypass` middleware that resolves a dev user when no real Clerk session exists. Fully disabled in production: frontend branch is dead-code in prod builds; backend bypass requires BOTH `NODE_ENV !== "production"` AND `DEV_AUTH_BYPASS=true` (fails closed otherwise).
 
 ## User preferences
 

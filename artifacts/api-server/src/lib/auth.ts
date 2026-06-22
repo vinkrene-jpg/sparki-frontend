@@ -1,9 +1,67 @@
 import { getAuth } from "@clerk/express";
 import type { Request, Response, NextFunction } from "express";
+import { db, userProfilesTable } from "@workspace/db";
+
+// Dev auth bypass requires BOTH a non-production runtime AND an explicit opt-in
+// flag. Keying off NODE_ENV alone is brittle — a misconfigured/staging
+// deployment running with non-production NODE_ENV would otherwise silently grant
+// access as a fallback user. The flag defaults OFF and must be set deliberately.
+const IS_DEV =
+  process.env.NODE_ENV !== "production" &&
+  process.env.DEV_AUTH_BYPASS === "true";
+
+// In development, requests without a real Clerk session resolve to a dev user so
+// the v0 frontend can be previewed without signing in. The dev user id comes
+// from DEV_AUTH_CLERK_ID, falling back to the first user_profiles row. Cached for
+// the process lifetime. This branch is fully disabled in production.
+let cachedDevUserId: string | null | undefined = undefined;
+
+async function resolveDevUserId(): Promise<string | null> {
+  if (cachedDevUserId !== undefined) return cachedDevUserId;
+  const envId = process.env.DEV_AUTH_CLERK_ID;
+  if (envId) {
+    cachedDevUserId = envId;
+    return cachedDevUserId;
+  }
+  try {
+    const rows = await db
+      .select({ clerkId: userProfilesTable.clerkId })
+      .from(userProfilesTable)
+      .limit(1);
+    cachedDevUserId = rows[0]?.clerkId ?? null;
+  } catch {
+    cachedDevUserId = null;
+  }
+  return cachedDevUserId;
+}
+
+// Dev-only middleware: attaches a resolved dev user id to the request when there
+// is no real Clerk session. Registered only when NODE_ENV !== "production".
+export async function devAuthBypass(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+) {
+  if (!IS_DEV) return next();
+  const auth = getAuth(req);
+  if (auth?.userId) return next();
+  const devId = await resolveDevUserId();
+  if (devId) {
+    (req as Request & { devClerkUserId?: string }).devClerkUserId = devId;
+  }
+  next();
+}
+
+function devUserId(req: Request): string | null {
+  if (!IS_DEV) return null;
+  return (
+    (req as Request & { devClerkUserId?: string }).devClerkUserId ?? null
+  );
+}
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const auth = getAuth(req);
-  const userId = auth?.userId;
+  const userId = auth?.userId ?? devUserId(req);
   if (!userId) {
     res.status(401).json({ error: "Unauthorized" });
     return;
@@ -13,5 +71,5 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 
 export function getClerkUserId(req: Request): string | null {
   const auth = getAuth(req);
-  return auth?.userId ?? null;
+  return auth?.userId ?? devUserId(req);
 }

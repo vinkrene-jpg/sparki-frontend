@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@clerk/react";
+import { DEV_PREVIEW } from "@/lib/dev";
 import { apiFetch } from "@/lib/api";
 import { queryKeys, STALE } from "@/lib/query-keys";
 import type { AthleteDailyMetric } from "@/lib/athlete-types";
@@ -11,7 +12,7 @@ export function useDailyMetrics(days = 14) {
     queryKey: queryKeys.athlete.metrics(days),
     queryFn: () =>
       apiFetch<AthleteDailyMetric[]>(`/api/athlete/metrics?days=${days}`),
-    enabled: isSignedIn === true,
+    enabled: isSignedIn === true || DEV_PREVIEW,
     staleTime: STALE.session,
   });
 }

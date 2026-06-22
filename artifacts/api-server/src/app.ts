@@ -9,6 +9,7 @@ import {
   getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
+import { devAuthBypass } from "./lib/auth";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -49,6 +50,12 @@ app.use(
     ),
   })),
 );
+
+// Dev-only: resolve a dev user when no real Clerk session is present so the v0
+// frontend can be previewed without signing in. Never registered in production.
+if (process.env.NODE_ENV !== "production") {
+  app.use(devAuthBypass);
+}
 
 app.use("/api", router);
 

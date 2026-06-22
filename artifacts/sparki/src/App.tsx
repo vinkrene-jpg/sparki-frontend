@@ -29,6 +29,8 @@ import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
 import { UserProvider, useUserProfile } from "@/contexts/UserContext";
 import { FeatureFlagProvider } from "@/contexts/FeatureFlagContext";
+import { DevPreview } from "@/components/sparki/dev-preview";
+import { DEV_PREVIEW } from "@/lib/dev";
 import { STALE } from "@/lib/query-keys";
 
 const queryClient = new QueryClient({
@@ -244,6 +246,9 @@ function AppRouter() {
         <UserProvider>
           <FeatureFlagProvider>
             <ErrorBoundary>
+              {DEV_PREVIEW ? (
+                <DevPreview />
+              ) : (
               <Switch>
                 <Route path="/" component={HomeRedirect} />
                 {/* REQUIRED — /*? is the only wouter syntax for Clerk OAuth sub-paths */}
@@ -270,6 +275,7 @@ function AppRouter() {
                 )}
                 <Route component={NotFound} />
               </Switch>
+              )}
             </ErrorBoundary>
           </FeatureFlagProvider>
         </UserProvider>

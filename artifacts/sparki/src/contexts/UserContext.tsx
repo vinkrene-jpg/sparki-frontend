@@ -8,6 +8,7 @@ import {
 } from "react";
 import { useUser } from "@clerk/react";
 import { apiFetch } from "@/lib/api";
+import { DEV_PREVIEW } from "@/lib/dev";
 
 export type Role = "athlete" | "coach" | "parent";
 
@@ -38,6 +39,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const syncAndFetch = useCallback(async () => {
+    // Dev Preview: no Clerk session, but the backend resolves a dev user.
+    // Skip the Clerk-driven sync and just load the resolved profile.
+    if (DEV_PREVIEW && !isSignedIn) {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const p = await apiFetch<UserProfile>("/api/auth/me");
+        setProfile(p);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load profile");
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
     if (!user || !isSignedIn) {
       setProfile(null);
       return;
@@ -69,6 +86,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, [user, isSignedIn]);
 
   useEffect(() => {
+    if (DEV_PREVIEW && !isSignedIn) {
+      void syncAndFetch();
+      return;
+    }
     if (!isLoaded) return;
     if (isSignedIn) {
       void syncAndFetch();

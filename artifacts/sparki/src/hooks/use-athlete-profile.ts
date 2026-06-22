@@ -8,6 +8,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { useUser } from "@clerk/react";
+import { DEV_PREVIEW } from "@/lib/dev";
 import { apiFetch } from "@/lib/api";
 import { queryKeys, STALE } from "@/lib/query-keys";
 import type { UserProfile } from "@/contexts/UserContext";
@@ -18,7 +19,7 @@ export function useAthleteProfile() {
   return useQuery({
     queryKey: queryKeys.user.profile(),
     queryFn: () => apiFetch<UserProfile>("/api/auth/me"),
-    enabled: isSignedIn === true,
+    enabled: isSignedIn === true || DEV_PREVIEW,
     staleTime: STALE.profile,
   });
 }

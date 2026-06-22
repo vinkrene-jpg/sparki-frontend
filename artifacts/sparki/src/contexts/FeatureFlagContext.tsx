@@ -8,6 +8,7 @@ import {
 } from "react";
 import { useUser } from "@clerk/react";
 import { apiFetch } from "@/lib/api";
+import { DEV_PREVIEW } from "@/lib/dev";
 import {
   FEATURE_KEYS,
   type FeatureKey,
@@ -53,6 +54,10 @@ export function FeatureFlagProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (DEV_PREVIEW) {
+      void fetchFlags();
+      return;
+    }
     if (!isLoaded) return;
     if (isSignedIn) {
       void fetchFlags();

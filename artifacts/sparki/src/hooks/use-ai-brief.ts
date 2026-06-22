@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useUser } from "@clerk/react";
+import { DEV_PREVIEW } from "@/lib/dev";
 import { apiFetch } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -10,7 +11,7 @@ export function useAiBrief(enabled = true) {
     queryKey: queryKeys.athlete.brief(),
     queryFn: () =>
       apiFetch<{ brief: string }>("/api/ai/brief", { method: "POST" }),
-    enabled: isSignedIn === true && enabled,
+    enabled: (isSignedIn === true || DEV_PREVIEW) && enabled,
     staleTime: 10 * 60_000,
   });
 }

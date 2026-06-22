@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@clerk/react";
+import { DEV_PREVIEW } from "@/lib/dev";
 import { apiFetch } from "@/lib/api";
 import { queryKeys, STALE } from "@/lib/query-keys";
 import type { FtpHistoryEntry } from "@/lib/athlete-types";
@@ -10,7 +11,7 @@ export function useFtpHistory() {
   return useQuery({
     queryKey: queryKeys.athlete.ftpHistory(),
     queryFn: () => apiFetch<FtpHistoryEntry[]>("/api/athlete/ftp"),
-    enabled: isSignedIn === true,
+    enabled: isSignedIn === true || DEV_PREVIEW,
     staleTime: STALE.profile,
   });
 }
