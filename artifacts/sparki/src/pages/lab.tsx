@@ -5,74 +5,23 @@ import { Sparkline } from "@/components/sparki/primitives"
 import { useLoad } from "@/hooks/use-load"
 import { useFtpHistory } from "@/hooks/use-ftp-history"
 import { useSessions } from "@/hooks/use-sessions"
-import { TrendingUp, TrendingDown, Minus } from "lucide-react"
+import { useDailyMetrics } from "@/hooks/use-daily-metrics"
+import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
 }
 
-const ATL_COLOR = "rgba(255,200,120,0.8)"
-const TSB_COLOR = "rgba(255,255,255,0.45)"
-
-function LoadChart({
-  chartData,
-}: {
-  chartData: Array<{ date: string; ctl: number; atl: number; tsb: number }>
-}) {
-  const w = 340
-  const h = 100
-
-  if (chartData.length < 2) {
-    return (
-      <div className="flex h-24 items-center justify-center text-[12px] text-white/25">
-        Log sessions to see your fitness curve
-      </div>
-    )
-  }
-
-  const allVals = chartData.flatMap((d) => [d.ctl, d.atl, d.tsb])
-  const min = Math.min(...allVals)
-  const max = Math.max(...allVals, 1)
-  const range = max - min || 1
-  const n = chartData.length
-
-  const x = (i: number) => (i / (n - 1)) * w
-  const y = (v: number) => h - ((v - min) / range) * (h - 8) - 4
-
-  const path = (arr: number[]) =>
-    arr.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ")
-
+function Delta({ value }: { value: number }) {
+  const positive = value > 0
+  const sign = value > 0 ? "+" : ""
   return (
-    <svg
-      width="100%"
-      height={h}
-      viewBox={`0 0 ${w} ${h}`}
-      preserveAspectRatio="none"
+    <span
+      className="font-mono text-[11px] tabular-nums"
+      style={{ color: positive ? ACCENT : "rgba(255,140,120,0.85)" }}
     >
-      <polyline
-        points={path(chartData.map((d) => d.tsb))}
-        fill="none"
-        stroke={TSB_COLOR}
-        strokeWidth="1.2"
-        strokeDasharray="4 4"
-        vectorEffect="non-scaling-stroke"
-      />
-      <polyline
-        points={path(chartData.map((d) => d.atl))}
-        fill="none"
-        stroke={ATL_COLOR}
-        strokeWidth="1.5"
-        vectorEffect="non-scaling-stroke"
-      />
-      <polyline
-        points={path(chartData.map((d) => d.ctl))}
-        fill="none"
-        stroke={ACCENT}
-        strokeWidth="1.8"
-        vectorEffect="non-scaling-stroke"
-        style={{ filter: `drop-shadow(0 0 4px ${ACCENT})` }}
-      />
-    </svg>
+      {sign}{value}
+    </span>
   )
 }
 
@@ -84,7 +33,7 @@ function FtpBars({
   if (history.length === 0) {
     return (
       <p className="text-[12px] text-white/25">
-        No FTP tests logged yet · Set your FTP in Profile
+        Nog geen FTP-tests gelogd · Stel FTP in bij Profiel
       </p>
     )
   }
@@ -92,9 +41,7 @@ function FtpBars({
   const sorted = [...history].sort((a, b) =>
     a.measuredAt.localeCompare(b.measuredAt),
   )
-  const min = Math.min(...sorted.map((h) => h.ftpWatts)) - 10
-  const max = Math.max(...sorted.map((h) => h.ftpWatts))
-  const range = max - min || 1
+  const maxW = Math.max(...sorted.map((h) => h.ftpWatts))
 
   const first = sorted[0]?.ftpWatts ?? 0
   const last = sorted[sorted.length - 1]?.ftpWatts ?? 0
@@ -104,17 +51,14 @@ function FtpBars({
     <div>
       <div className="flex items-end justify-between">
         <div className="flex items-baseline gap-1.5">
-          <span
-            className="font-sans text-4xl font-extralight tabular-nums"
-            style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
-          >
+          <span className="font-sans text-4xl font-extralight tabular-nums">
             {last}
           </span>
           <span className="font-mono text-[11px] text-white/35">W</span>
         </div>
         {delta !== 0 && (
           <span
-            className="label-xs"
+            className="font-mono text-[11px] tabular-nums"
             style={{ color: delta > 0 ? ACCENT : "rgba(255,140,120,0.85)" }}
           >
             {delta > 0 ? "+" : ""}
@@ -124,11 +68,11 @@ function FtpBars({
       </div>
       <div className="mt-4 flex h-20 items-end gap-2">
         {sorted.map((entry, i) => {
-          const h = ((entry.ftpWatts - min) / range) * 68 + 8
+          const h = ((entry.ftpWatts / maxW) * 72) + 8
           const isLast = i === sorted.length - 1
           const month = new Date(
             entry.measuredAt + "T12:00:00Z",
-          ).toLocaleDateString("en-US", { month: "short" })
+          ).toLocaleDateString("nl-NL", { month: "short" })
           return (
             <div
               key={entry.measuredAt + i}
@@ -146,7 +90,7 @@ function FtpBars({
                   }}
                 />
               </div>
-              <span className="label-xs text-white/30">{month}</span>
+              <span className="font-mono text-[8px] tracking-wider text-white/30">{month}</span>
             </div>
           )
         })}
@@ -159,22 +103,8 @@ export default function LabPage() {
   const { data: load, isLoading: loadLoading } = useLoad()
   const { data: ftpHistory, isLoading: ftpLoading } = useFtpHistory()
   const { data: sessions, isLoading: sessionsLoading } = useSessions(10)
-
-  const formIcon =
-    !load ? null
-    : load.tsb > 5 ? TrendingUp
-    : load.tsb < -10 ? TrendingDown
-    : Minus
-
-  const formLabel =
-    !load ? "—"
-    : load.tsb > 10 ? "Fresh"
-    : load.tsb > 5 ? "Rested"
-    : load.tsb > -5 ? "Neutral"
-    : load.tsb > -15 ? "Tired"
-    : "Very tired"
-
-  const FormIcon = formIcon ?? Minus
+  const { data: metrics, isLoading: metricsLoading } = useDailyMetrics(14)
+  const { data: profile } = useAthleteExtendedProfile()
 
   const clamp = (v: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v))
 
@@ -194,155 +124,181 @@ export default function LabPage() {
       : 0
 
   const bioAxes = [
-    { key: "fitness", label: "Fitness", level: load ? clamp(load.ctl / 80) : 0.5 },
-    { key: "feel", label: "Feel", level: avgFeel || 0.5 },
-    { key: "form", label: "Form", level: load ? clamp((load.tsb + 30) / 60) : 0.5 },
-    { key: "power", label: "Power", level: lastFtp > 0 ? clamp(lastFtp / 350) : 0.5 },
+    {
+      key: "fitness",
+      label: "Fitness",
+      level: load ? clamp(load.ctl / 80) : 0.5,
+    },
+    { key: "feel", label: "Voel", level: avgFeel || 0.5 },
+    {
+      key: "form",
+      label: "Form",
+      level: load ? clamp((load.tsb + 30) / 60) : 0.5,
+    },
+    {
+      key: "power",
+      label: "Power",
+      level:
+        lastFtp > 0
+          ? clamp(lastFtp / 350)
+          : profile?.ftp
+            ? clamp(profile.ftp / 350)
+            : 0.5,
+    },
     {
       key: "recovery",
-      label: "Recovery",
+      label: "Herstel",
       level: load
         ? clamp(1 - load.atl / Math.max(load.ctl * 1.5, 60))
         : 0.5,
     },
     {
       key: "consistency",
-      label: "Consistency",
+      label: "Consistentie",
       level: clamp((sessions ?? []).length / 10),
     },
   ]
 
-  const feelHistory = (sessions ?? [])
-    .filter((s) => s.feelScore != null)
-    .sort((a, b) => a.sessionDate.localeCompare(b.sessionDate))
-    .map((s) => s.feelScore!)
+  // Readiness history from feel scores in daily metrics (proxy for v0 readiness trend)
+  const readinessHistory = (metrics ?? [])
+    .slice()
+    .reverse()
+    .filter((m) => m.feelScore != null)
+    .map((m) => Math.round((m.feelScore! / 5) * 100))
+
+  // HRV trend from daily metrics
+  const todayHrv = metrics?.[0]?.hrv ?? null
+  const yesterdayHrv = metrics?.[1]?.hrv ?? null
+  const hrvDelta =
+    todayHrv != null && yesterdayHrv != null
+      ? Math.round(todayHrv - yesterdayHrv)
+      : null
+
+  const hrvTrend = (metrics ?? [])
+    .slice()
+    .reverse()
+    .filter((m) => m.hrv != null)
+    .map((m) => m.hrv!)
 
   const showRadar = !loadLoading && !sessionsLoading
-  const showFeelHistory = feelHistory.length >= 2
 
   return (
     <ScreenShell section="Lab">
-      {/* HEADER */}
+      {/* INTRO */}
       <div className="-mt-2">
-        <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">PERFORMANCE LAB</p>
-        <h1 className="mt-2 font-sans text-3xl font-extralight leading-tight tracking-tight">
-          Progress
+        <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
+          PERFORMANCE LAB
+        </p>
+        <h1 className="mt-2 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
+          Begrijp je vorm
         </h1>
-      </div>
-
-      {/* 01 FITNESS & FORM */}
-      <section>
-        <SectionLabel n="01" title="Fitness & Form" />
-
-        {loadLoading ? (
-          <div className="mt-4 space-y-3">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        ) : load ? (
-          <>
-            <div className="mt-4 flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full" style={{ background: ACCENT }} />
-                <span className="label-xs text-white/45">FITNESS (CTL)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full" style={{ background: ATL_COLOR }} />
-                <span className="label-xs text-white/45">FATIGUE (ATL)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full" style={{ background: TSB_COLOR }} />
-                <span className="label-xs text-white/45">FORM</span>
-              </div>
-            </div>
-
-            <div className="relative mt-4 h-24">
-              <LoadChart chartData={load.chartData} />
-            </div>
-
-            <div className="mt-5 flex items-center gap-5 border-t border-white/[0.07] pt-4">
-              <div className="flex flex-col gap-1">
-                <span className="label-xs text-white/35">CTL</span>
-                <span
-                  className="font-sans text-2xl font-light tabular-nums"
-                  style={{ color: ACCENT, fontVariantNumeric: "tabular-nums lining-nums" }}
-                >
-                  {load.ctl}
-                </span>
-              </div>
-              <span className="h-7 w-px bg-white/[0.08]" />
-              <div className="flex flex-col gap-1">
-                <span className="label-xs text-white/35">ATL</span>
-                <span
-                  className="font-sans text-2xl font-light tabular-nums"
-                  style={{ color: ATL_COLOR, fontVariantNumeric: "tabular-nums lining-nums" }}
-                >
-                  {load.atl}
-                </span>
-              </div>
-              <span className="h-7 w-px bg-white/[0.08]" />
-              <div className="flex flex-col gap-1">
-                <span className="label-xs text-white/35">FORM (TSB)</span>
-                <div className="flex items-center gap-1.5">
-                  <FormIcon
-                    className="h-4 w-4"
-                    style={{ color: load.tsb >= 0 ? ACCENT : "rgba(255,140,120,0.85)" }}
-                    strokeWidth={2}
-                  />
-                  <span
-                    className="font-sans text-2xl font-light tabular-nums"
-                    style={{
-                      color: load.tsb >= 0 ? ACCENT : "rgba(255,140,120,0.85)",
-                      fontVariantNumeric: "tabular-nums lining-nums",
-                    }}
-                  >
-                    {load.tsb > 0 ? "+" : ""}
-                    {load.tsb}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <p className="mt-3 text-[12px] leading-relaxed text-white/35">
-              Form is{" "}
-              <span style={{ color: load.tsb >= 0 ? ACCENT : "rgba(255,140,120,0.85)" }}>
-                {formLabel.toLowerCase()}
-              </span>
-              {load.ctl === 0
-                ? " — log sessions to build your fitness curve"
-                : load.tsb > 5
-                  ? " — good conditions for a quality effort"
-                  : load.tsb < -10
-                    ? " — consider a recovery day before hard training"
-                    : " — maintain current load"}
-            </p>
-          </>
-        ) : (
-          <p className="mt-4 text-[13px] text-white/35">
-            Log sessions to start tracking fitness
+        {profile && (
+          <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
+            {profile.displayName ?? "Atleet"}
+            {profile.ftp ? ` · FTP ${profile.ftp}W` : ""}
+            {profile.wkg ? ` · ${profile.wkg} W/kg` : ""}
           </p>
         )}
-      </section>
+      </div>
 
-      {/* 02 PERFORMANCE RADAR */}
+      {/* 01 PERFORMANCE RADAR */}
       {showRadar && (
         <section className="flex flex-col items-center">
           <div className="flex w-full items-center justify-between">
-            <SectionLabel n="02" title="Performance Radar" />
-            <span className="font-mono text-[10px] tracking-[0.2em] text-white/30">
-              6 SIGNALS
-            </span>
+            <SectionLabel n="01" title="Performance Radar" />
           </div>
           <BioRadar size={260} accent={ACCENT} axes={bioAxes} />
           <p className="mt-1 max-w-[18rem] text-pretty text-center text-[12px] leading-relaxed text-white/40">
-            Composite of fitness, feel, form, power, recovery &amp; consistency.
+            Je capaciteitsprofiel over zes signalen. Threshold en herstel zijn je
+            sterkste assen deze cyclus.
           </p>
         </section>
       )}
 
-      {/* 03 FTP DEVELOPMENT */}
+      {/* 02 READINESS HISTORY */}
       <section>
-        <SectionLabel n="03" title="FTP Development" />
+        <SectionLabel n="02" title="Readiness history" />
+        <div className="mt-4 flex items-baseline justify-between">
+          <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+            14 DAGEN
+          </span>
+          {readinessHistory.length > 1 && (
+            <span className="font-mono text-[11px] tabular-nums text-cyan-300/80">
+              {readinessHistory[readinessHistory.length - 1]} gereedheid
+            </span>
+          )}
+        </div>
+        {metricsLoading ? (
+          <Skeleton className="mt-3 h-14 w-full" />
+        ) : readinessHistory.length >= 2 ? (
+          <>
+            <div className="mt-3">
+              <Sparkline
+                data={readinessHistory}
+                width={340}
+                height={56}
+                stroke={ACCENT}
+                fill="rgba(120,210,230,0.07)"
+                className="w-full text-cyan-300"
+              />
+            </div>
+            <p className="mt-3 text-pretty text-[12px] leading-relaxed text-white/40">
+              Gebaseerd op dagelijkse check-in scores. Gestage opbouw is het doel.
+            </p>
+          </>
+        ) : (
+          <p className="mt-3 text-[12px] text-white/25">
+            Log dagelijkse check-ins om je readiness-trend te zien
+          </p>
+        )}
+      </section>
+
+      {/* 03 HRV TREND */}
+      <section>
+        <SectionLabel n="03" title="HRV trend" />
+        {metricsLoading ? (
+          <Skeleton className="mt-4 h-16 w-full" />
+        ) : todayHrv != null ? (
+          <>
+            <div className="mt-4 flex items-end justify-between">
+              <div className="flex items-baseline gap-1">
+                <span className="font-sans text-4xl font-extralight tabular-nums">
+                  {Math.round(todayHrv)}
+                </span>
+                <span className="font-mono text-[11px] text-white/35">ms</span>
+              </div>
+              {hrvDelta !== null && (
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[10px] tracking-wide text-white/35">
+                    vs gisteren
+                  </span>
+                  <Delta value={hrvDelta} />
+                </div>
+              )}
+            </div>
+            {hrvTrend.length >= 2 && (
+              <div className="mt-3">
+                <Sparkline
+                  data={hrvTrend}
+                  width={340}
+                  height={48}
+                  stroke={ACCENT}
+                  fill="rgba(120,210,230,0.07)"
+                  className="w-full text-cyan-300"
+                />
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="mt-4 text-[12px] text-white/25">
+            Voer je HRV in bij de dagelijkse check-in
+          </p>
+        )}
+      </section>
+
+      {/* 04 FTP ONTWIKKELING */}
+      <section>
+        <SectionLabel n="04" title="FTP ontwikkeling" />
         <div className="mt-4">
           {ftpLoading ? (
             <Skeleton className="h-24 w-full" />
@@ -352,40 +308,9 @@ export default function LabPage() {
         </div>
       </section>
 
-      {/* 04 FEEL HISTORY */}
-      {showFeelHistory && (
-        <section>
-          <SectionLabel n="04" title="Feel history" />
-          <div className="mt-4 flex items-baseline justify-between">
-            <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
-              RECENT SESSIONS
-            </span>
-            <span
-              className="font-mono text-[11px] tabular-nums"
-              style={{ color: ACCENT }}
-            >
-              {feelHistory[feelHistory.length - 1]}/5
-            </span>
-          </div>
-          <div className="mt-3 w-full">
-            <Sparkline
-              data={feelHistory}
-              width={340}
-              height={48}
-              stroke={ACCENT}
-              fill="rgba(120,210,230,0.07)"
-              className="w-full"
-            />
-          </div>
-          <p className="mt-3 text-[12px] leading-relaxed text-white/35">
-            Perceived effort quality across sessions · 1 (rough) → 5 (great)
-          </p>
-        </section>
-      )}
-
-      {/* 05 RECENT SESSIONS */}
+      {/* 05 RECENTE SESSIES */}
       <section>
-        <SectionLabel n="05" title="Recent sessions" />
+        <SectionLabel n="05" title="Recente sessies" />
         {sessionsLoading ? (
           <div className="mt-4 space-y-3">
             {[0, 1, 2].map((i) => (
@@ -397,7 +322,7 @@ export default function LabPage() {
             {sessions.slice(0, 8).map((s) => {
               const date = new Date(
                 s.sessionDate + "T12:00:00Z",
-              ).toLocaleDateString("en-US", {
+              ).toLocaleDateString("nl-NL", {
                 month: "short",
                 day: "numeric",
               })
@@ -407,7 +332,7 @@ export default function LabPage() {
                   className="flex items-center gap-4 border-b border-white/[0.05] py-3 last:border-0"
                 >
                   <div className="w-14 shrink-0">
-                    <span className="label-xs text-white/35">{date}</span>
+                    <span className="font-mono text-[10px] text-white/35">{date}</span>
                   </div>
                   <div className="flex-1 overflow-hidden">
                     <p className="truncate text-[13px] font-medium text-white/80">
@@ -415,9 +340,9 @@ export default function LabPage() {
                         s.type.charAt(0).toUpperCase() + s.type.slice(1)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex shrink-0 items-center gap-3">
                     {s.durationMin != null && (
-                      <span className="label-xs text-white/35">
+                      <span className="font-mono text-[10px] text-white/35">
                         {s.durationMin}m
                       </span>
                     )}
@@ -436,7 +361,7 @@ export default function LabPage() {
           </div>
         ) : (
           <p className="mt-4 text-[13px] text-white/35">
-            No sessions logged yet · Use Today → Log to record rides
+            Nog geen sessies gelogd · Gebruik Train → Sessie loggen
           </p>
         )}
       </section>

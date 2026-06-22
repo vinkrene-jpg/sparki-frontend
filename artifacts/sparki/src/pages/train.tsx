@@ -1,253 +1,37 @@
 import { useState } from "react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
-import { SectionLabel, ACCENT } from "@/components/sparki/ui"
+import { SectionLabel, Stat, Divider, ACCENT } from "@/components/sparki/ui"
+import { SparkiCore } from "@/components/sparki/sparki-core"
 import { useTodayWorkout, useUpdateWorkout } from "@/hooks/use-today-workout"
 import { useSessions, useLogSession } from "@/hooks/use-sessions"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
-import { Plus, CheckCircle2, XCircle, Bike, Activity, Timer, Zap } from "lucide-react"
+import { useAiBrief } from "@/hooks/use-ai-brief"
+import { useFeatureFlag } from "@/hooks/use-feature-flag"
+import {
+  Bike,
+  Activity,
+  Zap,
+  Check,
+  CheckCircle2,
+  XCircle,
+  Plus,
+} from "lucide-react"
 import type { TrainingSession } from "@/lib/athlete-types"
-
-type Tab = "plan" | "log"
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
 }
 
-function ZoneRow({
-  zone,
-  label,
-  min,
-  max,
-  active,
-}: {
-  zone: number
-  label: string
-  min: number
-  max: number
-  active?: boolean
-}) {
-  const colors = [
-    "rgba(120,210,230,0.25)",
-    "rgba(120,210,230,0.35)",
-    "rgba(255,220,100,0.5)",
-    "rgba(120,210,230,0.95)",
-    "rgba(255,140,80,0.8)",
-    "rgba(255,80,80,0.75)",
-  ]
-  const color = colors[zone - 1] ?? ACCENT
-  return (
-    <div
-      className="flex items-center gap-3 border-b border-white/[0.05] py-2.5 last:border-0"
-      style={{ opacity: active ? 1 : 0.45 }}
-    >
-      <span
-        className="h-3 w-1 rounded-full"
-        style={{
-          background: color,
-          boxShadow: active ? `0 0 8px ${color}` : "none",
-        }}
-      />
-      <span className="label-xs text-white/45">Z{zone}</span>
-      <span className="flex-1 text-[13px] font-medium tracking-tight text-white/85">
-        {label}
-      </span>
-      <span
-        className="font-sans text-[12px] tabular-nums text-white/50"
-        style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
-      >
-        {min}–{max}W
-      </span>
-    </div>
-  )
+const zoneColor: Record<number, string> = {
+  1: "rgba(120,210,230,0.25)",
+  2: "rgba(120,210,230,0.4)",
+  3: "rgba(255,220,100,0.45)",
+  4: "rgba(120,210,230,0.95)",
+  5: "rgba(255,140,80,0.8)",
+  6: "rgba(255,80,80,0.75)",
 }
 
-function PlanTab() {
-  const { data: workout, isLoading: workoutLoading } = useTodayWorkout()
-  const { data: profile, isLoading: profileLoading } = useAthleteExtendedProfile()
-  const updateWorkout = useUpdateWorkout()
-  const isLoading = workoutLoading || profileLoading
-
-  const markComplete = () => {
-    if (workout?.id) {
-      updateWorkout.mutate({ id: workout.id, status: "completed" })
-    }
-  }
-
-  const markSkipped = () => {
-    if (workout?.id) {
-      updateWorkout.mutate({ id: workout.id, status: "skipped" })
-    }
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-6">
-        <Skeleton className="h-32 w-full rounded-2xl" />
-        <Skeleton className="h-40 w-full rounded-2xl" />
-      </div>
-    )
-  }
-
-  if (!workout) {
-    return (
-      <div className="flex flex-col items-center gap-5 py-12">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/[0.03]">
-          <Bike className="h-7 w-7 text-white/25" strokeWidth={1.5} />
-        </div>
-        <div className="text-center">
-          <p className="text-[15px] font-medium text-white/60">No workout planned today</p>
-          <p className="mt-1 text-[13px] text-white/35">
-            Rest day, or add a workout below
-          </p>
-        </div>
-        <p className="mt-2 text-[12px] text-white/25">
-          Workout planning coming soon
-        </p>
-      </div>
-    )
-  }
-
-  const isPending = workout.status === "planned" || workout.status === "modified"
-  const isCompleted = workout.status === "completed"
-
-  return (
-    <div className="flex flex-col gap-6">
-      {/* Workout header */}
-      <div>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1">
-            <span className="label-xs text-white/35">{workout.type.toUpperCase()}</span>
-            <h2 className="mt-1.5 font-sans text-2xl font-light leading-tight tracking-tight">
-              {workout.title}
-            </h2>
-          </div>
-          {isCompleted && (
-            <span
-              className="shrink-0 rounded-full px-2.5 py-1 label-xs"
-              style={{
-                color: ACCENT,
-                background: "rgba(120,210,230,0.1)",
-                border: `1px solid rgba(120,210,230,0.3)`,
-              }}
-            >
-              DONE
-            </span>
-          )}
-        </div>
-
-        {workout.description && (
-          <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/50">
-            {workout.description}
-          </p>
-        )}
-
-        <div className="mt-4 flex items-center gap-5">
-          {workout.targetDurationMin != null && (
-            <>
-              <div className="flex items-center gap-1.5">
-                <Timer className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
-                <span className="font-sans text-[14px] font-medium tabular-nums text-white/80">
-                  {workout.targetDurationMin}min
-                </span>
-              </div>
-              <span className="h-4 w-px bg-white/[0.08]" />
-            </>
-          )}
-          {workout.targetTSS != null && (
-            <div className="flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
-              <span className="font-sans text-[14px] font-medium tabular-nums text-white/80">
-                {workout.targetTSS} TSS
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Power zones */}
-      {profile?.zones && (
-        <section>
-          <SectionLabel title="Power zones" />
-          {profile.ftp != null && profile.zones[3] && (
-            <div className="mt-4 mb-5 flex items-end gap-6">
-              <div>
-                <span
-                  className="font-mono text-[10px] tracking-[0.2em]"
-                  style={{ color: "rgba(120,210,230,0.8)" }}
-                >
-                  TARGET · ZONE 4
-                </span>
-                <p
-                  className="mt-1 font-sans text-3xl font-extralight tabular-nums"
-                  style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
-                >
-                  {profile.zones[3].min}–{profile.zones[3].max}W
-                </p>
-              </div>
-              <div className="mb-1 flex flex-col gap-0.5">
-                <span className="label-xs text-white/35">FTP</span>
-                <span
-                  className="font-sans text-[15px] font-light tabular-nums"
-                  style={{ color: ACCENT, fontVariantNumeric: "tabular-nums lining-nums" }}
-                >
-                  {profile.ftp}W
-                </span>
-              </div>
-            </div>
-          )}
-          <div className="mt-3 flex flex-col">
-            {profile.zones.map((z) => (
-              <ZoneRow
-                key={z.zone}
-                zone={z.zone}
-                label={z.label}
-                min={z.min}
-                max={z.max}
-                active={z.zone === 4}
-              />
-            ))}
-          </div>
-          {profile.ftp && (
-            <p className="mt-2 text-[11px] text-white/25">
-              Based on FTP {profile.ftp}W
-            </p>
-          )}
-        </section>
-      )}
-
-      {/* Actions */}
-      {isPending && (
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={markComplete}
-            disabled={updateWorkout.isPending}
-            className="flex flex-1 items-center justify-center gap-2 rounded-2xl py-3.5 font-sans text-[13px] font-semibold transition-opacity disabled:opacity-50"
-            style={{ background: ACCENT, color: "#040506" }}
-          >
-            <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} />
-            Done
-          </button>
-          <button
-            type="button"
-            onClick={markSkipped}
-            disabled={updateWorkout.isPending}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-white/[0.12] px-5 py-3.5 font-sans text-[13px] font-semibold text-white/50 transition-colors hover:border-white/20 disabled:opacity-50"
-          >
-            <XCircle className="h-4 w-4" strokeWidth={1.75} />
-            Skip
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function LogSessionForm({
-  onDone,
-}: {
-  onDone: () => void
-}) {
+function LogSessionForm({ onDone }: { onDone: () => void }) {
   const logSession = useLogSession()
   const [form, setForm] = useState<{
     title: string
@@ -267,8 +51,14 @@ function LogSessionForm({
     notes: "",
   })
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setForm((p) => ({ ...p, [k]: e.target.value }))
+  const set =
+    (k: keyof typeof form) =>
+    (
+      e: React.ChangeEvent<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >,
+    ) =>
+      setForm((p) => ({ ...p, [k]: e.target.value }))
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -299,26 +89,22 @@ function LogSessionForm({
         <div className="col-span-2">
           <input
             className={inputClass}
-            placeholder="Title (optional)"
+            placeholder="Titel (optioneel)"
             value={form.title}
             onChange={set("title")}
           />
         </div>
-        <select
-          className={inputClass}
-          value={form.type}
-          onChange={set("type")}
-        >
-          <option value="ride">Ride</option>
-          <option value="run">Run</option>
-          <option value="swim">Swim</option>
-          <option value="strength">Strength</option>
-          <option value="other">Other</option>
+        <select className={inputClass} value={form.type} onChange={set("type")}>
+          <option value="ride">Rit</option>
+          <option value="run">Hardlopen</option>
+          <option value="swim">Zwemmen</option>
+          <option value="strength">Kracht</option>
+          <option value="other">Anders</option>
         </select>
         <input
           className={inputClass}
           type="number"
-          placeholder="Duration (min)"
+          placeholder="Duur (min)"
           value={form.durationMin}
           onChange={set("durationMin")}
           min={1}
@@ -336,7 +122,7 @@ function LogSessionForm({
         <input
           className={inputClass}
           type="number"
-          placeholder="NP (watts)"
+          placeholder="NP (watt)"
           value={form.normalizedPower}
           onChange={set("normalizedPower")}
           min={50}
@@ -345,7 +131,9 @@ function LogSessionForm({
       </div>
 
       <div>
-        <label className="mb-2 block label-xs text-white/35">HOW DID IT FEEL?</label>
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+          HOE VOELDE HET?
+        </label>
         <div className="flex gap-2">
           {[1, 2, 3, 4, 5].map((n) => (
             <button
@@ -372,15 +160,15 @@ function LogSessionForm({
             </button>
           ))}
         </div>
-        <div className="mt-1 flex justify-between px-1 label-xs text-white/20">
-          <span>rough</span>
-          <span>great</span>
+        <div className="mt-1 flex justify-between px-1 font-mono text-[9px] tracking-[0.15em] text-white/20">
+          <span>zwaar</span>
+          <span>top</span>
         </div>
       </div>
 
       <textarea
         className={`${inputClass} resize-none`}
-        placeholder="Notes (optional)"
+        placeholder="Notities (optioneel)"
         rows={2}
         value={form.notes}
         onChange={set("notes")}
@@ -393,14 +181,14 @@ function LogSessionForm({
           className="flex-1 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
           style={{ background: ACCENT, color: "#040506" }}
         >
-          {logSession.isPending ? "Saving…" : "Save session"}
+          {logSession.isPending ? "Opslaan…" : "Sessie opslaan"}
         </button>
         <button
           type="button"
           onClick={onDone}
           className="rounded-2xl border border-white/[0.1] px-5 py-3.5 font-sans text-[13px] text-white/50"
         >
-          Cancel
+          Annuleer
         </button>
       </div>
     </form>
@@ -413,159 +201,352 @@ function typeIcon(type: string) {
   return Zap
 }
 
-function LogTab() {
-  const { data: sessions, isLoading } = useSessions(20)
-  const [showForm, setShowForm] = useState(false)
+export default function TrainPage() {
+  const { data: workout, isLoading: workoutLoading } = useTodayWorkout()
+  const { data: profile, isLoading: profileLoading } = useAthleteExtendedProfile()
+  const { data: sessions, isLoading: sessionsLoading } = useSessions(10)
+  const updateWorkout = useUpdateWorkout()
+  const aiEnabled = useFeatureFlag("ai_observations")
+  const { data: brief, isLoading: briefLoading } = useAiBrief(aiEnabled)
+  const [showLogForm, setShowLogForm] = useState(false)
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-3">
-        {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-16 w-full rounded-xl" />
-        ))}
-      </div>
-    )
+  const isLoading = workoutLoading || profileLoading
+
+  const markComplete = () => {
+    if (workout?.id) updateWorkout.mutate({ id: workout.id, status: "completed" })
+  }
+  const markSkipped = () => {
+    if (workout?.id) updateWorkout.mutate({ id: workout.id, status: "skipped" })
   }
 
+  const isPending =
+    workout?.status === "planned" || workout?.status === "modified"
+  const isCompleted = workout?.status === "completed"
+
+  const dayLabel = new Date()
+    .toLocaleDateString("nl-NL", { weekday: "long" })
+    .toUpperCase()
+
   return (
-    <div className="flex flex-col gap-5">
-      {!showForm && (
-        <button
-          type="button"
-          onClick={() => setShowForm(true)}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] py-3.5 font-sans text-[13px] font-medium text-white/50 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/60"
-        >
-          <Plus className="h-4 w-4" strokeWidth={2} />
-          Log a session
-        </button>
-      )}
+    <ScreenShell section="Train">
+      {/* INTRO */}
+      <div className="-mt-2">
+        <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
+          {dayLabel} · UITVOERING
+        </p>
+        {isLoading ? (
+          <Skeleton className="mt-2 h-8 w-56" />
+        ) : (
+          <h1 className="mt-2 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
+            {workout?.title ?? "Geen plan vandaag"}
+          </h1>
+        )}
+        {workout && (
+          <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
+            {workout.targetDurationMin ? `${workout.targetDurationMin}m` : ""}
+            {workout.targetDurationMin && workout.targetTSS ? " · " : ""}
+            {workout.targetTSS ? `${workout.targetTSS} TSS` : ""}
+          </p>
+        )}
+      </div>
 
-      {showForm && (
-        <div className="rounded-2xl border border-white/[0.09] bg-white/[0.02] p-5">
-          <p className="mb-4 font-mono text-[10px] tracking-[0.25em] text-white/70">LOG SESSION</p>
-          <LogSessionForm onDone={() => setShowForm(false)} />
-        </div>
-      )}
-
-      {sessions && sessions.length > 0 ? (
-        <div className="flex flex-col">
-          {sessions.map((s) => {
-            const Icon = typeIcon(s.type)
-            const date = new Date(s.sessionDate + "T12:00:00Z")
-            const dateLabel = date.toLocaleDateString("en-US", {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-            })
-            return (
-              <div
-                key={s.id}
-                className="flex items-center gap-4 border-b border-white/[0.05] py-4 last:border-0"
-              >
-                <span
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border"
-                  style={{
-                    borderColor: "rgba(255,255,255,0.1)",
-                    background: "rgba(255,255,255,0.03)",
-                  }}
-                >
-                  <Icon
-                    className="h-4 w-4"
-                    style={{ color: ACCENT }}
-                    strokeWidth={1.75}
-                  />
-                </span>
-                <div className="flex-1 overflow-hidden">
-                  <p className="truncate text-[14px] font-medium text-white/85">
-                    {s.title ?? s.type.charAt(0).toUpperCase() + s.type.slice(1)}
-                  </p>
-                  <div className="mt-0.5 flex items-center gap-2">
-                    <span className="label-xs text-white/35">{dateLabel}</span>
-                    {s.durationMin != null && (
-                      <>
-                        <span className="h-1 w-1 rounded-full bg-white/20" />
-                        <span className="label-xs text-white/35">
-                          {s.durationMin}min
-                        </span>
-                      </>
-                    )}
-                    {s.tss != null && (
-                      <>
-                        <span className="h-1 w-1 rounded-full bg-white/20" />
-                        <span className="label-xs text-white/35">
-                          {s.tss} TSS
-                        </span>
-                      </>
-                    )}
+      {/* 01 DE SESSIE */}
+      <section>
+        <SectionLabel n="01" title="De sessie" />
+        {isLoading ? (
+          <div className="mt-5 space-y-4">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        ) : workout ? (
+          <>
+            {/* TSS week bars as session load visualization */}
+            <div className="mt-5 flex h-24 items-end gap-1.5">
+              {[0.32, 0.9, 0.45, 0.93, 0.45, 0.95, 0.45, 0.97, 0.3].map((w, i) => {
+                const labels = ["WU", "T1", "R", "T2", "R", "T3", "R", "T4", "CD"]
+                const zones = [1, 4, 2, 4, 2, 4, 2, 4, 1]
+                const z = zones[i] ?? 2
+                return (
+                  <div
+                    key={i}
+                    className="flex flex-1 flex-col items-center justify-end"
+                    style={{ height: "100%" }}
+                  >
+                    <div
+                      className="w-full rounded-t-sm"
+                      style={{
+                        height: `${w * 100}%`,
+                        background: zoneColor[z] ?? "rgba(120,210,230,0.4)",
+                        boxShadow: z === 4 ? "0 0 12px rgba(120,210,230,0.5)" : "none",
+                      }}
+                    />
+                    <span className="mt-1.5 font-mono text-[7px] tracking-wider text-white/30">
+                      {labels[i]}
+                    </span>
                   </div>
+                )
+              })}
+            </div>
+
+            <div className="mt-5 flex items-center gap-5 border-t border-white/[0.07] pt-4">
+              <Stat label="Type" value={workout.type} />
+              {workout.targetDurationMin && (
+                <>
+                  <Divider />
+                  <Stat label="Duur" value={`${workout.targetDurationMin}m`} />
+                </>
+              )}
+              {workout.targetTSS && (
+                <>
+                  <Divider />
+                  <Stat label="Belasting" value={`${workout.targetTSS} TSS`} accent />
+                </>
+              )}
+            </div>
+
+            {isCompleted && (
+              <div
+                className="mt-4 flex items-center gap-2 rounded-full px-4 py-2 border"
+                style={{
+                  borderColor: "rgba(120,210,230,0.3)",
+                  background: "rgba(120,210,230,0.08)",
+                  color: ACCENT,
+                }}
+              >
+                <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                <span className="font-mono text-[10px] tracking-[0.2em]">
+                  SESSIE VOLTOOID
+                </span>
+              </div>
+            )}
+
+            {isPending && (
+              <div className="mt-5 flex gap-3">
+                <button
+                  type="button"
+                  onClick={markComplete}
+                  disabled={updateWorkout.isPending}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl py-3.5 font-sans text-[13px] font-semibold transition-opacity disabled:opacity-50"
+                  style={{ background: ACCENT, color: "#040506" }}
+                >
+                  <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} />
+                  Klaar
+                </button>
+                <button
+                  type="button"
+                  onClick={markSkipped}
+                  disabled={updateWorkout.isPending}
+                  className="flex items-center justify-center gap-2 rounded-2xl border border-white/[0.12] px-5 py-3.5 font-sans text-[13px] font-semibold text-white/50 transition-colors hover:border-white/20 disabled:opacity-50"
+                >
+                  <XCircle className="h-4 w-4" strokeWidth={1.75} />
+                  Overslaan
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="mt-5 flex flex-col items-center gap-5 py-8">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/[0.03]">
+              <Bike className="h-6 w-6 text-white/25" strokeWidth={1.5} />
+            </div>
+            <p className="text-[14px] text-white/35">
+              Geen training gepland vandaag
+            </p>
+          </div>
+        )}
+      </section>
+
+      {/* 02 DOELZONES */}
+      {!profileLoading && profile?.zones && (
+        <section>
+          <SectionLabel n="02" title="Doelzones" />
+          <div className="mt-4 flex items-end justify-between">
+            <div>
+              <span
+                className="font-mono text-[10px] tracking-[0.2em]"
+                style={{ color: "rgba(120,210,230,0.8)" }}
+              >
+                TARGET · ZONE 4
+              </span>
+              {profile.zones[3] && (
+                <p className="mt-1 font-sans text-3xl font-extralight tabular-nums">
+                  {profile.zones[3].min}–{profile.zones[3].max}W
+                </p>
+              )}
+            </div>
+            {profile.ftp && (
+              <div className="flex items-center gap-5 mb-1">
+                <Stat label="FTP" value={`${profile.ftp}W`} accent />
+                {profile.wkg && (
+                  <>
+                    <Divider />
+                    <Stat label="W/kg" value={String(profile.wkg)} />
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-5 flex flex-col">
+            {profile.zones.map((z) => {
+              const color = zoneColor[z.zone] ?? "rgba(120,210,230,0.4)"
+              return (
+                <div
+                  key={z.zone}
+                  className="flex items-center gap-3 border-b border-white/[0.05] py-2.5 last:border-0"
+                  style={{ opacity: z.zone === 4 ? 1 : 0.55 }}
+                >
+                  <span
+                    className="h-3 w-1 rounded-full"
+                    style={{
+                      background: color,
+                      boxShadow: z.zone === 4 ? `0 0 8px ${ACCENT}` : "none",
+                    }}
+                  />
+                  <span className="w-6 font-mono text-[11px] tabular-nums text-white/50">
+                    Z{z.zone}
+                  </span>
+                  <span className="flex-1 text-[13px] tracking-tight text-white/85">
+                    {z.label}
+                  </span>
+                  <span className="font-mono text-[11px] tabular-nums text-white/55">
+                    {z.min}–{z.max}W
+                  </span>
                 </div>
-                {s.feelScore != null && (
-                  <div className="flex flex-col items-end gap-0.5">
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* 06 AI COACH UITVOERING */}
+      {aiEnabled && (
+        <section>
+          <SectionLabel n="06" title="AI Coach uitvoering" />
+          <div className="relative mt-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 backdrop-blur-sm">
+            <div
+              className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 animate-breathe rounded-full"
+              style={{
+                background: `radial-gradient(circle, ${ACCENT}, transparent 70%)`,
+                opacity: 0.18,
+              }}
+            />
+            <div className="flex items-center gap-2">
+              <SparkiCore size={28} accent={ACCENT} readiness={0.9} variant="orb" />
+              <span className="font-mono text-[10px] tracking-[0.25em] text-cyan-300/80">
+                AI COACH
+              </span>
+            </div>
+            {briefLoading ? (
+              <div className="mt-3 space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-4/5" />
+              </div>
+            ) : brief ? (
+              <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/75">
+                {brief.brief}
+              </p>
+            ) : (
+              <p className="mt-3 text-[13px] leading-relaxed text-white/35">
+                Log een check-in om je gepersonaliseerde coaching te ontvangen.
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* 07 SESSIE LOGGEN */}
+      <section>
+        <SectionLabel n="07" title="Sessie loggen" />
+
+        {!showLogForm && (
+          <button
+            type="button"
+            onClick={() => setShowLogForm(true)}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] py-4 font-sans text-[13px] font-medium text-white/50 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/60"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2} />
+            Sessie toevoegen
+          </button>
+        )}
+
+        {showLogForm && (
+          <div className="mt-4 rounded-2xl border border-white/[0.09] bg-white/[0.02] p-5">
+            <LogSessionForm onDone={() => setShowLogForm(false)} />
+          </div>
+        )}
+
+        {/* Recent sessions */}
+        {!sessionsLoading && sessions && sessions.length > 0 && (
+          <div className="mt-5 flex flex-col">
+            <span className="mb-3 font-mono text-[10px] tracking-[0.2em] text-white/35">
+              RECENTE SESSIES
+            </span>
+            {sessions.slice(0, 5).map((s) => {
+              const Icon = typeIcon(s.type)
+              const date = new Date(
+                s.sessionDate + "T12:00:00Z",
+              ).toLocaleDateString("nl-NL", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })
+              return (
+                <div
+                  key={s.id}
+                  className="flex items-center gap-4 border-b border-white/[0.05] py-3.5 last:border-0"
+                >
+                  <span
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border"
+                    style={{
+                      borderColor: "rgba(255,255,255,0.1)",
+                      background: "rgba(255,255,255,0.03)",
+                    }}
+                  >
+                    <Icon
+                      className="h-4 w-4"
+                      style={{ color: ACCENT }}
+                      strokeWidth={1.75}
+                    />
+                  </span>
+                  <div className="flex-1 overflow-hidden">
+                    <p className="truncate text-[13px] font-medium text-white/85">
+                      {s.title ?? s.type.charAt(0).toUpperCase() + s.type.slice(1)}
+                    </p>
+                    <div className="mt-0.5 flex items-center gap-2">
+                      <span className="font-mono text-[10px] text-white/35">{date}</span>
+                      {s.durationMin != null && (
+                        <>
+                          <span className="h-1 w-1 rounded-full bg-white/20" />
+                          <span className="font-mono text-[10px] text-white/35">
+                            {s.durationMin}m
+                          </span>
+                        </>
+                      )}
+                      {s.tss != null && (
+                        <>
+                          <span className="h-1 w-1 rounded-full bg-white/20" />
+                          <span className="font-mono text-[10px] text-white/35">
+                            {s.tss} TSS
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  {s.feelScore != null && (
                     <span
                       className="font-sans text-base font-light tabular-nums"
                       style={{ color: ACCENT }}
                     >
                       {s.feelScore}
                     </span>
-                    <span className="label-xs text-white/25">FEEL</span>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      ) : !showForm ? (
-        <div className="py-8 text-center">
-          <p className="text-[13px] text-white/35">No sessions logged yet</p>
-          <p className="mt-1 text-[12px] text-white/20">
-            Log your first ride to start tracking load
-          </p>
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
-export default function TrainPage() {
-  const [tab, setTab] = useState<Tab>("plan")
-
-  return (
-    <ScreenShell section="Train">
-      {/* HEADER */}
-      <div className="-mt-2">
-        <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
-          {new Date().toLocaleDateString("en-US", { weekday: "long" }).toUpperCase()} · TRAINING
-        </p>
-        <h1 className="mt-2 font-sans text-3xl font-extralight leading-tight tracking-tight">
-          {tab === "plan" ? "Today's plan" : "Session log"}
-        </h1>
-      </div>
-
-      {/* TABS */}
-      <div className="-mt-4 flex gap-1.5">
-        {(["plan", "log"] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className="rounded-full border px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors"
-            style={{
-              borderColor:
-                tab === t
-                  ? "rgba(120,210,230,0.45)"
-                  : "rgba(255,255,255,0.1)",
-              background:
-                tab === t ? "rgba(120,210,230,0.1)" : "transparent",
-              color: tab === t ? ACCENT : "rgba(255,255,255,0.4)",
-            }}
-          >
-            {t === "plan" ? "Plan" : "Log"}
-          </button>
-        ))}
-      </div>
-
-      {/* CONTENT */}
-      {tab === "plan" ? <PlanTab /> : <LogTab />}
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </section>
     </ScreenShell>
   )
 }

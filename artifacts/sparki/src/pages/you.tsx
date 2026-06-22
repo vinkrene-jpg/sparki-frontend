@@ -6,7 +6,21 @@ import { useAthleteExtendedProfile, useUpdateAthleteProfile } from "@/hooks/use-
 import { useLogDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useLogFtp } from "@/hooks/use-ftp-history"
 import { useClerk } from "@clerk/react"
-import { Check, Pencil, User, Activity, Bike, Zap, Scale, ChevronRight } from "lucide-react"
+import {
+  Check,
+  Pencil,
+  User,
+  Activity,
+  Bike,
+  Zap,
+  Scale,
+  Target,
+  HeartPulse,
+  Settings,
+  ChevronRight,
+  Shield,
+  LogOut,
+} from "lucide-react"
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
@@ -22,22 +36,21 @@ function IdentityStat({
   accent?: boolean
 }) {
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-center gap-0.5">
       <span
         className="font-sans text-lg font-light tabular-nums"
-        style={{
-          color: accent ? ACCENT : "rgba(255,255,255,0.9)",
-          fontVariantNumeric: "tabular-nums lining-nums",
-        }}
+        style={{ color: accent ? ACCENT : "rgba(255,255,255,0.9)" }}
       >
         {value}
       </span>
-      <span className="label-xs text-white/35">{label.toUpperCase()}</span>
+      <span className="font-mono text-[9px] tracking-[0.18em] text-white/35">
+        {label.toUpperCase()}
+      </span>
     </div>
   )
 }
 
-function FtpEditor() {
+function FtpInlineEditor() {
   const { data: profile } = useAthleteExtendedProfile()
   const logFtp = useLogFtp()
   const [editing, setEditing] = useState(false)
@@ -48,134 +61,60 @@ function FtpEditor() {
     if (!watts || watts < 50 || watts > 600) return
     logFtp.mutate(
       { ftpWatts: watts, testType: "manual" },
-      { onSuccess: () => { setEditing(false); setValue("") } },
+      {
+        onSuccess: () => {
+          setEditing(false)
+          setValue("")
+        },
+      },
     )
   }
 
   if (editing) {
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <input
           autoFocus
           type="number"
-          placeholder={String(profile?.ftp ?? "e.g. 280")}
+          placeholder={String(profile?.ftp ?? "280")}
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="w-28 rounded-xl border border-cyan-300/30 bg-white/[0.04] px-3 py-2 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:outline-none"
+          className="w-24 rounded-lg border border-cyan-300/30 bg-white/[0.04] px-2.5 py-1.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSave()
-            if (e.key === "Escape") { setEditing(false); setValue("") }
+            if (e.key === "Escape") {
+              setEditing(false)
+              setValue("")
+            }
           }}
           min={50}
           max={600}
         />
-        <span className="label-sm text-white/40">W</span>
+        <span className="font-mono text-[11px] text-white/40">W</span>
         <button
           type="button"
           onClick={handleSave}
           disabled={logFtp.isPending || !value}
-          className="flex h-9 w-9 items-center justify-center rounded-xl disabled:opacity-40"
+          className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-40"
           style={{ background: ACCENT }}
         >
-          <Check className="h-4 w-4" style={{ color: "#040506" }} strokeWidth={2.5} />
-        </button>
-        <button
-          type="button"
-          onClick={() => { setEditing(false); setValue("") }}
-          className="label-xs text-white/30"
-        >
-          Cancel
+          <Check className="h-3.5 w-3.5" style={{ color: "#040506" }} strokeWidth={2.5} />
         </button>
       </div>
     )
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <span
-        className="font-sans text-4xl font-extralight tabular-nums"
-        style={{ color: ACCENT, fontVariantNumeric: "tabular-nums lining-nums" }}
-      >
-        {profile?.ftp ?? "—"}
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      className="flex items-center gap-2"
+    >
+      <span className="font-mono text-[11px] tracking-wide text-white/40">
+        {profile?.ftp ? `${profile.ftp}W` : "Niet ingesteld"}
       </span>
-      <span className="label-sm text-white/40">W</span>
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 transition-colors hover:border-cyan-300/30"
-      >
-        <Pencil className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
-      </button>
-    </div>
-  )
-}
-
-function GoalsEditor() {
-  const { data: profile } = useAthleteExtendedProfile()
-  const updateProfile = useUpdateAthleteProfile()
-  const [editing, setEditing] = useState(false)
-  const [value, setValue] = useState("")
-
-  const start = () => {
-    setValue(profile?.goals ?? "")
-    setEditing(true)
-  }
-
-  const save = () => {
-    updateProfile.mutate(
-      { goals: value },
-      { onSuccess: () => setEditing(false) },
-    )
-  }
-
-  if (editing) {
-    return (
-      <div className="flex flex-col gap-3">
-        <textarea
-          autoFocus
-          rows={3}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="e.g. Peak for Gran Fondo June, build to 4W/kg, top 10 Cat 3 race"
-          className="w-full resize-none rounded-xl border border-cyan-300/30 bg-white/[0.04] px-3.5 py-3 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:outline-none"
-        />
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={save}
-            disabled={updateProfile.isPending}
-            className="rounded-xl px-4 py-2 font-sans text-[13px] font-semibold disabled:opacity-40"
-            style={{ background: ACCENT, color: "#040506" }}
-          >
-            {updateProfile.isPending ? "Saving…" : "Save"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditing(false)}
-            className="rounded-xl border border-white/[0.1] px-4 py-2 font-sans text-[13px] text-white/50"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex items-start gap-3">
-      <p className="flex-1 text-pretty text-[14px] leading-relaxed text-white/60">
-        {profile?.goals ?? (
-          <span className="text-white/25">No goals set yet</span>
-        )}
-      </p>
-      <button
-        type="button"
-        onClick={start}
-        className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 transition-colors hover:border-cyan-300/30"
-      >
-        <Pencil className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
-      </button>
-    </div>
+      <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
+    </button>
   )
 }
 
@@ -204,9 +143,7 @@ function CheckInForm() {
         hrv: form.hrv ? parseInt(form.hrv) : undefined,
         notes: form.notes || null,
       },
-      {
-        onSuccess: () => setSaved(true),
-      },
+      { onSuccess: () => setSaved(true) },
     )
   }
 
@@ -215,7 +152,7 @@ function CheckInForm() {
       <div className="flex items-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.05] px-4 py-3">
         <Check className="h-4 w-4 shrink-0" style={{ color: ACCENT }} strokeWidth={2.5} />
         <span className="text-[13px] font-medium" style={{ color: ACCENT }}>
-          Check-in logged for today
+          Check-in gelogd voor vandaag
         </span>
       </div>
     )
@@ -251,7 +188,7 @@ function CheckInForm() {
           </button>
         ))}
       </div>
-      <div className="mt-1 flex justify-between px-0.5 label-xs text-white/20">
+      <div className="mt-1 flex justify-between px-0.5 font-mono text-[9px] tracking-[0.15em] text-white/20">
         <span>{lowLabel}</span>
         <span>{highLabel}</span>
       </div>
@@ -261,24 +198,32 @@ function CheckInForm() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
-        <label className="label-xs text-white/40">HOW DO YOU FEEL? (1–5)</label>
-        {ratingButtons("feelScore", 5, "terrible", "great")}
+        <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+          HOE VOEL JE JE? (1–5)
+        </label>
+        {ratingButtons("feelScore", 5, "slecht", "top")}
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="label-xs text-white/40">SLEEP QUALITY (1–5)</label>
-        {ratingButtons("sleepQuality", 5, "poor", "excellent")}
+        <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+          SLAAPKWALITEIT (1–5)
+        </label>
+        {ratingButtons("sleepQuality", 5, "slecht", "uitstekend")}
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="label-xs text-white/40">FATIGUE LEVEL (1–10)</label>
-        {ratingButtons("fatigueScore", 10, "fresh", "exhausted")}
+        <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+          VERMOEIDHEID (1–10)
+        </label>
+        {ratingButtons("fatigueScore", 10, "fris", "uitgeput")}
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="label-xs text-white/40">HRV (ms, optional)</label>
+        <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+          HRV (ms, optioneel)
+        </label>
         <input
           type="number"
           value={form.hrv}
           onChange={set("hrv")}
-          placeholder="e.g. 82"
+          placeholder="bijv. 82"
           min={20}
           max={250}
           className="rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
@@ -291,7 +236,76 @@ function CheckInForm() {
         className="rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-40"
         style={{ background: ACCENT, color: "#040506" }}
       >
-        {logMetrics.isPending ? "Saving…" : "Log today's check-in"}
+        {logMetrics.isPending ? "Opslaan…" : "Log check-in van vandaag"}
+      </button>
+    </div>
+  )
+}
+
+function GoalsSection() {
+  const { data: profile } = useAthleteExtendedProfile()
+  const updateProfile = useUpdateAthleteProfile()
+  const [editing, setEditing] = useState(false)
+  const [value, setValue] = useState("")
+
+  const start = () => {
+    setValue(profile?.goals ?? "")
+    setEditing(true)
+  }
+
+  const save = () => {
+    updateProfile.mutate(
+      { goals: value },
+      { onSuccess: () => setEditing(false) },
+    )
+  }
+
+  if (editing) {
+    return (
+      <div className="flex flex-col gap-3">
+        <textarea
+          autoFocus
+          rows={3}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="bijv. Piek voor Gran Fondo juni, opbouwen naar 4 W/kg"
+          className="w-full resize-none rounded-xl border border-cyan-300/30 bg-white/[0.04] px-3.5 py-3 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:outline-none"
+        />
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={save}
+            disabled={updateProfile.isPending}
+            className="rounded-xl px-4 py-2 font-sans text-[13px] font-semibold disabled:opacity-40"
+            style={{ background: ACCENT, color: "#040506" }}
+          >
+            {updateProfile.isPending ? "Opslaan…" : "Opslaan"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="rounded-xl border border-white/[0.1] px-4 py-2 font-sans text-[13px] text-white/50"
+          >
+            Annuleer
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-start gap-3">
+      <p className="flex-1 text-pretty text-[14px] leading-relaxed text-white/60">
+        {profile?.goals ?? (
+          <span className="text-white/25">Nog geen doelen ingesteld</span>
+        )}
+      </p>
+      <button
+        type="button"
+        onClick={start}
+        className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 transition-colors"
+      >
+        <Pencil className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
       </button>
     </div>
   )
@@ -309,6 +323,63 @@ export default function YouPage() {
     .toUpperCase()
     .slice(0, 2)
 
+  const configRows: {
+    icon: typeof User
+    label: string
+    value?: string
+    custom?: React.ReactNode
+  }[] = [
+    {
+      icon: User,
+      label: "Profiel",
+      value: profile?.displayName ?? "—",
+    },
+    {
+      icon: Activity,
+      label: "Rol",
+      value: profile?.activeRole
+        ? profile.activeRole.charAt(0).toUpperCase() + profile.activeRole.slice(1)
+        : "Atleet",
+    },
+    {
+      icon: Bike,
+      label: "Discipline",
+      value: profile?.discipline ?? "Niet ingesteld",
+    },
+    {
+      icon: Zap,
+      label: "FTP",
+      custom: <FtpInlineEditor />,
+    },
+    {
+      icon: Scale,
+      label: "Gewicht",
+      value: profile?.weightKg ? `${profile.weightKg} kg` : "Niet ingesteld",
+    },
+    {
+      icon: Target,
+      label: "Doelen",
+      value: profile?.goals
+        ? profile.goals.slice(0, 28) + (profile.goals.length > 28 ? "…" : "")
+        : "Geen doelen",
+    },
+    {
+      icon: HeartPulse,
+      label: "Gezondheid",
+      value: "Check-in hieronder",
+    },
+    {
+      icon: Shield,
+      label: "Privacy",
+      value: "Geregeld",
+    },
+    {
+      icon: Settings,
+      label: "Voorkeuren",
+      value: "Standaard",
+    },
+  ]
+
   return (
     <ScreenShell section="You">
       {/* IDENTITY */}
@@ -317,7 +388,7 @@ export default function YouPage() {
           <Skeleton className="h-32 w-32 rounded-full" />
         ) : (
           <div className="relative flex items-center justify-center">
-            <SparkiCore size={132} accent={ACCENT} readiness={0.85} variant="orb" />
+            <SparkiCore size={132} accent={ACCENT} readiness={0.87} variant="orb" />
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <span className="font-sans text-2xl font-extralight tracking-tight">
                 {initials}
@@ -333,111 +404,61 @@ export default function YouPage() {
           </div>
         ) : (
           <>
-            <h1 className="mt-4 font-sans text-3xl font-extralight leading-tight tracking-tight">
-              {profile?.displayName ?? "Athlete"}
+            <h1 className="mt-4 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
+              {profile?.displayName ?? "Atleet"}
             </h1>
-            <p className="mt-1.5 font-mono text-[11px] tracking-[0.2em] text-white/40">
-              {profile?.activeRole?.toUpperCase() ?? "ATHLETE"} ·{" "}
-              {(profile?.discipline ?? "Cyclist").toUpperCase()}
+            <p className="mt-1 font-mono text-[11px] tracking-[0.2em] text-white/40">
+              ELITE · {(profile?.discipline ?? "Road").toUpperCase()}
             </p>
             <div className="mt-5 flex items-center gap-5">
               <IdentityStat
                 label="FTP"
                 value={profile?.ftp ? `${profile.ftp}W` : "—"}
-                accent
               />
               <span className="h-7 w-px bg-white/[0.08]" />
               <IdentityStat
                 label="W/kg"
                 value={profile?.wkg ? String(profile.wkg) : "—"}
+                accent
               />
               <span className="h-7 w-px bg-white/[0.08]" />
               <IdentityStat
-                label="Weight"
-                value={
-                  profile?.weightKg ? `${profile.weightKg}kg` : "—"
-                }
+                label="Gewicht"
+                value={profile?.weightKg ? `${profile.weightKg}kg` : "—"}
               />
             </div>
           </>
         )}
       </section>
 
-      {/* FTP */}
+      {/* 01 DOELEN */}
       <section>
-        <SectionLabel n="01" title="FTP" />
-        <div className="mt-4">
-          {isLoading ? (
-            <Skeleton className="h-12 w-40" />
-          ) : (
-            <FtpEditor />
-          )}
-          {profile?.zones && (
-            <p className="mt-3 text-[12px] leading-relaxed text-white/30">
-              Zone 4 (Threshold):{" "}
-              {profile.zones[3]?.min}–{profile.zones[3]?.max}W ·
-              Zone 2 (Endurance):{" "}
-              {profile.zones[1]?.min}–{profile.zones[1]?.max}W
-            </p>
-          )}
-        </div>
-      </section>
-
-      {/* SEASON GOALS */}
-      <section>
-        <SectionLabel n="02" title="Season goals" />
+        <SectionLabel n="01" title="Doelen" />
         <div className="mt-3">
           {isLoading ? (
             <Skeleton className="h-10 w-full" />
           ) : (
-            <GoalsEditor />
+            <GoalsSection />
           )}
         </div>
       </section>
 
-      {/* DAILY CHECK-IN */}
+      {/* 02 DAGELIJKSE CHECK-IN */}
       <section>
-        <SectionLabel n="03" title="Today's check-in" />
-        <p className="mt-2 text-[12px] leading-relaxed text-white/35">
-          Log daily readiness to power Sparki's coaching insights
+        <SectionLabel n="02" title="Dagelijkse check-in" />
+        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+          Log dagelijkse gereedheid om Sparki's adviezen te voeden
         </p>
         <div className="mt-4">
           <CheckInForm />
         </div>
       </section>
 
-      {/* PROFILE */}
+      {/* 03 INSTELLINGEN */}
       <section>
-        <SectionLabel n="04" title="Profile" />
+        <SectionLabel n="03" title="Instellingen" />
         <div className="mt-3 flex flex-col">
-          {(
-            [
-              { icon: User, label: "Name", value: profile?.displayName ?? "—" },
-              {
-                icon: Activity,
-                label: "Role",
-                value: profile?.activeRole
-                  ? profile.activeRole.charAt(0).toUpperCase() +
-                    profile.activeRole.slice(1)
-                  : "Athlete",
-              },
-              {
-                icon: Bike,
-                label: "Discipline",
-                value: profile?.discipline ?? "Not set",
-              },
-              {
-                icon: Zap,
-                label: "FTP",
-                value: profile?.ftp ? `${profile.ftp}W` : "Not set",
-              },
-              {
-                icon: Scale,
-                label: "Weight",
-                value: profile?.weightKg ? `${profile.weightKg}kg` : "Not set",
-              },
-            ] as const
-          ).map((row) => {
+          {configRows.map((row) => {
             const Icon = row.icon
             return (
               <div
@@ -456,29 +477,36 @@ export default function YouPage() {
                 <span className="flex-1 text-[14px] tracking-tight text-white/85">
                   {row.label}
                 </span>
-                <span className="font-mono text-[11px] tracking-wide text-white/40">
-                  {row.value}
-                </span>
-                <ChevronRight className="h-3.5 w-3.5 text-white/20" strokeWidth={1.75} />
+                {row.custom ? (
+                  row.custom
+                ) : (
+                  <span className="font-mono text-[11px] tracking-wide text-white/40">
+                    {row.value}
+                  </span>
+                )}
+                <ChevronRight className="h-4 w-4 text-white/25" strokeWidth={1.75} />
               </div>
             )
           })}
         </div>
       </section>
 
-      {/* SIGN OUT */}
+      {/* UITLOGGEN */}
       <section className="pt-2">
         <button
           type="button"
           onClick={() => signOut({ redirectUrl: basePath || "/" })}
-          className="w-full rounded-2xl border border-white/[0.08] py-3.5 font-sans text-[13px] text-white/35 transition-colors hover:border-white/15 hover:text-white/50"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/[0.08] py-3.5 font-sans text-[13px] text-white/35 transition-colors hover:border-white/15 hover:text-white/50"
         >
-          Sign out
+          <LogOut className="h-4 w-4" strokeWidth={1.75} />
+          Uitloggen
         </button>
       </section>
 
       <footer className="pt-2 text-center">
-        <span className="label-xs text-white/15">SPARKI AI PERFORMANCE CENTER</span>
+        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
+          SPARKI AI PERFORMANCE CENTER · v1.0
+        </span>
       </footer>
     </ScreenShell>
   )
