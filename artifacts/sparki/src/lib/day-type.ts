@@ -87,6 +87,16 @@ export type DayTypeBriefingConfig = {
 };
 
 /**
+ * Props every day-type homepage component receives from the DayHome dispatcher.
+ * The dispatcher resolves the day type and its briefing once, then renders the
+ * registered component — so each homepage only presents, never detects.
+ */
+export type DayHomeComponentProps = {
+  dayType: DayType;
+  briefing: DayTypeBriefingConfig;
+};
+
+/**
  * Registry mapping each DayType to a briefing builder. Static copy lives here;
  * the dynamic part (today's workout title) is filled from context. New day-type
  * homepages register their briefing here.

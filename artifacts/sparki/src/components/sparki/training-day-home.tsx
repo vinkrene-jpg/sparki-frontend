@@ -6,269 +6,18 @@ import { Sparkline } from "@/components/sparki/primitives"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useAiBrief } from "@/hooks/use-ai-brief"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
-import { useUserProfile } from "@/contexts/UserContext"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useLoad } from "@/hooks/use-load"
 import { useSessions } from "@/hooks/use-sessions"
-import type { AthleteDailyMetric } from "@/lib/athlete-types"
-import { detectDayType, getDayTypeBriefing, type DayType } from "@/lib/day-type"
+import type { DayType, DayTypeBriefingConfig } from "@/lib/day-type"
 import { DayTypeBriefing } from "@/components/sparki/day-type-briefing"
+import {
+  HomeIntro,
+  ReactorReadiness,
+  VitalsGrid,
+  Skeleton,
+} from "@/components/sparki/home-sections"
 
-function todayLabel() {
-  return new Date().toLocaleDateString("nl-NL", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  })
-}
-
-function Skeleton({ className = "" }: { className?: string }) {
-  return (
-    <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
-  )
-}
-
-type Metrics = {
-  feelScore?: number | null
-  sleepQuality?: number | null
-  fatigueScore?: number | null
-  hrv?: number | null
-} | null
-
-function computeReadiness(m: Metrics) {
-  if (!m) return null
-  const feel = m.feelScore != null ? m.feelScore / 5 : null
-  const sleep = m.sleepQuality != null ? m.sleepQuality / 5 : null
-  const fatigue = m.fatigueScore != null ? (10 - m.fatigueScore) / 9 : null
-  const parts = [feel, sleep, fatigue].filter((v): v is number => v !== null)
-  if (parts.length === 0) return null
-  const score = Math.round((parts.reduce((s, v) => s + v, 0) / parts.length) * 100)
-  const state =
-    score >= 80 ? "PRIMED"
-    : score >= 65 ? "GOED"
-    : score >= 50 ? "MATIG"
-    : "LAAG"
-  const advice =
-    score >= 80 ? "Training handhaven — condities zijn ideaal"
-    : score >= 65 ? "Ga door — pas intensiteit aan indien nodig"
-    : score >= 50 ? "Overweeg lagere intensiteit vandaag"
-    : "Rust aanbevolen — herstel eerst"
-  const detail =
-    score >= 80
-      ? "Je systeem is fris genoeg voor de volledige belasting. Geen aanpassing nodig."
-      : score >= 65
-        ? "Goed herstel zichtbaar. Luister naar je lichaam tijdens de opbouw."
-        : score >= 50
-          ? "Verlaag de doelbelasting met 10–15%. Matig herstel."
-          : "Herstel heeft prioriteit. Actieve recovery of rust is de beste keuze."
-  return { score, state, advice, detail }
-}
-
-function Delta({ value, invert = false }: { value: number; invert?: boolean }) {
-  const positive = invert ? value < 0 : value > 0
-  const sign = value > 0 ? "+" : ""
-  return (
-    <span
-      className="font-mono text-[10px] tabular-nums"
-      style={{ color: positive ? ACCENT : "rgba(255,140,120,0.85)" }}
-    >
-      {sign}{value}
-    </span>
-  )
-}
-
-function ReactorReadiness({ metrics }: { metrics: Metrics }) {
-  if (!metrics) {
-    return (
-      <div className="flex flex-col items-center gap-3 py-2">
-        <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white/10 bg-white/[0.03]">
-          <span className="text-3xl font-extralight text-white/25">—</span>
-        </div>
-        <p className="text-center text-[12px] leading-relaxed text-white/35">
-          Nog geen check-in · Log gereedheid in{" "}
-          <span style={{ color: ACCENT }}>You</span>
-        </p>
-      </div>
-    )
-  }
-
-  const result = computeReadiness(metrics)
-
-  if (!result) {
-    return (
-      <p className="text-center text-[12px] text-white/35">
-        Check-in gelogd · Voeg voel, slaap &amp; vermoeidheid toe
-      </p>
-    )
-  }
-
-  const { score, state, advice, detail } = result
-
-  return (
-    <div className="relative mt-2 flex flex-col items-center">
-      <div className="relative flex items-center justify-center py-2">
-        <SparkiCore
-          size={240}
-          accent={ACCENT}
-          readiness={score / 100}
-          variant="reactor"
-        />
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/80">
-            READINESS
-          </span>
-          <span
-            className="font-sans text-7xl font-extralight leading-none tabular-nums"
-            style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
-          >
-            {score}
-          </span>
-          <span className="mt-1 font-mono text-[11px] tracking-[0.25em] text-white/50">
-            {state}
-          </span>
-        </div>
-      </div>
-      <div className="mt-2 flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/[0.06] px-4 py-2 backdrop-blur-sm">
-        <span
-          className="h-1.5 w-1.5 shrink-0 rounded-full"
-          style={{ background: ACCENT, boxShadow: `0 0 8px ${ACCENT}` }}
-        />
-        <span className="text-sm font-medium leading-tight tracking-tight text-white/90">
-          Advies: {advice}
-        </span>
-      </div>
-      <p className="mt-2 max-w-[16rem] text-pretty text-center text-[12px] leading-relaxed text-white/40">
-        {detail}
-      </p>
-    </div>
-  )
-}
-
-function VitalsGrid({ metrics }: { metrics: AthleteDailyMetric[] }) {
-  const today = metrics[0] ?? null
-
-  type VitalDef = {
-    label: string
-    value: string | null
-    unit: string
-    delta: number | null
-    trend: number[]
-    invert?: boolean
-  }
-
-  const entries: VitalDef[] = [
-    {
-      label: "HRV",
-      value: today?.hrv != null ? String(Math.round(today.hrv)) : null,
-      unit: "ms",
-      delta: (() => {
-        const vals = metrics.filter((m) => m.hrv != null).map((m) => m.hrv!)
-        return vals.length >= 2 ? Math.round(vals[0] - vals[1]) : null
-      })(),
-      trend: metrics
-        .slice()
-        .reverse()
-        .filter((m) => m.hrv != null)
-        .map((m) => m.hrv!),
-    },
-    {
-      label: "Slaap",
-      value: today?.sleepHours != null ? today.sleepHours : null,
-      unit: "hrs",
-      delta: (() => {
-        const vals = metrics
-          .filter((m) => m.sleepHours != null)
-          .map((m) => parseFloat(m.sleepHours!))
-        return vals.length >= 2
-          ? Math.round((vals[0] - vals[1]) * 10) / 10
-          : null
-      })(),
-      trend: metrics
-        .slice()
-        .reverse()
-        .filter((m) => m.sleepHours != null)
-        .map((m) => parseFloat(m.sleepHours!)),
-    },
-    {
-      label: "Rust HR",
-      value: today?.restingHR != null ? String(today.restingHR) : null,
-      unit: "bpm",
-      delta: (() => {
-        const vals = metrics
-          .filter((m) => m.restingHR != null)
-          .map((m) => m.restingHR!)
-        return vals.length >= 2 ? Math.round(vals[0] - vals[1]) : null
-      })(),
-      trend: metrics
-        .slice()
-        .reverse()
-        .filter((m) => m.restingHR != null)
-        .map((m) => m.restingHR!),
-      invert: true,
-    },
-    {
-      label: "Vermoeidheid",
-      value: today?.fatigueScore != null ? String(today.fatigueScore) : null,
-      unit: "/10",
-      delta: (() => {
-        const vals = metrics
-          .filter((m) => m.fatigueScore != null)
-          .map((m) => m.fatigueScore!)
-        return vals.length >= 2 ? Math.round(vals[0] - vals[1]) : null
-      })(),
-      trend: metrics
-        .slice()
-        .reverse()
-        .filter((m) => m.fatigueScore != null)
-        .map((m) => m.fatigueScore!),
-      invert: true,
-    },
-  ]
-
-  const hasAnyData = entries.some((e) => e.value !== null)
-  if (!hasAnyData) {
-    return (
-      <p className="text-[12px] text-white/35">
-        Log een check-in om je hersteldata te zien
-      </p>
-    )
-  }
-
-  return (
-    <div className="grid grid-cols-2 gap-x-5 gap-y-6">
-      {entries.map((vital) => (
-        <div key={vital.label} className="flex flex-col gap-1.5">
-          <div className="flex items-baseline justify-between">
-            <span className="font-mono text-[10px] tracking-[0.18em] text-white/40">
-              {vital.label.toUpperCase()}
-            </span>
-            {vital.delta !== null && (
-              <Delta value={vital.delta} invert={vital.invert} />
-            )}
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className="font-sans text-2xl font-light tabular-nums">
-              {vital.value ?? "—"}
-            </span>
-            <span className="font-mono text-[10px] text-white/35">{vital.unit}</span>
-          </div>
-          {vital.trend.length >= 2 ? (
-            <Sparkline
-              data={vital.trend}
-              width={150}
-              height={26}
-              stroke={ACCENT}
-              fill="rgba(120,210,230,0.08)"
-              className="text-cyan-300"
-            />
-          ) : (
-            <div className="h-[26px] rounded bg-white/[0.04]" />
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
 
 const zoneColor: Record<number, string> = {
   1: "rgba(120,210,230,0.25)",
@@ -276,36 +25,26 @@ const zoneColor: Record<number, string> = {
   4: "rgba(120,210,230,0.95)",
 }
 
+// Training-day homepage (blueprint §4: Coach Training & Sparki Training). The
+// full execution-focused home — workout, readiness, vitals, system balance, AI
+// coach and development. Selected by the DayHome dispatcher; `briefing` and
+// `dayType` are resolved upstream so this component only renders.
 export function TrainingDayHome({
-  devDayTypeOverride,
+  dayType,
+  briefing,
 }: {
-  devDayTypeOverride?: DayType
-} = {}) {
+  dayType: DayType
+  briefing: DayTypeBriefingConfig
+}) {
   const { data, isLoading } = useAthleteDashboard()
   const aiEnabled = useFeatureFlag("ai_observations")
   const { data: brief, isLoading: briefLoading } = useAiBrief(aiEnabled)
-  const { profile: userProfile } = useUserProfile()
   const { data: metricsHistory, isLoading: metricsLoading } = useDailyMetrics(14)
   const { data: loadData, isLoading: loadLoading } = useLoad()
   const { data: sessions } = useSessions(1)
 
-  const firstName = userProfile?.displayName?.split(" ")[0] ?? "Atleet"
   const profile = data?.athleteProfile
-
-  // Day-type engine (blueprint §4): decide what today is and build its briefing.
-  const todayWorkout = data?.todayWorkout ?? null
-  const dayTypeCtx = {
-    todayWorkout: todayWorkout
-      ? {
-          type: todayWorkout.type,
-          source: todayWorkout.source,
-          title: todayWorkout.title,
-        }
-      : null,
-    hasProfile: !!profile,
-  }
-  const dayType = devDayTypeOverride ?? detectDayType(dayTypeCtx)
-  const briefing = getDayTypeBriefing(dayType, dayTypeCtx)
+  const isCoachDay = dayType === "coach_training"
 
   const ctlTrend = loadData?.chartData.map((d) => d.ctl) ?? []
 
@@ -350,42 +89,11 @@ export function TrainingDayHome({
   return (
     <ScreenShell section="Home" bg="/concept-lab.png">
       {/* INTRO */}
-      <div className="relative -mt-2">
-        {/* Soft dark scrim behind the hero text — keeps it readable over the
-            brighter background without a hard black box. */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -inset-x-5 -inset-y-4"
-          style={{
-            background:
-              "radial-gradient(115% 130% at 8% 28%, rgba(4,8,14,0.58), rgba(4,8,14,0.22) 55%, transparent 80%)",
-          }}
-        />
-        <div className="relative">
-          <p className="font-mono text-[10px] tracking-[0.28em] text-white/45">
-            {todayLabel().toUpperCase()} · TRAINING DAY
-          </p>
-          <h1
-            className="mt-2 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight"
-            style={{ textShadow: "0 2px 24px rgba(0,0,0,0.45)" }}
-          >
-            Goedemorgen, {firstName}.
-          </h1>
-          {isLoading ? (
-            <Skeleton className="mt-1.5 h-4 w-40" />
-          ) : profile?.ftp ? (
-            <p className="mt-1 font-mono text-[11px] tracking-wide text-white/50">
-              {profile.discipline ?? "Wielrenner"} · FTP {profile.ftp}W
-              {profile.wkg ? ` · ${profile.wkg} W/kg` : ""}
-            </p>
-          ) : (
-            <p className="mt-1 font-mono text-[11px] tracking-wide text-white/45">
-              Stel je FTP in bij{" "}
-              <span style={{ color: ACCENT }}>Profiel</span> om te beginnen
-            </p>
-          )}
-        </div>
-      </div>
+      <HomeIntro
+        kicker={isCoachDay ? "COACH-TRAINING" : "TRAINING DAY"}
+        profile={profile}
+        isLoading={isLoading}
+      />
 
       {/* DAGTYPE BRIEFING — wat is vandaag & waarom (blueprint §4) */}
       {!isLoading && <DayTypeBriefing config={briefing} />}
@@ -411,6 +119,19 @@ export function TrainingDayHome({
                     {data.todayWorkout.targetTSS
                       ? ` · ${data.todayWorkout.targetTSS} TSS`
                       : ""}
+                  </p>
+                  {/* Bron-attributie — coach-plan vs. Sparki (grondregel 4) */}
+                  <p
+                    className="mt-1.5 font-mono text-[10px] tracking-[0.16em]"
+                    style={{
+                      color: isCoachDay
+                        ? "rgba(170,235,248,0.9)"
+                        : ACCENT,
+                    }}
+                  >
+                    {isCoachDay
+                      ? "COACH ZEGT · door je coach ingepland"
+                      : "SPARKI LEGT UIT · afgestemd op je vorm"}
                   </p>
                 </div>
                 <span

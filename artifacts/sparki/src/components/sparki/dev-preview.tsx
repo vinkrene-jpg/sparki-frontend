@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useLocation } from "wouter"
-import { TrainingDayHome } from "@/components/sparki/training-day-home"
+import { DayHome } from "@/components/sparki/day-home"
 import { BottomNav } from "@/components/sparki/bottom-nav"
 import type { DayType } from "@/lib/day-type"
 import TrainPage from "@/pages/train"
@@ -138,7 +138,7 @@ export function DevPreview() {
   } else if (location.startsWith("/you")) {
     page = <YouPage />
   } else {
-    page = <TrainingDayHome devDayTypeOverride={dayType} />
+    page = <DayHome devDayTypeOverride={dayType} />
     isHome = true
   }
 

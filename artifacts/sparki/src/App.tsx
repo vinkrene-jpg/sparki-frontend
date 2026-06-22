@@ -16,7 +16,7 @@ import { dark } from "@clerk/themes";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { BottomNav } from "@/components/sparki/bottom-nav";
-import { TrainingDayHome } from "@/components/sparki/training-day-home";
+import { DayHome } from "@/components/sparki/day-home";
 import { OnboardingFlow } from "@/components/sparki/onboarding-flow";
 import { ErrorBoundary } from "@/components/sparki/error-boundary";
 import NotFound from "@/pages/not-found";
@@ -179,7 +179,7 @@ function SignedInHome() {
 
   return (
     <>
-      <TrainingDayHome />
+      <DayHome />
       <BottomNav />
     </>
   );

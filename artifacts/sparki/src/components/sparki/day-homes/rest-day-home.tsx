@@ -1,0 +1,99 @@
+// Rest-day homepage (blueprint §4 #8). Full rest — no training. The day still
+// surfaces readiness + recovery data so nothing is lost vs. the training home,
+// but framed around adaptation. One primary action (briefing) + ≤3 notes.
+
+import { ScreenShell } from "@/components/sparki/screen-shell"
+import { SectionLabel } from "@/components/sparki/ui"
+import { DayTypeBriefing } from "@/components/sparki/day-type-briefing"
+import {
+  HomeIntro,
+  ReactorReadiness,
+  VitalsGrid,
+  Skeleton,
+} from "@/components/sparki/home-sections"
+import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
+import { useDailyMetrics } from "@/hooks/use-daily-metrics"
+import type { DayHomeComponentProps } from "@/lib/day-type"
+
+const REST_GUIDANCE = [
+  "Geen gestructureerde training vandaag — volledige rust.",
+  "Gebruik de dag voor slaap, lichte mobiliteit en goede voeding.",
+  "Adaptatie gebeurt tijdens rust — dit is waar je sterker wordt.",
+]
+
+export function RestDayHome({ briefing }: DayHomeComponentProps) {
+  const { data, isLoading } = useAthleteDashboard()
+  const { data: metricsHistory, isLoading: metricsLoading } = useDailyMetrics(14)
+  const profile = data?.athleteProfile
+
+  return (
+    <ScreenShell section="Home" bg="/concept-lab.png">
+      <HomeIntro kicker="RUSTDAG" profile={profile} isLoading={isLoading} />
+
+      {!isLoading && <DayTypeBriefing config={briefing} />}
+
+      {/* 01 BEN IK ER KLAAR VOOR — check-in blijft beschikbaar */}
+      <section>
+        <SectionLabel n="01" title="Ben ik er klaar voor" large />
+        <div className="mt-4">
+          {isLoading ? (
+            <div className="flex flex-col items-center gap-4">
+              <Skeleton className="h-60 w-60 rounded-full" />
+              <Skeleton className="h-8 w-56 rounded-full" />
+            </div>
+          ) : (
+            <ReactorReadiness metrics={data?.todayMetrics ?? null} />
+          )}
+        </div>
+      </section>
+
+      {/* 02 WAT ZIET SPARKI — hersteldata */}
+      <section>
+        <SectionLabel n="02" title="Wat ziet Sparki" large />
+        <div className="mt-4">
+          {metricsLoading ? (
+            <div className="grid grid-cols-2 gap-x-5 gap-y-6">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="flex flex-col gap-1.5">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-7 w-16" />
+                  <Skeleton className="h-6 w-full" />
+                </div>
+              ))}
+            </div>
+          ) : metricsHistory && metricsHistory.length > 0 ? (
+            <VitalsGrid metrics={metricsHistory} />
+          ) : (
+            <p className="text-[12px] text-white/35">
+              Log een check-in om je hersteldata te zien
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* 03 WAAROM RUST — ≤3 (grondregel 5) */}
+      <section>
+        <SectionLabel n="03" title="Waarom rust" large />
+        <ul className="mt-4 space-y-3">
+          {REST_GUIDANCE.map((tip) => (
+            <li
+              key={tip}
+              className="flex gap-3 rounded-xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+            >
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-white/40" />
+              <span className="text-[13px] leading-relaxed text-white/70">
+                {tip}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <footer className="pt-2 text-center">
+        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
+          SPARKI AI PERFORMANCE CENTER
+        </span>
+      </footer>
+    </ScreenShell>
+  )
+}
