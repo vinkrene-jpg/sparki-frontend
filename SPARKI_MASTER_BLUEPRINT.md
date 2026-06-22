@@ -14,6 +14,8 @@
 4. **Coach-first.** Sparki ondersteunt de coach, vervangt deze nooit.
 5. **Briefing, geen dashboard.** Elke homepage beantwoordt: *Wat is vandaag? Waarom? Wat wil mijn coach? Wat ziet Sparki? Wat is het volgende?* — met max. 1 primaire actie, max. 3 observaties, max. 3 aanbevelingen.
 6. **Integratie-klaar.** Ontworpen voor TrainingPeaks, Garmin, Strava, Komoot en een coach-portal.
+7. **Leer de atleet (adaptief).** De homepage past zich aan op profiel/niveau: beginner krijgt uitleg, ervaren rijder beknopte info, elite performance-metrics, junior meer begeleiding, recreant meer motivatie. De homepage wordt slimmer over tijd.
+8. **Lange-termijnvisie.** Sparki wordt het dagelijkse operating system van de atleet (training, herstel, voeding, slaap, materiaal, reizen, race-prep, competitie, seizoensplanning, teamcommunicatie, routes, analyse). Elke nieuwe feature versterkt dit, en wordt geen geïsoleerde module.
 
 ---
 
