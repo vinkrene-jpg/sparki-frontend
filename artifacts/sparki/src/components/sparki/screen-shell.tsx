@@ -30,18 +30,18 @@ function RoleSwitcher() {
         <button
           type="button"
           onClick={cycleRole}
-          className="label-xs rounded-full border border-white/10 px-2.5 py-1 text-white/60 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/80"
+          className="font-mono text-[10px] tracking-[0.18em] uppercase rounded-full border border-white/10 px-2.5 py-1 text-white/60 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/80"
           title="Switch role"
         >
           {ROLE_LABEL[active]}
         </button>
       ) : (
-        <span className="label-xs text-white/30">{ROLE_LABEL[active]}</span>
+        <span className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/30">{ROLE_LABEL[active]}</span>
       )}
       <button
         type="button"
         onClick={() => signOut({ redirectUrl: basePath || "/" })}
-        className="label-xs text-white/20 transition-colors hover:text-white/50"
+        className="font-mono text-[10px] text-white/20 transition-colors hover:text-white/50"
         title="Sign out"
       >
         ⏏
@@ -91,13 +91,13 @@ export function ScreenShell({
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-300/60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-300" />
             </span>
-            <span className="label-sm text-white/70">SPARKI</span>
+            <span className="font-mono text-[11px] tracking-[0.35em] text-white/70">SPARKI</span>
           </div>
           <Show when="signed-in">
             <RoleSwitcher />
           </Show>
           <Show when="signed-out">
-            <span className="label-sm text-white/30">{section.toUpperCase()}</span>
+            <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{section.toUpperCase()}</span>
           </Show>
         </header>
 

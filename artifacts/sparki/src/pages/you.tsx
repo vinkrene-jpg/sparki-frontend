@@ -24,7 +24,7 @@ function IdentityStat({
   return (
     <div className="flex flex-col items-center gap-1">
       <span
-        className="font-sans text-lg font-semibold tabular-nums"
+        className="font-sans text-lg font-light tabular-nums"
         style={{
           color: accent ? ACCENT : "rgba(255,255,255,0.9)",
           fontVariantNumeric: "tabular-nums lining-nums",
@@ -93,7 +93,7 @@ function FtpEditor() {
   return (
     <div className="flex items-center gap-3">
       <span
-        className="font-sans text-4xl font-bold tabular-nums"
+        className="font-sans text-4xl font-extralight tabular-nums"
         style={{ color: ACCENT, fontVariantNumeric: "tabular-nums lining-nums" }}
       >
         {profile?.ftp ?? "—"}
@@ -319,7 +319,7 @@ export default function YouPage() {
           <div className="relative flex items-center justify-center">
             <SparkiCore size={132} accent={ACCENT} readiness={0.85} variant="orb" />
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <span className="font-sans text-2xl font-bold tracking-tight">
+              <span className="font-sans text-2xl font-extralight tracking-tight">
                 {initials}
               </span>
             </div>
@@ -333,10 +333,10 @@ export default function YouPage() {
           </div>
         ) : (
           <>
-            <h1 className="mt-4 font-sans text-3xl font-semibold leading-tight tracking-tight">
+            <h1 className="mt-4 font-sans text-3xl font-extralight leading-tight tracking-tight">
               {profile?.displayName ?? "Athlete"}
             </h1>
-            <p className="mt-1.5 label-sm text-white/40">
+            <p className="mt-1.5 font-mono text-[11px] tracking-[0.2em] text-white/40">
               {profile?.activeRole?.toUpperCase() ?? "ATHLETE"} ·{" "}
               {(profile?.discipline ?? "Cyclist").toUpperCase()}
             </p>

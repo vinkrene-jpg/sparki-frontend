@@ -103,16 +103,16 @@ function FtpBars({
       <div className="flex items-end justify-between">
         <div className="flex items-baseline gap-1.5">
           <span
-            className="font-sans text-4xl font-bold"
+            className="font-sans text-4xl font-extralight tabular-nums"
             style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
           >
             {last}
           </span>
-          <span className="label-sm text-white/35">W</span>
+          <span className="font-mono text-[11px] text-white/35">W</span>
         </div>
         {delta !== 0 && (
           <span
-            className="label-xs font-semibold"
+            className="label-xs"
             style={{ color: delta > 0 ? ACCENT : "rgba(255,140,120,0.85)" }}
           >
             {delta > 0 ? "+" : ""}
@@ -177,11 +177,11 @@ export default function LabPage() {
   const FormIcon = formIcon ?? Minus
 
   return (
-    <ScreenShell section="Progress">
+    <ScreenShell section="Lab">
       {/* HEADER */}
       <div className="-mt-2">
-        <p className="label-sm text-white/35">PERFORMANCE ANALYTICS</p>
-        <h1 className="mt-2 font-sans text-3xl font-semibold leading-tight tracking-tight">
+        <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">PERFORMANCE LAB</p>
+        <h1 className="mt-2 font-sans text-3xl font-extralight leading-tight tracking-tight">
           Progress
         </h1>
       </div>
@@ -220,7 +220,7 @@ export default function LabPage() {
               <div className="flex flex-col gap-1">
                 <span className="label-xs text-white/35">CTL</span>
                 <span
-                  className="font-sans text-2xl font-bold tabular-nums"
+                  className="font-sans text-2xl font-light tabular-nums"
                   style={{ color: ACCENT, fontVariantNumeric: "tabular-nums lining-nums" }}
                 >
                   {load.ctl}
@@ -230,7 +230,7 @@ export default function LabPage() {
               <div className="flex flex-col gap-1">
                 <span className="label-xs text-white/35">ATL</span>
                 <span
-                  className="font-sans text-2xl font-bold tabular-nums"
+                  className="font-sans text-2xl font-light tabular-nums"
                   style={{ color: ATL_COLOR, fontVariantNumeric: "tabular-nums lining-nums" }}
                 >
                   {load.atl}
@@ -249,7 +249,7 @@ export default function LabPage() {
                     strokeWidth={2}
                   />
                   <span
-                    className="font-sans text-2xl font-bold tabular-nums"
+                    className="font-sans text-2xl font-light tabular-nums"
                     style={{
                       color: load.tsb >= 0 ? ACCENT : "rgba(255,140,120,0.85)",
                       fontVariantNumeric: "tabular-nums lining-nums",
@@ -335,7 +335,7 @@ export default function LabPage() {
                     )}
                     {s.tss != null && (
                       <span
-                        className="font-sans text-[12px] font-semibold tabular-nums"
+                        className="font-mono text-[12px] tabular-nums"
                         style={{ color: ACCENT }}
                       >
                         {s.tss}

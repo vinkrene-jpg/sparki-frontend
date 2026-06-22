@@ -1,4 +1,4 @@
-import { Home, Zap, Bot, TrendingUp, User } from "lucide-react"
+import { Home, Bike, Radio, FlaskConical, User } from "lucide-react"
 import { Link, useLocation } from "wouter"
 import { useUserProfile } from "@/contexts/UserContext"
 import type { Role } from "@/contexts/UserContext"
@@ -11,9 +11,9 @@ type NavItem = {
 
 const ATHLETE_NAV: NavItem[] = [
   { href: "/", icon: Home, label: "Home" },
-  { href: "/train", icon: Zap, label: "Today" },
-  { href: "/feed", icon: Bot, label: "Sparki" },
-  { href: "/lab", icon: TrendingUp, label: "Progress" },
+  { href: "/train", icon: Bike, label: "Train" },
+  { href: "/feed", icon: Radio, label: "Feed" },
+  { href: "/lab", icon: FlaskConical, label: "Lab" },
   { href: "/you", icon: User, label: "You" },
 ]
 
@@ -24,7 +24,7 @@ const COACH_NAV: NavItem[] = [
 
 const PARENT_NAV: NavItem[] = [
   { href: "/", icon: Home, label: "Home" },
-  { href: "/feed", icon: Bot, label: "Sparki" },
+  { href: "/feed", icon: Radio, label: "Feed" },
   { href: "/you", icon: User, label: "You" },
 ]
 
@@ -68,7 +68,7 @@ export function BottomNav() {
                 strokeWidth={1.75}
               />
               <span
-                className="font-sans text-[9px] uppercase tracking-[0.18em]"
+                className="font-mono text-[9px] uppercase tracking-[0.18em]"
                 style={{
                   color: isActive ? "var(--accent-cyan)" : "rgba(255,255,255,0.35)",
                 }}

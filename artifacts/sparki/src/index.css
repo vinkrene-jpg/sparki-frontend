@@ -49,20 +49,20 @@
   letter-spacing: -0.01em;
 }
 
-/* Precision label — tracked uppercase, medium weight */
+/* Precision label — tracked uppercase, v0 mono weight */
 .label-xs {
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   font-size: 9px;
-  font-weight: 500;
-  letter-spacing: 0.14em;
+  font-weight: 400;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
 .label-sm {
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.16em;
+  font-weight: 400;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
 }
 

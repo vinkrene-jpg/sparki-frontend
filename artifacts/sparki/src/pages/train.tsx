@@ -117,13 +117,13 @@ function PlanTab() {
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
             <span className="label-xs text-white/35">{workout.type.toUpperCase()}</span>
-            <h2 className="mt-1.5 font-sans text-2xl font-semibold leading-tight tracking-tight">
+            <h2 className="mt-1.5 font-sans text-2xl font-light leading-tight tracking-tight">
               {workout.title}
             </h2>
           </div>
           {isCompleted && (
             <span
-              className="shrink-0 rounded-full px-2.5 py-1 label-xs font-semibold"
+              className="shrink-0 rounded-full px-2.5 py-1 label-xs"
               style={{
                 color: ACCENT,
                 background: "rgba(120,210,230,0.1)",
@@ -325,7 +325,7 @@ function LogSessionForm({
               key={n}
               type="button"
               onClick={() => setForm((p) => ({ ...p, feelScore: String(n) }))}
-              className="flex flex-1 items-center justify-center rounded-xl border py-2.5 font-sans text-sm font-semibold transition-colors"
+              className="flex flex-1 items-center justify-center rounded-xl border py-2.5 font-mono text-sm transition-colors"
               style={{
                 borderColor:
                   form.feelScore === String(n)
@@ -415,7 +415,7 @@ function LogTab() {
 
       {showForm && (
         <div className="rounded-2xl border border-white/[0.09] bg-white/[0.02] p-5">
-          <p className="mb-4 label-sm font-semibold text-white/70">LOG SESSION</p>
+          <p className="mb-4 font-mono text-[10px] tracking-[0.25em] text-white/70">LOG SESSION</p>
           <LogSessionForm onDone={() => setShowForm(false)} />
         </div>
       )}
@@ -475,7 +475,7 @@ function LogTab() {
                 {s.feelScore != null && (
                   <div className="flex flex-col items-end gap-0.5">
                     <span
-                      className="font-sans text-base font-semibold tabular-nums"
+                      className="font-sans text-base font-light tabular-nums"
                       style={{ color: ACCENT }}
                     >
                       {s.feelScore}
@@ -503,13 +503,13 @@ export default function TrainPage() {
   const [tab, setTab] = useState<Tab>("plan")
 
   return (
-    <ScreenShell section="Today">
+    <ScreenShell section="Train">
       {/* HEADER */}
       <div className="-mt-2">
-        <p className="label-sm text-white/35">
+        <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
           {new Date().toLocaleDateString("en-US", { weekday: "long" }).toUpperCase()} · TRAINING
         </p>
-        <h1 className="mt-2 font-sans text-3xl font-semibold leading-tight tracking-tight">
+        <h1 className="mt-2 font-sans text-3xl font-extralight leading-tight tracking-tight">
           {tab === "plan" ? "Today's plan" : "Session log"}
         </h1>
       </div>
@@ -521,7 +521,7 @@ export default function TrainPage() {
             key={t}
             type="button"
             onClick={() => setTab(t)}
-            className="rounded-full border px-4 py-1.5 font-sans text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors"
+            className="rounded-full border px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors"
             style={{
               borderColor:
                 tab === t

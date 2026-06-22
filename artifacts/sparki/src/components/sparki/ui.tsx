@@ -7,7 +7,7 @@ export function SectionLabel({ n, title }: { n?: string; title: string }) {
     <div className="flex items-center gap-3">
       {n ? (
         <span
-          className="font-sans text-[11px] font-semibold tabular-nums"
+          className="font-mono text-[11px] tabular-nums"
           style={{ color: ACCENT, fontVariantNumeric: "tabular-nums lining-nums" }}
         >
           {n}
@@ -24,7 +24,7 @@ export function Delta({ value, invert = false }: { value: number; invert?: boole
   const sign = value > 0 ? "+" : ""
   return (
     <span
-      className="font-sans text-[10px] font-semibold tabular-nums"
+      className="font-mono text-[10px] tabular-nums"
       style={{
         color: positive ? ACCENT : "rgba(255,140,120,0.85)",
         fontVariantNumeric: "tabular-nums lining-nums",
@@ -55,7 +55,7 @@ export function Stat({
     <div className="flex flex-col gap-1">
       <span className="label-xs text-white/35">{label.toUpperCase()}</span>
       <span
-        className={`font-sans font-semibold tabular-nums leading-none ${big ? "text-2xl" : "text-[15px]"}`}
+        className={`font-sans font-light tabular-nums leading-none ${big ? "text-2xl" : "text-[15px]"}`}
         style={{
           color: accent ? ACCENT : "rgba(255,255,255,0.9)",
           fontVariantNumeric: "tabular-nums lining-nums",

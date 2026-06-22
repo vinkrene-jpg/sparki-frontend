@@ -34,14 +34,14 @@ export default function SparkiPage() {
   }
 
   return (
-    <ScreenShell section="Sparki">
+    <ScreenShell section="Feed">
       {/* HEADER */}
       <div className="-mt-2">
-        <p className="label-sm text-white/35">AI PERFORMANCE COACH</p>
-        <h1 className="mt-2 font-sans text-3xl font-semibold leading-tight tracking-tight">
+        <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">AI PERFORMANCE COACH</p>
+        <h1 className="mt-2 font-sans text-3xl font-extralight leading-tight tracking-tight">
           Sparki
         </h1>
-        <p className="mt-1.5 label-sm text-white/40">
+        <p className="mt-1.5 font-mono text-[11px] tracking-wide text-white/40">
           Powered by your training data
         </p>
       </div>
@@ -60,7 +60,7 @@ export default function SparkiPage() {
           <div className="flex items-center gap-3">
             <SparkiCore size={36} accent={ACCENT} readiness={0.9} variant="orb" />
             <div>
-              <span className="label-sm font-semibold text-cyan-300/80">
+              <span className="font-mono text-[10px] tracking-[0.25em] text-cyan-300/80">
                 SPARKI AI
               </span>
               <p className="label-xs text-white/25">
@@ -149,7 +149,7 @@ export default function SparkiPage() {
                 key={qa.id}
                 className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4"
               >
-                <p className="label-xs font-semibold text-white/45">YOU ASKED</p>
+                <p className="label-xs text-white/45">YOU ASKED</p>
                 <p className="mt-1.5 text-[13px] font-medium text-white/75">
                   {qa.question}
                 </p>

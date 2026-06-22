@@ -37,7 +37,7 @@ function ReadinessWidget({
     return (
       <div className="flex flex-col items-center gap-3 py-2">
         <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white/10 bg-white/[0.03]">
-          <span className="text-3xl font-bold text-white/25">—</span>
+          <span className="text-3xl font-extralight text-white/25">—</span>
         </div>
         <p className="text-center text-[12px] leading-relaxed text-white/35">
           No check-in yet · Log readiness in{" "}
@@ -101,7 +101,7 @@ function ReadinessWidget({
               <span className="label-xs text-white/40">{label.toUpperCase()}</span>
             </div>
             <span
-              className="font-sans text-[11px] font-semibold tabular-nums"
+              className="font-sans text-[11px] font-light tabular-nums"
               style={{
                 color: ACCENT,
                 fontVariantNumeric: "tabular-nums lining-nums",
@@ -165,12 +165,12 @@ function WorkoutCard({
           <span className="label-xs text-white/35">
             {workout.type.toUpperCase()}
           </span>
-          <h2 className="mt-1 text-pretty font-sans text-xl font-semibold leading-tight tracking-tight">
+          <h2 className="mt-1 text-pretty font-sans text-xl font-light leading-tight tracking-tight">
             {workout.title}
           </h2>
         </div>
         <span
-          className="shrink-0 rounded-full border px-2.5 py-1 label-xs font-semibold"
+          className="shrink-0 rounded-full border px-2.5 py-1 label-xs"
           style={{
             color: statusColor,
             borderColor: `${statusColor.replace("1)", "0.3)")}`,
@@ -185,7 +185,7 @@ function WorkoutCard({
           <>
             <div className="flex flex-col gap-1">
               <span className="label-xs text-white/35">DURATION</span>
-              <span className="font-sans text-[15px] font-semibold tabular-nums text-white/90">
+              <span className="font-sans text-[15px] font-light tabular-nums text-white/90">
                 {workout.targetDurationMin}min
               </span>
             </div>
@@ -195,7 +195,7 @@ function WorkoutCard({
         {workout.targetTSS != null && (
           <div className="flex flex-col gap-1">
             <span className="label-xs text-white/35">TSS</span>
-            <span className="font-sans text-[15px] font-semibold tabular-nums text-white/90">
+            <span className="font-sans text-[15px] font-light tabular-nums text-white/90">
               {workout.targetTSS}
             </span>
           </div>
@@ -276,7 +276,7 @@ export function TrainingDayHome() {
         <p className="label-sm text-white/35">
           {todayLabel().toUpperCase()} · PERFORMANCE CENTER
         </p>
-        <h1 className="mt-2 text-balance font-sans text-3xl font-semibold leading-tight tracking-tight">
+        <h1 className="mt-2 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
           Good morning, {firstName}.
         </h1>
         {isLoading ? (
@@ -336,7 +336,7 @@ export function TrainingDayHome() {
                 <div className="flex flex-col gap-1">
                   <span className="label-xs text-white/35">FITNESS (CTL)</span>
                   <span
-                    className="font-sans text-[15px] font-semibold tabular-nums"
+                    className="font-sans text-[15px] font-light tabular-nums"
                     style={{ color: ACCENT, fontVariantNumeric: "tabular-nums lining-nums" }}
                   >
                     {data.load.ctl}
@@ -346,7 +346,7 @@ export function TrainingDayHome() {
                 <div className="flex flex-col gap-1">
                   <span className="label-xs text-white/35">FATIGUE (ATL)</span>
                   <span
-                    className="font-sans text-[15px] font-semibold tabular-nums text-white/90"
+                    className="font-sans text-[15px] font-light tabular-nums text-white/90"
                     style={{ fontVariantNumeric: "tabular-nums lining-nums" }}
                   >
                     {data.load.atl}
@@ -356,7 +356,7 @@ export function TrainingDayHome() {
                 <div className="flex flex-col gap-1">
                   <span className="label-xs text-white/35">FORM (TSB)</span>
                   <span
-                    className="font-sans text-[15px] font-semibold tabular-nums"
+                    className="font-sans text-[15px] font-light tabular-nums"
                     style={{
                       color:
                         data.load.tsb >= 0
@@ -389,7 +389,7 @@ export function TrainingDayHome() {
             />
             <div className="flex items-center gap-2">
               <SparkiCore size={28} accent={ACCENT} readiness={0.9} variant="orb" />
-              <span className="label-sm font-semibold text-cyan-300/80">
+              <span className="font-mono text-[10px] tracking-[0.25em] text-cyan-300/80">
                 AI COACH
               </span>
             </div>
