@@ -7,6 +7,7 @@ import { useSessions, useLogSession } from "@/hooks/use-sessions"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { useAiBrief } from "@/hooks/use-ai-brief"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
+import { ActivityImportPanel } from "@/components/sparki/activity-import-panel"
 import {
   Bike,
   Activity,
@@ -547,6 +548,9 @@ export default function TrainPage() {
           </div>
         )}
       </section>
+
+      {/* 08 ACTIVITEIT IMPORTEREN */}
+      <ActivityImportPanel />
     </ScreenShell>
   )
 }

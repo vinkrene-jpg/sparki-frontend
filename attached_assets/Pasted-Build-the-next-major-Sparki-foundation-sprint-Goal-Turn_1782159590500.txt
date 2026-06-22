@@ -1,0 +1,424 @@
+Build the next major Sparki foundation sprint.
+
+Goal:
+Turn Sparki from a working frontend/app shell into a durable AI Performance Platform with persistent AI memory, real athlete context, privacy foundations, and a clear technical roadmap.
+
+Do not build isolated UI features.
+Do not add new decorative screens.
+Prioritise backend/data flow, persistence, and product architecture.
+
+Context from current audit:
+- The v0 frontend migration is complete.
+- Athlete profile, onboarding, roles, race calendar, race management, race phasing, recovery/sleep, lab insights and AI briefing mostly work.
+- Database has several useful tables but almost all real usage data is near-zero.
+- AI daily briefing and AI Q&A call a real LLM.
+- Main weakness: AI outputs are not persisted.
+- AI observations tables are currently dead/unused.
+- Coach/parent relationships are stored but not surfaced.
+- Integrations are placeholders.
+- Nutrition, route planning, equipment advice, notifications and social/together training are mostly mock/static.
+- Privacy/consent is incomplete.
+- Onboarding completion currently lives in localStorage and should become persistent in DB.
+
+Sprint name:
+Sparki AI Memory & Core Data Foundation
+
+Build scope:
+
+PHASE 1 — Persistent AI Memory
+
+Create a real persistent AI memory system.
+
+Use or repair the existing ai_observations-related tables if they exist.
+If the current schema is dead or unsuitable, safely migrate/extend it instead of creating duplicate concepts.
+
+Create tables/entities for:
+
+AIObservation:
+- id
+- athlete_id
+- source_type: daily_briefing, ai_chat, training_analysis, recovery_analysis, race_analysis, nutrition_analysis, manual_note, system
+- title
+- summary
+- observation_text
+- confidence: low, medium, high
+- category: training, recovery, race, nutrition, hydration, equipment, mental, planning, health, general
+- severity: info, watch, important, urgent
+- detected_pattern
+- supporting_data_refs
+- recommended_action
+- status: new, acknowledged, saved, dismissed, outdated
+- created_at
+- updated_at
+- expires_at nullable
+
+AIMemoryEvent:
+- id
+- athlete_id
+- event_type: briefing_generated, observation_created, user_acknowledged, user_dismissed, user_saved, model_updated, recommendation_followed
+- related_observation_id nullable
+- metadata json
+- created_at
+
+AIPreference:
+- athlete_id
+- communication_style: direct, supportive, analytical, concise, detailed
+- coaching_intensity: low, normal, high
+- explanation_level: simple, normal, expert
+- sensitive_topics: json
+- preferred_units
+- created_at
+- updated_at
+
+Requirements:
+- Store AI briefing outputs.
+- Store AI observations.
+- Store important AI Q&A outputs when useful.
+- Never store everything blindly. Persist only structured summaries and useful observations.
+- Add deduplication: do not save identical observations repeatedly.
+- Add status handling: user can acknowledge, save or dismiss observations.
+- Add a simple “AI Memory” or “Observations history” area in Lab.
+- Show observations grouped by category and recency.
+- Make current AI briefings aware of prior saved observations.
+- Include last 14 days metrics/workouts and relevant saved observations in AI context.
+- Add clear safeguards so old or dismissed observations are not overused.
+
+Acceptance tests:
+- Generate AI briefing.
+- Confirm briefing is saved.
+- Confirm observations are extracted and saved.
+- Confirm saved observations appear in Lab history.
+- Confirm dismissing an observation hides it from active list.
+- Confirm future briefing can access prior relevant observations.
+- Run typecheck.
+
+PHASE 2 — Persist onboarding state in DB
+
+Current problem:
+Onboarding completion lives in localStorage and is fragile.
+
+Implement persistent onboarding state.
+
+Create or extend onboarding state in DB:
+- athlete_id / user_id
+- onboarding_started_at
+- onboarding_completed_at
+- onboarding_version
+- completed_steps json
+- skipped_steps json
+- current_step
+- is_complete
+- last_seen_at
+
+Requirements:
+- localStorage may be used only as temporary cache, not source of truth.
+- When user logs in on another device, onboarding status must be correct.
+- If onboarding is complete, it must not reappear.
+- If incomplete, continue from correct step.
+- Existing localStorage users should be migrated gracefully where possible.
+- Do not break current onboarding UI.
+
+Acceptance tests:
+- New user starts onboarding.
+- Progress persists after reload.
+- Completion persists after logout/login.
+- Completion works across device/browser simulation.
+- Existing localStorage completion does not break.
+
+PHASE 3 — Coach and parent relationship surfacing
+
+Current problem:
+coach_athlete_links and parent_athlete_links are written but not surfaced.
+
+Build a simple v1 portal/read layer.
+
+Coach v1:
+- Coach can see linked athletes.
+- Show athlete roster.
+- Show basic readiness summary.
+- Show upcoming training/race schedule.
+- Show latest AI observations that are safe to share.
+- Show link status: pending, accepted, expired, revoked.
+- Do not build complex coaching tools yet.
+
+Parent v1:
+- Parent/guardian can see linked minor athlete.
+- Show basic schedule.
+- Show safety/recovery status.
+- Show high-level wellbeing/readiness summary.
+- Do not show sensitive performance/health detail unless explicitly allowed.
+- Add placeholder for consent settings.
+
+Relationship management:
+- Athlete can see linked coach/parent.
+- Athlete can revoke or request removal of link.
+- Admin can view link status.
+- Prevent orphaned relationships.
+- Avoid duplicate invitation/link status concepts where possible.
+
+Acceptance tests:
+- Coach with linked athlete sees roster.
+- Parent with linked athlete sees parent view.
+- Athlete sees linked persons.
+- Revoking a link removes visibility.
+- Pending links are not treated as active.
+
+PHASE 4 — Privacy, consent and minor athlete controls
+
+Build the foundation for privacy before real testers arrive.
+
+Create privacy/consent model:
+- athlete_id
+- consent_version
+- accepted_terms_at
+- accepted_privacy_at
+- parent_consent_required boolean
+- parent_consent_status: not_required, pending, accepted, declined
+- data_sharing_coach: none, summary, full
+- data_sharing_parent: none, safety_only, summary
+- ai_memory_enabled boolean
+- ai_sensitive_analysis_enabled boolean
+- marketing_consent boolean
+- export_allowed boolean
+- delete_requested_at nullable
+
+Requirements:
+- Add privacy settings screen.
+- Add visible explanation in Dutch.
+- Add special handling for minor athletes.
+- If athlete is minor, parent consent must be represented in data model.
+- Do not overbuild legal text, but create the correct product controls.
+- AI memory must be toggleable.
+- If AI memory is disabled, do not persist observations except required system logs.
+- Add audit log entries for consent changes.
+
+Acceptance tests:
+- Adult athlete can set privacy preferences.
+- Minor athlete shows parent consent requirement.
+- Coach view respects data_sharing_coach.
+- Parent view respects data_sharing_parent.
+- AI memory disabled prevents new observation storage.
+
+PHASE 5 — Replace static nutrition/hydration with real v1 data model
+
+Do not build a full nutrition app yet.
+Build a useful minimal foundation.
+
+Create NutritionHydrationLog:
+- athlete_id
+- date
+- context: normal_day, training_day, race_day, recovery_day
+- pre_training_food
+- during_training_carbs_grams
+- during_training_fluid_ml
+- during_training_sodium_mg nullable
+- post_training_food
+- body_weight_before nullable
+- body_weight_after nullable
+- stomach_issues boolean
+- notes
+- created_at
+
+Add simple UI:
+- Log nutrition/hydration for today or a training/race.
+- Show recent entries.
+- Show AI observation from nutrition data only when enough context exists.
+
+AI rules v1:
+- Detect low carbs during long rides.
+- Detect low fluid intake in warm weather if weather/temp is available or manually entered.
+- Detect stomach issue pattern.
+- Detect missing post-training recovery intake.
+- Store resulting observations in AIObservation.
+
+Acceptance tests:
+- User logs nutrition for training.
+- Entry persists.
+- AI can generate simple nutrition observation.
+- Observation appears in Lab history.
+
+PHASE 6 — Manual GPX/FIT upload foundation
+
+Build manual import before external integrations.
+
+Create ActivityImport:
+- athlete_id
+- file_name
+- file_type: gpx, fit, tcx, csv, unknown
+- source: manual_upload
+- uploaded_at
+- status: uploaded, parsed, failed, linked
+- parsed_summary json
+- error_message nullable
+- linked_training_session_id nullable
+
+Requirements:
+- Upload GPX/FIT file.
+- For v1, parse GPX if feasible.
+- FIT parsing may be placeholder if library not available, but store upload and status correctly.
+- Extract basic summary where possible:
+  - duration
+  - distance
+  - elevation
+  - start time
+  - route points count
+- Allow linking import to training_session.
+- Do not fake parsed values.
+- Show clear status if parsing is not supported yet.
+
+Acceptance tests:
+- Upload GPX.
+- Store file record.
+- Parse basic GPX metadata if feasible.
+- Link to training session.
+- FIT upload stored even if not parsed yet, with clear status.
+
+PHASE 7 — Notifications foundation
+
+Do not build external push notifications yet.
+Build internal notification model and UI.
+
+Create Notification:
+- user_id
+- athlete_id nullable
+- type: ai_observation, training_reminder, recovery_warning, race_reminder, coach_update, parent_update, system
+- title
+- body
+- priority: low, normal, high
+- read_at nullable
+- action_url nullable
+- created_at
+
+Requirements:
+- In-app notification center.
+- Create notifications from:
+  - new important AI observation
+  - upcoming race
+  - missing training log
+  - parent/coach link accepted
+- Mark as read.
+- Do not implement push/email yet.
+- Prepare for PWA push later.
+
+Acceptance tests:
+- Important AI observation creates notification.
+- User can read and mark notification as read.
+- Notification count updates.
+
+PHASE 8 — Admin/testing tools v1
+
+Surface the orphaned admin endpoints and add tester readiness.
+
+Build Admin → Testing area:
+- Feature flags overview
+- Invitations overview
+- User roles overview
+- AI memory status
+- Recent errors/logs if available
+- Test users list if existing
+- Manual test checklist
+
+Bug reporting:
+Build basic bug report module now if feasible:
+- button visible in app footer/settings
+- bug report form
+- page/url automatically captured
+- user role captured
+- description field
+- screenshot upload field or placeholder if screenshot capture not feasible
+- status: new, triaged, fixed, rejected
+- admin list view
+
+Do not spend excessive time on advanced screenshot automation if it blocks the sprint.
+A normal screenshot upload is acceptable in v1.
+
+Acceptance tests:
+- User submits bug report.
+- Admin can view bug report.
+- Feature flags are visible.
+- Invitations are visible.
+
+PHASE 9 — Technical roadmap document
+
+Create a new internal markdown document:
+docs/sparki-technical-roadmap.md
+
+Include:
+1. Current working product core
+2. Current data model
+3. Dead/unused schemas
+4. AI architecture
+5. AI memory architecture
+6. Privacy/consent model
+7. Integration roadmap
+8. Mobile/PWA roadmap
+9. Nutrition roadmap
+10. Route planning roadmap
+11. Equipment advice roadmap
+12. Coach/parent roadmap
+13. Testing/release roadmap
+14. Known risks
+15. Recommended next 15 build tasks
+
+Be honest:
+- mark mock features as mock
+- mark placeholders as placeholders
+- mark real features as real
+- list technical debt
+- list security/privacy concerns
+
+PHASE 10 — Cleanup and guardrails
+
+General requirements:
+- Do not create duplicate tables if existing ones can be safely extended.
+- Do not delete existing data.
+- Do not break current navigation.
+- Do not break current athlete profile.
+- Do not break current race calendar.
+- Do not break current training planning.
+- Do not remove Feed if it is still a legitimate AI daily briefing screen.
+- Do not rename core routes without migration.
+- Keep Dutch UI where user-facing.
+- Keep code maintainable.
+- Prefer small reusable services over large components.
+- Add clear TODO comments only where work is intentionally deferred.
+- Avoid fake “AI” labels on static text.
+
+Implementation priority:
+If time is limited, complete in this order:
+1. Persistent AI observations/memory
+2. Onboarding DB persistence
+3. Privacy/consent foundation
+4. Coach/parent surfacing
+5. Nutrition/hydration v1
+6. Notifications foundation
+7. GPX upload foundation
+8. Admin/testing tools
+9. Bug reports
+10. Technical roadmap doc
+
+Final validation:
+After implementation:
+- run typecheck
+- run lint if available
+- run any available tests
+- verify app renders
+- verify login/onboarding still works
+- verify AI briefing still works
+- verify AI observations persist
+- verify Lab history shows saved observations
+- verify coach/parent data reads correctly
+- verify privacy settings save
+- verify no console errors on main pages
+
+Final report:
+Return a concise implementation report with:
+
+1. Built successfully
+2. Partially built
+3. Not built
+4. Database changes made
+5. Mock/placeholder areas remaining
+6. Risks
+7. Manual tests needed
+8. Recommended next task

@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import { useClerk, Show } from "@clerk/react"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
 import { CinematicScene, type SceneName } from "@/components/sparki/cinematic-scene"
+import { NotificationBell } from "@/components/sparki/notification-bell"
 
 const SECTION_SCENE: Record<string, SceneName> = {
   home: "home",
@@ -88,9 +89,12 @@ export function ScreenShell({
             <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{section.toUpperCase()}</span>
           </Show>
           <Show when="signed-in">
-            <div className="flex flex-col items-end gap-1.5">
-              <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{section.toUpperCase()}</span>
-              <RoleSwitcher />
+            <div className="flex items-center gap-3">
+              <NotificationBell />
+              <div className="flex flex-col items-end gap-1.5">
+                <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{section.toUpperCase()}</span>
+                <RoleSwitcher />
+              </div>
             </div>
           </Show>
         </header>

@@ -2,6 +2,10 @@ import { useState } from "react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { SparkiCore } from "@/components/sparki/sparki-core"
+import { PrivacySettingsSection } from "@/components/sparki/privacy-settings"
+import { LinksSection } from "@/components/sparki/links-section"
+import { BugReportForm } from "@/components/sparki/bug-report-form"
+import { AdminPanel } from "@/components/sparki/admin-panel"
 import { useAthleteExtendedProfile, useUpdateAthleteProfile } from "@/hooks/use-athlete-extended-profile"
 import { useLogDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useLogFtp } from "@/hooks/use-ftp-history"
@@ -490,6 +494,14 @@ export default function YouPage() {
           })}
         </div>
       </section>
+
+      <PrivacySettingsSection />
+
+      <LinksSection />
+
+      <BugReportForm />
+
+      <AdminPanel />
 
       {/* UITLOGGEN */}
       <section className="pt-2">

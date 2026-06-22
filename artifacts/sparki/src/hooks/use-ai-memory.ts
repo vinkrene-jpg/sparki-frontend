@@ -1,0 +1,84 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useUser } from "@clerk/react";
+import { DEV_PREVIEW } from "@/lib/dev";
+import { apiFetch } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
+
+export type AiObservation = {
+  id: number;
+  sourceType: string;
+  title: string;
+  summary: string | null;
+  observationText: string;
+  confidence: "low" | "medium" | "high";
+  category: string;
+  severity: "info" | "watch" | "important" | "urgent";
+  detectedPattern: string | null;
+  recommendedAction: string | null;
+  status: "new" | "acknowledged" | "saved" | "dismissed" | "outdated";
+  createdAt: string;
+};
+
+type ObservationsResponse = {
+  observations: AiObservation[];
+  groups: Record<string, AiObservation[]>;
+};
+
+export function useObservations(enabled = true) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: queryKeys.aiMemory.observations(),
+    queryFn: () => apiFetch<ObservationsResponse>("/api/ai/observations"),
+    enabled: (isSignedIn === true || DEV_PREVIEW) && enabled,
+    staleTime: 2 * 60_000,
+  });
+}
+
+export function useUpdateObservation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: number; status: AiObservation["status"] }) =>
+      apiFetch<{ observation: AiObservation }>(`/api/ai/observations/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({
+        queryKey: queryKeys.aiMemory.observations(),
+      });
+    },
+  });
+}
+
+export type AiPreferences = {
+  communicationStyle: "direct" | "supportive" | "analytical" | "concise" | "detailed";
+  coachingIntensity: "low" | "normal" | "high";
+  explanationLevel: "simple" | "normal" | "expert";
+  sensitiveTopics: string[];
+  preferredUnits: string;
+};
+
+export function useAiPreferences(enabled = true) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: queryKeys.aiMemory.preferences(),
+    queryFn: () =>
+      apiFetch<{ preferences: AiPreferences }>("/api/ai/preferences"),
+    enabled: (isSignedIn === true || DEV_PREVIEW) && enabled,
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useUpdateAiPreferences() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (prefs: Partial<AiPreferences>) =>
+      apiFetch<{ preferences: AiPreferences }>("/api/ai/preferences", {
+        method: "PUT",
+        body: JSON.stringify(prefs),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.aiMemory.preferences() });
+    },
+  });
+}

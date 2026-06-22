@@ -13,6 +13,7 @@ import {
   type Invitation,
   type InvitationRelationship,
 } from "@workspace/db";
+import { createNotification } from "../lib/notifications";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { isAdmin } from "../lib/flags";
 
@@ -319,6 +320,21 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
         .status(409)
         .json({ error: "Invitation is no longer pending", status: "accepted" });
       return;
+    }
+
+    // Notify the inviter that their relationship link was accepted.
+    if (relationship === "coach_athlete" || relationship === "parent_athlete") {
+      const role = relationship === "coach_athlete" ? "coach" : "parent";
+      void createNotification({
+        clerkId: inv.inviterClerkId,
+        type: role === "coach" ? "coach_update" : "parent_update",
+        title: "Koppeling geaccepteerd",
+        body: `${accepter.displayName ?? "Een atleet"} heeft je ${
+          role === "coach" ? "coach" : "ouder"
+        }-uitnodiging geaccepteerd.`,
+        athleteClerkId: clerkId,
+        actionUrl: "/",
+      });
     }
 
     res.json({ invitation: publicView(result), roles: nextRoles });

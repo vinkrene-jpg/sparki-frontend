@@ -31,6 +31,16 @@ export const queryKeys = {
       ["coach", "athletes", athleteId, "notes"] as const,
   },
 
+  parent: {
+    all: () => ["parent"] as const,
+    athletes: () => ["parent", "athletes"] as const,
+  },
+
+  links: {
+    all: () => ["links"] as const,
+    mine: () => ["links", "mine"] as const,
+  },
+
   athlete: {
     all: () => ["athlete"] as const,
     profile: () => ["athlete", "profile"] as const,
@@ -47,6 +57,47 @@ export const queryKeys = {
     load: () => ["athlete", "load"] as const,
     ftpHistory: () => ["athlete", "ftp"] as const,
     brief: () => ["athlete", "ai", "brief"] as const,
+  },
+
+  aiMemory: {
+    all: () => ["ai-memory"] as const,
+    observations: () => ["ai-memory", "observations"] as const,
+    preferences: () => ["ai-memory", "preferences"] as const,
+  },
+
+  privacy: {
+    all: () => ["privacy"] as const,
+    settings: () => ["privacy", "settings"] as const,
+  },
+
+  nutrition: {
+    all: () => ["nutrition"] as const,
+    logs: (limit?: number) =>
+      limit != null
+        ? (["nutrition", "logs", limit] as const)
+        : (["nutrition", "logs"] as const),
+  },
+
+  notifications: {
+    all: () => ["notifications"] as const,
+    list: () => ["notifications", "list"] as const,
+  },
+
+  activityImports: {
+    all: () => ["activity-imports"] as const,
+    list: () => ["activity-imports", "list"] as const,
+  },
+
+  bugReports: {
+    all: () => ["bug-reports"] as const,
+    mine: () => ["bug-reports", "mine"] as const,
+    admin: () => ["bug-reports", "admin"] as const,
+  },
+
+  admin: {
+    all: () => ["admin"] as const,
+    whoami: () => ["admin", "whoami"] as const,
+    status: () => ["admin", "status"] as const,
   },
 
   races: {

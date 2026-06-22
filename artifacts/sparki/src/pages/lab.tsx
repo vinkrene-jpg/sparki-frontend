@@ -7,6 +7,8 @@ import { useFtpHistory } from "@/hooks/use-ftp-history"
 import { useSessions } from "@/hooks/use-sessions"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
+import { AiMemoryPanel } from "@/components/sparki/ai-memory-panel"
+import { NutritionPanel } from "@/components/sparki/nutrition-panel"
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
@@ -365,6 +367,12 @@ export default function LabPage() {
           </p>
         )}
       </section>
+
+      {/* 06 AI GEHEUGEN */}
+      <AiMemoryPanel />
+
+      {/* 07 VOEDING & HYDRATATIE */}
+      <NutritionPanel />
     </ScreenShell>
   )
 }

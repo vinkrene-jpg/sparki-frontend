@@ -17,6 +17,8 @@ import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wo
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { BottomNav } from "@/components/sparki/bottom-nav";
 import { DayHome } from "@/components/sparki/day-home";
+import { CoachHome } from "@/components/sparki/coach-home";
+import { ParentHome } from "@/components/sparki/parent-home";
 import { OnboardingFlow } from "@/components/sparki/onboarding-flow";
 import { ErrorBoundary } from "@/components/sparki/error-boundary";
 import NotFound from "@/pages/not-found";
@@ -28,6 +30,7 @@ import RacesPage from "@/pages/races";
 import InvitationsPage from "@/pages/invitations";
 import InviteAcceptPage from "@/pages/invite-accept";
 import LandingPage from "@/pages/landing";
+import { apiFetch } from "@/lib/api";
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
 import { UserProvider, useUserProfile } from "@/contexts/UserContext";
@@ -147,14 +150,48 @@ function SignedInHome() {
 
   useEffect(() => {
     if (!user) return;
-    const flag = localStorage.getItem(`sparki_onboarded_${user.id}`);
-    setOnboarded(flag === "true");
+    let cancelled = false;
+    const lsKey = `sparki_onboarded_${user.id}`;
+    const lsDone = localStorage.getItem(lsKey) === "true";
+    // DB is the source of truth. localStorage is only a fast-path cache and a
+    // migration bridge for users who completed onboarding before DB persistence.
+    void (async () => {
+      try {
+        const { onboarding } = await apiFetch<{
+          onboarding: { isComplete: boolean };
+        }>("/api/onboarding/state");
+        if (cancelled) return;
+        if (onboarding.isComplete) {
+          localStorage.setItem(lsKey, "true");
+          setOnboarded(true);
+        } else if (lsDone) {
+          // Migrate prior localStorage-only completion into the DB.
+          void apiFetch("/api/onboarding/state", {
+            method: "PUT",
+            body: JSON.stringify({ isComplete: true }),
+          });
+          setOnboarded(true);
+        } else {
+          setOnboarded(false);
+        }
+      } catch {
+        // Never hard-block the app on a network/DB hiccup — fall back to cache.
+        if (!cancelled) setOnboarded(lsDone);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   const handleComplete = useCallback(() => {
     if (user) {
       localStorage.setItem(`sparki_onboarded_${user.id}`, "true");
     }
+    void apiFetch("/api/onboarding/state", {
+      method: "PUT",
+      body: JSON.stringify({ isComplete: true }),
+    });
     // Refresh UserContext (picks up new displayName) + all athlete queries
     void refetchUser();
     void qc.invalidateQueries();
@@ -182,10 +219,19 @@ function SignedInHome() {
 
   return (
     <>
-      <DayHome />
+      <RoleHome />
       <BottomNav />
     </>
   );
+}
+
+// Home is role-aware: coaches see their roster, parents see the wellbeing view,
+// athletes see the day-type homepage engine.
+function RoleHome() {
+  const { profile } = useUserProfile();
+  if (profile?.activeRole === "coach") return <CoachHome />;
+  if (profile?.activeRole === "parent") return <ParentHome />;
+  return <DayHome />;
 }
 
 function HomeRedirect() {

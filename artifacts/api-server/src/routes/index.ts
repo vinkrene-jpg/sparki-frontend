@@ -6,6 +6,16 @@ import athleteRouter from "./athlete";
 import racesRouter from "./races";
 import invitationsRouter from "./invitations";
 import aiRouter from "./ai";
+import privacyRouter from "./privacy";
+import onboardingRouter from "./onboarding";
+import coachRouter from "./coach";
+import parentRouter from "./parent";
+import linksRouter from "./links";
+import nutritionRouter from "./nutrition";
+import notificationsRouter from "./notifications";
+import activityImportsRouter from "./activity-imports";
+import bugReportsRouter from "./bug-reports";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -16,5 +26,15 @@ router.use("/athlete", athleteRouter);
 router.use("/races", racesRouter);
 router.use("/invitations", invitationsRouter);
 router.use("/ai", aiRouter);
+router.use("/privacy", privacyRouter);
+router.use("/onboarding", onboardingRouter);
+router.use("/coach", coachRouter);
+router.use("/parent", parentRouter);
+router.use("/links", linksRouter);
+router.use("/nutrition", nutritionRouter);
+router.use("/notifications", notificationsRouter);
+router.use("/activity-imports", activityImportsRouter);
+router.use("/bug-reports", bugReportsRouter);
+router.use("/admin", adminRouter);
 
 export default router;
