@@ -69,7 +69,7 @@ async function loadPlanView(clerkId: string) {
     .filter((id): id is number => id != null);
   const routeById = new Map<
     number,
-    { id: number; name: string; distanceKm: number | null; elevationGainM: number | null; startName: string | null }
+    { id: number; name: string; distanceKm: number | null; elevationGainM: number | null }
   >();
   if (routeIds.length > 0) {
     const routes = await db
@@ -78,7 +78,6 @@ async function loadPlanView(clerkId: string) {
         name: routesTable.name,
         distanceKm: routesTable.distanceKm,
         elevationGainM: routesTable.elevationGainM,
-        startName: routesTable.startName,
       })
       .from(routesTable)
       .where(inArray(routesTable.id, routeIds));

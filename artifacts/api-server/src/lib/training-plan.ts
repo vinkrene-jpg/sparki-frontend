@@ -22,7 +22,6 @@ import {
   racesTable,
   trainingPlansTable,
   planDaysTable,
-  type TrainingType,
 } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { computeReadiness } from "./sharing";
@@ -30,8 +29,8 @@ import {
   disciplineToBike,
   generateAndSavePlanRoute,
   attachRouteToWorkout,
+  estimateDistanceKm,
 } from "./plan-routes";
-import { estimateDistanceKm } from "./route-generator";
 
 const HORIZON_DAYS = 21; // concrete 7-day week + ~2 provisional preview weeks
 const COMMIT_DAYS = 7; // first week is committed (also written as planned_workouts)
@@ -211,6 +210,9 @@ type DayKind =
   | "tempo"
   | "interval"
   | "wedstrijd";
+
+// Concrete training types a planned workout can carry (rest days map to null).
+type TrainingType = "duur" | "herstel" | "tempo" | "interval" | "wedstrijd";
 
 export type DaySkeleton = {
   offset: number;
