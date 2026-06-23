@@ -12,8 +12,22 @@ import {
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { generateThreeWeekPlan } from "../lib/training/plan-generator";
+import { autoAdaptPlan } from "../lib/training-plan";
 
 const router = Router();
+
+// Fire the autonomous provisional re-adaptation after a recovery/health signal
+// changes. Best-effort and non-blocking for the originating write: the helper
+// never throws, and we only log when it reports a failure.
+function triggerPlanRefresh(
+  req: import("express").Request,
+  clerkId: string,
+): void {
+  void autoAdaptPlan(clerkId).then((r) => {
+    if (r.error)
+      req.log.error({ err: r.error }, "auto plan adaptation failed");
+  });
+}
 
 function todayStr(): string {
   return new Date().toISOString().split("T")[0]!;
@@ -270,6 +284,7 @@ router.put("/health-status", requireAuth, async (req, res) => {
       return;
     }
 
+    triggerPlanRefresh(req, clerkId);
     res.json({ healthStatus: updated.healthStatus });
   } catch (err) {
     req.log.error({ err }, "athlete.health-status PUT failed");
@@ -812,6 +827,7 @@ router.post("/sessions", requireAuth, async (req, res) => {
         source: "manual",
       })
       .returning();
+    triggerPlanRefresh(req, clerkId);
     res.status(201).json(session);
   } catch (err) {
     req.log.error({ err }, "athlete.sessions POST failed");
@@ -901,6 +917,7 @@ router.post("/metrics", requireAuth, async (req, res) => {
         },
       })
       .returning();
+    triggerPlanRefresh(req, clerkId);
     res.status(201).json(metric);
   } catch (err) {
     req.log.error({ err }, "athlete.metrics POST failed");

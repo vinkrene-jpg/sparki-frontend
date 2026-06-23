@@ -2,8 +2,22 @@ import { Router } from "express";
 import { eq, and, asc } from "drizzle-orm";
 import { db, racesTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { autoAdaptPlan } from "../lib/training-plan";
 
 const router = Router();
+
+// Adding/moving/removing a race shifts the training phase and any in-horizon
+// race days, so re-run the autonomous provisional adaptation. Best-effort and
+// non-blocking: the helper never throws and we only log reported failures.
+function triggerPlanRefresh(
+  req: import("express").Request,
+  clerkId: string,
+): void {
+  void autoAdaptPlan(clerkId).then((r) => {
+    if (r.error)
+      req.log.error({ err: r.error }, "auto plan adaptation failed");
+  });
+}
 
 const PRIORITIES = ["A", "B", "C"] as const;
 
@@ -92,6 +106,7 @@ router.post("/", requireAuth, async (req, res) => {
         teamRiders: body.teamRiders ?? null,
       })
       .returning();
+    triggerPlanRefresh(req, clerkId);
     res.status(201).json(race);
   } catch (err) {
     req.log.error({ err }, "races POST failed");
@@ -149,6 +164,7 @@ router.put("/:id", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Race not found" });
       return;
     }
+    triggerPlanRefresh(req, clerkId);
     res.json(updated);
   } catch (err) {
     req.log.error({ err }, "races PUT failed");
@@ -209,6 +225,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Race not found" });
       return;
     }
+    triggerPlanRefresh(req, clerkId);
     res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "races DELETE failed");

@@ -19,6 +19,7 @@ import {
   checkCompleteness,
   generatePlan,
   adaptPlan,
+  maybeRollForward,
 } from "../lib/training-plan";
 
 const router = Router();
@@ -128,6 +129,14 @@ async function loadPlanView(clerkId: string) {
 router.get("/", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
+    // Autonomous roll-forward: once the committed week has elapsed, promote the
+    // next provisional week to a fresh committed week (with routes) before we
+    // render — no manual regenerate needed. Best-effort: never block the read.
+    try {
+      await maybeRollForward(clerkId);
+    } catch (err) {
+      req.log.error({ err }, "training-plan.rollForward failed");
+    }
     const [inputs, hasCoach, view] = await Promise.all([
       gatherInputs(clerkId),
       hasAcceptedCoach(clerkId),

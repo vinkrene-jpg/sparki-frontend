@@ -22,6 +22,7 @@ import {
   racesTable,
   trainingPlansTable,
   planDaysTable,
+  coachAthleteLinksTable,
 } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { computeReadiness } from "./sharing";
@@ -963,4 +964,90 @@ function adaptationReasonFor(
   if (i.phase === "taper")
     return "Volume verlaagd voor de tapering richting je wedstrijd.";
   return `Bijgewerkt op basis van je actuele gegevens (was: ${prevIntensity}).`;
+}
+
+// ── Autonomous refresh (task #21) ────────────────────────────────────────────
+// The plan adapts on its own: input changes (recovery/health/race) re-run the
+// lightweight provisional adaptation, and as the committed week elapses the next
+// provisional week is promoted to a fresh committed week (with routes).
+
+async function hasAcceptedCoach(athleteClerkId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ coachClerkId: coachAthleteLinksTable.coachClerkId })
+    .from(coachAthleteLinksTable)
+    .where(
+      and(
+        eq(coachAthleteLinksTable.athleteClerkId, athleteClerkId),
+        eq(coachAthleteLinksTable.status, "accepted"),
+      ),
+    )
+    .limit(1);
+  return !!row;
+}
+
+export type RollForwardResult = { rolled: boolean; reason: string };
+
+// Promote the calendar forward as time passes. When the committed 7-day week has
+// fully elapsed (today is at/after weekStartDate + COMMIT_DAYS), regenerate the
+// plan anchored at today — this turns what was the next provisional week into a
+// fresh committed week (with real routes) without any manual regeneration. Past,
+// completed sessions are preserved by generatePlan (it only clears future
+// still-"planned" workouts). No-op while inputs are incomplete or no plan exists.
+export async function maybeRollForward(
+  clerkId: string,
+): Promise<RollForwardResult> {
+  const [plan] = await db
+    .select({
+      id: trainingPlansTable.id,
+      weekStartDate: trainingPlansTable.weekStartDate,
+    })
+    .from(trainingPlansTable)
+    .where(
+      and(
+        eq(trainingPlansTable.clerkId, clerkId),
+        eq(trainingPlansTable.status, "active"),
+      ),
+    )
+    .limit(1);
+  if (!plan) return { rolled: false, reason: "no-plan" };
+
+  const elapsed = daysBetween(plan.weekStartDate, todayStr());
+  if (elapsed < COMMIT_DAYS)
+    return { rolled: false, reason: "committed-week-active" };
+
+  const inputs = await gatherInputs(clerkId);
+  const completeness = checkCompleteness(inputs);
+  if (!completeness.ready) return { rolled: false, reason: "incomplete-inputs" };
+
+  const mode = (await hasAcceptedCoach(clerkId)) ? "advisory" : "autonomous";
+  await generatePlan(clerkId, mode);
+  return { rolled: true, reason: "rolled-forward" };
+}
+
+export type AutoRefreshResult = {
+  rolled: boolean;
+  adapted: boolean;
+  changes: number;
+  error?: string;
+};
+
+// Best-effort autonomous refresh hook for input-change endpoints (daily metric,
+// session log, health status, races). Runs the fast, DB-only provisional
+// adaptation so the plan reflects the new signal immediately. Never throws — a
+// failure here must not break the originating write. The heavier time-based
+// roll-forward (which can call the model + routing) stays on the plan read path.
+export async function autoAdaptPlan(
+  clerkId: string,
+): Promise<AutoRefreshResult> {
+  try {
+    const r = await adaptPlan(clerkId);
+    return { rolled: false, adapted: r.adapted, changes: r.changes };
+  } catch (err) {
+    return {
+      rolled: false,
+      adapted: false,
+      changes: 0,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
 }
