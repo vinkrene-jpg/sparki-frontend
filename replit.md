@@ -55,6 +55,7 @@ An AI-powered cycling performance app for athletes, coaches, and parents — mig
 
 ## User preferences
 
+- **Never build static mock-UI in the frontend.** Every feature/screen must be backed by real, working backend data — no fabricated/placeholder content, no mock data files driving the UI. If real data isn't available yet, build the real source (DB/API/integration) for it.
 - Keep the Sparki design language: dark, premium, cyan/neon accent oklch(0.82 0.16 200), Inter Variable font. The home/app background is a **cinematic blue-black** treatment (NOT flat black) — see "Cinematic background" below. Do not revert it to a flat #040506 wash or add white surfaces / pastel UI / generic card-dashboard styling.
 - Do NOT touch existing training/AI/routes/events/nutrition/recovery/coach/parent feature pages.
 - Phase 1 only: auth, accounts, roles, protected routes, role switching.
