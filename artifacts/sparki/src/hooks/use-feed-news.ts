@@ -9,6 +9,8 @@ export type FeedNewsItem = {
   title: string;
   url: string;
   source: string | null;
+  authors: string[];
+  doi: string | null;
   summary: string | null;
   abstract: string | null;
   publishedAt: string | null;

@@ -3,10 +3,11 @@ import { Link } from "wouter"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { SparkiCore } from "@/components/sparki/sparki-core"
+import { NewsReader } from "@/components/sparki/news-reader"
 import { useAiBrief, useAskSparki, type AiSource } from "@/hooks/use-ai-brief"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { useKnowledge } from "@/hooks/use-knowledge"
-import { useFeedNews } from "@/hooks/use-feed-news"
+import { useFeedNews, type FeedNewsItem } from "@/hooks/use-feed-news"
 import {
   Megaphone,
   Users,
@@ -43,6 +44,9 @@ type StreamItem = {
   meta?: string
   time?: string
   sources?: AiSource[]
+  // Full news payload — present on news items so clicking opens the in-app
+  // reader (never navigates the browser away from the app).
+  news?: FeedNewsItem
 }
 
 const typeMeta: Record<
@@ -140,6 +144,7 @@ export default function FeedPage() {
   const [input, setInput] = useState("")
   const [active, setActive] = useState<FilterKey>("all")
   const [history, setHistory] = useState<StreamItem[]>([])
+  const [readerItem, setReaderItem] = useState<FeedNewsItem | null>(null)
 
   const handleAsk = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -189,6 +194,7 @@ export default function FeedPage() {
     source: n.source ?? undefined,
     url: n.url,
     time: relTime(n.publishedAt),
+    news: n,
   }))
 
   const streamItems: StreamItem[] =
@@ -341,8 +347,21 @@ export default function FeedPage() {
             return (
               <article
                 key={item.id}
-                className="relative flex gap-4 border-b border-white/[0.06] py-5 last:border-0"
+                className={`group/news relative flex gap-4 border-b border-white/[0.06] py-5 last:border-0${
+                  item.news ? " cursor-pointer" : ""
+                }`}
               >
+                {/* Stretched overlay: the WHOLE news card is the click target,
+                    opening the in-app reader (never leaving the app). Title and
+                    body stay plain text so there are no nested interactives. */}
+                {item.news && (
+                  <button
+                    type="button"
+                    onClick={() => setReaderItem(item.news!)}
+                    className="absolute inset-0 z-[1] rounded-lg focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300/50"
+                    aria-label={`Open nieuwsbericht: ${item.title}`}
+                  />
+                )}
                 <span
                   className="absolute left-0 top-5 h-8 w-px"
                   style={{
@@ -390,7 +409,11 @@ export default function FeedPage() {
                     )}
                   </div>
 
-                  {item.url ? (
+                  {item.news ? (
+                    <h3 className="mt-1.5 text-pretty font-sans text-[15px] font-light leading-snug text-white/90 transition-colors group-hover/news:text-cyan-100">
+                      {item.title}
+                    </h3>
+                  ) : item.url ? (
                     <a
                       href={item.url}
                       target="_blank"
@@ -458,6 +481,10 @@ export default function FeedPage() {
       </section>
 
       <KnowledgeFeedSection />
+
+      {readerItem && (
+        <NewsReader item={readerItem} onClose={() => setReaderItem(null)} />
+      )}
     </ScreenShell>
   )
 }

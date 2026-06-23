@@ -91,6 +91,8 @@ export type FeedNewsItem = {
   title: string;
   url: string;
   source: string | null;
+  authors: string[];
+  doi: string | null;
   summary: string | null;
   abstract: string | null;
   publishedAt: string | null;
@@ -153,6 +155,8 @@ export async function getPersonalizedNews(opts: {
     title: item.title,
     url: item.url,
     source: item.source,
+    authors: item.authors,
+    doi: item.doi,
     summary: item.summary,
     abstract: item.abstract,
     publishedAt: item.publishedAt,

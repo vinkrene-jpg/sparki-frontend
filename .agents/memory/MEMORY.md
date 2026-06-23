@@ -10,6 +10,7 @@
 - [Sparki day-type engine](sparki-day-type-engine.md) — Home day-type detection precedence (§4); rest=explicit rest workout, no-workout=general fallback; health status end-to-end.
 - [Sparki invitation/tester flow](sparki-invitations.md) — token invites grant role+link; one-time accept must be atomic (conditional status flip in a transaction), not read-then-update.
 - [Sparki account-readiness gate](sparki-account-readiness.md) — EVERY signed-in surface must render through one AccountGate (profile required), not Clerk auth alone; ensureAccount is the self-healing SSOT provisioning chain.
+- [Sparki in-app news reader](sparki-news-reader.md) — news clicks open an in-app reader (never navigate away); copyright = excerpt + source attribution, never full text.
 - [Sparki phased multi-sport](sparki-phased-sports.md) — sports registry is SSOT; isSportActive gates entry points only (not engine); validate raw sport BEFORE coerce-to-cycling default.
 - [Sparki account re-link](sparki-account-relink.md) — re-created Clerk account (same verified email) re-links to existing profile; identity email MUST come from Clerk server-side, never req.body; clerk_id FKs need ON UPDATE CASCADE.
 - [Sparki Context Engine V2](sparki-context-engine-v2.md) — coaching "reasoning" lives in SPARKI_SYSTEM prompt + buildAthleteContext richness; ai_observations already has confidence/expiresAt/pattern; /brief may ask questions when uncertain.
