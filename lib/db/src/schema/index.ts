@@ -8,6 +8,7 @@ export * from "./invitations";
 export * from "./feature-flags";
 export * from "./ai-memory";
 export * from "./context-memory";
+export * from "./social";
 export * from "./privacy";
 export * from "./onboarding";
 export * from "./nutrition";

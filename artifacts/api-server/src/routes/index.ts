@@ -22,6 +22,7 @@ import trainingPlanRouter from "./training-plan";
 import bugReportsRouter from "./bug-reports";
 import knowledgeRouter from "./knowledge";
 import feedRouter from "./feed";
+import socialRouter from "./social";
 import adminRouter from "./admin";
 
 const router: IRouter = Router();
@@ -49,6 +50,7 @@ router.use("/training-plan", trainingPlanRouter);
 router.use("/bug-reports", bugReportsRouter);
 router.use("/knowledge", knowledgeRouter);
 router.use("/feed", feedRouter);
+router.use("/social", socialRouter);
 router.use("/admin", adminRouter);
 
 export default router;

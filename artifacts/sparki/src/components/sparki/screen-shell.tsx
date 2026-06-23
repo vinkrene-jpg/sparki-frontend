@@ -1,7 +1,8 @@
 import type { ReactNode } from "react"
-import { LogOut, RefreshCw } from "lucide-react"
+import { LogOut, RefreshCw, Shield } from "lucide-react"
 import { useClerk, Show } from "@clerk/react"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
+import { useTeamIdentity } from "@/hooks/use-social"
 import { CinematicScene, type SceneName } from "@/components/sparki/cinematic-scene"
 import { NotificationBell } from "@/components/sparki/notification-bell"
 import { ProfilePromptCard } from "@/components/sparki/profile-prompt-card"
@@ -13,6 +14,7 @@ const SECTION_SCENE: Record<string, SceneName> = {
   feed: "feed",
   lab: "lab",
   you: "you",
+  samen: "feed",
 }
 
 // User-facing Dutch label for the section shown in the header. Keeps the internal
@@ -24,6 +26,7 @@ const SECTION_DISPLAY: Record<string, string> = {
   feed: "NIEUWS",
   lab: "INZICHT",
   you: "PROFIEL",
+  samen: "SAMEN",
   kennisbank: "KENNIS",
   coach: "COACH",
   ouder: "OUDER",
@@ -79,6 +82,31 @@ function RoleSwitcher() {
   )
 }
 
+// Subtle club crest shown on the home header when the athlete has set a club
+// identity. Colours come from the saved team identity; falls back to the cyan
+// accent. Renders nothing when no club is set.
+function ClubCrest() {
+  const { data } = useTeamIdentity()
+  const team = data?.team
+  if (!team || !team.clubName) return null
+  const color = team.primaryColor ?? "rgba(120,210,230,1)"
+  return (
+    <span
+      className="flex items-center gap-1.5 rounded-full border px-2.5 py-1"
+      style={{
+        borderColor: `${color}55`,
+        background: `${color}1a`,
+      }}
+      title={[team.clubName, team.teamName].filter(Boolean).join(" · ")}
+    >
+      <Shield className="h-3 w-3" style={{ color }} strokeWidth={2} />
+      <span className="max-w-[8rem] truncate font-mono text-[9px] uppercase tracking-[0.14em] text-white/70">
+        {team.shirtBadge || team.clubName}
+      </span>
+    </span>
+  )
+}
+
 // Adaptive profile prompts only make sense for the athlete Home view. Coaches
 // and parents have their own home; the prompt engine is athlete-scoped.
 function HomeProfilePrompt() {
@@ -97,6 +125,7 @@ export function ScreenShell({
   children: ReactNode
 }) {
   const scene = SECTION_SCENE[section.toLowerCase()] ?? "home"
+  const isHome = section.toLowerCase() === "home"
   const sectionLabel = SECTION_DISPLAY[section.toLowerCase()] ?? section.toUpperCase()
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#05070e] text-white">
@@ -113,21 +142,28 @@ export function ScreenShell({
             </span>
             <span className="font-mono text-[11px] tracking-[0.35em] text-white/70">SPARKI</span>
           </div>
-          <Show when="signed-out">
-            <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{sectionLabel}</span>
-          </Show>
-          <Show when="signed-in">
-            <div className="flex items-center gap-3">
-              <NotificationBell />
-              <div className="flex flex-col items-end gap-1.5">
-                <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{sectionLabel}</span>
-                <RoleSwitcher />
+          <div className="flex items-center gap-3">
+            {/* The home scene is only ever reached by an authenticated user (or
+                Development Preview), so the club crest renders outside the
+                signed-in gate to stay visible in preview too. It returns null
+                when no club identity is set. */}
+            {isHome && <ClubCrest />}
+            <Show when="signed-out">
+              <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{sectionLabel}</span>
+            </Show>
+            <Show when="signed-in">
+              <div className="flex items-center gap-3">
+                <NotificationBell />
+                <div className="flex flex-col items-end gap-1.5">
+                  <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{sectionLabel}</span>
+                  <RoleSwitcher />
+                </div>
               </div>
-            </div>
-          </Show>
+            </Show>
+          </div>
         </header>
 
-        {scene === "home" && <HomeProfilePrompt />}
+        {isHome && <HomeProfilePrompt />}
 
         {children}
       </div>

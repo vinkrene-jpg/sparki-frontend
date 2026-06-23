@@ -52,6 +52,12 @@ export const privacySettingsTable = pgTable("privacy_settings", {
   aiSensitiveAnalysisEnabled: boolean("ai_sensitive_analysis_enabled")
     .notNull()
     .default(true),
+  // Friend feed sharing. Fail-closed: off by default, so a friend never sees
+  // your activity updates (training afgerond, wedstrijd gepland, rustdag) until
+  // you explicitly opt in. Sensitive states (ziek/blessure) are never shared.
+  shareActivityWithFriends: boolean("share_activity_with_friends")
+    .notNull()
+    .default(false),
   marketingConsent: boolean("marketing_consent").notNull().default(false),
   exportAllowed: boolean("export_allowed").notNull().default(true),
   deleteRequestedAt: timestamp("delete_requested_at", { withTimezone: true }),

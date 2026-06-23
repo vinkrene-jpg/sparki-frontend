@@ -8,6 +8,7 @@ export type EffectivePrivacy = Pick<
   PrivacySettings,
   | "aiMemoryEnabled"
   | "aiSensitiveAnalysisEnabled"
+  | "shareActivityWithFriends"
   | "dataSharingCoach"
   | "dataSharingParent"
   | "parentConsentRequired"
@@ -18,6 +19,7 @@ export type EffectivePrivacy = Pick<
 const DEFAULTS: EffectivePrivacy = {
   aiMemoryEnabled: true,
   aiSensitiveAnalysisEnabled: true,
+  shareActivityWithFriends: false,
   dataSharingCoach: "summary",
   dataSharingParent: "safety_only",
   parentConsentRequired: false,
@@ -36,6 +38,7 @@ export async function getEffectivePrivacy(
   return {
     aiMemoryEnabled: row.aiMemoryEnabled,
     aiSensitiveAnalysisEnabled: row.aiSensitiveAnalysisEnabled,
+    shareActivityWithFriends: row.shareActivityWithFriends,
     dataSharingCoach: row.dataSharingCoach,
     dataSharingParent: row.dataSharingParent,
     parentConsentRequired: row.parentConsentRequired,

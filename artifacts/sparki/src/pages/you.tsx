@@ -10,6 +10,7 @@ import { AdminPanel } from "@/components/sparki/admin-panel"
 import { useAthleteExtendedProfile, useUpdateAthleteProfile } from "@/hooks/use-athlete-extended-profile"
 import { useLogDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useLogFtp } from "@/hooks/use-ftp-history"
+import { useTeamIdentity, useSaveTeamIdentity } from "@/hooks/use-social"
 import { useClerk } from "@clerk/react"
 import {
   Check,
@@ -26,6 +27,203 @@ import {
   Shield,
   LogOut,
 } from "lucide-react"
+
+function TeamIdentitySection() {
+  const { data, isLoading } = useTeamIdentity()
+  const save = useSaveTeamIdentity()
+  const team = data?.team
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState({
+    clubName: "",
+    teamName: "",
+    category: "",
+    shirtBadge: "",
+    primaryColor: "#0ea5b7",
+    secondaryColor: "#0b1220",
+  })
+
+  const start = () => {
+    setForm({
+      clubName: team?.clubName ?? "",
+      teamName: team?.teamName ?? "",
+      category: team?.category ?? "",
+      shirtBadge: team?.shirtBadge ?? "",
+      primaryColor: team?.primaryColor ?? "#0ea5b7",
+      secondaryColor: team?.secondaryColor ?? "#0b1220",
+    })
+    setEditing(true)
+  }
+
+  const set =
+    (k: keyof typeof form) =>
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      setForm((p) => ({ ...p, [k]: e.target.value }))
+
+  const submit = () => {
+    save.mutate(
+      {
+        clubName: form.clubName.trim() || null,
+        teamName: form.teamName.trim() || null,
+        category: form.category.trim() || null,
+        shirtBadge: form.shirtBadge.trim() || null,
+        primaryColor: form.primaryColor || null,
+        secondaryColor: form.secondaryColor || null,
+        logoUrl: "/club-crest.svg",
+        sport: "cycling",
+      },
+      { onSuccess: () => setEditing(false) },
+    )
+  }
+
+  const fieldClass =
+    "w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+
+  return (
+    <section>
+      <SectionLabel title="Club & team" />
+      {isLoading ? (
+        <div className="mt-3 h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
+      ) : editing ? (
+        <div className="mt-3 flex flex-col gap-3">
+          <div>
+            <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+              CLUB
+            </label>
+            <input
+              value={form.clubName}
+              onChange={set("clubName")}
+              placeholder="bijv. WV De Sprinters"
+              className={`mt-1.5 ${fieldClass}`}
+            />
+          </div>
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+                TEAM
+              </label>
+              <input
+                value={form.teamName}
+                onChange={set("teamName")}
+                placeholder="bijv. Junioren A"
+                className={`mt-1.5 ${fieldClass}`}
+              />
+            </div>
+            <div className="w-32">
+              <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+                CATEGORIE
+              </label>
+              <input
+                value={form.category}
+                onChange={set("category")}
+                placeholder="Junioren"
+                className={`mt-1.5 ${fieldClass}`}
+              />
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <div className="w-28">
+              <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+                BADGE
+              </label>
+              <input
+                value={form.shirtBadge}
+                onChange={set("shirtBadge")}
+                placeholder="DS"
+                maxLength={4}
+                className={`mt-1.5 ${fieldClass}`}
+              />
+            </div>
+            <div className="flex flex-1 gap-3">
+              <div className="flex-1">
+                <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+                  KLEUR 1
+                </label>
+                <input
+                  type="color"
+                  value={form.primaryColor}
+                  onChange={set("primaryColor")}
+                  className="mt-1.5 h-11 w-full rounded-xl border border-white/[0.1] bg-white/[0.04]"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+                  KLEUR 2
+                </label>
+                <input
+                  type="color"
+                  value={form.secondaryColor}
+                  onChange={set("secondaryColor")}
+                  className="mt-1.5 h-11 w-full rounded-xl border border-white/[0.1] bg-white/[0.04]"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={submit}
+              disabled={save.isPending}
+              className="rounded-xl px-4 py-2 font-sans text-[13px] font-semibold disabled:opacity-40"
+              style={{ background: ACCENT, color: "#040506" }}
+            >
+              {save.isPending ? "Opslaan…" : "Opslaan"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="rounded-xl border border-white/[0.1] px-4 py-2 font-sans text-[13px] text-white/50"
+            >
+              Annuleer
+            </button>
+          </div>
+        </div>
+      ) : team && team.clubName ? (
+        <div className="mt-3 flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+          <span
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border"
+            style={{
+              borderColor: team.primaryColor
+                ? `${team.primaryColor}66`
+                : "rgba(255,255,255,0.15)",
+              background: team.primaryColor ? `${team.primaryColor}22` : undefined,
+            }}
+          >
+            <Shield
+              className="h-5 w-5"
+              style={{ color: team.primaryColor ?? ACCENT }}
+              strokeWidth={1.75}
+            />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[14px] font-medium text-white/90">
+              {team.clubName}
+            </p>
+            <p className="truncate font-mono text-[10px] tracking-wide text-white/40">
+              {[team.teamName, team.category].filter(Boolean).join(" · ") ||
+                "Wielrennen"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={start}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10"
+          >
+            <Pencil className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={start}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/12 py-3.5 font-sans text-[13px] text-white/45 transition-colors hover:border-cyan-300/35 hover:text-white/65"
+        >
+          <Shield className="h-4 w-4" strokeWidth={1.75} />
+          Voeg je club & team toe
+        </button>
+      )}
+    </section>
+  )
+}
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
@@ -495,6 +693,8 @@ export default function YouPage() {
           })}
         </div>
       </section>
+
+      <TeamIdentitySection />
 
       <ConnectionsSection />
 

@@ -27,6 +27,7 @@ async function resolveDevUserId(): Promise<string | null> {
     const rows = await db
       .select({ clerkId: userProfilesTable.clerkId })
       .from(userProfilesTable)
+      .orderBy(userProfilesTable.createdAt, userProfilesTable.clerkId)
       .limit(1);
     cachedDevUserId = rows[0]?.clerkId ?? null;
   } catch {

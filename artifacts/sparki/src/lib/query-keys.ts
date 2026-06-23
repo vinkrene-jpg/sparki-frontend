@@ -144,6 +144,17 @@ export const queryKeys = {
     all: () => ["feed"] as const,
     news: () => ["feed", "news"] as const,
   },
+
+  social: {
+    all: () => ["social"] as const,
+    friends: () => ["social", "friends"] as const,
+    requests: () => ["social", "requests"] as const,
+    search: (q: string) => ["social", "search", q] as const,
+    feed: () => ["social", "feed"] as const,
+    suggestion: () => ["social", "suggestion"] as const,
+    proposals: () => ["social", "proposals"] as const,
+    team: () => ["social", "team"] as const,
+  },
 } as const;
 
 /** Default stale times (ms) — import these rather than hardcoding magic numbers. */

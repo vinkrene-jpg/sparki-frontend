@@ -26,6 +26,7 @@ function defaults(clerkId: string) {
     dataSharingParent: "safety_only",
     aiMemoryEnabled: true,
     aiSensitiveAnalysisEnabled: true,
+    shareActivityWithFriends: false,
     marketingConsent: false,
     exportAllowed: true,
     deleteRequestedAt: null,
@@ -37,6 +38,7 @@ const BOOLEAN_FIELDS = [
   "parentConsentRequired",
   "aiMemoryEnabled",
   "aiSensitiveAnalysisEnabled",
+  "shareActivityWithFriends",
   "marketingConsent",
   "exportAllowed",
 ] as const;

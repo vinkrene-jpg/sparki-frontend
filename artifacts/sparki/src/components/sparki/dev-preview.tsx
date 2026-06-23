@@ -8,6 +8,7 @@ import FeedPage from "@/pages/feed"
 import LabPage from "@/pages/lab"
 import YouPage from "@/pages/you"
 import RacesPage from "@/pages/races"
+import SamenPage from "@/pages/samen"
 import InvitationsPage from "@/pages/invitations"
 import InviteAcceptPage from "@/pages/invite-accept"
 import TesterQrPage from "@/pages/tester-qr"
@@ -48,6 +49,7 @@ const VIEWS: DevView[] = [
   { label: "Feed", path: "/feed" },
   { label: "Lab", path: "/lab" },
   { label: "You", path: "/you" },
+  { label: "Samen", path: "/samen" },
   { label: "Kennis", path: "/kennis" },
   { label: "Invites", path: "/invitations" },
   { label: "Tester-QR", path: "/tester-qr" },
@@ -190,6 +192,8 @@ export function DevPreview() {
     page = <KnowledgePage />
   } else if (location.startsWith("/races")) {
     page = <RacesPage />
+  } else if (location.startsWith("/samen")) {
+    page = <SamenPage />
   } else if (location.startsWith("/invitations")) {
     page = <InvitationsPage />
   } else if (location.startsWith("/tester-qr")) {

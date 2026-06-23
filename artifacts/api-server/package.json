@@ -13,6 +13,7 @@
     "test:data-hub": "pnpm run build && node --enable-source-maps ./dist/tests/data-hub.mjs",
     "test:memory-graph": "pnpm run build && node --enable-source-maps ./dist/tests/memory-graph.mjs",
     "test:context-memory": "pnpm run build && node --enable-source-maps ./dist/tests/context-memory.mjs",
+    "seed:social": "pnpm run build && node --enable-source-maps ./dist/scripts/seed-social.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
