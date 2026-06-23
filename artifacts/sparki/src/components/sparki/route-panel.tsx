@@ -7,6 +7,8 @@ import {
   useDeleteRoute,
   useGenerateRoute,
   useSaveGeneratedRoute,
+  useDownloadRouteGpx,
+  useDownloadCandidateGpx,
   type SparkiRoute,
   type Sport,
   type BikeType,
@@ -16,7 +18,7 @@ import {
   type RouteMeetpoint,
 } from "@/hooks/use-routes"
 import { useUpcomingWorkouts } from "@/hooks/use-today-workout"
-import { MapPin, Sparkles, Flag, Users, X } from "lucide-react"
+import { MapPin, Sparkles, Flag, Users, X, Download } from "lucide-react"
 
 const SURFACE_LABEL: Record<string, string> = {
   asfalt: "Asfalt",
@@ -124,10 +126,13 @@ function Climbs({
 
 function RouteCard({ route }: { route: SparkiRoute }) {
   const del = useDeleteRoute()
+  const gpx = useDownloadRouteGpx()
+  const [gpxError, setGpxError] = useState<string | null>(null)
   const profile = route.profile ?? []
   const climbs = route.climbs ?? []
   const nav = route.nav ?? []
   const geometry = route.geometry ?? []
+  const canExport = geometry.length > 1
 
   return (
     <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
@@ -148,15 +153,46 @@ function RouteCard({ route }: { route: SparkiRoute }) {
             {route.name}
           </h3>
         </div>
-        <button
-          type="button"
-          onClick={() => del.mutate(route.id)}
-          disabled={del.isPending}
-          className="shrink-0 font-mono text-[10px] text-white/30 transition hover:text-white/60 disabled:opacity-40"
-        >
-          wis
-        </button>
+        <div className="flex shrink-0 items-center gap-3">
+          {canExport && (
+            <button
+              type="button"
+              onClick={() => {
+                setGpxError(null)
+                gpx.mutate(
+                  { id: route.id, name: route.name },
+                  {
+                    onError: (e) =>
+                      setGpxError(
+                        e instanceof Error ? e.message : "Download mislukt",
+                      ),
+                  },
+                )
+              }}
+              disabled={gpx.isPending}
+              title="Download als GPX voor je fietscomputer"
+              className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-cyan-300/80 disabled:opacity-40"
+            >
+              <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
+              {gpx.isPending ? "…" : "GPX"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => del.mutate(route.id)}
+            disabled={del.isPending}
+            className="font-mono text-[10px] text-white/30 transition hover:text-white/60 disabled:opacity-40"
+          >
+            wis
+          </button>
+        </div>
       </div>
+
+      {gpxError && (
+        <p className="mt-2 text-[11px] text-[rgba(255,140,120,0.85)]">
+          {gpxError}
+        </p>
+      )}
 
       {geometry.length > 1 && <RouteMap geometry={geometry} className="mt-4" />}
 
@@ -218,6 +254,7 @@ const inputClass =
 function RouteGenerator({ onClose }: { onClose: () => void }) {
   const generate = useGenerateRoute()
   const save = useSaveGeneratedRoute()
+  const candidateGpx = useDownloadCandidateGpx()
   const { data: workouts } = useUpcomingWorkouts()
 
   const [mode, setMode] = useState<"loop" | "ptp" | "waypoints">("loop")
@@ -851,6 +888,30 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
               style={{ background: ACCENT, color: "#040506" }}
             >
               {save.isPending ? "Opslaan…" : "Bewaar"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setError(null)
+                candidateGpx.mutate(
+                  {
+                    candidateId: candidate.candidateId,
+                    name: candidate.name,
+                  },
+                  {
+                    onError: (e) =>
+                      setError(
+                        e instanceof Error ? e.message : "Download mislukt",
+                      ),
+                  },
+                )
+              }}
+              disabled={candidateGpx.isPending}
+              title="Download als GPX voor je fietscomputer"
+              className="flex items-center gap-1.5 rounded-2xl border border-white/[0.12] px-4 py-3.5 font-sans text-[13px] text-white/70 transition-colors hover:border-cyan-300/30 disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" strokeWidth={1.75} />
+              {candidateGpx.isPending ? "…" : "GPX"}
             </button>
             <button
               type="button"

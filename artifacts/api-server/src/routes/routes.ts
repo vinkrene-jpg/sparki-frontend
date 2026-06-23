@@ -18,6 +18,7 @@ import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
   parseGpxRoute,
   summarizeTrack,
+  buildGpx,
   putCandidate,
   getCandidate,
   getRoutingProvider,
@@ -276,6 +277,103 @@ router.get("/:id", requireAuth, async (req, res) => {
     req.log.error({ err }, "routes.get failed");
     res.status(500).json({ error: "Kon route niet laden" });
   }
+});
+
+// GET /api/routes/:id/gpx — download a saved route as a GPX file (owner only).
+// Geometry, elevation and turn-by-turn cues are serialized from the route's real
+// stored data. Routes without geometry (e.g. GPX imports, where we don't store
+// the raw track) cannot be re-exported and return 422.
+router.get("/:id/gpx", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  try {
+    const [route] = await db
+      .select()
+      .from(routesTable)
+      .where(and(eq(routesTable.id, id), eq(routesTable.clerkId, clerkId)))
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+
+    const gpx = buildGpx({
+      name: route.name,
+      geometry: (route.geometry as RoutePathPoint[] | null) ?? [],
+      profile: (route.profile as number[] | null) ?? null,
+      nav: (route.nav as { km: number; dir: string; note: string }[] | null) ?? null,
+    });
+    if (!gpx) {
+      res.status(422).json({
+        error:
+          "Deze route heeft geen opgeslagen geometrie en kan niet als GPX worden geëxporteerd.",
+      });
+      return;
+    }
+
+    const safeName =
+      (route.name || "sparki-route")
+        .normalize("NFKD")
+        .replace(/[^\w\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .toLowerCase() || "sparki-route";
+
+    res.setHeader("Content-Type", "application/gpx+xml; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${safeName}.gpx"`,
+    );
+    res.send(gpx);
+  } catch (err) {
+    req.log.error({ err }, "routes.gpx failed");
+    res.status(500).json({ error: "Kon GPX niet genereren" });
+  }
+});
+
+// GET /api/routes/candidate/:candidateId/gpx — download a not-yet-saved
+// generated proposal as GPX. Serialized from the server-trusted candidate store
+// (same honesty guarantee as saving), so the export uses real provider data.
+router.get("/candidate/:candidateId/gpx", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const candidateId = String(req.params.candidateId);
+  const stored = getCandidate(candidateId, clerkId);
+  if (!stored) {
+    res.status(410).json({
+      error:
+        "Routevoorstel is verlopen of niet gevonden — genereer de route opnieuw.",
+    });
+    return;
+  }
+
+  const gpx = buildGpx({
+    name: stored.name,
+    geometry: stored.geometry,
+    profile: stored.profile,
+    nav: stored.nav,
+  });
+  if (!gpx) {
+    res
+      .status(422)
+      .json({ error: "Dit voorstel heeft geen geometrie om te exporteren." });
+    return;
+  }
+
+  const safeName =
+    (stored.name || "sparki-route")
+      .normalize("NFKD")
+      .replace(/[^\w\s-]/g, "")
+      .trim()
+      .replace(/\s+/g, "-")
+      .toLowerCase() || "sparki-route";
+
+  res.setHeader("Content-Type", "application/gpx+xml; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${safeName}.gpx"`);
+  res.send(gpx);
 });
 
 // POST /api/routes/generate — propose a real, provider-backed route WITHOUT

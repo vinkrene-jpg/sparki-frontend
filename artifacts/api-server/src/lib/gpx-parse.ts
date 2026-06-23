@@ -211,6 +211,130 @@ export function parseGpxRoute(content: string): GpxRoute | null {
   };
 }
 
+// ── GPX serialization ───────────────────────────────────────────────────────
+// Build a valid GPX 1.1 document from a saved/generated route so athletes can
+// load it onto a Garmin/Wahoo head unit. Everything written comes from REAL
+// stored data — geometry coordinates from the routing provider, elevation from
+// the route's real (downsampled) elevation profile, and turn-by-turn cues from
+// the provider's instructions. Nothing is fabricated: when a value is missing
+// (e.g. a GPX-imported route has no geometry, or a route has no elevation) we
+// simply omit that element rather than invent it.
+
+type LatLon = [number, number];
+
+export type GpxBuildNavCue = { km: number; dir: string; note: string };
+
+export type GpxBuildInput = {
+  name: string;
+  geometry: LatLon[];
+  // Real, downsampled elevation profile (metres). Mapped back onto the track
+  // points by proportional position along the route. Null/empty → no <ele>.
+  profile?: number[] | null;
+  // Turn-by-turn cues. Exported as <wpt> waypoints, placed at the real route
+  // coordinate nearest each cue's cumulative-km position. Null/empty → no wpts.
+  nav?: GpxBuildNavCue[] | null;
+};
+
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+// Returns null when the route has no usable geometry (caller responds 422
+// rather than emitting an empty track).
+export function buildGpx(route: GpxBuildInput): string | null {
+  const geometry = (route.geometry ?? []).filter(
+    (p): p is LatLon =>
+      Array.isArray(p) &&
+      Number.isFinite(p[0]) &&
+      Number.isFinite(p[1]) &&
+      Math.abs(p[0]) <= 90 &&
+      Math.abs(p[1]) <= 180,
+  );
+  if (geometry.length < 2) return null;
+
+  const profile = (route.profile ?? []).filter((e) => Number.isFinite(e));
+  const n = geometry.length;
+
+  // Elevation at track point i: proportionally resample the real profile across
+  // the track. Both arrays are ordered start→finish along the same route, so
+  // index ratio maps a track point to its real elevation sample.
+  const eleAt = (i: number): number | null => {
+    if (profile.length === 0) return null;
+    if (profile.length === 1) return profile[0]!;
+    const idx = Math.round((i / (n - 1)) * (profile.length - 1));
+    return profile[Math.min(idx, profile.length - 1)]!;
+  };
+
+  // Cumulative distance per track point — used to place nav waypoints at the
+  // real coordinate nearest each cue's km marker.
+  const cumKm: number[] = [0];
+  for (let i = 1; i < n; i++) {
+    const a = geometry[i - 1]!;
+    const b = geometry[i]!;
+    cumKm.push(cumKm[i - 1]! + haversineKm(a[0], a[1], b[0], b[1]));
+  }
+
+  const nearestIdxForKm = (km: number): number => {
+    let best = 0;
+    let bestDiff = Infinity;
+    for (let i = 0; i < n; i++) {
+      const diff = Math.abs(cumKm[i]! - km);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        best = i;
+      }
+    }
+    return best;
+  };
+
+  const name = escapeXml(route.name?.trim() || "Sparki route");
+
+  const wpts: string[] = [];
+  for (const cue of route.nav ?? []) {
+    if (!Number.isFinite(cue.km)) continue;
+    const idx = nearestIdxForKm(cue.km);
+    const [lat, lon] = geometry[idx]!;
+    const ele = eleAt(idx);
+    const cueName = escapeXml(cue.dir?.trim() || "Cue");
+    const desc = escapeXml(cue.note?.trim() || "");
+    wpts.push(
+      `  <wpt lat="${lat}" lon="${lon}">\n` +
+        (ele != null ? `    <ele>${ele}</ele>\n` : "") +
+        `    <name>${cueName}</name>\n` +
+        (desc ? `    <desc>${desc}</desc>\n` : "") +
+        `    <type>${escapeXml("nav-cue")}</type>\n` +
+        `  </wpt>`,
+    );
+  }
+
+  const trkpts = geometry
+    .map((p, i) => {
+      const ele = eleAt(i);
+      return (
+        `      <trkpt lat="${p[0]}" lon="${p[1]}">` +
+        (ele != null ? `<ele>${ele}</ele>` : "") +
+        `</trkpt>`
+      );
+    })
+    .join("\n");
+
+  return (
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<gpx version="1.1" creator="Sparki" xmlns="http://www.topografix.com/GPX/1/1" ` +
+    `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ` +
+    `xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">\n` +
+    `  <metadata>\n    <name>${name}</name>\n  </metadata>\n` +
+    (wpts.length > 0 ? wpts.join("\n") + "\n" : "") +
+    `  <trk>\n    <name>${name}</name>\n    <trkseg>\n${trkpts}\n    </trkseg>\n  </trk>\n` +
+    `</gpx>\n`
+  );
+}
+
 // Detect sustained climbs: contiguous stretches of net ascent. Small dips are
 // tolerated; a stretch qualifies as a climb when it gains >= MIN_GAIN_M over
 // >= MIN_LENGTH_KM at an average grade >= MIN_GRADE_PCT. Names are generic

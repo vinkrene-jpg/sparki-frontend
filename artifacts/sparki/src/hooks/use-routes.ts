@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@clerk/react";
 import { DEV_PREVIEW } from "@/lib/dev";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, API_BASE } from "@/lib/api";
 import { queryKeys, STALE } from "@/lib/query-keys";
 
 export type RouteClimb = {
@@ -190,6 +190,84 @@ export function useSaveGeneratedRoute() {
       }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.routes.all() });
+    },
+  });
+}
+
+// Download a saved route as a GPX file. Fetches with cookies (same auth as the
+// rest of the app), then triggers a browser download from the blob. The server
+// returns 422 for routes without stored geometry (e.g. GPX imports).
+export function useDownloadRouteGpx() {
+  return useMutation({
+    mutationFn: async (route: { id: number; name: string }) => {
+      const res = await fetch(`${API_BASE}/api/routes/${route.id}/gpx`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        let message = "Kon GPX niet downloaden";
+        try {
+          const data = (await res.json()) as { error?: string };
+          if (data?.error) message = data.error;
+        } catch {
+          // non-JSON error body — keep the default message
+        }
+        throw new Error(message);
+      }
+      const blob = await res.blob();
+      const safeName =
+        (route.name || "sparki-route")
+          .normalize("NFKD")
+          .replace(/[^\w\s-]/g, "")
+          .trim()
+          .replace(/\s+/g, "-")
+          .toLowerCase() || "sparki-route";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${safeName}.gpx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    },
+  });
+}
+
+// Download a not-yet-saved generated proposal as GPX (server builds it from the
+// trusted candidate store).
+export function useDownloadCandidateGpx() {
+  return useMutation({
+    mutationFn: async (candidate: { candidateId: string; name: string }) => {
+      const res = await fetch(
+        `${API_BASE}/api/routes/candidate/${candidate.candidateId}/gpx`,
+        { credentials: "include" },
+      );
+      if (!res.ok) {
+        let message = "Kon GPX niet downloaden";
+        try {
+          const data = (await res.json()) as { error?: string };
+          if (data?.error) message = data.error;
+        } catch {
+          // non-JSON error body — keep the default message
+        }
+        throw new Error(message);
+      }
+      const blob = await res.blob();
+      const safeName =
+        (candidate.name || "sparki-route")
+          .normalize("NFKD")
+          .replace(/[^\w\s-]/g, "")
+          .trim()
+          .replace(/\s+/g, "-")
+          .toLowerCase() || "sparki-route";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${safeName}.gpx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
     },
   });
 }
