@@ -30,6 +30,7 @@ import {
   getPreferences,
   styleDirective,
 } from "../engines/coaching";
+import { runConnectionAnalysis } from "../engines/memory-graph";
 import { resolveFlags } from "../lib/flags";
 import {
   getRelevantKnowledge,
@@ -489,6 +490,22 @@ router.get("/observations", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "ai.observations failed");
     res.status(500).json({ error: "Failed to load observations" });
+  }
+});
+
+// ── POST /api/ai/connections ─────────────────────────────────────────────────
+// Run Sparki's deterministic cross-domain connection analysis: link training,
+// sleep, recovery, races, feedback and prior observations into explainable
+// insights (signals + confidence + alternatives). Privacy-gated via the memory
+// store. Returns what was derived and what actually persisted.
+router.post("/connections", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const result = await runConnectionAnalysis(clerkId);
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "ai.connections failed");
+    res.status(500).json({ error: "Verbanden zoeken mislukt." });
   }
 });
 

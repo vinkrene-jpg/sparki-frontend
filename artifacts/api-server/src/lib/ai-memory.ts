@@ -15,6 +15,7 @@ import {
   type AiObservationConfidence,
   type AiMemoryEventType,
   type AiPreference,
+  type ObservationSignal,
 } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { getEffectivePrivacy } from "./privacy";
@@ -35,6 +36,9 @@ export type ObservationInput = {
   severity?: AiObservationSeverity;
   detectedPattern?: string | null;
   supportingDataRefs?: unknown;
+  signals?: ObservationSignal[] | null;
+  alternativeExplanations?: string[] | null;
+  confidenceScore?: number | null;
   recommendedAction?: string | null;
   expiresAt?: Date | null;
   dedupeKey?: string | null;
@@ -111,6 +115,10 @@ export async function persistObservation(
       severity: input.severity ?? "info",
       detectedPattern: input.detectedPattern ?? null,
       supportingDataRefs: (input.supportingDataRefs as object) ?? null,
+      signals: input.signals ?? null,
+      alternativeExplanations: input.alternativeExplanations ?? null,
+      confidenceScore:
+        input.confidenceScore != null ? input.confidenceScore.toFixed(2) : null,
       recommendedAction: input.recommendedAction ?? null,
       dedupeKey,
       expiresAt: input.expiresAt ?? null,

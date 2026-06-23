@@ -3,8 +3,51 @@ import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import {
   useObservations,
   useUpdateObservation,
+  useRunConnections,
   type AiObservation,
+  type ObservationSignal,
 } from "@/hooks/use-ai-memory"
+
+const CONFIDENCE_LABEL: Record<string, string> = {
+  low: "lage zekerheid",
+  medium: "redelijke zekerheid",
+  high: "hoge zekerheid",
+}
+
+const SIGNAL_LABEL: Record<ObservationSignal["kind"], string> = {
+  training: "Training",
+  sleep: "Slaap",
+  recovery: "Herstel",
+  race: "Wedstrijd",
+  feedback: "Terugkoppeling",
+  memory: "Geheugen",
+}
+
+function ConfidenceMeter({
+  confidence,
+  score,
+}: {
+  confidence: string
+  score: string | null
+}) {
+  const pct = score != null ? Math.round(parseFloat(score) * 100) : null
+  return (
+    <div className="flex items-center gap-2">
+      <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+        {CONFIDENCE_LABEL[confidence] ?? confidence}
+        {pct != null ? ` · ${pct}%` : ""}
+      </span>
+      {pct != null && (
+        <span className="h-1 w-16 overflow-hidden rounded-full bg-white/[0.08]">
+          <span
+            className="block h-full rounded-full"
+            style={{ width: `${pct}%`, background: ACCENT }}
+          />
+        </span>
+      )}
+    </div>
+  )
+}
 
 const CATEGORY_LABELS: Record<string, string> = {
   training: "Training",
@@ -81,12 +124,66 @@ function ObservationCard({ obs }: { obs: AiObservation }) {
         )}
       </div>
 
+      <div className="mt-1.5">
+        <ConfidenceMeter confidence={obs.confidence} score={obs.confidenceScore} />
+      </div>
+
       <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-white/50">
         {expanded ? obs.observationText : (obs.summary ?? obs.observationText)}
       </p>
 
+      {expanded && obs.signals && obs.signals.length > 0 && (
+        <div className="mt-2.5">
+          <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/35">
+            Signalen die Sparki gebruikte
+          </p>
+          <ul className="mt-1.5 space-y-1">
+            {obs.signals.map((s, i) => (
+              <li
+                key={i}
+                className="flex items-baseline gap-2 text-[11px] leading-snug text-white/55"
+              >
+                <span
+                  className="mt-px shrink-0 rounded px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wider"
+                  style={{ background: "rgba(255,255,255,0.06)", color: ACCENT }}
+                >
+                  {SIGNAL_LABEL[s.kind] ?? s.kind}
+                </span>
+                <span className="min-w-0">
+                  <span className="text-white/70">{s.label}:</span> {s.value}
+                  {s.date && (
+                    <span className="text-white/30"> · {relativeDate(s.date)}</span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {expanded &&
+        obs.alternativeExplanations &&
+        obs.alternativeExplanations.length > 0 && (
+          <div className="mt-2.5">
+            <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/35">
+              Andere mogelijke verklaringen
+            </p>
+            <ul className="mt-1.5 space-y-1">
+              {obs.alternativeExplanations.map((a, i) => (
+                <li
+                  key={i}
+                  className="flex gap-1.5 text-[11px] leading-snug text-white/45"
+                >
+                  <span className="text-white/25">–</span>
+                  <span>{a}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
       {obs.recommendedAction && expanded && (
-        <p className="mt-2 text-[12px] leading-relaxed text-white/70">
+        <p className="mt-2.5 text-[12px] leading-relaxed text-white/70">
           <span style={{ color: ACCENT }}>→ </span>
           {obs.recommendedAction}
         </p>
@@ -94,13 +191,15 @@ function ObservationCard({ obs }: { obs: AiObservation }) {
 
       <div className="mt-2.5 flex items-center gap-3">
         {(obs.recommendedAction ||
+          (obs.signals?.length ?? 0) > 0 ||
+          (obs.alternativeExplanations?.length ?? 0) > 0 ||
           obs.observationText !== (obs.summary ?? obs.observationText)) && (
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
             className="font-mono text-[10px] tracking-wide text-white/40 transition hover:text-white/70"
           >
-            {expanded ? "Minder" : "Meer"}
+            {expanded ? "Minder" : "Waarom?"}
           </button>
         )}
         <div className="ml-auto flex items-center gap-3">
@@ -130,6 +229,7 @@ function ObservationCard({ obs }: { obs: AiObservation }) {
 
 export function AiMemoryPanel() {
   const { data, isLoading } = useObservations()
+  const runConnections = useRunConnections()
   const groups = data?.groups ?? {}
   const categories = Object.keys(groups)
 
@@ -137,9 +237,28 @@ export function AiMemoryPanel() {
     <section>
       <SectionLabel n="06" title="Sparki Geheugen" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
-        Wat Sparki over jou heeft onthouden uit eerdere briefings en gesprekken.
-        Bewaar wat klopt, verberg wat niet relevant is.
+        Sparki legt verbanden tussen je training, slaap, herstel, wedstrijden en
+        terugkoppeling. Bij elk inzicht zie je welke signalen zijn gebruikt, hoe
+        zeker Sparki is en welke andere verklaringen mogelijk zijn.
       </p>
+
+      <div className="mt-3 flex items-center gap-3">
+        <button
+          type="button"
+          disabled={runConnections.isPending}
+          onClick={() => runConnections.mutate()}
+          className="rounded-lg border border-white/[0.12] bg-white/[0.04] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/70 transition hover:border-cyan-400/40 hover:text-cyan-300 disabled:opacity-40"
+        >
+          {runConnections.isPending ? "Sparki zoekt…" : "Verbanden zoeken"}
+        </button>
+        {runConnections.isSuccess && !runConnections.isPending && (
+          <span className="font-mono text-[10px] text-white/40">
+            {runConnections.data.derived === 0
+              ? "Geen nieuwe verbanden gevonden"
+              : `${runConnections.data.derived} verband${runConnections.data.derived === 1 ? "" : "en"} bekeken`}
+          </span>
+        )}
+      </div>
 
       {isLoading ? (
         <div className="mt-4 space-y-3">
@@ -152,8 +271,8 @@ export function AiMemoryPanel() {
         </div>
       ) : categories.length === 0 ? (
         <p className="mt-4 text-[13px] text-white/35">
-          Nog geen observaties · Vraag Sparki om een briefing op Home om je
-          geheugen op te bouwen
+          Nog geen verbanden · Houd je training, slaap en herstel bij en klik op
+          "Verbanden zoeken" zodat Sparki patronen kan leggen
         </p>
       ) : (
         <div className="mt-4 space-y-5">

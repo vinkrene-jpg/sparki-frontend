@@ -4,6 +4,13 @@ import { DEV_PREVIEW } from "@/lib/dev";
 import { apiFetch } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 
+export type ObservationSignal = {
+  kind: "training" | "sleep" | "recovery" | "race" | "feedback" | "memory";
+  label: string;
+  value: string;
+  date?: string;
+};
+
 export type AiObservation = {
   id: number;
   sourceType: string;
@@ -14,10 +21,37 @@ export type AiObservation = {
   category: string;
   severity: "info" | "watch" | "important" | "urgent";
   detectedPattern: string | null;
+  signals: ObservationSignal[] | null;
+  alternativeExplanations: string[] | null;
+  confidenceScore: string | null;
   recommendedAction: string | null;
   status: "new" | "acknowledged" | "saved" | "dismissed" | "outdated";
   createdAt: string;
 };
+
+export type ConnectionAnalysisResult = {
+  windowDays: number;
+  derived: number;
+  created: number;
+  deduped: number;
+  gated: number;
+};
+
+// Trigger Sparki's cross-domain connection analysis, then refresh the memory.
+export function useRunConnections() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<ConnectionAnalysisResult>("/api/ai/connections", {
+        method: "POST",
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({
+        queryKey: queryKeys.aiMemory.observations(),
+      });
+    },
+  });
+}
 
 type ObservationsResponse = {
   observations: AiObservation[];

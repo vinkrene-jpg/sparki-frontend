@@ -3,6 +3,7 @@ import {
   serial,
   text,
   integer,
+  numeric,
   timestamp,
   jsonb,
   index,
@@ -27,6 +28,7 @@ export const aiObservationSourceTypes = [
   "recovery_analysis",
   "race_analysis",
   "nutrition_analysis",
+  "connection_analysis",
   "manual_note",
   "system",
 ] as const;
@@ -57,6 +59,22 @@ export const aiObservationSeverities = [
 ] as const;
 export type AiObservationSeverity = (typeof aiObservationSeverities)[number];
 
+// One concrete signal Sparki weighed when forming a connection. `kind` groups the
+// signal by domain so the UI can label/color it; `value` is the human-readable
+// reading (e.g. "5.4 u", "rustHR 58"); `date` anchors it in time.
+export type ObservationSignal = {
+  kind:
+    | "training"
+    | "sleep"
+    | "recovery"
+    | "race"
+    | "feedback"
+    | "memory";
+  label: string;
+  value: string;
+  date?: string;
+};
+
 export const aiObservationStatuses = [
   "new",
   "acknowledged",
@@ -82,6 +100,12 @@ export const aiObservationsTable = pgTable(
     severity: text("severity").notNull().default("info"),
     detectedPattern: text("detected_pattern"),
     supportingDataRefs: jsonb("supporting_data_refs"),
+    // Explainable connections: the concrete signals Sparki weighed, a precise
+    // 0..1 confidence score, and honest alternative explanations. These power the
+    // "which signals / how sure / what else could it be" surface in the UI.
+    signals: jsonb("signals").$type<ObservationSignal[]>(),
+    alternativeExplanations: jsonb("alternative_explanations").$type<string[]>(),
+    confidenceScore: numeric("confidence_score", { precision: 3, scale: 2 }),
     recommendedAction: text("recommended_action"),
     status: text("status").notNull().default("new"),
     // Stable hash of (category + detectedPattern/title) used to skip re-saving the
