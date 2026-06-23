@@ -9,7 +9,7 @@ import {
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { resolveFlags, isAdmin } from "../lib/flags";
-import { runKnowledgeScan, knowledgeCount } from "../lib/knowledge/scan";
+import { runKnowledgeScan, knowledgeCount } from "../engines/knowledge";
 
 const router = Router();
 

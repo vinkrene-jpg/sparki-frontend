@@ -15,9 +15,11 @@ import {
 } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { parseGpxRoute, summarizeTrack } from "../lib/gpx-parse";
-import { putCandidate, getCandidate } from "../lib/route-candidates";
 import {
+  parseGpxRoute,
+  summarizeTrack,
+  putCandidate,
+  getCandidate,
   getRoutingProvider,
   selectRoutingProfile,
   profileToSurface,
@@ -31,7 +33,7 @@ import {
   type ElevationPreference,
   type RoutingProfile,
   type RouteStep,
-} from "../lib/routing";
+} from "../engines/route";
 
 const router = Router();
 

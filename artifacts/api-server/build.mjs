@@ -18,6 +18,7 @@ async function buildAll() {
     entryPoints: [
       path.resolve(artifactDir, "src/index.ts"),
       path.resolve(artifactDir, "src/jobs/knowledge-scan.ts"),
+      path.resolve(artifactDir, "src/tests/smoke.ts"),
     ],
     platform: "node",
     bundle: true,

@@ -11,8 +11,9 @@ import {
   ftpHistoryTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { generateThreeWeekPlan } from "../lib/training/plan-generator";
-import { autoAdaptPlan } from "../lib/training-plan";
+import { generateThreeWeekPlan, autoAdaptPlan } from "../engines/training-plan";
+import { computeZones } from "../engines/profile";
+import { computeLoad } from "../engines/recovery-load";
 
 const router = Router();
 
@@ -37,72 +38,6 @@ function daysAgoStr(days: number): string {
   const d = new Date();
   d.setUTCDate(d.getUTCDate() - days);
   return d.toISOString().split("T")[0]!;
-}
-
-function computeLoad(
-  sessions: Array<{ sessionDate: string; tss: number | null }>,
-) {
-  const tssByDate = new Map<string, number>();
-  for (const s of sessions) {
-    if (s.tss != null) {
-      tssByDate.set(s.sessionDate, (tssByDate.get(s.sessionDate) ?? 0) + s.tss);
-    }
-  }
-
-  const today = new Date();
-  let ctl = 0;
-  let atl = 0;
-
-  for (let i = 90; i >= 0; i--) {
-    const d = new Date(today);
-    d.setUTCDate(d.getUTCDate() - i);
-    const dateStr = d.toISOString().split("T")[0]!;
-    const tss = tssByDate.get(dateStr) ?? 0;
-    ctl = ctl + (tss - ctl) / 42;
-    atl = atl + (tss - atl) / 7;
-  }
-
-  return {
-    ctl: Math.round(ctl),
-    atl: Math.round(atl),
-    tsb: Math.round(ctl - atl),
-  };
-}
-
-export function computeZones(ftp: number) {
-  return [
-    { zone: 1, label: "Active Recovery", min: 0, max: Math.round(ftp * 0.55) },
-    {
-      zone: 2,
-      label: "Endurance",
-      min: Math.round(ftp * 0.56),
-      max: Math.round(ftp * 0.75),
-    },
-    {
-      zone: 3,
-      label: "Tempo",
-      min: Math.round(ftp * 0.76),
-      max: Math.round(ftp * 0.9),
-    },
-    {
-      zone: 4,
-      label: "Threshold",
-      min: Math.round(ftp * 0.91),
-      max: Math.round(ftp * 1.05),
-    },
-    {
-      zone: 5,
-      label: "VO2 Max",
-      min: Math.round(ftp * 1.06),
-      max: Math.round(ftp * 1.2),
-    },
-    {
-      zone: 6,
-      label: "Anaerobic",
-      min: Math.round(ftp * 1.21),
-      max: Math.round(ftp * 1.5),
-    },
-  ];
 }
 
 // ── GET /api/athlete/profile ─────────────────────────────────────────────────

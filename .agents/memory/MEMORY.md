@@ -17,3 +17,4 @@
 - [Sparki knowledge base relevance](sparki-knowledge-base.md) — literature ingestion relevance guard must use word-boundary regex (substring "sport" matches "transport"); arXiv queries leak off-topic papers.
 - [Sparki autonomous training](sparki-autonomous-training.md) — coach-less plan engine: deterministic numbers, AI prose-only, real-or-absent ORS routes, coach-gated advisory; vite build needs PORT+BASE_PATH.
 - [Sparki tester QR onboarding](sparki-tester-qr.md) — QR entry: deep-link behind auth must use ?redirect_url= (Clerk honours it over fallback); QR base URL editable (dev origin ≠ deploy domain).
+- [Sparki engine layer](sparki-engine-layer.md) — api-server engines/<engine> facades; routes import engines not lib helpers; smoke harness; docs/engine-architecture.md.

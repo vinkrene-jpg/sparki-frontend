@@ -8,7 +8,7 @@ import {
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { analyzeNutritionLog } from "../lib/nutrition-rules";
-import { persistObservation } from "../lib/ai-memory";
+import { persistObservation } from "../engines/coaching";
 
 const router = Router();
 

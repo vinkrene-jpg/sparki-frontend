@@ -1,4 +1,4 @@
-import { runKnowledgeScan, knowledgeCount } from "../lib/knowledge/scan";
+import { runKnowledgeScan, knowledgeCount } from "../engines/knowledge";
 import { logger } from "../lib/logger";
 
 // CLI entry for the daily Sparki Knowledge Base scan. Intended to be run by a

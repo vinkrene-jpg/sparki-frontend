@@ -2,7 +2,7 @@ import { Router } from "express";
 import { eq, and, asc } from "drizzle-orm";
 import { db, racesTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { autoAdaptPlan } from "../lib/training-plan";
+import { autoAdaptPlan } from "../engines/training-plan";
 
 const router = Router();
 

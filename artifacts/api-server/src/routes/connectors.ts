@@ -2,8 +2,12 @@ import { Router } from "express";
 import { eq, and } from "drizzle-orm";
 import { db, connectorConnectionsTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { connectorRegistry, getConnectorDefinition } from "../lib/connectors/registry";
-import { syncStrava, type ProviderSyncResult } from "../lib/connectors/providers/strava";
+import {
+  connectorRegistry,
+  getConnectorDefinition,
+  syncStrava,
+  type ProviderSyncResult,
+} from "../engines/integration";
 
 const router = Router();
 

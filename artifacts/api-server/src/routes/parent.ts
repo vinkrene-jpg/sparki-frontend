@@ -13,7 +13,7 @@ import {
   parentSharingLevel,
   hasRole,
   getEffectiveParentConsent,
-} from "../lib/sharing";
+} from "../engines/coaching";
 
 const router = Router();
 

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { eq } from "drizzle-orm";
 import { db, athleteProfilesTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { getPersonalizedNews } from "../lib/knowledge/retrieval";
+import { getPersonalizedNews } from "../engines/knowledge";
 
 const router = Router();
 

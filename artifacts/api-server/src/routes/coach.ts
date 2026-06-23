@@ -10,12 +10,12 @@ import {
   aiObservationsTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { computeReadiness } from "../engines/recovery-load";
 import {
-  computeReadiness,
   coachSharingLevel,
   hasAcceptedCoachLink,
   hasRole,
-} from "../lib/sharing";
+} from "../engines/coaching";
 
 const router = Router();
 

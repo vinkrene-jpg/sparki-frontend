@@ -7,9 +7,9 @@ import {
   coachAthleteLinksTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { getMissingOnboardingData } from "../lib/connectors/missing-data";
-import { generatePlan } from "../lib/training-plan";
+import { generatePlan } from "../engines/training-plan";
 import {
+  getMissingOnboardingData,
   EXPERIENCE_LEVELS,
   estimateWeeklyHours,
   estimateFtp,
@@ -20,7 +20,7 @@ import {
   type ExperienceLevel,
   type ProfilePatch,
   type ProgressiveFacts,
-} from "../lib/onboarding-questions";
+} from "../engines/onboarding";
 
 const router = Router();
 

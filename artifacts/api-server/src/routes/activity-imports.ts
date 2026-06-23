@@ -7,7 +7,7 @@ import {
   type ActivityImportFileType,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { parseGpx } from "../lib/gpx-parse";
+import { parseGpx } from "../engines/route";
 
 const router = Router();
 

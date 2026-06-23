@@ -22,7 +22,7 @@ import {
   generatePlan,
   adaptPlan,
   maybeRollForward,
-} from "../lib/training-plan";
+} from "../engines/training-plan";
 import { getForecastByDate, type DayForecast } from "../lib/weather/open-meteo";
 import {
   assessTraining,

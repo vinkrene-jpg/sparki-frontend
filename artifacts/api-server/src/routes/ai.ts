@@ -26,13 +26,13 @@ import {
   extractObservations,
   getPreferences,
   styleDirective,
-} from "../lib/ai-memory";
+} from "../engines/coaching";
 import { resolveFlags } from "../lib/flags";
 import {
   getRelevantKnowledge,
   formatKnowledgeForPrompt,
   type KnowledgeSource,
-} from "../lib/knowledge/retrieval";
+} from "../engines/knowledge";
 
 const router = Router();
 
