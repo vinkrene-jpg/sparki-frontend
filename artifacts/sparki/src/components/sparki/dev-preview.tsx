@@ -10,6 +10,7 @@ import YouPage from "@/pages/you"
 import RacesPage from "@/pages/races"
 import InvitationsPage from "@/pages/invitations"
 import InviteAcceptPage from "@/pages/invite-accept"
+import TesterQrPage from "@/pages/tester-qr"
 import LandingPage from "@/pages/landing"
 import KnowledgePage from "@/pages/knowledge"
 
@@ -48,6 +49,7 @@ const VIEWS: DevView[] = [
   { label: "You", path: "/you" },
   { label: "Kennis", path: "/kennis" },
   { label: "Invites", path: "/invitations" },
+  { label: "Tester-QR", path: "/tester-qr" },
 ]
 
 function isActive(current: string, path: string): boolean {
@@ -188,6 +190,9 @@ export function DevPreview() {
     page = <RacesPage />
   } else if (location.startsWith("/invitations")) {
     page = <InvitationsPage />
+  } else if (location.startsWith("/tester-qr")) {
+    page = <TesterQrPage />
+    showNav = false
   } else if (location.startsWith("/invite/")) {
     page = <InviteAcceptPage />
     showNav = false

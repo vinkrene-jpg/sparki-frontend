@@ -30,6 +30,7 @@ import RacesPage from "@/pages/races";
 import KnowledgePage from "@/pages/knowledge";
 import InvitationsPage from "@/pages/invitations";
 import InviteAcceptPage from "@/pages/invite-accept";
+import TesterQrPage from "@/pages/tester-qr";
 import LandingPage from "@/pages/landing";
 import { apiFetch } from "@/lib/api";
 import SignInPage from "@/pages/sign-in";
@@ -262,6 +263,30 @@ function ProtectedPage({ component: Page }: { component: React.ComponentType }) 
   );
 }
 
+// The invite/QR entry route must survive the sign-in round-trip: a tester who
+// scans a QR while signed-out is sent to sign-in carrying a `redirect_url` back
+// to the invite page, so the token is never dropped and the role/link is granted
+// on return. Clerk honours `redirect_url` over the page's fallbackRedirectUrl.
+function InviteRoute() {
+  const [location] = useLocation();
+  const redirectTo = `/sign-in?redirect_url=${encodeURIComponent(
+    `${basePath}${location}`,
+  )}`;
+  return (
+    <>
+      <Show when="signed-in">
+        <>
+          <InviteAcceptPage />
+          <BottomNav />
+        </>
+      </Show>
+      <Show when="signed-out">
+        <Redirect to={redirectTo} />
+      </Show>
+    </>
+  );
+}
+
 function AppRouter() {
   const [, setLocation] = useLocation();
 
@@ -323,8 +348,11 @@ function AppRouter() {
                 <Route path="/invitations">
                   <ProtectedPage component={InvitationsPage} />
                 </Route>
+                <Route path="/tester-qr">
+                  <ProtectedPage component={TesterQrPage} />
+                </Route>
                 <Route path="/invite/:token">
-                  <ProtectedPage component={InviteAcceptPage} />
+                  <InviteRoute />
                 </Route>
                 {import.meta.env.DEV && PreviewPage && (
                   <Route path="/preview">

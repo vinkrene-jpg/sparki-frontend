@@ -167,6 +167,14 @@ export default function InvitationsPage() {
         <h1 className="mt-1 font-sans text-2xl font-light tracking-tight text-white/90">
           Testers & koppelingen
         </h1>
+        <button
+          type="button"
+          onClick={() => setLocation("/tester-qr")}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors"
+          style={{ borderColor: "rgba(120,210,230,0.4)", background: "rgba(120,210,230,0.08)", color: ACCENT }}
+        >
+          QR-codes om te testen →
+        </button>
       </header>
 
       {capabilities.length === 0 ? (
