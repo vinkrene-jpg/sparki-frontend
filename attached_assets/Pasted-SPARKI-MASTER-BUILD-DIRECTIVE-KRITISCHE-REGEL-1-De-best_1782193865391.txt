@@ -1,0 +1,453 @@
+SPARKI MASTER BUILD DIRECTIVE
+
+KRITISCHE REGEL 1
+De bestaande v0 frontend is de visuele waarheid.
+
+Niet vervangen.
+Niet opnieuw ontwerpen.
+Niet vereenvoudigen.
+Niet terugvallen naar standaard Replit componenten.
+
+Alle verdere ontwikkeling moet plaatsvinden binnen de bestaande v0-design language, componentstructuur, navigatie, uitstraling en gebruikerservaring.
+
+KRITISCHE REGEL 2
+
+Niet opnieuw beginnen.
+
+Gebruik:
+- bestaande codebase
+- bestaande architectuur
+- bestaande database
+- bestaande schermen
+- bestaande workflows
+- bestaande koppelingen
+- bestaande modules
+
+Behoud wat werkt.
+Verbeter wat niet werkt.
+Integreer wat ontbreekt.
+
+KRITISCHE REGEL 3
+
+Sparki is geen verzameling schermen.
+
+Sparki is een AI Performance Platform.
+
+Schermen zijn slechts de visuele laag bovenop de Sparki Brain.
+
+==================================================
+DE SPARKI BRAIN
+==================================================
+
+Bouw één centrale Sparki Brain die eigenaar wordt van alle logica.
+
+De Brain stuurt:
+
+- Athlete Profile Engine
+- Onboarding Engine
+- Training Plan Engine
+- Coaching Engine
+- Recovery Engine
+- Route Engine
+- Knowledge Engine
+- Integration Engine
+- Communication Engine
+- Club Engine
+- Team Engine
+- Friend Group Engine
+- Parent Engine
+- Trainer Engine
+- Dietitian Engine
+- Physio Engine
+- Performance Prediction Engine
+- Notification Engine
+- AVG Engine
+- Passport Engine
+- Athlete Journey Engine
+- Testing Engine
+
+Alle bestaande modules moeten worden gekoppeld aan deze Brain.
+
+==================================================
+ATHLETE PROFILE
+==================================================
+
+Volledig dynamisch profiel.
+
+Leren uit:
+- onboarding
+- koppelingen
+- trainingen
+- gedrag
+- feedback
+- communicatie
+- trainer
+- ouder
+- fysio
+- diëtist
+
+Profiel bevat:
+
+- fysieke data
+- sportieve data
+- mentale data
+- persoonlijkheid
+- motivaties
+- begeleidingsbehoefte
+- communicatiestijl
+- trainingshistorie
+- herstelhistorie
+- wedstrijdhistorie
+- sociale relaties
+- clubrelaties
+
+==================================================
+ONBOARDING
+==================================================
+
+Behoud:
+
+- 4 kernvragen
+- trainer of AI coach
+- gefaseerde onboarding
+- persoonlijkheidsprofiel
+- begeleidingsprofiel
+- communicatiestijl
+- motivatiefactoren
+
+Uitbreiden met:
+
+- sportkoppelingen
+- health-koppelingen
+- automatisch ophalen gegevens
+- alleen ontbrekende data vragen
+
+Onboarding blijft doorlopen tijdens gebruik.
+
+==================================================
+INTEGRATIES
+==================================================
+
+Ondersteunen:
+
+- Garmin
+- Strava
+- TrainingPeaks
+- Apple Health
+- Health Connect
+- Fitbit
+- Whoop
+- Oura
+- Polar
+- Suunto
+- Coros
+- Zwift
+- Wahoo
+- Komoot
+- RideWithGPS
+
+Handmatige invoer blijft fallback.
+
+==================================================
+TRAINING ENGINE
+==================================================
+
+Voor sporter zonder trainer:
+
+- automatisch schema
+- weekplanning
+- 3-weken preview
+- periodisering
+- wedstrijdvoorbereiding
+- herstelweken
+- trainingsopbouw
+
+Voor sporter met trainer:
+
+- trainer leidend
+- Sparki adviserend
+
+==================================================
+INTERACTIEVE TRAININGEN
+==================================================
+
+Iedere training aanklikbaar.
+
+Lagen:
+
+Laag 1:
+Wat moet ik doen?
+
+Laag 2:
+Waarom moet ik dit doen?
+
+Laag 3:
+Welke trainingsfilosofie zit hierachter?
+
+Laag 4:
+Technische verdieping
+
+Laag 5:
+Coachniveau uitleg
+
+==================================================
+ROUTE ENGINE
+==================================================
+
+OpenRouteService integratie.
+
+Automatische routekeuze.
+
+Sport-specifiek.
+
+Route gekoppeld aan training.
+
+Later uitbreidbaar naar:
+- Komoot
+- Strava
+- Google
+- Mapbox
+
+==================================================
+RECOVERY ENGINE
+==================================================
+
+Gebruik:
+
+- slaap
+- HRV
+- rusthartslag
+- belasting
+- vermoeidheid
+- blessures
+- feedback
+
+Past schema aan.
+
+==================================================
+KNOWLEDGE ENGINE
+==================================================
+
+Volledige kennislaag.
+
+Onderwerpen:
+
+- training
+- voeding
+- herstel
+- slaap
+- mindset
+- wedstrijdvoorbereiding
+- materiaal
+- pacing
+- aerodynamica
+- krachttraining
+
+Iedere uitleg beschikbaar in meerdere dieptelagen.
+
+==================================================
+PASSPORT CARD
+==================================================
+
+Dynamisch sportpaspoort.
+
+Rolafhankelijk.
+
+Sporter.
+Trainer.
+Ouder.
+Fysio.
+Diëtist.
+
+Toont alleen relevante gegevens.
+
+Volledig gekoppeld aan Athlete Profile Engine.
+
+==================================================
+CLUB / TEAM
+==================================================
+
+Ondersteunen:
+
+- clubs
+- teams
+- ploegen
+- trainingsgroepen
+
+Trainer kan:
+- uitnodigen
+- beheren
+- communiceren
+- analyseren
+
+==================================================
+VRIENDENGROEPEN
+==================================================
+
+Informele groepen.
+
+Gezamenlijk trainen.
+
+Routes delen.
+
+Beschikbaarheid delen.
+
+Privacy gecontroleerd.
+
+==================================================
+TRAINING MATCH ENGINE
+==================================================
+
+Zoekt automatisch:
+
+- vergelijkbare trainingen
+- overeenkomende tijdstippen
+- vergelijkbare doelen
+- vergelijkbaar niveau
+- vergelijkbare routes
+
+Doel:
+
+sporters slim laten samen trainen.
+
+==================================================
+COMMUNICATION ENGINE
+==================================================
+
+Niet alleen chat.
+
+Context-gestuurd.
+
+Sporter.
+Trainer.
+Ouder.
+Fysio.
+Diëtist.
+
+Rechten gebaseerd.
+
+==================================================
+AVG ENGINE
+==================================================
+
+Volledig geïntegreerd.
+
+Toestemming.
+Logging.
+Datatoegang.
+Minderjarigen.
+Medische gegevens.
+Bewaartermijnen.
+Export.
+Verwijderen.
+
+==================================================
+PERFORMANCE PREDICTION
+==================================================
+
+Voorspel:
+
+- prestatieontwikkeling
+- wedstrijdgereedheid
+- risico
+- doelhaalbaarheid
+
+==================================================
+ATHLETE JOURNEY
+==================================================
+
+Begeleid de sporter vanaf:
+
+- onboarding
+- eerste training
+- eerste wedstrijd
+- eerste seizoen
+
+Tot:
+
+- meerjarige ontwikkeling
+
+==================================================
+TESTING ENGINE
+==================================================
+
+Bouw Sparki Brain Test Center.
+
+Controleer automatisch:
+
+- logica aanwezig
+- AI aanwezig
+- kennis aanwezig
+- koppelingen aanwezig
+- rechten correct
+- interacties correct
+- routes correct
+- trainingen correct
+- schermen gekoppeld aan engines
+- geen dode knoppen
+- geen lege modules
+- geen lege kaarten
+- geen dummy AI
+- geen ontbrekende uitleg
+
+Maak testgebruikers:
+
+- jeugd
+- ouder
+- trainer
+- wielrenner
+- hardloper
+- beginner
+- gevorderde
+- fysio
+- diëtist
+- clubbeheerder
+
+Laat iedere release automatisch testen.
+
+==================================================
+3D EXPERIENCE
+==================================================
+
+Pas starten nadat bovenstaande stabiel werkt.
+
+Bouw vervolgens de volgende generatie ervaring:
+
+- 3D dashboards
+- 3D trainingsomgeving
+- 3D routeweergave
+- 3D voortgang
+- 3D prestatiecentrum
+- interactieve sportomgeving
+- futuristische performance center uitstraling
+
+Belangrijk:
+
+Eerst werkende intelligentie.
+Daarna 3D beleving.
+
+Nooit andersom.
+
+==================================================
+EINDDOEL
+==================================================
+
+Sparki moet geen trainingsapp zijn.
+
+Sparki moet een volledig AI Performance Ecosysteem zijn waarin:
+
+- sporters
+- trainers
+- ouders
+- clubs
+- teams
+- fysio's
+- diëtisten
+
+samenwerken rond één centrale intelligente Sparki Brain.
+
+Behoud de bestaande v0-frontend volledig.
+Integreer alle bestaande functionaliteit.
+Maak van iedere module echte werkende logica.
+Test alles automatisch.
+Start daarna met de 3D-performance ervaring.

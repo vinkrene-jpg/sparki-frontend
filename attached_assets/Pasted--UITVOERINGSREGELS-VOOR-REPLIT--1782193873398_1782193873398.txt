@@ -1,0 +1,165 @@
+==================================================
+UITVOERINGSREGELS VOOR REPLIT
+==================================================
+
+Dit is een bouwopdracht.
+
+Dit is GEEN analyseopdracht.
+Dit is GEEN brainstormopdracht.
+Dit is GEEN documentatieopdracht.
+Dit is GEEN onderzoeksopdracht.
+
+Niet reageren met:
+- lange rapporten
+- architectuurdocumenten zonder implementatie
+- samenvattingen
+- capability matrices
+- theoretische ontwerpen
+- uitgebreide markdown-documenten
+
+Lever uitsluitend werkende software op.
+
+==================================================
+WERKWIJZE
+==================================================
+
+Voor iedere module:
+
+1. Controleer bestaande code.
+2. Hergebruik bestaande code indien bruikbaar.
+3. Bouw ontbrekende logica.
+4. Koppel logica aan bestaande schermen.
+5. Maak automatische tests.
+6. Toon werkende resultaten.
+
+Niet eerst alles opnieuw analyseren.
+
+Niet eerst wekenlang architectuur schrijven.
+
+Niet eerst tientallen documenten produceren.
+
+Bouwen heeft altijd prioriteit boven documenteren.
+
+==================================================
+ANTI-PRESENTATIE REGEL
+==================================================
+
+Sparki mag niet bestaan uit:
+
+- mooie kaarten
+- mooie dashboards
+- mooie statistieken
+- mooie schermen
+- mooie teksten
+
+zonder werkende intelligentie.
+
+Iedere kaart moet gekoppeld zijn aan:
+- echte data
+- echte logica
+- echte beslissingen
+- echte interactie
+
+Indien een kaart geen werkende logica heeft:
+markeer deze als incomplete functionaliteit.
+
+==================================================
+ANTI-PLACEHOLDER REGEL
+==================================================
+
+Verboden:
+
+- Coming Soon
+- Future Feature
+- Placeholder
+- Mock Data
+- Dummy AI
+- Hardcoded advies
+- Hardcoded trainingsschema's
+- Hardcoded coachreacties
+- Hardcoded hersteladviezen
+
+Iedere output moet afkomstig zijn uit een engine.
+
+==================================================
+SPARKI BRAIN VALIDATION
+==================================================
+
+Voor iedere nieuwe functionaliteit controleert Sparki Brain:
+
+- bestaat dit al?
+- overlapt dit met bestaande functionaliteit?
+- welke engine is eigenaar?
+- welke database gebruikt dit?
+- welke rollen gebruiken dit?
+- welke AVG-regels gelden?
+- welke testen moeten slagen?
+
+Voorkom dubbele functionaliteit.
+
+Voorkom dubbele schermen.
+
+Voorkom dubbele workflows.
+
+==================================================
+DEFINITION OF DONE
+==================================================
+
+Een onderdeel is pas klaar wanneer:
+
+✓ logica gebouwd is
+✓ dataopslag werkt
+✓ rechten werken
+✓ interactie werkt
+✓ tests slagen
+✓ scherm gekoppeld is
+✓ uitleg beschikbaar is
+✓ AVG-regels werken
+✓ mobiele weergave werkt
+
+Niet wanneer alleen het scherm zichtbaar is.
+
+==================================================
+VERPLICHT TESTEN
+==================================================
+
+Na iedere implementatie:
+
+- unit tests
+- integratie tests
+- permissie tests
+- AVG tests
+- interactie tests
+- mobiele tests
+- regressie tests
+
+Automatisch uitvoeren.
+
+Toon fouten direct.
+
+==================================================
+VISUELE CONTROLE
+==================================================
+
+Controleer na iedere wijziging:
+
+- v0 design intact?
+- layout intact?
+- interacties intact?
+- navigatie intact?
+- responsive gedrag intact?
+- performance intact?
+
+Indien niet:
+
+wijziging terugdraaien of herstellen.
+
+==================================================
+EINDDOEL
+==================================================
+
+Niet opleveren:
+"Het scherm bestaat."
+
+Wel opleveren:
+"De functionaliteit werkt aantoonbaar, wordt gebruikt door de Sparki Brain, wordt getest, heeft uitleg, respecteert AVG, werkt mobiel en is gekoppeld aan bestaande v0 schermen."

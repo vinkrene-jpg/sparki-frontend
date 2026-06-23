@@ -1,0 +1,178 @@
+==================================================
+RACE ROOM / EVENT ROOM ENGINE
+==================================================
+
+Bouw Race Room als echte Sparki Brain-functionaliteit, niet als losse mediapagina.
+
+Doel:
+Rondom een wedstrijd of evenement krijgt iedere ploeg, trainer, ouder en sporter één centrale Race Room.
+
+De Race Room ondersteunt:
+
+1. Wedstrijdinformatie ophalen
+Sparki zoekt en verwerkt:
+- wedstrijdnaam
+- datum/tijd
+- locatie
+- route/parcours
+- startlijst/deelnemerslijst
+- categorieën
+- programma
+- uitslagen indien beschikbaar
+- weer
+- bereikbaarheid
+- parkeerinformatie
+- beste kijkpunten langs het parcours
+
+2. Deelnemers herkennen
+Sparki koppelt de startlijst aan:
+- sporters binnen Sparki
+- team/club/ploeg
+- trainer
+- ouder/verzorger
+- ploegleider
+
+3. Voor ouders/supporters
+Sparki toont begrijpelijk:
+- waar de wedstrijd is
+- hoe laat aanwezig zijn
+- waar parkeren
+- waar je het beste kunt staan
+- waar het parcours langs komt
+- wanneer de sporter ongeveer passeert
+- wat handig is om mee te nemen
+- eventuele updates tijdens de wedstrijd
+
+4. Voor trainer/ploegleider
+Sparki toont:
+- wie rijdt er
+- starttijden
+- parcoursanalyse
+- weersinvloed
+- aandachtspunten per sporter
+- tactische notities
+- wedstrijdplanning
+- materiaal/checklist
+- live/tussentijdse updates
+- na afloop AI-samenvatting
+
+5. Upload door externen
+Maak uploadlink of QR-code voor ouders, supporters, verzorgers en externe fotografen.
+
+Zij kunnen uploaden:
+- foto’s
+- video’s
+- korte opmerkingen
+- locatie indien beschikbaar
+- tijdstip automatisch opslaan
+
+Uploaders hoeven geen volledig Sparki-account te hebben, maar upload moet veilig en tijdelijk zijn.
+
+6. AI-mediaverwerking
+Na upload verwerkt Sparki:
+- sorteren per wedstrijd
+- sorteren per sporter indien herkenbaar/toegestaan
+- dubbele beelden verwijderen
+- slechte beelden markeren
+- hoogtepunten selecteren
+- compilatie maken
+- teamcompilatie maken
+- individuele sporterselectie maken
+- trainer/ploegleider-samenvatting maken
+
+7. Compilatie na de wedstrijd
+Na de wedstrijd maakt Sparki automatisch:
+- algemene wedstrijdcompilatie
+- teamcompilatie
+- sporter-specifieke compilatie
+- korte social clip
+- langere terugblik
+- selectie voor trainer/ploegleider
+- samenvatting met wedstrijdverloop en aandachtspunten
+
+8. AI afgestemd op aanwezige sporters
+Sparki gebruikt:
+- deelnemerslijst
+- teamselectie
+- uploaded media
+- timestamps
+- locatie
+- wedstrijdschema
+- zichtbare rugnummers indien mogelijk
+- toestemming/AVG
+
+Doel:
+Niet alleen media opslaan, maar relevante beelden koppelen aan juiste sporters en context.
+
+9. Tussentijdse updates
+Tijdens de wedstrijd kan Sparki tonen:
+- programma-update
+- start gemist/gewijzigd indien beschikbaar
+- weerverandering
+- belangrijke momenten
+- waar ouders nu het beste kunnen staan
+- verwachte doorkomst
+- berichten van trainer/ploegleider
+- korte wedstrijdnotities
+
+10. AVG en toestemming
+Belangrijk:
+Media van minderjarigen en sporters is privacygevoelig.
+
+Bouw:
+- toestemming voor media-upload
+- toestemming voor herkenning/koppeling aan sporter
+- toestemming voor delen binnen team/club
+- toestemming voor publicatie/social clips
+- tijdelijke uploadlinks
+- rechten per rol
+- verwijderverzoek
+- logging wie media bekijkt/downloadt/deelt
+- standaard geen publieke zichtbaarheid
+
+11. Race Room UI
+Maak het simpel en begrijpbaar.
+
+Gebruik duidelijke secties:
+
+Voor iedereen:
+- Waar en wanneer?
+- Wie rijden er?
+- Route/parcours
+- Waar kan ik staan?
+- Foto/video uploaden
+- Updates
+- Na afloop: compilatie
+
+Voor trainer/ploegleider:
+- Selectie
+- Tactiek
+- Aandachtspunten
+- Live-notities
+- AI-samenvatting
+- Media per sporter
+- Evaluatie
+
+12. Koppeling met andere engines
+Race Room moet gekoppeld zijn aan:
+- Athlete Profile Engine
+- Club/Team Engine
+- Trainer Engine
+- Parent Engine
+- Communication Engine
+- AVG Engine
+- Knowledge Engine
+- Performance Engine
+- Media Processing Engine
+- Notification Engine
+
+Acceptatiecriteria:
+- Een trainer kan een Race Room aanmaken.
+- Sporters/team worden gekoppeld.
+- Ouders krijgen begrijpbare wedstrijdinfo.
+- Externen kunnen via QR/link media uploaden.
+- Media wordt veilig opgeslagen.
+- Sparki maakt na afloop compilaties.
+- Trainer krijgt aparte wedstrijdsamenvatting.
+- Privacy/toestemming werkt.
+- Het scherm is eenvoudig te begrijpen.
