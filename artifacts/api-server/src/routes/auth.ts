@@ -1,24 +1,30 @@
 import { Router } from "express";
-import { and, eq } from "drizzle-orm";
-import { db, userProfilesTable, athleteProfilesTable, validRoles, type Role } from "@workspace/db";
-import { requireAuth, getClerkUserId, hasRealSession, getClerkVerifiedEmail } from "../lib/auth";
+import { eq } from "drizzle-orm";
+import { db, userProfilesTable, validRoles, type Role } from "@workspace/db";
+import {
+  requireAuth,
+  getClerkUserId,
+  hasRealSession,
+  getClerkVerifiedEmail,
+} from "../lib/auth";
+import { ensureAccount } from "../lib/account";
 import { isAdmin } from "../lib/flags";
 
 const router = Router();
 
 // POST /api/auth/sync
-// Idempotent first-login provisioning. Identity (email) is read from Clerk
-// server-side; only `displayName` is taken from the body.
+// Idempotent first-login provisioning AND every-login self-healing. Identity
+// (email) is read from Clerk server-side; only `displayName` comes from the body.
 // Body: { displayName?: string }
 router.post("/sync", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const { displayName } = req.body as { email?: string; displayName?: string };
 
-  // Identity MUST come from Clerk, never from the request body. The re-link
-  // below reassigns an existing profile to the caller's clerkId, so trusting a
-  // client-supplied email would be an account-takeover vector. In dev (auth
-  // bypass, no real Clerk session) we fall back to the body email — dev is not a
-  // security boundary and there is no Clerk user to query.
+  // Identity MUST come from Clerk, never from the request body. The re-link in
+  // ensureAccount reassigns an existing profile to the caller's clerkId, so
+  // trusting a client-supplied email would be an account-takeover vector. In dev
+  // (auth bypass, no real Clerk session) we fall back to the body email — dev is
+  // not a security boundary and there is no Clerk user to query.
   const verifiedEmail = await getClerkVerifiedEmail(req);
   const email = hasRealSession(req)
     ? verifiedEmail
@@ -30,80 +36,27 @@ router.post("/sync", requireAuth, async (req, res) => {
   }
 
   try {
-    await db
-      .insert(userProfilesTable)
-      .values({ clerkId, email, displayName: displayName ?? null, roles: ["athlete"], activeRole: "athlete" })
-      .onConflictDoNothing();
-
-    // Confirm the row for THIS clerkId exists before touching athlete_profiles.
-    // The user_profiles insert can no-op when `email` is already taken by a
-    // different clerkId (the email unique constraint). That happens when the same
-    // person re-creates their Clerk account (new clerkId, same verified email):
-    // their old profile row is left pointing at the now-defunct clerkId.
-    let [profile] = await db
-      .select()
-      .from(userProfilesTable)
-      .where(eq(userProfilesTable.clerkId, clerkId));
-
+    const profile = await ensureAccount(
+      clerkId,
+      email,
+      displayName ?? null,
+      req.log,
+    );
     if (!profile) {
-      // Re-link the orphaned profile to the current clerkId. Safe because the
-      // email is Clerk-verified (above) and Clerk enforces unique verified
-      // emails per instance, so the previous clerkId is provably defunct. Child
-      // rows follow via ON UPDATE CASCADE, preserving the user's history. The
-      // conditional update + row-count check guards against any race.
-      const [byEmail] = await db
-        .select()
-        .from(userProfilesTable)
-        .where(eq(userProfilesTable.email, email));
-
-      if (byEmail && byEmail.clerkId !== clerkId) {
-        req.log.warn(
-          { fromClerkId: byEmail.clerkId, toClerkId: clerkId },
-          "auth.sync: re-linking profile to re-created account",
-        );
-        const relinked = await db
-          .update(userProfilesTable)
-          .set({
-            clerkId,
-            displayName: displayName ?? byEmail.displayName,
-            updatedAt: new Date(),
-          })
-          .where(
-            and(
-              eq(userProfilesTable.clerkId, byEmail.clerkId),
-              eq(userProfilesTable.email, email),
-            ),
-          )
-          .returning({ clerkId: userProfilesTable.clerkId });
-
-        if (relinked.length === 1) {
-          [profile] = await db
-            .select()
-            .from(userProfilesTable)
-            .where(eq(userProfilesTable.clerkId, clerkId));
-        }
-      }
-    }
-
-    if (!profile) {
-      req.log.error({ clerkId }, "auth.sync: could not provision profile");
       res.status(500).json({ error: "Kon je account niet aanmaken." });
       return;
     }
-
-    await db
-      .insert(athleteProfilesTable)
-      .values({ clerkId })
-      .onConflictDoNothing();
-
-    res.json(profile);
+    res.json({ ...profile, isAdmin: isAdmin(clerkId) });
   } catch (err) {
     req.log.error({ err }, "auth.sync failed");
-    res.status(500).json({ error: "Internal server error" });
+    res
+      .status(500)
+      .json({ error: "Er ging iets mis bij het klaarzetten van je account." });
   }
 });
 
-// GET /api/auth/me
+// GET /api/auth/me — read-only. Self-heals nothing; sync is the provisioning
+// path. A missing profile here means sync has not run/succeeded yet.
 router.get("/me", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
 
@@ -131,7 +84,9 @@ router.put("/me/role", requireAuth, async (req, res) => {
   const { role } = req.body as { role: unknown };
 
   if (!role || !validRoles.includes(role as Role)) {
-    res.status(400).json({ error: `role must be one of: ${validRoles.join(", ")}` });
+    res
+      .status(400)
+      .json({ error: `role must be one of: ${validRoles.join(", ")}` });
     return;
   }
 

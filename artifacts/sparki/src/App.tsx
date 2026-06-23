@@ -145,16 +145,84 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
+// Shown when account provisioning (sync) could not complete. We deliberately
+// never fall through to onboarding or the app without a profile — that is the
+// exact failure that bricked onboarding. Clear Dutch copy + a retry, no crash.
+function AccountNotReady({
+  error,
+  onRetry,
+}: {
+  error: string | null;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-[#040506] px-6 text-center">
+      <div className="max-w-sm">
+        <h1 className="text-lg font-semibold text-white">
+          Je account wordt klaargezet
+        </h1>
+        <p className="mt-2 text-sm text-white/60">
+          Het lukte niet om je account te laden. Controleer je verbinding en
+          probeer het opnieuw.
+        </p>
+        {error ? (
+          <p className="mt-3 font-mono text-[11px] text-white/30">{error}</p>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="rounded-full bg-[oklch(0.82_0.16_200)] px-6 py-2.5 text-sm font-semibold text-black transition hover:brightness-110"
+      >
+        Opnieuw proberen
+      </button>
+    </div>
+  );
+}
+
+// Single account-readiness gate shared by EVERY signed-in surface. No signed-in
+// route may render app content until the account is provisioned: while sync is
+// in flight we show a dark splash; if it failed we show the retry screen; only
+// with a real profile do children render. This is what stops a user (via deep
+// link or direct navigation to /train, /feed, an invite, etc.) from ever
+// reaching the app — or onboarding — without a user_profiles row.
+function AccountGate({ children }: { children: React.ReactNode }) {
+  const { profile, isLoading, error, refetch } = useUserProfile();
+
+  if (isLoading || (!profile && !error)) {
+    return <div className="min-h-dvh bg-[#040506]" />;
+  }
+  if (!profile) {
+    return <AccountNotReady error={error} onRetry={() => void refetch()} />;
+  }
+  return <>{children}</>;
+}
+
+// Home is gated by the same AccountGate as every other signed-in surface, so the
+// readiness logic (loading splash / AccountNotReady / proceed) lives in exactly
+// one place. Once mounted, the account is guaranteed provisioned.
 function SignedInHome() {
+  return (
+    <AccountGate>
+      <SignedInHomeReady />
+    </AccountGate>
+  );
+}
+
+function SignedInHomeReady() {
   const { user } = useUser();
   const qc = useQueryClient();
-  const { refetch: refetchUser } = useUserProfile();
+  const { profile, refetch } = useUserProfile();
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    // Onboarding is evaluated ONLY once the account is provisioned. AccountGate
+    // guarantees a profile before this component mounts, so a missing
+    // user_profiles row can never slip a user into onboarding. The guard below
+    // is purely for type-narrowing.
+    if (!profile) return;
     let cancelled = false;
-    const lsKey = `sparki_onboarded_${user.id}`;
+    const lsKey = `sparki_onboarded_${profile.clerkId}`;
     const lsDone = localStorage.getItem(lsKey) === "true";
     // DB is the source of truth. localStorage is only a fast-path cache and a
     // migration bridge for users who completed onboarding before DB persistence.
@@ -185,23 +253,24 @@ function SignedInHome() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [profile?.clerkId]);
 
   const handleComplete = useCallback(() => {
-    if (user) {
-      localStorage.setItem(`sparki_onboarded_${user.id}`, "true");
+    if (profile) {
+      localStorage.setItem(`sparki_onboarded_${profile.clerkId}`, "true");
     }
     void apiFetch("/api/onboarding/state", {
       method: "PUT",
       body: JSON.stringify({ isComplete: true }),
     });
     // Refresh UserContext (picks up new displayName) + all athlete queries
-    void refetchUser();
+    void refetch();
     void qc.invalidateQueries();
     setOnboarded(true);
-  }, [user, qc, refetchUser]);
+  }, [profile, qc, refetch]);
 
-  // Brief dark flash while checking localStorage
+  // Account ready (guaranteed by AccountGate) — brief flash while resolving
+  // onboarding state.
   if (onboarded === null) {
     return <div className="min-h-dvh bg-[#040506]" />;
   }
@@ -252,10 +321,10 @@ function ProtectedPage({ component: Page }: { component: React.ComponentType }) 
   return (
     <>
       <Show when="signed-in">
-        <>
+        <AccountGate>
           <Page />
           <BottomNav />
-        </>
+        </AccountGate>
       </Show>
       <Show when="signed-out">
         <Redirect to="/sign-in" />
@@ -276,10 +345,10 @@ function InviteRoute() {
   return (
     <>
       <Show when="signed-in">
-        <>
+        <AccountGate>
           <InviteAcceptPage />
           <BottomNav />
-        </>
+        </AccountGate>
       </Show>
       <Show when="signed-out">
         <Redirect to={redirectTo} />

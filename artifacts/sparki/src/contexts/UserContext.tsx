@@ -72,14 +72,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
         user.username ||
         null;
 
-      await apiFetch("/api/auth/sync", {
+      // sync is the single robust provisioning + self-healing call. It returns
+      // the ready profile directly (user_profiles + athlete_profiles guaranteed,
+      // roles reconciled), so there is no separate /me round-trip that could race.
+      const p = await apiFetch<UserProfile>("/api/auth/sync", {
         method: "POST",
         body: JSON.stringify({ email: primaryEmail, displayName }),
       });
-
-      const p = await apiFetch<UserProfile>("/api/auth/me");
       setProfile(p);
     } catch (err) {
+      // Log for diagnostics; surface a clear state so the UI can show an error
+      // and a retry instead of silently dropping the user into a broken app.
+      console.error("[UserContext] account sync failed", err);
       setError(err instanceof Error ? err.message : "Failed to load profile");
     } finally {
       setIsLoading(false);
