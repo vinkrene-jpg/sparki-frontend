@@ -1,6 +1,23 @@
 import { useState, useCallback } from "react"
-import { ArrowLeft, Zap, Check, CheckCircle2, ChevronRight, Bike, User2 } from "lucide-react"
+import {
+  ArrowLeft,
+  Zap,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  Bike,
+  Footprints,
+  Waves,
+  User2,
+} from "lucide-react"
+import { SPORTS, DEFAULT_SPORT, type SportType } from "@workspace/feature-flags"
 import { apiFetch } from "@/lib/api"
+
+const SPORT_ICONS: Record<SportType, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
+  cycling: Bike,
+  running: Footprints,
+  triathlon: Waves,
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Phased adaptive onboarding — quick start (task #18).
@@ -148,37 +165,48 @@ function StepSport({ onNext }: { onNext: () => void }) {
       <StepHeading title="Wat is je sport?" subtitle="Sparki is gebouwd voor wielrenners — meer sporten volgen." />
 
       <div className="flex flex-1 flex-col gap-3">
-        <div
-          className="flex items-center gap-4 rounded-2xl border px-5 py-4"
-          style={{ borderColor: "rgba(120,210,230,0.4)", background: ACCENT_DIM }}
-        >
-          <div
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-            style={{ background: "rgba(120,210,230,0.18)" }}
-          >
-            <Bike className="h-5 w-5" style={{ color: ACCENT }} />
-          </div>
-          <div className="flex flex-1 flex-col gap-0.5">
-            <span className="font-sans text-sm font-semibold text-white/95">Wielrennen</span>
-            <span className="font-sans text-xs text-white/45">Weg, gravel, mountainbike & baan</span>
-          </div>
-          <CheckCircle2 className="h-5 w-5 shrink-0" style={{ color: ACCENT }} />
-        </div>
-
-        {["Hardlopen", "Triatlon"].map((s) => (
-          <div
-            key={s}
-            className="flex items-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-4 opacity-50"
-          >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/[0.04]">
-              <User2 className="h-5 w-5 text-white/30" />
+        {SPORTS.map((sport) => {
+          const Icon = SPORT_ICONS[sport.type] ?? User2
+          const active = sport.status === "active"
+          if (active) {
+            return (
+              <div
+                key={sport.type}
+                className="flex items-center gap-4 rounded-2xl border px-5 py-4"
+                style={{ borderColor: "rgba(120,210,230,0.4)", background: ACCENT_DIM }}
+              >
+                <div
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                  style={{ background: "rgba(120,210,230,0.18)" }}
+                >
+                  <Icon className="h-5 w-5" style={{ color: ACCENT }} />
+                </div>
+                <div className="flex flex-1 flex-col gap-0.5">
+                  <span className="font-sans text-sm font-semibold text-white/95">{sport.label}</span>
+                  <span className="font-sans text-xs text-white/45">{sport.description}</span>
+                </div>
+                <CheckCircle2 className="h-5 w-5 shrink-0" style={{ color: ACCENT }} />
+              </div>
+            )
+          }
+          return (
+            <div
+              key={sport.type}
+              className="flex items-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-4 opacity-50"
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/[0.04]">
+                <Icon className="h-5 w-5 text-white/30" />
+              </div>
+              <div className="flex flex-1 flex-col gap-0.5">
+                <span className="font-sans text-sm font-medium text-white/40">{sport.label}</span>
+                <span className="font-sans text-xs text-white/25">{sport.description}</span>
+              </div>
+              <span className="rounded-full border border-white/10 px-2 py-0.5 font-sans text-[10px] font-medium text-white/30">
+                Binnenkort
+              </span>
             </div>
-            <span className="flex-1 font-sans text-sm font-medium text-white/40">{s}</span>
-            <span className="rounded-full border border-white/10 px-2 py-0.5 font-sans text-[10px] font-medium text-white/30">
-              Binnenkort
-            </span>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       <div className="mt-auto pb-8 pt-6">
@@ -616,7 +644,7 @@ export function QuickStartFlow({ clerkUser, onComplete }: QuickStartFlowProps) {
       }>("/api/onboarding/quick-start", {
         method: "POST",
         body: JSON.stringify({
-          sport: "cycling",
+          sport: DEFAULT_SPORT,
           goals,
           experienceLevel: experience,
           trainingDaysPerWeek: days,

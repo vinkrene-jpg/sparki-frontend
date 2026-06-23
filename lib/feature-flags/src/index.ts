@@ -32,3 +32,5 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
   knowledge_base:
     "Sparki Knowledge Base — daily-scanned sport-science library, browsable news/research surface, and cited retrieval in AI briefs",
 };
+
+export * from "./sports";

@@ -18,6 +18,7 @@ import {
   type RouteMeetpoint,
 } from "@/hooks/use-routes"
 import { useUpcomingWorkouts } from "@/hooks/use-today-workout"
+import { isSportActive } from "@workspace/feature-flags"
 import { MapPin, Sparkles, Flag, Users, X, Download } from "lucide-react"
 
 const SURFACE_LABEL: Record<string, string> = {
@@ -29,12 +30,16 @@ const SURFACE_LABEL: Record<string, string> = {
   unknown: "Onbekend",
 }
 
-const SPORT_OPTIONS: { value: Sport; label: string; hint: string }[] = [
+// Phased rollout: only sports whose family is active in the shared registry are
+// offered. Foot sports stay defined here (the routing engine supports them) but
+// are filtered out until their sport family is activated.
+const ALL_SPORT_OPTIONS: { value: Sport; label: string; hint: string }[] = [
   { value: "cycling", label: "Fietsen", hint: "weg/onverhard" },
   { value: "running", label: "Hardlopen", hint: "weg/trail" },
   { value: "walking", label: "Wandelen", hint: "verhard" },
   { value: "hiking", label: "Hiken", hint: "paden" },
 ]
+const SPORT_OPTIONS = ALL_SPORT_OPTIONS.filter((s) => isSportActive(s.value))
 
 const BIKE_OPTIONS: { value: BikeType; label: string; hint: string }[] = [
   { value: "racefiets", label: "Racefiets", hint: "asfalt" },
@@ -397,7 +402,8 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
         </button>
       </div>
 
-      {/* Sport */}
+      {/* Sport — only shown when more than one sport family is active */}
+      {SPORT_OPTIONS.length > 1 && (
       <div className="mt-5">
         <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
           SPORT
@@ -431,6 +437,7 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
           ))}
         </div>
       </div>
+      )}
 
       {/* Bike type — only for cycling; Sparki auto-selects the routing profile */}
       {sport === "cycling" && (

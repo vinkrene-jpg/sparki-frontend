@@ -12,6 +12,7 @@
 // itself; the ask/skip lifecycle is tracked separately in onboarding_state.
 
 import type { AthleteProfile, InsertAthleteProfile } from "@workspace/db";
+import { getSubdisciplines, isValidSubdiscipline } from "@workspace/feature-flags";
 
 // ── Core quick-start estimation ──────────────────────────────────────────────
 
@@ -130,12 +131,12 @@ export function ageFromBirthYear(birthYear: number | null): number | null {
   return currentYear() - birthYear;
 }
 
-const DISCIPLINES: FactOption[] = [
-  { value: "Road", label: "Weg" },
-  { value: "Gravel", label: "Gravel" },
-  { value: "Mountain", label: "Mountainbike" },
-  { value: "Track", label: "Baan" },
-];
+// Cycling subdisciplines come from the shared sport registry so the catalog
+// never drifts between onboarding, validation and the web app.
+const DISCIPLINES: FactOption[] = getSubdisciplines("cycling").map((d) => ({
+  value: d.value,
+  label: d.label,
+}));
 
 const LOAD_OPTIONS: FactOption[] = [
   { value: "low", label: "Ik herstel langzaam — rustig opbouwen" },
@@ -241,8 +242,8 @@ const FACTS: FactDef[] = [
     adjust: (p) =>
       p.competitionLevel && p.competitionLevel !== "none" ? 10 : 0,
     parse: (v) =>
-      DISCIPLINES.some((d) => d.value === v)
-        ? { discipline: String(v) }
+      typeof v === "string" && isValidSubdiscipline("cycling", v)
+        ? { discipline: v }
         : null,
   },
   {

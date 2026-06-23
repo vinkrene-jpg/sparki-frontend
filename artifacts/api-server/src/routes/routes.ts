@@ -35,6 +35,7 @@ import {
   type RoutingProfile,
   type RouteStep,
 } from "../engines/route";
+import { isSportActive } from "@workspace/feature-flags";
 
 const router = Router();
 
@@ -407,6 +408,19 @@ router.post("/generate", requireAuth, async (req, res) => {
       : body.mode === "waypoints"
         ? "waypoints"
         : "loop";
+  // Phased rollout: route generation is only available for active sports
+  // (currently cycling). Validate the RAW input before coercion — coerceSport
+  // would otherwise silently map an explicit inactive sport (e.g. "triathlon",
+  // "running") to cycling and let it through. Absent sport defaults to cycling.
+  if (
+    typeof body.sport === "string" &&
+    !isSportActive(body.sport.toLowerCase())
+  ) {
+    res
+      .status(400)
+      .json({ error: "Deze sport is nog niet beschikbaar in Sparki." });
+    return;
+  }
   const sport = coerceSport(body.sport);
   const bikeType = coerceBikeType(body.bikeType);
   const elevationPreference = coerceElevation(body.elevationPreference);

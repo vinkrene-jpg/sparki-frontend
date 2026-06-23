@@ -7,6 +7,7 @@ import {
   coachAthleteLinksTable,
   userProfilesTable,
 } from "@workspace/db";
+import { isSportActive, DEFAULT_SPORT } from "@workspace/feature-flags";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { generatePlan } from "../engines/training-plan";
 import {
@@ -193,10 +194,14 @@ router.post("/quick-start", requireAuth, async (req, res) => {
     trainingDaysPerWeek?: number;
   };
 
-  // Only cycling is implemented today (sport is modelled for future sports).
-  const sport = (body.sport ?? "cycling").toLowerCase();
-  if (sport !== "cycling") {
-    res.status(400).json({ error: "Only cycling is supported right now" });
+  // Sport availability is governed by the shared sport registry. Only sports
+  // with a built training engine are marked "active"; everything else is blocked
+  // here (no placeholder support for sports that don't really work yet).
+  const sport = (body.sport ?? DEFAULT_SPORT).toLowerCase();
+  if (!isSportActive(sport)) {
+    res
+      .status(400)
+      .json({ error: "Deze sport is nog niet beschikbaar in Sparki." });
     return;
   }
   if (
@@ -218,7 +223,7 @@ router.post("/quick-start", requireAuth, async (req, res) => {
   const goals = typeof body.goals === "string" ? body.goals.trim().slice(0, 600) : null;
 
   const patch: ProfilePatch = {
-    sport: "cycling",
+    sport,
     experienceLevel: experience,
     trainingDaysPerWeek,
     availableDays: defaultAvailableDays(trainingDaysPerWeek),
