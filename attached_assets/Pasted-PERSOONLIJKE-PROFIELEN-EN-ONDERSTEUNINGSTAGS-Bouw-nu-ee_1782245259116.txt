@@ -1,0 +1,99 @@
+PERSOONLIJKE PROFIELEN EN ONDERSTEUNINGSTAGS
+
+Bouw nu een profielstructuur waarmee Sparki adviezen aanpast aan leeftijd, sportervaring, mentale belasting en voorkeur voor begeleiding.
+
+Implementeer direct de volgende hoofdprofielen:
+
+- Jeugd 12-15 jaar
+- Jeugd 16-18 jaar
+- Jongvolwassen 18-23 jaar
+- Volwassen 24-39 jaar
+- Master 40+
+
+Implementeer direct de volgende ondersteuningstags:
+
+- ADD
+- ADHD
+- Stressgevoelig
+- Perfectionistisch
+- Sterk analytisch
+- Snel overprikkeld
+- Moeite met inslapen
+- Wedstrijdspanning
+- Onregelmatig leefritme
+- Hoge trainingsambitie
+- Blessuregevoelig
+
+Deze tags mogen gecombineerd worden.
+
+Voorbeelden:
+
+- Jeugd 16-18 + ADD + wedstrijdspanning
+- Jongvolwassen + perfectionistisch + sterk analytisch
+- Master 40+ + blessuregevoelig + moeite met inslapen
+
+Sparki moet adviezen aanpassen op basis van deze combinatie.
+
+VOORBEELDLOGICA
+
+Bij ADD:
+- Kortere teksten.
+- Minder keuzestress.
+- Eén concrete vervolgstap.
+- Minder lange uitleg tenzij analytische stijl aan staat.
+
+Bij ADHD:
+- Actiegerichte begeleiding.
+- Korte oefeningen.
+- Minder lange slaapverhalen.
+- Meer fysieke ontspanningsroutines.
+
+Bij stressgevoelig:
+- Rustige toon.
+- Minder prestatiedruk.
+- Meer geruststelling bij herstelachterstand.
+- Geen alarmerende formuleringen.
+
+Bij perfectionistisch:
+- Extra uitleg dat één gemiste training of slechte nacht niet bepalend is.
+- Waarschuwingen tegen overcompenseren.
+- Focus op consistentie in plaats van perfectie.
+
+Bij sterk analytisch:
+- Meer data tonen.
+- Confidence score zichtbaar maken.
+- Uitleg waarom Sparki dit advies geeft.
+- Bronverwijzing of korte wetenschappelijke toelichting.
+
+Bij snel overprikkeld:
+- Minder notificaties.
+- Donkere rustige interface.
+- Minder tekstblokken tegelijk.
+- Eenvoudige nachtmodus.
+
+Bij moeite met inslapen:
+- Slaaproutine voorstellen.
+- Ademhalingsoefening aanbieden.
+- Regen- of omgevingsgeluid aanbieden.
+- Geen zware trainingsanalyse vlak voor bedtijd tonen.
+
+Bij wedstrijdspanning:
+- Wedstrijdnacht-module activeren.
+- Uitleg geven dat spanning normaal is.
+- Korte focusoefening aanbieden.
+- Geen dramatische waarschuwingen geven.
+
+Bij onregelmatig leefritme:
+- Bedtijd- en opsta-patroon herkennen.
+- Kleine haalbare verbeteringen voorstellen.
+- Niet streng of moraliserend formuleren.
+
+Bij hoge trainingsambitie:
+- Herstel actief bewaken.
+- Waarschuwen bij stapeling van belasting.
+- Advies geven wanneer rust prestatiebevorderend is.
+
+Bij blessuregevoelig:
+- Extra voorzichtigheid bij vermoeidheid.
+- Herstelstatus zwaarder meewegen.
+- Waarschuwen tegen intensieve training bij slechte slaap/herstel.

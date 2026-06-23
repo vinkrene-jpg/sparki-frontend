@@ -5,23 +5,15 @@ import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
   connectorRegistry,
   getConnectorDefinition,
-  syncStrava,
-  type ProviderSyncResult,
+  runSync,
+  HubError,
+  resolveReadiness,
 } from "../engines/integration";
 
 const router = Router();
 
-// Map of provider-id → real import function. Adding a wired platform = one entry
-// here plus its registry definition + provider module. Platforms absent from
-// this map are honestly "binnenkort beschikbaar" and cannot be synced.
-const SYNC_PROVIDERS: Record<
-  string,
-  (clerkId: string) => Promise<ProviderSyncResult>
-> = {
-  strava: syncStrava,
-};
-
-// Build the public connector shape (registry definition + this user's live row).
+// Build the public connector shape (registry definition + this user's live row +
+// 4-state readiness). The Data Hub owns the actual sync pipeline (runSync).
 async function buildConnectorItem(clerkId: string, id: string) {
   const def = getConnectorDefinition(id)!;
   const [row] = await db
@@ -47,6 +39,7 @@ async function buildConnectorItem(clerkId: string, id: string) {
     errorStatus: row?.errorStatus ?? null,
     permissionRevoked: row?.permissionRevoked ?? false,
     connectedAt: row?.connectedAt ?? null,
+    readiness: resolveReadiness(def, row?.status),
   };
 }
 
@@ -78,13 +71,14 @@ router.get("/", requireAuth, async (req, res) => {
         errorStatus: row?.errorStatus ?? null,
         permissionRevoked: row?.permissionRevoked ?? false,
         connectedAt: row?.connectedAt ?? null,
+        readiness: resolveReadiness(def, row?.status),
       };
     });
 
     res.json({ connectors });
   } catch (err) {
     req.log.error({ err }, "connectors.list failed");
-    res.status(500).json({ error: "Failed to load connectors" });
+    res.status(500).json({ error: "Kon koppelingen niet laden." });
   }
 });
 
@@ -93,75 +87,26 @@ router.get("/", requireAuth, async (req, res) => {
 router.post("/:id/sync", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = String(req.params.id);
-  const def = getConnectorDefinition(id);
-  if (!def) {
-    res.status(404).json({ error: "Unknown connector" });
-    return;
-  }
-  if (!def.available) {
-    res.status(400).json({
-      error: "unavailable",
-      message: def.unavailableReason ?? "Deze koppeling is nog niet beschikbaar.",
-    });
-    return;
-  }
-  const provider = SYNC_PROVIDERS[id];
-  if (!provider) {
-    res.status(501).json({ error: "Koppeling nog niet ondersteund." });
-    return;
-  }
-
-  const now = new Date();
   try {
-    const result = await provider(clerkId);
-    await db
-      .insert(connectorConnectionsTable)
-      .values({
-        clerkId,
-        provider: id,
-        status: "connected",
-        lastSyncAt: now,
-        connectedAt: now,
-        importedDataTypes: result.importedDataTypes,
-        externalUserId: result.externalUserId,
-        permissionRevoked: false,
-        errorStatus: null,
-      })
-      .onConflictDoUpdate({
-        target: [
-          connectorConnectionsTable.clerkId,
-          connectorConnectionsTable.provider,
-        ],
-        set: {
-          status: "connected",
-          lastSyncAt: now,
-          connectedAt: now,
-          importedDataTypes: result.importedDataTypes,
-          externalUserId: result.externalUserId,
-          permissionRevoked: false,
-          errorStatus: null,
-          updatedAt: now,
-        },
-      });
-
-    res.json({ connector: await buildConnectorItem(clerkId, def.id) });
+    // Single sync path: the Data Hub owns fetch → normalize → dedup → consent →
+    // persist → log. This route just surfaces the result/connection shape.
+    await runSync(clerkId, id, "manual");
+    res.json({ connector: await buildConnectorItem(clerkId, id) });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Synchroniseren mislukt.";
+    if (err instanceof HubError) {
+      const status =
+        err.code === "not_found"
+          ? 404
+          : err.code === "unavailable"
+            ? 400
+            : err.code === "unsupported"
+              ? 501
+              : 502;
+      res.status(status).json({ error: err.code, message: err.message });
+      return;
+    }
     req.log.error({ err }, "connectors.sync failed");
-    // Record the failure honestly so the UI can surface it (no silent success).
-    await db
-      .insert(connectorConnectionsTable)
-      .values({ clerkId, provider: id, status: "error", errorStatus: message })
-      .onConflictDoUpdate({
-        target: [
-          connectorConnectionsTable.clerkId,
-          connectorConnectionsTable.provider,
-        ],
-        set: { status: "error", errorStatus: message, updatedAt: now },
-      })
-      .catch(() => {});
-    res.status(502).json({ error: "sync_failed", message });
+    res.status(502).json({ error: "sync_failed", message: "Synchroniseren mislukt." });
   }
 });
 
@@ -170,7 +115,7 @@ router.post("/:id/disconnect", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = String(req.params.id);
   if (!getConnectorDefinition(id)) {
-    res.status(404).json({ error: "Unknown connector" });
+    res.status(404).json({ error: "Onbekende koppeling." });
     return;
   }
   const now = new Date();
@@ -196,7 +141,7 @@ router.post("/:id/disconnect", requireAuth, async (req, res) => {
     res.json({ connector: await buildConnectorItem(clerkId, id) });
   } catch (err) {
     req.log.error({ err }, "connectors.disconnect failed");
-    res.status(500).json({ error: "Failed to disconnect" });
+    res.status(500).json({ error: "Verbreken mislukt." });
   }
 });
 
@@ -205,7 +150,7 @@ router.post("/:id/revoke", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = String(req.params.id);
   if (!getConnectorDefinition(id)) {
-    res.status(404).json({ error: "Unknown connector" });
+    res.status(404).json({ error: "Onbekende koppeling." });
     return;
   }
   const now = new Date();
@@ -236,7 +181,7 @@ router.post("/:id/revoke", requireAuth, async (req, res) => {
     res.json({ connector: await buildConnectorItem(clerkId, id) });
   } catch (err) {
     req.log.error({ err }, "connectors.revoke failed");
-    res.status(500).json({ error: "Failed to revoke" });
+    res.status(500).json({ error: "Intrekken mislukt." });
   }
 });
 

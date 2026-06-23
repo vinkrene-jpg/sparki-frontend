@@ -31,7 +31,20 @@ export const trainingSessionsTable = pgTable("training_sessions", {
   intensityFactor: numeric("intensity_factor", { precision: 4, scale: 3 }),
   notes: text("notes"),
   feelScore: integer("feel_score"),
+  // Canonical Sparki sport family (see engines/data-hub/sports.ts). Lets one
+  // athlete hold cycling/running/etc sessions side by side without ambiguity.
+  sport: text("sport").notNull().default("cycling"),
+  avgCadence: integer("avg_cadence"),
+  avgSpeedKph: numeric("avg_speed_kph", { precision: 5, scale: 2 }),
+  maxHR: integer("max_hr"),
   source: text("source").notNull().default("manual"),
+  // Data Hub provenance. `externalRef` = "<provider>:<externalActivityId>" of the
+  // primary source; `sources` = every connector that contributed to this row
+  // (set when the hub merges the same activity imported from several platforms);
+  // `dedupeKey` = the cross-source key used to recognise that duplicate.
+  externalRef: text("external_ref"),
+  dedupeKey: text("dedupe_key"),
+  sources: jsonb("sources").$type<string[]>().default([]),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

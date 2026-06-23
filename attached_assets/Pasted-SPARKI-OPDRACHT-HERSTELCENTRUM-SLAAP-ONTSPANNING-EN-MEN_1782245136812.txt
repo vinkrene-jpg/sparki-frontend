@@ -1,0 +1,202 @@
+SPARKI OPDRACHT – HERSTELCENTRUM (SLAAP, ONTSPANNING EN MENTALE RUST)
+
+DOEL
+
+Bouw binnen Sparki een volledig Herstelcentrum dat sporters ondersteunt bij slaap, herstel, ontspanning, wedstrijdspanning en mentale rust.
+
+Dit is nadrukkelijk géén losse slaap-app. Alles staat in dienst van betere sportprestaties, sneller herstel, blessurepreventie en duurzame ontwikkeling van de sporter.
+
+PLAATS BINNEN SPARKI
+
+Lab
+→ Herstel
+→ Slaap
+→ Ontspanning
+→ Ademhaling
+→ Mentale Rust
+→ Wedstrijdvoorbereiding
+
+VISIE
+
+Sparki moet herkennen dat vooruitgang niet alleen ontstaat door meer trainen.
+
+Soms is beter slapen, beter herstellen of minder stress de grootste prestatieverbetering.
+
+Sparki moet daarom patronen herkennen en actief begeleiding bieden.
+
+SLAAPCOACH
+
+Bouw een persoonlijke slaapcoach.
+
+Functionaliteiten:
+
+* Regengeluiden
+* Bosgeluiden
+* Zee- en golfgeluiden
+* Windgeluiden
+* Rustige achtergrondmuziek
+* Automatische stopfunctie
+* Nachtmodus
+* Scherm automatisch dimmen
+
+Ontspanningsverhalen:
+
+* Jeugdversie
+* Volwassen versie
+* Wedstrijdvoorbereiding
+* Ontspanning na zware trainingsdag
+
+Audio's mogen in eerste instantie tekst-gebaseerd worden voorbereid zodat later audio kan worden toegevoegd.
+
+EDUCATIEVE MODULE
+
+Korte lessen van maximaal 2 minuten leestijd:
+
+* Waarom slaap belangrijk is
+* Herstel van spieren
+* Herstel van hersenen
+* Effect van slaaptekort
+* Cafeïne en prestaties
+* Schermgebruik voor het slapen
+* Stress en slaap
+* Wedstrijdspanning
+
+Alle uitleg moet praktisch, begrijpelijk en wetenschappelijk onderbouwd zijn.
+
+PERSOONLIJKE HERSTELANALYSE
+
+Sparki moet beschikbare data combineren:
+
+* Trainingsbelasting
+* Trainingsduur
+* Trainingsintensiteit
+* Rusthartslag
+* Slaapgegevens
+* Stemming
+* Voeding
+* Wedstrijdplanning
+
+Voorbeelden van observaties:
+
+"Je trainingsbelasting stijgt sneller dan je herstel."
+
+"Je rusthartslag ligt deze week hoger dan normaal."
+
+"Je herstel lijkt achter te blijven bij je trainingsvolume."
+
+"Je slaappatroon is onregelmatiger geworden sinds de examenperiode."
+
+Observaties moeten altijd een confidence score bevatten.
+
+Bij onvoldoende zekerheid moet Sparki vragen stellen.
+
+MENTALE RUST
+
+Bouw korte begeleide sessies:
+
+* 1 minuut
+* 3 minuten
+* 5 minuten
+
+Doelen:
+
+* Kalmeren
+* Ontspannen
+* Focus herstellen
+* Wedstrijdspanning verminderen
+* Piekeren verminderen
+
+WEDSTRIJDNACHT MODULE
+
+Veel sporters slapen slecht voor wedstrijden.
+
+Sparki moet hier actief op begeleiden.
+
+Onderwerpen:
+
+* Slecht slapen voor een wedstrijd is normaal.
+* Eén slechte nacht betekent meestal geen slechte prestatie.
+* Niet steeds op de klok kijken.
+* Rusten is ook herstel.
+* Spanning hoort bij presteren.
+
+Deze module moet wetenschappelijk correct zijn.
+
+PERSOONLIJKE PROFIELEN
+
+Ondersteun verschillende typen sporters:
+
+* Jeugd
+* Jongvolwassen
+* Volwassen
+* Masters
+
+Later uitbreidbaar met:
+
+* ADD
+* ADHD
+* Hooggevoelig
+* Perfectionistisch
+* Sterk analytisch
+* Stressgevoelig
+
+AI HERSTELCOACH
+
+Sparki moet patronen herkennen zoals:
+
+* Laat naar bed
+* Onregelmatige bedtijden
+* Hoge trainingsbelasting
+* Veel wedstrijden
+* Examens
+* Werkstress
+* Vermoeidheid
+* Overreiken
+
+Bij herkenning geeft Sparki geen standaardtips maar gepersonaliseerde begeleiding.
+
+WETENSCHAPPELIJKE BASIS
+
+Koppel deze module aan de bestaande wetenschappelijke kennisarchitectuur van Sparki.
+
+Nieuwe inzichten over:
+
+* Slaap
+* Herstel
+* Sportpsychologie
+* Stress
+* Overtraining
+* Mentale prestaties
+
+moeten automatisch beschikbaar worden voor toekomstige observaties.
+
+TOEKOMSTBESTENDIG ONTWERP
+
+Bereid de architectuur voor op:
+
+* Garmin
+* Polar
+* Apple Health
+* Google Fit
+* Oura
+* Whoop
+
+zonder dat deze koppelingen nu al gebouwd hoeven te worden.
+
+TESTEN
+
+Bouw uitgebreide testscenario's:
+
+* Jeugdsporter met examenstress
+* Wielrenner in wedstrijdperiode
+* Sporter met structureel slaaptekort
+* Sporter met overbelasting
+* Sporter met onregelmatig leefritme
+
+Controleer of Sparki in alle situaties relevante observaties en passende begeleiding geeft.
+
+OPLEVERRESULTAAT
+
+Het Herstelcentrum moet voelen als een integraal onderdeel van het Sparki Performance Center en niet als een losse slaapmodule.
+
+Het doel is dat Sparki leert herkennen wanneer de oplossing niet meer trainen is, maar beter herstellen.

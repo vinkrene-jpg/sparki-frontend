@@ -1,0 +1,70 @@
+import type { CanonicalActivity, CanonicalDailyMetric, CanonicalFtp } from "./types";
+
+// Data validation for the hub. Out-of-range / impossible values are dropped to
+// null (never coerced to a fake number). This protects every downstream engine
+// (load/recovery/zones) from garbage provider data.
+
+export function inRange(
+  v: number | null | undefined,
+  min: number,
+  max: number,
+): number | null {
+  if (typeof v !== "number" || !Number.isFinite(v)) return null;
+  if (v < min || v > max) return null;
+  return v;
+}
+
+function intOrNull(v: number | null): number | null {
+  return v == null ? null : Math.round(v);
+}
+
+/** Clean an activity: clamp/null impossible values. Returns null if unusable. */
+export function cleanActivity(a: CanonicalActivity): CanonicalActivity | null {
+  if (!a.externalId) return null;
+  const started = new Date(a.startedAt);
+  if (Number.isNaN(started.getTime())) return null;
+  return {
+    ...a,
+    durationMin: intOrNull(inRange(a.durationMin, 1, 24 * 60)),
+    distanceKm: inRange(a.distanceKm, 0, 2000),
+    elevationM: intOrNull(inRange(a.elevationM, 0, 20000)),
+    avgPower: intOrNull(inRange(a.avgPower, 0, 2000)),
+    normalizedPower: intOrNull(inRange(a.normalizedPower, 0, 2000)),
+    avgHR: intOrNull(inRange(a.avgHR, 20, 250)),
+    maxHR: intOrNull(inRange(a.maxHR, 20, 260)),
+    avgCadence: intOrNull(inRange(a.avgCadence, 0, 250)),
+    avgSpeedKph: inRange(a.avgSpeedKph, 0, 150),
+    tss: intOrNull(inRange(a.tss, 0, 1000)),
+  };
+}
+
+export function cleanDailyMetric(
+  m: CanonicalDailyMetric,
+): CanonicalDailyMetric | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(m.date)) return null;
+  const cleaned: CanonicalDailyMetric = {
+    date: m.date,
+    hrv: intOrNull(inRange(m.hrv, 1, 400)),
+    restingHR: intOrNull(inRange(m.restingHR, 20, 150)),
+    sleepHours: inRange(m.sleepHours, 0, 24),
+    sleepQuality: intOrNull(inRange(m.sleepQuality, 0, 100)),
+    fatigueScore: intOrNull(inRange(m.fatigueScore, 0, 100)),
+    weightKg: inRange(m.weightKg, 20, 300),
+  };
+  // Drop a metric row with nothing usable.
+  const hasAny =
+    cleaned.hrv != null ||
+    cleaned.restingHR != null ||
+    cleaned.sleepHours != null ||
+    cleaned.sleepQuality != null ||
+    cleaned.fatigueScore != null ||
+    cleaned.weightKg != null;
+  return hasAny ? cleaned : null;
+}
+
+export function cleanFtp(f: CanonicalFtp): CanonicalFtp | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(f.measuredAt)) return null;
+  const watts = inRange(f.ftpWatts, 50, 600);
+  if (watts == null) return null;
+  return { measuredAt: f.measuredAt, ftpWatts: Math.round(watts), testType: f.testType };
+}

@@ -1,0 +1,351 @@
+SPARKI – INTELLIGENCE PLATFORM V2
+
+BELANGRIJK
+
+Geen nieuwe hoofdschermen bouwen.
+
+De huidige schermen:
+
+* Vandaag
+* Training
+* Races
+* Nieuws
+* Inzicht
+* Profiel
+
+vormen de definitieve basis.
+
+Alle verdere ontwikkeling moet gericht zijn op intelligentie, databronnen, geheugen, analyses en wedstrijdondersteuning.
+
+──────────────────────────────
+
+1. SPARKI DATA HUB
+
+Bouw één centrale datahub.
+
+Ondersteunen:
+
+* Garmin Connect
+* Strava
+* TrainingPeaks
+* Apple Health
+* Google Health Connect
+* Fitbit
+* Whoop
+* Oura
+* Polar
+* Suunto
+* Coros
+* Wahoo
+* Zwift
+* Komoot
+
+Alle data vertalen naar één intern Sparki-profiel.
+
+Voorkom dubbele activiteiten.
+
+Herken automatisch dezelfde training vanuit meerdere bronnen.
+
+Voorbereiden voor:
+
+* wielrennen
+* hardlopen
+* triathlon
+* MTB
+* gravel
+* wandelen
+* zwemmen
+* teamsporten
+
+──────────────────────────────
+
+2. SPARKI GEHEUGEN
+
+Maak het bestaande geheugen veel slimmer.
+
+Opslaan:
+
+* trainingen
+* wedstrijden
+* opmerkingen
+* coachinformatie
+* ouderinformatie
+* voeding
+* slaap
+* ziekte
+* blessures
+* doelen
+* eerdere analyses
+
+Niet alleen opslaan.
+
+Ook verbanden leggen.
+
+Voorbeelden:
+
+* slaap daalt
+* HRV daalt
+* rusthartslag stijgt
+
+→ mogelijk herstelprobleem
+
+Of:
+
+* trainingsbelasting stijgt
+* FTP stijgt
+* vermoeidheid blijft laag
+
+→ positieve adaptatie
+
+──────────────────────────────
+
+3. OBSERVATIE-ENGINE
+
+Iedere analyse bestaat uit:
+
+* observatie
+* onderbouwing
+* confidence score
+* alternatieve verklaring
+
+Voorbeeld:
+
+Waarneming:
+Belastbaarheid neemt toe.
+
+Onderbouwing:
+
+* hogere trainingsbelasting
+* stabiele HRV
+* normale rusthartslag
+
+Confidence:
+84%
+
+Alternatieve verklaring:
+Meetfout of beperkte dataset.
+
+──────────────────────────────
+
+4. INZICHT-SCHERM
+
+Minder dashboards.
+
+Meer interpretatie.
+
+Niet:
+
+FTP = 245
+
+Wel:
+
+FTP stabiel.
+Duurvermogen stijgend.
+Belastbaarheid neemt toe.
+
+Niet:
+
+HRV = 62
+
+Wel:
+
+HRV stabiel zonder negatieve trend.
+Herstelcapaciteit voldoende.
+
+Iedere observatie moet uitlegbaar zijn.
+
+──────────────────────────────
+
+5. TRAINING
+
+Iedere training moet uitleg bevatten.
+
+Niet:
+
+Zone 4
+223-257 watt
+
+Wel:
+
+Vandaag adviseren we Zone 4 omdat:
+
+* herstelscore hoog
+* HRV stabiel
+* vermoeidheid laag
+* trainingsfase geschikt
+
+Confidence:
+82%
+
+──────────────────────────────
+
+6. ROUTEPLANNER
+
+Bouw routeplanner als kernfunctie.
+
+Sparki moet routes kunnen genereren op basis van:
+
+* trainingsdoel
+* trainingsduur
+* vermogen
+* hartslag
+* hoogtemeters
+* wind
+* verkeer
+* veiligheid
+
+Voorbeelden:
+
+* hersteltraining
+* duurtraining
+* intervaltraining
+* klimtraining
+* tijdrittraining
+
+Export:
+
+* Komoot
+* GPX
+* Garmin
+* Wahoo
+
+──────────────────────────────
+
+7. RACE CENTER
+
+Maak van Races een volwaardig wedstrijdcentrum.
+
+Per wedstrijd:
+
+* datum
+* locatie
+* afstand
+* hoogtemeters
+* weer
+* deelnemers
+* uitslagen
+* parcours
+
+Wedstrijdweek:
+
+* tapering
+* voeding
+* herstel
+* materiaalcheck
+
+Wedstrijddag:
+
+* kledingadvies
+* voedingsadvies
+* warming-up
+
+Na afloop:
+
+* analyse
+* uitslag
+* verbeterpunten
+
+──────────────────────────────
+
+8. KENNISBIBLIOTHEEK
+
+Controleer bestaande verborgen kennisbibliotheek.
+
+Rapporteer:
+
+* aanwezige boeken
+* aanwezige artikelen
+* aanwezige wetenschappelijke bronnen
+* aanwezige trainingskennis
+
+Voorbereiden voor:
+
+* Knowledge Is Watt
+* PubMed
+* IJSPP
+* Sports Medicine
+* Frontiers
+* TrainingPeaks
+
+Kennis mag nooit automatisch trainingsschema's wijzigen.
+
+Kennis levert:
+
+* observaties
+* waarschuwingen
+* suggesties
+* experimentvoorstellen
+
+──────────────────────────────
+
+9. COACHES EN OUDERS
+
+Voorbereiden:
+
+Coach kan toevoegen:
+
+* observaties
+* doelen
+* opmerkingen
+
+Ouder kan toevoegen:
+
+* observaties
+* welzijnssignalen
+
+Deze informatie wordt onderdeel van het Sparki-geheugen.
+
+──────────────────────────────
+
+10. NIEUWS
+
+Niet uitbreiden.
+
+Wel slimmer maken.
+
+Nieuws koppelen aan:
+
+* profiel
+* sport
+* wedstrijden
+* doelen
+
+Voorbeeld:
+
+Artikel over hitte.
+
+Relevant omdat:
+wedstrijd volgende week verwacht 31°C.
+
+──────────────────────────────
+
+11. TESTEN
+
+Na oplevering rapporteren:
+
+* architectuur
+* databronnen
+* datamodellen
+* geheugenstructuur
+* observatie-engine
+* race center
+* routeplanner
+* kennisbibliotheek
+* actieve koppelingen
+* ontbrekende API-toegang
+
+Screenshots verplicht.
+
+──────────────────────────────
+
+BELANGRIJK
+
+Geen nieuwe losse modules bouwen.
+
+Geen nieuwe dashboards bouwen.
+
+Geen nieuwe hoofdnavigatie bouwen.
+
+Gebruik de bestaande Sparki-schermen als basis.
+
+Maak Sparki aantoonbaar slimmer, persoonlijker en waardevoller voor sporters, coaches en ouders.

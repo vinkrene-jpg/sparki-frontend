@@ -15,11 +15,52 @@ import {
   revokeConnector,
   dataTypeLabel,
   formatLastSync,
+  READINESS_LABELS,
   type ConnectorItem,
+  type ReadinessState,
 } from "@/lib/connectors"
 
 function letter(name: string): string {
   return name.charAt(0).toUpperCase()
+}
+
+// Visual treatment per readiness state — honest about what's live vs. prepared.
+const READINESS_STYLE: Record<
+  ReadinessState,
+  { color: string; border: string; bg: string }
+> = {
+  actief: {
+    color: "rgb(110,231,183)",
+    border: "rgba(110,231,183,0.25)",
+    bg: "rgba(110,231,183,0.08)",
+  },
+  beschikbaar: {
+    color: ACCENT,
+    border: "rgba(120,210,230,0.25)",
+    bg: "rgba(120,210,230,0.08)",
+  },
+  testbaar: {
+    color: "rgb(196,181,253)",
+    border: "rgba(196,181,253,0.22)",
+    bg: "rgba(196,181,253,0.07)",
+  },
+  voorbereid: {
+    color: "rgba(255,255,255,0.4)",
+    border: "rgba(255,255,255,0.1)",
+    bg: "rgba(255,255,255,0.03)",
+  },
+}
+
+function ReadinessBadge({ state }: { state: ReadinessState }) {
+  const s = READINESS_STYLE[state]
+  return (
+    <span
+      className="shrink-0 rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide"
+      style={{ color: s.color, borderColor: s.border, background: s.bg }}
+    >
+      {READINESS_LABELS[state]}
+    </span>
+  )
 }
 
 function ConnectionRow({
@@ -74,11 +115,7 @@ function ConnectionRow({
           )}
         </div>
 
-        {!connector.available && (
-          <span className="shrink-0 rounded-full border border-white/10 px-2 py-0.5 font-mono text-[9px] tracking-wide text-white/30">
-            BINNENKORT
-          </span>
-        )}
+        {!isConnected && <ReadinessBadge state={connector.readiness.state} />}
 
         {connector.available && isConnected && (
           <div className="flex shrink-0 items-center gap-1.5">

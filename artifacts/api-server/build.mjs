@@ -20,6 +20,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/jobs/knowledge-scan.ts"),
       path.resolve(artifactDir, "src/tests/smoke.ts"),
       path.resolve(artifactDir, "src/tests/account.ts"),
+      path.resolve(artifactDir, "src/tests/data-hub.ts"),
     ],
     platform: "node",
     bundle: true,

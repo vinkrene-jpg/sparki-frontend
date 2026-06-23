@@ -12,6 +12,7 @@ export * from "./onboarding";
 export * from "./nutrition";
 export * from "./activity-imports";
 export * from "./connectors";
+export * from "./data-hub";
 export * from "./routes";
 export * from "./notifications";
 export * from "./bug-reports";

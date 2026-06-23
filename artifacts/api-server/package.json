@@ -10,6 +10,7 @@
     "scan:knowledge": "pnpm run build && node --enable-source-maps ./dist/jobs/knowledge-scan.mjs",
     "test:smoke": "pnpm run build && node --enable-source-maps ./dist/tests/smoke.mjs",
     "test:account": "pnpm run build && node --enable-source-maps ./dist/tests/account.mjs",
+    "test:data-hub": "pnpm run build && node --enable-source-maps ./dist/tests/data-hub.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

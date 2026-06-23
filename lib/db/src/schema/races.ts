@@ -52,6 +52,11 @@ export const racesTable = pgTable("races", {
   teamInfo: text("team_info"),
   coachInstructions: text("coach_instructions"),
 
+  // Finished-race outcome (uitslag) — athlete-entered now, integration-ready so
+  // a results feed (UCI/club/TrainingPeaks) can populate the same shape later.
+  raceType: text("race_type"), // e.g. "wegwedstrijd", "criterium", "tijdrit"
+  result: jsonb("result").$type<RaceResult>(),
+
   // Structured, integration-ready sub-objects
   logistics: jsonb("logistics"), // RaceLogisticsInput
   checklist: jsonb("checklist"), // Record<string, boolean> — persisted per race
@@ -64,6 +69,17 @@ export const racesTable = pgTable("races", {
     .notNull()
     .defaultNow(),
 });
+
+// Finished-race outcome. Stored in races.result (jsonb). All fields optional so
+// a planned (not-yet-raced) event simply has no result.
+export type RaceResult = {
+  status?: "finished" | "dnf" | "dns" | "dsq";
+  position?: number | null;
+  fieldSize?: number | null;
+  timeSec?: number | null;
+  points?: number | null;
+  note?: string | null;
+};
 
 export const insertRaceSchema = createInsertSchema(racesTable).omit({
   id: true,

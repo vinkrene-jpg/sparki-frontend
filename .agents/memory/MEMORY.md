@@ -9,6 +9,7 @@
 - [Sparki data foundation sprint](sparki-data-foundation.md) — clerkId identity, privacy-gated AI persist, dedupe_key; api-server route gotchas (no zod, String(params), db.execute().rows, admin via SPARKI_ADMIN_IDS).
 - [Sparki day-type engine](sparki-day-type-engine.md) — Home day-type detection precedence (§4); rest=explicit rest workout, no-workout=general fallback; health status end-to-end.
 - [Sparki invitation/tester flow](sparki-invitations.md) — token invites grant role+link; one-time accept must be atomic (conditional status flip in a transaction), not read-then-update.
+- [Sparki Data Hub](sparki-data-hub.md) — central multi-platform engine; dedupe key=sport+start-bucket only (not dur/dist) w/ neighbour match + tolerance; activity consent is AND; 4-state readiness; single runSync path.
 - [Sparki account-readiness gate](sparki-account-readiness.md) — EVERY signed-in surface must render through one AccountGate (profile required), not Clerk auth alone; ensureAccount is the self-healing SSOT provisioning chain.
 - [Sparki in-app news reader](sparki-news-reader.md) — news clicks open an in-app reader (never navigate away); copyright = excerpt + source attribution, never full text.
 - [Sparki phased multi-sport](sparki-phased-sports.md) — sports registry is SSOT; isSportActive gates entry points only (not engine); validate raw sport BEFORE coerce-to-cycling default.

@@ -3,6 +3,25 @@ import { apiFetch } from "@/lib/api"
 export type ConnectorCategory = "sport" | "health"
 export type ConnectorStatus = "connected" | "disconnected" | "error" | "revoked"
 
+// 4-state readiness model for each platform (computed server-side by the Data
+// Hub). Honest about what works today vs. what's prepared for future API access.
+export type ReadinessState = "actief" | "beschikbaar" | "testbaar" | "voorbereid"
+
+export interface ConnectorReadiness {
+  available: boolean
+  prepared: boolean
+  testable: boolean
+  active: boolean
+  state: ReadinessState
+}
+
+export const READINESS_LABELS: Record<ReadinessState, string> = {
+  actief: "Actief",
+  beschikbaar: "Beschikbaar",
+  testbaar: "Testbaar",
+  voorbereid: "Voorbereid",
+}
+
 // Shape returned by GET /api/connectors — registry definition merged with this
 // user's real connection row. Drives both the onboarding connect step and the
 // Settings management panel (single source of truth, no duplication).
@@ -20,6 +39,7 @@ export interface ConnectorItem {
   errorStatus: string | null
   permissionRevoked: boolean
   connectedAt: string | null
+  readiness: ConnectorReadiness
 }
 
 export async function fetchConnectors(): Promise<ConnectorItem[]> {

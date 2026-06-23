@@ -14,3 +14,7 @@ export * from "../../lib/connectors/registry";
 
 // Provider sync implementations.
 export * from "../../lib/connectors/providers/strava";
+
+// Data Hub — central normalization / ingest / dedup / consent / readiness /
+// logging engine that every platform funnels through.
+export * from "../data-hub";
