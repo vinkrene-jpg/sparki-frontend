@@ -14,6 +14,7 @@ import { requireAuth, getClerkUserId } from "../lib/auth";
 import { generateThreeWeekPlan, autoAdaptPlan } from "../engines/training-plan";
 import { computeZones } from "../engines/profile";
 import { computeLoad } from "../engines/recovery-load";
+import { captureContext } from "../engines/context-memory";
 
 const router = Router();
 
@@ -585,6 +586,15 @@ router.post("/workouts/:id/feedback", requireAuth, async (req, res) => {
       .values({ clerkId, workoutId: id, feedbackType, note: note ?? null })
       .returning();
 
+    // Let Sparki pick up a personal-context moment from the feedback note
+    // (e.g. "niet getraind, examen morgen"). Best-effort + privacy-gated inside
+    // captureContext — never blocks or fails the feedback response.
+    if (note && note.trim()) {
+      captureContext(clerkId, note.trim()).catch((err) =>
+        req.log.error({ err }, "athlete.workouts.feedback context capture failed"),
+      );
+    }
+
     // Mirror terminal feedback to the workout status.
     const newStatus =
       feedbackType === "done"
@@ -762,6 +772,15 @@ router.post("/sessions", requireAuth, async (req, res) => {
         source: "manual",
       })
       .returning();
+
+    // Pick up a personal-context moment from the logbook notes (best-effort,
+    // privacy-gated inside captureContext — never blocks the session response).
+    if (notes && notes.trim()) {
+      captureContext(clerkId, notes.trim()).catch((err) =>
+        req.log.error({ err }, "athlete.sessions context capture failed"),
+      );
+    }
+
     triggerPlanRefresh(req, clerkId);
     res.status(201).json(session);
   } catch (err) {

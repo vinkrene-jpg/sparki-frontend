@@ -2,13 +2,18 @@ import { and, desc, eq, lte, isNotNull } from "drizzle-orm";
 import {
   db,
   personalContextMemoriesTable,
+  type ContextVisibility,
   type PersonalContextMemory,
 } from "@workspace/db";
 import { getEffectivePrivacy } from "../../lib/privacy";
-import { detectContextMoment } from "./detect";
+import { detectContextMoment, followUpPrompt } from "./detect";
 
-export { detectContextMoment } from "./detect";
+export { detectContextMoment, followUpPrompt } from "./detect";
 export type { DetectedContext } from "./detect";
+
+// A due follow-up plus the exact prompt to show — direct question when fresh, or
+// a gentle "Je zei laatst dat ..." recall when the athlete returns late.
+export type DueFollowUp = PersonalContextMemory & { prompt: string };
 
 export type CaptureResult = {
   detected: boolean;
@@ -45,6 +50,8 @@ export async function captureContext(
       detail: detected.detail,
       followUpQuestion: detected.followUpQuestion,
       followUpAt: detected.followUpAt,
+      importance: detected.importance,
+      emotionalTone: detected.emotionalTone,
       signals: detected.signals,
       status: "scheduled",
     })
@@ -71,8 +78,8 @@ export async function listContextMemories(
 export async function getDueFollowUps(
   clerkId: string,
   now: Date = new Date(),
-): Promise<PersonalContextMemory[]> {
-  return db
+): Promise<DueFollowUp[]> {
+  const rows = await db
     .select()
     .from(personalContextMemoriesTable)
     .where(
@@ -85,6 +92,10 @@ export async function getDueFollowUps(
       ),
     )
     .orderBy(personalContextMemoriesTable.followUpAt);
+
+  // Compute the phrasing per row: fresh → direct question; long overdue (athlete
+  // returned late) → gentle "Je zei laatst dat ..." recall.
+  return rows.map((r) => ({ ...r, prompt: followUpPrompt(r, now) }));
 }
 
 /** Record the athlete's answer and mark the follow-up complete. Owner-scoped. */
@@ -97,6 +108,7 @@ export async function answerFollowUp(
     .update(personalContextMemoriesTable)
     .set({
       status: "followed_up",
+      followUpDone: true,
       response,
       followedUpAt: new Date(),
       updatedAt: new Date(),
@@ -142,6 +154,25 @@ export async function setContextEnabled(
   const [row] = await db
     .update(personalContextMemoriesTable)
     .set({ enabled, updatedAt: new Date() })
+    .where(
+      and(
+        eq(personalContextMemoriesTable.id, id),
+        eq(personalContextMemoriesTable.clerkId, clerkId),
+      ),
+    )
+    .returning();
+  return row ?? null;
+}
+
+/** Set sharing scope (private|shared) — athlete control. Owner-scoped. */
+export async function setContextVisibility(
+  clerkId: string,
+  id: number,
+  visibility: ContextVisibility,
+): Promise<PersonalContextMemory | null> {
+  const [row] = await db
+    .update(personalContextMemoriesTable)
+    .set({ visibility, updatedAt: new Date() })
     .where(
       and(
         eq(personalContextMemoriesTable.id, id),
@@ -202,6 +233,10 @@ export async function getAthleteContextForViewer(
       and(
         eq(personalContextMemoriesTable.clerkId, athleteClerkId),
         eq(personalContextMemoriesTable.enabled, true),
+        // Per-item athlete control: only items the athlete explicitly marked as
+        // shared are eligible — on top of the global sharing-level gate enforced
+        // by the caller. Private items NEVER reach a coach/parent.
+        eq(personalContextMemoriesTable.visibility, "shared"),
       ),
     )
     .orderBy(desc(personalContextMemoriesTable.createdAt))

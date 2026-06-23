@@ -14,16 +14,18 @@ import {
   personalContextMemoriesTable,
   privacySettingsTable,
 } from "@workspace/db";
-import { eq, inArray } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { ensureAccount, silentLogger } from "../lib/account";
 import {
   detectContextMoment,
+  followUpPrompt,
   captureContext,
   listContextMemories,
   getDueFollowUps,
   answerFollowUp,
   dismissFollowUp,
   setContextEnabled,
+  setContextVisibility,
   deleteContextMemory,
   getAthleteContextForViewer,
 } from "../engines/context-memory";
@@ -66,8 +68,6 @@ async function cleanup() {
   await db
     .delete(privacySettingsTable)
     .where(inArray(privacySettingsTable.clerkId, ids));
-  // user_profiles cleaned via account helper not exposed here; leave disposable
-  // namespaced rows (safe, unique per run). Delete profiles directly:
   const { userProfilesTable } = await import("@workspace/db");
   await db
     .delete(userProfilesTable)
@@ -79,31 +79,35 @@ async function cleanup() {
 const NOW = new Date(2026, 5, 22, 10, 0, 0);
 
 async function main() {
-  // 1-5. The five mandatory scenarios must each be detected with an evening
-  // follow-up scheduled.
-  await scenario("detectie: examen morgen", async () => {
+  // ── Detection: ≥10 distinct categories ─────────────────────────────────────
+
+  await scenario("detectie 1: examen/school morgen", async () => {
     const d = detectContextMoment(
       "ik heb niet getraind want ik heb morgen examen",
       NOW,
     );
-    assert(d, "examen niet herkend");
-    assert(d!.kind === "exam", `verkeerde kind: ${d!.kind}`);
+    assert(d, "school niet herkend");
+    assert(d!.kind === "school", `verkeerde kind: ${d!.kind}`);
     assert(d!.followUpAt, "geen follow-up gepland");
     assert(d!.followUpAt!.getHours() === 19, "follow-up niet 's avonds");
-    // morgen = NOW + 1 day
     assert(d!.followUpAt!.getDate() === 23, "follow-up niet op examendag");
   });
 
-  await scenario("detectie: wedstrijd dit weekend", async () => {
+  await scenario("detectie 2: wedstrijd dit weekend", async () => {
     const d = detectContextMoment("ik heb een wedstrijd dit weekend", NOW);
     assert(d, "wedstrijd niet herkend");
     assert(d!.kind === "race", `verkeerde kind: ${d!.kind}`);
-    assert(d!.followUpAt, "geen follow-up gepland");
-    // Saturday is 2026-06-27; follow-up the evening after (28th).
     assert(d!.followUpAt!.getHours() === 19, "follow-up niet 's avonds");
   });
 
-  await scenario("detectie: blessure", async () => {
+  await scenario("detectie 3: ziek/griep", async () => {
+    const d = detectContextMoment("ik ben ziek, flinke griep en koorts", NOW);
+    assert(d, "ziekte niet herkend");
+    assert(d!.kind === "illness", `verkeerde kind: ${d!.kind}`);
+    assert(d!.importance === "high", "ziekte hoort hoog te wegen");
+  });
+
+  await scenario("detectie 4: blessure", async () => {
     const d = detectContextMoment(
       "ik heb een blessure aan mijn knie en kan niet fietsen",
       NOW,
@@ -113,17 +117,54 @@ async function main() {
     assert(d!.followUpAt, "geen follow-up voor eerste training");
   });
 
-  await scenario("detectie: slecht slapen door spanning", async () => {
+  await scenario("detectie 5: werk in de weg", async () => {
+    const d = detectContextMoment(
+      "ik moest overwerken, drukke week op werk dus niet gefietst",
+      NOW,
+    );
+    assert(d, "werk niet herkend");
+    assert(d!.kind === "work", `verkeerde kind: ${d!.kind}`);
+  });
+
+  await scenario("detectie 6: familie/thuis", async () => {
+    const d = detectContextMoment(
+      "het was de begrafenis van mijn opa, druk met familie",
+      NOW,
+    );
+    assert(d, "familie niet herkend");
+    assert(d!.kind === "family", `verkeerde kind: ${d!.kind}`);
+    assert(d!.importance === "high", "familie hoort hoog te wegen");
+  });
+
+  await scenario("detectie 7: slecht slapen door spanning", async () => {
     const d = detectContextMoment(
       "ik heb slecht geslapen door de spanning",
       NOW,
     );
-    assert(d, "slaap/spanning niet herkend");
+    assert(d, "slaap niet herkend");
+    // Sleep wins over stress: the sentence leads with the sleep complaint.
     assert(d!.kind === "sleep", `verkeerde kind: ${d!.kind}`);
-    assert(d!.followUpAt, "geen follow-up gepland");
+    assert(d!.emotionalTone === "gespannen", `verkeerde toon: ${d!.emotionalTone}`);
   });
 
-  await scenario("detectie: vakantie/trainingskamp", async () => {
+  await scenario("detectie 8: pure spanning/stress", async () => {
+    const d = detectContextMoment("ik heb heel veel stress deze week", NOW);
+    assert(d, "stress niet herkend");
+    assert(d!.kind === "stress", `verkeerde kind: ${d!.kind}`);
+    assert(d!.importance === "high", "gespannen toon hoort hoog te wegen");
+  });
+
+  await scenario("detectie 9: motivatie kwijt", async () => {
+    const d = detectContextMoment(
+      "ik heb even geen zin meer, motivatie kwijt",
+      NOW,
+    );
+    assert(d, "motivatie niet herkend");
+    assert(d!.kind === "motivation", `verkeerde kind: ${d!.kind}`);
+    assert(d!.emotionalTone === "ongemotiveerd", `verkeerde toon: ${d!.emotionalTone}`);
+  });
+
+  await scenario("detectie 10: vakantie/trainingskamp", async () => {
     const camp = detectContextMoment("ik ga volgende week op trainingskamp", NOW);
     assert(camp && camp.kind === "camp", "trainingskamp niet herkend");
     const vac = detectContextMoment("ik ben op vakantie deze week", NOW);
@@ -131,14 +172,42 @@ async function main() {
     assert(camp!.followUpAt && vac!.followUpAt, "geen follow-up gepland");
   });
 
-  // 6. Non-matching text creates nothing.
-  await scenario("detectie: irrelevante tekst geeft null", async () => {
+  await scenario("detectie 11: zware training/herstel", async () => {
+    const d = detectContextMoment(
+      "ik heb een rustdag genomen, benen helemaal vol",
+      NOW,
+    );
+    assert(d, "sport/herstel niet herkend");
+    assert(d!.kind === "sport", `verkeerde kind: ${d!.kind}`);
+  });
+
+  await scenario("detectie 12: irrelevante tekst geeft null", async () => {
     const d = detectContextMoment("vandaag was een mooie dag", NOW);
     assert(d === null, "onterecht een context herkend");
   });
 
-  // 7. Full capture → persist with scheduled follow-up.
-  await scenario("captureContext bewaart + plant follow-up", async () => {
+  // ── Late return: "Je zei laatst dat ..." recall phrasing ───────────────────
+  await scenario("follow-up: late terugkomst geeft laatst-formulering", async () => {
+    const d = detectContextMoment("ik heb morgen examen", NOW);
+    const memory = {
+      kind: d!.kind,
+      followUpQuestion: d!.followUpQuestion,
+      followUpAt: d!.followUpAt,
+    };
+    // Fresh (just due) → direct question.
+    const fresh = followUpPrompt(memory, new Date(d!.followUpAt!.getTime() + 1000));
+    assert(fresh === d!.followUpQuestion, "verse vraag niet direct gesteld");
+    // Long overdue (athlete returned days later) → gentle recall.
+    const late = followUpPrompt(
+      memory,
+      new Date(d!.followUpAt!.getTime() + 1000 * 60 * 60 * 24 * 4),
+    );
+    assert(late.startsWith("Je zei laatst dat"), `geen recall-formulering: ${late}`);
+    assert(late.includes("examen"), "recall noemt het onderwerp niet");
+  });
+
+  // ── Full capture → persist with scheduled follow-up + new fields ───────────
+  await scenario("captureContext bewaart + plant follow-up + velden", async () => {
     const athlete = newId("capture");
     await ensureAccount(athlete, emailFor(athlete), "Pupil", silentLogger);
     const res = await captureContext(
@@ -149,9 +218,12 @@ async function main() {
     assert(res.memory, "geen geheugen aangemaakt");
     assert(res.memory!.status === "scheduled", "status niet scheduled");
     assert(res.memory!.followUpAt, "geen follow-up tijd");
+    assert(res.memory!.importance, "importance niet ingevuld");
+    assert(res.memory!.visibility === "private", "visibility hoort privé te zijn");
+    assert(res.memory!.followUpDone === false, "followUpDone hoort false te zijn");
   });
 
-  // 8. Privacy gate: ai_memory disabled → detected but NOT persisted.
+  // ── Privacy gate: ai_memory disabled → detected but NOT persisted ──────────
   await scenario("aiMemoryEnabled=false blokkeert opslag", async () => {
     const athlete = newId("gated");
     await ensureAccount(athlete, emailFor(athlete), "Pupil", silentLogger);
@@ -166,26 +238,27 @@ async function main() {
     assert(all.length === 0, "er is toch opgeslagen ondanks uitgezet geheugen");
   });
 
-  // 9. Follow-up lifecycle: due → answer → followed_up.
-  await scenario("follow-up: due → beantwoorden", async () => {
+  // ── Follow-up lifecycle: due → answer → followed_up ────────────────────────
+  await scenario("follow-up: due → beantwoorden zet followUpDone", async () => {
     const athlete = newId("lifecycle");
     await ensureAccount(athlete, emailFor(athlete), "Pupil", silentLogger);
     const res = await captureContext(athlete, "ik heb morgen examen");
     const id = res.memory!.id;
-    // Simulate time passing: ask for follow-ups due far in the future.
     const future = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
     const due = await getDueFollowUps(athlete, future);
-    assert(due.some((d) => d.id === id), "follow-up niet als due gevonden");
+    const dueItem = due.find((d) => d.id === id);
+    assert(dueItem, "follow-up niet als due gevonden");
+    assert(typeof dueItem!.prompt === "string" && dueItem!.prompt.length > 0, "geen prompt op due-item");
     const answered = await answerFollowUp(athlete, id, "ging goed, weer fit");
     assert(answered, "antwoord niet opgeslagen");
     assert(answered!.status === "followed_up", "status niet followed_up");
+    assert(answered!.followUpDone === true, "followUpDone niet gezet");
     assert(answered!.response === "ging goed, weer fit", "antwoord niet bewaard");
-    // No longer due after answering.
     const due2 = await getDueFollowUps(athlete, future);
     assert(!due2.some((d) => d.id === id), "blijft due na beantwoorden");
   });
 
-  // 10. Dismiss path.
+  // ── Dismiss path ───────────────────────────────────────────────────────────
   await scenario("follow-up: overslaan (dismiss)", async () => {
     const athlete = newId("dismiss");
     await ensureAccount(athlete, emailFor(athlete), "Pupil", silentLogger);
@@ -197,8 +270,8 @@ async function main() {
     assert(!due.some((d) => d.id === res.memory!.id), "dismissed nog steeds due");
   });
 
-  // 11. Athlete control: disable stops follow-ups; delete removes the row.
-  await scenario("athleet: pauzeren en verwijderen", async () => {
+  // ── Athlete control: disable stops follow-ups; delete removes the row ──────
+  await scenario("athleet: niet meer gebruiken en verwijderen", async () => {
     const athlete = newId("control");
     await ensureAccount(athlete, emailFor(athlete), "Pupil", silentLogger);
     const res = await captureContext(athlete, "ik heb morgen examen");
@@ -213,7 +286,7 @@ async function main() {
     assert(!all.some((m) => m.id === id), "memory nog aanwezig na verwijderen");
   });
 
-  // 12. Owner scoping: one athlete cannot touch another's memory.
+  // ── Owner scoping: one athlete cannot touch another's memory ──────────────
   await scenario("eigenaarscope: vreemde id niet bewerkbaar", async () => {
     const a = newId("owner_a");
     const b = newId("owner_b");
@@ -225,12 +298,26 @@ async function main() {
     assert(stolen === null, "vreemde gebruiker kon antwoord opslaan");
     const removed = await deleteContextMemory(b, id);
     assert(!removed, "vreemde gebruiker kon verwijderen");
-    // Owner still has it intact.
     const all = await listContextMemories(a);
     assert(all.some((m) => m.id === id), "eigenaar verloor de memory");
   });
 
-  // 13. Privacy projection: viewer never sees raw words or personal answers.
+  // ── Privacy: private items NEVER reach a viewer; sharing is opt-in ─────────
+  await scenario("privacy: privé verborgen, gedeeld zichtbaar voor viewer", async () => {
+    const athlete = newId("visibility");
+    await ensureAccount(athlete, emailFor(athlete), "Pupil", silentLogger);
+    const res = await captureContext(athlete, "ik heb morgen examen");
+    const id = res.memory!.id;
+    // Default private → viewer sees nothing.
+    let shared = await getAthleteContextForViewer(athlete);
+    assert(!shared.some((m) => m.id === id), "privé memory lekte naar viewer");
+    // Athlete opts in → now eligible for the viewer.
+    await setContextVisibility(athlete, id, "shared");
+    shared = await getAthleteContextForViewer(athlete);
+    assert(shared.some((m) => m.id === id), "gedeelde memory niet zichtbaar");
+  });
+
+  // ── Privacy projection: viewer never sees raw words or personal answers ────
   await scenario("privacy: viewer-projectie verbergt ruwe tekst", async () => {
     const athlete = newId("viewer");
     await ensureAccount(athlete, emailFor(athlete), "Pupil", silentLogger);
@@ -238,6 +325,7 @@ async function main() {
       athlete,
       "ik heb slecht geslapen door stress thuis",
     );
+    await setContextVisibility(athlete, res.memory!.id, "shared");
     await answerFollowUp(athlete, res.memory!.id, "privé antwoord");
     const shared = await getAthleteContextForViewer(athlete);
     assert(shared.length > 0, "viewer kreeg niets te zien");
@@ -247,11 +335,12 @@ async function main() {
     assert("title" in row && "detail" in row, "veilige velden ontbreken");
   });
 
-  // 14. Disabled memories are hidden from viewers too.
+  // ── Disabled shared memories are hidden from viewers too ───────────────────
   await scenario("privacy: gepauzeerde memory verborgen voor viewer", async () => {
     const athlete = newId("viewer_disabled");
     await ensureAccount(athlete, emailFor(athlete), "Pupil", silentLogger);
     const res = await captureContext(athlete, "ik heb morgen examen");
+    await setContextVisibility(athlete, res.memory!.id, "shared");
     await setContextEnabled(athlete, res.memory!.id, false);
     const shared = await getAthleteContextForViewer(athlete);
     assert(
@@ -260,7 +349,7 @@ async function main() {
     );
   });
 
-  // 15. Auth-coverage guard: every route in memory.ts must require auth.
+  // ── Auth-coverage guard: every route in memory.ts must require auth ────────
   await scenario("auth-coverage: alle memory-routes vereisen auth", async () => {
     const src = readFileSync("src/routes/memory.ts", "utf8");
     const routeLines = src

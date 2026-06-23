@@ -12,11 +12,26 @@ asks on next login, marks it followed-up; athlete can pause/delete.
 ## Design decisions worth keeping
 - **Detection is deterministic, not model-based.** Pure Dutch keyword + temporal
   rules in `engines/context-memory/detect.ts` → `DetectedContext | null`. Kept
-  pure (no DB) so it is unit-testable and predictable. Five scenario families:
-  exam / race / injury / sleep / camp (+ general fallback). Returns null for
-  non-matches so memories are created only on real hits.
+  pure (no DB) so it is unit-testable and predictable. Categories:
+  school / sport / work / family / illness / injury / stress / sleep /
+  motivation / race / camp (+ general fallback). Returns null for non-matches so
+  memories are created only on real hits.
   **Why:** the task demands *deterministic* detection and honest behaviour, not a
   probabilistic guess.
+  **How to apply:** rules are an ORDERED array — first match wins, so order
+  encodes precedence. Critical case: `sleep` MUST precede `stress`, otherwise
+  "slecht geslapen door spanning" misclassifies as stress (the sleep complaint
+  should win). When adding a category, place specific rules before generic ones.
+- **Each detection also carries importance + emotionalTone.** `importanceFor()`
+  and `detectTone()` derive `ContextImportance` (low/medium/high) and
+  `EmotionalTone`; illness/family/high-tone moments weigh `high`. These surface
+  in the overview as badges + a "Waarom" (signals) line.
+- **Late-return phrasing via `followUpPrompt(memory, now)`.** If the follow-up is
+  overdue >36h (athlete returned days later) it switches from the direct question
+  to gentle recall: "Je zei laatst dat <clause>. Hoe is dat gegaan?" (per-kind
+  RECALL_CLAUSE map). `getDueFollowUps` returns `memory + computed prompt`; the
+  dialog renders `current.prompt`, never the raw question. Param kind is typed
+  `string` (DB returns string) with a cast + `general` fallback.
 - **Follow-ups land in the evening (19:00)** of the relevant day. The "login
   check" is just `getDueFollowUps` (status=scheduled, enabled, followUpAt<=now);
   there is no cron — it surfaces whenever the athlete next opens the app.
@@ -30,6 +45,12 @@ asks on next login, marks it followed-up; athlete can pause/delete.
   access additionally gated by accepted link + sharing level != none.
   **Why:** privacy rule — viewers get Sparki's neutral framing, never the
   athlete's private text.
+- **Sharing is opt-in per memory and fails closed.** Schema `visibility`
+  defaults to `'private'`; `getAthleteContextForViewer` requires
+  `visibility='shared'` AND `enabled=true`. So a freshly captured memory is never
+  visible to a coach/parent until the athlete flips the toggle ("Gedeeld met
+  begeleiding" / "Alleen voor jou"). `setContextVisibility(clerkId,id,level)` is
+  clerkId-scoped; `PATCH /context/:id` validates against `contextVisibilityLevels`.
 - **Lifecycle guard:** answer/dismiss only act on rows with status=`scheduled`
   (predicate in the UPDATE), preventing re-answer of a completed/dismissed item
   from a stale client.

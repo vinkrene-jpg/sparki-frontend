@@ -78,7 +78,7 @@ export function FollowUpPrompt() {
         </div>
 
         <p className="mt-3 text-pretty text-[15px] font-medium leading-snug text-white/90">
-          {current.followUpQuestion}
+          {current.prompt}
         </p>
         <p className="mt-1 text-[12px] text-white/40">
           Over: <span style={{ color: ACCENT }}>{current.title}</span>

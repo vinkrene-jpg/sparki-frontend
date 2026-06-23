@@ -22,15 +22,46 @@ import { userProfilesTable } from "./users";
 // Persistence is privacy-gated (privacy_settings.ai_memory_enabled) at the
 // service layer, identical to ai_observations.
 
+// The "why" categories Sparki distinguishes: sport, school, work, family,
+// illness, injury, stress, sleep, motivation, race, camp, plus a general
+// fallback. Stored as text (not a pg enum) so adding a category never needs a
+// destructive migration.
 export const contextMemoryKinds = [
-  "exam",
-  "race",
+  "school",
+  "sport",
+  "work",
+  "family",
+  "illness",
   "injury",
+  "stress",
   "sleep",
+  "motivation",
+  "race",
   "camp",
   "general",
 ] as const;
 export type ContextMemoryKind = (typeof contextMemoryKinds)[number];
+
+// How heavy the moment is, used to prioritise + phrase carefully. Never a
+// medical/psychological judgement — purely a soft signal for tone and ordering.
+export const contextImportanceLevels = ["low", "medium", "high"] as const;
+export type ContextImportance = (typeof contextImportanceLevels)[number];
+
+// Coarse emotional colour of the statement (gespannen, vermoeid, ...). Plain
+// Dutch, surfaced as "waarom" context — never a diagnosis.
+export type EmotionalTone =
+  | "neutraal"
+  | "gespannen"
+  | "vermoeid"
+  | "teleurgesteld"
+  | "ongemotiveerd"
+  | "positief";
+
+// Athlete-controlled sharing scope. `private` = only the athlete ever sees it;
+// `shared` = eligible for coach/parent IF the global sharing level also permits.
+// Defaults to private because these are personal, sometimes sensitive moments.
+export const contextVisibilityLevels = ["private", "shared"] as const;
+export type ContextVisibility = (typeof contextVisibilityLevels)[number];
 
 // Lifecycle: scheduled → (athlete answers) followed_up | (athlete skips) dismissed.
 // `enabled=false` keeps the item but stops follow-ups (athlete control).
@@ -67,9 +98,17 @@ export const personalContextMemoriesTable = pgTable(
     followUpQuestion: text("follow_up_question").notNull(),
     // When to surface the follow-up. Null = no follow-up scheduled.
     followUpAt: timestamp("follow_up_at", { withTimezone: true }),
+    // True once the follow-up has been answered (mirrors status="followed_up").
+    followUpDone: boolean("follow_up_done").notNull().default(false),
     status: text("status").notNull().default("scheduled"),
     // The athlete's answer when the follow-up is completed.
     response: text("response"),
+    // Soft weight of the moment (low|medium|high) for ordering + careful tone.
+    importance: text("importance").notNull().default("medium"),
+    // Coarse emotional colour in plain Dutch (neutraal|gespannen|...). Nullable.
+    emotionalTone: text("emotional_tone").$type<EmotionalTone>(),
+    // Athlete-controlled sharing scope (private|shared). Defaults to private.
+    visibility: text("visibility").notNull().default("private"),
     // Athlete control: disabled items keep their history but stop following up.
     enabled: boolean("enabled").notNull().default(true),
     // What Sparki recognised (keywords / timing), for transparency.

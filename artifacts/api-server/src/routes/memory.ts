@@ -7,8 +7,10 @@ import {
   answerFollowUp,
   dismissFollowUp,
   setContextEnabled,
+  setContextVisibility,
   deleteContextMemory,
 } from "../engines/context-memory";
+import { contextVisibilityLevels, type ContextVisibility } from "@workspace/db";
 
 const router = Router();
 
@@ -106,7 +108,8 @@ router.post("/follow-ups/:id/dismiss", requireAuth, async (req, res) => {
   }
 });
 
-// PATCH /api/memory/context/:id — enable/disable (athlete control).
+// PATCH /api/memory/context/:id — athlete control: enable/disable ("niet meer
+// gebruiken") and/or change sharing scope (private|shared).
 router.patch("/context/:id", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = parseId(req.params.id);
@@ -114,12 +117,33 @@ router.patch("/context/:id", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Ongeldig id" });
     return;
   }
-  if (typeof req.body?.enabled !== "boolean") {
-    res.status(400).json({ error: "enabled moet true of false zijn" });
+  const hasEnabled = typeof req.body?.enabled === "boolean";
+  const hasVisibility = typeof req.body?.visibility === "string";
+  if (!hasEnabled && !hasVisibility) {
+    res.status(400).json({ error: "Geef enabled of visibility op" });
+    return;
+  }
+  if (
+    hasVisibility &&
+    !(contextVisibilityLevels as readonly string[]).includes(req.body.visibility)
+  ) {
+    res.status(400).json({
+      error: `visibility moet een van: ${contextVisibilityLevels.join(", ")}`,
+    });
     return;
   }
   try {
-    const memory = await setContextEnabled(clerkId, id, req.body.enabled);
+    let memory = null;
+    if (hasEnabled) {
+      memory = await setContextEnabled(clerkId, id, req.body.enabled);
+    }
+    if (hasVisibility) {
+      memory = await setContextVisibility(
+        clerkId,
+        id,
+        req.body.visibility as ContextVisibility,
+      );
+    }
     if (!memory) {
       res.status(404).json({ error: "Niet gevonden" });
       return;

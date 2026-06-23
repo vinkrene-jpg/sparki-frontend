@@ -5,16 +5,24 @@ import {
   useContextMemories,
   useCaptureContext,
   useSetContextEnabled,
+  useSetContextVisibility,
   useDeleteContextMemory,
   type ContextMemory,
   type ContextMemoryKind,
+  type ContextImportance,
 } from "@/hooks/use-context-memory"
 
 const KIND_LABEL: Record<ContextMemoryKind, string> = {
-  exam: "Examen",
-  race: "Wedstrijd",
+  school: "School",
+  sport: "Training",
+  work: "Werk",
+  family: "Familie",
+  illness: "Ziek",
   injury: "Blessure",
-  sleep: "Slaap & spanning",
+  stress: "Spanning",
+  sleep: "Slaap",
+  motivation: "Motivatie",
+  race: "Wedstrijd",
   camp: "Trainingskamp",
   general: "Algemeen",
 }
@@ -31,6 +39,18 @@ const STATUS_COLOR: Record<ContextMemory["status"], string> = {
   dismissed: "rgba(255,255,255,0.3)",
 }
 
+const IMPORTANCE_LABEL: Record<ContextImportance, string> = {
+  low: "Laag",
+  medium: "Gemiddeld",
+  high: "Hoog",
+}
+
+const IMPORTANCE_COLOR: Record<ContextImportance, string> = {
+  low: "rgba(255,255,255,0.3)",
+  medium: "rgba(245,200,110,0.85)",
+  high: "rgba(244,130,130,0.9)",
+}
+
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("nl-NL", {
     day: "numeric",
@@ -40,20 +60,34 @@ function formatDate(iso: string): string {
 
 function MemoryCard({ memory }: { memory: ContextMemory }) {
   const setEnabled = useSetContextEnabled()
+  const setVisibility = useSetContextVisibility()
   const remove = useDeleteContextMemory()
-  const busy = setEnabled.isPending || remove.isPending
+  const busy =
+    setEnabled.isPending || setVisibility.isPending || remove.isPending
 
   return (
     <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span
               className="rounded px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wider"
               style={{ background: "rgba(255,255,255,0.06)", color: ACCENT }}
             >
               {KIND_LABEL[memory.kind] ?? memory.kind}
             </span>
+            <span
+              className="font-mono text-[8px] uppercase tracking-wider"
+              style={{ color: IMPORTANCE_COLOR[memory.importance] }}
+              title="Hoe zwaar dit moment weegt"
+            >
+              {IMPORTANCE_LABEL[memory.importance]}
+            </span>
+            {memory.emotionalTone && memory.emotionalTone !== "neutraal" && (
+              <span className="font-mono text-[8px] uppercase tracking-wider text-white/40">
+                {memory.emotionalTone}
+              </span>
+            )}
             {!memory.enabled && (
               <span className="font-mono text-[8px] uppercase tracking-wider text-white/30">
                 Gepauzeerd
@@ -82,6 +116,22 @@ function MemoryCard({ memory }: { memory: ContextMemory }) {
         </p>
       )}
 
+      {memory.signals && memory.signals.length > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <span className="font-mono text-[9px] uppercase tracking-wider text-white/30">
+            Waarom
+          </span>
+          {memory.signals.map((s, i) => (
+            <span
+              key={i}
+              className="rounded border border-white/[0.06] bg-white/[0.03] px-1.5 py-0.5 text-[10px] text-white/45"
+            >
+              {s.value}
+            </span>
+          ))}
+        </div>
+      )}
+
       <div className="mt-2 flex items-center gap-2">
         <span
           className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
@@ -102,7 +152,23 @@ function MemoryCard({ memory }: { memory: ContextMemory }) {
         </p>
       )}
 
-      <div className="mt-2.5 flex items-center justify-end">
+      <div className="mt-2.5 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() =>
+            setVisibility.mutate({
+              id: memory.id,
+              visibility: memory.visibility === "shared" ? "private" : "shared",
+            })
+          }
+          className="font-mono text-[10px] tracking-wide text-white/45 transition hover:text-cyan-300 disabled:opacity-40"
+          title="Bepaal of je begeleiding dit mag zien"
+        >
+          {memory.visibility === "shared"
+            ? "Gedeeld met begeleiding"
+            : "Alleen voor jou"}
+        </button>
         <button
           type="button"
           disabled={busy}
@@ -111,7 +177,7 @@ function MemoryCard({ memory }: { memory: ContextMemory }) {
           }
           className="font-mono text-[10px] tracking-wide text-white/45 transition hover:text-cyan-300 disabled:opacity-40"
         >
-          {memory.enabled ? "Pauzeren" : "Weer aanzetten"}
+          {memory.enabled ? "Niet meer gebruiken" : "Weer aanzetten"}
         </button>
       </div>
     </div>
@@ -153,9 +219,10 @@ export function ContextMemoryPanel() {
     <section>
       <SectionLabel n="07" title="Sparki onthoudt" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
-        Vertel Sparki wat er speelt — een examen, een wedstrijd, een blessure of
-        een slechte nacht. Sparki onthoudt het en vraagt er op het juiste
-        moment naar. Jij houdt de regie: pauzeren of verwijderen kan altijd.
+        Vertel Sparki wat er speelt — school, werk, familie, een wedstrijd, een
+        blessure of een slechte nacht. Sparki onthoudt het en vraagt er op het
+        juiste moment rustig naar. Jij houdt de regie: delen, pauzeren of
+        verwijderen kan altijd.
       </p>
 
       <div className="mt-3">

@@ -5,14 +5,32 @@ import { apiFetch } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 
 export type ContextMemoryKind =
-  | "exam"
-  | "race"
+  | "school"
+  | "sport"
+  | "work"
+  | "family"
+  | "illness"
   | "injury"
+  | "stress"
   | "sleep"
+  | "motivation"
+  | "race"
   | "camp"
   | "general";
 
 export type ContextMemoryStatus = "scheduled" | "followed_up" | "dismissed";
+
+export type ContextImportance = "low" | "medium" | "high";
+
+export type EmotionalTone =
+  | "neutraal"
+  | "gespannen"
+  | "vermoeid"
+  | "teleurgesteld"
+  | "ongemotiveerd"
+  | "positief";
+
+export type ContextVisibility = "private" | "shared";
 
 export type ContextSignal = { label: string; value: string };
 
@@ -24,14 +42,22 @@ export type ContextMemory = {
   detail: string | null;
   followUpQuestion: string;
   followUpAt: string | null;
+  followUpDone: boolean;
   status: ContextMemoryStatus;
   response: string | null;
+  importance: ContextImportance;
+  emotionalTone: EmotionalTone | null;
+  visibility: ContextVisibility;
   enabled: boolean;
   signals: ContextSignal[] | null;
   createdAt: string;
   updatedAt: string;
   followedUpAt: string | null;
 };
+
+// A due follow-up carries the exact prompt to show (direct question when fresh,
+// or a "Je zei laatst dat ..." recall when the athlete returns late).
+export type DueFollowUp = ContextMemory & { prompt: string };
 
 type CaptureResult = {
   detected: boolean;
@@ -57,7 +83,7 @@ export function useDueFollowUps(enabled = true) {
   const { isSignedIn } = useUser();
   return useQuery({
     queryKey: queryKeys.contextMemory.due(),
-    queryFn: () => apiFetch<{ due: ContextMemory[] }>("/api/memory/follow-ups/due"),
+    queryFn: () => apiFetch<{ due: DueFollowUp[] }>("/api/memory/follow-ups/due"),
     enabled: previewEnabled(isSignedIn) && enabled,
     staleTime: 30_000,
   });
@@ -113,6 +139,24 @@ export function useSetContextEnabled() {
       apiFetch<{ memory: ContextMemory }>(`/api/memory/context/${id}`, {
         method: "PATCH",
         body: JSON.stringify({ enabled }),
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useSetContextVisibility() {
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: ({
+      id,
+      visibility,
+    }: {
+      id: number;
+      visibility: ContextVisibility;
+    }) =>
+      apiFetch<{ memory: ContextMemory }>(`/api/memory/context/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ visibility }),
       }),
     onSuccess: invalidate,
   });
