@@ -1,4 +1,4 @@
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import {
   db,
   knowledgeItemsTable,
@@ -80,6 +80,84 @@ export async function getRelevantKnowledge(opts: {
       summary: item.summary,
       disciplines: item.disciplines,
     }));
+}
+
+// ── Personalised Feed news ───────────────────────────────────────────────────
+// A news card surfaced on the Feed. Every field comes from a REAL stored news
+// row (type='news'); nothing is fabricated. `summary` is the Sparki Dutch
+// summary written by the daily scan from the article's real excerpt.
+export type FeedNewsItem = {
+  id: number;
+  title: string;
+  url: string;
+  source: string | null;
+  summary: string | null;
+  abstract: string | null;
+  publishedAt: string | null;
+  disciplines: string[];
+};
+
+// Personalised sports-news ranking for the Feed. Pure scoring over real stored
+// news rows: athlete keyword/discipline overlap + recency. ALWAYS falls back to
+// most-recent news (the DB order) so the feed is never empty when news exists —
+// personalisation only re-orders the same real items, it never invents any.
+export async function getPersonalizedNews(opts: {
+  keywords: string[];
+  disciplines?: KnowledgeDiscipline[];
+  limit?: number;
+}): Promise<FeedNewsItem[]> {
+  const limit = opts.limit ?? 24;
+  const pool: KnowledgeItem[] = await db
+    .select()
+    .from(knowledgeItemsTable)
+    .where(eq(knowledgeItemsTable.type, "news"))
+    .orderBy(
+      desc(knowledgeItemsTable.publishedAt),
+      desc(knowledgeItemsTable.fetchedAt),
+    )
+    .limit(200);
+
+  if (!pool.length) return [];
+
+  const kw = opts.keywords
+    .map((k) => k.toLowerCase().trim())
+    .filter((k) => k.length >= 3);
+  const wantDisc = new Set((opts.disciplines ?? []).map((d) => d));
+  const now = Date.now();
+
+  const scored = pool.map((item, idx) => {
+    let score = 0;
+    for (const d of item.disciplines) {
+      if (wantDisc.has(d as KnowledgeDiscipline)) score += 3;
+    }
+    const hay =
+      `${item.title} ${item.summary ?? ""} ${item.abstract ?? ""}`.toLowerCase();
+    for (const k of kw) {
+      if (hay.includes(k)) score += 2;
+    }
+    if (item.publishedAt) {
+      const days = (now - new Date(item.publishedAt).getTime()) / 86_400_000;
+      if (days <= 7) score += 4;
+      else if (days <= 30) score += 2;
+      else if (days <= 90) score += 1;
+    }
+    if (item.summary) score += 1;
+    // idx preserves the DB recency order as a stable tiebreak.
+    return { item, score, idx };
+  });
+
+  scored.sort((a, b) => b.score - a.score || a.idx - b.idx);
+
+  return scored.slice(0, limit).map(({ item }) => ({
+    id: item.id,
+    title: item.title,
+    url: item.url,
+    source: item.source,
+    summary: item.summary,
+    abstract: item.abstract,
+    publishedAt: item.publishedAt,
+    disciplines: item.disciplines,
+  }));
 }
 
 // Render sources as a compact, citation-ready block for the LLM prompt. Each

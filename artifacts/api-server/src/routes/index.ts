@@ -17,6 +17,7 @@ import activityImportsRouter from "./activity-imports";
 import routesRouter from "./routes";
 import bugReportsRouter from "./bug-reports";
 import knowledgeRouter from "./knowledge";
+import feedRouter from "./feed";
 import adminRouter from "./admin";
 
 const router: IRouter = Router();
@@ -39,6 +40,7 @@ router.use("/activity-imports", activityImportsRouter);
 router.use("/routes", routesRouter);
 router.use("/bug-reports", bugReportsRouter);
 router.use("/knowledge", knowledgeRouter);
+router.use("/feed", feedRouter);
 router.use("/admin", adminRouter);
 
 export default router;

@@ -51,13 +51,38 @@ export type NewsFeed = {
 
 export const NEWS_FEEDS: NewsFeed[] = [
   {
-    url: "https://www.cyclingnews.com/rss/",
+    url: "https://www.cyclingnews.com/feeds.xml",
     source: "Cyclingnews",
     discipline: "sportnieuws",
   },
   {
     url: "https://velo.outsideonline.com/feed/",
     source: "Velo",
+    discipline: "sportnieuws",
+  },
+  {
+    url: "https://escapecollective.com/rss/",
+    source: "Escape Collective",
+    discipline: "sportnieuws",
+  },
+  {
+    url: "https://www.wielerflits.nl/feed/",
+    source: "WielerFlits",
+    discipline: "sportnieuws",
+  },
+  {
+    url: "https://feeds.nos.nl/nossportwielrennen",
+    source: "NOS Wielrennen",
+    discipline: "sportnieuws",
+  },
+  {
+    url: "https://feeds.nos.nl/nossportalgemeen",
+    source: "NOS Sport",
+    discipline: "sportnieuws",
+  },
+  {
+    url: "https://www.runnersworld.com/rss/all.xml/",
+    source: "Runner's World",
     discipline: "sportnieuws",
   },
   {

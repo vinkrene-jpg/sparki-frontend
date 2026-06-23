@@ -6,11 +6,13 @@ import { SparkiCore } from "@/components/sparki/sparki-core"
 import { useAiBrief, useAskSparki, type AiSource } from "@/hooks/use-ai-brief"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { useKnowledge } from "@/hooks/use-knowledge"
+import { useFeedNews } from "@/hooks/use-feed-news"
 import {
   Megaphone,
   Users,
   Flag,
   PlayCircle,
+  Newspaper,
   Send,
   Loader2,
   ExternalLink,
@@ -18,10 +20,11 @@ import {
   ArrowRight,
 } from "lucide-react"
 
-type FilterKey = "all" | "coach" | "team" | "race" | "ai"
+type FilterKey = "all" | "news" | "coach" | "team" | "race" | "ai"
 
 const filters: { key: FilterKey; label: string }[] = [
   { key: "all", label: "Alles" },
+  { key: "news", label: "Nieuws" },
   { key: "coach", label: "Coach" },
   { key: "team", label: "Team" },
   { key: "race", label: "Race" },
@@ -35,6 +38,8 @@ type StreamItem = {
   title: string
   body: string
   author?: string
+  source?: string
+  url?: string
   meta?: string
   time?: string
   sources?: AiSource[]
@@ -45,21 +50,38 @@ const typeMeta: Record<
   { label: string; icon: typeof Users; color: string }
 > = {
   all: { label: "Alles", icon: PlayCircle, color: ACCENT },
+  news: { label: "Nieuws", icon: Newspaper, color: "rgba(170,235,248,0.9)" },
   coach: { label: "Coach", icon: Megaphone, color: "rgba(120,210,230,1)" },
   team: { label: "Team", icon: Users, color: "rgba(170,235,248,0.9)" },
   race: { label: "Race", icon: Flag, color: "rgba(255,200,120,0.95)" },
   ai: { label: "Sparki", icon: PlayCircle, color: "rgba(120,210,230,1)" },
 }
 
+function relTime(iso: string | null): string {
+  if (!iso) return ""
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ""
+  const days = Math.floor((Date.now() - d.getTime()) / 86_400_000)
+  if (days <= 0) return "Vandaag"
+  if (days === 1) return "Gisteren"
+  if (days < 7) return `${days} d`
+  if (days < 30) return `${Math.floor(days / 7)} w`
+  return d.toLocaleDateString("nl-NL", { day: "numeric", month: "short" })
+}
+
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
 }
 
-// Flag-gated preview of the latest sport-science / news from the knowledge base,
-// linking through to the full browsable surface at /kennis.
+// Flag-gated preview of the latest sport-science research from the knowledge
+// base, linking through to the full browsable surface at /kennis.
 function KnowledgeFeedSection() {
   const enabled = useFeatureFlag("knowledge_base")
-  const { data, isLoading } = useKnowledge({ limit: 3, enabled })
+  const { data, isLoading } = useKnowledge({
+    type: "research",
+    limit: 3,
+    enabled,
+  })
   if (!enabled) return null
   const items = data?.items ?? []
 
@@ -72,7 +94,7 @@ function KnowledgeFeedSection() {
       >
         <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white/55">
           <BookOpen className="h-3.5 w-3.5" style={{ color: ACCENT }} />
-          Wetenschap & nieuws
+          Wetenschap & onderzoek
         </span>
         <ArrowRight className="h-3.5 w-3.5 text-white/30" />
       </Link>
@@ -96,7 +118,7 @@ function KnowledgeFeedSection() {
           >
             <div className="flex items-center justify-between">
               <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
-                {item.type === "news" ? "NIEUWS" : "ONDERZOEK"}
+                ONDERZOEK
                 {item.source ? ` · ${item.source}` : ""}
               </span>
               <ExternalLink className="h-3 w-3 text-white/25 transition-colors group-hover:text-cyan-300/70" />
@@ -113,6 +135,7 @@ function KnowledgeFeedSection() {
 
 export default function FeedPage() {
   const { data: briefData, isLoading: briefLoading } = useAiBrief(true)
+  const { data: newsData, isLoading: newsLoading } = useFeedNews()
   const ask = useAskSparki()
   const [input, setInput] = useState("")
   const [active, setActive] = useState<FilterKey>("all")
@@ -139,31 +162,47 @@ export default function FeedPage() {
     ])
   }
 
-  // Build stream: AI brief + Q&A history
-  const aiItems: StreamItem[] = [
-    ...(briefData
-      ? [
-          {
-            id: "brief",
-            type: "ai" as FilterKey,
-            label: "Sparki",
-            title: "Dagelijkse briefing",
-            body: briefData.brief,
-            author: "Sparki",
-            time: "Vandaag",
-            sources: briefData.sources ?? [],
-          },
-        ]
-      : []),
-    ...history,
-  ]
+  // Sparki brief (pinned) + Q&A history.
+  const briefItems: StreamItem[] = briefData
+    ? [
+        {
+          id: "brief",
+          type: "ai" as FilterKey,
+          label: "Sparki",
+          title: "Dagelijkse briefing",
+          body: briefData.brief,
+          author: "Sparki",
+          time: "Vandaag",
+          sources: briefData.sources ?? [],
+        },
+      ]
+    : []
+  const aiItems: StreamItem[] = [...briefItems, ...history]
+
+  // Real, personalised sports news from the knowledge base.
+  const newsItems: StreamItem[] = (newsData?.items ?? []).map((n) => ({
+    id: `news-${n.id}`,
+    type: "news" as FilterKey,
+    label: "Nieuws",
+    title: n.title,
+    body: n.summary ?? n.abstract ?? "",
+    source: n.source ?? undefined,
+    url: n.url,
+    time: relTime(n.publishedAt),
+  }))
 
   const streamItems: StreamItem[] =
     active === "all"
-      ? aiItems
-      : active === "ai"
-        ? aiItems
-        : []
+      ? [...briefItems, ...newsItems, ...history]
+      : active === "news"
+        ? newsItems
+        : active === "ai"
+          ? aiItems
+          : []
+
+  const showAsk = active === "all" || active === "ai"
+  const showPersonalNote =
+    (active === "all" || active === "news") && newsItems.length > 0
 
   return (
     <ScreenShell section="Feed">
@@ -176,7 +215,7 @@ export default function FeedPage() {
           Wat er speelt
         </h1>
         <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
-          Coach · Team · Club · Wedstrijden · Sparki
+          Nieuws · Coach · Team · Wedstrijden · Sparki
         </p>
       </div>
 
@@ -208,8 +247,15 @@ export default function FeedPage() {
       <section>
         <SectionLabel title="Stream" />
 
+        {showPersonalNote && (
+          <div className="mt-2 flex items-center gap-1.5 font-mono text-[10px] tracking-wide text-white/35">
+            <SparkiCore size={14} accent={ACCENT} readiness={0.9} variant="orb" />
+            Door Sparki afgestemd op jouw sport en doelen
+          </div>
+        )}
+
         {/* Ask Sparki input */}
-        {(active === "all" || active === "ai") && (
+        {showAsk && (
           <form onSubmit={handleAsk} className="mt-4 flex gap-2">
             <input
               className="flex-1 rounded-xl border border-white/[0.1] bg-white/[0.04] px-4 py-3 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
@@ -259,9 +305,9 @@ export default function FeedPage() {
 
         {/* Stream items */}
         <div className="mt-2 flex flex-col">
-          {briefLoading && streamItems.length === 0 && (
+          {(briefLoading || newsLoading) && streamItems.length === 0 && (
             <>
-              {[0, 1].map((i) => (
+              {[0, 1, 2].map((i) => (
                 <div
                   key={i}
                   className="relative flex gap-4 border-b border-white/[0.06] py-5 last:border-0"
@@ -277,12 +323,14 @@ export default function FeedPage() {
             </>
           )}
 
-          {!briefLoading && streamItems.length === 0 && (
+          {!briefLoading && !newsLoading && streamItems.length === 0 && (
             <div className="py-8 text-center">
               <p className="text-[12px] text-white/20">
                 {active === "ai" || active === "all"
                   ? "Stel Sparki een vraag hierboven"
-                  : "Geen berichten in deze categorie"}
+                  : active === "news"
+                    ? "Nog geen nieuws beschikbaar"
+                    : "Geen berichten in deze categorie"}
               </p>
             </div>
           )}
@@ -327,25 +375,45 @@ export default function FeedPage() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-3">
                     <span
-                      className="font-mono text-[10px] tracking-[0.18em]"
+                      className="truncate font-mono text-[10px] tracking-[0.18em]"
                       style={{ color: meta.color }}
                     >
                       {meta.label.toUpperCase()}
+                      {item.source ? ` · ${item.source}` : ""}
                     </span>
                     {item.time && (
-                      <span className="font-mono text-[10px] tracking-wide text-white/30">
+                      <span className="shrink-0 font-mono text-[10px] tracking-wide text-white/30">
                         {item.time}
                       </span>
                     )}
                   </div>
-                  <h3 className="mt-1.5 text-pretty font-sans text-[15px] font-light leading-snug text-white/90">
-                    {item.title}
-                  </h3>
-                  <p className="mt-1 text-pretty text-[12px] leading-relaxed text-white/45">
-                    {item.body}
-                  </p>
+
+                  {item.url ? (
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group/title mt-1.5 block"
+                    >
+                      <h3 className="text-pretty font-sans text-[15px] font-light leading-snug text-white/90 transition-colors group-hover/title:text-cyan-100">
+                        {item.title}
+                        <ExternalLink className="ml-1.5 inline h-3 w-3 align-baseline text-white/25 transition-colors group-hover/title:text-cyan-300/70" />
+                      </h3>
+                    </a>
+                  ) : (
+                    <h3 className="mt-1.5 text-pretty font-sans text-[15px] font-light leading-snug text-white/90">
+                      {item.title}
+                    </h3>
+                  )}
+
+                  {item.body && (
+                    <p className="mt-1 text-pretty text-[12px] leading-relaxed text-white/45">
+                      {item.body}
+                    </p>
+                  )}
+
                   {item.sources && item.sources.length > 0 && (
                     <div className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
                       <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
@@ -374,6 +442,7 @@ export default function FeedPage() {
                       </ul>
                     </div>
                   )}
+
                   {item.author && (
                     <div className="mt-2 flex items-center gap-2">
                       <span className="font-mono text-[10px] tracking-wide text-white/40">

@@ -123,6 +123,11 @@ export const queryKeys = {
     list: (q: string, discipline: string, type: string) =>
       ["knowledge", "list", q, discipline, type] as const,
   },
+
+  feed: {
+    all: () => ["feed"] as const,
+    news: () => ["feed", "news"] as const,
+  },
 } as const;
 
 /** Default stale times (ms) — import these rather than hardcoding magic numbers. */

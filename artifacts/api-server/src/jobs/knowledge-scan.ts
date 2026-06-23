@@ -18,9 +18,21 @@ async function main() {
   // controls parallel Claude calls (raise cautiously — anthropic rate limits).
   const maxNew = intEnv("KNOWLEDGE_MAX_NEW");
   const concurrency = intEnv("KNOWLEDGE_CONCURRENCY");
-  logger.info({ maxNew, concurrency }, "knowledge-scan: starting");
+  // News-only mode skips the (slow) scientific providers and fetches just the
+  // RSS news feeds — used to quickly populate / refresh the Feed news stream.
+  const newsOnly = process.env.KNOWLEDGE_NEWS_ONLY === "true";
+  const perNewsFeed = intEnv("KNOWLEDGE_PER_NEWS");
+  logger.info(
+    { maxNew, concurrency, newsOnly, perNewsFeed },
+    "knowledge-scan: starting",
+  );
   const before = await knowledgeCount();
-  const result = await runKnowledgeScan({ maxNew, concurrency });
+  const result = await runKnowledgeScan({
+    maxNew,
+    concurrency,
+    perNewsFeed,
+    ...(newsOnly ? { researchProviders: [] } : {}),
+  });
   const after = await knowledgeCount();
   const summary = {
     ...result,

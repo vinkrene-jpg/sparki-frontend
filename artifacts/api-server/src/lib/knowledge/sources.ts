@@ -53,6 +53,7 @@ function toIsoDate(value: unknown): string | null {
 
 function stripTags(s: string): string {
   return s
+    .replace(/<!\[CDATA\[|\]\]>/g, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
@@ -338,7 +339,7 @@ async function fetchArxiv(topic: KnowledgeTopic, limit: number): Promise<RawItem
 }
 
 // ── RSS news feeds ───────────────────────────────────────────────────────────
-function parseRss(xml: string): Array<{
+function parseRss(rawXml: string): Array<{
   title: string;
   link: string;
   date: string | null;
@@ -350,6 +351,9 @@ function parseRss(xml: string): Array<{
     date: string | null;
     desc: string | null;
   }> = [];
+  // Unwrap CDATA first: many feeds (e.g. NOS) wrap <title>/<link> in
+  // <![CDATA[ ... ]]>, and the tag-stripper would otherwise swallow the link.
+  const xml = rawXml.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1");
   // Support both RSS <item> and Atom <entry>.
   const blocks = xml.includes("<item")
     ? xml.split(/<item[\s>]/).slice(1)
