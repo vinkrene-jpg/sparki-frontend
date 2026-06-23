@@ -20,3 +20,4 @@
 - [Sparki autonomous training](sparki-autonomous-training.md) — coach-less plan engine: deterministic numbers, AI prose-only, real-or-absent ORS routes, coach-gated advisory; vite build needs PORT+BASE_PATH.
 - [Sparki tester QR onboarding](sparki-tester-qr.md) — QR entry: deep-link behind auth must use ?redirect_url= (Clerk honours it over fallback); QR base URL editable (dev origin ≠ deploy domain).
 - [Sparki engine layer](sparki-engine-layer.md) — api-server engines/<engine> facades; routes import engines not lib helpers; smoke harness; docs/engine-architecture.md.
+- [Dutch-only copy exceptions](dutch-copy-exceptions.md) — accepted English proper nouns (Sparki, Performance Center, FTP, gran fondo); discipline DB values stay English, only labels translate.

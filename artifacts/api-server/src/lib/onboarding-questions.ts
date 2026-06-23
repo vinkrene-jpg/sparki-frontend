@@ -131,36 +131,36 @@ export function ageFromBirthYear(birthYear: number | null): number | null {
 }
 
 const DISCIPLINES: FactOption[] = [
-  { value: "Road", label: "Road" },
+  { value: "Road", label: "Weg" },
   { value: "Gravel", label: "Gravel" },
-  { value: "Mountain", label: "Mountain" },
-  { value: "Track", label: "Track" },
+  { value: "Mountain", label: "Mountainbike" },
+  { value: "Track", label: "Baan" },
 ];
 
 const LOAD_OPTIONS: FactOption[] = [
-  { value: "low", label: "I recover slowly — keep it gentle" },
-  { value: "moderate", label: "Average — a normal build works" },
-  { value: "high", label: "I can take a big load" },
+  { value: "low", label: "Ik herstel langzaam — rustig opbouwen" },
+  { value: "moderate", label: "Gemiddeld — een normale opbouw werkt" },
+  { value: "high", label: "Ik kan een grote belasting aan" },
 ];
 
 const COMPETITION_OPTIONS: FactOption[] = [
-  { value: "none", label: "Just for fitness & fun" },
-  { value: "recreational", label: "Gran fondos / sportives" },
-  { value: "local", label: "Local races" },
-  { value: "regional", label: "Regional races" },
-  { value: "national", label: "National / elite level" },
+  { value: "none", label: "Puur voor conditie & plezier" },
+  { value: "recreational", label: "Toertochten / gran fondo's" },
+  { value: "local", label: "Lokale wedstrijden" },
+  { value: "regional", label: "Regionale wedstrijden" },
+  { value: "national", label: "Nationaal / eliteniveau" },
 ];
 
 const COACHING_OPTIONS: FactOption[] = [
-  { value: "sparki", label: "Train with Sparki" },
-  { value: "coach", label: "Train with a coach" },
+  { value: "sparki", label: "Trainen met Sparki" },
+  { value: "coach", label: "Trainen met een coach" },
 ];
 
 const FACTS: FactDef[] = [
   {
     key: "coachingMode",
-    prompt: "Who's guiding your training?",
-    help: "Sparki can coach you autonomously, or you can connect with a human coach.",
+    prompt: "Wie begeleidt jouw training?",
+    help: "Sparki kan je zelfstandig begeleiden, of je koppelt een menselijke coach.",
     inputType: "choice",
     options: COACHING_OPTIONS,
     basePriority: 100,
@@ -170,11 +170,11 @@ const FACTS: FactDef[] = [
   },
   {
     key: "ftp",
-    prompt: "Do you know your FTP?",
-    help: "Your Functional Threshold Power sharpens your training zones. Sparki is using an estimate until you set it.",
+    prompt: "Ken je je FTP?",
+    help: "Je FTP — het vermogen dat je langdurig kunt volhouden — scherpt je trainingszones aan. Sparki gebruikt een schatting totdat je hem instelt.",
     inputType: "number",
     unit: "W",
-    placeholder: "e.g. 250",
+    placeholder: "bijv. 250",
     basePriority: 72,
     isKnown: (p) => p.ftp != null && p.ftpEstimated === false,
     adjust: (p) => {
@@ -195,11 +195,11 @@ const FACTS: FactDef[] = [
   },
   {
     key: "weightKg",
-    prompt: "What's your weight?",
-    help: "Used for power-to-weight (W/kg) and load tracking.",
+    prompt: "Wat is je gewicht?",
+    help: "Gebruikt voor je vermogen-per-kilo (W/kg) en belastingsopvolging.",
     inputType: "number",
     unit: "kg",
-    placeholder: "e.g. 72",
+    placeholder: "bijv. 72",
     basePriority: 66,
     isKnown: (p) => p.weightKg != null,
     parse: (v) => {
@@ -210,8 +210,8 @@ const FACTS: FactDef[] = [
   },
   {
     key: "loadCapacity",
-    prompt: "How well do you handle training load?",
-    help: "Sparki scales how aggressively your week builds.",
+    prompt: "Hoe goed verwerk je trainingsbelasting?",
+    help: "Sparki past aan hoe stevig je week opbouwt.",
     inputType: "choice",
     options: LOAD_OPTIONS,
     basePriority: 58,
@@ -231,8 +231,8 @@ const FACTS: FactDef[] = [
   },
   {
     key: "discipline",
-    prompt: "Which kind of riding is your focus?",
-    help: "Shapes your routes and sessions.",
+    prompt: "Welk soort rijden staat centraal?",
+    help: "Bepaalt je routes en sessies.",
     inputType: "choice",
     options: DISCIPLINES,
     basePriority: 55,
@@ -247,8 +247,8 @@ const FACTS: FactDef[] = [
   },
   {
     key: "competitionLevel",
-    prompt: "How competitive do you want to be?",
-    help: "Sparki uses this to prioritise what to ask next and how to periodise.",
+    prompt: "Hoe competitief wil je zijn?",
+    help: "Sparki gebruikt dit om te bepalen wat het hierna vraagt en hoe het periodiseert.",
     inputType: "choice",
     options: COMPETITION_OPTIONS,
     basePriority: 52,
@@ -260,11 +260,11 @@ const FACTS: FactDef[] = [
   },
   {
     key: "age",
-    prompt: "How old are you?",
-    help: "Age helps Sparki tune intensity and recovery.",
+    prompt: "Hoe oud ben je?",
+    help: "Leeftijd helpt Sparki intensiteit en herstel af te stemmen.",
     inputType: "number",
-    unit: "yr",
-    placeholder: "e.g. 34",
+    unit: "jr",
+    placeholder: "bijv. 34",
     basePriority: 50,
     isKnown: (p) => p.birthYear != null,
     parse: (v) => {
@@ -275,10 +275,10 @@ const FACTS: FactDef[] = [
   },
   {
     key: "motivation",
-    prompt: "What keeps you riding?",
-    help: "A line in your own words — it personalises Sparki's coaching.",
+    prompt: "Wat houdt je op de fiets?",
+    help: "Een zin in je eigen woorden — het personaliseert Sparki's coaching.",
     inputType: "text",
-    placeholder: "e.g. clear my head and chase weekend KOMs",
+    placeholder: "bijv. mijn hoofd leegmaken en in het weekend KOM's pakken",
     basePriority: 44,
     isKnown: (p) => p.motivation != null,
     parse: (v) => {
@@ -288,10 +288,10 @@ const FACTS: FactDef[] = [
   },
   {
     key: "injuryHistory",
-    prompt: "Any injuries or limitations Sparki should know about?",
-    help: "Helps Sparki keep your plan safe. Say \"none\" if all good.",
+    prompt: "Blessures of beperkingen die Sparki moet weten?",
+    help: "Helpt Sparki je plan veilig te houden. Zeg \"geen\" als alles oké is.",
     inputType: "text",
-    placeholder: "e.g. left knee niggle on long climbs",
+    placeholder: "bijv. linkerknie zeurt op lange klimmen",
     basePriority: 43,
     isKnown: (p) => p.injuryHistory != null,
     adjust: (p) => {
@@ -305,11 +305,11 @@ const FACTS: FactDef[] = [
   },
   {
     key: "typicalSleepHours",
-    prompt: "How much do you usually sleep?",
-    help: "Recovery context for Sparki's daily guidance.",
+    prompt: "Hoeveel slaap je meestal?",
+    help: "Herstelcontext voor Sparki's dagelijkse begeleiding.",
     inputType: "number",
-    unit: "hr",
-    placeholder: "e.g. 7.5",
+    unit: "u",
+    placeholder: "bijv. 7.5",
     basePriority: 38,
     isKnown: (p) => p.typicalSleepHours != null,
     parse: (v) => {
@@ -320,11 +320,11 @@ const FACTS: FactDef[] = [
   },
   {
     key: "heightCm",
-    prompt: "How tall are you?",
-    help: "Completes your athlete profile.",
+    prompt: "Hoe lang ben je?",
+    help: "Maakt je atletenprofiel compleet.",
     inputType: "number",
     unit: "cm",
-    placeholder: "e.g. 178",
+    placeholder: "bijv. 178",
     basePriority: 36,
     isKnown: (p) => p.heightCm != null,
     parse: (v) => {
@@ -335,10 +335,10 @@ const FACTS: FactDef[] = [
   },
   {
     key: "trainingPreferences",
-    prompt: "Any training preferences?",
-    help: "Terrain, indoor vs outdoor, sessions you love or avoid.",
+    prompt: "Nog trainingsvoorkeuren?",
+    help: "Terrein, binnen vs buiten, sessies die je graag of liever niet doet.",
     inputType: "text",
-    placeholder: "e.g. prefer outdoor, hate the turbo",
+    placeholder: "bijv. liefst buiten, hekel aan de rollerbank",
     basePriority: 34,
     isKnown: (p) => p.trainingPreferences != null,
     parse: (v) => {

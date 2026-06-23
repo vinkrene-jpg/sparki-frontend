@@ -142,14 +142,14 @@ export function ProfilePromptCard() {
             <Sparkles className="h-3.5 w-3.5" style={{ color: ACCENT }} />
           </div>
           <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-300/70">
-            Sparki wants to know
+            Sparki wil weten
           </span>
         </div>
         <button
           type="button"
           onClick={handleSkip}
           disabled={busy}
-          aria-label="Skip for now"
+          aria-label="Voorlopig overslaan"
           className="flex h-7 w-7 items-center justify-center rounded-lg text-white/30 transition-colors hover:bg-white/5 hover:text-white/60 disabled:opacity-40"
         >
           <X className="h-4 w-4" />
@@ -180,7 +180,7 @@ export function ProfilePromptCard() {
       </div>
 
       {(answer.isError || skip.isError) && (
-        <p className="mt-3 font-sans text-xs text-red-400">Couldn't save that — please try again.</p>
+        <p className="mt-3 font-sans text-xs text-red-400">Kon dit niet opslaan — probeer het opnieuw.</p>
       )}
 
       <div className="mt-4 flex items-center gap-3">
@@ -191,7 +191,7 @@ export function ProfilePromptCard() {
           className="flex h-10 flex-1 items-center justify-center rounded-xl font-sans text-sm font-semibold text-[#040506] transition-opacity hover:opacity-90 disabled:opacity-40"
           style={{ background: ACCENT }}
         >
-          {answer.isPending ? "Saving…" : "Save"}
+          {answer.isPending ? "Opslaan…" : "Opslaan"}
         </button>
         <button
           type="button"
@@ -199,7 +199,7 @@ export function ProfilePromptCard() {
           disabled={busy}
           className="font-sans text-sm text-white/35 transition-colors hover:text-white/60 disabled:opacity-40"
         >
-          Skip
+          Overslaan
         </button>
       </div>
     </section>

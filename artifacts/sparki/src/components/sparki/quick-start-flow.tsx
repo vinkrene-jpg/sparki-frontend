@@ -21,17 +21,17 @@ const EXPERIENCE_OPTIONS: Array<{
   title: string
   subtitle: string
 }> = [
-  { value: "beginner", title: "Beginner", subtitle: "New to structured training" },
-  { value: "intermediate", title: "Intermediate", subtitle: "Training regularly, building fitness" },
-  { value: "advanced", title: "Advanced", subtitle: "Experienced with structured training" },
-  { value: "elite", title: "Elite", subtitle: "High-performance racer" },
+  { value: "beginner", title: "Beginner", subtitle: "Nieuw met gestructureerd trainen" },
+  { value: "intermediate", title: "Gemiddeld", subtitle: "Traint regelmatig, bouwt conditie op" },
+  { value: "advanced", title: "Gevorderd", subtitle: "Ervaren met gestructureerd trainen" },
+  { value: "elite", title: "Elite", subtitle: "Prestatiegerichte renner" },
 ]
 
 const GOAL_PRESETS = [
-  "Finish my first gran fondo",
-  "Improve my FTP",
-  "Race competitively this season",
-  "Train more consistently",
+  "Mijn eerste gran fondo uitrijden",
+  "Mijn FTP verbeteren",
+  "Dit seizoen wedstrijden rijden",
+  "Constanter trainen",
 ]
 
 const DAYS = [1, 2, 3, 4, 5, 6, 7]
@@ -107,18 +107,18 @@ function StepWelcome({ firstName, onNext }: { firstName: string; onNext: () => v
       <div className="flex flex-col items-center gap-5 text-center">
         <div className="flex flex-col gap-2">
           <h1 className="font-sans text-[1.9rem] font-bold leading-tight tracking-tight text-white">
-            {firstName !== "Athlete" ? `Welcome, ${firstName}` : "Welcome to Sparki"}
+            {firstName !== "Athlete" ? `Welkom, ${firstName}` : "Welkom bij Sparki"}
           </h1>
           <p className="mx-auto max-w-[280px] font-sans text-sm leading-relaxed text-white/50">
-            Four quick questions and your training plan is live. Sparki learns the rest as you ride.
+            Vier korte vragen en je trainingsplan staat live. Sparki leert de rest terwijl je rijdt.
           </p>
         </div>
 
         <div className="flex w-full max-w-[300px] flex-col gap-3 text-left">
           {[
-            "A working dashboard in under a minute",
-            "Your first training week, built automatically",
-            "A 3-week preview you can shape over time",
+            "Een werkend dashboard binnen een minuut",
+            "Je eerste trainingsweek, automatisch opgebouwd",
+            "Een voorvertoning van 3 weken die je gaandeweg bijstuurt",
           ].map((text) => (
             <div key={text} className="flex items-start gap-3">
               <div
@@ -134,7 +134,7 @@ function StepWelcome({ firstName, onNext }: { firstName: string; onNext: () => v
       </div>
 
       <div className="w-full">
-        <PrimaryBtn onClick={onNext}>Let's go</PrimaryBtn>
+        <PrimaryBtn onClick={onNext}>Aan de slag</PrimaryBtn>
       </div>
     </div>
   )
@@ -145,7 +145,7 @@ function StepWelcome({ firstName, onNext }: { firstName: string; onNext: () => v
 function StepSport({ onNext }: { onNext: () => void }) {
   return (
     <div className="flex flex-1 flex-col">
-      <StepHeading title="What's your sport?" subtitle="Sparki is built for cyclists — more sports are on the way." />
+      <StepHeading title="Wat is je sport?" subtitle="Sparki is gebouwd voor wielrenners — meer sporten volgen." />
 
       <div className="flex flex-1 flex-col gap-3">
         <div
@@ -159,13 +159,13 @@ function StepSport({ onNext }: { onNext: () => void }) {
             <Bike className="h-5 w-5" style={{ color: ACCENT }} />
           </div>
           <div className="flex flex-1 flex-col gap-0.5">
-            <span className="font-sans text-sm font-semibold text-white/95">Cycling</span>
-            <span className="font-sans text-xs text-white/45">Road, gravel, mountain & track</span>
+            <span className="font-sans text-sm font-semibold text-white/95">Wielrennen</span>
+            <span className="font-sans text-xs text-white/45">Weg, gravel, mountainbike & baan</span>
           </div>
           <CheckCircle2 className="h-5 w-5 shrink-0" style={{ color: ACCENT }} />
         </div>
 
-        {["Running", "Triathlon"].map((s) => (
+        {["Hardlopen", "Triatlon"].map((s) => (
           <div
             key={s}
             className="flex items-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-4 opacity-50"
@@ -175,14 +175,14 @@ function StepSport({ onNext }: { onNext: () => void }) {
             </div>
             <span className="flex-1 font-sans text-sm font-medium text-white/40">{s}</span>
             <span className="rounded-full border border-white/10 px-2 py-0.5 font-sans text-[10px] font-medium text-white/30">
-              Soon
+              Binnenkort
             </span>
           </div>
         ))}
       </div>
 
       <div className="mt-auto pb-8 pt-6">
-        <PrimaryBtn onClick={onNext}>Continue</PrimaryBtn>
+        <PrimaryBtn onClick={onNext}>Doorgaan</PrimaryBtn>
       </div>
     </div>
   )
@@ -217,8 +217,8 @@ function StepGoal({
   return (
     <div className="flex flex-1 flex-col">
       <StepHeading
-        title="What's your main goal?"
-        subtitle="Sparki uses this to shape your plan and daily guidance."
+        title="Wat is je belangrijkste doel?"
+        subtitle="Sparki gebruikt dit om je plan en dagelijkse begeleiding vorm te geven."
       />
 
       <div className="flex flex-1 flex-col gap-3">
@@ -256,14 +256,14 @@ function StepGoal({
         ))}
 
         <div className="flex flex-col gap-2 pt-1">
-          <label className="label-xs text-white/30">OR DESCRIBE IN YOUR OWN WORDS</label>
+          <label className="label-xs text-white/30">OF OMSCHRIJF IN JE EIGEN WOORDEN</label>
           <textarea
             value={goalsText}
             onChange={(e) => {
               setGoalsText(e.target.value)
               if (e.target.value) setSelectedPreset(null)
             }}
-            placeholder="e.g. ride the local gran fondo in under 4 hours…"
+            placeholder="bijv. de lokale gran fondo onder de 4 uur rijden…"
             rows={3}
             className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 font-sans text-sm text-white/90 placeholder:text-white/20 focus:border-white/20 focus:outline-none"
           />
@@ -272,7 +272,7 @@ function StepGoal({
 
       <div className="mt-auto pb-8 pt-6">
         <PrimaryBtn onClick={onNext} disabled={!ready}>
-          Continue
+          Doorgaan
         </PrimaryBtn>
       </div>
     </div>
@@ -293,8 +293,8 @@ function StepExperience({
   return (
     <div className="flex flex-1 flex-col">
       <StepHeading
-        title="How experienced are you?"
-        subtitle="Sets a sensible starting point — Sparki refines it from your real rides."
+        title="Hoeveel ervaring heb je?"
+        subtitle="Bepaalt een verstandig startpunt — Sparki verfijnt het op basis van je echte ritten."
       />
 
       <div className="flex flex-1 flex-col gap-2.5">
@@ -332,7 +332,7 @@ function StepExperience({
 
       <div className="mt-auto pb-8 pt-6">
         <PrimaryBtn onClick={onNext} disabled={experience === null}>
-          Continue
+          Doorgaan
         </PrimaryBtn>
       </div>
     </div>
@@ -357,8 +357,8 @@ function StepDays({
   return (
     <div className="flex flex-1 flex-col">
       <StepHeading
-        title="How many days a week can you train?"
-        subtitle="Sparki spreads your week around this — you can change it any time."
+        title="Hoeveel dagen per week kun je trainen?"
+        subtitle="Sparki verdeelt je week hieromheen — je kunt het altijd aanpassen."
       />
 
       <div className="flex flex-1 flex-col gap-6">
@@ -381,7 +381,7 @@ function StepDays({
         </div>
         {days !== null && (
           <p className="font-sans text-sm text-white/45">
-            {days} {days === 1 ? "day" : "days"} a week — a great place to start.
+            {days} {days === 1 ? "dag" : "dagen"} per week — een mooi startpunt.
           </p>
         )}
       </div>
@@ -389,7 +389,7 @@ function StepDays({
       <div className="mt-auto flex flex-col gap-3 pb-8 pt-6">
         {error && <ErrorMsg msg={error} />}
         <PrimaryBtn onClick={onNext} disabled={days === null} loading={saving}>
-          Build my plan
+          Bouw mijn plan
         </PrimaryBtn>
       </div>
     </div>
@@ -417,21 +417,21 @@ function StepCoaching({
   }> = [
     {
       value: "sparki",
-      title: "Train with Sparki",
-      subtitle: "Sparki plans, adapts, and guides every session for you.",
+      title: "Trainen met Sparki",
+      subtitle: "Sparki plant, past aan en begeleidt elke sessie voor je.",
       icon: Zap,
     },
     {
       value: "coach",
-      title: "Train with a coach",
-      subtitle: "Connect a human coach. Sparki supports them with insights.",
+      title: "Trainen met een coach",
+      subtitle: "Koppel een menselijke coach. Sparki ondersteunt hem met inzichten.",
       icon: User2,
     },
   ]
 
   return (
     <div className="flex flex-1 flex-col">
-      <StepHeading title="Who's guiding your training?" subtitle="You can change this later in your profile." />
+      <StepHeading title="Wie begeleidt jouw training?" subtitle="Je kunt dit later aanpassen in je profiel." />
 
       <div className="flex flex-1 flex-col gap-3">
         {OPTIONS.map((opt) => {
@@ -473,7 +473,7 @@ function StepCoaching({
       <div className="mt-auto flex flex-col gap-3 pb-8 pt-6">
         {error && <ErrorMsg msg={error} />}
         <PrimaryBtn onClick={() => picked && onChoose(picked)} disabled={!picked} loading={saving}>
-          Continue
+          Doorgaan
         </PrimaryBtn>
       </div>
     </div>
@@ -522,24 +522,24 @@ function StepReady({
       <div className="flex w-full flex-col items-center gap-6 text-center">
         <div className="flex flex-col gap-2">
           <h1 className="font-sans text-[1.9rem] font-bold leading-tight tracking-tight text-white">
-            Your plan is live{firstName !== "Athlete" ? `, ${firstName}` : ""}
+            Je plan staat live{firstName !== "Athlete" ? `, ${firstName}` : ""}
           </h1>
           <p className="mx-auto max-w-[280px] font-sans text-sm leading-relaxed text-white/50">
             {coachingMode === "coach"
-              ? "Your first week is ready. Connect your coach any time — Sparki keeps things moving until then."
-              : "Your first training week is built and a 3-week preview is waiting. Sparki sharpens it as you ride."}
+              ? "Je eerste week staat klaar. Koppel je coach wanneer je wilt — Sparki houdt alles draaiende tot dan."
+              : "Je eerste trainingsweek is opgebouwd en een voorvertoning van 3 weken staat klaar. Sparki scherpt het aan terwijl je rijdt."}
           </p>
         </div>
 
         <div className="grid w-full grid-cols-2 gap-2">
           {weeklyHourTarget != null && (
-            <SummaryPill label="Weekly target" value={`~${weeklyHourTarget} hrs`} />
+            <SummaryPill label="Weekdoel" value={`~${weeklyHourTarget} u`} />
           )}
-          {ftp != null && <SummaryPill label="Starting FTP" value={`~${ftp} W`} />}
+          {ftp != null && <SummaryPill label="Start-FTP" value={`~${ftp} W`} />}
           <div className="col-span-2 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left">
-            <span className="font-sans text-[11px] uppercase tracking-widest text-white/30">Estimates</span>
+            <span className="font-sans text-[11px] uppercase tracking-widest text-white/30">Schattingen</span>
             <p className="mt-1 font-sans text-xs leading-relaxed text-white/55">
-              These are starting estimates. Sparki will ask a quick question now and then to dial them in.
+              Dit zijn startschattingen. Sparki stelt af en toe een korte vraag om ze scherp te stellen.
             </p>
           </div>
         </div>
@@ -552,7 +552,7 @@ function StepReady({
           className="flex h-12 w-full items-center justify-center gap-2 rounded-xl font-sans text-sm font-semibold tracking-wide text-[#040506] transition-opacity hover:opacity-90"
           style={{ background: ACCENT }}
         >
-          Go to Performance Center
+          Naar je Performance Center
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
@@ -625,7 +625,7 @@ export function QuickStartFlow({ clerkUser, onComplete }: QuickStartFlowProps) {
       setEstimated(est)
       transition(5)
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong. Please try again.")
+      setError(e instanceof Error ? e.message : "Er ging iets mis. Probeer het opnieuw.")
     } finally {
       setSaving(false)
     }
@@ -642,7 +642,7 @@ export function QuickStartFlow({ clerkUser, onComplete }: QuickStartFlowProps) {
       setCoachingMode(mode)
       transition(6)
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't save that. Please try again.")
+      setError(e instanceof Error ? e.message : "Kon dit niet opslaan. Probeer het opnieuw.")
     } finally {
       setSaving(false)
     }
