@@ -9,6 +9,7 @@ import {
   setTrainingBuddy,
   removeFriend,
   getFriendFeed,
+  getCircleFeed,
   suggestJointTraining,
   createProposal,
   respondToProposal,
@@ -141,6 +142,18 @@ router.get("/feed", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "social.feed failed");
     res.status(500).json({ error: "Kon de vriendenfeed niet laden." });
+  }
+});
+
+// ── Unified Circle feed ──────────────────────────────────────────────────────
+
+router.get("/circle-feed", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    res.json({ items: await getCircleFeed(clerkId) });
+  } catch (err) {
+    req.log.error({ err }, "social.circle-feed failed");
+    res.status(500).json({ error: "Kon je overzicht niet laden." });
   }
 });
 

@@ -24,6 +24,7 @@ import {
   teamIdentitiesTable,
   groupTrainingProposalsTable,
   groupTrainingInviteesTable,
+  personalContextMemoriesTable,
 } from "@workspace/db";
 import { and, eq, inArray, or } from "drizzle-orm";
 
@@ -362,12 +363,71 @@ async function main() {
     status: "proposed",
   });
 
+  // ── Own race + due memory follow-ups for the dev athlete ─────────────────────
+  // So the unified Circle feed shows the athlete's OWN race info plus a couple of
+  // due Sparki follow-up questions ("hoe ging het?") — real rows, not mock UI.
+  await db.delete(racesTable).where(eq(racesTable.clerkId, target));
+  await db.insert(racesTable).values({
+    clerkId: target,
+    name: "Ronde van Salland",
+    raceDate: isoDate(9),
+    location: "Raalte",
+    priority: "A",
+  });
+
+  // Remove prior seeded follow-ups so re-runs stay clean (match by clerk + title).
+  await db
+    .delete(personalContextMemoriesTable)
+    .where(
+      and(
+        eq(personalContextMemoriesTable.clerkId, target),
+        inArray(personalContextMemoriesTable.title, ["Wedstrijd", "Materiaal"]),
+      ),
+    );
+  await db.insert(personalContextMemoriesTable).values([
+    {
+      clerkId: target,
+      kind: "race",
+      statement: "Ik had afgelopen weekend een wedstrijd.",
+      title: "Wedstrijd",
+      detail:
+        "Je vertelde dat je afgelopen weekend een wedstrijd had. Sparki vraagt hoe het ging.",
+      followUpQuestion: "Hoe ging je wedstrijd? Wat ging goed en wat was zwaar?",
+      followUpAt: at(-1, 19),
+      status: "scheduled",
+      importance: "medium",
+      emotionalTone: "neutraal",
+      visibility: "private",
+      enabled: true,
+      signals: [{ label: "Onderwerp", value: "wedstrijd" }],
+    },
+    {
+      clerkId: target,
+      kind: "equipment",
+      statement: "Ik heb een nieuw zadel gemonteerd.",
+      title: "Materiaal",
+      detail:
+        "Je hebt iets aan je materiaal veranderd. Sparki vraagt later hoe het bevalt.",
+      followUpQuestion:
+        "Hoe bevalt je nieuwe materiaal? Voelt het fijn op de fiets?",
+      followUpAt: at(-2, 19),
+      status: "scheduled",
+      importance: "low",
+      emotionalTone: "neutraal",
+      visibility: "private",
+      enabled: true,
+      signals: [{ label: "Onderwerp", value: "materiaal / fiets" }],
+    },
+  ]);
+
   console.log("Social testdata seeded:");
   console.log(`  friends: Anna (buddy, shares), Bram (buddy, shares), Chris (private)`);
   console.log(`  club: WV De Sprinters · Junioren`);
   console.log(`  outbox proposal #${outbox!.id} (Anna accepted, Bram declined)`);
   console.log(`  inbox proposal #${inbox!.id} (from Anna, awaiting response)`);
   console.log(`  inbox proposal #${seeking!.id} (Bram seeking buddy)`);
+  console.log(`  own race: Ronde van Salland (Raalte)`);
+  console.log(`  due follow-ups: Wedstrijd + Materiaal`);
   console.log(`  solo athlete with no friends: ${SOLO}`);
 }
 

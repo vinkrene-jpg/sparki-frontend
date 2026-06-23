@@ -152,6 +152,35 @@ export function useFriendFeed() {
   });
 }
 
+export type CircleFeedItem = {
+  id: string;
+  type:
+    | "follow_up"
+    | "my_race"
+    | "friend_training"
+    | "friend_race"
+    | "friend_buddy"
+    | "friend_rest";
+  at: string;
+  title: string;
+  detail: string | null;
+  displayName: string | null;
+  clerkId: string | null;
+  memoryId: number | null;
+  prompt: string | null;
+};
+
+export function useCircleFeed() {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: queryKeys.social.circleFeed(),
+    queryFn: () =>
+      apiFetch<{ items: CircleFeedItem[] }>("/api/social/circle-feed"),
+    enabled: enabledInPreview(isSignedIn),
+    staleTime: STALE.session,
+  });
+}
+
 export function useJointTrainingSuggestion() {
   const { isSignedIn } = useUser();
   return useQuery({

@@ -1,4 +1,5 @@
 import { ScreenShell } from "@/components/sparki/screen-shell"
+import { ClubChip } from "@/components/sparki/club-chip"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { BioRadar } from "@/components/sparki/bio-radar"
 import { Sparkline } from "@/components/sparki/primitives"
@@ -189,9 +190,12 @@ export default function LabPage() {
     <ScreenShell section="Lab">
       {/* INTRO */}
       <div className="-mt-2">
-        <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
-          PERFORMANCE LAB
-        </p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
+            PERFORMANCE LAB
+          </p>
+          <ClubChip />
+        </div>
         <h1 className="mt-2 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
           Begrijp je vorm
         </h1>

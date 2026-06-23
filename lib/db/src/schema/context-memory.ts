@@ -38,6 +38,7 @@ export const contextMemoryKinds = [
   "motivation",
   "race",
   "camp",
+  "equipment",
   "general",
 ] as const;
 export type ContextMemoryKind = (typeof contextMemoryKinds)[number];

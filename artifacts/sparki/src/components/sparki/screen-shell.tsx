@@ -99,7 +99,15 @@ function ClubCrest() {
       }}
       title={[team.clubName, team.teamName].filter(Boolean).join(" · ")}
     >
-      <Shield className="h-3 w-3" style={{ color }} strokeWidth={2} />
+      {team.logoUrl ? (
+        <img
+          src={team.logoUrl}
+          alt=""
+          className="h-3.5 w-3.5 shrink-0 object-contain"
+        />
+      ) : (
+        <Shield className="h-3 w-3" style={{ color }} strokeWidth={2} />
+      )}
       <span className="max-w-[8rem] truncate font-mono text-[9px] uppercase tracking-[0.14em] text-white/70">
         {team.shirtBadge || team.clubName}
       </span>
@@ -169,8 +177,10 @@ export function ScreenShell({
       </div>
 
       {/* Login follow-up prompt — outside the signed-in gate so it also works in
-          Development Preview Mode. Renders nothing when no follow-up is due. */}
-      <FollowUpPrompt />
+          Development Preview Mode. Renders nothing when no follow-up is due.
+          Suppressed on the Circle route ("samen"), where the Circle feed is the
+          calm home for follow-ups — so we never double-ask the same question. */}
+      {section.toLowerCase() !== "samen" && <FollowUpPrompt />}
     </main>
   )
 }

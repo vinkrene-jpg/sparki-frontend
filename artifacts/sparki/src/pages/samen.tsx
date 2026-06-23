@@ -1,11 +1,13 @@
 import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
+import { queryKeys } from "@/lib/query-keys"
 import {
   useFriends,
   useFriendRequests,
   useAthleteSearch,
-  useFriendFeed,
+  useCircleFeed,
   useJointTrainingSuggestion,
   useProposals,
   useTeamIdentity,
@@ -16,10 +18,15 @@ import {
   useCreateProposal,
   useRespondToProposal,
   type FriendSummary,
-  type FriendFeedItem,
+  type CircleFeedItem,
   type ReceivedProposal,
   type SentProposal,
 } from "@/hooks/use-social"
+import { useFeedNews, type FeedNewsItem } from "@/hooks/use-feed-news"
+import {
+  useAnswerFollowUp,
+  useDismissFollowUp,
+} from "@/hooks/use-context-memory"
 import {
   Users,
   UserPlus,
@@ -34,6 +41,9 @@ import {
   CalendarPlus,
   Shield,
   Trash2,
+  Sparkles,
+  Newspaper,
+  Send,
 } from "lucide-react"
 
 // ── Shared atoms ─────────────────────────────────────────────────────────────
@@ -118,11 +128,14 @@ function formatDateTime(iso: string): string {
   })
 }
 
-const FEED_ICON: Record<FriendFeedItem["kind"], typeof Activity> = {
-  training_done: Activity,
-  race_planned: Flag,
-  looking_for_buddy: Bike,
-  rest_day: Moon,
+const FEED_ICON: Record<CircleFeedItem["type"] | "news", typeof Activity> = {
+  follow_up: Sparkles,
+  my_race: Flag,
+  friend_training: Activity,
+  friend_race: Flag,
+  friend_buddy: Bike,
+  friend_rest: Moon,
+  news: Newspaper,
 }
 
 // ── Friend requests ──────────────────────────────────────────────────────────
@@ -344,52 +357,205 @@ function Circle() {
   )
 }
 
-// ── Friend feed ──────────────────────────────────────────────────────────────
-function FriendFeed() {
-  const { data, isLoading } = useFriendFeed()
-  const items = data?.items ?? []
+// ── Circle feed (unified stream) ─────────────────────────────────────────────
+// One calm stream: Sparki's follow-up questions, your own race info, friend
+// activity and relevant sport news — never an algorithmic timeline.
+type StreamItem =
+  | { source: "circle"; sortAt: number; data: CircleFeedItem }
+  | { source: "news"; sortAt: number; data: FeedNewsItem }
+
+function FollowUpCard({ item }: { item: CircleFeedItem }) {
+  const qc = useQueryClient()
+  const answer = useAnswerFollowUp()
+  const dismiss = useDismissFollowUp()
+  const [text, setText] = useState("")
+  const busy = answer.isPending || dismiss.isPending
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: queryKeys.social.circleFeed() })
+  }
+
+  return (
+    <GlassCard className="border-cyan-300/20 bg-cyan-300/[0.05]">
+      <div className="flex items-start gap-3">
+        <span
+          className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-cyan-300/30"
+          style={{ background: "rgba(120,210,230,0.10)" }}
+        >
+          <Sparkles className="h-4 w-4" style={{ color: ACCENT }} strokeWidth={1.75} />
+        </span>
+        <div className="flex-1">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/70">
+            Sparki vraagt
+          </p>
+          <p className="mt-1 text-pretty text-[14px] leading-relaxed text-white/90">
+            {item.prompt ?? item.detail}
+          </p>
+          <div className="mt-3">
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={2}
+              placeholder="Vertel Sparki kort hoe het ging…"
+              className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-white/90 placeholder:text-white/30 outline-none focus:border-cyan-300/40"
+            />
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                disabled={busy || text.trim().length === 0}
+                onClick={() =>
+                  answer.mutate(
+                    { id: item.memoryId!, response: text.trim() },
+                    { onSuccess: invalidate },
+                  )
+                }
+                className="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 font-sans text-[12px] font-semibold disabled:opacity-40"
+                style={{ background: ACCENT, color: "#040506" }}
+              >
+                <Send className="h-3.5 w-3.5" strokeWidth={2} />
+                Beantwoorden
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  dismiss.mutate(item.memoryId!, { onSuccess: invalidate })
+                }
+                className="rounded-full border border-white/12 px-3.5 py-1.5 font-sans text-[12px] text-white/55 disabled:opacity-40"
+              >
+                Later
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </GlassCard>
+  )
+}
+
+function CircleItemCard({ item }: { item: CircleFeedItem }) {
+  const Icon = FEED_ICON[item.type]
+  const isMine = item.type === "my_race"
+  return (
+    <GlassCard className={isMine ? "border-cyan-300/15" : ""}>
+      <div className="flex items-start gap-3">
+        <span
+          className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10"
+          style={{ background: "rgba(255,255,255,0.03)" }}
+        >
+          <Icon className="h-4 w-4" style={{ color: ACCENT }} strokeWidth={1.75} />
+        </span>
+        <div className="flex-1">
+          {isMine ? (
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/70">
+              Jouw wedstrijd
+            </p>
+          ) : null}
+          <p className="text-[13.5px] leading-snug text-white/85">{item.title}</p>
+          {item.detail ? (
+            <p className="mt-0.5 font-mono text-[10px] tracking-wide text-white/40">
+              {item.detail}
+            </p>
+          ) : null}
+        </div>
+        <span className="shrink-0 font-mono text-[9.5px] tracking-wide text-white/30">
+          {formatDateTime(item.at)}
+        </span>
+      </div>
+    </GlassCard>
+  )
+}
+
+function NewsCard({ item }: { item: FeedNewsItem }) {
+  return (
+    <a
+      href={item.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block"
+    >
+      <GlassCard className="transition-colors hover:border-white/20">
+        <div className="flex items-start gap-3">
+          <span
+            className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10"
+            style={{ background: "rgba(255,255,255,0.03)" }}
+          >
+            <Newspaper className="h-4 w-4" style={{ color: ACCENT }} strokeWidth={1.75} />
+          </span>
+          <div className="flex-1">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/40">
+              {item.source ?? "Sparki nieuws"}
+            </p>
+            <p className="mt-0.5 text-[13.5px] leading-snug text-white/85">
+              {item.title}
+            </p>
+            {item.summary ? (
+              <p className="mt-1 line-clamp-2 text-pretty text-[12px] leading-relaxed text-white/45">
+                {item.summary}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </GlassCard>
+    </a>
+  )
+}
+
+function CircleFeed() {
+  const { data, isLoading, isError } = useCircleFeed()
+  const { data: newsData, isError: newsError } = useFeedNews(6)
+  const circle = data?.items ?? []
+  const news = newsData?.items ?? []
+
+  const followUps = circle.filter((i) => i.type === "follow_up")
+  const rest: StreamItem[] = [
+    ...circle
+      .filter((i) => i.type !== "follow_up")
+      .map((i) => ({
+        source: "circle" as const,
+        sortAt: new Date(i.at).getTime(),
+        data: i,
+      })),
+    ...news.map((n) => ({
+      source: "news" as const,
+      sortAt: n.publishedAt ? new Date(n.publishedAt).getTime() : 0,
+      data: n,
+    })),
+  ].sort((a, b) => b.sortAt - a.sortAt)
+
+  const isEmpty = followUps.length === 0 && rest.length === 0
 
   return (
     <section>
-      <SectionLabel n="02" title="Vriendenfeed" />
+      <SectionLabel n="02" title="Jouw overzicht" />
       {isLoading ? (
         <div className="mt-3 h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
-      ) : items.length === 0 ? (
+      ) : isError ? (
+        <p className="mt-3 text-pretty text-[13px] leading-relaxed text-rose-300/80">
+          Je overzicht kon niet geladen worden. Probeer het zo opnieuw.
+        </p>
+      ) : isEmpty ? (
         <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/40">
-          Nog geen activiteit van vrienden. Zodra vrienden hun activiteit delen,
-          zie je het hier.
+          Nog niets te zien. Zodra je vrienden hun activiteit delen, je een
+          wedstrijd plant of Sparki iets wil weten, verschijnt het hier.
         </p>
       ) : (
         <div className="mt-3 flex flex-col gap-2">
-          {items.map((item) => {
-            const Icon = FEED_ICON[item.kind]
-            return (
-              <GlassCard key={item.id}>
-                <div className="flex items-start gap-3">
-                  <span
-                    className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10"
-                    style={{ background: "rgba(255,255,255,0.03)" }}
-                  >
-                    <Icon
-                      className="h-4 w-4"
-                      style={{ color: ACCENT }}
-                      strokeWidth={1.75}
-                    />
-                  </span>
-                  <div className="flex-1">
-                    <p className="text-[13.5px] leading-snug text-white/85">
-                      {item.title}
-                    </p>
-                    {item.detail ? (
-                      <p className="mt-0.5 font-mono text-[10px] tracking-wide text-white/40">
-                        {item.detail}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-              </GlassCard>
-            )
-          })}
+          {followUps.map((item) => (
+            <FollowUpCard key={item.id} item={item} />
+          ))}
+          {rest.map((s) =>
+            s.source === "circle" ? (
+              <CircleItemCard key={s.data.id} item={s.data} />
+            ) : (
+              <NewsCard key={`news-${s.data.id}`} item={s.data} />
+            ),
+          )}
+          {newsError && (
+            <p className="text-pretty text-[12px] leading-relaxed text-rose-300/70">
+              Het laatste nieuws kon even niet geladen worden.
+            </p>
+          )}
         </div>
       )}
     </section>
@@ -840,7 +1006,7 @@ function ClubBanner() {
         }}
       >
         <span
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border"
+          className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border"
           style={{
             borderColor: team.primaryColor
               ? `${team.primaryColor}66`
@@ -848,11 +1014,19 @@ function ClubBanner() {
             background: team.primaryColor ? `${team.primaryColor}22` : undefined,
           }}
         >
-          <Shield
-            className="h-5 w-5"
-            style={{ color: team.primaryColor ?? ACCENT }}
-            strokeWidth={1.75}
-          />
+          {team.logoUrl ? (
+            <img
+              src={team.logoUrl}
+              alt={team.clubName ?? "Clublogo"}
+              className="h-full w-full object-contain p-1"
+            />
+          ) : (
+            <Shield
+              className="h-5 w-5"
+              style={{ color: team.primaryColor ?? ACCENT }}
+              strokeWidth={1.75}
+            />
+          )}
         </span>
         <div>
           <p className="text-[14px] font-medium text-white/90">
@@ -889,7 +1063,7 @@ export default function SamenPage() {
 
       <ClubBanner />
       <FriendRequests />
-      <FriendFeed />
+      <CircleFeed />
       <TrainTogether />
       <Proposals />
       <Circle />

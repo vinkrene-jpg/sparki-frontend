@@ -151,6 +151,7 @@ export const queryKeys = {
     requests: () => ["social", "requests"] as const,
     search: (q: string) => ["social", "search", q] as const,
     feed: () => ["social", "feed"] as const,
+    circleFeed: () => ["social", "circle-feed"] as const,
     suggestion: () => ["social", "suggestion"] as const,
     proposals: () => ["social", "proposals"] as const,
     team: () => ["social", "team"] as const,

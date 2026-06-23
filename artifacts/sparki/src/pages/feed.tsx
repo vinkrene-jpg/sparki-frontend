@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Link } from "wouter"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
+import { ClubChip } from "@/components/sparki/club-chip"
 import { SparkiCore } from "@/components/sparki/sparki-core"
 import { NewsReader } from "@/components/sparki/news-reader"
 import { useAiBrief, useAskSparki, type AiSource } from "@/hooks/use-ai-brief"
@@ -214,9 +215,12 @@ export default function FeedPage() {
     <ScreenShell section="Feed">
       {/* INTRO */}
       <div className="-mt-2">
-        <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
-          RONDOM JOU
-        </p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
+            RONDOM JOU
+          </p>
+          <ClubChip />
+        </div>
         <h1 className="mt-2 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
           Wat er speelt
         </h1>

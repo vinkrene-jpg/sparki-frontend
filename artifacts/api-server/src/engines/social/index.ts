@@ -20,6 +20,7 @@ import {
   type TeamIdentity,
 } from "@workspace/db";
 import { getEffectivePrivacy } from "../../lib/privacy";
+import { getDueFollowUps } from "../context-memory";
 
 // ── Types surfaced to the API layer ──────────────────────────────────────────
 export type FriendSummary = {
@@ -105,6 +106,27 @@ export type ReceivedProposal = {
   intensity: string | null;
   note: string | null;
   myStatus: string; // proposed | accepted | declined | expired
+};
+
+// One unified "Circle" stream item. Merges friend activity, the athlete's own
+// race info, and due memory follow-ups (Sparki wil weten hoe iets ging) into a
+// single calm, relevant timeline — never an algorithmic attention feed.
+export type CircleFeedItem = {
+  id: string;
+  type:
+    | "follow_up"
+    | "my_race"
+    | "friend_training"
+    | "friend_race"
+    | "friend_buddy"
+    | "friend_rest";
+  at: Date;
+  title: string;
+  detail: string | null;
+  displayName: string | null;
+  clerkId: string | null;
+  memoryId: number | null; // follow_up only
+  prompt: string | null; // follow_up only
 };
 
 // Dutch weekday labels for availability keys.
@@ -585,6 +607,94 @@ export async function getFriendFeed(viewer: string): Promise<FriendFeedItem[]> {
   // Most recent first; cap to a calm feed length.
   items.sort((a, b) => b.at.getTime() - a.at.getTime());
   return items.slice(0, 30);
+}
+
+// ── Unified Circle feed ──────────────────────────────────────────────────────
+const FRIEND_KIND_MAP: Record<FeedItemKind, CircleFeedItem["type"]> = {
+  training_done: "friend_training",
+  race_planned: "friend_race",
+  looking_for_buddy: "friend_buddy",
+  rest_day: "friend_rest",
+};
+
+// Combine friend activity, the athlete's own upcoming races, and due memory
+// follow-ups into one stream. Privacy fails closed via getFriendFeed; follow-ups
+// and own races are the viewer's own data. Due follow-ups are pinned on top
+// (Sparki actively wants an answer), the rest is most-recent-first.
+export async function getCircleFeed(clerkId: string): Promise<CircleFeedItem[]> {
+  const items: CircleFeedItem[] = [];
+
+  // 1. Friend activity (already opt-in + health-safe inside getFriendFeed).
+  const friendItems = await getFriendFeed(clerkId);
+  for (const f of friendItems) {
+    items.push({
+      id: f.id,
+      type: FRIEND_KIND_MAP[f.kind],
+      at: f.at,
+      title: f.title,
+      detail: f.detail,
+      displayName: f.displayName,
+      clerkId: f.clerkId,
+      memoryId: null,
+      prompt: null,
+    });
+  }
+
+  // 2. The athlete's own upcoming races (their own race info).
+  const todayStr = isoDate(new Date());
+  const myRaces = await db
+    .select({
+      id: racesTable.id,
+      name: racesTable.name,
+      raceDate: racesTable.raceDate,
+      location: racesTable.location,
+      priority: racesTable.priority,
+    })
+    .from(racesTable)
+    .where(
+      and(eq(racesTable.clerkId, clerkId), gte(racesTable.raceDate, todayStr)),
+    );
+  for (const r of myRaces) {
+    items.push({
+      id: `myrace-${r.id}`,
+      type: "my_race",
+      at: new Date(`${r.raceDate}T09:00:00`),
+      title: r.name,
+      detail: r.location
+        ? `${r.location} · ${r.priority}-koers`
+        : `${r.priority}-koers`,
+      displayName: null,
+      clerkId,
+      memoryId: null,
+      prompt: null,
+    });
+  }
+
+  // 3. Due memory follow-ups (Sparki wil weten hoe iets ging).
+  const due = await getDueFollowUps(clerkId);
+  for (const m of due) {
+    items.push({
+      id: `memory-${m.id}`,
+      type: "follow_up",
+      at: m.followUpAt ? new Date(m.followUpAt) : new Date(),
+      title: m.title,
+      detail: m.detail,
+      displayName: null,
+      clerkId,
+      memoryId: m.id,
+      prompt: m.prompt,
+    });
+  }
+
+  // Follow-ups float to the top (they're actionable, timely); the rest is
+  // most-recent-first. Calm cap — never an endless timeline.
+  items.sort((a, b) => {
+    const aFollow = a.type === "follow_up" ? 0 : 1;
+    const bFollow = b.type === "follow_up" ? 0 : 1;
+    if (aFollow !== bFollow) return aFollow - bFollow;
+    return b.at.getTime() - a.at.getTime();
+  });
+  return items.slice(0, 40);
 }
 
 // ── Joint-training suggestion ────────────────────────────────────────────────

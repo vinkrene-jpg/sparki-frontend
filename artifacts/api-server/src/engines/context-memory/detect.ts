@@ -241,6 +241,18 @@ const RULES: Rule[] = [
     topic: "trainingskamp / vakantie",
   },
   {
+    kind: "equipment",
+    test: (t) =>
+      /\b(nieuwe fiets|nieuwe racefiets|andere fiets|nieuw frame|nieuwe wielen|nieuwe banden|nieuw zadel|bikefitting|bike fit|fietsfitting|nieuwe schoenen|nieuwe pedalen|powermeter|vermogensmeter|nieuwe groepset|materiaalwissel|ander materiaal|afgesteld)\b/.test(t),
+    defaultLeadDays: 3,
+    followUpOffsetDays: 0,
+    title: "Materiaal",
+    detail: (p) =>
+      `Je hebt iets aan je materiaal veranderd${p}. Sparki vraagt later hoe het bevalt.`,
+    followUpQuestion: "Hoe bevalt je nieuwe materiaal? Voelt het fijn op de fiets?",
+    topic: "materiaal / fiets",
+  },
+  {
     kind: "sport",
     test: (t) =>
       /\b(te zwaar getraind|overtraind|overtraining|zware training|kapotgereden|benen vol|verzuurd|hersteldag|rustdag genomen|te moe om te trainen|geen benen)\b/.test(t),
@@ -301,6 +313,7 @@ const RECALL_CLAUSE: Record<ContextMemoryKind, string> = {
   motivation: "je even weinig zin had",
   race: "je een wedstrijd had",
   camp: "je op trainingskamp of vakantie ging",
+  equipment: "je iets aan je materiaal veranderde",
   general: "er iets speelde",
 };
 
