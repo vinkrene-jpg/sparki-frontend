@@ -6,10 +6,12 @@ import {
   athleteProfilesTable,
   trainingSessionsTable,
   plannedWorkoutsTable,
+  workoutFeedbackTable,
   athleteDailyMetricsTable,
   ftpHistoryTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { generateThreeWeekPlan } from "../lib/training/plan-generator";
 
 const router = Router();
 
@@ -395,6 +397,7 @@ router.put("/workouts/:id", requireAuth, async (req, res) => {
     status,
     title,
     description,
+    scheduledDate,
     targetDurationMin,
     targetTSS,
     structure,
@@ -403,11 +406,34 @@ router.put("/workouts/:id", requireAuth, async (req, res) => {
     status?: string;
     title?: string;
     description?: string;
+    scheduledDate?: string;
     targetDurationMin?: number;
     targetTSS?: number;
     structure?: unknown;
     sessionId?: number;
   };
+
+  // Validate proposal-applied fields so a bad LLM payload can't corrupt a workout.
+  if (scheduledDate != null && !/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate)) {
+    res.status(400).json({ error: "Invalid scheduledDate (expected YYYY-MM-DD)" });
+    return;
+  }
+  if (
+    targetDurationMin != null &&
+    (!Number.isFinite(targetDurationMin) ||
+      targetDurationMin < 0 ||
+      targetDurationMin > 1440)
+  ) {
+    res.status(400).json({ error: "Invalid targetDurationMin" });
+    return;
+  }
+  if (
+    targetTSS != null &&
+    (!Number.isFinite(targetTSS) || targetTSS < 0 || targetTSS > 1000)
+  ) {
+    res.status(400).json({ error: "Invalid targetTSS" });
+    return;
+  }
 
   try {
     const [updated] = await db
@@ -416,6 +442,7 @@ router.put("/workouts/:id", requireAuth, async (req, res) => {
         ...(status != null && { status }),
         ...(title != null && { title }),
         ...(description != null && { description }),
+        ...(scheduledDate != null && { scheduledDate }),
         ...(targetDurationMin != null && { targetDurationMin }),
         ...(targetTSS != null && { targetTSS }),
         ...(structure != null && { structure }),
@@ -437,6 +464,198 @@ router.put("/workouts/:id", requireAuth, async (req, res) => {
     res.json(updated);
   } catch (err) {
     req.log.error({ err }, "athlete.workouts PUT failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── GET /api/athlete/workouts/:id ────────────────────────────────────────────
+// Single workout + its feedback history. Ownership enforced via clerkId.
+router.get("/workouts/:id", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid workout id" });
+    return;
+  }
+  try {
+    const [workout] = await db
+      .select()
+      .from(plannedWorkoutsTable)
+      .where(
+        and(
+          eq(plannedWorkoutsTable.id, id),
+          eq(plannedWorkoutsTable.clerkId, clerkId),
+        ),
+      );
+    if (!workout) {
+      res.status(404).json({ error: "Workout not found" });
+      return;
+    }
+    const feedback = await db
+      .select()
+      .from(workoutFeedbackTable)
+      .where(
+        and(
+          eq(workoutFeedbackTable.workoutId, id),
+          eq(workoutFeedbackTable.clerkId, clerkId),
+        ),
+      )
+      .orderBy(desc(workoutFeedbackTable.createdAt));
+    res.json({ ...workout, feedback });
+  } catch (err) {
+    req.log.error({ err }, "athlete.workouts.detail failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── POST /api/athlete/workouts/:id/feedback ──────────────────────────────────
+// Record athlete feedback. Certain feedback also moves the workout status so the
+// day-type engine + load tracking stay in sync (done→completed, missed→skipped).
+const FEEDBACK_TYPES = [
+  "done",
+  "missed",
+  "too_hard",
+  "too_light",
+  "pain",
+  "tired",
+  "move",
+] as const;
+
+router.post("/workouts/:id/feedback", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid workout id" });
+    return;
+  }
+  const { feedbackType, note } = req.body as {
+    feedbackType?: string;
+    note?: string;
+  };
+  if (
+    !feedbackType ||
+    !(FEEDBACK_TYPES as readonly string[]).includes(feedbackType)
+  ) {
+    res.status(400).json({
+      error: `feedbackType must be one of: ${FEEDBACK_TYPES.join(", ")}`,
+    });
+    return;
+  }
+
+  try {
+    // Ownership check before recording.
+    const [workout] = await db
+      .select()
+      .from(plannedWorkoutsTable)
+      .where(
+        and(
+          eq(plannedWorkoutsTable.id, id),
+          eq(plannedWorkoutsTable.clerkId, clerkId),
+        ),
+      );
+    if (!workout) {
+      res.status(404).json({ error: "Workout not found" });
+      return;
+    }
+
+    const [feedback] = await db
+      .insert(workoutFeedbackTable)
+      .values({ clerkId, workoutId: id, feedbackType, note: note ?? null })
+      .returning();
+
+    // Mirror terminal feedback to the workout status.
+    const newStatus =
+      feedbackType === "done"
+        ? "completed"
+        : feedbackType === "missed"
+          ? "skipped"
+          : null;
+    if (newStatus) {
+      await db
+        .update(plannedWorkoutsTable)
+        .set({ status: newStatus, updatedAt: new Date() })
+        .where(
+          and(
+            eq(plannedWorkoutsTable.id, id),
+            eq(plannedWorkoutsTable.clerkId, clerkId),
+          ),
+        );
+    }
+
+    res.status(201).json({ feedback });
+  } catch (err) {
+    req.log.error({ err }, "athlete.workouts.feedback failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── POST /api/athlete/plan/generate ──────────────────────────────────────────
+// Generate a real periodized 3-week plan from the athlete's own numbers. Clears
+// any future Sparki-planned, not-yet-done workouts in the window first so the
+// plan is idempotent. Coach-planned and already-completed workouts are kept.
+router.post("/plan/generate", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const { startDate, weeks } = req.body as {
+    startDate?: string;
+    weeks?: number;
+  };
+
+  try {
+    const [athlete] = await db
+      .select()
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId));
+
+    if (!athlete?.ftp || !athlete?.weeklyHourTarget) {
+      res.status(422).json({
+        error: "profile_incomplete",
+        message:
+          "Stel eerst je FTP en wekelijkse uren in zodat Sparki een schema kan opbouwen.",
+      });
+      return;
+    }
+
+    const start = startDate ?? todayStr();
+    const blocks = weeks && weeks > 0 && weeks <= 6 ? weeks : 3;
+    const end = (() => {
+      const d = new Date(start + "T00:00:00Z");
+      d.setUTCDate(d.getUTCDate() + blocks * 7 - 1);
+      return d.toISOString().split("T")[0]!;
+    })();
+
+    const rows = generateThreeWeekPlan({
+      ftp: athlete.ftp,
+      weeklyHourTarget: athlete.weeklyHourTarget,
+      discipline: athlete.discipline,
+      goals: athlete.goals,
+      startDate: start,
+      weeks: blocks,
+    });
+
+    const inserted = await db.transaction(async (tx) => {
+      // Remove the previous Sparki proposal in this window — but never touch
+      // coach plans or workouts the athlete already engaged with.
+      await tx
+        .delete(plannedWorkoutsTable)
+        .where(
+          and(
+            eq(plannedWorkoutsTable.clerkId, clerkId),
+            eq(plannedWorkoutsTable.source, "sparki"),
+            eq(plannedWorkoutsTable.status, "planned"),
+            gte(plannedWorkoutsTable.scheduledDate, start),
+            lte(plannedWorkoutsTable.scheduledDate, end),
+          ),
+        );
+      if (rows.length === 0) return [];
+      return tx
+        .insert(plannedWorkoutsTable)
+        .values(rows.map((r) => ({ ...r, clerkId })))
+        .returning();
+    });
+
+    res.status(201).json({ workouts: inserted, from: start, to: end });
+  } catch (err) {
+    req.log.error({ err }, "athlete.plan.generate failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });

@@ -18,6 +18,9 @@ import {
   VitalsGrid,
   Skeleton,
 } from "@/components/sparki/home-sections"
+import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer"
+import { useState } from "react"
+import { ChevronRight } from "lucide-react"
 
 
 const zoneColor: Record<number, string> = {
@@ -38,6 +41,7 @@ export function TrainingDayHome({
   briefing: DayTypeBriefingConfig
 }) {
   const { data, isLoading } = useAthleteDashboard()
+  const [detailOpen, setDetailOpen] = useState(false)
   const aiEnabled = useFeatureFlag("ai_observations")
   const { data: brief, isLoading: briefLoading } = useAiBrief(aiEnabled)
   const { data: metricsHistory, isLoading: metricsLoading } = useDailyMetrics(14)
@@ -293,6 +297,20 @@ export function TrainingDayHome({
                   </>
                 )}
               </div>
+
+              <button
+                type="button"
+                onClick={() => setDetailOpen(true)}
+                className="group mt-4 flex w-full items-center justify-between rounded-2xl border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-left transition-colors hover:border-cyan-300/25"
+              >
+                <span className="font-mono text-[10px] tracking-[0.18em] text-white/55 transition-colors group-hover:text-cyan-300/70">
+                  BEKIJK VOLLEDIGE TRAINING
+                </span>
+                <ChevronRight
+                  className="h-4 w-4 text-white/30 transition-colors group-hover:text-cyan-300/60"
+                  strokeWidth={1.75}
+                />
+              </button>
             </>
           ) : (
             <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
@@ -493,6 +511,12 @@ export function TrainingDayHome({
           SPARKI PERFORMANCE CENTER
         </span>
       </footer>
+
+      <WorkoutDetailDrawer
+        workoutId={data?.todayWorkout?.id ?? null}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
     </ScreenShell>
   )
 }

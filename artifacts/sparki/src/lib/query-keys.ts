@@ -57,6 +57,9 @@ export const queryKeys = {
     load: () => ["athlete", "load"] as const,
     ftpHistory: () => ["athlete", "ftp"] as const,
     brief: () => ["athlete", "ai", "brief"] as const,
+    plan: (from: string, to: string) =>
+      ["athlete", "plan", from, to] as const,
+    workout: (id: number) => ["athlete", "workout", "detail", id] as const,
   },
 
   aiMemory: {

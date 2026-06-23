@@ -512,4 +512,212 @@ router.put("/preferences", requireAuth, async (req, res) => {
   }
 });
 
+// ── Workout coaching helpers ─────────────────────────────────────────────────
+// Load a workout (ownership-checked) and render its real structure into a
+// compact text block the model can reason over. No invented data — only what the
+// generator stored.
+async function loadOwnedWorkout(clerkId: string, id: number) {
+  const [workout] = await db
+    .select()
+    .from(plannedWorkoutsTable)
+    .where(
+      and(
+        eq(plannedWorkoutsTable.id, id),
+        eq(plannedWorkoutsTable.clerkId, clerkId),
+      ),
+    );
+  return workout ?? null;
+}
+
+function describeWorkout(workout: {
+  scheduledDate: string;
+  type: string;
+  title: string;
+  targetDurationMin: number | null;
+  targetTSS: number | null;
+  status: string;
+  structure: unknown;
+}): string {
+  const s = (workout.structure ?? {}) as Record<string, unknown>;
+  const parts: string[] = [];
+  parts.push(
+    `GEPLANDE TRAINING: ${workout.title} op ${workout.scheduledDate} (${workout.type}, ${workout.targetDurationMin ?? "?"}min, doel-TSS ${workout.targetTSS ?? "?"}, status ${workout.status})`,
+  );
+  if (typeof s.intensity === "string") parts.push(`INTENSITEIT: ${s.intensity}`);
+  if (typeof s.phase === "string" && typeof s.week === "number")
+    parts.push(`PERIODISERING: fase ${s.phase}, week ${s.week} van het blok`);
+  const blocks = Array.isArray(s.blocks)
+    ? (s.blocks as Array<Record<string, unknown>>)
+    : [];
+  if (blocks.length) {
+    parts.push("BLOKKEN:");
+    for (const b of blocks) {
+      parts.push(
+        `  - ${String(b.label)}: ${Number(b.durationMin)}min, zone Z${Number(b.zone)}${b.targetPctFtp != null ? `, ~${Number(b.targetPctFtp)}% FTP` : ""}`,
+      );
+    }
+  }
+  const rationale = (s.rationale ?? {}) as Record<string, unknown>;
+  if (typeof rationale.whyToday === "string")
+    parts.push(`BEDOELING: ${rationale.whyToday}`);
+  return parts.join("\n");
+}
+
+const FEEDBACK_LABEL: Record<string, string> = {
+  done: "heeft de training afgerond",
+  missed: "heeft de training gemist",
+  too_hard: "vond de training te zwaar",
+  too_light: "vond de training te licht",
+  pain: "meldt pijn of een blessuregevoel",
+  tired: "voelt zich vermoeid / niet hersteld",
+  move: "wil de training verplaatsen naar een andere dag",
+};
+
+// ── POST /api/ai/workout-explain ─────────────────────────────────────────────
+// The deeper "Waarom?" trainingsfilosofie-laag voor één specifieke training.
+// Real Sparki reasoning grounded in the workout's actual structure + the
+// athlete's data. Dutch, geen "AI"-woordgebruik.
+router.post("/workout-explain", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const { workoutId } = req.body as { workoutId?: number };
+  const id = Number(workoutId);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "workoutId is required" });
+    return;
+  }
+
+  try {
+    const workout = await loadOwnedWorkout(clerkId, id);
+    if (!workout) {
+      res.status(404).json({ error: "Workout not found" });
+      return;
+    }
+
+    const [context, system] = await Promise.all([
+      buildAthleteContext(clerkId),
+      systemPrompt(clerkId),
+    ]);
+    const workoutBlock = describeWorkout(workout);
+
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1400,
+      system,
+      messages: [
+        {
+          role: "user",
+          content: `Atleetcontext:\n${context}\n\n${workoutBlock}\n\nLeg in het NEDERLANDS de trainingsfilosofie achter JUIST DEZE training uit, zodat de atleet begrijpt waarom Sparki dit zo plant. Behandel — toegespitst op deze sessie, niet algemeen — de relevante principes uit: trainingsopbouw, belasting & herstel, progressieve overload, het nut van Z2, intensieve blokken, taper/herstelweek, periodisering, blessurepreventie, en de relatie tot het hoofddoel van de atleet.\n\nSchrijf 3–5 korte alinea's, coachend en concreet, met verwijzing naar de echte getallen waar zinvol. Schrijf platte tekst: GEEN markdown, geen kopjes, geen "#" of sterretjes/bold — alleen gewone alinea's gescheiden door een lege regel. Gebruik NOOIT het woord "AI" of "algoritme" — jij bent Sparki. Geen verzonnen data.`,
+        },
+      ],
+    });
+
+    const block = message.content[0];
+    if (!block || block.type !== "text") {
+      res.status(500).json({ error: "Unexpected Sparki response" });
+      return;
+    }
+    res.json({ explanation: block.text });
+  } catch (err) {
+    req.log.error({ err }, "ai.workout-explain failed");
+    res.status(500).json({ error: "Sparki service unavailable" });
+  }
+});
+
+// ── POST /api/ai/workout-adjust ──────────────────────────────────────────────
+// Athlete feedback → een concreet Sparki-aanpassingsvoorstel. Real LLM met
+// strikte JSON-output, zodat de client het voorstel kan tonen én toepassen.
+type AdjustProposal = {
+  recommendation: "keep" | "adjust" | "move" | "recovery" | "replan_week";
+  title: string;
+  message: string;
+  changes: {
+    targetDurationMin?: number;
+    targetTSS?: number;
+    intensity?: string;
+    newDate?: string;
+    title?: string;
+  } | null;
+};
+
+router.post("/workout-adjust", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const { workoutId, feedbackType, note } = req.body as {
+    workoutId?: number;
+    feedbackType?: string;
+    note?: string;
+  };
+  const id = Number(workoutId);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "workoutId is required" });
+    return;
+  }
+  if (!feedbackType || !FEEDBACK_LABEL[feedbackType]) {
+    res.status(400).json({ error: "valid feedbackType is required" });
+    return;
+  }
+
+  try {
+    const workout = await loadOwnedWorkout(clerkId, id);
+    if (!workout) {
+      res.status(404).json({ error: "Workout not found" });
+      return;
+    }
+
+    const [context, system] = await Promise.all([
+      buildAthleteContext(clerkId),
+      systemPrompt(clerkId),
+    ]);
+    const workoutBlock = describeWorkout(workout);
+    const today = todayStr();
+
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1200,
+      system,
+      messages: [
+        {
+          role: "user",
+          content: `Atleetcontext:\n${context}\n\n${workoutBlock}\n\nDE ATLEET ${FEEDBACK_LABEL[feedbackType].toUpperCase()}${note?.trim() ? ` — eigen toelichting: "${note.trim()}"` : ""}.\n\nBepaal als Sparki het beste antwoord en geef een concreet voorstel. Vandaag is ${today}. Antwoord UITSLUITEND met geldige JSON (geen markdown, geen tekst eromheen) in dit schema:\n{\n  "recommendation": "keep" | "adjust" | "move" | "recovery" | "replan_week",\n  "title": "korte kop (max 6 woorden, Nederlands)",\n  "message": "2-4 zinnen uitleg in het Nederlands, coachend en concreet, verwijzend naar de echte data",\n  "changes": null | {\n    "targetDurationMin"?: number,\n    "targetTSS"?: number,\n    "intensity"?: "string",\n    "newDate"?: "YYYY-MM-DD",\n    "title"?: "string"\n  }\n}\n\nRegels: bij "keep" is changes null. Bij "move" zet je newDate (een logische datum vanaf vandaag). Bij "adjust"/"recovery" geef je realistische nieuwe targetDurationMin/targetTSS/intensity. Bij pijn/blessure kies je herstel of verplaatsen, nooit zwaarder. Gebruik NOOIT het woord "AI" — jij bent Sparki.`,
+        },
+      ],
+    });
+
+    const block = message.content[0];
+    if (!block || block.type !== "text") {
+      res.status(500).json({ error: "Unexpected Sparki response" });
+      return;
+    }
+
+    // Parse the JSON robustly (strip any stray fencing).
+    let proposal: AdjustProposal | null = null;
+    try {
+      const raw = block.text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "");
+      const start = raw.indexOf("{");
+      const end = raw.lastIndexOf("}");
+      const json = start >= 0 && end >= 0 ? raw.slice(start, end + 1) : raw;
+      proposal = JSON.parse(json) as AdjustProposal;
+    } catch {
+      proposal = null;
+    }
+
+    const valid =
+      proposal &&
+      ["keep", "adjust", "move", "recovery", "replan_week"].includes(
+        proposal.recommendation,
+      ) &&
+      typeof proposal.title === "string" &&
+      typeof proposal.message === "string";
+
+    if (!valid) {
+      res.status(502).json({ error: "Sparki could not form a proposal" });
+      return;
+    }
+
+    res.json({ proposal });
+  } catch (err) {
+    req.log.error({ err }, "ai.workout-adjust failed");
+    res.status(500).json({ error: "Sparki service unavailable" });
+  }
+});
+
 export default router;

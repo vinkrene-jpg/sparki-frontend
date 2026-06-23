@@ -9,6 +9,8 @@ import { useAiBrief } from "@/hooks/use-ai-brief"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { ActivityImportPanel } from "@/components/sparki/activity-import-panel"
 import { RoutePanel } from "@/components/sparki/route-panel"
+import { ThreeWeekPlan } from "@/components/sparki/three-week-plan"
+import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer"
 import {
   Bike,
   Activity,
@@ -17,8 +19,9 @@ import {
   CheckCircle2,
   XCircle,
   Plus,
+  ChevronRight,
 } from "lucide-react"
-import type { TrainingSession } from "@/lib/athlete-types"
+import type { TrainingSession, WorkoutBlock } from "@/lib/athlete-types"
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
@@ -212,8 +215,15 @@ export default function TrainPage() {
   const routePlannerEnabled = useFeatureFlag("route_planner")
   const { data: brief, isLoading: briefLoading } = useAiBrief(aiEnabled)
   const [showLogForm, setShowLogForm] = useState(false)
+  const [detailOpen, setDetailOpen] = useState(false)
 
   const isLoading = workoutLoading || profileLoading
+
+  const blocks: WorkoutBlock[] = workout?.structure?.blocks ?? []
+  const maxBlockMin = blocks.reduce(
+    (m, b) => Math.max(m, b.durationMin),
+    1,
+  )
 
   const markComplete = () => {
     if (workout?.id) updateWorkout.mutate({ id: workout.id, status: "completed" })
@@ -253,6 +263,9 @@ export default function TrainPage() {
         )}
       </div>
 
+      {/* 00 PLAN — 3 weken */}
+      <ThreeWeekPlan />
+
       {/* 01 DE SESSIE */}
       <section>
         <SectionLabel n="01" title="De sessie" />
@@ -263,35 +276,44 @@ export default function TrainPage() {
           </div>
         ) : workout ? (
           <>
-            {/* TSS week bars as session load visualization */}
-            <div className="mt-5 flex h-24 items-end gap-1.5">
-              {[0.32, 0.9, 0.45, 0.93, 0.45, 0.95, 0.45, 0.97, 0.3].map((w, i) => {
-                const labels = ["WU", "T1", "R", "T2", "R", "T3", "R", "T4", "CD"]
-                const zones = [1, 4, 2, 4, 2, 4, 2, 4, 1]
-                const z = zones[i] ?? 2
-                return (
-                  <div
-                    key={i}
-                    className="flex flex-1 flex-col items-center justify-end"
-                    style={{ height: "100%" }}
-                  >
+            {/* Real structure-driven load bars (height = block duration, color = zone) */}
+            {blocks.length > 0 ? (
+              <div className="mt-5 flex h-24 items-end gap-1">
+                {blocks.map((b, i) => {
+                  const h = 0.25 + (b.durationMin / maxBlockMin) * 0.75
+                  return (
                     <div
-                      className="w-full rounded-t-sm"
-                      style={{
-                        height: `${w * 100}%`,
-                        background: zoneColor[z] ?? "rgba(120,210,230,0.4)",
-                        boxShadow: z === 4 ? "0 0 12px rgba(120,210,230,0.5)" : "none",
-                      }}
-                    />
-                    <span className="mt-1.5 font-mono text-[7px] tracking-wider text-white/30">
-                      {labels[i]}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
+                      key={i}
+                      className="flex flex-1 flex-col items-center justify-end"
+                      style={{ height: "100%" }}
+                      title={`${b.label} · ${b.durationMin}m · Z${b.zone}`}
+                    >
+                      <div
+                        className="w-full rounded-t-sm"
+                        style={{
+                          height: `${h * 100}%`,
+                          background:
+                            zoneColor[b.zone] ?? "rgba(120,210,230,0.4)",
+                          boxShadow:
+                            b.zone >= 4
+                              ? "0 0 12px rgba(120,210,230,0.5)"
+                              : "none",
+                        }}
+                      />
+                      <span className="mt-1.5 truncate font-mono text-[7px] tracking-wider text-white/30">
+                        Z{b.zone}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : null}
 
-            <div className="mt-5 flex items-center gap-5 border-t border-white/[0.07] pt-4">
+            <button
+              type="button"
+              onClick={() => setDetailOpen(true)}
+              className="group mt-5 flex w-full items-center gap-5 border-t border-white/[0.07] pt-4 text-left"
+            >
               <Stat label="Type" value={workout.type} />
               {workout.targetDurationMin && (
                 <>
@@ -305,7 +327,11 @@ export default function TrainPage() {
                   <Stat label="Belasting" value={`${workout.targetTSS} TSS`} accent />
                 </>
               )}
-            </div>
+              <span className="ml-auto flex items-center gap-1.5 font-mono text-[10px] tracking-[0.15em] text-white/40 transition-colors group-hover:text-cyan-300/70">
+                DETAIL
+                <ChevronRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+              </span>
+            </button>
 
             {isCompleted && (
               <div
@@ -556,6 +582,12 @@ export default function TrainPage() {
 
       {/* 08 ACTIVITEIT IMPORTEREN */}
       <ActivityImportPanel />
+
+      <WorkoutDetailDrawer
+        workoutId={workout?.id ?? null}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
     </ScreenShell>
   )
 }
