@@ -17,6 +17,7 @@ import {
   hasRole,
 } from "../engines/coaching";
 import { loadPlanView } from "../engines/training-plan";
+import { getAthleteContextForViewer } from "../engines/context-memory";
 
 const router = Router();
 
@@ -266,6 +267,32 @@ router.get("/athletes/:athleteId/plan", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "coach.athlete-plan failed");
     res.status(500).json({ error: "Kon adviesschema niet laden" });
+  }
+});
+
+// GET /api/coach/athletes/:athleteId/context — the athlete's personal-context
+// memories (examen, wedstrijd, blessure, slaap/spanning, kamp). Requires an
+// accepted link AND sharing != none. Only Sparki's neutral title/detail is
+// exposed — never the athlete's raw words or their personal answers.
+router.get("/athletes/:athleteId/context", requireAuth, async (req, res) => {
+  const coachId = getClerkUserId(req)!;
+  if (!(await requireCoach(coachId, res))) return;
+  const athleteId = String(req.params.athleteId);
+  try {
+    if (!(await hasAcceptedCoachLink(coachId, athleteId))) {
+      res.status(403).json({ error: "Geen gekoppelde atleet" });
+      return;
+    }
+    const sharing = await coachSharingLevel(athleteId);
+    if (sharing === "none") {
+      res.json({ sharing, memories: [], message: "Atleet deelt geen data" });
+      return;
+    }
+    const memories = await getAthleteContextForViewer(athleteId);
+    res.json({ sharing, memories });
+  } catch (err) {
+    req.log.error({ err }, "coach.athlete-context failed");
+    res.status(500).json({ error: "Kon context niet laden" });
   }
 });
 

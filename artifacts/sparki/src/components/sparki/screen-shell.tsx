@@ -5,6 +5,7 @@ import { useUserProfile, type Role } from "@/contexts/UserContext"
 import { CinematicScene, type SceneName } from "@/components/sparki/cinematic-scene"
 import { NotificationBell } from "@/components/sparki/notification-bell"
 import { ProfilePromptCard } from "@/components/sparki/profile-prompt-card"
+import { FollowUpPrompt } from "@/components/sparki/follow-up-prompt"
 
 const SECTION_SCENE: Record<string, SceneName> = {
   home: "home",
@@ -130,6 +131,10 @@ export function ScreenShell({
 
         {children}
       </div>
+
+      {/* Login follow-up prompt — outside the signed-in gate so it also works in
+          Development Preview Mode. Renders nothing when no follow-up is due. */}
+      <FollowUpPrompt />
     </main>
   )
 }

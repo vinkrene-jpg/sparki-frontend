@@ -12,6 +12,7 @@
     "test:account": "pnpm run build && node --enable-source-maps ./dist/tests/account.mjs",
     "test:data-hub": "pnpm run build && node --enable-source-maps ./dist/tests/data-hub.mjs",
     "test:memory-graph": "pnpm run build && node --enable-source-maps ./dist/tests/memory-graph.mjs",
+    "test:context-memory": "pnpm run build && node --enable-source-maps ./dist/tests/context-memory.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

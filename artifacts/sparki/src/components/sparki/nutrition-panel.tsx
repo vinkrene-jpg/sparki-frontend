@@ -157,7 +157,7 @@ export function NutritionPanel() {
   return (
     <section>
       <div className="flex items-center justify-between">
-        <SectionLabel n="07" title="Voeding & hydratatie" />
+        <SectionLabel n="08" title="Voeding & hydratatie" />
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}

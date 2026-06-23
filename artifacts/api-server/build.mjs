@@ -22,6 +22,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/tests/account.ts"),
       path.resolve(artifactDir, "src/tests/data-hub.ts"),
       path.resolve(artifactDir, "src/tests/memory-graph.ts"),
+      path.resolve(artifactDir, "src/tests/context-memory.ts"),
     ],
     platform: "node",
     bundle: true,

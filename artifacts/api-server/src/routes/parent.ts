@@ -11,9 +11,11 @@ import {
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
   parentSharingLevel,
+  hasAcceptedParentLink,
   hasRole,
   getEffectiveParentConsent,
 } from "../engines/coaching";
+import { getAthleteContextForViewer } from "../engines/context-memory";
 
 const router = Router();
 
@@ -120,6 +122,34 @@ router.get("/athletes", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "parent.athletes failed");
     res.status(500).json({ error: "Kon gekoppelde atleten niet laden" });
+  }
+});
+
+// GET /api/parent/athletes/:athleteId/context — the child's personal-context
+// memories, for a linked parent. Requires an accepted parent link AND
+// dataSharingParent != none. Only Sparki's neutral title/detail is exposed.
+router.get("/athletes/:athleteId/context", requireAuth, async (req, res) => {
+  const parentId = getClerkUserId(req)!;
+  if (!(await hasRole(parentId, "parent"))) {
+    res.status(403).json({ error: "Ouder-rol vereist" });
+    return;
+  }
+  const athleteId = String(req.params.athleteId);
+  try {
+    if (!(await hasAcceptedParentLink(parentId, athleteId))) {
+      res.status(403).json({ error: "Geen gekoppelde atleet" });
+      return;
+    }
+    const sharing = await parentSharingLevel(athleteId);
+    if (sharing === "none") {
+      res.json({ sharing, memories: [], message: "Atleet deelt geen data" });
+      return;
+    }
+    const memories = await getAthleteContextForViewer(athleteId);
+    res.json({ sharing, memories });
+  } catch (err) {
+    req.log.error({ err }, "parent.athlete-context failed");
+    res.status(500).json({ error: "Kon context niet laden" });
   }
 });
 

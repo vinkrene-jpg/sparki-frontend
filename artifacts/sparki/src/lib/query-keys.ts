@@ -68,6 +68,12 @@ export const queryKeys = {
     preferences: () => ["ai-memory", "preferences"] as const,
   },
 
+  contextMemory: {
+    all: () => ["context-memory"] as const,
+    list: () => ["context-memory", "list"] as const,
+    due: () => ["context-memory", "due"] as const,
+  },
+
   privacy: {
     all: () => ["privacy"] as const,
     settings: () => ["privacy", "settings"] as const,

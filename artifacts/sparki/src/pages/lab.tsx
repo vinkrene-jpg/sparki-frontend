@@ -8,6 +8,7 @@ import { useSessions } from "@/hooks/use-sessions"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { AiMemoryPanel } from "@/components/sparki/ai-memory-panel"
+import { ContextMemoryPanel } from "@/components/sparki/context-memory-panel"
 import { NutritionPanel } from "@/components/sparki/nutrition-panel"
 
 function Skeleton({ className = "" }: { className?: string }) {
@@ -371,7 +372,10 @@ export default function LabPage() {
       {/* 06 AI GEHEUGEN */}
       <AiMemoryPanel />
 
-      {/* 07 VOEDING & HYDRATATIE */}
+      {/* 07 SPARKI ONTHOUDT */}
+      <ContextMemoryPanel />
+
+      {/* 08 VOEDING & HYDRATATIE */}
       <NutritionPanel />
     </ScreenShell>
   )
