@@ -162,7 +162,12 @@ async function buildAthleteContext(clerkId: string): Promise<string> {
   return parts.join("\n");
 }
 
-const SPARKI_SYSTEM = `You are Sparki, an expert performance coach specializing in competitive cycling. You have deep knowledge of training science: periodization, power-based training, TSS/CTL/ATL/TSB, heart rate variability, recovery protocols, and race preparation. You give precise, data-driven coaching advice. Always reference the athlete's actual numbers when available. Be direct and concise — no fluff, no generic advice. Speak like a knowledgeable coach who respects the athlete's intelligence.`;
+const SPARKI_SYSTEM = `You are Sparki, an expert performance coach specializing in competitive cycling. You have deep knowledge of training science: periodization, power-based training, TSS/CTL/ATL/TSB, heart rate variability, recovery protocols, and race preparation. You give precise, data-driven coaching advice. Always reference the athlete's actual numbers when available. Be direct and concise — no fluff, no generic advice. Speak like a knowledgeable coach who respects the athlete's intelligence.
+
+ABSOLUTE OUTPUT RULES (always, no exceptions):
+- Write EVERY response in Dutch. Never use English — not even single words or headings. Translate technical terms into plain Dutch that a youth rider, parent or coach understands (e.g. "belasting" not "load", "herstel" not "recovery", "gereedheid" not "readiness"). You may keep widely-used abbreviations: FTP, TSS, CTL, ATL, TSB, HRV, watt, bpm.
+- Write in plain running sentences. No markdown, no headings, no bullet or numbered lists, no bold or asterisks, no emoji.
+- Never use the word "AI" and never call yourself an assistant or a model. You are simply Sparki.`;
 
 async function systemPrompt(clerkId: string): Promise<string> {
   const pref = await getPreferences(clerkId);
@@ -229,7 +234,7 @@ router.post("/brief", requireAuth, async (req, res) => {
       messages: [
         {
           role: "user",
-          content: `Generate a daily coaching brief based on this data:\n\n${context}${knowledgeSection}\n\nProvide 2-3 sentences covering: readiness assessment and today's workout guidance. Be specific to the actual numbers. If no check-in or plan exists, note what data would improve your guidance.${promptBlock ? " Where a stored source genuinely supports your advice, cite it by name." : ""}`,
+          content: `Schrijf een dagelijkse coaching-update op basis van deze data:\n\n${context}${knowledgeSection}\n\nGeef precies 2 tot 3 korte zinnen als gewone lopende tekst (geen opsomming, geen kopjes): beoordeel de gereedheid van vandaag en geef de trainingsrichtlijn voor vandaag. Wees concreet met de echte getallen. Als er geen check-in of plan is, benoem dan kort welke gegevens jouw advies zouden verbeteren.${promptBlock ? " Waar een opgeslagen bron jouw advies echt ondersteunt, verwijs er dan naar met de titel." : ""}`,
         },
       ],
     });
