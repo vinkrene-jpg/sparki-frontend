@@ -1,0 +1,98 @@
+Belangrijke architectuurcorrectie:
+
+Het adaptieve persoonlijke begeleidingsprofiel van Sparki is verdwenen en moet volledig terugkomen.
+
+Sparki is geen trainingsapp, maar een persoonlijke AI-coach. Daarom moet iedere sporter naast een fysiek profiel ook een gedrags-, motivatie- en begeleidingsprofiel krijgen.
+
+Bouw een adaptief profiel op dat geleidelijk tijdens de onboarding en de eerste gebruiksweken wordt opgebouwd.
+
+Onderwerpen:
+
+Persoonlijkheid
+- analytisch of intuïtief
+- competitief of recreatief
+- zelfstandig of behoefte aan begeleiding
+- introvert of extravert
+- gestructureerd of flexibel
+- perfectionistisch of pragmatisch
+
+Motivatie
+- gezondheid
+- prestaties
+- plezier
+- afvallen
+- sociale motivatie
+- wedstrijdgericht
+- persoonlijke uitdaging
+
+Begeleidingsbehoefte
+- dagelijks
+- wekelijks
+- alleen wanneer nodig
+- motiverend
+- zakelijk
+- streng
+- coachend
+- educatief
+
+Communicatiestijl
+- kort
+- uitgebreid
+- technisch
+- eenvoudig
+- veel uitleg
+- weinig uitleg
+- humor
+- serieus
+
+Leervoorkeur
+- lezen
+- video's
+- afbeeldingen
+- interactieve uitleg
+- stap voor stap
+- direct uitvoeren
+
+Besluitvorming
+- veel keuzevrijheid
+- duidelijke opdrachten
+- samen beslissen
+- Sparki mag adviseren
+- Sparki mag actief sturen
+
+Mentale begeleiding
+- zelfvertrouwen
+- wedstrijdspanning
+- discipline
+- motivatie
+- omgaan met tegenslag
+- herstel van teleurstellingen
+
+Doelgerichtheid
+- korte termijn
+- lange termijn
+- wedstrijdplanning
+- gezondheidsdoelen
+- leefstijl
+
+Belangrijk:
+
+Deze vragen worden NIET als één lange vragenlijst gesteld.
+
+Sparki verzamelt deze informatie gedurende de eerste dagen en weken via korte, natuurlijke interacties.
+
+Het profiel blijft dynamisch en wordt voortdurend bijgewerkt op basis van gedrag, feedback en trainingsresultaten.
+
+De uitkomst beïnvloedt:
+- communicatie
+- trainingsschema's
+- motivatie
+- uitleg
+- herinneringen
+- AI-coaching
+- hersteladvies
+- routevoorstellen
+- voedingsadvies
+- educatieve content
+
+Het doel is dat iedere sporter uiteindelijk een volledig persoonlijk begeleidingsprofiel heeft waarmee Sparki zich aanpast aan de persoon in plaats van andersom.

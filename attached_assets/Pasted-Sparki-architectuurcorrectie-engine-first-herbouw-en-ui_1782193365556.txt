@@ -1,0 +1,646 @@
+Sparki architectuurcorrectie: engine-first herbouw en uitwerking alle kernmodules
+
+Doel:
+Sparki mag geen verzameling losse schermen, placeholders of lege modules zijn. Sparki moet worden opgebouwd als een engine-first AI-platform. De UI mag alleen data tonen, acties starten en feedback verzamelen vanuit werkende engines.
+
+Stop met nieuwe losse schermen bouwen zonder backendlogica.
+
+Werk eerst onderstaande engines, datamodellen, beslisregels, API’s en tests uit. Daarna pas de UI koppelen.
+
+==================================================
+1. ENGINE-FIRST BASISARCHITECTUUR
+==================================================
+
+Bouw Sparki op rond deze centrale engines:
+
+1. Athlete Profile Engine
+2. Onboarding Engine
+3. Integration Engine
+4. Training Plan Engine
+5. Coaching Engine
+6. Route Engine
+7. Recovery & Load Engine
+8. Knowledge Engine
+9. Feedback & Adaptation Engine
+10. Notification Engine
+11. Parent / Guardian Engine
+12. Trainer / Coach Engine
+13. Club / Team Engine
+14. Testing & Simulation Engine
+
+Regel:
+Geen UI-scherm zonder gekoppelde engine.
+Geen statische dummyfunctionaliteit.
+Geen lege kaarten met tekst die niet werkelijk functioneel zijn.
+Geen “future placeholder” zonder duidelijke status.
+Alle functionaliteit moet testbaar zijn.
+
+Maak eerst:
+- engine-overzicht
+- datamodel
+- service-structuur
+- API-routes
+- database-tabellen
+- testplan
+- dependency map
+- prioriteitenvolgorde
+
+==================================================
+2. ATHLETE PROFILE ENGINE
+==================================================
+
+Deze engine is de centrale waarheid over de sporter.
+
+Beheer en combineer:
+
+Fysiek profiel:
+- leeftijd
+- geslacht
+- lengte
+- gewicht
+- sport(en)
+- niveau
+- ervaring
+- blessures
+- medische aandachtspunten
+- belastbaarheid
+- herstelstatus
+- slaap
+- voeding
+- rusthartslag
+- HRV
+- VO2max
+- FTP
+- hartslagzones
+- vermogenszones
+- trainingsgeschiedenis
+
+Sportprofiel:
+- hoofdsport
+- nevensporten
+- doel
+- wedstrijdplanning
+- beschikbare dagen
+- beschikbare uren
+- voorkeursdagen
+- materiaal
+- indoor/outdoor voorkeur
+- routevoorkeur
+- trainingslocatie
+- ervaring met gestructureerd trainen
+
+Persoonlijk begeleidingsprofiel:
+- persoonlijkheidstype
+- zelfstandigheid
+- behoefte aan begeleiding
+- gewenste communicatiestijl
+- mate van uitleg
+- motivatiebronnen
+- mentale aandachtspunten
+- disciplinegevoeligheid
+- voorkeur voor streng / coachend / rustig / technisch / motiverend
+- leervoorkeur
+- behoefte aan educatie
+- behoefte aan controle
+- behoefte aan vrijheid
+
+Belangrijk:
+Het profiel is dynamisch. Sparki leert continu bij uit:
+- onboarding
+- app-koppelingen
+- trainingen
+- gemiste trainingen
+- feedback
+- gedrag
+- check-ins
+- trainerinput
+- ouderinput indien minderjarig
+- wedstrijdresultaten
+
+Maak dit profiel niet als statisch formulier, maar als levende engine.
+
+==================================================
+3. ONBOARDING ENGINE
+==================================================
+
+Herbouw de volledige onboarding als kernonderdeel.
+
+Start nooit met een lange vragenlijst.
+
+Eerste onboarding:
+1. Welkom
+2. 4 kernvragen:
+   - Wat is je sport?
+   - Wat is je doel?
+   - Hoeveel ervaring heb je?
+   - Hoeveel dagen per week wil je trainen?
+3. Trainer of AI-coach?
+4. Sport- en gezondheidsapps koppelen
+5. Automatische data-import
+6. Alleen ontbrekende data handmatig vragen
+7. Eerste weekplanning + 3-weken-preview maken
+
+Gefaseerde onboarding:
+Na de eerste sessie stelt Sparki verspreid over dagen/weken korte vragen over:
+- leeftijd
+- lengte/gewicht
+- blessures
+- herstel
+- slaap
+- motivatie
+- persoonlijkheid
+- begeleidingsbehoefte
+- mentale thema’s
+- wedstrijdplanning
+- voeding
+- materiaal
+- routes
+- trainingsvoorkeuren
+
+Regels:
+- nooit alles tegelijk vragen
+- maximaal enkele vragen per moment
+- vragen aanpassen op leeftijd, ervaring, sport en trainerstatus
+- beginner anders behandelen dan gevorderde
+- jeugd anders behandelen dan volwassen sporter
+- sporter zonder trainer direct AI-coachmodus geven
+- sporter met trainer koppelen aan traineromgeving
+
+Onboarding moet ook later blijven doorgaan als continue profielverrijking.
+
+==================================================
+4. INTEGRATION ENGINE
+==================================================
+
+Bouw een modulaire koppelingenlaag.
+
+Ondersteun architectuur voor:
+- Garmin Connect
+- Strava
+- TrainingPeaks
+- Apple Health
+- Google Health Connect
+- Fitbit
+- Whoop
+- Oura
+- Polar
+- Suunto
+- Coros
+- Wahoo
+- Zwift
+- Komoot
+- Ride with GPS
+
+Voor iedere koppeling opslaan:
+- gekoppeld / niet gekoppeld
+- autorisatiestatus
+- laatste synchronisatie
+- beschikbare datatypes
+- geïmporteerde datatypes
+- foutmeldingen
+- toestemming ingetrokken
+- sync-log
+
+Importeer indien beschikbaar:
+- activiteiten
+- trainingsgeschiedenis
+- hartslag
+- vermogen
+- FTP
+- zones
+- gewicht
+- slaap
+- herstel
+- HRV
+- rusthartslag
+- VO2max
+- routegegevens
+- wedstrijdhistorie
+
+Belangrijk:
+Als geen koppeling aanwezig is, moet handmatig invullen mogelijk blijven.
+Onboarding mag nooit vastlopen door ontbrekende koppelingen.
+
+==================================================
+5. TRAINING PLAN ENGINE
+==================================================
+
+Deze engine maakt echte trainingsschema’s.
+
+Voor sporter zonder trainer:
+Sparki maakt zelfstandig:
+- concrete weekplanning voor komende 7 dagen
+- 3-weken-preview
+- per training: doel, duur, intensiteit, zones, blokken, routebehoefte, uitleg
+- aanpassing op basis van feedback, herstel, gemiste trainingen en voortgang
+
+Voor sporter met trainer:
+- trainer blijft leidend
+- Sparki ondersteunt
+- Sparki signaleert risico’s
+- Sparki doet voorstellen
+- Sparki overschrijft nooit zelfstandig het trainersschema
+
+Trainingsschema moet rekening houden met:
+- doel
+- niveau
+- leeftijd
+- ervaring
+- belastbaarheid
+- herstel
+- blessures
+- beschikbare tijd
+- wedstrijdplanning
+- sport
+- persoonlijkheid
+- motivatie
+- app-data
+- historische trainingen
+
+Weekschema en dagschema moeten interactief zijn.
+
+Iedere training moet aanklikbaar zijn.
+
+Trainingdetail bevat:
+- naam
+- sport
+- doel
+- duur
+- intensiteit
+- zones
+- warming-up
+- kernblok
+- cooling-down
+- routebehoefte
+- materiaal
+- uitleg
+- waarom deze training vandaag staat
+- wat de sporter moet voelen
+- wanneer aanpassen
+- risico’s
+- relatie met hoofddoel
+
+==================================================
+6. COACHING ENGINE
+==================================================
+
+Deze engine bepaalt hoe Sparki communiceert.
+
+Gebruik het persoonlijke begeleidingsprofiel.
+
+Sparki past zich aan op:
+- behoefte aan veel/weinig uitleg
+- technisch/eenvoudig taalgebruik
+- streng/motiverend/coachend/zakelijk
+- dagelijks/wekelijks/alleen indien nodig
+- introvert/extravert
+- competitief/recreatief
+- onzeker/zelfstandig
+- jeugd/volwassen
+- beginner/gevorderd
+
+Sparki moet niet alleen vragen stellen, maar leren van gedrag:
+- slaat sporter uitleg over?
+- mist sporter trainingen?
+- verplaatst sporter vaak?
+- reageert sporter beter op korte of lange uitleg?
+- heeft sporter behoefte aan bevestiging?
+- werkt druk averechts?
+
+De coaching engine beïnvloedt:
+- meldingen
+- uitleg
+- motivatie
+- trainingsaanpassingen
+- hersteladvies
+- mentale begeleiding
+- educatieve content
+
+==================================================
+7. ROUTE ENGINE
+==================================================
+
+Gebruik OpenRouteService als eerste provider.
+
+API-key:
+- gebruik Replit Secret ORS_API_KEY
+- nooit hardcoden
+
+Endpoint:
+POST https://api.openrouteservice.org/v2/directions/{profile}
+
+Ondersteun profielen:
+- cycling-road
+- cycling-regular
+- cycling-mountain
+- foot-walking
+- foot-hiking
+
+Koppel automatisch:
+- wielrennen → cycling-road
+- MTB → cycling-mountain
+- gravel → cycling-road of later eigen logica
+- wandelen → foot-walking
+- hardlopen → foot-walking
+- trailrun → foot-hiking
+
+Route engine moet routes maken op basis van:
+- sport
+- trainingsdoel
+- duur
+- afstand
+- intensiteit
+- hoogtemeters
+- veiligheid
+- ondergrond
+- locatie
+- voorkeuren
+- vermijden van drukke wegen indien mogelijk
+
+Toon:
+- kaart
+- afstand
+- duur
+- hoogtemeters
+- route-instructies
+- route opslaan bij training
+
+Architectuur:
+Maak provider abstraction zodat later Google, Komoot, Strava, Mapbox of GraphHopper kan worden toegevoegd.
+
+==================================================
+8. RECOVERY & LOAD ENGINE
+==================================================
+
+Bereken belasting en herstel.
+
+Gebruik:
+- trainingshistorie
+- duur
+- intensiteit
+- hartslag
+- vermogen
+- RPE
+- slaap
+- HRV
+- rusthartslag
+- vermoeidheidsfeedback
+- blessures
+- gemiste trainingen
+
+Output:
+- herstelstatus
+- vermoeidheidsrisico
+- blessurerisico
+- trainingsadvies
+- aanpassing van weekplanning
+- waarschuwingen
+- hersteltraining of rustdag voorstellen
+
+==================================================
+9. KNOWLEDGE ENGINE
+==================================================
+
+Maak diepere uitleg beschikbaar bij iedere training.
+
+Onderwerpen:
+- trainingsopbouw
+- belasting en herstel
+- progressieve overload
+- Z2
+- intervallen
+- taper
+- herstelweek
+- periodisering
+- blessurepreventie
+- voeding
+- slaap
+- mentale voorbereiding
+- wedstrijdspanning
+- routekeuze
+- zones
+- FTP
+- hartslag
+
+Deze uitleg moet contextueel zijn.
+Niet als losse kennisbank alleen, maar gekoppeld aan de actuele training en het profiel van de sporter.
+
+==================================================
+10. FEEDBACK & ADAPTATION ENGINE
+==================================================
+
+Iedere training moet feedback kunnen ontvangen:
+
+Vooraf:
+- moe
+- geen tijd
+- pijn
+- onzeker
+- wil verplaatsen
+- wil korter
+- wil lichter
+
+Achteraf:
+- gedaan
+- gemist
+- te zwaar
+- te licht
+- pijn
+- RPE
+- gevoel
+- motivatie
+- opmerking
+
+Sparki moet daarna voorstel doen:
+- behouden
+- aanpassen
+- verplaatsen
+- rustdag
+- hersteltraining
+- week herplannen
+- trainer informeren indien gekoppeld
+
+==================================================
+11. NOTIFICATION ENGINE
+==================================================
+
+Meldingen mogen niet generiek zijn.
+
+Ze moeten gebaseerd zijn op:
+- planning
+- herstel
+- gedrag
+- persoonlijkheid
+- begeleidingsbehoefte
+- leeftijd
+- trainerstatus
+- ouderstatus
+- belangrijke momenten
+
+Voorbeelden:
+- training herinnering
+- hersteladvies
+- check-in
+- motivatie
+- waarschuwing bij overbelasting
+- vraag om ontbrekende data
+- reminder app-koppeling
+- wedstrijdvoorbereiding
+
+==================================================
+12. PARENT / GUARDIAN ENGINE
+==================================================
+
+Voor minderjarige sporters:
+- ouder/verzorger koppelen
+- toestemming beheren
+- zichtbaarheid instellen
+- ouder mag niet alles automatisch zien
+- privacy sporter respecteren
+- ouder krijgt relevante signalen
+- trainer/ouders/sporter rollen scheiden
+
+Ondersteun:
+- uitnodiging ouder
+- toestemming
+- ouderdashboard
+- meldingen bij risico of begeleiding
+- leeftijdsafhankelijke regels
+
+==================================================
+13. TRAINER / COACH ENGINE
+==================================================
+
+Traineromgeving moet ondersteunen:
+- sporters uitnodigen
+- schema’s bekijken
+- schema’s maken
+- feedback zien
+- risico’s zien
+- Sparki-voorstellen beoordelen
+- communicatie met sporter
+- team/clubstructuur
+
+Trainer blijft leidend als sporter een trainer heeft.
+
+Sparki mag:
+- analyseren
+- signaleren
+- voorstellen doen
+- uitleg geven
+
+Sparki mag niet:
+- zelfstandig trainersschema overschrijven zonder toestemming
+
+==================================================
+14. CLUB / TEAM ENGINE
+==================================================
+
+Ondersteun later:
+- club
+- ploeg
+- team
+- vriendengroep
+- gezamenlijke trainingen
+- groepsroutes
+- beschikbaarheid
+- teamdoelen
+- trainerrol per groep
+- sporters onder clubstructuur
+
+Bouw nu alvast datamodel en architectuur zodat dit later zonder herbouw kan worden toegevoegd.
+
+==================================================
+15. TESTING & SIMULATION ENGINE
+==================================================
+
+Bouw interne testomgeving.
+
+Maak virtuele sporters:
+- jeugd met ouder
+- volwassen beginner
+- gevorderde wielrenner
+- sporter met trainer
+- sporter zonder trainer
+- blessuregevoelige sporter
+- sporter met weinig tijd
+- prestatiegerichte sporter
+- recreatieve sporter
+- sporter met veel data
+- sporter zonder koppelingen
+- sporter met gemiste trainingen
+- sporter met hoge vermoeidheid
+
+Test automatisch:
+- onboarding
+- profielopbouw
+- app-koppelingen fallback
+- trainingsschema generatie
+- 3-weken-preview
+- trainingdetails
+- feedback
+- schema-aanpassing
+- routegeneratie
+- coachingstijl
+- notificaties
+- ouder/trainer rechten
+
+Dashboard:
+Admin → Testing → Sparki Engine Test Center
+
+Toon:
+- teststatus
+- fouten
+- ontbrekende logica
+- lege modules
+- niet-werkende knoppen
+- engines zonder output
+- UI zonder engine
+- API-fouten
+- databasefouten
+- regressies
+
+==================================================
+16. UI-REGEL
+==================================================
+
+UI mag pas worden gebouwd of aangepast nadat duidelijk is:
+- welke engine de data levert
+- welke actie wordt uitgevoerd
+- welke database wordt bijgewerkt
+- welke test bewijst dat het werkt
+
+Alle kaarten, kalenders, knoppen en detailpagina’s moeten echte data gebruiken.
+
+Geen lege huls meer.
+
+==================================================
+17. EERSTE OPLEVERING
+==================================================
+
+Lever eerst op:
+
+1. Engine architecture document in de app/admin of als markdown
+2. Datamodel/database schema
+3. API/service structuur
+4. Werkende Onboarding Engine
+5. Werkende Athlete Profile Engine
+6. Werkende Training Plan Engine voor sporter zonder trainer
+7. Interactief weekschema
+8. Interactieve 3-weken-preview
+9. Aanklikbare trainingdetails met uitleg
+10. Feedback → aanpassing schema
+11. ORS Route Engine basis
+12. Test Center met minimaal 20 virtuele sporters
+
+Daarna pas verder met:
+- volledige traineromgeving
+- ouderomgeving
+- club/teamomgeving
+- uitgebreide integrations
+- notificaties
+- geavanceerde AI-coaching
+
+Belangrijk einddoel:
+Sparki moet aanvoelen als een echte persoonlijke AI-coach die leert, plant, uitlegt, routes maakt, herstel bewaakt en zich aanpast aan de sporter.
+Niet als een app met losse schermen.
