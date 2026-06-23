@@ -59,5 +59,6 @@ export interface RoutingProvider {
   generateLoop(req: LoopRequest): Promise<RouteResult>;
   routePointToPoint(req: PointToPointRequest): Promise<RouteResult>;
   geocode(text: string): Promise<GeocodeResult | null>;
+  geocodeSearch(text: string, limit?: number): Promise<GeocodeResult[]>;
   reverseGeocode(point: LatLon): Promise<string | null>;
 }

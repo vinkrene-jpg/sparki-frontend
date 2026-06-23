@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { SectionLabel, Stat, Divider, ACCENT } from "@/components/sparki/ui"
 import { RouteMap } from "@/components/sparki/route-map"
+import { LocationPickerMap } from "@/components/sparki/location-picker-map"
 import {
   useTrainingPlan,
   useGenerateTrainingPlan,
@@ -9,8 +10,8 @@ import {
   type PlanDay,
   type TrainingPlanResponse,
 } from "@/hooks/use-training-plan"
-import { useRoutes } from "@/hooks/use-routes"
-import { Sparkles, RefreshCw, MapPin, Calendar, Info } from "lucide-react"
+import { useRoutes, useGeocode, type GeocodeResult } from "@/hooks/use-routes"
+import { Sparkles, RefreshCw, MapPin, Calendar, Info, Search } from "lucide-react"
 
 const WEEKDAYS: { value: string; label: string }[] = [
   { value: "mon", label: "Ma" },
@@ -187,6 +188,172 @@ function PreviewDay({ day }: { day: PlanDay }) {
   )
 }
 
+type HomeLocation = { lat: number; lon: number; label: string | null }
+
+// Address search + map pin picker for the athlete's home location. Saving a
+// home location is what lets Sparki attach real routes to committed days, so
+// this lives directly in the setup flow. Search uses the ORS-backed geocoder;
+// the map lets the athlete fine-tune by dropping a pin anywhere.
+function HomeLocationField({
+  value,
+  onChange,
+}: {
+  value: HomeLocation | null
+  onChange: (next: HomeLocation | null) => void
+}) {
+  const geocode = useGeocode()
+  const [query, setQuery] = useState("")
+  const [results, setResults] = useState<GeocodeResult[]>([])
+  const [searched, setSearched] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const runSearch = (q: string) => {
+    const trimmed = q.trim()
+    if (trimmed.length < 2) {
+      setResults([])
+      setSearched(false)
+      return
+    }
+    geocode.mutate(trimmed, {
+      onSuccess: (res) => {
+        setResults(res.results)
+        setSearched(true)
+      },
+    })
+  }
+
+  const onQueryChange = (q: string) => {
+    setQuery(q)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => runSearch(q), 450)
+  }
+
+  const pickResult = (r: GeocodeResult) => {
+    onChange({ lat: r.lat, lon: r.lon, label: r.label })
+    setResults([])
+    setSearched(false)
+    setQuery(r.label)
+  }
+
+  return (
+    <div>
+      <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+        THUISLOCATIE
+      </label>
+      <p className="mb-3 text-[12px] leading-relaxed text-white/45">
+        Zoek je adres of zet een speld op de kaart. Sparki gebruikt dit
+        vertrekpunt om automatisch routes bij je trainingen te plannen.
+      </p>
+
+      <div className="relative">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30"
+              strokeWidth={1.75}
+            />
+            <input
+              className={`${inputClass} pl-9`}
+              type="text"
+              placeholder="Zoek adres of plaats"
+              value={query}
+              onChange={(e) => onQueryChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  runSearch(query)
+                }
+              }}
+            />
+          </div>
+        </div>
+
+        {geocode.isPending && (
+          <p className="mt-2 font-mono text-[10px] text-white/35">Zoeken…</p>
+        )}
+        {geocode.isError && (
+          <p className="mt-2 font-mono text-[10px] text-orange-300/70">
+            Zoeken lukte niet. Probeer opnieuw of zet een speld op de kaart.
+          </p>
+        )}
+        {searched && !geocode.isPending && results.length === 0 && (
+          <p className="mt-2 font-mono text-[10px] text-white/35">
+            Geen plaats gevonden — zet een speld op de kaart.
+          </p>
+        )}
+
+        {results.length > 0 && (
+          <ul className="mt-2 max-h-44 overflow-auto rounded-xl border border-white/[0.1] bg-[#070d16]/95 backdrop-blur-md">
+            {results.map((r, i) => (
+              <li key={`${r.lat},${r.lon},${i}`}>
+                <button
+                  type="button"
+                  onClick={() => pickResult(r)}
+                  className="flex w-full items-start gap-2 px-3 py-2.5 text-left text-[13px] text-white/75 transition-colors hover:bg-white/[0.05]"
+                >
+                  <MapPin
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/30"
+                    strokeWidth={1.75}
+                  />
+                  <span className="leading-snug">{r.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="mt-3">
+        <LocationPickerMap
+          value={value ? { lat: value.lat, lon: value.lon } : null}
+          onPick={(p) =>
+            onChange({
+              lat: p.lat,
+              lon: p.lon,
+              // A dropped pin has no place name; keep the searched label if the
+              // pin is essentially the same spot, otherwise clear it.
+              label:
+                value &&
+                Math.abs(value.lat - p.lat) < 0.0005 &&
+                Math.abs(value.lon - p.lon) < 0.0005
+                  ? value.label
+                  : null,
+            })
+          }
+        />
+      </div>
+
+      {value && (
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <p className="flex min-w-0 items-center gap-1.5 font-mono text-[10px] text-white/45">
+            <MapPin
+              className="h-3 w-3 shrink-0"
+              style={{ color: ACCENT }}
+              strokeWidth={1.75}
+            />
+            <span className="truncate">
+              {value.label ??
+                `${value.lat.toFixed(4)}, ${value.lon.toFixed(4)}`}
+            </span>
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              onChange(null)
+              setQuery("")
+              setResults([])
+              setSearched(false)
+            }}
+            className="shrink-0 font-mono text-[10px] text-white/40 transition-colors hover:text-white/70"
+          >
+            wissen
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function SetupForm({ data }: { data: TrainingPlanResponse }) {
   const save = useSavePlanSetup()
   const [experience, setExperience] = useState(
@@ -199,6 +366,15 @@ function SetupForm({ data }: { data: TrainingPlanResponse }) {
   const [days, setDays] = useState<string[]>(data.inputs.availableDays ?? [])
   const [prefs, setPrefs] = useState(data.inputs.trainingPreferences ?? "")
   const [injuries, setInjuries] = useState(data.inputs.injuryHistory ?? "")
+  const [home, setHome] = useState<HomeLocation | null>(
+    data.inputs.homeLat != null && data.inputs.homeLon != null
+      ? {
+          lat: data.inputs.homeLat,
+          lon: data.inputs.homeLon,
+          label: data.inputs.homeLabel ?? null,
+        }
+      : null,
+  )
 
   const toggleDay = (d: string) =>
     setDays((p) => (p.includes(d) ? p.filter((x) => x !== d) : [...p, d]))
@@ -215,6 +391,9 @@ function SetupForm({ data }: { data: TrainingPlanResponse }) {
       availableDays: days,
       trainingPreferences: prefs || null,
       injuryHistory: injuries || null,
+      homeLat: home ? home.lat : null,
+      homeLon: home ? home.lon : null,
+      homeLabel: home ? home.label : null,
     })
   }
 
@@ -332,6 +511,8 @@ function SetupForm({ data }: { data: TrainingPlanResponse }) {
         value={injuries}
         onChange={(e) => setInjuries(e.target.value)}
       />
+
+      <HomeLocationField value={home} onChange={setHome} />
 
       <button
         type="submit"

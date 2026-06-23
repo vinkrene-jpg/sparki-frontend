@@ -1,9 +1,9 @@
-// Server-side route generation + persistence for the autonomous training plan
-// (task #17). Reuses the same provider-backed routing + real-geometry stats math
-// as the manual route planner (task #10, lib/routing): geometry/distance/
-// elevation/duration all come from the routing provider — nothing is fabricated.
-// When the provider has no key or fails, the caller gets a null routeId and the
-// UI honestly shows "geen route voorgesteld".
+// Server-side route generation + persistence for the autonomous training plan.
+// Reuses the same provider-backed routing and real-geometry stats math as the
+// manual route planner (lib/routing): geometry/distance/elevation all come from
+// the routing provider — nothing is fabricated. When the provider has no key or
+// fails, the caller gets a null routeId and the UI honestly shows "geen route
+// voorgesteld".
 
 import { and, eq } from "drizzle-orm";
 import {
@@ -12,6 +12,7 @@ import {
   plannedWorkoutsTable,
   type RoutePathPoint,
 } from "@workspace/db";
+import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { summarizeTrack } from "./gpx-parse";
 import {
   getRoutingProvider,
@@ -24,13 +25,18 @@ import {
   type RoutingProfile,
 } from "./routing";
 
-// Honesty caveat appended to every generated-route rationale: the route is real
-// (provider-derived) but Sparki can't guarantee live traffic/road conditions.
-const HONESTY_CAVEAT =
-  "Let op: afstand, hoogtemeters en route komen rechtstreeks van de routingdienst — Sparki kan geen actuele verkeers- of wegomstandigheden garanderen.";
+// Training types the plan engine can request a route for. Steady outdoor rides
+// (duur/tempo) get a route; intervals/recovery/race are handled by the caller's
+// KIND_ROUTE_NEEDED gate.
+export type TrainingType =
+  | "duur"
+  | "herstel"
+  | "tempo"
+  | "interval"
+  | "wedstrijd";
 
 // Map an athlete discipline (sport) to the bike type the routing profile
-// selector understands. Default to a road race bike — the safest, most common.
+// understands. Default to a road race bike — the safest, most common.
 export function disciplineToBike(discipline: string | null): BikeType {
   const d = (discipline ?? "").toLowerCase();
   if (d.includes("mtb") || d.includes("mountain")) return "mtb";
@@ -39,48 +45,83 @@ export function disciplineToBike(discipline: string | null): BikeType {
   return "racefiets";
 }
 
-// Estimate a target loop distance (km) from a workout's duration using the
-// routing profile's conservative cruising speed. Only sizes the request — the
-// actual distance always comes back from the provider.
+// Direct bike → routing profile map, used to size a loop's target distance from
+// a workout's duration. The actual distance always comes back from the provider.
+function bikeProfile(bike: BikeType): RoutingProfile {
+  if (bike === "mtb") return "cycling-mountain";
+  if (bike === "gravel") return "cycling-regular";
+  return "cycling-road";
+}
+
+// Convert a workout's target duration into a target loop distance (km) using a
+// conservative cruising speed for the bike. Only sizes the request — the
+// provider returns the real distance.
 export function estimateDistanceKm(
   bike: BikeType,
   durationMin: number | null,
 ): number {
-  const profile = selectRoutingProfile({ sport: "cycling", bikeType: bike });
-  const minutes = durationMin ?? 60;
-  return Math.round((minutes / 60) * profileCruisingSpeedKmh(profile));
+  const speed = profileCruisingSpeedKmh(bikeProfile(bike));
+  const minutes = durationMin && durationMin > 0 ? durationMin : 60;
+  return Math.round((minutes / 60) * speed);
 }
 
-// Number of intermediate waypoints for a loop, by training intent. Mirrors the
-// manual route planner so generated plan routes have the same loop shape.
-function loopPointsFor(trainingType: string): number {
-  const t = trainingType.toLowerCase();
-  if (t.includes("interval")) return 2;
-  if (t.includes("herstel") || t.includes("recovery")) return 4;
+// Fewer waypoints → longer uninterrupted stretches (better for interval blocks);
+// more waypoints → a more varied, scenic loop (better for endurance).
+function loopPoints(training: TrainingType): number {
+  if (training === "interval") return 2;
+  if (training === "herstel") return 4;
   return 5;
 }
 
-// Deterministic, honest Dutch rationale built ONLY from the real provider-
-// derived numbers. No fabricated figures, no traffic guarantees.
-function buildPlanRouteRationale(input: {
-  trainingType: string;
+const HONESTY_CAVEAT =
+  "Let op: de route is geoptimaliseerd voor je trainingstype en sport, maar verkeerslichten, drukke wegen of het mijden van stadscentra kunnen niet worden gegarandeerd. Afstand, hoogtemeters, duur en navigatie komen rechtstreeks van de routemachine (OpenRouteService).";
+
+// Short Dutch rationale for why the route fits the workout. Uses the AI
+// integration to phrase it, but NEVER to invent geometry — only real numbers
+// are passed in. Deterministic fallback if the AI call fails; honesty caveat is
+// always appended server-side.
+async function buildRationale(input: {
+  training: TrainingType;
   profile: RoutingProfile;
   distanceKm: number | null;
   elevationGainM: number | null;
   climbCount: number;
   startName: string | null;
-}): string {
+}): Promise<string> {
   const label = activityLabel(input.profile);
   const shape = `een lus${input.startName ? ` vanuit ${input.startName}` : ""}`;
   const facts = [
-    input.distanceKm != null && `${Math.round(input.distanceKm)} km`,
+    input.distanceKm != null && `${input.distanceKm} km`,
     input.elevationGainM != null && `${input.elevationGainM} hoogtemeters`,
     input.climbCount > 0 && `${input.climbCount} gedetecteerde klim(men)`,
   ]
     .filter(Boolean)
     .join(", ");
-  const body = `Deze ${shape} van ${facts || "de gevraagde afstand"} past bij een ${input.trainingType} (${label}).`;
-  return `${body}\n\n${HONESTY_CAVEAT}`;
+
+  const fallback = `Deze ${shape} van ${facts || "de gevraagde afstand"} past bij een ${input.training} (${label}).`;
+
+  try {
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 400,
+      system:
+        "Je bent Sparki, een Nederlandstalige duursportcoach. Schrijf bondig en feitelijk. Verzin NOOIT cijfers, plaatsnamen of garanties die niet in de gegevens staan. Maximaal 2 zinnen.",
+      messages: [
+        {
+          role: "user",
+          content: `Leg in 1-2 Nederlandse zinnen uit waarom deze gegenereerde route past bij de geplande training. Gebruik alleen deze gegevens:\n- Trainingstype: ${input.training}\n- Sport/profiel: ${label}\n- Vorm: ${shape}\n- Afstand: ${input.distanceKm ?? "onbekend"} km\n- Hoogtemeters: ${input.elevationGainM ?? "onbekend"}\n- Klimmen: ${input.climbCount}\nSchrijf geen garanties over verkeer of stadscentra.`,
+        },
+      ],
+    });
+    const block = message.content[0];
+    const body =
+      block && block.type === "text" && block.text.trim()
+        ? block.text.trim()
+        : fallback;
+    return `${body}\n\n${HONESTY_CAVEAT}`;
+  } catch {
+    return `${fallback}\n\n${HONESTY_CAVEAT}`;
+  }
 }
 
 export type GeneratedPlanRoute = {
@@ -90,38 +131,35 @@ export type GeneratedPlanRoute = {
   startName: string | null;
 };
 
-// Generate a real provider loop route from the athlete's home location and save
-// it as one of their routes, returning the new route id. The route is owned by
-// the athlete (clerkId) exactly like a manually generated route. Returns null
-// when the provider is unavailable or returns no usable geometry — callers must
-// degrade honestly and never invent a route.
+// Generate a real provider-backed loop route from the athlete's home location
+// and save it as one of their routes, returning the new route id. The route is
+// owned by the athlete (clerkId) exactly like a manually generated route.
+// Returns null when the provider is unavailable or returns no usable geometry —
+// callers must degrade honestly and never invent a route.
 export async function generateAndSavePlanRoute(opts: {
   clerkId: string;
   start: LatLon;
   bike: BikeType;
-  training: string;
+  training: TrainingType;
   targetKm: number;
   seed: number;
   name: string;
 }): Promise<GeneratedPlanRoute | null> {
   const { clerkId, start, bike, training, targetKm, seed, name } = opts;
+  const provider = getRoutingProvider();
+  if (!provider.isConfigured()) return null;
   try {
-    const provider = getRoutingProvider();
-    if (!provider.isConfigured()) return null;
-
     const profile = selectRoutingProfile({
       sport: "cycling",
       bikeType: bike,
       trainingType: training,
-      targetDistanceKm: targetKm,
     });
-
     const routeResult = await provider.generateLoop({
       start,
       distanceKm: targetKm,
       profile,
       seed,
-      points: loopPointsFor(training),
+      points: loopPoints(training),
     });
     if (routeResult.path.length < 2) return null;
 
@@ -130,8 +168,8 @@ export async function generateAndSavePlanRoute(opts: {
     const elevationGainM = summary.elevationGainM ?? routeResult.ascentM;
     const startName = await provider.reverseGeocode(start);
 
-    const rationale = buildPlanRouteRationale({
-      trainingType: training,
+    const rationale = await buildRationale({
+      training,
       profile,
       distanceKm,
       elevationGainM,
@@ -139,21 +177,25 @@ export async function generateAndSavePlanRoute(opts: {
       startName,
     });
 
+    const geometry: RoutePathPoint[] = routeResult.path;
+    const distLabel = distanceKm != null ? ` · ${Math.round(distanceKm)} km` : "";
+    const routeName = startName ? `${name} vanuit ${startName}${distLabel}` : `${name}${distLabel}`;
+
     const [route] = await db
       .insert(routesTable)
       .values({
         clerkId,
-        name,
+        name: routeName,
         surface: profileToSurface(profile),
-        status: "ready",
         visibility: "private",
+        status: "ready",
         distanceKm,
         elevationGainM,
         durationSec: routeResult.durationSec,
         profile: summary.profile,
         climbs: summary.climbs,
         nav: routeResult.steps,
-        geometry: routeResult.path as RoutePathPoint[],
+        geometry,
         rationale,
         source: "generated",
       })
@@ -167,7 +209,7 @@ export async function generateAndSavePlanRoute(opts: {
       startName,
     };
   } catch {
-    // Provider missing key / no route / network — degrade to no route honestly.
+    // Missing key / no route / network — degrade to no route honestly.
     return null;
   }
 }

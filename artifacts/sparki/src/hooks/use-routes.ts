@@ -81,6 +81,20 @@ export type RouteCandidate = {
   targetDistanceKm: number | null;
 };
 
+export type GeocodeResult = { lat: number; lon: number; label: string };
+
+// Forward-geocode an address to coordinate candidates (best-first). Used by the
+// home-location picker. Triggered on demand (search button / debounce), never
+// auto-run, so it is a mutation rather than a query.
+export function useGeocode() {
+  return useMutation({
+    mutationFn: (query: string) =>
+      apiFetch<{ results: GeocodeResult[] }>(
+        `/api/routes/geocode?q=${encodeURIComponent(query)}`,
+      ),
+  });
+}
+
 export function useRoutes() {
   const { isSignedIn } = useUser();
   return useQuery({

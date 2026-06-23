@@ -152,6 +152,8 @@ router.get("/", requireAuth, async (req, res) => {
         readiness: inputs.readiness,
         healthStatus: inputs.healthStatus,
         nextRace: inputs.nextRace,
+        homeLat: inputs.home?.lat ?? null,
+        homeLon: inputs.home?.lon ?? null,
         homeLabel: inputs.home?.label ?? null,
       },
       plan: view?.plan ?? null,

@@ -40,6 +40,28 @@ are written as `planned_workouts` (source "sparki", planId set) and routed.
   up), rewrites only provisional (committed=false, future) plan_days vs current
   readiness/health, stamping each changed day with an adaptationReason.
 
+## Gotcha: the SetupForm + home picker live behind a feature flag
+**Why:** `train.tsx` renders `<TrainingPlanPanel/>` (which holds the onboarding
+SetupForm AND the home-location picker) ONLY when the `autonomous_training` flag
+resolves true for the user. With the flag off the entire panel is absent from the
+DOM — the picker/SetupForm is invisible and e2e tests "can't find the setup form".
+Enable per-user via a `user_flag_overrides` row (enabled=true) — but the
+`feature_flags` definition row for the key must exist first (override FK → key).
+Separately, `<ThreeWeekPlan/>` (section "00 PLAN · 3 WEKEN") renders the plan
+calendar INDEPENDENT of `needsSetup`, so seeing a plan calendar does NOT mean the
+profile is complete — the SetupForm is a different, flag-gated section ("04").
+
+## Gotcha: route attachment is one-way and fails silently
+**Why:** debugging "no routes attached" wastes time otherwise.
+**How to apply:** attachment sets `planned_workouts.route_id` → routes (one
+direction); `routes.linked_planned_workout_id` is NOT used for plan coupling.
+`generateAndSavePlanRoute` wraps everything in `try { } catch { return null }`, so
+ANY failure (ORS error, or a `routes` INSERT hitting a missing column during schema
+drift) degrades to null and the generate still returns 201 with an empty routes
+table. An empty routes table + 201 = silent degrade, not "no steady days". ORS
+`round_trip` directions is a different endpoint than geocode — verify directions
+specifically (geocode working does not prove routing works).
+
 ## Gotcha: vite production build needs env vars
 `pnpm run build` (and per-artifact `vite build`) FAILS in a bare shell because
 `artifacts/sparki/vite.config.ts` throws unless `PORT` AND `BASE_PATH` are set —

@@ -177,7 +177,6 @@ export type PlanRoute = {
   name: string;
   distanceKm: number | null;
   elevationGainM: number | null;
-  startName: string | null;
 };
 
 export type PlanDay = {
@@ -226,6 +225,8 @@ export type PlanInputsView = {
   readiness: PlanReadiness;
   healthStatus: string;
   nextRace: PlanRace | null;
+  homeLat: number | null;
+  homeLon: number | null;
   homeLabel: string | null;
 };
 

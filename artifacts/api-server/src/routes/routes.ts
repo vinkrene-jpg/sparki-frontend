@@ -177,6 +177,32 @@ router.get("/", requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/routes/geocode?q=… — forward-geocode an address to coordinates.
+// Used by the home-location picker so athletes can search a place instead of
+// only dropping a pin. Returns best-first candidates; empty list on no match.
+// Declared BEFORE "/:id" so "geocode" is never parsed as a route id.
+router.get("/geocode", requireAuth, async (req, res) => {
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  if (q.length < 2) {
+    res.json({ results: [] });
+    return;
+  }
+  const provider = getRoutingProvider();
+  if (!provider.isConfigured()) {
+    res.status(503).json({
+      error: "Adres zoeken is nog niet beschikbaar — de ORS_API_KEY ontbreekt.",
+    });
+    return;
+  }
+  try {
+    const results = await provider.geocodeSearch(q, 6);
+    res.json({ results });
+  } catch (err) {
+    req.log.error({ err }, "routes.geocode failed");
+    res.status(500).json({ error: "Kon adres niet zoeken" });
+  }
+});
+
 // GET /api/routes/:id — a single route (owner only).
 router.get("/:id", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;

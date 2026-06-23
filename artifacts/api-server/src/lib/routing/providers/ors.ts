@@ -248,6 +248,32 @@ export class OrsProvider implements RoutingProvider {
     }
   }
 
+  // Forward geocode free text to a list of candidates (best-first). Returns an
+  // empty array on any failure — search never throws at the caller.
+  async geocodeSearch(text: string, limit = 5): Promise<GeocodeResult[]> {
+    try {
+      const url = new URL(`${ORS_BASE}/geocode/search`);
+      url.searchParams.set("api_key", this.apiKey());
+      url.searchParams.set("text", text);
+      url.searchParams.set("size", String(Math.min(Math.max(limit, 1), 10)));
+      const res = await fetch(url, { headers: { Accept: "application/json" } });
+      if (!res.ok) return [];
+      const json = (await res.json()) as PeliasResponse;
+      const out: GeocodeResult[] = [];
+      for (const f of json.features ?? []) {
+        const coords = f?.geometry?.coordinates;
+        if (!coords || coords.length < 2) continue;
+        const lon = coords[0];
+        const lat = coords[1];
+        if (typeof lat !== "number" || typeof lon !== "number") continue;
+        out.push({ lat, lon, label: f?.properties?.label ?? text });
+      }
+      return out;
+    } catch {
+      return [];
+    }
+  }
+
   // Forward geocode free text to a coordinate. Returns null when nothing usable.
   async geocode(text: string): Promise<GeocodeResult | null> {
     try {
