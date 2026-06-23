@@ -137,6 +137,7 @@ router.put("/profile", requireAuth, async (req, res) => {
     loadCapacity,
     injuryHistory,
     trainingPreferences,
+    coachingMode,
     homeLat,
     homeLon,
     homeLabel,
@@ -152,6 +153,7 @@ router.put("/profile", requireAuth, async (req, res) => {
     loadCapacity?: string | null;
     injuryHistory?: string | null;
     trainingPreferences?: string | null;
+    coachingMode?: string | null;
     homeLat?: number | string | null;
     homeLon?: number | string | null;
     homeLabel?: string | null;
@@ -161,6 +163,11 @@ router.put("/profile", requireAuth, async (req, res) => {
   const WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
   const EXPERIENCE = ["beginner", "intermediate", "advanced", "elite"];
   const LOAD = ["low", "moderate", "high"];
+  const COACHING = ["self", "coach"];
+  const cleanCoaching =
+    coachingMode != null && COACHING.includes(coachingMode)
+      ? coachingMode
+      : undefined;
   const cleanDays =
     availableDays != null
       ? Array.from(new Set(availableDays.filter((d) => WEEKDAYS.includes(d))))
@@ -208,6 +215,7 @@ router.put("/profile", requireAuth, async (req, res) => {
         ...(cleanLoad !== undefined && { loadCapacity: cleanLoad }),
         ...(injuryHistory !== undefined && { injuryHistory }),
         ...(trainingPreferences !== undefined && { trainingPreferences }),
+        ...(cleanCoaching !== undefined && { coachingMode: cleanCoaching }),
         ...(homeLat !== undefined &&
           homeLon !== undefined && {
             homeLat: homeValid ? String(latNum) : null,

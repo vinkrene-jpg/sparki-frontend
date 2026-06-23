@@ -33,6 +33,10 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
   injuryHistory: text("injury_history"),
   // Free-text training preferences (terrain, indoor/outdoor, likes/dislikes).
   trainingPreferences: text("training_preferences"),
+  // Who guides this athlete's training. "self" = Sparki builds and adapts the
+  // plan autonomously; "coach" = the athlete has a human trainer who owns the
+  // plan. Chosen in onboarding ("Trainer of Sparki-coach"). Null until chosen.
+  coachingMode: text("coaching_mode"),
   // Home / preferred start location for generated routes. Loop routes need a
   // real start coordinate; null means route generation is skipped honestly.
   homeLat: numeric("home_lat", { precision: 9, scale: 6 }),

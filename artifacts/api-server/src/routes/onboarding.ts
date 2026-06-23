@@ -2,8 +2,22 @@ import { Router } from "express";
 import { eq } from "drizzle-orm";
 import { db, onboardingStateTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { getMissingOnboardingData } from "../lib/connectors/missing-data";
 
 const router = Router();
+
+// GET /api/onboarding/missing-data — required fields the first weekplan needs
+// that are still missing after any connector import. Drives the manual fallback.
+router.get("/missing-data", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const result = await getMissingOnboardingData(clerkId);
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "onboarding.missingData failed");
+    res.status(500).json({ error: "Failed to compute missing data" });
+  }
+});
 
 function defaults(clerkId: string) {
   return {

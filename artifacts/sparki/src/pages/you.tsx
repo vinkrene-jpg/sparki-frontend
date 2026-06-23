@@ -3,6 +3,7 @@ import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { SparkiCore } from "@/components/sparki/sparki-core"
 import { PrivacySettingsSection } from "@/components/sparki/privacy-settings"
+import { ConnectionsSection } from "@/components/sparki/connections-section"
 import { LinksSection } from "@/components/sparki/links-section"
 import { BugReportForm } from "@/components/sparki/bug-report-form"
 import { AdminPanel } from "@/components/sparki/admin-panel"
@@ -494,6 +495,8 @@ export default function YouPage() {
           })}
         </div>
       </section>
+
+      <ConnectionsSection />
 
       <PrivacySettingsSection />
 

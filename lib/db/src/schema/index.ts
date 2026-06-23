@@ -11,6 +11,7 @@ export * from "./privacy";
 export * from "./onboarding";
 export * from "./nutrition";
 export * from "./activity-imports";
+export * from "./connectors";
 export * from "./routes";
 export * from "./notifications";
 export * from "./bug-reports";

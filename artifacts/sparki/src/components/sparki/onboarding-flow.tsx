@@ -1,6 +1,26 @@
-import { useState, useCallback } from "react"
-import { ArrowLeft, Zap, Check, CheckCircle2, Link2, Bell, ChevronRight } from "lucide-react"
+import { useState, useCallback, useEffect } from "react"
+import {
+  ArrowLeft,
+  Zap,
+  Check,
+  CheckCircle2,
+  Link2,
+  ChevronRight,
+  RefreshCw,
+  AlertTriangle,
+  Loader2,
+  UserCog,
+  Bot,
+  Download,
+} from "lucide-react"
 import { apiFetch } from "@/lib/api"
+import {
+  fetchConnectors,
+  syncConnector,
+  dataTypeLabel,
+  formatLastSync,
+  type ConnectorItem,
+} from "@/lib/connectors"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -512,151 +532,522 @@ function StepFtp({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Step 5 — Integrations
+// Step — Trainer of Sparki-coach
 // ─────────────────────────────────────────────────────────────────────────────
 
-function IntegrationCard({
-  name,
-  description,
-  color,
-  letter,
+function StepCoachChoice({
+  value,
+  setValue,
+  onNext,
+  saving,
+  error,
 }: {
-  name: string
-  description: string
-  color: string
-  letter: string
+  value: "self" | "coach" | null
+  setValue: (v: "self" | "coach") => void
+  onNext: () => void
+  saving: boolean
+  error: string | null
 }) {
+  const options: Array<{
+    key: "self" | "coach"
+    icon: typeof Bot
+    title: string
+    subtitle: string
+  }> = [
+    {
+      key: "self",
+      icon: Bot,
+      title: "Sparki coacht mij",
+      subtitle: "Sparki bouwt je weekschema en past het automatisch aan op je data.",
+    },
+    {
+      key: "coach",
+      icon: UserCog,
+      title: "Ik heb een eigen trainer",
+      subtitle: "Je trainer bepaalt het schema; Sparki ondersteunt met data en inzichten.",
+    },
+  ]
+
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-4">
-      <div
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-sans text-sm font-bold text-white"
-        style={{ background: color }}
-      >
-        {letter}
+    <div className="flex flex-1 flex-col">
+      <StepHeading
+        title="Trainer of Sparki-coach?"
+        subtitle="Wie stuurt je training aan? Je kunt dit later altijd wijzigen."
+      />
+
+      <div className="flex flex-1 flex-col gap-3">
+        {options.map((opt) => {
+          const active = value === opt.key
+          const Icon = opt.icon
+          return (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => setValue(opt.key)}
+              className="flex w-full items-start gap-4 rounded-2xl border px-5 py-4 text-left transition-all"
+              style={
+                active
+                  ? { borderColor: "rgba(120,210,230,0.4)", background: "rgba(120,210,230,0.06)" }
+                  : { borderColor: "rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.025)" }
+              }
+            >
+              <div
+                className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                style={{ background: ACCENT_DIM }}
+              >
+                <Icon className="h-5 w-5" style={{ color: ACCENT }} />
+              </div>
+              <div className="flex flex-1 flex-col gap-0.5">
+                <span
+                  className="font-sans text-sm font-semibold"
+                  style={{ color: active ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.82)" }}
+                >
+                  {opt.title}
+                </span>
+                <span className="font-sans text-xs leading-relaxed text-white/45">{opt.subtitle}</span>
+              </div>
+              {active && <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: ACCENT }} />}
+            </button>
+          )
+        })}
       </div>
-      <div className="flex flex-1 flex-col gap-0.5">
-        <span className="font-sans text-sm font-medium text-white/80">{name}</span>
-        <span className="font-sans text-xs text-white/40">{description}</span>
+
+      <div className="mt-auto flex flex-col gap-3 pb-8 pt-6">
+        {error && <ErrorMsg msg={error} />}
+        <PrimaryBtn onClick={onNext} disabled={value === null} loading={saving}>
+          Continue
+        </PrimaryBtn>
       </div>
-      <span className="rounded-full border border-white/10 px-2 py-0.5 font-sans text-[10px] font-medium text-white/30">
-        Soon
-      </span>
     </div>
   )
 }
 
-function StepIntegrations({ onNext }: { onNext: () => void }) {
+// ─────────────────────────────────────────────────────────────────────────────
+// Step — Koppel apps (modular connector grid)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function providerLetter(name: string): string {
+  return name.charAt(0).toUpperCase()
+}
+
+function ConnectorCard({
+  connector,
+  connecting,
+  onConnect,
+}: {
+  connector: ConnectorItem
+  connecting: boolean
+  onConnect: (id: string) => void
+}) {
+  const isConnected = connector.status === "connected"
+  const isError = connector.status === "error"
+
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-4">
+      <div className="flex items-center gap-3">
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-sans text-sm font-bold"
+          style={
+            connector.available
+              ? { background: ACCENT_DIM, color: ACCENT }
+              : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.35)" }
+          }
+        >
+          {providerLetter(connector.displayName)}
+        </div>
+        <div className="flex flex-1 flex-col gap-0.5">
+          <span className="font-sans text-sm font-medium text-white/85">{connector.displayName}</span>
+          {!connector.available && connector.unavailableReason && (
+            <span className="font-sans text-xs leading-snug text-white/35">
+              {connector.unavailableReason}
+            </span>
+          )}
+          {connector.available && isConnected && (
+            <span className="font-sans text-xs text-white/40">
+              {formatLastSync(connector.lastSyncAt)
+                ? `Laatst gesynct ${formatLastSync(connector.lastSyncAt)}`
+                : "Gekoppeld"}
+            </span>
+          )}
+        </div>
+
+        {!connector.available && (
+          <span className="shrink-0 rounded-full border border-white/10 px-2 py-0.5 font-sans text-[10px] font-medium text-white/30">
+            Binnenkort
+          </span>
+        )}
+        {connector.available && isConnected && (
+          <span
+            className="flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-sans text-[10px] font-medium"
+            style={{ background: "rgba(120,210,230,0.12)", color: ACCENT }}
+          >
+            <Check className="h-3 w-3" strokeWidth={2.5} /> Gekoppeld
+          </span>
+        )}
+        {connector.available && !isConnected && (
+          <button
+            type="button"
+            onClick={() => onConnect(connector.id)}
+            disabled={connecting}
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 font-sans text-xs font-semibold text-[#040506] transition-opacity hover:opacity-90 disabled:opacity-50"
+            style={{ background: ACCENT }}
+          >
+            {connecting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : isError ? (
+              "Opnieuw"
+            ) : (
+              "Koppel"
+            )}
+          </button>
+        )}
+      </div>
+
+      {connector.available && isConnected && connector.importedDataTypes.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {connector.importedDataTypes.map((t) => (
+            <span
+              key={t}
+              className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 font-sans text-[10px] text-white/55"
+            >
+              {dataTypeLabel(t)}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {connector.available && isError && connector.errorStatus && (
+        <p className="flex items-start gap-1.5 font-sans text-xs text-red-400">
+          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+          {connector.errorStatus}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function StepConnectors({
+  connectors,
+  loading,
+  loadError,
+  connectingId,
+  onConnect,
+  onNext,
+  onSkip,
+}: {
+  connectors: ConnectorItem[]
+  loading: boolean
+  loadError: string | null
+  connectingId: string | null
+  onConnect: (id: string) => void
+  onNext: () => void
+  onSkip: () => void
+}) {
+  const sport = connectors.filter((c) => c.category === "sport")
+  const health = connectors.filter((c) => c.category === "health")
+  const anyConnected = connectors.some((c) => c.status === "connected")
+
+  const renderGroup = (label: string, items: ConnectorItem[]) =>
+    items.length > 0 && (
+      <div className="flex flex-col gap-2">
+        <span className="label-xs text-white/35">{label}</span>
+        <div className="flex flex-col gap-2.5">
+          {items.map((c) => (
+            <ConnectorCard
+              key={c.id}
+              connector={c}
+              connecting={connectingId === c.id}
+              onConnect={onConnect}
+            />
+          ))}
+        </div>
+      </div>
+    )
+
   return (
     <div className="flex flex-1 flex-col">
-      <div className="flex flex-col gap-2 pb-8 pt-8">
+      <div className="flex flex-col gap-2 pb-6 pt-8">
         <div className="mb-1 flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: ACCENT_DIM }}>
           <Link2 className="h-5 w-5" style={{ color: ACCENT }} />
         </div>
         <h2 className="font-sans text-2xl font-bold leading-tight tracking-tight text-white">
-          Connect your devices
+          Koppel je sport- en gezondheidsapps
         </h2>
         <p className="font-sans text-sm leading-relaxed text-white/50">
-          Sparki can automatically import your rides and recovery data. You can connect later in Profile.
+          Sparki haalt je gegevens automatisch op zodat je niets handmatig hoeft in te vullen. Geen koppeling? Geen probleem — je vult straks alleen aan wat ontbreekt.
         </p>
       </div>
 
-      <div className="flex flex-1 flex-col gap-3">
-        <IntegrationCard
-          name="Strava"
-          description="Auto-import rides, segments, and power data"
-          color="rgba(252,76,2,0.85)"
-          letter="S"
-        />
-        <IntegrationCard
-          name="Garmin Connect"
-          description="Sync HRV, sleep quality, and resting HR"
-          color="rgba(0,93,187,0.85)"
-          letter="G"
-        />
-        <IntegrationCard
-          name="Apple Health / Google Fit"
-          description="Import daily activity, steps, and sleep"
-          color="rgba(255,45,85,0.85)"
-          letter="H"
-        />
-
-        <p className="pt-2 font-sans text-xs text-white/25 text-center">
-          Integrations are coming soon — you'll be notified when they're ready.
-        </p>
+      <div className="flex flex-1 flex-col gap-5">
+        {loading && (
+          <div className="flex items-center justify-center gap-2 py-10 text-white/40">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="font-sans text-sm">Koppelingen laden…</span>
+          </div>
+        )}
+        {loadError && <ErrorMsg msg={loadError} />}
+        {!loading && !loadError && (
+          <>
+            {renderGroup("SPORT & TRAINING", sport)}
+            {renderGroup("GEZONDHEID & HERSTEL", health)}
+          </>
+        )}
       </div>
 
-      <div className="mt-auto pb-8 pt-6">
-        <PrimaryBtn onClick={onNext}>Continue</PrimaryBtn>
+      <div className="mt-auto flex flex-col gap-3 pb-8 pt-6">
+        <PrimaryBtn onClick={onNext}>{anyConnected ? "Verder" : "Verder"}</PrimaryBtn>
+        {!anyConnected && <SkipBtn onClick={onSkip} label="Sla over — ik vul het handmatig in" />}
       </div>
     </div>
   )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Step 6 — Permissions
+// Step — Automatische import
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PermissionRow({
-  icon: Icon,
-  title,
-  description,
+function StepAutoImport({
+  connectors,
+  onNext,
 }: {
-  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>
-  title: string
-  description: string
+  connectors: ConnectorItem[]
+  onNext: () => void
 }) {
-  return (
-    <div className="flex items-start gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-4">
-      <div
-        className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-        style={{ background: ACCENT_DIM }}
-      >
-        <Icon className="h-4 w-4" style={{ color: ACCENT }} />
-      </div>
-      <div className="flex flex-col gap-0.5">
-        <span className="font-sans text-sm font-medium text-white/80">{title}</span>
-        <span className="font-sans text-xs leading-relaxed text-white/40">{description}</span>
-      </div>
-    </div>
+  const connected = connectors.filter((c) => c.status === "connected")
+  const importedTypes = Array.from(
+    new Set(connected.flatMap((c) => c.importedDataTypes)),
   )
-}
 
-function StepPermissions({ onNext }: { onNext: () => void }) {
   return (
     <div className="flex flex-1 flex-col">
-      <div className="flex flex-col gap-2 pb-8 pt-8">
+      <div className="flex flex-col gap-2 pb-6 pt-8">
         <div className="mb-1 flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: ACCENT_DIM }}>
-          <Bell className="h-5 w-5" style={{ color: ACCENT }} />
+          <Download className="h-5 w-5" style={{ color: ACCENT }} />
         </div>
         <h2 className="font-sans text-2xl font-bold leading-tight tracking-tight text-white">
-          Stay in your zone
+          {connected.length > 0 ? "Je gegevens zijn opgehaald" : "Automatische import"}
         </h2>
         <p className="font-sans text-sm leading-relaxed text-white/50">
-          Sparki works best when you check in daily. Here's what's coming.
+          {connected.length > 0
+            ? "Sparki heeft de volgende gegevens uit je gekoppelde apps gehaald."
+            : "Je hebt nog geen app gekoppeld. We vragen hierna alleen de gegevens die nog ontbreken."}
         </p>
       </div>
 
       <div className="flex flex-1 flex-col gap-3">
-        <PermissionRow
-          icon={Zap}
-          title="Morning training brief"
-          description="A daily Sparki summary of your readiness, today's workout, and key metrics — delivered before you start your day."
-        />
-        <PermissionRow
-          icon={Bell}
-          title="Recovery reminders"
-          description="Gentle nudges when your load is spiking or you've skipped a check-in."
-        />
+        {connected.map((c) => (
+          <div
+            key={c.id}
+            className="flex flex-col gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-4"
+          >
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4" style={{ color: ACCENT }} />
+              <span className="font-sans text-sm font-medium text-white/85">{c.displayName}</span>
+            </div>
+            {c.importedDataTypes.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {c.importedDataTypes.map((t) => (
+                  <span
+                    key={t}
+                    className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 font-sans text-[10px] text-white/55"
+                  >
+                    {dataTypeLabel(t)}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span className="font-sans text-xs text-white/40">
+                Gekoppeld — nog geen gegevens beschikbaar om te importeren.
+              </span>
+            )}
+          </div>
+        ))}
 
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
-          <p className="font-sans text-xs text-white/30 leading-relaxed">
-            Push notifications are coming to the mobile app. For now, Sparki delivers your brief inside the app each morning.
+        {connected.length === 0 && (
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-5 text-center">
+            <p className="font-sans text-sm text-white/45 leading-relaxed">
+              Sparki vult je profiel aan met de gegevens die je hierna invult. Je kunt later in Instellingen alsnog een app koppelen.
+            </p>
+          </div>
+        )}
+
+        {importedTypes.length > 0 && (
+          <p className="pt-1 text-center font-sans text-xs text-white/30">
+            {importedTypes.length} type{importedTypes.length === 1 ? "" : "n"} gegevens geïmporteerd
           </p>
-        </div>
+        )}
       </div>
 
       <div className="mt-auto pb-8 pt-6">
-        <PrimaryBtn onClick={onNext}>Got it</PrimaryBtn>
+        <PrimaryBtn onClick={onNext}>Verder</PrimaryBtn>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Step — Alleen ontbrekende gegevens (manual fallback)
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface MissingField {
+  key: string
+  label: string
+  type: "text" | "number" | "select" | "multiselect"
+  unit?: string
+  options?: { value: string; label: string }[]
+}
+
+function StepMissingData({
+  onFinish,
+  saving,
+  error,
+}: {
+  onFinish: (values: Record<string, unknown>) => void
+  saving: boolean
+  error: string | null
+}) {
+  const [loading, setLoading] = useState(true)
+  const [missing, setMissing] = useState<MissingField[]>([])
+  const [values, setValues] = useState<Record<string, string>>({})
+  const [multi, setMulti] = useState<Record<string, string[]>>({})
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    apiFetch<{ missing: MissingField[] }>("/api/onboarding/missing-data")
+      .then((data) => {
+        if (active) setMissing(data.missing)
+      })
+      .catch((e) => {
+        if (active) setLoadError(e instanceof Error ? e.message : "Kon ontbrekende gegevens niet laden.")
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const collect = (): Record<string, unknown> => {
+    const out: Record<string, unknown> = {}
+    for (const f of missing) {
+      if (f.type === "multiselect") {
+        const arr = multi[f.key] ?? []
+        if (arr.length) out[f.key] = arr
+      } else {
+        const v = values[f.key]?.trim()
+        if (v) out[f.key] = f.type === "number" ? Number(v) : v
+      }
+    }
+    return out
+  }
+
+  const toggleMulti = (key: string, val: string) => {
+    setMulti((prev) => {
+      const cur = prev[key] ?? []
+      return {
+        ...prev,
+        [key]: cur.includes(val) ? cur.filter((v) => v !== val) : [...cur, val],
+      }
+    })
+  }
+
+  const allComplete = !loading && !loadError && missing.length === 0
+
+  return (
+    <div className="flex flex-1 flex-col">
+      <StepHeading
+        title={allComplete ? "Je profiel is compleet" : "Alleen wat nog ontbreekt"}
+        subtitle={
+          allComplete
+            ? "Sparki heeft alles wat nodig is voor je eerste weekplanning."
+            : "Vul de laatste gegevens aan zodat Sparki je weekschema kan opbouwen."
+        }
+      />
+
+      <div className="flex flex-1 flex-col gap-5">
+        {loading && (
+          <div className="flex items-center justify-center gap-2 py-10 text-white/40">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="font-sans text-sm">Controleren…</span>
+          </div>
+        )}
+        {loadError && <ErrorMsg msg={loadError} />}
+
+        {!loading &&
+          !loadError &&
+          missing.map((f) => (
+            <div key={f.key} className="flex flex-col gap-2">
+              <label className="label-xs text-white/40">{f.label.toUpperCase()}</label>
+
+              {(f.type === "text" || f.type === "number") && (
+                <div className="flex items-center gap-3">
+                  <input
+                    type={f.type === "number" ? "number" : "text"}
+                    value={values[f.key] ?? ""}
+                    onChange={(e) => setValues((p) => ({ ...p, [f.key]: e.target.value }))}
+                    className="h-11 flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 font-sans text-sm text-white/90 placeholder:text-white/25 focus:border-white/20 focus:outline-none"
+                  />
+                  {f.unit && <span className="font-sans text-sm text-white/35">{f.unit}</span>}
+                </div>
+              )}
+
+              {f.type === "select" && f.options && (
+                <div className="grid grid-cols-3 gap-2">
+                  {f.options.map((o) => {
+                    const active = values[f.key] === o.value
+                    return (
+                      <button
+                        key={o.value}
+                        type="button"
+                        onClick={() => setValues((p) => ({ ...p, [f.key]: o.value }))}
+                        className="flex h-10 items-center justify-center rounded-xl border px-2 font-sans text-xs font-medium transition-all"
+                        style={
+                          active
+                            ? { borderColor: "rgba(120,210,230,0.4)", background: ACCENT_DIM, color: ACCENT }
+                            : { borderColor: "rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.5)" }
+                        }
+                      >
+                        {o.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {f.type === "multiselect" && f.options && (
+                <div className="grid grid-cols-4 gap-2">
+                  {f.options.map((o) => {
+                    const active = (multi[f.key] ?? []).includes(o.value)
+                    return (
+                      <button
+                        key={o.value}
+                        type="button"
+                        onClick={() => toggleMulti(f.key, o.value)}
+                        className="flex h-10 items-center justify-center rounded-xl border font-sans text-xs font-medium transition-all"
+                        style={
+                          active
+                            ? { borderColor: "rgba(120,210,230,0.4)", background: ACCENT_DIM, color: ACCENT }
+                            : { borderColor: "rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.5)" }
+                        }
+                      >
+                        {o.label.slice(0, 2)}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
+      </div>
+
+      <div className="mt-auto flex flex-col gap-3 pb-8 pt-6">
+        {error && <ErrorMsg msg={error} />}
+        <PrimaryBtn onClick={() => onFinish(collect())} loading={saving} disabled={loading}>
+          Maak mijn weekplanning
+        </PrimaryBtn>
       </div>
     </div>
   )
@@ -787,8 +1178,21 @@ export function OnboardingFlow({ clerkUser, onComplete }: OnboardingFlowProps) {
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
   const [level, setLevel] = useState<number | null>(null)
   const [ftpWatts, setFtpWatts] = useState("")
+  const [coachingMode, setCoachingMode] = useState<"self" | "coach" | null>(null)
 
-  const progressPct = step <= 0 ? 0 : step >= 7 ? 100 : (step / TOTAL_DATA_STEPS) * 100
+  // Connector state is lifted so the auto-import step can show what was imported
+  // without refetching, and connections persist across step transitions.
+  const [connectors, setConnectors] = useState<ConnectorItem[]>([])
+  const [loadingConnectors, setLoadingConnectors] = useState(false)
+  const [connectorError, setConnectorError] = useState<string | null>(null)
+  const [connectingId, setConnectingId] = useState<string | null>(null)
+
+  // Flow steps: 0 Welkom · 1-4 kernvragen · 5 Trainer/Sparki-coach ·
+  // 6 Koppel apps · 7 Automatische import · 8 Alleen ontbrekende gegevens ·
+  // 9 Eerste weekplanning.
+  const TOTAL_STEPS = 9
+  const progressPct =
+    step <= 0 ? 0 : step >= TOTAL_STEPS ? 100 : (step / TOTAL_STEPS) * 100
 
   const transition = useCallback((toStep: number) => {
     setVisible(false)
@@ -861,7 +1265,92 @@ export function OnboardingFlow({ clerkUser, onComplete }: OnboardingFlowProps) {
     }
   }
 
-  const showHeader = step > 0 && step < 7
+  const saveCoach = async () => {
+    if (coachingMode) {
+      await apiFetch("/api/athlete/profile", {
+        method: "PUT",
+        body: JSON.stringify({ coachingMode }),
+      })
+    }
+  }
+
+  const loadConnectors = useCallback(async () => {
+    setLoadingConnectors(true)
+    setConnectorError(null)
+    try {
+      setConnectors(await fetchConnectors())
+    } catch (e) {
+      setConnectorError(e instanceof Error ? e.message : "Kon koppelingen niet laden.")
+    } finally {
+      setLoadingConnectors(false)
+    }
+  }, [])
+
+  // Load the connector list when the user reaches the connect step.
+  useEffect(() => {
+    if (step === 6 && connectors.length === 0 && !loadingConnectors) {
+      void loadConnectors()
+    }
+  }, [step, connectors.length, loadingConnectors, loadConnectors])
+
+  const connectOne = async (id: string) => {
+    setConnectingId(id)
+    setConnectorError(null)
+    try {
+      const updated = await syncConnector(id)
+      setConnectors((prev) => prev.map((c) => (c.id === id ? updated : c)))
+    } catch (e) {
+      setConnectorError(e instanceof Error ? e.message : "Koppelen mislukt.")
+      void loadConnectors()
+    } finally {
+      setConnectingId(null)
+    }
+  }
+
+  // Manual fallback save + build the first weekplan. Plan generation is
+  // best-effort and never blocks finishing onboarding.
+  const finishWithMissing = async (vals: Record<string, unknown>) => {
+    setSaving(true)
+    setError(null)
+    try {
+      const profileBody: Record<string, unknown> = {}
+      for (const [k, v] of Object.entries(vals)) {
+        if (k === "ftp") continue
+        if (k === "weightKg") profileBody.weightKg = String(v)
+        else profileBody[k] = v
+      }
+      if (Object.keys(profileBody).length) {
+        await apiFetch("/api/athlete/profile", {
+          method: "PUT",
+          body: JSON.stringify(profileBody),
+        })
+      }
+      if (vals.ftp != null) {
+        const watts = Number(vals.ftp)
+        if (Number.isFinite(watts) && watts >= 50 && watts <= 600) {
+          await apiFetch("/api/athlete/ftp", {
+            method: "POST",
+            body: JSON.stringify({ ftpWatts: watts, testType: "manual" }),
+          })
+        }
+      }
+      try {
+        await apiFetch("/api/athlete/plan/generate", {
+          method: "POST",
+          body: JSON.stringify({ weeks: 3 }),
+        })
+      } catch {
+        // non-blocking: plan can be generated later from the Train page
+      }
+      transition(9)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Opslaan mislukt.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const showHeader = step > 0 && step < TOTAL_STEPS
 
   return (
     <div className="flex min-h-dvh flex-col bg-[#040506] text-white">
@@ -934,9 +1423,37 @@ export function OnboardingFlow({ clerkUser, onComplete }: OnboardingFlowProps) {
             error={error}
           />
         )}
-        {step === 5 && <StepIntegrations onNext={() => transition(6)} />}
-        {step === 6 && <StepPermissions onNext={() => transition(7)} />}
+        {step === 5 && (
+          <StepCoachChoice
+            value={coachingMode}
+            setValue={setCoachingMode}
+            onNext={() => saveAndNext(6, saveCoach)}
+            saving={saving}
+            error={error}
+          />
+        )}
+        {step === 6 && (
+          <StepConnectors
+            connectors={connectors}
+            loading={loadingConnectors}
+            loadError={connectorError}
+            connectingId={connectingId}
+            onConnect={connectOne}
+            onNext={() => transition(7)}
+            onSkip={() => transition(7)}
+          />
+        )}
         {step === 7 && (
+          <StepAutoImport connectors={connectors} onNext={() => transition(8)} />
+        )}
+        {step === 8 && (
+          <StepMissingData
+            onFinish={finishWithMissing}
+            saving={saving}
+            error={error}
+          />
+        )}
+        {step === 9 && (
           <StepFinish
             firstName={firstName}
             discipline={discipline}
