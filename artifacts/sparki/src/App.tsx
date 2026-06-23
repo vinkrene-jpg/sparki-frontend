@@ -31,6 +31,7 @@ import KnowledgePage from "@/pages/knowledge";
 import InvitationsPage from "@/pages/invitations";
 import InviteAcceptPage from "@/pages/invite-accept";
 import TesterQrPage from "@/pages/tester-qr";
+import CoachAthletePlanPage from "@/pages/coach-athlete-plan";
 import LandingPage from "@/pages/landing";
 import { apiFetch } from "@/lib/api";
 import SignInPage from "@/pages/sign-in";
@@ -350,6 +351,9 @@ function AppRouter() {
                 </Route>
                 <Route path="/tester-qr">
                   <ProtectedPage component={TesterQrPage} />
+                </Route>
+                <Route path="/coach/athletes/:athleteId/plan">
+                  <ProtectedPage component={CoachAthletePlanPage} />
                 </Route>
                 <Route path="/invite/:token">
                   <InviteRoute />

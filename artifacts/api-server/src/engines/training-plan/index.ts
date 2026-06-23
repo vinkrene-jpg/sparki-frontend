@@ -13,6 +13,7 @@ export {
   adaptPlan,
   maybeRollForward,
   autoAdaptPlan,
+  loadPlanView,
 } from "../../lib/training-plan";
 export type {
   PlanInputs,

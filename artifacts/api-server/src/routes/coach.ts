@@ -16,6 +16,7 @@ import {
   hasAcceptedCoachLink,
   hasRole,
 } from "../engines/coaching";
+import { loadPlanView } from "../engines/training-plan";
 
 const router = Router();
 
@@ -206,6 +207,65 @@ router.get("/athletes/:athleteId", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "coach.athlete-detail failed");
     res.status(500).json({ error: "Kon atleet niet laden" });
+  }
+});
+
+// GET /api/coach/athletes/:athleteId/plan — read-only view of the athlete's
+// current Sparki advisory plan (mode "advisory"). Requires an accepted link and
+// the athlete sharing != none. This NEVER modifies the coach's planned_workouts;
+// it only surfaces Sparki's suggestion so the coach can decide what to act on.
+router.get("/athletes/:athleteId/plan", requireAuth, async (req, res) => {
+  const coachId = getClerkUserId(req)!;
+  if (!(await requireCoach(coachId, res))) return;
+  const athleteId = String(req.params.athleteId);
+  try {
+    if (!(await hasAcceptedCoachLink(coachId, athleteId))) {
+      res.status(403).json({ error: "Geen gekoppelde atleet" });
+      return;
+    }
+    const sharing = await coachSharingLevel(athleteId);
+    if (sharing === "none") {
+      res.json({
+        sharing,
+        athlete: null,
+        plan: null,
+        days: [],
+        message: "Atleet deelt geen data",
+      });
+      return;
+    }
+
+    const [profile] = await db
+      .select({
+        clerkId: userProfilesTable.clerkId,
+        displayName: userProfilesTable.displayName,
+        discipline: athleteProfilesTable.discipline,
+      })
+      .from(userProfilesTable)
+      .leftJoin(
+        athleteProfilesTable,
+        eq(athleteProfilesTable.clerkId, userProfilesTable.clerkId),
+      )
+      .where(eq(userProfilesTable.clerkId, athleteId));
+
+    const view = await loadPlanView(athleteId);
+    // Only surface advisory plans. An autonomous plan means the athlete is
+    // self-coached and there is no advice to show in the coach portal.
+    const isAdvisory = view?.plan?.mode === "advisory";
+
+    res.json({
+      sharing,
+      athlete: {
+        athleteClerkId: athleteId,
+        displayName: profile?.displayName ?? null,
+        discipline: profile?.discipline ?? null,
+      },
+      plan: isAdvisory ? view!.plan : null,
+      days: isAdvisory ? view!.days : [],
+    });
+  } catch (err) {
+    req.log.error({ err }, "coach.athlete-plan failed");
+    res.status(500).json({ error: "Kon adviesschema niet laden" });
   }
 });
 

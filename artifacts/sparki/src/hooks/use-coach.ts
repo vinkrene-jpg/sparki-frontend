@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useUser } from "@clerk/react";
 import { DEV_PREVIEW } from "@/lib/dev";
 import { apiFetch } from "@/lib/api";
-import { queryKeys } from "@/lib/query-keys";
+import { queryKeys, STALE } from "@/lib/query-keys";
+import type { PlanDay, PlanHeader } from "@/hooks/use-training-plan";
 
 export type Readiness = {
   label: "fresh" | "ok" | "tired" | "unknown";
@@ -32,5 +33,33 @@ export function useCoachRoster(enabled = true) {
       apiFetch<{ athletes: RosterAthlete[] }>("/api/coach/athletes"),
     enabled: (isSignedIn === true || DEV_PREVIEW) && enabled,
     staleTime: 2 * 60_000,
+  });
+}
+
+export type CoachAthletePlanResponse = {
+  sharing: "none" | "summary" | "full";
+  athlete: {
+    athleteClerkId: string;
+    displayName: string | null;
+    discipline: string | null;
+  } | null;
+  plan: PlanHeader | null;
+  days: PlanDay[];
+  message?: string;
+};
+
+/** Read-only view of a linked athlete's current Sparki advisory plan. */
+export function useCoachAthletePlan(athleteId: string | null, enabled = true) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: athleteId
+      ? queryKeys.coach.plan(athleteId)
+      : queryKeys.coach.plan("none"),
+    queryFn: () =>
+      apiFetch<CoachAthletePlanResponse>(
+        `/api/coach/athletes/${athleteId}/plan`,
+      ),
+    enabled: (isSignedIn === true || DEV_PREVIEW) && enabled && !!athleteId,
+    staleTime: STALE.session,
   });
 }

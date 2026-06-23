@@ -11,6 +11,7 @@ import RacesPage from "@/pages/races"
 import InvitationsPage from "@/pages/invitations"
 import InviteAcceptPage from "@/pages/invite-accept"
 import TesterQrPage from "@/pages/tester-qr"
+import CoachAthletePlanPage from "@/pages/coach-athlete-plan"
 import LandingPage from "@/pages/landing"
 import KnowledgePage from "@/pages/knowledge"
 
@@ -50,6 +51,7 @@ const VIEWS: DevView[] = [
   { label: "Kennis", path: "/kennis" },
   { label: "Invites", path: "/invitations" },
   { label: "Tester-QR", path: "/tester-qr" },
+  { label: "Coach Plan", path: "/coach/athletes/demo/plan" },
 ]
 
 function isActive(current: string, path: string): boolean {
@@ -193,6 +195,8 @@ export function DevPreview() {
   } else if (location.startsWith("/tester-qr")) {
     page = <TesterQrPage />
     showNav = false
+  } else if (location.startsWith("/coach/athletes/")) {
+    page = <CoachAthletePlanPage />
   } else if (location.startsWith("/invite/")) {
     page = <InviteAcceptPage />
     showNav = false

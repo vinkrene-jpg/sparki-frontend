@@ -62,9 +62,43 @@ table. An empty routes table + 201 = silent degrade, not "no steady days". ORS
 `round_trip` directions is a different endpoint than geocode — verify directions
 specifically (geocode working does not prove routing works).
 
-## Gotcha: dev DB silently drifts from schema (plan generation fails quietly)
-**Why:** task #17 added `training_plans` + `plan_days` tables and `planned_workouts.plan_id`/`route_id` columns to the schema, but the dev DB was never migrated (drizzle push is non-TTY blocked here). `generatePlan` runs inside `regeneratePlanSafely`, which swallows ALL errors and logs `onboarding.plan.regenerate failed` — so quick-start still returns `201 ok` while NO plan/plan_days/planned_workouts rows are written.
-**How to apply:** if a Sparki feature returns success but its DB rows are empty, suspect schema-vs-DB drift first. Compare `pgTable(...)` names/columns in `lib/db/src/schema/*` against `information_schema`. Fix with `executeSql` `CREATE TABLE IF NOT EXISTS` / `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` matching the schema exactly (push fails non-TTY). Don't trust an `ok` response — verify the rows landed.
+## Coach advisory view (coach portal)
+When an athlete has a coach, their plan is mode="advisory". The coach portal
+surfaces it READ-ONLY via `loadPlanView(clerkId)` (exported from
+`lib/training-plan.ts`) behind a coach route that gates on `requireCoach` +
+`hasAcceptedCoachLink` + `coachSharingLevel != "none"`. It only returns the plan
+when `mode === "advisory"` (autonomous = self-coached, nothing to advise). It
+NEVER touches the coach's planned_workouts. UI labels everything "Sparki-advies"
+(no "AI"), with an explicit "jouw eigen planning blijft ongewijzigd" notice.
+
+## Gotcha: plan-routes uses the routing/ provider, not standalone modules
+**Why:** task #17's autonomous-training code was originally merged against old
+standalone modules (`route-generator`, `ors`, `route-geometry`) that a parallel
+refactor had already replaced with the `lib/routing/` provider abstraction — the
+build was broken on arrival. **How to apply:** `lib/plan-routes.ts` uses
+`lib/routing` for everything — `getRoutingProvider`, `selectRoutingProfile`,
+`profileToSurface`, `profileCruisingSpeedKmh`, `activityLabel`, and `type BikeType`
+all come FROM `./routing` (NOT defined locally, NOT from `@workspace/db`), plus
+`summarizeTrack` from `gpx-parse`. Do not reintroduce imports of the deleted
+standalone modules, a local `BikeType`/`TrainingType`, or `@workspace/db`
+`BikeType`/`RoutePoint`.
+
+## Gotcha: dev DB drifts from schema files; drizzle push prompts a TTY
+**Why:** task #17 added `training_plans` + `plan_days` tables and
+`planned_workouts.plan_id`/`route_id` columns to the schema files but they were
+NEVER pushed to the dev DB, so any plan feature throws "relation/column does not
+exist" at runtime even though tsc passes. Worse, `generatePlan` runs inside
+`regeneratePlanSafely`, which swallows ALL errors and logs
+`onboarding.plan.regenerate failed` — so quick-start still returns `201 ok` while
+NO plan/plan_days/planned_workouts rows are written. `pnpm --filter @workspace/db
+run push` fails non-interactively ("Interactive prompts require a TTY" — drizzle's
+column-rename disambiguation), and a blind `--force` can DROP columns on unrelated
+drifted tables. **How to apply:** if a Sparki feature returns success but its DB
+rows are empty, suspect schema-vs-DB drift first — compare `pgTable(...)`
+names/columns in `lib/db/src/schema/*` against `information_schema`, then create
+only what's missing with targeted `CREATE TABLE IF NOT EXISTS` / `ALTER TABLE ...
+ADD COLUMN IF NOT EXISTS` matching the schema exactly (not a full push). Don't
+trust an `ok` response — verify the rows landed.
 
 ## Gotcha: vite production build needs env vars
 `pnpm run build` (and per-artifact `vite build`) FAILS in a bare shell because

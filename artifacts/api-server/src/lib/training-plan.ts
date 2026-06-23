@@ -11,7 +11,7 @@
 //  - When the athlete has an accepted coach, this engine is advisory-only and
 //    NEVER writes planned_workouts (the commit path is gated in the route layer).
 
-import { and, desc, eq, gte, isNotNull, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
 import {
   db,
   athleteProfilesTable,
@@ -23,6 +23,7 @@ import {
   trainingPlansTable,
   planDaysTable,
   coachAthleteLinksTable,
+  routesTable,
 } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { computeReadiness } from "./sharing";
@@ -908,6 +909,102 @@ function hashSeed(s: string): number {
     h = (h * 31 + s.charCodeAt(i)) % 1_000_000;
   }
   return Math.abs(h);
+}
+
+// ── Plan view (read model) ───────────────────────────────────────────────────
+
+// Assemble the full plan view: every plan day enriched with its committed
+// workout status and any attached real route. Shared by the athlete's own
+// training-plan route and the coach's read-only advisory view.
+export async function loadPlanView(clerkId: string) {
+  const [plan] = await db
+    .select()
+    .from(trainingPlansTable)
+    .where(
+      and(
+        eq(trainingPlansTable.clerkId, clerkId),
+        eq(trainingPlansTable.status, "active"),
+      ),
+    )
+    .limit(1);
+  if (!plan) return null;
+
+  const days = await db
+    .select()
+    .from(planDaysTable)
+    .where(eq(planDaysTable.planId, plan.id))
+    .orderBy(asc(planDaysTable.dayDate));
+
+  const workouts = await db
+    .select()
+    .from(plannedWorkoutsTable)
+    .where(eq(plannedWorkoutsTable.planId, plan.id));
+  const workoutById = new Map(workouts.map((w) => [w.id, w]));
+
+  const routeIds = workouts
+    .map((w) => w.routeId)
+    .filter((id): id is number => id != null);
+  const routeById = new Map<
+    number,
+    {
+      id: number;
+      name: string;
+      distanceKm: number | null;
+      elevationGainM: number | null;
+      startName: string | null;
+    }
+  >();
+  if (routeIds.length > 0) {
+    const routes = await db
+      .select({
+        id: routesTable.id,
+        name: routesTable.name,
+        distanceKm: routesTable.distanceKm,
+        elevationGainM: routesTable.elevationGainM,
+      })
+      .from(routesTable)
+      .where(inArray(routesTable.id, routeIds));
+    for (const r of routes) routeById.set(r.id, { ...r, startName: null });
+  }
+
+  const enriched = days.map((d) => {
+    const w = d.plannedWorkoutId ? workoutById.get(d.plannedWorkoutId) : null;
+    const route = w?.routeId ? (routeById.get(w.routeId) ?? null) : null;
+    return {
+      id: d.id,
+      dayDate: d.dayDate,
+      weekIndex: d.weekIndex,
+      focus: d.focus,
+      trainingType: d.trainingType,
+      intensityLabel: d.intensityLabel,
+      estDurationMin: d.estDurationMin,
+      isRest: d.isRest,
+      routeNeeded: d.routeNeeded,
+      rationale: d.rationale,
+      adaptationReason: d.adaptationReason,
+      committed: d.committed,
+      workout: w
+        ? { id: w.id, title: w.title, type: w.type, status: w.status }
+        : null,
+      route,
+    };
+  });
+
+  return {
+    plan: {
+      id: plan.id,
+      mode: plan.mode,
+      status: plan.status,
+      summary: plan.summary,
+      weekStartDate: plan.weekStartDate,
+      horizonEndDate: plan.horizonEndDate,
+      weeklyHourTarget: plan.weeklyHourTarget,
+      generatedAt: plan.generatedAt,
+      adaptationState: plan.adaptationState,
+      inputSnapshot: plan.inputSnapshot,
+    },
+    days: enriched,
+  };
 }
 
 // ── Adaptation ───────────────────────────────────────────────────────────────

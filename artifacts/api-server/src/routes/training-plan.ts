@@ -4,15 +4,10 @@
 // engine never writes planned_workouts — coach workouts are never overwritten.
 
 import { Router } from "express";
-import { and, asc, eq, gte, inArray } from "drizzle-orm";
+import { and, asc, eq, gte } from "drizzle-orm";
 import {
   db,
   coachAthleteLinksTable,
-  trainingPlansTable,
-  planDaysTable,
-  plannedWorkoutsTable,
-  routesTable,
-  athleteProfilesTable,
   racesTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
@@ -22,14 +17,8 @@ import {
   generatePlan,
   adaptPlan,
   maybeRollForward,
+  loadPlanView,
 } from "../engines/training-plan";
-import { getForecastByDate, type DayForecast } from "../lib/weather/open-meteo";
-import {
-  assessTraining,
-  assessNutrition,
-  weatherSummary,
-  type WeatherDayInput,
-} from "../lib/weather/assess";
 import { getRaceWeather } from "../lib/weather/race";
 
 const router = Router();
@@ -46,132 +35,6 @@ async function hasAcceptedCoach(athleteClerkId: string): Promise<boolean> {
     )
     .limit(1);
   return !!row;
-}
-
-// Assemble the full plan view: every plan day enriched with its committed
-// workout status and any attached real route.
-async function loadPlanView(clerkId: string) {
-  const [plan] = await db
-    .select()
-    .from(trainingPlansTable)
-    .where(
-      and(
-        eq(trainingPlansTable.clerkId, clerkId),
-        eq(trainingPlansTable.status, "active"),
-      ),
-    )
-    .limit(1);
-  if (!plan) return null;
-
-  const days = await db
-    .select()
-    .from(planDaysTable)
-    .where(eq(planDaysTable.planId, plan.id))
-    .orderBy(asc(planDaysTable.dayDate));
-
-  const workouts = await db
-    .select()
-    .from(plannedWorkoutsTable)
-    .where(eq(plannedWorkoutsTable.planId, plan.id));
-  const workoutById = new Map(workouts.map((w) => [w.id, w]));
-
-  const routeIds = workouts
-    .map((w) => w.routeId)
-    .filter((id): id is number => id != null);
-  const routeById = new Map<
-    number,
-    { id: number; name: string; distanceKm: number | null; elevationGainM: number | null }
-  >();
-  if (routeIds.length > 0) {
-    const routes = await db
-      .select({
-        id: routesTable.id,
-        name: routesTable.name,
-        distanceKm: routesTable.distanceKm,
-        elevationGainM: routesTable.elevationGainM,
-      })
-      .from(routesTable)
-      .where(inArray(routesTable.id, routeIds));
-    for (const r of routes) routeById.set(r.id, r);
-  }
-
-  // Weather enrichment — real Open-Meteo forecast for the athlete's home, joined
-  // per day within the ~16-day horizon. Best-effort: any failure leaves days
-  // without weather (no fabricated conditions). Forecast is fetched once.
-  let forecastByDate = new Map<string, DayForecast>();
-  const [profile] = await db
-    .select({
-      homeLat: athleteProfilesTable.homeLat,
-      homeLon: athleteProfilesTable.homeLon,
-    })
-    .from(athleteProfilesTable)
-    .where(eq(athleteProfilesTable.clerkId, clerkId))
-    .limit(1);
-  const homeLat = profile?.homeLat != null ? Number(profile.homeLat) : null;
-  const homeLon = profile?.homeLon != null ? Number(profile.homeLon) : null;
-  if (homeLat != null && homeLon != null && Number.isFinite(homeLat) && Number.isFinite(homeLon)) {
-    try {
-      forecastByDate = await getForecastByDate(homeLat, homeLon);
-    } catch {
-      forecastByDate = new Map();
-    }
-  }
-
-  const enriched = days.map((d) => {
-    const w = d.plannedWorkoutId ? workoutById.get(d.plannedWorkoutId) : null;
-    const route = w?.routeId ? (routeById.get(w.routeId) ?? null) : null;
-
-    const fc = forecastByDate.get(d.dayDate);
-    const wx: WeatherDayInput = {
-      isRest: d.isRest,
-      trainingType: d.trainingType,
-      estDurationMin: d.estDurationMin,
-      // Outdoor unless it's an explicit indoor session; routeNeeded is a strong
-      // signal but duur/tempo/interval rides are outdoor by default too.
-      outdoor: !d.isRest && d.trainingType !== null,
-    };
-    const weather = fc ? weatherSummary(fc) : null;
-    const trainingAdvisory = fc ? assessTraining(wx, fc) : null;
-    const nutritionAdvisory = fc ? assessNutrition(wx, fc) : null;
-
-    return {
-      id: d.id,
-      dayDate: d.dayDate,
-      weekIndex: d.weekIndex,
-      focus: d.focus,
-      trainingType: d.trainingType,
-      intensityLabel: d.intensityLabel,
-      estDurationMin: d.estDurationMin,
-      isRest: d.isRest,
-      routeNeeded: d.routeNeeded,
-      rationale: d.rationale,
-      adaptationReason: d.adaptationReason,
-      committed: d.committed,
-      workout: w
-        ? { id: w.id, title: w.title, type: w.type, status: w.status }
-        : null,
-      route,
-      weather,
-      trainingAdvisory,
-      nutritionAdvisory,
-    };
-  });
-
-  return {
-    plan: {
-      id: plan.id,
-      mode: plan.mode,
-      status: plan.status,
-      summary: plan.summary,
-      weekStartDate: plan.weekStartDate,
-      horizonEndDate: plan.horizonEndDate,
-      weeklyHourTarget: plan.weeklyHourTarget,
-      generatedAt: plan.generatedAt,
-      adaptationState: plan.adaptationState,
-      inputSnapshot: plan.inputSnapshot,
-    },
-    days: enriched,
-  };
 }
 
 // GET /api/training-plan — setup state + current plan (concrete week + preview).

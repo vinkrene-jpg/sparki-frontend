@@ -22,8 +22,9 @@ function fmtDate(iso: string) {
 function AthleteCard({ a }: { a: RosterAthlete }) {
   const r = a.readiness?.label ?? "unknown"
   const rl = readinessLabel[r]
-  return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+  const canOpen = a.sharing !== "none"
+  const inner = (
+    <>
       <div className="flex items-center gap-3">
         <span
           className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-[13px] font-medium text-white/80"
@@ -63,9 +64,31 @@ function AthleteCard({ a }: { a: RosterAthlete }) {
               ? `${fmtDate(a.nextSession.scheduledDate)} · ${a.nextSession.title}`
               : "Geen geplande sessie"}
           </span>
+          <span
+            className="ml-auto inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.12em]"
+            style={{ color: ACCENT }}
+          >
+            Sparki-advies
+            <ChevronRight className="h-3 w-3" strokeWidth={2} />
+          </span>
         </div>
       )}
-    </div>
+    </>
+  )
+
+  const cardClass =
+    "block rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+
+  if (!canOpen) {
+    return <div className={cardClass}>{inner}</div>
+  }
+  return (
+    <Link
+      href={`/coach/athletes/${a.athleteClerkId}/plan`}
+      className={`${cardClass} transition-colors hover:border-cyan-300/25`}
+    >
+      {inner}
+    </Link>
   )
 }
 
