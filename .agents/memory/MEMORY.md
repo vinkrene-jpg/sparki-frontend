@@ -9,6 +9,7 @@
 - [Sparki data foundation sprint](sparki-data-foundation.md) — clerkId identity, privacy-gated AI persist, dedupe_key; api-server route gotchas (no zod, String(params), db.execute().rows, admin via SPARKI_ADMIN_IDS).
 - [Sparki day-type engine](sparki-day-type-engine.md) — Home day-type detection precedence (§4); rest=explicit rest workout, no-workout=general fallback; health status end-to-end.
 - [Sparki invitation/tester flow](sparki-invitations.md) — token invites grant role+link; one-time accept must be atomic (conditional status flip in a transaction), not read-then-update.
+- [Sparki auth/sync email collision](sparki-sync-email-collision.md) — seeded demo row with a real email bricks onboarding (FK 500 → "Profile not found" 404s); sync must verify parent before child insert.
 - [Leaflet divIcon HTML sink (XSS)](leaflet-divicon-xss.md) — L.divIcon({html}) renders raw HTML; user labels must be escaped at sink AND markup-stripped server-side.
 - [Connector data ownership](sparki-connectors-ownership.md) — Replit account-level connectors are wrong for per-user third-party data; use per-user OAuth, tokens in connector_connections.
 - [Vite config PORT/BASE_PATH build trap](vite-config-build-port-trap.md) — module-level throw on PORT/BASE_PATH breaks `vite build`/deploy; gate on command==='serve', keep config sync.

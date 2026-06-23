@@ -24,15 +24,26 @@ router.post("/sync", requireAuth, async (req, res) => {
       .values({ clerkId, email, displayName: displayName ?? null, roles: ["athlete"], activeRole: "athlete" })
       .onConflictDoNothing();
 
-    await db
-      .insert(athleteProfilesTable)
-      .values({ clerkId })
-      .onConflictDoNothing();
-
+    // Confirm the row for THIS clerkId exists before touching athlete_profiles.
+    // The user_profiles insert can no-op when `email` is already taken by a
+    // different clerkId (unique constraint). In that case there is no parent row
+    // for this clerkId, so inserting athlete_profiles would violate the FK and
+    // 500 — bricking onboarding. Surface a clear conflict instead.
     const [profile] = await db
       .select()
       .from(userProfilesTable)
       .where(eq(userProfilesTable.clerkId, clerkId));
+
+    if (!profile) {
+      req.log.warn({ clerkId, email }, "auth.sync: email already linked to another account");
+      res.status(409).json({ error: "Dit e-mailadres is al gekoppeld aan een ander account." });
+      return;
+    }
+
+    await db
+      .insert(athleteProfilesTable)
+      .values({ clerkId })
+      .onConflictDoNothing();
 
     res.json(profile);
   } catch (err) {
