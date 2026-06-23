@@ -16,9 +16,6 @@ export type RouteNavCue = {
   note: string;
 };
 
-// [lon, lat] or [lon, lat, elevationMetres].
-export type RoutePoint = [number, number] | [number, number, number];
-
 export type SparkiRoute = {
   id: number;
   clerkId: string;
@@ -27,60 +24,62 @@ export type SparkiRoute = {
   status: string;
   visibility: string;
   distanceKm: number | null;
+  durationSec: number | null;
   elevationGainM: number | null;
   profile: number[] | null;
   climbs: RouteClimb[] | null;
   nav: RouteNavCue[] | null;
-  geometry: RoutePoint[] | null;
+  geometry: [number, number][] | null;
   rationale: string | null;
-  bikeType: string | null;
-  trainingType: string | null;
-  startName: string | null;
-  endName: string | null;
   source: string;
   linkedActivityImportId: number | null;
+  linkedPlannedWorkoutId: number | null;
   createdAt: string;
   updatedAt: string;
 };
 
-export type BikeType = "race" | "gravel" | "mtb";
-export type TrainingType =
-  | "duur"
-  | "interval"
-  | "herstel"
-  | "tempo"
-  | "wedstrijd";
+export type Sport = "cycling" | "running" | "walking" | "hiking";
+export type BikeType = "racefiets" | "mtb" | "gravel";
+export type ElevationPreference = "flat" | "hilly" | "any";
 
 export type GenerateRouteInput = {
-  mode: "loop" | "ab";
-  start: { lat: number; lon: number };
-  end?: { lat: number; lon: number };
-  bikeType: BikeType;
-  trainingType: TrainingType;
+  mode: "loop" | "ptp";
+  startLat: number;
+  startLon: number;
+  sport: Sport;
+  bikeType?: BikeType;
+  elevationPreference?: ElevationPreference;
+  trainingType?: string;
+  plannedWorkoutId?: number;
   targetDistanceKm?: number;
-  linkedWorkoutId?: number;
+  endLat?: number;
+  endLon?: number;
+  destinationText?: string;
   seed?: number;
 };
 
-// A generated route candidate (not yet persisted).
 export type RouteCandidate = {
+  candidateId: string;
   name: string;
   surface: string;
-  bikeType: BikeType;
-  trainingType: TrainingType;
-  mode: "loop" | "ab";
+  sport: Sport;
+  bikeType: BikeType | null;
+  routingProfile: string;
+  trainingType: string;
+  mode: "loop" | "ptp";
   distanceKm: number | null;
+  durationSec: number | null;
   elevationGainM: number | null;
   profile: number[];
   climbs: RouteClimb[];
-  geometry: RoutePoint[];
+  nav: RouteNavCue[];
+  geometry: [number, number][];
+  rationale: string;
   startName: string | null;
   endName: string | null;
-  rationale: string;
-  fromWorkout: boolean;
+  plannedWorkoutId: number | null;
+  targetDistanceKm: number | null;
 };
-
-export type GeocodeResult = { label: string; lat: number; lon: number };
 
 export function useRoutes() {
   const { isSignedIn } = useUser();
@@ -95,27 +94,12 @@ export function useRoutes() {
 export function useCreateRoute() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (
-      input:
-        | {
-            content: string;
-            name?: string;
-            surface?: string;
-            visibility?: string;
-          }
-        | {
-            source: "generated";
-            name?: string;
-            surface?: string;
-            visibility?: string;
-            bikeType?: string;
-            trainingType?: string;
-            rationale?: string | null;
-            startName?: string | null;
-            endName?: string | null;
-            geometry: RoutePoint[];
-          },
-    ) =>
+    mutationFn: (input: {
+      content: string;
+      name?: string;
+      surface?: string;
+      visibility?: string;
+    }) =>
       apiFetch<{ route: SparkiRoute }>("/api/routes", {
         method: "POST",
         body: JSON.stringify(input),
@@ -126,6 +110,7 @@ export function useCreateRoute() {
   });
 }
 
+// Propose an ORS-backed route WITHOUT saving it. Returns the candidate.
 export function useGenerateRoute() {
   return useMutation({
     mutationFn: (input: GenerateRouteInput) =>
@@ -136,17 +121,21 @@ export function useGenerateRoute() {
   });
 }
 
-export function useGeocode() {
+// Persist a generated candidate into the routes list (source="generated").
+export function useSaveGeneratedRoute() {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { q: string; near?: { lat: number; lon: number } }) => {
-      const params = new URLSearchParams({ q: input.q });
-      if (input.near) {
-        params.set("lat", String(input.near.lat));
-        params.set("lon", String(input.near.lon));
-      }
-      return apiFetch<{ results: GeocodeResult[] }>(
-        `/api/routes/geocode?${params.toString()}`,
-      );
+    mutationFn: (candidate: RouteCandidate) =>
+      apiFetch<{ route: SparkiRoute }>("/api/routes", {
+        method: "POST",
+        body: JSON.stringify({
+          source: "generated",
+          candidateId: candidate.candidateId,
+          name: candidate.name,
+        }),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.routes.all() });
     },
   });
 }

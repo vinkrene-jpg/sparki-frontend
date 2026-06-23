@@ -16,21 +16,21 @@ export function useTodayWorkout() {
   });
 }
 
-// Today + upcoming planned workouts (next ~30 days), so the route generator can
-// link a route to a scheduled session and derive its target distance.
+// Planned workouts in a window around today (recent + upcoming), for linking a
+// generated route to a workout. Defaults to last 7 days through next 21 days.
 export function useUpcomingWorkouts() {
   const { isSignedIn } = useUser();
-  const today = new Date();
-  const from = today.toISOString().split("T")[0]!;
-  const to = new Date(today.getTime() + 30 * 86_400_000)
-    .toISOString()
-    .split("T")[0]!;
-
+  const from = new Date();
+  from.setDate(from.getDate() - 7);
+  const to = new Date();
+  to.setDate(to.getDate() + 21);
+  const fromStr = from.toISOString().split("T")[0]!;
+  const toStr = to.toISOString().split("T")[0]!;
   return useQuery({
-    queryKey: [...queryKeys.athlete.all(), "workouts", "upcoming", from, to],
+    queryKey: [...queryKeys.athlete.all(), "workouts", "window", fromStr, toStr],
     queryFn: () =>
       apiFetch<PlannedWorkout[]>(
-        `/api/athlete/workouts?from=${from}&to=${to}`,
+        `/api/athlete/workouts?from=${fromStr}&to=${toStr}`,
       ),
     enabled: isSignedIn === true || DEV_PREVIEW,
     staleTime: STALE.session,

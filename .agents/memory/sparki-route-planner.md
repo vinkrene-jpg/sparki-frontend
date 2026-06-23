@@ -25,6 +25,29 @@ was rebuilt as a real, backend-connected, feature-flagged Train section.
   sections; never re-port the legacy `train/page.tsx` wholesale (it would overwrite the
   cinematic v0 layout the user wants preserved).
 
+## Smart AI route generator → routing PROVIDER ABSTRACTION
+The route planner's AI generator is built on a deliberately provider-agnostic routing
+layer (`api-server/src/lib/routing/`): a `RoutingProvider` interface + registry whose
+default honours a `ROUTING_PROVIDER` env (defaults "ors"). Adding another engine
+(Google/Komoot/Strava/Mapbox/GraphHopper) = one new provider file + registry entry; no
+route-handler or frontend change. Keep that boundary — handlers/frontend must stay
+provider-agnostic.
+- **Athlete never picks a routing profile.** Profile is derived server-side from sport +
+  bikeType + training intent + elevation preference. Keep profile selection a pure
+  function of those inputs; do not expose raw provider profiles to the UI.
+- **Data honesty covers duration + turn-by-turn too**, not just distance/elevation.
+  Everything (geometry/distance/duration/ascent/steps) comes from the provider directions
+  call; AI only phrases the rationale, and an honesty caveat (engine can only *prefer*,
+  names the provider) is always appended server-side. GPX uploads keep nav null.
+- **Generated-save provenance is server-enforced.** `POST /generate` stores the trusted
+  provider result server-side and returns an opaque `candidateId`; `POST /routes` with
+  `source:"generated"` persists ONLY from that stored candidate (by id, owner-scoped) and
+  ignores client-supplied geometry/metrics/nav. **Why:** a forged `source:"generated"`
+  POST could otherwise persist fabricated metrics, violating data honesty. **How to apply:**
+  never trust client-sent derived data on save — re-derive or look up trusted server state.
+- **"save WITH the training":** generated routes link a planned workout via FK (set null on
+  delete). The FK-ownership trap below applies — owner-check the workout id before insert.
+
 ## The FK-ownership trap (architect caught this)
 **Any client-supplied foreign-key id must be ownership-checked before insert.**
 **Why:** `POST /api/routes` accepted `linkedActivityImportId` as a raw int and inserted it,

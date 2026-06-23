@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from "express";
+import { Router } from "express";
 import { and, desc, eq } from "drizzle-orm";
 import {
   db,
@@ -7,45 +7,31 @@ import {
   plannedWorkoutsTable,
   routeSurfaces,
   routeVisibilities,
-  bikeTypes,
-  trainingTypes,
   type RouteSurface,
   type RouteVisibility,
-  type BikeType,
-  type TrainingType,
-  type RoutePoint,
+  type RoutePathPoint,
 } from "@workspace/db";
+import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { parseGpxRoute } from "../lib/gpx-parse";
+import { parseGpxRoute, summarizeTrack } from "../lib/gpx-parse";
+import { putCandidate, getCandidate } from "../lib/route-candidates";
 import {
-  computeRouteStats,
-  downsampleGeometry,
-  type GeoPoint,
-} from "../lib/route-geometry";
-import {
-  bikeProfile,
-  routeAtoB,
-  routeLoop,
-  reverseGeocode,
-  searchGeocode,
-  OrsError,
-  type LatLon,
-} from "../lib/ors";
-import {
-  estimateDistanceKm,
-  preferredSurface,
-  loopPoints,
-  generateRationale,
-} from "../lib/route-generator";
+  getRoutingProvider,
+  selectRoutingProfile,
+  profileToSurface,
+  profileCruisingSpeedKmh,
+  activityLabel,
+  sports,
+  bikeTypes,
+  elevationPreferences,
+  type Sport,
+  type BikeType,
+  type ElevationPreference,
+  type RoutingProfile,
+  type RouteStep,
+} from "../lib/routing";
 
 const router = Router();
-
-// Safety cap on stored/returned geometry so a pathological payload can't blow up
-// JSON size. Set high enough that realistic cycling routes keep their full ORS
-// resolution — distance/elevation are derived from these points, so aggressive
-// downsampling would understate the real route (corner-cutting). Authoritative
-// stats are always computed from the FULL ORS geometry before any downsampling.
-const MAX_GEOMETRY_POINTS = 4000;
 
 function coerceSurface(v: unknown): RouteSurface {
   return typeof v === "string" &&
@@ -61,46 +47,102 @@ function coerceVisibility(v: unknown): RouteVisibility {
     : "private";
 }
 
-function coerceBike(v: unknown): BikeType | null {
+function coerceSport(v: unknown): Sport {
+  return typeof v === "string" && (sports as readonly string[]).includes(v)
+    ? (v as Sport)
+    : "cycling";
+}
+
+function coerceBikeType(v: unknown): BikeType | null {
   return typeof v === "string" && (bikeTypes as readonly string[]).includes(v)
     ? (v as BikeType)
     : null;
 }
 
-function coerceTraining(v: unknown): TrainingType | null {
+function coerceElevation(v: unknown): ElevationPreference | null {
   return typeof v === "string" &&
-    (trainingTypes as readonly string[]).includes(v)
-    ? (v as TrainingType)
+    (elevationPreferences as readonly string[]).includes(v)
+    ? (v as ElevationPreference)
     : null;
 }
 
-function coercePoint(v: unknown): LatLon | null {
-  if (!v || typeof v !== "object") return null;
-  const o = v as Record<string, unknown>;
-  const lat = Number(o.lat);
-  const lon = Number(o.lon);
-  if (
-    !Number.isFinite(lat) ||
-    !Number.isFinite(lon) ||
-    lat < -90 ||
-    lat > 90 ||
-    lon < -180 ||
-    lon > 180
-  ) {
-    return null;
-  }
-  return { lat, lon };
+function finiteNum(v: unknown): number | null {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }
 
-// Turn ORS geometry ([lon,lat,ele?]) into the GeoPoint shape our stats math
-// expects, then compute distance/elevation/profile/climbs from it.
-function statsFromGeometry(geometry: RoutePoint[]) {
-  const geoPoints: GeoPoint[] = geometry.map((c) => ({
-    lon: c[0]!,
-    lat: c[1]!,
-    ele: c.length >= 3 ? (c[2] as number) : null,
-  }));
-  return computeRouteStats(geoPoints);
+// Honesty caveat — always appended to a generated route's rationale, regardless
+// of what the AI writes. The routing engine can only *prefer* a quiet, scenic
+// route; it cannot guarantee no traffic lights or that city centres are avoided.
+const HONESTY_CAVEAT =
+  "Let op: de route is geoptimaliseerd voor je trainingstype en sport, maar verkeerslichten, drukke wegen of het mijden van stadscentra kunnen niet worden gegarandeerd. Afstand, hoogtemeters, duur en navigatie komen rechtstreeks van de routemachine (OpenRouteService).";
+
+// Fewer waypoints → longer uninterrupted stretches (better for interval blocks);
+// more waypoints → a more varied, scenic loop (better for endurance).
+function loopPointsFor(trainingType: string): number {
+  const t = trainingType.toLowerCase();
+  if (t.includes("interval")) return 2;
+  if (t.includes("herstel") || t.includes("recovery")) return 4;
+  return 5;
+}
+
+// Build a short Dutch rationale for why the route fits the workout. Uses the AI
+// integration to phrase it, but NEVER to invent geometry — only the real,
+// ORS-derived numbers are passed in. Falls back to a deterministic template if
+// the AI call fails. The honesty caveat is always appended server-side.
+async function buildRationale(input: {
+  trainingType: string;
+  profile: RoutingProfile;
+  mode: "loop" | "ptp";
+  distanceKm: number | null;
+  durationSec: number | null;
+  elevationGainM: number | null;
+  climbCount: number;
+  startName: string | null;
+  endName: string | null;
+}): Promise<string> {
+  const label = activityLabel(input.profile);
+  const shape =
+    input.mode === "loop"
+      ? `een lus${input.startName ? ` vanuit ${input.startName}` : ""}`
+      : `een route${input.startName ? ` van ${input.startName}` : ""}${input.endName ? ` naar ${input.endName}` : ""}`;
+  const durationLabel =
+    input.durationSec != null
+      ? `${Math.round(input.durationSec / 60)} min`
+      : null;
+  const facts = [
+    input.distanceKm != null && `${input.distanceKm} km`,
+    durationLabel && `±${durationLabel}`,
+    input.elevationGainM != null && `${input.elevationGainM} hoogtemeters`,
+    input.climbCount > 0 && `${input.climbCount} gedetecteerde klim(men)`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const fallback = `Deze ${shape} van ${facts || "de gevraagde afstand"} past bij een ${input.trainingType} (${label}).`;
+
+  try {
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 400,
+      system:
+        "Je bent Sparki, een Nederlandstalige duursportcoach. Schrijf bondig en feitelijk. Verzin NOOIT cijfers, plaatsnamen of garanties die niet in de gegevens staan. Maximaal 2 zinnen.",
+      messages: [
+        {
+          role: "user",
+          content: `Leg in 1-2 Nederlandse zinnen uit waarom deze gegenereerde route past bij de geplande training. Gebruik alleen deze gegevens:\n- Trainingstype: ${input.trainingType}\n- Sport/profiel: ${label}\n- Vorm: ${shape}\n- Afstand: ${input.distanceKm ?? "onbekend"} km\n- Geschatte duur: ${durationLabel ?? "onbekend"}\n- Hoogtemeters: ${input.elevationGainM ?? "onbekend"}\n- Klimmen: ${input.climbCount}\nSchrijf geen garanties over verkeer of stadscentra.`,
+        },
+      ],
+    });
+    const block = message.content[0];
+    const body =
+      block && block.type === "text" && block.text.trim()
+        ? block.text.trim()
+        : fallback;
+    return `${body}\n\n${HONESTY_CAVEAT}`;
+  } catch {
+    return `${fallback}\n\n${HONESTY_CAVEAT}`;
+  }
 }
 
 // GET /api/routes — caller's saved routes, newest first.
@@ -118,177 +160,6 @@ router.get("/", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "routes.list failed");
     res.status(500).json({ error: "Kon routes niet laden" });
-  }
-});
-
-// GET /api/routes/geocode?q=...&lat=&lon= — forward geocode an address for the
-// A→B destination picker. lat/lon (optional) bias results near the start.
-router.get("/geocode", requireAuth, async (req, res) => {
-  const q = String(req.query.q ?? "").trim();
-  if (q.length < 2) {
-    res.status(400).json({ error: "Zoekterm te kort" });
-    return;
-  }
-  const near = coercePoint({ lat: req.query.lat, lon: req.query.lon });
-  try {
-    const results = await searchGeocode(q, near ?? undefined);
-    res.json({ results });
-  } catch (err) {
-    req.log.error({ err }, "routes.geocode failed");
-    const status = err instanceof OrsError ? 502 : 500;
-    res.status(status).json({ error: "Geocoderen mislukt" });
-  }
-});
-
-// POST /api/routes/generate — generate a real route candidate via ORS WITHOUT
-// persisting it. Geometry/distance/elevation/climbs all come from ORS; the
-// rationale is AI/rule-based prose. The client saves it later via POST /routes.
-//   body: { mode: "loop"|"ab", start:{lat,lon}, end?:{lat,lon},
-//           bikeType, trainingType, targetDistanceKm?, linkedWorkoutId?, seed? }
-router.post("/generate", requireAuth, async (req, res) => {
-  const clerkId = getClerkUserId(req)!;
-  const body = (req.body ?? {}) as Record<string, unknown>;
-
-  const mode = body.mode === "ab" ? "ab" : "loop";
-  const start = coercePoint(body.start);
-  if (!start) {
-    res.status(400).json({ error: "Geldig startpunt is verplicht" });
-    return;
-  }
-  const bike = coerceBike(body.bikeType);
-  if (!bike) {
-    res.status(400).json({ error: "Ongeldig fietstype" });
-    return;
-  }
-  const training = coerceTraining(body.trainingType);
-  if (!training) {
-    res.status(400).json({ error: "Ongeldig trainingstype" });
-    return;
-  }
-
-  const seed =
-    Number.isFinite(Number(body.seed)) && Number(body.seed) >= 0
-      ? Math.floor(Number(body.seed))
-      : undefined;
-
-  try {
-    // Derive target distance: explicit value wins; otherwise from a linked
-    // (owned) planned workout's target duration; otherwise a sensible default.
-    let targetKm =
-      Number.isFinite(Number(body.targetDistanceKm)) &&
-      Number(body.targetDistanceKm) > 0
-        ? Math.min(Number(body.targetDistanceKm), 300)
-        : 0;
-    let fromWorkout = false;
-
-    const requestedWorkoutId =
-      Number.isInteger(Number(body.linkedWorkoutId)) &&
-      Number(body.linkedWorkoutId) > 0
-        ? Number(body.linkedWorkoutId)
-        : null;
-
-    if (requestedWorkoutId != null) {
-      // Ownership check — never trust a raw workout id from the client.
-      const [workout] = await db
-        .select({
-          id: plannedWorkoutsTable.id,
-          targetDurationMin: plannedWorkoutsTable.targetDurationMin,
-        })
-        .from(plannedWorkoutsTable)
-        .where(
-          and(
-            eq(plannedWorkoutsTable.id, requestedWorkoutId),
-            eq(plannedWorkoutsTable.clerkId, clerkId),
-          ),
-        )
-        .limit(1);
-      if (!workout) {
-        res.status(400).json({ error: "Ongeldige trainingskoppeling" });
-        return;
-      }
-      if (targetKm <= 0 && workout.targetDurationMin) {
-        targetKm = estimateDistanceKm(bike, workout.targetDurationMin);
-        fromWorkout = true;
-      }
-    }
-
-    let end: LatLon | null = null;
-    if (mode === "ab") {
-      end = coercePoint(body.end);
-      if (!end) {
-        res
-          .status(400)
-          .json({ error: "Bestemming is verplicht voor een A→B route" });
-        return;
-      }
-    } else if (targetKm <= 0) {
-      targetKm = 40; // honest default loop length when nothing else is known
-    }
-
-    const profile = bikeProfile(bike);
-    const orsRoute =
-      mode === "ab"
-        ? await routeAtoB(profile, start, end!)
-        : await routeLoop(profile, start, targetKm, {
-            seed,
-            points: loopPoints(training),
-          });
-
-    // Compute authoritative stats from the FULL ORS geometry, then downsample
-    // only for transport/storage. Never derive distance from a reduced polyline.
-    const stats = statsFromGeometry(orsRoute.geometry);
-    const geometry = downsampleGeometry(orsRoute.geometry, MAX_GEOMETRY_POINTS);
-
-    const [startName, endName] = await Promise.all([
-      reverseGeocode(start),
-      end ? reverseGeocode(end) : Promise.resolve(null),
-    ]);
-
-    const rationale = await generateRationale({
-      bike,
-      training,
-      mode,
-      distanceKm: stats.distanceKm,
-      elevationGainM: stats.elevationGainM,
-      climbCount: stats.climbs.length,
-      startName,
-      endName,
-      fromWorkout,
-    });
-
-    const name =
-      mode === "ab"
-        ? `${startName ?? "Start"} → ${endName ?? "Bestemming"}`
-        : `Rondje ${startName ?? "vanaf start"}`;
-
-    res.json({
-      candidate: {
-        name,
-        surface: preferredSurface(bike),
-        bikeType: bike,
-        trainingType: training,
-        mode,
-        distanceKm: stats.distanceKm,
-        elevationGainM: stats.elevationGainM,
-        profile: stats.profile,
-        climbs: stats.climbs,
-        geometry,
-        startName,
-        endName,
-        rationale,
-        fromWorkout,
-      },
-    });
-  } catch (err) {
-    req.log.error({ err }, "routes.generate failed");
-    if (err instanceof OrsError) {
-      res.status(502).json({
-        error:
-          "De routemachine kon geen route vinden. Probeer een andere afstand of bestemming.",
-      });
-      return;
-    }
-    res.status(500).json({ error: "Kon route niet genereren" });
   }
 });
 
@@ -317,25 +188,319 @@ router.get("/:id", requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/routes — create a route. Two shapes:
-//   1. GPX upload: { content (GPX text), name?, surface?, visibility?,
-//                    linkedActivityImportId? }
-//   2. Generated:  { source:"generated", geometry:[[lon,lat,ele?]...], name?,
-//                    surface?, visibility?, bikeType?, trainingType?,
-//                    rationale?, startName?, endName? }
-// In BOTH cases distance/elevation/profile/climbs are recomputed server-side
-// from the real geometry — we never trust client-supplied stats.
+// POST /api/routes/generate — propose a real, provider-backed route WITHOUT
+// saving.
+//   body: { mode: "loop"|"ptp", startLat, startLon,
+//           sport?, bikeType?, elevationPreference?,
+//           trainingType?, plannedWorkoutId?, targetDistanceKm?,
+//           endLat?, endLon?, destinationText?, seed? }
+// Returns a candidate route (geometry, distance, duration, elevation profile,
+// climbs, surface, turn-by-turn nav, rationale). Geometry/distance/duration/
+// elevation/nav come straight from the routing provider — the AI only phrases
+// the rationale, it never invents geometry. The athlete does NOT pick a routing
+// profile: Sparki auto-selects it from sport + bike type + training + elevation.
+// Persist later via POST /api/routes with source="generated".
+router.post("/generate", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = (req.body ?? {}) as Record<string, unknown>;
+
+  const provider = getRoutingProvider();
+  if (!provider.isConfigured()) {
+    res.status(503).json({
+      error:
+        "Routegeneratie is nog niet beschikbaar — de ORS_API_KEY ontbreekt.",
+    });
+    return;
+  }
+
+  const mode = body.mode === "ptp" ? "ptp" : "loop";
+  const sport = coerceSport(body.sport);
+  const bikeType = coerceBikeType(body.bikeType);
+  const elevationPreference = coerceElevation(body.elevationPreference);
+  const trainingType =
+    typeof body.trainingType === "string" && body.trainingType.trim()
+      ? body.trainingType.trim()
+      : "duurtraining";
+
+  const startLat = finiteNum(body.startLat);
+  const startLon = finiteNum(body.startLon);
+  if (
+    startLat == null ||
+    startLon == null ||
+    Math.abs(startLat) > 90 ||
+    Math.abs(startLon) > 180
+  ) {
+    res.status(400).json({ error: "Geldig startpunt is verplicht" });
+    return;
+  }
+
+  const seed = finiteNum(body.seed) ?? undefined;
+
+  try {
+    // Resolve target distance + workout context FIRST, so duration-based sizing
+    // and profile selection can use the linked workout's intent.
+    let targetDistanceKm = finiteNum(body.targetDistanceKm);
+    let linkedWorkoutTitle: string | null = null;
+    let workoutDurationMin: number | null = null;
+    let workoutTrainingType = trainingType;
+
+    const plannedWorkoutId =
+      Number.isInteger(Number(body.plannedWorkoutId)) &&
+      Number(body.plannedWorkoutId) > 0
+        ? Number(body.plannedWorkoutId)
+        : null;
+    if (plannedWorkoutId != null) {
+      const [workout] = await db
+        .select()
+        .from(plannedWorkoutsTable)
+        .where(
+          and(
+            eq(plannedWorkoutsTable.id, plannedWorkoutId),
+            eq(plannedWorkoutsTable.clerkId, clerkId),
+          ),
+        )
+        .limit(1);
+      if (!workout) {
+        res.status(400).json({ error: "Ongeldige training-koppeling" });
+        return;
+      }
+      linkedWorkoutTitle = workout.title;
+      workoutDurationMin = workout.targetDurationMin;
+      if (workout.type && workout.type.trim()) workoutTrainingType = workout.type;
+    }
+
+    // Auto-select the routing profile — the athlete never picks one.
+    const profile = selectRoutingProfile({
+      sport,
+      bikeType,
+      trainingType: workoutTrainingType,
+      durationMin: workoutDurationMin,
+      targetDistanceKm,
+      elevationPreference,
+    });
+    const surface = profileToSurface(profile);
+
+    // Size a loop's target distance: explicit value > workout duration × speed
+    // > sensible default. A→B distance is whatever the provider returns.
+    if (targetDistanceKm == null && workoutDurationMin != null) {
+      targetDistanceKm =
+        Math.round(
+          (workoutDurationMin / 60) * profileCruisingSpeedKmh(profile),
+        ) || null;
+    }
+    if (targetDistanceKm == null) targetDistanceKm = 40;
+    targetDistanceKm = Math.min(Math.max(targetDistanceKm, 3), 200);
+
+    // Resolve an A→B destination from explicit coords or a free-text place.
+    let end: { lat: number; lon: number } | null = null;
+    let endLabel: string | null = null;
+    if (mode === "ptp") {
+      const endLat = finiteNum(body.endLat);
+      const endLon = finiteNum(body.endLon);
+      if (endLat != null && endLon != null) {
+        end = { lat: endLat, lon: endLon };
+      } else if (
+        typeof body.destinationText === "string" &&
+        body.destinationText.trim()
+      ) {
+        const geo = await provider.geocode(body.destinationText.trim());
+        if (!geo) {
+          res
+            .status(422)
+            .json({ error: "Kon de bestemming niet vinden" });
+          return;
+        }
+        end = { lat: geo.lat, lon: geo.lon };
+        endLabel = geo.label;
+      } else {
+        res
+          .status(400)
+          .json({ error: "Bestemming is verplicht voor een A→B route" });
+        return;
+      }
+    }
+
+    const routeResult =
+      mode === "ptp" && end
+        ? await provider.routePointToPoint({
+            start: { lat: startLat, lon: startLon },
+            end,
+            profile,
+          })
+        : await provider.generateLoop({
+            start: { lat: startLat, lon: startLon },
+            distanceKm: targetDistanceKm,
+            profile,
+            seed,
+            points: loopPointsFor(workoutTrainingType),
+          });
+
+    const summary = summarizeTrack(routeResult.points);
+    const distanceKm = summary.distanceKm ?? routeResult.distanceKm;
+    const elevationGainM = summary.elevationGainM ?? routeResult.ascentM;
+    const durationSec = routeResult.durationSec;
+    const nav: RouteStep[] = routeResult.steps;
+
+    // Best-effort place names for the route title (never blocks generation).
+    const [startName, resolvedEndName] = await Promise.all([
+      provider.reverseGeocode({ lat: startLat, lon: startLon }),
+      end ? provider.reverseGeocode(end) : Promise.resolve(endLabel),
+    ]);
+    const endName = endLabel ?? resolvedEndName;
+
+    const distLabel = distanceKm != null ? `${Math.round(distanceKm)} km` : "";
+    const name =
+      mode === "ptp"
+        ? `${startName ?? "Start"} → ${endName ?? "bestemming"}${distLabel ? ` · ${distLabel}` : ""}`
+        : `${workoutTrainingType}-lus${startName ? ` vanuit ${startName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`;
+
+    const rationale = await buildRationale({
+      trainingType: linkedWorkoutTitle
+        ? `${workoutTrainingType} (${linkedWorkoutTitle})`
+        : workoutTrainingType,
+      profile,
+      mode,
+      distanceKm,
+      durationSec,
+      elevationGainM,
+      climbCount: summary.climbs.length,
+      startName,
+      endName,
+    });
+
+    // Store the trusted candidate server-side and hand back an opaque id. Saving
+    // (POST /) persists ONLY from this store — never from client-supplied data —
+    // so generated route geometry/metrics/nav always come from the provider.
+    const candidateId = putCandidate({
+      clerkId,
+      name,
+      surface,
+      distanceKm,
+      durationSec,
+      elevationGainM,
+      profile: summary.profile,
+      climbs: summary.climbs,
+      nav,
+      geometry: routeResult.path,
+      rationale,
+      plannedWorkoutId,
+    });
+
+    res.json({
+      candidate: {
+        candidateId,
+        name,
+        surface,
+        sport,
+        bikeType,
+        routingProfile: profile,
+        trainingType: workoutTrainingType,
+        mode,
+        distanceKm,
+        durationSec,
+        elevationGainM,
+        profile: summary.profile,
+        climbs: summary.climbs,
+        nav,
+        geometry: routeResult.path,
+        rationale,
+        startName,
+        endName,
+        plannedWorkoutId,
+        targetDistanceKm: mode === "loop" ? targetDistanceKm : null,
+      },
+    });
+  } catch (err) {
+    req.log.error({ err }, "routes.generate failed");
+    const message =
+      err instanceof Error && err.message
+        ? err.message
+        : "Routegeneratie mislukt";
+    res.status(502).json({ error: message });
+  }
+});
+
+// POST /api/routes — create a route. Two sources:
+//   1. GPX upload: body { content (GPX text), name?, surface?, visibility?,
+//      linkedActivityImportId? } — distance/profile/climbs derived from track.
+//   2. Generated route: body { source: "generated", candidateId, name?,
+//      visibility? } — candidateId references a server-trusted candidate from
+//      POST /generate. All geometry/distance/duration/elevation/nav are pulled
+//      from that stored candidate, NEVER from the client (data-honesty guard:
+//      a forged payload cannot persist fabricated metrics). The client may only
+//      override cosmetic fields (name, visibility).
+// We never fabricate directions; GPX uploads keep nav null.
 router.post("/", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const body = (req.body ?? {}) as Record<string, unknown>;
 
-  const isGenerated = body.source === "generated";
+  // ── Generated route branch ─────────────────────────────────────────────────
+  if (body.source === "generated") {
+    const candidateId =
+      typeof body.candidateId === "string" ? body.candidateId : "";
+    const stored = candidateId ? getCandidate(candidateId, clerkId) : null;
+    if (!stored) {
+      res.status(410).json({
+        error:
+          "Routevoorstel is verlopen of niet gevonden — genereer de route opnieuw.",
+      });
+      return;
+    }
 
-  if (isGenerated) {
-    await createGeneratedRoute(req, res, clerkId, body);
+    // Only cosmetic overrides are accepted from the client; all route data comes
+    // from the trusted stored candidate.
+    const name =
+      typeof body.name === "string" && body.name.trim()
+        ? body.name.trim()
+        : stored.name;
+
+    try {
+      // Re-validate workout ownership defensively (it was checked at /generate).
+      let linkedPlannedWorkoutId: number | null = null;
+      if (stored.plannedWorkoutId != null) {
+        const [owned] = await db
+          .select({ id: plannedWorkoutsTable.id })
+          .from(plannedWorkoutsTable)
+          .where(
+            and(
+              eq(plannedWorkoutsTable.id, stored.plannedWorkoutId),
+              eq(plannedWorkoutsTable.clerkId, clerkId),
+            ),
+          )
+          .limit(1);
+        if (owned) linkedPlannedWorkoutId = owned.id;
+      }
+
+      const [route] = await db
+        .insert(routesTable)
+        .values({
+          clerkId,
+          name,
+          surface: coerceSurface(stored.surface),
+          visibility: coerceVisibility(body.visibility),
+          status: "ready",
+          distanceKm: stored.distanceKm,
+          durationSec: stored.durationSec,
+          elevationGainM: stored.elevationGainM,
+          profile: stored.profile,
+          climbs: stored.climbs,
+          nav: stored.nav.length > 0 ? stored.nav : null,
+          geometry: stored.geometry as RoutePathPoint[],
+          rationale: stored.rationale,
+          source: "generated",
+          linkedActivityImportId: null,
+          linkedPlannedWorkoutId,
+        })
+        .returning();
+      res.status(201).json({ route });
+    } catch (err) {
+      req.log.error({ err }, "routes.create (generated) failed");
+      res.status(500).json({ error: "Kon route niet opslaan" });
+    }
     return;
   }
 
+  // ── GPX upload branch ──────────────────────────────────────────────────────
   const content = typeof body.content === "string" ? body.content : "";
   if (!content.trim()) {
     res.status(400).json({ error: "GPX-inhoud (content) is verplicht" });
@@ -384,8 +549,6 @@ router.post("/", requireAuth, async (req, res) => {
       linkedActivityImportId = owned.id;
     }
 
-    const geometry = downsampleGeometry(parsed.geometry, MAX_GEOMETRY_POINTS);
-
     const [route] = await db
       .insert(routesTable)
       .values({
@@ -399,7 +562,6 @@ router.post("/", requireAuth, async (req, res) => {
         profile: parsed.profile,
         climbs: parsed.climbs,
         nav: null,
-        geometry: geometry.length > 0 ? geometry : null,
         source: "gpx",
         linkedActivityImportId,
       })
@@ -410,94 +572,6 @@ router.post("/", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Kon route niet opslaan" });
   }
 });
-
-// Persist a generated route. Stats are recomputed from the supplied geometry so
-// a client cannot save fabricated distance/elevation numbers.
-async function createGeneratedRoute(
-  req: Request,
-  res: Response,
-  clerkId: string,
-  body: Record<string, unknown>,
-) {
-  const rawGeometry = Array.isArray(body.geometry) ? body.geometry : [];
-  const geometry: RoutePoint[] = [];
-  for (const pt of rawGeometry) {
-    if (!Array.isArray(pt)) continue;
-    const lon = Number(pt[0]);
-    const lat = Number(pt[1]);
-    if (
-      !Number.isFinite(lon) ||
-      !Number.isFinite(lat) ||
-      lat < -90 ||
-      lat > 90 ||
-      lon < -180 ||
-      lon > 180
-    ) {
-      continue;
-    }
-    const ele = pt.length >= 3 ? Number(pt[2]) : NaN;
-    geometry.push(
-      Number.isFinite(ele) ? [lon, lat, ele] : [lon, lat],
-    );
-  }
-  if (geometry.length < 2) {
-    res.status(422).json({ error: "Ongeldige routegeometrie" });
-    return;
-  }
-
-  // Authoritative stats come from the FULL supplied geometry; we only downsample
-  // for storage. A client therefore cannot save fabricated distance/elevation.
-  const stats = statsFromGeometry(geometry);
-  const trimmed = downsampleGeometry(geometry, MAX_GEOMETRY_POINTS);
-
-  const name =
-    typeof body.name === "string" && body.name.trim()
-      ? body.name.trim()
-      : "Gegenereerde route";
-  const rationale =
-    typeof body.rationale === "string" && body.rationale.trim()
-      ? body.rationale.trim()
-      : null;
-  const bike = coerceBike(body.bikeType);
-  const training = coerceTraining(body.trainingType);
-  const startName =
-    typeof body.startName === "string" && body.startName.trim()
-      ? body.startName.trim()
-      : null;
-  const endName =
-    typeof body.endName === "string" && body.endName.trim()
-      ? body.endName.trim()
-      : null;
-
-  try {
-    const [route] = await db
-      .insert(routesTable)
-      .values({
-        clerkId,
-        name,
-        surface: coerceSurface(body.surface ?? (bike ? preferredSurface(bike) : undefined)),
-        visibility: coerceVisibility(body.visibility),
-        status: "ready",
-        distanceKm: stats.distanceKm,
-        elevationGainM: stats.elevationGainM,
-        profile: stats.profile,
-        climbs: stats.climbs,
-        nav: null,
-        geometry: trimmed,
-        rationale,
-        bikeType: bike,
-        trainingType: training,
-        startName,
-        endName,
-        source: "generated",
-      })
-      .returning();
-    res.status(201).json({ route });
-  } catch (err) {
-    req.log.error({ err }, "routes.create generated failed");
-    res.status(500).json({ error: "Kon route niet opslaan" });
-  }
-}
 
 // DELETE /api/routes/:id — remove a route (owner only).
 router.delete("/:id", requireAuth, async (req, res) => {

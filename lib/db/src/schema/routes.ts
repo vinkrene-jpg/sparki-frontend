@@ -11,33 +11,17 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { userProfilesTable } from "./users";
 import { activityImportsTable } from "./activity-imports";
+import { plannedWorkoutsTable } from "./athlete-training";
 
-// Saved cycling routes. Built honestly from real GPX track data via
-// lib/gpx-parse.ts — distance, elevation gain, and a downsampled elevation
-// profile are all computed from <ele>/<trkpt> points. Turn-by-turn navigation
-// is NOT derivable from a bare GPX track and is left null in v1 (the UI shows
-// "niet beschikbaar" rather than fabricating directions).
+// Saved routes. Built honestly from real data — for GPX uploads, distance,
+// elevation gain, and the elevation profile are computed from <ele>/<trkpt>
+// points. For generated routes, geometry/distance/elevation/duration and
+// turn-by-turn navigation all come from the routing provider (lib/routing),
+// never fabricated. A bare GPX track has no turn semantics, so nav stays null
+// for GPX (the UI shows "niet beschikbaar" rather than inventing directions).
 
-export const routeSurfaces = ["asfalt", "gravel", "mtb", "mixed", "unknown"] as const;
+export const routeSurfaces = ["asfalt", "gravel", "mtb", "mixed", "pad", "unknown"] as const;
 export type RouteSurface = (typeof routeSurfaces)[number];
-
-// Bike types the generator understands. The chosen bike drives the ORS cycling
-// profile and the *preferred* (not guaranteed) surface.
-export const bikeTypes = ["race", "gravel", "mtb"] as const;
-export type BikeType = (typeof bikeTypes)[number];
-
-// Training types the generator adapts routing parameters to.
-export const trainingTypes = [
-  "duur",
-  "interval",
-  "herstel",
-  "tempo",
-  "wedstrijd",
-] as const;
-export type TrainingType = (typeof trainingTypes)[number];
-
-// A single geometry vertex: [lon, lat] or [lon, lat, elevationMetres].
-export type RoutePoint = [number, number] | [number, number, number];
 
 export const routeStatuses = ["ready", "draft", "archived"] as const;
 export type RouteStatus = (typeof routeStatuses)[number];
@@ -59,6 +43,9 @@ export type RouteNavCue = {
   note: string;
 };
 
+// A single geographic point along a route path: [lat, lon].
+export type RoutePathPoint = [number, number];
+
 export const routesTable = pgTable("routes", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
@@ -70,28 +57,29 @@ export const routesTable = pgTable("routes", {
   visibility: text("visibility").notNull().default("private"),
   distanceKm: real("distance_km"),
   elevationGainM: real("elevation_gain_m"),
+  // Estimated moving time (seconds), from the routing provider. Null for GPX.
+  durationSec: integer("duration_sec"),
   // Normalized elevation profile points (downsampled, real ele values).
   profile: jsonb("profile"),
   // Detected climbs (RouteClimb[]).
   climbs: jsonb("climbs"),
   // Turn-by-turn cues (RouteNavCue[]) — null until a routing import exists.
   nav: jsonb("nav"),
-  // Full path geometry as [lon, lat, ele?] tuples so generated routes can be
-  // redrawn on a map. From a real routing engine (ORS) or a GPX track — never
-  // fabricated. Downsampled for storage. Null for legacy/GPX-only routes that
-  // were saved before geometry retention.
+  // Full path geometry (RoutePathPoint[] — [lat, lon]) so a generated route can
+  // be redrawn on a map. Null for GPX routes (we don't store the raw track).
   geometry: jsonb("geometry"),
-  // AI/rule-based Dutch explanation of why a generated route fits the workout.
+  // Short Dutch explanation of why this route fits the workout. Only present on
+  // generated routes; honesty caveats are baked into this text.
   rationale: text("rationale"),
-  // Generator inputs (only set for source='generated').
-  bikeType: text("bike_type"),
-  trainingType: text("training_type"),
-  // Geocoded start/end place names (best-effort; null when geocoding fails).
-  startName: text("start_name"),
-  endName: text("end_name"),
   source: text("source").notNull().default("manual"),
   linkedActivityImportId: integer("linked_activity_import_id").references(
     () => activityImportsTable.id,
+    { onDelete: "set null" },
+  ),
+  // Planned workout this route was generated/saved for ("save with the
+  // training"). Null for unattached routes.
+  linkedPlannedWorkoutId: integer("linked_planned_workout_id").references(
+    () => plannedWorkoutsTable.id,
     { onDelete: "set null" },
   ),
   createdAt: timestamp("created_at", { withTimezone: true })

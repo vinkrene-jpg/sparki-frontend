@@ -2,26 +2,27 @@ import { useEffect, useRef } from "react"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 import { ACCENT } from "@/components/sparki/ui"
-import type { RoutePoint } from "@/hooks/use-routes"
 
-// Lightweight Leaflet map that draws a route polyline. Geometry comes in as
-// [lon, lat, ele?] tuples (the order ORS/GeoJSON use); Leaflet wants [lat, lon].
-// Dark CartoDB tiles keep it consistent with the cinematic Sparki design.
+// Lightweight Leaflet map for drawing real route geometry. Uses CARTO's free
+// dark "dark_matter" raster tiles (no API key) so it sits naturally inside the
+// dark cinematic Sparki design. The polyline is the actual ORS/GPX path — we
+// never draw an invented line.
 export function RouteMap({
   geometry,
   className = "",
 }: {
-  geometry: RoutePoint[]
+  geometry: [number, number][]
   className?: string
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
-  const layerRef = useRef<L.LayerGroup | null>(null)
+  const lineRef = useRef<L.Polyline | null>(null)
+  const markersRef = useRef<L.Layer[]>([])
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
     const map = L.map(containerRef.current, {
-      zoomControl: false,
+      zoomControl: true,
       attributionControl: true,
       scrollWheelZoom: false,
     })
@@ -33,13 +34,10 @@ export function RouteMap({
         maxZoom: 19,
       },
     ).addTo(map)
-    L.control.zoom({ position: "bottomright" }).addTo(map)
     mapRef.current = map
-
     return () => {
       map.remove()
       mapRef.current = null
-      layerRef.current = null
     }
   }, [])
 
@@ -47,58 +45,47 @@ export function RouteMap({
     const map = mapRef.current
     if (!map) return
 
-    const latlngs: [number, number][] = geometry
-      .filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1]))
-      .map((p) => [p[1], p[0]])
-
-    if (layerRef.current) {
-      layerRef.current.remove()
-      layerRef.current = null
+    if (lineRef.current) {
+      lineRef.current.remove()
+      lineRef.current = null
     }
+    for (const m of markersRef.current) m.remove()
+    markersRef.current = []
 
-    if (latlngs.length < 2) {
-      map.setView([52.1, 5.1], 7) // Netherlands fallback view
-      return
-    }
+    if (geometry.length < 2) return
 
+    const latlngs = geometry.map(([lat, lon]) => [lat, lon] as [number, number])
     const line = L.polyline(latlngs, {
       color: ACCENT,
       weight: 4,
       opacity: 0.9,
-    })
+    }).addTo(map)
+    lineRef.current = line
 
-    // Start (green) and end (accent) markers.
+    const dot = (color: string) =>
+      L.divIcon({
+        className: "",
+        html: `<span style="display:block;width:12px;height:12px;border-radius:9999px;background:${color};box-shadow:0 0 0 3px rgba(5,7,14,0.9),0 0 10px ${color};"></span>`,
+        iconSize: [12, 12],
+        iconAnchor: [6, 6],
+      })
     const start = latlngs[0]!
     const end = latlngs[latlngs.length - 1]!
-    const startMarker = L.circleMarker(start, {
-      radius: 6,
-      color: "#7be3a6",
-      fillColor: "#7be3a6",
-      fillOpacity: 1,
-      weight: 2,
-    })
-    const endMarker = L.circleMarker(end, {
-      radius: 6,
-      color: ACCENT,
-      fillColor: ACCENT,
-      fillOpacity: 1,
-      weight: 2,
-    })
-
-    const group = L.layerGroup([line, startMarker, endMarker]).addTo(map)
-    layerRef.current = group
+    markersRef.current.push(
+      L.marker(start, { icon: dot(ACCENT) }).addTo(map),
+      L.marker(end, { icon: dot("rgba(255,160,90,0.95)") }).addTo(map),
+    )
 
     map.fitBounds(line.getBounds(), { padding: [24, 24] })
-
-    // Tiles can mis-size if the container was hidden/animating on first paint.
-    setTimeout(() => map.invalidateSize(), 60)
+    // Tiles can mis-size if the container was hidden when initialised.
+    setTimeout(() => map.invalidateSize(), 80)
   }, [geometry])
 
   return (
     <div
       ref={containerRef}
-      className={`overflow-hidden rounded-xl border border-white/[0.08] ${className}`}
-      style={{ background: "#05070e", minHeight: 220 }}
+      className={`w-full overflow-hidden rounded-xl border border-white/[0.08] ${className}`}
+      style={{ height: 260, background: "#05070e" }}
     />
   )
 }

@@ -6,36 +6,63 @@ import {
   useCreateRoute,
   useDeleteRoute,
   useGenerateRoute,
-  useGeocode,
+  useSaveGeneratedRoute,
   type SparkiRoute,
-  type RouteCandidate,
+  type Sport,
   type BikeType,
-  type TrainingType,
-  type GeocodeResult,
+  type ElevationPreference,
+  type RouteCandidate,
 } from "@/hooks/use-routes"
 import { useUpcomingWorkouts } from "@/hooks/use-today-workout"
+import { MapPin, Sparkles } from "lucide-react"
 
 const SURFACE_LABEL: Record<string, string> = {
   asfalt: "Asfalt",
   gravel: "Gravel",
   mtb: "MTB",
   mixed: "Gemengd",
+  pad: "Pad/trail",
   unknown: "Onbekend",
 }
 
-const BIKE_OPTIONS: { value: BikeType; label: string }[] = [
-  { value: "race", label: "Racefiets" },
-  { value: "gravel", label: "Gravel" },
-  { value: "mtb", label: "MTB" },
+const SPORT_OPTIONS: { value: Sport; label: string; hint: string }[] = [
+  { value: "cycling", label: "Fietsen", hint: "weg/onverhard" },
+  { value: "running", label: "Hardlopen", hint: "weg/trail" },
+  { value: "walking", label: "Wandelen", hint: "verhard" },
+  { value: "hiking", label: "Hiken", hint: "paden" },
 ]
 
-const TRAINING_OPTIONS: { value: TrainingType; label: string }[] = [
-  { value: "duur", label: "Duurtraining" },
-  { value: "interval", label: "Interval" },
-  { value: "tempo", label: "Tempo" },
-  { value: "herstel", label: "Herstel" },
-  { value: "wedstrijd", label: "Wedstrijdsimulatie" },
+const BIKE_OPTIONS: { value: BikeType; label: string; hint: string }[] = [
+  { value: "racefiets", label: "Racefiets", hint: "asfalt" },
+  { value: "gravel", label: "Gravel", hint: "gemengd" },
+  { value: "mtb", label: "MTB", hint: "onverhard" },
 ]
+
+const ELEVATION_OPTIONS: {
+  value: ElevationPreference
+  label: string
+}[] = [
+  { value: "any", label: "Geen voorkeur" },
+  { value: "flat", label: "Vlak" },
+  { value: "hilly", label: "Heuvelachtig" },
+]
+
+const TRAINING_OPTIONS = [
+  "duurtraining",
+  "interval",
+  "hersteltraining",
+  "tempo",
+  "anders",
+]
+
+// Estimated moving time → compact "1u 23m" / "45m" label.
+function formatDuration(sec: number | null): string {
+  if (sec == null) return "—"
+  const total = Math.round(sec / 60)
+  const h = Math.floor(total / 60)
+  const m = total % 60
+  return h > 0 ? `${h}u ${m}m` : `${m}m`
+}
 
 function ElevationProfile({ profile }: { profile: number[] }) {
   if (profile.length === 0) return null
@@ -59,7 +86,7 @@ function ElevationProfile({ profile }: { profile: number[] }) {
   )
 }
 
-function ClimbList({
+function Climbs({
   climbs,
 }: {
   climbs: { name: string; lengthKm: number; avgGradePct: number }[]
@@ -112,7 +139,7 @@ function RouteCard({ route }: { route: SparkiRoute }) {
               {route.status === "ready" ? "Klaar" : route.status}
             </span>
             <span className="font-mono text-[9px] uppercase text-white/25">
-              · {route.source === "generated" ? "gegenereerd" : route.source}
+              · {route.source}
             </span>
           </div>
           <h3 className="mt-1 truncate font-sans text-lg font-light tracking-tight text-white/90">
@@ -129,11 +156,7 @@ function RouteCard({ route }: { route: SparkiRoute }) {
         </button>
       </div>
 
-      {geometry.length > 1 && (
-        <div className="mt-4">
-          <RouteMap geometry={geometry} className="h-48" />
-        </div>
-      )}
+      {geometry.length > 1 && <RouteMap geometry={geometry} className="mt-4" />}
 
       {profile.length > 0 && <ElevationProfile profile={profile} />}
 
@@ -143,6 +166,8 @@ function RouteCard({ route }: { route: SparkiRoute }) {
           value={route.distanceKm != null ? `${route.distanceKm} km` : "—"}
         />
         <Divider />
+        <Stat label="Duur" value={formatDuration(route.durationSec)} />
+        <Divider />
         <Stat
           label="Hoogtemeters"
           value={route.elevationGainM != null ? `${route.elevationGainM} m` : "—"}
@@ -151,22 +176,13 @@ function RouteCard({ route }: { route: SparkiRoute }) {
         <Stat label="Ondergrond" value={SURFACE_LABEL[route.surface] ?? route.surface} />
       </div>
 
-      {route.rationale && (
-        <div className="mt-4 rounded-lg border border-cyan-300/15 bg-cyan-300/[0.04] p-3">
-          <p className="text-[12px] leading-relaxed text-white/70">
-            {route.rationale}
-          </p>
-        </div>
-      )}
+      <Climbs climbs={climbs} />
 
-      {route.source === "generated" && (
-        <p className="mt-2 text-[11px] leading-relaxed text-white/30">
-          Ondergrond en rustige wegen zijn een voorkeur van de routemachine,
-          geen garantie.
+      {route.rationale && (
+        <p className="mt-4 whitespace-pre-line text-[12px] leading-relaxed text-white/55">
+          {route.rationale}
         </p>
       )}
-
-      <ClimbList climbs={climbs} />
 
       {nav.length > 0 ? (
         <div className="mt-4 flex flex-col">
@@ -197,346 +213,381 @@ function RouteCard({ route }: { route: SparkiRoute }) {
 const inputClass =
   "w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
 
-function Segmented({
-  options,
-  value,
-  onChange,
-}: {
-  options: { value: string; label: string }[]
-  value: string
-  onChange: (v: string) => void
-}) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          onClick={() => onChange(o.value)}
-          className="rounded-xl border px-3.5 py-2 font-mono text-[11px] tracking-wide transition-colors"
-          style={{
-            borderColor:
-              value === o.value
-                ? "rgba(120,210,230,0.5)"
-                : "rgba(255,255,255,0.1)",
-            background:
-              value === o.value ? "rgba(120,210,230,0.12)" : "transparent",
-            color: value === o.value ? ACCENT : "rgba(255,255,255,0.5)",
-          }}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-function RouteGenerator() {
+function RouteGenerator({ onClose }: { onClose: () => void }) {
   const generate = useGenerateRoute()
-  const create = useCreateRoute()
-  const geocode = useGeocode()
+  const save = useSaveGeneratedRoute()
   const { data: workouts } = useUpcomingWorkouts()
 
-  const [mode, setMode] = useState<"loop" | "ab">("loop")
-  const [bikeType, setBikeType] = useState<BikeType>("race")
-  const [trainingType, setTrainingType] = useState<TrainingType>("duur")
+  const [mode, setMode] = useState<"loop" | "ptp">("loop")
+  const [sport, setSport] = useState<Sport>("cycling")
+  const [bikeType, setBikeType] = useState<BikeType>("racefiets")
+  const [elevationPreference, setElevationPreference] =
+    useState<ElevationPreference>("any")
+  const [trainingType, setTrainingType] = useState("duurtraining")
+  const [workoutId, setWorkoutId] = useState<string>("")
+  const [distance, setDistance] = useState("40")
+  const [destination, setDestination] = useState("")
   const [start, setStart] = useState<{ lat: number; lon: number } | null>(null)
-  const [startLabel, setStartLabel] = useState<string>("")
-  const [destQuery, setDestQuery] = useState("")
-  const [destResults, setDestResults] = useState<GeocodeResult[]>([])
-  const [dest, setDest] = useState<GeocodeResult | null>(null)
-  const [targetKm, setTargetKm] = useState("")
-  const [linkedWorkoutId, setLinkedWorkoutId] = useState<string>("")
+  const [geoState, setGeoState] = useState<"idle" | "loading" | "error">("idle")
   const [candidate, setCandidate] = useState<RouteCandidate | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [geoLoading, setGeoLoading] = useState(false)
-  const seedRef = useRef<number>(0)
+  const [saved, setSaved] = useState(false)
 
-  const useMyLocation = () => {
+  const linkedWorkout = workoutId
+    ? workouts?.find((w) => String(w.id) === workoutId)
+    : undefined
+
+  function useMyLocation() {
+    setGeoState("loading")
     setError(null)
-    if (!("geolocation" in navigator)) {
-      setError("Geolocatie niet beschikbaar in deze browser")
+    if (!navigator.geolocation) {
+      setGeoState("error")
+      setError("Geolocatie wordt niet ondersteund door je browser")
       return
     }
-    setGeoLoading(true)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setStart({ lat: pos.coords.latitude, lon: pos.coords.longitude })
-        setStartLabel(
-          `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`,
-        )
-        setGeoLoading(false)
+        setGeoState("idle")
       },
       () => {
-        setError("Kon je locatie niet ophalen — geef toestemming of zoek handmatig")
-        setGeoLoading(false)
+        setGeoState("error")
+        setError("Kon je locatie niet ophalen — geef toestemming of vul handmatig in")
       },
       { enableHighAccuracy: true, timeout: 10000 },
     )
   }
 
-  const searchDest = () => {
-    if (destQuery.trim().length < 2) return
+  function runGenerate(nextSeed?: number) {
     setError(null)
-    geocode.mutate(
-      { q: destQuery.trim(), near: start ?? undefined },
-      {
-        onSuccess: (d) => setDestResults(d.results),
-        onError: () => setError("Zoeken naar bestemming mislukt"),
-      },
-    )
-  }
-
-  const doGenerate = (regen = false) => {
+    setSaved(false)
     if (!start) {
-      setError("Kies eerst een startpunt")
+      setError("Kies eerst een startpunt (gebruik je locatie)")
       return
     }
-    if (mode === "ab" && !dest) {
-      setError("Kies een bestemming voor een A→B route")
+    if (mode === "ptp" && !destination.trim()) {
+      setError("Vul een bestemming in voor een A→B route")
       return
     }
-    setError(null)
-    if (regen) seedRef.current = Math.floor(Math.random() * 1_000_000)
+    const distNum = parseInt(distance)
     generate.mutate(
       {
         mode,
-        start,
-        end: mode === "ab" && dest ? { lat: dest.lat, lon: dest.lon } : undefined,
-        bikeType,
+        startLat: start.lat,
+        startLon: start.lon,
+        sport,
+        bikeType: sport === "cycling" ? bikeType : undefined,
+        elevationPreference,
         trainingType,
-        targetDistanceKm: targetKm ? Number(targetKm) : undefined,
-        linkedWorkoutId: linkedWorkoutId ? Number(linkedWorkoutId) : undefined,
-        seed: regen ? seedRef.current : undefined,
+        plannedWorkoutId: linkedWorkout ? linkedWorkout.id : undefined,
+        targetDistanceKm:
+          mode === "loop" && !linkedWorkout && Number.isFinite(distNum)
+            ? distNum
+            : undefined,
+        destinationText: mode === "ptp" ? destination.trim() : undefined,
+        seed: nextSeed,
       },
       {
-        onSuccess: (d) => setCandidate(d.candidate),
+        onSuccess: (data) => setCandidate(data.candidate),
         onError: (e) =>
-          setError(
-            e instanceof Error && e.message
-              ? cleanError(e.message)
-              : "Kon route niet genereren",
-          ),
+          setError(e instanceof Error ? e.message : "Routegeneratie mislukt"),
       },
     )
   }
 
-  const saveCandidate = () => {
+  function saveCandidate() {
     if (!candidate) return
-    create.mutate(
-      {
-        source: "generated",
-        name: candidate.name,
-        surface: candidate.surface,
-        bikeType: candidate.bikeType,
-        trainingType: candidate.trainingType,
-        rationale: candidate.rationale,
-        startName: candidate.startName,
-        endName: candidate.endName,
-        geometry: candidate.geometry,
+    save.mutate(candidate, {
+      onSuccess: () => {
+        setSaved(true)
+        setCandidate(null)
       },
-      {
-        onSuccess: () => {
-          setCandidate(null)
-          setError(null)
-        },
-        onError: () => setError("Bewaren mislukt"),
-      },
-    )
+      onError: (e) =>
+        setError(e instanceof Error ? e.message : "Opslaan mislukt"),
+    })
   }
 
   return (
-    <div className="mt-4 rounded-xl border border-white/[0.09] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan-300/80">
-        Genereer route
-      </span>
-      <p className="mt-1.5 text-[12px] leading-relaxed text-white/40">
-        Sparki stelt een echte route voor die past bij je training en fiets,
-        berekend met OpenRouteService. Afstand, hoogte en klimmen komen uit de
-        routemachine — niets verzonnen.
-      </p>
-
-      {/* Mode toggle */}
-      <div className="mt-4">
-        <Segmented
-          options={[
-            { value: "loop", label: "Rondje" },
-            { value: "ab", label: "A → B" },
-          ]}
-          value={mode}
-          onChange={(v) => setMode(v as "loop" | "ab")}
-        />
+    <div className="rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4" style={{ color: ACCENT }} strokeWidth={1.75} />
+          <span className="font-mono text-[10px] tracking-[0.22em] text-cyan-300/80">
+            ROUTE GENEREREN
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="font-mono text-[10px] text-white/35 transition hover:text-white/60"
+        >
+          sluit
+        </button>
       </div>
 
-      {/* Start */}
-      <div className="mt-4">
+      {/* Sport */}
+      <div className="mt-5">
         <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
-          START
+          SPORT
         </label>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={useMyLocation}
-            disabled={geoLoading}
-            className="rounded-xl border border-cyan-300/30 px-3.5 py-2 font-mono text-[11px] text-cyan-300/80 transition hover:border-cyan-300/50 disabled:opacity-50"
-          >
-            {geoLoading ? "Locatie ophalen…" : "Gebruik mijn locatie"}
-          </button>
-          {startLabel && (
-            <span className="truncate font-mono text-[11px] text-white/45">
-              {startLabel}
-            </span>
-          )}
+        <div className="grid grid-cols-4 gap-2">
+          {SPORT_OPTIONS.map((s) => (
+            <button
+              key={s.value}
+              type="button"
+              onClick={() => setSport(s.value)}
+              className="flex flex-col items-center rounded-xl border py-2.5 transition-colors"
+              style={{
+                borderColor:
+                  sport === s.value
+                    ? "rgba(120,210,230,0.5)"
+                    : "rgba(255,255,255,0.1)",
+                background:
+                  sport === s.value ? "rgba(120,210,230,0.12)" : "transparent",
+              }}
+            >
+              <span
+                className="text-[12px] font-medium"
+                style={{
+                  color: sport === s.value ? ACCENT : "rgba(255,255,255,0.6)",
+                }}
+              >
+                {s.label}
+              </span>
+              <span className="font-mono text-[8px] text-white/30">{s.hint}</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Destination (A→B only) */}
-      {mode === "ab" && (
+      {/* Bike type — only for cycling; Sparki auto-selects the routing profile */}
+      {sport === "cycling" && (
         <div className="mt-4">
           <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
-            BESTEMMING
+            FIETSTYPE
           </label>
           <div className="flex gap-2">
-            <input
-              className={inputClass}
-              placeholder="Zoek een plaats of adres"
-              value={destQuery}
-              onChange={(e) => setDestQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault()
-                  searchDest()
-                }
-              }}
-            />
-            <button
-              type="button"
-              onClick={searchDest}
-              disabled={geocode.isPending}
-              className="shrink-0 rounded-xl border border-white/[0.12] px-4 font-mono text-[11px] text-white/60 transition hover:border-white/25 disabled:opacity-50"
-            >
-              {geocode.isPending ? "…" : "Zoek"}
-            </button>
-          </div>
-          {dest && (
-            <p className="mt-2 font-mono text-[11px] text-cyan-300/70">
-              ✓ {dest.label}
-            </p>
-          )}
-          {destResults.length > 0 && (
-            <div className="mt-2 flex flex-col gap-1">
-              {destResults.map((r, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => {
-                    setDest(r)
-                    setDestResults([])
-                    setDestQuery(r.label)
+            {BIKE_OPTIONS.map((b) => (
+              <button
+                key={b.value}
+                type="button"
+                onClick={() => setBikeType(b.value)}
+                className="flex flex-1 flex-col items-center rounded-xl border py-2.5 transition-colors"
+                style={{
+                  borderColor:
+                    bikeType === b.value
+                      ? "rgba(120,210,230,0.5)"
+                      : "rgba(255,255,255,0.1)",
+                  background:
+                    bikeType === b.value
+                      ? "rgba(120,210,230,0.12)"
+                      : "transparent",
+                }}
+              >
+                <span
+                  className="text-[13px] font-medium"
+                  style={{
+                    color:
+                      bikeType === b.value ? ACCENT : "rgba(255,255,255,0.6)",
                   }}
-                  className="rounded-lg border border-white/[0.08] px-3 py-2 text-left text-[12px] text-white/70 transition hover:border-cyan-300/30 hover:text-white/90"
                 >
-                  {r.label}
-                </button>
-              ))}
-            </div>
-          )}
+                  {b.label}
+                </span>
+                <span className="font-mono text-[9px] text-white/30">
+                  {b.hint}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Bike type */}
+      {/* Elevation preference */}
       <div className="mt-4">
         <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
-          FIETS
+          HOOGTEVOORKEUR
         </label>
-        <Segmented
-          options={BIKE_OPTIONS}
-          value={bikeType}
-          onChange={(v) => setBikeType(v as BikeType)}
-        />
+        <div className="flex gap-2">
+          {ELEVATION_OPTIONS.map((e) => (
+            <button
+              key={e.value}
+              type="button"
+              onClick={() => setElevationPreference(e.value)}
+              className="flex-1 rounded-xl border py-2.5 text-[13px] transition-colors"
+              style={{
+                borderColor:
+                  elevationPreference === e.value
+                    ? "rgba(120,210,230,0.5)"
+                    : "rgba(255,255,255,0.1)",
+                background:
+                  elevationPreference === e.value
+                    ? "rgba(120,210,230,0.12)"
+                    : "transparent",
+                color:
+                  elevationPreference === e.value
+                    ? ACCENT
+                    : "rgba(255,255,255,0.6)",
+              }}
+            >
+              {e.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Training type */}
+      {/* Mode toggle */}
       <div className="mt-4">
         <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
-          TRAINING
+          VORM
         </label>
-        <Segmented
-          options={TRAINING_OPTIONS}
-          value={trainingType}
-          onChange={(v) => setTrainingType(v as TrainingType)}
-        />
+        <div className="flex gap-2">
+          {(
+            [
+              { v: "loop", l: "Lus (rondje)" },
+              { v: "ptp", l: "A → B" },
+            ] as const
+          ).map((m) => (
+            <button
+              key={m.v}
+              type="button"
+              onClick={() => setMode(m.v)}
+              className="flex-1 rounded-xl border py-2.5 text-[13px] transition-colors"
+              style={{
+                borderColor:
+                  mode === m.v ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.1)",
+                background: mode === m.v ? "rgba(120,210,230,0.12)" : "transparent",
+                color: mode === m.v ? ACCENT : "rgba(255,255,255,0.6)",
+              }}
+            >
+              {m.l}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Link planned workout */}
-      {workouts && workouts.length > 0 && (
-        <div className="mt-4">
+      {/* Training type + workout link */}
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div>
           <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
-            KOPPEL GEPLANDE TRAINING (OPTIONEEL)
+            TRAININGSTYPE
           </label>
           <select
             className={inputClass}
-            value={linkedWorkoutId}
-            onChange={(e) => setLinkedWorkoutId(e.target.value)}
+            value={trainingType}
+            onChange={(e) => setTrainingType(e.target.value)}
+            disabled={!!linkedWorkout}
           >
-            <option value="">Geen koppeling</option>
-            {workouts.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.scheduledDate} · {w.title}
-                {w.targetDurationMin ? ` (${w.targetDurationMin}m)` : ""}
+            {TRAINING_OPTIONS.map((t) => (
+              <option key={t} value={t}>
+                {t.charAt(0).toUpperCase() + t.slice(1)}
               </option>
             ))}
           </select>
         </div>
-      )}
+        <div>
+          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+            KOPPEL TRAINING
+          </label>
+          <select
+            className={inputClass}
+            value={workoutId}
+            onChange={(e) => {
+              setWorkoutId(e.target.value)
+              const w = workouts?.find((x) => String(x.id) === e.target.value)
+              if (w) setTrainingType(w.type || trainingType)
+            }}
+          >
+            <option value="">Geen</option>
+            {(workouts ?? []).map((w) => (
+              <option key={w.id} value={String(w.id)}>
+                {w.scheduledDate} · {w.title}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
 
-      {/* Target distance (loop only) */}
-      {mode === "loop" && (
+      {/* Distance (loop, manual) or destination (ptp) */}
+      {mode === "loop" ? (
         <div className="mt-4">
           <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
-            DOELAFSTAND (KM){linkedWorkoutId ? " — anders afgeleid uit training" : ""}
+            DOELAFSTAND (KM)
           </label>
           <input
             className={inputClass}
             type="number"
-            min={2}
-            max={300}
-            placeholder="bv. 40"
-            value={targetKm}
-            onChange={(e) => setTargetKm(e.target.value)}
+            min={3}
+            max={200}
+            value={linkedWorkout?.targetDurationMin ? "" : distance}
+            placeholder={
+              linkedWorkout?.targetDurationMin
+                ? `≈ afgeleid uit ${linkedWorkout.targetDurationMin}m training`
+                : "40"
+            }
+            onChange={(e) => setDistance(e.target.value)}
+            disabled={!!linkedWorkout?.targetDurationMin}
+          />
+        </div>
+      ) : (
+        <div className="mt-4">
+          <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+            BESTEMMING
+          </label>
+          <input
+            className={inputClass}
+            placeholder="bijv. Valkenburg"
+            value={destination}
+            onChange={(e) => setDestination(e.target.value)}
           />
         </div>
       )}
 
+      {/* Start location */}
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={useMyLocation}
+          disabled={geoState === "loading"}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.12] py-3 font-sans text-[13px] text-white/70 transition-colors hover:border-cyan-300/30 disabled:opacity-50"
+        >
+          <MapPin className="h-4 w-4" strokeWidth={1.75} />
+          {geoState === "loading"
+            ? "Locatie ophalen…"
+            : start
+              ? `Startpunt: ${start.lat.toFixed(4)}, ${start.lon.toFixed(4)}`
+              : "Gebruik mijn locatie"}
+        </button>
+      </div>
+
       {error && (
         <p className="mt-3 text-[12px] text-[rgba(255,140,120,0.85)]">{error}</p>
+      )}
+      {saved && (
+        <p className="mt-3 text-[12px]" style={{ color: ACCENT }}>
+          Route opgeslagen in je routes.
+        </p>
       )}
 
       <button
         type="button"
-        onClick={() => doGenerate(false)}
-        disabled={generate.isPending || !start}
+        onClick={() => runGenerate()}
+        disabled={generate.isPending}
         className="mt-4 w-full rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
         style={{ background: ACCENT, color: "#040506" }}
       >
-        {generate.isPending ? "Route berekenen…" : "Genereer route"}
+        {generate.isPending ? "Genereren…" : "Genereer route"}
       </button>
 
-      {/* Candidate preview */}
+      {/* Proposed candidate */}
       {candidate && (
-        <div className="mt-5 rounded-xl border border-cyan-300/20 bg-[#05070e]/80 p-4">
-          <div className="flex items-center justify-between">
-            <h4 className="truncate font-sans text-base font-light text-white/90">
-              {candidate.name}
-            </h4>
-            <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-cyan-300/70">
-              voorstel
-            </span>
-          </div>
+        <div className="mt-5 border-t border-white/[0.08] pt-5">
+          <h4 className="font-sans text-lg font-light tracking-tight text-white/90">
+            {candidate.name}
+          </h4>
 
-          <div className="mt-3">
-            <RouteMap geometry={candidate.geometry} className="h-52" />
-          </div>
+          {candidate.geometry.length > 1 && (
+            <RouteMap geometry={candidate.geometry} className="mt-4" />
+          )}
 
           {candidate.profile.length > 0 && (
             <ElevationProfile profile={candidate.profile} />
@@ -546,11 +597,11 @@ function RouteGenerator() {
             <Stat
               label="Afstand"
               value={
-                candidate.distanceKm != null
-                  ? `${candidate.distanceKm} km`
-                  : "—"
+                candidate.distanceKm != null ? `${candidate.distanceKm} km` : "—"
               }
             />
+            <Divider />
+            <Stat label="Duur" value={formatDuration(candidate.durationSec)} />
             <Divider />
             <Stat
               label="Hoogtemeters"
@@ -567,34 +618,59 @@ function RouteGenerator() {
             />
           </div>
 
-          <ClimbList climbs={candidate.climbs} />
+          <Climbs climbs={candidate.climbs} />
 
-          <div className="mt-4 rounded-lg border border-cyan-300/15 bg-cyan-300/[0.04] p-3">
-            <p className="text-[12px] leading-relaxed text-white/70">
-              {candidate.rationale}
-            </p>
-          </div>
-
-          <p className="mt-2 text-[11px] leading-relaxed text-white/30">
-            Ondergrond en rustige wegen zijn een voorkeur van de routemachine,
-            geen garantie.
+          <p className="mt-4 whitespace-pre-line text-[12px] leading-relaxed text-white/55">
+            {candidate.rationale}
           </p>
+
+          {candidate.nav.length > 0 && (
+            <div className="mt-4">
+              <span className="label-xs text-white/35">
+                STAP-VOOR-STAP ({candidate.nav.length})
+              </span>
+              <div className="mt-2 max-h-64 overflow-y-auto pr-1">
+                {candidate.nav.map((n, i) => (
+                  <div
+                    key={i}
+                    className="flex items-baseline gap-3 border-b border-white/[0.05] py-2 last:border-0"
+                  >
+                    <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-cyan-300/70">
+                      {n.km}
+                    </span>
+                    <span className="w-24 shrink-0 text-[12px] tracking-tight text-white/85">
+                      {n.dir}
+                    </span>
+                    <span className="flex-1 text-[12px] text-white/40">
+                      {n.note}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {candidate.plannedWorkoutId != null && (
+            <p className="mt-3 font-mono text-[10px] text-white/35">
+              Wordt opgeslagen bij de gekoppelde training.
+            </p>
+          )}
 
           <div className="mt-4 flex gap-3">
             <button
               type="button"
               onClick={saveCandidate}
-              disabled={create.isPending}
-              className="flex-1 rounded-2xl py-3 font-sans text-[13px] font-semibold disabled:opacity-50"
+              disabled={save.isPending}
+              className="flex-1 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
               style={{ background: ACCENT, color: "#040506" }}
             >
-              {create.isPending ? "Bewaren…" : "Bewaar"}
+              {save.isPending ? "Opslaan…" : "Bewaar"}
             </button>
             <button
               type="button"
-              onClick={() => doGenerate(true)}
+              onClick={() => runGenerate(Math.floor(Math.random() * 1e6))}
               disabled={generate.isPending}
-              className="rounded-2xl border border-white/[0.12] px-5 py-3 font-sans text-[13px] text-white/60 transition hover:border-white/25 disabled:opacity-50"
+              className="rounded-2xl border border-white/[0.12] px-5 py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20 disabled:opacity-50"
             >
               Regenereer
             </button>
@@ -603,17 +679,6 @@ function RouteGenerator() {
       )}
     </div>
   )
-}
-
-// Drizzle errors sometimes surface as JSON strings; keep them human-readable.
-function cleanError(msg: string): string {
-  try {
-    const parsed = JSON.parse(msg) as { error?: string }
-    if (parsed.error) return parsed.error
-  } catch {
-    // not JSON
-  }
-  return msg.length > 160 ? "Kon route niet genereren" : msg
 }
 
 export function RoutePanel() {
@@ -649,17 +714,17 @@ export function RoutePanel() {
         <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={() => setShowGenerator((v) => !v)}
+            onClick={() => setShowGenerator((s) => !s)}
             className="font-mono text-[10px] uppercase tracking-[0.18em] transition"
             style={{ color: ACCENT }}
           >
-            {showGenerator ? "− generator" : "✦ genereer"}
+            {showGenerator ? "− generator" : "+ genereer route"}
           </button>
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={create.isPending}
-            className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40 transition hover:text-white/70 disabled:opacity-50"
+            className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/45 transition disabled:opacity-50"
           >
             {create.isPending ? "verwerken…" : "+ gpx"}
           </button>
@@ -679,15 +744,20 @@ export function RoutePanel() {
       />
 
       <p className="mt-2 text-[12px] leading-relaxed text-white/35">
-        Laat Sparki een route genereren die past bij je training, of upload een
-        GPX-bestand voor een echt hoogteprofiel en gedetecteerde klimmen.
+        Laat Sparki een route genereren die past bij je training en sport — Sparki
+        kiest automatisch het juiste routeprofiel. Of upload een GPX-bestand voor
+        een echt hoogteprofiel.
       </p>
 
       {error && (
         <p className="mt-2 text-[12px] text-[rgba(255,140,120,0.85)]">{error}</p>
       )}
 
-      {showGenerator && <RouteGenerator />}
+      {showGenerator && (
+        <div className="mt-4">
+          <RouteGenerator onClose={() => setShowGenerator(false)} />
+        </div>
+      )}
 
       <div className="mt-4 space-y-4">
         {isLoading ? (
