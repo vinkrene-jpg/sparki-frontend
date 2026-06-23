@@ -39,9 +39,10 @@ function haversineKm(
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
-export function parseGpx(content: string): GpxSummary | null {
+// Extract raw track points from GPX content. Shared by parseGpx and
+// parseGpxRoute so both read the same source of truth.
+function extractTrackPoints(content: string): TrackPoint[] {
   const points: TrackPoint[] = [];
-
   // Match each <trkpt ...> ... </trkpt> (or self-closing). Tolerant of attribute
   // ordering and whitespace; deliberately simple regex parsing (no XML dep).
   const trkptRe = /<trkpt\b([^>]*?)(?:\/>|>([\s\S]*?)<\/trkpt>)/gi;
@@ -63,6 +64,11 @@ export function parseGpx(content: string): GpxSummary | null {
       time: Number.isFinite(t) ? t : null,
     });
   }
+  return points;
+}
+
+export function parseGpx(content: string): GpxSummary | null {
+  const points = extractTrackPoints(content);
 
   if (points.length === 0) return null;
 
@@ -101,4 +107,143 @@ export function parseGpx(content: string): GpxSummary | null {
         : null,
     trackName: nameStr || null,
   };
+}
+
+// Route-specific parse: distance + elevation gain + a downsampled real
+// elevation profile + detected climbs. Everything derived from real <ele>/
+// <trkpt> data — no fabricated values. Turn-by-turn nav is NOT produced here
+// (a bare GPX track has no turn semantics); callers leave nav null in v1.
+
+export type GpxRouteClimb = {
+  name: string;
+  lengthKm: number;
+  avgGradePct: number;
+};
+
+export type GpxRoute = {
+  distanceKm: number | null;
+  elevationGainM: number | null;
+  profile: number[];
+  climbs: GpxRouteClimb[];
+  trackName: string | null;
+};
+
+const PROFILE_SAMPLES = 48;
+
+export function parseGpxRoute(content: string): GpxRoute | null {
+  const points = extractTrackPoints(content);
+  if (points.length === 0) return null;
+
+  // Cumulative distance per point.
+  const cumKm: number[] = [0];
+  let distanceKm = 0;
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]!;
+    const b = points[i]!;
+    distanceKm += haversineKm(a.lat, a.lon, b.lat, b.lon);
+    cumKm.push(distanceKm);
+  }
+
+  const eleSeries = points.map((p) => p.ele);
+  const hasElevation = eleSeries.some((e) => e != null);
+
+  // Elevation gain (sum of positive deltas).
+  let elevationGainM = 0;
+  let prevEle: number | null = null;
+  for (const e of eleSeries) {
+    if (e == null) continue;
+    if (prevEle != null && e > prevEle) elevationGainM += e - prevEle;
+    prevEle = e;
+  }
+
+  // Downsample elevation to a fixed number of points for the profile chart.
+  // Uses real metres; the UI normalizes against the max.
+  const eleOnly = eleSeries.filter((e): e is number => e != null);
+  let profile: number[] = [];
+  if (eleOnly.length > 0) {
+    if (eleOnly.length <= PROFILE_SAMPLES) {
+      profile = eleOnly.map((e) => Math.round(e));
+    } else {
+      const step = (eleOnly.length - 1) / (PROFILE_SAMPLES - 1);
+      for (let i = 0; i < PROFILE_SAMPLES; i++) {
+        const idx = Math.round(i * step);
+        profile.push(Math.round(eleOnly[Math.min(idx, eleOnly.length - 1)]!));
+      }
+    }
+  }
+
+  const climbs = hasElevation ? detectClimbs(points, cumKm) : [];
+
+  return {
+    distanceKm: distanceKm > 0 ? Math.round(distanceKm * 100) / 100 : null,
+    elevationGainM: hasElevation ? Math.round(elevationGainM) : null,
+    profile,
+    climbs,
+    trackName: /<name>\s*([^<]+)<\/name>/i.exec(content)?.[1]?.trim() || null,
+  };
+}
+
+// Detect sustained climbs: contiguous stretches of net ascent. Small dips are
+// tolerated; a stretch qualifies as a climb when it gains >= MIN_GAIN_M over
+// >= MIN_LENGTH_KM at an average grade >= MIN_GRADE_PCT. Names are generic
+// ("Klim 1", ...) because a GPX track carries no climb names.
+function detectClimbs(
+  points: TrackPoint[],
+  cumKm: number[],
+): GpxRouteClimb[] {
+  const MIN_GAIN_M = 40;
+  const MIN_LENGTH_KM = 0.6;
+  const MIN_GRADE_PCT = 3;
+  const DESCENT_TOLERANCE_M = 12;
+
+  const climbs: GpxRouteClimb[] = [];
+  let startIdx: number | null = null;
+  let topEle = -Infinity;
+  let topIdx = 0;
+
+  const tryClose = (endIdx: number) => {
+    if (startIdx == null) return;
+    const startEle = points[startIdx]!.ele;
+    const endEle = points[topIdx]!.ele;
+    if (startEle != null && endEle != null) {
+      const gain = endEle - startEle;
+      const lengthKm = cumKm[topIdx]! - cumKm[startIdx]!;
+      if (
+        gain >= MIN_GAIN_M &&
+        lengthKm >= MIN_LENGTH_KM &&
+        (gain / (lengthKm * 1000)) * 100 >= MIN_GRADE_PCT
+      ) {
+        climbs.push({
+          name: `Klim ${climbs.length + 1}`,
+          lengthKm: Math.round(lengthKm * 10) / 10,
+          avgGradePct: Math.round((gain / (lengthKm * 1000)) * 1000) / 10,
+        });
+      }
+    }
+    startIdx = null;
+    topEle = -Infinity;
+  };
+
+  for (let i = 0; i < points.length; i++) {
+    const ele = points[i]!.ele;
+    if (ele == null) continue;
+    if (startIdx == null) {
+      startIdx = i;
+      topEle = ele;
+      topIdx = i;
+      continue;
+    }
+    if (ele >= topEle) {
+      topEle = ele;
+      topIdx = i;
+    } else if (topEle - ele >= DESCENT_TOLERANCE_M) {
+      // Sustained descent ends the current climb candidate.
+      tryClose(i);
+      startIdx = i;
+      topEle = ele;
+      topIdx = i;
+    }
+  }
+  tryClose(points.length - 1);
+  return climbs;
 }

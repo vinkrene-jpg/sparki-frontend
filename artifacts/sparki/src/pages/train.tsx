@@ -8,6 +8,7 @@ import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { useAiBrief } from "@/hooks/use-ai-brief"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { ActivityImportPanel } from "@/components/sparki/activity-import-panel"
+import { RoutePanel } from "@/components/sparki/route-panel"
 import {
   Bike,
   Activity,
@@ -208,6 +209,7 @@ export default function TrainPage() {
   const { data: sessions, isLoading: sessionsLoading } = useSessions(10)
   const updateWorkout = useUpdateWorkout()
   const aiEnabled = useFeatureFlag("ai_observations")
+  const routePlannerEnabled = useFeatureFlag("route_planner")
   const { data: brief, isLoading: briefLoading } = useAiBrief(aiEnabled)
   const [showLogForm, setShowLogForm] = useState(false)
 
@@ -419,6 +421,9 @@ export default function TrainPage() {
           </div>
         </section>
       )}
+
+      {/* 03 ROUTE & NAVIGATIE (feature-flagged) */}
+      {routePlannerEnabled && <RoutePanel />}
 
       {/* 06 AI COACH UITVOERING */}
       {aiEnabled && (

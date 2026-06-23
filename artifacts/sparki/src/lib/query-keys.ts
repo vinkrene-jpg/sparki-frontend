@@ -88,6 +88,12 @@ export const queryKeys = {
     list: () => ["activity-imports", "list"] as const,
   },
 
+  routes: {
+    all: () => ["routes"] as const,
+    list: () => ["routes", "list"] as const,
+    detail: (id: number) => ["routes", "detail", id] as const,
+  },
+
   bugReports: {
     all: () => ["bug-reports"] as const,
     mine: () => ["bug-reports", "mine"] as const,

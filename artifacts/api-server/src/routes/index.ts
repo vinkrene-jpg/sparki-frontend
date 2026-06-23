@@ -14,6 +14,7 @@ import linksRouter from "./links";
 import nutritionRouter from "./nutrition";
 import notificationsRouter from "./notifications";
 import activityImportsRouter from "./activity-imports";
+import routesRouter from "./routes";
 import bugReportsRouter from "./bug-reports";
 import adminRouter from "./admin";
 
@@ -34,6 +35,7 @@ router.use("/links", linksRouter);
 router.use("/nutrition", nutritionRouter);
 router.use("/notifications", notificationsRouter);
 router.use("/activity-imports", activityImportsRouter);
+router.use("/routes", routesRouter);
 router.use("/bug-reports", bugReportsRouter);
 router.use("/admin", adminRouter);
 
