@@ -95,6 +95,8 @@ export const queryKeys = {
     all: () => ["routes"] as const,
     list: () => ["routes", "list"] as const,
     detail: (id: number) => ["routes", "detail", id] as const,
+    byWorkout: (plannedWorkoutId: number) =>
+      ["routes", "by-workout", plannedWorkoutId] as const,
   },
 
   trainingPlan: {

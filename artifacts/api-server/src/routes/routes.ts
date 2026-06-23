@@ -146,14 +146,28 @@ async function buildRationale(input: {
 }
 
 // GET /api/routes — caller's saved routes, newest first.
+//   ?limit=N                 — cap the number of rows (1–100, default 30)
+//   ?plannedWorkoutId=N      — only routes linked to that planned workout
 router.get("/", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const limit = Math.min(Math.max(Number(req.query.limit) || 30, 1), 100);
+  const plannedWorkoutId =
+    Number.isInteger(Number(req.query.plannedWorkoutId)) &&
+    Number(req.query.plannedWorkoutId) > 0
+      ? Number(req.query.plannedWorkoutId)
+      : null;
   try {
+    const where =
+      plannedWorkoutId != null
+        ? and(
+            eq(routesTable.clerkId, clerkId),
+            eq(routesTable.linkedPlannedWorkoutId, plannedWorkoutId),
+          )
+        : eq(routesTable.clerkId, clerkId);
     const routes = await db
       .select()
       .from(routesTable)
-      .where(eq(routesTable.clerkId, clerkId))
+      .where(where)
       .orderBy(desc(routesTable.createdAt))
       .limit(limit);
     res.json({ routes });

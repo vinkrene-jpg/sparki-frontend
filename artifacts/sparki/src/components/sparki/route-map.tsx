@@ -10,9 +10,13 @@ import { ACCENT } from "@/components/sparki/ui"
 export function RouteMap({
   geometry,
   className = "",
+  height = 260,
+  interactive = true,
 }: {
   geometry: [number, number][]
   className?: string
+  height?: number
+  interactive?: boolean
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
@@ -22,9 +26,14 @@ export function RouteMap({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
     const map = L.map(containerRef.current, {
-      zoomControl: true,
+      zoomControl: interactive,
       attributionControl: true,
       scrollWheelZoom: false,
+      dragging: interactive,
+      doubleClickZoom: interactive,
+      boxZoom: interactive,
+      keyboard: interactive,
+      touchZoom: interactive,
     })
     L.tileLayer(
       "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
@@ -85,7 +94,7 @@ export function RouteMap({
     <div
       ref={containerRef}
       className={`w-full overflow-hidden rounded-xl border border-white/[0.08] ${className}`}
-      style={{ height: 260, background: "#05070e" }}
+      style={{ height, background: "#05070e" }}
     />
   )
 }

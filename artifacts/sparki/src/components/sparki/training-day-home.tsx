@@ -19,6 +19,7 @@ import {
   Skeleton,
 } from "@/components/sparki/home-sections"
 import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer"
+import { LinkedRoutePreview } from "@/components/sparki/linked-route"
 import { useState } from "react"
 import { ChevronRight } from "lucide-react"
 
@@ -311,6 +312,11 @@ export function TrainingDayHome({
                   strokeWidth={1.75}
                 />
               </button>
+
+              <LinkedRoutePreview
+                plannedWorkoutId={data.todayWorkout.id}
+                className="mt-4"
+              />
             </>
           ) : (
             <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">

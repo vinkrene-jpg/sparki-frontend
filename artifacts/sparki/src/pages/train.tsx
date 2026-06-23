@@ -9,6 +9,7 @@ import { useAiBrief } from "@/hooks/use-ai-brief"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { ActivityImportPanel } from "@/components/sparki/activity-import-panel"
 import { RoutePanel } from "@/components/sparki/route-panel"
+import { LinkedRoutePreview } from "@/components/sparki/linked-route"
 import { ThreeWeekPlan } from "@/components/sparki/three-week-plan"
 import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer"
 import { TrainingPlanPanel } from "@/components/sparki/training-plan-panel"
@@ -374,6 +375,11 @@ export default function TrainPage() {
                 </button>
               </div>
             )}
+
+            <LinkedRoutePreview
+              plannedWorkoutId={workout.id}
+              className="mt-5"
+            />
           </>
         ) : (
           <div className="mt-5 flex flex-col items-center gap-5 py-8">

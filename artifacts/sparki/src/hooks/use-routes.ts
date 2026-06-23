@@ -91,6 +91,25 @@ export function useRoutes() {
   });
 }
 
+// Routes saved against a specific planned workout. Used to surface the attached
+// route on the training/home session view ("open today's session, see the route
+// to ride"). Disabled when no workout id is available.
+export function useWorkoutRoutes(plannedWorkoutId: number | null | undefined) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: queryKeys.routes.byWorkout(plannedWorkoutId ?? 0),
+    queryFn: () =>
+      apiFetch<{ routes: SparkiRoute[] }>(
+        `/api/routes?plannedWorkoutId=${plannedWorkoutId}`,
+      ),
+    enabled:
+      (isSignedIn === true || DEV_PREVIEW) &&
+      typeof plannedWorkoutId === "number" &&
+      plannedWorkoutId > 0,
+    staleTime: STALE.session,
+  });
+}
+
 export function useCreateRoute() {
   const qc = useQueryClient();
   return useMutation({
