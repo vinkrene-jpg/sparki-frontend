@@ -56,72 +56,105 @@ function isActive(current: string, path: string): boolean {
   return current.startsWith(path)
 }
 
-function DevSwitcher({
+const pillStyle = (active: boolean) => ({
+  background: active ? "rgba(120,210,230,0.16)" : "transparent",
+  color: active ? "rgba(120,210,230,1)" : "rgba(255,255,255,0.45)",
+})
+
+// A single collapsible developer panel that consolidates the page switcher and
+// (on the home view) the day-type previewer. Collapsed by default so the real
+// app — with only its production BottomNav — is what's on screen. This whole
+// component is dev-only and never bundled into production.
+function DevPanel({
   current,
-  onSelect,
+  onNavigate,
+  isHome,
+  dayType,
+  onDayType,
 }: {
   current: string
-  onSelect: (path: string) => void
+  onNavigate: (path: string) => void
+  isHome: boolean
+  dayType: DayType | undefined
+  onDayType: (value: DayType | undefined) => void
 }) {
-  return (
-    <div className="fixed left-1/2 top-3 z-[9999] -translate-x-1/2">
-      <div className="flex items-center gap-1 rounded-full border border-cyan-300/25 bg-[#040506]/85 px-1.5 py-1.5 shadow-[0_0_20px_rgba(120,210,230,0.12)] backdrop-blur-xl">
-        <span className="px-2 font-mono text-[8px] uppercase tracking-[0.2em] text-cyan-300/60">
-          DEV
-        </span>
-        {VIEWS.map((v) => {
-          const active = isActive(current, v.path)
-          return (
-            <button
-              key={v.path}
-              type="button"
-              onClick={() => onSelect(v.path)}
-              className="rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors"
-              style={{
-                background: active ? "rgba(120,210,230,0.16)" : "transparent",
-                color: active ? "rgba(120,210,230,1)" : "rgba(255,255,255,0.45)",
-              }}
-            >
-              {v.label}
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
+  const [open, setOpen] = useState(false)
 
-function DayTypeSwitcher({
-  value,
-  onSelect,
-}: {
-  value: DayType | undefined
-  onSelect: (value: DayType | undefined) => void
-}) {
-  return (
-    <div className="fixed left-1/2 top-[3.4rem] z-[9999] -translate-x-1/2">
-      <div className="flex items-center gap-1 rounded-full border border-cyan-300/15 bg-[#040506]/85 px-1.5 py-1.5 shadow-[0_0_20px_rgba(120,210,230,0.08)] backdrop-blur-xl">
-        <span className="px-2 font-mono text-[8px] uppercase tracking-[0.2em] text-cyan-300/50">
-          DAGTYPE
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="fixed left-3 top-3 z-[9999] flex items-center gap-1.5 rounded-full border border-cyan-300/25 bg-[#040506]/85 px-3 py-1.5 shadow-[0_0_20px_rgba(120,210,230,0.12)] backdrop-blur-xl"
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-cyan-300/80" />
+        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-cyan-300/70">
+          Dev
         </span>
-        {DAY_TYPE_OPTIONS.map((o) => {
-          const active = value === o.value
-          return (
-            <button
-              key={o.label}
-              type="button"
-              onClick={() => onSelect(o.value)}
-              className="rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors"
-              style={{
-                background: active ? "rgba(120,210,230,0.16)" : "transparent",
-                color: active ? "rgba(120,210,230,1)" : "rgba(255,255,255,0.45)",
-              }}
-            >
-              {o.label}
-            </button>
-          )
-        })}
+      </button>
+    )
+  }
+
+  return (
+    <div className="fixed left-3 top-3 z-[9999] w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-cyan-300/20 bg-[#040506]/90 p-3 shadow-[0_0_30px_rgba(120,210,230,0.12)] backdrop-blur-xl">
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-cyan-300/70">
+          Dev preview
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40 transition-colors hover:text-white/70"
+        >
+          Sluiten
+        </button>
       </div>
+
+      <div className="mt-3">
+        <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-white/30">
+          Pagina
+        </span>
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          {VIEWS.map((v) => {
+            const active = isActive(current, v.path)
+            return (
+              <button
+                key={v.path}
+                type="button"
+                onClick={() => onNavigate(v.path)}
+                className="rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors"
+                style={pillStyle(active)}
+              >
+                {v.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {isHome && (
+        <div className="mt-3 border-t border-white/[0.07] pt-3">
+          <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-white/30">
+            Dagtype
+          </span>
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {DAY_TYPE_OPTIONS.map((o) => {
+              const active = dayType === o.value
+              return (
+                <button
+                  key={o.label}
+                  type="button"
+                  onClick={() => onDayType(o.value)}
+                  className="rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors"
+                  style={pillStyle(active)}
+                >
+                  {o.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -165,8 +198,13 @@ export function DevPreview() {
 
   return (
     <>
-      <DevSwitcher current={location} onSelect={setLocation} />
-      {isHome && <DayTypeSwitcher value={dayType} onSelect={setDayType} />}
+      <DevPanel
+        current={location}
+        onNavigate={setLocation}
+        isHome={isHome}
+        dayType={dayType}
+        onDayType={setDayType}
+      />
       {page}
       {showNav && <BottomNav />}
     </>
