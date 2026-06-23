@@ -16,6 +16,7 @@ import notificationsRouter from "./notifications";
 import activityImportsRouter from "./activity-imports";
 import routesRouter from "./routes";
 import bugReportsRouter from "./bug-reports";
+import knowledgeRouter from "./knowledge";
 import adminRouter from "./admin";
 
 const router: IRouter = Router();
@@ -37,6 +38,7 @@ router.use("/notifications", notificationsRouter);
 router.use("/activity-imports", activityImportsRouter);
 router.use("/routes", routesRouter);
 router.use("/bug-reports", bugReportsRouter);
+router.use("/knowledge", knowledgeRouter);
 router.use("/admin", adminRouter);
 
 export default router;

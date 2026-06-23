@@ -27,6 +27,12 @@ import {
   getPreferences,
   styleDirective,
 } from "../lib/ai-memory";
+import { resolveFlags } from "../lib/flags";
+import {
+  getRelevantKnowledge,
+  formatKnowledgeForPrompt,
+  type KnowledgeSource,
+} from "../lib/knowledge/retrieval";
 
 const router = Router();
 
@@ -164,6 +170,47 @@ async function systemPrompt(clerkId: string): Promise<string> {
   return directive ? `${SPARKI_SYSTEM}\n\n${directive}` : SPARKI_SYSTEM;
 }
 
+// Retrieval-augmented coaching: when the knowledge_base flag is enabled for the
+// user, pull the most relevant REAL stored literature/news and return both a
+// prompt block (for the model to cite) and the structured sources (for the
+// client to render clickable links). Returns empty when the flag is off or the
+// library has nothing relevant — coaching then proceeds without citations.
+async function gatherKnowledge(
+  clerkId: string,
+  keywordText: string,
+): Promise<{ promptBlock: string; sources: KnowledgeSource[] }> {
+  try {
+    const [profile] = await db
+      .select({ activeRole: userProfilesTable.activeRole })
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.clerkId, clerkId));
+    const activeRole = String(profile?.activeRole ?? "athlete");
+    const flags = await resolveFlags(clerkId, activeRole);
+    if (!flags.knowledge_base) return { promptBlock: "", sources: [] };
+
+    const keywords = keywordText
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((w) => w.length >= 4)
+      .slice(0, 40);
+    const sources = await getRelevantKnowledge({ keywords, limit: 4 });
+    if (!sources.length) return { promptBlock: "", sources: [] };
+
+    const block = `RELEVANTE WETENSCHAP & NIEUWS UIT DE SPARKI-KENNISBANK (alleen ECHT opgeslagen bronnen):
+${formatKnowledgeForPrompt(sources)}
+
+CITEERREGELS (strikt):
+- Verwijs alleen naar bovenstaande bronnen wanneer ze de athlete-data daadwerkelijk ondersteunen. Citeer met de titel (of auteur) van de bron.
+- Verzin NOOIT een artikel, auteur, tijdschrift, bevinding of link. Gebruik uitsluitend de bronnen hierboven.
+- Als geen bron relevant is, citeer dan niets.`;
+    return { promptBlock: block, sources };
+  } catch (err) {
+    // Knowledge augmentation is best-effort; never block coaching on it.
+    return { promptBlock: "", sources: [] };
+  }
+}
+
 // ── POST /api/ai/brief ───────────────────────────────────────────────────────
 router.post("/brief", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
@@ -172,6 +219,8 @@ router.post("/brief", requireAuth, async (req, res) => {
       buildAthleteContext(clerkId),
       systemPrompt(clerkId),
     ]);
+    const { promptBlock, sources } = await gatherKnowledge(clerkId, context);
+    const knowledgeSection = promptBlock ? `\n\n${promptBlock}` : "";
 
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
@@ -180,7 +229,7 @@ router.post("/brief", requireAuth, async (req, res) => {
       messages: [
         {
           role: "user",
-          content: `Generate a daily coaching brief based on this data:\n\n${context}\n\nProvide 2-3 sentences covering: readiness assessment and today's workout guidance. Be specific to the actual numbers. If no check-in or plan exists, note what data would improve your guidance.`,
+          content: `Generate a daily coaching brief based on this data:\n\n${context}${knowledgeSection}\n\nProvide 2-3 sentences covering: readiness assessment and today's workout guidance. Be specific to the actual numbers. If no check-in or plan exists, note what data would improve your guidance.${promptBlock ? " Where a stored source genuinely supports your advice, cite it by name." : ""}`,
         },
       ],
     });
@@ -191,7 +240,7 @@ router.post("/brief", requireAuth, async (req, res) => {
       return;
     }
     const brief = block.text;
-    res.json({ brief });
+    res.json({ brief, sources });
 
     // Persist memory after responding (best-effort; never blocks the response).
     void (async () => {
@@ -251,6 +300,11 @@ router.post("/ask", requireAuth, async (req, res) => {
       buildAthleteContext(clerkId),
       systemPrompt(clerkId),
     ]);
+    const { promptBlock, sources } = await gatherKnowledge(
+      clerkId,
+      `${question.trim()} ${context}`,
+    );
+    const knowledgeSection = promptBlock ? `\n\n${promptBlock}` : "";
 
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
@@ -259,7 +313,7 @@ router.post("/ask", requireAuth, async (req, res) => {
       messages: [
         {
           role: "user",
-          content: `Athlete data:\n${context}\n\nQuestion: ${question.trim()}`,
+          content: `Athlete data:\n${context}${knowledgeSection}\n\nQuestion: ${question.trim()}`,
         },
       ],
     });
@@ -270,7 +324,7 @@ router.post("/ask", requireAuth, async (req, res) => {
       return;
     }
     const answer = block.text;
-    res.json({ answer });
+    res.json({ answer, sources });
 
     // Only persist genuinely important insights from Q&A — not every exchange.
     void (async () => {

@@ -27,3 +27,10 @@ deployment with non-production NODE_ENV would silently grant access as a fallbac
 `DEV_AUTH_BYPASS === "true"` (defaults OFF, set only in the api-server `dev` script).
 Frontend branch is dead-code-eliminated in prod builds via `import.meta.env.DEV`.
 Never relax either condition.
+
+## New pages need a DevPreview branch (easy to miss)
+`DevPreview` does NOT defer to the production wouter `<Switch>` — it has its own
+`if (location.startsWith(...))` chain. A route registered only in `App.tsx` will work
+in prod but silently fall through to `DayHome` in dev preview (bottom-nav may still
+highlight it). When adding a page, add a branch in `dev-preview.tsx` (and optionally a
+`VIEWS` switcher entry) or it cannot be previewed in dev.

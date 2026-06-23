@@ -1,16 +1,21 @@
 import { useState } from "react"
+import { Link } from "wouter"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { SparkiCore } from "@/components/sparki/sparki-core"
-import { useAiBrief, useAskSparki } from "@/hooks/use-ai-brief"
+import { useAiBrief, useAskSparki, type AiSource } from "@/hooks/use-ai-brief"
+import { useFeatureFlag } from "@/hooks/use-feature-flag"
+import { useKnowledge } from "@/hooks/use-knowledge"
 import {
   Megaphone,
   Users,
   Flag,
-  Building2,
   PlayCircle,
   Send,
   Loader2,
+  ExternalLink,
+  BookOpen,
+  ArrowRight,
 } from "lucide-react"
 
 type FilterKey = "all" | "coach" | "team" | "race" | "ai"
@@ -32,6 +37,7 @@ type StreamItem = {
   author?: string
   meta?: string
   time?: string
+  sources?: AiSource[]
 }
 
 const typeMeta: Record<
@@ -47,6 +53,62 @@ const typeMeta: Record<
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
+}
+
+// Flag-gated preview of the latest sport-science / news from the knowledge base,
+// linking through to the full browsable surface at /kennis.
+function KnowledgeFeedSection() {
+  const enabled = useFeatureFlag("knowledge_base")
+  const { data, isLoading } = useKnowledge({ limit: 3, enabled })
+  if (!enabled) return null
+  const items = data?.items ?? []
+
+  return (
+    <section>
+      <SectionLabel title="Kennisbank" />
+      <Link
+        href="/kennis"
+        className="mt-3 flex items-center justify-between rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-3 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+      >
+        <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white/55">
+          <BookOpen className="h-3.5 w-3.5" style={{ color: ACCENT }} />
+          Wetenschap & nieuws
+        </span>
+        <ArrowRight className="h-3.5 w-3.5 text-white/30" />
+      </Link>
+
+      {isLoading && (
+        <div className="mt-3 space-y-2">
+          {[0, 1].map((i) => (
+            <Skeleton key={i} className="h-12 w-full rounded-xl" />
+          ))}
+        </div>
+      )}
+
+      <div className="mt-3 flex flex-col gap-2">
+        {items.map((item) => (
+          <a
+            key={item.id}
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 transition-colors hover:border-cyan-300/25"
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+                {item.type === "news" ? "NIEUWS" : "ONDERZOEK"}
+                {item.source ? ` · ${item.source}` : ""}
+              </span>
+              <ExternalLink className="h-3 w-3 text-white/25 transition-colors group-hover:text-cyan-300/70" />
+            </div>
+            <p className="mt-1 text-pretty text-[12px] font-light leading-snug text-white/80">
+              {item.title}
+            </p>
+          </a>
+        ))}
+      </div>
+    </section>
+  )
 }
 
 export default function FeedPage() {
@@ -71,6 +133,7 @@ export default function FeedPage() {
         body: result.answer,
         author: "Sparki AI",
         time: "Nu",
+        sources: result.sources ?? [],
       },
       ...prev,
     ])
@@ -88,6 +151,7 @@ export default function FeedPage() {
             body: briefData.brief,
             author: "Sparki AI",
             time: "Vandaag",
+            sources: briefData.sources ?? [],
           },
         ]
       : []),
@@ -282,6 +346,34 @@ export default function FeedPage() {
                   <p className="mt-1 text-pretty text-[12px] leading-relaxed text-white/45">
                     {item.body}
                   </p>
+                  {item.sources && item.sources.length > 0 && (
+                    <div className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+                      <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+                        <BookOpen className="h-3 w-3" style={{ color: ACCENT }} />
+                        Bronnen
+                      </p>
+                      <ul className="mt-2 space-y-1.5">
+                        {item.sources.map((s) => (
+                          <li key={s.id}>
+                            <a
+                              href={s.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group flex items-start gap-1.5 text-[11px] leading-snug text-white/55 transition-colors hover:text-cyan-200/90"
+                            >
+                              <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-white/25 transition-colors group-hover:text-cyan-300/70" />
+                              <span className="text-pretty">
+                                {s.title}
+                                {s.source ? (
+                                  <span className="text-white/30"> — {s.source}</span>
+                                ) : null}
+                              </span>
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   {item.author && (
                     <div className="mt-2 flex items-center gap-2">
                       <span className="font-mono text-[10px] tracking-wide text-white/40">
@@ -295,6 +387,8 @@ export default function FeedPage() {
           })}
         </div>
       </section>
+
+      <KnowledgeFeedSection />
     </ScreenShell>
   )
 }

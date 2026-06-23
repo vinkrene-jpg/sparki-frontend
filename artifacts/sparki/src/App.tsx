@@ -27,6 +27,7 @@ import TrainPage from "@/pages/train";
 import YouPage from "@/pages/you";
 import LabPage from "@/pages/lab";
 import RacesPage from "@/pages/races";
+import KnowledgePage from "@/pages/knowledge";
 import InvitationsPage from "@/pages/invitations";
 import InviteAcceptPage from "@/pages/invite-accept";
 import LandingPage from "@/pages/landing";
@@ -317,6 +318,9 @@ function AppRouter() {
                 </Route>
                 <Route path="/races">
                   <ProtectedPage component={RacesPage} />
+                </Route>
+                <Route path="/kennis">
+                  <ProtectedPage component={KnowledgePage} />
                 </Route>
                 <Route path="/invitations">
                   <ProtectedPage component={InvitationsPage} />

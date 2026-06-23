@@ -116,6 +116,13 @@ export const queryKeys = {
     list: () => ["invitations", "list"] as const,
     detail: (token: string) => ["invitations", "detail", token] as const,
   },
+
+  knowledge: {
+    all: () => ["knowledge"] as const,
+    meta: () => ["knowledge", "meta"] as const,
+    list: (q: string, discipline: string, type: string) =>
+      ["knowledge", "list", q, discipline, type] as const,
+  },
 } as const;
 
 /** Default stale times (ms) — import these rather than hardcoding magic numbers. */

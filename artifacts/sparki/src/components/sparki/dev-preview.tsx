@@ -11,6 +11,7 @@ import RacesPage from "@/pages/races"
 import InvitationsPage from "@/pages/invitations"
 import InviteAcceptPage from "@/pages/invite-accept"
 import LandingPage from "@/pages/landing"
+import KnowledgePage from "@/pages/knowledge"
 
 const LANDING_PATH = "/_dev/landing"
 
@@ -45,6 +46,7 @@ const VIEWS: DevView[] = [
   { label: "Feed", path: "/feed" },
   { label: "Lab", path: "/lab" },
   { label: "You", path: "/you" },
+  { label: "Kennis", path: "/kennis" },
   { label: "Invites", path: "/invitations" },
 ]
 
@@ -147,6 +149,8 @@ export function DevPreview() {
     page = <LabPage />
   } else if (location.startsWith("/you")) {
     page = <YouPage />
+  } else if (location.startsWith("/kennis")) {
+    page = <KnowledgePage />
   } else if (location.startsWith("/races")) {
     page = <RacesPage />
   } else if (location.startsWith("/invitations")) {

@@ -14,3 +14,4 @@ export * from "./activity-imports";
 export * from "./routes";
 export * from "./notifications";
 export * from "./bug-reports";
+export * from "./knowledge";

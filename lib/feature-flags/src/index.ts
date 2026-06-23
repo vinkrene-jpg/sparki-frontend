@@ -7,6 +7,7 @@ export const FEATURE_KEYS = [
   "parent_portal",
   "testing_tools",
   "premium",
+  "knowledge_base",
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -25,4 +26,6 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
   testing_tools:
     "Internal testing tools — flag management UI, data seeding, debug overlays",
   premium: "Premium feature tier — reserved for future paid features",
+  knowledge_base:
+    "Sparki Knowledge Base — daily-scanned sport-science library, browsable news/research surface, and cited retrieval in AI briefs",
 };

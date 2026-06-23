@@ -1,7 +1,8 @@
-import { Home, Bike, Flag, Radio, FlaskConical, User, UserPlus } from "lucide-react"
+import { Home, Bike, Flag, Radio, FlaskConical, User, UserPlus, BookOpen } from "lucide-react"
 import { Link, useLocation } from "wouter"
 import { useUserProfile } from "@/contexts/UserContext"
 import type { Role } from "@/contexts/UserContext"
+import { useFeatureFlag } from "@/hooks/use-feature-flag"
 
 type NavItem = {
   href: string
@@ -40,7 +41,16 @@ function navForRole(role: Role | null | undefined): NavItem[] {
 export function BottomNav() {
   const [pathname] = useLocation()
   const { profile } = useUserProfile()
-  const items = navForRole(profile?.activeRole)
+  const knowledgeOn = useFeatureFlag("knowledge_base")
+  let items = navForRole(profile?.activeRole)
+  // Knowledge base is flag-gated and only surfaced for athletes; replace the
+  // lower-priority "Races" slot to keep the bar from overcrowding.
+  if (knowledgeOn && profile?.activeRole !== "coach" && profile?.activeRole !== "parent") {
+    items = [
+      ...items.filter((i) => i.href !== "/races"),
+      { href: "/kennis", icon: BookOpen, label: "Kennis" },
+    ]
+  }
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50">
