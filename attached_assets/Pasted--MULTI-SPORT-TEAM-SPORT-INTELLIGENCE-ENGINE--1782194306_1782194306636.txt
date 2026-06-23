@@ -1,0 +1,182 @@
+==================================================
+MULTI-SPORT & TEAM-SPORT INTELLIGENCE ENGINE
+==================================================
+
+Sparki moet niet alleen wielrennen ondersteunen.
+
+Bouw een Multi-Sport Intelligence Engine die per sport bepaalt:
+
+- welke data relevant is
+- welke analyses nodig zijn
+- welke dashboards zichtbaar zijn
+- welke trainingsschema’s passen
+- welke coachingstijl logisch is
+- welke route/logging nodig is
+- welke team- of individuele context geldt
+
+Ondersteun minimaal:
+
+Individuele duursporten:
+- wielrennen
+- MTB
+- gravel
+- hardlopen
+- trailrunning
+- wandelen
+- triathlon
+- zwemmen
+- schaatsen
+
+Kracht/fitness:
+- krachttraining
+- core/stability
+- mobiliteit
+- blessurepreventie
+
+Teamsporten:
+- voetbal
+- hockey
+- basketbal
+- handbal
+- volleybal
+- rugby
+- algemene teamsportmodule
+
+Per sport moet Sparki eigen logica tonen.
+
+Voorbeelden:
+
+Wielrennen:
+- FTP
+- vermogen
+- hartslag
+- cadans
+- route
+- hoogtemeters
+- TSS/belasting
+- sprintanalyse
+- klimanalyse
+- wedstrijdtactiek
+
+Hardlopen:
+- tempo
+- hartslag
+- cadans
+- paslengte indien beschikbaar
+- ondergrond
+- route
+- intervalanalyse
+- blessurerisico
+
+Zwemmen:
+- afstand
+- tempo per 100m
+- slagtype
+- rustpauzes
+- techniek
+- trainingsblokken
+
+Krachttraining:
+- oefeningen
+- sets/reps
+- gewicht
+- RPE
+- progressie
+- techniek
+- blessurepreventie
+
+Teamsport:
+- teamtrainingen
+- wedstrijdplanning
+- aanwezigheidsregistratie
+- positie/rol
+- belasting per speler
+- individuele aandachtspunten
+- blessurestatus
+- trainerfeedback
+- teamcommunicatie
+- groepsanalyse
+- individuele begeleiding naast teamtraining
+
+Belangrijk:
+Een voetballer mag geen wielren-dashboard krijgen.
+Een wielrenner mag geen teamsportdashboard krijgen.
+Een jeugdspeler mag andere begeleiding krijgen dan een volwassen sporter.
+Een trainer moet per sport andere analyses zien.
+
+==================================================
+SPORT-SPECIFIC FEEDS
+==================================================
+
+Maak feeds per sport en rol.
+
+Sporter-feed:
+- relevante training
+- herstel
+- tips
+- voortgang
+- kennis
+- motivatie
+- waarschuwingen
+
+Trainer-feed:
+- sporters met risico
+- gemiste trainingen
+- voortgang
+- teambelasting
+- feedback
+- aandachtspunten
+
+Ouder-feed:
+- planning
+- aanwezigheid
+- welzijnssignalen
+- eenvoudige uitleg
+- geen onnodige prestatie- of medische data
+
+Team-feed:
+- teamplanning
+- groepsdoelen
+- gezamenlijke trainingen
+- wedstrijdinfo
+- communicatie
+
+==================================================
+TEAM-SPORT BEGELEIDING
+==================================================
+
+Voor teamsporten moet Sparki werken op twee niveaus:
+
+1. Teamniveau
+- teamtraining
+- wedstrijd
+- aanwezigheid
+- tactische thema’s
+- teamdoelen
+- groepsbelasting
+- teamcommunicatie
+
+2. Individueel niveau
+- spelerprofiel
+- positie/rol
+- fysieke belasting
+- herstel
+- blessurepreventie
+- individuele doelen
+- extra training
+- feedback
+- mentale begeleiding
+
+Sparki moet dus begrijpen:
+een speler traint binnen een team, maar ontwikkelt individueel.
+
+==================================================
+ACCEPTATIECRITERIA
+==================================================
+
+- Sportkeuze bepaalt dashboard, data en begeleiding.
+- Teamsport krijgt andere logica dan individuele sport.
+- Trainer ziet per sport passende analyses.
+- Ouder ziet vereenvoudigde rolafhankelijke informatie.
+- Feeds zijn sport- en rolafhankelijk.
+- Sparki Brain Test Center test minimaal 10 verschillende sporten.
