@@ -17,7 +17,7 @@ export const bugReportsTable = pgTable("bug_reports", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
     .notNull()
-    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   userRole: text("user_role"),
   pageUrl: text("page_url"),
   description: text("description").notNull(),

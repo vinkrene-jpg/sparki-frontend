@@ -12,6 +12,7 @@ import { useLocation } from "wouter"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { Skeleton } from "@/components/sparki/home-sections"
+import { apiFetch } from "@/lib/api"
 import { useUserProfile } from "@/contexts/UserContext"
 import { useInvitations, useCreateInvitation } from "@/hooks/use-invitations"
 import { RELATIONSHIP_LABEL, type Invitation } from "@/lib/invitation-types"
@@ -147,8 +148,32 @@ export default function TesterQrPage() {
   const [base, setBase] = useState(defaultBase)
   const [testerName, setTesterName] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [resetting, setResetting] = useState(false)
+  const [resetError, setResetError] = useState<string | null>(null)
 
   const isAdmin = profile?.isAdmin === true
+
+  // Replays onboarding for the signed-in admin: clears the server completion
+  // flags, drops the local "already onboarded" marker, then reloads at the app
+  // root so the onboarding flow starts fresh.
+  async function replayOnboarding() {
+    setResetError(null)
+    setResetting(true)
+    try {
+      await apiFetch("/api/admin/reset-onboarding", { method: "POST" })
+      if (profile?.clerkId) {
+        try {
+          window.localStorage.removeItem(`sparki_onboarded_${profile.clerkId}`)
+        } catch {
+          /* localStorage unavailable — server reset is the source of truth */
+        }
+      }
+      window.location.href = import.meta.env.BASE_URL
+    } catch (e) {
+      setResetError(e instanceof Error ? e.message : "Resetten mislukt.")
+      setResetting(false)
+    }
+  }
 
   function saveBase(next: string) {
     setBase(next)
@@ -301,6 +326,32 @@ export default function TesterQrPage() {
           </div>
         )}
       </section>
+
+      {isAdmin && (
+        <section className="space-y-3">
+          <SectionLabel n="04" title="Onboarding testen" large />
+          <div className="space-y-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+            <p className="text-[13px] leading-relaxed text-white/55">
+              Loop de onboarding opnieuw door om hem te controleren. Je profiel en
+              gegevens blijven bewaard; alleen de onboarding-stappen worden gereset.
+            </p>
+            <button
+              type="button"
+              onClick={replayOnboarding}
+              disabled={resetting}
+              className="w-full rounded-xl border py-3 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors disabled:opacity-50"
+              style={{
+                borderColor: "rgba(120,210,230,0.4)",
+                background: "rgba(120,210,230,0.12)",
+                color: ACCENT,
+              }}
+            >
+              {resetting ? "Bezig…" : "Onboarding opnieuw doorlopen"}
+            </button>
+            {resetError && <p className="text-[12px] text-red-300/80">{resetError}</p>}
+          </div>
+        </section>
+      )}
 
       <footer className="pt-2 text-center">
         <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">

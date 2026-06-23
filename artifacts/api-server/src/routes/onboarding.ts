@@ -5,6 +5,7 @@ import {
   onboardingStateTable,
   athleteProfilesTable,
   coachAthleteLinksTable,
+  userProfilesTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { generatePlan } from "../engines/training-plan";
@@ -230,6 +231,18 @@ router.post("/quick-start", requireAuth, async (req, res) => {
 
   const now = new Date();
   try {
+    // The athlete_profiles insert below has an FK to user_profiles. If sync
+    // never created the parent row (e.g. it errored), inserting here would throw
+    // a raw FK 500 and brick onboarding. Fail with a clear, recoverable error.
+    const [parent] = await db
+      .select({ clerkId: userProfilesTable.clerkId })
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.clerkId, clerkId));
+    if (!parent) {
+      res.status(409).json({ error: "Je account is nog niet klaar. Log opnieuw in en probeer het nog eens." });
+      return;
+    }
+
     await db
       .insert(athleteProfilesTable)
       .values({ clerkId, ...patch })

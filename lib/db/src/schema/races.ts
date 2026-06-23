@@ -22,7 +22,7 @@ export const racesTable = pgTable("races", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
     .notNull()
-    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
 
   // Core (athlete add/edit form)
   name: text("name").notNull(),

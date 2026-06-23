@@ -8,7 +8,7 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
   clerkId: text("clerk_id")
     .notNull()
     .unique()
-    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   ftp: integer("ftp"),
   weightKg: numeric("weight_kg", { precision: 5, scale: 2 }),
   discipline: text("discipline"),

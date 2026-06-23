@@ -34,7 +34,7 @@ export type DataSharingParentLevel = (typeof dataSharingParentLevels)[number];
 export const privacySettingsTable = pgTable("privacy_settings", {
   clerkId: text("clerk_id")
     .primaryKey()
-    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   consentVersion: text("consent_version").notNull().default("1"),
   acceptedTermsAt: timestamp("accepted_terms_at", { withTimezone: true }),
   acceptedPrivacyAt: timestamp("accepted_privacy_at", { withTimezone: true }),
@@ -68,7 +68,7 @@ export const consentAuditLogTable = pgTable("consent_audit_log", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
     .notNull()
-    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   field: text("field").notNull(),
   oldValue: text("old_value"),
   newValue: text("new_value"),

@@ -31,7 +31,7 @@ export const nutritionHydrationLogsTable = pgTable(
     id: serial("id").primaryKey(),
     clerkId: text("clerk_id")
       .notNull()
-      .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+      .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
     logDate: date("log_date").notNull(),
     context: text("context").notNull().default("normal_day"),
     preTrainingFood: text("pre_training_food"),

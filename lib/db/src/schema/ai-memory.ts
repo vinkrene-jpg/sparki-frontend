@@ -72,7 +72,7 @@ export const aiObservationsTable = pgTable(
     id: serial("id").primaryKey(),
     clerkId: text("clerk_id")
       .notNull()
-      .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+      .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
     sourceType: text("source_type").notNull(),
     title: text("title").notNull(),
     summary: text("summary"),
@@ -116,7 +116,7 @@ export const aiMemoryEventsTable = pgTable("ai_memory_events", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
     .notNull()
-    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   eventType: text("event_type").notNull(),
   relatedObservationId: integer("related_observation_id").references(
     () => aiObservationsTable.id,
@@ -146,7 +146,7 @@ export type AiExplanationLevel = (typeof aiExplanationLevels)[number];
 export const aiPreferencesTable = pgTable("ai_preferences", {
   clerkId: text("clerk_id")
     .primaryKey()
-    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   communicationStyle: text("communication_style")
     .notNull()
     .default("supportive"),

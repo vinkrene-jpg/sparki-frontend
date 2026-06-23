@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { sql } from "drizzle-orm";
-import { db } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
+import { db, onboardingStateTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { isAdmin } from "../lib/flags";
 
@@ -49,6 +49,35 @@ router.get("/status", requireAuth, requireAdmin, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "admin.status failed");
     res.status(500).json({ error: "Kon status niet laden" });
+  }
+});
+
+// POST /api/admin/reset-onboarding — replays the onboarding flow for the calling
+// admin so it can be tested on demand. Clears the completion flags + adaptive
+// fact state; the athlete profile is left intact (quick-start re-upserts it).
+router.post("/reset-onboarding", requireAuth, requireAdmin, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    await db
+      .insert(onboardingStateTable)
+      .values({ clerkId, isComplete: false })
+      .onConflictDoUpdate({
+        target: onboardingStateTable.clerkId,
+        set: {
+          isComplete: false,
+          onboardingCompletedAt: null,
+          coreCompletedAt: null,
+          completedSteps: [],
+          skippedSteps: [],
+          currentStep: 0,
+          progressiveFacts: {},
+          updatedAt: new Date(),
+        },
+      });
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "admin.reset-onboarding failed");
+    res.status(500).json({ error: "Kon onboarding niet resetten" });
   }
 });
 

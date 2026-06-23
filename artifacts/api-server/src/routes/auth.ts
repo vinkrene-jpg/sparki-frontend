@@ -1,20 +1,31 @@
 import { Router } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db, userProfilesTable, athleteProfilesTable, validRoles, type Role } from "@workspace/db";
-import { requireAuth, getClerkUserId } from "../lib/auth";
+import { requireAuth, getClerkUserId, hasRealSession, getClerkVerifiedEmail } from "../lib/auth";
 import { isAdmin } from "../lib/flags";
 
 const router = Router();
 
 // POST /api/auth/sync
-// Idempotent first-login provisioning.
-// Body: { email: string; displayName?: string }
+// Idempotent first-login provisioning. Identity (email) is read from Clerk
+// server-side; only `displayName` is taken from the body.
+// Body: { displayName?: string }
 router.post("/sync", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
-  const { email, displayName } = req.body as { email: string; displayName?: string };
+  const { displayName } = req.body as { email?: string; displayName?: string };
+
+  // Identity MUST come from Clerk, never from the request body. The re-link
+  // below reassigns an existing profile to the caller's clerkId, so trusting a
+  // client-supplied email would be an account-takeover vector. In dev (auth
+  // bypass, no real Clerk session) we fall back to the body email — dev is not a
+  // security boundary and there is no Clerk user to query.
+  const verifiedEmail = await getClerkVerifiedEmail(req);
+  const email = hasRealSession(req)
+    ? verifiedEmail
+    : ((req.body as { email?: string })?.email ?? null);
 
   if (!email) {
-    res.status(400).json({ error: "email is required" });
+    res.status(400).json({ error: "Geen geverifieerd e-mailadres gevonden." });
     return;
   }
 
@@ -26,17 +37,57 @@ router.post("/sync", requireAuth, async (req, res) => {
 
     // Confirm the row for THIS clerkId exists before touching athlete_profiles.
     // The user_profiles insert can no-op when `email` is already taken by a
-    // different clerkId (unique constraint). In that case there is no parent row
-    // for this clerkId, so inserting athlete_profiles would violate the FK and
-    // 500 — bricking onboarding. Surface a clear conflict instead.
-    const [profile] = await db
+    // different clerkId (the email unique constraint). That happens when the same
+    // person re-creates their Clerk account (new clerkId, same verified email):
+    // their old profile row is left pointing at the now-defunct clerkId.
+    let [profile] = await db
       .select()
       .from(userProfilesTable)
       .where(eq(userProfilesTable.clerkId, clerkId));
 
     if (!profile) {
-      req.log.warn({ clerkId, email }, "auth.sync: email already linked to another account");
-      res.status(409).json({ error: "Dit e-mailadres is al gekoppeld aan een ander account." });
+      // Re-link the orphaned profile to the current clerkId. Safe because the
+      // email is Clerk-verified (above) and Clerk enforces unique verified
+      // emails per instance, so the previous clerkId is provably defunct. Child
+      // rows follow via ON UPDATE CASCADE, preserving the user's history. The
+      // conditional update + row-count check guards against any race.
+      const [byEmail] = await db
+        .select()
+        .from(userProfilesTable)
+        .where(eq(userProfilesTable.email, email));
+
+      if (byEmail && byEmail.clerkId !== clerkId) {
+        req.log.warn(
+          { fromClerkId: byEmail.clerkId, toClerkId: clerkId },
+          "auth.sync: re-linking profile to re-created account",
+        );
+        const relinked = await db
+          .update(userProfilesTable)
+          .set({
+            clerkId,
+            displayName: displayName ?? byEmail.displayName,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(userProfilesTable.clerkId, byEmail.clerkId),
+              eq(userProfilesTable.email, email),
+            ),
+          )
+          .returning({ clerkId: userProfilesTable.clerkId });
+
+        if (relinked.length === 1) {
+          [profile] = await db
+            .select()
+            .from(userProfilesTable)
+            .where(eq(userProfilesTable.clerkId, clerkId));
+        }
+      }
+    }
+
+    if (!profile) {
+      req.log.error({ clerkId }, "auth.sync: could not provision profile");
+      res.status(500).json({ error: "Kon je account niet aanmaken." });
       return;
     }
 

@@ -42,7 +42,7 @@ export const invitationsTable = pgTable("invitations", {
   // Who created the invite and in what capacity.
   inviterClerkId: text("inviter_clerk_id")
     .notNull()
-    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   createdByRole: text("created_by_role").notNull(), // "admin" | "coach" | "parent"
 
   // What the accepter gets.
@@ -55,7 +55,7 @@ export const invitationsTable = pgTable("invitations", {
   status: text("status").notNull().default("pending"),
   acceptedByClerkId: text("accepted_by_clerk_id").references(
     () => userProfilesTable.clerkId,
-    { onDelete: "set null" },
+    { onDelete: "set null", onUpdate: "cascade" },
   ),
 
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),

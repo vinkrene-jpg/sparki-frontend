@@ -1,4 +1,4 @@
-import { getAuth } from "@clerk/express";
+import { getAuth, clerkClient } from "@clerk/express";
 import type { Request, Response, NextFunction } from "express";
 import { db, userProfilesTable } from "@workspace/db";
 
@@ -72,4 +72,31 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 export function getClerkUserId(req: Request): string | null {
   const auth = getAuth(req);
   return auth?.userId ?? devUserId(req);
+}
+
+// True when the request carries a real Clerk session (not the dev bypass).
+export function hasRealSession(req: Request): boolean {
+  return Boolean(getAuth(req)?.userId);
+}
+
+// Resolves the caller's *verified* primary email straight from Clerk — the only
+// trustworthy source of identity. Never trust an email from the request body for
+// security decisions (e.g. account re-linking): a client could submit someone
+// else's address. Returns null when there is no real session, no primary email,
+// or the primary email is unverified.
+export async function getClerkVerifiedEmail(req: Request): Promise<string | null> {
+  const auth = getAuth(req);
+  if (!auth?.userId) return null;
+  try {
+    const user = await clerkClient.users.getUser(auth.userId);
+    const addresses = user.emailAddresses ?? [];
+    const primary =
+      addresses.find((a) => a.id === user.primaryEmailAddressId) ?? addresses[0];
+    if (!primary) return null;
+    return primary.verification?.status === "verified"
+      ? primary.emailAddress
+      : null;
+  } catch {
+    return null;
+  }
 }

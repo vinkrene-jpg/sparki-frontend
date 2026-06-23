@@ -18,7 +18,7 @@ export const athleteDailyMetricsTable = pgTable(
     id: serial("id").primaryKey(),
     clerkId: text("clerk_id")
       .notNull()
-      .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+      .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
     metricDate: date("metric_date").notNull(),
     hrv: integer("hrv"),
     restingHR: integer("resting_hr"),
@@ -42,7 +42,7 @@ export const ftpHistoryTable = pgTable("ftp_history", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
     .notNull()
-    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   measuredAt: date("measured_at").notNull(),
   ftpWatts: integer("ftp_watts").notNull(),
   testType: text("test_type").notNull().default("manual"),

@@ -27,7 +27,7 @@ export const userFlagOverridesTable = pgTable(
   {
     clerkId: text("clerk_id")
       .notNull()
-      .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+      .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
     flagKey: text("flag_key")
       .notNull()
       .references(() => featureFlagsTable.key, { onDelete: "cascade" }),

@@ -41,7 +41,7 @@ export const connectorConnectionsTable = pgTable(
     id: serial("id").primaryKey(),
     clerkId: text("clerk_id")
       .notNull()
-      .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+      .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
     // Stable connector id from the backend registry, e.g. "strava".
     provider: text("provider").notNull(),
     // "connected" | "disconnected" | "error" | "revoked"

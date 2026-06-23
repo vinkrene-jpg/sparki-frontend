@@ -15,7 +15,7 @@ import { userProfilesTable } from "./users";
 export const onboardingStateTable = pgTable("onboarding_state", {
   clerkId: text("clerk_id")
     .primaryKey()
-    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   onboardingStartedAt: timestamp("onboarding_started_at", {
     withTimezone: true,
   }),

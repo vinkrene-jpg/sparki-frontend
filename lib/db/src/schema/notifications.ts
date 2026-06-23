@@ -33,10 +33,10 @@ export const notificationsTable = pgTable(
     id: serial("id").primaryKey(),
     clerkId: text("clerk_id")
       .notNull()
-      .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+      .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
     athleteClerkId: text("athlete_clerk_id").references(
       () => userProfilesTable.clerkId,
-      { onDelete: "set null" },
+      { onDelete: "set null", onUpdate: "cascade" },
     ),
     type: text("type").notNull(),
     title: text("title").notNull(),

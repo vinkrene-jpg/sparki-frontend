@@ -36,7 +36,7 @@ export const activityImportsTable = pgTable("activity_imports", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
     .notNull()
-    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   fileName: text("file_name").notNull(),
   fileType: text("file_type").notNull().default("unknown"),
   source: text("source").notNull().default("manual_upload"),

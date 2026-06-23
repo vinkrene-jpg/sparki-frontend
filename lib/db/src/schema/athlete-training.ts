@@ -17,7 +17,7 @@ export const trainingSessionsTable = pgTable("training_sessions", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
     .notNull()
-    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   sessionDate: date("session_date").notNull(),
   type: text("type").notNull().default("ride"),
   title: text("title"),
@@ -44,7 +44,7 @@ export const plannedWorkoutsTable = pgTable("planned_workouts", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
     .notNull()
-    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   scheduledDate: date("scheduled_date").notNull(),
   type: text("type").notNull().default("ride"),
   title: text("title").notNull(),
@@ -80,7 +80,7 @@ export const trainingPlansTable = pgTable("training_plans", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
     .notNull()
-    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   status: text("status").notNull().default("active"), // active | archived
   mode: text("mode").notNull().default("autonomous"), // autonomous | advisory
   weekStartDate: date("week_start_date").notNull(),
@@ -113,7 +113,7 @@ export const planDaysTable = pgTable("plan_days", {
     .references(() => trainingPlansTable.id, { onDelete: "cascade" }),
   clerkId: text("clerk_id")
     .notNull()
-    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   dayDate: date("day_date").notNull(),
   weekIndex: integer("week_index").notNull().default(0), // 0,1,2
   // Short focus label, e.g. "Duurtraining", "Intervallen", "Rust", "Herstel".
@@ -151,7 +151,7 @@ export const workoutFeedbackTable = pgTable("workout_feedback", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
     .notNull()
-    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   workoutId: integer("workout_id")
     .notNull()
     .references(() => plannedWorkoutsTable.id, { onDelete: "cascade" }),

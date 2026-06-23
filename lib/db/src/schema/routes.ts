@@ -65,7 +65,7 @@ export const routesTable = pgTable("routes", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
     .notNull()
-    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   name: text("name").notNull(),
   surface: text("surface").notNull().default("unknown"),
   status: text("status").notNull().default("ready"),
