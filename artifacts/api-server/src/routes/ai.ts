@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, eq, desc } from "drizzle-orm";
+import { and, eq, desc, gte } from "drizzle-orm";
 import {
   db,
   userProfilesTable,
@@ -7,6 +7,9 @@ import {
   trainingSessionsTable,
   plannedWorkoutsTable,
   athleteDailyMetricsTable,
+  ftpHistoryTable,
+  nutritionHydrationLogsTable,
+  racesTable,
   aiObservationsTable,
   aiPreferencesTable,
   aiObservationStatuses,
@@ -49,6 +52,9 @@ async function buildAthleteContext(clerkId: string): Promise<string> {
     allWorkouts,
     recentSessions,
     recentMetrics,
+    ftpHistory,
+    nutritionLogs,
+    upcomingRaces,
     priorObservations,
   ] = await Promise.all([
     db
@@ -70,18 +76,38 @@ async function buildAthleteContext(clerkId: string): Promise<string> {
       .from(trainingSessionsTable)
       .where(eq(trainingSessionsTable.clerkId, clerkId))
       .orderBy(desc(trainingSessionsTable.sessionDate))
-      .limit(7),
+      .limit(10),
     db
       .select()
       .from(athleteDailyMetricsTable)
       .where(eq(athleteDailyMetricsTable.clerkId, clerkId))
       .orderBy(desc(athleteDailyMetricsTable.metricDate))
       .limit(14),
+    db
+      .select()
+      .from(ftpHistoryTable)
+      .where(eq(ftpHistoryTable.clerkId, clerkId))
+      .orderBy(desc(ftpHistoryTable.measuredAt))
+      .limit(6),
+    db
+      .select()
+      .from(nutritionHydrationLogsTable)
+      .where(eq(nutritionHydrationLogsTable.clerkId, clerkId))
+      .orderBy(desc(nutritionHydrationLogsTable.logDate))
+      .limit(5),
+    db
+      .select()
+      .from(racesTable)
+      .where(and(eq(racesTable.clerkId, clerkId), gte(racesTable.raceDate, today)))
+      .orderBy(racesTable.raceDate)
+      .limit(5),
     getContextObservations(clerkId),
   ]);
 
   const todayPlan = allWorkouts.find((w) => w.scheduledDate === today) ?? null;
   const todayMetric = recentMetrics.find((m) => m.metricDate === today) ?? null;
+  const daysUntil = (d: string) =>
+    Math.round((new Date(d).getTime() - new Date(today).getTime()) / 86400000);
 
   const parts: string[] = [];
   parts.push(`TODAY: ${today}`);
@@ -92,12 +118,38 @@ async function buildAthleteContext(clerkId: string): Promise<string> {
       athlete.ftp && athlete.weightKg
         ? (athlete.ftp / Number(athlete.weightKg)).toFixed(2)
         : null;
+    const age =
+      athlete.birthYear != null
+        ? new Date().getFullYear() - athlete.birthYear
+        : null;
     parts.push(
       `PROFILE: FTP=${athlete.ftp ?? "not set"}W${wkg ? `, ${wkg} W/kg` : ""}, Weight=${athlete.weightKg ?? "unknown"}kg, Discipline=${athlete.discipline ?? "road cycling"}`,
     );
+    const bio = [
+      age != null && `Age=${age}`,
+      athlete.competitionLevel && `CompetitionLevel=${athlete.competitionLevel}`,
+      athlete.experienceLevel && `TrainingExperience=${athlete.experienceLevel}`,
+      athlete.trainingDaysPerWeek != null &&
+        `TrainingDays/wk=${athlete.trainingDaysPerWeek}`,
+      athlete.loadCapacity && `LoadCapacity=${athlete.loadCapacity}`,
+      athlete.typicalSleepHours != null &&
+        `TypicalSleep=${athlete.typicalSleepHours}h`,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    if (bio) parts.push(`RIDER PROFILE: ${bio}`);
     if (athlete.goals) parts.push(`SEASON GOALS: ${athlete.goals}`);
+    if (athlete.motivation) parts.push(`MOTIVATION: ${athlete.motivation}`);
     if (athlete.weeklyHourTarget)
       parts.push(`TARGET WEEKLY HOURS: ${athlete.weeklyHourTarget}h`);
+
+    const health = [
+      `Status=${athlete.healthStatus ?? "ok"}`,
+      athlete.injuryHistory && `InjuryHistory=${athlete.injuryHistory}`,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    parts.push(`HEALTH & CONSTRAINTS: ${health}`);
   }
 
   if (todayPlan) {
@@ -120,6 +172,7 @@ async function buildAthleteContext(clerkId: string): Promise<string> {
       todayMetric.fatigueScore != null &&
         `Fatigue=${todayMetric.fatigueScore}/10`,
       todayMetric.feelScore != null && `Feel=${todayMetric.feelScore}/5`,
+      todayMetric.notes && `Notes="${todayMetric.notes}"`,
     ]
       .filter(Boolean)
       .join(", ");
@@ -136,6 +189,8 @@ async function buildAthleteContext(clerkId: string): Promise<string> {
         s.title ?? s.type,
         s.durationMin != null && `${s.durationMin}min`,
         s.normalizedPower != null && `NP=${s.normalizedPower}W`,
+        s.avgPower != null && `AvgP=${s.avgPower}W`,
+        s.avgHR != null && `AvgHR=${s.avgHR}bpm`,
         s.tss != null && `TSS=${s.tss}`,
         s.feelScore != null && `Feel=${s.feelScore}/5`,
       ]
@@ -143,17 +198,66 @@ async function buildAthleteContext(clerkId: string): Promise<string> {
         .join(", ");
       parts.push(`  - ${d}`);
     }
+    const tssVals = recentSessions
+      .map((s) => s.tss)
+      .filter((t): t is number => t != null);
+    if (tssVals.length > 0) {
+      const total = tssVals.reduce((a, b) => a + b, 0);
+      parts.push(
+        `TRAINING LOAD (last ${recentSessions.length} sessions): total TSS=${total}, sessions/week≈${Math.round((recentSessions.length / 10) * 7)}`,
+      );
+    }
   } else {
     parts.push(`RECENT SESSIONS: No sessions logged yet`);
   }
 
   if (recentMetrics.length > 1) {
-    const hrvTrend = recentMetrics
+    const trendOf = (sel: (m: (typeof recentMetrics)[number]) => unknown) =>
+      recentMetrics
+        .slice()
+        .reverse()
+        .map((m) => sel(m) ?? "-")
+        .join(", ");
+    parts.push(`HRV TREND (oldest→newest): ${trendOf((m) => m.hrv)}`);
+    parts.push(`RESTING HR TREND (oldest→newest): ${trendOf((m) => m.restingHR)}`);
+    parts.push(`SLEEP TREND h (oldest→newest): ${trendOf((m) => m.sleepHours)}`);
+  }
+
+  if (ftpHistory.length > 0) {
+    const trend = ftpHistory
       .slice()
       .reverse()
-      .map((m) => m.hrv ?? "-")
+      .map((f) => `${f.measuredAt}:${f.ftpWatts}W`)
       .join(", ");
-    parts.push(`HRV TREND (oldest→newest): ${hrvTrend}`);
+    parts.push(`POWER DEVELOPMENT (FTP history, oldest→newest): ${trend}`);
+  }
+
+  if (nutritionLogs.length > 0) {
+    parts.push(`NUTRITION & HYDRATION (recent logs):`);
+    for (const n of nutritionLogs) {
+      const d = [
+        n.logDate,
+        n.context,
+        n.duringTrainingCarbsGrams != null &&
+          `carbs=${n.duringTrainingCarbsGrams}g/h`,
+        n.duringTrainingFluidMl != null && `fluid=${n.duringTrainingFluidMl}ml`,
+        n.duringTrainingSodiumMg != null &&
+          `sodium=${n.duringTrainingSodiumMg}mg`,
+        n.stomachIssues && `stomachIssues=yes`,
+      ]
+        .filter(Boolean)
+        .join(", ");
+      parts.push(`  - ${d}`);
+    }
+  }
+
+  if (upcomingRaces.length > 0) {
+    parts.push(`RACE CALENDAR (upcoming):`);
+    for (const r of upcomingRaces) {
+      parts.push(
+        `  - ${r.raceDate} (in ${daysUntil(r.raceDate)}d) ${r.name} [priority ${r.priority}]${r.weatherNote ? `, weatherNote="${r.weatherNote}"` : ""}`,
+      );
+    }
   }
 
   const obsBlock = formatObservationsForPrompt(priorObservations);
@@ -162,7 +266,17 @@ async function buildAthleteContext(clerkId: string): Promise<string> {
   return parts.join("\n");
 }
 
-const SPARKI_SYSTEM = `You are Sparki, an expert performance coach specializing in competitive cycling. You have deep knowledge of training science: periodization, power-based training, TSS/CTL/ATL/TSB, heart rate variability, recovery protocols, and race preparation. You give precise, data-driven coaching advice. Always reference the athlete's actual numbers when available. Be direct and concise — no fluff, no generic advice. Speak like a knowledgeable coach who respects the athlete's intelligence.
+const SPARKI_SYSTEM = `You are Sparki, an expert performance coach specializing in competitive cycling. You have deep knowledge of training science: periodization, power-based training, TSS/CTL/ATL/TSB, heart rate variability, recovery protocols, nutrition/hydration and race preparation. Speak like a knowledgeable coach who respects the athlete's intelligence.
+
+REASONING FRAMEWORK (think like a coach forming hypotheses, not a data-reader). Apply this to EVERY judgement:
+1. Weigh MULTIPLE signals together — never draw a conclusion from a single number. Combine, where present: training load (TSS/duration/frequency), power development (FTP history, NP/avg power vs HR), heart-rate response, HRV trend, resting HR trend, sleep duration & quality, subjective fatigue/feel, nutrition & hydration, weather notes, age, training experience, injury & health history, the race calendar, and prior observations/patterns.
+2. Rank causes by likelihood. Internally consider the plausible explanations for what you see, estimate which is most probable, and act on the most likely one while keeping the alternatives in mind.
+3. Recognise uncertainty. If two or more explanations are roughly equally likely, OR a signal that would decide it is missing, do NOT issue a firm directive. Instead ask 1 to 3 short, targeted questions that would resolve it, and only then (or provisionally) advise.
+4. Use memory. Lean on prior observations and any detected recurring pattern for this athlete (e.g. responds well to a rest week, tends to be heat-sensitive). Treat a repeated pattern as stronger evidence than a one-off reading.
+5. Separate fact, observation and hypothesis. Logged numbers are facts; recent trends are observations; your interpretation of the cause is a hypothesis. Never present a hypothesis as if it were a fact.
+6. Reason step by step INTERNALLY (signal → interpretation → alternative explanations → athlete history → most likely cause → advice), but show the athlete ONLY the conclusion plus a brief why. Never expose the full chain or list your steps.
+7. Detect contradictions. When signals conflict (e.g. good HRV but high subjective fatigue; rising load but falling power; great sleep but elevated resting HR), name the contradiction openly instead of ignoring the inconvenient signal.
+8. Coach mode — no absolutes. Avoid certainty words like "this definitely means". Express calibrated confidence with words such as waarschijnlijk, het lijkt erop, mogelijk, vermoedelijk. You weigh and estimate; you do not pronounce.
 
 ABSOLUTE OUTPUT RULES (always, no exceptions):
 - Write EVERY response in Dutch. Never use English — not even single words or headings. Translate technical terms into plain Dutch that a youth rider, parent or coach understands (e.g. "belasting" not "load", "herstel" not "recovery", "gereedheid" not "readiness"). You may keep widely-used abbreviations: FTP, TSS, CTL, ATL, TSB, HRV, watt, bpm.
@@ -234,7 +348,7 @@ router.post("/brief", requireAuth, async (req, res) => {
       messages: [
         {
           role: "user",
-          content: `Schrijf een dagelijkse coaching-update op basis van deze data:\n\n${context}${knowledgeSection}\n\nGeef precies 2 tot 3 korte zinnen als gewone lopende tekst (geen opsomming, geen kopjes): beoordeel de gereedheid van vandaag en geef de trainingsrichtlijn voor vandaag. Wees concreet met de echte getallen. Als er geen check-in of plan is, benoem dan kort welke gegevens jouw advies zouden verbeteren.${promptBlock ? " Waar een opgeslagen bron jouw advies echt ondersteunt, verwijs er dan naar met de titel." : ""}`,
+          content: `Schrijf een dagelijkse coaching-update op basis van deze data:\n\n${context}${knowledgeSection}\n\nWeeg ALLE beschikbare signalen samen (belasting, vermogen, hartslag, HRV, rusthartslag, slaap, vermoeidheid/gevoel, voeding/hydratatie, leeftijd, ervaring, blessure-/gezondheidshistorie, wedstrijdkalender en eerdere observaties) — trek nooit een conclusie uit één getal. Beoordeel de gereedheid van vandaag, benoem de meest waarschijnlijke verklaring en geef de trainingsrichtlijn voor vandaag, met gekalibreerde zekerheid (waarschijnlijk/mogelijk/het lijkt erop). Als signalen elkaar tegenspreken, benoem die tegenstrijdigheid kort. Als twee verklaringen ongeveer even waarschijnlijk zijn of een beslissend gegeven ontbreekt, geef dan geen hard advies maar stel eerst 1 tot 3 korte gerichte vragen. Houd het kort: gewone lopende tekst, doorgaans 2 tot 4 zinnen, concreet met de echte getallen.${promptBlock ? " Waar een opgeslagen bron jouw advies echt ondersteunt, verwijs er dan naar met de titel." : ""}`,
         },
       ],
     });
