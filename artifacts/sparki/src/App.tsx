@@ -284,7 +284,7 @@ function AppRouter() {
         signUp: {
           start: {
             title: "Join Sparki",
-            subtitle: "AI-powered cycling performance",
+            subtitle: "Sparki-powered cycling performance",
           },
         },
       }}

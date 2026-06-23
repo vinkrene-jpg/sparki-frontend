@@ -153,7 +153,7 @@ export function RaceDayHome({ briefing }: DayHomeComponentProps) {
 
       <footer className="pt-2 text-center">
         <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
-          SPARKI AI PERFORMANCE CENTER
+          SPARKI PERFORMANCE CENTER
         </span>
       </footer>
 

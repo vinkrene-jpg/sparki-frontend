@@ -262,7 +262,7 @@ export function NutritionPanel() {
           !open && (
             <p className="text-[12px] text-white/30">
               Nog niets gelogd · Log voeding en hydratatie rond je trainingen voor
-              AI-inzichten
+              Sparki-inzichten
             </p>
           )
         )}

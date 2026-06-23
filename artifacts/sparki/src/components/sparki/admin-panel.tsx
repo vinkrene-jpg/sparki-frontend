@@ -14,7 +14,7 @@ const STATUS_LABELS: Record<string, string> = {
   parents: "Ouders",
   observations: "Observaties",
   active_observations: "Actieve observaties",
-  ai_memory_enabled: "AI-geheugen aan",
+  ai_memory_enabled: "Sparki-geheugen aan",
   coach_links: "Coach-koppelingen",
   parent_links: "Ouder-koppelingen",
   nutrition_logs: "Voedingslogs",

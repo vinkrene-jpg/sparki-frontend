@@ -114,7 +114,7 @@ export function PrivacySettingsSection() {
           <div className="divide-y divide-white/[0.06]">
             <Row
               icon={Brain}
-              title="AI-geheugen"
+              title="Sparki-geheugen"
               desc="Sta Sparki toe om observaties over jouw training te onthouden en te gebruiken in toekomstige adviezen."
             >
               <Toggle
@@ -127,7 +127,7 @@ export function PrivacySettingsSection() {
             <Row
               icon={ShieldCheck}
               title="Gevoelige analyse"
-              desc="Laat AI gevoelige signalen (vermoeidheid, stemming, gezondheid) meewegen. Uit = alleen prestatiedata."
+              desc="Laat Sparki gevoelige signalen (vermoeidheid, stemming, gezondheid) meewegen. Uit = alleen prestatiedata."
             >
               <Toggle
                 on={p.aiSensitiveAnalysisEnabled}

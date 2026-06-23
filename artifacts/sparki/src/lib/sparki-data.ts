@@ -233,7 +233,7 @@ export const feed: FeedItem[] = [
   {
     id: "f2",
     type: "ai",
-    author: "Sparki AI",
+    author: "Sparki",
     time: "07:40",
     title: "Readiness +4 sinds gisteren",
     body: "Je HRV is hersteld boven baseline. Groen licht voor de volledige belasting.",

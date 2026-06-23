@@ -35,7 +35,7 @@ export default function LandingPage() {
         {/* Headline */}
         <div className="flex flex-col gap-3">
           <h1 className="font-sans text-4xl font-bold leading-[1.08] tracking-tight text-white">
-            AI Performance
+            Sparki Performance
             <br />
             <span
               style={{ color: "oklch(0.82 0.16 200)" }}
@@ -44,7 +44,7 @@ export default function LandingPage() {
             </span>
           </h1>
           <p className="mx-auto max-w-xs font-sans text-sm text-white/50 leading-relaxed">
-            Train smarter. Recover faster. Reach your peak — with AI coaching built for cyclists.
+            Train smarter. Recover faster. Reach your peak — with Sparki coaching built for cyclists.
           </p>
         </div>
 

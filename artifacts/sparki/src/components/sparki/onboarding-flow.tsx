@@ -146,7 +146,7 @@ function StepWelcome({ firstName, onNext }: { firstName: string; onNext: () => v
         <div className="flex w-full max-w-[300px] flex-col gap-3 text-left">
           {[
             "Personalized training zones from your FTP",
-            "AI daily brief tailored to your fitness",
+            "Sparki daily brief tailored to your fitness",
             "Smart load, recovery, and readiness tracking",
           ].map((text) => (
             <div key={text} className="flex items-start gap-3">
@@ -200,7 +200,7 @@ function StepAboutYou({
     <div className="flex flex-1 flex-col">
       <StepHeading
         title="Tell us about yourself"
-        subtitle="This personalises your profile and AI coaching."
+        subtitle="This personalises your profile and Sparki coaching."
       />
 
       <div className="flex flex-1 flex-col gap-6">
@@ -640,7 +640,7 @@ function StepPermissions({ onNext }: { onNext: () => void }) {
         <PermissionRow
           icon={Zap}
           title="Morning training brief"
-          description="A daily AI summary of your readiness, today's workout, and key metrics — delivered before you start your day."
+          description="A daily Sparki summary of your readiness, today's workout, and key metrics — delivered before you start your day."
         />
         <PermissionRow
           icon={Bell}

@@ -25,7 +25,7 @@ const filters: { key: FilterKey; label: string }[] = [
   { key: "coach", label: "Coach" },
   { key: "team", label: "Team" },
   { key: "race", label: "Race" },
-  { key: "ai", label: "AI" },
+  { key: "ai", label: "Sparki" },
 ]
 
 type StreamItem = {
@@ -48,7 +48,7 @@ const typeMeta: Record<
   coach: { label: "Coach", icon: Megaphone, color: "rgba(120,210,230,1)" },
   team: { label: "Team", icon: Users, color: "rgba(170,235,248,0.9)" },
   race: { label: "Race", icon: Flag, color: "rgba(255,200,120,0.95)" },
-  ai: { label: "Sparki AI", icon: PlayCircle, color: "rgba(120,210,230,1)" },
+  ai: { label: "Sparki", icon: PlayCircle, color: "rgba(120,210,230,1)" },
 }
 
 function Skeleton({ className = "" }: { className?: string }) {
@@ -128,10 +128,10 @@ export default function FeedPage() {
       {
         id: Date.now(),
         type: "ai",
-        label: "Sparki AI",
+        label: "Sparki",
         title: q,
         body: result.answer,
-        author: "Sparki AI",
+        author: "Sparki",
         time: "Nu",
         sources: result.sources ?? [],
       },
@@ -146,10 +146,10 @@ export default function FeedPage() {
           {
             id: "brief",
             type: "ai" as FilterKey,
-            label: "Sparki AI",
+            label: "Sparki",
             title: "Dagelijkse briefing",
             body: briefData.brief,
-            author: "Sparki AI",
+            author: "Sparki",
             time: "Vandaag",
             sources: briefData.sources ?? [],
           },
@@ -176,7 +176,7 @@ export default function FeedPage() {
           Wat er speelt
         </h1>
         <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
-          Coach · Team · Club · Wedstrijden · AI
+          Coach · Team · Club · Wedstrijden · Sparki
         </p>
       </div>
 

@@ -135,7 +135,7 @@ export function AiMemoryPanel() {
 
   return (
     <section>
-      <SectionLabel n="06" title="AI Geheugen" />
+      <SectionLabel n="06" title="Sparki Geheugen" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
         Wat Sparki over jou heeft onthouden uit eerdere briefings en gesprekken.
         Bewaar wat klopt, verberg wat niet relevant is.

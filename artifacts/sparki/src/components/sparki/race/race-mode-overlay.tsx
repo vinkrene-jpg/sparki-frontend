@@ -84,7 +84,7 @@ export function RaceModeOverlay({
             Sterkte — vertrouw op je voorbereiding.
           </p>
           <p className="mt-1 font-mono text-[9px] tracking-[0.3em] text-white/25">
-            SPARKI AI PERFORMANCE CENTER
+            SPARKI PERFORMANCE CENTER
           </p>
         </div>
       </div>

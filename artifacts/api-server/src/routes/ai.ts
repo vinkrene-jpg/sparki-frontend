@@ -162,7 +162,7 @@ async function buildAthleteContext(clerkId: string): Promise<string> {
   return parts.join("\n");
 }
 
-const SPARKI_SYSTEM = `You are Sparki, an expert AI performance coach specializing in competitive cycling. You have deep knowledge of training science: periodization, power-based training, TSS/CTL/ATL/TSB, heart rate variability, recovery protocols, and race preparation. You give precise, data-driven coaching advice. Always reference the athlete's actual numbers when available. Be direct and concise — no fluff, no generic advice. Speak like a knowledgeable coach who respects the athlete's intelligence.`;
+const SPARKI_SYSTEM = `You are Sparki, an expert performance coach specializing in competitive cycling. You have deep knowledge of training science: periodization, power-based training, TSS/CTL/ATL/TSB, heart rate variability, recovery protocols, and race preparation. You give precise, data-driven coaching advice. Always reference the athlete's actual numbers when available. Be direct and concise — no fluff, no generic advice. Speak like a knowledgeable coach who respects the athlete's intelligence.`;
 
 async function systemPrompt(clerkId: string): Promise<string> {
   const pref = await getPreferences(clerkId);
@@ -236,7 +236,7 @@ router.post("/brief", requireAuth, async (req, res) => {
 
     const block = message.content[0];
     if (!block || block.type !== "text") {
-      res.status(500).json({ error: "Unexpected AI response" });
+      res.status(500).json({ error: "Unexpected Sparki response" });
       return;
     }
     const brief = block.text;
@@ -281,7 +281,7 @@ router.post("/brief", requireAuth, async (req, res) => {
     })();
   } catch (err) {
     req.log.error({ err }, "ai.brief failed");
-    res.status(500).json({ error: "AI service unavailable" });
+    res.status(500).json({ error: "Sparki service unavailable" });
   }
 });
 
@@ -320,7 +320,7 @@ router.post("/ask", requireAuth, async (req, res) => {
 
     const block = message.content[0];
     if (!block || block.type !== "text") {
-      res.status(500).json({ error: "Unexpected AI response" });
+      res.status(500).json({ error: "Unexpected Sparki response" });
       return;
     }
     const answer = block.text;
@@ -354,7 +354,7 @@ router.post("/ask", requireAuth, async (req, res) => {
     })();
   } catch (err) {
     req.log.error({ err }, "ai.ask failed");
-    res.status(500).json({ error: "AI service unavailable" });
+    res.status(500).json({ error: "Sparki service unavailable" });
   }
 });
 

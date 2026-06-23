@@ -424,7 +424,7 @@ export default function PreviewPage() {
                   className="font-mono text-[10px] tracking-[0.18em]"
                   style={{ color: ACCENT }}
                 >
-                  SPARKI AI
+                  SPARKI
                 </span>
                 <h3 className="mt-1.5 font-sans text-[15px] font-light leading-snug text-white/90">
                   {qa.question}

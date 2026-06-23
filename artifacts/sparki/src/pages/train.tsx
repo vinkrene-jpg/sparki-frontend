@@ -425,10 +425,10 @@ export default function TrainPage() {
       {/* 03 ROUTE & NAVIGATIE (feature-flagged) */}
       {routePlannerEnabled && <RoutePanel />}
 
-      {/* 06 AI COACH UITVOERING */}
+      {/* 06 SPARKI UITVOERING */}
       {aiEnabled && (
         <section>
-          <SectionLabel n="06" title="AI Coach uitvoering" />
+          <SectionLabel n="06" title="Sparki coaching" />
           <div className="relative mt-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
             <div
               className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 animate-breathe rounded-full"
@@ -440,7 +440,7 @@ export default function TrainPage() {
             <div className="flex items-center gap-2">
               <SparkiCore size={28} accent={ACCENT} readiness={0.9} variant="orb" />
               <span className="font-mono text-[10px] tracking-[0.25em] text-cyan-300/80">
-                AI COACH
+                SPARKI
               </span>
             </div>
             {briefLoading ? (

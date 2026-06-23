@@ -381,7 +381,7 @@ export function TrainingDayHome({
             <div className="flex items-center gap-2">
               <SparkiCore size={28} accent={ACCENT} readiness={0.9} variant="orb" />
               <span className="font-mono text-[10px] tracking-[0.25em] text-cyan-300/80">
-                AI COACH
+                SPARKI
               </span>
             </div>
             {briefLoading ? (
@@ -490,7 +490,7 @@ export function TrainingDayHome({
 
       <footer className="pt-2 text-center">
         <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
-          SPARKI AI PERFORMANCE CENTER
+          SPARKI PERFORMANCE CENTER
         </span>
       </footer>
     </ScreenShell>
