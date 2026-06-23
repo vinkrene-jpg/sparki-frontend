@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@clerk/react";
 import { DEV_PREVIEW } from "@/lib/dev";
 import { apiFetch } from "@/lib/api";
@@ -16,7 +16,7 @@ function dateStr(d: Date): string {
 }
 
 /** A multi-week window of planned workouts (default: today → +21 days). */
-export function useTrainingPlan(weeks = 3) {
+export function usePlanWindow(weeks = 3) {
   const { isSignedIn } = useUser();
   const today = new Date();
   const from = dateStr(today);
@@ -154,6 +154,167 @@ export function useApplyProposal() {
         queryKey: queryKeys.athlete.workout(vars.id),
       });
       void qc.invalidateQueries({ queryKey: queryKeys.athlete.all() });
+    },
+  });
+}
+
+// ── Autonomous training plan (coach-less plan engine) ──────────────────────
+
+export type PlanReadiness = {
+  label: "fresh" | "ok" | "tired" | "unknown";
+  score: number | null;
+};
+
+export type PlanRace = {
+  name: string;
+  raceDate: string;
+  priority: string;
+  daysAway: number;
+};
+
+export type PlanRoute = {
+  id: number;
+  name: string;
+  distanceKm: number | null;
+  elevationGainM: number | null;
+  startName: string | null;
+};
+
+export type PlanDay = {
+  id: number;
+  dayDate: string;
+  weekIndex: number;
+  focus: string;
+  trainingType: string | null;
+  intensityLabel: string | null;
+  estDurationMin: number | null;
+  isRest: boolean;
+  routeNeeded: boolean;
+  rationale: string | null;
+  adaptationReason: string | null;
+  committed: boolean;
+  workout: { id: number; title: string; type: string; status: string } | null;
+  route: PlanRoute | null;
+};
+
+export type PlanHeader = {
+  id: number;
+  mode: "autonomous" | "advisory";
+  status: string;
+  summary: string | null;
+  weekStartDate: string;
+  horizonEndDate: string;
+  weeklyHourTarget: number | null;
+  generatedAt: string;
+  adaptationState: {
+    adaptationCount?: number;
+    lastAdaptedAt?: string | null;
+    notes?: string[];
+  } | null;
+  inputSnapshot: Record<string, unknown> | null;
+};
+
+export type PlanInputsView = {
+  experienceLevel: string | null;
+  availableDays: string[];
+  weeklyHourTarget: number | null;
+  loadCapacity: string | null;
+  injuryHistory: string | null;
+  trainingPreferences: string | null;
+  discipline: string | null;
+  phase: "base" | "build" | "peak" | "taper";
+  readiness: PlanReadiness;
+  healthStatus: string;
+  nextRace: PlanRace | null;
+  homeLabel: string | null;
+};
+
+export type TrainingPlanResponse = {
+  hasCoach: boolean;
+  mode: "autonomous" | "advisory";
+  needsSetup: boolean;
+  missing: string[];
+  hasHome: boolean;
+  inputs: PlanInputsView;
+  plan: PlanHeader | null;
+  days: PlanDay[];
+};
+
+export type GenerateResponse = {
+  mode: "autonomous" | "advisory";
+  hasCoach: boolean;
+  routesGenerated: number;
+  routesAttempted: number;
+  plan: PlanHeader | null;
+  days: PlanDay[];
+};
+
+export type AdaptResponse = {
+  adapted: boolean;
+  changes: number;
+  note: string;
+  plan: PlanHeader | null;
+  days: PlanDay[];
+};
+
+export type PlanSetupInput = {
+  experienceLevel?: string;
+  availableDays?: string[];
+  weeklyHourTarget?: number;
+  loadCapacity?: string;
+  injuryHistory?: string | null;
+  trainingPreferences?: string | null;
+  homeLat?: number | null;
+  homeLon?: number | null;
+  homeLabel?: string | null;
+};
+
+export function useTrainingPlan(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.trainingPlan.current(),
+    queryFn: () => apiFetch<TrainingPlanResponse>("/api/training-plan"),
+    staleTime: STALE.session,
+    enabled,
+  });
+}
+
+export function useGenerateTrainingPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<GenerateResponse>("/api/training-plan/generate", {
+        method: "POST",
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.trainingPlan.all() });
+      qc.invalidateQueries({ queryKey: queryKeys.athlete.todayWorkout() });
+      qc.invalidateQueries({ queryKey: queryKeys.routes.all() });
+    },
+  });
+}
+
+export function useAdaptTrainingPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<AdaptResponse>("/api/training-plan/adapt", { method: "POST" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.trainingPlan.all() });
+    },
+  });
+}
+
+export function useSavePlanSetup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: PlanSetupInput) =>
+      apiFetch("/api/athlete/profile", {
+        method: "PUT",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.trainingPlan.all() });
+      qc.invalidateQueries({ queryKey: queryKeys.athlete.profile() });
     },
   });
 }

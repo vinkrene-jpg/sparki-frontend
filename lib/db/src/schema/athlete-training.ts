@@ -7,6 +7,7 @@ import {
   date,
   timestamp,
   jsonb,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -56,6 +57,85 @@ export const plannedWorkoutsTable = pgTable("planned_workouts", {
   sessionId: integer("session_id").references(() => trainingSessionsTable.id, {
     onDelete: "set null",
   }),
+  // Autonomous-coaching links (task #17). planId ties a committed session to the
+  // generated training plan; routeId attaches a real ORS-generated route to a
+  // route-needed session. routeId is a soft reference (plain int) to avoid a
+  // circular schema import; ownership is enforced in the route layer.
+  planId: integer("plan_id"),
+  routeId: integer("route_id"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ── Autonomous training plan (task #17) ──────────────────────────────────────
+// Header row for a Sparki-generated plan. Stores the input snapshot used, an
+// honest plain-language summary, and adaptation state. `mode` records whether
+// the plan was produced autonomously (no coach) or as advisory-only output for
+// a coached athlete — the autonomous commit path is gated on no accepted coach.
+export const trainingPlansTable = pgTable("training_plans", {
+  id: serial("id").primaryKey(),
+  clerkId: text("clerk_id")
+    .notNull()
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+  status: text("status").notNull().default("active"), // active | archived
+  mode: text("mode").notNull().default("autonomous"), // autonomous | advisory
+  weekStartDate: date("week_start_date").notNull(),
+  horizonEndDate: date("horizon_end_date").notNull(),
+  weeklyHourTarget: integer("weekly_hour_target"),
+  // Snapshot of the planning inputs (profile fields + derived phase) used to
+  // generate this plan, so we can show what it was based on and adapt honestly.
+  inputSnapshot: jsonb("input_snapshot"),
+  // Honest plain-language summary of the plan and its reasoning.
+  summary: text("summary"),
+  // Adaptation bookkeeping: { lastAdaptedAt, adaptationCount, notes[] }.
+  adaptationState: jsonb("adaptation_state"),
+  generatedAt: timestamp("generated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// One row per day across the ~3-week horizon. The first 7 days are committed
+// (also written as planned_workouts); later days are provisional and adapt.
+export const planDaysTable = pgTable("plan_days", {
+  id: serial("id").primaryKey(),
+  planId: integer("plan_id")
+    .notNull()
+    .references(() => trainingPlansTable.id, { onDelete: "cascade" }),
+  clerkId: text("clerk_id")
+    .notNull()
+    .references(() => userProfilesTable.clerkId, { onDelete: "cascade" }),
+  dayDate: date("day_date").notNull(),
+  weekIndex: integer("week_index").notNull().default(0), // 0,1,2
+  // Short focus label, e.g. "Duurtraining", "Intervallen", "Rust", "Herstel".
+  focus: text("focus").notNull(),
+  // Route-generator training type (duur|interval|herstel|tempo|wedstrijd) or null
+  // for rest days. Drives the ORS profile when a route is needed.
+  trainingType: text("training_type"),
+  // Human intensity label, e.g. "Zone 2 · rustig", "Zone 4 · intervallen".
+  intensityLabel: text("intensity_label"),
+  estDurationMin: integer("est_duration_min"),
+  isRest: boolean("is_rest").notNull().default(false),
+  routeNeeded: boolean("route_needed").notNull().default(false),
+  // Short plain-language explanation of why this day looks the way it does.
+  rationale: text("rationale"),
+  // Honest reason shown when adaptation changed this provisional day.
+  adaptationReason: text("adaptation_reason"),
+  committed: boolean("committed").notNull().default(false),
+  // Set for committed days — the planned_workouts row this day was written to.
+  plannedWorkoutId: integer("planned_workout_id").references(
+    () => plannedWorkoutsTable.id,
+    { onDelete: "set null" },
+  ),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -94,10 +174,23 @@ export const insertPlannedWorkoutSchema = createInsertSchema(
 export const selectPlannedWorkoutSchema =
   createSelectSchema(plannedWorkoutsTable);
 
+export const insertTrainingPlanSchema = createInsertSchema(
+  trainingPlansTable,
+).omit({ id: true });
+export const selectTrainingPlanSchema = createSelectSchema(trainingPlansTable);
+export const insertPlanDaySchema = createInsertSchema(planDaysTable).omit({
+  id: true,
+});
+export const selectPlanDaySchema = createSelectSchema(planDaysTable);
+
 export type TrainingSession = typeof trainingSessionsTable.$inferSelect;
 export type InsertTrainingSession = z.infer<typeof insertTrainingSessionSchema>;
 export type PlannedWorkout = typeof plannedWorkoutsTable.$inferSelect;
 export type InsertPlannedWorkout = z.infer<typeof insertPlannedWorkoutSchema>;
+export type TrainingPlan = typeof trainingPlansTable.$inferSelect;
+export type InsertTrainingPlan = z.infer<typeof insertTrainingPlanSchema>;
+export type PlanDay = typeof planDaysTable.$inferSelect;
+export type InsertPlanDay = z.infer<typeof insertPlanDaySchema>;
 
 export const insertWorkoutFeedbackSchema = createInsertSchema(
   workoutFeedbackTable,

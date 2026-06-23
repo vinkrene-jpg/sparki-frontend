@@ -18,6 +18,26 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
   // "injured", the day-type engine routes Home to a calm recovery-only view and
   // blocks training pressure. "ok" (default) is the normal training state.
   healthStatus: text("health_status").notNull().default("ok"),
+
+  // ── Autonomous-coaching planning inputs (task #17) ─────────────────────────
+  // Structured fields Sparki needs to build a real training plan when the
+  // athlete has no human coach. All nullable — the Train setup form fills them.
+  // experienceLevel: beginner | intermediate | advanced | elite
+  experienceLevel: text("experience_level"),
+  // Weekday keys the athlete can train on, e.g. ["mon","wed","fri","sun"].
+  availableDays: text("available_days").array(),
+  // Self-assessed load tolerance: low | moderate | high. Scales how aggressively
+  // the weekly hour target is distributed (and deload frequency).
+  loadCapacity: text("load_capacity"),
+  // Free-text injury history / current limitations (honest constraint input).
+  injuryHistory: text("injury_history"),
+  // Free-text training preferences (terrain, indoor/outdoor, likes/dislikes).
+  trainingPreferences: text("training_preferences"),
+  // Home / preferred start location for generated routes. Loop routes need a
+  // real start coordinate; null means route generation is skipped honestly.
+  homeLat: numeric("home_lat", { precision: 9, scale: 6 }),
+  homeLon: numeric("home_lon", { precision: 9, scale: 6 }),
+  homeLabel: text("home_label"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

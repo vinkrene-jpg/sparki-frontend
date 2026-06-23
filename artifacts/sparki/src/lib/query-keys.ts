@@ -97,6 +97,11 @@ export const queryKeys = {
     detail: (id: number) => ["routes", "detail", id] as const,
   },
 
+  trainingPlan: {
+    all: () => ["training-plan"] as const,
+    current: () => ["training-plan", "current"] as const,
+  },
+
   bugReports: {
     all: () => ["bug-reports"] as const,
     mine: () => ["bug-reports", "mine"] as const,

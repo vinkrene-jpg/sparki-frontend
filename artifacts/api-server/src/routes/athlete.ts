@@ -125,14 +125,65 @@ router.get("/profile", requireAuth, async (req, res) => {
 // ── PUT /api/athlete/profile ─────────────────────────────────────────────────
 router.put("/profile", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
-  const { ftp, weightKg, discipline, goals, weeklyHourTarget, displayName } = req.body as {
+  const {
+    ftp,
+    weightKg,
+    discipline,
+    goals,
+    weeklyHourTarget,
+    displayName,
+    experienceLevel,
+    availableDays,
+    loadCapacity,
+    injuryHistory,
+    trainingPreferences,
+    homeLat,
+    homeLon,
+    homeLabel,
+  } = req.body as {
     ftp?: number;
     weightKg?: string;
     discipline?: string;
     goals?: string;
     weeklyHourTarget?: number;
     displayName?: string;
+    experienceLevel?: string | null;
+    availableDays?: string[] | null;
+    loadCapacity?: string | null;
+    injuryHistory?: string | null;
+    trainingPreferences?: string | null;
+    homeLat?: number | string | null;
+    homeLon?: number | string | null;
+    homeLabel?: string | null;
   };
+
+  // Whitelisted enum values for the planning inputs (never trust raw input).
+  const WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+  const EXPERIENCE = ["beginner", "intermediate", "advanced", "elite"];
+  const LOAD = ["low", "moderate", "high"];
+  const cleanDays =
+    availableDays != null
+      ? Array.from(new Set(availableDays.filter((d) => WEEKDAYS.includes(d))))
+      : undefined;
+  const cleanExperience =
+    experienceLevel != null && EXPERIENCE.includes(experienceLevel)
+      ? experienceLevel
+      : undefined;
+  const cleanLoad =
+    loadCapacity != null && LOAD.includes(loadCapacity)
+      ? loadCapacity
+      : undefined;
+  const latNum = homeLat != null && homeLat !== "" ? Number(homeLat) : null;
+  const lonNum = homeLon != null && homeLon !== "" ? Number(homeLon) : null;
+  const homeValid =
+    latNum != null &&
+    lonNum != null &&
+    Number.isFinite(latNum) &&
+    Number.isFinite(lonNum) &&
+    latNum >= -90 &&
+    latNum <= 90 &&
+    lonNum >= -180 &&
+    lonNum <= 180;
 
   try {
     if (displayName != null) {
@@ -150,6 +201,19 @@ router.put("/profile", requireAuth, async (req, res) => {
         ...(discipline != null && { discipline }),
         ...(goals != null && { goals }),
         ...(weeklyHourTarget != null && { weeklyHourTarget }),
+        ...(cleanExperience !== undefined && {
+          experienceLevel: cleanExperience,
+        }),
+        ...(cleanDays !== undefined && { availableDays: cleanDays }),
+        ...(cleanLoad !== undefined && { loadCapacity: cleanLoad }),
+        ...(injuryHistory !== undefined && { injuryHistory }),
+        ...(trainingPreferences !== undefined && { trainingPreferences }),
+        ...(homeLat !== undefined &&
+          homeLon !== undefined && {
+            homeLat: homeValid ? String(latNum) : null,
+            homeLon: homeValid ? String(lonNum) : null,
+            homeLabel: homeValid ? (homeLabel ?? null) : null,
+          }),
         updatedAt: new Date(),
       })
       .where(eq(athleteProfilesTable.clerkId, clerkId))

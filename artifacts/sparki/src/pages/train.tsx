@@ -11,6 +11,7 @@ import { ActivityImportPanel } from "@/components/sparki/activity-import-panel"
 import { RoutePanel } from "@/components/sparki/route-panel"
 import { ThreeWeekPlan } from "@/components/sparki/three-week-plan"
 import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer"
+import { TrainingPlanPanel } from "@/components/sparki/training-plan-panel"
 import {
   Bike,
   Activity,
@@ -213,6 +214,7 @@ export default function TrainPage() {
   const updateWorkout = useUpdateWorkout()
   const aiEnabled = useFeatureFlag("ai_observations")
   const routePlannerEnabled = useFeatureFlag("route_planner")
+  const autonomousTrainingEnabled = useFeatureFlag("autonomous_training")
   const { data: brief, isLoading: briefLoading } = useAiBrief(aiEnabled)
   const [showLogForm, setShowLogForm] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
@@ -450,6 +452,9 @@ export default function TrainPage() {
 
       {/* 03 ROUTE & NAVIGATIE (feature-flagged) */}
       {routePlannerEnabled && <RoutePanel />}
+
+      {/* 04 TRAININGSSCHEMA (feature-flagged) */}
+      {autonomousTrainingEnabled && <TrainingPlanPanel />}
 
       {/* 06 SPARKI UITVOERING */}
       {aiEnabled && (

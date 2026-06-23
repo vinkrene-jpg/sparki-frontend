@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { SparkiCore } from "@/components/sparki/sparki-core"
-import { useTrainingPlan, useGeneratePlan } from "@/hooks/use-training-plan"
+import { usePlanWindow, useGeneratePlan } from "@/hooks/use-training-plan"
 import { DayDetailDrawer } from "@/components/sparki/day-detail-drawer"
 import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer"
 import type { PlannedWorkout } from "@/lib/athlete-types"
@@ -28,7 +28,7 @@ function zoneDot(zone: number): string {
 }
 
 export function ThreeWeekPlan() {
-  const { data: plan, isLoading } = useTrainingPlan(3)
+  const { data: plan, isLoading } = usePlanWindow(3)
   const generate = useGeneratePlan()
 
   const [dayOpen, setDayOpen] = useState(false)

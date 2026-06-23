@@ -3,6 +3,7 @@ export const FEATURE_KEYS = [
   "strava",
   "garmin",
   "route_planner",
+  "autonomous_training",
   "coach_portal",
   "parent_portal",
   "testing_tools",
@@ -19,6 +20,8 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
   garmin: "Garmin Connect integration — HRV, sleep, RHR, activity sync",
   route_planner:
     "Route planner, elevation profiles, turn-by-turn navigation",
+  autonomous_training:
+    "Autonomous AI training schedule — Sparki builds and adapts a real plan when the athlete has no coach (advisory-only when coached)",
   coach_portal:
     "Coach portal — view and manage linked athlete training plans",
   parent_portal:
