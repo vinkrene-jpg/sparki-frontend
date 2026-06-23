@@ -179,6 +179,41 @@ export type PlanRoute = {
   elevationGainM: number | null;
 };
 
+export type WeatherSeverity = "ok" | "caution" | "severe";
+
+export type DayWeather = {
+  label: string;
+  tempMinC: number | null;
+  tempMaxC: number | null;
+  apparentMinC: number | null;
+  apparentMaxC: number | null;
+  precipMm: number | null;
+  snowfallCm: number | null;
+  windMaxKmh: number | null;
+  precipProbMaxPct: number | null;
+};
+
+export type WeatherAdvisory = {
+  severity: WeatherSeverity;
+  headline: string;
+  detail: string;
+  suggestion: string | null;
+};
+
+export type WeatherNutritionAdvisory = {
+  severity: WeatherSeverity;
+  hydrationNote: string | null;
+  fuelNote: string | null;
+};
+
+export type RaceWeather = {
+  available: boolean;
+  reason: "ok" | "too_far" | "no_location" | "geocode_failed" | "no_forecast";
+  locationLabel: string | null;
+  weather: DayWeather | null;
+  advisory: WeatherAdvisory | null;
+};
+
 export type PlanDay = {
   id: number;
   dayDate: string;
@@ -194,6 +229,9 @@ export type PlanDay = {
   committed: boolean;
   workout: { id: number; title: string; type: string; status: string } | null;
   route: PlanRoute | null;
+  weather: DayWeather | null;
+  trainingAdvisory: WeatherAdvisory | null;
+  nutritionAdvisory: WeatherNutritionAdvisory | null;
 };
 
 export type PlanHeader = {
@@ -237,6 +275,7 @@ export type TrainingPlanResponse = {
   missing: string[];
   hasHome: boolean;
   inputs: PlanInputsView;
+  raceWeather: RaceWeather | null;
   plan: PlanHeader | null;
   days: PlanDay[];
 };

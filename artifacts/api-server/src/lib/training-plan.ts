@@ -32,6 +32,9 @@ import {
   attachRouteToWorkout,
   estimateDistanceKm,
 } from "./plan-routes";
+// Weather guard (additive, delimited): the only weather coupling in the engine.
+import { getForecastByDate } from "./weather/open-meteo";
+import { assessTraining, type WeatherSeverity } from "./weather/assess";
 
 const HORIZON_DAYS = 21; // concrete 7-day week + ~2 provisional preview weeks
 const COMMIT_DAYS = 7; // first week is committed (also written as planned_workouts)
@@ -81,6 +84,10 @@ export type PlanInputs = {
   } | null;
   phase: "base" | "build" | "peak" | "taper";
   racesByDate: Map<string, { name: string; priority: string }>;
+  // Per-date weather severity for a representative long outdoor ride, over the
+  // committed week only (empty when no home coords / forecast). Used solely by
+  // the additive weather guard in buildSkeleton — never fabricated.
+  weatherByDate: Map<string, WeatherSeverity>;
 };
 
 export type InputCompleteness = {
@@ -172,6 +179,24 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
     }
   }
 
+  // Weather guard input (best-effort): severity of a representative long outdoor
+  // ride per committed-week date. Never blocks plan generation — empty on failure.
+  const weatherByDate = new Map<string, WeatherSeverity>();
+  if (home) {
+    try {
+      const fc = await getForecastByDate(home.lat, home.lon, COMMIT_DAYS);
+      for (const [date, day] of fc) {
+        const advisory = assessTraining(
+          { isRest: false, trainingType: "duur", estDurationMin: 150, outdoor: true },
+          day,
+        );
+        weatherByDate.set(date, advisory?.severity ?? "ok");
+      }
+    } catch {
+      // Honest degradation: no weather → guard simply doesn't fire.
+    }
+  }
+
   return {
     clerkId,
     displayName: user?.displayName ?? null,
@@ -198,6 +223,7 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
       : null,
     phase: derivePhase(daysAway),
     racesByDate,
+    weatherByDate,
   };
 }
 
@@ -403,6 +429,27 @@ export function buildSkeleton(i: PlanInputs, startDate: string): DaySkeleton[] {
           p.kind = "duur";
         }
       });
+
+      // ── Weather guard (additive) ───────────────────────────────────────────
+      // Committed week only, real forecast only: if the long ride lands on a
+      // clearly-severe day (storm/heat/ice), move it to a non-severe endurance
+      // day when one exists. If no safe day exists we leave it as-is — the
+      // per-day advisory in the view will warn honestly rather than hide it.
+      if (w === 0 && longIdx >= 0 && i.weatherByDate.size > 0) {
+        const longDay = avail[longIdx]!;
+        if (i.weatherByDate.get(longDay.date) === "severe") {
+          let altIdx = -1;
+          avail.forEach((p, idx) => {
+            if (altIdx >= 0 || idx === longIdx) return;
+            if (qIdx.has(idx) || p.kind !== "duur") return;
+            if (i.weatherByDate.get(p.date) !== "severe") altIdx = idx;
+          });
+          if (altIdx >= 0) {
+            avail[altIdx]!.kind = "long";
+            longDay.kind = "duur";
+          }
+        }
+      }
 
       // Insert one recovery spin right after a hard day when volume allows it.
       if (n >= 5) {

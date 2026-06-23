@@ -18,6 +18,9 @@ export type StoredCandidate = {
   climbs: unknown[];
   nav: RouteStep[];
   geometry: [number, number][];
+  // User-placed shaping points for interactive (waypoints-mode) routes. Empty
+  // for loop/ptp candidates. The geometry above is still the real provider path.
+  waypoints: [number, number][];
   rationale: string;
   plannedWorkoutId: number | null;
   createdAt: number;

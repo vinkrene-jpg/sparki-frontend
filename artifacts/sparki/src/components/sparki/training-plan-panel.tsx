@@ -8,10 +8,28 @@ import {
   useAdaptTrainingPlan,
   useSavePlanSetup,
   type PlanDay,
+  type DayWeather,
+  type WeatherSeverity,
+  type WeatherAdvisory,
+  type WeatherNutritionAdvisory,
+  type RaceWeather,
   type TrainingPlanResponse,
 } from "@/hooks/use-training-plan"
 import { useRoutes, useGeocode, type GeocodeResult } from "@/hooks/use-routes"
-import { Sparkles, RefreshCw, MapPin, Calendar, Info, Search } from "lucide-react"
+import {
+  Sparkles,
+  RefreshCw,
+  MapPin,
+  Calendar,
+  Info,
+  Search,
+  CloudSnow,
+  Wind,
+  Droplets,
+  Thermometer,
+  AlertTriangle,
+  Utensils,
+} from "lucide-react"
 
 const WEEKDAYS: { value: string; label: string }[] = [
   { value: "mon", label: "Ma" },
@@ -75,6 +93,149 @@ function intensityColor(label: string | null): string {
   return ACCENT
 }
 
+const SEVERITY_COLOR: Record<WeatherSeverity, string> = {
+  ok: "rgba(120,210,230,0.7)",
+  caution: "rgba(255,200,90,0.9)",
+  severe: "rgba(255,120,90,0.95)",
+}
+
+function tempLabel(w: DayWeather): string | null {
+  if (w.tempMinC == null && w.tempMaxC == null) return null
+  const lo = w.tempMinC != null ? Math.round(w.tempMinC) : null
+  const hi = w.tempMaxC != null ? Math.round(w.tempMaxC) : null
+  if (lo != null && hi != null) return `${lo}–${hi}°`
+  return `${(lo ?? hi)!}°`
+}
+
+// Compact weather strip — real forecast numbers for the day. Honest: only shows
+// metrics the forecast actually returned.
+function WeatherStrip({ w }: { w: DayWeather }) {
+  const temp = tempLabel(w)
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] text-white/45">
+      <span className="text-white/55">{w.label}</span>
+      {temp && (
+        <span className="flex items-center gap-1">
+          <Thermometer className="h-2.5 w-2.5" strokeWidth={1.75} />
+          {temp}
+        </span>
+      )}
+      {w.windMaxKmh != null && w.windMaxKmh >= 20 && (
+        <span className="flex items-center gap-1">
+          <Wind className="h-2.5 w-2.5" strokeWidth={1.75} />
+          {Math.round(w.windMaxKmh)} km/u
+        </span>
+      )}
+      {w.snowfallCm != null && w.snowfallCm > 0 ? (
+        <span className="flex items-center gap-1">
+          <CloudSnow className="h-2.5 w-2.5" strokeWidth={1.75} />
+          {w.snowfallCm.toFixed(1)} cm
+        </span>
+      ) : (
+        w.precipMm != null &&
+        w.precipMm >= 1 && (
+          <span className="flex items-center gap-1">
+            <Droplets className="h-2.5 w-2.5" strokeWidth={1.75} />
+            {Math.round(w.precipMm)} mm
+          </span>
+        )
+      )}
+    </div>
+  )
+}
+
+// Weather coaching advisory — Sparki's read on how conditions affect the
+// session. Only rendered when there's something worth saying (caution/severe).
+function WeatherAdvisoryCard({ a }: { a: WeatherAdvisory }) {
+  if (a.severity === "ok") return null
+  const color = SEVERITY_COLOR[a.severity]
+  return (
+    <div
+      className="mt-3 rounded-xl border p-3"
+      style={{ borderColor: `${color.replace(/[\d.]+\)$/, "0.25)")}`, background: color.replace(/[\d.]+\)$/, "0.06)") }}
+    >
+      <div className="flex items-center gap-1.5">
+        <AlertTriangle className="h-3 w-3 shrink-0" style={{ color }} strokeWidth={2} />
+        <span className="font-mono text-[10px] uppercase tracking-[0.15em]" style={{ color }}>
+          {a.headline}
+        </span>
+      </div>
+      <p className="mt-1.5 text-[12px] leading-relaxed text-white/70">{a.detail}</p>
+      {a.suggestion && (
+        <p className="mt-1.5 text-[12px] leading-relaxed text-white/55">
+          <span className="text-white/40">Sparki: </span>
+          {a.suggestion}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// Weather-driven fuelling/hydration note for the day.
+function WeatherNutritionCard({ a }: { a: WeatherNutritionAdvisory }) {
+  if (!a.hydrationNote && !a.fuelNote) return null
+  const color = SEVERITY_COLOR[a.severity]
+  return (
+    <div className="mt-2 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+      <div className="flex items-center gap-1.5">
+        <Utensils className="h-3 w-3 shrink-0" style={{ color }} strokeWidth={1.75} />
+        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/45">
+          Voeding bij dit weer
+        </span>
+      </div>
+      {a.hydrationNote && (
+        <p className="mt-1.5 flex items-start gap-1.5 text-[12px] leading-relaxed text-white/65">
+          <Droplets className="mt-0.5 h-3 w-3 shrink-0 text-cyan-300/60" strokeWidth={1.75} />
+          {a.hydrationNote}
+        </p>
+      )}
+      {a.fuelNote && (
+        <p className="mt-1.5 flex items-start gap-1.5 text-[12px] leading-relaxed text-white/65">
+          <Utensils className="mt-0.5 h-3 w-3 shrink-0 text-white/40" strokeWidth={1.75} />
+          {a.fuelNote}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// Race-day weather at the *race location* (geocoded from the race's place).
+// Honest about why it isn't available (too far out, no location, etc.).
+function RaceWeatherCard({ rw }: { rw: RaceWeather }) {
+  if (!rw.available) {
+    const msg =
+      rw.reason === "too_far"
+        ? "Weersverwachting voor de wedstrijddag komt beschikbaar zodra die binnen ~16 dagen valt."
+        : rw.reason === "no_location"
+          ? "Voeg een locatie toe aan je wedstrijd zodat Sparki het weer ter plaatse kan checken."
+          : rw.reason === "geocode_failed"
+            ? "Sparki kon de wedstrijdlocatie niet op de kaart vinden — controleer de plaatsnaam."
+            : "Nog geen weersverwachting beschikbaar voor de wedstrijdlocatie."
+    return (
+      <div className="mt-3 flex items-start gap-1.5 border-t border-white/[0.06] pt-3 font-mono text-[10px] leading-relaxed text-white/35">
+        <MapPin className="mt-0.5 h-3 w-3 shrink-0" strokeWidth={1.75} />
+        {msg}
+      </div>
+    )
+  }
+  return (
+    <div className="mt-3 border-t border-white/[0.06] pt-3">
+      <div className="flex items-center gap-1.5">
+        <MapPin className="h-3 w-3 shrink-0" style={{ color: ACCENT }} strokeWidth={1.75} />
+        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/45">
+          Weer op wedstrijddag{rw.locationLabel ? ` · ${rw.locationLabel}` : ""}
+        </span>
+      </div>
+      {rw.weather && (
+        <div className="mt-2">
+          <WeatherStrip w={rw.weather} />
+        </div>
+      )}
+      {rw.advisory && <WeatherAdvisoryCard a={rw.advisory} />}
+    </div>
+  )
+}
+
 function CommittedDay({ day }: { day: PlanDay }) {
   const dayName = formatDay(day.dayDate)
   if (day.isRest) {
@@ -136,6 +297,16 @@ function CommittedDay({ day }: { day: PlanDay }) {
         </p>
       )}
 
+      {day.weather && (
+        <div className="mt-3 border-t border-white/[0.06] pt-3">
+          <WeatherStrip w={day.weather} />
+        </div>
+      )}
+      {day.trainingAdvisory && <WeatherAdvisoryCard a={day.trainingAdvisory} />}
+      {day.nutritionAdvisory && (
+        <WeatherNutritionCard a={day.nutritionAdvisory} />
+      )}
+
       {day.route ? (
         <DayRouteMap routeId={day.route.id} />
       ) : (
@@ -179,6 +350,16 @@ function PreviewDay({ day }: { day: PlanDay }) {
               <p className="mt-1 flex items-start gap-1 text-[11px] leading-snug text-cyan-300/55">
                 <RefreshCw className="mt-0.5 h-2.5 w-2.5 shrink-0" />
                 {day.adaptationReason}
+              </p>
+            )}
+            {day.weather && <div className="mt-1.5"><WeatherStrip w={day.weather} /></div>}
+            {day.trainingAdvisory && day.trainingAdvisory.severity !== "ok" && (
+              <p
+                className="mt-1 flex items-start gap-1 text-[11px] leading-snug"
+                style={{ color: SEVERITY_COLOR[day.trainingAdvisory.severity] }}
+              >
+                <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" strokeWidth={2} />
+                {day.trainingAdvisory.headline}
               </p>
             )}
           </>
@@ -621,6 +802,9 @@ export function TrainingPlanPanel() {
                     accent
                   />
                 </div>
+              )}
+              {data.raceWeather && (
+                <RaceWeatherCard rw={data.raceWeather} />
               )}
             </div>
           )}

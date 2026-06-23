@@ -10,6 +10,8 @@ import {
   type RouteSurface,
   type RouteVisibility,
   type RoutePathPoint,
+  type RouteWaypoint,
+  type RouteMeetpoint,
 } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { requireAuth, getClerkUserId } from "../lib/auth";
@@ -71,6 +73,50 @@ function finiteNum(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+// Parse an ordered list of user-placed waypoints ([lat, lon] pairs) from the
+// request body, dropping anything malformed or out of range. Used by the
+// interactive (waypoints) generation mode.
+function parseWaypoints(v: unknown): { lat: number; lon: number }[] {
+  if (!Array.isArray(v)) return [];
+  const out: { lat: number; lon: number }[] = [];
+  for (const item of v) {
+    if (!Array.isArray(item) || item.length < 2) continue;
+    const lat = Number(item[0]);
+    const lon = Number(item[1]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    if (Math.abs(lat) > 90 || Math.abs(lon) > 180) continue;
+    out.push({ lat, lon });
+  }
+  return out;
+}
+
+// Parse named meeting points ("verzamelpunten") from the request body. These are
+// user annotations (not provider geometry), so client-supplied lat/lon/name are
+// accepted — but sanitised: coordinates range-checked, names trimmed/capped, and
+// malformed entries dropped. Capped to a sensible maximum.
+function parseMeetpoints(v: unknown): RouteMeetpoint[] {
+  if (!Array.isArray(v)) return [];
+  const out: RouteMeetpoint[] = [];
+  for (const item of v) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const lat = Number(o.lat);
+    const lon = Number(o.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    if (Math.abs(lat) > 90 || Math.abs(lon) > 180) continue;
+    // Strip angle brackets so stored values can never carry HTML/markup into
+    // any downstream sink (defence-in-depth alongside client-side escaping).
+    const stripMarkup = (s: string) => s.replace(/[<>]/g, "").trim();
+    const rawName = typeof o.name === "string" ? stripMarkup(o.name) : "";
+    const name = (rawName || "Verzamelpunt").slice(0, 80);
+    const rawNote = typeof o.note === "string" ? stripMarkup(o.note) : "";
+    const note = rawNote ? rawNote.slice(0, 280) : null;
+    out.push({ lat, lon, name, note });
+    if (out.length >= 25) break;
+  }
+  return out;
+}
+
 // Honesty caveat — always appended to a generated route's rationale, regardless
 // of what the AI writes. The routing engine can only *prefer* a quiet, scenic
 // route; it cannot guarantee no traffic lights or that city centres are avoided.
@@ -93,7 +139,7 @@ function loopPointsFor(trainingType: string): number {
 async function buildRationale(input: {
   trainingType: string;
   profile: RoutingProfile;
-  mode: "loop" | "ptp";
+  mode: "loop" | "ptp" | "waypoints";
   distanceKm: number | null;
   durationSec: number | null;
   elevationGainM: number | null;
@@ -105,7 +151,9 @@ async function buildRationale(input: {
   const shape =
     input.mode === "loop"
       ? `een lus${input.startName ? ` vanuit ${input.startName}` : ""}`
-      : `een route${input.startName ? ` van ${input.startName}` : ""}${input.endName ? ` naar ${input.endName}` : ""}`;
+      : input.mode === "waypoints"
+        ? `een zelf uitgestippelde route${input.startName ? ` vanuit ${input.startName}` : ""}`
+        : `een route${input.startName ? ` van ${input.startName}` : ""}${input.endName ? ` naar ${input.endName}` : ""}`;
   const durationLabel =
     input.durationSec != null
       ? `${Math.round(input.durationSec / 60)} min`
@@ -253,7 +301,12 @@ router.post("/generate", requireAuth, async (req, res) => {
     return;
   }
 
-  const mode = body.mode === "ptp" ? "ptp" : "loop";
+  const mode =
+    body.mode === "ptp"
+      ? "ptp"
+      : body.mode === "waypoints"
+        ? "waypoints"
+        : "loop";
   const sport = coerceSport(body.sport);
   const bikeType = coerceBikeType(body.bikeType);
   const elevationPreference = coerceElevation(body.elevationPreference);
@@ -262,8 +315,20 @@ router.post("/generate", requireAuth, async (req, res) => {
       ? body.trainingType.trim()
       : "duurtraining";
 
-  const startLat = finiteNum(body.startLat);
-  const startLon = finiteNum(body.startLon);
+  // Interactive mode: an ordered list of user-placed points the provider threads
+  // a real road route through. The first point doubles as the start.
+  const waypoints = mode === "waypoints" ? parseWaypoints(body.waypoints) : [];
+  if (mode === "waypoints" && waypoints.length < 2) {
+    res.status(400).json({
+      error: "Plaats minstens twee punten op de kaart voor een eigen route",
+    });
+    return;
+  }
+
+  const startLat =
+    mode === "waypoints" ? waypoints[0]!.lat : finiteNum(body.startLat);
+  const startLon =
+    mode === "waypoints" ? waypoints[0]!.lon : finiteNum(body.startLon);
   if (
     startLat == null ||
     startLon == null ||
@@ -361,19 +426,21 @@ router.post("/generate", requireAuth, async (req, res) => {
     }
 
     const routeResult =
-      mode === "ptp" && end
-        ? await provider.routePointToPoint({
-            start: { lat: startLat, lon: startLon },
-            end,
-            profile,
-          })
-        : await provider.generateLoop({
-            start: { lat: startLat, lon: startLon },
-            distanceKm: targetDistanceKm,
-            profile,
-            seed,
-            points: loopPointsFor(workoutTrainingType),
-          });
+      mode === "waypoints"
+        ? await provider.routeWaypoints({ points: waypoints, profile })
+        : mode === "ptp" && end
+          ? await provider.routePointToPoint({
+              start: { lat: startLat, lon: startLon },
+              end,
+              profile,
+            })
+          : await provider.generateLoop({
+              start: { lat: startLat, lon: startLon },
+              distanceKm: targetDistanceKm,
+              profile,
+              seed,
+              points: loopPointsFor(workoutTrainingType),
+            });
 
     const summary = summarizeTrack(routeResult.points);
     const distanceKm = summary.distanceKm ?? routeResult.distanceKm;
@@ -381,10 +448,14 @@ router.post("/generate", requireAuth, async (req, res) => {
     const durationSec = routeResult.durationSec;
     const nav: RouteStep[] = routeResult.steps;
 
-    // Best-effort place names for the route title (never blocks generation).
+    // Best-effort place names for the route title (never blocks generation). For
+    // a waypoints route the last placed point is the "end".
+    const endPoint =
+      end ??
+      (mode === "waypoints" ? waypoints[waypoints.length - 1]! : null);
     const [startName, resolvedEndName] = await Promise.all([
       provider.reverseGeocode({ lat: startLat, lon: startLon }),
-      end ? provider.reverseGeocode(end) : Promise.resolve(endLabel),
+      endPoint ? provider.reverseGeocode(endPoint) : Promise.resolve(endLabel),
     ]);
     const endName = endLabel ?? resolvedEndName;
 
@@ -392,7 +463,9 @@ router.post("/generate", requireAuth, async (req, res) => {
     const name =
       mode === "ptp"
         ? `${startName ?? "Start"} → ${endName ?? "bestemming"}${distLabel ? ` · ${distLabel}` : ""}`
-        : `${workoutTrainingType}-lus${startName ? ` vanuit ${startName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`;
+        : mode === "waypoints"
+          ? `Eigen route${startName ? ` vanuit ${startName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`
+          : `${workoutTrainingType}-lus${startName ? ` vanuit ${startName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`;
 
     const rationale = await buildRationale({
       trainingType: linkedWorkoutTitle
@@ -422,6 +495,8 @@ router.post("/generate", requireAuth, async (req, res) => {
       climbs: summary.climbs,
       nav,
       geometry: routeResult.path,
+      waypoints:
+        mode === "waypoints" ? waypoints.map((p) => [p.lat, p.lon]) : [],
       rationale,
       plannedWorkoutId,
     });
@@ -443,6 +518,8 @@ router.post("/generate", requireAuth, async (req, res) => {
         climbs: summary.climbs,
         nav,
         geometry: routeResult.path,
+        waypoints:
+          mode === "waypoints" ? waypoints.map((p) => [p.lat, p.lon]) : [],
         rationale,
         startName,
         endName,
@@ -488,11 +565,14 @@ router.post("/", requireAuth, async (req, res) => {
     }
 
     // Only cosmetic overrides are accepted from the client; all route data comes
-    // from the trusted stored candidate.
+    // from the trusted stored candidate. Meeting points ("verzamelpunten") are
+    // user annotations — not provider geometry — so they're accepted from the
+    // client, but sanitised by parseMeetpoints (coords range-checked, capped).
     const name =
       typeof body.name === "string" && body.name.trim()
         ? body.name.trim()
         : stored.name;
+    const meetpoints = parseMeetpoints(body.meetpoints);
 
     try {
       // Re-validate workout ownership defensively (it was checked at /generate).
@@ -526,6 +606,11 @@ router.post("/", requireAuth, async (req, res) => {
           climbs: stored.climbs,
           nav: stored.nav.length > 0 ? stored.nav : null,
           geometry: stored.geometry as RoutePathPoint[],
+          waypoints:
+            stored.waypoints.length > 0
+              ? (stored.waypoints as RouteWaypoint[])
+              : null,
+          meetpoints: meetpoints.length > 0 ? meetpoints : null,
           rationale: stored.rationale,
           source: "generated",
           linkedActivityImportId: null,

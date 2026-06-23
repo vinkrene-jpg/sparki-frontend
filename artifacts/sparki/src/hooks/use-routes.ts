@@ -14,6 +14,17 @@ export type RouteNavCue = {
   km: number;
   dir: string;
   note: string;
+}
+
+// A user-placed shaping point for an interactive route: [lat, lon].
+export type RouteWaypoint = [number, number]
+
+// A named meeting point ("verzamelpunt") the user drops along/near the route.
+export type RouteMeetpoint = {
+  lat: number
+  lon: number
+  name: string
+  note: string | null
 };
 
 export type SparkiRoute = {
@@ -30,6 +41,8 @@ export type SparkiRoute = {
   climbs: RouteClimb[] | null;
   nav: RouteNavCue[] | null;
   geometry: [number, number][] | null;
+  waypoints: RouteWaypoint[] | null;
+  meetpoints: RouteMeetpoint[] | null;
   rationale: string | null;
   source: string;
   linkedActivityImportId: number | null;
@@ -43,9 +56,9 @@ export type BikeType = "racefiets" | "mtb" | "gravel";
 export type ElevationPreference = "flat" | "hilly" | "any";
 
 export type GenerateRouteInput = {
-  mode: "loop" | "ptp";
-  startLat: number;
-  startLon: number;
+  mode: "loop" | "ptp" | "waypoints";
+  startLat?: number;
+  startLon?: number;
   sport: Sport;
   bikeType?: BikeType;
   elevationPreference?: ElevationPreference;
@@ -55,6 +68,8 @@ export type GenerateRouteInput = {
   endLat?: number;
   endLon?: number;
   destinationText?: string;
+  // Ordered [lat, lon] points for an interactive (waypoints) route.
+  waypoints?: RouteWaypoint[];
   seed?: number;
 };
 
@@ -66,7 +81,7 @@ export type RouteCandidate = {
   bikeType: BikeType | null;
   routingProfile: string;
   trainingType: string;
-  mode: "loop" | "ptp";
+  mode: "loop" | "ptp" | "waypoints";
   distanceKm: number | null;
   durationSec: number | null;
   elevationGainM: number | null;
@@ -74,6 +89,7 @@ export type RouteCandidate = {
   climbs: RouteClimb[];
   nav: RouteNavCue[];
   geometry: [number, number][];
+  waypoints: RouteWaypoint[];
   rationale: string;
   startName: string | null;
   endName: string | null;
@@ -155,16 +171,21 @@ export function useGenerateRoute() {
 }
 
 // Persist a generated candidate into the routes list (source="generated").
+// Optionally attaches user-authored meeting points ("verzamelpunten").
 export function useSaveGeneratedRoute() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (candidate: RouteCandidate) =>
+    mutationFn: (input: {
+      candidate: RouteCandidate;
+      meetpoints?: RouteMeetpoint[];
+    }) =>
       apiFetch<{ route: SparkiRoute }>("/api/routes", {
         method: "POST",
         body: JSON.stringify({
           source: "generated",
-          candidateId: candidate.candidateId,
-          name: candidate.name,
+          candidateId: input.candidate.candidateId,
+          name: input.candidate.name,
+          meetpoints: input.meetpoints ?? [],
         }),
       }),
     onSuccess: () => {

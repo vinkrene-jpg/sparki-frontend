@@ -18,6 +18,7 @@ import type {
   RouteStep,
   RoutingProfile,
   RoutingProvider,
+  WaypointRequest,
 } from "../types";
 
 const ORS_BASE = "https://api.openrouteservice.org";
@@ -222,6 +223,22 @@ export class OrsProvider implements RoutingProvider {
         [req.start.lon, req.start.lat],
         [req.end.lon, req.end.lat],
       ],
+      elevation: true,
+      instructions: true,
+      language: "nl",
+      options: { avoid_features: this.avoidFor(req.profile) },
+    });
+  }
+
+  // Route through an ordered list of user-placed waypoints (≥2). ORS threads the
+  // real road network through every coordinate in order — the returned geometry
+  // is the actual ridable path, never a straight line between the clicks.
+  async routeWaypoints(req: WaypointRequest): Promise<RouteResult> {
+    if (req.points.length < 2) {
+      throw new Error("Een route heeft minimaal twee punten nodig");
+    }
+    return this.directions(req.profile, {
+      coordinates: req.points.map((p) => [p.lon, p.lat]),
       elevation: true,
       instructions: true,
       language: "nl",

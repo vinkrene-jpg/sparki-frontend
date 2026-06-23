@@ -51,6 +51,14 @@ export type PointToPointRequest = {
   profile: RoutingProfile;
 };
 
+// An interactive, user-shaped route through an ordered list of points (≥2).
+// The athlete clicks points on the map; the provider returns the real road
+// route that threads through them in order (never an invented straight line).
+export type WaypointRequest = {
+  points: LatLon[];
+  profile: RoutingProfile;
+};
+
 // The contract every routing provider implements. ORS is the first provider.
 export interface RoutingProvider {
   readonly name: string;
@@ -58,6 +66,7 @@ export interface RoutingProvider {
   isConfigured(): boolean;
   generateLoop(req: LoopRequest): Promise<RouteResult>;
   routePointToPoint(req: PointToPointRequest): Promise<RouteResult>;
+  routeWaypoints(req: WaypointRequest): Promise<RouteResult>;
   geocode(text: string): Promise<GeocodeResult | null>;
   geocodeSearch(text: string, limit?: number): Promise<GeocodeResult[]>;
   reverseGeocode(point: LatLon): Promise<string | null>;

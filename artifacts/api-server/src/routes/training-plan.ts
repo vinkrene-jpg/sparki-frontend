@@ -4,7 +4,7 @@
 // engine never writes planned_workouts — coach workouts are never overwritten.
 
 import { Router } from "express";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, gte, inArray } from "drizzle-orm";
 import {
   db,
   coachAthleteLinksTable,
@@ -12,6 +12,8 @@ import {
   planDaysTable,
   plannedWorkoutsTable,
   routesTable,
+  athleteProfilesTable,
+  racesTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
@@ -21,6 +23,14 @@ import {
   adaptPlan,
   maybeRollForward,
 } from "../lib/training-plan";
+import { getForecastByDate, type DayForecast } from "../lib/weather/open-meteo";
+import {
+  assessTraining,
+  assessNutrition,
+  weatherSummary,
+  type WeatherDayInput,
+} from "../lib/weather/assess";
+import { getRaceWeather } from "../lib/weather/race";
 
 const router = Router();
 
@@ -85,9 +95,45 @@ async function loadPlanView(clerkId: string) {
     for (const r of routes) routeById.set(r.id, r);
   }
 
+  // Weather enrichment — real Open-Meteo forecast for the athlete's home, joined
+  // per day within the ~16-day horizon. Best-effort: any failure leaves days
+  // without weather (no fabricated conditions). Forecast is fetched once.
+  let forecastByDate = new Map<string, DayForecast>();
+  const [profile] = await db
+    .select({
+      homeLat: athleteProfilesTable.homeLat,
+      homeLon: athleteProfilesTable.homeLon,
+    })
+    .from(athleteProfilesTable)
+    .where(eq(athleteProfilesTable.clerkId, clerkId))
+    .limit(1);
+  const homeLat = profile?.homeLat != null ? Number(profile.homeLat) : null;
+  const homeLon = profile?.homeLon != null ? Number(profile.homeLon) : null;
+  if (homeLat != null && homeLon != null && Number.isFinite(homeLat) && Number.isFinite(homeLon)) {
+    try {
+      forecastByDate = await getForecastByDate(homeLat, homeLon);
+    } catch {
+      forecastByDate = new Map();
+    }
+  }
+
   const enriched = days.map((d) => {
     const w = d.plannedWorkoutId ? workoutById.get(d.plannedWorkoutId) : null;
     const route = w?.routeId ? (routeById.get(w.routeId) ?? null) : null;
+
+    const fc = forecastByDate.get(d.dayDate);
+    const wx: WeatherDayInput = {
+      isRest: d.isRest,
+      trainingType: d.trainingType,
+      estDurationMin: d.estDurationMin,
+      // Outdoor unless it's an explicit indoor session; routeNeeded is a strong
+      // signal but duur/tempo/interval rides are outdoor by default too.
+      outdoor: !d.isRest && d.trainingType !== null,
+    };
+    const weather = fc ? weatherSummary(fc) : null;
+    const trainingAdvisory = fc ? assessTraining(wx, fc) : null;
+    const nutritionAdvisory = fc ? assessNutrition(wx, fc) : null;
+
     return {
       id: d.id,
       dayDate: d.dayDate,
@@ -105,6 +151,9 @@ async function loadPlanView(clerkId: string) {
         ? { id: w.id, title: w.title, type: w.type, status: w.status }
         : null,
       route,
+      weather,
+      trainingAdvisory,
+      nutritionAdvisory,
     };
   });
 
@@ -143,6 +192,33 @@ router.get("/", requireAuth, async (req, res) => {
       loadPlanView(clerkId),
     ]);
     const completeness = checkCompleteness(inputs);
+
+    // Race-day weather: look up the forecast at the *race location* for the next
+    // upcoming race (best-effort, never blocks the plan view).
+    let raceWeather: Awaited<ReturnType<typeof getRaceWeather>> | null = null;
+    try {
+      const today = new Date().toISOString().split("T")[0]!;
+      const [nextRace] = await db
+        .select({
+          name: racesTable.name,
+          raceDate: racesTable.raceDate,
+          location: racesTable.location,
+        })
+        .from(racesTable)
+        .where(
+          and(
+            eq(racesTable.clerkId, clerkId),
+            gte(racesTable.raceDate, today),
+          ),
+        )
+        .orderBy(asc(racesTable.raceDate))
+        .limit(1);
+      if (nextRace) {
+        raceWeather = await getRaceWeather(nextRace.location, nextRace.raceDate);
+      }
+    } catch (err) {
+      req.log.error({ err }, "training-plan.raceWeather failed");
+    }
     res.json({
       hasCoach,
       mode: hasCoach ? "advisory" : "autonomous",
@@ -165,6 +241,7 @@ router.get("/", requireAuth, async (req, res) => {
         homeLon: inputs.home?.lon ?? null,
         homeLabel: inputs.home?.label ?? null,
       },
+      raceWeather,
       plan: view?.plan ?? null,
       days: view?.days ?? [],
     });

@@ -46,6 +46,21 @@ export type RouteNavCue = {
 // A single geographic point along a route path: [lat, lon].
 export type RoutePathPoint = [number, number];
 
+// A user-placed shaping point for an interactive route ([lat, lon]). The stored
+// geometry is still the real provider-routed path through these points — the
+// waypoints are kept so the route can be reopened and re-shaped later.
+export type RouteWaypoint = [number, number];
+
+// A named meeting point ("verzamelpunt") — a user annotation, not provider data:
+// where a group gathers before/along the ride. lat/lon come from a map click or
+// geocode; name/note are authored by the user.
+export type RouteMeetpoint = {
+  lat: number;
+  lon: number;
+  name: string;
+  note: string | null;
+};
+
 export const routesTable = pgTable("routes", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
@@ -68,6 +83,12 @@ export const routesTable = pgTable("routes", {
   // Full path geometry (RoutePathPoint[] — [lat, lon]) so a generated route can
   // be redrawn on a map. Null for GPX routes (we don't store the raw track).
   geometry: jsonb("geometry"),
+  // User-placed shaping points (RouteWaypoint[]) for an interactive route, so it
+  // can be reopened and re-shaped. Null for loop/ptp/GPX routes.
+  waypoints: jsonb("waypoints"),
+  // Named meeting points (RouteMeetpoint[]) — "verzamelpunten" the user adds.
+  // User annotations (not provider geometry); null when none were placed.
+  meetpoints: jsonb("meetpoints"),
   // Short Dutch explanation of why this route fits the workout. Only present on
   // generated routes; honesty caveats are baked into this text.
   rationale: text("rationale"),
