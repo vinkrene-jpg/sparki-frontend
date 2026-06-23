@@ -145,6 +145,11 @@ export const queryKeys = {
     news: () => ["feed", "news"] as const,
   },
 
+  voice: {
+    all: () => ["voice"] as const,
+    profile: () => ["voice", "profile"] as const,
+  },
+
   social: {
     all: () => ["social"] as const,
     friends: () => ["social", "friends"] as const,

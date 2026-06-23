@@ -9,6 +9,7 @@
 - [Sparki data foundation sprint](sparki-data-foundation.md) — clerkId identity, privacy-gated AI persist, dedupe_key; api-server route gotchas (no zod, String(params), db.execute().rows, admin via SPARKI_ADMIN_IDS).
 - [Sparki day-type engine](sparki-day-type-engine.md) — Home day-type detection precedence (§4); rest=explicit rest workout, no-workout=general fallback; health status end-to-end.
 - [Sparki invitation/tester flow](sparki-invitations.md) — token invites grant role+link; one-time accept must be atomic (conditional status flip in a transaction), not read-then-update.
+- [Sparki Voice & Personality Engine](sparki-voice-engine.md) — deterministic tone/trust/empathy engine; refuses to fabricate (null), empathy-before-humor, trust gates tones; new api-server tests need build.mjs entry + test script.
 - [Sparki Circle unified feed](sparki-circle.md) — /samen merges follow-ups+friends+races+news; suppress global FollowUpPrompt on samen via `section` not `scene`; "Jouw overzicht" not "Circle-feed".
 - [Sparki Social & Team](sparki-social-team.md) — Samen page; ScreenShell scene-fallback leaks home-only UI (gate on explicit section); team-update null clears columns; sport keys need Dutch labels; feed privacy fail-closed.
 - [Sparki personal-context memory](sparki-context-memory.md) — deterministic Dutch detection, evening follow-ups, privacy-gated persist, viewer projection omits raw statement/response. Plus: JSX \u escapes don't work in text/attr strings.

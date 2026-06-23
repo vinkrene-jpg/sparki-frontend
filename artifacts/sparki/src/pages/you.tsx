@@ -7,6 +7,7 @@ import { ConnectionsSection } from "@/components/sparki/connections-section"
 import { LinksSection } from "@/components/sparki/links-section"
 import { BugReportForm } from "@/components/sparki/bug-report-form"
 import { AdminPanel } from "@/components/sparki/admin-panel"
+import { SparkiVoiceSection } from "@/components/sparki/sparki-voice"
 import { useAthleteExtendedProfile, useUpdateAthleteProfile } from "@/hooks/use-athlete-extended-profile"
 import { useLogDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useLogFtp } from "@/hooks/use-ftp-history"
@@ -692,6 +693,15 @@ export default function YouPage() {
             )
           })}
         </div>
+      </section>
+
+      {/* 04 HOE SPARKI KLINKT */}
+      <section>
+        <SectionLabel n="04" title="Hoe Sparki klinkt" />
+        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+          Sparki's toon groeit mee naarmate jullie elkaar beter leren kennen
+        </p>
+        <SparkiVoiceSection />
       </section>
 
       <TeamIdentitySection />
