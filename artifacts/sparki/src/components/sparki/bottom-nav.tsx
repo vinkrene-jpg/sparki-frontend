@@ -11,25 +11,25 @@ type NavItem = {
 }
 
 const ATHLETE_NAV: NavItem[] = [
-  { href: "/", icon: Home, label: "Home" },
-  { href: "/train", icon: Bike, label: "Train" },
+  { href: "/", icon: Home, label: "Vandaag" },
+  { href: "/train", icon: Bike, label: "Training" },
   { href: "/races", icon: Flag, label: "Races" },
-  { href: "/feed", icon: Radio, label: "Feed" },
-  { href: "/lab", icon: FlaskConical, label: "Lab" },
-  { href: "/you", icon: User, label: "You" },
+  { href: "/feed", icon: Radio, label: "Nieuws" },
+  { href: "/lab", icon: FlaskConical, label: "Inzicht" },
+  { href: "/you", icon: User, label: "Profiel" },
 ]
 
 const COACH_NAV: NavItem[] = [
-  { href: "/", icon: Home, label: "Home" },
-  { href: "/invitations", icon: UserPlus, label: "Invites" },
-  { href: "/you", icon: User, label: "You" },
+  { href: "/", icon: Home, label: "Vandaag" },
+  { href: "/invitations", icon: UserPlus, label: "Uitnodigen" },
+  { href: "/you", icon: User, label: "Profiel" },
 ]
 
 const PARENT_NAV: NavItem[] = [
-  { href: "/", icon: Home, label: "Home" },
-  { href: "/feed", icon: Radio, label: "Feed" },
-  { href: "/invitations", icon: UserPlus, label: "Invites" },
-  { href: "/you", icon: User, label: "You" },
+  { href: "/", icon: Home, label: "Vandaag" },
+  { href: "/feed", icon: Radio, label: "Nieuws" },
+  { href: "/invitations", icon: UserPlus, label: "Uitnodigen" },
+  { href: "/you", icon: User, label: "Profiel" },
 ]
 
 function navForRole(role: Role | null | undefined): NavItem[] {
@@ -81,9 +81,9 @@ export function BottomNav() {
                 strokeWidth={1.75}
               />
               <span
-                className="font-mono text-[9px] uppercase tracking-[0.18em]"
+                className="font-mono text-[10px] uppercase tracking-[0.12em]"
                 style={{
-                  color: isActive ? "var(--accent-cyan)" : "rgba(255,255,255,0.35)",
+                  color: isActive ? "var(--accent-cyan)" : "rgba(255,255,255,0.5)",
                 }}
               >
                 {item.label}

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import { LogOut, RefreshCw } from "lucide-react"
 import { useClerk, Show } from "@clerk/react"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
 import { CinematicScene, type SceneName } from "@/components/sparki/cinematic-scene"
@@ -12,10 +13,24 @@ const SECTION_SCENE: Record<string, SceneName> = {
   you: "you",
 }
 
-const ROLE_LABEL: Record<Role, string> = {
-  athlete: "ATHLETE",
+// User-facing Dutch label for the section shown in the header. Keeps the internal
+// `section` key (which drives the scene) in English while presenting plain Dutch.
+const SECTION_DISPLAY: Record<string, string> = {
+  home: "VANDAAG",
+  train: "TRAINING",
+  races: "RACES",
+  feed: "NIEUWS",
+  lab: "INZICHT",
+  you: "PROFIEL",
+  kennisbank: "KENNIS",
   coach: "COACH",
-  parent: "PARENT",
+  ouder: "OUDER",
+}
+
+const ROLE_LABEL: Record<Role, string> = {
+  athlete: "Sporter",
+  coach: "Coach",
+  parent: "Ouder",
 }
 
 function RoleSwitcher() {
@@ -40,21 +55,23 @@ function RoleSwitcher() {
         <button
           type="button"
           onClick={cycleRole}
-          className="font-mono text-[10px] tracking-[0.18em] uppercase rounded-full border border-white/10 px-2.5 py-1 text-white/60 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/80"
-          title="Switch role"
+          className="flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+          title="Wissel van rol"
         >
+          <RefreshCw className="h-2.5 w-2.5 opacity-70" strokeWidth={2} />
           {ROLE_LABEL[active]}
         </button>
       ) : (
-        <span className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/30">{ROLE_LABEL[active]}</span>
+        <span className="font-mono text-[10px] tracking-[0.14em] uppercase text-white/40">{ROLE_LABEL[active]}</span>
       )}
       <button
         type="button"
         onClick={() => signOut({ redirectUrl: basePath || "/" })}
-        className="font-mono text-[10px] text-white/20 transition-colors hover:text-white/50"
-        title="Sign out"
+        className="flex items-center gap-1 text-white/35 transition-colors hover:text-cyan-300/80"
+        title="Uitloggen"
+        aria-label="Uitloggen"
       >
-        ⏏
+        <LogOut className="h-3.5 w-3.5" strokeWidth={1.75} />
       </button>
     </div>
   )
@@ -70,6 +87,7 @@ export function ScreenShell({
   children: ReactNode
 }) {
   const scene = SECTION_SCENE[section.toLowerCase()] ?? "home"
+  const sectionLabel = SECTION_DISPLAY[section.toLowerCase()] ?? section.toUpperCase()
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#05070e] text-white">
       {/* Per-screen cinematic background — shared structure, scene-specific
@@ -86,13 +104,13 @@ export function ScreenShell({
             <span className="font-mono text-[11px] tracking-[0.35em] text-white/70">SPARKI</span>
           </div>
           <Show when="signed-out">
-            <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{section.toUpperCase()}</span>
+            <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{sectionLabel}</span>
           </Show>
           <Show when="signed-in">
             <div className="flex items-center gap-3">
               <NotificationBell />
               <div className="flex flex-col items-end gap-1.5">
-                <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{section.toUpperCase()}</span>
+                <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{sectionLabel}</span>
                 <RoleSwitcher />
               </div>
             </div>

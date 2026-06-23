@@ -4,6 +4,7 @@
 // later via the same typed provider layer.
 
 import { useState } from "react"
+import { ChevronLeft } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { Skeleton } from "@/components/sparki/home-sections"
@@ -276,13 +277,25 @@ export default function RacesPage() {
   return (
     <ScreenShell section="Races" bg="/concept-lab.png">
       <header className="flex items-center justify-between">
-        <div>
-          <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
-            WEDSTRIJDEN
-          </span>
-          <h1 className="mt-1 font-sans text-2xl font-light tracking-tight text-white/90">
-            Mijn races
-          </h1>
+        <div className="flex items-center gap-3">
+          {showForm && (
+            <button
+              type="button"
+              onClick={closeForm}
+              className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
+              Terug
+            </button>
+          )}
+          <div>
+            <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
+              WEDSTRIJDEN
+            </span>
+            <h1 className="mt-1 font-sans text-2xl font-light tracking-tight text-white/90">
+              {showForm ? (editingId != null ? "Race bewerken" : "Race toevoegen") : "Mijn races"}
+            </h1>
+          </div>
         </div>
         {!showForm && (
           <button

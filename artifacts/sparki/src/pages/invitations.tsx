@@ -4,6 +4,8 @@
 // Cinematic Sparki design language.
 
 import { useMemo, useState } from "react"
+import { ChevronLeft } from "lucide-react"
+import { useLocation } from "wouter"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { Skeleton } from "@/components/sparki/home-sections"
@@ -64,6 +66,7 @@ type Capability = {
 
 export default function InvitationsPage() {
   const { profile } = useUserProfile()
+  const [, setLocation] = useLocation()
   const { data: invitations, isLoading } = useInvitations()
   const createInvite = useCreateInvitation()
   const revokeInvite = useRevokeInvitation()
@@ -150,6 +153,14 @@ export default function InvitationsPage() {
   return (
     <ScreenShell section="You" bg="/concept-lab.png">
       <header>
+        <button
+          type="button"
+          onClick={() => setLocation("/you")}
+          className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
+          Terug
+        </button>
         <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
           UITNODIGINGEN
         </span>

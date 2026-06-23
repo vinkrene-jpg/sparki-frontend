@@ -22,6 +22,7 @@ import {
   XCircle,
   Plus,
   ChevronRight,
+  X,
 } from "lucide-react"
 import type { TrainingSession, WorkoutBlock } from "@/lib/athlete-types"
 
@@ -92,6 +93,20 @@ function LogSessionForm({ onDone }: { onDone: () => void }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan-300/70">
+          Nieuwe sessie
+        </span>
+        <button
+          type="button"
+          onClick={onDone}
+          className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-white/40 transition-colors hover:text-white/70"
+          aria-label="Sluiten"
+        >
+          <X className="h-3.5 w-3.5" strokeWidth={2} />
+          Sluiten
+        </button>
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
           <input
