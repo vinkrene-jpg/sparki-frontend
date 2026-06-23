@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, numeric, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, numeric, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { userProfilesTable } from "./users";
@@ -14,6 +14,32 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
   discipline: text("discipline"),
   goals: text("goals"),
   weeklyHourTarget: integer("weekly_hour_target"),
+
+  // ── Phased adaptive onboarding (task #18) ──────────────────────────────────
+  // Sport is modelled for future multi-sport support; only "cycling" is
+  // implemented today. The 4 core quick-start answers are: sport, goals (above),
+  // experienceLevel (below), trainingDaysPerWeek. Estimated flags mark values
+  // Sparki derived from those answers so later check-ins can refine them.
+  sport: text("sport"),
+  trainingDaysPerWeek: integer("training_days_per_week"),
+  // Coaching path chosen by the athlete: "sparki" (autonomous engine) or
+  // "coach" (human coach via the invitation/link flow). Null = not yet chosen.
+  coachingMode: text("coaching_mode"),
+  // Progressive profile facts gathered gradually during normal use.
+  birthYear: integer("birth_year"),
+  heightCm: integer("height_cm"),
+  // Self-reported competition level — drives adaptive question ordering and
+  // (later) periodisation: none | recreational | local | regional | national.
+  competitionLevel: text("competition_level"),
+  // Free-text "why do you ride" motivation (personalises Sparki's coaching).
+  motivation: text("motivation"),
+  // Typical nightly sleep in hours (recovery context).
+  typicalSleepHours: numeric("typical_sleep_hours", { precision: 3, scale: 1 }),
+  // True while the value is a quick-start estimate, not athlete-confirmed.
+  ftpEstimated: boolean("ftp_estimated").notNull().default(false),
+  weeklyHourTargetEstimated: boolean("weekly_hour_target_estimated")
+    .notNull()
+    .default(false),
   // Athlete-set health status (blueprint §4 #1 Emergency/Health). When "sick" or
   // "injured", the day-type engine routes Home to a calm recovery-only view and
   // blocks training pressure. "ok" (default) is the normal training state.
@@ -33,10 +59,6 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
   injuryHistory: text("injury_history"),
   // Free-text training preferences (terrain, indoor/outdoor, likes/dislikes).
   trainingPreferences: text("training_preferences"),
-  // Who guides this athlete's training. "self" = Sparki builds and adapts the
-  // plan autonomously; "coach" = the athlete has a human trainer who owns the
-  // plan. Chosen in onboarding ("Trainer of Sparki-coach"). Null until chosen.
-  coachingMode: text("coaching_mode"),
   // Home / preferred start location for generated routes. Loop routes need a
   // real start coordinate; null means route generation is skipped honestly.
   homeLat: numeric("home_lat", { precision: 9, scale: 6 }),

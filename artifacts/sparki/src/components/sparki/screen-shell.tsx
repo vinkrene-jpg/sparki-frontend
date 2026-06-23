@@ -4,6 +4,7 @@ import { useClerk, Show } from "@clerk/react"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
 import { CinematicScene, type SceneName } from "@/components/sparki/cinematic-scene"
 import { NotificationBell } from "@/components/sparki/notification-bell"
+import { ProfilePromptCard } from "@/components/sparki/profile-prompt-card"
 
 const SECTION_SCENE: Record<string, SceneName> = {
   home: "home",
@@ -77,6 +78,14 @@ function RoleSwitcher() {
   )
 }
 
+// Adaptive profile prompts only make sense for the athlete Home view. Coaches
+// and parents have their own home; the prompt engine is athlete-scoped.
+function HomeProfilePrompt() {
+  const { profile } = useUserProfile()
+  if (!profile || profile.activeRole !== "athlete") return null
+  return <ProfilePromptCard />
+}
+
 export function ScreenShell({
   section,
   bg = "/concept-lab.png",
@@ -116,6 +125,8 @@ export function ScreenShell({
             </div>
           </Show>
         </header>
+
+        {scene === "home" && <HomeProfilePrompt />}
 
         {children}
       </div>

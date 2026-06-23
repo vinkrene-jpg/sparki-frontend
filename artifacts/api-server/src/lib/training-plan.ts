@@ -850,6 +850,8 @@ function trainingToKind(t: TrainingType): DayKind {
       return "interval";
     case "wedstrijd":
       return "wedstrijd";
+    default:
+      return "duur";
   }
 }
 

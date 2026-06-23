@@ -19,7 +19,7 @@ import { BottomNav } from "@/components/sparki/bottom-nav";
 import { DayHome } from "@/components/sparki/day-home";
 import { CoachHome } from "@/components/sparki/coach-home";
 import { ParentHome } from "@/components/sparki/parent-home";
-import { OnboardingFlow } from "@/components/sparki/onboarding-flow";
+import { QuickStartFlow } from "@/components/sparki/quick-start-flow";
 import { ErrorBoundary } from "@/components/sparki/error-boundary";
 import NotFound from "@/pages/not-found";
 import FeedPage from "@/pages/feed";
@@ -206,11 +206,9 @@ function SignedInHome() {
 
   if (!onboarded) {
     return (
-      <OnboardingFlow
+      <QuickStartFlow
         clerkUser={{
-          id: user?.id ?? "",
           firstName: user?.firstName ?? null,
-          lastName: user?.lastName ?? null,
           username: user?.username ?? null,
         }}
         onComplete={handleComplete}

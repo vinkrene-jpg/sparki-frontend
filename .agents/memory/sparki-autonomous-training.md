@@ -62,6 +62,10 @@ table. An empty routes table + 201 = silent degrade, not "no steady days". ORS
 `round_trip` directions is a different endpoint than geocode — verify directions
 specifically (geocode working does not prove routing works).
 
+## Gotcha: dev DB silently drifts from schema (plan generation fails quietly)
+**Why:** task #17 added `training_plans` + `plan_days` tables and `planned_workouts.plan_id`/`route_id` columns to the schema, but the dev DB was never migrated (drizzle push is non-TTY blocked here). `generatePlan` runs inside `regeneratePlanSafely`, which swallows ALL errors and logs `onboarding.plan.regenerate failed` — so quick-start still returns `201 ok` while NO plan/plan_days/planned_workouts rows are written.
+**How to apply:** if a Sparki feature returns success but its DB rows are empty, suspect schema-vs-DB drift first. Compare `pgTable(...)` names/columns in `lib/db/src/schema/*` against `information_schema`. Fix with `executeSql` `CREATE TABLE IF NOT EXISTS` / `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` matching the schema exactly (push fails non-TTY). Don't trust an `ok` response — verify the rows landed.
+
 ## Gotcha: vite production build needs env vars
 `pnpm run build` (and per-artifact `vite build`) FAILS in a bare shell because
 `artifacts/sparki/vite.config.ts` throws unless `PORT` AND `BASE_PATH` are set —
