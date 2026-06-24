@@ -80,7 +80,7 @@ export function BottomNav() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-gradient-to-t from-[#040506] to-transparent"
       />
-      <div className="mx-auto flex max-w-md items-center justify-between border-t border-white/[0.06] bg-[#040506]/85 px-7 pb-7 pt-3.5 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-md items-center border-t border-white/[0.06] bg-[#040506]/85 px-2 pb-7 pt-3.5 backdrop-blur-xl">
         {items.map((item) => {
           const Icon = item.icon
           const isActive =
@@ -89,7 +89,7 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-col items-center gap-1.5"
+              className="flex min-w-0 flex-1 flex-col items-center gap-1.5"
               aria-current={isActive ? "page" : undefined}
             >
               <Icon
@@ -103,7 +103,7 @@ export function BottomNav() {
                 strokeWidth={1.75}
               />
               <span
-                className="font-mono text-[10px] uppercase tracking-[0.12em]"
+                className="font-mono text-[10px] uppercase tracking-[0.03em] whitespace-nowrap"
                 style={{
                   color: isActive ? "var(--accent-cyan)" : "rgba(255,255,255,0.5)",
                 }}
