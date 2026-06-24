@@ -27,6 +27,7 @@ import {
 } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { computeReadiness } from "./sharing";
+import { computeLoad, computeRiskSignal, type Load, type RiskSignal } from "./recovery-load";
 import {
   disciplineToBike,
   generateAndSavePlanRoute,
@@ -76,6 +77,10 @@ export type PlanInputs = {
   healthStatus: string;
   home: { lat: number; lon: number; label: string | null } | null;
   readiness: ReturnType<typeof computeReadiness>;
+  // Load model (CTL/ATL/TSB) + the composite risk signal from the Recovery &
+  // Load engine, derived from real TSS history. Drives week-volume adaptation.
+  load: Load;
+  risk: RiskSignal;
   recentSessionCount: number;
   nextRace: {
     name: string;
@@ -121,6 +126,7 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
     [athlete],
     [latestMetric],
     recentSessions,
+    loadSessions,
     upcomingRaces,
   ] = await Promise.all([
     db
@@ -144,6 +150,18 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
         and(
           eq(trainingSessionsTable.clerkId, clerkId),
           gte(trainingSessionsTable.sessionDate, addDaysStr(today, -14)),
+        ),
+      ),
+    db
+      .select({
+        sessionDate: trainingSessionsTable.sessionDate,
+        tss: trainingSessionsTable.tss,
+      })
+      .from(trainingSessionsTable)
+      .where(
+        and(
+          eq(trainingSessionsTable.clerkId, clerkId),
+          gte(trainingSessionsTable.sessionDate, addDaysStr(today, -90)),
         ),
       ),
     db
@@ -198,6 +216,13 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
     }
   }
 
+  // Recovery & Load: real load model from 90-day TSS history + composite risk
+  // signal (form, acute:chronic spike, readiness, health). Drives adaptation.
+  const readiness = computeReadiness(latestMetric ?? null);
+  const healthStatus = athlete?.healthStatus ?? "ok";
+  const load = computeLoad(loadSessions);
+  const risk = computeRiskSignal({ load, readiness, healthStatus });
+
   return {
     clerkId,
     displayName: user?.displayName ?? null,
@@ -210,9 +235,11 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
     discipline: athlete?.discipline ?? null,
     ftp: athlete?.ftp ?? null,
     goals: athlete?.goals ?? null,
-    healthStatus: athlete?.healthStatus ?? "ok",
+    healthStatus,
     home,
-    readiness: computeReadiness(latestMetric ?? null),
+    readiness,
+    load,
+    risk,
     recentSessionCount: recentSessions.length,
     nextRace: next
       ? {
@@ -352,10 +379,19 @@ function weekFactor(
     factor = Math.min(factor, 0.8);
     note = "lichtere week ingepland voor herstel en supercompensatie";
   }
-  // Recovery signal: start easier when the athlete reports being tired.
-  if (i.readiness.label === "tired" && weekIndex === 0) {
-    factor = Math.min(factor, 0.7);
-    note = "rustiger gestart omdat je herstel laag is";
+  // Recovery & Load signal: ease off when the composite risk is elevated. High
+  // risk pulls the committed week down hard and trims the provisional weeks; a
+  // moderate signal nudges only the committed week. The note is plain Dutch.
+  if (i.risk.level === "high") {
+    if (weekIndex === 0) {
+      factor = Math.min(factor, 0.6);
+      note = "rustiger gestart: je belasting en herstel geven een verhoogd risico";
+    } else {
+      factor *= 0.9;
+    }
+  } else if (i.risk.level === "moderate" && weekIndex === 0) {
+    factor = Math.min(factor, 0.8);
+    note = note ?? "iets rustiger gestart om je belasting in balans te houden";
   }
   if (i.loadCapacity === "low") factor *= 0.9;
   if (i.loadCapacity === "high") factor *= 1.05;

@@ -4,6 +4,25 @@
 // it. Other engines read the profile (FTP, weight, goals, availability) through
 // this surface. Profile read/update HTTP shapes live in `routes/athlete.ts`;
 // the reusable domain logic (zone derivation) lives here.
+//
+// The profile also carries the adaptive coaching profile (begeleidingsprofiel):
+// behavioural/motivational/social dimensions fed gradually by onboarding,
+// check-ins and trainings, and consumed by the Coaching engine.
+
+export {
+  COACHING_DIMENSIONS,
+  getCoachingProfile,
+  observeDimension,
+  recordCoachingAnswer,
+  parseCoachingAnswer,
+  isCoachingDimensionKey,
+  deriveFromCheckin,
+  deriveFromTraining,
+  selectNextCoachingQuestions,
+  coachingProfileDirective,
+  dominantValue,
+} from "../../lib/profile/coaching-profile";
+export type { CoachingDimensionKey } from "../../lib/profile/coaching-profile";
 
 /**
  * Derive the 6 cycling power zones from an athlete's FTP (watts).

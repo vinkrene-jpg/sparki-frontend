@@ -9,7 +9,12 @@ import {
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { resolveFlags, isAdmin } from "../lib/flags";
-import { runKnowledgeScan, knowledgeCount } from "../engines/knowledge";
+import {
+  runKnowledgeScan,
+  knowledgeCount,
+  explainTopic,
+  listTopics,
+} from "../engines/knowledge";
 
 const router = Router();
 
@@ -141,6 +146,31 @@ router.post("/scan", requireAuth, requireAdmin, async (req, res) => {
     res.json(result);
   } catch (err) {
     req.log.error({ err }, "knowledge.scan failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ─────────────────────────────────────────────
+// GET /api/knowledge/explain?topic=zones
+// Athlete-facing, plain-Dutch explanation of a core topic (zones/recovery/
+// nutrition/mental), paired with real library sources to read further.
+// Without ?topic, returns the list of askable core topics.
+// ─────────────────────────────────────────────
+router.get("/explain", requireAuth, requireKnowledgeFlag, async (req, res) => {
+  const topic = String(req.query.topic ?? "").trim();
+  if (!topic) {
+    res.json({ topics: listTopics() });
+    return;
+  }
+  try {
+    const explanation = await explainTopic(topic);
+    if (!explanation) {
+      res.status(404).json({ error: "Unknown topic", topics: listTopics() });
+      return;
+    }
+    res.json(explanation);
+  } catch (err) {
+    req.log.error({ err }, "knowledge.explain failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });

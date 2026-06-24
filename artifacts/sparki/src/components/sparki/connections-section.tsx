@@ -10,6 +10,7 @@ import {
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import {
   fetchConnectors,
+  authorizeConnector,
   syncConnector,
   beginOauthConnect,
   disconnectConnector,
@@ -225,6 +226,25 @@ export function ConnectionsSection() {
 
   useEffect(() => {
     void load()
+    // Pick up the result of a returning OAuth flow (e.g. Strava redirected the
+    // athlete back to /you?strava=connected|error), then strip the param so a
+    // refresh doesn't re-trigger the message.
+    const params = new URLSearchParams(window.location.search)
+    const strava = params.get("strava")
+    if (strava) {
+      if (strava === "error") {
+        setError(
+          "Koppelen met Strava is niet gelukt. Probeer het opnieuw of controleer of je toestemming hebt gegeven.",
+        )
+      }
+      params.delete("strava")
+      const q = params.toString()
+      window.history.replaceState(
+        {},
+        "",
+        window.location.pathname + (q ? `?${q}` : ""),
+      )
+    }
   }, [])
 
   // Handle the return from the Strava OAuth round-trip (?strava=connected|denied|
@@ -259,6 +279,16 @@ export function ConnectionsSection() {
     setBusyId(id)
     setError(null)
     try {
+      const connector = connectors.find((c) => c.id === id)
+      // OAuth platforms (e.g. Strava) need the athlete to authorize Sparki on the
+      // provider first — navigate to the consent screen. The provider redirects
+      // back to /you?strava=... where the result is picked up on mount. A plain
+      // sync here would fail because no per-user token exists yet.
+      if (connector?.authType === "oauth") {
+        const url = await authorizeConnector(id)
+        window.location.assign(url)
+        return
+      }
       replace(await syncConnector(id))
     } catch (e) {
       setError(e instanceof Error ? e.message : "Koppelen mislukt.")

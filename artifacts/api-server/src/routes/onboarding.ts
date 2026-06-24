@@ -25,10 +25,15 @@ import {
   selectNextQuestions,
   parseFactAnswer,
   getFact,
+  selectNextCoachingQuestions,
+  parseCoachingAnswer,
+  recordCoachingAnswer,
+  isCoachingDimensionKey,
   type ExperienceLevel,
   type ProfilePatch,
   type ProgressiveFacts,
 } from "../engines/onboarding";
+import { getCoachingProfile } from "../engines/profile";
 
 const router = Router();
 
@@ -499,7 +504,26 @@ router.get("/next-questions", requireAuth, async (req, res) => {
       return;
     }
     const facts = await loadProgressiveFacts(clerkId);
-    res.json({ questions: selectNextQuestions(profile, facts, limit) });
+    const coachingProfile = await getCoachingProfile(clerkId);
+    // Interleave physical profile facts with begeleidingsprofiel dimensions so
+    // both are gathered gradually (never a single long survey). Profile facts are
+    // surfaced slightly more eagerly than coaching dimensions.
+    const profileQs = selectNextQuestions(profile, facts, limit);
+    const coachingQs = selectNextCoachingQuestions(coachingProfile, facts, limit);
+    const merged: typeof profileQs = [];
+    let pi = 0;
+    let ci = 0;
+    while (merged.length < limit && (pi < profileQs.length || ci < coachingQs.length)) {
+      // 2 profile : 1 coaching cadence.
+      if (pi < profileQs.length && (merged.length % 3 !== 2 || ci >= coachingQs.length)) {
+        merged.push(profileQs[pi++]!);
+      } else if (ci < coachingQs.length) {
+        merged.push(coachingQs[ci++]!);
+      } else if (pi < profileQs.length) {
+        merged.push(profileQs[pi++]!);
+      }
+    }
+    res.json({ questions: merged });
   } catch (err) {
     req.log.error({ err }, "onboarding.next-questions failed");
     res.status(500).json({ error: "Failed to load questions" });
@@ -510,7 +534,33 @@ router.get("/next-questions", requireAuth, async (req, res) => {
 router.post("/answer", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const { key, value } = req.body as { key?: string; value?: unknown };
-  if (!key || !getFact(key)) {
+  if (!key) {
+    res.status(400).json({ error: "Unknown question" });
+    return;
+  }
+
+  // Coaching-dimension (begeleidingsprofiel) answers write to the coaching
+  // profile, not the physical athlete profile.
+  if (isCoachingDimensionKey(key)) {
+    if (!parseCoachingAnswer(key, value)) {
+      res.status(400).json({ error: "Invalid answer" });
+      return;
+    }
+    try {
+      await recordCoachingAnswer(clerkId, key, value);
+      await writeFactState(clerkId, key, {
+        status: "answered",
+        lastAskedAt: new Date().toISOString(),
+      });
+      res.json({ ok: true });
+    } catch (err) {
+      req.log.error({ err }, "onboarding.answer (coaching) failed");
+      res.status(500).json({ error: "Failed to save answer" });
+    }
+    return;
+  }
+
+  if (!getFact(key)) {
     res.status(400).json({ error: "Unknown question" });
     return;
   }
@@ -547,7 +597,7 @@ router.post("/answer", requireAuth, async (req, res) => {
 router.post("/skip", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const key = (req.body as { key?: string }).key;
-  if (!key || !getFact(key)) {
+  if (!key || (!getFact(key) && !isCoachingDimensionKey(key))) {
     res.status(400).json({ error: "Unknown question" });
     return;
   }

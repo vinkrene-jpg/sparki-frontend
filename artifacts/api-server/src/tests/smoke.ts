@@ -13,14 +13,24 @@
 import { db, pool, userProfilesTable, athleteProfilesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
-import { computeZones } from "../engines/profile";
-import { computeLoad, computeReadiness } from "../engines/recovery-load";
+import {
+  computeZones,
+  COACHING_DIMENSIONS,
+  dominantValue,
+  parseCoachingAnswer,
+} from "../engines/profile";
+import {
+  computeLoad,
+  computeReadiness,
+  computeRiskSignal,
+} from "../engines/recovery-load";
 import {
   getContextObservations,
   getActiveObservations,
   getPreferences,
   styleDirective,
   formatObservationsForPrompt,
+  coachingProfileDirective,
 } from "../engines/coaching";
 import {
   gatherInputs,
@@ -42,11 +52,16 @@ import {
   getRelevantKnowledge,
   getPersonalizedNews,
   knowledgeCount,
+  explainTopic,
+  listTopics,
+  resolveTopicKey,
 } from "../engines/knowledge";
 import {
   connectorRegistry,
   getConnectorDefinition,
   isConnectorAvailable,
+  isStravaConfigured,
+  buildStravaAuthorizeUrl,
 } from "../engines/integration";
 
 type Status = "pass" | "fail" | "skip";
@@ -118,6 +133,67 @@ async function main() {
   await run("Recovery & Load", "computeReadiness", () => {
     const r = computeReadiness(null);
     assert(typeof r.score === "number" || r.score === null, "readiness shape");
+  });
+
+  await run("Recovery & Load", "computeRiskSignal levels", () => {
+    const fresh = computeReadiness(null);
+    // A calm, balanced athlete → low risk.
+    const low = computeRiskSignal({
+      load: { ctl: 50, atl: 48, tsb: 2 },
+      readiness: { ...fresh, label: "fresh" },
+      healthStatus: "ok",
+    });
+    assert(low.level === "low", `expected low, got ${low.level}`);
+    // Deep negative form + acute spike + tired → high risk.
+    const high = computeRiskSignal({
+      load: { ctl: 40, atl: 70, tsb: -32 },
+      readiness: { ...fresh, label: "tired" },
+      healthStatus: "ok",
+    });
+    assert(high.level === "high", `expected high, got ${high.level}`);
+    assert(high.score > low.score, "high risk scores above low risk");
+    assert(high.reasons.length > 0, "high risk lists reasons");
+    // Injury is a hard override toward high.
+    const injured = computeRiskSignal({
+      load: { ctl: 50, atl: 48, tsb: 2 },
+      readiness: { ...fresh, label: "fresh" },
+      healthStatus: "injured",
+    });
+    assert(injured.level === "high", "injury → high risk");
+  });
+
+  await run("Profile", "coaching dimensions catalog", () => {
+    assert(COACHING_DIMENSIONS.length === 8, "8 coaching dimensions");
+    for (const d of COACHING_DIMENSIONS) {
+      assert(d.options.length > 0, `${d.key} has options`);
+      assert(typeof d.prompt === "string" && d.prompt.length > 0, "dutch prompt");
+    }
+  });
+
+  await run("Profile", "dominantValue + parseCoachingAnswer", () => {
+    // No evidence → no winner.
+    assert(dominantValue(undefined) === null, "empty tally → null");
+    // A single deliberate answer (weight 5) lands at high confidence.
+    const got = dominantValue({ data_driven: 5 });
+    assert(got?.value === "data_driven", "winner is data_driven");
+    assert(got?.confidence === "high", "single direct answer → high");
+    // Validation guards reject unknown keys/values.
+    const key = COACHING_DIMENSIONS[0]!.key;
+    const okValue = COACHING_DIMENSIONS[0]!.options[0]!.value;
+    assert(parseCoachingAnswer(key, okValue)?.value === okValue, "valid parses");
+    assert(parseCoachingAnswer("not_a_dimension", okValue) === null, "bad key");
+    assert(parseCoachingAnswer(key, "bogus_value") === null, "bad value");
+  });
+
+  await run("Coaching", "coachingProfileDirective", () => {
+    // Null profile + no motivation → empty (nothing to inject).
+    assert(coachingProfileDirective(null) === "", "null profile → empty");
+    // Motivation alone produces a directive even with no learned dimensions.
+    const withMotivation = coachingProfileDirective(null, "ik wil het WK rijden");
+    assert(
+      withMotivation.includes("WK") || withMotivation.length > 0,
+      "motivation injected",
+    );
   });
 
   await run("Coaching", "styleDirective+format", () => {
@@ -335,7 +411,52 @@ async function main() {
     assert(connectorRegistry.length > 0, "registry not empty");
     const strava = getConnectorDefinition("strava");
     assert(!!strava, "strava defined");
+    assert(strava!.authType === "oauth", "strava is per-user OAuth");
     assert(typeof isConnectorAvailable("strava") === "boolean", "availability");
+  });
+
+  await run("Integration", "strava authorize URL", () => {
+    // Temporarily provide credentials so we can validate the consent URL Sparki
+    // builds (scopes, redirect_uri, state, response_type) without any network.
+    const prevId = process.env.STRAVA_CLIENT_ID;
+    const prevSecret = process.env.STRAVA_CLIENT_SECRET;
+    process.env.STRAVA_CLIENT_ID = "test_client";
+    process.env.STRAVA_CLIENT_SECRET = "test_secret";
+    try {
+      assert(isStravaConfigured() === true, "configured with creds");
+      const redirectUri =
+        "https://example.com/api/connectors/strava/callback";
+      const url = buildStravaAuthorizeUrl({
+        redirectUri,
+        state: "user_abc",
+      });
+      const u = new URL(url);
+      assert(
+        u.origin + u.pathname === "https://www.strava.com/oauth/authorize",
+        "points at Strava authorize endpoint",
+      );
+      assert(u.searchParams.get("client_id") === "test_client", "client_id");
+      assert(u.searchParams.get("response_type") === "code", "response_type");
+      assert(u.searchParams.get("redirect_uri") === redirectUri, "redirect_uri");
+      assert(u.searchParams.get("state") === "user_abc", "state = athlete id");
+      const scope = u.searchParams.get("scope") ?? "";
+      assert(scope.includes("activity:read_all"), "requests activity scope");
+      assert(scope.includes("profile:read_all"), "requests profile scope");
+    } finally {
+      if (prevId === undefined) delete process.env.STRAVA_CLIENT_ID;
+      else process.env.STRAVA_CLIENT_ID = prevId;
+      if (prevSecret === undefined) delete process.env.STRAVA_CLIENT_SECRET;
+      else process.env.STRAVA_CLIENT_SECRET = prevSecret;
+    }
+  });
+
+  await run("Knowledge", "topic library (pure)", () => {
+    const topics = listTopics();
+    assert(topics.length === 4, "4 core topics");
+    assert(resolveTopicKey("leg de trainingszones uit") === "zones", "zones alias");
+    assert(resolveTopicKey("hoe herstel ik?") === "recovery", "recovery alias");
+    assert(resolveTopicKey("voeding voor de race") === "nutrition", "nutrition");
+    assert(resolveTopicKey("iets totaal onbekends xyz") === null, "unknown → null");
   });
 
   // ── DB-bound read-only entry points (need a seeded user) ──────────────────
@@ -361,24 +482,55 @@ async function main() {
     ] as const) {
       skip(engine, check, "no seeded user_profiles row");
     }
-    // knowledgeCount needs no user.
+    // knowledgeCount + explainTopic need no user (explainTopic reads the global
+    // library, but works on an empty one — sources simply come back empty).
     await run("Knowledge", "knowledgeCount", async () => {
       const n = await knowledgeCount();
       assert(typeof n === "number", "knowledgeCount number");
+    });
+    await run("Knowledge", "explainTopic", async () => {
+      const zones = await explainTopic("trainingszones");
+      assert(zones?.topic === "zones", "explains zones");
+      assert(zones!.summary.length > 0 && zones!.keyPoints.length > 0, "has body");
+      assert(Array.isArray(zones!.sources), "sources array");
+      assert((await explainTopic("onbekend xyz")) === null, "unknown → null");
     });
   } else {
     const id = clerkId;
     await run("Training Plan", "gatherInputs+checkCompleteness", async () => {
       const inputs = await gatherInputs(id);
       assert(!!inputs, "gatherInputs returns inputs");
+      assert(!!inputs.load && typeof inputs.load.tsb === "number", "load present");
+      assert(
+        ["low", "moderate", "high"].includes(inputs.risk.level),
+        "risk level present",
+      );
       const completeness = checkCompleteness(inputs);
       assert(typeof completeness.ready === "boolean", "completeness.ready bool");
       assert(Array.isArray(completeness.missing), "completeness.missing array");
-      const skeleton = buildSkeleton(
-        inputs,
-        new Date().toISOString().split("T")[0]!,
-      );
+      const start = new Date().toISOString().split("T")[0]!;
+      const skeleton = buildSkeleton(inputs, start);
       assert(Array.isArray(skeleton), "buildSkeleton array");
+
+      // Behavioural: the same athlete under a forced HIGH risk signal must not
+      // train MORE in the committed week than under a forced LOW signal. The
+      // plan adapts down to risk.
+      const trainingMin = (days: typeof skeleton) =>
+        days
+          .slice(0, 7)
+          .reduce((sum, d) => sum + (d.isRest ? 0 : d.estDurationMin ?? 0), 0);
+      const lowPlan = buildSkeleton(
+        { ...inputs, risk: { ...inputs.risk, level: "low" } },
+        start,
+      );
+      const highPlan = buildSkeleton(
+        { ...inputs, risk: { ...inputs.risk, level: "high" } },
+        start,
+      );
+      assert(
+        trainingMin(highPlan) <= trainingMin(lowPlan),
+        "high-risk week volume ≤ low-risk week volume",
+      );
     });
 
     await run("Onboarding", "getMissingOnboardingData", async () => {

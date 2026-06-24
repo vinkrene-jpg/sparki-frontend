@@ -42,6 +42,8 @@ export const connectorRegistry: ConnectorDefinition[] = [
     displayName: "Strava",
     category: "sport",
     available: true,
+    // Per-user direct OAuth (tokens stored per athlete), NOT the account-level
+    // Replit connector proxy — that would bind one Strava account for everyone.
     authType: "oauth",
     provides: [
       "profile",

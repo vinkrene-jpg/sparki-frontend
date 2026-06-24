@@ -12,7 +12,11 @@ import {
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { generateThreeWeekPlan, autoAdaptPlan } from "../engines/training-plan";
-import { computeZones } from "../engines/profile";
+import {
+  computeZones,
+  deriveFromCheckin,
+  deriveFromTraining,
+} from "../engines/profile";
 import { computeLoad } from "../engines/recovery-load";
 import { captureContext } from "../engines/context-memory";
 
@@ -614,6 +618,16 @@ router.post("/workouts/:id/feedback", requireAuth, async (req, res) => {
         );
     }
 
+    // Behavioural signal for the coaching profile: completing a planned session
+    // as planned vs deviating informs the begeleidingsprofiel. "missed" carries
+    // no how-they-train signal, so it is left out.
+    if (feedbackType !== "missed") {
+      void deriveFromTraining(clerkId, {
+        hadPlannedSession: true,
+        completedAsPlanned: feedbackType === "done",
+      }).catch((err) => req.log.error({ err }, "deriveFromTraining failed"));
+    }
+
     res.status(201).json({ feedback });
   } catch (err) {
     req.log.error({ err }, "athlete.workouts.feedback failed");
@@ -872,6 +886,13 @@ router.post("/metrics", requireAuth, async (req, res) => {
       })
       .returning();
     triggerPlanRefresh(req, clerkId);
+    // Behavioural signal for the coaching profile: a logged check-in nudges the
+    // begeleidingsprofiel (engagement + mental-support need). Best-effort.
+    if (metric) {
+      void deriveFromCheckin(clerkId, metric).catch((err) =>
+        req.log.error({ err }, "deriveFromCheckin failed"),
+      );
+    }
     res.status(201).json(metric);
   } catch (err) {
     req.log.error({ err }, "athlete.metrics POST failed");

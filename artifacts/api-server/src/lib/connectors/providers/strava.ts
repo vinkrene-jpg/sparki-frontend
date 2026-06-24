@@ -1,9 +1,10 @@
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import {
   db,
   athleteProfilesTable,
   athleteDailyMetricsTable,
   ftpHistoryTable,
+  connectorConnectionsTable,
   type ConnectorDataType,
 } from "@workspace/db";
 import { getValidStravaAccessToken } from "./strava-oauth";
@@ -19,6 +20,8 @@ function todayStr(): string {
   return new Date().toISOString().split("T")[0]!;
 }
 
+const STRAVA_API = "https://www.strava.com/api/v3";
+
 interface StravaAthlete {
   id?: number;
   weight?: number | null; // kilograms
@@ -33,7 +36,7 @@ interface StravaAthlete {
 export async function syncStrava(clerkId: string): Promise<ProviderSyncResult> {
   const accessToken = await getValidStravaAccessToken(clerkId);
 
-  const athleteRes = await fetch("https://www.strava.com/api/v3/athlete", {
+  const athleteRes = await fetch(`${STRAVA_API}/athlete`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (athleteRes.status === 401) {

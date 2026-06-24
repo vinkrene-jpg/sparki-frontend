@@ -164,6 +164,136 @@ export async function getPersonalizedNews(opts: {
   }));
 }
 
+// ── Athlete-facing topic explanations ────────────────────────────────────────
+// A deterministic, plain-Dutch core-topic library so an athlete can ask "leg
+// trainingszones uit" and get a stable, trustworthy answer — never invented per
+// request. Each explanation is paired with REAL retrieved sources from the
+// library so the athlete can read further. No user-facing "AI" wording.
+
+export type TopicExplanation = {
+  topic: TopicKey;
+  title: string;
+  summary: string;
+  keyPoints: string[];
+  sources: KnowledgeSource[];
+};
+
+export type TopicKey = "zones" | "recovery" | "nutrition" | "mental";
+
+type TopicEntry = {
+  title: string;
+  summary: string;
+  keyPoints: string[];
+  // Retrieval hints: keywords + disciplines used to attach real library sources.
+  keywords: string[];
+  disciplines: KnowledgeDiscipline[];
+  // Aliases the athlete might type; matched case-insensitively as substrings.
+  aliases: string[];
+};
+
+const TOPIC_LIBRARY: Record<TopicKey, TopicEntry> = {
+  zones: {
+    title: "Trainingszones",
+    summary:
+      "Trainingszones verdelen je inspanning in niveaus, meestal op basis van je FTP (vermogen) of hartslag. Door bewust in een zone te trainen, stuur je precies de aanpassing die je wilt: lange rustige ritten bouwen je basis, drempelblokken verhogen je duurvermogen en korte felle intervallen scherpen je topvermogen.",
+    keyPoints: [
+      "Zone 1–2 (rustig): bouwt je aerobe basis en helpt herstellen. Hier breng je de meeste uren door.",
+      "Zone 3–4 (tempo/drempel): verhoogt het vermogen dat je lang kunt volhouden.",
+      "Zone 5+ (VO2max en hoger): korte, felle blokken die je topvermogen en explosiviteit aanscherpen.",
+      "Polariseren werkt: veel rustig, weinig maar gericht hard, en het middengebied bewust doseren.",
+    ],
+    keywords: ["zone", "ftp", "drempel", "threshold", "vo2", "power", "vermogen", "intensity"],
+    disciplines: ["inspanningsfysiologie", "fysiologie", "sportwetenschap"],
+    aliases: ["zone", "zones", "trainingszone", "intensiteit", "ftp", "vermogen", "hartslagzone"],
+  },
+  recovery: {
+    title: "Herstel",
+    summary:
+      "Je wordt niet sterker tijdens de training maar tijdens het herstel erna. Slaap, voeding en rustige dagen laten je lichaam de prikkel verwerken en bovenop je oude niveau terugkomen. Te weinig herstel stapelt vermoeidheid op en verhoogt je blessurerisico; goed herstel maakt je harde trainingen pas effectief.",
+    keyPoints: [
+      "Slaap is je belangrijkste hersteltool: streef naar voldoende én regelmatige nachten.",
+      "Wissel zware en rustige dagen af — twee zware dagen op rij vragen om een echte rustdag.",
+      "Let op signalen: een hoge rusthartslag, slechte slaap of weinig zin kunnen op restvermoeidheid wijzen.",
+      "Actief herstel (heel rustig fietsen) kan beter werken dan volledige stilstand.",
+    ],
+    keywords: ["recovery", "herstel", "sleep", "slaap", "rest", "fatigue", "vermoeidheid", "hrv"],
+    disciplines: ["fysiologie", "inspanningsfysiologie", "sportwetenschap"],
+    aliases: ["herstel", "recovery", "rust", "slaap", "vermoeidheid", "overtraining"],
+  },
+  nutrition: {
+    title: "Voeding",
+    summary:
+      "Voeding is je brandstof: koolhydraten leveren de energie voor harde inspanning, eiwitten herstellen je spieren en vocht houdt je prestatie op peil. Wat en wanneer je eet, bepaalt of je een training goed doorkomt en er sterker uit terugkomt.",
+    keyPoints: [
+      "Eet rond langere of intensieve ritten extra koolhydraten — voor, tijdens en erna.",
+      "Neem na een zware training eiwitten op om je spieren te laten herstellen.",
+      "Drink genoeg; zelfs licht uitdrogen verlaagt je vermogen merkbaar.",
+      "Train je darmen: oefen tijdens trainingen met de voeding die je in wedstrijden wilt gebruiken.",
+    ],
+    keywords: ["nutrition", "voeding", "carbohydrate", "koolhydraat", "protein", "eiwit", "hydration", "fuel"],
+    disciplines: ["voedingsleer", "fysiologie", "sportwetenschap"],
+    aliases: ["voeding", "nutrition", "eten", "koolhydraten", "eiwit", "drinken", "hydratatie"],
+  },
+  mental: {
+    title: "Mentale training",
+    summary:
+      "Je kop is net zo trainbaar als je benen. Omgaan met spanning, gefocust blijven en vertrouwen houden na een mindere dag bepaalt vaak hoe je presteert als het er echt toe doet. Mentale vaardigheden oefen je net als een interval: bewust en herhaald.",
+    keyPoints: [
+      "Werk met doelen die je zelf in de hand hebt (je eigen inzet), niet alleen de uitslag.",
+      "Gebruik een vaste routine voor de start om zenuwen om te zetten in focus.",
+      "Praat tegen jezelf zoals je tegen een teamgenoot zou praten — streng mag, afbreken niet.",
+      "Evalueer rustig na afloop: wat ging goed, wat neem je mee, en laat de rest los.",
+    ],
+    keywords: ["mental", "mentaal", "psychology", "motivation", "focus", "stress", "confidence", "mindset"],
+    disciplines: ["sportpsychologie", "psychologie"],
+    aliases: ["mentaal", "mental", "mindset", "motivatie", "focus", "spanning", "zenuwen", "psychologie"],
+  },
+};
+
+/** Resolve a free-text topic request to a known core topic, or null. */
+export function resolveTopicKey(input: string): TopicKey | null {
+  const q = input.toLowerCase().trim();
+  if (!q) return null;
+  for (const key of Object.keys(TOPIC_LIBRARY) as TopicKey[]) {
+    if (key === q) return key;
+    for (const alias of TOPIC_LIBRARY[key].aliases) {
+      if (q.includes(alias)) return key;
+    }
+  }
+  return null;
+}
+
+/** The set of core topics the athlete can ask about (for menus/validation). */
+export function listTopics(): Array<{ key: TopicKey; title: string }> {
+  return (Object.keys(TOPIC_LIBRARY) as TopicKey[]).map((key) => ({
+    key,
+    title: TOPIC_LIBRARY[key].title,
+  }));
+}
+
+/**
+ * Athlete-facing explanation of a core topic: a stable, deterministic Dutch
+ * explanation paired with REAL retrieved library sources to read further.
+ * Returns null when the request doesn't map to a known topic.
+ */
+export async function explainTopic(input: string): Promise<TopicExplanation | null> {
+  const key = resolveTopicKey(input);
+  if (!key) return null;
+  const entry = TOPIC_LIBRARY[key];
+  const sources = await getRelevantKnowledge({
+    keywords: entry.keywords,
+    disciplines: entry.disciplines,
+    limit: 3,
+  });
+  return {
+    topic: key,
+    title: entry.title,
+    summary: entry.summary,
+    keyPoints: entry.keyPoints,
+    sources,
+  };
+}
+
 // Render sources as a compact, citation-ready block for the LLM prompt. Each
 // entry includes the real title + URL so the model can cite name + link.
 export function formatKnowledgeForPrompt(sources: KnowledgeSource[]): string {

@@ -360,13 +360,15 @@ export type ProgressiveFactState = {
 export type ProgressiveFacts = Record<string, ProgressiveFactState>;
 
 export type OnboardingQuestion = {
-  key: FactKey;
+  key: string;
   prompt: string;
   help?: string;
   inputType: FactInputType;
   options?: FactOption[];
   unit?: string;
   placeholder?: string;
+  // "profile" = physical athlete fact; "coaching" = begeleidingsprofiel dimension.
+  group?: "profile" | "coaching";
 };
 
 function toQuestion(f: FactDef): OnboardingQuestion {
@@ -378,6 +380,7 @@ function toQuestion(f: FactDef): OnboardingQuestion {
     ...(f.options != null && { options: f.options }),
     ...(f.unit != null && { unit: f.unit }),
     ...(f.placeholder != null && { placeholder: f.placeholder }),
+    group: "profile",
   };
 }
 

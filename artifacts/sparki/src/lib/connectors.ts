@@ -60,6 +60,16 @@ export async function beginOauthConnect(
   return data.url
 }
 
+// Start a per-user OAuth flow (e.g. Strava). Returns the provider consent URL
+// the browser should navigate to. The backend issues a `state` carrying the
+// athlete's id so the callback can verify ownership.
+export async function authorizeConnector(id: string): Promise<string> {
+  const data = await apiFetch<{ url: string }>(
+    `/api/connectors/${id}/authorize`,
+  )
+  return data.url
+}
+
 export async function syncConnector(id: string): Promise<ConnectorItem> {
   const data = await apiFetch<{ connector: ConnectorItem }>(
     `/api/connectors/${id}/sync`,

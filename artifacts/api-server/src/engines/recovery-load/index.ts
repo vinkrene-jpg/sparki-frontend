@@ -9,37 +9,8 @@
 export { computeReadiness } from "../../lib/sharing";
 export type { Readiness } from "../../lib/sharing";
 
-/**
- * Compute Chronic/Acute Training Load and Training Stress Balance from the
- * athlete's TSS history over the trailing ~90 days.
- * Pure: caller supplies the sessions; no I/O here.
- */
-export function computeLoad(
-  sessions: Array<{ sessionDate: string; tss: number | null }>,
-) {
-  const tssByDate = new Map<string, number>();
-  for (const s of sessions) {
-    if (s.tss != null) {
-      tssByDate.set(s.sessionDate, (tssByDate.get(s.sessionDate) ?? 0) + s.tss);
-    }
-  }
-
-  const today = new Date();
-  let ctl = 0;
-  let atl = 0;
-
-  for (let i = 90; i >= 0; i--) {
-    const d = new Date(today);
-    d.setUTCDate(d.getUTCDate() - i);
-    const dateStr = d.toISOString().split("T")[0]!;
-    const tss = tssByDate.get(dateStr) ?? 0;
-    ctl = ctl + (tss - ctl) / 42;
-    atl = atl + (tss - atl) / 7;
-  }
-
-  return {
-    ctl: Math.round(ctl),
-    atl: Math.round(atl),
-    tsb: Math.round(ctl - atl),
-  };
-}
+// Load model + the real risk signal the Training Plan engine consumes. The pure
+// implementation lives in lib/recovery-load so the plan engine can import it
+// without an engine→engine cycle.
+export { computeLoad, computeRiskSignal } from "../../lib/recovery-load";
+export type { Load, RiskSignal, RiskLevel } from "../../lib/recovery-load";

@@ -8,6 +8,7 @@ import {
   runSync,
   HubError,
   resolveReadiness,
+  syncStrava,
 } from "../engines/integration";
 import {
   buildStravaAuthorizeUrl,
@@ -18,8 +19,8 @@ import {
   deauthorizeStrava,
   publicBaseUrl,
   allowedReturnHosts,
+  isStravaConfigured,
 } from "../lib/connectors/providers/strava-oauth";
-import { syncStrava } from "../lib/connectors/providers/strava";
 
 const router = Router();
 
@@ -39,10 +40,32 @@ function safeReturnUrl(returnTo: string, status: string): string {
   }
 }
 
+// A platform is effectively wireable only when its server-side credentials are
+// present. The registry says "Strava is an OAuth platform"; this says "and its
+// API app is actually configured right now". Keeps the UI honest.
+function effectiveAvailability(id: string): {
+  available: boolean;
+  unavailableReason: string | null;
+} {
+  const def = getConnectorDefinition(id);
+  if (!def) return { available: false, unavailableReason: null };
+  if (id === "strava" && !isStravaConfigured()) {
+    return {
+      available: false,
+      unavailableReason: "Strava-koppeling wordt nog ingesteld.",
+    };
+  }
+  return {
+    available: def.available,
+    unavailableReason: def.unavailableReason ?? null,
+  };
+}
+
 // Build the public connector shape (registry definition + this user's live row +
 // 4-state readiness). The Data Hub owns the actual sync pipeline (runSync).
 async function buildConnectorItem(clerkId: string, id: string) {
   const def = getConnectorDefinition(id)!;
+  const eff = effectiveAvailability(id);
   const [row] = await db
     .select()
     .from(connectorConnectionsTable)
@@ -56,10 +79,10 @@ async function buildConnectorItem(clerkId: string, id: string) {
     id: def.id,
     displayName: def.displayName,
     category: def.category,
-    available: def.available,
+    available: eff.available,
     authType: def.authType,
     provides: def.provides,
-    unavailableReason: def.unavailableReason ?? null,
+    unavailableReason: eff.unavailableReason,
     status: row?.status ?? "disconnected",
     lastSyncAt: row?.lastSyncAt ?? null,
     importedDataTypes: row?.importedDataTypes ?? [],
@@ -84,14 +107,15 @@ router.get("/", requireAuth, async (req, res) => {
 
     const connectors = connectorRegistry.map((def) => {
       const row = byProvider.get(def.id);
+      const eff = effectiveAvailability(def.id);
       return {
         id: def.id,
         displayName: def.displayName,
         category: def.category,
-        available: def.available,
+        available: eff.available,
         authType: def.authType,
         provides: def.provides,
-        unavailableReason: def.unavailableReason ?? null,
+        unavailableReason: eff.unavailableReason,
         status: row?.status ?? "disconnected",
         lastSyncAt: row?.lastSyncAt ?? null,
         importedDataTypes: row?.importedDataTypes ?? [],
@@ -114,6 +138,26 @@ router.get("/", requireAuth, async (req, res) => {
 router.post("/:id/sync", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = String(req.params.id);
+  const def = getConnectorDefinition(id);
+  if (!def) {
+    res.status(404).json({ error: "Unknown connector" });
+    return;
+  }
+  // Gate on EFFECTIVE availability (registry + runtime config), not the static
+  // registry flag — Strava is "available" in the registry but only wireable once
+  // its API credentials exist. Otherwise sync would proceed and fail with a
+  // confusing token error instead of the honest "wordt nog ingesteld".
+  const eff = effectiveAvailability(id);
+  if (!eff.available) {
+    res.status(400).json({
+      error: "unavailable",
+      message:
+        eff.unavailableReason ??
+        def.unavailableReason ??
+        "Deze koppeling is nog niet beschikbaar.",
+    });
+    return;
+  }
   try {
     // Single sync path: the Data Hub owns fetch → normalize → dedup → consent →
     // persist → log. This route just surfaces the result/connection shape.
@@ -240,6 +284,13 @@ router.get("/:id/authorize", requireAuth, async (req, res) => {
       .json({ error: "unsupported", message: "Deze koppeling kan niet zo gekoppeld worden." });
     return;
   }
+  if (!isStravaConfigured()) {
+    res.status(503).json({
+      error: "not_configured",
+      message: "Strava-koppeling wordt nog ingesteld.",
+    });
+    return;
+  }
   try {
     const returnTo =
       typeof req.query.returnTo === "string" ? req.query.returnTo : "";
@@ -278,7 +329,19 @@ router.get("/strava/callback", async (req, res) => {
       redirectUri: stravaRedirectUri(),
     });
     const now = new Date();
-    const scopes = tokens.scope ? tokens.scope.split(",") : [];
+    // Persist the scopes Strava ACTUALLY granted. The athlete may untick boxes
+    // on the consent screen, so the callback `scope` param is the source of
+    // truth; fall back to the token response's scope when the param is absent.
+    const grantedScopes =
+      typeof req.query.scope === "string"
+        ? req.query.scope.split(",").filter(Boolean)
+        : [];
+    const scopes =
+      grantedScopes.length > 0
+        ? grantedScopes
+        : tokens.scope
+          ? tokens.scope.split(",")
+          : [];
     const externalUserId =
       tokens.athlete?.id != null ? String(tokens.athlete.id) : null;
 

@@ -10,3 +10,12 @@ export * from "../../lib/onboarding-questions";
 
 // Missing-data check that gates the first plan.
 export * from "../../lib/connectors/missing-data";
+
+// Coaching-dimension (begeleidingsprofiel) gradual collection. Onboarding feeds
+// these via short follow-up prompts; the Athlete Profile engine owns the storage.
+export {
+  selectNextCoachingQuestions,
+  parseCoachingAnswer,
+  recordCoachingAnswer,
+  isCoachingDimensionKey,
+} from "../../lib/profile/coaching-profile";

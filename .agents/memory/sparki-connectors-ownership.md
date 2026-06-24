@@ -28,3 +28,28 @@ tokens per `clerkId` in `connector_connections`; refresh from the stored
 refresh_token). Add an ownership guard so `/sync` only runs when a connected row
 with tokens exists for the requesting `clerkId`. The Replit account-level connector
 is only appropriate for single-tenant/admin-level data, never per-end-user data.
+
+## OAuth wiring pitfalls (learned wiring Strava end-to-end)
+
+- **The Connect button must START the OAuth flow, not call `/sync`.** For an
+  `authType==="oauth"` connector the frontend has to navigate the browser to the
+  consent URL (`GET /api/connectors/:id/authorize` → `window.location.assign`).
+  Calling `/sync` first fails with "geen actieve koppeling" because no per-user
+  token exists yet. This is the single most likely reason a freshly-wired OAuth
+  connector "can never connect".
+- **`redirect_uri` must be built from the proxy's forwarded host**
+  (`x-forwarded-proto`/`x-forwarded-host`), and that domain must match the
+  provider's registered callback domain (Strava: "Authorization Callback Domain").
+  The dev domain ≠ the deployed domain, so the callback domain must be re-set in
+  the provider after publishing. Allow an env override (`STRAVA_REDIRECT_URI`).
+- **Gate `/sync` on EFFECTIVE availability** (registry flag AND runtime config
+  like `isStravaConfigured()`), not the static registry `available` flag — else
+  an unconfigured provider proceeds and dies with a confusing token error instead
+  of the honest "wordt nog ingesteld".
+- **Persist the scopes the provider ACTUALLY granted** (from the callback `scope`
+  query param), not the requested set — the user can untick boxes on consent.
+- **OAuth callback redirect target**: send the athlete back to the page that hosts
+  the connections UI (Sparki: `/you`), not the app root, so they see the result.
+- **The live consent step cannot be automated** — it requires a human logging into
+  the real provider account. Everything else (authorize URL shape, redirect_uri,
+  error paths, disconnect) is testable without it.

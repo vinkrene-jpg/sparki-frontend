@@ -18,6 +18,14 @@ export {
 } from "../../lib/ai-memory";
 export type { ObservationInput } from "../../lib/ai-memory";
 
+// Per-athlete coaching profile (begeleidingsprofiel) directive — shapes Sparki's
+// voice from the athlete's behavioural/motivational dimensions. Storage is owned
+// by the Profile engine; Coaching consumes it.
+export {
+  getCoachingProfile,
+  coachingProfileDirective,
+} from "../../lib/profile/coaching-profile";
+
 // Coach / parent sharing-access relationships and consent.
 export {
   hasAcceptedCoachLink,

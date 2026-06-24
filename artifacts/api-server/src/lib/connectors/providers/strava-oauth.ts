@@ -21,6 +21,14 @@ interface StravaConfig {
   clientSecret: string;
 }
 
+/** True only when the platform API app credentials are configured server-side. */
+export function isStravaConfigured(): boolean {
+  return Boolean(
+    process.env.STRAVA_CLIENT_ID?.trim() &&
+      process.env.STRAVA_CLIENT_SECRET?.trim(),
+  );
+}
+
 export function getStravaConfig(): StravaConfig {
   const clientId = process.env.STRAVA_CLIENT_ID?.trim();
   const clientSecret = process.env.STRAVA_CLIENT_SECRET?.trim();

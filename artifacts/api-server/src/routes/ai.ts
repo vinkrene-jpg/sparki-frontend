@@ -29,6 +29,8 @@ import {
   extractObservations,
   getPreferences,
   styleDirective,
+  getCoachingProfile,
+  coachingProfileDirective,
 } from "../engines/coaching";
 import { runConnectionAnalysis } from "../engines/memory-graph";
 import { resolveFlags } from "../lib/flags";
@@ -285,9 +287,20 @@ ABSOLUTE OUTPUT RULES (always, no exceptions):
 - Never use the word "AI" and never call yourself an assistant or a model. You are simply Sparki.`;
 
 async function systemPrompt(clerkId: string): Promise<string> {
-  const pref = await getPreferences(clerkId);
-  const directive = styleDirective(pref);
-  return directive ? `${SPARKI_SYSTEM}\n\n${directive}` : SPARKI_SYSTEM;
+  const [pref, coachingProfile, [athlete]] = await Promise.all([
+    getPreferences(clerkId),
+    getCoachingProfile(clerkId),
+    db
+      .select({ motivation: athleteProfilesTable.motivation })
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId)),
+  ]);
+  const parts = [
+    SPARKI_SYSTEM,
+    styleDirective(pref),
+    coachingProfileDirective(coachingProfile, athlete?.motivation ?? null),
+  ].filter((p) => p && p.length > 0);
+  return parts.join("\n\n");
 }
 
 // Retrieval-augmented coaching: when the knowledge_base flag is enabled for the

@@ -1,5 +1,6 @@
 export * from "./users";
 export * from "./athlete-profiles";
+export * from "./coaching-profile";
 export * from "./athlete-training";
 export * from "./athlete-metrics";
 export * from "./races";
