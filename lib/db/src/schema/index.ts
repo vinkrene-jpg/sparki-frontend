@@ -24,3 +24,4 @@ export * from "./health-checks";
 export * from "./input-center";
 export * from "./material";
 export * from "./document-analyses";
+export * from "./coach-followup-answers";

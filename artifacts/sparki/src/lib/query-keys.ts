@@ -21,6 +21,7 @@ export const queryKeys = {
 
   coach: {
     all: () => ["coach"] as const,
+    analysis: () => ["coach", "analysis"] as const,
     athletes: () => ["coach", "athletes"] as const,
     athlete: (athleteId: string) => ["coach", "athletes", athleteId] as const,
     plan: (athleteId: string) =>

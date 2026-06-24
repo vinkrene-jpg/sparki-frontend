@@ -6,6 +6,7 @@ import {
   userProfilesTable,
   athleteProfilesTable,
   athleteDailyMetricsTable,
+  coachFollowupAnswersTable,
   plannedWorkoutsTable,
   aiObservationsTable,
 } from "@workspace/db";
@@ -18,6 +19,14 @@ import {
 } from "../engines/coaching";
 import { loadPlanView } from "../engines/training-plan";
 import { getAthleteContextForViewer } from "../engines/context-memory";
+import {
+  runCoachAnalysis,
+  isKnownFollowUp,
+  isValidFollowUpAnswer,
+  checkInFromAnswer,
+  isCoachFeedbackSignal,
+  recordCoachingFeedback,
+} from "../engines/observation";
 
 const router = Router();
 
@@ -426,6 +435,106 @@ router.post("/athletes/:athleteId/plan/adopt", requireAuth, async (req, res) => 
   } catch (err) {
     req.log.error({ err }, "coach.athlete-plan-adopt failed");
     res.status(500).json({ error: "Kon advies niet overnemen" });
+  }
+});
+
+// ── Athlete-facing daily coach analysis (no role gate; your own data) ─────────
+
+// GET /api/coach/analysis — Sparki's deterministic six-part analysis for the
+// signed-in athlete, including today's stored follow-up answers fed back in.
+router.get("/analysis", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const analysis = await runCoachAnalysis(clerkId);
+    res.json(analysis);
+  } catch (err) {
+    req.log.error({ err }, "coach.analysis failed");
+    res.status(500).json({ error: "Kon je analyse niet samenstellen" });
+  }
+});
+
+// POST /api/coach/followup — save the athlete's answer to one of Sparki's
+// follow-up questions, then return the freshly recomputed analysis so the advice
+// updates immediately. A "fris/oké/vermoeid" answer is a real check-in and is
+// persisted as actual daily metrics. Body: { questionId, answer }.
+router.post("/followup", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = req.body as Record<string, unknown>;
+  const questionId = String(body.questionId ?? "");
+  const answer = String(body.answer ?? "");
+
+  if (!isKnownFollowUp(questionId) || !isValidFollowUpAnswer(questionId, answer)) {
+    res.status(400).json({ error: "Ongeldige vraag of antwoord" });
+    return;
+  }
+
+  try {
+    const today = todayISO();
+
+    // A check-in answer is real readiness data — persist it as a daily metric so
+    // every engine (not just this analysis) sees it.
+    const checkIn = checkInFromAnswer(answer);
+    if (questionId === "missing_checkin" && checkIn) {
+      await db
+        .insert(athleteDailyMetricsTable)
+        .values({
+          clerkId,
+          metricDate: today,
+          feelScore: checkIn.feelScore,
+          fatigueScore: checkIn.fatigueScore,
+        })
+        .onConflictDoUpdate({
+          target: [
+            athleteDailyMetricsTable.clerkId,
+            athleteDailyMetricsTable.metricDate,
+          ],
+          set: {
+            feelScore: checkIn.feelScore,
+            fatigueScore: checkIn.fatigueScore,
+          },
+        });
+    }
+
+    // Store the answer itself (one per question per day; re-answering updates it).
+    await db
+      .insert(coachFollowupAnswersTable)
+      .values({ clerkId, analysisDate: today, questionId, answer })
+      .onConflictDoUpdate({
+        target: [
+          coachFollowupAnswersTable.clerkId,
+          coachFollowupAnswersTable.analysisDate,
+          coachFollowupAnswersTable.questionId,
+        ],
+        set: { answer, updatedAt: new Date() },
+      });
+
+    const analysis = await runCoachAnalysis(clerkId);
+    res.json(analysis);
+  } catch (err) {
+    req.log.error({ err }, "coach.followup failed");
+    res.status(500).json({ error: "Kon je antwoord niet verwerken" });
+  }
+});
+
+// POST /api/coach/feedback — record how the athlete reacted to Sparki's advice
+// (e.g. advice_followed / too_strict) so the begeleidingsprofiel adapts. Body:
+// { signal }.
+router.post("/feedback", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = req.body as Record<string, unknown>;
+  const signal = String(body.signal ?? "");
+
+  if (!isCoachFeedbackSignal(signal)) {
+    res.status(400).json({ error: "Ongeldig feedbacksignaal" });
+    return;
+  }
+
+  try {
+    const nudges = await recordCoachingFeedback(clerkId, signal);
+    res.json({ ok: true, nudges });
+  } catch (err) {
+    req.log.error({ err }, "coach.feedback failed");
+    res.status(500).json({ error: "Kon je feedback niet verwerken" });
   }
 });
 

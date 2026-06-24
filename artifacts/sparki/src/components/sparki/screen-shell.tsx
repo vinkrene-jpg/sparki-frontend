@@ -8,6 +8,13 @@ import { NotificationBell } from "@/components/sparki/notification-bell"
 import { ProfilePromptCard } from "@/components/sparki/profile-prompt-card"
 import { CoachInputNeeds } from "@/components/sparki/coach-input-actions"
 import { FollowUpPrompt } from "@/components/sparki/follow-up-prompt"
+import { CoachAnalysisCard } from "@/components/sparki/coach/coach-analysis-card"
+
+// Sparki's daily coach analysis belongs on the athlete's training-facing
+// surfaces: the day homes (Vandaag, incl. race week → Wedstrijdvoorbereiding),
+// Training, Inzicht (Lab) and Races. It is suppressed on Nieuws/Profiel/Samen/
+// Kennis and on the coach/parent homes (the card itself is athlete-only).
+const COACH_CARD_SECTIONS = new Set(["home", "train", "lab", "races"])
 
 const SECTION_SCENE: Record<string, SceneName> = {
   home: "home",
@@ -133,8 +140,10 @@ export function ScreenShell({
   bg?: string
   children: ReactNode
 }) {
-  const scene = SECTION_SCENE[section.toLowerCase()] ?? "home"
-  const isHome = section.toLowerCase() === "home"
+  const sectionKey = section.toLowerCase()
+  const scene = SECTION_SCENE[sectionKey] ?? "home"
+  const isHome = sectionKey === "home"
+  const showCoachCard = COACH_CARD_SECTIONS.has(sectionKey)
   const sectionLabel = SECTION_DISPLAY[section.toLowerCase()] ?? section.toUpperCase()
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#05070e] text-white">
@@ -174,6 +183,8 @@ export function ScreenShell({
 
         {isHome && <HomeProfilePrompt />}
         {isHome && <CoachInputNeeds />}
+
+        {showCoachCard && <CoachAnalysisCard />}
 
         {children}
       </div>
