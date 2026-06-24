@@ -1,58 +1,37 @@
 ---
-name: Sparki Onboarding V2
-description: Narrative 6-screen onboarding; founding-athlete + evidence-gated curiosity/honest engines governed by the Voice Engine; gotchas.
+name: Sparki onboarding V2 + persona harness
+description: How adaptive onboarding selects/validates questions, and the three durable product findings a 20-persona test proved.
 ---
 
-# Sparki Onboarding V2
+# Adaptive onboarding — durable facts
 
-Form-based quick-start replaced by a 6-screen narrative that lands the athlete straight in
-the app. Self-type claim + Founding Athlete program + evidence-gated curiosity/honest
-surfaces carry the storyline.
+The progressive onboarding gathers data gradually (never one long survey): physical
+profile *facts* interleaved with begeleidings (coaching) *dimensions* at a fixed
+2 profile : 1 coaching cadence. A new athlete is seeded with cycling/beginner
+defaults, an **estimated** FTP + weekly-hours, and their self-claim; everything
+else is gathered later. `coachingMode` ("Wie begeleidt je?") always surfaces first.
 
-## Durable decisions
+## Testing approach that works here
+Pure-function simulation beats integration tests for the engine: drive the REAL
+selection/validation/tally functions through a faithful copy of the route's
+merge loop, no DB writes, assert invariants. Catches cadence/validation/termination
+regressions cheaply. **Floor-not-equal** invariants (`>= 20 catalog questions`,
+`accepted === order.length`) survive intentional catalog growth; a hardcoded
+`=== 20` would falsely fail when questions are added.
 
-- **Founding number is DB-uniqueness-backed, never read-then-write.** Idempotent assignment that
-  retries on Postgres `23505` under concurrent races. A `MAX(n)+1` read-then-write collides under
-  burst signups; the DB UNIQUE constraint is the only safe serialization.
-
-- **Insight surfaces (open-loops + honest) are governed by the Voice Engine, not a parallel
-  reimplementation.** Tone/anti-fabrication gating lives in one shared helper that reuses the
-  voice engine's tier→tone rule. Each loop/observation carries a voice tone; the route passes the
-  athlete's REAL trust tier. Verbatim brief copy is preserved (lines stay fixed); the engine only
-  decides *whether* a line may speak. **Why:** the prior standalone insight engines duplicated tone
-  logic and bypassed the single-source voice rules — review blocker. Pointed lines (e.g. the
-  "I doubt your theory" dry-humor observation) must be *earned* via trust, not shown to brand-new
-  athletes; lower-trust contradiction → honest "insufficient" rather than a too-early jab.
-
-- **Engines stay evidence-gated — never fabricate.** Loops emit only when their real-signal predicate
-  passes; honest returns explicit "onvoldoende bewijs" when evidence is thin. Honest failures + no
-  mock UI is a hard project rule; a fabricated "theory about you" breaks the narrative's trust premise.
-
-- **Onboarding "Koppelen" must enter the REAL connect flow, not a duplicate.** It reuses the same
-  ConnectionsSection / `/api/connectors` stack as settings (a dedicated connect step with a top
-  "Terug" and a finish CTA); "Later" is the skip path. **Why:** review blocker — both buttons
-  previously finished identically, so the connect flow was unreachable.
-
-- **complete-v2 builds the first plan inline (~30s) but never fails onboarding on a plan hiccup.**
-  Onboarding completion (profile + state + founding number) must succeed even if plan generation
-  throws — failing would strand a user whose founding number is already claimed. Instead the endpoint
-  returns `planReady: boolean` (quick-start does the same), and the home degrades to a general/fallback
-  day when no plan/todayWorkout exists. **Why:** "success guarantees a usable app" is satisfied by
-  graceful fallback + an honest planReady flag, not by hard-failing on a transient LLM error. Known UX
-  cost (button spins on both finish paths); a follow-up makes the build background/non-blocking.
-
-- **A new invitation `relationship` must be wired on BOTH sides or it's a dangling capability.**
-  The head_tester relationship needs: backend enum + admin-gated create + accept effect, AND the
-  frontend union/label maps + a visible admin control to mint it (tester-QR "Markeer als hoofdtester").
-  **Why:** a backend-only relationship is unreachable through the product and leaves client types
-  incomplete — flagged as a review blocker.
-
-## Gotchas
-
-- **DevPreview bypasses the auth router**, so new auth-gated screens are invisible in dev preview
-  unless added to `dev-preview.tsx` (VIEWS entry + isActive branch + render branch). Onboarding V2 is
-  at `/_dev/onboarding`. Any future onboarding/auth screen needs the same three additions.
-- **The Profiel (you) page shows a pre-existing "Sparki vraagt na" adaptive modal** on load for users
-  with pending context-memory follow-ups — it overlays the page and can't be dismissed in a static
-  screenshot. Verify new you.tsx surfaces via endpoints (curl) or by clearing pending follow-ups,
-  not by screenshot alone.
+## Three product findings (proven empirically, not bugs)
+- **Nonsense answers fail honestly, no alternative path.** Out-of-range / invalid
+  input → 400, the question is NOT snoozed so it resurfaces; the UI shows a plain
+  generic Dutch retry line and "Overslaan" snoozes 3 days. Not a dead-end (skip is
+  the escape) but there is no guided recovery and no separate fallback onboarding.
+  **Free-text facts accept any non-empty string** — only empty text is rejectable.
+- **The question catalog is FIXED.** A willing athlete who asks for intensive
+  guidance does NOT get extra/deeper questions. `guidanceNeed=high` only feeds the
+  coaching *directive/tone* (reaches high confidence after one direct answer,
+  weight 5). Onboarding *breadth* never adapts to engagement or guidance need.
+- **Q&A-only data quality is capped.** Even a fully-willing athlete leaves
+  `weeklyHourTarget` permanently **estimated** (no progressive fact ever makes it
+  real) and FTP stays an estimate until a number is typed. A connected sport app
+  is what would supply measured FTP/weight/history instead of self-report/estimate.
+  **Why:** `getMissingOnboardingData` treats an estimated FTP/hours as "present",
+  so a plan builds and the manual fallback never re-asks — usable, but coarse.

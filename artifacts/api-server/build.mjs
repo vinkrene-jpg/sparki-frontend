@@ -25,6 +25,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/tests/context-memory.ts"),
       path.resolve(artifactDir, "src/tests/voice.ts"),
       path.resolve(artifactDir, "src/tests/onboarding-v2.ts"),
+      path.resolve(artifactDir, "src/tests/onboarding-personas.ts"),
       path.resolve(artifactDir, "src/tests/material.ts"),
       path.resolve(artifactDir, "src/tests/material-nudge.ts"),
       path.resolve(artifactDir, "src/scripts/seed-social.ts"),
