@@ -21,3 +21,4 @@ export * from "./notifications";
 export * from "./bug-reports";
 export * from "./knowledge";
 export * from "./health-checks";
+export * from "./input-center";

@@ -37,3 +37,4 @@
 - [Sparki Admin Health Check engine](sparki-health-check.md) — honesty contract: real probe or GREY, never fake green; probes never throw; isAdmin dev-bypass; wouter Link no nested <a>.
 - [Coach plan adoption](coach-plan-adoption.md) — coach adopts advisory plan_days into athlete-owned planned_workouts (source="coach", planId null); dedupe by date+source, never overwrite.
 - [Sparki Race Intelligence](sparki-race-intel.md) — deterministic prep/report/fuel/checklist over a Race; never fabricate (gaps honest), cheapest fuel tier first, no guide parser ⇒ prompt to fill fields.
+- [Sparki Input Center & ACL timing](sparki-input-center.md) — one central composer; object ACL can only be set AFTER bytes exist (presign→PUT→set-ACL-on-persist), never before.

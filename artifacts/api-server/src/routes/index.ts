@@ -26,6 +26,8 @@ import socialRouter from "./social";
 import voiceRouter from "./voice";
 import insightsRouter from "./insights";
 import adminRouter from "./admin";
+import storageRouter from "./storage";
+import inputCenterRouter from "./input-center";
 
 const router: IRouter = Router();
 
@@ -56,5 +58,7 @@ router.use("/social", socialRouter);
 router.use("/voice", voiceRouter);
 router.use(insightsRouter);
 router.use("/admin", adminRouter);
+router.use(storageRouter);
+router.use(inputCenterRouter);
 
 export default router;

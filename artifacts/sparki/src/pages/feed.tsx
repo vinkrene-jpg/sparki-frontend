@@ -5,7 +5,8 @@ import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { ClubChip } from "@/components/sparki/club-chip"
 import { SparkiCore } from "@/components/sparki/sparki-core"
 import { NewsReader } from "@/components/sparki/news-reader"
-import { useAiBrief, useAskSparki, type AiSource } from "@/hooks/use-ai-brief"
+import { SparkiInputCenter } from "@/components/sparki/sparki-input-center"
+import { useAiBrief, type AiSource } from "@/hooks/use-ai-brief"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { useKnowledge } from "@/hooks/use-knowledge"
 import { useFeedNews, type FeedNewsItem } from "@/hooks/use-feed-news"
@@ -15,8 +16,6 @@ import {
   Flag,
   PlayCircle,
   Newspaper,
-  Send,
-  Loader2,
   ExternalLink,
   BookOpen,
   ArrowRight,
@@ -141,34 +140,11 @@ function KnowledgeFeedSection() {
 export default function FeedPage() {
   const { data: briefData, isLoading: briefLoading } = useAiBrief(true)
   const { data: newsData, isLoading: newsLoading } = useFeedNews()
-  const ask = useAskSparki()
-  const [input, setInput] = useState("")
   const [active, setActive] = useState<FilterKey>("all")
-  const [history, setHistory] = useState<StreamItem[]>([])
   const [readerItem, setReaderItem] = useState<FeedNewsItem | null>(null)
 
-  const handleAsk = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const q = input.trim()
-    if (!q || ask.isPending) return
-    setInput("")
-    const result = await ask.mutateAsync(q)
-    setHistory((prev) => [
-      {
-        id: Date.now(),
-        type: "ai",
-        label: "Sparki",
-        title: q,
-        body: result.answer,
-        author: "Sparki",
-        time: "Nu",
-        sources: result.sources ?? [],
-      },
-      ...prev,
-    ])
-  }
-
-  // Sparki brief (pinned) + Q&A history.
+  // Sparki brief (pinned daily briefing). The interactive conversation lives in
+  // the central Sparki Input Center (persistent), not in ephemeral page state.
   const briefItems: StreamItem[] = briefData
     ? [
         {
@@ -183,7 +159,6 @@ export default function FeedPage() {
         },
       ]
     : []
-  const aiItems: StreamItem[] = [...briefItems, ...history]
 
   // Real, personalised sports news from the knowledge base.
   const newsItems: StreamItem[] = (newsData?.items ?? []).map((n) => ({
@@ -198,16 +173,16 @@ export default function FeedPage() {
     news: n,
   }))
 
+  const isSparki = active === "ai"
   const streamItems: StreamItem[] =
     active === "all"
-      ? [...briefItems, ...newsItems, ...history]
+      ? [...briefItems, ...newsItems]
       : active === "news"
         ? newsItems
-        : active === "ai"
-          ? aiItems
+        : isSparki
+          ? briefItems
           : []
 
-  const showAsk = active === "all" || active === "ai"
   const showPersonalNote =
     (active === "all" || active === "news") && newsItems.length > 0
 
@@ -264,55 +239,6 @@ export default function FeedPage() {
           </div>
         )}
 
-        {/* Ask Sparki input */}
-        {showAsk && (
-          <form onSubmit={handleAsk} className="mt-4 flex gap-2">
-            <input
-              className="flex-1 rounded-xl border border-white/[0.1] bg-white/[0.04] px-4 py-3 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
-              placeholder="Vraag Sparki iets over training, herstel, zones…"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              disabled={ask.isPending}
-            />
-            <button
-              type="submit"
-              disabled={!input.trim() || ask.isPending}
-              className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl transition-opacity disabled:opacity-35"
-              style={{ background: ACCENT }}
-            >
-              {ask.isPending ? (
-                <Loader2
-                  className="h-4 w-4 animate-spin"
-                  style={{ color: "#040506" }}
-                  strokeWidth={2.5}
-                />
-              ) : (
-                <Send
-                  className="h-4 w-4"
-                  style={{ color: "#040506" }}
-                  strokeWidth={2.5}
-                />
-              )}
-            </button>
-          </form>
-        )}
-
-        {/* Thinking skeleton */}
-        {ask.isPending && (
-          <div className="mt-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-            <div className="mb-3 flex items-center gap-2">
-              <SparkiCore size={22} accent={ACCENT} readiness={0.9} variant="orb" />
-              <span className="font-mono text-[10px] tracking-[0.18em] text-white/40">
-                DENKT…
-              </span>
-            </div>
-            <div className="space-y-2">
-              <Skeleton className="h-3.5 w-full" />
-              <Skeleton className="h-3.5 w-4/5" />
-            </div>
-          </div>
-        )}
-
         {/* Stream items */}
         <div className="mt-2 flex flex-col">
           {(briefLoading || newsLoading) && streamItems.length === 0 && (
@@ -333,17 +259,20 @@ export default function FeedPage() {
             </>
           )}
 
-          {!briefLoading && !newsLoading && streamItems.length === 0 && (
-            <div className="py-8 text-center">
-              <p className="text-[12px] text-white/20">
-                {active === "ai" || active === "all"
-                  ? "Stel Sparki een vraag hierboven"
-                  : active === "news"
+          {!briefLoading &&
+            !newsLoading &&
+            streamItems.length === 0 &&
+            !isSparki && (
+              <div className="py-8 text-center">
+                <p className="text-[12px] text-white/20">
+                  {active === "news"
                     ? "Nog geen nieuws beschikbaar"
-                    : "Geen berichten in deze categorie"}
-              </p>
-            </div>
-          )}
+                    : active === "all"
+                      ? "Nog niets te tonen"
+                      : "Geen berichten in deze categorie"}
+                </p>
+              </div>
+            )}
 
           {streamItems.map((item) => {
             const meta = typeMeta[item.type]
@@ -482,6 +411,15 @@ export default function FeedPage() {
             )
           })}
         </div>
+
+        {/* Central Sparki Input Center — the ONE place to give Sparki a photo,
+            image, PDF, file, link or question. The whole conversation (with the
+            uploaded items) stays persisted and visible. */}
+        {isSparki && (
+          <div className="mt-6">
+            <SparkiInputCenter />
+          </div>
+        )}
       </section>
 
       <KnowledgeFeedSection />

@@ -167,6 +167,11 @@ export const queryKeys = {
     identity: () => ["onboarding", "identity"] as const,
   },
 
+  inputCenter: {
+    all: () => ["input-center"] as const,
+    conversation: () => ["input-center", "conversation"] as const,
+  },
+
   social: {
     all: () => ["social"] as const,
     friends: () => ["social", "friends"] as const,
