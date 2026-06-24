@@ -26,6 +26,14 @@ export type StateAction = {
   reason: string;
 };
 
+export type StateMetric = {
+  key: string;
+  label: string;
+  value: string;
+  hint: string;
+  tone: "positive" | "concern" | "neutral";
+};
+
 export type SparkiState = {
   date: string;
   athleteName: string;
@@ -39,6 +47,7 @@ export type SparkiState = {
   confidenceLabel: string;
   status: string;
   action: StateAction | null;
+  metrics: StateMetric[];
   checkInDone: boolean;
   why: StateSignal[];
   missing: string[];

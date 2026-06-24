@@ -49,3 +49,4 @@
 - [Sparki State Engine (generic service) + Vandaag dual-surface](sparki-state-engine.md) — engine belongs to NO screen; StateCard injects drill-in via onShowDetails prop, never imports HomeViewContext; pure computeState (conf≤0.9), suppress coach cards only on Vandaag state surface.
 - [Adaptive Coach Engine V1](adaptive-coach-engine.md) — deterministic decision layer (decideCoach); surfaced via CoachDecisionContext→ScreenShell across all home day-types; dev override fail-closed.
 - [Sparki Core visual-language prototype](sparki-core-playground.md) — living-shape design contract: calm-not-jerky, uncertainty=hazy, good↔bad X/Y cross, stretch=2 strong pulls; frontend-only before any engine.
+- [Sparki State Card opening](sparki-state-card-opening.md) — glanceable metrics come from the State Engine (not dashboard) to keep the card surface-agnostic; honest empty when no load; never two routes to one drill-in.

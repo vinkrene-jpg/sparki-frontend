@@ -1,11 +1,12 @@
 import { useState } from "react"
-import { ChevronDown, ChevronRight, ArrowRight } from "lucide-react"
+import { ChevronDown, ChevronRight, ArrowRight, Zap } from "lucide-react"
 import { SparkiCore } from "@/components/sparki/core/sparki-core"
 import {
   useSparkiState,
   useStateCheckIn,
   type CheckInAnswer,
   type StateSignal,
+  type StateMetric,
   type StateBand,
 } from "@/hooks/use-sparki-state"
 import { stateToCore } from "@/lib/state-to-core"
@@ -71,6 +72,23 @@ const CHECKINS: { value: CheckInAnswer; label: string }[] = [
   { value: "vermoeid", label: "Vermoeid" },
 ]
 
+// Tone → value colour for the glanceable metrics (cyan→warm Sparki language).
+const METRIC_TONE: Record<StateMetric["tone"], string> = {
+  positive: "text-cyan-300",
+  concern: "text-amber-300",
+  neutral: "text-white/90",
+}
+
+// Time-of-day greeting — a small, personal touch so Vandaag opens warm, not as a
+// stack of dashboards.
+function greeting(): string {
+  const h = new Date().getHours()
+  if (h < 6) return "Goedenacht"
+  if (h < 12) return "Goedemorgen"
+  if (h < 18) return "Goedemiddag"
+  return "Goedenavond"
+}
+
 export function StateCard({ onShowDetails, detailsLabel }: StateCardProps = {}) {
   const { data: state, isLoading, isError, refetch } = useSparkiState()
   const checkIn = useStateCheckIn()
@@ -107,12 +125,18 @@ export function StateCard({ onShowDetails, detailsLabel }: StateCardProps = {}) 
   const accent = BAND_ACCENT[state.band]
   const core = stateToCore(state)
   const showCheckInButtons = !state.checkInDone || reCheckIn
+  const firstName = state.athleteName?.trim().split(/\s+/)[0] ?? ""
 
   return (
     <div className="space-y-6">
       {/* ── Level 1: the living Core ───────────────────────────────────────── */}
       <section className="relative flex flex-col items-center">
-        <div className="relative h-64 w-full max-w-sm">
+        {firstName && (
+          <p className="text-[14px] font-light tracking-tight text-white/70">
+            {greeting()}, {firstName}.
+          </p>
+        )}
+        <div className="relative -mt-1 h-64 w-full max-w-sm">
           <SparkiCore state={core} className="absolute inset-0 h-full w-full" />
         </div>
         <div className="mt-1 flex items-center gap-2">
@@ -132,13 +156,40 @@ export function StateCard({ onShowDetails, detailsLabel }: StateCardProps = {}) 
         </h1>
       </section>
 
+      {/* ── Level 1: glanceable real data — tap to drill into the full analysis ── */}
+      {state.metrics.length > 0 &&
+        (onShowDetails ? (
+          <button
+            type="button"
+            onClick={onShowDetails}
+            className="group w-full rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
+          >
+            <MetricRow metrics={state.metrics} />
+            <div className="mt-3 flex items-center justify-between border-t border-white/[0.06] pt-3">
+              <span className="text-[13px] text-white/55 transition-colors group-hover:text-cyan-300/80">
+                {detailsLabel ?? "Bekijk de volledige analyse"}
+              </span>
+              <ChevronRight className="h-4 w-4 text-white/35 transition-colors group-hover:text-cyan-300/70" />
+            </div>
+          </button>
+        ) : (
+          <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+            <MetricRow metrics={state.metrics} />
+          </section>
+        ))}
+
       {/* ── Level 1: short coach action ────────────────────────────────────── */}
       {state.action && (
-        <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
-          <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/35">
-            Sparki adviseert
-          </p>
-          <p className="mt-2 text-[15px] font-medium leading-snug text-white">
+        <section className="rounded-2xl border border-cyan-300/15 bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+          <div className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-300/15 ring-1 ring-cyan-300/30">
+              <Zap className="h-3.5 w-3.5 text-cyan-300" />
+            </span>
+            <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+              Sparki adviseert
+            </p>
+          </div>
+          <p className="mt-2.5 text-[15px] font-medium leading-snug text-white">
             {state.action.label}
           </p>
           <p className="mt-1.5 text-[13px] leading-relaxed text-white/60">
@@ -256,8 +307,11 @@ export function StateCard({ onShowDetails, detailsLabel }: StateCardProps = {}) 
         )}
       </section>
 
-      {/* ── Level 3: host-injected drill-in (omitted when no host action) ───── */}
-      {onShowDetails && (
+      {/* ── Level 3: host-injected drill-in ─────────────────────────────────────
+          Rendered only when the glanceable metrics card above isn't already
+          carrying the drill-in (i.e. no real metrics yet), so Vandaag never
+          shows two routes to the same full analysis. */}
+      {onShowDetails && state.metrics.length === 0 && (
         <button
           type="button"
           onClick={onShowDetails}
@@ -270,6 +324,34 @@ export function StateCard({ onShowDetails, detailsLabel }: StateCardProps = {}) 
           <ChevronRight className="h-4 w-4 text-white/40" />
         </button>
       )}
+    </div>
+  )
+}
+
+// The glanceable real-data row — the few numbers an athlete wants to see at a
+// glance (Vorm / Conditie / Belasting). Real values only; the engine omits these
+// entirely when no training data exists, so this never renders fabricated zeros.
+function MetricRow({ metrics }: { metrics: StateMetric[] }) {
+  return (
+    <div className="flex items-stretch">
+      {metrics.map((mtr, i) => (
+        <div
+          key={mtr.key}
+          className={`flex-1 px-2 text-center ${
+            i > 0 ? "border-l border-white/[0.07]" : ""
+          }`}
+        >
+          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+            {mtr.label}
+          </p>
+          <p
+            className={`mt-1 font-sans text-[22px] font-light leading-none tabular-nums ${METRIC_TONE[mtr.tone]}`}
+          >
+            {mtr.value}
+          </p>
+          <p className="mt-1 text-[11px] leading-tight text-white/45">{mtr.hint}</p>
+        </div>
+      ))}
     </div>
   )
 }

@@ -45,6 +45,22 @@ export type StateAction = {
   reason: string;
 };
 
+// A glanceable real-data readout for level 1 — the few numbers an athlete wants
+// to see at a glance, each drillable into the full analysis. Real values only:
+// when there is no training data yet the engine returns an empty list, never a
+// fabricated number.
+export type StateMetric = {
+  /** Internal key (English): "form" | "fitness" | "fatigue". */
+  key: string;
+  /** Plain-Dutch label, e.g. "Vorm". */
+  label: string;
+  /** Formatted value, e.g. "+12", "48". */
+  value: string;
+  /** One-word plain-Dutch reading, e.g. "fris", "je basis". */
+  hint: string;
+  tone: "positive" | "concern" | "neutral";
+};
+
 export type SparkiState = {
   date: string;
   athleteName: string;
@@ -79,6 +95,8 @@ export type SparkiState = {
   status: string;
   /** One short coach action: iets aanpassen vandaag (null when nothing to add). */
   action: StateAction | null;
+  /** Glanceable real metrics for level 1 — empty when no training data exists. */
+  metrics: StateMetric[];
   /** Whether today's check-in is in (a consumer may surface a check-in prompt). */
   checkInDone: boolean;
 

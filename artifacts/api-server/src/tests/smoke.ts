@@ -675,6 +675,28 @@ async function main() {
     // Confidence is honest: never 1.0, capped at 0.9, weather excluded as structural.
     assert(good.confidence > 0 && good.confidence <= 0.9, "confidence in (0, 0.9]");
 
+    // Glanceable metrics: real load → populated, and sourced from m.load so the
+    // numbers stay self-consistent (Vorm = Conditie − Belasting).
+    assert(good.metrics.length === 3, "load present → 3 glanceable metrics");
+    const form = good.metrics.find((m) => m.key === "form");
+    const fitness = good.metrics.find((m) => m.key === "fitness");
+    const fatigue = good.metrics.find((m) => m.key === "fatigue");
+    assert(
+      form?.value === "+2" && fitness?.value === "50" && fatigue?.value === "48",
+      "metric values mirror real load (tsb/ctl/atl)",
+    );
+    assert(
+      Number(form?.value) === Number(fitness?.value) - Number(fatigue?.value),
+      "Vorm equals Conditie minus Belasting",
+    );
+
+    // No training data → no fabricated zeros, just an empty list.
+    const noLoad = computeState({
+      ...baseInput,
+      metrics: { ...baseMetrics, loadSessions: 0 },
+    });
+    assert(noLoad.metrics.length === 0, "no load sessions → empty metrics, never faked");
+
     // Injury is a hard override toward the bottom band, regardless of form.
     const injured = computeState({
       ...baseInput,

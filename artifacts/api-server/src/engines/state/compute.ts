@@ -18,6 +18,7 @@ import type {
   SparkiState,
   StateAction,
   StateBand,
+  StateMetric,
   StateSignal,
 } from "./types";
 
@@ -299,6 +300,42 @@ function daysPhrase(n: number): string {
   return `over ${n} dagen`;
 }
 
+// ── Glanceable metrics (level 1) ────────────────────────────────────────────────
+
+const signed = (n: number): string => (n > 0 ? `+${n}` : `${n}`);
+
+// The few real numbers an athlete wants to see at a glance. Built ONLY from real
+// training load — when no sessions have fed the load model yet, we return an
+// empty list rather than show a fabricated 0. Each value drills into the full
+// analysis on the consumer side.
+function buildMetrics(m: IntakeMetrics): StateMetric[] {
+  if (m.loadSessions < 1) return [];
+  const tsb = m.load.tsb;
+  return [
+    {
+      key: "form",
+      label: "Vorm",
+      value: signed(tsb),
+      hint: tsb <= -15 ? "vermoeid" : tsb >= 10 ? "fris" : "in balans",
+      tone: tsb <= -15 ? "concern" : tsb >= 10 ? "positive" : "neutral",
+    },
+    {
+      key: "fitness",
+      label: "Conditie",
+      value: `${m.load.ctl}`,
+      hint: "je basis",
+      tone: "neutral",
+    },
+    {
+      key: "fatigue",
+      label: "Belasting",
+      value: `${m.load.atl}`,
+      hint: "recent",
+      tone: "neutral",
+    },
+  ];
+}
+
 // ── Why (top 3 signals) ──────────────────────────────────────────────────────────
 
 type WhyCandidate = StateSignal & { weight: number };
@@ -504,6 +541,7 @@ export function computeState(input: StateComputeInput): SparkiState {
     confidenceLabel,
     status: computeStatus(band, movement.direction, m.healthStatus),
     action: computeAction(band, x, y, m),
+    metrics: buildMetrics(m),
     checkInDone,
     why: buildWhy(m),
     missing: input.missing,
