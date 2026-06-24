@@ -308,6 +308,8 @@ router.get("/:id/gpx", requireAuth, async (req, res) => {
       geometry: (route.geometry as RoutePathPoint[] | null) ?? [],
       profile: (route.profile as number[] | null) ?? null,
       nav: (route.nav as { km: number; dir: string; note: string }[] | null) ?? null,
+      climbs:
+        (route.climbs as { name: string; summitKm: number }[] | null) ?? null,
     });
     if (!gpx) {
       res.status(422).json({
@@ -420,6 +422,7 @@ router.get("/candidate/:candidateId/gpx", requireAuth, async (req, res) => {
     geometry: stored.geometry,
     profile: stored.profile,
     nav: stored.nav,
+    climbs: stored.climbs as { name: string; summitKm: number }[],
   });
   if (!gpx) {
     res

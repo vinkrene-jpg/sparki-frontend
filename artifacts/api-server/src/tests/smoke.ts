@@ -182,6 +182,40 @@ async function main() {
     );
     assert(withNav!.includes("<wpt "), "keeps waypoint fallback");
 
+    // Climbs → Summit course points anchored at the summit km, even with no nav.
+    const withClimbs = buildGpx({
+      name: "Climb route",
+      geometry,
+      profile: [10, 20, 30, 40],
+      nav: null,
+      climbs: [{ name: "Klim 1", summitKm: 2.5 }],
+    });
+    assert(withClimbs != null, "buildGpx returns gpx with climbs");
+    assert(
+      withClimbs!.includes("<gpxx:PointType>Summit</gpxx:PointType>"),
+      "emits Summit course point for a climb",
+    );
+    assert(
+      withClimbs!.includes("<gpxx:PointName>Klim 1</gpxx:PointName>"),
+      "names the climb course point",
+    );
+    assert(
+      withClimbs!.includes("<type>climb-summit</type>"),
+      "keeps climb waypoint fallback",
+    );
+    // Climb without a finite summit km → never fabricated into a point.
+    const badClimb = buildGpx({
+      name: "Bad climb",
+      geometry,
+      profile: null,
+      nav: null,
+      climbs: [{ name: "Klim ?", summitKm: Number.NaN }],
+    });
+    assert(
+      badClimb != null && !badClimb.includes("Summit"),
+      "skips climbs without a summit position",
+    );
+
     // No nav cues → plain track, no gpxx namespace, no course points (graceful).
     const noNav = buildGpx({ name: "Bare", geometry, profile: null, nav: null });
     assert(noNav != null, "buildGpx returns gpx without nav");

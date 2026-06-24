@@ -118,6 +118,9 @@ export type GpxRouteClimb = {
   name: string;
   lengthKm: number;
   avgGradePct: number;
+  // Cumulative km position of the climb's summit (top), measured along the
+  // track. Used to anchor an on-device course point at the real summit.
+  summitKm: number;
 };
 
 // A single track point preserved for faithful re-export: [lat, lon] when the
@@ -241,6 +244,10 @@ type GeoPoint = [number, number] | [number, number, number];
 
 export type GpxBuildNavCue = { km: number; dir: string; note: string };
 
+// A detected climb to flag as a named course point at its summit. Only the name
+// and the summit's cumulative-km position are needed for export.
+export type GpxBuildClimb = { name: string; summitKm: number };
+
 export type GpxBuildInput = {
   name: string;
   // [lat, lon] points; an optional third element is a real per-point elevation
@@ -253,6 +260,11 @@ export type GpxBuildInput = {
   // Turn-by-turn cues. Exported as <wpt> waypoints, placed at the real route
   // coordinate nearest each cue's cumulative-km position. Null/empty → no wpts.
   nav?: GpxBuildNavCue[] | null;
+  // Detected climbs. Each is emitted as a course point (PointType "Summit") at
+  // the real track coordinate nearest its summit km, so head units pre-warn
+  // riders about upcoming climbs. Only entries with a finite summitKm are used
+  // (older stored climbs without a summit position are skipped — never faked).
+  climbs?: GpxBuildClimb[] | null;
 };
 
 function escapeXml(s: string): string {
@@ -384,6 +396,34 @@ export function buildGpx(route: GpxBuildInput): string | null {
         pointName: cueName,
         pointType: coursePointType(dir || note),
         notes: desc,
+      });
+    }
+  }
+
+  // Climb summits → course points (PointType "Summit") so head units pre-warn
+  // riders about an upcoming climb, not just turns. Anchored to the real track
+  // coordinate nearest each summit's km, reusing nearestIdxForKm. Only climbs
+  // with a finite summit position are used — nothing is fabricated. A turn cue
+  // already claiming a track point keeps it (turns are safety-critical); the
+  // summit still gets a <wpt> fallback so it isn't lost.
+  for (const climb of route.climbs ?? []) {
+    if (!Number.isFinite(climb.summitKm)) continue;
+    const idx = nearestIdxForKm(climb.summitKm);
+    const [lat, lon] = geometry[idx]!;
+    const ele = eleAt(idx);
+    const climbName = escapeXml(climb.name?.trim() || "Klim");
+    wpts.push(
+      `  <wpt lat="${lat}" lon="${lon}">\n` +
+        (ele != null ? `    <ele>${ele}</ele>\n` : "") +
+        `    <name>${climbName}</name>\n` +
+        `    <type>${escapeXml("climb-summit")}</type>\n` +
+        `  </wpt>`,
+    );
+    if (!coursePointByIdx.has(idx)) {
+      coursePointByIdx.set(idx, {
+        pointName: climbName,
+        pointType: "Summit",
+        notes: "",
       });
     }
   }
@@ -640,6 +680,7 @@ function detectClimbs(
           name: `Klim ${climbs.length + 1}`,
           lengthKm: Math.round(lengthKm * 10) / 10,
           avgGradePct: Math.round((gain / (lengthKm * 1000)) * 1000) / 10,
+          summitKm: Math.round(cumKm[topIdx]! * 100) / 100,
         });
       }
     }
