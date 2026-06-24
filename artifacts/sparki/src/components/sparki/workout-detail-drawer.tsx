@@ -69,6 +69,21 @@ const FEEDBACK_OPTIONS: {
   { type: "move", label: "Verplaatsen", tone: "neutral" },
 ]
 
+// Forward-looking options for a session that hasn't happened yet. Never asks
+// "hoe ging het" about a training still in the future — instead the athlete
+// shapes the plan vooraf (verplaatsen / te zwaar of te licht ingepland / niet
+// fit), zodat Sparki proactief bijstuurt in plaats van een formulier af te nemen.
+const PLANNING_OPTIONS: {
+  type: WorkoutFeedbackType
+  label: string
+  tone: "good" | "neutral" | "warn"
+}[] = [
+  { type: "move", label: "Verplaatsen", tone: "neutral" },
+  { type: "too_hard", label: "Te zwaar ingepland", tone: "warn" },
+  { type: "too_light", label: "Te licht ingepland", tone: "neutral" },
+  { type: "pain", label: "Niet fit / blessure", tone: "warn" },
+]
+
 function SectionHead({
   n,
   title,
@@ -239,6 +254,17 @@ export function WorkoutDetailDrawer({
     ? routeNeedLabel[structure.routeNeed]
     : routeNeedLabel.none
   const RouteIcon = route.icon
+
+  // A training in the future hasn't happened yet, so asking "hoe ging het" is
+  // robotic. Sparki understands timing: an upcoming session gets forward-looking
+  // plan-feedback; only a session that is today/past or done asks how it went.
+  const now = new Date()
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+  const isUpcoming =
+    workout != null &&
+    workout.status !== "completed" &&
+    workout.scheduledDate > todayStr
+  const feedbackOptions = isUpcoming ? PLANNING_OPTIONS : FEEDBACK_OPTIONS
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
@@ -429,21 +455,32 @@ export function WorkoutDetailDrawer({
               )}
             </section>
 
-            {/* 04 FEEDBACK → SPARKI VOORSTEL */}
+            {/* 04 FEEDBACK → SPARKI VOORSTEL (context-aware: vooruit plannen
+                bij een nog komende training, terugkijken bij een gedane). */}
             <section className="flex flex-col gap-3">
-              <SectionHead n="04" title="Jouw feedback" icon={Check} />
+              <SectionHead
+                n="04"
+                title={isUpcoming ? "Past deze training?" : "Jouw feedback"}
+                icon={Check}
+              />
               <p className="text-[12px] leading-relaxed text-white/45">
-                Laat weten hoe het ging — Sparki past je plan zo nodig aan.
+                {isUpcoming
+                  ? "Deze training komt er nog aan. Klopt er iets niet of past het beter op een andere dag? Dan stemt Sparki je plan er vast op af."
+                  : "Laat weten hoe het ging — Sparki past je plan zo nodig aan."}
               </p>
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={2}
-                placeholder="Toelichting (optioneel)…"
+                placeholder={
+                  isUpcoming
+                    ? "Wat moet Sparki weten? (optioneel)…"
+                    : "Toelichting (optioneel)…"
+                }
                 className="w-full resize-none rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
               />
               <div className="flex flex-wrap gap-2">
-                {FEEDBACK_OPTIONS.map((opt) => {
+                {feedbackOptions.map((opt) => {
                   const active = activeFeedback === opt.type
                   return (
                     <button

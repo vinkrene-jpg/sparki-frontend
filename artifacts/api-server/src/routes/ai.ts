@@ -434,17 +434,23 @@ router.post("/workout-explain", requireAuth, async (req, res) => {
     ]);
     const workoutBlock = describeWorkout(workout);
 
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1600,
-      system,
-      messages: [
-        {
-          role: "user",
-          content: `Atleetcontext:\n${context}\n\n${workoutBlock}\n\nLeg in het NEDERLANDS uit waarom Sparki JUIST DEZE training zo plant. Geef twee niveaus: eerst de korte kern, daarna de uitgebreide onderbouwing met meer diepgang en de echte getallen. De uitgebreide versie geeft méér diepgang en data — niet zomaar méér tekst.\n\nAntwoord UITSLUITEND met geldige JSON (geen markdown, geen tekst eromheen) in dit schema:\n{\n  "short": "1 tot 2 zinnen, de kern: waarom deze training vandaag past. Direct leesbaar, geen jargon.",\n  "extended": "2 tot 4 korte alinea's met de trainingsfilosofie toegespitst op deze sessie — relevante principes uit trainingsopbouw, belasting & herstel, progressieve overload, nut van Z2, intensieve blokken, taper/herstelweek, periodisering, blessurepreventie en de relatie tot het hoofddoel. Verwijs naar de echte getallen (duur, TSS, zones, %FTP, week/fase). Platte tekst, alinea's gescheiden door een lege regel."\n}\n\nRegels: gebruik alleen echte data uit de context hierboven, verzin niets. Schrijf platte tekst in beide velden: GEEN markdown, geen kopjes, geen "#" of sterretjes/bold. Gebruik NOOIT het woord "AI" of "algoritme" — jij bent Sparki.`,
-        },
-      ],
-    });
+    const message = await anthropic.messages.create(
+      {
+        model: "claude-sonnet-4-6",
+        max_tokens: 1600,
+        system,
+        messages: [
+          {
+            role: "user",
+            content: `Atleetcontext:\n${context}\n\n${workoutBlock}\n\nLeg in het NEDERLANDS uit waarom Sparki JUIST DEZE training zo plant. Geef twee niveaus: eerst de korte kern, daarna de uitgebreide onderbouwing met meer diepgang en de echte getallen. De uitgebreide versie geeft méér diepgang en data — niet zomaar méér tekst.\n\nAntwoord UITSLUITEND met geldige JSON (geen markdown, geen tekst eromheen) in dit schema:\n{\n  "short": "1 tot 2 zinnen, de kern: waarom deze training vandaag past. Direct leesbaar, geen jargon.",\n  "extended": "2 tot 4 korte alinea's met de trainingsfilosofie toegespitst op deze sessie — relevante principes uit trainingsopbouw, belasting & herstel, progressieve overload, nut van Z2, intensieve blokken, taper/herstelweek, periodisering, blessurepreventie en de relatie tot het hoofddoel. Verwijs naar de echte getallen (duur, TSS, zones, %FTP, week/fase). Platte tekst, alinea's gescheiden door een lege regel."\n}\n\nRegels: gebruik alleen echte data uit de context hierboven, verzin niets. Schrijf platte tekst in beide velden: GEEN markdown, geen kopjes, geen "#" of sterretjes/bold. Gebruik NOOIT het woord "AI" of "algoritme" — jij bent Sparki.`,
+          },
+        ],
+      },
+      // Fail fast instead of hanging the "Sparki denkt na…" spinner forever: a
+      // single attempt (no retries) with a hard ceiling surfaces the honest
+      // error UI instead of an indefinite spinner.
+      { timeout: 60000, maxRetries: 0 },
+    );
 
     const block = message.content[0];
     if (!block || block.type !== "text") {

@@ -66,6 +66,27 @@ the param via `navigate(path,{replace:true})` so refresh/back don't re-scroll.
 Stripping the query is safe: `ScrollToTop` keys on the path only, so removing the
 query won't re-fire scroll-to-top.
 
+## Feedback/empty-state copy must be tense-aware (never ask past-tense about a future thing)
+
+A workout/event surface must NOT ask "Laat weten hoe het ging" (Gedaan/Gemist/
+Vermoeid/Pijn) about a session that hasn't happened yet — it reads as robotic
+form-filling, not an understanding Sparki. Compute timing from `scheduledDate` vs
+local today (build `YYYY-MM-DD` from `getFullYear/Month/Date`, NOT
+`toLocaleDateString` which is locale/runtime dependent) and switch framing:
+- upcoming (future date, status != completed) → forward "Past deze training?" +
+  forward options (Verplaatsen / Te zwaar ingepland / Te licht ingepland / Niet
+  fit). These are still valid `WorkoutFeedbackType` values, so submit/adjust/history
+  paths stay compatible.
+- today/past/completed → retrospective "Jouw feedback" + full option set.
+
+**Why:** the user explicitly flagged this as "formulieren invullen ipv een
+interactieve begrijpende Sparki" and said it applies "op alle onderdelen".
+
+**How to apply:** treat this as an app-wide principle — any surface that asks for
+reflection/feedback should branch on whether the thing is past vs future before
+choosing tense and options. (workout-detail-drawer.tsx section 04 is the first
+instance.)
+
 ## "Missing" gaps clear only on a fresh dashboard fetch (background refetch)
 
 Each gap's presence comes from `useAthleteDashboard()` (`athleteProfile`,
