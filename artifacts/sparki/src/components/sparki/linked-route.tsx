@@ -84,7 +84,9 @@ export function RouteDetailDrawer({
               </SheetTitle>
             </SheetHeader>
 
-            {geometry.length > 1 && <RouteMap geometry={geometry} />}
+            {geometry.length > 1 && (
+              <RouteMap geometry={geometry} climbs={climbs} />
+            )}
 
             {profile.length > 0 && <ElevationProfile profile={profile} />}
 

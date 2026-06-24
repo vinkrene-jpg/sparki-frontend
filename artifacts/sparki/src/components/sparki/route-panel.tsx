@@ -215,7 +215,9 @@ function RouteCard({ route }: { route: SparkiRoute }) {
         </p>
       )}
 
-      {geometry.length > 1 && <RouteMap geometry={geometry} className="mt-4" />}
+      {geometry.length > 1 && (
+        <RouteMap geometry={geometry} climbs={climbs} className="mt-4" />
+      )}
 
       {profile.length > 0 && <ElevationProfile profile={profile} />}
 
@@ -829,6 +831,7 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
           {candidate.geometry.length > 1 && (
             <RouteMap
               geometry={candidate.geometry}
+              climbs={candidate.climbs}
               meetpoints={mode === "waypoints" ? meetpoints : []}
               interactive={false}
               className="mt-4"

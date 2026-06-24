@@ -2,7 +2,46 @@ import { useEffect, useRef } from "react"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 import { ACCENT } from "@/components/sparki/ui"
-import type { RouteWaypoint, RouteMeetpoint } from "@/hooks/use-routes"
+import type {
+  RouteWaypoint,
+  RouteMeetpoint,
+  RouteClimb,
+} from "@/hooks/use-routes"
+
+// Cumulative distance (km) at each track point, mirroring the server-side
+// gpx-parse cumulativeKm so summit anchoring matches the stored climb data.
+function cumulativeKm(geometry: [number, number][]): number[] {
+  const cumKm: number[] = [0]
+  const R = 6371 // earth radius (km)
+  for (let i = 1; i < geometry.length; i++) {
+    const a = geometry[i - 1]!
+    const b = geometry[i]!
+    const dLat = ((b[0] - a[0]) * Math.PI) / 180
+    const dLon = ((b[1] - a[1]) * Math.PI) / 180
+    const lat1 = (a[0] * Math.PI) / 180
+    const lat2 = (b[0] * Math.PI) / 180
+    const h =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2
+    cumKm.push(cumKm[i - 1]! + 2 * R * Math.asin(Math.min(1, Math.sqrt(h))))
+  }
+  return cumKm
+}
+
+// Index of the track point whose cumulative km is closest to `km` (mirrors
+// gpx-parse nearestIdxForKm).
+function nearestIdxForKm(cumKm: number[], km: number): number {
+  let best = 0
+  let bestDiff = Infinity
+  for (let i = 0; i < cumKm.length; i++) {
+    const diff = Math.abs(cumKm[i]! - km)
+    if (diff < bestDiff) {
+      bestDiff = diff
+      best = i
+    }
+  }
+  return best
+}
 
 // Lightweight Leaflet map for drawing real route geometry. Uses CARTO's free
 // dark "dark_matter" raster tiles (no API key) so it sits naturally inside the
@@ -22,6 +61,7 @@ export function RouteMap({
   interactive = true,
   waypoints = [],
   meetpoints = [],
+  climbs = [],
   center,
   onMapClick,
   onWaypointDrag,
@@ -34,6 +74,10 @@ export function RouteMap({
   interactive?: boolean
   waypoints?: RouteWaypoint[]
   meetpoints?: RouteMeetpoint[]
+  // Detected climbs (read-only routes). Each climb with a finite summitKm is
+  // plotted as a summit marker anchored to the real track coordinate nearest
+  // that km. Routes without climbs (or without summitKm) show no markers.
+  climbs?: RouteClimb[]
   // Fallback view when there's nothing to fit yet (empty builder canvas).
   center?: [number, number]
   onMapClick?: (lat: number, lon: number) => void
@@ -186,6 +230,42 @@ export function RouteMap({
       markersRef.current.push(marker)
     })
 
+    // Summit markers — a small cyan peak at each climb's top, anchored to the
+    // real track coordinate nearest its stored summitKm. Only finite-summitKm
+    // climbs are plotted; nothing is invented when a route has no climbs.
+    const summitIcon = () =>
+      L.divIcon({
+        className: "",
+        html: `<span style="display:block;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid ${ACCENT};filter:drop-shadow(0 0 1px rgba(5,7,14,0.95)) drop-shadow(0 0 6px ${ACCENT});"></span>`,
+        iconSize: [14, 12],
+        iconAnchor: [7, 12],
+      })
+    if (climbs.length > 0 && latlngs.length >= 2) {
+      const cumKm = cumulativeKm(latlngs)
+      climbs.forEach((c) => {
+        if (!Number.isFinite(c.summitKm)) return
+        const idx = nearestIdxForKm(cumKm, c.summitKm as number)
+        const at = latlngs[idx]
+        if (!at) return
+        const marker = L.marker(at, {
+          icon: summitIcon(),
+          interactive: true,
+          keyboard: false,
+        }).addTo(map)
+        // Plain-Dutch label on hover (desktop) and tap (mobile).
+        marker.bindTooltip(`Top: ${escapeHtml(c.name)}`, {
+          direction: "top",
+          offset: [0, -12],
+          opacity: 1,
+        })
+        marker.on("click", (e) => {
+          L.DomEvent.stopPropagation(e)
+          marker.openTooltip()
+        })
+        markersRef.current.push(marker)
+      })
+    }
+
     // Fit to whatever we have (line, waypoints, or meetpoints).
     const fitPoints: [number, number][] = [
       ...latlngs,
@@ -201,7 +281,7 @@ export function RouteMap({
     }
     // Tiles can mis-size if the container was hidden when initialised.
     setTimeout(() => map.invalidateSize(), 80)
-  }, [geometry, waypoints, meetpoints, isBuilder, center])
+  }, [geometry, waypoints, meetpoints, climbs, isBuilder, center])
 
   return (
     <div

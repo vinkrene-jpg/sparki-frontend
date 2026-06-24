@@ -74,7 +74,7 @@ function DayRouteMap({ routeId }: { routeId: number }) {
   if (geometry.length < 2) return null
   return (
     <div className="mt-3">
-      <RouteMap geometry={geometry} className="h-40" />
+      <RouteMap geometry={geometry} climbs={route?.climbs ?? []} className="h-40" />
       {route?.rationale && (
         <p className="mt-2 text-[12px] leading-relaxed text-white/55">
           {route.rationale}
