@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { eq, and, asc } from "drizzle-orm";
-import { db, racesTable } from "@workspace/db";
+import { db, racesTable, athleteProfilesTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { autoAdaptPlan } from "../engines/training-plan";
+import { buildRaceIntel } from "../engines/race";
 
 const router = Router();
 
@@ -65,6 +66,41 @@ router.get("/", requireAuth, async (req, res) => {
     res.json(races);
   } catch (err) {
     req.log.error({ err }, "races GET failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── GET /api/races/:id/intel ─────────────────────────────────────────────────
+// Race Intelligence: phased prep timeline, auto race-day report (honest about
+// unknowns), race-fuel advice with budget alternatives, multi-day checklists.
+// Computed on demand from the athlete's own race + profile — no stored snapshot.
+router.get("/:id/intel", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid race id" });
+    return;
+  }
+
+  try {
+    const [race] = await db
+      .select()
+      .from(racesTable)
+      .where(and(eq(racesTable.id, id), eq(racesTable.clerkId, clerkId)));
+
+    if (!race) {
+      res.status(404).json({ error: "Race not found" });
+      return;
+    }
+
+    const [athlete] = await db
+      .select()
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId));
+
+    res.json(buildRaceIntel(race, athlete ?? null));
+  } catch (err) {
+    req.log.error({ err }, "race intel GET failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });

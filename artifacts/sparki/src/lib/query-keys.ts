@@ -130,6 +130,7 @@ export const queryKeys = {
   races: {
     all: () => ["races"] as const,
     list: () => ["races", "list"] as const,
+    intel: (id: number) => ["races", "intel", id] as const,
   },
 
   invitations: {

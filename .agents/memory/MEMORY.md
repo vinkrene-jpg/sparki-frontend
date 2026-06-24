@@ -36,3 +36,4 @@
 - [Dutch-only copy exceptions](dutch-copy-exceptions.md) — accepted English proper nouns (Sparki, Performance Center, FTP, gran fondo); discipline DB values stay English, only labels translate.
 - [Sparki Admin Health Check engine](sparki-health-check.md) — honesty contract: real probe or GREY, never fake green; probes never throw; isAdmin dev-bypass; wouter Link no nested <a>.
 - [Coach plan adoption](coach-plan-adoption.md) — coach adopts advisory plan_days into athlete-owned planned_workouts (source="coach", planId null); dedupe by date+source, never overwrite.
+- [Sparki Race Intelligence](sparki-race-intel.md) — deterministic prep/report/fuel/checklist over a Race; never fabricate (gaps honest), cheapest fuel tier first, no guide parser ⇒ prompt to fill fields.

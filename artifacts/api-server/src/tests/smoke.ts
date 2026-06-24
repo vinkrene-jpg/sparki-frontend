@@ -63,6 +63,13 @@ import {
   isStravaConfigured,
   buildStravaAuthorizeUrl,
 } from "../engines/integration";
+import {
+  buildRaceIntel,
+  buildPrepTimeline,
+  buildRaceFuel,
+  buildRaceDayReport,
+} from "../engines/race";
+import type { Race } from "@workspace/db";
 
 type Status = "pass" | "fail" | "skip";
 const results: { engine: string; check: string; status: Status; note?: string }[] =
@@ -448,6 +455,127 @@ async function main() {
       if (prevSecret === undefined) delete process.env.STRAVA_CLIENT_SECRET;
       else process.env.STRAVA_CLIENT_SECRET = prevSecret;
     }
+  });
+
+  await run("Race Intelligence", "buildRaceIntel (pure)", () => {
+    // A fixed "today" keeps day-derived status deterministic.
+    const today = new Date(2026, 5, 1); // 1 June 2026, local midnight
+    const base: Race = {
+      id: 42,
+      clerkId: "user_test",
+      name: "Omloop van het Houtland",
+      raceDate: "2026-06-08", // 7 days out
+      startTime: "13:00",
+      location: "Lichtervelde",
+      priority: "A",
+      discipline: "weg",
+      notes: null,
+      plannedWorkoutId: null,
+      travelDate: null,
+      course: null,
+      distanceKm: "120.00",
+      elevationM: 850,
+      technicalSections: "Kasseistrook op 30 km",
+      weatherNote: null,
+      teamName: null,
+      teamInfo: null,
+      coachInstructions: null,
+      raceType: null,
+      result: null,
+      logistics: null,
+      checklist: null,
+      teamRiders: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const intel = buildRaceIntel(base, null, today);
+    assert(intel.raceId === 42, "raceId echoed");
+    assert(intel.daysUntil === 7, `daysUntil 7, got ${intel.daysUntil}`);
+
+    // Prep timeline: 7/5/3/2/1 + race day = 6 milestones, exactly one active.
+    assert(intel.prep.length === 6, "6 prep phases");
+    const active = intel.prep.filter((p) => p.status === "active");
+    assert(active.length === 1, `exactly one active phase, got ${active.length}`);
+    assert(active[0]!.daysBefore === 7, "week-out phase active at 7 days");
+    const techPhase = intel.prep.find((p) => p.askTechnicalGuide);
+    assert(!!techPhase, "a phase asks for the technical guide");
+    assert(techPhase!.daysBefore === 3, "technical-guide ask sits 3 days out");
+    // distanceKm/elevation present ⇒ guide treated as received.
+    assert(
+      techPhase!.technicalGuideReceived === true,
+      "guide marked received when course data exists",
+    );
+
+    // Report: distance + elevation known ⇒ honest course read, no fabrication.
+    const course = intel.report.sections.find((s) => s.id === "koerskarakter");
+    assert(!!course, "koerskarakter section present");
+    assert(
+      course!.items.find((i) => i.label === "Afstand")?.value === "120.00 km",
+      "distance rendered from race data",
+    );
+    // weatherNote is null ⇒ it must be listed as a known gap, never invented.
+    assert(
+      intel.report.dataGaps.includes("weersinschatting"),
+      "missing weather honestly flagged as a gap",
+    );
+    assert(
+      intel.report.personalNote.includes(base.name),
+      "personal note references the race",
+    );
+
+    // Fuel: 120 km @ weg(34 km/h) ≈ 212 min ⇒ long-race carb band + totals.
+    const fuel = buildRaceFuel(base);
+    assert(fuel.durationKnown === true, "duration derived from distance");
+    assert(fuel.isEstimate === true, "duration always flagged as estimate");
+    assert(
+      fuel.carbsPerHourG.min === 60 && fuel.carbsPerHourG.max === 90,
+      "long race ⇒ 60–90 g/h band",
+    );
+    assert(fuel.totalCarbsG != null, "totals computed when duration known");
+    assert(fuel.tiers.length === 3, "three budget tiers");
+    assert(
+      fuel.tiers[0]!.id === "laag",
+      "cheapest tier comes first (not the priciest by default)",
+    );
+
+    // Unknown distance ⇒ honest per-hour guidance, no fabricated totals.
+    const noDistance = buildRaceFuel({ ...base, distanceKm: null });
+    assert(noDistance.durationKnown === false, "no distance ⇒ duration unknown");
+    assert(noDistance.totalCarbsG === null, "no totals without a distance");
+
+    // Checklist groups: spread across days, electronica vs documenten split.
+    assert(intel.checklistGroups.length >= 4, "multiple checklist groups");
+    const elektronica = intel.checklistGroups.find((g) => g.id === "elektronica");
+    assert(!!elektronica, "elektronica group present");
+    assert(
+      elektronica!.itemIds.length > 0 && elektronica!.itemLabels.length > 0,
+      "checklist group carries persistable item ids + labels",
+    );
+
+    // A finished race (date in the past) ⇒ all phases done, none active.
+    const past = buildPrepTimeline({ ...base, raceDate: "2026-05-01" }, today);
+    assert(
+      past.every((p) => p.status === "done"),
+      "past race ⇒ every phase done",
+    );
+
+    // A sparse race ⇒ report stays honest (gaps listed, no invented values).
+    const sparse = buildRaceDayReport(
+      { ...base, distanceKm: null, elevationM: null, technicalSections: null },
+      null,
+      today,
+    );
+    assert(
+      sparse.dataGaps.includes("afstand") &&
+        sparse.dataGaps.includes("hoogtemeters"),
+      "sparse race lists distance + elevation as gaps",
+    );
+    const sparseCourse = sparse.sections.find((s) => s.id === "koerskarakter");
+    assert(
+      sparseCourse!.items.every((i) => i.label !== "Afstand" || !i.known),
+      "no distance value fabricated when unknown",
+    );
   });
 
   await run("Knowledge", "topic library (pure)", () => {

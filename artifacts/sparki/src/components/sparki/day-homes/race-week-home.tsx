@@ -1,6 +1,7 @@
-// Race Week homepage (task #4, step 2). Build phase (7–4 days) leads with
-// training focus; taper phase (3–2 days) shifts to freshness. Honours grondregel
-// 5: one primary action (briefing) + ≤3 recommendations.
+// Race Week homepage (task #4, step 2). Now driven by the Race Intelligence
+// engine: a phased preparation timeline (7/5/3/2/1 days + race day) replaces the
+// old static guidance, and an auto race-day report previews what Sparki already
+// knows. Honours grondregel 5: one primary action (briefing) + focused sections.
 
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel } from "@/components/sparki/ui"
@@ -9,30 +10,20 @@ import { HomeIntro, ReactorReadiness, Skeleton } from "@/components/sparki/home-
 import {
   RaceCountdown,
   RaceSummaryCard,
-  GuidanceList,
   NoRaceCard,
 } from "@/components/sparki/race/race-shared"
+import { PrepTimeline, RaceDayReport } from "@/components/sparki/race/race-intel"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useRaceContext } from "@/hooks/use-races"
+import { useRaceIntel } from "@/hooks/use-race-intel"
 import type { DayHomeComponentProps } from "@/lib/day-type"
-
-const BUILD_GUIDANCE = [
-  "Laatste kwaliteit deze week — scherpe intervallen, beheerst volume.",
-  "Verzorg slaap en voeding nu al; vorm bouw je niet op in één dag.",
-  "Check materiaal vroeg zodat er tijd is voor reparatie of vervanging.",
-]
-
-const TAPER_GUIDANCE = [
-  "Taperen: minder volume, behoud intensiteit met korte prikkels.",
-  "Kom fris aan de start — extra rust telt nu zwaarder dan training.",
-  "Visualiseer je race en leg je plan en logistiek vast.",
-]
 
 export function RaceWeekHome({ briefing }: DayHomeComponentProps) {
   const { data, isLoading } = useAthleteDashboard()
   const { context } = useRaceContext()
   const profile = data?.athleteProfile
-  const isTaper = (context?.daysUntil ?? 7) <= 3
+  const race = context?.race ?? null
+  const { data: intel } = useRaceIntel(race?.id)
 
   return (
     <ScreenShell section="Home" bg="/concept-lab.png">
@@ -67,12 +58,23 @@ export function RaceWeekHome({ briefing }: DayHomeComponentProps) {
         </div>
       </section>
 
-      <section>
-        <SectionLabel n="03" title="Wat wordt aanbevolen" large />
-        <div className="mt-4">
-          <GuidanceList items={isTaper ? TAPER_GUIDANCE : BUILD_GUIDANCE} />
-        </div>
-      </section>
+      {race && intel && (
+        <>
+          <section>
+            <SectionLabel n="03" title="Voorbereiding stap voor stap" large />
+            <div className="mt-4">
+              <PrepTimeline phases={intel.prep} />
+            </div>
+          </section>
+
+          <section>
+            <SectionLabel n="04" title="Wedstrijddagrapportage" large />
+            <div className="mt-4">
+              <RaceDayReport report={intel.report} />
+            </div>
+          </section>
+        </>
+      )}
 
       <footer className="pt-2 text-center">
         <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">

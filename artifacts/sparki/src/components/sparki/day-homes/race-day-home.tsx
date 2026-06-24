@@ -17,8 +17,10 @@ import {
 import { RacePlannerTimeline } from "@/components/sparki/race/race-planner-timeline"
 import { ChecklistStatus } from "@/components/sparki/race/prep-checklist"
 import { RaceModeOverlay } from "@/components/sparki/race/race-mode-overlay"
+import { RaceDayReport, RaceFuelCard } from "@/components/sparki/race/race-intel"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useRaceContext } from "@/hooks/use-races"
+import { useRaceIntel } from "@/hooks/use-race-intel"
 import { computeRaceDayTimings } from "@/lib/race-planner"
 import type { DayHomeComponentProps } from "@/lib/day-type"
 
@@ -27,6 +29,7 @@ export function RaceDayHome({ briefing }: DayHomeComponentProps) {
   const { context } = useRaceContext()
   const profile = data?.athleteProfile
   const race = context?.race ?? null
+  const { data: intel } = useRaceIntel(race?.id)
   const [raceMode, setRaceMode] = useState(false)
 
   return (
@@ -93,8 +96,26 @@ export function RaceDayHome({ briefing }: DayHomeComponentProps) {
             </div>
           </section>
 
+          {intel && (
+            <section>
+              <SectionLabel n="05" title="Wedstrijddagrapportage" large />
+              <div className="mt-4">
+                <RaceDayReport report={intel.report} />
+              </div>
+            </section>
+          )}
+
+          {intel && (
+            <section>
+              <SectionLabel n="06" title="Race fuel" large />
+              <div className="mt-4">
+                <RaceFuelCard fuel={intel.fuel} />
+              </div>
+            </section>
+          )}
+
           <section>
-            <SectionLabel n="05" title="Team & coach" large />
+            <SectionLabel n="07" title="Team & coach" large />
             <div className="mt-4 space-y-3">
               <InfoBlock
                 label={race.teamName ? race.teamName : "Team"}
@@ -110,7 +131,7 @@ export function RaceDayHome({ briefing }: DayHomeComponentProps) {
           </section>
 
           <section>
-            <SectionLabel n="06" title="Materiaalstatus" large />
+            <SectionLabel n="08" title="Materiaalstatus" large />
             <div className="mt-4">
               <ChecklistStatus race={race} />
             </div>

@@ -1,7 +1,8 @@
-// Day Before Race homepage (task #4, step 3). Preparation mode: countdown,
-// persisted prep checklist, race strategy (nutrition/hydration/sleep/weather),
-// equipment recs, logistics planner, team meeting, Sparki observations and coach
-// notes. Honours grondregel 5: one primary action (briefing → checklist).
+// Day Before Race homepage (task #4, step 3). Now driven by the Race Intelligence
+// engine: multi-day checklist (grouped, persisted), auto race-day report, and
+// the race-fuel plan with budget alternatives replace the old static copy. The
+// logistics timeline and team-meeting planner stay. Honours grondregel 5: one
+// primary action (briefing → checklist).
 
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel } from "@/components/sparki/ui"
@@ -10,40 +11,28 @@ import { HomeIntro } from "@/components/sparki/home-sections"
 import {
   RaceCountdown,
   RaceSummaryCard,
-  GuidanceList,
   InfoBlock,
   NoRaceCard,
 } from "@/components/sparki/race/race-shared"
+import {
+  MultiDayChecklist,
+  RaceDayReport,
+  RaceFuelCard,
+} from "@/components/sparki/race/race-intel"
 import { PrepChecklist } from "@/components/sparki/race/prep-checklist"
 import { RacePlannerTimeline } from "@/components/sparki/race/race-planner-timeline"
 import { TeamMeetingPlanner } from "@/components/sparki/race/team-meeting-planner"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useRaceContext } from "@/hooks/use-races"
+import { useRaceIntel } from "@/hooks/use-race-intel"
 import type { DayHomeComponentProps } from "@/lib/day-type"
-
-const STRATEGY = [
-  "Eet vanavond koolhydraatrijk en vermijd experimenten met nieuw voedsel.",
-  "Hydrateer goed door de dag — niet alles in één keer voor het slapen.",
-  "Ga op tijd naar bed; slaap twee nachten voor de race telt het zwaarst.",
-]
-
-const EQUIPMENT = [
-  "Controleer bandenspanning, remmen en schakeling.",
-  "Laad fietscomputer, shifters en lampjes volledig op.",
-  "Leg wedstrijdkleding en reservemateriaal klaar.",
-]
-
-const OBSERVATIONS = [
-  "Loop je checklist vanavond na, niet morgenochtend in haast.",
-  "Plan je vertrek met marge — onverwacht oponthoud kost rust.",
-  "Bevestig je startttijd en locatie nog één keer.",
-]
 
 export function DayBeforeRaceHome({ briefing }: DayHomeComponentProps) {
   const { data, isLoading } = useAthleteDashboard()
   const { context } = useRaceContext()
   const profile = data?.athleteProfile
   const race = context?.race ?? null
+  const { data: intel } = useRaceIntel(race?.id)
 
   return (
     <ScreenShell section="Home" bg="/concept-lab.png">
@@ -70,31 +59,42 @@ export function DayBeforeRaceHome({ briefing }: DayHomeComponentProps) {
           <section>
             <SectionLabel n="02" title="Checklist" large />
             <div className="mt-4">
-              <PrepChecklist race={race} />
+              {intel ? (
+                <MultiDayChecklist
+                  race={race}
+                  groups={intel.checklistGroups}
+                  daysUntil={context!.daysUntil}
+                />
+              ) : (
+                <PrepChecklist race={race} />
+              )}
             </div>
           </section>
 
-          <section>
-            <SectionLabel n="03" title="Strategie" large />
-            <div className="mt-4 space-y-3">
-              <GuidanceList items={STRATEGY} />
-              <InfoBlock label="Weer" value={race.weatherNote} empty="Nog geen weersinschatting toegevoegd" />
-            </div>
-          </section>
+          {intel && (
+            <section>
+              <SectionLabel n="03" title="Wedstrijddagrapportage" large />
+              <div className="mt-4">
+                <RaceDayReport report={intel.report} />
+              </div>
+            </section>
+          )}
+
+          {intel && (
+            <section>
+              <SectionLabel n="04" title="Race fuel" large />
+              <div className="mt-4">
+                <RaceFuelCard fuel={intel.fuel} />
+              </div>
+            </section>
+          )}
 
           <section>
-            <SectionLabel n="04" title="Materiaal & logistiek" large />
+            <SectionLabel n="05" title="Materiaal & logistiek" large />
             <div className="mt-4 space-y-3">
-              <GuidanceList items={EQUIPMENT} />
               <RacePlannerTimeline race={race} />
               <TeamMeetingPlanner race={race} />
-            </div>
-          </section>
-
-          <section>
-            <SectionLabel n="05" title="Wat ziet Sparki" large />
-            <div className="mt-4">
-              <GuidanceList items={OBSERVATIONS} dotColor="rgba(255,200,120,0.85)" />
+              <InfoBlock label="Weer" value={race.weatherNote} empty="Nog geen weersinschatting toegevoegd" />
             </div>
           </section>
 
