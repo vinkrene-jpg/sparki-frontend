@@ -1,4 +1,6 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useLocation } from "wouter"
+import { useFixParams } from "@/hooks/use-missing-input"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, Stat, Divider, ACCENT } from "@/components/sparki/ui"
 import { SparkiCore } from "@/components/sparki/sparki-core"
@@ -237,6 +239,27 @@ export default function TrainPage() {
   const { data: brief, isLoading: briefLoading } = useAiBrief(aiEnabled)
   const [showLogForm, setShowLogForm] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
+  const [, navigate] = useLocation()
+  const { focus } = useFixParams()
+  const [planHighlight, setPlanHighlight] = useState(false)
+
+  // When arrived here via a coach action ("Bekijk je training"), scroll straight
+  // to the training plan and briefly highlight it so the navigation feels real —
+  // otherwise the user lands on the coach card at the top and nothing seems to
+  // have happened. The focus param is stripped afterwards so a refresh/back
+  // doesn't re-trigger the auto-scroll.
+  useEffect(() => {
+    if (focus !== "plan") return
+    const t = setTimeout(() => {
+      document
+        .getElementById("three-week-plan")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" })
+      setPlanHighlight(true)
+      setTimeout(() => setPlanHighlight(false), 1600)
+      navigate("/train", { replace: true })
+    }, 200)
+    return () => clearTimeout(t)
+  }, [focus, navigate])
 
   const isLoading = workoutLoading || profileLoading
 
@@ -285,7 +308,12 @@ export default function TrainPage() {
       </div>
 
       {/* 00 PLAN — 3 weken */}
-      <div id="three-week-plan">
+      <div
+        id="three-week-plan"
+        className={`scroll-mt-4 rounded-3xl transition-shadow duration-500 ${
+          planHighlight ? "shadow-[0_0_0_2px_rgba(120,210,230,0.5)]" : ""
+        }`}
+      >
         <ThreeWeekPlan />
       </div>
 

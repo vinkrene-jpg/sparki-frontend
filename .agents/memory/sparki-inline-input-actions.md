@@ -47,6 +47,25 @@ persists until all gaps are genuinely filled.
 belongs in the shell gated on `isHome`, not in a day component. `coach-input-actions.tsx`
 also has an athlete-role gate (`useUserProfile`) so coach/parent views don't see it.
 
+## A coach action that only navigates feels broken — land on the real target
+
+`ScreenShell` renders the `CoachAnalysisCard` at the TOP of home/train/lab/races,
+and `ScrollToTop` lands navigations at the top. So a coach-card action that just
+`setLocation("/train")` / `setLocation("/lab")` drops the user back onto another
+coach card — the actual training plan / nutrition input is off-screen and the
+button feels dead ("doen het niet"), even though navigation worked.
+
+**Why:** the destination's most relevant content is below the shared shell coach
+card; without scrolling there, nothing visibly changed.
+
+**How to apply:** route coach actions through the `?focus=` convention (the same
+one `ScrollToTop` already skips on) — e.g. `/train?focus=plan`, `/lab?focus=nutrition`
+— and have the destination page read `useFixParams().focus`, smooth-scroll to the
+target element (`#three-week-plan`, `#nutrition`), briefly highlight it, then strip
+the param via `navigate(path,{replace:true})` so refresh/back don't re-scroll.
+Stripping the query is safe: `ScrollToTop` keys on the path only, so removing the
+query won't re-fire scroll-to-top.
+
 ## "Missing" gaps clear only on a fresh dashboard fetch (background refetch)
 
 Each gap's presence comes from `useAthleteDashboard()` (`athleteProfile`,

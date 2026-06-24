@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
+import { useFixParams } from "@/hooks/use-missing-input"
 import { ClubChip } from "@/components/sparki/club-chip"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { BioRadar } from "@/components/sparki/bio-radar"
@@ -118,6 +120,26 @@ export default function LabPage() {
   const { data: metrics, isLoading: metricsLoading } = useDailyMetrics(14)
   const { data: profile } = useAthleteExtendedProfile()
   const [, navigate] = useLocation()
+  const { focus } = useFixParams()
+  const [nutritionHighlight, setNutritionHighlight] = useState(false)
+
+  // When arrived here via the coach action "Vul je voeding in", scroll straight
+  // to the nutrition panel (it lives near the bottom of the lab) and briefly
+  // highlight it — otherwise the user lands on the coach card at the top and the
+  // nutrition input is nowhere in sight. The focus param is stripped afterwards
+  // so a refresh/back doesn't re-trigger the auto-scroll.
+  useEffect(() => {
+    if (focus !== "nutrition") return
+    const t = setTimeout(() => {
+      document
+        .getElementById("nutrition")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" })
+      setNutritionHighlight(true)
+      setTimeout(() => setNutritionHighlight(false), 1600)
+      navigate("/lab", { replace: true })
+    }, 200)
+    return () => clearTimeout(t)
+  }, [focus, navigate])
 
   const clamp = (v: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v))
 
@@ -459,7 +481,14 @@ export default function LabPage() {
       <ContextMemoryPanel />
 
       {/* 08 VOEDING & HYDRATATIE */}
-      <NutritionPanel />
+      <div
+        id="nutrition"
+        className={`scroll-mt-4 rounded-3xl transition-shadow duration-500 ${
+          nutritionHighlight ? "shadow-[0_0_0_2px_rgba(120,210,230,0.5)]" : ""
+        }`}
+      >
+        <NutritionPanel />
+      </div>
 
       {/* 09 MATERIAALCOACH */}
       <MaterialCoach />

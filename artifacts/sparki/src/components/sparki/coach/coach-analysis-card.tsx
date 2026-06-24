@@ -54,10 +54,10 @@ const INTENSITY_LABEL: Record<string, string> = {
 
 // Where each action takes the athlete. Kept in sync with the bottom-nav routes.
 const ACTION_ROUTE: Record<CoachActionKind, string> = {
-  adjust_training: "/train",
-  rest: "/train",
-  check_in: "/train",
-  nutrition: "/lab",
+  adjust_training: "/train?focus=plan",
+  rest: "/train?focus=plan",
+  check_in: "/train?focus=plan",
+  nutrition: "/lab?focus=nutrition",
   add_race: "/races",
   check_gear: "/races",
 }
