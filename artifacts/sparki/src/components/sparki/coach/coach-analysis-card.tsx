@@ -108,6 +108,27 @@ function AnalysisPart({
   )
 }
 
+// When Sparki has no real read for one or more analytical lenses, it says so
+// ONCE — naturally and honestly — instead of repeating an identical "te weinig
+// gegevens" placeholder under every empty heading. Three apologies in a row read
+// as a robotic form; one plain-Dutch line that names the gap and how it unlocks
+// reads as an intelligent coach.
+function InsightGapNote({ phrases }: { phrases: string[] }) {
+  const list =
+    phrases.length === 1
+      ? phrases[0]
+      : `${phrases.slice(0, -1).join(", ")} en ${phrases[phrases.length - 1]}`
+  return (
+    <div className="border-l border-white/10 pl-3">
+      <p className="text-sm italic leading-relaxed text-white/45">
+        Sparki ziet vandaag nog geen {list} in je gegevens. Dat scherpt vanzelf
+        aan naarmate je meer ritten en check-ins logt — dan vallen trends en
+        uitschieters op.
+      </p>
+    </div>
+  )
+}
+
 // "Wat ik zie" — the raw numbers Sparki weighed, as a compact scannable table
 // instead of buried in prose (numbers-in-text reads poorly). Honest: only
 // present signals appear here.
@@ -432,6 +453,27 @@ export function CoachAnalysisCard({
     ]),
   ]
 
+  // The three optional analytical lenses. Only render the ones Sparki genuinely
+  // has a read on; everything absent folds into a single honest note rather than
+  // a repeated "te weinig gegevens" placeholder under each empty heading.
+  const lenses = [
+    { label: "Patronen", phrase: "terugkerende patronen", body: data.patronen },
+    {
+      label: "Beter dan verwacht",
+      phrase: "meevallers",
+      body: data.beterDanVerwacht,
+    },
+    {
+      label: "Verdient aandacht",
+      phrase: "aandachtspunten",
+      body: data.verdientAandacht,
+    },
+  ]
+  const presentLenses = lenses.filter((l) => l.body)
+  const absentLensPhrases = lenses
+    .filter((l) => !l.body)
+    .map((l) => l.phrase)
+
   // ── Hero (Home) ────────────────────────────────────────────────────────────
   if (variant === "hero") {
     // The daily check-in lives on the State Card (the entry point to this full
@@ -576,12 +618,17 @@ export function CoachAnalysisCard({
         </p>
       </div>
 
-      {/* Five-part analysis */}
+      {/* Analysis — the spine (wat valt op / waarom dit advies) plus only the
+          optional lenses Sparki actually has a read on. Empty lenses collapse
+          into one honest note instead of repeated placeholders. */}
       <div className="mt-4 space-y-3">
         <AnalysisPart label="Wat valt op" body={data.watValtOp} />
-        <AnalysisPart label="Patronen" body={data.patronen} />
-        <AnalysisPart label="Beter dan verwacht" body={data.beterDanVerwacht} />
-        <AnalysisPart label="Verdient aandacht" body={data.verdientAandacht} />
+        {presentLenses.map((l) => (
+          <AnalysisPart key={l.label} label={l.label} body={l.body} />
+        ))}
+        {absentLensPhrases.length > 0 && (
+          <InsightGapNote phrases={absentLensPhrases} />
+        )}
         <AnalysisPart label="Waarom dit advies" body={data.waaromAdvies} />
       </div>
 

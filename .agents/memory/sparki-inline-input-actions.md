@@ -87,6 +87,24 @@ reflection/feedback should branch on whether the thing is past vs future before
 choosing tense and options. (workout-detail-drawer.tsx section 04 is the first
 instance.)
 
+## Don't repeat identical empty placeholders — fold absent sections into ONE honest note
+
+A panel with several labeled sub-sections (e.g. the coach card's optional lenses
+Patronen / Beter dan verwacht / Verdient aandacht) must NOT render the same
+"te weinig gegevens" placeholder under every empty heading. Three identical
+apologies in a row read as a robotic form, "te geautomatiseerd / niet
+intelligent". Render only the sub-sections that genuinely have a body; collapse
+all absent ones into a SINGLE plain-Dutch note that names the gap and how it
+unlocks (e.g. "meer ritten en check-ins logt").
+
+**Why:** the user explicitly flagged the repeated light-grey placeholder text as
+unintelligent. Honesty (disclose the gap) does NOT require one placeholder per
+empty heading — one consolidated honest line satisfies it and reads like a coach.
+
+**How to apply:** keep "spine" parts always visible; split optional parts into
+present (render normally) vs absent (one consolidated note). Treat both `null`
+and `""` as absent. (coach-analysis-card.tsx card variant is the reference.)
+
 ## "Missing" gaps clear only on a fresh dashboard fetch (background refetch)
 
 Each gap's presence comes from `useAthleteDashboard()` (`athleteProfile`,
