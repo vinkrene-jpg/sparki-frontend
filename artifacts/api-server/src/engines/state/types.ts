@@ -32,7 +32,7 @@ export type MovementDirection = "stijgend" | "stabiel" | "dalend" | "onbekend";
 export type StateSignal = {
   kind: SignalKind;
   label: string;
-  /** Plain-Dutch human reading, e.g. "vormbalans -22 (vermoeid)". */
+  /** Plain-Dutch human reading, e.g. "Je trainde stevig en bent nog wat vermoeid". */
   reading: string;
   tone: "positive" | "concern" | "neutral";
 };

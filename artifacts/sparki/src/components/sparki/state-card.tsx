@@ -37,7 +37,7 @@ const SIGNAL_LABEL_NL: Record<string, string> = {
   sleep: "slaap",
   subjective_feel: "hoe je je voelt",
   power_dev: "vermogensontwikkeling",
-  feedback: "reacties op trainingen",
+  feedback: "hoe je trainingen aanvoelden",
   health: "gezondheid",
   race_calendar: "wedstrijdkalender",
   nutrition: "voeding",
@@ -204,7 +204,9 @@ export function StateCard({ onShowDetails, detailsLabel }: StateCardProps = {}) 
           className="flex w-full items-center justify-between px-5 py-4 text-left"
           aria-expanded={showWhy}
         >
-          <span className="text-[14px] font-medium text-white/85">Waarom?</span>
+          <span className="text-[14px] font-medium text-white/85">
+            Waarom ziet Sparki dit zo?
+          </span>
           <ChevronDown
             className={`h-4 w-4 text-white/40 transition-transform ${
               showWhy ? "rotate-180" : ""
@@ -213,6 +215,11 @@ export function StateCard({ onShowDetails, detailsLabel }: StateCardProps = {}) 
         </button>
         {showWhy && (
           <div className="space-y-3 px-5 pb-5">
+            {state.why.length > 0 && (
+              <p className="text-[12px] leading-relaxed text-white/50">
+                Dit is waar Sparki vandaag naar kijkt:
+              </p>
+            )}
             {state.why.length > 0 ? (
               <ul className="space-y-2.5">
                 {state.why.map((s, i) => (
@@ -235,17 +242,13 @@ export function StateCard({ onShowDetails, detailsLabel }: StateCardProps = {}) 
               </p>
             )}
 
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-white/[0.06] pt-3 text-[11px] text-white/40">
-              <span>Zekerheid: {state.confidenceLabel}</span>
+            <div className="border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-white/40">
+              Sparki baseert dit op {state.confidenceLabel} over jou.
               {state.missing.length > 0 && (
                 <>
-                  <span className="text-white/20">·</span>
-                  <span>
-                    Sparki mist nog:{" "}
-                    {state.missing
-                      .map((m) => SIGNAL_LABEL_NL[m] ?? m)
-                      .join(", ")}
-                  </span>
+                  {" "}
+                  Nog niet meegenomen:{" "}
+                  {state.missing.map((m) => SIGNAL_LABEL_NL[m] ?? m).join(", ")}.
                 </>
               )}
             </div>

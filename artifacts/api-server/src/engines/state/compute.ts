@@ -274,7 +274,7 @@ function computeAction(
   if (race && race.daysUntil >= 0 && race.daysUntil <= 3)
     return {
       label: "Houd het scherp maar rustig richting je wedstrijd",
-      reason: `${race.name} is over ${race.daysUntil} dag(en) — je wilt fris aan de start staan`,
+      reason: `${race.name} is ${daysPhrase(race.daysUntil)} — je wilt fris aan de start staan`,
     };
   if (x < 0.35 && y >= 0.55)
     return {
@@ -290,6 +290,13 @@ function computeAction(
     label: "Blijf bij je geplande belasting",
     reason: "je signalen geven geen reden om af te wijken",
   };
+}
+
+// Plain-Dutch day phrasing — no "dag(en)" plural hack ever reaches a user.
+function daysPhrase(n: number): string {
+  if (n <= 0) return "vandaag";
+  if (n === 1) return "over 1 dag";
+  return `over ${n} dagen`;
 }
 
 // ── Why (top 3 signals) ──────────────────────────────────────────────────────────
@@ -315,14 +322,19 @@ function buildWhy(m: IntakeMetrics): StateSignal[] {
     });
   }
 
-  // Training load / form.
+  // Training load / form. We describe the balance in words — the raw "vormbalans"
+  // number means nothing to a youth rider or parent.
   if (m.loadSessions >= 1) {
     const tsb = m.load.tsb;
-    const qual = tsb <= -15 ? "vermoeid" : tsb >= 10 ? "uitgerust" : "in balans";
     c.push({
       kind: "training_load",
-      label: "Trainingsbelasting",
-      reading: `vormbalans ${tsb} (${qual})`,
+      label: "Je trainingen",
+      reading:
+        tsb <= -15
+          ? "Je trainde stevig en bent nog wat vermoeid"
+          : tsb >= 10
+            ? "Je bent goed uitgerust van je trainingen"
+            : "Je belasting en herstel zijn in balans",
       tone: tsb <= -15 ? "concern" : tsb >= 10 ? "positive" : "neutral",
       weight: m.loadSessions >= 3 ? 3 : 1.5,
     });
@@ -332,10 +344,8 @@ function buildWhy(m: IntakeMetrics): StateSignal[] {
   if (m.readiness.label !== "unknown") {
     c.push({
       kind: "readiness",
-      label: "Check-in van vandaag",
-      reading: `je voelt je ${readinessNL(m.readiness.label)}${
-        m.readiness.score != null ? ` (${m.readiness.score}/100)` : ""
-      }`,
+      label: "Hoe je je voelt",
+      reading: `Je gaf aan je ${readinessNL(m.readiness.label)} te voelen`,
       tone:
         m.readiness.label === "fresh"
           ? "positive"
@@ -361,8 +371,8 @@ function buildWhy(m: IntakeMetrics): StateSignal[] {
   if (m.hrv) {
     c.push({
       kind: "hrv_trend",
-      label: "HRV-trend",
-      reading: `${trendNL(m.hrv)} (${m.hrv.first} → ${m.hrv.last} ms)`,
+      label: "Herstel (HRV)",
+      reading: trendNL(m.hrv),
       tone:
         m.hrv.direction === "rising"
           ? "positive"
@@ -377,8 +387,8 @@ function buildWhy(m: IntakeMetrics): StateSignal[] {
   if (m.restingHr) {
     c.push({
       kind: "resting_hr_trend",
-      label: "Rusthartslag-trend",
-      reading: `${trendNL(m.restingHr)} (${m.restingHr.first} → ${m.restingHr.last} bpm)`,
+      label: "Rusthartslag",
+      reading: trendNL(m.restingHr),
       tone:
         m.restingHr.direction === "rising"
           ? "concern"
@@ -420,7 +430,7 @@ function buildWhy(m: IntakeMetrics): StateSignal[] {
     c.push({
       kind: "race_calendar",
       label: "Wedstrijd",
-      reading: `${race.name} over ${race.daysUntil} dag(en)`,
+      reading: `${race.name} — ${daysPhrase(race.daysUntil)}`,
       tone: "neutral",
       weight: 2.5,
     });
