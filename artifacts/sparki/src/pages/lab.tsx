@@ -13,6 +13,7 @@ import { ContextMemoryPanel } from "@/components/sparki/context-memory-panel"
 import { NutritionPanel } from "@/components/sparki/nutrition-panel"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import { useLocation } from "wouter"
+import { MaterialCoach } from "@/components/sparki/material-coach"
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
@@ -414,6 +415,9 @@ export default function LabPage() {
 
       {/* 08 VOEDING & HYDRATATIE */}
       <NutritionPanel />
+
+      {/* 09 MATERIAALCOACH */}
+      <MaterialCoach />
     </ScreenShell>
   )
 }

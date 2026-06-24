@@ -28,6 +28,7 @@ import insightsRouter from "./insights";
 import adminRouter from "./admin";
 import storageRouter from "./storage";
 import inputCenterRouter from "./input-center";
+import materialRouter from "./material";
 
 const router: IRouter = Router();
 
@@ -60,5 +61,6 @@ router.use(insightsRouter);
 router.use("/admin", adminRouter);
 router.use(storageRouter);
 router.use(inputCenterRouter);
+router.use("/material", materialRouter);
 
 export default router;
