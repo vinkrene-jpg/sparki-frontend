@@ -1,7 +1,15 @@
 import { apiFetch } from "@/lib/api"
 
 export type ConnectorCategory = "sport" | "health"
-export type ConnectorStatus = "connected" | "disconnected" | "error" | "revoked"
+export type ConnectorStatus =
+  | "connected"
+  | "disconnected"
+  | "error"
+  | "revoked"
+  // "Koppelen gestart": the athlete went through the consent flow for a platform
+  // whose real API isn't wired yet. Their choice is saved, but no data is
+  // imported (honest — "API nog niet actief").
+  | "pending"
 
 // 4-state readiness model for each platform (computed server-side by the Data
 // Hub). Honest about what works today vs. what's prepared for future API access.
@@ -68,6 +76,17 @@ export async function authorizeConnector(id: string): Promise<string> {
     `/api/connectors/${id}/authorize`,
   )
   return data.url
+}
+
+// Record an honest "koppelen gestart" intent for a platform whose real API
+// isn't wired yet. The athlete confirmed consent on which data Sparki may use;
+// the backend persists status="pending" without importing any data.
+export async function startConnector(id: string): Promise<ConnectorItem> {
+  const data = await apiFetch<{ connector: ConnectorItem }>(
+    `/api/connectors/${id}/start`,
+    { method: "POST" },
+  )
+  return data.connector
 }
 
 export async function syncConnector(id: string): Promise<ConnectorItem> {

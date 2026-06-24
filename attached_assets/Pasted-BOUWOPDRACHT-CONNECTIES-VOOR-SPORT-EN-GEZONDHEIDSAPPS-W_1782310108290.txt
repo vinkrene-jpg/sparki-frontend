@@ -1,0 +1,124 @@
+BOUWOPDRACHT — CONNECTIES VOOR SPORT- EN GEZONDHEIDSAPPS WERKEND MAKEN
+
+Doel:
+Maak het traject werkend waarmee een sporter sportapps en gezondheidsapps kan koppelen. Dit is nodig zodat Sparki snel bruikbare data krijgt.
+
+Niet alleen iconen tonen. De gebruiker moet echt door een koppel-flow kunnen lopen.
+
+Scope:
+Bouw een Connecties-scherm in onboarding én in Profiel/Instellingen.
+
+Categorieën:
+
+Sportapps:
+- Garmin Connect
+- Strava
+- TrainingPeaks
+- Komoot
+- Zwift
+- Wahoo
+- Polar Flow
+- Suunto
+- Coros
+- Hammerhead
+- Ride with GPS
+
+Gezondheid:
+- Apple Health
+- Apple Watch
+- Google Health Connect
+- Fitbit
+- Samsung Health
+- Oura
+- Whoop
+
+Per koppeling tonen:
+- naam
+- type: sport / gezondheid
+- status: niet gekoppeld / koppelen gestart / gekoppeld / fout / nog niet beschikbaar
+- laatst gesynchroniseerd
+- welke data Sparki kan gebruiken
+- knop: Koppelen / Opnieuw proberen / Ontkoppelen
+
+Belangrijk:
+Als echte OAuth/API nog niet beschikbaar is, bouw dan geen nepdata-import.
+
+Bouw dan wél de echte gebruikersflow:
+1. sporter kiest app
+2. Sparki toont welke data gevraagd wordt
+3. sporter bevestigt toestemming
+4. status wordt opgeslagen als “koppelen gestart” of “gekoppeld via demo/dev”
+5. dashboard toont dat deze bron beschikbaar is
+6. ontbrekende gegevens worden daarna niet opnieuw handmatig gevraagd
+
+Voor Strava:
+Gebruik bestaande Strava-koppeling als die er al is.
+Zorg dat status, foutmeldingen en opnieuw koppelen zichtbaar zijn.
+
+Voor Google Health Connect:
+Gebruik bestaande Google Fit/Health Connect-status als die er al is.
+
+Voor overige platformen:
+Maak connector-shells aan:
+- provider key
+- display name
+- category
+- available/importable data types
+- status
+- connect route
+- disconnect route
+- sync placeholder met duidelijke melding “API nog niet actief”
+
+Data-types:
+- leeftijd
+- geslacht
+- lengte
+- gewicht
+- FTP
+- hartslagzones
+- maximale hartslag
+- rusthartslag
+- HRV
+- VO2max
+- trainingen
+- slaap
+- herstel
+- activiteiten
+- routehistorie
+- wedstrijdhistorie
+
+Na koppelen:
+Sparki moet bepalen welke profielgegevens nog ontbreken.
+
+Voorbeeld:
+Als FTP via Strava/Garmin beschikbaar is, niet meer vragen om FTP.
+Als slaap via Health Connect/Oura beschikbaar is, check-in mag korter.
+Als trainingshistorie beschikbaar is, onboarding mag minder vragen.
+
+Acceptatie:
+- Onboarding bevat stap “Koppel je sport- en gezondheidsapps”.
+- Sporter kan meerdere apps selecteren.
+- Per app werkt een koppel-flow met toestemming en status.
+- Status blijft staan na refresh.
+- Ontkoppelen werkt.
+- Profiel/Instellingen toont dezelfde connecties.
+- Vandaag/Home gebruikt connectiestatus om ontbrekende data te bepalen.
+- Er wordt geen nepdata geïmporteerd.
+- Niet-actieve API’s zijn eerlijk gemarkeerd als nog niet actief.
+- Typecheck groen.
+- Preview laat minimaal zien:
+  1. Strava gekoppeld
+  2. Health Connect gekoppeld
+  3. Garmin als connector-shell
+  4. Oura/Whoop als gezondheid-shell
+  5. ontbrekende-gegevenskaart past zich aan na koppeling
+
+Niet bouwen:
+- Geen volledige OAuth voor alle platformen als credentials ontbreken.
+- Geen nep synchronisatie.
+- Geen statische iconenlijst zonder flow.
+- Geen nieuwe losse dashboardpagina.
+- Geen lange uitlegteksten.
+
+Klaar betekent:
+Een sporter kan in de preview zichtbaar het traject doorlopen om apps te koppelen, de status wordt opgeslagen, en Sparki gebruikt die status direct om minder handmatige vragen te stellen.

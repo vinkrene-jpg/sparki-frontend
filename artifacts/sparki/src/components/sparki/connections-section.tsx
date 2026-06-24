@@ -6,11 +6,14 @@ import {
   AlertTriangle,
   RefreshCw,
   Trash2,
+  X,
+  ShieldCheck,
+  Clock,
 } from "lucide-react"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import {
   fetchConnectors,
-  authorizeConnector,
+  startConnector,
   syncConnector,
   beginOauthConnect,
   disconnectConnector,
@@ -24,6 +27,11 @@ import {
 
 function letter(name: string): string {
   return name.charAt(0).toUpperCase()
+}
+
+const CATEGORY_LABEL: Record<string, string> = {
+  sport: "Sportapp",
+  health: "Gezondheidsapp",
 }
 
 // Visual treatment per readiness state — honest about what's live vs. prepared.
@@ -65,27 +73,141 @@ function ReadinessBadge({ state }: { state: ReadinessState }) {
   )
 }
 
+// Compact list of the data types Sparki can use from a platform once connected.
+function DataTypeChips({ types }: { types: string[] }) {
+  if (types.length === 0) return null
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {types.map((t) => (
+        <span
+          key={t}
+          className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 font-sans text-[10px] text-white/55"
+        >
+          {dataTypeLabel(t)}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+// Consent screen shown before any connection is made: which data Sparki will
+// use, an honest note about what happens, and a confirm button. The exact copy
+// and action depend on whether the platform is wireable today (e.g. Strava →
+// real OAuth) or still in preparation (→ honest "koppelen gestart", no import).
+function ConsentDialog({
+  connector,
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  connector: ConnectorItem
+  busy: boolean
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  const isOauth = connector.available && connector.authType === "oauth"
+  const confirmLabel = isOauth
+    ? `Ga naar ${connector.displayName}`
+    : connector.available
+      ? "Koppel"
+      : "Geef toestemming"
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm sm:items-center"
+      role="dialog"
+      aria-modal="true"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-[#070d16]/95 shadow-2xl backdrop-blur-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-3 border-b border-white/[0.06] p-5">
+          <span
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-xl font-sans text-base font-bold"
+            style={{ background: "rgba(120,210,230,0.1)", color: ACCENT }}
+          >
+            {letter(connector.displayName)}
+          </span>
+          <div className="flex flex-1 flex-col gap-0.5">
+            <span className="text-[15px] font-semibold tracking-tight text-white/90">
+              {connector.displayName} koppelen
+            </span>
+            <span className="font-mono text-[10px] uppercase tracking-wide text-white/40">
+              {CATEGORY_LABEL[connector.category] ?? connector.category}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-white/45 transition-colors hover:text-white/80"
+            aria-label="Sluiten"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-4 p-5">
+          <div className="flex flex-col gap-2">
+            <span className="flex items-center gap-1.5 text-[12px] font-medium text-white/70">
+              <ShieldCheck className="h-3.5 w-3.5" style={{ color: ACCENT }} />
+              Sparki gebruikt deze gegevens
+            </span>
+            <DataTypeChips types={connector.provides} />
+          </div>
+
+          <p className="text-[12px] leading-relaxed text-white/45">
+            {isOauth
+              ? `Je wordt doorgestuurd naar ${connector.displayName} om toestemming te geven. Daarna haalt Sparki je gegevens automatisch op.`
+              : connector.available
+                ? "Na je toestemming haalt Sparki je gegevens automatisch op."
+                : `De koppeling met ${connector.displayName} is nog in voorbereiding — de API is nog niet actief. We bewaren je keuze en koppelen automatisch zodra dit platform beschikbaar is. Tot die tijd vul je deze gegevens zelf in.`}
+          </p>
+
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={busy}
+              className="h-9 rounded-lg px-4 font-sans text-xs font-medium text-white/55 transition-colors hover:text-white/80 disabled:opacity-40"
+            >
+              Annuleren
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={busy}
+              className="flex h-9 items-center gap-1.5 rounded-lg px-4 font-sans text-xs font-semibold text-[#040506] transition-opacity hover:opacity-90 disabled:opacity-50"
+              style={{ background: ACCENT }}
+            >
+              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : confirmLabel}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ConnectionRow({
   connector,
   busy,
   onConnect,
-  onBeginConnect,
   onDisconnect,
   onRevoke,
+  onSync,
 }: {
   connector: ConnectorItem
   busy: boolean
   onConnect: (id: string) => void
-  onBeginConnect: (id: string) => void
   onDisconnect: (id: string) => void
   onRevoke: (id: string) => void
+  onSync: (id: string) => void
 }) {
   const isConnected = connector.status === "connected"
+  const isPending = connector.status === "pending"
   const isError = connector.status === "error"
-  // OAuth platforms (e.g. Strava) connect by redirecting to the provider's
-  // consent screen — not by triggering a data sync.
-  const connectAction =
-    connector.authType === "oauth" ? onBeginConnect : onConnect
 
   return (
     <div className="flex flex-col gap-3 py-3.5">
@@ -93,7 +215,7 @@ function ConnectionRow({
         <span
           className="grid h-9 w-9 shrink-0 place-items-center rounded-xl font-sans text-sm font-bold"
           style={
-            connector.available
+            connector.available || isPending
               ? { background: "rgba(120,210,230,0.1)", color: ACCENT }
               : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.35)" }
           }
@@ -104,32 +226,39 @@ function ConnectionRow({
           <span className="text-[14px] tracking-tight text-white/85">
             {connector.displayName}
           </span>
-          {!connector.available && connector.unavailableReason && (
-            <span className="text-[11px] leading-snug text-white/35">
-              {connector.unavailableReason}
+          {isPending ? (
+            <span className="flex items-center gap-1 font-mono text-[10px] tracking-wide text-amber-300/80">
+              <Clock className="h-3 w-3" />
+              Koppelen gestart — API nog niet actief
             </span>
-          )}
-          {connector.available && isConnected && (
+          ) : isConnected ? (
             <span className="font-mono text-[10px] tracking-wide text-white/40">
               {formatLastSync(connector.lastSyncAt)
                 ? `Laatst gesynct ${formatLastSync(connector.lastSyncAt)}`
                 : "Gekoppeld"}
             </span>
+          ) : (
+            !connector.available &&
+            connector.unavailableReason && (
+              <span className="text-[11px] leading-snug text-white/35">
+                {connector.unavailableReason}
+              </span>
+            )
           )}
-          {connector.available && connector.permissionRevoked && (
+          {connector.permissionRevoked && (
             <span className="font-mono text-[10px] tracking-wide text-amber-400/80">
               Toegang ingetrokken — opnieuw koppelen
             </span>
           )}
         </div>
 
-        {!isConnected && <ReadinessBadge state={connector.readiness.state} />}
+        {!isConnected && !isPending && <ReadinessBadge state={connector.readiness.state} />}
 
-        {connector.available && isConnected && (
+        {isConnected && (
           <div className="flex shrink-0 items-center gap-1.5">
             <button
               type="button"
-              onClick={() => onConnect(connector.id)}
+              onClick={() => onSync(connector.id)}
               disabled={busy}
               title="Opnieuw synchroniseren"
               className="grid h-8 w-8 place-items-center rounded-full border border-white/10 text-white/55 transition-colors hover:text-white/80 disabled:opacity-40"
@@ -152,17 +281,28 @@ function ConnectionRow({
           </div>
         )}
 
-        {connector.available && !isConnected && (
+        {isPending && (
           <button
             type="button"
-            onClick={() => connectAction(connector.id)}
+            onClick={() => onDisconnect(connector.id)}
+            disabled={busy}
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-white/10 px-3 font-sans text-xs font-medium text-white/55 transition-colors hover:text-red-400 disabled:opacity-40"
+          >
+            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Ontkoppelen"}
+          </button>
+        )}
+
+        {!isConnected && !isPending && (
+          <button
+            type="button"
+            onClick={() => onConnect(connector.id)}
             disabled={busy}
             className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 font-sans text-xs font-semibold text-[#040506] transition-opacity hover:opacity-90 disabled:opacity-50"
             style={{ background: ACCENT }}
           >
             {busy ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : isError ? (
+            ) : isError || connector.permissionRevoked ? (
               "Opnieuw"
             ) : (
               "Koppel"
@@ -171,27 +311,25 @@ function ConnectionRow({
         )}
       </div>
 
-      {connector.available && isConnected && connector.importedDataTypes.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 pl-12">
-          {connector.importedDataTypes.map((t) => (
-            <span
-              key={t}
-              className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 font-sans text-[10px] text-white/55"
-            >
-              {dataTypeLabel(t)}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* What data Sparki can use from this platform. Connected rows show what
+          was actually imported; everything else shows the platform's full
+          capabilities so the athlete knows what they'd get. */}
+      <div className="pl-12">
+        {isConnected && connector.importedDataTypes.length > 0 ? (
+          <DataTypeChips types={connector.importedDataTypes} />
+        ) : (
+          <DataTypeChips types={connector.provides} />
+        )}
+      </div>
 
-      {connector.available && isError && connector.errorStatus && (
+      {isError && connector.errorStatus && (
         <p className="flex items-start gap-1.5 pl-12 font-sans text-[11px] text-red-400">
           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
           {connector.errorStatus}
         </p>
       )}
 
-      {connector.available && isConnected && (
+      {isConnected && (
         <button
           type="button"
           onClick={() => onRevoke(connector.id)}
@@ -211,6 +349,7 @@ export function ConnectionsSection() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [consentId, setConsentId] = useState<string | null>(null)
 
   const load = async () => {
     setLoading(true)
@@ -224,92 +363,78 @@ export function ConnectionsSection() {
     }
   }
 
-  useEffect(() => {
-    void load()
-    // Pick up the result of a returning OAuth flow (e.g. Strava redirected the
-    // athlete back to /you?strava=connected|error), then strip the param so a
-    // refresh doesn't re-trigger the message.
-    const params = new URLSearchParams(window.location.search)
-    const strava = params.get("strava")
-    if (strava) {
-      if (strava === "error") {
-        setError(
-          "Koppelen met Strava is niet gelukt. Probeer het opnieuw of controleer of je toestemming hebt gegeven.",
-        )
-      }
-      params.delete("strava")
-      const q = params.toString()
-      window.history.replaceState(
-        {},
-        "",
-        window.location.pathname + (q ? `?${q}` : ""),
-      )
-    }
-  }, [])
-
   // Handle the return from the Strava OAuth round-trip (?strava=connected|denied|
   // error). Show the result, refresh the live state, then strip the param so a
   // refresh doesn't re-trigger the message.
   useEffect(() => {
+    void load()
     const params = new URLSearchParams(window.location.search)
     const result = params.get("strava")
-    if (!result) return
-    if (result === "connected") {
-      setNotice("Strava is gekoppeld.")
-      setError(null)
-    } else if (result === "denied") {
-      setError("Je hebt de koppeling met Strava geannuleerd.")
-    } else {
-      setError("Er ging iets mis bij het koppelen met Strava. Probeer het opnieuw.")
+    if (result) {
+      if (result === "connected") {
+        setNotice("Strava is gekoppeld.")
+        setError(null)
+      } else if (result === "denied") {
+        setError("Je hebt de koppeling met Strava geannuleerd.")
+      } else {
+        setError("Er ging iets mis bij het koppelen met Strava. Probeer het opnieuw.")
+      }
+      params.delete("strava")
+      const qs = params.toString()
+      window.history.replaceState(
+        {},
+        "",
+        `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`,
+      )
     }
-    params.delete("strava")
-    const qs = params.toString()
-    window.history.replaceState(
-      {},
-      "",
-      `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`,
-    )
-    void load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const replace = (updated: ConnectorItem) =>
     setConnectors((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
 
-  const handleConnect = async (id: string) => {
+  // The athlete confirmed consent in the dialog. Route to the right action:
+  // OAuth platforms (Strava) redirect to the provider; other wireable platforms
+  // run a sync; not-yet-wired platforms record an honest "koppelen gestart".
+  const handleConfirm = async () => {
+    const id = consentId
+    if (!id) return
+    const connector = connectors.find((c) => c.id === id)
+    if (!connector) return
     setBusyId(id)
     setError(null)
+    setNotice(null)
     try {
-      const connector = connectors.find((c) => c.id === id)
-      // OAuth platforms (e.g. Strava) need the athlete to authorize Sparki on the
-      // provider first — navigate to the consent screen. The provider redirects
-      // back to /you?strava=... where the result is picked up on mount. A plain
-      // sync here would fail because no per-user token exists yet.
-      if (connector?.authType === "oauth") {
-        const url = await authorizeConnector(id)
-        window.location.assign(url)
-        return
+      if (connector.available && connector.authType === "oauth") {
+        const url = await beginOauthConnect(id, window.location.href)
+        window.location.href = url
+        return // navigating away
       }
-      replace(await syncConnector(id))
+      if (connector.available) {
+        replace(await syncConnector(id))
+      } else {
+        replace(await startConnector(id))
+        setNotice(`Koppelen met ${connector.displayName} is gestart.`)
+      }
+      setConsentId(null)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Koppelen mislukt.")
       void load()
+      setConsentId(null)
     } finally {
       setBusyId(null)
     }
   }
 
-  // Start the OAuth round-trip: fetch the provider consent URL, then send the
-  // browser there. We pass the current URL so the callback can return the user
-  // to exactly this page. No `finally` reset — the page is navigating away.
-  const handleBeginConnect = async (id: string) => {
+  const handleSync = async (id: string) => {
     setBusyId(id)
     setError(null)
-    setNotice(null)
     try {
-      const url = await beginOauthConnect(id, window.location.href)
-      window.location.href = url
+      replace(await syncConnector(id))
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Koppelen mislukt.")
+      setError(e instanceof Error ? e.message : "Synchroniseren mislukt.")
+      void load()
+    } finally {
       setBusyId(null)
     }
   }
@@ -338,9 +463,20 @@ export function ConnectionsSection() {
     }
   }
 
+  // Order: connected → koppelen gestart → wireable now → in voorbereiding.
   const connected = connectors.filter((c) => c.status === "connected")
-  const available = connectors.filter((c) => c.available && c.status !== "connected")
-  const upcoming = connectors.filter((c) => !c.available)
+  const pending = connectors.filter((c) => c.status === "pending")
+  const available = connectors.filter(
+    (c) => c.available && c.status !== "connected" && c.status !== "pending",
+  )
+  const upcoming = connectors.filter(
+    (c) => !c.available && c.status !== "connected" && c.status !== "pending",
+  )
+  const ordered = [...connected, ...pending, ...available, ...upcoming]
+
+  const consentConnector = consentId
+    ? connectors.find((c) => c.id === consentId) ?? null
+    : null
 
   return (
     <section className="pt-2">
@@ -358,37 +494,15 @@ export function ConnectionsSection() {
           </div>
         ) : (
           <div className="divide-y divide-white/[0.06]">
-            {connected.map((c) => (
+            {ordered.map((c) => (
               <ConnectionRow
                 key={c.id}
                 connector={c}
                 busy={busyId === c.id}
-                onConnect={handleConnect}
-                onBeginConnect={handleBeginConnect}
+                onConnect={setConsentId}
                 onDisconnect={handleDisconnect}
                 onRevoke={handleRevoke}
-              />
-            ))}
-            {available.map((c) => (
-              <ConnectionRow
-                key={c.id}
-                connector={c}
-                busy={busyId === c.id}
-                onConnect={handleConnect}
-                onBeginConnect={handleBeginConnect}
-                onDisconnect={handleDisconnect}
-                onRevoke={handleRevoke}
-              />
-            ))}
-            {upcoming.map((c) => (
-              <ConnectionRow
-                key={c.id}
-                connector={c}
-                busy={busyId === c.id}
-                onConnect={handleConnect}
-                onBeginConnect={handleBeginConnect}
-                onDisconnect={handleDisconnect}
-                onRevoke={handleRevoke}
+                onSync={handleSync}
               />
             ))}
           </div>
@@ -414,6 +528,15 @@ export function ConnectionsSection() {
         Platforms zonder koppeling komen binnenkort beschikbaar. Tot die tijd vul
         je ontbrekende gegevens handmatig aan.
       </p>
+
+      {consentConnector && (
+        <ConsentDialog
+          connector={consentConnector}
+          busy={busyId === consentConnector.id}
+          onCancel={() => setConsentId(null)}
+          onConfirm={handleConfirm}
+        />
+      )}
     </section>
   )
 }

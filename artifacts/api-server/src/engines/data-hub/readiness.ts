@@ -26,8 +26,12 @@ const INGESTABLE_TYPES = new Set([
 export function resolveReadiness(
   def: ConnectorDefinition,
   connectionStatus: string | null | undefined,
+  // Effective availability (registry flag AND runtime config, e.g. Strava only
+  // counts as available once its API credentials exist). Pass this so the
+  // readiness badge can never contradict the row's `available`/`unavailableReason`.
+  availableOverride?: boolean,
 ): ConnectorReadiness {
-  const available = def.available;
+  const available = availableOverride ?? def.available;
   const prepared = true; // every registry platform is hub-ingest-ready
   const active = connectionStatus === "connected";
   const testable =

@@ -89,7 +89,7 @@ async function buildConnectorItem(clerkId: string, id: string) {
     errorStatus: row?.errorStatus ?? null,
     permissionRevoked: row?.permissionRevoked ?? false,
     connectedAt: row?.connectedAt ?? null,
-    readiness: resolveReadiness(def, row?.status),
+    readiness: resolveReadiness(def, row?.status, eff.available),
   };
 }
 
@@ -122,7 +122,7 @@ router.get("/", requireAuth, async (req, res) => {
         errorStatus: row?.errorStatus ?? null,
         permissionRevoked: row?.permissionRevoked ?? false,
         connectedAt: row?.connectedAt ?? null,
-        readiness: resolveReadiness(def, row?.status),
+        readiness: resolveReadiness(def, row?.status, eff.available),
       };
     });
 
@@ -178,6 +178,64 @@ router.post("/:id/sync", requireAuth, async (req, res) => {
     }
     req.log.error({ err }, "connectors.sync failed");
     res.status(502).json({ error: "sync_failed", message: "Synchroniseren mislukt." });
+  }
+});
+
+// POST /api/connectors/:id/start — record an honest "koppelen gestart" intent
+// for a platform whose real API is not wired yet. The athlete has gone through
+// the consent screen and confirmed which data Sparki may use; we persist that
+// choice (status="pending") so the dashboard knows the source is intended and
+// the user isn't asked to set it up again — but NO data is imported (honest:
+// "API nog niet actief"). Wireable platforms must use authorize/sync instead.
+router.post("/:id/start", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = String(req.params.id);
+  const def = getConnectorDefinition(id);
+  if (!def) {
+    res.status(404).json({ error: "Onbekende koppeling." });
+    return;
+  }
+  // A platform that IS wireable today must go through the real flow (OAuth or
+  // sync) — recording a fake "pending" for it would hide the working path.
+  const eff = effectiveAvailability(id);
+  if (eff.available) {
+    res.status(400).json({
+      error: "available",
+      message: "Deze koppeling kan nu echt gekoppeld worden.",
+    });
+    return;
+  }
+  const now = new Date();
+  try {
+    await db
+      .insert(connectorConnectionsTable)
+      .values({
+        clerkId,
+        provider: id,
+        status: "pending",
+        connectedAt: now,
+        permissionRevoked: false,
+        errorStatus: null,
+        importedDataTypes: [],
+      })
+      .onConflictDoUpdate({
+        target: [
+          connectorConnectionsTable.clerkId,
+          connectorConnectionsTable.provider,
+        ],
+        set: {
+          status: "pending",
+          connectedAt: now,
+          permissionRevoked: false,
+          errorStatus: null,
+          importedDataTypes: [],
+          updatedAt: now,
+        },
+      });
+    res.json({ connector: await buildConnectorItem(clerkId, id) });
+  } catch (err) {
+    req.log.error({ err }, "connectors.start failed");
+    res.status(500).json({ error: "Koppelen starten mislukt." });
   }
 });
 
