@@ -181,6 +181,7 @@ export const queryKeys = {
     all: () => ["material"] as const,
     list: () => ["material", "list"] as const,
     categories: () => ["material", "categories"] as const,
+    nudge: () => ["material", "nudge"] as const,
   },
 
   social: {

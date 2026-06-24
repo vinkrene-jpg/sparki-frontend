@@ -1,4 +1,5 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { useSearch } from "wouter"
 import {
   Camera,
   Check,
@@ -9,6 +10,7 @@ import {
   X,
   Plus,
   ChevronRight,
+  Sparkles,
 } from "lucide-react"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import {
@@ -16,6 +18,8 @@ import {
   useMaterialAnalyses,
   useAnalyzeMaterial,
   useAddMaterialPhoto,
+  useMaterialNudge,
+  useDismissMaterialNudge,
   fileToResizedPhoto,
   type MaterialCategory,
   type MaterialAnalysis,
@@ -362,16 +366,84 @@ function UploadPanel({
   )
 }
 
+function NudgeCard({
+  message,
+  onShow,
+  onDismiss,
+  dismissing,
+}: {
+  message: string
+  onShow: () => void
+  onDismiss: () => void
+  dismissing: boolean
+}) {
+  return (
+    <div className="mt-4 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.06] p-4 backdrop-blur-md">
+      <div className="flex items-start gap-2.5">
+        <span className="mt-0.5 shrink-0">
+          <Sparkles className="h-4 w-4" strokeWidth={1.75} style={{ color: ACCENT }} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/45">
+            Sparki merkt op
+          </p>
+          <p className="mt-1.5 text-pretty text-[14px] leading-relaxed text-white/80">
+            {message}
+          </p>
+          <div className="mt-3 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onShow}
+              className="rounded-lg px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-black transition disabled:opacity-50"
+              style={{ background: ACCENT }}
+            >
+              Laat zien
+            </button>
+            <button
+              type="button"
+              onClick={onDismiss}
+              disabled={dismissing}
+              className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-white/70 disabled:opacity-40"
+            >
+              Niet nodig
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function MaterialCoach() {
   const { data: catData } = useMaterialCategories()
   const { data: listData, isLoading } = useMaterialAnalyses()
+  const { data: nudgeData } = useMaterialNudge()
   const addPhoto = useAddMaterialPhoto()
+  const dismissNudge = useDismissMaterialNudge()
+  const search = useSearch()
 
   const [selected, setSelected] = useState<MaterialCategory | null>(null)
   const [active, setActive] = useState<MaterialAnalysis | null>(null)
 
   const categories = catData?.categories ?? []
   const history = listData?.analyses ?? []
+  const nudge = nudgeData?.nudge ?? null
+
+  // Deep-link from the nudge / notification: ?materiaal=<category> auto-opens
+  // that category's upload panel once. Fires only when categories are loaded and
+  // the param changes, so it never fights with manual navigation.
+  const deepLinked = useRef<string | null>(null)
+  useEffect(() => {
+    const key = new URLSearchParams(search).get("materiaal")
+    if (!key || categories.length === 0) return
+    if (deepLinked.current === key) return
+    const match = categories.find((c) => c.key === key)
+    if (match) {
+      deepLinked.current = key
+      setActive(null)
+      setSelected(match)
+    }
+  }, [search, categories])
 
   function handleAddPhoto(id: number, file: File) {
     void (async () => {
@@ -393,6 +465,21 @@ export function MaterialCoach() {
         Sparki beoordeelt het eerlijk — met advies en, bij materiaal, een
         kosteninschatting.
       </p>
+
+      {!selected && !active && nudge && !nudge.dismissed && (
+        <NudgeCard
+          message={nudge.message}
+          dismissing={dismissNudge.isPending}
+          onShow={() => {
+            const match = categories.find((c) => c.key === nudge.category)
+            if (match) {
+              setActive(null)
+              setSelected(match)
+            }
+          }}
+          onDismiss={() => dismissNudge.mutate(nudge.notificationId)}
+        />
+      )}
 
       {!selected && !active && (
         <div className="mt-4 flex flex-wrap gap-2">

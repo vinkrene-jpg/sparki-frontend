@@ -26,3 +26,13 @@ export {
   streamMaterialPhoto,
 } from "../../lib/material/storage";
 export type { StoredPhotoInput } from "../../lib/material/storage";
+
+export {
+  evaluateMaterialNudge,
+  ensureMaterialNudgeNotification,
+} from "../../lib/material/nudge";
+export type {
+  MaterialNudge,
+  MaterialNudgeCategory,
+  EnsuredMaterialNudge,
+} from "../../lib/material/nudge";

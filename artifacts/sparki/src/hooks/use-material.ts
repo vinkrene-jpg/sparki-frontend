@@ -54,6 +54,21 @@ export type MaterialAnalysis = {
 
 export type PhotoPayload = { data: string; mediaType: string }
 
+// A gentle, real-data-driven suggestion to run a wear check (chain/tyres/brakes).
+export type MaterialNudge = {
+  category: string
+  label: string
+  title: string
+  message: string
+  distanceSinceKm: number
+  thresholdKm: number
+  bucket: number
+  lastCheckedAt: string | null
+  actionUrl: string
+  notificationId: number
+  dismissed: boolean
+}
+
 export function useMaterialCategories() {
   return useQuery({
     queryKey: queryKeys.material.categories(),
@@ -103,6 +118,30 @@ export function useAddMaterialPhoto() {
       ),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.material.list() })
+    },
+  })
+}
+
+export function useMaterialNudge() {
+  return useQuery({
+    queryKey: queryKeys.material.nudge(),
+    queryFn: () => apiFetch<{ nudge: MaterialNudge | null }>("/api/material/nudge"),
+    staleTime: 5 * 60_000,
+  })
+}
+
+// Dismissing a nudge marks its backing notification read; it then stops showing
+// here and won't re-surface until the athlete rides another full wear interval.
+export function useDismissMaterialNudge() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (notificationId: number) =>
+      apiFetch<{ ok: true }>(`/api/notifications/${notificationId}/read`, {
+        method: "PATCH",
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.material.nudge() })
+      void qc.invalidateQueries({ queryKey: queryKeys.notifications.all() })
     },
   })
 }

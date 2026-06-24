@@ -26,6 +26,7 @@ import {
 } from "../../lib/connectors/registry";
 import { getHubProvider } from "./providers";
 import { ingestBatch } from "./ingest";
+import { ensureMaterialNudgeNotification } from "../material";
 
 export * from "./types";
 export * from "./sports";
@@ -193,6 +194,11 @@ export async function runSync(
       })
       .where(eq(syncRunsTable.id, runId))
       .returning();
+
+    // Fresh activity may push a wear part over its threshold — let Sparki notice
+    // and (idempotently) raise a gentle Materiaalcoach nudge. Best-effort: never
+    // let it break a successful sync.
+    await ensureMaterialNudgeNotification(clerkId).catch(() => {});
 
     return {
       run: finished!,

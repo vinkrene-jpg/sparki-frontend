@@ -14,6 +14,7 @@ import {
   uploadMaterialPhoto,
   readMaterialPhotoBase64,
   streamMaterialPhoto,
+  ensureMaterialNudgeNotification,
   type MaterialPhotoInput,
 } from "../engines/material";
 
@@ -68,6 +69,31 @@ async function athleteHint(clerkId: string): Promise<string | null> {
 // may ask. Context-sensitive prompts, never a mandatory form.
 router.get("/categories", requireAuth, (_req, res) => {
   res.json({ categories: MATERIAL_CATEGORIES });
+});
+
+// GET /api/material/nudge — does the athlete's real training data suggest a wear
+// check? Deterministic, honest, dismissable. Returns { nudge: null } when nothing
+// crosses a threshold. When a nudge is active it also ensures a matching in-app
+// notification exists so the suggestion surfaces globally, not just here.
+router.get("/nudge", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const result = await ensureMaterialNudgeNotification(clerkId);
+    if (!result) {
+      res.json({ nudge: null });
+      return;
+    }
+    res.json({
+      nudge: {
+        ...result.nudge,
+        notificationId: result.notificationId,
+        dismissed: result.dismissed,
+      },
+    });
+  } catch (err) {
+    req.log.error({ err }, "material.nudge failed");
+    res.status(500).json({ error: "Kon materiaalcheck niet bepalen" });
+  }
 });
 
 // GET /api/material — the athlete's own analyses, newest first.
