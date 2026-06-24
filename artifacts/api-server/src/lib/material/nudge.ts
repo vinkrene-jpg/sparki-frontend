@@ -164,7 +164,7 @@ export async function evaluateMaterialNudge(
       thresholdKm: rule.thresholdKm,
       bucket,
       lastCheckedAt: lastCheck ? lastCheck.toISOString() : null,
-      actionUrl: `/lab?materiaal=${rule.category}&n=${bucket}`,
+      actionUrl: `/?materiaal=${rule.category}&n=${bucket}`,
     };
   }
 

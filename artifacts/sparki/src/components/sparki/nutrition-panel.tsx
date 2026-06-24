@@ -102,7 +102,7 @@ function LogCard({ log }: { log: NutritionLog }) {
   )
 }
 
-export function NutritionPanel() {
+export function NutritionPanel({ n = "09" }: { n?: string } = {}) {
   const { data, isLoading } = useNutritionLogs()
   const create = useCreateNutritionLog()
   const [open, setOpen] = useState(false)
@@ -157,7 +157,7 @@ export function NutritionPanel() {
   return (
     <section>
       <div className="flex items-center justify-between">
-        <SectionLabel n="09" title="Voeding & hydratatie" />
+        <SectionLabel n={n} title="Voeding & hydratatie" />
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}

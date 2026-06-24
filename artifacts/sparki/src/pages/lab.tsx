@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
-import { useFixParams } from "@/hooks/use-missing-input"
 import { ClubChip } from "@/components/sparki/club-chip"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { BioRadar } from "@/components/sparki/bio-radar"
@@ -12,10 +11,9 @@ import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { AiMemoryPanel } from "@/components/sparki/ai-memory-panel"
 import { ContextMemoryPanel } from "@/components/sparki/context-memory-panel"
-import { NutritionPanel } from "@/components/sparki/nutrition-panel"
+import { SparkiObservations } from "@/components/sparki/insights-section"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import { useLocation } from "wouter"
-import { MaterialCoach } from "@/components/sparki/material-coach"
 import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer"
 import { TrainingProgression } from "@/components/sparki/training-progression"
 import type { TrainingSession } from "@/lib/athlete-types"
@@ -123,27 +121,7 @@ export default function LabPage() {
   const { data: metrics, isLoading: metricsLoading } = useDailyMetrics(14)
   const { data: profile } = useAthleteExtendedProfile()
   const [, navigate] = useLocation()
-  const { focus } = useFixParams()
-  const [nutritionHighlight, setNutritionHighlight] = useState(false)
   const [openSession, setOpenSession] = useState<TrainingSession | null>(null)
-
-  // When arrived here via the coach action "Vul je voeding in", scroll straight
-  // to the nutrition panel (it lives near the bottom of the lab) and briefly
-  // highlight it — otherwise the user lands on the coach card at the top and the
-  // nutrition input is nowhere in sight. The focus param is stripped afterwards
-  // so a refresh/back doesn't re-trigger the auto-scroll.
-  useEffect(() => {
-    if (focus !== "nutrition") return
-    const t = setTimeout(() => {
-      document
-        .getElementById("nutrition")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" })
-      setNutritionHighlight(true)
-      setTimeout(() => setNutritionHighlight(false), 1600)
-      navigate("/lab", { replace: true })
-    }, 200)
-    return () => clearTimeout(t)
-  }, [focus, navigate])
 
   const clamp = (v: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v))
 
@@ -253,6 +231,9 @@ export default function LabPage() {
           </p>
         )}
       </div>
+
+      {/* SPARKI ZIET VANDAAG — de nieuwsgierig makende kop van Inzicht */}
+      <SparkiObservations />
 
       {/* 00 CORE PLAYGROUND — visueel prototype, handmatig bestuurbaar */}
       <button
@@ -493,19 +474,6 @@ export default function LabPage() {
 
       {/* 08 SPARKI ONTHOUDT */}
       <ContextMemoryPanel />
-
-      {/* 09 VOEDING & HYDRATATIE */}
-      <div
-        id="nutrition"
-        className={`scroll-mt-4 rounded-3xl transition-shadow duration-500 ${
-          nutritionHighlight ? "shadow-[0_0_0_2px_rgba(120,210,230,0.5)]" : ""
-        }`}
-      >
-        <NutritionPanel />
-      </div>
-
-      {/* 10 MATERIAALCOACH */}
-      <MaterialCoach />
 
       <SessionDetailDrawer
         session={openSession}

@@ -4,7 +4,8 @@
 // and renders the *registered homepage component* for that type. Home shows
 // exactly one day-type homepage — not a single page with a swapped header.
 
-import type { ReactElement } from "react"
+import { useEffect, useState, type ReactElement } from "react"
+import { useLocation, useSearch } from "wouter"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useRaceContext } from "@/hooks/use-races"
 import {
@@ -29,6 +30,10 @@ import { HomeViewProvider, useHomeView } from "@/contexts/HomeViewContext"
 import { DEV_PREVIEW } from "@/lib/dev"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { StateCard } from "@/components/sparki/state-card"
+import { NutritionPanel } from "@/components/sparki/nutrition-panel"
+import { MaterialCoach } from "@/components/sparki/material-coach"
+import { SectionLabel } from "@/components/sparki/ui"
+import { useFixParams } from "@/hooks/use-missing-input"
 import { Skeleton } from "@/components/sparki/home-sections"
 import { TrainingDayHome } from "@/components/sparki/training-day-home"
 import { RecoveryDayHome } from "@/components/sparki/day-homes/recovery-day-home"
@@ -90,9 +95,52 @@ export type DevCoachOverride = {
 // HomeView context — the card itself stays surface-agnostic.
 function StateDayHome() {
   const homeView = useHomeView()
+  const { focus } = useFixParams()
+  const [, navigate] = useLocation()
+  const [nutritionHighlight, setNutritionHighlight] = useState(false)
+
+  // Vandaag is the single place to update yourself as an athlete: how you feel
+  // (in the State Card above) plus your nutrition and your gear. When the coach
+  // sends you here to "vul je voeding in" (?focus=nutrition), scroll straight to
+  // the self-update block and briefly highlight it, then strip the param so a
+  // refresh/back doesn't re-trigger the scroll.
+  useEffect(() => {
+    if (focus !== "nutrition") return
+    const t = setTimeout(() => {
+      document
+        .getElementById("nutrition")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" })
+      setNutritionHighlight(true)
+      setTimeout(() => setNutritionHighlight(false), 1600)
+      navigate("/", { replace: true })
+    }, 200)
+    return () => clearTimeout(t)
+  }, [focus, navigate])
+
   return (
     <ScreenShell section="Home" bg="/concept-lab.png">
       <StateCard onShowDetails={() => homeView?.setView("full")} />
+
+      <section className="mt-2">
+        <SectionLabel title="Jouw update vandaag" />
+        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
+          Eén plek om jezelf bij te werken. Hoe je je voelt staat hierboven — log
+          hieronder je voeding en hydratatie en laat Sparki je materiaal bekijken.
+        </p>
+
+        <div
+          id="nutrition"
+          className={`mt-5 scroll-mt-4 rounded-3xl transition-shadow duration-500 ${
+            nutritionHighlight ? "shadow-[0_0_0_2px_rgba(120,210,230,0.5)]" : ""
+          }`}
+        >
+          <NutritionPanel n="" />
+        </div>
+
+        <div className="mt-7">
+          <MaterialCoach n="" />
+        </div>
+      </section>
     </ScreenShell>
   )
 }
@@ -117,8 +165,23 @@ function DayHomeInner({
 }) {
   const homeView = useHomeView()
   const view = homeView?.view ?? "state"
+  const search = useSearch()
   const { data, isLoading } = useAthleteDashboard()
   const { context: raceContext, isLoading: racesLoading } = useRaceContext()
+
+  // Self-update deep-links (coach "vul je voeding in" → ?focus=nutrition; material
+  // nudge → ?materiaal=…) target the calm State Card surface, where the nutrition
+  // and material panels now live. If the athlete happens to be in the full
+  // day-type analysis when such a link fires, switch back to the state view so the
+  // panel is actually mounted and its own scroll/open effect can run.
+  useEffect(() => {
+    const params = new URLSearchParams(search)
+    const wantsSelfUpdate =
+      params.get("focus") === "nutrition" || params.has("materiaal")
+    if (wantsSelfUpdate && homeView && homeView.view !== "state") {
+      homeView.setView("state")
+    }
+  }, [search, homeView])
 
   // Default surface — the State Card. Shown unless the athlete drills into the
   // full day-type analysis. Rendered before the dashboard/races gate so it never

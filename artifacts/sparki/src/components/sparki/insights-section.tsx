@@ -6,11 +6,13 @@ import { apiFetch } from "@/lib/api"
 import { queryKeys, STALE } from "@/lib/query-keys"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Profile surfaces for Sparki's evidence-gated insights:
-//  • Open loops — curiosity teasers Sparki has earned the right to open.
-//  • "Sparki, eerlijk?" — one honest observation, on demand.
-//  • Founding Athlete badge — a real account fact (#00N) + its copy.
-//  • Hoofdtester — running joke surface, only when the account is flagged.
+// Sparki's evidence-gated surfaces, split by where they belong:
+//  • SparkiObservations (Inzicht) — the curiosity headline "Sparki ziet vandaag":
+//      · Open loops — curiosity teasers Sparki has earned the right to open.
+//      · "Sparki, eerlijk?" — one honest observation, on demand.
+//  • FoundingSection (Profiel) — account identity:
+//      · Founding Athlete badge — a real account fact (#00N) + its copy.
+//      · Hoofdtester — running joke surface, only when the account is flagged.
 //
 // Everything here is backed by real endpoints. No mock data: when Sparki has no
 // evidence yet, the surface says so plainly instead of inventing content.
@@ -182,37 +184,45 @@ function IdentityBadges() {
   )
 }
 
-// ── Section wrapper ──────────────────────────────────────────────────────────
+// ── Inzicht: the daily curiosity surface ─────────────────────────────────────
 
-export function InsightsSection() {
+/**
+ * "Sparki ziet vandaag" — the curiosity headline for Inzicht. Shows the open
+ * loops Sparki has earned the right to open (auto, evidence-gated) plus one
+ * honest observation on demand. Stays plain / silent when there is not enough
+ * real data — it never invents a teaser.
+ */
+export function SparkiObservations() {
   return (
-    <>
-      <section>
-        <SectionLabel n="05" title="Sparki's observaties" />
-        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
-          Open lussen die Sparki op basis van jouw echte data heeft geopend
-        </p>
-        <div className="mt-4">
-          <OpenLoops />
-        </div>
-      </section>
-
-      <section>
-        <SectionLabel n="06" title="Sparki, eerlijk?" />
-        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
-          Eén eerlijke observatie — alleen als de data het onderbouwt
-        </p>
-        <div className="mt-4">
+    <section>
+      <SectionLabel title="Sparki ziet vandaag" />
+      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+        Wat Sparki opvalt in jouw echte data — alleen als er iets te zeggen valt
+      </p>
+      <div className="mt-5 flex flex-col gap-6">
+        <OpenLoops />
+        <div>
+          <p className="mb-3 text-pretty text-[12px] leading-relaxed text-white/35">
+            Of vraag Sparki om één eerlijke observatie — alleen als de data het
+            onderbouwt.
+          </p>
           <HonestButton />
         </div>
-      </section>
+      </div>
+    </section>
+  )
+}
 
-      <section>
-        <SectionLabel n="07" title="Founding Athlete" />
-        <div className="mt-4">
-          <IdentityBadges />
-        </div>
-      </section>
-    </>
+// ── Profiel: Founding Athlete identity ───────────────────────────────────────
+
+/** Founding Athlete number + Hoofdtester line — a real account fact, on Profiel. */
+export function FoundingSection() {
+  return (
+    <section>
+      <SectionLabel n="05" title="Founding Athlete" />
+      <div className="mt-4">
+        <IdentityBadges />
+      </div>
+    </section>
   )
 }
