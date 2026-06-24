@@ -66,6 +66,32 @@ function signalLabel(kind: string): string {
   return SIGNAL_LABEL[kind] ?? kind
 }
 
+function normalizeText(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, " ")
+}
+
+// Drop any lens whose text is already contained in (or contains) "wat valt op".
+// The engine builds "wat valt op" from ALL observations while each lens is a
+// subset, so on e.g. an all-concerns day they read identically. This keeps the
+// same sentence from appearing under two headings. Honest: nothing is invented,
+// only repetition is removed.
+function dedupeLenses(
+  watValtOp: string | null,
+  lenses: { label: string; body: string | null }[],
+): { label: string; body: string }[] {
+  const seen: string[] = []
+  if (watValtOp) seen.push(normalizeText(watValtOp))
+  const out: { label: string; body: string }[] = []
+  for (const l of lenses) {
+    if (!l.body) continue
+    const n = normalizeText(l.body)
+    if (seen.some((s) => s.includes(n) || n.includes(s))) continue
+    seen.push(n)
+    out.push({ label: l.label, body: l.body })
+  }
+  return out
+}
+
 function ConfidencePill({ confidence }: { confidence: Confidence }) {
   const tone =
     confidence.level === "high"
@@ -469,7 +495,7 @@ export function CoachAnalysisCard({
       body: data.verdientAandacht,
     },
   ]
-  const presentLenses = lenses.filter((l) => l.body)
+  const dedupedLenses = dedupeLenses(data.watValtOp, lenses)
   const absentLensPhrases = lenses
     .filter((l) => !l.body)
     .map((l) => l.phrase)
@@ -518,41 +544,24 @@ export function CoachAnalysisCard({
             </p>
           </div>
 
-          {/* The 5-part read */}
-          <div className="mt-4 space-y-3">
-            <AnalysisPart label="Wat ik zie" body={data.watValtOp} />
-            <AnalysisPart label="Waarom" body={data.waaromAdvies} />
-            <div className="border-l border-white/10 pl-3">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
-                Hoe zeker
-              </p>
-              <p className="mt-1 text-sm leading-relaxed text-white/80">
-                Sparki is hier voor {data.advice.confidence.score}% zeker van
-                {data.advice.confidence.reasons[0]
-                  ? ` — ${data.advice.confidence.reasons[0]}`
-                  : ""}
-                .
-              </p>
-            </div>
-            <AnalysisPart label="Advies" body={data.adviesVandaag} />
-            <div className="border-l border-white/10 pl-3">
+          {/* Eén korte lezing. De diepte (waarom / hoe zeker / meevallers) zit
+              achter "Waarom zegt Sparki dit?" zodat dit scanbaar blijft en de
+              kop niet twee keer als advies herhaald wordt. */}
+          <div className="mt-4">
+            <AnalysisPart label="Wat valt op" body={data.watValtOp} />
+          </div>
+
+          {/* Open vragen — alleen als Sparki echt iets wil weten */}
+          {otherFollowUps.length > 0 && (
+            <div className="mt-4 space-y-2.5">
               <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
                 Wat ik nog wil weten
               </p>
-              {otherFollowUps.length > 0 ? (
-                <div className="mt-2 space-y-2.5">
-                  {otherFollowUps.map((q) => (
-                    <FollowUp key={q.id} q={q} />
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-1 text-sm leading-relaxed text-white/55">
-                  Niets dringends — Sparki heeft genoeg om vandaag op af te gaan.
-                  Een check-in hierboven scherpt het advies verder aan.
-                </p>
-              )}
+              {otherFollowUps.map((q) => (
+                <FollowUp key={q.id} q={q} />
+              ))}
             </div>
-          </div>
+          )}
 
           {/* Explainable advice — opens a dedicated panel, never inline */}
           <button
@@ -618,18 +627,11 @@ export function CoachAnalysisCard({
         </p>
       </div>
 
-      {/* Analysis — the spine (wat valt op / waarom dit advies) plus only the
-          optional lenses Sparki actually has a read on. Empty lenses collapse
-          into one honest note instead of repeated placeholders. */}
-      <div className="mt-4 space-y-3">
+      {/* Eén scanbare lezing. De volledige uitsplitsing (lenzen + waarom +
+          onderbouwing) zit achter "Waarom zegt Sparki dit?" zodat de kaart geen
+          muur tekst is. */}
+      <div className="mt-4">
         <AnalysisPart label="Wat valt op" body={data.watValtOp} />
-        {presentLenses.map((l) => (
-          <AnalysisPart key={l.label} label={l.label} body={l.body} />
-        ))}
-        {absentLensPhrases.length > 0 && (
-          <InsightGapNote phrases={absentLensPhrases} />
-        )}
-        <AnalysisPart label="Waarom dit advies" body={data.waaromAdvies} />
       </div>
 
       {/* Why-panel toggle (inline expander) */}
@@ -648,12 +650,30 @@ export function CoachAnalysisCard({
       </button>
 
       {showWhy && (
-        <div className="mt-3 rounded-xl border border-white/[0.08] bg-black/20 p-4">
-          <WhyContent
-            data={data}
-            usedSignals={usedSignals}
-            missingKinds={missingKinds}
-          />
+        <div className="mt-3 space-y-4 rounded-xl border border-white/[0.08] bg-black/20 p-4">
+          {(dedupedLenses.length > 0 || absentLensPhrases.length > 0) && (
+            <div className="space-y-3">
+              {dedupedLenses.map((l) => (
+                <AnalysisPart key={l.label} label={l.label} body={l.body} />
+              ))}
+              {absentLensPhrases.length > 0 && (
+                <InsightGapNote phrases={absentLensPhrases} />
+              )}
+            </div>
+          )}
+          <div
+            className={
+              dedupedLenses.length > 0 || absentLensPhrases.length > 0
+                ? "border-t border-white/[0.06] pt-4"
+                : ""
+            }
+          >
+            <WhyContent
+              data={data}
+              usedSignals={usedSignals}
+              missingKinds={missingKinds}
+            />
+          </div>
         </div>
       )}
 
