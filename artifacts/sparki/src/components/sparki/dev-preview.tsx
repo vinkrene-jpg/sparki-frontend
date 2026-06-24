@@ -2,9 +2,15 @@ import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
 import { apiFetch } from "@/lib/api"
 import { getDevAthleteId, setDevAthleteId } from "@/lib/dev"
-import { DayHome } from "@/components/sparki/day-home"
+import { DayHome, type DevCoachOverride } from "@/components/sparki/day-home"
 import { BottomNav } from "@/components/sparki/bottom-nav"
 import type { DayType } from "@/lib/day-type"
+import {
+  COACH_SCENARIOS,
+  COACH_SCENARIO_ORDER,
+  type CoachOverrideMode,
+  type CoachScenarioKey,
+} from "@/lib/coach-engine"
 import TrainPage from "@/pages/train"
 import FeedPage from "@/pages/feed"
 import LabPage from "@/pages/lab"
@@ -169,12 +175,20 @@ function DevPanel({
   isHome,
   dayType,
   onDayType,
+  coachMode,
+  onCoachMode,
+  coachScenario,
+  onCoachScenario,
 }: {
   current: string
   onNavigate: (path: string) => void
   isHome: boolean
   dayType: DayType | undefined
   onDayType: (value: DayType | undefined) => void
+  coachMode: CoachOverrideMode
+  onCoachMode: (value: CoachOverrideMode) => void
+  coachScenario: CoachScenarioKey | undefined
+  onCoachScenario: (value: CoachScenarioKey | undefined) => void
 }) {
   const [open, setOpen] = useState(false)
 
@@ -255,6 +269,63 @@ function DevPanel({
           </div>
         </div>
       )}
+
+      {isHome && (
+        <div className="mt-3 border-t border-white/[0.07] pt-3">
+          <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-white/30">
+            Coach-engine · type sporter
+          </span>
+
+          {/* Mode toggle — Scenario (fictief profiel + dagdata) is default;
+              Profiel wisselt alleen het profiel en behoudt echte dagdata. */}
+          <div className="mt-1.5 flex gap-1">
+            {(
+              [
+                { label: "Scenario", value: "scenario" as const },
+                { label: "Profiel", value: "profile" as const },
+              ]
+            ).map((m) => (
+              <button
+                key={m.value}
+                type="button"
+                onClick={() => onCoachMode(m.value)}
+                className="rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors"
+                style={pillStyle(coachMode === m.value)}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Sporter-keuze — Uit = echte profiel-engine, geen override. */}
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            <button
+              type="button"
+              onClick={() => onCoachScenario(undefined)}
+              className="rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors"
+              style={pillStyle(coachScenario === undefined)}
+            >
+              Uit
+            </button>
+            {COACH_SCENARIO_ORDER.map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => onCoachScenario(key)}
+                className="rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors"
+                style={pillStyle(coachScenario === key)}
+              >
+                {COACH_SCENARIOS[key].label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 font-mono text-[8px] leading-relaxed text-white/25">
+            {coachMode === "scenario"
+              ? "Fictief profiel + dagdata + wedstrijdcontext."
+              : "Alleen profiel wisselt — echte check-in/hersteldata blijven."}
+          </p>
+        </div>
+      )}
     </div>
   )
 }
@@ -266,6 +337,16 @@ function DevPanel({
 export function DevPreview() {
   const [location, setLocation] = useLocation()
   const [dayType, setDayType] = useState<DayType | undefined>(undefined)
+  // Coach-engine override (Adaptive Coach Engine selector). Default mode is
+  // Scenario override; no athlete is selected until you pick one ("Uit" = the
+  // real profile-driven engine).
+  const [coachMode, setCoachMode] = useState<CoachOverrideMode>("scenario")
+  const [coachScenario, setCoachScenario] = useState<
+    CoachScenarioKey | undefined
+  >(undefined)
+  const devCoachOverride: DevCoachOverride | undefined = coachScenario
+    ? { mode: coachMode, scenario: coachScenario }
+    : undefined
 
   let page: React.ReactNode
   let showNav = true
@@ -316,7 +397,9 @@ export function DevPreview() {
     page = <InviteAcceptPage />
     showNav = false
   } else {
-    page = <DayHome devDayTypeOverride={dayType} />
+    page = (
+      <DayHome devDayTypeOverride={dayType} devCoachOverride={devCoachOverride} />
+    )
     isHome = true
   }
 
@@ -328,6 +411,10 @@ export function DevPreview() {
         isHome={isHome}
         dayType={dayType}
         onDayType={setDayType}
+        coachMode={coachMode}
+        onCoachMode={setCoachMode}
+        coachScenario={coachScenario}
+        onCoachScenario={setCoachScenario}
       />
       {page}
       {showNav && <BottomNav />}

@@ -9,6 +9,8 @@ import { ProfilePromptCard } from "@/components/sparki/profile-prompt-card"
 import { CoachInputNeeds } from "@/components/sparki/coach-input-actions"
 import { FollowUpPrompt } from "@/components/sparki/follow-up-prompt"
 import { CoachAnalysisCard } from "@/components/sparki/coach/coach-analysis-card"
+import { CoachDecisionCard } from "@/components/sparki/coach-decision-card"
+import { useCoachDecision } from "@/contexts/CoachDecisionContext"
 
 // Sparki's daily coach analysis belongs on the athlete's training-facing
 // surfaces: the day homes (Vandaag, incl. race week → Wedstrijdvoorbereiding),
@@ -145,6 +147,7 @@ export function ScreenShell({
   const isHome = sectionKey === "home"
   const showCoachCard = COACH_CARD_SECTIONS.has(sectionKey)
   const sectionLabel = SECTION_DISPLAY[section.toLowerCase()] ?? section.toUpperCase()
+  const coachDecision = useCoachDecision()
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#05070e] text-white">
       {/* Per-screen cinematic background — shared structure, scene-specific
@@ -187,6 +190,11 @@ export function ScreenShell({
         {showCoachCard && (
           <CoachAnalysisCard variant={isHome ? "hero" : "card"} />
         )}
+
+        {/* Adaptive Coach Engine output — the engine's decision (onderwerp /
+            advies / vraag / prioriteit) for today, surfaced on every home
+            day-type. Driven by the CoachDecision context from the dispatcher. */}
+        {isHome && coachDecision && <CoachDecisionCard decision={coachDecision} />}
 
         {children}
       </div>

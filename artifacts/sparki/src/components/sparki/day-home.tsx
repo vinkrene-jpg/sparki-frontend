@@ -14,6 +14,18 @@ import {
   type DayTypeContext,
   type DayHomeComponentProps,
 } from "@/lib/day-type"
+import {
+  decideCoach,
+  coachInputFromProfile,
+  resolveOverrideInput,
+  COACH_SCENARIOS,
+  type CoachDayData,
+  type CoachDecision,
+  type CoachOverrideMode,
+  type CoachScenarioKey,
+} from "@/lib/coach-engine"
+import { CoachDecisionProvider } from "@/contexts/CoachDecisionContext"
+import { DEV_PREVIEW } from "@/lib/dev"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { Skeleton } from "@/components/sparki/home-sections"
 import { TrainingDayHome } from "@/components/sparki/training-day-home"
@@ -61,10 +73,20 @@ function DayHomeLoading() {
   )
 }
 
+// Dev/preview-only coach override (Adaptive Coach Engine selector). Ignored
+// entirely in production: the override is only applied when DEV_PREVIEW is true,
+// so production builds always run the engine on the real profile.
+export type DevCoachOverride = {
+  mode: CoachOverrideMode
+  scenario: CoachScenarioKey
+}
+
 export function DayHome({
   devDayTypeOverride,
+  devCoachOverride,
 }: {
   devDayTypeOverride?: DayType
+  devCoachOverride?: DevCoachOverride
 } = {}) {
   const { data, isLoading } = useAthleteDashboard()
   const { context: raceContext, isLoading: racesLoading } = useRaceContext()
@@ -98,5 +120,36 @@ export function DayHome({
   const dayType = devDayTypeOverride ?? detectDayType(ctx)
   const briefing = getDayTypeBriefing(dayType, ctx)
   const Component = dayHomeRegistry[dayType]
-  return <Component dayType={dayType} briefing={briefing} />
+
+  // ── Adaptive Coach Engine ─────────────────────────────────────────────────
+  // Today's real day data feeds the engine. The engine sits between the profile
+  // and the advice; Home reads its decision, never the other way around.
+  const realDay: CoachDayData = {
+    feelScore: data?.todayMetrics?.feelScore ?? null,
+    fatigueScore: data?.todayMetrics?.fatigueScore ?? null,
+    tsb: data?.load?.tsb ?? null,
+  }
+  const raceForCoach = raceContext
+    ? { daysUntil: raceContext.daysUntil }
+    : null
+
+  let coachDecision: CoachDecision | null = null
+  if (DEV_PREVIEW && devCoachOverride) {
+    // Dev/preview override: scenario = fully fictional; profile = scenario's
+    // profile portion but today's REAL day data preserved. Never reached in
+    // production (DEV_PREVIEW is false → dead-code).
+    const scenario = COACH_SCENARIOS[devCoachOverride.scenario]
+    coachDecision = decideCoach(
+      resolveOverrideInput(scenario, devCoachOverride.mode, realDay),
+    )
+  } else {
+    const input = coachInputFromProfile(profile, realDay, raceForCoach)
+    coachDecision = input ? decideCoach(input) : null
+  }
+
+  return (
+    <CoachDecisionProvider value={coachDecision}>
+      <Component dayType={dayType} briefing={briefing} />
+    </CoachDecisionProvider>
+  )
 }
