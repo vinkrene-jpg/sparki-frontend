@@ -29,6 +29,7 @@ import adminRouter from "./admin";
 import storageRouter from "./storage";
 import inputCenterRouter from "./input-center";
 import materialRouter from "./material";
+import documentAnalysisRouter from "./document-analysis";
 
 const router: IRouter = Router();
 
@@ -62,5 +63,6 @@ router.use("/admin", adminRouter);
 router.use(storageRouter);
 router.use(inputCenterRouter);
 router.use("/material", materialRouter);
+router.use("/document-analyses", documentAnalysisRouter);
 
 export default router;

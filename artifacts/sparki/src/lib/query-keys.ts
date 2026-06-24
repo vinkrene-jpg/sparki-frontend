@@ -97,6 +97,11 @@ export const queryKeys = {
     list: () => ["activity-imports", "list"] as const,
   },
 
+  documentAnalyses: {
+    all: () => ["document-analyses"] as const,
+    list: () => ["document-analyses", "list"] as const,
+  },
+
   routes: {
     all: () => ["routes"] as const,
     list: () => ["routes", "list"] as const,

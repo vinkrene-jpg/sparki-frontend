@@ -70,6 +70,12 @@ import {
   buildRaceDayReport,
 } from "../engines/race";
 import type { Race } from "@workspace/db";
+import {
+  deriveDerived,
+  applyAnswers,
+  fieldsToRacePatch,
+  isSupportedMediaType,
+} from "../engines/document-analysis";
 
 type Status = "pass" | "fail" | "skip";
 const results: { engine: string; check: string; status: Status; note?: string }[] =
@@ -585,6 +591,44 @@ async function main() {
     assert(resolveTopicKey("hoe herstel ik?") === "recovery", "recovery alias");
     assert(resolveTopicKey("voeding voor de race") === "nutrition", "nutrition");
     assert(resolveTopicKey("iets totaal onbekends xyz") === null, "unknown → null");
+  });
+
+  await run("Document Analysis", "derive + answers + race patch (pure)", () => {
+    assert(isSupportedMediaType("application/pdf"), "pdf supported");
+    assert(isSupportedMediaType("image/png"), "png supported");
+    assert(!isSupportedMediaType("text/plain"), "txt rejected");
+
+    const fields = {
+      startTime: { key: "startTime", value: "10:30", confidence: "high" as const },
+      distanceKm: { key: "distanceKm", value: null, confidence: null },
+      startLocation: {
+        key: "startLocation",
+        value: "Gent",
+        confidence: "low" as const,
+      },
+    };
+    const d = deriveDerived(fields);
+    assert(d.foundFields.includes("startTime"), "startTime found");
+    assert(d.missingFields.includes("distanceKm"), "distanceKm missing");
+    // A low-confidence value earns a confirm question; missing fields earn one too.
+    assert(
+      d.followUpQuestions.some((q) => q.toLowerCase().includes("kilometer")),
+      "asks for distance",
+    );
+    assert(
+      d.followUpQuestions.some((q) => q.includes("Gent")),
+      "confirms low-confidence value",
+    );
+
+    const merged = applyAnswers(fields, { distanceKm: "142" });
+    assert(
+      merged.foundFields.includes("distanceKm"),
+      "answered field becomes found",
+    );
+
+    const patch = fieldsToRacePatch(merged.extractedFields);
+    assert(patch.startTime === "10:30", "race patch maps startTime");
+    assert(patch.distanceKm === "142", "race patch maps distance");
   });
 
   // ── DB-bound read-only entry points (need a seeded user) ──────────────────

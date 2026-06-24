@@ -10,6 +10,7 @@ import { missingTargets } from "@/lib/missing-input"
 import { useAiBrief } from "@/hooks/use-ai-brief"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { ActivityImportPanel } from "@/components/sparki/activity-import-panel"
+import { DocumentAnalysisPanel } from "@/components/sparki/document-analysis-panel"
 import { RoutePanel } from "@/components/sparki/route-panel"
 import { LinkedRoutePreview } from "@/components/sparki/linked-route"
 import { ThreeWeekPlan } from "@/components/sparki/three-week-plan"
@@ -641,6 +642,9 @@ export default function TrainPage() {
 
       {/* 08 ACTIVITEIT IMPORTEREN */}
       <ActivityImportPanel />
+
+      {/* 09 WEDSTRIJDGIDS LEZEN */}
+      <DocumentAnalysisPanel />
 
       <WorkoutDetailDrawer
         workoutId={workout?.id ?? null}

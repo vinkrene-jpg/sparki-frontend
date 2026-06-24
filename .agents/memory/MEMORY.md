@@ -39,3 +39,4 @@
 - [Sparki Race Intelligence](sparki-race-intel.md) — deterministic prep/report/fuel/checklist over a Race; never fabricate (gaps honest), cheapest fuel tier first, no guide parser ⇒ prompt to fill fields.
 - [Sparki Input Center & ACL timing](sparki-input-center.md) — one central composer; object ACL can only be set AFTER bytes exist (presign→PUT→set-ACL-on-persist), never before.
 - [Sparki Materiaalcoach](sparki-materiaalcoach.md) — photo-driven honest advice; confidence-gated extra-photo ask; cost only for material kind; photos in object storage, owner-checked serve.
+- [Sparki Document Analysis](sparki-document-analysis.md) — reads race/technical guides (PDF/image) via Anthropic document block; honest gevonden/ontbreekt + deterministic follow-ups; links+enriches races.
