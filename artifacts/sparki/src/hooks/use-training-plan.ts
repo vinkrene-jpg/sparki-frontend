@@ -93,11 +93,15 @@ export function useSubmitFeedback() {
   });
 }
 
-/** Ask Sparki for the deep "Waarom?" philosophy behind one workout. */
+/**
+ * Ask Sparki to explain one workout in two tiers: a short, directly readable
+ * kernel plus an extended version with more depth and the real numbers. The
+ * athlete always starts with the short version and can expand on demand.
+ */
 export function useWorkoutExplain() {
   return useMutation({
     mutationFn: (workoutId: number) =>
-      apiFetch<{ explanation: string }>("/api/ai/workout-explain", {
+      apiFetch<{ short: string; extended: string }>("/api/ai/workout-explain", {
         method: "POST",
         body: JSON.stringify({ workoutId }),
       }),

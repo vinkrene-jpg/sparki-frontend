@@ -16,6 +16,7 @@
 - [Sparki Voice & Personality Engine](sparki-voice-engine.md) — deterministic tone/trust/empathy engine; refuses to fabricate (null), empathy-before-humor, trust gates tones; new api-server tests need build.mjs entry + test script.
 - [Sparki Circle unified feed](sparki-circle.md) — /samen merges follow-ups+friends+races+news; suppress global FollowUpPrompt on samen via `section` not `scene`; "Jouw overzicht" not "Circle-feed".
 - [Sparki Social & Team](sparki-social-team.md) — Samen page; ScreenShell scene-fallback leaks home-only UI (gate on explicit section); team-update null clears columns; sport keys need Dutch labels; feed privacy fail-closed.
+- [Sparki two-tier explanation standard](sparki-tiered-explanation.md) — short-by-default + "Uitgebreid" expand (TieredExplanation); only tier where REAL extended data exists, never fabricate depth on one-liners.
 - [Sparki personal-context memory](sparki-context-memory.md) — deterministic Dutch detection, evening follow-ups, privacy-gated persist, viewer projection omits raw statement/response. Plus: JSX \u escapes don't work in text/attr strings.
 - [Sparki memory graph](sparki-memory-graph.md) — deterministic cross-domain "verbanden": confidence never 1.0, rules stay silent on weak evidence, persist accounting created+deduped+gated===derived.
 - [Sparki Data Hub](sparki-data-hub.md) — central multi-platform engine; dedupe key=sport+start-bucket only (not dur/dist) w/ neighbour match + tolerance; activity consent is AND; 4-state readiness; single runSync path.

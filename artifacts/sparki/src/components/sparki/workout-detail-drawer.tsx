@@ -6,6 +6,10 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { ACCENT } from "@/components/sparki/ui"
+import {
+  TieredExplanation,
+  PlainTextParagraphs,
+} from "@/components/sparki/tiered-explanation"
 import { SparkiCore } from "@/components/sparki/sparki-core"
 import {
   useWorkoutDetail,
@@ -164,7 +168,10 @@ export function WorkoutDetailDrawer({
   const applyProposal = useApplyProposal()
 
   const [note, setNote] = useState("")
-  const [explanation, setExplanation] = useState<string | null>(null)
+  const [explanation, setExplanation] = useState<{
+    short: string
+    extended: string
+  } | null>(null)
   const [proposal, setProposal] = useState<SparkiAdjustProposal | null>(null)
   const [activeFeedback, setActiveFeedback] = useState<WorkoutFeedbackType | null>(
     null,
@@ -188,7 +195,8 @@ export function WorkoutDetailDrawer({
   const loadExplanation = () => {
     if (!workout) return
     explain.mutate(workout.id, {
-      onSuccess: (res) => setExplanation(res.explanation),
+      onSuccess: (res) =>
+        setExplanation({ short: res.short, extended: res.extended }),
     })
   }
 
@@ -338,32 +346,33 @@ export function WorkoutDetailDrawer({
             {structure && (
               <section className="flex flex-col gap-3">
                 <SectionHead n="02" title="Wat & waarom vandaag" icon={Sparkles} />
-                <div className="flex flex-col">
-                  <ExplainRow
-                    label="Waarom vandaag"
-                    value={structure.rationale.whyToday}
-                  />
-                  <ExplainRow
-                    label="Doel"
-                    value={structure.rationale.supportsGoal}
-                  />
-                  <ExplainRow
-                    label="Wat je moet voelen"
-                    value={structure.rationale.whatToFeel}
-                  />
-                  <ExplainRow
-                    label="Te zwaar?"
-                    value={structure.rationale.tooHardSigns}
-                  />
-                  <ExplainRow
-                    label="Te licht?"
-                    value={structure.rationale.tooLightSigns}
-                  />
-                  <ExplainRow
-                    label="Veilig aanpassen"
-                    value={structure.rationale.safeAdjust}
-                  />
-                </div>
+                <TieredExplanation
+                  short={structure.rationale.whyToday}
+                  extended={
+                    <div className="flex flex-col">
+                      <ExplainRow
+                        label="Doel"
+                        value={structure.rationale.supportsGoal}
+                      />
+                      <ExplainRow
+                        label="Wat je moet voelen"
+                        value={structure.rationale.whatToFeel}
+                      />
+                      <ExplainRow
+                        label="Te zwaar?"
+                        value={structure.rationale.tooHardSigns}
+                      />
+                      <ExplainRow
+                        label="Te licht?"
+                        value={structure.rationale.tooLightSigns}
+                      />
+                      <ExplainRow
+                        label="Veilig aanpassen"
+                        value={structure.rationale.safeAdjust}
+                      />
+                    </div>
+                  }
+                />
                 {structure.recoveryAdvice && (
                   <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] px-3.5 py-3">
                     <p className="font-mono text-[9px] tracking-[0.2em] text-white/35">
@@ -388,22 +397,10 @@ export function WorkoutDetailDrawer({
                       SPARKI
                     </span>
                   </div>
-                  <div className="space-y-3 text-[13px] leading-relaxed text-white/75">
-                    {explanation
-                      .split(/\n\n+/)
-                      .map((para) =>
-                        para
-                          .replace(/^#+\s*/gm, "")
-                          .replace(/\*\*/g, "")
-                          .trim(),
-                      )
-                      .filter(Boolean)
-                      .map((para, i) => (
-                        <p key={i} className="text-pretty">
-                          {para}
-                        </p>
-                      ))}
-                  </div>
+                  <TieredExplanation
+                    short={explanation.short}
+                    extended={<PlainTextParagraphs text={explanation.extended} />}
+                  />
                 </div>
               ) : (
                 <button

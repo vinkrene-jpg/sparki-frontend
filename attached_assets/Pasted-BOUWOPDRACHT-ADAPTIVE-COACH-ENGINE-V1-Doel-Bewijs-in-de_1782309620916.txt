@@ -1,0 +1,178 @@
+BOUWOPDRACHT — ADAPTIVE COACH ENGINE V1
+
+Doel:
+
+Bewijs in de preview dat Sparki verschillende sporters verschillend behandelt.
+
+Niet bouwen aan nieuwe schermen.
+Niet bouwen aan opslag.
+Niet bouwen aan onboarding.
+Niet bouwen aan databases.
+
+Bouw uitsluitend de beslislaag tussen sportprofiel en advies.
+
+PROBLEEM
+
+Momenteel lijken verschillende sporters uiteindelijk grotendeels dezelfde ervaring te krijgen.
+
+Dat moet veranderen.
+
+IMPLEMENTATIE
+
+Maak een centrale Coach Decision Engine.
+
+Input:
+
+* sport
+* ervaring
+* doel
+* beschikbare uren
+* wedstrijd ja/nee
+* check-in
+* hersteldata indien aanwezig
+
+Output:
+
+* hoofdonderwerp van vandaag
+* advies
+* vraag (indien nodig)
+* prioriteit
+
+De engine bepaalt dit.
+
+Niet de UI.
+
+Niet een vaste flow.
+
+MINIMALE BESLISREGELS
+
+PROFIEL A
+
+Beginnende sporter
+
+Doel:
+fit worden
+
+Training:
+3 uur/week
+
+Geen wedstrijd
+
+Vandaag:
+
+Sparki focus:
+consistentie
+
+Voorbeeld:
+
+"Je grootste winst zit momenteel niet in harder trainen maar in regelmatig trainen."
+
+Vraag:
+
+"Welke dag lukt trainen meestal het makkelijkst?"
+
+---
+
+PROFIEL B
+
+Wedstrijdrenner
+
+Doel:
+top 10 NK criterium
+
+Training:
+12 uur/week
+
+Wedstrijd over 10 dagen
+
+Vandaag:
+
+Sparki focus:
+wedstrijdvoorbereiding
+
+Voorbeeld:
+
+"De wedstrijd komt dichterbij. Ik kijk vooral naar belasting en herstel."
+
+Vraag:
+
+"Voel je wedstrijdspanning?"
+
+---
+
+PROFIEL C
+
+Ervaren sporter
+
+Doel:
+FTP verhogen
+
+Training:
+10 uur/week
+
+Geen wedstrijd
+
+Vandaag:
+
+Sparki focus:
+prestatieontwikkeling
+
+Voorbeeld:
+
+"Je trainingsbelasting is momenteel belangrijker dan je herstelscore van vandaag."
+
+Vraag:
+
+"Voelde de laatste intervaltraining uitvoerbaar?"
+
+---
+
+BELANGRIJK
+
+De verschillen moeten zichtbaar zijn.
+
+Niet:
+
+dezelfde tekst met andere cijfers.
+
+Wel:
+
+ander onderwerp
+ander advies
+andere vraag
+andere prioriteit
+
+HOME
+
+Voeg tijdelijk een debug-selector toe:
+
+* Beginner
+* Wedstrijdrenner
+* Ervaren sporter
+
+Na wisselen moet Home direct veranderen.
+
+Geen refresh nodig.
+
+ACCEPTATIE
+
+Klaar wanneer ik in de preview:
+
+Beginner selecteer
+→ consistentiecoach zie
+
+Wedstrijdrenner selecteer
+→ wedstrijdcoach zie
+
+Ervaren sporter selecteer
+→ prestatiecoach zie
+
+En duidelijk kan zien dat Sparki andere keuzes maakt.
+
+Geen rapport.
+
+Geen analyse.
+
+Geen roadmap.
+
+Gewoon bouwen en tonen.

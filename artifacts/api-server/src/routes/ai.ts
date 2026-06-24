@@ -436,12 +436,12 @@ router.post("/workout-explain", requireAuth, async (req, res) => {
 
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 1400,
+      max_tokens: 1600,
       system,
       messages: [
         {
           role: "user",
-          content: `Atleetcontext:\n${context}\n\n${workoutBlock}\n\nLeg in het NEDERLANDS de trainingsfilosofie achter JUIST DEZE training uit, zodat de atleet begrijpt waarom Sparki dit zo plant. Behandel — toegespitst op deze sessie, niet algemeen — de relevante principes uit: trainingsopbouw, belasting & herstel, progressieve overload, het nut van Z2, intensieve blokken, taper/herstelweek, periodisering, blessurepreventie, en de relatie tot het hoofddoel van de atleet.\n\nSchrijf 3–5 korte alinea's, coachend en concreet, met verwijzing naar de echte getallen waar zinvol. Schrijf platte tekst: GEEN markdown, geen kopjes, geen "#" of sterretjes/bold — alleen gewone alinea's gescheiden door een lege regel. Gebruik NOOIT het woord "AI" of "algoritme" — jij bent Sparki. Geen verzonnen data.`,
+          content: `Atleetcontext:\n${context}\n\n${workoutBlock}\n\nLeg in het NEDERLANDS uit waarom Sparki JUIST DEZE training zo plant. Geef twee niveaus: eerst de korte kern, daarna de uitgebreide onderbouwing met meer diepgang en de echte getallen. De uitgebreide versie geeft méér diepgang en data — niet zomaar méér tekst.\n\nAntwoord UITSLUITEND met geldige JSON (geen markdown, geen tekst eromheen) in dit schema:\n{\n  "short": "1 tot 2 zinnen, de kern: waarom deze training vandaag past. Direct leesbaar, geen jargon.",\n  "extended": "2 tot 4 korte alinea's met de trainingsfilosofie toegespitst op deze sessie — relevante principes uit trainingsopbouw, belasting & herstel, progressieve overload, nut van Z2, intensieve blokken, taper/herstelweek, periodisering, blessurepreventie en de relatie tot het hoofddoel. Verwijs naar de echte getallen (duur, TSS, zones, %FTP, week/fase). Platte tekst, alinea's gescheiden door een lege regel."\n}\n\nRegels: gebruik alleen echte data uit de context hierboven, verzin niets. Schrijf platte tekst in beide velden: GEEN markdown, geen kopjes, geen "#" of sterretjes/bold. Gebruik NOOIT het woord "AI" of "algoritme" — jij bent Sparki.`,
         },
       ],
     });
@@ -451,7 +451,28 @@ router.post("/workout-explain", requireAuth, async (req, res) => {
       res.status(500).json({ error: "Unexpected Sparki response" });
       return;
     }
-    res.json({ explanation: block.text });
+
+    // Parse the two-tier JSON robustly (strip any stray fencing).
+    let parsed: { short?: unknown; extended?: unknown } | null = null;
+    try {
+      const raw = block.text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "");
+      const start = raw.indexOf("{");
+      const end = raw.lastIndexOf("}");
+      const json = start >= 0 && end >= 0 ? raw.slice(start, end + 1) : raw;
+      parsed = JSON.parse(json) as { short?: unknown; extended?: unknown };
+    } catch {
+      parsed = null;
+    }
+
+    const short = typeof parsed?.short === "string" ? parsed.short.trim() : "";
+    const extended =
+      typeof parsed?.extended === "string" ? parsed.extended.trim() : "";
+
+    if (!short || !extended) {
+      res.status(502).json({ error: "Sparki could not form an explanation" });
+      return;
+    }
+    res.json({ short, extended });
   } catch (err) {
     req.log.error({ err }, "ai.workout-explain failed");
     res.status(500).json({ error: "Sparki service unavailable" });
