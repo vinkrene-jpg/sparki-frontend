@@ -26,6 +26,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/tests/voice.ts"),
       path.resolve(artifactDir, "src/tests/onboarding-v2.ts"),
       path.resolve(artifactDir, "src/scripts/seed-social.ts"),
+      path.resolve(artifactDir, "src/jobs/health-check.ts"),
     ],
     platform: "node",
     bundle: true,

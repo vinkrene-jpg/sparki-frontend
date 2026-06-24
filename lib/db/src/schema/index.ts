@@ -19,3 +19,4 @@ export * from "./routes";
 export * from "./notifications";
 export * from "./bug-reports";
 export * from "./knowledge";
+export * from "./health-checks";

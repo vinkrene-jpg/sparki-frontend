@@ -34,6 +34,8 @@ import InviteAcceptPage from "@/pages/invite-accept";
 import TesterQrPage from "@/pages/tester-qr";
 import CoachAthletePlanPage from "@/pages/coach-athlete-plan";
 import LandingPage from "@/pages/landing";
+import AdminPage from "@/pages/admin";
+import AdminHealthDetailPage from "@/pages/admin-health-detail";
 import { apiFetch } from "@/lib/api";
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
@@ -415,6 +417,12 @@ function AppRouter() {
                 </Route>
                 <Route path="/kennis">
                   <ProtectedPage component={KnowledgePage} />
+                </Route>
+                <Route path="/admin">
+                  <ProtectedPage component={AdminPage} />
+                </Route>
+                <Route path="/admin/health/:checkKey">
+                  <ProtectedPage component={AdminHealthDetailPage} />
                 </Route>
                 <Route path="/invitations">
                   <ProtectedPage component={InvitationsPage} />

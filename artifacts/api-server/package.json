@@ -16,6 +16,7 @@
     "test:voice": "pnpm run build && node --enable-source-maps ./dist/tests/voice.mjs",
     "test:onboarding-v2": "pnpm run build && node --enable-source-maps ./dist/tests/onboarding-v2.mjs",
     "seed:social": "pnpm run build && node --enable-source-maps ./dist/scripts/seed-social.mjs",
+    "job:health": "pnpm run build && node --enable-source-maps ./dist/jobs/health-check.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

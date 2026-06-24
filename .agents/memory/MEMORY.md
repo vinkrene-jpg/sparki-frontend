@@ -32,3 +32,4 @@
 - [Sparki tester QR onboarding](sparki-tester-qr.md) — QR entry: deep-link behind auth must use ?redirect_url= (Clerk honours it over fallback); QR base URL editable (dev origin ≠ deploy domain).
 - [Sparki engine layer](sparki-engine-layer.md) — api-server engines/<engine> facades; routes import engines not lib helpers; smoke harness; docs/engine-architecture.md.
 - [Dutch-only copy exceptions](dutch-copy-exceptions.md) — accepted English proper nouns (Sparki, Performance Center, FTP, gran fondo); discipline DB values stay English, only labels translate.
+- [Sparki Admin Health Check engine](sparki-health-check.md) — honesty contract: real probe or GREY, never fake green; probes never throw; isAdmin dev-bypass; wouter Link no nested <a>.

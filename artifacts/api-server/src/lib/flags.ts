@@ -60,6 +60,15 @@ export async function resolveFlags(
  * Bootstrap: set SPARKI_ADMIN_IDS=clerk_xxxxx,clerk_yyyyy in Replit Secrets.
  */
 export function isAdmin(clerkId: string): boolean {
+  // Development Preview Mode: when the dev auth bypass is active the resolved dev
+  // user previews production components (incl. the admin dashboard). Fails closed
+  // in production — requires BOTH NODE_ENV !== "production" AND DEV_AUTH_BYPASS.
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.DEV_AUTH_BYPASS === "true"
+  ) {
+    return true;
+  }
   const raw = process.env.SPARKI_ADMIN_IDS ?? "";
   if (!raw.trim()) return false;
   return raw.split(",").map((s) => s.trim()).includes(clerkId);

@@ -16,6 +16,8 @@ import CoachAthletePlanPage from "@/pages/coach-athlete-plan"
 import LandingPage from "@/pages/landing"
 import KnowledgePage from "@/pages/knowledge"
 import { OnboardingV2 } from "@/components/sparki/onboarding-v2"
+import AdminPage from "@/pages/admin"
+import AdminHealthDetailPage from "@/pages/admin-health-detail"
 
 const LANDING_PATH = "/_dev/landing"
 const ONBOARDING_PATH = "/_dev/onboarding"
@@ -57,6 +59,7 @@ const VIEWS: DevView[] = [
   { label: "Invites", path: "/invitations" },
   { label: "Tester-QR", path: "/tester-qr" },
   { label: "Coach Plan", path: "/coach/athletes/demo/plan" },
+  { label: "Admin", path: "/admin" },
 ]
 
 function isActive(current: string, path: string): boolean {
@@ -206,6 +209,12 @@ export function DevPreview() {
     page = <RacesPage />
   } else if (location.startsWith("/samen")) {
     page = <SamenPage />
+  } else if (location.startsWith("/admin/health/")) {
+    page = <AdminHealthDetailPage />
+    showNav = false
+  } else if (location.startsWith("/admin")) {
+    page = <AdminPage />
+    showNav = false
   } else if (location.startsWith("/invitations")) {
     page = <InvitationsPage />
   } else if (location.startsWith("/tester-qr")) {

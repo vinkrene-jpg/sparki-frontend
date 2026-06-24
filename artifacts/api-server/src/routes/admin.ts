@@ -1,8 +1,19 @@
 import { Router } from "express";
-import { eq, sql } from "drizzle-orm";
-import { db, onboardingStateTable } from "@workspace/db";
+import { sql, desc, eq } from "drizzle-orm";
+import {
+  db,
+  onboardingStateTable,
+  healthCheckResultsTable,
+  healthCheckRunsTable,
+  healthCheckBatchesTable,
+} from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { isAdmin } from "../lib/flags";
+import { runHealthChecks, runSingleCheck } from "../lib/health/engine";
+import {
+  healthCheckDefinitions,
+  getCheckDefinition,
+} from "../lib/health/checks";
 
 const router = Router();
 
@@ -78,6 +89,309 @@ router.post("/reset-onboarding", requireAuth, requireAdmin, async (req, res) => 
   } catch (err) {
     req.log.error({ err }, "admin.reset-onboarding failed");
     res.status(500).json({ error: "Kon onboarding niet resetten" });
+  }
+});
+
+// ── Health dashboard ──────────────────────────────────────────────────────────
+
+// Build the plain-language dashboard snapshot: per-check latest status (joined
+// against the definition registry so checks that never ran show as "grey/onbekend"),
+// grouped by category, plus the operational aggregates an admin watches daily.
+router.get("/health", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const rows = await db.select().from(healthCheckResultsTable);
+    const byKey = new Map(rows.map((r) => [r.checkKey, r]));
+
+    // Always render every defined check, even before its first run.
+    const checks = healthCheckDefinitions.map((def) => {
+      const r = byKey.get(def.key);
+      if (!r) {
+        return {
+          checkKey: def.key,
+          category: def.category,
+          title: def.title,
+          description: def.description,
+          responsibleModule: def.responsibleModule,
+          statusColor: "grey" as const,
+          passed: false,
+          responseTimeMs: null,
+          lastRunAt: null,
+          lastSuccessAt: null,
+          errorMessage: "Nog niet gecontroleerd.",
+          technicalDetails: null,
+          userImpact: def.userImpact,
+          urgency: def.urgency,
+          remediation: def.remediation,
+          resolvedAt: null,
+        };
+      }
+      return {
+        checkKey: r.checkKey,
+        category: r.category,
+        title: r.title,
+        description: r.description,
+        responsibleModule: r.responsibleModule,
+        statusColor: r.statusColor,
+        passed: r.passed,
+        responseTimeMs: r.responseTimeMs,
+        lastRunAt: r.lastRunAt,
+        lastSuccessAt: r.lastSuccessAt,
+        errorMessage: r.errorMessage,
+        technicalDetails: r.technicalDetails,
+        userImpact: r.userImpact,
+        urgency: r.urgency,
+        remediation: r.remediation,
+        resolvedAt: r.resolvedAt,
+      };
+    });
+
+    // Worst non-grey status drives the overall headline.
+    const severity = { green: 0, grey: 0, orange: 1, red: 2 } as const;
+    let overall: "green" | "orange" | "red" | "grey" = "green";
+    for (const c of checks) {
+      if (severity[c.statusColor] > severity[overall]) overall = c.statusColor;
+    }
+
+    // Open failures = red/orange that are not acknowledged.
+    const openErrors = checks
+      .filter(
+        (c) =>
+          (c.statusColor === "red" || c.statusColor === "orange") &&
+          !c.resolvedAt,
+      )
+      .sort(
+        (a, b) =>
+          (b.statusColor === "red" ? 1 : 0) - (a.statusColor === "red" ? 1 : 0),
+      );
+
+    const [lastBatch] = await db
+      .select()
+      .from(healthCheckBatchesTable)
+      .orderBy(desc(healthCheckBatchesTable.startedAt))
+      .limit(1);
+
+    const lastRunAt =
+      checks.reduce<Date | null>((acc, c) => {
+        if (!c.lastRunAt) return acc;
+        return !acc || c.lastRunAt > acc ? c.lastRunAt : acc;
+      }, null) ?? null;
+    const lastSuccessAt =
+      checks.reduce<Date | null>((acc, c) => {
+        if (!c.lastSuccessAt) return acc;
+        return !acc || c.lastSuccessAt > acc ? c.lastSuccessAt : acc;
+      }, null) ?? null;
+
+    // Operational aggregates (plain-language friendly numbers).
+    const agg = await db.execute(sql`
+      SELECT
+        (SELECT count(*) FROM user_profiles)::int AS active_users,
+        (SELECT count(*) FROM user_profiles WHERE created_at > now() - interval '7 days')::int AS new_registrations,
+        (SELECT count(*) FROM bug_reports WHERE status = 'new')::int AS open_bug_reports,
+        (SELECT count(*) FROM workout_feedback)::int AS feedback_messages,
+        (SELECT count(*) FROM activity_imports WHERE status = 'failed')::int AS failed_imports,
+        (SELECT count(*) FROM invitations WHERE status = 'pending' AND expires_at < now())::int AS expired_tokens
+    `);
+
+    res.json({
+      overall,
+      lastRunAt,
+      lastSuccessAt,
+      checks,
+      openErrors,
+      lastBatch: lastBatch ?? null,
+      aggregates: agg.rows[0] ?? {},
+    });
+  } catch (err) {
+    req.log.error({ err }, "admin.health failed");
+    res.status(500).json({ error: "Kon de gezondheidsstatus niet laden" });
+  }
+});
+
+// POST /api/admin/health/run — run the engine now ("Controleer nu").
+// Body: { mode?: "manual"|"weekly", key?: string } — key runs a single check.
+router.post("/health/run", requireAuth, requireAdmin, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = (req.body ?? {}) as { mode?: string; key?: string };
+  try {
+    if (body.key) {
+      if (!getCheckDefinition(String(body.key))) {
+        res.status(404).json({ error: "Onbekende controle" });
+        return;
+      }
+      const outcome = await runSingleCheck(String(body.key), clerkId);
+      res.json({ ok: true, outcome });
+      return;
+    }
+    const mode = body.mode === "weekly" ? "weekly" : "manual";
+    const { batchId, outcomes } = await runHealthChecks({
+      mode,
+      triggeredBy: clerkId,
+    });
+    res.json({ ok: true, batchId, outcomes });
+  } catch (err) {
+    req.log.error({ err }, "admin.health.run failed");
+    res.status(500).json({ error: "De controle kon niet worden uitgevoerd" });
+  }
+});
+
+// GET /api/admin/health/check/:key — single check detail + recent history.
+router.get(
+  "/health/check/:key",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    const key = String(req.params.key);
+    const def = getCheckDefinition(key);
+    if (!def) {
+      res.status(404).json({ error: "Onbekende controle" });
+      return;
+    }
+    try {
+      const [result] = await db
+        .select()
+        .from(healthCheckResultsTable)
+        .where(eq(healthCheckResultsTable.checkKey, key));
+
+      const history = await db
+        .select()
+        .from(healthCheckRunsTable)
+        .where(eq(healthCheckRunsTable.checkKey, key))
+        .orderBy(desc(healthCheckRunsTable.ranAt))
+        .limit(50);
+
+      res.json({
+        check: result
+          ? {
+              checkKey: result.checkKey,
+              category: result.category,
+              title: result.title,
+              description: result.description,
+              responsibleModule: result.responsibleModule,
+              statusColor: result.statusColor,
+              passed: result.passed,
+              responseTimeMs: result.responseTimeMs,
+              lastRunAt: result.lastRunAt,
+              lastSuccessAt: result.lastSuccessAt,
+              errorMessage: result.errorMessage,
+              technicalDetails: result.technicalDetails,
+              userImpact: result.userImpact,
+              urgency: result.urgency,
+              remediation: result.remediation,
+              resolvedAt: result.resolvedAt,
+              resolvedBy: result.resolvedBy,
+            }
+          : {
+              // Never-run check: show the definition's metadata honestly.
+              checkKey: def.key,
+              category: def.category,
+              title: def.title,
+              description: def.description,
+              responsibleModule: def.responsibleModule,
+              statusColor: "grey",
+              passed: false,
+              responseTimeMs: null,
+              lastRunAt: null,
+              lastSuccessAt: null,
+              errorMessage: "Nog niet gecontroleerd.",
+              technicalDetails: null,
+              userImpact: def.userImpact,
+              urgency: def.urgency,
+              remediation: def.remediation,
+              resolvedAt: null,
+              resolvedBy: null,
+            },
+        history,
+      });
+    } catch (err) {
+      req.log.error({ err }, "admin.health.check failed");
+      res.status(500).json({ error: "Kon de controle niet laden" });
+    }
+  },
+);
+
+// POST /api/admin/health/check/:key/resolve — acknowledge a failure as handled.
+router.post(
+  "/health/check/:key/resolve",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    const clerkId = getClerkUserId(req)!;
+    const key = String(req.params.key);
+    if (!getCheckDefinition(key)) {
+      res.status(404).json({ error: "Onbekende controle" });
+      return;
+    }
+    try {
+      const [row] = await db
+        .update(healthCheckResultsTable)
+        .set({ resolvedAt: new Date(), resolvedBy: clerkId, updatedAt: new Date() })
+        .where(eq(healthCheckResultsTable.checkKey, key))
+        .returning({ checkKey: healthCheckResultsTable.checkKey });
+      if (!row) {
+        res.status(404).json({ error: "Deze controle is nog niet uitgevoerd" });
+        return;
+      }
+      res.json({ ok: true });
+    } catch (err) {
+      req.log.error({ err }, "admin.health.resolve failed");
+      res.status(500).json({ error: "Kon niet als opgelost markeren" });
+    }
+  },
+);
+
+// GET /api/admin/feedback — recent training feedback from athletes (admin only).
+router.get("/feedback", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const result = await db.execute(sql`
+      SELECT wf.id, wf.feedback_type, wf.note, wf.created_at AS "createdAt",
+             up.display_name AS "reporterName"
+      FROM workout_feedback wf
+      LEFT JOIN user_profiles up ON up.clerk_id = wf.clerk_id
+      ORDER BY wf.created_at DESC
+      LIMIT 50
+    `);
+    res.json({ feedback: result.rows });
+  } catch (err) {
+    req.log.error({ err }, "admin.feedback failed");
+    res.status(500).json({ error: "Kon de feedback niet laden" });
+  }
+});
+
+// GET /api/admin/failed-imports — recent failed activity imports (admin only).
+router.get("/failed-imports", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const result = await db.execute(sql`
+      SELECT ai.id, ai.file_name AS "fileName", ai.file_type AS "fileType",
+             ai.status, ai.error_message AS "errorMessage",
+             ai.uploaded_at AS "uploadedAt", up.display_name AS "reporterName"
+      FROM activity_imports ai
+      LEFT JOIN user_profiles up ON up.clerk_id = ai.clerk_id
+      WHERE ai.status = 'failed'
+      ORDER BY ai.uploaded_at DESC
+      LIMIT 50
+    `);
+    res.json({ imports: result.rows });
+  } catch (err) {
+    req.log.error({ err }, "admin.failedImports failed");
+    res.status(500).json({ error: "Kon de mislukte imports niet laden" });
+  }
+});
+
+// GET /api/admin/health/batches — test history (all runs) + release history.
+router.get("/health/batches", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const batches = await db
+      .select()
+      .from(healthCheckBatchesTable)
+      .orderBy(desc(healthCheckBatchesTable.startedAt))
+      .limit(40);
+    res.json({
+      batches,
+      releaseChecks: batches.filter((b) => b.runMode === "release"),
+    });
+  } catch (err) {
+    req.log.error({ err }, "admin.health.batches failed");
+    res.status(500).json({ error: "Kon de testgeschiedenis niet laden" });
   }
 });
 

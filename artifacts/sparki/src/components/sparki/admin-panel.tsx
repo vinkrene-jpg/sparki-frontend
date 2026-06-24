@@ -1,3 +1,4 @@
+import { Link } from "wouter"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import {
   useAdminWhoami,
@@ -103,7 +104,16 @@ export function AdminPanel() {
 
   return (
     <section>
-      <SectionLabel n="10" title="Admin" />
+      <div className="flex items-center justify-between">
+        <SectionLabel n="10" title="Admin" />
+        <Link
+          href="/admin"
+          className="rounded-full border px-3.5 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] transition"
+          style={{ borderColor: ACCENT, color: ACCENT }}
+        >
+          Gezondheidscheck →
+        </Link>
+      </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
         {Object.entries(STATUS_LABELS).map(([key, label]) => (

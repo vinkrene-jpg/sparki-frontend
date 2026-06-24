@@ -120,6 +120,11 @@ export const queryKeys = {
     all: () => ["admin"] as const,
     whoami: () => ["admin", "whoami"] as const,
     status: () => ["admin", "status"] as const,
+    health: () => ["admin", "health"] as const,
+    healthCheck: (key: string) => ["admin", "health", "check", key] as const,
+    healthBatches: () => ["admin", "health", "batches"] as const,
+    feedback: () => ["admin", "feedback"] as const,
+    failedImports: () => ["admin", "failed-imports"] as const,
   },
 
   races: {
