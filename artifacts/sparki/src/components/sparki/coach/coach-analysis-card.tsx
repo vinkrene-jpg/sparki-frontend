@@ -52,15 +52,6 @@ const INTENSITY_LABEL: Record<string, string> = {
   stevig: "Stevig",
 }
 
-// The always-available quick check-in. These three answers map (server-side) to
-// real feel/fatigue daily metrics and trigger a full recompute — see the
-// coach/followup route + checkInFromAnswer. Values must match the engine.
-const CHECK_IN_OPTIONS: { value: string; label: string }[] = [
-  { value: "fris", label: "Fris" },
-  { value: "oke", label: "Oké" },
-  { value: "vermoeid", label: "Vermoeid" },
-]
-
 // Where each action takes the athlete. Kept in sync with the bottom-nav routes.
 const ACTION_ROUTE: Record<CoachActionKind, string> = {
   adjust_training: "/train",
@@ -243,45 +234,6 @@ function FollowUp({ q }: { q: FollowUpQuestion }) {
   )
 }
 
-// Always-available quick check-in. Posts a real check-in (persists feel/fatigue
-// + recomputes) regardless of whether Sparki is currently asking for it.
-function QuickCheckIn() {
-  const answer = useAnswerFollowUp()
-  return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5">
-      <p className="text-sm font-medium text-white/85">Hoe voel je je nu?</p>
-      <p className="mt-0.5 text-xs text-white/45">
-        Sparki past het advies meteen aan op je antwoord.
-      </p>
-      <div className="mt-2.5 flex flex-wrap gap-2">
-        {CHECK_IN_OPTIONS.map((o) => (
-          <button
-            key={o.value}
-            type="button"
-            disabled={answer.isPending}
-            onClick={() =>
-              answer.mutate({ questionId: "missing_checkin", answer: o.value })
-            }
-            className="rounded-full border border-white/15 px-4 py-1.5 text-sm text-white/80 transition-colors hover:border-cyan-300/50 hover:text-cyan-200 disabled:opacity-40"
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
-      {answer.isSuccess && (
-        <p className="mt-2 text-xs text-cyan-200/80">
-          Bijgewerkt — Sparki heeft je advies opnieuw bekeken.
-        </p>
-      )}
-      {answer.isError && (
-        <p className="mt-2 text-xs text-rose-300/80">
-          Sparki kon je check-in niet opslaan. Probeer het zo nog eens.
-        </p>
-      )}
-    </div>
-  )
-}
-
 function ActionButton({ action }: { action: CoachAction }) {
   const [, setLocation] = useLocation()
   return (
@@ -456,7 +408,8 @@ export function CoachAnalysisCard({
 
   // ── Hero (Home) ────────────────────────────────────────────────────────────
   if (variant === "hero") {
-    // The quick check-in is always available above, so don't ask it twice here.
+    // The daily check-in lives on the State Card (the entry point to this full
+    // analysis), so we never ask "hoe voel je je" a second time here.
     const otherFollowUps = data.followUps.filter((q) => q.id !== "missing_checkin")
     return (
       <>
@@ -495,11 +448,6 @@ export function CoachAnalysisCard({
             <p className="mt-2.5 text-lg font-semibold leading-snug text-white">
               {data.advice.headline}
             </p>
-          </div>
-
-          {/* Always-available quick check-in */}
-          <div className="mt-4">
-            <QuickCheckIn />
           </div>
 
           {/* The 5-part read */}
