@@ -26,6 +26,9 @@ const TIER_TONES: Record<TrustTier, VoiceTone[]> = {
   maat: ["observer", "supportive", "curious", "dry_humor", "cynical"],
 };
 
+/** The humor styles. Suppressed entirely on focus moments (e.g. race build-up). */
+const HUMOR_TONES: VoiceTone[] = ["dry_humor", "cynical"];
+
 /** Pure: is a style allowed to speak at this trust tier? */
 export function isToneUnlocked(tone: VoiceTone, tier: TrustTier): boolean {
   return TIER_TONES[tier].includes(tone);
@@ -124,23 +127,23 @@ function resolveTone(
   // styles). It must still have authored lines for this event.
   if (forceTone && input.tone && hasLines(input.tone)) return input.tone;
 
-  // Requested tone, but only if it is unlocked at this tier and has lines.
-  if (
-    input.tone &&
-    isToneUnlocked(input.tone, input.trust) &&
-    hasLines(input.tone)
-  ) {
-    return input.tone;
-  }
+  // A style may actually speak here only if it is unlocked at this tier, has
+  // authored lines, and — on a focus moment (race build-up) — is not humor.
+  // Wedstrijdmodus: rust, vertrouwen, focus — geen losse grappen.
+  const speakable = (t: VoiceTone) =>
+    isToneUnlocked(t, input.trust) &&
+    hasLines(t) &&
+    (!cfg.focus || !HUMOR_TONES.includes(t));
 
-  // Fall back to the event default if it is unlocked + available.
-  if (isToneUnlocked(defaultTone, input.trust) && hasLines(defaultTone)) {
-    return defaultTone;
-  }
+  // Requested tone, if speakable.
+  if (input.tone && speakable(input.tone)) return input.tone;
 
-  // Otherwise the first unlocked tone (tier order) that has lines for this event.
+  // Fall back to the event default if speakable.
+  if (speakable(defaultTone)) return defaultTone;
+
+  // Otherwise the first speakable tone in tier order.
   for (const t of TIER_TONES[input.trust]) {
-    if (hasLines(t)) return t;
+    if (speakable(t)) return t;
   }
 
   // Last resort: supportive always exists for safety.

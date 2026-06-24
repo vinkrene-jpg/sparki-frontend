@@ -15,6 +15,9 @@ export type EventConfig = {
   defaultTone: VoiceTone;
   needsMemory?: boolean;
   openLoop?: boolean;
+  /** Focus moment (e.g. race build-up): never loose jokes. Humor tones are
+   *  suppressed regardless of trust — Sparki brings rust, vertrouwen en focus. */
+  focus?: boolean;
   lines: Partial<Record<VoiceTone, string[]>>;
 };
 
@@ -111,11 +114,11 @@ export const EVENTS: Record<VoiceEvent, EventConfig> = {
 
   race_upcoming: {
     empathy: false,
+    focus: true,
     defaultTone: "observer",
     lines: {
       observer: ["Je koers komt eraan {sport}.", "Nog even tot je wedstrijd."],
       curious: ["Benieuwd hoe je dit aanpakt.", "Ik heb er een goed gevoel over."],
-      dry_humor: ["Tijd om de benen te laten zien.", "Geen druk. Behalve dan een beetje."],
       supportive: ["Je bent er klaar voor.", "Vertrouw op je werk."],
     },
   },

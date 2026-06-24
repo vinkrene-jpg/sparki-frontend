@@ -243,6 +243,17 @@ function main() {
     }
   });
 
+  // ── Wedstrijdmodus: focus, geen losse grappen ──────────────────────────────
+  scenario("wedstrijdmodus: race_upcoming heeft geen humorlijnen", () => {
+    assert(!EVENTS.race_upcoming.lines.dry_humor, "race_upcoming heeft droge humor");
+    assert(!EVENTS.race_upcoming.lines.cynical, "race_upcoming is cynisch");
+  });
+  scenario("wedstrijdmodus: maat vraagt humor → valt terug op rustige stijl", () => {
+    const line = composeVoice({ event: "race_upcoming", tone: "dry_humor", trust: "maat", seed: 0 });
+    assert(line, "geen lijn");
+    assert(line!.tone !== "dry_humor" && line!.tone !== "cynical", `humor lekte in wedstrijdmodus: ${line!.tone}`);
+  });
+
   // ── Sport flavour ──────────────────────────────────────────────────────────
   scenario("sport: mtb kleurt de wedstrijdlijn", () => {
     const line = composeVoice({ event: "race_upcoming", tone: "observer", trust: "maat", sport: "mtb", seed: 0 });
