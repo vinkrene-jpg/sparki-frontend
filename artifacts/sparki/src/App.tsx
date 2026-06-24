@@ -354,6 +354,19 @@ function InviteRoute() {
   );
 }
 
+// Wouter keeps the previous scroll position across navigations, so opening a new
+// page (e.g. Training) would start halfway down where you last were. Reset to the
+// top whenever the path changes. Pages that open with ?focus=... manage their own
+// scroll target, so leave those alone.
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("focus")) return;
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [location]);
+  return null;
+}
+
 function AppRouter() {
   const [, setLocation] = useLocation();
 
@@ -386,6 +399,7 @@ function AppRouter() {
         <UserProvider>
           <FeatureFlagProvider>
             <ErrorBoundary>
+              <ScrollToTop />
               {DEV_PREVIEW ? (
                 <DevPreview />
               ) : (
