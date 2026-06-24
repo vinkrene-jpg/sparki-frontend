@@ -124,6 +124,7 @@ function BatchRow({ b }: { b: HealthBatch }) {
     weekly: "Wekelijks",
     release: "Release-controle",
   };
+  const automatic = b.triggeredBy === "scheduler";
   return (
     <div className="rounded-xl border border-white/[0.07] bg-[#070d16]/[0.6] p-3 backdrop-blur-md">
       <div className="flex items-center justify-between gap-3">
@@ -131,6 +132,15 @@ function BatchRow({ b }: { b: HealthBatch }) {
           <StatusDot color={meta.dot} />
           <span className="text-[12px] text-white/80">
             {MODE_LABEL[b.runMode] ?? b.runMode}
+          </span>
+          <span
+            className={`rounded-full px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] ${
+              automatic
+                ? "bg-[oklch(0.82_0.16_200_/_0.14)] text-[oklch(0.82_0.16_200)]"
+                : "bg-white/[0.06] text-white/40"
+            }`}
+          >
+            {automatic ? "Automatisch" : "Handmatig"}
           </span>
         </div>
         <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/30">
