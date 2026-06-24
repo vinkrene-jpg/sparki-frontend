@@ -105,6 +105,24 @@ empty heading — one consolidated honest line satisfies it and reads like a coa
 present (render normally) vs absent (one consolidated note). Treat both `null`
 and `""` as absent. (coach-analysis-card.tsx card variant is the reference.)
 
+## A primary action button must DO the action, never just scroll to another button
+
+If a button is labelled with an action ("Bouw mijn plan"), its onClick must
+perform that action (call the real mutation), not `scrollIntoView` to a second,
+identical button further down the page. A scroll-only action button reads to the
+user as "werkt niet" — they click it, the page jumps, and nothing happened.
+
+**Why:** /train had TWO "Bouw mijn plan" buttons — the three-week-plan one
+generated for real, but the section-01 ("De sessie") one only scrolled to it.
+Users clicked the first, saw no plan built, and reported it broken. This is the
+same dead-end class as "ga naar X" text: an action surface that doesn't act.
+
+**How to apply:** when the real action hook already exists (useGeneratePlan),
+wire every button with that label to call it directly (loading label, disabled +
+`if (isPending) return` guard, honest error incl. profile_incomplete), then
+optionally scroll to where the result renders on success. Don't duplicate a CTA
+as a navigation shim.
+
 ## "Missing" gaps clear only on a fresh dashboard fetch (background refetch)
 
 Each gap's presence comes from `useAthleteDashboard()` (`athleteProfile`,

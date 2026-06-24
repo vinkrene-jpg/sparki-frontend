@@ -16,6 +16,7 @@ import { DocumentAnalysisPanel } from "@/components/sparki/document-analysis-pan
 import { RoutePanel } from "@/components/sparki/route-panel"
 import { LinkedRoutePreview } from "@/components/sparki/linked-route"
 import { ThreeWeekPlan } from "@/components/sparki/three-week-plan"
+import { useGeneratePlan } from "@/hooks/use-training-plan"
 import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer"
 import { TrainingPlanPanel } from "@/components/sparki/training-plan-panel"
 import {
@@ -233,6 +234,7 @@ export default function TrainPage() {
   const { data: profile, isLoading: profileLoading } = useAthleteExtendedProfile()
   const { data: sessions, isLoading: sessionsLoading } = useSessions(10)
   const updateWorkout = useUpdateWorkout()
+  const generatePlan = useGeneratePlan()
   const aiEnabled = useFeatureFlag("ai_observations")
   const routePlannerEnabled = useFeatureFlag("route_planner")
   const autonomousTrainingEnabled = useFeatureFlag("autonomous_training")
@@ -443,21 +445,48 @@ export default function TrainPage() {
                 retry="generate-plan"
               />
             ) : (
-              <MissingInputNotice
-                compact
-                showOrb={false}
-                title="Nog geen training voor vandaag"
-                description="Je profiel is compleet, maar er staat nog geen schema klaar. Bouw je 3-wekenplan om je dagtrainingen te activeren."
-                profile={profile}
-                primary={{
-                  label: "Bouw mijn plan",
-                  onClick: () => {
-                    document
-                      .getElementById("three-week-plan")
-                      ?.scrollIntoView({ behavior: "smooth", block: "start" })
-                  },
-                }}
-              />
+              <>
+                <MissingInputNotice
+                  compact
+                  showOrb={false}
+                  title="Nog geen training voor vandaag"
+                  description="Je profiel is compleet, maar er staat nog geen schema klaar. Bouw je 3-wekenplan om je dagtrainingen te activeren."
+                  profile={profile}
+                  primary={{
+                    label: generatePlan.isPending
+                      ? "Plan opbouwen…"
+                      : "Bouw mijn plan",
+                    loading: generatePlan.isPending,
+                    disabled: generatePlan.isPending,
+                    // Actually build the plan here — don't just scroll to another
+                    // button. Once it's built, scroll up so the user sees the
+                    // freshly filled 3-week grid populate.
+                    onClick: () => {
+                      if (generatePlan.isPending) return
+                      generatePlan.mutate(undefined, {
+                        onSuccess: () => {
+                          setTimeout(() => {
+                            document
+                              .getElementById("three-week-plan")
+                              ?.scrollIntoView({
+                                behavior: "smooth",
+                                block: "start",
+                              })
+                          }, 100)
+                        },
+                      })
+                    },
+                  }}
+                />
+                {generatePlan.isError && (
+                  <p className="mt-3 text-[12px] text-red-300/70">
+                    {generatePlan.error instanceof Error &&
+                    generatePlan.error.message.includes("profile_incomplete")
+                      ? "Sparki mist nog je FTP of wekelijkse uren. Vul ze aan bij je profiel."
+                      : "Het opbouwen lukte niet. Probeer het opnieuw."}
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}
