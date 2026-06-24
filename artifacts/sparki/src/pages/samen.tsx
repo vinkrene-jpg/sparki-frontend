@@ -281,7 +281,7 @@ function Circle() {
 
   return (
     <section>
-      <SectionLabel n="01" title="Mijn vrienden" />
+      <SectionLabel n="04" title="Mijn vrienden" />
       {isLoading ? (
         <div className="mt-3 h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
       ) : friends.length === 0 ? (
@@ -527,7 +527,7 @@ function CircleFeed() {
 
   return (
     <section>
-      <SectionLabel n="02" title="Jouw overzicht" />
+      <SectionLabel n="03" title="Jouw overzicht" />
       {isLoading ? (
         <div className="mt-3 h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
       ) : isError ? (
@@ -572,7 +572,7 @@ function TrainTogether() {
 
   return (
     <section>
-      <SectionLabel n="03" title="Samen trainen" />
+      <SectionLabel n="02" title="Samen trainen" />
       <div className="mt-3">
         {suggestion?.available ? (
           <GlassCard className="border-cyan-300/20 bg-cyan-300/[0.04]">
@@ -946,7 +946,7 @@ function Proposals() {
   if (isLoading) {
     return (
       <section>
-        <SectionLabel n="04" title="Voorstellen" />
+        <SectionLabel n="01" title="Voorstellen" />
         <div className="mt-3 h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
       </section>
     )
@@ -954,10 +954,10 @@ function Proposals() {
 
   return (
     <section>
-      <SectionLabel n="04" title="Voorstellen" />
+      <SectionLabel n="01" title="Voorstellen" />
       {received.length === 0 && sent.length === 0 ? (
         <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/40">
-          Nog geen voorstellen. Maak er een via "Samen trainen" hierboven.
+          Nog geen voorstellen. Maak er een via "Samen trainen" hieronder.
         </p>
       ) : (
         <div className="mt-3 flex flex-col gap-4">
@@ -1061,11 +1061,11 @@ export default function SamenPage() {
         </div>
       </section>
 
+      <Proposals />
+      <TrainTogether />
       <ClubBanner />
       <FriendRequests />
       <CircleFeed />
-      <TrainTogether />
-      <Proposals />
       <Circle />
       <AddFriend />
     </ScreenShell>
