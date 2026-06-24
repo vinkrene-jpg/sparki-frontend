@@ -1,8 +1,4 @@
-import { useEffect, useRef, useState, useCallback, lazy, Suspense } from "react";
-
-const PreviewPage = import.meta.env.DEV
-  ? lazy(() => import("@/pages/preview"))
-  : null;
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   ClerkProvider,
   SignIn,
@@ -436,13 +432,6 @@ function AppRouter() {
                 <Route path="/invite/:token">
                   <InviteRoute />
                 </Route>
-                {import.meta.env.DEV && PreviewPage && (
-                  <Route path="/preview">
-                    <Suspense fallback={<div className="min-h-dvh bg-[#040506]" />}>
-                      <PreviewPage />
-                    </Suspense>
-                  </Route>
-                )}
                 <Route component={NotFound} />
               </Switch>
               )}

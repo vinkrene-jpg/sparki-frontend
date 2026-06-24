@@ -39,7 +39,9 @@
 - [Dutch-only copy exceptions](dutch-copy-exceptions.md) — accepted English proper nouns (Sparki, Performance Center, FTP, gran fondo); discipline DB values stay English, only labels translate.
 - [Sparki Admin Health Check engine](sparki-health-check.md) — honesty contract: real probe or GREY, never fake green; probes never throw; isAdmin dev-bypass; wouter Link no nested <a>.
 - [Coach plan adoption](coach-plan-adoption.md) — coach adopts advisory plan_days into athlete-owned planned_workouts (source="coach", planId null); dedupe by date+source, never overwrite.
+- [Sparki general-day concrete advice](sparki-day-advice.md) — no-plan Home day shows one deterministic explainable session (lib/day-advice); readiness SSOT in lib/readiness; TSB guard; race framing base/build only.
 - [Sparki Race Intelligence](sparki-race-intel.md) — deterministic prep/report/fuel/checklist over a Race; never fabricate (gaps honest), cheapest fuel tier first, no guide parser ⇒ prompt to fill fields.
 - [Sparki Input Center & ACL timing](sparki-input-center.md) — one central composer; object ACL can only be set AFTER bytes exist (presign→PUT→set-ACL-on-persist), never before.
 - [Sparki Materiaalcoach](sparki-materiaalcoach.md) — photo-driven honest advice; confidence-gated extra-photo ask; cost only for material kind; photos in object storage, owner-checked serve.
 - [Sparki Document Analysis](sparki-document-analysis.md) — reads race/technical guides (PDF/image) via Anthropic document block; honest gevonden/ontbreekt + deterministic follow-ups; links+enriches races.
+- [Sparki inline input actions](sparki-inline-input-actions.md) — Home coach-surface empty states must offer direct inline actions (real mutation hook + dashboard invalidate), never "ga naar X" text.

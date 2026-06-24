@@ -6,6 +6,7 @@ import { useTeamIdentity } from "@/hooks/use-social"
 import { CinematicScene, type SceneName } from "@/components/sparki/cinematic-scene"
 import { NotificationBell } from "@/components/sparki/notification-bell"
 import { ProfilePromptCard } from "@/components/sparki/profile-prompt-card"
+import { CoachInputNeeds } from "@/components/sparki/coach-input-actions"
 import { FollowUpPrompt } from "@/components/sparki/follow-up-prompt"
 
 const SECTION_SCENE: Record<string, SceneName> = {
@@ -172,6 +173,7 @@ export function ScreenShell({
         </header>
 
         {isHome && <HomeProfilePrompt />}
+        {isHome && <CoachInputNeeds />}
 
         {children}
       </div>

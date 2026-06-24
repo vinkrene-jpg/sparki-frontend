@@ -16,8 +16,11 @@ import {
   Skeleton,
 } from "@/components/sparki/home-sections"
 import { HealthStatusControl } from "@/components/sparki/health-status-control"
+import { QuickActionButton } from "@/components/sparki/coach-input-actions"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
+import { useRaces } from "@/hooks/use-races"
+import { computeDayAdvice, type DayAdvice } from "@/lib/day-advice"
 import type { DayHomeComponentProps } from "@/lib/day-type"
 
 const SETUP_STEPS: { label: string; hint: string; href: string }[] = [
@@ -38,17 +41,22 @@ const SETUP_STEPS: { label: string; hint: string; href: string }[] = [
   },
 ]
 
-const NO_TRAINING_SUGGESTIONS = [
-  "Geen training ingepland — een goed moment voor lichte beweging of mobiliteit.",
-  "Plan je volgende sessie zodat Sparki je dag weer kan opbouwen.",
-  "Gebruik de dag om bij te tanken: slaap, hydratatie en voeding.",
-]
-
 export function GeneralDayHome({ briefing }: DayHomeComponentProps) {
   const { data, isLoading } = useAthleteDashboard()
   const { data: metricsHistory, isLoading: metricsLoading } = useDailyMetrics(14)
+  const { data: races } = useRaces()
   const profile = data?.athleteProfile
   const [, navigate] = useLocation()
+
+  // Concrete, explainable advice for a no-plan day — built from the athlete's
+  // real signals (check-in, form, weekly hours, FTP, nearest race). Null until
+  // there's a check-in to base readiness on (the reactor prompts for one).
+  const advice = computeDayAdvice({
+    profile: profile ?? null,
+    metrics: data?.todayMetrics ?? null,
+    load: data?.load ?? null,
+    races,
+  })
 
   // Brand-new athletes (no profile yet) get the onboarding flow; established
   // athletes with simply no plan today get the rich no-training fallback.
@@ -132,32 +140,30 @@ export function GeneralDayHome({ briefing }: DayHomeComponentProps) {
             </div>
           </section>
 
-          {/* 03 WAT NU — ≤3 suggesties (grondregel 5) */}
+          {/* 03 WAT NU — één concreet, uitlegbaar advies (grondregel 5) */}
           <section>
             <SectionLabel n="03" title="Wat nu" large />
-            <ul className="mt-4 space-y-3">
-              {NO_TRAINING_SUGGESTIONS.map((tip) => (
-                <li
-                  key={tip}
-                  className="flex gap-3 rounded-xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
-                >
-                  <span
-                    className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
-                    style={{
-                      background: "rgba(120,210,230,0.85)",
-                      boxShadow: "0 0 8px rgba(120,210,230,0.85)",
-                    }}
-                  />
-                  <span className="text-[13px] leading-relaxed text-white/70">
-                    {tip}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {/* Externe data expliciet gelabeld (grondregel 3 — nooit verzonnen) */}
-            <p className="mt-3 px-1 text-[11px] leading-relaxed text-white/35">
-              Weer &amp; routesuggesties — externe koppeling volgt.
-            </p>
+            <div className="mt-4">
+              {isLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-6 w-3/4 rounded" />
+                  <Skeleton className="h-24 w-full rounded-xl" />
+                </div>
+              ) : advice ? (
+                <DayAdviceCard
+                  advice={advice}
+                  onPrimary={() => navigate(advice.primary.href)}
+                />
+              ) : (
+                <div className="flex flex-col items-start gap-3 rounded-xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+                  <p className="text-[13px] leading-relaxed text-white/70">
+                    Log je check-in van vandaag, dan zet Sparki hier een concreet
+                    advies neer op basis van je vorm, FTP en doel.
+                  </p>
+                  <QuickActionButton action="checkin" />
+                </div>
+              )}
+            </div>
           </section>
 
           <HealthStatusControl />
@@ -170,5 +176,70 @@ export function GeneralDayHome({ briefing }: DayHomeComponentProps) {
         </span>
       </footer>
     </ScreenShell>
+  )
+}
+
+// One concrete, explainable recommendation: a headline with real numbers, the
+// power band (when an FTP is known), what to focus on, and a "waarom" that cites
+// each signal Sparki weighed. Replaces the old generic no-training tips.
+function DayAdviceCard({
+  advice,
+  onPrimary,
+}: {
+  advice: DayAdvice
+  onPrimary: () => void
+}) {
+  return (
+    <div className="rounded-2xl border border-cyan-300/20 bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+      <div className="flex items-start gap-3">
+        <span
+          className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full"
+          style={{ background: ACCENT, boxShadow: `0 0 8px ${ACCENT}` }}
+        />
+        <div className="flex-1">
+          <p className="text-[15px] font-medium leading-snug tracking-tight text-white/95">
+            {advice.headline}
+          </p>
+          {advice.power && (
+            <p className="mt-1.5 font-mono text-[12px] tabular-nums tracking-wide text-cyan-300/90">
+              {advice.power.low}–{advice.power.high} W · {advice.power.label}
+            </p>
+          )}
+          <p className="mt-2 text-[13px] leading-relaxed text-white/55">
+            {advice.focus}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 border-t border-white/[0.07] pt-4">
+        <p className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+          WAAROM DIT ADVIES
+        </p>
+        <ul className="mt-3 space-y-2.5">
+          {advice.reasons.map((reason) => (
+            <li key={reason} className="flex gap-2.5">
+              <span
+                className="mt-1.5 h-1 w-1 shrink-0 rounded-full"
+                style={{ background: "rgba(120,210,230,0.7)" }}
+              />
+              <span className="text-[12.5px] leading-relaxed text-white/70">
+                {reason}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <button
+        type="button"
+        onClick={onPrimary}
+        className="mt-5 inline-flex items-center gap-2 rounded-full border border-cyan-300/30 bg-cyan-300/[0.08] px-5 py-2.5 text-[13px] font-medium tracking-tight text-white/90 transition-colors hover:bg-cyan-300/[0.14]"
+      >
+        {advice.primary.label}
+        <span aria-hidden="true" style={{ color: ACCENT }}>
+          →
+        </span>
+      </button>
+    </div>
   )
 }

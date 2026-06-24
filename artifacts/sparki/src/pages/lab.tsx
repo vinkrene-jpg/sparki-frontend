@@ -193,7 +193,18 @@ export default function LabPage() {
     .filter((m) => m.hrv != null)
     .map((m) => m.hrv!)
 
-  const showRadar = !loadLoading && !sessionsLoading
+  // Only surface the radar once there is real signal behind it — otherwise the
+  // axes would fall back to neutral 0.5 placeholders and present a fake reading.
+  const hasRadarData =
+    !!load ||
+    (sessions?.length ?? 0) > 0 ||
+    (ftpHistory?.length ?? 0) > 0 ||
+    feelScores.length > 0 ||
+    profile?.ftp != null
+  const radarLoading = loadLoading || sessionsLoading
+  // Honest, derived insight — the strongest axis computed from real numbers,
+  // never a hardcoded claim.
+  const strongestAxis = [...bioAxes].sort((a, b) => b.level - a.level)[0]
 
   return (
     <ScreenShell section="Lab">
@@ -218,18 +229,27 @@ export default function LabPage() {
       </div>
 
       {/* 01 PERFORMANCE RADAR */}
-      {showRadar && (
-        <section className="flex flex-col items-center">
-          <div className="flex w-full items-center justify-between">
-            <SectionLabel n="01" title="Performance Radar" />
-          </div>
-          <BioRadar size={260} accent={ACCENT} axes={bioAxes} />
-          <p className="mt-1 max-w-[18rem] text-pretty text-center text-[12px] leading-relaxed text-white/40">
-            Je capaciteitsprofiel over zes signalen. Threshold en herstel zijn je
-            sterkste assen deze cyclus.
+      <section className="flex flex-col items-center">
+        <div className="flex w-full items-center justify-between">
+          <SectionLabel n="01" title="Performance Radar" />
+        </div>
+        {radarLoading ? (
+          <Skeleton className="mt-4 h-[260px] w-[260px] rounded-full" />
+        ) : hasRadarData ? (
+          <>
+            <BioRadar size={260} accent={ACCENT} axes={bioAxes} />
+            <p className="mt-1 max-w-[18rem] text-pretty text-center text-[12px] leading-relaxed text-white/40">
+              Je capaciteitsprofiel over zes signalen, berekend uit je belasting,
+              sessies en check-ins. Je sterkste signaal nu: {strongestAxis.label}.
+            </p>
+          </>
+        ) : (
+          <p className="mt-4 max-w-[18rem] text-pretty text-center text-[12px] leading-relaxed text-white/35">
+            Nog te weinig gegevens voor je radar · Log sessies en check-ins zodat
+            Sparki je capaciteitsprofiel kan opbouwen.
           </p>
-        </section>
-      )}
+        )}
+      </section>
 
       {/* 02 READINESS HISTORY */}
       <section>

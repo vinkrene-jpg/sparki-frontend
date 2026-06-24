@@ -6,10 +6,14 @@
 // readiness + vitals logic without duplication.
 
 import { ACCENT } from "@/components/sparki/ui"
+import { QuickActionButton } from "@/components/sparki/coach-input-actions"
 import { SparkiCore } from "@/components/sparki/sparki-core"
 import { Sparkline } from "@/components/sparki/primitives"
 import { useUserProfile } from "@/contexts/UserContext"
 import type { AthleteDailyMetric } from "@/lib/athlete-types"
+import { computeReadiness, type Metrics } from "@/lib/readiness"
+
+export type { Metrics }
 
 export function todayLabel() {
   return new Date().toLocaleDateString("nl-NL", {
@@ -23,42 +27,6 @@ export function Skeleton({ className = "" }: { className?: string }) {
   return (
     <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
   )
-}
-
-export type Metrics = {
-  feelScore?: number | null
-  sleepQuality?: number | null
-  fatigueScore?: number | null
-  hrv?: number | null
-} | null
-
-function computeReadiness(m: Metrics) {
-  if (!m) return null
-  const feel = m.feelScore != null ? m.feelScore / 5 : null
-  const sleep = m.sleepQuality != null ? m.sleepQuality / 5 : null
-  const fatigue = m.fatigueScore != null ? (10 - m.fatigueScore) / 9 : null
-  const parts = [feel, sleep, fatigue].filter((v): v is number => v !== null)
-  if (parts.length === 0) return null
-  const score = Math.round((parts.reduce((s, v) => s + v, 0) / parts.length) * 100)
-  const state =
-    score >= 80 ? "PRIMED"
-    : score >= 65 ? "GOED"
-    : score >= 50 ? "MATIG"
-    : "LAAG"
-  const advice =
-    score >= 80 ? "Training handhaven — condities zijn ideaal"
-    : score >= 65 ? "Ga door — pas intensiteit aan indien nodig"
-    : score >= 50 ? "Overweeg lagere intensiteit vandaag"
-    : "Rust aanbevolen — herstel eerst"
-  const detail =
-    score >= 80
-      ? "Je systeem is fris genoeg voor de volledige belasting. Geen aanpassing nodig."
-      : score >= 65
-        ? "Goed herstel zichtbaar. Luister naar je lichaam tijdens de opbouw."
-        : score >= 50
-          ? "Verlaag de doelbelasting met 10–15%. Matig herstel."
-          : "Herstel heeft prioriteit. Actieve recovery of rust is de beste keuze."
-  return { score, state, advice, detail }
 }
 
 function Delta({ value, invert = false }: { value: number; invert?: boolean }) {
@@ -82,9 +50,9 @@ export function ReactorReadiness({ metrics }: { metrics: Metrics }) {
           <span className="text-3xl font-extralight text-white/25">—</span>
         </div>
         <p className="text-center text-[12px] leading-relaxed text-white/35">
-          Nog geen check-in · Log gereedheid in{" "}
-          <span style={{ color: ACCENT }}>You</span>
+          Nog geen check-in vandaag
         </p>
+        <QuickActionButton action="checkin" />
       </div>
     )
   }
@@ -225,9 +193,12 @@ export function VitalsGrid({ metrics }: { metrics: AthleteDailyMetric[] }) {
   const hasAnyData = entries.some((e) => e.value !== null)
   if (!hasAnyData) {
     return (
-      <p className="text-[12px] text-white/35">
-        Log een check-in om je hersteldata te zien
-      </p>
+      <div className="flex flex-col items-start gap-3">
+        <p className="text-[12px] text-white/35">
+          Nog geen hersteldata — vul je check-in in om dit te zien
+        </p>
+        <QuickActionButton action="checkin" />
+      </div>
     )
   }
 
@@ -317,10 +288,12 @@ export function HomeIntro({
             {profile.wkg ? ` · ${profile.wkg} W/kg` : ""}
           </p>
         ) : (
-          <p className="mt-1 font-mono text-[11px] tracking-wide text-white/45">
-            Stel je FTP in bij{" "}
-            <span style={{ color: ACCENT }}>Profiel</span> om te beginnen
-          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="font-mono text-[11px] tracking-wide text-white/45">
+              Nog geen FTP ingesteld
+            </span>
+            <QuickActionButton action="ftp" variant="link" />
+          </div>
         )}
       </div>
     </div>

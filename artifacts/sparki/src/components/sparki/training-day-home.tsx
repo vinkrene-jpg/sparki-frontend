@@ -20,6 +20,7 @@ import {
 } from "@/components/sparki/home-sections"
 import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer"
 import { LinkedRoutePreview } from "@/components/sparki/linked-route"
+import { QuickActionButton } from "@/components/sparki/coach-input-actions"
 import { useState } from "react"
 import { ChevronRight } from "lucide-react"
 
@@ -329,8 +330,12 @@ export function TrainingDayHome({
                 </span>
               </div>
               <p className="mt-2 text-[13px] leading-relaxed text-white/35">
-                Geen training gepland · Voeg toe via Train
+                Geen training gepland — voeg een wedstrijd toe en Sparki plant je
+                opbouw.
               </p>
+              <div className="mt-3">
+                <QuickActionButton action="race" />
+              </div>
             </div>
           )}
         </div>
@@ -368,9 +373,12 @@ export function TrainingDayHome({
           ) : metricsHistory && metricsHistory.length > 0 ? (
             <VitalsGrid metrics={metricsHistory} />
           ) : (
-            <p className="text-[12px] text-white/35">
-              Log een check-in om je hersteldata te zien
-            </p>
+            <div className="flex flex-col items-start gap-3">
+              <p className="text-[12px] text-white/35">
+                Nog geen hersteldata — vul je check-in in om dit te zien
+              </p>
+              <QuickActionButton action="checkin" />
+            </div>
           )}
         </div>
       </section>
@@ -418,9 +426,13 @@ export function TrainingDayHome({
                 {brief.brief}
               </p>
             ) : (
-              <p className="mt-3 text-[13px] leading-relaxed text-white/35">
-                Log een check-in en plan een training voor je dagelijkse briefing.
-              </p>
+              <div className="mt-3 flex flex-col items-start gap-3">
+                <p className="text-[13px] leading-relaxed text-white/35">
+                  Vul je check-in in zodat Sparki je dagelijkse briefing kan
+                  opstellen.
+                </p>
+                <QuickActionButton action="checkin" />
+              </div>
             )}
           </div>
         </section>
