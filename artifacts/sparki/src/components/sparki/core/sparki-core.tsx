@@ -1,19 +1,22 @@
 import { useEffect, useRef } from "react"
 
-// The living Sparki Core — a single organic, breathing shape that encodes a
-// state through position, size, colour, deformation, pulse, opacity, movement
-// and stability. This is a pure visual prototype: it renders whatever state it
-// is handed, with no notion of where that state comes from. Canvas 2D + a small
-// deterministic sum-of-sines deformation (no dependencies), animated at 60fps.
+// The living Sparki Core — a single organic, calm shape that encodes a state
+// through position (on a good↔bad cross), size, colour, gentle deformation,
+// breathing, transparency, a slow lean/drift, an elongation when two factors
+// pull hard, and a certainty that reads as soft-vs-crisp (never jittery).
+// Pure visual prototype: it renders whatever state it is handed, with no notion
+// of where that state comes from. Canvas 2D + a small deterministic sum-of-sines
+// deformation (no dependencies). Movement is deliberately slow and never
+// schokkerig — uncertainty makes the Core hazy, not restless.
 
 export interface CoreVisualState {
-  /** 0..1 horizontal position in the field */
+  /** 0..1 horizontal position in the field (0.5 = centre) */
   x: number
-  /** 0..1 vertical position in the field */
+  /** 0..1 vertical position in the field (0 = top/good, 1 = bottom/bad) */
   y: number
   /** 0..1 overall size */
   size: number
-  /** 0..360 colour (hue) */
+  /** 0..360 colour (hue) — the good↔bad balance */
   hue: number
   /** 0..1 shape deformation (how far it bends from a calm circle) */
   distortion: number
@@ -21,13 +24,15 @@ export interface CoreVisualState {
   pulse: number
   /** 0..1 transparency (1 = solid) */
   opacity: number
-  /** 0..1 movement speed */
+  /** 0..1 movement speed (a slow lean/drift, never fast) */
   speed: number
-  /** 0..360 movement direction in degrees */
+  /** 0..360 the axis along which influence pulls — lean + stretch direction */
   direction: number
+  /** 0..1 elongation: how far two strong factors stretch the shape */
+  stretch: number
   /** 0..1 second influencing factor (inner energy core) */
   secondary: number
-  /** 0..1 stability / coherence — low values make the Core restless and fuzzy */
+  /** 0..1 certainty / how much data — low values make the Core soft and hazy */
   confidence: number
 }
 
@@ -82,47 +87,64 @@ export function SparkiCore({
 
       const minDim = Math.min(W, H)
 
-      // Breathing — amplitude and rate both grow with pulse.
-      const pulseRate = 1.0 + s.pulse * 2.4
-      const breath = 1 + s.pulse * 0.13 * Math.sin(t * pulseRate)
+      // Certainty reads as soft↔crisp. soft = 1 when we know little.
+      const soft = 1 - Math.max(0, Math.min(1, s.confidence))
+
+      // Breathing — amplitude and rate both grow with pulse, but stay gentle.
+      const pulseRate = 0.7 + s.pulse * 1.4
+      const breath = 1 + s.pulse * 0.1 * Math.sin(t * pulseRate)
       const baseR = minDim * (0.1 + s.size * 0.3) * breath
 
-      // Position + drift along the chosen direction, faster with speed.
+      // Position + a slow lean/drift along the influence axis. Deliberately
+      // small and calm — never a fast or jerky travel.
       const dir = (s.direction * Math.PI) / 180
-      const driftPhase = t * (0.25 + s.speed * 1.6)
-      const driftAmp = s.speed * minDim * 0.05
+      const driftPhase = t * (0.18 + s.speed * 0.7)
+      const driftAmp = s.speed * minDim * 0.035
       const cx = W * s.x + Math.cos(dir) * Math.sin(driftPhase) * driftAmp
       const cy = H * s.y + Math.sin(dir) * Math.sin(driftPhase) * driftAmp
 
-      // Low confidence = flicker in opacity (the Core looks unsure).
-      const flicker = 1 - (1 - s.confidence) * 0.14 * Math.abs(Math.sin(t * 8.5))
-      const alpha = Math.max(0, Math.min(1, s.opacity)) * flicker
+      // Transparency is its own dimension; certainty does NOT flicker it.
+      const alpha = Math.max(0, Math.min(1, s.opacity))
 
-      // Organic radius deformation: a few slow sines (distortion) plus a fast,
-      // high-frequency unrest term that grows as confidence falls.
+      // Organic radius deformation: a few slow, low-frequency sines only — no
+      // high-frequency unrest. Uncertainty never makes it jagged.
       const deform = (ang: number, phase: number) => {
-        const slow =
-          Math.sin(ang * 3 + phase * 0.8) * 0.5 +
-          Math.sin(ang * 5 - phase * 1.1) * 0.3 +
-          Math.sin(ang * 2 + phase * 0.5) * 0.2
-        const unrest =
-          (1 - s.confidence) *
-          (Math.sin(ang * 11 + phase * 6) * 0.5 +
-            Math.sin(ang * 19 - phase * 9) * 0.5)
-        return s.distortion * 0.42 * slow + 0.22 * unrest
+        return (
+          s.distortion *
+          0.34 *
+          (Math.sin(ang * 2 + phase * 0.7) * 0.5 +
+            Math.sin(ang * 3 - phase * 0.5) * 0.3 +
+            Math.sin(ang * 4 + phase * 0.35) * 0.2)
+        )
       }
 
-      const tt = t * (0.6 + s.speed * 1.4)
+      // Slow internal clock — the shape evolves calmly regardless of drift.
+      const tt = t * (0.22 + s.speed * 0.5)
+
+      // Anisotropic stretch along the influence axis (two strong factors pull
+      // the Core into a teardrop/oval).
+      const ca = Math.cos(dir)
+      const sa = Math.sin(dir)
+      const sx = 1 + s.stretch * 0.95
+      const sy = 1 - s.stretch * 0.32
 
       const buildPath = (R: number, scale: number, phaseShift: number) => {
-        const N = 140
+        const N = 160
         ctx.beginPath()
         for (let i = 0; i <= N; i++) {
           const ang = (i / N) * Math.PI * 2
           const d = deform(ang, tt + phaseShift)
           const r = R * scale * (1 + d)
-          const px = cx + Math.cos(ang) * r
-          const py = cy + Math.sin(ang) * r
+          // base point on the circle
+          const lx = Math.cos(ang) * r
+          const ly = Math.sin(ang) * r
+          // rotate into the influence frame, stretch, rotate back
+          const ux = lx * ca + ly * sa
+          const uy = -lx * sa + ly * ca
+          const fx = ux * sx * ca - uy * sy * sa
+          const fy = ux * sx * sa + uy * sy * ca
+          const px = cx + fx
+          const py = cy + fy
           if (i === 0) ctx.moveTo(px, py)
           else ctx.lineTo(px, py)
         }
@@ -133,8 +155,8 @@ export function SparkiCore({
 
       ctx.globalAlpha = alpha
 
-      // 1 — ambient halo
-      const glowR = baseR * 2.4
+      // 1 — ambient halo. Hazier (wider, softer) when certainty is low.
+      const glowR = baseR * (2.2 + soft * 0.8)
       const glow = ctx.createRadialGradient(
         cx,
         cy,
@@ -143,28 +165,29 @@ export function SparkiCore({
         cy,
         glowR,
       )
-      glow.addColorStop(0, col(60, 0.3))
-      glow.addColorStop(0.5, col(55, 0.1))
+      glow.addColorStop(0, col(60, 0.26 + soft * 0.08))
+      glow.addColorStop(0.5, col(55, 0.09))
       glow.addColorStop(1, col(50, 0))
       ctx.fillStyle = glow
       ctx.beginPath()
       ctx.arc(cx, cy, glowR, 0, Math.PI * 2)
       ctx.fill()
 
-      // 2 — motion trail in the direction of travel
+      // 2 — soft lean trail in the direction of travel
       if (s.speed > 0.02) {
-        const tx = cx - Math.cos(dir) * baseR * 0.6 * s.speed
-        const ty = cy - Math.sin(dir) * baseR * 0.6 * s.speed
-        const tg = ctx.createRadialGradient(tx, ty, 0, tx, ty, baseR * 1.4)
-        tg.addColorStop(0, col(58, 0.2 * s.speed))
+        const tx = cx - Math.cos(dir) * baseR * 0.5 * s.speed
+        const ty = cy - Math.sin(dir) * baseR * 0.5 * s.speed
+        const tg = ctx.createRadialGradient(tx, ty, 0, tx, ty, baseR * 1.3)
+        tg.addColorStop(0, col(58, 0.16 * s.speed))
         tg.addColorStop(1, col(58, 0))
         ctx.fillStyle = tg
         ctx.beginPath()
-        ctx.arc(tx, ty, baseR * 1.4, 0, Math.PI * 2)
+        ctx.arc(tx, ty, baseR * 1.3, 0, Math.PI * 2)
         ctx.fill()
       }
 
-      // 3 — main body. Confidence sharpens the gradient and the glow.
+      // 3 — main body. Certainty sharpens the gradient + the glow; low
+      // certainty blurs the edge so the Core looks soft, not nervous.
       buildPath(baseR, 1, 0)
       const sharp = 0.45 + s.confidence * 0.35
       const body = ctx.createRadialGradient(
@@ -180,14 +203,14 @@ export function SparkiCore({
       body.addColorStop(sharp, col(55, 0.85))
       body.addColorStop(1, col(45, 0.1))
       ctx.fillStyle = body
-      ctx.shadowColor = col(60, 0.5)
-      ctx.shadowBlur = baseR * (0.5 + s.confidence * 0.3)
+      ctx.shadowColor = col(60, 0.45)
+      ctx.shadowBlur = baseR * (0.35 + soft * 0.6)
       ctx.fill()
       ctx.shadowBlur = 0
 
-      // edge rim — crisper when confident
+      // edge rim — crisper when certain, almost gone when hazy
       ctx.lineWidth = 1 + s.confidence * 1.5
-      ctx.strokeStyle = col(85, 0.25 + s.confidence * 0.25)
+      ctx.strokeStyle = col(85, 0.1 + s.confidence * 0.3)
       ctx.stroke()
 
       // 4 — secondary inner core (the second influencing factor), counter-phase

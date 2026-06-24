@@ -16,11 +16,12 @@ const DEFAULT_STATE: CoreVisualState = {
   y: 0.45,
   size: 0.62,
   hue: 190,
-  distortion: 0.28,
+  distortion: 0.22,
   pulse: 0.4,
   opacity: 0.95,
-  speed: 0.3,
+  speed: 0.2,
   direction: 90,
+  stretch: 0.15,
   secondary: 0.4,
   confidence: 0.8,
 }
@@ -29,81 +30,90 @@ type Preset = { label: string; state: CoreVisualState }
 
 const PRESETS: Preset[] = [
   {
+    // Boven-midden, groen, strak en helder: goed met veel reserve.
     label: "Topvorm",
     state: {
       x: 0.5,
-      y: 0.45,
+      y: 0.28,
       size: 0.82,
-      hue: 165,
-      distortion: 0.12,
-      pulse: 0.45,
+      hue: 158,
+      distortion: 0.1,
+      pulse: 0.4,
       opacity: 1,
-      speed: 0.35,
+      speed: 0.18,
       direction: 90,
-      secondary: 0.55,
+      stretch: 0.1,
+      secondary: 0.5,
       confidence: 0.92,
     },
   },
   {
+    // Onder-midden, koel/paars, klein en rustig: weinig reserve.
     label: "Vermoeid",
     state: {
       x: 0.5,
-      y: 0.55,
+      y: 0.66,
       size: 0.5,
       hue: 255,
-      distortion: 0.3,
-      pulse: 0.2,
-      opacity: 0.8,
-      speed: 0.12,
+      distortion: 0.2,
+      pulse: 0.16,
+      opacity: 0.85,
+      speed: 0.1,
       direction: 270,
+      stretch: 0.12,
       secondary: 0.3,
-      confidence: 0.6,
+      confidence: 0.7,
     },
   },
   {
-    label: "Onrustig",
+    // Twee sterke invloeden trekken de vorm uit langs een as.
+    label: "Onder spanning",
     state: {
-      x: 0.5,
-      y: 0.45,
-      size: 0.62,
-      hue: 18,
-      distortion: 0.75,
-      pulse: 0.8,
+      x: 0.46,
+      y: 0.5,
+      size: 0.64,
+      hue: 32,
+      distortion: 0.28,
+      pulse: 0.45,
       opacity: 0.95,
-      speed: 0.8,
-      direction: 200,
-      secondary: 0.7,
-      confidence: 0.25,
+      speed: 0.22,
+      direction: 35,
+      stretch: 0.72,
+      secondary: 0.62,
+      confidence: 0.62,
     },
   },
   {
     label: "Hersteld",
     state: {
       x: 0.5,
-      y: 0.42,
+      y: 0.36,
       size: 0.6,
       hue: 140,
       distortion: 0.1,
       pulse: 0.3,
       opacity: 0.95,
-      speed: 0.18,
+      speed: 0.14,
       direction: 90,
+      stretch: 0.1,
       secondary: 0.4,
       confidence: 0.85,
     },
   },
   {
+    // Weinig data: zacht en wazig (niet schokkerig), bijna doorzichtig.
     label: "Weinig data",
     state: {
       x: 0.5,
       y: 0.5,
       size: 0.5,
       hue: 200,
-      distortion: 0.4,
-      pulse: 0.35,
-      opacity: 0.55,
-      speed: 0.3,
+      distortion: 0.18,
+      pulse: 0.3,
+      opacity: 0.5,
+      speed: 0.12,
       direction: 120,
+      stretch: 0.08,
       secondary: 0.2,
       confidence: 0.12,
     },
@@ -223,8 +233,20 @@ export default function CorePlaygroundPage() {
         </button>
       </header>
 
-      {/* The living Core — the whole point. No numbers on it. */}
+      {/* The living Core on a good↔bad cross. No numbers on it. */}
       <div className="relative h-[40vh] min-h-[260px] shrink-0">
+        {/* X/Y kruis — boven-midden = goed, onder-midden = zwaar. De achtergrond
+            houdt de positie betekenisvol zonder cijfers. */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+          <div className="absolute left-1/2 top-6 bottom-6 w-px -translate-x-1/2 bg-gradient-to-b from-emerald-300/20 via-white/10 to-rose-300/20" />
+          <div className="absolute top-1/2 left-6 right-6 h-px -translate-y-1/2 bg-white/10" />
+          <span className="absolute left-1/2 top-2 -translate-x-1/2 font-mono text-[9px] uppercase tracking-[0.22em] text-emerald-300/45">
+            Goed · veel reserve
+          </span>
+          <span className="absolute left-1/2 bottom-9 -translate-x-1/2 font-mono text-[9px] uppercase tracking-[0.22em] text-rose-300/45">
+            Zwaar · weinig reserve
+          </span>
+        </div>
         <SparkiCore state={state} className="absolute inset-0" />
         <p className="pointer-events-none absolute inset-x-0 bottom-2 text-center font-sans text-[12px] font-light text-white/35">
           Begrijp je de toestand binnen een halve seconde?
@@ -263,13 +285,13 @@ export default function CorePlaygroundPage() {
             onChange={(v) => set("x", v)}
           />
           <Slider
-            label="Positie Y"
-            value={state.y}
+            label="Positie omhoog (hoger = beter)"
+            value={1 - state.y}
             min={0}
             max={1}
             step={0.01}
-            display={pct(state.y)}
-            onChange={(v) => set("y", v)}
+            display={pct(1 - state.y)}
+            onChange={(v) => set("y", 1 - v)}
           />
           <Slider
             label="Grootte"
@@ -327,13 +349,22 @@ export default function CorePlaygroundPage() {
             onChange={(v) => set("speed", v)}
           />
           <Slider
-            label="Bewegingsrichting"
+            label="Richting van invloed (as)"
             value={state.direction}
             min={0}
             max={360}
             step={1}
             display={`${Math.round(state.direction)}°`}
             onChange={(v) => set("direction", v)}
+          />
+          <Slider
+            label="Uitrekking (twee sterke invloeden)"
+            value={state.stretch}
+            min={0}
+            max={1}
+            step={0.01}
+            display={pct(state.stretch)}
+            onChange={(v) => set("stretch", v)}
           />
           <Slider
             label="Tweede invloed"
