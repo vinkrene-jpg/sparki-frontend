@@ -264,6 +264,19 @@ function escapeXml(s: string): string {
     .replace(/'/g, "&apos;");
 }
 
+// Map a (Dutch) maneuver word to a Garmin gpxx CoursePoint PointType. The enum
+// values come from Garmin's course-point vocabulary (Left / Right / Straight /
+// Generic); anything we can't confidently classify falls back to "Generic" so
+// the on-device prompt still appears. Matching is keyword-based (case-
+// insensitive) so it's robust to the exact phrasing of the cue.
+function coursePointType(dir: string): string {
+  const d = dir.toLowerCase();
+  if (d.includes("rechtdoor") || d.includes("straight")) return "Straight";
+  if (d.includes("links") || d.includes("left")) return "Left";
+  if (d.includes("rechts") || d.includes("right")) return "Right";
+  return "Generic";
+}
+
 // Returns null when the route has no usable geometry (caller responds 422
 // rather than emitting an empty track).
 export function buildGpx(route: GpxBuildInput): string | null {
@@ -317,14 +330,26 @@ export function buildGpx(route: GpxBuildInput): string | null {
 
   const name = escapeXml(route.name?.trim() || "Sparki route");
 
+  // Each nav cue is anchored to the nearest real track-point index. We emit it
+  // two ways: (1) as a Garmin course point embedded inside that <trkpt> (gpxx
+  // extension) so Garmin/Wahoo head units surface richer on-device turn prompts,
+  // and (2) as a bare <wpt> waypoint as a fallback for viewers/devices that
+  // don't understand the Garmin extension. When a route has no nav cues we emit
+  // neither (and don't declare the gpxx namespace) — a plain track.
+  const coursePointByIdx = new Map<
+    number,
+    { pointName: string; pointType: string; notes: string }
+  >();
   const wpts: string[] = [];
   for (const cue of route.nav ?? []) {
     if (!Number.isFinite(cue.km)) continue;
     const idx = nearestIdxForKm(cue.km);
     const [lat, lon] = geometry[idx]!;
     const ele = eleAt(idx);
-    const cueName = escapeXml(cue.dir?.trim() || "Cue");
-    const desc = escapeXml(cue.note?.trim() || "");
+    const dir = cue.dir?.trim() || "";
+    const note = cue.note?.trim() || "";
+    const cueName = escapeXml(dir || note || "Cue");
+    const desc = escapeXml(note);
     wpts.push(
       `  <wpt lat="${lat}" lon="${lon}">\n` +
         (ele != null ? `    <ele>${ele}</ele>\n` : "") +
@@ -333,24 +358,55 @@ export function buildGpx(route: GpxBuildInput): string | null {
         `    <type>${escapeXml("nav-cue")}</type>\n` +
         `  </wpt>`,
     );
+    // First cue wins if two map to the same track point (sparse geometry); a
+    // single <trkpt> carries at most one course point.
+    if (!coursePointByIdx.has(idx)) {
+      coursePointByIdx.set(idx, {
+        pointName: cueName,
+        pointType: coursePointType(dir || note),
+        notes: desc,
+      });
+    }
   }
+
+  const hasCoursePoints = coursePointByIdx.size > 0;
 
   const trkpts = geometry
     .map((p, i) => {
       const ele = eleAt(i);
+      const cp = coursePointByIdx.get(i);
+      const head = `      <trkpt lat="${p[0]}" lon="${p[1]}">`;
+      if (!cp) {
+        return head + (ele != null ? `<ele>${ele}</ele>` : "") + `</trkpt>`;
+      }
+      // Course point embedded in the track via Garmin's gpxx extension.
       return (
-        `      <trkpt lat="${p[0]}" lon="${p[1]}">` +
-        (ele != null ? `<ele>${ele}</ele>` : "") +
-        `</trkpt>`
+        `${head}\n` +
+        (ele != null ? `        <ele>${ele}</ele>\n` : "") +
+        `        <extensions>\n` +
+        `          <gpxx:CoursePointExtension>\n` +
+        `            <gpxx:PointName>${cp.pointName}</gpxx:PointName>\n` +
+        `            <gpxx:PointType>${cp.pointType}</gpxx:PointType>\n` +
+        (cp.notes
+          ? `            <gpxx:Notes>${cp.notes}</gpxx:Notes>\n`
+          : "") +
+        `          </gpxx:CoursePointExtension>\n` +
+        `        </extensions>\n` +
+        `      </trkpt>`
       );
     })
     .join("\n");
 
+  const gpxxNs = hasCoursePoints
+    ? ` xmlns:gpxx="http://www.garmin.com/xmlschemas/GpxExtensions/v3"`
+    : "";
+
   return (
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<gpx version="1.1" creator="Sparki" xmlns="http://www.topografix.com/GPX/1/1" ` +
-    `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ` +
-    `xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">\n` +
+    `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"` +
+    gpxxNs +
+    ` xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">\n` +
     `  <metadata>\n    <name>${name}</name>\n  </metadata>\n` +
     (wpts.length > 0 ? wpts.join("\n") + "\n" : "") +
     `  <trk>\n    <name>${name}</name>\n    <trkseg>\n${trkpts}\n    </trkseg>\n  </trk>\n` +

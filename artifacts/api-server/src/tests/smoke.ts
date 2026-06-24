@@ -27,7 +27,7 @@ import {
   checkCompleteness,
   buildSkeleton,
 } from "../engines/training-plan";
-import { selectRoutingProfile, profileToSurface } from "../engines/route";
+import { selectRoutingProfile, profileToSurface, buildGpx } from "../engines/route";
 import {
   getMissingOnboardingData,
   selectNextQuestions,
@@ -129,6 +129,66 @@ async function main() {
     });
     assert(profile === "cycling-road", "racefiets → cycling-road");
     assert(typeof profileToSurface(profile) === "string", "surface string");
+  });
+
+  await run("Route", "buildGpx course points", () => {
+    const geometry: [number, number][] = [
+      [52.0, 4.0],
+      [52.01, 4.01],
+      [52.02, 4.02],
+      [52.03, 4.03],
+    ];
+    // With nav cues → embedded Garmin course points + fallback waypoints.
+    const withNav = buildGpx({
+      name: "Test route",
+      geometry,
+      profile: [10, 20, 30, 40],
+      nav: [
+        { km: 0, dir: "Vertrek", note: "Start hier" },
+        { km: 1.2, dir: "Links", note: "Sla linksaf" },
+        { km: 2.5, dir: "Scherp rechts", note: "Scherp naar rechts" },
+        { km: 3.4, dir: "Rechtdoor", note: "Blijf rechtdoor gaan" },
+      ],
+    });
+    assert(withNav != null, "buildGpx returns gpx with nav");
+    assert(
+      withNav!.includes('xmlns:gpxx="http://www.garmin.com/xmlschemas/GpxExtensions/v3"'),
+      "declares gpxx namespace when course points exist",
+    );
+    assert(
+      withNav!.includes("<gpxx:CoursePointExtension>"),
+      "embeds CoursePointExtension in track",
+    );
+    assert(
+      withNav!.includes("<gpxx:PointType>Left</gpxx:PointType>"),
+      "maps 'Links' → Left",
+    );
+    assert(
+      withNav!.includes("<gpxx:PointType>Right</gpxx:PointType>"),
+      "maps 'Scherp rechts' → Right",
+    );
+    assert(
+      withNav!.includes("<gpxx:PointType>Straight</gpxx:PointType>"),
+      "maps 'Rechtdoor' → Straight",
+    );
+    assert(
+      withNav!.includes("<gpxx:PointType>Generic</gpxx:PointType>"),
+      "maps 'Vertrek' → Generic",
+    );
+    assert(withNav!.includes("<wpt "), "keeps waypoint fallback");
+
+    // No nav cues → plain track, no gpxx namespace, no course points (graceful).
+    const noNav = buildGpx({ name: "Bare", geometry, profile: null, nav: null });
+    assert(noNav != null, "buildGpx returns gpx without nav");
+    assert(!noNav!.includes("gpxx"), "no gpxx namespace when no cues");
+    assert(!noNav!.includes("<wpt "), "no waypoints when no cues");
+    assert(!noNav!.includes("<extensions>"), "no course points when no cues");
+
+    // No usable geometry → null (caller responds 422).
+    assert(
+      buildGpx({ name: "x", geometry: [], nav: null }) === null,
+      "null on empty geometry",
+    );
   });
 
   await run("Onboarding", "estimateFtp", () => {
