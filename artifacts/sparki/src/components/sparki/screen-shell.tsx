@@ -184,7 +184,9 @@ export function ScreenShell({
         {isHome && <HomeProfilePrompt />}
         {isHome && <CoachInputNeeds />}
 
-        {showCoachCard && <CoachAnalysisCard />}
+        {showCoachCard && (
+          <CoachAnalysisCard variant={isHome ? "hero" : "card"} />
+        )}
 
         {children}
       </div>

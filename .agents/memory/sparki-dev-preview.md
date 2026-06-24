@@ -28,6 +28,22 @@ deployment with non-production NODE_ENV would silently grant access as a fallbac
 Frontend branch is dead-code-eliminated in prod builds via `import.meta.env.DEV`.
 Never relax either condition.
 
+## Dev athlete switching (preview multiple seeded profiles)
+A dev-only `x-dev-clerk-id` request header lets the preview switch which seeded athlete
+is the active user, resolved per-request (not the process-cached default).
+**Why:** previewing personality/observation differences across athletes needs to flip
+the resolved user live without restarting; must never become a prod auth hole.
+**How to apply:** `devAuthBypass` honours the header ONLY when IS_DEV, there is no real
+Clerk session, AND a `user_profiles` row actually exists for that id (fail-closed — an
+unknown id falls back to the default dev user). Frontend attaches it from a localStorage
+store in `lib/dev.ts` via `apiFetch`, guarded by `import.meta.env.DEV`. The
+`/api/dev/*` routes are registered only when `NODE_ENV !== "production"`.
+
+## Engine personality/basis strings are sentence fragments
+`personality.basis` (and similar engine-resolved phrases) come back lowercase with no
+terminal punctuation (e.g. "je rijdt op nationaal niveau"). The UI must capitalize +
+punctuate at the render sink — do not assume engine strings are display-ready.
+
 ## New pages need a DevPreview branch (easy to miss)
 `DevPreview` does NOT defer to the production wouter `<Switch>` — it has its own
 `if (location.startsWith(...))` chain. A route registered only in `App.tsx` will work

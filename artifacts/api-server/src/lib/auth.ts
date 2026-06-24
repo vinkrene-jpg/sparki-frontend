@@ -1,5 +1,6 @@
 import { getAuth, clerkClient } from "@clerk/express";
 import type { Request, Response, NextFunction } from "express";
+import { eq } from "drizzle-orm";
 import { db, userProfilesTable } from "@workspace/db";
 
 // Dev auth bypass requires BOTH a non-production runtime AND an explicit opt-in
@@ -36,8 +37,38 @@ async function resolveDevUserId(): Promise<string | null> {
   return cachedDevUserId;
 }
 
+// True only for a clerkId that actually exists in user_profiles. Used so the dev
+// preview can switch the active athlete via the `x-dev-clerk-id` header WITHOUT
+// ever resolving to a non-existent / unauthorised id. Fails closed on any error.
+async function devUserExists(clerkId: string): Promise<boolean> {
+  try {
+    const rows = await db
+      .select({ clerkId: userProfilesTable.clerkId })
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.clerkId, clerkId))
+      .limit(1);
+    return rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+function requestedDevClerkId(req: Request): string | null {
+  const raw = req.headers["x-dev-clerk-id"];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  const trimmed = (value ?? "").trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 // Dev-only middleware: attaches a resolved dev user id to the request when there
 // is no real Clerk session. Registered only when NODE_ENV !== "production".
+//
+// The dev preview can pin which seeded athlete to view via the `x-dev-clerk-id`
+// header. That override is honoured ONLY in dev (IS_DEV) and ONLY when the id
+// maps to a real user_profiles row — otherwise we ignore it and fall back to the
+// default dev user. This keeps the switch request-level (no caching) and fails
+// closed: the header can never grant access to a non-existent profile, and the
+// whole branch is dead in production.
 export async function devAuthBypass(
   req: Request,
   _res: Response,
@@ -46,6 +77,13 @@ export async function devAuthBypass(
   if (!IS_DEV) return next();
   const auth = getAuth(req);
   if (auth?.userId) return next();
+
+  const requested = requestedDevClerkId(req);
+  if (requested && (await devUserExists(requested))) {
+    (req as Request & { devClerkUserId?: string }).devClerkUserId = requested;
+    return next();
+  }
+
   const devId = await resolveDevUserId();
   if (devId) {
     (req as Request & { devClerkUserId?: string }).devClerkUserId = devId;

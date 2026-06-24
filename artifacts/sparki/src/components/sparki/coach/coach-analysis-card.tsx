@@ -3,10 +3,13 @@ import { useLocation } from "wouter"
 import {
   Activity,
   ChevronDown,
+  ChevronLeft,
   HelpCircle,
+  RefreshCw,
   Sparkles,
   ThumbsDown,
   ThumbsUp,
+  X,
 } from "lucide-react"
 import { useUserProfile } from "@/contexts/UserContext"
 import {
@@ -15,10 +18,14 @@ import {
   useCoachFeedback,
   type CoachAction,
   type CoachActionKind,
+  type CoachAnalysis,
   type Confidence,
   type FollowUpQuestion,
   type IntakeSignal,
+  type Personality,
 } from "@/hooks/use-coach-analysis"
+
+export type CoachCardVariant = "hero" | "card"
 
 // Plain-Dutch labels for the engine's internal signal kinds (used when listing
 // which signals Sparki weighed and which were missing).
@@ -44,6 +51,15 @@ const INTENSITY_LABEL: Record<string, string> = {
   normaal: "Normaal",
   stevig: "Stevig",
 }
+
+// The always-available quick check-in. These three answers map (server-side) to
+// real feel/fatigue daily metrics and trigger a full recompute — see the
+// coach/followup route + checkInFromAnswer. Values must match the engine.
+const CHECK_IN_OPTIONS: { value: string; label: string }[] = [
+  { value: "fris", label: "Fris" },
+  { value: "oke", label: "Oké" },
+  { value: "vermoeid", label: "Vermoeid" },
+]
 
 // Where each action takes the athlete. Kept in sync with the bottom-nav routes.
 const ACTION_ROUTE: Record<CoachActionKind, string> = {
@@ -76,8 +92,8 @@ function ConfidencePill({ confidence }: { confidence: Confidence }) {
   )
 }
 
-// One of the six analysis parts. Honest about gaps: a null part renders a plain
-// "te weinig gegevens" line rather than being hidden or faked.
+// One analysis part. Honest about gaps: a null part renders a plain "te weinig
+// gegevens" line rather than being hidden or faked.
 function AnalysisPart({
   label,
   body,
@@ -106,15 +122,13 @@ function SignalList({ signals }: { signals: IntakeSignal[] }) {
   return (
     <div>
       <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-200/70">
-        Wat Sparki meeweegt
+        Onderbouwing — wat Sparki meeweegt
       </p>
       <ul className="mt-1.5 space-y-1">
         {signals.map((s) => (
           <li key={s.kind} className="flex justify-between gap-3 text-xs">
             <span className="text-white/70">{signalLabel(s.kind)}</span>
-            <span className="text-right text-white/45">
-              {s.value ?? "—"}
-            </span>
+            <span className="text-right text-white/45">{s.value ?? "—"}</span>
           </li>
         ))}
       </ul>
@@ -174,6 +188,33 @@ function ReasonBlock({ confidence }: { confidence: Confidence }) {
   )
 }
 
+// The full explainable read. Shared by the hero overlay and the card's inline
+// expander so the "waarom" content stays in one place.
+function WhyContent({
+  data,
+  usedSignals,
+  missingKinds,
+}: {
+  data: CoachAnalysis
+  usedSignals: IntakeSignal[]
+  missingKinds: string[]
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1.5 text-sm leading-relaxed text-white/75">
+        <p>{data.advice.explainers.watIkZie}</p>
+        <p>{data.advice.explainers.watIkDenk}</p>
+        <p>{data.advice.explainers.waaromDitAdvies}</p>
+        <p>{data.advice.explainers.watAlsHetAndersIs}</p>
+        <p>{data.advice.explainers.watVerandertMijnAdvies}</p>
+      </div>
+      <SignalList signals={usedSignals} />
+      <MissingList kinds={missingKinds} />
+      <ReasonBlock confidence={data.advice.confidence} />
+    </div>
+  )
+}
+
 function FollowUp({ q }: { q: FollowUpQuestion }) {
   const answer = useAnswerFollowUp()
   return (
@@ -186,9 +227,7 @@ function FollowUp({ q }: { q: FollowUpQuestion }) {
             key={o.value}
             type="button"
             disabled={answer.isPending}
-            onClick={() =>
-              answer.mutate({ questionId: q.id, answer: o.value })
-            }
+            onClick={() => answer.mutate({ questionId: q.id, answer: o.value })}
             className="rounded-full border border-white/15 px-3 py-1.5 text-xs text-white/80 transition-colors hover:border-cyan-300/50 hover:text-cyan-200 disabled:opacity-40"
           >
             {o.label}
@@ -198,6 +237,45 @@ function FollowUp({ q }: { q: FollowUpQuestion }) {
       {answer.isError && (
         <p className="mt-2 text-xs text-rose-300/80">
           Sparki kon je antwoord niet verwerken. Probeer het zo nog eens.
+        </p>
+      )}
+    </div>
+  )
+}
+
+// Always-available quick check-in. Posts a real check-in (persists feel/fatigue
+// + recomputes) regardless of whether Sparki is currently asking for it.
+function QuickCheckIn() {
+  const answer = useAnswerFollowUp()
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5">
+      <p className="text-sm font-medium text-white/85">Hoe voel je je nu?</p>
+      <p className="mt-0.5 text-xs text-white/45">
+        Sparki past het advies meteen aan op je antwoord.
+      </p>
+      <div className="mt-2.5 flex flex-wrap gap-2">
+        {CHECK_IN_OPTIONS.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            disabled={answer.isPending}
+            onClick={() =>
+              answer.mutate({ questionId: "missing_checkin", answer: o.value })
+            }
+            className="rounded-full border border-white/15 px-4 py-1.5 text-sm text-white/80 transition-colors hover:border-cyan-300/50 hover:text-cyan-200 disabled:opacity-40"
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+      {answer.isSuccess && (
+        <p className="mt-2 text-xs text-cyan-200/80">
+          Bijgewerkt — Sparki heeft je advies opnieuw bekeken.
+        </p>
+      )}
+      {answer.isError && (
+        <p className="mt-2 text-xs text-rose-300/80">
+          Sparki kon je check-in niet opslaan. Probeer het zo nog eens.
         </p>
       )}
     </div>
@@ -225,17 +303,111 @@ function ActionButton({ action }: { action: CoachAction }) {
   )
 }
 
+function FeedbackRow() {
+  const feedback = useCoachFeedback()
+  return (
+    <div className="mt-4 flex items-center justify-end gap-2 border-t border-white/[0.06] pt-3">
+      <span className="mr-auto text-[11px] text-white/35">
+        Klopt dit advies voor jou?
+      </span>
+      <button
+        type="button"
+        disabled={feedback.isPending}
+        onClick={() => feedback.mutate("advice_followed")}
+        className="flex items-center gap-1 rounded-full border border-white/12 px-2.5 py-1 text-xs text-white/65 transition-colors hover:border-cyan-300/40 hover:text-cyan-200 disabled:opacity-40"
+      >
+        <ThumbsUp className="h-3 w-3" /> Ja
+      </button>
+      <button
+        type="button"
+        disabled={feedback.isPending}
+        onClick={() => feedback.mutate("advice_ignored")}
+        className="flex items-center gap-1 rounded-full border border-white/12 px-2.5 py-1 text-xs text-white/65 transition-colors hover:border-rose-300/40 hover:text-rose-200 disabled:opacity-40"
+      >
+        <ThumbsDown className="h-3 w-3" /> Nee
+      </button>
+    </div>
+  )
+}
+
+// One plain-Dutch line on how Sparki is speaking to this athlete today, with the
+// honest reason it chose that voice. Never fabricated — comes straight from the
+// engine's resolved personality.
+function PersonalityLine({ personality }: { personality: Personality }) {
+  const basis = personality.basis
+    ? personality.basis.charAt(0).toUpperCase() + personality.basis.slice(1)
+    : ""
+  return (
+    <p className="mt-3 text-sm text-white/70">
+      Sparki coacht je als{" "}
+      <span className="text-cyan-200/90">{personality.label}</span>.
+      {basis && <span className="text-white/45"> {basis}.</span>}
+    </p>
+  )
+}
+
+// Dedicated full-screen explainable-advice panel with a TOP way-back (Terug +
+// Sluiten). Used by the hero so "waarom" is never a buried inline accordion.
+function WhyOverlay({
+  data,
+  usedSignals,
+  missingKinds,
+  onClose,
+}: {
+  data: CoachAnalysis
+  usedSignals: IntakeSignal[]
+  missingKinds: string[]
+  onClose: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-[10000] flex flex-col bg-[#05070e]/96 backdrop-blur-xl">
+      <div className="sticky top-0 flex items-center justify-between border-b border-white/10 bg-[#05070e]/80 px-5 py-4 backdrop-blur-md">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex items-center gap-1.5 text-sm text-white/70 transition-colors hover:text-cyan-200"
+        >
+          <ChevronLeft className="h-4 w-4" /> Terug
+        </button>
+        <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/50">
+          Waarom dit advies
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Sluiten"
+          className="text-white/45 transition-colors hover:text-white/80"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+      <div className="mx-auto w-full max-w-md flex-1 overflow-y-auto px-5 py-5">
+        <WhyContent
+          data={data}
+          usedSignals={usedSignals}
+          missingKinds={missingKinds}
+        />
+      </div>
+    </div>
+  )
+}
+
 /**
- * Surfaces Sparki's deterministic daily coach analysis: the six-part read, the
- * advice with its confidence, an explainable "Waarom zegt Sparki dit?" panel,
- * in-app follow-up questions whose answers change the advice, and concrete next
- * steps so no insight is a dead end. Athlete-only; renders nothing otherwise.
+ * Surfaces Sparki's deterministic daily coach analysis. On Home it renders as the
+ * `hero` — leading with the personality voice, the advice + confidence, a 5-part
+ * read (wat ik zie / waarom / hoe zeker / advies / wat wil ik nog weten), an
+ * always-available quick check-in, a refresh trigger, and an explainable-advice
+ * overlay with a top way-back. Elsewhere it renders as a compact `card`.
+ * Athlete-only; renders nothing otherwise.
  */
-export function CoachAnalysisCard() {
+export function CoachAnalysisCard({
+  variant = "card",
+}: {
+  variant?: CoachCardVariant
+}) {
   const { profile } = useUserProfile()
   const [showWhy, setShowWhy] = useState(false)
-  const feedback = useCoachFeedback()
-  const { data, isLoading, isError } = useCoachAnalysis()
+  const { data, isLoading, isError, refetch, isFetching } = useCoachAnalysis()
 
   if (!profile || profile.activeRole !== "athlete") return null
 
@@ -253,12 +425,19 @@ export function CoachAnalysisCard() {
         <p className="text-sm text-white/55">
           Sparki kon je analyse nu niet samenstellen. Probeer het later opnieuw.
         </p>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          className="mt-3 flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-xs text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-200"
+        >
+          <RefreshCw className="h-3 w-3" /> Opnieuw proberen
+        </button>
       </section>
     )
   }
 
   // Aggregate the present signals Sparki weighed across all observations (deduped
-  // by kind) plus everything it is missing — both shown honestly in the why-panel.
+  // by kind) plus everything it is missing — both shown honestly as onderbouwing.
   const usedByKind = new Map<string, IntakeSignal>()
   for (const o of data.observations) {
     for (const s of o.signalsUsed) {
@@ -275,6 +454,132 @@ export function CoachAnalysisCard() {
     ]),
   ]
 
+  // ── Hero (Home) ────────────────────────────────────────────────────────────
+  if (variant === "hero") {
+    // The quick check-in is always available above, so don't ask it twice here.
+    const otherFollowUps = data.followUps.filter((q) => q.id !== "missing_checkin")
+    return (
+      <>
+        <section className="rounded-2xl border border-cyan-300/15 bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-cyan-300" strokeWidth={2} />
+              <h2 className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/60">
+                Sparki vandaag
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              disabled={isFetching}
+              className="flex items-center gap-1.5 rounded-full border border-white/12 px-2.5 py-1 text-[11px] text-white/55 transition-colors hover:border-cyan-300/40 hover:text-cyan-200 disabled:opacity-40"
+              title="Opnieuw bekijken"
+            >
+              <RefreshCw
+                className={`h-3 w-3 ${isFetching ? "animate-spin" : ""}`}
+              />
+              Ververs
+            </button>
+          </div>
+
+          <PersonalityLine personality={data.personality} />
+
+          {/* Advice headline + intensity + confidence */}
+          <div className="mt-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.05] p-4">
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-cyan-300/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-cyan-200">
+                {INTENSITY_LABEL[data.advice.intensity] ?? data.advice.intensity}
+              </span>
+              <ConfidencePill confidence={data.advice.confidence} />
+            </div>
+            <p className="mt-2.5 text-lg font-semibold leading-snug text-white">
+              {data.advice.headline}
+            </p>
+          </div>
+
+          {/* Always-available quick check-in */}
+          <div className="mt-4">
+            <QuickCheckIn />
+          </div>
+
+          {/* The 5-part read */}
+          <div className="mt-4 space-y-3">
+            <AnalysisPart label="Wat ik zie" body={data.watValtOp} />
+            <AnalysisPart label="Waarom" body={data.waaromAdvies} />
+            <div className="border-l border-white/10 pl-3">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+                Hoe zeker
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-white/80">
+                Sparki is hier voor {data.advice.confidence.score}% zeker van
+                {data.advice.confidence.reasons[0]
+                  ? ` — ${data.advice.confidence.reasons[0]}`
+                  : ""}
+                .
+              </p>
+            </div>
+            <AnalysisPart label="Advies" body={data.adviesVandaag} />
+            <div className="border-l border-white/10 pl-3">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+                Wat ik nog wil weten
+              </p>
+              {otherFollowUps.length > 0 ? (
+                <div className="mt-2 space-y-2.5">
+                  {otherFollowUps.map((q) => (
+                    <FollowUp key={q.id} q={q} />
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-1 text-sm leading-relaxed text-white/55">
+                  Niets dringends — Sparki heeft genoeg om vandaag op af te gaan.
+                  Een check-in hierboven scherpt het advies verder aan.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Explainable advice — opens a dedicated panel, never inline */}
+          <button
+            type="button"
+            onClick={() => setShowWhy(true)}
+            className="mt-4 flex w-full items-center justify-between rounded-xl border border-white/12 px-3.5 py-2.5 text-left transition-colors hover:border-cyan-300/40"
+          >
+            <span className="flex items-center gap-2 text-sm text-white/75">
+              <HelpCircle className="h-4 w-4 text-cyan-300/80" />
+              Waarom zegt Sparki dit?
+            </span>
+            <ChevronDown className="h-4 w-4 -rotate-90 text-white/40" />
+          </button>
+
+          {/* Concrete next steps — no dead-end insights */}
+          {data.actions.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+                <Activity className="h-3 w-3" />
+                Wat je nu kunt doen
+              </p>
+              {data.actions.map((a) => (
+                <ActionButton key={a.key} action={a} />
+              ))}
+            </div>
+          )}
+
+          <FeedbackRow />
+        </section>
+
+        {showWhy && (
+          <WhyOverlay
+            data={data}
+            usedSignals={usedSignals}
+            missingKinds={missingKinds}
+            onClose={() => setShowWhy(false)}
+          />
+        )}
+      </>
+    )
+  }
+
+  // ── Card (Train / Inzicht / Races) ───────────────────────────────────────────
   return (
     <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
       <div className="flex items-center gap-2">
@@ -297,7 +602,7 @@ export function CoachAnalysisCard() {
         </p>
       </div>
 
-      {/* Six-part analysis */}
+      {/* Five-part analysis */}
       <div className="mt-4 space-y-3">
         <AnalysisPart label="Wat valt op" body={data.watValtOp} />
         <AnalysisPart label="Patronen" body={data.patronen} />
@@ -306,7 +611,7 @@ export function CoachAnalysisCard() {
         <AnalysisPart label="Waarom dit advies" body={data.waaromAdvies} />
       </div>
 
-      {/* Why-panel toggle */}
+      {/* Why-panel toggle (inline expander) */}
       <button
         type="button"
         onClick={() => setShowWhy((v) => !v)}
@@ -322,21 +627,16 @@ export function CoachAnalysisCard() {
       </button>
 
       {showWhy && (
-        <div className="mt-3 space-y-3 rounded-xl border border-white/[0.08] bg-black/20 p-4">
-          <div className="space-y-1.5 text-xs leading-relaxed text-white/70">
-            <p>{data.advice.explainers.watIkZie}</p>
-            <p>{data.advice.explainers.watIkDenk}</p>
-            <p>{data.advice.explainers.waaromDitAdvies}</p>
-            <p>{data.advice.explainers.watAlsHetAndersIs}</p>
-            <p>{data.advice.explainers.watVerandertMijnAdvies}</p>
-          </div>
-          <SignalList signals={usedSignals} />
-          <MissingList kinds={missingKinds} />
-          <ReasonBlock confidence={data.advice.confidence} />
+        <div className="mt-3 rounded-xl border border-white/[0.08] bg-black/20 p-4">
+          <WhyContent
+            data={data}
+            usedSignals={usedSignals}
+            missingKinds={missingKinds}
+          />
         </div>
       )}
 
-      {/* Follow-up questions (max 3) — only when Sparki is in doubt / missing data */}
+      {/* Follow-up questions — only when Sparki is in doubt / missing data */}
       {data.followUps.length > 0 && (
         <div className="mt-4 space-y-2.5">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
@@ -361,28 +661,7 @@ export function CoachAnalysisCard() {
         </div>
       )}
 
-      {/* Lightweight feedback so the advice tone adapts over time */}
-      <div className="mt-4 flex items-center justify-end gap-2 border-t border-white/[0.06] pt-3">
-        <span className="mr-auto text-[11px] text-white/35">
-          Klopt dit advies voor jou?
-        </span>
-        <button
-          type="button"
-          disabled={feedback.isPending}
-          onClick={() => feedback.mutate("advice_followed")}
-          className="flex items-center gap-1 rounded-full border border-white/12 px-2.5 py-1 text-xs text-white/65 transition-colors hover:border-cyan-300/40 hover:text-cyan-200 disabled:opacity-40"
-        >
-          <ThumbsUp className="h-3 w-3" /> Ja
-        </button>
-        <button
-          type="button"
-          disabled={feedback.isPending}
-          onClick={() => feedback.mutate("advice_ignored")}
-          className="flex items-center gap-1 rounded-full border border-white/12 px-2.5 py-1 text-xs text-white/65 transition-colors hover:border-rose-300/40 hover:text-rose-200 disabled:opacity-40"
-        >
-          <ThumbsDown className="h-3 w-3" /> Nee
-        </button>
-      </div>
+      <FeedbackRow />
     </section>
   )
 }

@@ -31,6 +31,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/tests/observation.ts"),
       path.resolve(artifactDir, "src/scripts/seed-social.ts"),
       path.resolve(artifactDir, "src/scripts/seed-virtual-athletes.ts"),
+      path.resolve(artifactDir, "src/scripts/seed-preview-athletes.ts"),
       path.resolve(artifactDir, "src/jobs/health-check.ts"),
     ],
     platform: "node",

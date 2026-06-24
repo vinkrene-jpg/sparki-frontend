@@ -1,5 +1,7 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
+import { apiFetch } from "@/lib/api"
+import { getDevAthleteId, setDevAthleteId } from "@/lib/dev"
 import { DayHome } from "@/components/sparki/day-home"
 import { BottomNav } from "@/components/sparki/bottom-nav"
 import type { DayType } from "@/lib/day-type"
@@ -76,6 +78,87 @@ const pillStyle = (active: boolean) => ({
   color: active ? "rgba(120,210,230,1)" : "rgba(255,255,255,0.45)",
 })
 
+type PreviewAthlete = {
+  clerkId: string
+  name: string | null
+  personaLabel: string
+  basis: string
+}
+
+// Dev-only switcher for the ACTIVE preview athlete. Lists the seeded preview
+// athletes (honest: only those that actually exist) and, on pick, pins the
+// choice and does a full reload so UserContext + every query refetch for the new
+// athlete — the cleanest way to swap identity without coordinating cache state.
+function AthleteSwitcher() {
+  const [athletes, setAthletes] = useState<PreviewAthlete[]>([])
+  const [error, setError] = useState(false)
+  const selected = getDevAthleteId()
+
+  useEffect(() => {
+    let cancelled = false
+    apiFetch<{ athletes: PreviewAthlete[] }>("/api/dev/preview-athletes")
+      .then((res) => {
+        if (!cancelled) setAthletes(res.athletes)
+      })
+      .catch(() => {
+        if (!cancelled) setError(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const pick = (clerkId: string | null) => {
+    setDevAthleteId(clerkId)
+    window.location.reload()
+  }
+
+  return (
+    <div className="mt-3 border-t border-white/[0.07] pt-3">
+      <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-white/30">
+        Atleet
+      </span>
+      {error ? (
+        <p className="mt-1.5 text-[10px] text-amber-200/70">
+          Kon preview-atleten niet laden. Draai{" "}
+          <span className="font-mono">seed:preview</span>.
+        </p>
+      ) : athletes.length === 0 ? (
+        <p className="mt-1.5 text-[10px] text-white/40">
+          Nog geen preview-atleten geseed.
+        </p>
+      ) : (
+        <div className="mt-1.5 flex flex-col gap-1">
+          <button
+            type="button"
+            onClick={() => pick(null)}
+            className="rounded-lg px-2.5 py-1 text-left font-mono text-[10px] uppercase tracking-[0.1em] transition-colors"
+            style={pillStyle(!selected)}
+          >
+            Standaard
+          </button>
+          {athletes.map((a) => (
+            <button
+              key={a.clerkId}
+              type="button"
+              onClick={() => pick(a.clerkId)}
+              className="rounded-lg px-2.5 py-1 text-left transition-colors"
+              style={pillStyle(selected === a.clerkId)}
+            >
+              <span className="block font-mono text-[10px] uppercase tracking-[0.1em]">
+                {a.name ?? a.clerkId}
+              </span>
+              <span className="block text-[9px] normal-case tracking-normal text-white/35">
+                {a.personaLabel} — {a.basis}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // A single collapsible developer panel that consolidates the page switcher and
 // (on the home view) the day-type previewer. Collapsed by default so the real
 // app — with only its production BottomNav — is what's on screen. This whole
@@ -146,6 +229,8 @@ function DevPanel({
           })}
         </div>
       </div>
+
+      <AthleteSwitcher />
 
       {isHome && (
         <div className="mt-3 border-t border-white/[0.07] pt-3">

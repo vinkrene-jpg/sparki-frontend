@@ -31,6 +31,7 @@ import inputCenterRouter from "./input-center";
 import materialRouter from "./material";
 import documentAnalysisRouter from "./document-analysis";
 import calendarRouter from "./calendar";
+import devRouter from "./dev";
 
 const router: IRouter = Router();
 
@@ -66,5 +67,11 @@ router.use(inputCenterRouter);
 router.use("/material", materialRouter);
 router.use("/document-analyses", documentAnalysisRouter);
 router.use("/calendar", calendarRouter);
+
+// Dev-only routes (preview-athlete switcher). Mounted ONLY outside production so
+// these endpoints simply do not exist on a deployed build.
+if (process.env.NODE_ENV !== "production") {
+  router.use("/dev", devRouter);
+}
 
 export default router;

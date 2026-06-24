@@ -75,9 +75,27 @@ export type CoachAction = {
   reason: string;
 };
 
+export type PersonalityKey =
+  | "beginner"
+  | "ervaren"
+  | "jeugdrenner"
+  | "ouder"
+  | "trainer"
+  | "topsporter";
+
+export type Personality = {
+  key: PersonalityKey;
+  label: string;
+  vocabulary: "simpel" | "normaal" | "technisch";
+  encouragement: "hoog" | "normaal" | "laag";
+  detail: "kort" | "normaal" | "uitgebreid";
+  basis: string;
+};
+
 export type CoachAnalysis = {
   date: string;
   athleteName: string;
+  personality: Personality;
   watValtOp: string | null;
   patronen: string | null;
   beterDanVerwacht: string | null;
