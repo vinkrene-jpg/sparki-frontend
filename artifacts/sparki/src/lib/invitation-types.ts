@@ -9,6 +9,7 @@ export type InvitationRelationship =
   | "coach_athlete"
   | "parent_athlete"
   | "none"
+  | "head_tester"
 
 export interface Invitation {
   id: number
@@ -48,4 +49,5 @@ export const RELATIONSHIP_LABEL: Record<InvitationRelationship, string> = {
   coach_athlete: "Coach → atleet",
   parent_athlete: "Ouder → atleet",
   none: "Rol-uitnodiging",
+  head_tester: "Hoofdtester",
 }

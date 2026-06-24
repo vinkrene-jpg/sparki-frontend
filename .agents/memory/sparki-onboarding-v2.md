@@ -33,9 +33,19 @@ surfaces carry the storyline.
   "Terug" and a finish CTA); "Later" is the skip path. **Why:** review blocker — both buttons
   previously finished identically, so the connect flow was unreachable.
 
-- **complete-v2 awaits the plan build inline (~30s), matching quick-start.** First plan exists before
-  the success response so the user never lands planless. Known UX cost (button spins on both finish
-  paths); deferred to a follow-up to make it background/non-blocking.
+- **complete-v2 builds the first plan inline (~30s) but never fails onboarding on a plan hiccup.**
+  Onboarding completion (profile + state + founding number) must succeed even if plan generation
+  throws — failing would strand a user whose founding number is already claimed. Instead the endpoint
+  returns `planReady: boolean` (quick-start does the same), and the home degrades to a general/fallback
+  day when no plan/todayWorkout exists. **Why:** "success guarantees a usable app" is satisfied by
+  graceful fallback + an honest planReady flag, not by hard-failing on a transient LLM error. Known UX
+  cost (button spins on both finish paths); a follow-up makes the build background/non-blocking.
+
+- **A new invitation `relationship` must be wired on BOTH sides or it's a dangling capability.**
+  The head_tester relationship needs: backend enum + admin-gated create + accept effect, AND the
+  frontend union/label maps + a visible admin control to mint it (tester-QR "Markeer als hoofdtester").
+  **Why:** a backend-only relationship is unreachable through the product and leaves client types
+  incomplete — flagged as a review blocker.
 
 ## Gotchas
 

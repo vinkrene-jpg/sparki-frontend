@@ -147,6 +147,7 @@ export default function TesterQrPage() {
 
   const [base, setBase] = useState(defaultBase)
   const [testerName, setTesterName] = useState("")
+  const [asHeadTester, setAsHeadTester] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [resetting, setResetting] = useState(false)
   const [resetError, setResetError] = useState<string | null>(null)
@@ -195,12 +196,15 @@ export default function TesterQrPage() {
     setError(null)
     createInvite.mutate(
       {
-        relationship: "none",
+        relationship: asHeadTester ? "head_tester" : "none",
         targetRole: "athlete",
         email: testerName.trim() || null,
       },
       {
-        onSuccess: () => setTesterName(""),
+        onSuccess: () => {
+          setTesterName("")
+          setAsHeadTester(false)
+        },
         onError: (e) =>
           setError(e instanceof Error ? e.message : "Aanmaken mislukt."),
       },
@@ -276,6 +280,18 @@ export default function TesterQrPage() {
                 className="mt-1.5 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-[14px] text-white placeholder-white/25 outline-none transition-colors focus:border-cyan-300/40"
               />
             </label>
+            <label className="flex cursor-pointer items-start gap-2.5">
+              <input
+                type="checkbox"
+                checked={asHeadTester}
+                onChange={(e) => setAsHeadTester(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-cyan-300"
+              />
+              <span className="text-[12px] leading-relaxed text-white/55">
+                Markeer als <span className="text-white/80">hoofdtester</span> — geeft
+                deze tester de Hoofdtester-status in Sparki.
+              </span>
+            </label>
             <button
               type="button"
               onClick={createTester}
@@ -287,7 +303,11 @@ export default function TesterQrPage() {
                 color: ACCENT,
               }}
             >
-              {createInvite.isPending ? "Aanmaken…" : "Tester-code maken"}
+              {createInvite.isPending
+                ? "Aanmaken…"
+                : asHeadTester
+                  ? "Hoofdtester-code maken"
+                  : "Tester-code maken"}
             </button>
             {error && <p className="text-[12px] text-red-300/80">{error}</p>}
           </div>

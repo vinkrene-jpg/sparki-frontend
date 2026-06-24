@@ -76,13 +76,20 @@ async function hasAcceptedCoach(athleteClerkId: string): Promise<boolean> {
 }
 
 // Safely regenerate the autonomous plan after a planning input changes. Never
-// lets a plan-generation hiccup fail the onboarding/answer request itself.
-async function regeneratePlanSafely(clerkId: string, log: { error: (o: unknown, m: string) => void }) {
+// lets a plan-generation hiccup fail the onboarding/answer request itself, but
+// reports whether a plan was actually built so callers can be honest about it
+// (the dashboard renders a general fallback when no plan exists yet).
+async function regeneratePlanSafely(
+  clerkId: string,
+  log: { error: (o: unknown, m: string) => void },
+): Promise<boolean> {
   try {
     const coached = await hasAcceptedCoach(clerkId);
     await generatePlan(clerkId, coached ? "advisory" : "autonomous");
+    return true;
   } catch (err) {
     log.error({ err }, "onboarding.plan.regenerate failed");
+    return false;
   }
 }
 
@@ -283,11 +290,14 @@ router.post("/quick-start", requireAuth, async (req, res) => {
         },
       });
 
-    // Build the first real plan immediately so the dashboard is usable.
-    await regeneratePlanSafely(clerkId, req.log);
+    // Build the first real plan immediately so the dashboard is usable. A plan
+    // hiccup never fails onboarding (the home degrades to a general day), but we
+    // report planReady honestly so the client never claims a plan that isn't there.
+    const planReady = await regeneratePlanSafely(clerkId, req.log);
 
     res.status(201).json({
       ok: true,
+      planReady,
       estimated: { weeklyHourTarget: patch.weeklyHourTarget, ftp: patch.ftp },
     });
   } catch (err) {
@@ -396,11 +406,14 @@ router.post("/complete-v2", requireAuth, async (req, res) => {
     // Earn the Founding Athlete badge (atomic + idempotent).
     const foundingNumber = await assignFoundingNumber(clerkId);
 
-    // Build the first real plan immediately so the app is usable on landing.
-    await regeneratePlanSafely(clerkId, req.log);
+    // Build the first real plan immediately so the app is usable on landing. A
+    // plan hiccup never fails onboarding (the home degrades to a general day),
+    // but planReady is reported honestly so the client never claims a missing plan.
+    const planReady = await regeneratePlanSafely(clerkId, req.log);
 
     res.status(201).json({
       ok: true,
+      planReady,
       foundingNumber,
       foundingLabel: foundingLabel(foundingNumber),
       foundingLines: FOUNDING_LINES,
