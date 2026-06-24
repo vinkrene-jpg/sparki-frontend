@@ -800,6 +800,10 @@ router.post("/", requireAuth, async (req, res) => {
         elevationGainM: parsed.elevationGainM,
         profile: parsed.profile,
         climbs: parsed.climbs,
+        // Persist the full track shape (with per-point elevation where present)
+        // so the import can be re-exported as a faithful GPX. A bare GPX track
+        // still carries no turn semantics, so nav stays null.
+        geometry: parsed.geometry,
         nav: null,
         source: "gpx",
         linkedActivityImportId,

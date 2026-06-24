@@ -120,12 +120,20 @@ export type GpxRouteClimb = {
   avgGradePct: number;
 };
 
+// A single track point preserved for faithful re-export: [lat, lon] when the
+// source had no elevation, or [lat, lon, ele] when a real <ele> was present.
+export type GpxGeometryPoint = [number, number] | [number, number, number];
+
 export type GpxRoute = {
   distanceKm: number | null;
   elevationGainM: number | null;
   profile: number[];
   climbs: GpxRouteClimb[];
   trackName: string | null;
+  // Full track shape (every real <trkpt>), with per-point elevation where the
+  // source GPX provided it. Persisted so an imported route can be re-exported
+  // as a faithful GPX, not just summarized.
+  geometry: GpxGeometryPoint[];
 };
 
 // A summary derived from a sequence of geographic points. Shared by the GPX
@@ -205,8 +213,15 @@ export function parseGpxRoute(content: string): GpxRoute | null {
 
   const summary = summarizeTrack(points);
 
+  // Preserve the full track shape so the import can be faithfully re-exported.
+  // Keep per-point elevation only where the source actually provided it.
+  const geometry: GpxGeometryPoint[] = points.map((p) =>
+    p.ele != null ? [p.lat, p.lon, p.ele] : [p.lat, p.lon],
+  );
+
   return {
     ...summary,
+    geometry,
     trackName: /<name>\s*([^<]+)<\/name>/i.exec(content)?.[1]?.trim() || null,
   };
 }
@@ -221,14 +236,19 @@ export function parseGpxRoute(content: string): GpxRoute | null {
 // simply omit that element rather than invent it.
 
 type LatLon = [number, number];
+// Track point that may carry a real per-point elevation as its third element.
+type GeoPoint = [number, number] | [number, number, number];
 
 export type GpxBuildNavCue = { km: number; dir: string; note: string };
 
 export type GpxBuildInput = {
   name: string;
-  geometry: LatLon[];
+  // [lat, lon] points; an optional third element is a real per-point elevation
+  // (preserved from a GPX import) and takes precedence over `profile`.
+  geometry: GeoPoint[];
   // Real, downsampled elevation profile (metres). Mapped back onto the track
   // points by proportional position along the route. Null/empty → no <ele>.
+  // Only used for points that don't already carry a real per-point elevation.
   profile?: number[] | null;
   // Turn-by-turn cues. Exported as <wpt> waypoints, placed at the real route
   // coordinate nearest each cue's cumulative-km position. Null/empty → no wpts.
@@ -248,7 +268,7 @@ function escapeXml(s: string): string {
 // rather than emitting an empty track).
 export function buildGpx(route: GpxBuildInput): string | null {
   const geometry = (route.geometry ?? []).filter(
-    (p): p is LatLon =>
+    (p): p is GeoPoint =>
       Array.isArray(p) &&
       Number.isFinite(p[0]) &&
       Number.isFinite(p[1]) &&
@@ -260,10 +280,13 @@ export function buildGpx(route: GpxBuildInput): string | null {
   const profile = (route.profile ?? []).filter((e) => Number.isFinite(e));
   const n = geometry.length;
 
-  // Elevation at track point i: proportionally resample the real profile across
-  // the track. Both arrays are ordered start→finish along the same route, so
-  // index ratio maps a track point to its real elevation sample.
+  // Elevation at track point i. Prefer a real per-point elevation carried on the
+  // geometry (preserved from a GPX import) — that's the faithful source. Fall
+  // back to proportionally resampling the downsampled profile across the track
+  // (generated routes only store a profile). Both are real data, never invented.
   const eleAt = (i: number): number | null => {
+    const ptEle = geometry[i]?.[2];
+    if (typeof ptEle === "number" && Number.isFinite(ptEle)) return ptEle;
     if (profile.length === 0) return null;
     if (profile.length === 1) return profile[0]!;
     const idx = Math.round((i / (n - 1)) * (profile.length - 1));
