@@ -84,12 +84,15 @@ export type DevCoachOverride = {
 }
 
 // Vandaag's default surface: the calm State Card. It carries its own loading /
-// error / empty states and drills into the full analysis via the HomeView
-// context, so it never has to wait on the dashboard or races queries.
+// error / empty states, so it never has to wait on the dashboard or races
+// queries. The State Card is a generic engine consumer; Vandaag is the host that
+// injects what its drill-in does (open the full day-type analysis) via the
+// HomeView context — the card itself stays surface-agnostic.
 function StateDayHome() {
+  const homeView = useHomeView()
   return (
     <ScreenShell section="Home" bg="/concept-lab.png">
-      <StateCard />
+      <StateCard onShowDetails={() => homeView?.setView("full")} />
     </ScreenShell>
   )
 }

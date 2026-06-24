@@ -4,8 +4,11 @@ import { DEV_PREVIEW } from "@/lib/dev";
 import { apiFetch } from "@/lib/api";
 import { queryKeys, STALE } from "@/lib/query-keys";
 
-// Local mirror of the State Engine's SparkiState contract (the engine lives in
-// the api-server package; this is the read-only shape the UI relies on).
+// Frontend client for the generic State Engine. The engine itself lives in the
+// api-server package (no screen owns it); this hook is the shared read path that
+// ANY surface can use — Vandaag, Training, Races, coach views, widgets, Sparki
+// Display. It depends on nothing from Vandaag. Below is a local mirror of the
+// engine's SparkiState contract (the read-only shape the UI relies on).
 
 export type StateBand = "belastbaar" | "solide" | "wisselend" | "kwetsbaar";
 

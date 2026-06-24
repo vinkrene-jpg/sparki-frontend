@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { ChevronDown, ChevronRight, ArrowRight } from "lucide-react"
 import { SparkiCore } from "@/components/sparki/core/sparki-core"
-import { useHomeView } from "@/contexts/HomeViewContext"
 import {
   useSparkiState,
   useStateCheckIn,
@@ -11,6 +10,22 @@ import {
 } from "@/hooks/use-sparki-state"
 import { stateToCore } from "@/lib/state-to-core"
 import { Skeleton } from "@/components/sparki/home-sections"
+
+// Generic State Engine consumer. It renders one honest Sparki toestand (the
+// living Core + status + coach action + check-in + the 2–3 "Waarom?" signals)
+// from the engine's /api/state contract. It knows nothing about Vandaag: any
+// surface (Training, Races, Coach, Widgets, Sparki Display, …) can mount it.
+//
+// The optional drill-in to a fuller view is INJECTED by the host via
+// `onShowDetails` — the card never imports a surface-specific context. On
+// Vandaag this opens the full day-type analysis; elsewhere it can do anything,
+// or be omitted (then the drill-in row simply does not render).
+export type StateCardProps = {
+  /** Optional host-supplied drill-in. Omit to hide the row entirely. */
+  onShowDetails?: () => void
+  /** Label for the drill-in row. Defaults to "Volledige analyse". */
+  detailsLabel?: string
+}
 
 // Plain-Dutch labels for the honest "Sparki mist nog" gaps. Internal signal keys
 // stay English; only the rendered string is Dutch.
@@ -56,10 +71,9 @@ const CHECKINS: { value: CheckInAnswer; label: string }[] = [
   { value: "vermoeid", label: "Vermoeid" },
 ]
 
-export function StateCard() {
+export function StateCard({ onShowDetails, detailsLabel }: StateCardProps = {}) {
   const { data: state, isLoading, isError, refetch } = useSparkiState()
   const checkIn = useStateCheckIn()
-  const homeView = useHomeView()
   const [showWhy, setShowWhy] = useState(false)
   const [reCheckIn, setReCheckIn] = useState(false)
 
@@ -239,16 +253,16 @@ export function StateCard() {
         )}
       </section>
 
-      {/* ── Level 3: drill-in to the full analysis (existing cards) ─────────── */}
-      {homeView && (
+      {/* ── Level 3: host-injected drill-in (omitted when no host action) ───── */}
+      {onShowDetails && (
         <button
           type="button"
-          onClick={() => homeView.setView("full")}
+          onClick={onShowDetails}
           className="flex w-full items-center justify-between rounded-2xl border border-white/[0.08] bg-white/[0.02] px-5 py-4 text-left transition-colors hover:border-cyan-300/30 hover:bg-white/[0.04]"
         >
           <span className="flex items-center gap-2 text-[14px] text-white/80">
             <ArrowRight className="h-4 w-4 text-cyan-300/70" />
-            Volledige analyse
+            {detailsLabel ?? "Volledige analyse"}
           </span>
           <ChevronRight className="h-4 w-4 text-white/40" />
         </button>

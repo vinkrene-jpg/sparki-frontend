@@ -4,7 +4,8 @@ import type { SparkiState } from "@/hooks/use-sparki-state"
 // Translate the honest SparkiState into the living Core's visual language. Pure
 // and deterministic: the same state always renders the same Core. The engine
 // already did all the judgement — this only maps numbers to a shape, never adds
-// meaning of its own.
+// meaning of its own. It is part of the shared engine client (no Vandaag
+// dependency): any surface that renders a Sparki Core reuses this mapping.
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n))
 

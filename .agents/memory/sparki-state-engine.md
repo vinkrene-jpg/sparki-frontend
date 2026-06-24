@@ -1,6 +1,6 @@
 ---
-name: Sparki State Engine + Vandaag dual-surface
-description: How Vandaag's State Card and the full day-type analysis share one route, and the State Engine honesty contract.
+name: Sparki State Engine (generic service) + Vandaag dual-surface
+description: The State Engine is a surface-agnostic service (Vandaag is only its first consumer); how the State Card decouples from Vandaag, plus the honesty contract.
 ---
 
 # Sparki State Engine ("van dashboard naar coach")
@@ -14,6 +14,26 @@ denominator so a permanent gap doesn't drag every athlete down, but it is still
 shown in `missing`. Stress has no live source → never invented; HRV + resting-HR
 + feel act as a transparent recovery-strain proxy that only nudges tension when
 those trends actually exist.
+
+## The engine is a GENERIC service — Vandaag is just its first consumer
+**Decision:** the State Engine belongs to NO screen. Backend (`engines/state/*`,
+`runStateAnalysis(clerkId)`, `GET /api/state`) and the frontend client
+(`hooks/use-sparki-state.ts`, `lib/state-to-core.ts`, `components/sparki/
+state-card.tsx`) must have ZERO dependency on Vandaag modules so Training, Races,
+Routeplanner, Live Ride, notifications, widgets, Sparki Display, coach views and
+APIs can reuse them unchanged.
+
+**Why:** explicit product directive — "de State Engine mag geen onderdeel van
+Vandaag worden". A shared component reaching into a screen-specific context
+quietly couples the engine to that screen and blocks reuse.
+
+**How to apply / guardrail:** `StateCard` must NOT import `HomeViewContext` (or
+any Vandaag module). Its drill-in is **injected by the host** via optional props
+`onShowDetails?: () => void` + `detailsLabel?` (the L3 row renders only when
+`onShowDetails` is given). Vandaag's `StateDayHome` (inside `HomeViewProvider`)
+passes `onShowDetails={() => homeView?.setView("full")}`. Any future "this card
+needs to do X on Vandaag" must be a prop the host injects, never an import the
+card pulls from a screen.
 
 ## Vandaag two-surface pattern (no new route/screen)
 **Decision:** Vandaag shows two surfaces under one route via `HomeViewContext`

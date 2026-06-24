@@ -1,11 +1,16 @@
 // Sparki State Engine — shared types.
 //
 // One honest "toestand" (state) for an athlete today, derived from every REAL
-// signal Sparki already gathers. It is the source the living Sparki Core on
-// Vandaag renders, plus the short status / coach action and the 2–3 signals
-// behind the position. Nothing is fabricated: missing signals lower certainty
-// and are listed as honest gaps, never guessed. Stress has no live source, so
-// it is never invented — at most it nudges via the strain proxy (HRV + feel).
+// signal Sparki already gathers. This is the engine's surface-agnostic output
+// contract: the field position (which drives a living Sparki Core), the short
+// status / coach action, the 2–3 signals behind the position, certainty and
+// honest gaps. It is not tied to any screen — Vandaag is only the first consumer;
+// Training, Races, Routeplanner, Live Ride, notifications, widgets, Sparki
+// Display, coach views and APIs read the same shape unchanged.
+//
+// Nothing is fabricated: missing signals lower certainty and are listed as
+// honest gaps, never guessed. Stress has no live source, so it is never invented
+// — at most it nudges via the strain proxy (HRV + feel).
 //
 // Internal keys stay English; every rendered string is plain Dutch.
 
@@ -74,7 +79,7 @@ export type SparkiState = {
   status: string;
   /** One short coach action: iets aanpassen vandaag (null when nothing to add). */
   action: StateAction | null;
-  /** Whether today's check-in is in (drives the check-in element on Vandaag). */
+  /** Whether today's check-in is in (a consumer may surface a check-in prompt). */
   checkInDone: boolean;
 
   // ── Level 2 ("Waarom?") ─────────────────────────────────────────────────────

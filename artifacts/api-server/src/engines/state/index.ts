@@ -1,8 +1,12 @@
 // Sparki State Engine — public facade.
 //
-// One honest toestand for an athlete today, derived from the SAME real signal
-// intake the observation engine uses (no duplicate gathering, no fabrication).
-// Routes import from here, never the internals.
+// A generic, surface-agnostic service that derives one honest toestand for an
+// athlete today from the SAME real signal intake the observation engine uses
+// (no duplicate gathering, no fabrication). It belongs to no single screen: it
+// is the shared source for Vandaag (its first consumer), and — without any
+// change — for Training, Races, Routeplanner, Live Ride, notifications, widgets,
+// Sparki Display, coach views and public APIs. Consumers import from here only,
+// never the internals.
 
 import { gatherSignals } from "../observation";
 import { computeState } from "./compute";

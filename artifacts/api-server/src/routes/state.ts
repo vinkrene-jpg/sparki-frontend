@@ -1,7 +1,9 @@
 // GET /api/state — today's honest Sparki toestand for the signed-in athlete.
 //
-// Drives the State Card (the living Sparki Core + status + coach action + the
-// 2–3 signals behind it) on Vandaag. Real data only; honest failure on error.
+// The generic State Engine's HTTP surface: the living Sparki Core position +
+// status + coach action + the 2–3 signals behind it. Any consumer reads it
+// (Vandaag is the first; Training, Races, widgets, Sparki Display, coach views,
+// external APIs read the same payload). Real data only; honest failure on error.
 
 import { Router } from "express";
 import { requireAuth, getClerkUserId } from "../lib/auth";
