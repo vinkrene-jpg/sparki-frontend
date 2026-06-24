@@ -108,21 +108,30 @@ function AnalysisPart({
   )
 }
 
-function SignalList({ signals }: { signals: IntakeSignal[] }) {
+// "Wat ik zie" — the raw numbers Sparki weighed, as a compact scannable table
+// instead of buried in prose (numbers-in-text reads poorly). Honest: only
+// present signals appear here.
+function SignalsTable({ signals }: { signals: IntakeSignal[] }) {
   if (signals.length === 0) return null
   return (
-    <div>
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-200/70">
-        Onderbouwing — wat Sparki meeweegt
-      </p>
-      <ul className="mt-1.5 space-y-1">
-        {signals.map((s) => (
-          <li key={s.kind} className="flex justify-between gap-3 text-xs">
-            <span className="text-white/70">{signalLabel(s.kind)}</span>
-            <span className="text-right text-white/45">{s.value ?? "—"}</span>
-          </li>
-        ))}
-      </ul>
+    <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]">
+      <table className="w-full border-collapse">
+        <tbody>
+          {signals.map((s) => (
+            <tr
+              key={s.kind}
+              className="border-b border-white/[0.06] last:border-0"
+            >
+              <td className="px-3 py-2 align-top text-[13px] text-white/55">
+                {signalLabel(s.kind)}
+              </td>
+              <td className="px-3 py-2 text-right align-top font-mono text-[13px] tabular-nums text-white/90">
+                {s.value ?? "—"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
@@ -192,14 +201,31 @@ function WhyContent({
 }) {
   return (
     <div className="space-y-4">
+      {/* Wat ik zie — eerst de cijfers, als klein tabelletje. Bij te weinig
+          meetwaarden valt het honest terug op de tekstuele lezing. */}
+      <div>
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+          Wat ik zie
+        </p>
+        {usedSignals.length > 0 ? (
+          <div className="mt-1.5">
+            <SignalsTable signals={usedSignals} />
+          </div>
+        ) : (
+          <p className="mt-1 text-sm leading-relaxed text-white/80">
+            {data.advice.explainers.watIkZie}
+          </p>
+        )}
+      </div>
+
+      {/* Uitleg eronder — wat de cijfers betekenen, zonder getallen in de tekst. */}
       <div className="space-y-1.5 text-sm leading-relaxed text-white/75">
-        <p>{data.advice.explainers.watIkZie}</p>
         <p>{data.advice.explainers.watIkDenk}</p>
         <p>{data.advice.explainers.waaromDitAdvies}</p>
         <p>{data.advice.explainers.watAlsHetAndersIs}</p>
         <p>{data.advice.explainers.watVerandertMijnAdvies}</p>
       </div>
-      <SignalList signals={usedSignals} />
+
       <MissingList kinds={missingKinds} />
       <ReasonBlock confidence={data.advice.confidence} />
     </div>
