@@ -21,6 +21,14 @@ export function stateToCore(state: SparkiState): CoreVisualState {
   const x = clamp01(state.x)
   const y = clamp01(state.y)
 
+  // The Core is the centred hero of Vandaag. It expresses its field position
+  // through colour, size and a gentle lean — NOT by travelling to the edges,
+  // which reads as a layout bug and can clip the orb off-screen. So the rendered
+  // position is compressed into a calm band around the centre; the full semantic
+  // x/y below still drive hue, size, stretch and lean direction at full range.
+  const posX = 0.5 + (x - 0.5) * 0.26
+  const posY = 0.5 + (y - 0.5) * 0.3
+
   // The influence axis: the direction the Core leans/stretches, pointing from the
   // calm centre toward the athlete's actual position in the field. Canvas y grows
   // downward, so this already reads as "down = vulnerable".
@@ -39,8 +47,8 @@ export function stateToCore(state: SparkiState): CoreVisualState {
         : 0.38
 
   return {
-    x,
-    y,
+    x: posX,
+    y: posY,
     // Robuust athletes read a touch larger; kwetsbaar a touch smaller.
     size: 0.58 + (1 - y) * 0.22,
     hue: hueFromY(y),
