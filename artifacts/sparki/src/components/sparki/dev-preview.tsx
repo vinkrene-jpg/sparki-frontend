@@ -6,6 +6,7 @@ import type { DayType } from "@/lib/day-type"
 import TrainPage from "@/pages/train"
 import FeedPage from "@/pages/feed"
 import LabPage from "@/pages/lab"
+import CorePlaygroundPage from "@/pages/core-playground"
 import YouPage from "@/pages/you"
 import RacesPage from "@/pages/races"
 import SamenPage from "@/pages/samen"
@@ -53,6 +54,7 @@ const VIEWS: DevView[] = [
   { label: "Train", path: "/train" },
   { label: "Feed", path: "/feed" },
   { label: "Lab", path: "/lab" },
+  { label: "Core", path: "/core" },
   { label: "You", path: "/you" },
   { label: "Samen", path: "/samen" },
   { label: "Kennis", path: "/kennis" },
@@ -199,6 +201,9 @@ export function DevPreview() {
     page = <TrainPage />
   } else if (location.startsWith("/feed")) {
     page = <FeedPage />
+  } else if (location.startsWith("/core")) {
+    page = <CorePlaygroundPage />
+    showNav = false
   } else if (location.startsWith("/lab")) {
     page = <LabPage />
   } else if (location.startsWith("/you")) {

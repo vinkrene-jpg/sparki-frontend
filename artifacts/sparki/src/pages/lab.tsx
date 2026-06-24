@@ -228,6 +228,31 @@ export default function LabPage() {
         )}
       </div>
 
+      {/* 00 CORE PLAYGROUND — visueel prototype, handmatig bestuurbaar */}
+      <button
+        type="button"
+        onClick={() => navigate("/core")}
+        className="group w-full rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.05] p-4 text-left transition-colors hover:bg-cyan-300/[0.1]"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="font-mono text-[10px] tracking-[0.22em] text-cyan-300/70">
+              CORE SPEELTUIN
+            </p>
+            <p className="mt-1 text-[14px] font-medium text-white/85">
+              Speel met de levende Core
+            </p>
+            <p className="mt-0.5 text-pretty text-[12px] leading-relaxed text-white/45">
+              Stuur de vorm volledig met de hand en test of je de toestand in een
+              halve seconde begrijpt.
+            </p>
+          </div>
+          <span className="shrink-0 font-mono text-[18px] text-cyan-300/60 transition-transform group-hover:translate-x-0.5">
+            →
+          </span>
+        </div>
+      </button>
+
       {/* 01 PERFORMANCE RADAR */}
       <section className="flex flex-col items-center">
         <div className="flex w-full items-center justify-between">
