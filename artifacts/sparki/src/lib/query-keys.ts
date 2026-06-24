@@ -150,6 +150,17 @@ export const queryKeys = {
     profile: () => ["voice", "profile"] as const,
   },
 
+  insights: {
+    all: () => ["insights"] as const,
+    openLoops: () => ["insights", "open-loops"] as const,
+    honest: () => ["insights", "honest"] as const,
+  },
+
+  onboarding: {
+    all: () => ["onboarding"] as const,
+    identity: () => ["onboarding", "identity"] as const,
+  },
+
   social: {
     all: () => ["social"] as const,
     friends: () => ["social", "friends"] as const,

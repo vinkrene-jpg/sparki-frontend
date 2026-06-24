@@ -11,6 +11,12 @@ import { isSportActive, DEFAULT_SPORT } from "@workspace/feature-flags";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { generatePlan } from "../engines/training-plan";
 import {
+  assignFoundingNumber,
+  foundingLabel,
+  headTesterLine,
+  FOUNDING_LINES,
+} from "../engines/insights";
+import {
   getMissingOnboardingData,
   EXPERIENCE_LEVELS,
   estimateWeeklyHours,
@@ -287,6 +293,150 @@ router.post("/quick-start", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "onboarding.quick-start failed");
     res.status(500).json({ error: "Failed to complete quick start" });
+  }
+});
+
+// The five self-claims an athlete can make in onboarding V2. Free-form keys; the
+// engine never treats them as ground truth — only as a claim to test against data.
+const SELF_TYPES = [
+  "diesel",
+  "sprinter",
+  "alleskunner",
+  "geen_idee",
+  "ik_zie_wel",
+] as const;
+
+// POST /api/onboarding/complete-v2 — finish the narrative onboarding. Saves the
+// self-claim, seeds sensible planning defaults ONLY for values not already set
+// (so a returning athlete keeps their real numbers), assigns the Founding Athlete
+// number atomically, builds the first real plan, and marks onboarding complete.
+router.post("/complete-v2", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const selfType = (req.body as { selfType?: string }).selfType;
+  if (!selfType || !SELF_TYPES.includes(selfType as (typeof SELF_TYPES)[number])) {
+    res
+      .status(400)
+      .json({ error: `selfType must be one of: ${SELF_TYPES.join(", ")}` });
+    return;
+  }
+
+  const sport = DEFAULT_SPORT.toLowerCase();
+  const experience: ExperienceLevel = "beginner";
+  const trainingDaysPerWeek = 3;
+  const now = new Date();
+
+  try {
+    // FK guard: athlete_profiles references user_profiles. Fail clearly (not a
+    // raw FK 500) if sync never created the parent row.
+    const [parent] = await db
+      .select({ clerkId: userProfilesTable.clerkId })
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.clerkId, clerkId));
+    if (!parent) {
+      res.status(409).json({
+        error: "Je account is nog niet klaar. Log opnieuw in en probeer het nog eens.",
+      });
+      return;
+    }
+
+    const [existing] = await db
+      .select()
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId));
+
+    // Seed planning defaults ONLY where nothing real exists yet.
+    const seed: ProfilePatch = {};
+    if (!existing?.experienceLevel) seed.experienceLevel = experience;
+    if (!existing?.sport) seed.sport = sport;
+    if (existing?.trainingDaysPerWeek == null) {
+      seed.trainingDaysPerWeek = trainingDaysPerWeek;
+      seed.availableDays = defaultAvailableDays(trainingDaysPerWeek);
+    }
+    if (existing?.weeklyHourTarget == null) {
+      seed.weeklyHourTarget = estimateWeeklyHours(experience, trainingDaysPerWeek);
+      seed.weeklyHourTargetEstimated = true;
+    }
+    if (existing?.ftp == null) {
+      seed.ftp = estimateFtp(experience);
+      seed.ftpEstimated = true;
+    }
+    const patch: ProfilePatch = { ...seed, selfType };
+
+    await db
+      .insert(athleteProfilesTable)
+      .values({ clerkId, ...patch })
+      .onConflictDoUpdate({
+        target: athleteProfilesTable.clerkId,
+        set: { ...patch, updatedAt: now },
+      });
+
+    await db
+      .insert(onboardingStateTable)
+      .values({
+        clerkId,
+        onboardingStartedAt: now,
+        coreCompletedAt: now,
+        onboardingCompletedAt: now,
+        onboardingVersion: "2",
+        isComplete: true,
+        lastSeenAt: now,
+      })
+      .onConflictDoUpdate({
+        target: onboardingStateTable.clerkId,
+        set: {
+          coreCompletedAt: now,
+          onboardingCompletedAt: now,
+          onboardingVersion: "2",
+          isComplete: true,
+          lastSeenAt: now,
+          updatedAt: now,
+        },
+      });
+
+    // Earn the Founding Athlete badge (atomic + idempotent).
+    const foundingNumber = await assignFoundingNumber(clerkId);
+
+    // Build the first real plan immediately so the app is usable on landing.
+    await regeneratePlanSafely(clerkId, req.log);
+
+    res.status(201).json({
+      ok: true,
+      foundingNumber,
+      foundingLabel: foundingLabel(foundingNumber),
+      foundingLines: FOUNDING_LINES,
+    });
+  } catch (err) {
+    req.log.error({ err }, "onboarding.complete-v2 failed");
+    res.status(500).json({ error: "Kon onboarding niet afronden." });
+  }
+});
+
+// GET /api/onboarding/identity — Founding Athlete badge + Hoofdtester status.
+// Both are real account facts; the rotating tester line is deterministic per day.
+router.get("/identity", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const [u] = await db
+      .select({
+        foundingNumber: userProfilesTable.foundingNumber,
+        isHeadTester: userProfilesTable.isHeadTester,
+      })
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.clerkId, clerkId));
+    if (!u) {
+      res.status(404).json({ error: "Profile not found" });
+      return;
+    }
+    res.json({
+      foundingNumber: u.foundingNumber,
+      foundingLabel: u.foundingNumber != null ? foundingLabel(u.foundingNumber) : null,
+      foundingLines: u.foundingNumber != null ? FOUNDING_LINES : [],
+      isHeadTester: u.isHeadTester,
+      headTesterLine: u.isHeadTester ? headTesterLine() : null,
+    });
+  } catch (err) {
+    req.log.error({ err }, "onboarding.identity failed");
+    res.status(500).json({ error: "Kon je status niet laden." });
   }
 });
 

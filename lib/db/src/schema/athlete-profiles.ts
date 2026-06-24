@@ -22,6 +22,10 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
   // Sparki derived from those answers so later check-ins can refine them.
   sport: text("sport"),
   trainingDaysPerWeek: integer("training_days_per_week"),
+  // Onboarding V2 self-claim: what kind of athlete the rider *thinks* they are,
+  // before Sparki has evidence. Free-form key (diesel | sprinter | alleskunner |
+  // geen_idee | ik_zie_wel). Sparki forms its own theory from real data later.
+  selfType: text("self_type"),
   // Coaching path chosen by the athlete: "sparki" (autonomous engine) or
   // "coach" (human coach via the invitation/link flow). Null = not yet chosen.
   coachingMode: text("coaching_mode"),

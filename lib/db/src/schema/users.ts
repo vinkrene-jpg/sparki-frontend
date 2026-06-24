@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -8,6 +8,13 @@ export const userProfilesTable = pgTable("user_profiles", {
   displayName: text("display_name"),
   roles: text("roles").array().notNull().default(["athlete"]),
   activeRole: text("active_role").notNull().default("athlete"),
+  // Founding Athlete program — a stable sequential number assigned once, the
+  // first time onboarding V2 completes. Unique; NULL until earned (Postgres
+  // allows many NULLs under a UNIQUE constraint). Assigned atomically.
+  foundingNumber: integer("founding_number").unique(),
+  // Head-tester ("Hoofdtester") flag — set when a head-tester invite is
+  // accepted. Drives Sparki's running self-deprecating tester joke.
+  isHeadTester: boolean("is_head_tester").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

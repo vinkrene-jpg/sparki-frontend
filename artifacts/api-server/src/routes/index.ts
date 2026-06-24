@@ -24,6 +24,7 @@ import knowledgeRouter from "./knowledge";
 import feedRouter from "./feed";
 import socialRouter from "./social";
 import voiceRouter from "./voice";
+import insightsRouter from "./insights";
 import adminRouter from "./admin";
 
 const router: IRouter = Router();
@@ -53,6 +54,7 @@ router.use("/knowledge", knowledgeRouter);
 router.use("/feed", feedRouter);
 router.use("/social", socialRouter);
 router.use("/voice", voiceRouter);
+router.use(insightsRouter);
 router.use("/admin", adminRouter);
 
 export default router;

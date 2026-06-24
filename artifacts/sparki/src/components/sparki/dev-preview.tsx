@@ -15,8 +15,10 @@ import TesterQrPage from "@/pages/tester-qr"
 import CoachAthletePlanPage from "@/pages/coach-athlete-plan"
 import LandingPage from "@/pages/landing"
 import KnowledgePage from "@/pages/knowledge"
+import { OnboardingV2 } from "@/components/sparki/onboarding-v2"
 
 const LANDING_PATH = "/_dev/landing"
+const ONBOARDING_PATH = "/_dev/onboarding"
 
 // Dev-only preview of each day type (blueprint §4). "Auto" uses the real engine
 // detection; the rest force a specific day type so every homepage is visible
@@ -44,6 +46,7 @@ type DevView = {
 
 const VIEWS: DevView[] = [
   { label: "Landing", path: LANDING_PATH },
+  { label: "Onboarding", path: ONBOARDING_PATH },
   { label: "Home", path: "/" },
   { label: "Train", path: "/train" },
   { label: "Feed", path: "/feed" },
@@ -58,6 +61,7 @@ const VIEWS: DevView[] = [
 
 function isActive(current: string, path: string): boolean {
   if (path === LANDING_PATH) return current.startsWith(LANDING_PATH)
+  if (path === ONBOARDING_PATH) return current.startsWith(ONBOARDING_PATH)
   if (path === "/") return current === "/" || current === ""
   return current.startsWith(path)
 }
@@ -179,6 +183,14 @@ export function DevPreview() {
 
   if (location.startsWith(LANDING_PATH)) {
     page = <LandingPage />
+    showNav = false
+  } else if (location.startsWith(ONBOARDING_PATH)) {
+    page = (
+      <OnboardingV2
+        firstName="Dylan"
+        onComplete={() => setLocation("/")}
+      />
+    )
     showNav = false
   } else if (location.startsWith("/train")) {
     page = <TrainPage />

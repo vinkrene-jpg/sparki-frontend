@@ -18,6 +18,9 @@ import { userProfilesTable } from "./users";
 //   relationship "parent_athlete" → inviter is the parent/guardian, accepter is
 //                                    the (minor) athlete
 //   relationship "none"           → role grant only (admin-created), no link
+//   relationship "head_tester"    → admin-minted; marks the accepter as the
+//                                    Hoofdtester (sets user_profiles.isHeadTester).
+//                                    No link row; targetRole stays "athlete".
 //
 // status lifecycle: pending → accepted | revoked | expired
 export const invitationStatuses = [
@@ -32,6 +35,7 @@ export const invitationRelationships = [
   "coach_athlete",
   "parent_athlete",
   "none",
+  "head_tester",
 ] as const;
 export type InvitationRelationship = (typeof invitationRelationships)[number];
 

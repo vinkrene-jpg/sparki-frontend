@@ -105,6 +105,17 @@ router.post("/", requireAuth, async (req, res) => {
       }
       targetRole = "athlete";
       createdByRole = "coach";
+    } else if (relationship === "head_tester") {
+      // Head-tester ("Hoofdtester") invites are admin-minted only. They grant the
+      // athlete role and mark the accepter as the head tester on accept.
+      if (!admin) {
+        res
+          .status(403)
+          .json({ error: "Admin access required to create head-tester invitations" });
+        return;
+      }
+      targetRole = "athlete";
+      createdByRole = "admin";
     } else if (relationship === "parent_athlete") {
       if (!roles.includes("parent")) {
         res
@@ -236,7 +247,12 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
     const relationship = inv.relationship as InvitationRelationship;
 
     // Self-accept makes no sense for a relationship link (you'd link to yourself).
-    if (relationship !== "none" && inv.inviterClerkId === clerkId) {
+    // "head_tester" grants a flag (not a peer link), so self-accept is allowed.
+    if (
+      relationship !== "none" &&
+      relationship !== "head_tester" &&
+      inv.inviterClerkId === clerkId
+    ) {
       res
         .status(400)
         .json({ error: "You cannot accept your own relationship invitation" });
@@ -310,6 +326,12 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
             ],
             set: { status: "accepted" },
           });
+      } else if (relationship === "head_tester") {
+        // Mark the accepter as Sparki's Hoofdtester. No peer link row.
+        await tx
+          .update(userProfilesTable)
+          .set({ isHeadTester: true, updatedAt: new Date() })
+          .where(eq(userProfilesTable.clerkId, clerkId));
       }
 
       return claimed;

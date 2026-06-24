@@ -8,6 +8,7 @@ import { LinksSection } from "@/components/sparki/links-section"
 import { BugReportForm } from "@/components/sparki/bug-report-form"
 import { AdminPanel } from "@/components/sparki/admin-panel"
 import { SparkiVoiceSection } from "@/components/sparki/sparki-voice"
+import { InsightsSection } from "@/components/sparki/insights-section"
 import { useAthleteExtendedProfile, useUpdateAthleteProfile } from "@/hooks/use-athlete-extended-profile"
 import { useLogDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useLogFtp } from "@/hooks/use-ftp-history"
@@ -660,7 +661,7 @@ export default function YouPage() {
 
       {/* 03 INSTELLINGEN */}
       <section>
-        <SectionLabel n="03" title="Instellingen" />
+        <SectionLabel n="08" title="Instellingen" />
         <div className="mt-3 flex flex-col">
           {configRows.map((row) => {
             const Icon = row.icon
@@ -703,6 +704,8 @@ export default function YouPage() {
         </p>
         <SparkiVoiceSection />
       </section>
+
+      <InsightsSection />
 
       <TeamIdentitySection />
 
