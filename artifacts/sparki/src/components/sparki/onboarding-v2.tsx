@@ -174,9 +174,9 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
         {step === 0 && (
           <NarrativeScreen
             lines={[
-              { text: "Ah." },
+              { text: "Hoi." },
               { text: `Jij bent dus ${name}.` },
-              { text: "Ik had op iemand normalers gehoopt.", dim: true },
+              { text: "Goed dat je er bent.", dim: true },
             ]}
           >
             <PrimaryBtn onClick={next}>Verder</PrimaryBtn>
@@ -187,16 +187,21 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
           <NarrativeScreen
             lines={[
               { text: "Ik ben Sparki." },
-              { text: "Officieel ben ik een sportplatform." },
-              { text: "Onofficieel onderzoek ik sporters.", dim: true },
+              { text: "Ik weet nog weinig over je." },
+              { text: "Daar gaan we verandering in brengen.", dim: true },
             ]}
           >
-            <PrimaryBtn onClick={next}>Dat klinkt verdacht</PrimaryBtn>
+            <PrimaryBtn onClick={next}>Verder</PrimaryBtn>
           </NarrativeScreen>
         )}
 
         {step === 2 && (
-          <NarrativeScreen lines={[{ text: "Correct." }]}>
+          <NarrativeScreen
+            lines={[
+              { text: "Voordat ik advies geef," },
+              { text: "wil ik eerst begrijpen wat voor sporter je bent." },
+            ]}
+          >
             <PrimaryBtn onClick={next}>Verder</PrimaryBtn>
           </NarrativeScreen>
         )}
