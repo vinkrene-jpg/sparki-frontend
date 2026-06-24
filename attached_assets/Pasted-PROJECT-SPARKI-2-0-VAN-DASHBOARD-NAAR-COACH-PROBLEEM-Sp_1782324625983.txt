@@ -1,0 +1,156 @@
+PROJECT: SPARKI 2.0 – VAN DASHBOARD NAAR COACH
+
+PROBLEEM
+
+Sparki ontwikkelt zich momenteel richting een verzameling dashboards, analyses, kaarten, confidence scores en tekstuele uitleg.
+
+Dit is niet de visie.
+
+Een sporter wil niet 20 analyses lezen.
+Een sporter wil direct voelen hoe hij ervoor staat.
+
+Sparki moet evolueren van:
+
+Data → Analyse → Tekst
+
+naar:
+
+Data → Interpretatie → Ervaring
+
+ALGEMENE ONTWERPREGELS
+
+1. Toestand boven informatie
+De gebruiker ziet eerst zijn toestand.
+Pas daarna de analyse.
+
+2. Verandering boven momentopname
+Toon hoe de situatie beweegt.
+Niet alleen hoe deze nu is.
+
+3. Visueel boven tekst
+Toon eerst.
+Leg pas uit als de gebruiker daarom vraagt.
+
+4. Eén belangrijk inzicht
+Niet vijf tegelijk.
+
+5. AI mag twijfelen
+Geen geforceerde percentages.
+Geen schijnzekerheid.
+
+6. Advies moet coachachtig voelen
+Niet als een rapport.
+
+NIEUW KERNONDERDEEL: SPARKI STATE ENGINE
+
+Bouw een centrale engine die overal dezelfde toestand gebruikt.
+
+Input:
+- Trainingbelasting
+- Herstel
+- Slaap
+- HR
+- RPE
+- Check-ins
+- Wedstrijdkalender
+- Trainingshistorie
+- Voeding
+- Hydratatie
+- Stress
+- Beschikbare externe data
+
+Output:
+- Positie
+- Vorm
+- Kleur
+- Spanning
+- Bewegingsrichting
+
+Deze toestand wordt de basis voor ALLE schermen.
+
+SPARKI-VORM
+
+Ontwikkel de levende Sparki-vorm.
+
+Eigenschappen:
+- organisch
+- rustig bewegend
+- geen schokkerige animaties
+- kern blijft altijd herkenbaar
+
+De vorm reageert op:
+- herstel
+- belasting
+- vermoeidheid
+- wedstrijdspanning
+- positieve trends
+- negatieve trends
+- onzekerheid in data
+
+De vorm kan:
+- uitrekken
+- samentrekken
+- verschuiven
+- kleur veranderen
+- trager of actiever bewegen
+
+X/Y MODEL
+
+Y-as:
+boven = belastbaar
+onder = kwetsbaar
+
+X-as:
+links = hersteltekort
+rechts = hersteloverschot
+
+Positie wordt bepaald door alle signalen samen.
+
+TOEPASSEN OP HELE APP
+
+Vandaag:
+- vervang analysekaarten door State Card
+
+Training:
+- toon hoe trainingen de toestand veranderen
+
+Race:
+- toon wedstrijdgereedheid
+
+Lab:
+- toon verklaringen achter de toestand
+
+Profiel:
+- toon persoonlijke gevoeligheden die de toestand beïnvloeden
+
+INFORMATIE HIËRARCHIE
+
+Niveau 1
+Alleen toestand zichtbaar
+
+Niveau 2
+Korte uitleg zichtbaar na klik
+
+Niveau 3
+Volledige analyse zichtbaar na doorklikken
+
+Nooit direct lange teksten tonen.
+
+TESTCRITERIUM
+
+Een sporter moet binnen 3 seconden begrijpen:
+
+- Hoe sta ik ervoor?
+- Word ik beter of slechter?
+- Moet ik vandaag iets aanpassen?
+
+zonder één analyseblok te hoeven lezen.
+
+OPLEVERING
+
+Lever eerst een werkende versie van de State Engine en de nieuwe State Card in de preview op.
+
+Geen nieuwe losse dashboards bouwen.
+Geen nieuwe analysepagina's bouwen.
+
+Eerst de nieuwe coachervaring realiseren.

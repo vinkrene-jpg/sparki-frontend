@@ -25,8 +25,10 @@ import {
   type CoachScenarioKey,
 } from "@/lib/coach-engine"
 import { CoachDecisionProvider } from "@/contexts/CoachDecisionContext"
+import { HomeViewProvider, useHomeView } from "@/contexts/HomeViewContext"
 import { DEV_PREVIEW } from "@/lib/dev"
 import { ScreenShell } from "@/components/sparki/screen-shell"
+import { StateCard } from "@/components/sparki/state-card"
 import { Skeleton } from "@/components/sparki/home-sections"
 import { TrainingDayHome } from "@/components/sparki/training-day-home"
 import { RecoveryDayHome } from "@/components/sparki/day-homes/recovery-day-home"
@@ -81,15 +83,47 @@ export type DevCoachOverride = {
   scenario: CoachScenarioKey
 }
 
-export function DayHome({
+// Vandaag's default surface: the calm State Card. It carries its own loading /
+// error / empty states and drills into the full analysis via the HomeView
+// context, so it never has to wait on the dashboard or races queries.
+function StateDayHome() {
+  return (
+    <ScreenShell section="Home" bg="/concept-lab.png">
+      <StateCard />
+    </ScreenShell>
+  )
+}
+
+export function DayHome(props: {
+  devDayTypeOverride?: DayType
+  devCoachOverride?: DevCoachOverride
+} = {}) {
+  return (
+    <HomeViewProvider>
+      <DayHomeInner {...props} />
+    </HomeViewProvider>
+  )
+}
+
+function DayHomeInner({
   devDayTypeOverride,
   devCoachOverride,
 }: {
   devDayTypeOverride?: DayType
   devCoachOverride?: DevCoachOverride
-} = {}) {
+}) {
+  const homeView = useHomeView()
+  const view = homeView?.view ?? "state"
   const { data, isLoading } = useAthleteDashboard()
   const { context: raceContext, isLoading: racesLoading } = useRaceContext()
+
+  // Default surface — the State Card. Shown unless the athlete drills into the
+  // full day-type analysis. Rendered before the dashboard/races gate so it never
+  // blocks on data it doesn't need.
+  if (view === "state") {
+    return <StateDayHome />
+  }
+
   const profile = data?.athleteProfile
   const todayWorkout = data?.todayWorkout ?? null
   const ctx: DayTypeContext = {

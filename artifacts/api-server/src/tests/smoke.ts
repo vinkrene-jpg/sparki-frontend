@@ -76,6 +76,8 @@ import {
   fieldsToRacePatch,
   isSupportedMediaType,
 } from "../engines/document-analysis";
+import { computeState, type StateComputeInput } from "../engines/state";
+import type { IntakeMetrics } from "../engines/observation/types";
 
 type Status = "pass" | "fail" | "skip";
 const results: { engine: string; check: string; status: Status; note?: string }[] =
@@ -629,6 +631,81 @@ async function main() {
     const patch = fieldsToRacePatch(merged.extractedFields);
     assert(patch.startTime === "10:30", "race patch maps startTime");
     assert(patch.distanceKm === "142", "race patch maps distance");
+  });
+
+  await run("State", "computeState (pure)", () => {
+    const baseMetrics: IntakeMetrics = {
+      load: { ctl: 50, atl: 48, tsb: 2 },
+      loadSessions: 12,
+      readiness: { label: "fresh", score: 82, basis: ["goede slaap"] },
+      risk: { level: "low", score: 8, acwr: 0.96, reasons: [] },
+      hrv: { direction: "rising", first: 60, last: 70, delta: 10, days: 7 },
+      restingHr: { direction: "falling", first: 52, last: 49, delta: -3, days: 7 },
+      sleep: { latest: 8, avg: 7.8, days: 7 },
+      feel: { latest: 8, avg: 7.5, days: 7 },
+      fatigue: { latest: 2, avg: 2.5, days: 7 },
+      ftp: { trend: null, latest: 280 },
+      feedback: { total: 5, done: 5, missed: 0, tooHard: 0, tooLight: 0, pain: 0, tired: 0 },
+      races: { nextA: null, nextAny: null, count: 0 },
+      nutrition: { logs: 3 },
+      sessionsPerWeek: 4,
+      healthStatus: "ok",
+    };
+    const baseInput: StateComputeInput = {
+      today: "2026-06-24",
+      athleteName: "Test",
+      metrics: baseMetrics,
+      signals: [
+        { kind: "training_load", status: "present", label: "Trainingsbelasting", value: "ok", dataPoints: 12 },
+        { kind: "readiness", status: "present", label: "Gereedheid", value: "fris", dataPoints: 1 },
+        { kind: "hrv_trend", status: "present", label: "HRV", value: "stijgend", dataPoints: 7 },
+        { kind: "weather", status: "missing", label: "Weer", value: null, dataPoints: 0 },
+      ],
+      missing: ["weather"],
+    };
+
+    // A fresh, robust, recovered athlete → top band, recovery surplus side.
+    const good = computeState(baseInput);
+    assert(good.band === "belastbaar", `fresh athlete → belastbaar, got ${good.band}`);
+    assert(good.y <= 0.3, "robust athlete sits high (low y)");
+    assert(good.x >= 0.5, "recovered athlete sits on the surplus side");
+    assert(good.checkInDone === true, "readiness present → check-in done");
+    assert(good.why.length > 0 && good.why.length <= 3, "why holds 1–3 signals");
+    assert(good.action !== null, "always a concrete next step");
+    // Confidence is honest: never 1.0, capped at 0.9, weather excluded as structural.
+    assert(good.confidence > 0 && good.confidence <= 0.9, "confidence in (0, 0.9]");
+
+    // Injury is a hard override toward the bottom band, regardless of form.
+    const injured = computeState({
+      ...baseInput,
+      metrics: { ...baseMetrics, healthStatus: "injured" },
+    });
+    assert(injured.band === "kwetsbaar", `injury → kwetsbaar, got ${injured.band}`);
+    assert(injured.y >= 0.9, "injury forces vulnerability high");
+    assert(
+      injured.why[0]?.kind === "health",
+      "injury surfaces as the top reason",
+    );
+
+    // No check-in at all → honest gap that lowers certainty.
+    const noCheckIn = computeState({
+      ...baseInput,
+      metrics: {
+        ...baseMetrics,
+        readiness: { label: "unknown", score: null, basis: [] },
+      },
+    });
+    assert(noCheckIn.checkInDone === false, "no readiness → check-in not done");
+    assert(
+      noCheckIn.confidence < good.confidence,
+      "missing check-in lowers confidence",
+    );
+
+    // Determinism: identical input → identical output.
+    assert(
+      JSON.stringify(computeState(baseInput)) === JSON.stringify(good),
+      "computeState is deterministic",
+    );
   });
 
   // ── DB-bound read-only entry points (need a seeded user) ──────────────────

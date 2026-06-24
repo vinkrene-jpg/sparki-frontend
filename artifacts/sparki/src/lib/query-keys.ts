@@ -19,6 +19,11 @@ export const queryKeys = {
     flags: () => ["user", "flags"] as const,
   },
 
+  state: {
+    all: () => ["state"] as const,
+    current: () => ["state", "current"] as const,
+  },
+
   coach: {
     all: () => ["coach"] as const,
     analysis: () => ["coach", "analysis"] as const,

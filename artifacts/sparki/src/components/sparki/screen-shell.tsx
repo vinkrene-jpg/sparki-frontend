@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { LogOut, RefreshCw, Shield } from "lucide-react"
+import { LogOut, RefreshCw, Shield, ChevronLeft } from "lucide-react"
 import { useClerk, Show } from "@clerk/react"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
 import { useTeamIdentity } from "@/hooks/use-social"
@@ -11,6 +11,7 @@ import { FollowUpPrompt } from "@/components/sparki/follow-up-prompt"
 import { CoachAnalysisCard } from "@/components/sparki/coach/coach-analysis-card"
 import { CoachDecisionCard } from "@/components/sparki/coach-decision-card"
 import { useCoachDecision } from "@/contexts/CoachDecisionContext"
+import { useHomeView } from "@/contexts/HomeViewContext"
 
 // Sparki's daily coach analysis belongs on the athlete's training-facing
 // surfaces: the day homes (Vandaag, incl. race week → Wedstrijdvoorbereiding),
@@ -148,6 +149,12 @@ export function ScreenShell({
   const showCoachCard = COACH_CARD_SECTIONS.has(sectionKey)
   const sectionLabel = SECTION_DISPLAY[section.toLowerCase()] ?? section.toUpperCase()
   const coachDecision = useCoachDecision()
+  // Vandaag's two surfaces (see HomeViewContext). On the calm State Card surface
+  // the dashboard/coach cards are suppressed; on the full analysis surface a top
+  // "Terug" returns to the State Card. Null outside Vandaag → unchanged elsewhere.
+  const homeView = useHomeView()
+  const stateSurface = isHome && homeView?.view === "state"
+  const fullSurface = isHome && homeView?.view === "full"
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#05070e] text-white">
       {/* Per-screen cinematic background — shared structure, scene-specific
@@ -184,17 +191,31 @@ export function ScreenShell({
           </div>
         </header>
 
-        {isHome && <HomeProfilePrompt />}
-        {isHome && <CoachInputNeeds />}
+        {/* Top-anchored Terug from the full analysis back to the State Card. */}
+        {fullSurface && (
+          <button
+            type="button"
+            onClick={() => homeView!.setView("state")}
+            className="flex items-center gap-1.5 self-start rounded-full border border-white/15 px-3 py-1.5 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Terug naar Sparki
+          </button>
+        )}
 
-        {showCoachCard && (
+        {isHome && !stateSurface && <HomeProfilePrompt />}
+        {isHome && !stateSurface && <CoachInputNeeds />}
+
+        {showCoachCard && !stateSurface && (
           <CoachAnalysisCard variant={isHome ? "hero" : "card"} />
         )}
 
         {/* Adaptive Coach Engine output — the engine's decision (onderwerp /
             advies / vraag / prioriteit) for today, surfaced on every home
             day-type. Driven by the CoachDecision context from the dispatcher. */}
-        {isHome && coachDecision && <CoachDecisionCard decision={coachDecision} />}
+        {isHome && !stateSurface && coachDecision && (
+          <CoachDecisionCard decision={coachDecision} />
+        )}
 
         {children}
       </div>
@@ -203,7 +224,7 @@ export function ScreenShell({
           Development Preview Mode. Renders nothing when no follow-up is due.
           Suppressed on the Circle route ("samen"), where the Circle feed is the
           calm home for follow-ups — so we never double-ask the same question. */}
-      {section.toLowerCase() !== "samen" && <FollowUpPrompt />}
+      {section.toLowerCase() !== "samen" && !stateSurface && <FollowUpPrompt />}
     </main>
   )
 }
