@@ -27,7 +27,12 @@ import {
   checkCompleteness,
   buildSkeleton,
 } from "../engines/training-plan";
-import { selectRoutingProfile, profileToSurface, buildGpx } from "../engines/route";
+import {
+  selectRoutingProfile,
+  profileToSurface,
+  buildGpx,
+  buildTcx,
+} from "../engines/route";
 import {
   getMissingOnboardingData,
   selectNextQuestions,
@@ -187,6 +192,102 @@ async function main() {
     // No usable geometry → null (caller responds 422).
     assert(
       buildGpx({ name: "x", geometry: [], nav: null }) === null,
+      "null on empty geometry",
+    );
+  });
+
+  await run("Route", "buildTcx course points", () => {
+    const geometry: [number, number][] = [
+      [52.0, 4.0],
+      [52.01, 4.01],
+      [52.02, 4.02],
+      [52.03, 4.03],
+    ];
+    // With nav cues → a TCX Course with embedded <CoursePoint> turn prompts.
+    const withNav = buildTcx({
+      name: "Test route",
+      geometry,
+      profile: [10, 20, 30, 40],
+      durationSec: 600,
+      nav: [
+        { km: 0, dir: "Vertrek", note: "Start hier" },
+        { km: 1.2, dir: "Links", note: "Sla linksaf" },
+        { km: 2.5, dir: "Scherp rechts", note: "Scherp naar rechts" },
+        { km: 3.4, dir: "Rechtdoor", note: "Blijf rechtdoor gaan" },
+      ],
+    });
+    assert(withNav != null, "buildTcx returns tcx with nav");
+    assert(
+      withNav!.includes(
+        'xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2"',
+      ),
+      "declares TrainingCenterDatabase v2 namespace",
+    );
+    assert(
+      withNav!.includes("<Course>") && withNav!.includes("<Lap>"),
+      "emits Course + Lap structure",
+    );
+    assert(
+      withNav!.includes("<CoursePoint>") && withNav!.includes("</CoursePoint>"),
+      "emits CoursePoint turn prompts",
+    );
+    assert(
+      withNav!.includes("<PointType>Left</PointType>"),
+      "maps 'Links' → Left",
+    );
+    assert(
+      withNav!.includes("<PointType>Right</PointType>"),
+      "maps 'Scherp rechts' → Right",
+    );
+    assert(
+      withNav!.includes("<PointType>Straight</PointType>"),
+      "maps 'Rechtdoor' → Straight",
+    );
+    assert(
+      withNav!.includes("<PointType>Generic</PointType>"),
+      "maps 'Vertrek' → Generic",
+    );
+    assert(
+      withNav!.includes("<AltitudeMeters>") &&
+        withNav!.includes("<DistanceMeters>"),
+      "emits real altitude + distance on trackpoints",
+    );
+    assert(withNav!.includes("<Time>"), "emits schema-required Time elements");
+
+    // Summit mapping (TCX-only vocabulary beyond the gpxx set).
+    const climb = buildTcx({
+      name: "Klim",
+      geometry,
+      profile: [10, 20, 30, 40],
+      durationSec: 600,
+      nav: [{ km: 2.5, dir: "Top van de klim", note: "Boven" }],
+    });
+    assert(
+      climb!.includes("<PointType>Summit</PointType>"),
+      "maps 'Top'/'klim' → Summit",
+    );
+
+    // No nav cues → a plain course (still valid), no CoursePoint.
+    const noNav = buildTcx({
+      name: "Bare",
+      geometry,
+      profile: null,
+      durationSec: null,
+      nav: null,
+    });
+    assert(noNav != null, "buildTcx returns tcx without nav (nominal pace)");
+    assert(
+      !noNav!.includes("<CoursePoint>"),
+      "no CoursePoint when no cues",
+    );
+    assert(
+      noNav!.includes("<Track>") && noNav!.includes("<Trackpoint>"),
+      "still emits a plain course track",
+    );
+
+    // No usable geometry → null (caller responds 422).
+    assert(
+      buildTcx({ name: "x", geometry: [], nav: null }) === null,
       "null on empty geometry",
     );
   });

@@ -7,8 +7,9 @@ import {
   useDeleteRoute,
   useGenerateRoute,
   useSaveGeneratedRoute,
-  useDownloadRouteGpx,
-  useDownloadCandidateGpx,
+  useDownloadRoute,
+  useDownloadCandidate,
+  type RouteExportFormat,
   type SparkiRoute,
   type Sport,
   type BikeType,
@@ -131,13 +132,24 @@ function Climbs({
 
 function RouteCard({ route }: { route: SparkiRoute }) {
   const del = useDeleteRoute()
-  const gpx = useDownloadRouteGpx()
+  const download = useDownloadRoute()
   const [gpxError, setGpxError] = useState<string | null>(null)
   const profile = route.profile ?? []
   const climbs = route.climbs ?? []
   const nav = route.nav ?? []
   const geometry = route.geometry ?? []
   const canExport = geometry.length > 1
+
+  function exportRoute(format: RouteExportFormat) {
+    setGpxError(null)
+    download.mutate(
+      { id: route.id, name: route.name, format },
+      {
+        onError: (e) =>
+          setGpxError(e instanceof Error ? e.message : "Download mislukt"),
+      },
+    )
+  }
 
   return (
     <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
@@ -160,27 +172,27 @@ function RouteCard({ route }: { route: SparkiRoute }) {
         </div>
         <div className="flex shrink-0 items-center gap-3">
           {canExport && (
-            <button
-              type="button"
-              onClick={() => {
-                setGpxError(null)
-                gpx.mutate(
-                  { id: route.id, name: route.name },
-                  {
-                    onError: (e) =>
-                      setGpxError(
-                        e instanceof Error ? e.message : "Download mislukt",
-                      ),
-                  },
-                )
-              }}
-              disabled={gpx.isPending}
-              title="Download als GPX voor je fietscomputer"
-              className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-cyan-300/80 disabled:opacity-40"
-            >
-              <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
-              {gpx.isPending ? "…" : "GPX"}
-            </button>
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => exportRoute("gpx")}
+                disabled={download.isPending}
+                title="Download als GPX voor je fietscomputer"
+                className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-cyan-300/80 disabled:opacity-40"
+              >
+                <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
+                GPX
+              </button>
+              <button
+                type="button"
+                onClick={() => exportRoute("tcx")}
+                disabled={download.isPending}
+                title="Download als TCX-course — meest betrouwbare navigatie op Garmin/Wahoo"
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-cyan-300/80 disabled:opacity-40"
+              >
+                TCX
+              </button>
+            </div>
           )}
           <button
             type="button"
@@ -259,7 +271,7 @@ const inputClass =
 function RouteGenerator({ onClose }: { onClose: () => void }) {
   const generate = useGenerateRoute()
   const save = useSaveGeneratedRoute()
-  const candidateGpx = useDownloadCandidateGpx()
+  const candidateDownload = useDownloadCandidate()
   const { data: workouts } = useUpcomingWorkouts()
 
   const [mode, setMode] = useState<"loop" | "ptp" | "waypoints">("loop")
@@ -900,10 +912,11 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
               type="button"
               onClick={() => {
                 setError(null)
-                candidateGpx.mutate(
+                candidateDownload.mutate(
                   {
                     candidateId: candidate.candidateId,
                     name: candidate.name,
+                    format: "gpx",
                   },
                   {
                     onError: (e) =>
@@ -913,12 +926,37 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
                   },
                 )
               }}
-              disabled={candidateGpx.isPending}
+              disabled={candidateDownload.isPending}
               title="Download als GPX voor je fietscomputer"
               className="flex items-center gap-1.5 rounded-2xl border border-white/[0.12] px-4 py-3.5 font-sans text-[13px] text-white/70 transition-colors hover:border-cyan-300/30 disabled:opacity-50"
             >
               <Download className="h-4 w-4" strokeWidth={1.75} />
-              {candidateGpx.isPending ? "…" : "GPX"}
+              GPX
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setError(null)
+                candidateDownload.mutate(
+                  {
+                    candidateId: candidate.candidateId,
+                    name: candidate.name,
+                    format: "tcx",
+                  },
+                  {
+                    onError: (e) =>
+                      setError(
+                        e instanceof Error ? e.message : "Download mislukt",
+                      ),
+                  },
+                )
+              }}
+              disabled={candidateDownload.isPending}
+              title="Download als TCX-course — meest betrouwbare navigatie op Garmin/Wahoo"
+              className="flex items-center gap-1.5 rounded-2xl border border-white/[0.12] px-4 py-3.5 font-sans text-[13px] text-white/70 transition-colors hover:border-cyan-300/30 disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" strokeWidth={1.75} />
+              TCX
             </button>
             <button
               type="button"

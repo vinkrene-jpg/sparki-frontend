@@ -19,6 +19,7 @@ import {
   parseGpxRoute,
   summarizeTrack,
   buildGpx,
+  buildTcx,
   putCandidate,
   getCandidate,
   getRoutingProvider,
@@ -336,6 +337,69 @@ router.get("/:id/gpx", requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/routes/:id/tcx — download a saved route as a TCX Course file (owner
+// only). Garmin Edge / Wahoo ELEMNT devices read embedded turn-by-turn most
+// reliably from a TCX <CoursePoint>, so this is the most dependable on-device
+// navigation export. Same honesty/graceful-fallback rules as the GPX export:
+// real stored data only, no cues → plain course, no geometry → 422.
+router.get("/:id/tcx", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  try {
+    const [route] = await db
+      .select()
+      .from(routesTable)
+      .where(and(eq(routesTable.id, id), eq(routesTable.clerkId, clerkId)))
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+
+    const tcx = buildTcx({
+      name: route.name,
+      geometry: (route.geometry as RoutePathPoint[] | null) ?? [],
+      profile: (route.profile as number[] | null) ?? null,
+      nav:
+        (route.nav as { km: number; dir: string; note: string }[] | null) ??
+        null,
+      durationSec: route.durationSec ?? null,
+    });
+    if (!tcx) {
+      res.status(422).json({
+        error:
+          "Deze route heeft geen opgeslagen geometrie en kan niet als TCX worden geëxporteerd.",
+      });
+      return;
+    }
+
+    const safeName =
+      (route.name || "sparki-route")
+        .normalize("NFKD")
+        .replace(/[^\w\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .toLowerCase() || "sparki-route";
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.garmin.tcx+xml; charset=utf-8",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${safeName}.tcx"`,
+    );
+    res.send(tcx);
+  } catch (err) {
+    req.log.error({ err }, "routes.tcx failed");
+    res.status(500).json({ error: "Kon TCX niet genereren" });
+  }
+});
+
 // GET /api/routes/candidate/:candidateId/gpx — download a not-yet-saved
 // generated proposal as GPX. Serialized from the server-trusted candidate store
 // (same honesty guarantee as saving), so the export uses real provider data.
@@ -375,6 +439,50 @@ router.get("/candidate/:candidateId/gpx", requireAuth, async (req, res) => {
   res.setHeader("Content-Type", "application/gpx+xml; charset=utf-8");
   res.setHeader("Content-Disposition", `attachment; filename="${safeName}.gpx"`);
   res.send(gpx);
+});
+
+// GET /api/routes/candidate/:candidateId/tcx — download a not-yet-saved
+// generated proposal as a TCX Course file. Serialized from the server-trusted
+// candidate store (same honesty guarantee as saving), so the export uses real
+// provider data. TCX <CoursePoint> is the most dependable on-device turn-by-turn
+// format for Garmin/Wahoo.
+router.get("/candidate/:candidateId/tcx", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const candidateId = String(req.params.candidateId);
+  const stored = getCandidate(candidateId, clerkId);
+  if (!stored) {
+    res.status(410).json({
+      error:
+        "Routevoorstel is verlopen of niet gevonden — genereer de route opnieuw.",
+    });
+    return;
+  }
+
+  const tcx = buildTcx({
+    name: stored.name,
+    geometry: stored.geometry,
+    profile: stored.profile,
+    nav: stored.nav,
+    durationSec: stored.durationSec,
+  });
+  if (!tcx) {
+    res
+      .status(422)
+      .json({ error: "Dit voorstel heeft geen geometrie om te exporteren." });
+    return;
+  }
+
+  const safeName =
+    (stored.name || "sparki-route")
+      .normalize("NFKD")
+      .replace(/[^\w\s-]/g, "")
+      .trim()
+      .replace(/\s+/g, "-")
+      .toLowerCase() || "sparki-route";
+
+  res.setHeader("Content-Type", "application/vnd.garmin.tcx+xml; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${safeName}.tcx"`);
+  res.send(tcx);
 });
 
 // POST /api/routes/generate — propose a real, provider-backed route WITHOUT

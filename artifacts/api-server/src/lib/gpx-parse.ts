@@ -277,10 +277,10 @@ function coursePointType(dir: string): string {
   return "Generic";
 }
 
-// Returns null when the route has no usable geometry (caller responds 422
-// rather than emitting an empty track).
-export function buildGpx(route: GpxBuildInput): string | null {
-  const geometry = (route.geometry ?? []).filter(
+// Drop anything that isn't a real, in-range [lat, lon(, ele)] point. Shared by
+// buildGpx and buildTcx so both serializers see the exact same trusted track.
+function sanitizeGeometry(geometry: GeoPoint[] | null | undefined): GeoPoint[] {
+  return (geometry ?? []).filter(
     (p): p is GeoPoint =>
       Array.isArray(p) &&
       Number.isFinite(p[0]) &&
@@ -288,16 +288,19 @@ export function buildGpx(route: GpxBuildInput): string | null {
       Math.abs(p[0]) <= 90 &&
       Math.abs(p[1]) <= 180,
   );
-  if (geometry.length < 2) return null;
+}
 
-  const profile = (route.profile ?? []).filter((e) => Number.isFinite(e));
+// Elevation resolver for track point i. Prefers a real per-point elevation
+// carried on the geometry (preserved from a GPX import) — the faithful source.
+// Falls back to proportionally resampling the downsampled profile across the
+// track (generated routes only store a profile). Both are real data, never
+// invented; returns null when neither is available. Shared by both serializers.
+function elevationResolver(
+  geometry: GeoPoint[],
+  profile: number[],
+): (i: number) => number | null {
   const n = geometry.length;
-
-  // Elevation at track point i. Prefer a real per-point elevation carried on the
-  // geometry (preserved from a GPX import) — that's the faithful source. Fall
-  // back to proportionally resampling the downsampled profile across the track
-  // (generated routes only store a profile). Both are real data, never invented.
-  const eleAt = (i: number): number | null => {
+  return (i: number): number | null => {
     const ptEle = geometry[i]?.[2];
     if (typeof ptEle === "number" && Number.isFinite(ptEle)) return ptEle;
     if (profile.length === 0) return null;
@@ -305,28 +308,44 @@ export function buildGpx(route: GpxBuildInput): string | null {
     const idx = Math.round((i / (n - 1)) * (profile.length - 1));
     return profile[Math.min(idx, profile.length - 1)]!;
   };
+}
 
-  // Cumulative distance per track point — used to place nav waypoints at the
-  // real coordinate nearest each cue's km marker.
+// Cumulative distance (km) per track point. Used to place nav cues at the real
+// coordinate nearest each cue's km marker, and to spread TCX times by distance.
+function cumulativeKm(geometry: GeoPoint[]): number[] {
   const cumKm: number[] = [0];
-  for (let i = 1; i < n; i++) {
+  for (let i = 1; i < geometry.length; i++) {
     const a = geometry[i - 1]!;
     const b = geometry[i]!;
     cumKm.push(cumKm[i - 1]! + haversineKm(a[0], a[1], b[0], b[1]));
   }
+  return cumKm;
+}
 
-  const nearestIdxForKm = (km: number): number => {
-    let best = 0;
-    let bestDiff = Infinity;
-    for (let i = 0; i < n; i++) {
-      const diff = Math.abs(cumKm[i]! - km);
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        best = i;
-      }
+// Index of the track point whose cumulative km is closest to `km`.
+function nearestIdxForKm(cumKm: number[], km: number): number {
+  let best = 0;
+  let bestDiff = Infinity;
+  for (let i = 0; i < cumKm.length; i++) {
+    const diff = Math.abs(cumKm[i]! - km);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = i;
     }
-    return best;
-  };
+  }
+  return best;
+}
+
+// Returns null when the route has no usable geometry (caller responds 422
+// rather than emitting an empty track).
+export function buildGpx(route: GpxBuildInput): string | null {
+  const geometry = sanitizeGeometry(route.geometry);
+  if (geometry.length < 2) return null;
+
+  const profile = (route.profile ?? []).filter((e) => Number.isFinite(e));
+
+  const eleAt = elevationResolver(geometry, profile);
+  const cumKm = cumulativeKm(geometry);
 
   const name = escapeXml(route.name?.trim() || "Sparki route");
 
@@ -343,7 +362,7 @@ export function buildGpx(route: GpxBuildInput): string | null {
   const wpts: string[] = [];
   for (const cue of route.nav ?? []) {
     if (!Number.isFinite(cue.km)) continue;
-    const idx = nearestIdxForKm(cue.km);
+    const idx = nearestIdxForKm(cumKm, cue.km);
     const [lat, lon] = geometry[idx]!;
     const ele = eleAt(idx);
     const dir = cue.dir?.trim() || "";
@@ -411,6 +430,179 @@ export function buildGpx(route: GpxBuildInput): string | null {
     (wpts.length > 0 ? wpts.join("\n") + "\n" : "") +
     `  <trk>\n    <name>${name}</name>\n    <trkseg>\n${trkpts}\n    </trkseg>\n  </trk>\n` +
     `</gpx>\n`
+  );
+}
+
+// ── TCX Course serialization ──────────────────────────────────────────────
+// Garmin Edge and Wahoo ELEMNT devices read embedded turn-by-turn most reliably
+// from a TCX Course (<CoursePoint>) — GPX gpxx course points are best-effort and
+// not honored by every device. buildTcx produces a valid TCX Course (Training
+// Center Database v2) from the SAME real route data buildGpx uses: geometry,
+// elevation profile and nav cues. Nothing is fabricated — elevation is omitted
+// when absent, nav cues become <CoursePoint> turn prompts, no cues → a plain
+// course, and <2 geometry points → null (caller responds 422).
+//
+// The TCX schema REQUIRES a <Time> on every Trackpoint/CoursePoint and a
+// <TotalTimeSeconds> on the Lap. A course has no real ride timestamps, so we
+// synthesize a monotonic time series from the route's REAL duration estimate
+// (durationSec), spread proportional to cumulative distance. When no duration is
+// available we fall back to a nominal course pace purely to keep the file
+// structurally valid — these times are never surfaced as ride data.
+
+// Map a (Dutch) maneuver word to a TCX CoursePoint PointType_t value. Superset
+// of the gpxx mapping (TCX also has Summit etc.); keyword-based and case-
+// insensitive, falling back to "Generic" so the on-device prompt still appears.
+function tcxCoursePointType(dir: string): string {
+  const d = dir.toLowerCase();
+  if (d.includes("rechtdoor") || d.includes("straight")) return "Straight";
+  if (d.includes("links") || d.includes("left")) return "Left";
+  if (d.includes("rechts") || d.includes("right")) return "Right";
+  if (
+    d.includes("top") ||
+    d.includes("summit") ||
+    d.includes("klim") ||
+    d.includes("col")
+  )
+    return "Summit";
+  return "Generic";
+}
+
+export type TcxBuildInput = GpxBuildInput & {
+  // Real provider duration estimate (seconds). Used only to spread the
+  // schema-required <Time> values across the track; null → nominal-pace fallback.
+  durationSec?: number | null;
+};
+
+// Nominal cycling pace (km/h) used ONLY to space the schema-required <Time>
+// values when a route carries no real duration estimate. Never user-facing.
+const TCX_NOMINAL_SPEED_KMH = 25;
+
+// Anchor every synthesized course time to a fixed, obviously-not-a-ride epoch so
+// it's clear these are structural placeholders, not real ride timestamps.
+const TCX_TIME_ANCHOR_MS = Date.UTC(2000, 0, 1, 0, 0, 0);
+
+// Returns null when the route has no usable geometry (caller responds 422
+// rather than emitting an empty course).
+export function buildTcx(route: TcxBuildInput): string | null {
+  const geometry = sanitizeGeometry(route.geometry);
+  if (geometry.length < 2) return null;
+
+  const profile = (route.profile ?? []).filter((e) => Number.isFinite(e));
+  const n = geometry.length;
+
+  const eleAt = elevationResolver(geometry, profile);
+  const cumKm = cumulativeKm(geometry);
+  const totalKm = cumKm[n - 1]!;
+
+  // Total course time: the route's real duration estimate when present, else a
+  // nominal-pace fallback derived from real distance (structural only).
+  const totalTimeSec =
+    typeof route.durationSec === "number" &&
+    Number.isFinite(route.durationSec) &&
+    route.durationSec > 0
+      ? route.durationSec
+      : totalKm > 0
+        ? (totalKm / TCX_NOMINAL_SPEED_KMH) * 3600
+        : 0;
+
+  // Time at point i: anchored epoch + offset proportional to cumulative distance.
+  // Degenerate (zero-length) routes spread time evenly by index so it stays
+  // strictly monotonic — devices reject equal/decreasing timestamps.
+  const timeAt = (i: number): string => {
+    const frac =
+      totalKm > 0 ? cumKm[i]! / totalKm : n > 1 ? i / (n - 1) : 0;
+    const ms = TCX_TIME_ANCHOR_MS + Math.round(frac * totalTimeSec * 1000);
+    return new Date(ms).toISOString();
+  };
+
+  // Cumulative distance in metres at point i (TCX uses metres throughout).
+  const distMAt = (i: number): number => Math.round(cumKm[i]! * 1000 * 10) / 10;
+
+  // Course Name is restricted to 15 chars in the TCX schema; CoursePoint Name to
+  // 10. Truncate so the file validates while keeping the prompt readable.
+  const courseName = escapeXml((route.name?.trim() || "Sparki route").slice(0, 15));
+
+  const positionEl = (
+    tag: string,
+    lat: number,
+    lon: number,
+    indent: string,
+  ): string =>
+    `${indent}<${tag}>\n` +
+    `${indent}  <LatitudeDegrees>${lat}</LatitudeDegrees>\n` +
+    `${indent}  <LongitudeDegrees>${lon}</LongitudeDegrees>\n` +
+    `${indent}</${tag}>`;
+
+  const trackpoints = geometry
+    .map((p, i) => {
+      const ele = eleAt(i);
+      return (
+        `        <Trackpoint>\n` +
+        `          <Time>${timeAt(i)}</Time>\n` +
+        positionEl("Position", p[0], p[1], "          ") +
+        "\n" +
+        (ele != null ? `          <AltitudeMeters>${ele}</AltitudeMeters>\n` : "") +
+        `          <DistanceMeters>${distMAt(i)}</DistanceMeters>\n` +
+        `        </Trackpoint>`
+      );
+    })
+    .join("\n");
+
+  // Nav cues → <CoursePoint> turn prompts, anchored to the real coordinate
+  // nearest each cue's km marker. No cues → a plain course (still valid).
+  const coursePoints: string[] = [];
+  const usedIdx = new Set<number>();
+  for (const cue of route.nav ?? []) {
+    if (!Number.isFinite(cue.km)) continue;
+    const idx = nearestIdxForKm(cumKm, cue.km);
+    if (usedIdx.has(idx)) continue; // one prompt per track point
+    usedIdx.add(idx);
+    const [lat, lon] = geometry[idx]!;
+    const ele = eleAt(idx);
+    const dir = cue.dir?.trim() || "";
+    const note = cue.note?.trim() || "";
+    const cpName = escapeXml((dir || note || "Cue").slice(0, 10));
+    const desc = escapeXml(note);
+    coursePoints.push(
+      `      <CoursePoint>\n` +
+        `        <Name>${cpName}</Name>\n` +
+        `        <Time>${timeAt(idx)}</Time>\n` +
+        positionEl("Position", lat, lon, "        ") +
+        "\n" +
+        (ele != null ? `        <AltitudeMeters>${ele}</AltitudeMeters>\n` : "") +
+        `        <PointType>${tcxCoursePointType(dir || note)}</PointType>\n` +
+        (desc ? `        <Notes>${desc}</Notes>\n` : "") +
+        `      </CoursePoint>`,
+    );
+  }
+
+  const begin = geometry[0]!;
+  const end = geometry[n - 1]!;
+
+  return (
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<TrainingCenterDatabase ` +
+    `xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2" ` +
+    `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ` +
+    `xsi:schemaLocation="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2 ` +
+    `http://www.garmin.com/xmlschemas/TrainingCenterDatabasev2.xsd">\n` +
+    `  <Courses>\n` +
+    `    <Course>\n` +
+    `      <Name>${courseName}</Name>\n` +
+    `      <Lap>\n` +
+    `        <TotalTimeSeconds>${Math.round(totalTimeSec * 10) / 10}</TotalTimeSeconds>\n` +
+    `        <DistanceMeters>${distMAt(n - 1)}</DistanceMeters>\n` +
+    positionEl("BeginPosition", begin[0], begin[1], "        ") +
+    "\n" +
+    positionEl("EndPosition", end[0], end[1], "        ") +
+    "\n" +
+    `        <Intensity>Active</Intensity>\n` +
+    `      </Lap>\n` +
+    `      <Track>\n${trackpoints}\n      </Track>\n` +
+    (coursePoints.length > 0 ? coursePoints.join("\n") + "\n" : "") +
+    `    </Course>\n` +
+    `  </Courses>\n` +
+    `</TrainingCenterDatabase>\n`
   );
 }
 

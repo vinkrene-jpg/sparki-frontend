@@ -194,81 +194,78 @@ export function useSaveGeneratedRoute() {
   });
 }
 
-// Download a saved route as a GPX file. Fetches with cookies (same auth as the
-// rest of the app), then triggers a browser download from the blob. The server
-// returns 422 for routes without stored geometry (e.g. GPX imports).
-export function useDownloadRouteGpx() {
+// Route export formats. GPX is widely compatible; TCX Course (<CoursePoint>) is
+// the most dependable on-device turn-by-turn format for Garmin Edge / Wahoo
+// ELEMNT head units.
+export type RouteExportFormat = "gpx" | "tcx";
+
+// Fetch an export blob (with cookies, same auth as the rest of the app) and
+// trigger a browser download. The server returns 422 for routes without stored
+// geometry (e.g. GPX imports).
+async function downloadRouteFile(
+  endpoint: string,
+  name: string,
+  format: RouteExportFormat,
+) {
+  const res = await fetch(endpoint, { credentials: "include" });
+  if (!res.ok) {
+    let message = `Kon ${format.toUpperCase()} niet downloaden`;
+    try {
+      const data = (await res.json()) as { error?: string };
+      if (data?.error) message = data.error;
+    } catch {
+      // non-JSON error body — keep the default message
+    }
+    throw new Error(message);
+  }
+  const blob = await res.blob();
+  const safeName =
+    (name || "sparki-route")
+      .normalize("NFKD")
+      .replace(/[^\w\s-]/g, "")
+      .trim()
+      .replace(/\s+/g, "-")
+      .toLowerCase() || "sparki-route";
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${safeName}.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// Download a saved route as a GPX or TCX file.
+export function useDownloadRoute() {
   return useMutation({
-    mutationFn: async (route: { id: number; name: string }) => {
-      const res = await fetch(`${API_BASE}/api/routes/${route.id}/gpx`, {
-        credentials: "include",
-      });
-      if (!res.ok) {
-        let message = "Kon GPX niet downloaden";
-        try {
-          const data = (await res.json()) as { error?: string };
-          if (data?.error) message = data.error;
-        } catch {
-          // non-JSON error body — keep the default message
-        }
-        throw new Error(message);
-      }
-      const blob = await res.blob();
-      const safeName =
-        (route.name || "sparki-route")
-          .normalize("NFKD")
-          .replace(/[^\w\s-]/g, "")
-          .trim()
-          .replace(/\s+/g, "-")
-          .toLowerCase() || "sparki-route";
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${safeName}.gpx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    },
+    mutationFn: (route: {
+      id: number;
+      name: string;
+      format: RouteExportFormat;
+    }) =>
+      downloadRouteFile(
+        `${API_BASE}/api/routes/${route.id}/${route.format}`,
+        route.name,
+        route.format,
+      ),
   });
 }
 
-// Download a not-yet-saved generated proposal as GPX (server builds it from the
-// trusted candidate store).
-export function useDownloadCandidateGpx() {
+// Download a not-yet-saved generated proposal as GPX or TCX (server builds it
+// from the trusted candidate store).
+export function useDownloadCandidate() {
   return useMutation({
-    mutationFn: async (candidate: { candidateId: string; name: string }) => {
-      const res = await fetch(
-        `${API_BASE}/api/routes/candidate/${candidate.candidateId}/gpx`,
-        { credentials: "include" },
-      );
-      if (!res.ok) {
-        let message = "Kon GPX niet downloaden";
-        try {
-          const data = (await res.json()) as { error?: string };
-          if (data?.error) message = data.error;
-        } catch {
-          // non-JSON error body — keep the default message
-        }
-        throw new Error(message);
-      }
-      const blob = await res.blob();
-      const safeName =
-        (candidate.name || "sparki-route")
-          .normalize("NFKD")
-          .replace(/[^\w\s-]/g, "")
-          .trim()
-          .replace(/\s+/g, "-")
-          .toLowerCase() || "sparki-route";
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${safeName}.gpx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    },
+    mutationFn: (candidate: {
+      candidateId: string;
+      name: string;
+      format: RouteExportFormat;
+    }) =>
+      downloadRouteFile(
+        `${API_BASE}/api/routes/candidate/${candidate.candidateId}/${candidate.format}`,
+        candidate.name,
+        candidate.format,
+      ),
   });
 }
 
