@@ -30,6 +30,7 @@ import storageRouter from "./storage";
 import inputCenterRouter from "./input-center";
 import materialRouter from "./material";
 import documentAnalysisRouter from "./document-analysis";
+import calendarRouter from "./calendar";
 
 const router: IRouter = Router();
 
@@ -64,5 +65,6 @@ router.use(storageRouter);
 router.use(inputCenterRouter);
 router.use("/material", materialRouter);
 router.use("/document-analyses", documentAnalysisRouter);
+router.use("/calendar", calendarRouter);
 
 export default router;

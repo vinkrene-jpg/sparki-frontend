@@ -9,6 +9,8 @@ import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { Skeleton } from "@/components/sparki/home-sections"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
+import { ImportFromCalendar } from "@/components/sparki/import-from-calendar"
+import type { CalendarEvent } from "@/lib/calendar-types"
 import {
   useRaces,
   useCreateRace,
@@ -205,6 +207,7 @@ export default function RacesPage() {
 
   const [editingId, setEditingId] = useState<number | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [teamRiders, setTeamRiders] = useState<TeamRider[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -216,8 +219,49 @@ export default function RacesPage() {
     setForm(EMPTY_FORM)
     setTeamRiders([])
     setEditingId(null)
+    setShowImport(false)
     setShowForm(true)
     setError(null)
+  }
+
+  function startImport() {
+    setShowForm(false)
+    setEditingId(null)
+    setError(null)
+    setShowImport(true)
+  }
+
+  function closeImport() {
+    setShowImport(false)
+  }
+
+  const SOURCE_LABELS: Record<CalendarEvent["source"], string> = {
+    fietssport: "Fietssport",
+    wetri: "We-Tri",
+    knwu: "KNWU",
+  }
+
+  // An event picked from an external calendar prefills the create form; the
+  // athlete reviews and confirms before anything is saved.
+  function prefillFromEvent(ev: CalendarEvent) {
+    setForm({
+      ...EMPTY_FORM,
+      name: ev.name,
+      raceDate: ev.date ?? "",
+      location: ev.location ?? "",
+      discipline: ev.discipline ?? "",
+      distanceKm: ev.distanceKm != null ? String(ev.distanceKm) : "",
+      notes: `Geïmporteerd uit ${SOURCE_LABELS[ev.source]}\n${ev.url}`,
+    })
+    setTeamRiders([])
+    setEditingId(null)
+    setShowImport(false)
+    setShowForm(true)
+    setError(
+      ev.date
+        ? null
+        : "Controleer de datum — die kon niet automatisch worden ingevuld.",
+    )
   }
 
   function startEdit(r: Race) {
@@ -279,10 +323,10 @@ export default function RacesPage() {
     <ScreenShell section="Races" bg="/concept-lab.png">
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {showForm && (
+          {(showForm || showImport) && (
             <button
               type="button"
-              onClick={closeForm}
+              onClick={showForm ? closeForm : closeImport}
               className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
             >
               <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
@@ -294,23 +338,40 @@ export default function RacesPage() {
               WEDSTRIJDEN
             </span>
             <h1 className="mt-1 font-sans text-2xl font-light tracking-tight text-white/90">
-              {showForm ? (editingId != null ? "Race bewerken" : "Race toevoegen") : "Mijn races"}
+              {showImport
+                ? "Uit kalender"
+                : showForm
+                  ? editingId != null
+                    ? "Race bewerken"
+                    : "Race toevoegen"
+                  : "Mijn races"}
             </h1>
           </div>
         </div>
-        {!showForm && (
-          <button
-            type="button"
-            onClick={startCreate}
-            className="rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06]"
-            style={{ borderColor: ACCENT, color: ACCENT, background: "rgba(255,255,255,0.04)" }}
-          >
-            + Race
-          </button>
+        {!showForm && !showImport && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={startImport}
+              className="rounded-full border border-white/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+            >
+              Uit kalender
+            </button>
+            <button
+              type="button"
+              onClick={startCreate}
+              className="rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06]"
+              style={{ borderColor: ACCENT, color: ACCENT, background: "rgba(255,255,255,0.04)" }}
+            >
+              + Race
+            </button>
+          </div>
         )}
       </header>
 
-      {showForm ? (
+      {showImport ? (
+        <ImportFromCalendar onPick={prefillFromEvent} />
+      ) : showForm ? (
         <RaceForm
           form={form}
           set={set}

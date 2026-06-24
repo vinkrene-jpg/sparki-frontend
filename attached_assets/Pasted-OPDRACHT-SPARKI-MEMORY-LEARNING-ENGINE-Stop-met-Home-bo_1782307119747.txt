@@ -1,0 +1,173 @@
+OPDRACHT — SPARKI MEMORY & LEARNING ENGINE
+
+Stop met Home bouwen als dashboard. Sparki moet zichtbaar een sporter leren begrijpen.
+
+Doel:
+Bouw Sparki om van metrics-scherm naar lerende coach. De Home-pagina moet niet starten met HRV/slaap/rusthartslag, maar met Sparki’s belangrijkste observatie van vandaag.
+
+1. Home: één hoofdobservatie
+
+Toon bovenaan maximaal één centrale coach-observatie:
+
+Voorbeelden:
+- “Je herstel lijkt beter dan je zelf verwacht.”
+- “Ik twijfel of je vandaag klaar bent voor intensiteit.”
+- “Je slaap begint je herstel te beïnvloeden.”
+- “Je vorm lijkt richting wedstrijd op te lopen.”
+- “Je bent consistenter dan vorige maand.”
+
+Deze observatie moet altijd hebben:
+
+- Wat zie ik?
+- Waarom denk ik dat?
+- Hoe zeker ben ik?
+- Wat raad ik vandaag aan?
+- Wat wil ik nog van jou weten?
+
+Metrics mogen zichtbaar blijven, maar alleen als onderbouwing. Niet als hoofdproduct.
+
+2. Coach-geheugen
+
+Sparki moet conclusies opslaan, niet alleen ruwe data.
+
+Sla per sporter leerpunten op zoals:
+
+- reageert goed op rust na zware blokken
+- onderschat vaak eigen vorm vóór wedstrijden
+- slaapt slechter na late intensieve trainingen
+- herstelt snel van duurtraining
+- reageert slecht op extra druk
+- heeft baat bij korte concrete instructies
+
+Maak hiervoor een memory/learning datamodel.
+
+Elke observatie mag verwijzen naar eerder geleerd gedrag:
+
+“Dit lijkt op 3 eerdere dagen waarop je training daarna goed ging.”
+
+Of:
+
+“Vorige keer dat je vermoeidheid zo laag was na een zware rit, bleek je toch goed belastbaar.”
+
+3. Confidence en twijfel
+
+Elke observatie krijgt confidence:
+
+- hoog
+- middel
+- laag
+
+Bij lage confidence mag Sparki geen stellig advies geven. Dan moet Sparki een vraag stellen.
+
+Voorbeelden:
+- “Ik twijfel nog. Hoe voelen je benen?”
+- “Je data zien er goed uit, maar ik mis je check-in.”
+- “Je slaap is voldoende, maar ik weet niet hoe zwaar gisteren echt voelde.”
+
+Antwoorden moeten worden opgeslagen als leerdata.
+
+4. Vraag-flow
+
+Bouw directe antwoordknoppen op Home:
+
+- Fris / Normaal / Zwaar
+- Zin in trainen / Neutraal / Geen zin
+- Goed geslapen / Matig / Slecht
+- Stress laag / Normaal / Hoog
+- Wedstrijdspanning laag / normaal / hoog
+
+Na antwoord moet Sparki de observatie direct kunnen herberekenen of aanscherpen.
+
+5. Vervang generieke teksten
+
+Verwijder of herschrijf teksten zoals:
+
+- “Gebruik de dag om bij te tanken”
+- “Plan je volgende sessie”
+- “Geen training ingepland”
+
+Deze teksten zijn te generiek.
+
+Maak ze persoonlijk en contextueel:
+
+Niet:
+“Geen training ingepland.”
+
+Wel:
+“Je hebt vandaag nog niets staan. Op basis van je herstel zou een rustige duurtraining logisch zijn, tenzij je benen zwaar voelen.”
+
+6. Coach-toon
+
+Sparki moet klinken als een coach die meekijkt, niet als een dashboard.
+
+Eigenschappen:
+- persoonlijk
+- kort
+- eerlijk over twijfel
+- soms licht cynisch/grappig, maar niet geforceerd
+- concreet
+- geen motivatiespreuken
+- geen wellness-taal
+- geen vage AI-poëzie
+
+Voorbeeld goed:
+“Je data doen alsof je fris bent. Nu je benen nog.”
+
+Voorbeeld fout:
+“Vandaag is een mooie kans om bewust te herstellen en in balans te komen.”
+
+7. Insight-schermen herstellen
+
+Controleer bestaande Home-, Insight-, Coach- en Observatie-schermen op deze vraag:
+
+“Laat dit scherm zien dat Sparki deze sporter kent?”
+
+Zo niet:
+- herschrijven naar observatie/advies/vraag
+- samenvoegen
+- verwijderen
+- of ondergeschikt maken aan de hoofdobservatie
+
+Gebruik Sparki Insight als denkrichting: minder dode schermen, meer verbinding met behoefte, twijfel, patroon en sporter-context.
+
+8. Testdata / demo
+
+Maak dit zichtbaar in de preview met minimaal 3 sporterprofielen:
+
+A. Dylan — U23 wielrenner
+- wedstrijd binnenkort
+- wisselende slaap
+- twijfel over vorm
+- gevoelig voor druk
+- wil concrete korte adviezen
+
+B. Recreatieve sporter
+- wil afvallen
+- traint 3x per week
+- motivatie wisselt
+- heeft behoefte aan bevestiging en simpele keuzes
+
+C. Ervaren sporter
+- veel data
+- wil onderbouwing
+- wil weten waarom Sparki iets adviseert
+
+Voor elk profiel moet Home anders voelen. Niet alleen andere cijfers, maar andere observaties, vragen en toon.
+
+9. Acceptatiecriteria
+
+Klaar is pas klaar als:
+
+- Home opent met één centrale coach-observatie.
+- Metrics zijn onderbouwing, niet het hoofdscherm.
+- Sparki toont waarom hij iets denkt.
+- Sparki toont confidence.
+- Sparki stelt vragen bij twijfel.
+- Antwoorden worden opgeslagen.
+- Latere observaties kunnen verwijzen naar eerdere leerpunten.
+- Generieke dashboardteksten zijn vervangen.
+- Dylan-profiel voelt concreet, scherp en persoonlijk.
+- In de preview is zichtbaar dat Sparki per sporter anders redeneert.
+
+Belangrijk:
+Bouw geen nieuw los dashboard. Bouw dit in de bestaande Home/Coach/Insight-flow. Geen placeholder-schermen. Geen “later uitbreidbaar”. Het moet nu werkend zichtbaar zijn in de preview.
