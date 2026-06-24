@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react"
 import { ArrowLeft, Zap, ChevronRight } from "lucide-react"
 import { apiFetch } from "@/lib/api"
+import { ConnectionsSection } from "@/components/sparki/connections-section"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sparki Onboarding V2 — a six-screen narrative.
@@ -267,12 +268,37 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
             ]}
           >
             {error && <ErrorMsg msg={error} />}
-            <PrimaryBtn onClick={finish} loading={saving}>
+            <PrimaryBtn onClick={next}>
               Koppelen
               <ChevronRight className="h-4 w-4" />
             </PrimaryBtn>
             <GhostBtn onClick={finish}>Later</GhostBtn>
           </NarrativeScreen>
+        )}
+
+        {step === 6 && (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="flex flex-col gap-1.5 pt-2">
+              <h2 className="font-sans text-[1.5rem] font-bold leading-tight tracking-tight text-white">
+                Koppel je sportdata
+              </h2>
+              <p className="text-pretty text-[13px] leading-relaxed text-white/45">
+                Kies wat je nu wilt koppelen. Je kunt dit later altijd aanpassen.
+              </p>
+            </div>
+
+            <div className="-mx-6 mt-4 flex-1 overflow-y-auto px-6">
+              <ConnectionsSection />
+            </div>
+
+            <div className="mt-auto flex flex-col gap-3 pb-8 pt-4">
+              {error && <ErrorMsg msg={error} />}
+              <PrimaryBtn onClick={finish} loading={saving}>
+                Klaar — naar Sparki
+                <ChevronRight className="h-4 w-4" />
+              </PrimaryBtn>
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -23,9 +23,15 @@ import {
   type InsightSignals,
   type SelfType,
 } from "../engines/insights";
+import type { TrustTier } from "../engines/voice";
 
 type Status = "pass" | "fail";
 const results: { scenario: string; status: Status; note?: string }[] = [];
+
+// Most evidence-gating scenarios isolate the data gate, not the trust gate, so
+// they run at the highest trust tier where every tone is unlocked. Dedicated
+// scenarios below exercise the trust gating itself.
+const MAAT: TrustTier = "maat";
 
 function assert(cond: unknown, msg: string) {
   if (!cond) throw new Error(msg);
@@ -105,48 +111,67 @@ function main() {
 
   // ── Open loops: nothing without evidence ───────────────────────────────────
   scenario("open-loops: nieuwe atleet krijgt geen lussen", () =>
-    assert(computeOpenLoops(baseSignals()).length === 0, "verzon lussen zonder bewijs"));
+    assert(computeOpenLoops(baseSignals(), MAAT).length === 0, "verzon lussen zonder bewijs"));
 
   // ── Open loops: each gate fires on its real signal ─────────────────────────
   scenario("open-loops: theory_about_you vereist self-claim + 3 sessies", () => {
     const has = (s: InsightSignals) =>
-      computeOpenLoops(s).some((l) => l.id === "theory_about_you");
+      computeOpenLoops(s, MAAT).some((l) => l.id === "theory_about_you");
     assert(!has(baseSignals({ selfType: "diesel", totalSessions: 2 })), "vuurde te vroeg");
     assert(has(baseSignals({ selfType: "diesel", totalSessions: 3 })), "vuurde niet bij bewijs");
     assert(!has(baseSignals({ selfType: null, totalSessions: 5 })), "vuurde zonder self-claim");
   });
   scenario("open-loops: missing_puzzle vuurt bij geschatte FTP of geen gewicht", () => {
     const has = (s: InsightSignals) =>
-      computeOpenLoops(s).some((l) => l.id === "missing_puzzle");
+      computeOpenLoops(s, MAAT).some((l) => l.id === "missing_puzzle");
     assert(has(baseSignals({ ftpEstimated: true })), "FTP-schatting gaf geen lus");
     assert(has(baseSignals({ weightMissing: true })), "ontbrekend gewicht gaf geen lus");
     assert(!has(baseSignals({ ftpEstimated: false, weightMissing: false })), "vuurde zonder reden");
   });
   scenario("open-loops: something_in_data vereist 5 sessies", () => {
     const has = (s: InsightSignals) =>
-      computeOpenLoops(s).some((l) => l.id === "something_in_data");
+      computeOpenLoops(s, MAAT).some((l) => l.id === "something_in_data");
     assert(!has(baseSignals({ totalSessions: 4 })), "vuurde bij 4");
     assert(has(baseSignals({ totalSessions: 5 })), "vuurde niet bij 5");
   });
   scenario("open-loops: two_explanations vereist variatie + sessies", () => {
     const has = (s: InsightSignals) =>
-      computeOpenLoops(s).some((l) => l.id === "two_explanations");
+      computeOpenLoops(s, MAAT).some((l) => l.id === "two_explanations");
     assert(has(baseSignals({ distinctTypes: 2, totalSessions: 4 })), "vuurde niet bij variatie");
     assert(!has(baseSignals({ distinctTypes: 1, totalSessions: 9 })), "vuurde zonder variatie");
   });
   scenario("open-loops: starting_to_understand vereist tijd + relatie", () => {
     const has = (s: InsightSignals) =>
-      computeOpenLoops(s).some((l) => l.id === "starting_to_understand");
+      computeOpenLoops(s, MAAT).some((l) => l.id === "starting_to_understand");
     assert(has(baseSignals({ daysKnown: 7, totalSessions: 6 })), "vuurde niet bij tijd+sessies");
     assert(has(baseSignals({ daysKnown: 8, memoriesCount: 1 })), "vuurde niet bij tijd+memory");
     assert(!has(baseSignals({ daysKnown: 3, totalSessions: 20 })), "vuurde te vroeg");
   });
 
+  // ── Open loops: trust gates the interpretive curiosity hooks ───────────────
+  scenario("open-loops: curious lussen zijn trust-gated", () => {
+    // something_in_data embodies the curious tone → silent at the lowest trust,
+    // unlocked once Sparki has earned a little familiarity. Evidence is present.
+    const s = baseSignals({ totalSessions: 5 });
+    const has = (t: TrustTier) =>
+      computeOpenLoops(s, t).some((l) => l.id === "something_in_data");
+    assert(!has("nieuw"), "curious-lus lekte bij nieuwe atleet");
+    assert(has("kennismaking"), "curious-lus kwam niet vrij bij meer vertrouwen");
+  });
+  scenario("open-loops: observerende lussen spreken vanaf tier nieuw", () => {
+    // theory_about_you is an observer-tone loop → available from the first tier.
+    const s = baseSignals({ selfType: "diesel", totalSessions: 3 });
+    assert(
+      computeOpenLoops(s, "nieuw").some((l) => l.id === "theory_about_you"),
+      "observer-lus bleef stil ondanks bewijs",
+    );
+  });
+
   // ── Open loops: deterministic + priority order ─────────────────────────────
   scenario("open-loops: deterministisch bij gelijke signalen", () => {
     const s = baseSignals({ selfType: "diesel", totalSessions: 6, distinctTypes: 2, daysKnown: 9 });
-    const a = computeOpenLoops(s).map((l) => l.id).join(",");
-    const b = computeOpenLoops(s).map((l) => l.id).join(",");
+    const a = computeOpenLoops(s, MAAT).map((l) => l.id).join(",");
+    const b = computeOpenLoops(s, MAAT).map((l) => l.id).join(",");
     assert(a === b, "niet deterministisch");
   });
   scenario("open-loops: behoudt catalog-prioriteitsvolgorde", () => {
@@ -158,20 +183,21 @@ function main() {
       daysKnown: 9,
       memoriesCount: 1,
     });
-    const got = computeOpenLoops(s).map((l) => l.id);
+    const got = computeOpenLoops(s, MAAT).map((l) => l.id);
     const expected = OPEN_LOOPS.filter((l) => l.evidence(s)).map((l) => l.id);
     assert(JSON.stringify(got) === JSON.stringify(expected), `volgorde fout: ${got.join(",")}`);
   });
 
   // ── Honest observation: insufficient until real evidence ───────────────────
   scenario("eerlijk: te weinig sessies → onvoldoende bewijs", () => {
-    const o = composeHonest(baseSignals({ totalSessions: 2 }));
+    const o = composeHonest(baseSignals({ totalSessions: 2 }), MAAT);
     assert(o.kind === "insufficient" && !o.founded, "claimde iets zonder bewijs");
     assert(o.text === "Ik heb daar nog onvoldoende bewijs voor.", `verkeerde tekst: ${o.text}`);
   });
   scenario("eerlijk: duidelijke stap omhoog → better_than_thought", () => {
     const o = composeHonest(
       baseSignals({ totalSessions: 5, recentAvgTss: 80, baselineAvgTss: 60 }),
+      MAAT,
     );
     assert(o.kind === "better_than_thought" && o.founded, `kreeg ${o.kind}`);
   });
@@ -179,6 +205,7 @@ function main() {
     // sprinter claim, maar gemiddelde rit is lang → tegengesproken.
     const o = composeHonest(
       baseSignals({ totalSessions: 6, selfType: "sprinter", avgDurationMin: 120 }),
+      MAAT,
     );
     assert(o.kind === "doubts_theory" && o.founded, `kreeg ${o.kind}`);
   });
@@ -190,23 +217,42 @@ function main() {
         recentAvgTss: 70,
         baselineAvgTss: 70,
       }),
+      MAAT,
     );
     assert(o.kind === "underestimates" && o.founded, `kreeg ${o.kind}`);
   });
   scenario("eerlijk: genoeg sessies maar niets opvallends → onvoldoende bewijs", () => {
-    const o = composeHonest(baseSignals({ totalSessions: 4, selfType: "diesel" }));
+    const o = composeHonest(baseSignals({ totalSessions: 4, selfType: "diesel" }), MAAT);
     assert(o.kind === "insufficient" && !o.founded, `kreeg ${o.kind}`);
   });
   scenario("eerlijk: deterministisch", () => {
     const s = baseSignals({ totalSessions: 5, recentAvgTss: 80, baselineAvgTss: 60 });
-    assert(composeHonest(s).text === composeHonest(s).text, "niet deterministisch");
+    assert(composeHonest(s, MAAT).text === composeHonest(s, MAAT).text, "niet deterministisch");
   });
   scenario("eerlijk: bescheiden claims kunnen niet 'fout' zijn", () => {
     // ik_zie_wel met lange ritten mag nooit doubts_theory geven.
     const o = composeHonest(
       baseSignals({ totalSessions: 8, selfType: "ik_zie_wel", avgDurationMin: 130 }),
+      MAAT,
     );
     assert(o.kind !== "doubts_theory", "bescheiden claim werd tegengesproken");
+  });
+  scenario("eerlijk: doubts_theory is trust-gated (pittig is verdiend)", () => {
+    // A contradicted claim — but the pointed line is dry humor, earned at higher
+    // trust. At low trust Sparki stays honest-but-silent rather than landing it.
+    const s = baseSignals({ totalSessions: 6, selfType: "sprinter", avgDurationMin: 120 });
+    assert(composeHonest(s, "nieuw").kind === "insufficient", "was te vroeg pittig");
+    assert(composeHonest(s, "kennismaking").kind === "insufficient", "was te vroeg pittig");
+    assert(composeHonest(s, "vertrouwd").kind === "doubts_theory", "bleef stil ondanks vertrouwen");
+    assert(composeHonest(s, "maat").kind === "doubts_theory", "bleef stil bij maat");
+  });
+  scenario("eerlijk: steunende observatie mag vanaf tier nieuw", () => {
+    // A measurable step up is supportive → never trust-gated away.
+    const s = baseSignals({ totalSessions: 5, recentAvgTss: 80, baselineAvgTss: 60 });
+    assert(
+      composeHonest(s, "nieuw").kind === "better_than_thought",
+      "steun werd onterecht gegated",
+    );
   });
 
   // ── Founding label formatting ──────────────────────────────────────────────
@@ -255,7 +301,7 @@ function main() {
             daysKnown: 10,
             memoriesCount: 1,
           });
-          for (const l of computeOpenLoops(s)) seen.add(l.text);
+          for (const l of computeOpenLoops(s, MAAT)) seen.add(l.text);
         }
       }
     }
@@ -273,7 +319,7 @@ function main() {
       baseSignals({ totalSessions: 6, selfType: "geen_idee", recentAvgTss: 70, baselineAvgTss: 70 }),
     ];
     for (const s of variants) {
-      const bad = bannedWord(composeHonest(s).text);
+      const bad = bannedWord(composeHonest(s, MAAT).text);
       assert(!bad, `verboden woord "${bad}" in eerlijke observatie`);
     }
   });

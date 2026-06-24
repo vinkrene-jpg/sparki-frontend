@@ -10,6 +10,7 @@ import {
   computeOpenLoops,
   composeHonest,
 } from "../engines/insights";
+import { computeTrust } from "../engines/voice";
 
 const router = Router();
 
@@ -19,8 +20,11 @@ const router = Router();
 router.get("/open-loops", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
-    const signals = await computeInsightSignals(clerkId);
-    res.json({ loops: computeOpenLoops(signals) });
+    const [signals, trust] = await Promise.all([
+      computeInsightSignals(clerkId),
+      computeTrust(clerkId),
+    ]);
+    res.json({ loops: computeOpenLoops(signals, trust.tier) });
   } catch (err) {
     req.log.error({ err }, "insights.openLoops failed");
     res.status(500).json({ error: "Kon Sparki's observaties niet laden." });
@@ -32,8 +36,11 @@ router.get("/open-loops", requireAuth, async (req, res) => {
 router.get("/honest", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
-    const signals = await computeInsightSignals(clerkId);
-    const obs = composeHonest(signals);
+    const [signals, trust] = await Promise.all([
+      computeInsightSignals(clerkId),
+      computeTrust(clerkId),
+    ]);
+    const obs = composeHonest(signals, trust.tier);
     res.json({ observation: obs });
   } catch (err) {
     req.log.error({ err }, "insights.honest failed");

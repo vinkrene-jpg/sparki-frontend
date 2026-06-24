@@ -6,6 +6,8 @@
 // composition is deterministic: same signals → same observation.
 
 import type { InsightSignals, SelfType } from "./signals";
+import { insightLineAllowed } from "../voice";
+import type { TrustTier, VoiceTone } from "../voice";
 
 export type HonestObservation = {
   text: string;
@@ -25,6 +27,19 @@ const INSUFFICIENT: HonestObservation = {
   kind: "insufficient",
 };
 
+// The voice tone each founded observation embodies. The pointed "I doubt your
+// theory" line is dry humor — earned at higher trust; until then Sparki simply
+// holds it back (honest "not yet") rather than being pointed too early. The
+// supportive / observational lines are available from the first tier.
+const OBSERVATION_TONE: Record<
+  Exclude<HonestObservation["kind"], "insufficient">,
+  VoiceTone
+> = {
+  better_than_thought: "supportive",
+  underestimates: "observer",
+  doubts_theory: "dry_humor",
+};
+
 // A confident self-claim that the data can contradict. "geen_idee" / "ik_zie_wel"
 // are modest claims — they can't be "wrong", only under-confident.
 function claimContradicted(selfType: SelfType, s: InsightSignals): boolean {
@@ -37,9 +52,14 @@ function claimContradicted(selfType: SelfType, s: InsightSignals): boolean {
   return false;
 }
 
-export function composeHonest(s: InsightSignals): HonestObservation {
+export function composeHonest(
+  s: InsightSignals,
+  trust: TrustTier,
+): HonestObservation {
   // Need a real base of evidence before Sparki says anything pointed at all.
   if (s.totalSessions < 3) return INSUFFICIENT;
+
+  let candidate: HonestObservation | null = null;
 
   // 1. A clear, measurable step up versus the athlete's own baseline.
   if (
@@ -47,7 +67,7 @@ export function composeHonest(s: InsightSignals): HonestObservation {
     s.baselineAvgTss != null &&
     s.recentAvgTss > Math.round(s.baselineAvgTss * 1.1)
   ) {
-    return {
+    candidate = {
       text: "Dat was beter dan jij dacht.",
       founded: true,
       kind: "better_than_thought",
@@ -55,8 +75,8 @@ export function composeHonest(s: InsightSignals): HonestObservation {
   }
 
   // 2. A confident claim the real rides contradict.
-  if (s.selfType != null && claimContradicted(s.selfType, s)) {
-    return {
+  else if (s.selfType != null && claimContradicted(s.selfType, s)) {
+    candidate = {
       text: "Ik heb twijfels bij jouw theorie.",
       founded: true,
       kind: "doubts_theory",
@@ -64,14 +84,14 @@ export function composeHonest(s: InsightSignals): HonestObservation {
   }
 
   // 3. Modest self-claim, but a steady real base that holds up — gentle nudge.
-  if (
+  else if (
     (s.selfType === "geen_idee" || s.selfType === "ik_zie_wel") &&
     s.totalSessions >= 5 &&
     s.recentAvgTss != null &&
     s.baselineAvgTss != null &&
     s.recentAvgTss >= s.baselineAvgTss
   ) {
-    return {
+    candidate = {
       text: "Volgens mij onderschat je jezelf regelmatig.",
       founded: true,
       kind: "underestimates",
@@ -79,5 +99,12 @@ export function composeHonest(s: InsightSignals): HonestObservation {
   }
 
   // Nothing the data truly supports yet — say so honestly.
-  return INSUFFICIENT;
+  if (candidate === null) return INSUFFICIENT;
+
+  // Trust gates tone: a pointed observation that the athlete hasn't earned yet
+  // stays unspoken (honest "not yet") rather than landing too early.
+  const tone = OBSERVATION_TONE[candidate.kind as keyof typeof OBSERVATION_TONE];
+  if (!insightLineAllowed({ trust, tone, evidence: true })) return INSUFFICIENT;
+
+  return candidate;
 }
