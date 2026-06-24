@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useRef, useState, type Dispatch, type SetStateAction } from "react"
 import { SectionLabel, Stat, Divider, ACCENT } from "@/components/sparki/ui"
 import { RouteMap } from "@/components/sparki/route-map"
 import {
@@ -22,6 +22,56 @@ import {
 import { useUpcomingWorkouts } from "@/hooks/use-today-workout"
 import { isSportActive } from "@workspace/feature-flags"
 import { MapPin, Sparkles, Flag, Users, X, Download } from "lucide-react"
+
+// Editable list of named meeting points ("verzamelpunten") — e.g. where you
+// pick up a friend. Shared by the interactive builder and the generated-route
+// preview so both can drop pickup spots.
+function MeetpointList({
+  meetpoints,
+  setMeetpoints,
+}: {
+  meetpoints: RouteMeetpoint[]
+  setMeetpoints: Dispatch<SetStateAction<RouteMeetpoint[]>>
+}) {
+  if (meetpoints.length === 0) return null
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      {meetpoints.map((mp, i) => (
+        <div
+          key={i}
+          className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2"
+        >
+          <Users
+            className="h-3.5 w-3.5 shrink-0"
+            style={{ color: "rgba(255,160,90,0.9)" }}
+            strokeWidth={1.75}
+          />
+          <input
+            className="min-w-0 flex-1 bg-transparent font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
+            value={mp.name}
+            placeholder="Naam verzamelpunt"
+            onChange={(e) =>
+              setMeetpoints((m) =>
+                m.map((x, idx) =>
+                  idx === i ? { ...x, name: e.target.value } : x,
+                ),
+              )
+            }
+          />
+          <button
+            type="button"
+            onClick={() =>
+              setMeetpoints((m) => m.filter((_, idx) => idx !== i))
+            }
+            className="shrink-0 text-white/30 transition hover:text-[rgba(255,140,120,0.85)]"
+          >
+            <X className="h-3.5 w-3.5" strokeWidth={2} />
+          </button>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 const SURFACE_LABEL: Record<string, string> = {
   asfalt: "Asfalt",
@@ -389,16 +439,22 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
     )
   }
 
-  // Builder: a map click adds either a route-shaping waypoint or a named
-  // meeting point ("verzamelpunt"), depending on the active place-mode.
+  // Drop a named meeting point ("verzamelpunt") — e.g. a spot to pick up a
+  // friend — independent of the route-shaping waypoints.
+  function addMeetpoint(lat: number, lon: number) {
+    setMeetpoints((m) => [
+      ...m,
+      { lat, lon, name: `Verzamelpunt ${m.length + 1}`, note: null },
+    ])
+  }
+
+  // Builder: a map click adds either a route-shaping waypoint or a meetpoint,
+  // depending on the active place-mode.
   function handleMapClick(lat: number, lon: number) {
     if (placeMode === "waypoint") {
       setWaypoints((w) => [...w, [lat, lon]])
     } else {
-      setMeetpoints((m) => [
-        ...m,
-        { lat, lon, name: `Verzamelpunt ${m.length + 1}`, note: null },
-      ])
+      addMeetpoint(lat, lon)
     }
   }
 
@@ -758,43 +814,7 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
           </div>
 
           {/* Editable meeting-point list */}
-          {meetpoints.length > 0 && (
-            <div className="mt-3 flex flex-col gap-2">
-              {meetpoints.map((mp, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2"
-                >
-                  <Users
-                    className="h-3.5 w-3.5 shrink-0"
-                    style={{ color: "rgba(255,160,90,0.9)" }}
-                    strokeWidth={1.75}
-                  />
-                  <input
-                    className="min-w-0 flex-1 bg-transparent font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
-                    value={mp.name}
-                    placeholder="Naam verzamelpunt"
-                    onChange={(e) =>
-                      setMeetpoints((m) =>
-                        m.map((x, idx) =>
-                          idx === i ? { ...x, name: e.target.value } : x,
-                        ),
-                      )
-                    }
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setMeetpoints((m) => m.filter((_, idx) => idx !== i))
-                    }
-                    className="shrink-0 text-white/30 transition hover:text-[rgba(255,140,120,0.85)]"
-                  >
-                    <X className="h-3.5 w-3.5" strokeWidth={2} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <MeetpointList meetpoints={meetpoints} setMeetpoints={setMeetpoints} />
         </div>
       )}
 
@@ -829,13 +849,26 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
           </h4>
 
           {candidate.geometry.length > 1 && (
-            <RouteMap
-              geometry={candidate.geometry}
-              climbs={candidate.climbs}
-              meetpoints={mode === "waypoints" ? meetpoints : []}
-              interactive={false}
-              className="mt-4"
-            />
+            <>
+              <p className="mt-4 text-[12px] leading-relaxed text-white/40">
+                Tik op de route om een verzamelpunt te plaatsen — bijvoorbeeld om
+                een vriend op te halen. Tik op een pin om hem te verwijderen.
+              </p>
+              <RouteMap
+                geometry={candidate.geometry}
+                climbs={candidate.climbs}
+                meetpoints={meetpoints}
+                onMapClick={addMeetpoint}
+                onMeetpointClick={(i) =>
+                  setMeetpoints((m) => m.filter((_, idx) => idx !== i))
+                }
+                className="mt-3"
+              />
+              <MeetpointList
+                meetpoints={meetpoints}
+                setMeetpoints={setMeetpoints}
+              />
+            </>
           )}
 
           {candidate.profile.length > 0 && (

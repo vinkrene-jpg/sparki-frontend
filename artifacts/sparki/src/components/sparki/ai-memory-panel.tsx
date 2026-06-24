@@ -235,7 +235,7 @@ export function AiMemoryPanel() {
 
   return (
     <section>
-      <SectionLabel n="06" title="Sparki Geheugen" />
+      <SectionLabel n="07" title="Sparki Geheugen" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
         Sparki legt verbanden tussen je training, slaap, herstel, wedstrijden en
         terugkoppeling. Bij elk inzicht zie je welke signalen zijn gebruikt, hoe

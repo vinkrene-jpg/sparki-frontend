@@ -46,6 +46,7 @@
 - [Sparki Document Analysis](sparki-document-analysis.md) — reads race/technical guides (PDF/image) via Anthropic document block; honest gevonden/ontbreekt + deterministic follow-ups; links+enriches races.
 - [Sparki inline input actions](sparki-inline-input-actions.md) — Home coach-surface empty states must offer direct inline actions (real mutation hook + dashboard invalidate), never "ga naar X" text.
 - [Sparki Observation & Coach Engine](sparki-observation-engine.md) — deterministic coach brain; ≥2-signal guard (health exception), confidence capped <100, weather always missing, no-"AI" copy.
+- [Sparki trainingsverloop & readback](sparki-progression.md) — trend/development UI derives from existing real series (useLoad+useSessions), no new endpoint; empty-state routes to the cause's flow.
 - [Sparki State Engine (generic service) + Vandaag dual-surface](sparki-state-engine.md) — engine belongs to NO screen; StateCard injects drill-in via onShowDetails prop, never imports HomeViewContext; pure computeState (conf≤0.9), suppress coach cards only on Vandaag state surface.
 - [Adaptive Coach Engine V1](adaptive-coach-engine.md) — deterministic decision layer (decideCoach); surfaced via CoachDecisionContext→ScreenShell across all home day-types; dev override fail-closed.
 - [Sparki Core visual-language prototype](sparki-core-playground.md) — living-shape design contract: calm-not-jerky, uncertainty=hazy, good↔bad X/Y cross, stretch=2 strong pulls; frontend-only before any engine.

@@ -459,7 +459,7 @@ export function MaterialCoach() {
 
   return (
     <section>
-      <SectionLabel n="09" title="Materiaalcoach" />
+      <SectionLabel n="10" title="Materiaalcoach" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
         Soms zegt een foto meer dan woorden. Kies een onderwerp, laat het zien en
         Sparki beoordeelt het eerlijk — met advies en, bij materiaal, een

@@ -16,6 +16,9 @@ import { NutritionPanel } from "@/components/sparki/nutrition-panel"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import { useLocation } from "wouter"
 import { MaterialCoach } from "@/components/sparki/material-coach"
+import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer"
+import { TrainingProgression } from "@/components/sparki/training-progression"
+import type { TrainingSession } from "@/lib/athlete-types"
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
@@ -116,12 +119,13 @@ function FtpBars({
 export default function LabPage() {
   const { data: load, isLoading: loadLoading } = useLoad()
   const { data: ftpHistory, isLoading: ftpLoading } = useFtpHistory()
-  const { data: sessions, isLoading: sessionsLoading } = useSessions(10)
+  const { data: sessions, isLoading: sessionsLoading } = useSessions(60)
   const { data: metrics, isLoading: metricsLoading } = useDailyMetrics(14)
   const { data: profile } = useAthleteExtendedProfile()
   const [, navigate] = useLocation()
   const { focus } = useFixParams()
   const [nutritionHighlight, setNutritionHighlight] = useState(false)
+  const [openSession, setOpenSession] = useState<TrainingSession | null>(null)
 
   // When arrived here via the coach action "Vul je voeding in", scroll straight
   // to the nutrition panel (it lives near the bottom of the lab) and briefly
@@ -424,9 +428,11 @@ export default function LabPage() {
                 day: "numeric",
               })
               return (
-                <div
+                <button
+                  type="button"
                   key={s.id}
-                  className="flex items-center gap-4 border-b border-white/[0.05] py-3 last:border-0"
+                  onClick={() => setOpenSession(s)}
+                  className="flex w-full items-center gap-4 border-b border-white/[0.05] py-3 text-left transition-colors last:border-0 hover:bg-white/[0.02]"
                 >
                   <div className="w-14 shrink-0">
                     <span className="font-mono text-[10px] text-white/35">{date}</span>
@@ -452,7 +458,7 @@ export default function LabPage() {
                       </span>
                     )}
                   </div>
-                </div>
+                </button>
               )
             })}
           </div>
@@ -474,13 +480,21 @@ export default function LabPage() {
         )}
       </section>
 
-      {/* 06 AI GEHEUGEN */}
+      {/* 06 TRAININGSVERLOOP */}
+      <TrainingProgression
+        sessions={sessions}
+        chartData={load?.chartData}
+        loading={loadLoading || sessionsLoading}
+        n="06"
+      />
+
+      {/* 07 AI GEHEUGEN */}
       <AiMemoryPanel />
 
-      {/* 07 SPARKI ONTHOUDT */}
+      {/* 08 SPARKI ONTHOUDT */}
       <ContextMemoryPanel />
 
-      {/* 08 VOEDING & HYDRATATIE */}
+      {/* 09 VOEDING & HYDRATATIE */}
       <div
         id="nutrition"
         className={`scroll-mt-4 rounded-3xl transition-shadow duration-500 ${
@@ -490,8 +504,16 @@ export default function LabPage() {
         <NutritionPanel />
       </div>
 
-      {/* 09 MATERIAALCOACH */}
+      {/* 10 MATERIAALCOACH */}
       <MaterialCoach />
+
+      <SessionDetailDrawer
+        session={openSession}
+        open={openSession != null}
+        onOpenChange={(o) => {
+          if (!o) setOpenSession(null)
+        }}
+      />
     </ScreenShell>
   )
 }

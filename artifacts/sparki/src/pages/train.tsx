@@ -18,6 +18,7 @@ import { LinkedRoutePreview } from "@/components/sparki/linked-route"
 import { ThreeWeekPlan } from "@/components/sparki/three-week-plan"
 import { useGeneratePlan } from "@/hooks/use-training-plan"
 import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer"
+import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer"
 import { TrainingPlanPanel } from "@/components/sparki/training-plan-panel"
 import {
   Bike,
@@ -241,6 +242,7 @@ export default function TrainPage() {
   const { data: brief, isLoading: briefLoading } = useAiBrief(aiEnabled)
   const [showLogForm, setShowLogForm] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
+  const [openSession, setOpenSession] = useState<TrainingSession | null>(null)
   const [, navigate] = useLocation()
   const { focus } = useFixParams()
   const [planHighlight, setPlanHighlight] = useState(false)
@@ -258,6 +260,19 @@ export default function TrainPage() {
         ?.scrollIntoView({ behavior: "smooth", block: "start" })
       setPlanHighlight(true)
       setTimeout(() => setPlanHighlight(false), 1600)
+      navigate("/train", { replace: true })
+    }, 200)
+    return () => clearTimeout(t)
+  }, [focus, navigate])
+
+  // Arrived via a "Log een training" CTA: open the log form and scroll to it.
+  useEffect(() => {
+    if (focus !== "logsession") return
+    setShowLogForm(true)
+    const t = setTimeout(() => {
+      document
+        .getElementById("log-session")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" })
       navigate("/train", { replace: true })
     }, 200)
     return () => clearTimeout(t)
@@ -605,7 +620,7 @@ export default function TrainPage() {
       )}
 
       {/* 07 SESSIE LOGGEN */}
-      <section>
+      <section id="log-session" className="scroll-mt-4">
         <SectionLabel n="07" title="Sessie loggen" />
 
         {!showLogForm && (
@@ -641,9 +656,11 @@ export default function TrainPage() {
                 day: "numeric",
               })
               return (
-                <div
+                <button
+                  type="button"
                   key={s.id}
-                  className="flex items-center gap-4 border-b border-white/[0.05] py-3.5 last:border-0"
+                  onClick={() => setOpenSession(s)}
+                  className="flex w-full items-center gap-4 border-b border-white/[0.05] py-3.5 text-left transition-colors last:border-0 hover:bg-white/[0.02]"
                 >
                   <span
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border"
@@ -690,7 +707,7 @@ export default function TrainPage() {
                       {s.feelScore}
                     </span>
                   )}
-                </div>
+                </button>
               )
             })}
           </div>
@@ -707,6 +724,14 @@ export default function TrainPage() {
         workoutId={workout?.id ?? null}
         open={detailOpen}
         onOpenChange={setDetailOpen}
+      />
+
+      <SessionDetailDrawer
+        session={openSession}
+        open={openSession != null}
+        onOpenChange={(o) => {
+          if (!o) setOpenSession(null)
+        }}
       />
     </ScreenShell>
   )
