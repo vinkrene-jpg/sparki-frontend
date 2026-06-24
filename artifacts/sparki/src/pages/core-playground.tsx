@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import { useLocation } from "wouter"
 import { ArrowLeft, RotateCcw } from "lucide-react"
 import {
@@ -119,6 +119,33 @@ const PRESETS: Preset[] = [
     },
   },
 ]
+
+function Group({
+  n,
+  title,
+  hint,
+  children,
+}: {
+  n?: string
+  title: string
+  hint: string
+  children: ReactNode
+}) {
+  return (
+    <section className="space-y-4">
+      <div className="flex items-baseline gap-2">
+        {n && (
+          <span className="font-mono text-[10px] text-cyan-300/70">{n}</span>
+        )}
+        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/55">
+          {title}
+        </span>
+        <span className="text-[11px] text-white/30">— {hint}</span>
+      </div>
+      {children}
+    </section>
+  )
+}
 
 function Slider({
   label,
@@ -249,7 +276,7 @@ export default function CorePlaygroundPage() {
         </div>
         <SparkiCore state={state} className="absolute inset-0" />
         <p className="pointer-events-none absolute inset-x-0 bottom-2 text-center font-sans text-[12px] font-light text-white/35">
-          Begrijp je de toestand binnen een halve seconde?
+          Je actuele prestatiecapaciteit — zie je 'm binnen een halve seconde?
         </p>
       </div>
 
@@ -274,116 +301,132 @@ export default function CorePlaygroundPage() {
           </div>
         </div>
 
-        <div className="space-y-4">
-          <Slider
-            label="Positie X"
-            value={state.x}
-            min={0}
-            max={1}
-            step={0.01}
-            display={pct(state.x)}
-            onChange={(v) => set("x", v)}
-          />
-          <Slider
-            label="Positie omhoog (hoger = beter)"
-            value={1 - state.y}
-            min={0}
-            max={1}
-            step={0.01}
-            display={pct(1 - state.y)}
-            onChange={(v) => set("y", 1 - v)}
-          />
-          <Slider
-            label="Grootte"
-            value={state.size}
-            min={0}
-            max={1}
-            step={0.01}
-            display={pct(state.size)}
-            onChange={(v) => set("size", v)}
-          />
-          <Slider
-            label="Kleur"
-            value={state.hue}
-            min={0}
-            max={360}
-            step={1}
-            display={`${Math.round(state.hue)}°`}
-            hue
-            onChange={(v) => set("hue", v)}
-          />
-          <Slider
-            label="Vervorming"
-            value={state.distortion}
-            min={0}
-            max={1}
-            step={0.01}
-            display={pct(state.distortion)}
-            onChange={(v) => set("distortion", v)}
-          />
-          <Slider
-            label="Pulsatie"
-            value={state.pulse}
-            min={0}
-            max={1}
-            step={0.01}
-            display={pct(state.pulse)}
-            onChange={(v) => set("pulse", v)}
-          />
-          <Slider
-            label="Transparantie"
-            value={state.opacity}
-            min={0.1}
-            max={1}
-            step={0.01}
-            display={pct(state.opacity)}
-            onChange={(v) => set("opacity", v)}
-          />
-          <Slider
-            label="Bewegingssnelheid"
-            value={state.speed}
-            min={0}
-            max={1}
-            step={0.01}
-            display={pct(state.speed)}
-            onChange={(v) => set("speed", v)}
-          />
-          <Slider
-            label="Richting van invloed (as)"
-            value={state.direction}
-            min={0}
-            max={360}
-            step={1}
-            display={`${Math.round(state.direction)}°`}
-            onChange={(v) => set("direction", v)}
-          />
-          <Slider
-            label="Uitrekking (twee sterke invloeden)"
-            value={state.stretch}
-            min={0}
-            max={1}
-            step={0.01}
-            display={pct(state.stretch)}
-            onChange={(v) => set("stretch", v)}
-          />
-          <Slider
-            label="Tweede invloed"
-            value={state.secondary}
-            min={0}
-            max={1}
-            step={0.01}
-            display={pct(state.secondary)}
-            onChange={(v) => set("secondary", v)}
-          />
-          <Slider
-            label="Betrouwbaarheid"
-            value={state.confidence}
-            min={0}
-            max={1}
-            step={0.01}
-            display={pct(state.confidence)}
-            onChange={(v) => set("confidence", v)}
-          />
+        {/* Sliders follow the reading priority: positie > kleur > vorm >
+            beweging. Wijzig iets en de Core schuift er langzaam naartoe. */}
+        <div className="space-y-6">
+          <Group n="1" title="Positie" hint="Waar zit mijn Core? (belangrijkste)">
+            <Slider
+              label="Positie X"
+              value={state.x}
+              min={0}
+              max={1}
+              step={0.01}
+              display={pct(state.x)}
+              onChange={(v) => set("x", v)}
+            />
+            <Slider
+              label="Positie omhoog (hoger = beter)"
+              value={1 - state.y}
+              min={0}
+              max={1}
+              step={0.01}
+              display={pct(1 - state.y)}
+              onChange={(v) => set("y", 1 - v)}
+            />
+          </Group>
+
+          <Group n="2" title="Kleur" hint="Welke kleur heeft mijn Core?">
+            <Slider
+              label="Kleur"
+              value={state.hue}
+              min={0}
+              max={360}
+              step={1}
+              display={`${Math.round(state.hue)}°`}
+              hue
+              onChange={(v) => set("hue", v)}
+            />
+          </Group>
+
+          <Group n="3" title="Vorm" hint="Hoe vervormt mijn Core?">
+            <Slider
+              label="Grootte"
+              value={state.size}
+              min={0}
+              max={1}
+              step={0.01}
+              display={pct(state.size)}
+              onChange={(v) => set("size", v)}
+            />
+            <Slider
+              label="Vervorming"
+              value={state.distortion}
+              min={0}
+              max={1}
+              step={0.01}
+              display={pct(state.distortion)}
+              onChange={(v) => set("distortion", v)}
+            />
+            <Slider
+              label="Uitrekking (twee sterke invloeden)"
+              value={state.stretch}
+              min={0}
+              max={1}
+              step={0.01}
+              display={pct(state.stretch)}
+              onChange={(v) => set("stretch", v)}
+            />
+            <Slider
+              label="Tweede invloed"
+              value={state.secondary}
+              min={0}
+              max={1}
+              step={0.01}
+              display={pct(state.secondary)}
+              onChange={(v) => set("secondary", v)}
+            />
+          </Group>
+
+          <Group n="4" title="Beweging" hint="Minst belangrijk — alleen leven, geen status">
+            <Slider
+              label="Bewegingssnelheid"
+              value={state.speed}
+              min={0}
+              max={1}
+              step={0.01}
+              display={pct(state.speed)}
+              onChange={(v) => set("speed", v)}
+            />
+            <Slider
+              label="Richting van invloed (as)"
+              value={state.direction}
+              min={0}
+              max={360}
+              step={1}
+              display={`${Math.round(state.direction)}°`}
+              onChange={(v) => set("direction", v)}
+            />
+            <Slider
+              label="Pulsatie"
+              value={state.pulse}
+              min={0}
+              max={1}
+              step={0.01}
+              display={pct(state.pulse)}
+              onChange={(v) => set("pulse", v)}
+            />
+          </Group>
+
+          <Group title="Data & zekerheid" hint="Hoeveel weet Sparki van je?">
+            <Slider
+              label="Transparantie"
+              value={state.opacity}
+              min={0.1}
+              max={1}
+              step={0.01}
+              display={pct(state.opacity)}
+              onChange={(v) => set("opacity", v)}
+            />
+            <Slider
+              label="Betrouwbaarheid"
+              value={state.confidence}
+              min={0}
+              max={1}
+              step={0.01}
+              display={pct(state.confidence)}
+              onChange={(v) => set("confidence", v)}
+            />
+          </Group>
         </div>
       </div>
     </div>

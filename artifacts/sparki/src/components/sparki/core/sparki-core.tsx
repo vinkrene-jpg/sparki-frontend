@@ -77,10 +77,60 @@ export function SparkiCore({
     if (canvas.parentElement) ro.observe(canvas.parentElement)
 
     const start = performance.now()
+    let last = start
+
+    // The Core lives in a force field: it never jumps to a new target, it
+    // glides toward it. We keep a displayed state `cur` that eases toward the
+    // live target every frame (frame-rate independent). Position settles
+    // slowest (it is the most important signal), movement-only channels fastest.
+    const cur: CoreVisualState = { ...stateRef.current }
+
+    // tau = seconds to ~63% of the way there. Bigger = slower, more deliberate.
+    const TAU: Record<keyof CoreVisualState, number> = {
+      x: 1.1,
+      y: 1.1,
+      size: 0.7,
+      hue: 0.8,
+      distortion: 0.6,
+      pulse: 0.5,
+      opacity: 0.6,
+      speed: 0.5,
+      direction: 0.8,
+      stretch: 0.7,
+      secondary: 0.6,
+      confidence: 0.7,
+    }
+
+    const approach = (a: number, b: number, tau: number, dt: number) =>
+      a + (b - a) * (1 - Math.exp(-dt / tau))
+
+    // Ease an angle (deg) along the shortest path so hue/direction never spin
+    // the long way round when the target wraps past 0/360.
+    const approachAngle = (a: number, b: number, tau: number, dt: number) => {
+      const delta = ((b - a + 540) % 360) - 180
+      return a + delta * (1 - Math.exp(-dt / tau))
+    }
 
     const draw = (now: number) => {
       const t = (now - start) / 1000
-      const s = stateRef.current
+      const dt = Math.min(0.05, Math.max(0, (now - last) / 1000))
+      last = now
+
+      const target = stateRef.current
+      cur.x = approach(cur.x, target.x, TAU.x, dt)
+      cur.y = approach(cur.y, target.y, TAU.y, dt)
+      cur.size = approach(cur.size, target.size, TAU.size, dt)
+      cur.hue = ((approachAngle(cur.hue, target.hue, TAU.hue, dt) % 360) + 360) % 360
+      cur.distortion = approach(cur.distortion, target.distortion, TAU.distortion, dt)
+      cur.pulse = approach(cur.pulse, target.pulse, TAU.pulse, dt)
+      cur.opacity = approach(cur.opacity, target.opacity, TAU.opacity, dt)
+      cur.speed = approach(cur.speed, target.speed, TAU.speed, dt)
+      cur.direction = ((approachAngle(cur.direction, target.direction, TAU.direction, dt) % 360) + 360) % 360
+      cur.stretch = approach(cur.stretch, target.stretch, TAU.stretch, dt)
+      cur.secondary = approach(cur.secondary, target.secondary, TAU.secondary, dt)
+      cur.confidence = approach(cur.confidence, target.confidence, TAU.confidence, dt)
+
+      const s = cur
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, W, H)

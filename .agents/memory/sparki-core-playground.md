@@ -5,8 +5,28 @@ description: The "Core" living-shape design contract proven in a frontend-only p
 
 # Sparki Core — visual language (frontend-only prototype)
 
-The Core is a single living shape that encodes an athlete's live physical state
-so an experienced rider grasps it in <0.5s — condition *and* remaining reserve.
+The Core represents the athlete's **actuele prestatiecapaciteit** — NOT an
+emotion, health, or score indicator. An experienced rider must grasp it in
+<0.5s — condition *and* remaining reserve.
+
+## Reading priority (strict, drives every design call)
+1. **Positie** — "Waar zit mijn Core?" (most important signal)
+2. **Kleur** — "Welke kleur heeft mijn Core?"
+3. **Vorm** — "Hoe vervormt mijn Core?"
+4. **Beweging** — least important; only conveys life, never status.
+Playground sliders are grouped/ordered to mirror this exact hierarchy.
+
+## Force-field motion (non-negotiable)
+The Core must feel like it moves **through a force field**, not like it is
+animated. Positive and negative factors pull it; the final position emerges from
+all forces together, and it **glides slowly to a new balance position** — never
+schokkerig, never springend, never instant A→B. The goal feeling is "ik zie mijn
+toestand verschuiven", not "ik zie een status veranderen".
+**How:** the renderer keeps a displayed state `cur` that eases toward the live
+target every frame via frame-rate-independent exponential approach
+(`a + (b-a)*(1-exp(-dt/tau))`); positie has the largest tau (slowest settle),
+movement-only channels the smallest. Hue/direction ease along the shortest
+angular path. NEVER bind the canvas directly to the raw target state.
 A pure-frontend, slider-driven playground proves the language BEFORE any
 CoreState / data model / engine exists. Reachable in-app (floating "Core" button
 + Inzicht card + `/core`).
