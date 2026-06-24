@@ -6,6 +6,7 @@ import {
   ftpHistoryTable,
   type ConnectorDataType,
 } from "@workspace/db";
+import { getValidStravaAccessToken } from "./strava-oauth";
 
 // Result of a real import run. importedDataTypes lists only what was actually
 // persisted from the provider — never a fabricated/aspirational set.
@@ -16,51 +17,6 @@ export interface ProviderSyncResult {
 
 function todayStr(): string {
   return new Date().toISOString().split("T")[0]!;
-}
-
-// ── Replit connector credential access (server-side) ─────────────────────────
-// The Strava connection is authorized at the Replit-account level via the
-// integrations system; we read the live access token from the connector proxy.
-async function getStravaAccessToken(): Promise<string> {
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY
-    ? "repl " + process.env.REPL_IDENTITY
-    : process.env.WEB_REPL_RENEWAL
-      ? "depl " + process.env.WEB_REPL_RENEWAL
-      : null;
-
-  if (!hostname || !xReplitToken) {
-    throw new Error("Strava-koppeling is nog niet ingesteld.");
-  }
-
-  const res = await fetch(
-    `https://${hostname}/api/v2/connection?include_secrets=true&connector_names=strava-web`,
-    {
-      headers: {
-        Accept: "application/json",
-        X_REPLIT_TOKEN: xReplitToken,
-      },
-    },
-  );
-  if (!res.ok) {
-    throw new Error("Kon de Strava-koppeling niet ophalen.");
-  }
-  const data = (await res.json()) as {
-    items?: Array<{
-      settings?: {
-        access_token?: string;
-        oauth?: { credentials?: { access_token?: string } };
-      };
-    }>;
-  };
-  const conn = data.items?.[0];
-  const accessToken =
-    conn?.settings?.access_token ??
-    conn?.settings?.oauth?.credentials?.access_token;
-  if (!accessToken) {
-    throw new Error("Geen actieve Strava-koppeling gevonden.");
-  }
-  return accessToken;
 }
 
 interface StravaAthlete {
@@ -75,7 +31,7 @@ interface StravaAthlete {
  * returns are written — missing fields are skipped (never invented).
  */
 export async function syncStrava(clerkId: string): Promise<ProviderSyncResult> {
-  const accessToken = await getStravaAccessToken();
+  const accessToken = await getValidStravaAccessToken(clerkId);
 
   const athleteRes = await fetch("https://www.strava.com/api/v3/athlete", {
     headers: { Authorization: `Bearer ${accessToken}` },

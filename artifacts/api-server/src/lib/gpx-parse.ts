@@ -408,7 +408,7 @@ export function buildGpx(route: GpxBuildInput): string | null {
   // summit still gets a <wpt> fallback so it isn't lost.
   for (const climb of route.climbs ?? []) {
     if (!Number.isFinite(climb.summitKm)) continue;
-    const idx = nearestIdxForKm(climb.summitKm);
+    const idx = nearestIdxForKm(cumKm, climb.summitKm);
     const [lat, lon] = geometry[idx]!;
     const ele = eleAt(idx);
     const climbName = escapeXml(climb.name?.trim() || "Klim");

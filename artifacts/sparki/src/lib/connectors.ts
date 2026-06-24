@@ -47,6 +47,19 @@ export async function fetchConnectors(): Promise<ConnectorItem[]> {
   return data.connectors
 }
 
+// Start a real per-user OAuth flow. Returns the provider consent URL; the caller
+// redirects the browser there. After consent the provider calls our callback,
+// which stores the tokens and redirects back to `returnTo` with `?strava=...`.
+export async function beginOauthConnect(
+  id: string,
+  returnTo: string,
+): Promise<string> {
+  const data = await apiFetch<{ url: string }>(
+    `/api/connectors/${id}/authorize?returnTo=${encodeURIComponent(returnTo)}`,
+  )
+  return data.url
+}
+
 export async function syncConnector(id: string): Promise<ConnectorItem> {
   const data = await apiFetch<{ connector: ConnectorItem }>(
     `/api/connectors/${id}/sync`,

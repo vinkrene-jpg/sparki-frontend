@@ -9,6 +9,7 @@
 - [Sparki data foundation sprint](sparki-data-foundation.md) — clerkId identity, privacy-gated AI persist, dedupe_key; api-server route gotchas (no zod, String(params), db.execute().rows, admin via SPARKI_ADMIN_IDS).
 - [Sparki day-type engine](sparki-day-type-engine.md) — Home day-type detection precedence (§4); rest=explicit rest workout, no-workout=general fallback; health status end-to-end.
 - [Sparki invitation/tester flow](sparki-invitations.md) — token invites grant role+link; one-time accept must be atomic (conditional status flip in a transaction), not read-then-update.
+- [Sparki Strava per-user OAuth](sparki-strava-oauth.md) — Strava is direct per-user OAuth into connector_connections (NOT Replit proxy); signed-state callback, redirect_uri from REPLIT_DOMAINS not req.host.
 - [Sparki Onboarding V2](sparki-onboarding-v2.md) — narrative 6-screen onboarding; founding number via DB UNIQUE+retry (not MAX+1); curiosity/honest engines must stay evidence-gated; DevPreview needs explicit entry for auth screens.
 - [Sparki Voice & Personality Engine](sparki-voice-engine.md) — deterministic tone/trust/empathy engine; refuses to fabricate (null), empathy-before-humor, trust gates tones; new api-server tests need build.mjs entry + test script.
 - [Sparki Circle unified feed](sparki-circle.md) — /samen merges follow-ups+friends+races+news; suppress global FollowUpPrompt on samen via `section` not `scene`; "Jouw overzicht" not "Circle-feed".

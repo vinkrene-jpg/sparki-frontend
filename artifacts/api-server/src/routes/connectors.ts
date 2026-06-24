@@ -9,8 +9,35 @@ import {
   HubError,
   resolveReadiness,
 } from "../engines/integration";
+import {
+  buildStravaAuthorizeUrl,
+  stravaRedirectUri,
+  signStravaState,
+  verifyStravaState,
+  exchangeStravaCode,
+  deauthorizeStrava,
+  publicBaseUrl,
+  allowedReturnHosts,
+} from "../lib/connectors/providers/strava-oauth";
+import { syncStrava } from "../lib/connectors/providers/strava";
 
 const router = Router();
+
+// Build a safe in-app return URL after the OAuth round-trip. Only same-site
+// targets (our own domains) are honoured; everything else falls back to the app
+// root. A `strava` status flag is appended so the UI can confirm the result.
+function safeReturnUrl(returnTo: string, status: string): string {
+  const fallback = `${publicBaseUrl()}/?strava=${status}`;
+  if (!returnTo) return fallback;
+  try {
+    const u = new URL(returnTo);
+    if (!allowedReturnHosts().includes(u.host)) return fallback;
+    u.searchParams.set("strava", status);
+    return u.toString();
+  } catch {
+    return fallback;
+  }
+}
 
 // Build the public connector shape (registry definition + this user's live row +
 // 4-state readiness). The Data Hub owns the actual sync pipeline (runSync).
@@ -155,6 +182,21 @@ router.post("/:id/revoke", requireAuth, async (req, res) => {
   }
   const now = new Date();
   try {
+    // Best-effort: tell Strava to drop our access before we clear local tokens.
+    if (id === "strava") {
+      const [existing] = await db
+        .select({ accessToken: connectorConnectionsTable.accessToken })
+        .from(connectorConnectionsTable)
+        .where(
+          and(
+            eq(connectorConnectionsTable.clerkId, clerkId),
+            eq(connectorConnectionsTable.provider, id),
+          ),
+        );
+      if (existing?.accessToken) {
+        await deauthorizeStrava(existing.accessToken);
+      }
+    }
     await db
       .insert(connectorConnectionsTable)
       .values({
@@ -182,6 +224,124 @@ router.post("/:id/revoke", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "connectors.revoke failed");
     res.status(500).json({ error: "Intrekken mislukt." });
+  }
+});
+
+// GET /api/connectors/:id/authorize — start a real per-user OAuth flow. Returns
+// the provider consent URL as JSON so the frontend can redirect the browser to
+// it. Only providers wired for direct OAuth (currently Strava) are supported.
+router.get("/:id/authorize", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = String(req.params.id);
+  const def = getConnectorDefinition(id);
+  if (!def || def.authType !== "oauth" || id !== "strava") {
+    res
+      .status(400)
+      .json({ error: "unsupported", message: "Deze koppeling kan niet zo gekoppeld worden." });
+    return;
+  }
+  try {
+    const returnTo =
+      typeof req.query.returnTo === "string" ? req.query.returnTo : "";
+    const redirectUri = stravaRedirectUri();
+    const state = signStravaState({ clerkId, returnTo });
+    const url = buildStravaAuthorizeUrl({ redirectUri, state });
+    res.json({ url });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Kon de koppeling niet starten.";
+    req.log.error({ err }, "connectors.authorize failed");
+    res.status(400).json({ error: "authorize_failed", message });
+  }
+});
+
+// GET /api/connectors/strava/callback — Strava redirects the browser here after
+// consent. Identity comes from the signed `state` (HMAC, short-lived), so no
+// session cookie is required for the cross-site redirect to succeed. Stores the
+// per-user tokens, marks the connection connected, imports an initial snapshot
+// best-effort, then redirects back into the app.
+router.get("/strava/callback", async (req, res) => {
+  if (typeof req.query.error === "string" && req.query.error) {
+    res.redirect(safeReturnUrl("", "denied"));
+    return;
+  }
+  let returnTo = "";
+  try {
+    const code = String(req.query.code ?? "");
+    const stateRaw = String(req.query.state ?? "");
+    if (!code) throw new Error("Geen autorisatiecode ontvangen van Strava.");
+    const state = verifyStravaState(stateRaw);
+    returnTo = state.returnTo;
+
+    const tokens = await exchangeStravaCode({
+      code,
+      redirectUri: stravaRedirectUri(),
+    });
+    const now = new Date();
+    const scopes = tokens.scope ? tokens.scope.split(",") : [];
+    const externalUserId =
+      tokens.athlete?.id != null ? String(tokens.athlete.id) : null;
+
+    await db
+      .insert(connectorConnectionsTable)
+      .values({
+        clerkId: state.clerkId,
+        provider: "strava",
+        status: "connected",
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        tokenExpiresAt: new Date(tokens.expires_at * 1000),
+        externalUserId,
+        scopes,
+        connectedAt: now,
+        permissionRevoked: false,
+        errorStatus: null,
+      })
+      .onConflictDoUpdate({
+        target: [
+          connectorConnectionsTable.clerkId,
+          connectorConnectionsTable.provider,
+        ],
+        set: {
+          status: "connected",
+          accessToken: tokens.access_token,
+          refreshToken: tokens.refresh_token,
+          tokenExpiresAt: new Date(tokens.expires_at * 1000),
+          externalUserId,
+          scopes,
+          connectedAt: now,
+          permissionRevoked: false,
+          errorStatus: null,
+          updatedAt: now,
+        },
+      });
+
+    // Best-effort initial import. A failed import must NOT flip a freshly
+    // connected account to "error" — so we call the provider directly (not
+    // runSync) and only record what actually imported.
+    try {
+      const result = await syncStrava(state.clerkId);
+      await db
+        .update(connectorConnectionsTable)
+        .set({
+          importedDataTypes: result.importedDataTypes,
+          lastSyncAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(connectorConnectionsTable.clerkId, state.clerkId),
+            eq(connectorConnectionsTable.provider, "strava"),
+          ),
+        );
+    } catch (importErr) {
+      req.log.warn({ err: importErr }, "strava.callback initial import failed");
+    }
+
+    res.redirect(safeReturnUrl(returnTo, "connected"));
+  } catch (err) {
+    req.log.error({ err }, "connectors.strava.callback failed");
+    res.redirect(safeReturnUrl(returnTo, "error"));
   }
 });
 

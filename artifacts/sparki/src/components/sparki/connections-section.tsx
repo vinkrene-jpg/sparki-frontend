@@ -11,6 +11,7 @@ import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import {
   fetchConnectors,
   syncConnector,
+  beginOauthConnect,
   disconnectConnector,
   revokeConnector,
   dataTypeLabel,
@@ -67,17 +68,23 @@ function ConnectionRow({
   connector,
   busy,
   onConnect,
+  onBeginConnect,
   onDisconnect,
   onRevoke,
 }: {
   connector: ConnectorItem
   busy: boolean
   onConnect: (id: string) => void
+  onBeginConnect: (id: string) => void
   onDisconnect: (id: string) => void
   onRevoke: (id: string) => void
 }) {
   const isConnected = connector.status === "connected"
   const isError = connector.status === "error"
+  // OAuth platforms (e.g. Strava) connect by redirecting to the provider's
+  // consent screen — not by triggering a data sync.
+  const connectAction =
+    connector.authType === "oauth" ? onBeginConnect : onConnect
 
   return (
     <div className="flex flex-col gap-3 py-3.5">
@@ -147,7 +154,7 @@ function ConnectionRow({
         {connector.available && !isConnected && (
           <button
             type="button"
-            onClick={() => onConnect(connector.id)}
+            onClick={() => connectAction(connector.id)}
             disabled={busy}
             className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 font-sans text-xs font-semibold text-[#040506] transition-opacity hover:opacity-90 disabled:opacity-50"
             style={{ background: ACCENT }}
@@ -201,6 +208,7 @@ export function ConnectionsSection() {
   const [connectors, setConnectors] = useState<ConnectorItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
 
   const load = async () => {
@@ -219,6 +227,31 @@ export function ConnectionsSection() {
     void load()
   }, [])
 
+  // Handle the return from the Strava OAuth round-trip (?strava=connected|denied|
+  // error). Show the result, refresh the live state, then strip the param so a
+  // refresh doesn't re-trigger the message.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const result = params.get("strava")
+    if (!result) return
+    if (result === "connected") {
+      setNotice("Strava is gekoppeld.")
+      setError(null)
+    } else if (result === "denied") {
+      setError("Je hebt de koppeling met Strava geannuleerd.")
+    } else {
+      setError("Er ging iets mis bij het koppelen met Strava. Probeer het opnieuw.")
+    }
+    params.delete("strava")
+    const qs = params.toString()
+    window.history.replaceState(
+      {},
+      "",
+      `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`,
+    )
+    void load()
+  }, [])
+
   const replace = (updated: ConnectorItem) =>
     setConnectors((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
 
@@ -231,6 +264,22 @@ export function ConnectionsSection() {
       setError(e instanceof Error ? e.message : "Koppelen mislukt.")
       void load()
     } finally {
+      setBusyId(null)
+    }
+  }
+
+  // Start the OAuth round-trip: fetch the provider consent URL, then send the
+  // browser there. We pass the current URL so the callback can return the user
+  // to exactly this page. No `finally` reset — the page is navigating away.
+  const handleBeginConnect = async (id: string) => {
+    setBusyId(id)
+    setError(null)
+    setNotice(null)
+    try {
+      const url = await beginOauthConnect(id, window.location.href)
+      window.location.href = url
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Koppelen mislukt.")
       setBusyId(null)
     }
   }
@@ -285,6 +334,7 @@ export function ConnectionsSection() {
                 connector={c}
                 busy={busyId === c.id}
                 onConnect={handleConnect}
+                onBeginConnect={handleBeginConnect}
                 onDisconnect={handleDisconnect}
                 onRevoke={handleRevoke}
               />
@@ -295,6 +345,7 @@ export function ConnectionsSection() {
                 connector={c}
                 busy={busyId === c.id}
                 onConnect={handleConnect}
+                onBeginConnect={handleBeginConnect}
                 onDisconnect={handleDisconnect}
                 onRevoke={handleRevoke}
               />
@@ -305,6 +356,7 @@ export function ConnectionsSection() {
                 connector={c}
                 busy={busyId === c.id}
                 onConnect={handleConnect}
+                onBeginConnect={handleBeginConnect}
                 onDisconnect={handleDisconnect}
                 onRevoke={handleRevoke}
               />
@@ -312,6 +364,13 @@ export function ConnectionsSection() {
           </div>
         )}
       </div>
+
+      {notice && (
+        <p className="mt-2 flex items-center gap-1.5 px-1 text-[11px] text-emerald-400">
+          <Check className="h-3 w-3 shrink-0" />
+          {notice}
+        </p>
+      )}
 
       {error && (
         <p className="mt-2 flex items-center gap-1.5 px-1 text-[11px] text-red-400">

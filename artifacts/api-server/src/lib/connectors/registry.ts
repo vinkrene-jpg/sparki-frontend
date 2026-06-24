@@ -42,8 +42,7 @@ export const connectorRegistry: ConnectorDefinition[] = [
     displayName: "Strava",
     category: "sport",
     available: true,
-    authType: "replit-connector",
-    replitConnectorId: "strava-web",
+    authType: "oauth",
     provides: [
       "profile",
       "weight",
