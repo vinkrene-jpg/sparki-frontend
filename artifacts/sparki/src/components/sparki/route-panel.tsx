@@ -17,6 +17,7 @@ import {
   type RouteCandidate,
   type RouteWaypoint,
   type RouteMeetpoint,
+  type RouteClimb,
 } from "@/hooks/use-routes"
 import { useUpcomingWorkouts } from "@/hooks/use-today-workout"
 import { isSportActive } from "@workspace/feature-flags"
@@ -96,11 +97,7 @@ function ElevationProfile({ profile }: { profile: number[] }) {
   )
 }
 
-function Climbs({
-  climbs,
-}: {
-  climbs: { name: string; lengthKm: number; avgGradePct: number }[]
-}) {
+function Climbs({ climbs }: { climbs: RouteClimb[] }) {
   if (climbs.length === 0) return null
   return (
     <div className="mt-4">
@@ -111,9 +108,16 @@ function Climbs({
             key={i}
             className="flex items-baseline gap-3 border-b border-white/[0.05] py-2 last:border-0"
           >
-            <span className="flex-1 text-[13px] tracking-tight text-white/85">
-              {c.name}
-            </span>
+            <div className="flex-1">
+              <span className="text-[13px] tracking-tight text-white/85">
+                {c.name}
+              </span>
+              {Number.isFinite(c.summitKm) && (
+                <span className="ml-2 font-mono text-[10px] tabular-nums text-white/35">
+                  top op {c.summitKm} km
+                </span>
+              )}
+            </div>
             <span className="font-mono text-[11px] tabular-nums text-white/45">
               {c.lengthKm} km
             </span>

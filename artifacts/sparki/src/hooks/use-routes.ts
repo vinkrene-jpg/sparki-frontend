@@ -8,6 +8,9 @@ export type RouteClimb = {
   name: string;
   lengthKm: number;
   avgGradePct: number;
+  // Cumulative km position of the climb's summit (top) along the route. Newer
+  // field — older stored climbs may omit it, so treat it as optional.
+  summitKm?: number;
 };
 
 export type RouteNavCue = {
