@@ -33,6 +33,23 @@ async function requireCoach(clerkId: string, res: import("express").Response) {
   return true;
 }
 
+// Map a plan day's route-generator training type to the planned_workouts.type
+// vocabulary so an adopted coach session reads correctly in the athlete's plan.
+function planDayToWorkoutType(trainingType: string | null): string {
+  switch (trainingType) {
+    case "interval":
+      return "interval";
+    case "tempo":
+      return "tempo";
+    case "herstel":
+      return "recovery";
+    case "wedstrijd":
+      return "race";
+    default:
+      return "ride";
+  }
+}
+
 // GET /api/coach/athletes — roster of accepted athletes, each gated by the
 // athlete's own dataSharingCoach preference.
 router.get("/athletes", requireAuth, async (req, res) => {
@@ -254,6 +271,30 @@ router.get("/athletes/:athleteId/plan", requireAuth, async (req, res) => {
     // self-coached and there is no advice to show in the coach portal.
     const isAdvisory = view?.plan?.mode === "advisory";
 
+    // Mark days the coach has already adopted (a coach-sourced planned_workouts
+    // row exists for that date) so the UI can show a "Overgenomen" state and
+    // never offer to write the same day twice.
+    type PlanViewDay = NonNullable<
+      Awaited<ReturnType<typeof loadPlanView>>
+    >["days"][number];
+    let days: Array<PlanViewDay & { adopted: boolean }> = [];
+    if (isAdvisory) {
+      const coachWorkouts = await db
+        .select({ scheduledDate: plannedWorkoutsTable.scheduledDate })
+        .from(plannedWorkoutsTable)
+        .where(
+          and(
+            eq(plannedWorkoutsTable.clerkId, athleteId),
+            eq(plannedWorkoutsTable.source, "coach"),
+          ),
+        );
+      const adoptedDates = new Set(coachWorkouts.map((w) => w.scheduledDate));
+      days = view!.days.map((d) => ({
+        ...d,
+        adopted: adoptedDates.has(d.dayDate),
+      }));
+    }
+
     res.json({
       sharing,
       athlete: {
@@ -262,7 +303,7 @@ router.get("/athletes/:athleteId/plan", requireAuth, async (req, res) => {
         discipline: profile?.discipline ?? null,
       },
       plan: isAdvisory ? view!.plan : null,
-      days: isAdvisory ? view!.days : [],
+      days,
     });
   } catch (err) {
     req.log.error({ err }, "coach.athlete-plan failed");
@@ -293,6 +334,98 @@ router.get("/athletes/:athleteId/context", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "coach.athlete-context failed");
     res.status(500).json({ error: "Kon context niet laden" });
+  }
+});
+
+// POST /api/coach/athletes/:athleteId/plan/adopt — the coach explicitly adopts
+// one or more advised days into the athlete's plan as coach-authored sessions
+// (source "coach", NOT "sparki"). Mirrors the gating of GET .../plan. Nothing is
+// written automatically: only the day ids the coach sends are adopted, and a day
+// that already has a coach session on its date is skipped — existing coach
+// workouts are never silently overwritten.
+router.post("/athletes/:athleteId/plan/adopt", requireAuth, async (req, res) => {
+  const coachId = getClerkUserId(req)!;
+  if (!(await requireCoach(coachId, res))) return;
+  const athleteId = String(req.params.athleteId);
+
+  const body = req.body as { planDayIds?: unknown };
+  const dayIds = Array.from(
+    new Set(
+      (Array.isArray(body.planDayIds) ? body.planDayIds : [])
+        .map((n) => Number(n))
+        .filter((n) => Number.isInteger(n) && n > 0),
+    ),
+  );
+  if (dayIds.length === 0) {
+    res.status(400).json({ error: "Geen dagen geselecteerd" });
+    return;
+  }
+
+  try {
+    if (!(await hasAcceptedCoachLink(coachId, athleteId))) {
+      res.status(403).json({ error: "Geen gekoppelde atleet" });
+      return;
+    }
+    const sharing = await coachSharingLevel(athleteId);
+    if (sharing === "none") {
+      res.status(403).json({ error: "Atleet deelt geen data" });
+      return;
+    }
+
+    const view = await loadPlanView(athleteId);
+    if (!view || view.plan.mode !== "advisory") {
+      res.status(404).json({ error: "Geen adviesschema beschikbaar" });
+      return;
+    }
+    const byId = new Map(view.days.map((d) => [d.id, d]));
+
+    const adopted: number[] = [];
+    const skipped: Array<{ dayId: number; reason: string }> = [];
+
+    for (const dayId of dayIds) {
+      const day = byId.get(dayId);
+      if (!day) {
+        skipped.push({ dayId, reason: "not_found" });
+        continue;
+      }
+      if (day.isRest) {
+        skipped.push({ dayId, reason: "rest" });
+        continue;
+      }
+      // Never overwrite: if a coach session already exists on that date, skip.
+      const [existing] = await db
+        .select({ id: plannedWorkoutsTable.id })
+        .from(plannedWorkoutsTable)
+        .where(
+          and(
+            eq(plannedWorkoutsTable.clerkId, athleteId),
+            eq(plannedWorkoutsTable.scheduledDate, day.dayDate),
+            eq(plannedWorkoutsTable.source, "coach"),
+          ),
+        )
+        .limit(1);
+      if (existing) {
+        skipped.push({ dayId, reason: "already" });
+        continue;
+      }
+
+      await db.insert(plannedWorkoutsTable).values({
+        clerkId: athleteId,
+        scheduledDate: day.dayDate,
+        type: planDayToWorkoutType(day.trainingType),
+        title: day.workout?.title ?? day.focus,
+        description: day.rationale ?? null,
+        targetDurationMin: day.estDurationMin ?? null,
+        status: "planned",
+        source: "coach",
+      });
+      adopted.push(dayId);
+    }
+
+    res.status(201).json({ adopted, skipped });
+  } catch (err) {
+    req.log.error({ err }, "coach.athlete-plan-adopt failed");
+    res.status(500).json({ error: "Kon advies niet overnemen" });
   }
 });
 

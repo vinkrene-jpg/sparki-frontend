@@ -33,3 +33,4 @@
 - [Sparki engine layer](sparki-engine-layer.md) — api-server engines/<engine> facades; routes import engines not lib helpers; smoke harness; docs/engine-architecture.md.
 - [Dutch-only copy exceptions](dutch-copy-exceptions.md) — accepted English proper nouns (Sparki, Performance Center, FTP, gran fondo); discipline DB values stay English, only labels translate.
 - [Sparki Admin Health Check engine](sparki-health-check.md) — honesty contract: real probe or GREY, never fake green; probes never throw; isAdmin dev-bypass; wouter Link no nested <a>.
+- [Coach plan adoption](coach-plan-adoption.md) — coach adopts advisory plan_days into athlete-owned planned_workouts (source="coach", planId null); dedupe by date+source, never overwrite.

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@clerk/react";
 import { DEV_PREVIEW } from "@/lib/dev";
 import { apiFetch } from "@/lib/api";
@@ -36,6 +36,9 @@ export function useCoachRoster(enabled = true) {
   });
 }
 
+/** A suggested advisory day, plus whether the coach has already adopted it. */
+export type CoachPlanDay = PlanDay & { adopted: boolean };
+
 export type CoachAthletePlanResponse = {
   sharing: "none" | "summary" | "full";
   athlete: {
@@ -44,8 +47,13 @@ export type CoachAthletePlanResponse = {
     discipline: string | null;
   } | null;
   plan: PlanHeader | null;
-  days: PlanDay[];
+  days: CoachPlanDay[];
   message?: string;
+};
+
+export type AdoptPlanResult = {
+  adopted: number[];
+  skipped: Array<{ dayId: number; reason: string }>;
 };
 
 /** Read-only view of a linked athlete's current Sparki advisory plan. */
@@ -61,5 +69,26 @@ export function useCoachAthletePlan(athleteId: string | null, enabled = true) {
       ),
     enabled: (isSignedIn === true || DEV_PREVIEW) && enabled && !!athleteId,
     staleTime: STALE.session,
+  });
+}
+
+/**
+ * Adopt one or more advised days into the athlete's plan as coach-authored
+ * sessions (source "coach"). Explicit, per-day; never overwrites existing coach
+ * workouts. Refetches the advisory plan so adopted days flip to "Overgenomen".
+ */
+export function useAdoptCoachPlanDays(athleteId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (planDayIds: number[]) =>
+      apiFetch<AdoptPlanResult>(
+        `/api/coach/athletes/${athleteId}/plan/adopt`,
+        { method: "POST", body: JSON.stringify({ planDayIds }) },
+      ),
+    onSuccess: () => {
+      if (athleteId) {
+        void qc.invalidateQueries({ queryKey: queryKeys.coach.plan(athleteId) });
+      }
+    },
   });
 }

@@ -4,12 +4,26 @@
 // coach can see Sparki's suggestion alongside their own plan. This view NEVER
 // modifies the coach's planned_workouts — it is purely informational.
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Link, useLocation } from "wouter"
-import { ChevronLeft, Sparkles, Calendar, Info, MapPin, Mountain } from "lucide-react"
+import {
+  ChevronLeft,
+  Sparkles,
+  Calendar,
+  Info,
+  MapPin,
+  Mountain,
+  Check,
+  Plus,
+  Loader2,
+} from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, Stat, Divider, ACCENT } from "@/components/sparki/ui"
-import { useCoachAthletePlan } from "@/hooks/use-coach"
+import {
+  useCoachAthletePlan,
+  useAdoptCoachPlanDays,
+  type CoachPlanDay,
+} from "@/hooks/use-coach"
 import type { PlanDay } from "@/hooks/use-training-plan"
 
 function formatDay(dateStr: string): string {
@@ -51,9 +65,17 @@ function PlanRouteSummary({ route }: { route: NonNullable<PlanDay["route"]> }) {
   )
 }
 
-// A committed/concrete suggested day (read-only). Mirrors the athlete's
-// CommittedDay but without any interactive controls.
-function SuggestedDay({ day }: { day: PlanDay }) {
+// A committed/concrete suggested day. The coach can adopt it into the athlete's
+// plan as a coach-authored session; rest days are informational only.
+function SuggestedDay({
+  day,
+  onAdopt,
+  isAdopting,
+}: {
+  day: CoachPlanDay
+  onAdopt: (dayId: number) => void
+  isAdopting: boolean
+}) {
   const dayName = formatDay(day.dayDate)
   if (day.isRest) {
     return (
@@ -107,6 +129,29 @@ function SuggestedDay({ day }: { day: PlanDay }) {
       )}
 
       {day.route && <PlanRouteSummary route={day.route} />}
+
+      <div className="mt-3 border-t border-white/[0.06] pt-3">
+        {day.adopted ? (
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/20 bg-emerald-400/[0.08] px-2.5 py-1.5 text-[12px] text-emerald-300/90">
+            <Check className="h-3.5 w-3.5" strokeWidth={2.25} />
+            Overgenomen in jouw plan
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onAdopt(day.id)}
+            disabled={isAdopting}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-3 py-1.5 text-[12px] text-cyan-100/90 transition-colors hover:bg-cyan-300/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isAdopting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
+            ) : (
+              <Plus className="h-3.5 w-3.5" strokeWidth={2.25} />
+            )}
+            Overnemen in mijn plan
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -148,6 +193,8 @@ export default function CoachAthletePlanPage() {
     location.match(/\/coach\/athletes\/([^/?#]+)\/plan/)?.[1] ?? null
 
   const { data, isLoading } = useCoachAthletePlan(athleteId)
+  const adopt = useAdoptCoachPlanDays(athleteId)
+  const [pendingIds, setPendingIds] = useState<number[]>([])
 
   const weekDays = useMemo(
     () => (data?.days ?? []).filter((d) => d.weekIndex === 0),
@@ -158,7 +205,21 @@ export default function CoachAthletePlanPage() {
     [data],
   )
 
+  // Adoptable = a concrete (non-rest) advised day the coach hasn't taken yet.
+  const adoptableDays = useMemo(
+    () => weekDays.filter((d) => !d.isRest && !d.adopted),
+    [weekDays],
+  )
+
   const name = data?.athlete?.displayName ?? "Atleet"
+
+  function handleAdopt(ids: number[]) {
+    if (ids.length === 0 || adopt.isPending) return
+    setPendingIds(ids)
+    adopt.mutate(ids, {
+      onSettled: () => setPendingIds([]),
+    })
+  }
 
   return (
     <ScreenShell section="Coach" bg="/concept-lab.png">
@@ -242,18 +303,45 @@ export default function CoachAthletePlanPage() {
 
             {/* Suggested 7-day week */}
             <div>
-              <div className="mb-3 flex items-center gap-2">
-                <Calendar
-                  className="h-3.5 w-3.5 text-white/40"
-                  strokeWidth={1.75}
-                />
-                <span className="font-mono text-[10px] tracking-[0.2em] text-white/40">
-                  ADVIES · KOMENDE 7 DAGEN
-                </span>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Calendar
+                    className="h-3.5 w-3.5 text-white/40"
+                    strokeWidth={1.75}
+                  />
+                  <span className="font-mono text-[10px] tracking-[0.2em] text-white/40">
+                    ADVIES · KOMENDE 7 DAGEN
+                  </span>
+                </div>
+                {adoptableDays.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleAdopt(adoptableDays.map((d) => d.id))}
+                    disabled={adopt.isPending}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-3 py-1.5 text-[11px] text-cyan-100/90 transition-colors hover:bg-cyan-300/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {adopt.isPending && pendingIds.length > 1 ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
+                    ) : (
+                      <Plus className="h-3.5 w-3.5" strokeWidth={2.25} />
+                    )}
+                    Neem hele week over
+                  </button>
+                )}
               </div>
+              <p className="mb-3 text-[12px] leading-relaxed text-white/45">
+                Neem losse dagen over in jouw eigen plan. Ze worden vastgelegd als
+                jouw trainingen — het Sparki-advies zelf verandert niet en
+                bestaande trainingen worden nooit overschreven.
+              </p>
               <div className="flex flex-col gap-3">
                 {weekDays.map((d) => (
-                  <SuggestedDay key={d.id} day={d} />
+                  <SuggestedDay
+                    key={d.id}
+                    day={d}
+                    onAdopt={(id) => handleAdopt([id])}
+                    isAdopting={adopt.isPending && pendingIds.includes(d.id)}
+                  />
                 ))}
               </div>
             </div>
