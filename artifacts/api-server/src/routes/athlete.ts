@@ -81,6 +81,7 @@ router.put("/profile", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const {
     ftp,
+    ftpEstimated,
     weightKg,
     discipline,
     goals,
@@ -97,6 +98,7 @@ router.put("/profile", requireAuth, async (req, res) => {
     homeLabel,
   } = req.body as {
     ftp?: number;
+    ftpEstimated?: boolean;
     weightKg?: string;
     discipline?: string;
     goals?: string;
@@ -158,6 +160,7 @@ router.put("/profile", requireAuth, async (req, res) => {
       .update(athleteProfilesTable)
       .set({
         ...(ftp != null && { ftp }),
+        ...(typeof ftpEstimated === "boolean" && { ftpEstimated }),
         ...(weightKg != null && { weightKg }),
         ...(discipline != null && { discipline }),
         ...(goals != null && { goals }),

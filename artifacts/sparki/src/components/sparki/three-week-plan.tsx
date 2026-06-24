@@ -1,9 +1,13 @@
 import { useState } from "react"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
-import { SparkiCore } from "@/components/sparki/sparki-core"
 import { usePlanWindow, useGeneratePlan } from "@/hooks/use-training-plan"
+import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { DayDetailDrawer } from "@/components/sparki/day-detail-drawer"
 import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer"
+import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
+import { FtpEstimateWizard } from "@/components/sparki/ftp-estimate-wizard"
+import { useRetryAction } from "@/hooks/use-missing-input"
+import { isTargetSet } from "@/lib/missing-input"
 import type { PlannedWorkout } from "@/lib/athlete-types"
 import { Loader2, CalendarRange } from "lucide-react"
 
@@ -29,12 +33,23 @@ function zoneDot(zone: number): string {
 
 export function ThreeWeekPlan() {
   const { data: plan, isLoading } = usePlanWindow(3)
+  const { data: profile } = useAthleteExtendedProfile()
   const generate = useGeneratePlan()
 
   const [dayOpen, setDayOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [workoutOpen, setWorkoutOpen] = useState(false)
   const [selectedWorkout, setSelectedWorkout] = useState<number | null>(null)
+  const [ftpWizardOpen, setFtpWizardOpen] = useState(false)
+
+  // Backend requires both FTP and weekly hours to build a plan.
+  const canBuild =
+    isTargetSet("ftp", profile) && isTargetSet("weeklyHours", profile)
+
+  // When the user returns here after filling in a missing value, retry the build.
+  useRetryAction("generate-plan", () => {
+    if (canBuild) generate.mutate(undefined)
+  })
 
   const today = localDate(new Date())
   const workouts: PlannedWorkout[] = plan ?? []
@@ -79,41 +94,40 @@ export function ThreeWeekPlan() {
           Plan laden…
         </div>
       ) : !hasPlan ? (
-        <div className="mt-5 flex flex-col items-center gap-5 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-6 py-10 text-center backdrop-blur-md">
-          <SparkiCore size={40} accent={ACCENT} readiness={0.85} variant="orb" />
-          <div>
-            <p className="font-sans text-[15px] font-light text-white/85">
-              Nog geen schema
-            </p>
-            <p className="mt-1.5 text-[13px] leading-relaxed text-white/45">
-              Sparki bouwt een periodiseerd plan van 3 weken op basis van je FTP,
-              wekelijkse uren en doel.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => generate.mutate(undefined)}
-            disabled={generate.isPending}
-            className="flex items-center justify-center gap-2 rounded-2xl px-5 py-3 font-sans text-[13px] font-semibold disabled:opacity-50"
-            style={{ background: ACCENT, color: "#040506" }}
-          >
-            {generate.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Plan opbouwen…
-              </>
-            ) : (
-              <>
-                <CalendarRange className="h-4 w-4" strokeWidth={2} />
-                Bouw mijn plan
-              </>
-            )}
-          </button>
+        <div className="mt-5">
+          <MissingInputNotice
+            title="Nog geen schema"
+            description={
+              canBuild
+                ? "Sparki bouwt een periodiseerd plan van 3 weken op basis van je FTP, wekelijkse uren en doel."
+                : "Sparki heeft een paar gegevens nodig om je plan op te bouwen. Vul ze hieronder in — je komt daarna automatisch hier terug."
+            }
+            targets={["ftp", "weeklyHours", "goal"]}
+            profile={profile}
+            returnTo="/train"
+            retry="generate-plan"
+            actions={
+              !isTargetSet("ftp", profile)
+                ? [
+                    {
+                      label: "Ik weet mijn FTP niet",
+                      onClick: () => setFtpWizardOpen(true),
+                    },
+                  ]
+                : []
+            }
+            primary={{
+              label: generate.isPending ? "Plan opbouwen…" : "Bouw mijn plan",
+              onClick: () => generate.mutate(undefined),
+              loading: generate.isPending,
+              disabled: !canBuild || generate.isPending,
+            }}
+          />
           {generate.isError && (
-            <p className="text-[12px] text-red-300/70">
+            <p className="mt-3 text-center text-[12px] text-red-300/70">
               {generate.error instanceof Error &&
               generate.error.message.includes("profile_incomplete")
-                ? "Stel eerst je FTP en wekelijkse uren in zodat Sparki een schema kan opbouwen."
+                ? "Sparki mist nog je FTP of wekelijkse uren. Vul ze hierboven in."
                 : "Het opbouwen lukte niet. Probeer het opnieuw."}
             </p>
           )}
@@ -223,6 +237,12 @@ export function ThreeWeekPlan() {
         workoutId={selectedWorkout}
         open={workoutOpen}
         onOpenChange={setWorkoutOpen}
+      />
+      <FtpEstimateWizard
+        open={ftpWizardOpen}
+        onOpenChange={setFtpWizardOpen}
+        weightKg={profile?.weightKg ? Number(profile.weightKg) : null}
+        onSaved={() => setFtpWizardOpen(false)}
       />
     </section>
   )

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect, useRef, type ReactNode } from "react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { SparkiCore } from "@/components/sparki/sparki-core"
@@ -14,6 +14,7 @@ import { useLogDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useLogFtp } from "@/hooks/use-ftp-history"
 import { useTeamIdentity, useSaveTeamIdentity } from "@/hooks/use-social"
 import { useClerk } from "@clerk/react"
+import { useFixParams, useCompleteFix } from "@/hooks/use-missing-input"
 import {
   Check,
   Pencil,
@@ -28,7 +29,45 @@ import {
   ChevronRight,
   Shield,
   LogOut,
+  Clock,
 } from "lucide-react"
+
+type EditorProps = { autoOpen?: boolean; onSaved?: () => void }
+
+/** Scrolls to + briefly highlights the section matching the active focus token. */
+function FocusTarget({
+  token,
+  focus,
+  children,
+}: {
+  token: string
+  focus: string | null
+  children: ReactNode
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [hl, setHl] = useState(false)
+  useEffect(() => {
+    if (focus === token && ref.current) {
+      ref.current.scrollIntoView({ behavior: "smooth", block: "center" })
+      setHl(true)
+      const t = setTimeout(() => setHl(false), 2600)
+      return () => clearTimeout(t)
+    }
+    return undefined
+  }, [focus, token])
+  return (
+    <div
+      ref={ref}
+      className={
+        hl
+          ? "rounded-2xl ring-2 ring-cyan-300/50 transition-all duration-500"
+          : "rounded-2xl transition-all duration-500"
+      }
+    >
+      {children}
+    </div>
+  )
+}
 
 function TeamIdentitySection() {
   const { data, isLoading } = useTeamIdentity()
@@ -255,11 +294,15 @@ function IdentityStat({
   )
 }
 
-function FtpInlineEditor() {
+function FtpInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
   const { data: profile } = useAthleteExtendedProfile()
   const logFtp = useLogFtp()
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState("")
+
+  useEffect(() => {
+    if (autoOpen) setEditing(true)
+  }, [autoOpen])
 
   const handleSave = () => {
     const watts = parseInt(value)
@@ -270,6 +313,7 @@ function FtpInlineEditor() {
         onSuccess: () => {
           setEditing(false)
           setValue("")
+          onSaved?.()
         },
       },
     )
@@ -323,7 +367,7 @@ function FtpInlineEditor() {
   )
 }
 
-function CheckInForm() {
+function CheckInForm({ onSaved }: EditorProps = {}) {
   const logMetrics = useLogDailyMetrics()
   const [saved, setSaved] = useState(false)
   const [form, setForm] = useState({
@@ -348,7 +392,11 @@ function CheckInForm() {
         hrv: form.hrv ? parseInt(form.hrv) : undefined,
         notes: form.notes || null,
       },
-      { onSuccess: () => setSaved(true) },
+      { onSuccess: () => {
+          setSaved(true)
+          onSaved?.()
+        },
+      },
     )
   }
 
@@ -447,11 +495,18 @@ function CheckInForm() {
   )
 }
 
-function GoalsSection() {
+function GoalsSection({ autoOpen, onSaved }: EditorProps = {}) {
   const { data: profile } = useAthleteExtendedProfile()
   const updateProfile = useUpdateAthleteProfile()
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState("")
+
+  useEffect(() => {
+    if (autoOpen) {
+      setValue(profile?.goals ?? "")
+      setEditing(true)
+    }
+  }, [autoOpen, profile?.goals])
 
   const start = () => {
     setValue(profile?.goals ?? "")
@@ -461,7 +516,12 @@ function GoalsSection() {
   const save = () => {
     updateProfile.mutate(
       { goals: value },
-      { onSuccess: () => setEditing(false) },
+      {
+        onSuccess: () => {
+          setEditing(false)
+          onSaved?.()
+        },
+      },
     )
   }
 
@@ -516,10 +576,229 @@ function GoalsSection() {
   )
 }
 
+function WeeklyHoursInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
+  const { data: profile } = useAthleteExtendedProfile()
+  const updateProfile = useUpdateAthleteProfile()
+  const [editing, setEditing] = useState(false)
+  const [value, setValue] = useState("")
+
+  useEffect(() => {
+    if (autoOpen) {
+      setValue(profile?.weeklyHourTarget ? String(profile.weeklyHourTarget) : "")
+      setEditing(true)
+    }
+  }, [autoOpen, profile?.weeklyHourTarget])
+
+  const handleSave = () => {
+    const hours = parseInt(value)
+    if (!hours || hours < 1 || hours > 40) return
+    updateProfile.mutate(
+      { weeklyHourTarget: hours },
+      {
+        onSuccess: () => {
+          setEditing(false)
+          setValue("")
+          onSaved?.()
+        },
+      },
+    )
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-2">
+        <input
+          autoFocus
+          type="number"
+          placeholder={String(profile?.weeklyHourTarget ?? "8")}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="w-20 rounded-lg border border-cyan-300/30 bg-white/[0.04] px-2.5 py-1.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSave()
+            if (e.key === "Escape") {
+              setEditing(false)
+              setValue("")
+            }
+          }}
+          min={1}
+          max={40}
+        />
+        <span className="font-mono text-[11px] text-white/40">u/wk</span>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={updateProfile.isPending || !value}
+          className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-40"
+          style={{ background: ACCENT }}
+        >
+          <Check className="h-3.5 w-3.5" style={{ color: "#040506" }} strokeWidth={2.5} />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <button type="button" onClick={() => setEditing(true)} className="flex items-center gap-2">
+      <span className="font-mono text-[11px] tracking-wide text-white/40">
+        {profile?.weeklyHourTarget ? `${profile.weeklyHourTarget} u/wk` : "Niet ingesteld"}
+      </span>
+      <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
+    </button>
+  )
+}
+
+function WeightInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
+  const { data: profile } = useAthleteExtendedProfile()
+  const updateProfile = useUpdateAthleteProfile()
+  const [editing, setEditing] = useState(false)
+  const [value, setValue] = useState("")
+
+  useEffect(() => {
+    if (autoOpen) {
+      setValue(profile?.weightKg ?? "")
+      setEditing(true)
+    }
+  }, [autoOpen, profile?.weightKg])
+
+  const handleSave = () => {
+    const kg = parseFloat(value)
+    if (!kg || kg < 30 || kg > 150) return
+    updateProfile.mutate(
+      { weightKg: String(kg) },
+      {
+        onSuccess: () => {
+          setEditing(false)
+          setValue("")
+          onSaved?.()
+        },
+      },
+    )
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-2">
+        <input
+          autoFocus
+          type="number"
+          step="0.1"
+          placeholder={profile?.weightKg ?? "70"}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="w-20 rounded-lg border border-cyan-300/30 bg-white/[0.04] px-2.5 py-1.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSave()
+            if (e.key === "Escape") {
+              setEditing(false)
+              setValue("")
+            }
+          }}
+          min={30}
+          max={150}
+        />
+        <span className="font-mono text-[11px] text-white/40">kg</span>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={updateProfile.isPending || !value}
+          className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-40"
+          style={{ background: ACCENT }}
+        >
+          <Check className="h-3.5 w-3.5" style={{ color: "#040506" }} strokeWidth={2.5} />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <button type="button" onClick={() => setEditing(true)} className="flex items-center gap-2">
+      <span className="font-mono text-[11px] tracking-wide text-white/40">
+        {profile?.weightKg ? `${profile.weightKg} kg` : "Niet ingesteld"}
+      </span>
+      <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
+    </button>
+  )
+}
+
+const DISCIPLINES = ["Weg", "MTB", "Gravel", "Veldrijden", "Baan", "Triatlon"]
+
+function DisciplineInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
+  const { data: profile } = useAthleteExtendedProfile()
+  const updateProfile = useUpdateAthleteProfile()
+  const [editing, setEditing] = useState(false)
+
+  useEffect(() => {
+    if (autoOpen) setEditing(true)
+  }, [autoOpen])
+
+  const choose = (d: string) => {
+    updateProfile.mutate(
+      { discipline: d },
+      {
+        onSuccess: () => {
+          setEditing(false)
+          onSaved?.()
+        },
+      },
+    )
+  }
+
+  if (editing) {
+    return (
+      <div className="flex max-w-[200px] flex-wrap justify-end gap-1.5">
+        {DISCIPLINES.map((d) => (
+          <button
+            key={d}
+            type="button"
+            onClick={() => choose(d)}
+            disabled={updateProfile.isPending}
+            className="rounded-lg border px-2.5 py-1 font-sans text-[12px] disabled:opacity-40"
+            style={{
+              borderColor:
+                profile?.discipline === d
+                  ? "rgba(120,210,230,0.45)"
+                  : "rgba(255,255,255,0.12)",
+              color:
+                profile?.discipline === d ? ACCENT : "rgba(255,255,255,0.6)",
+            }}
+          >
+            {d}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <button type="button" onClick={() => setEditing(true)} className="flex items-center gap-2">
+      <span className="font-mono text-[11px] tracking-wide text-white/40">
+        {profile?.discipline ?? "Niet ingesteld"}
+      </span>
+      <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
+    </button>
+  )
+}
+
 export default function YouPage() {
   const { data: profile, isLoading } = useAthleteExtendedProfile()
   const { signOut } = useClerk()
+  const { focus } = useFixParams()
+  const completeFix = useCompleteFix()
+  const [hlToken, setHlToken] = useState<string | null>(null)
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, "")
+
+  useEffect(() => {
+    if (!focus) return undefined
+    const el = document.getElementById(`cfg-${focus}`)
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" })
+      setHlToken(focus)
+      const t = setTimeout(() => setHlToken(null), 2600)
+      return () => clearTimeout(t)
+    }
+    return undefined
+  }, [focus])
 
   const initials = (profile?.displayName ?? "A")
     .split(" ")
@@ -533,6 +812,7 @@ export default function YouPage() {
     label: string
     value?: string
     custom?: React.ReactNode
+    focusToken?: string
   }[] = [
     {
       icon: User,
@@ -549,17 +829,46 @@ export default function YouPage() {
     {
       icon: Bike,
       label: "Discipline",
-      value: profile?.discipline ?? "Niet ingesteld",
+      focusToken: "sportProfile",
+      custom: (
+        <DisciplineInlineEditor
+          autoOpen={focus === "sportProfile"}
+          onSaved={focus === "sportProfile" ? completeFix : undefined}
+        />
+      ),
     },
     {
       icon: Zap,
       label: "FTP",
-      custom: <FtpInlineEditor />,
+      focusToken: "ftp",
+      custom: (
+        <FtpInlineEditor
+          autoOpen={focus === "ftp"}
+          onSaved={focus === "ftp" ? completeFix : undefined}
+        />
+      ),
+    },
+    {
+      icon: Clock,
+      label: "Uren per week",
+      focusToken: "weeklyHours",
+      custom: (
+        <WeeklyHoursInlineEditor
+          autoOpen={focus === "weeklyHours"}
+          onSaved={focus === "weeklyHours" ? completeFix : undefined}
+        />
+      ),
     },
     {
       icon: Scale,
       label: "Gewicht",
-      value: profile?.weightKg ? `${profile.weightKg} kg` : "Niet ingesteld",
+      focusToken: "weight",
+      custom: (
+        <WeightInlineEditor
+          autoOpen={focus === "weight"}
+          onSaved={focus === "weight" ? completeFix : undefined}
+        />
+      ),
     },
     {
       icon: Target,
@@ -637,27 +946,34 @@ export default function YouPage() {
       </section>
 
       {/* 01 DOELEN */}
-      <section>
-        <SectionLabel n="01" title="Doelen" />
-        <div className="mt-3">
-          {isLoading ? (
-            <Skeleton className="h-10 w-full" />
-          ) : (
-            <GoalsSection />
-          )}
-        </div>
-      </section>
+      <FocusTarget token="goal" focus={focus}>
+        <section>
+          <SectionLabel n="01" title="Doelen" />
+          <div className="mt-3">
+            {isLoading ? (
+              <Skeleton className="h-10 w-full" />
+            ) : (
+              <GoalsSection
+                autoOpen={focus === "goal"}
+                onSaved={focus === "goal" ? completeFix : undefined}
+              />
+            )}
+          </div>
+        </section>
+      </FocusTarget>
 
       {/* 02 DAGELIJKSE CHECK-IN */}
-      <section>
-        <SectionLabel n="02" title="Dagelijkse check-in" />
-        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
-          Log dagelijkse gereedheid om Sparki's adviezen te voeden
-        </p>
-        <div className="mt-4">
-          <CheckInForm />
-        </div>
-      </section>
+      <FocusTarget token="checkin" focus={focus}>
+        <section>
+          <SectionLabel n="02" title="Dagelijkse check-in" />
+          <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+            Log dagelijkse gereedheid om Sparki's adviezen te voeden
+          </p>
+          <div className="mt-4">
+            <CheckInForm onSaved={focus === "checkin" ? completeFix : undefined} />
+          </div>
+        </section>
+      </FocusTarget>
 
       {/* 03 INSTELLINGEN */}
       <section>
@@ -665,10 +981,14 @@ export default function YouPage() {
         <div className="mt-3 flex flex-col">
           {configRows.map((row) => {
             const Icon = row.icon
+            const highlighted = !!row.focusToken && hlToken === row.focusToken
             return (
               <div
                 key={row.label}
-                className="flex items-center gap-4 border-b border-white/[0.05] py-3.5 last:border-0"
+                id={row.focusToken ? `cfg-${row.focusToken}` : undefined}
+                className={`flex items-center gap-4 border-b border-white/[0.05] py-3.5 last:border-0 ${
+                  highlighted ? "rounded-xl ring-2 ring-cyan-300/50" : ""
+                }`}
               >
                 <span
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border"
@@ -709,7 +1029,9 @@ export default function YouPage() {
 
       <TeamIdentitySection />
 
-      <ConnectionsSection />
+      <FocusTarget token="connections" focus={focus}>
+        <ConnectionsSection />
+      </FocusTarget>
 
       <PrivacySettingsSection />
 

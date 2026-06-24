@@ -8,6 +8,7 @@ import { ChevronLeft } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { Skeleton } from "@/components/sparki/home-sections"
+import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import {
   useRaces,
   useCreateRace,
@@ -366,20 +367,11 @@ export default function RacesPage() {
           ))}
         </section>
       ) : (
-        <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
-          <p className="text-[13px] leading-relaxed text-white/55">
-            Nog geen wedstrijden. Voeg je eerste race toe om je race-week,
-            checklist en dagplanning te activeren.
-          </p>
-          <button
-            type="button"
-            onClick={startCreate}
-            className="mt-4 inline-flex rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06]"
-            style={{ borderColor: ACCENT, color: ACCENT, background: "rgba(255,255,255,0.04)" }}
-          >
-            Race toevoegen
-          </button>
-        </div>
+        <MissingInputNotice
+          title="Nog geen wedstrijden"
+          description="Voeg je eerste race toe om je race-week, checklist en dagplanning te activeren."
+          actions={[{ label: "Race toevoegen", onClick: startCreate }]}
+        />
       )}
 
       <footer className="pt-2 text-center">

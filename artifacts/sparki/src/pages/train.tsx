@@ -5,6 +5,8 @@ import { SparkiCore } from "@/components/sparki/sparki-core"
 import { useTodayWorkout, useUpdateWorkout } from "@/hooks/use-today-workout"
 import { useSessions, useLogSession } from "@/hooks/use-sessions"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
+import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
+import { missingTargets } from "@/lib/missing-input"
 import { useAiBrief } from "@/hooks/use-ai-brief"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { ActivityImportPanel } from "@/components/sparki/activity-import-panel"
@@ -282,7 +284,9 @@ export default function TrainPage() {
       </div>
 
       {/* 00 PLAN — 3 weken */}
-      <ThreeWeekPlan />
+      <div id="three-week-plan">
+        <ThreeWeekPlan />
+      </div>
 
       {/* 01 DE SESSIE */}
       <section>
@@ -397,13 +401,35 @@ export default function TrainPage() {
             />
           </>
         ) : (
-          <div className="mt-5 flex flex-col items-center gap-5 py-8">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/[0.03]">
-              <Bike className="h-6 w-6 text-white/25" strokeWidth={1.5} />
-            </div>
-            <p className="text-[14px] text-white/35">
-              Geen training gepland vandaag
-            </p>
+          <div className="mt-5">
+            {missingTargets(["ftp", "weeklyHours"], profile).length > 0 ? (
+              <MissingInputNotice
+                compact
+                showOrb={false}
+                title="Geen training gepland vandaag"
+                description="Sparki bouwt je dagplanning op zodra je FTP en wekelijkse uren bekend zijn. Vul ze aan om je schema te activeren."
+                targets={["ftp", "weeklyHours"]}
+                profile={profile}
+                returnTo="/train"
+                retry="generate-plan"
+              />
+            ) : (
+              <MissingInputNotice
+                compact
+                showOrb={false}
+                title="Nog geen training voor vandaag"
+                description="Je profiel is compleet, maar er staat nog geen schema klaar. Bouw je 3-wekenplan om je dagtrainingen te activeren."
+                profile={profile}
+                primary={{
+                  label: "Bouw mijn plan",
+                  onClick: () => {
+                    document
+                      .getElementById("three-week-plan")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                  },
+                }}
+              />
+            )}
           </div>
         )}
       </section>
@@ -505,9 +531,16 @@ export default function TrainPage() {
                 {brief.brief}
               </p>
             ) : (
-              <p className="mt-3 text-[13px] leading-relaxed text-white/35">
-                Log een check-in om je gepersonaliseerde coaching te ontvangen.
-              </p>
+              <div className="mt-3">
+                <MissingInputNotice
+                  compact
+                  showOrb={false}
+                  title="Nog geen coaching vandaag"
+                  description="Log je check-in zodat Sparki je dag persoonlijk kan begeleiden."
+                  targets={["checkin"]}
+                  returnTo="/train"
+                />
+              </div>
             )}
           </div>
         </section>

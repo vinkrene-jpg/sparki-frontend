@@ -11,6 +11,8 @@ import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { AiMemoryPanel } from "@/components/sparki/ai-memory-panel"
 import { ContextMemoryPanel } from "@/components/sparki/context-memory-panel"
 import { NutritionPanel } from "@/components/sparki/nutrition-panel"
+import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
+import { useLocation } from "wouter"
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
@@ -36,9 +38,14 @@ function FtpBars({
 }) {
   if (history.length === 0) {
     return (
-      <p className="text-[12px] text-white/25">
-        Nog geen FTP-tests gelogd · Stel FTP in bij Profiel
-      </p>
+      <MissingInputNotice
+        compact
+        showOrb={false}
+        title="Nog geen FTP-tests"
+        description="Sparki heeft je FTP nodig om je vooruitgang te volgen. Stel je FTP in of log een test."
+        targets={["ftp"]}
+        returnTo="/lab"
+      />
     )
   }
 
@@ -109,6 +116,7 @@ export default function LabPage() {
   const { data: sessions, isLoading: sessionsLoading } = useSessions(10)
   const { data: metrics, isLoading: metricsLoading } = useDailyMetrics(14)
   const { data: profile } = useAthleteExtendedProfile()
+  const [, navigate] = useLocation()
 
   const clamp = (v: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v))
 
@@ -254,9 +262,16 @@ export default function LabPage() {
             </p>
           </>
         ) : (
-          <p className="mt-3 text-[12px] text-white/25">
-            Log dagelijkse check-ins om je readiness-trend te zien
-          </p>
+          <div className="mt-3">
+            <MissingInputNotice
+              compact
+              showOrb={false}
+              title="Nog geen readiness-trend"
+              description="Log je dagelijkse check-in zodat Sparki je readiness-trend kan opbouwen."
+              targets={["checkin"]}
+              returnTo="/lab"
+            />
+          </div>
         )}
       </section>
 
@@ -297,9 +312,16 @@ export default function LabPage() {
             )}
           </>
         ) : (
-          <p className="mt-4 text-[12px] text-white/25">
-            Voer je HRV in bij de dagelijkse check-in
-          </p>
+          <div className="mt-4">
+            <MissingInputNotice
+              compact
+              showOrb={false}
+              title="Nog geen HRV"
+              description="Voer je HRV in bij de dagelijkse check-in zodat Sparki je herstel kan volgen."
+              targets={["checkin"]}
+              returnTo="/lab"
+            />
+          </div>
         )}
       </section>
 
@@ -367,9 +389,20 @@ export default function LabPage() {
             })}
           </div>
         ) : (
-          <p className="mt-4 text-[13px] text-white/35">
-            Nog geen sessies gelogd · Gebruik Train → Sessie loggen
-          </p>
+          <div className="mt-4">
+            <MissingInputNotice
+              compact
+              showOrb={false}
+              title="Nog geen sessies gelogd"
+              description="Log een training om je sessie-historie en belasting op te bouwen."
+              actions={[
+                {
+                  label: "Ga naar Training",
+                  onClick: () => navigate("/train"),
+                },
+              ]}
+            />
+          </div>
         )}
       </section>
 
