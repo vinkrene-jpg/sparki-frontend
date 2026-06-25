@@ -35,11 +35,13 @@ export function TrainingProgression({
   chartData,
   loading,
   n = "06",
+  hideLabel = false,
 }: {
   sessions: TrainingSession[] | undefined
   chartData: LoadData["chartData"] | undefined
   loading: boolean
   n?: string
+  hideLabel?: boolean
 }) {
   const [, navigate] = useLocation()
   const weeks = 6
@@ -59,10 +61,14 @@ export function TrainingProgression({
 
   return (
     <section>
-      <SectionLabel n={n} title="Trainingsverloop" />
-      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
-        Niet alleen vandaag — zo ontwikkel je je over meerdere trainingen heen.
-      </p>
+      {!hideLabel && (
+        <>
+          <SectionLabel n={n} title="Trainingsverloop" />
+          <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
+            Niet alleen vandaag — zo ontwikkel je je over meerdere trainingen heen.
+          </p>
+        </>
+      )}
 
       {loading ? (
         <div className="mt-4 space-y-3">

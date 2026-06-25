@@ -31,7 +31,15 @@ function zoneDot(zone: number): string {
   return "rgba(120,210,230,0.5)"
 }
 
-export function ThreeWeekPlan() {
+export function ThreeWeekPlan({
+  hideLabel = false,
+  hideEmptyCta = false,
+  hideRegenerate = false,
+}: {
+  hideLabel?: boolean
+  hideEmptyCta?: boolean
+  hideRegenerate?: boolean
+} = {}) {
   const { data: plan, isLoading } = usePlanWindow(3)
   const { data: profile } = useAthleteExtendedProfile()
   const generate = useGeneratePlan()
@@ -86,7 +94,7 @@ export function ThreeWeekPlan() {
 
   return (
     <section>
-      <SectionLabel n="00" title="Plan · 3 weken" />
+      {!hideLabel && <SectionLabel n="00" title="Plan · 3 weken" />}
 
       {isLoading ? (
         <div className="mt-5 flex items-center gap-2 text-[13px] text-white/40">
@@ -94,6 +102,12 @@ export function ThreeWeekPlan() {
           Plan laden…
         </div>
       ) : !hasPlan ? (
+        hideEmptyCta ? (
+          <p className="mt-5 text-pretty text-[12px] leading-relaxed text-white/40">
+            Je plan verschijnt hier zodra Sparki het heeft opgebouwd — bouw het in
+            de sectie hierboven.
+          </p>
+        ) : (
         <div className="mt-5">
           <MissingInputNotice
             title="Nog geen schema"
@@ -132,6 +146,7 @@ export function ThreeWeekPlan() {
             </p>
           )}
         </div>
+        )
       ) : (
         <div className="mt-5 flex flex-col gap-2.5">
           {/* DOW header */}
@@ -205,24 +220,26 @@ export function ThreeWeekPlan() {
               })}
             </div>
           ))}
-          <button
-            type="button"
-            onClick={() => generate.mutate(undefined)}
-            disabled={generate.isPending}
-            className="mt-1.5 flex items-center justify-center gap-2 rounded-xl border border-dashed border-white/[0.12] py-2.5 font-sans text-[12px] font-medium text-white/45 transition-colors hover:border-cyan-300/25 hover:text-cyan-300/60 disabled:opacity-50"
-          >
-            {generate.isPending ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Opnieuw opbouwen…
-              </>
-            ) : (
-              <>
-                <CalendarRange className="h-3.5 w-3.5" strokeWidth={1.75} />
-                Plan opnieuw opbouwen
-              </>
-            )}
-          </button>
+          {!hideRegenerate && (
+            <button
+              type="button"
+              onClick={() => generate.mutate(undefined)}
+              disabled={generate.isPending}
+              className="mt-1.5 flex items-center justify-center gap-2 rounded-xl border border-dashed border-white/[0.12] py-2.5 font-sans text-[12px] font-medium text-white/45 transition-colors hover:border-cyan-300/25 hover:text-cyan-300/60 disabled:opacity-50"
+            >
+              {generate.isPending ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Opnieuw opbouwen…
+                </>
+              ) : (
+                <>
+                  <CalendarRange className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Plan opnieuw opbouwen
+                </>
+              )}
+            </button>
+          )}
         </div>
       )}
 
