@@ -34,6 +34,17 @@ CoreState / data model / engine exists. Reachable in-app (floating "Core" button
 **Why:** the user pivoted away from building the real Core engine first — the
 visual grammar must be validated as a communication language before architecture.
 
+## Override: on-screen position is pinned to centre (product decision)
+In the live Vandaag Core (`lib/state-to-core.ts`) `posX`/`posY` are hard-set to
+`0.5` — the Core never translates off-centre. The semantic x/y still drive hue,
+size, stretch and **lean direction**, so field position is conveyed by
+colour/size/shape/lean, not by moving the body.
+**Why:** the director read an off-centre orb as a layout bug on a phone and
+stated the carriers of state are vorm/grootte/kleur (not position). This
+supersedes the original "Positie = signal #1" hierarchy for the rendered card.
+**How to apply:** do NOT reintroduce a position offset in `stateToCore`; if a
+future surface wants positional encoding, gate it per-surface, never globally.
+
 ## The design contract (how the shape must read)
 - **Calm, never jerky ("niet grillig / niet schokkerig").** No high-frequency
   unrest, no opacity flicker. Only slow, low-harmonic deformation + gentle drift.
