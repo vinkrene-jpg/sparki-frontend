@@ -55,3 +55,4 @@
 - [Sparki Core visual-language prototype](sparki-core-playground.md) — living-shape design contract: calm-not-jerky, uncertainty=hazy, good↔bad X/Y cross, stretch=2 strong pulls; frontend-only before any engine.
 - [Sparki State Card opening](sparki-state-card-opening.md) — glanceable metrics come from the State Engine (not dashboard) to keep the card surface-agnostic; honest empty when no load; never two routes to one drill-in.
 - [Sparki /train four-layer spine](sparki-train-layers.md) — engine layers L1 bron/L2 doel/L3 vandaag/L4 patronen; TodayLayer must NOT duplicate shell-owned CoachAnalysisCard+FollowUpPrompt.
+- [Sparki Voeding screen](sparki-voeding-screen.md) — nutrition is a dedicated Sheet (not inline); logs carry photos (material storage engine, owner-checked serve); guidance is age-tuned (youth<16 light, adult numbers), never fabricated.

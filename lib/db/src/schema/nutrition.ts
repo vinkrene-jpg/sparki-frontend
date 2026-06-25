@@ -7,6 +7,7 @@ import {
   boolean,
   date,
   timestamp,
+  jsonb,
   index,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
@@ -46,6 +47,9 @@ export const nutritionHydrationLogsTable = pgTable(
     bodyWeightAfter: numeric("body_weight_after", { precision: 5, scale: 2 }),
     stomachIssues: boolean("stomach_issues").notNull().default(false),
     notes: text("notes"),
+    // Optional real photos of the meal/drink, stored in object storage (owner ACL).
+    // Only normalized object paths ("/objects/...") are kept here, never raw bytes.
+    photoPaths: jsonb("photo_paths").$type<string[]>().notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

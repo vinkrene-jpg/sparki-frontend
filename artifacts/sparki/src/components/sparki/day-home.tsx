@@ -30,9 +30,11 @@ import { HomeViewProvider, useHomeView } from "@/contexts/HomeViewContext"
 import { DEV_PREVIEW } from "@/lib/dev"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { StateCard } from "@/components/sparki/state-card"
-import { NutritionPanel } from "@/components/sparki/nutrition-panel"
+import { VoedingScreen } from "@/components/sparki/voeding-screen"
 import { MaterialCoach } from "@/components/sparki/material-coach"
-import { SectionLabel } from "@/components/sparki/ui"
+import { SectionLabel, ACCENT } from "@/components/sparki/ui"
+import { useNutritionLogs } from "@/hooks/use-nutrition"
+import { Apple, ChevronRight } from "lucide-react"
 import { useFixParams } from "@/hooks/use-missing-input"
 import { Skeleton } from "@/components/sparki/home-sections"
 import { TrainingDayHome } from "@/components/sparki/training-day-home"
@@ -93,29 +95,43 @@ export type DevCoachOverride = {
 // queries. The State Card is a generic engine consumer; Vandaag is the host that
 // injects what its drill-in does (open the full day-type analysis) via the
 // HomeView context — the card itself stays surface-agnostic.
+function relativeDate(iso: string): string {
+  const then = new Date(iso + "T12:00:00Z").getTime()
+  const days = Math.floor((Date.now() - then) / 86_400_000)
+  if (days <= 0) return "vandaag"
+  if (days === 1) return "gisteren"
+  if (days < 7) return `${days} dgn geleden`
+  return new Date(iso + "T12:00:00Z").toLocaleDateString("nl-NL", {
+    month: "short",
+    day: "numeric",
+  })
+}
+
 function StateDayHome() {
   const homeView = useHomeView()
   const { focus } = useFixParams()
   const [, navigate] = useLocation()
-  const [nutritionHighlight, setNutritionHighlight] = useState(false)
+  const [voedingOpen, setVoedingOpen] = useState(false)
+  const { data: nutritionData } = useNutritionLogs()
 
   // Vandaag is the single place to update yourself as an athlete: how you feel
-  // (in the State Card above) plus your nutrition and your gear. When the coach
-  // sends you here to "vul je voeding in" (?focus=nutrition), scroll straight to
-  // the self-update block and briefly highlight it, then strip the param so a
-  // refresh/back doesn't re-trigger the scroll.
+  // (in the State Card above) plus your nutrition and your gear. The Voeding card
+  // opens the dedicated Voeding screen directly. When the coach sends you here to
+  // "vul je voeding in" (?focus=nutrition), open that screen straight away, then
+  // strip the param so a refresh/back doesn't re-trigger it.
   useEffect(() => {
     if (focus !== "nutrition") return
-    const t = setTimeout(() => {
-      document
-        .getElementById("nutrition")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" })
-      setNutritionHighlight(true)
-      setTimeout(() => setNutritionHighlight(false), 1600)
-      navigate("/", { replace: true })
-    }, 200)
-    return () => clearTimeout(t)
+    setVoedingOpen(true)
+    navigate("/", { replace: true })
   }, [focus, navigate])
+
+  const logs = nutritionData?.logs ?? []
+  const lastLog = logs[0] ?? null
+  const voedingSummary = lastLog
+    ? logs.length === 1
+      ? `1 keer gelogd · laatste ${relativeDate(lastLog.logDate)}`
+      : `${logs.length} keer gelogd · laatste ${relativeDate(lastLog.logDate)}`
+    : "Nog niets gelogd — begin hier"
 
   return (
     <ScreenShell section="Home" bg="/concept-lab.png">
@@ -124,23 +140,39 @@ function StateDayHome() {
       <section className="mt-2">
         <SectionLabel title="Jouw update vandaag" />
         <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
-          Eén plek om jezelf bij te werken. Hoe je je voelt staat hierboven — log
-          hieronder je voeding en hydratatie en laat Sparki je materiaal bekijken.
+          Eén plek om jezelf bij te werken. Hoe je je voelt staat hierboven — open
+          je voeding en laat Sparki je materiaal bekijken.
         </p>
 
-        <div
+        <button
           id="nutrition"
-          className={`mt-5 scroll-mt-4 rounded-3xl transition-shadow duration-500 ${
-            nutritionHighlight ? "shadow-[0_0_0_2px_rgba(120,210,230,0.5)]" : ""
-          }`}
+          type="button"
+          onClick={() => setVoedingOpen(true)}
+          className="mt-5 flex w-full scroll-mt-4 items-center gap-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
         >
-          <NutritionPanel n="" />
-        </div>
+          <span
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.08]"
+            style={{ background: "rgba(120,210,230,0.08)" }}
+          >
+            <Apple className="h-5 w-5" strokeWidth={1.75} style={{ color: ACCENT }} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14px] font-medium text-white/90">
+              Voeding &amp; hydratatie
+            </span>
+            <span className="mt-0.5 block text-[12px] text-white/45">
+              {voedingSummary}
+            </span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-white/25" strokeWidth={1.75} />
+        </button>
 
         <div className="mt-7">
           <MaterialCoach n="" />
         </div>
       </section>
+
+      <VoedingScreen open={voedingOpen} onOpenChange={setVoedingOpen} />
     </ScreenShell>
   )
 }

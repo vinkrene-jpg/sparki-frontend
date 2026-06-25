@@ -160,7 +160,7 @@ function CostEstimate({ cost }: { cost: NonNullable<MaterialAnalysis["costEstima
   )
 }
 
-function AnalysisResult({
+export function AnalysisResult({
   analysis,
   onAddPhoto,
   adding,
@@ -255,7 +255,7 @@ function AnalysisResult({
   )
 }
 
-function UploadPanel({
+export function UploadPanel({
   category,
   onCancel,
   onDone,
@@ -425,8 +425,16 @@ export function MaterialCoach({ n = "10" }: { n?: string } = {}) {
   const [selected, setSelected] = useState<MaterialCategory | null>(null)
   const [active, setActive] = useState<MaterialAnalysis | null>(null)
 
-  const categories = catData?.categories ?? []
-  const history = listData?.analyses ?? []
+  // Voeding-onderwerpen (ontbijt, wedstrijdvoeding) wonen nu in het eigen
+  // Voeding-scherm. De Materiaalcoach toont uitsluitend materiaal-onderwerpen.
+  const allCategories = catData?.categories ?? []
+  const materialKeys = new Set(
+    allCategories.filter((c) => c.kind === "material").map((c) => c.key),
+  )
+  const categories = allCategories.filter((c) => c.kind === "material")
+  const history = (listData?.analyses ?? []).filter((a) =>
+    materialKeys.has(a.category),
+  )
   const nudge = nudgeData?.nudge ?? null
 
   // Deep-link from the nudge / notification: ?materiaal=<category> auto-opens

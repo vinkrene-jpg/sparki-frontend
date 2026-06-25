@@ -91,6 +91,7 @@ export const queryKeys = {
       limit != null
         ? (["nutrition", "logs", limit] as const)
         : (["nutrition", "logs"] as const),
+    guidance: () => ["nutrition", "guidance"] as const,
   },
 
   notifications: {

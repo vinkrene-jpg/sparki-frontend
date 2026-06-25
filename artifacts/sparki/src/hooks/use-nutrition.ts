@@ -3,6 +3,7 @@ import { useUser } from "@clerk/react";
 import { DEV_PREVIEW } from "@/lib/dev";
 import { apiFetch } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
+import type { PhotoPayload } from "@/hooks/use-material";
 
 export type NutritionContext =
   | "normal_day"
@@ -24,6 +25,7 @@ export type NutritionLog = {
   bodyWeightAfter: string | null;
   stomachIssues: boolean;
   notes: string | null;
+  photoPaths: string[];
   createdAt: string;
 };
 
@@ -39,6 +41,20 @@ export type NutritionLogInput = {
   bodyWeightAfter?: string | null;
   stomachIssues?: boolean;
   notes?: string | null;
+  photos?: PhotoPayload[];
+};
+
+export type NutritionGuidanceTopic = {
+  title: string;
+  what: string;
+  why: string;
+  how: string;
+};
+
+export type NutritionGuidance = {
+  level: "youth" | "adult";
+  intro: string;
+  topics: NutritionGuidanceTopic[];
 };
 
 export function useNutritionLogs(limit = 30) {
@@ -66,6 +82,18 @@ export function useCreateNutritionLog() {
         queryKey: queryKeys.aiMemory.observations(),
       });
     },
+  });
+}
+
+export function useNutritionGuidance(enabled = true) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: queryKeys.nutrition.guidance(),
+    queryFn: () =>
+      apiFetch<{ guidance: NutritionGuidance }>("/api/nutrition/guidance"),
+    enabled: enabled && (isSignedIn === true || DEV_PREVIEW),
+    staleTime: 30 * 60_000,
+    retry: false,
   });
 }
 

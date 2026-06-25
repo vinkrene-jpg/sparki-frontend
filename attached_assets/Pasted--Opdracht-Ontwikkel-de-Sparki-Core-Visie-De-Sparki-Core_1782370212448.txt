@@ -1,0 +1,470 @@
+# Opdracht – Ontwikkel de Sparki Core
+
+## Visie
+
+De Sparki Core wordt het hart van Sparki.
+
+Niet alleen van Sparki Ride, maar van het volledige Sparki-platform.
+
+De Core is geen dashboard, geen grafiek, geen score en geen gimmick.
+
+De Core wordt de universele visuele taal waarmee Sparki de actuele én voorspelde toestand van een sporter communiceert.
+
+Wanneer een ervaren sporter 0,5 seconde naar zijn scherm kijkt, moet hij direct begrijpen:
+
+* Hoe sta ik ervoor?
+* Hoeveel reserve heb ik?
+* Beweeg ik de goede kant op?
+* Moet ik mijn gedrag aanpassen?
+
+Zonder cijfers te analyseren.
+Zonder tekst te lezen.
+
+Garmin toont data.
+
+Sparki toont de Core.
+
+---
+
+# Geen losse visualisatie
+
+De Core is géén simpele blob.
+
+De Core vertegenwoordigt de complete actuele toestand van de sporter.
+
+Hij wordt gevoed door honderden signalen die samen één beeld vormen.
+
+Voorbeelden:
+
+* vermogen
+* hartslag
+* HRV
+* herstel
+* slaap
+* voeding
+* hydratatie
+* trainingsbelasting
+* wedstrijdplanning
+* weersomstandigheden
+* temperatuur
+* routeprofiel
+* mentale signalen
+* persoonlijke geschiedenis
+* coachinformatie
+* externe trainingsschema's
+
+Deze gegevens zijn niet zichtbaar.
+
+Alleen het resultaat wordt zichtbaar.
+
+---
+
+# De Grid
+
+De Grid is geen achtergrond.
+
+De Grid is onderdeel van de taal.
+
+De Core beweegt zich door een vast tweedimensionaal speelveld.
+
+Dit speelveld komt overal terug:
+
+* Home
+* Vandaag
+* Training
+* Analyse
+* Wedstrijdmodus
+* Ride
+* Herstel
+* Historie
+
+Hierdoor leert de sporter de taal vanzelf.
+
+Het speelveld moet futuristisch ogen.
+
+Subtiele lijnen.
+
+Donkere achtergrond.
+
+Geen druk raster.
+
+Wel herkenbaar.
+
+---
+
+# Positie
+
+De positie op de grid is de belangrijkste informatie.
+
+Belangrijker dan kleur.
+
+Belangrijker dan vorm.
+
+Belangrijker dan animatie.
+
+Voorbeeld:
+
+boven midden
+
+= optimale toestand
+
+onder midden
+
+= slechte totale toestand
+
+Links en rechts vertegenwoordigen andere dimensies van de totale prestatie.
+
+Deze assen mogen later wetenschappelijk verder worden uitgewerkt.
+
+---
+
+# De Core
+
+De Core is een herkenbare vaste basisvorm.
+
+Geen grillige blob.
+
+Geen willekeurige vloeistof.
+
+Geen chaotische animatie.
+
+De basisvorm blijft altijd herkenbaar.
+
+De vorm verandert slechts beperkt.
+
+Maximaal ongeveer 20–30%.
+
+---
+
+# Vormverandering
+
+De vorm verandert wanneer één of meerdere factoren dominant worden.
+
+Bijvoorbeeld:
+
+* vermoeidheid
+* voeding
+* mentale belasting
+* warmte
+* herstel
+
+Wanneer twee factoren veel invloed hebben ontstaat een lichte uitrekking.
+
+Alsof een zwaartekrachtveld aan de vorm trekt.
+
+Niet alsof de blob explodeert.
+
+Niet alsof er spikes ontstaan.
+
+Het moet subtiel blijven.
+
+---
+
+# Beweging
+
+De Core beweegt rustig.
+
+Nooit schokkerig.
+
+Nooit springend.
+
+Alsof hij langzaam naar een nieuwe balanspositie glijdt.
+
+De sporter moet voelen:
+
+"Mijn toestand verschuift."
+
+Niet:
+
+"Er is een animatie."
+
+---
+
+# Kleur
+
+Kleur betekent niet automatisch:
+
+groen = goed
+
+rood = slecht
+
+Iedere sporter reageert anders.
+
+Sparki moet uiteindelijk leren welke kleurtaal het beste werkt.
+
+Voor sommige sporters:
+
+groen = optimaal.
+
+Voor anderen:
+
+blauw.
+
+Of paars.
+
+Of wit.
+
+De kleurprofielen moeten later door AI kunnen worden gepersonaliseerd.
+
+Concurrenten mogen niet eenvoudig kunnen aflezen wat de toestand betekent.
+
+---
+
+# Confidence
+
+Sparki weet niet altijd alles.
+
+Ontbrekende informatie mag nooit worden behandeld alsof deze positief of negatief is.
+
+Ontbrekende data verhoogt de onzekerheid.
+
+De Core moet daarom ook de betrouwbaarheid van zijn eigen beoordeling kunnen weergeven.
+
+Bijvoorbeeld via:
+
+* transparantie
+* scherpte
+* subtiele gloed
+
+Niet via tekst.
+
+---
+
+# Trainingsmodus
+
+Tijdens trainingen wordt het scherm gesplitst.
+
+Links:
+
+Core + Grid.
+
+Rechts:
+
+route
+training
+blokken
+navigatie
+
+De Core blijft leidend.
+
+---
+
+# Wedstrijdmodus
+
+Tijdens een wedstrijd is de Core dominant.
+
+Geen uitgebreide teksten.
+
+Geen analyses.
+
+Geen waarschuwingen.
+
+Alleen:
+
+Core
+
+en minimale informatie zoals:
+
+vermogen
+hartslag
+cadans
+
+Meer niet.
+
+---
+
+# De grootste innovatie
+
+De Core toont niet alleen de huidige toestand.
+
+Hij voorspelt ook de toekomstige ontwikkeling.
+
+Wanneer Sparki of een trainer een training voorstelt berekent Sparki vooraf:
+
+"Wat verwachten wij dat deze training met jouw Core gaat doen?"
+
+Hieruit ontstaat een voorspeld Core-pad.
+
+Dit is géén route.
+
+Geen ster.
+
+Geen waypoint.
+
+Maar een voorspelde ontwikkeling van de Core gedurende de volledige training.
+
+Bijvoorbeeld:
+
+Start
+
+↓
+
+warming-up
+
+↓
+
+interval 1
+
+↓
+
+herstel
+
+↓
+
+interval 2
+
+↓
+
+vermoeidheid
+
+↓
+
+cooldown
+
+↓
+
+verwachte herstelstatus
+
+De sporter ziet dus vooraf hoe zijn Core zich waarschijnlijk zal ontwikkelen.
+
+---
+
+# Live
+
+Tijdens de training ontstaat het werkelijke Core-pad.
+
+Dit wordt continu naast het voorspelde pad gelegd.
+
+Wanneer de sporter afwijkt wordt het voorspelde pad live aangepast.
+
+Niet omdat Sparki fout zat.
+
+Maar omdat nieuwe informatie beschikbaar komt.
+
+Bijvoorbeeld:
+
+* interval harder uitgevoerd
+* training niet gevolgd
+* voeding overgeslagen
+* onverwachte omstandigheden
+
+Niet:
+
+verkoudheid
+
+of
+
+temperatuur
+
+wanneer deze vooraf al bekend waren.
+
+Die moeten reeds in de voorspelling verwerkt zijn.
+
+---
+
+# Na de training
+
+Na afloop toont Sparki:
+
+Voorspeld Core-pad
+
+Werkelijk Core-pad
+
+Afwijkingen
+
+Uitleg
+
+Niet:
+
+"Je was moe."
+
+Maar bijvoorbeeld:
+
+"De afwijking ontstond vanaf interval 3 doordat je gemiddeld 18 watt boven het trainingsdoel reed. Hierdoor werd de belasting groter dan gepland en verschoof je Core verder richting vermoeidheid."
+
+Hierdoor leert Sparki voortdurend bij.
+
+---
+
+# Analyse versus communicatie
+
+Dit is een fundamenteel principe.
+
+Analyse en communicatie zijn twee verschillende AI-systemen.
+
+## Analyse
+
+Altijd objectief.
+
+Altijd eerlijk.
+
+Altijd gebaseerd op data.
+
+## Communicatie
+
+Persoonlijk.
+
+Positief.
+
+Motiverend.
+
+Afgestemd op de sporter.
+
+De analyse verandert nooit.
+
+Alleen de manier waarop deze wordt gecommuniceerd verandert.
+
+Sparki leert:
+
+* waar de sporter op reageert
+* hoeveel uitleg prettig is
+* welke kleuren werken
+* welke toon motiveert
+* welke visualisatie het snelst wordt begrepen
+
+---
+
+# Core Playground
+
+Bouw een uitgebreide Core Playground.
+
+Niet om de techniek te testen.
+
+Maar om de visuele taal te ontwikkelen.
+
+Maak instelbaar:
+
+* positie
+* grootte
+* kleur
+* kleurprofiel
+* vervorming
+* transparantie
+* confidence
+* beweging
+* bewegingssnelheid
+* twee of meer krachten die aan de Core trekken
+* voorspeld Core-pad
+* werkelijk Core-pad
+
+Hiermee kunnen wij maanden experimenteren totdat de taal perfect is.
+
+---
+
+# Filosofie
+
+Garmin toont cijfers.
+
+Garmin laat sporters interpreteren.
+
+Sparki interpreteert eerst.
+
+Daarna communiceert Sparki de essentie.
+
+Niet met cijfers.
+
+Niet met tekst.
+
+Maar met een universele visuele taal die iedere sporter na verloop van tijd intuïtief leert begrijpen.
+
+De Core moet uiteindelijk het meest herkenbare onderdeel van Sparki worden.
