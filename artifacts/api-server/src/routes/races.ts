@@ -3,8 +3,15 @@ import { eq, and, asc } from "drizzle-orm";
 import { db, racesTable, athleteProfilesTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { autoAdaptPlan } from "../engines/training-plan";
-import { buildRaceIntel } from "../engines/race";
+import {
+  buildRaceContext,
+  buildRaceEvaluation,
+  buildRaceIntelEnriched,
+  deriveRaceTypeValue,
+  persistRaceEvaluation,
+} from "../engines/race";
 import { buildRaceInsight } from "../lib/race-insight";
+import type { RaceResult } from "@workspace/db";
 
 const router = Router();
 
@@ -36,6 +43,8 @@ type RaceBody = {
   notes?: string | null;
   plannedWorkoutId?: number | null;
   travelDate?: string | null;
+  raceType?: string | null;
+  result?: RaceResult | null;
   course?: string | null;
   distanceKm?: string | null;
   elevationM?: number | null;
@@ -128,9 +137,71 @@ router.get("/:id/intel", requireAuth, async (req, res) => {
       .from(athleteProfilesTable)
       .where(eq(athleteProfilesTable.clerkId, clerkId));
 
-    res.json(buildRaceIntel(race, athlete ?? null));
+    res.json(await buildRaceIntelEnriched(race, athlete ?? null));
   } catch (err) {
     req.log.error({ err }, "race intel GET failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── GET /api/races/:id/context ───────────────────────────────────────────────
+// The central race-context object: every field Sparki could find/derive for this
+// race, each tagged found/derived/missing with herkomst, plus honest gaps and
+// per-domain guidance. Source-agnostic — surfaces render it generically.
+router.get("/:id/context", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid race id" });
+    return;
+  }
+  try {
+    const [race] = await db
+      .select()
+      .from(racesTable)
+      .where(and(eq(racesTable.id, id), eq(racesTable.clerkId, clerkId)));
+    if (!race) {
+      res.status(404).json({ error: "Race not found" });
+      return;
+    }
+    const [athlete] = await db
+      .select()
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId));
+    res.json(await buildRaceContext(race, athlete ?? null));
+  } catch (err) {
+    req.log.error({ err }, "race context GET failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── GET /api/races/:id/evaluation ────────────────────────────────────────────
+// Post-race evaluation: honest comparison of the real outcome (result or matched
+// activity) against Sparki's expectation. Read-only — a future race is reported
+// as not-yet-evaluable; persistence to memory happens when a result is saved.
+router.get("/:id/evaluation", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid race id" });
+    return;
+  }
+  try {
+    const [race] = await db
+      .select()
+      .from(racesTable)
+      .where(and(eq(racesTable.id, id), eq(racesTable.clerkId, clerkId)));
+    if (!race) {
+      res.status(404).json({ error: "Race not found" });
+      return;
+    }
+    const [athlete] = await db
+      .select()
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId));
+    res.json(await buildRaceEvaluation(race, athlete ?? null));
+  } catch (err) {
+    req.log.error({ err }, "race evaluation GET failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -159,6 +230,13 @@ router.post("/", requireAuth, async (req, res) => {
         notes: body.notes ?? null,
         plannedWorkoutId: body.plannedWorkoutId ?? null,
         travelDate: body.travelDate ?? null,
+        // Auto-derive the race type on create when the athlete didn't supply one
+        // (from discipline, else name). Stays null when nothing matches — never guessed.
+        raceType:
+          body.raceType ??
+          deriveRaceTypeValue({ discipline: body.discipline ?? null, name: body.name }) ??
+          null,
+        result: body.result ?? null,
         course: body.course ?? null,
         distanceKm: body.distanceKm ?? null,
         elevationM: body.elevationM ?? null,
@@ -192,6 +270,33 @@ router.put("/:id", requireAuth, async (req, res) => {
   const priority = normalizePriority(body.priority);
 
   try {
+    // Load the existing race (ownership-checked) first so we can auto-enrich the
+    // race type on edit when the athlete changes the name/discipline.
+    const [existing] = await db
+      .select()
+      .from(racesTable)
+      .where(and(eq(racesTable.id, id), eq(racesTable.clerkId, clerkId)));
+    if (!existing) {
+      res.status(404).json({ error: "Race not found" });
+      return;
+    }
+
+    // Auto-derive raceType on edit: only when no explicit raceType is sent, the
+    // name or discipline is changing, and the race has no type yet. Never clobber
+    // an athlete's explicit choice and stay null when nothing matches — no guessing.
+    let autoRaceType: string | undefined;
+    if (
+      body.raceType === undefined &&
+      (body.name !== undefined || body.discipline !== undefined) &&
+      !(existing.raceType && existing.raceType.trim())
+    ) {
+      const derived = deriveRaceTypeValue({
+        discipline: body.discipline !== undefined ? body.discipline : existing.discipline,
+        name: body.name !== undefined ? body.name : existing.name,
+      });
+      if (derived) autoRaceType = derived;
+    }
+
     const [updated] = await db
       .update(racesTable)
       .set({
@@ -206,6 +311,9 @@ router.put("/:id", requireAuth, async (req, res) => {
           plannedWorkoutId: body.plannedWorkoutId,
         }),
         ...(body.travelDate !== undefined && { travelDate: body.travelDate }),
+        ...(body.raceType !== undefined && { raceType: body.raceType }),
+        ...(autoRaceType !== undefined && { raceType: autoRaceType }),
+        ...(body.result !== undefined && { result: body.result }),
         ...(body.course !== undefined && { course: body.course }),
         ...(body.distanceKm !== undefined && { distanceKm: body.distanceKm }),
         ...(body.elevationM !== undefined && { elevationM: body.elevationM }),
@@ -231,6 +339,14 @@ router.put("/:id", requireAuth, async (req, res) => {
       return;
     }
     triggerPlanRefresh(req, clerkId);
+    // When a result is saved for a race that has already happened, run the
+    // post-race evaluation and persist its conclusion to memory (privacy-gated +
+    // deduped). Best-effort and non-blocking — never delays or fails the response.
+    if (body.result !== undefined && updated.result) {
+      void persistRaceEvaluation(updated, null).catch((err) =>
+        req.log.error({ err }, "race evaluation persist failed"),
+      );
+    }
     res.json(updated);
   } catch (err) {
     req.log.error({ err }, "races PUT failed");

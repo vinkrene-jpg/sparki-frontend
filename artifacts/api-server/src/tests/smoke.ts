@@ -68,6 +68,9 @@ import {
   buildPrepTimeline,
   buildRaceFuel,
   buildRaceDayReport,
+  composeRaceContext,
+  formatRaceContextForPrompt,
+  composeRaceEvaluation,
 } from "../engines/race";
 import type { Race } from "@workspace/db";
 import {
@@ -584,6 +587,232 @@ async function main() {
       sparseCourse!.items.every((i) => i.label !== "Afstand" || !i.known),
       "no distance value fabricated when unknown",
     );
+  });
+
+  await run("Race Intelligence", "composeRaceContext (pure)", () => {
+    const today = new Date(2026, 5, 1); // 1 June 2026
+    const base: Race = {
+      id: 7,
+      clerkId: "user_test",
+      name: "Ronde van Vlaanderen Cyclo",
+      raceDate: "2026-06-08", // 7 days out (within weather horizon)
+      startTime: "13:00",
+      location: "Oudenaarde",
+      priority: "A",
+      discipline: "weg",
+      notes: null,
+      plannedWorkoutId: null,
+      travelDate: null,
+      course: null,
+      distanceKm: "120.00",
+      elevationM: 850,
+      technicalSections: null,
+      weatherNote: null,
+      teamName: null,
+      teamInfo: null,
+      coachInstructions: null,
+      raceType: null,
+      result: null,
+      logistics: null,
+      checklist: null,
+      teamRiders: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const sources = {
+      weather: {
+        available: true,
+        reason: "ok" as const,
+        locationLabel: "Oudenaarde",
+        weather: {
+          label: "Half bewolkt",
+          tempMinC: 12,
+          tempMaxC: 19,
+          apparentMinC: 11,
+          apparentMaxC: 18,
+          precipMm: 0,
+          snowfallCm: null,
+          windMaxKmh: 22,
+          precipProbMaxPct: 20,
+        },
+        advisory: null,
+      },
+      travel: {
+        available: true,
+        reason: "ok" as const,
+        fromLabel: "Gent",
+        toLabel: "Oudenaarde",
+        straightLineKm: 24,
+      },
+      logistics: {
+        arrivalBufferMin: 75,
+        registrationMin: 30,
+        warmupMin: 20,
+        callUpMin: 10,
+        breakfastBeforeDepartureMin: 180,
+        rationale: "Wegwedstrijd: ruim op tijd voor inschrijving en warming-up.",
+      },
+      routeLinked: false,
+      today,
+    };
+
+    const ctx = composeRaceContext(base, null, sources);
+    const byKey = (k: string) => ctx.fields.find((f) => f.key === k);
+
+    // Race type derived from discipline "weg" → "wegwedstrijd", confidence < 1.
+    const type = byKey("type")!;
+    assert(type.status === "derived", "race type derived when not on record");
+    assert(type.value === "wegwedstrijd", `expected wegwedstrijd, got ${type.value}`);
+    assert(
+      type.confidence != null && type.confidence < 1,
+      "derived race type carries confidence < 1.0",
+    );
+    assert(!!type.explanation, "derived race type carries an explanation");
+
+    // Duration derived from distance × pace, confidence < 1.
+    const duur = byKey("duur")!;
+    assert(duur.status === "derived", "duration derived from distance");
+    assert(duur.value != null, "derived duration has a value");
+    assert(duur.confidence != null && duur.confidence < 1, "duration confidence < 1");
+
+    // Weather found from a real forecast (not derived, not invented).
+    const weer = byKey("weer")!;
+    assert(weer.status === "found", "weather found from forecast source");
+    assert(weer.value != null && weer.value.includes("Half bewolkt"), "weather value rendered");
+
+    // Travel derived & bounded with a caveat (hemelsbreed, not road distance).
+    const reis = byKey("reisafstand")!;
+    assert(reis.status === "derived", "travel derived from coordinates");
+    assert(reis.confidence != null && reis.confidence < 1, "travel confidence < 1");
+
+    // Recommended arrival = 13:00 − 75 min = 11:45.
+    const aankomst = byKey("aankomst")!;
+    assert(aankomst.status === "derived", "arrival derived from start time");
+    assert(
+      aankomst.value != null && aankomst.value.startsWith("11:45"),
+      `expected arrival 11:45, got ${aankomst.value}`,
+    );
+
+    // Things with no reachable source stay honest gaps — never fabricated.
+    assert(byKey("uitslagen_eerder")!.status === "missing", "prior results honest gap");
+    assert(byKey("deelnemerslijst")!.status === "missing", "participant list honest gap");
+    assert(byKey("vertrektijd")!.status === "missing", "road departure time honest gap");
+    // Gaps array mirrors the missing fields.
+    assert(
+      ctx.gaps.some((g) => g.key === "uitslagen_eerder"),
+      "gaps include unreachable-source fields",
+    );
+
+    // Prompt block is plain Dutch and never exposes the term "AI".
+    const prompt = formatRaceContextForPrompt(ctx);
+    assert(typeof prompt === "string" && prompt.length > 0, "prompt block rendered");
+    assert(!/\bAI\b/.test(prompt), "no user-facing 'AI' in race-context prompt");
+
+    // A sparse race (no distance, weather out of horizon) keeps honest gaps.
+    const sparseCtx = composeRaceContext(
+      { ...base, distanceKm: null, location: null },
+      null,
+      {
+        ...sources,
+        weather: {
+          available: false,
+          reason: "too_far" as const,
+          locationLabel: null,
+          weather: null,
+          advisory: null,
+        },
+        travel: {
+          available: false,
+          reason: "no_location" as const,
+          fromLabel: null,
+          toLabel: null,
+          straightLineKm: null,
+        },
+      },
+    );
+    const sparseDuur = sparseCtx.fields.find((f) => f.key === "duur")!;
+    assert(sparseDuur.status === "missing" && sparseDuur.value === null, "no distance ⇒ duur missing");
+    assert(
+      sparseCtx.fields.find((f) => f.key === "weer")!.status === "missing",
+      "out-of-horizon weather ⇒ honest gap",
+    );
+  });
+
+  await run("Race Intelligence", "composeRaceEvaluation (pure)", () => {
+    const today = new Date(2026, 5, 1); // 1 June 2026
+    const base: Race = {
+      id: 9,
+      clerkId: "user_test",
+      name: "Omloop van het Houtland",
+      raceDate: "2026-05-20", // already in the past
+      startTime: "13:00",
+      location: "Lichtervelde",
+      priority: "A",
+      discipline: "weg",
+      notes: null,
+      plannedWorkoutId: null,
+      travelDate: null,
+      course: null,
+      distanceKm: "120.00",
+      elevationM: 850,
+      technicalSections: null,
+      weatherNote: null,
+      teamName: null,
+      teamInfo: null,
+      coachInstructions: null,
+      raceType: null,
+      result: null,
+      logistics: null,
+      checklist: null,
+      teamRiders: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    // Future race ⇒ not evaluable yet, honest about why.
+    const future = composeRaceEvaluation({ ...base, raceDate: "2026-06-08" }, null, {
+      today,
+    });
+    assert(future.evaluable === false, "future race ⇒ not evaluable");
+    assert(future.summary === null, "future race ⇒ no conclusion");
+
+    // Past race, no result and no activity ⇒ asks, never assumes.
+    const empty = composeRaceEvaluation(base, null, { today });
+    assert(empty.evaluable === true, "past race is evaluable");
+    assert(empty.summary === null, "no data ⇒ no fabricated conclusion");
+    assert(
+      empty.gaps.some((g) => g.key === "result"),
+      "past race with no data asks for the result",
+    );
+
+    // Finished, position 5/80, time 12600s (3h30) ⇒ real learnings + confidence < 1.
+    const finished = composeRaceEvaluation(
+      {
+        ...base,
+        result: {
+          status: "finished",
+          position: 5,
+          fieldSize: 80,
+          timeSec: 12600,
+          note: null,
+        },
+      },
+      null,
+      { today },
+    );
+    assert(finished.evaluable === true, "finished race evaluable");
+    assert(finished.hasResult === true, "result detected");
+    assert(finished.learnings.length > 0, "finished race yields learnings");
+    assert(finished.summary != null, "finished race yields a conclusion");
+    assert(
+      finished.confidenceScore != null && finished.confidenceScore < 1,
+      "evaluation confidence < 1.0",
+    );
+    assert(
+      finished.comparisons.some((c) => c.label === "Klassement"),
+      "placing comparison present",
+    );
+    assert(!/\bAI\b/.test(finished.learnings.join(" ")), "no 'AI' in learnings");
   });
 
   await run("Knowledge", "topic library (pure)", () => {

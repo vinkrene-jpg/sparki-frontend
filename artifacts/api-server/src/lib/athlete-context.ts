@@ -19,6 +19,7 @@ import {
   coachingProfileDirective,
 } from "../engines/coaching";
 import { resolveFlags } from "./flags";
+import { buildRaceContext, formatRaceContextForPrompt } from "./race-context";
 import {
   getRelevantKnowledge,
   formatKnowledgeForPrompt,
@@ -250,6 +251,16 @@ export async function buildAthleteContext(clerkId: string): Promise<string> {
       parts.push(
         `  - ${r.raceDate} (in ${daysUntil(r.raceDate)}d) ${r.name} [priority ${r.priority}]${r.weatherNote ? `, weatherNote="${r.weatherNote}"` : ""}`,
       );
+    }
+    // Race intelligence for the nearest upcoming race — real weather, derived
+    // type/duration/arrival, travel and honest gaps. Best-effort: a failure here
+    // (e.g. geocoding) must never block the brief.
+    try {
+      const ctx = await buildRaceContext(upcomingRaces[0]!, athlete ?? null);
+      const block = formatRaceContextForPrompt(ctx);
+      if (block) parts.push(block);
+    } catch {
+      // intelligence is additive; the brief stands without it
     }
   }
 

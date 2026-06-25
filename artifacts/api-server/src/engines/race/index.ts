@@ -26,3 +26,38 @@ export type {
   IntelStatus,
   Range as FuelRange,
 } from "../../lib/race-intel";
+
+// Central, source-agnostic race-context engine (status-modelled fields, honest
+// gaps, per-domain guidance) + report enrichment + race-type derivation.
+export {
+  composeRaceContext,
+  buildRaceContext,
+  buildRaceIntelEnriched,
+  formatRaceContextForPrompt,
+  deriveRaceTypeValue,
+} from "../../lib/race-context";
+
+export type {
+  RaceContext,
+  RaceContextField,
+  RaceContextGap,
+  RaceContextDomain,
+  RaceContextPhase,
+  RaceFieldStatus,
+  RaceContextSources,
+} from "../../lib/race-context";
+
+// Post-race evaluation & learning loop (matched activity, honest comparisons,
+// privacy-gated persistence to memory).
+export {
+  composeRaceEvaluation,
+  buildRaceEvaluation,
+  persistRaceEvaluation,
+} from "../../lib/race-evaluation";
+
+export type {
+  RaceEvaluation,
+  RaceEvalComparison,
+  RaceEvalGap,
+  MatchedActivity,
+} from "../../lib/race-evaluation";
