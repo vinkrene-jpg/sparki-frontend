@@ -33,3 +33,26 @@ export function useLogSession() {
     },
   });
 }
+
+// Attach the subjective gap (feel + notes) to a session Sparki already has —
+// used when confirming a connector-imported activity instead of re-entering it.
+export function useUpdateSessionFeel() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      id: number;
+      feelScore?: number;
+      notes?: string | null;
+    }) =>
+      apiFetch<TrainingSession>(`/api/athlete/sessions/${data.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ feelScore: data.feelScore, notes: data.notes }),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.athlete.sessions() });
+      void qc.invalidateQueries({ queryKey: queryKeys.athlete.dashboard() });
+      void qc.invalidateQueries({ queryKey: queryKeys.athlete.load() });
+    },
+  });
+}

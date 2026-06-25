@@ -54,6 +54,7 @@
 - [Adaptive Coach Engine V1](adaptive-coach-engine.md) — deterministic decision layer (decideCoach); surfaced via CoachDecisionContext→ScreenShell across all home day-types; dev override fail-closed.
 - [Sparki Core visual-language prototype](sparki-core-playground.md) — living-shape design contract: calm-not-jerky, uncertainty=hazy, good↔bad X/Y cross, stretch=2 strong pulls; frontend-only before any engine.
 - [Sparki State Card opening](sparki-state-card-opening.md) — glanceable metrics come from the State Engine (not dashboard) to keep the card surface-agnostic; honest empty when no load; never two routes to one drill-in.
+- [Sparki intelligent-werkblad doctrine](sparki-werkblad-doctrine.md) — confirm-not-ask + hide manual input only on realized connector supply (importedDataTypes, not `provides`); always keep override.
 - [Sparki /train four-layer spine](sparki-train-layers.md) — engine layers L1 bron/L2 doel/L3 vandaag/L4 patronen; TodayLayer must NOT duplicate shell-owned CoachAnalysisCard+FollowUpPrompt.
 - [Sparki Voeding screen](sparki-voeding-screen.md) — nutrition is a dedicated Sheet (not inline); logs carry photos (material storage engine, owner-checked serve); guidance is age-tuned (youth<16 light, adult numbers), never fabricated.
 - [Sparki Core living profile](sparki-core-profile.md) — /you shows what Sparki DERIVED (lenses, identity, evolution); settings in drill-in sheet; exclude daily_briefing from lenses; ?focus= auto-opens sheet, close to "/you" not basePath.

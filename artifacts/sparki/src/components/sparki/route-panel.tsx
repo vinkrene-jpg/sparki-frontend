@@ -1,4 +1,4 @@
-import { useRef, useState, type Dispatch, type SetStateAction } from "react"
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react"
 import { SectionLabel, Stat, Divider, ACCENT } from "@/components/sparki/ui"
 import { RouteMap } from "@/components/sparki/route-map"
 import {
@@ -20,6 +20,7 @@ import {
   type RouteClimb,
 } from "@/hooks/use-routes"
 import { useUpcomingWorkouts } from "@/hooks/use-today-workout"
+import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { isSportActive } from "@workspace/feature-flags"
 import { MapPin, Sparkles, Flag, Users, X, Download } from "lucide-react"
 
@@ -98,6 +99,29 @@ const BIKE_OPTIONS: { value: BikeType; label: string; hint: string }[] = [
   { value: "gravel", label: "Gravel", hint: "gemengd" },
   { value: "mtb", label: "MTB", hint: "onverhard" },
 ]
+
+// Honest derivation: map the athlete's real profile discipline to the bike type
+// the routing profile should use — the same mapping the plan engine uses. Returns
+// null when the discipline gives no clear signal, so Sparki never guesses.
+function disciplineToBikeType(discipline: string | null): BikeType | null {
+  if (!discipline) return null
+  const d = discipline.toLowerCase()
+  if (d.includes("mtb") || d.includes("mountain") || d.includes("atb"))
+    return "mtb"
+  if (d.includes("gravel") || d.includes("cross") || d.includes("cx"))
+    return "gravel"
+  if (
+    d.includes("weg") ||
+    d.includes("road") ||
+    d.includes("race") ||
+    d.includes("baan") ||
+    d.includes("crit") ||
+    d.includes("tijdrit") ||
+    d.includes("klassiek")
+  )
+    return "racefiets"
+  return null
+}
 
 const ELEVATION_OPTIONS: {
   value: ElevationPreference
@@ -329,10 +353,27 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
   const save = useSaveGeneratedRoute()
   const candidateDownload = useDownloadCandidate()
   const { data: workouts } = useUpcomingWorkouts()
+  const { data: dashboard } = useAthleteDashboard()
 
   const [mode, setMode] = useState<"loop" | "ptp" | "waypoints">("loop")
   const [sport, setSport] = useState<Sport>("cycling")
   const [bikeType, setBikeType] = useState<BikeType>("racefiets")
+  // Sparki pre-selects the fietstype from the athlete's real profile discipline
+  // (honest derivation, not a guess). Once the rider touches it, we never
+  // override their choice. `derivedBike` also drives the honest "Sparki koos …"
+  // note so the rider sees why this option is selected.
+  const [bikeTouched, setBikeTouched] = useState(false)
+  const derivedBike = disciplineToBikeType(
+    dashboard?.athleteProfile?.discipline ?? null,
+  )
+  function chooseBike(value: BikeType) {
+    setBikeTouched(true)
+    setBikeType(value)
+  }
+  useEffect(() => {
+    if (bikeTouched || !derivedBike) return
+    setBikeType(derivedBike)
+  }, [derivedBike, bikeTouched])
   const [elevationPreference, setElevationPreference] =
     useState<ElevationPreference>("any")
   const [trainingType, setTrainingType] = useState("duurtraining")
@@ -519,12 +560,18 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
           <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
             FIETSTYPE
           </label>
+          {derivedBike && !bikeTouched && (
+            <p className="mb-2 text-[11px] leading-relaxed text-cyan-300/55">
+              Sparki koos dit op basis van je discipline. Pas aan als je vandaag
+              een andere fiets pakt.
+            </p>
+          )}
           <div className="flex gap-2">
             {BIKE_OPTIONS.map((b) => (
               <button
                 key={b.value}
                 type="button"
-                onClick={() => setBikeType(b.value)}
+                onClick={() => chooseBike(b.value)}
                 className="flex flex-1 flex-col items-center rounded-xl border py-2.5 transition-colors"
                 style={{
                   borderColor:

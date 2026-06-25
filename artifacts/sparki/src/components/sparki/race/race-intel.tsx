@@ -5,8 +5,14 @@
 
 import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
+import { Sparkles } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
 import { useUpdateRaceChecklist } from "@/hooks/use-races"
+import {
+  useMaterialChecklistOverlay,
+  checklistChecked,
+  checklistAuto,
+} from "@/components/sparki/race/prep-checklist"
 import type { ChecklistState, Race } from "@/lib/race-types"
 import type {
   ChecklistGroup,
@@ -302,20 +308,25 @@ export function MultiDayChecklist({
   daysUntil: number
 }) {
   const update = useUpdateRaceChecklist()
+  const derived = useMaterialChecklistOverlay()
   const [state, setState] = useState<ChecklistState>(() => race.checklist ?? {})
 
   useEffect(() => {
     setState(race.checklist ?? {})
   }, [race.id, race.checklist])
 
+  const isChecked = (id: string) => checklistChecked(state, derived, id)
+  const isAuto = (id: string) => checklistAuto(state, derived, id)
+
   function toggle(id: string) {
-    const next = { ...state, [id]: !state[id] }
+    const next = { ...state, [id]: !isChecked(id) }
     setState(next)
     update.mutate({ id: race.id, checklist: next })
   }
 
   const allIds = groups.flatMap((g) => g.itemIds)
-  const done = allIds.filter((id) => state[id]).length
+  const done = allIds.filter((id) => isChecked(id)).length
+  const autoCount = allIds.filter((id) => isAuto(id)).length
 
   return (
     <div className="space-y-3">
@@ -328,8 +339,16 @@ export function MultiDayChecklist({
         </span>
       </div>
 
+      {autoCount > 0 && (
+        <p className="flex items-center gap-1.5 px-1 text-[11.5px] leading-relaxed text-cyan-300/65">
+          <Sparkles size={12} className="shrink-0" />
+          Sparki vinkte {autoCount} {autoCount === 1 ? "punt" : "punten"} alvast
+          af op basis van je recente materiaalcheck. Klopt het niet? Tik het uit.
+        </p>
+      )}
+
       {groups.map((group) => {
-        const groupDone = group.itemIds.filter((id) => state[id]).length
+        const groupDone = group.itemIds.filter((id) => isChecked(id)).length
         const isDue = daysUntil <= group.whenDaysBefore
         return (
           <div
@@ -359,12 +378,19 @@ export function MultiDayChecklist({
 
             <div className="mt-3 grid grid-cols-2 gap-2">
               {group.itemIds.map((id, i) => {
-                const checked = !!state[id]
+                const checked = isChecked(id)
+                const auto = isAuto(id)
+                const detected = derived[id]?.detectedItem
                 return (
                   <button
                     key={id}
                     type="button"
                     onClick={() => toggle(id)}
+                    title={
+                      auto
+                        ? `Sparki zag dit bij je materiaalcheck${detected ? `: ${detected}` : ""}`
+                        : undefined
+                    }
                     className="flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors"
                     style={{
                       borderColor: checked ? "rgba(120,210,230,0.3)" : "rgba(255,255,255,0.07)",
@@ -381,9 +407,16 @@ export function MultiDayChecklist({
                     >
                       {checked ? "✓" : ""}
                     </span>
-                    <span className={`text-[12.5px] ${checked ? "text-white/85" : "text-white/55"}`}>
+                    <span className={`flex-1 text-[12.5px] ${checked ? "text-white/85" : "text-white/55"}`}>
                       {group.itemLabels[i] ?? id}
                     </span>
+                    {auto && (
+                      <Sparkles
+                        size={11}
+                        className="shrink-0 text-cyan-300/70"
+                        aria-label="Door Sparki gecheckt"
+                      />
+                    )}
                   </button>
                 )
               })}

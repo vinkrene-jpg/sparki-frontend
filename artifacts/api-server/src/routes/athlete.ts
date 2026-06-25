@@ -806,6 +806,75 @@ router.post("/sessions", requireAuth, async (req, res) => {
   }
 });
 
+// ── PUT /api/athlete/sessions/:id ────────────────────────────────────────────
+// Attach the subjective gap (feel + notes) to a session Sparki already has —
+// e.g. an activity imported from a connector. Only these two fields are
+// updatable here: the objective data (duur/vermogen/afstand) comes from the
+// source and is never re-entered or overwritten via this route.
+router.put("/sessions/:id", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  if (!Number.isFinite(id)) {
+    res.status(400).json({ error: "Invalid session id" });
+    return;
+  }
+
+  const { feelScore, notes } = req.body as {
+    feelScore?: number | null;
+    notes?: string | null;
+  };
+
+  if (feelScore != null && (feelScore < 1 || feelScore > 5)) {
+    res.status(400).json({ error: "feelScore must be 1-5" });
+    return;
+  }
+
+  try {
+    // Ownership check — only update the caller's own session.
+    const [existing] = await db
+      .select()
+      .from(trainingSessionsTable)
+      .where(
+        and(
+          eq(trainingSessionsTable.id, id),
+          eq(trainingSessionsTable.clerkId, clerkId),
+        ),
+      )
+      .limit(1);
+
+    if (!existing) {
+      res.status(404).json({ error: "Session not found" });
+      return;
+    }
+
+    const [session] = await db
+      .update(trainingSessionsTable)
+      .set({
+        ...(feelScore !== undefined ? { feelScore: feelScore ?? null } : {}),
+        ...(notes !== undefined ? { notes: notes ?? null } : {}),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(trainingSessionsTable.id, id),
+          eq(trainingSessionsTable.clerkId, clerkId),
+        ),
+      )
+      .returning();
+
+    if (notes && notes.trim()) {
+      captureContext(clerkId, notes.trim()).catch((err) =>
+        req.log.error({ err }, "athlete.sessions PUT context capture failed"),
+      );
+    }
+
+    res.json(session);
+  } catch (err) {
+    req.log.error({ err }, "athlete.sessions PUT failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ── GET /api/athlete/metrics ─────────────────────────────────────────────────
 router.get("/metrics", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;

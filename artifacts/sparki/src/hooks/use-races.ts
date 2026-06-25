@@ -75,6 +75,63 @@ export function useDeleteRace() {
   });
 }
 
+// ── Race insight ─────────────────────────────────────────────────────────────
+// The "intelligent werkblad" data: everything Sparki derives for a race before
+// the athlete types anything. Honest about every gap (never fabricated).
+export type RaceInsightWeather = {
+  available: boolean;
+  reason: "ok" | "too_far" | "no_location" | "geocode_failed" | "no_forecast";
+  locationLabel: string | null;
+  weather: {
+    label: string;
+    tempMinC: number | null;
+    tempMaxC: number | null;
+    precipMm: number | null;
+    windMaxKmh: number | null;
+    precipProbMaxPct: number | null;
+  } | null;
+  advisory: { headline: string; detail: string; suggestion: string | null } | null;
+};
+
+export type RaceInsight = {
+  weather: RaceInsightWeather;
+  travel: {
+    available: boolean;
+    reason: "ok" | "no_home" | "no_location" | "geocode_failed";
+    fromLabel: string | null;
+    toLabel: string | null;
+    straightLineKm: number | null;
+  };
+  departureSuggestion: string | null;
+  logistics: {
+    arrivalBufferMin: number;
+    registrationMin: number;
+    warmupMin: number;
+    callUpMin: number;
+    breakfastBeforeDepartureMin: number;
+    rationale: string;
+  };
+};
+
+export function useRaceInsight(
+  location: string | null,
+  raceDate: string,
+  discipline: string | null,
+) {
+  const { isSignedIn } = useUser();
+  const params = new URLSearchParams();
+  if (location) params.set("location", location);
+  if (raceDate) params.set("raceDate", raceDate);
+  if (discipline) params.set("discipline", discipline);
+  return useQuery({
+    queryKey: queryKeys.races.insight(location, raceDate, discipline),
+    queryFn: () =>
+      apiFetch<RaceInsight>(`/api/races/insight?${params.toString()}`),
+    enabled: (isSignedIn === true || DEV_PREVIEW) && raceDate !== "",
+    staleTime: STALE.session,
+  });
+}
+
 export function useUpdateRaceChecklist() {
   const qc = useQueryClient();
   return useMutation({

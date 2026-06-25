@@ -1,10 +1,12 @@
-// Race management (task #4, step 1 UI). Athlete adds / edits / deletes races and
-// enters the logistics + team inputs that power the race homepages and planners.
-// Cinematic Sparki design language; all entry is manual today, integration-ready
-// later via the same typed provider layer.
+// Race worksheet — an "intelligent werkblad", not a blank form. When the athlete
+// adds or imports a race, Sparki first gathers everything it can derive (race-day
+// weather, home→venue distance, a discipline logistics proposal, the home
+// departure, teammates from the Circle) and pre-fills the genuinely-empty fields,
+// so the athlete only confirms and fills the real gaps. Honest about every
+// unknown (never fabricated). Cinematic Sparki design language.
 
-import { useState } from "react"
-import { ChevronLeft } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { ChevronLeft, CloudSun, MapPin, Clock, Users, Sparkles } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { Skeleton } from "@/components/sparki/home-sections"
@@ -16,7 +18,10 @@ import {
   useCreateRace,
   useUpdateRace,
   useDeleteRace,
+  useRaceInsight,
+  type RaceInsight,
 } from "@/hooks/use-races"
+import { useFriends, type FriendSummary } from "@/hooks/use-social"
 import type {
   Race,
   RaceInput,
@@ -172,6 +177,158 @@ function formatDate(dateStr: string): string {
   return date.toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" })
 }
 
+// ── Intelligent worksheet: what Sparki already found ─────────────────────────
+function weatherReasonNl(reason: RaceInsight["weather"]["reason"]): string {
+  switch (reason) {
+    case "too_far":
+      return "Het weer is er nog niet — een voorspelling bestaat pas vanaf ~16 dagen voor de wedstrijd. Sparki vult het later automatisch aan."
+    case "no_location":
+      return "Geef hieronder een locatie op, dan haalt Sparki het weer erbij."
+    case "geocode_failed":
+      return "Sparki kon deze locatie niet op de kaart vinden — controleer de plaatsnaam."
+    case "no_forecast":
+      return "Voor deze datum is er geen voorspelling beschikbaar."
+    default:
+      return "Het weer is nu niet beschikbaar."
+  }
+}
+
+function travelReasonNl(reason: RaceInsight["travel"]["reason"]): string {
+  switch (reason) {
+    case "no_home":
+      return "Sparki kent je thuislocatie nog niet — stel die in bij je profiel, dan rekent Sparki de afstand uit."
+    case "no_location":
+      return "Vul de locatie in, dan berekent Sparki de afstand vanaf huis."
+    case "geocode_failed":
+      return "Sparki kon de locatie niet op de kaart vinden — controleer de plaatsnaam."
+    default:
+      return "Afstand nu niet te berekenen."
+  }
+}
+
+function formatWeatherNote(w: RaceInsight["weather"]): string | null {
+  const s = w.weather
+  if (!w.available || !s) return null
+  const parts: string[] = [s.label]
+  if (s.tempMinC != null && s.tempMaxC != null)
+    parts.push(`${Math.round(s.tempMinC)}–${Math.round(s.tempMaxC)}°C`)
+  if (s.windMaxKmh != null) parts.push(`wind tot ${Math.round(s.windMaxKmh)} km/u`)
+  if (s.precipProbMaxPct != null)
+    parts.push(`${Math.round(s.precipProbMaxPct)}% kans op neerslag`)
+  return parts.join(", ")
+}
+
+function InsightRow({
+  icon,
+  title,
+  children,
+  found,
+}: {
+  icon: React.ReactNode
+  title: string
+  children: React.ReactNode
+  found: boolean
+}) {
+  return (
+    <div className="flex gap-3">
+      <div
+        className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+        style={{
+          color: found ? ACCENT : "rgba(255,255,255,0.35)",
+          background: found ? "rgba(120,210,230,0.08)" : "rgba(255,255,255,0.03)",
+          border: `1px solid ${found ? "rgba(120,210,230,0.22)" : "rgba(255,255,255,0.08)"}`,
+        }}
+      >
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/35">
+          {title}
+        </p>
+        <div className="mt-1 text-[13px] leading-relaxed text-white/75">{children}</div>
+      </div>
+    </div>
+  )
+}
+
+// The "Sparki heeft alvast gekeken" panel — shown above the worksheet. It states
+// honestly what Sparki could derive (weather, afstand, logistiek-voorstel) and
+// what it could not, so the athlete only confirms and fills the genuine gaps.
+function RaceInsightPanel({
+  insight,
+  loading,
+}: {
+  insight: RaceInsight | undefined
+  loading: boolean
+}) {
+  if (loading && !insight) {
+    return <Skeleton className="h-40 w-full rounded-2xl" />
+  }
+  if (!insight) return null
+
+  const { weather, travel, logistics } = insight
+  const weatherNote = formatWeatherNote(weather)
+
+  return (
+    <section className="rounded-2xl border border-cyan-300/15 bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-3.5 w-3.5" style={{ color: ACCENT }} strokeWidth={2} />
+        <span className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color: ACCENT }}>
+          Sparki heeft alvast gekeken
+        </span>
+      </div>
+      <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
+        Dit haalde Sparki er zelf bij. Controleer het en vul alleen aan wat
+        ontbreekt — overschrijven mag altijd.
+      </p>
+
+      <div className="mt-4 space-y-3.5">
+        <InsightRow icon={<CloudSun className="h-4 w-4" />} title="Weer op wedstrijddag" found={weather.available}>
+          {weather.available && weatherNote ? (
+            <>
+              <span className="text-white/85">{weatherNote}</span>
+              {weather.locationLabel && (
+                <span className="text-white/40"> · {weather.locationLabel}</span>
+              )}
+              {weather.advisory && (
+                <p className="mt-1 text-[12px] text-amber-200/80">
+                  {weather.advisory.headline}
+                  {weather.advisory.suggestion ? ` — ${weather.advisory.suggestion}` : ""}
+                </p>
+              )}
+            </>
+          ) : (
+            <span className="text-white/45">{weatherReasonNl(weather.reason)}</span>
+          )}
+        </InsightRow>
+
+        <InsightRow icon={<MapPin className="h-4 w-4" />} title="Afstand vanaf huis" found={travel.available}>
+          {travel.available && travel.straightLineKm != null ? (
+            <>
+              <span className="text-white/85">≈ {travel.straightLineKm} km hemelsbreed</span>
+              {travel.fromLabel && <span className="text-white/40"> vanaf {travel.fromLabel}</span>}
+              <p className="mt-1 text-[12px] text-white/40">
+                Reistijd met de auto kan Sparki niet automatisch berekenen — vul je
+                reistijd hieronder zelf in.
+              </p>
+            </>
+          ) : (
+            <span className="text-white/45">{travelReasonNl(travel.reason)}</span>
+          )}
+        </InsightRow>
+
+        <InsightRow icon={<Clock className="h-4 w-4" />} title="Logistiek-voorstel" found>
+          <span className="text-white/85">
+            Aankomst {logistics.arrivalBufferMin} min vooraf · warming-up{" "}
+            {logistics.warmupMin} min · call-up {logistics.callUpMin} min
+          </span>
+          <p className="mt-1 text-[12px] text-white/40">{logistics.rationale}</p>
+        </InsightRow>
+      </div>
+    </section>
+  )
+}
+
 // ── Field primitives ─────────────────────────────────────────────────────────
 function Field({
   label,
@@ -285,6 +442,39 @@ export default function RacesPage() {
     ])
   }
 
+  // Add a teammate straight from the athlete's Circle — no retyping a name that
+  // Sparki already knows. Skips riders already added.
+  function addRiderNamed(name: string) {
+    setTeamRiders((rs) => {
+      if (rs.some((r) => r.name.trim().toLowerCase() === name.trim().toLowerCase()))
+        return rs
+      return [
+        ...rs,
+        { id: crypto.randomUUID(), name, startLocation: "", travelDurationMin: null },
+      ]
+    })
+  }
+
+  // Sparki fills the genuinely-empty fields from its derived insight. Only empty
+  // fields are touched, so anything the athlete typed is preserved.
+  function applyInsight(ins: RaceInsight) {
+    setForm((f) => {
+      const next = { ...f }
+      if (!next.departureLocation && ins.departureSuggestion)
+        next.departureLocation = ins.departureSuggestion
+      const lg = ins.logistics
+      if (!next.arrivalBufferMin) next.arrivalBufferMin = String(lg.arrivalBufferMin)
+      if (!next.registrationMin) next.registrationMin = String(lg.registrationMin)
+      if (!next.warmupMin) next.warmupMin = String(lg.warmupMin)
+      if (!next.callUpMin) next.callUpMin = String(lg.callUpMin)
+      if (!next.breakfastBeforeDepartureMin)
+        next.breakfastBeforeDepartureMin = String(lg.breakfastBeforeDepartureMin)
+      const wn = formatWeatherNote(ins.weather)
+      if (!next.weatherNote && wn) next.weatherNote = wn
+      return next
+    })
+  }
+
   function updateRider(id: string, patch: Partial<TeamRider>) {
     setTeamRiders((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)))
   }
@@ -377,8 +567,10 @@ export default function RacesPage() {
           set={set}
           teamRiders={teamRiders}
           addRider={addRider}
+          addRiderNamed={addRiderNamed}
           updateRider={updateRider}
           removeRider={removeRider}
+          applyInsight={applyInsight}
           editing={editingId != null}
           saving={saving}
           error={error}
@@ -449,8 +641,10 @@ function RaceForm({
   set,
   teamRiders,
   addRider,
+  addRiderNamed,
   updateRider,
   removeRider,
+  applyInsight,
   editing,
   saving,
   error,
@@ -463,8 +657,10 @@ function RaceForm({
   set: <K extends keyof FormState>(key: K, value: FormState[K]) => void
   teamRiders: TeamRider[]
   addRider: () => void
+  addRiderNamed: (name: string) => void
   updateRider: (id: string, patch: Partial<TeamRider>) => void
   removeRider: (id: string) => void
+  applyInsight: (ins: RaceInsight) => void
   editing: boolean
   saving: boolean
   error: string | null
@@ -473,6 +669,32 @@ function RaceForm({
   onDelete: () => void
   deleting: boolean
 }) {
+  // Sparki gathers first: derive everything available for this race, then fill
+  // the genuinely-empty fields once per distinct (location/date/discipline) set.
+  const insightQ = useRaceInsight(
+    form.location.trim() || null,
+    form.raceDate,
+    form.discipline.trim() || null,
+  )
+  const insight = insightQ.data
+  const appliedRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!insight) return
+    const key = `${form.location.trim()}|${form.raceDate}|${form.discipline.trim()}`
+    if (appliedRef.current === key) return
+    appliedRef.current = key
+    applyInsight(insight)
+  }, [insight, form.location, form.raceDate, form.discipline, applyInsight])
+
+  const { data: friendsData } = useFriends()
+  const friends: FriendSummary[] = friendsData?.friends ?? []
+  const addedNames = new Set(
+    teamRiders.map((r) => r.name.trim().toLowerCase()).filter(Boolean),
+  )
+  const availableFriends = friends.filter(
+    (fr) => !addedNames.has(fr.displayName.trim().toLowerCase()),
+  )
+
   return (
     <form
       onSubmit={(e) => {
@@ -481,6 +703,7 @@ function RaceForm({
       }}
       className="space-y-8"
     >
+      <RaceInsightPanel insight={insight} loading={insightQ.isLoading} />
       {/* 01 Basis */}
       <section>
         <SectionLabel n="01" title="Wedstrijd" large />
@@ -564,7 +787,8 @@ function RaceForm({
       <section>
         <SectionLabel n="03" title="Logistiek" large />
         <p className="mt-2 text-[11px] leading-relaxed text-white/35">
-          Deze gegevens berekenen je dagplanning. Tijden zijn schattingen.
+          Sparki vulde alvast een voorstel in op basis van je discipline en
+          thuislocatie. Pas aan waar nodig — dit berekent je dagplanning.
         </p>
         <div className="mt-4 space-y-4">
           <Field label="Vertreklocatie">
@@ -621,6 +845,33 @@ function RaceForm({
           <Field label="Coachinstructies">
             <TextArea value={form.coachInstructions} onChange={(e) => set("coachInstructions", e.target.value)} placeholder="Sprint voorbereiden voor kopman" />
           </Field>
+
+          {availableFriends.length > 0 && (
+            <div className="rounded-xl border border-white/[0.07] bg-white/[0.015] p-3">
+              <div className="flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5 text-cyan-300/70" strokeWidth={2} />
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/40">
+                  Uit je Circle
+                </span>
+              </div>
+              <p className="mt-1.5 text-[12px] leading-relaxed text-white/45">
+                Tik om een vriend uit je Circle als renner toe te voegen — geen
+                naam meer overtypen.
+              </p>
+              <div className="mt-2.5 flex flex-wrap gap-2">
+                {availableFriends.map((fr) => (
+                  <button
+                    key={fr.clerkId}
+                    type="button"
+                    onClick={() => addRiderNamed(fr.displayName)}
+                    className="rounded-full border border-white/10 px-3 py-1.5 text-[12px] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+                  >
+                    + {fr.displayName}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {teamRiders.length > 0 && (
             <div className="space-y-3">

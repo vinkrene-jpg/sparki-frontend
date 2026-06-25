@@ -22,6 +22,8 @@ import {
   useUpdateAthleteProfile,
 } from "@/hooks/use-athlete-extended-profile"
 import { useLogDailyMetrics } from "@/hooks/use-daily-metrics"
+import { useConnectors, connectorSupplying } from "@/hooks/use-connectors"
+import { formatLastSync } from "@/lib/connectors"
 import { useLogFtp } from "@/hooks/use-ftp-history"
 import { useTeamIdentity, useSaveTeamIdentity } from "@/hooks/use-social"
 import { useClerk } from "@clerk/react"
@@ -355,6 +357,9 @@ function FtpInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
 
 function CheckInForm({ onSaved }: EditorProps = {}) {
   const logMetrics = useLogDailyMetrics()
+  const { data: connectors } = useConnectors()
+  const hrvSupplier = connectorSupplying(connectors, "hrv")
+  const [hrvManual, setHrvManual] = useState(false)
   const [saved, setSaved] = useState(false)
   const [form, setForm] = useState({
     feelScore: "3",
@@ -459,15 +464,34 @@ function CheckInForm({ onSaved }: EditorProps = {}) {
         <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
           HRV (ms, optioneel)
         </label>
-        <input
-          type="number"
-          value={form.hrv}
-          onChange={set("hrv")}
-          placeholder="bijv. 82"
-          min={20}
-          max={250}
-          className="rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
-        />
+        {hrvSupplier && !hrvManual ? (
+          <div className="flex flex-col gap-1.5 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] px-3.5 py-2.5">
+            <span className="text-[13px] text-white/70">
+              Sparki haalt je HRV automatisch op uit {hrvSupplier.displayName}
+              {formatLastSync(hrvSupplier.lastSyncAt)
+                ? ` — laatste sync ${formatLastSync(hrvSupplier.lastSyncAt)}`
+                : ""}
+              . Je hoeft dit niet zelf in te vullen.
+            </span>
+            <button
+              type="button"
+              onClick={() => setHrvManual(true)}
+              className="self-start font-sans text-[11px] font-medium text-white/45 underline underline-offset-2 transition-colors hover:text-white/70"
+            >
+              Toch handmatig invullen
+            </button>
+          </div>
+        ) : (
+          <input
+            type="number"
+            value={form.hrv}
+            onChange={set("hrv")}
+            placeholder="bijv. 82"
+            min={20}
+            max={250}
+            className="rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+          />
+        )}
       </div>
       <button
         type="button"
@@ -637,6 +661,8 @@ function WeeklyHoursInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
 
 function WeightInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
   const { data: profile } = useAthleteExtendedProfile()
+  const { data: connectors } = useConnectors()
+  const weightSupplier = connectorSupplying(connectors, "weight")
   const updateProfile = useUpdateAthleteProfile()
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState("")
@@ -660,6 +686,31 @@ function WeightInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
           onSaved?.()
         },
       },
+    )
+  }
+
+  if (weightSupplier && !editing) {
+    const lastSync = formatLastSync(weightSupplier.lastSyncAt)
+    return (
+      <div className="flex flex-col items-start gap-0.5">
+        <span className="font-mono text-[11px] tracking-wide text-white/40">
+          {profile?.weightKg ? `${profile.weightKg} kg` : "Nog niet gesynct"}
+        </span>
+        <span className="text-[10px] text-white/30">
+          Sparki haalt dit op uit {weightSupplier.displayName}
+          {lastSync ? ` · ${lastSync}` : ""}
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            setValue(profile?.weightKg ?? "")
+            setEditing(true)
+          }}
+          className="mt-0.5 font-sans text-[10px] font-medium text-white/40 underline underline-offset-2 transition-colors hover:text-white/70"
+        >
+          Handmatig corrigeren
+        </button>
+      </div>
     )
   }
 

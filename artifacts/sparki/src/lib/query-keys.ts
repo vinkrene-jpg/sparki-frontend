@@ -47,6 +47,11 @@ export const queryKeys = {
     mine: () => ["links", "mine"] as const,
   },
 
+  connectors: {
+    all: () => ["connectors"] as const,
+    list: () => ["connectors", "list"] as const,
+  },
+
   athlete: {
     all: () => ["athlete"] as const,
     profile: () => ["athlete", "profile"] as const,
@@ -143,6 +148,11 @@ export const queryKeys = {
     all: () => ["races"] as const,
     list: () => ["races", "list"] as const,
     intel: (id: number) => ["races", "intel", id] as const,
+    insight: (
+      location: string | null,
+      raceDate: string,
+      discipline: string | null,
+    ) => ["races", "insight", location, raceDate, discipline] as const,
   },
 
   invitations: {

@@ -1,5 +1,8 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Camera, Loader2, Trash2, X, Sparkles } from "lucide-react"
+import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
+import { useRaceContext } from "@/hooks/use-races"
+import { detectDayType, type DayType, type DayTypeContext } from "@/lib/day-type"
 import {
   Sheet,
   SheetContent,
@@ -42,6 +45,41 @@ const CONTEXT_ORDER: NutritionContext[] = [
   "normal_day",
 ]
 
+// Honest derivation: map the resolved day-type (from the SAME engine the Home
+// uses) to the nutrition context, so Sparki pre-selects the right context
+// instead of asking the rider to pick it. Returns null when the day-type gives
+// no clear nutrition signal, so Sparki never guesses.
+function dayTypeToContext(dt: DayType): NutritionContext | null {
+  switch (dt) {
+    case "race_day":
+      return "race_day"
+    case "coach_training":
+    case "sparki_training":
+    case "race_week":
+      return "training_day"
+    case "recovery":
+    case "post_race":
+    case "rest":
+    case "emergency":
+      return "recovery_day"
+    case "general":
+      return "normal_day"
+    // day_before_race / travel_day have no single obvious eating context —
+    // leave the rider's own choice untouched.
+    default:
+      return null
+  }
+}
+
+// Short Dutch reason shown under the auto-selected context, so the rider sees
+// WHY Sparki picked it (honesty contract). Only set for derived contexts.
+const CONTEXT_REASON: Record<NutritionContext, string> = {
+  training_day: "Sparki zag een training voor vandaag.",
+  race_day: "Sparki zag dat je vandaag een wedstrijd hebt.",
+  recovery_day: "Sparki zag dat vandaag een herstel- of rustdag is.",
+  normal_day: "Geen training of wedstrijd vandaag.",
+}
+
 const MAX_PHOTOS = 4
 
 function todayIso(): string {
@@ -75,8 +113,44 @@ type StagedPhoto = { payload: PhotoPayload; preview: string }
 function LogForm() {
   const create = useCreateNutritionLog()
   const fileRef = useRef<HTMLInputElement>(null)
+  const { data: dashboard } = useAthleteDashboard()
+  const { context: raceContext } = useRaceContext()
+
+  // Sparki resolves today's day-type from the SAME engine the Home uses, then
+  // pre-selects the nutrition context — the rider only confirms or overrides.
+  const profile = dashboard?.athleteProfile
+  const todayWorkout = dashboard?.todayWorkout ?? null
+  const dayCtx: DayTypeContext = {
+    todayWorkout: todayWorkout
+      ? {
+          type: todayWorkout.type,
+          source: todayWorkout.source,
+          title: todayWorkout.title,
+        }
+      : null,
+    hasProfile: !!profile,
+    healthStatus: profile?.healthStatus ?? null,
+    race: raceContext
+      ? {
+          phase: raceContext.phase,
+          daysUntil: raceContext.daysUntil,
+          name: raceContext.race.name,
+        }
+      : null,
+  }
+  const derivedContext = dayTypeToContext(detectDayType(dayCtx))
 
   const [context, setContext] = useState<NutritionContext>("training_day")
+  const [contextTouched, setContextTouched] = useState(false)
+  // Apply the derived context once, until the rider makes their own choice.
+  useEffect(() => {
+    if (contextTouched || !derivedContext) return
+    setContext(derivedContext)
+  }, [derivedContext, contextTouched])
+  function chooseContext(c: NutritionContext) {
+    setContextTouched(true)
+    setContext(c)
+  }
   const [carbs, setCarbs] = useState("")
   const [fluid, setFluid] = useState("")
   const [sodium, setSodium] = useState("")
@@ -106,7 +180,8 @@ function LogForm() {
   }
 
   function reset() {
-    setContext("training_day")
+    setContext(derivedContext ?? "training_day")
+    setContextTouched(false)
     setCarbs("")
     setFluid("")
     setSodium("")
@@ -156,7 +231,7 @@ function LogForm() {
             <button
               key={c}
               type="button"
-              onClick={() => setContext(c)}
+              onClick={() => chooseContext(c)}
               className="rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition"
               style={{
                 borderColor: context === c ? ACCENT : "rgba(255,255,255,0.12)",
@@ -167,6 +242,11 @@ function LogForm() {
             </button>
           ))}
         </div>
+        {derivedContext && !contextTouched && (
+          <p className="text-[11px] leading-relaxed text-cyan-300/55">
+            {CONTEXT_REASON[derivedContext]} Pas aan als het anders was.
+          </p>
+        )}
 
         <div className="grid grid-cols-3 gap-2">
           <input

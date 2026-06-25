@@ -4,6 +4,7 @@ import { db, racesTable, athleteProfilesTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { autoAdaptPlan } from "../engines/training-plan";
 import { buildRaceIntel } from "../engines/race";
+import { buildRaceInsight } from "../lib/race-insight";
 
 const router = Router();
 
@@ -66,6 +67,35 @@ router.get("/", requireAuth, async (req, res) => {
     res.json(races);
   } catch (err) {
     req.log.error({ err }, "races GET failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── GET /api/races/insight ───────────────────────────────────────────────────
+// The "intelligent werkblad" behind the race worksheet: everything Sparki can
+// derive for a (prospective or saved) race before the athlete types anything —
+// race-day weather, home→venue distance, a discipline logistics proposal, and
+// the home departure suggestion. Honest about every gap (never fabricated).
+// Registered before "/:id/intel" so the literal path is matched first.
+router.get("/insight", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const location = req.query["location"] ? String(req.query["location"]) : null;
+  const raceDate = req.query["raceDate"] ? String(req.query["raceDate"]) : "";
+  const discipline = req.query["discipline"]
+    ? String(req.query["discipline"])
+    : null;
+  if (!raceDate) {
+    res.status(400).json({ error: "raceDate is required" });
+    return;
+  }
+  try {
+    const [athlete] = await db
+      .select()
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId));
+    res.json(await buildRaceInsight({ location, raceDate, discipline }, athlete ?? null));
+  } catch (err) {
+    req.log.error({ err }, "race insight GET failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });

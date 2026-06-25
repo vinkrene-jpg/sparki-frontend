@@ -1,0 +1,116 @@
+Opdracht – Bouw de Race Intelligence Engine (geen slimme Wedstrijden-pagina)
+
+We gaan geen intelligente Wedstrijden-module bouwen. We bouwen de eerste centrale intelligentielaag van Sparki. De Wedstrijden-module is slechts de eerste databron die deze engine voedt.
+
+Doel
+
+Zodra een sporter een wedstrijd toevoegt (handmatig, via kalender of automatisch), moet Sparki vrijwel alles zelf regelen. De sporter hoeft zo min mogelijk handmatig in te vullen.
+
+Bouw de Race Intelligence Engine
+
+Wanneer een wedstrijd bekend is, verzamelt Sparki automatisch zoveel mogelijk informatie.
+
+Onder andere:
+
+wedstrijdnaam herkennen;
+KNWU-gegevens indien beschikbaar;
+datum en starttijd;
+locatie;
+afstand;
+hoogteprofiel;
+parcours;
+technische gids;
+weersverwachting;
+windrichting en windsnelheid;
+temperatuur;
+deelnemerslijst indien openbaar;
+uitslagen van eerdere edities;
+type wedstrijd (criterium, klassieker, tijdrit, MTB, gravel, baan, etc.);
+verwachte duur;
+reisafstand;
+aanbevolen vertrektijd.
+
+De engine moet informatie combineren uit gekoppelde databronnen en openbare bronnen waar toegestaan.
+
+Gebruik deze informatie vervolgens in de hele app
+
+Niet alleen in Wedstrijden.
+
+De engine levert data aan:
+
+Home
+Coach
+Training
+Routes
+Voeding
+Materiaal
+Herstel
+Slaap
+Race
+
+Voorbeelden:
+
+Training
+
+taper automatisch aanpassen;
+laatste intensieve training bepalen;
+rustdagen adviseren.
+
+Voeding
+
+koolhydraatstrategie;
+drinken;
+gels;
+cafeïne;
+ontbijt;
+herstelvoeding.
+
+Materiaal
+
+bandenadvies;
+bandendruk;
+kleding;
+regenadvies;
+reservewielen;
+verzet;
+helmkeuze.
+
+Route
+
+verkenning;
+GPX;
+gevaarlijke punten;
+windgevoelige stukken.
+
+Coach
+
+mentale aandachtspunten;
+pacing;
+verwachtingen;
+persoonlijke aandachtspunten op basis van eerdere wedstrijden.
+
+Na de wedstrijd
+
+automatische race-evaluatie;
+vergelijking met verwachting;
+leerpunten;
+invloed op toekomstige adviezen.
+Centrale architectuur
+
+Bouw dit niet als logica in de Wedstrijden-module.
+
+Maak een generieke Race Intelligence Engine die alle informatie verzamelt en beschikbaar stelt aan de rest van Sparki.
+
+Later moeten Routes, Health, Garmin, Strava, Voeding, Weer, Agenda en andere databronnen op exact dezelfde manier op deze centrale intelligentielaag aansluiten.
+
+Belangrijk
+Geen nieuwe schermen.
+Geen placeholders.
+Geen demo-functionaliteit.
+Werk direct met de bestaande coach-engine.
+De bestaande briefing moet automatisch profiteren van deze nieuwe intelligentie.
+Als gegevens ontbreken, probeert Sparki deze eerst automatisch op te halen. Alleen wanneer dat niet mogelijk is, vraagt hij de sporter om aanvullende informatie.
+
+Definition of Done
+
+Na deze opdracht voelt Sparki niet als een app waarin je een wedstrijd invoert, maar als een coach die begrijpt dat je een wedstrijd gaat rijden en daar automatisch alle relevante begeleiding omheen organiseert. Dit is de eerste bouwsteen van één centrale AI-coach die gevoed wordt door meerdere databronnen, in plaats van losse slimme modules.
