@@ -3,7 +3,7 @@
 // cards for them (see ./personalize) and persists honest interaction signals.
 // No fabricated content ever leaves this layer.
 
-import { and, eq, desc, inArray } from "drizzle-orm";
+import { and, eq, or, desc, inArray } from "drizzle-orm";
 import {
   db,
   intelCardsTable,
@@ -90,7 +90,10 @@ export async function buildIntelContext(
     .where(
       and(
         eq(intelInteractionsTable.clerkId, clerkId),
-        eq(intelInteractionsTable.interesting, true),
+        or(
+          eq(intelInteractionsTable.interesting, true),
+          eq(intelInteractionsTable.saved, true),
+        ),
       ),
     );
   const engagedTopics = Array.from(

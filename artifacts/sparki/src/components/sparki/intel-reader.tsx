@@ -15,6 +15,9 @@ import {
   Minus,
   ThumbsUp,
   ThumbsDown,
+  Star,
+  Share2,
+  type LucideIcon,
 } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
 import { TieredExplanation } from "@/components/sparki/tiered-explanation"
@@ -32,6 +35,40 @@ import {
   type IntelFeedItem,
   type MythAnswer,
 } from "@/lib/intel-types"
+
+// A single inline action pill (bewaar / later lezen / boeiend / delen). When
+// `fill` is set the icon fills while active, matching the bookmark behaviour.
+function ActionPill({
+  active,
+  fill = false,
+  onClick,
+  Icon,
+  label,
+}: {
+  active: boolean
+  fill?: boolean
+  onClick: () => void
+  Icon: LucideIcon
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      aria-pressed={active}
+      className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors"
+      style={{
+        borderColor: active ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.12)",
+        background: active ? "rgba(120,210,230,0.1)" : "transparent",
+        color: active ? ACCENT : "rgba(255,255,255,0.5)",
+      }}
+    >
+      <Icon className={`h-3.5 w-3.5 ${active && fill ? "fill-current" : ""}`} />
+      {label}
+    </button>
+  )
+}
 
 function FieldBlock({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -352,6 +389,9 @@ export function IntelReader({
   const closeRef = useRef<HTMLButtonElement>(null)
   const toggleFlag = useToggleIntelFlag()
   const [saved, setSaved] = useState(item.interaction.saved)
+  const [readLater, setReadLater] = useState(item.interaction.readLater)
+  const [interesting, setInteresting] = useState(item.interaction.interesting)
+  const [shared, setShared] = useState(false)
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null
@@ -375,6 +415,41 @@ export function IntelReader({
     const next = !saved
     setSaved(next)
     toggleFlag.mutate({ id: card.id, field: "saved", value: next })
+  }
+
+  const toggleReadLater = () => {
+    const next = !readLater
+    setReadLater(next)
+    toggleFlag.mutate({ id: card.id, field: "readLater", value: next })
+  }
+
+  const toggleInteresting = () => {
+    const next = !interesting
+    setInteresting(next)
+    toggleFlag.mutate({ id: card.id, field: "interesting", value: next })
+  }
+
+  // Share the card honestly: the native share sheet when available, otherwise
+  // copy the title + real source link to the clipboard. There is no fabricated
+  // public card URL — we share what genuinely exists.
+  const onShare = async () => {
+    const text = `${card.title} — via Sparki`
+    const url = card.sourceUrl ?? undefined
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: card.title, text, url })
+      } catch {
+        // The athlete dismissed the share sheet — nothing to do.
+      }
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(url ? `${text}\n${url}` : text)
+      setShared(true)
+      window.setTimeout(() => setShared(false), 2000)
+    } catch {
+      // Clipboard unavailable — silently ignore rather than fake success.
+    }
   }
 
   return (
@@ -416,19 +491,35 @@ export function IntelReader({
           >
             {TOPIC_LABEL[card.topic]}
           </span>
-          <button
-            type="button"
-            onClick={toggleSave}
-            className="ml-auto flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors"
-            style={{
-              borderColor: saved ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.12)",
-              background: saved ? "rgba(120,210,230,0.1)" : "transparent",
-              color: saved ? ACCENT : "rgba(255,255,255,0.5)",
-            }}
-          >
-            <Bookmark className={`h-3.5 w-3.5 ${saved ? "fill-current" : ""}`} />
-            {saved ? "Opgeslagen" : "Bewaar"}
-          </button>
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+            <ActionPill
+              active={saved}
+              fill
+              onClick={toggleSave}
+              Icon={Bookmark}
+              label={saved ? "Opgeslagen" : "Bewaar"}
+            />
+            <ActionPill
+              active={readLater}
+              fill
+              onClick={toggleReadLater}
+              Icon={Clock}
+              label={readLater ? "Voor later" : "Later lezen"}
+            />
+            <ActionPill
+              active={interesting}
+              fill
+              onClick={toggleInteresting}
+              Icon={Star}
+              label="Boeiend"
+            />
+            <ActionPill
+              active={shared}
+              onClick={onShare}
+              Icon={Share2}
+              label={shared ? "Gekopieerd" : "Delen"}
+            />
+          </div>
         </div>
 
         <h1 className="mt-5 text-balance font-sans text-2xl font-light leading-tight tracking-tight text-white/95">

@@ -2,13 +2,15 @@ import { useState } from "react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { useKnowledge, useKnowledgeMeta } from "@/hooks/use-knowledge"
-import { useIntelFeed } from "@/hooks/use-intel"
+import { useIntelFeed, useIntelMeta } from "@/hooks/use-intel"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { IntelCard } from "@/components/sparki/intel-card"
 import { IntelReader } from "@/components/sparki/intel-reader"
 import {
   INTEL_KINDS,
+  INTEL_TOPICS,
   KIND_SHORT,
+  TOPIC_LABEL,
   type IntelFeedItem,
 } from "@/lib/intel-types"
 import {
@@ -67,13 +69,18 @@ function CardSkeletons() {
 
 function VoorJouTab() {
   const [kind, setKind] = useState("")
+  const [topic, setTopic] = useState("")
   const [q, setQ] = useState("")
   const [submitted, setSubmitted] = useState("")
   const [savedOnly, setSavedOnly] = useState(false)
   const [open, setOpen] = useState<IntelFeedItem | null>(null)
 
+  const { data: meta } = useIntelMeta()
+  const topics = meta?.topics ?? INTEL_TOPICS
+
   const { data, isLoading } = useIntelFeed({
     kind,
+    topic,
     q: submitted,
     scope: savedOnly ? "saved" : "all",
   })
@@ -176,6 +183,40 @@ function VoorJouTab() {
         </button>
       </div>
 
+      {/* TOPIC FILTERS */}
+      <div className="-mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setTopic("")}
+          className="rounded-full border px-3 py-1 font-mono text-[9px] uppercase tracking-[0.16em] transition-colors"
+          style={{
+            borderColor: !topic ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.08)",
+            background: !topic ? "rgba(120,210,230,0.1)" : "transparent",
+            color: !topic ? ACCENT : "rgba(255,255,255,0.4)",
+          }}
+        >
+          Alle onderwerpen
+        </button>
+        {topics.map((t) => {
+          const on = topic === t
+          return (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTopic(on ? "" : t)}
+              className="rounded-full border px-3 py-1 font-mono text-[9px] uppercase tracking-[0.16em] transition-colors"
+              style={{
+                borderColor: on ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.08)",
+                background: on ? "rgba(120,210,230,0.1)" : "transparent",
+                color: on ? ACCENT : "rgba(255,255,255,0.4)",
+              }}
+            >
+              {TOPIC_LABEL[t]}
+            </button>
+          )
+        })}
+      </div>
+
       <section>
         {isLoading && <CardSkeletons />}
 
@@ -188,7 +229,7 @@ function VoorJouTab() {
                   ? `Niets gevonden voor "${submitted}".`
                   : "Er is nog geen inhoud voor je klaargezet."}
             </p>
-            {(savedOnly || submitted) && (
+            {(savedOnly || submitted || topic) && (
               <button
                 type="button"
                 onClick={() => {
@@ -196,6 +237,7 @@ function VoorJouTab() {
                   setSubmitted("")
                   setQ("")
                   setKind("")
+                  setTopic("")
                 }}
                 className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300/70 hover:text-cyan-300"
               >
