@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import { useEffect } from "react"
 import { LogOut, RefreshCw, Shield, ChevronLeft, MessageSquarePlus } from "lucide-react"
 import { useClerk, Show } from "@clerk/react"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
@@ -13,6 +14,8 @@ import { CoachAnalysisCard } from "@/components/sparki/coach/coach-analysis-card
 import { CoachDecisionCard } from "@/components/sparki/coach-decision-card"
 import { useCoachDecision } from "@/contexts/CoachDecisionContext"
 import { useHomeView } from "@/contexts/HomeViewContext"
+import { startTelemetry, trackScreen } from "@/lib/telemetry"
+import { screenForSection } from "@/lib/tracked-screens"
 
 // Sparki's daily coach analysis belongs on the athlete's training-facing
 // surfaces: the day homes (Vandaag, incl. race week → Wedstrijdvoorbereiding),
@@ -189,6 +192,18 @@ export function ScreenShell({
   children: ReactNode
 }) {
   const sectionKey = section.toLowerCase()
+
+  // Real usage telemetry: start the background flush/heartbeat loops once, and
+  // record a screen view whenever a route-reachable section renders. Sub-surfaces
+  // (coach/routes/voeding/connect/instellingen) call trackScreen themselves.
+  useEffect(() => {
+    startTelemetry()
+  }, [])
+  useEffect(() => {
+    const screen = screenForSection(sectionKey)
+    if (screen) trackScreen(screen)
+  }, [sectionKey])
+
   const scene = SECTION_SCENE[sectionKey] ?? "home"
   const isHome = sectionKey === "home"
   const showCoachCard = COACH_CARD_SECTIONS.has(sectionKey)
@@ -200,6 +215,12 @@ export function ScreenShell({
   const homeView = useHomeView()
   const stateSurface = isHome && homeView?.view === "state"
   const fullSurface = isHome && homeView?.view === "full"
+
+  // The full Vandaag analysis surface IS the "Coach" screen for coverage: it's
+  // where Sparki's full coaching read is shown. Tracked only when actually open.
+  useEffect(() => {
+    if (fullSurface) trackScreen("coach")
+  }, [fullSurface])
   const { profile } = useUserProfile()
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#05070e] text-white">

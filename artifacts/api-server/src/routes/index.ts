@@ -34,6 +34,7 @@ import calendarRouter from "./calendar";
 import stateRouter from "./state";
 import photoStyleRouter from "./photo-style";
 import corePredictionRouter from "./core-prediction";
+import telemetryRouter from "./telemetry";
 import devRouter from "./dev";
 
 const router: IRouter = Router();
@@ -73,6 +74,7 @@ router.use("/calendar", calendarRouter);
 router.use("/state", stateRouter);
 router.use("/photo-style", photoStyleRouter);
 router.use("/core-prediction", corePredictionRouter);
+router.use("/telemetry", telemetryRouter);
 
 // Dev-only routes (preview-athlete switcher). Mounted ONLY outside production so
 // these endpoints simply do not exist on a deployed build.

@@ -27,3 +27,4 @@ export * from "./document-analyses";
 export * from "./coach-followup-answers";
 export * from "./photo-lab";
 export * from "./core-predictions";
+export * from "./telemetry";

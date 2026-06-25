@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react"
+import { trackScreen } from "@/lib/telemetry"
 import { SectionLabel, Stat, Divider, ACCENT } from "@/components/sparki/ui"
 import { RouteMap } from "@/components/sparki/route-map"
 import {
@@ -1066,6 +1067,10 @@ export function RoutePanel() {
   const inputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [showGenerator, setShowGenerator] = useState(false)
+
+  useEffect(() => {
+    trackScreen("routes")
+  }, [])
 
   const routes = data?.routes ?? []
 

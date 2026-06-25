@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Camera, Loader2, Trash2, X, Sparkles } from "lucide-react"
+import { trackScreen } from "@/lib/telemetry"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useRaceContext } from "@/hooks/use-races"
 import { detectDayType, type DayType, type DayTypeContext } from "@/lib/day-type"
@@ -687,6 +688,9 @@ export function VoedingScreen({
   open: boolean
   onOpenChange: (v: boolean) => void
 }) {
+  useEffect(() => {
+    if (open) trackScreen("nutrition")
+  }, [open])
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent

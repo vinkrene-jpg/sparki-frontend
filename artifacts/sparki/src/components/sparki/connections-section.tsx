@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { trackScreen } from "@/lib/telemetry"
 import {
   Link2,
   Check,
@@ -362,6 +363,10 @@ export function ConnectionsSection() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    trackScreen("connect")
+  }, [])
 
   // Handle the return from the Strava OAuth round-trip (?strava=connected|denied|
   // error). Show the result, refresh the live state, then strip the param so a

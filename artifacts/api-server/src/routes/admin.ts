@@ -15,6 +15,15 @@ import {
   healthCheckDefinitions,
   getCheckDefinition,
 } from "../lib/health/checks";
+import {
+  scoreTester,
+  buildCoverage,
+  coveragePct,
+  coverageStatus,
+  COVERAGE_SCREENS,
+  type TesterRawData,
+} from "../lib/test-dashboard/scoring";
+import { isConnectorAvailable } from "../lib/connectors/registry";
 
 const router = Router();
 
@@ -386,6 +395,376 @@ router.get("/testers", requireAuth, requireAdmin, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "admin.testers failed");
     res.status(500).json({ error: "Kon het testeroverzicht niet laden" });
+  }
+});
+
+// GET /api/admin/test-dashboard — the full Test Management Dashboard. Every
+// number is derived from REAL data: usage from tester_events, coverage from
+// screen_view events, onboarding from onboarding_state, connectors from
+// connector_connections, feedback from bug_reports. Testers with no telemetry
+// get honest zeroes + reliability "geen" so the UI shows "nog niet gemeten",
+// never a fabricated value.
+router.get("/test-dashboard", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    // 1) Roster: head testers + everyone who accepted an invitation.
+    const rosterRes = await db.execute(sql`
+      SELECT up.clerk_id            AS "clerkId",
+             up.display_name        AS "displayName",
+             up.email               AS "email",
+             up.roles               AS "roles",
+             up.is_head_tester      AS "isHeadTester",
+             up.head_tester_number  AS "headTesterNumber",
+             up.last_seen_at        AS "lastSeenAt",
+             up.last_platform       AS "lastPlatform",
+             up.app_version         AS "appVersion",
+             up.tester_completed_at AS "testerCompletedAt",
+             up.created_at          AS "createdAt"
+      FROM user_profiles up
+      WHERE up.is_head_tester = true
+         OR up.clerk_id IN (
+              SELECT accepted_by_clerk_id FROM invitations
+              WHERE accepted_by_clerk_id IS NOT NULL
+            )
+      ORDER BY up.created_at ASC
+    `);
+    const roster = rosterRes.rows as Array<Record<string, unknown>>;
+
+    // 2) Usage per tester (sessions, time-in-app, active days, last activity).
+    const usageRes = await db.execute(sql`
+      WITH sess AS (
+        SELECT clerk_id, session_id,
+               EXTRACT(EPOCH FROM (max(created_at) - min(created_at))) AS dur
+        FROM tester_events
+        GROUP BY clerk_id, session_id
+      ),
+      sess_agg AS (
+        SELECT clerk_id,
+               count(*)::int AS sessions,
+               COALESCE(sum(dur), 0)::int AS total_seconds
+        FROM sess GROUP BY clerk_id
+      ),
+      ev_agg AS (
+        SELECT clerk_id,
+               count(DISTINCT (created_at AT TIME ZONE 'UTC')::date)
+                 FILTER (WHERE created_at > now() - interval '30 days')::int
+                 AS active_days_30,
+               max(created_at) AS last_activity_at,
+               count(*) FILTER (WHERE type = 'feature_use')::int AS feature_uses
+        FROM tester_events GROUP BY clerk_id
+      )
+      SELECT COALESCE(sa.clerk_id, ea.clerk_id) AS "clerkId",
+             COALESCE(sa.sessions, 0)           AS "sessions",
+             COALESCE(sa.total_seconds, 0)      AS "totalSeconds",
+             COALESCE(ea.active_days_30, 0)     AS "activeDays30",
+             ea.last_activity_at                AS "lastActivityAt",
+             COALESCE(ea.feature_uses, 0)       AS "featureUses"
+      FROM sess_agg sa FULL OUTER JOIN ev_agg ea ON sa.clerk_id = ea.clerk_id
+    `);
+    const usageByClerk = new Map<string, Record<string, unknown>>();
+    for (const row of usageRes.rows as Array<Record<string, unknown>>) {
+      usageByClerk.set(String(row.clerkId), row);
+    }
+
+    // 3) Coverage per tester per screen (screen_view counts).
+    const coverageRes = await db.execute(sql`
+      SELECT clerk_id AS "clerkId", screen, count(*)::int AS views
+      FROM tester_events
+      WHERE type = 'screen_view' AND screen IS NOT NULL
+      GROUP BY clerk_id, screen
+    `);
+    const coverageByClerk = new Map<string, Record<string, number>>();
+    for (const row of coverageRes.rows as Array<Record<string, unknown>>) {
+      const id = String(row.clerkId);
+      const map = coverageByClerk.get(id) ?? {};
+      map[String(row.screen)] = Number(row.views);
+      coverageByClerk.set(id, map);
+    }
+
+    // 4) Onboarding per tester.
+    const onboardingRes = await db.execute(sql`
+      SELECT clerk_id AS "clerkId",
+             core_completed_at        AS "coreCompletedAt",
+             onboarding_completed_at  AS "onboardingCompletedAt",
+             is_complete              AS "isComplete",
+             completed_steps          AS "completedSteps"
+      FROM onboarding_state
+    `);
+    const onboardingByClerk = new Map<string, Record<string, unknown>>();
+    for (const row of onboardingRes.rows as Array<Record<string, unknown>>) {
+      onboardingByClerk.set(String(row.clerkId), row);
+    }
+
+    // 5) Connectors per tester.
+    const connectorsRes = await db.execute(sql`
+      SELECT clerk_id AS "clerkId", provider, status,
+             last_sync_at        AS "lastSyncAt",
+             imported_data_types AS "importedDataTypes",
+             permission_revoked  AS "permissionRevoked",
+             error_status        AS "errorStatus"
+      FROM connector_connections
+    `);
+    const connectorsByClerk = new Map<string, Array<Record<string, unknown>>>();
+    for (const row of connectorsRes.rows as Array<Record<string, unknown>>) {
+      const id = String(row.clerkId);
+      const list = connectorsByClerk.get(id) ?? [];
+      list.push(row);
+      connectorsByClerk.set(id, list);
+    }
+
+    // 6) Feedback per tester (bug_reports breakdown).
+    const feedbackRes = await db.execute(sql`
+      SELECT clerk_id AS "clerkId",
+             count(*)::int                                  AS total,
+             count(*) FILTER (WHERE kind = 'bug')::int      AS bugs,
+             count(*) FILTER (WHERE kind = 'idea')::int     AS ideas,
+             count(*) FILTER (WHERE kind = 'other')::int    AS others,
+             count(*) FILTER (WHERE status = 'new')::int    AS "openCount",
+             count(*) FILTER (WHERE status = 'fixed')::int  AS "fixedCount",
+             COALESCE(round(avg(length(description))), 0)::int AS "avgDescLen"
+      FROM bug_reports GROUP BY clerk_id
+    `);
+    const feedbackByClerk = new Map<string, Record<string, unknown>>();
+    for (const row of feedbackRes.rows as Array<Record<string, unknown>>) {
+      feedbackByClerk.set(String(row.clerkId), row);
+    }
+
+    // ── Assemble per-tester dashboard rows ──────────────────────────────────
+    const testers = roster.map((p) => {
+      const clerkId = String(p.clerkId);
+      const usage = usageByClerk.get(clerkId);
+      const coverageMap = coverageByClerk.get(clerkId) ?? {};
+      const onb = onboardingByClerk.get(clerkId);
+      const connRows = connectorsByClerk.get(clerkId) ?? [];
+      const fb = feedbackByClerk.get(clerkId);
+
+      const connectedConnectors = connRows.filter(
+        (c) => c.status === "connected" && !c.permissionRevoked,
+      ).length;
+
+      const sessions = Number(usage?.sessions ?? 0);
+      const totalSeconds = Number(usage?.totalSeconds ?? 0);
+      const activeDays30 = Number(usage?.activeDays30 ?? 0);
+      const featureUses = Number(usage?.featureUses ?? 0);
+      const lastActivityAt = usage?.lastActivityAt
+        ? new Date(String(usage.lastActivityAt))
+        : null;
+
+      const feedback = {
+        total: Number(fb?.total ?? 0),
+        bugs: Number(fb?.bugs ?? 0),
+        ideas: Number(fb?.ideas ?? 0),
+        others: Number(fb?.others ?? 0),
+        avgDescLen: Number(fb?.avgDescLen ?? 0),
+      };
+
+      const raw: TesterRawData = {
+        sessions,
+        totalSeconds,
+        activeDays30,
+        lastActivityAt,
+        featureUses,
+        coverage: coverageMap,
+        onboarding: onb
+          ? {
+              coreCompletedAt: onb.coreCompletedAt
+                ? new Date(String(onb.coreCompletedAt))
+                : null,
+              isComplete: onb.isComplete === true,
+              completedSteps: Array.isArray(onb.completedSteps)
+                ? onb.completedSteps.length
+                : 0,
+            }
+          : null,
+        connectedConnectors,
+        feedback,
+      };
+
+      const scores = scoreTester(raw);
+
+      return {
+        clerkId,
+        displayName: p.displayName ?? null,
+        email: p.email ?? null,
+        roles: p.roles ?? [],
+        isHeadTester: p.isHeadTester === true,
+        headTesterNumber: p.headTesterNumber ?? null,
+        lastPlatform: p.lastPlatform ?? null,
+        appVersion: p.appVersion ?? null,
+        testerCompletedAt: p.testerCompletedAt ?? null,
+        invitedAt: p.createdAt ?? null,
+        usage: {
+          sessions,
+          totalSeconds,
+          avgSeconds: sessions > 0 ? Math.round(totalSeconds / sessions) : 0,
+          activeDays30,
+          featureUses,
+          lastActivityAt: lastActivityAt ? lastActivityAt.toISOString() : null,
+          hasData: sessions > 0 || featureUses > 0,
+        },
+        coverage: buildCoverage(coverageMap),
+        coveragePct: coveragePct(coverageMap),
+        onboarding: onb
+          ? {
+              coreCompleted: !!onb.coreCompletedAt,
+              fullyComplete: onb.isComplete === true,
+              completedSteps: Array.isArray(onb.completedSteps)
+                ? onb.completedSteps.length
+                : 0,
+            }
+          : null,
+        connectors: connRows.map((c) => ({
+          provider: c.provider,
+          status: c.status,
+          available: isConnectorAvailable(String(c.provider)),
+          lastSyncAt: c.lastSyncAt ?? null,
+          importedDataTypes: Array.isArray(c.importedDataTypes)
+            ? c.importedDataTypes
+            : [],
+          permissionRevoked: c.permissionRevoked === true,
+          errorStatus: c.errorStatus ?? null,
+        })),
+        connectedConnectors,
+        feedback: {
+          total: feedback.total,
+          bugs: feedback.bugs,
+          ideas: feedback.ideas,
+          others: feedback.others,
+          openCount: Number(fb?.openCount ?? 0),
+          fixedCount: Number(fb?.fixedCount ?? 0),
+          avgDescLen: feedback.avgDescLen,
+        },
+        scores,
+      };
+    });
+
+    // ── Summary across all testers ──────────────────────────────────────────
+    const total = testers.length;
+    const activeTesters = testers.filter((t) => t.usage.hasData).length;
+    const notStarted = total - activeTesters;
+    const completedOnboarding = testers.filter(
+      (t) => t.onboarding?.coreCompleted,
+    ).length;
+    const completedTesting = testers.filter(
+      (t) => t.testerCompletedAt != null,
+    ).length;
+
+    // Average only over testers with real usage — a tester without telemetry has
+    // a testscore of 0 by design, so including them would understate the true
+    // average and contradict the "—" shown on their card.
+    const avgTestscore =
+      activeTesters > 0
+        ? Math.round(
+            testers
+              .filter((t) => t.usage.hasData)
+              .reduce((acc, t) => acc + t.scores.testscore, 0) / activeTesters,
+          )
+        : 0;
+    const totalFeedback = testers.reduce((acc, t) => acc + t.feedback.total, 0);
+    const openBugs = testers.reduce((acc, t) => acc + t.feedback.openCount, 0);
+
+    // Coverage per screen across all testers: how many opened it (never/viewed/
+    // active) and the share that opened it at least once.
+    const coveragePerScreen = COVERAGE_SCREENS.map((s) => {
+      let never = 0;
+      let viewed = 0;
+      let active = 0;
+      for (const t of testers) {
+        const c = t.coverage.find((x) => x.key === s.key);
+        const st = c ? c.status : coverageStatus(0);
+        if (st === "never") never += 1;
+        else if (st === "viewed") viewed += 1;
+        else active += 1;
+      }
+      const opened = viewed + active;
+      return {
+        key: s.key,
+        label: s.label,
+        never,
+        viewed,
+        active,
+        openedPct: total > 0 ? Math.round((opened / total) * 100) : 0,
+      };
+    });
+
+    // Smart signals — deterministic, honest observations an admin should act on.
+    const signals: Array<{
+      tone: "info" | "warn" | "good";
+      message: string;
+    }> = [];
+
+    if (total === 0) {
+      signals.push({
+        tone: "info",
+        message: "Er zijn nog geen testers. Nodig testers uit om te beginnen.",
+      });
+    } else {
+      if (notStarted > 0) {
+        signals.push({
+          tone: "warn",
+          message: `${notStarted} van de ${total} testers ${
+            notStarted === 1 ? "is" : "zijn"
+          } nog niet gestart (geen meetbare activiteit).`,
+        });
+      }
+      const neverOpened = coveragePerScreen.filter(
+        (s) => s.viewed + s.active === 0,
+      );
+      for (const s of neverOpened) {
+        signals.push({
+          tone: "warn",
+          message: `"${s.label}" is door geen enkele tester geopend.`,
+        });
+      }
+      const activeNoFeedback = testers.filter(
+        (t) => t.usage.hasData && t.feedback.total === 0,
+      ).length;
+      if (activeNoFeedback > 0) {
+        signals.push({
+          tone: "info",
+          message: `${activeNoFeedback} actieve ${
+            activeNoFeedback === 1 ? "tester gaf" : "testers gaven"
+          } nog geen feedback.`,
+        });
+      }
+      if (openBugs > 0) {
+        signals.push({
+          tone: "warn",
+          message: `${openBugs} openstaande ${
+            openBugs === 1 ? "melding wacht" : "meldingen wachten"
+          } op opvolging.`,
+        });
+      }
+      const grondig = testers.filter(
+        (t) => t.scores.phase === "grondig",
+      ).length;
+      if (grondig > 0) {
+        signals.push({
+          tone: "good",
+          message: `${grondig} ${
+            grondig === 1 ? "tester test" : "testers testen"
+          } grondig — sterke dekking en activiteit.`,
+        });
+      }
+    }
+
+    res.json({
+      summary: {
+        total,
+        activeTesters,
+        notStarted,
+        completedOnboarding,
+        completedTesting,
+        avgTestscore,
+        totalFeedback,
+        openBugs,
+        coveragePerScreen,
+        signals,
+      },
+      testers,
+    });
+  } catch (err) {
+    req.log.error({ err }, "admin.testDashboard failed");
+    res.status(500).json({ error: "Kon het testdashboard niet laden" });
   }
 });
 

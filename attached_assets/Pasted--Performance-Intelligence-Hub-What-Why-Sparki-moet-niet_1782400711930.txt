@@ -1,0 +1,229 @@
+# Performance Intelligence Hub
+
+## What & Why
+
+Sparki moet niet alleen reageren op trainingsdata, maar ook de nieuwsgierigheid van fanatieke sporters voeden. Bouw daarom een nieuwe intelligentielaag die dagelijks interessante wielerkennis, materiaalontwikkelingen, wetenschappelijke inzichten en discussies aanbiedt.
+
+Dit is géén traditionele nieuwsfeed en géén verzameling links. Sparki gedraagt zich als een persoonlijke performance-editor die de belangrijkste ontwikkelingen selecteert, samenvat en relateert aan de sporter.
+
+De inhoud moet intelligent, compact en aantrekkelijk zijn. Iedere kaart moet binnen 1 à 2 minuten te lezen zijn.
+
+---
+
+# Nieuwe module: Performance Intelligence
+
+Voeg binnen de bestaande Sparki-omgeving een nieuw onderdeel toe met de volgende kaarten.
+
+---
+
+## 1. Myth Buster ⭐
+
+Iedere dag of week verschijnt automatisch een nieuwe stelling.
+
+Voorbeelden:
+
+- Een hogere cadans is altijd sneller.
+- Tubeless is altijd sneller.
+- Creatine is alleen voor sprinters.
+- Je moet altijd een herstelshake drinken.
+- Zwaarder trainen is beter dan slimmer trainen.
+
+De gebruiker kiest:
+
+- Waar
+- Niet waar
+- Hangt ervan af
+
+Na het antwoord toont Sparki:
+
+- juiste antwoord
+- korte uitleg
+- wetenschappelijke onderbouwing
+- praktische toepassing
+- waarom dit voor deze sporter relevant is
+
+Later kan Sparki onthouden welke onderwerpen de gebruiker interessant vindt.
+
+---
+
+## 2. Peloton Trends ⭐
+
+Toon ontwikkelingen binnen de wielersport.
+
+Geen nieuwsartikelen.
+
+Wel trends.
+
+Bijvoorbeeld:
+
+- Steeds meer WorldTour-teams rijden 30 mm banden.
+- Kortere cranks worden populairder.
+- Koolhydraatinname tijdens wedstrijden stijgt.
+- Aero wordt belangrijker dan gewicht op veel parcoursen.
+- Nieuwe trainingsmethoden winnen terrein.
+
+Iedere trend bevat:
+
+- wat verandert er
+- waarom
+- voordelen
+- nadelen
+- hoe zeker is deze trend
+
+---
+
+## 3. Gear Wars ⭐
+
+Vergelijk twee producten.
+
+Bijvoorbeeld:
+
+Cadex 50
+vs
+Reserve 52
+
+Of
+
+GP5000 S TR
+vs
+Pirelli P Zero Race TLR
+
+Sparki vergelijkt objectief:
+
+- gewicht
+- aerodynamica
+- rolweerstand
+- grip droog
+- grip nat
+- comfort
+- duurzaamheid
+- prijs
+- geschikt voor klimmen
+- geschikt voor sprint
+- geschikt voor criteriums
+- geschikt voor gran fondo
+
+Geen winnaar aanwijzen.
+
+Alleen sterke en zwakke punten.
+
+---
+
+## 4. Sparki Academy ⭐
+
+Iedere week verschijnt een mini-masterclass.
+
+Leestijd:
+
+3 tot 5 minuten.
+
+Onderwerpen bijvoorbeeld:
+
+- Hoe werkt VO2max?
+- Waarom stijgt hartslag bij warmte?
+- Waarom zegt FTP niet alles?
+- Hoe werkt taperen?
+- Waarom rijden profs bredere banden?
+- De wetenschap achter aerodynamica.
+- Slaap en herstel.
+- Koolhydraten tijdens lange wedstrijden.
+
+Iedere les bevat:
+
+- eenvoudige uitleg
+- verdieping
+- praktijkvoorbeeld
+- belangrijkste conclusie
+
+---
+
+## 5. Debate ⭐
+
+Iedere week één discussie.
+
+Voorbeeld:
+
+Zijn 165 mm cranks beter dan 172,5 mm?
+
+Sparki toont:
+
+Argument vóór
+
+Argument tegen
+
+Wat zegt de wetenschap?
+
+Wat doen profteams?
+
+Bestaat er inmiddels een duidelijke conclusie?
+
+Zo niet:
+
+Waarom verschillen de meningen?
+
+---
+
+## Slimme personalisatie
+
+Gebruik bestaande gebruikersdata.
+
+Voorbeelden:
+
+Een mountainbiker krijgt andere onderwerpen dan een wegwielrenner.
+
+Een junior krijgt andere uitleg dan een elite-renner.
+
+Een beginner krijgt eenvoudigere uitleg.
+
+Een gevorderde krijgt meer verdieping.
+
+---
+
+## Favorieten
+
+Gebruikers kunnen:
+
+- opslaan
+- later lezen
+- delen
+- markeren als interessant
+
+Sparki leert hiervan welke onderwerpen populair zijn.
+
+---
+
+## Zoekfunctie
+
+Zoeken op:
+
+- materiaal
+- voeding
+- training
+- aerodynamica
+- herstel
+- slaap
+- wetenschap
+- wedstrijden
+
+---
+
+## Voorbereiding op toekomstige AI
+
+Ontwerp de structuur zodat kaarten later automatisch gevoed kunnen worden vanuit:
+
+- wetenschappelijke literatuur
+- betrouwbare wielerpublicaties
+- KNWU
+- UCI
+- fabrikantinformatie
+- eigen Sparki Knowledge Base
+
+Voor nu mogen voorbeeldinhouden worden gebruikt, maar de architectuur moet volledig voorbereid zijn op automatische AI-gegenereerde content.
+
+---
+
+# Definition of Done
+
+Er is een nieuwe "Performance Intelligence"-omgeving waarin de sporter dagelijks interessante, hoogwaardige en compacte content krijgt over training, wetenschap, materiaal en ontwikkelingen in de wielersport.
+
+De module voelt als een persoonlijke performance-redacteur en vergroot de dagelijkse betrokkenheid, ook op rustdagen. De architectuur is direct voorbereid op toekomstige automatische AI-content, zonder later opnieuw ontworpen te hoeven worden.

@@ -170,6 +170,7 @@ export const queryKeys = {
   testers: {
     all: () => ["testers"] as const,
     list: () => ["testers", "list"] as const,
+    dashboard: () => ["testers", "dashboard"] as const,
   },
 
   knowledge: {

@@ -15,7 +15,8 @@ import {
   useCreateInvitation,
   useRevokeInvitation,
 } from "@/hooks/use-invitations"
-import { useTesters, useSetTesterCompleted } from "@/hooks/use-testers"
+import { useTestDashboard, useSetTesterCompleted } from "@/hooks/use-testers"
+import { TestDashboardView } from "@/components/sparki/test-dashboard"
 import {
   STATUS_LABEL,
   RELATIONSHIP_LABEL,
@@ -23,15 +24,6 @@ import {
   type InvitationStatus,
   type InvitationRelationship,
 } from "@/lib/invitation-types"
-import {
-  TESTER_STATUS_LABEL,
-  testerStatus,
-  testerRole,
-  testerName,
-  testerNumber,
-  type TesterRow,
-  type TesterStatus,
-} from "@/lib/tester-types"
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "")
 
@@ -67,126 +59,6 @@ function formatDateTime(iso: string): string {
   })
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("nl-NL", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  })
-}
-
-// Plain-Dutch relative time for "laatste login" — honest "—" when never seen.
-function formatRelative(iso: string | null): string {
-  if (!iso) return "—"
-  const then = new Date(iso).getTime()
-  const diff = Date.now() - then
-  if (Number.isNaN(then)) return "—"
-  const min = Math.round(diff / 60000)
-  if (min < 1) return "zojuist"
-  if (min < 60) return `${min} min geleden`
-  const hrs = Math.round(min / 60)
-  if (hrs < 24) return `${hrs} uur geleden`
-  const days = Math.round(hrs / 24)
-  if (days < 30) return `${days} dag${days === 1 ? "" : "en"} geleden`
-  return formatDate(iso)
-}
-
-const TESTER_STATUS_STYLE: Record<
-  TesterStatus,
-  { color: string; bg: string; border: string }
-> = {
-  uitgenodigd: { color: ACCENT, bg: "rgba(120,210,230,0.08)", border: "rgba(120,210,230,0.22)" },
-  actief: { color: "rgba(130,220,160,0.95)", bg: "rgba(130,220,160,0.08)", border: "rgba(130,220,160,0.22)" },
-  klaar: { color: "rgba(190,170,255,0.95)", bg: "rgba(190,170,255,0.08)", border: "rgba(190,170,255,0.24)" },
-  verlopen: { color: "rgba(255,255,255,0.5)", bg: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.12)" },
-  ingetrokken: { color: "rgba(255,140,120,0.9)", bg: "rgba(255,140,120,0.07)", border: "rgba(255,140,120,0.22)" },
-}
-
-function MetaCell({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">
-        {label}
-      </p>
-      <p className="mt-0.5 truncate text-[12px] text-white/70">{value}</p>
-    </div>
-  )
-}
-
-function StatCell({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-2.5 py-2 text-center">
-      <p className="font-sans text-[18px] font-light leading-none text-white/90">
-        {value}
-      </p>
-      <p className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.12em] text-white/40">
-        {label}
-      </p>
-    </div>
-  )
-}
-
-function TesterCard({
-  tester,
-  onToggleDone,
-  busy,
-}: {
-  tester: TesterRow
-  onToggleDone: (clerkId: string, completed: boolean) => void
-  busy: boolean
-}) {
-  const status = testerStatus(tester)
-  const s = TESTER_STATUS_STYLE[status]
-  const number = testerNumber(tester)
-  const accepted = !!tester.acceptedByClerkId
-  const done = status === "klaar"
-
-  return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate font-sans text-[15px] font-light text-white/90">
-            {testerName(tester)}
-          </p>
-          <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45">
-            {testerRole(tester)}
-          </p>
-        </div>
-        <span
-          className="shrink-0 rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em]"
-          style={{ color: s.color, background: s.bg, border: `1px solid ${s.border}` }}
-        >
-          {TESTER_STATUS_LABEL[status]}
-        </span>
-      </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5">
-        <MetaCell label="Testernummer" value={number ?? "—"} />
-        <MetaCell label="Uitgenodigd" value={formatDate(tester.invitedAt)} />
-        <MetaCell label="Laatste login" value={formatRelative(tester.lastSeenAt)} />
-        <MetaCell label="App-versie" value={tester.appVersion ?? "—"} />
-        <MetaCell label="Toestel" value={tester.lastPlatform ?? "—"} />
-      </div>
-
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        <StatCell label="Feedback" value={tester.feedbackTotal} />
-        <StatCell label="Bugs" value={tester.bugs} />
-        <StatCell label="Ideeën" value={tester.ideas} />
-      </div>
-
-      {accepted && (
-        <button
-          type="button"
-          onClick={() => onToggleDone(tester.acceptedByClerkId!, !done)}
-          disabled={busy}
-          className="mt-3 w-full rounded-lg border border-white/10 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/65 transition-colors hover:bg-white/[0.05] disabled:opacity-50"
-        >
-          {done ? "Heropenen" : "Markeer als klaar"}
-        </button>
-      )}
-    </div>
-  )
-}
 
 type Capability = {
   relationship: InvitationRelationship
@@ -202,7 +74,8 @@ export default function InvitationsPage() {
   const createInvite = useCreateInvitation()
   const revokeInvite = useRevokeInvitation()
   const isAdminUser = profile?.isAdmin === true
-  const { data: testers, isLoading: testersLoading } = useTesters(isAdminUser)
+  const { data: dashboard, isLoading: dashboardLoading } =
+    useTestDashboard(isAdminUser)
   const setTesterDone = useSetTesterCompleted()
 
   const [email, setEmail] = useState("")
@@ -414,40 +287,35 @@ export default function InvitationsPage() {
 
       {isAdminUser && (
         <section className="space-y-3">
-          <SectionLabel n="02" title="Testeroverzicht" large />
+          <SectionLabel n="02" title="Testdashboard" large />
 
-          {testersLoading ? (
+          {dashboardLoading ? (
             <div className="space-y-3">
               {[0, 1].map((i) => (
                 <Skeleton key={i} className="h-56 w-full rounded-2xl" />
               ))}
             </div>
-          ) : testers && testers.length > 0 ? (
-            testers.map((t) => (
-              <TesterCard
-                key={t.invitationId}
-                tester={t}
-                busy={setTesterDone.isPending}
-                onToggleDone={(clerkId, completed) =>
-                  setTesterDone.mutate(
-                    { clerkId, completed },
-                    {
-                      onError: (e) =>
-                        setError(
-                          e instanceof Error
-                            ? e.message
-                            : "Bijwerken mislukt.",
-                        ),
-                    },
-                  )
-                }
-              />
-            ))
+          ) : dashboard ? (
+            <TestDashboardView
+              summary={dashboard.summary}
+              testers={dashboard.testers}
+              busy={setTesterDone.isPending}
+              onToggleDone={(clerkId, completed) =>
+                setTesterDone.mutate(
+                  { clerkId, completed },
+                  {
+                    onError: (e) =>
+                      setError(
+                        e instanceof Error ? e.message : "Bijwerken mislukt.",
+                      ),
+                  },
+                )
+              }
+            />
           ) : (
             <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
               <p className="text-[13px] leading-relaxed text-white/55">
-                Nog geen testers. Zodra je iemand uitnodigt en die meedoet,
-                verschijnt hier het volledige overzicht.
+                Het testdashboard kon niet worden geladen.
               </p>
             </div>
           )}

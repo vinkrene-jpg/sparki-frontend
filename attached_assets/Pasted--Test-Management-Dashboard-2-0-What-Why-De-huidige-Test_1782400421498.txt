@@ -1,0 +1,218 @@
+# Test Management Dashboard 2.0
+
+## What & Why
+
+De huidige Testers & Koppelingen-pagina is een goede administratieve basis, maar nog geen hulpmiddel om de kwaliteit van het testen te beoordelen. Bouw deze pagina uit tot een volledig Test Management Dashboard dat laat zien wie daadwerkelijk test, welke onderdelen van Sparki gebruikt worden, welke koppelingen functioneren en waar nog testgaten zitten.
+
+Alle informatie moet gebaseerd zijn op echte telemetry en bestaande data. Geen placeholders, geen fictieve statistieken.
+
+---
+
+## Done looks like
+
+### 1. Uitgebreide testerkaart
+
+Iedere testerkaart toont:
+
+- Naam
+- Rol (Hoofdtester / Tester / Coach / Ouder)
+- Status
+- Betrouwbaarheidsscore
+- Testfase
+- Testernummer
+- Uitnodigingsdatum
+- Laatste login
+- App-versie
+- Platform (iPhone / Android / Desktop)
+- Feedback-, bug- en ideeëntellers
+
+---
+
+### 2. Gebruik
+
+Per tester automatisch registreren en tonen:
+
+- aantal sessies
+- totale tijd in de app
+- gemiddelde sessieduur
+- actieve dagen laatste 30 dagen
+- laatste activiteit
+
+Alles gebaseerd op echte sessiedata.
+
+---
+
+### 3. Testdekking
+
+Registreer automatisch welke onderdelen daadwerkelijk gebruikt zijn.
+
+Onder andere:
+
+- Home
+- Coach
+- Training
+- Lab
+- Social
+- Routes
+- Wedstrijd
+- Voeding
+- Connect
+- Instellingen
+
+Per onderdeel tonen:
+
+- nooit geopend
+- bekeken
+- actief gebruikt
+
+Inclusief percentage testdekking.
+
+---
+
+### 4. Onboarding
+
+Toon automatisch:
+
+- huidige stap
+- afgeronde stappen
+- datum voltooiing
+- percentage voltooid
+
+---
+
+### 5. Koppelingen
+
+Per tester zichtbaar:
+
+- Google Fit
+- Apple Health
+- Garmin
+- Polar
+- Wahoo
+- Strava
+- TrainingPeaks
+- Komoot
+
+Status:
+
+- Niet gekoppeld
+- Gekoppeld
+- Synchroniseert
+- Fout
+
+Inclusief laatste succesvolle synchronisatie.
+
+---
+
+### 6. Feedback
+
+Automatisch tonen:
+
+- Bugs
+- Ideeën
+- Screenshots
+- Crash reports
+- Verbeterpunten
+
+Inclusief datum van laatste inzending.
+
+---
+
+### 7. Testkwaliteit
+
+Bereken automatisch:
+
+- schermen bezocht
+- features gebruikt
+- percentage van de app getest
+- actieve dagen
+- openstaande testtaken
+
+---
+
+### 8. Hoofdtester-score
+
+Voeg een automatisch berekende testscore toe.
+
+Bijvoorbeeld:
+
+Testscore ............. 97%
+Compleetheid .......... 95%
+Activiteit ............ 100%
+Feedbackkwaliteit ..... 92%
+Herhaalbaarheid ....... 96%
+
+Deze score mag uitsluitend gebaseerd zijn op daadwerkelijk gebruik.
+
+---
+
+### 9. Dashboard-overzicht
+
+Boven de testerlijst komt een managementdashboard.
+
+Bijvoorbeeld:
+
+14 testers
+
+12 actief
+2 uitgenodigd
+
+84 bugs
+39 ideeën
+
+Testdekking
+
+Home ............100%
+Coach ............91%
+Training .........94%
+Lab ..............73%
+Wedstrijd ........22%
+Voeding ..........68%
+Social ...........17%
+
+Hiermee is direct zichtbaar welke onderdelen nauwelijks getest worden.
+
+---
+
+### 10. Slimme signalering
+
+Voeg automatische signalen toe, zoals:
+
+- Lab is door minder dan 25% van de testers bezocht.
+- De nieuwe voedingsmodule is nog niet getest.
+- Garmin is nog nooit gekoppeld.
+- Dylan heeft sinds de laatste release nog niet getest.
+- Coach Insight heeft nog geen feedback ontvangen.
+
+Deze signalen worden automatisch gegenereerd op basis van werkelijke data.
+
+---
+
+## Technische eisen
+
+- uitsluitend echte telemetry gebruiken
+- geen placeholders
+- geen fictieve statistieken
+- iedere sessie registreren
+- ieder schermbezoek registreren
+- iedere feature-interactie registreren
+- iedere koppeling registreren
+- iedere feedbackactie registreren
+- realtime dashboard
+- historische gegevens bewaren zodat trends zichtbaar worden
+
+---
+
+## Definition of Done
+
+De huidige Testers & Koppelingen-pagina verandert in een volledig Test Management Dashboard waarmee direct zichtbaar is:
+
+- wie daadwerkelijk test;
+- hoe intensief iedere tester de app gebruikt;
+- welke schermen en functies getest zijn;
+- welke onderdelen nauwelijks getest worden;
+- welke koppelingen functioneren;
+- hoeveel feedback iedere tester levert;
+- hoe compleet Sparki vóór een release getest is.
+
+Alle statistieken zijn gebaseerd op echte telemetry en bestaande data. Er worden nergens fictieve waarden of placeholders gebruikt.

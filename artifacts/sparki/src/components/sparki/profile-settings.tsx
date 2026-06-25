@@ -9,6 +9,7 @@
 // the app opens this sheet and jumps straight to the FTP editor.
 
 import { useState, useEffect, useRef, type ReactNode } from "react"
+import { trackScreen } from "@/lib/telemetry"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { PrivacySettingsSection } from "@/components/sparki/privacy-settings"
 import { ConnectionsSection } from "@/components/sparki/connections-section"
@@ -833,6 +834,10 @@ export function ProfileSettings({
   const { signOut } = useClerk()
   const [hlToken, setHlToken] = useState<string | null>(null)
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, "")
+
+  useEffect(() => {
+    trackScreen("settings")
+  }, [])
 
   useEffect(() => {
     if (!focus) return undefined

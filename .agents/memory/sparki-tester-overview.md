@@ -35,3 +35,25 @@ Uitgenodigd, Laatste login, App-versie, Toestel, and Feedback/Bugs/Ideeën count
   `POST /api/admin/testers/:clerkId/complete {completed}` (404 if no profile).
 - Rol: head-tester→Hoofdtester, coach→Coach, parent→Ouder, else Tester.
 - Testernummer is an EXPLICIT field with "—" fallback (not a conditional badge).
+
+## Test Management Dashboard 2.0 — scoring honesty gate (durable decision)
+- `GET /api/admin/test-dashboard` builds per-tester scores via the pure
+  `lib/test-dashboard/scoring.ts` `scoreTester()`. The deterministic scores are
+  compleetheid / activiteit / feedbackkwaliteit / herhaalbaarheid / testscore +
+  reliability + phase. Usage comes from the `tester_events` telemetry table
+  (sessions/screen_view/feature_use), coverage over 10 canonical screens.
+- **Telemetry gate (the durable rule):** if a tester has NO measured usage
+  (`sessions===0 && featureUses===0`), `scoreTester()` returns early with
+  activiteit=0, herhaalbaarheid=0, testscore=0, reliability="geen",
+  phase="nog-niet-gestart". Only the genuinely non-usage signals stay real:
+  compleetheid (onboarding+connectors) and feedbackkwaliteit (bug_reports).
+  **Why:** a tester who only finished onboarding or filed feedback must make ZERO
+  usage claims — showing a non-zero testscore/reliability while the card renders
+  "—" is a fabrication and failed review.
+- **Summary must match the card:** `avgTestscore` averages ONLY over
+  `usage.hasData` testers, divided by `activeTesters` (0 when none); the frontend
+  KPI shows "—" when `activeTesters===0`. The hasData predicate MUST equal the
+  scoring gate (`sessions>0 || featureUses>0`) or backend/frontend diverge.
+- Regression test: `src/tests/test-dashboard.ts` (`run test:test-dashboard`,
+  registered in build.mjs + package.json) pins the gate + determinism + coverage
+  thresholds. It's a PURE-function test (no DB), unlike most api-server tests.
