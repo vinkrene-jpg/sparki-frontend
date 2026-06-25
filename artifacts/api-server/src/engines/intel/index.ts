@@ -23,6 +23,7 @@ import {
   normalizeLevel,
   disciplineLabel,
   levelLabel,
+  topicLabel,
   rankCards,
 } from "./personalize";
 
@@ -169,14 +170,20 @@ export async function getFeed(
     .where(and(...conditions))
     .orderBy(desc(intelCardsTable.publishedAt));
 
-  // Free-text search across title/summary (case-insensitive, honest substring).
+  // Free-text search across title, summary and the card's topic (label + key),
+  // case-insensitive, honest substring — so "voeding" or "herstel" find their
+  // cards even when the word isn't in the title.
   const q = filter.q?.trim().toLowerCase();
   const filtered = q
-    ? cards.filter(
-        (c) =>
+    ? cards.filter((c) => {
+        const topicText = `${topicLabel(c.topic as IntelTopic)} ${c.topic}`
+          .toLowerCase();
+        return (
           c.title.toLowerCase().includes(q) ||
-          c.summary.toLowerCase().includes(q),
-      )
+          c.summary.toLowerCase().includes(q) ||
+          topicText.includes(q)
+        );
+      })
     : cards;
 
   const interactions = await interactionMap(
@@ -268,13 +275,6 @@ export async function setFlag(
     );
   if (!card) return null;
 
-  const column =
-    field === "saved"
-      ? "saved"
-      : field === "readLater"
-        ? "read_later"
-        : "interesting";
-
   const [row] = await db
     .insert(intelInteractionsTable)
     .values({ clerkId, cardId, [field]: value })
@@ -283,7 +283,6 @@ export async function setFlag(
       set: { [field]: value, updatedAt: new Date() },
     })
     .returning();
-  void column;
   return toState(row);
 }
 

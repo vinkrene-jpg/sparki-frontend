@@ -33,10 +33,17 @@ export function IntelCard({
   }
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onOpen}
-      className="group w-full rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          onOpen()
+        }
+      }}
+      className="group w-full cursor-pointer rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
     >
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45">
@@ -44,13 +51,9 @@ export function IntelCard({
           <span className="text-white/25">·</span>
           {TOPIC_LABEL[card.topic]}
         </span>
-        <span
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           onClick={toggleSave}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") toggleSave(e as unknown as React.MouseEvent)
-          }}
           aria-label={item.interaction.saved ? "Verwijder uit bewaard" : "Bewaar"}
           className="-m-1 cursor-pointer p-1"
         >
@@ -61,7 +64,7 @@ export function IntelCard({
                 : "text-white/25 group-hover:text-white/50"
             }`}
           />
-        </span>
+        </button>
       </div>
 
       <h3 className="mt-2 text-pretty font-sans text-[15px] font-light leading-snug text-white/90">
@@ -87,6 +90,6 @@ export function IntelCard({
           </span>
         )}
       </div>
-    </button>
+    </div>
   )
 }
