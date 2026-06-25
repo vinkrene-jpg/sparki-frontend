@@ -1,0 +1,186 @@
+# Sparki Core – Adaptieve uitleg en persoonlijke begeleiding
+
+De Sparki Core is de centrale visuele taal van Sparki. De Core is voor iedere sporter hetzelfde systeem, maar de manier waarop Sparki de Core uitlegt groeit mee met de gebruiker.
+
+Het doel is dat iedere sporter, ongeacht leeftijd of kennisniveau, de Core intuïtief leert begrijpen zonder overweldigd te worden met data.
+
+## Geen vaste informatieniveaus op basis van leeftijd
+
+Sparki bepaalt niet op basis van leeftijd hoeveel uitleg een sporter krijgt.
+
+Een jonge talentvolle sporter kan analytischer zijn dan een volwassen recreant.
+
+Daarom leert Sparki eerst de sporter kennen.
+
+Sparki analyseert onder andere:
+
+* hoeveel uitleg wordt gelezen;
+* welke schermen vaak worden geopend;
+* of de sporter analyses bekijkt of overslaat;
+* of de sporter nieuwsgierig is naar achterliggende oorzaken;
+* hoe vaak de sporter vragen stelt;
+* hoe technisch de sporter denkt;
+* hoeveel informatie de sporter daadwerkelijk gebruikt.
+
+Op basis hiervan groeit de uitleg automatisch mee.
+
+## Vier ontwikkelfasen
+
+### Fase 1 – Ontdekken
+
+Voor nieuwe gebruikers.
+
+De Core is vooral een gevoel.
+
+Sparki communiceert eenvoudig.
+
+Voorbeelden:
+
+* Vandaag sta je er goed voor.
+* Je lichaam heeft voldoende reserve.
+* Vandaag rustig opbouwen.
+* Je Core laat zien dat je lichaam klaar is voor deze training.
+
+Geen moeilijke termen.
+
+Geen uitgebreide analyses.
+
+Geen overdaad aan data.
+
+---
+
+### Fase 2 – Begrijpen
+
+De sporter raakt gewend aan de Core.
+
+Nu begint Sparki uit te leggen waarom de Core verandert.
+
+Bijvoorbeeld:
+
+* Je Core staat iets lager doordat je herstel nog niet volledig is.
+* Je lichaam heeft de training van gisteren nog niet volledig verwerkt.
+* De combinatie van slaap en trainingsbelasting beïnvloedt vandaag je reserve.
+
+De sporter kan nu de Core aanklikken.
+
+Er verschijnt een Canvas waarop de belangrijkste invloeden zichtbaar worden.
+
+Niet alle data.
+
+Alleen de belangrijkste oorzaken.
+
+---
+
+### Fase 3 – Leren
+
+De sporter wil zichzelf beter leren kennen.
+
+Nu toont Sparki:
+
+* voorspeld Core-pad;
+* werkelijk Core-pad;
+* afwijkingen;
+* belangrijkste oorzaken;
+* patronen;
+* terugkerende ontwikkelingen.
+
+Hier leert de sporter niet alleen wat zijn Core betekent, maar vooral hoe zijn lichaam op trainingen reageert.
+
+---
+
+### Fase 4 – Master
+
+Voor gevorderde sporters, coaches en topsport.
+
+Nu worden geavanceerde analyses beschikbaar.
+
+Bijvoorbeeld:
+
+* Confidence van de voorspelling;
+* Gevoeligheidsanalyse;
+* Welke factoren de grootste invloed hadden;
+* Alternatieve trainingsscenario's;
+* Ontwikkeling over maanden;
+* Patronen die de trainer nog niet ziet;
+* AI-voorspellingen voor toekomstige trainingen.
+
+Deze informatie wordt nooit standaard getoond.
+
+Alleen wanneer de gebruiker daar behoefte aan heeft.
+
+## Analyse en communicatie zijn twee verschillende AI-systemen
+
+Sparki maakt een duidelijk onderscheid tussen:
+
+### Analyse-AI
+
+Deze bepaalt de werkelijkheid.
+
+Objectief.
+
+Wetenschappelijk.
+
+Gebaseerd op alle beschikbare data.
+
+### Coach-AI
+
+Deze bepaalt hoe dezelfde analyse wordt gecommuniceerd.
+
+Niet iedere sporter reageert op dezelfde manier.
+
+Sommigen willen feiten.
+
+Sommigen willen motivatie.
+
+Sommigen willen humor.
+
+Sommigen willen korte aanwijzingen.
+
+Sparki leert welke communicatiestijl het beste werkt.
+
+De analyse verandert nooit.
+
+Alleen de communicatie verandert.
+
+## De Core blijft hetzelfde
+
+De Core verandert nooit van betekenis.
+
+Alleen de uitleg groeit mee.
+
+Een beginner ziet:
+
+"Je lichaam heeft vandaag veel reserve."
+
+Een gevorderde ziet:
+
+"Je herstel is goed waardoor je vandaag een hoge belastbaarheid hebt."
+
+Een topsporter ziet:
+
+"Je HRV, herstelstatus, trainingsbelasting en slaapkwaliteit zorgen gezamenlijk voor een hoge Core. Confidence 92%."
+
+De onderliggende analyse is identiek.
+
+Alleen de vertaling verschilt.
+
+## Het uiteindelijke doel
+
+De Core moet uitgroeien tot een levenslange visuele taal.
+
+Een sporter leert deze taal stap voor stap.
+
+Na maanden of jaren hoeft de sporter geen cijfers of lange teksten meer te lezen.
+
+Een korte blik op de Core is voldoende om intuïtief te begrijpen:
+
+* Hoe sta ik ervoor?
+* Hoeveel reserve heb ik?
+* Beweeg ik de goede kant op?
+* Moet ik mijn gedrag aanpassen?
+
+Dat is het uiteindelijke doel van Sparki.
+
+Niet meer data tonen.
+
+Maar complexe sportwetenschap vertalen naar een persoonlijke, begrijpelijke en intuïtieve taal die iedere sporter op zijn eigen niveau leert begrijpen.

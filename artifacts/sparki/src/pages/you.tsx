@@ -1,1063 +1,564 @@
-import { useState, useEffect, useRef, type ReactNode } from "react"
+import { useState, useEffect } from "react"
+import { useLocation } from "wouter"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
-import { SparkiCore } from "@/components/sparki/sparki-core"
-import { PrivacySettingsSection } from "@/components/sparki/privacy-settings"
-import { ConnectionsSection } from "@/components/sparki/connections-section"
-import { LinksSection } from "@/components/sparki/links-section"
-import { BugReportForm } from "@/components/sparki/bug-report-form"
-import { AdminPanel } from "@/components/sparki/admin-panel"
-import { SparkiVoiceSection } from "@/components/sparki/sparki-voice"
-import { FoundingSection } from "@/components/sparki/insights-section"
-import { useAthleteExtendedProfile, useUpdateAthleteProfile } from "@/hooks/use-athlete-extended-profile"
-import { useLogDailyMetrics } from "@/hooks/use-daily-metrics"
-import { useLogFtp } from "@/hooks/use-ftp-history"
-import { useTeamIdentity, useSaveTeamIdentity } from "@/hooks/use-social"
-import { useClerk } from "@clerk/react"
-import { useFixParams, useCompleteFix } from "@/hooks/use-missing-input"
+import { StateCard } from "@/components/sparki/state-card"
+import { ProfileSettings } from "@/components/sparki/profile-settings"
+import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
+import { useObservations, useRunConnections, type AiObservation } from "@/hooks/use-ai-memory"
+import { useFtpHistory } from "@/hooks/use-ftp-history"
+import { useLoad } from "@/hooks/use-load"
+import { useSessions } from "@/hooks/use-sessions"
+import { useSparkiState } from "@/hooks/use-sparki-state"
+import { useFixParams, useCompleteFix, useStartFix } from "@/hooks/use-missing-input"
 import {
-  Check,
-  Pencil,
-  User,
-  Activity,
-  Bike,
-  Zap,
-  Scale,
-  Target,
-  HeartPulse,
+  deriveIdentity,
+  categorizeObservations,
+  deriveEvolution,
+  type EvolutionTone,
+} from "@/lib/core-profile"
+import { missingTargets, type InputTargetKey } from "@/lib/missing-input"
+import {
   Settings,
-  ChevronRight,
-  Shield,
-  LogOut,
-  Clock,
+  X,
+  Sparkles,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  ChevronDown,
+  ArrowRight,
+  RefreshCw,
+  HelpCircle,
+  Compass,
 } from "lucide-react"
 
-type EditorProps = { autoOpen?: boolean; onSaved?: () => void }
+// Tokens that belong to an editor inside the Instellingen sheet. When the app
+// deep-links to /you?focus=<one of these>, the sheet opens and jumps to it.
+const SETTINGS_FOCUS_TOKENS = new Set([
+  "ftp",
+  "weeklyHours",
+  "weight",
+  "sportProfile",
+  "goal",
+  "checkin",
+  "connections",
+])
 
-/** Scrolls to + briefly highlights the section matching the active focus token. */
-function FocusTarget({
-  token,
-  focus,
-  children,
-}: {
-  token: string
-  focus: string | null
-  children: ReactNode
-}) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [hl, setHl] = useState(false)
-  useEffect(() => {
-    if (focus === token && ref.current) {
-      ref.current.scrollIntoView({ behavior: "smooth", block: "center" })
-      setHl(true)
-      const t = setTimeout(() => setHl(false), 2600)
-      return () => clearTimeout(t)
-    }
-    return undefined
-  }, [focus, token])
+const CONFIDENCE_NL: Record<AiObservation["confidence"], string> = {
+  low: "vermoeden",
+  medium: "redelijk zeker",
+  high: "zeker",
+}
+
+const CONFIDENCE_DOT: Record<AiObservation["confidence"], string> = {
+  low: "bg-white/35",
+  medium: "bg-cyan-300/70",
+  high: "bg-cyan-300",
+}
+
+function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      ref={ref}
-      className={
-        hl
-          ? "rounded-2xl ring-2 ring-cyan-300/50 transition-all duration-500"
-          : "rounded-2xl transition-all duration-500"
-      }
-    >
+    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
       {children}
     </div>
   )
 }
 
-function TeamIdentitySection() {
-  const { data, isLoading } = useTeamIdentity()
-  const save = useSaveTeamIdentity()
-  const team = data?.team
-  const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState({
-    clubName: "",
-    teamName: "",
-    category: "",
-    shirtBadge: "",
-    primaryColor: "#0ea5b7",
-    secondaryColor: "#0b1220",
-  })
-
-  const start = () => {
-    setForm({
-      clubName: team?.clubName ?? "",
-      teamName: team?.teamName ?? "",
-      category: team?.category ?? "",
-      shirtBadge: team?.shirtBadge ?? "",
-      primaryColor: team?.primaryColor ?? "#0ea5b7",
-      secondaryColor: team?.secondaryColor ?? "#0b1220",
-    })
-    setEditing(true)
-  }
-
-  const set =
-    (k: keyof typeof form) =>
-    (e: React.ChangeEvent<HTMLInputElement>) =>
-      setForm((p) => ({ ...p, [k]: e.target.value }))
-
-  const submit = () => {
-    save.mutate(
-      {
-        clubName: form.clubName.trim() || null,
-        teamName: form.teamName.trim() || null,
-        category: form.category.trim() || null,
-        shirtBadge: form.shirtBadge.trim() || null,
-        primaryColor: form.primaryColor || null,
-        secondaryColor: form.secondaryColor || null,
-        logoUrl: "/club-crest.svg",
-        sport: "cycling",
-      },
-      { onSuccess: () => setEditing(false) },
-    )
-  }
-
-  const fieldClass =
-    "w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+// One honest derived insight. Shows what Sparki concluded, the action it
+// suggests, and — crucially — the real signals behind it (the "why").
+function InsightCard({ obs }: { obs: AiObservation }) {
+  const [open, setOpen] = useState(false)
+  const signals = obs.signals ?? []
+  const hasWhy = signals.length > 0 || (obs.alternativeExplanations?.length ?? 0) > 0
 
   return (
-    <section>
-      <SectionLabel title="Club & team" />
-      {isLoading ? (
-        <div className="mt-3 h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
-      ) : editing ? (
-        <div className="mt-3 flex flex-col gap-3">
-          <div>
-            <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
-              CLUB
-            </label>
-            <input
-              value={form.clubName}
-              onChange={set("clubName")}
-              placeholder="bijv. WV De Sprinters"
-              className={`mt-1.5 ${fieldClass}`}
-            />
-          </div>
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
-                TEAM
-              </label>
-              <input
-                value={form.teamName}
-                onChange={set("teamName")}
-                placeholder="bijv. Junioren A"
-                className={`mt-1.5 ${fieldClass}`}
-              />
-            </div>
-            <div className="w-32">
-              <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
-                CATEGORIE
-              </label>
-              <input
-                value={form.category}
-                onChange={set("category")}
-                placeholder="Junioren"
-                className={`mt-1.5 ${fieldClass}`}
-              />
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <div className="w-28">
-              <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
-                BADGE
-              </label>
-              <input
-                value={form.shirtBadge}
-                onChange={set("shirtBadge")}
-                placeholder="DS"
-                maxLength={4}
-                className={`mt-1.5 ${fieldClass}`}
-              />
-            </div>
-            <div className="flex flex-1 gap-3">
-              <div className="flex-1">
-                <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
-                  KLEUR 1
-                </label>
-                <input
-                  type="color"
-                  value={form.primaryColor}
-                  onChange={set("primaryColor")}
-                  className="mt-1.5 h-11 w-full rounded-xl border border-white/[0.1] bg-white/[0.04]"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
-                  KLEUR 2
-                </label>
-                <input
-                  type="color"
-                  value={form.secondaryColor}
-                  onChange={set("secondaryColor")}
-                  className="mt-1.5 h-11 w-full rounded-xl border border-white/[0.1] bg-white/[0.04]"
-                />
-              </div>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={submit}
-              disabled={save.isPending}
-              className="rounded-xl px-4 py-2 font-sans text-[13px] font-semibold disabled:opacity-40"
-              style={{ background: ACCENT, color: "#040506" }}
-            >
-              {save.isPending ? "Opslaan…" : "Opslaan"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditing(false)}
-              className="rounded-xl border border-white/[0.1] px-4 py-2 font-sans text-[13px] text-white/50"
-            >
-              Annuleer
-            </button>
-          </div>
-        </div>
-      ) : team && team.clubName ? (
-        <div className="mt-3 flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-          <span
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border"
-            style={{
-              borderColor: team.primaryColor
-                ? `${team.primaryColor}66`
-                : "rgba(255,255,255,0.15)",
-              background: team.primaryColor ? `${team.primaryColor}22` : undefined,
-            }}
-          >
-            <Shield
-              className="h-5 w-5"
-              style={{ color: team.primaryColor ?? ACCENT }}
-              strokeWidth={1.75}
-            />
+    <Card>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-[15px] font-medium leading-snug text-white">{obs.title}</p>
+        <span className="mt-0.5 flex shrink-0 items-center gap-1.5">
+          <span className={`h-1.5 w-1.5 rounded-full ${CONFIDENCE_DOT[obs.confidence]}`} />
+          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+            {CONFIDENCE_NL[obs.confidence]}
           </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[14px] font-medium text-white/90">
-              {team.clubName}
-            </p>
-            <p className="truncate font-mono text-[10px] tracking-wide text-white/40">
-              {[team.teamName, team.category].filter(Boolean).join(" · ") ||
-                "Wielrennen"}
-            </p>
-          </div>
+        </span>
+      </div>
+
+      {obs.observationText && (
+        <p className="mt-2 text-[13px] leading-relaxed text-white/65">{obs.observationText}</p>
+      )}
+
+      {obs.recommendedAction && (
+        <div className="mt-3 flex items-start gap-2 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] px-3 py-2.5">
+          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300" strokeWidth={1.75} />
+          <p className="text-[13px] leading-relaxed text-white/80">{obs.recommendedAction}</p>
+        </div>
+      )}
+
+      {hasWhy && (
+        <>
           <button
             type="button"
-            onClick={start}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10"
+            onClick={() => setOpen((v) => !v)}
+            className="mt-3 flex items-center gap-1.5 text-[12px] text-white/45 transition-colors hover:text-cyan-300/80"
+            aria-expanded={open}
           >
-            <Pencil className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
+            Waarom Sparki dit ziet
+            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
           </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={start}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/12 py-3.5 font-sans text-[13px] text-white/45 transition-colors hover:border-cyan-300/35 hover:text-white/65"
-        >
-          <Shield className="h-4 w-4" strokeWidth={1.75} />
-          Voeg je club & team toe
-        </button>
+          {open && (
+            <div className="mt-2.5 space-y-2 border-t border-white/[0.06] pt-3">
+              {signals.map((s, i) => (
+                <div key={`${s.kind}-${i}`} className="flex items-start gap-2.5">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-white/30" />
+                  <p className="text-[12px] leading-relaxed text-white/60">
+                    <span className="text-white/80">{s.label}:</span> {s.value}
+                  </p>
+                </div>
+              ))}
+              {(obs.alternativeExplanations?.length ?? 0) > 0 && (
+                <p className="pt-1 text-[11px] leading-relaxed text-white/40">
+                  Sparki houdt ook rekening met:{" "}
+                  {obs.alternativeExplanations!.join("; ")}.
+                </p>
+              )}
+            </div>
+          )}
+        </>
       )}
+    </Card>
+  )
+}
+
+function InsightSection({
+  n,
+  title,
+  blurb,
+  items,
+}: {
+  n: string
+  title: string
+  blurb: string
+  items: AiObservation[]
+}) {
+  if (items.length === 0) return null
+  return (
+    <section>
+      <SectionLabel n={n} title={title} />
+      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">{blurb}</p>
+      <div className="mt-3 flex flex-col gap-3">
+        {items.map((o) => (
+          <InsightCard key={o.id} obs={o} />
+        ))}
+      </div>
     </section>
   )
 }
 
-function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
+const TONE_ICON: Record<EvolutionTone, typeof TrendingUp> = {
+  up: TrendingUp,
+  down: TrendingDown,
+  flat: Minus,
 }
 
-function IdentityStat({
-  label,
-  value,
-  accent,
-}: {
-  label: string
-  value: string
-  accent?: boolean
-}) {
-  return (
-    <div className="flex flex-col items-center gap-0.5">
-      <span
-        className="font-sans text-lg font-light tabular-nums"
-        style={{ color: accent ? ACCENT : "rgba(255,255,255,0.9)" }}
-      >
-        {value}
-      </span>
-      <span className="font-mono text-[9px] tracking-[0.18em] text-white/35">
-        {label.toUpperCase()}
-      </span>
-    </div>
-  )
-}
-
-function FtpInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
-  const { data: profile } = useAthleteExtendedProfile()
-  const logFtp = useLogFtp()
-  const [editing, setEditing] = useState(false)
-  const [value, setValue] = useState("")
-
-  useEffect(() => {
-    if (autoOpen) setEditing(true)
-  }, [autoOpen])
-
-  const handleSave = () => {
-    const watts = parseInt(value)
-    if (!watts || watts < 50 || watts > 600) return
-    logFtp.mutate(
-      { ftpWatts: watts, testType: "manual" },
-      {
-        onSuccess: () => {
-          setEditing(false)
-          setValue("")
-          onSaved?.()
-        },
-      },
-    )
-  }
-
-  if (editing) {
-    return (
-      <div className="flex items-center gap-2">
-        <input
-          autoFocus
-          type="number"
-          placeholder={String(profile?.ftp ?? "280")}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="w-24 rounded-lg border border-cyan-300/30 bg-white/[0.04] px-2.5 py-1.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleSave()
-            if (e.key === "Escape") {
-              setEditing(false)
-              setValue("")
-            }
-          }}
-          min={50}
-          max={600}
-        />
-        <span className="font-mono text-[11px] text-white/40">W</span>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={logFtp.isPending || !value}
-          className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-40"
-          style={{ background: ACCENT }}
-        >
-          <Check className="h-3.5 w-3.5" style={{ color: "#040506" }} strokeWidth={2.5} />
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => setEditing(true)}
-      className="flex items-center gap-2"
-    >
-      <span className="font-mono text-[11px] tracking-wide text-white/40">
-        {profile?.ftp ? `${profile.ftp}W` : "Niet ingesteld"}
-      </span>
-      <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
-    </button>
-  )
-}
-
-function CheckInForm({ onSaved }: EditorProps = {}) {
-  const logMetrics = useLogDailyMetrics()
-  const [saved, setSaved] = useState(false)
-  const [form, setForm] = useState({
-    feelScore: "3",
-    sleepQuality: "3",
-    fatigueScore: "5",
-    hrv: "",
-    notes: "",
-  })
-
-  const set =
-    (k: keyof typeof form) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      setForm((p) => ({ ...p, [k]: e.target.value }))
-
-  const handleSave = () => {
-    logMetrics.mutate(
-      {
-        feelScore: parseInt(form.feelScore),
-        sleepQuality: parseInt(form.sleepQuality),
-        fatigueScore: parseInt(form.fatigueScore),
-        hrv: form.hrv ? parseInt(form.hrv) : undefined,
-        notes: form.notes || null,
-      },
-      { onSuccess: () => {
-          setSaved(true)
-          onSaved?.()
-        },
-      },
-    )
-  }
-
-  if (saved) {
-    return (
-      <div className="flex items-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.05] px-4 py-3">
-        <Check className="h-4 w-4 shrink-0" style={{ color: ACCENT }} strokeWidth={2.5} />
-        <span className="text-[13px] font-medium" style={{ color: ACCENT }}>
-          Check-in gelogd voor vandaag
-        </span>
-      </div>
-    )
-  }
-
-  const ratingButtons = (
-    key: keyof typeof form,
-    count: number,
-    lowLabel: string,
-    highLabel: string,
-  ) => (
-    <div>
-      <div className="flex gap-1.5">
-        {Array.from({ length: count }, (_, i) => i + 1).map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => setForm((p) => ({ ...p, [key]: String(n) }))}
-            className="flex flex-1 items-center justify-center rounded-lg border py-2 font-sans text-[12px] font-semibold transition-colors"
-            style={{
-              borderColor:
-                form[key] === String(n)
-                  ? "rgba(120,210,230,0.45)"
-                  : "rgba(255,255,255,0.1)",
-              background:
-                form[key] === String(n)
-                  ? "rgba(120,210,230,0.1)"
-                  : "transparent",
-              color: form[key] === String(n) ? ACCENT : "rgba(255,255,255,0.45)",
-            }}
-          >
-            {n}
-          </button>
-        ))}
-      </div>
-      <div className="mt-1 flex justify-between px-0.5 font-mono text-[9px] tracking-[0.15em] text-white/20">
-        <span>{lowLabel}</span>
-        <span>{highLabel}</span>
-      </div>
-    </div>
-  )
-
-  return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-1.5">
-        <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
-          HOE VOEL JE JE? (1–5)
-        </label>
-        {ratingButtons("feelScore", 5, "slecht", "top")}
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
-          SLAAPKWALITEIT (1–5)
-        </label>
-        {ratingButtons("sleepQuality", 5, "slecht", "uitstekend")}
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
-          VERMOEIDHEID (1–10)
-        </label>
-        {ratingButtons("fatigueScore", 10, "fris", "uitgeput")}
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
-          HRV (ms, optioneel)
-        </label>
-        <input
-          type="number"
-          value={form.hrv}
-          onChange={set("hrv")}
-          placeholder="bijv. 82"
-          min={20}
-          max={250}
-          className="rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
-        />
-      </div>
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={logMetrics.isPending}
-        className="rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-40"
-        style={{ background: ACCENT, color: "#040506" }}
-      >
-        {logMetrics.isPending ? "Opslaan…" : "Log check-in van vandaag"}
-      </button>
-    </div>
-  )
-}
-
-function GoalsSection({ autoOpen, onSaved }: EditorProps = {}) {
-  const { data: profile } = useAthleteExtendedProfile()
-  const updateProfile = useUpdateAthleteProfile()
-  const [editing, setEditing] = useState(false)
-  const [value, setValue] = useState("")
-
-  useEffect(() => {
-    if (autoOpen) {
-      setValue(profile?.goals ?? "")
-      setEditing(true)
-    }
-  }, [autoOpen, profile?.goals])
-
-  const start = () => {
-    setValue(profile?.goals ?? "")
-    setEditing(true)
-  }
-
-  const save = () => {
-    updateProfile.mutate(
-      { goals: value },
-      {
-        onSuccess: () => {
-          setEditing(false)
-          onSaved?.()
-        },
-      },
-    )
-  }
-
-  if (editing) {
-    return (
-      <div className="flex flex-col gap-3">
-        <textarea
-          autoFocus
-          rows={3}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="bijv. Piek voor Gran Fondo juni, opbouwen naar 4 W/kg"
-          className="w-full resize-none rounded-xl border border-cyan-300/30 bg-white/[0.04] px-3.5 py-3 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:outline-none"
-        />
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={save}
-            disabled={updateProfile.isPending}
-            className="rounded-xl px-4 py-2 font-sans text-[13px] font-semibold disabled:opacity-40"
-            style={{ background: ACCENT, color: "#040506" }}
-          >
-            {updateProfile.isPending ? "Opslaan…" : "Opslaan"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditing(false)}
-            className="rounded-xl border border-white/[0.1] px-4 py-2 font-sans text-[13px] text-white/50"
-          >
-            Annuleer
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex items-start gap-3">
-      <p className="flex-1 text-pretty text-[14px] leading-relaxed text-white/60">
-        {profile?.goals ?? (
-          <span className="text-white/25">Nog geen doelen ingesteld</span>
-        )}
-      </p>
-      <button
-        type="button"
-        onClick={start}
-        className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 transition-colors"
-      >
-        <Pencil className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
-      </button>
-    </div>
-  )
-}
-
-function WeeklyHoursInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
-  const { data: profile } = useAthleteExtendedProfile()
-  const updateProfile = useUpdateAthleteProfile()
-  const [editing, setEditing] = useState(false)
-  const [value, setValue] = useState("")
-
-  useEffect(() => {
-    if (autoOpen) {
-      setValue(profile?.weeklyHourTarget ? String(profile.weeklyHourTarget) : "")
-      setEditing(true)
-    }
-  }, [autoOpen, profile?.weeklyHourTarget])
-
-  const handleSave = () => {
-    const hours = parseInt(value)
-    if (!hours || hours < 1 || hours > 40) return
-    updateProfile.mutate(
-      { weeklyHourTarget: hours },
-      {
-        onSuccess: () => {
-          setEditing(false)
-          setValue("")
-          onSaved?.()
-        },
-      },
-    )
-  }
-
-  if (editing) {
-    return (
-      <div className="flex items-center gap-2">
-        <input
-          autoFocus
-          type="number"
-          placeholder={String(profile?.weeklyHourTarget ?? "8")}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="w-20 rounded-lg border border-cyan-300/30 bg-white/[0.04] px-2.5 py-1.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleSave()
-            if (e.key === "Escape") {
-              setEditing(false)
-              setValue("")
-            }
-          }}
-          min={1}
-          max={40}
-        />
-        <span className="font-mono text-[11px] text-white/40">u/wk</span>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={updateProfile.isPending || !value}
-          className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-40"
-          style={{ background: ACCENT }}
-        >
-          <Check className="h-3.5 w-3.5" style={{ color: "#040506" }} strokeWidth={2.5} />
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <button type="button" onClick={() => setEditing(true)} className="flex items-center gap-2">
-      <span className="font-mono text-[11px] tracking-wide text-white/40">
-        {profile?.weeklyHourTarget ? `${profile.weeklyHourTarget} u/wk` : "Niet ingesteld"}
-      </span>
-      <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
-    </button>
-  )
-}
-
-function WeightInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
-  const { data: profile } = useAthleteExtendedProfile()
-  const updateProfile = useUpdateAthleteProfile()
-  const [editing, setEditing] = useState(false)
-  const [value, setValue] = useState("")
-
-  useEffect(() => {
-    if (autoOpen) {
-      setValue(profile?.weightKg ?? "")
-      setEditing(true)
-    }
-  }, [autoOpen, profile?.weightKg])
-
-  const handleSave = () => {
-    const kg = parseFloat(value)
-    if (!kg || kg < 30 || kg > 150) return
-    updateProfile.mutate(
-      { weightKg: String(kg) },
-      {
-        onSuccess: () => {
-          setEditing(false)
-          setValue("")
-          onSaved?.()
-        },
-      },
-    )
-  }
-
-  if (editing) {
-    return (
-      <div className="flex items-center gap-2">
-        <input
-          autoFocus
-          type="number"
-          step="0.1"
-          placeholder={profile?.weightKg ?? "70"}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="w-20 rounded-lg border border-cyan-300/30 bg-white/[0.04] px-2.5 py-1.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleSave()
-            if (e.key === "Escape") {
-              setEditing(false)
-              setValue("")
-            }
-          }}
-          min={30}
-          max={150}
-        />
-        <span className="font-mono text-[11px] text-white/40">kg</span>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={updateProfile.isPending || !value}
-          className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-40"
-          style={{ background: ACCENT }}
-        >
-          <Check className="h-3.5 w-3.5" style={{ color: "#040506" }} strokeWidth={2.5} />
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <button type="button" onClick={() => setEditing(true)} className="flex items-center gap-2">
-      <span className="font-mono text-[11px] tracking-wide text-white/40">
-        {profile?.weightKg ? `${profile.weightKg} kg` : "Niet ingesteld"}
-      </span>
-      <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
-    </button>
-  )
-}
-
-const DISCIPLINES = ["Weg", "MTB", "Gravel", "Veldrijden", "Baan", "Triatlon"]
-
-function DisciplineInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
-  const { data: profile } = useAthleteExtendedProfile()
-  const updateProfile = useUpdateAthleteProfile()
-  const [editing, setEditing] = useState(false)
-
-  useEffect(() => {
-    if (autoOpen) setEditing(true)
-  }, [autoOpen])
-
-  const choose = (d: string) => {
-    updateProfile.mutate(
-      { discipline: d },
-      {
-        onSuccess: () => {
-          setEditing(false)
-          onSaved?.()
-        },
-      },
-    )
-  }
-
-  if (editing) {
-    return (
-      <div className="flex max-w-[200px] flex-wrap justify-end gap-1.5">
-        {DISCIPLINES.map((d) => (
-          <button
-            key={d}
-            type="button"
-            onClick={() => choose(d)}
-            disabled={updateProfile.isPending}
-            className="rounded-lg border px-2.5 py-1 font-sans text-[12px] disabled:opacity-40"
-            style={{
-              borderColor:
-                profile?.discipline === d
-                  ? "rgba(120,210,230,0.45)"
-                  : "rgba(255,255,255,0.12)",
-              color:
-                profile?.discipline === d ? ACCENT : "rgba(255,255,255,0.6)",
-            }}
-          >
-            {d}
-          </button>
-        ))}
-      </div>
-    )
-  }
-
-  return (
-    <button type="button" onClick={() => setEditing(true)} className="flex items-center gap-2">
-      <span className="font-mono text-[11px] tracking-wide text-white/40">
-        {profile?.discipline ?? "Niet ingesteld"}
-      </span>
-      <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
-    </button>
-  )
+const TONE_COLOR: Record<EvolutionTone, string> = {
+  up: "text-cyan-300",
+  down: "text-amber-300",
+  flat: "text-white/55",
 }
 
 export default function YouPage() {
-  const { data: profile, isLoading } = useAthleteExtendedProfile()
-  const { signOut } = useClerk()
+  const [, navigate] = useLocation()
   const { focus } = useFixParams()
   const completeFix = useCompleteFix()
-  const [hlToken, setHlToken] = useState<string | null>(null)
-  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "")
+  const startFix = useStartFix()
 
+  const { data: profile } = useAthleteExtendedProfile()
+  const { data: state } = useSparkiState()
+  const { data: obsData, isLoading: obsLoading } = useObservations()
+  const { data: ftpHistory } = useFtpHistory()
+  const { data: load } = useLoad()
+  const { data: sessions } = useSessions(40)
+  const runConnections = useRunConnections()
+
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
+  // Open the settings sheet when the app deep-links to an editor that lives in it.
   useEffect(() => {
-    if (!focus) return undefined
-    const el = document.getElementById(`cfg-${focus}`)
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" })
-      setHlToken(focus)
-      const t = setTimeout(() => setHlToken(null), 2600)
-      return () => clearTimeout(t)
-    }
-    return undefined
+    if (focus && SETTINGS_FOCUS_TOKENS.has(focus)) setSettingsOpen(true)
   }, [focus])
 
-  const initials = (profile?.displayName ?? "A")
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2)
+  // Lock body scroll while the sheet is open.
+  useEffect(() => {
+    if (!settingsOpen) return undefined
+    const prev = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeSettings()
+    }
+    window.addEventListener("keydown", onKey)
+    return () => {
+      document.body.style.overflow = prev
+      window.removeEventListener("keydown", onKey)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsOpen])
 
-  const configRows: {
-    icon: typeof User
-    label: string
-    value?: string
-    custom?: React.ReactNode
-    focusToken?: string
-  }[] = [
-    {
-      icon: User,
-      label: "Profiel",
-      value: profile?.displayName ?? "—",
-    },
-    {
-      icon: Activity,
-      label: "Rol",
-      value: profile?.activeRole
-        ? profile.activeRole.charAt(0).toUpperCase() + profile.activeRole.slice(1)
-        : "Atleet",
-    },
-    {
-      icon: Bike,
-      label: "Discipline",
-      focusToken: "sportProfile",
-      custom: (
-        <DisciplineInlineEditor
-          autoOpen={focus === "sportProfile"}
-          onSaved={focus === "sportProfile" ? completeFix : undefined}
-        />
-      ),
-    },
-    {
-      icon: Zap,
-      label: "FTP",
-      focusToken: "ftp",
-      custom: (
-        <FtpInlineEditor
-          autoOpen={focus === "ftp"}
-          onSaved={focus === "ftp" ? completeFix : undefined}
-        />
-      ),
-    },
-    {
-      icon: Clock,
-      label: "Uren per week",
-      focusToken: "weeklyHours",
-      custom: (
-        <WeeklyHoursInlineEditor
-          autoOpen={focus === "weeklyHours"}
-          onSaved={focus === "weeklyHours" ? completeFix : undefined}
-        />
-      ),
-    },
-    {
-      icon: Scale,
-      label: "Gewicht",
-      focusToken: "weight",
-      custom: (
-        <WeightInlineEditor
-          autoOpen={focus === "weight"}
-          onSaved={focus === "weight" ? completeFix : undefined}
-        />
-      ),
-    },
-    {
-      icon: Target,
-      label: "Doelen",
-      value: profile?.goals
-        ? profile.goals.slice(0, 28) + (profile.goals.length > 28 ? "…" : "")
-        : "Geen doelen",
-    },
-    {
-      icon: HeartPulse,
-      label: "Gezondheid",
-      value: "Check-in hieronder",
-    },
-    {
-      icon: Shield,
-      label: "Privacy",
-      value: "Geregeld",
-    },
-    {
-      icon: Settings,
-      label: "Voorkeuren",
-      value: "Standaard",
-    },
-  ]
+  const closeSettings = () => {
+    setSettingsOpen(false)
+    // Strip ?focus= but stay on this page. Route is wouter-relative (the base
+    // prefix is handled by wouter), so navigate to "/you", never basePath.
+    if (focus) navigate("/you", { replace: true })
+  }
+
+  const onCompleteFix = () => {
+    const navigated = completeFix()
+    if (!navigated) closeSettings()
+  }
+
+  const sessionsCount = sessions?.length ?? 0
+  const identity = deriveIdentity(profile, sessionsCount)
+  const observations = obsData?.observations ?? []
+  const lenses = categorizeObservations(observations)
+  const evolution = deriveEvolution(ftpHistory, load, sessions)
+
+  // What Sparki still wants to collect — only genuinely missing profile inputs.
+  const gapTargets = missingTargets(
+    ["sportProfile", "ftp", "weight", "weeklyHours", "goal"] as InputTargetKey[],
+    profile,
+  )
+  const needsSportData = sessionsCount === 0
+  const stateMissing = state?.missing ?? []
 
   return (
     <ScreenShell section="You">
-      {/* IDENTITY */}
-      <section className="flex flex-col items-center">
-        {isLoading ? (
-          <Skeleton className="h-32 w-32 rounded-full" />
-        ) : (
-          <div className="relative flex items-center justify-center">
-            <SparkiCore size={132} accent={ACCENT} readiness={0.87} variant="orb" />
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <span className="font-sans text-2xl font-extralight tracking-tight">
-                {initials}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {isLoading ? (
-          <div className="mt-4 flex flex-col items-center gap-2">
-            <Skeleton className="h-7 w-36" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-        ) : (
-          <>
-            <h1 className="mt-4 text-balance font-sans text-3xl font-extralight leading-tight tracking-tight">
-              {profile?.displayName ?? "Atleet"}
-            </h1>
-            <p className="mt-1 font-mono text-[11px] tracking-[0.2em] text-white/40">
-              ELITE · {(profile?.discipline ?? "Road").toUpperCase()}
-            </p>
-            <div className="mt-5 flex items-center gap-5">
-              <IdentityStat
-                label="FTP"
-                value={profile?.ftp ? `${profile.ftp}W` : "—"}
-              />
-              <span className="h-7 w-px bg-white/[0.08]" />
-              <IdentityStat
-                label="W/kg"
-                value={profile?.wkg ? String(profile.wkg) : "—"}
-                accent
-              />
-              <span className="h-7 w-px bg-white/[0.08]" />
-              <IdentityStat
-                label="Gewicht"
-                value={profile?.weightKg ? `${profile.weightKg}kg` : "—"}
-              />
-            </div>
-          </>
-        )}
-      </section>
-
-      {/* 01 DOELEN */}
-      <FocusTarget token="goal" focus={focus}>
-        <section>
-          <SectionLabel n="01" title="Doelen" />
-          <div className="mt-3">
-            {isLoading ? (
-              <Skeleton className="h-10 w-full" />
-            ) : (
-              <GoalsSection
-                autoOpen={focus === "goal"}
-                onSaved={focus === "goal" ? completeFix : undefined}
-              />
-            )}
-          </div>
-        </section>
-      </FocusTarget>
-
-      {/* 02 DAGELIJKSE CHECK-IN */}
-      <FocusTarget token="checkin" focus={focus}>
-        <section>
-          <SectionLabel n="02" title="Dagelijkse check-in" />
-          <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
-            Log dagelijkse gereedheid om Sparki's adviezen te voeden
+      {/* HEADER */}
+      <section className="flex items-center justify-between">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-cyan-300/70">
+            Sparki Core
           </p>
-          <div className="mt-4">
-            <CheckInForm onSaved={focus === "checkin" ? completeFix : undefined} />
-          </div>
-        </section>
-      </FocusTarget>
-
-      {/* 03 INSTELLINGEN */}
-      <section>
-        <SectionLabel n="08" title="Instellingen" />
-        <div className="mt-3 flex flex-col">
-          {configRows.map((row) => {
-            const Icon = row.icon
-            const highlighted = !!row.focusToken && hlToken === row.focusToken
-            return (
-              <div
-                key={row.label}
-                id={row.focusToken ? `cfg-${row.focusToken}` : undefined}
-                className={`flex items-center gap-4 border-b border-white/[0.05] py-3.5 last:border-0 ${
-                  highlighted ? "rounded-xl ring-2 ring-cyan-300/50" : ""
-                }`}
-              >
-                <span
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border"
-                  style={{
-                    borderColor: "rgba(255,255,255,0.1)",
-                    background: "rgba(255,255,255,0.03)",
-                  }}
-                >
-                  <Icon className="h-4 w-4 text-white/55" strokeWidth={1.75} />
-                </span>
-                <span className="flex-1 text-[14px] tracking-tight text-white/85">
-                  {row.label}
-                </span>
-                {row.custom ? (
-                  row.custom
-                ) : (
-                  <span className="font-mono text-[11px] tracking-wide text-white/40">
-                    {row.value}
-                  </span>
-                )}
-                <ChevronRight className="h-4 w-4 text-white/25" strokeWidth={1.75} />
-              </div>
-            )
-          })}
+          <h1 className="mt-1 font-sans text-2xl font-extralight tracking-tight text-white">
+            Wat Sparki van je weet
+          </h1>
         </div>
-      </section>
-
-      {/* 04 HOE SPARKI KLINKT */}
-      <section>
-        <SectionLabel n="04" title="Hoe Sparki klinkt" />
-        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
-          Sparki's toon groeit mee naarmate jullie elkaar beter leren kennen
-        </p>
-        <SparkiVoiceSection />
-      </section>
-
-      <FoundingSection />
-
-      <TeamIdentitySection />
-
-      <FocusTarget token="connections" focus={focus}>
-        <ConnectionsSection />
-      </FocusTarget>
-
-      <PrivacySettingsSection />
-
-      <LinksSection />
-
-      <BugReportForm />
-
-      <AdminPanel />
-
-      {/* UITLOGGEN */}
-      <section className="pt-2">
         <button
           type="button"
-          onClick={() => signOut({ redirectUrl: basePath || "/" })}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/[0.08] py-3.5 font-sans text-[13px] text-white/35 transition-colors hover:border-white/15 hover:text-white/50"
+          onClick={() => setSettingsOpen(true)}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/12 text-white/55 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+          aria-label="Instellingen"
         >
-          <LogOut className="h-4 w-4" strokeWidth={1.75} />
-          Uitloggen
+          <Settings className="h-4 w-4" strokeWidth={1.75} />
         </button>
       </section>
 
-      <footer className="pt-2 text-center">
-        <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">
-          SPARKI PERFORMANCE CENTER · v1.0
-        </span>
-      </footer>
+      {/* WIE BEN JIJ ALS SPORTER */}
+      {identity && (
+        <section>
+          <SectionLabel n="01" title="Wie je bent als sporter" />
+          <div className="mt-3">
+            <Card>
+              <div className="flex items-center gap-2">
+                <Compass className="h-4 w-4 text-cyan-300" strokeWidth={1.75} />
+                <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+                  Sparki's beeld van jou
+                </span>
+              </div>
+              <p className="mt-2.5 text-[20px] font-light tracking-tight text-white">
+                {identity.archetypeLabel}
+              </p>
+              <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                {identity.levelLabel}
+                {identity.disciplineLabel ? ` · ${identity.disciplineLabel}` : ""}
+              </p>
+              <p className="mt-3 text-[13px] leading-relaxed text-white/65">
+                {identity.descriptor}
+              </p>
+
+              {identity.facts.length > 0 && (
+                <div className="mt-4 flex items-stretch border-t border-white/[0.06] pt-4">
+                  {identity.facts.map((f, i) => (
+                    <div
+                      key={f.label}
+                      className={`flex-1 text-center ${i > 0 ? "border-l border-white/[0.07]" : ""}`}
+                    >
+                      <p
+                        className="font-sans text-lg font-light tabular-nums"
+                        style={{ color: f.accent ? ACCENT : "rgba(255,255,255,0.9)" }}
+                      >
+                        {f.value}
+                      </p>
+                      <p className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+                        {f.label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-4 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-white/40">
+                Sparki baseert dit op {identity.confidenceLabel} van je.
+                {identity.sharpenWith.length > 0 && (
+                  <> Scherper wordt het zodra Sparki {identity.sharpenWith.join(", ")} kent.</>
+                )}
+              </div>
+            </Card>
+          </div>
+        </section>
+      )}
+
+      {/* CORE STATUS — de levende Core + dag-check-in + waarom */}
+      <section>
+        <SectionLabel n="02" title="Je Core-status" />
+        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+          Hoe Sparki je vandaag inschat — en hoe je je voelt
+        </p>
+        <div className="mt-4">
+          <StateCard />
+        </div>
+      </section>
+
+      {/* WAT HEEFT SPARKI GELEERD */}
+      <section>
+        <div className="flex items-center justify-between">
+          <SectionLabel n="03" title="Wat Sparki heeft geleerd" />
+          {observations.length > 0 && (
+            <button
+              type="button"
+              onClick={() => runConnections.mutate()}
+              disabled={runConnections.isPending}
+              className="flex items-center gap-1.5 text-[11px] text-white/40 transition-colors hover:text-cyan-300/80 disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${runConnections.isPending ? "animate-spin" : ""}`}
+                strokeWidth={1.75}
+              />
+              Opnieuw kijken
+            </button>
+          )}
+        </div>
+        <div className="mt-3">
+          {obsLoading ? (
+            <div className="h-24 animate-pulse rounded-2xl bg-white/[0.05]" />
+          ) : lenses.lead ? (
+            <>
+              <p className="mb-3 text-[12px] leading-relaxed text-white/35">
+                Sparki heeft {lenses.total} {lenses.total === 1 ? "ding" : "dingen"} over je
+                afgeleid uit je data. Dit valt het meest op:
+              </p>
+              <InsightCard obs={lenses.lead} />
+            </>
+          ) : (
+            <Card>
+              <p className="text-[14px] leading-relaxed text-white/70">
+                Sparki heeft nog niets over je afgeleid.
+              </p>
+              <p className="mt-2 text-[13px] leading-relaxed text-white/50">
+                Zodra Sparki je ritten en check-ins ziet, ontstaan hier de eerste inzichten —
+                eigenschappen, patronen en ontwikkelpunten. Hieronder zie je wat Sparki daarvoor
+                nog nodig heeft.
+              </p>
+            </Card>
+          )}
+        </div>
+      </section>
+
+      {/* STERKE EIGENSCHAPPEN */}
+      <InsightSection
+        n="04"
+        title="Sterke eigenschappen"
+        blurb="Wat Sparki bij jou ziet werken"
+        items={lenses.strengths}
+      />
+
+      {/* ONTWIKKELPUNTEN */}
+      <InsightSection
+        n="05"
+        title="Ontwikkelpunten"
+        blurb="Waar de meeste winst voor je ligt"
+        items={lenses.development}
+      />
+
+      {/* PATRONEN */}
+      <InsightSection
+        n="06"
+        title="Patronen die Sparki ziet"
+        blurb="Verbanden die over tijd terugkomen in je data"
+        items={lenses.patterns}
+      />
+
+      {/* WAAR SPARKI ONZEKER OVER IS */}
+      {(lenses.uncertainty.length > 0 || stateMissing.length > 0) && (
+        <section>
+          <SectionLabel n="07" title="Waar Sparki onzeker over is" />
+          <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+            Sparki is hier eerlijk over: dit weet het nog niet zeker
+          </p>
+          <div className="mt-3 flex flex-col gap-3">
+            {lenses.uncertainty.map((o) => (
+              <InsightCard key={o.id} obs={o} />
+            ))}
+            {stateMissing.length > 0 && (
+              <Card>
+                <div className="flex items-start gap-2.5">
+                  <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-white/45" strokeWidth={1.75} />
+                  <div>
+                    <p className="text-[14px] font-medium text-white/85">
+                      Sparki kijkt nog niet naar alles
+                    </p>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">
+                      Voor je huidige beeld mist Sparki nog: {stateMissing.join(", ")}. Daardoor is
+                      de inschatting voorzichtiger dan ze kan zijn.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* WELKE INFORMATIE WIL SPARKI VERZAMELEN */}
+      <section>
+        <SectionLabel n="08" title="Welke informatie Sparki wil verzamelen" />
+        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+          Vul aan wat ontbreekt — elk stukje maakt Sparki's beeld scherper
+        </p>
+        <div className="mt-3">
+          {gapTargets.length === 0 && !needsSportData ? (
+            <Card>
+              <p className="text-[14px] leading-relaxed text-white/70">
+                Sparki heeft alles wat het nu nodig heeft.
+              </p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-white/50">
+                Je profiel is compleet. Hoe meer je traint en incheckt, hoe verder Sparki je beeld
+                verfijnt.
+              </p>
+            </Card>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {gapTargets.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => startFix(t.key)}
+                  className="group flex items-start gap-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
+                >
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-300/10 ring-1 ring-cyan-300/25">
+                    <ArrowRight className="h-3.5 w-3.5 text-cyan-300" strokeWidth={2} />
+                  </span>
+                  <div className="flex-1">
+                    <p className="text-[14px] font-medium text-white/90">{t.missingTitle}</p>
+                    <p className="mt-1 text-[12px] leading-relaxed text-white/55">{t.missingWhy}</p>
+                    <span className="mt-2 inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 transition-colors group-hover:text-cyan-300">
+                      {t.label} →
+                    </span>
+                  </div>
+                </button>
+              ))}
+              {needsSportData && (
+                <button
+                  type="button"
+                  onClick={() => startFix("sportData")}
+                  className="group flex items-start gap-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
+                >
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-300/10 ring-1 ring-cyan-300/25">
+                    <ArrowRight className="h-3.5 w-3.5 text-cyan-300" strokeWidth={2} />
+                  </span>
+                  <div className="flex-1">
+                    <p className="text-[14px] font-medium text-white/90">
+                      Nog geen sportdata gekoppeld
+                    </p>
+                    <p className="mt-1 text-[12px] leading-relaxed text-white/55">
+                      Koppel je sporthorloge of -account zodat Sparki je ritten kan zien en
+                      observeren. Zonder ritten blijven veel inzichten leeg.
+                    </p>
+                    <span className="mt-2 inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 transition-colors group-hover:text-cyan-300">
+                      Sportdata koppelen →
+                    </span>
+                  </div>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* HOE IS JE SPORTPROFIEL VERANDERD */}
+      <section>
+        <SectionLabel n="09" title="Hoe je sportprofiel veranderd is" />
+        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+          Sparki's beeld van je verandering over tijd — uit je eigen data
+        </p>
+        <div className="mt-3">
+          {evolution.hasAny ? (
+            <div className="flex flex-col gap-2.5">
+              {evolution.items.map((item) => {
+                const Icon = TONE_ICON[item.tone]
+                return (
+                  <Card key={item.key}>
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/45">
+                        {item.label}
+                      </span>
+                      <span
+                        className={`flex items-center gap-1.5 text-[13px] font-medium ${TONE_COLOR[item.tone]}`}
+                      >
+                        <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+                        {item.change}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-[22px] font-light tabular-nums text-white">
+                      {item.current}
+                    </p>
+                    <p className="mt-1.5 text-[12px] leading-relaxed text-white/50">{item.detail}</p>
+                  </Card>
+                )
+              })}
+            </div>
+          ) : (
+            <Card>
+              <p className="text-[14px] leading-relaxed text-white/70">
+                Sparki ziet nog te weinig verloop.
+              </p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-white/50">
+                Zodra je meerdere FTP-metingen of ritten hebt, laat Sparki hier zien hoe je conditie,
+                vermogen en ritme zich ontwikkelen.
+              </p>
+            </Card>
+          )}
+        </div>
+      </section>
+
+      {/* INSTELLINGEN — drill-in sheet */}
+      {settingsOpen && (
+        <div
+          className="fixed inset-0 z-[9998] flex flex-col overflow-y-auto"
+          style={{
+            background:
+              "radial-gradient(120% 80% at 50% 0%, #0a1622 0%, #05070e 60%, #03040a 100%)",
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Instellingen"
+        >
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/[0.08] bg-[#05070e]/85 px-5 py-4 backdrop-blur-md">
+            <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-cyan-300/70">
+              Instellingen
+            </span>
+            <button
+              type="button"
+              onClick={closeSettings}
+              className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/60 transition-colors hover:bg-white/[0.06]"
+            >
+              <X className="h-3.5 w-3.5" />
+              Sluiten
+            </button>
+          </div>
+          <div className="mx-auto w-full max-w-xl flex-1 px-5 py-8">
+            <ProfileSettings focus={focus} onCompleteFix={onCompleteFix} />
+          </div>
+        </div>
+      )}
     </ScreenShell>
   )
 }
