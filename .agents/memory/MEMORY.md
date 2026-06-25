@@ -59,3 +59,4 @@
 - [Sparki /train four-layer spine](sparki-train-layers.md) — engine layers L1 bron/L2 doel/L3 vandaag/L4 patronen; TodayLayer must NOT duplicate shell-owned CoachAnalysisCard+FollowUpPrompt.
 - [Sparki Voeding screen](sparki-voeding-screen.md) — nutrition is a dedicated Sheet (not inline); logs carry photos (material storage engine, owner-checked serve); guidance is age-tuned (youth<16 light, adult numbers), never fabricated.
 - [Sparki Core living profile](sparki-core-profile.md) — /you shows what Sparki DERIVED (lenses, identity, evolution); settings in drill-in sheet; exclude daily_briefing from lenses; ?focus= auto-opens sheet, close to "/you" not basePath.
+- [Sparki Core-prediction engine](core-prediction-engine.md) — per-workout Core forecast nu→tijdens→eind→herstel; exhaustive factor coverage (gap=honest "missing"); dual VOORSPELD/WERKELIJK path + coarse-from-duration fallback; immutable snapshots.

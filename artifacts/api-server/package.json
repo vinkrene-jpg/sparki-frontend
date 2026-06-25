@@ -19,6 +19,7 @@
     "test:material": "pnpm run build && node --enable-source-maps ./dist/tests/material.mjs",
     "test:material-nudge": "pnpm run build && node --enable-source-maps ./dist/tests/material-nudge.mjs",
     "test:observation": "pnpm run build && node --enable-source-maps ./dist/tests/observation.mjs",
+    "test:core-prediction": "pnpm run build && node --enable-source-maps ./dist/tests/core-prediction.mjs",
     "seed:social": "pnpm run build && node --enable-source-maps ./dist/scripts/seed-social.mjs",
     "seed:virtual-athletes": "pnpm run build && node --enable-source-maps ./dist/scripts/seed-virtual-athletes.mjs",
     "seed:preview": "pnpm run build && node --enable-source-maps ./dist/scripts/seed-preview-athletes.mjs",

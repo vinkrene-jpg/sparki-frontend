@@ -5,6 +5,7 @@ import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { detectReadinessConflict } from "@/lib/train-intelligence"
 import { LayerHeading } from "@/components/sparki/train/layer-heading"
 import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer"
+import { CorePredictionPanel } from "@/components/sparki/core-prediction-panel"
 import { LinkedRoutePreview } from "@/components/sparki/linked-route"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import { missingTargets } from "@/lib/missing-input"
@@ -82,6 +83,9 @@ export function TodayLayer() {
           <Skeleton className="mt-4 h-24 w-full" />
         </div>
       ) : workout ? (
+        <>
+        {/* Core-voorspelpaneel — Sparki's effect-forecast boven elke training. */}
+        <CorePredictionPanel workoutId={workout.id} />
         <div className={`${cardClass} flex flex-col gap-4`}>
           {/* Session header */}
           <div>
@@ -300,6 +304,7 @@ export function TodayLayer() {
 
           <LinkedRoutePreview plannedWorkoutId={workout.id} />
         </div>
+        </>
       ) : (
         <div className={cardClass}>
           {missingTargets(["ftp", "weeklyHours"], profile).length > 0 ? (

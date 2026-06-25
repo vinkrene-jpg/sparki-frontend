@@ -1,0 +1,324 @@
+# Opdracht – Insight Engine v1 (Core-pagina)
+
+## Doel
+
+We stoppen met het tonen van data en beginnen met het tonen van begrip.
+
+De Inzichten-pagina wordt het hart van Sparki. Hier denkt Sparki hardop. Niet met losse statistieken, maar met observaties, verbanden, onzekerheden en adviezen die voortdurend veranderen naarmate er meer data beschikbaar komt.
+
+De Core blijft het visuele middelpunt, maar daaromheen ontstaat een levende analyse.
+
+---
+
+# De Core wordt een levend model
+
+De Core is geen dashboard.
+
+De Core is Sparki's huidige beeld van de sporter.
+
+Iedere observatie moet invloed kunnen hebben op de Core.
+
+Bijvoorbeeld:
+
+* vermoeidheid
+* motivatie
+* herstel
+* trainingsbelasting
+* slaap
+* mentale belasting
+* stress
+* voeding
+* ziekte
+* wedstrijdvorm
+* consistentie
+* vertrouwen in voorspellingen
+
+De Core beweegt continu mee.
+
+Niet alleen de positie verandert.
+
+Ook de zekerheid waarmee Sparki iets denkt.
+
+---
+
+# Elke observatie krijgt zes onderdelen
+
+## 1. Observatie
+
+Feitelijk.
+
+Voorbeeld:
+
+"Je hartslag blijft de afgelopen vijf trainingen stijgen terwijl het vermogen gelijk blijft."
+
+---
+
+## 2. Waarschijnlijke verklaring
+
+Sparki redeneert.
+
+Bijvoorbeeld:
+
+* oplopende vermoeidheid
+* warmte
+* beginnende ziekte
+* slaaptekort
+* stress
+* onvoldoende herstel
+* slechte voeding
+
+Elke verklaring krijgt een waarschijnlijkheid.
+
+Geen absolute waarheid.
+
+---
+
+## 3. Bewijs
+
+Laat zien welke data hiervoor gebruikt zijn.
+
+Bijvoorbeeld:
+
+* HRV
+* slaap
+* rusthartslag
+* vermogen
+* cadans
+* RPE
+* temperatuur
+* wedstrijdplanning
+* eerdere patronen
+
+De gebruiker moet exact kunnen zien waarom Sparki dit denkt.
+
+---
+
+## 4. Vertrouwen (Confidence)
+
+Iedere observatie krijgt een confidence.
+
+Bijvoorbeeld:
+
+97%
+
+Daaronder staat waarom.
+
+Voorbeeld:
+
+"Hoog vertrouwen omdat vergelijkbare patronen al 6 keer eerder zijn gezien."
+
+Of
+
+"Matig vertrouwen omdat HRV ontbreekt."
+
+---
+
+## 5. Wat gebeurt er als we niets doen?
+
+Bijvoorbeeld:
+
+"De kans neemt toe dat je morgen minder kwaliteit kunt leveren tijdens de intensieve training."
+
+Of
+
+"Waarschijnlijk geen probleem."
+
+---
+
+## 6. Advies
+
+Niet algemeen.
+
+Persoonlijk.
+
+Bijvoorbeeld:
+
+* training aanpassen
+* juist niet aanpassen
+* extra koolhydraten
+* vroeger slapen
+* warming-up verlengen
+* herstelrit
+* niets doen
+
+---
+
+# Tegenstrijdigheden herkennen
+
+Sparki moet actief zoeken naar conflicten.
+
+Bijvoorbeeld:
+
+"Je voelt je uitstekend."
+
+Maar
+
+* HRV daalt
+* rusthartslag stijgt
+* slaap slecht
+
+Dan meldt Sparki:
+
+"Je gevoel en je fysiologie spreken elkaar tegen."
+
+---
+
+# Patronen herkennen
+
+Niet één dag bekijken.
+
+Maar weken en maanden.
+
+Voorbeelden:
+
+"Elke derde trainingsweek neemt je herstel af."
+
+"Na wedstrijden slaap je structureel slechter."
+
+"Bij temperaturen boven 24°C verlies je gemiddeld 8% meer vermogen."
+
+"Na twee rustdagen presteer je beter dan na één."
+
+"Tijdens vakanties train je minder maar herstel je juist beter."
+
+---
+
+# Onzekerheid tonen
+
+Sparki mag ook zeggen:
+
+"Ik weet het nog niet."
+
+Bijvoorbeeld:
+
+"Ik twijfel tussen warmte en vermoeidheid."
+
+Daarna stelt Sparki maximaal één gerichte vraag om zijn model te verbeteren.
+
+---
+
+# Zelflerend
+
+Iedere bevestiging of correctie van de sporter verbetert het model.
+
+Bijvoorbeeld:
+
+"Klopt."
+
+"Nee."
+
+"Dat kwam door mijn werk."
+
+"Ik was ziek."
+
+"Ik heb slecht gegeten."
+
+Deze feedback wordt gebruikt bij toekomstige analyses.
+
+---
+
+# Tijdlijn
+
+Elke observatie krijgt een levensduur.
+
+Nieuw.
+
+Ontwikkelend.
+
+Stabiel.
+
+Verdwijnend.
+
+Opgelost.
+
+Hierdoor ziet de sporter welke problemen tijdelijk zijn en welke structureel terugkomen.
+
+---
+
+# Relaties tussen observaties
+
+Observaties mogen elkaar beïnvloeden.
+
+Bijvoorbeeld:
+
+Slaaptekort
+
+↓
+
+slechter herstel
+
+↓
+
+hogere hartslag
+
+↓
+
+lager vermogen
+
+↓
+
+meer frustratie
+
+↓
+
+slechter slapen
+
+Sparki toont deze keten.
+
+---
+
+# Prioriteiten
+
+Niet twintig inzichten tegelijk.
+
+De Insight Engine bepaalt automatisch:
+
+* Kritiek
+* Belangrijk
+* Interessant
+* Achtergrond
+
+Alleen de belangrijkste inzichten staan standaard open.
+
+---
+
+# Explainability
+
+Bij iedere analyse moet de gebruiker kunnen openen:
+
+"Waarom denk je dit?"
+
+Daar staat:
+
+* gebruikte data
+* gebruikte patronen
+* ontbrekende data
+* confidence
+* alternatieve verklaringen
+
+Volledig transparant.
+
+---
+
+# De Core voedt alles
+
+Deze pagina is niet alleen een overzicht.
+
+Alle analyses worden beschikbaar voor:
+
+* Home
+* Coach
+* Training
+* Routes
+* Voeding
+* Race
+* Materiaal
+* Herstel
+
+De Core wordt daarmee het centrale brein van Sparki.
+
+---
+
+# Definition of Done
+
+Na deze opdracht voelt de Inzichten-pagina niet meer als een dashboard met statistieken, maar als een intelligent gesprek met een coach die zijn redenering uitlegt, twijfels durft te tonen, leert van feedback en voortdurend een completer beeld van de sporter opbouwt. De Core is hierbij het levende model waarop alle analyses en toekomstige adviezen binnen Sparki gebaseerd zijn.

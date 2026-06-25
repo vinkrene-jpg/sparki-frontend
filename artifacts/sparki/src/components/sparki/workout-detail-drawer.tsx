@@ -11,6 +11,7 @@ import {
   PlainTextParagraphs,
 } from "@/components/sparki/tiered-explanation"
 import { SparkiCore } from "@/components/sparki/sparki-core"
+import { CorePredictionPanel } from "@/components/sparki/core-prediction-panel"
 import {
   useWorkoutDetail,
   useSubmitFeedback,
@@ -323,6 +324,9 @@ export function WorkoutDetailDrawer({
                 </div>
               )}
             </SheetHeader>
+
+            {/* Core-voorspelpaneel — effect-forecast boven elke training. */}
+            <CorePredictionPanel workoutId={workout.id} />
 
             {/* 01 PRAKTISCH */}
             <section className="flex flex-col gap-4">

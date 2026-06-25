@@ -24,6 +24,12 @@ export const queryKeys = {
     current: () => ["state", "current"] as const,
   },
 
+  corePrediction: {
+    all: () => ["core-prediction"] as const,
+    forWorkout: (workoutId: number) =>
+      ["core-prediction", "workout", workoutId] as const,
+  },
+
   coach: {
     all: () => ["coach"] as const,
     analysis: () => ["coach", "analysis"] as const,
