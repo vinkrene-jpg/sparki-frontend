@@ -409,10 +409,82 @@ const FEEDBACK_LABEL: Record<string, string> = {
 };
 
 // ── POST /api/ai/workout-explain ─────────────────────────────────────────────
-// The deeper "Waarom?" trainingsfilosofie-laag voor één specifieke training.
+// Snelle eerste laag voor "Waarom?": alleen de korte kern (1–2 zinnen), zodat de
+// uitleg vrijwel meteen verschijnt in plaats van ~20s op een spinner te hangen.
+// De diepere onderbouwing komt pas op verzoek via /workout-explain-extended.
+router.post("/workout-explain", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const { workoutId } = req.body as { workoutId?: number };
+  const id = Number(workoutId);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "workoutId is required" });
+    return;
+  }
+
+  try {
+    const workout = await loadOwnedWorkout(clerkId, id);
+    if (!workout) {
+      res.status(404).json({ error: "Workout not found" });
+      return;
+    }
+
+    const [context, system] = await Promise.all([
+      buildAthleteContext(clerkId),
+      systemPrompt(clerkId),
+    ]);
+    const workoutBlock = describeWorkout(workout);
+
+    const message = await anthropic.messages.create(
+      {
+        model: "claude-sonnet-4-6",
+        max_tokens: 400,
+        system,
+        messages: [
+          {
+            role: "user",
+            content: `Atleetcontext:\n${context}\n\n${workoutBlock}\n\nLeg in het NEDERLANDS in 1 tot 2 zinnen de KERN uit: waarom Sparki JUIST DEZE training vandaag zo plant. Direct leesbaar, geen jargon. Gebruik alleen echte data uit de context hierboven, verzin niets.\n\nAntwoord UITSLUITEND met geldige JSON (geen markdown, geen tekst eromheen): {"short": "..."}\n\nSchrijf platte tekst: GEEN markdown, geen kopjes, geen "#" of sterretjes/bold. Gebruik NOOIT het woord "AI" of "algoritme" — jij bent Sparki.`,
+          },
+        ],
+      },
+      // Fail fast instead of hanging the spinner: one attempt, hard ceiling.
+      { timeout: 30000, maxRetries: 0 },
+    );
+
+    const block = message.content[0];
+    if (!block || block.type !== "text") {
+      res.status(500).json({ error: "Unexpected Sparki response" });
+      return;
+    }
+
+    let parsed: { short?: unknown } | null = null;
+    try {
+      const raw = block.text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "");
+      const start = raw.indexOf("{");
+      const end = raw.lastIndexOf("}");
+      const json = start >= 0 && end >= 0 ? raw.slice(start, end + 1) : raw;
+      parsed = JSON.parse(json) as { short?: unknown };
+    } catch {
+      parsed = null;
+    }
+
+    const short = typeof parsed?.short === "string" ? parsed.short.trim() : "";
+    if (!short) {
+      res.status(502).json({ error: "Sparki could not form an explanation" });
+      return;
+    }
+    res.json({ short });
+  } catch (err) {
+    req.log.error({ err }, "ai.workout-explain failed");
+    res.status(500).json({ error: "Sparki service unavailable" });
+  }
+});
+
+// ── POST /api/ai/workout-explain-extended ────────────────────────────────────
+// De diepere "Waarom?" trainingsfilosofie-laag voor één specifieke training,
+// alleen geladen wanneer de atleet "Uitgebreid" opent (de zwaardere generatie).
 // Real Sparki reasoning grounded in the workout's actual structure + the
 // athlete's data. Dutch, geen "AI"-woordgebruik.
-router.post("/workout-explain", requireAuth, async (req, res) => {
+router.post("/workout-explain-extended", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const { workoutId } = req.body as { workoutId?: number };
   const id = Number(workoutId);
@@ -470,17 +542,16 @@ router.post("/workout-explain", requireAuth, async (req, res) => {
       parsed = null;
     }
 
-    const short = typeof parsed?.short === "string" ? parsed.short.trim() : "";
     const extended =
       typeof parsed?.extended === "string" ? parsed.extended.trim() : "";
 
-    if (!short || !extended) {
+    if (!extended) {
       res.status(502).json({ error: "Sparki could not form an explanation" });
       return;
     }
-    res.json({ short, extended });
+    res.json({ extended });
   } catch (err) {
-    req.log.error({ err }, "ai.workout-explain failed");
+    req.log.error({ err }, "ai.workout-explain-extended failed");
     res.status(500).json({ error: "Sparki service unavailable" });
   }
 });

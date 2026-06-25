@@ -25,6 +25,16 @@ extended source exists. Do NOT force a tier onto already-short content (one-line
 "depth" to fill an expand panel violates the project's no-fabrication rule. Those
 one-liners already satisfy "start with the short version".
 
+**Latency / two-phase rule (avoid the spinner "hang"):** when the extended tier
+is an LLM generation, do NOT generate short+extended in one call — a multi-
+paragraph generation is ~20s and the "Sparki denkt na…" spinner reads as a
+freeze. Split it: a fast SHORT-only endpoint (`/workout-explain`, ~4–5s, small
+max_tokens) paints first; the heavy EXTENDED (`/workout-explain-extended`, ~18s)
+loads ONLY when the athlete opens "Uitgebreid". `TieredExplanation` supports this
+lazy mode: `hasExtended` (force-show the toggle before content loads), `onExpand`
+(fires once on first expand → trigger the fetch), `extendedPending` (shows an
+inline spinner). On extended error, collapsing/re-expanding retries (no dead-end).
+
 Reference for the data shape: the AI-memory `ObservationCard`
 (`ai-memory-panel.tsx`) already implements the contract natively via
 `summary` (short) → `observationText` + `signals` + `alternativeExplanations` +

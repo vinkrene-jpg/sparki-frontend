@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, Loader2 } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
 
 /**
@@ -12,6 +12,9 @@ import { ACCENT } from "@/components/sparki/ui"
 export function TieredExplanation({
   short,
   extended,
+  extendedPending = false,
+  hasExtended: hasExtendedProp,
+  onExpand,
   moreLabel = "Uitgebreid",
   lessLabel = "Minder",
   className,
@@ -20,25 +23,47 @@ export function TieredExplanation({
   short: ReactNode
   /** Deeper version with more depth + data. Omit to render short only. */
   extended?: ReactNode
+  /** True while the extended version is being loaded on demand. */
+  extendedPending?: boolean
+  /** Force-show the toggle even before `extended` has loaded (lazy mode). */
+  hasExtended?: boolean
+  /** Fired the first time the athlete expands — use to lazy-load `extended`. */
+  onExpand?: () => void
   moreLabel?: string
   lessLabel?: string
   className?: string
 }) {
   const [expanded, setExpanded] = useState(false)
-  const hasExtended = extended != null && extended !== false && extended !== ""
+  const extendedLoaded = extended != null && extended !== false && extended !== ""
+  const showToggle = hasExtendedProp ?? extendedLoaded
+
+  const toggle = () => {
+    const next = !expanded
+    setExpanded(next)
+    if (next && !extendedLoaded && !extendedPending) onExpand?.()
+  }
 
   return (
     <div className={className}>
       <div className="text-[13px] leading-relaxed text-white/80">{short}</div>
 
-      {hasExtended && expanded && (
-        <div className="mt-3 border-t border-white/[0.07] pt-3">{extended}</div>
+      {showToggle && expanded && (
+        <div className="mt-3 border-t border-white/[0.07] pt-3">
+          {extendedLoaded ? (
+            extended
+          ) : extendedPending ? (
+            <span className="inline-flex items-center gap-2 text-[12px] text-white/45">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Sparki denkt na…
+            </span>
+          ) : null}
+        </div>
       )}
 
-      {hasExtended && (
+      {showToggle && (
         <button
           type="button"
-          onClick={() => setExpanded((v) => !v)}
+          onClick={toggle}
           className="mt-2.5 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-cyan-300"
         >
           <ChevronDown

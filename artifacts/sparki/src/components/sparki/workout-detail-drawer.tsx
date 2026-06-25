@@ -15,6 +15,7 @@ import {
   useWorkoutDetail,
   useSubmitFeedback,
   useWorkoutExplain,
+  useWorkoutExplainExtended,
   useWorkoutAdjust,
   useApplyProposal,
 } from "@/hooks/use-training-plan"
@@ -179,13 +180,14 @@ export function WorkoutDetailDrawer({
   const { data: workout, isLoading } = useWorkoutDetail(open ? workoutId : null)
   const submitFeedback = useSubmitFeedback()
   const explain = useWorkoutExplain()
+  const explainExtended = useWorkoutExplainExtended()
   const adjust = useWorkoutAdjust()
   const applyProposal = useApplyProposal()
 
   const [note, setNote] = useState("")
   const [explanation, setExplanation] = useState<{
     short: string
-    extended: string
+    extended: string | null
   } | null>(null)
   const [proposal, setProposal] = useState<SparkiAdjustProposal | null>(null)
   const [activeFeedback, setActiveFeedback] = useState<WorkoutFeedbackType | null>(
@@ -210,8 +212,19 @@ export function WorkoutDetailDrawer({
   const loadExplanation = () => {
     if (!workout) return
     explain.mutate(workout.id, {
+      onSuccess: (res) => setExplanation({ short: res.short, extended: null }),
+    })
+  }
+
+  // The deeper onderbouwing is the slow generation; only fetch it when the
+  // athlete actually opens "Uitgebreid", so the short kernel paints fast.
+  const loadExtended = () => {
+    if (!workout || explanation?.extended || explainExtended.isPending) return
+    explainExtended.mutate(workout.id, {
       onSuccess: (res) =>
-        setExplanation({ short: res.short, extended: res.extended }),
+        setExplanation((prev) =>
+          prev ? { ...prev, extended: res.extended } : prev,
+        ),
     })
   }
 
@@ -425,7 +438,14 @@ export function WorkoutDetailDrawer({
                   </div>
                   <TieredExplanation
                     short={explanation.short}
-                    extended={<PlainTextParagraphs text={explanation.extended} />}
+                    hasExtended
+                    extendedPending={explainExtended.isPending}
+                    onExpand={loadExtended}
+                    extended={
+                      explanation.extended != null ? (
+                        <PlainTextParagraphs text={explanation.extended} />
+                      ) : undefined
+                    }
                   />
                 </div>
               ) : (
@@ -448,7 +468,7 @@ export function WorkoutDetailDrawer({
                   )}
                 </button>
               )}
-              {explain.isError && (
+              {(explain.isError || explainExtended.isError) && (
                 <p className="text-[12px] text-red-300/70">
                   Sparki is even niet bereikbaar. Probeer het zo opnieuw.
                 </p>

@@ -101,7 +101,22 @@ export function useSubmitFeedback() {
 export function useWorkoutExplain() {
   return useMutation({
     mutationFn: (workoutId: number) =>
-      apiFetch<{ short: string; extended: string }>("/api/ai/workout-explain", {
+      apiFetch<{ short: string }>("/api/ai/workout-explain", {
+        method: "POST",
+        body: JSON.stringify({ workoutId }),
+      }),
+  });
+}
+
+/**
+ * Load the deeper "Waarom?" onderbouwing on demand — only when the athlete opens
+ * "Uitgebreid". This is the heavier generation, kept out of the first paint so
+ * the short kernel appears almost immediately.
+ */
+export function useWorkoutExplainExtended() {
+  return useMutation({
+    mutationFn: (workoutId: number) =>
+      apiFetch<{ extended: string }>("/api/ai/workout-explain-extended", {
         method: "POST",
         body: JSON.stringify({ workoutId }),
       }),
