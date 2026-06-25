@@ -260,20 +260,20 @@ export default function CorePlaygroundPage() {
         </button>
       </header>
 
-      {/* The living Core on a good↔bad cross. No numbers on it. */}
+      {/* The living Core on a smart-screen grid backdrop. No numbers on it. */}
       <div className="relative h-[40vh] min-h-[260px] shrink-0">
-        {/* X/Y kruis — boven-midden = goed, onder-midden = zwaar. De achtergrond
-            houdt de positie betekenisvol zonder cijfers. */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-          <div className="absolute left-1/2 top-6 bottom-6 w-px -translate-x-1/2 bg-gradient-to-b from-emerald-300/20 via-white/10 to-rose-300/20" />
-          <div className="absolute top-1/2 left-6 right-6 h-px -translate-y-1/2 bg-white/10" />
-          <span className="absolute left-1/2 top-2 -translate-x-1/2 font-mono text-[9px] uppercase tracking-[0.22em] text-emerald-300/45">
-            Goed · veel reserve
-          </span>
-          <span className="absolute left-1/2 bottom-9 -translate-x-1/2 font-mono text-[9px] uppercase tracking-[0.22em] text-rose-300/45">
-            Zwaar · weinig reserve
-          </span>
-        </div>
+        {/* Grid-raster — rustig, technisch instrument-raster dat de Sparki Ride
+            smart-screen-look nabootst achter de Core. Subtiel zodat de Core
+            ervóór goed leesbaar blijft. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-6 opacity-[0.5] [mask-image:radial-gradient(ellipse_at_center,black_55%,transparent_100%)]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, oklch(0.82 0.16 200 / 0.10) 1px, transparent 1px), linear-gradient(to bottom, oklch(0.82 0.16 200 / 0.10) 1px, transparent 1px)",
+            backgroundSize: "32px 32px",
+          }}
+        />
         <SparkiCore state={state} className="absolute inset-0" />
         <p className="pointer-events-none absolute inset-x-0 bottom-2 text-center font-sans text-[12px] font-light text-white/35">
           Je actuele prestatiecapaciteit — zie je 'm binnen een halve seconde?

@@ -10,6 +10,9 @@ import { useAiBrief, type AiSource } from "@/hooks/use-ai-brief"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { useKnowledge } from "@/hooks/use-knowledge"
 import { useFeedNews, type FeedNewsItem } from "@/hooks/use-feed-news"
+import { useRaces } from "@/hooks/use-races"
+import { useCoachAnalysis } from "@/hooks/use-coach-analysis"
+import { useCircleFeed } from "@/hooks/use-social"
 import {
   Megaphone,
   Users,
@@ -71,6 +74,92 @@ function relTime(iso: string | null): string {
   if (days < 7) return `${days} d`
   if (days < 30) return `${Math.floor(days / 7)} w`
   return d.toLocaleDateString("nl-NL", { day: "numeric", month: "short" })
+}
+
+function ymdToday(): string {
+  const d = new Date()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${d.getFullYear()}-${m}-${day}`
+}
+
+function raceWhen(ymd: string): string {
+  const d = new Date(`${ymd}T00:00:00`)
+  if (Number.isNaN(d.getTime())) return ""
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const days = Math.round((d.getTime() - today.getTime()) / 86_400_000)
+  if (days <= 0) return "Vandaag"
+  if (days === 1) return "Morgen"
+  if (days < 14) return `over ${days} d`
+  if (days < 60) return `over ${Math.round(days / 7)} w`
+  return d.toLocaleDateString("nl-NL", { day: "numeric", month: "short" })
+}
+
+function raceDateText(ymd: string): string {
+  const d = new Date(`${ymd}T00:00:00`)
+  if (Number.isNaN(d.getTime())) return ""
+  return d.toLocaleDateString("nl-NL", {
+    weekday: "short",
+    day: "numeric",
+    month: "long",
+  })
+}
+
+const priorityLabel = (p: "A" | "B" | "C"): string =>
+  p === "A"
+    ? "A-wedstrijd (hoofddoel)"
+    : p === "B"
+      ? "B-wedstrijd"
+      : "C-wedstrijd"
+
+// Honest, actionable empty state per tab — never a dead-end: each explains what's
+// missing in plain Dutch and routes to the exact flow that fills it.
+function EmptyTab({ active }: { active: FilterKey }) {
+  const config: Partial<
+    Record<FilterKey, { text: string; href?: string; cta?: string }>
+  > = {
+    all: {
+      text: "Nog niets te tonen. Vul je dagelijkse check-in in zodat Sparki iets te melden heeft.",
+      href: "/you?focus=checkin",
+      cta: "Check-in invullen",
+    },
+    news: {
+      text: "Nog geen nieuws beschikbaar — Sparki stemt dit af op jouw sport en doelen zodra er iets relevants is.",
+    },
+    coach: {
+      text: "Sparki heeft nog te weinig gegevens om je te coachen. Vul je check-in in zodat er iets te analyseren is.",
+      href: "/you?focus=checkin",
+      cta: "Check-in invullen",
+    },
+    team: {
+      text: "Je volgt nog niemand in je Circle. Voeg teamgenoten of vrienden toe om hun updates hier te zien.",
+      href: "/samen",
+      cta: "Naar je Circle",
+    },
+    race: {
+      text: "Je hebt nog geen aankomende wedstrijden. Voeg er een toe om je races hier te volgen.",
+      href: "/races",
+      cta: "Wedstrijd toevoegen",
+    },
+  }
+  const c = config[active] ?? { text: "Geen berichten in deze categorie" }
+  return (
+    <div className="py-10 text-center">
+      <p className="mx-auto max-w-xs text-pretty text-[12px] leading-relaxed text-white/40">
+        {c.text}
+      </p>
+      {c.href && c.cta && (
+        <Link
+          href={c.href}
+          className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-200 transition-colors hover:bg-cyan-300/15"
+        >
+          {c.cta}
+          <ArrowRight className="h-3 w-3" />
+        </Link>
+      )}
+    </div>
+  )
 }
 
 function Skeleton({ className = "" }: { className?: string }) {
@@ -140,6 +229,9 @@ function KnowledgeFeedSection() {
 export default function FeedPage() {
   const { data: briefData, isLoading: briefLoading } = useAiBrief(true)
   const { data: newsData, isLoading: newsLoading } = useFeedNews()
+  const { data: racesData, isLoading: raceLoading } = useRaces()
+  const { data: coachData, isLoading: coachLoading } = useCoachAnalysis()
+  const { data: circleData, isLoading: teamLoading } = useCircleFeed()
   const [active, setActive] = useState<FilterKey>("all")
   const [readerItem, setReaderItem] = useState<FeedNewsItem | null>(null)
 
@@ -173,15 +265,93 @@ export default function FeedPage() {
     news: n,
   }))
 
+  // Coach — Sparki's structured coaching for today (advice + what stands out).
+  // Real output of the observation engine over the athlete's own metrics. Kept
+  // out of "all" to avoid duplicating the narrative briefing.
+  const coachItems: StreamItem[] = coachData
+    ? [
+        {
+          id: "coach-advies",
+          type: "coach" as FilterKey,
+          label: "Coach",
+          title: coachData.advice?.headline || "Advies voor vandaag",
+          body: [coachData.adviesVandaag, coachData.waaromAdvies]
+            .filter((s) => s && s.trim().length > 0)
+            .join("\n\n"),
+          author: "Sparki-coach",
+          time: relTime(coachData.date),
+        },
+        ...coachData.observations.map((o, i) => ({
+          id: `coach-obs-${i}`,
+          type: "coach" as FilterKey,
+          label: "Coach",
+          title: o.topic,
+          body: o.statement,
+          time: relTime(coachData.date),
+        })),
+      ]
+    : []
+
+  // Team — updates from the people the athlete follows in their Circle (only
+  // friend/teammate activity; the athlete's own items live elsewhere).
+  const teamItems: StreamItem[] = (circleData?.items ?? [])
+    .filter((it) => it.type.startsWith("friend_"))
+    .map((it) => ({
+      id: `team-${it.id}`,
+      type: "team" as FilterKey,
+      label: "Team",
+      title: it.title,
+      body: it.detail ?? "",
+      author: it.displayName ?? undefined,
+      time: relTime(it.at),
+    }))
+
+  // Race — the athlete's own upcoming races, soonest first.
+  const todayYmd = ymdToday()
+  const raceItems: StreamItem[] = (racesData ?? [])
+    .filter((r) => r.raceDate >= todayYmd)
+    .sort((a, b) => a.raceDate.localeCompare(b.raceDate))
+    .map((r) => ({
+      id: `race-${r.id}`,
+      type: "race" as FilterKey,
+      label: "Race",
+      title: r.name,
+      body: [raceDateText(r.raceDate), r.location, priorityLabel(r.priority)]
+        .filter((s) => s && String(s).trim().length > 0)
+        .join(" · "),
+      time: raceWhen(r.raceDate),
+    }))
+
   const isSparki = active === "ai"
   const streamItems: StreamItem[] =
     active === "all"
-      ? [...briefItems, ...newsItems]
+      ? [...briefItems, ...raceItems, ...teamItems, ...newsItems]
       : active === "news"
         ? newsItems
-        : isSparki
-          ? briefItems
-          : []
+        : active === "coach"
+          ? coachItems
+          : active === "team"
+            ? teamItems
+            : active === "race"
+              ? raceItems
+              : isSparki
+                ? briefItems
+                : []
+
+  const loading =
+    active === "all"
+      ? briefLoading || newsLoading || raceLoading || teamLoading
+      : active === "news"
+        ? newsLoading
+        : active === "coach"
+          ? coachLoading
+          : active === "team"
+            ? teamLoading
+            : active === "race"
+              ? raceLoading
+              : isSparki
+                ? briefLoading
+                : false
 
   const showPersonalNote =
     (active === "all" || active === "news") && newsItems.length > 0
@@ -241,7 +411,7 @@ export default function FeedPage() {
 
         {/* Stream items */}
         <div className="mt-2 flex flex-col">
-          {(briefLoading || newsLoading) && streamItems.length === 0 && (
+          {loading && streamItems.length === 0 && (
             <>
               {[0, 1, 2].map((i) => (
                 <div
@@ -259,20 +429,9 @@ export default function FeedPage() {
             </>
           )}
 
-          {!briefLoading &&
-            !newsLoading &&
-            streamItems.length === 0 &&
-            !isSparki && (
-              <div className="py-8 text-center">
-                <p className="text-[12px] text-white/20">
-                  {active === "news"
-                    ? "Nog geen nieuws beschikbaar"
-                    : active === "all"
-                      ? "Nog niets te tonen"
-                      : "Geen berichten in deze categorie"}
-                </p>
-              </div>
-            )}
+          {!loading && streamItems.length === 0 && !isSparki && (
+            <EmptyTab active={active} />
+          )}
 
           {streamItems.map((item) => {
             const meta = typeMeta[item.type]
@@ -365,7 +524,15 @@ export default function FeedPage() {
                   )}
 
                   {item.body && (
-                    <p className="mt-1 text-pretty text-[12px] leading-relaxed text-white/45">
+                    <p
+                      className={`mt-1.5 text-pretty leading-relaxed ${
+                        isAi
+                          ? "whitespace-pre-line text-[13px] text-white/70"
+                          : item.type === "coach"
+                            ? "whitespace-pre-line text-[12px] text-white/55"
+                            : "text-[12px] text-white/45"
+                      }`}
+                    >
                       {item.body}
                     </p>
                   )}

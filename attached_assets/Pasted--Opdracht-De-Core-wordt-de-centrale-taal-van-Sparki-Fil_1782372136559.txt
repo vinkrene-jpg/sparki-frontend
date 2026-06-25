@@ -1,0 +1,189 @@
+# Opdracht – De Core wordt de centrale taal van Sparki
+
+## Filosofie
+
+De Core is vanaf nu de centrale visuele taal van Sparki.
+
+Alle andere visualisaties zijn géén losse dashboards meer, maar verklaren of verdiepen de Core.
+
+De gebruiker leert dus één taal.
+
+Niet tien verschillende grafieken.
+
+---
+
+# Ontwerpprincipe
+
+Elke visualisatie in Sparki moet één van deze twee vragen beantwoorden:
+
+**1. Waarom ziet mijn Core er nu zo uit?**
+
+of
+
+**2. Hoe is mijn Core veranderd?**
+
+Wanneer een visualisatie deze vragen niet beantwoordt, hoort deze waarschijnlijk niet meer thuis in Sparki.
+
+---
+
+# Performance Radar
+
+De huidige Performance Radar wordt niet verwijderd.
+
+Hij krijgt een andere functie.
+
+Nu toont hij losse eigenschappen.
+
+Dat moet veranderen.
+
+Nieuwe functie:
+
+**Waarom staat mijn Core hier?**
+
+De Radar laat zien welke factoren de grootste invloed hebben op de huidige Core.
+
+Bijvoorbeeld:
+
+* herstel
+* vermogen
+* trainingsbelasting
+* mentale belasting
+* voeding
+* slaap
+
+Niet als losse scorekaart.
+
+Maar als verklaring van de huidige Core.
+
+De Radar is dus een verdieping van de Core.
+
+Niet een tweede hoofdvisualisatie.
+
+---
+
+# Readiness History
+
+Ook deze blijft bestaan.
+
+Maar niet meer als een simpele lijn.
+
+Nieuwe functie:
+
+**Hoe heeft mijn Core zich ontwikkeld?**
+
+Toon een tijdlijn van historische Cores.
+
+Bijvoorbeeld:
+
+Dag 1
+
+Core
+
+↓
+
+Dag 2
+
+Core
+
+↓
+
+Dag 3
+
+Core
+
+↓
+
+Dag 4
+
+Core
+
+De sporter ziet letterlijk hoe de Core zich door de tijd heeft ontwikkeld.
+
+Niet alleen een readiness-score.
+
+Maar de daadwerkelijke toestand.
+
+Bij aanklikken van een historische Core opent een uitleg:
+
+* waarom stond de Core daar?
+* welke training ging eraan vooraf?
+* welke factoren hadden de grootste invloed?
+* wat gebeurde daarna?
+
+---
+
+# Historie
+
+Maak de volledige historie Core-gebaseerd.
+
+Niet:
+
+Grafieken.
+
+Maar:
+
+Een ontwikkeling van de Core door de tijd.
+
+Daarmee ontstaat een visuele levenslijn van de sporter.
+
+---
+
+# Verdieping
+
+Wanneer de gebruiker op de Core tikt:
+
+Open een analysepagina.
+
+Niet:
+
+"Hier zijn alle grafieken."
+
+Maar:
+
+"Waarom staat mijn Core hier?"
+
+Gebruik hiervoor bestaande analyses waar mogelijk.
+
+Nieuwe visualisaties zijn alleen toegestaan wanneer zij de Core beter verklaren.
+
+---
+
+# Ontwerpregel
+
+De Core is altijd de eerste laag.
+
+Alle overige visualisaties zijn ondergeschikt.
+
+Dus:
+
+Data
+
+↓
+
+Analyse
+
+↓
+
+Core
+
+↓
+
+Verdieping
+
+Niet andersom.
+
+---
+
+# Geen dubbele informatie
+
+Voorkom dat dezelfde informatie meerdere keren wordt weergegeven.
+
+De gebruiker ziet eerst de Core.
+
+Pas daarna, indien gewenst, de onderliggende analyses.
+
+Hierdoor wordt Sparki eenvoudiger, consistenter en intuïtiever.
+
+De sporter leert één visuele taal die overal binnen Sparki terugkomt.
+
+Dat maakt de Core het herkenbare gezicht van het volledige platform.
