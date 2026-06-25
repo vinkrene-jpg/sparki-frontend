@@ -22,6 +22,9 @@ export interface UserProfile {
   isHeadTester?: boolean;
   headTesterNumber?: number | null;
   foundingNumber?: number | null;
+  lastSeenAt?: string | null;
+  lastPlatform?: string | null;
+  appVersion?: string | null;
   createdAt: string;
   updatedAt: string;
 }

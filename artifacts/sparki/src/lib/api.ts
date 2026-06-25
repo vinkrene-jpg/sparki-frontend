@@ -1,4 +1,5 @@
 import { DEV_PREVIEW, getDevAthleteId } from "@/lib/dev";
+import { APP_VERSION } from "@/lib/version";
 
 export const API_BASE = import.meta.env.VITE_API_URL ?? "";
 
@@ -19,6 +20,7 @@ export async function apiFetch<T = unknown>(
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      "X-Sparki-App-Version": APP_VERSION,
       ...devHeader,
       ...init?.headers,
     },

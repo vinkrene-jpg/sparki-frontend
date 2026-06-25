@@ -6,6 +6,7 @@ import {
   healthCheckResultsTable,
   healthCheckRunsTable,
   healthCheckBatchesTable,
+  userProfilesTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { isAdmin } from "../lib/flags";
@@ -335,6 +336,91 @@ router.post(
     } catch (err) {
       req.log.error({ err }, "admin.health.resolve failed");
       res.status(500).json({ error: "Kon niet als opgelost markeren" });
+    }
+  },
+);
+
+// ── Tester overview ───────────────────────────────────────────────────────────
+
+// GET /api/admin/testers — one row per invitation (the tester roster), joined to
+// the accepter's profile (when accepted) + their feedback counts. Everything is
+// real, aggregated data: pending invites show only what's known (email + date),
+// accepted testers add name, number, role, last login, device, app version and
+// feedback/bug/idea counts. Missing telemetry stays NULL (honest "—"), never faked.
+router.get("/testers", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const result = await db.execute(sql`
+      SELECT
+        i.id                       AS "invitationId",
+        i.email                    AS "inviteEmail",
+        i.relationship             AS "relationship",
+        i.target_role              AS "targetRole",
+        i.status                   AS "inviteStatus",
+        i.created_at               AS "invitedAt",
+        i.accepted_by_clerk_id     AS "acceptedByClerkId",
+        up.display_name            AS "displayName",
+        up.email                   AS "profileEmail",
+        up.roles                   AS "roles",
+        up.is_head_tester          AS "isHeadTester",
+        up.head_tester_number      AS "headTesterNumber",
+        up.last_seen_at            AS "lastSeenAt",
+        up.last_platform           AS "lastPlatform",
+        up.app_version             AS "appVersion",
+        up.tester_completed_at     AS "testerCompletedAt",
+        COALESCE(br.total, 0)::int AS "feedbackTotal",
+        COALESCE(br.bugs, 0)::int  AS "bugs",
+        COALESCE(br.ideas, 0)::int AS "ideas"
+      FROM invitations i
+      LEFT JOIN user_profiles up ON up.clerk_id = i.accepted_by_clerk_id
+      LEFT JOIN (
+        SELECT clerk_id,
+               count(*)                              AS total,
+               count(*) FILTER (WHERE kind = 'bug')  AS bugs,
+               count(*) FILTER (WHERE kind = 'idea') AS ideas
+        FROM bug_reports
+        GROUP BY clerk_id
+      ) br ON br.clerk_id = i.accepted_by_clerk_id
+      ORDER BY i.created_at DESC
+    `);
+    res.json({ testers: result.rows });
+  } catch (err) {
+    req.log.error({ err }, "admin.testers failed");
+    res.status(500).json({ error: "Kon het testeroverzicht niet laden" });
+  }
+});
+
+// POST /api/admin/testers/:clerkId/complete — mark a tester as "Klaar" (done)
+// or reopen them. Body: { completed: boolean }. Only works on accepted testers
+// (a real profile must exist).
+router.post(
+  "/testers/:clerkId/complete",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    const clerkId = String(req.params["clerkId"] ?? "");
+    const { completed } = (req.body ?? {}) as { completed?: unknown };
+    if (!clerkId) {
+      res.status(400).json({ error: "Geen tester opgegeven" });
+      return;
+    }
+    if (typeof completed !== "boolean") {
+      res.status(400).json({ error: "completed moet true of false zijn" });
+      return;
+    }
+    try {
+      const [row] = await db
+        .update(userProfilesTable)
+        .set({ testerCompletedAt: completed ? new Date() : null })
+        .where(eq(userProfilesTable.clerkId, clerkId))
+        .returning({ clerkId: userProfilesTable.clerkId });
+      if (!row) {
+        res.status(404).json({ error: "Deze tester is nog niet actief" });
+        return;
+      }
+      res.json({ ok: true });
+    } catch (err) {
+      req.log.error({ err }, "admin.testers.complete failed");
+      res.status(500).json({ error: "Kon de testerstatus niet bijwerken" });
     }
   },
 );

@@ -167,6 +167,11 @@ export const queryKeys = {
     detail: (token: string) => ["invitations", "detail", token] as const,
   },
 
+  testers: {
+    all: () => ["testers"] as const,
+    list: () => ["testers", "list"] as const,
+  },
+
   knowledge: {
     all: () => ["knowledge"] as const,
     meta: () => ["knowledge", "meta"] as const,

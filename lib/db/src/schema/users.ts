@@ -19,6 +19,17 @@ export const userProfilesTable = pgTable("user_profiles", {
   // when the first head-tester invite is accepted. Unique; NULL until earned
   // (Postgres allows many NULLs under UNIQUE). Assigned atomically (MAX+1).
   headTesterNumber: integer("head_tester_number").unique(),
+  // Lightweight session telemetry, refreshed on every /api/auth/me + /sync.
+  // Honest gaps: NULL until the user has actually been seen / sent the data.
+  // lastPlatform is parsed from the User-Agent ("iPhone" | "iPad" | "Android" |
+  // "Desktop" | NULL when unknown). appVersion is the client build version sent
+  // in the X-Sparki-App-Version header.
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+  lastPlatform: text("last_platform"),
+  appVersion: text("app_version"),
+  // Tester lifecycle: when an admin marks a tester as "Klaar" (done testing).
+  // NULL = still Actief/Uitgenodigd. Set/cleared from the tester overview.
+  testerCompletedAt: timestamp("tester_completed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

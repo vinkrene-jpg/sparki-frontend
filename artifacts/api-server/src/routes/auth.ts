@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request } from "express";
 import { eq } from "drizzle-orm";
 import { db, userProfilesTable, validRoles, type Role } from "@workspace/db";
 import {
@@ -12,6 +12,47 @@ import { isAdmin } from "../lib/flags";
 import { assignHeadTesterNumber } from "../engines/insights";
 
 const router = Router();
+
+// Map a User-Agent string to a coarse, plain-language device label for the
+// tester overview. Returns null (honest "onbekend") when it can't be told —
+// never guesses.
+function platformFromUserAgent(ua: string | undefined): string | null {
+  if (!ua) return null;
+  if (/iPhone/i.test(ua)) return "iPhone";
+  if (/iPad/i.test(ua)) return "iPad";
+  if (/Android/i.test(ua)) return "Android";
+  if (/Macintosh|Windows NT|Linux|CrOS/i.test(ua)) return "Desktop";
+  return null;
+}
+
+// Refresh lightweight session telemetry (last seen, device, app version) on
+// every authenticated read. Returns the updated row so the response reflects
+// the new values immediately. Device/version are only written when actually
+// present — a missing signal leaves the prior honest value untouched.
+async function recordTelemetry<
+  T extends { clerkId: string },
+>(req: Request, profile: T): Promise<T> {
+  const platform = platformFromUserAgent(req.get("user-agent") ?? undefined);
+  const headerVersion = req.get("x-sparki-app-version");
+  const appVersion =
+    headerVersion && headerVersion.trim() ? headerVersion.trim() : null;
+
+  const set: Record<string, unknown> = { lastSeenAt: new Date() };
+  if (platform) set["lastPlatform"] = platform;
+  if (appVersion) set["appVersion"] = appVersion;
+
+  try {
+    const [row] = await db
+      .update(userProfilesTable)
+      .set(set)
+      .where(eq(userProfilesTable.clerkId, profile.clerkId))
+      .returning();
+    return row ? ({ ...profile, ...row } as T) : profile;
+  } catch (err) {
+    req.log.error({ err }, "auth: telemetry update failed");
+    return profile;
+  }
+}
 
 // Self-heal the Hoofdtester badge number. The invite-accept path assigns it
 // best-effort *after* the accept commits, so a transient hiccup could leave a
@@ -70,7 +111,8 @@ router.post("/sync", requireAuth, async (req, res) => {
       res.status(500).json({ error: "Kon je account niet aanmaken." });
       return;
     }
-    const healed = await withHeadTesterNumber(profile, req.log);
+    const tracked = await recordTelemetry(req, profile);
+    const healed = await withHeadTesterNumber(tracked, req.log);
     res.json({ ...healed, isAdmin: isAdmin(clerkId) });
   } catch (err) {
     req.log.error({ err }, "auth.sync failed");
@@ -98,7 +140,8 @@ router.get("/me", requireAuth, async (req, res) => {
       return;
     }
 
-    const healed = await withHeadTesterNumber(profile, req.log);
+    const tracked = await recordTelemetry(req, profile);
+    const healed = await withHeadTesterNumber(tracked, req.log);
     res.json({ ...healed, isAdmin: isAdmin(clerkId) });
   } catch (err) {
     req.log.error({ err }, "auth.me failed");
