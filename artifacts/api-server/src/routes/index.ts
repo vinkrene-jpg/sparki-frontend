@@ -32,6 +32,7 @@ import materialRouter from "./material";
 import documentAnalysisRouter from "./document-analysis";
 import calendarRouter from "./calendar";
 import stateRouter from "./state";
+import photoStyleRouter from "./photo-style";
 import devRouter from "./dev";
 
 const router: IRouter = Router();
@@ -69,6 +70,7 @@ router.use("/material", materialRouter);
 router.use("/document-analyses", documentAnalysisRouter);
 router.use("/calendar", calendarRouter);
 router.use("/state", stateRouter);
+router.use("/photo-style", photoStyleRouter);
 
 // Dev-only routes (preview-athlete switcher). Mounted ONLY outside production so
 // these endpoints simply do not exist on a deployed build.
