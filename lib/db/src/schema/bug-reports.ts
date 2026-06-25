@@ -13,12 +13,18 @@ export const bugReportStatuses = [
 ] as const;
 export type BugReportStatus = (typeof bugReportStatuses)[number];
 
+// What kind of feedback a report is: a bug, an idea/suggestion, or something
+// else. Defaults to "bug" for backward compatibility with older rows.
+export const bugReportKinds = ["bug", "idea", "other"] as const;
+export type BugReportKind = (typeof bugReportKinds)[number];
+
 export const bugReportsTable = pgTable("bug_reports", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
     .notNull()
     .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
   userRole: text("user_role"),
+  kind: text("kind").notNull().default("bug"),
   pageUrl: text("page_url"),
   description: text("description").notNull(),
   screenshotUrl: text("screenshot_url"),

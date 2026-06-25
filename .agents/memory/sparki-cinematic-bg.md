@@ -41,3 +41,13 @@ identical across screens.
   change). Beam intensity lives on the beam WRAPPER opacity (the inner layer
   animates 0→peak), so scene-specific intensity survives the animation.
 - Verify mobile at ~402px; keep the fixed BottomNav legible (bottom vignette).
+
+## ScreenShell injects home chrome — standalone pages need `bare`
+ScreenShell auto-injects coaching surfaces around `{children}`: HomeProfilePrompt,
+CoachInputNeeds, CoachAnalysisCard, CoachDecisionCard (all when section maps to
+home / is in COACH_CARD_SECTIONS) AND `<FollowUpPrompt />` for EVERY section except
+"samen"/state-surface. A standalone full-screen moment (e.g. head-tester welcome)
+that passes `section="Home"` gets its own content buried beneath the day-coaching
+stack — looks like the route "didn't match" when it actually did.
+**Fix:** pass `bare` (suppresses all injected surfaces) + a neutral section whose
+label is meaningful (unknown keys fall back to section.toUpperCase()).

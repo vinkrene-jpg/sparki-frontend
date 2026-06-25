@@ -19,6 +19,9 @@ export interface UserProfile {
   roles: Role[];
   activeRole: Role;
   isAdmin?: boolean;
+  isHeadTester?: boolean;
+  headTesterNumber?: number | null;
+  foundingNumber?: number | null;
   createdAt: string;
   updatedAt: string;
 }

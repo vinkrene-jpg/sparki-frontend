@@ -30,6 +30,7 @@ import KnowledgePage from "@/pages/knowledge";
 import InvitationsPage from "@/pages/invitations";
 import InviteAcceptPage from "@/pages/invite-accept";
 import TesterQrPage from "@/pages/tester-qr";
+import TesterWelcomePage from "@/pages/tester-welcome";
 import CoachAthletePlanPage from "@/pages/coach-athlete-plan";
 import LandingPage from "@/pages/landing";
 import AdminPage from "@/pages/admin";
@@ -39,6 +40,7 @@ import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
 import { UserProvider, useUserProfile } from "@/contexts/UserContext";
 import { FeatureFlagProvider } from "@/contexts/FeatureFlagContext";
+import { FeedbackProvider } from "@/contexts/FeedbackContext";
 import { DevPreview } from "@/components/sparki/dev-preview";
 import { DEV_PREVIEW } from "@/lib/dev";
 import { STALE } from "@/lib/query-keys";
@@ -285,6 +287,16 @@ function SignedInHomeReady() {
     );
   }
 
+  // First arrival as a head tester (e.g. granted server-side, then signing in
+  // fresh) routes once to the premium welcome moment. The page itself records
+  // the "seen" flag, so this only ever fires a single time per account.
+  if (
+    profile?.isHeadTester &&
+    localStorage.getItem(`sparki_tester_welcomed_${profile.clerkId}`) !== "true"
+  ) {
+    return <Redirect to="/welkom-tester" />;
+  }
+
   return (
     <>
       <RoleHome />
@@ -399,6 +411,7 @@ function AppRouter() {
         <ClerkQueryClientCacheInvalidator />
         <UserProvider>
           <FeatureFlagProvider>
+            <FeedbackProvider>
             <ErrorBoundary>
               <ScrollToTop />
               {DEV_PREVIEW ? (
@@ -448,6 +461,9 @@ function AppRouter() {
                 <Route path="/tester-qr">
                   <ProtectedPage component={TesterQrPage} />
                 </Route>
+                <Route path="/welkom-tester">
+                  <ProtectedPage component={TesterWelcomePage} />
+                </Route>
                 <Route path="/coach/athletes/:athleteId/plan">
                   <ProtectedPage component={CoachAthletePlanPage} />
                 </Route>
@@ -458,6 +474,7 @@ function AppRouter() {
               </Switch>
               )}
             </ErrorBoundary>
+            </FeedbackProvider>
           </FeatureFlagProvider>
         </UserProvider>
       </QueryClientProvider>

@@ -6,6 +6,7 @@ import {
   ObjectNotFoundError,
 } from "../lib/objectStorage";
 import { ObjectPermission } from "../lib/objectAcl";
+import { isAdmin } from "../lib/flags";
 
 // Object storage routes for the Sparki Input Center.
 //
@@ -68,11 +69,16 @@ router.get(
       const objectFile =
         await objectStorageService.getObjectEntityFile(objectPath);
 
-      const canAccess = await objectStorageService.canAccessObjectEntity({
-        userId: clerkId,
-        objectFile,
-        requestedPermission: ObjectPermission.READ,
-      });
+      // Admins may read any object so they can review tester-submitted bug
+      // screenshots (which are owned privately by the reporter). Everyone else
+      // is owner/ACL-gated as normal.
+      const canAccess =
+        isAdmin(clerkId) ||
+        (await objectStorageService.canAccessObjectEntity({
+          userId: clerkId,
+          objectFile,
+          requestedPermission: ObjectPermission.READ,
+        }));
       if (!canAccess) {
         res.status(403).json({ error: "Geen toegang tot dit bestand" });
         return;

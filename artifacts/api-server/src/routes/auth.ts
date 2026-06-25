@@ -9,8 +9,32 @@ import {
 } from "../lib/auth";
 import { ensureAccount } from "../lib/account";
 import { isAdmin } from "../lib/flags";
+import { assignHeadTesterNumber } from "../engines/insights";
 
 const router = Router();
+
+// Self-heal the Hoofdtester badge number. The invite-accept path assigns it
+// best-effort *after* the accept commits, so a transient hiccup could leave a
+// profile with isHeadTester=true but headTesterNumber=null. assignHeadTesterNumber
+// is idempotent (returns the existing number if already set), so calling it here
+// whenever the number is missing closes that gap on the next sync/read — the head
+// tester never gets stuck without a number.
+async function withHeadTesterNumber<
+  T extends {
+    clerkId: string;
+    isHeadTester?: boolean | null;
+    headTesterNumber?: number | null;
+  },
+>(profile: T, log: { error: (obj: unknown, msg?: string) => void }): Promise<T> {
+  if (!profile.isHeadTester || profile.headTesterNumber != null) return profile;
+  try {
+    const n = await assignHeadTesterNumber(profile.clerkId);
+    return { ...profile, headTesterNumber: n };
+  } catch (err) {
+    log.error({ err }, "auth: head-tester number backfill failed");
+    return profile;
+  }
+}
 
 // POST /api/auth/sync
 // Idempotent first-login provisioning AND every-login self-healing. Identity
@@ -46,7 +70,8 @@ router.post("/sync", requireAuth, async (req, res) => {
       res.status(500).json({ error: "Kon je account niet aanmaken." });
       return;
     }
-    res.json({ ...profile, isAdmin: isAdmin(clerkId) });
+    const healed = await withHeadTesterNumber(profile, req.log);
+    res.json({ ...healed, isAdmin: isAdmin(clerkId) });
   } catch (err) {
     req.log.error({ err }, "auth.sync failed");
     res
@@ -55,8 +80,10 @@ router.post("/sync", requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/auth/me — read-only. Self-heals nothing; sync is the provisioning
-// path. A missing profile here means sync has not run/succeeded yet.
+// GET /api/auth/me — read-only for provisioning (sync is the provisioning path;
+// a missing profile here means sync has not run/succeeded yet). The one narrow
+// exception is the idempotent Hoofdtester-number backfill below, which closes a
+// best-effort gap from invite-accept without re-provisioning anything else.
 router.get("/me", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
 
@@ -71,7 +98,8 @@ router.get("/me", requireAuth, async (req, res) => {
       return;
     }
 
-    res.json({ ...profile, isAdmin: isAdmin(clerkId) });
+    const healed = await withHeadTesterNumber(profile, req.log);
+    res.json({ ...healed, isAdmin: isAdmin(clerkId) });
   } catch (err) {
     req.log.error({ err }, "auth.me failed");
     res.status(500).json({ error: "Internal server error" });

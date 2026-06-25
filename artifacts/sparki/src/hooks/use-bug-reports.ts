@@ -5,12 +5,14 @@ import { apiFetch } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 
 export type BugReportStatus = "new" | "triaged" | "fixed" | "rejected";
+export type BugReportKind = "bug" | "idea" | "other";
 
 export type BugReport = {
   id: number;
   clerkId: string;
   reporterName?: string | null;
   userRole: string | null;
+  kind?: BugReportKind;
   pageUrl: string | null;
   description: string;
   screenshotUrl: string | null;
@@ -21,10 +23,37 @@ export type BugReport = {
 
 export type BugReportInput = {
   description: string;
+  kind?: BugReportKind;
   userRole?: string | null;
   pageUrl?: string | null;
   screenshotUrl?: string | null;
+  screenshotObjectPath?: string | null;
 };
+
+// Upload a screenshot via the presigned-URL flow (cookie-authenticated, owner =
+// the reporter). Returns the canonical object path to send with the report. The
+// bytes go DIRECTLY to storage — never through our API server.
+export async function uploadBugScreenshot(file: File): Promise<string> {
+  const contentType = file.type || "application/octet-stream";
+  const { uploadURL, objectPath } = await apiFetch<{
+    uploadURL: string;
+    objectPath: string;
+  }>("/api/storage/uploads/request-url", {
+    method: "POST",
+    body: JSON.stringify({
+      name: file.name,
+      size: file.size,
+      contentType,
+    }),
+  });
+  const put = await fetch(uploadURL, {
+    method: "PUT",
+    headers: { "Content-Type": contentType },
+    body: file,
+  });
+  if (!put.ok) throw new Error("Uploaden van screenshot is mislukt");
+  return objectPath;
+}
 
 export function useCreateBugReport() {
   const qc = useQueryClient();

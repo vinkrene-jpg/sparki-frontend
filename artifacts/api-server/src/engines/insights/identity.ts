@@ -62,6 +62,51 @@ export function foundingLabel(n: number): string {
   return `Founding Athlete #${String(n).padStart(3, "0")}`;
 }
 
+/**
+ * Assign (or return the existing) Head Tester number for a user. Mirrors
+ * {@link assignFoundingNumber}: idempotent, atomic MAX+1, retries on the unique
+ * constraint when two first-accepts race. Called when a head-tester invite is
+ * accepted.
+ */
+export async function assignHeadTesterNumber(clerkId: string): Promise<number> {
+  const [existing] = await db
+    .select({ n: userProfilesTable.headTesterNumber })
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkId, clerkId));
+  if (existing?.n != null) return existing.n;
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      const result = await db.execute<{ head_tester_number: number }>(sql`
+        UPDATE user_profiles
+        SET head_tester_number = (
+              SELECT COALESCE(MAX(head_tester_number), 0) + 1 FROM user_profiles
+            ),
+            updated_at = now()
+        WHERE clerk_id = ${clerkId} AND head_tester_number IS NULL
+        RETURNING head_tester_number
+      `);
+      const claimed = result.rows?.[0]?.head_tester_number;
+      if (claimed != null) return Number(claimed);
+
+      const [row] = await db
+        .select({ n: userProfilesTable.headTesterNumber })
+        .from(userProfilesTable)
+        .where(eq(userProfilesTable.clerkId, clerkId));
+      if (row?.n != null) return row.n;
+    } catch (err) {
+      if (isUniqueViolation(err)) continue;
+      throw err;
+    }
+  }
+  throw new Error("Kon geen Hoofdtester-nummer toewijzen.");
+}
+
+/** Zero-padded badge label, e.g. 1 → "Head Tester #001". */
+export function headTesterLabel(n: number): string {
+  return `Head Tester #${String(n).padStart(3, "0")}`;
+}
+
 /** The three-line founding badge copy (verbatim brief). */
 export const FOUNDING_LINES = [
   "Klinkt belangrijk.",

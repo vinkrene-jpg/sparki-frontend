@@ -2,7 +2,7 @@
 // lets the signed-in user accept it. On success the role + relationship are stored
 // server-side and the user is sent to the home screen. Cinematic Sparki design.
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useLocation } from "wouter"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { ACCENT } from "@/components/sparki/ui"
@@ -38,18 +38,35 @@ export default function InviteAcceptPage() {
   const [accepted, setAccepted] = useState(false)
   const [acceptError, setAcceptError] = useState<string | null>(null)
 
+  const isHeadTester = invite?.relationship === "head_tester"
+
   function onAccept() {
     if (!token) return
     setAcceptError(null)
+    // Head testers land on their premium welcome moment; everyone else goes home.
+    const dest = invite?.relationship === "head_tester" ? "/welkom-tester" : "/"
     accept.mutate(token, {
       onSuccess: () => {
         setAccepted(true)
-        setTimeout(() => setLocation("/"), 1400)
+        setTimeout(() => setLocation(dest), 1400)
       },
       onError: (e) =>
         setAcceptError(e instanceof Error ? e.message : "Accepteren mislukt."),
     })
   }
+
+  // A head-tester invite grants a flag (no peer link, no extra choice to make),
+  // so we accept it automatically the moment it loads and is still open — the
+  // tester just sees the confirmation and is whisked to the welcome screen.
+  const autoFired = useRef(false)
+  useEffect(() => {
+    if (autoFired.current) return
+    if (!invite || invite.status !== "pending") return
+    if (invite.relationship !== "head_tester") return
+    autoFired.current = true
+    onAccept()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invite])
 
   return (
     <ScreenShell section="Home" bg="/concept-lab.png">
@@ -90,6 +107,9 @@ export default function InviteAcceptPage() {
               )}
               {invite.relationship === "none" && (
                 <>Je krijgt toegang met de rol <strong className="text-white/90">{ROLE_LABEL[invite.targetRole] ?? invite.targetRole}</strong>.</>
+              )}
+              {invite.relationship === "head_tester" && (
+                <>Je wordt <strong className="text-white/90">hoofdtester</strong> van Sparki — vroege toegang tot alles, plus een directe lijn om bugs en ideeën te melden.</>
               )}
             </p>
             <div className="mt-4 flex items-center gap-2">

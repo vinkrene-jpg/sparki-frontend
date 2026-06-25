@@ -11,14 +11,22 @@ import {
  * Resolve all feature flags for a user.
  *
  * Precedence (highest → lowest):
- *   1. User-level override  (user_flag_overrides row)
- *   2. Role match           (flag.enabledRoles includes activeRole)
- *   3. Global default       (flag.enabledGlobally)
- *   4. false
+ *   1. User-level override   (user_flag_overrides row)
+ *   2. Role match            (flag.enabledRoles includes activeRole)
+ *   3. Global default        (flag.enabledGlobally)
+ *   4. Head-tester early access — for flags that EXIST (have a row) but aren't yet
+ *      enabled by role or globally, head testers get them early (true). This is the
+ *      whole point of the Hoofdtester: in-test features turn on for them before
+ *      everyone else. The kill-switch is a user-level override (step 1, highest
+ *      precedence): set an override=false for that tester to hide a flag from them.
+ *      Flags with NO row are not real features → they stay false even for head
+ *      testers (we never enable something that isn't registered).
+ *   5. false
  */
 export async function resolveFlags(
   clerkId: string,
   activeRole: string,
+  opts: { isHeadTester?: boolean } = {},
 ): Promise<Record<FeatureKey, boolean>> {
   const [flags, overrides] = await Promise.all([
     db.select().from(featureFlagsTable),
@@ -48,7 +56,13 @@ export async function resolveFlags(
       result[key] = true;
       continue;
     }
-    result[key] = flag.enabledGlobally;
+    if (flag.enabledGlobally) {
+      result[key] = true;
+      continue;
+    }
+    // Head-tester early access: anything not explicitly off (override) and not
+    // yet globally/role-enabled still turns ON for the Hoofdtester.
+    result[key] = opts.isHeadTester === true;
   }
 
   return result;

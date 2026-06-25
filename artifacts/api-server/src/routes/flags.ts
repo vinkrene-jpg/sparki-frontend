@@ -23,12 +23,17 @@ router.get("/", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
     const [profile] = await db
-      .select({ activeRole: userProfilesTable.activeRole })
+      .select({
+        activeRole: userProfilesTable.activeRole,
+        isHeadTester: userProfilesTable.isHeadTester,
+      })
       .from(userProfilesTable)
       .where(eq(userProfilesTable.clerkId, clerkId));
 
     const activeRole = profile?.activeRole ?? "athlete";
-    const flags = await resolveFlags(clerkId, activeRole);
+    const flags = await resolveFlags(clerkId, activeRole, {
+      isHeadTester: profile?.isHeadTester === true,
+    });
     res.json(flags);
   } catch (err) {
     req.log.error({ err }, "flags.get failed");
@@ -243,12 +248,17 @@ router.get(
     const clerkId = String(req.params.clerkId);
     try {
       const [profile] = await db
-        .select({ activeRole: userProfilesTable.activeRole })
+        .select({
+          activeRole: userProfilesTable.activeRole,
+          isHeadTester: userProfilesTable.isHeadTester,
+        })
         .from(userProfilesTable)
         .where(eq(userProfilesTable.clerkId, clerkId));
 
       const activeRole = String(profile?.activeRole ?? "athlete");
-      const flags = await resolveFlags(clerkId, activeRole);
+      const flags = await resolveFlags(clerkId, activeRole, {
+        isHeadTester: profile?.isHeadTester === true,
+      });
       res.json({ clerkId, activeRole, flags });
     } catch (err) {
       req.log.error({ err }, "flags.admin.resolve failed");

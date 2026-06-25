@@ -1,7 +1,8 @@
 import type { ReactNode } from "react"
-import { LogOut, RefreshCw, Shield, ChevronLeft } from "lucide-react"
+import { LogOut, RefreshCw, Shield, ChevronLeft, MessageSquarePlus } from "lucide-react"
 import { useClerk, Show } from "@clerk/react"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
+import { useFeedback } from "@/contexts/FeedbackContext"
 import { useTeamIdentity } from "@/hooks/use-social"
 import { CinematicScene, type SceneName } from "@/components/sparki/cinematic-scene"
 import { NotificationBell } from "@/components/sparki/notification-bell"
@@ -134,13 +135,57 @@ function HomeProfilePrompt() {
   return <ProfilePromptCard />
 }
 
+// Subtle "Head Tester #001" mark in the header — quiet, premium, never shouty.
+function HeadTesterBadge({ number }: { number: number | null }) {
+  const label =
+    typeof number === "number"
+      ? `#${String(number).padStart(3, "0")}`
+      : null
+  return (
+    <span
+      title={label ? `Head Tester ${label}` : "Head Tester"}
+      className="flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em]"
+      style={{
+        color: "oklch(0.82 0.16 200)",
+        background: "rgba(120,210,230,0.07)",
+        border: "1px solid rgba(120,210,230,0.22)",
+      }}
+    >
+      <Shield className="h-2.5 w-2.5" strokeWidth={2} />
+      {label ? `Tester ${label}` : "Tester"}
+    </span>
+  )
+}
+
+// Header trigger that opens the global feedback & bug reporter from any screen.
+function FeedbackButton() {
+  const { openFeedback } = useFeedback()
+  return (
+    <button
+      type="button"
+      onClick={openFeedback}
+      aria-label="Feedback & bug melden"
+      title="Feedback & bug melden"
+      className="rounded-full border border-white/15 p-1.5 text-white/60 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+    >
+      <MessageSquarePlus className="h-4 w-4" strokeWidth={1.75} />
+    </button>
+  )
+}
+
 export function ScreenShell({
   section,
   bg = "/concept-lab.png",
+  bare = false,
   children,
 }: {
   section: string
   bg?: string
+  // When true, suppress every injected coaching surface (home prompts, coach
+  // cards, coach-decision card and the follow-up prompt). Used by standalone
+  // moments like the head-tester welcome that own their full content and must
+  // not be smothered by the shared home chrome.
+  bare?: boolean
   children: ReactNode
 }) {
   const sectionKey = section.toLowerCase()
@@ -155,6 +200,7 @@ export function ScreenShell({
   const homeView = useHomeView()
   const stateSurface = isHome && homeView?.view === "state"
   const fullSurface = isHome && homeView?.view === "full"
+  const { profile } = useUserProfile()
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#05070e] text-white">
       {/* Per-screen cinematic background — shared structure, scene-specific
@@ -181,6 +227,8 @@ export function ScreenShell({
             </Show>
             <Show when="signed-in">
               <div className="flex items-center gap-3">
+                {profile?.isHeadTester && <HeadTesterBadge number={profile.headTesterNumber ?? null} />}
+                <FeedbackButton />
                 <NotificationBell />
                 <div className="flex flex-col items-end gap-1.5">
                   <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{sectionLabel}</span>
@@ -203,17 +251,17 @@ export function ScreenShell({
           </button>
         )}
 
-        {isHome && !stateSurface && <HomeProfilePrompt />}
-        {isHome && !stateSurface && <CoachInputNeeds />}
+        {!bare && isHome && !stateSurface && <HomeProfilePrompt />}
+        {!bare && isHome && !stateSurface && <CoachInputNeeds />}
 
-        {showCoachCard && !stateSurface && (
+        {!bare && showCoachCard && !stateSurface && (
           <CoachAnalysisCard variant={isHome ? "hero" : "card"} />
         )}
 
         {/* Adaptive Coach Engine output — the engine's decision (onderwerp /
             advies / vraag / prioriteit) for today, surfaced on every home
             day-type. Driven by the CoachDecision context from the dispatcher. */}
-        {isHome && !stateSurface && coachDecision && (
+        {!bare && isHome && !stateSurface && coachDecision && (
           <CoachDecisionCard decision={coachDecision} />
         )}
 
@@ -224,7 +272,7 @@ export function ScreenShell({
           Development Preview Mode. Renders nothing when no follow-up is due.
           Suppressed on the Circle route ("samen"), where the Circle feed is the
           calm home for follow-ups — so we never double-ask the same question. */}
-      {section.toLowerCase() !== "samen" && !stateSurface && <FollowUpPrompt />}
+      {!bare && section.toLowerCase() !== "samen" && !stateSurface && <FollowUpPrompt />}
     </main>
   )
 }

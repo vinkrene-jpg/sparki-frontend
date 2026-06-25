@@ -5,12 +5,15 @@ import {
   bugReportsTable,
   userProfilesTable,
   bugReportStatuses,
+  bugReportKinds,
   type BugReportStatus,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { isAdmin } from "../lib/flags";
+import { ObjectStorageService } from "../lib/objectStorage";
 
 const router = Router();
+const objectStorageService = new ObjectStorageService();
 
 function requireAdmin(
   req: Parameters<typeof requireAuth>[0],
@@ -38,15 +41,39 @@ router.post("/", requireAuth, async (req, res) => {
   }
   const str = (v: unknown): string | null =>
     typeof v === "string" && v.trim() !== "" ? v.trim() : null;
+
+  const kindRaw = typeof body.kind === "string" ? body.kind : "bug";
+  const kind = (bugReportKinds as readonly string[]).includes(kindRaw)
+    ? kindRaw
+    : "bug";
+
+  // A screenshot is an object just uploaded via the presigned PUT flow. Its
+  // canonical path (e.g. /objects/<id>) is what the client sends. We register
+  // ownership (private, owner = reporter) now that the bytes exist, then store
+  // the path. Admins are additionally allowed to read it on the serve route.
+  const screenshotObjectPath = str(body.screenshotObjectPath);
+  if (screenshotObjectPath) {
+    try {
+      await objectStorageService.trySetObjectEntityAclPolicy(
+        screenshotObjectPath,
+        { owner: clerkId, visibility: "private" },
+      );
+    } catch (err) {
+      req.log.error({ err }, "bugReports.screenshot ACL set failed");
+    }
+  }
+
   try {
     const [row] = await db
       .insert(bugReportsTable)
       .values({
         clerkId,
         description,
+        kind,
         userRole: str(body.userRole),
         pageUrl: str(body.pageUrl),
-        screenshotUrl: str(body.screenshotUrl),
+        // Prefer the uploaded object path; fall back to a legacy URL string.
+        screenshotUrl: screenshotObjectPath ?? str(body.screenshotUrl),
       })
       .returning();
     res.status(201).json({ report: row });
@@ -82,6 +109,7 @@ router.get("/admin", requireAuth, requireAdmin, async (req, res) => {
         clerkId: bugReportsTable.clerkId,
         reporterName: userProfilesTable.displayName,
         userRole: bugReportsTable.userRole,
+        kind: bugReportsTable.kind,
         pageUrl: bugReportsTable.pageUrl,
         description: bugReportsTable.description,
         screenshotUrl: bugReportsTable.screenshotUrl,

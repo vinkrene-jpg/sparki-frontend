@@ -16,6 +16,7 @@ import {
 import { createNotification } from "../lib/notifications";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { isAdmin } from "../lib/flags";
+import { assignHeadTesterNumber } from "../engines/insights";
 
 const router = Router();
 
@@ -342,6 +343,18 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
         .status(409)
         .json({ error: "Invitation is no longer pending", status: "accepted" });
       return;
+    }
+
+    // Head tester: assign the sequential "Head Tester #001" badge once, after
+    // the accept committed. Idempotent + atomic. Best-effort: a number-assignment
+    // hiccup must not fail an otherwise-successful accept (the flag is already
+    // set, and a later /me read can backfill via re-accept is not needed).
+    if (relationship === "head_tester") {
+      try {
+        await assignHeadTesterNumber(clerkId);
+      } catch (err) {
+        req.log.error({ err }, "invitations accept: head-tester number failed");
+      }
     }
 
     // Notify the inviter that their relationship link was accepted.

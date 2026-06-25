@@ -14,6 +14,8 @@ export type { HonestObservation } from "./honest";
 export {
   assignFoundingNumber,
   foundingLabel,
+  assignHeadTesterNumber,
+  headTesterLabel,
   headTesterLine,
   FOUNDING_LINES,
   HEAD_TESTER_LINES,

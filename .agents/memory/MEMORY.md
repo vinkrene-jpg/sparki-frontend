@@ -1,6 +1,7 @@
 - [Sparki migration pattern](sparki-migration.md) — fullstack_copy_frontend.sh fails when CLIENT_DIR is blank; write files directly instead.
 - [Sparki Clerk auth wiring](sparki-clerk-auth.md) — Phase 1 complete: cookie auth, JIT sync, roles in own DB, lib/db must be built for tsc.
 - [Sparki feature flags](sparki-feature-flags.md) — flag system architecture: DB tables, resolution precedence, Express params cast, composite PK onConflict pattern.
+- [Sparki Head Tester](sparki-head-tester.md) — head-tester early access enables has-row flags (not no-row); override is kill-switch; number must be idempotently backfilled on /me+/sync.
 - [Vite font loading — Next.js var() trap](vite-font-var-trap.md) — var(--font-geist-sans) undefined in Vite causes entire font-family to fall back to browser serif; always use @fontsource packages.
 - [Sparki Development Preview Mode](sparki-dev-preview.md) — dev-only auth/onboarding bypass; requires NODE_ENV!=production AND DEV_AUTH_BYPASS=true (fails closed).
 - [Sparki cinematic background](sparki-cinematic-bg.md) — shared ScreenShell fixed bg layer; cyclist visible page-wide, glass cards 82%, OLED-safe blue-black, no flat-black/white surfaces.

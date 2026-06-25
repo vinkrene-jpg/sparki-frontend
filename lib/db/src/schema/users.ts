@@ -15,6 +15,10 @@ export const userProfilesTable = pgTable("user_profiles", {
   // Head-tester ("Hoofdtester") flag — set when a head-tester invite is
   // accepted. Drives Sparki's running self-deprecating tester joke.
   isHeadTester: boolean("is_head_tester").notNull().default(false),
+  // Sequential head-tester badge ("Head Tester #001"), assigned exactly once
+  // when the first head-tester invite is accepted. Unique; NULL until earned
+  // (Postgres allows many NULLs under UNIQUE). Assigned atomically (MAX+1).
+  headTesterNumber: integer("head_tester_number").unique(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
