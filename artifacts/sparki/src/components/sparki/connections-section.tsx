@@ -10,6 +10,7 @@ import {
   Trash2,
   X,
   ShieldCheck,
+  ChevronDown,
 } from "lucide-react"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import {
@@ -354,6 +355,7 @@ export function ConnectionsSection() {
   const [notice, setNotice] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [consentId, setConsentId] = useState<string | null>(null)
+  const [showUpcoming, setShowUpcoming] = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -476,7 +478,10 @@ export function ConnectionsSection() {
     (c) => c.available && c.status !== "connected",
   )
   const upcoming = connectors.filter((c) => !c.available)
-  const ordered = [...connected, ...available, ...upcoming]
+  // Connectable now (real connections) stay open in the main card; the
+  // not-yet-available platforms are tucked into a collapsible card so the long
+  // "Binnenkort" list doesn't clutter the screen.
+  const ready = [...connected, ...available]
 
   const consentConnector = consentId
     ? connectors.find((c) => c.id === consentId) ?? null
@@ -490,28 +495,81 @@ export function ConnectionsSection() {
         ophaalt. Verbreken of opnieuw synchroniseren kan altijd.
       </p>
 
-      <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 backdrop-blur-md">
-        {loading ? (
-          <div className="flex items-center justify-center gap-2 py-8 text-white/40">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="font-sans text-sm">Koppelingen laden…</span>
-          </div>
-        ) : (
-          <div className="divide-y divide-white/[0.06]">
-            {ordered.map((c) => (
-              <ConnectionRow
-                key={c.id}
-                connector={c}
-                busy={busyId === c.id}
-                onConnect={setConsentId}
-                onDisconnect={handleDisconnect}
-                onRevoke={handleRevoke}
-                onSync={handleSync}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {loading ? (
+        <div className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] py-8 text-white/40 backdrop-blur-md">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="font-sans text-sm">Koppelingen laden…</span>
+        </div>
+      ) : (
+        <>
+          {ready.length > 0 && (
+            <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 backdrop-blur-md">
+              <div className="divide-y divide-white/[0.06]">
+                {ready.map((c) => (
+                  <ConnectionRow
+                    key={c.id}
+                    connector={c}
+                    busy={busyId === c.id}
+                    onConnect={setConsentId}
+                    onDisconnect={handleDisconnect}
+                    onRevoke={handleRevoke}
+                    onSync={handleSync}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {upcoming.length > 0 && (
+            <div className="mt-3 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] backdrop-blur-md">
+              <button
+                type="button"
+                onClick={() => setShowUpcoming((v) => !v)}
+                aria-expanded={showUpcoming}
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/[0.02]"
+              >
+                <span
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-xl"
+                  style={{ background: "rgba(255,255,255,0.04)" }}
+                >
+                  <Link2 className="h-4 w-4 text-white/35" strokeWidth={1.75} />
+                </span>
+                <div className="flex flex-1 flex-col gap-0.5">
+                  <span className="text-[14px] tracking-tight text-white/75">
+                    Binnenkort beschikbaar
+                  </span>
+                  <span className="text-[11px] leading-snug text-white/35">
+                    {upcoming.length} platforms wachten op goedkeuring of zijn nog
+                    in voorbereiding
+                  </span>
+                </div>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 text-white/40 transition-transform ${
+                    showUpcoming ? "rotate-180" : ""
+                  }`}
+                  strokeWidth={1.75}
+                />
+              </button>
+
+              {showUpcoming && (
+                <div className="divide-y divide-white/[0.06] border-t border-white/[0.06] px-4">
+                  {upcoming.map((c) => (
+                    <ConnectionRow
+                      key={c.id}
+                      connector={c}
+                      busy={busyId === c.id}
+                      onConnect={setConsentId}
+                      onDisconnect={handleDisconnect}
+                      onRevoke={handleRevoke}
+                      onSync={handleSync}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
 
       {notice && (
         <p className="mt-2 flex items-center gap-1.5 px-1 text-[11px] text-emerald-400">
