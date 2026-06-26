@@ -236,7 +236,7 @@ export function AnalysisResult({
             style={{ background: ACCENT }}
           >
             <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-            {adding ? "Sparki kijkt…" : "Extra foto toevoegen"}
+            {adding ? "Bezig…" : "Extra foto toevoegen"}
           </button>
         </div>
       )}
@@ -360,7 +360,7 @@ export function UploadPanel({
         className="w-full rounded-lg py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-black transition disabled:opacity-50"
         style={{ background: ACCENT }}
       >
-        {analyze.isPending ? "Sparki kijkt naar je foto…" : "Vraag Sparki"}
+        {analyze.isPending ? "Bezig…" : "Vraag Sparki"}
       </button>
     </div>
   )
@@ -385,7 +385,7 @@ function NudgeCard({
         </span>
         <div className="min-w-0 flex-1">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/45">
-            Sparki merkt op
+            Opgemerkt
           </p>
           <p className="mt-1.5 text-pretty text-[14px] leading-relaxed text-white/80">
             {message}

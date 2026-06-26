@@ -54,7 +54,7 @@ export function TieredExplanation({
           ) : extendedPending ? (
             <span className="inline-flex items-center gap-2 text-[12px] text-white/45">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Sparki denkt na…
+              Bezig…
             </span>
           ) : null}
         </div>

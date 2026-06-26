@@ -90,7 +90,7 @@ function HonestButton() {
         className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border font-sans text-[13px] font-medium transition-colors disabled:opacity-50"
         style={{ borderColor: "rgba(120,210,230,0.3)", background: "rgba(120,210,230,0.06)", color: "rgba(255,255,255,0.9)" }}
       >
-        {ask.isPending ? "Sparki denkt na…" : "Sparki, eerlijk?"}
+        {ask.isPending ? "Bezig…" : "Sparki, eerlijk?"}
       </button>
 
       {ask.isError && (
@@ -195,9 +195,9 @@ function IdentityBadges() {
 export function SparkiObservations() {
   return (
     <section>
-      <SectionLabel title="Sparki ziet vandaag" />
+      <SectionLabel title="Wat vandaag opvalt" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
-        Wat Sparki opvalt in jouw echte data — alleen als er iets te zeggen valt
+        Wat opvalt in jouw echte data — alleen als er iets te zeggen valt
       </p>
       <div className="mt-5 flex flex-col gap-6">
         <OpenLoops />

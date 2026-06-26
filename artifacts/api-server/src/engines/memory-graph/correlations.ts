@@ -32,7 +32,7 @@ function memoryReinforced(bundle: SignalBundle, dedupeKey: string): ObservationS
   return {
     kind: "memory",
     label: "Eerder waargenomen",
-    value: "Sparki zag dit patroon al eens",
+    value: "Dit patroon kwam al eens voor",
     date: new Date(prior.createdAt).toISOString().slice(0, 10),
   };
 }
@@ -419,7 +419,7 @@ function ruleRecurringFeedback(bundle: SignalBundle): Connection | null {
       ? "Herhaalde pijnmeldingen verdienen aandacht voordat ze een blessure worden."
       : `Je gaf ${items.length} keer aan dat een training als "${label}" voelde.`,
     observationText: isHealth
-      ? `Sparki zag ${items.length} pijnmeldingen in je terugkoppeling. Pijn is een gezondheidssignaal — neem het serieus en laat het bij twijfel nakijken.`
+      ? `Er staan ${items.length} pijnmeldingen in je terugkoppeling. Pijn is een gezondheidssignaal — neem het serieus en laat het bij twijfel nakijken.`
       : `Je markeerde ${items.length} trainingen als "${label}". Dat kan betekenen dat de belasting of opbouw niet past bij je huidige vorm.`,
     category: isHealth ? "health" : "training",
     severity: isHealth ? "important" : "watch",

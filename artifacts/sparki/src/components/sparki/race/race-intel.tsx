@@ -388,7 +388,7 @@ export function MultiDayChecklist({
                     onClick={() => toggle(id)}
                     title={
                       auto
-                        ? `Sparki zag dit bij je materiaalcheck${detected ? `: ${detected}` : ""}`
+                        ? `Uit je materiaalcheck${detected ? `: ${detected}` : ""}`
                         : undefined
                     }
                     className="flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors"

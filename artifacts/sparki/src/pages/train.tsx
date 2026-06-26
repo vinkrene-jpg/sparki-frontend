@@ -104,7 +104,7 @@ function ConfirmActivityCard({ session }: { session: TrainingSession }) {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-cyan-300/70">
-            Sparki zag je activiteit
+            Nieuwe activiteit binnen
           </p>
           <p className="mt-1 text-[14px] font-medium text-white/90">
             {session.title ??

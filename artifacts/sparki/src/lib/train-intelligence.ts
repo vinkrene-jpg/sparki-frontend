@@ -32,7 +32,7 @@ export function detectSource(
       kind: "coach",
       label: "Je trainer",
       detail:
-        "Je trainer bepaalt je schema. Sparki kijkt mee en geeft advies, maar verandert nooit zelf je trainingen.",
+        "Je trainer bepaalt je schema. Sparki geeft advies, maar verandert nooit zelf je trainingen.",
       canBuild: false,
     }
   }
@@ -100,7 +100,7 @@ export function judgeGoalFit(args: {
   if (!race) {
     return {
       verdict: "onbekend",
-      headline: "Sparki weet nog niet waar je naartoe traint",
+      headline: "Nog geen doel om naartoe te trainen",
       reason:
         "Zonder doel of wedstrijd kan Sparki niet beoordelen of je training de goede kant op gaat. Voeg een doel toe, dan wordt elk advies daarop afgestemd.",
       needs: ["een doel of wedstrijd"],

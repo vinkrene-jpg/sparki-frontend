@@ -111,7 +111,7 @@ export function PatternsLayer() {
   return (
     <section className="flex flex-col gap-4">
       <LayerHeading
-        title="Wat Sparki over tijd ziet"
+        title="Wat over tijd opvalt"
         subtitle="Niet alleen vandaag — de patronen in hoe je traint, herstelt en groeit."
       />
 

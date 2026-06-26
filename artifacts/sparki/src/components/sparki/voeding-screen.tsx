@@ -75,9 +75,9 @@ function dayTypeToContext(dt: DayType): NutritionContext | null {
 // Short Dutch reason shown under the auto-selected context, so the rider sees
 // WHY Sparki picked it (honesty contract). Only set for derived contexts.
 const CONTEXT_REASON: Record<NutritionContext, string> = {
-  training_day: "Sparki zag een training voor vandaag.",
-  race_day: "Sparki zag dat je vandaag een wedstrijd hebt.",
-  recovery_day: "Sparki zag dat vandaag een herstel- of rustdag is.",
+  training_day: "Er staat een training voor vandaag.",
+  race_day: "Je hebt vandaag een wedstrijd.",
+  recovery_day: "Vandaag is een herstel- of rustdag.",
   normal_day: "Geen training of wedstrijd vandaag.",
 }
 
@@ -393,7 +393,7 @@ function GuidanceSection({ enabled }: { enabled: boolean }) {
       {isLoading ? (
         <div className="mt-4 flex items-center gap-2 text-[12px] text-white/45">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          Sparki denkt na over jouw voeding…
+          Voedingsadvies wordt opgesteld…
         </div>
       ) : isError || !guidance ? (
         <div className="mt-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
@@ -407,7 +407,7 @@ function GuidanceSection({ enabled }: { enabled: boolean }) {
             className="mt-3 rounded-lg px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-black transition disabled:opacity-50"
             style={{ background: ACCENT }}
           >
-            {isFetching ? "Sparki denkt na…" : "Opnieuw proberen"}
+            {isFetching ? "Bezig…" : "Opnieuw proberen"}
           </button>
         </div>
       ) : (
@@ -495,8 +495,8 @@ function PhotoAdviceSection() {
     <section>
       <SectionLabel title="Sparki beoordeelt je voeding" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
-        Laat je ontbijt of wedstrijdvoeding zien — Sparki kijkt mee en beoordeelt
-        het eerlijk.
+        Laat je ontbijt of wedstrijdvoeding zien — je krijgt er een eerlijke
+        beoordeling op.
       </p>
 
       {!selected && !active && (

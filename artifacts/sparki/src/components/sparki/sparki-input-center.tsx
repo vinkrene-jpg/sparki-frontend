@@ -304,7 +304,7 @@ export function SparkiInputCenter() {
             <SparkiCore size={30} accent={ACCENT} readiness={0.9} variant="orb" />
             <div className="flex-1 space-y-2 pt-1">
               <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
-                Sparki denkt…
+                Bezig…
               </span>
               <Skeleton className="h-3.5 w-full" />
               <Skeleton className="h-3.5 w-3/4" />

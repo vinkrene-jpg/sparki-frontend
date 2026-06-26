@@ -192,7 +192,7 @@ async function probeSparkiAi(): Promise<ProbeResult> {
       responseTimeMs: took,
       message:
         took > 4000
-          ? "Sparki denkt mee, maar reageert traag."
+          ? "Sparki-denkkracht reageert, maar traag."
           : "Sparki-denkkracht werkt.",
       technicalDetails: `Anthropic antwoordde in ${took}ms`,
     };

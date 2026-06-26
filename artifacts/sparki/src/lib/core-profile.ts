@@ -46,11 +46,11 @@ const ARCHETYPE_LABEL: Record<CoachArchetype, string> = {
 
 const ARCHETYPE_DESCRIPTOR: Record<CoachArchetype, string> = {
   consistentiecoach:
-    "Sparki ziet je grootste winst in regelmaat — vaker trainen weegt voor jou nu zwaarder dan harder trainen.",
+    "Je grootste winst zit in regelmaat — vaker trainen weegt voor jou nu zwaarder dan harder trainen.",
   wedstrijdcoach:
-    "Sparki leest je als iemand die naar een koers toe traint — vorm, timing en herstel rond je wedstrijden staan voorop.",
+    "Je traint naar een koers toe — vorm, timing en herstel rond je wedstrijden staan voorop.",
   prestatiecoach:
-    "Sparki leest je als prestatiegericht — je traint om meer vermogen en hardere inspanningen aan te kunnen.",
+    "Je bent prestatiegericht — je traint om meer vermogen en hardere inspanningen aan te kunnen.",
 };
 
 const LEVEL_LABEL: Record<"beginner" | "intermediate" | "advanced", string> = {
@@ -108,10 +108,10 @@ export function deriveIdentity(
 
   return {
     archetype,
-    archetypeLabel: archetype ? ARCHETYPE_LABEL[archetype] : "Sparki leert je nog kennen",
+    archetypeLabel: archetype ? ARCHETYPE_LABEL[archetype] : "Profiel nog in opbouw",
     descriptor: archetype
       ? ARCHETYPE_DESCRIPTOR[archetype]
-      : "Sparki heeft nog te weinig van je gezien om je als sporter te typeren.",
+      : "Er is nog te weinig bekend om je als sporter te typeren.",
     levelLabel: level,
     disciplineLabel: profile.discipline?.trim() ? profile.discipline.trim() : null,
     facts,
@@ -284,7 +284,7 @@ export function deriveEvolution(
       current: `${perWeek}/wk`,
       change: `${recent.length} ritten · 4 wk`,
       detail:
-        "Hoe vaak je de afgelopen vier weken daadwerkelijk hebt getraind — Sparki's belangrijkste maat voor consistentie.",
+        "Hoe vaak je de afgelopen vier weken daadwerkelijk hebt getraind — de belangrijkste maat voor consistentie.",
       tone: recent.length >= 8 ? "up" : recent.length === 0 ? "down" : "flat",
     });
   }

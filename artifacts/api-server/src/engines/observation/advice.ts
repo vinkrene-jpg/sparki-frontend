@@ -227,7 +227,7 @@ function adviceConfidence(
     uncertainties.push("niet al je signalen wijzen dezelfde kant op");
   }
   if (agreeing <= 1 && driver !== "injured" && driver !== "sick") {
-    uncertainties.push("Sparki baseert zich nog op weinig gegevens");
+    uncertainties.push("er zijn nog weinig gegevens om op te baseren");
   }
 
   return computeConfidence({

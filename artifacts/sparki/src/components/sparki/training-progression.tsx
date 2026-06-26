@@ -16,7 +16,7 @@ function Skeleton({ className = "" }: { className?: string }) {
 }
 
 const CTL_VERDICT: Record<TrendDir, string> = {
-  up: "Je fitheid bouwt op — Sparki ziet je vorm over deze periode stijgen.",
+  up: "Je fitheid bouwt op — je vorm stijgt over deze periode.",
   flat: "Je fitheid is stabiel — je houdt je niveau goed vast.",
   down: "Je fitheid zakt iets — je traint nu minder dan je lichaam gewend was.",
 }

@@ -294,7 +294,7 @@ export function StateCard({ onShowDetails, detailsLabel }: StateCardProps = {}) 
             )}
 
             <div className="border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-white/40">
-              Sparki baseert dit op {state.confidenceLabel} over jou.
+              Gebaseerd op {state.confidenceLabel} over jou.
               {state.missing.length > 0 && (
                 <>
                   {" "}

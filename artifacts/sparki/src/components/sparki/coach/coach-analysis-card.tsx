@@ -147,7 +147,7 @@ function InsightGapNote({ phrases }: { phrases: string[] }) {
   return (
     <div className="border-l border-white/10 pl-3">
       <p className="text-sm italic leading-relaxed text-white/45">
-        Sparki ziet vandaag nog geen {list} in je gegevens. Dat scherpt vanzelf
+        Vandaag nog geen {list} in je gegevens. Dat scherpt vanzelf
         aan naarmate je meer ritten en check-ins logt — dan vallen trends en
         uitschieters op.
       </p>
@@ -188,7 +188,7 @@ function MissingList({ kinds }: { kinds: string[] }) {
   return (
     <div>
       <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-amber-200/70">
-        Wat Sparki nog mist
+        Wat nog ontbreekt
       </p>
       <ul className="mt-1.5 flex flex-wrap gap-1.5">
         {kinds.map((k) => (

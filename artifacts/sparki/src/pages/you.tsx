@@ -102,7 +102,7 @@ function InsightCard({ obs }: { obs: AiObservation }) {
             className="mt-3 flex items-center gap-1.5 text-[12px] text-white/45 transition-colors hover:text-cyan-300/80"
             aria-expanded={open}
           >
-            Waarom Sparki dit ziet
+            Waarop dit is gebaseerd
             <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
           </button>
           {open && (
@@ -117,7 +117,7 @@ function InsightCard({ obs }: { obs: AiObservation }) {
               ))}
               {(obs.alternativeExplanations?.length ?? 0) > 0 && (
                 <p className="pt-1 text-[11px] leading-relaxed text-white/40">
-                  Sparki houdt ook rekening met:{" "}
+                  Andere mogelijke verklaringen:{" "}
                   {obs.alternativeExplanations!.join("; ")}.
                 </p>
               )}
@@ -238,7 +238,7 @@ export default function YouPage() {
             Sparki Core
           </p>
           <h1 className="mt-1 font-sans text-2xl font-extralight tracking-tight text-white">
-            Wat Sparki van je weet
+            Wat er van je bekend is
           </h1>
         </div>
         <button
@@ -260,7 +260,7 @@ export default function YouPage() {
               <div className="flex items-center gap-2">
                 <Compass className="h-4 w-4 text-cyan-300" strokeWidth={1.75} />
                 <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
-                  Sparki's beeld van jou
+                  Jouw sporterstype
                 </span>
               </div>
               <p className="mt-2.5 text-[20px] font-light tracking-tight text-white">
@@ -296,9 +296,18 @@ export default function YouPage() {
               )}
 
               <div className="mt-4 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-white/40">
-                Sparki baseert dit op {identity.confidenceLabel} van je.
+                Gebaseerd op {identity.confidenceLabel} van je.
                 {identity.sharpenWith.length > 0 && (
-                  <> Scherper wordt het zodra Sparki {identity.sharpenWith.join(", ")} kent.</>
+                  <>
+                    {" "}
+                    Scherper wordt het zodra{" "}
+                    {identity.sharpenWith.length === 1
+                      ? `${identity.sharpenWith[0]} bekend is`
+                      : `${identity.sharpenWith.slice(0, -1).join(", ")} en ${
+                          identity.sharpenWith[identity.sharpenWith.length - 1]
+                        } bekend zijn`}
+                    .
+                  </>
                 )}
               </div>
             </Card>
@@ -310,7 +319,7 @@ export default function YouPage() {
       <section>
         <SectionLabel n="02" title="Je Core-status" />
         <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
-          Hoe Sparki je vandaag inschat — en hoe je je voelt
+          Hoe je er vandaag voorstaat — en hoe je je voelt
         </p>
         <div className="mt-4">
           <StateCard />
@@ -320,7 +329,7 @@ export default function YouPage() {
       {/* WAT HEEFT SPARKI GELEERD */}
       <section>
         <div className="flex items-center justify-between">
-          <SectionLabel n="03" title="Wat Sparki heeft geleerd" />
+          <SectionLabel n="03" title="Wat tot nu toe opvalt" />
           {observations.length > 0 && (
             <button
               type="button"
@@ -342,20 +351,20 @@ export default function YouPage() {
           ) : lenses.lead ? (
             <>
               <p className="mb-3 text-[12px] leading-relaxed text-white/35">
-                Sparki heeft {lenses.total} {lenses.total === 1 ? "ding" : "dingen"} over je
-                afgeleid uit je data. Dit valt het meest op:
+                Uit je data {lenses.total === 1 ? "is" : "zijn"} {lenses.total}{" "}
+                {lenses.total === 1 ? "ding" : "dingen"} over je afgeleid. Dit valt het meest op:
               </p>
               <InsightCard obs={lenses.lead} />
             </>
           ) : (
             <Card>
               <p className="text-[14px] leading-relaxed text-white/70">
-                Sparki heeft nog niets over je afgeleid.
+                Er is nog niets over je afgeleid.
               </p>
               <p className="mt-2 text-[13px] leading-relaxed text-white/50">
-                Zodra Sparki je ritten en check-ins ziet, ontstaan hier de eerste inzichten —
-                eigenschappen, patronen en ontwikkelpunten. Hieronder zie je wat Sparki daarvoor
-                nog nodig heeft.
+                Zodra je ritten en check-ins binnenkomen, ontstaan hier de eerste inzichten —
+                eigenschappen, patronen en ontwikkelpunten. Hieronder zie je wat daarvoor
+                nog nodig is.
               </p>
             </Card>
           )}
@@ -366,7 +375,7 @@ export default function YouPage() {
       <InsightSection
         n="04"
         title="Sterke eigenschappen"
-        blurb="Wat Sparki bij jou ziet werken"
+        blurb="Wat bij jou werkt"
         items={lenses.strengths}
       />
 
@@ -381,7 +390,7 @@ export default function YouPage() {
       {/* PATRONEN */}
       <InsightSection
         n="06"
-        title="Patronen die Sparki ziet"
+        title="Terugkerende patronen"
         blurb="Verbanden die over tijd terugkomen in je data"
         items={lenses.patterns}
       />
@@ -389,9 +398,9 @@ export default function YouPage() {
       {/* WAAR SPARKI ONZEKER OVER IS */}
       {(lenses.uncertainty.length > 0 || stateMissing.length > 0) && (
         <section>
-          <SectionLabel n="07" title="Waar Sparki onzeker over is" />
+          <SectionLabel n="07" title="Waar nog onzekerheid zit" />
           <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
-            Sparki is hier eerlijk over: dit weet het nog niet zeker
+            Eerlijk gezegd: dit is nog niet zeker
           </p>
           <div className="mt-3 flex flex-col gap-3">
             {lenses.uncertainty.map((o) => (
@@ -403,10 +412,10 @@ export default function YouPage() {
                   <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-white/45" strokeWidth={1.75} />
                   <div>
                     <p className="text-[14px] font-medium text-white/85">
-                      Sparki kijkt nog niet naar alles
+                      Nog niet alles is in beeld
                     </p>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">
-                      Voor je huidige beeld mist Sparki nog: {stateMissing.join(", ")}. Daardoor is
+                      Voor je huidige beeld ontbreekt nog: {stateMissing.join(", ")}. Daardoor is
                       de inschatting voorzichtiger dan ze kan zijn.
                     </p>
                   </div>
@@ -419,19 +428,19 @@ export default function YouPage() {
 
       {/* WELKE INFORMATIE WIL SPARKI VERZAMELEN */}
       <section>
-        <SectionLabel n="08" title="Welke informatie Sparki wil verzamelen" />
+        <SectionLabel n="08" title="Welke informatie nog ontbreekt" />
         <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
-          Vul aan wat ontbreekt — elk stukje maakt Sparki's beeld scherper
+          Vul aan wat ontbreekt — elk stukje maakt het beeld scherper
         </p>
         <div className="mt-3">
           {gapTargets.length === 0 && !needsSportData ? (
             <Card>
               <p className="text-[14px] leading-relaxed text-white/70">
-                Sparki heeft alles wat het nu nodig heeft.
+                Alle basisgegevens zijn er.
               </p>
               <p className="mt-1.5 text-[13px] leading-relaxed text-white/50">
-                Je profiel is compleet. Hoe meer je traint en incheckt, hoe verder Sparki je beeld
-                verfijnt.
+                Je profiel is compleet. Hoe meer je traint en incheckt, hoe scherper je beeld
+                wordt.
               </p>
             </Card>
           ) : (
@@ -469,8 +478,8 @@ export default function YouPage() {
                       Nog geen sportdata gekoppeld
                     </p>
                     <p className="mt-1 text-[12px] leading-relaxed text-white/55">
-                      Koppel je sporthorloge of -account zodat Sparki je ritten kan zien en
-                      observeren. Zonder ritten blijven veel inzichten leeg.
+                      Koppel je sporthorloge of -account zodat je ritten binnenkomen en
+                      geanalyseerd worden. Zonder ritten blijven veel inzichten leeg.
                     </p>
                     <span className="mt-2 inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 transition-colors group-hover:text-cyan-300">
                       Sportdata koppelen →
@@ -487,7 +496,7 @@ export default function YouPage() {
       <section>
         <SectionLabel n="09" title="Hoe je sportprofiel veranderd is" />
         <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
-          Sparki's beeld van je verandering over tijd — uit je eigen data
+          Je verandering over tijd — uit je eigen data
         </p>
         <div className="mt-3">
           {evolution.hasAny ? (
@@ -518,10 +527,10 @@ export default function YouPage() {
           ) : (
             <Card>
               <p className="text-[14px] leading-relaxed text-white/70">
-                Sparki ziet nog te weinig verloop.
+                Nog te weinig verloop om te tonen.
               </p>
               <p className="mt-1.5 text-[13px] leading-relaxed text-white/50">
-                Zodra je meerdere FTP-metingen of ritten hebt, laat Sparki hier zien hoe je conditie,
+                Zodra je meerdere FTP-metingen of ritten hebt, zie je hier hoe je conditie,
                 vermogen en ritme zich ontwikkelen.
               </p>
             </Card>
