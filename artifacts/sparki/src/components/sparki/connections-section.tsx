@@ -10,12 +10,10 @@ import {
   Trash2,
   X,
   ShieldCheck,
-  Clock,
 } from "lucide-react"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import {
   fetchConnectors,
-  startConnector,
   syncConnector,
   beginOauthConnect,
   disconnectConnector,
@@ -71,6 +69,21 @@ function ReadinessBadge({ state }: { state: ReadinessState }) {
       style={{ color: s.color, borderColor: s.border, background: s.bg }}
     >
       {READINESS_LABELS[state]}
+    </span>
+  )
+}
+
+// Shown for platforms that aren't a direct connection yet (awaiting the
+// platform's official approval, native-only, or still in preparation). Honest:
+// a single calm "Binnenkort" — never a half-started "koppelen gestart" state.
+function UpcomingBadge() {
+  const s = READINESS_STYLE.voorbereid
+  return (
+    <span
+      className="shrink-0 rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide"
+      style={{ color: s.color, borderColor: s.border, background: s.bg }}
+    >
+      Binnenkort
     </span>
   )
 }
@@ -208,9 +221,9 @@ function ConnectionRow({
   onRevoke: (id: string) => void
   onSync: (id: string) => void
 }) {
-  const isConnected = connector.status === "connected"
-  const isPending = connector.status === "pending"
-  const isError = connector.status === "error"
+  const isAvailable = connector.available
+  const isConnected = isAvailable && connector.status === "connected"
+  const isError = isAvailable && connector.status === "error"
 
   return (
     <div className="flex flex-col gap-3 py-3.5">
@@ -218,7 +231,7 @@ function ConnectionRow({
         <span
           className="grid h-9 w-9 shrink-0 place-items-center rounded-xl font-sans text-sm font-bold"
           style={
-            connector.available || isPending
+            connector.available
               ? { background: "rgba(120,210,230,0.1)", color: ACCENT }
               : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.35)" }
           }
@@ -229,19 +242,14 @@ function ConnectionRow({
           <span className="text-[14px] tracking-tight text-white/85">
             {connector.displayName}
           </span>
-          {isPending ? (
-            <span className="flex items-center gap-1 font-mono text-[10px] tracking-wide text-amber-300/80">
-              <Clock className="h-3 w-3" />
-              Koppelen gestart — API nog niet actief
-            </span>
-          ) : isConnected ? (
+          {isConnected ? (
             <span className="font-mono text-[10px] tracking-wide text-white/40">
               {formatLastSync(connector.lastSyncAt)
                 ? `Laatst gesynct ${formatLastSync(connector.lastSyncAt)}`
                 : "Gekoppeld"}
             </span>
           ) : (
-            !connector.available &&
+            !isAvailable &&
             connector.unavailableReason && (
               <span className="text-[11px] leading-snug text-white/35">
                 {connector.unavailableReason}
@@ -255,7 +263,11 @@ function ConnectionRow({
           )}
         </div>
 
-        {!isConnected && !isPending && <ReadinessBadge state={connector.readiness.state} />}
+        {!isAvailable ? (
+          <UpcomingBadge />
+        ) : (
+          !isConnected && <ReadinessBadge state={connector.readiness.state} />
+        )}
 
         {isConnected && (
           <div className="flex shrink-0 items-center gap-1.5">
@@ -284,18 +296,7 @@ function ConnectionRow({
           </div>
         )}
 
-        {isPending && (
-          <button
-            type="button"
-            onClick={() => onDisconnect(connector.id)}
-            disabled={busy}
-            className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-white/10 px-3 font-sans text-xs font-medium text-white/55 transition-colors hover:text-red-400 disabled:opacity-40"
-          >
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Ontkoppelen"}
-          </button>
-        )}
-
-        {!isConnected && !isPending && (
+        {isAvailable && !isConnected && (
           <button
             type="button"
             onClick={() => onConnect(connector.id)}
@@ -412,17 +413,12 @@ export function ConnectionsSection() {
     setError(null)
     setNotice(null)
     try {
-      if (connector.available && connector.authType === "oauth") {
+      if (connector.authType === "oauth") {
         const url = await beginOauthConnect(id, window.location.href)
         window.location.href = url
         return // navigating away
       }
-      if (connector.available) {
-        replace(await syncConnector(id))
-      } else {
-        replace(await startConnector(id))
-        setNotice(`Koppelen met ${connector.displayName} is gestart.`)
-      }
+      replace(await syncConnector(id))
       setConsentId(null)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Koppelen mislukt.")
@@ -470,16 +466,17 @@ export function ConnectionsSection() {
     }
   }
 
-  // Order: connected → koppelen gestart → wireable now → in voorbereiding.
-  const connected = connectors.filter((c) => c.status === "connected")
-  const pending = connectors.filter((c) => c.status === "pending")
+  // Order: connected → wireable now → awaiting approval / in voorbereiding.
+  // Unavailable platforms are purely informational (a calm "Binnenkort"); they
+  // can never be "connected" and no longer create a half-started pending shell.
+  const connected = connectors.filter(
+    (c) => c.available && c.status === "connected",
+  )
   const available = connectors.filter(
-    (c) => c.available && c.status !== "connected" && c.status !== "pending",
+    (c) => c.available && c.status !== "connected",
   )
-  const upcoming = connectors.filter(
-    (c) => !c.available && c.status !== "connected" && c.status !== "pending",
-  )
-  const ordered = [...connected, ...pending, ...available, ...upcoming]
+  const upcoming = connectors.filter((c) => !c.available)
+  const ordered = [...connected, ...available, ...upcoming]
 
   const consentConnector = consentId
     ? connectors.find((c) => c.id === consentId) ?? null
@@ -532,8 +529,10 @@ export function ConnectionsSection() {
 
       <p className="mt-2 flex items-center gap-1.5 px-1 text-[11px] leading-snug text-white/30">
         <Link2 className="h-3 w-3 shrink-0" />
-        Platforms zonder koppeling komen binnenkort beschikbaar. Tot die tijd vul
-        je ontbrekende gegevens handmatig aan.
+        Sommige platforms geven externe apps pas toegang na een officieel
+        goedkeuringsproces — die koppelingen schakelen we automatisch in zodra
+        Sparki is goedgekeurd. Tot die tijd voeg je trainingen toe via een
+        GPX-bestand of een koppeling die al werkt.
       </p>
 
       {consentConnector && (

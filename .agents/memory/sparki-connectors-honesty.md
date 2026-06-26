@@ -9,14 +9,21 @@ The Connecties flow lets athletes connect sport/health apps. Most platforms are
 not wireable yet (no live API). The whole feature must stay honest under the
 project's "never fabricate data" rule.
 
-## Pending shells must not import or imply data
-A not-yet-wireable connector can record a **persisted consent** ("Koppelen
-gestart", status `pending`) but imports zero data and never appears connected.
-**Why:** users want to express intent and have it remembered, but a pending
-shell has no real data behind it — claiming otherwise is fabrication.
-**How to apply:** the start endpoint records `pending` only for connectors whose
-*effective* availability is false; truly-available platforms (e.g. Strava once
-configured) must go through the real authorize/sync path instead.
+## Unavailable connectors are informational only (pending shell RETIRED in UI)
+Decision: an unavailable connector now renders as a calm read-only "Binnenkort"
+row — its `unavailableReason` + a Binnenkort badge, **no Koppel button**. The old
+"Koppelen gestart — API nog niet actief" pending-shell UX was removed because
+users read it as a half-broken connection. The reason text is split by restriction
+class (all driven off `authType`): `oauth` = "platform gates external apps behind
+an official approval process; auto-enables once Sparki is approved"; `native` =
+on-device app; `replit-connector` = in voorbereiding.
+**Why:** the user explicitly wanted Garmin/TrainingPeaks (and every same-restriction
+platform) shown as honestly "binnenkort beschikbaar", not a confusing started state.
+**How to apply:** keep the connect CTA gated on `connector.available`; never
+reintroduce a pending-shell display for unavailable connectors. The legacy
+`POST /:id/start` + `startConnector()` helper still exist but are no longer wired
+to any UI — treat them as deprecated. Copy may only point to GPX file-import as a
+fallback (FIT/TCX/CSV are stored as placeholders, not parsed — don't promise them).
 
 ## "Don't re-ask already-available data" applies only to REAL connections
 Consent copy must NOT promise a pending shell will stop asking for data — there

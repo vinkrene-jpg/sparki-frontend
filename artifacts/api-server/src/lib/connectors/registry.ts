@@ -31,8 +31,13 @@ export interface ConnectorDefinition {
 const SOON = "Binnenkort beschikbaar.";
 const NATIVE_REASON =
   "Gegevens van dit platform staan op je telefoon zelf. Koppelen kan straks via de Sparki-app op je toestel.";
+// Platforms reachable only via direct per-platform OAuth. The platform gates
+// external apps behind an official approval process, so Sparki may only offer a
+// secure connection once it has been approved. Honest — never shown as
+// connectable until then; meanwhile the athlete imports via a GPX-bestand or an
+// already-working koppeling. Flips to a real connection automatically on approval.
 const OAUTH_PENDING =
-  "Binnenkort beschikbaar — koppeling met dit platform wordt voorbereid.";
+  "Nog niet beschikbaar als directe koppeling. Dit ligt niet aan Sparki: dit platform geeft externe apps pas toegang na een officieel goedkeuringsproces. Zodra Sparki is goedgekeurd, schakelen we de koppeling automatisch in. Tot die tijd voeg je trainingen toe via een GPX-bestand of een koppeling die al werkt.";
 
 // Modular registry. Adding a new platform = add one entry here (and, when it
 // becomes wireable, a provider implementation + flip `available`).
