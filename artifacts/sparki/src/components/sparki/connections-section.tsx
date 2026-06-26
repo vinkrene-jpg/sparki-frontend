@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import { trackScreen } from "@/lib/telemetry"
 import {
   Link2,
@@ -113,15 +114,15 @@ function ConsentDialog({
       ? "Koppel"
       : "Geef toestemming"
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-[70] flex items-end justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm sm:items-center"
       role="dialog"
       aria-modal="true"
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-[#070d16]/95 shadow-2xl backdrop-blur-xl"
+        className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-white/10 bg-[#070d16]/95 shadow-2xl backdrop-blur-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3 border-b border-white/[0.06] p-5">
@@ -187,7 +188,8 @@ function ConsentDialog({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
