@@ -17,6 +17,7 @@ import {
   type HealthBatch,
 } from "@/hooks/use-admin-health";
 import { useAdminBugReports } from "@/hooks/use-bug-reports";
+import { FeedbackInbox } from "@/components/sparki/feedback-inbox";
 import {
   STATUS_META,
   CATEGORY_LABEL,
@@ -335,58 +336,7 @@ export default function AdminPage() {
               </div>
             </section>
 
-            <section className="mt-6">
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
-                Bugmeldingen ({bugData?.reports?.length ?? 0})
-              </p>
-              <div className="mt-3 space-y-2">
-                {(bugData?.reports ?? []).length === 0 ? (
-                  <p className="text-[12px] text-white/30">
-                    Nog geen bugmeldingen.
-                  </p>
-                ) : (
-                  (bugData?.reports ?? []).slice(0, 10).map((r) => (
-                    <div
-                      key={r.id}
-                      className="rounded-xl border border-white/[0.07] bg-[#070d16]/[0.6] p-3 backdrop-blur-md"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="text-[13px] leading-snug text-white/85">
-                          {r.description}
-                        </p>
-                        <span className="shrink-0 rounded-full bg-white/[0.06] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-white/50">
-                          {r.status}
-                        </span>
-                      </div>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-x-2 font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
-                        <span>{r.reporterName ?? "Onbekend"}</span>
-                        {r.userRole && <span>· {r.userRole}</span>}
-                        <span>· {formatWhen(r.createdAt)}</span>
-                        {r.pageUrl && (
-                          <span className="normal-case tracking-normal text-white/25">
-                            · {r.pageUrl}
-                          </span>
-                        )}
-                      </div>
-                      {r.screenshotUrl && (
-                        <a
-                          href={r.screenshotUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-2 inline-block"
-                        >
-                          <img
-                            src={r.screenshotUrl}
-                            alt="Schermafbeelding bij bugmelding"
-                            className="max-h-32 rounded-lg border border-white/10 object-cover"
-                          />
-                        </a>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
+            <FeedbackInbox reports={bugData?.reports ?? []} />
 
             <section className="mt-6">
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
