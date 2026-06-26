@@ -589,8 +589,9 @@ export function ConnectionsSection() {
         <Link2 className="h-3 w-3 shrink-0" />
         Sommige platforms geven externe apps pas toegang na een officieel
         goedkeuringsproces — die koppelingen schakelen we automatisch in zodra
-        Sparki is goedgekeurd. Tot die tijd voeg je trainingen toe via een
-        GPX-bestand of een koppeling die al werkt.
+        Sparki is goedgekeurd. Tot die tijd voeg je trainingen toe via een GPX-
+        of FIT-bestand (FIT bevat ook je vermogen en hartslag) of een koppeling
+        die al werkt.
       </p>
 
       {consentConnector && (

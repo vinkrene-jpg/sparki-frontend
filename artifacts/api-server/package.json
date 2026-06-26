@@ -26,6 +26,7 @@
     "seed:preview": "pnpm run build && node --enable-source-maps ./dist/scripts/seed-preview-athletes.mjs",
     "seed:intel": "pnpm run build && node --enable-source-maps ./dist/scripts/seed-intel.mjs",
     "test:intel": "pnpm run build && node --enable-source-maps ./dist/tests/intel.mjs",
+    "test:fit-parse": "pnpm run build && node --enable-source-maps ./dist/tests/fit-parse.mjs",
     "job:health": "pnpm run build && node --enable-source-maps ./dist/jobs/health-check.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

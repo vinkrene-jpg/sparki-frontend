@@ -17,6 +17,24 @@ export type GpxSummary = {
   trackName: string | null;
 };
 
+// Real metrics decoded from a binary FIT activity file (Garmin/Wahoo/Zwift).
+// Any metric the file does not contain stays null and is shown as "ontbreekt".
+export type FitSummary = {
+  format: "fit";
+  sport: string | null;
+  startTime: string | null;
+  durationSec: number | null;
+  distanceKm: number | null;
+  elevationGainM: number | null;
+  avgPower: number | null;
+  maxPower: number | null;
+  avgHeartRate: number | null;
+  maxHeartRate: number | null;
+  avgCadence: number | null;
+  calories: number | null;
+  recordCount: number;
+};
+
 export type ActivityImport = {
   id: number;
   clerkId: string;
@@ -25,7 +43,7 @@ export type ActivityImport = {
   source: string;
   uploadedAt: string;
   status: ActivityImportStatus;
-  parsedSummary: GpxSummary | Record<string, unknown> | null;
+  parsedSummary: GpxSummary | FitSummary | Record<string, unknown> | null;
   errorMessage: string | null;
   linkedTrainingSessionId: number | null;
 };
@@ -44,7 +62,11 @@ export function useActivityImports() {
 export function useUploadActivity() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { fileName: string; content: string }) =>
+    mutationFn: (input: {
+      fileName: string
+      content?: string
+      contentBase64?: string
+    }) =>
       apiFetch<{ import: ActivityImport; parsed: boolean }>(
         "/api/activity-imports",
         { method: "POST", body: JSON.stringify(input) },

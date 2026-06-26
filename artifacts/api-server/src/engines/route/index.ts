@@ -11,6 +11,9 @@ export * from "../../lib/routing";
 // GPX parsing / track summaries for uploads.
 export * from "../../lib/gpx-parse";
 
+// FIT (binary) activity decoding — real power/HR/cadence from device exports.
+export * from "../../lib/fit-parse";
+
 // Short-lived store of provider-generated candidate routes awaiting review.
 export * from "../../lib/route-candidates";
 

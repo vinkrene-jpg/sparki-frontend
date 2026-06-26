@@ -7,7 +7,7 @@ import {
   type ActivityImportFileType,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { parseGpx } from "../engines/route";
+import { parseGpx, parseFit } from "../engines/route";
 
 const router = Router();
 
@@ -37,9 +37,9 @@ router.get("/", requireAuth, async (req, res) => {
 });
 
 // POST /api/activity-imports — upload an activity file.
-//   body: { fileName, content (text, for GPX), byteSize? }
-// GPX is parsed for real metadata now. FIT/TCX/CSV are recorded with status
-// "uploaded" (placeholder — parsing not implemented yet; we never fake values).
+//   body: { fileName, content (text — GPX/TCX/CSV), contentBase64 (binary — FIT) }
+// GPX and FIT are parsed for real metrics now. TCX/CSV are recorded with status
+// "uploaded" (honest placeholder — parsing not implemented yet; never faked).
 router.post("/", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const body = (req.body ?? {}) as Record<string, unknown>;
@@ -52,40 +52,65 @@ router.post("/", requireAuth, async (req, res) => {
     return;
   }
   const content = typeof body.content === "string" ? body.content : "";
+  // FIT is binary, so the client sends it base64-encoded. Strip a data-URL
+  // prefix if one slipped in.
+  const contentBase64 =
+    typeof body.contentBase64 === "string"
+      ? body.contentBase64.replace(/^data:[^;]*;base64,/, "")
+      : "";
   const fileType = detectType(fileName);
+
+  const insertFailed = async (errorMessage: string) => {
+    const [row] = await db
+      .insert(activityImportsTable)
+      .values({ clerkId, fileName, fileType, status: "failed", errorMessage })
+      .returning();
+    res.status(201).json({ import: row, parsed: false });
+  };
+
+  const insertParsed = async (summary: unknown) => {
+    const [row] = await db
+      .insert(activityImportsTable)
+      .values({
+        clerkId,
+        fileName,
+        fileType,
+        status: "parsed",
+        parsedSummary: summary as Record<string, unknown>,
+      })
+      .returning();
+    res.status(201).json({ import: row, parsed: true });
+  };
 
   try {
     if (fileType === "gpx") {
       const summary = parseGpx(content);
       if (!summary) {
-        const [row] = await db
-          .insert(activityImportsTable)
-          .values({
-            clerkId,
-            fileName,
-            fileType,
-            status: "failed",
-            errorMessage: "Geen geldige trackpunten gevonden in GPX-bestand",
-          })
-          .returning();
-        res.status(201).json({ import: row, parsed: false });
+        await insertFailed("Geen geldige trackpunten gevonden in GPX-bestand");
         return;
       }
-      const [row] = await db
-        .insert(activityImportsTable)
-        .values({
-          clerkId,
-          fileName,
-          fileType,
-          status: "parsed",
-          parsedSummary: summary,
-        })
-        .returning();
-      res.status(201).json({ import: row, parsed: true });
+      await insertParsed(summary);
       return;
     }
 
-    // Non-GPX: record the upload honestly as a placeholder (not yet parsed).
+    if (fileType === "fit") {
+      if (!contentBase64) {
+        await insertFailed("Geen geldige FIT-gegevens ontvangen");
+        return;
+      }
+      const buf = Buffer.from(contentBase64, "base64");
+      const summary = parseFit(buf);
+      if (!summary) {
+        await insertFailed(
+          "Geen geldige trainingsgegevens gevonden in FIT-bestand",
+        );
+        return;
+      }
+      await insertParsed(summary);
+      return;
+    }
+
+    // TCX/CSV (and unknown): record the upload honestly as a placeholder.
     const [row] = await db
       .insert(activityImportsTable)
       .values({
