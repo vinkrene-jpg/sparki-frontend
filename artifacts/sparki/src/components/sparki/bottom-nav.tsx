@@ -1,8 +1,7 @@
-import { Home, Bike, Flag, Radio, FlaskConical, User, UserPlus, BookOpen, Users, Orbit } from "lucide-react"
+import { Home, Activity, Compass, Dumbbell, User, UserPlus, Radio } from "lucide-react"
 import { Link, useLocation } from "wouter"
 import { useUserProfile } from "@/contexts/UserContext"
 import type { Role } from "@/contexts/UserContext"
-import { useFeatureFlag } from "@/hooks/use-feature-flag"
 
 type NavItem = {
   href: string
@@ -10,14 +9,17 @@ type NavItem = {
   label: string
 }
 
+// Experience-first navigation (approved restructure):
+// Vandaag · Activiteiten · Ontdekken · Trainen · Jij.
+// Nieuws + Kennis + Inzicht are being merged into Ontdekken; Races folds into
+// Trainen; Samen is reachable from the profile/header; Core is an internal
+// engine with no nav entry.
 const ATHLETE_NAV: NavItem[] = [
   { href: "/", icon: Home, label: "Vandaag" },
-  { href: "/train", icon: Bike, label: "Training" },
-  { href: "/races", icon: Flag, label: "Races" },
-  { href: "/samen", icon: Users, label: "Samen" },
-  { href: "/feed", icon: Radio, label: "Nieuws" },
-  { href: "/lab", icon: FlaskConical, label: "Inzicht" },
-  { href: "/you", icon: User, label: "Profiel" },
+  { href: "/activiteiten", icon: Activity, label: "Activiteiten" },
+  { href: "/feed", icon: Compass, label: "Ontdekken" },
+  { href: "/train", icon: Dumbbell, label: "Trainen" },
+  { href: "/you", icon: User, label: "Jij" },
 ]
 
 const COACH_NAV: NavItem[] = [
@@ -42,40 +44,10 @@ function navForRole(role: Role | null | undefined): NavItem[] {
 export function BottomNav() {
   const [pathname] = useLocation()
   const { profile } = useUserProfile()
-  const knowledgeOn = useFeatureFlag("knowledge_base")
-  let items = navForRole(profile?.activeRole)
-  // Knowledge base is flag-gated and only surfaced for athletes; replace the
-  // lower-priority "Races" slot to keep the bar from overcrowding.
-  if (knowledgeOn && profile?.activeRole !== "coach" && profile?.activeRole !== "parent") {
-    items = [
-      ...items.filter((i) => i.href !== "/races"),
-      { href: "/kennis", icon: BookOpen, label: "Kennis" },
-    ]
-  }
+  const items = navForRole(profile?.activeRole)
 
   return (
-    <>
-      {/* Zwevende snelkoppeling naar de Core Speeltuin — altijd zichtbaar zodat
-          het visuele prototype op de telefoon meteen te vinden is. */}
-      <Link
-        href="/core"
-        aria-label="Open Core Speeltuin"
-        className="fixed bottom-24 right-4 z-[60] flex items-center gap-2 rounded-full border border-cyan-300/40 bg-[#040506]/85 px-4 py-2.5 shadow-[0_0_24px_rgba(120,210,230,0.3)] backdrop-blur-xl transition-transform active:scale-95"
-      >
-        <Orbit
-          className="h-4 w-4"
-          style={{ color: "var(--accent-cyan)", filter: "drop-shadow(0 0 6px var(--accent-cyan))" }}
-          strokeWidth={1.75}
-        />
-        <span
-          className="font-mono text-[11px] uppercase tracking-[0.16em]"
-          style={{ color: "var(--accent-cyan)" }}
-        >
-          Core
-        </span>
-      </Link>
-
-      <nav className="fixed inset-x-0 bottom-0 z-50">
+    <nav className="fixed inset-x-0 bottom-0 z-50">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-gradient-to-t from-[#040506] to-transparent"
@@ -114,7 +86,6 @@ export function BottomNav() {
           )
         })}
       </div>
-      </nav>
-    </>
+    </nav>
   )
 }

@@ -30,6 +30,7 @@ const SECTION_SCENE: Record<string, SceneName> = {
   lab: "lab",
   you: "you",
   samen: "feed",
+  activiteiten: "feed",
 }
 
 // User-facing Dutch label for the section shown in the header. Keeps the internal
@@ -42,6 +43,7 @@ const SECTION_DISPLAY: Record<string, string> = {
   lab: "INZICHT",
   you: "PROFIEL",
   samen: "SAMEN",
+  activiteiten: "ACTIVITEITEN",
   kennisbank: "KENNIS",
   coach: "COACH",
   ouder: "OUDER",

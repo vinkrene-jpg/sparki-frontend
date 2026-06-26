@@ -14,6 +14,7 @@ import {
 import TrainPage from "@/pages/train"
 import FeedPage from "@/pages/feed"
 import LabPage from "@/pages/lab"
+import ActiviteitenPage from "@/pages/activiteiten"
 import CorePlaygroundPage from "@/pages/core-playground"
 import PhotoLabPage from "@/pages/photo-lab"
 import YouPage from "@/pages/you"
@@ -61,6 +62,7 @@ const VIEWS: DevView[] = [
   { label: "Landing", path: LANDING_PATH },
   { label: "Onboarding", path: ONBOARDING_PATH },
   { label: "Home", path: "/" },
+  { label: "Activiteiten", path: "/activiteiten" },
   { label: "Train", path: "/train" },
   { label: "Feed", path: "/feed" },
   { label: "Lab", path: "/lab" },
@@ -376,6 +378,8 @@ export function DevPreview() {
     showNav = false
   } else if (location.startsWith("/lab")) {
     page = <LabPage />
+  } else if (location.startsWith("/activiteiten")) {
+    page = <ActiviteitenPage />
   } else if (location.startsWith("/you")) {
     page = <YouPage />
   } else if (location.startsWith("/photo-lab")) {

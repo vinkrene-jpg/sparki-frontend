@@ -25,6 +25,12 @@ A major UX reorg of the whole app around four steps, in this order on EVERY scre
 ## Phasing
 F1 = nav + Home + opening flow · F2 = Activiteit-detail · F3 = Ontdekken tab · F4 = Trainen + rest.
 
+## Implementation status (real app)
+- **Nav shipped**: `bottom-nav.tsx` athlete nav is now the 5 approved tabs; floating Core shortcut removed (route `/core` kept, no nav entry); the old `knowledge_base` Races→Kennis swap was dropped for athletes. Coach/parent navs left unchanged.
+- **Activiteiten shipped**: real surface `pages/activiteiten.tsx` (route in BOTH `App.tsx` and `dev-preview.tsx`; section key `activiteiten` added to ScreenShell SECTION_SCENE/SECTION_DISPLAY, NOT in COACH_CARD_SECTIONS so no coach card — advice-last). Lists `useSessions`, taps open existing `SessionDetailDrawer`. **Honesty reconciliation:** the prototype's weather/atmosphere chips were OMITTED because `TrainingSession` has no weather data — never fabricate them on real cards.
+- **Interim**: "Ontdekken" tab points to `/feed` until the merged discovery surface is built in F3. "Trainen" → `/train`; races fold in F4.
+- **Still TODO**: experience-first reorder of the Vandaag/Home day-type engine (the riskiest F1 piece — touches HomeViewContext state/full surfaces + ScreenShell coach-card injection); F3 merged Ontdekken (Nieuws+Kennis+Inzicht); F4 Trainen+races fold + Samen→header/profiel.
+
 ## Prototype-first rule (hard requirement from user)
 Build a CLICKABLE canvas prototype first (Home, Activiteit-detail, new nav) and get explicit approval BEFORE touching the real app. Prototype lives in the mockup-sandbox:
 `artifacts/mockup-sandbox/src/components/mockups/sparki-reboot/Prototype.tsx` (single self-contained clickable mobile file).

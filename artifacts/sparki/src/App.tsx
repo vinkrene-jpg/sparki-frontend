@@ -22,6 +22,7 @@ import FeedPage from "@/pages/feed";
 import TrainPage from "@/pages/train";
 import YouPage from "@/pages/you";
 import LabPage from "@/pages/lab";
+import ActiviteitenPage from "@/pages/activiteiten";
 import CorePlaygroundPage from "@/pages/core-playground";
 import PhotoLabPage from "@/pages/photo-lab";
 import SamenPage from "@/pages/samen";
@@ -430,6 +431,9 @@ function AppRouter() {
                 </Route>
                 <Route path="/lab">
                   <ProtectedPage component={LabPage} />
+                </Route>
+                <Route path="/activiteiten">
+                  <ProtectedPage component={ActiviteitenPage} />
                 </Route>
                 <Route path="/core">
                   <ProtectedPage component={CorePlaygroundPage} />
