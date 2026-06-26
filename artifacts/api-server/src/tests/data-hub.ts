@@ -28,6 +28,7 @@ import {
   cleanActivity,
   resolveReadiness,
   ingestBatch,
+  effectiveImportedDataTypes,
   type NormalizedBatch,
 } from "../engines/data-hub";
 import { getConnectorDefinition } from "../engines/integration";
@@ -155,6 +156,64 @@ async function main() {
     });
     assert(bad === null, "invalid activity rejected");
   });
+
+  await run(
+    "Consent",
+    "effectiveImportedDataTypes never claims blocked activity import",
+    () => {
+      const batch: NormalizedBatch = {
+        importedDataTypes: ["activities", "training_history", "ftp"],
+        activities: [
+          {
+            externalId: "1",
+            sport: "cycling",
+            startedAt: "2026-06-20T07:00:00.000Z",
+            durationMin: 60,
+          },
+        ],
+      };
+
+      // Both consents present + activities fetched → claimed.
+      const full = effectiveImportedDataTypes(batch, ALL_ALLOWED());
+      assert(full.includes("activities"), "activities claimed when allowed");
+      assert(
+        full.includes("training_history"),
+        "training_history claimed when allowed",
+      );
+      assert(full.includes("ftp"), "non-activity type untouched");
+
+      // Revoke "activities" only → AND gate blocks BOTH activity types, ftp stays.
+      const noActivities = ALL_ALLOWED();
+      noActivities.delete("activities");
+      const r1 = effectiveImportedDataTypes(batch, noActivities);
+      assert(!r1.includes("activities"), "activities dropped when revoked");
+      assert(
+        !r1.includes("training_history"),
+        "training_history dropped when activities revoked (AND gate)",
+      );
+      assert(r1.includes("ftp"), "ftp still reported");
+
+      // Revoke "training_history" only → same: both activity types dropped.
+      const noHistory = ALL_ALLOWED();
+      noHistory.delete("training_history");
+      const r2 = effectiveImportedDataTypes(batch, noHistory);
+      assert(
+        !r2.includes("activities") && !r2.includes("training_history"),
+        "both activity types dropped when training_history revoked",
+      );
+
+      // No activities fetched → never claim activity import even with full consent.
+      const empty: NormalizedBatch = {
+        importedDataTypes: ["activities", "training_history"],
+        activities: [],
+      };
+      const r3 = effectiveImportedDataTypes(empty, ALL_ALLOWED());
+      assert(
+        !r3.includes("activities") && !r3.includes("training_history"),
+        "no activity claim when nothing fetched",
+      );
+    },
+  );
 
   await run("Readiness", "4-state resolution", () => {
     const strava = getConnectorDefinition("strava")!;

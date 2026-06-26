@@ -1,4 +1,8 @@
-import { syncStrava } from "../../lib/connectors/providers/strava";
+import type { ConnectorDataType } from "@workspace/db";
+import {
+  syncStrava,
+  fetchStravaActivities,
+} from "../../lib/connectors/providers/strava";
 import type { HubProvider } from "./types";
 
 // Registered hub adapters. Adding a real platform later = implement its
@@ -6,18 +10,29 @@ import type { HubProvider } from "./types";
 // flip its registry `available` flag. Nothing else changes — the central ingest,
 // dedup, consent, and logging pipeline already handles every platform.
 //
-// Strava is live today. The existing `syncStrava` already persists the athlete's
-// profile/weight/ftp directly, so its hub adapter reports the result and sets
-// `persistedExternally` to avoid a double write — while still flowing through the
-// hub for connection state + sync logging.
+// Strava is live today. Profile/weight/ftp are persisted directly by
+// `syncStrava` (legacy external path), but ACTIVITIES flow through the central
+// ingest pipeline so they land in `training_sessions` with cross-source dedup +
+// provenance. We therefore return the activities and leave `persistedExternally`
+// false so the hub ingests them (the batch carries no weight/ftp arrays, so
+// there is no double write of the externally-persisted profile data).
 const stravaProvider: HubProvider = {
   id: "strava",
   async fetchAndNormalize(ctx) {
-    const res = await syncStrava(ctx.clerkId);
+    const profile = await syncStrava(ctx.clerkId);
+    const activities = await fetchStravaActivities(ctx.clerkId);
+
+    const importedDataTypes: ConnectorDataType[] = [...profile.importedDataTypes];
+    // Only claim activity/history import when activities were actually returned.
+    if (activities.length > 0) {
+      importedDataTypes.push("activities", "training_history");
+    }
+
     return {
-      externalUserId: res.externalUserId,
-      importedDataTypes: res.importedDataTypes,
-      persistedExternally: true,
+      externalUserId: profile.externalUserId,
+      importedDataTypes,
+      activities,
+      persistedExternally: false,
     };
   },
 };

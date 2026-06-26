@@ -25,7 +25,7 @@ import {
   type ConnectorDefinition,
 } from "../../lib/connectors/registry";
 import { getHubProvider } from "./providers";
-import { ingestBatch } from "./ingest";
+import { ingestBatch, effectiveImportedDataTypes } from "./ingest";
 import { ensureMaterialNudgeNotification } from "../material";
 
 export * from "./types";
@@ -34,7 +34,11 @@ export * from "./dedupe";
 export * from "./validation";
 export * from "./readiness";
 export * from "./providers";
-export { ingestBatch } from "./ingest";
+export {
+  ingestBatch,
+  effectiveImportedDataTypes,
+  activitiesIngestAllowed,
+} from "./ingest";
 export type { IngestOptions } from "./ingest";
 
 // Honest, typed failure so the API can map it to the right status code.
@@ -176,10 +180,14 @@ export async function runSync(
       ? {}
       : await ingestBatch(clerkId, providerId, batch, { allowed });
 
+    // Report only what consent actually let us persist — never claim activity
+    // import when the user revoked activities/training_history.
+    const importedDataTypes = effectiveImportedDataTypes(batch, allowed);
+
     await upsertConnection(
       clerkId,
       providerId,
-      batch.importedDataTypes,
+      importedDataTypes,
       batch.externalUserId,
       now,
     );
@@ -190,7 +198,7 @@ export async function runSync(
         status: "success",
         finishedAt: new Date(),
         counts,
-        importedDataTypes: batch.importedDataTypes,
+        importedDataTypes,
       })
       .where(eq(syncRunsTable.id, runId))
       .returning();
@@ -203,7 +211,7 @@ export async function runSync(
     return {
       run: finished!,
       counts,
-      importedDataTypes: batch.importedDataTypes,
+      importedDataTypes,
     };
   } catch (err) {
     const message =

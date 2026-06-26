@@ -8,7 +8,10 @@ import {
   runSync,
   HubError,
   resolveReadiness,
-  syncStrava,
+  getHubProvider,
+  loadAllowedDataTypes,
+  ingestBatch,
+  effectiveImportedDataTypes,
 } from "../engines/integration";
 import {
   buildStravaAuthorizeUrl,
@@ -438,23 +441,33 @@ router.get("/strava/callback", async (req, res) => {
       });
 
     // Best-effort initial import. A failed import must NOT flip a freshly
-    // connected account to "error" — so we call the provider directly (not
-    // runSync) and only record what actually imported.
+    // connected account to "error" — so we import via the hub provider directly
+    // (not runSync, which records a connection error on failure) and only record
+    // what actually imported. This brings in profile/weight/ftp AND activities
+    // through the central ingest pipeline.
     try {
-      const result = await syncStrava(state.clerkId);
-      await db
-        .update(connectorConnectionsTable)
-        .set({
-          importedDataTypes: result.importedDataTypes,
-          lastSyncAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(connectorConnectionsTable.clerkId, state.clerkId),
-            eq(connectorConnectionsTable.provider, "strava"),
-          ),
-        );
+      const provider = getHubProvider("strava");
+      if (provider?.fetchAndNormalize) {
+        const allowed = await loadAllowedDataTypes(state.clerkId, "strava");
+        const batch = await provider.fetchAndNormalize({ clerkId: state.clerkId });
+        if (!batch.persistedExternally) {
+          await ingestBatch(state.clerkId, "strava", batch, { allowed });
+        }
+        await db
+          .update(connectorConnectionsTable)
+          .set({
+            // Report only what consent actually let us persist.
+            importedDataTypes: effectiveImportedDataTypes(batch, allowed),
+            lastSyncAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(connectorConnectionsTable.clerkId, state.clerkId),
+              eq(connectorConnectionsTable.provider, "strava"),
+            ),
+          );
+      }
     } catch (importErr) {
       req.log.warn({ err: importErr }, "strava.callback initial import failed");
     }

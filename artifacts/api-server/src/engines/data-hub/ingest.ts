@@ -25,6 +25,36 @@ export interface IngestOptions {
   allowed: Set<ConnectorDataType>;
 }
 
+// Activity payloads carry BOTH "activities" and "training_history" meaning and
+// share one ingestion path. Revoking EITHER must block ingestion (AND, fails
+// safe toward more privacy). This is the single source of truth for that gate.
+export function activitiesIngestAllowed(
+  allowed: Set<ConnectorDataType>,
+): boolean {
+  return allowed.has("activities") && allowed.has("training_history");
+}
+
+// The data types we may HONESTLY report as imported for a batch, given consent.
+// A provider adapter may include "activities"/"training_history" when it fetched
+// activities, but those must be dropped when consent blocked ingestion or no
+// activity actually came back — so connection state never claims data it didn't
+// persist.
+export function effectiveImportedDataTypes(
+  batch: NormalizedBatch,
+  allowed: Set<ConnectorDataType>,
+): ConnectorDataType[] {
+  const set = new Set<ConnectorDataType>(batch.importedDataTypes);
+  if (set.has("activities") || set.has("training_history")) {
+    const persisted =
+      (batch.activities?.length ?? 0) > 0 && activitiesIngestAllowed(allowed);
+    if (!persisted) {
+      set.delete("activities");
+      set.delete("training_history");
+    }
+  }
+  return [...set];
+}
+
 function dateOf(iso: string): string {
   return new Date(iso).toISOString().split("T")[0]!;
 }
@@ -298,14 +328,9 @@ export async function ingestBatch(
   const counts: SyncRunCounts = {};
   const { allowed } = opts;
 
-  // Strict per-datatype consent: activity payloads carry BOTH "activities" and
-  // "training_history" meaning, and there is one ingestion path. Revoking EITHER
-  // must block ingestion — using AND means one consent can never be bypassed by
-  // the other (fails safe toward more privacy). Default-grant keeps both on
-  // unless the user explicitly revoked one.
-  const activitiesAllowed =
-    allowed.has("activities") && allowed.has("training_history");
-  if (activitiesAllowed) await ingestActivities(clerkId, provider, batch, counts);
+  // Strict per-datatype consent for activities (see activitiesIngestAllowed).
+  if (activitiesIngestAllowed(allowed))
+    await ingestActivities(clerkId, provider, batch, counts);
 
   await ingestDailyMetrics(clerkId, batch, allowed, counts);
 
