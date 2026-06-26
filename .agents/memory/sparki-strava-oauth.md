@@ -36,3 +36,30 @@ comment said per-user OAuth — the implementation just hadn't caught up.
 - The Strava app's "Authorization Callback Domain" must equal the bare domain of
   `publicBaseUrl()`. Strava allows only ONE callback domain, so dev and prod
   domains can't both be whitelisted at once.
+
+## The configured client-id MUST match the app whose callback domain is registered
+
+`STRAVA_CLIENT_ID`/`STRAVA_CLIENT_SECRET` are stored as **global secrets** (same
+value in dev and prod — confirmed via viewEnvVars: both live under `secrets`, not
+env-scoped). So whatever client-id is set is what BOTH the workspace and the
+published deployment use.
+
+**Symptom of a mismatch:** Strava `/oauth/authorize` returns HTTP 400
+`{"errors":[{"resource":"Application","field":"redirect_uri","code":"invalid"}]}`
+*even though* the user swears the callback domain is set correctly. The trap: the
+configured client-id is a DIFFERENT Strava app than the one the user edited (in one
+real case `257989` was configured but the user's real app — with the correct
+callback domain — was `257987`, a one-digit difference).
+
+**How to diagnose without touching code:** the client-id is public, so curl
+`https://www.strava.com/oauth/authorize?client_id=<ID>&response_type=code&redirect_uri=<urlencoded prod callback>&scope=read&state=x`
+for each candidate id. `HTTP 302` = that app accepts the redirect_uri (correct app);
+`HTTP 400 redirect_uri invalid` = wrong app or callback domain not saved on that app.
+Compare the configured id against the id shown on the user's Strava API page
+(it's on the main "My API Application" page, NOT inside the "Edit Application"
+popup — users repeatedly send the edit popup which hides the id).
+
+**Fix:** request the correct `STRAVA_CLIENT_ID` + `STRAVA_CLIENT_SECRET` via
+`requestEnvVar` (secrets can't be set directly). Because they're global secrets,
+the running **production deployment must be redeployed** to pick up the new values
+— restarting dev workflows is not enough for the live app.
