@@ -53,3 +53,23 @@ is only appropriate for single-tenant/admin-level data, never per-end-user data.
 - **The live consent step cannot be automated** — it requires a human logging into
   the real provider account. Everything else (authorize URL shape, redirect_uri,
   error paths, disconnect) is testable without it.
+
+## Per-platform availability reality (which connectors can actually be wired)
+
+**Why:** users ask "make the other koppelingen work too"; the blocker is almost
+always external credentials, not our code — don't fabricate an untestable OAuth.
+
+- **Replit managed connectors EXIST for:** Fitbit, Oura, Whoop, Coros, Strava
+  (search via `searchIntegrations`). But they're account-level (see top of file),
+  so for per-athlete data still do direct per-user OAuth, not the proxy.
+- **NO Replit connector for Garmin Connect or TrainingPeaks.** Both require the
+  platform's own partner/developer approval before any credentials exist:
+  Garmin = Garmin Connect Developer Program (Health/Activity API; delivers data via
+  push/webhook, not a simple pull like Strava); TrainingPeaks = partner API access.
+  Cannot be built+tested until the user obtains an approved Client ID + Secret.
+- **Self-serve (credentials issued immediately, OAuth2, Strava-like) :** Fitbit,
+  Oura, Whoop — the fastest real wins if the user is flexible on platform.
+- **Google Health Connect is impossible in the web app** — it's on-device Android
+  data, readable only by a native mobile app; there is no server-side web OAuth.
+- **Decision:** never blind-build a gated connector. Request its Client ID/Secret
+  as secrets, then wire + test on the Strava per-user-OAuth template the same day.
