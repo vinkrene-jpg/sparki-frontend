@@ -541,7 +541,11 @@ export function Prototype() {
   };
 
   return (
-    <div className="font-sans text-white bg-[#05070e] min-h-[100dvh] relative overflow-hidden flex flex-col antialiased selection:bg-[#78D2E6]/30">
+    <div className="font-sans text-white bg-[#02040a] min-h-[100dvh] w-full flex justify-center items-stretch antialiased selection:bg-[#78D2E6]/30">
+    <div
+      className="relative w-full max-w-[430px] min-h-[100dvh] bg-[#05070e] overflow-hidden flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.6)] ring-1 ring-white/5"
+      style={{ transform: 'translateZ(0)' }}
+    >
       {/* Global Background Gradients */}
       <div className="fixed top-0 inset-x-0 h-[50vh] bg-[radial-gradient(ellipse_at_top,rgba(120,210,230,0.06),transparent_70%)] pointer-events-none" />
       <div className="fixed bottom-0 inset-x-0 h-[30vh] bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
@@ -590,6 +594,7 @@ export function Prototype() {
           })}
         </div>
       </nav>
+    </div>
     </div>
   );
 }
