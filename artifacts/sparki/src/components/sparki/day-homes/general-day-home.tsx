@@ -20,8 +20,11 @@ import { QuickActionButton } from "@/components/sparki/coach-input-actions"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useRaces } from "@/hooks/use-races"
+import { useHomeWeather } from "@/hooks/use-home-weather"
 import { computeDayAdvice, type DayAdvice } from "@/lib/day-advice"
+import type { HomeWeather } from "@/lib/weather-types"
 import type { DayHomeComponentProps } from "@/lib/day-type"
+import { Thermometer, Wind, Droplets, CloudSnow, MapPin } from "lucide-react"
 
 const SETUP_STEPS: { label: string; hint: string; href: string }[] = [
   {
@@ -45,17 +48,20 @@ export function GeneralDayHome({ briefing }: DayHomeComponentProps) {
   const { data, isLoading } = useAthleteDashboard()
   const { data: metricsHistory, isLoading: metricsLoading } = useDailyMetrics(14)
   const { data: races } = useRaces()
+  const { data: weather, isLoading: weatherLoading } = useHomeWeather()
   const profile = data?.athleteProfile
   const [, navigate] = useLocation()
 
   // Concrete, explainable advice for a no-plan day — built from the athlete's
-  // real signals (check-in, form, weekly hours, FTP, nearest race). Null until
-  // there's a check-in to base readiness on (the reactor prompts for one).
+  // real signals (check-in, form, weekly hours, FTP, nearest race) and today's
+  // real home weather (which can honestly step an intensive outdoor day back).
+  // Null until there's a check-in to base readiness on (the reactor prompts).
   const advice = computeDayAdvice({
     profile: profile ?? null,
     metrics: data?.todayMetrics ?? null,
     load: data?.load ?? null,
     races,
+    weather: weather ?? null,
   })
 
   // Brand-new athletes (no profile yet) get the onboarding flow; established
@@ -140,9 +146,24 @@ export function GeneralDayHome({ briefing }: DayHomeComponentProps) {
             </div>
           </section>
 
-          {/* 03 WAT NU — één concreet, uitlegbaar advies (grondregel 5) */}
+          {/* 03 HET WEER VANDAAG — echte condities thuis (grondregel 3) */}
           <section>
-            <SectionLabel n="03" title="Wat nu" large />
+            <SectionLabel n="03" title="Het weer vandaag" large />
+            <div className="mt-4">
+              {weatherLoading ? (
+                <Skeleton className="h-20 w-full rounded-xl" />
+              ) : (
+                <HomeWeatherCard
+                  weather={weather ?? null}
+                  onSetHome={() => navigate("/train")}
+                />
+              )}
+            </div>
+          </section>
+
+          {/* 04 WAT NU — één concreet, uitlegbaar advies (grondregel 5) */}
+          <section>
+            <SectionLabel n="04" title="Wat nu" large />
             <div className="mt-4">
               {isLoading ? (
                 <div className="space-y-3">
@@ -240,6 +261,123 @@ function DayAdviceCard({
           →
         </span>
       </button>
+    </div>
+  )
+}
+
+// Today's real conditions at the athlete's home location. Honest by contract:
+// no saved location → a direct prompt to set one (never a dead-end); no forecast
+// → it says so plainly; otherwise the real numbers + Sparki's read on an
+// outdoor intensive ride. Nothing is ever fabricated.
+const SEVERITY_TEXT: Record<"caution" | "severe", string> = {
+  caution: "rgba(245,200,90,0.95)",
+  severe: "rgba(245,120,110,0.95)",
+}
+
+function HomeWeatherCard({
+  weather,
+  onSetHome,
+}: {
+  weather: HomeWeather | null
+  onSetHome: () => void
+}) {
+  if (!weather || (!weather.available && weather.reason === "no_home")) {
+    return (
+      <div className="flex flex-col items-start gap-3 rounded-xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+        <p className="text-[13px] leading-relaxed text-white/70">
+          Sparki kent je thuislocatie nog niet, dus kan het weer bij jou in de
+          buurt niet ophalen. Stel je thuislocatie in en Sparki houdt het weer
+          mee in je dagelijkse advies.
+        </p>
+        <button
+          type="button"
+          onClick={onSetHome}
+          className="inline-flex items-center gap-2 rounded-full border border-cyan-300/30 bg-cyan-300/[0.08] px-4 py-2 text-[12.5px] font-medium tracking-tight text-white/90 transition-colors hover:bg-cyan-300/[0.14]"
+        >
+          <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
+          Thuislocatie instellen
+        </button>
+      </div>
+    )
+  }
+
+  if (!weather.available || !weather.today) {
+    return (
+      <div className="rounded-xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+        <p className="text-[13px] leading-relaxed text-white/55">
+          Er is op dit moment geen weersverwachting beschikbaar voor vandaag
+          {weather.locationLabel ? ` (${weather.locationLabel})` : ""}. Sparki
+          laat hier geen schatting zien.
+        </p>
+      </div>
+    )
+  }
+
+  const s = weather.today
+  const a = weather.advisory
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+      {weather.locationLabel && (
+        <div className="flex items-center gap-1.5 text-white/45">
+          <MapPin className="h-3 w-3" strokeWidth={1.75} />
+          <span className="font-mono text-[10px] uppercase tracking-[0.15em]">
+            {weather.locationLabel}
+          </span>
+        </div>
+      )}
+      <p className="mt-2 text-[15px] font-medium tracking-tight text-white/95">
+        {s.label}
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[12px] tabular-nums text-white/65">
+        {(s.tempMinC != null || s.tempMaxC != null) && (
+          <span className="flex items-center gap-1.5">
+            <Thermometer className="h-3 w-3" strokeWidth={1.75} />
+            {s.tempMinC != null && s.tempMaxC != null
+              ? `${Math.round(s.tempMinC)}–${Math.round(s.tempMaxC)}°C`
+              : `${Math.round((s.tempMaxC ?? s.tempMinC)!)}°C`}
+          </span>
+        )}
+        {s.windMaxKmh != null && s.windMaxKmh >= 15 && (
+          <span className="flex items-center gap-1.5">
+            <Wind className="h-3 w-3" strokeWidth={1.75} />
+            {Math.round(s.windMaxKmh)} km/u
+          </span>
+        )}
+        {s.snowfallCm != null && s.snowfallCm > 0 ? (
+          <span className="flex items-center gap-1.5">
+            <CloudSnow className="h-3 w-3" strokeWidth={1.75} />
+            {s.snowfallCm.toFixed(1)} cm
+          </span>
+        ) : (
+          s.precipMm != null &&
+          s.precipMm >= 1 && (
+            <span className="flex items-center gap-1.5">
+              <Droplets className="h-3 w-3" strokeWidth={1.75} />
+              {Math.round(s.precipMm)} mm
+            </span>
+          )
+        )}
+      </div>
+
+      {a && a.severity !== "ok" && (
+        <div className="mt-4 border-t border-white/[0.07] pt-3">
+          <p
+            className="font-mono text-[10px] uppercase tracking-[0.15em]"
+            style={{ color: SEVERITY_TEXT[a.severity] }}
+          >
+            {a.headline}
+          </p>
+          <p className="mt-1.5 text-[12.5px] leading-relaxed text-white/65">
+            {a.detail}
+          </p>
+          {a.suggestion && (
+            <p className="mt-1.5 text-[12.5px] leading-relaxed text-white/50">
+              <span className="text-white/40">Sparki: </span>
+              {a.suggestion}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }

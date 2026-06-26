@@ -96,6 +96,11 @@ export const queryKeys = {
     settings: () => ["privacy", "settings"] as const,
   },
 
+  weather: {
+    all: () => ["weather"] as const,
+    home: () => ["weather", "home"] as const,
+  },
+
   nutrition: {
     all: () => ["nutrition"] as const,
     logs: (limit?: number) =>

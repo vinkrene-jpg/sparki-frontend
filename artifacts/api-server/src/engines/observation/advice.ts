@@ -105,32 +105,64 @@ function presentSummary(intake: SignalIntake, kinds: SignalKind[]): string {
   return vals.length ? vals.join("; ") : "nog weinig vastgelegde gegevens";
 }
 
+// Weather only changes the advice when it would turn a genuinely hard outdoor
+// day into a risky one: severe conditions ease a planned hard prikkel ("stevig")
+// down to a normal day. Anything milder is surfaced by the UI but never
+// overrides the physiological decision — weather is only *named* in the advice
+// when it materially changed it.
+function weatherEasing(
+  intake: SignalIntake,
+  intensity: AdviceIntensity,
+): { easedIntensity: AdviceIntensity; summary: string } | null {
+  const w = intake.metrics.weather;
+  if (!w || !w.available || w.severity !== "severe") return null;
+  if (intensity !== "stevig") return null;
+  return {
+    easedIntensity: "normaal",
+    summary: w.summaryText ?? "zware omstandigheden",
+  };
+}
+
 /** Build today's advice with its five explainers. Deterministic. */
 export function generateAdvice(
   intake: SignalIntake,
   p: Personality,
   findings: ContradictionFinding[],
 ): Advice {
-  const { driver, intensity } = decideDriver(intake);
+  const { driver, intensity: rawIntensity } = decideDriver(intake);
   const m = intake.metrics;
-  const headline = headlineFor(driver, p, intake);
+  const eased = weatherEasing(intake, rawIntensity);
+  const intensity = eased ? eased.easedIntensity : rawIntensity;
+  const headline = eased
+    ? `Het weer (${eased.summary}) maakt een zware buitenrit vandaag riskant; kies voor een normale, rustigere prikkel of ga binnen op de trainer.`
+    : headlineFor(driver, p, intake);
 
   const seenKinds: SignalKind[] =
     driver === "injured" || driver === "sick"
       ? ["health"]
       : ["training_load", "readiness", "subjective_feel", "hrv_trend", "resting_hr_trend"];
-  const watIkZie = `Wat ik zie: ${presentSummary(intake, seenKinds)}.`;
+  const watIkZie = `Wat ik zie: ${presentSummary(intake, seenKinds)}${
+    eased ? `; het weer thuis is ${eased.summary}` : ""
+  }.`;
 
-  const watIkDenk = `Wat ik denk: ${thinkFor(driver, m)}`;
+  const watIkDenk = `Wat ik denk: ${thinkFor(driver, m)}${
+    eased
+      ? " Bij dit weer levert een zware buitenrit meer risico dan rendement, dus Sparki temt vandaag de intensiteit."
+      : ""
+  }`;
 
-  const waaromDitAdvies = `Waarom dit advies: ${whyFor(driver)}`;
+  const waaromDitAdvies = `Waarom dit advies: ${whyFor(driver)}${
+    eased ? " Het weer weegt vandaag zwaar genoeg mee om de prikkel te verlagen." : ""
+  }`;
 
   const alt =
     findings[0]?.description ??
     "een andere verklaring kan zijn dat een losse dag je beeld vertekent in plaats van een echte trend";
   const watAlsHetAndersIs = `Wat als het anders is: ${alt}; daarom houdt Sparki ruimte om bij te sturen.`;
 
-  const watVerandertMijnAdvies = `Wat mijn advies verandert: ${changeFor(driver)}`;
+  const watVerandertMijnAdvies = `Wat mijn advies verandert: ${changeFor(driver)}${
+    eased ? " Klaart het weer op of ga je binnen trainen, dan kan de zware prikkel alsnog." : ""
+  }`;
 
   const confidence = adviceConfidence(intake, driver, findings);
 

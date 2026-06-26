@@ -149,11 +149,19 @@ function main() {
     const load = sigs.find((s) => s.kind === "training_load")!;
     assert(load.status === "missing" && !!load.reason, "training load not honest-missing");
     const weather = sigs.find((s) => s.kind === "weather")!;
-    assert(weather.status === "missing", "weather should always be missing (no live feed)");
+    assert(weather.status === "missing", "weather should be missing without a home location");
   });
-  scenario("intake: weather is never present", () => {
+  scenario("intake: weather missing without home location", () => {
     const sigs = buildSignals(baseMetrics({ loadSessions: 10, readiness: { label: "fresh", score: 80, basis: ["gevoel"] } }));
-    assert(sigs.find((s) => s.kind === "weather")!.status === "missing", "weather leaked as present");
+    const w = sigs.find((s) => s.kind === "weather")!;
+    assert(w.status === "missing" && /thuislocatie/.test(w.reason ?? ""), "weather should be honest-missing without home");
+  });
+  scenario("intake: weather present when home forecast available", () => {
+    const sigs = buildSignals(baseMetrics({
+      weather: { available: true, reason: "ok", locationLabel: "Utrecht", summaryText: "Regen, 8–14°C", severity: "caution", todayForecast: null },
+    }));
+    const w = sigs.find((s) => s.kind === "weather")!;
+    assert(w.status === "present" && /Regen/.test(w.value ?? ""), "weather should be present with a real forecast");
   });
   scenario("intake: health is always a known fact", () => {
     const sigs = buildSignals(baseMetrics());
@@ -272,6 +280,29 @@ function main() {
       assert(a.headline.trim().length > 0, "headline empty");
     });
   }
+
+  scenario("advice: severe weather eases a hard day and names it", () => {
+    const freshOver: Partial<IntakeMetrics> = { loadSessions: 10, load: { ctl: 60, atl: 50, tsb: 10 }, readiness: { label: "fresh", score: 80, basis: ["gevoel"] } };
+    const dry = intake(freshOver);
+    const dryAdvice = generateAdvice(dry, BEGINNER, detectContradictions(dry.metrics));
+    assert(dryAdvice.intensity === "stevig", `expected stevig without weather, got ${dryAdvice.intensity}`);
+    const stormy = intake({
+      ...freshOver,
+      weather: { available: true, reason: "ok", locationLabel: "Utrecht", summaryText: "Onweer, wind tot 60 km/u", severity: "severe", todayForecast: null },
+    });
+    const stormyAdvice = generateAdvice(stormy, BEGINNER, detectContradictions(stormy.metrics));
+    assert(stormyAdvice.intensity === "normaal", `severe weather did not ease stevig, got ${stormyAdvice.intensity}`);
+    assert(/weer/i.test(stormyAdvice.headline), "eased headline should name the weather");
+    assert(/weer/i.test(stormyAdvice.explainers.watIkZie), "watIkZie should name the weather when it eased advice");
+  });
+  scenario("advice: caution weather does NOT override a hard day", () => {
+    const i = intake({
+      loadSessions: 10, load: { ctl: 60, atl: 50, tsb: 10 }, readiness: { label: "fresh", score: 80, basis: ["gevoel"] },
+      weather: { available: true, reason: "ok", locationLabel: "Utrecht", summaryText: "Bewolkt, 12–18°C", severity: "caution", todayForecast: null },
+    });
+    const a = generateAdvice(i, BEGINNER, detectContradictions(i.metrics));
+    assert(a.intensity === "stevig", `caution weather should not ease, got ${a.intensity}`);
+  });
 
   // ── Six-part composer ───────────────────────────────────────────────────────
   scenario("compose: six parts, advice always present", () => {

@@ -13,6 +13,7 @@
 import type { Race } from "@/lib/race-types"
 import { daysUntil } from "@/lib/race-context"
 import { computeReadiness, type Metrics } from "@/lib/readiness"
+import type { HomeWeather } from "@/lib/weather-types"
 
 export type DayAdviceKind =
   | "rest"
@@ -45,6 +46,9 @@ export type DayAdviceInput = {
   metrics: Metrics
   load: Load
   races: Race[] | undefined
+  /** Real home-location weather. When severe it can honestly nudge an
+   *  outdoor-intensive day toward endurance; otherwise it only adds a note. */
+  weather?: HomeWeather | null
 }
 
 // Standard Coggan power zones as a fraction of FTP — used only to translate a
@@ -107,6 +111,24 @@ function buildHeadline(kind: DayAdviceKind, dur: number): string {
     case "intervals":
       return `Intervaltraining van ±${dur} min`
   }
+}
+
+// Plain-Dutch one-liner of today's home conditions, honest — only numbers the
+// forecast actually returned. Mirrors the backend's formatHomeWeatherText.
+function weatherText(w: HomeWeather): string {
+  const s = w.today
+  if (!s) return w.locationLabel ?? "thuis"
+  const parts: string[] = []
+  if (s.label && s.label !== "Onbekend") parts.push(s.label)
+  if (s.tempMinC != null && s.tempMaxC != null) {
+    parts.push(`${Math.round(s.tempMinC)}–${Math.round(s.tempMaxC)}°C`)
+  } else if (s.tempMaxC != null) {
+    parts.push(`tot ${Math.round(s.tempMaxC)}°C`)
+  }
+  if (s.windMaxKmh != null && s.windMaxKmh >= 20) {
+    parts.push(`wind tot ${Math.round(s.windMaxKmh)} km/u`)
+  }
+  return parts.length > 0 ? parts.join(", ") : (w.locationLabel ?? "thuis")
 }
 
 function buildFocus(kind: DayAdviceKind): string {
@@ -177,6 +199,26 @@ export function computeDayAdvice(input: DayAdviceInput): DayAdvice | null {
     }
   }
 
+  // 3b. Weather guard — only when it materially changes the session. Severe
+  //     conditions (or extreme heat) make an outdoor *intensive* day risky, so
+  //     Sparki honestly steps it back to endurance and says why. Milder weather
+  //     never overrides the physiological choice; it is only noted on the card.
+  let weatherNote: string | null = null
+  const w = input.weather
+  if (w && w.available && w.today) {
+    const apparentHeat = w.today.apparentMaxC
+    const isSevere = w.advisory?.severity === "severe"
+    const isExtremeHeat = apparentHeat != null && apparentHeat >= 30
+    if ((isSevere || isExtremeHeat) && (kind === "tempo" || kind === "intervals")) {
+      const was = kind
+      kind = "endurance"
+      const reason = isExtremeHeat && !isSevere ? "de hitte" : "het weer"
+      weatherNote = `Door ${reason} (${weatherText(w)}) zet Sparki je geplande ${was === "intervals" ? "intervallen" : "tempotraining"} om naar een rustigere duurrit; binnen op de trainer kun je wel intensief.`
+    } else if (w.advisory && w.advisory.severity !== "ok") {
+      weatherNote = `Let op het weer: ${weatherText(w)}. ${w.advisory.suggestion ?? w.advisory.detail}`
+    }
+  }
+
   // 4. Duration from weekly hours spread over the planned training days.
   const weeklyMin = (profile.weeklyHourTarget ?? 0) * 60
   const days = clamp(profile.trainingDaysPerWeek ?? 4, 2, 7)
@@ -230,6 +272,9 @@ export function computeDayAdvice(input: DayAdviceInput): DayAdvice | null {
     )
   }
   reasons.push(raceNote ?? "Nog geen wedstrijd gepland — focus op een sterke basis.")
+  if (weatherNote) {
+    reasons.push(weatherNote)
+  }
   if (profile.goals && profile.goals.trim()) {
     reasons.push(`Dit werkt naar je doel: ${profile.goals.trim()}.`)
   }

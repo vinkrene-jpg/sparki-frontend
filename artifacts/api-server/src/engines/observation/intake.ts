@@ -21,12 +21,14 @@ import {
 } from "@workspace/db";
 import { computeLoad, computeRiskSignal } from "../../lib/recovery-load";
 import { computeReadiness } from "../../lib/sharing";
+import { getHomeWeather, formatHomeWeatherText } from "../../lib/weather/home";
 import type {
   IntakeSignal,
   IntakeMetrics,
   SignalIntake,
   SignalKind,
   TrendInfo,
+  WeatherIntake,
 } from "./types";
 
 const WINDOW_DAYS = 28;
@@ -202,6 +204,28 @@ export async function gatherSignals(clerkId: string): Promise<SignalIntake> {
       ? Math.round((sessions.length / WINDOW_DAYS) * 7 * 10) / 10
       : null;
 
+  // Today's real home-location weather (best-effort, honest gaps). Done after
+  // the DB reads since it needs the athlete's saved coordinates; never blocks or
+  // fabricates — an upstream miss just yields a "missing" weather signal.
+  let weather: WeatherIntake | null = null;
+  try {
+    const hw = await getHomeWeather(
+      athlete?.homeLat,
+      athlete?.homeLon,
+      athlete?.homeLabel,
+    );
+    weather = {
+      available: hw.available,
+      reason: hw.reason,
+      locationLabel: hw.locationLabel,
+      summaryText: formatHomeWeatherText(hw.today),
+      severity: hw.advisory?.severity ?? null,
+      todayForecast: hw.todayForecast,
+    };
+  } catch {
+    weather = null;
+  }
+
   const metricsOut: IntakeMetrics = {
     load,
     loadSessions: tssSessions.length,
@@ -230,6 +254,7 @@ export async function gatherSignals(clerkId: string): Promise<SignalIntake> {
     nutrition: { logs: nutrition.length },
     sessionsPerWeek,
     healthStatus,
+    weather,
   };
 
   // ── Per-channel signal status (honest gaps) ─────────────────────────────────
@@ -463,15 +488,33 @@ export function buildSignals(m: IntakeMetrics): IntakeSignal[] {
     });
   }
 
-  // Weather has no live feed — it is athlete-entered per race only.
-  out.push({
-    kind: "weather",
-    status: "missing",
-    label: "Weer",
-    value: null,
-    reason: "Sparki haalt geen live weer op; weer staat alleen bij een wedstrijd",
-    dataPoints: 0,
-  });
+  // Weather — real, from the athlete's saved home location. Honest gaps: no
+  // saved location, or today outside the forecast horizon, both stay "missing"
+  // rather than a fabricated reading.
+  const w = m.weather;
+  if (w && w.available && w.summaryText) {
+    out.push({
+      kind: "weather",
+      status: "present",
+      label: "Weer",
+      value: w.locationLabel
+        ? `${w.summaryText} (${w.locationLabel})`
+        : w.summaryText,
+      dataPoints: 1,
+    });
+  } else {
+    out.push({
+      kind: "weather",
+      status: "missing",
+      label: "Weer",
+      value: null,
+      reason:
+        w?.reason === "no_forecast"
+          ? "geen weersverwachting beschikbaar voor vandaag"
+          : "geen thuislocatie ingesteld; Sparki kan het weer niet ophalen",
+      dataPoints: 0,
+    });
+  }
 
   return out;
 }

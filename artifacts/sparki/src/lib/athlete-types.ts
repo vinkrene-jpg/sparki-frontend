@@ -21,6 +21,9 @@ export type AthleteProfile = {
   healthStatus: "ok" | "sick" | "injured";
   zones: Zone[] | null;
   wkg: number | null;
+  homeLat: string | null;
+  homeLon: string | null;
+  homeLabel: string | null;
   createdAt: string;
   updatedAt: string;
 };

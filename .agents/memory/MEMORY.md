@@ -67,3 +67,4 @@
 - [Sparki tester overview & telemetry](sparki-tester-overview.md) — admin /invitations roster + Test Dashboard 2.0; telemetry never clobbers w/ null; scoring telemetry-gate: no usage ⇒ testscore/reliability zeroed (only compleetheid/feedbackkwaliteit stay real), summary avg over hasData only.
 - [Sparki hand-rolled modal layering](sparki-modal-layering.md) — custom fixed modals must createPortal to body + z-[70]+; z-50 collides with bottom nav, hiding buttons (silent "nothing happens").
 - [Sparki experience-first restructure](sparki-experience-restructure.md) — approved Beleven→Ontdekken→Begrijpen→Verbeteren reorg; 5-tab nav (Vandaag·Activiteiten·Ontdekken·Trainen·Jij); prototype-first before real app; F1–F4 phasing.
+- [Sparki home weather](sparki-home-weather.md) — real Open-Meteo for home location on everyday surfaces; home-advisory representative session must be ≥120min or heat reads diverge from daily-advice engine.

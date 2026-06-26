@@ -11,6 +11,8 @@
 
 import type { Load, RiskSignal } from "../../lib/recovery-load";
 import type { Readiness } from "../../lib/sharing";
+import type { DayForecast } from "../../lib/weather/open-meteo";
+import type { WeatherSeverity } from "../../lib/weather/assess";
 import type {
   AiObservationCategory,
   AiObservationSeverity,
@@ -91,6 +93,26 @@ export type IntakeMetrics = {
   nutrition: { logs: number };
   sessionsPerWeek: number | null;
   healthStatus: string;
+  /**
+   * Today's real weather at the athlete's home location, or an honest gap.
+   * Optional so synthetic/test intakes that don't supply it default to a
+   * "missing" weather signal (Sparki cannot fetch the weather without a home
+   * location), never a fabricated reading.
+   */
+  weather?: WeatherIntake | null;
+};
+
+// Real home-location weather as the intake sees it. todayForecast is kept so the
+// advice layer can assess weather against the *specific* session it recommends.
+export type WeatherIntake = {
+  available: boolean;
+  reason: "ok" | "no_home" | "no_forecast";
+  locationLabel: string | null;
+  /** Plain-Dutch one-liner of today's conditions, e.g. "Regen, 8–14°C". */
+  summaryText: string | null;
+  /** Severity of today's conditions for an outdoor intensive ride. */
+  severity: WeatherSeverity | null;
+  todayForecast: DayForecast | null;
 };
 
 export type SignalIntake = {

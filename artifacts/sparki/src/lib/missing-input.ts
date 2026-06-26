@@ -20,7 +20,8 @@ export type InputTargetKey =
   | "sportData"
   | "race"
   | "material"
-  | "guide";
+  | "guide"
+  | "homeLocation";
 
 export interface InputTarget {
   key: InputTargetKey;
@@ -136,6 +137,16 @@ export const INPUT_TARGETS: Record<InputTargetKey, InputTarget> = {
     missingTitle: "Technische gids ontbreekt",
     missingWhy:
       "Voeg de technische gids of parcoursinfo van je wedstrijd toe voor een gericht plan.",
+  },
+  homeLocation: {
+    key: "homeLocation",
+    label: "Thuislocatie instellen",
+    route: "/train",
+    focus: "homeLocation",
+    missingTitle: "Geen thuislocatie ingesteld",
+    missingWhy:
+      "Stel je thuislocatie in zodat Sparki het weer bij je in de buurt kan ophalen en je training erop kan afstemmen.",
+    isSet: (p) => !!(p?.homeLat != null && p?.homeLon != null),
   },
 };
 
