@@ -260,7 +260,13 @@ type ExtractedObservation = {
   recommendedAction?: string;
 };
 
-const EXTRACT_SYSTEM = `You extract durable, structured coaching observations from an analysis. Return STRICT JSON only — no prose, no markdown fences. Output an array (possibly empty) of objects with keys: title (short), summary (one sentence), observationText (1-3 sentences), category, severity, confidence, detectedPattern (optional), recommendedAction (optional). Only include genuinely useful, specific, data-grounded observations worth remembering across days. If nothing is noteworthy, return []. Never invent numbers not present in the data.`;
+const EXTRACT_SYSTEM = `You extract durable, structured coaching observations from an analysis. Return STRICT JSON only — no prose, no markdown fences. Output an array (possibly empty) of objects with keys: title (short), summary (one sentence), observationText (1-3 sentences), category, severity, confidence, detectedPattern (optional), recommendedAction (optional). Only include genuinely useful, specific, data-grounded observations worth remembering across days. If nothing is noteworthy, return []. Never invent numbers not present in the data.
+
+ABSOLUTE OUTPUT RULES:
+- Write EVERY human-readable field (title, summary, observationText, detectedPattern, recommendedAction) in plain Dutch. Never use English — not even single words or headings. Translate technical terms into plain Dutch that a youth rider, parent or coach understands (e.g. "belasting" not "load", "herstel" not "recovery", "gereedheid" not "readiness", "slaapkwaliteit" not "SleepQuality", "gevoel" not "Feel"). You may keep widely-used abbreviations: FTP, TSS, CTL, ATL, TSB, HRV, watt, bpm.
+- The keys category, severity and confidence stay as the exact English enum codes (do NOT translate those values) — only the human-readable fields are Dutch.
+- Never use the word "AI" in any field.
+- Neutral voice: state the observation or advice directly. Do not narrate Sparki perceiving or thinking (no "Sparki ziet", "Sparki denkt", "Sparki merkt op").`;
 
 function coerceEnum<T extends string>(
   value: unknown,
