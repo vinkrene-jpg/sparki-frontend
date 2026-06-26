@@ -1,5 +1,10 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "dklBJWtosan4nmROHinsN"
+uri = "file://artifacts/mockup-sandbox/public/images/sparki-hero.png"
+type = "image"
+title = "cinematic cycling hero"
 
 [[outputs]]
 id = "iXVmxu4mE3y89Pt9b9iP8"
