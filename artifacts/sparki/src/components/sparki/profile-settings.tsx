@@ -15,7 +15,7 @@ import { PrivacySettingsSection } from "@/components/sparki/privacy-settings"
 import { ConnectionsSection } from "@/components/sparki/connections-section"
 import { LinksSection } from "@/components/sparki/links-section"
 import { BugReportForm } from "@/components/sparki/bug-report-form"
-import { AdminPanel } from "@/components/sparki/admin-panel"
+import { AdminPanel, TesterAccessLinks } from "@/components/sparki/admin-panel"
 import { SparkiVoiceSection } from "@/components/sparki/sparki-voice"
 import { FoundingSection } from "@/components/sparki/insights-section"
 import {
@@ -1017,6 +1017,8 @@ export function ProfileSettings({
       <LinksSection />
 
       <BugReportForm />
+
+      <TesterAccessLinks />
 
       <AdminPanel />
 

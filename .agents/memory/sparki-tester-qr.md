@@ -28,6 +28,18 @@ dev domain — not the published deployment. There is no reliable way to read th
 *deployment* domain from a dev session, so the operator pastes/opens-on the live
 domain once. Opening the page on the published app makes the default correct.
 
+## Non-obvious constraint 3 — athlete nav has no invite/tester entry
+The experience-first 5-tab `ATHLETE_NAV` (Vandaag·Activiteiten·Ontdekken·
+Trainen·Jij) deliberately carries NO "Uitnodigen"/invite link — only
+`COACH_NAV`/`PARENT_NAV` do. An admin/head-tester whose active role is `athlete`
+therefore cannot reach `/invitations` or `/tester-qr` from the bottom nav.
+**Why:** the restructure froze the athlete nav at exactly 5 tabs, so the tester
+link/QR page silently became unreachable for the (athlete-role) admin who hands
+out tester links — "de download link ontbreekt nu".
+**How to apply:** surface admin/tester entry points from the `/you` `AdminPanel`
+header (admin-gated), NOT the bottom nav. Links to `/invitations`, `/tester-qr`,
+`/admin` live there. Never add a 6th athlete nav tab to fix this.
+
 ## Scope kept
 Accept stays a one-tap screen (reusing the existing invitation flow) rather than
 auto-accepting — auto-accept would be new auth logic (out of scope).

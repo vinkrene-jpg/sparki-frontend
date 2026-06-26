@@ -1,5 +1,6 @@
 import { Link } from "wouter"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
+import { useUserProfile } from "@/contexts/UserContext"
 import {
   useAdminWhoami,
   useAdminStatus,
@@ -91,6 +92,44 @@ function BugRow({ r }: { r: BugReport }) {
   )
 }
 
+// Head-testers help recruit and onboard other testers, but their active role is
+// usually `athlete` — which (by design) has no invite/tester entry in the 5-tab
+// nav. Without this, a non-admin head-tester can't reach the tester link/QR page
+// to hand out access. Admins already get these links via AdminPanel, so this is
+// only shown to head-testers who aren't admins (avoids duplicate links).
+export function TesterAccessLinks() {
+  const { profile } = useUserProfile()
+  if (!profile?.isHeadTester || profile?.isAdmin) return null
+
+  return (
+    <section>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <SectionLabel n="—" title="Tester-toegang" />
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/tester-qr"
+            className="rounded-full border px-3.5 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] transition"
+            style={{ borderColor: ACCENT, color: ACCENT }}
+          >
+            Tester-QR →
+          </Link>
+          <Link
+            href="/invitations"
+            className="rounded-full border px-3.5 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] transition"
+            style={{ borderColor: ACCENT, color: ACCENT }}
+          >
+            Uitnodigen →
+          </Link>
+        </div>
+      </div>
+      <p className="mt-3 text-[12px] leading-relaxed text-white/45">
+        Deel de QR-code of link waarmee een tester de app opent. Bestaande
+        testers openen de app met de algemene toegangscode.
+      </p>
+    </section>
+  )
+}
+
 export function AdminPanel() {
   const { data: who } = useAdminWhoami()
   const isAdmin = who?.isAdmin === true
@@ -104,15 +143,31 @@ export function AdminPanel() {
 
   return (
     <section>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <SectionLabel n="10" title="Admin" />
-        <Link
-          href="/admin"
-          className="rounded-full border px-3.5 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] transition"
-          style={{ borderColor: ACCENT, color: ACCENT }}
-        >
-          Gezondheidscheck →
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/invitations"
+            className="rounded-full border px-3.5 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] transition"
+            style={{ borderColor: ACCENT, color: ACCENT }}
+          >
+            Uitnodigen →
+          </Link>
+          <Link
+            href="/tester-qr"
+            className="rounded-full border px-3.5 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] transition"
+            style={{ borderColor: ACCENT, color: ACCENT }}
+          >
+            Tester-QR →
+          </Link>
+          <Link
+            href="/admin"
+            className="rounded-full border px-3.5 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] transition"
+            style={{ borderColor: ACCENT, color: ACCENT }}
+          >
+            Gezondheidscheck →
+          </Link>
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
