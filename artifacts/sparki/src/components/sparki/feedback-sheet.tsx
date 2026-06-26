@@ -9,11 +9,20 @@ import { useLocation } from "wouter"
 import { X, Bug, Lightbulb, MessageSquare, ImagePlus, Loader2 } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
 import { useUserProfile } from "@/contexts/UserContext"
+import { formatWhen } from "@/lib/health-status"
 import {
   useCreateBugReport,
+  useMyBugReports,
   uploadBugScreenshot,
+  type BugReport,
   type BugReportKind,
 } from "@/hooks/use-bug-reports"
+import {
+  STATUS_META,
+  KIND_META,
+  kindOf,
+  statusOf,
+} from "@/lib/bug-report-status"
 
 const KINDS: { key: BugReportKind; label: string; icon: typeof Bug }[] = [
   { key: "bug", label: "Bug", icon: Bug },
@@ -27,11 +36,89 @@ const PLACEHOLDER: Record<BugReportKind, string> = {
   other: "Waar wil je het over hebben?",
 }
 
+// Read-only list of the caller's own reports with the current status, so a
+// tester can see whether each bug/idea has been picked up or resolved. Uses the
+// exact same Dutch status labels as the admin inbox.
+function MyReportsView({
+  loading,
+  error,
+  reports,
+}: {
+  loading: boolean
+  error: boolean
+  reports: BugReport[]
+}) {
+  if (loading) {
+    return (
+      <div className="mt-6 flex items-center justify-center gap-2 text-[12px] text-white/40">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        Meldingen laden…
+      </div>
+    )
+  }
+  if (error) {
+    return (
+      <p className="mt-6 text-center text-[12px] text-red-300/80">
+        Je meldingen konden niet geladen worden. Probeer het zo opnieuw.
+      </p>
+    )
+  }
+  if (reports.length === 0) {
+    return (
+      <p className="mt-6 text-center text-[12px] leading-relaxed text-white/40">
+        Je hebt nog niets gemeld. Zodra je iets meldt, zie je hier de status —
+        en Sparki laat het je weten wanneer het opgepakt of opgelost is.
+      </p>
+    )
+  }
+  return (
+    <div className="mt-5 max-h-[22rem] space-y-2 overflow-y-auto pr-1">
+      {reports.map((r) => {
+        const status = statusOf(r)
+        const kind = kindOf(r)
+        const meta = STATUS_META[status]
+        return (
+          <div
+            key={r.id}
+            className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]"
+                  style={{ color: ACCENT, background: "rgba(120,210,230,0.1)" }}
+                >
+                  {KIND_META[kind].label}
+                </span>
+                <span
+                  className="rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]"
+                  style={{ color: meta.color, background: meta.bg }}
+                >
+                  {meta.label}
+                </span>
+              </div>
+              <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+                {formatWhen(r.createdAt)}
+              </span>
+            </div>
+            <p className="mt-2 text-[13px] leading-snug text-white/80">
+              {r.description}
+            </p>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export function FeedbackSheet({ onClose }: { onClose: () => void }) {
   const [location] = useLocation()
   const { profile } = useUserProfile()
   const create = useCreateBugReport()
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const [view, setView] = useState<"new" | "mine">("new")
+  const mine = useMyBugReports(view === "mine")
 
   const [kind, setKind] = useState<BugReportKind>("bug")
   const [description, setDescription] = useState("")
@@ -119,7 +206,37 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        {done ? (
+        {/* Tab toggle: new report vs. the status of your own reports. */}
+        <div className="mt-4 grid grid-cols-2 gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.02] p-1">
+          {([
+            { key: "new", label: "Nieuwe melding" },
+            { key: "mine", label: "Jouw meldingen" },
+          ] as const).map((t) => {
+            const active = view === t.key
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setView(t.key)}
+                className="rounded-lg py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition"
+                style={{
+                  background: active ? "rgba(120,210,230,0.12)" : "transparent",
+                  color: active ? ACCENT : "rgba(255,255,255,0.5)",
+                }}
+              >
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {view === "mine" ? (
+          <MyReportsView
+            loading={mine.isLoading}
+            error={mine.isError}
+            reports={mine.data?.reports ?? []}
+          />
+        ) : done ? (
           <div className="mt-6 rounded-xl border p-5 text-center"
             style={{ borderColor: "rgba(130,220,160,0.3)", background: "rgba(130,220,160,0.06)" }}>
             <p className="text-[14px] font-light text-white/90">

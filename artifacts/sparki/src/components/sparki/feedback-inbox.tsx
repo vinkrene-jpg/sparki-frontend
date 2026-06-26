@@ -7,53 +7,13 @@ import {
   type BugReportStatus,
   type BugReportKind,
 } from "@/hooks/use-bug-reports";
-
-// Triage states in the order an admin walks a report through.
-const STATUS_ORDER: BugReportStatus[] = [
-  "new",
-  "triaged",
-  "fixed",
-  "rejected",
-];
-
-const STATUS_META: Record<
-  BugReportStatus,
-  { label: string; color: string; bg: string }
-> = {
-  new: {
-    label: "Nieuw",
-    color: "rgba(120,210,230,1)",
-    bg: "rgba(120,210,230,0.12)",
-  },
-  triaged: {
-    label: "In behandeling",
-    color: "rgba(245,190,90,1)",
-    bg: "rgba(245,190,90,0.12)",
-  },
-  fixed: {
-    label: "Opgelost",
-    color: "rgba(110,220,150,1)",
-    bg: "rgba(110,220,150,0.12)",
-  },
-  rejected: {
-    label: "Afgewezen",
-    color: "rgba(255,255,255,0.5)",
-    bg: "rgba(255,255,255,0.06)",
-  },
-};
-
-const KIND_META: Record<BugReportKind, { label: string }> = {
-  bug: { label: "Bug" },
-  idea: { label: "Idee" },
-  other: { label: "Overig" },
-};
-
-function kindOf(r: BugReport): BugReportKind {
-  return r.kind ?? "bug";
-}
-function statusOf(r: BugReport): BugReportStatus {
-  return (STATUS_ORDER as string[]).includes(r.status) ? r.status : "new";
-}
+import {
+  STATUS_ORDER,
+  STATUS_META,
+  KIND_META,
+  kindOf,
+  statusOf,
+} from "@/lib/bug-report-status";
 
 type KindFilter = "all" | BugReportKind;
 type StatusFilter = "all" | BugReportStatus;

@@ -69,6 +69,17 @@ export function useCreateBugReport() {
   });
 }
 
+// The caller's own reports, so a tester can see the current status of every
+// bug/idea they submitted (with the same Dutch labels as the admin inbox).
+export function useMyBugReports(enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.bugReports.mine(),
+    queryFn: () => apiFetch<{ reports: BugReport[] }>("/api/bug-reports/mine"),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
 export function useAdminBugReports(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.bugReports.admin(),

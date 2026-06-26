@@ -11,9 +11,34 @@ import {
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { isAdmin } from "../lib/flags";
 import { ObjectStorageService } from "../lib/objectStorage";
+import { createNotification } from "../lib/notifications";
 
 const router = Router();
 const objectStorageService = new ObjectStorageService();
+
+// What the reporter is told when an admin moves their report to a new status.
+// "new" is the submit default and never produces a notification.
+const STATUS_NOTICE: Partial<
+  Record<BugReportStatus, { title: string; body: (snippet: string) => string }>
+> = {
+  triaged: {
+    title: "Je melding is opgepakt",
+    body: (s) => `Sparki is met je melding aan de slag: "${s}"`,
+  },
+  fixed: {
+    title: "Je melding is opgelost",
+    body: (s) => `Goed nieuws — je melding is opgelost: "${s}"`,
+  },
+  rejected: {
+    title: "Je melding is afgehandeld",
+    body: (s) => `Sparki pakt deze melding niet verder op: "${s}"`,
+  },
+};
+
+function snippetOf(description: string): string {
+  const trimmed = description.trim();
+  return trimmed.length > 80 ? `${trimmed.slice(0, 79)}…` : trimmed;
+}
 
 function requireAdmin(
   req: Parameters<typeof requireAuth>[0],
@@ -147,15 +172,42 @@ router.patch("/admin/:id", requireAuth, requireAdmin, async (req, res) => {
     return;
   }
   try {
-    const [row] = await db
-      .update(bugReportsTable)
-      .set({ status: status as BugReportStatus, updatedAt: new Date() })
+    // Read the current report first so we know the previous status and the
+    // reporter to notify (and only notify when the status actually changes).
+    const [existing] = await db
+      .select()
+      .from(bugReportsTable)
       .where(eq(bugReportsTable.id, id))
-      .returning();
-    if (!row) {
+      .limit(1);
+    if (!existing) {
       res.status(404).json({ error: "Melding niet gevonden" });
       return;
     }
+
+    const newStatus = status as BugReportStatus;
+    const [row] = await db
+      .update(bugReportsTable)
+      .set({ status: newStatus, updatedAt: new Date() })
+      .where(eq(bugReportsTable.id, id))
+      .returning();
+
+    // Close the loop with the original submitter: tell them in-app when their
+    // report is picked up or resolved. Skip if nothing changed, and never spam
+    // the same status twice (dedupe on the body).
+    const notice = STATUS_NOTICE[newStatus];
+    if (notice && existing.status !== newStatus) {
+      const body = notice.body(snippetOf(existing.description));
+      await createNotification({
+        clerkId: existing.clerkId,
+        type: "system",
+        title: notice.title,
+        body,
+        priority: newStatus === "fixed" ? "high" : "normal",
+        actionUrl: "/you",
+        dedupeWithin: { type: "system", matchBody: body },
+      });
+    }
+
     res.json({ report: row });
   } catch (err) {
     req.log.error({ err }, "bugReports.updateStatus failed");
