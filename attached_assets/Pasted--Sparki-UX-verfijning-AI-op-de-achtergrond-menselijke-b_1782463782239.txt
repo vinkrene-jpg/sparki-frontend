@@ -1,0 +1,140 @@
+# Sparki UX-verfijning – AI op de achtergrond & menselijke beleving
+
+Tijdens het uitwerken van het nieuwe prototype zijn twee belangrijke ontwerpbeslissingen ontstaan. Verwerk deze direct in het canvas/prototype voordat de echte UI gebouwd wordt.
+
+## 1. Sparki hoeft zichzelf niet voortdurend te benoemen
+
+Nieuwe ontwerpregel:
+
+**De gebruiker bevindt zich al in Sparki. Daarom hoeft de interface niet steeds te zeggen "Sparki ziet", "Sparki denkt", "Sparki adviseert" of "Sparki-coaching".**
+
+De intelligentie van Sparki moet blijken uit de kwaliteit van de observaties, niet uit het steeds noemen van zijn naam.
+
+### Dus liever:
+
+**Opvallend**
+
+Je derde rit op rij met stijgende duur.
+
+---
+
+**Nieuw ontdekt**
+
+Je hartslag bleef stabieler dan tijdens vergelijkbare ritten.
+
+---
+
+**Voor morgen**
+
+Een rustige herstelrit lijkt de beste keuze.
+
+---
+
+**Waarom?**
+
+In plaats van:
+
+"Waarom ziet Sparki dit?"
+
+---
+
+**Onderbouwing**
+
+In plaats van:
+
+"Bekijk volledige analyse"
+
+---
+
+Gebruik de naam "Sparki" alleen wanneer het echt een persoonlijk moment toevoegt, bijvoorbeeld:
+
+"Mag ik je iets laten zien?"
+
+of
+
+"Vandaag viel me iets op."
+
+Dat maakt Sparki menselijker en rustiger.
+
+---
+
+## 2. Minder dashboard, meer sportbeleving
+
+De huidige hero is een goede stap, maar voelt nog te veel als een mooie afbeelding.
+
+De gebruiker moet direct weer even in zijn sportmoment worden teruggebracht.
+
+Onderzoek hoe de hero rijker kan worden zonder druk te worden.
+
+Denk bijvoorbeeld aan:
+
+* routekaart subtiel verwerken
+* weersomstandigheden
+* temperatuur
+* hoogtepunten van de rit
+* persoonlijke foto's
+* herinneringen
+* een korte persoonlijke quote
+* bijzondere prestatie
+* kleine animaties of beweging
+* sfeer boven data
+
+De gebruiker moet eerst denken:
+
+"Leuke rit."
+
+Niet:
+
+"Welke data staat hier?"
+
+---
+
+## De kaarten 'Vorm' en 'Vermoeidheid'
+
+Deze ogen momenteel nog als klassieke Garmin-dashboardkaarten.
+
+Onderzoek alternatieven die beter passen bij de nieuwe filosofie.
+
+Niet:
+
+"42,5 CTL"
+
+Maar bijvoorbeeld:
+
+* Ontwikkeling
+* Herstel
+* Energie
+* Sterker dan vorige week
+* Je bouwt rustig op
+* Consequentie
+* Momentum
+
+Als cijfers worden getoond, moeten ze ondersteunend zijn aan het verhaal, niet andersom.
+
+---
+
+## Ontwerpregel voor de hele app
+
+De gebruiker opent Sparki niet om AI te zien.
+
+De gebruiker opent Sparki om zijn sport opnieuw te beleven.
+
+AI werkt op de achtergrond.
+
+Pas wanneer de gebruiker nieuwsgierig wordt, legt Sparki uit waarom iets opvalt.
+
+De AI is dus geen hoofdpersoon.
+
+De sporter en zijn sportervaring zijn de hoofdpersoon.
+
+---
+
+## Done looks like
+
+* De interface voelt rustiger.
+* De naam "Sparki" komt nog maar sporadisch voor.
+* Observaties voelen natuurlijk en menselijk.
+* De hero roept emotie en herinnering op.
+* Minder dashboardgevoel.
+* Meer gevoel van: "Ik beleef mijn sport opnieuw."
+* De gebruiker ontdekt inzichten in plaats van dat de AI zichzelf presenteert.

@@ -3,7 +3,8 @@ import {
   Home, Activity, Compass, Dumbbell, User, Zap, 
   ChevronLeft, ChevronDown, ChevronUp, MapPin, 
   ArrowUpRight, TrendingUp, Info, AlertCircle, Mountain, 
-  Timer, BarChart2, Route, Heart, Activity as SpeedIcon
+  Timer, BarChart2, Route, Heart, Cloud, Thermometer, Sparkles,
+  Activity as SpeedIcon
 } from 'lucide-react';
 
 // --- MOCK DATA ---
@@ -24,6 +25,7 @@ const ACTIVITIES = [
       tss: '110',
       feel: 'Goed'
     },
+    atmosphere: { weather: 'Mistige ochtend', temp: '9°', highlight: 'Eerste licht over het Heuvelland' },
     hasStreams: false,
     discoveries: [
       'Je hield je hartslag 85% van de tijd in zone 2. Heel netjes voor een duurrit.',
@@ -46,6 +48,7 @@ const ACTIVITIES = [
       tss: '85',
       feel: 'Zwaar'
     },
+    atmosphere: { weather: 'Binnen · Zwift', temp: '—', highlight: 'Laatste blok net gehaald' },
     hasStreams: true,
     discoveries: [
       'Nieuw 20-min vermogen: 248 W (was 242 W).',
@@ -68,6 +71,7 @@ const ACTIVITIES = [
       tss: '180',
       feel: 'Kapot'
     },
+    atmosphere: { weather: 'Harde wind', temp: '12°', highlight: '105 km met de groep' },
     hasStreams: false,
     discoveries: [
       'Hoogste TSS (180) van de afgelopen maand.',
@@ -93,11 +97,18 @@ const SectionHeading = ({ children, icon: Icon }: any) => (
   </h2>
 );
 
-const SparkiBadge = () => (
-  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#78D2E6]/10 border border-[#78D2E6]/20 text-[#78D2E6] text-[10px] uppercase font-mono tracking-widest mb-2">
-    <Zap className="w-3 h-3 fill-[#78D2E6]" />
-    Sparki ziet
+const Eyebrow = ({ children, tone = 'cyan' }: { children: React.ReactNode; tone?: 'cyan' | 'muted' }) => (
+  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] uppercase font-mono tracking-widest mb-2 ${tone === 'cyan' ? 'bg-[#78D2E6]/10 border border-[#78D2E6]/20 text-[#78D2E6]' : 'bg-white/5 border border-white/10 text-white/55'}`}>
+    <span className={`w-1.5 h-1.5 rounded-full ${tone === 'cyan' ? 'bg-[#78D2E6]' : 'bg-white/40'}`} />
+    {children}
   </div>
+);
+
+const AtmoChip = ({ icon: Icon, children }: any) => (
+  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white/80 text-[11px]">
+    {Icon && <Icon className="w-3 h-3" />}
+    {children}
+  </span>
 );
 
 // --- TABS ---
@@ -111,20 +122,36 @@ const VandaagTab = ({ onOpenActivity }: any) => {
       <section>
         <SectionHeading>Beleven</SectionHeading>
         <Card onClick={() => onOpenActivity(recent)}>
-          <div className="relative h-48 bg-[#05070e]">
+          <div className="relative h-60 bg-[#05070e]">
             <img 
               src="/__mockup/images/sparki-hero.png" 
-              alt="Hero" 
+              alt="" 
               className="absolute inset-0 w-full h-full object-cover opacity-95"
               style={{ objectPosition: "center 72%" }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#05070e] via-[#05070e]/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#05070e] via-[#05070e]/30 to-transparent" />
+
+            {/* Sfeer boven data: weer + temperatuur */}
+            <div className="absolute top-3 left-3 right-3 flex items-center gap-2 flex-wrap">
+              <AtmoChip icon={Cloud}>{recent.atmosphere.weather}</AtmoChip>
+              {recent.atmosphere.temp !== '—' && <AtmoChip icon={Thermometer}>{recent.atmosphere.temp}</AtmoChip>}
+            </div>
+
+            {/* Subtiele routelijn */}
+            <svg viewBox="0 0 120 40" className="absolute top-2 right-3 w-24 h-10 opacity-30" fill="none" preserveAspectRatio="none">
+              <path d="M2,30 C20,10 35,34 55,20 S95,6 118,16" stroke="#78D2E6" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+            </svg>
+
             <div className="absolute bottom-4 left-4 right-4">
               <p className="text-white/60 text-sm mb-1">{recent.date} — {recent.location}</p>
-              <h3 className="text-2xl font-semibold mb-2">{recent.title}</h3>
-              <p className="text-white/80 leading-relaxed text-sm italic border-l-2 border-[#78D2E6] pl-3">
+              <h3 className="text-2xl font-semibold mb-2 leading-tight">{recent.title}</h3>
+              <p className="text-white/85 leading-relaxed text-sm italic border-l-2 border-[#78D2E6] pl-3 mb-3">
                 "{recent.summary}"
               </p>
+              <div className="flex items-center gap-1.5 text-[#78D2E6]/90 text-xs">
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                <span>{recent.atmosphere.highlight}</span>
+              </div>
             </div>
           </div>
         </Card>
@@ -134,7 +161,7 @@ const VandaagTab = ({ onOpenActivity }: any) => {
       <section>
         <SectionHeading icon={Compass}>Ontdekken</SectionHeading>
         <Card className="p-4">
-          <SparkiBadge />
+          <Eyebrow>Opvallend</Eyebrow>
           <p className="text-white/90 leading-relaxed mb-3 text-sm">
             Je derde rit op rij met stijgende duur — je bouwt rustig op. De hartslag bleef stabiel in zone 2, wat wijst op goede aerobe fitheid.
           </p>
@@ -144,37 +171,37 @@ const VandaagTab = ({ onOpenActivity }: any) => {
             onClick={(e) => { e.stopPropagation(); setExplainOpen(!explainOpen); }}
             className="flex items-center gap-1.5 text-[#78D2E6] text-sm font-medium hover:text-white transition-colors mt-2"
           >
-            Waarom ziet Sparki dit?
+            Waarom?
             {explainOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
 
           {explainOpen && (
             <div className="mt-3 pt-3 border-t border-white/10 text-sm text-white/70 space-y-3">
-              <p>Sparki vergelijkt de tijdsduur en de gemiddelde hartslag van je laatste 3 ritten. Terwijl de duur toenam (60m → 90m → 135m), bleef de hartslag op gemiddeld 132 bpm.</p>
+              <p>De tijdsduur en gemiddelde hartslag van je laatste 3 ritten naast elkaar gelegd: terwijl de duur toenam (60m → 90m → 135m), bleef de hartslag op gemiddeld 132 bpm.</p>
               <div className="flex items-center gap-2 bg-white/5 p-2 rounded-lg">
                 <TrendingUp className="w-4 h-4 text-[#78D2E6]" />
                 <span className="font-mono text-xs">Vertrouwen: Hoog (op basis van 3 weken data)</span>
               </div>
               <p className="text-xs text-white/50 italic flex gap-1.5 items-start">
                 <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                Wat Sparki nog mist: Gevoel van spiervermoeidheid de dag erna, omdat je geen herstelvragenlijst hebt ingevuld.
+                Wat nog ontbreekt: gevoel van spiervermoeidheid de dag erna — je hebt nog geen herstelvragenlijst ingevuld.
               </p>
             </div>
           )}
         </Card>
       </section>
 
-      {/* COMPACT SNAPSHOT */}
+      {/* MOMENTUM — verhaal, geen dashboard */}
       <section className="grid grid-cols-2 gap-3">
         <Card className="p-4">
-          <div className="text-white/50 text-xs uppercase tracking-widest font-mono mb-1">Vorm (CTL)</div>
-          <div className="text-3xl font-semibold font-mono tabular-nums">42.5</div>
-          <div className="text-white/50 text-xs mt-1">+1.2 deze week</div>
+          <div className="text-white/45 text-[10px] uppercase tracking-widest font-mono mb-1.5">Ontwikkeling</div>
+          <div className="text-base font-semibold leading-snug mb-1">Je bouwt rustig op</div>
+          <div className="text-[#78D2E6] text-xs">Sterker dan vorige week</div>
         </Card>
         <Card className="p-4">
-          <div className="text-white/50 text-xs uppercase tracking-widest font-mono mb-1">Vermoeidheid</div>
-          <div className="text-3xl font-semibold font-mono tabular-nums">56.0</div>
-          <div className="text-[#78D2E6] text-xs mt-1">Licht stijgend</div>
+          <div className="text-white/45 text-[10px] uppercase tracking-widest font-mono mb-1.5">Energie</div>
+          <div className="text-base font-semibold leading-snug mb-1">Iets vermoeid</div>
+          <div className="text-white/50 text-xs">Belasting loopt licht op</div>
         </Card>
       </section>
 
@@ -182,15 +209,12 @@ const VandaagTab = ({ onOpenActivity }: any) => {
       <section>
         <SectionHeading icon={ArrowUpRight}>Verbeteren</SectionHeading>
         <Card className="p-4">
-          <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-            <Zap className="w-4 h-4 text-[#78D2E6]" />
-            Sparki-coaching
-          </h4>
-          <p className="text-white/70 text-sm leading-relaxed mb-3">
-            Omdat je vermoeidheid licht stijgt na het blokken van afgelopen dagen, stelt Sparki voor om morgen een actieve hersteldag in te plannen (max 45 min, zone 1).
+          <h4 className="text-sm font-semibold mb-2">Voor morgen</h4>
+          <p className="text-white/75 text-sm leading-relaxed mb-3">
+            Een rustige herstelrit lijkt de beste keuze (max 45 min, zone 1). Je belasting loopt licht op na de blokken van de afgelopen dagen.
           </p>
           <button className="text-[#78D2E6] text-sm font-medium">
-            Bekijk volledige analyse →
+            Onderbouwing →
           </button>
         </Card>
       </section>
@@ -242,18 +266,31 @@ const ActivityDetail = ({ activity, onBack }: any) => {
       <div className="relative h-64 bg-[#05070e]">
         <img 
           src="/__mockup/images/sparki-hero.png" 
-          alt="Hero" 
+          alt="" 
           className="absolute inset-0 w-full h-full object-cover opacity-95"
           style={{ objectPosition: "center 70%" }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#05070e] via-[#05070e]/30 to-transparent" />
-        
+
+        {activity.atmosphere && (
+          <div className="absolute top-3 left-4 right-4 flex items-center gap-2 flex-wrap">
+            <AtmoChip icon={Cloud}>{activity.atmosphere.weather}</AtmoChip>
+            {activity.atmosphere.temp !== '—' && <AtmoChip icon={Thermometer}>{activity.atmosphere.temp}</AtmoChip>}
+          </div>
+        )}
+
         <div className="absolute bottom-6 left-4 right-4">
           <div className="text-white/60 text-sm mb-1">{activity.date} — {activity.location}</div>
-          <h1 className="text-2xl font-bold mb-3">{activity.title}</h1>
-          <p className="text-white/80 leading-relaxed text-sm italic border-l-2 border-[#78D2E6] pl-3">
+          <h1 className="text-2xl font-bold mb-2">{activity.title}</h1>
+          <p className="text-white/85 leading-relaxed text-sm italic border-l-2 border-[#78D2E6] pl-3 mb-3">
             "{activity.summary}"
           </p>
+          {activity.atmosphere && (
+            <div className="flex items-center gap-1.5 text-[#78D2E6]/90 text-xs">
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span>{activity.atmosphere.highlight}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -282,8 +319,8 @@ const ActivityDetail = ({ activity, onBack }: any) => {
         <section>
           <SectionHeading icon={Compass}>Ontdekken</SectionHeading>
           <Card className="p-4">
-            <SparkiBadge />
-            <h4 className="font-semibold text-sm mb-2">Sparki ontdekte in deze rit:</h4>
+            <Eyebrow>Nieuw ontdekt</Eyebrow>
+            <h4 className="font-semibold text-sm mb-2">Opgevallen in deze rit</h4>
             <ul className="space-y-2 text-white/80 text-sm">
               {activity.discoveries.map((disc: string, i: number) => (
                 <li key={i} className="flex gap-2 items-start">
@@ -297,20 +334,20 @@ const ActivityDetail = ({ activity, onBack }: any) => {
               onClick={() => setExplainOpen(!explainOpen)}
               className="flex items-center gap-1.5 text-[#78D2E6] text-sm font-medium hover:text-white transition-colors mt-4"
             >
-              Waarom ziet Sparki dit?
+              Waarom?
               {explainOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
 
             {explainOpen && (
               <div className="mt-3 pt-3 border-t border-white/10 text-sm text-white/70 space-y-3">
-                <p>Sparki analyseert je vermogenscurve (Power Duration Curve) en zag een nieuw record op de 20-minuten as.</p>
+                <p>Je vermogenscurve (Power Duration Curve) toont een nieuw record op de 20-minuten-as.</p>
                 <div className="flex items-center gap-2 bg-white/5 p-2 rounded-lg">
                   <TrendingUp className="w-4 h-4 text-[#78D2E6]" />
                   <span className="font-mono text-xs">Vertrouwen: Zeer hoog (seconde-data)</span>
                 </div>
                 <p className="text-xs text-white/50 italic flex gap-1.5 items-start">
                   <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                  Wat Sparki nog mist: Gekalibreerde weegschaal data voor exacte W/kg. De huidige W/kg is geschat op basis van 68kg.
+                  Wat nog ontbreekt: gekalibreerde weegschaaldata voor exacte W/kg. Nu geschat op basis van 68 kg.
                 </p>
               </div>
             )}
@@ -420,10 +457,7 @@ const ActivityDetail = ({ activity, onBack }: any) => {
         <section>
           <SectionHeading icon={ArrowUpRight}>Verbeteren</SectionHeading>
           <Card className="p-4">
-            <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-              <Zap className="w-4 h-4 text-[#78D2E6]" />
-              Sparki-coaching
-            </h4>
+            <h4 className="text-sm font-semibold mb-2">Voor de volgende keer</h4>
             <p className="text-white/70 text-sm leading-relaxed mb-4">
               {activity.hasStreams 
                 ? "Je intervallen waren sterk, maar je trapte iets te zwaar in het begin. Probeer volgende keer je krachten gelijkmatiger te verdelen over de 4 blokken."
@@ -445,7 +479,7 @@ const OntdekkenTab = () => (
     <Card className="p-4">
       <div className="text-[10px] uppercase font-mono text-[#78D2E6] mb-2 tracking-widest">Persoonlijk Inzicht</div>
       <h3 className="font-semibold text-lg mb-2">Je trapt efficiënter op klimmen</h3>
-      <p className="text-sm text-white/70 mb-3">Sparki ziet dat je hartslag bij 200W op hellingen van {'>'}5% de afgelopen maand met 4 bpm is gedaald.</p>
+      <p className="text-sm text-white/70 mb-3">Je hartslag bij 200W op hellingen van {'>'}5% is de afgelopen maand met 4 bpm gedaald.</p>
       <div className="h-1 bg-white/10 rounded overflow-hidden">
         <div className="h-full bg-[#78D2E6] w-[70%]" />
       </div>
