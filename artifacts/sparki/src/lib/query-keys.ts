@@ -137,6 +137,7 @@ export const queryKeys = {
     all: () => ["bug-reports"] as const,
     mine: () => ["bug-reports", "mine"] as const,
     admin: () => ["bug-reports", "admin"] as const,
+    comments: (id: number) => ["bug-reports", "comments", id] as const,
   },
 
   admin: {

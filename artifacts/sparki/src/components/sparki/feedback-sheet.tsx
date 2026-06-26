@@ -6,8 +6,17 @@
 
 import { useRef, useState } from "react"
 import { useLocation } from "wouter"
-import { X, Bug, Lightbulb, MessageSquare, ImagePlus, Loader2 } from "lucide-react"
+import {
+  X,
+  Bug,
+  Lightbulb,
+  MessageSquare,
+  ImagePlus,
+  Loader2,
+  MessagesSquare,
+} from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
+import { BugReportThread } from "@/components/sparki/bug-report-thread"
 import { useUserProfile } from "@/contexts/UserContext"
 import { formatWhen } from "@/lib/health-status"
 import {
@@ -72,41 +81,56 @@ function MyReportsView({
     )
   }
   return (
-    <div className="mt-5 max-h-[22rem] space-y-2 overflow-y-auto pr-1">
-      {reports.map((r) => {
-        const status = statusOf(r)
-        const kind = kindOf(r)
-        const meta = STATUS_META[status]
-        return (
-          <div
-            key={r.id}
-            className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3"
+    <div className="mt-5 max-h-[26rem] space-y-2 overflow-y-auto pr-1">
+      {reports.map((r) => (
+        <MyReportCard key={r.id} report={r} />
+      ))}
+    </div>
+  )
+}
+
+// One of the caller's own reports, with an expandable follow-up thread so the
+// tester can add a missing detail or answer a question from Sparki.
+function MyReportCard({ report: r }: { report: BugReport }) {
+  const [open, setOpen] = useState(false)
+  const status = statusOf(r)
+  const kind = kindOf(r)
+  const meta = STATUS_META[status]
+  return (
+    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <span
+            className="rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]"
+            style={{ color: ACCENT, background: "rgba(120,210,230,0.1)" }}
           >
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
-                <span
-                  className="rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]"
-                  style={{ color: ACCENT, background: "rgba(120,210,230,0.1)" }}
-                >
-                  {KIND_META[kind].label}
-                </span>
-                <span
-                  className="rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]"
-                  style={{ color: meta.color, background: meta.bg }}
-                >
-                  {meta.label}
-                </span>
-              </div>
-              <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
-                {formatWhen(r.createdAt)}
-              </span>
-            </div>
-            <p className="mt-2 text-[13px] leading-snug text-white/80">
-              {r.description}
-            </p>
-          </div>
-        )
-      })}
+            {KIND_META[kind].label}
+          </span>
+          <span
+            className="rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]"
+            style={{ color: meta.color, background: meta.bg }}
+          >
+            {meta.label}
+          </span>
+        </div>
+        <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+          {formatWhen(r.createdAt)}
+        </span>
+      </div>
+      <p className="mt-2 text-[13px] leading-snug text-white/80">
+        {r.description}
+      </p>
+
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="mt-2.5 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-cyan-300"
+      >
+        <MessagesSquare className="h-3.5 w-3.5" strokeWidth={1.75} />
+        {open ? "Gesprek sluiten" : "Reageren of detail toevoegen"}
+      </button>
+
+      {open && <BugReportThread reportId={r.id} viewerRole="reporter" />}
     </div>
   )
 }

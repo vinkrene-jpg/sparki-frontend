@@ -1,4 +1,11 @@
-import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  serial,
+  integer,
+  text,
+  timestamp,
+  index,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { userProfilesTable } from "./users";
@@ -44,3 +51,44 @@ export const selectBugReportSchema = createSelectSchema(bugReportsTable);
 
 export type BugReport = typeof bugReportsTable.$inferSelect;
 export type InsertBugReport = z.infer<typeof insertBugReportSchema>;
+
+// A follow-up thread on a report: a tester can add a missing detail or answer a
+// question, and an admin can reply/ask back. `authorRole` records whether each
+// message came from the reporter or from an admin (rendered as "Sparki" to the
+// tester), so the thread reads as a simple chronological back-and-forth.
+export const bugReportCommentAuthors = ["reporter", "admin"] as const;
+export type BugReportCommentAuthor = (typeof bugReportCommentAuthors)[number];
+
+export const bugReportCommentsTable = pgTable(
+  "bug_report_comments",
+  {
+    id: serial("id").primaryKey(),
+    bugReportId: integer("bug_report_id")
+      .notNull()
+      .references(() => bugReportsTable.id, { onDelete: "cascade" }),
+    clerkId: text("clerk_id")
+      .notNull()
+      .references(() => userProfilesTable.clerkId, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    authorRole: text("author_role").notNull(),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("bug_report_comments_report_idx").on(t.bugReportId)],
+);
+
+export const insertBugReportCommentSchema = createInsertSchema(
+  bugReportCommentsTable,
+).omit({ id: true });
+export const selectBugReportCommentSchema = createSelectSchema(
+  bugReportCommentsTable,
+);
+
+export type BugReportComment = typeof bugReportCommentsTable.$inferSelect;
+export type InsertBugReportComment = z.infer<
+  typeof insertBugReportCommentSchema
+>;

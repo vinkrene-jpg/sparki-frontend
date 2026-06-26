@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
+import { MessagesSquare } from "lucide-react";
 import { ACCENT } from "@/components/sparki/ui";
+import { BugReportThread } from "@/components/sparki/bug-report-thread";
 import { formatWhen } from "@/lib/health-status";
 import {
   useUpdateBugReportStatus,
@@ -47,6 +49,7 @@ function FilterPill({
 
 function ReportCard({ r }: { r: BugReport }) {
   const update = useUpdateBugReportStatus();
+  const [threadOpen, setThreadOpen] = useState(false);
   const status = statusOf(r);
   const kind = kindOf(r);
   const meta = STATUS_META[status];
@@ -133,6 +136,17 @@ function ReportCard({ r }: { r: BugReport }) {
           Kon status niet bijwerken. Probeer opnieuw.
         </p>
       )}
+
+      <button
+        type="button"
+        onClick={() => setThreadOpen((v) => !v)}
+        className="mt-3 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/40 transition hover:text-cyan-300"
+      >
+        <MessagesSquare className="h-3.5 w-3.5" strokeWidth={1.75} />
+        {threadOpen ? "Gesprek sluiten" : "Reageren / vraag stellen"}
+      </button>
+
+      {threadOpen && <BugReportThread reportId={r.id} viewerRole="admin" />}
     </div>
   );
 }

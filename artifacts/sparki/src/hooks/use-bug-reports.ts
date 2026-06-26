@@ -30,6 +30,15 @@ export type BugReportInput = {
   screenshotObjectPath?: string | null;
 };
 
+// A single message in a report's follow-up thread. `authorRole` is who wrote it:
+// "reporter" (the tester) or "admin" (shown to the tester as Sparki).
+export type BugReportComment = {
+  id: number;
+  authorRole: "reporter" | "admin";
+  body: string;
+  createdAt: string;
+};
+
 // Upload a screenshot via the presigned-URL flow (cookie-authenticated, owner =
 // the reporter). Returns the canonical object path to send with the report. The
 // bytes go DIRECTLY to storage — never through our API server.
@@ -100,6 +109,41 @@ export function useUpdateBugReportStatus() {
       }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.bugReports.admin() });
+    },
+  });
+}
+
+// The follow-up thread on one report (reporter's own report, or admin).
+export function useBugReportComments(reportId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.bugReports.comments(reportId),
+    queryFn: () =>
+      apiFetch<{ comments: BugReportComment[] }>(
+        `/api/bug-reports/${reportId}/comments`,
+      ),
+    enabled,
+    staleTime: 15_000,
+  });
+}
+
+// Add a follow-up message to a report's thread. Refreshes that thread plus the
+// list views so the most-recently-active report surfaces.
+export function useAddBugReportComment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { reportId: number; body: string }) =>
+      apiFetch<{ comment: BugReportComment }>(
+        `/api/bug-reports/${input.reportId}/comments`,
+        {
+          method: "POST",
+          body: JSON.stringify({ body: input.body }),
+        },
+      ),
+    onSuccess: (_data, input) => {
+      void qc.invalidateQueries({
+        queryKey: queryKeys.bugReports.comments(input.reportId),
+      });
+      void qc.invalidateQueries({ queryKey: queryKeys.bugReports.all() });
     },
   });
 }

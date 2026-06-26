@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import {
   db,
   bugReportsTable,
+  bugReportCommentsTable,
   userProfilesTable,
   bugReportStatuses,
   bugReportKinds,
@@ -212,6 +213,130 @@ router.patch("/admin/:id", requireAuth, requireAdmin, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "bugReports.updateStatus failed");
     res.status(500).json({ error: "Kon status niet bijwerken" });
+  }
+});
+
+// Whoever may read/write a report's thread: the original reporter (their own
+// report) or any admin. Returns the report plus the caller's role on it, or null
+// when the report does not exist / the caller is not allowed.
+async function authorizeThread(
+  clerkId: string,
+  reportId: number,
+): Promise<{
+  report: typeof bugReportsTable.$inferSelect;
+  role: "reporter" | "admin";
+} | null> {
+  const [report] = await db
+    .select()
+    .from(bugReportsTable)
+    .where(eq(bugReportsTable.id, reportId))
+    .limit(1);
+  if (!report) return null;
+  if (report.clerkId === clerkId) return { report, role: "reporter" };
+  if (isAdmin(clerkId)) return { report, role: "admin" };
+  return null;
+}
+
+// GET /api/bug-reports/:id/comments — the chronological thread on a report.
+// Readable by the reporter (own report) or any admin.
+router.get("/:id/comments", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  try {
+    const access = await authorizeThread(clerkId, id);
+    if (!access) {
+      res.status(404).json({ error: "Melding niet gevonden" });
+      return;
+    }
+    const comments = await db
+      .select({
+        id: bugReportCommentsTable.id,
+        authorRole: bugReportCommentsTable.authorRole,
+        body: bugReportCommentsTable.body,
+        createdAt: bugReportCommentsTable.createdAt,
+      })
+      .from(bugReportCommentsTable)
+      .where(eq(bugReportCommentsTable.bugReportId, id))
+      .orderBy(asc(bugReportCommentsTable.createdAt));
+    res.json({ comments });
+  } catch (err) {
+    req.log.error({ err }, "bugReports.comments.list failed");
+    res.status(500).json({ error: "Kon reacties niet laden" });
+  }
+});
+
+// POST /api/bug-reports/:id/comments — add a follow-up message to the thread.
+// The reporter adds a missing detail / answers; an admin replies or asks back.
+// When an admin posts, the reporter gets an in-app notice (framed as Sparki).
+router.post("/:id/comments", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const text =
+    typeof body.body === "string" ? body.body.trim() : "";
+  if (text.length < 1) {
+    res.status(400).json({ error: "Bericht is leeg" });
+    return;
+  }
+  if (text.length > 2000) {
+    res.status(400).json({ error: "Bericht is te lang" });
+    return;
+  }
+  try {
+    const access = await authorizeThread(clerkId, id);
+    if (!access) {
+      res.status(404).json({ error: "Melding niet gevonden" });
+      return;
+    }
+
+    const [comment] = await db
+      .insert(bugReportCommentsTable)
+      .values({
+        bugReportId: id,
+        clerkId,
+        authorRole: access.role,
+        body: text,
+      })
+      .returning({
+        id: bugReportCommentsTable.id,
+        authorRole: bugReportCommentsTable.authorRole,
+        body: bugReportCommentsTable.body,
+        createdAt: bugReportCommentsTable.createdAt,
+      });
+
+    // Bump the report's updatedAt so a thread with new activity surfaces.
+    await db
+      .update(bugReportsTable)
+      .set({ updatedAt: new Date() })
+      .where(eq(bugReportsTable.id, id));
+
+    // When an admin replies, close the loop with the reporter in-app. The
+    // reporter posting their own message needs no self-notification.
+    if (access.role === "admin") {
+      await createNotification({
+        clerkId: access.report.clerkId,
+        type: "system",
+        title: "Sparki heeft op je melding gereageerd",
+        body: `Er staat een nieuw bericht bij je melding: "${snippetOf(
+          access.report.description,
+        )}"`,
+        priority: "normal",
+        actionUrl: "/you",
+      });
+    }
+
+    res.status(201).json({ comment });
+  } catch (err) {
+    req.log.error({ err }, "bugReports.comments.create failed");
+    res.status(500).json({ error: "Kon reactie niet opslaan" });
   }
 });
 
