@@ -12,6 +12,7 @@ import { useState, useEffect, useRef, type ReactNode } from "react"
 import { trackScreen } from "@/lib/telemetry"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { PrivacySettingsSection } from "@/components/sparki/privacy-settings"
+import { ReminderSettingsSection } from "@/components/sparki/reminder-settings"
 import { ConnectionsSection } from "@/components/sparki/connections-section"
 import { LinksSection } from "@/components/sparki/links-section"
 import { BugReportForm } from "@/components/sparki/bug-report-form"
@@ -1013,6 +1014,8 @@ export function ProfileSettings({
       </FocusTarget>
 
       <PrivacySettingsSection />
+
+      <ReminderSettingsSection />
 
       <LinksSection />
 

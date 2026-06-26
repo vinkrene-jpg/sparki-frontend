@@ -115,6 +115,11 @@ export const queryKeys = {
     list: () => ["notifications", "list"] as const,
   },
 
+  reminderPreferences: {
+    all: () => ["reminder-preferences"] as const,
+    settings: () => ["reminder-preferences", "settings"] as const,
+  },
+
   activityImports: {
     all: () => ["activity-imports"] as const,
     list: () => ["activity-imports", "list"] as const,

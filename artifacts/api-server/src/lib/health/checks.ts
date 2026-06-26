@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { connectorRegistry } from "../connectors/registry";
+import { emailChannelStatus } from "../email";
 import type { CheckDefinition, ProbeResult } from "./types";
 
 // ── Probe helpers ────────────────────────────────────────────────────────────
@@ -596,48 +597,74 @@ const coreChecks: CheckDefinition[] = [
       }
     },
   },
+  {
+    key: "mail_server",
+    category: "mail",
+    title: "E-mail & herinneringen per mail",
+    description:
+      "Controleert of er e-mails verstuurd kunnen worden (herinneringen, meldingen).",
+    responsibleModule: "E-mailkanaal (Resend)",
+    userImpact: impact(
+      "Herinneringen gaan niet per e-mail uit; ze blijven wel in de app staan.",
+    ),
+    urgency: "low",
+    remediation:
+      "Koppel een e-mailprovider en verifieer een eigen domein zodat er aan alle sporters gemaild kan worden.",
+    probe: async () => {
+      const start = performance.now();
+      // Honesty contract: a real probe of the email channel. Never fake green.
+      //   ready          → GREEN (verified sender domain, can mail athletes)
+      //   limited        → ORANGE (connected but no verified domain: only test
+      //                    sends to the account owner work — "let op")
+      //   not_configured → GREY (no provider connected yet)
+      let status;
+      try {
+        status = await emailChannelStatus();
+      } catch (err) {
+        return {
+          status: "red",
+          passed: false,
+          responseTimeMs: ms(start),
+          message: "Het e-mailkanaal kan niet gecontroleerd worden.",
+          technicalDetails: err instanceof Error ? err.message : String(err),
+        };
+      }
+      if (status.state === "ready") {
+        const domains =
+          status.verifiedDomains.length > 0
+            ? status.verifiedDomains.join(", ")
+            : "(eigen afzender ingesteld)";
+        return {
+          status: "green",
+          passed: true,
+          responseTimeMs: ms(start),
+          message: "E-mail werkt: herinneringen kunnen per mail verstuurd worden.",
+          technicalDetails: `Afzender ${status.from}; geverifieerd: ${domains}`,
+        };
+      }
+      if (status.state === "limited") {
+        return {
+          status: "orange",
+          passed: false,
+          responseTimeMs: ms(start),
+          message:
+            "E-mail is gekoppeld, maar er is nog geen eigen domein geverifieerd. Tot die tijd kan alleen naar de eigenaar van het account getest worden — herinneringen aan sporters gaan nog niet per mail uit.",
+          technicalDetails: status.reason,
+        };
+      }
+      const r = grey(
+        "Er is nog geen e-mailkanaal gekoppeld. Herinneringen blijven voorlopig in de app staan.",
+        start,
+      );
+      r.technicalDetails = status.reason;
+      return r;
+    },
+  },
 ];
 
 // Honestly-unwired capabilities. Each is GREY with a plain reason and detects
 // presence rather than assuming — when the capability lands, the probe flips.
 const unwiredChecks: CheckDefinition[] = [
-  {
-    key: "mail_server",
-    category: "mail",
-    title: "E-mail & meldingen per mail",
-    description:
-      "Controleert of er e-mails verstuurd kunnen worden (bevestigingen, herinneringen).",
-    responsibleModule: "E-mailserver",
-    userImpact: impact(
-      "Er gaan geen e-mails uit. Alles loopt voorlopig via meldingen in de app.",
-    ),
-    urgency: "low",
-    remediation:
-      "Koppel een e-mailprovider zodra e-mailmeldingen nodig zijn.",
-    probe: async () => {
-      const start = performance.now();
-      // Honesty contract: there is NO functional send-probe wired, so this can
-      // never be green from config presence alone. It stays GREY. We only note
-      // whether a provider config was detected (so the day a real send-test is
-      // wired, this probe can be upgraded), but presence ≠ working.
-      const configured = Boolean(
-        process.env.SMTP_HOST ||
-          process.env.MAIL_PROVIDER ||
-          process.env.RESEND_API_KEY ||
-          process.env.SENDGRID_API_KEY,
-      );
-      const r = grey(
-        configured
-          ? "Er is een mailprovider geconfigureerd, maar er is nog geen echte verzendtest gekoppeld. E-mails versturen wordt nog niet bevestigd."
-          : "Er is nog geen mailserver gekoppeld. E-mails versturen is nog niet beschikbaar.",
-        start,
-      );
-      r.technicalDetails = configured
-        ? "Mail-omgevingsvariabele gevonden; geen functionele verzendtest gewired."
-        : "Geen mail-omgevingsvariabele gevonden.";
-      return r;
-    },
-  },
   {
     key: "gps_permission",
     category: "gps",

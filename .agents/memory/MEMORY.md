@@ -68,3 +68,5 @@
 - [Sparki hand-rolled modal layering](sparki-modal-layering.md) — custom fixed modals must createPortal to body + z-[70]+; z-50 collides with bottom nav, hiding buttons (silent "nothing happens").
 - [Sparki experience-first restructure](sparki-experience-restructure.md) — approved Beleven→Ontdekken→Begrijpen→Verbeteren reorg; 5-tab nav (Vandaag·Activiteiten·Ontdekken·Trainen·Jij); prototype-first before real app; F1–F4 phasing.
 - [Sparki home weather](sparki-home-weather.md) — real Open-Meteo for home location on everyday surfaces; home-advisory representative session must be ≥120min or heat reads diverge from daily-advice engine.
+- [Drizzle onConflict partial index](drizzle-onconflict-partial-index.md) — onConflictDoNothing predicate is `where` not `targetWhere`; wrong key fails silently (inserts "succeed" but nothing persists).
+- [Sparki reminder delivery](sparki-reminder-delivery.md) — scheduled email reminders engine; idempotent via notifications dedupeKey+sentAt; email honest-limited (no verified domain) skips, never fake-sends.
