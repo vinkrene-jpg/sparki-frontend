@@ -257,6 +257,105 @@ scenario("health capped (sick) → herstel limiter, finding cites illness", () =
   )
 })
 
+// ── 4. The developmentGoal reshuffles the top limiter (goal weighting) ───────
+// Same training data, different goal → a DIFFERENT honest top limiter. This pins
+// the GOAL_WEIGHTS path that both the Home (Vandaag) card and the /you
+// Ontwikkelkompas rely on. Without these, a regression in the goal weighting
+// could silently mislead goal-setting riders while the neutral path stays green.
+
+scenario("granfondo reshuffles the limiter to 'basis' where neutral picks 'herstel'", () => {
+  // CTL 35 → basis gap 0.5; TSB -21 → herstel gap 0.55. Rhythm/opbouwtempo are
+  // on order (gap 0). Neutral weighting (all 1.0) makes herstel the top gap.
+  // Gran fondo emphasises the aerobe basis (weight 1.3) enough to flip the top
+  // limiter to basis even though basis's raw gap is smaller.
+  const load = makeLoad({ ctl: 35, atl: 35, tsb: -21 })
+  const sessions = sessionsFromBuckets(EVEN_BUCKETS)
+
+  const neutral = deriveOntwikkelprioriteit(load, sessions, makeProfile())
+  assert(neutral.hasData === true && neutral.balanced === false, "neutral run must surface a limiter")
+  assert(neutral.key === "herstel", `neutral weighting must pick herstel, got: ${neutral.key}`)
+
+  const granfondo = deriveOntwikkelprioriteit(
+    load,
+    sessions,
+    makeProfile({ developmentGoal: "granfondo" }),
+  )
+  assert(granfondo.hasData === true && granfondo.balanced === false, "granfondo run must surface a limiter")
+  assert(
+    granfondo.key === "basis",
+    `granfondo must reshuffle the top limiter to basis, got: ${granfondo.key}`,
+  )
+  assert(granfondo.label === "Aerobe basis", `expected 'Aerobe basis' label, got: ${granfondo.label}`)
+  // The whole point: identical data, the goal alone changed the verdict.
+  assert(
+    neutral.key !== granfondo.key,
+    "the goal must change the selected limiter on identical training data",
+  )
+})
+
+scenario("recreatief reshuffles the limiter to 'herstel' where neutral picks 'basis'", () => {
+  // CTL 35 → basis gap 0.5; TSB -19 → herstel gap 0.45. Neutral weighting makes
+  // basis the top gap. Recreatief de-emphasises the aerobe basis (weight 0.8)
+  // enough that herstel (weight 1.0) becomes the top limiter instead.
+  const load = makeLoad({ ctl: 35, atl: 35, tsb: -19 })
+  const sessions = sessionsFromBuckets(EVEN_BUCKETS)
+
+  const neutral = deriveOntwikkelprioriteit(load, sessions, makeProfile())
+  assert(neutral.key === "basis", `neutral weighting must pick basis, got: ${neutral.key}`)
+
+  const recreatief = deriveOntwikkelprioriteit(
+    load,
+    sessions,
+    makeProfile({ developmentGoal: "recreatief" }),
+  )
+  assert(
+    recreatief.key === "herstel",
+    `recreatief must reshuffle the top limiter to herstel, got: ${recreatief.key}`,
+  )
+  assert(recreatief.label === "Herstel", `expected 'Herstel' label, got: ${recreatief.label}`)
+  assert(
+    neutral.key !== recreatief.key,
+    "the goal must change the selected limiter on identical training data",
+  )
+})
+
+// ── 5. goalRef is pinned to the chosen goal (drives the goal-referenced copy) ──
+// Both surfaces render goal-referenced copy ("… richting <goalRef>") off this
+// field, so pin it: it must equal the goal's exact label, and be null with no goal.
+
+scenario("goalRef reflects the chosen developmentGoal (and is null when none is set)", () => {
+  const load = makeLoad({ ctl: 35, atl: 35, tsb: -21 })
+  const sessions = sessionsFromBuckets(EVEN_BUCKETS)
+
+  const neutral = deriveOntwikkelprioriteit(load, sessions, makeProfile())
+  assert(neutral.goalRef === null, `no goal must leave goalRef null, got: ${neutral.goalRef}`)
+
+  const granfondo = deriveOntwikkelprioriteit(
+    load,
+    sessions,
+    makeProfile({ developmentGoal: "granfondo" }),
+  )
+  assert(
+    granfondo.goalRef === "Gran fondo / toertocht",
+    `granfondo goalRef must be its label, got: ${granfondo.goalRef}`,
+  )
+  // The goal-referenced finding both surfaces render must mention the goal.
+  assert(
+    granfondo.finding.includes("Gran fondo / toertocht"),
+    `granfondo finding must reference the goal, got: ${granfondo.finding}`,
+  )
+
+  const recreatief = deriveOntwikkelprioriteit(
+    load,
+    sessions,
+    makeProfile({ developmentGoal: "recreatief" }),
+  )
+  assert(
+    recreatief.goalRef === "Recreatief & fit",
+    `recreatief goalRef must be its label, got: ${recreatief.goalRef}`,
+  )
+})
+
 // ── Report ───────────────────────────────────────────────────────────────────
 
 const failed = results.filter((r) => r.status === "fail")
