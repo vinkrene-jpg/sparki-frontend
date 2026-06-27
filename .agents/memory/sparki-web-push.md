@@ -20,9 +20,13 @@ hosts (HTTPS only) at BOTH subscribe time and send time** (`isValidPushEndpoint`
 
 ## Honesty / delivery rules
 - `pushChannelStatus()` is "ready" only when both VAPID keys exist; otherwise honest-limited
-  (mirrors email). VAPID keys are auto-generated and stored as shared env vars
-  (VAPID_PUBLIC_KEY/PRIVATE_KEY/SUBJECT) — generate to a temp file, `setEnvVars` without
-  printing the private value, then delete the file.
+  (mirrors email). **Secret storage rule:** `setEnvVars` writes plaintext into `.replit`
+  (source control) — NEVER put `VAPID_PRIVATE_KEY` (or any private key/token) there. Only the
+  PUBLIC key (sent to browsers) + SUBJECT (a mailto) are safe as shared env vars. The PRIVATE
+  key must live in the encrypted Secrets store; the agent cannot write secrets, so generate the
+  keypair, set public+subject via `setEnvVars`, and `requestEnvVar({requestType:"secret"})` to
+  have the user paste the private key. **Why:** committing a private key to `.replit` is a
+  blocking credential leak (caught in code review) — rotate immediately if it ever happens.
 - Push is sent ONLY for freshly-inserted notification rows (insert `.returning({id})` →
   detect new) so re-runs don't re-push already-seen nudges. Dead subs (404/410, or
   non-allowlisted) are pruned.
