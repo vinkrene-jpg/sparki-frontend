@@ -6,6 +6,8 @@ import {
 } from "@/components/ui/sheet"
 import { ACCENT } from "@/components/sparki/ui"
 import type { TrainingSession } from "@/lib/athlete-types"
+import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
+import { analyzeSession, type InsightTone } from "@/lib/session-analysis"
 import {
   Clock,
   Route as RouteIcon,
@@ -15,6 +17,12 @@ import {
   HeartPulse,
   Activity,
 } from "lucide-react"
+
+const TONE_COLOR: Record<InsightTone, string> = {
+  neutral: "rgba(255,255,255,0.4)",
+  positive: ACCENT,
+  caution: "rgba(255,180,90,0.9)",
+}
 
 const TYPE_LABELS: Record<string, string> = {
   endurance: "Duurtraining",
@@ -84,11 +92,17 @@ export function SessionDetailDrawer({
   session,
   open,
   onOpenChange,
+  recentSessions = [],
 }: {
   session: TrainingSession | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  recentSessions?: TrainingSession[]
 }) {
+  const { data: profile } = useAthleteExtendedProfile()
+  const analysis = session
+    ? analyzeSession(session, profile, recentSessions)
+    : null
   const fullDate = session
     ? new Date(session.sessionDate + "T12:00:00Z").toLocaleDateString("nl-NL", {
         weekday: "long",
@@ -178,6 +192,38 @@ export function SessionDetailDrawer({
                 </span>
               </div>
             </SheetHeader>
+
+            {analysis && analysis.insights.length > 0 ? (
+              <div className="mt-5 rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+                <span className="font-mono text-[10px] tracking-[0.2em] text-cyan-300/70">
+                  HOE DEZE RIT GING
+                </span>
+                <div className="mt-3 flex flex-col gap-3">
+                  {analysis.insights.map((ins, i) => (
+                    <div key={i}>
+                      <span
+                        className="font-mono text-[9px] uppercase tracking-[0.16em]"
+                        style={{ color: TONE_COLOR[ins.tone] }}
+                      >
+                        {ins.label}
+                      </span>
+                      <p className="mt-0.5 text-pretty text-[13px] leading-relaxed text-white/70">
+                        {ins.text}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                {analysis.missing && (
+                  <p className="mt-3 text-pretty text-[12px] leading-relaxed text-white/40">
+                    {analysis.missing}
+                  </p>
+                )}
+              </div>
+            ) : analysis && analysis.missing ? (
+              <p className="mt-5 text-pretty text-[13px] leading-relaxed text-white/45">
+                {analysis.missing}
+              </p>
+            ) : null}
 
             {metrics.length > 0 ? (
               <div className="mt-5 grid grid-cols-2 gap-2.5">

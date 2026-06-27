@@ -12,7 +12,9 @@ import {
 } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer"
+import { TrainingProgression } from "@/components/sparki/training-progression"
 import { useSessions } from "@/hooks/use-sessions"
+import { useLoad } from "@/hooks/use-load"
 import type { TrainingSession } from "@/lib/athlete-types"
 
 const TYPE_LABELS: Record<string, string> = {
@@ -149,6 +151,7 @@ function ActivityCard({
 
 export default function ActiviteitenPage() {
   const { data: sessions, isLoading, isError, refetch } = useSessions(40)
+  const { data: load, isLoading: loadLoading } = useLoad()
   const [selected, setSelected] = useState<TrainingSession | null>(null)
   const [open, setOpen] = useState(false)
 
@@ -165,9 +168,33 @@ export default function ActiviteitenPage() {
         </h1>
         <p className="text-sm text-white/55">
           Elke rit die Sparki kent — wat je deed, hoe het ging. Tik op een rit
-          voor de volledige uitlezing.
+          voor de volledige uitlezing en analyse.
         </p>
       </div>
+
+      {sessions && sessions.length > 0 ? (
+        <section>
+          <h2 className="text-base font-semibold tracking-tight text-white/90">
+            Je ontwikkeling
+          </h2>
+          <p className="mt-1 text-[12px] leading-relaxed text-white/45">
+            Van je laatste ritten tot de afgelopen weken — zo bouw je op over
+            tijd, niet alleen vandaag.
+          </p>
+          <TrainingProgression
+            hideLabel
+            sessions={sessions}
+            chartData={load?.chartData}
+            loading={isLoading || loadLoading}
+          />
+        </section>
+      ) : null}
+
+      {sessions && sessions.length > 0 ? (
+        <h2 className="text-base font-semibold tracking-tight text-white/90">
+          Alle ritten
+        </h2>
+      ) : null}
 
       {isLoading ? (
         <div className="flex flex-col gap-3">
@@ -224,6 +251,7 @@ export default function ActiviteitenPage() {
         session={selected}
         open={open}
         onOpenChange={setOpen}
+        recentSessions={sessions ?? []}
       />
     </ScreenShell>
   )
