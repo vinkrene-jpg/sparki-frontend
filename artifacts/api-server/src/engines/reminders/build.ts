@@ -12,6 +12,7 @@ import { and, eq, gte, lte } from "drizzle-orm";
 import {
   db,
   athleteDailyMetricsTable,
+  athleteProfilesTable,
   plannedWorkoutsTable,
   racesTable,
   type NotificationType,
@@ -171,6 +172,120 @@ async function raceItems(clerkId: string, now: Date): Promise<ReminderItem[]> {
   });
 }
 
+// ISO-8601 week bucket ("2026-W26") — the dedupe window for profile nudges. One
+// nudge per missing field per week: it persists (re-nudges) until the field is
+// filled, then the engine moves on to the next genuinely-missing field.
+function isoWeek(d: Date): string {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = (date.getUTCDay() + 6) % 7; // Mon=0..Sun=6
+  date.setUTCDate(date.getUTCDate() - dayNum + 3); // nearest Thursday
+  const firstThursday = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
+  const week =
+    1 +
+    Math.round(
+      ((date.getTime() - firstThursday.getTime()) / 86400000 -
+        3 +
+        ((firstThursday.getUTCDay() + 6) % 7)) /
+        7,
+    );
+  return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+// One core profile field that is genuinely missing — in priority order, the most
+// valuable one first. Each carries the focused deep link that opens exactly that
+// one question in the app (a push can never hold an input field itself).
+type ProfileField = {
+  id: string;
+  title: string;
+  body: string;
+  actionUrl: string;
+};
+
+// The single most valuable missing core field for this athlete, or null when the
+// profile is complete (nothing is fabricated; we only ever ask for a real gap).
+async function profileItem(
+  clerkId: string,
+  now: Date,
+): Promise<ReminderItem | null> {
+  const [p] = await db
+    .select({
+      ftp: athleteProfilesTable.ftp,
+      weightKg: athleteProfilesTable.weightKg,
+      goals: athleteProfilesTable.goals,
+      heightCm: athleteProfilesTable.heightCm,
+      birthYear: athleteProfilesTable.birthYear,
+      homeLat: athleteProfilesTable.homeLat,
+      homeLon: athleteProfilesTable.homeLon,
+    })
+    .from(athleteProfilesTable)
+    .where(eq(athleteProfilesTable.clerkId, clerkId))
+    .limit(1);
+  if (!p) return null; // no profile row yet — handled by onboarding, not a nudge
+
+  const missing: ProfileField[] = [];
+  if (p.ftp == null) {
+    missing.push({
+      id: "ftp",
+      title: "Wat is je FTP?",
+      body: "Met je FTP berekent Sparki je trainingszones en je belasting. Geef je FTP door — of laat 'm schatten als je 'm niet weet.",
+      actionUrl: "/you?focus=ftp",
+    });
+  }
+  if (p.weightKg == null || Number(p.weightKg) <= 0) {
+    missing.push({
+      id: "weight",
+      title: "Wat is je gewicht?",
+      body: "Met je gewicht volgt Sparki je vermogen per kilo (W/kg) en je voedingsadvies. Geef even je gewicht door.",
+      actionUrl: "/you?focus=weight",
+    });
+  }
+  if (!p.goals || p.goals.trim().length === 0) {
+    missing.push({
+      id: "goal",
+      title: "Wat is je doel?",
+      body: "Zonder doel is er geen richting om naartoe te trainen. Geef kort door waar je naartoe wilt.",
+      actionUrl: "/you?focus=goal",
+    });
+  }
+  if (p.heightCm == null) {
+    missing.push({
+      id: "height",
+      title: "Wat is je lengte?",
+      body: "Je lengte hoort bij je profiel en telt mee in je voedings- en houdingsadvies. Geef even je lengte door.",
+      actionUrl: "/you?focus=height",
+    });
+  }
+  if (p.birthYear == null) {
+    missing.push({
+      id: "birthyear",
+      title: "In welk jaar ben je geboren?",
+      body: "Met je geboortejaar stemt Sparki je zones en advies af op je leeftijd. Geef even je geboortejaar door.",
+      actionUrl: "/you?focus=birthYear",
+    });
+  }
+  if (p.homeLat == null || p.homeLon == null) {
+    missing.push({
+      id: "home",
+      title: "Waar woon je?",
+      body: "Met je thuislocatie haalt Sparki het weer bij jou in de buurt op en stemt je training daarop af. Geef je thuislocatie door.",
+      actionUrl: "/train?focus=homeLocation",
+    });
+  }
+
+  const field = missing[0];
+  if (!field) return null; // profile complete — nothing to nudge
+
+  return {
+    kind: "profile",
+    type: "profile_nudge",
+    dedupeKey: `reminder:profile:${field.id}:${isoWeek(now)}`,
+    title: field.title,
+    body: field.body,
+    emailSubject: `Sparki: ${field.title}`,
+    actionUrl: field.actionUrl,
+  };
+}
+
 // All genuinely-due reminders for one athlete at `now`. Caller filters by prefs.
 export async function buildDueReminders(
   clerkId: string,
@@ -183,5 +298,7 @@ export async function buildDueReminders(
   if (followup) items.push(followup);
   items.push(...(await trainingItems(clerkId, now)));
   items.push(...(await raceItems(clerkId, now)));
+  const profile = await profileItem(clerkId, now);
+  if (profile) items.push(profile);
   return items;
 }

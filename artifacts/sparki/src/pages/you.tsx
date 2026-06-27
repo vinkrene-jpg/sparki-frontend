@@ -40,6 +40,8 @@ const SETTINGS_FOCUS_TOKENS = new Set([
   "ftp",
   "weeklyHours",
   "weight",
+  "height",
+  "birthYear",
   "sportProfile",
   "goal",
   "checkin",

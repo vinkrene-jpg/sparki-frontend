@@ -28,6 +28,8 @@ export const notificationTypes = [
   // Reminder-delivery types (created by the scheduled reminder job).
   "checkin_reminder",
   "followup_question",
+  // One-question nudge for a genuinely-missing core profile field.
+  "profile_nudge",
 ] as const;
 export type NotificationType = (typeof notificationTypes)[number];
 

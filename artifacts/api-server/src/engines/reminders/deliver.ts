@@ -16,11 +16,13 @@ import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   db,
   notificationsTable,
+  pushSubscriptionsTable,
   userProfilesTable,
   type ReminderKind,
 } from "@workspace/db";
 import { logger } from "../../lib/logger";
 import { emailChannelStatus, sendEmail } from "../../lib/email";
+import { pushChannelStatus, sendPush } from "../../lib/push";
 import { buildDueReminders, type ReminderItem } from "./build";
 import { getPrefs, allows } from "./preferences";
 
@@ -34,6 +36,7 @@ export type DeliverOptions = {
 
 export type DeliverSummary = {
   emailState: string;
+  pushState: string;
   athletesConsidered: number;
   athletesWithReminders: number;
   itemsDue: number;
@@ -41,6 +44,9 @@ export type DeliverSummary = {
   emailsSent: number;
   emailsFailed: number;
   emailsSkipped: number;
+  pushesSent: number;
+  pushesFailed: number;
+  subscriptionsPruned: number;
 };
 
 // Recipients = athletes (roles include "athlete") who have an email on file.
@@ -87,8 +93,12 @@ export async function deliverReminders(
   const status = await emailChannelStatus();
   const canEmail = status.state === "ready" && !opts.skipEmail;
 
+  const pushStatus = pushChannelStatus();
+  const canPush = pushStatus.state === "ready";
+
   const summary: DeliverSummary = {
     emailState: status.state,
+    pushState: pushStatus.state,
     athletesConsidered: 0,
     athletesWithReminders: 0,
     itemsDue: 0,
@@ -96,6 +106,9 @@ export async function deliverReminders(
     emailsSent: 0,
     emailsFailed: 0,
     emailsSkipped: 0,
+    pushesSent: 0,
+    pushesFailed: 0,
+    subscriptionsPruned: 0,
   };
 
   const athletes = await listAthletes(maxAthletes);
@@ -120,10 +133,33 @@ export async function deliverReminders(
     summary.athletesWithReminders++;
     summary.itemsDue += allowed.length;
 
+    // The athlete's active push subscriptions (one per device/browser). Loaded
+    // once per athlete; only consulted when the push channel is configured.
+    let subs: Array<{
+      id: number;
+      endpoint: string;
+      p256dh: string;
+      auth: string;
+    }> = [];
+    if (canPush) {
+      subs = await db
+        .select({
+          id: pushSubscriptionsTable.id,
+          endpoint: pushSubscriptionsTable.endpoint,
+          p256dh: pushSubscriptionsTable.p256dh,
+          auth: pushSubscriptionsTable.auth,
+        })
+        .from(pushSubscriptionsTable)
+        .where(eq(pushSubscriptionsTable.clerkId, athlete.clerkId));
+    }
+
     for (const item of allowed) {
-      // 1. Create the in-app row exactly once (idempotent on dedupeKey).
+      // 1. Create the in-app row exactly once (idempotent on dedupeKey). The
+      //    RETURNING set is non-empty ONLY when this row was freshly inserted —
+      //    that is our signal to push (and email) exactly once, never on re-runs.
+      let inserted: Array<{ id: number }>;
       try {
-        await db
+        inserted = await db
           .insert(notificationsTable)
           .values({
             clerkId: athlete.clerkId,
@@ -140,13 +176,43 @@ export async function deliverReminders(
             // the arbiter predicate from `where` (only onConflictDoUpdate uses
             // `targetWhere`). Must match the index's WHERE to be honoured.
             where: sql`${notificationsTable.dedupeKey} IS NOT NULL`,
-          });
+          })
+          .returning({ id: notificationsTable.id });
       } catch (err) {
         logger.warn(
           { err, dedupeKey: item.dedupeKey },
           "reminders: in-app insert failed",
         );
         continue;
+      }
+      const freshlyCreated = inserted.length > 0;
+
+      // 2. Push to every device — but only for a freshly-created notification, so
+      //    a re-run never re-pushes. Dead endpoints (404/410) are pruned. Push is
+      //    independent of email: it can land even when email is unconfigured.
+      if (freshlyCreated && canPush && subs.length > 0) {
+        for (const sub of subs) {
+          const r = await sendPush(
+            { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
+            {
+              title: item.title,
+              body: item.body,
+              url: item.actionUrl,
+              tag: item.dedupeKey,
+            },
+          );
+          if (r.ok) {
+            summary.pushesSent++;
+          } else {
+            summary.pushesFailed++;
+            if (r.prune) {
+              await db
+                .delete(pushSubscriptionsTable)
+                .where(eq(pushSubscriptionsTable.id, sub.id));
+              summary.subscriptionsPruned++;
+            }
+          }
+        }
       }
 
       // Load the (now guaranteed) row to read its delivery state.
@@ -211,6 +277,7 @@ export async function pendingEmailCount(): Promise<number> {
           "followup_question",
           "training_reminder",
           "race_reminder",
+          "profile_nudge",
         ]),
       ),
     );

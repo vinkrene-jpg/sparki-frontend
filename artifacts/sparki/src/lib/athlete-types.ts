@@ -14,6 +14,8 @@ export type AthleteProfile = {
   id: number;
   ftp: number | null;
   weightKg: string | null;
+  heightCm: number | null;
+  birthYear: number | null;
   discipline: string | null;
   goals: string | null;
   weeklyHourTarget: number | null;

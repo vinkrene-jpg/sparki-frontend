@@ -37,6 +37,8 @@ import {
   Bike,
   Zap,
   Scale,
+  Ruler,
+  Cake,
   Target,
   HeartPulse,
   Settings,
@@ -761,6 +763,152 @@ function WeightInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
   )
 }
 
+function HeightInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
+  const { data: profile } = useAthleteExtendedProfile()
+  const updateProfile = useUpdateAthleteProfile()
+  const [editing, setEditing] = useState(false)
+  const [value, setValue] = useState("")
+
+  useEffect(() => {
+    if (autoOpen) {
+      setValue(profile?.heightCm != null ? String(profile.heightCm) : "")
+      setEditing(true)
+    }
+  }, [autoOpen, profile?.heightCm])
+
+  const handleSave = () => {
+    const cm = Math.round(parseFloat(value))
+    if (!cm || cm < 100 || cm > 250) return
+    updateProfile.mutate(
+      { heightCm: cm },
+      {
+        onSuccess: () => {
+          setEditing(false)
+          setValue("")
+          onSaved?.()
+        },
+      },
+    )
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-2">
+        <input
+          autoFocus
+          type="number"
+          step="1"
+          placeholder={profile?.heightCm != null ? String(profile.heightCm) : "175"}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="w-20 rounded-lg border border-cyan-300/30 bg-white/[0.04] px-2.5 py-1.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSave()
+            if (e.key === "Escape") {
+              setEditing(false)
+              setValue("")
+            }
+          }}
+          min={100}
+          max={250}
+        />
+        <span className="font-mono text-[11px] text-white/40">cm</span>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={updateProfile.isPending || !value}
+          className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-40"
+          style={{ background: ACCENT }}
+        >
+          <Check className="h-3.5 w-3.5" style={{ color: "#040506" }} strokeWidth={2.5} />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <button type="button" onClick={() => setEditing(true)} className="flex items-center gap-2">
+      <span className="font-mono text-[11px] tracking-wide text-white/40">
+        {profile?.heightCm != null ? `${profile.heightCm} cm` : "Niet ingesteld"}
+      </span>
+      <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
+    </button>
+  )
+}
+
+function BirthYearInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
+  const { data: profile } = useAthleteExtendedProfile()
+  const updateProfile = useUpdateAthleteProfile()
+  const [editing, setEditing] = useState(false)
+  const [value, setValue] = useState("")
+  const nowYear = new Date().getFullYear()
+
+  useEffect(() => {
+    if (autoOpen) {
+      setValue(profile?.birthYear != null ? String(profile.birthYear) : "")
+      setEditing(true)
+    }
+  }, [autoOpen, profile?.birthYear])
+
+  const handleSave = () => {
+    const y = Math.round(parseFloat(value))
+    if (!y || y < 1920 || y > nowYear) return
+    updateProfile.mutate(
+      { birthYear: y },
+      {
+        onSuccess: () => {
+          setEditing(false)
+          setValue("")
+          onSaved?.()
+        },
+      },
+    )
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-2">
+        <input
+          autoFocus
+          type="number"
+          step="1"
+          placeholder={profile?.birthYear != null ? String(profile.birthYear) : "2005"}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="w-24 rounded-lg border border-cyan-300/30 bg-white/[0.04] px-2.5 py-1.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSave()
+            if (e.key === "Escape") {
+              setEditing(false)
+              setValue("")
+            }
+          }}
+          min={1920}
+          max={nowYear}
+        />
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={updateProfile.isPending || !value}
+          className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-40"
+          style={{ background: ACCENT }}
+        >
+          <Check className="h-3.5 w-3.5" style={{ color: "#040506" }} strokeWidth={2.5} />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <button type="button" onClick={() => setEditing(true)} className="flex items-center gap-2">
+      <span className="font-mono text-[11px] tracking-wide text-white/40">
+        {profile?.birthYear != null ? `${profile.birthYear}` : "Niet ingesteld"}
+      </span>
+      <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
+    </button>
+  )
+}
+
 const DISCIPLINES = ["Weg", "MTB", "Gravel", "Veldrijden", "Baan", "Triatlon"]
 
 function DisciplineInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
@@ -908,6 +1056,28 @@ export function ProfileSettings({
         <WeightInlineEditor
           autoOpen={focus === "weight"}
           onSaved={focus === "weight" ? onCompleteFix : undefined}
+        />
+      ),
+    },
+    {
+      icon: Ruler,
+      label: "Lengte",
+      focusToken: "height",
+      custom: (
+        <HeightInlineEditor
+          autoOpen={focus === "height"}
+          onSaved={focus === "height" ? onCompleteFix : undefined}
+        />
+      ),
+    },
+    {
+      icon: Cake,
+      label: "Geboortejaar",
+      focusToken: "birthYear",
+      custom: (
+        <BirthYearInlineEditor
+          autoOpen={focus === "birthYear"}
+          onSaved={focus === "birthYear" ? onCompleteFix : undefined}
         />
       ),
     },

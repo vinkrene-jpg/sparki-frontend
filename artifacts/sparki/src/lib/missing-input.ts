@@ -15,6 +15,8 @@ export type InputTargetKey =
   | "weeklyHours"
   | "goal"
   | "weight"
+  | "height"
+  | "birthYear"
   | "sportProfile"
   | "checkin"
   | "sportData"
@@ -82,6 +84,26 @@ export const INPUT_TARGETS: Record<InputTargetKey, InputTarget> = {
     missingWhy:
       "Sparki gebruikt je gewicht voor je vermogen per kilo (W/kg) en voeding.",
     isSet: (p) => !!(p?.weightKg && Number(p.weightKg) > 0),
+  },
+  height: {
+    key: "height",
+    label: "Lengte invullen",
+    route: "/you",
+    focus: "height",
+    missingTitle: "Lengte ontbreekt",
+    missingWhy:
+      "Sparki gebruikt je lengte in je voedings- en houdingsadvies.",
+    isSet: (p) => p?.heightCm != null,
+  },
+  birthYear: {
+    key: "birthYear",
+    label: "Geboortejaar invullen",
+    route: "/you",
+    focus: "birthYear",
+    missingTitle: "Geboortejaar ontbreekt",
+    missingWhy:
+      "Met je geboortejaar stemt Sparki je zones en advies af op je leeftijd.",
+    isSet: (p) => p?.birthYear != null,
   },
   sportProfile: {
     key: "sportProfile",

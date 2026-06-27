@@ -10,6 +10,7 @@ export type ReminderPreferences = {
   followups: boolean;
   training: boolean;
   races: boolean;
+  profile: boolean;
 };
 
 export function useReminderPreferences(enabled = true) {

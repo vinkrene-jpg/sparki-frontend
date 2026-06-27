@@ -70,4 +70,5 @@
 - [Sparki home weather](sparki-home-weather.md) — real Open-Meteo for home location on everyday surfaces; home-advisory representative session must be ≥120min or heat reads diverge from daily-advice engine.
 - [Drizzle onConflict partial index](drizzle-onconflict-partial-index.md) — onConflictDoNothing predicate is `where` not `targetWhere`; wrong key fails silently (inserts "succeed" but nothing persists).
 - [Sparki reminder delivery](sparki-reminder-delivery.md) — scheduled email reminders engine; idempotent via notifications dedupeKey+sentAt; email honest-limited (no verified domain) skips, never fake-sends.
+- [Sparki Web Push + profile nudges](sparki-web-push.md) — push endpoints are server-fetched URLs ⇒ host-allowlist SSRF guard at subscribe AND send; push only freshly-created rows; dedupe uses passed `now`.
 - [LLM prompt Dutch coverage](llm-prompt-dutch-coverage.md) — each LLM prompt needs its OWN Dutch rule; EXTRACT_SYSTEM lacked it → English observation cards on /you; clear stale rows by expiring training_analysis/ai_chat only.

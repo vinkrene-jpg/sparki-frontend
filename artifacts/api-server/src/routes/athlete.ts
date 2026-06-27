@@ -83,6 +83,8 @@ router.put("/profile", requireAuth, async (req, res) => {
     ftp,
     ftpEstimated,
     weightKg,
+    heightCm,
+    birthYear,
     discipline,
     goals,
     weeklyHourTarget,
@@ -100,6 +102,8 @@ router.put("/profile", requireAuth, async (req, res) => {
     ftp?: number;
     ftpEstimated?: boolean;
     weightKg?: string;
+    heightCm?: number | string | null;
+    birthYear?: number | string | null;
     discipline?: string;
     goals?: string;
     weeklyHourTarget?: number;
@@ -136,6 +140,26 @@ router.put("/profile", requireAuth, async (req, res) => {
     loadCapacity != null && LOAD.includes(loadCapacity)
       ? loadCapacity
       : undefined;
+  // Lengte (cm) and geboortejaar — integer columns; only persisted when present
+  // and within a plausible human range (never trust raw input). Sending `null`
+  // explicitly clears the value; omitting the field leaves it untouched.
+  const nowYear = new Date().getFullYear();
+  let cleanHeightCm: number | null | undefined;
+  if (heightCm === null) {
+    cleanHeightCm = null;
+  } else if (heightCm !== undefined && heightCm !== "") {
+    const h = Math.round(Number(heightCm));
+    cleanHeightCm = Number.isFinite(h) && h >= 100 && h <= 250 ? h : undefined;
+  }
+  let cleanBirthYear: number | null | undefined;
+  if (birthYear === null) {
+    cleanBirthYear = null;
+  } else if (birthYear !== undefined && birthYear !== "") {
+    const y = Math.round(Number(birthYear));
+    cleanBirthYear =
+      Number.isFinite(y) && y >= 1920 && y <= nowYear ? y : undefined;
+  }
+
   const latNum = homeLat != null && homeLat !== "" ? Number(homeLat) : null;
   const lonNum = homeLon != null && homeLon !== "" ? Number(homeLon) : null;
   const homeValid =
@@ -162,6 +186,8 @@ router.put("/profile", requireAuth, async (req, res) => {
         ...(ftp != null && { ftp }),
         ...(typeof ftpEstimated === "boolean" && { ftpEstimated }),
         ...(weightKg != null && { weightKg }),
+        ...(cleanHeightCm !== undefined && { heightCm: cleanHeightCm }),
+        ...(cleanBirthYear !== undefined && { birthYear: cleanBirthYear }),
         ...(discipline != null && { discipline }),
         ...(goals != null && { goals }),
         ...(weeklyHourTarget != null && { weeklyHourTarget }),

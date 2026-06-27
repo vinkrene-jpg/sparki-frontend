@@ -19,6 +19,7 @@ export type EffectivePrefs = {
   followups: boolean;
   training: boolean;
   races: boolean;
+  profile: boolean;
 };
 
 export const DEFAULT_PREFS: EffectivePrefs = {
@@ -27,6 +28,7 @@ export const DEFAULT_PREFS: EffectivePrefs = {
   followups: true,
   training: true,
   races: true,
+  profile: true,
 };
 
 function toEffective(row: ReminderPreferences | undefined): EffectivePrefs {
@@ -37,6 +39,7 @@ function toEffective(row: ReminderPreferences | undefined): EffectivePrefs {
     followups: row.followups,
     training: row.training,
     races: row.races,
+    profile: row.profile,
   };
 }
 
