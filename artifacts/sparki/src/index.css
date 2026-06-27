@@ -40,6 +40,15 @@
   --accent-cyan: oklch(0.82 0.16 200);
 }
 
+/* Native <select> dropdown items — dark popup so options stay readable
+   (without this, white option text renders on the browser's white popup
+   background and is only visible on hover). */
+option,
+optgroup {
+  background-color: #0b1220;
+  color: #e7ecf3;
+}
+
 /* Sports-watch numeric rendering — tabular lining figures */
 .num {
   font-family: var(--font-sans);
