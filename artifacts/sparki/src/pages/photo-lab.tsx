@@ -4,6 +4,7 @@ import { attachmentUrl } from "@/hooks/use-input-center"
 import {
   useStylizePhoto,
   useChoosePhoto,
+  useSetPhotoDecor,
   type StylizeResponse,
 } from "@/hooks/use-photo-style"
 
@@ -26,9 +27,11 @@ export default function PhotoLabPage() {
   const [result, setResult] = useState<StylizeResponse | null>(null)
   const [kept, setKept] = useState<"original" | "sparki_style" | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [decorSet, setDecorSet] = useState(false)
 
   const stylize = useStylizePhoto()
   const choose = useChoosePhoto()
+  const setDecor = useSetPhotoDecor()
 
   // Release the local object URL when it changes / on unmount.
   useEffect(() => {
@@ -41,9 +44,20 @@ export default function PhotoLabPage() {
     setResult(null)
     setKept(null)
     setError(null)
+    setDecorSet(false)
     setStage("intro")
     if (originalUrl) URL.revokeObjectURL(originalUrl)
     setOriginalUrl(null)
+  }
+
+  async function handleUseAsDecor() {
+    if (!result || !kept) return
+    try {
+      await setDecor.mutateAsync({ id: result.id, variant: kept })
+      setDecorSet(true)
+    } catch {
+      setError("Instellen als sfeerbeeld lukte niet. Probeer het opnieuw.")
+    }
   }
 
   function handlePick() {
@@ -275,6 +289,43 @@ export default function PhotoLabPage() {
                 . Je andere versie blijft ook bewaard.
               </p>
             </div>
+
+            {/* Use the kept photo to dress up the profile. Only when it was
+                persisted (a session row exists) — an offline-only original
+                can't be served back, so we don't pretend it can. */}
+            {result && !decorSet && (
+              <div className="rounded-2xl border border-white/10 bg-[#070d16]/70 px-4 py-4">
+                <p className="text-sm leading-relaxed text-white/75">
+                  Wil je deze foto als sfeerbeeld op je profiel? Hij komt dan
+                  bovenaan je Sparki Core te staan.
+                </p>
+                <button
+                  type="button"
+                  disabled={setDecor.isPending}
+                  onClick={handleUseAsDecor}
+                  className="mt-3 rounded-full px-5 py-3 text-sm font-semibold text-[#05070e] transition hover:brightness-110 disabled:opacity-60"
+                  style={{ background: ACCENT }}
+                >
+                  {setDecor.isPending ? "Bezig…" : "Gebruik als sfeerbeeld"}
+                </button>
+              </div>
+            )}
+
+            {decorSet && (
+              <div className="rounded-2xl border border-cyan-300/25 bg-cyan-300/[0.06] px-4 py-4">
+                <p className="text-sm leading-relaxed text-white/85">
+                  Ingesteld als sfeerbeeld. Je ziet hem bovenaan je profiel.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => navigate("/you")}
+                  className="mt-3 rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium text-white/85 transition hover:bg-white/5"
+                >
+                  Naar je profiel
+                </button>
+              </div>
+            )}
+
             <button
               type="button"
               onClick={reset}

@@ -68,6 +68,10 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
   homeLat: numeric("home_lat", { precision: 9, scale: 6 }),
   homeLon: numeric("home_lon", { precision: 9, scale: 6 }),
   homeLabel: text("home_label"),
+  // Object path of a photo the athlete chose (from the Foto-lab) to dress up
+  // their profile as an atmosphere/hero image. Null = none chosen → no fake
+  // hero is shown. Points at an owner-gated stored object (original or styled).
+  decorPhotoPath: text("decor_photo_path"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

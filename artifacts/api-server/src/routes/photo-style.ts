@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { eq, and, desc } from "drizzle-orm";
-import { db, photoLabUploadsTable } from "@workspace/db";
+import { db, photoLabUploadsTable, athleteProfilesTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
   claimOwnership,
@@ -94,6 +94,22 @@ router.post("/stylize", requireAuth, async (req, res) => {
   }
 });
 
+// POST /api/photo-style/decor/clear — remove the athlete's atmosphere photo.
+// Declared BEFORE the "/:id/..." routes so "decor" is never read as an id.
+router.post("/decor/clear", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const [updated] = await db
+    .update(athleteProfilesTable)
+    .set({ decorPhotoPath: null, updatedAt: new Date() })
+    .where(eq(athleteProfilesTable.clerkId, clerkId))
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "Profiel niet gevonden" });
+    return;
+  }
+  res.json({ decorPhotoPath: null });
+});
+
 // POST /api/photo-style/:id/choose — body { variant: "original" | "sparki_style" }.
 // Persists the user's explicit keep-choice. Ownership-checked; the styled
 // variant can only be chosen when it actually exists.
@@ -142,6 +158,56 @@ router.post("/:id/choose", requireAuth, async (req, res) => {
     chosenPath:
       variant === "sparki_style" ? updated!.styledPath : updated!.originalPath,
   });
+});
+
+// POST /api/photo-style/:id/use-as-decor — body { variant: "original" | "sparki_style" }.
+// Sets the chosen photo as the athlete's profile atmosphere image. Ownership-
+// checked against the upload session; the styled variant must actually exist.
+router.post("/:id/use-as-decor", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String((req.params as { id?: unknown }).id));
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  const body = req.body as { variant?: unknown };
+  const variant = String(body.variant);
+  if (variant !== "original" && variant !== "sparki_style") {
+    res.status(400).json({ error: "variant moet original of sparki_style zijn" });
+    return;
+  }
+
+  const [row] = await db
+    .select()
+    .from(photoLabUploadsTable)
+    .where(
+      and(
+        eq(photoLabUploadsTable.id, id),
+        eq(photoLabUploadsTable.clerkId, clerkId),
+      ),
+    );
+  if (!row) {
+    res.status(404).json({ error: "Upload niet gevonden" });
+    return;
+  }
+  if (variant === "sparki_style" && !row.styledPath) {
+    res.status(409).json({ error: "Er is geen Sparki-versie om te gebruiken" });
+    return;
+  }
+
+  const decorPhotoPath =
+    variant === "sparki_style" ? row.styledPath! : row.originalPath;
+
+  const [updated] = await db
+    .update(athleteProfilesTable)
+    .set({ decorPhotoPath, updatedAt: new Date() })
+    .where(eq(athleteProfilesTable.clerkId, clerkId))
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "Profiel niet gevonden" });
+    return;
+  }
+  res.json({ decorPhotoPath });
 });
 
 // GET /api/photo-style/latest — the caller's most recent session, so the test

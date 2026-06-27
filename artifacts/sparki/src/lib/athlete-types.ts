@@ -24,6 +24,7 @@ export type AthleteProfile = {
   homeLat: string | null;
   homeLon: string | null;
   homeLabel: string | null;
+  decorPhotoPath: string | null;
   createdAt: string;
   updatedAt: string;
 };

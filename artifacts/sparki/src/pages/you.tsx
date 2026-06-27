@@ -5,6 +5,8 @@ import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { StateCard } from "@/components/sparki/state-card"
 import { ProfileSettings } from "@/components/sparki/profile-settings"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
+import { useClearPhotoDecor } from "@/hooks/use-photo-style"
+import { attachmentUrl } from "@/hooks/use-input-center"
 import { useObservations, useRunConnections, type AiObservation } from "@/hooks/use-ai-memory"
 import { useFtpHistory } from "@/hooks/use-ftp-history"
 import { useLoad } from "@/hooks/use-load"
@@ -173,6 +175,7 @@ export default function YouPage() {
   const startFix = useStartFix()
 
   const { data: profile } = useAthleteExtendedProfile()
+  const clearDecor = useClearPhotoDecor()
   const { data: state } = useSparkiState()
   const { data: obsData, isLoading: obsLoading } = useObservations()
   const { data: ftpHistory } = useFtpHistory()
@@ -229,8 +232,36 @@ export default function YouPage() {
   const needsSportData = sessionsCount === 0
   const stateMissing = state?.missing ?? []
 
+  const decorPath = profile?.decorPhotoPath ?? null
+
   return (
     <ScreenShell section="You">
+      {/* SFEERBEELD — the athlete's own photo dressing up the profile. Only
+          shown when one is actually chosen; otherwise the cinematic background
+          stands on its own (no fake hero). */}
+      {decorPath && (
+        <section className="-mt-2">
+          <div className="relative overflow-hidden rounded-2xl border border-white/10">
+            <img
+              src={attachmentUrl(decorPath)}
+              alt="Jouw sfeerbeeld"
+              className="h-44 w-full object-cover sm:h-56"
+            />
+            {/* Dark Sparki overlays keep text legible and on-brand. */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#05070e] via-[#05070e]/55 to-transparent" />
+            <div className="pointer-events-none absolute inset-0 bg-[#05070e]/25" />
+            <div className="absolute bottom-0 left-0 right-0 p-4">
+              <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-cyan-300/80">
+                Sparki Core
+              </p>
+              <p className="mt-1 text-lg font-light tracking-tight text-white">
+                {profile?.displayName ?? "Jouw profiel"}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* HEADER */}
       <section className="flex items-center justify-between">
         <div>
@@ -535,6 +566,53 @@ export default function YouPage() {
               </p>
             </Card>
           )}
+        </div>
+      </section>
+
+      {/* SFEERBEELD — manage the profile photo. Always present so the Foto-lab
+          is reachable from normal navigation, not only the dev preview. */}
+      <section>
+        <SectionLabel n="10" title="Sfeerbeeld" />
+        <div className="mt-3">
+          <Card>
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-cyan-300" strokeWidth={1.75} />
+              <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+                Jouw foto op je profiel
+              </span>
+            </div>
+            <p className="mt-2.5 text-[13px] leading-relaxed text-white/65">
+              {decorPath
+                ? "Je sfeerbeeld staat bovenaan je profiel. Je kunt een andere foto kiezen of hem weghalen."
+                : "Upload een foto en geef hem de rustige, donkere Sparki-look. Kies je hem als sfeerbeeld, dan komt hij bovenaan je profiel te staan."}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2.5">
+              <button
+                type="button"
+                onClick={() => navigate("/photo-lab")}
+                className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-semibold text-[#05070e] transition hover:brightness-110"
+                style={{ background: ACCENT }}
+              >
+                {decorPath ? "Andere foto kiezen" : "Foto kiezen"}
+                <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.25} />
+              </button>
+              {decorPath && (
+                <button
+                  type="button"
+                  disabled={clearDecor.isPending}
+                  onClick={() => clearDecor.mutate()}
+                  className="inline-flex items-center rounded-full border border-white/15 px-4 py-2.5 text-[13px] font-medium text-white/75 transition hover:bg-white/[0.06] disabled:opacity-60"
+                >
+                  {clearDecor.isPending ? "Bezig…" : "Sfeerbeeld weghalen"}
+                </button>
+              )}
+            </div>
+            {clearDecor.isError && (
+              <p className="mt-3 rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-[13px] text-amber-100/90">
+                Weghalen lukte nu niet. Probeer het zo nog eens.
+              </p>
+            )}
+          </Card>
         </div>
       </section>
 

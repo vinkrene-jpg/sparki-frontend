@@ -31,6 +31,16 @@ original stays usable (route returns 200 with `styledPath:null`, never a fake gr
   access control you MUST use a second *real* seeded clerkId (e.g. `seed_social_anna`),
   otherwise both requests resolve to the same user and the guard looks like it passed.
 
+## Profile decor (sfeerbeeld) — reachability + owner-gated visibility
+- A kept Foto-lab photo can be set as `athlete_profiles.decorPhotoPath` and shown as
+  a hero at the top of `/you`. Foto-lab is reachable from the `/you` "Sfeerbeeld"
+  section (and dev-preview switcher) — NOT from the bottom nav.
+- **Constraint:** decor images are served through the owner-gated `/api/storage/...`
+  path (`attachmentUrl`), so a decor hero is only visible to the photo's **owner**.
+  A coach/parent viewing another athlete's profile would NOT see that athlete's
+  hero. Accepted as v1 (honest: no fake hero, just nothing). If cross-user viewing
+  is ever needed, decor serving must move to a non-owner-gated or shared-ACL path.
+
 ## esbuild externalization
 - api-server `build.mjs` externalizes `@google/*` (alongside `@google-cloud/*`). So
   `@google/genai` is NOT bundled — it must be a **direct dependency of api-server**

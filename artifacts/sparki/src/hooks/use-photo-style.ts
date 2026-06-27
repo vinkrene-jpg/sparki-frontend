@@ -1,6 +1,7 @@
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { apiFetch } from "@/lib/api"
 import { uploadFile } from "@/hooks/use-input-center"
+import { queryKeys } from "@/lib/query-keys"
 
 // Sparki Photo Lab — upload a real photo, relight it into the Sparki look, and
 // persist the user's explicit keep-choice. Two variants are always kept: the
@@ -85,5 +86,43 @@ export function useChoosePhoto() {
         method: "POST",
         body: JSON.stringify({ variant: input.variant }),
       }),
+  })
+}
+
+export type DecorResponse = { decorPhotoPath: string | null }
+
+// Use a kept photo as the profile atmosphere image (decorates the page). The
+// profile/dashboard queries are refreshed so the hero shows up immediately.
+export function useSetPhotoDecor() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: {
+      id: number
+      variant: "original" | "sparki_style"
+    }): Promise<DecorResponse> =>
+      apiFetch<DecorResponse>(`/api/photo-style/${input.id}/use-as-decor`, {
+        method: "POST",
+        body: JSON.stringify({ variant: input.variant }),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.athlete.profile() })
+      void qc.invalidateQueries({ queryKey: queryKeys.athlete.dashboard() })
+    },
+  })
+}
+
+// Remove the profile atmosphere image — the page falls back to the cinematic
+// background honestly, no fake hero remains.
+export function useClearPhotoDecor() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (): Promise<DecorResponse> =>
+      apiFetch<DecorResponse>("/api/photo-style/decor/clear", {
+        method: "POST",
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.athlete.profile() })
+      void qc.invalidateQueries({ queryKey: queryKeys.athlete.dashboard() })
+    },
   })
 }
