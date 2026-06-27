@@ -88,7 +88,10 @@ export function analyzeSession(
     })
   }
 
-  // 2. Belasting (TSS) against the athlete's own typical ride.
+  // 2. Belasting (TSS) against the athlete's own typical ride. The comparison
+  // is only honest with enough comparable history; below that we say so plainly
+  // instead of fabricating a reference (`loadNeedsHistory`).
+  let loadNeedsHistory = false
   const tss = session.tss
   if (tss != null) {
     const peerTss = peers
@@ -117,6 +120,9 @@ export function analyzeSession(
           text: `Met ${tss} TSS lag deze rit rond je gebruikelijke belasting (±${ref} TSS).`,
         })
       }
+    } else {
+      // Not enough comparable rides yet — be honest, never fabricate a reference.
+      loadNeedsHistory = true
     }
   }
 
@@ -168,12 +174,17 @@ export function analyzeSession(
     }
   }
 
-  // Honest gap: what would unlock the zwaarte/zone read.
+  // Honest gap: what would unlock a deeper read. The trainingszone gap (no
+  // intensity/FTP) is the most fundamental, so it takes priority; once the zone
+  // is readable, the next honest gap is too little history to compare load.
   let missing: string | null = null
   if (ifv == null) {
     missing = ftp
       ? "Zonder vermogens- of intensiteitsdata kan de trainingszone van deze rit niet bepaald worden."
       : "Vul je FTP in en koppel een vermogensmeter, dan worden de zwaarte en trainingszone van je ritten leesbaar."
+  } else if (loadNeedsHistory) {
+    missing =
+      "Er zijn nog te weinig vergelijkbare ritten om de belasting van deze rit tegen je gemiddelde af te zetten. Log een paar ritten meer, dan wordt die vergelijking zichtbaar."
   }
 
   return { insights, missing }
