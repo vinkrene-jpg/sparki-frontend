@@ -37,7 +37,7 @@ export function GoalLayer() {
     <section className="flex flex-col gap-4">
       <LayerHeading
         title="Je doel als maatlat"
-        subtitle="Alles wat je traint, meet Sparki af aan waar je naartoe wilt."
+        subtitle="Alles wat je traint, wordt afgemeten aan waar je naartoe wilt."
       />
 
       <div className={cardClass}>

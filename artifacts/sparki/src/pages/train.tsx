@@ -131,8 +131,8 @@ function ConfirmActivityCard({ session }: { session: TrainingSession }) {
       )}
 
       <p className="mt-3 text-[12px] leading-relaxed text-white/55">
-        Dit haalde Sparki al op — je hoeft niks opnieuw in te vullen. Eén ding
-        weet Sparki nog niet: hoe voelde het?
+        Dit is al opgehaald — je hoeft niks opnieuw in te vullen. Eén ding
+        ontbreekt nog: hoe voelde het?
       </p>
 
       <div className="mt-3 flex gap-2">

@@ -127,7 +127,7 @@ export function TrainingProgression({
             ) : (
               <p className="mt-3 text-pretty text-[12px] leading-relaxed text-white/40">
                 Nog te weinig gelogde belasting voor een fitheidsverloop. Log je
-                trainingen een paar weken, dan tekent Sparki je opbouw uit.
+                trainingen een paar weken, dan wordt je opbouw zichtbaar.
               </p>
             )}
           </div>
@@ -148,7 +148,7 @@ export function TrainingProgression({
                   compact
                   showOrb={false}
                   title="Nog te weinig sessies"
-                  description="Sparki heeft een paar gelogde trainingen nodig om je volume en ontwikkeling per week te tonen."
+                  description="Er zijn een paar gelogde trainingen nodig om je volume en ontwikkeling per week te tonen."
                   primary={{
                     label: "Log een training",
                     onClick: () => navigate("/train?focus=logsession"),

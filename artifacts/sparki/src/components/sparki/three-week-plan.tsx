@@ -104,7 +104,7 @@ export function ThreeWeekPlan({
       ) : !hasPlan ? (
         hideEmptyCta ? (
           <p className="mt-5 text-pretty text-[12px] leading-relaxed text-white/40">
-            Je plan verschijnt hier zodra Sparki het heeft opgebouwd — bouw het in
+            Je plan verschijnt hier zodra het is opgebouwd — bouw het in
             de sectie hierboven.
           </p>
         ) : (
@@ -113,8 +113,8 @@ export function ThreeWeekPlan({
             title="Nog geen schema"
             description={
               canBuild
-                ? "Sparki bouwt een periodiseerd plan van 3 weken op basis van je FTP, wekelijkse uren en doel."
-                : "Sparki heeft een paar gegevens nodig om je plan op te bouwen. Vul ze hieronder in — je komt daarna automatisch hier terug."
+                ? "Een periodiseerd plan van 3 weken op basis van je FTP, wekelijkse uren en doel."
+                : "Er zijn nog een paar gegevens nodig om je plan op te bouwen. Vul ze hieronder in — je komt daarna automatisch hier terug."
             }
             targets={["ftp", "weeklyHours", "goal"]}
             profile={profile}
@@ -141,7 +141,7 @@ export function ThreeWeekPlan({
             <p className="mt-3 text-center text-[12px] text-red-300/70">
               {generate.error instanceof Error &&
               generate.error.message.includes("profile_incomplete")
-                ? "Sparki mist nog je FTP of wekelijkse uren. Vul ze hierboven in."
+                ? "Je FTP of wekelijkse uren ontbreken nog. Vul ze hierboven in."
                 : "Het opbouwen lukte niet. Probeer het opnieuw."}
             </p>
           )}

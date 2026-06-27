@@ -128,7 +128,7 @@ export function PatternsLayer() {
           {hasSessions ? (
             <>
               <p className="text-pretty text-[13px] leading-relaxed text-white/60">
-                Sparki heeft je trainingen, maar nog geen patronen vastgelegd.
+                Je trainingen zijn er, maar er zijn nog geen patronen vastgelegd.
                 Laat Sparki je gegevens doorzoeken op verbanden tussen belasting,
                 herstel en vorm.
               </p>
@@ -152,7 +152,7 @@ export function PatternsLayer() {
               compact
               showOrb={false}
               title="Nog te weinig trainingen voor patronen"
-              description="Sparki herkent pas patronen als het een paar weken aan trainingen heeft gezien. Log je trainingen of koppel een platform."
+              description="Patronen worden pas zichtbaar na een paar weken aan gelogde trainingen. Log je trainingen of koppel een platform."
               primary={{
                 label: "Log een training",
                 onClick: () => navigate("/train?focus=logsession"),

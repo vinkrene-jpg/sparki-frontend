@@ -167,7 +167,7 @@ export default function ActiviteitenPage() {
           Je ritten
         </h1>
         <p className="text-sm text-white/55">
-          Elke rit die Sparki kent — wat je deed, hoe het ging. Tik op een rit
+          Al je ritten — wat je deed, hoe het ging. Tik op een rit
           voor de volledige uitlezing en analyse.
         </p>
       </div>

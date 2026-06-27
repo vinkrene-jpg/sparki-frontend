@@ -311,8 +311,8 @@ export function TodayLayer() {
             <MissingInputNotice
               compact
               showOrb={false}
-              title="Sparki kan je sessie van vandaag nog niet bepalen"
-              description="Zodra Sparki je FTP en wekelijkse uren kent, plant het je dagtraining."
+              title="Nog geen sessie voor vandaag"
+              description="Zodra je FTP en wekelijkse uren bekend zijn, verschijnt hier je dagtraining."
               targets={["ftp", "weeklyHours"]}
               profile={profile}
               returnTo="/train"

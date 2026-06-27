@@ -64,7 +64,7 @@ export function SourceLayer() {
     <section className="flex flex-col gap-4">
       <LayerHeading
         title="Waar komt je training vandaan"
-        subtitle="Sparki past zich aan op wie je schema bepaalt — en houdt zich daaraan."
+        subtitle="Wie je schema bepaalt, bepaalt ook hoe het meebeweegt met je vorm."
       />
 
       {isLoading ? (
@@ -154,8 +154,8 @@ export function SourceLayer() {
                 <MissingInputNotice
                   compact
                   showOrb={false}
-                  title="Sparki kan een schema voor je bouwen"
-                  description="Met je FTP en wekelijkse uren bouwt Sparki een periodiseerd plan dat meebeweegt met je vorm."
+                  title="Laat je schema opbouwen"
+                  description="Met je FTP en wekelijkse uren komt er een periodiseerd plan dat meebeweegt met je vorm."
                   targets={["ftp", "weeklyHours"]}
                   profile={profile}
                   returnTo="/train"
@@ -181,7 +181,7 @@ export function SourceLayer() {
                 <p className="mt-3 text-[12px] text-red-300/70">
                   {generate.error instanceof Error &&
                   generate.error.message.includes("profile_incomplete")
-                    ? "Sparki mist nog je FTP of wekelijkse uren. Vul ze aan bij je profiel."
+                    ? "Je FTP of wekelijkse uren ontbreken nog. Vul ze aan bij je profiel."
                     : "Het opbouwen lukte niet. Probeer het opnieuw."}
                 </p>
               )}
@@ -203,7 +203,7 @@ export function SourceLayer() {
           {source.kind !== "coach" && (
             <p className="mt-4 border-t border-white/[0.06] pt-3 font-mono text-[10px] leading-relaxed tracking-wide text-white/25">
               Externe schema's importeren (zoals TrainingPeaks) kan nog niet —
-              Sparki werkt met je eigen invoer en gekoppelde platforms.
+              alleen je eigen invoer en gekoppelde platforms tellen mee.
             </p>
           )}
         </div>

@@ -32,7 +32,7 @@ export function detectSource(
       kind: "coach",
       label: "Je trainer",
       detail:
-        "Je trainer bepaalt je schema. Sparki geeft advies, maar verandert nooit zelf je trainingen.",
+        "Je trainer bepaalt je schema. Je krijgt advies, maar je trainingen worden nooit automatisch veranderd.",
       canBuild: false,
     }
   }
@@ -41,7 +41,7 @@ export function detectSource(
       kind: "sparki",
       label: "Sparki",
       detail:
-        "Sparki bouwt je schema op uit je eigen cijfers en past het aan op hoe je traint en herstelt.",
+        "Dit schema is opgebouwd uit je eigen cijfers en beweegt mee met hoe je traint en herstelt.",
       canBuild: true,
     }
   }
@@ -50,7 +50,7 @@ export function detectSource(
       kind: "self",
       label: "Je eigen invoer",
       detail:
-        "Je voert je trainingen zelf in. Sparki rekent mee en geeft inzicht, maar plant niets voor je.",
+        "Je voert je trainingen zelf in — je krijgt inzicht en berekeningen, maar er wordt niets voor je ingepland.",
       canBuild: true,
     }
   }
@@ -58,7 +58,7 @@ export function detectSource(
     kind: "none",
     label: "Nog geen bron",
     detail:
-      "Er is nog geen trainingsbron. Sparki kan een schema voor je opbouwen op basis van je eigen cijfers.",
+      "Er is nog geen trainingsbron. Op basis van je eigen cijfers kan er een schema voor je worden opgebouwd.",
     canBuild: true,
   }
 }
@@ -102,7 +102,7 @@ export function judgeGoalFit(args: {
       verdict: "onbekend",
       headline: "Nog geen doel om naartoe te trainen",
       reason:
-        "Zonder doel of wedstrijd kan Sparki niet beoordelen of je training de goede kant op gaat. Voeg een doel toe, dan wordt elk advies daarop afgestemd.",
+        "Zonder doel of wedstrijd is er geen maatstaf voor of je training de goede kant op gaat. Voeg een doel toe, dan wordt elk advies daarop afgestemd.",
       needs: ["een doel of wedstrijd"],
     }
   }
@@ -121,7 +121,7 @@ export function judgeGoalFit(args: {
       verdict: "onbekend",
       headline: `Nog ${weeksAway} ${weeksAway === 1 ? "week" : "weken"} tot ${goalLabel}`,
       reason:
-        "Sparki heeft nog te weinig gelogde belasting om je opbouw richting dit doel te beoordelen. Log je trainingen of koppel een platform, dan tekent Sparki je koers uit.",
+        "Er is nog te weinig gelogde belasting om je opbouw richting dit doel te beoordelen. Log je trainingen of koppel een platform, dan wordt je koers zichtbaar.",
       needs: ["meer gelogde trainingen om je opbouw te beoordelen"],
     }
   }
