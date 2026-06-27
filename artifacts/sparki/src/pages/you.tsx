@@ -19,8 +19,10 @@ import {
   deriveEvolution,
   deriveBelastbaarheid,
   deriveBandbreedte,
+  deriveOntwikkelprioriteit,
   developmentGoalInfo,
   type EvolutionTone,
+  type Ontwikkelprioriteit,
 } from "@/lib/core-profile"
 import { missingTargets, type InputTargetKey } from "@/lib/missing-input"
 import {
@@ -136,6 +138,63 @@ function InsightCard({ obs }: { obs: AiObservation }) {
   )
 }
 
+// The single highest-impact development limiter, with its concrete next action
+// and an expandable "why" carrying the real factor readouts.
+function PrioriteitCard({
+  prioriteit,
+}: {
+  prioriteit: Ontwikkelprioriteit
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <Card>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Compass className="h-4 w-4 text-cyan-300" strokeWidth={1.75} />
+          <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+            Je grootste hefboom
+          </span>
+        </div>
+        <span className="shrink-0 rounded-full bg-cyan-300/10 px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-cyan-300 ring-1 ring-cyan-300/20">
+          {prioriteit.label}
+        </span>
+      </div>
+      <p className="mt-2.5 text-[14px] leading-relaxed text-white/80">{prioriteit.finding}</p>
+      <div className="mt-3 flex items-start gap-2 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] px-3 py-2.5">
+        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300" strokeWidth={1.75} />
+        <p className="text-[13px] leading-relaxed text-white/80">{prioriteit.action}</p>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="mt-3 flex items-center gap-1.5 text-[12px] text-white/45 transition-colors hover:text-cyan-300/80"
+        aria-expanded={open}
+      >
+        Waarop dit is gebaseerd
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="mt-2.5 space-y-2 border-t border-white/[0.06] pt-3">
+          {prioriteit.signals.map((s) => (
+            <div key={s.label} className="flex items-start gap-2.5">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-white/30" />
+              <p className="text-[12px] leading-relaxed text-white/60">
+                <span className="text-white/80">{s.label}:</span> {s.value}
+              </p>
+            </div>
+          ))}
+          {prioriteit.goalRef && (
+            <p className="pt-1 text-[11px] leading-relaxed text-white/40">
+              Gewogen tegen je doel: {prioriteit.goalRef}.
+            </p>
+          )}
+        </div>
+      )}
+    </Card>
+  )
+}
+
 function InsightSection({
   n,
   title,
@@ -230,6 +289,7 @@ export default function YouPage() {
   const evolution = deriveEvolution(ftpHistory, load, sessions)
   const belastbaarheid = deriveBelastbaarheid(load, sessions, profile)
   const bandbreedte = deriveBandbreedte(ftpHistory, load, profile)
+  const prioriteit = deriveOntwikkelprioriteit(load, sessions, profile)
   const goalInfo = developmentGoalInfo(profile?.developmentGoal)
 
   // What Sparki still wants to collect — only genuinely missing profile inputs.
@@ -590,6 +650,35 @@ export default function YouPage() {
               </div>
             </button>
           )}
+
+          {/* Ontwikkelprioriteit — de ene factor die je ontwikkeling het meest
+              remt, gewogen tegen je doel. Directief, niet alleen beschrijvend. */}
+          {prioriteit.hasData &&
+            (prioriteit.balanced ? (
+              <Card>
+                <div className="flex items-center gap-2">
+                  <Compass className="h-4 w-4 text-cyan-300" strokeWidth={1.75} />
+                  <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+                    Je grootste hefboom
+                  </span>
+                </div>
+                <p className="mt-2.5 text-[15px] font-light tracking-tight text-white">
+                  {prioriteit.label}
+                </p>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-white/60">
+                  {prioriteit.finding}
+                </p>
+                <div className="mt-3 flex items-start gap-2 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] px-3 py-2.5">
+                  <Sparkles
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300"
+                    strokeWidth={1.75}
+                  />
+                  <p className="text-[13px] leading-relaxed text-white/80">{prioriteit.action}</p>
+                </div>
+              </Card>
+            ) : (
+              <PrioriteitCard prioriteit={prioriteit} />
+            ))}
 
           {belastbaarheid.hasData ? (
             <Card>

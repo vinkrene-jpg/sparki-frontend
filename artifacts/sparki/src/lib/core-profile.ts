@@ -385,31 +385,38 @@ function clamp01(n: number): number {
   return Math.max(0, Math.min(1, n));
 }
 
-export function deriveBelastbaarheid(
+// ── Shared load factors ───────────────────────────────────────────────────────
+// The single source of truth for the real, deterministic factors that both the
+// Belastbaarheid read and the Ontwikkelprioriteit (bottleneck) engine build on.
+// Computed purely from longitudinal load + sessions, so the two stay consistent.
+// Each factor is 0..1 where 1 = strong. Honest gate: returns ok=false with a
+// plain-Dutch reason when there is too little real data.
+
+type LoadFactors = {
+  rhythm: number; // trainingsregelmaat (weekly-session consistency)
+  capacity: number; // opgebouwde basis (CTL/70 scale)
+  rampSafety: number; // opbouwtempo (acute:chronic control)
+  recovery: number; // herstel (sustained TSB / vorm)
+  lastCtl: number;
+  maxRatio: number;
+  avgTsb: number;
+  inWindowCount: number;
+  spanWeeks: number;
+  healthCapped: boolean;
+};
+
+function computeLoadFactors(
   load: LoadData | undefined,
   sessions: TrainingSession[] | undefined,
   profile: AthleteProfile | null | undefined,
-): Belastbaarheid {
-  const EMPTY = (reason: string): Belastbaarheid => ({
-    hasData: false,
-    score: null,
-    band: null,
-    headline: "Belastbaarheid nog niet in te schatten",
-    meaning: "",
-    confidenceLabel: "",
-    windowLabel: "",
-    factors: [],
-    reason,
-    healthCapped: false,
-  });
-
+): { ok: false; reason: string } | { ok: true; f: LoadFactors } {
   const chart = load?.chartData ?? [];
   const allSessions = sessions ?? [];
   const now = Date.now();
   const DAY = 86_400_000;
+  const WEEKS = 6;
 
   // Sessions in the trailing 6-week window — the basis for the rhythm read.
-  const WEEKS = 6;
   const inWindow = allSessions.filter((s) => {
     const t = new Date(s.sessionDate).getTime();
     return !Number.isNaN(t) && now - t <= WEEKS * 7 * DAY && now - t >= 0;
@@ -417,9 +424,11 @@ export function deriveBelastbaarheid(
 
   // Honest gate: too little to say anything reliable.
   if (chart.length < 10 || inWindow.length < 6) {
-    return EMPTY(
-      "Sparki heeft minstens een paar weken aan ritten nodig om je belastbaarheid betrouwbaar in te schatten. Koppel je sportdata of log meer ritten.",
-    );
+    return {
+      ok: false,
+      reason:
+        "Sparki heeft minstens een paar weken aan ritten nodig om dit betrouwbaar in te schatten. Koppel je sportdata of log meer ritten.",
+    };
   }
 
   // 1. Trainingsregelmaat — weekly session counts, consistency = 1 - CV.
@@ -432,8 +441,7 @@ export function deriveBelastbaarheid(
   const mean = buckets.reduce((a, b) => a + b, 0) / WEEKS;
   let rhythm = 0;
   if (mean > 0) {
-    const variance =
-      buckets.reduce((a, b) => a + (b - mean) ** 2, 0) / WEEKS;
+    const variance = buckets.reduce((a, b) => a + (b - mean) ** 2, 0) / WEEKS;
     const cv = Math.sqrt(variance) / mean;
     rhythm = clamp01(1 - cv);
   }
@@ -453,11 +461,66 @@ export function deriveBelastbaarheid(
   let rampSafety = 1;
   if (maxRatio > 1.3) rampSafety = clamp01(1 - (maxRatio - 1.3) / 0.5);
 
+  // 4. Herstel — sustained form (TSB) over the last 14 days. Form that sits deep
+  //    in the negative means load isn't landing; -10..-30 is the honest decline
+  //    band. Sickness/injury caps recovery low and is flagged.
+  const avgTsb =
+    recentPts.length > 0
+      ? recentPts.reduce((a, p) => a + p.tsb, 0) / recentPts.length
+      : 0;
+  let recovery = clamp01((avgTsb + 30) / 20);
+  const healthCapped =
+    profile?.healthStatus === "sick" || profile?.healthStatus === "injured";
+  if (healthCapped) recovery = Math.min(recovery, 0.3);
+
+  const firstT = new Date(chart[0].date).getTime();
+  const spanWeeks = Number.isNaN(firstT)
+    ? WEEKS
+    : Math.max(1, Math.round((now - firstT) / (7 * DAY)));
+
+  return {
+    ok: true,
+    f: {
+      rhythm,
+      capacity,
+      rampSafety,
+      recovery,
+      lastCtl,
+      maxRatio,
+      avgTsb,
+      inWindowCount: inWindow.length,
+      spanWeeks,
+      healthCapped,
+    },
+  };
+}
+
+export function deriveBelastbaarheid(
+  load: LoadData | undefined,
+  sessions: TrainingSession[] | undefined,
+  profile: AthleteProfile | null | undefined,
+): Belastbaarheid {
+  const EMPTY = (reason: string): Belastbaarheid => ({
+    hasData: false,
+    score: null,
+    band: null,
+    headline: "Belastbaarheid nog niet in te schatten",
+    meaning: "",
+    confidenceLabel: "",
+    windowLabel: "",
+    factors: [],
+    reason,
+    healthCapped: false,
+  });
+
+  const computed = computeLoadFactors(load, sessions, profile);
+  if (!computed.ok) return EMPTY(computed.reason);
+  const { rhythm, capacity, rampSafety, lastCtl, maxRatio, inWindowCount, spanWeeks, healthCapped } =
+    computed.f;
+
   let score01 = 0.4 * rhythm + 0.35 * capacity + 0.25 * rampSafety;
 
   // Health gate — sickness/injury holds the read back, honestly flagged.
-  const healthCapped =
-    profile?.healthStatus === "sick" || profile?.healthStatus === "injured";
   if (healthCapped) score01 = Math.min(score01, 0.35);
 
   const score = Math.round(score01 * 100);
@@ -465,12 +528,8 @@ export function deriveBelastbaarheid(
     score >= 70 ? "robuust" : score >= 45 ? "redelijk" : "beperkt";
 
   // Confidence + window honesty — based on how much data actually backs the read.
-  const firstT = new Date(chart[0].date).getTime();
-  const spanWeeks = Number.isNaN(firstT)
-    ? WEEKS
-    : Math.max(1, Math.round((now - firstT) / (7 * DAY)));
   const confidenceLabel =
-    spanWeeks >= 8 && inWindow.length >= 15
+    spanWeeks >= 8 && inWindowCount >= 15
       ? "redelijk zeker"
       : spanWeeks >= 4
         ? "een eerste indruk"
@@ -747,5 +806,190 @@ export function deriveBandbreedte(
     confidenceLabel,
     factors,
     reason: null,
+  };
+}
+
+// ── Ontwikkelprioriteit (the single biggest limiter) ──────────────────────────
+// Directive, not just descriptive: out of the SAME real belastbaarheid factors
+// (regelmaat / basis / opbouwtempo / herstel) it names the ONE limiter that,
+// improved, moves the athlete most toward their developmentGoal. Each limiter's
+// "gap" (how far below ideal) is weighted by how much it matters for the goal;
+// the highest-impact gap wins and gets a concrete, honest next action.
+//
+// Honesty: same evidence gate as belastbaarheid (hasData=false otherwise). When
+// no factor is genuinely holding the athlete back, it says so (balanced) rather
+// than inventing a problem. Neutral voice, plain Dutch, never fabricates depth.
+
+export type LimiterKey = "regelmaat" | "basis" | "opbouwtempo" | "herstel";
+
+export type Ontwikkelprioriteit = {
+  hasData: boolean;
+  /** Plain-Dutch reason shown when hasData=false. */
+  reason: string | null;
+  /** True when no single factor clearly holds development back. */
+  balanced: boolean;
+  key: LimiterKey | null;
+  label: string;
+  /** Neutral observation of what is holding development back. */
+  finding: string;
+  /** A concrete, honest next action. */
+  action: string;
+  /** The real signals behind the read (the "why"). */
+  signals: { label: string; value: string }[];
+  /** Transparent ranking of every limiter, strongest gap first. */
+  ranked: { key: LimiterKey; label: string; gap: number; impact: number }[];
+  /** The goal this is weighed against, when one is set. */
+  goalRef: string | null;
+};
+
+const LIMITER_LABEL: Record<LimiterKey, string> = {
+  regelmaat: "Regelmaat",
+  basis: "Aerobe basis",
+  opbouwtempo: "Opbouwtempo",
+  herstel: "Herstel",
+};
+
+// How much each limiter matters for a given long-term goal. These are honest
+// emphases (relative weights), not absolute truths — every limiter still counts.
+// Default (no goal chosen) treats all factors equally.
+const GOAL_WEIGHTS: Record<DevelopmentGoalKey, Record<LimiterKey, number>> = {
+  recreatief: { regelmaat: 1.2, basis: 0.8, opbouwtempo: 1.0, herstel: 1.0 },
+  granfondo: { regelmaat: 1.0, basis: 1.3, opbouwtempo: 0.9, herstel: 1.0 },
+  topamateur: { regelmaat: 1.0, basis: 1.2, opbouwtempo: 1.1, herstel: 1.0 },
+  elite_u23: { regelmaat: 0.9, basis: 1.2, opbouwtempo: 1.2, herstel: 1.1 },
+  prof: { regelmaat: 0.9, basis: 1.2, opbouwtempo: 1.2, herstel: 1.2 },
+  persoonlijk: { regelmaat: 1.0, basis: 1.0, opbouwtempo: 1.0, herstel: 1.0 },
+};
+
+const NEUTRAL_WEIGHTS: Record<LimiterKey, number> = {
+  regelmaat: 1.0,
+  basis: 1.0,
+  opbouwtempo: 1.0,
+  herstel: 1.0,
+};
+
+// A factor is only treated as a real limiter once its gap is meaningful. Below
+// this, the athlete is honestly told nothing is holding them back (balanced).
+const GAP_THRESHOLD = 0.3;
+
+export function deriveOntwikkelprioriteit(
+  load: LoadData | undefined,
+  sessions: TrainingSession[] | undefined,
+  profile: AthleteProfile | null | undefined,
+): Ontwikkelprioriteit {
+  const goalKey = developmentGoalInfo(profile?.developmentGoal)?.key ?? null;
+  const goalRef = goalKey ? developmentGoalInfo(goalKey)!.label : null;
+
+  const EMPTY = (reason: string): Ontwikkelprioriteit => ({
+    hasData: false,
+    reason,
+    balanced: false,
+    key: null,
+    label: "",
+    finding: "",
+    action: "",
+    signals: [],
+    ranked: [],
+    goalRef,
+  });
+
+  const computed = computeLoadFactors(load, sessions, profile);
+  if (!computed.ok) return EMPTY(computed.reason);
+  const { rhythm, capacity, rampSafety, recovery, lastCtl, maxRatio, avgTsb, healthCapped } =
+    computed.f;
+
+  const weights = goalKey ? GOAL_WEIGHTS[goalKey] : NEUTRAL_WEIGHTS;
+
+  const scores: Record<LimiterKey, number> = {
+    regelmaat: rhythm,
+    basis: capacity,
+    opbouwtempo: rampSafety,
+    herstel: recovery,
+  };
+
+  // Gap = how far below ideal; impact = gap weighted by goal relevance.
+  const ranked = (Object.keys(scores) as LimiterKey[])
+    .map((key) => {
+      const gap = clamp01(1 - scores[key]);
+      return { key, label: LIMITER_LABEL[key], gap, impact: gap * weights[key] };
+    })
+    .sort((a, b) => b.impact - a.impact);
+
+  // The real factor readouts — shown as the "why" behind whichever wins.
+  const signals: { label: string; value: string }[] = [
+    { label: "Trainingsregelmaat", value: `${Math.round(rhythm * 100)}%` },
+    { label: "Opgebouwde basis", value: `CTL ${lastCtl}` },
+    {
+      label: "Opbouwtempo",
+      value: maxRatio <= 1.3 ? "gecontroleerd" : maxRatio <= 1.6 ? "pittig" : "te grillig",
+    },
+    {
+      label: "Herstel (vorm)",
+      value: `TSB ${avgTsb >= 0 ? "+" : ""}${Math.round(avgTsb)}`,
+    },
+  ];
+
+  const top = ranked[0];
+
+  // Honest "nothing is holding you back" when no gap is meaningful.
+  if (top.gap < GAP_THRESHOLD) {
+    return {
+      hasData: true,
+      reason: null,
+      balanced: true,
+      key: null,
+      label: "Geen duidelijke rem",
+      finding:
+        "Geen enkele factor remt je ontwikkeling nu duidelijk af — je regelmaat, basis, opbouw en herstel zijn op orde.",
+      action: goalRef
+        ? `Houd dit vast. De volgende winst zit in geleidelijk meer of gerichter trainen richting "${goalRef}".`
+        : "Houd dit vast. De volgende winst zit in geleidelijk meer of gerichter trainen.",
+      signals,
+      ranked,
+      goalRef,
+    };
+  }
+
+  const goalSuffix = goalRef ? ` richting "${goalRef}"` : "";
+
+  let finding: string;
+  let action: string;
+  switch (top.key) {
+    case "regelmaat":
+      finding = `Je traint onregelmatig — de ene week veel, de andere week weinig. Regelmaat is nu je grootste rem${goalSuffix}: je lichaam bouwt het snelst op met een vast ritme.`;
+      action =
+        "Kies een haalbaar aantal vaste trainingsmomenten per week en houd dat een paar weken vast — liever drie keer elke week dan vijf keer in de ene en één keer in de volgende.";
+      break;
+    case "basis":
+      finding = `Je aerobe basis is nog dun (CTL ${lastCtl}). Een bredere basis is je grootste hefboom${goalSuffix}: er valt meer te winnen met rustige duurtraining dan met losse harde inspanningen.`;
+      action =
+        "Voeg de komende weken rustige duurkilometers toe (zone 2) en bouw je wekelijkse omvang in kleine stappen op — volgehouden, niet in één sprong.";
+      break;
+    case "opbouwtempo":
+      finding = `Je belasting maakt sprongen — recente trainingen lopen flink voor op je opgebouwde basis. Te grillig opbouwen is nu je grootste rem${goalSuffix}: het verhoogt de kans op vermoeidheid en blessures.`;
+      action =
+        "Vlak je opbouw af: verhoog je wekelijkse belasting met kleine stappen in plaats van pieken, en wissel zware blokken af met lichtere.";
+      break;
+    case "herstel":
+    default:
+      finding = healthCapped
+        ? `Omdat je nu ${profile?.healthStatus === "injured" ? "geblesseerd" : "ziek"} bent, is herstel nu je eerste prioriteit${goalSuffix} — pas als je hersteld bent kan training weer landen.`
+        : `Je herstel blijft achter — je vorm staat al langer diep in de min. Onvoldoende herstel is nu je grootste rem${goalSuffix}: je trainingen kunnen zo niet renderen.`;
+      action =
+        "Las herstel in: een paar lichtere dagen of een rustweek zodat je belasting kan landen. Bouw daarna pas weer op.";
+      break;
+  }
+
+  return {
+    hasData: true,
+    reason: null,
+    balanced: false,
+    key: top.key,
+    label: LIMITER_LABEL[top.key],
+    finding,
+    action,
+    signals,
+    ranked,
+    goalRef,
   };
 }

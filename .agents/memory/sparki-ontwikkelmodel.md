@@ -76,3 +76,17 @@ dashboard. Communicate those as roadmap, NOT built.
   `NODE_ENV=development` + `DEV_AUTH_BYPASS=true` (other test scripts don't) or every
   request 401s and the contract assertions are vacuous — the test asserts the 200
   precondition to catch that.
+
+## Ontwikkelprioriteit / bottleneck-engine (built)
+- `deriveOntwikkelprioriteit(load, sessions, profile)` in core-profile.ts names the ONE limiter
+  that most holds development back. Reuses the SAME factors as belastbaarheid — both now read
+  from a single `computeLoadFactors()` helper (rhythm/capacity/rampSafety + NEW `recovery` from
+  sustained TSB) so the two reads can never drift. Refactor preserved belastbaarheid scoring.
+- Limiters: `regelmaat|basis|opbouwtempo|herstel`. gap = 1−score (0..1); impact = gap × goal weight
+  (`GOAL_WEIGHTS` per developmentGoal, NEUTRAL when no goal). Highest impact wins.
+- Honesty: same evidence gate as belastbaarheid (hasData=false → reason). When the top gap is
+  < `GAP_THRESHOLD` (0.3) it returns `balanced:true` ("geen duidelijke rem") instead of inventing
+  a problem. Health sick/injured caps `recovery` ≤0.3 and the herstel copy says so.
+- Surfaced in the Ontwikkelkompas (you.tsx) ABOVE the Belastbaarheid card via `PrioriteitCard`
+  (finding + concrete action + "Waarop dit is gebaseerd" disclosure showing all 4 factor readouts).
+  Weights/0.7-CTL anchor are honest *scales*, not truths — keep that framing if you tune them.
