@@ -48,9 +48,9 @@ export function RecoveryDayHome({ briefing }: DayHomeComponentProps) {
         </div>
       </section>
 
-      {/* 02 WAT ZIET SPARKI — hersteldata */}
+      {/* 02 WAT OPVALT — hersteldata */}
       <section>
-        <SectionLabel n="02" title="Wat ziet Sparki" large />
+        <SectionLabel n="02" title="Wat opvalt" large />
         <div className="mt-4">
           {metricsLoading ? (
             <div className="grid grid-cols-2 gap-x-5 gap-y-6">

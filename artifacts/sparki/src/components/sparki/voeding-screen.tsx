@@ -673,7 +673,7 @@ function RecentLogs() {
         ) : (
           <p className="text-[12px] leading-relaxed text-white/35">
             Nog niets gelogd. Log hierboven je voeding en hydratatie rond je
-            trainingen — dan ziet Sparki er patronen in.
+            trainingen — dan komen er patronen in beeld.
           </p>
         )}
       </div>

@@ -438,10 +438,14 @@ export default function TrainPage() {
         {dayLabel} · JOUW TRAINING
       </p>
 
-      {/* Layer 1 — where the schedule comes from. */}
+      {/* Today's proposed training leads the page — what to do today, and why
+          precisely this. */}
+      <TodayLayer />
+
+      {/* Where the schedule comes from. */}
       <SourceLayer />
 
-      {/* Layer 2 — the goal as a yardstick (+ concrete 3-week plan). */}
+      {/* The goal as a yardstick (+ concrete 3-week plan). */}
       <div
         id="three-week-plan"
         className={`scroll-mt-4 rounded-3xl transition-shadow duration-500 ${
@@ -451,17 +455,14 @@ export default function TrainPage() {
         <GoalLayer />
       </div>
 
-      {/* Layer 3 — what to do today, and why precisely this. */}
-      <TodayLayer />
-
-      {/* Layer 4 — the patterns Sparki sees over time. */}
+      {/* The patterns over time. */}
       <PatternsLayer />
 
       {/* Voed Sparki — every input here sharpens the advice above. */}
       <section id="log-session" className="scroll-mt-4 flex flex-col gap-4">
         <LayerHeading
           title="Voed Sparki"
-          subtitle="Hoe meer Sparki van je ziet, hoe scherper elk advies hierboven wordt."
+          subtitle="Hoe meer je deelt, hoe scherper elk advies hierboven wordt."
         />
 
         {/* Sparki zag je activiteit — confirm imported activities (only the

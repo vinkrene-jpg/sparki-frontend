@@ -210,7 +210,7 @@ function ReasonBlock({ confidence }: { confidence: Confidence }) {
       {confidence.reasons.length > 0 && (
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
-            Waarom Sparki zo zeker is
+            Waarop dit is gebaseerd
           </p>
           <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-white/65">
             {confidence.reasons.map((r, i) => (

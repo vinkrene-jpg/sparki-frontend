@@ -5,12 +5,12 @@ description: How /train is composed from engine layers and why TodayLayer must n
 
 # /train four-layer spine
 
-`/train` (TrainPage) is composed of four engine-driven layers + an input cluster, each a real surface that explains itself — never static widgets:
-- **L1 SourceLayer** — who drives the schema (trainer / Sparki / eigen invoer / none) from `useTrainingPlan`, plus build/adapt actions.
-- **L2 GoalLayer** — deterministic verdict (`op_koers`/`te_zwaar`/`te_licht`/`onbekend`) from `judgeGoalFit`, grounded in CTL/TSB/phase/weeksAway numbers; `onbekend` + honest `needs[]` when evidence thin. Renders ThreeWeekPlan.
-- **L3 TodayLayer** — today's workout + `structure.rationale` + session-specific readiness/plan conflict (`detectReadinessConflict`). Session viz + target zone + Klaar/Overslaan.
-- **L4 PatternsLayer** — `ai_observations` + TrainingProgression, honest empty states.
-- **Voed Sparki** — log session + Activity/Document/Route panels, de-numbered, grouped with a reason.
+`/train` (TrainPage) is composed of four engine-driven layers + an input cluster, each a real surface that explains itself — never static widgets. **Presentation order: TodayLayer leads the page** (user demand: "begin de pagina met de voorgestelde training"), then Source → Goal → Patterns → Voed Sparki. The L1–L4 names below are engine identity, not page order:
+- **TodayLayer** (page-first) — today's workout + `structure.rationale` + session-specific readiness/plan conflict (`detectReadinessConflict`). Session viz + target zone + Klaar/Overslaan. Empty-state copy points to Source layer as "hieronder" (it now sits below).
+- **SourceLayer** — who drives the schema (trainer / Sparki / eigen invoer / none) from `useTrainingPlan`, plus build/adapt actions.
+- **GoalLayer** — deterministic verdict (`op_koers`/`te_zwaar`/`te_licht`/`onbekend`) from `judgeGoalFit`, grounded in CTL/TSB/phase/weeksAway numbers; `onbekend` + honest `needs[]` when evidence thin. Renders ThreeWeekPlan (`id="three-week-plan"`, focus-scroll target).
+- **PatternsLayer** — `ai_observations` + TrainingProgression, honest empty states.
+- **Voed Sparki** — log session + Activity/Document/Route panels, de-numbered, grouped with a reason; stays last so "hierboven" in its subtitle stays correct.
 
 Composition helpers live in `lib/train-intelligence.ts` (pure, deterministic, fail-closed).
 

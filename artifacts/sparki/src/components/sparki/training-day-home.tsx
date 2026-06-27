@@ -356,9 +356,9 @@ export function TrainingDayHome({
         </div>
       </section>
 
-      {/* 03 WAAROM DENKT SPARKI DAT */}
+      {/* 03 WAAROM DEZE TRAINING */}
       <section>
-        <SectionLabel n="03" title="Waarom denkt Sparki dat" large />
+        <SectionLabel n="03" title="Waarom deze training" large />
         <div className="mt-4">
           {metricsLoading ? (
             <div className="grid grid-cols-2 gap-x-5 gap-y-6">

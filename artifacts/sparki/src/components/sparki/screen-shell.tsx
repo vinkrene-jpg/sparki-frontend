@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import { useEffect } from "react"
-import { LogOut, RefreshCw, Shield, ChevronLeft, MessageSquarePlus } from "lucide-react"
+import { LogOut, RefreshCw, Shield, ChevronLeft, MessageSquarePlus, Users } from "lucide-react"
+import { Link } from "wouter"
 import { useClerk, Show } from "@clerk/react"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
 import { useFeedback } from "@/contexts/FeedbackContext"
@@ -162,6 +163,23 @@ function HeadTesterBadge({ number }: { number: number | null }) {
   )
 }
 
+// Fixed, app-wide entry to "Samen trainen" — the social/team surface no longer
+// has its own nav tab, so it lives as a clear top button for athletes.
+function SamenButton() {
+  const { profile } = useUserProfile()
+  if (profile?.activeRole !== "athlete") return null
+  return (
+    <Link
+      href="/samen"
+      aria-label="Samen trainen"
+      title="Samen trainen"
+      className="rounded-full border border-white/15 p-1.5 text-white/60 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+    >
+      <Users className="h-4 w-4" strokeWidth={1.75} />
+    </Link>
+  )
+}
+
 // Header trigger that opens the global feedback & bug reporter from any screen.
 function FeedbackButton() {
   const { openFeedback } = useFeedback()
@@ -251,6 +269,7 @@ export function ScreenShell({
             <Show when="signed-in">
               <div className="flex items-center gap-3">
                 {profile?.isHeadTester && <HeadTesterBadge number={profile.headTesterNumber ?? null} />}
+                <SamenButton />
                 <FeedbackButton />
                 <NotificationBell />
                 <div className="flex flex-col items-end gap-1.5">

@@ -256,7 +256,7 @@ export function StateCard({ onShowDetails, detailsLabel }: StateCardProps = {}) 
           aria-expanded={showWhy}
         >
           <span className="text-[14px] font-medium text-white/85">
-            Waarom ziet Sparki dit zo?
+            Waarom dit zo is?
           </span>
           <ChevronDown
             className={`h-4 w-4 text-white/40 transition-transform ${

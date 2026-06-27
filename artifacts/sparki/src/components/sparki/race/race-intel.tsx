@@ -162,7 +162,7 @@ export function RaceDayReport({ report }: { report: RaceDayReportData }) {
         }}
       >
         <span className="font-mono text-[10px] tracking-[0.22em]" style={{ color: ACCENT }}>
-          SPARKI ZIET
+          WAT OPVALT
         </span>
         <p className="mt-2 text-[13px] leading-relaxed text-white/80">
           {report.personalNote}

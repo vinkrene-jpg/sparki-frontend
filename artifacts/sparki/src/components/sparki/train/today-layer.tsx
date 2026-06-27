@@ -322,7 +322,7 @@ export function TodayLayer() {
             <p className="text-pretty text-[13px] leading-relaxed text-white/55">
               Je profiel is compleet. Zodra je schema er staat — bouw het bij
               <span className="text-white/75"> “Waar komt je training vandaan” </span>
-              hierboven — verschijnt hier je sessie van vandaag.
+              hieronder — verschijnt hier je sessie van vandaag.
             </p>
           )}
         </div>
