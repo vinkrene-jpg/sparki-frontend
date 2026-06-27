@@ -13,6 +13,7 @@ import { CoachInputNeeds } from "@/components/sparki/coach-input-actions"
 import { FollowUpPrompt } from "@/components/sparki/follow-up-prompt"
 import { CoachAnalysisCard } from "@/components/sparki/coach/coach-analysis-card"
 import { CoachDecisionCard } from "@/components/sparki/coach-decision-card"
+import { OntwikkelprioriteitHomeCard } from "@/components/sparki/ontwikkelprioriteit-home-card"
 import { useCoachDecision } from "@/contexts/CoachDecisionContext"
 import { useHomeView } from "@/contexts/HomeViewContext"
 import { startTelemetry, trackScreen } from "@/lib/telemetry"
@@ -306,6 +307,11 @@ export function ScreenShell({
         {!bare && isHome && !stateSurface && coachDecision && (
           <CoachDecisionCard decision={coachDecision} />
         )}
+
+        {/* Ontwikkelprioriteit — the single biggest long-term limiter + next
+            action, reusing the Core engine verbatim. Glanceable here where
+            athletes start their day; taps through to the full Ontwikkelkompas. */}
+        {!bare && isHome && !stateSurface && <OntwikkelprioriteitHomeCard />}
 
         {children}
       </div>

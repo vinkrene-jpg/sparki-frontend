@@ -254,6 +254,16 @@ export default function YouPage() {
     if (focus && SETTINGS_FOCUS_TOKENS.has(focus)) setSettingsOpen(true)
   }, [focus])
 
+  // Deep-link from the Home Ontwikkelprioriteit card: scroll the Ontwikkelkompas
+  // section into view, then strip ?focus= so it doesn't linger. Route is
+  // wouter-relative (base prefix handled by wouter), so navigate to "/you".
+  useEffect(() => {
+    if (focus !== "ontwikkelkompas") return
+    const el = document.getElementById("ontwikkelkompas")
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" })
+    navigate("/you", { replace: true })
+  }, [focus, navigate])
+
   // Lock body scroll while the sheet is open.
   useEffect(() => {
     if (!settingsOpen) return undefined
@@ -592,7 +602,7 @@ export default function YouPage() {
       </section>
 
       {/* ONTWIKKELKOMPAS — langetermijndoel + belastbaarheid */}
-      <section>
+      <section id="ontwikkelkompas" className="scroll-mt-24">
         <SectionLabel n="09" title="Je ontwikkelkompas" />
         <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
           Waar je naartoe groeit, hoeveel training je lichaam aankan, en hoe je je
