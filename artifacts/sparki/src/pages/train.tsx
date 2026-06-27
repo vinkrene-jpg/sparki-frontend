@@ -585,6 +585,7 @@ export default function TrainPage() {
 
       <SessionDetailDrawer
         session={openSession}
+        recentSessions={sessions ?? []}
         open={openSession != null}
         onOpenChange={(o) => {
           if (!o) setOpenSession(null)
