@@ -34,6 +34,21 @@ dashboard. Communicate those as roadmap, NOT built.
 - The "70" CTL anchor and the weights are honest *scales*, not absolute truths — comments
   say so. If you tune them, keep the honesty framing.
 
+## Potentieel-bandbreedte (sprint 2 — growth range)
+- `deriveBandbreedte(ftpHistory, load, profile)` in `core-profile.ts` returns an honest
+  FTP growth RANGE (low/expected/high) over a fixed ~12-week (one block) horizon — NEVER
+  a single promise, NEVER "jaren". Surfaced in Ontwikkelkompas (/you §09) after belastbaarheid.
+- Inputs are REAL only: least-squares slope of `ftpHistory.ftpWatts` (W/wk), CTL trend from
+  `load.chartData`, age trainability from `birthYear`, and the data window (n + span).
+- Honest gates: needs ≥2 FTP measurements AND a ≥21-day span, else `hasData:false` with a
+  plain-Dutch reason + a "FTP invullen" button (`startFix("ftp")`).
+- Band math is a deliberately conservative *scale* (not absolute truth, comments say so):
+  expected rate = slope·0.7 (taper for diminishing returns), high scales with age headroom,
+  low ≈ slope·0.3 (consolidation); CTL-down shrinks the upside, CTL-up widens it. Ordering
+  is enforced low ≤ expected ≤ high. Plateau (tiny spread) is its own honest headline.
+- Confidence label: ≥5 pts & ≥12wk "redelijk zeker"; ≥3 & ≥6wk "een eerste indruk"; else
+  "nog voorzichtig". Goal label is woven into copy when set, never required.
+
 ## Wiring gotchas
 - `developmentGoal` is whitelisted on `PUT /api/athlete/profile`: explicit `null` clears,
   a valid enum key sets, unknown strings are IGNORED (not trusted). GET returns it via the

@@ -18,6 +18,7 @@ import {
   categorizeObservations,
   deriveEvolution,
   deriveBelastbaarheid,
+  deriveBandbreedte,
   developmentGoalInfo,
   type EvolutionTone,
 } from "@/lib/core-profile"
@@ -228,6 +229,7 @@ export default function YouPage() {
   const lenses = categorizeObservations(observations)
   const evolution = deriveEvolution(ftpHistory, load, sessions)
   const belastbaarheid = deriveBelastbaarheid(load, sessions, profile)
+  const bandbreedte = deriveBandbreedte(ftpHistory, load, profile)
   const goalInfo = developmentGoalInfo(profile?.developmentGoal)
 
   // What Sparki still wants to collect — only genuinely missing profile inputs.
@@ -658,6 +660,98 @@ export default function YouPage() {
                   <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.25} />
                 </button>
               )}
+            </Card>
+          )}
+
+          {/* Potentieel-bandbreedte — realistische groeiruimte (low/expected/high)
+              richting het doel, alleen uit echte data. Een schatting, geen belofte. */}
+          {bandbreedte.hasData ? (
+            <Card>
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+                  Groeiruimte
+                </span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+                  {bandbreedte.confidenceLabel}
+                </span>
+              </div>
+              <p className="mt-2.5 text-[15px] font-light tracking-tight text-white">
+                {bandbreedte.headline}
+              </p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-white/60">
+                {bandbreedte.meaning}
+              </p>
+
+              {/* Bandbreedte: behoudend → verwacht → optimistisch */}
+              <div className="mt-4 flex items-stretch border-t border-white/[0.06] pt-4">
+                <div className="flex-1 text-center">
+                  <p className="text-[15px] font-light tabular-nums text-white/55">
+                    {bandbreedte.low} {bandbreedte.unit}
+                  </p>
+                  <p className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">
+                    Behoudend
+                  </p>
+                </div>
+                <div className="flex-1 border-l border-r border-white/[0.07] text-center">
+                  <p className="text-[22px] font-light leading-none tabular-nums text-cyan-300">
+                    {bandbreedte.expected} {bandbreedte.unit}
+                  </p>
+                  <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-white/45">
+                    Verwacht
+                  </p>
+                </div>
+                <div className="flex-1 text-center">
+                  <p className="text-[15px] font-light tabular-nums text-white/55">
+                    {bandbreedte.high} {bandbreedte.unit}
+                  </p>
+                  <p className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">
+                    Optimistisch
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-stretch border-t border-white/[0.06] pt-4">
+                {bandbreedte.factors.map((f, i) => (
+                  <div
+                    key={f.label}
+                    className={`flex-1 text-center ${i > 0 ? "border-l border-white/[0.07]" : ""}`}
+                  >
+                    <p className="font-sans text-[13px] font-light text-white/85">{f.value}</p>
+                    <p className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">
+                      {f.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-white/40">
+                Schatting voor {bandbreedte.horizonLabel} (huidige FTP {bandbreedte.current}{" "}
+                {bandbreedte.unit}). Een realistische bandbreedte, geen belofte — je
+                werkelijke groei hangt af van je training en herstel.
+              </p>
+            </Card>
+          ) : (
+            <Card>
+              <div className="flex items-center gap-2">
+                <Compass className="h-4 w-4 text-white/45" strokeWidth={1.75} />
+                <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+                  Groeiruimte
+                </span>
+              </div>
+              <p className="mt-2.5 text-[14px] leading-relaxed text-white/70">
+                Nog niet betrouwbaar in te schatten.
+              </p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">
+                {bandbreedte.reason}
+              </p>
+              <button
+                type="button"
+                onClick={() => startFix("ftp")}
+                className="mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-semibold text-[#05070e] transition hover:brightness-110"
+                style={{ background: ACCENT }}
+              >
+                FTP invullen
+                <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.25} />
+              </button>
             </Card>
           )}
 

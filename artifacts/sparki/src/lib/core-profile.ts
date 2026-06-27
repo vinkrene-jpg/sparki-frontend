@@ -516,3 +516,236 @@ export function deriveBelastbaarheid(
     healthCapped,
   };
 }
+
+// ── Potentieel-bandbreedte (realistic growth range) ───────────────────────────
+// An honest, deterministic estimate of where the athlete can realistically
+// develop their FTP over the COMING MONTHS — expressed as a range
+// (behoudend / verwacht / optimistisch), never a single guaranteed number and
+// never a fake "jaren"-projection. It is derived purely from REAL data:
+//   1. FTP-verloop      — the least-squares slope of real FTP measurements.
+//   2. Conditietrend    — whether CTL (training load base) is rising/falling.
+//   3. Leeftijdsruimte  — physiological trainability headroom from birthYear.
+//   4. Datavenster      — how many measurements over how long back the read
+//                         (drives the confidence + the width of the range).
+// When there is too little real data we say so honestly (hasData=false) instead
+// of inventing a band. The horizon is deliberately ONE training block (~3
+// months); it never pretends to project years ahead.
+
+export type BandbreedteTone = "up" | "flat" | "down";
+
+export type Bandbreedte = {
+  hasData: boolean;
+  /** Current FTP the band is anchored on (W). */
+  current: number | null;
+  /** Conservative end — progress largely stalls / consolidation (W). */
+  low: number | null;
+  /** Most likely outcome with steady training (W). */
+  expected: number | null;
+  /** Optimistic end — training and recovery line up well (W). */
+  high: number | null;
+  unit: string;
+  horizonLabel: string;
+  goalLabel: string | null;
+  tone: BandbreedteTone;
+  headline: string;
+  meaning: string;
+  confidenceLabel: string;
+  factors: { label: string; value: string }[];
+  /** Plain-Dutch reason shown when hasData=false. */
+  reason: string | null;
+};
+
+const HORIZON_WEEKS = 12; // one training block (~3 months) — never years.
+
+function ftpSlopePerWeek(
+  points: { t: number; y: number }[],
+): number {
+  // Ordinary least-squares slope of y over t (t in weeks). Caller guarantees
+  // ≥2 points with non-zero time spread.
+  const n = points.length;
+  const meanT = points.reduce((a, p) => a + p.t, 0) / n;
+  const meanY = points.reduce((a, p) => a + p.y, 0) / n;
+  let num = 0;
+  let den = 0;
+  for (const p of points) {
+    num += (p.t - meanT) * (p.y - meanY);
+    den += (p.t - meanT) ** 2;
+  }
+  return den === 0 ? 0 : num / den;
+}
+
+// Physiological trainability headroom by age. This is an honest *scale* (younger
+// riders have more room to grow, masters trend toward maintenance), not an
+// absolute truth — it only widens/narrows the optimistic end of the range.
+function ageTrainability(
+  birthYear: number | null | undefined,
+): { factor: number; label: string } {
+  if (birthYear == null) return { factor: 0.6, label: "onbekend" };
+  const age = new Date().getFullYear() - birthYear;
+  if (age <= 0 || age > 100) return { factor: 0.6, label: "onbekend" };
+  if (age < 16) return { factor: 0.7, label: "groeit nog" };
+  if (age <= 22) return { factor: 1.0, label: "veel ruimte" };
+  if (age <= 34) return { factor: 0.75, label: "ruim" };
+  if (age <= 44) return { factor: 0.55, label: "gemiddeld" };
+  if (age <= 54) return { factor: 0.4, label: "beperkter" };
+  return { factor: 0.3, label: "behoud voorop" };
+}
+
+function fmtRate(w: number): string {
+  const r = Math.round(w * 10) / 10;
+  const sign = r > 0 ? "+" : "";
+  return `${sign}${r.toFixed(1).replace(".", ",")} W/wk`;
+}
+
+export function deriveBandbreedte(
+  ftpHistory: FtpHistoryEntry[] | undefined,
+  load: LoadData | undefined,
+  profile: AthleteProfile | null | undefined,
+): Bandbreedte {
+  const goalLabel = developmentGoalLabel(profile?.developmentGoal);
+  const DAY = 86_400_000;
+
+  const EMPTY = (reason: string): Bandbreedte => ({
+    hasData: false,
+    current: null,
+    low: null,
+    expected: null,
+    high: null,
+    unit: "W",
+    horizonLabel: "",
+    goalLabel,
+    tone: "flat",
+    headline: "Groeiruimte nog niet in te schatten",
+    meaning: "",
+    confidenceLabel: "",
+    factors: [],
+    reason,
+  });
+
+  const ftps = (ftpHistory ?? [])
+    .filter((f) => Number.isFinite(f.ftpWatts) && f.ftpWatts > 0)
+    .slice()
+    .sort((a, b) => new Date(a.measuredAt).getTime() - new Date(b.measuredAt).getTime());
+
+  // Honest gate: a slope needs at least two real measurements.
+  if (ftps.length < 2) {
+    return EMPTY(
+      "Sparki heeft minstens twee FTP-metingen nodig om je groeiruimte in te schatten. Doe een FTP-test of koppel je sportdata zodat metingen binnenkomen.",
+    );
+  }
+
+  const first = ftps[0];
+  const last = ftps[ftps.length - 1];
+  const t0 = new Date(first.measuredAt).getTime();
+  const spanDays = (new Date(last.measuredAt).getTime() - t0) / DAY;
+
+  // And those measurements must span enough time for a slope to mean anything.
+  if (spanDays < 21) {
+    return EMPTY(
+      "Je FTP-metingen liggen nog te dicht op elkaar. Over een paar weken kan Sparki een betrouwbare groeirichting laten zien.",
+    );
+  }
+
+  const points = ftps.map((f) => ({
+    t: (new Date(f.measuredAt).getTime() - t0) / (7 * DAY),
+    y: f.ftpWatts,
+  }));
+  const slope = ftpSlopePerWeek(points); // W per week (real, signed)
+
+  const current = profile?.ftp ?? last.ftpWatts;
+
+  // Conditietrend — rising CTL supports growth, falling CTL suppresses it.
+  const chart = load?.chartData ?? [];
+  let ctlTone: BandbreedteTone = "flat";
+  if (chart.length >= 2) {
+    const d = chart[chart.length - 1].ctl - chart[0].ctl;
+    ctlTone = d > 2 ? "up" : d < -2 ? "down" : "flat";
+  }
+
+  const age = ageTrainability(profile?.birthYear);
+
+  // Confidence + range width — more measurements over a longer window make the
+  // read tighter and more trustworthy; thin data widens the band honestly.
+  const n = ftps.length;
+  const spanWeeks = spanDays / 7;
+  let confidenceLabel: string;
+  if (n >= 5 && spanWeeks >= 12) confidenceLabel = "redelijk zeker";
+  else if (n >= 3 && spanWeeks >= 6) confidenceLabel = "een eerste indruk";
+  else confidenceLabel = "nog voorzichtig";
+
+  // Build three weekly rates from the observed slope. Gains decelerate, so the
+  // expected case deliberately tapers the raw slope (a conservative scale, not
+  // an absolute truth). The optimistic end scales with age headroom; the
+  // conservative end falls back toward consolidation.
+  const taper = 0.7;
+  let rateExpected = slope > 0 ? slope * taper : slope;
+  let rateHigh = slope > 0 ? slope * (1 + age.factor * 0.8) : Math.max(0, slope * 0.3 + 0.2);
+  const rateLow = slope > 0 ? slope * 0.3 : slope;
+
+  // Conditietrend modulates the upside: you rarely gain FTP while your base is
+  // shrinking, and a rising base earns a little extra headroom.
+  if (ctlTone === "down") {
+    rateExpected *= 0.6;
+    rateHigh *= 0.6;
+  } else if (ctlTone === "up") {
+    rateHigh *= 1.1;
+  }
+
+  let expected = Math.round(current + rateExpected * HORIZON_WEEKS);
+  let high = Math.round(current + rateHigh * HORIZON_WEEKS);
+  let low = Math.round(current + rateLow * HORIZON_WEEKS);
+
+  // Enforce a sane ordering: low ≤ expected ≤ high.
+  low = Math.min(low, expected);
+  high = Math.max(high, expected);
+
+  const deltaExp = expected - current;
+  const spread = high - low;
+
+  const tone: BandbreedteTone =
+    deltaExp >= 3 ? "up" : deltaExp <= -3 ? "down" : "flat";
+
+  const goalSuffix = goalLabel ? ` richting "${goalLabel}"` : "";
+
+  let headline: string;
+  let baseMeaning: string;
+  if (spread < 2 && Math.abs(deltaExp) < 3) {
+    headline = "Je zit rond een plateau";
+    baseMeaning = `Je FTP is de laatste tijd vlak. Verdere groei${goalSuffix} vraagt nu vooral een nieuwe prikkel — meer volume, gerichtere intervallen of beter herstel — eerder dan simpelweg doorgaan.`;
+  } else if (tone === "up") {
+    headline = "Er zit groei in";
+    baseMeaning = `Op basis van je FTP-verloop, conditietrend en leeftijd ligt je FTP over de komende ~3 maanden naar verwachting rond ${expected} W, met een realistische bandbreedte van ${low}–${high} W${goalSuffix}. Dit is een schatting, geen belofte — je werkelijke groei hangt af van hoe je traint en herstelt.`;
+  } else if (tone === "down") {
+    headline = "Je vorm staat onder druk";
+    baseMeaning = `Je FTP-verloop wijst nu omlaag. Zonder bijsturing ligt je FTP over de komende ~3 maanden eerder rond ${expected} W (bandbreedte ${low}–${high} W). Met regelmaat en opbouw is de bovenkant van die band haalbaar — het is een richting, geen vaststaand resultaat.`;
+  } else {
+    headline = "Je houdt je niveau vast";
+    baseMeaning = `Je FTP blijft naar verwachting rond ${expected} W over de komende ~3 maanden, met ruimte tot ${high} W als training en herstel goed samenvallen${goalSuffix}. Een schatting op basis van je eigen data, geen belofte.`;
+  }
+
+  const factors: { label: string; value: string }[] = [
+    { label: "Tempo nu", value: fmtRate(slope) },
+    { label: "Leeftijdsruimte", value: age.label },
+    {
+      label: "Conditietrend",
+      value: ctlTone === "up" ? "stijgend" : ctlTone === "down" ? "dalend" : "stabiel",
+    },
+  ];
+
+  return {
+    hasData: true,
+    current,
+    low,
+    expected,
+    high,
+    unit: "W",
+    horizonLabel: "de komende ~3 maanden",
+    goalLabel,
+    tone,
+    headline,
+    meaning: baseMeaning,
+    confidenceLabel,
+    factors,
+    reason: null,
+  };
+}
