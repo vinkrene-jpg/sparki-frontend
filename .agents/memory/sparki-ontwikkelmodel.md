@@ -66,3 +66,13 @@ dashboard. Communicate those as roadmap, NOT built.
 - athlete-context.ts goal line is plain Dutch ("LANGETERMIJNDOEL: … — weeg elke beslissing
   af tegen deze ambitie") even though the surrounding internal prompt is English-keyed —
   acceptance required a Dutch goal line.
+
+## Contract test
+- `tests/development-goal.ts` (`test:development-goal`) locks the whitelist: valid enum
+  persists, unknown/empty string ignored, explicit null clears, omitted field untouched,
+  all GET-round-tripped. **Why HTTP-level:** the whitelist lives inline in the PUT handler
+  (not an exported fn), so the test boots the real `app` and uses the dev-auth bypass
+  (`x-dev-clerk-id` header → disposable seeded user). Its script MUST export
+  `NODE_ENV=development` + `DEV_AUTH_BYPASS=true` (other test scripts don't) or every
+  request 401s and the contract assertions are vacuous — the test asserts the 200
+  precondition to catch that.

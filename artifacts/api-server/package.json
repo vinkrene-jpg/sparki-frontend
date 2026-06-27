@@ -28,6 +28,7 @@
     "test:intel": "pnpm run build && node --enable-source-maps ./dist/tests/intel.mjs",
     "test:fit-parse": "pnpm run build && node --enable-source-maps ./dist/tests/fit-parse.mjs",
     "test:email-channel": "pnpm run build && node --enable-source-maps ./dist/tests/email-channel.mjs",
+    "test:development-goal": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/development-goal.mjs",
     "job:health": "pnpm run build && node --enable-source-maps ./dist/jobs/health-check.mjs",
     "job:reminders": "pnpm run build && node --enable-source-maps ./dist/jobs/reminders.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
