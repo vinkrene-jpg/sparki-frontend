@@ -137,6 +137,17 @@ export function StateCard({ onShowDetails, detailsLabel }: StateCardProps = {}) 
           </p>
         )}
         <div className="relative -mt-1 h-64 w-full max-w-sm">
+          {/* Instrument-raster achter de Core — bootst de smart-screen-look na.
+              Subtiel, met radiale mask zodat de Core ervóór leesbaar blijft. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-4 opacity-50 [mask-image:radial-gradient(ellipse_at_center,black_55%,transparent_100%)]"
+            style={{
+              backgroundImage:
+                "linear-gradient(to right, oklch(0.82 0.16 200 / 0.10) 1px, transparent 1px), linear-gradient(to bottom, oklch(0.82 0.16 200 / 0.10) 1px, transparent 1px)",
+              backgroundSize: "32px 32px",
+            }}
+          />
           <SparkiCore state={core} className="absolute inset-0 h-full w-full" />
         </div>
         <div className="mt-1 flex items-center gap-2">
