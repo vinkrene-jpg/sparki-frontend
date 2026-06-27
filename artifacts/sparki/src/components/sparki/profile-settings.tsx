@@ -29,6 +29,7 @@ import { formatLastSync } from "@/lib/connectors"
 import { useLogFtp } from "@/hooks/use-ftp-history"
 import { useTeamIdentity, useSaveTeamIdentity } from "@/hooks/use-social"
 import { useClerk } from "@clerk/react"
+import { DEVELOPMENT_GOALS } from "@/lib/core-profile"
 import {
   Check,
   Pencil,
@@ -540,53 +541,115 @@ function GoalsSection({ autoOpen, onSaved }: EditorProps = {}) {
     )
   }
 
-  if (editing) {
-    return (
-      <div className="flex flex-col gap-3">
-        <textarea
-          autoFocus
-          rows={3}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="bijv. Piek voor Gran Fondo juni, opbouwen naar 4 W/kg"
-          className="w-full resize-none rounded-xl border border-cyan-300/30 bg-white/[0.04] px-3.5 py-3 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:outline-none"
-        />
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={save}
-            disabled={updateProfile.isPending}
-            className="rounded-xl px-4 py-2 font-sans text-[13px] font-semibold disabled:opacity-40"
-            style={{ background: ACCENT, color: "#040506" }}
-          >
-            {updateProfile.isPending ? "Opslaan…" : "Opslaan"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditing(false)}
-            className="rounded-xl border border-white/[0.1] px-4 py-2 font-sans text-[13px] text-white/50"
-          >
-            Annuleer
-          </button>
-        </div>
-      </div>
-    )
+  const currentGoal = profile?.developmentGoal ?? null
+  const pickGoal = (key: string) => {
+    if (key === currentGoal) return
+    updateProfile.mutate({ developmentGoal: key }, { onSuccess: () => onSaved?.() })
   }
 
   return (
-    <div className="flex items-start gap-3">
-      <p className="flex-1 text-pretty text-[14px] leading-relaxed text-white/60">
-        {profile?.goals ?? (
-          <span className="text-white/25">Nog geen doelen ingesteld</span>
+    <div className="flex flex-col gap-5">
+      {/* Structured long-term ambition — the reference point for all coaching. */}
+      <div>
+        <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+          JE LANGETERMIJNDOEL
+        </label>
+        <div className="mt-2 flex flex-col gap-2">
+          {DEVELOPMENT_GOALS.map((g) => {
+            const selected = currentGoal === g.key
+            return (
+              <button
+                key={g.key}
+                type="button"
+                onClick={() => pickGoal(g.key)}
+                disabled={updateProfile.isPending}
+                className="flex items-start gap-3 rounded-xl border px-3.5 py-3 text-left transition-colors disabled:opacity-60"
+                style={{
+                  borderColor: selected
+                    ? "rgba(120,210,230,0.45)"
+                    : "rgba(255,255,255,0.1)",
+                  background: selected ? "rgba(120,210,230,0.08)" : "transparent",
+                }}
+              >
+                <span
+                  className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border"
+                  style={{
+                    borderColor: selected ? ACCENT : "rgba(255,255,255,0.2)",
+                    background: selected ? ACCENT : "transparent",
+                  }}
+                >
+                  {selected && (
+                    <Check className="h-2.5 w-2.5" style={{ color: "#040506" }} strokeWidth={3} />
+                  )}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span
+                    className="block font-sans text-[14px] font-medium"
+                    style={{ color: selected ? ACCENT : "rgba(255,255,255,0.85)" }}
+                  >
+                    {g.label}
+                  </span>
+                  <span className="mt-0.5 block text-[12px] leading-relaxed text-white/45">
+                    {g.blurb}
+                  </span>
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Free-text personal goal / season notes (used for "persoonlijk"). */}
+      <div>
+        <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+          EIGEN TOELICHTING (OPTIONEEL)
+        </label>
+        {editing ? (
+          <div className="mt-2 flex flex-col gap-3">
+            <textarea
+              autoFocus
+              rows={3}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="bijv. Piek voor Gran Fondo juni, opbouwen naar 4 W/kg"
+              className="w-full resize-none rounded-xl border border-cyan-300/30 bg-white/[0.04] px-3.5 py-3 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:outline-none"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={save}
+                disabled={updateProfile.isPending}
+                className="rounded-xl px-4 py-2 font-sans text-[13px] font-semibold disabled:opacity-40"
+                style={{ background: ACCENT, color: "#040506" }}
+              >
+                {updateProfile.isPending ? "Opslaan…" : "Opslaan"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                className="rounded-xl border border-white/[0.1] px-4 py-2 font-sans text-[13px] text-white/50"
+              >
+                Annuleer
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-2 flex items-start gap-3">
+            <p className="flex-1 text-pretty text-[14px] leading-relaxed text-white/60">
+              {profile?.goals ?? (
+                <span className="text-white/25">Nog geen toelichting</span>
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={start}
+              className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 transition-colors"
+            >
+              <Pencil className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
+            </button>
+          </div>
         )}
-      </p>
-      <button
-        type="button"
-        onClick={start}
-        className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 transition-colors"
-      >
-        <Pencil className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
-      </button>
+      </div>
     </div>
   )
 }

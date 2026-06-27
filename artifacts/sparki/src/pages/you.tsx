@@ -17,6 +17,8 @@ import {
   deriveIdentity,
   categorizeObservations,
   deriveEvolution,
+  deriveBelastbaarheid,
+  developmentGoalInfo,
   type EvolutionTone,
 } from "@/lib/core-profile"
 import { missingTargets, type InputTargetKey } from "@/lib/missing-input"
@@ -225,6 +227,8 @@ export default function YouPage() {
   const observations = obsData?.observations ?? []
   const lenses = categorizeObservations(observations)
   const evolution = deriveEvolution(ftpHistory, load, sessions)
+  const belastbaarheid = deriveBelastbaarheid(load, sessions, profile)
+  const goalInfo = developmentGoalInfo(profile?.developmentGoal)
 
   // What Sparki still wants to collect — only genuinely missing profile inputs.
   const gapTargets = missingTargets(
@@ -525,38 +529,169 @@ export default function YouPage() {
         </div>
       </section>
 
-      {/* HOE IS JE SPORTPROFIEL VERANDERD */}
+      {/* ONTWIKKELKOMPAS — langetermijndoel + belastbaarheid */}
       <section>
-        <SectionLabel n="09" title="Hoe je sportprofiel veranderd is" />
+        <SectionLabel n="09" title="Je ontwikkelkompas" />
         <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
-          Je verandering over tijd — uit je eigen data
+          Waar je naartoe groeit, hoeveel training je lichaam aankan, en hoe je je
+          basis ontwikkelt
         </p>
-        <div className="mt-3">
-          {evolution.hasAny ? (
-            <div className="flex flex-col gap-2.5">
-              {evolution.items.map((item) => {
-                const Icon = TONE_ICON[item.tone]
-                return (
-                  <Card key={item.key}>
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/45">
-                        {item.label}
-                      </span>
-                      <span
-                        className={`flex items-center gap-1.5 text-[13px] font-medium ${TONE_COLOR[item.tone]}`}
-                      >
-                        <Icon className="h-3.5 w-3.5" strokeWidth={2} />
-                        {item.change}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-[22px] font-light tabular-nums text-white">
-                      {item.current}
+        <div className="mt-3 flex flex-col gap-2.5">
+          {goalInfo ? (
+            <Card>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+                    Langetermijndoel
+                  </span>
+                  <p className="mt-2 text-[18px] font-light tracking-tight text-white">
+                    {goalInfo.label}
+                  </p>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">
+                    {goalInfo.blurb}
+                  </p>
+                  {goalInfo.key === "persoonlijk" && profile?.goals && (
+                    <p className="mt-2 text-pretty text-[13px] italic leading-relaxed text-white/70">
+                      {profile.goals}
                     </p>
-                    <p className="mt-1.5 text-[12px] leading-relaxed text-white/50">{item.detail}</p>
-                  </Card>
-                )
-              })}
-            </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => startFix("developmentGoal")}
+                  className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 transition-colors hover:text-cyan-300"
+                >
+                  Aanpassen
+                </button>
+              </div>
+            </Card>
+          ) : (
+            <button
+              type="button"
+              onClick={() => startFix("developmentGoal")}
+              className="group flex items-start gap-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
+            >
+              <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-300/10 ring-1 ring-cyan-300/25">
+                <Compass className="h-3.5 w-3.5 text-cyan-300" strokeWidth={2} />
+              </span>
+              <div className="flex-1">
+                <p className="text-[14px] font-medium text-white/90">
+                  Kies je langetermijndoel
+                </p>
+                <p className="mt-1 text-[12px] leading-relaxed text-white/55">
+                  Bepaal waar je naartoe wilt — recreatief, een toertocht, wedstrijden of
+                  hoger. Sparki weegt elk advies af tegen dat doel.
+                </p>
+                <span className="mt-2 inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 transition-colors group-hover:text-cyan-300">
+                  Doel kiezen →
+                </span>
+              </div>
+            </button>
+          )}
+
+          {belastbaarheid.hasData ? (
+            <Card>
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+                  Belastbaarheid
+                </span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+                  {belastbaarheid.confidenceLabel}
+                </span>
+              </div>
+              <div className="mt-2.5 flex items-baseline gap-2">
+                <span
+                  className={`text-[34px] font-light leading-none tabular-nums ${
+                    belastbaarheid.band === "beperkt" ? "text-amber-300" : "text-cyan-300"
+                  }`}
+                >
+                  {belastbaarheid.score}
+                </span>
+                <span className="text-[13px] text-white/35">/ 100</span>
+              </div>
+              <p className="mt-2.5 text-[15px] font-light tracking-tight text-white">
+                {belastbaarheid.headline}
+              </p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-white/60">
+                {belastbaarheid.meaning}
+              </p>
+              <div className="mt-4 flex items-stretch border-t border-white/[0.06] pt-4">
+                {belastbaarheid.factors.map((f, i) => (
+                  <div
+                    key={f.label}
+                    className={`flex-1 text-center ${i > 0 ? "border-l border-white/[0.07]" : ""}`}
+                  >
+                    <p className="font-sans text-[14px] font-light text-white/85">{f.value}</p>
+                    <p className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">
+                      {f.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-white/40">
+                {belastbaarheid.windowLabel}. Dit beeld wordt scherper naarmate er meer
+                maanden aan data zijn.
+              </p>
+            </Card>
+          ) : (
+            <Card>
+              <div className="flex items-center gap-2">
+                <Compass className="h-4 w-4 text-white/45" strokeWidth={1.75} />
+                <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
+                  Belastbaarheid
+                </span>
+              </div>
+              <p className="mt-2.5 text-[14px] leading-relaxed text-white/70">
+                Nog niet betrouwbaar in te schatten.
+              </p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">
+                {belastbaarheid.reason}
+              </p>
+              {needsSportData && (
+                <button
+                  type="button"
+                  onClick={() => startFix("sportData")}
+                  className="mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-semibold text-[#05070e] transition hover:brightness-110"
+                  style={{ background: ACCENT }}
+                >
+                  Sportdata koppelen
+                  <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.25} />
+                </button>
+              )}
+            </Card>
+          )}
+
+          {/* Benutting & ontwikkeling — hoe je je opgebouwde basis ontwikkelt over
+              tijd, uit je eigen data (FTP/conditie/ritme). */}
+          <div className="mt-1.5 flex items-center gap-2">
+            <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/40">
+              Benutting & ontwikkeling
+            </span>
+            <span className="text-[11px] text-white/30">— je verandering over tijd</span>
+          </div>
+          {evolution.hasAny ? (
+            evolution.items.map((item) => {
+              const Icon = TONE_ICON[item.tone]
+              return (
+                <Card key={item.key}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/45">
+                      {item.label}
+                    </span>
+                    <span
+                      className={`flex items-center gap-1.5 text-[13px] font-medium ${TONE_COLOR[item.tone]}`}
+                    >
+                      <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+                      {item.change}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-[22px] font-light tabular-nums text-white">
+                    {item.current}
+                  </p>
+                  <p className="mt-1.5 text-[12px] leading-relaxed text-white/50">{item.detail}</p>
+                </Card>
+              )
+            })
           ) : (
             <Card>
               <p className="text-[14px] leading-relaxed text-white/70">

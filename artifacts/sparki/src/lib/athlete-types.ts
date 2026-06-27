@@ -18,6 +18,7 @@ export type AthleteProfile = {
   birthYear: number | null;
   discipline: string | null;
   goals: string | null;
+  developmentGoal: string | null;
   weeklyHourTarget: number | null;
   trainingDaysPerWeek: number | null;
   healthStatus: "ok" | "sick" | "injured";

@@ -132,6 +132,18 @@ export async function buildAthleteContext(clerkId: string): Promise<string> {
       .filter(Boolean)
       .join(", ");
     if (bio) parts.push(`RIDER PROFILE: ${bio}`);
+    const DEV_GOAL_NL: Record<string, string> = {
+      recreatief: "recreatief & fit blijven (geen wedstrijddruk)",
+      granfondo: "een zware toertocht / gran fondo goed uitrijden",
+      topamateur: "presteren in amateurwedstrijden",
+      elite_u23: "doorgroeien richting elite / U23",
+      prof: "professioneel (prof worden of blijven)",
+      persoonlijk: "een eigen, persoonlijk doel",
+    };
+    if (athlete.developmentGoal && DEV_GOAL_NL[athlete.developmentGoal])
+      parts.push(
+        `LANGETERMIJNDOEL: ${DEV_GOAL_NL[athlete.developmentGoal]} — weeg elke beslissing af tegen deze ambitie`,
+      );
     if (athlete.goals) parts.push(`SEASON GOALS: ${athlete.goals}`);
     if (athlete.motivation) parts.push(`MOTIVATION: ${athlete.motivation}`);
     if (athlete.weeklyHourTarget)

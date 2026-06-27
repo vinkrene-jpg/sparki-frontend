@@ -72,3 +72,4 @@
 - [Sparki reminder delivery](sparki-reminder-delivery.md) — scheduled email reminders engine; idempotent via notifications dedupeKey+sentAt; email honest-limited (no verified domain) skips, never fake-sends.
 - [Sparki Web Push + profile nudges](sparki-web-push.md) — push endpoints are server-fetched URLs ⇒ host-allowlist SSRF guard at subscribe AND send; push only freshly-created rows; dedupe uses passed `now`.
 - [LLM prompt Dutch coverage](llm-prompt-dutch-coverage.md) — each LLM prompt needs its OWN Dutch rule; EXTRACT_SYSTEM lacked it → English observation cards on /you; clear stale rows by expiring training_analysis/ai_chat only.
+- [Sparki Ontwikkelmodel](sparki-ontwikkelmodel.md) — long-term dev model: structured developmentGoal enum + deterministic honest belastbaarheid (first-window, no fake years) + /you Ontwikkelkompas (doel+belastbaarheid+benutting).

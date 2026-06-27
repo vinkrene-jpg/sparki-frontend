@@ -1,0 +1,53 @@
+---
+name: Sparki Ontwikkelmodel (long-term development model)
+description: Foundation of the multi-sprint "ontwikkelmodel" — structured development goal + deterministic belastbaarheid read + Ontwikkelkompas section on /you.
+---
+
+# Ontwikkelmodel — Fundament v1
+
+The honest foundation of Sparki's long-term development model. First slice of a
+multi-sprint vision; later sprints add potentieel-bandbreedtes, ontwikkel­prioriteiten/
+bottleneck-engine, wetenschapsengine met bewijsweging, persoonlijke validatie, trainer-
+dashboard. Communicate those as roadmap, NOT built.
+
+## What it is
+- **Structured `developmentGoal`** — a text enum on `athlete_profiles` (col `development_goal`)
+  that is THE reference point every coaching decision is weighed against. Keys:
+  `recreatief | granfondo | topamateur | elite_u23 | prof | persoonlijk`. `persoonlijk`
+  reuses the existing free-text `goals` field for the athlete's own words — they are NOT
+  the same field; goal = structured ambition, goals = free-text toelichting/season notes.
+- **Belastbaarheid** — a deterministic, REAL-data read of how much load the athlete can
+  absorb. NOT the same as the State Engine's instantaneous y; this is a longitudinal,
+  first-window estimate.
+- **Ontwikkelkompas** — the /you section that unifies doel + belastbaarheid + benutting
+  (the existing evolution/verloop items live INSIDE this section, not as a separate one).
+
+## Key design rules (honesty)
+- Belastbaarheid is gated: returns `hasData:false` with a plain-Dutch reason when there is
+  too little real data (needs ~10 load points AND ≥6 sessions in 6wk). Never fabricated.
+- It is explicitly a **first-window estimate** — copy says "eerste inschatting op basis van
+  X weken", NEVER fake "jaren" / years of data. Confidence labels are honest and never
+  claim certainty beyond "redelijk zeker".
+- Score = 0.4·trainingsregelmaat (weekly-session CV) + 0.35·opgebouwde basis (CTL/70 clamp)
+  + 0.25·opbouwtempo (acute:chronic ATL/CTL ratio, controlled ≤1.3). Health sick/injured
+  caps the score ≤0.35 and says so. Bands: ≥70 robuust / ≥45 redelijk / else beperkt.
+- The "70" CTL anchor and the weights are honest *scales*, not absolute truths — comments
+  say so. If you tune them, keep the honesty framing.
+
+## Wiring gotchas
+- `developmentGoal` is whitelisted on `PUT /api/athlete/profile`: explicit `null` clears,
+  a valid enum key sets, unknown strings are IGNORED (not trusted). GET returns it via the
+  `...athlete` spread already.
+- Frontend `AthleteProfile` type must carry `developmentGoal` so `useUpdateAthleteProfile`
+  (`Partial<AthleteProfile>`) can save it.
+- Missing-input target `developmentGoal` REUSES `focus: "goal"` (no new SETTINGS_FOCUS_TOKEN
+  needed) — startFix("developmentGoal") → /you?focus=goal opens settings + scrolls to the
+  Doelen/GoalsSection which holds both the structured picker and the free-text toelichting.
+- Do NOT add `developmentGoal` to the /you `gapTargets` list — the Ontwikkelkompas renders
+  its own goal prompt; adding it to gaps would double-prompt.
+- The catalog + label/info helpers + `deriveBelastbaarheid` all live in
+  `artifacts/sparki/src/lib/core-profile.ts` (frontend lib). `DEVELOPMENT_GOALS` is imported
+  by both you.tsx and profile-settings GoalsSection.
+- athlete-context.ts goal line is plain Dutch ("LANGETERMIJNDOEL: … — weeg elke beslissing
+  af tegen deze ambitie") even though the surrounding internal prompt is English-keyed —
+  acceptance required a Dutch goal line.

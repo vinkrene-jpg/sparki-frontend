@@ -13,6 +13,11 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
   weightKg: numeric("weight_kg", { precision: 5, scale: 2 }),
   discipline: text("discipline"),
   goals: text("goals"),
+  // Structured long-term development ambition (Ontwikkelmodel) — the reference
+  // point every coaching decision is weighed against. One of:
+  // recreatief | granfondo | topamateur | elite_u23 | prof | persoonlijk.
+  // "persoonlijk" reuses the free-text `goals` field for the athlete's own words.
+  developmentGoal: text("development_goal"),
   weeklyHourTarget: integer("weekly_hour_target"),
 
   // ── Phased adaptive onboarding (task #18) ──────────────────────────────────

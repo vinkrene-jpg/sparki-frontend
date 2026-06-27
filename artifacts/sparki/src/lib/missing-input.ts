@@ -14,6 +14,7 @@ export type InputTargetKey =
   | "ftp"
   | "weeklyHours"
   | "goal"
+  | "developmentGoal"
   | "weight"
   | "height"
   | "birthYear"
@@ -74,6 +75,16 @@ export const INPUT_TARGETS: Record<InputTargetKey, InputTarget> = {
     missingWhy:
       "Zonder doel weet Sparki niet waar je naartoe traint. Geef aan waar je naartoe wilt.",
     isSet: (p) => !!(p?.goals && p.goals.trim().length > 0),
+  },
+  developmentGoal: {
+    key: "developmentGoal",
+    label: "Langetermijndoel kiezen",
+    route: "/you",
+    focus: "goal",
+    missingTitle: "Langetermijndoel ontbreekt",
+    missingWhy:
+      "Kies waar je op de lange termijn naartoe wilt — recreatief, een toertocht, wedstrijden of hoger. Sparki weegt elk advies af tegen dat doel.",
+    isSet: (p) => !!(p?.developmentGoal && p.developmentGoal.trim().length > 0),
   },
   weight: {
     key: "weight",

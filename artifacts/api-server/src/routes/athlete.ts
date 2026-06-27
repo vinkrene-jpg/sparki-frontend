@@ -87,6 +87,7 @@ router.put("/profile", requireAuth, async (req, res) => {
     birthYear,
     discipline,
     goals,
+    developmentGoal,
     weeklyHourTarget,
     displayName,
     experienceLevel,
@@ -106,6 +107,7 @@ router.put("/profile", requireAuth, async (req, res) => {
     birthYear?: number | string | null;
     discipline?: string;
     goals?: string;
+    developmentGoal?: string | null;
     weeklyHourTarget?: number;
     displayName?: string;
     experienceLevel?: string | null;
@@ -124,10 +126,29 @@ router.put("/profile", requireAuth, async (req, res) => {
   const EXPERIENCE = ["beginner", "intermediate", "advanced", "elite"];
   const LOAD = ["low", "moderate", "high"];
   const COACHING = ["self", "coach"];
+  const DEVELOPMENT_GOALS = [
+    "recreatief",
+    "granfondo",
+    "topamateur",
+    "elite_u23",
+    "prof",
+    "persoonlijk",
+  ];
   const cleanCoaching =
     coachingMode != null && COACHING.includes(coachingMode)
       ? coachingMode
       : undefined;
+  // developmentGoal: explicit null clears it; a valid enum key sets it; anything
+  // else (unknown string) is ignored rather than trusted.
+  let cleanDevelopmentGoal: string | null | undefined;
+  if (developmentGoal === null) {
+    cleanDevelopmentGoal = null;
+  } else if (
+    developmentGoal != null &&
+    DEVELOPMENT_GOALS.includes(developmentGoal)
+  ) {
+    cleanDevelopmentGoal = developmentGoal;
+  }
   const cleanDays =
     availableDays != null
       ? Array.from(new Set(availableDays.filter((d) => WEEKDAYS.includes(d))))
@@ -190,6 +211,9 @@ router.put("/profile", requireAuth, async (req, res) => {
         ...(cleanBirthYear !== undefined && { birthYear: cleanBirthYear }),
         ...(discipline != null && { discipline }),
         ...(goals != null && { goals }),
+        ...(cleanDevelopmentGoal !== undefined && {
+          developmentGoal: cleanDevelopmentGoal,
+        }),
         ...(weeklyHourTarget != null && { weeklyHourTarget }),
         ...(cleanExperience !== undefined && {
           experienceLevel: cleanExperience,

@@ -291,3 +291,228 @@ export function deriveEvolution(
 
   return { items, hasAny: items.length > 0 };
 }
+
+// ── Ontwikkeldoel (long-term development goal) ────────────────────────────────
+// The structured long-term ambition the athlete chose. It is the reference point
+// every coaching decision is weighed against (Ontwikkelmodel). "persoonlijk"
+// lets the athlete describe their own goal in the free-text `goals` field.
+
+export type DevelopmentGoalKey =
+  | "recreatief"
+  | "granfondo"
+  | "topamateur"
+  | "elite_u23"
+  | "prof"
+  | "persoonlijk";
+
+export const DEVELOPMENT_GOALS: {
+  key: DevelopmentGoalKey;
+  label: string;
+  blurb: string;
+}[] = [
+  {
+    key: "recreatief",
+    label: "Recreatief & fit",
+    blurb: "Lekker blijven fietsen, gezond en fit, zonder wedstrijddruk.",
+  },
+  {
+    key: "granfondo",
+    label: "Gran fondo / toertocht",
+    blurb: "Een zware toertocht of gran fondo goed kunnen uitrijden.",
+  },
+  {
+    key: "topamateur",
+    label: "Wedstrijden bij de amateurs",
+    blurb: "Meedoen en presteren in amateurwedstrijden.",
+  },
+  {
+    key: "elite_u23",
+    label: "Richting elite / U23",
+    blurb: "Doorgroeien naar elite- of beloftenniveau.",
+  },
+  {
+    key: "prof",
+    label: "Professioneel",
+    blurb: "De ambitie om prof te worden of te blijven.",
+  },
+  {
+    key: "persoonlijk",
+    label: "Eigen doel",
+    blurb: "Een persoonlijk doel dat je zelf omschrijft.",
+  },
+];
+
+export function developmentGoalInfo(
+  key: string | null | undefined,
+): { key: DevelopmentGoalKey; label: string; blurb: string } | null {
+  if (!key) return null;
+  return DEVELOPMENT_GOALS.find((g) => g.key === key) ?? null;
+}
+
+export function developmentGoalLabel(key: string | null | undefined): string | null {
+  return developmentGoalInfo(key)?.label ?? null;
+}
+
+// ── Belastbaarheid (load tolerance / Body Boost) ──────────────────────────────
+// An honest, deterministic first-window read of how much training load the
+// athlete can robustly absorb, derived purely from REAL longitudinal data:
+//   1. Trainingsregelmaat — how consistent the weekly session rhythm is.
+//   2. Opgebouwde basis    — the accumulated fitness (CTL) actually present.
+//   3. Opbouwtempo         — whether recent load rose in a controlled way
+//                            (acute:chronic ratio), not in unsustainable spikes.
+// Health status caps the read. When there is too little data we say so honestly
+// (hasData=false) instead of inventing a number. This is explicitly a first-
+// window estimate — it never pretends to be built on "years" of data.
+
+export type BelastbaarheidBand = "robuust" | "redelijk" | "beperkt";
+
+export type Belastbaarheid = {
+  hasData: boolean;
+  score: number | null; // 0..100
+  band: BelastbaarheidBand | null;
+  headline: string;
+  meaning: string;
+  confidenceLabel: string;
+  windowLabel: string;
+  factors: { label: string; value: string }[];
+  /** Plain-Dutch reason shown when hasData=false. */
+  reason: string | null;
+  /** True when the read is held back because the athlete is sick/injured. */
+  healthCapped: boolean;
+};
+
+function clamp01(n: number): number {
+  return Math.max(0, Math.min(1, n));
+}
+
+export function deriveBelastbaarheid(
+  load: LoadData | undefined,
+  sessions: TrainingSession[] | undefined,
+  profile: AthleteProfile | null | undefined,
+): Belastbaarheid {
+  const EMPTY = (reason: string): Belastbaarheid => ({
+    hasData: false,
+    score: null,
+    band: null,
+    headline: "Belastbaarheid nog niet in te schatten",
+    meaning: "",
+    confidenceLabel: "",
+    windowLabel: "",
+    factors: [],
+    reason,
+    healthCapped: false,
+  });
+
+  const chart = load?.chartData ?? [];
+  const allSessions = sessions ?? [];
+  const now = Date.now();
+  const DAY = 86_400_000;
+
+  // Sessions in the trailing 6-week window — the basis for the rhythm read.
+  const WEEKS = 6;
+  const inWindow = allSessions.filter((s) => {
+    const t = new Date(s.sessionDate).getTime();
+    return !Number.isNaN(t) && now - t <= WEEKS * 7 * DAY && now - t >= 0;
+  });
+
+  // Honest gate: too little to say anything reliable.
+  if (chart.length < 10 || inWindow.length < 6) {
+    return EMPTY(
+      "Sparki heeft minstens een paar weken aan ritten nodig om je belastbaarheid betrouwbaar in te schatten. Koppel je sportdata of log meer ritten.",
+    );
+  }
+
+  // 1. Trainingsregelmaat — weekly session counts, consistency = 1 - CV.
+  const buckets = new Array(WEEKS).fill(0) as number[];
+  for (const s of inWindow) {
+    const ageDays = (now - new Date(s.sessionDate).getTime()) / DAY;
+    const idx = Math.min(WEEKS - 1, Math.floor(ageDays / 7));
+    buckets[idx] += 1;
+  }
+  const mean = buckets.reduce((a, b) => a + b, 0) / WEEKS;
+  let rhythm = 0;
+  if (mean > 0) {
+    const variance =
+      buckets.reduce((a, b) => a + (b - mean) ** 2, 0) / WEEKS;
+    const cv = Math.sqrt(variance) / mean;
+    rhythm = clamp01(1 - cv);
+  }
+
+  // 2. Opgebouwde basis — current CTL. ~70 CTL reflects a solidly trained
+  //    amateur; the mapping is honest about being a scale, not an absolute truth.
+  const lastCtl = Math.round(chart[chart.length - 1].ctl);
+  const capacity = clamp01(lastCtl / 70);
+
+  // 3. Opbouwtempo — acute:chronic workload ratio over the last 14 days. A ratio
+  //    that stays controlled (≤1.3) reads as robust; sharp spikes lower it.
+  const recentPts = chart.slice(-14);
+  let maxRatio = 0;
+  for (const p of recentPts) {
+    if (p.ctl > 0) maxRatio = Math.max(maxRatio, p.atl / p.ctl);
+  }
+  let rampSafety = 1;
+  if (maxRatio > 1.3) rampSafety = clamp01(1 - (maxRatio - 1.3) / 0.5);
+
+  let score01 = 0.4 * rhythm + 0.35 * capacity + 0.25 * rampSafety;
+
+  // Health gate — sickness/injury holds the read back, honestly flagged.
+  const healthCapped =
+    profile?.healthStatus === "sick" || profile?.healthStatus === "injured";
+  if (healthCapped) score01 = Math.min(score01, 0.35);
+
+  const score = Math.round(score01 * 100);
+  const band: BelastbaarheidBand =
+    score >= 70 ? "robuust" : score >= 45 ? "redelijk" : "beperkt";
+
+  // Confidence + window honesty — based on how much data actually backs the read.
+  const firstT = new Date(chart[0].date).getTime();
+  const spanWeeks = Number.isNaN(firstT)
+    ? WEEKS
+    : Math.max(1, Math.round((now - firstT) / (7 * DAY)));
+  const confidenceLabel =
+    spanWeeks >= 8 && inWindow.length >= 15
+      ? "redelijk zeker"
+      : spanWeeks >= 4
+        ? "een eerste indruk"
+        : "nog voorzichtig";
+  const windowLabel = `eerste inschatting op basis van ${spanWeeks} ${spanWeeks === 1 ? "week" : "weken"} aan data`;
+
+  const headline =
+    band === "robuust"
+      ? "Je lichaam kan veel training aan"
+      : band === "redelijk"
+        ? "Je belastbaarheid is redelijk"
+        : "Je belastbaarheid is nog beperkt";
+
+  const baseMeaning =
+    band === "robuust"
+      ? "Je traint regelmatig en hebt een stevige basis opgebouwd. Daardoor kun je nu meer en hardere training verdragen — mits je herstel blijft kloppen."
+      : band === "redelijk"
+        ? "Je hebt een redelijke basis, maar er is nog ruimte om steviger te worden. Bouw rustig op en houd je regelmaat vast voordat je de belasting flink verhoogt."
+        : "Je basis is nog dun of je ritme wisselt sterk. Eerst regelmaat en geleidelijke opbouw — grote sprongen in belasting zijn nu het grootste risico.";
+  const meaning = healthCapped
+    ? `${baseMeaning} Omdat je nu ${profile?.healthStatus === "injured" ? "geblesseerd" : "ziek"} bent, houdt Sparki je belastbaarheid bewust laag tot je hersteld bent.`
+    : baseMeaning;
+
+  const factors: { label: string; value: string }[] = [
+    { label: "Trainingsregelmaat", value: `${Math.round(rhythm * 100)}%` },
+    { label: "Opgebouwde basis", value: `CTL ${lastCtl}` },
+    {
+      label: "Opbouwtempo",
+      value: maxRatio <= 1.3 ? "gecontroleerd" : maxRatio <= 1.6 ? "pittig" : "te grillig",
+    },
+  ];
+
+  return {
+    hasData: true,
+    score,
+    band,
+    headline,
+    meaning,
+    confidenceLabel,
+    windowLabel,
+    factors,
+    reason: null,
+    healthCapped,
+  };
+}
