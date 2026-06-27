@@ -1,0 +1,99 @@
+Build this as an architectural refactor, not as a new feature.
+
+The goal is **not** to build a second Observation Engine.
+
+The goal is to make the existing Observation / Coach Engine the single source of truth for the entire application.
+
+Every screen should consume observations from this central engine.
+
+No page should perform its own analysis anymore.
+
+The Observation Engine should become the heart of Sparki.
+
+Please implement this in phases so existing functionality keeps working.
+
+### Phase 1 – Centralization
+
+Refactor the existing Observation / Coach Engine into the single source of truth.
+
+Do not change the athlete experience yet.
+
+Existing screens should continue to work.
+
+### Phase 2 – Observation lifecycle
+
+Every observation becomes an object with:
+
+* unique id
+* priority
+* confidence
+* created date
+* updated date
+* expiry
+* status (new / confirmed / pattern / historical)
+* supporting evidence
+* contradictory evidence
+* explanation
+* recommendation
+
+### Phase 3 – Deduplication
+
+Many screens currently show the same insight in different wording.
+
+Remove this.
+
+One observation should exist only once.
+
+Other screens reference that observation.
+
+### Phase 4 – Observation synthesis
+
+Instead of showing multiple related observations:
+
+* HRV lower
+* Short sleep
+* High load
+
+merge them into one higher-level observation with one explanation.
+
+This is where Sparki starts behaving like a coach instead of an analytics dashboard.
+
+### Phase 5 – Priority engine
+
+The engine should determine:
+
+* what is critical
+* what is important
+* what is informative
+* what is historical
+
+Home should never show more than five observations.
+
+### Phase 6 – Daily briefing
+
+The Observation Engine generates one daily briefing.
+
+Every other page derives its information from that same engine.
+
+There should only be one truth inside Sparki.
+
+### Phase 7 – Learning
+
+The engine should remember:
+
+* which observations were correct
+* which recommendations were followed
+* which observations disappeared
+* which patterns became recurring
+
+This becomes the foundation for future personalization.
+
+Important:
+
+This is not a UI project.
+
+This is an architectural refactor.
+
+The UI should simply become a different view on the same observation objects.
+
+This architecture will become the foundation for every future AI capability inside Sparki.
