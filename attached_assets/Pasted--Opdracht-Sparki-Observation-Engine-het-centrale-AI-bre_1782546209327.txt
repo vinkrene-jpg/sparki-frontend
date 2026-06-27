@@ -1,0 +1,372 @@
+# Opdracht – Sparki Observation Engine (het centrale AI-brein)
+
+## Probleem
+
+Momenteel verschijnen analyses verspreid door de app.
+
+Voorbeelden:
+
+* Home
+* Core
+* Ritten
+* Ontwikkeling
+* Patronen
+
+Daardoor ontstaan meerdere problemen:
+
+* dezelfde observatie komt meerdere keren terug;
+* observaties spreken elkaar soms tegen;
+* de sporter moet zoeken;
+* de sporter weet niet wat het belangrijkst is;
+* iedere pagina lijkt zelfstandig analyses te maken.
+
+Dit moet volledig veranderen.
+
+---
+
+# Nieuwe filosofie
+
+Sparki analyseert niet per scherm.
+
+Sparki analyseert één keer.
+
+Daarna worden alle schermen gevoed vanuit dezelfde centrale Observation Engine.
+
+Er bestaat binnen Sparki nog maar **één waarheid**.
+
+---
+
+# Observation Engine
+
+Alle databronnen komen samen.
+
+Bijvoorbeeld:
+
+* trainingen;
+* wedstrijden;
+* slaap;
+* HRV;
+* rusthartslag;
+* gewicht;
+* voeding;
+* hydratatie;
+* agenda;
+* check-ins;
+* blessures;
+* FTP;
+* TSS;
+* CTL;
+* ATL;
+* weersomstandigheden;
+* wedstrijdplanning.
+
+AI maakt hier eerst duizenden kleine analyses van.
+
+Daarna worden deze samengevoegd.
+
+Bijvoorbeeld:
+
+350 micro-analyses
+
+↓
+
+42 observaties
+
+↓
+
+12 belangrijke inzichten
+
+↓
+
+5 hoofdboodschappen
+
+↓
+
+1 advies voor vandaag
+
+---
+
+# Geen dubbele observaties
+
+Bijvoorbeeld.
+
+Niet meer:
+
+HRV gedaald.
+
+*
+
+Hoge belasting.
+
+*
+
+Korte nachten.
+
+*
+
+Rusthartslag stabiel.
+
+Maar één observatie:
+
+"Je lichaam is nog aan het herstellen van een zwaar trainingsblok. De lichte HRV-daling in combinatie met drie korte nachten past hierbij. Geen alarmsignaal, maar wel verstandig om vandaag herstel voorrang te geven."
+
+Alle onderliggende data blijven beschikbaar.
+
+Maar de sporter ziet slechts één conclusie.
+
+---
+
+# Observaties zijn levende objecten
+
+Iedere observatie krijgt een levenscyclus.
+
+Nieuw
+
+↓
+
+Bevestigd
+
+↓
+
+Patroon
+
+↓
+
+Verdwijnt
+
+↓
+
+Historie
+
+Een observatie verdwijnt automatisch zodra deze niet meer relevant is.
+
+---
+
+# Prioriteit
+
+Iedere observatie krijgt automatisch een prioriteit.
+
+Kritiek
+
+Belangrijk
+
+Interessant
+
+Historie
+
+Home toont uitsluitend:
+
+Kritiek + Belangrijk.
+
+---
+
+# Zekerheid
+
+Iedere observatie krijgt een betrouwbaarheid.
+
+Bijvoorbeeld:
+
+Zeer zeker
+
+Redelijk zeker
+
+Onzeker
+
+Speculatief
+
+De sporter begrijpt daardoor hoe sterk de conclusie is.
+
+---
+
+# Waarom denkt Sparki dit?
+
+Iedere observatie bevat:
+
+Waarom zie ik dit?
+
+Welke data gebruikt Sparki?
+
+Welke data ontbreekt?
+
+Welke alternatieve verklaringen zijn mogelijk?
+
+Welke gegevens spreken dit tegen?
+
+Hoe lang blijft dit waarschijnlijk gelden?
+
+---
+
+# Home
+
+Home toont maximaal vijf observaties.
+
+Niet meer.
+
+De belangrijkste eerst.
+
+Bijvoorbeeld:
+
+🟢 Herstel verloopt normaal.
+
+🟠 Taperfase gestart.
+
+🟢 Conditie stijgt.
+
+🔵 FTP controleren.
+
+🟡 Slaap verdient aandacht.
+
+Meer hoeft de sporter niet te lezen.
+
+---
+
+# Andere schermen
+
+De andere schermen maken geen eigen analyses meer.
+
+Ze tonen alleen observaties die relevant zijn.
+
+## Ritten
+
+Alleen observaties die uit de rit zijn ontstaan.
+
+## Ontwikkeling
+
+Alleen observaties over trends.
+
+## Core
+
+Alleen huidige toestand.
+
+## Wedstrijd
+
+Alleen wedstrijdrelevante observaties.
+
+---
+
+# Geen dubbele tekst
+
+Wanneer een observatie al bestaat:
+
+"HRV gedaald"
+
+Mag deze niet opnieuw op een andere pagina worden uitgelegd.
+
+Er wordt verwezen naar dezelfde observatie.
+
+---
+
+# AI combineert inzichten
+
+AI moet leren verbanden te leggen.
+
+Bijvoorbeeld:
+
+Niet:
+
+* korte nachten;
+* HRV lager;
+* hoge belasting.
+
+Maar:
+
+"Je herstel wordt waarschijnlijk beperkt door de combinatie van zware trainingsbelasting en drie korte nachten."
+
+Dat is één observatie.
+
+---
+
+# Dagelijkse briefing
+
+Iedere ochtend krijgt de sporter één briefing.
+
+Bijvoorbeeld:
+
+Goedemorgen Dylan.
+
+Vandaag zijn vijf zaken belangrijk.
+
+1.
+
+Je taperfase is begonnen.
+
+2.
+
+Je herstelt normaal.
+
+3.
+
+Controleer je FTP-instelling.
+
+4.
+
+Plan vandaag voldoende slaap.
+
+5.
+
+Geen extra trainingsbelasting.
+
+Niet meer.
+
+---
+
+# Historie
+
+Iedere observatie wordt opgeslagen.
+
+Sporter kan later zien:
+
+* wanneer ontstond dit;
+* wanneer verdween dit;
+* kwam het vaker terug;
+* had Sparki gelijk.
+
+Hierdoor leert zowel de sporter als AI.
+
+---
+
+# AI leert
+
+AI houdt bij:
+
+Welke observaties bleken achteraf juist?
+
+Welke waren minder betrouwbaar?
+
+Welke adviezen volgde de sporter?
+
+Wat werkte uiteindelijk?
+
+Hierdoor wordt Sparki steeds persoonlijker.
+
+---
+
+# Ontwerpregel
+
+Binnen Sparki worden analyses nooit rechtstreeks op een pagina gemaakt.
+
+Iedere analyse loopt altijd eerst via de centrale Observation Engine.
+
+Alle schermen gebruiken daarna dezelfde observaties.
+
+Hierdoor ontstaat rust, consistentie en vertrouwen.
+
+---
+
+# Eindresultaat
+
+Sparki verandert van een app met veel losse analyses naar een echte digitale coach.
+
+De sporter hoeft niet meer te zoeken.
+
+Niet meer zelf verbanden te leggen.
+
+Niet meer meerdere schermen te vergelijken.
+
+Sparki bepaalt eerst wat écht belangrijk is.
+
+Pas daarna laat hij de onderliggende data zien.
+
+De sporter krijgt daardoor niet meer data, maar meer duidelijkheid.
+
+Dat is precies hoe een ervaren coach ook werkt.
