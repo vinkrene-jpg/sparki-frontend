@@ -1,36 +1,31 @@
 ---
 name: Sparki insight grouping (grafiek-eerst)
-description: How insight/observation cards are grouped per metric and rendered chart-first across /train and /you.
+description: Durable rules for how derived-observation insight cards are grouped per metric and rendered chart-first.
 ---
 
 # Sparki insight grouping — "grafiek-eerst, minder tekst"
 
-Insight cards (derived `AiObservation`s) lead with a REAL chart, then a short read,
-then an "Uitgebreid" expand. Same-metric observations collapse into ONE card so the
-same explanation does not repeat.
+Derived-observation insight cards (the AiObservation lists on Trainen
+"over tijd" and /you Core lenses) lead with a REAL chart, then a short read,
+then an "Uitgebreid" disclosure. Same-metric observations collapse into ONE card.
 
-**Why:** users were seeing several near-identical cards for one maatstaf (e.g. three
-HRV cards). Leading with text and repeating it is noise; the data is the point.
+**Why:** users saw several near-identical cards for one maatstaf (e.g. three HRV
+cards). Repeating the text is noise; the trend data is the point. There is one
+shared card + one grouping engine so every observation surface reads the same.
 
-**How to apply:**
-- `lib/insight-grouping.ts` is the SSOT: `classifyObservation` → `MetricKind`
-  (hrv/rhr/sleep/recovery/ftp/fitness/volume/form/frequency/other);
-  `seriesForKind` maps a kind to its REAL series from
-  `{metrics, ftpHistory, load, sessions}`; `groupObservations` collapses per kind
-  to `{lead, members, series}` and sorts strongest-first.
-- `components/sparki/insight/graph-insight-card.tsx` is the shared card. Reuse it,
-  do not re-implement a card per surface.
-- Honesty contract (do NOT break): non-chartable insight → `series: null` →
-  no chart region. A real metric with <2 points → series with empty/short
-  `values` → card shows "Nog geen meetreeks…". NEVER fabricate a line.
-- Two-tier only (short + Uitgebreid) via `TieredExplanation`. The `extended`
-  render helper MUST return `undefined` when there is no real depth, otherwise the
-  toggle shows but opens to nothing (passing `<Comp/>` JSX is never null → always
-  shows toggle; call a render *function* that can return undefined instead).
-- `/you` grouping is per-lens (strengths/development/patterns/uncertainty each
-  grouped independently): the SAME metric can legitimately be both a strength and a
-  development point, so do NOT group across lenses.
-- `rhr` (rusthart) carries `trendGoodWhenDown: true` — a downward trend is good.
-- Metrics from the API are newest-first; `seriesForKind` reverses to chronological.
-- Coverage: `lib/insight-grouping.test.ts` (`pnpm --filter @workspace/sparki run
-  test:insight-grouping`).
+**How to apply / non-obvious rules:**
+- Honesty contract is the hard constraint: a non-chartable insight maps to a
+  null series → NO chart region; a real metric with too few points renders an
+  explicit "nog geen meetreeks" state. NEVER synthesize a line to fill a chart.
+- Two-tier only (short + Uitgebreid). The extended-content helper MUST be a
+  function that can return `undefined` when there's no real depth — passing JSX
+  directly is never null, so the disclosure toggle would open to nothing.
+- /you grouping is per-lens, NOT global: the same metric can legitimately be both
+  a strength AND a development point, so do not dedupe a metric across lenses.
+- Resting-HR trend is "good when down"; daily metrics arrive newest-first and
+  must be reversed to chronological before charting.
+- SCOPE BOUNDARY: this pattern is for AiObservation *card lists*. The daily
+  coach surface ("Sparki vandaag" / "Wat valt op") is a different engine — a
+  single synthesized advice block, not a metric-card list — so the grafiek-eerst
+  card does not apply there. Unifying those two engines (ownership/source-of-truth
+  per insight kind to suppress cross-tab duplicates) is a separate, larger task.
