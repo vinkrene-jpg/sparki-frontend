@@ -11,7 +11,14 @@ import { useObservations, useRunConnections, type AiObservation } from "@/hooks/
 import { useFtpHistory } from "@/hooks/use-ftp-history"
 import { useLoad } from "@/hooks/use-load"
 import { useSessions } from "@/hooks/use-sessions"
+import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useSparkiState } from "@/hooks/use-sparki-state"
+import { GraphInsightCard } from "@/components/sparki/insight/graph-insight-card"
+import {
+  groupObservations,
+  type InsightGroup,
+  type InsightSources,
+} from "@/lib/insight-grouping"
 import { useFixParams, useCompleteFix, useStartFix } from "@/hooks/use-missing-input"
 import {
   deriveIdentity,
@@ -53,18 +60,6 @@ const SETTINGS_FOCUS_TOKENS = new Set([
   "connections",
 ])
 
-const CONFIDENCE_NL: Record<AiObservation["confidence"], string> = {
-  low: "vermoeden",
-  medium: "redelijk zeker",
-  high: "zeker",
-}
-
-const CONFIDENCE_DOT: Record<AiObservation["confidence"], string> = {
-  low: "bg-white/35",
-  medium: "bg-cyan-300/70",
-  high: "bg-cyan-300",
-}
-
 function Card({ children }: { children: React.ReactNode }) {
   return (
     <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
@@ -73,68 +68,81 @@ function Card({ children }: { children: React.ReactNode }) {
   )
 }
 
-// One honest derived insight. Shows what Sparki concluded, the action it
-// suggests, and — crucially — the real signals behind it (the "why").
-function InsightCard({ obs }: { obs: AiObservation }) {
-  const [open, setOpen] = useState(false)
-  const signals = obs.signals ?? []
-  const hasWhy = signals.length > 0 || (obs.alternativeExplanations?.length ?? 0) > 0
-
+// The deeper explanation revealed under "Uitgebreid": the suggested action, the
+// real signals behind the conclusion ("Waarop dit is gebaseerd"), any other
+// same-metric observations, and alternative explanations. Returns undefined when
+// there is no real depth so the toggle stays hidden.
+function renderGroupExtended(group: InsightGroup): React.ReactNode | undefined {
+  const { lead, members } = group
+  const others = members.filter((m) => m.id !== lead.id)
+  const signals = lead.signals ?? []
+  const alts = lead.alternativeExplanations ?? []
+  if (
+    !lead.recommendedAction &&
+    signals.length === 0 &&
+    alts.length === 0 &&
+    others.length === 0
+  ) {
+    return undefined
+  }
   return (
-    <Card>
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-[15px] font-medium leading-snug text-white">{obs.title}</p>
-        <span className="mt-0.5 flex shrink-0 items-center gap-1.5">
-          <span className={`h-1.5 w-1.5 rounded-full ${CONFIDENCE_DOT[obs.confidence]}`} />
-          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
-            {CONFIDENCE_NL[obs.confidence]}
-          </span>
-        </span>
-      </div>
-
-      {obs.observationText && (
-        <p className="mt-2 text-[13px] leading-relaxed text-white/65">{obs.observationText}</p>
-      )}
-
-      {obs.recommendedAction && (
-        <div className="mt-3 flex items-start gap-2 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] px-3 py-2.5">
+    <div className="space-y-3">
+      {lead.recommendedAction && (
+        <div className="flex items-start gap-2 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] px-3 py-2.5">
           <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300" strokeWidth={1.75} />
-          <p className="text-[13px] leading-relaxed text-white/80">{obs.recommendedAction}</p>
+          <p className="text-[13px] leading-relaxed text-white/80">{lead.recommendedAction}</p>
         </div>
       )}
-
-      {hasWhy && (
-        <>
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            className="mt-3 flex items-center gap-1.5 text-[12px] text-white/45 transition-colors hover:text-cyan-300/80"
-            aria-expanded={open}
-          >
+      {signals.length > 0 && (
+        <div className="space-y-2">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
             Waarop dit is gebaseerd
-            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
-          </button>
-          {open && (
-            <div className="mt-2.5 space-y-2 border-t border-white/[0.06] pt-3">
-              {signals.map((s, i) => (
-                <div key={`${s.kind}-${i}`} className="flex items-start gap-2.5">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-white/30" />
-                  <p className="text-[12px] leading-relaxed text-white/60">
-                    <span className="text-white/80">{s.label}:</span> {s.value}
-                  </p>
-                </div>
-              ))}
-              {(obs.alternativeExplanations?.length ?? 0) > 0 && (
-                <p className="pt-1 text-[11px] leading-relaxed text-white/40">
-                  Andere mogelijke verklaringen:{" "}
-                  {obs.alternativeExplanations!.join("; ")}.
-                </p>
-              )}
+          </p>
+          {signals.map((s, i) => (
+            <div key={`${s.kind}-${i}`} className="flex items-start gap-2.5">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-white/30" />
+              <p className="text-[12px] leading-relaxed text-white/60">
+                <span className="text-white/80">{s.label}:</span> {s.value}
+              </p>
             </div>
-          )}
-        </>
+          ))}
+        </div>
       )}
-    </Card>
+      {others.length > 0 && (
+        <div className="space-y-2">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+            Ook hierover opgevallen
+          </p>
+          {others.map((o) => (
+            <p key={o.id} className="text-pretty text-[12px] leading-relaxed text-white/55">
+              {o.observationText}
+            </p>
+          ))}
+        </div>
+      )}
+      {alts.length > 0 && (
+        <p className="text-[11px] leading-relaxed text-white/40">
+          Andere mogelijke verklaringen: {alts.join("; ")}.
+        </p>
+      )}
+    </div>
+  )
+}
+
+// One honest derived insight, chart-first: leads with the real series behind the
+// maatstaf, then a short read, with the "why" behind an "Uitgebreid" toggle.
+// Same-metric observations are collapsed into one card (lead + members).
+function GroupInsightCard({ group }: { group: InsightGroup }) {
+  const { lead } = group
+  return (
+    <GraphInsightCard
+      title={lead.title}
+      confidence={lead.confidence}
+      concern={lead.severity === "important" || lead.severity === "urgent"}
+      series={group.series}
+      read={lead.observationText || lead.summary || ""}
+      extended={renderGroupExtended(group)}
+    />
   )
 }
 
@@ -200,20 +208,24 @@ function InsightSection({
   title,
   blurb,
   items,
+  sources,
 }: {
   n: string
   title: string
   blurb: string
   items: AiObservation[]
+  sources: InsightSources
 }) {
   if (items.length === 0) return null
+  // Collapse same-metric observations so the same read isn't repeated.
+  const groups = groupObservations(items, sources)
   return (
     <section>
       <SectionLabel n={n} title={title} />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">{blurb}</p>
       <div className="mt-3 flex flex-col gap-3">
-        {items.map((o) => (
-          <InsightCard key={o.id} obs={o} />
+        {groups.map((g) => (
+          <GroupInsightCard key={g.key} group={g} />
         ))}
       </div>
     </section>
@@ -245,7 +257,11 @@ export default function YouPage() {
   const { data: ftpHistory } = useFtpHistory()
   const { data: load } = useLoad()
   const { data: sessions } = useSessions(40)
+  const { data: metrics } = useDailyMetrics(30)
   const runConnections = useRunConnections()
+
+  // Real data sources so insight cards can lead with charts and group per metric.
+  const insightSources: InsightSources = { metrics, ftpHistory, load, sessions }
 
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -463,7 +479,9 @@ export default function YouPage() {
                 Uit je data {lenses.total === 1 ? "is" : "zijn"} {lenses.total}{" "}
                 {lenses.total === 1 ? "ding" : "dingen"} over je afgeleid. Dit valt het meest op:
               </p>
-              <InsightCard obs={lenses.lead} />
+              <GroupInsightCard
+                group={groupObservations([lenses.lead], insightSources)[0]}
+              />
             </>
           ) : (
             <Card>
@@ -486,6 +504,7 @@ export default function YouPage() {
         title="Sterke eigenschappen"
         blurb="Wat bij jou werkt"
         items={lenses.strengths}
+        sources={insightSources}
       />
 
       {/* ONTWIKKELPUNTEN */}
@@ -494,6 +513,7 @@ export default function YouPage() {
         title="Ontwikkelpunten"
         blurb="Waar de meeste winst voor je ligt"
         items={lenses.development}
+        sources={insightSources}
       />
 
       {/* PATRONEN */}
@@ -502,6 +522,7 @@ export default function YouPage() {
         title="Terugkerende patronen"
         blurb="Verbanden die over tijd terugkomen in je data"
         items={lenses.patterns}
+        sources={insightSources}
       />
 
       {/* WAAR SPARKI ONZEKER OVER IS */}
@@ -512,8 +533,8 @@ export default function YouPage() {
             Eerlijk gezegd: dit is nog niet zeker
           </p>
           <div className="mt-3 flex flex-col gap-3">
-            {lenses.uncertainty.map((o) => (
-              <InsightCard key={o.id} obs={o} />
+            {groupObservations(lenses.uncertainty, insightSources).map((g) => (
+              <GroupInsightCard key={g.key} group={g} />
             ))}
             {stateMissing.length > 0 && (
               <Card>

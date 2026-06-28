@@ -1,95 +1,78 @@
-import { useState } from "react"
 import { useLocation } from "wouter"
-import { useObservations, useRunConnections, type AiObservation } from "@/hooks/use-ai-memory"
+import { useObservations, useRunConnections } from "@/hooks/use-ai-memory"
 import { useSessions } from "@/hooks/use-sessions"
 import { useLoad } from "@/hooks/use-load"
+import { useFtpHistory } from "@/hooks/use-ftp-history"
+import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { isTrainingObservation } from "@/lib/train-intelligence"
+import { groupObservations, type InsightGroup } from "@/lib/insight-grouping"
 import { LayerHeading } from "@/components/sparki/train/layer-heading"
 import { TrainingProgression } from "@/components/sparki/training-progression"
+import { GraphInsightCard } from "@/components/sparki/insight/graph-insight-card"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import { ACCENT } from "@/components/sparki/ui"
-import {
-  Loader2,
-  Search,
-  ChevronDown,
-  AlertTriangle,
-  TrendingUp,
-} from "lucide-react"
-
-const CONF_LABEL: Record<AiObservation["confidence"], string> = {
-  low: "lage zekerheid",
-  medium: "redelijke zekerheid",
-  high: "hoge zekerheid",
-}
+import { Loader2, Search } from "lucide-react"
+import type { ReactNode } from "react"
 
 const cardClass =
   "rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md"
 
-function ObservationCard({ o }: { o: AiObservation }) {
-  const [open, setOpen] = useState(false)
-  const concern = o.severity === "important" || o.severity === "urgent"
-  const alts = o.alternativeExplanations ?? []
+// The deeper explanation revealed under "Uitgebreid": the advice, any other
+// same-metric observations, then the alternative explanations. Returns
+// undefined when there is no real depth so the toggle stays hidden.
+function renderGroupExtended(group: InsightGroup): ReactNode | undefined {
+  const { lead, members } = group
+  const others = members.filter((m) => m.id !== lead.id)
+  const alts = lead.alternativeExplanations ?? []
+  if (!lead.recommendedAction && others.length === 0 && alts.length === 0) {
+    return undefined
+  }
   return (
-    <div className={cardClass}>
-      <div className="flex items-center gap-2">
-        {concern ? (
-          <AlertTriangle
-            className="h-3.5 w-3.5"
-            style={{ color: "rgba(255,180,90,0.9)" }}
-            strokeWidth={2}
-          />
-        ) : (
-          <TrendingUp className="h-3.5 w-3.5" style={{ color: ACCENT }} strokeWidth={2} />
-        )}
-        <span className="flex-1 truncate font-sans text-[14px] font-medium text-white/90">
-          {o.title}
-        </span>
-        <span className="font-mono text-[9px] tracking-wide text-white/35">
-          {CONF_LABEL[o.confidence]}
-        </span>
-      </div>
-      <p className="mt-2 text-pretty text-[13px] leading-relaxed text-white/65">
-        {o.observationText}
-      </p>
-      {o.recommendedAction && (
+    <div className="space-y-3">
+      {lead.recommendedAction && (
         <p
-          className="mt-2.5 rounded-xl border px-3 py-2 text-pretty text-[12px] leading-relaxed"
+          className="rounded-xl border px-3 py-2 text-pretty text-[12px] leading-relaxed"
           style={{
             borderColor: "rgba(120,210,230,0.18)",
             background: "rgba(120,210,230,0.05)",
             color: "rgba(190,235,245,0.85)",
           }}
         >
-          {o.recommendedAction}
+          {lead.recommendedAction}
         </p>
       )}
+      {others.length > 0 && (
+        <div className="space-y-2">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+            Ook hierover opgevallen
+          </p>
+          {others.map((o) => (
+            <p
+              key={o.id}
+              className="text-pretty text-[12px] leading-relaxed text-white/55"
+            >
+              {o.observationText}
+            </p>
+          ))}
+        </div>
+      )}
       {alts.length > 0 && (
-        <>
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            className="mt-2.5 flex items-center gap-1 font-mono text-[10px] tracking-wide text-white/40 transition-colors hover:text-white/65"
-          >
-            Andere verklaringen
-            <ChevronDown
-              className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`}
-              strokeWidth={2}
-            />
-          </button>
-          {open && (
-            <ul className="mt-2 flex flex-col gap-1.5">
-              {alts.map((a, i) => (
-                <li
-                  key={i}
-                  className="text-pretty text-[12px] leading-relaxed text-white/45"
-                >
-                  • {a}
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
+        <div>
+          <p className="text-[11px] leading-relaxed text-white/40">
+            Andere mogelijke verklaringen:
+          </p>
+          <ul className="mt-1 flex flex-col gap-1">
+            {alts.map((a, i) => (
+              <li
+                key={i}
+                className="text-pretty text-[12px] leading-relaxed text-white/45"
+              >
+                • {a}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   )
@@ -101,11 +84,20 @@ export function PatternsLayer() {
   const { data: obs } = useObservations(aiEnabled)
   const { data: sessions, isLoading: sessionsLoading } = useSessions(60)
   const { data: load, isLoading: loadLoading } = useLoad()
+  const { data: ftpHistory } = useFtpHistory()
+  const { data: metrics } = useDailyMetrics(30)
   const runConnections = useRunConnections()
 
   const training = (obs?.observations ?? []).filter((o) =>
     isTrainingObservation(o.category),
   )
+  // Collapse same-metric observations so the same explanation isn't repeated.
+  const groups = groupObservations(training, {
+    metrics,
+    ftpHistory,
+    load,
+    sessions,
+  })
   const hasSessions = (sessions?.length ?? 0) > 0
 
   return (
@@ -115,15 +107,25 @@ export function PatternsLayer() {
         subtitle="Niet alleen vandaag — de patronen in hoe je traint, herstelt en groeit."
       />
 
-      {aiEnabled && training.length > 0 && (
+      {aiEnabled && groups.length > 0 && (
         <div className="flex flex-col gap-3">
-          {training.slice(0, 4).map((o) => (
-            <ObservationCard key={o.id} o={o} />
+          {groups.slice(0, 6).map((g) => (
+            <GraphInsightCard
+              key={g.key}
+              title={g.lead.title}
+              confidence={g.lead.confidence}
+              concern={
+                g.lead.severity === "important" || g.lead.severity === "urgent"
+              }
+              series={g.series}
+              read={g.lead.observationText}
+              extended={renderGroupExtended(g)}
+            />
           ))}
         </div>
       )}
 
-      {aiEnabled && training.length === 0 && (
+      {aiEnabled && groups.length === 0 && (
         <div className={cardClass}>
           {hasSessions ? (
             <>
