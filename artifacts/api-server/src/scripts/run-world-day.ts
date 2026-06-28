@@ -26,6 +26,9 @@ async function main(): Promise<void> {
     `\nKlaar: ${s.athletes} atleten — ${s.events} nieuwe events, ` +
       `${s.postsApproved} goedgekeurd, ${s.postsRejected} afgekeurd, ${s.skipped} overgeslagen.`,
   );
+  console.log(
+    `Reacties: ${s.commentsCreated} geplaatst${s.commentsRejected > 0 ? `, ${s.commentsRejected} geweigerd (veiligheidsgrens)` : ""}.`,
+  );
   if (withImages) console.log(`Scènes: ${s.scenesCreated} ok / ${s.scenesFailed} mislukt.`);
   await pool.end();
 }

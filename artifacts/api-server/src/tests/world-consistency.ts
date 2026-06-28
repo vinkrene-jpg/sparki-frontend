@@ -19,10 +19,19 @@
 import {
   generatePopulation,
   validatePopulation,
+  influenceFromScore,
   type GeneratedAthlete,
 } from "../lib/world/population";
 import { simulateDay, type SimEvent, type SimPost } from "../lib/world/simulation";
-import { validatePost } from "../lib/world/validation";
+import { validatePost, validateSafety } from "../lib/world/validation";
+import { buildCareer, relationshipDynamics } from "../lib/world/career";
+import {
+  scoreFeedItem,
+  hasPersonalSignal,
+  type AffinityIndex,
+  type FeedScoreInput,
+  type FeedScoreContext,
+} from "../lib/world/feed-scoring";
 
 // ── harness config ───────────────────────────────────────────────────────────
 const POP_COUNT = 50;
@@ -308,6 +317,226 @@ function main() {
   report("monotoon-leven", "warn", "Atleten met te weinig variatie in events", monotoneAthletes, monotoneExamples);
   report("explosieve-belasting", "warn", "Onrealistische wekelijkse belastingssprong (>2\u00d7)", runawayWeeks, runawayExamples);
   report("caption-run", "warn", "Zelfde caption meerdere dagen op rij per atleet", identicalCaptionRun, identicalRunExamples);
+
+  // ── T9: ADAPTIEVE-WERELD INVARIANTEN ───────────────────────────────────────
+  // Determinism + plausibility for follower reach, multi-year careers, the
+  // safety boundary, and the learning effect of the adaptive feed.
+  console.log("\nAdaptieve-wereld invarianten:");
+
+  const SEASON_YEAR = Number(START_DATE.slice(0, 4)); // 2026
+
+  // A) Follower reach — determinism + category coherence + plausible bounds.
+  const pop2 = generatePopulation(POP_COUNT, POP_SEED);
+  const bySlug2 = new Map(pop2.athletes.map((a) => [a.slug, a]));
+  let followerDrift = 0;
+  let influenceMismatch = 0;
+  let followerOutOfBounds = 0;
+  const tierMin: Record<string, number> = {};
+  const tierMax: Record<string, number> = {};
+  for (const a of athletes) {
+    const twin = bySlug2.get(a.slug);
+    if (!twin || twin.followerScore !== a.followerScore) followerDrift++;
+    if (influenceFromScore(a.followerScore) !== a.influenceCategory) influenceMismatch++;
+    if (a.followerScore < 0 || a.followerScore > 5_000_000) followerOutOfBounds++;
+    const cat = a.influenceCategory;
+    tierMin[cat] = Math.min(tierMin[cat] ?? Infinity, a.followerScore);
+    tierMax[cat] = Math.max(tierMax[cat] ?? -Infinity, a.followerScore);
+  }
+  invariant("followerScore is deterministisch over runs", followerDrift === 0, `${followerDrift} drift`);
+  invariant("influenceCategory volgt uit followerScore", influenceMismatch === 0, `${influenceMismatch} mismatch`);
+  invariant("followerScore binnen geloofwaardige grenzen", followerOutOfBounds === 0, `${followerOutOfBounds} buiten grenzen`);
+
+  // Tier ordering: each higher tier's floor must clear the lower tier's ceiling.
+  const TIER_ORDER = ["beginner", "lokaal", "bekend", "prof", "wereldster"];
+  let tierOverlap = 0;
+  for (let i = 1; i < TIER_ORDER.length; i++) {
+    const lo = TIER_ORDER[i - 1]!;
+    const hi = TIER_ORDER[i]!;
+    if (tierMax[lo] != null && tierMin[hi] != null && tierMin[hi]! <= tierMax[lo]!) tierOverlap++;
+  }
+  invariant("hogere invloed-tiers hebben meer volgers dan lagere", tierOverlap === 0, `${tierOverlap} overlappingen`);
+
+  // B) Career timelines — determinism + plausible multi-year structure.
+  let careerDrift = 0;
+  let careerEmpty = 0;
+  let careerSeasonGap = 0;
+  let careerAgeMismatch = 0;
+  let careerEndpointMismatch = 0;
+  let careerFtpImplausible = 0;
+  let multiYearCareers = 0;
+  const shortCareerExamples: string[] = [];
+  let tooShortCareers = 0;
+  for (const a of athletes) {
+    const c1 = buildCareer(a, SEASON_YEAR);
+    const c2 = buildCareer(a, SEASON_YEAR);
+    if (JSON.stringify(c1) !== JSON.stringify(c2)) careerDrift++;
+    if (c1.length === 0) {
+      careerEmpty++;
+      continue;
+    }
+    if (c1.length >= 3) multiYearCareers++;
+    // seasonYear strictly +1 and age strictly +1 per entry
+    for (let i = 1; i < c1.length; i++) {
+      if (c1[i]!.seasonYear !== c1[i - 1]!.seasonYear + 1) careerSeasonGap++;
+      if (c1[i]!.ageThatYear !== c1[i - 1]!.ageThatYear + 1) careerAgeMismatch++;
+    }
+    // the final entry must land exactly on the athlete's known endpoint
+    const last = c1[c1.length - 1]!;
+    if (last.seasonYear !== SEASON_YEAR || last.ageThatYear !== a.age || last.ftp !== a.ftp)
+      careerEndpointMismatch++;
+    // every historical FTP must be physiologically sane and never exceed today's
+    // peak by an implausible margin (history ramps up toward the present)
+    for (const e of c1) {
+      if (e.ftp != null && (e.ftp < 80 || e.ftp > 600)) careerFtpImplausible++;
+    }
+    // a believable athlete has more than a single season of story unless very young
+    if (c1.length < 2 && a.age >= 20) {
+      tooShortCareers++;
+      if (shortCareerExamples.length < 4)
+        shortCareerExamples.push(`${a.name} (${a.age}j): ${c1.length} seizoen`);
+    }
+  }
+  invariant("loopbaan is deterministisch over runs", careerDrift === 0, `${careerDrift} drift`);
+  invariant("elke atleet heeft een loopbaan-tijdlijn", careerEmpty === 0, `${careerEmpty} leeg`);
+  invariant("loopbaanseizoenen lopen aaneengesloten op", careerSeasonGap === 0, `${careerSeasonGap} gaten`);
+  invariant("loopbaanleeftijden lopen jaar voor jaar op", careerAgeMismatch === 0, `${careerAgeMismatch} mismatch`);
+  invariant("laatste seizoen valt exact op de huidige cijfers", careerEndpointMismatch === 0, `${careerEndpointMismatch} mismatch`);
+  invariant("historische FTP-waarden zijn fysiologisch plausibel", careerFtpImplausible === 0, `${careerFtpImplausible} implausibel`);
+  invariant("er bestaan meerjarige loopbanen", multiYearCareers > 0, `${multiYearCareers} meerjarig`);
+  report("korte-loopbaan", "warn", "Volwassen atleten met een loopbaan van 1 seizoen", tooShortCareers, shortCareerExamples);
+
+  // Relationship dynamics determinism + bounds.
+  let relDynDrift = 0;
+  let relDynOutOfBounds = 0;
+  for (const rel of relationships.slice(0, 60)) {
+    const from = bySlug.get(rel.fromSlug);
+    const to = bySlug.get(rel.toSlug);
+    if (!from || !to) continue;
+    const d1 = relationshipDynamics(from, to, rel.kind);
+    const d2 = relationshipDynamics(from, to, rel.kind);
+    if (d1.strength !== d2.strength || d1.status !== d2.status) relDynDrift++;
+    if (d1.strength < 1 || d1.strength > 100) relDynOutOfBounds++;
+  }
+  invariant("relatie-dynamiek is deterministisch", relDynDrift === 0, `${relDynDrift} drift`);
+  invariant("relatie-sterkte ligt tussen 1 en 100", relDynOutOfBounds === 0, `${relDynOutOfBounds} buiten grenzen`);
+
+  // C) Safety boundary — must reject every category with a plain-Dutch reason,
+  // and must leave honest sport talk untouched.
+  const UNSAFE_SAMPLES = [
+    "Hey sexy, kom je vanavond langs voor wat naakt plezier?",
+    "Ik ben verliefd op je, zullen we afspreken voor een date?",
+    "Geef me een kus na de finish, schatje",
+    "Je hebt mij nodig, zonder mij red je het niet",
+    "Hou dit geheim en vertrouw alleen mij",
+    "Ik ga je chanteren als je niet luistert",
+  ];
+  const SAFE_SAMPLES = [
+    "Lekkere intervaltraining gereden vandaag, benen voelen sterk.",
+    "Tweede plek in de criterium, blij met de sprint.",
+    "Rustdag met de familie, morgen weer een lange duurrit.",
+    "Nieuwe banden getest op het gravelparcours, top grip.",
+  ];
+  let unsafeAllowed = 0;
+  let unsafeWithoutReason = 0;
+  for (const s of UNSAFE_SAMPLES) {
+    const v = validateSafety(s);
+    if (v.ok) unsafeAllowed++;
+    else if (!v.reason) unsafeWithoutReason++;
+  }
+  let safeRejected = 0;
+  for (const s of SAFE_SAMPLES) {
+    if (!validateSafety(s).ok) safeRejected++;
+  }
+  invariant("veiligheidsgrens weigert alle ongepaste teksten", unsafeAllowed === 0, `${unsafeAllowed} doorgelaten`);
+  invariant("elke geweigerde tekst heeft een leesbare reden", unsafeWithoutReason === 0, `${unsafeWithoutReason} zonder reden`);
+  invariant("veiligheidsgrens laat eerlijke sporttaal staan", safeRejected === 0, `${safeRejected} onterecht geweigerd`);
+
+  // The boundary must also bite when wired through validatePost.
+  const sampleAthlete = athletes[0]!;
+  const unsafeEvent: SimEvent = {
+    athleteSlug: sampleAthlete.slug,
+    eventDate: START_DATE,
+    type: "rest",
+    title: "Rustdag",
+    summary: "Rustdag",
+    payload: {},
+  };
+  const unsafePost: SimPost = {
+    athleteSlug: sampleAthlete.slug,
+    kind: "story",
+    caption: "Kom je bij mij langs schatje, ik ben verliefd op je",
+    scene: null,
+  };
+  invariant(
+    "validatePost weigert een onveilige caption",
+    validatePost(sampleAthlete, unsafeEvent, unsafePost).status === "rejected",
+  );
+
+  // D) Learning effect — the adaptive feed must visibly react to learned
+  // affinity and to follow/favorite, deterministically and monotonically.
+  const baseInput: FeedScoreInput = {
+    athleteId: 999,
+    publishedAtMs: SEASON_YEAR, // constant; recency identical across compared items
+    discipline: "gravel",
+    archetype: "avonturier",
+    role: "peer",
+    expertise: null,
+    cohort: "gravel-avonturier",
+    level: "amateur",
+    postKind: "photo",
+    followerScore: 1200,
+    influenceCategory: "lokaal",
+  };
+  const emptyCtx: FeedScoreContext = {
+    nowMs: SEASON_YEAR,
+    myDiscipline: "",
+    follow: new Map(),
+    affinity: new Map(),
+    affinityMax: 0,
+  };
+  invariant("geen persoonlijk signaal bij een lege context", hasPersonalSignal(emptyCtx) === false);
+
+  const affinity: AffinityIndex = new Map([
+    ["discipline", new Map([["gravel", { score: 10, support: 5 }]])],
+    ["cohort", new Map([["gravel-avonturier", { score: 10, support: 5 }]])],
+  ]);
+  const learnedCtx: FeedScoreContext = {
+    nowMs: SEASON_YEAR,
+    myDiscipline: "gravel",
+    follow: new Map(),
+    affinity,
+    affinityMax: 10,
+  };
+  invariant("wel persoonlijk signaal zodra er affiniteit is", hasPersonalSignal(learnedCtx) === true);
+
+  const matchScore = scoreFeedItem(baseInput, learnedCtx).total;
+  const offMatchInput: FeedScoreInput = {
+    ...baseInput,
+    discipline: "baan",
+    cohort: "baan-sprinter",
+  };
+  const offScore = scoreFeedItem(offMatchInput, learnedCtx).total;
+  invariant("geleerde voorkeur tilt passende posts omhoog", matchScore > offScore, `${matchScore.toFixed(1)} vs ${offScore.toFixed(1)}`);
+
+  // Determinism: identical input+context yields an identical score.
+  const repeat = scoreFeedItem(baseInput, learnedCtx).total;
+  invariant("feed-score is deterministisch", repeat === matchScore);
+
+  // Follow & favorite must outrank a stranger, and favorite must outrank follow.
+  const neutralCtx: FeedScoreContext = {
+    nowMs: SEASON_YEAR,
+    myDiscipline: "",
+    follow: new Map(),
+    affinity: new Map(),
+    affinityMax: 0,
+  };
+  const strangerScore = scoreFeedItem(baseInput, neutralCtx).total;
+  const followCtx: FeedScoreContext = { ...neutralCtx, follow: new Map([[999, false]]) };
+  const favCtx: FeedScoreContext = { ...neutralCtx, follow: new Map([[999, true]]) };
+  const followScore = scoreFeedItem(baseInput, followCtx).total;
+  const favScore = scoreFeedItem(baseInput, favCtx).total;
+  invariant("een gevolgde renner scoort hoger dan een onbekende", followScore > strangerScore);
+  invariant("een favoriet scoort hoger dan een gewone volg", favScore > followScore);
 
   // ── dashboard print ────────────────────────────────────────────────────────
   const order: Record<Severity, number> = { error: 0, warn: 1, info: 2 };

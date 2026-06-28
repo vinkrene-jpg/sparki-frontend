@@ -15,10 +15,11 @@ import {
   virtualAthletesTable,
   virtualEventsTable,
   virtualPostsTable,
+  virtualInteractionsTable,
 } from "@workspace/db";
 import { generatePopulation, type GeneratedAthlete } from "../../lib/world/population";
-import { simulateDay } from "../../lib/world/simulation";
-import { validatePost } from "../../lib/world/validation";
+import { simulateDay, generateComments } from "../../lib/world/simulation";
+import { validatePost, validateSafety } from "../../lib/world/validation";
 import { getOrCreateScene } from "../world-media";
 
 export type WorldDaySummary = {
@@ -30,16 +31,14 @@ export type WorldDaySummary = {
   postsRejected: number;
   scenesCreated: number;
   scenesFailed: number;
+  commentsCreated: number;
+  commentsRejected: number;
 };
 
 type DbAthlete = { id: number; slug: string };
 
 // Rebuild the in-memory generated athlete (numbers) keyed by slug so the
 // simulation has the full physiology, while persistence uses the DB id.
-function generatedBySlug(count: number, seed: number): Map<string, GeneratedAthlete> {
-  const pop = generatePopulation(count, seed);
-  return new Map(pop.athletes.map((a) => [a.slug, a]));
-}
 
 export async function runWorldDay(
   date: string,
@@ -47,11 +46,23 @@ export async function runWorldDay(
 ): Promise<WorldDaySummary> {
   const count = opts.count ?? 50;
   const seed = opts.seed ?? 1;
-  const genBySlug = generatedBySlug(count, seed);
+  const pop = generatePopulation(count, seed);
+  const genBySlug = new Map(pop.athletes.map((a) => [a.slug, a]));
+
+  // Who relates to whom (for peer comments). Relationship rows are directed; a
+  // post's author draws reactions from every athlete that relates TO them.
+  const relatedBySlug = new Map<string, Set<string>>();
+  for (const r of pop.relationships) {
+    if (!relatedBySlug.has(r.fromSlug)) relatedBySlug.set(r.fromSlug, new Set());
+    if (!relatedBySlug.has(r.toSlug)) relatedBySlug.set(r.toSlug, new Set());
+    relatedBySlug.get(r.fromSlug)!.add(r.toSlug);
+    relatedBySlug.get(r.toSlug)!.add(r.fromSlug);
+  }
 
   const dbAthletes: DbAthlete[] = await db
     .select({ id: virtualAthletesTable.id, slug: virtualAthletesTable.slug })
     .from(virtualAthletesTable);
+  const idBySlug = new Map(dbAthletes.map((a) => [a.slug, a.id]));
 
   // Which athletes already have an event for this date → skip (idempotent).
   const existing = await db
@@ -77,6 +88,8 @@ export async function runWorldDay(
     postsRejected: 0,
     scenesCreated: 0,
     scenesFailed: 0,
+    commentsCreated: 0,
+    commentsRejected: 0,
   };
 
   for (const dba of dbAthletes) {
@@ -116,18 +129,47 @@ export async function runWorldDay(
       }
     }
 
-    await db.insert(virtualPostsTable).values({
-      athleteId: dba.id,
-      eventId: evtRow!.id,
-      kind: post.kind,
-      caption: post.caption,
-      mediaId,
-      validationStatus: verdict.status,
-      validationNotes: verdict.notes,
-      publishedAt: verdict.status === "approved" ? new Date() : null,
-    });
+    const [postRow] = await db
+      .insert(virtualPostsTable)
+      .values({
+        athleteId: dba.id,
+        eventId: evtRow!.id,
+        kind: post.kind,
+        caption: post.caption,
+        mediaId,
+        validationStatus: verdict.status,
+        validationNotes: verdict.notes,
+        publishedAt: verdict.status === "approved" ? new Date() : null,
+      })
+      .returning({ id: virtualPostsTable.id });
     if (verdict.status === "approved") summary.postsApproved += 1;
     else summary.postsRejected += 1;
+
+    // Peer comments — only on published posts. Each comment passes the same
+    // safety boundary as captions; anything that trips it is dropped honestly
+    // (never persisted, never shown).
+    if (verdict.status === "approved" && postRow) {
+      const candidateSlugs = [...(relatedBySlug.get(dba.slug) ?? [])];
+      const candidates = candidateSlugs
+        .map((s) => genBySlug.get(s))
+        .filter((g): g is GeneratedAthlete => g != null && idBySlug.has(g.slug));
+      const comments = generateComments(gen, event, candidates, date);
+      for (const c of comments) {
+        const actorId = idBySlug.get(c.fromSlug);
+        if (!actorId) continue;
+        if (!validateSafety(c.body).ok) {
+          summary.commentsRejected += 1;
+          continue;
+        }
+        await db.insert(virtualInteractionsTable).values({
+          postId: postRow.id,
+          actorAthleteId: actorId,
+          kind: "comment",
+          body: c.body,
+        });
+        summary.commentsCreated += 1;
+      }
+    }
   }
 
   return summary;

@@ -71,7 +71,8 @@ async function main(): Promise<void> {
   );
   console.log(`Niveaus: ${[...byLevel].map(([k, v]) => `${k} ${v}`).join(", ")}`);
   console.log(
-    `\nKlaar: ${summary.athletes} atleten, ${summary.relationships} relaties` +
+    `\nKlaar: ${summary.athletes} atleten, ${summary.relationships} relaties, ` +
+      `${summary.careerEntries} carrière-seizoenen` +
       (withAvatars
         ? `, avatars ${summary.avatarsCreated} ok / ${summary.avatarsFailed} mislukt.`
         : " (avatars overgeslagen — draai met --avatars om ze te genereren)."),

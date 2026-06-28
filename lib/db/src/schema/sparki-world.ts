@@ -102,6 +102,29 @@ export const virtualAthletesTable = pgTable("virtual_athletes", {
   team: text("team"),
   sponsor: text("sponsor"),
   coachName: text("coach_name"),
+  // ── Adaptive world layer (task: Adaptieve Virtual Athletes) ───────────────
+  // Where in a multi-year career this athlete is RIGHT NOW. Drives the timeline
+  // and how the cast reads (a comeback rider posts differently than a youngster).
+  // jeugd | u23 | continentaal | prof | blessure | comeback | coach
+  careerPhase: text("career_phase").notNull().default("amateur"),
+  // What this athlete is to the viewer:
+  //   peer        → recognisable, "iemand zoals jij" (the default cast)
+  //   inspiration → a prof / ex-prof to look up to
+  //   specialist  → a discipline specialist (climber, sprinter)
+  //   expert      → a knowledge authority (nutrition, biomechanics, sports doctor)
+  role: text("role").notNull().default("peer"),
+  // For specialists/experts: their field, plain Dutch (e.g. "voedingsexpert",
+  // "klimspecialist", "sportarts", "biomechanica", "materiaalexpert"). Null for peers.
+  expertise: text("expertise"),
+  // A recognisable target-group cohort label, plain Dutch, for the "Voor jou
+  // herkenbaar" rail (e.g. "granfondo-ondernemer", "criterium-sprinter",
+  // "vroege-ochtend-ouder"). Null when the athlete isn't a fixture cohort.
+  cohort: text("cohort"),
+  // A believable, transparently-fictional follower count: from a few dozen
+  // (beginner) up to millions (a world star). Deterministic, never a real metric.
+  followerScore: integer("follower_score").notNull().default(0),
+  // Bucketed influence tier, plain Dutch: wereldster | prof | bekend | lokaal | beginner.
+  influenceCategory: text("influence_category").notNull().default("lokaal"),
   // The athlete's story (verhaal), in plain Dutch.
   bio: text("bio"),
   // The long tail: humor, intelligence, ambition, perseverance, stress
@@ -147,11 +170,50 @@ export const virtualRelationshipsTable = pgTable(
       .notNull()
       .references(() => virtualAthletesTable.id, { onDelete: "cascade" }),
     kind: text("kind").notNull(),
+    // How strong the bond is (1..100), deterministic from shared history. Lets
+    // the social graph evolve believably (a faded friendship vs a tight one).
+    strength: integer("strength").notNull().default(50),
+    // active | faded | former — relationships move over time (team switches,
+    // age, results) without ever being deleted, so the history stays honest.
+    status: text("status").notNull().default("active"),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
   (t) => [unique().on(t.athleteId, t.relatedAthleteId, t.kind)],
+);
+
+// ── Career timeline ──────────────────────────────────────────────────────────
+// One row per season in a Virtual Athlete's multi-year career. Deterministically
+// generated (never re-rolled), so re-seeding yields the same life story. Numbers
+// (ftp, wins) develop along a believable age curve with injury dips; the
+// personality stays recognisable. Highs and lows are flagged for the timeline UI.
+export const virtualCareerEntriesTable = pgTable(
+  "virtual_career_entries",
+  {
+    id: serial("id").primaryKey(),
+    athleteId: integer("athlete_id")
+      .notNull()
+      .references(() => virtualAthletesTable.id, { onDelete: "cascade" }),
+    seasonYear: integer("season_year").notNull(),
+    ageThatYear: integer("age_that_year").notNull(),
+    // jeugd | u23 | continentaal | prof | blessure | comeback | coach
+    phase: text("phase").notNull(),
+    level: text("level"),
+    team: text("team"),
+    ftp: integer("ftp"),
+    // milestone | highlight | lowlight | normal — drives emphasis in the UI.
+    kind: text("kind").notNull().default("normal"),
+    title: text("title").notNull(),
+    summary: text("summary"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [unique().on(t.athleteId, t.seasonYear)],
 );
 
 // ── Living life — the event timeline ─────────────────────────────────────────
@@ -231,7 +293,15 @@ export const virtualPostsTable = pgTable("virtual_posts", {
 // Either a Virtual Athlete (actorAthleteId) or a real user (actorClerkId) acts
 // on a post — exactly one of the two is set. Real-user interactions are how the
 // community feels two-way without breaking the fiction.
-export const virtualInteractionKinds = ["like", "comment"] as const;
+// like / comment are visible engagement; view / save / share are the quieter
+// signals the adaptive feed learns from (what the user lingers on, keeps, passes on).
+export const virtualInteractionKinds = [
+  "like",
+  "comment",
+  "view",
+  "save",
+  "share",
+] as const;
 export type VirtualInteractionKind =
   (typeof virtualInteractionKinds)[number];
 
@@ -284,6 +354,36 @@ export const userVirtualFollowsTable = pgTable(
   (t) => [unique().on(t.clerkId, t.athleteId)],
 );
 
+// ── Per-user learned affinity ────────────────────────────────────────────────
+// The adaptive layer. A user's tastes, DERIVED only from how they behave inside
+// Sparki World (views/saves/shares/likes/comments/follows on fictional content)
+// — NEVER from their real performance data. One row per (dimension, key):
+//   dimension: discipline | archetype | role | expertise | cohort | topic | level
+//   key:       e.g. "gravel", "klimmer", "expert", "voedingsexpert", "race"
+// `score` is a recomputed weight (higher = stronger pull). Rebuilt idempotently
+// from the interaction history, so it can always be regenerated from scratch.
+export const userVirtualAffinityTable = pgTable(
+  "user_virtual_affinity",
+  {
+    id: serial("id").primaryKey(),
+    clerkId: text("clerk_id")
+      .notNull()
+      .references(() => userProfilesTable.clerkId, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    dimension: text("dimension").notNull(),
+    key: text("key").notNull(),
+    score: real("score").notNull().default(0),
+    // How many interactions fed this score (honesty: low support = low confidence).
+    support: integer("support").notNull().default(0),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [unique().on(t.clerkId, t.dimension, t.key)],
+);
+
 // ── Zod + inferred types ─────────────────────────────────────────────────────
 export const insertVirtualMediaSchema = createInsertSchema(
   virtualMediaTable,
@@ -306,6 +406,12 @@ export const insertVirtualInteractionSchema = createInsertSchema(
 export const insertUserVirtualFollowSchema = createInsertSchema(
   userVirtualFollowsTable,
 ).omit({ id: true });
+export const insertVirtualCareerEntrySchema = createInsertSchema(
+  virtualCareerEntriesTable,
+).omit({ id: true });
+export const insertUserVirtualAffinitySchema = createInsertSchema(
+  userVirtualAffinityTable,
+).omit({ id: true });
 
 export const selectVirtualAthleteSchema =
   createSelectSchema(virtualAthletesTable);
@@ -319,6 +425,10 @@ export type VirtualEvent = typeof virtualEventsTable.$inferSelect;
 export type VirtualPost = typeof virtualPostsTable.$inferSelect;
 export type VirtualInteraction = typeof virtualInteractionsTable.$inferSelect;
 export type UserVirtualFollow = typeof userVirtualFollowsTable.$inferSelect;
+export type VirtualCareerEntry =
+  typeof virtualCareerEntriesTable.$inferSelect;
+export type UserVirtualAffinity =
+  typeof userVirtualAffinityTable.$inferSelect;
 
 export type InsertVirtualMedia = z.infer<typeof insertVirtualMediaSchema>;
 export type InsertVirtualAthlete = z.infer<typeof insertVirtualAthleteSchema>;

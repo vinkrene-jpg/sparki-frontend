@@ -81,3 +81,26 @@ generate/upload so it never bills the image model.)
   **error-level** (physically impossible) findings fail the process — warnings are report.
 - Events are independent per (slug,date) with no day-to-day carry-over, so back-to-back
   races / no-rest streaks are EXPECTED weak spots the dashboard reports (not bugs).
+
+## Adaptive world v2 (per-user) — career, followers, affinity, rails
+- Schema adds to virtual_athletes: careerPhase/role/expertise/cohort/followerScore/
+  influenceCategory; relationships gain strength/status/updatedAt; interactions kinds +=
+  view/save/share; new `virtual_career_entries` (multi-year timeline) + `user_virtual_affinity`.
+- `lib/world/career.ts` `buildCareer` = deterministic multi-year timeline (jeugd→U23→
+  continentaal→prof→blessure→comeback→coach) with age-curve FTP development; pure/seeded.
+- `influenceFromScore` tiers: wereldster≥250k, prof≥25k, bekend≥3k, lokaal≥300, else beginner.
+- `engines/world-affinity` `learnAffinity(clerkId)` recomputes user_virtual_affinity from
+  weighted view/save/share/follow signals × post→athlete attrs. **NEVER touches real perf data.**
+- Adaptive feed v2: pure `scoreFeedItem`/`hasPersonalSignal` scoring (profile match, learned
+  affinity, follow/fav, influence, recency); follow weighs < favorite; honest low-data fallback.
+- Routes: GET /api/world/recommended (recognizable+inspiration), /heroes (top influence);
+  profile += career[] + followerScore; feed athlete objects += followerScore/influenceCategory/
+  role/cohort. **Profile route is `/athletes/:slug` (plural).**
+- Frontend `/wereld`: Tijdlijn/Bewaard tabs, Voorgesteld+Toonaangevend rails, FollowerCount
+  (null if score≤0), CareerTimeline, save/share + IntersectionObserver view tracking. Profile
+  drill-in is `openSlug` STATE not a URL route → a direct `/wereld/:slug` URL shows the feed.
+- Harness `test:world-consistency` extended: follower/career determinism + tier ordering +
+  timeline plausibility + validateSafety reject/accept battery + feed learning effect. 35/35.
+- **Stale-bundle gotcha:** after backend engine/route edits, RESTART the api-server workflow —
+  HMR only covers frontend; a stale bundle returns `Cannot GET` on new routes + drops new
+  feed fields (looked like a frontend bug; was just an un-rebuilt server).

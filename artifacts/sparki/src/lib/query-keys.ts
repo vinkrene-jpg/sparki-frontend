@@ -254,6 +254,9 @@ export const queryKeys = {
     feed: () => ["world", "feed"] as const,
     athlete: (slug: string) => ["world", "athlete", slug] as const,
     comments: (postId: number) => ["world", "comments", postId] as const,
+    recommended: () => ["world", "recommended"] as const,
+    heroes: () => ["world", "heroes"] as const,
+    saved: () => ["world", "saved"] as const,
   },
 } as const;
 

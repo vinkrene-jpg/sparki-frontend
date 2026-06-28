@@ -41,6 +41,40 @@ const FORBIDDEN = [
   /Sparki (ziet|denkt|weet|merkt|leest|kijkt|baseert|zag)/i,
 ];
 
+// ── safety boundary ──────────────────────────────────────────────────────────
+// Sparki World is a sport community. Virtual Athletes never speak to a real user
+// (or to each other) in a sexual, flirty, romantic, manipulative or dependency-
+// inducing way. This boundary is HARD: any caption or comment that trips it is
+// rejected with a plain-Dutch reason and never shown — there is no toggle.
+const UNSAFE_PATTERNS: Array<{ re: RegExp; reason: string }> = [
+  {
+    re: /\b(seks|seksueel|sexy|naakt|nudes?|borsten|kont|geil)\b/i,
+    reason: "seksueel getinte inhoud is niet toegestaan in Sparki World",
+  },
+  {
+    re: /\b(flirt(en)?|versier(en|d)?|verliefd|romantisch|romantiek|kus(sen|je)?|knuffel(en)?|schatje|liefje|lekker ding|date\b|afspreken voor een date|relatie zoeken|aantrekkelijk vind)\b/i,
+    reason: "flirterige of romantische inhoud is niet toegestaan in Sparki World",
+  },
+  {
+    re: /(je hebt mij nodig|zonder mij red je|alleen ik begrijp je|vertrouw alleen mij|niemand anders snapt|je kunt niet zonder mij|hou dit geheim|niet aan anderen vertellen|blijf bij mij)/i,
+    reason: "manipulatieve of afhankelijkheid-voedende inhoud is niet toegestaan",
+  },
+  {
+    re: /\b(manipuleer(t|de)?|chantage|chanteren)\b/i,
+    reason: "manipulatieve inhoud is niet toegestaan",
+  },
+];
+
+export type SafetyResult = { ok: boolean; reason: string | null };
+
+export function validateSafety(text: string): SafetyResult {
+  const t = (text ?? "").toString();
+  for (const { re, reason } of UNSAFE_PATTERNS) {
+    if (re.test(t)) return { ok: false, reason };
+  }
+  return { ok: true, reason: null };
+}
+
 export function validatePost(
   athlete: GeneratedAthlete,
   event: SimEvent,
@@ -58,6 +92,10 @@ export function validatePost(
   for (const re of FORBIDDEN) {
     if (re.test(cap)) return reject(`verboden formulering in caption (${re.source})`);
   }
+
+  // 2b) safety boundary (sexual/flirty/romantic/manipulative/dependency)
+  const safety = validateSafety(cap);
+  if (!safety.ok) return reject(safety.reason ?? "ongepaste inhoud");
 
   // 3) event ↔ post consistency
   const allowed = ALLOWED_KINDS[event.type];

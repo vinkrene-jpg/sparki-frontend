@@ -15,12 +15,14 @@ import {
   db,
   virtualAthletesTable,
   virtualRelationshipsTable,
+  virtualCareerEntriesTable,
 } from "@workspace/db";
 import {
   generatePopulation,
   type Population,
   type GeneratedAthlete,
 } from "../../lib/world/population";
+import { buildCareer, relationshipDynamics } from "../../lib/world/career";
 import { getOrCreateAvatar } from "../world-media";
 
 export type SeedOptions = {
@@ -34,6 +36,7 @@ export type SeedSummary = {
   relationships: number;
   avatarsCreated: number;
   avatarsFailed: number;
+  careerEntries: number;
 };
 
 function athleteValues(a: GeneratedAthlete) {
@@ -57,6 +60,12 @@ function athleteValues(a: GeneratedAthlete) {
     team: a.team,
     sponsor: a.sponsor,
     coachName: a.coachName,
+    careerPhase: a.careerPhase,
+    role: a.role,
+    expertise: a.expertise,
+    cohort: a.cohort,
+    followerScore: a.followerScore,
+    influenceCategory: a.influenceCategory,
     bio: a.bio,
     traits: a.traits as Record<string, unknown>,
     status: "active" as const,
@@ -89,15 +98,79 @@ export async function persistPopulation(
     .where(inArray(virtualAthletesTable.slug, slugs));
   const idBySlug = new Map(rows.map((r) => [r.slug, r.id]));
 
-  // 3) relationships (idempotent via the unique constraint)
+  // 3) relationships with deterministic strength/status (idempotent; on
+  //    re-seed we refresh the dynamics so the social graph stays consistent
+  //    with the current cast).
+  const bySlug = new Map(pop.athletes.map((a) => [a.slug, a]));
   for (const rel of pop.relationships) {
     const athleteId = idBySlug.get(rel.fromSlug);
     const relatedAthleteId = idBySlug.get(rel.toSlug);
-    if (!athleteId || !relatedAthleteId) continue;
+    const from = bySlug.get(rel.fromSlug);
+    const to = bySlug.get(rel.toSlug);
+    if (!athleteId || !relatedAthleteId || !from || !to) continue;
+    const dyn = relationshipDynamics(from, to, rel.kind);
     await db
       .insert(virtualRelationshipsTable)
-      .values({ athleteId, relatedAthleteId, kind: rel.kind })
-      .onConflictDoNothing();
+      .values({
+        athleteId,
+        relatedAthleteId,
+        kind: rel.kind,
+        strength: dyn.strength,
+        status: dyn.status,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [
+          virtualRelationshipsTable.athleteId,
+          virtualRelationshipsTable.relatedAthleteId,
+          virtualRelationshipsTable.kind,
+        ],
+        set: { strength: dyn.strength, status: dyn.status, updatedAt: new Date() },
+      });
+  }
+
+  // 3b) career timeline — one row per season, deterministic and idempotent
+  //     (unique on athleteId+seasonYear). The current in-world year anchors the
+  //     most-recent season to the athlete's known numbers.
+  const currentSeasonYear = new Date().getUTCFullYear();
+  let careerEntries = 0;
+  for (const a of pop.athletes) {
+    const athleteId = idBySlug.get(a.slug);
+    if (!athleteId) continue;
+    const career = buildCareer(a, currentSeasonYear);
+    careerEntries += career.length;
+    for (const e of career) {
+      await db
+        .insert(virtualCareerEntriesTable)
+        .values({
+          athleteId,
+          seasonYear: e.seasonYear,
+          ageThatYear: e.ageThatYear,
+          phase: e.phase,
+          level: e.level,
+          team: e.team,
+          ftp: e.ftp,
+          kind: e.kind,
+          title: e.title,
+          summary: e.summary,
+        })
+        .onConflictDoUpdate({
+          target: [
+            virtualCareerEntriesTable.athleteId,
+            virtualCareerEntriesTable.seasonYear,
+          ],
+          set: {
+            ageThatYear: e.ageThatYear,
+            phase: e.phase,
+            level: e.level,
+            team: e.team,
+            ftp: e.ftp,
+            kind: e.kind,
+            title: e.title,
+            summary: e.summary,
+          },
+        });
+    }
   }
 
   // 4) optional avatars (opt-in; per-athlete unique, cached by the Media Engine)
@@ -127,6 +200,7 @@ export async function persistPopulation(
     relationships: pop.relationships.length,
     avatarsCreated,
     avatarsFailed,
+    careerEntries,
   };
 }
 

@@ -5,6 +5,8 @@ import type {
   WorldAthleteProfile,
   WorldComment,
   WorldFeedResponse,
+  WorldSuggestionsResponse,
+  WorldSavedResponse,
 } from "@/lib/world-types";
 
 // The personalised Sparki World feed of validated, transparently-fictional posts.
@@ -86,5 +88,74 @@ export function useAddComment() {
       void qc.invalidateQueries({ queryKey: queryKeys.world.comments(vars.postId) });
       void qc.invalidateQueries({ queryKey: queryKeys.world.feed() });
     },
+  });
+}
+
+// Voorgestelde renners (herkenbaar + inspiratie), getailleerd op de gebruiker.
+export function useWorldRecommended() {
+  return useQuery({
+    queryKey: queryKeys.world.recommended(),
+    queryFn: () => apiFetch<WorldSuggestionsResponse>(`/api/world/recommended`),
+    staleTime: STALE.session,
+  });
+}
+
+// Toonaangevende figuren in de wereld.
+export function useWorldHeroes() {
+  return useQuery({
+    queryKey: queryKeys.world.heroes(),
+    queryFn: () => apiFetch<WorldSuggestionsResponse>(`/api/world/heroes`),
+    staleTime: STALE.session,
+  });
+}
+
+// De berichten die de gebruiker heeft bewaard.
+export function useWorldSaved() {
+  return useQuery({
+    queryKey: queryKeys.world.saved(),
+    queryFn: () => apiFetch<WorldSavedResponse>(`/api/world/saved`),
+    staleTime: STALE.live,
+  });
+}
+
+// Bewaar / haal-uit-bewaard (toggle).
+export function useToggleSave() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (postId: number) =>
+      apiFetch<{ saved: boolean }>(`/api/world/posts/${postId}/save`, {
+        method: "POST",
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.world.saved() });
+      void qc.invalidateQueries({ queryKey: queryKeys.world.feed() });
+    },
+  });
+}
+
+// Deel een bericht (stille leersignaal).
+export function useRecordShare() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (postId: number) =>
+      apiFetch<{ shared: boolean; firstTime: boolean }>(
+        `/api/world/posts/${postId}/share`,
+        { method: "POST" },
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.world.feed() });
+    },
+  });
+}
+
+// Registreer dat een bericht in beeld kwam (stil leersignaal, één keer per post).
+// Fire-and-forget: faalt het, dan blijft de feed gewoon werken.
+export function useRecordView() {
+  return useMutation({
+    mutationFn: (postId: number) =>
+      apiFetch<{ viewed: boolean; firstTime: boolean }>(
+        `/api/world/posts/${postId}/view`,
+        { method: "POST" },
+      ),
   });
 }

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   Heart,
   MessageCircle,
@@ -9,6 +9,10 @@ import {
   Send,
   Globe,
   Sparkles,
+  Bookmark,
+  Share2,
+  Users,
+  Trophy,
 } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import {
@@ -18,8 +22,19 @@ import {
   useSetFollow,
   useToggleLike,
   useAddComment,
+  useWorldRecommended,
+  useWorldHeroes,
+  useWorldSaved,
+  useToggleSave,
+  useRecordShare,
+  useRecordView,
 } from "@/hooks/use-world"
-import type { WorldAthlete, WorldPost } from "@/lib/world-types"
+import type {
+  WorldAthlete,
+  WorldPost,
+  WorldSuggestedAthlete,
+  WorldCareerEntry,
+} from "@/lib/world-types"
 
 // Plain-Dutch labels for internal discipline/kind keys.
 const KIND_LABEL: Record<string, string> = {
@@ -32,6 +47,16 @@ const KIND_LABEL: Record<string, string> = {
   humor: "Luchtig",
   observation: "Observatie",
   reel: "Clip",
+}
+
+const PHASE_LABEL: Record<string, string> = {
+  jeugd: "Jeugd",
+  u23: "Belofte (U23)",
+  continentaal: "Continentaal",
+  prof: "Prof",
+  blessure: "Blessure",
+  comeback: "Comeback",
+  coach: "Coach",
 }
 
 function initials(name: string): string {
@@ -53,7 +78,18 @@ function relativeDay(iso: string | null): string {
   return weeks === 1 ? "1 week geleden" : `${weeks} weken geleden`
 }
 
-function Avatar({ athlete, size = 44 }: { athlete: WorldAthlete; size?: number }) {
+// Believable follower display: 940, 12,3k, 1,2 mln.
+function formatFollowers(n: number): string {
+  if (n < 1000) return `${n}`
+  if (n < 1_000_000) {
+    const k = n / 1000
+    return `${k.toFixed(k < 10 ? 1 : 0).replace(".", ",")}k`
+  }
+  const m = n / 1_000_000
+  return `${m.toFixed(1).replace(".", ",")} mln`
+}
+
+function Avatar({ athlete, size = 44 }: { athlete: { avatarUrl: string | null; name: string }; size?: number }) {
   if (athlete.avatarUrl) {
     return (
       <img
@@ -102,12 +138,22 @@ function VirtualTag() {
   )
 }
 
+function FollowerCount({ score }: { score: number }) {
+  if (!score || score <= 0) return null
+  return (
+    <span className="flex items-center gap-1 text-[11px] text-white/40">
+      <Users className="h-3 w-3" strokeWidth={1.75} />
+      {formatFollowers(score)} volgers
+    </span>
+  )
+}
+
 function FollowButton({
   athlete,
   isFollowing,
   isFavorite,
 }: {
-  athlete: WorldAthlete
+  athlete: { id: number }
   isFollowing: boolean
   isFavorite: boolean
 }) {
@@ -236,10 +282,41 @@ function PostCard({
   onOpenAthlete: (slug: string) => void
 }) {
   const toggleLike = useToggleLike()
+  const toggleSave = useToggleSave()
+  const recordShare = useRecordShare()
+  const recordView = useRecordView()
   const [showComments, setShowComments] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [shared, setShared] = useState(false)
+  const ref = useRef<HTMLElement | null>(null)
+  const seen = useRef(false)
+
+  // Quiet "view" signal: fire once when the post is meaningfully in view.
+  useEffect(() => {
+    const el = ref.current
+    if (!el || seen.current) return
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting && !seen.current) {
+            seen.current = true
+            recordView.mutate(post.id)
+            obs.disconnect()
+          }
+        }
+      },
+      { threshold: 0.5 },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post.id])
 
   return (
-    <article className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <article
+      ref={ref}
+      className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+    >
       <div className="flex items-center justify-between gap-3">
         <button
           type="button"
@@ -259,6 +336,7 @@ function PostCard({
                 .filter(Boolean)
                 .join(" · ") || "Virtual Athlete"}
             </p>
+            <FollowerCount score={post.athlete.followerScore} />
           </div>
         </button>
         <FollowButton
@@ -310,10 +388,113 @@ function PostCard({
           <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
           {post.commentCount > 0 && <span>{post.commentCount}</span>}
         </button>
+        <button
+          type="button"
+          onClick={() =>
+            toggleSave.mutate(post.id, {
+              onSuccess: (r) => setSaved(r.saved),
+            })
+          }
+          disabled={toggleSave.isPending}
+          className="flex items-center gap-1.5 text-[13px] transition-colors"
+          style={{ color: saved ? "var(--accent-cyan)" : "rgba(255,255,255,0.55)" }}
+          aria-label={saved ? "Uit bewaard halen" : "Bewaren"}
+        >
+          <Bookmark
+            className="h-4 w-4"
+            strokeWidth={1.75}
+            style={{ fill: saved ? "var(--accent-cyan)" : "transparent" }}
+          />
+          <span>{saved ? "Bewaard" : "Bewaar"}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            recordShare.mutate(post.id, {
+              onSuccess: () => setShared(true),
+            })
+          }
+          disabled={recordShare.isPending}
+          className="flex items-center gap-1.5 text-[13px] transition-colors"
+          style={{ color: shared ? "var(--accent-cyan)" : "rgba(255,255,255,0.55)" }}
+          aria-label="Delen"
+        >
+          <Share2 className="h-4 w-4" strokeWidth={1.75} />
+          <span>{shared ? "Gedeeld" : "Deel"}</span>
+        </button>
       </div>
 
       {showComments && <Comments postId={post.id} />}
     </article>
+  )
+}
+
+// ── Rails: voorgestelde renners & toonaangevende figuren ─────────────────────
+function SuggestionCard({
+  athlete,
+  onOpen,
+}: {
+  athlete: WorldSuggestedAthlete
+  onOpen: (slug: string) => void
+}) {
+  const setFollow = useSetFollow()
+  return (
+    <div className="flex w-[164px] shrink-0 flex-col items-center gap-2 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-center backdrop-blur-md">
+      <button type="button" onClick={() => onOpen(athlete.slug)} aria-label={athlete.name}>
+        <Avatar athlete={athlete} size={56} />
+      </button>
+      <div className="min-w-0">
+        <button
+          type="button"
+          onClick={() => onOpen(athlete.slug)}
+          className="block w-full truncate text-[13px] font-semibold text-white"
+        >
+          {athlete.name}
+        </button>
+        <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-cyan-200/70">
+          {athlete.reason}
+        </p>
+        <p className="mt-1 text-[10px] text-white/35">
+          {formatFollowers(athlete.followerScore)} volgers
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => setFollow.mutate({ athleteId: athlete.id, following: true })}
+        disabled={setFollow.isPending}
+        className="mt-1 flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-medium transition-colors"
+        style={{ borderColor: "rgba(120,210,230,0.4)", color: "var(--accent-cyan)" }}
+      >
+        <UserPlus className="h-3 w-3" strokeWidth={1.75} /> Volgen
+      </button>
+    </div>
+  )
+}
+
+function Rail({
+  title,
+  icon,
+  items,
+  onOpen,
+}: {
+  title: string
+  icon: React.ReactNode
+  items: WorldSuggestedAthlete[]
+  onOpen: (slug: string) => void
+}) {
+  if (items.length === 0) return null
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        {icon}
+        <h2 className="text-[15px] font-semibold text-white">{title}</h2>
+      </div>
+      <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+        {items.map((a) => (
+          <SuggestionCard key={a.id} athlete={a} onOpen={onOpen} />
+        ))}
+      </div>
+    </section>
   )
 }
 
@@ -323,6 +504,59 @@ const REL_LABEL: Record<string, string> = {
   teammate: "Ploeggenoot",
   coach: "Coach",
   family: "Familie",
+}
+
+const CAREER_DOT: Record<string, string> = {
+  milestone: "var(--accent-cyan)",
+  highlight: "rgba(120,210,230,0.7)",
+  lowlight: "rgba(245,180,120,0.7)",
+  normal: "rgba(255,255,255,0.3)",
+}
+
+function CareerTimeline({ entries }: { entries: WorldCareerEntry[] }) {
+  if (entries.length === 0) return null
+  // Newest season first reads best as a "how did they get here" story.
+  const ordered = [...entries].sort((a, b) => b.seasonYear - a.seasonYear)
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+      <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.18em] text-white/35">
+        Loopbaan
+      </p>
+      <ol className="relative flex flex-col gap-4 border-l border-white/[0.1] pl-4">
+        {ordered.map((e) => (
+          <li key={e.seasonYear} className="relative">
+            <span
+              className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full"
+              style={{ backgroundColor: CAREER_DOT[e.kind] ?? CAREER_DOT.normal }}
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] font-semibold text-white">{e.seasonYear}</span>
+              <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] text-white/55">
+                {PHASE_LABEL[e.phase] ?? e.phase}
+              </span>
+              <span className="text-[11px] text-white/35">{e.ageThatYear} jaar</span>
+            </div>
+            <p className="mt-1 text-[13px] leading-relaxed text-white/85">{e.title}</p>
+            {e.summary && (
+              <p className="mt-0.5 text-[12px] leading-relaxed text-white/55">{e.summary}</p>
+            )}
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {e.team && (
+                <span className="rounded-full bg-white/[0.05] px-2 py-0.5 text-[10px] text-white/50">
+                  {e.team}
+                </span>
+              )}
+              {e.ftp != null && (
+                <span className="rounded-full bg-white/[0.05] px-2 py-0.5 text-[10px] text-white/50">
+                  FTP {e.ftp} W
+                </span>
+              )}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
 }
 
 function AthleteProfile({
@@ -383,6 +617,9 @@ function AthleteProfile({
                       .filter(Boolean)
                       .join(" · ")}
                   </p>
+                  <div className="mt-1">
+                    <FollowerCount score={data.athlete.followerScore} />
+                  </div>
                 </div>
               </div>
               <FollowButton
@@ -433,6 +670,8 @@ function AthleteProfile({
             )}
           </div>
 
+          <CareerTimeline entries={data.career} />
+
           <div className="flex flex-col gap-4">
             {data.posts.length === 0 ? (
               <p className="text-[13px] text-white/45">
@@ -450,9 +689,15 @@ function AthleteProfile({
   )
 }
 
+type Tab = "feed" | "saved"
+
 export default function WereldPage() {
   const { data, isLoading, error } = useWorldFeed()
+  const recommended = useWorldRecommended()
+  const heroes = useWorldHeroes()
+  const saved = useWorldSaved()
   const [openSlug, setOpenSlug] = useState<string | null>(null)
+  const [tab, setTab] = useState<Tab>("feed")
 
   return (
     <ScreenShell section="wereld">
@@ -471,22 +716,81 @@ export default function WereldPage() {
 
           <WorldBanner />
 
-          {isLoading ? (
-            <p className="text-[13px] text-white/45">De wereld wordt geladen…</p>
-          ) : error ? (
-            <p className="text-[13px] text-amber-200/70">
-              De wereld kon niet worden geladen. Probeer het later opnieuw.
-            </p>
-          ) : !data || data.items.length === 0 ? (
-            <p className="text-[13px] text-white/45">
-              Er zijn nog geen berichten in Sparki World.
-            </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setTab("feed")}
+              className="rounded-full border px-3.5 py-1.5 text-[12px] font-medium transition-colors"
+              style={
+                tab === "feed"
+                  ? { borderColor: "rgba(120,210,230,0.4)", color: "var(--accent-cyan)" }
+                  : { borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }
+              }
+            >
+              Tijdlijn
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("saved")}
+              className="flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[12px] font-medium transition-colors"
+              style={
+                tab === "saved"
+                  ? { borderColor: "rgba(120,210,230,0.4)", color: "var(--accent-cyan)" }
+                  : { borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }
+              }
+            >
+              <Bookmark className="h-3.5 w-3.5" strokeWidth={1.75} /> Bewaard
+            </button>
+          </div>
+
+          {tab === "saved" ? (
+            saved.isLoading ? (
+              <p className="text-[13px] text-white/45">Bewaarde berichten laden…</p>
+            ) : !saved.data || saved.data.items.length === 0 ? (
+              <p className="text-[13px] text-white/45">
+                Je hebt nog niets bewaard. Tik op "Bewaar" onder een bericht om het hier
+                terug te vinden.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {saved.data.items.map((post) => (
+                  <PostCard key={post.id} post={post} onOpenAthlete={setOpenSlug} />
+                ))}
+              </div>
+            )
           ) : (
-            <div className="flex flex-col gap-4">
-              {data.items.map((post) => (
-                <PostCard key={post.id} post={post} onOpenAthlete={setOpenSlug} />
-              ))}
-            </div>
+            <>
+              <Rail
+                title="Voorgesteld voor jou"
+                icon={<Users className="h-4 w-4 text-cyan-300/80" strokeWidth={1.75} />}
+                items={recommended.data?.items ?? []}
+                onOpen={setOpenSlug}
+              />
+              <Rail
+                title="Toonaangevend"
+                icon={<Trophy className="h-4 w-4 text-cyan-300/80" strokeWidth={1.75} />}
+                items={heroes.data?.items ?? []}
+                onOpen={setOpenSlug}
+              />
+
+              {isLoading ? (
+                <p className="text-[13px] text-white/45">De wereld wordt geladen…</p>
+              ) : error ? (
+                <p className="text-[13px] text-amber-200/70">
+                  De wereld kon niet worden geladen. Probeer het later opnieuw.
+                </p>
+              ) : !data || data.items.length === 0 ? (
+                <p className="text-[13px] text-white/45">
+                  Er zijn nog geen berichten in Sparki World.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {data.items.map((post) => (
+                    <PostCard key={post.id} post={post} onOpenAthlete={setOpenSlug} />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

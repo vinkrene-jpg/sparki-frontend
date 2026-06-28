@@ -319,6 +319,106 @@ export function buildPost(
   return { athleteSlug: athlete.slug, kind, caption, scene };
 }
 
+// ── peer comments (deterministic, supportive, safe) ──────────────────────────
+// Related athletes react to a post. The reactions are first-person, plain-Dutch,
+// neutral and STRICTLY about sport / encouragement — never flirty, romantic or
+// manipulative (the safety boundary in validation.ts is the hard gate; these
+// pools are built to stay inside it by construction). Deterministic per
+// (post, commenter) so the world is stable and re-runnable.
+export type SimComment = {
+  fromSlug: string;
+  body: string;
+};
+
+const COMMENT_TRAINING = [
+  "Lekker bezig!",
+  "Mooie cijfers.",
+  "Strakke training.",
+  "Daar word je sterker van.",
+  "Netjes afgewerkt.",
+];
+const COMMENT_RACE_GOOD = [
+  "Gefeliciteerd, knap gereden!",
+  "Top resultaat!",
+  "Verdiend — sterk gereden.",
+  "Wat een dag, chapeau!",
+];
+const COMMENT_RACE_OK = [
+  "Goed afgemaakt.",
+  "Knap volgehouden.",
+  "Sterk dat je het uitreed.",
+  "Volgende keer beter — kop op.",
+];
+const COMMENT_REST = ["Verstandig.", "Herstel hoort erbij.", "Goeie keuze."];
+const COMMENT_INJURY = ["Beterschap!", "Rustig opbouwen.", "Sterkte, neem je tijd."];
+const COMMENT_CAMP = ["Geniet van de kilometers!", "Mooie omgeving.", "Veel plezier op stage."];
+const COMMENT_EQUIPMENT = ["Benieuwd naar je ervaring.", "Hoe bevalt het?", "Mooi materiaal."];
+const COMMENT_NUTRITION = ["Goeie aanpak.", "Belangrijk, dat eten.", "Daar zit veel winst."];
+const COMMENT_MOTIV = ["Mooi doel!", "Daar ga je komen.", "Sterk, hou vast."];
+const COMMENT_GENERIC = ["Mooi!", "Sterk bezig.", "Top."];
+
+function commentPool(event: SimEvent): readonly string[] {
+  switch (event.type) {
+    case "training":
+      return COMMENT_TRAINING;
+    case "race": {
+      const good = event.payload.placing != null && Number(event.payload.placing) <= 3;
+      return good ? COMMENT_RACE_GOOD : COMMENT_RACE_OK;
+    }
+    case "rest":
+    case "recovery":
+      return COMMENT_REST;
+    case "injury":
+    case "illness":
+      return COMMENT_INJURY;
+    case "training_camp":
+      return COMMENT_CAMP;
+    case "equipment":
+      return COMMENT_EQUIPMENT;
+    case "nutrition":
+      return COMMENT_NUTRITION;
+    case "motivation":
+      return COMMENT_MOTIV;
+    default:
+      return COMMENT_GENERIC;
+  }
+}
+
+// Generate 0..3 peer comments for a post from the given candidate commenters
+// (already filtered to athletes who actually relate to the author). The count
+// scales with how notable the event is (a race win draws more reactions).
+export function generateComments(
+  athlete: GeneratedAthlete,
+  event: SimEvent,
+  candidates: GeneratedAthlete[],
+  date: string,
+): SimComment[] {
+  if (candidates.length === 0) return [];
+  const rng = new Rng(fnv1a(`${athlete.slug}|${date}|comments`));
+
+  const notable =
+    event.type === "race" &&
+    event.payload.placing != null &&
+    Number(event.payload.placing) <= 3;
+  // Base reaction likelihood; injuries/illness draw support too.
+  const maxComments = notable ? 3 : event.type === "injury" || event.type === "illness" ? 2 : 2;
+
+  // Deterministically order candidates and take a few.
+  const ordered = [...candidates].sort((a, b) =>
+    fnv1a(`${a.slug}|${date}`) - fnv1a(`${b.slug}|${date}`),
+  );
+  const pool = commentPool(event);
+  const out: SimComment[] = [];
+  for (const c of ordered) {
+    if (out.length >= maxComments) break;
+    // ~55% of eligible candidates actually comment (deterministic).
+    if (!rng.chance(0.55)) continue;
+    const body = pool[Math.floor(rng.next() * pool.length)] ?? pool[0]!;
+    out.push({ fromSlug: c.slug, body });
+  }
+  return out;
+}
+
 // ── one world-day for one athlete ────────────────────────────────────────────
 export type SimDay = { event: SimEvent; post: SimPost };
 
