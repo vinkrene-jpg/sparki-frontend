@@ -5,31 +5,47 @@
 > open punten kort in de chat. Nieuwe keuze gesteld → hier toevoegen. Beslist → hier
 > weghalen (of naar "Beslist" verplaatsen). Nooit een keuze stilletjes laten vallen.
 
-Laatst bijgewerkt: 2026-06-28 (retroactieve scan van de volledige gesprekgeschiedenis).
+Laatst bijgewerkt: 2026-06-28.
 
 ## Wacht op jouw keuze
 
-### Bekend / lopend
-1. **Mentale Training — sterrensysteem.** Onderwerpen al gekozen (6: wedstrijdspanning,
-   focus/concentratie, tegenslag & veerkracht, zelfvertrouwen, druk van ouders/coach,
-   motivatie volhouden). Nog te beslissen: wát de sterren precies regelen — diepgang
-   per kaart instelbaar, één globale diepgang-voorkeur in je profiel, of iets anders.
-   Status: feature gepauzeerd tot na de audit (audit is nu klaar) → klaar om te hervatten.
+### Sparki World (nieuwe grote visie — botst met "eerst V1 afmaken")
+1. **Richting / voorrang.** Wat eerst bouwen: (a) de V1-analyse-gaten (zoals net gekozen),
+   (b) Sparki World krijgt voorrang, of (c) parallel beginnen aan de fundering van Sparki
+   World. Status: vraag gesteld, nog geen antwoord.
+2. **Scope Sparki World.** Gefaseerd MVP (~50 Virtual Athletes, foto's + verhalen, geen
+   video) / groter ineens (500 + nachtelijke simulatie, video later) / volledige visie
+   incl. video in één keer. Status: vraag gesteld, nog geen antwoord.
+3. **Kosten-akkoord.** AI-foto's (en later video's) kosten echt geld per stuk → akkoord met
+   agressief cachen/hergebruiken en video pas in een latere fase? Status: vraag gesteld.
+
+### Mentale Training — sterrensysteem
+4. **Wát de sterren precies regelen** — diepgang per kaart instelbaar, één globale
+   diepgang-voorkeur in je profiel, of iets anders. Onderwerpen al gekozen (6).
+   NIEUW vastgelegd (28 jun): chat met Sparki mag uit beeld verdwijnen na sluiten,
+   maar blijft in Sparki's geheugen; onderwerpen + reacties worden geanalyseerd voor de
+   mentale beoordeling (privacy-gated — alleen met toestemming). Zie "Beslist".
 
 ### Gevonden in de geschiedenis — graag bevestigen of nog actueel
-2. **Route op de kaart bewerken** — route zélf vormen (tik/sleep punten) / losse
+5. **Route op de kaart bewerken** — route zélf vormen (tik/sleep punten) / losse
    verzamelpunten plaatsen / allebei. (Nu: alleen GPX-import, geen interactieve kaart.)
-3. **Route downloaden (GPX-export)** — een exportknop bij routes. (Nu: niet gekoppeld.)
-4. **Productie-database bijwerken** — schema-wijzigingen ook op de live (gepubliceerde)
+6. **Route downloaden (GPX-export)** — een exportknop bij routes. (Nu: niet gekoppeld.)
+7. **Productie-database bijwerken** — schema-wijzigingen ook op de live (gepubliceerde)
    database toepassen, zodat het na publiceren meteen werkt. (Terugkerend bij elke deploy.)
-5. **Achtergrond achter de Core / het Ride-scherm** — welke scène je daar wilt zien.
-6. **V2-dekkingsaudit** — de volledige V2-specificatie per onderdeel (1–11) nalopen en
-   rapporteren wat af/niet-af is.
+8. **Achtergrond achter de Core / het Ride-scherm** — welke scène je daar wilt zien.
 
 ### Mogelijk al achterhaald (laag) — schrap gerust
-7. **Samen-pagina volgorde** — welk blok bovenaan (Voorstellen vs. Samen trainen).
-8. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav.
-   (Beide kunnen al opgelost zijn door de latere 5-tab-herstructurering.)
+9. **Samen-pagina volgorde** — welk blok bovenaan (Voorstellen vs. Samen trainen).
+10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav.
 
 ## Beslist (archief)
-- (leeg — hier verschijnen afgeronde keuzes met de gekozen optie + datum)
+- **2026-06-28 — Bouwvolgorde V1:** eerst de analyse-gaten dichten (power-/duurcurve,
+  seizoenstijdlijn, FTP-voorspelling-grafiek). (Onder voorbehoud van de Sparki World-richtingkeuze.)
+- **2026-06-28 — Prioriteit 4 (persoonlijke beleving):** overslaan tot de rest van V1 af is.
+- **2026-06-28 — A6 live in-workout coaching + echte Garmin/Komoot/Wahoo-koppelingen:**
+  eerlijk markeren als "volgende fase / buiten huidige web-scope".
+- **2026-06-28 — Chat-geheugen & mentale beoordeling:** chatberichten mogen uit de UI
+  verdwijnen na het sluiten van het scherm, maar blijven bewaard in Sparki's geheugen;
+  Sparki analyseert de onderwerpen + reacties voor de mentale beoordeling. Alleen met
+  toestemming opslaan/analyseren (privacy-gated, geen fabricatie).
+- **2026-06-28 — V2-dekkingsaudit:** afgerond, opgeleverd als `SPARKI_V1_COVERAGE_AUDIT.md`.
