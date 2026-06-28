@@ -1,11 +1,18 @@
 <svg width="180" height="180" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
+    <radialGradient id="glowOuter" cx="256" cy="256" r="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#b6ff2e" stop-opacity="0.55" />
+      <stop offset="0.45" stop-color="#8cff1f" stop-opacity="0.18" />
+      <stop offset="1" stop-color="#8cff1f" stop-opacity="0" />
+    </radialGradient>
     <linearGradient id="bolt" x1="200" y1="100" x2="312" y2="420" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#aef0ff" />
-      <stop offset="1" stop-color="#5cc4dc" />
+      <stop offset="0" stop-color="#f2ffcf" />
+      <stop offset="0.45" stop-color="#c6ff3a" />
+      <stop offset="1" stop-color="#7be21e" />
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="110" fill="#05070e" />
+  <circle cx="256" cy="256" r="200" fill="url(#glowOuter)" />
   <g transform="translate(256 256) scale(5.4) translate(-40 -40)">
     <polygon points="44,12 28,44 38,44 36,68 52,36 42,36" fill="url(#bolt)" />
   </g>

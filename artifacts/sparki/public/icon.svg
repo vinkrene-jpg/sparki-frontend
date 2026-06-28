@@ -4,19 +4,26 @@
       <stop offset="0" stop-color="#070d16" />
       <stop offset="1" stop-color="#05070e" />
     </linearGradient>
-    <radialGradient id="glow" cx="256" cy="248" r="200" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#78d2e6" stop-opacity="0.35" />
-      <stop offset="0.55" stop-color="#78d2e6" stop-opacity="0.08" />
-      <stop offset="1" stop-color="#78d2e6" stop-opacity="0" />
+    <radialGradient id="glowOuter" cx="256" cy="252" r="210" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#b6ff2e" stop-opacity="0.55" />
+      <stop offset="0.45" stop-color="#8cff1f" stop-opacity="0.20" />
+      <stop offset="1" stop-color="#8cff1f" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="glowCore" cx="256" cy="252" r="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e6ffb0" stop-opacity="0.8" />
+      <stop offset="0.5" stop-color="#aaff2b" stop-opacity="0.35" />
+      <stop offset="1" stop-color="#aaff2b" stop-opacity="0" />
     </radialGradient>
     <linearGradient id="bolt" x1="200" y1="100" x2="312" y2="420" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#aef0ff" />
-      <stop offset="1" stop-color="#5cc4dc" />
+      <stop offset="0" stop-color="#f2ffcf" />
+      <stop offset="0.45" stop-color="#c6ff3a" />
+      <stop offset="1" stop-color="#7be21e" />
     </linearGradient>
   </defs>
   <rect width="512" height="512" fill="url(#bg)" />
-  <circle cx="256" cy="248" r="200" fill="url(#glow)" />
-  <circle cx="256" cy="256" r="186" fill="none" stroke="#78d2e6" stroke-opacity="0.22" stroke-width="2" />
+  <circle cx="256" cy="252" r="210" fill="url(#glowOuter)" />
+  <circle cx="256" cy="252" r="120" fill="url(#glowCore)" />
+  <circle cx="256" cy="256" r="186" fill="none" stroke="#aaff2b" stroke-opacity="0.28" stroke-width="2" />
   <g transform="translate(256 256) scale(5.4) translate(-40 -40)">
     <polygon points="44,12 28,44 38,44 36,68 52,36 42,36" fill="url(#bolt)" />
   </g>

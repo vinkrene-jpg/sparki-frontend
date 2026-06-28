@@ -398,6 +398,13 @@ export default function FeedPage() {
         })}
       </div>
 
+      {/* Sparki-gesprek — altijd zichtbaar bovenaan Ontdekken zodat je hier
+          direct een vraag, foto, bestand of link aan Sparki kunt geven. Niet
+          langer verstopt achter het "Sparki"-filter. */}
+      <div className="-mt-2">
+        <SparkiInputCenter />
+      </div>
+
       {/* STREAM */}
       <section>
         <SectionLabel title="Stream" />
@@ -579,14 +586,6 @@ export default function FeedPage() {
           })}
         </div>
 
-        {/* Central Sparki Input Center — the ONE place to give Sparki a photo,
-            image, PDF, file, link or question. The whole conversation (with the
-            uploaded items) stays persisted and visible. */}
-        {isSparki && (
-          <div className="mt-6">
-            <SparkiInputCenter />
-          </div>
-        )}
       </section>
 
       <KnowledgeFeedSection />
