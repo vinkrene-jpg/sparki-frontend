@@ -11,7 +11,8 @@
     "test:session-analysis": "tsx src/lib/session-analysis.test.ts",
     "test:ontwikkelprioriteit": "tsx src/lib/ontwikkelprioriteit.test.ts",
     "test:bandbreedte": "tsx src/lib/bandbreedte.test.ts",
-    "test:core-profile": "tsx src/lib/core-profile.test.ts"
+    "test:core-profile": "tsx src/lib/core-profile.test.ts",
+    "test:core-profile-bandbreedte": "tsx src/lib/core-profile-bandbreedte.test.ts"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",
