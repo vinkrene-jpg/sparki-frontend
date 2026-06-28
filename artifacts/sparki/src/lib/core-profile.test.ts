@@ -16,7 +16,12 @@
 // Exits non-zero on any failure.
 import type { AthleteProfile, TrainingSession } from "@/lib/athlete-types"
 import type { LoadData } from "@/hooks/use-load"
-import { deriveBelastbaarheid, deriveOntwikkelprioriteit } from "./core-profile"
+import type { AiObservation } from "@/hooks/use-ai-memory"
+import {
+  categorizeObservations,
+  deriveBelastbaarheid,
+  deriveOntwikkelprioriteit,
+} from "./core-profile"
 
 type Status = "pass" | "fail"
 const results: { scenario: string; status: Status; note?: string }[] = []
@@ -313,6 +318,195 @@ scenario("belastbaarheid: too little data → honest hasData=false", () => {
   assert(b.hasData === false, "short chart must fail the gate")
   assert(b.score === null && b.band === null, "no score or band may be invented")
   assert(b.reason != null && b.reason.length > 0, "an honest reason must be given")
+})
+
+// ── 7. categorizeObservations — lenses must never duplicate or lose an insight ─
+// Each live observation lands in EXACTLY ONE of four lenses by precedence:
+//   1. low confidence            → uncertainty
+//   2. has a detected pattern    → patterns
+//   3. severity needs attention  → development
+//   4. otherwise (steady/info)   → strengths
+// Dismissed / outdated / transient (daily_briefing, daily_n) are excluded.
+// The "lead" is chosen by severity → confidence → recency.
+
+let nextObsId = 1
+function makeObservation(overrides: Partial<AiObservation> = {}): AiObservation {
+  const id = nextObsId++
+  return {
+    id,
+    sourceType: "training_analysis",
+    title: `Observation ${id}`,
+    summary: null,
+    observationText: "",
+    confidence: "medium",
+    category: "general",
+    severity: "info",
+    detectedPattern: null,
+    signals: null,
+    alternativeExplanations: null,
+    confidenceScore: null,
+    recommendedAction: null,
+    status: "new",
+    createdAt: new Date(Date.now() - id * 1000).toISOString(),
+    ...overrides,
+  }
+}
+
+scenario("categorize: every live observation lands in exactly one lens", () => {
+  const obs = [
+    makeObservation({ confidence: "low", detectedPattern: "x", severity: "urgent" }), // uncertainty
+    makeObservation({ confidence: "high", detectedPattern: "trend", severity: "urgent" }), // patterns
+    makeObservation({ confidence: "medium", severity: "important" }), // development
+    makeObservation({ confidence: "high", severity: "info" }), // strengths
+    makeObservation({ confidence: "medium", severity: "watch" }), // development
+    makeObservation({ confidence: "low", severity: "info" }), // uncertainty
+  ]
+  const r = categorizeObservations(obs)
+  assert(r.total === obs.length, `total must equal live count, got ${r.total}`)
+  const sum =
+    r.strengths.length + r.development.length + r.patterns.length + r.uncertainty.length
+  assert(sum === r.total, `buckets must sum to total: ${sum} !== ${r.total}`)
+
+  // No observation may appear in two buckets, and none may be lost.
+  const seen = new Map<number, number>()
+  for (const bucket of [r.strengths, r.development, r.patterns, r.uncertainty]) {
+    for (const o of bucket) seen.set(o.id, (seen.get(o.id) ?? 0) + 1)
+  }
+  assert(seen.size === obs.length, "every live observation must appear in some bucket")
+  for (const [id, count] of seen) {
+    assert(count === 1, `observation ${id} appeared in ${count} buckets (duplicated)`)
+  }
+})
+
+scenario("categorize: low confidence beats a detected pattern → uncertainty", () => {
+  // Low confidence + a detected pattern + needs-attention severity. Precedence
+  // 1 (low confidence) must win over patterns/development.
+  const o = makeObservation({ confidence: "low", detectedPattern: "trend", severity: "urgent" })
+  const r = categorizeObservations([o])
+  assert(r.uncertainty.length === 1, "low confidence must route to uncertainty")
+  assert(r.patterns.length === 0, "a low-confidence pattern must NOT also land in patterns")
+  assert(r.development.length === 0 && r.strengths.length === 0, "no other lens may receive it")
+})
+
+scenario("categorize: a detected pattern beats needs-attention → patterns", () => {
+  // Not low confidence, has a pattern, urgent severity. Precedence 2 (pattern)
+  // must win over development.
+  const o = makeObservation({ confidence: "high", detectedPattern: "ramp", severity: "urgent" })
+  const r = categorizeObservations([o])
+  assert(r.patterns.length === 1, "a detected pattern must route to patterns")
+  assert(r.development.length === 0, "the pattern must NOT also land in development")
+})
+
+scenario("categorize: needs-attention without a pattern → development", () => {
+  for (const severity of ["watch", "important", "urgent"] as const) {
+    const o = makeObservation({ confidence: "high", severity, detectedPattern: null })
+    const r = categorizeObservations([o])
+    assert(r.development.length === 1, `severity ${severity} must route to development`)
+    assert(
+      r.patterns.length === 0 && r.uncertainty.length === 0 && r.strengths.length === 0,
+      `severity ${severity} must land ONLY in development`,
+    )
+  }
+})
+
+scenario("categorize: steady info-severity, no pattern → strengths", () => {
+  const o = makeObservation({ confidence: "high", severity: "info", detectedPattern: null })
+  const r = categorizeObservations([o])
+  assert(r.strengths.length === 1, "an info-severity, confident, pattern-less read is a strength")
+  assert(
+    r.development.length === 0 && r.patterns.length === 0 && r.uncertainty.length === 0,
+    "a strength must land ONLY in strengths",
+  )
+})
+
+scenario("categorize: a blank-string pattern is NOT treated as a real pattern", () => {
+  // detectedPattern present but empty/whitespace must fall through to development.
+  const o = makeObservation({ confidence: "high", severity: "watch", detectedPattern: "   " })
+  const r = categorizeObservations([o])
+  assert(r.patterns.length === 0, "a whitespace pattern must not route to patterns")
+  assert(r.development.length === 1, "it must fall through to development on severity")
+})
+
+scenario("categorize: dismissed / outdated / transient observations are excluded", () => {
+  const obs = [
+    makeObservation({ status: "dismissed" }),
+    makeObservation({ status: "outdated" }),
+    makeObservation({ sourceType: "daily_briefing", severity: "urgent" }),
+    makeObservation({ sourceType: "daily_n", confidence: "low" }),
+    makeObservation({ confidence: "high", severity: "info" }), // the only live one
+  ]
+  const r = categorizeObservations(obs)
+  assert(r.total === 1, `only the single live observation may count, got ${r.total}`)
+  assert(r.strengths.length === 1, "the live observation must be the lone strength")
+  assert(
+    r.development.length === 0 && r.patterns.length === 0 && r.uncertainty.length === 0,
+    "excluded observations must not leak into any lens",
+  )
+})
+
+scenario("categorize: a transient daily message never surfaces as the lead", () => {
+  // The transient one is the most severe; it must still be excluded from lead.
+  const obs = [
+    makeObservation({ sourceType: "daily_briefing", severity: "urgent", confidence: "high" }),
+    makeObservation({ confidence: "medium", severity: "watch" }),
+  ]
+  const r = categorizeObservations(obs)
+  assert(r.lead != null, "a live observation must be chosen as lead")
+  assert(r.lead!.sourceType !== "daily_briefing", "a transient message may never be the lead")
+})
+
+scenario("categorize: lead is chosen by severity first", () => {
+  // The urgent one is low-confidence and older; severity still wins outright.
+  const info = makeObservation({
+    severity: "info",
+    confidence: "high",
+    createdAt: new Date().toISOString(),
+  })
+  const urgent = makeObservation({
+    severity: "urgent",
+    confidence: "low",
+    createdAt: new Date(Date.now() - 10 * DAY).toISOString(),
+  })
+  const r = categorizeObservations([info, urgent])
+  assert(r.lead?.id === urgent.id, "the highest severity must lead regardless of confidence/age")
+})
+
+scenario("categorize: lead breaks severity ties by confidence", () => {
+  const low = makeObservation({ severity: "watch", confidence: "low" })
+  const high = makeObservation({ severity: "watch", confidence: "high" })
+  const r = categorizeObservations([low, high])
+  assert(r.lead?.id === high.id, "equal severity must break to the higher confidence")
+})
+
+scenario("categorize: lead breaks severity+confidence ties by recency", () => {
+  const older = makeObservation({
+    severity: "important",
+    confidence: "medium",
+    createdAt: new Date(Date.now() - 5 * DAY).toISOString(),
+  })
+  const newer = makeObservation({
+    severity: "important",
+    confidence: "medium",
+    createdAt: new Date().toISOString(),
+  })
+  const r = categorizeObservations([older, newer])
+  assert(r.lead?.id === newer.id, "equal severity+confidence must break to the most recent")
+})
+
+scenario("categorize: no live observations → empty, honest result", () => {
+  const r = categorizeObservations([
+    makeObservation({ status: "dismissed" }),
+    makeObservation({ sourceType: "daily_briefing" }),
+  ])
+  assert(r.total === 0, "no live observations means total 0")
+  assert(r.lead === null, "no lead may be invented")
+  assert(
+    r.strengths.length === 0 &&
+      r.development.length === 0 &&
+      r.patterns.length === 0 &&
+      r.uncertainty.length === 0,
+    "all lenses must be empty",
+  )
 })
 
 // ── Report ───────────────────────────────────────────────────────────────────
