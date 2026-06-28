@@ -259,8 +259,12 @@ export function SparkiInputCenter() {
     }
   }
 
+  const hasConversation = isLoading || turns.length > 0 || send.isPending
+
   return (
-    <div className="flex min-h-[62vh] flex-col gap-4">
+    <div
+      className={`flex flex-col gap-4 ${hasConversation ? "min-h-[62vh]" : ""}`}
+    >
       {/* CONVERSATION */}
       <div className="flex flex-1 flex-col gap-6">
         {isLoading && turns.length === 0 && (
