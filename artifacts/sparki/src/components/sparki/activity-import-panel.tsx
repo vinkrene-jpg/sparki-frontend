@@ -4,10 +4,13 @@ import {
   useActivityImports,
   useUploadActivity,
   useDeleteActivityImport,
+  useLinkActivityImport,
   type ActivityImport,
   type GpxSummary,
   type FitSummary,
 } from "@/hooks/use-activity-imports"
+import { useSessions } from "@/hooks/use-sessions"
+import type { TrainingSession } from "@/lib/athlete-types"
 
 const STATUS_LABEL: Record<string, string> = {
   uploaded: "Geüpload",
@@ -43,6 +46,50 @@ function fmtDuration(sec: number | null): string | null {
   const h = Math.floor(sec / 3600)
   const m = Math.floor((sec % 3600) / 60)
   return h > 0 ? `${h}u ${m}m` : `${m}m`
+}
+
+const NL_MONTHS = [
+  "jan", "feb", "mrt", "apr", "mei", "jun",
+  "jul", "aug", "sep", "okt", "nov", "dec",
+]
+
+function fmtDateNl(iso: string | null): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return `${d.getDate()} ${NL_MONTHS[d.getMonth()]}`
+}
+
+function sessionLabel(s: TrainingSession): string {
+  const parts: string[] = []
+  const date = fmtDateNl(s.sessionDate)
+  if (date) parts.push(date)
+  parts.push(s.title?.trim() || s.type)
+  const dur = fmtDuration(s.durationMin != null ? s.durationMin * 60 : null)
+  if (dur) parts.push(dur)
+  return parts.join(" · ")
+}
+
+// The activity's own date (from parsed GPX/FIT start time) drives a smart
+// ordering of candidate sessions; falls back to the upload moment.
+function importDateMs(imp: ActivityImport): number {
+  const s = imp.parsedSummary as { startTime?: string | null } | null
+  const iso = s?.startTime ?? imp.uploadedAt
+  const t = iso ? new Date(iso).getTime() : NaN
+  return Number.isNaN(t) ? Date.now() : t
+}
+
+// Most-likely matches first: sessions closest in time to the activity.
+function rankSessions(
+  sessions: TrainingSession[],
+  imp: ActivityImport,
+): TrainingSession[] {
+  const ref = importDateMs(imp)
+  return [...sessions].sort(
+    (a, b) =>
+      Math.abs(new Date(a.sessionDate).getTime() - ref) -
+      Math.abs(new Date(b.sessionDate).getTime() - ref),
+  )
 }
 
 // A single decoded FIT metric. `value` is null when the file did not contain it,
@@ -101,7 +148,97 @@ function FitMetricGrid({ summary }: { summary: FitSummary }) {
   )
 }
 
-function ImportCard({ imp }: { imp: ActivityImport }) {
+function LinkRow({
+  imp,
+  sessions,
+}: {
+  imp: ActivityImport
+  sessions: TrainingSession[]
+}) {
+  const link = useLinkActivityImport()
+  const [picking, setPicking] = useState(false)
+
+  const linkedSession =
+    imp.linkedTrainingSessionId != null
+      ? sessions.find((s) => s.id === imp.linkedTrainingSessionId)
+      : undefined
+  const candidates = rankSessions(sessions, imp).slice(0, 6)
+
+  if (imp.linkedTrainingSessionId != null) {
+    return (
+      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-white/[0.06] pt-2.5">
+        <span className="min-w-0 truncate text-[12px] text-white/55">
+          <span className="text-[rgba(140,230,170,0.9)]">Gekoppeld</span>
+          {linkedSession ? ` · ${sessionLabel(linkedSession)}` : ""}
+        </span>
+        <button
+          type="button"
+          onClick={() => link.mutate({ id: imp.id, sessionId: null })}
+          disabled={link.isPending}
+          className="shrink-0 font-mono text-[10px] text-white/30 transition hover:text-white/60 disabled:opacity-40"
+        >
+          ontkoppel
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-2.5 border-t border-white/[0.06] pt-2.5">
+      {!picking ? (
+        <button
+          type="button"
+          onClick={() => setPicking(true)}
+          className="font-mono text-[10px] uppercase tracking-[0.16em] transition hover:opacity-80"
+          style={{ color: ACCENT }}
+        >
+          + koppel aan training
+        </button>
+      ) : sessions.length === 0 ? (
+        <p className="text-[12px] text-white/35">
+          Nog geen trainingen om aan te koppelen — log eerst een training.
+        </p>
+      ) : (
+        <div className="space-y-1.5">
+          <p className="text-[11px] text-white/35">
+            Kies de bijbehorende training
+            <button
+              type="button"
+              onClick={() => setPicking(false)}
+              className="ml-2 font-mono text-[10px] text-white/30 transition hover:text-white/60"
+            >
+              annuleer
+            </button>
+          </p>
+          {candidates.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => {
+                link.mutate(
+                  { id: imp.id, sessionId: s.id },
+                  { onSuccess: () => setPicking(false) },
+                )
+              }}
+              disabled={link.isPending}
+              className="block w-full truncate rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-1.5 text-left text-[12px] text-white/70 transition hover:border-white/20 hover:text-white/90 disabled:opacity-40"
+            >
+              {sessionLabel(s)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ImportCard({
+  imp,
+  sessions,
+}: {
+  imp: ActivityImport
+  sessions: TrainingSession[]
+}) {
   const del = useDeleteActivityImport()
   const gpx = isGpxSummary(imp.parsedSummary) ? imp.parsedSummary : null
   const fit = isFitSummary(imp.parsedSummary) ? imp.parsedSummary : null
@@ -160,17 +297,20 @@ function ImportCard({ imp }: { imp: ActivityImport }) {
           wis
         </button>
       </div>
+      {imp.status !== "failed" && <LinkRow imp={imp} sessions={sessions} />}
     </div>
   )
 }
 
 export function ActivityImportPanel() {
   const { data, isLoading } = useActivityImports()
+  const { data: sessions } = useSessions(30)
   const upload = useUploadActivity()
   const inputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
 
   const imports = data?.imports ?? []
+  const sessionList = sessions ?? []
 
   async function onFile(file: File) {
     setError(null)
@@ -237,7 +377,9 @@ export function ActivityImportPanel() {
         {isLoading ? (
           <div className="h-16 w-full animate-pulse rounded-xl bg-white/[0.06]" />
         ) : imports.length > 0 ? (
-          imports.map((imp) => <ImportCard key={imp.id} imp={imp} />)
+          imports.map((imp) => (
+            <ImportCard key={imp.id} imp={imp} sessions={sessionList} />
+          ))
         ) : (
           <p className="text-[12px] text-white/30">
             Nog geen activiteiten geïmporteerd

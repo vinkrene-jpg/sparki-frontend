@@ -77,6 +77,22 @@ export function useUploadActivity() {
   });
 }
 
+// Link (or unlink) an import to one of the athlete's training sessions.
+// Pass sessionId: null to unlink.
+export function useLinkActivityImport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: number; sessionId: number | null }) =>
+      apiFetch<{ import: ActivityImport }>(
+        `/api/activity-imports/${input.id}/link`,
+        { method: "PATCH", body: JSON.stringify({ sessionId: input.sessionId }) },
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.activityImports.all() });
+    },
+  });
+}
+
 export function useDeleteActivityImport() {
   const qc = useQueryClient();
   return useMutation({

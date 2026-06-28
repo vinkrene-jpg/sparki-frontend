@@ -4,6 +4,7 @@ import {
   db,
   activityImportsTable,
   activityImportFileTypes,
+  trainingSessionsTable,
   type ActivityImportFileType,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
@@ -127,6 +128,92 @@ router.post("/", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "activityImports.create failed");
     res.status(500).json({ error: "Kon bestand niet verwerken" });
+  }
+});
+
+// PATCH /api/activity-imports/:id/link — link (or unlink) an import to one of
+// the athlete's own training sessions. Both the import AND the session must
+// belong to the caller (cross-tenant reference protection). Pass
+// `{ sessionId: number }` to link, `{ sessionId: null }` to unlink.
+router.patch("/:id/link", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const raw = body.sessionId;
+  const sessionId =
+    raw === null
+      ? null
+      : typeof raw === "number" && Number.isInteger(raw) && raw > 0
+        ? raw
+        : undefined;
+  if (sessionId === undefined) {
+    res.status(400).json({ error: "sessionId is verplicht (nummer of null)" });
+    return;
+  }
+  try {
+    const [imp] = await db
+      .select()
+      .from(activityImportsTable)
+      .where(
+        and(
+          eq(activityImportsTable.id, id),
+          eq(activityImportsTable.clerkId, clerkId),
+        ),
+      )
+      .limit(1);
+    if (!imp) {
+      res.status(404).json({ error: "Import niet gevonden" });
+      return;
+    }
+    if (sessionId != null && imp.status === "failed") {
+      res
+        .status(400)
+        .json({ error: "Een mislukte import kun je niet koppelen" });
+      return;
+    }
+    if (sessionId != null) {
+      const [owned] = await db
+        .select({ id: trainingSessionsTable.id })
+        .from(trainingSessionsTable)
+        .where(
+          and(
+            eq(trainingSessionsTable.id, sessionId),
+            eq(trainingSessionsTable.clerkId, clerkId),
+          ),
+        )
+        .limit(1);
+      if (!owned) {
+        res.status(400).json({ error: "Ongeldige trainingskoppeling" });
+        return;
+      }
+    }
+    // When unlinking, restore the honest pre-link status: "parsed" if the file
+    // produced real metrics, otherwise "uploaded". ("failed" can't reach here.)
+    const unlinkedStatus =
+      imp.parsedSummary && (imp.fileType === "gpx" || imp.fileType === "fit")
+        ? ("parsed" as const)
+        : ("uploaded" as const);
+    const [row] = await db
+      .update(activityImportsTable)
+      .set({
+        linkedTrainingSessionId: sessionId,
+        status: sessionId != null ? "linked" : unlinkedStatus,
+      })
+      .where(
+        and(
+          eq(activityImportsTable.id, id),
+          eq(activityImportsTable.clerkId, clerkId),
+        ),
+      )
+      .returning();
+    res.json({ import: row });
+  } catch (err) {
+    req.log.error({ err }, "activityImports.link failed");
+    res.status(500).json({ error: "Kon koppeling niet opslaan" });
   }
 });
 
