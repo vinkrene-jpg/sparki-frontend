@@ -1,18 +1,18 @@
-import { useState } from "react"
-import { SectionLabel, ACCENT } from "@/components/sparki/ui"
+import { type ReactNode } from "react"
+import { SectionLabel } from "@/components/sparki/ui"
 import {
   useObservations,
   useUpdateObservation,
   useRunConnections,
-  type AiObservation,
   type ObservationSignal,
 } from "@/hooks/use-ai-memory"
-
-const CONFIDENCE_LABEL: Record<string, string> = {
-  low: "lage zekerheid",
-  medium: "redelijke zekerheid",
-  high: "hoge zekerheid",
-}
+import { useSessions } from "@/hooks/use-sessions"
+import { useLoad } from "@/hooks/use-load"
+import { useFtpHistory } from "@/hooks/use-ftp-history"
+import { useDailyMetrics } from "@/hooks/use-daily-metrics"
+import { groupObservations, type InsightGroup } from "@/lib/insight-grouping"
+import { GraphInsightCard } from "@/components/sparki/insight/graph-insight-card"
+import { ACCENT } from "@/components/sparki/ui"
 
 const SIGNAL_LABEL: Record<ObservationSignal["kind"], string> = {
   training: "Training",
@@ -21,59 +21,6 @@ const SIGNAL_LABEL: Record<ObservationSignal["kind"], string> = {
   race: "Wedstrijd",
   feedback: "Terugkoppeling",
   memory: "Geheugen",
-}
-
-function ConfidenceMeter({
-  confidence,
-  score,
-}: {
-  confidence: string
-  score: string | null
-}) {
-  const pct = score != null ? Math.round(parseFloat(score) * 100) : null
-  return (
-    <div className="flex items-center gap-2">
-      <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
-        {CONFIDENCE_LABEL[confidence] ?? confidence}
-        {pct != null ? ` · ${pct}%` : ""}
-      </span>
-      {pct != null && (
-        <span className="h-1 w-16 overflow-hidden rounded-full bg-white/[0.08]">
-          <span
-            className="block h-full rounded-full"
-            style={{ width: `${pct}%`, background: ACCENT }}
-          />
-        </span>
-      )}
-    </div>
-  )
-}
-
-const CATEGORY_LABELS: Record<string, string> = {
-  training: "Training",
-  recovery: "Herstel",
-  race: "Wedstrijd",
-  nutrition: "Voeding",
-  hydration: "Hydratatie",
-  equipment: "Materiaal",
-  mental: "Mentaal",
-  planning: "Planning",
-  health: "Gezondheid",
-  general: "Algemeen",
-}
-
-const SEVERITY_COLOR: Record<string, string> = {
-  info: "rgba(255,255,255,0.35)",
-  watch: "rgba(245,200,110,0.9)",
-  important: "rgba(245,160,90,0.95)",
-  urgent: "rgba(255,120,110,0.95)",
-}
-
-const SEVERITY_LABEL: Record<string, string> = {
-  info: "Info",
-  watch: "Let op",
-  important: "Belangrijk",
-  urgent: "Urgent",
 }
 
 function relativeDate(iso: string): string {
@@ -88,57 +35,51 @@ function relativeDate(iso: string): string {
   })
 }
 
-function ObservationCard({ obs }: { obs: AiObservation }) {
-  const update = useUpdateObservation()
-  const [expanded, setExpanded] = useState(false)
-  const isSaved = obs.status === "saved"
-  const pending = update.isPending
+// The deeper explanation revealed under "Uitgebreid": the recommended action,
+// the signals Sparki weighed, any other same-metric observations, the
+// alternative explanations, and the per-insight management (bewaren/verbergen).
+// Always rendered for the memory panel so management stays reachable; honest —
+// nothing is invented, only collapsed.
+function GroupExtended({
+  group,
+  onSave,
+  onDismiss,
+  saved,
+  busy,
+}: {
+  group: InsightGroup
+  onSave: () => void
+  onDismiss: () => void
+  saved: boolean
+  busy: boolean
+}) {
+  const { lead, members } = group
+  const others = members.filter((m) => m.id !== lead.id)
+  const alts = lead.alternativeExplanations ?? []
+  const signals = lead.signals ?? []
 
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span
-              className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
-              style={{ background: SEVERITY_COLOR[obs.severity] }}
-            />
-            <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/35">
-              {SEVERITY_LABEL[obs.severity] ?? obs.severity}
-            </span>
-            <span className="font-mono text-[9px] text-white/25">
-              · {relativeDate(obs.createdAt)}
-            </span>
-          </div>
-          <p className="mt-1.5 text-[13px] font-medium leading-snug text-white/85">
-            {obs.title}
-          </p>
-        </div>
-        {isSaved && (
-          <span
-            className="shrink-0 font-mono text-[9px] uppercase tracking-wider"
-            style={{ color: ACCENT }}
-          >
-            Bewaard
-          </span>
-        )}
-      </div>
+    <div className="space-y-3">
+      {lead.recommendedAction && (
+        <p
+          className="rounded-xl border px-3 py-2 text-pretty text-[12px] leading-relaxed"
+          style={{
+            borderColor: "rgba(120,210,230,0.18)",
+            background: "rgba(120,210,230,0.05)",
+            color: "rgba(190,235,245,0.85)",
+          }}
+        >
+          {lead.recommendedAction}
+        </p>
+      )}
 
-      <div className="mt-1.5">
-        <ConfidenceMeter confidence={obs.confidence} score={obs.confidenceScore} />
-      </div>
-
-      <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-white/50">
-        {expanded ? obs.observationText : (obs.summary ?? obs.observationText)}
-      </p>
-
-      {expanded && obs.signals && obs.signals.length > 0 && (
-        <div className="mt-2.5">
+      {signals.length > 0 && (
+        <div>
           <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/35">
             Signalen die Sparki gebruikte
           </p>
           <ul className="mt-1.5 space-y-1">
-            {obs.signals.map((s, i) => (
+            {signals.map((s, i) => (
               <li
                 key={i}
                 className="flex items-baseline gap-2 text-[11px] leading-snug text-white/55"
@@ -161,53 +102,55 @@ function ObservationCard({ obs }: { obs: AiObservation }) {
         </div>
       )}
 
-      {expanded &&
-        obs.alternativeExplanations &&
-        obs.alternativeExplanations.length > 0 && (
-          <div className="mt-2.5">
-            <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/35">
-              Andere mogelijke verklaringen
+      {others.length > 0 && (
+        <div className="space-y-2">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+            Ook hierover opgevallen
+          </p>
+          {others.map((o) => (
+            <p
+              key={o.id}
+              className="text-pretty text-[12px] leading-relaxed text-white/55"
+            >
+              {o.observationText}
             </p>
-            <ul className="mt-1.5 space-y-1">
-              {obs.alternativeExplanations.map((a, i) => (
-                <li
-                  key={i}
-                  className="flex gap-1.5 text-[11px] leading-snug text-white/45"
-                >
-                  <span className="text-white/25">–</span>
-                  <span>{a}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-      {obs.recommendedAction && expanded && (
-        <p className="mt-2.5 text-[12px] leading-relaxed text-white/70">
-          <span style={{ color: ACCENT }}>→ </span>
-          {obs.recommendedAction}
-        </p>
+          ))}
+        </div>
       )}
 
-      <div className="mt-2.5 flex items-center gap-3">
-        {(obs.recommendedAction ||
-          (obs.signals?.length ?? 0) > 0 ||
-          (obs.alternativeExplanations?.length ?? 0) > 0 ||
-          obs.observationText !== (obs.summary ?? obs.observationText)) && (
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            className="font-mono text-[10px] tracking-wide text-white/40 transition hover:text-white/70"
+      {alts.length > 0 && (
+        <div>
+          <p className="text-[11px] leading-relaxed text-white/40">
+            Andere mogelijke verklaringen:
+          </p>
+          <ul className="mt-1 flex flex-col gap-1">
+            {alts.map((a, i) => (
+              <li
+                key={i}
+                className="text-pretty text-[12px] leading-relaxed text-white/45"
+              >
+                • {a}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="flex items-center gap-3 border-t border-white/[0.06] pt-2.5">
+        {saved && (
+          <span
+            className="font-mono text-[9px] uppercase tracking-wider"
+            style={{ color: ACCENT }}
           >
-            {expanded ? "Minder" : "Waarom?"}
-          </button>
+            Bewaard
+          </span>
         )}
         <div className="ml-auto flex items-center gap-3">
-          {!isSaved && (
+          {!saved && (
             <button
               type="button"
-              disabled={pending}
-              onClick={() => update.mutate({ id: obs.id, status: "saved" })}
+              disabled={busy}
+              onClick={onSave}
               className="font-mono text-[10px] tracking-wide text-white/45 transition hover:text-cyan-300 disabled:opacity-40"
             >
               Bewaren
@@ -215,8 +158,8 @@ function ObservationCard({ obs }: { obs: AiObservation }) {
           )}
           <button
             type="button"
-            disabled={pending}
-            onClick={() => update.mutate({ id: obs.id, status: "dismissed" })}
+            disabled={busy}
+            onClick={onDismiss}
             className="font-mono text-[10px] tracking-wide text-white/45 transition hover:text-white/80 disabled:opacity-40"
           >
             Verbergen
@@ -227,19 +170,66 @@ function ObservationCard({ obs }: { obs: AiObservation }) {
   )
 }
 
+// One honest derived insight, chart-first via the shared GraphInsightCard: the
+// real series behind the maatstaf leads, then a short read, with the deeper
+// explanation + management behind "Uitgebreid". Same-metric observations are
+// collapsed into one card so the same read never repeats.
+function MemoryInsightCard({ group }: { group: InsightGroup }): ReactNode {
+  const update = useUpdateObservation()
+  const { lead, members } = group
+  const saved = lead.status === "saved"
+
+  const dismissGroup = () => {
+    for (const m of members) {
+      update.mutate({ id: m.id, status: "dismissed" })
+    }
+  }
+
+  return (
+    <GraphInsightCard
+      title={lead.title}
+      confidence={lead.confidence}
+      concern={lead.severity === "important" || lead.severity === "urgent"}
+      series={group.series}
+      read={lead.observationText || lead.summary || ""}
+      extended={
+        <GroupExtended
+          group={group}
+          saved={saved}
+          busy={update.isPending}
+          onSave={() => update.mutate({ id: lead.id, status: "saved" })}
+          onDismiss={dismissGroup}
+        />
+      }
+    />
+  )
+}
+
 export function AiMemoryPanel() {
   const { data, isLoading } = useObservations()
+  const { data: sessions } = useSessions(60)
+  const { data: load } = useLoad()
+  const { data: ftpHistory } = useFtpHistory()
+  const { data: metrics } = useDailyMetrics(30)
   const runConnections = useRunConnections()
-  const groups = data?.groups ?? {}
-  const categories = Object.keys(groups)
+
+  // Collapse same-metric observations so the same explanation isn't repeated,
+  // and map each metric group to its real longitudinal series for the chart.
+  const groups = groupObservations(data?.observations ?? [], {
+    metrics,
+    ftpHistory,
+    load,
+    sessions,
+  })
 
   return (
     <section>
       <SectionLabel n="07" title="Sparki Geheugen" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
         Sparki legt verbanden tussen je training, slaap, herstel, wedstrijden en
-        terugkoppeling. Bij elk inzicht zie je welke signalen zijn gebruikt, hoe
-        zeker Sparki is en welke andere verklaringen mogelijk zijn.
+        terugkoppeling. Bij elk inzicht zie je de meetreeks erachter, hoe zeker
+        Sparki is en — onder "Uitgebreid" — welke signalen zijn gebruikt en welke
+        andere verklaringen mogelijk zijn.
       </p>
 
       <div className="mt-3 flex items-center gap-3">
@@ -269,24 +259,15 @@ export function AiMemoryPanel() {
             />
           ))}
         </div>
-      ) : categories.length === 0 ? (
+      ) : groups.length === 0 ? (
         <p className="mt-4 text-[13px] text-white/35">
           Nog geen verbanden · Houd je training, slaap en herstel bij en klik op
           "Verbanden zoeken" zodat Sparki patronen kan leggen
         </p>
       ) : (
-        <div className="mt-4 space-y-5">
-          {categories.map((cat) => (
-            <div key={cat}>
-              <p className="mb-2 font-mono text-[10px] tracking-[0.2em] text-white/35">
-                {(CATEGORY_LABELS[cat] ?? cat).toUpperCase()}
-              </p>
-              <div className="space-y-2.5">
-                {groups[cat]!.map((obs) => (
-                  <ObservationCard key={obs.id} obs={obs} />
-                ))}
-              </div>
-            </div>
+        <div className="mt-4 flex flex-col gap-3">
+          {groups.map((g) => (
+            <MemoryInsightCard key={g.key} group={g} />
           ))}
         </div>
       )}
