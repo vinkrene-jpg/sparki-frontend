@@ -29,6 +29,12 @@
     "test:fit-parse": "pnpm run build && node --enable-source-maps ./dist/tests/fit-parse.mjs",
     "test:email-channel": "pnpm run build && node --enable-source-maps ./dist/tests/email-channel.mjs",
     "test:development-goal": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/development-goal.mjs",
+    "test:world-media": "pnpm run build && node --enable-source-maps ./dist/tests/world-media.mjs",
+    "seed:sparki-world": "pnpm run build && node --enable-source-maps ./dist/scripts/seed-sparki-world.mjs",
+    "test:world-sim": "pnpm run build && node --enable-source-maps ./dist/tests/world-sim.mjs",
+    "test:world-consistency": "pnpm run build && node --enable-source-maps ./dist/tests/world-consistency.mjs",
+    "sim:world-day": "pnpm run build && node --enable-source-maps ./dist/scripts/run-world-day.mjs",
+    "test:world-feed": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/world-feed.mjs",
     "job:health": "pnpm run build && node --enable-source-maps ./dist/jobs/health-check.mjs",
     "job:reminders": "pnpm run build && node --enable-source-maps ./dist/jobs/reminders.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"

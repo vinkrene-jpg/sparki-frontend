@@ -248,6 +248,13 @@ export const queryKeys = {
     proposals: () => ["social", "proposals"] as const,
     team: () => ["social", "team"] as const,
   },
+
+  world: {
+    all: () => ["world"] as const,
+    feed: () => ["world", "feed"] as const,
+    athlete: (slug: string) => ["world", "athlete", slug] as const,
+    comments: (postId: number) => ["world", "comments", postId] as const,
+  },
 } as const;
 
 /** Default stale times (ms) — import these rather than hardcoding magic numbers. */

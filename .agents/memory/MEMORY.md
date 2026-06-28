@@ -76,3 +76,4 @@
 - [Sparki Ontwikkelmodel](sparki-ontwikkelmodel.md) — long-term dev model: structured developmentGoal enum + deterministic honest belastbaarheid (first-window, no fake years) + /you Ontwikkelkompas (doel+belastbaarheid+benutting).
 - [ImageMagick SVG glow](imagemagick-svg-glow.md) — MSVG ignores feGaussianBlur/filters; build icon glows with radialGradient layers, regenerate ALL PNG derivatives (OS-cached).
 - [Sparki Sound Studio](sparki-sound-studio.md) — original audio identity + in-app wekker; web can't ring locked phone (state it); dedupe on LOCAL date; optimistic restore even on first write.
+- [Sparki World architecture](sparki-world.md) — transparently-fictional Virtual Athletes island; cache-first Media Engine (promptKey UNIQUE, avatars carry slug/scenes don't); hard wall to real data; honest gaps.

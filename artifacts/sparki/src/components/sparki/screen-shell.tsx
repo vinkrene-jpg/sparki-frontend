@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { useEffect } from "react"
-import { LogOut, RefreshCw, Shield, ChevronLeft, MessageSquarePlus, Users } from "lucide-react"
+import { LogOut, RefreshCw, Shield, ChevronLeft, MessageSquarePlus, Users, Globe } from "lucide-react"
 import { Link } from "wouter"
 import { useClerk, Show } from "@clerk/react"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
@@ -33,6 +33,7 @@ const SECTION_SCENE: Record<string, SceneName> = {
   you: "you",
   samen: "feed",
   activiteiten: "feed",
+  wereld: "feed",
 }
 
 // User-facing Dutch label for the section shown in the header. Keeps the internal
@@ -46,6 +47,7 @@ const SECTION_DISPLAY: Record<string, string> = {
   you: "PROFIEL",
   samen: "SAMEN",
   activiteiten: "ACTIVITEITEN",
+  wereld: "WERELD",
   kennisbank: "KENNIS",
   coach: "COACH",
   ouder: "OUDER",
@@ -181,6 +183,23 @@ function SamenButton() {
   )
 }
 
+// Fixed, app-wide entry to "Sparki World" — the transparently-fictional world of
+// Virtual Athletes. Lives as a clear top button for athletes, like Samen.
+function WereldButton() {
+  const { profile } = useUserProfile()
+  if (profile?.activeRole !== "athlete") return null
+  return (
+    <Link
+      href="/wereld"
+      aria-label="Sparki World"
+      title="Sparki World"
+      className="rounded-full border border-white/15 p-1.5 text-white/60 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+    >
+      <Globe className="h-4 w-4" strokeWidth={1.75} />
+    </Link>
+  )
+}
+
 // Header trigger that opens the global feedback & bug reporter from any screen.
 function FeedbackButton() {
   const { openFeedback } = useFeedback()
@@ -271,6 +290,7 @@ export function ScreenShell({
               <div className="flex items-center gap-3">
                 {profile?.isHeadTester && <HeadTesterBadge number={profile.headTesterNumber ?? null} />}
                 <SamenButton />
+                <WereldButton />
                 <FeedbackButton />
                 <NotificationBell />
                 <div className="flex flex-col items-end gap-1.5">

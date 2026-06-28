@@ -21,6 +21,7 @@ import YouPage from "@/pages/you"
 import GeluidPage from "@/pages/geluid"
 import RacesPage from "@/pages/races"
 import SamenPage from "@/pages/samen"
+import WereldPage from "@/pages/wereld"
 import InvitationsPage from "@/pages/invitations"
 import InviteAcceptPage from "@/pages/invite-accept"
 import TesterQrPage from "@/pages/tester-qr"
@@ -72,6 +73,7 @@ const VIEWS: DevView[] = [
   { label: "Geluid", path: "/geluid" },
   { label: "Foto-lab", path: "/photo-lab" },
   { label: "Samen", path: "/samen" },
+  { label: "Wereld", path: "/wereld" },
   { label: "Kennis", path: "/kennis" },
   { label: "Invites", path: "/invitations" },
   { label: "Tester-QR", path: "/tester-qr" },
@@ -395,6 +397,8 @@ export function DevPreview() {
     page = <RacesPage />
   } else if (location.startsWith("/samen")) {
     page = <SamenPage />
+  } else if (location.startsWith("/wereld")) {
+    page = <WereldPage />
   } else if (location.startsWith("/admin/health/")) {
     page = <AdminHealthDetailPage />
     showNav = false

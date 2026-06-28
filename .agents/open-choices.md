@@ -9,16 +9,6 @@ Laatst bijgewerkt: 2026-06-28.
 
 ## Wacht op jouw keuze
 
-### Sparki World (nieuwe grote visie — botst met "eerst V1 afmaken")
-1. **Richting / voorrang.** Wat eerst bouwen: (a) de V1-analyse-gaten (zoals net gekozen),
-   (b) Sparki World krijgt voorrang, of (c) parallel beginnen aan de fundering van Sparki
-   World. Status: vraag gesteld, nog geen antwoord.
-2. **Scope Sparki World.** Gefaseerd MVP (~50 Virtual Athletes, foto's + verhalen, geen
-   video) / groter ineens (500 + nachtelijke simulatie, video later) / volledige visie
-   incl. video in één keer. Status: vraag gesteld, nog geen antwoord.
-3. **Kosten-akkoord.** AI-foto's (en later video's) kosten echt geld per stuk → akkoord met
-   agressief cachen/hergebruiken en video pas in een latere fase? Status: vraag gesteld.
-
 ### Mentale Training — sterrensysteem
 4. **Wát de sterren precies regelen** — diepgang per kaart instelbaar, één globale
    diepgang-voorkeur in je profiel, of iets anders. Onderwerpen al gekozen (6).
@@ -39,6 +29,11 @@ Laatst bijgewerkt: 2026-06-28.
 10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav.
 
 ## Beslist (archief)
+- **2026-06-28 — Sparki World richting + scope + kosten:** parallel beginnen aan de
+  fundering; gefaseerd MVP (~50 Virtual Athletes, foto's + verhalen, géén video — video
+  is fase 2); akkoord met agressief cachen/hergebruiken van beelden om kosten te drukken.
+  MVP gebouwd (T001–T007: schema, Media Engine, populatie, simulatie+validatie, feed/
+  interacties-API + personalisatie v1, /wereld-tab, consistentie-harness).
 - **2026-06-28 — Bouwvolgorde V1:** eerst de analyse-gaten dichten (power-/duurcurve,
   seizoenstijdlijn, FTP-voorspelling-grafiek). (Onder voorbehoud van de Sparki World-richtingkeuze.)
 - **2026-06-28 — Prioriteit 4 (persoonlijke beleving):** overslaan tot de rest van V1 af is.

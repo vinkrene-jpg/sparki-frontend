@@ -38,6 +38,7 @@ import corePredictionRouter from "./core-prediction";
 import telemetryRouter from "./telemetry";
 import weatherRouter from "./weather";
 import audioRouter from "./audio";
+import sparkiWorldRouter from "./sparki-world";
 import devRouter from "./dev";
 
 const router: IRouter = Router();
@@ -81,6 +82,7 @@ router.use("/core-prediction", corePredictionRouter);
 router.use("/telemetry", telemetryRouter);
 router.use("/weather", weatherRouter);
 router.use("/audio", audioRouter);
+router.use("/world", sparkiWorldRouter);
 
 // Dev-only routes (preview-athlete switcher). Mounted ONLY outside production so
 // these endpoints simply do not exist on a deployed build.
