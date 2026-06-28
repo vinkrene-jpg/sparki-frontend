@@ -3,8 +3,10 @@ import { useLocation } from "wouter"
 import {
   useNotifications,
   useMarkNotificationRead,
+  useMarkNotificationsRead,
   useMarkAllNotificationsRead,
   type AppNotification,
+  type NotificationGroup,
 } from "@/hooks/use-notifications"
 
 const PRIORITY_COLOR: Record<string, string> = {
@@ -24,23 +26,26 @@ function relativeDate(iso: string): string {
   })
 }
 
+// A single notification line (used both standalone and as a member of a day).
 function NotificationRow({
   n,
-  onNavigate,
+  showDate = true,
+  compact = false,
+  onActivate,
 }: {
   n: AppNotification
-  onNavigate: (url: string | null) => void
+  showDate?: boolean
+  compact?: boolean
+  onActivate: (n: AppNotification) => void
 }) {
-  const markRead = useMarkNotificationRead()
   const unread = n.readAt == null
   return (
     <button
       type="button"
-      onClick={() => {
-        if (unread) markRead.mutate(n.id)
-        onNavigate(n.actionUrl)
-      }}
-      className="flex w-full items-start gap-2.5 border-b border-white/[0.05] px-3.5 py-3 text-left transition last:border-0 hover:bg-white/[0.03]"
+      onClick={() => onActivate(n)}
+      className={`flex w-full items-start gap-2.5 border-b border-white/[0.05] text-left transition last:border-0 hover:bg-white/[0.03] ${
+        compact ? "px-3.5 py-2.5" : "px-3.5 py-3"
+      }`}
     >
       <span
         className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
@@ -56,9 +61,11 @@ function NotificationRow({
           >
             {n.title}
           </p>
-          <span className="shrink-0 font-mono text-[9px] text-white/25">
-            {relativeDate(n.createdAt)}
-          </span>
+          {showDate && (
+            <span className="shrink-0 font-mono text-[9px] text-white/25">
+              {relativeDate(n.createdAt)}
+            </span>
+          )}
         </div>
         {n.body && (
           <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-white/45">
@@ -70,20 +77,97 @@ function NotificationRow({
   )
 }
 
+// A combined day: one header line ("Je hebt 3 dingen voor vandaag") with the
+// individual notifications listed underneath, expandable.
+function DayGroupRow({
+  group,
+  onActivate,
+}: {
+  group: Extract<NotificationGroup, { kind: "day" }>
+  onActivate: (n: AppNotification) => void
+}) {
+  const [expanded, setExpanded] = useState(group.isToday)
+  const markMany = useMarkNotificationsRead()
+  const unread = group.unreadCount > 0
+
+  function markDayRead() {
+    const ids = group.members.filter((m) => m.readAt == null).map((m) => m.id)
+    if (ids.length > 0) markMany.mutate(ids)
+  }
+
+  return (
+    <div className="border-b border-white/[0.05] last:border-0">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-start gap-2.5 px-3.5 py-3 text-left transition hover:bg-white/[0.03]"
+      >
+        <span
+          className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
+          style={{
+            background: unread ? PRIORITY_COLOR[group.priority] : "transparent",
+            border: unread ? "none" : "1px solid rgba(255,255,255,0.15)",
+          }}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <p
+              className={`truncate text-[13px] ${unread ? "font-medium text-white/90" : "text-white/55"}`}
+            >
+              {group.title}
+            </p>
+            <span className="shrink-0 font-mono text-[9px] text-white/25">
+              {group.dayLabel}
+            </span>
+          </div>
+          <p className="mt-0.5 text-[11px] text-cyan-300/60">
+            {expanded ? "Verberg onderdelen" : "Toon onderdelen"}
+          </p>
+        </div>
+      </button>
+      {expanded && (
+        <div className="bg-white/[0.015] pl-3">
+          {group.members.map((m) => (
+            <NotificationRow
+              key={m.id}
+              n={m}
+              showDate={false}
+              compact
+              onActivate={onActivate}
+            />
+          ))}
+          {unread && (
+            <div className="px-3.5 py-2">
+              <button
+                type="button"
+                onClick={markDayRead}
+                disabled={markMany.isPending}
+                className="font-mono text-[10px] text-cyan-300/80 transition hover:text-cyan-300 disabled:opacity-40"
+              >
+                dag gelezen
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function NotificationBell() {
   const [open, setOpen] = useState(false)
   const [, navigate] = useLocation()
   const { data } = useNotifications()
+  const markRead = useMarkNotificationRead()
   const markAll = useMarkAllNotificationsRead()
 
-  const notifications = data?.notifications ?? []
+  const groups = data?.groups ?? []
   const unreadCount = data?.unreadCount ?? 0
 
-  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "")
-
-  function onNavigate(url: string | null) {
+  function onActivate(n: AppNotification) {
+    if (n.readAt == null) markRead.mutate(n.id)
     setOpen(false)
-    if (url) navigate(url)
+    if (n.actionUrl) navigate(n.actionUrl)
   }
 
   return (
@@ -126,10 +210,22 @@ export function NotificationBell() {
               )}
             </div>
             <div className="max-h-[22rem] overflow-y-auto">
-              {notifications.length > 0 ? (
-                notifications.map((n) => (
-                  <NotificationRow key={n.id} n={n} onNavigate={onNavigate} />
-                ))
+              {groups.length > 0 ? (
+                groups.map((g) =>
+                  g.kind === "single" ? (
+                    <NotificationRow
+                      key={`s-${g.notification.id}`}
+                      n={g.notification}
+                      onActivate={onActivate}
+                    />
+                  ) : (
+                    <DayGroupRow
+                      key={`d-${g.dayKey}`}
+                      group={g}
+                      onActivate={onActivate}
+                    />
+                  ),
+                )
               ) : (
                 <p className="px-3.5 py-6 text-center text-[12px] text-white/30">
                   Geen meldingen

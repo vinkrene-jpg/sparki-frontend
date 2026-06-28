@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import {
   db,
   notificationsTable,
@@ -7,7 +7,10 @@ import {
   reminderKinds,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { getUnreadCount } from "../lib/notifications";
+import {
+  getUnreadDayCount,
+  groupNotificationsByDay,
+} from "../lib/notifications";
 import { getPrefs, updatePrefs, type PrefsPatch } from "../engines/reminders";
 import { pushChannelStatus, isValidPushEndpoint } from "../lib/push";
 
@@ -140,8 +143,11 @@ router.get("/", requireAuth, async (req, res) => {
       .where(where)
       .orderBy(desc(notificationsTable.createdAt))
       .limit(limit);
-    const unreadCount = await getUnreadCount(clerkId);
-    res.json({ notifications, unreadCount });
+    // Fold the rows into at-most-one entry per calendar day for the bell. The
+    // unread badge counts *days* with unread notifications, not the raw total.
+    const groups = groupNotificationsByDay(notifications);
+    const unreadCount = await getUnreadDayCount(clerkId);
+    res.json({ groups, unreadCount });
   } catch (err) {
     req.log.error({ err }, "notifications.list failed");
     res.status(500).json({ error: "Kon meldingen niet laden" });
@@ -171,6 +177,39 @@ router.patch("/:id/read", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "notifications.read failed");
     res.status(500).json({ error: "Kon melding niet bijwerken" });
+  }
+});
+
+// POST /api/notifications/read-batch — mark a set of notifications read in one
+// go. Used when an athlete reads a combined day entry in the bell: the client
+// passes every member id of that day so the whole day flips to read at once.
+router.post("/read-batch", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = (req.body ?? {}) as { ids?: unknown };
+  const ids = Array.isArray(body.ids)
+    ? body.ids
+        .map((v) => Number(v))
+        .filter((v) => Number.isInteger(v))
+    : [];
+  if (ids.length === 0) {
+    res.status(400).json({ error: "Geen meldingen opgegeven" });
+    return;
+  }
+  try {
+    await db
+      .update(notificationsTable)
+      .set({ readAt: new Date() })
+      .where(
+        and(
+          eq(notificationsTable.clerkId, clerkId),
+          inArray(notificationsTable.id, ids),
+          isNull(notificationsTable.readAt),
+        ),
+      );
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "notifications.readBatch failed");
+    res.status(500).json({ error: "Kon meldingen niet bijwerken" });
   }
 });
 
