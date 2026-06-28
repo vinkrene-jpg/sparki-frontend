@@ -20,6 +20,7 @@ export * from "./routes";
 export * from "./notifications";
 export * from "./reminder-preferences";
 export * from "./push-subscriptions";
+export * from "./audio-preferences";
 export * from "./bug-reports";
 export * from "./knowledge";
 export * from "./health-checks";

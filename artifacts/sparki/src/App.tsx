@@ -45,6 +45,8 @@ import { FeedbackProvider } from "@/contexts/FeedbackContext";
 import { DevPreview } from "@/components/sparki/dev-preview";
 import { DEV_PREVIEW } from "@/lib/dev";
 import { STALE } from "@/lib/query-keys";
+import { SoundProvider } from "@/contexts/SoundContext";
+import GeluidPage from "@/pages/geluid";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -413,6 +415,7 @@ function AppRouter() {
         <UserProvider>
           <FeatureFlagProvider>
             <FeedbackProvider>
+            <SoundProvider>
             <ErrorBoundary>
               <ScrollToTop />
               {DEV_PREVIEW ? (
@@ -443,6 +446,9 @@ function AppRouter() {
                 </Route>
                 <Route path="/you">
                   <ProtectedPage component={YouPage} />
+                </Route>
+                <Route path="/geluid">
+                  <ProtectedPage component={GeluidPage} />
                 </Route>
                 <Route path="/races">
                   <ProtectedPage component={RacesPage} />
@@ -478,6 +484,7 @@ function AppRouter() {
               </Switch>
               )}
             </ErrorBoundary>
+            </SoundProvider>
             </FeedbackProvider>
           </FeatureFlagProvider>
         </UserProvider>

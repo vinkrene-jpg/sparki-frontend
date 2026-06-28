@@ -23,3 +23,39 @@ id = "_OX_LQlsTZzVpQhxn917i"
 uri = "file://SPARKI_MASTER_BLUEPRINT.md"
 type = "text"
 title = "Sparki Master Blueprint (compleet)"
+
+[[outputs]]
+id = "TigUwSXCY0Kg4tYLaLjuo"
+uri = "file://artifacts/sparki/public/sounds/sparki/performance/wekker-sport.mp3"
+type = "audio"
+title = "Wekker — Sport"
+
+[[outputs]]
+id = "Q7xTMKH8WfF8cM657YAZh"
+uri = "file://artifacts/sparki/public/sounds/sparki/performance/wekker-energie.mp3"
+type = "audio"
+title = "Wekker — Energie (loop)"
+
+[[outputs]]
+id = "UKA_i2zrEXDdpig5B1Q3M"
+uri = "file://artifacts/sparki/public/sounds/sparki/performance/wekker-rust.mp3"
+type = "audio"
+title = "Wekker — Rust"
+
+[[outputs]]
+id = "cJphvfl9CbO9ebdTE2jOb"
+uri = "file://artifacts/sparki/public/sounds/sparki/performance/training-voltooid.mp3"
+type = "audio"
+title = "Training voltooid"
+
+[[outputs]]
+id = "mnsGWMXbSBRWXPh9AbCUu"
+uri = "file://artifacts/sparki/public/sounds/sparki/performance/record.mp3"
+type = "audio"
+title = "Nieuw record"
+
+[[outputs]]
+id = "zfN5jrk0bHBlF6MxC5JI2"
+uri = "file://artifacts/sparki/public/sounds/sparki/performance/observatie.mp3"
+type = "audio"
+title = "Melding of inzicht"

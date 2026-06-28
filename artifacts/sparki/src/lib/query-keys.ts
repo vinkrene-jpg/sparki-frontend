@@ -19,6 +19,11 @@ export const queryKeys = {
     flags: () => ["user", "flags"] as const,
   },
 
+  audio: {
+    all: () => ["audio"] as const,
+    preferences: () => ["audio", "preferences"] as const,
+  },
+
   state: {
     all: () => ["state"] as const,
     current: () => ["state", "current"] as const,

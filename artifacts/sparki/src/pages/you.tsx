@@ -993,6 +993,23 @@ export default function YouPage() {
             </button>
           </div>
           <div className="mx-auto w-full max-w-xl flex-1 px-5 py-8">
+            <button
+              type="button"
+              onClick={() => navigate("/geluid")}
+              className="mb-6 flex w-full items-center justify-between rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-3.5 text-left backdrop-blur-md transition-colors hover:bg-white/[0.04]"
+            >
+              <span>
+                <span className="block text-sm font-medium text-white">
+                  Geluid &amp; wekker
+                </span>
+                <span className="block text-xs text-white/50">
+                  App-geluiden, volume en de wekker instellen.
+                </span>
+              </span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300/70">
+                Open
+              </span>
+            </button>
             <ProfileSettings focus={focus} onCompleteFix={onCompleteFix} />
           </div>
         </div>
