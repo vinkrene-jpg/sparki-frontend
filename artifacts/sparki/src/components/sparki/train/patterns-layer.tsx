@@ -24,8 +24,14 @@ const cardClass =
 function renderGroupExtended(group: InsightGroup): ReactNode | undefined {
   const { lead, members } = group
   const others = members.filter((m) => m.id !== lead.id)
+  const signals = lead.signals ?? []
   const alts = lead.alternativeExplanations ?? []
-  if (!lead.recommendedAction && others.length === 0 && alts.length === 0) {
+  if (
+    !lead.recommendedAction &&
+    signals.length === 0 &&
+    others.length === 0 &&
+    alts.length === 0
+  ) {
     return undefined
   }
   return (
@@ -41,6 +47,21 @@ function renderGroupExtended(group: InsightGroup): ReactNode | undefined {
         >
           {lead.recommendedAction}
         </p>
+      )}
+      {signals.length > 0 && (
+        <div className="space-y-2">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+            Waarop dit is gebaseerd
+          </p>
+          {signals.map((s, i) => (
+            <div key={`${s.kind}-${i}`} className="flex items-start gap-2.5">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-white/30" />
+              <p className="text-[12px] leading-relaxed text-white/60">
+                <span className="text-white/80">{s.label}:</span> {s.value}
+              </p>
+            </div>
+          ))}
+        </div>
       )}
       {others.length > 0 && (
         <div className="space-y-2">
