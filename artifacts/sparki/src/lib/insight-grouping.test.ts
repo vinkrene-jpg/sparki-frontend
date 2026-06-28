@@ -10,8 +10,18 @@
 //     data yields an empty `values` array (the card shows "nog geen meetreeks"),
 //     never a fabricated line.
 //
+// A SURFACE GUARD also lives here: the derived-observation surfaces (Trainen
+// PatternsLayer, /you Core, and the Inzicht "Sparki Geheugen" panel) must all
+// render through groupObservations + GraphInsightCard so the same metric never
+// reappears as several near-identical cards. The guard fails if any of those
+// surfaces stops grouping or reintroduces the old per-observation ObservationCard
+// pattern — catching a regression by test instead of by eye.
+//
 // Pure functions, no DB — run with: `pnpm --filter @workspace/sparki run test:insight-grouping`
 // Exits non-zero on any failure.
+import { readFileSync } from "node:fs"
+import { dirname, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
 import type { AiObservation } from "@/hooks/use-ai-memory"
 import type { AthleteDailyMetric, FtpHistoryEntry } from "@/lib/athlete-types"
 import {
@@ -185,6 +195,89 @@ scenario("FTP series sorts ascending by measurement date", () => {
 scenario("'other' kind never produces a chart", () => {
   assert(seriesForKind("other", {}) === null, "other kind must map to null series")
 })
+
+// ── grouping + honesty at the groupObservations level ────────────────────────
+
+scenario(
+  "groupObservations collapses same-metric (lead + members) and never fabricates a series without data",
+  () => {
+    const list = [
+      obs({ title: "HRV daalt", severity: "watch", confidence: "low" }),
+      obs({ title: "HRV blijft laag", severity: "important", confidence: "high" }),
+      obs({ title: "HRV herstelt traag", severity: "info", confidence: "medium" }),
+      obs({ title: "Weersverwachting wedstrijd", category: "race" }),
+    ]
+    // No sources at all → nothing real to chart.
+    const groups = groupObservations(list, {})
+
+    const hrv = groups.find((g) => g.kind === "hrv")
+    assert(!!hrv, "the three HRV observations must collapse into one hrv group")
+    assert(
+      hrv!.members.length === 3,
+      `the hrv group must carry all 3 members, got ${hrv!.members.length}`,
+    )
+    assert(
+      hrv!.lead.title === "HRV blijft laag",
+      `the strongest observation must lead, got "${hrv!.lead.title}"`,
+    )
+    assert(
+      hrv!.members[0].id === hrv!.lead.id,
+      "the lead must be the first member of the group",
+    )
+    // A metric group with no source data must yield an empty (not fabricated) series.
+    assert(!!hrv!.series, "a metric group still returns a series shell")
+    assert(
+      hrv!.series!.values.length === 0,
+      "no source data must yield zero values, never an invented line",
+    )
+
+    // A non-chartable insight yields a null series (no chart at all).
+    const other = groups.find((g) => g.kind === "other")
+    assert(!!other, "the race-weather note must stay its own 'other' group")
+    assert(
+      other!.series === null,
+      "an insight with no real series must yield a null series, never a fabricated one",
+    )
+  },
+)
+
+// ── surface guard: every observation surface must group ──────────────────────
+//
+// These surfaces render derived AiObservations. Each MUST funnel them through
+// groupObservations + GraphInsightCard so the same maatstaf collapses into one
+// card. The guard fails if a surface drops grouping or reintroduces a raw
+// per-observation card (the old ObservationCard pattern) — locking the rule in.
+
+const here = dirname(fileURLToPath(import.meta.url)) // …/src/lib
+const SURFACES: { name: string; path: string }[] = [
+  {
+    name: "Inzicht — Sparki Geheugen panel",
+    path: resolve(here, "../components/sparki/ai-memory-panel.tsx"),
+  },
+  {
+    name: "Trainen — PatternsLayer",
+    path: resolve(here, "../components/sparki/train/patterns-layer.tsx"),
+  },
+  { name: "/you — Core", path: resolve(here, "../pages/you.tsx") },
+]
+
+for (const surface of SURFACES) {
+  scenario(`${surface.name} groups observations (no raw per-observation cards)`, () => {
+    const src = readFileSync(surface.path, "utf8")
+    assert(
+      /\bgroupObservations\s*\(/.test(src),
+      `${surface.name} must funnel observations through groupObservations() — it no longer groups`,
+    )
+    assert(
+      src.includes("GraphInsightCard"),
+      `${surface.name} must render insights via the shared GraphInsightCard`,
+    )
+    assert(
+      !/\bObservationCard\b/.test(src),
+      `${surface.name} reintroduced the old per-observation ObservationCard pattern — group instead`,
+    )
+  })
+}
 
 // ── Report ───────────────────────────────────────────────────────────────────
 
