@@ -59,3 +59,9 @@ id = "zfN5jrk0bHBlF6MxC5JI2"
 uri = "file://artifacts/sparki/public/sounds/sparki/performance/observatie.mp3"
 type = "audio"
 title = "Melding of inzicht"
+
+[[outputs]]
+id = "9jsCR8LnUHrNMmfVcRYlE"
+uri = "file://SPARKI_V1_COVERAGE_AUDIT.md"
+type = "text"
+title = "Sparki V1 Dekkingsaudit (28 juni 2026)"
