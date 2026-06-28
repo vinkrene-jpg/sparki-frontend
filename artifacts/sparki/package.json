@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:session-analysis": "tsx src/lib/session-analysis.test.ts",
     "test:ontwikkelprioriteit": "tsx src/lib/ontwikkelprioriteit.test.ts",
+    "test:bandbreedte": "tsx src/lib/bandbreedte.test.ts",
     "test:core-profile": "tsx src/lib/core-profile.test.ts"
   },
   "devDependencies": {
