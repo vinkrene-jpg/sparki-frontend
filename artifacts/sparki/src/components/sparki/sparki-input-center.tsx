@@ -260,9 +260,9 @@ export function SparkiInputCenter() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-[62vh] flex-col gap-4">
       {/* CONVERSATION */}
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-1 flex-col gap-6">
         {isLoading && turns.length === 0 && (
           <div className="space-y-4">
             {[0, 1].map((i) => (
@@ -446,9 +446,9 @@ export function SparkiInputCenter() {
 
           {/* Text composer */}
           <textarea
-            className="max-h-32 min-h-[40px] flex-1 resize-none rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+            className="max-h-40 min-h-[56px] flex-1 resize-none rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
             placeholder="Stel Sparki een vraag of beschrijf wat je deelt…"
-            rows={1}
+            rows={2}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
