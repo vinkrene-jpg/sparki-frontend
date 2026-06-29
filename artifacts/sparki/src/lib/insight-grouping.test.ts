@@ -30,6 +30,11 @@ import {
   seriesForKind,
   type InsightSources,
 } from "./insight-grouping"
+import {
+  coachOwnsObservations,
+  OBSERVATION_PROSE_FIELDS,
+  ownerOf,
+} from "./insight-ownership"
 
 type Status = "pass" | "fail"
 const results: { scenario: string; status: Status; note?: string }[] = []
@@ -318,6 +323,65 @@ for (const surface of SURFACES) {
     )
   })
 }
+
+// ── dedup guard: coach vs observations own DISJOINT insight domains ──────────
+//
+// Two systems derive from the SAME observations: the daily coach (a synthesized
+// day-advies) and the over-time observations (grafiek-eerst kaarten). To stop the
+// SAME insight from appearing twice (coach prose + kaart), the coach surface owns
+// ONLY the synthesized advies; the trend observations are owned solely by the
+// GraphInsightCard surface. lib/insight-ownership is the SSOT; this guard locks it.
+
+scenario("insight ownership map has exactly one owner per domain", () => {
+  assert(
+    ownerOf("daily_advice") === "coach_daily",
+    "het dagadvies moet bij de coach-kaart horen",
+  )
+  assert(
+    ownerOf("trend_observation") === "graph_cards",
+    "trend-observaties moeten bij de grafiek-kaarten horen",
+  )
+  assert(
+    !coachOwnsObservations(),
+    "de coach-kaart mag nooit eigenaar van trend-observaties zijn",
+  )
+})
+
+scenario("CoachAnalysisCard renders no trend-observation prose (advies-only)", () => {
+  const src = readFileSync(
+    resolve(here, "../components/sparki/coach/coach-analysis-card.tsx"),
+    "utf8",
+  )
+  for (const field of OBSERVATION_PROSE_FIELDS) {
+    assert(
+      !new RegExp(`data\\.${field}\\b`).test(src),
+      `coach card re-renders observation prose "data.${field}" — dat inzicht hoort bij de GraphInsightCard-kaarten; haal het hier weg (anders verschijnt het twee keer)`,
+    )
+  }
+  // It must still render the synthesized advies it owns.
+  assert(
+    /data\.advice\b/.test(src),
+    "coach card moet nog steeds het dagadvies tonen dat het bezit",
+  )
+})
+
+scenario("grouped metric insights are all owned by the graph-card surface", () => {
+  const groups = groupObservations(
+    [
+      obs({ title: "HRV blijft laag", severity: "important", confidence: "high" }),
+      obs({ title: "FTP stijgt", severity: "info", confidence: "medium" }),
+      obs({ title: "Rusthartslag daalt", severity: "watch", confidence: "low" }),
+    ],
+    {},
+  )
+  assert(groups.length > 0, "verwacht gegroepeerde trend-inzichten")
+  const owner = ownerOf("trend_observation")
+  assert(owner === "graph_cards", "trend-observaties renderen op de grafiek-kaarten")
+  assert(
+    owner !== "coach_daily",
+    "geen enkele trend-observatie mag op de coach-kaart verschijnen",
+  )
+})
 
 // ── Report ───────────────────────────────────────────────────────────────────
 

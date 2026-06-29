@@ -34,8 +34,15 @@ shared card + one grouping engine so every observation surface reads the same.
   splitting across `other`/`recovery`/`hrv`.
 - Resting-HR trend is "good when down"; daily metrics arrive newest-first and
   must be reversed to chronological before charting.
-- SCOPE BOUNDARY: this pattern is for AiObservation *card lists*. The daily
-  coach surface ("Sparki vandaag" / "Wat valt op") is a different engine — a
-  single synthesized advice block, not a metric-card list — so the grafiek-eerst
-  card does not apply there. Unifying those two engines (ownership/source-of-truth
-  per insight kind to suppress cross-tab duplicates) is a separate, larger task.
+- OWNERSHIP RULE (insight ontdubbeling): the daily-coach analysis and the
+  over-time observations are TWO renderings of the SAME derived observations, so
+  whenever both can appear together they duplicate. The durable rule: the coach
+  surface owns ONLY the synthesized day-advies; the grafiek-eerst cards are the
+  SOLE owner of the trend/observation reads. The coach card must never re-render
+  the observation prose. **Why:** a code review rejected an attempt where the coach
+  card showed both the advies AND the observation prose that the graph cards
+  already showed. **How to apply:** `lib/insight-ownership.ts` is the SSOT and a
+  source-reading guard in `insight-grouping.test.ts` fails if the coach card
+  reintroduces an observation-prose field — keep that guard green; the coach
+  backend fields stay populated but unused by the UI. Enforcement is currently
+  test-only (the SSOT isn't wired into runtime selection yet).

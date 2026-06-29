@@ -66,32 +66,6 @@ function signalLabel(kind: string): string {
   return SIGNAL_LABEL[kind] ?? kind
 }
 
-function normalizeText(s: string): string {
-  return s.trim().toLowerCase().replace(/\s+/g, " ")
-}
-
-// Drop any lens whose text is already contained in (or contains) "wat valt op".
-// The engine builds "wat valt op" from ALL observations while each lens is a
-// subset, so on e.g. an all-concerns day they read identically. This keeps the
-// same sentence from appearing under two headings. Honest: nothing is invented,
-// only repetition is removed.
-function dedupeLenses(
-  watValtOp: string | null,
-  lenses: { label: string; body: string | null }[],
-): { label: string; body: string }[] {
-  const seen: string[] = []
-  if (watValtOp) seen.push(normalizeText(watValtOp))
-  const out: { label: string; body: string }[] = []
-  for (const l of lenses) {
-    if (!l.body) continue
-    const n = normalizeText(l.body)
-    if (seen.some((s) => s.includes(n) || n.includes(s))) continue
-    seen.push(n)
-    out.push({ label: l.label, body: l.body })
-  }
-  return out
-}
-
 function ConfidencePill({ confidence }: { confidence: Confidence }) {
   const tone =
     confidence.level === "high"
@@ -106,52 +80,6 @@ function ConfidencePill({ confidence }: { confidence: Confidence }) {
     >
       zekerheid {confidence.score}%
     </span>
-  )
-}
-
-// One analysis part. Honest about gaps: a null part renders a plain "te weinig
-// gegevens" line rather than being hidden or faked.
-function AnalysisPart({
-  label,
-  body,
-}: {
-  label: string
-  body: string | null
-}) {
-  return (
-    <div className="border-l border-white/10 pl-3">
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
-        {label}
-      </p>
-      {body ? (
-        <p className="mt-1 text-sm leading-relaxed text-white/80">{body}</p>
-      ) : (
-        <p className="mt-1 text-sm italic leading-relaxed text-white/35">
-          Hier heeft Sparki vandaag te weinig gegevens voor.
-        </p>
-      )}
-    </div>
-  )
-}
-
-// When Sparki has no real read for one or more analytical lenses, it says so
-// ONCE — naturally and honestly — instead of repeating an identical "te weinig
-// gegevens" placeholder under every empty heading. Three apologies in a row read
-// as a robotic form; one plain-Dutch line that names the gap and how it unlocks
-// reads as an intelligent coach.
-function InsightGapNote({ phrases }: { phrases: string[] }) {
-  const list =
-    phrases.length === 1
-      ? phrases[0]
-      : `${phrases.slice(0, -1).join(", ")} en ${phrases[phrases.length - 1]}`
-  return (
-    <div className="border-l border-white/10 pl-3">
-      <p className="text-sm italic leading-relaxed text-white/45">
-        Vandaag nog geen {list} in je gegevens. Dat scherpt vanzelf
-        aan naarmate je meer ritten en check-ins logt — dan vallen trends en
-        uitschieters op.
-      </p>
-    </div>
   )
 }
 
@@ -479,26 +407,10 @@ export function CoachAnalysisCard({
     ]),
   ]
 
-  // The three optional analytical lenses. Only render the ones Sparki genuinely
-  // has a read on; everything absent folds into a single honest note rather than
-  // a repeated "te weinig gegevens" placeholder under each empty heading.
-  const lenses = [
-    { label: "Patronen", phrase: "terugkerende patronen", body: data.patronen },
-    {
-      label: "Beter dan verwacht",
-      phrase: "meevallers",
-      body: data.beterDanVerwacht,
-    },
-    {
-      label: "Verdient aandacht",
-      phrase: "aandachtspunten",
-      body: data.verdientAandacht,
-    },
-  ]
-  const dedupedLenses = dedupeLenses(data.watValtOp, lenses)
-  const absentLensPhrases = lenses
-    .filter((l) => !l.body)
-    .map((l) => l.phrase)
+  // Ontdubbeling: trend-inzichten (HRV/rusthart/slaap/FTP/CTL/vorm/frequentie)
+  // horen bij de grafiek-eerst inzichtkaarten op Training en Profiel — niet hier.
+  // Deze kaart blijft puur het dagadvies (de synthese), zodat hetzelfde inzicht
+  // niet twee keer verschijnt. Eigenaarschap staat vast in lib/insight-ownership.
 
   // ── Hero (Home) ────────────────────────────────────────────────────────────
   if (variant === "hero") {
@@ -542,13 +454,6 @@ export function CoachAnalysisCard({
             <p className="mt-2.5 text-lg font-semibold leading-snug text-white">
               {data.advice.headline}
             </p>
-          </div>
-
-          {/* Eén korte lezing. De diepte (waarom / hoe zeker / meevallers) zit
-              achter "Waarom zegt Sparki dit?" zodat dit scanbaar blijft en de
-              kop niet twee keer als advies herhaald wordt. */}
-          <div className="mt-4">
-            <AnalysisPart label="Wat valt op" body={data.watValtOp} />
           </div>
 
           {/* Open vragen — alleen als Sparki echt iets wil weten */}
@@ -627,13 +532,6 @@ export function CoachAnalysisCard({
         </p>
       </div>
 
-      {/* Eén scanbare lezing. De volledige uitsplitsing (lenzen + waarom +
-          onderbouwing) zit achter "Waarom zegt Sparki dit?" zodat de kaart geen
-          muur tekst is. */}
-      <div className="mt-4">
-        <AnalysisPart label="Wat valt op" body={data.watValtOp} />
-      </div>
-
       {/* Why-panel toggle (inline expander) */}
       <button
         type="button"
@@ -651,29 +549,11 @@ export function CoachAnalysisCard({
 
       {showWhy && (
         <div className="mt-3 space-y-4 rounded-xl border border-white/[0.08] bg-black/20 p-4">
-          {(dedupedLenses.length > 0 || absentLensPhrases.length > 0) && (
-            <div className="space-y-3">
-              {dedupedLenses.map((l) => (
-                <AnalysisPart key={l.label} label={l.label} body={l.body} />
-              ))}
-              {absentLensPhrases.length > 0 && (
-                <InsightGapNote phrases={absentLensPhrases} />
-              )}
-            </div>
-          )}
-          <div
-            className={
-              dedupedLenses.length > 0 || absentLensPhrases.length > 0
-                ? "border-t border-white/[0.06] pt-4"
-                : ""
-            }
-          >
-            <WhyContent
-              data={data}
-              usedSignals={usedSignals}
-              missingKinds={missingKinds}
-            />
-          </div>
+          <WhyContent
+            data={data}
+            usedSignals={usedSignals}
+            missingKinds={missingKinds}
+          />
         </div>
       )}
 
