@@ -18,6 +18,9 @@
 //                         each leading with its real chart.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import type { AiObservation } from "@/hooks/use-ai-memory"
+import { isTrainingObservation } from "@/lib/train-intelligence"
+
 export type InsightDomain = "daily_advice" | "trend_observation"
 export type InsightSurface = "coach_daily" | "graph_cards"
 
@@ -45,3 +48,22 @@ export const OBSERVATION_PROSE_FIELDS = [
   "beterDanVerwacht",
   "verdientAandacht",
 ] as const
+
+// ── Cross-tab ownership (which TAB renders an over-time observation) ──────────
+//
+// The grafiek-eerst observation cards live on two tabs and would otherwise show
+// the same observation twice. Ownership is by category so each observation
+// renders on exactly ONE tab:
+//   - Trainen "Wat over tijd opvalt" → the training-pattern reads (belasting,
+//     herstel, fitheid, vorm, frequentie — the TRAINING_CATEGORIES).
+//   - /you Core → the durable, non-training profiel-traits (the tone-lenzen).
+// This partition makes the rendered observation sets disjoint across the tabs.
+export type TabSurface = "train" | "you"
+
+export function observationTabOwner(o: AiObservation): TabSurface {
+  return isTrainingObservation(o.category) ? "train" : "you"
+}
+
+export function ownsObservation(surface: TabSurface, o: AiObservation): boolean {
+  return observationTabOwner(o) === surface
+}

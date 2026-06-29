@@ -44,5 +44,13 @@ shared card + one grouping engine so every observation surface reads the same.
   already showed. **How to apply:** `lib/insight-ownership.ts` is the SSOT and a
   source-reading guard in `insight-grouping.test.ts` fails if the coach card
   reintroduces an observation-prose field — keep that guard green; the coach
-  backend fields stay populated but unused by the UI. Enforcement is currently
-  test-only (the SSOT isn't wired into runtime selection yet).
+  backend fields stay populated but unused by the UI.
+- CROSS-TAB OWNERSHIP RULE: Trainen "Wat over tijd opvalt" and /you Core both
+  render grafiek-eerst cards from the SAME observation pool, so the same read can
+  appear on both tabs. The durable rule: each observation has exactly ONE owning
+  tab — split by category, Trainen owns the training-pattern reads, /you owns the
+  rest. **Why:** a code review rejected an attempt where a training-category read
+  showed on both Trainen and /you. **How to apply:** route every tab's observation
+  filter through the insight-ownership SSOT (never a direct category check in a UI
+  component), and keep the regression test asserting the two tabs render disjoint
+  observations + group keys for the same payload.

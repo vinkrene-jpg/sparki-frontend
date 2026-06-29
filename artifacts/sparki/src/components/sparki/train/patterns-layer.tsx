@@ -5,7 +5,7 @@ import { useLoad } from "@/hooks/use-load"
 import { useFtpHistory } from "@/hooks/use-ftp-history"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
-import { isTrainingObservation } from "@/lib/train-intelligence"
+import { ownsObservation } from "@/lib/insight-ownership"
 import { groupObservations, type InsightGroup } from "@/lib/insight-grouping"
 import { LayerHeading } from "@/components/sparki/train/layer-heading"
 import { TrainingProgression } from "@/components/sparki/training-progression"
@@ -109,8 +109,11 @@ export function PatternsLayer() {
   const { data: metrics } = useDailyMetrics(30)
   const runConnections = useRunConnections()
 
+  // Trainen owns the training-pattern observations; /you Core owns the rest.
+  // Ownership lives in lib/insight-ownership so the same insight can't appear on
+  // both tabs.
   const training = (obs?.observations ?? []).filter((o) =>
-    isTrainingObservation(o.category),
+    ownsObservation("train", o),
   )
   // Collapse same-metric observations so the same explanation isn't repeated.
   const groups = groupObservations(training, {

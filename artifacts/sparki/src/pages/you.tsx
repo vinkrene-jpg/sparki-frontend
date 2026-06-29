@@ -19,6 +19,7 @@ import {
   type InsightGroup,
   type InsightSources,
 } from "@/lib/insight-grouping"
+import { ownsObservation } from "@/lib/insight-ownership"
 import { useFixParams, useCompleteFix, useStartFix } from "@/hooks/use-missing-input"
 import {
   deriveIdentity,
@@ -308,7 +309,13 @@ export default function YouPage() {
 
   const sessionsCount = sessions?.length ?? 0
   const identity = deriveIdentity(profile, sessionsCount)
-  const observations = obsData?.observations ?? []
+  // Cross-tab ontdubbeling: the training-pattern observations are owned by
+  // Trainen "Wat over tijd opvalt"; /you Core owns the durable, non-training
+  // profiel-traits. Filtering here keeps the same insight from appearing on both
+  // tabs. lib/insight-ownership is the SSOT.
+  const observations = (obsData?.observations ?? []).filter((o) =>
+    ownsObservation("you", o),
+  )
   const lenses = categorizeObservations(observations)
 
   // Group ALL durable observations ONCE so the same maatstaf is shown a single

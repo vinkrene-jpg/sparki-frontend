@@ -33,7 +33,9 @@ import {
 import {
   coachOwnsObservations,
   OBSERVATION_PROSE_FIELDS,
+  observationTabOwner,
   ownerOf,
+  ownsObservation,
 } from "./insight-ownership"
 
 type Status = "pass" | "fail"
@@ -380,6 +382,71 @@ scenario("grouped metric insights are all owned by the graph-card surface", () =
   assert(
     owner !== "coach_daily",
     "geen enkele trend-observatie mag op de coach-kaart verschijnen",
+  )
+})
+
+// ── cross-tab guard: Trainen and /you own DISJOINT observations ──────────────
+//
+// Trainen "Wat over tijd opvalt" and /you Core both render grafiek-eerst cards
+// from the SAME ai_observations pool. Without ownership, a training-category read
+// (e.g. HRV/fitheid) would appear on BOTH tabs. lib/insight-ownership partitions
+// them by category — Trainen owns the training-pattern reads, /you owns the rest —
+// so each observation has exactly one owning tab and renders once.
+
+scenario("every observation is owned by exactly one tab (train XOR you)", () => {
+  const payload = [
+    obs({ title: "HRV blijft laag", category: "recovery" }),
+    obs({ title: "Fitheid stijgt", category: "fitness" }),
+    obs({ title: "Eiwitinname blijft laag", category: "nutrition" }),
+    obs({ title: "Doel komt in zicht", category: "goal" }),
+  ]
+  for (const o of payload) {
+    const ownedByTrain = ownsObservation("train", o)
+    const ownedByYou = ownsObservation("you", o)
+    assert(
+      ownedByTrain !== ownedByYou,
+      `observation "${o.title}" (${o.category}) must be owned by exactly one tab, got train=${ownedByTrain} you=${ownedByYou}`,
+    )
+    assert(
+      observationTabOwner(o) === (ownedByTrain ? "train" : "you"),
+      "observationTabOwner must agree with ownsObservation",
+    )
+  }
+})
+
+scenario("Trainen and /you render DISJOINT observation sets for the same payload", () => {
+  const payload = [
+    obs({ title: "HRV blijft laag", category: "recovery" }),
+    obs({ title: "Fitheid stijgt", category: "fitness" }),
+    obs({ title: "Belasting loopt op", category: "load" }),
+    obs({ title: "Eiwitinname blijft laag", category: "nutrition" }),
+    obs({ title: "Doel komt in zicht", category: "goal" }),
+  ]
+  const trainIds = payload.filter((o) => ownsObservation("train", o)).map((o) => o.id)
+  const youIds = payload.filter((o) => ownsObservation("you", o)).map((o) => o.id)
+  // Together they cover the whole payload (nothing dropped, nothing duplicated).
+  assert(
+    trainIds.length + youIds.length === payload.length,
+    `every observation must land on one tab, got train=${trainIds.length} you=${youIds.length} of ${payload.length}`,
+  )
+  const overlap = trainIds.filter((id) => youIds.includes(id))
+  assert(
+    overlap.length === 0,
+    `Trainen and /you must not share observations, overlapping ids: ${JSON.stringify(overlap)}`,
+  )
+  // The grafiek-eerst groups built per tab share no group key either.
+  const trainKeys = groupObservations(
+    payload.filter((o) => ownsObservation("train", o)),
+    {},
+  ).map((g) => g.key)
+  const youKeys = groupObservations(
+    payload.filter((o) => ownsObservation("you", o)),
+    {},
+  ).map((g) => g.key)
+  const sharedKeys = trainKeys.filter((k) => youKeys.includes(k))
+  assert(
+    sharedKeys.length === 0,
+    `Trainen and /you group keys must be disjoint, shared: ${JSON.stringify(sharedKeys)}`,
   )
 })
 
