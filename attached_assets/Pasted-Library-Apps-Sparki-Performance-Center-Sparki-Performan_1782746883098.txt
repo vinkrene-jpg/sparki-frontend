@@ -1,0 +1,72 @@
+Library
+Apps
+Sparki — Performance Center
+Sparki — Performance CenterWebsite
+Documents
+Sparki Phase 2 — Migration PlanText
+Sparki Migration AuditText
+Sparki Master Blueprint (compleet)Text
+Sparki V1 Dekkingsaudit (28 juni 2026)Text
+Images
+cinematic cycling hero
+cinematic cycling heroImage
+Audio
+Wekker — SportAudio
+Wekker — Energie (loop)Audio
+Wekker — RustAudio
+Training voltooidAudio
+Nieuw recordAudio
+Melding of inzichtAudio
+rustigAudio
+energiekAudio
+epischAudio
+Limit the number of displayed recurring pattern cards
+
+waar staan de mentale leskaarten?
+7 minutes ago
+
+Korte check van de route en het navigatielabel, dan geef ik je een exact antwoord.
+
+Er is geen aparte feature die letterlijk "mentale leskaarten" heet. De mentale content zit in de Kennisbank:
+
+In de app
+
+    Pagina: /kennis (in de navigatie onder Kennis/Ontdekken).
+    Daar staat bovenaan een rij onderwerp-filters; kies "Mentaal" om alleen die kaarten te zien (sportpsychologie / mindset / focus / spanning).
+
+In de code
+
+    Pagina + filters: artifacts/sparki/src/pages/knowledge.tsx
+    Het onderwerp-label: mentaal: "Mentaal" in artifacts/sparki/src/lib/intel-types.ts
+    Backend-bron van de kaarten: artifacts/api-server/src/lib/knowledge/topics.ts (disciplines sportpsychologie / psychologie) en de matching in artifacts/api-server/src/lib/knowledge/retrieval.ts (keywords mental, mindset, motivatie, focus, spanning, zenuwen, psychologie).
+
+Wil je dat ik je naar dat scherm breng/screenshot maak, of bedoelde je iets specifiekers met "leskaarten" (bijv. een aparte lesmodule die je verwacht maar niet ziet)?
+
+Eén ding dat me opviel tijdens het zoeken: in diverse gebruikersteksten staat het losse woord "ni" waar "mentale"/"mentaal" hoort (bijv. "Tactiek & ni", "Hoeveel ni steun heb je graag?", "houd me ni scherp"). Dat lijkt een tekstcorruptie. Zal ik dat apart voor je nakijken en herstellen?
+
+06 terugkerende partonen zijn wel erg veel kaarten.
+5 minutes ago
+
+wat is de status van het ai-peloton?
+3 minutes ago
+
+Laat me de echte data-status ophalen (aantallen) en de dagelijkse simulatie + media-engine bekijken.
+
+Het AI-peloton (intern "Sparki World" — het transparant-fictieve virtuele peloton) is gebouwd en draait, met één duidelijk gat: er is nog geen beeld gegenereerd. Status op basis van de echte data nu:
+
+Werkt / aanwezig
+
+    Pagina + navigatie: bereikbaar op /wereld, met route en detailpagina per renner.
+    Backend volledig bedraad: /api/world/* (feed, profielen, volgen, likes, reacties, bewaren, delen, views, aanbevolen, kopstukken) + engines (feed, affiniteit, media, populatie, simulatie) + 10 DB-tabellen.
+    Cast bestaat: 50 virtuele renners, 50 posts, 50 events.
+    Dagelijkse simulatie: er is een wereld-dag-job (sim:world-day); deze is één keer gedraaid (laatste event: 28-06-2026).
+
+Gaten (eerlijk)
+
+    Geen beeld: virtual_media = 0 rijen (0 klaar, 0 mislukt). De media-engine is cache-first en genereert alleen met de --images-vlag, en die is nog nooit gedraaid → geen avatars/scènefoto's. Conform de eerlijkheidsregel toont de UI hier nette "geen beeld"-gaten in plaats van neppe foto's.
+    Maar 1 gesimuleerde dag: de feed is dus vrij dun; meer dagen draaien geeft een levendiger peloton.
+    Nog geen interactie: user_virtual_follows = 0 — niemand volgt nog een virtuele renner.
+
+Kort samengevat: functioneel compleet en live met 50 fictieve renners en één dag aan posts/events, maar zónder gegenereerde beelden en zonder dat iemand al volgt. De grootste eerstvolgende stap zou zijn: de wereld-dag mét beeld draaien (en evt. een paar extra dagen) zodat er avatars en scènes verschijnen.
+
+Wil je dat ik (a) de wereld-dag mét beeld draai om avatars/scènes te genereren, (b) een paar extra dagen simuleer voor een rijkere feed, of (c) het zo laat?

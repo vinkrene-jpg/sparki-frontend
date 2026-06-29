@@ -32,6 +32,13 @@ Real, DB-backed, interactive cycling-knowledge module. Five card kinds:
   so it never overrides a real discipline/topic/level match. (Computing it without
   using it was flagged as an incomplete "depth personalization".)
 
+- **Content source is the curated `scripts/seed-intel.ts` ONLY** — no
+  auto-generation/ingestion. An empty topic *filter* (e.g. mentaal, slaap,
+  aerodynamica) is honest thin-seed coverage, NOT a bug; the feed never zero-filters
+  the base "Alles + Alle onderwerpen" view. Keep ≥2 real, sourced cards per
+  `intelTopic` or that topic's filter shows the empty state. Cards must stay honest:
+  qualitative/ranges over fabricated precise specs, `null`→"—", `sourceLabel` always.
+
 ## Test/build path
 
 - After schema change: `pnpm --filter @workspace/db run build`.

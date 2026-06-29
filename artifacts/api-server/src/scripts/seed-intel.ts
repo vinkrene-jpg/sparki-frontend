@@ -365,6 +365,267 @@ const CARDS: SeedCard[] = [
       hasConsensus: false,
     },
   },
+
+  // ── AERODYNAMICA ──────────────────────────────────────────────────────────
+  {
+    dedupeKey: "myth-aero-only-high-speed",
+    kind: "myth_buster",
+    topic: "aerodynamica",
+    title: "Aerodynamica telt alleen bij hoge snelheid",
+    summary:
+      "Veel renners denken dat aero pas zin heeft als je hard gaat. Klopt dat?",
+    disciplines: ["road", "triathlon", "all"],
+    levels: ["all"],
+    sourceLabel: "Aerodynamica-onderzoek wielrennen",
+    content: {
+      statement:
+        "Aan je aerodynamica werken heeft alleen zin als je heel hard rijdt.",
+      answer: "niet_waar",
+      explanation:
+        "Luchtweerstand is al de grootste remmende kracht bij gewone snelheden op het vlakke. Vanaf zo'n 20–25 km/u gaat het grootste deel van je vermogen op aan het verplaatsen van lucht, niet aan rolweerstand.",
+      science:
+        "Luchtweerstand groeit met het kwadraat van de snelheid en het benodigde vermogen nog sterker. Bij vlak rijden is de rijder zelf veruit de grootste hap luchtweerstand (ruwweg twee derde tot driekwart van het totaal), dus je houding telt zwaarder dan je materiaal.",
+      application:
+        "Je hoeft geen tijdritfiets te kopen. Iets lager op het stuur, smallere ellebogen en jezelf klein maken in de wind levert op elke rit gratis snelheid op.",
+      relevance:
+        "Helpt je sneller rijden zonder meer vermogen — puur door slimmer in de wind te zitten.",
+    },
+  },
+  {
+    dedupeKey: "academy-position-beats-gear-aero",
+    kind: "academy",
+    topic: "aerodynamica",
+    title: "Waarom je houding meer scheelt dan je wielen",
+    summary:
+      "Het goedkoopste aerovoordeel zit niet in je portemonnee maar in je houding.",
+    disciplines: ["road", "triathlon", "gravel", "all"],
+    levels: ["beginner", "intermediate", "advanced"],
+    sourceLabel: "Aerodynamica — verdeling luchtweerstand",
+    content: {
+      simple:
+        "De grootste 'rem' in de wind ben je zelf, niet je fiets. Daarom levert kleiner maken in je houding meestal meer snelheid op dan dure aerospullen.",
+      deep:
+        "Van de totale luchtweerstand komt het grootste deel van het lichaam van de rijder en maar een kleiner deel van het frame en de wielen. Een lagere, compactere houding (vlakke rug, smalle ellebogen, hoofd uit de wind) verkleint je frontale oppervlak en daarmee je weerstand. Aerowielen en -frames helpen ook, maar het effect is kleiner én duurder dan wat je gratis met je lichaam kunt doen. De kunst is een aerohouding vinden die je lang kunt volhouden en waarin je nog goed vermogen kwijt kunt.",
+      example:
+        "Dezelfde renner die van rechtop naar laag-op-de-beugels gaat, rijdt bij gelijk vermogen merkbaar harder — vaak meer winst dan een set aerowielen oplevert.",
+      conclusion:
+        "Werk eerst (gratis) aan je houding, daarna pas aan materiaal. En train je aerohouding, zodat hij comfortabel en vol te houden wordt.",
+      readMinutes: 4,
+    },
+  },
+
+  // ── SLAAP ─────────────────────────────────────────────────────────────────
+  {
+    dedupeKey: "academy-sleep-recovery-tool",
+    kind: "academy",
+    topic: "slaap",
+    title: "Slaap: je sterkste hersteltool",
+    summary: "Geen supplement of massage komt in de buurt van een goede nacht.",
+    disciplines: ["all"],
+    levels: ["all"],
+    sourceLabel: "Slaap- en herstelonderzoek bij sporters",
+    content: {
+      simple:
+        "Je wordt niet sterker tijdens het trainen, maar tijdens het herstellen — en slaap is daarvan het belangrijkste deel. Te weinig slaap remt je herstel, je vorm en je concentratie.",
+      deep:
+        "In de diepe slaap lopen herstelprocessen die spieren en energievoorraden herstellen en het zenuwstelsel laten kalmeren. Structureel te kort slapen verhoogt je vermoeidheid, verlaagt je vermogen om hard te trainen en vergroot de kans op ziekte en blessures. Volwassen sporters hebben vaak baat bij zo'n 7–9 uur, met extra behoefte in zware trainingsweken; jonge sporters hebben er doorgaans nog meer nodig.",
+      example:
+        "Een week met structureel te weinig slaap voelt als 'benen vol' en mindere motivatie, ook al klopt je training. Herstel je slaap, dan komt je scherpte vaak vanzelf terug.",
+      conclusion:
+        "Behandel slaap als training: vaste tijden, donker en koel, scherm weg vóór het slapen. Het is de goedkoopste winst die er is.",
+      readMinutes: 3,
+    },
+  },
+  {
+    dedupeKey: "myth-catch-up-sleep-weekend",
+    kind: "myth_buster",
+    topic: "slaap",
+    title: "Slaaptekort haal je in het weekend in",
+    summary: "Doordeweeks kort slapen en zaterdag uitslapen — lost dat het op?",
+    disciplines: ["all"],
+    levels: ["all"],
+    sourceLabel: "Slaaponderzoek — slaapschuld",
+    content: {
+      statement:
+        "Een week te weinig slapen maak je goed met één keer flink uitslapen in het weekend.",
+      answer: "hangt_ervan_af",
+      explanation:
+        "Eén keer uitslapen helpt iets tegen acute vermoeidheid, maar herstelt niet alles van een hele week tekort. De aanpassingen die je training laten plakken, vragen om regelmaat, niet om één lange nacht.",
+      science:
+        "Opgebouwde 'slaapschuld' los je niet volledig op met een enkele uitslaapnacht; sommige effecten op alertheid en stofwisseling blijven hangen. Een regelmatig slaapritme werkt beter dan grote uitschieters.",
+      application:
+        "Mik op consistente bedtijden door de week heen. Een keer wat extra in het weekend mag, maar reken er niet op als reparatie voor structureel tekort.",
+      relevance:
+        "Voorkomt dat je je herstel ondermijnt met een ritme dat je vorm in de weg zit.",
+    },
+  },
+
+  // ── WETENSCHAP ────────────────────────────────────────────────────────────
+  {
+    dedupeKey: "academy-what-is-vo2max",
+    kind: "academy",
+    topic: "wetenschap",
+    title: "Wat is VO2max — en kun je het verbeteren?",
+    summary: "Het 'motorvermogen' van je lichaam, in gewone taal.",
+    disciplines: ["all"],
+    levels: ["beginner", "intermediate", "advanced"],
+    sourceLabel: "Inspanningsfysiologie — zuurstofopname",
+    content: {
+      simple:
+        "VO2max is hoeveel zuurstof je lichaam maximaal kan opnemen en gebruiken per minuut. Hoe hoger, hoe groter je 'motor' voor harde, langere inspanningen. En ja: je kunt hem trainen.",
+      deep:
+        "VO2max hangt af van hoeveel zuurstofrijk bloed je hart kan rondpompen en hoe goed je spieren die zuurstof gebruiken. Aanleg speelt een rol, maar gerichte training — vooral stevige intervallen rond je maximale duurinspanning, bovenop een brede aerobe basis — verhoogt het meetbaar. De winst is het grootst bij wie nog ongetraind is en vlakt af naarmate je beter getraind raakt.",
+      example:
+        "Een paar weken intervallen van enkele minuten hard, afgewisseld met rust en bovenop rustige duur, tilt bij de meeste renners de VO2max omhoog.",
+      conclusion:
+        "VO2max is deels aanleg, deels training. Combineer een stevige aerobe basis met gerichte intervallen om hem te laten groeien.",
+      readMinutes: 4,
+    },
+  },
+  {
+    dedupeKey: "debate-marginal-gains",
+    kind: "debate",
+    topic: "wetenschap",
+    title: "Werken 'marginal gains' echt?",
+    summary:
+      "Tientallen kleine voordeeltjes optellen tot winst — feit of marketing?",
+    disciplines: ["all"],
+    levels: ["intermediate", "advanced", "elite"],
+    sourceLabel: "Sportwetenschap — kleine winsten vs. basis",
+    content: {
+      proposition:
+        "Veel kleine verbeteringen optellen ('marginal gains') maakt het verschil tussen winnen en verliezen.",
+      argumentFor:
+        "Op topniveau liggen renners zo dicht bij elkaar dat een handvol kleine voordelen — aero, voeding, slaap, materiaal — samen een meetbaar verschil maken.",
+      argumentAgainst:
+        "Voor de meeste renners zijn de grote knoppen (trainingsopbouw, herstel, consistentie) nog lang niet uitgenut. Je verliezen in details terwijl de basis nog winst biedt, is zonde van je tijd.",
+      science:
+        "De wetenschap ondersteunt dat kleine voordelen optellen, maar vooral als de basis al op orde is. Het grootste rendement zit voor bijna iedereen in consistent trainen, voldoende herstel en goede voeding — pas daarna lonen de marges.",
+      proTeams:
+        "Topteams jagen op marginale winsten, maar bouwen die bovenop een keiharde trainings- en herstelbasis — niet in plaats daarvan.",
+      conclusion:
+        "Eerst de basis, dan de marges. Marginal gains werken, maar zijn geen shortcut om een onafgemaakte basis te omzeilen.",
+      hasConsensus: false,
+    },
+  },
+
+  // ── WEDSTRIJDEN ───────────────────────────────────────────────────────────
+  {
+    dedupeKey: "academy-pacing-race",
+    kind: "academy",
+    topic: "wedstrijden",
+    title: "Pacing: waarom te hard starten je koers breekt",
+    summary: "De klassieke fout: vol vertrekken en sterven in de finale.",
+    disciplines: ["road", "gravel", "triathlon", "mtb", "all"],
+    levels: ["all"],
+    sourceLabel: "Wedstrijdfysiologie — verdeling van de inspanning",
+    content: {
+      simple:
+        "Te hard beginnen voelt goed in de eerste minuten, maar kost je later veel meer dan het oplevert. Gelijkmatig verdelen is bijna altijd sneller over de hele afstand.",
+      deep:
+        "Wie ver boven zijn duurvermogen start, stapelt vroeg vermoeidheid en verzuring op die je later niet meer wegrijdt. Bij tijdritten en klimmen werkt een vrij gelijkmatige inspanning (of een ietsje conservatief begin) meestal het best. In een wedstrijd met groep en koerssituaties stuur je daarnaast op de juiste momenten — maar de basisregel blijft: spaar genoeg over voor het deel dat telt.",
+      example:
+        "Twee even sterke renners op een klim: wie gelijkmatig rijdt, klopt vaak wie vol start en halverwege instort.",
+      conclusion:
+        "Begin gecontroleerd en bewaar je beste kaarten voor het beslissende deel. Pacing wint koersen die kracht alleen niet wint.",
+      readMinutes: 4,
+    },
+  },
+  {
+    dedupeKey: "myth-early-attack-pointless",
+    kind: "myth_buster",
+    topic: "wedstrijden",
+    title: "Van ver aanvallen is altijd kansloos",
+    summary: "Vroege vluchters worden toch teruggepakt — of niet?",
+    disciplines: ["road", "all"],
+    levels: ["intermediate", "advanced"],
+    sourceLabel: "Koerstactiek — praktijk profwielrennen",
+    content: {
+      statement:
+        "Vroeg en van ver aanvallen heeft geen zin, want je wordt toch altijd teruggepakt.",
+      answer: "hangt_ervan_af",
+      explanation:
+        "Vaak worden vroege aanvallen teruggehaald, maar lang niet altijd. Wind, parcours, samenwerking en het gedrag van het peloton bepalen of een vroege move standhoudt.",
+      science:
+        "Een groep die goed samenwerkt rijdt efficiënter dan een eenling, dus statistisch worden veel vluchten gegrepen. Maar bij tegenwind voor het peloton, een zwaar parcours, verdeeld jagen of een sterke samenwerkende kopgroep kan een vroege aanval wél slagen.",
+      application:
+        "Kies je moment: val van ver aan als de omstandigheden je helpen (wind, zwaar parcours, niemand die wil jagen) en spaar anders je krachten voor later.",
+      relevance:
+        "Helpt je inschatten wanneer een waagstuk slim is in plaats van zinloos.",
+    },
+  },
+
+  // ── MENTAAL ───────────────────────────────────────────────────────────────
+  {
+    dedupeKey: "myth-mental-toughness-innate",
+    kind: "myth_buster",
+    topic: "mentaal",
+    title: "Mentale kracht heb je of heb je niet",
+    summary: "Is doorzettingsvermogen aangeboren talent of te trainen?",
+    disciplines: ["all"],
+    levels: ["all"],
+    sourceLabel: "Sportpsychologie — mentale vaardigheden",
+    content: {
+      statement:
+        "Mentale kracht is een aangeboren eigenschap: je hebt het of je hebt het niet.",
+      answer: "niet_waar",
+      explanation:
+        "Mentale vaardigheden zijn net als fysieke: je kunt ze trainen. Focus, omgaan met ongemak en jezelf toespreken worden beter met oefening.",
+      science:
+        "Sportpsychologie laat zien dat technieken als doelen stellen, zelfspraak, ademhaling en het opdelen van een inspanning in stukken helpen om door zware momenten te komen — en dat ze trainbaar zijn, niet vast.",
+      application:
+        "Oefen mentale technieken net als intervallen: bedenk vooraf een paar zinnen voor zware momenten, hak een lange inspanning op in stukjes, en stuur je ademhaling als het zwaar wordt.",
+      relevance:
+        "Geeft je grip op je hoofd op de momenten dat je benen het willen opgeven.",
+    },
+  },
+  {
+    dedupeKey: "academy-focus-hard-moments",
+    kind: "academy",
+    topic: "mentaal",
+    title: "Je focus sturen op de zwaarste momenten",
+    summary:
+      "Wat je tegen jezelf zegt als het pijn doet, bepaalt vaak hoe ver je komt.",
+    disciplines: ["all"],
+    levels: ["all"],
+    sourceLabel: "Sportpsychologie — aandacht en zelfspraak",
+    content: {
+      simple:
+        "Op zware momenten dwaalt je hoofd naar 'ik kan niet meer'. Je kunt je aandacht bewust ergens anders op richten — je ademhaling, je tempo, het volgende bochtje — en zo langer doorgaan.",
+      deep:
+        "Aandacht is stuurbaar. Naar binnen voelen (ademhaling, cadans, houding) helpt bij het bewaken van je inspanning; de aandacht naar buiten richten helpt om door een dood punt te komen. Korte, positieve zelfspraak ('rustig ademen', 'tot de boom') werkt beter dan jezelf afkraken. Door een lange inspanning op te delen in behapbare stukjes voelt de hele klus minder overweldigend.",
+      example:
+        "In plaats van 'nog 20 minuten' denken aan 'tot de volgende bocht' — en daarna weer de volgende. Stukje voor stukje kom je verder dan je dacht.",
+      conclusion:
+        "Bereid een paar zinnen en een focuspunt voor vóór je zwaarste trainingen en koersen. Wie zijn aandacht stuurt, houdt het langer vol.",
+      readMinutes: 4,
+    },
+  },
+  {
+    dedupeKey: "debate-visualisation-works",
+    kind: "debate",
+    topic: "mentaal",
+    title: "Helpt visualisatie echt?",
+    summary: "Een wedstrijd vooraf in je hoofd afspelen: zweverig of zinvol?",
+    disciplines: ["all"],
+    levels: ["all"],
+    sourceLabel: "Sportpsychologie — mentale verbeelding",
+    content: {
+      proposition:
+        "Je inspanning of wedstrijd vooraf in detail visualiseren verbetert je prestatie.",
+      argumentFor:
+        "Voorstanders zeggen dat het vooraf doorlopen van scenario's je voorbereidt op zware momenten, zenuwen vermindert en je sneller de juiste keuze laat maken.",
+      argumentAgainst:
+        "Critici vinden het vaag en moeilijk meetbaar, en waarschuwen dat het oefenen op de fiets niet vervangt.",
+      science:
+        "Onderzoek in de sportpsychologie laat zien dat gestructureerde mentale verbeelding — levendig, met alle zintuigen en herhaald — een ondersteunend effect kan hebben op vaardigheid en zelfvertrouwen. Het is een aanvulling op fysieke training, geen vervanging.",
+      proTeams:
+        "Veel topsporters gebruiken vaste mentale routines en visualiseren cruciale momenten als onderdeel van hun voorbereiding.",
+      conclusion:
+        "Visualisatie helpt als aanvulling, mits je het concreet en regelmatig doet. Het vervangt geen training, maar maakt je voorbereiding completer.",
+      hasConsensus: true,
+    },
+  },
 ];
 
 async function seed() {
