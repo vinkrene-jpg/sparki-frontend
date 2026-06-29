@@ -221,3 +221,27 @@ id = "31VZeAa6Q2IqEO89xPntl"
 uri = "file://.local/world-samples/new-05-372.png"
 type = "image"
 title = "Groepsrit Dolomieten — vreugde, oogcontact"
+
+[[outputs]]
+id = "L60gV7iTU7vHQpkYYi_aI"
+uri = "file://.local/world-samples/new-00-384.png"
+type = "image"
+title = "Arm-selfie kustweg — bold kit, bezweet, stralend"
+
+[[outputs]]
+id = "YM8jbEqlKlM1I5s9XDBr8"
+uri = "file://.local/world-samples/new-02-382.png"
+type = "image"
+title = "Arm-selfie wijngaard — dynamisch tenue, glans"
+
+[[outputs]]
+id = "E-HuzHXUo3prVT7OzykSc"
+uri = "file://.local/world-samples/new-06-378.png"
+type = "image"
+title = "Golden Gate — bezwete kit, warme blik"
+
+[[outputs]]
+id = "oNXrGNrUgMf4ObySFyRa3"
+uri = "file://.local/world-samples/new-01-383.png"
+type = "image"
+title = "Toscane, mannelijke renner — doorleefde kit"

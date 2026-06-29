@@ -97,7 +97,7 @@ export function buildPromptKey(
 const STYLE_VERSION = "v2";
 // Feed photos get their own version so a fresh, rawer look can be regenerated
 // WITHOUT touching the already-approved avatar faces (avatars keep STYLE_VERSION).
-const POST_STYLE_VERSION = "v6";
+const POST_STYLE_VERSION = "v7";
 
 // Authentic-but-beautifully-shot look, modelled on the most successful cycling &
 // lifestyle creators on Instagram: real and candid, yet high craft. NOT a stiff
@@ -122,9 +122,10 @@ const POST_LOOK =
 // Visible effort for active cycling moments — sweat, grime, windblown hair, a
 // tired-but-proud face. This is what makes a ride photo feel real, not stock.
 const EFFORT_RIDE =
-  "A real, lived-in riding moment with just a touch of genuine effort — a light sheen of sweat and windblown " +
-  "hair — but above all radiating intense joy and pride: a big, warm, beaming smile or a glowing, elated, confident " +
-  "expression, visibly in love with riding through such a beautiful place, in a strong, athletic posture.";
+  "A real, lived-in riding moment with genuine effort: skin glistening with sweat from the exertion, a clear sheen on " +
+  "the face, neck and arms, flushed cheeks and windblown hair — yet above all radiating intense joy and pride: a big, " +
+  "warm, beaming smile or a glowing, elated, confident expression, visibly in love with riding through such a beautiful " +
+  "place, in a strong, athletic posture.";
 const EFFORT_FINISH =
   "Sweat-glistened and a little dirt-streaked from racing, hair a mess, but the face lit up with raw, radiant pride, " +
   "joy and emotion — pure happiness in the moment.";
@@ -243,10 +244,17 @@ function teamKitFor(team?: string | null): {
 function kitClause(team?: string | null, slug?: string): string {
   const k = teamKitFor(team);
   if (k.sponsor) {
-    return `wearing pro team cycling kit in ${k.colors} with the fictional sponsor wordmark "${k.sponsor}" across the chest`;
+    return `wearing a sleek, modern pro race cycling kit in ${k.colors} with bold, dynamic sponsor graphics and the fictional sponsor wordmark "${k.sponsor}" across the chest`;
   }
-  return `wearing a neat casual club cycling kit in ${pickBy(KIT_COLORS, `${slug || "x"}:col`)}`;
+  return `wearing a sharp, modern club cycling kit in ${pickBy(KIT_COLORS, `${slug || "x"}:col`)} with bold graphic detailing`;
 }
+// Authentic, worn-in kit — the difference between a real ride photo and a clean
+// catalogue shot: jersey zip pulled partway open, fabric a little dusty and
+// road-grimed, sweat-darkened and slightly rumpled. NOT freshly pressed.
+const KIT_WORN =
+  "The kit looks authentically worn from real riding: the jersey zip pulled partway down at the chest, the fabric " +
+  "a little dusty and dirt-flecked from the road, sweat-darkened around the collar and back and slightly rumpled — " +
+  "lived-in and real, never freshly pressed or pristine.";
 function bikeClause(team?: string | null): string {
   const k = teamKitFor(team);
   return k.bikeBrand
@@ -536,12 +544,12 @@ export function buildPostPrompt(attrs: {
   } else if (attrs.sceneType === "race_finish") {
     scene =
       `The athlete celebrating just after a race finish, ${kitClause(attrs.team, attrs.slug)}, ` +
-      `arms up, other riders and a finish-line atmosphere behind, ${framingFor(seed)}. ${EFFORT_FINISH}`;
+      `arms up, other riders and a finish-line atmosphere behind, ${framingFor(seed)}. ${EFFORT_FINISH} ${KIT_WORN}`;
   } else {
     // training_ride / mountain_road / generic ride
     scene =
       `The athlete out riding, ${kitClause(attrs.team, attrs.slug)}, ${bikeClause(attrs.team)}, ` +
-      `at ${locationFor(attrs.discipline, seed)} — ${framingFor(seed)}. ${EFFORT_RIDE}`;
+      `at ${locationFor(attrs.discipline, seed)} — ${framingFor(seed)}. ${EFFORT_RIDE} ${KIT_WORN}`;
   }
 
   return [
