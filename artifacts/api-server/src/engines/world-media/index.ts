@@ -95,16 +95,33 @@ export function buildPromptKey(
 // Bump to force a fresh look across the whole cast (changes every cache key, so
 // "ready" rows are no longer reused and new imagery is generated).
 const STYLE_VERSION = "v2";
+// Feed photos get their own version so a fresh, rawer look can be regenerated
+// WITHOUT touching the already-approved avatar faces (avatars keep STYLE_VERSION).
+const POST_STYLE_VERSION = "v3";
 
 // Authentic, social-media look — deliberately NOT an over-polished cinematic
 // studio/stock photo (the previous uniform teal wash made every image look the
-// same). Reads like a real photo shot on a modern phone.
+// same, like a cycling magazine). Reads like a real photo a real person posts.
 const WORLD_LOOK = [
-  "Authentic candid social-media photo, looks shot on a modern smartphone.",
-  "Natural lighting, true real-world colours for the location, believable and lightly imperfect.",
-  "Sharp and high quality but NOT an over-polished studio or stock photo.",
+  "Candid, authentic photo that looks shot on a phone — like a real person's social-media post or selfie, NOT a magazine, advert or stock photo.",
+  "Natural available lighting, true real-world colours, natural unretouched skin, slightly imperfect and lived-in.",
   "Photorealistic. Output only the image.",
 ].join(" ");
+
+// Extra layer for FEED posts only (not profile avatars): real emotion + grit so
+// the cast feels human and relatable, the way the user asked — sweaty, tired,
+// proud, messy, in the thick of it.
+const POST_LOOK =
+  "Capture real human emotion and the feeling of the moment — a genuine, unposed expression, " +
+  "a little grain and motion like a real phone snapshot, candid not staged.";
+
+// Visible effort for active cycling moments — sweat, grime, windblown hair, a
+// tired-but-proud face. This is what makes a ride photo feel real, not stock.
+const EFFORT_RIDE =
+  "Show the real effort: sweat on the face and arms, flushed cheeks, road grime or mud flecked up the legs, " +
+  "hair messy and windblown, breathing hard with a focused, determined look.";
+const EFFORT_FINISH =
+  "Drenched in sweat, legs streaked with dirt, hair a mess, face exhausted but lit up with raw, genuine pride and emotion.";
 
 // Honesty line shared by every still: the person is invented and so is every
 // sponsor/brand — we never depict a real recognisable individual or a real-world
@@ -371,7 +388,7 @@ export function buildPrompt(
     return [
       `An authentic social-media profile photo of a fictional ${subject}.`,
       `${capitalise(look)}.`,
-      "Head-and-shoulders, looking at the camera with a natural, approachable expression,",
+      "Head-and-shoulders, looking at the camera with a warm, charismatic, expressive natural expression,",
       "like a friendly selfie a real cycling influencer would use as their profile picture.",
       `${capitalise(kitClause(a.team as string, slug))}.`,
       `Outdoors at ${locationFor(a.discipline as string, slug)}, natural daylight.`,
@@ -473,18 +490,19 @@ export function buildPostPrompt(attrs: {
   } else if (attrs.sceneType === "race_finish") {
     scene =
       `The athlete celebrating just after a race finish, ${kitClause(attrs.team, attrs.slug)}, ` +
-      `arms up, other riders and a finish-line atmosphere behind, ${framingFor(seed)}.`;
+      `arms up, other riders and a finish-line atmosphere behind, ${framingFor(seed)}. ${EFFORT_FINISH}`;
   } else {
     // training_ride / mountain_road / generic ride
     scene =
       `The athlete out riding, ${kitClause(attrs.team, attrs.slug)}, ${bikeClause(attrs.team)}, ` +
-      `at ${locationFor(attrs.discipline, seed)} — ${framingFor(seed)}.`;
+      `at ${locationFor(attrs.discipline, seed)} — ${framingFor(seed)}. ${EFFORT_RIDE}`;
   }
 
   return [
     identity,
     scene,
     [weather, time].filter(Boolean).join(", ") + (weather || time ? "." : ""),
+    POST_LOOK,
     HONESTY_LINE,
     WORLD_LOOK,
   ]
@@ -741,7 +759,7 @@ export async function getOrCreatePostPhoto(
       : framingFor(seed);
 
   const attributes: MediaAttributes = {
-    styleVersion: STYLE_VERSION,
+    styleVersion: POST_STYLE_VERSION,
     slug: athlete.slug,
     sceneType: descriptor.sceneType,
     lifestyle: descriptor.lifestyle ?? undefined,

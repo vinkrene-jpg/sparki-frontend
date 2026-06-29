@@ -119,3 +119,27 @@ id = "zdoU2biMws_gvNPLEN6py"
 uri = "file://.local/world-samples/feed-recovery-ruben-schneider.png"
 type = "image"
 title = "Herstel thuis — foamrollen (fictief 'Pelotonix')"
+
+[[outputs]]
+id = "Gf-nRmaAczRPrnksZ_x6X"
+uri = "file://.local/world-samples/new-00-358.png"
+type = "image"
+title = "In de regen — vastberaden, nat, haar in de wind (Meridiaan)"
+
+[[outputs]]
+id = "CH4f_udwPnIFe2vVMH7gm"
+uri = "file://.local/world-samples/new-02-356.png"
+type = "image"
+title = "Selfie in de Dolomieten — oprechte lach, haar door de war"
+
+[[outputs]]
+id = "OwpKfSYndej6xn7Rs9Tgr"
+uri = "file://.local/world-samples/new-04-354.png"
+type = "image"
+title = "Groepsrit langs de Golden Gate (NOVA Energy)"
+
+[[outputs]]
+id = "6xCtbrZObPNdtj2UjUFMX"
+uri = "file://.local/world-samples/new-06-342.png"
+type = "image"
+title = "Colorado bij gouden licht (Helder / Strade)"
