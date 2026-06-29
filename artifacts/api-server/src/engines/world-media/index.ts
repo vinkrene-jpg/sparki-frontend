@@ -97,7 +97,7 @@ export function buildPromptKey(
 const STYLE_VERSION = "v2";
 // Feed photos get their own version so a fresh, rawer look can be regenerated
 // WITHOUT touching the already-approved avatar faces (avatars keep STYLE_VERSION).
-const POST_STYLE_VERSION = "v15";
+const POST_STYLE_VERSION = "v17";
 
 // Authentic-but-beautifully-shot look, modelled on the most successful cycling &
 // lifestyle creators on Instagram: real and candid, yet high craft. NOT a stiff
@@ -117,7 +117,10 @@ const POST_LOOK =
   "(often golden hour or gently backlit with warm rim light), shallow depth of field on close shots with soft background bokeh, " +
   "and a subtle cinematic colour grade that feels cohesive across a feed. " +
   "Keep it candid, warm and emotional — a real, unposed, in-the-moment phone snapshot bursting with life and feeling, " +
-  "with the slight natural imperfection of a genuine real photo; absolutely never clinical, sterile, posed, stiff or stocky.";
+  "with the slight natural imperfection of a genuine real photo; absolutely never clinical, sterile, posed, stiff or stocky. " +
+  "It must feel like a friend casually grabbed the shot on a phone in the moment — never like a photographer hired for a " +
+  "brochure, catalogue or magazine. Modern sport-content energy: golden hour, rain, mist, backlight, a spontaneous crop, " +
+  "a slightly imperfect frame — something you could post straight to Instagram right now.";
 
 // Visible effort for active cycling moments — sweat, grime, windblown hair, a
 // tired-but-proud face. This is what makes a ride photo feel real, not stock.
@@ -223,22 +226,80 @@ function buildName(gender?: string): string {
 // and legs, visible muscle tone). Pulled out so feed photos can reinforce the
 // figure EVEN when editing from an avatar reference (the reference drives the
 // face; this keeps the body from defaulting to a stiff, sexless silhouette).
-function figureFor(a: { gender?: string; archetype?: string }): string {
+function figureFor(a: { gender?: string; archetype?: string; age?: number }): string {
   const sex = buildName(a.gender);
   const arch = (a.archetype || "").toLowerCase();
   const lean = /klimmer|ultra|marathon|cross-country|duur/.test(arch);
   const power = /sprinter|baansprinter|achtervolger/.test(arch);
+  // Youth (and unknown age, fail-safe) stay strictly wholesome: a fit junior
+  // athlete's build, NEVER an adult's heavily-muscled or alluring physique.
+  const youth = typeof a.age !== "number" || a.age < 18;
+  if (youth) {
+    return sex === "female"
+      ? "a lean, fit junior athlete's figure — naturally slim and sporty, healthy and age-appropriate, not muscular and not curvy"
+      : "a lean, fit junior athlete's build — naturally slim and sporty, healthy and age-appropriate, not heavily muscled";
+  }
+  // Adults: genuinely athletic, defined bodies — the look of a real elite cyclist
+  // who trains ~15h/week. Defined, not exaggerated; never a bodybuilder.
   return sex === "female"
     ? lean
-      ? "a youthful, slim and softly feminine athletic figure — slender, toned legs, a slim waist and gentle feminine curves, lightly muscled, never bulky"
+      ? "a genuinely athletic, very fit female cyclist's figure — lean, defined climber's legs and powerful thighs, a slim waist, athletic shoulders and subtle, real muscle definition; healthy, toned and confident, never skinny-flat and never bulky or masculine"
       : power
-        ? "a youthful, athletic yet distinctly feminine figure — shapely toned legs and a slim waist with soft feminine curves, fit but never bulky"
-        : "a youthful, fit and feminine figure — a slim waist, gently curved silhouette and lightly toned legs, graceful and not bulky"
+        ? "a strong, athletic female sprinter's figure — powerful, muscular thighs and calves, a slim waist, athletic shoulders and clear but feminine muscle definition; healthy, toned and confident, never bulky or masculine"
+        : "a genuinely athletic, very fit female cyclist's figure — strong, toned legs and powerful thighs, a slim waist, athletic shoulders and subtle, real muscle definition; healthy, toned and confident, never skinny-flat and never bulky or masculine"
     : lean
-      ? "a lean but visibly muscular cyclist's physique — broad shoulders, defined sinewy arms and powerful, clearly muscled legs"
+      ? "a convincing, lean elite-endurance male physique — broad shoulders, a defined chest and arms, a narrow waist and powerful, clearly muscled climber's legs; visible but natural muscle definition, the body of someone who trains ~15 hours a week, never skinny or wooden and never a bulky bodybuilder"
       : power
-        ? "a powerful, heavily muscled sprinter's physique — broad shoulders, thick defined arms and explosively muscular thighs and calves"
-        : "a strong, muscular masculine physique — broad shoulders, well-defined arms and powerful, clearly muscled legs";
+        ? "a powerful, athletic male sprinter's physique — broad shoulders, a strong defined chest and arms, a narrow waist and explosively muscular thighs and calves; visible but natural muscle, never a bulky bodybuilder"
+        : "a strong, athletic male cyclist's physique — broad shoulders, a defined chest and arms, a narrow waist and powerful, clearly muscled legs; visible but natural muscle definition, the body of someone who trains ~15 hours a week, never a bulky bodybuilder";
+}
+
+// Adult-only tasteful "spanning": the magnetic pull of a genuinely fit, confident,
+// charismatic adult — appeal that comes purely from health, fitness, confidence and
+// presence. Returns "" for youth (and unknown age), who stay strictly wholesome.
+function allureFor(a: { age?: number }): string {
+  if (typeof a.age !== "number" || a.age < 18) return "";
+  return (
+    "This is a strikingly attractive, charismatic adult athlete with confident, magnetic body language and a natural, " +
+    "tasteful allure that comes purely from health, fitness, confidence and presence — captivating but classy and " +
+    "athletic, never crude, never sexualised, never revealing and never posed like a glamour or swimwear shoot."
+  );
+}
+
+// ── per-athlete identity beyond the face: personality, a favourite accent colour
+// and a recognisable on-camera habit — so each athlete feels like a real person
+// with their own character, not just a different face. Slug-seeded = consistent.
+const PERSONALITY = [
+  "a warm, easy-going personality",
+  "a playful, mischievous personality",
+  "a calm, quietly determined personality",
+  "an intense, driven, competitive personality",
+  "a bubbly, enthusiastic personality",
+  "a cool, understated, confident personality",
+  "a friendly, down-to-earth personality",
+  "a focused, meticulous personality",
+];
+const ACCENT_COLOR = [
+  "electric blue", "hot pink", "neon yellow", "deep red", "teal",
+  "burnt orange", "purple", "lime green", "sky blue", "coral",
+];
+const POSE_HABIT = [
+  "leaning in close toward the camera",
+  "a relaxed thumbs-up or peace sign",
+  "glancing candidly just off to the side of the lens",
+  "standing tall and proud, chin up",
+  "glancing back over the shoulder at the lens",
+  "being caught mid-movement, unposed",
+  "a quick, easy grin",
+  "a calm, understated stance",
+];
+function personaFor(slug: string): string {
+  const s = slug || "x";
+  return (
+    `Their own consistent character shows through — ${pickBy(PERSONALITY, `${s}:pers`)}, ` +
+    `a personal liking for ${pickBy(ACCENT_COLOR, `${s}:accent`)} accents on their kit, socks or gear, ` +
+    `and a recognisable on-camera habit: ${pickBy(POSE_HABIT, `${s}:pose`)}.`
+  );
 }
 function appearanceFor(a: {
   slug: string;
@@ -249,20 +310,28 @@ function appearanceFor(a: {
   const slug = a.slug || "x";
   const sex = buildName(a.gender);
   const build = figureFor(a);
-  const genderFace =
-    sex === "female"
+  // Youth (and unknown age, fail-safe) stay strictly wholesome at the FACE level
+  // too: no adult-feminine framing, no "captivating/attractive" wrapper — only a
+  // natural, age-appropriate young-teen face. Adults keep the influencer look.
+  const youth = typeof a.age !== "number" || a.age < 18;
+  const genderFace = youth
+    ? "natural, age-appropriate facial features for a young teenager"
+    : sex === "female"
       ? "soft, feminine facial features"
       : "masculine facial features with a defined jawline";
   const hair =
     sex === "female" ? pickBy(HAIR_V, `${slug}:hair`) : pickBy(HAIR_M, `${slug}:hair`);
   const facial =
-    sex === "male" ? `, ${pickBy(FACIAL_HAIR, `${slug}:beard`)}` : "";
+    sex === "male" && !youth ? `, ${pickBy(FACIAL_HAIR, `${slug}:beard`)}` : "";
+  const charisma = youth
+    ? "a fresh, natural, wholesome young face that clearly looks their stated age"
+    : "very good-looking and photogenic, with striking, expressive, captivating eyes";
   return [
     `${pickBy(SKIN, `${slug}:skin`)} skin`,
     `${pickBy(HAIR_COLOR, `${slug}:haircol`)} ${hair}${facial}`,
     genderFace,
     pickBy(FACE_FEATURE, `${slug}:face`),
-    "very good-looking and photogenic, with striking, expressive, captivating eyes",
+    charisma,
     build,
   ].join(", ");
 }
@@ -491,11 +560,18 @@ export function buildPrompt(
       archetype: a.archetype as string,
     });
     const subject = [age, gender, "cyclist"].filter(Boolean).join(" ");
+    const isYouth = typeof a.age === "number" && a.age < 18;
+    const youthAnchor = isYouth
+      ? `This athlete is ${a.age} years old — clearly and unmistakably a young teenager of exactly that age, with a wholesome school-age appearance. Never make them look like an adult, and never give them an adult, mature or alluring look.`
+      : "";
+    const expression = isYouth
+      ? "Head-and-shoulders, looking at the camera with a natural, friendly, age-appropriate smile, like a wholesome junior club portrait."
+      : "Head-and-shoulders, looking at the camera with a warm, charismatic, expressive natural expression, like a friendly selfie a real cycling influencer would use as their profile picture.";
     return [
       `An authentic social-media profile photo of a fictional ${subject}.`,
+      youthAnchor,
       `${capitalise(look)}.`,
-      "Head-and-shoulders, looking at the camera with a warm, charismatic, expressive natural expression,",
-      "like a friendly selfie a real cycling influencer would use as their profile picture.",
+      expression,
       `${capitalise(kitClause(a.team as string, slug))}.`,
       `Outdoors at ${locationFor(a.discipline as string, slug)}, natural daylight.`,
       HONESTY_LINE,
@@ -585,11 +661,20 @@ export function buildPostPrompt(attrs: {
     "Keep the EXACT same recognisable person and face as the reference photo — " +
     "same identity, facial features and hair (if no reference is given, depict: " +
     `${look}).`;
+  // Youth are clamped to a wholesome young-teen depiction. CRITICAL: the post is an
+  // img2img edit and the body/age can drift adult, so we anchor the age explicitly
+  // and STRIP all adult-feminine/masculine and alluring framing for minors.
+  const isYouth = typeof attrs.age === "number" && attrs.age < 18;
+  const youthAnchor = isYouth
+    ? `CRITICAL: this athlete is a ${attrs.age}-year-old youth/junior — depict them unmistakably as a young teenager of exactly that age, with a fresh youthful child's face and a slight, undeveloped junior build, completely wholesome and age-appropriate. NEVER depict them as an adult, NEVER give them a mature, curvy or muscular adult physique, and NEVER any sexual, alluring or 'attractive adult' quality whatsoever.`
+    : "";
   // Reinforce the gendered figure on EVERY post: img2img follows the avatar for
   // the face, but the body can drift to a stiff, sexless silhouette — so we state
   // it again here. The face stays from the reference; only the build is nudged.
-  const figureLine =
-    buildName(attrs.gender) === "female"
+  // Youth get a neutral, non-gendered junior build line (no adult-feminine framing).
+  const figureLine = isYouth
+    ? `Their build is simply that of a fit ${attrs.age}-year-old junior athlete: ${figureFor(attrs)}.`
+    : buildName(attrs.gender) === "female"
       ? `Her body is unmistakably, softly feminine: ${figureFor(attrs)} — graceful and natural, never boxy, stocky or masculine.`
       : `His body is clearly masculine and athletic: ${figureFor(attrs)}.`;
 
@@ -598,8 +683,9 @@ export function buildPostPrompt(attrs: {
     scene = `The same athlete ${lifestyleClause(attrs.lifestyle)}.`;
   } else if (attrs.sceneType === "bike_detail") {
     scene =
-      `A close, candid photo of the athlete's bike — ${bikeClause(attrs.team)} — ` +
-      `leaning at ${locationFor(attrs.discipline, seed)}, the rider partly in frame.`;
+      `A close, candid photo of the athlete's bike AT REST — ${bikeClause(attrs.team)} — ` +
+      `leaning against a wall or fence at ${locationFor(attrs.discipline, seed)}, ` +
+      `with the rider standing or crouching beside it, OFF the bike and clearly not riding.`;
   } else if (attrs.sceneType === "race_finish") {
     scene =
       `The athlete celebrating just after a race finish, ${kitClause(attrs.team, attrs.slug)}, ` +
@@ -616,9 +702,12 @@ export function buildPostPrompt(attrs: {
 
   return [
     identity,
+    youthAnchor,
     onBike ? helmetFor(seed) : "",
     scene,
     figureLine,
+    allureFor(attrs),
+    personaFor(attrs.slug),
     [weather, time].filter(Boolean).join(", ") + (weather || time ? "." : ""),
     `${CONNECTION} ${emotionFor(seed)}.`,
     POST_LOOK,

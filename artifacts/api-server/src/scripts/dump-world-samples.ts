@@ -1,11 +1,19 @@
 // One-off: export the most-recently (re)generated world feed photos to disk so
 // they can be reviewed. NOT part of the product — remove after use.
 import { writeFileSync, mkdirSync } from "node:fs";
-import { desc, eq, and, isNotNull, like, or } from "drizzle-orm";
+import { desc, eq, and, isNotNull, like, or, inArray } from "drizzle-orm";
 import { db, pool, virtualMediaTable } from "@workspace/db";
 import { ObjectStorageService } from "../lib/objectStorage";
 
 const FILTER = process.argv.includes("--view");
+const idsArg = process.argv.find((a) => a.startsWith("--ids="));
+const IDS = idsArg
+  ? idsArg
+      .slice("--ids=".length)
+      .split(",")
+      .map((s) => Number(s.trim()))
+      .filter((n) => Number.isFinite(n))
+  : [];
 
 const OUT = "/home/runner/workspace/.local/world-samples";
 const svc = new ObjectStorageService();
@@ -21,9 +29,10 @@ async function main(): Promise<void> {
     .from(virtualMediaTable)
     .where(
       and(
-        eq(virtualMediaTable.purpose, "post"),
+        IDS.length ? undefined : eq(virtualMediaTable.purpose, "post"),
         eq(virtualMediaTable.status, "ready"),
         isNotNull(virtualMediaTable.objectPath),
+        IDS.length ? inArray(virtualMediaTable.id, IDS) : undefined,
         FILTER
           ? or(
               like(virtualMediaTable.promptKey, "%show-off-the-breathtaking%"),
@@ -33,7 +42,7 @@ async function main(): Promise<void> {
       ),
     )
     .orderBy(desc(virtualMediaTable.id))
-    .limit(8);
+    .limit(IDS.length || 8);
 
   let i = 0;
   for (const r of rows) {

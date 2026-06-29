@@ -19,9 +19,9 @@
 //   pnpm --filter @workspace/api-server run backfill:avatars -- --concurrency=8
 //   pnpm --filter @workspace/api-server run backfill:avatars -- --all --limit=8
 
-import { asc, eq, isNull } from "drizzle-orm";
-import { db, pool, virtualAthletesTable } from "@workspace/db";
-import { getOrCreateAvatar } from "../engines/world-media";
+import { asc, eq, isNull, lt, inArray } from "drizzle-orm";
+import { db, pool, virtualAthletesTable, virtualMediaTable } from "@workspace/db";
+import { getOrCreateAvatar, buildPromptKey } from "../engines/world-media";
 
 async function main(): Promise<void> {
   const concArg = process.argv.find((a) => a.startsWith("--concurrency="));
@@ -33,6 +33,14 @@ async function main(): Promise<void> {
   const limit = limitArg
     ? Math.max(1, parseInt(limitArg.slice("--limit=".length), 10) || 0)
     : 0;
+  // Target a single athlete by slug, or every youth (age<18). The avatar cache
+  // key carries NO style version, so a prompt-only change (e.g. the youth-safety
+  // anchors) is invisible to the cache-first resolver. `--force` deletes the
+  // existing avatar media row first so a fresh canonical avatar is generated.
+  const athleteArg = process.argv.find((a) => a.startsWith("--athlete="));
+  const athleteSlug = athleteArg ? athleteArg.slice("--athlete=".length) : "";
+  const youthOnly = process.argv.includes("--youth");
+  const force = process.argv.includes("--force");
 
   const base = db
     .select({
@@ -46,8 +54,40 @@ async function main(): Promise<void> {
     })
     .from(virtualAthletesTable)
     .orderBy(asc(virtualAthletesTable.slug));
-  const rows = all ? await base : await base.where(isNull(virtualAthletesTable.avatarMediaId));
+  const rows = athleteSlug
+    ? await base.where(eq(virtualAthletesTable.slug, athleteSlug))
+    : youthOnly
+      ? await base.where(lt(virtualAthletesTable.age, 18))
+      : all
+        ? await base
+        : await base.where(isNull(virtualAthletesTable.avatarMediaId));
   const todo = limit > 0 ? rows.slice(0, limit) : rows;
+
+  // Force a fresh generation by removing the cached (ready) avatar rows for the
+  // targeted athletes before the cache-first resolver runs.
+  if (force && todo.length) {
+    // Detach the athletes from their current avatar first so the media rows can
+    // be deleted without tripping the avatar_media_id foreign key.
+    await db
+      .update(virtualAthletesTable)
+      .set({ avatarMediaId: null })
+      .where(inArray(virtualAthletesTable.id, todo.map((a) => a.id)));
+    const keys = todo.map((a) =>
+      buildPromptKey("avatar", {
+        slug: a.slug,
+        gender: a.gender ?? undefined,
+        age: a.age ?? undefined,
+        archetype: a.archetype ?? undefined,
+        discipline: a.discipline ?? undefined,
+        team: a.team ?? undefined,
+      } as Parameters<typeof buildPromptKey>[1]),
+    );
+    const del = await db
+      .delete(virtualMediaTable)
+      .where(inArray(virtualMediaTable.promptKey, keys))
+      .returning({ id: virtualMediaTable.id });
+    console.log(`--force: ${del.length} bestaande avatar-media verwijderd vóór regen.`);
+  }
 
   console.log(
     `Avatars te genereren: ${todo.length} (mode=${all ? "all" : "missing"}${limit ? `, limit=${limit}` : ""}, concurrency=${concurrency}). Cache-first, dus dit hervat waar het stopte.`,

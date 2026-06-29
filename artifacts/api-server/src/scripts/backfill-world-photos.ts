@@ -18,7 +18,7 @@
 // Honesty contract: a failed generation leaves the post's media untouched (it
 // keeps its previous image or stays text-only) and is retried on the next run.
 
-import { and, asc, eq, isNotNull } from "drizzle-orm";
+import { and, asc, eq, isNotNull, inArray } from "drizzle-orm";
 import {
   db,
   pool,
@@ -58,6 +58,11 @@ async function main(): Promise<void> {
     : 0;
   const athleteArg = process.argv.find((a) => a.startsWith("--athlete="));
   const onlySlug = athleteArg ? athleteArg.slice("--athlete=".length) : null;
+  // The post cache key does NOT include the avatar bytes, so after an avatar is
+  // regenerated the cache-first resolver would keep serving the OLD edit. `--force`
+  // deletes the targeted posts' cached media so each photo is re-edited from the
+  // (new) canonical avatar.
+  const force = process.argv.includes("--force");
 
   const pop = generatePopulation(POP_COUNT, POP_SEED);
   const genBySlug = new Map<string, GeneratedAthlete>(pop.athletes.map((a) => [a.slug, a]));
@@ -91,6 +96,28 @@ async function main(): Promise<void> {
     .orderBy(asc(virtualPostsTable.id));
 
   const todo = limit > 0 ? rows.slice(0, limit) : rows;
+
+  if (force && todo.length) {
+    const mediaIds = todo
+      .map((r) => r.mediaId)
+      .filter((id): id is number => typeof id === "number");
+    const postIds = todo.map((r) => r.postId);
+    if (postIds.length) {
+      await db
+        .update(virtualPostsTable)
+        .set({ mediaId: null })
+        .where(inArray(virtualPostsTable.id, postIds));
+    }
+    if (mediaIds.length) {
+      const del = await db
+        .delete(virtualMediaTable)
+        .where(inArray(virtualMediaTable.id, mediaIds))
+        .returning({ id: virtualMediaTable.id });
+      console.log(`--force: ${del.length} bestaande post-media verwijderd vóór regen.`);
+    }
+    // Refresh the avatar object path now that posts are detached (avatars may have
+    // just been regenerated for these athletes).
+  }
 
   console.log(
     `Feed-foto's te (her)genereren: ${todo.length}${onlySlug ? ` (atleet=${onlySlug})` : ""}${limit ? `, limit=${limit}` : ""}, concurrency=${concurrency}. Cache-first.`,
