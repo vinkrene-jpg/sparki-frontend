@@ -97,23 +97,26 @@ export function buildPromptKey(
 const STYLE_VERSION = "v2";
 // Feed photos get their own version so a fresh, rawer look can be regenerated
 // WITHOUT touching the already-approved avatar faces (avatars keep STYLE_VERSION).
-const POST_STYLE_VERSION = "v3";
+const POST_STYLE_VERSION = "v4";
 
-// Authentic, social-media look — deliberately NOT an over-polished cinematic
-// studio/stock photo (the previous uniform teal wash made every image look the
-// same, like a cycling magazine). Reads like a real photo a real person posts.
+// Authentic-but-beautifully-shot look, modelled on the most successful cycling &
+// lifestyle creators on Instagram: real and candid, yet high craft. NOT a stiff
+// studio/stock/catalogue photo and NOT the old uniform teal magazine wash.
 const WORLD_LOOK = [
-  "Candid, authentic photo that looks shot on a phone — like a real person's social-media post or selfie, NOT a magazine, advert or stock photo.",
-  "Natural available lighting, true real-world colours, natural unretouched skin, slightly imperfect and lived-in.",
+  "Authentic but beautifully shot, like a top Instagram influencer's feed — high quality with great natural light and strong composition, yet candid and real, NOT a stiff studio, stock or catalogue photo.",
+  "True real-world colours with a subtle, cohesive film-like grade; natural unretouched skin; believable and lived-in.",
   "Photorealistic. Output only the image.",
 ].join(" ");
 
-// Extra layer for FEED posts only (not profile avatars): real emotion + grit so
-// the cast feels human and relatable, the way the user asked — sweaty, tired,
-// proud, messy, in the thick of it.
+// Extra craft layer for FEED posts only (not profile avatars): the look of the
+// most successful cycling/lifestyle influencers — strong composition + beautiful
+// light + a cohesive grade, while staying candid and emotional (the grit stays).
 const POST_LOOK =
-  "Capture real human emotion and the feeling of the moment — a genuine, unposed expression, " +
-  "a little grain and motion like a real phone snapshot, candid not staged.";
+  "Compose and light it like the most successful cycling & lifestyle influencers on Instagram: " +
+  "intentional composition (rule of thirds, real depth and leading lines), beautiful natural directional light " +
+  "(often golden hour or gently backlit with warm rim light), shallow depth of field on close shots with soft background bokeh, " +
+  "and a subtle cinematic colour grade that feels cohesive across a feed. " +
+  "Keep it candid and emotional — a real, unposed moment, never stiff or stocky.";
 
 // Visible effort for active cycling moments — sweat, grime, windblown hair, a
 // tired-but-proud face. This is what makes a ride photo feel real, not stock.

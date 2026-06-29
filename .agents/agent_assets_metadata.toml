@@ -143,3 +143,27 @@ id = "6xCtbrZObPNdtj2UjUFMX"
 uri = "file://.local/world-samples/new-06-342.png"
 type = "image"
 title = "Colorado bij gouden licht (Helder / Strade)"
+
+[[outputs]]
+id = "R2ffAIE-eY04dvn9Ar8AU"
+uri = "file://.local/world-samples/new-00-363.png"
+type = "image"
+title = "Kustmist, ondiepe scherptediepte (Meridiaan)"
+
+[[outputs]]
+id = "9ajSlQrY-hcS1OjbFuYNc"
+uri = "file://.local/world-samples/new-02-361.png"
+type = "image"
+title = "Duinen bij zonsondergang — warme grade (Polderbank)"
+
+[[outputs]]
+id = "otjNC-LR4Ks4fGhOh7LM_"
+uri = "file://.local/world-samples/new-03-360.png"
+type = "image"
+title = "Selfie in de Dolomieten — gouden waas"
+
+[[outputs]]
+id = "kasheR3tJvtKTB3ncU1BR"
+uri = "file://.local/world-samples/new-04-359.png"
+type = "image"
+title = "Groepsrit Golden Gate, tegenlicht (NOVA Energy)"
