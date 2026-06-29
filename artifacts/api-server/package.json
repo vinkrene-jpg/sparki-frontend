@@ -37,6 +37,7 @@
     "test:world-consistency": "pnpm run build && node --enable-source-maps ./dist/tests/world-consistency.mjs",
     "sim:world-day": "pnpm run build && node --enable-source-maps ./dist/scripts/run-world-day.mjs",
     "test:world-feed": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/world-feed.mjs",
+    "test:world-affinity": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/world-affinity.mjs",
     "job:health": "pnpm run build && node --enable-source-maps ./dist/jobs/health-check.mjs",
     "job:reminders": "pnpm run build && node --enable-source-maps ./dist/jobs/reminders.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"

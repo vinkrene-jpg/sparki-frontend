@@ -104,3 +104,14 @@ generate/upload so it never bills the image model.)
 - **Stale-bundle gotcha:** after backend engine/route edits, RESTART the api-server workflow —
   HMR only covers frontend; a stale bundle returns `Cannot GET` on new routes + drops new
   feed fields (looked like a frontend bug; was just an un-rebuilt server).
+
+## Dev DB world-table drift recovery (durable)
+- World tables are FULLY REGENERABLE (`seed:sparki-world`, deterministic seed=1). When the dev DB
+  drifts behind `sparki-world.ts` (missing adaptive-layer columns / `virtual_career_entries` /
+  `user_virtual_affinity`), do NOT run global `push-force` — it can truncate real user/training
+  data (separate task owns global reconciliation). Instead apply NON-DESTRUCTIVE world-only DDL
+  (ADD COLUMN IF NOT EXISTS with defaults, CREATE TABLE IF NOT EXISTS, dedupe-then-add unique
+  constraint) then re-seed the world. Rebuild `lib/db` afterwards so tsc resolves new members.
+- `test:world-affinity` is the end-to-end learning-loop guard: real view/save/share → learnAffinity
+  → live feed reorders, plus two wall checks (clean-slate empty model; no real-perf table row-count
+  change). Picks most-represented NON-viewer discipline to isolate learned affinity from profile-match boost.

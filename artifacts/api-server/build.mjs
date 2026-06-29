@@ -46,6 +46,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/tests/world-media.ts"),
       path.resolve(artifactDir, "src/tests/world-sim.ts"),
       path.resolve(artifactDir, "src/tests/world-feed.ts"),
+      path.resolve(artifactDir, "src/tests/world-affinity.ts"),
       path.resolve(artifactDir, "src/tests/world-consistency.ts"),
       path.resolve(artifactDir, "src/jobs/health-check.ts"),
       path.resolve(artifactDir, "src/jobs/reminders.ts"),
