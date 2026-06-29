@@ -97,7 +97,7 @@ export function buildPromptKey(
 const STYLE_VERSION = "v2";
 // Feed photos get their own version so a fresh, rawer look can be regenerated
 // WITHOUT touching the already-approved avatar faces (avatars keep STYLE_VERSION).
-const POST_STYLE_VERSION = "v5";
+const POST_STYLE_VERSION = "v6";
 
 // Authentic-but-beautifully-shot look, modelled on the most successful cycling &
 // lifestyle creators on Instagram: real and candid, yet high craft. NOT a stiff
@@ -116,14 +116,15 @@ const POST_LOOK =
   "intentional composition (rule of thirds, real depth and leading lines), beautiful natural directional light " +
   "(often golden hour or gently backlit with warm rim light), shallow depth of field on close shots with soft background bokeh, " +
   "and a subtle cinematic colour grade that feels cohesive across a feed. " +
-  "Keep it candid and emotional — a real, unposed moment, never stiff or stocky.";
+  "Keep it candid, warm and emotional — a real, unposed, in-the-moment phone snapshot bursting with life and feeling, " +
+  "with the slight natural imperfection of a genuine real photo; absolutely never clinical, sterile, posed, stiff or stocky.";
 
 // Visible effort for active cycling moments — sweat, grime, windblown hair, a
 // tired-but-proud face. This is what makes a ride photo feel real, not stock.
 const EFFORT_RIDE =
   "A real, lived-in riding moment with just a touch of genuine effort — a light sheen of sweat and windblown " +
-  "hair — but above all radiating joy and pride: a warm, beaming smile or a glowing, happy, confident expression, " +
-  "clearly loving riding through such a beautiful place, in a strong, athletic posture.";
+  "hair — but above all radiating intense joy and pride: a big, warm, beaming smile or a glowing, elated, confident " +
+  "expression, visibly in love with riding through such a beautiful place, in a strong, athletic posture.";
 const EFFORT_FINISH =
   "Sweat-glistened and a little dirt-streaked from racing, hair a mess, but the face lit up with raw, radiant pride, " +
   "joy and emotion — pure happiness in the moment.";
@@ -131,10 +132,13 @@ const EFFORT_FINISH =
 // Even with little to 'say', a good-looking rider who beams pride and joy and locks
 // eyes with the viewer carries the shot. Applied to EVERY post.
 const CONNECTION =
-  "Above all, capture real emotion and connection with the viewer: the rider looks genuinely proud and happy to be " +
-  "there, savouring the beautiful surroundings. When the eyes meet the camera they connect directly and warmly — " +
-  "expressive, magnetic, charismatic eye contact, a real smile reaching the eyes — the attractive, likeable presence " +
-  "of a top cycling lifestyle influencer that makes you want to follow them. Never blank, cold or emotionless.";
+  "THE SINGLE MOST IMPORTANT THING in the image is raw emotion and a powerful connection with the viewer — it must " +
+  "hit instantly and unmistakably, never something you have to search for. The rider radiates overwhelming warmth, " +
+  "pride and joy, glowing with happiness to be there and visibly in love with the beautiful surroundings. The eyes " +
+  "lock onto the camera with intense, captivating, magnetic eye contact, and a big genuine smile that reaches the " +
+  "eyes and crinkles them. Charismatic, attractive, alive and full of feeling — the irresistible, likeable presence " +
+  "of a top cycling lifestyle influencer that instantly makes you want to follow them. Absolutely never blank, flat, " +
+  "clinical, cold, posed or emotionless.";
 
 // Honesty line shared by every still: the person is invented and so is every
 // sponsor/brand — we never depict a real recognisable individual or a real-world
@@ -284,9 +288,9 @@ function locationFor(discipline?: string, seed?: string): string {
 // genuine variety in angle and scale (not always a centred medium shot) and real
 // selfies actually appear.
 const FRAMING_RIDE = [
-  // true front-camera selfies (so selfies are unmistakably present)
-  "a real front-camera selfie held at arm's length, the rider's face large and close in frame, slight wide-angle phone-lens look, eyes to the camera mid-ride",
-  "an over-the-shoulder front-camera selfie while riding, face close on one side with the road and scenery stretching behind",
+  // true front-camera selfies — the rider's own arm clearly holds the phone
+  "a genuine front-camera selfie with the rider's own arm clearly outstretched holding the phone, the extended arm and hand visible in the foreground, face large and close, slight wide-angle phone-lens distortion, big warm smile and intense eye contact mid-ride",
+  "an arm's-length front-camera selfie, the extended arm holding the phone clearly visible at the edge of the frame, the rider's face close and warm with the road and scenery behind, laughing or beaming straight at the lens",
   // POV
   "a POV handlebar shot looking down the road, the rider's hands, stem and front wheel in the foreground",
   // social / group

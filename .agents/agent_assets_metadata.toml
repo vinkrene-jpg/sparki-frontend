@@ -197,3 +197,27 @@ id = "ArXggnpW3AgoqDRJW5f6e"
 uri = "file://.local/world-samples/new-05-365.png"
 type = "image"
 title = "Groepsrit Dolomieten — vreugde, diepte in beeld"
+
+[[outputs]]
+id = "LTvdtE6JuoJUry10FjjnI"
+uri = "file://.local/world-samples/new-01-376.png"
+type = "image"
+title = "Arm-selfie wijngaard — arm vast aan camera, stralend"
+
+[[outputs]]
+id = "PNcM8EbUteBAtD5LcW0OI"
+uri = "file://.local/world-samples/new-02-375.png"
+type = "image"
+title = "Arm-selfie kustweg — grote lach, echt selfie-gevoel"
+
+[[outputs]]
+id = "LiyS0obIb_74mHo_I2KBm"
+uri = "file://.local/world-samples/new-03-374.png"
+type = "image"
+title = "Golden Gate — warme intense blik, trots"
+
+[[outputs]]
+id = "31VZeAa6Q2IqEO89xPntl"
+uri = "file://.local/world-samples/new-05-372.png"
+type = "image"
+title = "Groepsrit Dolomieten — vreugde, oogcontact"
