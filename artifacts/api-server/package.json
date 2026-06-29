@@ -20,6 +20,7 @@
     "test:material-nudge": "pnpm run build && node --enable-source-maps ./dist/tests/material-nudge.mjs",
     "test:observation": "pnpm run build && node --enable-source-maps ./dist/tests/observation.mjs",
     "test:notifications": "pnpm run build && node --enable-source-maps ./dist/tests/notifications.mjs",
+    "test:notification-day-count": "pnpm run build && node --enable-source-maps ./dist/tests/notification-day-count.mjs",
     "test:core-prediction": "pnpm run build && node --enable-source-maps ./dist/tests/core-prediction.mjs",
     "test:test-dashboard": "pnpm run build && node --enable-source-maps ./dist/tests/test-dashboard.mjs",
     "seed:social": "pnpm run build && node --enable-source-maps ./dist/scripts/seed-social.mjs",
