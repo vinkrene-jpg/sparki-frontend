@@ -211,22 +211,40 @@ function InsightSection({
   title,
   blurb,
   groups,
+  max,
 }: {
   n: string
   title: string
   blurb: string
   groups: InsightGroup[]
+  // When set, only the `max` strongest groups show by default; the rest fold
+  // behind a "Toon meer" toggle (nothing is removed — groups are strongest-first).
+  max?: number
 }) {
+  const [expanded, setExpanded] = useState(false)
   if (groups.length === 0) return null
+  const limit = max ?? Infinity
+  const collapsed = !expanded && groups.length > limit
+  const shown = collapsed ? groups.slice(0, limit) : groups
+  const hiddenCount = groups.length - shown.length
   return (
     <section>
       <SectionLabel n={n} title={title} />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">{blurb}</p>
       <div className="mt-3 flex flex-col gap-3">
-        {groups.map((g) => (
+        {shown.map((g) => (
           <GroupInsightCard key={g.key} group={g} />
         ))}
       </div>
+      {(collapsed || expanded) && groups.length > limit && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/60 transition-colors hover:bg-white/[0.06]"
+        >
+          {expanded ? "Toon minder" : `Toon meer (${hiddenCount})`}
+        </button>
+      )}
     </section>
   )
 }
@@ -554,6 +572,7 @@ export default function YouPage() {
         title="Terugkerende patronen"
         blurb="Verbanden die over tijd terugkomen in je data"
         groups={laneGroups.patterns}
+        max={3}
       />
 
       {/* WAAR SPARKI ONZEKER OVER IS */}
