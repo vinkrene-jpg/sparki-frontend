@@ -97,7 +97,7 @@ export function buildPromptKey(
 const STYLE_VERSION = "v2";
 // Feed photos get their own version so a fresh, rawer look can be regenerated
 // WITHOUT touching the already-approved avatar faces (avatars keep STYLE_VERSION).
-const POST_STYLE_VERSION = "v8";
+const POST_STYLE_VERSION = "v9";
 
 // Authentic-but-beautifully-shot look, modelled on the most successful cycling &
 // lifestyle creators on Instagram: real and candid, yet high craft. NOT a stiff
@@ -187,19 +187,22 @@ function appearanceFor(a: {
   const arch = (a.archetype || "").toLowerCase();
   const lean = /klimmer|ultra|marathon|cross-country|duur/.test(arch);
   const power = /sprinter|baansprinter|achtervolger/.test(arch);
-  // Gender-dimorphic, athletic build — feminine vs masculine physiques.
+  // Gender-dimorphic, athletic build — clearly feminine vs clearly masculine
+  // physiques. Women read youthful and softly feminine (slim waist, gentle curves,
+  // toned not bulky); men read distinctly muscular (broad shoulders, defined arms
+  // and legs, visible muscle tone).
   const build =
     sex === "female"
       ? lean
-        ? "a lean, toned, feminine athletic build"
+        ? "a youthful, slim and softly feminine athletic figure — slender, toned legs, a slim waist and gentle feminine curves, lightly muscled, never bulky"
         : power
-          ? "a strong yet feminine athletic build"
-          : "a fit, feminine athletic build"
+          ? "a youthful, athletic yet distinctly feminine figure — shapely toned legs and a slim waist with soft feminine curves, fit but never bulky"
+          : "a youthful, fit and feminine figure — a slim waist, gently curved silhouette and lightly toned legs, graceful and not bulky"
       : lean
-        ? "a lean, wiry but muscular cyclist's build"
+        ? "a lean but visibly muscular cyclist's physique — broad shoulders, defined sinewy arms and powerful, clearly muscled legs"
         : power
-          ? "a powerful, muscular sprinter's build"
-          : "a strong, muscular athletic build";
+          ? "a powerful, heavily muscled sprinter's physique — broad shoulders, thick defined arms and explosively muscular thighs and calves"
+          : "a strong, muscular masculine physique — broad shoulders, well-defined arms and powerful, clearly muscled legs";
   const genderFace =
     sex === "female"
       ? "soft, feminine facial features"

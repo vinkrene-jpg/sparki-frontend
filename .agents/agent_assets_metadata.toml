@@ -269,3 +269,27 @@ id = "Lc_UAz0OKNs_UIeWt9_C2"
 uri = "file://.local/world-samples/new-02-421.png"
 type = "image"
 title = "Glooiende velden — sfeerbeeld van de omgeving"
+
+[[outputs]]
+id = "3W6Jqua6DyB5VlEGv7wth"
+uri = "file://.local/world-samples/new-04-448.png"
+type = "image"
+title = "Man, bergweg — duidelijk gespierder (schouders/armen/benen)"
+
+[[outputs]]
+id = "i7kgYquNnUItsxKrBxQYk"
+uri = "file://.local/world-samples/new-03-449.png"
+type = "image"
+title = "Man, Toscane — krachtige gespierde bouw"
+
+[[outputs]]
+id = "17Q9AfaW_DNHtuodk_MPq"
+uri = "file://.local/world-samples/new-05-447.png"
+type = "image"
+title = "Vrouw, Golden Gate — jonger, vrouwelijke vormen, getoned"
+
+[[outputs]]
+id = "R75_by77MeadqosK8ACNm"
+uri = "file://.local/world-samples/new-01-451.png"
+type = "image"
+title = "Vrouw, arm-selfie kust — vrouwelijke lijn"
