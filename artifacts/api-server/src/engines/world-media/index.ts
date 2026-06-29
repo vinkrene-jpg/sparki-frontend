@@ -97,7 +97,7 @@ export function buildPromptKey(
 const STYLE_VERSION = "v2";
 // Feed photos get their own version so a fresh, rawer look can be regenerated
 // WITHOUT touching the already-approved avatar faces (avatars keep STYLE_VERSION).
-const POST_STYLE_VERSION = "v9";
+const POST_STYLE_VERSION = "v10";
 
 // Authentic-but-beautifully-shot look, modelled on the most successful cycling &
 // lifestyle creators on Instagram: real and candid, yet high craft. NOT a stiff
@@ -129,6 +129,13 @@ const EFFORT_RIDE =
 const EFFORT_FINISH =
   "Sweat-glistened and a little dirt-streaked from racing, hair a mess, but the face lit up with raw, radiant pride, " +
   "joy and emotion — pure happiness in the moment.";
+// Professional on-bike position. Without this, riders (especially the men) sit
+// upright and awkward — the dead giveaway of a fake, amateur photo.
+const POSTURE =
+  "Whenever the rider is on the bike they hold a polished, professional racing position: a long, flat, level back, " +
+  "relaxed dropped shoulders, softly bent elbows, hands correctly on the brake hoods or down in the drops, hips quiet " +
+  "and stable, core engaged — the efficient, well-drilled, powerful look of an experienced pro. Never sitting bolt " +
+  "upright, slumped, hunched, stiff, perched too high or awkward.";
 // The single thing that makes an influencer photo work: warmth and connection.
 // Even with little to 'say', a good-looking rider who beams pride and joy and locks
 // eyes with the viewer carries the shot. Applied to EVERY post.
@@ -298,25 +305,24 @@ function locationFor(discipline?: string, seed?: string): string {
 // the camera position and how big the rider sits in the frame, so the feed gets
 // genuine variety in angle and scale (not always a centred medium shot) and real
 // selfies actually appear.
+// Instagram-feed framing: this is a personal social feed, so it is OVERWHELMINGLY
+// self-shot — real front-camera selfies (arm holding the phone) and the odd casual
+// snap a riding mate took. Deliberately NOT polished cycling-magazine photography
+// (no third-person panning action, drone/high angles, low-angle-from-the-tarmac or
+// wide "rider tiny in the landscape" shots) — that reads like an ad and kills the
+// feel of a real person's feed. Selfie variants dominate the pool on purpose.
 const FRAMING_RIDE = [
   // true front-camera selfies — the rider's own arm clearly holds the phone
-  "a genuine front-camera selfie with the rider's own arm clearly outstretched holding the phone, the extended arm and hand visible in the foreground, face large and close, slight wide-angle phone-lens distortion, big warm smile and intense eye contact mid-ride",
+  "a genuine front-camera selfie taken mid-ride with the rider's own arm clearly outstretched holding the phone, the extended arm and hand visible in the foreground, face large and close, slight wide-angle phone-lens distortion, big warm smile and intense eye contact",
   "an arm's-length front-camera selfie, the extended arm holding the phone clearly visible at the edge of the frame, the rider's face close and warm with the road and scenery behind, laughing or beaming straight at the lens",
-  // POV
-  "a POV handlebar shot looking down the road, the rider's hands, stem and front wheel in the foreground",
-  // social / group
-  "a group-ride shot with several teammates spread across the frame at different distances and depths",
-  "riding side by side with a training mate, both full-body in frame, shot from the side",
-  // varied camera positions + subject SCALE
-  "a wide epic landscape shot with the rider small in the lower third of the frame, huge scenery all around, lots of negative space",
-  // 'look at this view' — the scenery is the real subject, the rider happens to look great in it
-  "a photo taken mainly to show off the breathtaking scenery — the stunning landscape fills most of the frame and is clearly the subject, with the rider smaller and off to one side, pausing to gaze out at the view and happening to look great in it",
-  "an environmental shot capturing the epic surroundings, the rider turned to take in the panorama (seen from behind or three-quarter), the vista dominating the frame — they just happen to look beautiful in the scene",
-  "a dramatic low-angle shot from near the tarmac looking up, the rider large and powerful against the sky",
-  "a tight close-up on the rider's face and shoulders, shallow depth of field, the effort and expression filling the frame",
-  "a side-on full-body panning action shot, the rider sharp and the background streaked with motion blur",
-  "a shot from directly behind following the rider into the scene, the road leading the eye away",
-  "a high angle from above looking down on the rider and the road below",
+  "a casual front-camera selfie paused at a viewpoint, the rider's own arm outstretched holding the phone, leaning slightly into the lens with a big happy grin — and the breathtaking scenery clearly spread out behind them so the view is shown off in the same shot",
+  "a front-camera selfie that deliberately shows off the epic view: the rider holds the phone at arm's length and tilts it so most of the frame is the stunning landscape behind them, with their happy face in the corner — a 'look where I am right now' selfie",
+  "a sweaty, close-up post-effort front-camera selfie, the rider's arm holding the phone, flushed and beaming straight down the lens right after a hard effort",
+  "a fun group selfie: the rider and a training mate both lean into one phone held at arm's length, both faces close and laughing, the extended arm visible in the foreground",
+  // self-shot POV (still feels like the rider's own phone, not a photographer)
+  "a POV handlebar shot the rider took of their own hands, stem and front wheel with the road ahead — clearly shot on their own phone",
+  // the rare candid a mate grabbed — still amateur phone, never a magazine shot
+  "a candid, slightly imperfect phone photo a riding mate quickly snapped of the rider mid-ride, casual and unposed like a real social-feed pic, never a polished professional magazine shot",
 ];
 function framingFor(seed?: string): string {
   return pickBy(FRAMING_RIDE, `${seed || "x"}:frame`);
@@ -550,12 +556,12 @@ export function buildPostPrompt(attrs: {
   } else if (attrs.sceneType === "race_finish") {
     scene =
       `The athlete celebrating just after a race finish, ${kitClause(attrs.team, attrs.slug)}, ` +
-      `arms up, other riders and a finish-line atmosphere behind, ${framingFor(seed)}. ${EFFORT_FINISH} ${KIT_WORN}`;
+      `arms up, other riders and a finish-line atmosphere behind, ${framingFor(seed)}. ${EFFORT_FINISH} ${POSTURE} ${KIT_WORN}`;
   } else {
     // training_ride / mountain_road / generic ride
     scene =
       `The athlete out riding, ${kitClause(attrs.team, attrs.slug)}, ${bikeClause(attrs.team)}, ` +
-      `at ${locationFor(attrs.discipline, seed)} — ${framingFor(seed)}. ${EFFORT_RIDE} ${KIT_WORN}`;
+      `at ${locationFor(attrs.discipline, seed)} — ${framingFor(seed)}. ${EFFORT_RIDE} ${POSTURE} ${KIT_WORN}`;
   }
 
   return [

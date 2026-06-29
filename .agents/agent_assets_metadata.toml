@@ -293,3 +293,27 @@ id = "R75_by77MeadqosK8ACNm"
 uri = "file://.local/world-samples/new-01-451.png"
 type = "image"
 title = "Vrouw, arm-selfie kust — vrouwelijke lijn"
+
+[[outputs]]
+id = "sMHai2odXDjfiCm3-5Jex"
+uri = "file://.local/world-samples/new-03-460.png"
+type = "image"
+title = "Man, rij-selfie bergpas — professionele houding op de fiets"
+
+[[outputs]]
+id = "4YX54eZjw_GtWvPLWOHDp"
+uri = "file://.local/world-samples/new-02-461.png"
+type = "image"
+title = "Selfie met uitzicht (Ventoux) — view achter de renner"
+
+[[outputs]]
+id = "TmmeL7gnsCm6dXNDm35o6"
+uri = "file://.local/world-samples/new-07-456.png"
+type = "image"
+title = "Vrouw, rij-selfie kustweg — arm met telefoon, Instagram-feel"
+
+[[outputs]]
+id = "lQRcsnHVZc4Tlhni9Zoq1"
+uri = "file://.local/world-samples/new-04-459.png"
+type = "image"
+title = "Man, kiekje van maat — casual, geen magazinefoto"
