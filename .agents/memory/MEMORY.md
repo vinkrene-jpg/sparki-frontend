@@ -78,3 +78,4 @@
 - [Sparki Sound Studio](sparki-sound-studio.md) — original audio identity + in-app wekker; web can't ring locked phone (state it); dedupe on LOCAL date; optimistic restore even on first write.
 - [Sparki World architecture](sparki-world.md) — transparently-fictional Virtual Athletes island; cache-first Media Engine (promptKey UNIQUE, avatars carry slug/scenes don't); hard wall to real data; honest gaps.
 - [Sparki daily notification fold](sparki-notification-daily-fold.md) — bell folds rows to one entry per Ams calendar day; unread badge counts DAYS not rows; email/push + DB rows untouched.
+- [Sparki chat overlay & session thread](sparki-chat-overlay.md) — chat opens from header SPARKI button (portal z-[80]); visible thread is session-scoped (SESSION_START filter), full history stays in DB memory; never delete rows for "fresh start".

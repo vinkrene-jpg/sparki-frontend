@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { LogOut, RefreshCw, Shield, ChevronLeft, MessageSquarePlus, Users, Globe } from "lucide-react"
 import { Link } from "wouter"
 import { useClerk, Show } from "@clerk/react"
@@ -14,6 +14,7 @@ import { FollowUpPrompt } from "@/components/sparki/follow-up-prompt"
 import { CoachAnalysisCard } from "@/components/sparki/coach/coach-analysis-card"
 import { CoachDecisionCard } from "@/components/sparki/coach-decision-card"
 import { OntwikkelprioriteitHomeCard } from "@/components/sparki/ontwikkelprioriteit-home-card"
+import { SparkiChatOverlay } from "@/components/sparki/sparki-chat-overlay"
 import { useCoachDecision } from "@/contexts/CoachDecisionContext"
 import { useHomeView } from "@/contexts/HomeViewContext"
 import { startTelemetry, trackScreen } from "@/lib/telemetry"
@@ -262,6 +263,7 @@ export function ScreenShell({
     if (fullSurface) trackScreen("coach")
   }, [fullSurface])
   const { profile } = useUserProfile()
+  const [chatOpen, setChatOpen] = useState(false)
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#05070e] text-white">
       {/* Per-screen cinematic background — shared structure, scene-specific
@@ -270,13 +272,19 @@ export function ScreenShell({
 
       <div className="relative z-10 mx-auto flex max-w-md flex-col gap-10 px-6 pb-32 pt-12">
         <header className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setChatOpen(true)}
+            aria-label="Vraag Sparki — open de chat"
+            title="Vraag Sparki"
+            className="flex items-center gap-2 rounded-full transition-opacity hover:opacity-80"
+          >
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-300/60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-300" />
             </span>
             <span className="font-mono text-[11px] tracking-[0.35em] text-white/70">SPARKI</span>
-          </div>
+          </button>
           <div className="flex items-center gap-3">
             {/* The home scene is only ever reached by an authenticated user (or
                 Development Preview), so the club crest renders outside the
@@ -341,6 +349,9 @@ export function ScreenShell({
           Suppressed on the Circle route ("samen"), where the Circle feed is the
           calm home for follow-ups — so we never double-ask the same question. */}
       {!bare && section.toLowerCase() !== "samen" && !stateSurface && <FollowUpPrompt />}
+
+      {/* App-wide chat window — opened from the SPARKI mark in the header. */}
+      <SparkiChatOverlay open={chatOpen} onClose={() => setChatOpen(false)} />
     </main>
   )
 }

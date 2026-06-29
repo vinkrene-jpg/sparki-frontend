@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   Send,
   Loader2,
@@ -25,9 +25,17 @@ import {
 
 // One central, reusable place where the athlete gives Sparki anything — a typed
 // question, a photo from the camera, an image/PDF/file upload, or a pasted link.
-// Everything is really stored (object storage, tied to the athlete) and the full
-// conversation, including the uploaded items, stays visible across sessions.
-// There are no scattered upload buttons elsewhere — this is the single composer.
+// Everything is really stored (object storage, tied to the athlete) and kept in
+// Sparki's memory. The thread shown here is the current session only (see
+// SESSION_START); there are no scattered upload buttons elsewhere — this is the
+// single composer.
+
+// When the app is opened, the visible chat starts clean: only the turns from
+// THIS session are shown. Everything the athlete ever shared still lives in
+// Sparki's memory (the DB) for analysis — it is just no longer rendered at the
+// top of a fresh conversation. Set once per page load (= one "app open"); SPA
+// route changes keep it, a reload/reopen resets it to an empty thread.
+const SESSION_START = Date.now()
 
 type PendingAttachment = InputAttachment & { uploading?: boolean }
 
@@ -190,10 +198,21 @@ export function SparkiInputCenter() {
 
   const fileRef = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
 
-  const turns = data?.turns ?? []
+  // Only this session's turns are shown — older messages stay in Sparki's
+  // memory (DB) but are not rendered on a freshly opened conversation.
+  const turns = (data?.turns ?? []).filter(
+    (t) => new Date(t.createdAt).getTime() >= SESSION_START,
+  )
   const uploading = pending.some((p) => p.uploading)
   const busy = send.isPending || uploading
+
+  // Keep the newest turn in view: open at the latest message and follow new
+  // replies, so the conversation reads bottom-up like a chat, not top-anchored.
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ block: "end" })
+  }, [turns.length, send.isPending])
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return
@@ -292,8 +311,8 @@ export function SparkiInputCenter() {
             </div>
             <p className="text-[13px] leading-relaxed text-white/60">
               Geef Sparki een foto, afbeelding, PDF, bestand of link, of stel je
-              vraag. Alles wat je deelt blijft hier bewaard, zodat Sparki je beter
-              leert kennen.
+              vraag. Je begint elke keer met een schoon gesprek — Sparki onthoudt
+              wel alles uit eerdere gesprekken om je beter te leren kennen.
             </p>
           </div>
         )}
@@ -315,6 +334,9 @@ export function SparkiInputCenter() {
             </div>
           </div>
         )}
+
+        {/* Anchor — keeps the newest turn / reply in view. */}
+        <div ref={bottomRef} />
       </div>
 
       {/* COMPOSER */}
@@ -383,7 +405,7 @@ export function SparkiInputCenter() {
           <p className="mb-2 text-[11px] text-rose-300/80">{error}</p>
         )}
 
-        <div className="flex items-end gap-2">
+        <div className="flex flex-col gap-2">
           {/* Hidden file/camera inputs */}
           <input
             ref={fileRef}
@@ -408,8 +430,45 @@ export function SparkiInputCenter() {
             }}
           />
 
-          {/* Attach controls */}
-          <div className="flex shrink-0 gap-1">
+          {/* Eerste regel — het venster (tekst) + versturen */}
+          <div className="flex items-end gap-2">
+            <textarea
+              className="max-h-40 min-h-[56px] flex-1 resize-none rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+              placeholder="Stel Sparki een vraag of beschrijf wat je deelt…"
+              rows={2}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault()
+                  void handleSend()
+                }
+              }}
+              disabled={send.isPending}
+            />
+
+            <button
+              type="button"
+              onClick={() => void handleSend()}
+              disabled={!canSend}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-opacity disabled:opacity-35"
+              style={{ background: ACCENT }}
+              aria-label="Versturen naar Sparki"
+            >
+              {busy ? (
+                <Loader2
+                  className="h-4 w-4 animate-spin"
+                  style={{ color: "#040506" }}
+                  strokeWidth={2.5}
+                />
+              ) : (
+                <Send className="h-4 w-4" style={{ color: "#040506" }} strokeWidth={2.5} />
+              )}
+            </button>
+          </div>
+
+          {/* Tweede regel — bijlage toevoegen */}
+          <div className="flex gap-1">
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
@@ -447,41 +506,6 @@ export function SparkiInputCenter() {
               <Link2 className="h-4 w-4" />
             </button>
           </div>
-
-          {/* Text composer */}
-          <textarea
-            className="max-h-40 min-h-[56px] flex-1 resize-none rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
-            placeholder="Stel Sparki een vraag of beschrijf wat je deelt…"
-            rows={2}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault()
-                void handleSend()
-              }
-            }}
-            disabled={send.isPending}
-          />
-
-          <button
-            type="button"
-            onClick={() => void handleSend()}
-            disabled={!canSend}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-opacity disabled:opacity-35"
-            style={{ background: ACCENT }}
-            aria-label="Versturen naar Sparki"
-          >
-            {busy ? (
-              <Loader2
-                className="h-4 w-4 animate-spin"
-                style={{ color: "#040506" }}
-                strokeWidth={2.5}
-              />
-            ) : (
-              <Send className="h-4 w-4" style={{ color: "#040506" }} strokeWidth={2.5} />
-            )}
-          </button>
         </div>
       </div>
     </div>

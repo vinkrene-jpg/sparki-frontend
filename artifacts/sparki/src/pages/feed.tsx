@@ -5,7 +5,6 @@ import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { ClubChip } from "@/components/sparki/club-chip"
 import { SparkiCore } from "@/components/sparki/sparki-core"
 import { NewsReader } from "@/components/sparki/news-reader"
-import { SparkiInputCenter } from "@/components/sparki/sparki-input-center"
 import { useAiBrief, type AiSource } from "@/hooks/use-ai-brief"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { useKnowledge } from "@/hooks/use-knowledge"
@@ -396,13 +395,6 @@ export default function FeedPage() {
             </button>
           )
         })}
-      </div>
-
-      {/* Sparki-gesprek — altijd zichtbaar bovenaan Ontdekken zodat je hier
-          direct een vraag, foto, bestand of link aan Sparki kunt geven. Niet
-          langer verstopt achter het "Sparki"-filter. */}
-      <div className="-mt-2">
-        <SparkiInputCenter />
       </div>
 
       {/* STREAM */}
