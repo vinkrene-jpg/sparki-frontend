@@ -97,7 +97,7 @@ export function buildPromptKey(
 const STYLE_VERSION = "v2";
 // Feed photos get their own version so a fresh, rawer look can be regenerated
 // WITHOUT touching the already-approved avatar faces (avatars keep STYLE_VERSION).
-const POST_STYLE_VERSION = "v4";
+const POST_STYLE_VERSION = "v5";
 
 // Authentic-but-beautifully-shot look, modelled on the most successful cycling &
 // lifestyle creators on Instagram: real and candid, yet high craft. NOT a stiff
@@ -121,10 +121,20 @@ const POST_LOOK =
 // Visible effort for active cycling moments — sweat, grime, windblown hair, a
 // tired-but-proud face. This is what makes a ride photo feel real, not stock.
 const EFFORT_RIDE =
-  "Show the real effort: sweat on the face and arms, flushed cheeks, road grime or mud flecked up the legs, " +
-  "hair messy and windblown, breathing hard with a focused, determined look.";
+  "A real, lived-in riding moment with just a touch of genuine effort — a light sheen of sweat and windblown " +
+  "hair — but above all radiating joy and pride: a warm, beaming smile or a glowing, happy, confident expression, " +
+  "clearly loving riding through such a beautiful place, in a strong, athletic posture.";
 const EFFORT_FINISH =
-  "Drenched in sweat, legs streaked with dirt, hair a mess, face exhausted but lit up with raw, genuine pride and emotion.";
+  "Sweat-glistened and a little dirt-streaked from racing, hair a mess, but the face lit up with raw, radiant pride, " +
+  "joy and emotion — pure happiness in the moment.";
+// The single thing that makes an influencer photo work: warmth and connection.
+// Even with little to 'say', a good-looking rider who beams pride and joy and locks
+// eyes with the viewer carries the shot. Applied to EVERY post.
+const CONNECTION =
+  "Above all, capture real emotion and connection with the viewer: the rider looks genuinely proud and happy to be " +
+  "there, savouring the beautiful surroundings. When the eyes meet the camera they connect directly and warmly — " +
+  "expressive, magnetic, charismatic eye contact, a real smile reaching the eyes — the attractive, likeable presence " +
+  "of a top cycling lifestyle influencer that makes you want to follow them. Never blank, cold or emotionless.";
 
 // Honesty line shared by every still: the person is invented and so is every
 // sponsor/brand — we never depict a real recognisable individual or a real-world
@@ -170,11 +180,25 @@ function appearanceFor(a: {
   const slug = a.slug || "x";
   const sex = buildName(a.gender);
   const arch = (a.archetype || "").toLowerCase();
-  const build = /klimmer|ultra|marathon|cross-country|duur/.test(arch)
-    ? "a lean, wiry cyclist's build"
-    : /sprinter|baansprinter|achtervolger/.test(arch)
-      ? "a powerful, muscular sprinter's build"
-      : "a fit, athletic build";
+  const lean = /klimmer|ultra|marathon|cross-country|duur/.test(arch);
+  const power = /sprinter|baansprinter|achtervolger/.test(arch);
+  // Gender-dimorphic, athletic build — feminine vs masculine physiques.
+  const build =
+    sex === "female"
+      ? lean
+        ? "a lean, toned, feminine athletic build"
+        : power
+          ? "a strong yet feminine athletic build"
+          : "a fit, feminine athletic build"
+      : lean
+        ? "a lean, wiry but muscular cyclist's build"
+        : power
+          ? "a powerful, muscular sprinter's build"
+          : "a strong, muscular athletic build";
+  const genderFace =
+    sex === "female"
+      ? "soft, feminine facial features"
+      : "masculine facial features with a defined jawline";
   const hair =
     sex === "female" ? pickBy(HAIR_V, `${slug}:hair`) : pickBy(HAIR_M, `${slug}:hair`);
   const facial =
@@ -182,7 +206,9 @@ function appearanceFor(a: {
   return [
     `${pickBy(SKIN, `${slug}:skin`)} skin`,
     `${pickBy(HAIR_COLOR, `${slug}:haircol`)} ${hair}${facial}`,
+    genderFace,
     pickBy(FACE_FEATURE, `${slug}:face`),
+    "very good-looking and photogenic, with striking, expressive, captivating eyes",
     build,
   ].join(", ");
 }
@@ -253,13 +279,26 @@ function locationFor(discipline?: string, seed?: string): string {
 }
 
 // ── influencer framing (selfies, group rides, with a mate) ─────────────────────
+// Each entry is a FULL shot description — it sets BOTH who/how it was taken AND
+// the camera position and how big the rider sits in the frame, so the feed gets
+// genuine variety in angle and scale (not always a centred medium shot) and real
+// selfies actually appear.
 const FRAMING_RIDE = [
-  "a candid arm's-length selfie, smiling at the camera mid-ride",
-  "a POV handlebar selfie taken while riding",
-  "a group-ride photo with several teammates riding alongside",
-  "riding side by side with a training mate, both clearly in frame",
-  "a candid action shot a friend snapped from the roadside",
-  "a relaxed selfie at a viewpoint with the bike leaning nearby",
+  // true front-camera selfies (so selfies are unmistakably present)
+  "a real front-camera selfie held at arm's length, the rider's face large and close in frame, slight wide-angle phone-lens look, eyes to the camera mid-ride",
+  "an over-the-shoulder front-camera selfie while riding, face close on one side with the road and scenery stretching behind",
+  // POV
+  "a POV handlebar shot looking down the road, the rider's hands, stem and front wheel in the foreground",
+  // social / group
+  "a group-ride shot with several teammates spread across the frame at different distances and depths",
+  "riding side by side with a training mate, both full-body in frame, shot from the side",
+  // varied camera positions + subject SCALE
+  "a wide epic landscape shot with the rider small in the lower third of the frame, huge scenery all around, lots of negative space",
+  "a dramatic low-angle shot from near the tarmac looking up, the rider large and powerful against the sky",
+  "a tight close-up on the rider's face and shoulders, shallow depth of field, the effort and expression filling the frame",
+  "a side-on full-body panning action shot, the rider sharp and the background streaked with motion blur",
+  "a shot from directly behind following the rider into the scene, the road leading the eye away",
+  "a high angle from above looking down on the rider and the road below",
 ];
 function framingFor(seed?: string): string {
   return pickBy(FRAMING_RIDE, `${seed || "x"}:frame`);
@@ -505,6 +544,7 @@ export function buildPostPrompt(attrs: {
     identity,
     scene,
     [weather, time].filter(Boolean).join(", ") + (weather || time ? "." : ""),
+    CONNECTION,
     POST_LOOK,
     HONESTY_LINE,
     WORLD_LOOK,

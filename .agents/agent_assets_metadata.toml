@@ -167,3 +167,33 @@ id = "kasheR3tJvtKTB3ncU1BR"
 uri = "file://.local/world-samples/new-04-359.png"
 type = "image"
 title = "Groepsrit Golden Gate, tegenlicht (NOVA Energy)"
+
+[[outputs]]
+id = "UeGFv3wbSgtmx_VWlc6g3"
+uri = "file://.local/world-samples/new-01-369.png"
+type = "image"
+title = "Selfie in de wijngaarden — warme lach, oogcontact"
+
+[[outputs]]
+id = "_hZ8b5I_utbw9r4Yrt3GH"
+uri = "file://.local/world-samples/new-02-368.png"
+type = "image"
+title = "Front-camera selfie aan de kust — blij, verbonden"
+
+[[outputs]]
+id = "XAsj4x5oFNT8QshjJcyTo"
+uri = "file://.local/world-samples/new-03-367.png"
+type = "image"
+title = "Low-angle held-shot, Golden Gate — trots & stralend"
+
+[[outputs]]
+id = "ALvYiiSEjkHmA15sgQZOX"
+uri = "file://.local/world-samples/new-00-370.png"
+type = "image"
+title = "Toscane, mannelijke renner — warme glimlach"
+
+[[outputs]]
+id = "ArXggnpW3AgoqDRJW5f6e"
+uri = "file://.local/world-samples/new-05-365.png"
+type = "image"
+title = "Groepsrit Dolomieten — vreugde, diepte in beeld"
