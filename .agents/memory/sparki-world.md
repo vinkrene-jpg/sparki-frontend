@@ -98,7 +98,16 @@ generate/upload so it never bills the image model.)
   role/cohort. **Profile route is `/athletes/:slug` (plural).**
 - Frontend `/wereld`: Tijdlijn/Bewaard tabs, Voorgesteld+Toonaangevend rails, FollowerCount
   (null if score≤0), CareerTimeline, save/share + IntersectionObserver view tracking. Profile
-  drill-in is `openSlug` STATE not a URL route → a direct `/wereld/:slug` URL shows the feed.
+  drill-in is now a REAL route `/wereld/athlete/:slug` (wouter useRoute in wereld.tsx,
+  registered in App.tsx) → shareable/deep-linkable; backToWorld()→`/wereld`. Internal API
+  route stays `/api/world/athletes/:slug` (plural).
+- **Dev DB drift gotcha:** the `virtual_*` tables can be seeded under an OLD schema (missing
+  columns on virtual_athletes + virtual_athlete_relationships; missing virtual_career_entries /
+  user_virtual_affinity), making `/wereld` 500. `pnpm db push` ABORTS (wants to truncate
+  relationships). Fix = apply additive DDL (ADD COLUMN IF NOT EXISTS + CREATE TABLE IF NOT
+  EXISTS, match lib/db/src/schema/sparki-world.ts, add unique constraints only after verifying
+  zero dups) then re-run `seed:sparki-world` — it is idempotent & fiction-only (safe to reseed,
+  upserts by slug, dedupes by unique constraints). Never push-force (truncates).
 - Harness `test:world-consistency` extended: follower/career determinism + tier ordering +
   timeline plausibility + validateSafety reject/accept battery + feed learning effect. 35/35.
 - **Stale-bundle gotcha:** after backend engine/route edits, RESTART the api-server workflow —

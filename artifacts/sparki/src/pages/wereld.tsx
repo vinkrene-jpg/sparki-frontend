@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { useLocation, useRoute } from "wouter"
 import {
   Heart,
   MessageCircle,
@@ -696,16 +697,24 @@ export default function WereldPage() {
   const recommended = useWorldRecommended()
   const heroes = useWorldHeroes()
   const saved = useWorldSaved()
-  const [openSlug, setOpenSlug] = useState<string | null>(null)
+  const [, setLocation] = useLocation()
+  const [matchAthlete, params] = useRoute("/wereld/athlete/:slug")
   const [tab, setTab] = useState<Tab>("feed")
+
+  // Each athlete now has a real, shareable route. Opening a profile navigates
+  // to /wereld/athlete/:slug (deep-linkable, screenshot- and share-friendly)
+  // rather than toggling local state. Going back returns to the feed route.
+  const openSlug = matchAthlete ? decodeURIComponent(params.slug) : null
+  const openAthlete = (slug: string) => setLocation(`/wereld/athlete/${slug}`)
+  const backToWorld = () => setLocation("/wereld")
 
   return (
     <ScreenShell section="wereld">
       {openSlug ? (
         <AthleteProfile
           slug={openSlug}
-          onBack={() => setOpenSlug(null)}
-          onOpenAthlete={setOpenSlug}
+          onBack={backToWorld}
+          onOpenAthlete={openAthlete}
         />
       ) : (
         <div className="flex flex-col gap-5">
@@ -754,7 +763,7 @@ export default function WereldPage() {
             ) : (
               <div className="flex flex-col gap-4">
                 {saved.data.items.map((post) => (
-                  <PostCard key={post.id} post={post} onOpenAthlete={setOpenSlug} />
+                  <PostCard key={post.id} post={post} onOpenAthlete={openAthlete} />
                 ))}
               </div>
             )
@@ -764,13 +773,13 @@ export default function WereldPage() {
                 title="Voorgesteld voor jou"
                 icon={<Users className="h-4 w-4 text-cyan-300/80" strokeWidth={1.75} />}
                 items={recommended.data?.items ?? []}
-                onOpen={setOpenSlug}
+                onOpen={openAthlete}
               />
               <Rail
                 title="Toonaangevend"
                 icon={<Trophy className="h-4 w-4 text-cyan-300/80" strokeWidth={1.75} />}
                 items={heroes.data?.items ?? []}
-                onOpen={setOpenSlug}
+                onOpen={openAthlete}
               />
 
               {isLoading ? (
@@ -786,7 +795,7 @@ export default function WereldPage() {
               ) : (
                 <div className="flex flex-col gap-4">
                   {data.items.map((post) => (
-                    <PostCard key={post.id} post={post} onOpenAthlete={setOpenSlug} />
+                    <PostCard key={post.id} post={post} onOpenAthlete={openAthlete} />
                   ))}
                 </div>
               )}

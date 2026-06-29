@@ -460,6 +460,9 @@ function AppRouter() {
                 <Route path="/wereld">
                   <ProtectedPage component={WereldPage} />
                 </Route>
+                <Route path="/wereld/athlete/:slug">
+                  <ProtectedPage component={WereldPage} />
+                </Route>
                 <Route path="/kennis">
                   <ProtectedPage component={KnowledgePage} />
                 </Route>
