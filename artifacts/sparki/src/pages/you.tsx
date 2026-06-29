@@ -7,7 +7,7 @@ import { ProfileSettings } from "@/components/sparki/profile-settings"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { useClearPhotoDecor } from "@/hooks/use-photo-style"
 import { attachmentUrl } from "@/hooks/use-input-center"
-import { useObservations, useRunConnections, type AiObservation } from "@/hooks/use-ai-memory"
+import { useObservations, useRunConnections } from "@/hooks/use-ai-memory"
 import { useFtpHistory } from "@/hooks/use-ftp-history"
 import { useLoad } from "@/hooks/use-load"
 import { useSessions } from "@/hooks/use-sessions"
@@ -23,12 +23,14 @@ import { useFixParams, useCompleteFix, useStartFix } from "@/hooks/use-missing-i
 import {
   deriveIdentity,
   categorizeObservations,
+  observationLane,
   deriveEvolution,
   deriveBelastbaarheid,
   deriveBandbreedte,
   deriveOntwikkelprioriteit,
   developmentGoalInfo,
   type EvolutionTone,
+  type ObservationLane,
   type Ontwikkelprioriteit,
 } from "@/lib/core-profile"
 import { missingTargets, type InputTargetKey } from "@/lib/missing-input"
@@ -207,18 +209,14 @@ function InsightSection({
   n,
   title,
   blurb,
-  items,
-  sources,
+  groups,
 }: {
   n: string
   title: string
   blurb: string
-  items: AiObservation[]
-  sources: InsightSources
+  groups: InsightGroup[]
 }) {
-  if (items.length === 0) return null
-  // Collapse same-metric observations so the same read isn't repeated.
-  const groups = groupObservations(items, sources)
+  if (groups.length === 0) return null
   return (
     <section>
       <SectionLabel n={n} title={title} />
@@ -312,6 +310,37 @@ export default function YouPage() {
   const identity = deriveIdentity(profile, sessionsCount)
   const observations = obsData?.observations ?? []
   const lenses = categorizeObservations(observations)
+
+  // Group ALL durable observations ONCE so the same maatstaf is shown a single
+  // time across the whole page. The live set is exactly what categorize kept
+  // (dismissed/outdated/transient already filtered), reconstructed from its
+  // buckets so there's one source of truth. groupObservations collapses
+  // same-metric observations into one card (lead + supporting members) and
+  // returns them strongest-first.
+  const liveObservations = [
+    ...lenses.strengths,
+    ...lenses.development,
+    ...lenses.patterns,
+    ...lenses.uncertainty,
+  ]
+  const allGroups = groupObservations(liveObservations, insightSources)
+  // The headline group = the one carrying the overall lead; shown only in §03.
+  const leadGroup = lenses.lead
+    ? allGroups.find((g) => g.members.some((m) => m.id === lenses.lead!.id)) ?? null
+    : null
+  // Route every remaining group into exactly one lens by its lead's tone, so a
+  // metric never reappears in a second section (no duplicate cards).
+  const laneGroups: Record<ObservationLane, InsightGroup[]> = {
+    strengths: [],
+    development: [],
+    patterns: [],
+    uncertainty: [],
+  }
+  for (const g of allGroups) {
+    if (leadGroup && g.key === leadGroup.key) continue
+    laneGroups[observationLane(g.lead)].push(g)
+  }
+
   const evolution = deriveEvolution(ftpHistory, load, sessions)
   const belastbaarheid = deriveBelastbaarheid(load, sessions, profile)
   const bandbreedte = deriveBandbreedte(ftpHistory, load, profile)
@@ -473,15 +502,13 @@ export default function YouPage() {
         <div className="mt-3">
           {obsLoading ? (
             <div className="h-24 animate-pulse rounded-2xl bg-white/[0.05]" />
-          ) : lenses.lead ? (
+          ) : leadGroup ? (
             <>
               <p className="mb-3 text-[12px] leading-relaxed text-white/35">
                 Uit je data {lenses.total === 1 ? "is" : "zijn"} {lenses.total}{" "}
                 {lenses.total === 1 ? "ding" : "dingen"} over je afgeleid. Dit valt het meest op:
               </p>
-              <GroupInsightCard
-                group={groupObservations([lenses.lead], insightSources)[0]}
-              />
+              <GroupInsightCard group={leadGroup} />
             </>
           ) : (
             <Card>
@@ -503,8 +530,7 @@ export default function YouPage() {
         n="04"
         title="Sterke eigenschappen"
         blurb="Wat bij jou werkt"
-        items={lenses.strengths}
-        sources={insightSources}
+        groups={laneGroups.strengths}
       />
 
       {/* ONTWIKKELPUNTEN */}
@@ -512,8 +538,7 @@ export default function YouPage() {
         n="05"
         title="Ontwikkelpunten"
         blurb="Waar de meeste winst voor je ligt"
-        items={lenses.development}
-        sources={insightSources}
+        groups={laneGroups.development}
       />
 
       {/* PATRONEN */}
@@ -521,19 +546,18 @@ export default function YouPage() {
         n="06"
         title="Terugkerende patronen"
         blurb="Verbanden die over tijd terugkomen in je data"
-        items={lenses.patterns}
-        sources={insightSources}
+        groups={laneGroups.patterns}
       />
 
       {/* WAAR SPARKI ONZEKER OVER IS */}
-      {(lenses.uncertainty.length > 0 || stateMissing.length > 0) && (
+      {(laneGroups.uncertainty.length > 0 || stateMissing.length > 0) && (
         <section>
           <SectionLabel n="07" title="Waar nog onzekerheid zit" />
           <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
             Eerlijk gezegd: dit is nog niet zeker
           </p>
           <div className="mt-3 flex flex-col gap-3">
-            {groupObservations(lenses.uncertainty, insightSources).map((g) => (
+            {laneGroups.uncertainty.map((g) => (
               <GroupInsightCard key={g.key} group={g} />
             ))}
             {stateMissing.length > 0 && (

@@ -62,7 +62,7 @@ const KIND_RULES: Array<{ kind: MetricKind; re: RegExp }> = [
   { kind: "rhr", re: /rusthart|rustpols|resting/i },
   { kind: "sleep", re: /slaap|sleep/i },
   { kind: "ftp", re: /\bftp\b|vermogen|wattage|\bwatt/i },
-  { kind: "recovery", re: /herstel|recovery|vermoeid|fatigue|frisheid|readiness|gereed/i },
+  { kind: "recovery", re: /herstel|recovery|vermoeid|fatigue|frisheid|readiness|gereed|check-?in|incheck/i },
   { kind: "form", re: /\bvorm\b|versheid|\btsb\b|\bform\b/i },
   { kind: "fitness", re: /fitheid|fitness|conditie|\bctl\b/i },
   { kind: "volume", re: /volume|belasting|\btss\b|trainingslast/i },

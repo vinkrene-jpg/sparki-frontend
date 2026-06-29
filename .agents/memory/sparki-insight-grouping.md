@@ -20,8 +20,18 @@ shared card + one grouping engine so every observation surface reads the same.
 - Two-tier only (short + Uitgebreid). The extended-content helper MUST be a
   function that can return `undefined` when there's no real depth — passing JSX
   directly is never null, so the disclosure toggle would open to nothing.
-- /you grouping is per-lens, NOT global: the same metric can legitimately be both
-  a strength AND a development point, so do not dedupe a metric across lenses.
+- /you grouping is GLOBAL, then routed to ONE lens: group ALL durable
+  observations once (`groupObservations` over the reconstructed live set), render
+  the overall lead group only in §03, then send every remaining group to exactly
+  one lens via `observationLane(group.lead)` (the SSOT in `core-profile.ts`, also
+  used by `categorizeObservations`). This is what stops the same maatstaf from
+  reappearing in two sections (the "Geen check-in × 3" bug). Earlier per-section
+  grouping let the lead repeat in a lens AND the same metric show across lenses.
+- A metric's lens is decided by its LEAD observation's tone, so a metric lands in
+  one lane only — it is not simultaneously a strength and a development point.
+- Check-in / readiness reads classify to `recovery` (KIND_RULES regex includes
+  `check-?in|incheck`) so day-specific titles collapse into one card instead of
+  splitting across `other`/`recovery`/`hrv`.
 - Resting-HR trend is "good when down"; daily metrics arrive newest-first and
   must be reversed to chronological before charting.
 - SCOPE BOUNDARY: this pattern is for AiObservation *card lists*. The daily

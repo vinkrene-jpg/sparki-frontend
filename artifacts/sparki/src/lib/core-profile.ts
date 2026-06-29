@@ -157,6 +157,23 @@ function needsAttention(o: AiObservation): boolean {
   return o.severity === "watch" || o.severity === "important" || o.severity === "urgent";
 }
 
+// The single lens an observation belongs in, by precedence (first match wins):
+//   1. low confidence         → uncertainty
+//   2. has a detected pattern → patterns
+//   3. needs attention        → development
+//   4. otherwise (steady)     → strengths
+// Exported so other surfaces (e.g. /you) can route GROUPED insights into the
+// same lens as categorizeObservations, keeping one source of truth and never
+// showing the same maatstaf in two sections.
+export type ObservationLane = "strengths" | "development" | "patterns" | "uncertainty";
+
+export function observationLane(o: AiObservation): ObservationLane {
+  if (o.confidence === "low") return "uncertainty";
+  if (o.detectedPattern && o.detectedPattern.trim().length > 0) return "patterns";
+  if (needsAttention(o)) return "development";
+  return "strengths";
+}
+
 // Transient daily messages (the "today" briefing) belong on Core Status, not in
 // the durable profile lenses — they're a momentary read, not a derived trait.
 const TRANSIENT_SOURCE_TYPES = new Set(["daily_briefing", "daily_n"]);
@@ -176,10 +193,19 @@ export function categorizeObservations(observations: AiObservation[]): CoreObser
   const uncertainty: AiObservation[] = [];
 
   for (const o of live) {
-    if (o.confidence === "low") uncertainty.push(o);
-    else if (o.detectedPattern && o.detectedPattern.trim().length > 0) patterns.push(o);
-    else if (needsAttention(o)) development.push(o);
-    else strengths.push(o);
+    switch (observationLane(o)) {
+      case "uncertainty":
+        uncertainty.push(o);
+        break;
+      case "patterns":
+        patterns.push(o);
+        break;
+      case "development":
+        development.push(o);
+        break;
+      default:
+        strengths.push(o);
+    }
   }
 
   // Lead = the most important, most confident, most recent insight overall.

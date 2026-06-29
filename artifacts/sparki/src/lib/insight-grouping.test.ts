@@ -153,6 +153,46 @@ scenario("different metrics stay in separate groups; 'other' stays single", () =
   assert(!!other && other.series === null, "an 'other' group must have no chart (null series)")
 })
 
+// ── regression: the "Geen check-in × 3" /you bug ─────────────────────────────
+//
+// Check-in / readiness observations used to be persisted under different DB
+// categories (general / recovery) with day-specific titles, so they classified
+// to different kinds and never collapsed — surfacing the same "Geen check-in"
+// read several times on /you. They must all classify to ONE kind and group into
+// a single card (lead + members), regardless of category.
+
+scenario("check-in / readiness observations all classify to ONE kind", () => {
+  const kinds = [
+    classifyObservation(obs({ title: "Geen check-in gelogd op rustdag", category: "recovery" })),
+    classifyObservation(obs({ title: "Geen check-in geregistreerd", category: "training" })),
+    classifyObservation(obs({ title: "No readiness check-in logged", category: "recovery" })),
+    classifyObservation(obs({ title: "Incheck van vandaag ontbreekt", category: "training" })),
+  ]
+  const unique = new Set(kinds)
+  assert(
+    unique.size === 1,
+    `all check-in/readiness reads must share one kind, got ${JSON.stringify([...unique])}`,
+  )
+})
+
+scenario("multiple check-in observations across categories collapse into ONE group", () => {
+  const list = [
+    obs({ title: "Geen check-in gelogd op wedstrijdvoorbereiding", category: "training", severity: "info", confidence: "high" }),
+    obs({ title: "Geen check-in geregistreerd op rustdag", category: "recovery", severity: "info", confidence: "high" }),
+    obs({ title: "Geen check-in gelogd op rustdag voor A-wedstrijd", category: "training", severity: "info", confidence: "high" }),
+    obs({ title: "No readiness check-in logged", category: "recovery", severity: "info", confidence: "medium" }),
+  ]
+  const groups = groupObservations(list, {})
+  assert(
+    groups.length === 1,
+    `the four check-in reads must collapse into ONE group, got ${groups.length}`,
+  )
+  assert(
+    groups[0].members.length === 4,
+    `the check-in group must carry all 4 members, got ${groups[0].members.length}`,
+  )
+})
+
 // ── series honesty ───────────────────────────────────────────────────────────
 
 scenario("HRV series is real and chronological (oldest → newest)", () => {
