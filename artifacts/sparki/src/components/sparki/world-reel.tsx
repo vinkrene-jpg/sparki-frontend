@@ -253,14 +253,20 @@ function RailAction({
 
 function ReelSlide({
   post,
+  index,
   initialSaved,
+  onActive,
   onOpenAthlete,
   onOpenComments,
 }: {
   post: WorldPost
+  index: number
   // Known-saved when this slide is rendered inside the "Bewaard" tab; the feed
   // response carries no per-post saved flag, so it defaults to false elsewhere.
   initialSaved: boolean
+  // Reports which slide currently fills the viewport so the parent can preload
+  // the next images (instant switching).
+  onActive: (index: number) => void
   onOpenAthlete: (slug: string) => void
   onOpenComments: (postId: number) => void
 }) {
@@ -275,26 +281,45 @@ function ReelSlide({
   const ref = useRef<HTMLElement | null>(null)
   const seen = useRef(false)
 
-  // Fire a single "view" when this slide is the one in view.
+  // Two jobs, one observer:
+  //  1) Tell the parent which slide is active → it preloads the next images.
+  //  2) Dwell-gate the learning signal: only record a "view" once the slide has
+  //     genuinely lingered in view (~1.4s). Flash-by slides during a fast swipe
+  //     no longer pollute the learned-affinity model — Sparki learns from real
+  //     attention, not from photos that merely flickered past.
   useEffect(() => {
     const el = ref.current
-    if (!el || seen.current) return
+    if (!el) return
+    let dwell: ReturnType<typeof setTimeout> | undefined
     const obs = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
-          if (e.isIntersecting && e.intersectionRatio >= 0.6 && !seen.current) {
-            seen.current = true
-            recordView.mutate(post.id)
-            obs.disconnect()
+          const active = e.isIntersecting && e.intersectionRatio >= 0.6
+          if (active) {
+            onActive(index)
+            if (!seen.current && dwell === undefined) {
+              dwell = setTimeout(() => {
+                if (!seen.current) {
+                  seen.current = true
+                  recordView.mutate(post.id)
+                }
+              }, 1400)
+            }
+          } else if (dwell !== undefined) {
+            clearTimeout(dwell)
+            dwell = undefined
           }
         }
       },
-      { threshold: [0.6] },
+      { threshold: [0, 0.6] },
     )
     obs.observe(el)
-    return () => obs.disconnect()
+    return () => {
+      if (dwell !== undefined) clearTimeout(dwell)
+      obs.disconnect()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [post.id])
+  }, [post.id, index])
 
   const hasMedia = Boolean(post.mediaUrl)
   const captionLong = post.caption.length > 120
@@ -310,7 +335,9 @@ function ReelSlide({
         <img
           src={post.mediaUrl as string}
           alt=""
-          loading="lazy"
+          loading={index < 3 ? "eager" : "lazy"}
+          decoding="async"
+          fetchPriority={index < 3 ? "high" : "auto"}
           className="absolute inset-0 h-full w-full object-cover"
         />
       ) : (
@@ -487,6 +514,7 @@ export function WorldReel({
 }) {
   const [commentsFor, setCommentsFor] = useState<number | null>(null)
   const [showHint, setShowHint] = useState(true)
+  const [activeIndex, setActiveIndex] = useState(0)
 
   // Fade the swipe hint after a moment — it's a first-glance affordance only.
   useEffect(() => {
@@ -494,17 +522,33 @@ export function WorldReel({
     return () => clearTimeout(t)
   }, [])
 
+  // Warm the next two photos into the browser cache the moment a slide becomes
+  // active, so swiping forward shows the image instantly instead of a flash of
+  // black while it downloads.
+  useEffect(() => {
+    for (let i = activeIndex + 1; i <= activeIndex + 2 && i < posts.length; i++) {
+      const url = posts[i]?.mediaUrl
+      if (url) {
+        const img = new Image()
+        img.decoding = "async"
+        img.src = url
+      }
+    }
+  }, [activeIndex, posts])
+
   return (
     <div className="relative -mx-6">
       <div
         onScroll={() => showHint && setShowHint(false)}
         className="h-[calc(100dvh-11rem)] min-h-[460px] snap-y snap-mandatory overflow-y-auto overscroll-contain scroll-smooth rounded-2xl border border-white/[0.06] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {posts.map((post) => (
+        {posts.map((post, i) => (
           <ReelSlide
             key={post.id}
             post={post}
+            index={i}
             initialSaved={initialSaved}
+            onActive={setActiveIndex}
             onOpenAthlete={onOpenAthlete}
             onOpenComments={setCommentsFor}
           />
@@ -516,7 +560,7 @@ export function WorldReel({
         <div className="pointer-events-none absolute inset-x-0 top-14 flex justify-center">
           <span className="flex items-center gap-1.5 rounded-full bg-black/45 px-3 py-1.5 text-[11px] text-white/85 backdrop-blur-sm">
             <ChevronUp className="h-3.5 w-3.5 animate-bounce" strokeWidth={2} />
-            Swipe voor meer
+            Veeg voor meer
           </span>
         </div>
       )}

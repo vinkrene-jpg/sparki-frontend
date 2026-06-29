@@ -1,6 +1,8 @@
 import { useState } from "react"
-import { Link } from "wouter"
+import { Link, useLocation } from "wouter"
 import { ScreenShell } from "@/components/sparki/screen-shell"
+import { WorldReel } from "@/components/sparki/world-reel"
+import { useWorldFeed } from "@/hooks/use-world"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { ClubChip } from "@/components/sparki/club-chip"
 import { SparkiCore } from "@/components/sparki/sparki-core"
@@ -23,10 +25,11 @@ import {
   ArrowRight,
 } from "lucide-react"
 
-type FilterKey = "all" | "news" | "coach" | "team" | "race" | "ai"
+type FilterKey = "all" | "renners" | "news" | "coach" | "team" | "race" | "ai"
 
 const filters: { key: FilterKey; label: string }[] = [
   { key: "all", label: "Alles" },
+  { key: "renners", label: "Renners" },
   { key: "news", label: "Nieuws" },
   { key: "coach", label: "Coach" },
   { key: "team", label: "Team" },
@@ -56,6 +59,7 @@ const typeMeta: Record<
   { label: string; icon: typeof Users; color: string }
 > = {
   all: { label: "Alles", icon: PlayCircle, color: ACCENT },
+  renners: { label: "Renners", icon: Users, color: ACCENT },
   news: { label: "Nieuws", icon: Newspaper, color: "rgba(170,235,248,0.9)" },
   coach: { label: "Coach", icon: Megaphone, color: "rgba(120,210,230,1)" },
   team: { label: "Team", icon: Users, color: "rgba(170,235,248,0.9)" },
@@ -231,8 +235,15 @@ export default function FeedPage() {
   const { data: racesData, isLoading: raceLoading } = useRaces()
   const { data: coachData, isLoading: coachLoading } = useCoachAnalysis()
   const { data: circleData, isLoading: teamLoading } = useCircleFeed()
+  const { data: worldData, isLoading: worldLoading, error: worldError } =
+    useWorldFeed()
+  const [, setLocation] = useLocation()
   const [active, setActive] = useState<FilterKey>("all")
   const [readerItem, setReaderItem] = useState<FeedNewsItem | null>(null)
+
+  // Renners-swipe opens an athlete's full profile (deep-linkable under /wereld).
+  const openAthlete = (slug: string) =>
+    setLocation(`/wereld/athlete/${encodeURIComponent(slug)}`)
 
   // Sparki brief (pinned daily briefing). The interactive conversation lives in
   // the central Sparki Input Center (persistent), not in ephemeral page state.
@@ -397,6 +408,32 @@ export default function FeedPage() {
         })}
       </div>
 
+      {/* RENNERS — Instagram-style, one-photo-at-a-time swipe of Sparki World,
+          ordered by what Sparki has learned this viewer likes. Honest states. */}
+      {active === "renners" ? (
+        <section>
+          <div className="-mt-2 mb-2 flex items-center gap-1.5 font-mono text-[10px] tracking-wide text-white/35">
+            <SparkiCore size={14} accent={ACCENT} readiness={0.9} variant="orb" />
+            Afgestemd op wat jij leuk vindt — veeg omhoog voor de volgende
+          </div>
+          {worldLoading ? (
+            <p className="py-10 text-center text-[13px] text-white/45">
+              De renners worden geladen…
+            </p>
+          ) : worldError ? (
+            <p className="py-10 text-center text-[13px] text-amber-200/70">
+              De renners konden niet worden geladen. Probeer het later opnieuw.
+            </p>
+          ) : !worldData || worldData.items.length === 0 ? (
+            <p className="py-10 text-center text-[13px] text-white/45">
+              Er zijn nog geen renners om te tonen.
+            </p>
+          ) : (
+            <WorldReel posts={worldData.items} onOpenAthlete={openAthlete} />
+          )}
+        </section>
+      ) : (
+      <>
       {/* STREAM */}
       <section>
         <SectionLabel title="Stream" />
@@ -581,6 +618,8 @@ export default function FeedPage() {
       </section>
 
       <KnowledgeFeedSection />
+      </>
+      )}
 
       {readerItem && (
         <NewsReader item={readerItem} onClose={() => setReaderItem(null)} />
