@@ -1,9 +1,11 @@
 // One-off: export the most-recently (re)generated world feed photos to disk so
 // they can be reviewed. NOT part of the product — remove after use.
 import { writeFileSync, mkdirSync } from "node:fs";
-import { desc, eq, and, isNotNull } from "drizzle-orm";
+import { desc, eq, and, isNotNull, like, or } from "drizzle-orm";
 import { db, pool, virtualMediaTable } from "@workspace/db";
 import { ObjectStorageService } from "../lib/objectStorage";
+
+const FILTER = process.argv.includes("--view");
 
 const OUT = "/home/runner/workspace/.local/world-samples";
 const svc = new ObjectStorageService();
@@ -22,6 +24,12 @@ async function main(): Promise<void> {
         eq(virtualMediaTable.purpose, "post"),
         eq(virtualMediaTable.status, "ready"),
         isNotNull(virtualMediaTable.objectPath),
+        FILTER
+          ? or(
+              like(virtualMediaTable.promptKey, "%show-off-the-breathtaking%"),
+              like(virtualMediaTable.promptKey, "%environmental-shot-capturing%"),
+            )
+          : undefined,
       ),
     )
     .orderBy(desc(virtualMediaTable.id))

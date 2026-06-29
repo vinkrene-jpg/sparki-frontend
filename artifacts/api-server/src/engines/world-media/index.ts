@@ -97,7 +97,7 @@ export function buildPromptKey(
 const STYLE_VERSION = "v2";
 // Feed photos get their own version so a fresh, rawer look can be regenerated
 // WITHOUT touching the already-approved avatar faces (avatars keep STYLE_VERSION).
-const POST_STYLE_VERSION = "v7";
+const POST_STYLE_VERSION = "v8";
 
 // Authentic-but-beautifully-shot look, modelled on the most successful cycling &
 // lifestyle creators on Instagram: real and candid, yet high craft. NOT a stiff
@@ -306,6 +306,9 @@ const FRAMING_RIDE = [
   "riding side by side with a training mate, both full-body in frame, shot from the side",
   // varied camera positions + subject SCALE
   "a wide epic landscape shot with the rider small in the lower third of the frame, huge scenery all around, lots of negative space",
+  // 'look at this view' — the scenery is the real subject, the rider happens to look great in it
+  "a photo taken mainly to show off the breathtaking scenery — the stunning landscape fills most of the frame and is clearly the subject, with the rider smaller and off to one side, pausing to gaze out at the view and happening to look great in it",
+  "an environmental shot capturing the epic surroundings, the rider turned to take in the panorama (seen from behind or three-quarter), the vista dominating the frame — they just happen to look beautiful in the scene",
   "a dramatic low-angle shot from near the tarmac looking up, the rider large and powerful against the sky",
   "a tight close-up on the rider's face and shoulders, shallow depth of field, the effort and expression filling the frame",
   "a side-on full-body panning action shot, the rider sharp and the background streaked with motion blur",

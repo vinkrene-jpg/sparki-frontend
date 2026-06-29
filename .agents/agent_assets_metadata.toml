@@ -245,3 +245,27 @@ id = "oNXrGNrUgMf4ObySFyRa3"
 uri = "file://.local/world-samples/new-01-383.png"
 type = "image"
 title = "Toscane, mannelijke renner — doorleefde kit"
+
+[[outputs]]
+id = "HqydHYJCJMQBUliSUKlH1"
+uri = "file://.local/world-samples/new-00-431.png"
+type = "image"
+title = "Dolomieten-uitzicht — landschap is onderwerp, renner kijkt mee"
+
+[[outputs]]
+id = "r5dkofSNeuTTUZfgpthl_"
+uri = "file://.local/world-samples/new-04-399.png"
+type = "image"
+title = "Bergpas bij zonsondergang — vista vult het beeld"
+
+[[outputs]]
+id = "nDibJk7QoCVlWbTYqcpM4"
+uri = "file://.local/world-samples/new-01-428.png"
+type = "image"
+title = "Piek achter renner — omgeving als hoofdrol"
+
+[[outputs]]
+id = "Lc_UAz0OKNs_UIeWt9_C2"
+uri = "file://.local/world-samples/new-02-421.png"
+type = "image"
+title = "Glooiende velden — sfeerbeeld van de omgeving"
