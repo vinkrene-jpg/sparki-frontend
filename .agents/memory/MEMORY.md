@@ -80,3 +80,5 @@
 - [Sparki daily notification fold](sparki-notification-daily-fold.md) — bell folds rows to one entry per Ams calendar day; unread badge counts DAYS not rows; email/push + DB rows untouched.
 - [Sparki presentation variation](sparki-presentation-variation.md) — per-app-open seed rotates only ORDER + which real insight leads; numbers stable, urgent never demoted, seed-0 no-op.
 - [Sparki chat overlay & session thread](sparki-chat-overlay.md) — chat opens from header SPARKI button (portal z-[80]); visible thread is session-scoped (SESSION_START filter), full history stays in DB memory; never delete rows for "fresh start".
+- [Sparki Wedstrijd-room](sparki-race-room.md) — race-day media montage; dayIndex 1-based end-to-end; ScreenShell leaks coach card on COACH_CARD_SECTIONS — use `bare`.
+- [Local-date UTC off-by-one trap](local-date-utc-trap.md) — toISOString().slice(0,10) gives UTC date; for NL local calendar days build from local getters.

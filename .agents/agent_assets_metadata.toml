@@ -65,3 +65,21 @@ id = "9jsCR8LnUHrNMmfVcRYlE"
 uri = "file://SPARKI_V1_COVERAGE_AUDIT.md"
 type = "text"
 title = "Sparki V1 Dekkingsaudit (28 juni 2026)"
+
+[[outputs]]
+id = "wmEfrMNwYdx0y1NaMISA0"
+uri = "file://artifacts/api-server/assets/music/rustig.mp3"
+type = "audio"
+title = "rustig"
+
+[[outputs]]
+id = "tiYyx70NSKL10sajJWkgc"
+uri = "file://artifacts/api-server/assets/music/energiek.mp3"
+type = "audio"
+title = "energiek"
+
+[[outputs]]
+id = "pp2BZ4SBOaSVcQlPLj4Gc"
+uri = "file://artifacts/api-server/assets/music/episch.mp3"
+type = "audio"
+title = "episch"

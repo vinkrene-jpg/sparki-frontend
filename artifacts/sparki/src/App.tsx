@@ -28,6 +28,7 @@ import PhotoLabPage from "@/pages/photo-lab";
 import SamenPage from "@/pages/samen";
 import WereldPage from "@/pages/wereld";
 import RacesPage from "@/pages/races";
+import WedstrijdRoomPage from "@/pages/wedstrijd-room";
 import KnowledgePage from "@/pages/knowledge";
 import InvitationsPage from "@/pages/invitations";
 import InviteAcceptPage from "@/pages/invite-accept";
@@ -453,6 +454,9 @@ function AppRouter() {
                 </Route>
                 <Route path="/races">
                   <ProtectedPage component={RacesPage} />
+                </Route>
+                <Route path="/wedstrijd-room">
+                  <ProtectedPage component={WedstrijdRoomPage} />
                 </Route>
                 <Route path="/samen">
                   <ProtectedPage component={SamenPage} />

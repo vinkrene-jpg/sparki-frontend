@@ -249,6 +249,13 @@ export const queryKeys = {
     team: () => ["social", "team"] as const,
   },
 
+  raceRooms: {
+    all: () => ["race-rooms"] as const,
+    list: () => ["race-rooms", "list"] as const,
+    detail: (id: number) => ["race-rooms", "detail", id] as const,
+    music: () => ["race-rooms", "music"] as const,
+  },
+
   world: {
     all: () => ["world"] as const,
     feed: () => ["world", "feed"] as const,

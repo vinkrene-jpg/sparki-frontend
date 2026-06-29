@@ -6,7 +6,8 @@
 // unknown (never fabricated). Cinematic Sparki design language.
 
 import { useEffect, useRef, useState } from "react"
-import { ChevronLeft, CloudSun, MapPin, Clock, Users, Sparkles } from "lucide-react"
+import { useLocation } from "wouter"
+import { ChevronLeft, CloudSun, MapPin, Clock, Users, Sparkles, Film } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { Skeleton } from "@/components/sparki/home-sections"
@@ -357,6 +358,7 @@ function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
 }
 
 export default function RacesPage() {
+  const [, setLocation] = useLocation()
   const { data: races, isLoading } = useRaces()
   const createRace = useCreateRace()
   const updateRace = useUpdateRace()
@@ -540,6 +542,14 @@ export default function RacesPage() {
         </div>
         {!showForm && !showImport && (
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setLocation("/wedstrijd-room")}
+              className="flex items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+            >
+              <Film className="h-3.5 w-3.5" strokeWidth={2} />
+              Wedstrijd-room
+            </button>
             <button
               type="button"
               onClick={startImport}

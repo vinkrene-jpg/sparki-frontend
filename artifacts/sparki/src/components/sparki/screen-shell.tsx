@@ -52,6 +52,7 @@ const SECTION_DISPLAY: Record<string, string> = {
   kennisbank: "KENNIS",
   coach: "COACH",
   ouder: "OUDER",
+  "wedstrijd-room": "WEDSTRIJD-ROOM",
 }
 
 const ROLE_LABEL: Record<Role, string> = {

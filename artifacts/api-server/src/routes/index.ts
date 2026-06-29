@@ -39,6 +39,7 @@ import telemetryRouter from "./telemetry";
 import weatherRouter from "./weather";
 import audioRouter from "./audio";
 import sparkiWorldRouter from "./sparki-world";
+import raceRoomsRouter from "./race-rooms";
 import devRouter from "./dev";
 
 const router: IRouter = Router();
@@ -83,6 +84,7 @@ router.use("/telemetry", telemetryRouter);
 router.use("/weather", weatherRouter);
 router.use("/audio", audioRouter);
 router.use("/world", sparkiWorldRouter);
+router.use(raceRoomsRouter);
 
 // Dev-only routes (preview-athlete switcher). Mounted ONLY outside production so
 // these endpoints simply do not exist on a deployed build.

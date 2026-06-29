@@ -20,6 +20,7 @@ import PhotoLabPage from "@/pages/photo-lab"
 import YouPage from "@/pages/you"
 import GeluidPage from "@/pages/geluid"
 import RacesPage from "@/pages/races"
+import WedstrijdRoomPage from "@/pages/wedstrijd-room"
 import SamenPage from "@/pages/samen"
 import WereldPage from "@/pages/wereld"
 import InvitationsPage from "@/pages/invitations"
@@ -72,6 +73,7 @@ const VIEWS: DevView[] = [
   { label: "You", path: "/you" },
   { label: "Geluid", path: "/geluid" },
   { label: "Foto-lab", path: "/photo-lab" },
+  { label: "Wedstrijd-room", path: "/wedstrijd-room" },
   { label: "Samen", path: "/samen" },
   { label: "Wereld", path: "/wereld" },
   { label: "Kennis", path: "/kennis" },
@@ -393,6 +395,8 @@ export function DevPreview() {
     showNav = false
   } else if (location.startsWith("/kennis")) {
     page = <KnowledgePage />
+  } else if (location.startsWith("/wedstrijd-room")) {
+    page = <WedstrijdRoomPage />
   } else if (location.startsWith("/races")) {
     page = <RacesPage />
   } else if (location.startsWith("/samen")) {

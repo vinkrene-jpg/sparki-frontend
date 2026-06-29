@@ -19,6 +19,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/index.ts"),
       path.resolve(artifactDir, "src/jobs/knowledge-scan.ts"),
       path.resolve(artifactDir, "src/tests/smoke.ts"),
+      path.resolve(artifactDir, "src/tests/race-room.ts"),
       path.resolve(artifactDir, "src/tests/account.ts"),
       path.resolve(artifactDir, "src/tests/data-hub.ts"),
       path.resolve(artifactDir, "src/tests/memory-graph.ts"),

@@ -29,6 +29,17 @@ Laatst bijgewerkt: 2026-06-29.
 10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav.
 
 ## Beslist (archief)
+- **2026-06-29 — Wedstrijd-room (media delen + dagcompilatie):** gekozen voor optie 3
+  (eerst de simpele versie voor jezelf: jij uploadt media + tekstuele updates en krijgt
+  de compilatie; uitnodigen van anderen komt later). VOLLEDIGE VISIE (voor latere fasen):
+  bij een wedstrijd waar je als team rijdt kun je renners, ouders en begeleiding in één
+  room uitnodigen om media + tekst-updates te delen. Aan het eind van elke dag (meerdaagse
+  wedstrijd = meerdere dagen; ééndaagse = na 1 dag klaar) maakt Sparki een leuke compilatie
+  van de ingezonden media + updates; bij voldoende input per renner een eigen compilatie met
+  een passend muziekje eronder. Roomdeelnemers kunnen de compilatie downloaden voor eigen
+  gebruik. FASE 1 (nu te bouwen): één persoon (jij), upload per dag, echte ffmpeg-montage met
+  bijschriften + muziekbed, download. Honest: compilatie is een echte montage (geen fake),
+  per-renner + multi-persoon room + uitnodigingen zijn fase 2.
 - **2026-06-29 — Verse beleving bij elke login:** gekozen voor "veel variatie".
   Analyses en feeds tonen bij elk app-bezoek dezelfde ECHTE cijfers, maar in
   wisselende volgorde met een ander echt inzicht vooraan. Gebouwd: presentatie-
