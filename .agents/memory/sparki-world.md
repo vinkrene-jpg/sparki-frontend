@@ -179,3 +179,14 @@ generate/upload so it never bills the image model.)
 - Clips are opt-in: `world:highlights` script backfills hero athletes only (role inspiration /
   influence wereldster|prof). If the Gemini proxy lacks Veo, generation throws → failed row → UI
   shows avatar fallback (honesty contract holds). No clips exist until the script is run.
+
+## Off-bike visual variety (lifestyle/recovery/nutrition/rest photos)
+- To make the feed feel alive (activities/environment/variety), more REAL off-bike moments
+  become `photo` posts: recovery→`recovery_home`, nutrition→`cooking`/`groceries`,
+  rest→~50% lifestyle (cafe/grandparents/bakery), plus a richer lifestyle pool & higher freq.
+  Honesty holds because a plausible everyday photo is not a fabricated metric/claim.
+- **Coupling trap:** giving an event type a `photo` kind in `buildPost` ALSO requires adding
+  `photo` to that event's `ALLOWED_KINDS` in `lib/world/validation.ts`, or `runWorldDay`
+  rejects the post pre-persist. `backfill-world-photos` BYPASSES validation (it only sets
+  media_id on already-approved rows), so a backfill can "succeed" while fresh sims silently
+  reject — verify both paths. The `photo ⇒ scene` guard in validation keeps it honest.

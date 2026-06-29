@@ -259,6 +259,10 @@ const LIFESTYLE: Record<string, string> = {
   cafe: "relaxing on an outdoor café terrace with friends after a ride",
   groceries: "back from groceries, unpacking healthy food on a kitchen counter",
   recovery_home: "foam-rolling and stretching on the living-room floor in comfy clothes",
+  fysio: "at a physiotherapy clinic, doing a guided recovery exercise on a treatment table",
+  bike_wash: "washing a road bike with a hose and brush in the yard after a muddy ride",
+  new_shoes: "unboxing a brand-new pair of cycling shoes at home, looking excited",
+  library: "studying at a university library desk with a laptop, notes and a coffee",
 };
 function lifestyleClause(kind?: string): string {
   const k = (kind || "").toLowerCase();

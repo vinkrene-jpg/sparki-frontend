@@ -23,12 +23,12 @@ export type ValidationResult = {
 // Which post kinds are sensible for which event type.
 const ALLOWED_KINDS: Record<string, PostKind[]> = {
   training: ["photo", "training_log"],
-  rest: ["observation", "story"],
-  recovery: ["observation", "story"],
+  rest: ["photo", "observation", "story"],
+  recovery: ["photo", "observation", "story"],
   race: ["photo", "training_log"],
   equipment: ["review", "photo"],
   training_camp: ["photo", "story"],
-  nutrition: ["nutrition"],
+  nutrition: ["photo", "nutrition"],
   motivation: ["humor", "observation"],
   injury: ["observation", "story"],
   illness: ["observation", "story"],

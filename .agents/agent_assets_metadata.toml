@@ -95,3 +95,27 @@ id = "bq5rEZhu8XZsP6j0kLrx0"
 uri = "file://.local/world-sample/bas-goossens_feedphoto.png"
 type = "image"
 title = "Nieuwe feed-foto — zelfde gezicht, echte locatie (Moab, VS), verzonnen sponsors + fietsmerk"
+
+[[outputs]]
+id = "kec8u24gCiimphNWDsxmj"
+uri = "file://.local/world-samples/feed-training-sofie-vos.png"
+type = "image"
+title = "Groepsrit bij de berg — fictief 'Ventou Vélo' tenue"
+
+[[outputs]]
+id = "mS7Ezfl6q9y5qg5kBGiBg"
+uri = "file://.local/world-samples/feed-race-luuk-van-dijk-2.png"
+type = "image"
+title = "Overwinning aan de finish — fictief 'Polderbank' team"
+
+[[outputs]]
+id = "9ZPyypoau_FGYV-Jc1kW_"
+uri = "file://.local/world-samples/feed-nutrition-linda-sportarts.png"
+type = "image"
+title = "Zelf koken thuis (voeding-post)"
+
+[[outputs]]
+id = "zdoU2biMws_gvNPLEN6py"
+uri = "file://.local/world-samples/feed-recovery-ruben-schneider.png"
+type = "image"
+title = "Herstel thuis — foamrollen (fictief 'Pelotonix')"

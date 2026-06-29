@@ -155,16 +155,22 @@ export function generateEvent(athlete: GeneratedAthlete, date: string): SimEvent
 
   // Lifestyle / off-the-bike moments — recognisable everyday life so the cast
   // feels like real people you follow, not just a training log.
-  if (rng.chance(0.08)) {
+  if (rng.chance(0.13)) {
     const moment = rng.pick([
       { kind: "new_tv", title: "Nieuwe tv", summary: "Eindelijk een nieuwe tv in huis.", cap: "Nieuwe tv binnen — koersen kijken wordt nóg leuker." },
       { kind: "new_trainer", title: "Nieuwe hometrainer", summary: "Pijnschuur geüpgraded.", cap: "Nieuwe hometrainer staat klaar. Winter kan komen." },
       { kind: "school", title: "Weer naar school", summary: "Studie en fietsen combineren.", cap: "Weer begonnen met school. Plannen wordt de kunst." },
+      { kind: "library", title: "Studeren", summary: "Studie en sport combineren.", cap: "Even doorpakken in de bib. School en fietsen samen." },
       { kind: "grandparents", title: "Bij opa en oma", summary: "Even bijkomen met koffie en gebak.", cap: "Koffie bij opa en oma. Herstel telt ook hier." },
       { kind: "bakery", title: "Bij de bakker", summary: "Verdiende lekkernij na de rit.", cap: "Even langs de bakker na de rit. Verdiend." },
       { kind: "cooking", title: "Zelf koken", summary: "Gezond bord op tafel.", cap: "Zelf gekookt vandaag. Goede brandstof voor morgen." },
+      { kind: "groceries", title: "Boodschappen", summary: "Gezonde inkopen gedaan.", cap: "Boodschappen gehaald — goed eten begint in de supermarkt." },
       { kind: "garage", title: "Sleutelen", summary: "Fiets weer helemaal nagekeken.", cap: "Avondje sleutelen. Alles weer strak afgesteld." },
+      { kind: "bike_wash", title: "Fiets wassen", summary: "Fiets weer schoon na de modder.", cap: "Fiets gewassen na de modder. Weer als nieuw." },
+      { kind: "new_shoes", title: "Nieuwe schoenen", summary: "Nieuwe fietsschoenen.", cap: "Nieuwe schoenen binnen. Klaar om in te rijden." },
       { kind: "cafe", title: "Koffiestop", summary: "Terrasje met de rijdersgroep.", cap: "Koffiestop met de groep. Hier doe je het ook voor." },
+      { kind: "fysio", title: "Bij de fysio", summary: "Onderhoud aan het lijf.", cap: "Langs de fysio geweest. Klein onderhoud, groot verschil." },
+      { kind: "recovery_home", title: "Herstel thuis", summary: "Foamrollen en rekken.", cap: "Even foamrollen en rekken op de mat. Herstel telt." },
     ]);
     return base("lifestyle", moment.title, moment.summary, { kind: moment.kind, cap: moment.cap });
   }
@@ -287,12 +293,18 @@ export function buildPost(
     }
     case "rest": {
       caption = rng.pick(CAP_REST);
-      kind = "observation";
+      // A rest day often still has a real off-the-bike moment worth a photo
+      // (coffee, family, bakery) — honest everyday life, not fabricated training.
+      scene = rng.chance(0.5)
+        ? sceneFor("lifestyle", rng.pick(["cafe", "grandparents", "bakery", "groceries"]))
+        : null;
+      kind = scene ? "photo" : "observation";
       break;
     }
     case "recovery": {
       caption = fill(rng.pick(CAP_RECOVERY), { kind: String(p.kind ?? "herstel") });
-      kind = "observation";
+      scene = sceneFor("lifestyle", "recovery_home");
+      kind = scene ? "photo" : "observation";
       break;
     }
     case "race": {
@@ -327,7 +339,8 @@ export function buildPost(
     }
     case "nutrition": {
       caption = rng.pick(CAP_NUTRITION);
-      kind = "nutrition";
+      scene = sceneFor("lifestyle", rng.pick(["cooking", "groceries"]));
+      kind = scene ? "photo" : "nutrition";
       break;
     }
     case "motivation": {
