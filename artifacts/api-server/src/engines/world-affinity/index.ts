@@ -13,7 +13,7 @@
 // follows/favorites weigh more. Because it is a full rebuild it is idempotent
 // and can always be regenerated — honest by construction.
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import {
   db,
   virtualAthletesTable,
@@ -125,7 +125,26 @@ export async function learnAffinity(clerkId: string): Promise<AffinitySummary> {
     return { clerkId, dimension: dimension!, key: key!, score: v.score, support: v.support };
   });
   if (rows.length > 0) {
-    await db.insert(userVirtualAffinityTable).values(rows);
+    // Upsert (not plain insert): the view endpoint fires many requests at once,
+    // so several full rebuilds for the same user can overlap. A plain insert
+    // races the delete+insert of a concurrent rebuild and trips the unique
+    // (clerkId, dimension, key) constraint. Upsert makes overlapping rebuilds
+    // converge to the same deterministic scores instead of crashing.
+    await db
+      .insert(userVirtualAffinityTable)
+      .values(rows)
+      .onConflictDoUpdate({
+        target: [
+          userVirtualAffinityTable.clerkId,
+          userVirtualAffinityTable.dimension,
+          userVirtualAffinityTable.key,
+        ],
+        set: {
+          score: sql`excluded.score`,
+          support: sql`excluded.support`,
+          updatedAt: sql`now()`,
+        },
+      });
   }
 
   return { clerkId, rows: rows.length, support };

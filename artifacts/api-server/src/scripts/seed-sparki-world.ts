@@ -22,7 +22,8 @@ function pad(s: string, n: number): string {
 
 async function main(): Promise<void> {
   const withAvatars = process.argv.includes("--avatars");
-  const count = 50;
+  const countArg = process.argv.find((a) => a.startsWith("--count="));
+  const count = countArg ? Math.max(1, parseInt(countArg.slice("--count=".length), 10) || 200) : 200;
   const seed = 1;
 
   console.log(`Sparki World — populatie genereren (${count} Virtual Athletes, seed=${seed}) …`);

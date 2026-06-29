@@ -40,6 +40,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/scripts/seed-preview-athletes.ts"),
       path.resolve(artifactDir, "src/scripts/seed-intel.ts"),
       path.resolve(artifactDir, "src/scripts/seed-sparki-world.ts"),
+      path.resolve(artifactDir, "src/scripts/backfill-avatars.ts"),
       path.resolve(artifactDir, "src/scripts/backfill-world-highlights.ts"),
       path.resolve(artifactDir, "src/scripts/run-world-day.ts"),
       path.resolve(artifactDir, "src/tests/intel.ts"),
