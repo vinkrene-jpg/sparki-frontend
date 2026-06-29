@@ -32,6 +32,7 @@ import { ScreenShell } from "@/components/sparki/screen-shell"
 import { StateCard } from "@/components/sparki/state-card"
 import { VoedingScreen } from "@/components/sparki/voeding-screen"
 import { MaterialCoach } from "@/components/sparki/material-coach"
+import { LeskaartVandaag } from "@/components/sparki/leskaart-van-dag"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { useNutritionLogs } from "@/hooks/use-nutrition"
 import { Apple, ChevronRight } from "lucide-react"
@@ -171,6 +172,8 @@ function StateDayHome() {
           <MaterialCoach n="" />
         </div>
       </section>
+
+      <LeskaartVandaag />
 
       <VoedingScreen open={voedingOpen} onOpenChange={setVoedingOpen} />
     </ScreenShell>
