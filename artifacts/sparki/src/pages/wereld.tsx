@@ -113,6 +113,24 @@ function Avatar({ athlete, size = 44 }: { athlete: { avatarUrl: string | null; n
   )
 }
 
+// A short looping highlight clip. Muted, autoplaying and inline so it plays on
+// mobile without taking over the screen. Only rendered when a clip is ready —
+// callers fall back to the still avatar when it is absent (never a placeholder).
+function HighlightClip({ src }: { src: string }) {
+  return (
+    <video
+      src={src}
+      autoPlay
+      loop
+      muted
+      playsInline
+      preload="metadata"
+      aria-hidden
+      className="h-full w-full object-cover"
+    />
+  )
+}
+
 // The unmissable, honest marker: this whole surface is a simulation.
 function WorldBanner() {
   return (
@@ -441,9 +459,22 @@ function SuggestionCard({
   const setFollow = useSetFollow()
   return (
     <div className="flex w-[164px] shrink-0 flex-col items-center gap-2 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-center backdrop-blur-md">
-      <button type="button" onClick={() => onOpen(athlete.slug)} aria-label={athlete.name}>
-        <Avatar athlete={athlete} size={56} />
-      </button>
+      {athlete.highlightUrl ? (
+        <button
+          type="button"
+          onClick={() => onOpen(athlete.slug)}
+          aria-label={athlete.name}
+          className="w-full overflow-hidden rounded-xl border border-white/[0.08]"
+        >
+          <div className="aspect-video w-full">
+            <HighlightClip src={athlete.highlightUrl} />
+          </div>
+        </button>
+      ) : (
+        <button type="button" onClick={() => onOpen(athlete.slug)} aria-label={athlete.name}>
+          <Avatar athlete={athlete} size={56} />
+        </button>
+      )}
       <div className="min-w-0">
         <button
           type="button"
@@ -634,6 +665,17 @@ function AthleteProfile({
               <p className="mt-4 text-[14px] leading-relaxed text-white/80">
                 {data.athlete.bio}
               </p>
+            )}
+
+            {data.athlete.highlightUrl && (
+              <figure className="mt-4 overflow-hidden rounded-xl border border-white/[0.08]">
+                <div className="aspect-video w-full">
+                  <HighlightClip src={data.athlete.highlightUrl} />
+                </div>
+                <figcaption className="px-3 py-2 text-[11px] text-white/40">
+                  Hoogtepunten — gesimuleerde beelden
+                </figcaption>
+              </figure>
             )}
 
             <div className="mt-4 flex flex-wrap gap-2">

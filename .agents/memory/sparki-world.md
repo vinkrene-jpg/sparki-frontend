@@ -124,3 +124,24 @@ generate/upload so it never bills the image model.)
 - `test:world-affinity` is the end-to-end learning-loop guard: real view/save/share → learnAffinity
   → live feed reorders, plus two wall checks (clean-slate empty model; no real-perf table row-count
   change). Picks most-represented NON-viewer discipline to isolate learned affinity from profile-match boost.
+- **Dev-DB drift gotcha (world tables):** The dev DB lagged the schema badly (missing virtual_athletes cols role/expertise/cohort/
+  follower_score/influence_category/career_phase AND whole tables like user_virtual_affinity) →
+  world-feed test threw `column/relation does not exist`. `db push` (even `push-force`) BLOCKS on
+  an interactive TTY truncation prompt for the `virtual_athlete_relationships` unique constraint.
+  Fix: `TRUNCATE virtual_athlete_relationships` (seed data) manually, then `db push` runs clean,
+  then re-seed with `seed:sparki-world`. World tables are all deterministically re-seedable, so
+  truncate+reseed is safe and recoverable.
+
+## Video highlights (phase 2 — looping clips)
+- `virtual_media.kind="video"` already existed → NO migration. Highlight clips associate by a
+  deterministic `promptKey` (`highlightKeyFor(slug)`), NOT a new column. `resolveMedia` branches
+  on kind: video→`generateVideo` (Veo, `@workspace/integrations-gemini-ai/video`, 16:9 dur6,
+  bounded poll ≤5min, videoBytes-or-uri), else `generateImage`. Cache-first + honest failed/null
+  path identical to images.
+- `getOrCreateHighlight(slug)` + `readyHighlightUrls(slugs)` (slug→url map, ONLY ready rows with
+  objectPath). world-feed adds `highlightUrl: string|null` to athlete/suggested views (heroes,
+  recommended, profile). Frontend `HighlightClip` (autoplay/loop/muted/playsInline) shows clip
+  when present, else falls back to avatar — never a fabricated placeholder.
+- Clips are opt-in: `world:highlights` script backfills hero athletes only (role inspiration /
+  influence wereldster|prof). If the Gemini proxy lacks Veo, generation throws → failed row → UI
+  shows avatar fallback (honesty contract holds). No clips exist until the script is run.

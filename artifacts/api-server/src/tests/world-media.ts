@@ -15,8 +15,12 @@ import { eq } from "drizzle-orm";
 import {
   buildPromptKey,
   buildPrompt,
+  buildVideoPrompt,
   resolveMedia,
   mediaUrl,
+  highlightKeyFor,
+  getOrCreateHighlight,
+  readyHighlightUrls,
   type MediaDeps,
 } from "../engines/world-media";
 
@@ -99,6 +103,21 @@ scenario("prompt is realistic photographic text", () => {
   assert(/fictional/i.test(a), "avatar prompt must mark the person fictional");
 });
 
+scenario("video prompt is realistic, loop-friendly and fictional", () => {
+  const p = buildVideoPrompt("highlight", { discipline: "weg", scene: "climb" });
+  assert(/clip/i.test(p), "must describe a video clip");
+  assert(/loop/i.test(p), "highlight clip must be loop-friendly");
+  assert(/fictional/i.test(p), "must mark the cyclist as fictional");
+  assert(!/cartoon|illustration/i.test(p), "must not request cartoon style");
+});
+
+scenario("highlight key carries athlete identity", () => {
+  const a = highlightKeyFor({ slug: "lotte", discipline: "weg", archetype: "klimmer" });
+  const b = highlightKeyFor({ slug: "sanne", discipline: "weg", archetype: "klimmer" });
+  assert(a !== b, "different athletes must get different highlight keys");
+  assert(/^highlight\|/.test(a), "key must be scoped to the highlight purpose");
+});
+
 scenario("mediaUrl is null-safe and prefixes the serve route", () => {
   assert(mediaUrl(null) === null, "null path stays null");
   assert(
@@ -166,6 +185,54 @@ async function main() {
       !!row.failureReason && /onbereikbaar/.test(row.failureReason),
       "must keep an honest failure reason",
     );
+  });
+
+  await scenarioAsync(
+    "highlight clip is stored as a video and reused on a cache hit",
+    async () => {
+      let generateCalls = 0;
+      const deps: MediaDeps = {
+        generate: async () => {
+          generateCalls += 1;
+          return { b64_json: "ZmFrZQ==", mimeType: "video/mp4" };
+        },
+        upload: async () => `/objects/uploads/${tag}-clip`,
+      };
+      const athlete = { slug: `${tag}-hero`, discipline: "weg", archetype: "klimmer" };
+      const first = await getOrCreateHighlight(athlete, deps);
+      cleanupKeys.push(first.promptKey);
+      const second = await getOrCreateHighlight(athlete, deps);
+      assert(generateCalls === 1, `generate ran ${generateCalls}× (want 1)`);
+      assert(first.kind === "video", "highlight must persist as a video");
+      assert(first.purpose === "highlight", "purpose must be highlight");
+      assert(first.status === "ready", "first must be ready");
+      assert(second.id === first.id, "second must reuse the same row");
+
+      // A ready highlight is surfaced by the slug→url lookup …
+      const ready = await readyHighlightUrls([athlete]);
+      assert(
+        ready.get(athlete.slug) === "/api/storage/objects/uploads/" + tag + "-clip",
+        "ready highlight must be returned with its serve URL",
+      );
+      // … and an athlete without a clip is simply omitted (graceful fallback).
+      const none = await readyHighlightUrls([{ slug: `${tag}-nobody` }]);
+      assert(none.size === 0, "athletes without a clip must be omitted, never faked");
+    },
+  );
+
+  await scenarioAsync("highlight generation failure is honest", async () => {
+    const deps: MediaDeps = {
+      generate: async () => {
+        throw new Error("video onbereikbaar");
+      },
+    };
+    const athlete = { slug: `${tag}-broke`, discipline: "mtb", archetype: "klimmer" };
+    const row = await getOrCreateHighlight(athlete, deps);
+    cleanupKeys.push(row.promptKey);
+    assert(row.status === "failed", "must record a failed status");
+    assert(row.objectPath === null, "failed clip must have no object path");
+    const ready = await readyHighlightUrls([athlete]);
+    assert(ready.size === 0, "a failed clip must not surface as ready");
   });
 
   // cleanup disposable rows

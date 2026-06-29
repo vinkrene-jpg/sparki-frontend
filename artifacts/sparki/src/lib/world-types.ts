@@ -16,6 +16,8 @@ export type WorldAthlete = {
   influenceCategory: string | null;
   role: string | null;
   cohort: string | null;
+  // A short looping highlight clip when one is ready; absent/null otherwise.
+  highlightUrl?: string | null;
 };
 
 export type WorldPost = {
@@ -83,6 +85,8 @@ export type WorldSuggestedAthlete = {
   followerScore: number;
   influenceCategory: string | null;
   reason: string;
+  // A short looping highlight clip when one is ready; null otherwise.
+  highlightUrl: string | null;
   fictional: true;
 };
 

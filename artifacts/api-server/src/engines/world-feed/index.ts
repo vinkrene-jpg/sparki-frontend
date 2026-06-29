@@ -23,7 +23,7 @@ import {
   virtualCareerEntriesTable,
   userVirtualFollowsTable,
 } from "@workspace/db";
-import { mediaUrl } from "../world-media";
+import { mediaUrl, readyHighlightUrls } from "../world-media";
 import { getAffinity } from "../world-affinity";
 import {
   scoreFeedItem,
@@ -288,6 +288,8 @@ export type AthleteProfileView = {
     ftp: number | null;
     careerPhase: string | null;
     traits: Record<string, unknown> | null;
+    // A short looping highlight clip when one is ready; null otherwise.
+    highlightUrl: string | null;
   };
   relationships: { kind: string; name: string; slug: string }[];
   career: CareerEntryView[];
@@ -404,6 +406,9 @@ export async function getAthleteProfile(
   const likedSet = new Set(myLikes.map((l) => l.postId));
 
   const avatarUrl = a.avatarMediaId != null ? (avatars.get(a.avatarMediaId) ?? null) : null;
+  const highlights = await readyHighlightUrls([
+    { slug: a.slug, discipline: a.discipline, archetype: a.archetype },
+  ]);
   const athleteView = {
     id: a.id,
     slug: a.slug,
@@ -424,6 +429,7 @@ export async function getAthleteProfile(
     ftp: a.ftp,
     careerPhase: a.careerPhase,
     traits: a.traits ?? null,
+    highlightUrl: highlights.get(a.slug) ?? null,
   };
 
   return {
@@ -470,6 +476,8 @@ export type SuggestedAthlete = {
   followerScore: number;
   influenceCategory: string | null;
   reason: string; // plain-Dutch why this athlete is suggested
+  // A short looping highlight clip when one is ready; null otherwise.
+  highlightUrl: string | null;
   fictional: true;
 };
 
@@ -582,6 +590,7 @@ export async function getRecommended(
 
   const top = scored.slice(0, limit).map((e) => e.a);
   const avatars = await avatarMap(top);
+  const highlights = await readyHighlightUrls(top);
   const items: SuggestedAthlete[] = top.map((a) => ({
     id: a.id,
     slug: a.slug,
@@ -596,6 +605,7 @@ export async function getRecommended(
     followerScore: a.followerScore ?? 0,
     influenceCategory: a.influenceCategory,
     reason: recommendReason(a, myDiscipline),
+    highlightUrl: highlights.get(a.slug) ?? null,
     fictional: true,
   }));
   return { items, fictional: true };
@@ -622,6 +632,7 @@ export async function getHeroes(
 
   const top = rows.slice(0, limit);
   const avatars = await avatarMap(top);
+  const highlights = await readyHighlightUrls(top);
   const items: SuggestedAthlete[] = top.map((a) => ({
     id: a.id,
     slug: a.slug,
@@ -636,6 +647,7 @@ export async function getHeroes(
     followerScore: a.followerScore ?? 0,
     influenceCategory: a.influenceCategory,
     reason: followed.has(a.id) ? "Je volgt deze renner al" : "Toonaangevend in de wereld",
+    highlightUrl: highlights.get(a.slug) ?? null,
     fictional: true,
   }));
   return { items, fictional: true };
