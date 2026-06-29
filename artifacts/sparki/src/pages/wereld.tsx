@@ -36,6 +36,7 @@ import type {
   WorldSuggestedAthlete,
   WorldCareerEntry,
 } from "@/lib/world-types"
+import { WorldReel } from "@/components/sparki/world-reel"
 
 // Plain-Dutch labels for internal discipline/kind keys.
 const KIND_LABEL: Record<string, string> = {
@@ -732,7 +733,7 @@ function AthleteProfile({
   )
 }
 
-type Tab = "feed" | "saved"
+type Tab = "feed" | "discover" | "saved"
 
 export default function WereldPage() {
   const { data, isLoading, error } = useWorldFeed()
@@ -759,58 +760,48 @@ export default function WereldPage() {
           onOpenAthlete={openAthlete}
         />
       ) : (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-4">
           <div className="flex items-center gap-2">
             <Globe className="h-5 w-5 text-cyan-300/80" strokeWidth={1.75} />
             <h1 className="text-[20px] font-semibold text-white">Sparki World</h1>
           </div>
 
-          <WorldBanner />
-
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setTab("feed")}
-              className="rounded-full border px-3.5 py-1.5 text-[12px] font-medium transition-colors"
-              style={
-                tab === "feed"
-                  ? { borderColor: "rgba(120,210,230,0.4)", color: "var(--accent-cyan)" }
-                  : { borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }
-              }
-            >
-              Tijdlijn
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab("saved")}
-              className="flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[12px] font-medium transition-colors"
-              style={
-                tab === "saved"
-                  ? { borderColor: "rgba(120,210,230,0.4)", color: "var(--accent-cyan)" }
-                  : { borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }
-              }
-            >
-              <Bookmark className="h-3.5 w-3.5" strokeWidth={1.75} /> Bewaard
-            </button>
+            {(
+              [
+                { key: "feed", label: "Tijdlijn", icon: null },
+                {
+                  key: "discover",
+                  label: "Ontdek",
+                  icon: <Users className="h-3.5 w-3.5" strokeWidth={1.75} />,
+                },
+                {
+                  key: "saved",
+                  label: "Bewaard",
+                  icon: <Bookmark className="h-3.5 w-3.5" strokeWidth={1.75} />,
+                },
+              ] as { key: Tab; label: string; icon: React.ReactNode }[]
+            ).map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTab(t.key)}
+                className="flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[12px] font-medium transition-colors"
+                style={
+                  tab === t.key
+                    ? { borderColor: "rgba(120,210,230,0.4)", color: "var(--accent-cyan)" }
+                    : { borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }
+                }
+              >
+                {t.icon}
+                {t.label}
+              </button>
+            ))}
           </div>
 
-          {tab === "saved" ? (
-            saved.isLoading ? (
-              <p className="text-[13px] text-white/45">Bewaarde berichten laden…</p>
-            ) : !saved.data || saved.data.items.length === 0 ? (
-              <p className="text-[13px] text-white/45">
-                Je hebt nog niets bewaard. Tik op "Bewaar" onder een bericht om het hier
-                terug te vinden.
-              </p>
-            ) : (
-              <div className="flex flex-col gap-4">
-                {saved.data.items.map((post) => (
-                  <PostCard key={post.id} post={post} onOpenAthlete={openAthlete} />
-                ))}
-              </div>
-            )
-          ) : (
+          {tab === "discover" ? (
             <>
+              <WorldBanner />
               <Rail
                 title="Voorgesteld voor jou"
                 icon={<Users className="h-4 w-4 text-cyan-300/80" strokeWidth={1.75} />}
@@ -823,25 +814,40 @@ export default function WereldPage() {
                 items={heroes.data?.items ?? []}
                 onOpen={openAthlete}
               />
-
-              {isLoading ? (
-                <p className="text-[13px] text-white/45">De wereld wordt geladen…</p>
-              ) : error ? (
-                <p className="text-[13px] text-amber-200/70">
-                  De wereld kon niet worden geladen. Probeer het later opnieuw.
-                </p>
-              ) : !data || data.items.length === 0 ? (
-                <p className="text-[13px] text-white/45">
-                  Er zijn nog geen berichten in Sparki World.
-                </p>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  {data.items.map((post) => (
-                    <PostCard key={post.id} post={post} onOpenAthlete={openAthlete} />
-                  ))}
-                </div>
-              )}
+              {(recommended.data?.items?.length ?? 0) === 0 &&
+                (heroes.data?.items?.length ?? 0) === 0 && (
+                  <p className="text-[13px] text-white/45">
+                    Er zijn nog geen sporters om te ontdekken.
+                  </p>
+                )}
             </>
+          ) : tab === "saved" ? (
+            saved.isLoading ? (
+              <p className="text-[13px] text-white/45">Bewaarde berichten laden…</p>
+            ) : !saved.data || saved.data.items.length === 0 ? (
+              <p className="text-[13px] text-white/45">
+                Je hebt nog niets bewaard. Tik op "Bewaar" bij een bericht om het hier
+                terug te vinden.
+              </p>
+            ) : (
+              <WorldReel
+                posts={saved.data.items}
+                onOpenAthlete={openAthlete}
+                initialSaved
+              />
+            )
+          ) : isLoading ? (
+            <p className="text-[13px] text-white/45">De wereld wordt geladen…</p>
+          ) : error ? (
+            <p className="text-[13px] text-amber-200/70">
+              De wereld kon niet worden geladen. Probeer het later opnieuw.
+            </p>
+          ) : !data || data.items.length === 0 ? (
+            <p className="text-[13px] text-white/45">
+              Er zijn nog geen berichten in Sparki World.
+            </p>
+          ) : (
+            <WorldReel posts={data.items} onOpenAthlete={openAthlete} />
           )}
         </div>
       )}

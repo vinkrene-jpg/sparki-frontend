@@ -149,6 +149,23 @@ generate/upload so it never bills the image model.)
   cheap; `sim:world-day --images` is idempotent per date (already-simulated athletes skipped) and not
   everyone posts every day (a full run leaves many athletes with no event that day — realistic, honest).
 
+## Feed presentation = TikTok/Instagram reel (`components/sparki/world-reel.tsx`)
+- The `/wereld` "Tijdlijn" + "Bewaard" tabs render a full-screen VERTICAL scroll-snap reel
+  (`snap-y snap-mandatory overscroll-contain`), one post per viewport — not a stacked card list.
+  Discovery rails (Voorgesteld/Toonaangevend) moved to their own "Ontdek" tab so the reel stays
+  immersive. `PostCard` (the old card) survives only on the athlete profile drill-in.
+- **Honesty moved onto each slide:** the single top "gesimuleerd" banner is gone from the reel —
+  EVERY slide carries a "Virtual Athlete · gesimuleerd" marker so fiction is unmissable while
+  swiping. Text-only posts (no `mediaUrl`) NEVER fabricate an image: they render a deterministic
+  on-brand gradient (`textGradient(post.id)`) with the caption as a centered hero.
+- **Layering:** bottom nav is `fixed z-50`; reel action rail/meta must be lifted clear of it
+  (`bottom-32` rail, `pb-28` meta) or they hide behind the nav (looks like "buttons missing").
+  Comments are a body-`createPortal` bottom sheet at `z-[80]` (above nav) with dialog semantics.
+- **Gotcha — no `savedByMe` field:** `WorldPost` carries no per-post saved flag, so a slide's
+  bookmark state can't be derived from the feed. The "Bewaard" tab passes `initialSaved` to seed
+  it true (every item there IS saved); elsewhere it honestly defaults false. Like/comment show real
+  counts; save/share have no count data so they show none (don't fabricate a number).
+
 ## Video highlights (phase 2 — looping clips)
 - `virtual_media.kind="video"` already existed → NO migration. Highlight clips associate by a
   deterministic `promptKey` (`highlightKeyFor(slug)`), NOT a new column. `resolveMedia` branches
