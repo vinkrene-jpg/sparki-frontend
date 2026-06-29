@@ -97,7 +97,7 @@ export function buildPromptKey(
 const STYLE_VERSION = "v2";
 // Feed photos get their own version so a fresh, rawer look can be regenerated
 // WITHOUT touching the already-approved avatar faces (avatars keep STYLE_VERSION).
-const POST_STYLE_VERSION = "v12";
+const POST_STYLE_VERSION = "v15";
 
 // Authentic-but-beautifully-shot look, modelled on the most successful cycling &
 // lifestyle creators on Instagram: real and candid, yet high craft. NOT a stiff
@@ -136,6 +136,23 @@ const POSTURE =
   "relaxed dropped shoulders, softly bent elbows, hands correctly on the brake hoods or down in the drops, hips quiet " +
   "and stable, core engaged — the efficient, well-drilled, powerful look of an experienced pro. Never sitting bolt " +
   "upright, slumped, hunched, stiff, perched too high or awkward.";
+// Modern road cyclists always ride WITH a helmet, plus sport sunglasses. Glasses
+// are biased toward 'pushed up on the helmet' so the eyes/expression we worked so
+// hard on stay visible; only a minority are worn over the eyes (clear/light lenses
+// so the gaze still reads). Applied to ON-BIKE scenes only — not lifestyle.
+const GLASSES = [
+  "sport cycling sunglasses pushed up and perched on the front of the helmet, eyes and expression clearly visible",
+  "sport cycling sunglasses flipped up onto the helmet, eyes clearly visible",
+  "sport cycling sunglasses resting up on top of the helmet, not over the eyes",
+  "modern sport cycling sunglasses worn over the eyes, with lightly tinted lenses through which the eyes still read",
+];
+function helmetFor(seed?: string): string {
+  return (
+    "CRITICAL, NON-NEGOTIABLE: while on the bike the rider is ALWAYS wearing a modern, correctly-fitted " +
+    "cycling helmet suited to the discipline, straps fastened under the chin — absolutely never bare-headed, " +
+    `never just hair. Plus ${pickBy(GLASSES, `${seed || "x"}:glasses`)}.`
+  );
+}
 // The single thing that makes an influencer photo work: warmth and connection.
 // Even with little to 'say', a good-looking rider who beams pride and joy and locks
 // eyes with the viewer carries the shot. Applied to EVERY post.
@@ -594,8 +611,12 @@ export function buildPostPrompt(attrs: {
       `at ${locationFor(attrs.discipline, seed)} — ${framingFor(seed)}. ${EFFORT_RIDE} ${POSTURE} ${KIT_WORN}`;
   }
 
+  const onBike =
+    attrs.sceneType !== "lifestyle" && attrs.sceneType !== "bike_detail";
+
   return [
     identity,
+    onBike ? helmetFor(seed) : "",
     scene,
     figureLine,
     [weather, time].filter(Boolean).join(", ") + (weather || time ? "." : ""),
