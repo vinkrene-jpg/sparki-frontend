@@ -83,3 +83,15 @@ id = "pp2BZ4SBOaSVcQlPLj4Gc"
 uri = "file://artifacts/api-server/assets/music/episch.mp3"
 type = "audio"
 title = "episch"
+
+[[outputs]]
+id = "fzqLtg3tMM4vtuQM8vTyW"
+uri = "file://.local/world-sample/bas-goossens_avatar.png"
+type = "image"
+title = "Canonieke avatar — Bas Goossens (vaste herkenbare kop)"
+
+[[outputs]]
+id = "bq5rEZhu8XZsP6j0kLrx0"
+uri = "file://.local/world-sample/bas-goossens_feedphoto.png"
+type = "image"
+title = "Nieuwe feed-foto — zelfde gezicht, echte locatie (Moab, VS), verzonnen sponsors + fietsmerk"

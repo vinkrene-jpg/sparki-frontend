@@ -1,10 +1,15 @@
-// Sparki World — backfill avatars for athletes that don't have one yet.
+// Sparki World — backfill avatars for athletes.
 //
-// Idempotent & resumable: only athletes with avatar_media_id IS NULL are
-// processed, and the Media Engine is cache-first, so re-running picks up exactly
-// where a previous (timed-out) run stopped. Avatars are generated CONCURRENTLY
-// (bounded pool) because each image is an independent network call — this is the
-// only way a fixed time budget covers the whole 200+ cast.
+// Idempotent & resumable: by default only athletes with avatar_media_id IS NULL
+// are processed, and the Media Engine is cache-first, so re-running picks up
+// exactly where a previous (timed-out) run stopped. Avatars are generated
+// CONCURRENTLY (bounded pool) because each image is an independent network call.
+//
+// `--all` re-points EVERY athlete (not just NULL ones). Use this after a style
+// version bump: the Media Engine key changes, so a fresh canonical avatar is
+// generated and the athlete is re-pointed to it. `--limit=N` caps the run to the
+// first N athletes (alphabetical by slug) so a SMALL paid sample can be proven
+// before scaling to the full cast.
 //
 // Honesty contract: a failed generation persists an honest "failed" media row
 // (no fake placeholder) and the athlete simply keeps no avatar; it is retried on
@@ -12,8 +17,9 @@
 //
 //   pnpm --filter @workspace/api-server run backfill:avatars
 //   pnpm --filter @workspace/api-server run backfill:avatars -- --concurrency=8
+//   pnpm --filter @workspace/api-server run backfill:avatars -- --all --limit=8
 
-import { eq, isNull } from "drizzle-orm";
+import { asc, eq, isNull } from "drizzle-orm";
 import { db, pool, virtualAthletesTable } from "@workspace/db";
 import { getOrCreateAvatar } from "../engines/world-media";
 
@@ -22,19 +28,29 @@ async function main(): Promise<void> {
   const concurrency = concArg
     ? Math.max(1, Math.min(16, parseInt(concArg.slice("--concurrency=".length), 10) || 8))
     : 8;
+  const all = process.argv.includes("--all");
+  const limitArg = process.argv.find((a) => a.startsWith("--limit="));
+  const limit = limitArg
+    ? Math.max(1, parseInt(limitArg.slice("--limit=".length), 10) || 0)
+    : 0;
 
-  const todo = await db
+  const base = db
     .select({
       id: virtualAthletesTable.id,
       slug: virtualAthletesTable.slug,
       gender: virtualAthletesTable.gender,
       age: virtualAthletesTable.age,
+      archetype: virtualAthletesTable.archetype,
+      discipline: virtualAthletesTable.discipline,
+      team: virtualAthletesTable.team,
     })
     .from(virtualAthletesTable)
-    .where(isNull(virtualAthletesTable.avatarMediaId));
+    .orderBy(asc(virtualAthletesTable.slug));
+  const rows = all ? await base : await base.where(isNull(virtualAthletesTable.avatarMediaId));
+  const todo = limit > 0 ? rows.slice(0, limit) : rows;
 
   console.log(
-    `Avatars te genereren: ${todo.length} (concurrency=${concurrency}). Cache-first, dus dit hervat waar het stopte.`,
+    `Avatars te genereren: ${todo.length} (mode=${all ? "all" : "missing"}${limit ? `, limit=${limit}` : ""}, concurrency=${concurrency}). Cache-first, dus dit hervat waar het stopte.`,
   );
 
   let created = 0;
@@ -52,6 +68,9 @@ async function main(): Promise<void> {
           slug: a.slug,
           gender: a.gender,
           age: a.age,
+          archetype: a.archetype,
+          discipline: a.discipline,
+          team: a.team,
         });
         if (media.status === "ready" && media.objectPath) {
           await db

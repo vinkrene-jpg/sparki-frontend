@@ -63,7 +63,8 @@ export type EventType =
   | "nutrition"
   | "motivation"
   | "injury"
-  | "illness";
+  | "illness"
+  | "lifestyle";
 
 export type SimEvent = {
   athleteSlug: string;
@@ -87,13 +88,17 @@ export type SimPost = {
   athleteSlug: string;
   kind: PostKind;
   caption: string;
-  // Descriptor for the (cached) scene image; null = a text-only post (honest:
-  // we never label a media-less post as a "photo").
+  // Descriptor for the (per-athlete) feed photo; null = a text-only post
+  // (honest: we never label a media-less post as a "photo"). The image engine
+  // turns this into a face-consistent photo (edited from the athlete's avatar)
+  // and derives the concrete location/framing from `seed`.
   scene: {
+    sceneType: string; // training_ride | race_finish | bike_detail | mountain_road | lifestyle
     discipline: string;
-    scene: string;
     weather: string;
     timeOfDay: string;
+    lifestyle?: string; // lifestyle kind when sceneType === "lifestyle"
+    seed: string; // stable per athlete+day → deterministic location/framing
   } | null;
 };
 
@@ -147,6 +152,22 @@ export function generateEvent(athlete: GeneratedAthlete, date: string): SimEvent
     return base("nutrition", "Voeding op orde", "Aandacht voor eten rond de training.", {
       style: athlete.traits.voeding,
     });
+
+  // Lifestyle / off-the-bike moments — recognisable everyday life so the cast
+  // feels like real people you follow, not just a training log.
+  if (rng.chance(0.08)) {
+    const moment = rng.pick([
+      { kind: "new_tv", title: "Nieuwe tv", summary: "Eindelijk een nieuwe tv in huis.", cap: "Nieuwe tv binnen — koersen kijken wordt nóg leuker." },
+      { kind: "new_trainer", title: "Nieuwe hometrainer", summary: "Pijnschuur geüpgraded.", cap: "Nieuwe hometrainer staat klaar. Winter kan komen." },
+      { kind: "school", title: "Weer naar school", summary: "Studie en fietsen combineren.", cap: "Weer begonnen met school. Plannen wordt de kunst." },
+      { kind: "grandparents", title: "Bij opa en oma", summary: "Even bijkomen met koffie en gebak.", cap: "Koffie bij opa en oma. Herstel telt ook hier." },
+      { kind: "bakery", title: "Bij de bakker", summary: "Verdiende lekkernij na de rit.", cap: "Even langs de bakker na de rit. Verdiend." },
+      { kind: "cooking", title: "Zelf koken", summary: "Gezond bord op tafel.", cap: "Zelf gekookt vandaag. Goede brandstof voor morgen." },
+      { kind: "garage", title: "Sleutelen", summary: "Fiets weer helemaal nagekeken.", cap: "Avondje sleutelen. Alles weer strak afgesteld." },
+      { kind: "cafe", title: "Koffiestop", summary: "Terrasje met de rijdersgroep.", cap: "Koffiestop met de groep. Hier doe je het ook voor." },
+    ]);
+    return base("lifestyle", moment.title, moment.summary, { kind: moment.kind, cap: moment.cap });
+  }
 
   // Races mostly on weekends, and only for athletes who actually compete.
   const competes = athlete.level !== "recreant" || rng.chance(0.3);
@@ -235,9 +256,17 @@ export function buildPost(
   const p = event.payload;
   const weather = rng.pick(WEATHER);
   const timeOfDay = rng.pick(TIME_OF_DAY);
-  const sceneFor = (scene: string) =>
+  const seed = `${athlete.slug}|${event.eventDate}`;
+  const sceneFor = (sceneType: string, lifestyle?: string) =>
     opts.withImage
-      ? { discipline: athlete.discipline, scene, weather, timeOfDay }
+      ? {
+          sceneType,
+          discipline: athlete.discipline,
+          weather,
+          timeOfDay,
+          ...(lifestyle ? { lifestyle } : {}),
+          seed,
+        }
       : null;
 
   let kind: PostKind;
@@ -252,7 +281,7 @@ export function buildPost(
         pw: Number(p.avgPower ?? 0),
         feel: rng.pick(FEEL),
       });
-      scene = sceneFor("training ride");
+      scene = sceneFor("training_ride");
       kind = scene ? "photo" : "training_log";
       break;
     }
@@ -274,19 +303,25 @@ export function buildPost(
         placing: Number(p.placing ?? 0),
         field: Number(p.fieldSize ?? 0),
       });
-      scene = sceneFor("race finish");
+      scene = sceneFor("race_finish");
       kind = scene ? "photo" : "training_log";
       break;
     }
     case "equipment": {
       caption = fill(rng.pick(CAP_EQUIPMENT), { item: String(p.item ?? "materiaal") });
-      scene = sceneFor("bike detail");
+      scene = sceneFor("bike_detail");
       kind = "review";
       break;
     }
     case "training_camp": {
       caption = fill(rng.pick(CAP_CAMP), { place: String(p.place ?? "het buitenland") });
-      scene = sceneFor("mountain road");
+      scene = sceneFor("mountain_road");
+      kind = scene ? "photo" : "story";
+      break;
+    }
+    case "lifestyle": {
+      caption = String(p.cap ?? "Even iets anders dan fietsen vandaag.");
+      scene = sceneFor("lifestyle", String(p.kind ?? "cafe"));
       kind = scene ? "photo" : "story";
       break;
     }

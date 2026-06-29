@@ -16,11 +16,12 @@ import {
   virtualEventsTable,
   virtualPostsTable,
   virtualInteractionsTable,
+  virtualMediaTable,
 } from "@workspace/db";
 import { generatePopulation, type GeneratedAthlete } from "../../lib/world/population";
 import { simulateDay, generateComments } from "../../lib/world/simulation";
 import { validatePost, validateSafety } from "../../lib/world/validation";
-import { getOrCreateScene } from "../world-media";
+import { getOrCreatePostPhoto } from "../world-media";
 
 export type WorldDaySummary = {
   date: string;
@@ -35,7 +36,7 @@ export type WorldDaySummary = {
   commentsRejected: number;
 };
 
-type DbAthlete = { id: number; slug: string };
+type DbAthlete = { id: number; slug: string; avatarObjectPath: string | null };
 
 // Rebuild the in-memory generated athlete (numbers) keyed by slug so the
 // simulation has the full physiology, while persistence uses the DB id.
@@ -60,8 +61,16 @@ export async function runWorldDay(
   }
 
   const dbAthletes: DbAthlete[] = await db
-    .select({ id: virtualAthletesTable.id, slug: virtualAthletesTable.slug })
-    .from(virtualAthletesTable);
+    .select({
+      id: virtualAthletesTable.id,
+      slug: virtualAthletesTable.slug,
+      avatarObjectPath: virtualMediaTable.objectPath,
+    })
+    .from(virtualAthletesTable)
+    .leftJoin(
+      virtualMediaTable,
+      eq(virtualAthletesTable.avatarMediaId, virtualMediaTable.id),
+    );
   const idBySlug = new Map(dbAthletes.map((a) => [a.slug, a.id]));
 
   // Which athletes already have an event for this date → skip (idempotent).
@@ -117,10 +126,22 @@ export async function runWorldDay(
       .returning({ id: virtualEventsTable.id });
     summary.events += 1;
 
-    // optional cached scene image (only for approved photo posts)
+    // optional per-athlete feed photo (only for approved photo posts). The image
+    // is edited FROM the athlete's avatar so the same recognisable face recurs.
     let mediaId: number | null = null;
     if (opts.withImages && post.scene && verdict.status === "approved") {
-      const media = await getOrCreateScene(post.scene);
+      const media = await getOrCreatePostPhoto(
+        {
+          slug: dba.slug,
+          gender: gen.gender,
+          age: gen.age,
+          archetype: gen.archetype,
+          discipline: gen.discipline,
+          team: gen.team,
+          avatarObjectPath: dba.avatarObjectPath,
+        },
+        post.scene,
+      );
       if (media.status === "ready" && media.objectPath) {
         mediaId = media.id;
         summary.scenesCreated += 1;

@@ -36,6 +36,7 @@
     "test:world-media": "pnpm run build && node --enable-source-maps ./dist/tests/world-media.mjs",
     "seed:sparki-world": "pnpm run build && node --enable-source-maps ./dist/scripts/seed-sparki-world.mjs",
     "backfill:avatars": "pnpm run build && node --enable-source-maps ./dist/scripts/backfill-avatars.mjs",
+    "backfill:world-photos": "pnpm run build && node --enable-source-maps ./dist/scripts/backfill-world-photos.mjs",
     "world:highlights": "pnpm run build && node --enable-source-maps ./dist/scripts/backfill-world-highlights.mjs",
     "test:world-sim": "pnpm run build && node --enable-source-maps ./dist/tests/world-sim.mjs",
     "test:world-consistency": "pnpm run build && node --enable-source-maps ./dist/tests/world-consistency.mjs",

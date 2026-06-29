@@ -182,6 +182,9 @@ export async function persistPopulation(
         slug: a.slug,
         gender: a.gender,
         age: a.age,
+        archetype: a.archetype,
+        discipline: a.discipline,
+        team: a.team,
       });
       if (media.status === "ready" && media.objectPath) {
         await db

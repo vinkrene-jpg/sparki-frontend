@@ -106,6 +106,21 @@ export class ObjectStorageService {
     return new Response(webStream, { headers });
   }
 
+  // Download a stored object's raw bytes as base64 (+ its content type). Used to
+  // feed a previously generated image back into an image-to-image edit (so a
+  // feed photo can keep the SAME face as the athlete's canonical avatar).
+  async getObjectBytes(
+    objectPath: string,
+  ): Promise<{ base64: string; mimeType: string }> {
+    const file = await this.getObjectEntityFile(objectPath);
+    const [metadata] = await file.getMetadata();
+    const [buffer] = await file.download();
+    return {
+      base64: buffer.toString("base64"),
+      mimeType: (metadata.contentType as string) || "image/png",
+    };
+  }
+
   async getObjectEntityUploadURL(): Promise<string> {
     const privateObjectDir = this.getPrivateObjectDir();
     if (!privateObjectDir) {

@@ -27,7 +27,7 @@ import {
   type VirtualMedia,
   type VirtualMediaKind,
 } from "@workspace/db";
-import { generateImage } from "@workspace/integrations-gemini-ai/image";
+import { generateImage, editImage } from "@workspace/integrations-gemini-ai/image";
 import { generateVideo } from "@workspace/integrations-gemini-ai/video";
 import { ObjectStorageService } from "../../lib/objectStorage";
 
@@ -39,6 +39,7 @@ const SYSTEM_OWNER = "sparki-world";
 export type MediaPurpose =
   | "avatar"
   | "scene"
+  | "post"
   | "equipment"
   | "podium"
   | "highlight";
@@ -91,12 +92,178 @@ export function buildPromptKey(
 // attributes. Always realistic photography (never cartoon/illustration) and
 // always a FICTIONAL person — the transparency that this is simulated lives in
 // the UI labelling, not in the pixels.
-const SPARKI_LOOK = [
-  "Cinematic, premium sports photography.",
-  "Deep blue-black tones, soft cool cyan/teal rim light, gentle atmospheric haze,",
-  "subtle vignette, natural realistic colours, high dynamic range.",
-  "Photorealistic, sharp, high quality. Output only the image.",
+// Bump to force a fresh look across the whole cast (changes every cache key, so
+// "ready" rows are no longer reused and new imagery is generated).
+const STYLE_VERSION = "v2";
+
+// Authentic, social-media look — deliberately NOT an over-polished cinematic
+// studio/stock photo (the previous uniform teal wash made every image look the
+// same). Reads like a real photo shot on a modern phone.
+const WORLD_LOOK = [
+  "Authentic candid social-media photo, looks shot on a modern smartphone.",
+  "Natural lighting, true real-world colours for the location, believable and lightly imperfect.",
+  "Sharp and high quality but NOT an over-polished studio or stock photo.",
+  "Photorealistic. Output only the image.",
 ].join(" ");
+
+// Honesty line shared by every still: the person is invented and so is every
+// sponsor/brand — we never depict a real recognisable individual or a real-world
+// company logo. The transparency that this is simulated lives in the UI label.
+const HONESTY_LINE =
+  "This is a made-up, fictional person — do not depict any real, recognisable individual. " +
+  "Any sponsor names or bike branding are invented, fictional wordmarks only — no real-world brand logos.";
+
+// ── deterministic pickers (stable per athlete, so a face/team stays consistent) ─
+function hashStr(s: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+function pickBy<T>(arr: readonly T[], seed: string): T {
+  return arr[hashStr(seed) % arr.length]!;
+}
+
+// ── per-athlete appearance (makes every face DISTINCT & recognisable) ──────────
+const SKIN = ["light", "fair", "lightly tanned", "olive", "tanned", "brown", "dark brown"];
+const HAIR_COLOR = ["dark brown", "black", "blonde", "light brown", "auburn", "ginger", "ash brown"];
+const HAIR_M = ["short cropped hair", "a buzz cut", "messy short hair", "short curly hair", "a man bun", "slicked-back hair"];
+const HAIR_V = ["a high ponytail", "long straight hair", "shoulder-length wavy hair", "a short bob", "braided hair", "hair tied back in a bun"];
+const FACIAL_HAIR = ["clean-shaven", "clean-shaven", "light stubble", "a short trimmed beard", "a moustache"];
+const FACE_FEATURE = ["a sharp jawline", "a friendly round face", "light freckles", "strong cheekbones", "kind expressive eyes", "angular features", "a warm easy smile"];
+
+function buildName(gender?: string): string {
+  return (gender || "").toLowerCase() === "v" ? "female" : "male";
+}
+
+// A compact, deterministic description of one athlete's looks. Climbers read
+// lean, sprinters muscular; everything else is slug-seeded so each athlete is a
+// distinct, repeatable person.
+function appearanceFor(a: {
+  slug: string;
+  gender?: string;
+  age?: number;
+  archetype?: string;
+}): string {
+  const slug = a.slug || "x";
+  const sex = buildName(a.gender);
+  const arch = (a.archetype || "").toLowerCase();
+  const build = /klimmer|ultra|marathon|cross-country|duur/.test(arch)
+    ? "a lean, wiry cyclist's build"
+    : /sprinter|baansprinter|achtervolger/.test(arch)
+      ? "a powerful, muscular sprinter's build"
+      : "a fit, athletic build";
+  const hair =
+    sex === "female" ? pickBy(HAIR_V, `${slug}:hair`) : pickBy(HAIR_M, `${slug}:hair`);
+  const facial =
+    sex === "male" ? `, ${pickBy(FACIAL_HAIR, `${slug}:beard`)}` : "";
+  return [
+    `${pickBy(SKIN, `${slug}:skin`)} skin`,
+    `${pickBy(HAIR_COLOR, `${slug}:haircol`)} ${hair}${facial}`,
+    pickBy(FACE_FEATURE, `${slug}:face`),
+    build,
+  ].join(", ");
+}
+
+// ── per-team fictional kit + bike brand (one consistent make per team) ─────────
+const BIKE_BRANDS = ["Velora", "Aeronaut", "Strade", "Northwind", "Apex", "Solstice", "Ridgeline", "Falcone", "Borealis", "Kestrel-V"];
+const KIT_SPONSORS = ["NOVA Energy", "Helder", "Polderbank", "Tidal", "Volt", "Meridiaan", "Kanttek", "Berglicht", "Hexa", "Zephyr"];
+const KIT_COLORS = ["teal and black", "red and white", "navy and orange", "black and neon yellow", "white and royal blue", "forest green and grey", "deep purple and white", "crimson and charcoal"];
+
+function teamKitFor(team?: string | null): {
+  bikeBrand: string;
+  sponsor: string;
+  colors: string;
+} {
+  if (team && team.trim()) {
+    const t = team.trim();
+    return {
+      bikeBrand: pickBy(BIKE_BRANDS, `${t}:bike`),
+      sponsor: pickBy(KIT_SPONSORS, `${t}:kit`),
+      colors: pickBy(KIT_COLORS, `${t}:col`),
+    };
+  }
+  return { bikeBrand: "", sponsor: "", colors: "" };
+}
+
+// Pro-style kit clause. Team riders wear matching team kit with a fictional
+// sponsor wordmark; unaffiliated riders wear plausible casual club kit.
+function kitClause(team?: string | null, slug?: string): string {
+  const k = teamKitFor(team);
+  if (k.sponsor) {
+    return `wearing pro team cycling kit in ${k.colors} with the fictional sponsor wordmark "${k.sponsor}" across the chest`;
+  }
+  return `wearing a neat casual club cycling kit in ${pickBy(KIT_COLORS, `${slug || "x"}:col`)}`;
+}
+function bikeClause(team?: string | null): string {
+  const k = teamKitFor(team);
+  return k.bikeBrand
+    ? `riding a high-end road bike with the fictional brand "${k.bikeBrand}" on the frame`
+    : "riding a quality road bike";
+}
+
+// ── varied real-world locations across Europe AND the USA ──────────────────────
+const LOC_ROAD = [
+  "the Dolomites in Italy", "Mallorca's coastal mountain roads in Spain",
+  "the Stelvio Pass switchbacks in the Alps", "the cobbled farm roads of Flanders, Belgium",
+  "Mont Ventoux in Provence, France", "the Black Forest in Germany",
+  "the green Yorkshire Dales in England", "the rolling countryside around Girona, Spain",
+  "the Dutch coastal dunes by the North Sea", "the forested Ardennes in Belgium",
+  "the Pacific Coast Highway in California, USA", "the Colorado Rockies near Boulder, USA",
+  "the desert highways near Moab, Utah, USA", "an autumn back road in Vermont, USA",
+  "the Blue Ridge Parkway in North Carolina, USA", "the Marin Headlands near San Francisco, USA",
+];
+const LOC_GRAVEL = [
+  "a dusty gravel road through Tuscany, Italy", "a forest gravel track in the Veluwe, Netherlands",
+  "a vineyard gravel path in Burgundy, France", "the gravel backroads of Girona, Spain",
+  "the red gravel of Moab, Utah, USA", "a Vermont dirt road in autumn, USA",
+  "the gravel ranch roads of Kansas, USA", "a Black Forest gravel trail in Germany",
+];
+const LOC_MTB = [
+  "a flowy mountain-bike trail in the Alps", "a rocky singletrack in the Dolomites, Italy",
+  "a pine-forest trail in the Ardennes, Belgium", "a desert slickrock trail in Moab, Utah, USA",
+  "a redwood forest trail in California, USA", "an alpine trail in the Colorado Rockies, USA",
+];
+function locationFor(discipline?: string, seed?: string): string {
+  const d = (discipline || "").toLowerCase();
+  const pool = d === "gravel" ? LOC_GRAVEL : d === "mtb" ? LOC_MTB : LOC_ROAD;
+  return pickBy(pool, `${seed || "x"}:loc`);
+}
+
+// ── influencer framing (selfies, group rides, with a mate) ─────────────────────
+const FRAMING_RIDE = [
+  "a candid arm's-length selfie, smiling at the camera mid-ride",
+  "a POV handlebar selfie taken while riding",
+  "a group-ride photo with several teammates riding alongside",
+  "riding side by side with a training mate, both clearly in frame",
+  "a candid action shot a friend snapped from the roadside",
+  "a relaxed selfie at a viewpoint with the bike leaning nearby",
+];
+function framingFor(seed?: string): string {
+  return pickBy(FRAMING_RIDE, `${seed || "x"}:frame`);
+}
+
+// ── lifestyle / home-situation scenes (variety beyond cycling) ─────────────────
+// Recognisable everyday moments — the same athlete you saw riding now shows up at
+// home, at school, at the bakery… so the cast feels like real people to follow.
+const LIFESTYLE: Record<string, string> = {
+  new_tv: "at home on the sofa, grinning next to a large brand-new flat-screen TV, in casual home clothes",
+  new_trainer: "in a home 'pain cave', proudly showing a brand-new indoor smart trainer with a bike mounted on it",
+  school: "walking onto a school/university campus with a backpack and books, in casual student clothes",
+  grandparents: "having coffee and cake with grandparents in a cosy living room",
+  bakery: "at a local bakery counter, holding a fresh pastry and a coffee, smiling",
+  cooking: "cooking a healthy meal in a bright home kitchen",
+  garage: "wrenching on a bike in a home garage, tools and parts around",
+  cafe: "relaxing on an outdoor café terrace with friends after a ride",
+  groceries: "back from groceries, unpacking healthy food on a kitchen counter",
+  recovery_home: "foam-rolling and stretching on the living-room floor in comfy clothes",
+};
+function lifestyleClause(kind?: string): string {
+  const k = (kind || "").toLowerCase();
+  return LIFESTYLE[k] || "relaxing at home in casual clothes";
+}
 
 function disciplineScene(discipline?: string): string {
   switch ((discipline || "").toLowerCase()) {
@@ -189,20 +356,29 @@ export function buildPrompt(
   if (purpose === "avatar") {
     const gender = genderNoun(a.gender as string);
     const age = typeof a.age === "number" ? `${a.age}-year-old` : "";
-    const subject = [age, gender, "amateur cyclist"]
-      .filter(Boolean)
-      .join(" ");
+    const slug = (a.slug as string) || "x";
+    const look = appearanceFor({
+      slug,
+      gender: a.gender as string,
+      age: a.age as number,
+      archetype: a.archetype as string,
+    });
+    const subject = [age, gender, "cyclist"].filter(Boolean).join(" ");
     return [
-      `A realistic portrait headshot of a fictional ${subject}.`,
-      "Natural face, candid and approachable, athletic build.",
-      "Plain dark background.",
-      SPARKI_LOOK,
+      `An authentic social-media profile photo of a fictional ${subject}.`,
+      `${capitalise(look)}.`,
+      "Head-and-shoulders, looking at the camera with a natural, approachable expression,",
+      "like a friendly selfie a real cycling influencer would use as their profile picture.",
+      `${capitalise(kitClause(a.team as string, slug))}.`,
+      `Outdoors at ${locationFor(a.discipline as string, slug)}, natural daylight.`,
+      HONESTY_LINE,
+      WORLD_LOOK,
     ]
       .filter(Boolean)
       .join(" ");
   }
 
-  // scene / equipment / podium
+  // legacy scene / equipment / podium (still used by video + non-athlete stills)
   const setting =
     sceneSetting(a.scene as string) || disciplineScene(a.discipline as string);
   const weather = weatherClause(a.weather as string);
@@ -214,7 +390,99 @@ export function buildPrompt(
   return [
     `${subject}${time ? " " + time : ""}${weather ? ", " + weather : ""}.`,
     "No recognisable real people or logos.",
-    SPARKI_LOOK,
+    WORLD_LOOK,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function capitalise(s: string): string {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
+// Dutch weather keys (the simulation speaks Dutch). Returns "" for keys that add
+// nothing so the prompt stays clean.
+function weatherClauseNl(weather?: string): string {
+  switch ((weather || "").toLowerCase()) {
+    case "zon":
+      return "bright sunny weather";
+    case "bewolkt":
+      return "soft overcast light";
+    case "regen":
+      return "wet rainy weather with a glistening road";
+    case "wind":
+      return "blustery windy conditions";
+    case "koud":
+      return "cold crisp conditions";
+    case "warm":
+      return "warm hazy summer light";
+    default:
+      return "";
+  }
+}
+function timeClauseNl(timeOfDay?: string): string {
+  switch ((timeOfDay || "").toLowerCase()) {
+    case "ochtend":
+      return "in the morning light";
+    case "middag":
+      return "in midday light";
+    case "avond":
+      return "in evening golden-hour light";
+    default:
+      return "";
+  }
+}
+
+// ── per-athlete feed-photo prompt (cycling + lifestyle) ────────────────────────
+// Built so it works BOTH as an image-to-image edit from the athlete's avatar
+// (keeps the same face) and as a plain text generation fallback (describes the
+// person fully). The scene varies by type, location, framing, weather and time.
+export function buildPostPrompt(attrs: {
+  slug: string;
+  gender?: string;
+  age?: number;
+  archetype?: string;
+  discipline?: string;
+  team?: string | null;
+  sceneType: string;
+  lifestyle?: string;
+  weather?: string;
+  timeOfDay?: string;
+  seed?: string;
+}): string {
+  const seed = attrs.seed || attrs.slug;
+  const look = appearanceFor(attrs);
+  const weather = weatherClauseNl(attrs.weather);
+  const time = timeClauseNl(attrs.timeOfDay);
+  const identity =
+    "Keep the EXACT same recognisable person and face as the reference photo — " +
+    "same identity, hair and build (if no reference is given, depict: " +
+    `${look}).`;
+
+  let scene: string;
+  if (attrs.sceneType === "lifestyle") {
+    scene = `The same athlete ${lifestyleClause(attrs.lifestyle)}.`;
+  } else if (attrs.sceneType === "bike_detail") {
+    scene =
+      `A close, candid photo of the athlete's bike — ${bikeClause(attrs.team)} — ` +
+      `leaning at ${locationFor(attrs.discipline, seed)}, the rider partly in frame.`;
+  } else if (attrs.sceneType === "race_finish") {
+    scene =
+      `The athlete celebrating just after a race finish, ${kitClause(attrs.team, attrs.slug)}, ` +
+      `arms up, other riders and a finish-line atmosphere behind, ${framingFor(seed)}.`;
+  } else {
+    // training_ride / mountain_road / generic ride
+    scene =
+      `The athlete out riding, ${kitClause(attrs.team, attrs.slug)}, ${bikeClause(attrs.team)}, ` +
+      `at ${locationFor(attrs.discipline, seed)} — ${framingFor(seed)}.`;
+  }
+
+  return [
+    identity,
+    scene,
+    [weather, time].filter(Boolean).join(", ") + (weather || time ? "." : ""),
+    HONESTY_LINE,
+    WORLD_LOOK,
   ]
     .filter(Boolean)
     .join(" ");
@@ -384,6 +652,9 @@ export async function getOrCreateAvatar(
     slug: string;
     gender?: string | null;
     age?: number | null;
+    archetype?: string | null;
+    discipline?: string | null;
+    team?: string | null;
   },
   deps: MediaDeps = {},
 ): Promise<VirtualMedia> {
@@ -391,9 +662,13 @@ export async function getOrCreateAvatar(
     {
       purpose: "avatar",
       attributes: {
+        styleVersion: STYLE_VERSION,
         slug: athlete.slug,
         gender: athlete.gender ?? undefined,
         age: athlete.age ?? undefined,
+        archetype: athlete.archetype ?? undefined,
+        discipline: athlete.discipline ?? undefined,
+        team: athlete.team ?? undefined,
       },
     },
     deps,
@@ -423,6 +698,85 @@ export async function getOrCreateScene(
       },
     },
     deps,
+  );
+}
+
+// Per-athlete feed photo. Unlike a shared scene, this carries the athlete's
+// identity in the key and — crucially — is generated as an image-to-image EDIT
+// from the athlete's canonical avatar, so the SAME recognisable face recurs
+// across all of that athlete's posts (cycling AND lifestyle). Falls back to a
+// fully-described text generation when no avatar exists yet (honest, no fake).
+export async function getOrCreatePostPhoto(
+  athlete: {
+    slug: string;
+    gender?: string | null;
+    age?: number | null;
+    archetype?: string | null;
+    discipline?: string | null;
+    team?: string | null;
+    avatarObjectPath?: string | null;
+  },
+  descriptor: {
+    sceneType: string;
+    discipline?: string | null;
+    weather?: string | null;
+    timeOfDay?: string | null;
+    lifestyle?: string | null;
+    seed?: string | null;
+  },
+  deps: MediaDeps = {},
+): Promise<VirtualMedia> {
+  const discipline = descriptor.discipline ?? athlete.discipline ?? undefined;
+  const seed = descriptor.seed ?? athlete.slug;
+
+  // Derive concrete framing/location so they enter the cache key (variety, yet
+  // stable per athlete-day) and stay in lock-step with the prompt text.
+  const framing =
+    descriptor.sceneType === "lifestyle"
+      ? lifestyleClause(descriptor.lifestyle ?? undefined)
+      : framingFor(seed);
+
+  const attributes: MediaAttributes = {
+    styleVersion: STYLE_VERSION,
+    slug: athlete.slug,
+    sceneType: descriptor.sceneType,
+    lifestyle: descriptor.lifestyle ?? undefined,
+    discipline,
+    location: locationFor(discipline, seed),
+    framing,
+    weather: descriptor.weather ?? undefined,
+    timeOfDay: descriptor.timeOfDay ?? undefined,
+    team: athlete.team ?? undefined,
+  };
+
+  const prompt = buildPostPrompt({
+    slug: athlete.slug,
+    gender: athlete.gender ?? undefined,
+    age: athlete.age ?? undefined,
+    archetype: athlete.archetype ?? undefined,
+    discipline,
+    team: athlete.team ?? undefined,
+    sceneType: descriptor.sceneType,
+    lifestyle: descriptor.lifestyle ?? undefined,
+    weather: descriptor.weather ?? undefined,
+    timeOfDay: descriptor.timeOfDay ?? undefined,
+    seed,
+  });
+
+  // Face consistency: edit FROM the canonical avatar. Bytes are fetched lazily,
+  // inside the generate closure, so a cache hit never downloads anything.
+  let generate = deps.generate;
+  if (!generate && athlete.avatarObjectPath) {
+    const ref = athlete.avatarObjectPath;
+    generate = async (p: string) => {
+      const bytes = await svc.getObjectBytes(ref);
+      return editImage({ base64: bytes.base64, mimeType: bytes.mimeType }, p);
+    };
+  }
+
+  return resolveMedia(
+    { purpose: "post", aspectRatio: "4:5", attributes, prompt },
+    { ...deps, generate },
   );
 }
 
