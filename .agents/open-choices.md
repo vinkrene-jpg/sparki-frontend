@@ -5,7 +5,7 @@
 > open punten kort in de chat. Nieuwe keuze gesteld → hier toevoegen. Beslist → hier
 > weghalen (of naar "Beslist" verplaatsen). Nooit een keuze stilletjes laten vallen.
 
-Laatst bijgewerkt: 2026-06-28.
+Laatst bijgewerkt: 2026-06-29.
 
 ## Wacht op jouw keuze
 
@@ -29,6 +29,11 @@ Laatst bijgewerkt: 2026-06-28.
 10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav.
 
 ## Beslist (archief)
+- **2026-06-29 — Verse beleving bij elke login:** gekozen voor "veel variatie".
+  Analyses en feeds tonen bij elk app-bezoek dezelfde ECHTE cijfers, maar in
+  wisselende volgorde met een ander echt inzicht vooraan. Gebouwd: presentatie-
+  variatielaag (per-bezoek seed; alleen volgorde rotteert, nooit de cijfers,
+  urgent blijft altijd bovenaan).
 - **2026-06-28 — Sparki World richting + scope + kosten:** parallel beginnen aan de
   fundering; gefaseerd MVP (~50 Virtual Athletes, foto's + verhalen, géén video — video
   is fase 2); akkoord met agressief cachen/hergebruiken van beelden om kosten te drukken.

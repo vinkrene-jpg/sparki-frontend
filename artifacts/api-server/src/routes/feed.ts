@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db, athleteProfilesTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { getPersonalizedNews } from "../engines/knowledge";
+import { sessionSeed, windowedReorder } from "../lib/variation";
 
 const router = Router();
 
@@ -111,7 +112,13 @@ router.get("/news", requireAuth, async (req, res) => {
       limit,
     });
 
-    res.json({ items, personalized: keywords.length > 0 });
+    // Keep the most-relevant items near the top, but vary the order within small
+    // windows by the per-app-open session seed so the feed feels fresh each
+    // visit. Pure reordering of real items — relevance ranking is preserved.
+    res.json({
+      items: windowedReorder(items, sessionSeed(req)),
+      personalized: keywords.length > 0,
+    });
   } catch (err) {
     req.log.error({ err }, "feed.news failed");
     res.status(500).json({ error: "Internal server error" });

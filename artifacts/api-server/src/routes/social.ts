@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { sessionSeed, seededRotate, windowedReorder } from "../lib/variation";
 import {
   searchAthletes,
   sendFriendRequest,
@@ -150,7 +151,16 @@ router.get("/feed", requireAuth, async (req, res) => {
 router.get("/circle-feed", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
-    res.json({ items: await getCircleFeed(clerkId) });
+    // Vary the order per app-open: due follow-ups stay pinned on top (rotated so
+    // a different one can lead), the rest is reordered within small windows.
+    // Pure presentation — the real items and their data never change.
+    const seed = sessionSeed(req);
+    const all = await getCircleFeed(clerkId);
+    const followUps = all.filter((i) => i.type === "follow_up");
+    const rest = all.filter((i) => i.type !== "follow_up");
+    res.json({
+      items: [...seededRotate(followUps, seed), ...windowedReorder(rest, seed)],
+    });
   } catch (err) {
     req.log.error({ err }, "social.circle-feed failed");
     res.status(500).json({ error: "Kon je overzicht niet laden." });

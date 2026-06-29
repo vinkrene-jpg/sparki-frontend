@@ -21,6 +21,7 @@ import {
   type StoredFollowUpAnswer,
 } from "./followups";
 import { resolvePersonality, encouragementLine } from "./personality";
+import { rotateWithinGroups } from "../../lib/variation";
 import type {
   Advice,
   CoachAction,
@@ -55,13 +56,25 @@ function detailLimit(p: Personality): number {
 export function composeCoachAnalysis(
   intake: SignalIntake,
   personality: Personality,
-  opts: { resolvedFollowUpIds?: ReadonlySet<string> } = {},
+  opts: { resolvedFollowUpIds?: ReadonlySet<string>; variationSeed?: number } = {},
 ): CoachAnalysis {
   const resolved = opts.resolvedFollowUpIds ?? new Set<string>();
   const findings = detectContradictions(intake.metrics).filter(
     (f) => !resolved.has(f.id),
   );
-  const observations = deriveObservations(intake, findings);
+  // Honest presentation variation: when a per-app-open session seed is present,
+  // rotate the real observations WITHIN their severity tier so a different real
+  // insight leads each visit. urgent→important→info always keeps priority; the
+  // numbers and conclusions never change. No seed (server jobs/tests) = no-op.
+  const derived = deriveObservations(intake, findings);
+  const observations = opts.variationSeed
+    ? rotateWithinGroups(
+        derived,
+        (o) => o.severity,
+        ["urgent", "important", "info"],
+        opts.variationSeed,
+      )
+    : derived;
   const followUps = buildFollowUps(intake.metrics, findings, resolved);
   const advice = generateAdvice(intake, personality, findings);
   const actions = buildActions(intake, advice);
@@ -223,7 +236,7 @@ const LEVEL_TO_CONFIDENCE = {
  */
 export async function runCoachAnalysis(
   clerkId: string,
-  opts: { persist?: boolean } = {},
+  opts: { persist?: boolean; variationSeed?: number } = {},
 ): Promise<CoachAnalysis> {
   const intake = await gatherSignals(clerkId);
 
@@ -258,6 +271,7 @@ export async function runCoachAnalysis(
   ]);
   const analysis = composeCoachAnalysis(activeIntake, personality, {
     resolvedFollowUpIds: resolvedSet,
+    variationSeed: opts.variationSeed,
   });
 
   if (opts.persist) {

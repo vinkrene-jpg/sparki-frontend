@@ -27,6 +27,7 @@ import {
   systemPrompt,
   gatherKnowledge,
 } from "../lib/athlete-context";
+import { sessionSeed, rotateWithinGroups } from "../lib/variation";
 
 const router = Router();
 
@@ -182,7 +183,15 @@ router.post("/ask", requireAuth, async (req, res) => {
 router.get("/observations", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
-    const rows = await getActiveObservations(clerkId);
+    // Rotate real observations within their severity tier by the per-app-open
+    // session seed so a different real insight leads each visit (urgent always
+    // first). Pure presentation — the rows and their data are unchanged.
+    const rows = rotateWithinGroups(
+      await getActiveObservations(clerkId),
+      (r) => r.severity,
+      ["urgent", "important", "info"],
+      sessionSeed(req),
+    );
     const groups: Record<string, AiObservation[]> = {};
     for (const r of rows) (groups[r.category] ??= []).push(r);
     res.json({ observations: rows, groups });

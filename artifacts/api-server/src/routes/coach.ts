@@ -11,6 +11,7 @@ import {
   aiObservationsTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { sessionSeed } from "../lib/variation";
 import { computeReadiness } from "../engines/recovery-load";
 import {
   coachSharingLevel,
@@ -445,7 +446,9 @@ router.post("/athletes/:athleteId/plan/adopt", requireAuth, async (req, res) => 
 router.get("/analysis", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
-    const analysis = await runCoachAnalysis(clerkId);
+    const analysis = await runCoachAnalysis(clerkId, {
+      variationSeed: sessionSeed(req),
+    });
     res.json(analysis);
   } catch (err) {
     req.log.error({ err }, "coach.analysis failed");
@@ -508,7 +511,9 @@ router.post("/followup", requireAuth, async (req, res) => {
         set: { answer, updatedAt: new Date() },
       });
 
-    const analysis = await runCoachAnalysis(clerkId);
+    const analysis = await runCoachAnalysis(clerkId, {
+      variationSeed: sessionSeed(req),
+    });
     res.json(analysis);
   } catch (err) {
     req.log.error({ err }, "coach.followup failed");
