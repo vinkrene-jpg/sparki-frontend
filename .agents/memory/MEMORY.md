@@ -82,3 +82,4 @@
 - [Sparki chat overlay & session thread](sparki-chat-overlay.md) — chat opens from header SPARKI button (portal z-[80]); visible thread is session-scoped (SESSION_START filter), full history stays in DB memory; never delete rows for "fresh start".
 - [Sparki Wedstrijd-room](sparki-race-room.md) — race-day media montage; dayIndex 1-based end-to-end; ScreenShell leaks coach card on COACH_CARD_SECTIONS — use `bare`.
 - [Local-date UTC off-by-one trap](local-date-utc-trap.md) — toISOString().slice(0,10) gives UTC date; for NL local calendar days build from local getters.
+- [Sparki observation dedup](sparki-observation-dedup.md) — expanded cards repeat same fact; dedupe at PRESENTATION (dedupeObservationsByText, word+number overlap) not in groupObservations; LLM title-drift breeds dup rows.

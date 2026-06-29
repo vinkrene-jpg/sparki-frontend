@@ -27,6 +27,7 @@ import type { AthleteDailyMetric, FtpHistoryEntry } from "@/lib/athlete-types"
 import {
   classifyObservation,
   groupObservations,
+  dedupeObservationsByText,
   seriesForKind,
   type InsightSources,
 } from "./insight-grouping"
@@ -448,6 +449,87 @@ scenario("Trainen and /you render DISJOINT observation sets for the same payload
     sharedKeys.length === 0,
     `Trainen and /you group keys must be disjoint, shared: ${JSON.stringify(sharedKeys)}`,
   )
+})
+
+// ── dedupeObservationsByText ─────────────────────────────────────────────────
+
+scenario("near-identical FTP paraphrases collapse to one", () => {
+  // The real-world bug: many same-fact FTP paragraphs stacked in one expanded
+  // card. Different wording, same numbers/story → must collapse.
+  const paraphrases = [
+    obs({
+      observationText:
+        "Tussen januari en mei 2026 steeg het FTP van 262W naar 285W, een toename van 23W in ruim vier maanden.",
+    }),
+    obs({
+      observationText:
+        "De FTP-geschiedenis toont een stijgende lijn van 262W (januari) naar 285W (mei), maar het profiel vermeldt 245W.",
+    }),
+    obs({
+      observationText:
+        "FTP steeg van 262W naar 274W naar 285W, een toename van 23W in vijf maanden — het profiel vermeldt echter 245W.",
+    }),
+    obs({
+      observationText:
+        "Over drie meetpunten in 2026 is het FTP gestaag gestegen: 262W, 274W en 285W; de huidige waarde van 245W lijkt verouderd.",
+    }),
+  ]
+  const kept = dedupeObservationsByText(paraphrases)
+  assert(
+    kept.length === 1,
+    `four FTP paraphrases must collapse to one, got ${kept.length}`,
+  )
+  assert(kept[0].id === paraphrases[0].id, "the first (strongest) must win")
+})
+
+scenario("genuinely different same-metric notes are kept", () => {
+  const a = obs({ observationText: "Je FTP stijgt gestaag." })
+  const b = obs({
+    observationText:
+      "Je FTP-test is verouderd; plan binnenkort een nieuwe meting om je zones scherp te houden.",
+  })
+  const kept = dedupeObservationsByText([a, b])
+  assert(kept.length === 2, `distinct FTP notes must both stay, got ${kept.length}`)
+})
+
+scenario("paraphrase of the lead is dropped via `against`", () => {
+  const lead = obs({
+    observationText: "Je vermogen ontwikkelt zich de goede kant op; je training slaat aan.",
+  })
+  const echo = obs({
+    observationText: "Het vermogen ontwikkelt zich de goede kant op — de training slaat duidelijk aan.",
+  })
+  const fresh = obs({ observationText: "Je slaap was deze week korter dan gebruikelijk." })
+  const kept = dedupeObservationsByText([echo, fresh], [lead])
+  assert(
+    kept.length === 1 && kept[0].id === fresh.id,
+    `only the non-echo note must survive, got ${kept.map((k) => k.id).join(",")}`,
+  )
+})
+
+scenario("same-metric notes sharing one figure are NOT merged", () => {
+  // Precision guard: two genuinely different FTP notes that happen to share a
+  // single number (here 285W) but reach different conclusions must both stay —
+  // the number rule needs ≥2 shared figures with strong overlap to collapse.
+  const a = obs({
+    observationText: "Je FTP klom in 2026 van 262W naar 285W; je vorm trekt aan.",
+  })
+  const b = obs({
+    observationText:
+      "Bij 285W drempel en 72 kg blijft je vermogen-per-kilo laag; mik op 2027 voor de volgende stap.",
+  })
+  const kept = dedupeObservationsByText([a, b])
+  assert(
+    kept.length === 2,
+    `distinct FTP notes sharing one figure must both stay, got ${kept.length}`,
+  )
+})
+
+scenario("empty-text observations are never falsely merged", () => {
+  const a = obs({ observationText: "", title: "" })
+  const b = obs({ observationText: "", title: "" })
+  const kept = dedupeObservationsByText([a, b])
+  assert(kept.length === 2, `blank texts must not collapse, got ${kept.length}`)
 })
 
 // ── Report ───────────────────────────────────────────────────────────────────

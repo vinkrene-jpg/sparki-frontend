@@ -16,6 +16,7 @@ import { useSparkiState } from "@/hooks/use-sparki-state"
 import { GraphInsightCard } from "@/components/sparki/insight/graph-insight-card"
 import {
   groupObservations,
+  dedupeObservationsByText,
   type InsightGroup,
   type InsightSources,
 } from "@/lib/insight-grouping"
@@ -77,7 +78,12 @@ function Card({ children }: { children: React.ReactNode }) {
 // there is no real depth so the toggle stays hidden.
 function renderGroupExtended(group: InsightGroup): React.ReactNode | undefined {
   const { lead, members } = group
-  const others = members.filter((m) => m.id !== lead.id)
+  // Same-metric members are often paraphrases of the lead's fact; collapse
+  // near-duplicates (and drop any that merely re-tell the lead) before listing.
+  const others = dedupeObservationsByText(
+    members.filter((m) => m.id !== lead.id),
+    [lead],
+  ).slice(0, 3)
   const signals = lead.signals ?? []
   const alts = lead.alternativeExplanations ?? []
   if (

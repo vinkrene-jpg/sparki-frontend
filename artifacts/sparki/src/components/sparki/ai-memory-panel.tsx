@@ -10,7 +10,11 @@ import { useSessions } from "@/hooks/use-sessions"
 import { useLoad } from "@/hooks/use-load"
 import { useFtpHistory } from "@/hooks/use-ftp-history"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
-import { groupObservations, type InsightGroup } from "@/lib/insight-grouping"
+import {
+  groupObservations,
+  dedupeObservationsByText,
+  type InsightGroup,
+} from "@/lib/insight-grouping"
 import { GraphInsightCard } from "@/components/sparki/insight/graph-insight-card"
 import { ACCENT } from "@/components/sparki/ui"
 
@@ -54,7 +58,12 @@ function GroupExtended({
   busy: boolean
 }) {
   const { lead, members } = group
-  const others = members.filter((m) => m.id !== lead.id)
+  // Same-metric members are often paraphrases of the lead's fact; collapse
+  // near-duplicates (and drop any that merely re-tell the lead) before listing.
+  const others = dedupeObservationsByText(
+    members.filter((m) => m.id !== lead.id),
+    [lead],
+  ).slice(0, 3)
   const alts = lead.alternativeExplanations ?? []
   const signals = lead.signals ?? []
 

@@ -230,3 +230,101 @@ export function groupObservations(
   all.sort((a, b) => compareObservations(a.lead, b.lead))
   return all
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Near-duplicate prose collapse.
+//
+// Same-metric observations are often paraphrases of one fact ("FTP steeg van
+// 262W naar 285W" vs "De FTP toont een stijgende lijn van 262W"). Listing each
+// member's text in an expanded card repeats the same story many times. We
+// collapse near-duplicate prose with a token-overlap measure that is robust to
+// length differences, keeping the first (strongest) of each cluster.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Short Dutch function words carry no topical signal; dropping them keeps the
+// overlap measure about content (numbers, maatstaf, richting) rather than glue.
+const STOPWORDS = new Set([
+  "van", "een", "het", "dit", "dat", "die", "met", "niet", "naar", "voor",
+  "maar", "ook", "als", "dan", "wat", "wel", "nog", "per", "uit", "aan", "bij",
+  "door", "over", "tot", "zijn", "was", "wordt", "worden", "heeft", "hebben",
+  "deze", "daar", "hier", "omdat", "want", "dus", "the", "and",
+])
+
+function significantTokens(text: string): Set<string> {
+  return new Set(
+    (text || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\u00c0-\u017f]+/g, " ")
+      .split(/\s+/)
+      .filter((t) => t.length >= 3 && !STOPWORDS.has(t)),
+  )
+}
+
+// The figures an observation cites (watts, W/kg, dates…). Same-metric
+// observations that quote the same numbers are telling the same story, even
+// when the prose is rephrased — a stronger duplicate signal than words alone.
+function significantNumbers(text: string): Set<string> {
+  const out = new Set<string>()
+  const re = /\d+(?:[.,]\d+)?/g
+  let m: RegExpExecArray | null
+  while ((m = re.exec(text || "")) !== null) out.add(m[0].replace(",", "."))
+  return out
+}
+
+// Overlap coefficient = |A∩B| / min(|A|,|B|). High when the shorter set's
+// content is largely contained in the larger one — exactly the paraphrase case.
+function overlapCoefficient(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 || b.size === 0) return 0
+  let inter = 0
+  for (const t of a) if (b.has(t)) inter++
+  return inter / Math.min(a.size, b.size)
+}
+
+type TextSignature = { words: Set<string>; nums: Set<string> }
+
+function signatureOf(o: AiObservation): TextSignature {
+  const text = o.observationText || o.title
+  return { words: significantTokens(text), nums: significantNumbers(text) }
+}
+
+// A candidate is a near-duplicate of a kept signature when either its content
+// words overlap strongly, or (for figure-bearing notes) it quotes the same
+// numbers. Both guards require ≥2 shared figures so a single shared year/value
+// can never collapse two genuinely different notes.
+function isNearDuplicate(a: TextSignature, b: TextSignature, wordThreshold: number): boolean {
+  if (a.words.size > 0 && b.words.size > 0 && overlapCoefficient(a.words, b.words) >= wordThreshold) {
+    return true
+  }
+  if (a.nums.size >= 2 && b.nums.size >= 2 && overlapCoefficient(a.nums, b.nums) >= 0.6) {
+    return true
+  }
+  return false
+}
+
+/**
+ * Drop observations whose prose is a near-duplicate of one already kept (same
+ * story, different wording or just rephrased around the same figures). Order is
+ * preserved; the first occurrence wins. `against` seeds the kept set (e.g. the
+ * lead) so paraphrases of it are removed too. Texts with no meaningful content
+ * are always kept (never falsely merged).
+ */
+export function dedupeObservationsByText(
+  observations: AiObservation[],
+  against: AiObservation[] = [],
+  wordThreshold = 0.6,
+): AiObservation[] {
+  const sigs: TextSignature[] = against
+    .map(signatureOf)
+    .filter((s) => s.words.size > 0 || s.nums.size > 0)
+  const kept: AiObservation[] = []
+  for (const o of observations) {
+    const sig = signatureOf(o)
+    const hasContent = sig.words.size > 0 || sig.nums.size > 0
+    if (hasContent && sigs.some((s) => isNearDuplicate(s, sig, wordThreshold))) {
+      continue
+    }
+    kept.push(o)
+    if (hasContent) sigs.push(sig)
+  }
+  return kept
+}

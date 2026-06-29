@@ -6,7 +6,11 @@ import { useFtpHistory } from "@/hooks/use-ftp-history"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { ownsObservation } from "@/lib/insight-ownership"
-import { groupObservations, type InsightGroup } from "@/lib/insight-grouping"
+import {
+  groupObservations,
+  dedupeObservationsByText,
+  type InsightGroup,
+} from "@/lib/insight-grouping"
 import { LayerHeading } from "@/components/sparki/train/layer-heading"
 import { TrainingProgression } from "@/components/sparki/training-progression"
 import { GraphInsightCard } from "@/components/sparki/insight/graph-insight-card"
@@ -23,7 +27,12 @@ const cardClass =
 // undefined when there is no real depth so the toggle stays hidden.
 function renderGroupExtended(group: InsightGroup): ReactNode | undefined {
   const { lead, members } = group
-  const others = members.filter((m) => m.id !== lead.id)
+  // Same-metric members are often paraphrases of the lead's fact; collapse
+  // near-duplicates (and drop any that merely re-tell the lead) before listing.
+  const others = dedupeObservationsByText(
+    members.filter((m) => m.id !== lead.id),
+    [lead],
+  ).slice(0, 3)
   const signals = lead.signals ?? []
   const alts = lead.alternativeExplanations ?? []
   if (
