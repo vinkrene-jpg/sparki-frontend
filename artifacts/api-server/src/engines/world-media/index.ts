@@ -97,7 +97,7 @@ export function buildPromptKey(
 const STYLE_VERSION = "v2";
 // Feed photos get their own version so a fresh, rawer look can be regenerated
 // WITHOUT touching the already-approved avatar faces (avatars keep STYLE_VERSION).
-const POST_STYLE_VERSION = "v10";
+const POST_STYLE_VERSION = "v11";
 
 // Authentic-but-beautifully-shot look, modelled on the most successful cycling &
 // lifestyle creators on Instagram: real and candid, yet high craft. NOT a stiff
@@ -140,13 +140,30 @@ const POSTURE =
 // Even with little to 'say', a good-looking rider who beams pride and joy and locks
 // eyes with the viewer carries the shot. Applied to EVERY post.
 const CONNECTION =
-  "THE SINGLE MOST IMPORTANT THING in the image is raw emotion and a powerful connection with the viewer — it must " +
-  "hit instantly and unmistakably, never something you have to search for. The rider radiates overwhelming warmth, " +
-  "pride and joy, glowing with happiness to be there and visibly in love with the beautiful surroundings. The eyes " +
-  "lock onto the camera with intense, captivating, magnetic eye contact, and a big genuine smile that reaches the " +
-  "eyes and crinkles them. Charismatic, attractive, alive and full of feeling — the irresistible, likeable presence " +
-  "of a top cycling lifestyle influencer that instantly makes you want to follow them. Absolutely never blank, flat, " +
-  "clinical, cold, posed or emotionless.";
+  "The image must convey ONE single, clear, strong, instantly readable emotion — authentic and unmistakable, never " +
+  "blank, flat, clinical, cold, posed or 'pleasant by default'. That one feeling carries the whole photo and gives the " +
+  "rider a magnetic, likeable, alive presence that makes you want to follow them. CRUCIAL: the emotion must genuinely " +
+  "VARY from post to post — do NOT fall back on the same broad happy smile and the same straight-to-camera eye contact " +
+  "every time; the expression, the eyes and where they look should all follow the specific feeling described next. The " +
+  "exact emotion to portray in THIS photo:";
+// Deterministic, VARIED emotion per post — without this every face reads the same.
+// The picked feeling dictates the whole expression AND the gaze (eye contact only
+// when the emotion calls for it), so a feed shows a real range of human moments.
+const EMOTION_POOL = [
+  "radiant, infectious joy — caught mid-laugh, head tipped back a little, eyes crinkled, pure delight, looking right at the lens",
+  "quiet, calm pride and deep satisfaction — a soft, content half-smile and steady, peaceful eyes",
+  "fierce determination and focus, deep in the effort — jaw set, eyes hard and fixed on the road ahead, not smiling, completely in the zone",
+  "playful, cheeky fun — a mischievous grin with a wink or tongue out, clearly messing around, eyes sparkling at the lens",
+  "open-mouthed awe and wonder at the view — eyes wide and gazing off at the landscape (NOT at the camera), genuinely moved by where they are",
+  "spent but elated right after a brutal effort — breathing hard, flushed, a raw exhausted grin, eyes shining and a little glassy",
+  "serene, peaceful contentment — relaxed, eyes soft or briefly closed, simply at ease and happy in the moment, a gentle barely-there smile",
+  "gritty suffering on a hard climb — a pained grimace of effort, teeth gritted, brow furrowed, digging deep, eyes down on the road",
+  "warm, easy, understated friendliness — a relaxed genuine everyday smile, like quietly greeting a friend, calm eyes",
+  "bright, surprised excitement — eyes lit up, eyebrows raised, an unguarded happy 'wow' expression",
+];
+function emotionFor(seed?: string): string {
+  return pickBy(EMOTION_POOL, `${seed || "x"}:emotion`);
+}
 
 // Honesty line shared by every still: the person is invented and so is every
 // sponsor/brand — we never depict a real recognisable individual or a real-world
@@ -312,13 +329,14 @@ function locationFor(discipline?: string, seed?: string): string {
 // wide "rider tiny in the landscape" shots) — that reads like an ad and kills the
 // feel of a real person's feed. Selfie variants dominate the pool on purpose.
 const FRAMING_RIDE = [
-  // true front-camera selfies — the rider's own arm clearly holds the phone
-  "a genuine front-camera selfie taken mid-ride with the rider's own arm clearly outstretched holding the phone, the extended arm and hand visible in the foreground, face large and close, slight wide-angle phone-lens distortion, big warm smile and intense eye contact",
-  "an arm's-length front-camera selfie, the extended arm holding the phone clearly visible at the edge of the frame, the rider's face close and warm with the road and scenery behind, laughing or beaming straight at the lens",
-  "a casual front-camera selfie paused at a viewpoint, the rider's own arm outstretched holding the phone, leaning slightly into the lens with a big happy grin — and the breathtaking scenery clearly spread out behind them so the view is shown off in the same shot",
-  "a front-camera selfie that deliberately shows off the epic view: the rider holds the phone at arm's length and tilts it so most of the frame is the stunning landscape behind them, with their happy face in the corner — a 'look where I am right now' selfie",
-  "a sweaty, close-up post-effort front-camera selfie, the rider's arm holding the phone, flushed and beaming straight down the lens right after a hard effort",
-  "a fun group selfie: the rider and a training mate both lean into one phone held at arm's length, both faces close and laughing, the extended arm visible in the foreground",
+  // natural front-camera selfies — the phone is held high and OFF to one side at an
+  // angle (the way people actually take selfies), never dead-centre square-on
+  "a natural mid-ride front-camera selfie with the phone held up high and off to one side so the angle is tilted and slightly looking-up into the lens, the outstretched arm and hand clearly in the foreground, the face at a relaxed three-quarter angle rather than square to the camera",
+  "a candid arm's-length selfie shot from an angle off to the side, the rider's face half-turned toward the lens (not straight-on), the extended arm holding the phone visible at the edge, the road and scenery behind",
+  "a casual selfie paused at a viewpoint, the phone held out to one side and tilted, the rider half-turned with the breathtaking scenery clearly spread out behind them so the view is shown off in the same shot",
+  "a 'look where I am right now' selfie with the phone tilted so most of the frame is the stunning landscape behind, the rider's face off in a corner at an angle, glancing back toward the lens",
+  "a sweaty post-effort selfie with the phone held a bit above the face looking up into the lens, off-centre and unposed, flushed right after a hard effort",
+  "a fun two-person selfie: the rider and a training mate both lean in toward one phone held high at arm's length, faces at playful angles and not square to the camera, the extended arm in the foreground",
   // self-shot POV (still feels like the rider's own phone, not a photographer)
   "a POV handlebar shot the rider took of their own hands, stem and front wheel with the road ahead — clearly shot on their own phone",
   // the rare candid a mate grabbed — still amateur phone, never a magazine shot
@@ -568,7 +586,7 @@ export function buildPostPrompt(attrs: {
     identity,
     scene,
     [weather, time].filter(Boolean).join(", ") + (weather || time ? "." : ""),
-    CONNECTION,
+    `${CONNECTION} ${emotionFor(seed)}.`,
     POST_LOOK,
     HONESTY_LINE,
     WORLD_LOOK,

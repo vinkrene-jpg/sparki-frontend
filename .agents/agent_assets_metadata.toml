@@ -317,3 +317,27 @@ id = "lQRcsnHVZc4Tlhni9Zoq1"
 uri = "file://.local/world-samples/new-04-459.png"
 type = "image"
 title = "Man, kiekje van maat — casual, geen magazinefoto"
+
+[[outputs]]
+id = "cMzMPPQeQO5O8FUPX3au1"
+uri = "file://.local/world-samples/new-06-468.png"
+type = "image"
+title = "Rustige tevredenheid — kijkt naar eigen scherm, hoog/zij-hoek"
+
+[[outputs]]
+id = "ZB5vVwKX6bEVkHtp_B6y9"
+uri = "file://.local/world-samples/new-03-471.png"
+type = "image"
+title = "Verbazing/ontzag — blik weg van lens, andere emotie"
+
+[[outputs]]
+id = "wp-oITiBpQ5CWB5ZXDE3o"
+uri = "file://.local/world-samples/new-01-473.png"
+type = "image"
+title = "Ingetogen, vriendelijk — schuine selfie-hoek"
+
+[[outputs]]
+id = "IsXYIW-mee_oxEe9h1Tfs"
+uri = "file://.local/world-samples/new-00-474.png"
+type = "image"
+title = "Verraste blijdschap — weer een andere emotie"
