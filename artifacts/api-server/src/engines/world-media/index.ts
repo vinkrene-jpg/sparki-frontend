@@ -120,18 +120,22 @@ const POST_LOOK =
   "with the slight natural imperfection of a genuine real photo; absolutely never clinical, sterile, posed, stiff or stocky. " +
   "It must feel like a friend casually grabbed the shot on a phone in the moment — never like a photographer hired for a " +
   "brochure, catalogue or magazine. Modern sport-content energy: golden hour, rain, mist, backlight, a spontaneous crop, " +
-  "a slightly imperfect frame — something you could post straight to Instagram right now.";
+  "a slightly imperfect frame — something you could post straight to Instagram right now. " +
+  "Channel the energy of a young rider's OWN phone: a self-shot, story-style moment with the casual, scroll-stopping, " +
+  "magnetic look of a popular young creator's feed — the kind of photo you want to keep looking at — fresh, current and " +
+  "youthful, never stiff, dated, corporate or middle-aged in feel.";
 
-// Visible effort for active cycling moments — sweat, grime, windblown hair, a
-// tired-but-proud face. This is what makes a ride photo feel real, not stock.
+// Visible effort for active cycling moments — sweat, grime, windblown hair. This
+// is the PHYSICAL state that makes a ride photo feel real, not stock. It must NOT
+// dictate the expression: the emotion clause (context-aware, varied) owns the
+// face, so a feed never shows the same forced smile twice.
 const EFFORT_RIDE =
-  "A real, lived-in riding moment with genuine effort: skin glistening with sweat from the exertion, a clear sheen on " +
-  "the face, neck and arms, flushed cheeks and windblown hair — yet above all radiating intense joy and pride: a big, " +
-  "warm, beaming smile or a glowing, elated, confident expression, visibly in love with riding through such a beautiful " +
-  "place, in a strong, athletic posture.";
+  "A real, lived-in riding moment with genuine effort: skin lightly glistening with sweat from the exertion, a soft " +
+  "sheen on the face, neck and arms, faintly flushed cheeks and windblown hair, in a natural, athletic posture. " +
+  "Do NOT default the face to a broad smile — the expression is whatever the emotion below describes.";
 const EFFORT_FINISH =
-  "Sweat-glistened and a little dirt-streaked from racing, hair a mess, but the face lit up with raw, radiant pride, " +
-  "joy and emotion — pure happiness in the moment.";
+  "Sweat-glistened and a little dirt-streaked from racing, hair a mess from the effort — the raw, real physical state " +
+  "right after a hard race. The exact expression is whatever the emotion below describes, not a default grin.";
 // Professional on-bike position. Without this, riders (especially the men) sit
 // upright and awkward — the dead giveaway of a fake, amateur photo.
 const POSTURE =
@@ -166,23 +170,69 @@ const CONNECTION =
   "VARY from post to post — do NOT fall back on the same broad happy smile and the same straight-to-camera eye contact " +
   "every time; the expression, the eyes and where they look should all follow the specific feeling described next. The " +
   "exact emotion to portray in THIS photo:";
-// Deterministic, VARIED emotion per post — without this every face reads the same.
-// The picked feeling dictates the whole expression AND the gaze (eye contact only
-// when the emotion calls for it), so a feed shows a real range of human moments.
-const EMOTION_POOL = [
-  "radiant, infectious joy — caught mid-laugh, head tipped back a little, eyes crinkled, pure delight, looking right at the lens",
-  "quiet, calm pride and deep satisfaction — a soft, content half-smile and steady, peaceful eyes",
-  "fierce determination and focus, deep in the effort — jaw set, eyes hard and fixed on the road ahead, not smiling, completely in the zone",
-  "playful, cheeky fun — a mischievous grin with a wink or tongue out, clearly messing around, eyes sparkling at the lens",
+// Deterministic, VARIED emotion per post — but the feeling MUST fit the moment.
+// A single global pool was the bug: "gritty suffering on a climb" landed on a
+// bakery selfie, "awe at the view" on a bike-detail shot. So the pool is now
+// chosen by the scene: a ride can show effort/awe, a finish shows raw release,
+// a quiet lifestyle moment stays everyday-warm. Each entry still dictates the
+// whole expression AND the gaze (eye contact only when the feeling calls for it).
+
+// On-bike riding moments: effort, flow, the view, the joy of being out there.
+const EMOTION_RIDE = [
+  "radiant, infectious joy of being out on the bike — caught mid-laugh, eyes crinkled, looking right at the lens",
+  "fierce determination and focus, deep in the effort — jaw set, eyes hard on the road ahead, not smiling, completely in the zone",
   "open-mouthed awe and wonder at the view — eyes wide and gazing off at the landscape (NOT at the camera), genuinely moved by where they are",
-  "spent but elated right after a brutal effort — breathing hard, flushed, a raw exhausted grin, eyes shining and a little glassy",
-  "serene, peaceful contentment — relaxed, eyes soft or briefly closed, simply at ease and happy in the moment, a gentle barely-there smile",
-  "gritty suffering on a hard climb — a pained grimace of effort, teeth gritted, brow furrowed, digging deep, eyes down on the road",
-  "warm, easy, understated friendliness — a relaxed genuine everyday smile, like quietly greeting a friend, calm eyes",
-  "bright, surprised excitement — eyes lit up, eyebrows raised, an unguarded happy 'wow' expression",
+  "gritty suffering deep in a hard effort — a pained grimace, teeth gritted, brow furrowed, digging deep, eyes down on the road",
+  "serene, peaceful flow — relaxed and at ease in the rhythm of the ride, a gentle barely-there smile, calm eyes on the road",
+  "playful, cheeky fun mid-ride — a mischievous grin glancing at the lens, clearly enjoying themselves",
+  "bright, surprised delight at the moment — eyes lit up, eyebrows raised, an unguarded happy 'wow'",
 ];
-function emotionFor(seed?: string): string {
-  return pickBy(EMOTION_POOL, `${seed || "x"}:emotion`);
+// Right after a race finish: raw release, pride, spent-but-elated emotion.
+const EMOTION_FINISH = [
+  "spent but elated right after a brutal effort — breathing hard, flushed, a raw exhausted grin, eyes shining and a little glassy",
+  "overwhelming pride and joy of finishing — arms thrown up, face lit with raw emotion, maybe close to happy tears",
+  "fierce triumphant release — a roar of celebration, eyes blazing, pure adrenaline",
+  "exhausted relief and quiet satisfaction — hands on knees or head, a worn-out half-smile, completely emptied out",
+];
+// Off-bike, beside the bike at rest: quiet pride, calm, friendly.
+const EMOTION_BIKE_DETAIL = [
+  "quiet pride and satisfaction looking over the bike — a soft, content smile, calm steady eyes",
+  "warm, easy, understated friendliness — a relaxed genuine everyday smile, like quietly greeting a friend",
+  "calm, understated confidence — an easy half-smile, comfortable and at home with the gear",
+];
+// Everyday life away from racing: warm, human, low-key — never effort or awe.
+const EMOTION_LIFESTYLE = [
+  "warm, easy, understated friendliness — a relaxed genuine everyday smile, like quietly greeting a friend, calm eyes",
+  "radiant, infectious joy — caught mid-laugh, head tipped back a little, eyes crinkled, pure delight, looking right at the lens",
+  "playful, cheeky fun — a mischievous grin, clearly messing around, eyes sparkling at the lens",
+  "quiet, calm contentment — a soft, content half-smile and steady, peaceful eyes, simply at ease",
+  "bright, surprised excitement — eyes lit up, eyebrows raised, an unguarded happy 'wow'",
+  "cool, understated confidence — an easy, relaxed half-smile, comfortable in the moment",
+];
+// A few lifestyle contexts read wrong with a random feeling — pin the obvious
+// ones so a physio session isn't "wow excitement" and a new-gear unboxing isn't
+// "calm contentment". Anything not listed falls back to the everyday pool.
+const LIFESTYLE_EMOTION: Record<string, readonly string[]> = {
+  new_tv: ["bright, surprised excitement — eyes lit up, eyebrows raised, an unguarded happy 'wow'"],
+  new_trainer: ["bright, surprised excitement — eyes lit up, eyebrows raised, an unguarded happy 'wow'"],
+  new_shoes: ["bright, surprised excitement — eyes lit up, eyebrows raised, an unguarded happy 'wow'"],
+  new_bike: ["bright, surprised excitement — eyes lit up, eyebrows raised, an unguarded happy 'wow'"],
+  fysio: ["calm, slightly tired acceptance — a soft patient half-smile, relaxed and at ease being looked after"],
+  recovery: ["calm, slightly tired contentment — relaxed, eyes soft, simply resting"],
+  massage: ["calm, slightly tired contentment — relaxed, eyes soft, simply resting"],
+  study: ["quiet, focused calm — a soft half-smile, settled and concentrated"],
+  school: ["quiet, focused calm — a soft half-smile, settled and concentrated"],
+};
+function emotionFor(seed?: string, sceneType?: string, lifestyle?: string): string {
+  const key = `${seed || "x"}:emotion`;
+  if (sceneType === "race_finish") return pickBy(EMOTION_FINISH, key);
+  if (sceneType === "bike_detail") return pickBy(EMOTION_BIKE_DETAIL, key);
+  if (sceneType === "lifestyle") {
+    const pinned = lifestyle ? LIFESTYLE_EMOTION[lifestyle] : undefined;
+    return pinned ? pickBy(pinned, key) : pickBy(EMOTION_LIFESTYLE, key);
+  }
+  // training_ride / mountain_road / generic ride
+  return pickBy(EMOTION_RIDE, key);
 }
 
 // Honesty line shared by every still: the person is invented and so is every
@@ -254,15 +304,18 @@ function figureFor(a: { gender?: string; archetype?: string; age?: number }): st
         : "a strong, athletic male cyclist's physique — broad shoulders, a defined chest and arms, a narrow waist and powerful, clearly muscled legs; visible but natural muscle definition, the body of someone who trains ~15 hours a week, never a bulky bodybuilder";
 }
 
-// Adult-only tasteful "spanning": the magnetic pull of a genuinely fit, confident,
-// charismatic adult — appeal that comes purely from health, fitness, confidence and
-// presence. Returns "" for youth (and unknown age), who stay strictly wholesome.
+// Adult-only natural appeal: the easy, photogenic charisma of a genuinely fit,
+// confident young rider — the kind of face people enjoy following. Deliberately
+// understated, NOT a glamour/magazine register: the pull comes from health,
+// fitness and an unforced, candid presence, never from posing or styling.
+// Returns "" for youth (and unknown age), who stay strictly wholesome.
 function allureFor(a: { age?: number }): string {
   if (typeof a.age !== "number" || a.age < 18) return "";
   return (
-    "This is a strikingly attractive, charismatic adult athlete with confident, magnetic body language and a natural, " +
-    "tasteful allure that comes purely from health, fitness, confidence and presence — captivating but classy and " +
-    "athletic, never crude, never sexualised, never revealing and never posed like a glamour or swimwear shoot."
+    "This is a naturally good-looking, photogenic young adult athlete with an easy, unforced confidence and a candid, " +
+    "approachable presence — genuinely attractive in a real, everyday way, the way a fit young rider looks in their own " +
+    "phone photos. Keep it natural and understated: never glossy, never sexualised, never revealing, and never posed or " +
+    "styled like a glamour, fashion or magazine shoot."
   );
 }
 
@@ -709,7 +762,7 @@ export function buildPostPrompt(attrs: {
     allureFor(attrs),
     personaFor(attrs.slug),
     [weather, time].filter(Boolean).join(", ") + (weather || time ? "." : ""),
-    `${CONNECTION} ${emotionFor(seed)}.`,
+    `${CONNECTION} ${emotionFor(seed, attrs.sceneType, attrs.lifestyle)}.`,
     POST_LOOK,
     HONESTY_LINE,
     WORLD_LOOK,
