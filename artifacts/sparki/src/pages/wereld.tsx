@@ -9,7 +9,6 @@ import {
   Star,
   Send,
   Globe,
-  Sparkles,
   Bookmark,
   Share2,
   Users,
@@ -129,24 +128,6 @@ function HighlightClip({ src }: { src: string }) {
       aria-hidden
       className="h-full w-full object-cover"
     />
-  )
-}
-
-// The unmissable, honest marker: this whole surface is a simulation.
-function WorldBanner() {
-  return (
-    <div className="flex items-start gap-3 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.05] px-4 py-3">
-      <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300/80" strokeWidth={1.75} />
-      <div>
-        <p className="text-[13px] font-medium text-cyan-100/90">
-          Sparki World — gesimuleerd
-        </p>
-        <p className="mt-0.5 text-[12px] leading-relaxed text-white/55">
-          Alle sporters hier zijn Virtual Athletes: verzonnen personages. Niets
-          hiervan telt mee voor jouw eigen prestaties of analyse.
-        </p>
-      </div>
-    </div>
   )
 }
 
@@ -801,7 +782,6 @@ export default function WereldPage() {
 
           {tab === "discover" ? (
             <>
-              <WorldBanner />
               <Rail
                 title="Voorgesteld voor jou"
                 icon={<Users className="h-4 w-4 text-cyan-300/80" strokeWidth={1.75} />}
