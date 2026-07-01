@@ -190,3 +190,10 @@ generate/upload so it never bills the image model.)
   rejects the post pre-persist. `backfill-world-photos` BYPASSES validation (it only sets
   media_id on already-approved rows), so a backfill can "succeed" while fresh sims silently
   reject — verify both paths. The `photo ⇒ scene` guard in validation keeps it honest.
+
+## Empty prod World after publish — copy-seed, never regenerate
+- Publishing copies the DB *schema*, not its *content* → a freshly published database shows the honest empty World ("nog geen renners"), even though dev is full.
+- **Why no regen is needed:** object storage (App Storage bucket) is SHARED between dev and the deployment, so every `object_path` stays valid once the rows are copied. Regenerating would be paid image generation for no reason.
+- **Why it must run in-app:** the agent's prod access is READ-ONLY; the only writer to the prod DB is the deployed runtime. So the seed has to run inside the app on boot (or as an explicit `seed:world-copy` release step) — and it only takes effect after a re-publish.
+- Copy engine `ensureWorldSeed` (lib/world-seed.ts, bundled dev export at scripts/data/world-seed.json): empty-guard + transaction advisory-lock + FK-ordered inserts + `ON CONFLICT (id) DO NOTHING` + `setval` sequence repair. Excludes real-user rows: user_virtual_follows, user_virtual_affinity, and virtual_interactions with a non-null actor_clerk_id (they FK to users absent in a fresh prod DB).
+- **How to apply:** to seed any per-instance/empty prod table from dev without paid work, confirm the referenced blob storage is env-shared, then copy rows — don't re-run the generator.

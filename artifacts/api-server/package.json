@@ -35,6 +35,7 @@
     "test:development-goal": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/development-goal.mjs",
     "test:world-media": "pnpm run build && node --enable-source-maps ./dist/tests/world-media.mjs",
     "seed:sparki-world": "pnpm run build && node --enable-source-maps ./dist/scripts/seed-sparki-world.mjs",
+    "seed:world-copy": "pnpm run build && node --enable-source-maps ./dist/scripts/seed-world-copy.mjs",
     "backfill:avatars": "pnpm run build && node --enable-source-maps ./dist/scripts/backfill-avatars.mjs",
     "backfill:world-photos": "pnpm run build && node --enable-source-maps ./dist/scripts/backfill-world-photos.mjs",
     "world:highlights": "pnpm run build && node --enable-source-maps ./dist/scripts/backfill-world-highlights.mjs",
