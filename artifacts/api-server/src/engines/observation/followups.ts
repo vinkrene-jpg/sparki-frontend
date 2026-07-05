@@ -50,6 +50,21 @@ export const FOLLOWUP_OPTIONS: Record<string, FollowUpOption[]> = {
     { value: "ga_bijhouden", label: "Ja, ik ga het bijhouden" },
     { value: "lukt_niet", label: "Lukt me nu niet" },
   ],
+  // Profile-consistency questions: "pas_aan" lets Sparki apply the correction
+  // (re-verified server-side against the real data first); "laat_staan" keeps
+  // the current value and suppresses the question for a while.
+  profile_ftp_low: [
+    { value: "pas_aan", label: "Ja, pas mijn FTP aan" },
+    { value: "laat_staan", label: "Nee, mijn FTP klopt zo" },
+  ],
+  profile_level_mismatch: [
+    { value: "pas_aan", label: "Klopt, zet mijn niveau op gevorderd" },
+    { value: "laat_staan", label: "Nee, ik ben echt nog beginner" },
+  ],
+  profile_week_target_off: [
+    { value: "pas_aan", label: "Ja, pas mijn weekdoel aan" },
+    { value: "laat_staan", label: "Nee, mijn doel blijft staan" },
+  ],
 };
 
 /** The follow-up ids Sparki can raise (and therefore accept answers for). */

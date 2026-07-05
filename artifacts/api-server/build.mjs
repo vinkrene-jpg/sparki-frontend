@@ -30,6 +30,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/tests/material.ts"),
       path.resolve(artifactDir, "src/tests/material-nudge.ts"),
       path.resolve(artifactDir, "src/tests/observation.ts"),
+      path.resolve(artifactDir, "src/tests/profile-consistency.ts"),
       path.resolve(artifactDir, "src/tests/notifications.ts"),
       path.resolve(artifactDir, "src/tests/notification-day-count.ts"),
       path.resolve(artifactDir, "src/tests/notifications-read-batch.ts"),

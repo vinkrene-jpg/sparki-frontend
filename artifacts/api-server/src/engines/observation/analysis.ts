@@ -299,13 +299,25 @@ export async function runCoachAnalysis(
   return analysis;
 }
 
-// Load the follow-up answers the athlete gave for today (engine-internal keys).
+// How long a profile-consistency answer keeps suppressing its question. A
+// "laat_staan" is a real decision; re-asking the next day would nag.
+const PROFILE_ANSWER_RETENTION_DAYS = 45;
+
+// Load the follow-up answers the athlete gave for today (engine-internal keys),
+// plus recent profile_* answers: those questions are about slow-moving profile
+// values, so an answer stays valid well beyond one day.
 async function loadTodayAnswers(
   clerkId: string,
   analysisDate: string,
 ): Promise<StoredFollowUpAnswer[]> {
   const { db, coachFollowupAnswersTable } = await import("@workspace/db");
-  const { and, eq } = await import("drizzle-orm");
+  const { and, eq, gte, like, or } = await import("drizzle-orm");
+  const cutoff = new Date(
+    new Date(`${analysisDate}T00:00:00Z`).getTime() -
+      PROFILE_ANSWER_RETENTION_DAYS * 86_400_000,
+  )
+    .toISOString()
+    .split("T")[0]!;
   const rows = await db
     .select({
       questionId: coachFollowupAnswersTable.questionId,
@@ -315,10 +327,23 @@ async function loadTodayAnswers(
     .where(
       and(
         eq(coachFollowupAnswersTable.clerkId, clerkId),
-        eq(coachFollowupAnswersTable.analysisDate, analysisDate),
+        or(
+          eq(coachFollowupAnswersTable.analysisDate, analysisDate),
+          and(
+            like(coachFollowupAnswersTable.questionId, "profile_%"),
+            gte(coachFollowupAnswersTable.analysisDate, cutoff),
+          ),
+        ),
       ),
-    );
-  return rows.map((r) => ({ questionId: r.questionId, answer: r.answer }));
+    )
+    .orderBy(coachFollowupAnswersTable.analysisDate);
+  // Later answers win when the same question was answered on several days.
+  const byId = new Map<string, string>();
+  for (const r of rows) byId.set(r.questionId, r.answer);
+  return [...byId.entries()].map(([questionId, answer]) => ({
+    questionId,
+    answer,
+  }));
 }
 
 // Resolve personality from the athlete's stored profile + active role.

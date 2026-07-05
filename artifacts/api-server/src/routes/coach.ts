@@ -27,6 +27,7 @@ import {
   checkInFromAnswer,
   isCoachFeedbackSignal,
   recordCoachingFeedback,
+  applyProfileCorrection,
 } from "../engines/observation";
 
 const router = Router();
@@ -496,6 +497,13 @@ router.post("/followup", requireAuth, async (req, res) => {
             fatigueScore: checkIn.fatigueScore,
           },
         });
+    }
+
+    // A confirmed profile correction ("pas_aan" on a profile_* question) is
+    // applied now — the applier re-verifies the evidence from the database
+    // before writing, so a stale confirmation never blind-writes anything.
+    if (questionId.startsWith("profile_") && answer === "pas_aan") {
+      await applyProfileCorrection(clerkId, questionId);
     }
 
     // Store the answer itself (one per question per day; re-answering updates it).

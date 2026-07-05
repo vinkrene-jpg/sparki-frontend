@@ -22,6 +22,7 @@ import {
 import { computeLoad, computeRiskSignal } from "../../lib/recovery-load";
 import { computeReadiness } from "../../lib/sharing";
 import { getHomeWeather, formatHomeWeatherText } from "../../lib/weather/home";
+import { loadProfileFacts } from "./profile-consistency";
 import type {
   IntakeSignal,
   IntakeMetrics,
@@ -86,6 +87,7 @@ export async function gatherSignals(clerkId: string): Promise<SignalIntake> {
     nutrition,
     upcomingRaces,
     plannedIds,
+    profileFacts,
   ] = await Promise.all([
     db
       .select()
@@ -141,6 +143,8 @@ export async function gatherSignals(clerkId: string): Promise<SignalIntake> {
       .select({ id: plannedWorkoutsTable.id })
       .from(plannedWorkoutsTable)
       .where(eq(plannedWorkoutsTable.clerkId, clerkId)),
+    // Profile claims vs proven riding (own 120-day window; honest nulls).
+    loadProfileFacts(clerkId),
   ]);
 
   // Feedback over the athlete's planned workouts (join via owned workout ids).
@@ -254,6 +258,7 @@ export async function gatherSignals(clerkId: string): Promise<SignalIntake> {
     nutrition: { logs: nutrition.length },
     sessionsPerWeek,
     healthStatus,
+    profile: profileFacts,
     weather,
   };
 

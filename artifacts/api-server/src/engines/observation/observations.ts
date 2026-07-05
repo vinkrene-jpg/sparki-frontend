@@ -19,6 +19,7 @@ import type {
   SignalKind,
 } from "./types";
 import type { ContradictionFinding } from "./contradiction";
+import { detectProfileInconsistencies } from "./profile-consistency";
 
 // ── Confidence maths (pure) ──────────────────────────────────────────────────
 
@@ -400,6 +401,29 @@ export function deriveObservations(
         }),
       );
     }
+  }
+
+  // Profile claims vs proven riding — Sparki names implausible profile values
+  // (FTP lower than a proven effort, "beginner" with big weeks, a week target
+  // far from reality). The evidence is many real rides, never a single point;
+  // the numbers are already in the statement.
+  for (const item of detectProfileInconsistencies(m.profile)) {
+    out.push(
+      build(intake, findings, {
+        topic: item.id,
+        tone: item.tone,
+        statement: item.statement,
+        category: item.category,
+        severity: item.severity,
+        usedKinds: ["training_load"],
+        decisiveMissing: [],
+        allowSingle: true,
+        extraReasons: [
+          "gebaseerd op je echte ritten van de afgelopen weken",
+        ],
+        detectedPattern: "profielwaarde past niet bij je echte ritten",
+      }),
+    );
   }
 
   const observations = out.filter((o): o is Observation => o != null);

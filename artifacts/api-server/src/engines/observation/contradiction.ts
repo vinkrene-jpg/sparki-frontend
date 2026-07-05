@@ -7,6 +7,7 @@
 
 import type { IntakeMetrics, FollowUpQuestion, SignalKind } from "./types";
 import { optionsFor } from "./followups";
+import { detectProfileInconsistencies } from "./profile-consistency";
 
 export type ContradictionFinding = {
   id: string;
@@ -91,6 +92,23 @@ export function buildFollowUps(
   resolvedIds: ReadonlySet<string> = new Set(),
 ): FollowUpQuestion[] {
   const out: FollowUpQuestion[] = [];
+
+  // Profile inconsistencies first: an FTP or level that contradicts real
+  // riding skews every other conclusion, so Sparki asks about that before
+  // anything else. Never auto-corrected — the athlete confirms first.
+  for (const i of detectProfileInconsistencies(m.profile)) {
+    if (resolvedIds.has(i.id)) continue;
+    out.push({
+      id: i.id,
+      question: i.question,
+      because: i.because,
+      resolves:
+        i.id === "profile_ftp_low"
+          ? (["power_dev"] as SignalKind[])
+          : (["training_load"] as SignalKind[]),
+      options: optionsFor(i.id),
+    });
+  }
 
   for (const f of findings) {
     if (resolvedIds.has(f.id)) continue;

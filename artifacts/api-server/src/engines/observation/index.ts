@@ -28,6 +28,14 @@ export {
   type StoredFollowUpAnswer,
 } from "./followups";
 export {
+  detectProfileInconsistencies,
+  loadProfileFacts,
+  applyProfileCorrection,
+  isProfileFollowUp,
+  type ProfileInconsistency,
+  type ProfileInconsistencyId,
+} from "./profile-consistency";
+export {
   mapFeedbackToDimensions,
   recordCoachingFeedback,
   isCoachFeedbackSignal,

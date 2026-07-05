@@ -64,6 +64,30 @@ export type TrendInfo = {
   days: number;
 };
 
+// What the athlete's profile CLAIMS versus what real riding PROVES. Sparki uses
+// this to notice implausible profile values (FTP lower than a proven effort,
+// "beginner" with big training weeks, a week target far from reality), name
+// them, ask about them and — only after the athlete confirms — correct them.
+export type ProfileFacts = {
+  ftp: number | null;
+  ftpEstimated: boolean;
+  experienceLevel: string | null;
+  weeklyHourTarget: number | null;
+  weeklyHourTargetEstimated: boolean;
+  /** Honest FTP lower bound proven by a real whole-ride effort (or null). */
+  ftpFloor: {
+    floorWatts: number;
+    sessionDate: string;
+    durationMin: number;
+    watts: number;
+    kind: "sustained" | "short";
+  } | null;
+  /** Complete weeks with riding in the recent window. */
+  weeksWithRiding: number;
+  /** Median hours per riding week over that window (null = too little data). */
+  medianHours: number | null;
+};
+
 // The numeric side of the intake — what the observation rules actually weigh.
 export type IntakeMetrics = {
   load: Load;
@@ -93,6 +117,12 @@ export type IntakeMetrics = {
   nutrition: { logs: number };
   sessionsPerWeek: number | null;
   healthStatus: string;
+  /**
+   * Profile claims vs proven riding, or null/absent when not gathered (older
+   * synthetic/test intakes). Sparki never invents facts here: every field
+   * comes from the stored profile or from real sessions.
+   */
+  profile?: ProfileFacts | null;
   /**
    * Today's real weather at the athlete's home location, or an honest gap.
    * Optional so synthetic/test intakes that don't supply it default to a
