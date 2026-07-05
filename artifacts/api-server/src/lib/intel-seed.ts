@@ -748,6 +748,28 @@ const CARDS: SeedCard[] = [
     },
   },
   {
+    dedupeKey: "academy-resilience-bad-legs",
+    kind: "academy",
+    topic: "mentaal",
+    title: "Weerbaarheid: goed trainen zonder goede benen",
+    summary:
+      "In de winter voelen belangrijke trainingen zelden fijn. Weerbaarheid is de vaardigheid om ze tóch goed uit te voeren — en die kun je trainen.",
+    disciplines: ["all"],
+    levels: ["all"],
+    sourceLabel: "Sportpsychologie & coachingpraktijk — mentale weerbaarheid",
+    content: {
+      simple:
+        "Wachten op goede benen is geen plan: in de winter komen ze zelden, en juist dan staan de belangrijke blokken op het programma. Weerbaarheid betekent dat de kwaliteit van je training niet afhangt van hoe je je voelt. Niet doorbeuken bij ziekte of echte vermoeidheid — wel leren dat 'geen zin, zware benen bij de start' meestal niets zegt over wat je vandaag kunt.",
+      deep:
+        "Weerbaarheid is een vaardigheid, geen karaktereigenschap — en elke zware winterdag is een oefenkans. Wat het oplevert: (1) je wordt onafhankelijk van je dagvorm — wie alleen goed traint op goede dagen, traint in de winter bijna nooit goed; (2) het betaalt uit in de koers, want daar voelt het óók nooit fijn op het moment dat het erom gaat — wie in november intervallen leerde afmaken op zware benen, herkent dat gevoel in de finale en schrikt er niet meer van; (3) elke afgemaakte training op een mindere dag is bewijs voor je zelfvertrouwen dat gevoel en kunnen twee verschillende dingen zijn. Hoe je het traint: verklein de opdracht tot alleen het eerstvolgende blok (niet 'nog twee uur', maar 'dit interval'); beoordeel de uitvoering op wat je deed — vermogen, uitvoering, afgemaakt — niet op hoe het voelde; en spreek vooraf met jezelf af waarop je écht mag stoppen (ziekte, pijn die verergert, aanhoudende oververmoeidheid), zodat 'geen zin' geen sluiproute wordt.",
+      example:
+        "Blokkentraining in januari: koud, zware benen vanaf de eerste minuut. In plaats van af te breken rijd je alleen het eerste blok — dat blijkt qua vermogen gewoon goed. Je maakt de training af en noteert: gevoel slecht, uitvoering prima. Drie maanden later, in de finale van een klassieker, herken je exact datzelfde gevoel — en weet je uit ervaring dat je er doorheen kunt.",
+      conclusion:
+        "Goede benen zijn schaars, belangrijke trainingen niet. Wie leert presteren op mindere dagen, bouwt precies de vaardigheid op die in de koers het verschil maakt — én het zelfvertrouwen dat erbij hoort.",
+      readMinutes: 5,
+    },
+  },
+  {
     dedupeKey: "myth-dnf-mental-weakness",
     kind: "myth_buster",
     topic: "mentaal",
