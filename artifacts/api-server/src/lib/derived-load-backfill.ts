@@ -26,6 +26,7 @@ import {
 } from "@workspace/db";
 import {
   deriveTss,
+  estimateFtpFloor,
   ftpAtDate,
   medianWeeklyHours,
   type FtpEntry,
@@ -40,6 +41,7 @@ export type DerivedBackfillSummary = {
   sessionsUpdated: number;
   sessionsSkipped: number;
   targetsRecalibrated: number;
+  ftpFloorsRaised: number;
 };
 
 type Log = (msg: string) => void;
@@ -121,6 +123,100 @@ export async function backfillTssForAthlete(clerkId: string): Promise<{
 }
 
 /**
+ * Raise an ESTIMATED FTP to the honest floor proven by real efforts in the
+ * last `windowDays`. Only ever RAISES (a floor can't lower anything), only
+ * touches profiles with ftpEstimated=true, and records the correction in
+ * ftp_history so belastingscores use the right FTP from that date on.
+ * A user-measured FTP is never touched.
+ */
+export async function recalibrateEstimatedFtp(
+  clerkId: string,
+  windowDays = 120,
+): Promise<{ changed: boolean; ftp: number | null }> {
+  const [profile] = await db
+    .select({
+      ftp: athleteProfilesTable.ftp,
+      estimated: athleteProfilesTable.ftpEstimated,
+    })
+    .from(athleteProfilesTable)
+    .where(eq(athleteProfilesTable.clerkId, clerkId))
+    .limit(1);
+  if (!profile || !profile.estimated) return { changed: false, ftp: null };
+
+  const sessions = await db
+    .select({
+      sessionDate: trainingSessionsTable.sessionDate,
+      durationMin: trainingSessionsTable.durationMin,
+      normalizedPower: trainingSessionsTable.normalizedPower,
+      avgPower: trainingSessionsTable.avgPower,
+    })
+    .from(trainingSessionsTable)
+    .where(
+      and(
+        eq(trainingSessionsTable.clerkId, clerkId),
+        sql`${trainingSessionsTable.sessionDate} >= (CURRENT_DATE - make_interval(days => ${windowDays}))::date`,
+      ),
+    );
+  const floor = estimateFtpFloor(sessions);
+  if (!floor) return { changed: false, ftp: profile.ftp };
+  if (profile.ftp != null && floor.floorWatts <= profile.ftp) {
+    return { changed: false, ftp: profile.ftp };
+  }
+
+  await db
+    .update(athleteProfilesTable)
+    .set({
+      ftp: floor.floorWatts,
+      // Still a derived value (a lower bound, not a measurement) — the flag
+      // stays true so a stronger real effort keeps raising it.
+      ftpEstimated: true,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(athleteProfilesTable.clerkId, clerkId),
+        eq(athleteProfilesTable.ftpEstimated, true),
+      ),
+    );
+
+  // Record in ftp_history so ftpAtDate applies the corrected value to rides
+  // from the proof date on. Idempotent PER DAY: at most one derived row per
+  // clerkId+measuredAt — a re-derivation for the same proof date UPDATES that
+  // row instead of stacking same-day duplicates (which would make FTP-at-date
+  // selection order-dependent).
+  const notes =
+    floor.basis.kind === "sustained"
+      ? `Ondergrens: ${floor.basis.watts} watt volgehouden over ${floor.basis.durationMin} min`
+      : `Ondergrens: 95% van ${floor.basis.watts} watt over ${floor.basis.durationMin} min`;
+  const [existing] = await db
+    .select({ id: ftpHistoryTable.id, ftpWatts: ftpHistoryTable.ftpWatts })
+    .from(ftpHistoryTable)
+    .where(
+      and(
+        eq(ftpHistoryTable.clerkId, clerkId),
+        eq(ftpHistoryTable.measuredAt, floor.basis.sessionDate),
+        eq(ftpHistoryTable.testType, "derived"),
+      ),
+    )
+    .limit(1);
+  if (!existing) {
+    await db.insert(ftpHistoryTable).values({
+      clerkId,
+      measuredAt: floor.basis.sessionDate,
+      ftpWatts: floor.floorWatts,
+      testType: "derived",
+      notes,
+    });
+  } else if (existing.ftpWatts !== floor.floorWatts) {
+    await db
+      .update(ftpHistoryTable)
+      .set({ ftpWatts: floor.floorWatts, notes })
+      .where(eq(ftpHistoryTable.id, existing.id));
+  }
+  return { changed: true, ftp: floor.floorWatts };
+}
+
+/**
  * Re-derive an ESTIMATED weekly hour target from real riding. No-op when the
  * target was set by the user, when there aren't enough complete riding weeks,
  * or when the derived value equals the current one.
@@ -179,6 +275,8 @@ export async function refreshDerivedLoadForAthlete(
   clerkId: string,
 ): Promise<void> {
   try {
+    // FTP first: the corrected value must feed the score derivation below.
+    await recalibrateEstimatedFtp(clerkId);
     await backfillTssForAthlete(clerkId);
     await recalibrateWeeklyTarget(clerkId);
   } catch {
@@ -199,6 +297,7 @@ export async function backfillDerivedLoad(
     sessionsUpdated: 0,
     sessionsSkipped: 0,
     targetsRecalibrated: 0,
+    ftpFloorsRaised: 0,
   };
 
   // Advisory locks are SESSION-bound: acquire and release MUST happen on the
@@ -214,6 +313,17 @@ export async function backfillDerivedLoad(
     locked = lock.rows[0]?.locked === true;
     if (!locked) return summary; // another instance is on it
     summary.ran = true;
+
+    // FTP floors first: score derivation below must use the corrected FTP.
+    const estimatedFtp = await db
+      .select({ clerkId: athleteProfilesTable.clerkId })
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.ftpEstimated, true));
+    for (const p of estimatedFtp) {
+      const r = await recalibrateEstimatedFtp(p.clerkId);
+      if (r.changed) summary.ftpFloorsRaised++;
+    }
+
     // Athletes with at least one derivable session missing a score.
     const candidates = await db
       .selectDistinct({ clerkId: trainingSessionsTable.clerkId })
@@ -244,11 +354,16 @@ export async function backfillDerivedLoad(
       if (r.changed) summary.targetsRecalibrated++;
     }
 
-    if (summary.sessionsUpdated > 0 || summary.targetsRecalibrated > 0) {
+    if (
+      summary.sessionsUpdated > 0 ||
+      summary.targetsRecalibrated > 0 ||
+      summary.ftpFloorsRaised > 0
+    ) {
       log(
         `belastingscores afgeleid: ${summary.sessionsUpdated} ritten bijgewerkt, ` +
           `${summary.sessionsSkipped} eerlijk overgeslagen; ` +
-          `${summary.targetsRecalibrated} weekdoelen geijkt op echt rijgedrag`,
+          `${summary.targetsRecalibrated} weekdoelen geijkt op echt rijgedrag; ` +
+          `${summary.ftpFloorsRaised} FTP-schattingen opgetrokken naar bewezen ondergrens`,
       );
     }
   } finally {

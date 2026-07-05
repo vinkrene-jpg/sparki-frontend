@@ -11,11 +11,13 @@ import { db, pool, trainingSessionsTable, athleteProfilesTable, userProfilesTabl
 import { eq } from "drizzle-orm";
 import {
   deriveTss,
+  estimateFtpFloor,
   ftpAtDate,
   medianWeeklyHours,
 } from "../lib/derived-load";
 import {
   backfillTssForAthlete,
+  recalibrateEstimatedFtp,
   recalibrateWeeklyTarget,
 } from "../lib/derived-load-backfill";
 import { buildMergePatch } from "../engines/data-hub/dedupe";
@@ -151,6 +153,67 @@ async function main() {
     assert(!("avgPower" in patch), "existing avgPower must win");
   });
 
+  await scenario("ftpAtDate: same-day duplicates resolve deterministically (highest wins)", () => {
+    const history = [
+      { measuredAt: "2026-04-04", ftpWatts: 298 },
+      { measuredAt: "2026-04-04", ftpWatts: 285 },
+      { measuredAt: "2026-01-01", ftpWatts: 250 },
+    ];
+    assert(ftpAtDate(history, "2026-05-01", null) === 298, "highest same-day row must win");
+    // Order-independence: reversed input gives the same answer.
+    assert(
+      ftpAtDate([...history].reverse(), "2026-05-01", null) === 298,
+      "must be order-independent",
+    );
+  });
+
+  // ── estimateFtpFloor (pure) ────────────────────────────────────────────────
+  await scenario("ftpFloor: 45–120min ride gives NP as floor", () => {
+    const r = estimateFtpFloor([
+      { sessionDate: "2026-06-01", durationMin: 60, normalizedPower: 287, avgPower: 270 },
+    ]);
+    assert(r && r.floorWatts === 287, `floor ${r?.floorWatts} !== 287`);
+    assert(r!.basis.kind === "sustained", "kind must be sustained");
+  });
+
+  await scenario("ftpFloor: 20–45min ride gives 95% of NP", () => {
+    const r = estimateFtpFloor([
+      { sessionDate: "2026-06-01", durationMin: 35, normalizedPower: 388, avgPower: 390 },
+    ]);
+    assert(r && r.floorWatts === 369, `floor ${r?.floorWatts} !== 369 (0.95×388)`);
+    assert(r!.basis.kind === "short", "kind must be short");
+  });
+
+  await scenario("ftpFloor: picks the highest floor across rides", () => {
+    const r = estimateFtpFloor([
+      { sessionDate: "2026-06-01", durationMin: 60, normalizedPower: 287, avgPower: null },
+      { sessionDate: "2026-06-10", durationMin: 49, normalizedPower: 298, avgPower: null },
+      { sessionDate: "2026-06-15", durationMin: 30, normalizedPower: 300, avgPower: null }, // 285
+    ]);
+    assert(r && r.floorWatts === 298, `floor ${r?.floorWatts} !== 298`);
+    assert(r!.basis.sessionDate === "2026-06-10", "wrong basis ride");
+  });
+
+  await scenario("ftpFloor: honest null without qualifying rides", () => {
+    assert(
+      estimateFtpFloor([
+        { sessionDate: "2026-06-01", durationMin: 15, normalizedPower: 400, avgPower: null }, // too short
+        { sessionDate: "2026-06-02", durationMin: 180, normalizedPower: 250, avgPower: null }, // too long
+        { sessionDate: "2026-06-03", durationMin: 60, normalizedPower: null, avgPower: null }, // no power
+      ]) === null,
+      "should be null",
+    );
+  });
+
+  await scenario("ftpFloor: rejects implausible power (corrupt data)", () => {
+    assert(
+      estimateFtpFloor([
+        { sessionDate: "2026-06-01", durationMin: 60, normalizedPower: 900, avgPower: null },
+      ]) === null,
+      "900W hour must not become a floor",
+    );
+  });
+
   // ── DB backfill + recalibration (integration) ──────────────────────────────
   const RUN = `test_derived_${Date.now()}`;
   try {
@@ -275,6 +338,85 @@ async function main() {
         .from(athleteProfilesTable)
         .where(eq(athleteProfilesTable.clerkId, RUN));
       assert(p!.t === 6, "target must remain 6");
+    });
+
+    await scenario("ftp-recalibrate: estimated FTP raised to proven floor + history row", async () => {
+      // Recent hard 49-min effort at NP 298 proves FTP ≥ 298.
+      await db.insert(trainingSessionsTable).values({
+        clerkId: RUN,
+        sessionDate: day(10),
+        type: "ride",
+        sport: "cycling",
+        durationMin: 49,
+        normalizedPower: 298,
+        tss: 80,
+      });
+      await db
+        .update(athleteProfilesTable)
+        .set({ ftp: 250, ftpEstimated: true })
+        .where(eq(athleteProfilesTable.clerkId, RUN));
+      const r = await recalibrateEstimatedFtp(RUN);
+      assert(r.changed, "should raise");
+      assert(r.ftp === 298, `ftp ${r.ftp} !== 298`);
+      const [p] = await db
+        .select({ ftp: athleteProfilesTable.ftp, e: athleteProfilesTable.ftpEstimated })
+        .from(athleteProfilesTable)
+        .where(eq(athleteProfilesTable.clerkId, RUN));
+      assert(p!.ftp === 298, `stored ftp ${p!.ftp} !== 298`);
+      assert(p!.e === true, "must stay flagged as estimated");
+      const hist = await db
+        .select({ w: ftpHistoryTable.ftpWatts, t: ftpHistoryTable.testType })
+        .from(ftpHistoryTable)
+        .where(eq(ftpHistoryTable.clerkId, RUN));
+      assert(
+        hist.some((h) => h.w === 298 && h.t === "derived"),
+        "derived history row missing",
+      );
+    });
+
+    await scenario("ftp-recalibrate: second run is a no-op (idempotent)", async () => {
+      const before = (
+        await db.select({ id: ftpHistoryTable.id }).from(ftpHistoryTable).where(eq(ftpHistoryTable.clerkId, RUN))
+      ).length;
+      const r = await recalibrateEstimatedFtp(RUN);
+      assert(!r.changed, "second run must not change");
+      const after = (
+        await db.select({ id: ftpHistoryTable.id }).from(ftpHistoryTable).where(eq(ftpHistoryTable.clerkId, RUN))
+      ).length;
+      assert(before === after, "no duplicate history rows");
+    });
+
+    await scenario("ftp-recalibrate: same proof-date re-derivation updates row, no duplicate", async () => {
+      // The proof ride's power gets corrected upward (e.g. re-import): the
+      // derived history row for that date must be UPDATED, not duplicated.
+      await db
+        .update(trainingSessionsTable)
+        .set({ normalizedPower: 305 })
+        .where(eq(trainingSessionsTable.normalizedPower, 298));
+      const r = await recalibrateEstimatedFtp(RUN);
+      assert(r.changed && r.ftp === 305, `ftp ${r.ftp} !== 305`);
+      const derivedRows = (
+        await db
+          .select({ w: ftpHistoryTable.ftpWatts, t: ftpHistoryTable.testType, d: ftpHistoryTable.measuredAt })
+          .from(ftpHistoryTable)
+          .where(eq(ftpHistoryTable.clerkId, RUN))
+      ).filter((h) => h.t === "derived");
+      assert(derivedRows.length === 1, `expected 1 derived row, got ${derivedRows.length}`);
+      assert(derivedRows[0]!.w === 305, `derived row watts ${derivedRows[0]!.w} !== 305`);
+    });
+
+    await scenario("ftp-recalibrate: user-measured FTP is never touched", async () => {
+      await db
+        .update(athleteProfilesTable)
+        .set({ ftp: 240, ftpEstimated: false })
+        .where(eq(athleteProfilesTable.clerkId, RUN));
+      const r = await recalibrateEstimatedFtp(RUN);
+      assert(!r.changed, "measured ftp changed!");
+      const [p] = await db
+        .select({ ftp: athleteProfilesTable.ftp })
+        .from(athleteProfilesTable)
+        .where(eq(athleteProfilesTable.clerkId, RUN));
+      assert(p!.ftp === 240, `ftp must remain 240, got ${p!.ftp}`);
     });
   } finally {
     await db.delete(userProfilesTable).where(eq(userProfilesTable.clerkId, RUN));

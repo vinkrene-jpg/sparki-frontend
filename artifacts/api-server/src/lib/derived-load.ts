@@ -72,7 +72,12 @@ export function ftpAtDate(
 ): number | null {
   const valid = history
     .filter((e) => /^\d{4}-\d{2}-\d{2}$/.test(e.measuredAt) && e.ftpWatts > 0)
-    .sort((a, b) => a.measuredAt.localeCompare(b.measuredAt));
+    // Deterministic tie-break for same-day rows: highest watts wins (a floor
+    // proven that day supersedes a lower same-day value).
+    .sort(
+      (a, b) =>
+        a.measuredAt.localeCompare(b.measuredAt) || a.ftpWatts - b.ftpWatts,
+    );
   if (valid.length === 0) return profileFtp;
   let applicable: FtpEntry | null = null;
   for (const e of valid) {
@@ -80,6 +85,72 @@ export function ftpAtDate(
     else break;
   }
   return (applicable ?? valid[0]!).ftpWatts;
+}
+
+// ── FTP-ondergrens uit echte inspanningen ────────────────────────────────────
+
+export type EffortSession = {
+  sessionDate: string;
+  durationMin: number | null;
+  normalizedPower: number | null;
+  avgPower: number | null;
+};
+
+export type FtpFloor = {
+  floorWatts: number;
+  basis: {
+    sessionDate: string;
+    durationMin: number;
+    watts: number;
+    // "sustained" = hele rit van 45–120 min gehouden → FTP is minstens die NP.
+    // "short"     = rit van 20–<45 min → 95%-regel (standaard 20-min-protocol).
+    kind: "sustained" | "short";
+  };
+};
+
+/**
+ * Honest LOWER BOUND for FTP, derived from whole-ride power the athlete has
+ * actually held. We only store per-ride averages (no intra-ride power curve),
+ * so an exact FTP is NOT derivable — but a floor is: whoever held X watt
+ * normalized for 45–120 minutes has an FTP of at least X, and for a 20–<45
+ * minute ride at least 0.95×X (the standard 20-min test factor, conservative
+ * here because whole-ride NP ≤ best-segment NP).
+ *
+ * Returns null when no ride in the window qualifies — honestly no signal.
+ */
+export function estimateFtpFloor(sessions: EffortSession[]): FtpFloor | null {
+  let best: FtpFloor | null = null;
+  for (const s of sessions) {
+    const dur = s.durationMin;
+    const power = s.normalizedPower ?? s.avgPower;
+    if (
+      dur == null || !Number.isFinite(dur) ||
+      power == null || !Number.isFinite(power) || power <= 0 || power > 2000 ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(s.sessionDate)
+    ) {
+      continue;
+    }
+    let kind: "sustained" | "short";
+    let floor: number;
+    if (dur >= 45 && dur <= 120) {
+      kind = "sustained";
+      floor = Math.round(power);
+    } else if (dur >= 20 && dur < 45) {
+      kind = "short";
+      floor = Math.round(power * 0.95);
+    } else {
+      continue;
+    }
+    // Implausible floors signal corrupt power data — never propagate them.
+    if (floor < 80 || floor > 600) continue;
+    if (!best || floor > best.floorWatts) {
+      best = {
+        floorWatts: floor,
+        basis: { sessionDate: s.sessionDate, durationMin: dur, watts: power, kind },
+      };
+    }
+  }
+  return best;
 }
 
 // ── Weekly-target recalibration ──────────────────────────────────────────────
