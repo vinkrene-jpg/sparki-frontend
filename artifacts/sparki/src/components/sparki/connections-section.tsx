@@ -107,9 +107,9 @@ function DataTypeChips({ types }: { types: string[] }) {
 }
 
 // Consent screen shown before any connection is made: which data Sparki will
-// use, an honest note about what happens, and a confirm button. The exact copy
-// and action depend on whether the platform is wireable today (e.g. Strava →
-// real OAuth) or still in preparation (→ honest "koppelen gestart", no import).
+// use, an honest note about what happens, and a confirm button. Only opens for
+// platforms that are wireable today (OAuth → redirect, otherwise direct sync);
+// not-yet-wired platforms are purely informational and never reach this dialog.
 function ConsentDialog({
   connector,
   busy,
@@ -124,9 +124,7 @@ function ConsentDialog({
   const isOauth = connector.available && connector.authType === "oauth"
   const confirmLabel = isOauth
     ? `Ga naar ${connector.displayName}`
-    : connector.available
-      ? "Koppel"
-      : "Geef toestemming"
+    : "Koppel"
 
   return createPortal(
     <div
@@ -176,9 +174,7 @@ function ConsentDialog({
           <p className="text-[12px] leading-relaxed text-white/45">
             {isOauth
               ? `Je wordt doorgestuurd naar ${connector.displayName} om toestemming te geven. Daarna haalt Sparki je gegevens automatisch op.`
-              : connector.available
-                ? "Na je toestemming haalt Sparki je gegevens automatisch op."
-                : `De koppeling met ${connector.displayName} is nog in voorbereiding — de API is nog niet actief. We bewaren je keuze en koppelen automatisch zodra dit platform beschikbaar is. Tot die tijd vul je deze gegevens zelf in.`}
+              : "Na je toestemming haalt Sparki je gegevens automatisch op."}
           </p>
 
           <div className="flex items-center justify-end gap-2 pt-1">

@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { ensureWorldSeed } from "./lib/world-seed";
 import { backfillDerivedLoad } from "./lib/derived-load-backfill";
+import { cleanupStaleConnectorShells } from "./lib/connectors/cleanup";
 
 const rawPort = process.env["PORT"];
 
@@ -50,4 +51,21 @@ app.listen(port, (err) => {
         );
     })
     .catch((err) => logger.error({ err }, "Derived-load backfill failed"));
+
+  // Fire-and-forget self-heal: delete stale "koppelen gestart" shells for
+  // platforms whose API is not wired (the retired pending-flow) so no
+  // dashboard shows an unfinishable "In afwachting" connection. Idempotent.
+  cleanupStaleConnectorShells({
+    log: (m) => logger.info({ connectors: "cleanup" }, m),
+  })
+    .then((r) => {
+      if (r.deleted > 0)
+        logger.info(
+          { connectors: "cleanup", deleted: r.deleted },
+          "Stale connector shells cleaned up",
+        );
+    })
+    .catch((err) =>
+      logger.error({ err }, "Connector shell cleanup failed"),
+    );
 });

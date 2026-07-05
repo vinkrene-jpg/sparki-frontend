@@ -78,17 +78,6 @@ export async function authorizeConnector(id: string): Promise<string> {
   return data.url
 }
 
-// Record an honest "koppelen gestart" intent for a platform whose real API
-// isn't wired yet. The athlete confirmed consent on which data Sparki may use;
-// the backend persists status="pending" without importing any data.
-export async function startConnector(id: string): Promise<ConnectorItem> {
-  const data = await apiFetch<{ connector: ConnectorItem }>(
-    `/api/connectors/${id}/start`,
-    { method: "POST" },
-  )
-  return data.connector
-}
-
 export async function syncConnector(id: string): Promise<ConnectorItem> {
   const data = await apiFetch<{ connector: ConnectorItem }>(
     `/api/connectors/${id}/sync`,

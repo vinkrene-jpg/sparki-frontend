@@ -21,8 +21,12 @@ on-device app; `replit-connector` = in voorbereiding.
 platform) shown as honestly "binnenkort beschikbaar", not a confusing started state.
 **How to apply:** keep the connect CTA gated on `connector.available`; never
 reintroduce a pending-shell display for unavailable connectors. The legacy
-`POST /:id/start` + `startConnector()` helper still exist but are no longer wired
-to any UI — treat them as deprecated. Copy may only point to GPX file-import as a
+`POST /:id/start` endpoint + `startConnector()` helper are now fully REMOVED, and
+a boot self-heal (`cleanupStaleConnectorShells`) deletes leftover shells: all
+`status='pending'` rows plus TOKENLESS rows of registry-unavailable providers.
+Token-bearing rows are never deleted (protects real state if a provider is ever
+temporarily flagged unavailable). Regression test: `test:connector-cleanup`.
+Copy may only point to GPX file-import as a
 fallback (FIT/TCX/CSV are stored as placeholders, not parsed — don't promise them).
 
 ## "Don't re-ask already-available data" applies only to REAL connections
