@@ -32,12 +32,23 @@ Real, DB-backed, interactive cycling-knowledge module. Five card kinds:
   so it never overrides a real discipline/topic/level match. (Computing it without
   using it was flagged as an incomplete "depth personalization".)
 
-- **Content source is the curated `scripts/seed-intel.ts` ONLY** — no
-  auto-generation/ingestion. An empty topic *filter* (e.g. mentaal, slaap,
-  aerodynamica) is honest thin-seed coverage, NOT a bug; the feed never zero-filters
-  the base "Alles + Alle onderwerpen" view. Keep ≥2 real, sourced cards per
-  `intelTopic` or that topic's filter shows the empty state. Cards must stay honest:
-  qualitative/ranges over fabricated precise specs, `null`→"—", `sourceLabel` always.
+- **Content source is the curated seed ONLY** — no auto-generation/ingestion.
+  Content now lives in `lib/intel-seed.ts` (`ensureIntelSeed`); `scripts/seed-intel.ts`
+  is a thin manual runner. An empty topic *filter* is honest thin-seed coverage, NOT
+  a bug; the feed never zero-filters the base "Alles + Alle onderwerpen" view. Keep
+  ≥2 real, sourced cards per `intelTopic` or that topic's filter shows the empty
+  state. Cards must stay honest: qualitative/ranges over fabricated precise specs,
+  `null`→"—", `sourceLabel` always.
+- **Curated content must ship via a boot seed, or production stays empty.** Cards
+  only lived in dev until `ensureIntelSeed` was wired fire-and-forget into api-server
+  boot (like world seed): idempotent card upsert on `dedupeKey` + creates the
+  `knowledge_base` flag row enabled ONLY if absent (`onConflictDoNothing`, so a later
+  admin disable is never overwritten). Symptom before: tester saw no Kennis surface
+  at all (0 prod cards, no flag row).
+- **Mentaal prominence**: "Voor jou" shows a spotlight block only when unfiltered AND
+  real mentaal cards are in the personalized feed (spotlighted ids removed from the
+  main list to avoid dupes); `/kennis?topic=<x>` initializes the topic filter
+  (validated against `INTEL_TOPICS`), used by the Ontdekken quick-link.
 
 ## Test/build path
 

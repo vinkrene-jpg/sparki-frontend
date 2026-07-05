@@ -23,6 +23,7 @@ import {
   ExternalLink,
   BookOpen,
   ArrowRight,
+  Brain,
 } from "lucide-react"
 
 type FilterKey = "all" | "renners" | "news" | "coach" | "team" | "race" | "ai"
@@ -191,6 +192,16 @@ function KnowledgeFeedSection() {
         <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white/55">
           <BookOpen className="h-3.5 w-3.5" style={{ color: ACCENT }} />
           Wetenschap & onderzoek
+        </span>
+        <ArrowRight className="h-3.5 w-3.5 text-white/30" />
+      </Link>
+      <Link
+        href="/kennis?topic=mentaal"
+        className="mt-2 flex items-center justify-between rounded-2xl border border-cyan-300/[0.16] bg-[#070d16]/[0.82] px-4 py-3 backdrop-blur-md transition-colors hover:border-cyan-300/35"
+      >
+        <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white/55">
+          <Brain className="h-3.5 w-3.5" style={{ color: ACCENT }} />
+          Sterker in je hoofd
         </span>
         <ArrowRight className="h-3.5 w-3.5 text-white/30" />
       </Link>

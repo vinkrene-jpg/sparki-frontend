@@ -20,6 +20,7 @@ import {
   Newspaper,
   FlaskConical,
   Bookmark,
+  Brain,
 } from "lucide-react"
 
 const DISCIPLINE_LABELS: Record<string, string> = {
@@ -67,9 +68,14 @@ function CardSkeletons() {
 
 // ── "Voor jou" — the Performance Intelligence feed ───────────────────────────
 
+function initialTopic(): string {
+  const t = new URLSearchParams(window.location.search).get("topic") ?? ""
+  return (INTEL_TOPICS as readonly string[]).includes(t) ? t : ""
+}
+
 function VoorJouTab() {
   const [kind, setKind] = useState("")
-  const [topic, setTopic] = useState("")
+  const [topic, setTopic] = useState(initialTopic)
   const [q, setQ] = useState("")
   const [submitted, setSubmitted] = useState("")
   const [savedOnly, setSavedOnly] = useState(false)
@@ -85,6 +91,15 @@ function VoorJouTab() {
     scope: savedOnly ? "saved" : "all",
   })
   const items = data?.items ?? []
+
+  // Mentaal spotlight: only on the unfiltered view, only with REAL mentaal
+  // cards in the personalized feed — never a fabricated placeholder block.
+  const unfiltered = !kind && !topic && !submitted && !savedOnly
+  const mentaalSpotlight = unfiltered
+    ? items.filter((i) => i.card.topic === "mentaal").slice(0, 2)
+    : []
+  const spotlightIds = new Set(mentaalSpotlight.map((i) => i.card.id))
+  const listItems = items.filter((i) => !spotlightIds.has(i.card.id))
 
   return (
     <>
@@ -217,6 +232,36 @@ function VoorJouTab() {
         })}
       </div>
 
+      {mentaalSpotlight.length > 0 && (
+        <section className="rounded-2xl border border-cyan-300/[0.18] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+          <div className="flex items-center justify-between">
+            <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-300/80">
+              <Brain className="h-3.5 w-3.5" style={{ color: ACCENT }} />
+              Sterker in je hoofd
+            </p>
+            <button
+              type="button"
+              onClick={() => setTopic("mentaal")}
+              className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/45 transition-colors hover:text-cyan-300"
+            >
+              Alles over mentaal
+            </button>
+          </div>
+          <p className="mt-1.5 text-[12px] leading-relaxed text-white/45">
+            De benen winnen de koers, het hoofd bepaalt hoe vaak.
+          </p>
+          <div className="mt-3 flex flex-col gap-3">
+            {mentaalSpotlight.map((item) => (
+              <IntelCard
+                key={item.card.id}
+                item={item}
+                onOpen={() => setOpen(item)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       <section>
         {isLoading && <CardSkeletons />}
 
@@ -248,7 +293,7 @@ function VoorJouTab() {
         )}
 
         <div className="mt-4 flex flex-col gap-3">
-          {items.map((item) => (
+          {listItems.map((item) => (
             <IntelCard key={item.card.id} item={item} onOpen={() => setOpen(item)} />
           ))}
         </div>

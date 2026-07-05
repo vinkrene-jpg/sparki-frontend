@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { ensureWorldSeed } from "./lib/world-seed";
+import { ensureIntelSeed } from "./lib/intel-seed";
 import { backfillDerivedLoad } from "./lib/derived-load-backfill";
 import { cleanupStaleConnectorShells } from "./lib/connectors/cleanup";
 
@@ -36,6 +37,16 @@ app.listen(port, (err) => {
       if (r.seeded) logger.info({ seed: "world", total: r.total }, "Sparki World seeded");
     })
     .catch((err) => logger.error({ err }, "Sparki World seed failed"));
+
+  // Fire-and-forget: the curated Kennisbank cards ship with each release.
+  // Idempotent upsert keyed on dedupeKey, so this is safe on every boot in
+  // dev and production; without it a fresh production DB has zero cards.
+  ensureIntelSeed({ log: (m) => logger.info({ seed: "intel" }, m) })
+    .then((r) => {
+      if (r.inserted > 0)
+        logger.info({ seed: "intel", ...r }, "Kennisbank cards seeded");
+    })
+    .catch((err) => logger.error({ err }, "Kennisbank seed failed"));
 
   // Fire-and-forget self-heal: rides imported before belastingscore-derivation
   // existed (e.g. Strava history) get their score derived from their own power
