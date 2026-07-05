@@ -3,12 +3,14 @@ import {
   db,
   trainingSessionsTable,
   athleteDailyMetricsTable,
+  athleteProfilesTable,
   ftpHistoryTable,
   equipmentTable,
   connectorActivitiesTable,
   type ConnectorDataType,
   type SyncRunCounts,
 } from "@workspace/db";
+import { deriveTss, ftpAtDate, type FtpEntry } from "../../lib/derived-load";
 import type { NormalizedBatch } from "./types";
 import { legacyTypeForSport } from "./sports";
 import {
@@ -65,17 +67,59 @@ function numStr(v: number | null | undefined): string | null {
 }
 
 // ── Activities ───────────────────────────────────────────────────────────────
+
+// FTP knowledge for one athlete, loaded once per batch so every activity can
+// derive its belastingscore against the FTP that applied on its date.
+async function loadFtpContext(clerkId: string): Promise<{
+  profileFtp: number | null;
+  history: FtpEntry[];
+}> {
+  const [profile] = await db
+    .select({ ftp: athleteProfilesTable.ftp })
+    .from(athleteProfilesTable)
+    .where(eq(athleteProfilesTable.clerkId, clerkId))
+    .limit(1);
+  const history = await db
+    .select({
+      measuredAt: ftpHistoryTable.measuredAt,
+      ftpWatts: ftpHistoryTable.ftpWatts,
+    })
+    .from(ftpHistoryTable)
+    .where(eq(ftpHistoryTable.clerkId, clerkId));
+  return { profileFtp: profile?.ftp ?? null, history };
+}
+
 async function ingestActivities(
   clerkId: string,
   provider: string,
   batch: NormalizedBatch,
   counts: SyncRunCounts,
 ): Promise<void> {
+  if ((batch.activities?.length ?? 0) === 0) return;
+  const ftpCtx = await loadFtpContext(clerkId);
   for (const rawActivity of batch.activities ?? []) {
     const a = cleanActivity(rawActivity);
     if (!a) {
       counts.skipped = (counts.skipped ?? 0) + 1;
       continue;
+    }
+    // Providers like Strava never send a belastingscore. Derive it from the
+    // activity's own power and the FTP at that date (standard formula, see
+    // lib/derived-load). Provider-supplied scores always win; when nothing is
+    // derivable the score honestly stays null.
+    let tss = a.tss;
+    let intensityFactor: number | null = null;
+    if (tss == null) {
+      const derived = deriveTss({
+        durationMin: a.durationMin,
+        normalizedPower: a.normalizedPower,
+        avgPower: a.avgPower,
+        ftp: ftpAtDate(ftpCtx.history, dateOf(a.startedAt), ftpCtx.profileFtp),
+      });
+      if (derived) {
+        tss = derived.tss;
+        intensityFactor = derived.intensityFactor;
+      }
     }
     const dedupeKey = computeActivityDedupeKey({
       sport: a.sport,
@@ -121,7 +165,8 @@ async function ingestActivities(
         maxHR: a.maxHR,
         avgCadence: a.avgCadence,
         avgSpeedKph: numStr(a.avgSpeedKph),
-        tss: a.tss,
+        tss,
+        intensityFactor: numStr(intensityFactor),
         title: a.title ?? null,
       };
       const patch = buildMergePatch(
@@ -154,7 +199,8 @@ async function ingestActivities(
           maxHR: a.maxHR,
           avgCadence: a.avgCadence,
           avgSpeedKph: numStr(a.avgSpeedKph),
-          tss: a.tss,
+          tss,
+          intensityFactor: numStr(intensityFactor),
           source: provider,
           externalRef: `${provider}:${a.externalId}`,
           dedupeKey,

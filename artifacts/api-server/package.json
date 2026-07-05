@@ -12,6 +12,7 @@
     "test:race-room": "pnpm run build && node --enable-source-maps ./dist/tests/race-room.mjs",
     "test:account": "pnpm run build && node --enable-source-maps ./dist/tests/account.mjs",
     "test:data-hub": "pnpm run build && node --enable-source-maps ./dist/tests/data-hub.mjs",
+    "test:derived-load": "pnpm run build && node --enable-source-maps ./dist/tests/derived-load.mjs",
     "test:memory-graph": "pnpm run build && node --enable-source-maps ./dist/tests/memory-graph.mjs",
     "test:context-memory": "pnpm run build && node --enable-source-maps ./dist/tests/context-memory.mjs",
     "test:voice": "pnpm run build && node --enable-source-maps ./dist/tests/voice.mjs",

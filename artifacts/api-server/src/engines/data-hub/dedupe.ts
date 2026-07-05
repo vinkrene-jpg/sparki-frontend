@@ -88,6 +88,7 @@ const MERGEABLE_FIELDS = [
   "avgCadence",
   "avgSpeedKph",
   "tss",
+  "intensityFactor",
   "title",
 ] as const;
 

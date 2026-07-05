@@ -27,6 +27,7 @@ import {
 import { getHubProvider } from "./providers";
 import { ingestBatch, effectiveImportedDataTypes } from "./ingest";
 import { ensureMaterialNudgeNotification } from "../material";
+import { refreshDerivedLoadForAthlete } from "../../lib/derived-load-backfill";
 
 export * from "./types";
 export * from "./sports";
@@ -207,6 +208,11 @@ export async function runSync(
     // and (idempotently) raise a gentle Materiaalcoach nudge. Best-effort: never
     // let it break a successful sync.
     await ensureMaterialNudgeNotification(clerkId).catch(() => {});
+
+    // Repair derived numbers over the athlete's full history: fill scores that
+    // became derivable (e.g. FTP arrived after older rides) and re-derive an
+    // ESTIMATED weekly target from real riding. Best-effort, never throws.
+    await refreshDerivedLoadForAthlete(clerkId);
 
     return {
       run: finished!,

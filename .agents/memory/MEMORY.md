@@ -85,3 +85,4 @@
 - [Sparki observation dedup](sparki-observation-dedup.md) — expanded cards repeat same fact; dedupe at PRESENTATION (dedupeObservationsByText, word+number overlap) not in groupObservations; LLM title-drift breeds dup rows.
 - [Long-running jobs in this sandbox](sandbox-background-jobs.md) — nohup/setsid bg jobs die at tool-call boundaries; run long one-shot jobs as a console workflow + poll.
 - [Ontdekken Renners reel + dwell-gated learning](sparki-ontdekken-renners.md) — World swipe-reel surfaced in /feed; feed view-events must dwell-gate ~1.4s or fast scroll pollutes affinity.
+- [Sparki derived belastingscore](sparki-derived-tss.md) — TSS derived from power+FTP at ingest + boot self-heal; advisory locks need ONE client (never pool.query); new merge fields must join MERGEABLE_FIELDS.
