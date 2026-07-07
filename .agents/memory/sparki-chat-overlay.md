@@ -35,7 +35,7 @@ mounts `SparkiChatOverlay`.
 
 - **The model must receive the FULL DB history, not just the current turn.** The
   session-scoped visible thread is render-only; the Anthropic call replays the
-  last ~20 persisted turns (athlete→user, sparki→assistant), old attachments/
+  last ~100 persisted turns (athlete→user, sparki→assistant), old attachments/
   links described as text only (bytes loaded only for the current turn).
   - **Why:** without history every reply was a same-ish "first answer" — no
     flowing conversation, while UI copy promises "Sparki onthoudt alles".

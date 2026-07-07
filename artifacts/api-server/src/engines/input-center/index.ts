@@ -191,7 +191,7 @@ async function buildTurnBlocks(
 
 // How many prior persisted turns are replayed to the model so the chat is a
 // flowing conversation instead of a series of isolated first messages.
-const HISTORY_TURNS = 20;
+const HISTORY_TURNS = 100;
 const HISTORY_TURN_MAX_CHARS = 2000;
 
 // Loads the most recent prior turns (before the just-persisted athlete turn)
