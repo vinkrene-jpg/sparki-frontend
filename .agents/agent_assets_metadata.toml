@@ -383,3 +383,9 @@ id = "Q5s750hUmXdM5XuYUem3v"
 uri = "file://.local/world-samples/new-01-546.png"
 type = "image"
 title = "Zelfde renner — lifestyle: foam-rollen thuis"
+
+[[outputs]]
+id = "vKCBbyuH8jo3gjW7dekSd"
+uri = "file://tmp/vapid-nieuwe-sleutel.txt"
+type = "text"
+title = "Nieuwe VAPID private key (plak als Secret)"
