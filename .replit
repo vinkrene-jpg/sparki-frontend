@@ -121,6 +121,7 @@ channel = "stable-25_05"
 SPARKI_ADMIN_IDS = "user_3FXo8wJYIQ2uvZGRXyrRXzdWuUp"
 
 [userenv.shared]
-VAPID_PUBLIC_KEY = "BIrCWZySU6bHK-jkKLkA-Xn9p0jKaIgk3lvRlEnNU5jfjGpqMZW-j91fOSX2zvwxMLAAudXM0qPGcqVHTqTzJ1M"
+VAPID_PUBLIC_KEY = "BE_zshRDB06c6BP5jf0KqW58sejO_57nStUboT-LDb8qMvPXgSUV7VbZQmWIE1vbKXs6LRF8pnZvXsjbgmuOhUc"
 VAPID_SUBJECT = "mailto:notificaties@sparki.app"
-VAPID_PRIVATE_KEY = "RA4L9n3EvNVKrpux-2B0KjLWaMcgBXTfSTMuOp-guBc"
+
+[userenv.development]

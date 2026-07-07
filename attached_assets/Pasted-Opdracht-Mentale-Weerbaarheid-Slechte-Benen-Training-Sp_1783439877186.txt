@@ -1,0 +1,115 @@
+Opdracht – Mentale Weerbaarheid & Slechte Benen Training (Sparki)
+Doel
+
+Voeg een nieuwe coachingskaart toe die sporters helpt wanneer zij mentaal moeite hebben om een training uit te voeren.
+
+Belangrijk:
+
+Dit gaat niet over fysieke oververmoeidheid of overtraining.
+
+Het gaat om dagen waarop een sporter:
+
+geen zin heeft;
+zware benen ervaart terwijl hij normaal hersteld is;
+weinig motivatie voelt;
+tegen de training opziet;
+in de winter moeite heeft om kwaliteitstrainingen af te werken;
+mentaal opgeeft voordat de training begonnen is.
+Nieuwe kaart
+
+Mentale Weerbaarheid
+
+De kaart moet onder andere tonen:
+
+mentale weerbaarheidsscore
+ontwikkeling afgelopen weken
+patronen
+risicofactoren
+persoonlijke adviezen
+AI-analyse
+
+AI moet herkennen wanneer iemand structureel:
+
+trainingen uitstelt
+kwaliteitstrainingen overslaat
+korter rijdt dan gepland
+intervallen afbreekt
+excuses maakt
+motivatieverlies toont
+vooral op gevoel beslist
+Coaching tijdens de training
+
+Tijdens een training moet Sparki kunnen herkennen:
+
+de eerste mentale dip
+het moment waarop iemand wil stoppen
+terugkerende patronen
+
+Vervolgens coachen met korte, natuurlijke aanwijzingen.
+
+Bijvoorbeeld:
+
+Nog één interval.
+Focus alleen op de komende minuut.
+Je benen voelen zwaar, maar je lichaam is niet vermoeid.
+Dit is precies de training die je sterker maakt.
+Vandaag train je karakter.
+
+Niet overdreven motiverend, maar realistisch.
+
+Voorbereiding
+
+Voor moeilijke trainingen:
+
+uitleg waarom deze training belangrijk is;
+welke mentale weerstand normaal is;
+waar de sporter waarschijnlijk tegenaan loopt;
+hoe daarmee om te gaan.
+Nabespreking
+
+Na afloop:
+
+AI analyseert:
+
+wanneer de mentale dip begon;
+hoe de sporter daarop reageerde;
+of hij zichzelf heeft herpakt;
+wat hiervan geleerd kan worden.
+
+Niet alleen prestaties beoordelen, maar vooral de mentale uitvoering.
+
+Persoonlijk profiel
+
+AI leert:
+
+welke trainingen iemand moeilijk vindt;
+welke woorden goed werken;
+wanneer iemand het snelst opgeeft;
+welke aanpak juist motivatie geeft.
+
+Iedere sporter krijgt uiteindelijk een eigen mentale coach.
+
+Geen medische claims
+
+Dit onderdeel mag:
+
+geen burn-out,
+geen depressie,
+geen medische diagnoses stellen.
+
+Alleen coachen op motivatie, discipline, focus en mentale weerbaarheid.
+
+Integratie
+
+Deze functionaliteit moet aansluiten op:
+
+Training
+Lab
+Observaties
+Chat
+Daganalyse
+Nachtelijke AI-analyse
+
+Zodat mentale weerbaarheid onderdeel wordt van het totale sportprofiel.
+
+Ik zou hier nog één stap aan toevoegen die Sparki onderscheidt van vrijwel alle andere trainingsapps: een Mentale Bibliotheek. Daarin staan technieken uit de sportpsychologie, zoals visualisatie, self-talk, ademhaling, aandacht verleggen, chunking en acceptatie. De AI kiest automatisch de techniek die het beste past bij de sporter en de specifieke training. Dat maakt de coaching veel persoonlijker en wetenschappelijk beter onderbouwd.

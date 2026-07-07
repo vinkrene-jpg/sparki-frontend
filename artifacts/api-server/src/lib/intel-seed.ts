@@ -793,6 +793,72 @@ const CARDS: SeedCard[] = [
         "Helpt je op het moment zelf een eerlijk onderscheid te maken tussen verstandig stoppen en te vroeg opgeven.",
     },
   },
+  {
+    dedupeKey: "academy-breathing-under-pressure",
+    kind: "academy",
+    topic: "mentaal",
+    title: "Ademhaling sturen als het zwaar wordt",
+    summary:
+      "Je adem is de snelste knop die je hebt om een mentale dip te dempen — op de fiets en ernaast.",
+    disciplines: ["all"],
+    levels: ["all"],
+    sourceLabel: "Sportpsychologie — ademhaling en spanningsregulatie",
+    content: {
+      simple:
+        "Als het zwaar wordt, gaat je ademhaling vanzelf hoog en snel — en dat versterkt het gevoel van paniek en 'ik kan niet meer'. Door je adem bewust te sturen (langer uit dan in) kalmeert je hoofd, terwijl je benen gewoon doortrappen.",
+      deep:
+        "Een bewust verlengde uitademing remt de stressreactie: hartslag en spanningsgevoel zakken iets, terwijl het vermogen dat je trapt gelijk blijft. Daarom is ademsturing zo bruikbaar op het moment dat je hoofd wil stoppen maar je lichaam nog kan. Het werkt het best als je het vooraf oefent op rustige ritten, zodat het patroon (bijvoorbeeld 3 tellen in, 4 tellen uit) er al in zit voordat je het onder druk nodig hebt. Belangrijk onderscheid: dit dempt de mentale dip, het maskeert geen echte uitputting — vermogen dat structureel wegzakt is een lichaamssignaal, geen ademkwestie.",
+      example:
+        "Halverwege het derde interval roept je hoofd 'stop'. In plaats van meteen te beslissen: tien ademhalingen, 3 tellen in, 4 tellen uit, blik op de weg. Daarna blijkt de dip meestal weggezakt — en het interval haalbaar.",
+      conclusion:
+        "Oefen één vast adempatroon op rustige ritten en zet het in bij de eerste mentale dip. Eerst ademen, dan pas beslissen.",
+      readMinutes: 4,
+    },
+  },
+  {
+    dedupeKey: "academy-chunking-long-efforts",
+    kind: "academy",
+    topic: "mentaal",
+    title: "Opdelen: de hele training bestaat niet",
+    summary:
+      "Niemand rijdt '2 uur met blokken' — je rijdt steeds één blok. Wie zo denkt, maakt meer trainingen af.",
+    disciplines: ["all"],
+    levels: ["all"],
+    sourceLabel: "Sportpsychologie — chunking en doelen stellen",
+    content: {
+      simple:
+        "Een lange of zware training voelt als een berg zolang je naar het geheel kijkt. Deel hem op in stukken die je wél kunt overzien: dit interval, dit kwartier, tot dat dorp. Je hoofd hoeft alleen het eerstvolgende stuk aan te kunnen.",
+      deep:
+        "Grote opdrachten voelen zwaarder dan de som van hun delen: wie aan 'nog 90 minuten' denkt, geeft eerder op dan wie aan 'nog dit blok' denkt. Opdelen (chunking) verkleint de mentale last per beslismoment, en elk afgerond stuk levert een klein succesje op dat motivatie teruggeeft — precies op de momenten dat die wegzakt. De kunst zit in de maat: stukken van 5 à 15 minuten of één herhaling werken beter dan halve trainingen. En de regel is: beslissen over stoppen mag alleen op de grens tussen twee stukken, nooit middenin.",
+      example:
+        "Vier keer acht minuten drempel. In plaats van 'nog 24 minuten hard' na het eerste blok: alleen blok twee telt. Pauze. Dan pas bestaat blok drie. Wie zo telt, staat vaker verbaasd aan het einde van blok vier.",
+      conclusion:
+        "Knip elke zware training vooraf in stukken en beslis alleen op de grenzen. Het volgende blok is altijd haalbaar — en meer hoeft je hoofd niet te weten.",
+      readMinutes: 4,
+    },
+  },
+  {
+    dedupeKey: "academy-acceptance-start-anyway",
+    kind: "academy",
+    topic: "mentaal",
+    title: "Accepteren en tóch starten",
+    summary:
+      "Geen zin en zware benen hoef je niet weg te vechten. Erken ze — en start de eerste tien minuten toch.",
+    disciplines: ["all"],
+    levels: ["all"],
+    sourceLabel: "Sportpsychologie — acceptatie en gedrag",
+    content: {
+      simple:
+        "Vechten tegen 'geen zin' kost energie en werkt zelden. Wat wél werkt: benoem wat je voelt ('geen zin', 'zware benen'), accepteer dat het er is, en spreek met jezelf af dat je alleen de eerste tien minuten rustig start. Daarna beslis je pas echt.",
+      deep:
+        "Gevoelens zijn geen opdrachten: 'geen zin' is informatie, geen instructie om over te slaan. Acceptatie betekent niet dat je alles goed vindt, maar dat je stopt met vechten tegen het gevoel en je energie in de eerstvolgende actie steekt. De tienminutenregel gebruikt een betrouwbaar patroon: weerstand is bijna altijd het grootst vóór de start en zakt zodra je bezig bent. Wie de beslissing verplaatst van de bank naar minuut tien, beslist met betere informatie — hoe het rijden nu écht voelt in plaats van hoe het idee ervan voelt. Blijkt het na tien minuten nog steeds leeg en zwaar, dan is aanpassen of inkorten een eerlijke, volwassen keuze — geen nederlaag.",
+      example:
+        "Woensdagavond, donker, geen zin. Afspraak met jezelf: alleen omkleden en tien minuten rustig rijden. Op minuut acht voelen de benen gewoon normaal en rijd je het geplande schema. Was het na tien minuten nog steeds niets geweest, dan had je met een gerust hart een rustige korte rit gedaan.",
+      conclusion:
+        "Erken het gevoel, start klein, en beslis pas op minuut tien. Zo beslist je hoofd niet vanaf de bank over een training die het nog niet kent.",
+      readMinutes: 4,
+    },
+  },
 ];
 
 export async function ensureIntelSeed(opts?: {

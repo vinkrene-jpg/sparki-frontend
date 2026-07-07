@@ -279,6 +279,16 @@ export async function buildAthleteContext(clerkId: string): Promise<string> {
   const obsBlock = formatObservationsForPrompt(priorObservations);
   if (obsBlock) parts.push(obsBlock);
 
+  // Mental execution block — real pattern data (postponed/shortened/avoided
+  // workouts) so coaching can address motivation and discipline honestly.
+  // Additive: a failure here must never block the context.
+  try {
+    const { mentalContextBlock } = await import("../engines/mental");
+    parts.push(await mentalContextBlock(clerkId));
+  } catch {
+    // context stands without it
+  }
+
   return parts.join("\n");
 }
 

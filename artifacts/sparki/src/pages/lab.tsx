@@ -16,6 +16,7 @@ import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import { useLocation } from "wouter"
 import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer"
 import { TrainingProgression } from "@/components/sparki/training-progression"
+import { MentalResilienceCard } from "@/components/sparki/mental-resilience-card"
 import type { TrainingSession } from "@/lib/athlete-types"
 
 function Skeleton({ className = "" }: { className?: string }) {
@@ -469,10 +470,13 @@ export default function LabPage() {
         n="06"
       />
 
-      {/* 07 AI GEHEUGEN */}
+      {/* 07 MENTALE WEERBAARHEID */}
+      <MentalResilienceCard n="07" />
+
+      {/* 08 AI GEHEUGEN */}
       <AiMemoryPanel />
 
-      {/* 08 SPARKI ONTHOUDT */}
+      {/* 09 SPARKI ONTHOUDT */}
       <ContextMemoryPanel />
 
       <SessionDetailDrawer

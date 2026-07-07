@@ -217,7 +217,7 @@ export function ContextMemoryPanel() {
 
   return (
     <section>
-      <SectionLabel n="08" title="Sparki onthoudt" />
+      <SectionLabel n="09" title="Sparki onthoudt" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
         Vertel Sparki wat er speelt — school, werk, familie, een wedstrijd, een
         blessure of een slechte nacht. Sparki onthoudt het en vraagt er op het
