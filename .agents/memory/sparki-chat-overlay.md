@@ -33,5 +33,22 @@ mounts `SparkiChatOverlay`.
 - **Composer is two rows by request:** row 1 = text input + send, row 2 =
   attachment options (paperclip/camera/link). Keep this order.
 
+- **The model must receive the FULL DB history, not just the current turn.** The
+  session-scoped visible thread is render-only; the Anthropic call replays the
+  last ~20 persisted turns (athlete→user, sparki→assistant), old attachments/
+  links described as text only (bytes loaded only for the current turn).
+  - **Why:** without history every reply was a same-ish "first answer" — no
+    flowing conversation, while UI copy promises "Sparki onthoudt alles".
+  - **How to apply:** Anthropic requires strict role alternation — merge
+    consecutive same-role turns, drop leading assistant turns, and fold a
+    dangling trailing user turn (athlete turn persisted but reply failed) into
+    the current user message, never send two consecutive user messages.
+
+- **Transient failures must never look like "new user".** The onboarding-state
+  check in App.tsx retries 3x with backoff; on persistent failure it shows an
+  honest Dutch retry screen. Onboarding renders only when the server positively
+  says isComplete=false — a network/auth hiccup on mobile cold start must not
+  restart onboarding for an existing athlete.
+
 - **Single source:** the chat lives ONLY in the header overlay now. Do not also
   embed `SparkiInputCenter` inside a page (it was removed from the feed page).

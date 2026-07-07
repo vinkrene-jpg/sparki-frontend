@@ -222,6 +222,8 @@ function SignedInHomeReady() {
   const qc = useQueryClient();
   const { profile, refetch } = useUserProfile();
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
+  const [checkFailed, setCheckFailed] = useState(false);
+  const [checkNonce, setCheckNonce] = useState(0);
 
   useEffect(() => {
     // Onboarding is evaluated ONLY once the account is provisioned. AccountGate
@@ -235,33 +237,52 @@ function SignedInHomeReady() {
     // DB is the source of truth. localStorage is only a fast-path cache and a
     // migration bridge for users who completed onboarding before DB persistence.
     void (async () => {
-      try {
-        const { onboarding } = await apiFetch<{
-          onboarding: { isComplete: boolean };
-        }>("/api/onboarding/state");
-        if (cancelled) return;
-        if (onboarding.isComplete) {
-          localStorage.setItem(lsKey, "true");
-          setOnboarded(true);
-        } else if (lsDone) {
-          // Migrate prior localStorage-only completion into the DB.
-          void apiFetch("/api/onboarding/state", {
-            method: "PUT",
-            body: JSON.stringify({ isComplete: true }),
-          });
-          setOnboarded(true);
-        } else {
-          setOnboarded(false);
+      // A transient failure (flaky mobile network, session cookie still
+      // refreshing at cold start) must NEVER look like "new user" — that would
+      // restart the full onboarding for someone who already finished it. So:
+      // retry a few times, and if the server still can't answer, show an
+      // honest retry screen instead of onboarding. Onboarding only renders
+      // when the server POSITIVELY says isComplete=false.
+      const ATTEMPTS = 3;
+      for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+        try {
+          const { onboarding } = await apiFetch<{
+            onboarding: { isComplete: boolean };
+          }>("/api/onboarding/state");
+          if (cancelled) return;
+          if (onboarding.isComplete) {
+            localStorage.setItem(lsKey, "true");
+            setOnboarded(true);
+          } else if (lsDone) {
+            // Migrate prior localStorage-only completion into the DB.
+            void apiFetch("/api/onboarding/state", {
+              method: "PUT",
+              body: JSON.stringify({ isComplete: true }),
+            });
+            setOnboarded(true);
+          } else {
+            setOnboarded(false);
+          }
+          return;
+        } catch {
+          if (cancelled) return;
+          if (attempt < ATTEMPTS) {
+            await new Promise((r) => setTimeout(r, 700 * attempt));
+            continue;
+          }
+          if (lsDone) {
+            // Cache says this device completed onboarding before — trust it.
+            setOnboarded(true);
+          } else {
+            setCheckFailed(true);
+          }
         }
-      } catch {
-        // Never hard-block the app on a network/DB hiccup — fall back to cache.
-        if (!cancelled) setOnboarded(lsDone);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [profile?.clerkId]);
+  }, [profile?.clerkId, checkNonce]);
 
   const handleComplete = useCallback(() => {
     if (profile) {
@@ -276,6 +297,34 @@ function SignedInHomeReady() {
     void qc.invalidateQueries();
     setOnboarded(true);
   }, [profile, qc, refetch]);
+
+  // The onboarding-status check failed after retries and this device has no
+  // cached completion. Show an honest retry screen — NEVER onboarding, which
+  // would force an existing athlete to answer everything again.
+  if (checkFailed) {
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#040506] px-8 text-center">
+        <p className="text-[15px] font-medium text-white/85">
+          Je gegevens konden niet worden geladen
+        </p>
+        <p className="max-w-xs text-[13px] leading-relaxed text-white/45">
+          Waarschijnlijk hapert de verbinding even. Je voortgang is veilig
+          opgeslagen — niets gaat verloren.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setCheckFailed(false);
+            setOnboarded(null);
+            setCheckNonce((n) => n + 1);
+          }}
+          className="mt-2 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-6 py-2.5 text-[13px] font-medium text-cyan-200 transition-colors hover:bg-cyan-300/20"
+        >
+          Opnieuw proberen
+        </button>
+      </div>
+    );
+  }
 
   // Account ready (guaranteed by AccountGate) — brief flash while resolving
   // onboarding state.

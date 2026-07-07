@@ -17,7 +17,7 @@
 //   Sparki as "received but not readable here"; Sparki acknowledges them
 //   honestly instead of pretending to have analysed them.
 
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, lt } from "drizzle-orm";
 import {
   db,
   sparkiInputMessagesTable,
@@ -189,6 +189,67 @@ async function buildTurnBlocks(
   return blocks;
 }
 
+// How many prior persisted turns are replayed to the model so the chat is a
+// flowing conversation instead of a series of isolated first messages.
+const HISTORY_TURNS = 20;
+const HISTORY_TURN_MAX_CHARS = 2000;
+
+// Loads the most recent prior turns (before the just-persisted athlete turn)
+// and maps them to alternating Anthropic messages. Attachments/links from old
+// turns are described as text — bytes are only ever loaded for the current
+// turn. Consecutive same-role turns are merged because the API requires
+// alternating roles.
+async function loadHistoryMessages(
+  clerkId: string,
+  beforeId: number,
+): Promise<{ role: "user" | "assistant"; content: string }[]> {
+  const rows = await db
+    .select()
+    .from(sparkiInputMessagesTable)
+    .where(
+      and(
+        eq(sparkiInputMessagesTable.clerkId, clerkId),
+        lt(sparkiInputMessagesTable.id, beforeId),
+      ),
+    )
+    .orderBy(desc(sparkiInputMessagesTable.createdAt))
+    .limit(HISTORY_TURNS);
+  rows.reverse();
+
+  const out: { role: "user" | "assistant"; content: string }[] = [];
+  for (const row of rows) {
+    const role = row.role === "athlete" ? "user" : "assistant";
+    const parts: string[] = [];
+    if (row.text) {
+      parts.push(
+        row.text.length > HISTORY_TURN_MAX_CHARS
+          ? `${row.text.slice(0, HISTORY_TURN_MAX_CHARS)} […ingekort]`
+          : row.text,
+      );
+    }
+    if (row.link) parts.push(`[Deelde eerder deze link: ${row.link}]`);
+    const atts = (row.attachments ?? []) as InputAttachment[];
+    if (atts.length > 0) {
+      parts.push(
+        `[Stuurde eerder ${atts.length === 1 ? "een bijlage" : `${atts.length} bijlagen`}: ${atts
+          .map((a) => a.name)
+          .join(", ")}]`,
+      );
+    }
+    if (parts.length === 0) continue;
+    const content = parts.join("\n");
+    const last = out[out.length - 1];
+    if (last && last.role === role) {
+      last.content += `\n\n${content}`;
+    } else {
+      out.push({ role, content });
+    }
+  }
+  // The API requires the first message to be a user turn.
+  while (out.length > 0 && out[0]!.role !== "user") out.shift();
+  return out;
+}
+
 export type PostMessageInput = {
   clerkId: string;
   text: string | null;
@@ -243,19 +304,43 @@ export async function postMessage(
     .join(" ")
     .trim();
 
-  const [context, system, knowledge, turnBlocks] = await Promise.all([
+  const [context, system, knowledge, turnBlocks, history] = await Promise.all([
     buildAthleteContext(clerkId),
     systemPrompt(clerkId),
     gatherKnowledge(clerkId, keywordSeed || "training"),
     buildTurnBlocks(clerkId, text, link, attachments),
+    loadHistoryMessages(clerkId, athleteTurn!.id),
   ]);
 
   const contextText =
     `ATLEETCONTEXT (echte gelogde data — gebruik dit om je antwoord te onderbouwen):\n${context}` +
-    (knowledge.promptBlock ? `\n\n${knowledge.promptBlock}` : "");
+    (knowledge.promptBlock ? `\n\n${knowledge.promptBlock}` : "") +
+    (history.length > 0
+      ? `\n\nDit is een DOORLOPEND gesprek: de eerdere beurten hierboven zijn echt. ` +
+        `Bouw voort op wat al gezegd is, verwijs ernaar waar dat helpt, en herhaal ` +
+        `geen uitleg of vragen die al aan bod kwamen. Begin niet opnieuw met een ` +
+        `algemene introductie.`
+      : "");
+
+  // The API requires strict user/assistant alternation. If the newest history
+  // row is also a user turn (a prior request persisted the athlete turn but
+  // failed before Sparki replied), fold that dangling turn into the current
+  // user message instead of sending two consecutive user messages.
+  const danglingUser =
+    history.length > 0 && history[history.length - 1]!.role === "user"
+      ? history.pop()!
+      : null;
 
   const userBlocks: AnthropicContentBlock[] = [
     { type: "text", text: contextText },
+    ...(danglingUser
+      ? [
+          {
+            type: "text" as const,
+            text: `[Eerder verstuurd bericht dat nog geen antwoord kreeg:]\n${danglingUser.content}`,
+          },
+        ]
+      : []),
     ...turnBlocks,
   ];
 
@@ -263,7 +348,13 @@ export async function postMessage(
     model: MODEL,
     max_tokens: 4096,
     system,
-    messages: [{ role: "user", content: userBlocks }],
+    messages: [
+      ...history.map((h) => ({
+        role: h.role,
+        content: [{ type: "text" as const, text: h.content }],
+      })),
+      { role: "user", content: userBlocks },
+    ],
   });
 
   const reply = message.content
