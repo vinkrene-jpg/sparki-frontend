@@ -106,6 +106,24 @@ export function useCreateNutritionLog() {
   });
 }
 
+// Assess the stored photo(s) of an EXISTING log — for photos that were saved
+// before the assessment existed or whose assessment failed at logging time.
+export function useAssessLogPhoto() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<{ photoAdvice: MealPhotoAdvice | null }>(
+        `/api/nutrition/${id}/photo-advice`,
+        { method: "POST" },
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({
+        queryKey: queryKeys.aiMemory.observations(),
+      });
+    },
+  });
+}
+
 export function useNutritionGuidance(enabled = true) {
   const { isSignedIn } = useUser();
   return useQuery({

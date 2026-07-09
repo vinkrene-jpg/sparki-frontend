@@ -285,6 +285,90 @@ router.get("/photo/:id/:idx", requireAuth, async (req, res) => {
   }
 });
 
+// POST /api/nutrition/:id/photo-advice — assess the stored photo(s) of an
+// EXISTING log (owner only). Needed for logs whose photo was saved before the
+// assessment existed or whose assessment failed at logging time: a photo of
+// food must always be able to get a real reaction, never silently sit in
+// storage. Honest failure: if the photos cannot be read or assessed we say so.
+router.post("/:id/photo-advice", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  try {
+    const [log] = await db
+      .select()
+      .from(nutritionHydrationLogsTable)
+      .where(
+        and(
+          eq(nutritionHydrationLogsTable.id, id),
+          eq(nutritionHydrationLogsTable.clerkId, clerkId),
+        ),
+      );
+    if (!log) {
+      res.status(404).json({ error: "Log niet gevonden" });
+      return;
+    }
+    if (log.photoPaths.length === 0) {
+      res.status(400).json({ error: "Deze log heeft geen foto" });
+      return;
+    }
+
+    const photos: MaterialPhotoInput[] = [];
+    for (const p of log.photoPaths.slice(0, MAX_PHOTOS)) {
+      const stored = await readMaterialPhotoBase64(p);
+      const mediaType = normalizeMediaType(stored.mediaType);
+      if (mediaType) photos.push({ base64: stored.base64, mediaType });
+    }
+    if (photos.length === 0) {
+      res
+        .status(502)
+        .json({ error: "De foto kon niet gelezen worden uit de opslag" });
+      return;
+    }
+
+    const noteParts = [
+      log.notes,
+      log.preTrainingFood && `Voor de training at ik: ${log.preTrainingFood}`,
+      log.postTrainingFood && `Na de training at ik: ${log.postTrainingFood}`,
+    ].filter((p): p is string => !!p);
+
+    const photoAdvice = await analyzeMaterial({
+      category: MEAL_CATEGORY,
+      photos,
+      userNote: noteParts.join(". ") || null,
+      athleteHint: `Deze maaltijd/dit eten is gelogd ${CONTEXT_HINTS[log.context] ?? "die dag"} (${log.logDate}).`,
+    });
+
+    if (photoAdvice.advice.summary) {
+      void persistObservation({
+        clerkId,
+        sourceType: "nutrition_analysis",
+        category: "nutrition",
+        severity: "info",
+        confidence:
+          photoAdvice.confidence === "unknown" ? "low" : photoAdvice.confidence,
+        title: `Maaltijd bekeken: ${photoAdvice.detectedItem}`,
+        observationText: photoAdvice.advice.summary,
+        recommendedAction: photoAdvice.advice.risks[0] ?? null,
+        detectedPattern: "meal_photo_review",
+        supportingDataRefs: { nutritionLogId: log.id, logDate: log.logDate },
+      }).catch((err) =>
+        req.log.error({ err }, "nutrition.photo-advice persist failed"),
+      );
+    }
+
+    res.json({ photoAdvice });
+  } catch (err) {
+    req.log.error({ err }, "nutrition.photo-advice (existing log) failed");
+    res
+      .status(502)
+      .json({ error: "De foto kon nu niet beoordeeld worden. Probeer het zo opnieuw." });
+  }
+});
+
 // ── GET /api/nutrition/day-analysis ──────────────────────────────────────────
 // Whole-day nutrition analysis for ONE date: everything the rider logged that
 // day (fields + meal photos) related to the training of that day (ridden and/or

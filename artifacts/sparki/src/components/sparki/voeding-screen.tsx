@@ -18,6 +18,7 @@ import {
   useNutritionLogs,
   useCreateNutritionLog,
   useDeleteNutritionLog,
+  useAssessLogPhoto,
   useNutritionGuidance,
   useNutritionDayAnalysis,
   useFuelingPlan,
@@ -677,6 +678,8 @@ function PhotoAdviceSection() {
 // ── (4) Recent gelogd — jouw echte voedingslogboek met foto's ─────────────────
 function LogCard({ log }: { log: NutritionLog }) {
   const del = useDeleteNutritionLog()
+  const assess = useAssessLogPhoto()
+  const [advice, setAdvice] = useState<MealPhotoAdvice | null>(null)
   const parts: string[] = []
   if (log.duringTrainingCarbsGrams != null)
     parts.push(`${log.duringTrainingCarbsGrams} g kh`)
@@ -729,6 +732,64 @@ function LogCard({ log }: { log: NutritionLog }) {
                   className="h-16 w-16 shrink-0 rounded-lg border border-white/[0.08] object-cover"
                 />
               ))}
+            </div>
+          )}
+          {log.photoPaths.length > 0 && !advice && (
+            <button
+              type="button"
+              onClick={() =>
+                assess.mutate(log.id, {
+                  onSuccess: (res) => setAdvice(res.photoAdvice),
+                })
+              }
+              disabled={assess.isPending}
+              className="mt-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] transition disabled:opacity-50"
+              style={{ color: ACCENT }}
+            >
+              {assess.isPending ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  foto wordt bekeken…
+                </>
+              ) : (
+                "Beoordeel deze foto"
+              )}
+            </button>
+          )}
+          {assess.isError && !advice && (
+            <p className="mt-1.5 text-[11px] leading-relaxed text-white/50">
+              De foto kon nu niet beoordeeld worden. Probeer het zo opnieuw.
+            </p>
+          )}
+          {advice && (
+            <div className="mt-2.5 rounded-lg border border-cyan-300/25 bg-cyan-300/[0.05] p-3">
+              <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-cyan-300/70">
+                Beoordeling van je foto
+              </p>
+              <p className="mt-1 text-[13px] font-medium text-white/90">
+                {advice.detectedItem}
+              </p>
+              <p className="mt-1 text-pretty text-[12px] leading-relaxed text-white/70">
+                {advice.advice.summary}
+              </p>
+              {advice.advice.pros.length > 0 && (
+                <ul className="mt-1.5 space-y-0.5">
+                  {advice.advice.pros.map((p, i) => (
+                    <li key={i} className="text-[11px] leading-relaxed text-white/55">
+                      <span style={{ color: ACCENT }}>+</span> {p}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {(advice.advice.cons.length > 0 || advice.advice.risks.length > 0) && (
+                <ul className="mt-1 space-y-0.5">
+                  {[...advice.advice.cons, ...advice.advice.risks].map((c, i) => (
+                    <li key={i} className="text-[11px] leading-relaxed text-white/55">
+                      <span className="text-[rgba(245,160,90,0.95)]">–</span> {c}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
         </div>
