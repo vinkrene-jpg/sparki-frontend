@@ -15,6 +15,12 @@ export {
   decideProposal,
   recordGoalEvent,
   goalsContextLine,
+  loadSteeringDirectives,
+  directivesFromProposals,
+  buildProposalCandidates,
+  deriveGoalPatch,
+  judgeProgress,
+  nextGoalQuestion,
   isValidHorizon,
   isValidStatus,
 } from "../../lib/goals";
@@ -28,4 +34,7 @@ export type {
   GoalQuestion,
   GoalDailySummary,
   ProposalBuildResult,
+  ProposalCandidate,
+  SteeringDirective,
+  MeasureContext,
 } from "../../lib/goals";

@@ -74,7 +74,7 @@ export type GoalPicture = {
 
 // ── Shared measurement context ────────────────────────────────────────────────
 
-type MeasureContext = {
+export type MeasureContext = {
   load: Load;
   prevLoad: Load; // load as of ~28 days ago, for CTL trend
   doneCount14: number;
@@ -163,7 +163,7 @@ async function buildMeasureContext(clerkId: string): Promise<MeasureContext> {
 
 // ── Deterministic progress judgement ─────────────────────────────────────────
 
-function judgeProgress(
+export function judgeProgress(
   ctx: MeasureContext,
   targetDate: string | null,
   measure: string | null,
@@ -267,11 +267,11 @@ async function loadDerivedGoals(
         and(
           eq(racesTable.clerkId, clerkId),
           gte(racesTable.raceDate, ctx.todayIso),
-          inArray(racesTable.priority, ["A", "B"]),
+          inArray(racesTable.priority, ["A", "B", "C"]),
         ),
       )
       .orderBy(asc(racesTable.raceDate))
-      .limit(5),
+      .limit(6),
     db
       .select({
         developmentGoal: athleteProfilesTable.developmentGoal,
@@ -294,7 +294,7 @@ async function loadDerivedGoals(
       title: `${race.priority}-wedstrijd: ${race.name}`,
       targetDate: race.raceDate,
       detail: race.location ?? null,
-      priority: race.priority === "A" ? 1 : 2,
+      priority: race.priority === "A" ? 1 : race.priority === "B" ? 2 : 3,
       progress: judgeProgress(ctx, race.raceDate, null),
     });
   }
@@ -339,7 +339,7 @@ async function loadDerivedGoals(
 
 // ── Doorvraagladder — one targeted question at a time ────────────────────────
 
-function nextGoalQuestion(
+export function nextGoalQuestion(
   goals: GoalWithProgress[],
   derived: DerivedGoal[],
   healthStatus: string,
@@ -608,6 +608,132 @@ function periodKey(d = new Date()): string {
 
 export type ProposalBuildResult = { created: number; skipped: number };
 
+export type ProposalCandidate = {
+  goalId: number | null;
+  kind: string;
+  title: string;
+  reasoning: string;
+  proposedChange?: unknown;
+};
+
+/** Pure, deterministic candidate builder — separately testable. Decides WHICH
+ * proposals this month's review produces; persists nothing. */
+export function buildProposalCandidates(
+  ctx: MeasureContext,
+  active: Pick<AthleteGoal, "id" | "title" | "targetDate" | "measure">[],
+  opts: {
+    finished?: Pick<AthleteGoal, "title" | "status">[];
+    seasonGoal?: { peakDate: string | null; targetWeightKg: unknown } | null;
+  } = {},
+): ProposalCandidate[] {
+  const out: ProposalCandidate[] = [];
+
+  for (const goal of active) {
+    const progress = judgeProgress(ctx, goal.targetDate, goal.measure);
+
+    if (progress.verdict === "risico") {
+      if (ctx.healthStatus === "injured" || ctx.healthStatus === "sick") {
+        // Recovery first + honest goal adjustment option.
+        out.push({
+          goalId: goal.id,
+          kind: "recovery",
+          title: `Herstel voorrang geven boven "${goal.title}"`,
+          reasoning: `${progress.reasons.join(" ")} Eerst herstellen beschermt het doel op langere termijn — doortrainen vergroot de schade.`,
+          proposedChange: { focus: "recovery" },
+        });
+        if (goal.targetDate) {
+          const suggested = new Date(goal.targetDate + "T00:00:00Z");
+          suggested.setUTCDate(suggested.getUTCDate() + 28);
+          const newDate = suggested.toISOString().split("T")[0]!;
+          out.push({
+            goalId: goal.id,
+            kind: "goal_adjust",
+            title: `Streefdatum van "${goal.title}" vier weken opschuiven`,
+            reasoning: `Met de huidige gezondheidssituatie is de oorspronkelijke datum (${goal.targetDate}) krap. Opschuiven naar ${newDate} houdt het doel eerlijk haalbaar.`,
+            proposedChange: { targetDate: newDate },
+          });
+        }
+      } else if (
+        ctx.plannedCount14 >= 3 &&
+        ctx.doneCount14 / ctx.plannedCount14 < 0.5
+      ) {
+        out.push({
+          goalId: goal.id,
+          kind: "load",
+          title: `Trainingsbelasting verlagen richting "${goal.title}"`,
+          reasoning: `${progress.reasons.join(" ")} Een schema dat past bij je werkelijke week is beter dan een schema dat blijft liggen — liever minder gepland en wél uitgevoerd.`,
+          proposedChange: { weeklyLoad: "verlagen" },
+        });
+      } else {
+        out.push({
+          goalId: goal.id,
+          kind: "goal_adjust",
+          title: `Doel "${goal.title}" bijstellen`,
+          reasoning: `${progress.reasons.join(" ")} Bijstellen (datum of meetlat) houdt het doel geloofwaardig in plaats van demotiverend.`,
+          proposedChange: null,
+        });
+      }
+    }
+
+    if (
+      progress.verdict === "op_koers" &&
+      ctx.load.ctl - ctx.prevLoad.ctl >= 5 &&
+      goal.targetDate &&
+      progress.daysToTarget != null &&
+      progress.daysToTarget > 60
+    ) {
+      out.push({
+        goalId: goal.id,
+        kind: "load",
+        title: `Ontwikkeling versnelt — belasting rond "${goal.title}" herijken`,
+        reasoning: `Je belastbaarheid steeg van ${ctx.prevLoad.ctl} naar ${ctx.load.ctl} in vier weken en je doel ligt nog ${progress.daysToTarget} dagen weg. Het schema kan iets ambitieuzer, of het doel kan scherper.`,
+        proposedChange: { weeklyLoad: "herijken" },
+      });
+    }
+  }
+
+  // Nutrition steering: only when a REAL season goal exists (17+ gated at its
+  // source) with a peak within 90 days and execution is faltering or the load
+  // trend is down — then training fueling deserves explicit attention.
+  const sg = opts.seasonGoal;
+  if (sg && sg.peakDate) {
+    const daysToPeak = daysBetween(ctx.todayIso, sg.peakDate);
+    const executionLow =
+      ctx.plannedCount14 >= 3 && ctx.doneCount14 / ctx.plannedCount14 < 0.5;
+    const loadDown =
+      (ctx.load.ctl >= 5 || ctx.prevLoad.ctl >= 5) &&
+      ctx.load.ctl - ctx.prevLoad.ctl <= -3;
+    if (daysToPeak >= 0 && daysToPeak <= 90 && (executionLow || loadDown)) {
+      out.push({
+        goalId: null,
+        kind: "nutrition",
+        title: "Voeding rond trainingen aanscherpen richting je piek",
+        reasoning: `Je piek is over ${daysToPeak} dagen en ${
+          loadDown
+            ? `je belastbaarheid daalt (van ${ctx.prevLoad.ctl} naar ${ctx.load.ctl}).`
+            : `je voerde maar ${ctx.doneCount14} van ${ctx.plannedCount14} geplande trainingen uit.`
+        } Trainingen volledig gevoed rijden beschermt je vorm én je seizoensdoel — nooit trainen op een leeg lichaam.`,
+        proposedChange: { nutrition: "fuel_training" },
+      });
+    }
+  }
+
+  // Picture-level: a recently achieved/dropped goal → review the rest.
+  const finished = opts.finished ?? [];
+  if (finished.length > 0 && active.length > 0) {
+    const f = finished[0]!;
+    out.push({
+      goalId: null,
+      kind: "goal_review",
+      title: "Overige doelen herzien",
+      reasoning: `"${f.title}" is ${f.status === "achieved" ? "behaald" : "vervallen"}. Dat is een goed moment om te kijken of je overige doelen nog kloppen qua datum en ambitie.`,
+      proposedChange: null,
+    });
+  }
+
+  return out;
+}
+
 /** Build monthly adjustment proposals for one athlete. Deterministic, honest,
  * idempotent per goal+kind+month via dedupeKey. Nothing is applied here. */
 export async function buildMonthlyProposals(
@@ -615,26 +741,42 @@ export async function buildMonthlyProposals(
 ): Promise<ProposalBuildResult> {
   const ctx = await buildMeasureContext(clerkId);
   const period = periodKey();
-  const active = await db
-    .select()
-    .from(athleteGoalsTable)
-    .where(
-      and(
-        eq(athleteGoalsTable.clerkId, clerkId),
-        eq(athleteGoalsTable.status, "active"),
+  const [active, finished, [seasonGoal]] = await Promise.all([
+    db
+      .select()
+      .from(athleteGoalsTable)
+      .where(
+        and(
+          eq(athleteGoalsTable.clerkId, clerkId),
+          eq(athleteGoalsTable.status, "active"),
+        ),
       ),
-    );
+    db
+      .select()
+      .from(athleteGoalsTable)
+      .where(
+        and(
+          eq(athleteGoalsTable.clerkId, clerkId),
+          inArray(athleteGoalsTable.status, ["achieved", "dropped"]),
+          gte(
+            athleteGoalsTable.updatedAt,
+            new Date(Date.now() - 35 * 86_400_000),
+          ),
+        ),
+      ),
+    db
+      .select({
+        peakDate: nutritionSeasonGoalsTable.peakDate,
+        targetWeightKg: nutritionSeasonGoalsTable.targetWeightKg,
+      })
+      .from(nutritionSeasonGoalsTable)
+      .where(eq(nutritionSeasonGoalsTable.clerkId, clerkId)),
+  ]);
 
   let created = 0;
   let skipped = 0;
 
-  const propose = async (input: {
-    goalId: number | null;
-    kind: string;
-    title: string;
-    reasoning: string;
-    proposedChange?: unknown;
-  }) => {
+  const propose = async (input: ProposalCandidate) => {
     const dedupeKey = `goal:${input.goalId ?? "all"}:${input.kind}:${period}`;
     // Concurrency-safe idempotency: the unique index (clerk_id, dedupe_key)
     // is the real guard; onConflictDoNothing makes a duplicate run a no-op.
@@ -669,93 +811,40 @@ export async function buildMonthlyProposals(
     }
   };
 
-  for (const goal of active) {
-    const progress = judgeProgress(ctx, goal.targetDate, goal.measure);
-
-    if (progress.verdict === "risico") {
-      if (ctx.healthStatus === "injured" || ctx.healthStatus === "sick") {
-        // Recovery first + honest goal adjustment option.
-        await propose({
-          goalId: goal.id,
-          kind: "recovery",
-          title: `Herstel voorrang geven boven "${goal.title}"`,
-          reasoning: `${progress.reasons.join(" ")} Eerst herstellen beschermt het doel op langere termijn — doortrainen vergroot de schade.`,
-          proposedChange: { focus: "recovery" },
-        });
-        if (goal.targetDate) {
-          const suggested = new Date(goal.targetDate + "T00:00:00Z");
-          suggested.setUTCDate(suggested.getUTCDate() + 28);
-          const newDate = suggested.toISOString().split("T")[0]!;
-          await propose({
-            goalId: goal.id,
-            kind: "goal_adjust",
-            title: `Streefdatum van "${goal.title}" vier weken opschuiven`,
-            reasoning: `Met de huidige gezondheidssituatie is de oorspronkelijke datum (${goal.targetDate}) krap. Opschuiven naar ${newDate} houdt het doel eerlijk haalbaar.`,
-            proposedChange: { targetDate: newDate },
-          });
-        }
-      } else if (ctx.plannedCount14 >= 3 && ctx.doneCount14 / ctx.plannedCount14 < 0.5) {
-        await propose({
-          goalId: goal.id,
-          kind: "load",
-          title: `Trainingsbelasting verlagen richting "${goal.title}"`,
-          reasoning: `${progress.reasons.join(" ")} Een schema dat past bij je werkelijke week is beter dan een schema dat blijft liggen — liever minder gepland en wél uitgevoerd.`,
-          proposedChange: { weeklyLoad: "verlagen" },
-        });
-      } else {
-        await propose({
-          goalId: goal.id,
-          kind: "goal_adjust",
-          title: `Doel "${goal.title}" bijstellen`,
-          reasoning: `${progress.reasons.join(" ")} Bijstellen (datum of meetlat) houdt het doel geloofwaardig in plaats van demotiverend.`,
-          proposedChange: null,
-        });
-      }
-    }
-
-    if (
-      progress.verdict === "op_koers" &&
-      ctx.load.ctl - ctx.prevLoad.ctl >= 5 &&
-      goal.targetDate &&
-      progress.daysToTarget != null &&
-      progress.daysToTarget > 60
-    ) {
-      await propose({
-        goalId: goal.id,
-        kind: "load",
-        title: `Ontwikkeling versnelt — belasting rond "${goal.title}" herijken`,
-        reasoning: `Je belastbaarheid steeg van ${ctx.prevLoad.ctl} naar ${ctx.load.ctl} in vier weken en je doel ligt nog ${progress.daysToTarget} dagen weg. Het schema kan iets ambitieuzer, of het doel kan scherper.`,
-        proposedChange: { weeklyLoad: "herijken" },
-      });
-    }
-  }
-
-  // Picture-level: a recently achieved/dropped goal → review the rest.
-  const finished = await db
-    .select()
-    .from(athleteGoalsTable)
-    .where(
-      and(
-        eq(athleteGoalsTable.clerkId, clerkId),
-        inArray(athleteGoalsTable.status, ["achieved", "dropped"]),
-        gte(athleteGoalsTable.updatedAt, new Date(Date.now() - 35 * 86_400_000)),
-      ),
-    );
-  if (finished.length > 0 && active.length > 0) {
-    const f = finished[0]!;
-    await propose({
-      goalId: null,
-      kind: "goal_review",
-      title: "Overige doelen herzien",
-      reasoning: `"${f.title}" is ${f.status === "achieved" ? "behaald" : "vervallen"}. Dat is een goed moment om te kijken of je overige doelen nog kloppen qua datum en ambitie.`,
-      proposedChange: null,
-    });
+  const candidates = buildProposalCandidates(ctx, active, {
+    finished,
+    seasonGoal: seasonGoal ?? null,
+  });
+  for (const candidate of candidates) {
+    await propose(candidate);
   }
 
   return { created, skipped };
 }
 
 // ── Accept / reject a proposal ────────────────────────────────────────────────
+
+/** Pure: derive the athlete_goals patch an accepted proposal applies. Only
+ * whitelisted, validated fields ever reach the goal row. */
+export function deriveGoalPatch(
+  proposedChange: unknown,
+): Partial<typeof athleteGoalsTable.$inferInsert> {
+  const patch: Partial<typeof athleteGoalsTable.$inferInsert> = {};
+  if (proposedChange == null || typeof proposedChange !== "object") return patch;
+  const change = proposedChange as Record<string, unknown>;
+  if (
+    typeof change.targetDate === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(change.targetDate)
+  ) {
+    patch.targetDate = change.targetDate;
+  }
+  if (isValidStatus(change.status)) {
+    patch.status = change.status;
+    if (typeof change.statusReason === "string")
+      patch.statusReason = change.statusReason;
+  }
+  return patch;
+}
 
 export async function decideProposal(
   clerkId: string,
@@ -792,16 +881,7 @@ export async function decideProposal(
 
   // Apply the structured change ONLY on acceptance — never silently.
   if (decision === "accepted" && proposal.goalId != null && proposal.proposedChange) {
-    const change = proposal.proposedChange as Record<string, unknown>;
-    const patch: Partial<typeof athleteGoalsTable.$inferInsert> = {};
-    if (typeof change.targetDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(change.targetDate)) {
-      patch.targetDate = change.targetDate;
-    }
-    if (isValidStatus(change.status)) {
-      patch.status = change.status;
-      if (typeof change.statusReason === "string")
-        patch.statusReason = change.statusReason;
-    }
+    const patch = deriveGoalPatch(proposal.proposedChange);
     if (Object.keys(patch).length > 0) {
       patch.updatedAt = new Date();
       await db
@@ -828,10 +908,89 @@ export async function decideProposal(
 
 // ── Planning integration ──────────────────────────────────────────────────────
 
+/** How long an accepted steering proposal keeps influencing plan inputs. */
+const DIRECTIVE_WINDOW_DAYS = 35;
+
+export type SteeringDirective = {
+  kind: string; // load | recovery | nutrition
+  line: string; // plain-Dutch instruction for the plan/day-advice inputs
+};
+
+/** Pure: map ACCEPTED load/recovery/nutrition proposals (within the validity
+ * window) to concrete plan-input directives. This is how an accepted steering
+ * proposal actually changes what the plan generator and day advice work with. */
+export function directivesFromProposals(
+  proposals: Pick<
+    GoalProposal,
+    "kind" | "status" | "decidedAt" | "proposedChange" | "title"
+  >[],
+  now: Date = new Date(),
+): SteeringDirective[] {
+  const out: SteeringDirective[] = [];
+  const seen = new Set<string>();
+  for (const p of proposals) {
+    if (p.status !== "accepted" || !p.decidedAt) continue;
+    const ageDays = (now.getTime() - p.decidedAt.getTime()) / 86_400_000;
+    if (ageDays < 0 || ageDays > DIRECTIVE_WINDOW_DAYS) continue;
+    const change = (p.proposedChange ?? {}) as Record<string, unknown>;
+    let line: string | null = null;
+    if (p.kind === "recovery" && change.focus === "recovery") {
+      line =
+        "Afgesproken bijsturing: herstel heeft voorrang — plan lichter, geen intensieve blokken tot de hersteldirectie is opgeheven.";
+    } else if (p.kind === "load" && change.weeklyLoad === "verlagen") {
+      line =
+        "Afgesproken bijsturing: weekbelasting verlagen — liever minder gepland en wél uitgevoerd.";
+    } else if (p.kind === "load" && change.weeklyLoad === "herijken") {
+      line =
+        "Afgesproken bijsturing: belasting mag iets ambitieuzer — de belastbaarheid steeg duidelijk.";
+    } else if (p.kind === "nutrition" && change.nutrition === "fuel_training") {
+      line =
+        "Afgesproken bijsturing: trainingen volledig gevoed rijden — voeding rond trainingen heeft expliciete aandacht.";
+    }
+    if (line && !seen.has(line)) {
+      seen.add(line);
+      out.push({ kind: p.kind, line });
+    }
+  }
+  return out;
+}
+
+/** Load the athlete's currently-active steering directives from accepted
+ * proposals. Used by plan generation and coaching context. */
+export async function loadSteeringDirectives(
+  clerkId: string,
+): Promise<SteeringDirective[]> {
+  const accepted = await db
+    .select({
+      kind: goalProposalsTable.kind,
+      status: goalProposalsTable.status,
+      decidedAt: goalProposalsTable.decidedAt,
+      proposedChange: goalProposalsTable.proposedChange,
+      title: goalProposalsTable.title,
+    })
+    .from(goalProposalsTable)
+    .where(
+      and(
+        eq(goalProposalsTable.clerkId, clerkId),
+        eq(goalProposalsTable.status, "accepted"),
+        gte(
+          goalProposalsTable.decidedAt,
+          new Date(Date.now() - DIRECTIVE_WINDOW_DAYS * 86_400_000),
+        ),
+      ),
+    );
+  return directivesFromProposals(accepted);
+}
+
 /** Plain-Dutch goals block for prompts and the plan generator's `goals` input.
- * Empty string when there is nothing real to say. */
+ * Empty string when there is nothing real to say. Includes the athlete's
+ * accepted steering directives so an accepted proposal really changes the
+ * inputs the plan and day advice are built on. */
 export async function goalsContextLine(clerkId: string): Promise<string> {
-  const picture = await loadGoalPicture(clerkId);
+  const [picture, directives] = await Promise.all([
+    loadGoalPicture(clerkId),
+    loadSteeringDirectives(clerkId),
+  ]);
   const active = picture.goals.filter((g) => g.status === "active");
   const parts: string[] = [];
   for (const g of active.slice(0, 3)) {
@@ -851,6 +1010,9 @@ export async function goalsContextLine(clerkId: string): Promise<string> {
   }
   for (const d of picture.derived.slice(0, 2)) {
     parts.push(d.title + (d.targetDate ? ` (${d.targetDate})` : ""));
+  }
+  for (const dir of directives) {
+    parts.push(dir.line);
   }
   return parts.join(" · ");
 }
