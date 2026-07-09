@@ -223,6 +223,17 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
   const load = computeLoad(loadSessions);
   const risk = computeRiskSignal({ load, readiness, healthStatus });
 
+  // Actieve doelen (incl. horizon + voortgang) sturen de planning mee. Additive:
+  // when the athlete has no goal picture this stays exactly athlete.goals.
+  let goalsText = athlete?.goals ?? null;
+  try {
+    const { goalsContextLine } = await import("./goals");
+    const line = await goalsContextLine(clerkId);
+    if (line) goalsText = goalsText ? `${goalsText} · Doelen: ${line}` : `Doelen: ${line}`;
+  } catch {
+    // Honest degradation: goals block missing → plan uses profile goals only.
+  }
+
   return {
     clerkId,
     displayName: user?.displayName ?? null,
@@ -234,7 +245,7 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
     trainingPreferences: athlete?.trainingPreferences ?? null,
     discipline: athlete?.discipline ?? null,
     ftp: athlete?.ftp ?? null,
-    goals: athlete?.goals ?? null,
+    goals: goalsText,
     healthStatus,
     home,
     readiness,

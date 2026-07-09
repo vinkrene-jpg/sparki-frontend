@@ -60,6 +60,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/tests/world-consistency.ts"),
       path.resolve(artifactDir, "src/jobs/health-check.ts"),
       path.resolve(artifactDir, "src/jobs/reminders.ts"),
+      path.resolve(artifactDir, "src/jobs/goal-review.ts"),
     ],
     platform: "node",
     bundle: true,

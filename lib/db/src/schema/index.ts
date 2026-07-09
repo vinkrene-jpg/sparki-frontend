@@ -34,3 +34,4 @@ export * from "./core-predictions";
 export * from "./telemetry";
 export * from "./intel";
 export * from "./sparki-world";
+export * from "./goals";

@@ -294,6 +294,31 @@ export async function runCoachAnalysis(
       };
       await persistObservation(input);
     }
+
+    // Doelen-voortgang: one deterministic daily summary of the athlete's goal
+    // picture (deduped per day). Skipped honestly when there are no goals.
+    try {
+      const { composeGoalDailySummary } = await import("../../lib/goals");
+      const goalSummary = await composeGoalDailySummary(clerkId);
+      if (goalSummary) {
+        await persistObservation({
+          clerkId,
+          sourceType: "training_analysis",
+          title: goalSummary.headline.slice(0, 120),
+          summary: goalSummary.headline,
+          observationText: [goalSummary.headline, ...goalSummary.lines].join(" "),
+          confidence: "medium",
+          category: "planning",
+          severity: goalSummary.headline.includes("onder druk")
+            ? "important"
+            : "info",
+          detectedPattern: "goal_progress",
+          dedupeKey: `goal:progress:${analysis.date}`,
+        });
+      }
+    } catch {
+      // Goal summary is additive — a failure here never blocks the analysis.
+    }
   }
 
   return analysis;

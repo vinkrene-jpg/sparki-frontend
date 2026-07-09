@@ -145,6 +145,13 @@ export async function buildAthleteContext(clerkId: string): Promise<string> {
         `LANGETERMIJNDOEL: ${DEV_GOAL_NL[athlete.developmentGoal]} — weeg elke beslissing af tegen deze ambitie`,
       );
     if (athlete.goals) parts.push(`SEASON GOALS: ${athlete.goals}`);
+    try {
+      const { goalsContextLine } = await import("./goals");
+      const goalsLine = await goalsContextLine(clerkId);
+      if (goalsLine) parts.push(`ACTIEVE DOELEN (met voortgang): ${goalsLine}`);
+    } catch {
+      // Goals block is additive; never block the context on it.
+    }
     if (athlete.motivation) parts.push(`MOTIVATION: ${athlete.motivation}`);
     if (athlete.weeklyHourTarget)
       parts.push(`TARGET WEEKLY HOURS: ${athlete.weeklyHourTarget}h`);

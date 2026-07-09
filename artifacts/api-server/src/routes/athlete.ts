@@ -278,6 +278,19 @@ router.put("/health-status", requireAuth, async (req, res) => {
     }
 
     triggerPlanRefresh(req, clerkId);
+
+    // Doelen-engine: a reported injury/illness immediately marks the impact on
+    // every active goal (idempotent per day). Best-effort — never blocks.
+    if (healthStatus === "injured" || healthStatus === "sick") {
+      import("../engines/goals")
+        .then(({ reassessGoalsOnHealthChange }) =>
+          reassessGoalsOnHealthChange(clerkId, healthStatus),
+        )
+        .catch((err) =>
+          req.log.error({ err }, "goals.reassessOnHealthChange failed"),
+        );
+    }
+
     res.json({ healthStatus: updated.healthStatus });
   } catch (err) {
     req.log.error({ err }, "athlete.health-status PUT failed");

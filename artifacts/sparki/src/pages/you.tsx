@@ -14,6 +14,7 @@ import { useSessions } from "@/hooks/use-sessions"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useSparkiState } from "@/hooks/use-sparki-state"
 import { GraphInsightCard } from "@/components/sparki/insight/graph-insight-card"
+import { GoalsWorksheet } from "@/components/sparki/goals-worksheet"
 import {
   groupObservations,
   dedupeObservationsByText,
@@ -976,10 +977,20 @@ export default function YouPage() {
         </div>
       </section>
 
+      {/* DOELEN — het meerjarige doelenbeeld: eigen doelen + afgeleide doelen,
+          dagelijkse voortgang uit de backend, voorstellen alleen na bevestiging. */}
+      <section id="doelen" className="scroll-mt-24">
+        <SectionLabel n="10" title="Je doelen" />
+        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+          Waar je naartoe werkt — dit seizoen en verder — en hoe je ervoor staat
+        </p>
+        <GoalsWorksheet />
+      </section>
+
       {/* SFEERBEELD — manage the profile photo. Always present so the Foto-lab
           is reachable from normal navigation, not only the dev preview. */}
       <section>
-        <SectionLabel n="10" title="Sfeerbeeld" />
+        <SectionLabel n="11" title="Sfeerbeeld" />
         <div className="mt-3">
           <Card>
             <div className="flex items-center gap-2">

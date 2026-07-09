@@ -49,6 +49,7 @@
     "test:world-affinity": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/world-affinity.mjs",
     "job:health": "pnpm run build && node --enable-source-maps ./dist/jobs/health-check.mjs",
     "job:reminders": "pnpm run build && node --enable-source-maps ./dist/jobs/reminders.mjs",
+    "job:goal-review": "pnpm run build && node --enable-source-maps ./dist/jobs/goal-review.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
