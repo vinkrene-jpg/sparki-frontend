@@ -19,6 +19,7 @@ import {
   useCreateNutritionLog,
   useDeleteNutritionLog,
   useNutritionGuidance,
+  useNutritionDayAnalysis,
   type NutritionContext,
   type NutritionLog,
   type MealPhotoAdvice,
@@ -85,7 +86,12 @@ const CONTEXT_REASON: Record<NutritionContext, string> = {
 const MAX_PHOTOS = 4
 
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10)
+  // Local calendar day — never toISOString(), that gives the UTC day and
+  // flips to the wrong date around midnight in NL.
+  const d = new Date()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${d.getFullYear()}-${m}-${day}`
 }
 
 function relativeDate(iso: string): string {
@@ -737,6 +743,136 @@ function LogCard({ log }: { log: NutritionLog }) {
   )
 }
 
+// ── Analyse van je dag — alles van één dag samen, gewogen tegen training & persoon ─
+function DayAnalysisSection() {
+  const day = useNutritionDayAnalysis()
+  const { data } = useNutritionLogs()
+  const hasLogsToday = (data?.logs ?? []).some(
+    (l) => l.logDate === todayIso(),
+  )
+  const result = day.data
+  const analysis = result?.analysis ?? null
+
+  return (
+    <section>
+      <SectionLabel title="Analyse van je dag" />
+      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
+        Alles wat je vandaag logde, gewogen tegen je training van vandaag en
+        wie jij bent.
+      </p>
+
+      <div className="mt-4">
+        {!day.isPending && !analysis && (
+          <button
+            type="button"
+            onClick={() => day.mutate(todayIso())}
+            disabled={!hasLogsToday}
+            className="rounded-lg px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.16em] text-black transition disabled:opacity-40"
+            style={{ background: ACCENT }}
+          >
+            Beoordeel mijn dag
+          </button>
+        )}
+        {!hasLogsToday && !day.isPending && !analysis && (
+          <p className="mt-2 text-[12px] leading-relaxed text-white/40">
+            Log eerst wat je vandaag at of dronk — dan kan de dag beoordeeld
+            worden.
+          </p>
+        )}
+        {day.isPending && (
+          <div className="flex items-center gap-2 text-[12px] text-white/50">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Je dag wordt beoordeeld — dit duurt even…
+          </div>
+        )}
+        {day.isError && (
+          <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+            <p className="text-[13px] leading-relaxed text-white/60">
+              Sparki kon je dag nu niet beoordelen. Probeer het zo opnieuw.
+            </p>
+            <button
+              type="button"
+              onClick={() => day.mutate(todayIso())}
+              className="mt-3 rounded-lg px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-black"
+              style={{ background: ACCENT }}
+            >
+              Opnieuw proberen
+            </button>
+          </div>
+        )}
+        {result && !analysis && result.reason && (
+          <p className="text-[12px] leading-relaxed text-white/50">
+            {result.reason}
+          </p>
+        )}
+        {analysis && (
+          <div className="space-y-3">
+            <div className="rounded-2xl border border-cyan-300/25 bg-cyan-300/[0.05] p-4">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300/70">
+                Vandaag · {analysis.logCount}{" "}
+                {analysis.logCount === 1 ? "log" : "logs"}
+                {analysis.photoCount > 0 && ` · ${analysis.photoCount} foto's`}
+                {analysis.trainedThatDay
+                  ? " · getraind"
+                  : analysis.plannedThatDay
+                    ? " · training gepland"
+                    : " · geen training"}
+              </p>
+              <p className="mt-2 text-pretty text-[13px] leading-relaxed text-white/80">
+                {analysis.summary}
+              </p>
+            </div>
+            {analysis.points.map((p, i) => (
+              <div
+                key={i}
+                className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+              >
+                <p className="text-[14px] font-medium text-white/90">
+                  {p.title}
+                </p>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-white/70">
+                  {p.finding}
+                </p>
+                {p.advice && (
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-cyan-300/75">
+                    {p.advice}
+                  </p>
+                )}
+              </div>
+            ))}
+            {analysis.gaps.length > 0 && (
+              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+                  Voor een vollediger beeld
+                </p>
+                <ul className="mt-2 space-y-1">
+                  {analysis.gaps.map((g, i) => (
+                    <li
+                      key={i}
+                      className="text-[12px] leading-relaxed text-white/55"
+                    >
+                      · {g}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => day.mutate(todayIso())}
+              disabled={day.isPending}
+              className="font-mono text-[11px] uppercase tracking-[0.16em] disabled:opacity-50"
+              style={{ color: ACCENT }}
+            >
+              Opnieuw beoordelen
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
 function RecentLogs() {
   const { data, isLoading } = useNutritionLogs()
   const logs = data?.logs ?? []
@@ -791,6 +927,7 @@ export function VoedingScreen({
           </SheetHeader>
 
           <LogForm />
+          <DayAnalysisSection />
           <GuidanceSection enabled={open} />
           <PhotoAdviceSection />
           <RecentLogs />

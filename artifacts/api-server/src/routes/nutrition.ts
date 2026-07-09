@@ -5,6 +5,8 @@ import {
   nutritionHydrationLogsTable,
   nutritionContexts,
   athleteProfilesTable,
+  trainingSessionsTable,
+  plannedWorkoutsTable,
   type NutritionContext,
 } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
@@ -16,6 +18,7 @@ import {
   normalizeMediaType,
   uploadMaterialPhoto,
   streamMaterialPhoto,
+  readMaterialPhotoBase64,
   analyzeMaterial,
   type MaterialCategory,
   type MaterialPhotoInput,
@@ -277,6 +280,275 @@ router.get("/photo/:id/:idx", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "nutrition.photo failed");
     if (!res.headersSent) res.status(404).json({ error: "Foto niet gevonden" });
+  }
+});
+
+// ── GET /api/nutrition/day-analysis ──────────────────────────────────────────
+// Whole-day nutrition analysis for ONE date: everything the rider logged that
+// day (fields + meal photos) related to the training of that day (ridden and/or
+// planned) and to WHO the rider is (age, weight, discipline, development goal).
+// Age decides the depth: under 16 stays light and habit-focused (no gram
+// targets, no performance pressure, RED-S-safe); 16+ gets concrete numbers.
+// Honest gaps: what Sparki cannot know (e.g. meals that were not logged,
+// missing birth year/weight) is named plainly, never filled in.
+
+const MAX_DAY_PHOTOS = 6;
+
+router.get("/day-analysis", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const rawDate = strOrNull(req.query.date);
+  // Fallback = the NL calendar day (server clock runs in UTC; a plain
+  // toISOString() slice would point at yesterday between 00:00–02:00 NL time).
+  const date =
+    rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate)
+      ? rawDate
+      : new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Europe/Amsterdam",
+        }).format(new Date());
+
+  try {
+    const [[athlete], logs, sessions, planned] = await Promise.all([
+      db
+        .select({
+          birthYear: athleteProfilesTable.birthYear,
+          weightKg: athleteProfilesTable.weightKg,
+          discipline: athleteProfilesTable.discipline,
+          developmentGoal: athleteProfilesTable.developmentGoal,
+          ftp: athleteProfilesTable.ftp,
+        })
+        .from(athleteProfilesTable)
+        .where(eq(athleteProfilesTable.clerkId, clerkId)),
+      db
+        .select()
+        .from(nutritionHydrationLogsTable)
+        .where(
+          and(
+            eq(nutritionHydrationLogsTable.clerkId, clerkId),
+            eq(nutritionHydrationLogsTable.logDate, date),
+          ),
+        )
+        .orderBy(nutritionHydrationLogsTable.createdAt),
+      db
+        .select()
+        .from(trainingSessionsTable)
+        .where(
+          and(
+            eq(trainingSessionsTable.clerkId, clerkId),
+            eq(trainingSessionsTable.sessionDate, date),
+          ),
+        ),
+      db
+        .select()
+        .from(plannedWorkoutsTable)
+        .where(
+          and(
+            eq(plannedWorkoutsTable.clerkId, clerkId),
+            eq(plannedWorkoutsTable.scheduledDate, date),
+          ),
+        ),
+    ]);
+
+    if (logs.length === 0) {
+      res.json({
+        analysis: null,
+        reason:
+          "Er is op deze dag nog niets gelogd. Log eerst wat je at of dronk — dan kan de dag beoordeeld worden.",
+      });
+      return;
+    }
+
+    const age =
+      athlete?.birthYear != null
+        ? new Date().getFullYear() - athlete.birthYear
+        : null;
+    const isYouth = age != null && age < YOUTH_AGE_CUTOFF;
+
+    // Real meal photos of the day (capped) as visual evidence.
+    const photoInputs: MaterialPhotoInput[] = [];
+    for (const log of logs) {
+      for (const p of log.photoPaths) {
+        if (photoInputs.length >= MAX_DAY_PHOTOS) break;
+        try {
+          const stored = await readMaterialPhotoBase64(p);
+          const mediaType = normalizeMediaType(stored.mediaType);
+          if (mediaType) {
+            photoInputs.push({ base64: stored.base64, mediaType });
+          }
+        } catch (err) {
+          req.log.warn({ err, path: p }, "nutrition.day photo read failed");
+        }
+      }
+    }
+
+    const logLines = logs
+      .map((l, i) => {
+        const parts: string[] = [`Log ${i + 1} (${CONTEXT_HINTS[l.context] ?? l.context})`];
+        if (l.preTrainingFood) parts.push(`voor de training: ${l.preTrainingFood}`);
+        if (l.postTrainingFood) parts.push(`na de training: ${l.postTrainingFood}`);
+        if (l.duringTrainingCarbsGrams != null)
+          parts.push(`${l.duringTrainingCarbsGrams} g koolhydraten tijdens`);
+        if (l.duringTrainingFluidMl != null)
+          parts.push(`${l.duringTrainingFluidMl} ml vocht tijdens`);
+        if (l.duringTrainingSodiumMg != null)
+          parts.push(`${l.duringTrainingSodiumMg} mg natrium tijdens`);
+        if (l.stomachIssues) parts.push("maag-darmklachten gehad");
+        if (l.notes) parts.push(`notitie: ${l.notes}`);
+        if (l.photoPaths.length > 0)
+          parts.push(`${l.photoPaths.length} foto('s) — zie bijgevoegde beelden`);
+        return "- " + parts.join("; ");
+      })
+      .join("\n");
+
+    const sessionLines =
+      sessions.length > 0
+        ? sessions
+            .map((s) => {
+              const parts = [
+                `${s.title ?? s.type}`,
+                s.durationMin != null ? `${s.durationMin} min` : null,
+                s.distanceKm != null ? `${s.distanceKm} km` : null,
+                s.tss != null ? `belastingsscore ${s.tss}` : null,
+                s.avgPower != null ? `gem. ${s.avgPower} W` : null,
+              ].filter(Boolean);
+              return "- Gereden: " + parts.join(", ");
+            })
+            .join("\n")
+        : null;
+    const plannedLines =
+      planned.length > 0
+        ? planned
+            .map((p) => {
+              const parts = [
+                p.title,
+                p.targetDurationMin != null ? `${p.targetDurationMin} min gepland` : null,
+                p.targetTSS != null ? `doel-belastingsscore ${p.targetTSS}` : null,
+                `status: ${p.status}`,
+              ].filter(Boolean);
+              return "- Gepland: " + parts.join(", ");
+            })
+            .join("\n")
+        : null;
+
+    const personLines = [
+      age != null ? `Leeftijd: ${age} jaar` : "Leeftijd: onbekend (geboortejaar niet ingevuld)",
+      athlete?.weightKg != null ? `Gewicht: ${athlete.weightKg} kg` : "Gewicht: onbekend",
+      athlete?.discipline ? `Discipline: ${athlete.discipline}` : null,
+      athlete?.developmentGoal ? `Ontwikkeldoel: ${athlete.developmentGoal}` : null,
+      athlete?.ftp != null ? `FTP: ${athlete.ftp} W` : null,
+      "Geslacht: onbekend (wordt niet geregistreerd)",
+    ].filter(Boolean);
+
+    const audienceRule = isYouth
+      ? `Deze sporter is ${age} jaar — een jeugdsporter. Houd de analyse LICHT en positief: gewoontes, genoeg en gevarieerd eten, op tijd eten rond de training, genoeg drinken. GEEN calorieën tellen, GEEN gram- of macrodoelen, GEEN prestatiedruk of afval-taal. Veiligheid voorop: eten is brandstof én plezier, nooit minder eten om lichter te worden.`
+      : `Geef een concrete, volwassen analyse met echte richtgetallen waar dat eerlijk kan (koolhydraten per uur t.o.v. de duur/intensiteit van de training, vocht, eiwit voor herstel, timing).`;
+
+    const message = await anthropic.messages.create(
+      {
+        model: "claude-sonnet-4-6",
+        max_tokens: 2000,
+        system: await systemPrompt(clerkId),
+        messages: [
+          {
+            role: "user",
+            content: [
+              ...photoInputs.map((p) => ({
+                type: "image" as const,
+                source: {
+                  type: "base64" as const,
+                  media_type: p.mediaType,
+                  data: p.base64,
+                },
+              })),
+              {
+                type: "text" as const,
+                text: `Analyseer de VOEDING VAN ÉÉN DAG (${date}) van deze sporter, in relatie tot de training van die dag en tot wie de sporter is.
+
+WIE:
+${personLines.join("\n")}
+
+TRAINING DIE DAG:
+${sessionLines ?? "- Geen gereden training bekend voor deze dag."}
+${plannedLines ?? "- Geen geplande training voor deze dag."}
+
+GELOGD DIE DAG:
+${logLines}
+
+${audienceRule}
+
+EERLIJKHEID (verplicht): je ziet ALLEEN wat gelogd is — waarschijnlijk niet alle maaltijden van de dag. Trek dus geen conclusies over de totale dagvoeding alsof die compleet is; beoordeel wat er WEL is en benoem onder "gaps" wat je mist om een vollediger beeld te geven (bijv. niet-gelogde maaltijden, ontbrekend geboortejaar of gewicht). Verzin niets. Beoordeel foto's alleen op wat echt zichtbaar is.
+
+Antwoord UITSLUITEND met geldige JSON (geen markdown eromheen):
+{
+  "summary": "2 tot 3 zinnen: het eerlijke totaalbeeld van deze dag, persoonlijk.",
+  "points": [ { "title": "kort", "finding": "wat je ziet in de gelogde voeding t.o.v. training en persoon", "advice": "concreet wat hiermee te doen" } ],
+  "gaps": [ "wat ontbreekt om een vollediger beeld te geven, in gewone taal" ]
+}
+
+2 tot 4 points. Platte tekst, gewoon Nederlands, geen Engels, nooit het woord "AI".`,
+              },
+            ],
+          },
+        ],
+      },
+      { timeout: 60000, maxRetries: 0 },
+    );
+
+    const block = message.content[0];
+    if (!block || block.type !== "text") {
+      res.status(502).json({ error: "Sparki kon de dag nu niet beoordelen" });
+      return;
+    }
+    let parsed: Record<string, unknown> | null = null;
+    try {
+      const raw = block.text.trim();
+      const start = raw.indexOf("{");
+      const end = raw.lastIndexOf("}");
+      parsed = JSON.parse(
+        start >= 0 && end > start ? raw.slice(start, end + 1) : raw,
+      ) as Record<string, unknown>;
+    } catch {
+      parsed = null;
+    }
+    const summary = typeof parsed?.summary === "string" ? parsed.summary.trim() : "";
+    const points = Array.isArray(parsed?.points)
+      ? (parsed.points as unknown[])
+          .map((p) => {
+            const o = (p ?? {}) as Record<string, unknown>;
+            return {
+              title: typeof o.title === "string" ? o.title.trim() : "",
+              finding: typeof o.finding === "string" ? o.finding.trim() : "",
+              advice: typeof o.advice === "string" ? o.advice.trim() : "",
+            };
+          })
+          .filter((p) => p.title && p.finding)
+      : [];
+    const gaps = Array.isArray(parsed?.gaps)
+      ? (parsed.gaps as unknown[]).filter(
+          (g): g is string => typeof g === "string" && g.trim() !== "",
+        )
+      : [];
+
+    if (!summary || points.length === 0) {
+      res.status(502).json({ error: "Sparki kon de dag nu niet beoordelen" });
+      return;
+    }
+
+    res.json({
+      analysis: {
+        date,
+        level: isYouth ? "youth" : "adult",
+        summary,
+        points,
+        gaps,
+        logCount: logs.length,
+        photoCount: photoInputs.length,
+        trainedThatDay: sessions.length > 0,
+        plannedThatDay: planned.length > 0,
+      },
+    });
+  } catch (err) {
+    req.log.error({ err }, "nutrition.day-analysis failed");
+    res.status(500).json({ error: "Sparki is even niet bereikbaar" });
   }
 });
 

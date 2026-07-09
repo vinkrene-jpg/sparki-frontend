@@ -118,6 +118,34 @@ export function useNutritionGuidance(enabled = true) {
   });
 }
 
+export type NutritionDayAnalysis = {
+  date: string;
+  level: "youth" | "adult";
+  summary: string;
+  points: { title: string; finding: string; advice: string }[];
+  gaps: string[];
+  logCount: number;
+  photoCount: number;
+  trainedThatDay: boolean;
+  plannedThatDay: boolean;
+};
+
+export type NutritionDayResult = {
+  analysis: NutritionDayAnalysis | null;
+  reason?: string;
+};
+
+// On-demand (button-triggered) whole-day analysis — modelled as a mutation
+// because it is slow and costly, so it never fires automatically.
+export function useNutritionDayAnalysis() {
+  return useMutation({
+    mutationFn: (date: string) =>
+      apiFetch<NutritionDayResult>(
+        `/api/nutrition/day-analysis?date=${encodeURIComponent(date)}`,
+      ),
+  });
+}
+
 export function useDeleteNutritionLog() {
   const qc = useQueryClient();
   return useMutation({
