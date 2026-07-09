@@ -8,6 +8,7 @@ import {
   trainingSessionsTable,
   plannedWorkoutsTable,
   racesTable,
+  nutritionSeasonGoalsTable,
   type NutritionContext,
 } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
@@ -364,6 +365,15 @@ router.get("/day-analysis", requireAuth, async (req, res) => {
         : null;
     const isYouth = age != null && age < YOUTH_AGE_CUTOFF;
 
+    const seasonBlock = await seasonGoalPromptBlock(
+      clerkId,
+      age,
+      athlete?.weightKg != null ? Number(athlete.weightKg) : null,
+      new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Amsterdam" }).format(
+        new Date(),
+      ),
+    );
+
     // Real meal photos of the day (capped) as visual evidence.
     const photoInputs: MaterialPhotoInput[] = [];
     for (const log of logs) {
@@ -474,7 +484,7 @@ ${plannedLines ?? "- Geen geplande training voor deze dag."}
 GELOGD DIE DAG:
 ${logLines}
 
-${audienceRule}
+${seasonBlock ? seasonBlock + "\n\n" : ""}${audienceRule}
 
 EERLIJKHEID (verplicht): je ziet ALLEEN wat gelogd is — waarschijnlijk niet alle maaltijden van de dag. Trek dus geen conclusies over de totale dagvoeding alsof die compleet is; beoordeel wat er WEL is en benoem onder "gaps" wat je mist om een vollediger beeld te geven (bijv. niet-gelogde maaltijden, ontbrekend geboortejaar of gewicht). Verzin niets. Beoordeel foto's alleen op wat echt zichtbaar is.
 
@@ -553,6 +563,357 @@ Antwoord UITSLUITEND met geldige JSON (geen markdown eromheen):
   }
 });
 
+// ── Seizoensdoel (17+) — season goal that steers the nutrition day-planning ──
+// The athlete states when the race season starts, when the peak lies and what
+// their target weight is. Sparki asks — and keeps asking — for exactly what is
+// still missing (one targeted question at a time, never a blank form) and
+// derives an honest, deterministic steering: safe pace only (max ~0,5 kg per
+// week), fueling the training always comes first, never crash diets. Athletes
+// under 17 get NO weight steering at all (RED-S safety) — the endpoint refuses
+// honestly instead of hiding the rule.
+
+const SEASON_GOAL_MIN_AGE = 17;
+const SAFE_KG_PER_WEEK = 0.5;
+
+type SeasonSteering = {
+  deltaKg: number | null;
+  weeksToSeasonStart: number | null;
+  weeksToPeak: number | null;
+  requiredKgPerWeek: number | null;
+  feasible: boolean | null;
+  summary: string;
+  warning: string | null;
+};
+
+function weeksUntil(dateStr: string | null, todayStr: string): number | null {
+  if (!dateStr) return null;
+  const target = new Date(dateStr + "T12:00:00Z").getTime();
+  const today = new Date(todayStr + "T12:00:00Z").getTime();
+  return Math.round(((target - today) / 86_400_000 / 7) * 10) / 10;
+}
+
+function computeSeasonSteering(
+  currentKg: number | null,
+  targetKg: number | null,
+  seasonStartDate: string | null,
+  peakDate: string | null,
+  today: string,
+): SeasonSteering | null {
+  if (currentKg == null || targetKg == null) return null;
+  const deltaKg = Math.round((currentKg - targetKg) * 10) / 10;
+  const weeksToSeasonStart = weeksUntil(seasonStartDate, today);
+  const weeksToPeak = weeksUntil(peakDate, today);
+  // The season start is the moment the weight should be right; the peak is
+  // the hard deadline. Steer on the nearest future milestone.
+  const horizon =
+    weeksToSeasonStart != null && weeksToSeasonStart > 0
+      ? weeksToSeasonStart
+      : weeksToPeak != null && weeksToPeak > 0
+        ? weeksToPeak
+        : null;
+
+  if (Math.abs(deltaKg) <= 0.5) {
+    return {
+      deltaKg,
+      weeksToSeasonStart,
+      weeksToPeak,
+      requiredKgPerWeek: 0,
+      feasible: true,
+      summary:
+        "Je zit al op je streefgewicht. De voeding stuurt op behoud: genoeg eten voor je trainingen, niet minder.",
+      warning: null,
+    };
+  }
+
+  const direction = deltaKg > 0 ? "afvallen" : "aankomen";
+  if (horizon == null || horizon <= 0) {
+    return {
+      deltaKg,
+      weeksToSeasonStart,
+      weeksToPeak,
+      requiredKgPerWeek: null,
+      feasible: null,
+      summary: `Verschil met streefgewicht: ${Math.abs(deltaKg).toString().replace(".", ",")} kg (${direction}). Zonder toekomstige seizoensstart of piekdatum kan het tempo niet berekend worden.`,
+      warning: null,
+    };
+  }
+
+  const requiredKgPerWeek =
+    Math.round((Math.abs(deltaKg) / horizon) * 100) / 100;
+  const feasible = requiredKgPerWeek <= SAFE_KG_PER_WEEK;
+  const horizonNl = horizon.toString().replace(".", ",");
+  return {
+    deltaKg,
+    weeksToSeasonStart,
+    weeksToPeak,
+    requiredKgPerWeek,
+    feasible,
+    summary: feasible
+      ? `${Math.abs(deltaKg).toString().replace(".", ",")} kg ${direction} in ${horizonNl} weken kan rustig: ongeveer ${requiredKgPerWeek.toString().replace(".", ",")} kg per week. Dat past naast je trainingen.`
+      : `${Math.abs(deltaKg).toString().replace(".", ",")} kg ${direction} in ${horizonNl} weken vraagt ${requiredKgPerWeek.toString().replace(".", ",")} kg per week — dat is meer dan het veilige tempo van ${SAFE_KG_PER_WEEK.toString().replace(".", ",")} kg per week.`,
+    warning: feasible
+      ? null
+      : "Dit tempo is niet gezond en kost je trainingskwaliteit. Stel je streefgewicht of je datum bij — de voeding stuurt nooit sneller dan het veilige tempo.",
+  };
+}
+
+// Age gate: null when eligible, otherwise honest refusal payload.
+function seasonGoalIneligible(
+  age: number | null,
+): { eligible: false; reason: string; message: string } | null {
+  if (age == null) {
+    return {
+      eligible: false,
+      reason: "birth_year_missing",
+      message:
+        "Je geboortejaar is nog niet ingevuld. Sturen op gewicht is er alleen voor renners van 17 jaar en ouder — vul eerst je geboortejaar in bij je profiel.",
+    };
+  }
+  if (age < SEASON_GOAL_MIN_AGE) {
+    return {
+      eligible: false,
+      reason: "too_young",
+      message:
+        "Sturen op gewicht doet Sparki bewust niet onder de 17. Op jouw leeftijd geldt: genoeg en gevarieerd eten, op tijd rond je trainingen — je lichaam is nog volop in ontwikkeling.",
+    };
+  }
+  return null;
+}
+
+// The doorvraag ladder: the ONE next question Sparki asks, in a fixed order.
+function nextSeasonGoalQuestion(input: {
+  currentWeightKg: number | null;
+  targetWeightKg: number | null;
+  seasonStartDate: string | null;
+  peakDate: string | null;
+}): { field: string; question: string; why: string } | null {
+  if (input.seasonStartDate == null) {
+    return {
+      field: "seasonStartDate",
+      question: "Wanneer begint je wedstrijdseizoen?",
+      why: "Dan weet Sparki tegen wanneer je gewicht goed moet zitten en hoeveel tijd er is om rustig bij te sturen.",
+    };
+  }
+  if (input.peakDate == null) {
+    return {
+      field: "peakDate",
+      question: "Wanneer ligt het hoogtepunt van je seizoen?",
+      why: "Rond je piek telt je gewicht het zwaarst — daar stuurt de dagvoeding uiteindelijk naartoe.",
+    };
+  }
+  if (input.currentWeightKg == null) {
+    return {
+      field: "currentWeightKg",
+      question: "Wat weeg je op dit moment?",
+      why: "Zonder je huidige gewicht valt niet te zeggen of en hoeveel er bijgestuurd moet worden.",
+    };
+  }
+  if (input.targetWeightKg == null) {
+    return {
+      field: "targetWeightKg",
+      question: "Welk gewicht wil je hebben als het erop aankomt?",
+      why: "Dit is het doel waar de dagvoeding naartoe rekent — altijd in een gezond tempo, nooit ten koste van je trainingen.",
+    };
+  }
+  return null;
+}
+
+router.get("/season-goal", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const [[athlete], [goal]] = await Promise.all([
+      db
+        .select({
+          birthYear: athleteProfilesTable.birthYear,
+          weightKg: athleteProfilesTable.weightKg,
+        })
+        .from(athleteProfilesTable)
+        .where(eq(athleteProfilesTable.clerkId, clerkId)),
+      db
+        .select()
+        .from(nutritionSeasonGoalsTable)
+        .where(eq(nutritionSeasonGoalsTable.clerkId, clerkId)),
+    ]);
+
+    const age =
+      athlete?.birthYear != null
+        ? new Date().getFullYear() - athlete.birthYear
+        : null;
+    const blocked = seasonGoalIneligible(age);
+    if (blocked) {
+      res.json(blocked);
+      return;
+    }
+
+    const currentWeightKg =
+      athlete?.weightKg != null ? Number(athlete.weightKg) : null;
+    const targetWeightKg =
+      goal?.targetWeightKg != null ? Number(goal.targetWeightKg) : null;
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Amsterdam",
+    }).format(new Date());
+
+    res.json({
+      eligible: true,
+      goal: {
+        seasonStartDate: goal?.seasonStartDate ?? null,
+        peakDate: goal?.peakDate ?? null,
+        targetWeightKg,
+        note: goal?.note ?? null,
+      },
+      currentWeightKg,
+      nextQuestion: nextSeasonGoalQuestion({
+        currentWeightKg,
+        targetWeightKg,
+        seasonStartDate: goal?.seasonStartDate ?? null,
+        peakDate: goal?.peakDate ?? null,
+      }),
+      steering: computeSeasonSteering(
+        currentWeightKg,
+        targetWeightKg,
+        goal?.seasonStartDate ?? null,
+        goal?.peakDate ?? null,
+        today,
+      ),
+    });
+  } catch (err) {
+    req.log.error({ err }, "nutrition.season-goal get failed");
+    res.status(500).json({ error: "Sparki is even niet bereikbaar" });
+  }
+});
+
+router.put("/season-goal", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const [athlete] = await db
+      .select({
+        birthYear: athleteProfilesTable.birthYear,
+        weightKg: athleteProfilesTable.weightKg,
+      })
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId));
+    const age =
+      athlete?.birthYear != null
+        ? new Date().getFullYear() - athlete.birthYear
+        : null;
+    const blocked = seasonGoalIneligible(age);
+    if (blocked) {
+      res.status(403).json({ error: blocked.message });
+      return;
+    }
+
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+    const parseDate = (v: unknown): string | null | undefined => {
+      if (v === undefined) return undefined;
+      if (v === null || v === "") return null;
+      if (typeof v !== "string" || !dateRe.test(v)) return undefined;
+      // Strict calendar check: round-trip so 2026-99-99 never reaches the DB.
+      const d = new Date(v + "T12:00:00Z");
+      return Number.isNaN(d.getTime()) ||
+        d.toISOString().slice(0, 10) !== v
+        ? undefined
+        : v;
+    };
+    const parseWeight = (v: unknown): number | null | undefined => {
+      if (v === undefined) return undefined;
+      if (v === null || v === "") return null;
+      const n = typeof v === "number" ? v : Number(String(v).replace(",", "."));
+      return Number.isFinite(n) && n >= 35 && n <= 150 ? Math.round(n * 10) / 10 : undefined;
+    };
+
+    const seasonStartDate = parseDate(body.seasonStartDate);
+    const peakDate = parseDate(body.peakDate);
+    const targetWeightKg = parseWeight(body.targetWeightKg);
+    const currentWeightKg = parseWeight(body.currentWeightKg);
+    const note =
+      body.note === undefined
+        ? undefined
+        : body.note === null || body.note === ""
+          ? null
+          : String(body.note).slice(0, 500);
+
+    if (
+      (body.seasonStartDate !== undefined && seasonStartDate === undefined) ||
+      (body.peakDate !== undefined && peakDate === undefined)
+    ) {
+      res.status(400).json({ error: "Datum moet als JJJJ-MM-DD" });
+      return;
+    }
+    if (
+      (body.targetWeightKg !== undefined && targetWeightKg === undefined) ||
+      (body.currentWeightKg !== undefined && currentWeightKg === undefined)
+    ) {
+      res.status(400).json({ error: "Gewicht moet tussen 35 en 150 kg liggen" });
+      return;
+    }
+
+    // Current weight lives on the athlete profile — single source of truth.
+    if (currentWeightKg !== undefined && currentWeightKg !== null) {
+      await db
+        .update(athleteProfilesTable)
+        .set({ weightKg: String(currentWeightKg), updatedAt: new Date() })
+        .where(eq(athleteProfilesTable.clerkId, clerkId));
+    }
+
+    const goalValues: Record<string, unknown> = { updatedAt: new Date() };
+    if (seasonStartDate !== undefined) goalValues.seasonStartDate = seasonStartDate;
+    if (peakDate !== undefined) goalValues.peakDate = peakDate;
+    if (targetWeightKg !== undefined)
+      goalValues.targetWeightKg = targetWeightKg == null ? null : String(targetWeightKg);
+    if (note !== undefined) goalValues.note = note;
+
+    await db
+      .insert(nutritionSeasonGoalsTable)
+      .values({ clerkId, ...goalValues })
+      .onConflictDoUpdate({
+        target: nutritionSeasonGoalsTable.clerkId,
+        set: goalValues,
+      });
+
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "nutrition.season-goal put failed");
+    res.status(500).json({ error: "Sparki is even niet bereikbaar" });
+  }
+});
+
+// Shared: the deterministic season-goal steering block injected into the
+// fueling-plan and day-analysis prompts for adult (17+) athletes with a goal.
+async function seasonGoalPromptBlock(
+  clerkId: string,
+  age: number | null,
+  currentWeightKg: number | null,
+  today: string,
+): Promise<string | null> {
+  if (age == null || age < SEASON_GOAL_MIN_AGE) return null;
+  const [goal] = await db
+    .select()
+    .from(nutritionSeasonGoalsTable)
+    .where(eq(nutritionSeasonGoalsTable.clerkId, clerkId));
+  if (!goal) return null;
+  const targetWeightKg =
+    goal.targetWeightKg != null ? Number(goal.targetWeightKg) : null;
+  const steering = computeSeasonSteering(
+    currentWeightKg,
+    targetWeightKg,
+    goal.seasonStartDate,
+    goal.peakDate,
+    today,
+  );
+  const lines = [
+    "SEIZOENSDOEL (door de sporter zelf ingesteld, weegt mee in het advies):",
+    goal.seasonStartDate ? `- Wedstrijdseizoen begint: ${goal.seasonStartDate}` : null,
+    goal.peakDate ? `- Hoogtepunt van het seizoen: ${goal.peakDate}` : null,
+    targetWeightKg != null ? `- Streefgewicht: ${targetWeightKg} kg` : null,
+    steering ? `- Berekende sturing: ${steering.summary}` : null,
+    steering?.warning ? `- Waarschuwing: ${steering.warning}` : null,
+    goal.note ? `- Toelichting van de sporter: ${goal.note}` : null,
+    `REGELS: de training van vandaag wordt ALTIJD volledig gevoed — nooit besparen rond of tijdens een training. Sturing op gewicht gebeurt uitsluitend via de gewone maaltijden op rustige momenten, in een tempo van maximaal ${SAFE_KG_PER_WEEK.toString().replace(".", ",")} kg per week. Nooit crashdiëten of maaltijden overslaan adviseren.`,
+  ].filter(Boolean);
+  return lines.length > 1 ? lines.join("\n") : null;
+}
+
 // ── GET /api/nutrition/fueling-plan ──────────────────────────────────────────
 // When the training or race of a day is known IN ADVANCE, Sparki proposes a
 // four-phase fueling plan: voorbereiding → tijdens → direct erna → de uren
@@ -615,6 +976,15 @@ router.get("/fueling-plan", requireAuth, async (req, res) => {
         : null;
     const isYouth = age != null && age < YOUTH_AGE_CUTOFF;
 
+    const seasonBlock = await seasonGoalPromptBlock(
+      clerkId,
+      age,
+      athlete?.weightKg != null ? Number(athlete.weightKg) : null,
+      new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Amsterdam" }).format(
+        new Date(),
+      ),
+    );
+
     const effortLines: string[] = [];
     for (const r of dayRaces) {
       const parts = [
@@ -663,7 +1033,7 @@ ${personLines.join("\n")}
 GEPLAND OP ${date}:
 ${effortLines.join("\n")}
 
-${audienceRule}
+${seasonBlock ? seasonBlock + "\n\n" : ""}${audienceRule}
 
 EERLIJKHEID (verplicht): baseer hoeveelheden op de geplande duur en intensiteit die hierboven staan. Ontbreekt de duur of intensiteit, zeg dat dan bij "gaps" en houd het advies daar voorzichtig in plaats van getallen te verzinnen. Starttijd is onbekend — formuleer timing relatief ("2 tot 3 uur voor de start"), nooit met kloktijden.
 

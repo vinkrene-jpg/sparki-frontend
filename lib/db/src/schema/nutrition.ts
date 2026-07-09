@@ -57,6 +57,34 @@ export const nutritionHydrationLogsTable = pgTable(
   (t) => [index("nutrition_clerk_date_idx").on(t.clerkId, t.logDate)],
 );
 
+// Season goal — steers the nutrition day-planning for adult athletes (17+).
+// The athlete states when the race season starts, when the season peak lies
+// and what their target weight is; Sparki derives an honest, safe steering
+// (never crash diets, fueling the training always comes first). One row per
+// athlete, always adjustable. NOT used for athletes under 17 (RED-S safety).
+export const nutritionSeasonGoalsTable = pgTable("nutrition_season_goals", {
+  id: serial("id").primaryKey(),
+  clerkId: text("clerk_id")
+    .notNull()
+    .unique()
+    .references(() => userProfilesTable.clerkId, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  seasonStartDate: date("season_start_date"),
+  peakDate: date("peak_date"),
+  targetWeightKg: numeric("target_weight_kg", { precision: 5, scale: 2 }),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type NutritionSeasonGoal = typeof nutritionSeasonGoalsTable.$inferSelect;
+
 export const insertNutritionHydrationLogSchema = createInsertSchema(
   nutritionHydrationLogsTable,
 ).omit({ id: true });

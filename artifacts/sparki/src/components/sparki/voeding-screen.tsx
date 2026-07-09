@@ -21,6 +21,8 @@ import {
   useNutritionGuidance,
   useNutritionDayAnalysis,
   useFuelingPlan,
+  useSeasonGoal,
+  useUpdateSeasonGoal,
   type NutritionContext,
   type NutritionLog,
   type MealPhotoAdvice,
@@ -744,6 +746,186 @@ function LogCard({ log }: { log: NutritionLog }) {
   )
 }
 
+// ── Seizoensdoel (17+) — Sparki vraagt en vraagt door, één vraag tegelijk ────
+const GOAL_FIELD_LABELS: Record<string, string> = {
+  seasonStartDate: "Start wedstrijdseizoen",
+  peakDate: "Hoogtepunt seizoen",
+  currentWeightKg: "Huidig gewicht",
+  targetWeightKg: "Streefgewicht",
+}
+
+function SeasonGoalSection({ enabled }: { enabled: boolean }) {
+  const { data, isLoading } = useSeasonGoal(enabled)
+  const update = useUpdateSeasonGoal()
+  const [answer, setAnswer] = useState("")
+  const [editing, setEditing] = useState<string | null>(null)
+
+  // Under-17s get no weight steering at all — section renders nothing.
+  if (!isLoading && data && !data.eligible && data.reason === "too_young")
+    return null
+
+  const eligible = data?.eligible === true ? data : null
+  const question = eligible?.nextQuestion ?? null
+  const activeField = editing ?? question?.field ?? null
+  const isDateField =
+    activeField === "seasonStartDate" || activeField === "peakDate"
+
+  function submitAnswer() {
+    if (!activeField || !answer.trim()) return
+    const value = isDateField
+      ? answer.trim()
+      : Number(answer.trim().replace(",", "."))
+    update.mutate(
+      { [activeField]: value },
+      {
+        onSuccess: () => {
+          setAnswer("")
+          setEditing(null)
+        },
+      },
+    )
+  }
+
+  return (
+    <section>
+      <SectionLabel title="Seizoensdoel" />
+      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
+        Je dagvoeding stuurt mee op je seizoen: op gewicht zijn als het
+        wedstrijdseizoen begint, en scherp op je piek. Altijd in een gezond
+        tempo — je trainingen worden nooit tekortgedaan.
+      </p>
+
+      <div className="mt-4 space-y-3">
+        {isLoading && (
+          <div className="h-16 w-full animate-pulse rounded-xl bg-white/[0.06]" />
+        )}
+
+        {data && !data.eligible && data.reason === "birth_year_missing" && (
+          <p className="text-[12px] leading-relaxed text-white/50">
+            {data.message}
+          </p>
+        )}
+
+        {eligible && (
+          <>
+            {/* Wat al bekend is — altijd bij te stellen */}
+            {(eligible.goal.seasonStartDate ||
+              eligible.goal.peakDate ||
+              eligible.goal.targetWeightKg != null ||
+              eligible.currentWeightKg != null) && (
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ["seasonStartDate", eligible.goal.seasonStartDate],
+                    ["peakDate", eligible.goal.peakDate],
+                    [
+                      "currentWeightKg",
+                      eligible.currentWeightKg != null
+                        ? `${String(eligible.currentWeightKg).replace(".", ",")} kg`
+                        : null,
+                    ],
+                    [
+                      "targetWeightKg",
+                      eligible.goal.targetWeightKg != null
+                        ? `${String(eligible.goal.targetWeightKg).replace(".", ",")} kg`
+                        : null,
+                    ],
+                  ] as const
+                )
+                  .filter(([, v]) => v != null)
+                  .map(([field, v]) => (
+                    <button
+                      key={field}
+                      type="button"
+                      onClick={() => {
+                        setEditing(field)
+                        setAnswer("")
+                      }}
+                      className="rounded-full border border-white/[0.12] px-3 py-1.5 text-[11px] text-white/60 transition hover:border-white/30 hover:text-white/85"
+                    >
+                      {GOAL_FIELD_LABELS[field]}: {v}
+                    </button>
+                  ))}
+              </div>
+            )}
+
+            {/* Sparki's volgende vraag — of het bijstellen van een waarde */}
+            {activeField && (
+              <div className="rounded-2xl border border-cyan-300/25 bg-cyan-300/[0.05] p-4">
+                <p className="text-[13px] font-medium text-white/90">
+                  {editing
+                    ? `${GOAL_FIELD_LABELS[editing]} bijstellen`
+                    : question?.question}
+                </p>
+                {!editing && question?.why && (
+                  <p className="mt-1.5 text-[12px] leading-relaxed text-white/55">
+                    {question.why}
+                  </p>
+                )}
+                <div className="mt-3 flex items-center gap-2">
+                  <input
+                    type={isDateField ? "date" : "number"}
+                    inputMode={isDateField ? undefined : "decimal"}
+                    step={isDateField ? undefined : "0.1"}
+                    value={answer}
+                    onChange={(e) => setAnswer(e.target.value)}
+                    placeholder={isDateField ? undefined : "kg"}
+                    className="w-40 rounded-lg border border-white/[0.12] bg-black/30 px-3 py-2 text-[13px] text-white outline-none focus:border-cyan-300/50 [color-scheme:dark]"
+                  />
+                  <button
+                    type="button"
+                    onClick={submitAnswer}
+                    disabled={update.isPending || !answer.trim()}
+                    className="rounded-lg px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-black disabled:opacity-40"
+                    style={{ background: ACCENT }}
+                  >
+                    {update.isPending ? "Bezig…" : "Opslaan"}
+                  </button>
+                  {editing && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditing(null)
+                        setAnswer("")
+                      }}
+                      className="text-[12px] text-white/45 hover:text-white/70"
+                    >
+                      Annuleren
+                    </button>
+                  )}
+                </div>
+                {update.isError && (
+                  <p className="mt-2 text-[12px] text-red-300/80">
+                    Opslaan lukte niet. Controleer de waarde en probeer het
+                    opnieuw.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* De berekende sturing — eerlijk, incl. waarschuwing bij onhaalbaar tempo */}
+            {!activeField && eligible.steering && (
+              <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+                <p className="text-[13px] leading-relaxed text-white/75">
+                  {eligible.steering.summary}
+                </p>
+                {eligible.steering.warning && (
+                  <p className="mt-2 text-[12px] leading-relaxed text-amber-300/80">
+                    {eligible.steering.warning}
+                  </p>
+                )}
+                <p className="mt-2 text-[11px] leading-relaxed text-white/35">
+                  Dit doel stuurt mee in je dag-analyse en je voedingsplan.
+                </p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </section>
+  )
+}
+
 // ── Voedingsplan vooraf — vier fasen rond een geplande training of wedstrijd ─
 const PHASE_HINTS: Record<string, string> = {
   voorbereiding: "De uren vóór de start",
@@ -1052,6 +1234,7 @@ export function VoedingScreen({
           </SheetHeader>
 
           <LogForm />
+          <SeasonGoalSection enabled={open} />
           <FuelingPlanSection />
           <DayAnalysisSection />
           <GuidanceSection enabled={open} />

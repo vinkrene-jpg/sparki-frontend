@@ -174,6 +174,61 @@ export function useFuelingPlan() {
   });
 }
 
+export type SeasonGoalSteering = {
+  deltaKg: number | null;
+  weeksToSeasonStart: number | null;
+  weeksToPeak: number | null;
+  requiredKgPerWeek: number | null;
+  feasible: boolean | null;
+  summary: string;
+  warning: string | null;
+};
+
+export type SeasonGoalResult =
+  | { eligible: false; reason: "birth_year_missing" | "too_young"; message: string }
+  | {
+      eligible: true;
+      goal: {
+        seasonStartDate: string | null;
+        peakDate: string | null;
+        targetWeightKg: number | null;
+        note: string | null;
+      };
+      currentWeightKg: number | null;
+      nextQuestion: { field: string; question: string; why: string } | null;
+      steering: SeasonGoalSteering | null;
+    };
+
+export function useSeasonGoal(enabled: boolean) {
+  return useQuery({
+    queryKey: ["nutrition", "season-goal"],
+    queryFn: () => apiFetch<SeasonGoalResult>("/api/nutrition/season-goal"),
+    enabled,
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
+export function useUpdateSeasonGoal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      seasonStartDate?: string | null;
+      peakDate?: string | null;
+      targetWeightKg?: number | null;
+      currentWeightKg?: number | null;
+      note?: string | null;
+    }) =>
+      apiFetch<{ ok: true }>("/api/nutrition/season-goal", {
+        method: "PUT",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["nutrition", "season-goal"] });
+    },
+  });
+}
+
 export function useDeleteNutritionLog() {
   const qc = useQueryClient();
   return useMutation({
