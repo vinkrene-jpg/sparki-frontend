@@ -44,6 +44,27 @@ export type NutritionLogInput = {
   photos?: PhotoPayload[];
 };
 
+export type MealPhotoAdvice = {
+  detectedItem: string;
+  confidence: "high" | "medium" | "low" | "unknown";
+  needsMorePhoto: boolean;
+  followUpQuestion: string | null;
+  advice: {
+    summary: string;
+    pros: string[];
+    cons: string[];
+    risks: string[];
+    alternatives: string[];
+  };
+};
+
+export type CreateNutritionResult = {
+  log: NutritionLog;
+  flagged: number;
+  photoAdvice: MealPhotoAdvice | null;
+  photoAdviceFailed: boolean;
+};
+
 export type NutritionGuidanceTopic = {
   title: string;
   what: string;
@@ -72,7 +93,7 @@ export function useCreateNutritionLog() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: NutritionLogInput) =>
-      apiFetch<{ log: NutritionLog; flagged: number }>("/api/nutrition", {
+      apiFetch<CreateNutritionResult>("/api/nutrition", {
         method: "POST",
         body: JSON.stringify(input),
       }),

@@ -21,6 +21,7 @@ import {
   useNutritionGuidance,
   type NutritionContext,
   type NutritionLog,
+  type MealPhotoAdvice,
 } from "@/hooks/use-nutrition"
 import {
   useMaterialCategories,
@@ -162,6 +163,8 @@ function LogForm() {
   const [photos, setPhotos] = useState<StagedPhoto[]>([])
   const [photoError, setPhotoError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+  const [mealAdvice, setMealAdvice] = useState<MealPhotoAdvice | null>(null)
+  const [mealAdviceFailed, setMealAdviceFailed] = useState(false)
 
   async function addPhoto(file: File) {
     setPhotoError(null)
@@ -195,6 +198,9 @@ function LogForm() {
   }
 
   function submit() {
+    const hadPhotos = photos.length > 0
+    setMealAdvice(null)
+    setMealAdviceFailed(false)
     create.mutate(
       {
         logDate: todayIso(),
@@ -209,14 +215,20 @@ function LogForm() {
         photos: photos.map((p) => p.payload),
       },
       {
-        onSuccess: () => {
+        onSuccess: (res) => {
           reset()
-          setDone(true)
-          setTimeout(() => setDone(false), 2200)
+          setMealAdvice(res.photoAdvice ?? null)
+          setMealAdviceFailed(hadPhotos && (res.photoAdviceFailed || !res.photoAdvice))
+          if (!res.photoAdvice) {
+            setDone(true)
+            setTimeout(() => setDone(false), 2200)
+          }
         },
       },
     )
   }
+
+  const hasStagedPhotos = photos.length > 0
 
   return (
     <section>
@@ -359,6 +371,19 @@ function LogForm() {
             Gelogd — Sparki neemt het mee.
           </p>
         )}
+        {create.isPending && hasStagedPhotos && (
+          <p className="flex items-center gap-2 text-[12px] text-white/55">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Je foto wordt bekeken — dit duurt even…
+          </p>
+        )}
+        {mealAdviceFailed && (
+          <p className="text-[12px] leading-relaxed text-white/60">
+            Je log is opgeslagen, maar de foto kon nu niet beoordeeld worden.
+            Probeer het later opnieuw via &ldquo;Sparki beoordeelt je
+            voeding&rdquo; hieronder.
+          </p>
+        )}
 
         <button
           type="button"
@@ -367,9 +392,63 @@ function LogForm() {
           className="w-full rounded-lg py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-black transition disabled:opacity-50"
           style={{ background: ACCENT }}
         >
-          {create.isPending ? "opslaan…" : "Loggen"}
+          {create.isPending
+            ? hasStagedPhotos
+              ? "foto wordt bekeken…"
+              : "opslaan…"
+            : "Loggen"}
         </button>
       </div>
+
+      {mealAdvice && (
+        <div className="mt-4 rounded-2xl border border-cyan-300/25 bg-cyan-300/[0.05] p-4">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300/70">
+            Beoordeling van je foto
+          </p>
+          <p className="mt-1.5 text-[14px] font-medium text-white/90">
+            {mealAdvice.detectedItem}
+          </p>
+          <p className="mt-1.5 text-pretty text-[13px] leading-relaxed text-white/75">
+            {mealAdvice.advice.summary}
+          </p>
+          {mealAdvice.advice.pros.length > 0 && (
+            <ul className="mt-2.5 space-y-1">
+              {mealAdvice.advice.pros.map((p, i) => (
+                <li key={i} className="text-[12px] leading-relaxed text-white/60">
+                  <span style={{ color: ACCENT }}>+</span> {p}
+                </li>
+              ))}
+            </ul>
+          )}
+          {(mealAdvice.advice.cons.length > 0 ||
+            mealAdvice.advice.risks.length > 0) && (
+            <ul className="mt-1.5 space-y-1">
+              {[...mealAdvice.advice.cons, ...mealAdvice.advice.risks].map(
+                (c, i) => (
+                  <li
+                    key={i}
+                    className="text-[12px] leading-relaxed text-white/60"
+                  >
+                    <span className="text-[rgba(245,160,90,0.95)]">–</span> {c}
+                  </li>
+                ),
+              )}
+            </ul>
+          )}
+          {mealAdvice.needsMorePhoto && mealAdvice.followUpQuestion && (
+            <p className="mt-2.5 text-[12px] leading-relaxed text-cyan-300/70">
+              {mealAdvice.followUpQuestion}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => setMealAdvice(null)}
+            className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-white/45"
+          >
+            Sluiten
+          </button>
+        </div>
+      )}
     </section>
   )
 }

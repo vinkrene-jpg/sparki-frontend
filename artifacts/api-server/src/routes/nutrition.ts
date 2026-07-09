@@ -16,12 +16,32 @@ import {
   normalizeMediaType,
   uploadMaterialPhoto,
   streamMaterialPhoto,
+  analyzeMaterial,
+  type MaterialCategory,
   type MaterialPhotoInput,
+  type MaterialAnalysisResult,
 } from "../engines/material";
 
 const router = Router();
 
 const MAX_PHOTOS = 4;
+
+// Local category for meal-photo assessment on a nutrition log. Deliberately NOT
+// in the Materiaalcoach registry: this path is triggered by the rider logging a
+// meal with a photo, not by picking a category chip.
+const MEAL_CATEGORY: MaterialCategory = {
+  key: "logged_meal",
+  label: "Maaltijd",
+  prompt: "Laat zien wat je at of dronk",
+  kind: "nutrition",
+};
+
+const CONTEXT_HINTS: Record<string, string> = {
+  training_day: "rond een training",
+  race_day: "rond een wedstrijd",
+  recovery_day: "op een hersteldag",
+  normal_day: "op een gewone dag",
+};
 
 const numStr = (v: unknown): string | null =>
   v == null || v === "" ? null : String(v);
@@ -143,7 +163,57 @@ router.post("/", requireAuth, async (req, res) => {
       (err) => req.log.error({ err }, "nutrition.analyze failed"),
     );
 
-    res.status(201).json({ log, flagged: observations.length });
+    // Meal-photo assessment: a photo of food must get a real reaction, never
+    // silently disappear into storage. Honest failure: on error the log is
+    // still saved and we say so (photoAdviceFailed), never a fabricated verdict.
+    let photoAdvice: MaterialAnalysisResult | null = null;
+    let photoAdviceFailed = false;
+    if (photos.length > 0) {
+      try {
+        const noteParts = [
+          strOrNull(body.notes),
+          strOrNull(body.preTrainingFood) &&
+            `Voor de training at ik: ${strOrNull(body.preTrainingFood)}`,
+          strOrNull(body.postTrainingFood) &&
+            `Na de training at ik: ${strOrNull(body.postTrainingFood)}`,
+        ].filter((p): p is string => !!p);
+        photoAdvice = await analyzeMaterial({
+          category: MEAL_CATEGORY,
+          photos,
+          userNote: noteParts.join(". ") || null,
+          athleteHint: `Deze maaltijd/dit eten is gelogd ${CONTEXT_HINTS[context] ?? "vandaag"}.`,
+        });
+        if (photoAdvice.advice.summary) {
+          void persistObservation({
+            clerkId,
+            sourceType: "nutrition_analysis",
+            category: "nutrition",
+            severity: "info",
+            confidence:
+              photoAdvice.confidence === "unknown"
+                ? "low"
+                : photoAdvice.confidence,
+            title: `Maaltijd bekeken: ${photoAdvice.detectedItem}`,
+            observationText: photoAdvice.advice.summary,
+            recommendedAction: photoAdvice.advice.risks[0] ?? null,
+            detectedPattern: "meal_photo_review",
+            supportingDataRefs: { nutritionLogId: log.id, logDate: log.logDate },
+          }).catch((err) =>
+            req.log.error({ err }, "nutrition.photo-advice persist failed"),
+          );
+        }
+      } catch (err) {
+        photoAdviceFailed = true;
+        req.log.error({ err }, "nutrition.photo-advice failed");
+      }
+    }
+
+    res.status(201).json({
+      log,
+      flagged: observations.length,
+      photoAdvice,
+      photoAdviceFailed,
+    });
   } catch (err) {
     req.log.error({ err }, "nutrition.create failed");
     res.status(500).json({ error: "Kon log niet opslaan" });
