@@ -10,9 +10,11 @@ import { logger } from "../lib/logger";
 // run repeatedly: proposals are idempotent per goal+kind+month via dedupeKey,
 // and NOTHING is applied without the athlete's explicit confirmation in-app.
 //
-// Recommended cadence: monthly, first day of the month
-//   (cron: 0 7 1 * *  — 07:00 on the 1st).
+// Schedule it via Publishing → Scheduled Deployments:
+//   • Monthly, 1st of the month, 06:00 Europe/Amsterdam
+//     (cron: 0 6 1 * *  with timezone Europe/Amsterdam).
 // Run command: `pnpm --filter @workspace/api-server run job:goal-review`.
+// Build command: none needed (the run command builds first via `pnpm run build`).
 //
 // Optional env:
 //   GOAL_REVIEW_MAX_ATHLETES — cap athletes processed in one run (safety valve).
