@@ -7,6 +7,7 @@ import {
   athleteProfilesTable,
   trainingSessionsTable,
   plannedWorkoutsTable,
+  racesTable,
   type NutritionContext,
 } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
@@ -548,6 +549,216 @@ Antwoord UITSLUITEND met geldige JSON (geen markdown eromheen):
     });
   } catch (err) {
     req.log.error({ err }, "nutrition.day-analysis failed");
+    res.status(500).json({ error: "Sparki is even niet bereikbaar" });
+  }
+});
+
+// ── GET /api/nutrition/fueling-plan ──────────────────────────────────────────
+// When the training or race of a day is known IN ADVANCE, Sparki proposes a
+// four-phase fueling plan: voorbereiding → tijdens → direct erna → de uren
+// erna (herstel). Grounded in the REAL planned workout / race of that date and
+// the athlete's profile. Honest reason when nothing is planned — never a
+// generic made-up plan. Youth <16 stays light and RED-S-safe (no numbers).
+
+router.get("/fueling-plan", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const rawDate = strOrNull(req.query.date);
+  const date =
+    rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate)
+      ? rawDate
+      : new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Europe/Amsterdam",
+        }).format(new Date());
+
+  try {
+    const [[athlete], planned, dayRaces] = await Promise.all([
+      db
+        .select({
+          birthYear: athleteProfilesTable.birthYear,
+          weightKg: athleteProfilesTable.weightKg,
+          discipline: athleteProfilesTable.discipline,
+          developmentGoal: athleteProfilesTable.developmentGoal,
+          ftp: athleteProfilesTable.ftp,
+        })
+        .from(athleteProfilesTable)
+        .where(eq(athleteProfilesTable.clerkId, clerkId)),
+      db
+        .select()
+        .from(plannedWorkoutsTable)
+        .where(
+          and(
+            eq(plannedWorkoutsTable.clerkId, clerkId),
+            eq(plannedWorkoutsTable.scheduledDate, date),
+          ),
+        ),
+      db
+        .select()
+        .from(racesTable)
+        .where(
+          and(eq(racesTable.clerkId, clerkId), eq(racesTable.raceDate, date)),
+        ),
+    ]);
+
+    const openPlanned = planned.filter((p) => p.status !== "completed");
+    if (openPlanned.length === 0 && dayRaces.length === 0) {
+      res.json({
+        plan: null,
+        reason:
+          "Er staat voor deze dag geen training of wedstrijd gepland. Zodra er iets in je schema staat, kan er vooraf een voedingsplan gemaakt worden.",
+      });
+      return;
+    }
+
+    const age =
+      athlete?.birthYear != null
+        ? new Date().getFullYear() - athlete.birthYear
+        : null;
+    const isYouth = age != null && age < YOUTH_AGE_CUTOFF;
+
+    const effortLines: string[] = [];
+    for (const r of dayRaces) {
+      const parts = [
+        `WEDSTRIJD: ${r.name}`,
+        r.discipline ? `discipline ${r.discipline}` : null,
+        r.distanceKm != null ? `${r.distanceKm} km` : null,
+      ].filter(Boolean);
+      effortLines.push("- " + parts.join(", "));
+    }
+    for (const p of openPlanned) {
+      const parts = [
+        `TRAINING: ${p.title}`,
+        p.description ? p.description : null,
+        p.targetDurationMin != null ? `${p.targetDurationMin} min gepland` : null,
+        p.targetTSS != null ? `doel-belastingsscore ${p.targetTSS}` : null,
+      ].filter(Boolean);
+      effortLines.push("- " + parts.join(", "));
+    }
+
+    const personLines = [
+      age != null ? `Leeftijd: ${age} jaar` : "Leeftijd: onbekend (geboortejaar niet ingevuld)",
+      athlete?.weightKg != null ? `Gewicht: ${athlete.weightKg} kg` : "Gewicht: onbekend",
+      athlete?.discipline ? `Discipline: ${athlete.discipline}` : null,
+      athlete?.developmentGoal ? `Ontwikkeldoel: ${athlete.developmentGoal}` : null,
+      athlete?.ftp != null ? `FTP: ${athlete.ftp} W` : null,
+      "Geslacht: onbekend (wordt niet geregistreerd)",
+    ].filter(Boolean);
+
+    const audienceRule = isYouth
+      ? `Deze sporter is ${age} jaar — een jeugdsporter. Houd het plan LICHT en positief: gewone maaltijden op tijd, een gevulde bidon, iets kleins meenemen voor onderweg bij lange ritten, gewoon eten na afloop. GEEN calorieën, GEEN gram- of macrodoelen, GEEN prestatiedruk of afval-taal. Eten is brandstof én plezier; nooit minder eten om lichter te worden.`
+      : `Geef een concreet, volwassen plan met echte richtgetallen waar dat eerlijk kan: koolhydraten in de uren vooraf, koolhydraten per uur tijdens (afgestemd op duur en intensiteit — onder de 60–75 minuten is extra voeding tijdens meestal niet nodig, zeg dat dan eerlijk), vocht en natrium, koolhydraten + eiwit direct na, en volwaardige maaltijden in de uren erna.`;
+
+    const message = await anthropic.messages.create(
+      {
+        model: "claude-sonnet-4-6",
+        max_tokens: 2000,
+        system: await systemPrompt(clerkId),
+        messages: [
+          {
+            role: "user",
+            content: `Maak een VOEDINGSPLAN VOORAF voor de inspanning van ${date}, in vier fasen. Baseer het UITSLUITEND op wat hieronder echt gepland staat en op wie de sporter is.
+
+WIE:
+${personLines.join("\n")}
+
+GEPLAND OP ${date}:
+${effortLines.join("\n")}
+
+${audienceRule}
+
+EERLIJKHEID (verplicht): baseer hoeveelheden op de geplande duur en intensiteit die hierboven staan. Ontbreekt de duur of intensiteit, zeg dat dan bij "gaps" en houd het advies daar voorzichtig in plaats van getallen te verzinnen. Starttijd is onbekend — formuleer timing relatief ("2 tot 3 uur voor de start"), nooit met kloktijden.
+
+Antwoord UITSLUITEND met geldige JSON (geen markdown eromheen):
+{
+  "summary": "1 tot 2 zinnen: waar dit plan op gebouwd is en wat de kern is.",
+  "phases": [
+    { "phase": "voorbereiding", "title": "Voorbereiding", "advice": "concreet advies voor de uren vóór de start" },
+    { "phase": "tijdens", "title": "Tijdens", "advice": "concreet advies tijdens de inspanning" },
+    { "phase": "direct_erna", "title": "Direct erna", "advice": "concreet advies voor de eerste 30 tot 60 minuten na afloop" },
+    { "phase": "herstel", "title": "De uren erna", "advice": "concreet advies voor herstel de rest van de dag" }
+  ],
+  "gaps": [ "wat ontbreekt om het plan preciezer te maken, in gewone taal" ]
+}
+
+Precies deze 4 fasen, in deze volgorde. Platte tekst, gewoon Nederlands, geen Engels, nooit het woord "AI".`,
+          },
+        ],
+      },
+      { timeout: 60000, maxRetries: 0 },
+    );
+
+    const block = message.content[0];
+    if (!block || block.type !== "text") {
+      res.status(502).json({ error: "Sparki kon nu geen voedingsplan maken" });
+      return;
+    }
+    let parsed: Record<string, unknown> | null = null;
+    try {
+      const raw = block.text.trim();
+      const start = raw.indexOf("{");
+      const end = raw.lastIndexOf("}");
+      parsed = JSON.parse(
+        start >= 0 && end > start ? raw.slice(start, end + 1) : raw,
+      ) as Record<string, unknown>;
+    } catch {
+      parsed = null;
+    }
+    const summary = typeof parsed?.summary === "string" ? parsed.summary.trim() : "";
+    // Enforce the four-phase contract: exactly voorbereiding → tijdens →
+    // direct_erna → herstel, deduped by key and in canonical order. Anything
+    // less is an honest 502, never a partial plan.
+    const PHASE_ORDER = ["voorbereiding", "tijdens", "direct_erna", "herstel"] as const;
+    const PHASE_TITLES: Record<(typeof PHASE_ORDER)[number], string> = {
+      voorbereiding: "Voorbereiding",
+      tijdens: "Tijdens",
+      direct_erna: "Direct erna",
+      herstel: "De uren erna",
+    };
+    const byKey = new Map<string, { phase: string; title: string; advice: string }>();
+    if (Array.isArray(parsed?.phases)) {
+      for (const p of parsed.phases as unknown[]) {
+        const o = (p ?? {}) as Record<string, unknown>;
+        const key = typeof o.phase === "string" ? o.phase.trim() : "";
+        const advice = typeof o.advice === "string" ? o.advice.trim() : "";
+        if (
+          (PHASE_ORDER as readonly string[]).includes(key) &&
+          advice &&
+          !byKey.has(key)
+        ) {
+          byKey.set(key, {
+            phase: key,
+            title: PHASE_TITLES[key as (typeof PHASE_ORDER)[number]],
+            advice,
+          });
+        }
+      }
+    }
+    const phases = PHASE_ORDER.map((k) => byKey.get(k)).filter(
+      (p): p is { phase: string; title: string; advice: string } => p != null,
+    );
+    const gaps = Array.isArray(parsed?.gaps)
+      ? (parsed.gaps as unknown[]).filter(
+          (g): g is string => typeof g === "string" && g.trim() !== "",
+        )
+      : [];
+
+    if (!summary || phases.length !== PHASE_ORDER.length) {
+      res.status(502).json({ error: "Sparki kon nu geen voedingsplan maken" });
+      return;
+    }
+
+    res.json({
+      plan: {
+        date,
+        level: isYouth ? "youth" : "adult",
+        summary,
+        phases,
+        gaps,
+        raceCount: dayRaces.length,
+        workoutCount: openPlanned.length,
+      },
+    });
+  } catch (err) {
+    req.log.error({ err }, "nutrition.fueling-plan failed");
     res.status(500).json({ error: "Sparki is even niet bereikbaar" });
   }
 });

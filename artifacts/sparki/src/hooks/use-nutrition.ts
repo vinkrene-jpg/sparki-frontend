@@ -146,6 +146,34 @@ export function useNutritionDayAnalysis() {
   });
 }
 
+export type FuelingPhase = { phase: string; title: string; advice: string };
+
+export type FuelingPlan = {
+  date: string;
+  level: "youth" | "adult";
+  summary: string;
+  phases: FuelingPhase[];
+  gaps: string[];
+  raceCount: number;
+  workoutCount: number;
+};
+
+export type FuelingPlanResult = {
+  plan: FuelingPlan | null;
+  reason?: string;
+};
+
+// On-demand four-phase fueling plan for a day with a KNOWN planned training or
+// race — voorbereiding / tijdens / direct erna / de uren erna (herstel).
+export function useFuelingPlan() {
+  return useMutation({
+    mutationFn: (date: string) =>
+      apiFetch<FuelingPlanResult>(
+        `/api/nutrition/fueling-plan?date=${encodeURIComponent(date)}`,
+      ),
+  });
+}
+
 export function useDeleteNutritionLog() {
   const qc = useQueryClient();
   return useMutation({

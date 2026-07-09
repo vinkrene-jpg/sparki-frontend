@@ -20,6 +20,7 @@ import {
   useDeleteNutritionLog,
   useNutritionGuidance,
   useNutritionDayAnalysis,
+  useFuelingPlan,
   type NutritionContext,
   type NutritionLog,
   type MealPhotoAdvice,
@@ -743,6 +744,130 @@ function LogCard({ log }: { log: NutritionLog }) {
   )
 }
 
+// ── Voedingsplan vooraf — vier fasen rond een geplande training of wedstrijd ─
+const PHASE_HINTS: Record<string, string> = {
+  voorbereiding: "De uren vóór de start",
+  tijdens: "Onderweg",
+  direct_erna: "Eerste 30–60 minuten na afloop",
+  herstel: "De rest van de dag",
+}
+
+function FuelingPlanSection() {
+  const fueling = useFuelingPlan()
+  const result = fueling.data
+  const plan = result?.plan ?? null
+
+  return (
+    <section>
+      <SectionLabel title="Voedingsplan voor je training" />
+      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
+        Staat je training of wedstrijd al in je schema? Dan krijg je vooraf een
+        plan in vier fasen: voorbereiding, tijdens, direct erna en de uren
+        erna voor herstel.
+      </p>
+
+      <div className="mt-4">
+        {!fueling.isPending && !plan && (
+          <button
+            type="button"
+            onClick={() => fueling.mutate(todayIso())}
+            className="rounded-lg px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.16em] text-black transition"
+            style={{ background: ACCENT }}
+          >
+            Maak mijn plan voor vandaag
+          </button>
+        )}
+        {fueling.isPending && (
+          <div className="flex items-center gap-2 text-[12px] text-white/50">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Je voedingsplan wordt opgesteld — dit duurt even…
+          </div>
+        )}
+        {fueling.isError && (
+          <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+            <p className="text-[13px] leading-relaxed text-white/60">
+              Sparki kon nu geen voedingsplan maken. Probeer het zo opnieuw.
+            </p>
+            <button
+              type="button"
+              onClick={() => fueling.mutate(todayIso())}
+              className="mt-3 rounded-lg px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-black"
+              style={{ background: ACCENT }}
+            >
+              Opnieuw proberen
+            </button>
+          </div>
+        )}
+        {result && !plan && result.reason && (
+          <p className="mt-3 text-[12px] leading-relaxed text-white/50">
+            {result.reason}
+          </p>
+        )}
+        {plan && (
+          <div className="space-y-3">
+            <div className="rounded-2xl border border-cyan-300/25 bg-cyan-300/[0.05] p-4">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300/70">
+                Vandaag
+                {plan.raceCount > 0 && " · wedstrijd"}
+                {plan.workoutCount > 0 && " · geplande training"}
+              </p>
+              <p className="mt-2 text-pretty text-[13px] leading-relaxed text-white/80">
+                {plan.summary}
+              </p>
+            </div>
+            {plan.phases.map((p, i) => (
+              <div
+                key={i}
+                className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+              >
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="text-[14px] font-medium text-white/90">
+                    {i + 1}. {p.title}
+                  </p>
+                  {PHASE_HINTS[p.phase] && (
+                    <p className="shrink-0 font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">
+                      {PHASE_HINTS[p.phase]}
+                    </p>
+                  )}
+                </div>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-white/70">
+                  {p.advice}
+                </p>
+              </div>
+            ))}
+            {plan.gaps.length > 0 && (
+              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+                  Voor een preciezer plan
+                </p>
+                <ul className="mt-2 space-y-1">
+                  {plan.gaps.map((g, i) => (
+                    <li
+                      key={i}
+                      className="text-[12px] leading-relaxed text-white/55"
+                    >
+                      · {g}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => fueling.mutate(todayIso())}
+              disabled={fueling.isPending}
+              className="font-mono text-[11px] uppercase tracking-[0.16em] disabled:opacity-50"
+              style={{ color: ACCENT }}
+            >
+              Opnieuw opstellen
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
 // ── Analyse van je dag — alles van één dag samen, gewogen tegen training & persoon ─
 function DayAnalysisSection() {
   const day = useNutritionDayAnalysis()
@@ -927,6 +1052,7 @@ export function VoedingScreen({
           </SheetHeader>
 
           <LogForm />
+          <FuelingPlanSection />
           <DayAnalysisSection />
           <GuidanceSection enabled={open} />
           <PhotoAdviceSection />
