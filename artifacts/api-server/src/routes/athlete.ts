@@ -1154,10 +1154,14 @@ router.post("/ftp", requireAuth, async (req, res) => {
       })
       .returning();
 
-    // Also sync FTP to athlete profile
+    // Also sync FTP to athlete profile. A manual FTP log is a real user-asserted
+    // measurement, so it must clear `ftpEstimated` — otherwise the post-sync
+    // `recalibrateEstimatedFtp` self-heal treats the value as an estimate and
+    // silently re-raises it to the proven floor (e.g. back to 410W), undoing the
+    // athlete's correction on every sync.
     await db
       .update(athleteProfilesTable)
-      .set({ ftp: ftpWatts, updatedAt: new Date() })
+      .set({ ftp: ftpWatts, ftpEstimated: false, updatedAt: new Date() })
       .where(eq(athleteProfilesTable.clerkId, clerkId));
 
     res.status(201).json(entry);

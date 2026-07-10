@@ -26,6 +26,14 @@ export type StateCardProps = {
   onShowDetails?: () => void
   /** Label for the drill-in row. Defaults to "Volledige analyse". */
   detailsLabel?: string
+  /**
+   * When true, an outstanding daily check-in ("Hoe voel je je vandaag?") is
+   * hoisted to the very top of the card so it is the first thing the athlete
+   * sees on opening the app. Once today's check-in is done it drops back to its
+   * calm position below, letting the living Core lead again. Vandaag sets this;
+   * the Core profile page leaves it off.
+   */
+  checkInFirst?: boolean
 }
 
 // Plain-Dutch labels for the honest "Sparki mist nog" gaps. Internal signal keys
@@ -89,7 +97,11 @@ function greeting(): string {
   return "Goedenavond"
 }
 
-export function StateCard({ onShowDetails, detailsLabel }: StateCardProps = {}) {
+export function StateCard({
+  onShowDetails,
+  detailsLabel,
+  checkInFirst,
+}: StateCardProps = {}) {
   const { data: state, isLoading, isError, refetch } = useSparkiState()
   const checkIn = useStateCheckIn()
   const [showWhy, setShowWhy] = useState(false)
@@ -126,9 +138,66 @@ export function StateCard({ onShowDetails, detailsLabel }: StateCardProps = {}) 
   const core = stateToCore(state)
   const showCheckInButtons = !state.checkInDone || reCheckIn
   const firstName = state.athleteName?.trim().split(/\s+/)[0] ?? ""
+  // Only hoist when there is an outstanding check-in — once today's is recorded
+  // the slim "genoteerd" line stays in its calm position below and the Core leads.
+  const hoistCheckIn = !!checkInFirst && showCheckInButtons
+
+  const checkInBlock = (
+    <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+      <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/35">
+        Check-in van vandaag
+      </p>
+      {showCheckInButtons ? (
+        <>
+          <p className="mt-2 text-[14px] leading-relaxed text-white/75">
+            Hoe voel je je vandaag? Sparki past je beeld er direct op aan.
+          </p>
+          <div className="mt-3 flex gap-2">
+            {CHECKINS.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                disabled={checkIn.isPending}
+                onClick={() =>
+                  checkIn.mutate(c.value, {
+                    onSuccess: () => setReCheckIn(false),
+                  })
+                }
+                className="flex-1 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 text-[13px] text-white/85 transition-colors hover:border-cyan-300/40 hover:text-cyan-300 disabled:opacity-50"
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+          {checkIn.isError && (
+            <p className="mt-2 text-[12px] text-amber-300/90">
+              Opslaan lukte niet. Probeer het zo nog eens.
+            </p>
+          )}
+        </>
+      ) : (
+        <div className="mt-2 flex items-center justify-between">
+          <p className="text-[14px] text-white/70">
+            Je check-in van vandaag staat genoteerd.
+          </p>
+          <button
+            type="button"
+            onClick={() => setReCheckIn(true)}
+            className="text-[13px] text-cyan-300/80 transition-colors hover:text-cyan-300"
+          >
+            Aanpassen
+          </button>
+        </div>
+      )}
+    </section>
+  )
 
   return (
     <div className="space-y-6">
+      {/* ── Level 0: outstanding check-in, hoisted so it is the first thing asked
+          on opening the app (Vandaag only). Drops back below once recorded. ── */}
+      {hoistCheckIn && checkInBlock}
+
       {/* ── Level 1: the living Core ───────────────────────────────────────── */}
       <section className="relative flex flex-col items-center">
         {firstName && (
@@ -209,54 +278,8 @@ export function StateCard({ onShowDetails, detailsLabel }: StateCardProps = {}) 
         </section>
       )}
 
-      {/* ── Level 1: check-in (writes real daily metrics → recomputes state) ── */}
-      <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
-        <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/35">
-          Check-in van vandaag
-        </p>
-        {showCheckInButtons ? (
-          <>
-            <p className="mt-2 text-[14px] leading-relaxed text-white/75">
-              Hoe voel je je vandaag? Sparki past je beeld er direct op aan.
-            </p>
-            <div className="mt-3 flex gap-2">
-              {CHECKINS.map((c) => (
-                <button
-                  key={c.value}
-                  type="button"
-                  disabled={checkIn.isPending}
-                  onClick={() =>
-                    checkIn.mutate(c.value, {
-                      onSuccess: () => setReCheckIn(false),
-                    })
-                  }
-                  className="flex-1 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 text-[13px] text-white/85 transition-colors hover:border-cyan-300/40 hover:text-cyan-300 disabled:opacity-50"
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
-            {checkIn.isError && (
-              <p className="mt-2 text-[12px] text-amber-300/90">
-                Opslaan lukte niet. Probeer het zo nog eens.
-              </p>
-            )}
-          </>
-        ) : (
-          <div className="mt-2 flex items-center justify-between">
-            <p className="text-[14px] text-white/70">
-              Je check-in van vandaag staat genoteerd.
-            </p>
-            <button
-              type="button"
-              onClick={() => setReCheckIn(true)}
-              className="text-[13px] text-cyan-300/80 transition-colors hover:text-cyan-300"
-            >
-              Aanpassen
-            </button>
-          </div>
-        )}
-      </section>
+      {/* ── Level 1: check-in — in its calm position unless hoisted to the top ── */}
+      {!hoistCheckIn && checkInBlock}
 
       {/* ── Level 2: "Waarom?" — the 2–3 signals behind the position ────────── */}
       <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] backdrop-blur-md">

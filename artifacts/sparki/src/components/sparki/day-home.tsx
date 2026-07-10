@@ -136,7 +136,10 @@ function StateDayHome() {
 
   return (
     <ScreenShell section="Home" bg="/concept-lab.png">
-      <StateCard onShowDetails={() => homeView?.setView("full")} />
+      <StateCard
+        checkInFirst
+        onShowDetails={() => homeView?.setView("full")}
+      />
 
       <section className="mt-2">
         <SectionLabel title="Jouw update vandaag" />
