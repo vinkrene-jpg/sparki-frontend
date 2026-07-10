@@ -34,6 +34,7 @@
     "seed:intel": "pnpm run build && node --enable-source-maps ./dist/scripts/seed-intel.mjs",
     "test:intel": "pnpm run build && node --enable-source-maps ./dist/tests/intel.mjs",
     "test:fit-parse": "pnpm run build && node --enable-source-maps ./dist/tests/fit-parse.mjs",
+    "test:activity-file-ingest": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/activity-file-ingest.mjs",
     "test:email-channel": "pnpm run build && node --enable-source-maps ./dist/tests/email-channel.mjs",
     "test:development-goal": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/development-goal.mjs",
     "test:world-media": "pnpm run build && node --enable-source-maps ./dist/tests/world-media.mjs",

@@ -97,3 +97,4 @@
 - [Sparki bundle anatomy](sparki-bundle-anatomy.md) — the scary multi-MB bundle is the api-server SERVER esbuild (not browser-shipped); manualChunks is a caching win, real cut needs route-lazy.
 - [pino worker-transport flaky](pino-worker-transport-flaky.md) — pino-pretty worker transport races process-exit in tests/jobs ("worker is not a function"); use sync in-process stream, prod stays JSON.
 - [Non-destructive constraint migration](db-nondestructive-constraint-migration.md) — idempotent guarded ADD CONSTRAINT + md5 before/after proof; drizzle-kit push --strict --verbose aborts at TTY prompt = safe diff (applies nothing).
+- [Sparki file-import as Data Hub source](sparki-file-import-source.md) — GPX/FIT/TCX uploads ingest via `ingestBatch` provider "file" (not a silo); content-only externalId; timeless GPX ≠ activity; unlink uses PARSEABLE_FILE_TYPES.

@@ -49,6 +49,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/scripts/dump-world-samples.ts"),
       path.resolve(artifactDir, "src/tests/intel.ts"),
       path.resolve(artifactDir, "src/tests/fit-parse.ts"),
+      path.resolve(artifactDir, "src/tests/activity-file-ingest.ts"),
       path.resolve(artifactDir, "src/tests/derived-load.ts"),
       path.resolve(artifactDir, "src/tests/connector-cleanup.ts"),
       path.resolve(artifactDir, "src/tests/email-channel.ts"),

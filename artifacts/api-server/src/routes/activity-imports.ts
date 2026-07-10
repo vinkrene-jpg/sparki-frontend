@@ -8,7 +8,12 @@ import {
   type ActivityImportFileType,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { parseGpx, parseFit } from "../engines/route";
+import { parseGpx, parseFit, parseTcx } from "../engines/route";
+import {
+  ingestActivityFile,
+  fileExternalId,
+  unlinkedImportStatus,
+} from "../lib/activity-file-ingest";
 
 const router = Router();
 
@@ -39,8 +44,12 @@ router.get("/", requireAuth, async (req, res) => {
 
 // POST /api/activity-imports — upload an activity file.
 //   body: { fileName, content (text — GPX/TCX/CSV), contentBase64 (binary — FIT) }
-// GPX and FIT are parsed for real metrics now. TCX/CSV are recorded with status
-// "uploaded" (honest placeholder — parsing not implemented yet; never faked).
+// GPX, FIT and TCX are parsed for real metrics AND ingested through the canonical
+// Data Hub ("file" source): the upload becomes a real training session that
+// merges with a same-time connector ride and feeds every downstream engine —
+// the same path a manual TrainingPeaks export takes. A dated file links to its
+// session ("linked"); a timeless GPX (a bare route) stays "parsed". CSV/unknown
+// are recorded honestly as "uploaded" (no parser yet; never faked).
 router.post("/", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const body = (req.body ?? {}) as Record<string, unknown>;
@@ -69,18 +78,43 @@ router.post("/", requireAuth, async (req, res) => {
     res.status(201).json({ import: row, parsed: false });
   };
 
-  const insertParsed = async (summary: unknown) => {
+  // Persist a parsed file AND route it through the canonical Data Hub. When the
+  // file carries a real start time it becomes (or merges into) a training
+  // session and the import is "linked"; a timeless GPX (a bare route) has no
+  // session and stays "parsed". A Data Hub hiccup never loses the parse — the
+  // import is still recorded, with an honest note that no session was created.
+  const insertParsed = async (
+    kind: "gpx" | "fit" | "tcx",
+    summary: Record<string, unknown>,
+    externalId: string,
+  ) => {
+    let sessionId: number | null = null;
+    let ingestError: string | null = null;
+    try {
+      const result = await ingestActivityFile(
+        clerkId,
+        kind,
+        summary as never,
+        externalId,
+      );
+      sessionId = result.sessionId;
+    } catch (err) {
+      req.log.error({ err }, "activityImports.ingest failed");
+      ingestError = "Bestand verwerkt, maar er kon geen sessie worden aangemaakt";
+    }
     const [row] = await db
       .insert(activityImportsTable)
       .values({
         clerkId,
         fileName,
         fileType,
-        status: "parsed",
-        parsedSummary: summary as Record<string, unknown>,
+        status: sessionId != null ? "linked" : "parsed",
+        parsedSummary: summary,
+        linkedTrainingSessionId: sessionId,
+        errorMessage: ingestError,
       })
       .returning();
-    res.status(201).json({ import: row, parsed: true });
+    res.status(201).json({ import: row, parsed: true, sessionId });
   };
 
   try {
@@ -90,7 +124,11 @@ router.post("/", requireAuth, async (req, res) => {
         await insertFailed("Geen geldige trackpunten gevonden in GPX-bestand");
         return;
       }
-      await insertParsed(summary);
+      await insertParsed(
+        "gpx",
+        summary as unknown as Record<string, unknown>,
+        fileExternalId(content, fileName),
+      );
       return;
     }
 
@@ -107,7 +145,27 @@ router.post("/", requireAuth, async (req, res) => {
         );
         return;
       }
-      await insertParsed(summary);
+      await insertParsed(
+        "fit",
+        summary as unknown as Record<string, unknown>,
+        fileExternalId(buf, fileName),
+      );
+      return;
+    }
+
+    if (fileType === "tcx") {
+      const summary = parseTcx(content);
+      if (!summary) {
+        await insertFailed(
+          "Geen geldige trainingsgegevens gevonden in TCX-bestand",
+        );
+        return;
+      }
+      await insertParsed(
+        "tcx",
+        summary as unknown as Record<string, unknown>,
+        fileExternalId(content, fileName),
+      );
       return;
     }
 
@@ -193,10 +251,10 @@ router.patch("/:id/link", requireAuth, async (req, res) => {
     }
     // When unlinking, restore the honest pre-link status: "parsed" if the file
     // produced real metrics, otherwise "uploaded". ("failed" can't reach here.)
-    const unlinkedStatus =
-      imp.parsedSummary && (imp.fileType === "gpx" || imp.fileType === "fit")
-        ? ("parsed" as const)
-        : ("uploaded" as const);
+    const unlinkedStatus = unlinkedImportStatus(
+      imp.fileType,
+      !!imp.parsedSummary,
+    );
     const [row] = await db
       .update(activityImportsTable)
       .set({

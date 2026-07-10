@@ -14,6 +14,9 @@ export * from "../../lib/gpx-parse";
 // FIT (binary) activity decoding — real power/HR/cadence from device exports.
 export * from "../../lib/fit-parse";
 
+// TCX (XML) activity decoding — real power/HR/cadence/elevation from exports.
+export * from "../../lib/tcx-parse";
+
 // Short-lived store of provider-generated candidate routes awaiting review.
 export * from "../../lib/route-candidates";
 
