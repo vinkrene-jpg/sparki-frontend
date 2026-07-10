@@ -51,6 +51,7 @@ export const CATEGORY_LABEL: Record<string, string> = {
   notifications: "Meldingen",
   ai: "Sparki-denkkracht",
   nightly: "Nachtelijke taken",
+  goals: "Doelen-review",
   onboarding: "Onboarding",
   invite: "Uitnodigingen",
   parent: "Ouder-toezicht",

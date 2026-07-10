@@ -45,6 +45,7 @@ export const healthCategories = [
   "notifications",
   "ai",
   "nightly",
+  "goals",
   "onboarding",
   "invite",
   "parent",

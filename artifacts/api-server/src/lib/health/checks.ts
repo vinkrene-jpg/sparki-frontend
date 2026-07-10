@@ -598,6 +598,90 @@ const coreChecks: CheckDefinition[] = [
     },
   },
   {
+    key: "goal_review_job",
+    category: "goals",
+    title: "Maandelijkse doelen-review",
+    description:
+      "Controleert of de maandelijkse doelen-review echt voorstellen heeft opgeleverd.",
+    responsibleModule: "Doelen-review (maandelijks)",
+    userImpact: impact(
+      "Sporters krijgen geen maandelijkse voorstellen om hun doelen bij te sturen.",
+    ),
+    urgency: "medium",
+    remediation:
+      "Controleer de geplande maandelijkse taak (Scheduled Deployment, job:goal-review) en de logs van de laatste run.",
+    probe: async () => {
+      const start = performance.now();
+      try {
+        const r = await db.execute(sql`
+          SELECT
+            count(*)::int AS total,
+            count(*) FILTER (
+              WHERE created_at >= now() - interval '35 days'
+            )::int AS recent,
+            max(created_at) AS last_at
+          FROM goal_proposals
+        `);
+        const row = r.rows[0] as
+          | { total?: number; recent?: number; last_at?: string | Date | null }
+          | undefined;
+        const total = Number(row?.total ?? 0);
+        const recent = Number(row?.recent ?? 0);
+        const lastAt = row?.last_at ? new Date(row.last_at) : null;
+        const took = ms(start);
+
+        if (total === 0) {
+          // Never ran (or never produced anything). Distinguish honestly:
+          // without active goals there is nothing for the job to propose.
+          const g = await db.execute(
+            sql`SELECT count(*)::int AS n FROM athlete_goals WHERE status = 'active'`,
+          );
+          const activeGoals = Number(
+            (g.rows[0] as { n?: number } | undefined)?.n ?? 0,
+          );
+          if (activeGoals === 0) {
+            return grey(
+              "De doelen-review heeft nog nooit voorstellen gemaakt — er zijn ook nog geen actieve doelen om te beoordelen. Zodra sporters doelen hebben, hoort hier resultaat te verschijnen.",
+              start,
+            );
+          }
+          return grey(
+            `De doelen-review heeft nog nooit voorstellen gemaakt, terwijl er wel ${activeGoals} actieve doel(en) zijn. Controleer of de geplande maandelijkse taak (job:goal-review) is aangemaakt.`,
+            start,
+          );
+        }
+
+        if (recent === 0) {
+          return {
+            status: "orange",
+            passed: false,
+            responseTimeMs: took,
+            message: `De doelen-review heeft in de afgelopen 35 dagen geen voorstellen gemaakt. Laatste voorstel: ${
+              lastAt ? lastAt.toLocaleDateString("nl-NL") : "onbekend"
+            }. Mogelijk draait de geplande taak niet meer.`,
+            technicalDetails: `goal_proposals: ${total} totaal, 0 in laatste 35 dagen`,
+          };
+        }
+
+        return {
+          status: "green",
+          passed: true,
+          responseTimeMs: took,
+          message: `De doelen-review draait: ${recent} voorstel(len) in de afgelopen 35 dagen.`,
+          technicalDetails: `goal_proposals: ${recent} recent / ${total} totaal in ${took}ms`,
+        };
+      } catch (err) {
+        return {
+          status: "red",
+          passed: false,
+          responseTimeMs: ms(start),
+          message: "De doelen-voorstellen kunnen niet worden gelezen.",
+          technicalDetails: err instanceof Error ? err.message : String(err),
+        };
+      }
+    },
+  },
+  {
     key: "mail_server",
     category: "mail",
     title: "E-mail & herinneringen per mail",
