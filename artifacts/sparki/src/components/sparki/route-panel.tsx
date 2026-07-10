@@ -1149,7 +1149,21 @@ export function RoutePanel() {
         ) : routes.length > 0 ? (
           routes.map((r) => <RouteCard key={r.id} route={r} />)
         ) : (
-          <p className="text-[12px] text-white/30">Nog geen routes opgeslagen</p>
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
+            <p className="text-[12px] leading-relaxed text-white/40">
+              Nog geen routes opgeslagen — laat Sparki er één opbouwen op basis
+              van je startpunt, fiets en afstand.
+            </p>
+            {!showGenerator && (
+              <button
+                type="button"
+                onClick={() => setShowGenerator(true)}
+                className="mt-3 rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300 transition hover:bg-cyan-300/20"
+              >
+                Genereer je eerste route
+              </button>
+            )}
+          </div>
         )}
       </div>
     </section>
