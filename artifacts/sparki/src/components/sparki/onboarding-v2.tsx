@@ -3,6 +3,13 @@ import { ArrowLeft, Zap, ChevronRight } from "lucide-react"
 import { apiFetch } from "@/lib/api"
 import { ConnectionsSection } from "@/components/sparki/connections-section"
 import { OnboardingGapFill } from "@/components/sparki/onboarding-gap-fill"
+import {
+  ONBOARDING_STEP_KEY,
+  ONBOARDING_SELF_KEY,
+  restoreOnboardingState,
+  clearOnboardingState,
+  type SelfType,
+} from "@/lib/onboarding-resume"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sparki Onboarding V2 — a narrative flow ending in a mandatory connect step.
@@ -18,8 +25,6 @@ import { OnboardingGapFill } from "@/components/sparki/onboarding-gap-fill"
 const ACCENT = "rgba(120,210,230,1)"
 const ACCENT_DIM = "rgba(120,210,230,0.12)"
 
-type SelfType = "diesel" | "sprinter" | "alleskunner" | "geen_idee" | "ik_zie_wel"
-
 const SELF_OPTIONS: Array<{ value: SelfType; label: string }> = [
   { value: "diesel", label: "Diesel" },
   { value: "sprinter", label: "Sprinter" },
@@ -28,37 +33,10 @@ const SELF_OPTIONS: Array<{ value: SelfType; label: string }> = [
   { value: "ik_zie_wel", label: "Ik zie wel" },
 ]
 
-// The connect step (5) redirects out to Strava and back via a full page load, so
+// The connect step redirects out to Strava and back via a full page load, so
 // onboarding must survive that round-trip. Progress is kept in sessionStorage
-// (per-tab) and cleared once onboarding completes.
-const ONBOARDING_STEP_KEY = "sparki_onboarding_step"
-const ONBOARDING_SELF_KEY = "sparki_onboarding_selftype"
-const LAST_STEP = 7
-
-function restoreOnboardingState(): { step: number; selfType: SelfType | null } {
-  if (typeof window === "undefined") return { step: 0, selfType: null }
-  let selfType: SelfType | null = null
-  const rawSelf = window.sessionStorage.getItem(ONBOARDING_SELF_KEY)
-  if (rawSelf && SELF_OPTIONS.some((o) => o.value === rawSelf)) {
-    selfType = rawSelf as SelfType
-  }
-  let step = 0
-  const rawStep = window.sessionStorage.getItem(ONBOARDING_STEP_KEY)
-  if (rawStep) {
-    const n = parseInt(rawStep, 10)
-    if (Number.isFinite(n) && n >= 0 && n <= LAST_STEP) step = n
-  }
-  // Never resume past the self-type question without an answer — finish() needs
-  // it, so a corrupted resume would otherwise dead-end.
-  if (step > 3 && !selfType) step = 0
-  return { step, selfType }
-}
-
-function clearOnboardingState(): void {
-  if (typeof window === "undefined") return
-  window.sessionStorage.removeItem(ONBOARDING_STEP_KEY)
-  window.sessionStorage.removeItem(ONBOARDING_SELF_KEY)
-}
+// (per-tab) — restore/clamp/clear logic lives in `@/lib/onboarding-resume`.
+const sessionStore = typeof window !== "undefined" ? window.sessionStorage : null
 
 // Each narrative screen is a stack of lines, revealed as one calm beat.
 type Line = { text: string; dim?: boolean }
@@ -155,7 +133,7 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
   // Restore progress so the Strava OAuth round-trip (a full page load) returns
   // the athlete to the connect step instead of restarting onboarding — otherwise
   // the freshly imported data would never reach the very next gap-fill screen.
-  const [restored] = useState(restoreOnboardingState)
+  const [restored] = useState(() => restoreOnboardingState(sessionStore))
   const [step, setStep] = useState(restored.step)
   const [selfType, setSelfType] = useState<SelfType | null>(restored.selfType)
   const [saving, setSaving] = useState(false)
@@ -165,10 +143,10 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
   const [connBusy, setConnBusy] = useState(false)
 
   useEffect(() => {
-    window.sessionStorage.setItem(ONBOARDING_STEP_KEY, String(step))
+    sessionStore?.setItem(ONBOARDING_STEP_KEY, String(step))
   }, [step])
   useEffect(() => {
-    if (selfType) window.sessionStorage.setItem(ONBOARDING_SELF_KEY, selfType)
+    if (selfType) sessionStore?.setItem(ONBOARDING_SELF_KEY, selfType)
   }, [selfType])
 
   const name = firstName?.trim() ? firstName.trim() : "renner"
@@ -190,7 +168,7 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
         method: "POST",
         body: JSON.stringify({ selfType }),
       })
-      clearOnboardingState()
+      clearOnboardingState(sessionStore)
       onComplete()
     } catch {
       setError("Kon je profiel niet opslaan. Controleer je verbinding en probeer het opnieuw.")

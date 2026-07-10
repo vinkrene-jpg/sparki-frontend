@@ -25,6 +25,10 @@ import {
   type ConnectorItem,
   type ReadinessState,
 } from "@/lib/connectors"
+import {
+  shouldGatherAfterOAuth,
+  gatherStravaAfterOAuth,
+} from "@/lib/onboarding-resume"
 
 function letter(name: string): string {
   return name.charAt(0).toUpperCase()
@@ -430,33 +434,24 @@ export function ConnectionsSection({
       if (result !== "connected") return
 
       const strava = list.find((c) => c.id === "strava")
-      const importLanded =
-        !!strava &&
-        strava.status === "connected" &&
-        strava.importedDataTypes.length > 0
-      if (strava?.status === "connected" && !importLanded) {
+      if (shouldGatherAfterOAuth(result, strava)) {
         // Connected but nothing imported yet — gather it now so the gap-fill
         // reflects real data (FTP/gewicht/activiteiten) instead of asking for it.
-        setImporting(true)
-        onImportingChange?.(true)
+        // The helper holds "Verder" (setImporting → onImportingChange) for the
+        // full duration of the sync and always releases it once it settles.
         setNotice(null)
         setError(null)
-        try {
-          const updated = await syncConnector("strava")
-          if (!alive) return
-          replace(updated)
-          setNotice("Strava is gekoppeld en je gegevens zijn opgehaald.")
-        } catch {
-          if (!alive) return
-          setError(
-            "Strava is gekoppeld, maar je gegevens ophalen lukte nog niet. Je kunt zo opnieuw synchroniseren.",
-          )
-        } finally {
-          if (alive) {
-            setImporting(false)
-            onImportingChange?.(false)
-          }
-        }
+        await gatherStravaAfterOAuth({
+          sync: () => syncConnector("strava"),
+          setImporting: (v) => {
+            setImporting(v)
+            onImportingChange?.(v)
+          },
+          onReplace: replace,
+          onNotice: setNotice,
+          onError: setError,
+          isAlive: () => alive,
+        })
       } else {
         setNotice("Strava is gekoppeld.")
       }

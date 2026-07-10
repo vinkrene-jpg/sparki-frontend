@@ -14,7 +14,8 @@
     "test:bandbreedte": "tsx src/lib/bandbreedte.test.ts",
     "test:core-profile": "tsx src/lib/core-profile.test.ts",
     "test:core-profile-bandbreedte": "tsx src/lib/core-profile-bandbreedte.test.ts",
-    "test:core-profile-evolution": "tsx src/lib/core-profile-evolution.test.ts"
+    "test:core-profile-evolution": "tsx src/lib/core-profile-evolution.test.ts",
+    "test:onboarding-resume": "tsx src/lib/onboarding-resume.test.ts"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",

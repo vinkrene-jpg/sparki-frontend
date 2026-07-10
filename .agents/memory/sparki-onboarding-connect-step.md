@@ -35,6 +35,12 @@ data never reaches the "very next" gap-fill.** Fix: persist step + selfType in
 `sessionStorage` (`sparki_onboarding_step` / `sparki_onboarding_selftype`),
 restore on mount, clamp (never resume past the self-type question without an
 answer or finish() dead-ends), and clear on complete-v2 success.
+The restore/clamp + post-OAuth import logic is extracted as pure functions in
+`lib/onboarding-resume.ts` (storage-injected, DOM-free) so both components use it
+and `lib/onboarding-resume.test.ts` (tsx, no jsdom) can drive the OAuth-return
+path deterministically — resume-not-0, the self-type clamp, and "Verder" held
+during the sync / released once it settles (deferred-promise harness).
+
 **Why:** honour "gather first, then ask only the gaps" — the import must reach
 the next screen. **How to apply:** on OAuth return (`?strava=connected`) the
 connect step guarantees the initial import landed (best-effort callback import
