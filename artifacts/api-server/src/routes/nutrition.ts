@@ -23,6 +23,7 @@ import {
   streamMaterialPhoto,
   readMaterialPhotoBase64,
   analyzeMaterial,
+  analyzeMealText,
   type MaterialCategory,
   type MaterialPhotoInput,
   type MaterialAnalysisResult,
@@ -283,14 +284,21 @@ router.post("/", requireAuth, async (req, res) => {
     let photoAdvice: MaterialAnalysisResult | null = null;
     let photoAdviceFailed = false;
     let trainingContext: string | null = null;
+
+    // Food text the rider typed (without a photo) — the fields that describe
+    // what they ate/drank. Notes alone don't trigger an estimate (they may not
+    // be about food), but they enrich the description once food fields exist.
+    const preFood = strOrNull(body.preTrainingFood);
+    const postFood = strOrNull(body.postTrainingFood);
+    const noteText = strOrNull(body.notes);
+    const hasFoodText = !!(preFood || postFood);
+
     if (photos.length > 0) {
       try {
         const noteParts = [
-          strOrNull(body.notes),
-          strOrNull(body.preTrainingFood) &&
-            `Voor de training at ik: ${strOrNull(body.preTrainingFood)}`,
-          strOrNull(body.postTrainingFood) &&
-            `Na de training at ik: ${strOrNull(body.postTrainingFood)}`,
+          noteText,
+          preFood && `Voor de training at ik: ${preFood}`,
+          postFood && `Na de training at ik: ${postFood}`,
         ].filter((p): p is string => !!p);
         const mealCtx = await buildMealContext(clerkId, logDate, context);
         trainingContext = mealCtx.trainingContext;
@@ -323,6 +331,47 @@ router.post("/", requireAuth, async (req, res) => {
       } catch (err) {
         photoAdviceFailed = true;
         req.log.error({ err }, "nutrition.photo-advice failed");
+      }
+    } else if (hasFoodText) {
+      // No photo, but the rider described food in text — still give a real
+      // nutrition estimate instead of a dead-end with no values.
+      try {
+        const mealText = [
+          preFood && `Voor de training: ${preFood}`,
+          postFood && `Na de training: ${postFood}`,
+          noteText && `Notitie: ${noteText}`,
+        ]
+          .filter((p): p is string => !!p)
+          .join(". ");
+        const mealCtx = await buildMealContext(clerkId, logDate, context);
+        trainingContext = mealCtx.trainingContext;
+        photoAdvice = await analyzeMealText({
+          mealText,
+          athleteHint: mealCtx.athleteHint,
+          youth: mealCtx.youth,
+        });
+        if (photoAdvice.advice.summary) {
+          void persistObservation({
+            clerkId,
+            sourceType: "nutrition_analysis",
+            category: "nutrition",
+            severity: "info",
+            confidence:
+              photoAdvice.confidence === "unknown"
+                ? "low"
+                : photoAdvice.confidence,
+            title: `Voeding bekeken: ${photoAdvice.detectedItem}`,
+            observationText: photoAdvice.advice.summary,
+            recommendedAction: photoAdvice.advice.risks[0] ?? null,
+            detectedPattern: "meal_text_review",
+            supportingDataRefs: { nutritionLogId: log.id, logDate: log.logDate },
+          }).catch((err) =>
+            req.log.error({ err }, "nutrition.text-advice persist failed"),
+          );
+        }
+      } catch (err) {
+        photoAdviceFailed = true;
+        req.log.error({ err }, "nutrition.text-advice failed");
       }
     }
 
@@ -430,38 +479,69 @@ router.post("/:id/photo-advice", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Log niet gevonden" });
       return;
     }
-    if (log.photoPaths.length === 0) {
-      res.status(400).json({ error: "Deze log heeft geen foto" });
-      return;
-    }
 
-    const photos: MaterialPhotoInput[] = [];
-    for (const p of log.photoPaths.slice(0, MAX_PHOTOS)) {
-      const stored = await readMaterialPhotoBase64(p);
-      const mediaType = normalizeMediaType(stored.mediaType);
-      if (mediaType) photos.push({ base64: stored.base64, mediaType });
-    }
-    if (photos.length === 0) {
+    // Optional rider correction — e.g. "het waren 10 broodjes, niet 6". It is
+    // authoritative over what the photo/text seemed to show (the rider was
+    // there), so the estimate is recomputed on their stated amount.
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const correction = strOrNull(body.correction);
+    const hasFoodText = !!(log.preTrainingFood || log.postTrainingFood);
+
+    if (log.photoPaths.length === 0 && !hasFoodText && !correction) {
       res
-        .status(502)
-        .json({ error: "De foto kon niet gelezen worden uit de opslag" });
+        .status(400)
+        .json({ error: "Deze log heeft geen foto of omschrijving om te beoordelen" });
       return;
     }
-
-    const noteParts = [
-      log.notes,
-      log.preTrainingFood && `Voor de training at ik: ${log.preTrainingFood}`,
-      log.postTrainingFood && `Na de training at ik: ${log.postTrainingFood}`,
-    ].filter((p): p is string => !!p);
 
     const mealCtx = await buildMealContext(clerkId, log.logDate, log.context);
-    const photoAdvice = await analyzeMaterial({
-      category: MEAL_CATEGORY,
-      photos,
-      userNote: noteParts.join(". ") || null,
-      athleteHint: mealCtx.athleteHint,
-      youth: mealCtx.youth,
-    });
+    let photoAdvice: MaterialAnalysisResult;
+
+    if (log.photoPaths.length > 0) {
+      const photos: MaterialPhotoInput[] = [];
+      for (const p of log.photoPaths.slice(0, MAX_PHOTOS)) {
+        const stored = await readMaterialPhotoBase64(p);
+        const mediaType = normalizeMediaType(stored.mediaType);
+        if (mediaType) photos.push({ base64: stored.base64, mediaType });
+      }
+      if (photos.length === 0) {
+        res
+          .status(502)
+          .json({ error: "De foto kon niet gelezen worden uit de opslag" });
+        return;
+      }
+
+      const noteParts = [
+        log.notes,
+        log.preTrainingFood && `Voor de training at ik: ${log.preTrainingFood}`,
+        log.postTrainingFood && `Na de training at ik: ${log.postTrainingFood}`,
+        correction && `Correctie van de renner (leidend): ${correction}`,
+      ].filter((p): p is string => !!p);
+
+      photoAdvice = await analyzeMaterial({
+        category: MEAL_CATEGORY,
+        photos,
+        userNote: noteParts.join(". ") || null,
+        athleteHint: mealCtx.athleteHint,
+        youth: mealCtx.youth,
+      });
+    } else {
+      // Text-only log (no photo) — assess (or re-assess with a correction) the
+      // rider's description so it too gets real nutrition values.
+      const mealText = [
+        log.preTrainingFood && `Voor de training: ${log.preTrainingFood}`,
+        log.postTrainingFood && `Na de training: ${log.postTrainingFood}`,
+        log.notes && `Notitie: ${log.notes}`,
+        correction && `Correctie van de renner (leidend): ${correction}`,
+      ]
+        .filter((p): p is string => !!p)
+        .join(". ");
+      photoAdvice = await analyzeMealText({
+        mealText,
+        athleteHint: mealCtx.athleteHint,
+        youth: mealCtx.youth,
+      });
+    }
 
     if (photoAdvice.advice.summary) {
       void persistObservation({
@@ -471,10 +551,14 @@ router.post("/:id/photo-advice", requireAuth, async (req, res) => {
         severity: "info",
         confidence:
           photoAdvice.confidence === "unknown" ? "low" : photoAdvice.confidence,
-        title: `Maaltijd bekeken: ${photoAdvice.detectedItem}`,
+        title:
+          log.photoPaths.length > 0
+            ? `Maaltijd bekeken: ${photoAdvice.detectedItem}`
+            : `Voeding bekeken: ${photoAdvice.detectedItem}`,
         observationText: photoAdvice.advice.summary,
         recommendedAction: photoAdvice.advice.risks[0] ?? null,
-        detectedPattern: "meal_photo_review",
+        detectedPattern:
+          log.photoPaths.length > 0 ? "meal_photo_review" : "meal_text_review",
         supportingDataRefs: { nutritionLogId: log.id, logDate: log.logDate },
       }).catch((err) =>
         req.log.error({ err }, "nutrition.photo-advice persist failed"),
@@ -486,7 +570,7 @@ router.post("/:id/photo-advice", requireAuth, async (req, res) => {
     req.log.error({ err }, "nutrition.photo-advice (existing log) failed");
     res
       .status(502)
-      .json({ error: "De foto kon nu niet beoordeeld worden. Probeer het zo opnieuw." });
+      .json({ error: "Dit kon nu niet beoordeeld worden. Probeer het zo opnieuw." });
   }
 });
 

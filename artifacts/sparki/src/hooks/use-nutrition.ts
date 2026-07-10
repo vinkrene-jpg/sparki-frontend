@@ -137,11 +137,18 @@ export function useCreateNutritionLog() {
 export function useAssessLogPhoto() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) =>
-      apiFetch<{
+    mutationFn: (input: number | { id: number; correction?: string | null }) => {
+      const id = typeof input === "number" ? input : input.id;
+      const correction =
+        typeof input === "number" ? null : input.correction ?? null;
+      return apiFetch<{
         photoAdvice: MealPhotoAdvice | null;
         trainingContext: string | null;
-      }>(`/api/nutrition/${id}/photo-advice`, { method: "POST" }),
+      }>(`/api/nutrition/${id}/photo-advice`, {
+        method: "POST",
+        body: JSON.stringify(correction ? { correction } : {}),
+      });
+    },
     onSuccess: () => {
       void qc.invalidateQueries({
         queryKey: queryKeys.aiMemory.observations(),

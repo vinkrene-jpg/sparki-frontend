@@ -154,6 +154,7 @@ EERLIJKHEIDSREGELS (altijd, geen uitzonderingen):
 - Geef altijd een expliciet zekerheidsniveau: "high" (duidelijk zichtbaar en herkenbaar), "medium" (waarschijnlijk maar niet zeker), "low" (vermoeden, te weinig zichtbaar), "unknown" (niet te beoordelen).
 - Als je het niet zeker genoeg kunt zien, zet needsMorePhoto op true en stel via followUpQuestion één concrete vraag: welke extra foto of hoek je nodig hebt (bijv. close-up van het profiel, andere belichting, zijaanzicht). Geef in dat geval alvast voorzichtig, voorlopig advies maar geen harde conclusies.
 - Bij twijfel tussen meerdere mogelijkheden: benoem ze en kies niet zomaar één als zekerheid.
+- HOEVEELHEID (bij voeding): als de renner zelf een hoeveelheid noemt (bijv. "10 broodjes", "2 bidons", "een dubbele portie"), is die hoeveelheid LEIDEND boven wat je op de foto telt — de renner was erbij en de foto toont mogelijk niet alles (overlappende of al opgegeten stukken). Reken de voedingswaarde dan op de door de renner genoemde hoeveelheid. Noemt de renner niets, dan tel je zo eerlijk mogelijk uit de foto en benoem je in note dat het aantal een schatting is en dat de foto niet alles hoeft te tonen.
 
 ADVIES:
 - summary: korte heldere samenvatting van wat je ziet en wat het betekent.
@@ -405,6 +406,106 @@ Geef je zekerheidsniveau eerlijk aan en vraag om een extra foto als je het niet 
     followUpQuestion: asStr(parsed.followUpQuestion) || null,
     advice,
     costEstimate,
+    nutrition,
+  };
+}
+
+// ── Text-based meal estimate ─────────────────────────────────────────────────
+// Riders often just TYPE what they ate ("10 broodjes met kaas") without a photo.
+// This produces the same honest estimate shape as the photo path so the UI can
+// render the exact same nutrition card — never a dead-end with no values.
+
+const SYSTEM_TEXT = `Je bent Sparki, een ervaren voedingscoach voor wielrenners. Een renner beschrijft in gewone taal wat hij at of dronk (er is GEEN foto). Schat op basis van die beschrijving de voedingswaarde en geef kort, eerlijk advies.
+
+EERLIJKHEIDSREGELS (altijd):
+- Ga uit van wat de renner beschrijft. Verzin geen ingrediënten of hoeveelheden die er niet staan.
+- Een schatting op basis van tekst is minder nauwkeurig dan een foto: kies confidence conservatief (meestal "medium" of "low") en benoem in note dat het een schatting op basis van de beschrijving is.
+- HOEVEELHEID is leidend: neem de door de renner genoemde hoeveelheid letterlijk (bijv. "10 broodjes" = 10 broodjes) en reken de voedingswaarde op die HELE hoeveelheid. Noemt de renner geen aantal, ga dan uit van een normale portie en zeg dat eerlijk in note.
+- Is de beschrijving te vaag om iets te schatten, zet de betreffende velden op null en stel via followUpQuestion één concrete vraag over wat je mist (bijv. hoeveel, of waar het broodje mee belegd was).
+
+ADVIES:
+- summary: korte heldere samenvatting van wat deze voeding betekent voor de renner.
+- pros, cons, risks, alternatives: lijsten met korte, concrete punten. Laat een lijst leeg ([]) als er niets relevants is — vul nooit met holle tekst.
+
+VOEDINGSWAARDE:
+- Kwalitatieve niveaus (carbsLevel, proteinLevel, fatLevel, fiberLevel): "hoog" | "gemiddeld" | "laag" | "onbekend". Vul deze ALTIJD zo goed mogelijk in — ze zijn ook veilig voor jonge sporters.
+- micronutrients: de belangrijkste aannemelijke vitaminen en mineralen op basis van de genoemde ingrediënten. Per stuk name, level en een korte note (of null). Verzin geen precieze mg-waarden. Laat leeg ([]) als je niets betrouwbaars kunt zeggen.
+- Getallen (caloriesKcal, carbsGrams, proteinGrams, fatGrams, fiberGrams): VUL DEZE ALLEEN als in de context "TOON GETALLEN" staat. Staat er "GEEN GETALLEN" (jonge sporter), zet dan al deze getallen op null en gebruik uitsluitend de kwalitatieve niveaus — geen calorieën, geen gram-doelen, geen afval-taal.
+
+KOPPEL AAN DE TRAINING:
+- Als er trainingscontext is meegegeven, betrek dat expliciet in summary en advies: past dit eten bij die inspanning (genoeg koolhydraten voor/na, herstel, timing)? Wees concreet maar eerlijk over wat je niet kunt weten.
+
+TAAL & VORM:
+- Alles in gewoon Nederlands dat een jeugdrenner, ouder of coach begrijpt. Geen Engels.
+- Noem nooit het woord "AI" en noem jezelf geen assistent of model. Je bent Sparki.
+
+UITVOER: antwoord UITSLUITEND met geldige JSON, zonder code-blokken of extra tekst, in exact dit formaat:
+{
+  "detectedItem": string,
+  "confidence": "high" | "medium" | "low" | "unknown",
+  "followUpQuestion": string | null,
+  "advice": { "summary": string, "pros": string[], "cons": string[], "risks": string[], "alternatives": string[] },
+  "nutrition": null | { "caloriesKcal": number | null, "carbsGrams": number | null, "proteinGrams": number | null, "fatGrams": number | null, "fiberGrams": number | null, "carbsLevel": "hoog" | "gemiddeld" | "laag" | "onbekend", "proteinLevel": "hoog" | "gemiddeld" | "laag" | "onbekend", "fatLevel": "hoog" | "gemiddeld" | "laag" | "onbekend", "fiberLevel": "hoog" | "gemiddeld" | "laag" | "onbekend", "micronutrients": [ { "name": string, "level": "hoog" | "gemiddeld" | "laag" | "onbekend", "note": string | null } ], "confidence": "high" | "medium" | "low" | "unknown", "note": string | null }
+}`;
+
+// Estimate a meal from the rider's free-text description (no photo). Throws on a
+// malformed model response so the route can fail honestly instead of guessing.
+export async function analyzeMealText(input: {
+  mealText: string;
+  athleteHint?: string | null;
+  // Youth (<16): keep it qualitative — no calorie/gram numbers (RED-S safety).
+  youth?: boolean;
+}): Promise<MaterialAnalysisResult> {
+  const mealText = input.mealText.trim();
+  if (!mealText) {
+    throw new Error("Geen omschrijving van de voeding");
+  }
+
+  const showNumbers = input.youth !== true;
+  const athleteLine = input.athleteHint?.trim()
+    ? `\nContext renner: ${input.athleteHint.trim()}`
+    : "";
+  const numbersLine = showNumbers
+    ? "\nVoedingswaarde: TOON GETALLEN — vul caloriesKcal en de gram-schattingen in als je ze redelijk kunt inschatten (altijd als schatting benoemen)."
+    : "\nVoedingswaarde: GEEN GETALLEN — dit is een jonge sporter. Zet alle getallen op null en gebruik alleen de kwalitatieve niveaus. Geen calorieën, geen gram-doelen, geen afval-taal.";
+
+  const userText = `De renner beschrijft wat hij at of dronk: "${mealText}".${athleteLine}${numbersLine}
+Schat de voedingswaarde van de HELE beschreven hoeveelheid en geef kort, eerlijk advies.`;
+
+  const message = await anthropic.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 2048,
+    system: SYSTEM_TEXT,
+    messages: [{ role: "user", content: userText }],
+  });
+
+  const block = message.content[0];
+  if (!block || block.type !== "text") {
+    throw new Error("Onverwacht antwoord van Sparki");
+  }
+
+  const parsed = extractJson(block.text) as Record<string, unknown>;
+  const adviceRaw = (parsed.advice ?? {}) as Record<string, unknown>;
+
+  const advice: MaterialAdvice = {
+    summary: asStr(adviceRaw.summary),
+    pros: asStringList(adviceRaw.pros),
+    cons: asStringList(adviceRaw.cons),
+    risks: asStringList(adviceRaw.risks),
+    alternatives: asStringList(adviceRaw.alternatives),
+  };
+
+  const confidence = asConfidence(parsed.confidence);
+  const nutrition = coerceNutrition(parsed.nutrition, showNumbers);
+
+  return {
+    detectedItem: asStr(parsed.detectedItem) || "Wat je hebt ingevoerd",
+    confidence,
+    // No photo involved — a "stuur een extra foto"-vraag zou hier niet kloppen.
+    needsMorePhoto: false,
+    followUpQuestion: asStr(parsed.followUpQuestion) || null,
+    advice,
+    costEstimate: null,
     nutrition,
   };
 }

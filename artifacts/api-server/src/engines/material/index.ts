@@ -11,6 +11,7 @@ export {
   getCategory,
   normalizeMediaType,
   analyzeMaterial,
+  analyzeMealText,
 } from "../../lib/material/analyze";
 export type {
   MaterialCategory,

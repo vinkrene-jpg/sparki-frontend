@@ -178,6 +178,8 @@ function LogForm() {
   const [mealAdvice, setMealAdvice] = useState<MealPhotoAdvice | null>(null)
   const [mealAdviceFailed, setMealAdviceFailed] = useState(false)
   const [mealTraining, setMealTraining] = useState<string | null>(null)
+  const [mealLogId, setMealLogId] = useState<number | null>(null)
+  const [mealSource, setMealSource] = useState<"photo" | "text">("photo")
 
   async function addPhoto(file: File) {
     setPhotoError(null)
@@ -212,9 +214,15 @@ function LogForm() {
 
   function submit() {
     const hadPhotos = photos.length > 0
+    // Explicit food fields (not notes) drive the text-based estimate — must match
+    // the backend gate so the loading/label states are honest.
+    const hadFoodText = !!(preFood.trim() || postFood.trim())
+    const willAssess = hadPhotos || hadFoodText
     setMealAdvice(null)
     setMealAdviceFailed(false)
     setMealTraining(null)
+    setMealLogId(null)
+    setMealSource(hadPhotos ? "photo" : "text")
     create.mutate(
       {
         logDate: todayIso(),
@@ -233,7 +241,8 @@ function LogForm() {
           reset()
           setMealAdvice(res.photoAdvice ?? null)
           setMealTraining(res.trainingContext ?? null)
-          setMealAdviceFailed(hadPhotos && (res.photoAdviceFailed || !res.photoAdvice))
+          setMealLogId(res.log?.id ?? null)
+          setMealAdviceFailed(willAssess && (res.photoAdviceFailed || !res.photoAdvice))
           if (!res.photoAdvice) {
             setDone(true)
             setTimeout(() => setDone(false), 2200)
@@ -244,6 +253,8 @@ function LogForm() {
   }
 
   const hasStagedPhotos = photos.length > 0
+  const hasFoodText = !!(preFood.trim() || postFood.trim())
+  const willAssess = hasStagedPhotos || hasFoodText
 
   return (
     <section>
@@ -386,17 +397,19 @@ function LogForm() {
             Gelogd — Sparki neemt het mee.
           </p>
         )}
-        {create.isPending && hasStagedPhotos && (
+        {create.isPending && willAssess && (
           <p className="flex items-center gap-2 text-[12px] text-white/55">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            Je foto wordt bekeken — dit duurt even…
+            {hasStagedPhotos
+              ? "Je foto wordt bekeken — dit duurt even…"
+              : "Je invoer wordt bekeken — dit duurt even…"}
           </p>
         )}
         {mealAdviceFailed && (
           <p className="text-[12px] leading-relaxed text-white/60">
-            Je log is opgeslagen, maar de foto kon nu niet beoordeeld worden.
-            Probeer het later opnieuw via &ldquo;Sparki beoordeelt je
-            voeding&rdquo; hieronder.
+            Je log is opgeslagen, maar de beoordeling lukte nu niet. Probeer het
+            later opnieuw via &ldquo;Sparki beoordeelt je voeding&rdquo;
+            hieronder.
           </p>
         )}
 
@@ -408,68 +421,25 @@ function LogForm() {
           style={{ background: ACCENT }}
         >
           {create.isPending
-            ? hasStagedPhotos
-              ? "foto wordt bekeken…"
+            ? willAssess
+              ? "wordt bekeken…"
               : "opslaan…"
             : "Loggen"}
         </button>
       </div>
 
-      {mealAdvice && (
-        <div className="mt-4 rounded-2xl border border-cyan-300/25 bg-cyan-300/[0.05] p-4">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300/70">
-            Beoordeling van je foto
-          </p>
-          <p className="mt-1.5 text-[14px] font-medium text-white/90">
-            {mealAdvice.detectedItem}
-          </p>
-          <p className="mt-1.5 text-pretty text-[13px] leading-relaxed text-white/75">
-            {mealAdvice.advice.summary}
-          </p>
-          {mealAdvice.advice.pros.length > 0 && (
-            <ul className="mt-2.5 space-y-1">
-              {mealAdvice.advice.pros.map((p, i) => (
-                <li key={i} className="text-[12px] leading-relaxed text-white/60">
-                  <span style={{ color: ACCENT }}>+</span> {p}
-                </li>
-              ))}
-            </ul>
-          )}
-          {(mealAdvice.advice.cons.length > 0 ||
-            mealAdvice.advice.risks.length > 0) && (
-            <ul className="mt-1.5 space-y-1">
-              {[...mealAdvice.advice.cons, ...mealAdvice.advice.risks].map(
-                (c, i) => (
-                  <li
-                    key={i}
-                    className="text-[12px] leading-relaxed text-white/60"
-                  >
-                    <span className="text-[rgba(245,160,90,0.95)]">–</span> {c}
-                  </li>
-                ),
-              )}
-            </ul>
-          )}
-          {mealAdvice.nutrition && (
-            <NutritionFacts nutrition={mealAdvice.nutrition} />
-          )}
-          {mealTraining && <TrainingContextLine text={mealTraining} />}
-          {mealAdvice.needsMorePhoto && mealAdvice.followUpQuestion && (
-            <p className="mt-2.5 text-[12px] leading-relaxed text-cyan-300/70">
-              {mealAdvice.followUpQuestion}
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={() => {
-              setMealAdvice(null)
-              setMealTraining(null)
-            }}
-            className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-white/45"
-          >
-            Sluiten
-          </button>
-        </div>
+      {mealAdvice && mealLogId !== null && (
+        <MealAdviceCard
+          advice={mealAdvice}
+          training={mealTraining}
+          source={mealSource}
+          logId={mealLogId}
+          onClose={() => {
+            setMealAdvice(null)
+            setMealTraining(null)
+            setMealLogId(null)
+          }}
+        />
       )}
     </section>
   )
@@ -807,12 +777,175 @@ function NutritionFacts({
   )
 }
 
+// Shared meal-assessment card — used for both the photo path and the text path.
+// Always offers an honest correction affordance: Sparki's read (a photo count,
+// a text estimate) is a starting point the rider can put right ("het waren 10
+// broodjes, niet 6"), after which the estimate is recomputed on their amount.
+function MealAdviceCard({
+  advice,
+  training,
+  source,
+  logId,
+  compact,
+  onClose,
+}: {
+  advice: MealPhotoAdvice
+  training: string | null
+  source: "photo" | "text"
+  logId: number
+  compact?: boolean
+  onClose?: () => void
+}) {
+  const assess = useAssessLogPhoto()
+  const [current, setCurrent] = useState<MealPhotoAdvice>(advice)
+  const [currentTraining, setCurrentTraining] = useState<string | null>(training)
+  const [correcting, setCorrecting] = useState(false)
+  const [correction, setCorrection] = useState("")
+
+  // Reset when a fresh assessment is passed in (new log / re-open).
+  useEffect(() => {
+    setCurrent(advice)
+    setCurrentTraining(training)
+    setCorrecting(false)
+    setCorrection("")
+  }, [advice, training])
+
+  function submitCorrection() {
+    const c = correction.trim()
+    if (!c) return
+    assess.mutate(
+      { id: logId, correction: c },
+      {
+        onSuccess: (res) => {
+          if (res.photoAdvice) {
+            setCurrent(res.photoAdvice)
+            setCurrentTraining(res.trainingContext ?? null)
+          }
+          setCorrecting(false)
+          setCorrection("")
+        },
+      },
+    )
+  }
+
+  const headerCls = compact
+    ? "font-mono text-[9px] uppercase tracking-[0.16em] text-cyan-300/70"
+    : "font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300/70"
+  const bodyText = compact ? "text-[12px]" : "text-[13px]"
+  const listText = compact ? "text-[11px]" : "text-[12px]"
+
+  return (
+    <div
+      className={`${compact ? "mt-2.5" : "mt-4"} rounded-${compact ? "lg" : "2xl"} border border-cyan-300/25 bg-cyan-300/[0.05] ${compact ? "p-3" : "p-4"}`}
+    >
+      <p className={headerCls}>
+        {source === "text" ? "Beoordeling van je invoer" : "Beoordeling van je foto"}
+      </p>
+      <p className={`${compact ? "mt-1" : "mt-1.5"} ${compact ? "text-[13px]" : "text-[14px]"} font-medium text-white/90`}>
+        {current.detectedItem}
+      </p>
+      <p className={`${compact ? "mt-1" : "mt-1.5"} text-pretty ${bodyText} leading-relaxed text-white/${compact ? "70" : "75"}`}>
+        {current.advice.summary}
+      </p>
+      {current.advice.pros.length > 0 && (
+        <ul className={`${compact ? "mt-1.5" : "mt-2.5"} space-y-${compact ? "0.5" : "1"}`}>
+          {current.advice.pros.map((p, i) => (
+            <li key={i} className={`${listText} leading-relaxed text-white/${compact ? "55" : "60"}`}>
+              <span style={{ color: ACCENT }}>+</span> {p}
+            </li>
+          ))}
+        </ul>
+      )}
+      {(current.advice.cons.length > 0 || current.advice.risks.length > 0) && (
+        <ul className={`${compact ? "mt-1" : "mt-1.5"} space-y-${compact ? "0.5" : "1"}`}>
+          {[...current.advice.cons, ...current.advice.risks].map((c, i) => (
+            <li key={i} className={`${listText} leading-relaxed text-white/${compact ? "55" : "60"}`}>
+              <span className="text-[rgba(245,160,90,0.95)]">–</span> {c}
+            </li>
+          ))}
+        </ul>
+      )}
+      {current.nutrition && (
+        <NutritionFacts nutrition={current.nutrition} compact={compact} />
+      )}
+      {currentTraining && <TrainingContextLine text={currentTraining} compact={compact} />}
+      {(current.needsMorePhoto || source === "text") &&
+        current.followUpQuestion && (
+          <p className={`${compact ? "mt-2" : "mt-2.5"} ${listText} leading-relaxed text-cyan-300/70`}>
+            {current.followUpQuestion}
+          </p>
+        )}
+
+      {/* Honest confirm/correct — the rider can put the amount right. */}
+      {correcting ? (
+        <div className="mt-3 space-y-2">
+          <textarea
+            className={`${inputCls} min-h-[52px] resize-none`}
+            placeholder="Bijv. het waren 10 broodjes, niet 6"
+            value={correction}
+            onChange={(e) => setCorrection(e.target.value)}
+          />
+          {assess.isError && (
+            <p className="text-[11px] leading-relaxed text-white/55">
+              Het lukte nu niet om opnieuw te beoordelen. Probeer het zo nog eens.
+            </p>
+          )}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={submitCorrection}
+              disabled={assess.isPending || !correction.trim()}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-black transition disabled:opacity-50"
+              style={{ background: ACCENT }}
+            >
+              {assess.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
+              {assess.isPending ? "Bezig…" : "Opnieuw beoordelen"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCorrecting(false)
+                setCorrection("")
+              }}
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/45"
+            >
+              Annuleren
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setCorrecting(true)}
+          className={`${compact ? "mt-2" : "mt-3"} font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/70`}
+        >
+          Klopt dit niet? Verbeter het
+        </button>
+      )}
+
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className={`${compact ? "mt-2" : "mt-3"} block font-mono text-[11px] uppercase tracking-[0.16em] text-white/45`}
+        >
+          Sluiten
+        </button>
+      )}
+    </div>
+  )
+}
+
 // ── (4) Recent gelogd — jouw echte voedingslogboek met foto's ─────────────────
 function LogCard({ log }: { log: NutritionLog }) {
   const del = useDeleteNutritionLog()
   const assess = useAssessLogPhoto()
   const [advice, setAdvice] = useState<MealPhotoAdvice | null>(null)
   const [training, setTraining] = useState<string | null>(null)
+  const hasPhoto = log.photoPaths.length > 0
+  // A text log can be assessed too, as long as it actually describes food.
+  const hasFoodText = !!(log.preTrainingFood || log.postTrainingFood)
+  const canAssess = hasPhoto || hasFoodText
   const parts: string[] = []
   if (log.duringTrainingCarbsGrams != null)
     parts.push(`${log.duringTrainingCarbsGrams} g kh`)
@@ -867,7 +1000,7 @@ function LogCard({ log }: { log: NutritionLog }) {
               ))}
             </div>
           )}
-          {log.photoPaths.length > 0 && !advice && (
+          {canAssess && !advice && (
             <button
               type="button"
               onClick={() =>
@@ -885,52 +1018,32 @@ function LogCard({ log }: { log: NutritionLog }) {
               {assess.isPending ? (
                 <>
                   <Loader2 className="h-3 w-3 animate-spin" />
-                  foto wordt bekeken…
+                  {hasPhoto ? "foto wordt bekeken…" : "invoer wordt bekeken…"}
                 </>
-              ) : (
+              ) : hasPhoto ? (
                 "Beoordeel deze foto"
+              ) : (
+                "Beoordeel deze voeding"
               )}
             </button>
           )}
           {assess.isError && !advice && (
             <p className="mt-1.5 text-[11px] leading-relaxed text-white/50">
-              De foto kon nu niet beoordeeld worden. Probeer het zo opnieuw.
+              Dit kon nu niet beoordeeld worden. Probeer het zo opnieuw.
             </p>
           )}
           {advice && (
-            <div className="mt-2.5 rounded-lg border border-cyan-300/25 bg-cyan-300/[0.05] p-3">
-              <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-cyan-300/70">
-                Beoordeling van je foto
-              </p>
-              <p className="mt-1 text-[13px] font-medium text-white/90">
-                {advice.detectedItem}
-              </p>
-              <p className="mt-1 text-pretty text-[12px] leading-relaxed text-white/70">
-                {advice.advice.summary}
-              </p>
-              {advice.advice.pros.length > 0 && (
-                <ul className="mt-1.5 space-y-0.5">
-                  {advice.advice.pros.map((p, i) => (
-                    <li key={i} className="text-[11px] leading-relaxed text-white/55">
-                      <span style={{ color: ACCENT }}>+</span> {p}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {(advice.advice.cons.length > 0 || advice.advice.risks.length > 0) && (
-                <ul className="mt-1 space-y-0.5">
-                  {[...advice.advice.cons, ...advice.advice.risks].map((c, i) => (
-                    <li key={i} className="text-[11px] leading-relaxed text-white/55">
-                      <span className="text-[rgba(245,160,90,0.95)]">–</span> {c}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {advice.nutrition && (
-                <NutritionFacts nutrition={advice.nutrition} compact />
-              )}
-              {training && <TrainingContextLine text={training} compact />}
-            </div>
+            <MealAdviceCard
+              advice={advice}
+              training={training}
+              source={hasPhoto ? "photo" : "text"}
+              logId={log.id}
+              compact
+              onClose={() => {
+                setAdvice(null)
+                setTraining(null)
+              }}
+            />
           )}
         </div>
         <button
