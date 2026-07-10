@@ -56,6 +56,10 @@ args = "test-onboarding-strava-gapfill"
 task = "workflow.run"
 args = "test-onboarding-resume"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "test-feedback-adjust"
+
 [[workflows.workflow]]
 name = "test-session-analysis"
 author = "agent"
@@ -162,6 +166,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/sparki run test:onboarding-resume"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "test-feedback-adjust"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run test:feedback-adjust"
 
 [workflows.workflow.metadata]
 isValidation = true

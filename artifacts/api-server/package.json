@@ -52,6 +52,7 @@
     "test:scheduled-tasks-route": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/scheduled-tasks-route.mjs",
     "test:onboarding-connect-step": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/onboarding-connect-step.mjs",
     "test:onboarding-strava-gapfill": "pnpm run build && node --enable-source-maps ./dist/tests/onboarding-strava-gapfill.mjs",
+    "test:feedback-adjust": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/feedback-adjust.mjs",
     "job:health": "pnpm run build && node --enable-source-maps ./dist/jobs/health-check.mjs",
     "job:reminders": "pnpm run build && node --enable-source-maps ./dist/jobs/reminders.mjs",
     "job:goal-review": "pnpm run build && node --enable-source-maps ./dist/jobs/goal-review.mjs",
