@@ -44,6 +44,10 @@ args = "test-scheduled-tasks"
 task = "workflow.run"
 args = "test-scheduled-tasks-route"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "test-onboarding-connect-step"
+
 [[workflows.workflow]]
 name = "test-session-analysis"
 author = "agent"
@@ -120,6 +124,17 @@ args = "pnpm --filter @workspace/api-server run test:scheduled-tasks-route"
 
 [workflows.workflow.metadata]
 isValidation = true
+
+[[workflows.workflow]]
+name = "test-onboarding-connect-step"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run test:onboarding-connect-step"
+
+[workflows.workflow.metadata]
+outputType = "console"
 
 [agent]
 stack = "PNPM_WORKSPACE"
