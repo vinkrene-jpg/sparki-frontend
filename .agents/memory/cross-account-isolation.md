@@ -17,6 +17,16 @@ matches nothing). Nutrition was previously a silent 200 no-op; it now returns 40
 for a non-owner, so the isolation test asserts strictly 404 (plus A's row must
 survive — "zero mutation" is still the primary guarantee).
 
+**Exception — activity-import DELETE:** `DELETE /api/activity-imports/:id` does
+NOT use `.returning()` — it always answers **200 `{ok:true}`**, so for a
+non-owner it is a silent NO-OP, not a 404. There the guarantee is "zero
+mutation" (A's row survives), not the status code — assert the row survives.
+
+**Material POST /:id/photo positive control:** the owner path re-analyses via an
+LLM (may 200/400/502), so the owner positive control asserts only
+`status !== 404` (ownership gate passed) rather than a specific success code.
+B is still hard-denied 404 at the gate before any analysis/upload.
+
 **Why:** a future ownership-filter regression on any of these would silently
 become a cross-account data leak/mutation; the positive control stops the test
 from passing falsely if everyone starts getting 404.

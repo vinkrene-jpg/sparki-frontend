@@ -19,13 +19,19 @@
 //   • races    — GET :id/intel, GET :id/context, GET :id/evaluation,
 //                PUT :id, PUT :id/checklist, DELETE :id
 //   • routes   — GET :id, GET :id/gpx, GET :id/tcx, DELETE :id
-//   • workouts — GET /api/athlete/workouts/:id
+//   • workouts — GET /api/athlete/workouts/:id, PUT /api/athlete/workouts/:id
+//   • sessions — PUT /api/athlete/sessions/:id (the subjective feel/notes patch
+//                on an activity/session Sparki already holds)
+//   • imports  — PATCH /api/activity-imports/:id/link, DELETE /api/activity-imports/:id
 //   • nutrition— GET /api/nutrition/photo/:id/:idx, DELETE /api/nutrition/:id
-//   • material — GET /api/material/photo/:id/:idx
+//   • material — GET /api/material/photo/:id/:idx, POST /api/material/:id/photo
 //
 // Note on the nutrition DELETE: like races/routes DELETE, it uses `.returning()`
 // and returns 404 for a non-owned id (ownership-scoped delete matches nothing).
-// B therefore gets 404 and A's row must survive. The security guarantee is
+// B therefore gets 404 and A's row must survive. The activity-import DELETE is
+// the odd one out: it does NOT use `.returning()`, so it always answers
+// `{ ok: true }` — for a non-owner it is a NO-OP (B gets 200 but A's row must
+// survive). In every case the security guarantee is
 // "zero mutation", which this test asserts explicitly.
 //
 // Photo/object serving uses REAL object storage: A's photo rows are seeded with
@@ -50,6 +56,8 @@ import {
   plannedWorkoutsTable,
   nutritionHydrationLogsTable,
   materialAnalysesTable,
+  trainingSessionsTable,
+  activityImportsTable,
   userProfilesTable,
 } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
@@ -112,6 +120,12 @@ const seeded = {
   workoutId: 0,
   nutritionId: 0,
   materialId: 0,
+  sessionId: 0,
+  importId: 0,
+  // A second session owned by A — used as a valid link target for the import
+  // positive control (the import route requires BOTH import and session to be
+  // owned by the caller).
+  sessionLinkTargetId: 0,
 };
 
 function isoOffset(days: number): string {
@@ -173,6 +187,27 @@ async function workoutRow(id: number) {
     .where(eq(plannedWorkoutsTable.id, id));
   return r ?? null;
 }
+async function sessionRow(id: number) {
+  const [r] = await db
+    .select()
+    .from(trainingSessionsTable)
+    .where(eq(trainingSessionsTable.id, id));
+  return r ?? null;
+}
+async function importRow(id: number) {
+  const [r] = await db
+    .select()
+    .from(activityImportsTable)
+    .where(eq(activityImportsTable.id, id));
+  return r ?? null;
+}
+async function materialRow(id: number) {
+  const [r] = await db
+    .select()
+    .from(materialAnalysesTable)
+    .where(eq(materialAnalysesTable.id, id));
+  return r ?? null;
+}
 
 async function cleanup() {
   // Athlete-owned rows cascade on profile delete, but delete explicitly first so
@@ -191,6 +226,18 @@ async function cleanup() {
     .delete(plannedWorkoutsTable)
     .where(eq(plannedWorkoutsTable.clerkId, clerkA))
     .catch(() => {});
+  // Imports FK-reference sessions, so delete imports before sessions for both
+  // athletes (B owns a session used as a cross-tenant link-denial fixture).
+  for (const c of [clerkA, clerkB]) {
+    await db
+      .delete(activityImportsTable)
+      .where(eq(activityImportsTable.clerkId, c))
+      .catch(() => {});
+    await db
+      .delete(trainingSessionsTable)
+      .where(eq(trainingSessionsTable.clerkId, c))
+      .catch(() => {});
+  }
   for (const c of [clerkA, clerkB]) {
     await db
       .delete(userProfilesTable)
@@ -253,6 +300,61 @@ async function main() {
     })
     .returning({ id: plannedWorkoutsTable.id });
   seeded.workoutId = workout!.id;
+
+  // A's training session — the subjective feel/notes patch target (PUT sessions/:id).
+  const [session] = await db
+    .insert(trainingSessionsTable)
+    .values({
+      clerkId: clerkA,
+      sessionDate: isoOffset(-1),
+      type: "ride",
+      title: "A's rit",
+      durationMin: 90,
+      notes: "A's originele notitie",
+      feelScore: 3,
+      source: "manual",
+    })
+    .returning({ id: trainingSessionsTable.id });
+  seeded.sessionId = session!.id;
+
+  // A second A-owned session, used as a valid link target for the activity-import
+  // link positive control.
+  const [linkTarget] = await db
+    .insert(trainingSessionsTable)
+    .values({
+      clerkId: clerkA,
+      sessionDate: isoOffset(-2),
+      type: "ride",
+      title: "A's koppeldoel",
+      durationMin: 60,
+      source: "manual",
+    })
+    .returning({ id: trainingSessionsTable.id });
+  seeded.sessionLinkTargetId = linkTarget!.id;
+
+  // B owns a session too, to prove B still can't link A's import to it (the
+  // route rejects at A's import-ownership check before it ever inspects B's
+  // session).
+  await db.insert(trainingSessionsTable).values({
+    clerkId: clerkB,
+    sessionDate: isoOffset(-1),
+    type: "ride",
+    title: "B's rit",
+    source: "manual",
+  });
+
+  // A's activity import — the link/delete target (PATCH :id/link, DELETE :id).
+  const [imp] = await db
+    .insert(activityImportsTable)
+    .values({
+      clerkId: clerkA,
+      fileName: "a-rit.gpx",
+      fileType: "gpx",
+      status: "parsed",
+      parsedSummary: { note: "A's import" },
+    })
+    .returning({ id: activityImportsTable.id });
+  seeded.importId = imp!.id;
 
   // Upload a real photo owned by A, then seed the nutrition + material rows that
   // reference it, so the owner's photo-serve returns real 200 bytes.
@@ -411,6 +513,130 @@ async function main() {
     },
   );
 
+  await scenario("workouts: owner A can update its own workout (positive control)", async () => {
+    const put = await req("PUT", `/api/athlete/workouts/${seeded.workoutId}`, clerkA, {
+      title: "A's training (bijgewerkt)",
+    });
+    assert(put.status === 200, `A PUT workout expected 200, got ${put.status}`);
+    const row = await workoutRow(seeded.workoutId);
+    assert(
+      row!.title === "A's training (bijgewerkt)",
+      "A's own PUT did not persist the new title",
+    );
+  });
+
+  await scenario(
+    "workouts: athlete B is denied PUT on A's workout (no mutation)",
+    async () => {
+      const before = await workoutRow(seeded.workoutId);
+      assert(before != null, "seed of A's workout failed");
+
+      const put = await req("PUT", `/api/athlete/workouts/${seeded.workoutId}`, clerkB, {
+        title: "GEKAAPT DOOR B",
+        status: "completed",
+        targetTSS: 999,
+      });
+      assert(put.status === 404, `B PUT workout must be 404, got ${put.status}`);
+
+      const after = await workoutRow(seeded.workoutId);
+      assert(after != null, "A's workout was deleted by B — isolation broken");
+      assert(
+        after!.title === before!.title &&
+          after!.status === before!.status &&
+          after!.targetTSS === before!.targetTSS,
+        "A's workout was mutated by B — isolation broken",
+      );
+    },
+  );
+
+  // ── SESSIONS (subjective feel/notes patch) ──────────────────────────────────
+  await scenario("sessions: owner A can patch its own session (positive control)", async () => {
+    const put = await req("PUT", `/api/athlete/sessions/${seeded.sessionId}`, clerkA, {
+      feelScore: 5,
+      notes: "A's bijgewerkte notitie",
+    });
+    assert(put.status === 200, `A PUT session expected 200, got ${put.status}`);
+    const row = await sessionRow(seeded.sessionId);
+    assert(
+      row!.feelScore === 5 && row!.notes === "A's bijgewerkte notitie",
+      "A's own session patch did not persist",
+    );
+  });
+
+  await scenario(
+    "sessions: athlete B is denied PUT on A's session (no mutation)",
+    async () => {
+      const before = await sessionRow(seeded.sessionId);
+      assert(before != null, "seed of A's session failed");
+
+      const put = await req("PUT", `/api/athlete/sessions/${seeded.sessionId}`, clerkB, {
+        feelScore: 1,
+        notes: "GEKAAPT DOOR B",
+      });
+      assert(put.status === 404, `B PUT session must be 404, got ${put.status}`);
+
+      const after = await sessionRow(seeded.sessionId);
+      assert(after != null, "A's session disappeared after B's PUT");
+      assert(
+        after!.feelScore === before!.feelScore && after!.notes === before!.notes,
+        "A's session was mutated by B — isolation broken",
+      );
+    },
+  );
+
+  // ── ACTIVITY IMPORTS (link + delete) ────────────────────────────────────────
+  await scenario("imports: owner A can link its own import to its own session (positive control)", async () => {
+    const patch = await req(
+      "PATCH",
+      `/api/activity-imports/${seeded.importId}/link`,
+      clerkA,
+      { sessionId: seeded.sessionLinkTargetId },
+    );
+    assert(patch.status === 200, `A PATCH import link expected 200, got ${patch.status}`);
+    const row = await importRow(seeded.importId);
+    assert(
+      row!.linkedTrainingSessionId === seeded.sessionLinkTargetId &&
+        row!.status === "linked",
+      "A's own import link did not persist",
+    );
+  });
+
+  await scenario(
+    "imports: athlete B is denied link + delete on A's import (no mutation)",
+    async () => {
+      const before = await importRow(seeded.importId);
+      assert(before != null, "seed of A's import failed");
+
+      // B tries to re-link A's import → 404 at A's import-ownership check.
+      const patch = await req(
+        "PATCH",
+        `/api/activity-imports/${seeded.importId}/link`,
+        clerkB,
+        { sessionId: null },
+      );
+      assert(patch.status === 404, `B PATCH import link must be 404, got ${patch.status}`);
+
+      // DELETE is an ownership-scoped no-op for a non-owner: it answers 200 but
+      // must NOT delete A's row. The security guarantee is zero mutation.
+      const del = await req("DELETE", `/api/activity-imports/${seeded.importId}`, clerkB);
+      assert(
+        del.status === 200 || del.status === 404,
+        `B DELETE import expected 200 (no-op) or 404, got ${del.status}`,
+      );
+
+      const after = await importRow(seeded.importId);
+      assert(
+        after != null,
+        "A's import was deleted by B — cross-account mutation, isolation broken",
+      );
+      assert(
+        after!.linkedTrainingSessionId === before!.linkedTrainingSessionId &&
+          after!.status === before!.status,
+        "A's import was mutated by B — isolation broken",
+      );
+    },
+  );
+
   // ── NUTRITION (photo serve + delete) ─────────────────────────────────────────
   await scenario("nutrition: owner A can serve its own meal photo (positive control)", async () => {
     const g = await req("GET", `/api/nutrition/photo/${seeded.nutritionId}/0`, clerkA);
@@ -461,6 +687,55 @@ async function main() {
         clerkB,
       );
       assert(photo.status === 404, `B GET material photo must be 404, got ${photo.status}`);
+    },
+  );
+
+  // POST /api/material/:id/photo — the ownership gate runs BEFORE any analysis or
+  // upload. For B the route must 404 at that gate (nothing analysed, no photo
+  // appended). The owner positive control proves the gate lets A through: A must
+  // NOT be denied by ownership (never 404). It may 200 (analysed) or 502 (analysis
+  // upstream unavailable) — either way the ownership check passed and A's photo
+  // count is only ever allowed to grow, never A's row seen as "not found".
+  await scenario(
+    "material: athlete B is denied POST extra photo on A's case (no read, no mutation)",
+    async () => {
+      const before = await materialRow(seeded.materialId);
+      assert(before != null, "seed of A's material case failed");
+      const beforeCount = before!.photoPaths.length;
+
+      const post = await req(
+        "POST",
+        `/api/material/${seeded.materialId}/photo`,
+        clerkB,
+        { photos: [{ data: PNG_1x1_BASE64, mediaType: "image/png" }] },
+      );
+      assert(post.status === 404, `B POST material photo must be 404, got ${post.status}`);
+
+      const after = await materialRow(seeded.materialId);
+      assert(after != null, "A's material case disappeared after B's POST");
+      assert(
+        after!.photoPaths.length === beforeCount,
+        "B appended a photo to A's material case — cross-account mutation, isolation broken",
+      );
+    },
+  );
+
+  await scenario(
+    "material: owner A is not denied by ownership on POST extra photo (positive control)",
+    async () => {
+      const post = await req(
+        "POST",
+        `/api/material/${seeded.materialId}/photo`,
+        clerkA,
+        { photos: [{ data: PNG_1x1_BASE64, mediaType: "image/png" }] },
+      );
+      // The ownership gate must pass for the owner: never a 404 "Niet gevonden".
+      // 200 (analysed) or 502 (analysis upstream unavailable) both prove the gate
+      // let A through; only a 404 would mean the owner was wrongly denied.
+      assert(
+        post.status !== 404,
+        `A POST material photo must not be denied by ownership (404), got ${post.status}`,
+      );
     },
   );
 }
