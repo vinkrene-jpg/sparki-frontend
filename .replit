@@ -72,6 +72,10 @@ args = "test-coach-parent-link-isolation"
 task = "workflow.run"
 args = "test-coach-parent-sharing-levels"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "test-coach-parent-private-memory"
+
 [[workflows.workflow]]
 name = "test-session-analysis"
 author = "agent"
@@ -222,6 +226,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/api-server run test:coach-parent-sharing-levels"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "test-coach-parent-private-memory"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run test:coach-parent-private-memory"
 
 [workflows.workflow.metadata]
 isValidation = true
