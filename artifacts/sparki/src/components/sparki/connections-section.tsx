@@ -344,7 +344,14 @@ function ConnectionRow({
   )
 }
 
-export function ConnectionsSection() {
+export function ConnectionsSection({
+  // Onboarding passes this so it can hold the "Verder" button while Sparki is
+  // still importing a freshly-connected platform — the gap-fill must only decide
+  // what's missing AFTER the initial import has landed.
+  onImportingChange,
+}: {
+  onImportingChange?: (importing: boolean) => void
+} = {}) {
   const [connectors, setConnectors] = useState<ConnectorItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -352,6 +359,9 @@ export function ConnectionsSection() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [consentId, setConsentId] = useState<string | null>(null)
   const [showUpcoming, setShowUpcoming] = useState(false)
+  // Honest "we're fetching your data" state right after a connect. Never a fake
+  // green: the import is really running (Data Hub sync) before we claim success.
+  const [importing, setImporting] = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -369,22 +379,19 @@ export function ConnectionsSection() {
     trackScreen("connect")
   }, [])
 
+  const replace = (updated: ConnectorItem) =>
+    setConnectors((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
+
   // Handle the return from the Strava OAuth round-trip (?strava=connected|denied|
-  // error). Show the result, refresh the live state, then strip the param so a
-  // refresh doesn't re-trigger the message.
+  // error). Strip the param first so a refresh can't re-trigger the flow, load
+  // the live state, then — on success — make sure the initial import actually
+  // landed before the next gap-fill screen decides what's still missing. The
+  // OAuth callback does a best-effort import; if it brought nothing in (or failed
+  // silently) we run a real Data Hub sync now, with an honest "ophalen" state.
   useEffect(() => {
-    void load()
     const params = new URLSearchParams(window.location.search)
     const result = params.get("strava")
     if (result) {
-      if (result === "connected") {
-        setNotice("Strava is gekoppeld.")
-        setError(null)
-      } else if (result === "denied") {
-        setError("Je hebt de koppeling met Strava geannuleerd.")
-      } else {
-        setError("Er ging iets mis bij het koppelen met Strava. Probeer het opnieuw.")
-      }
       params.delete("strava")
       const qs = params.toString()
       window.history.replaceState(
@@ -393,11 +400,73 @@ export function ConnectionsSection() {
         `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`,
       )
     }
+
+    let alive = true
+    void (async () => {
+      setLoading(true)
+      setError(null)
+      let list: ConnectorItem[]
+      try {
+        list = await fetchConnectors()
+      } catch (e) {
+        if (alive) {
+          setError(e instanceof Error ? e.message : "Kon koppelingen niet laden.")
+          setLoading(false)
+        }
+        return
+      }
+      if (!alive) return
+      setConnectors(list)
+      setLoading(false)
+
+      if (result === "denied") {
+        setError("Je hebt de koppeling met Strava geannuleerd.")
+        return
+      }
+      if (result === "error") {
+        setError("Er ging iets mis bij het koppelen met Strava. Probeer het opnieuw.")
+        return
+      }
+      if (result !== "connected") return
+
+      const strava = list.find((c) => c.id === "strava")
+      const importLanded =
+        !!strava &&
+        strava.status === "connected" &&
+        strava.importedDataTypes.length > 0
+      if (strava?.status === "connected" && !importLanded) {
+        // Connected but nothing imported yet — gather it now so the gap-fill
+        // reflects real data (FTP/gewicht/activiteiten) instead of asking for it.
+        setImporting(true)
+        onImportingChange?.(true)
+        setNotice(null)
+        setError(null)
+        try {
+          const updated = await syncConnector("strava")
+          if (!alive) return
+          replace(updated)
+          setNotice("Strava is gekoppeld en je gegevens zijn opgehaald.")
+        } catch {
+          if (!alive) return
+          setError(
+            "Strava is gekoppeld, maar je gegevens ophalen lukte nog niet. Je kunt zo opnieuw synchroniseren.",
+          )
+        } finally {
+          if (alive) {
+            setImporting(false)
+            onImportingChange?.(false)
+          }
+        }
+      } else {
+        setNotice("Strava is gekoppeld.")
+      }
+    })()
+
+    return () => {
+      alive = false
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  const replace = (updated: ConnectorItem) =>
-    setConnectors((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
 
   // The athlete confirmed consent in the dialog. Route to the right action:
   // OAuth platforms (Strava) redirect to the provider; other wireable platforms
@@ -565,6 +634,13 @@ export function ConnectionsSection() {
             </div>
           )}
         </>
+      )}
+
+      {importing && (
+        <p className="mt-2 flex items-center gap-1.5 px-1 text-[11px] text-white/55">
+          <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
+          Je gegevens worden opgehaald…
+        </p>
       )}
 
       {notice && (

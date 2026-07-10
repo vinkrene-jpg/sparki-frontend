@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { ArrowLeft, Zap, ChevronRight } from "lucide-react"
 import { apiFetch } from "@/lib/api"
 import { ConnectionsSection } from "@/components/sparki/connections-section"
@@ -27,6 +27,38 @@ const SELF_OPTIONS: Array<{ value: SelfType; label: string }> = [
   { value: "geen_idee", label: "Geen idee" },
   { value: "ik_zie_wel", label: "Ik zie wel" },
 ]
+
+// The connect step (5) redirects out to Strava and back via a full page load, so
+// onboarding must survive that round-trip. Progress is kept in sessionStorage
+// (per-tab) and cleared once onboarding completes.
+const ONBOARDING_STEP_KEY = "sparki_onboarding_step"
+const ONBOARDING_SELF_KEY = "sparki_onboarding_selftype"
+const LAST_STEP = 7
+
+function restoreOnboardingState(): { step: number; selfType: SelfType | null } {
+  if (typeof window === "undefined") return { step: 0, selfType: null }
+  let selfType: SelfType | null = null
+  const rawSelf = window.sessionStorage.getItem(ONBOARDING_SELF_KEY)
+  if (rawSelf && SELF_OPTIONS.some((o) => o.value === rawSelf)) {
+    selfType = rawSelf as SelfType
+  }
+  let step = 0
+  const rawStep = window.sessionStorage.getItem(ONBOARDING_STEP_KEY)
+  if (rawStep) {
+    const n = parseInt(rawStep, 10)
+    if (Number.isFinite(n) && n >= 0 && n <= LAST_STEP) step = n
+  }
+  // Never resume past the self-type question without an answer — finish() needs
+  // it, so a corrupted resume would otherwise dead-end.
+  if (step > 3 && !selfType) step = 0
+  return { step, selfType }
+}
+
+function clearOnboardingState(): void {
+  if (typeof window === "undefined") return
+  window.sessionStorage.removeItem(ONBOARDING_STEP_KEY)
+  window.sessionStorage.removeItem(ONBOARDING_SELF_KEY)
+}
 
 // Each narrative screen is a stack of lines, revealed as one calm beat.
 type Line = { text: string; dim?: boolean }
@@ -120,10 +152,24 @@ interface OnboardingV2Props {
 }
 
 export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
-  const [step, setStep] = useState(0)
-  const [selfType, setSelfType] = useState<SelfType | null>(null)
+  // Restore progress so the Strava OAuth round-trip (a full page load) returns
+  // the athlete to the connect step instead of restarting onboarding — otherwise
+  // the freshly imported data would never reach the very next gap-fill screen.
+  const [restored] = useState(restoreOnboardingState)
+  const [step, setStep] = useState(restored.step)
+  const [selfType, setSelfType] = useState<SelfType | null>(restored.selfType)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // True while a freshly-connected platform is still importing — holds "Verder"
+  // so the gap-fill only decides what's missing after the import has landed.
+  const [connBusy, setConnBusy] = useState(false)
+
+  useEffect(() => {
+    window.sessionStorage.setItem(ONBOARDING_STEP_KEY, String(step))
+  }, [step])
+  useEffect(() => {
+    if (selfType) window.sessionStorage.setItem(ONBOARDING_SELF_KEY, selfType)
+  }, [selfType])
 
   const name = firstName?.trim() ? firstName.trim() : "renner"
 
@@ -144,6 +190,7 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
         method: "POST",
         body: JSON.stringify({ selfType }),
       })
+      clearOnboardingState()
       onComplete()
     } catch {
       setError("Kon je profiel niet opslaan. Controleer je verbinding en probeer het opnieuw.")
@@ -282,11 +329,11 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
             </div>
 
             <div className="-mx-6 mt-4 flex-1 overflow-y-auto px-6">
-              <ConnectionsSection />
+              <ConnectionsSection onImportingChange={setConnBusy} />
             </div>
 
             <div className="mt-auto flex flex-col gap-3 pb-8 pt-4">
-              <PrimaryBtn onClick={next}>
+              <PrimaryBtn onClick={next} disabled={connBusy}>
                 Verder
                 <ChevronRight className="h-4 w-4" />
               </PrimaryBtn>
