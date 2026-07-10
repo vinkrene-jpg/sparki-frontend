@@ -395,3 +395,9 @@ id = "7LWQO6nr8jrZdDH8K64px"
 uri = "file://RELEASE_READINESS_REPORT.md"
 type = "text"
 title = "Sparki Release-Readiness Report"
+
+[[outputs]]
+id = "-Z7o6xQKln1nn7RTSITOi"
+uri = "file://SPARKI_COACH_STRATEGY_ANALYSIS.md"
+type = "text"
+title = "Strategische herontwerpanalyse — Sparki vs TrainingPeaks"
