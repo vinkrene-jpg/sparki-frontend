@@ -389,3 +389,9 @@ id = "vKCBbyuH8jo3gjW7dekSd"
 uri = "file://tmp/vapid-nieuwe-sleutel.txt"
 type = "text"
 title = "Nieuwe VAPID private key (plak als Secret)"
+
+[[outputs]]
+id = "7LWQO6nr8jrZdDH8K64px"
+uri = "file://RELEASE_READINESS_REPORT.md"
+type = "text"
+title = "Sparki Release-Readiness Report"

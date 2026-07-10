@@ -56,6 +56,21 @@ export default defineConfig(({ command }) => {
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        // Behavior-neutral vendor splitting: heavy libraries used only on a few
+        // screens (maps, charts, QR, animation) become their own cacheable
+        // chunks so they no longer bloat the single main bundle. No lazy/Suspense
+        // boundaries are introduced, so runtime behavior is unchanged.
+        manualChunks: {
+          "vendor-react": ["react", "react-dom", "wouter"],
+          "vendor-map": ["leaflet"],
+          "vendor-charts": ["recharts"],
+          "vendor-qr": ["qrcode.react"],
+          "vendor-motion": ["framer-motion"],
+        },
+      },
+    },
   },
   server: {
     port,

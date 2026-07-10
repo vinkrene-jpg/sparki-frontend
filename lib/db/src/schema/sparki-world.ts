@@ -183,7 +183,16 @@ export const virtualRelationshipsTable = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [unique().on(t.athleteId, t.relatedAthleteId, t.kind)],
+  // Explicit short name: the auto-generated name exceeds Postgres' 63-char
+  // identifier limit and gets truncated, which made drizzle-kit push believe the
+  // constraint was missing on every run (perpetual drift + truncate prompt).
+  (t) => [
+    unique("virtual_rel_athlete_related_kind_uq").on(
+      t.athleteId,
+      t.relatedAthleteId,
+      t.kind,
+    ),
+  ],
 );
 
 // ── Career timeline ──────────────────────────────────────────────────────────

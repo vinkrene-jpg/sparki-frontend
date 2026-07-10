@@ -380,12 +380,39 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
   const [trainingType, setTrainingType] = useState("duurtraining")
   const [workoutId, setWorkoutId] = useState<string>("")
   const [distance, setDistance] = useState("40")
+  const [distanceTouched, setDistanceTouched] = useState(false)
   const [destination, setDestination] = useState("")
   const [start, setStart] = useState<{ lat: number; lon: number } | null>(null)
   const [geoState, setGeoState] = useState<"idle" | "loading" | "error">("idle")
   const [candidate, setCandidate] = useState<RouteCandidate | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+
+  // Seed the default loop distance from the training plan (nearest planned
+  // session's duration) instead of a fixed 40 km. It's only an editable
+  // starting suggestion — a route linked to a workout still derives its true
+  // distance server-side.
+  useEffect(() => {
+    if (distanceTouched) return
+    const list = workouts ?? []
+    const today = new Date().toISOString().split("T")[0]!
+    const upcoming = list
+      .filter((w) => w.targetDurationMin && w.scheduledDate >= today)
+      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))[0]
+    const nearest =
+      upcoming ??
+      list
+        .filter((w) => w.targetDurationMin)
+        .sort((a, b) => b.scheduledDate.localeCompare(a.scheduledDate))[0]
+    if (nearest?.targetDurationMin) {
+      const kmh = sport === "running" ? 11 : 28
+      const km = Math.max(
+        3,
+        Math.min(200, Math.round((nearest.targetDurationMin / 60) * kmh)),
+      )
+      setDistance(String(km))
+    }
+  }, [workouts, sport, distanceTouched])
 
   // Interactive builder state (mode === "waypoints").
   const [waypoints, setWaypoints] = useState<RouteWaypoint[]>([])
@@ -726,9 +753,17 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
                 ? `≈ afgeleid uit ${linkedWorkout.targetDurationMin}m training`
                 : "40"
             }
-            onChange={(e) => setDistance(e.target.value)}
+            onChange={(e) => {
+              setDistanceTouched(true)
+              setDistance(e.target.value)
+            }}
             disabled={!!linkedWorkout?.targetDurationMin}
           />
+          {!linkedWorkout?.targetDurationMin && !distanceTouched && (
+            <p className="mt-1.5 text-[11px] leading-relaxed text-white/35">
+              Geschat op basis van je geplande trainingsduur — pas gerust aan.
+            </p>
+          )}
         </div>
       )}
 

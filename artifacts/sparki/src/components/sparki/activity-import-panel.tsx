@@ -381,9 +381,20 @@ export function ActivityImportPanel() {
             <ImportCard key={imp.id} imp={imp} sessions={sessionList} />
           ))
         ) : (
-          <p className="text-[12px] text-white/30">
-            Nog geen activiteiten geïmporteerd
-          </p>
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 text-center">
+            <p className="text-[12px] text-white/40">
+              Nog geen activiteiten geïmporteerd
+            </p>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={upload.isPending}
+              className="mt-2.5 font-mono text-[10px] uppercase tracking-[0.16em] transition hover:opacity-80 disabled:opacity-50"
+              style={{ color: ACCENT }}
+            >
+              {upload.isPending ? "uploaden…" : "+ importeer je eerste bestand"}
+            </button>
+          </div>
         )}
       </div>
     </section>

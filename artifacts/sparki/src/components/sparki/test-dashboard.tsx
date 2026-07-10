@@ -4,6 +4,7 @@
 // "nog niet gemeten", never a fabricated figure. Cinematic Sparki design language.
 
 import { useState } from "react"
+import { useLocation } from "wouter"
 import { ChevronDown } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
 import {
@@ -517,6 +518,7 @@ export function TestDashboardView({
   onToggleDone: (clerkId: string, completed: boolean) => void
   busy: boolean
 }) {
+  const [, setLocation] = useLocation()
   return (
     <div className="space-y-3">
       <SummaryHeader summary={summary} />
@@ -526,6 +528,18 @@ export function TestDashboardView({
             Nog geen testers. Zodra je iemand uitnodigt en die meedoet, verschijnt
             hier het volledige overzicht.
           </p>
+          <button
+            type="button"
+            onClick={() => setLocation("/tester-qr")}
+            className="mt-4 inline-flex items-center gap-1.5 rounded-xl border px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors"
+            style={{
+              borderColor: "rgba(120,210,230,0.4)",
+              background: "rgba(120,210,230,0.12)",
+              color: ACCENT,
+            }}
+          >
+            Nodig een tester uit
+          </button>
         </div>
       ) : (
         testers.map((t) => (

@@ -5,7 +5,7 @@
 // QR simply opens onboarding. Admins can mint a named tester invite inline.
 // Cinematic Sparki design language.
 
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { ChevronLeft } from "lucide-react"
 import { QRCodeCanvas } from "qrcode.react"
 import { useLocation } from "wouter"
@@ -25,8 +25,19 @@ const BASE_URL_KEY = "sparki_qr_base_url"
 // domain. The field is editable + persisted so codes can be prepared from the
 // workspace by pasting the published domain once.
 function defaultBase(): string {
+  const stored =
+    typeof window !== "undefined"
+      ? window.localStorage.getItem(BASE_URL_KEY)
+      : null
+  if (stored) return stored
+  // Environment/config override: pins the QR base URL to the published domain
+  // without a manual paste. Falls back to the current origin.
+  const configured = (
+    import.meta.env.VITE_PUBLIC_APP_URL as string | undefined
+  )?.trim()
+  if (configured) return normalizeBase(configured)
   if (typeof window === "undefined") return ""
-  return window.localStorage.getItem(BASE_URL_KEY) || window.location.origin
+  return window.location.origin
 }
 
 function normalizeBase(raw: string): string {
@@ -153,6 +164,24 @@ export default function TesterQrPage() {
   const [resetError, setResetError] = useState<string | null>(null)
 
   const isAdmin = profile?.isAdmin === true
+
+  // Prefill the tester name from the signed-in profile once, as an editable
+  // convenience. Never overwrites what the admin has typed or cleared.
+  const didPrefillName = useRef(false)
+  useEffect(() => {
+    if (didPrefillName.current) return
+    // If the admin already typed (or cleared) something before profile data
+    // hydrated, respect it and never prefill over it.
+    if (testerName.trim() !== "") {
+      didPrefillName.current = true
+      return
+    }
+    const name = profile?.displayName?.trim()
+    if (name) {
+      setTesterName(name)
+      didPrefillName.current = true
+    }
+  }, [profile?.displayName, testerName])
 
   // Replays onboarding for the signed-in admin: clears the server completion
   // flags, drops the local "already onboarded" marker, then reloads at the app
