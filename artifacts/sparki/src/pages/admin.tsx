@@ -11,10 +11,12 @@ import {
   useAdminHealth,
   useRunHealthChecks,
   useAdminHealthBatches,
+  useAdminScheduledTasks,
   useAdminFeedback,
   useAdminFailedImports,
   type HealthCheck,
   type HealthBatch,
+  type ScheduledTask,
 } from "@/hooks/use-admin-health";
 import { useAdminBugReports } from "@/hooks/use-bug-reports";
 import { FeedbackInbox } from "@/components/sparki/feedback-inbox";
@@ -167,6 +169,46 @@ function BatchRow({ b }: { b: HealthBatch }) {
   );
 }
 
+function ScheduledTaskRow({ t }: { t: ScheduledTask }) {
+  const meta = STATUS_META[t.statusColor];
+  return (
+    <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <StatusDot color={meta.dot} />
+            <span className="truncate text-[13px] font-medium text-white/90">
+              {t.title}
+            </span>
+          </div>
+          <p className="mt-1 text-[12px] leading-snug text-white/55">
+            {t.message}
+          </p>
+        </div>
+        <span
+          className="shrink-0 rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]"
+          style={{ color: meta.color, background: meta.bg }}
+        >
+          {t.statusColor === "green"
+            ? "Draait"
+            : t.statusColor === "orange"
+              ? "Let op"
+              : "Nog opzetten"}
+        </span>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-white/30">
+        <span>
+          {t.traceLabel}: {formatWhen(t.lastRunAt)}
+        </span>
+        <span className="text-white/20">· {t.schedule}</span>
+      </div>
+      <code className="mt-2 block truncate rounded-md bg-black/30 px-2 py-1 font-mono text-[10px] text-white/40">
+        {t.runCommand}
+      </code>
+    </div>
+  );
+}
+
 const FEEDBACK_LABEL: Record<string, string> = {
   done: "Gedaan",
   missed: "Gemist",
@@ -186,6 +228,7 @@ export default function AdminPage() {
   const { data: health, isLoading } = useAdminHealth(enabled);
   const { data: statusData } = useAdminStatus(enabled);
   const { data: batchData } = useAdminHealthBatches(enabled);
+  const { data: scheduledData } = useAdminScheduledTasks(enabled);
   const { data: bugData } = useAdminBugReports(enabled);
   const { data: feedbackData } = useAdminFeedback(enabled);
   const { data: importsData } = useAdminFailedImports(enabled);
@@ -250,6 +293,38 @@ export default function AdminPage() {
                 lastRunAt={health.lastRunAt}
               />
             </div>
+
+            {scheduledData && scheduledData.tasks.length > 0 && (
+              <section className="mt-6">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                    Geplande taken
+                  </p>
+                  {scheduledData.missing > 0 && (
+                    <span
+                      className="rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]"
+                      style={{
+                        color: STATUS_META.orange.color,
+                        background: STATUS_META.orange.bg,
+                      }}
+                    >
+                      {scheduledData.missing} nog opzetten
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-[12px] leading-snug text-white/40">
+                  Deze taken horen als Scheduled Deployment te draaien. De status
+                  komt uit de echte data-sporen die elke taak achterlaat — geen
+                  zichtbare run betekent dat de geplande taak mogelijk nog niet is
+                  aangemaakt.
+                </p>
+                <div className="mt-3 space-y-2.5">
+                  {scheduledData.tasks.map((t) => (
+                    <ScheduledTaskRow key={t.key} t={t} />
+                  ))}
+                </div>
+              </section>
+            )}
 
             {health.openErrors.length > 0 && (
               <section className="mt-6">

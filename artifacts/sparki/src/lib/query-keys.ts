@@ -162,6 +162,7 @@ export const queryKeys = {
     health: () => ["admin", "health"] as const,
     healthCheck: (key: string) => ["admin", "health", "check", key] as const,
     healthBatches: () => ["admin", "health", "batches"] as const,
+    scheduledTasks: () => ["admin", "scheduled-tasks"] as const,
     feedback: () => ["admin", "feedback"] as const,
     failedImports: () => ["admin", "failed-imports"] as const,
   },

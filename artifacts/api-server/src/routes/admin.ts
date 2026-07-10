@@ -842,6 +842,184 @@ router.get("/failed-imports", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// GET /api/admin/scheduled-tasks — "Geplande taken"-overzicht.
+//
+// Honesty contract: the server cannot read the Replit deployment config, so it
+// can NEVER confirm a Scheduled Deployment truly exists. What it CAN do is look
+// at the real data traces each job leaves behind and honestly report the last
+// visible run. No trace within the expected cadence → warn plainly that the
+// Scheduled Deployment may not be created yet. Nothing is ever a fake green.
+router.get(
+  "/scheduled-tasks",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    const DAY_MS = 24 * 60 * 60 * 1000;
+
+    // Classify a data trace into an honest status. `lastRunAt` = the newest
+    // trace we could find; `staleAfterDays` = how long before "no recent run"
+    // becomes a warning (the job's expected cadence + a grace margin).
+    function classify(
+      lastRunAt: Date | null,
+      staleAfterDays: number,
+    ): { statusColor: "green" | "orange" | "grey"; recent: boolean } {
+      if (!lastRunAt) return { statusColor: "grey", recent: false };
+      const ageDays = (Date.now() - lastRunAt.getTime()) / DAY_MS;
+      if (ageDays <= staleAfterDays)
+        return { statusColor: "green", recent: true };
+      return { statusColor: "orange", recent: false };
+    }
+
+    try {
+      // ── job:health — last AUTOMATIC (scheduler-triggered) engine batch ──────
+      const [lastAutoBatch] = await db
+        .select()
+        .from(healthCheckBatchesTable)
+        .where(eq(healthCheckBatchesTable.triggeredBy, "scheduler"))
+        .orderBy(desc(healthCheckBatchesTable.startedAt))
+        .limit(1);
+
+      // ── job:goal-review — newest goal proposal + whether there is anything
+      //    to propose at all (active goals). ──────────────────────────────────
+      const goalTrace = await db.execute(sql`
+        SELECT
+          (SELECT max(created_at) FROM goal_proposals) AS last_at,
+          (SELECT count(*) FROM goal_proposals)::int AS total,
+          (SELECT count(*) FROM athlete_goals WHERE status = 'active')::int AS active_goals
+      `);
+      const goalRow = goalTrace.rows[0] as
+        | { last_at?: string | Date | null; total?: number; active_goals?: number }
+        | undefined;
+
+      // ── job:reminders — newest scheduled reminder notification ─────────────
+      const reminderTrace = await db.execute(sql`
+        SELECT max(created_at) AS last_at, count(*)::int AS total
+        FROM notifications
+        WHERE dedupe_key LIKE 'reminder:%'
+      `);
+      const reminderRow = reminderTrace.rows[0] as
+        | { last_at?: string | Date | null; total?: number }
+        | undefined;
+
+      // ── knowledge-scan — newest knowledge item fetched ─────────────────────
+      const knowledgeTrace = await db.execute(sql`
+        SELECT max(coalesce(fetched_at, created_at)) AS last_at, count(*)::int AS total
+        FROM knowledge_items
+      `);
+      const knowledgeRow = knowledgeTrace.rows[0] as
+        | { last_at?: string | Date | null; total?: number }
+        | undefined;
+
+      const toDate = (v: string | Date | null | undefined): Date | null =>
+        v ? new Date(v) : null;
+
+      // ── job:health ─────────────────────────────────────────────────────────
+      const healthLast = lastAutoBatch?.startedAt
+        ? new Date(lastAutoBatch.startedAt)
+        : null;
+      const health = classify(healthLast, 8);
+      const healthTask = {
+        key: "health",
+        title: "Gezondheidscheck",
+        description:
+          "Test elke nacht automatisch alle onderdelen van de app en bewaart de uitslag.",
+        runCommand: "pnpm --filter @workspace/api-server run job:health",
+        schedule: "Dagelijks 04:00 (cron 0 4 * * *) · wekelijks + release-modus",
+        traceLabel: "Laatste automatische controle-run",
+        lastRunAt: healthLast ? healthLast.toISOString() : null,
+        statusColor: health.statusColor,
+        message: healthLast
+          ? health.recent
+            ? "De geplande gezondheidscheck draait: er is recent een automatische controle uitgevoerd."
+            : "De laatste automatische controle is meer dan een week oud. Mogelijk is de geplande taak (Scheduled Deployment) gestopt of nooit aangemaakt."
+          : "Er is nog nooit een automatische controle gezien. Controleer of de Scheduled Deployment 'job:health' is aangemaakt vóór livegang.",
+      };
+
+      // ── job:goal-review ──────────────────────────────────────────────────────
+      const goalLast = toDate(goalRow?.last_at);
+      const activeGoals = Number(goalRow?.active_goals ?? 0);
+      const goalCls = classify(goalLast, 35);
+      let goalStatus: "green" | "orange" | "grey" = goalCls.statusColor;
+      let goalMessage: string;
+      if (goalLast) {
+        goalMessage = goalCls.recent
+          ? "De maandelijkse doelen-review draait: er zijn recent voorstellen gemaakt."
+          : "De laatste voorstellen zijn ouder dan 35 dagen. Mogelijk draait de maandelijkse taak niet meer.";
+      } else if (activeGoals === 0) {
+        // Honest: nothing to propose yet, so absence of a trace is expected.
+        goalStatus = "grey";
+        goalMessage =
+          "Er zijn nog geen actieve doelen, dus de doelen-review heeft nog niets te beoordelen. Zodra sporters doelen hebben, hoort hier resultaat te verschijnen.";
+      } else {
+        goalStatus = "grey";
+        goalMessage = `Er zijn ${activeGoals} actieve doel(en), maar nog geen enkel voorstel. Controleer of de Scheduled Deployment 'job:goal-review' is aangemaakt.`;
+      }
+      const goalTask = {
+        key: "goal_review",
+        title: "Maandelijkse doelen-review",
+        description:
+          "Maakt elke maand voorstellen om de doelen van sporters bij te sturen.",
+        runCommand: "pnpm --filter @workspace/api-server run job:goal-review",
+        schedule: "Maandelijks, 1e van de maand 06:00 (cron 0 6 1 * *)",
+        traceLabel: "Laatste doelen-voorstel",
+        lastRunAt: goalLast ? goalLast.toISOString() : null,
+        statusColor: goalStatus,
+        message: goalMessage,
+      };
+
+      // ── job:reminders ────────────────────────────────────────────────────────
+      const reminderLast = toDate(reminderRow?.last_at);
+      const reminderCls = classify(reminderLast, 3);
+      const reminderTask = {
+        key: "reminders",
+        title: "Herinneringen",
+        description:
+          "Stuurt sporters herinneringen (check-in, training, races) in de app en per mail.",
+        runCommand: "pnpm --filter @workspace/api-server run job:reminders",
+        schedule: "Dagelijks 18:00 (cron 0 18 * * *)",
+        traceLabel: "Laatste verstuurde herinnering",
+        lastRunAt: reminderLast ? reminderLast.toISOString() : null,
+        statusColor: reminderCls.statusColor,
+        message: reminderLast
+          ? reminderCls.recent
+            ? "De herinneringen-taak draait: er zijn recent herinneringen aangemaakt."
+            : "Er zijn al enkele dagen geen herinneringen aangemaakt. Mogelijk draait de geplande taak niet meer, of er was niets te versturen."
+          : "Er is nog nooit een geplande herinnering gezien. Controleer of de Scheduled Deployment 'job:reminders' is aangemaakt vóór livegang.",
+      };
+
+      // ── knowledge-scan ───────────────────────────────────────────────────────
+      const knowledgeLast = toDate(knowledgeRow?.last_at);
+      const knowledgeCls = classify(knowledgeLast, 8);
+      const knowledgeTask = {
+        key: "knowledge_scan",
+        title: "Nachtelijke kennis-scan",
+        description:
+          "Vult de kennisbank en het nieuws door elke nacht bronnen te scannen.",
+        runCommand: "pnpm --filter @workspace/api-server run scan:knowledge",
+        schedule: "Dagelijks (aanbevolen 's nachts, bv. cron 0 3 * * *)",
+        traceLabel: "Laatst opgehaalde kennis-item",
+        lastRunAt: knowledgeLast ? knowledgeLast.toISOString() : null,
+        statusColor: knowledgeCls.statusColor,
+        message: knowledgeLast
+          ? knowledgeCls.recent
+            ? "De kennis-scan draait: er is recent verse kennis opgehaald."
+            : "De laatste kennis is meer dan een week oud. Mogelijk draait de nachtelijke scan niet meer of is de Scheduled Deployment nooit aangemaakt."
+          : "De kennisbank is nog leeg. Controleer of de Scheduled Deployment 'job:knowledge' is aangemaakt vóór livegang.",
+      };
+
+      const tasks = [healthTask, goalTask, reminderTask, knowledgeTask];
+      const missing = tasks.filter((t) => t.statusColor === "grey").length;
+
+      res.json({ tasks, missing });
+    } catch (err) {
+      req.log.error({ err }, "admin.scheduled-tasks failed");
+      res
+        .status(500)
+        .json({ error: "Kon het overzicht van geplande taken niet laden" });
+    }
+  },
+);
+
 // GET /api/admin/health/batches — test history (all runs) + release history.
 router.get("/health/batches", requireAuth, requireAdmin, async (req, res) => {
   try {

@@ -129,6 +129,30 @@ export function useAdminFailedImports(enabled: boolean) {
   });
 }
 
+export type ScheduledTask = {
+  key: string;
+  title: string;
+  description: string;
+  runCommand: string;
+  schedule: string;
+  traceLabel: string;
+  lastRunAt: string | null;
+  statusColor: HealthStatusColor;
+  message: string;
+};
+
+export function useAdminScheduledTasks(enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.admin.scheduledTasks(),
+    queryFn: () =>
+      apiFetch<{ tasks: ScheduledTask[]; missing: number }>(
+        "/api/admin/scheduled-tasks",
+      ),
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
 export function useAdminHealthBatches(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.admin.healthBatches(),
