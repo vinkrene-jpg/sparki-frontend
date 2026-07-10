@@ -21,6 +21,7 @@ import {
 import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer"
 import { LinkedRoutePreview } from "@/components/sparki/linked-route"
 import { QuickActionButton } from "@/components/sparki/coach-input-actions"
+import { GoalContextLine } from "@/components/sparki/goal-context-line"
 import { useState } from "react"
 import { ChevronRight } from "lucide-react"
 
@@ -230,6 +231,11 @@ export function TrainingDayHome({
                   </span>
                 </div>
               )}
+
+              {/* DOEL-CONTEXT — welk doel deze training dient (alleen bij een
+                  echt actief/afgeleid doel; eerlijk leeg anders). Klik opent
+                  het Doelen-werkblad op /you. */}
+              <GoalContextLine />
 
               {/* week TSS bars as session load visualization */}
               {data.weekTSS && data.weekTSS.length > 0 && (

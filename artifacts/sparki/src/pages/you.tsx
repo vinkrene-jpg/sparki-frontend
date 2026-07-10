@@ -298,8 +298,8 @@ export default function YouPage() {
   // section into view, then strip ?focus= so it doesn't linger. Route is
   // wouter-relative (base prefix handled by wouter), so navigate to "/you".
   useEffect(() => {
-    if (focus !== "ontwikkelkompas") return
-    const el = document.getElementById("ontwikkelkompas")
+    if (focus !== "ontwikkelkompas" && focus !== "doelen") return
+    const el = document.getElementById(focus)
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" })
     navigate("/you", { replace: true })
   }, [focus, navigate])
