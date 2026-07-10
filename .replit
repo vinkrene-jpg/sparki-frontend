@@ -48,6 +48,10 @@ args = "test-scheduled-tasks-route"
 task = "workflow.run"
 args = "test-onboarding-connect-step"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "test-onboarding-strava-gapfill"
+
 [[workflows.workflow]]
 name = "test-session-analysis"
 author = "agent"
@@ -135,6 +139,17 @@ args = "pnpm --filter @workspace/api-server run test:onboarding-connect-step"
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow]]
+name = "test-onboarding-strava-gapfill"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run test:onboarding-strava-gapfill"
+
+[workflows.workflow.metadata]
+isValidation = true
 
 [agent]
 stack = "PNPM_WORKSPACE"
