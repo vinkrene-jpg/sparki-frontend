@@ -18,6 +18,7 @@ import {
   getCoachingProfile,
   coachingProfileDirective,
 } from "../engines/coaching";
+import { computeAge } from "./age";
 import { resolveFlags } from "./flags";
 import { buildRaceContext, formatRaceContextForPrompt } from "./race-context";
 import {
@@ -112,10 +113,7 @@ export async function buildAthleteContext(clerkId: string): Promise<string> {
       athlete.ftp && athlete.weightKg
         ? (athlete.ftp / Number(athlete.weightKg)).toFixed(2)
         : null;
-    const age =
-      athlete.birthYear != null
-        ? new Date().getFullYear() - athlete.birthYear
-        : null;
+    const age = computeAge(athlete.birthDate, athlete.birthYear);
     parts.push(
       `PROFILE: FTP=${athlete.ftp ?? "not set"}W${wkg ? `, ${wkg} W/kg` : ""}, Weight=${athlete.weightKg ?? "unknown"}kg, Discipline=${athlete.discipline ?? "road cycling"}`,
     );

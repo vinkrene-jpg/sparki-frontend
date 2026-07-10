@@ -899,25 +899,48 @@ function HeightInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
   )
 }
 
+// Format an ISO date (YYYY-MM-DD) as a short Dutch date (24-09-2007). Falls back
+// to the year alone when only a birth year is known (older profiles).
+function formatBirth(birthDate: string | null, birthYear: number | null): string {
+  if (birthDate) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(birthDate)
+    if (m) return `${m[3]}-${m[2]}-${m[1]}`
+  }
+  if (birthYear != null) return String(birthYear)
+  return "Niet ingesteld"
+}
+
 function BirthYearInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
   const { data: profile } = useAthleteExtendedProfile()
   const updateProfile = useUpdateAthleteProfile()
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState("")
-  const nowYear = new Date().getFullYear()
+  const todayIso = new Date().toISOString().slice(0, 10)
+
+  const initialValue = () => {
+    if (profile?.birthDate) return profile.birthDate.slice(0, 10)
+    // Older profiles that only stored a year — leave the day/month for the user
+    // to fill so Sparki can compute the exact age.
+    return ""
+  }
 
   useEffect(() => {
     if (autoOpen) {
-      setValue(profile?.birthYear != null ? String(profile.birthYear) : "")
+      setValue(initialValue())
       setEditing(true)
     }
-  }, [autoOpen, profile?.birthYear])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpen, profile?.birthDate])
 
   const handleSave = () => {
-    const y = Math.round(parseFloat(value))
-    if (!y || y < 1920 || y > nowYear) return
+    // Full date of birth so age is exact (not off by up to a year). We send the
+    // ISO date; the server also derives birthYear from it for backward compat.
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+    if (!m) return
+    const y = Number(m[1])
+    if (y < 1920 || value > todayIso) return
     updateProfile.mutate(
-      { birthYear: y },
+      { birthDate: value },
       {
         onSuccess: () => {
           setEditing(false)
@@ -933,12 +956,10 @@ function BirthYearInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
       <div className="flex items-center gap-2">
         <input
           autoFocus
-          type="number"
-          step="1"
-          placeholder={profile?.birthYear != null ? String(profile.birthYear) : "2005"}
+          type="date"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="w-24 rounded-lg border border-cyan-300/30 bg-white/[0.04] px-2.5 py-1.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
+          className="rounded-lg border border-cyan-300/30 bg-white/[0.04] px-2.5 py-1.5 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none [color-scheme:dark]"
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSave()
             if (e.key === "Escape") {
@@ -946,8 +967,8 @@ function BirthYearInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
               setValue("")
             }
           }}
-          min={1920}
-          max={nowYear}
+          min="1920-01-01"
+          max={todayIso}
         />
         <button
           type="button"
@@ -965,7 +986,7 @@ function BirthYearInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
   return (
     <button type="button" onClick={() => setEditing(true)} className="flex items-center gap-2">
       <span className="font-mono text-[11px] tracking-wide text-white/40">
-        {profile?.birthYear != null ? `${profile.birthYear}` : "Niet ingesteld"}
+        {formatBirth(profile?.birthDate ?? null, profile?.birthYear ?? null)}
       </span>
       <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
     </button>
@@ -1135,7 +1156,7 @@ export function ProfileSettings({
     },
     {
       icon: Cake,
-      label: "Geboortejaar",
+      label: "Geboortedatum",
       focusToken: "birthYear",
       custom: (
         <BirthYearInlineEditor

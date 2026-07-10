@@ -13,6 +13,7 @@ import {
 } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { computeAge } from "../lib/age";
 import { analyzeNutritionLog } from "../lib/nutrition-rules";
 import { persistObservation } from "../engines/coaching";
 import { buildAthleteContext, systemPrompt } from "../lib/athlete-context";
@@ -85,6 +86,7 @@ async function buildMealContext(
     db
       .select({
         birthYear: athleteProfilesTable.birthYear,
+        birthDate: athleteProfilesTable.birthDate,
         weightKg: athleteProfilesTable.weightKg,
         ftp: athleteProfilesTable.ftp,
         discipline: athleteProfilesTable.discipline,
@@ -112,10 +114,7 @@ async function buildMealContext(
       ),
   ]);
 
-  const age =
-    athlete?.birthYear != null
-      ? new Date().getFullYear() - athlete.birthYear
-      : null;
+  const age = computeAge(athlete?.birthDate, athlete?.birthYear);
   const youth = age != null && age < YOUTH_AGE_CUTOFF;
 
   // Describe the day's training in plain Dutch. Done sessions win (that is what
@@ -514,6 +513,7 @@ router.get("/day-analysis", requireAuth, async (req, res) => {
       db
         .select({
           birthYear: athleteProfilesTable.birthYear,
+          birthDate: athleteProfilesTable.birthDate,
           weightKg: athleteProfilesTable.weightKg,
           discipline: athleteProfilesTable.discipline,
           developmentGoal: athleteProfilesTable.developmentGoal,
@@ -560,10 +560,7 @@ router.get("/day-analysis", requireAuth, async (req, res) => {
       return;
     }
 
-    const age =
-      athlete?.birthYear != null
-        ? new Date().getFullYear() - athlete.birthYear
-        : null;
+    const age = computeAge(athlete?.birthDate, athlete?.birthYear);
     const isYouth = age != null && age < YOUTH_AGE_CUTOFF;
 
     const seasonBlock = await seasonGoalPromptBlock(
@@ -926,6 +923,7 @@ router.get("/season-goal", requireAuth, async (req, res) => {
       db
         .select({
           birthYear: athleteProfilesTable.birthYear,
+          birthDate: athleteProfilesTable.birthDate,
           weightKg: athleteProfilesTable.weightKg,
         })
         .from(athleteProfilesTable)
@@ -936,10 +934,7 @@ router.get("/season-goal", requireAuth, async (req, res) => {
         .where(eq(nutritionSeasonGoalsTable.clerkId, clerkId)),
     ]);
 
-    const age =
-      athlete?.birthYear != null
-        ? new Date().getFullYear() - athlete.birthYear
-        : null;
+    const age = computeAge(athlete?.birthDate, athlete?.birthYear);
     const blocked = seasonGoalIneligible(age);
     if (blocked) {
       res.json(blocked);
@@ -989,14 +984,12 @@ router.put("/season-goal", requireAuth, async (req, res) => {
     const [athlete] = await db
       .select({
         birthYear: athleteProfilesTable.birthYear,
+        birthDate: athleteProfilesTable.birthDate,
         weightKg: athleteProfilesTable.weightKg,
       })
       .from(athleteProfilesTable)
       .where(eq(athleteProfilesTable.clerkId, clerkId));
-    const age =
-      athlete?.birthYear != null
-        ? new Date().getFullYear() - athlete.birthYear
-        : null;
+    const age = computeAge(athlete?.birthDate, athlete?.birthYear);
     const blocked = seasonGoalIneligible(age);
     if (blocked) {
       res.status(403).json({ error: blocked.message });
@@ -1137,6 +1130,7 @@ router.get("/fueling-plan", requireAuth, async (req, res) => {
       db
         .select({
           birthYear: athleteProfilesTable.birthYear,
+          birthDate: athleteProfilesTable.birthDate,
           weightKg: athleteProfilesTable.weightKg,
           discipline: athleteProfilesTable.discipline,
           developmentGoal: athleteProfilesTable.developmentGoal,
@@ -1171,10 +1165,7 @@ router.get("/fueling-plan", requireAuth, async (req, res) => {
       return;
     }
 
-    const age =
-      athlete?.birthYear != null
-        ? new Date().getFullYear() - athlete.birthYear
-        : null;
+    const age = computeAge(athlete?.birthDate, athlete?.birthYear);
     const isYouth = age != null && age < YOUTH_AGE_CUTOFF;
 
     const seasonBlock = await seasonGoalPromptBlock(
@@ -1352,15 +1343,13 @@ router.get("/guidance", requireAuth, async (req, res) => {
     const [athlete] = await db
       .select({
         birthYear: athleteProfilesTable.birthYear,
+        birthDate: athleteProfilesTable.birthDate,
         discipline: athleteProfilesTable.discipline,
       })
       .from(athleteProfilesTable)
       .where(eq(athleteProfilesTable.clerkId, clerkId));
 
-    const age =
-      athlete?.birthYear != null
-        ? new Date().getFullYear() - athlete.birthYear
-        : null;
+    const age = computeAge(athlete?.birthDate, athlete?.birthYear);
     const isYouth = age != null && age < YOUTH_AGE_CUTOFF;
     const level: "youth" | "adult" = isYouth ? "youth" : "adult";
 

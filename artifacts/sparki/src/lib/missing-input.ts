@@ -108,13 +108,13 @@ export const INPUT_TARGETS: Record<InputTargetKey, InputTarget> = {
   },
   birthYear: {
     key: "birthYear",
-    label: "Geboortejaar invullen",
+    label: "Geboortedatum invullen",
     route: "/you",
     focus: "birthYear",
-    missingTitle: "Geboortejaar ontbreekt",
+    missingTitle: "Geboortedatum ontbreekt",
     missingWhy:
-      "Met je geboortejaar stemt Sparki je zones en advies af op je leeftijd.",
-    isSet: (p) => p?.birthYear != null,
+      "Met je geboortedatum stemt Sparki je zones en advies af op je exacte leeftijd.",
+    isSet: (p) => p?.birthDate != null || p?.birthYear != null,
   },
   sportProfile: {
     key: "sportProfile",

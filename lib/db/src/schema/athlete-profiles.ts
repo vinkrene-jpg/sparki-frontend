@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, numeric, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, numeric, boolean, timestamp, date } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { userProfilesTable } from "./users";
@@ -36,6 +36,11 @@ export const athleteProfilesTable = pgTable("athlete_profiles", {
   coachingMode: text("coaching_mode"),
   // Progressive profile facts gathered gradually during normal use.
   birthYear: integer("birth_year"),
+  // Full date of birth (YYYY-MM-DD). When present, exact age is derived from
+  // this (accounting for whether the birthday has already passed this year);
+  // birthYear stays as a backward-compatible fallback for profiles that only
+  // ever supplied a year/age (which can be off by up to one year).
+  birthDate: date("birth_date"),
   heightCm: integer("height_cm"),
   // Self-reported competition level — drives adaptive question ordering and
   // (later) periodisation: none | recreational | local | regional | national.

@@ -85,6 +85,7 @@ router.put("/profile", requireAuth, async (req, res) => {
     weightKg,
     heightCm,
     birthYear,
+    birthDate,
     discipline,
     goals,
     developmentGoal,
@@ -105,6 +106,7 @@ router.put("/profile", requireAuth, async (req, res) => {
     weightKg?: string;
     heightCm?: number | string | null;
     birthYear?: number | string | null;
+    birthDate?: string | null;
     discipline?: string;
     goals?: string;
     developmentGoal?: string | null;
@@ -180,6 +182,30 @@ router.put("/profile", requireAuth, async (req, res) => {
     cleanBirthYear =
       Number.isFinite(y) && y >= 1920 && y <= nowYear ? y : undefined;
   }
+  // Full date of birth (YYYY-MM-DD) — the source of truth for exact age. Sending
+  // `null` clears it; a valid, non-future date within a plausible range is kept
+  // and also derives birthYear so year-only fallbacks stay consistent.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  let cleanBirthDate: string | null | undefined;
+  if (birthDate === null) {
+    cleanBirthDate = null;
+  } else if (birthDate !== undefined && birthDate !== "") {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthDate);
+    if (m) {
+      const y = Number(m[1]);
+      const parsed = new Date(`${birthDate}T00:00:00Z`);
+      const validCalendar =
+        !Number.isNaN(parsed.getTime()) &&
+        parsed.toISOString().slice(0, 10) === birthDate;
+      if (validCalendar && y >= 1920 && birthDate <= todayIso) {
+        cleanBirthDate = birthDate;
+        // Full DOB is authoritative — always derive birthYear from it so the
+        // year-only fallback can never drift out of sync with the exact date,
+        // even if the caller sent a conflicting birthYear in the same payload.
+        cleanBirthYear = y;
+      }
+    }
+  }
 
   const latNum = homeLat != null && homeLat !== "" ? Number(homeLat) : null;
   const lonNum = homeLon != null && homeLon !== "" ? Number(homeLon) : null;
@@ -209,6 +235,7 @@ router.put("/profile", requireAuth, async (req, res) => {
         ...(weightKg != null && { weightKg }),
         ...(cleanHeightCm !== undefined && { heightCm: cleanHeightCm }),
         ...(cleanBirthYear !== undefined && { birthYear: cleanBirthYear }),
+        ...(cleanBirthDate !== undefined && { birthDate: cleanBirthDate }),
         ...(discipline != null && { discipline }),
         ...(goals != null && { goals }),
         ...(cleanDevelopmentGoal !== undefined && {

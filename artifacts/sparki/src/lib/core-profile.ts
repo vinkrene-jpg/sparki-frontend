@@ -9,6 +9,7 @@
 // The page renders a section only when it has a genuine reason to be visible.
 
 import type { AthleteProfile, FtpHistoryEntry, TrainingSession } from "@/lib/athlete-types";
+import { computeAge } from "@/lib/age";
 import type { AiObservation } from "@/hooks/use-ai-memory";
 import type { LoadData } from "@/hooks/use-load";
 import {
@@ -663,11 +664,12 @@ function ftpSlopePerWeek(
 // riders have more room to grow, masters trend toward maintenance), not an
 // absolute truth — it only widens/narrows the optimistic end of the range.
 function ageTrainability(
+  birthDate: string | null | undefined,
   birthYear: number | null | undefined,
 ): { factor: number; label: string } {
-  if (birthYear == null) return { factor: 0.6, label: "onbekend" };
-  const age = new Date().getFullYear() - birthYear;
-  if (age <= 0 || age > 100) return { factor: 0.6, label: "onbekend" };
+  const age = computeAge(birthDate, birthYear);
+  if (age == null || age <= 0 || age > 100)
+    return { factor: 0.6, label: "onbekend" };
   if (age < 16) return { factor: 0.7, label: "groeit nog" };
   if (age <= 22) return { factor: 1.0, label: "veel ruimte" };
   if (age <= 34) return { factor: 0.75, label: "ruim" };
@@ -747,7 +749,7 @@ export function deriveBandbreedte(
     ctlTone = d > 2 ? "up" : d < -2 ? "down" : "flat";
   }
 
-  const age = ageTrainability(profile?.birthYear);
+  const age = ageTrainability(profile?.birthDate, profile?.birthYear);
 
   // Confidence + range width — more measurements over a longer window make the
   // read tighter and more trustworthy; thin data widens the band honestly.

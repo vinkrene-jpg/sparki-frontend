@@ -387,6 +387,7 @@ async function resolvePersonalityFor(clerkId: string): Promise<Personality> {
     .where(eq(userProfilesTable.clerkId, clerkId));
   return resolvePersonality({
     birthYear: athlete?.birthYear ?? null,
+    birthDate: athlete?.birthDate ?? null,
     experienceLevel: athlete?.experienceLevel ?? null,
     competitionLevel: athlete?.competitionLevel ?? null,
     activeRole: user?.activeRole ?? null,

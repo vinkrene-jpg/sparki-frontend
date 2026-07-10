@@ -16,6 +16,7 @@ export type AthleteProfile = {
   weightKg: string | null;
   heightCm: number | null;
   birthYear: number | null;
+  birthDate: string | null;
   discipline: string | null;
   goals: string | null;
   developmentGoal: string | null;

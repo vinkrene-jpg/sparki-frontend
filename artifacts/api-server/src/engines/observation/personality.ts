@@ -6,6 +6,7 @@
 // Jeugdrenner); the model is extensible (Ouder, Trainer, Topsporter included).
 
 import type { Personality, PersonalityKey } from "./types";
+import { computeAge } from "../../lib/age";
 
 const DEFS: Record<PersonalityKey, Omit<Personality, "basis">> = {
   beginner: {
@@ -54,6 +55,7 @@ const DEFS: Record<PersonalityKey, Omit<Personality, "basis">> = {
 
 export type PersonalityInput = {
   birthYear?: number | null;
+  birthDate?: string | null;
   experienceLevel?: string | null;
   competitionLevel?: string | null;
   activeRole?: string | null;
@@ -73,10 +75,7 @@ export function resolvePersonality(input: PersonalityInput): Personality {
   if (role === "coach") return withBasis("trainer", "je kijkt mee als trainer");
 
   const now = input.today ?? new Date();
-  const age =
-    input.birthYear != null && input.birthYear > 1900
-      ? now.getFullYear() - input.birthYear
-      : null;
+  const age = computeAge(input.birthDate, input.birthYear, now);
   if (age != null && age <= 18) {
     return withBasis("jeugdrenner", `je bent ${age} jaar — nog jeugdrenner`);
   }

@@ -4,6 +4,7 @@
 // No fabricated content ever leaves this layer.
 
 import { and, eq, or, desc, inArray } from "drizzle-orm";
+import { computeAge } from "../../lib/age";
 import {
   db,
   intelCardsTable,
@@ -73,6 +74,7 @@ export async function buildIntelContext(
       experienceLevel: athleteProfilesTable.experienceLevel,
       competitionLevel: athleteProfilesTable.competitionLevel,
       birthYear: athleteProfilesTable.birthYear,
+      birthDate: athleteProfilesTable.birthDate,
       goals: athleteProfilesTable.goals,
       motivation: athleteProfilesTable.motivation,
       selfType: athleteProfilesTable.selfType,
@@ -107,8 +109,7 @@ export async function buildIntelContext(
   const level = normalizeLevel(profile?.experienceLevel ?? null);
 
   // Youth (<16) or true beginners get the simpler framing surfaced first.
-  const now = new Date().getFullYear();
-  const age = profile?.birthYear ? now - profile.birthYear : null;
+  const age = computeAge(profile?.birthDate, profile?.birthYear);
   const simplify =
     (age != null && age < 16) || level === "beginner" || level === null;
 
