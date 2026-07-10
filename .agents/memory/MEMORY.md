@@ -90,3 +90,4 @@
 - [Sparki nutrition season goal](sparki-season-goal.md) — 17+ only (RED-S refusal), deterministic ≤0,5 kg/wk steering, one-question doorvraag ladder; round-trip-validate calendar dates.
 - [Sparki derived belastingscore](sparki-derived-tss.md) — TSS derived from power+FTP at ingest + boot self-heal; advisory locks need ONE client (never pool.query); new merge fields must join MERGEABLE_FIELDS.
 - [Sparki Doelen-engine](sparki-goals-engine.md) — derived goals never duplicated as rows; dedupe = DB unique index+onConflict (not read-then-insert); per-day checks compare Amsterdam local date; ladder questions must open edit-UI for the target goal.
+- [Sparki scheduled-tasks overview test](sparki-scheduled-tasks-test.md) — /admin "Geplande taken" status: unit-test pure classify/build + route test seeding one FRESH newest trace per job (global aggregate queries) to catch column/dedupeKey drift.

@@ -48,6 +48,8 @@
     "test:world-feed": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/world-feed.mjs",
     "test:world-affinity": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/world-affinity.mjs",
     "test:goals": "pnpm run build && node --enable-source-maps ./dist/tests/goals.mjs",
+    "test:scheduled-tasks": "pnpm run build && node --enable-source-maps ./dist/tests/scheduled-tasks.mjs",
+    "test:scheduled-tasks-route": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/scheduled-tasks-route.mjs",
     "job:health": "pnpm run build && node --enable-source-maps ./dist/jobs/health-check.mjs",
     "job:reminders": "pnpm run build && node --enable-source-maps ./dist/jobs/reminders.mjs",
     "job:goal-review": "pnpm run build && node --enable-source-maps ./dist/jobs/goal-review.mjs",

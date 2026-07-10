@@ -62,6 +62,8 @@ async function buildAll() {
       path.resolve(artifactDir, "src/jobs/reminders.ts"),
       path.resolve(artifactDir, "src/jobs/goal-review.ts"),
       path.resolve(artifactDir, "src/tests/goals.ts"),
+      path.resolve(artifactDir, "src/tests/scheduled-tasks.ts"),
+      path.resolve(artifactDir, "src/tests/scheduled-tasks-route.ts"),
     ],
     platform: "node",
     bundle: true,
