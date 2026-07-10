@@ -1,0 +1,38 @@
+Ga direct door met de resterende werkzaamheden, maar hanteer onderstaande prioriteit en grenzen.
+
+Rond eerst de volledige privacy- en toegangscontrolereeks af:
+#186: coach/ouder heeft uitsluitend toegang tot expliciet gekoppelde atleten;
+#187: toegang vervalt onmiddellijk en volledig na ontkoppeling;
+#188: zichtbare gegevens worden begrensd door het ingestelde privacyniveau;
+valideer cross-account-isolatie opnieuw na afronding van de hele reeks.
+Bouw hiervoor geautomatiseerde negatieve tests:
+gebruiker A mag nooit gegevens van niet-gekoppelde gebruiker B lezen;
+directe API-aanroepen met een ander athlete ID moeten 403 of 404 opleveren;
+oude links, gecachte identifiers en eerder geldige sessies mogen na ontkoppeling geen toegang behouden;
+ouder-, coach-, tester-, admin- en atleetrollen moeten afzonderlijk worden getest;
+test zowel lezen als wijzigen, downloaden en exporteren.
+Los daarna de database-schema-drift op met een niet-destructieve migratie.
+Voer geen truncate, delete of automatische datavernietiging uit.
+Onderzoek eerst waarom de unieke constraint botst met de bestaande 3.668 rijen.
+Rapporteer duplicaten en conflicterende records.
+Maak een expliciet migratieplan voor deduplicatie of een aangepaste constraint.
+Maak vóór uitvoering een databaseback-up of herstelbaar snapshot.
+Voer de migratie pas uit wanneer aantoonbaar geen geldige data verloren gaat.
+Rond daarna de kleine UX-punten af:
+activity-import-panel: voeg een directe actie toe aan de lege status;
+test-dashboard: voeg een directe uitnodigingsactie toe;
+leid de standaard routeafstand af uit het trainingsplan in plaats van een vaste 40 km;
+vul tester-naam vooraf vanuit het profiel;
+haal de base-URL uit de omgeving/configuratie.
+Onderzoek de bundle van 7,3 MB en rapporteer de grootste onderdelen. Voer alleen veilige code-splitting uit; geen functionele herbouw en geen dependency-wissels zonder aantoonbare noodzaak.
+Publiceer nog niet automatisch. Lever eerst één release-readinessrapport op met:
+resultaten van typecheck, build en runtime smoke tests;
+bewijs van cross-account-isolatie;
+resultaten van ontkoppel- en privacytests;
+status van de database-migratie;
+bevestiging dat geen data is verwijderd;
+commit-ID’s;
+rollbackprocedure;
+expliciet GO of NO-GO-advies.
+
+De huidige productieversie mag tijdens deze werkzaamheden niet worden aangetast. Geen destructieve databaseacties en geen productiegebruik als testomgeving.
