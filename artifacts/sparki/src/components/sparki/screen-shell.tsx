@@ -10,6 +10,7 @@ import { CinematicScene, type SceneName } from "@/components/sparki/cinematic-sc
 import { NotificationBell } from "@/components/sparki/notification-bell"
 import { ProfilePromptCard } from "@/components/sparki/profile-prompt-card"
 import { CoachInputNeeds } from "@/components/sparki/coach-input-actions"
+import { ConnectorRecoveryNudge } from "@/components/sparki/connector-recovery-nudge"
 import { FollowUpPrompt } from "@/components/sparki/follow-up-prompt"
 import { CoachAnalysisCard } from "@/components/sparki/coach/coach-analysis-card"
 import { CoachDecisionCard } from "@/components/sparki/coach-decision-card"
@@ -324,6 +325,7 @@ export function ScreenShell({
         )}
 
         {!bare && isHome && !stateSurface && <HomeProfilePrompt />}
+        {!bare && isHome && !stateSurface && <ConnectorRecoveryNudge />}
         {!bare && isHome && !stateSurface && <CoachInputNeeds />}
 
         {!bare && showCoachCard && !stateSurface && (
