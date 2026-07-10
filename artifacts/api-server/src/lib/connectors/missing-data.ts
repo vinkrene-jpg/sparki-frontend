@@ -6,6 +6,7 @@ import {
   ftpHistoryTable,
   athleteDailyMetricsTable,
 } from "@workspace/db";
+import { getSubdisciplines } from "@workspace/feature-flags";
 
 // A single field the first training plan needs. Drives the "alleen ontbrekende
 // gegevens" manual fallback form generically, so the frontend renders whatever
@@ -28,14 +29,13 @@ const DAY_OPTIONS = [
   { value: "sun", label: "Zondag" },
 ];
 
-const DISCIPLINE_OPTIONS = [
-  { value: "road", label: "Weg" },
-  { value: "gravel", label: "Gravel" },
-  { value: "mtb", label: "Mountainbike" },
-  { value: "track", label: "Baan" },
-  { value: "cyclocross", label: "Veldrijden" },
-  { value: "triathlon", label: "Triatlon" },
-];
+// Canonical subdisciplines from the shared sport registry (same source the
+// progressive onboarding questions use) so the values stored here match what
+// isValidSubdiscipline("cycling", …) accepts — e.g. "Road"/"Gravel", not "road".
+const DISCIPLINE_OPTIONS = getSubdisciplines("cycling").map((d) => ({
+  value: d.value,
+  label: d.label,
+}));
 
 // All fields the deterministic first weekplan depends on, with the spec used to
 // ask for them manually when neither onboarding nor an import supplied them.

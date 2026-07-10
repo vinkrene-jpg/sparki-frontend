@@ -7,7 +7,11 @@ import {
   coachAthleteLinksTable,
   userProfilesTable,
 } from "@workspace/db";
-import { isSportActive, DEFAULT_SPORT } from "@workspace/feature-flags";
+import {
+  isSportActive,
+  DEFAULT_SPORT,
+  isValidSubdiscipline,
+} from "@workspace/feature-flags";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { generatePlan } from "../engines/training-plan";
 import {
@@ -47,6 +51,107 @@ router.get("/missing-data", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "onboarding.missingData failed");
     res.status(500).json({ error: "Failed to compute missing data" });
+  }
+});
+
+const VALID_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+
+// POST /api/onboarding/missing-data — the manual override behind the mandatory
+// connection step. After connector import, Sparki asks ONLY the required fields
+// that are still genuinely missing; the athlete fills those here. Real values
+// win over the estimated defaults complete-v2 would otherwise seed, so a manual
+// FTP/hours entry is marked as measured (not estimated). Each field is written
+// to its canonical table; unknown/invalid values are simply ignored (never
+// fabricated). Returns the fresh missing-data result so the client can confirm.
+router.post("/missing-data", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const values = (req.body as { values?: Record<string, unknown> }).values ?? {};
+
+  const athletePatch: ProfilePatch = {};
+  let displayName: string | undefined;
+
+  const raw = (k: string): unknown => values[k];
+  const filled = (v: unknown): boolean =>
+    v !== undefined && v !== null && v !== "";
+
+  if (typeof raw("displayName") === "string" && filled(raw("displayName"))) {
+    displayName = (raw("displayName") as string).trim().slice(0, 120) || undefined;
+  }
+
+  const disc = raw("discipline");
+  if (typeof disc === "string" && isValidSubdiscipline("cycling", disc)) {
+    athletePatch.discipline = disc;
+  }
+
+  if (filled(raw("weightKg"))) {
+    const n = Number(raw("weightKg"));
+    if (Number.isFinite(n) && n >= 30 && n <= 250) {
+      athletePatch.weightKg = String(Math.round(n * 10) / 10);
+    }
+  }
+
+  if (filled(raw("ftp"))) {
+    const n = Number(raw("ftp"));
+    if (Number.isFinite(n) && n >= 50 && n <= 600) {
+      athletePatch.ftp = Math.round(n);
+      athletePatch.ftpEstimated = false;
+    }
+  }
+
+  if (filled(raw("weeklyHourTarget"))) {
+    const n = Number(raw("weeklyHourTarget"));
+    if (Number.isFinite(n) && n >= 1 && n <= 40) {
+      athletePatch.weeklyHourTarget = Math.round(n);
+      athletePatch.weeklyHourTargetEstimated = false;
+    }
+  }
+
+  const days = raw("availableDays");
+  if (Array.isArray(days)) {
+    const picked = VALID_DAYS.filter((d) => days.includes(d));
+    if (picked.length > 0) {
+      athletePatch.availableDays = picked;
+      athletePatch.trainingDaysPerWeek = picked.length;
+    }
+  }
+
+  const now = new Date();
+  try {
+    // FK guard: athlete_profiles references user_profiles. Fail clearly (not a
+    // raw FK 500) if sync never created the parent row.
+    const [parent] = await db
+      .select({ clerkId: userProfilesTable.clerkId })
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.clerkId, clerkId));
+    if (!parent) {
+      res.status(409).json({
+        error: "Je account is nog niet klaar. Log opnieuw in en probeer het nog eens.",
+      });
+      return;
+    }
+
+    if (displayName !== undefined) {
+      await db
+        .update(userProfilesTable)
+        .set({ displayName, updatedAt: now })
+        .where(eq(userProfilesTable.clerkId, clerkId));
+    }
+
+    if (Object.keys(athletePatch).length > 0) {
+      await db
+        .insert(athleteProfilesTable)
+        .values({ clerkId, ...athletePatch })
+        .onConflictDoUpdate({
+          target: athleteProfilesTable.clerkId,
+          set: { ...athletePatch, updatedAt: now },
+        });
+    }
+
+    const result = await getMissingOnboardingData(clerkId);
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "onboarding.missingData.save failed");
+    res.status(500).json({ error: "Kon je gegevens niet opslaan." });
   }
 });
 

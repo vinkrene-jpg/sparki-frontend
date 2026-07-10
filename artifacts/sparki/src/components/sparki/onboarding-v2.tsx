@@ -2,15 +2,17 @@ import { useState, useCallback } from "react"
 import { ArrowLeft, Zap, ChevronRight } from "lucide-react"
 import { apiFetch } from "@/lib/api"
 import { ConnectionsSection } from "@/components/sparki/connections-section"
+import { OnboardingGapFill } from "@/components/sparki/onboarding-gap-fill"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sparki Onboarding V2 — a six-screen narrative.
+// Sparki Onboarding V2 — a narrative flow ending in a mandatory connect step.
 //
 // No forms, no sliders. Sparki introduces himself, asks the one question that
 // matters (what kind of athlete do you THINK you are), warns you he probably
-// disagrees, and lands you straight in the app — the real plan is generated
-// server-side from sensible defaults. Copy is verbatim from the brief; plain
-// Dutch throughout; the word "AI" never appears.
+// disagrees, then — BEFORE the first plan — runs a mandatory step: connect your
+// sport & health apps so Sparki gathers what already exists, and only then asks
+// for the genuinely-missing fields (the manual override). The real plan is
+// generated server-side. Copy is plain Dutch; the word "AI" never appears.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ACCENT = "rgba(120,210,230,1)"
@@ -80,18 +82,6 @@ function PrimaryBtn({
       ) : (
         children
       )}
-    </button>
-  )
-}
-
-function GhostBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex h-12 w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] font-sans text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.06] hover:text-white/85"
-    >
-      {children}
     </button>
   )
 }
@@ -267,17 +257,15 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
         {step === 5 && (
           <NarrativeScreen
             lines={[
-              { text: "Koppel je sportdata." },
-              { text: "Ik doe alsof ik slim ben." },
-              { text: "Data helpen daarbij.", dim: true },
+              { text: "Koppel je sport- en gezondheidsapps." },
+              { text: "Dan haal ik alles op wat er al is." },
+              { text: "Daarna vraag ik alleen wat nog ontbreekt.", dim: true },
             ]}
           >
-            {error && <ErrorMsg msg={error} />}
             <PrimaryBtn onClick={next}>
               Koppelen
               <ChevronRight className="h-4 w-4" />
             </PrimaryBtn>
-            <GhostBtn onClick={finish}>Later</GhostBtn>
           </NarrativeScreen>
         )}
 
@@ -285,10 +273,11 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex flex-col gap-1.5 pt-2">
               <h2 className="font-sans text-[1.5rem] font-bold leading-tight tracking-tight text-white">
-                Koppel je sportdata
+                Koppel je sport- en gezondheidsapps
               </h2>
               <p className="text-pretty text-[13px] leading-relaxed text-white/45">
-                Kies wat je nu wilt koppelen. Je kunt dit later altijd aanpassen.
+                Wat je koppelt, lees ik automatisch uit. Nog niet beschikbare apps
+                staan er eerlijk bij. Je kunt dit later in Instellingen aanpassen.
               </p>
             </div>
 
@@ -297,12 +286,21 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
             </div>
 
             <div className="mt-auto flex flex-col gap-3 pb-8 pt-4">
-              {error && <ErrorMsg msg={error} />}
-              <PrimaryBtn onClick={finish} loading={saving}>
-                Klaar — naar Sparki
+              <PrimaryBtn onClick={next}>
+                Verder
                 <ChevronRight className="h-4 w-4" />
               </PrimaryBtn>
             </div>
+          </div>
+        )}
+
+        {step === 7 && (
+          <OnboardingGapFill onComplete={finish} finishing={saving} />
+        )}
+
+        {step === 7 && error && (
+          <div className="pb-8">
+            <ErrorMsg msg={error} />
           </div>
         )}
       </div>
