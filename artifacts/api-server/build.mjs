@@ -69,6 +69,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/tests/feedback-adjust.ts"),
       path.resolve(artifactDir, "src/tests/cross-account-isolation.ts"),
       path.resolve(artifactDir, "src/tests/coach-parent-link-isolation.ts"),
+      path.resolve(artifactDir, "src/tests/coach-parent-sharing-levels.ts"),
     ],
     platform: "node",
     bundle: true,
