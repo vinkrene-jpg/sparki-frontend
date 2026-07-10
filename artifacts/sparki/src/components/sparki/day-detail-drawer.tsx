@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/sheet"
 import { ACCENT } from "@/components/sparki/ui"
 import type { PlannedWorkout, WorkoutRouteNeed } from "@/lib/athlete-types"
-import { Bike, Activity, Zap, Moon, ChevronRight, Gauge, Clock } from "lucide-react"
+import { Bike, Activity, Zap, Moon, ChevronRight, Gauge, Clock, X } from "lucide-react"
 
 const routeNeedShort: Record<WorkoutRouteNeed, string> = {
   outdoor_long: "Lange buitenrit",
@@ -59,6 +59,15 @@ export function DayDetailDrawer({
         className="w-full overflow-y-auto border-l border-white/[0.08] bg-[#05070e]/95 p-0 backdrop-blur-xl sm:max-w-md"
       >
         <div className="flex flex-col gap-6 px-6 pb-16 pt-7">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="-ml-1 flex w-fit items-center gap-1.5 font-mono text-[10px] tracking-[0.18em] text-white/45 transition-colors hover:text-white/80"
+            aria-label="Sluiten"
+          >
+            <X className="h-3.5 w-3.5" strokeWidth={2} />
+            SLUITEN
+          </button>
           <SheetHeader className="space-y-2 text-left">
             <p className="font-mono text-[10px] tracking-[0.28em] text-white/35">
               DAGOVERZICHT
