@@ -96,3 +96,4 @@
 - [Cross-account isolation testing](cross-account-isolation.md) — athlete-owned :id routes deny B via clerkId filter; nutrition DELETE is a silent 200 no-op (assert row survives, not 404); photo positive control needs a REAL upload.
 - [Sparki bundle anatomy](sparki-bundle-anatomy.md) — the scary multi-MB bundle is the api-server SERVER esbuild (not browser-shipped); manualChunks is a caching win, real cut needs route-lazy.
 - [pino worker-transport flaky](pino-worker-transport-flaky.md) — pino-pretty worker transport races process-exit in tests/jobs ("worker is not a function"); use sync in-process stream, prod stays JSON.
+- [Non-destructive constraint migration](db-nondestructive-constraint-migration.md) — idempotent guarded ADD CONSTRAINT + md5 before/after proof; drizzle-kit push --strict --verbose aborts at TTY prompt = safe diff (applies nothing).
