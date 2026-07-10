@@ -64,6 +64,10 @@ args = "test-feedback-adjust"
 task = "workflow.run"
 args = "test-cross-account-isolation"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "test-coach-parent-link-isolation"
+
 [[workflows.workflow]]
 name = "test-session-analysis"
 author = "agent"
@@ -195,6 +199,17 @@ args = "pnpm --filter @workspace/api-server run test:cross-account-isolation"
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow]]
+name = "test-coach-parent-link-isolation"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run test:coach-parent-link-isolation"
+
+[workflows.workflow.metadata]
+isValidation = true
 
 [agent]
 stack = "PNPM_WORKSPACE"

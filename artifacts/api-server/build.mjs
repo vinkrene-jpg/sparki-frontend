@@ -68,6 +68,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/tests/onboarding-strava-gapfill.ts"),
       path.resolve(artifactDir, "src/tests/feedback-adjust.ts"),
       path.resolve(artifactDir, "src/tests/cross-account-isolation.ts"),
+      path.resolve(artifactDir, "src/tests/coach-parent-link-isolation.ts"),
     ],
     platform: "node",
     bundle: true,

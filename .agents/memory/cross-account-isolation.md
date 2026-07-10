@@ -35,3 +35,20 @@ from passing falsely if everyone starts getting 404.
 `artifacts/api-server/src/tests/cross-account-isolation.ts` with an owner-can /
 B-denied pair. Photo-serve positive controls need a REAL object upload
 (`uploadMaterialPhoto`) because a bogus path 404s the same as a denied owner.
+
+## Coach/parent → athlete LINK isolation (the relationship surfaces)
+
+Complementary to athlete-vs-athlete: coach/parent routes gate on an **accepted**
+`coach_athlete_links` / `parent_athlete_links` row (`hasAcceptedCoachLink` /
+`hasAcceptedParentLink`, both require `status === "accepted"`), NOT just the
+coach/parent role. Denial status here is **403** ("Geen gekoppelde atleet"), not
+404 — different from the athlete-owned 404 convention. Covered by
+`test:coach-parent-link-isolation` (seeds coach, parent, a LINKED athlete, an
+UNLINKED athlete, and a PENDING-link athlete). It asserts linked→success +
+unlinked/pending→403 for: coach roster/detail/plan/context/plan-adopt and parent
+roster/context, plus cross-role denial (coach on parent surface & vice-versa).
+**Pending links must be tested separately** — a regression that treats any link
+row as authorized (ignoring `status`) would pass an accepted-only test but leak
+to pending. Seeding needs: `ensureAccount` then `update user_profiles.roles` to
+add coach/parent (defaults to `["athlete"]`), and for the adopt positive control
+an `advisory`-mode `training_plans` row + a non-rest `plan_days` row.
