@@ -93,3 +93,4 @@
 - [Sparki scheduled-tasks overview test](sparki-scheduled-tasks-test.md) — /admin "Geplande taken" status: unit-test pure classify/build + route test seeding one FRESH newest trace per job (global aggregate queries) to catch column/dedupeKey drift.
 - [Sparki exact age from DOB](sparki-exact-age.md) — compute age from full birth_date via shared computeAge (never currentYear-birthYear); DOB is authoritative, always re-derives birthYear in lockstep.
 - [Sparki mandatory onboarding connect step](sparki-onboarding-connect-step.md) — onboarding routes through connect→gap-fill before first plan; connect step mandatory but connecting optional (honesty); gap-fill asks ONLY missing required fields (manual override, real>manual>estimated).
+- [Cross-account isolation testing](cross-account-isolation.md) — athlete-owned :id routes deny B via clerkId filter; nutrition DELETE is a silent 200 no-op (assert row survives, not 404); photo positive control needs a REAL upload.
