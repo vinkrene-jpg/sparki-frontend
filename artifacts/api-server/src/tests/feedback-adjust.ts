@@ -108,6 +108,9 @@ async function stopServer(): Promise<void> {
 // ── Seeded fixtures ──────────────────────────────────────────────────────────
 const RUN = `test_fbadjust_${Date.now()}`;
 const clerkId = `${RUN}_athlete`;
+// A second, disposable athlete used only to prove cross-account requests are
+// denied. B never owns any of the seeded workouts.
+const clerkIdB = `${RUN}_athlete_b`;
 const seeded = { workoutIds: [] as number[] };
 
 function isoOffset(days: number): string {
@@ -145,11 +148,14 @@ function proposal(over: Record<string, unknown> = {}): string {
   });
 }
 
-// ── HTTP helpers acting as the seeded dev athlete via the x-dev-clerk-id header.
+// ── HTTP helpers acting as a seeded dev athlete via the x-dev-clerk-id header.
+// `actor` defaults to the primary seeded athlete; pass a different clerkId to
+// drive a request AS another athlete (used by the cross-account denial test).
 async function submitFeedback(
   workoutId: number,
   feedbackType: string,
   note?: string,
+  actor: string = clerkId,
 ): Promise<{ status: number; body: unknown }> {
   const res = await fetch(
     `${baseUrl}/api/athlete/workouts/${workoutId}/feedback`,
@@ -157,7 +163,7 @@ async function submitFeedback(
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-dev-clerk-id": clerkId,
+        "x-dev-clerk-id": actor,
       },
       body: JSON.stringify({ feedbackType, note }),
     },
@@ -169,12 +175,13 @@ async function requestAdjust(
   workoutId: number,
   feedbackType: string,
   note?: string,
+  actor: string = clerkId,
 ): Promise<{ status: number; body: { proposal?: unknown } }> {
   const res = await fetch(`${baseUrl}/api/ai/workout-adjust`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-dev-clerk-id": clerkId,
+      "x-dev-clerk-id": actor,
     },
     body: JSON.stringify({ workoutId, feedbackType, note }),
   });
@@ -184,12 +191,13 @@ async function requestAdjust(
 async function applyProposal(
   workoutId: number,
   body: Record<string, unknown>,
+  actor: string = clerkId,
 ): Promise<{ status: number; body: unknown }> {
   const res = await fetch(`${baseUrl}/api/athlete/workouts/${workoutId}`, {
     method: "PUT",
     headers: {
       "content-type": "application/json",
-      "x-dev-clerk-id": clerkId,
+      "x-dev-clerk-id": actor,
     },
     body: JSON.stringify(body),
   });
@@ -235,11 +243,21 @@ async function cleanup() {
     .delete(userProfilesTable)
     .where(eq(userProfilesTable.clerkId, clerkId))
     .catch(() => {});
+  await db
+    .delete(userProfilesTable)
+    .where(eq(userProfilesTable.clerkId, clerkIdB))
+    .catch(() => {});
 }
 
 async function main() {
   await startServer();
   await ensureAccount(clerkId, `${clerkId}@example.test`, "Testatleet", silentLogger);
+  await ensureAccount(
+    clerkIdB,
+    `${clerkIdB}@example.test`,
+    "Testatleet B",
+    silentLogger,
+  );
 
   // Precondition: the dev bypass must authorize the seeded athlete, otherwise
   // every request is a 401/403 and the assertions below are meaningless.
@@ -530,6 +548,90 @@ async function main() {
     const rows = await feedbackRows(id);
     assert(rows.length === 0, "a rejected feedbackType must not persist a row");
   });
+
+  // ── Cross-account isolation: athlete B can NEVER touch athlete A's workout ────
+  // Every mutating/coaching route resolves the workout ownership-scoped by
+  // clerkId. A second athlete (B) submitting feedback on, requesting a proposal
+  // for, or applying changes to A's workout must be denied (404) with ZERO DB
+  // mutation on A's workout and NO feedback row created by B. A regression here
+  // is a cross-account data leak/mutation.
+  await scenario(
+    "cross-account: athlete B is denied feedback/adjust/apply on athlete A's workout (no mutation)",
+    async () => {
+      // A owns a pristine, upcoming workout with a known title/date.
+      const id = await seedWorkout(isoOffset(10));
+      const original = await workoutRow(id);
+      assert(original != null, "seed of A's workout failed");
+
+      // 1) POST feedback AS B → must be 404, no feedback row for B.
+      const fb = await submitFeedback(id, "done", "niet mijn training", clerkIdB);
+      assert(
+        fb.status === 404,
+        `B feedback on A's workout must be 404, got ${fb.status}`,
+      );
+      const bFeedback = await db
+        .select()
+        .from(workoutFeedbackTable)
+        .where(
+          and(
+            eq(workoutFeedbackTable.workoutId, id),
+            eq(workoutFeedbackTable.clerkId, clerkIdB),
+          ),
+        );
+      assert(
+        bFeedback.length === 0,
+        `B must not create a feedback row on A's workout, found ${bFeedback.length}`,
+      );
+
+      // 2) POST /api/ai/workout-adjust AS B → must be 404 (no proposal).
+      nextProposal = proposal({ recommendation: "keep", changes: null });
+      const adj = await requestAdjust(id, "done", undefined, clerkIdB);
+      assert(
+        adj.status === 404,
+        `B adjust on A's workout must be 404, got ${adj.status}`,
+      );
+      assert(
+        adj.body.proposal == null,
+        "B must not receive a proposal for A's workout",
+      );
+
+      // 3) PUT AS B → must be 404, and A's workout must be byte-for-byte unchanged.
+      const put = await applyProposal(
+        id,
+        {
+          status: "modified",
+          title: "GEKAAPT DOOR B",
+          scheduledDate: isoOffset(20),
+          targetDurationMin: 5,
+          targetTSS: 5,
+        },
+        clerkIdB,
+      );
+      assert(
+        put.status === 404,
+        `B PUT on A's workout must be 404, got ${put.status}`,
+      );
+
+      // A's workout must be exactly as seeded — no field mutated by B's attempts.
+      const after = await workoutRow(id);
+      assert(after != null, "A's workout disappeared after B's attempts");
+      assert(
+        after!.title === original!.title &&
+          after!.scheduledDate === original!.scheduledDate &&
+          after!.status === original!.status &&
+          after!.targetDurationMin === original!.targetDurationMin &&
+          after!.targetTSS === original!.targetTSS,
+        "A's workout was mutated by athlete B — cross-account isolation broken",
+      );
+
+      // A's own feedback rows are untouched too (B's denied writes leaked nothing).
+      const aFeedback = await feedbackRows(id);
+      assert(
+        aFeedback.length === 0,
+        `A's workout must have no feedback rows, found ${aFeedback.length}`,
+      );
+    },
+  );
 }
 
 async function shutdown(code: number) {
