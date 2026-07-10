@@ -1,20 +1,22 @@
 import pino from "pino";
+import PinoPretty from "pino-pretty";
 
 const isProduction = process.env.NODE_ENV === "production";
 
-export const logger = pino({
+const options = {
   level: process.env.LOG_LEVEL ?? "info",
   redact: [
     "req.headers.authorization",
     "req.headers.cookie",
     "res.headers['set-cookie']",
   ],
-  ...(isProduction
-    ? {}
-    : {
-        transport: {
-          target: "pino-pretty",
-          options: { colorize: true },
-        },
-      }),
-});
+};
+
+// In dev we still want pretty logs, but as a SYNCHRONOUS in-process stream
+// rather than pino's worker-thread transport. The worker transport (thread-stream)
+// races with process exit in short-lived processes (tests, one-shot jobs),
+// which surfaced as intermittent "worker is not a function" / "the worker has
+// exited" crashes. A synchronous stream has no worker and cannot race.
+export const logger = isProduction
+  ? pino(options)
+  : pino(options, PinoPretty({ colorize: true, sync: true }));

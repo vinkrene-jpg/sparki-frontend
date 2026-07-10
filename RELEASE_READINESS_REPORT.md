@@ -23,6 +23,8 @@ _Generated: 10 July 2026 · Environment: development (no production changes made
 
 Re-run twice (before and after the two architect-flagged fixes) — both green.
 
+**Flaky-test fix (found during validation):** `test-scheduled-tasks-route` and `test-feedback-adjust` failed the validation run with a `thread-stream`/pino error ("worker is not a function" / "the worker has exited") — the pino-pretty **worker-thread transport** racing with process exit in short-lived (test/job) processes. Confirmed flaky (both tests pass when run directly). Fixed at root in `artifacts/api-server/src/lib/logger.ts`: dev now uses a **synchronous in-process pino-pretty stream** instead of the worker transport (prod still plain JSON). Both tests then pass **4/4** consecutive runs; api-server dev workflow restarts clean.
+
 ---
 
 ## 3. Privacy / Cross-Account Isolation — negative-test evidence
