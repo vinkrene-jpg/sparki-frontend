@@ -11,5 +11,5 @@ description: Multi-year goals engine — derived goals never duplicated, proposa
 - Race-derived goals cover A/B/C priorities (A=1, B=2, C=3) — don't silently drop C.
 - **Idempotency must be a DB constraint, not read-then-insert.** Unique index `(clerk_id, dedupe_key)` + `onConflictDoNothing({target:[...]})` with `.returning()` to count created vs skipped. Read-then-insert is not concurrency-safe under parallel job/API runs.
 - **Per-day dedupe must compare Amsterdam LOCAL date**: `(created_at AT TIME ZONE 'Europe/Amsterdam')::date = <nl-date>::date` — never `createdAt >= '<date>T00:00:00Z'` (UTC midnight shifts around local midnight).
-- **Doorvraagladder questions must be resolvable in the UI**: if `nextQuestion.goalId` points at an existing goal, the CTA must open an edit form for THAT goal (date/measure), not always a create-new form — otherwise the ladder stalls forever (architect caught this).
+- **Doorvraagladder questions must be resolvable in the UI**: if `nextQuestion.goalId` points at an existing goal, the CTA must open an edit form for THAT goal (date/measure), not always a create-new form — otherwise the ladder stalls forever.
 - Injections into coach analysis / athlete context / training plan are best-effort try/catch, never blocking.

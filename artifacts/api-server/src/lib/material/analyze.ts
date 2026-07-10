@@ -109,6 +109,34 @@ export type MaterialPhotoInput = {
   mediaType: ImageMediaType;
 };
 
+// Qualitative amount for a nutrient — always safe to show (also for youth).
+export type MealNutrientLevel = "hoog" | "gemiddeld" | "laag" | "onbekend";
+
+export type MealMicronutrient = {
+  name: string;
+  level: MealNutrientLevel;
+  note: string | null;
+};
+
+// Honest nutrition estimate read off a real meal photo. Numbers are only ever
+// filled for adults (showNumbers); for youth (<16) they stay null and only the
+// qualitative levels are used — RED-S safety, no calorie/gram targets.
+export type MealNutritionEstimate = {
+  showNumbers: boolean;
+  caloriesKcal: number | null;
+  carbsGrams: number | null;
+  proteinGrams: number | null;
+  fatGrams: number | null;
+  fiberGrams: number | null;
+  carbsLevel: MealNutrientLevel;
+  proteinLevel: MealNutrientLevel;
+  fatLevel: MealNutrientLevel;
+  fiberLevel: MealNutrientLevel;
+  micronutrients: MealMicronutrient[];
+  confidence: MaterialConfidenceLevel;
+  note: string | null;
+};
+
 export type MaterialAnalysisResult = {
   detectedItem: string;
   confidence: MaterialConfidenceLevel;
@@ -116,6 +144,7 @@ export type MaterialAnalysisResult = {
   followUpQuestion: string | null;
   advice: MaterialAdvice;
   costEstimate: MaterialCostEstimate | null;
+  nutrition: MealNutritionEstimate | null;
 };
 
 const SYSTEM = `Je bent Sparki, een ervaren materiaal- en voedingscoach voor wielrenners. Je beoordeelt ECHTE foto's van uitrusting (wielset, banden, remblokken, ketting, helm, fietsproblemen) en van voeding (ontbijt, wedstrijdvoeding).
@@ -136,6 +165,15 @@ KOSTENINSCHATTING (alleen bij materiaal, NIET bij voeding):
 - confidence: eigen zekerheidsniveau voor de kosten. Gebruik Nederlandse prijzen. Als je iets niet eerlijk kunt inschatten, zet die kant op null en leg het uit in note.
 - Bij voeding: laat costEstimate volledig weg (null).
 
+VOEDINGSWAARDE (ALLEEN bij voeding, anders nutrition = null):
+- Schat op basis van wat je op de foto ziet de voedingswaarde van de HELE getoonde portie. Dit is altijd een schatting; benoem dat eerlijk in note en kies confidence conservatief. Zie je te weinig om iets te schatten, laat dat veld null en zeg het.
+- Kwalitatieve niveaus (carbsLevel, proteinLevel, fatLevel, fiberLevel): "hoog" | "gemiddeld" | "laag" | "onbekend". Deze vul je ALTIJD zo goed mogelijk in — ze zijn ook veilig voor jonge sporters.
+- micronutrients: lijst met de belangrijkste zichtbare vitaminen en mineralen (bijv. "Vitamine C", "IJzer", "Calcium", "Kalium"). Per stuk: name, level ("hoog"/"gemiddeld"/"laag"/"onbekend") en een korte note (waar zit het in, of null). Alleen wat je op basis van de zichtbare ingrediënten redelijk kunt onderbouwen — verzin geen precieze mg-waarden. Laat leeg ([]) als je niets betrouwbaars kunt zeggen.
+- Getallen (caloriesKcal, carbsGrams, proteinGrams, fatGrams, fiberGrams): VUL DEZE ALLEEN als in de context "TOON GETALLEN" staat. Staat er "GEEN GETALLEN" (jonge sporter), zet dan al deze getallen op null en gebruik uitsluitend de kwalitatieve niveaus — geen calorieën, geen gram-doelen, geen afval-taal.
+
+KOPPEL AAN DE TRAINING:
+- Als er trainingscontext is meegegeven (wat de renner die dag traint/trainde, duur, zwaarte), betrek dat expliciet in summary en advies: past dit eten bij die inspanning (genoeg koolhydraten voor/na, herstel, timing)? Wees concreet maar eerlijk over wat je niet kunt weten.
+
 TAAL & VORM:
 - Alles in gewoon Nederlands dat een jeugdrenner, ouder of coach begrijpt. Geen Engels.
 - Noem nooit het woord "AI" en noem jezelf geen assistent of model. Je bent Sparki.
@@ -147,7 +185,8 @@ UITVOER: antwoord UITSLUITEND met geldige JSON, zonder code-blokken of extra tek
   "needsMorePhoto": boolean,
   "followUpQuestion": string | null,
   "advice": { "summary": string, "pros": string[], "cons": string[], "risks": string[], "alternatives": string[] },
-  "costEstimate": null | { "diy": null | { "materials": string[], "costRange": string, "difficulty": string, "timeEstimate": string }, "professional": null | { "laborCost": string, "totalCost": string }, "confidence": "high" | "medium" | "low" | "unknown", "note": string | null }
+  "costEstimate": null | { "diy": null | { "materials": string[], "costRange": string, "difficulty": string, "timeEstimate": string }, "professional": null | { "laborCost": string, "totalCost": string }, "confidence": "high" | "medium" | "low" | "unknown", "note": string | null },
+  "nutrition": null | { "caloriesKcal": number | null, "carbsGrams": number | null, "proteinGrams": number | null, "fatGrams": number | null, "fiberGrams": number | null, "carbsLevel": "hoog" | "gemiddeld" | "laag" | "onbekend", "proteinLevel": "hoog" | "gemiddeld" | "laag" | "onbekend", "fatLevel": "hoog" | "gemiddeld" | "laag" | "onbekend", "fiberLevel": "hoog" | "gemiddeld" | "laag" | "onbekend", "micronutrients": [ { "name": string, "level": "hoog" | "gemiddeld" | "laag" | "onbekend", "note": string | null } ], "confidence": "high" | "medium" | "low" | "unknown", "note": string | null }
 }`;
 
 function extractJson(text: string): unknown {
@@ -212,6 +251,65 @@ function coerceCost(raw: unknown): MaterialCostEstimate | null {
   };
 }
 
+function asLevel(v: unknown): MealNutrientLevel {
+  return v === "hoog" || v === "gemiddeld" || v === "laag" ? v : "onbekend";
+}
+
+function asNumOrNull(v: unknown): number | null {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n) : null;
+}
+
+// Parse the nutrition estimate. `showNumbers` is decided by us (age), never by
+// the model: for youth we drop every numeric field regardless of what came back.
+function coerceNutrition(raw: unknown, showNumbers: boolean): MealNutritionEstimate | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+
+  const micronutrients: MealMicronutrient[] = Array.isArray(r.micronutrients)
+    ? (r.micronutrients as unknown[])
+        .map((m) => {
+          const o = (m ?? {}) as Record<string, unknown>;
+          const name = asStr(o.name);
+          if (!name) return null;
+          return { name, level: asLevel(o.level), note: asStr(o.note) || null };
+        })
+        .filter((m): m is MealMicronutrient => m != null)
+        .slice(0, 8)
+    : [];
+
+  const carbsLevel = asLevel(r.carbsLevel);
+  const proteinLevel = asLevel(r.proteinLevel);
+  const fatLevel = asLevel(r.fatLevel);
+  const fiberLevel = asLevel(r.fiberLevel);
+
+  const hasAnything =
+    micronutrients.length > 0 ||
+    carbsLevel !== "onbekend" ||
+    proteinLevel !== "onbekend" ||
+    fatLevel !== "onbekend" ||
+    fiberLevel !== "onbekend" ||
+    asNumOrNull(r.caloriesKcal) != null;
+  if (!hasAnything) return null;
+
+  return {
+    showNumbers,
+    caloriesKcal: showNumbers ? asNumOrNull(r.caloriesKcal) : null,
+    carbsGrams: showNumbers ? asNumOrNull(r.carbsGrams) : null,
+    proteinGrams: showNumbers ? asNumOrNull(r.proteinGrams) : null,
+    fatGrams: showNumbers ? asNumOrNull(r.fatGrams) : null,
+    fiberGrams: showNumbers ? asNumOrNull(r.fiberGrams) : null,
+    carbsLevel,
+    proteinLevel,
+    fatLevel,
+    fiberLevel,
+    micronutrients,
+    confidence: asConfidence(r.confidence),
+    note: asStr(r.note) || null,
+  };
+}
+
 // Analyse one material/nutrition case from real photos. Throws on a malformed
 // model response so the route can fail honestly rather than persist a guess.
 export async function analyzeMaterial(input: {
@@ -219,11 +317,16 @@ export async function analyzeMaterial(input: {
   photos: MaterialPhotoInput[];
   userNote?: string | null;
   athleteHint?: string | null;
+  // Youth (<16): keep it qualitative — no calorie/gram numbers (RED-S safety).
+  // Defaults to adult (numbers shown) when not provided.
+  youth?: boolean;
 }): Promise<MaterialAnalysisResult> {
   const { category, photos } = input;
   if (photos.length === 0) {
     throw new Error("Minstens één foto is nodig");
   }
+
+  const showNumbers = input.youth !== true;
 
   const noteLine = input.userNote?.trim()
     ? `\nWat de renner erbij zegt: "${input.userNote.trim()}"`
@@ -234,10 +337,16 @@ export async function analyzeMaterial(input: {
   const costLine =
     category.kind === "material"
       ? "Geef ook een kosteninschatting (zelf doen vs. laten doen) met een eigen zekerheidsniveau."
-      : "Dit is voeding: geef geen kosteninschatting (costEstimate = null), alleen advies.";
+      : "Dit is voeding: geef geen kosteninschatting (costEstimate = null), alleen advies plus een voedingswaarde-schatting (nutrition).";
+  const numbersLine =
+    category.kind === "nutrition"
+      ? showNumbers
+        ? "\nVoedingswaarde: TOON GETALLEN — vul caloriesKcal en de gram-schattingen in als je ze redelijk kunt inschatten (altijd als schatting benoemen)."
+        : "\nVoedingswaarde: GEEN GETALLEN — dit is een jonge sporter. Zet alle getallen op null en gebruik alleen de kwalitatieve niveaus. Geen calorieën, geen gram-doelen, geen afval-taal."
+      : "";
 
   const userText = `Onderwerp: ${category.label}.${noteLine}${athleteLine}
-Bekijk de bijgevoegde foto('s) en beoordeel wat zichtbaar is. ${costLine}
+Bekijk de bijgevoegde foto('s) en beoordeel wat zichtbaar is. ${costLine}${numbersLine}
 Geef je zekerheidsniveau eerlijk aan en vraag om een extra foto als je het niet goed genoeg kunt zien.`;
 
   const content = [
@@ -283,6 +392,12 @@ Geef je zekerheidsniveau eerlijk aan en vraag om een extra foto als je het niet 
   const costEstimate =
     category.kind === "material" ? coerceCost(parsed.costEstimate) : null;
 
+  // Nutrition estimate only applies to nutrition cases; never for material.
+  const nutrition =
+    category.kind === "nutrition"
+      ? coerceNutrition(parsed.nutrition, showNumbers)
+      : null;
+
   return {
     detectedItem: asStr(parsed.detectedItem) || category.label,
     confidence,
@@ -290,5 +405,6 @@ Geef je zekerheidsniveau eerlijk aan en vraag om een extra foto als je het niet 
     followUpQuestion: asStr(parsed.followUpQuestion) || null,
     advice,
     costEstimate,
+    nutrition,
   };
 }

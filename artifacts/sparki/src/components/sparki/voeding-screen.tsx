@@ -27,6 +27,8 @@ import {
   type NutritionContext,
   type NutritionLog,
   type MealPhotoAdvice,
+  type MealNutritionEstimate,
+  type MealNutrientLevel,
 } from "@/hooks/use-nutrition"
 import {
   useMaterialCategories,
@@ -175,6 +177,7 @@ function LogForm() {
   const [done, setDone] = useState(false)
   const [mealAdvice, setMealAdvice] = useState<MealPhotoAdvice | null>(null)
   const [mealAdviceFailed, setMealAdviceFailed] = useState(false)
+  const [mealTraining, setMealTraining] = useState<string | null>(null)
 
   async function addPhoto(file: File) {
     setPhotoError(null)
@@ -211,6 +214,7 @@ function LogForm() {
     const hadPhotos = photos.length > 0
     setMealAdvice(null)
     setMealAdviceFailed(false)
+    setMealTraining(null)
     create.mutate(
       {
         logDate: todayIso(),
@@ -228,6 +232,7 @@ function LogForm() {
         onSuccess: (res) => {
           reset()
           setMealAdvice(res.photoAdvice ?? null)
+          setMealTraining(res.trainingContext ?? null)
           setMealAdviceFailed(hadPhotos && (res.photoAdviceFailed || !res.photoAdvice))
           if (!res.photoAdvice) {
             setDone(true)
@@ -445,6 +450,10 @@ function LogForm() {
               )}
             </ul>
           )}
+          {mealAdvice.nutrition && (
+            <NutritionFacts nutrition={mealAdvice.nutrition} />
+          )}
+          {mealTraining && <TrainingContextLine text={mealTraining} />}
           {mealAdvice.needsMorePhoto && mealAdvice.followUpQuestion && (
             <p className="mt-2.5 text-[12px] leading-relaxed text-cyan-300/70">
               {mealAdvice.followUpQuestion}
@@ -452,7 +461,10 @@ function LogForm() {
           )}
           <button
             type="button"
-            onClick={() => setMealAdvice(null)}
+            onClick={() => {
+              setMealAdvice(null)
+              setMealTraining(null)
+            }}
             className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-white/45"
           >
             Sluiten
@@ -675,11 +687,132 @@ function PhotoAdviceSection() {
   )
 }
 
+// Plain-Dutch label for a qualitative nutrient level.
+const LEVEL_LABELS: Record<MealNutrientLevel, string> = {
+  hoog: "hoog",
+  gemiddeld: "gemiddeld",
+  laag: "laag",
+  onbekend: "onbekend",
+}
+
+// The training this meal is tied to (already plain Dutch from the backend, e.g.
+// "Gereden op deze dag: Interval · 90 min"). Null hides the line.
+function TrainingContextLine({
+  text,
+  compact,
+}: {
+  text: string
+  compact?: boolean
+}) {
+  return (
+    <p
+      className={`mt-2 ${compact ? "text-[11px]" : "text-[12px]"} leading-relaxed text-white/60`}
+    >
+      <span className="text-cyan-300/70">Bij je training — </span>
+      {text}
+    </p>
+  )
+}
+
+// Honest photo-based nutrition estimate: macro amounts (numbers only for adults;
+// youth stays qualitative for RED-S safety) plus visible vitamins & minerals.
+function NutritionFacts({
+  nutrition,
+  compact,
+}: {
+  nutrition: MealNutritionEstimate
+  compact?: boolean
+}) {
+  const n = nutrition
+  const macros = (
+    [
+      { label: "Koolhydraten", grams: n.carbsGrams, level: n.carbsLevel },
+      { label: "Eiwit", grams: n.proteinGrams, level: n.proteinLevel },
+      { label: "Vet", grams: n.fatGrams, level: n.fatLevel },
+      { label: "Vezels", grams: n.fiberGrams, level: n.fiberLevel },
+    ] as { label: string; grams: number | null; level: MealNutrientLevel }[]
+  ).filter((m) => m.grams != null || m.level !== "onbekend")
+
+  const showCalories = n.showNumbers && n.caloriesKcal != null
+  if (macros.length === 0 && n.micronutrients.length === 0 && !showCalories) {
+    return null
+  }
+
+  const text = compact ? "text-[11px]" : "text-[12px]"
+
+  return (
+    <div className="mt-2.5 rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5">
+      <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-cyan-300/60">
+        Voedingswaarde · schatting
+      </p>
+      {showCalories && (
+        <p
+          className={`mt-1 ${compact ? "text-[13px]" : "text-[14px]"} font-medium text-white/90`}
+        >
+          ± {n.caloriesKcal} kcal
+        </p>
+      )}
+      {macros.length > 0 && (
+        <ul className="mt-1.5 space-y-0.5">
+          {macros.map((m, i) => (
+            <li key={i} className={`${text} leading-relaxed text-white/65`}>
+              {m.label}:{" "}
+              {n.showNumbers && m.grams != null ? (
+                <>
+                  <span className="text-white/85">± {m.grams} g</span>
+                  {m.level !== "onbekend" && (
+                    <span className="text-white/40"> · {LEVEL_LABELS[m.level]}</span>
+                  )}
+                </>
+              ) : (
+                <span className="text-white/85">{LEVEL_LABELS[m.level]}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {n.micronutrients.length > 0 && (
+        <div className="mt-2">
+          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+            Vitaminen & mineralen
+          </p>
+          <ul className="mt-1 space-y-0.5">
+            {n.micronutrients.map((mn, i) => (
+              <li key={i} className={`${text} leading-relaxed text-white/60`}>
+                <span className="text-white/85">{mn.name}</span>
+                <span className="text-white/40"> · {LEVEL_LABELS[mn.level]}</span>
+                {mn.note ? (
+                  <span className="text-white/45"> — {mn.note}</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {n.note && (
+        <p
+          className={`mt-2 ${compact ? "text-[10px]" : "text-[11px]"} leading-relaxed text-white/40`}
+        >
+          {n.note}
+        </p>
+      )}
+      {!n.showNumbers && (
+        <p
+          className={`mt-1 ${compact ? "text-[10px]" : "text-[11px]"} leading-relaxed text-white/40`}
+        >
+          Voor jonge sporters houden we het bij niveaus — geen calorieën of grammen.
+        </p>
+      )}
+    </div>
+  )
+}
+
 // ── (4) Recent gelogd — jouw echte voedingslogboek met foto's ─────────────────
 function LogCard({ log }: { log: NutritionLog }) {
   const del = useDeleteNutritionLog()
   const assess = useAssessLogPhoto()
   const [advice, setAdvice] = useState<MealPhotoAdvice | null>(null)
+  const [training, setTraining] = useState<string | null>(null)
   const parts: string[] = []
   if (log.duringTrainingCarbsGrams != null)
     parts.push(`${log.duringTrainingCarbsGrams} g kh`)
@@ -739,7 +872,10 @@ function LogCard({ log }: { log: NutritionLog }) {
               type="button"
               onClick={() =>
                 assess.mutate(log.id, {
-                  onSuccess: (res) => setAdvice(res.photoAdvice),
+                  onSuccess: (res) => {
+                    setAdvice(res.photoAdvice)
+                    setTraining(res.trainingContext ?? null)
+                  },
                 })
               }
               disabled={assess.isPending}
@@ -790,6 +926,10 @@ function LogCard({ log }: { log: NutritionLog }) {
                   ))}
                 </ul>
               )}
+              {advice.nutrition && (
+                <NutritionFacts nutrition={advice.nutrition} compact />
+              )}
+              {training && <TrainingContextLine text={training} compact />}
             </div>
           )}
         </div>

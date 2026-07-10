@@ -44,6 +44,30 @@ export type NutritionLogInput = {
   photos?: PhotoPayload[];
 };
 
+export type MealNutrientLevel = "hoog" | "gemiddeld" | "laag" | "onbekend";
+
+export type MealMicronutrient = {
+  name: string;
+  level: MealNutrientLevel;
+  note: string | null;
+};
+
+export type MealNutritionEstimate = {
+  showNumbers: boolean;
+  caloriesKcal: number | null;
+  carbsGrams: number | null;
+  proteinGrams: number | null;
+  fatGrams: number | null;
+  fiberGrams: number | null;
+  carbsLevel: MealNutrientLevel;
+  proteinLevel: MealNutrientLevel;
+  fatLevel: MealNutrientLevel;
+  fiberLevel: MealNutrientLevel;
+  micronutrients: MealMicronutrient[];
+  confidence: "high" | "medium" | "low" | "unknown";
+  note: string | null;
+};
+
 export type MealPhotoAdvice = {
   detectedItem: string;
   confidence: "high" | "medium" | "low" | "unknown";
@@ -56,6 +80,7 @@ export type MealPhotoAdvice = {
     risks: string[];
     alternatives: string[];
   };
+  nutrition: MealNutritionEstimate | null;
 };
 
 export type CreateNutritionResult = {
@@ -63,6 +88,7 @@ export type CreateNutritionResult = {
   flagged: number;
   photoAdvice: MealPhotoAdvice | null;
   photoAdviceFailed: boolean;
+  trainingContext: string | null;
 };
 
 export type NutritionGuidanceTopic = {
@@ -112,10 +138,10 @@ export function useAssessLogPhoto() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: number) =>
-      apiFetch<{ photoAdvice: MealPhotoAdvice | null }>(
-        `/api/nutrition/${id}/photo-advice`,
-        { method: "POST" },
-      ),
+      apiFetch<{
+        photoAdvice: MealPhotoAdvice | null;
+        trainingContext: string | null;
+      }>(`/api/nutrition/${id}/photo-advice`, { method: "POST" }),
     onSuccess: () => {
       void qc.invalidateQueries({
         queryKey: queryKeys.aiMemory.observations(),

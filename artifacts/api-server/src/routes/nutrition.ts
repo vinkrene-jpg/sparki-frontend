@@ -48,6 +48,116 @@ const CONTEXT_HINTS: Record<string, string> = {
   normal_day: "op een gewone dag",
 };
 
+// Plain-Dutch labels for the training `type` column (values are English keys).
+const SESSION_TYPE_LABELS: Record<string, string> = {
+  ride: "Rit",
+  endurance: "Duurtraining",
+  interval: "Intervaltraining",
+  tempo: "Tempotraining",
+  threshold: "Drempeltraining",
+  vo2max: "VO2max-training",
+  recovery: "Herstelrit",
+  race: "Wedstrijd",
+  rest: "Rustdag",
+  strength: "Krachttraining",
+  run: "Duurloop",
+};
+
+const sessionTypeLabel = (type: string | null | undefined): string =>
+  (type && SESSION_TYPE_LABELS[type]) || "Training";
+
+// Gather everything Sparki already knows for a meal-photo assessment: who the
+// rider is (age → youth gate for RED-S, weight, FTP, discipline) and what they
+// train/trained that day. Intelligent-werkblad rule: combine real data first so
+// the assessment reacts to the actual effort instead of giving generic food
+// tips. Returns an honest hint string for the model, the youth flag, and a
+// plain-Dutch training line for the UI (null when there is no training that day).
+async function buildMealContext(
+  clerkId: string,
+  logDate: string,
+  context: string,
+): Promise<{
+  athleteHint: string;
+  youth: boolean;
+  trainingContext: string | null;
+}> {
+  const [[athlete], sessions, planned] = await Promise.all([
+    db
+      .select({
+        birthYear: athleteProfilesTable.birthYear,
+        weightKg: athleteProfilesTable.weightKg,
+        ftp: athleteProfilesTable.ftp,
+        discipline: athleteProfilesTable.discipline,
+        developmentGoal: athleteProfilesTable.developmentGoal,
+      })
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId)),
+    db
+      .select()
+      .from(trainingSessionsTable)
+      .where(
+        and(
+          eq(trainingSessionsTable.clerkId, clerkId),
+          eq(trainingSessionsTable.sessionDate, logDate),
+        ),
+      ),
+    db
+      .select()
+      .from(plannedWorkoutsTable)
+      .where(
+        and(
+          eq(plannedWorkoutsTable.clerkId, clerkId),
+          eq(plannedWorkoutsTable.scheduledDate, logDate),
+        ),
+      ),
+  ]);
+
+  const age =
+    athlete?.birthYear != null
+      ? new Date().getFullYear() - athlete.birthYear
+      : null;
+  const youth = age != null && age < YOUTH_AGE_CUTOFF;
+
+  // Describe the day's training in plain Dutch. Done sessions win (that is what
+  // actually happened); otherwise fall back to the planned workout.
+  let trainingContext: string | null = null;
+  if (sessions.length > 0) {
+    const parts = sessions.map((s) => {
+      const bits: string[] = [s.title?.trim() || sessionTypeLabel(s.type)];
+      if (s.durationMin != null) bits.push(`${s.durationMin} min`);
+      if (s.distanceKm != null) bits.push(`${Number(s.distanceKm)} km`);
+      if (s.tss != null) bits.push(`belasting ${s.tss}`);
+      return bits.join(" · ");
+    });
+    trainingContext = `Gereden op deze dag: ${parts.join(" en ")}`;
+  } else if (planned.length > 0) {
+    const parts = planned.map((p) => {
+      const bits: string[] = [p.title?.trim() || sessionTypeLabel(p.type)];
+      if (p.targetDurationMin != null) bits.push(`${p.targetDurationMin} min`);
+      if (p.targetTSS != null) bits.push(`belasting ${p.targetTSS}`);
+      return bits.join(" · ");
+    });
+    trainingContext = `Gepland op deze dag: ${parts.join(" en ")}`;
+  }
+
+  const hintParts: string[] = [
+    `Deze maaltijd/dit eten is gelogd ${CONTEXT_HINTS[context] ?? "die dag"} (${logDate}).`,
+  ];
+  if (age != null)
+    hintParts.push(`Renner is ${age} jaar${youth ? " (jonge sporter)" : ""}.`);
+  if (athlete?.weightKg != null)
+    hintParts.push(`Gewicht ${Number(athlete.weightKg)} kg.`);
+  if (athlete?.ftp != null) hintParts.push(`FTP ${athlete.ftp} watt.`);
+  if (athlete?.discipline) hintParts.push(`Discipline: ${athlete.discipline}.`);
+  hintParts.push(
+    trainingContext
+      ? `${trainingContext}.`
+      : "Geen training bekend op deze dag.",
+  );
+
+  return { athleteHint: hintParts.join(" "), youth, trainingContext };
+}
+
 const numStr = (v: unknown): string | null =>
   v == null || v === "" ? null : String(v);
 
@@ -173,6 +283,7 @@ router.post("/", requireAuth, async (req, res) => {
     // still saved and we say so (photoAdviceFailed), never a fabricated verdict.
     let photoAdvice: MaterialAnalysisResult | null = null;
     let photoAdviceFailed = false;
+    let trainingContext: string | null = null;
     if (photos.length > 0) {
       try {
         const noteParts = [
@@ -182,11 +293,14 @@ router.post("/", requireAuth, async (req, res) => {
           strOrNull(body.postTrainingFood) &&
             `Na de training at ik: ${strOrNull(body.postTrainingFood)}`,
         ].filter((p): p is string => !!p);
+        const mealCtx = await buildMealContext(clerkId, logDate, context);
+        trainingContext = mealCtx.trainingContext;
         photoAdvice = await analyzeMaterial({
           category: MEAL_CATEGORY,
           photos,
           userNote: noteParts.join(". ") || null,
-          athleteHint: `Deze maaltijd/dit eten is gelogd ${CONTEXT_HINTS[context] ?? "vandaag"}.`,
+          athleteHint: mealCtx.athleteHint,
+          youth: mealCtx.youth,
         });
         if (photoAdvice.advice.summary) {
           void persistObservation({
@@ -218,6 +332,7 @@ router.post("/", requireAuth, async (req, res) => {
       flagged: observations.length,
       photoAdvice,
       photoAdviceFailed,
+      trainingContext,
     });
   } catch (err) {
     req.log.error({ err }, "nutrition.create failed");
@@ -335,11 +450,13 @@ router.post("/:id/photo-advice", requireAuth, async (req, res) => {
       log.postTrainingFood && `Na de training at ik: ${log.postTrainingFood}`,
     ].filter((p): p is string => !!p);
 
+    const mealCtx = await buildMealContext(clerkId, log.logDate, log.context);
     const photoAdvice = await analyzeMaterial({
       category: MEAL_CATEGORY,
       photos,
       userNote: noteParts.join(". ") || null,
-      athleteHint: `Deze maaltijd/dit eten is gelogd ${CONTEXT_HINTS[log.context] ?? "die dag"} (${log.logDate}).`,
+      athleteHint: mealCtx.athleteHint,
+      youth: mealCtx.youth,
     });
 
     if (photoAdvice.advice.summary) {
@@ -360,7 +477,7 @@ router.post("/:id/photo-advice", requireAuth, async (req, res) => {
       );
     }
 
-    res.json({ photoAdvice });
+    res.json({ photoAdvice, trainingContext: mealCtx.trainingContext });
   } catch (err) {
     req.log.error({ err }, "nutrition.photo-advice (existing log) failed");
     res
