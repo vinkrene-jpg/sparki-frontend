@@ -393,6 +393,110 @@ async function main() {
     },
   );
 
+  // ── Decline contract: a proposal that is NOT applied must leave the plan intact
+  // The drawer persists feedback, shows a Sparki proposal, and only fires the
+  // apply PUT when the athlete taps "Toepassen". Tapping "Houden" (or a proposal
+  // with no changes) must fire NO PUT at all. If a regression ever routed decline
+  // through the apply path — or adjust itself started mutating the plan — the
+  // workout would silently drift. These two scenarios prove the OTHER half of the
+  // interactive-schedule contract: after feedback persists and a proposal WITH
+  // concrete changes is requested but never applied, every workout column stays
+  // exactly as seeded. Covers both branches (retrospective + planning).
+  await scenario(
+    "decline (retrospective): a proposal that is not applied leaves the workout unchanged",
+    async () => {
+      const scheduledDate = isoOffset(-4);
+      const id = await seedWorkout(scheduledDate);
+
+      // Retrospective feedback that does NOT mirror status (unlike done/missed),
+      // so the seeded row is the exact baseline and any drift can ONLY come from
+      // an applied proposal.
+      const fb = await submitFeedback(id, "too_light", "had meer gekund");
+      assert(fb.status === 201, `feedback expected 201, got ${fb.status}`);
+
+      // Sparki returns a proposal WITH concrete changes — the tempting case where
+      // a bug could apply them without the athlete's consent.
+      nextProposal = proposal({
+        recommendation: "adjust",
+        title: "Volgende keer iets zwaarder",
+        message: "We tillen de belasting een klein stukje op.",
+        changes: { targetDurationMin: 120, targetTSS: 110, intensity: "z3" },
+      });
+      const adj = await requestAdjust(id, "too_light", "had meer gekund");
+      assert(adj.status === 200, `adjust expected 200, got ${adj.status}`);
+      const p = adj.body.proposal as { changes?: unknown } | undefined;
+      assert(
+        p?.changes != null,
+        "proposal must carry changes for a decline to be meaningful",
+      );
+
+      // The athlete declines ("Houden"): NO apply PUT is fired. Assert every
+      // column is byte-for-byte as seeded.
+      const w = await workoutRow(id);
+      assert(w?.status === "planned", `status drifted on decline: ${w?.status}`);
+      assert(
+        w?.scheduledDate === scheduledDate,
+        `date drifted on decline: ${w?.scheduledDate}`,
+      );
+      assert(
+        w?.targetDurationMin === 90,
+        `duration drifted on decline: ${w?.targetDurationMin}`,
+      );
+      assert(w?.targetTSS === 75, `tss drifted on decline: ${w?.targetTSS}`);
+      assert(w?.title === "Testtraining", `title drifted on decline: ${w?.title}`);
+      assert(
+        w?.description == null,
+        `description drifted on decline: ${w?.description}`,
+      );
+    },
+  );
+
+  await scenario(
+    "decline (planning): an upcoming 'move' proposal that is not applied leaves the workout unchanged",
+    async () => {
+      const scheduledDate = isoOffset(12);
+      const id = await seedWorkout(scheduledDate);
+
+      // A forward-looking 'move' keeps the workout planned (no status mirror), so
+      // the seeded row is again the exact baseline.
+      const fb = await submitFeedback(id, "move", "misschien een andere dag");
+      assert(fb.status === 201, `feedback expected 201, got ${fb.status}`);
+
+      // Sparki proposes a reschedule to a concrete new date — declining must NOT
+      // move the workout.
+      const wouldBeDate = isoOffset(15);
+      nextProposal = proposal({
+        recommendation: "move",
+        title: "Verplaatsen naar later",
+        message: "Beter op een dag dat het uitkomt.",
+        changes: { newDate: wouldBeDate },
+      });
+      const adj = await requestAdjust(id, "move", "misschien een andere dag");
+      assert(adj.status === 200, `adjust expected 200, got ${adj.status}`);
+      const p = adj.body.proposal as { changes?: { newDate?: string } } | undefined;
+      assert(p?.changes?.newDate === wouldBeDate, "move proposal must carry a newDate");
+
+      // Athlete declines: no reschedule PUT. The workout must stay on its seeded
+      // date and status — a silent move here is exactly the bug we're guarding.
+      const w = await workoutRow(id);
+      assert(w?.status === "planned", `status drifted on decline: ${w?.status}`);
+      assert(
+        w?.scheduledDate === scheduledDate,
+        `date drifted on decline: ${w?.scheduledDate} (must not be ${wouldBeDate})`,
+      );
+      assert(
+        w?.targetDurationMin === 90,
+        `duration drifted on decline: ${w?.targetDurationMin}`,
+      );
+      assert(w?.targetTSS === 75, `tss drifted on decline: ${w?.targetTSS}`);
+      assert(w?.title === "Testtraining", `title drifted on decline: ${w?.title}`);
+      assert(
+        w?.description == null,
+        `description drifted on decline: ${w?.description}`,
+      );
+    },
+  );
+
   // ── Ordering contract: requesting a proposal must NOT persist feedback ───────
   // The drawer persists feedback FIRST, then asks for a proposal. If adjust
   // itself started writing feedback, the ordering guarantee would silently rot
