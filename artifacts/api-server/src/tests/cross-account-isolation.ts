@@ -23,10 +23,9 @@
 //   • nutrition— GET /api/nutrition/photo/:id/:idx, DELETE /api/nutrition/:id
 //   • material — GET /api/material/photo/:id/:idx
 //
-// Note on the nutrition DELETE: unlike races/routes DELETE (which 404 on a
-// non-owned id via `.returning()`), nutrition DELETE runs an ownership-scoped
-// delete and always answers `{ ok: true }`. It is therefore a NO-OP for a
-// non-owner — B gets 200 but A's row must survive. The security guarantee is
+// Note on the nutrition DELETE: like races/routes DELETE, it uses `.returning()`
+// and returns 404 for a non-owned id (ownership-scoped delete matches nothing).
+// B therefore gets 404 and A's row must survive. The security guarantee is
 // "zero mutation", which this test asserts explicitly.
 //
 // Photo/object serving uses REAL object storage: A's photo rows are seeded with
@@ -431,12 +430,12 @@ async function main() {
       );
       assert(photo.status === 404, `B GET nutrition photo must be 404, got ${photo.status}`);
 
-      // DELETE is an ownership-scoped no-op for a non-owner: it answers 200 but
-      // must NOT delete A's row. The security guarantee is zero mutation.
+      // DELETE for a non-owner must return 404 (matching races/routes DELETE)
+      // and must NOT delete A's row. The security guarantee is zero mutation.
       const del = await req("DELETE", `/api/nutrition/${seeded.nutritionId}`, clerkB);
       assert(
-        del.status === 200 || del.status === 404,
-        `B DELETE nutrition expected 200 (no-op) or 404, got ${del.status}`,
+        del.status === 404,
+        `B DELETE nutrition expected 404, got ${del.status}`,
       );
       const after = await nutritionRow(seeded.nutritionId);
       assert(

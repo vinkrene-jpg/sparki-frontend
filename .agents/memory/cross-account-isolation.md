@@ -11,12 +11,11 @@ Every athlete-owned route resolves its record with an ownership-scoped filter
 and, for each `:id` surface, proves owner A gets 200 (positive control) and B
 gets denied with zero read/mutation.
 
-**Non-obvious DELETE-status quirk:** races DELETE and routes DELETE use
-`.returning()` and answer **404** when the id isn't owned. But nutrition DELETE
-(`DELETE /api/nutrition/:id`) runs the ownership-scoped delete and always answers
-**200 `{ok:true}`** — for a non-owner it is a silent NO-OP, not a 404. The
-security guarantee there is "zero mutation" (A's row survives), not the status
-code. Assert the row survives, not a 404, for that endpoint.
+**DELETE-status convention:** races, routes AND nutrition DELETE all use
+`.returning()` and answer **404** when the id isn't owned (ownership-scoped delete
+matches nothing). Nutrition was previously a silent 200 no-op; it now returns 404
+for a non-owner, so the isolation test asserts strictly 404 (plus A's row must
+survive — "zero mutation" is still the primary guarantee).
 
 **Why:** a future ownership-filter regression on any of these would silently
 become a cross-account data leak/mutation; the positive control stops the test

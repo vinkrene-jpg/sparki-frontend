@@ -348,14 +348,19 @@ router.delete("/:id", requireAuth, async (req, res) => {
     return;
   }
   try {
-    await db
+    const [deleted] = await db
       .delete(nutritionHydrationLogsTable)
       .where(
         and(
           eq(nutritionHydrationLogsTable.id, id),
           eq(nutritionHydrationLogsTable.clerkId, clerkId),
         ),
-      );
+      )
+      .returning();
+    if (!deleted) {
+      res.status(404).json({ error: "Log niet gevonden" });
+      return;
+    }
     res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "nutrition.delete failed");
