@@ -108,6 +108,9 @@ const clerkParent = `${RUN}_parent`;
 const clerkLinked = `${RUN}_athlete_linked`;
 const clerkUnlinked = `${RUN}_athlete_unlinked`;
 const clerkPending = `${RUN}_athlete_pending`;
+// athlete R — starts ACCEPTED (coach + parent), then the link is REVOKED mid-run
+// to prove access is lost the moment the athlete unlinks.
+const clerkRevoked = `${RUN}_athlete_revoked`;
 
 const seeded = {
   planId: 0,
@@ -166,7 +169,7 @@ async function coachWorkoutCount(clerkId: string): Promise<number> {
 async function cleanup() {
   // Adopted coach workouts + the seeded plan/days for L (also cascade on profile
   // delete, but remove explicitly so a failed cascade never leaks fixtures).
-  for (const c of [clerkLinked, clerkUnlinked, clerkPending]) {
+  for (const c of [clerkLinked, clerkUnlinked, clerkPending, clerkRevoked]) {
     await db
       .delete(plannedWorkoutsTable)
       .where(eq(plannedWorkoutsTable.clerkId, c))
@@ -195,6 +198,7 @@ async function cleanup() {
     clerkLinked,
     clerkUnlinked,
     clerkPending,
+    clerkRevoked,
   ]) {
     await db
       .delete(userProfilesTable)
@@ -212,6 +216,7 @@ async function main() {
   await ensureAccount(clerkLinked, `${clerkLinked}@example.test`, "Atleet L", silentLogger);
   await ensureAccount(clerkUnlinked, `${clerkUnlinked}@example.test`, "Atleet U", silentLogger);
   await ensureAccount(clerkPending, `${clerkPending}@example.test`, "Atleet P", silentLogger);
+  await ensureAccount(clerkRevoked, `${clerkRevoked}@example.test`, "Atleet R", silentLogger);
 
   // Grant the coach/parent roles (ensureAccount defaults to ["athlete"]).
   await db
@@ -245,6 +250,18 @@ async function main() {
     parentClerkId: clerkParent,
     athleteClerkId: clerkPending,
     status: "pending",
+  });
+
+  // Accepted links → athlete R (revoked mid-run below).
+  await db.insert(coachAthleteLinksTable).values({
+    coachClerkId: clerkCoach,
+    athleteClerkId: clerkRevoked,
+    status: "accepted",
+  });
+  await db.insert(parentAthleteLinksTable).values({
+    parentClerkId: clerkParent,
+    athleteClerkId: clerkRevoked,
+    status: "accepted",
   });
 
   // athlete U — deliberately NO link row of any kind.
@@ -539,6 +556,164 @@ async function main() {
         parentOnCoach.status === 403,
         `parent on coach surface must be 403, got ${parentOnCoach.status}`,
       );
+    },
+  );
+
+  // ── REVOCATION TRANSITION (the real-world regression) ────────────────────────
+  // A previously-ACCEPTED coach/parent must lose access the instant the athlete
+  // unlinks them. Athlete R starts with accepted coach + parent links; we prove
+  // access works, then revoke and prove every surface flips to 403 with ZERO
+  // read and ZERO mutation. Two revoke shapes are covered:
+  //   • soft-revoke  — status flipped to "revoked" (defends a future soft-delete)
+  //   • hard-delete  — the link row removed, exactly what DELETE /api/links does.
+
+  // Positive control: while ACCEPTED, R is fully reachable on both surfaces.
+  await scenario(
+    "revoke precondition: accepted R is readable on coach + parent surfaces",
+    async () => {
+      const cd = await req("GET", `/api/coach/athletes/${clerkRevoked}`, clerkCoach);
+      assert(cd.status === 200, `accepted R coach detail expected 200, got ${cd.status}`);
+      assert(cd.text.includes("Atleet R"), "accepted R coach detail missing name");
+
+      const cc = await req(
+        "GET",
+        `/api/coach/athletes/${clerkRevoked}/context`,
+        clerkCoach,
+      );
+      assert(cc.status === 200, `accepted R coach context expected 200, got ${cc.status}`);
+
+      const pc = await req(
+        "GET",
+        `/api/parent/athletes/${clerkRevoked}/context`,
+        clerkParent,
+      );
+      assert(pc.status === 200, `accepted R parent context expected 200, got ${pc.status}`);
+    },
+  );
+
+  // Flip both links to a non-accepted "revoked" status (soft-revoke).
+  await scenario(
+    "revoke (soft): status → 'revoked' denies coach + parent with zero read/mutation",
+    async () => {
+      await db
+        .update(coachAthleteLinksTable)
+        .set({ status: "revoked" })
+        .where(
+          and(
+            eq(coachAthleteLinksTable.coachClerkId, clerkCoach),
+            eq(coachAthleteLinksTable.athleteClerkId, clerkRevoked),
+          ),
+        );
+      await db
+        .update(parentAthleteLinksTable)
+        .set({ status: "revoked" })
+        .where(
+          and(
+            eq(parentAthleteLinksTable.parentClerkId, clerkParent),
+            eq(parentAthleteLinksTable.athleteClerkId, clerkRevoked),
+          ),
+        );
+
+      // Coach reads all denied, no name leak.
+      const cd = await req("GET", `/api/coach/athletes/${clerkRevoked}`, clerkCoach);
+      assert(cd.status === 403, `revoked coach detail must be 403, got ${cd.status}`);
+      assert(!cd.text.includes("Atleet R"), "revoked coach detail leaked the athlete's name");
+
+      const cp = await req(
+        "GET",
+        `/api/coach/athletes/${clerkRevoked}/plan`,
+        clerkCoach,
+      );
+      assert(cp.status === 403, `revoked coach plan must be 403, got ${cp.status}`);
+
+      const cc = await req(
+        "GET",
+        `/api/coach/athletes/${clerkRevoked}/context`,
+        clerkCoach,
+      );
+      assert(cc.status === 403, `revoked coach context must be 403, got ${cc.status}`);
+
+      // Coach mutation (adopt) denied with zero coach-sourced write.
+      const before = await coachWorkoutCount(clerkRevoked);
+      const adopt = await req(
+        "POST",
+        `/api/coach/athletes/${clerkRevoked}/plan/adopt`,
+        clerkCoach,
+        { planDayIds: [seeded.adoptDayId] },
+      );
+      assert(adopt.status === 403, `revoked coach adopt must be 403, got ${adopt.status}`);
+      const after = await coachWorkoutCount(clerkRevoked);
+      assert(
+        after === before,
+        `revoked coach adopt mutated R's plan — access not lost (before ${before}, after ${after})`,
+      );
+
+      // Parent read denied.
+      const pc = await req(
+        "GET",
+        `/api/parent/athletes/${clerkRevoked}/context`,
+        clerkParent,
+      );
+      assert(pc.status === 403, `revoked parent context must be 403, got ${pc.status}`);
+
+      // Rosters no longer list R (link-scoped to accepted only).
+      const roster = await req("GET", "/api/coach/athletes", clerkCoach);
+      const cids = new Set(
+        ((roster.json as { athletes?: Array<{ athleteClerkId: string }> }).athletes ?? []).map(
+          (a) => a.athleteClerkId,
+        ),
+      );
+      assert(!cids.has(clerkRevoked), "coach roster still lists the revoked athlete");
+
+      const proster = await req("GET", "/api/parent/athletes", clerkParent);
+      const pids = new Set(
+        ((proster.json as { athletes?: Array<{ athleteClerkId: string }> }).athletes ?? []).map(
+          (a) => a.athleteClerkId,
+        ),
+      );
+      assert(!pids.has(clerkRevoked), "parent roster still lists the revoked athlete");
+    },
+  );
+
+  // Hard-delete the link rows — exactly what DELETE /api/links/{coach,parent}
+  // does — and confirm access stays denied.
+  await scenario(
+    "revoke (hard delete): removing the link row keeps coach + parent denied",
+    async () => {
+      await db
+        .delete(coachAthleteLinksTable)
+        .where(
+          and(
+            eq(coachAthleteLinksTable.coachClerkId, clerkCoach),
+            eq(coachAthleteLinksTable.athleteClerkId, clerkRevoked),
+          ),
+        );
+      await db
+        .delete(parentAthleteLinksTable)
+        .where(
+          and(
+            eq(parentAthleteLinksTable.parentClerkId, clerkParent),
+            eq(parentAthleteLinksTable.athleteClerkId, clerkRevoked),
+          ),
+        );
+
+      const cd = await req("GET", `/api/coach/athletes/${clerkRevoked}`, clerkCoach);
+      assert(cd.status === 403, `deleted-link coach detail must be 403, got ${cd.status}`);
+      assert(!cd.text.includes("Atleet R"), "deleted-link coach detail leaked the athlete's name");
+
+      const cc = await req(
+        "GET",
+        `/api/coach/athletes/${clerkRevoked}/context`,
+        clerkCoach,
+      );
+      assert(cc.status === 403, `deleted-link coach context must be 403, got ${cc.status}`);
+
+      const pc = await req(
+        "GET",
+        `/api/parent/athletes/${clerkRevoked}/context`,
+        clerkParent,
+      );
+      assert(pc.status === 403, `deleted-link parent context must be 403, got ${pc.status}`);
     },
   );
 }
