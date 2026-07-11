@@ -60,6 +60,7 @@
     "test:coach-parent-sharing-levels": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/coach-parent-sharing-levels.mjs",
     "test:coach-parent-share-nothing": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/coach-parent-share-nothing.mjs",
     "test:coach-parent-private-memory": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/coach-parent-private-memory.mjs",
+    "test:coach-parent-shared-raw-fields": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/coach-parent-shared-raw-fields.mjs",
     "job:health": "pnpm run build && node --enable-source-maps ./dist/jobs/health-check.mjs",
     "job:reminders": "pnpm run build && node --enable-source-maps ./dist/jobs/reminders.mjs",
     "job:goal-review": "pnpm run build && node --enable-source-maps ./dist/jobs/goal-review.mjs",
