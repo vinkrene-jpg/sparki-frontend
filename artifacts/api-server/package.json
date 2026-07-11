@@ -57,6 +57,7 @@
     "test:cross-account-isolation": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/cross-account-isolation.mjs",
     "test:coach-parent-link-isolation": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/coach-parent-link-isolation.mjs",
     "test:coach-parent-sharing-levels": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/coach-parent-sharing-levels.mjs",
+    "test:coach-parent-share-nothing": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/coach-parent-share-nothing.mjs",
     "test:coach-parent-private-memory": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/coach-parent-private-memory.mjs",
     "job:health": "pnpm run build && node --enable-source-maps ./dist/jobs/health-check.mjs",
     "job:reminders": "pnpm run build && node --enable-source-maps ./dist/jobs/reminders.mjs",

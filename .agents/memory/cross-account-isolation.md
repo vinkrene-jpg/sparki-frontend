@@ -52,3 +52,28 @@ row as authorized (ignoring `status`) would pass an accepted-only test but leak
 to pending. Seeding needs: `ensureAccount` then `update user_profiles.roles` to
 add coach/parent (defaults to `["athlete"]`), and for the adopt positive control
 an `advisory`-mode `training_plans` row + a non-rest `plan_days` row.
+
+## Sharing-preference is a SECOND privacy axis on top of the accepted link
+
+An accepted link is NOT consent to read data. Coach/parent routes additionally
+branch on the athlete's own `dataSharingCoach`/`dataSharingParent` preference
+(`coachSharingLevel`/`parentSharingLevel` → `getEffectivePrivacy`, defaults
+coach=`summary`, parent=`safety_only`). At `none` the routes return the withheld
+shape (200, `athlete:null` / `plan:null` / `days:[]` / `memories:[]` / roster
+entry base-only) and adopt is **403 with zero mutation** — NOT a 403 on the read
+surfaces. Two tests cover this:
+- `test:coach-parent-sharing-levels` — walks each tier (coach none/summary/full,
+  parent none/safety_only/summary), asserting each level's exact slice.
+- `test:coach-parent-share-nothing` — the "shares nothing with anyone" case:
+  coach=none AND parent=none simultaneously on one accepted-linked athlete →
+  every coach+parent surface withholds all real data, then a single restore
+  (coach=full, parent=summary) on the SAME links proves the data reappears
+  (positive control guards against a false pass from an empty seed).
+
+**Why:** the link-isolation test runs on DEFAULT sharing, so a regression in the
+`=== "none"` branches would leak a linked athlete's plan/context/readiness
+despite their explicit choice and go unnoticed. **How to apply:** leak assertions
+must check by distinctive string markers (planned-workout title, plan-day focus,
+context-memory title), not just by shape — a payload could still carry the value
+under a different key. New api-server tests need a build.mjs entry point + a
+`test:*` script + a registered validation workflow.
