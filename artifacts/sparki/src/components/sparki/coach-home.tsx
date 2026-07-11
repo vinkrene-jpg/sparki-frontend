@@ -1,8 +1,13 @@
+import { useState } from "react"
 import { Link } from "wouter"
-import { Users, ChevronRight, CalendarDays, Activity } from "lucide-react"
+import { Users, ChevronRight, CalendarDays, Activity, X } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
-import { useCoachRoster, type RosterAthlete } from "@/hooks/use-coach"
+import {
+  useCoachRoster,
+  useEndCoachLink,
+  type RosterAthlete,
+} from "@/hooks/use-coach"
 
 const readinessLabel: Record<string, { nl: string; color: string }> = {
   fresh: { nl: "Fris", color: "oklch(0.82 0.16 150)" },
@@ -19,7 +24,15 @@ function fmtDate(iso: string) {
   })
 }
 
-function AthleteCard({ a }: { a: RosterAthlete }) {
+function AthleteCard({
+  a,
+  onEndLink,
+  ending,
+}: {
+  a: RosterAthlete
+  onEndLink: () => void
+  ending: boolean
+}) {
   const r = a.readiness?.label ?? "unknown"
   const rl = readinessLabel[r]
   const canOpen = a.sharing !== "none"
@@ -79,22 +92,59 @@ function AthleteCard({ a }: { a: RosterAthlete }) {
   const cardClass =
     "block rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
 
+  const endLinkButton = (
+    <button
+      type="button"
+      onClick={onEndLink}
+      disabled={ending}
+      aria-label="Koppeling met atleet beëindigen"
+      title="Koppeling beëindigen"
+      className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-lg text-white/30 transition-colors hover:bg-white/[0.06] hover:text-white/70 disabled:opacity-40"
+    >
+      <X className="h-4 w-4" strokeWidth={1.75} />
+    </button>
+  )
+
   if (!canOpen) {
-    return <div className={cardClass}>{inner}</div>
+    return (
+      <div className={`relative ${cardClass}`}>
+        {inner}
+        {endLinkButton}
+      </div>
+    )
   }
   return (
-    <Link
-      href={`/coach/athletes/${a.athleteClerkId}/plan`}
-      className={`${cardClass} transition-colors hover:border-cyan-300/25`}
-    >
-      {inner}
-    </Link>
+    <div className="relative">
+      <Link
+        href={`/coach/athletes/${a.athleteClerkId}/plan`}
+        className={`${cardClass} pr-10 transition-colors hover:border-cyan-300/25`}
+      >
+        {inner}
+      </Link>
+      {endLinkButton}
+    </div>
   )
 }
 
 export function CoachHome() {
   const { data, isLoading } = useCoachRoster()
+  const endLink = useEndCoachLink()
+  const [pendingEnd, setPendingEnd] = useState<string | null>(null)
   const athletes = data?.athletes ?? []
+
+  function handleEndLink(a: RosterAthlete) {
+    const name = a.displayName ?? "deze atleet"
+    if (
+      !window.confirm(
+        `Koppeling met ${name} beëindigen? Je hebt daarna geen toegang meer tot hun gegevens.`,
+      )
+    )
+      return
+    setPendingEnd(a.athleteClerkId)
+    endLink.mutate(a.athleteClerkId, {
+      onSettled: () => setPendingEnd(null),
+    })
+  }
 
   return (
     <ScreenShell section="Coach" bg="/concept-lab.png">
@@ -135,7 +185,12 @@ export function CoachHome() {
         ) : (
           <div className="space-y-3">
             {athletes.map((a) => (
-              <AthleteCard key={a.athleteClerkId} a={a} />
+              <AthleteCard
+                key={a.athleteClerkId}
+                a={a}
+                onEndLink={() => handleEndLink(a)}
+                ending={pendingEnd === a.athleteClerkId}
+              />
             ))}
           </div>
         )}

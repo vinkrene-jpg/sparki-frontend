@@ -36,6 +36,23 @@ export function useCoachRoster(enabled = true) {
   });
 }
 
+/**
+ * A coach ends the link to an athlete from their own side. Scoped server-side to
+ * the caller's own coach links; refreshes the roster so the athlete disappears.
+ */
+export function useEndCoachLink() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (athleteClerkId: string) =>
+      apiFetch<{ ok: true }>(`/api/links/as-coach/${athleteClerkId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.coach.athletes() });
+    },
+  });
+}
+
 /** A suggested advisory day, plus whether the coach has already adopted it. */
 export type CoachPlanDay = PlanDay & { adopted: boolean };
 

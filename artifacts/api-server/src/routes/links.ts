@@ -90,4 +90,52 @@ router.delete("/parent/:parentClerkId", requireAuth, async (req, res) => {
   }
 });
 
+// DELETE /api/links/as-coach/:athleteClerkId — a coach ends a link to an athlete
+// from their own side. Scoped to coachClerkId = me, so a coach can only end a
+// link where they are the coach (never someone else's link).
+router.delete("/as-coach/:athleteClerkId", requireAuth, async (req, res) => {
+  const me = getClerkUserId(req)!;
+  try {
+    await db
+      .delete(coachAthleteLinksTable)
+      .where(
+        and(
+          eq(coachAthleteLinksTable.coachClerkId, me),
+          eq(
+            coachAthleteLinksTable.athleteClerkId,
+            String(req.params.athleteClerkId),
+          ),
+        ),
+      );
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "links.end-as-coach failed");
+    res.status(500).json({ error: "Kon koppeling niet verwijderen" });
+  }
+});
+
+// DELETE /api/links/as-parent/:athleteClerkId — a parent ends a link to an
+// athlete from their own side. Scoped to parentClerkId = me, so a parent can
+// only end a link where they are the parent (never someone else's link).
+router.delete("/as-parent/:athleteClerkId", requireAuth, async (req, res) => {
+  const me = getClerkUserId(req)!;
+  try {
+    await db
+      .delete(parentAthleteLinksTable)
+      .where(
+        and(
+          eq(parentAthleteLinksTable.parentClerkId, me),
+          eq(
+            parentAthleteLinksTable.athleteClerkId,
+            String(req.params.athleteClerkId),
+          ),
+        ),
+      );
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "links.end-as-parent failed");
+    res.status(500).json({ error: "Kon koppeling niet verwijderen" });
+  }
+});
+
 export default router;

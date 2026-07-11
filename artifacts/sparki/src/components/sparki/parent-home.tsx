@@ -1,8 +1,13 @@
+import { useState } from "react"
 import { Link } from "wouter"
-import { HeartPulse, Moon, Smile, CalendarDays, Users } from "lucide-react"
+import { HeartPulse, Moon, Smile, CalendarDays, Users, X } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
-import { useParentAthletes, type ParentAthlete } from "@/hooks/use-parent"
+import {
+  useParentAthletes,
+  useEndParentLink,
+  type ParentAthlete,
+} from "@/hooks/use-parent"
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("nl-NL", {
@@ -40,12 +45,20 @@ function Stat({
   )
 }
 
-function AthleteCard({ a }: { a: ParentAthlete }) {
+function AthleteCard({
+  a,
+  onEndLink,
+  ending,
+}: {
+  a: ParentAthlete
+  onEndLink: () => void
+  ending: boolean
+}) {
   const wb = a.wellbeing
   return (
     <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-      <div className="flex items-center justify-between">
-        <div className="text-[15px] tracking-tight text-white/90">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1 text-[15px] tracking-tight text-white/90">
           {a.displayName ?? "Atleet"}
         </div>
         <span
@@ -60,6 +73,16 @@ function AthleteCard({ a }: { a: ParentAthlete }) {
         >
           {healthLabel[a.healthStatus ?? "ok"] ?? a.healthStatus}
         </span>
+        <button
+          type="button"
+          onClick={onEndLink}
+          disabled={ending}
+          aria-label="Koppeling met atleet beëindigen"
+          title="Koppeling beëindigen"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-white/30 transition-colors hover:bg-white/[0.06] hover:text-white/70 disabled:opacity-40"
+        >
+          <X className="h-4 w-4" strokeWidth={1.75} />
+        </button>
       </div>
 
       {a.sharing === "none" ? (
@@ -121,7 +144,23 @@ function AthleteCard({ a }: { a: ParentAthlete }) {
 
 export function ParentHome() {
   const { data, isLoading } = useParentAthletes()
+  const endLink = useEndParentLink()
+  const [pendingEnd, setPendingEnd] = useState<string | null>(null)
   const athletes = data?.athletes ?? []
+
+  function handleEndLink(a: ParentAthlete) {
+    const name = a.displayName ?? "deze atleet"
+    if (
+      !window.confirm(
+        `Koppeling met ${name} beëindigen? Je hebt daarna geen toegang meer tot hun gegevens.`,
+      )
+    )
+      return
+    setPendingEnd(a.athleteClerkId)
+    endLink.mutate(a.athleteClerkId, {
+      onSettled: () => setPendingEnd(null),
+    })
+  }
 
   return (
     <ScreenShell section="Ouder" bg="/concept-lab.png">
@@ -163,7 +202,12 @@ export function ParentHome() {
         ) : (
           <div className="space-y-3">
             {athletes.map((a) => (
-              <AthleteCard key={a.athleteClerkId} a={a} />
+              <AthleteCard
+                key={a.athleteClerkId}
+                a={a}
+                onEndLink={() => handleEndLink(a)}
+                ending={pendingEnd === a.athleteClerkId}
+              />
             ))}
           </div>
         )}
