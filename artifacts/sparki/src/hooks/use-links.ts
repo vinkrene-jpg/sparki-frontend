@@ -35,7 +35,7 @@ export function useRevokeLink() {
       kind: "coach" | "parent";
       clerkId: string;
     }) =>
-      apiFetch<{ ok: true }>(`/api/links/${kind}/${clerkId}`, {
+      apiFetch<{ ok: true; removed: number }>(`/api/links/${kind}/${clerkId}`, {
         method: "DELETE",
       }),
     onSuccess: () => {

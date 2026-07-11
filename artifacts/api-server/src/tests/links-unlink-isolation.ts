@@ -263,6 +263,10 @@ async function main() {
       );
       assert(del.status === 200, `self coach unlink expected 200, got ${del.status}`);
       assert(
+        (del.json as { removed?: number } | null)?.removed === 1,
+        `self coach unlink must report removed=1, got ${JSON.stringify(del.json)}`,
+      );
+      assert(
         !(await coachLinkExists(clerkCoach, clerkSelf)),
         "A's coach link row still present after A unlinked it",
       );
@@ -298,6 +302,10 @@ async function main() {
         clerkSelf,
       );
       assert(del.status === 200, `self parent unlink expected 200, got ${del.status}`);
+      assert(
+        (del.json as { removed?: number } | null)?.removed === 1,
+        `self parent unlink must report removed=1, got ${JSON.stringify(del.json)}`,
+      );
       assert(
         !(await parentLinkExists(clerkParent, clerkSelf)),
         "A's parent link row still present after A unlinked it",
@@ -338,6 +346,10 @@ async function main() {
         `attacker coach unlink expected 200 no-op, got ${del.status}`,
       );
       assert(
+        (del.json as { removed?: number } | null)?.removed === 0,
+        `attacker coach no-op must report removed=0, got ${JSON.stringify(del.json)}`,
+      );
+      assert(
         await coachLinkExists(clerkCoach, clerkVictim),
         "B's DELETE removed V's coach link — unlink is NOT scoped to the caller",
       );
@@ -370,6 +382,10 @@ async function main() {
       assert(
         del.status === 200,
         `attacker parent unlink expected 200 no-op, got ${del.status}`,
+      );
+      assert(
+        (del.json as { removed?: number } | null)?.removed === 0,
+        `attacker parent no-op must report removed=0, got ${JSON.stringify(del.json)}`,
       );
       assert(
         await parentLinkExists(clerkParent, clerkVictim),

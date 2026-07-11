@@ -56,7 +56,7 @@ router.get("/", requireAuth, async (req, res) => {
 router.delete("/coach/:coachClerkId", requireAuth, async (req, res) => {
   const me = getClerkUserId(req)!;
   try {
-    await db
+    const result = await db
       .delete(coachAthleteLinksTable)
       .where(
         and(
@@ -64,7 +64,8 @@ router.delete("/coach/:coachClerkId", requireAuth, async (req, res) => {
           eq(coachAthleteLinksTable.athleteClerkId, me),
         ),
       );
-    res.json({ ok: true });
+    const removed = result.rowCount ?? 0;
+    res.json({ ok: true, removed });
   } catch (err) {
     req.log.error({ err }, "links.revoke-coach failed");
     res.status(500).json({ error: "Kon koppeling niet verwijderen" });
@@ -75,7 +76,7 @@ router.delete("/coach/:coachClerkId", requireAuth, async (req, res) => {
 router.delete("/parent/:parentClerkId", requireAuth, async (req, res) => {
   const me = getClerkUserId(req)!;
   try {
-    await db
+    const result = await db
       .delete(parentAthleteLinksTable)
       .where(
         and(
@@ -83,7 +84,8 @@ router.delete("/parent/:parentClerkId", requireAuth, async (req, res) => {
           eq(parentAthleteLinksTable.athleteClerkId, me),
         ),
       );
-    res.json({ ok: true });
+    const removed = result.rowCount ?? 0;
+    res.json({ ok: true, removed });
   } catch (err) {
     req.log.error({ err }, "links.revoke-parent failed");
     res.status(500).json({ error: "Kon koppeling niet verwijderen" });

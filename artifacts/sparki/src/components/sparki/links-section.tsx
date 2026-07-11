@@ -1,4 +1,5 @@
-import { Users, UserCog, X } from "lucide-react"
+import { useState } from "react"
+import { Users, UserCog, X, AlertTriangle } from "lucide-react"
 import { SectionLabel } from "@/components/sparki/ui"
 import {
   useMyLinks,
@@ -54,9 +55,36 @@ function LinkRow({
 export function LinksSection() {
   const { data, isLoading } = useMyLinks()
   const revoke = useRevokeLink()
+  const [notice, setNotice] = useState<string | null>(null)
   const coaches = data?.coaches ?? []
   const parents = data?.parents ?? []
   const hasAny = coaches.length > 0 || parents.length > 0
+
+  const handleRevoke = (
+    kind: "coach" | "parent",
+    person: LinkedPerson,
+  ) => {
+    setNotice(null)
+    const who = person.displayName ?? person.email
+    const rol = kind === "coach" ? "coach" : "ouder"
+    revoke.mutate(
+      { kind, clerkId: person.clerkId },
+      {
+        onSuccess: (result) => {
+          if (!result.removed || result.removed < 1) {
+            setNotice(
+              `De koppeling met ${who} (${rol}) was al weg — er is niets verwijderd. De lijst is opnieuw geladen.`,
+            )
+          }
+        },
+        onError: () => {
+          setNotice(
+            `Het verwijderen van de koppeling met ${who} (${rol}) is niet gelukt. Probeer het zo nog eens.`,
+          )
+        },
+      },
+    )
+  }
 
   return (
     <section className="pt-2">
@@ -78,9 +106,7 @@ export function LinksSection() {
                 person={c}
                 kind="coach"
                 busy={revoke.isPending}
-                onRevoke={() =>
-                  revoke.mutate({ kind: "coach", clerkId: c.clerkId })
-                }
+                onRevoke={() => handleRevoke("coach", c)}
               />
             ))}
             {parents.map((p) => (
@@ -89,14 +115,24 @@ export function LinksSection() {
                 person={p}
                 kind="parent"
                 busy={revoke.isPending}
-                onRevoke={() =>
-                  revoke.mutate({ kind: "parent", clerkId: p.clerkId })
-                }
+                onRevoke={() => handleRevoke("parent", p)}
               />
             ))}
           </div>
         )}
       </div>
+      {notice && (
+        <div
+          role="alert"
+          className="mt-2 flex items-start gap-2 rounded-xl border border-amber-400/25 bg-amber-400/[0.08] px-3 py-2.5 text-[12px] leading-snug text-amber-200/90"
+        >
+          <AlertTriangle
+            className="mt-0.5 h-3.5 w-3.5 shrink-0"
+            strokeWidth={1.75}
+          />
+          <span>{notice}</span>
+        </div>
+      )}
       <p className="mt-2 px-1 text-[11px] leading-snug text-white/30">
         Een koppeling verwijderen stopt direct het delen van jouw gegevens met
         die persoon.
