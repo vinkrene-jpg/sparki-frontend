@@ -401,3 +401,9 @@ id = "-Z7o6xQKln1nn7RTSITOi"
 uri = "file://SPARKI_COACH_STRATEGY_ANALYSIS.md"
 type = "text"
 title = "Strategische herontwerpanalyse — Sparki vs TrainingPeaks"
+
+[[outputs]]
+id = "21W3h3zpO1kC406QkMYE8"
+uri = "file://sparki-backup-bundle.zip"
+type = "unspecified"
+title = "SPARKI Git Backup (ZIP, contains sparki-backup.bundle, 52 MB)"
