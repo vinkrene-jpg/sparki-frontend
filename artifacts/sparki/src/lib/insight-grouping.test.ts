@@ -28,6 +28,7 @@ import {
   classifyObservation,
   groupObservations,
   dedupeObservationsByText,
+  dedupeObservationsByFact,
   seriesForKind,
   type InsightSources,
 } from "./insight-grouping"
@@ -198,6 +199,105 @@ scenario("multiple check-in observations across categories collapse into ONE gro
   assert(
     groups[0].members.length === 4,
     `the check-in group must carry all 4 members, got ${groups[0].members.length}`,
+  )
+})
+
+// ── cross-maatstaf fact collapse ─────────────────────────────────────────────
+//
+// Prod bug: one hard ride (20 juni — 129 minuten, TSS 301) was persisted as a
+// volume note AND a herstel note AND echoed in the ftp story, so the SAME fact
+// led three separate cards. Notes citing the same figures must collapse to one
+// card (strongest wins) regardless of maatstaf; notes sharing only a single
+// figure must stay distinct.
+
+scenario("the same fact under different maatstaven collapses to ONE card", () => {
+  const volume = obs({
+    title: "Trainingsbelasting boven het doelvolume",
+    category: "load",
+    observationText:
+      "De rit op 20 juni duurde 129 minuten met een TSS van 301, ver boven het weekdoel.",
+    severity: "important",
+    confidence: "high",
+  })
+  const recovery = obs({
+    title: "Herstel wordt onvoldoende ingepland",
+    category: "recovery",
+    observationText:
+      "Na een piek van 129 minuten en een TSS van 301 ontbrak zichtbare lichte hersteltijd.",
+    severity: "watch",
+    confidence: "medium",
+  })
+  const groups = groupObservations([volume, recovery], {})
+  assert(
+    groups.length === 1,
+    `the same fact across maatstaven must collapse to one card, got ${groups.length}`,
+  )
+  assert(
+    groups[0].lead.id === volume.id,
+    "the strongest observation must be the surviving lead",
+  )
+})
+
+scenario("cross-maatstaf notes sharing only ONE figure stay separate", () => {
+  const volume = obs({
+    title: "Belasting loopt op",
+    category: "load",
+    observationText: "Je weekbelasting steeg naar 301 TSS.",
+    severity: "important",
+  })
+  const recovery = obs({
+    title: "Herstel blijft achter",
+    category: "recovery",
+    observationText: "Je hersteltoestand zakte naar 40 procent.",
+    severity: "watch",
+  })
+  const groups = groupObservations([volume, recovery], {})
+  assert(
+    groups.length === 2,
+    `notes sharing a single figure must stay separate, got ${groups.length}`,
+  )
+})
+
+scenario("dedupeObservationsByFact keeps text-only notes and the strongest duplicate", () => {
+  const strong = obs({
+    observationText: "Rit van 129 minuten met TSS 301.",
+    severity: "important",
+    confidence: "high",
+  })
+  const weakDup = obs({
+    observationText: "Een sessie van 129 minuten leverde een TSS van 301 op.",
+    severity: "info",
+    confidence: "low",
+  })
+  const textOnly = obs({ observationText: "Je consistentie liep de laatste weken terug." })
+  const kept = dedupeObservationsByFact([weakDup, strong, textOnly])
+  const keptIds = kept.map((k) => k.id)
+  assert(
+    keptIds.includes(strong.id) && keptIds.includes(textOnly.id),
+    "the strongest duplicate and the figure-free note must survive",
+  )
+  assert(
+    !keptIds.includes(weakDup.id),
+    `the weaker same-figure duplicate must be dropped, kept ${JSON.stringify(keptIds)}`,
+  )
+  assert(
+    keptIds.length === 2,
+    `exactly the strong + text-only notes must remain, got ${kept.length}`,
+  )
+})
+
+scenario("cross-maatstaf notes sharing two incidental figures but no shared word stay separate", () => {
+  // Honesty guard against over-collapse: two genuinely different facts that
+  // coincidentally cite the same two numbers (285 and 72) but share no content
+  // word must BOTH stay — numeric overlap alone is not enough to merge.
+  const power = obs({ observationText: "FTP steeg tot 285 watt bij 72 kilo." })
+  const sleep = obs({
+    observationText: "Slaapduur daalde richting 285 minuten met 72 procent diepgang.",
+  })
+  const kept = dedupeObservationsByFact([power, sleep])
+  assert(
+    kept.length === 2,
+    `distinct facts sharing only incidental numbers must both stay, got ${kept.length}`,
   )
 })
 

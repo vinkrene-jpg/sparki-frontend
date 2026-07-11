@@ -188,15 +188,21 @@ function compareObservations(a: AiObservation, b: AiObservation): number {
  * Group observations so the same maatstaf is shown once. Observations that map
  * to a real metric are collapsed per kind (lead = strongest); everything else
  * stays as its own single-member group.
+ *
+ * Before grouping, a cross-maatstaf fact pass (`dedupeObservationsByFact`)
+ * removes the same fact when it was persisted under several maatstaven (e.g. one
+ * hard ride surfacing as a volume note AND a herstel note), so a single fact
+ * never leads more than one card.
  */
 export function groupObservations(
   observations: AiObservation[],
   sources: InsightSources,
 ): InsightGroup[] {
+  const deduped = dedupeObservationsByFact(observations)
   const byKind = new Map<MetricKind, AiObservation[]>()
   const singles: InsightGroup[] = []
 
-  for (const obs of observations) {
+  for (const obs of deduped) {
     const kind = classifyObservation(obs)
     if (kind === "other") {
       singles.push({
@@ -327,4 +333,56 @@ export function dedupeObservationsByText(
     if (hasContent) sigs.push(sig)
   }
   return kept
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cross-maatstaf fact collapse.
+//
+// One fact is often persisted as several observations under different
+// maatstaven — e.g. a single hard ride ("20 juni: 129 minuten, TSS 301")
+// surfacing as a volume note AND a herstel note AND echoed in the ftp story.
+// Grouping by kind keeps them apart, so the same fact leads three separate
+// cards. This pass keeps the strongest observation per fact-cluster and drops
+// the weaker duplicates REGARDLESS of kind. It uses the same strict figure guard
+// as the prose dedup (≥2 shared numbers, strong overlap), so notes that merely
+// share a single value stay distinct — only genuinely the same fact collapses.
+// Text-only notes (no figures) never merge here; same-maatstaf grouping and the
+// prose dedup handle those.
+// ─────────────────────────────────────────────────────────────────────────────
+export function dedupeObservationsByFact(
+  observations: AiObservation[],
+): AiObservation[] {
+  // True when two notes share at least one NON-numeric content word. Numeric
+  // tokens (e.g. "285") also live in the word set, so they must be excluded here
+  // — otherwise the shared figures we're already matching on would satisfy the
+  // word guard by themselves, defeating its purpose.
+  const shareContentWord = (a: Set<string>, b: Set<string>): boolean => {
+    for (const w of a) if (!/^\d+$/.test(w) && b.has(w)) return true
+    return false
+  }
+  // Strongest first so the surviving representative of each fact-cluster is the
+  // most severe/confident one; input order is restored for the kept survivors.
+  const ranked = [...observations].sort(compareObservations)
+  const keptSigs: TextSignature[] = []
+  const keepIds = new Set<AiObservation["id"]>()
+  for (const o of ranked) {
+    const sig = signatureOf(o)
+    // Collapse only when the same fact is genuinely retold: ≥2 shared figures
+    // with strong overlap AND at least one shared non-numeric content word. The
+    // extra word guard means two DIFFERENT notes that merely cite the same
+    // numbers (e.g. a watt reading and a sleep-minutes reading that
+    // coincidentally share values) are never merged — honesty over tidiness.
+    const isDuplicate =
+      sig.nums.size >= 2 &&
+      keptSigs.some(
+        (s) =>
+          s.nums.size >= 2 &&
+          overlapCoefficient(s.nums, sig.nums) >= 0.6 &&
+          shareContentWord(s.words, sig.words),
+      )
+    if (isDuplicate) continue
+    keepIds.add(o.id)
+    if (sig.nums.size >= 2) keptSigs.push(sig)
+  }
+  return observations.filter((o) => keepIds.has(o.id))
 }
