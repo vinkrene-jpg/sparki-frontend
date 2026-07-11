@@ -9,6 +9,17 @@ Laatst bijgewerkt: 2026-06-29.
 
 ## Wacht op jouw keuze
 
+### Terugkeer-drang / "pull-to-return" (NIEUW 11 jul)
+11. **Hoe maken we Sparki iets waar Dylan uit zichzelf naar terugkeert** — nu sterk
+    in nut, maar mist de gezonde gewoonte-trek die Instagram wél heeft. Mijn advies:
+    gezonde terugkeer-drang (elke keer echt iets nieuws & van jou), GEEN verslavende
+    trucs (geen eindeloos scrollen/streak-angst/nep-nieuw/ijdelheid — schaadt juist
+    jonge renners). Kandidaten: (a) dagelijks ritme met 2-3 echte terugkeer-momenten,
+    (b) "er wacht iets nieuws" melding alleen bij écht nieuw inzicht, (c) sociale
+    trek/kudos uit je Circle, (d) Renners/World-reel als snelle-prikkel-plek uitbouwen,
+    (e) micro-overwinningen/streak van gezonde gewoontes. WACHT op keuze: welke
+    filosofie (gezond, zoals ik adviseer?) en welke mechaniek(en) eerst.
+
 ### Mentale Training — sterrensysteem
 4. **Wát de sterren precies regelen** — diepgang per kaart instelbaar, één globale
    diepgang-voorkeur in je profiel, of iets anders. Onderwerpen al gekozen (6).
