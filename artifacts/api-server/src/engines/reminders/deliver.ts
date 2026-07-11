@@ -278,6 +278,7 @@ export async function pendingEmailCount(): Promise<number> {
           "training_reminder",
           "race_reminder",
           "profile_nudge",
+          "something_new",
         ]),
       ),
     );

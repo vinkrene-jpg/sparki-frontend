@@ -19,6 +19,12 @@ import {
   type ReminderKind,
 } from "@workspace/db";
 import { runCoachAnalysis } from "../observation";
+import {
+  deriveEngagement,
+  findWhatsNew,
+  amsterdamHour,
+  amsterdamYmd,
+} from "../engagement";
 
 export type ReminderItem = {
   kind: ReminderKind;
@@ -286,6 +292,66 @@ async function profileItem(
   };
 }
 
+// The smartly-timed "er is iets nieuws voor je" nudge. It fires only when ALL
+// of these are true, so it is helpful and never nagging or fabricated:
+//   1. the athlete is NOT currently/recently active (away from the app) — the
+//      pulse is for reaching someone who left, never to interrupt an active use;
+//   2. the moment falls inside the athlete's receptive window (learned from
+//      their own real usage, or an honest calm-evening default while there is
+//      too little data to know their rhythm);
+//   3. there is GENUINELY something new since their last open (a real new
+//      insight or fresh news) — if nothing is new, no nudge is created.
+// Deduped to at most one per real (Amsterdam) calendar day.
+const RECENT_ACTIVE_HOURS = 8;
+const FALLBACK_SINCE_DAYS = 7;
+
+async function whatsNewItem(
+  clerkId: string,
+  now: Date,
+): Promise<ReminderItem | null> {
+  const engagement = await deriveEngagement(clerkId, now);
+
+  // 1. Don't nudge someone who is already active.
+  if (
+    engagement.hoursSinceLastOpen != null &&
+    engagement.hoursSinceLastOpen < RECENT_ACTIVE_HOURS
+  ) {
+    return null;
+  }
+
+  // 2. Only inside the receptive window.
+  const hour = amsterdamHour(now);
+  const { startHour, endHour } = engagement.receptiveWindow;
+  const inWindow =
+    endHour > startHour
+      ? hour >= startHour && hour < endHour
+      : hour >= startHour || hour < endHour; // defensive: window across midnight
+  if (!inWindow) return null;
+
+  // 3. Only on genuinely new content since the last open (honest fallback window
+  //    when we have never seen an open before).
+  const since = engagement.lastOpenAt
+    ? new Date(engagement.lastOpenAt)
+    : new Date(now.getTime() - FALLBACK_SINCE_DAYS * 86_400_000);
+  const whatsNew = await findWhatsNew(clerkId, since, now);
+  if (!whatsNew) return null;
+
+  const body =
+    whatsNew.count === 1
+      ? `Er staat iets nieuws voor je klaar: ${whatsNew.lead.title}.`
+      : `Er staan ${whatsNew.count} nieuwe dingen voor je klaar. Om te beginnen: ${whatsNew.lead.title}.`;
+
+  return {
+    kind: "pulse",
+    type: "something_new",
+    dedupeKey: `reminder:whatsnew:${amsterdamYmd(now)}`,
+    title: "Er is iets nieuws voor je",
+    body,
+    emailSubject: "Sparki: er is iets nieuws voor je",
+    actionUrl: whatsNew.lead.actionUrl,
+  };
+}
+
 // All genuinely-due reminders for one athlete at `now`. Caller filters by prefs.
 export async function buildDueReminders(
   clerkId: string,
@@ -300,5 +366,7 @@ export async function buildDueReminders(
   items.push(...(await raceItems(clerkId, now)));
   const profile = await profileItem(clerkId, now);
   if (profile) items.push(profile);
+  const pulse = await whatsNewItem(clerkId, now);
+  if (pulse) items.push(pulse);
   return items;
 }

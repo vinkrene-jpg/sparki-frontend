@@ -7,6 +7,8 @@ import {
   Flag,
   UserCog,
   Smartphone,
+  Sparkles,
+  Clock,
 } from "lucide-react"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import {
@@ -14,6 +16,10 @@ import {
   useUpdateReminderPreferences,
   type ReminderPreferences,
 } from "@/hooks/use-reminder-preferences"
+import {
+  useEngagementRhythm,
+  type EngagementRhythm,
+} from "@/hooks/use-engagement"
 import { usePush } from "@/hooks/use-push"
 
 function Toggle({
@@ -173,9 +179,24 @@ export function ReminderSettingsSection() {
                 onClick={() => set({ profile: !p.profile })}
               />
             </Row>
+
+            <Row
+              icon={Sparkles}
+              title="Er is iets nieuws"
+              desc="Een tik als er écht iets nieuws voor je klaarstaat — een nieuw inzicht of vers nieuws — op een moment dat bij jou past. Nooit zomaar, en nooit als er niets nieuws is."
+              dimmed={!p.enabled}
+            >
+              <Toggle
+                on={p.pulse}
+                disabled={busy || !p.enabled}
+                onClick={() => set({ pulse: !p.pulse })}
+              />
+            </Row>
           </div>
         )}
       </div>
+
+      <RhythmReadout />
 
       <PushSettingsRow />
 
@@ -185,6 +206,104 @@ export function ReminderSettingsSection() {
         netjes in de app staan.
       </p>
     </section>
+  )
+}
+
+// ── Jouw ritme (transparency read-out) ────────────────────────────────────────
+// An honest window into what Sparki learned about the athlete's OWN usage, so the
+// "er is iets nieuws" tik never feels like a mystery. It only explains WHEN a tik
+// may land — never what content is shown. Everything here is real telemetry; when
+// there is too little to know a rhythm, it says so plainly.
+function fmtHour(h: number): string {
+  return `${String(h).padStart(2, "0")}:00`
+}
+
+const SCREEN_LABELS: Record<string, string> = {
+  home: "Vandaag",
+  training: "Training",
+  races: "Wedstrijden",
+  feed: "Nieuws",
+  news: "Nieuws",
+  you: "Profiel",
+  lab: "Inzicht",
+  insights: "Inzicht",
+  voeding: "Voeding",
+  samen: "Samen",
+  kennis: "Kennisbank",
+  world: "Renners",
+}
+
+function contentLabel(c: EngagementRhythm["topContent"][number]): string {
+  if (c.kind === "screen") return SCREEN_LABELS[c.key] ?? c.key
+  return c.key
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+      <div className="text-[15px] tabular-nums text-white/85">{value}</div>
+      <div className="mt-0.5 text-[11px] text-white/40">{label}</div>
+    </div>
+  )
+}
+
+function RhythmReadout() {
+  const { data, isLoading } = useEngagementRhythm()
+  const r = data?.rhythm
+
+  if (isLoading) {
+    return (
+      <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-4 backdrop-blur-md">
+        <div className="h-4 w-24 animate-pulse rounded bg-white/[0.06]" />
+        <div className="mt-3 h-8 animate-pulse rounded bg-white/[0.06]" />
+      </div>
+    )
+  }
+  if (!r) return null
+
+  const learned = r.windowSource === "learned" && r.receptiveHour != null
+  const windowLine = learned
+    ? `Je opent Sparki meestal rond ${fmtHour(r.receptiveHour as number)}. Een tik over iets nieuws komt daarom rond dat moment.`
+    : `Sparki kent je ritme nog niet goed genoeg, dus een tik komt op een rustig moment in de avond (tussen ${fmtHour(r.receptiveWindow.startHour)} en ${fmtHour(r.receptiveWindow.endHour)}).`
+
+  return (
+    <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-4 backdrop-blur-md">
+      <div className="flex items-center gap-2">
+        <Clock className="h-4 w-4 text-white/45" strokeWidth={1.75} />
+        <div className="text-[13px] tracking-tight text-white/80">Jouw ritme</div>
+      </div>
+      <p className="mt-2 text-[12px] leading-snug text-white/50">{windowLine}</p>
+
+      {r.hasData && (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <Stat label="Keer per week geopend" value={`${r.opensPerWeek}×`} />
+          <Stat label="Actieve dagen (60d)" value={`${r.distinctActiveDays}`} />
+        </div>
+      )}
+
+      {r.topContent.length > 0 && (
+        <div className="mt-3">
+          <div className="text-[11px] uppercase tracking-wide text-white/30">
+            Waar je het vaakst kijkt
+          </div>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {r.topContent.slice(0, 4).map((c) => (
+              <span
+                key={`${c.kind}:${c.key}`}
+                className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/55"
+              >
+                {contentLabel(c)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <p className="mt-3 text-[11px] leading-snug text-white/30">
+        Dit komt van je eigen gebruik van de app en bepaalt alleen het moment van
+        een tik — nooit wát je te zien krijgt.
+      </p>
+    </div>
   )
 }
 

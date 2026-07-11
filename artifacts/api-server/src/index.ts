@@ -4,6 +4,7 @@ import { ensureWorldSeed } from "./lib/world-seed";
 import { ensureIntelSeed } from "./lib/intel-seed";
 import { backfillDerivedLoad } from "./lib/derived-load-backfill";
 import { cleanupStaleConnectorShells } from "./lib/connectors/cleanup";
+import { startReminderScheduler } from "./lib/reminder-scheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -79,4 +80,11 @@ app.listen(port, (err) => {
     .catch((err) =>
       logger.error({ err }, "Connector shell cleanup failed"),
     );
+
+  // Start the in-process reminder scheduler so reminders and the smartly-timed
+  // "er is iets nieuws voor je" nudge actually fire without any Scheduled
+  // Deployment setup. Production-only by default; opt-in in dev via
+  // REMINDERS_IN_PROCESS=true. Every reminder is idempotent (dedupeKey), so this
+  // is safe alongside a separately-scheduled job.
+  startReminderScheduler();
 });

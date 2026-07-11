@@ -30,6 +30,9 @@ export const notificationTypes = [
   "followup_question",
   // One-question nudge for a genuinely-missing core profile field.
   "profile_nudge",
+  // Smartly-timed nudge when there is GENUINELY new content for the athlete
+  // (a real new insight or fresh news), delivered at a receptive moment.
+  "something_new",
 ] as const;
 export type NotificationType = (typeof notificationTypes)[number];
 

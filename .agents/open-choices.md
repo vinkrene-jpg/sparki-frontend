@@ -9,17 +9,6 @@ Laatst bijgewerkt: 2026-06-29.
 
 ## Wacht op jouw keuze
 
-### Terugkeer-drang / "pull-to-return" (NIEUW 11 jul)
-11. **Hoe maken we Sparki iets waar Dylan uit zichzelf naar terugkeert** — nu sterk
-    in nut, maar mist de gezonde gewoonte-trek die Instagram wél heeft. Mijn advies:
-    gezonde terugkeer-drang (elke keer echt iets nieuws & van jou), GEEN verslavende
-    trucs (geen eindeloos scrollen/streak-angst/nep-nieuw/ijdelheid — schaadt juist
-    jonge renners). Kandidaten: (a) dagelijks ritme met 2-3 echte terugkeer-momenten,
-    (b) "er wacht iets nieuws" melding alleen bij écht nieuw inzicht, (c) sociale
-    trek/kudos uit je Circle, (d) Renners/World-reel als snelle-prikkel-plek uitbouwen,
-    (e) micro-overwinningen/streak van gezonde gewoontes. WACHT op keuze: welke
-    filosofie (gezond, zoals ik adviseer?) en welke mechaniek(en) eerst.
-
 ### Mentale Training — sterrensysteem
 4. **Wát de sterren precies regelen** — diepgang per kaart instelbaar, één globale
    diepgang-voorkeur in je profiel, of iets anders. Onderwerpen al gekozen (6).
@@ -40,6 +29,19 @@ Laatst bijgewerkt: 2026-06-29.
 10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav.
 
 ## Beslist (archief)
+- **2026-07-11 — Terugkeer-drang / "pull-to-return":** gekozen voor een GEZONDE
+  terugkeer-drang (elke keer echt iets nieuws & van jou), nadrukkelijk GEEN verslavende
+  trucs (geen eindeloos scrollen/streak-angst/nep-nieuw/ijdelheid — schaadt juist jonge
+  renners). Aanpak = combinatie van mechanieken aangestuurd door één slimme motor die
+  leert van Dylan's ÉCHTE open-/klikgedrag (hoe vaak, wanneer, wat hij aantikt) en
+  daarop de timing + inhoud afstemt. Eerlijk: meet alleen echt gedrag, urgent/gezondheid
+  nooit wegdrukken, verstandige standaard zolang te weinig data (eerlijk gezegd), altijd
+  zichtbaar + uit te zetten. FASE 1 (nu te bouwen): fundering = gedrag vastleggen +
+  leerlaag + eerste toepassing = slim getimede "er wacht iets nieuws"-melding (alleen bij
+  écht nieuw inzicht, op zijn ontvankelijke moment). Daarna erbovenop: dagelijks ritme,
+  sociale trek/kudos, Renners/World-reel als prikkel-plek, micro-overwinningen/streak.
+
+
 - **2026-06-29 — Wedstrijd-room (media delen + dagcompilatie):** gekozen voor optie 3
   (eerst de simpele versie voor jezelf: jij uploadt media + tekstuele updates en krijgt
   de compilatie; uitnodigen van anderen komt later). VOLLEDIGE VISIE (voor latere fasen):

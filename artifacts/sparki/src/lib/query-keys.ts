@@ -266,6 +266,11 @@ export const queryKeys = {
     heroes: () => ["world", "heroes"] as const,
     saved: () => ["world", "saved"] as const,
   },
+
+  engagement: {
+    all: () => ["engagement"] as const,
+    rhythm: () => ["engagement", "rhythm"] as const,
+  },
 } as const;
 
 /** Default stale times (ms) — import these rather than hardcoding magic numbers. */

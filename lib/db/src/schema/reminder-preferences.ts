@@ -26,6 +26,9 @@ export const reminderPreferencesTable = pgTable("reminder_preferences", {
   // One-question nudges for genuinely-missing core profile data
   // (gewicht, FTP, lengte, geboortejaar, doel, thuislocatie).
   profile: boolean("profile").notNull().default(true),
+  // Smartly-timed "er is iets nieuws voor je" nudge — only fires when there is
+  // genuinely new content, at a moment the athlete tends to be receptive.
+  pulse: boolean("pulse").notNull().default(true),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -50,5 +53,6 @@ export const reminderKinds = [
   "training",
   "races",
   "profile",
+  "pulse",
 ] as const;
 export type ReminderKind = (typeof reminderKinds)[number];

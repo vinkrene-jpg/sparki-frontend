@@ -11,6 +11,7 @@ export type ReminderPreferences = {
   training: boolean;
   races: boolean;
   profile: boolean;
+  pulse: boolean;
 };
 
 export function useReminderPreferences(enabled = true) {
