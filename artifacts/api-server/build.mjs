@@ -76,6 +76,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/tests/coach-parent-share-nothing.ts"),
       path.resolve(artifactDir, "src/tests/coach-parent-private-memory.ts"),
       path.resolve(artifactDir, "src/tests/coach-parent-shared-raw-fields.ts"),
+      path.resolve(artifactDir, "src/tests/health-endpoints.ts"),
     ],
     platform: "node",
     bundle: true,
