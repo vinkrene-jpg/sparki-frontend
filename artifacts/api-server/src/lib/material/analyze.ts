@@ -156,9 +156,9 @@ EERLIJKHEIDSREGELS (altijd, geen uitzonderingen):
 - Bij twijfel tussen meerdere mogelijkheden: benoem ze en kies niet zomaar één als zekerheid.
 - HOEVEELHEID (bij voeding): als de renner zelf een hoeveelheid noemt (bijv. "10 broodjes", "2 bidons", "een dubbele portie"), is die hoeveelheid LEIDEND boven wat je op de foto telt — de renner was erbij en de foto toont mogelijk niet alles (overlappende of al opgegeten stukken). Reken de voedingswaarde dan op de door de renner genoemde hoeveelheid. Noemt de renner niets, dan tel je zo eerlijk mogelijk uit de foto en benoem je in note dat het aantal een schatting is en dat de foto niet alles hoeft te tonen.
 
-ADVIES:
-- summary: korte heldere samenvatting van wat je ziet en wat het betekent.
-- pros, cons, risks, alternatives: lijsten met korte, concrete punten. Risks zijn veiligheids- of prestatierisico's. Alternatives zijn realistische opties. Laat een lijst leeg ([]) als er niets relevants is — vul nooit met holle tekst.
+ADVIES (houd het KORT en bruikbaar — de renner wil een snelle check, geen verslag):
+- summary: één of twee korte zinnen — wat je ziet en wat het betekent. Niet meer.
+- pros, cons, risks, alternatives: lijsten met korte, concrete punten (maximaal ~3 per lijst, telkens één korte regel). Risks zijn veiligheids- of prestatierisico's. Alternatives zijn realistische opties. Laat een lijst leeg ([]) als er niets relevants is — vul nooit met holle tekst.
 
 KOSTENINSCHATTING (alleen bij materiaal, NIET bij voeding):
 - diy: zelf doen — materials (benodigdheden), costRange (bereik in euro's, bijv. "€15 – €30"), difficulty (bijv. "makkelijk", "gemiddeld", "lastig"), timeEstimate (bijv. "20 min").
@@ -172,8 +172,8 @@ VOEDINGSWAARDE (ALLEEN bij voeding, anders nutrition = null):
 - micronutrients: lijst met de belangrijkste zichtbare vitaminen en mineralen (bijv. "Vitamine C", "IJzer", "Calcium", "Kalium"). Per stuk: name, level ("hoog"/"gemiddeld"/"laag"/"onbekend") en een korte note (waar zit het in, of null). Alleen wat je op basis van de zichtbare ingrediënten redelijk kunt onderbouwen — verzin geen precieze mg-waarden. Laat leeg ([]) als je niets betrouwbaars kunt zeggen.
 - Getallen (caloriesKcal, carbsGrams, proteinGrams, fatGrams, fiberGrams): VUL DEZE ALLEEN als in de context "TOON GETALLEN" staat. Staat er "GEEN GETALLEN" (jonge sporter), zet dan al deze getallen op null en gebruik uitsluitend de kwalitatieve niveaus — geen calorieën, geen gram-doelen, geen afval-taal.
 
-KOPPEL AAN DE TRAINING:
-- Als er trainingscontext is meegegeven (wat de renner die dag traint/trainde, duur, zwaarte), betrek dat expliciet in summary en advies: past dit eten bij die inspanning (genoeg koolhydraten voor/na, herstel, timing)? Wees concreet maar eerlijk over wat je niet kunt weten.
+KOPPEL AAN DE TRAINING (kort):
+- Als er trainingscontext is meegegeven, voeg HOOGUIT ÉÉN korte zin toe of dit eten bij die inspanning past (bijv. genoeg koolhydraten of goede timing). Geen uitgebreide trainingsanalyse, geen herhaling van de training. Is er geen trainingscontext, laat deze koppeling dan volledig weg.
 
 TAAL & VORM:
 - Alles in gewoon Nederlands dat een jeugdrenner, ouder of coach begrijpt. Geen Engels.

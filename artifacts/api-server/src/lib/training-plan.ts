@@ -349,6 +349,36 @@ const KIND_WEIGHT: Record<DayKind, number> = {
   wedstrijd: 0,
 };
 
+type ExperienceTier = "beginner" | "intermediate" | "advanced" | "elite";
+
+function experienceTier(experience: string | null): ExperienceTier {
+  if (experience === "beginner") return "beginner";
+  if (experience === "advanced") return "advanced";
+  if (experience === "elite") return "elite";
+  return "intermediate";
+}
+
+// Coaching-realistic ceilings per single session, so a weekly-hour target (which
+// for many riders is only an ESTIMATE) can never be crammed into a few days as an
+// absurd session — e.g. 13 u/week ÷ 3 dagen used to push the long ride against a
+// hard 360-min (6 u) cap. A real coach never prescribes a 6-hour ride to an
+// intermediate. These caps scale with experience; minutes that don't fit are
+// simply not scheduled — honest realism beats a mathematically-tidy weekly total.
+const SESSION_CAP_MIN: Record<DayKind, Record<ExperienceTier, number>> = {
+  rest: { beginner: 0, intermediate: 0, advanced: 0, elite: 0 },
+  long: { beginner: 120, intermediate: 180, advanced: 240, elite: 300 },
+  duur: { beginner: 90, intermediate: 120, advanced: 150, elite: 180 },
+  tempo: { beginner: 75, intermediate: 90, advanced: 105, elite: 120 },
+  interval: { beginner: 60, intermediate: 75, advanced: 90, elite: 105 },
+  herstel: { beginner: 45, intermediate: 60, advanced: 60, elite: 75 },
+  // Race duration is the race itself; the skeleton never invents it here.
+  wedstrijd: { beginner: 360, intermediate: 360, advanced: 360, elite: 360 },
+};
+
+function sessionCapMin(kind: DayKind, experience: string | null): number {
+  return SESSION_CAP_MIN[kind][experienceTier(experience)];
+}
+
 function qualityDaysFor(experience: string | null, phase: PlanInputs["phase"]) {
   let q = experience === "beginner" ? 1 : experience === "elite" ? 3 : 2;
   if (phase === "taper") q = Math.max(1, q - 1);
@@ -529,7 +559,8 @@ export function buildSkeleton(i: PlanInputs, startDate: string): DaySkeleton[] {
       let dur: number | null = null;
       if (!isRest && kind !== "wedstrijd" && weightSum > 0) {
         const raw = (weeklyMin * KIND_WEIGHT[kind]) / weightSum;
-        dur = Math.max(30, Math.min(360, Math.round(raw / 5) * 5));
+        const cap = sessionCapMin(kind, i.experienceLevel);
+        dur = Math.max(30, Math.min(cap, Math.round(raw / 5) * 5));
       }
       if (kind === "herstel" && dur != null) dur = Math.min(dur, 60);
 

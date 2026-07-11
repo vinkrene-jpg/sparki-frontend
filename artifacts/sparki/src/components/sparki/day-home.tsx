@@ -35,6 +35,7 @@ import { MaterialCoach } from "@/components/sparki/material-coach"
 import { LeskaartVandaag } from "@/components/sparki/leskaart-van-dag"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { useNutritionLogs } from "@/hooks/use-nutrition"
+import { AddTrainingButton } from "@/components/sparki/add-training"
 import { Apple, ChevronRight } from "lucide-react"
 import { useFixParams } from "@/hooks/use-missing-input"
 import { Skeleton } from "@/components/sparki/home-sections"
@@ -147,6 +148,12 @@ function StateDayHome() {
           Eén plek om jezelf bij te werken. Hoe je je voelt staat hierboven — open
           je voeding en laat Sparki je materiaal bekijken.
         </p>
+
+        {/* Adding a training must never be hidden — log a done session or plan a
+            new one right from Vandaag. */}
+        <div className="mt-5">
+          <AddTrainingButton variant="prominent" />
+        </div>
 
         <button
           id="nutrition"

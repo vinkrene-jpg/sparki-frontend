@@ -3,11 +3,7 @@ import { useLocation } from "wouter"
 import { useFixParams } from "@/hooks/use-missing-input"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { ACCENT } from "@/components/sparki/ui"
-import {
-  useSessions,
-  useLogSession,
-  useUpdateSessionFeel,
-} from "@/hooks/use-sessions"
+import { useSessions, useUpdateSessionFeel } from "@/hooks/use-sessions"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { ActivityImportPanel } from "@/components/sparki/activity-import-panel"
 import { DocumentAnalysisPanel } from "@/components/sparki/document-analysis-panel"
@@ -18,7 +14,11 @@ import { SourceLayer } from "@/components/sparki/train/source-layer"
 import { GoalLayer } from "@/components/sparki/train/goal-layer"
 import { TodayLayer } from "@/components/sparki/train/today-layer"
 import { PatternsLayer } from "@/components/sparki/train/patterns-layer"
-import { Bike, Activity, Zap, Plus, X, Sparkles, Check } from "lucide-react"
+import {
+  AddTrainingButton,
+  LogSessionForm,
+} from "@/components/sparki/add-training"
+import { Bike, Activity, Zap, Plus, Sparkles, Check } from "lucide-react"
 import type { TrainingSession } from "@/lib/athlete-types"
 
 // Sources where Sparki already captured the objective data itself (a connector
@@ -192,184 +192,6 @@ function ConfirmActivityCard({ session }: { session: TrainingSession }) {
   )
 }
 
-function LogSessionForm({ onDone }: { onDone: () => void }) {
-  const logSession = useLogSession()
-  const [form, setForm] = useState<{
-    title: string
-    type: string
-    durationMin: string
-    tss: string
-    normalizedPower: string
-    feelScore: string
-    notes: string
-  }>({
-    title: "",
-    type: "ride",
-    durationMin: "",
-    tss: "",
-    normalizedPower: "",
-    feelScore: "3",
-    notes: "",
-  })
-
-  const set =
-    (k: keyof typeof form) =>
-    (
-      e: React.ChangeEvent<
-        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-      >,
-    ) =>
-      setForm((p) => ({ ...p, [k]: e.target.value }))
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const today = new Date().toISOString().split("T")[0]!
-    logSession.mutate(
-      {
-        sessionDate: today,
-        type: form.type,
-        title: form.title || null,
-        durationMin: form.durationMin ? parseInt(form.durationMin) : undefined,
-        tss: form.tss ? parseInt(form.tss) : undefined,
-        normalizedPower: form.normalizedPower
-          ? parseInt(form.normalizedPower)
-          : undefined,
-        feelScore: parseInt(form.feelScore),
-        notes: form.notes || null,
-      } as Partial<TrainingSession>,
-      { onSuccess: onDone },
-    )
-  }
-
-  const inputClass =
-    "w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
-
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan-300/70">
-          Nieuwe sessie
-        </span>
-        <button
-          type="button"
-          onClick={onDone}
-          className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-white/40 transition-colors hover:text-white/70"
-          aria-label="Sluiten"
-        >
-          <X className="h-3.5 w-3.5" strokeWidth={2} />
-          Sluiten
-        </button>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="col-span-2">
-          <input
-            className={inputClass}
-            placeholder="Titel (optioneel)"
-            value={form.title}
-            onChange={set("title")}
-          />
-        </div>
-        <select className={inputClass} value={form.type} onChange={set("type")}>
-          <option value="ride">Rit</option>
-          <option value="run">Hardlopen</option>
-          <option value="swim">Zwemmen</option>
-          <option value="strength">Kracht</option>
-          <option value="other">Anders</option>
-        </select>
-        <input
-          className={inputClass}
-          type="number"
-          placeholder="Duur (min)"
-          value={form.durationMin}
-          onChange={set("durationMin")}
-          min={1}
-          max={999}
-        />
-        <input
-          className={inputClass}
-          type="number"
-          placeholder="TSS"
-          value={form.tss}
-          onChange={set("tss")}
-          min={1}
-          max={999}
-        />
-        <input
-          className={inputClass}
-          type="number"
-          placeholder="NP (watt)"
-          value={form.normalizedPower}
-          onChange={set("normalizedPower")}
-          min={50}
-          max={1000}
-        />
-      </div>
-
-      <div>
-        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
-          HOE VOELDE HET?
-        </label>
-        <div className="flex gap-2">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => setForm((p) => ({ ...p, feelScore: String(n) }))}
-              className="flex flex-1 items-center justify-center rounded-xl border py-2.5 font-mono text-sm transition-colors"
-              style={{
-                borderColor:
-                  form.feelScore === String(n)
-                    ? "rgba(120,210,230,0.5)"
-                    : "rgba(255,255,255,0.1)",
-                background:
-                  form.feelScore === String(n)
-                    ? "rgba(120,210,230,0.12)"
-                    : "transparent",
-                color:
-                  form.feelScore === String(n)
-                    ? ACCENT
-                    : "rgba(255,255,255,0.5)",
-              }}
-            >
-              {n}
-            </button>
-          ))}
-        </div>
-        <div className="mt-1 flex justify-between px-1 font-mono text-[9px] tracking-[0.15em] text-white/20">
-          <span>zwaar</span>
-          <span>top</span>
-        </div>
-      </div>
-
-      <textarea
-        className={`${inputClass} resize-none`}
-        placeholder="Notities (optioneel)"
-        rows={2}
-        value={form.notes}
-        onChange={set("notes")}
-      />
-
-      <div className="flex gap-3">
-        <button
-          type="submit"
-          disabled={logSession.isPending}
-          className="flex-1 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
-          style={{ background: ACCENT, color: "#040506" }}
-        >
-          {logSession.isPending ? "Opslaan…" : "Sessie opslaan"}
-        </button>
-        <button
-          type="button"
-          onClick={onDone}
-          className="rounded-2xl border border-white/[0.1] px-5 py-3.5 font-sans text-[13px] text-white/50"
-        >
-          Annuleer
-        </button>
-      </div>
-    </form>
-  )
-}
-
 function typeIcon(type: string) {
   if (type === "ride") return Bike
   if (type === "run") return Activity
@@ -437,6 +259,10 @@ export default function TrainPage() {
       <p className="-mt-2 font-mono text-[10px] tracking-[0.28em] text-white/35">
         {dayLabel} · JOUW TRAINING
       </p>
+
+      {/* Prominent, always-visible entry point so adding a training is never
+          hidden: log a done session or plan a new one, from anywhere. */}
+      <AddTrainingButton variant="prominent" />
 
       {/* Today's proposed training leads the page — what to do today, and why
           precisely this. */}
