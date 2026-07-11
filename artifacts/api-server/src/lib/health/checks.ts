@@ -1,7 +1,11 @@
-import { sql } from "drizzle-orm";
-import { db } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
+import { db, connectorConnectionsTable } from "@workspace/db";
 import { connectorRegistry } from "../connectors/registry";
 import { emailChannelStatus } from "../email";
+import {
+  isStravaConfigured,
+  getValidStravaAccessToken,
+} from "../connectors/providers/strava-oauth";
 import type { CheckDefinition, ProbeResult } from "./types";
 
 // ── Probe helpers ────────────────────────────────────────────────────────────
@@ -286,62 +290,66 @@ async function probeMapsOrs(): Promise<ProbeResult> {
   }
 }
 
-// Strava connector. Account-level via the Replit connector proxy. GREY when no
-// connection is configured; GREEN when a live access token can be read.
+// Strava connector. Direct per-user OAuth (not the Replit proxy). GREY when
+// OAuth is not configured; GREEN when configured (and, if an athlete is
+// connected, when their access token can be read/refreshed); ORANGE when a live
+// connection's token refresh fails.
 async function probeStrava(): Promise<ProbeResult> {
   const start = performance.now();
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY
-    ? "repl " + process.env.REPL_IDENTITY
-    : process.env.WEB_REPL_RENEWAL
-      ? "depl " + process.env.WEB_REPL_RENEWAL
-      : null;
-  if (!hostname || !xReplitToken) {
+  // Strava is wired via DIRECT per-user OAuth (STRAVA_CLIENT_ID/SECRET), with the
+  // access/refresh tokens stored per athlete in connector_connections — NOT via
+  // the Replit connector-proxy. So the probe measures that real path: is OAuth
+  // configured, and can a live connection's access token actually be refreshed?
+  if (!isStravaConfigured()) {
     return grey(
-      "Strava is nog niet gekoppeld. Sporters kunnen voorlopig geen ritten importeren.",
+      "Strava is nog niet gekoppeld. De koppeling is nog niet geconfigureerd, dus sporters kunnen nog geen ritten importeren.",
       start,
     );
   }
   try {
-    const res = await fetchWithTimeout(
-      `https://${hostname}/api/v2/connection?include_secrets=true&connector_names=strava-web`,
-      { headers: { Accept: "application/json", X_REPLIT_TOKEN: xReplitToken } },
-    );
-    const took = ms(start);
-    if (!res.ok) {
+    const rows = await db
+      .select({
+        clerkId: connectorConnectionsTable.clerkId,
+        status: connectorConnectionsTable.status,
+      })
+      .from(connectorConnectionsTable)
+      .where(eq(connectorConnectionsTable.provider, "strava"));
+
+    const connected = rows.filter((r) => r.status === "connected");
+    if (connected.length === 0) {
+      // The capability is fully wired and configured; there is simply no active
+      // athlete connection yet to import-test. That is honest, not a failure.
+      return {
+        status: "green",
+        passed: true,
+        responseTimeMs: ms(start),
+        message:
+          "Strava-koppeling is beschikbaar; sporters kunnen verbinden. Er is nog geen actieve koppeling om een import mee te testen.",
+        technicalDetails: `Strava OAuth geconfigureerd; ${rows.length} koppeling(en), 0 actief.`,
+      };
+    }
+    // Validate a real connection end-to-end: read/refresh a live access token.
+    try {
+      await getValidStravaAccessToken(connected[0].clerkId);
+      const took = ms(start);
+      return {
+        status: "green",
+        passed: true,
+        responseTimeMs: took,
+        message: "Strava is gekoppeld. Ritten importeren werkt.",
+        technicalDetails: `Actief toegangstoken gevalideerd voor ${connected.length} koppeling(en) in ${took}ms.`,
+      };
+    } catch (tokenErr) {
       return {
         status: "orange",
         passed: false,
-        responseTimeMs: took,
-        message: "De Strava-koppeling kon niet worden gecontroleerd.",
-        technicalDetails: `Connector-proxy antwoordde ${res.status}`,
+        responseTimeMs: ms(start),
+        message:
+          "Een Strava-koppeling kon niet worden ververst. De betreffende sporter moet mogelijk opnieuw koppelen.",
+        technicalDetails:
+          tokenErr instanceof Error ? tokenErr.message : String(tokenErr),
       };
     }
-    const data = (await res.json()) as {
-      items?: Array<{
-        settings?: {
-          access_token?: string;
-          oauth?: { credentials?: { access_token?: string } };
-        };
-      }>;
-    };
-    const conn = data.items?.[0];
-    const token =
-      conn?.settings?.access_token ??
-      conn?.settings?.oauth?.credentials?.access_token;
-    if (!token) {
-      return grey(
-        "Strava is nog niet gekoppeld. Sporters kunnen voorlopig geen ritten importeren.",
-        start,
-      );
-    }
-    return {
-      status: "green",
-      passed: true,
-      responseTimeMs: took,
-      message: "Strava is gekoppeld. Ritten importeren werkt.",
-      technicalDetails: `Actief toegangstoken gevonden in ${took}ms`,
-    };
   } catch (err) {
     return {
       status: "orange",

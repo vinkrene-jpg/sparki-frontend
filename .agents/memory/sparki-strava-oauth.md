@@ -63,3 +63,21 @@ popup — users repeatedly send the edit popup which hides the id).
 `requestEnvVar` (secrets can't be set directly). Because they're global secrets,
 the running **production deployment must be redeployed** to pick up the new values
 — restarting dev workflows is not enough for the live app.
+
+## A health probe must measure a feature's REAL mechanism, or it lies
+
+Rule: when a feature's wiring changes (e.g. Replit proxy → per-user OAuth), its
+Gezondheidscheck probe must change in lockstep — a probe that measures the old/
+wrong mechanism produces a permanent false status and silently breaks the health
+engine's honesty contract (its whole selling point).
+
+**Why:** the Strava probe kept hitting the Replit connector-proxy (`strava-web`)
+and getting 401 → permanent false ORANGE, while real Strava is per-user OAuth
+(see above). The symptom of this class of bug is a check stuck on one status that
+contradicts how the feature actually works.
+
+**How to apply (Strava-shaped features):** GREY only when truly not configured;
+GREEN when the capability is wired even if no user is connected yet (nothing is
+broken — you just can't import-test); reserve ORANGE/RED for a real failure of an
+actual live connection. Prefer validating via the same token-refresh helper the
+feature itself uses (cheap: refreshes only near expiry).
