@@ -21,7 +21,7 @@ race, NOT a logic failure — each test passes when run alone.
 - Log files rotate per run; `ls -t` may surface a stale failed log. Trust the
   `system_log_status` (finished vs failed), not the newest file on disk.
 
-**Root-cause fix (backlog #201, not yet done)**: give each workflow an isolated build
+**Root-cause fix (not yet done)**: give each workflow an isolated build
 outdir, or add a build lock in `build.mjs`. Deploy-critical file — validate the prod
 build after any change. Left unfixed intentionally rather than gambling a subtle
 concurrency change on a freshly-published app.

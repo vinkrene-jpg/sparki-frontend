@@ -53,6 +53,56 @@ export function useEndCoachLink() {
   });
 }
 
+/**
+ * A shareable observation about a linked athlete, surfaced in the coach view.
+ * Only observations the athlete has saved/acknowledged reach the coach, and only
+ * when the athlete's sharing level is not "none" (both enforced server-side).
+ */
+export type CoachAthleteObservation = {
+  id: number;
+  title: string;
+  summary: string | null;
+  category: string;
+  severity: "info" | "important" | "urgent" | string;
+  createdAt: string;
+};
+
+export type CoachAthleteDetail = {
+  clerkId: string;
+  displayName: string | null;
+  discipline: string | null;
+  healthStatus: string | null;
+  ftp: number | null;
+  readiness: Readiness;
+  observations: CoachAthleteObservation[];
+};
+
+export type CoachAthleteDetailResponse = {
+  sharing: "none" | "summary" | "full";
+  athlete: CoachAthleteDetail | null;
+  message?: string;
+};
+
+/**
+ * Read-only detail on a linked athlete: readiness plus the shareable
+ * observations the athlete has saved/acknowledged. Gated server-side by the
+ * accepted link and the athlete's own sharing preference.
+ */
+export function useCoachAthleteDetail(athleteId: string | null, enabled = true) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: athleteId
+      ? queryKeys.coach.athlete(athleteId)
+      : queryKeys.coach.athlete("none"),
+    queryFn: () =>
+      apiFetch<CoachAthleteDetailResponse>(
+        `/api/coach/athletes/${athleteId}`,
+      ),
+    enabled: (isSignedIn === true || DEV_PREVIEW) && enabled && !!athleteId,
+    staleTime: STALE.session,
+  });
+}
+
 /** A suggested advisory day, plus whether the coach has already adopted it. */
 export type CoachPlanDay = PlanDay & { adopted: boolean };
 

@@ -143,6 +143,63 @@ function BlockRow({ block }: { block: WorkoutBlock }) {
   )
 }
 
+// The plan engine tags every block with a kind. Warming-up and cooling-down are
+// their own phases; everything else (intervals, herstel tussendoor, tempo) is
+// the hoofddeel. Grouping keeps their real order so a coach/athlete instantly
+// sees "opbouw → werk → uitrijden" instead of one undifferentiated list.
+function groupBlocks(blocks: WorkoutBlock[]): {
+  warmup: WorkoutBlock[]
+  main: WorkoutBlock[]
+  cooldown: WorkoutBlock[]
+} {
+  const warmup: WorkoutBlock[] = []
+  const main: WorkoutBlock[] = []
+  const cooldown: WorkoutBlock[] = []
+  for (const b of blocks) {
+    if (b.kind === "warmup") warmup.push(b)
+    else if (b.kind === "cooldown") cooldown.push(b)
+    else main.push(b)
+  }
+  return { warmup, main, cooldown }
+}
+
+function blocksTotalMin(blocks: WorkoutBlock[]): number {
+  return blocks.reduce(
+    (sum, b) => sum + b.durationMin * (b.reps && b.reps > 1 ? b.reps : 1),
+    0,
+  )
+}
+
+function BlockGroup({
+  label,
+  blocks,
+}: {
+  label: string
+  blocks: WorkoutBlock[]
+}) {
+  if (blocks.length === 0) return null
+  const total = blocksTotalMin(blocks)
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between">
+        <span className="font-mono text-[9px] tracking-[0.2em] text-white/45">
+          {label.toUpperCase()}
+        </span>
+        {total > 0 && (
+          <span className="font-mono text-[9px] tabular-nums text-white/30">
+            {total}m
+          </span>
+        )}
+      </div>
+      <div className="flex flex-col">
+        {blocks.map((b, i) => (
+          <BlockRow key={i} block={b} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function ExplainRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="border-b border-white/[0.05] py-3 last:border-0">
@@ -368,18 +425,35 @@ export function WorkoutDetailDrawer({
                 <span className="text-[12px] text-white/70">{route.label}</span>
               </div>
 
-              {structure && structure.blocks.length > 0 && (
-                <div>
-                  <p className="mb-1 font-mono text-[9px] tracking-[0.2em] text-white/35">
-                    OPBOUW
-                  </p>
-                  <div className="flex flex-col">
-                    {structure.blocks.map((b, i) => (
-                      <BlockRow key={i} block={b} />
-                    ))}
+              {structure && structure.blocks.length > 0 && (() => {
+                const groups = groupBlocks(structure.blocks)
+                // Only split into fases when there is an explicit warming-up or
+                // cooling-down to distinguish — otherwise a single "Hoofddeel"
+                // label adds noise, so fall back to the plain OPBOUW list.
+                const showGroups =
+                  groups.warmup.length > 0 || groups.cooldown.length > 0
+                if (!showGroups) {
+                  return (
+                    <div>
+                      <p className="mb-1 font-mono text-[9px] tracking-[0.2em] text-white/35">
+                        OPBOUW
+                      </p>
+                      <div className="flex flex-col">
+                        {structure.blocks.map((b, i) => (
+                          <BlockRow key={i} block={b} />
+                        ))}
+                      </div>
+                    </div>
+                  )
+                }
+                return (
+                  <div className="flex flex-col gap-3">
+                    <BlockGroup label="Warming-up" blocks={groups.warmup} />
+                    <BlockGroup label="Hoofddeel" blocks={groups.main} />
+                    <BlockGroup label="Cooling-down" blocks={groups.cooldown} />
                   </div>
-                </div>
-              )}
+                )
+              })()}
 
               {structure && structure.equipment.length > 0 && (
                 <div className="flex items-start gap-2.5">

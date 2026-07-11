@@ -21,8 +21,10 @@ import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, Stat, Divider, ACCENT } from "@/components/sparki/ui"
 import {
   useCoachAthletePlan,
+  useCoachAthleteDetail,
   useAdoptCoachPlanDays,
   type CoachPlanDay,
+  type CoachAthleteObservation,
 } from "@/hooks/use-coach"
 import type { PlanDay } from "@/hooks/use-training-plan"
 
@@ -32,6 +34,68 @@ function formatDay(dateStr: string): string {
     day: "numeric",
     month: "short",
   })
+}
+
+function formatObsDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("nl-NL", {
+    day: "numeric",
+    month: "short",
+  })
+}
+
+const OBS_CATEGORY_NL: Record<string, string> = {
+  training: "Training",
+  recovery: "Herstel",
+  nutrition: "Voeding",
+  race: "Wedstrijd",
+  health: "Gezondheid",
+  sleep: "Slaap",
+  motivation: "Motivatie",
+  general: "Algemeen",
+}
+
+function obsSeverityStyle(severity: string): { color: string; label: string } {
+  switch (severity) {
+    case "urgent":
+      return { color: "oklch(0.72 0.19 25)", label: "Urgent" }
+    case "important":
+      return { color: "oklch(0.78 0.16 60)", label: "Belangrijk" }
+    default:
+      return { color: ACCENT, label: "Info" }
+  }
+}
+
+function ObservationRow({ obs }: { obs: CoachAthleteObservation }) {
+  const sev = obsSeverityStyle(obs.severity)
+  const category = OBS_CATEGORY_NL[obs.category] ?? obs.category
+  return (
+    <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span
+              className="h-1.5 w-1.5 shrink-0 rounded-full"
+              style={{ background: sev.color }}
+            />
+            <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+              {category}
+            </span>
+          </div>
+          <h4 className="mt-1 text-pretty text-[14px] font-light tracking-tight text-white/90">
+            {obs.title}
+          </h4>
+        </div>
+        <span className="shrink-0 font-mono text-[10px] text-white/30">
+          {formatObsDate(obs.createdAt)}
+        </span>
+      </div>
+      {obs.summary && (
+        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/60">
+          {obs.summary}
+        </p>
+      )}
+    </div>
+  )
 }
 
 function intensityColor(label: string | null): string {
@@ -193,8 +257,16 @@ export default function CoachAthletePlanPage() {
     location.match(/\/coach\/athletes\/([^/?#]+)\/plan/)?.[1] ?? null
 
   const { data, isLoading } = useCoachAthletePlan(athleteId)
+  const {
+    data: detail,
+    isLoading: detailLoading,
+    isError: detailError,
+  } = useCoachAthleteDetail(athleteId)
   const adopt = useAdoptCoachPlanDays(athleteId)
   const [pendingIds, setPendingIds] = useState<number[]>([])
+
+  const observations = detail?.athlete?.observations ?? []
+  const sharesData = detail?.sharing != null && detail.sharing !== "none"
 
   const weekDays = useMemo(
     () => (data?.days ?? []).filter((d) => d.weekIndex === 0),
@@ -233,7 +305,54 @@ export default function CoachAthletePlanPage() {
         </Link>
 
         <div>
-          <SectionLabel n="01" title="Sparki-advies" />
+          <SectionLabel n="01" title="Wat opvalt" />
+          <p className="mt-2 text-[13px] text-white/45">
+            Wat er speelt bij <span className="text-white/70">{name}</span>,
+            gedeeld op basis van hun eigen privacy-instelling.
+          </p>
+        </div>
+
+        {detailLoading ? (
+          <div className="space-y-3">
+            {[0, 1].map((i) => (
+              <div
+                key={i}
+                className="h-20 animate-pulse rounded-2xl bg-white/[0.05]"
+              />
+            ))}
+          </div>
+        ) : detailError ? (
+          <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
+            <Info className="mx-auto mb-3 h-7 w-7 text-white/30" strokeWidth={1.5} />
+            <p className="text-[14px] text-white/60">
+              Kon dit even niet ophalen. Probeer het zo opnieuw.
+            </p>
+          </div>
+        ) : !sharesData ? (
+          <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
+            <Info className="mx-auto mb-3 h-7 w-7 text-white/30" strokeWidth={1.5} />
+            <p className="text-[14px] text-white/60">
+              {name} deelt geen data met jou.
+            </p>
+          </div>
+        ) : observations.length === 0 ? (
+          <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
+            <Info className="mx-auto mb-3 h-7 w-7 text-white/30" strokeWidth={1.5} />
+            <p className="text-[14px] text-white/60">Nog niets om te delen.</p>
+            <p className="mt-2 text-[12px] text-white/40">
+              Zodra {name} inzichten bewaart, verschijnen ze hier.
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {observations.map((obs) => (
+              <ObservationRow key={obs.id} obs={obs} />
+            ))}
+          </div>
+        )}
+
+        <div className="pt-1">
+          <SectionLabel n="02" title="Sparki-advies" />
           <p className="mt-2 text-[13px] text-white/45">
             Het vrijblijvende adviesschema dat Sparki voor{" "}
             <span className="text-white/70">{name}</span> heeft opgesteld. Dit is
