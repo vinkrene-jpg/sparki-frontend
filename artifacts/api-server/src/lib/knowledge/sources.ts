@@ -387,13 +387,23 @@ function parseRss(rawXml: string): Array<{
   return out;
 }
 
+// Some publishers (e.g. BikeRadar) reject the default bot User-Agent with a
+// 403/406. For those we retry ONCE with a browser-like UA. This only re-requests
+// the same public RSS URL — no data is fabricated.
+const BROWSER_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
 async function fetchNewsFeed(
   feed: (typeof NEWS_FEEDS)[number],
   limit: number,
 ): Promise<RawItem[]> {
-  const res = await fetchWithTimeout(feed.url, {
-    headers: { Accept: "application/rss+xml, application/xml, text/xml" },
-  });
+  const accept = "application/rss+xml, application/xml, text/xml";
+  let res = await fetchWithTimeout(feed.url, { headers: { Accept: accept } });
+  if (!res.ok && [401, 403, 406, 429, 451].includes(res.status)) {
+    res = await fetchWithTimeout(feed.url, {
+      headers: { Accept: `${accept}, */*`, "User-Agent": BROWSER_UA },
+    });
+  }
   if (!res.ok) throw new Error(`RSS ${feed.source} ${res.status}`);
   const xml = await res.text();
   const parsed = parseRss(xml).slice(0, limit);

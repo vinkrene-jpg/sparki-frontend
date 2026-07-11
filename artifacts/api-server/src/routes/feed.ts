@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db, athleteProfilesTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { getPersonalizedNews } from "../engines/knowledge";
+import { maybeRefreshNews } from "../lib/knowledge/refresh";
 import { sessionSeed, windowedReorder } from "../lib/variation";
 
 const router = Router();
@@ -91,6 +92,12 @@ router.get("/news", requireAuth, async (req, res) => {
   const limit = Number.isFinite(limitRaw)
     ? Math.min(Math.max(Math.trunc(limitRaw), 1), 50)
     : 24;
+
+  // Keep the news stream fresh without depending on a Scheduled Deployment:
+  // if the newest news is stale, this kicks off a background refresh (at most
+  // once/hour, non-blocking). This request still serves the current items; the
+  // refresh lands for the next visit.
+  maybeRefreshNews();
 
   try {
     const [profile] = await db

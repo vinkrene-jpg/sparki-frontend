@@ -101,3 +101,4 @@
 - [Deployment liveness probes bare /api](deploy-liveness-bare-api.md) — platform pings the service base path (not only startup healthz); api router needs get("/") too or republish flaps unhealthy.
 - [api-server test build race](api-server-test-build-race.md) — parallel test:* workflows share one dist/ + rm-rebuild ⇒ "service was stopped"; restart them strictly sequentially; per-workflow isolated build is the real fix.
 - [Sparki per-session caps](sparki-session-caps.md) — plan engine caps single-session minutes per DayKind×experience; unrealistic weekly quota underfills honestly, never a 6h ride; wedstrijd keeps 360.
+- [Sparki news freshness & ranking](sparki-news-freshness.md) — pipelines gated only on a user-configured Scheduled Deployment silently rot; self-heal via lazy refresh on the READ path; recency-dominant + cross-source dedup + source-diversity curation.

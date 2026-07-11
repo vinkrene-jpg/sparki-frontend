@@ -99,10 +99,56 @@ export type FeedNewsItem = {
   disciplines: string[];
 };
 
+// Stopwords stripped before comparing news titles for near-duplicate stories.
+const NEWS_TITLE_STOPWORDS = new Set([
+  "the", "and", "for", "with", "from", "this", "that", "have", "will", "your",
+  "een", "het", "van", "met", "voor", "naar", "door", "over", "tot", "zijn",
+  "wordt", "worden", "deze", "dat", "als", "maar", "niet", "wel", "meer", "aan",
+  "bij", "een", "ook", "nog", "wordt", "gaat", "komt", "haar", "hun",
+]);
+
+// Significant lowercase word set of a title (len>=4, no stopwords) — the basis
+// for cross-source near-duplicate detection (same race reported by 3 outlets).
+function titleWordSet(title: string): Set<string> {
+  const out = new Set<string>();
+  for (const w of title.toLowerCase().split(/[^a-z0-9]+/)) {
+    if (w.length >= 4 && !NEWS_TITLE_STOPWORDS.has(w)) out.add(w);
+  }
+  return out;
+}
+
+// Overlap coefficient (intersection / smaller set) — robust when titles differ
+// in length. 1.0 = one title's significant words are a subset of the other.
+function overlapCoefficient(a: Set<string>, b: Set<string>): number {
+  if (!a.size || !b.size) return 0;
+  const [small, large] = a.size <= b.size ? [a, b] : [b, a];
+  let inter = 0;
+  for (const w of small) if (large.has(w)) inter++;
+  return inter / small.size;
+}
+
+// Recency is the dominant signal for a *daily* news stream: fresh items lead,
+// personalisation only breaks ties among comparably-fresh items.
+function recencyPoints(publishedAt: string | null, now: number): number {
+  if (!publishedAt) return 0;
+  const t = new Date(publishedAt).getTime();
+  if (!Number.isFinite(t)) return 0;
+  const days = Math.max(0, (now - t) / 86_400_000);
+  if (days <= 1) return 12;
+  if (days <= 3) return 9;
+  if (days <= 7) return 6;
+  if (days <= 14) return 4;
+  if (days <= 30) return 2;
+  if (days <= 60) return 1;
+  return 0;
+}
+
 // Personalised sports-news ranking for the Feed. Pure scoring over real stored
-// news rows: athlete keyword/discipline overlap + recency. ALWAYS falls back to
-// most-recent news (the DB order) so the feed is never empty when news exists —
-// personalisation only re-orders the same real items, it never invents any.
+// news rows: recency-dominant, then athlete keyword/discipline overlap. On top
+// of scoring it (1) collapses near-duplicate stories across sources, keeping the
+// best-scored real row, and (2) interleaves sources so one outlet never floods
+// the head. ALWAYS falls back to the most-recent real news so the feed is never
+// empty — presentation only re-orders/de-dupes real items, never invents any.
 export async function getPersonalizedNews(opts: {
   keywords: string[];
   disciplines?: KnowledgeDiscipline[];
@@ -130,27 +176,54 @@ export async function getPersonalizedNews(opts: {
   const scored = pool.map((item, idx) => {
     let score = 0;
     for (const d of item.disciplines) {
-      if (wantDisc.has(d as KnowledgeDiscipline)) score += 3;
+      if (wantDisc.has(d as KnowledgeDiscipline)) score += 2;
     }
     const hay =
       `${item.title} ${item.summary ?? ""} ${item.abstract ?? ""}`.toLowerCase();
-    for (const k of kw) {
-      if (hay.includes(k)) score += 2;
-    }
-    if (item.publishedAt) {
-      const days = (now - new Date(item.publishedAt).getTime()) / 86_400_000;
-      if (days <= 7) score += 4;
-      else if (days <= 30) score += 2;
-      else if (days <= 90) score += 1;
-    }
+    let kwHits = 0;
+    for (const k of kw) if (hay.includes(k)) kwHits++;
+    score += Math.min(kwHits, 3) * 2; // cap keyword weight so recency leads
+    const rec = recencyPoints(item.publishedAt, now);
+    score += rec;
     if (item.summary) score += 1;
     // idx preserves the DB recency order as a stable tiebreak.
-    return { item, score, idx };
+    return { item, score, rec, idx, words: titleWordSet(item.title) };
   });
 
-  scored.sort((a, b) => b.score - a.score || a.idx - b.idx);
+  scored.sort((a, b) => b.score - a.score || b.rec - a.rec || a.idx - b.idx);
 
-  return scored.slice(0, limit).map(({ item }) => ({
+  // Drop stale items (>60 days, recency 0) from the daily stream — but only when
+  // enough fresh items remain to fill it, so the feed is never left empty.
+  const fresh = scored.filter((s) => s.rec > 0);
+  const base = fresh.length >= limit ? fresh : scored;
+
+  // Collapse near-duplicate stories across sources: walking best-first, skip an
+  // item whose significant title words substantially overlap one already kept.
+  const kept: typeof base = [];
+  for (const s of base) {
+    const dup = kept.some(
+      (k) =>
+        k.words.size >= 3 &&
+        s.words.size >= 3 &&
+        overlapCoefficient(k.words, s.words) >= 0.6,
+    );
+    if (!dup) kept.push(s);
+  }
+
+  // Source diversity: greedy pick the best remaining item from a source other
+  // than the previous pick, so no single outlet dominates the top of the feed.
+  const remaining = [...kept];
+  const ordered: typeof kept = [];
+  let lastSource: string | null | undefined;
+  while (remaining.length && ordered.length < limit) {
+    let pick = remaining.findIndex((r) => r.item.source !== lastSource);
+    if (pick === -1) pick = 0; // only same-source items left
+    const [chosen] = remaining.splice(pick, 1);
+    ordered.push(chosen!);
+    lastSource = chosen!.item.source;
+  }
+
+  return ordered.slice(0, limit).map(({ item }) => ({
     id: item.id,
     title: item.title,
     url: item.url,
