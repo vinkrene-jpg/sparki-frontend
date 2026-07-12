@@ -1,0 +1,295 @@
+
+
+### 5.1 Gratis — Renner
+
+Doel: de volledige kernloop kunnen ervaren.
+
+Bevat minimaal:
+
+- account, doelen en relevante sportbron koppelen;
+- trainingsplanning en dagelijkse trainingskaart;
+- basale interpretatie na een activiteit;
+- wekelijkse voortgang op hoofdlijnen;
+- basale veiligheids- en herstelwaarschuwingen;
+- toegang tot eigen data, instellingen en verwijderopties.
+
+De gratis laag moet sterk genoeg zijn om de unieke waarde van Sparki te bewijzen. Een uitgeklede versie die alleen naar Premium verwijst valideert niets.
+
+### 5.2 Renner Premium — initiële hypothese: circa €6 per maand of €59 per jaar
+
+Betaalde waarde kan liggen in:
+
+- diepere sessieanalyse en patroonherkenning;
+- langetermijnontwikkeling en scenario’s;
+- uitgebreidere wedstrijdvoorbereiding en nabespreking;
+- voedings- en herstelbegeleiding binnen duidelijke grenzen;
+- document- en materiaalondersteuning;
+- meer historische context en uitlegbaarheid.
+
+Premium koopt **meer diepgang, continuïteit en gemak**, niet het recht om basisveiligheid te zien.
+
+### 5.3 Coach — initiële hypothese: circa €29 per maand tot een afgesproken rosteromvang
+
+De coachlaag moet worden verkocht op aantoonbare productiviteit:
+
+- overzicht van renners die aandacht nodig hebben;
+- uitzonderingen en risico’s in plaats van een muur aan grafieken;
+- voorstelbare schema-aanpassingen met onderbouwing;
+- gedeelde context en coachnotities;
+- controle: de coach kan AI-advies accepteren, aanpassen of afwijzen;
+- rapportage van tijdsbesparing en opvolging.
+
+Een staffel per renner kan later worden getest, maar mag groei van het roster niet onnodig bestraffen.
+
+### 5.4 Ouder-inzicht — prijs en vorm nog niet vastleggen
+
+Eerst valideren welke informatie werkelijk gewenst en passend is. Ontwerpprincipes:
+
+- de renner weet wat wordt gedeeld;
+- deelniveaus zijn begrijpelijk en wijzigbaar;
+- geen continue surveillance of prestatievergelijking;
+- veiligheidsinformatie wordt zorgvuldig onderscheiden van normale trainingsdetails;
+- ouderwaarde bestaat uit afstemming en geruststelling, niet uit controle.
+
+### 5.5 Club/team — initiële hypothese: circa €250–750 per jaar
+
+Dit prijsbereik kan alleen worden getest nadat duidelijk is wat de club werkelijk afneemt. Waarschijnlijke vereisten zijn:
+
+- rol- en rechtenbeheer;
+- onboarding van coaches en renners;
+- uniforme maar aanpasbare trainingsprincipes;
+- rapportage zonder ongewenste ranglijsten;
+- support, export, continuïteit en governance.
+
+Een clubcontract is pas schaalbaar wanneer onboarding en support grotendeels herhaalbaar zijn.
+
+---
+
+## 6. Financiële haalbaarheid: wat daadwerkelijk bewezen moet worden
+
+Retentie is geen verdienmodel. Het verdienmodel beschrijft **wie betaalt, waarvoor, hoeveel en met welke frequentie**. Retentie bepaalt vervolgens mede de levensduur en economische waarde van die klantrelatie.
+
+### 6.1 Vereiste economische variabelen
+
+Per pakket moeten minimaal worden gemeten:
+
+- gemiddelde omzet per betalende klant;
+- maandelijkse of jaarlijkse churn;
+- directe leveringskosten: AI, opslag, gegevensverwerking en externe diensten;
+- support- en onboardingkosten;
+- verkoopkosten, vooral voor coaches en clubs;
+- betaal- en administratiekosten;
+- terugbetalingen en proefperioden;
+- brutomarge;
+- acquisitiekosten en terugverdientijd.
+
+Een eenvoudige abonnementenbenadering is:
+
+> **Brutowinst-LTV ≈ maandelijkse omzet × brutomarge ÷ maandelijkse churn**
+
+Dit is slechts bruikbaar wanneer churn en marge uit werkelijk gedrag komen. Een aangenomen verblijfsduur van twee jaar is geen bewijs.
+
+### 6.2 Illustratief coachscenario — geen forecast
+
+Bij een coachprijs van €29 per maand:
+
+- is €29 omzet niet hetzelfde als €29 marge;
+- moet eerst blijken hoeveel AI-, support- en onboardingkosten het roster veroorzaakt;
+- moet een betaalde pilot aantonen dat de coach blijft omdat Sparki tijd of kwaliteit oplevert;
+- moet de acquisitie-inspanning binnen een acceptabele periode worden terugverdiend.
+
+De stelling “één coach blijft twee jaar, dus de klant verdient zich ruim terug” wordt pas geldig nadat omzet, marge, churn en acquisitiekosten zijn gemeten.
+
+### 6.3 Kostenbeheersing zonder kwaliteitsverlies
+
+- Zware analyses alleen uitvoeren bij relevante nieuwe data of een expliciete vraag.
+- Resultaten cachen en deterministische berekeningen niet onnodig door een taalmodel laten herhalen.
+- Goedkope regels gebruiken voor eenvoudige detectie; complexere modellen alleen bij echte meerwaarde.
+- Modeluitvoer loggen, evalueren en waar mogelijk hergebruiken.
+- Supportlast meenemen in productontwerp: heldere uitleg voorkomt veel handmatige vragen.
+- Geen kostenbesparing die onzeker advies stelliger of veiligheidscontrole zwakker maakt.
+
+---
+
+## 7. Bewijsplan: van Dylan naar een betaalbaar product
+
+### Fase A — intrinsieke rennerwaarde bewijzen
+
+**Doel:** vaststellen of een renner Sparki vrijwillig opent voor interpretatie en bijsturing die hij elders niet krijgt.
+
+**Testopzet:**
+
+- Dylan en een kleine groep vergelijkbare renners gebruiken Sparki meerdere weken.
+- Na elke relevante synchronisatie verschijnt één compact analyseblok: wat, waarom, volgende stap en zekerheid.
+- Geen badges, streaks, generieke engagementmeldingen of extra sociale druk.
+- Garmin en Strava blijven gewoon beschikbaar; Sparki moet naast die producten zijn eigen waarde verdienen.
+
+**Te meten:**
+
+- aandeel relevante activiteiten waarvan de analyse vrijwillig wordt geopend;
+- tijd tussen synchronisatie en openen;
+- expliciete beoordeling: nuttig, niet nuttig, al bekend of onbetrouwbaar;
+- aantal analyses dat tot een concrete keuze of beter begrip leidt;
+- terugkeer zonder pushmelding;
+- informatie die de renner alsnog in Garmin, Strava of bij een coach moest zoeken;
+- fouten, tegenstrijdigheden en te stellige conclusies.
+
+**Voorlopige beslisdrempels, uitsluitend als start voor het experiment:**
+
+- een duidelijke meerderheid van de testers kan zonder hulp benoemen wat Sparki uniek doet;
+- herhaald gebruik ontstaat bij meerdere renners, niet alleen bij de oprichter of één enthousiaste tester;
+- nuttige inzichten komen substantieel vaker voor dan generieke, dubbele of foutieve analyses;
+- veiligheidskritieke planningsfouten, zoals extreme inhaaltrainingen, zijn uitgesloten voordat retentie wordt geoptimaliseerd.
+
+Wanneer dit niet lukt, wordt niet eerst aan notificaties of pricing gesleuteld. Dan moet de kernanalyse verbeteren of de propositie worden versmald.
+
+### Fase B — coachwaarde en betalingsbereidheid bewijzen
+
+**Doel:** aantonen dat Sparki tijd bespaart of betere begeleiding mogelijk maakt.
+
+**Testopzet:**
+
+- enkele coaches met echte rosters;
+- focus op uitzonderingen, planvoorstellen en opvolging;
+- nulmeting van tijdsbesteding en huidige werkwijze;
+- een beperkte betaalde pilot, niet alleen een vrijblijvende interessepeiling.
+
+**Te meten:**
+
+- tijd per renner per week;
+- aantal relevante signalen dat eerder of makkelijker wordt gezien;
+- percentage AI-voorstellen dat wordt geaccepteerd, aangepast of afgewezen;
+- reden van afwijzing;
+- bereidheid om na de pilot daadwerkelijk te verlengen;
+- support- en onboardinglast per coach.
+
+### Fase C — ouderwaarde zorgvuldig valideren
+
+**Doel:** bepalen of ouder-inzicht echte geruststelling en betere afstemming oplevert zonder de renner te laten voelen dat hij wordt gevolgd.
+
+Test niet alleen betalingsbereidheid, maar ook:
+
+- voorkeur van de renner;
+- begrip van deelinstellingen;
+- conflicten of druk die door gedeelde informatie ontstaan;
+- welke veiligheidsinformatie werkelijk nuttig is;
+- welke informatie niet gedeeld hoort te worden.
+
+### Fase D — clubproduct en schaalbaarheid bewijzen
+
+Start pas wanneer coachwaarde aantoonbaar is. Gebruik betaalde pilots of concrete intentieverklaringen met duidelijke scope. Meet verkoopduur, onboarding, gebruik per rol, supportkosten en verlenging.
+
+---
+
+## 8. De juiste metriek
+
+### 8.1 Primaire productmetriek
+
+> **Aantal bruikbare, betrouwbare trainingsbeslissingen per actieve renner per week.**
+
+Een beslissing telt alleen wanneer de gebruiker of coach bevestigt dat het inzicht tot handelen, aanpassen, vermijden of aantoonbaar beter begrip heeft geleid.
+
+### 8.2 Ondersteunende productmetingen
+
+- aandeel activiteiten met een werkelijk nieuw inzicht;
+- nuttigheidsscore per type analyse;
+- acceptatie en aanpassing van trainingsvoorstellen;
+- terugkeer op natuurlijke momenten;
+- doelvoortgang over meerdere weken;
+- datakwaliteit en analysezekerheid;
+- tijdsbesparing voor coaches.
+
+### 8.3 Bedrijfsmetingen
+
+- actieve gratis renners naar betaalde klantrelaties;
+- betaalde conversie per doelgroep;
+- churn en verlenging;
+- omzet per klant;
+- brutomarge;
+- acquisitiekosten;
+- terugverdientijd;
+- supportlast.
+
+### 8.4 Ethische en veiligheidswaarborgen
+
+- aantal fout-positieve en gemiste veiligheidsmeldingen;
+- aantal te stellige of onvoldoende onderbouwde analyses;
+- meldingsopt-outs en redenen;
+- ervaren druk, schuld of surveillance;
+- klachten over delen, privacy of autonomie;
+- eenvoud van data-export, opzeggen en accountverwijdering;
+- commerciële prompts die per ongeluk boven herstel of veiligheid verschenen.
+
+Schermtijd is geen succesmetriek. Meer sessies zijn alleen positief wanneer ze samengaan met meer bruikbare beslissingen, vertrouwen en verantwoord resultaat.
+
+---
+
+## 9. Consequenties voor de komende sprints
+
+### Eerst bouwen
+
+1. **Veiligheidsinvarianten in de planner**
+   - Geen automatische inhaalstrategie die gemiste trainingsminuten omzet in extreme sessies.
+   - Harde grenzen, contextcontrole en uitlegbare reden bij iedere grote planwijziging.
+
+2. **Post-activity insight card**
+   - Wat gebeurde er?
+   - Waarom relevant voor het doel?
+   - Wat verandert er?
+   - Hoe zeker is Sparki?
+
+3. **Meetinstrumentatie**
+   - Geopend, nuttig, al bekend, onjuist, actie genomen en reden van afwijzing.
+
+4. **Pre-training decision card**
+   - Doel, reden, aanpassingscriteria en wat niet hoeft te worden ingehaald.
+
+5. **Wekelijkse ontwikkelsamenvatting**
+   - Alleen wanneer voldoende data beschikbaar is; geen generieke tekst om een ritueel te vullen.
+
+6. **Coach-exception view**
+   - Eerst tonen wie aandacht nodig heeft en waarom; pas daarna volledige details.
+
+### Nog niet prioriteren
+
+- betaalmuren en uitgebreide billing;
+- badges, streaks en engagementgamification;
+- nog meer algemene dashboards;
+- sociale feeds;
+- omvangrijk clubbeheer;
+- brede multi-sportuitbreiding;
+- marketingclaims over prestatieverbetering die nog niet zijn aangetoond.
+
+De betaalarchitectuur kan technisch worden voorbereid, maar commercieel activeren gebeurt pas nadat de betreffende waarde in een pilot is bewezen.
+
+---
+
+## 10. Feature-review voor iedere sprint
+
+Iedere feature moet vooraf acht vragen beantwoorden:
+
+1. Welke concrete gebruikersvraag lost dit op?
+2. Op welk natuurlijk moment ontstaat die vraag?
+3. Welke data ondersteunt de uitkomst?
+4. Hoe wordt onzekerheid zichtbaar gemaakt?
+5. Welke beslissing of welk begrip volgt eruit?
+6. Levert Garmin, Strava of een andere bestaande dienst dit al vrijwel hetzelfde?
+7. Kan de feature druk, surveillance of onveilig gedrag veroorzaken?
+8. Hoe meten we echte waarde zonder schermtijd als doel te nemen?
+
+Een feature zonder overtuigende antwoorden wordt niet gebouwd of wordt als experiment met een expliciete stopregel uitgevoerd.
+
+---
+
+## 11. Samenvatting
+
+Sparki kan een eerlijk en winstgevend abonnementenproduct worden, maar die conclusie is nog niet bewezen. De volgorde is bepalend:
+
+1. lever een unieke en betrouwbare interpretatie die tot betere trainingsbeslissingen leidt;
+2. toon aan dat renners daarvoor vrijwillig terugkomen;
+3. toon bij coaches aantoonbare tijdsbesparing of kwaliteitswinst aan;
+4. valideer ouder- en clubwaarde zonder autonomie, privacy of vertrouwen te beschadigen;
+5. meet daarna prijs, churn, marge, acquisitiekosten en terugverdientijd;
+6. schaal alleen wat zowel waardevol, veilig als economisch herhaalbaar is.
+
+Dylan is daarmee geen randgeval dat met meer notificaties moet worden geactiveerd. Hij is een vroege falsificatietest van de productbelofte. Wanneer Sparki voor hem geen relevante vraag beter beantwoordt dan Garmin en Strava, moet eerst de kernwaarde scherper worden — niet de engagementlaag agressiever.
