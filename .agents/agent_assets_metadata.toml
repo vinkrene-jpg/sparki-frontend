@@ -413,3 +413,51 @@ id = "RZee9UprxmUPutpZmN1Uu"
 uri = "file://SPARKI-VERDIENMODEL-EN-RETENTIE.md"
 type = "text"
 title = "Sparki — Verdienmodel & retentie (besloten: renner gratis in fase 1)"
+
+[[outputs]]
+id = "UEsmSsnWnlbAkUQlOpEob"
+uri = "file://docs/product/FEATURE_INVENTORY.md"
+type = "text"
+title = "Featurecatalogus (F-001…F-163)"
+
+[[outputs]]
+id = "YdAi9Xi64vpZiAx8XxIP0"
+uri = "file://docs/product/FEATURE_INVENTORY.csv"
+type = "table"
+title = "Featurecatalogus (CSV, alle velden)"
+
+[[outputs]]
+id = "EPqvNJ6Aetpv_0q0n-QY5"
+uri = "file://docs/product/CURRENT_INFORMATION_ARCHITECTURE.md"
+type = "text"
+title = "Huidige informatiearchitectuur"
+
+[[outputs]]
+id = "KvSvlsq1Uk9DgR4FcQ5ma"
+uri = "file://docs/product/RIDER_CORE_JOURNEY.md"
+type = "text"
+title = "Kernreis van de renner"
+
+[[outputs]]
+id = "XyFgC-SivZLULNN6lV9G3"
+uri = "file://docs/product/DYLAN_VALUE_GAPS.md"
+type = "text"
+title = "Dylan-probleemanalyse (waardegaten)"
+
+[[outputs]]
+id = "t5FTvvNuB5VEBeriTse9t"
+uri = "file://docs/product/FEATURE_CONSOLIDATION_MATRIX.md"
+type = "text"
+title = "Consolidatiematrix"
+
+[[outputs]]
+id = "fs8iERwbQ3VGvrBF2wG7U"
+uri = "file://docs/product/AUDIT_UNCERTAINTIES.md"
+type = "text"
+title = "Auditonzekerheden (⚠-register)"
+
+[[outputs]]
+id = "nQQauwk-IonF-dDGNDX84"
+uri = "file://SPARKI-STRATEGIE.md"
+type = "text"
+title = "Sparki-strategie (eerder opgesteld)"

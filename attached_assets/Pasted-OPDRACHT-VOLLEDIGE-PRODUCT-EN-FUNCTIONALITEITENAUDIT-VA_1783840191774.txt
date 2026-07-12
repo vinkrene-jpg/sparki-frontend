@@ -1,0 +1,185 @@
+OPDRACHT — VOLLEDIGE PRODUCT- EN FUNCTIONALITEITENAUDIT VAN SPARKI
+
+Doel:
+Maak op basis van de actuele codebase zichtbaar wat Sparki werkelijk kan, wat een gebruiker daadwerkelijk kan bereiken en waar functionaliteiten elkaar overlappen, verborgen zijn of zonder duidelijke productrol bestaan.
+
+Dit is uitsluitend een onderzoeks- en documentatieopdracht.
+
+Wijzig geen productcode.
+Voeg geen nieuwe functionaliteiten toe.
+Herontwerp nog geen schermen.
+Verwijder nog niets.
+
+Gebruik de codebase als primaire bron. Vertrouw niet uitsluitend op eerdere prompts, README-bestanden, backlogteksten of bestaande strategiedocumenten.
+
+1. Inventariseer de volledige codebase
+
+Onderzoek minimaal:
+
+- frontend-routes;
+- pagina’s en schermen;
+- navigatie-items;
+- tabs, modals, drawers en contextmenu’s;
+- zelfstandige gebruikerscomponenten;
+- backend-routes en API-endpoints;
+- services;
+- databasemodellen;
+- background jobs en synchronisaties;
+- AI-prompts, agents en analyseworkflows;
+- notificaties;
+- externe integraties;
+- rollen, rechten en privacygrenzen;
+- feature flags;
+- tests;
+- ongebruikte of niet-bereikbare code;
+- functionaliteit die alleen vanuit een specifieke rol zichtbaar is.
+
+2. Maak een codegedreven featurecatalogus
+
+Maak voor iedere gevonden functionaliteit één regel met minimaal:
+
+- uniek ID;
+- functionele naam;
+- korte omschrijving;
+- doelgroep/rol;
+- gebruikersvraag die zij beantwoordt;
+- trigger of relevant moment;
+- frontend-route of entry point;
+- relevante componentbestanden;
+- backend-service of endpoint;
+- gebruikte databronnen;
+- zichtbare output;
+- afhankelijkheden;
+- testdekking;
+- huidige bereikbaarheid;
+- mogelijke overlap met andere functies;
+- veiligheids- of privacyrisico;
+- huidige status:
+  - volledig werkend;
+  - gedeeltelijk werkend;
+  - verborgen;
+  - niet bereikbaar;
+  - experimenteel;
+  - vermoedelijk verouderd;
+  - onbekend.
+
+Noem een functionaliteit alleen wanneer je daarvoor concrete code-evidence kunt geven. Voeg relevante bestandsnamen en routes toe. Markeer onzekerheden expliciet.
+
+3. Breng de huidige informatiearchitectuur in kaart
+
+Documenteer:
+
+- de volledige primaire navigatie;
+- secundaire navigatie;
+- alle schermen per rol;
+- hoe een gebruiker ieder scherm bereikt;
+- welke schermen geen duidelijke ingang hebben;
+- welke functies op meerdere plaatsen voorkomen;
+- welke interne producttermen in de interface staan;
+- welke pagina’s veel verschillende doelen tegelijk proberen te bedienen.
+
+Maak hiervan een hiërarchische schermkaart.
+
+4. Onderzoek de kernreis van de renner
+
+Breng stap voor stap in kaart:
+
+app openen
+→ Vandaag bekijken
+→ geplande training bekijken
+→ activiteit synchroniseren
+→ activiteit openen
+→ analyse begrijpen
+→ gevolgen voor het schema bekijken
+→ ontwikkeling bekijken
+→ een vervolgvraag stellen.
+
+Noteer per stap:
+
+- benodigde acties;
+- navigatiesprongen;
+- informatie die direct zichtbaar is;
+- informatie die verborgen zit;
+- herhaling;
+- onduidelijke termen;
+- ontbrekende feedback;
+- fout-, laad- en lege staten;
+- mogelijke verstoring van vertrouwen.
+
+5. Classificeer iedere functionaliteit
+
+Gebruik deze categorieën:
+
+A. Kernwaarde
+Beantwoordt rechtstreeks één van:
+- wat betekende mijn training?
+- wat is vandaag verstandig?
+- word ik aantoonbaar beter?
+
+B. Contextuele waarde
+Waardevol op een specifiek moment, bijvoorbeeld wedstrijd, voeding, materiaal of documentanalyse.
+
+C. Ondersteunende infrastructuur
+Nodig voor het product maar niet als zelfstandige gebruikersbestemming.
+
+D. Overlappend
+Doet grotendeels hetzelfde als een andere functie.
+
+E. Weesfunctie
+Bestaat in code maar heeft geen duidelijke of werkende ingang.
+
+F. Afleidend of onvoldoende gedefinieerd
+Heeft geen duidelijke bijdrage aan een gebruikersbeslissing.
+
+6. Maak een eerste consolidatiematrix
+
+Geef voor iedere functionaliteit nog geen definitief besluit, maar een onderbouwd voorstel:
+
+- behouden als zichtbare kernfunctie;
+- alleen contextueel tonen;
+- samenvoegen;
+- verplaatsen;
+- op de achtergrond houden;
+- tijdelijk verbergen;
+- kandidaat voor verwijdering;
+- nader onderzoeken.
+
+7. Leg specifiek de Dylan-problemen bloot
+
+Beoordeel op basis van de huidige code en schermstructuur:
+
+- hoe snel Dylan na openen een uniek inzicht ziet;
+- hoeveel keuzes hij eerst moet maken;
+- of de startpagina op tijd en context reageert;
+- of analyses boven een ervaren trainingskennisniveau opereren;
+- waar generieke informatie wordt getoond;
+- waar waardevol inzicht te diep verborgen zit;
+- waar veel functies om aandacht concurreren;
+- waar de relatie tussen analyse en aangepast trainingsplan ontbreekt.
+
+8. Lever de volgende bestanden op
+
+- docs/product/FEATURE_INVENTORY.md
+- docs/product/FEATURE_INVENTORY.csv
+- docs/product/CURRENT_INFORMATION_ARCHITECTURE.md
+- docs/product/RIDER_CORE_JOURNEY.md
+- docs/product/DYLAN_VALUE_GAPS.md
+- docs/product/FEATURE_CONSOLIDATION_MATRIX.md
+- docs/product/AUDIT_UNCERTAINTIES.md
+
+9. Volledigheidscontrole
+
+Controleer vóór oplevering dat:
+
+- iedere frontend-route is verwerkt;
+- ieder navigatie-item is verwerkt;
+- ieder backend-endpoint met gebruikersimpact is verwerkt;
+- iedere AI-workflow is verwerkt;
+- iedere notificatiestroom is verwerkt;
+- iedere rol is verwerkt;
+- verborgen en niet-bereikbare functionaliteit apart is benoemd;
+- conclusies naar concrete codebestanden verwijzen.
+
+Stop na de audit.
+
+Implementeer geen redesign en maak nog geen nieuwe features. Lever eerst de volledige inventarisatie ter beoordeling op.

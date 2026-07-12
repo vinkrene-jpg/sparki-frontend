@@ -1,0 +1,348 @@
+Gebruik het bijgevoegde document “Sparki_strategie_v2.md”, de huidige Replit-versie van “Sparki — Eerlijk verdienmodel & gezonde retentie” en onderstaande besluiten om één geïntegreerd strategiedocument te maken.
+
+Voeg de documenten niet simpelweg achter elkaar. Los tegenstrijdigheden op en laat de nieuwste expliciete besluiten voorgaan.
+
+Wijzig uitsluitend het strategiedocument en de strategische uitgangspunten. Implementeer nog geen billing, abonnementen, betaalmuur, commerciële gebruikslimieten of engagementmechanieken.
+
+========================================
+1. LEIDENDE STRATEGISCHE VOLGORDE
+========================================
+
+De strategie krijgt deze volgorde:
+
+1. Vertrouwensvloer: veiligheid, datakwaliteit en betrouwbaarheid.
+2. Unieke productwaarde: Sparki levert beslissingen en inzichten die de renner niet al uit Garmin, Strava of zijn eigen basiskennis haalt.
+3. Gezonde retentie: renners keren vrijwillig terug vanwege aantoonbare waarde.
+4. Schaalbaarheid: werking, support en rekenkosten blijven beheersbaar.
+5. Betalingsbereidheid: pas testen nadat productwaarde en gebruik zijn aangetoond.
+6. Eventueel verdienmodel: pas na de validatiefase en nooit automatisch.
+
+Productwaarde gaat vóór retentie. Retentie gaat vóór monetisatie.
+
+========================================
+2. PRODUCTPOSITIONERING
+========================================
+
+Neem als kernpositionering op:
+
+“Garmin registreert. Strava vergelijkt en deelt. Sparki interpreteert en stuurt verantwoord bij.”
+
+Dylan wordt expliciet opgenomen als falsificatietest van de productpropositie.
+
+Het probleem is niet primair dat Dylan onvoldoende wordt teruggelokt. Het probleem is dat hij nog onvoldoende reden ervaart om Sparki vrijwillig te openen.
+
+Sparki moet voor een renner drie terugkerende vragen beantwoorden:
+
+1. Na een training:
+   “Wat betekende deze training werkelijk voor mijn ontwikkeling?”
+
+2. Voor een training:
+   “Wat is vandaag, gezien mijn belasting, herstel, doel en actuele context, verstandig?”
+
+3. Periodiek:
+   “Word ik aantoonbaar beter, waarin precies, en waardoor?”
+
+De primaire waarde-eenheid is niet een scherm, AI-antwoord, grafiek, badge of notificatie, maar:
+
+“Een betrouwbare persoonlijke trainingsbeslissing die de renner zonder Sparki niet, later of minder goed had kunnen nemen.”
+
+========================================
+3. VERTROUWENSVLOER EN RELEASE-POORT
+========================================
+
+Betrouwbaarheid is geen onderscheidende feature, maar de minimale voorwaarde om coaching te mogen leveren.
+
+Neem een release-poort op voor de volledige kernreis:
+
+app openen
+→ Vandaag bekijken
+→ training openen
+→ activiteit synchroniseren
+→ analyse bekijken
+→ aangepast schema controleren.
+
+De release-poort moet minimaal controleren op:
+
+- correcte datums en tijdzones;
+- correcte eenheden;
+- geen dubbele activiteiten;
+- geen verloren of verzonnen gegevens;
+- correcte koppeling van activiteit, analyse en schema;
+- realistische trainingsduur en belasting;
+- geen extreme inhaaltrainingen;
+- geen tegenstrijdig advies;
+- geen stellige conclusie wanneer de data onvoldoende is;
+- geen onveilig herstel-, belasting-, voedings- of trainingsadvies.
+
+Gebruik synthetische referentierenners met bekende verwachte uitkomsten, waaronder:
+
+- nieuwe renner zonder historie;
+- renner met meerdere weken historie;
+- renner met onvolledige sensordata;
+- renner met gemiste trainingen;
+- renner met verhoogde belasting;
+- renner met wedstrijd;
+- renner met een mogelijk veiligheids- of overbelastingssignaal.
+
+Een release wordt geblokkeerd bij:
+
+- veiligheidskritieke fouten;
+- dataverlies of datacorruptie;
+- materieel onjuiste trainingsinformatie;
+- blokkade van een kernstap;
+- onveilig of intern tegenstrijdig advies.
+
+Neem daarnaast productie-monitoring, incidentregistratie en een rollbackprocedure op.
+
+========================================
+4. DEFINITIE VAN “STABIELE PUBLIEKE BÈTA”
+========================================
+
+De start van de gratis periode mag niet informeel, achteraf of op basis van alleen een publicatiedatum worden bepaald.
+
+De “stabiele publieke bèta” begint uitsluitend wanneer alle volgende voorwaarden zijn vervuld:
+
+1. De volledige release-poort van de kernloop is succesvol doorlopen voor minimaal drie opeenvolgende release-candidates.
+
+2. Er staan geen openstaande rode incidenten of defects open. Rood omvat minimaal:
+   - veiligheidsrisico;
+   - privacy- of toestemmingsfout;
+   - dataverlies of datacorruptie;
+   - materieel onjuiste trainingsdata;
+   - onveilig advies;
+   - blokkade van login, synchronisatie, Vandaag, training, analyse of schema.
+
+3. Een representatieve testgroep heeft Sparki minimaal vier aaneengesloten weken gebruikt zonder verstorende kernloopbug.
+
+Een verstorende bug is een fout die:
+   - een kernstap onmogelijk maakt;
+   - verkeerde of verloren data veroorzaakt;
+   - een materially onjuist getal toont;
+   - onveilig of tegenstrijdig advies geeft;
+   - de normale dagelijkse gebruikersreis wezenlijk onderbreekt.
+
+4. Productiemonitoring, incidentlogging en rollback zijn actief en getest.
+
+5. De start wordt formeel vastgelegd met:
+   - exacte kalenderdatum;
+   - releaseversie;
+   - bewijs dat de criteria zijn gehaald;
+   - verantwoordelijke voor het besluit.
+
+De periode begint niet automatisch bij de eerste tester, eerste deployment, besloten test of interne bèta.
+
+Na de formele startdatum wordt deze datum niet met terugwerkende kracht verschoven wanneer later een incident optreedt. Zo’n incident activeert herstel- en releaseprocedures, maar verlengt of reset de commerciële toezegging niet.
+
+========================================
+5. 24 MAANDEN ALLE RENNERSFUNCTIES GRATIS
+========================================
+
+Gedurende 24 maanden vanaf de formele start van de stabiele publieke bèta zijn alle algemeen beschikbare Sparki-functionaliteiten voor renners gratis.
+
+Gedurende deze validatiefase bestaan voor renners niet:
+
+- Renner Premium;
+- upgradeprompts;
+- betaalmuren;
+- commerciële gebruikslimieten;
+- beperkte historie om conversie af te dwingen;
+- limieten op wedstrijdanalyses;
+- limieten op materiaalchecks;
+- limieten op Core-voorspellingen;
+- beperkte documentanalyse;
+- automatisch aflopende proefperiodes.
+
+Verwijder deze beperkingen uit de actieve productstrategie.
+
+Prijsvoorstellen en eventuele toekomstige pakketten mogen alleen blijven staan in een afzonderlijk hoofdstuk:
+
+“Mogelijke modellen na validatie — onbewezen hypothesen.”
+
+Maak duidelijk dat de gratis periode een globale productvalidatiefase is. Het is niet automatisch een afzonderlijke garantie van 24 maanden vanaf de registratiedatum van iedere nieuwe gebruiker.
+
+Na maand 24 volgt een beoordelingsmoment, niet automatisch een betaalmuur.
+
+========================================
+6. KOSTENWAARBORG TIJDENS DE GRATIS FASE
+========================================
+
+Leg vast dat 24 maanden gratis gebruik niet betekent dat kosten onbeheerst mogen oplopen.
+
+Meet vanaf het begin minimaal:
+
+- totale infrastructuurkosten;
+- AI-kosten per actieve renner;
+- kosten per geïmporteerde activiteit;
+- kosten per analyse;
+- kosten per chatinteractie;
+- kosten per zware voorspelling;
+- cache-hitratio;
+- supporttijd en supportkosten per actieve renner;
+- kosten per cohort;
+- ontwikkeling van kosten bij groei.
+
+Voor de start van de stabiele publieke bèta moeten een numeriek kostenbudget, doelkosten per actieve renner en waarschuwingsgrenzen worden vastgesteld.
+
+Een kostenoverschrijding activeert in deze volgorde:
+
+1. Dubbele of overbodige modelaanroepen verwijderen.
+2. Resultaten cachen en identieke berekeningen hergebruiken.
+3. Alleen opnieuw rekenen wanneer relevante brondata verandert.
+4. Berekeningen batchen waar directe verwerking niet nodig is.
+5. Eenvoudige, betrouwbare detecties uitvoeren met deterministische regels.
+6. Een goedkoper model uitsluitend gebruiken wanneer benchmarktests aantonen dat veiligheid, feitelijke juistheid en bruikbaarheid niet materieel achteruitgaan.
+7. Niet-kritieke experimenten en nieuwe featureontwikkeling tijdelijk bevriezen.
+8. Groei of onboarding van nieuwe gebruikers transparant vertragen wanneer verdere groei de bestaande kwaliteitsbelofte bedreigt.
+
+Kosten mogen nooit leiden tot:
+
+- stilzwijgende kwaliteitsverlaging;
+- minder nauwkeurige veiligheidsanalyse;
+- het weglaten van overbelasting- of blessuresignalen;
+- verzonnen of oppervlakkigere antwoorden die als gelijkwaardig worden gepresenteerd;
+- een verborgen frequentielimiet voor normaal gebruik;
+- een verkapte betaalmuur;
+- voortijdige betaling door renners;
+- slechtere dienstverlening voor bestaande renners zonder duidelijke communicatie.
+
+Technische beveiligings- en anti-misbruiklimieten zijn toegestaan wanneer ze uitsluitend abnormaal, geautomatiseerd of frauduleus gebruik raken. Ze mogen normaal gebruik door een renner niet beperken en mogen niet als commerciële schaarste worden ingezet.
+
+Wanneer optimalisatie onvoldoende is, wordt eerst nieuwe instroom of niet-kritieke uitbreiding beperkt. De bestaande veiligheids- en kwaliteitsbelofte aan renners wordt niet stilletjes uitgehold.
+
+========================================
+7. ANALYSEKWALITEIT EN KENNISNIVEAU
+========================================
+
+Sparki moet boven het actuele kennisniveau van de individuele renner opereren.
+
+Dat betekent:
+
+- basisuitleg voor beginners;
+- patronen en context voor gevorderden;
+- kwantificering, historische verbanden, uitzonderingen en onzekerheid voor ervaren renners zoals Dylan.
+
+Voeg bij analyses laagdrempelige feedback toe:
+
+- nuttig;
+- al bekend;
+- niet relevant;
+- onjuist.
+
+Definieer de opvolging:
+
+- “Nuttig” identificeert welk type inzicht waarde leverde.
+- “Al bekend” betekent dat de analyse correct maar te oppervlakkig was.
+- “Niet relevant” betekent dat de analyse onvoldoende aansloot op het doel of beslismoment.
+- “Onjuist” opent een kwaliteitsincident met ernstclassificatie.
+
+Combineer deze feedback met gedragsdata, waaronder:
+
+- vrijwillige openingen;
+- terugkeer na nieuwe analyses;
+- adviesopvolging;
+- gewijzigde trainingsbeslissingen;
+- correcties;
+- gebruik van Garmin, Strava of een coach naast Sparki.
+
+========================================
+8. GEZONDE RETENTIE
+========================================
+
+Behoud de bestaande retentie-wet:
+
+Toegestaan:
+- echte nieuwe inzichten;
+- relevante voortgang;
+- zinvolle trainings- en herstelherinneringen;
+- timing op ontvankelijkheid;
+- sociale waarde met toestemming.
+
+Verboden:
+- nep-urgentie;
+- nep-schaarste;
+- guilt-tripping;
+- strafstreaks;
+- variabele gokbeloningen;
+- oneindige feeds;
+- verborgen opt-outs;
+- notificaties zonder nieuwe waarde.
+
+Veiligheids- en gezondheidsmeldingen krijgen altijd voorrang boven commerciële of engagementlogica.
+
+========================================
+9. COMMERCIËLE HYPOTHESEN
+========================================
+
+Herschrijf onbewezen commerciële uitspraken als hypothesen.
+
+Dit geldt minimaal voor:
+
+- betalingsbereidheid van ouders;
+- betalingsbereidheid van coaches;
+- betalingsbereidheid van clubs;
+- lage churn;
+- mond-tot-mondgroei;
+- lage marginale kosten;
+- bijna nul acquisitiekosten via clubs;
+- één kind dat één of twee betalende ouders oplevert;
+- “Premium verkoopt zichzelf”;
+- een gemiddelde klantduur van twee jaar.
+
+Coach- en clubfunctionaliteit mag tijdens de gratis rennerfase afzonderlijk in betaalde pilots worden getest, mits:
+
+- de renner geen functionaliteit verliest;
+- het een afzonderlijke waarde voor coach of organisatie betreft;
+- privacy en toestemming aantoonbaar zijn geregeld;
+- veiligheidsvoordelen niet worden verkocht;
+- pilotresultaten als hypothesetoets worden behandeld.
+
+========================================
+10. BESLISMOMENT NA 24 MAANDEN
+========================================
+
+Een betaalmodel wordt na 24 maanden alleen overwogen wanneer aantoonbaar is dat:
+
+- de kernloop betrouwbaar werkt;
+- renners Sparki vrijwillig openen;
+- Sparki bruikbare beslissingen oplevert;
+- Sparki iets toevoegt ten opzichte van Garmin en Strava;
+- gebruikers structureel terugkomen zonder dark patterns;
+- kosten per actieve renner beheersbaar zijn;
+- support schaalbaar is;
+- daadwerkelijke betalingsbereidheid bestaat;
+- duidelijk is welke kernwaarde gratis blijft;
+- vroege gebruikers een eerlijke overgang krijgen.
+
+Een groot ledenaantal is op zichzelf onvoldoende bewijs.
+
+Veiligheidsfuncties, privacybeheer, toegang tot eigen data, data-export en het verwijderen van een account blijven ook na de validatiefase gratis.
+
+========================================
+11. OPLEVERING
+========================================
+
+Lever op:
+
+1. Eén geïntegreerd en opgeschoond strategiedocument.
+2. Een changelog met inhoudelijke keuzes en verwijderde tegenstrijdigheden.
+3. Een tabel met:
+   - bewezen;
+   - hypothese;
+   - nog onbekend.
+4. De fasering:
+   - Vertrouwensvloer;
+   - Unieke waarde;
+   - Gezonde retentie;
+   - Schaalbaarheid;
+   - Betalingsvalidatie;
+   - Eventueel verdienmodel.
+5. Een afzonderlijke technische ticketlijst voor:
+   - release-poort;
+   - synthetische referentierenners;
+   - productie-monitoring;
+   - analysefeedback;
+   - kosteninstrumentatie;
+   - kostenwaarschuwingen.
+6. Een expliciete lijst van alle Premium-limieten uit de oude strategie die voor de eerste 24 maanden zijn verwijderd.
+
+Implementeer nog niets. Lever eerst het herziene document ter beoordeling op.
