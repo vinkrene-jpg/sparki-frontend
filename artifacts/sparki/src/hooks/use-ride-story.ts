@@ -56,9 +56,51 @@ export type RideStory = {
   predictionAvailable: boolean;
 };
 
+export type RaceDayWeather = {
+  available: boolean;
+  reason: "ok" | "too_far" | "no_location" | "geocode_failed" | "no_forecast";
+  locationLabel: string | null;
+  weather: {
+    label: string;
+    tempMinC: number | null;
+    tempMaxC: number | null;
+    apparentMinC: number | null;
+    apparentMaxC: number | null;
+    precipMm: number | null;
+    snowfallCm: number | null;
+    windMaxKmh: number | null;
+    precipProbMaxPct: number | null;
+  } | null;
+  advisory: {
+    severity: "ok" | "caution" | "severe";
+    headline: string;
+    detail: string;
+    suggestion: string | null;
+  } | null;
+};
+
+export type RaceDayPayload = {
+  race: {
+    id: number;
+    name: string;
+    raceDate: string;
+    startTime: string | null;
+    location: string | null;
+    discipline: string | null;
+    raceType: string | null;
+    distanceKm: string | null;
+    notes: string | null;
+    coachInstructions: string | null;
+    course: string | null;
+  };
+  weather: RaceDayWeather | null;
+};
+
 export type RideMoment = {
   suppressed: boolean;
   suppressReason: "health" | null;
+  phase: "racedag" | "verwerken" | "na-rit" | null;
+  raceDay: RaceDayPayload | null;
   story: RideStory | null;
   sync: SyncStatus;
 };

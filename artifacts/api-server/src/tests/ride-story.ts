@@ -106,9 +106,16 @@ function hoursAgo(h: number): Date {
   return new Date(Date.now() - h * 60 * 60 * 1000);
 }
 
+// Must match the backend's Amsterdam calendar day (amsterdamToday in
+// routes/ride-story.ts) — a server-local date flips around midnight on a
+// non-Amsterdam host and makes the race-day scenarios flaky.
 function isoToday(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Amsterdam",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }
 
 async function seedSession(
@@ -449,6 +456,64 @@ async function main() {
         }),
       });
       assert(r.status === 200, `owner with valid context expected 200, got ${r.status}`);
+    },
+  );
+
+  // 9 ── Racedag-fasen: RACEDAG → RIT-BINNEN → NA-RIT ─────────────────────────
+  await scenario(
+    "moment phases: race today w/o activity → racedag (no invented weather); pending import → verwerken; analysed today-ride displaces → na-rit",
+    async () => {
+      // Make every earlier import stale so the race day starts clean.
+      await db
+        .update(connectorActivitiesTable)
+        .set({ importedAt: hoursAgo(30) })
+        .where(eq(connectorActivitiesTable.clerkId, clerkId));
+
+      const [race] = await db
+        .insert(racesTable)
+        .values({
+          clerkId,
+          name: "46e Wielerronde van Testdorp",
+          raceDate: isoToday(),
+          startTime: "15:30",
+          distanceKm: "90",
+          raceType: "criterium",
+          notes: "56 rondes",
+          // location intentionally absent → weather must stay null (honest).
+        })
+        .returning({ id: racesTable.id });
+
+      // Phase 1 — RACEDAG: race today, no fresh activity.
+      let r = await api("/api/ride-story/moment");
+      assert(r.body.phase === "racedag", `expected racedag, got ${r.body.phase}`);
+      assert(r.body.story === null, "racedag must carry no story");
+      assert(r.body.raceDay?.race?.name === "46e Wielerronde van Testdorp",
+        "racedag must carry the real race row");
+      assert(r.body.raceDay.race.startTime === "15:30" && r.body.raceDay.race.notes === "56 rondes",
+        "racedag must expose the real known fields");
+      assert(r.body.raceDay.weather === null,
+        "without a location the weather must be null — never invented");
+      assert(r.body.sync != null, "racedag payload must keep the honest sync status");
+
+      // Phase 2 — RIT-BINNEN: an import arrived but no session row yet.
+      await seedActivity(null, hoursAgo(0));
+      r = await api("/api/ride-story/moment");
+      assert(r.body.phase === "verwerken", `expected verwerken, got ${r.body.phase}`);
+      assert(r.body.story === null, "verwerken must carry no story yet");
+      assert(r.body.raceDay != null, "verwerken keeps the race context");
+
+      // Phase 3 — NA-RIT: the analysed today-ride displaces the racedag block.
+      const raceRide = await seedSession({ tss: 95, durationMin: 130, title: "Wedstrijdrit" });
+      await seedActivity(raceRide, hoursAgo(0));
+      r = await api("/api/ride-story/moment");
+      assert(r.body.phase === "na-rit", `expected na-rit, got ${r.body.phase}`);
+      assert(r.body.story?.session?.id === raceRide,
+        "na-rit must lead with the fresh race ride");
+      assert(r.body.story.consequence.status === "wedstrijd",
+        `race-day story expected consequence wedstrijd, got ${r.body.story?.consequence?.status}`);
+      assert(r.body.raceDay === null, "a fresh race ride must displace the racedag block");
+
+      await db.delete(racesTable).where(eq(racesTable.id, race!.id));
     },
   );
 

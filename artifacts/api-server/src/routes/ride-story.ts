@@ -16,7 +16,7 @@
 //   is suppressed (`suppressed: true`) so the existing health surface leads.
 
 import { Router, type Request, type Response } from "express";
-import { and, desc, eq, gte, isNotNull, lt } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, isNull, lt } from "drizzle-orm";
 import {
   db,
   athleteProfilesTable,
@@ -32,8 +32,20 @@ import {
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { assessConsequence, type ConsequenceResult } from "../lib/ride-story";
+import { getRaceWeather, type RaceWeather } from "../lib/weather/race";
 
 const router = Router();
+
+// "Vandaag" for a Dutch athlete means the Amsterdam calendar day — never the
+// UTC date (see local-date trap: toISOString flips the day around midnight).
+export function amsterdamToday(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Amsterdam",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
 
 // A ride counts as "fresh" (drives the NA-RIT moment) when it was imported
 // into the hub within this window.
@@ -276,6 +288,28 @@ router.get("/sync-status", requireAuth, async (req: Request, res: Response) => {
   }
 });
 
+// RACEDAG payload — only real race-row fields, never invented content.
+// Weather is attached ONLY when both location and start time are known
+// (and even then the weather engine stays honest about geocode/forecast gaps).
+type RaceDayPayload = {
+  race: {
+    id: number;
+    name: string;
+    raceDate: string;
+    startTime: string | null;
+    location: string | null;
+    discipline: string | null;
+    raceType: string | null;
+    distanceKm: string | null;
+    notes: string | null;
+    coachInstructions: string | null;
+    course: string | null;
+  };
+  weather: RaceWeather | null;
+};
+
+type MomentPhase = "racedag" | "verwerken" | "na-rit" | null;
+
 router.get("/moment", requireAuth, async (req: Request, res: Response) => {
   const clerkId = getClerkUserId(req)!;
   try {
@@ -291,8 +325,33 @@ router.get("/moment", requireAuth, async (req: Request, res: Response) => {
     const healthStatus = profileRows[0]?.healthStatus ?? "ok";
     const suppressed = healthStatus === "sick" || healthStatus === "injured";
 
-    // Freshest hub-imported ride within the window that produced a session.
+    if (suppressed) {
+      // Safety first: sick/injured → the health surface leads, also on race day.
+      res.json({
+        suppressed: true,
+        suppressReason: "health" as const,
+        phase: null as MomentPhase,
+        raceDay: null,
+        story: null,
+        sync,
+      });
+      return;
+    }
+
+    const today = amsterdamToday();
     const cutoff = new Date(Date.now() - FRESH_WINDOW_HOURS * 60 * 60 * 1000);
+
+    // Race on the calendar for today (Amsterdam)?
+    const [raceToday] = await db
+      .select()
+      .from(racesTable)
+      .where(
+        and(eq(racesTable.clerkId, clerkId), eq(racesTable.raceDate, today)),
+      )
+      .orderBy(racesTable.priority, racesTable.startTime, racesTable.id)
+      .limit(1);
+
+    // Freshest hub-imported ride within the window that produced a session.
     const [fresh] = await db
       .select({ sessionId: connectorActivitiesTable.normalizedSessionId })
       .from(connectorActivitiesTable)
@@ -306,33 +365,94 @@ router.get("/moment", requireAuth, async (req: Request, res: Response) => {
       .orderBy(desc(connectorActivitiesTable.importedAt))
       .limit(1);
 
-    if (suppressed || !fresh?.sessionId) {
-      res.json({
-        suppressed,
-        suppressReason: suppressed ? "health" : null,
-        story: null,
-        sync,
-      });
-      return;
+    let story: StoryPayload | null = null;
+    if (fresh?.sessionId) {
+      const [session] = await db
+        .select()
+        .from(trainingSessionsTable)
+        .where(
+          and(
+            eq(trainingSessionsTable.id, fresh.sessionId),
+            eq(trainingSessionsTable.clerkId, clerkId),
+          ),
+        )
+        .limit(1);
+      if (session) story = await buildStory(clerkId, session);
     }
 
-    const [session] = await db
-      .select()
-      .from(trainingSessionsTable)
-      .where(
-        and(
-          eq(trainingSessionsTable.id, fresh.sessionId),
-          eq(trainingSessionsTable.clerkId, clerkId),
-        ),
-      )
-      .limit(1);
-    if (!session) {
-      res.json({ suppressed: false, suppressReason: null, story: null, sync });
-      return;
+    let phase: MomentPhase = story ? "na-rit" : null;
+    let raceDay: RaceDayPayload | null = null;
+
+    if (raceToday) {
+      // A fresh ride that STARTED today displaces the racedag block: once the
+      // race activity is in, the story leads. A ride from before today (e.g.
+      // yesterday evening's opener) does not displace it.
+      const storyIsToday =
+        story != null && story.session.sessionDate === today;
+
+      if (storyIsToday) {
+        phase = "na-rit";
+      } else {
+        // RIT-BINNEN: a fresh import that has NO session row yet AND belongs
+        // to the race day itself (Amsterdam calendar day of the ride start —
+        // falling back to arrival time). A late-processed import from
+        // yesterday must never read as "je wedstrijdrit is binnen".
+        const pendingCandidates = await db
+          .select({
+            startedAt: connectorActivitiesTable.startedAt,
+            importedAt: connectorActivitiesTable.importedAt,
+          })
+          .from(connectorActivitiesTable)
+          .where(
+            and(
+              eq(connectorActivitiesTable.clerkId, clerkId),
+              gte(connectorActivitiesTable.importedAt, cutoff),
+              isNull(connectorActivitiesTable.normalizedSessionId),
+            ),
+          )
+          .orderBy(desc(connectorActivitiesTable.importedAt))
+          .limit(10);
+        const hasPendingImport = pendingCandidates.some((p) => {
+          const at = p.startedAt ?? p.importedAt;
+          return at != null && amsterdamToday(at) === today;
+        });
+
+        phase = hasPendingImport ? "verwerken" : "racedag";
+
+        // Weather only when BOTH location and start time are truly known.
+        const weather =
+          raceToday.location && raceToday.startTime
+            ? await getRaceWeather(raceToday.location, raceToday.raceDate)
+            : null;
+
+        raceDay = {
+          race: {
+            id: raceToday.id,
+            name: raceToday.name,
+            raceDate: raceToday.raceDate,
+            startTime: raceToday.startTime,
+            location: raceToday.location,
+            discipline: raceToday.discipline,
+            raceType: raceToday.raceType,
+            distanceKm: raceToday.distanceKm,
+            notes: raceToday.notes,
+            coachInstructions: raceToday.coachInstructions,
+            course: raceToday.course,
+          },
+          weather,
+        };
+        if (phase === "verwerken") story = null;
+      }
     }
 
-    const story = await buildStory(clerkId, session);
-    res.json({ suppressed: false, suppressReason: null, story, sync });
+    res.json({
+      suppressed: false,
+      suppressReason: null,
+      phase,
+      raceDay,
+      story: phase === "racedag" || phase === "verwerken" ? null : story,
+      sync,
+    });
   } catch (err) {
     req.log.error({ err }, "ride-story.moment failed");
     res.status(500).json({ error: "Na-rit moment ophalen mislukt" });
