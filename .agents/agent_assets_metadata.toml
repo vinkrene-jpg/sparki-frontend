@@ -461,3 +461,9 @@ id = "nQQauwk-IonF-dDGNDX84"
 uri = "file://SPARKI-STRATEGIE.md"
 type = "text"
 title = "Sparki-strategie (eerder opgesteld)"
+
+[[outputs]]
+id = "J7hFoJ3OIs4JjwkeRP8bW"
+uri = "file://docs/product/NIEUWE_KERNERVARING.md"
+type = "text"
+title = "Ontwerp: nieuwe kernervaring voor de renner"
