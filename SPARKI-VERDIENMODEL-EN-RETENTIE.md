@@ -74,6 +74,42 @@ De wielermarkt (jeugd) is een **niche**: relatief klein, prijsgevoelig bij de re
 
 > Prijzen zijn richtpunten om mee te starten en te testen, geen definitieve tarieven.
 
+### Wat zit waar — en waar de schaalbaarheid zit
+
+| Onderdeel | Gratis (Renner) | Renner Premium | Ouder-inzicht | Coach | Club/Team |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Account, profiel, doelen | ✔ | ✔ | — | ✔ | ✔ |
+| Sportbron koppelen (Strava e.d.) + activiteiten-import | ✔ | ✔ | — | ✔ | ✔ |
+| Trainingsschema (3-weken-plan) + dagelijkse trainingsdag | ✔ | ✔ | — | ✔ | ✔ |
+| Basis-inzicht per rit + wekelijkse voortgang | ✔ | ✔ | — | ✔ | ✔ |
+| Wedstrijdkalender-import + eigen wedstrijden | ✔ | ✔ | — | ✔ | ✔ |
+| Meldingen & "er is iets nieuws" (gezonde pull) | ✔ | ✔ | ✔ | ✔ | ✔ |
+| Vraag Sparki (chat) — basis | ✔ | ✔ | — | ✔ | ✔ |
+| Diepe sessie-analyse & terugkerende patronen | — | ✔ | — | ✔ | ✔ |
+| Levend Core-profiel + Ontwikkelkompas (langetermijn) | — | ✔ | — | ✔ | ✔ |
+| Voedingscoach + seizoensdoel (17+) | — | ✔ | — | ✔ | ✔ |
+| Wedstrijd-intelligentie (voorbereiding, voeding, nabespreking) | — | ✔ | — | ✔ | ✔ |
+| Materiaalcoach (foto-advies) & documentanalyse (wedstrijdgids) | — | ✔ | — | ✔ | ✔ |
+| Core-voorspelling per training (vooraf/achteraf) | — | ✔ | — | ✔ | ✔ |
+| Ouder-venster met deelniveaus (privacy-gated) | — | — | ✔ | — | ✔ |
+| Meldingen over het kind (gezondheid altijd, rest per deelniveau) | — | — | ✔ | — | ✔ |
+| Roster-overzicht meerdere renners | — | — | — | ✔ | ✔ |
+| Advies-schema's voorstellen & overnemen per renner | — | — | — | ✔ | ✔ |
+| Gedeelde context & privé-notities per renner | — | — | — | ✔ | ✔ |
+| Alle leden + coaches onder één afspraak, clubbeheer | — | — | — | — | ✔ |
+
+**Waar de schaalbaarheid zit (de hefboom per laag):**
+
+| Laag | Hefboom | Waarom het schaalt |
+|---|---|---|
+| Gratis | **Groeikanaal** | Elke renner kost bijna niets extra (analyses gecachet, alleen rekenen bij nieuwe data) en brengt via mond-tot-mond nieuwe gebruikers binnen. |
+| Renner Premium | **Per gebruiker** | Lineair: elke upgrade is directe marge, geen extra begeleidingskosten. |
+| Ouder | **1 kind → 1–2 betalers** | De renner zelf betaalt niets, maar brengt vaak één of twee betalende ouders mee. |
+| Coach | **1 coach → N renners** | Eén betalende coach activeert z'n hele roster; per-renner-staffel laat de prijs meegroeien met zijn succes. |
+| Club/Team | **1 deal → tientallen gebruikers** | Grootste hefboom: één verkoopgesprek levert een hele club aan actieve renners, ouders én coaches — tegen vrijwel nul acquisitiekosten per gebruiker. |
+
+De piramide is bewust: onderaan gratis volume (groei), bovenaan steeds grotere hefbomen per verkochte eenheid. Hoe hoger in de tabel je verkoopt, hoe minder verkoopinspanning per actieve gebruiker.
+
 ---
 
 ## 4. Waarom dit financieel wérkt
