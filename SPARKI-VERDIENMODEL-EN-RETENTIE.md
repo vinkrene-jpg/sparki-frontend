@@ -44,7 +44,13 @@ Als het antwoord "truc" is, bouwen we het niet. Urgente/gezondheids-meldingen (b
 
 ## 3. Het verdienmodel — realistisch en haalbaar
 
-De wielermarkt (jeugd) is een **niche**: relatief klein, prijsgevoelig bij de renner zelf. De sleutel is dat **niet de jeugdrenner de hoofdbetaler is**, maar de mensen om hem heen die waarde én budget hebben: **ouders, coaches en clubs**. De renner krijgt genoeg gratis waarde om te blijven; het geld komt van wie er baat bij heeft dat de renner goed begeleid wordt.
+> **BESLOTEN (12 juli 2026): de renner betaalt voorlopig níéts.**
+> **Fase 1 (nu → bewezen werking, richtjaar ~2 jaar):** álles is gratis voor renners — inclusief materiaalcoach, diepe sessie-analyse, voedingscoach en wedstrijd-intelligentie. Eerst bewijzen dat Sparki werkt en een grote gratis ledenbasis opbouwen. De enige betaalde abonnementen in deze fase zijn **Coach** en **Ouder-inzicht** — en die worden pas commercieel geactiveerd nadat hun waarde in een betaalde pilot is aangetoond (fase B/C uit het bewijsplan).
+> **Fase 2 (pas ná bewijs en veel gratis leden):** langzaam en transparant onderdelen voor renners achter een betaalmuur — volgens het proef-model verderop in dit document, dat tot die tijd een *hypothese* is, geen plan.
+>
+> **Harde randvoorwaarde voor fase 2 (vertrouwensbescherming):** wie in de gratis jaren lid werd, mag zich nooit bedrogen voelen. Dat betekent: (a) vanaf dag één eerlijk communiceren dat de app "gratis tijdens de opbouwfase" is, zodat een latere betaalmuur geen woordbreuk is; (b) ruime overgangsregeling of blijvend voordeel voor vroege leden (grandfathering); (c) veiligheids- en gezondheidssignalen blijven áltijd gratis, ook in fase 2.
+
+De wielermarkt (jeugd) is een **niche**: relatief klein, prijsgevoelig bij de renner zelf. De sleutel is dat **niet de jeugdrenner de hoofdbetaler is**, maar de mensen om hem heen die waarde én budget hebben: **ouders, coaches en clubs**. De renner krijgt de volle waarde gratis; het geld komt van wie er baat bij heeft dat de renner goed begeleid wordt.
 
 ### Doelgroepen & wie betaalt
 
@@ -55,28 +61,27 @@ De wielermarkt (jeugd) is een **niche**: relatief klein, prijsgevoelig bij de re
 | Coach | Tijd besparen, meer renners aankunnen, betere begeleiding | **Hoog** (het is z'n werk/passie) |
 | Club / team / federatie | Talent ontwikkelen, uniforme aanpak, ledenbinding | **Hoog** (B2B, schaalbaar) |
 
-### Voorgestelde lagen (indicatieve prijzen, NL/EU)
+### De lagen in fase 1 (nu)
 
-1. **Gratis — "Renner"** (acquisitie-motor)
-   Het echte Sparki, met eerlijke grenzen: volledig trainingsschema, activiteiten koppelen (Strava e.d.), coaching-oordeel op élke rit, en een proef van de onderscheidende intelligentie (wedstrijd-voorbereiding voor je A-doelen, materiaalcheck, dagelijkse voedingsbasis). Bewust duidelijk béter dan een gratis Strava/Garmin-account — het is je groeikanaal, geen uitgeklede lokker.
+1. **Renner — gratis, volledig** (groei- en bewijsmotor)
+   Alles wat de app kan: schema, koppeling, sessie-analyse, materiaalcoach, voedingscoach, wedstrijd-intelligentie, Core-profiel, voorspellingen. Geen limieten, geen betaalmuur. Doel: bewijzen dat het werkt en een grote, enthousiaste ledenbasis opbouwen. Communicatie vanaf dag één: "gratis tijdens de opbouwfase".
 
-2. **Renner Premium — ~€6/mnd of ~€59/jaar**
-   Haalt de grenzen eraf en voegt het langetermijn-geheugen toe: onbeperkte wedstrijd-intelligentie en materiaalcoach, volledig voedingsplan + seizoensdoel, trends en Ontwikkelkompas over maanden, Core-voorspelling bij elke training. Voor de gemotiveerde renner die de waarde al geproefd heeft.
+2. **Coach — hypothese ~€29/mnd tot een afgesproken rosteromvang**
+   Verkocht op aantoonbare productiviteit: renners-die-aandacht-nodig-hebben-overzicht, advies-schema's met onderbouwing (accepteren/aanpassen/afwijzen), gedeelde context. Commercieel activeren pas na een betaalde pilot die tijdsbesparing of kwaliteitswinst aantoont.
 
-3. **Ouder-inzicht — ~€4/mnd, of gratis meegeleverd bij Premium**
-   Veilig, privacy-gated venster op de training van het kind (afgestemde deelniveaus die er al zijn). Gemoedsrust als product. Vaak de laagdrempeligste eerste betaler.
+3. **Ouder-inzicht — prijs en vorm nog niet vastleggen**
+   Eerst valideren wat ouders werkelijk willen én wat de renner passend vindt (deelniveaus, geen surveillance). Waarde = geruststelling en afstemming, niet controle. Prijs volgt uit die validatie.
 
-4. **Coach — ~€4–5 per gekoppelde renner/mnd, met staffel** (bijv. flat ~€29/mnd tot 10 renners, daarna per renner)
-   De coach begeleidt méér renners in minder tijd: advies-schema's, roster-overzicht, gedeelde context. Hoogste betalingsbereidheid, want het is direct rendement op zijn tijd.
+4. **Club / team / federatie — hypothese ~€250–750/jaar, pas na bewezen coachwaarde**
+   Eén deal = tientallen gebruikers; het schaalbare B2B-spoor. Start pas als de coachlaag zich bewezen heeft en onboarding herhaalbaar is.
 
-5. **Club / team / federatie — B2B, ~€250–750/jaar per club** (afhankelijk van omvang)
-   Alle renners + coaches van een club onder één afspraak, uniforme aanpak, talentontwikkeling. Dit is de **schaalbare** hefboom: één deal = tientallen actieve gebruikers. Denk clubs, regionale selecties, op termijn een KNWU-achtige partner.
+> Alle bedragen zijn hypotheses om in pilots te testen, geen vastgestelde tarieven.
 
-> Prijzen zijn richtpunten om mee te starten en te testen, geen definitieve tarieven.
+### Fase 2 (hypothese, pas ná bewijs): Renner Premium via het proef-model
 
-### Wat zit waar — en waar de schaalbaarheid zit
+Als na de gratis opbouwfase blijkt dat Sparki werkt en de ledenbasis groot genoeg is, kan een Renner Premium-laag (~€6/mnd of ~€59/jaar) langzaam worden geïntroduceerd volgens het onderstaande proef-model. Tot dat moment is deze tabel **uitdrukkelijk een hypothese** — hij ligt op de plank en wordt getoetst aan wat gebruikers dan werkelijk waarderen.
 
-**Het tiering-principe: gratis proef je het échte, betaald krijg je het onbeperkt en dieper.**
+**Het tiering-principe (voor fase 2): gratis proef je het échte, betaald krijg je het onbeperkt en dieper.**
 De meerwaarde van Sparki tegenover een gratis Strava/Garmin-account is dat Sparki *oordeelt en coacht* — niet alleen data toont. Die intelligentie mag dus NIET volledig achter de betaalmuur: dan is de gratis laag inwisselbaar en proeft niemand ooit het verschil. Daarom is de grens niet "welke feature", maar **diepte en frequentie**: elke onderscheidende functie is gratis écht bruikbaar (geen uitgeklede demo), Premium haalt de begrenzing eraf en voegt het langetermijn-geheugen toe. Grenzen zijn altijd transparant en eerlijk gecommuniceerd ("je hebt 1 van 2 wedstrijd-analyses dit seizoen gebruikt"), nooit een verrassing achteraf.
 
 | Onderdeel | Gratis (Renner) | Renner Premium | Coach | Club/Team |
@@ -93,7 +98,7 @@ De meerwaarde van Sparki tegenover een gratis Strava/Garmin-account is dat Spark
 | Documentanalyse (wedstrijdgids inlezen) | Bij je 2 A-wedstrijden | ✔ onbeperkt | ✔ | ✔ |
 | Wedstrijdkalender-import + eigen wedstrijden | ✔ volledig | ✔ | ✔ | ✔ |
 | Vraag Sparki (chat) + meldingen (gezonde pull) | ✔ | ✔ | ✔ | ✔ |
-| Ouder-venster met deelniveaus + meldingen over het kind | *(Ouder-abonnement, ~€4/mnd)* | idem | — | ✔ |
+| Ouder-venster met deelniveaus + meldingen over het kind | *(Ouder-abonnement, prijs nog te valideren)* | idem | — | ✔ |
 | Roster-overzicht, advies-schema's overnemen, notities per renner | — | — | ✔ | ✔ |
 | Alle leden + coaches onder één afspraak, clubbeheer | — | — | — | ✔ |
 
@@ -107,7 +112,7 @@ De meerwaarde van Sparki tegenover een gratis Strava/Garmin-account is dat Spark
 | Laag | Hefboom | Waarom het schaalt |
 |---|---|---|
 | Gratis | **Groeikanaal** | Elke renner kost bijna niets extra (analyses gecachet, alleen rekenen bij nieuwe data) en brengt via mond-tot-mond nieuwe gebruikers binnen. |
-| Renner Premium | **Per gebruiker** | Lineair: elke upgrade is directe marge, geen extra begeleidingskosten. |
+| Renner Premium *(fase 2)* | **Per gebruiker** | Lineair: elke upgrade is directe marge, geen extra begeleidingskosten. |
 | Ouder | **1 kind → 1–2 betalers** | De renner zelf betaalt niets, maar brengt vaak één of twee betalende ouders mee. |
 | Coach | **1 coach → N renners** | Eén betalende coach activeert z'n hele roster; per-renner-staffel laat de prijs meegroeien met zijn succes. |
 | Club/Team | **1 deal → tientallen gebruikers** | Grootste hefboom: één verkoopgesprek levert een hele club aan actieve renners, ouders én coaches — tegen vrijwel nul acquisitiekosten per gebruiker. |
@@ -116,14 +121,14 @@ De piramide is bewust: onderaan gratis volume (groei), bovenaan steeds grotere h
 
 ---
 
-## 4. Waarom dit financieel wérkt
+## 4. Waarom dit financieel kán werken — en wat eerst bewezen moet worden
 
-- **Retentie ís het verdienmodel.** Bij abonnementen bepaalt vasthouden (lage churn) vrijwel alles. En eerlijke, op-resultaat-gebaseerde waarde geeft juist lage churn: mensen zeggen niet op wat hen aantoonbaar beter maakt. De dark patterns die we weglaten, verhogen juist churn op termijn (irritatie, wantrouwen).
+- **Retentie is geen verdienmodel, maar bepaalt wél de levensduur van elke klantrelatie.** Het verdienmodel beschrijft wie betaalt, waarvoor en hoeveel; retentie bepaalt hoe lang. Eerlijke, op-resultaat-gebaseerde waarde geeft naar verwachting lage churn — maar dat is een hypothese die gemeten moet worden, geen gegeven.
 - **Betaler ≠ eindgebruiker.** Doordat ouders/coaches/clubs betalen en de jeugdrenner gratis blijft, is de niche-prijsgevoeligheid van de renner geen blokkade. De gratis laag is het groeikanaal; de betaalde lagen zitten waar het budget zit.
 - **Lage marginale kosten.** Software schaalt: elke extra club/coach kost weinig extra. De grootste variabele kost is de reken-/denkkracht per gebruiker — te beheersen door zware analyses te cachen en alleen te draaien als er nieuwe data is (patroon dat al in de app zit).
 - **B2B als versneller.** Één clubdeal levert veel actieve gebruikers tegen lage acquisitiekosten (via de club, niet één-voor-één adverteren). Dat drukt de kosten om een klant te winnen fors.
 
-**De simpele redenering:** als een coach €29/mnd betaalt en gemiddeld 2+ jaar blijft omdat het hem echt tijd/resultaat oplevert, verdien je die klant ruim terug — zónder één truc. Dat is het bewijs dat eerlijk niet "waardeloos" hoeft te zijn.
+**Wat per betaalde laag eerst gemeten moet worden** (vóór commercieel activeren): omzet per klant, churn, directe leveringskosten (denkkracht, opslag, externe diensten), support- en onboardingkosten, acquisitiekosten en terugverdientijd. Een redenering als "een coach van €29/mnd die 2 jaar blijft verdient zich ruim terug" is pas geldig nadat die variabelen uit een betaalde pilot komen — niet uit een aanname.
 
 ---
 
@@ -139,11 +144,13 @@ De piramide is bewust: onderaan gratis volume (groei), bovenaan steeds grotere h
 ## 6. Concrete eerste stappen
 
 1. **Leg de retentie-wet (sectie 2) vast** als product-principe in `replit.md`, zodat elke sprint eraan getoetst wordt.
-2. **Bouw de betaal-laag pas ná bewezen waarde**: eerst zichtbaar maken dat de app renners meetbaar verder helpt (voortgang, resultaten), dán de abonnementen aanzetten. Betalen voor bewezen waarde is eerlijk; betalen voor een belofte niet.
-3. **Begin met de laagdrempeligste betaler**: ouder-inzicht en coach, want daar zit bereidheid én snel rendement. Club/B2B parallel opstarten (langere adem).
-4. **Meet de juiste dingen**: retentie/churn en of gebruikers écht beter worden — niet schermtijd. De metriek volgt het principe.
+2. **Renner blijft volledig gratis** gedurende de opbouwfase — geen limieten, geen betaalmuur. Communiceer vanaf dag één eerlijk "gratis tijdens de opbouwfase", zodat een latere betaalstap geen woordbreuk is.
+3. **Bewijs eerst de kernwaarde bij renners** (vrijwillig terugkomen voor inzichten die Strava/Garmin niet geven), en bouw daarvoor de meetinstrumentatie: per analyse vastleggen geopend / nuttig / al bekend / onjuist / actie genomen. Zonder die meting valt niets te bewijzen.
+4. **Coach en ouder zijn de eerste betaalde abonnementen** — maar pas commercieel actief na een betaalde pilot die de waarde aantoont (coach: tijdsbesparing; ouder: geruststelling zonder surveillance). Club/B2B daarna (langere adem).
+5. **Renner Premium (fase 2) pas na ~2 succesvolle jaren en een grote gratis ledenbasis** — via het proef-model, langzaam, transparant en met een ruime regeling voor vroege leden.
+6. **Meet de juiste dingen**: bruikbare trainingsbeslissingen per renner per week, retentie/churn, en of gebruikers écht beter worden — niet schermtijd.
 
 ---
 
 ### Samengevat
-We kiezen bewust een derde spoor: **hoge retentie via echte waarde + een verdienmodel dat op resultaat rust, niet op aandacht.** Eerlijkheid is hier geen offer maar het verschil dat je verkoopt. Het is haalbaar omdat de betalers (ouders, coaches, clubs) waarde én budget hebben, en omdat vertrouwen precies de lage churn oplevert waar een abonnementsmodel op draait.
+We kiezen bewust een derde spoor: **hoge retentie via echte waarde + een verdienmodel dat op resultaat rust, niet op aandacht.** De volgorde is besloten: **de renner betaalt voorlopig niets** — eerst met een volledig gratis app bewijzen dat Sparki werkt en een grote ledenbasis opbouwen. Het geld komt in deze fase (na betaalde pilots) van **coaches en ouders**, later van clubs, en pas ná bewezen succes eventueel van een Renner Premium-laag — langzaam, transparant en zonder vroege leden te bruuskeren. Eerlijkheid is hier geen offer maar het verschil dat je verkoopt.

@@ -29,6 +29,13 @@ Laatst bijgewerkt: 2026-06-29.
 10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav.
 
 ## Beslist (archief)
+- **2026-07-12 — Verdienmodel-volgorde:** de renner betaalt voorlopig NIETS — alles
+  (incl. materiaalcoach, diepe analyse, voeding, wedstrijd-intelligentie) is gratis
+  tijdens de opbouwfase (richtjaar ~2 jaar): eerst bewijzen dat het werkt + grote
+  gratis ledenbasis. Coach en Ouder-inzicht zijn de eerste betaalde abonnementen
+  (pas commercieel actief na betaalde pilot). Renner Premium is een fase-2-hypothese
+  (proef-model in `SPARKI-VERDIENMODEL-EN-RETENTIE.md`), met grandfathering voor
+  vroege leden en veiligheid/gezondheid altijd gratis.
 - **2026-07-11 — Terugkeer-drang / "pull-to-return":** gekozen voor een GEZONDE
   terugkeer-drang (elke keer echt iets nieuws & van jou), nadrukkelijk GEEN verslavende
   trucs (geen eindeloos scrollen/streak-angst/nep-nieuw/ijdelheid — schaadt juist jonge
