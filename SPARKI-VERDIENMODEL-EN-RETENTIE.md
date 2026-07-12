@@ -58,10 +58,10 @@ De wielermarkt (jeugd) is een **niche**: relatief klein, prijsgevoelig bij de re
 ### Voorgestelde lagen (indicatieve prijzen, NL/EU)
 
 1. **Gratis — "Renner"** (acquisitie-motor)
-   Kernwaarde die écht werkt: trainingsschema, activiteiten koppelen (Strava e.d.), basis-inzicht, doelen. Genoeg om te blijven en door te vertellen. Dit is bewust royaal — het is je groeikanaal, geen uitgeklede lokker.
+   Het echte Sparki, met eerlijke grenzen: volledig trainingsschema, activiteiten koppelen (Strava e.d.), coaching-oordeel op élke rit, en een proef van de onderscheidende intelligentie (wedstrijd-voorbereiding voor je A-doelen, materiaalcheck, dagelijkse voedingsbasis). Bewust duidelijk béter dan een gratis Strava/Garmin-account — het is je groeikanaal, geen uitgeklede lokker.
 
 2. **Renner Premium — ~€6/mnd of ~€59/jaar**
-   Diepere analyse, voedings-/herstel-begeleiding, wedstrijd-intelligentie, langetermijn-ontwikkelmodel. Voor de gemotiveerde (vaak oudere) renner die zelf investeert.
+   Haalt de grenzen eraf en voegt het langetermijn-geheugen toe: onbeperkte wedstrijd-intelligentie en materiaalcoach, volledig voedingsplan + seizoensdoel, trends en Ontwikkelkompas over maanden, Core-voorspelling bij elke training. Voor de gemotiveerde renner die de waarde al geproefd heeft.
 
 3. **Ouder-inzicht — ~€4/mnd, of gratis meegeleverd bij Premium**
    Veilig, privacy-gated venster op de training van het kind (afgestemde deelniveaus die er al zijn). Gemoedsrust als product. Vaak de laagdrempeligste eerste betaler.
@@ -76,27 +76,31 @@ De wielermarkt (jeugd) is een **niche**: relatief klein, prijsgevoelig bij de re
 
 ### Wat zit waar — en waar de schaalbaarheid zit
 
-| Onderdeel | Gratis (Renner) | Renner Premium | Ouder-inzicht | Coach | Club/Team |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Account, profiel, doelen | ✔ | ✔ | — | ✔ | ✔ |
-| Sportbron koppelen (Strava e.d.) + activiteiten-import | ✔ | ✔ | — | ✔ | ✔ |
-| Trainingsschema (3-weken-plan) + dagelijkse trainingsdag | ✔ | ✔ | — | ✔ | ✔ |
-| Basis-inzicht per rit + wekelijkse voortgang | ✔ | ✔ | — | ✔ | ✔ |
-| Wedstrijdkalender-import + eigen wedstrijden | ✔ | ✔ | — | ✔ | ✔ |
-| Meldingen & "er is iets nieuws" (gezonde pull) | ✔ | ✔ | ✔ | ✔ | ✔ |
-| Vraag Sparki (chat) — basis | ✔ | ✔ | — | ✔ | ✔ |
-| Diepe sessie-analyse & terugkerende patronen | — | ✔ | — | ✔ | ✔ |
-| Levend Core-profiel + Ontwikkelkompas (langetermijn) | — | ✔ | — | ✔ | ✔ |
-| Voedingscoach + seizoensdoel (17+) | — | ✔ | — | ✔ | ✔ |
-| Wedstrijd-intelligentie (voorbereiding, voeding, nabespreking) | — | ✔ | — | ✔ | ✔ |
-| Materiaalcoach (foto-advies) & documentanalyse (wedstrijdgids) | — | ✔ | — | ✔ | ✔ |
-| Core-voorspelling per training (vooraf/achteraf) | — | ✔ | — | ✔ | ✔ |
-| Ouder-venster met deelniveaus (privacy-gated) | — | — | ✔ | — | ✔ |
-| Meldingen over het kind (gezondheid altijd, rest per deelniveau) | — | — | ✔ | — | ✔ |
-| Roster-overzicht meerdere renners | — | — | — | ✔ | ✔ |
-| Advies-schema's voorstellen & overnemen per renner | — | — | — | ✔ | ✔ |
-| Gedeelde context & privé-notities per renner | — | — | — | ✔ | ✔ |
-| Alle leden + coaches onder één afspraak, clubbeheer | — | — | — | — | ✔ |
+**Het tiering-principe: gratis proef je het échte, betaald krijg je het onbeperkt en dieper.**
+De meerwaarde van Sparki tegenover een gratis Strava/Garmin-account is dat Sparki *oordeelt en coacht* — niet alleen data toont. Die intelligentie mag dus NIET volledig achter de betaalmuur: dan is de gratis laag inwisselbaar en proeft niemand ooit het verschil. Daarom is de grens niet "welke feature", maar **diepte en frequentie**: elke onderscheidende functie is gratis écht bruikbaar (geen uitgeklede demo), Premium haalt de begrenzing eraf en voegt het langetermijn-geheugen toe. Grenzen zijn altijd transparant en eerlijk gecommuniceerd ("je hebt 1 van 2 wedstrijd-analyses dit seizoen gebruikt"), nooit een verrassing achteraf.
+
+| Onderdeel | Gratis (Renner) | Renner Premium | Coach | Club/Team |
+|---|---|---|:---:|:---:|
+| Account, profiel, doelen, sportbron koppelen + import | ✔ volledig | ✔ | ✔ | ✔ |
+| Trainingsschema (3-weken-plan) + dagelijkse trainingsdag | ✔ volledig | ✔ | ✔ | ✔ |
+| Sessie-analyse (oordeel + uitleg per rit) | ✔ **elke rit, volledig** | ✔ | ✔ | ✔ |
+| Terugkerende patronen & trends over maanden | Laatste ~6 weken | ✔ onbeperkte historie | ✔ | ✔ |
+| Wedstrijd-intelligentie (voorbereiding, voeding, nabespreking) | ✔ **2 wedstrijden per seizoen** (je A-doelen) | ✔ onbeperkt | ✔ | ✔ |
+| Materiaalcoach (foto-advies) | ✔ **2 checks per jaar** | ✔ onbeperkt + kostenadvies | ✔ | ✔ |
+| Voedingscoach | ✔ dagelijkse basisadviezen rond training | ✔ volledig fueling-plan + seizoensdoel (17+) | ✔ | ✔ |
+| Levend Core-profiel | ✔ huidig beeld | ✔ + Ontwikkelkompas & evolutie (langetermijn) | ✔ | ✔ |
+| Core-voorspelling per training (vooraf/achteraf) | Proef: 1× per week | ✔ elke training | ✔ | ✔ |
+| Documentanalyse (wedstrijdgids inlezen) | Bij je 2 A-wedstrijden | ✔ onbeperkt | ✔ | ✔ |
+| Wedstrijdkalender-import + eigen wedstrijden | ✔ volledig | ✔ | ✔ | ✔ |
+| Vraag Sparki (chat) + meldingen (gezonde pull) | ✔ | ✔ | ✔ | ✔ |
+| Ouder-venster met deelniveaus + meldingen over het kind | *(Ouder-abonnement, ~€4/mnd)* | idem | — | ✔ |
+| Roster-overzicht, advies-schema's overnemen, notities per renner | — | — | ✔ | ✔ |
+| Alle leden + coaches onder één afspraak, clubbeheer | — | — | — | ✔ |
+
+**Waarom deze verdeling klopt:**
+- **Gratis is beter dan Strava/Garmin gratis** — je krijgt daadwerkelijk coaching-oordeel op elke rit, een echt schema, en je proeft materiaal-, voedings- en wedstrijd-intelligentie op de momenten die er het meest toe doen (je A-wedstrijden).
+- **Premium verkoopt zichzelf op het moment dat de waarde bewezen is**: wie z'n derde wedstrijd wil voorbereiden, z'n seizoenstrend wil zien of elke training een voorspelling wil, heeft het nut al ervaren. De upgrade is dan een logische stap, geen gok.
+- **De begrenzing is eerlijk**: limieten zijn frequentie/historie (echt schaars: rekenkracht en langetermijn-geheugen), geen kunstmatig kreupel gemaakte functies. Gezondheids- en veiligheidssignalen (overbelasting, blessurerisico) zijn **nooit** begrensd — die horen bij de zorgplicht, niet bij het verdienmodel.
 
 **Waar de schaalbaarheid zit (de hefboom per laag):**
 
