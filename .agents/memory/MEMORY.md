@@ -103,3 +103,4 @@
 - [Sparki per-session caps](sparki-session-caps.md) — plan engine caps single-session minutes per DayKind×experience; unrealistic weekly quota underfills honestly, never a 6h ride; wedstrijd keeps 360.
 - [Sparki engagement engine](sparki-engagement-engine.md) — healthy pull-to-return: learns real open rhythm from tester_events, honest default when thin; recency MUST come from opens not heartbeats (late beat else suppresses a due nudge); urgent/health never demoted.
 - [Sparki news freshness & ranking](sparki-news-freshness.md) — pipelines gated only on a user-configured Scheduled Deployment silently rot; self-heal via lazy refresh on the READ path; recency-dominant + cross-source dedup + source-diversity curation.
+- [Sparki Rit-verhaal](sparki-ride-story.md) — flag `rit_verhaal`; sync line must render independent of fresh story; predictionAvailable strictly pre-hoc; workflow limit hit ⇒ tests via shell.

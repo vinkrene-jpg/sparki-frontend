@@ -9,6 +9,7 @@ export const FEATURE_KEYS = [
   "testing_tools",
   "premium",
   "knowledge_base",
+  "rit_verhaal",
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -31,6 +32,8 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
   premium: "Premium feature tier — reserved for future paid features",
   knowledge_base:
     "Sparki Knowledge Base — daily-scanned sport-science library, browsable news/research surface, and cited retrieval in AI briefs",
+  rit_verhaal:
+    "De keten (Fase 1) — sync-status, na-rit moment op Vandaag, rit-verhaal met vier hoofdstukken, inline schemagevolg en chat-met-ritcontext",
 };
 
 export * from "./sports";

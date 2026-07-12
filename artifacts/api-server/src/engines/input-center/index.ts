@@ -255,6 +255,10 @@ export type PostMessageInput = {
   text: string | null;
   link: string | null;
   attachments: InputAttachment[];
+  // Optional, already-verified context block (e.g. the ride the question is
+  // about). Built and ownership-checked by the ROUTE layer — the engine only
+  // injects it into the prompt so Sparki answers grounded in that real data.
+  contextBlock?: string | null;
 };
 
 export type PostMessageResult = {
@@ -314,6 +318,10 @@ export async function postMessage(
 
   const contextText =
     `ATLEETCONTEXT (echte gelogde data — gebruik dit om je antwoord te onderbouwen):\n${context}` +
+    (input.contextBlock
+      ? `\n\nGESPREKSCONTEXT — de vraag van de atleet gaat specifiek over deze rit ` +
+        `(echte gelogde data, beantwoord de vraag hierop gericht):\n${input.contextBlock}`
+      : "") +
     (knowledge.promptBlock ? `\n\n${knowledge.promptBlock}` : "") +
     (history.length > 0
       ? `\n\nDit is een DOORLOPEND gesprek: de eerdere beurten hierboven zijn echt. ` +

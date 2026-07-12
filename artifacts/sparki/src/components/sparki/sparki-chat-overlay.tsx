@@ -3,18 +3,25 @@ import { createPortal } from "react-dom"
 import { X } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
 import { SparkiCore } from "@/components/sparki/sparki-core"
-import { SparkiInputCenter } from "@/components/sparki/sparki-input-center"
+import {
+  SparkiInputCenter,
+  type ChatContext,
+} from "@/components/sparki/sparki-input-center"
 
 // The chat window for "Vraag Sparki". It opens from the SPARKI mark in the
 // header (every screen) and slides up as a full-height panel. Portaled to the
 // document body and z-[80] so it sits above the bottom navigation (z-50). One
 // obvious top-anchored close (per the back-out rule) — never exit-by-scroll.
+// When opened from a Rit-verhaal, `context` carries that ride: it is shown as
+// a visible chip in the composer and sent along so Sparki answers about it.
 export function SparkiChatOverlay({
   open,
   onClose,
+  context = null,
 }: {
   open: boolean
   onClose: () => void
+  context?: ChatContext | null
 }) {
   // Close on Escape and lock body scroll while the chat is open.
   useEffect(() => {
@@ -69,7 +76,7 @@ export function SparkiChatOverlay({
         {/* Conversation + composer. The composer is sticky to the bottom of this
             scroll area; the conversation scrolls behind it. */}
         <div className="flex-1 overflow-y-auto px-5 pb-5 pt-5">
-          <SparkiInputCenter />
+          <SparkiInputCenter context={context} />
         </div>
       </div>
     </div>,

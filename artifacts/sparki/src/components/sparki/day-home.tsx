@@ -33,6 +33,7 @@ import { StateCard } from "@/components/sparki/state-card"
 import { VoedingScreen } from "@/components/sparki/voeding-screen"
 import { MaterialCoach } from "@/components/sparki/material-coach"
 import { LeskaartVandaag } from "@/components/sparki/leskaart-van-dag"
+import { RideMomentBlock } from "@/components/sparki/ride-moment-block"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { useNutritionLogs } from "@/hooks/use-nutrition"
 import { AddTrainingButton } from "@/components/sparki/add-training"
@@ -141,6 +142,10 @@ function StateDayHome() {
         checkInFirst
         onShowDetails={() => homeView?.setView("full")}
       />
+
+      {/* NA-RIT moment (Fase 1 "De keten") — only when a ride really just came
+          in via a koppeling; flag-gated, suppressed when ziek/geblesseerd. */}
+      <RideMomentBlock />
 
       <section className="mt-2">
         <SectionLabel title="Jouw update vandaag" />

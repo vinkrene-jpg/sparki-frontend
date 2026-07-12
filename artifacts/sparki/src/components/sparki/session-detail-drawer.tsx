@@ -8,6 +8,8 @@ import { ACCENT } from "@/components/sparki/ui"
 import type { TrainingSession } from "@/lib/athlete-types"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { analyzeSession, type InsightTone } from "@/lib/session-analysis"
+import { useRideStory, useRideStoryFlag } from "@/hooks/use-ride-story"
+import { RideStoryChapters } from "@/components/sparki/ride-story"
 import {
   Clock,
   Route as RouteIcon,
@@ -100,6 +102,14 @@ export function SessionDetailDrawer({
   recentSessions?: TrainingSession[]
 }) {
   const { data: profile } = useAthleteExtendedProfile()
+  // Rit-verhaal (flag `rit_verhaal`): when the story is available it replaces
+  // the loose analysis + metrics blocks with the four chapters. Flag off (or
+  // story unavailable) keeps the existing drawer untouched.
+  const storyFlagOn = useRideStoryFlag()
+  const { data: story } = useRideStory(
+    storyFlagOn && open && session ? session.id : null,
+  )
+  const showStory = storyFlagOn && story != null && session?.id === story.session.id
   const analysis = session
     ? analyzeSession(session, profile, recentSessions)
     : null
@@ -193,6 +203,12 @@ export function SessionDetailDrawer({
               </div>
             </SheetHeader>
 
+            {showStory && story ? (
+              <div className="mt-5">
+                <RideStoryChapters story={story} />
+              </div>
+            ) : (
+              <>
             {analysis && analysis.insights.length > 0 ? (
               <div className="mt-5 rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
                 <span className="font-mono text-[10px] tracking-[0.2em] text-cyan-300/70">
@@ -242,6 +258,8 @@ export function SessionDetailDrawer({
                 (duur, vermogen, hartslag) om je trainingen rijker terug te
                 lezen.
               </p>
+            )}
+              </>
             )}
 
             {session.feelScore != null && (

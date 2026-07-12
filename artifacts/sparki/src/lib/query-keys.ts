@@ -231,6 +231,13 @@ export const queryKeys = {
     conversation: () => ["input-center", "conversation"] as const,
   },
 
+  rideStory: {
+    all: () => ["ride-story"] as const,
+    syncStatus: () => ["ride-story", "sync-status"] as const,
+    moment: () => ["ride-story", "moment"] as const,
+    session: (id: number) => ["ride-story", "session", id] as const,
+  },
+
   material: {
     all: () => ["material"] as const,
     list: () => ["material", "list"] as const,

@@ -101,10 +101,15 @@ export function useConversation() {
   })
 }
 
+// Optional conversation context: the ride the question is about. The backend
+// ownership-checks the session and grounds Sparki's answer in that real ride.
+export type SendMessageContext = { kind: "session"; sessionId: number }
+
 export type SendMessageInput = {
   text?: string | null
   link?: string | null
   attachments?: InputAttachment[]
+  context?: SendMessageContext | null
 }
 
 export function useSendMessage() {
@@ -120,6 +125,7 @@ export function useSendMessage() {
           text: input.text ?? null,
           link: input.link ?? null,
           attachments: input.attachments ?? [],
+          context: input.context ?? null,
         }),
       }),
     onSuccess: () => {

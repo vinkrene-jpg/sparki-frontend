@@ -186,7 +186,18 @@ function TurnView({ turn }: { turn: ConversationTurn }) {
   )
 }
 
-export function SparkiInputCenter() {
+// Optional ride context for the composer: shown as a visible chip so the
+// athlete SEES what Sparki gets, and sent along with every message while set.
+export type ChatContext = {
+  sessionId: number
+  label: string
+}
+
+export function SparkiInputCenter({
+  context = null,
+}: {
+  context?: ChatContext | null
+} = {}) {
   const { data, isLoading } = useConversation()
   const send = useSendMessage()
 
@@ -268,6 +279,9 @@ export function SparkiInputCenter() {
         text: text.trim() || null,
         link: link.trim() || null,
         attachments,
+        context: context
+          ? { kind: "session", sessionId: context.sessionId }
+          : null,
       })
       setText("")
       setLink("")
@@ -341,6 +355,21 @@ export function SparkiInputCenter() {
 
       {/* COMPOSER */}
       <div className="sticky bottom-0 rounded-2xl border border-white/[0.1] bg-[#070d16]/[0.92] p-3 backdrop-blur-md">
+        {/* Visible ride context — the athlete sees exactly what Sparki krijgt */}
+        {context && (
+          <div className="mb-2.5 flex items-center gap-2 rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-2.5 py-2">
+            <span
+              className="font-mono text-[9px] uppercase tracking-[0.16em]"
+              style={{ color: ACCENT }}
+            >
+              Gaat over
+            </span>
+            <span className="min-w-0 flex-1 truncate text-[12px] text-white/80">
+              {context.label}
+            </span>
+          </div>
+        )}
+
         {/* Pending attachment chips */}
         {pending.length > 0 && (
           <div className="mb-2.5 flex flex-wrap gap-2">

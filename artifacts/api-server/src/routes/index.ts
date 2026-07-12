@@ -43,6 +43,7 @@ import sparkiWorldRouter from "./sparki-world";
 import raceRoomsRouter from "./race-rooms";
 import goalsRouter from "./goals";
 import engagementRouter from "./engagement";
+import rideStoryRouter from "./ride-story";
 import devRouter from "./dev";
 
 const router: IRouter = Router();
@@ -91,6 +92,7 @@ router.use("/world", sparkiWorldRouter);
 router.use(raceRoomsRouter);
 router.use("/goals", goalsRouter);
 router.use("/engagement", engagementRouter);
+router.use("/ride-story", rideStoryRouter);
 
 // Dev-only routes (preview-athlete switcher). Mounted ONLY outside production so
 // these endpoints simply do not exist on a deployed build.

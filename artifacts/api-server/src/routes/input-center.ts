@@ -1,11 +1,15 @@
 import { Router, type Request, type Response } from "express";
+import { and, eq } from "drizzle-orm";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
+  db,
+  trainingSessionsTable,
   inputAttachmentKinds,
   type InputAttachment,
   type InputAttachmentKind,
 } from "@workspace/db";
 import { getConversation, postMessage } from "../engines/input-center";
+import { buildSessionContextBlock } from "../lib/ride-story";
 
 // Sparki Input Center routes.
 //
@@ -74,10 +78,40 @@ router.post(
       text?: unknown;
       link?: unknown;
       attachments?: unknown;
+      context?: unknown;
     };
     const text = typeof body.text === "string" ? body.text : null;
     const link = typeof body.link === "string" ? body.link : null;
     const attachments = parseAttachments(body.attachments);
+
+    // Optional ride context: { kind: "session", sessionId }. Ownership is
+    // verified HERE — an unknown or not-owned session is a hard 400, never a
+    // silently-dropped context (the athlete sees a visible context chip and
+    // must be able to trust that Sparki really got that ride).
+    let contextBlock: string | null = null;
+    if (body.context !== undefined && body.context !== null) {
+      const ctx = body.context as { kind?: unknown; sessionId?: unknown };
+      const sessionId = Number(ctx.sessionId);
+      if (ctx.kind !== "session" || !Number.isInteger(sessionId)) {
+        res.status(400).json({ error: "Ongeldige gesprekscontext" });
+        return;
+      }
+      const [session] = await db
+        .select()
+        .from(trainingSessionsTable)
+        .where(
+          and(
+            eq(trainingSessionsTable.id, sessionId),
+            eq(trainingSessionsTable.clerkId, clerkId),
+          ),
+        )
+        .limit(1);
+      if (!session) {
+        res.status(400).json({ error: "Deze rit is niet gevonden" });
+        return;
+      }
+      contextBlock = buildSessionContextBlock(session);
+    }
 
     const hasContent =
       (text && text.trim().length > 0) ||
@@ -91,7 +125,13 @@ router.post(
     }
 
     try {
-      const result = await postMessage({ clerkId, text, link, attachments });
+      const result = await postMessage({
+        clerkId,
+        text,
+        link,
+        attachments,
+        contextBlock,
+      });
       res.json(result);
     } catch (err) {
       req.log.error({ err }, "input-center.messages failed");
