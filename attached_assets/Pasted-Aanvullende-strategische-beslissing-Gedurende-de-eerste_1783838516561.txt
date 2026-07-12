@@ -1,0 +1,66 @@
+Aanvullende strategische beslissing:
+
+Gedurende de eerste 24 maanden van de stabiele publieke validatiefase krijgen renners toegang tot alle Sparki-functionaliteit zonder betaling en zonder functionele of frequentiegebonden limieten.
+
+Pas daarom het strategiedocument als volgt aan:
+
+1. Verwijder gedurende deze validatiefase alle gratis-versus-Premium-limieten voor renners, waaronder:
+   - limieten op wedstrijdanalyses;
+   - limieten op materiaalchecks;
+   - limieten op Core-voorspellingen;
+   - beperkte historie;
+   - beperkte documentanalyse;
+   - beperkte voedings- of trainingsanalyse.
+
+2. Er komt gedurende deze 24 maanden:
+   - geen Premium-abonnement voor renners;
+   - geen proefperiode;
+   - geen upgradeprompt;
+   - geen betaalmuur;
+   - geen kunstmatig beperkte gratis versie.
+
+3. Formuleer het doel van deze periode als:
+   - unieke productwaarde bewijzen;
+   - aantonen dat renners vrijwillig terugkomen;
+   - aantonen dat adviezen tot bruikbare trainingsbeslissingen leiden;
+   - veiligheid, betrouwbaarheid en ontwikkelresultaat meten;
+   - werkelijke gebruiks- en AI-kosten vaststellen.
+
+4. Leg vast dat de 24 maanden beginnen bij de lancering van de stabiele publieke bèta. Neem geen impliciete startdatum aan.
+
+5. Een betaalmodel wordt na 24 maanden niet automatisch ingevoerd. Het wordt alleen overwogen wanneer productwaarde, gezonde retentie, beheersbare unit economics en daadwerkelijke betalingsbereidheid zijn aangetoond.
+
+6. Maak expliciet dat een groot ledenaantal op zichzelf geen bewijs van betalingsbereidheid is.
+
+7. Veiligheids- en gezondheidsfunctionaliteit blijft ook na de validatiefase gratis. Dit omvat minimaal:
+   - urgente signalen over blessure en overbelasting;
+   - correcties op onveilig trainingsadvies;
+   - toegang tot en export van eigen gegevens;
+   - privacy- en toestemmingsbeheer.
+
+8. Neem een transparantieprincipe op:
+   gebruikers worden vanaf het begin geïnformeerd dat Sparki zich in een gratis validatiefase van 24 maanden bevindt en dat later een betaald model kan volgen. Er komt nooit een onverwachte betaalmuur.
+
+9. Neem als overgangsprincipe op:
+   vroege gebruikers krijgen een redelijke founder- of overgangsregeling en verliezen niet plotseling midden in een seizoen toegang tot eerder gebruikte kernwaarde.
+
+10. Coach- en clubfunctionaliteit mag tijdens deze periode afzonderlijk als betaalde pilot worden getest, mits:
+    - de renner daardoor geen functionaliteit verliest;
+    - het een aantoonbaar afzonderlijk product voor coaches of organisaties is;
+    - de pilot transparant wordt gepresenteerd;
+    - er geen sportieve veiligheidsvoordelen worden verkocht.
+
+11. Meet vanaf het begin:
+    - retentie per cohort;
+    - vrijwillige openingsmomenten;
+    - bruikbare trainingsbeslissingen;
+    - resultaat- en veiligheidsindicatoren;
+    - AI- en infrastructuurkosten per actieve renner;
+    - supportkosten;
+    - organische groei;
+    - daadwerkelijke betalingsbereidheid van coaches, clubs en later renners.
+
+12. Herschrijf het strategiedocument zodat de volgorde wordt:
+    veiligheid → productwaarde → gezonde retentie → schaalbaarheid → betalingsbereidheid → eventueel betaalmodel.
+
+Wijzig alleen het strategiedocument en de strategische uitgangspunten. Bouw nu geen billing, abonnementsinterface of betaalmuur.

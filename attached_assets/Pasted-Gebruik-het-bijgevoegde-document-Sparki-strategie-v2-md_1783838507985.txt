@@ -1,0 +1,44 @@
+Gebruik het bijgevoegde document “Sparki_strategie_v2.md” als het leidende strategiedocument.
+
+Maak één geïntegreerde eindversie. Voeg niet simpelweg beide documenten achter elkaar en neem claims niet kritiekloos over.
+
+Behoud uit je huidige gewijzigde versie:
+- het principe “gratis biedt de echte kernwaarde; betaald biedt meer diepte, frequentie en historie”;
+- de transparante featurelimieten;
+- het uitgangspunt dat veiligheids- en gezondheidssignalen nooit worden begrensd;
+- de tiering-tabel, maar uitsluitend als voorlopige hypothese.
+
+Neem uit Sparki_strategie_v2.md leidend over:
+- Dylan als falsificatietest van de productpropositie;
+- productwaarde vóór retentie en monetisatie;
+- de positionering: “Garmin registreert. Strava vergelijkt en deelt. Sparki interpreteert en stuurt verantwoord bij”;
+- de drie intrinsieke openingsredenen: na een training, vóór een training en periodieke ontwikkeling;
+- de bruikbare trainingsbeslissing als primaire waarde-eenheid;
+- expliciete onzekerheid en bewijsniveaus in analyses;
+- het validatieplan, de meetpunten en stopcriteria;
+- coach als eerste commerciële hypothese en ouder-inzicht als afzonderlijk te valideren propositie;
+- de financiële logica inclusief AI-kosten, support, onboarding, acquisitiekosten, brutomarge en churn.
+
+Herschrijf stellige commerciële uitspraken als hypothesen zolang ze niet gemeten zijn. Dit geldt onder andere voor:
+- betalingsbereidheid van ouders, coaches en clubs;
+- mond-tot-mondgroei;
+- lage marginale kosten;
+- conversie van gratis naar Premium;
+- “Premium verkoopt zichzelf”;
+- vrijwel nul acquisitiekosten via clubs;
+- een gemiddelde klantduur van twee jaar.
+
+De strategische volgorde moet zijn:
+1. veiligheid en betrouwbaarheid;
+2. unieke productwaarde aantonen;
+3. vrijwillig hergebruik aantonen;
+4. betalingsbereidheid valideren;
+5. pas daarna pricing, betaalmuren en schaalbaarheid optimaliseren.
+
+Wijzig nu uitsluitend het strategiedocument. Implementeer nog geen billing, abonnementslogica, engagementmechanieken of nieuwe productfeatures.
+
+Lever op:
+1. één opgeschoonde geïntegreerde strategie;
+2. een korte changelog;
+3. een tabel met “bewezen / hypothese / nog onbekend”;
+4. een sprintvolgorde gebaseerd op het bewijsplan.
