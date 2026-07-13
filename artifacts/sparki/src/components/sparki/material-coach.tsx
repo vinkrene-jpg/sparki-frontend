@@ -414,7 +414,10 @@ function NudgeCard({
   )
 }
 
-export function MaterialCoach({ n = "10" }: { n?: string } = {}) {
+export function MaterialCoach({
+  n = "10",
+  hideNudge = false,
+}: { n?: string; hideNudge?: boolean } = {}) {
   const { data: catData } = useMaterialCategories()
   const { data: listData, isLoading } = useMaterialAnalyses()
   const { data: nudgeData } = useMaterialNudge()
@@ -474,7 +477,7 @@ export function MaterialCoach({ n = "10" }: { n?: string } = {}) {
         kosteninschatting.
       </p>
 
-      {!selected && !active && nudge && !nudge.dismissed && (
+      {!hideNudge && !selected && !active && nudge && !nudge.dismissed && (
         <NudgeCard
           message={nudge.message}
           dismissing={dismissNudge.isPending}

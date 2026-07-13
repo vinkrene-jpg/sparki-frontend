@@ -34,6 +34,18 @@ import { VoedingScreen } from "@/components/sparki/voeding-screen"
 import { MaterialCoach } from "@/components/sparki/material-coach"
 import { LeskaartVandaag } from "@/components/sparki/leskaart-van-dag"
 import { RideMomentBlock } from "@/components/sparki/ride-moment-block"
+import { CheckInChip } from "@/components/sparki/check-in-chip"
+import { FollowUpChip } from "@/components/sparki/follow-up-chip"
+import { MeerijderNudge } from "@/components/sparki/meerijder-nudge"
+import { HomeWeatherRow } from "@/components/sparki/home-weather-row"
+import { useRideMoment } from "@/hooks/use-ride-story"
+import { useHomeWeather } from "@/hooks/use-home-weather"
+import { useSetHealthStatus } from "@/hooks/use-health-status"
+import {
+  selectMoment,
+  weatherAllowed,
+  leskaartAllowed,
+} from "@/lib/aandachtswet"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { useNutritionLogs } from "@/hooks/use-nutrition"
 import { AddTrainingButton } from "@/components/sparki/add-training"
@@ -110,23 +122,123 @@ function relativeDate(iso: string): string {
   })
 }
 
+// Explicit rest-day detection — mirrors the day-type engine's isRestWorkout so
+// Vandaag's aandachtswet agrees with the full day-type analysis.
+function isRestType(t: string | null | undefined): boolean {
+  if (!t) return false
+  const s = t.toLowerCase()
+  return s.includes("rest") || s.includes("rust") || s.includes("off")
+}
+
+// The leading Momentblok when the athlete has marked themselves sick/injured
+// (aandachtswet prio 1). Reuses the real health mutation — no fabricated medical
+// advice, just an honest status line, the neutral "herstel gaat voor" framing,
+// and the working "ik ben weer hersteld" action.
+function HealthMomentBlock() {
+  const setStatus = useSetHealthStatus()
+  const { data } = useAthleteDashboard()
+  const label =
+    data?.athleteProfile?.healthStatus === "injured" ? "geblesseerd" : "ziek"
+  return (
+    <section className="rounded-2xl border border-[rgba(255,140,120,0.28)] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+      <div className="flex items-center gap-2">
+        <span
+          className="h-1.5 w-1.5 shrink-0 rounded-full"
+          style={{
+            background: "rgba(255,140,120,0.9)",
+            boxShadow: "0 0 8px rgba(255,140,120,0.8)",
+          }}
+        />
+        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[rgba(255,170,150,0.85)]">
+          Herstel gaat voor
+        </span>
+      </div>
+      <p className="mt-2.5 text-[15px] font-medium leading-snug text-white/90">
+        Je hebt jezelf {label} gemeld.
+      </p>
+      <p className="mt-1.5 text-pretty text-[13px] leading-relaxed text-white/60">
+        Er komt nu geen trainingsdruk bij. Rust, slaap, hydratatie en voeding
+        gaan voor. Meld je weer beter zodra het kan, dan bouwt Sparki rustig op.
+      </p>
+      <button
+        type="button"
+        disabled={setStatus.isPending}
+        onClick={() => setStatus.mutate("ok")}
+        className="mt-4 w-full rounded-full border border-cyan-300/30 bg-cyan-300/[0.06] px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-cyan-200/90 transition-colors hover:bg-cyan-300/[0.12] disabled:opacity-50"
+      >
+        {setStatus.isPending ? "Bijwerken…" : "Ik ben weer hersteld"}
+      </button>
+    </section>
+  )
+}
+
 function StateDayHome() {
   const homeView = useHomeView()
   const { focus } = useFixParams()
   const [, navigate] = useLocation()
   const [voedingOpen, setVoedingOpen] = useState(false)
   const { data: nutritionData } = useNutritionLogs()
+  const { data: dashboard } = useAthleteDashboard()
+  const { data: moment } = useRideMoment()
+  const weather = useHomeWeather()
 
   // Vandaag is the single place to update yourself as an athlete: how you feel
-  // (in the State Card above) plus your nutrition and your gear. The Voeding card
-  // opens the dedicated Voeding screen directly. When the coach sends you here to
-  // "vul je voeding in" (?focus=nutrition), open that screen straight away, then
-  // strip the param so a refresh/back doesn't re-trigger it.
+  // (the check-in chip below the Momentblok) plus your nutrition and your gear.
+  // The Voeding card opens the dedicated Voeding screen directly. When the coach
+  // sends you here to "vul je voeding in" (?focus=nutrition), open that screen
+  // straight away, then strip the param so a refresh/back doesn't re-trigger it.
   useEffect(() => {
     if (focus !== "nutrition") return
     setVoedingOpen(true)
     navigate("/", { replace: true })
   }, [focus, navigate])
+
+  // ── De aandachtswet (Fase 2, §5.1): resolve the SINGLE leading Momentblok
+  // from real, already-resolved signals. Higher priority always wins; health is
+  // never dimmed and presentation variation never moves this leader. ──
+  const profile = dashboard?.athleteProfile
+  const todayWorkout = dashboard?.todayWorkout ?? null
+  const healthActive =
+    profile?.healthStatus === "sick" || profile?.healthStatus === "injured"
+  const ridePhase = moment && !moment.suppressed ? moment.phase : null
+  const restDay = isRestType(todayWorkout?.type)
+  const plannedWorkoutToday =
+    !!todayWorkout &&
+    !restDay &&
+    todayWorkout.status !== "completed" &&
+    todayWorkout.status !== "done"
+
+  // Real proposal signal (never fabricated): the ride-moment consequence carries
+  // status "voorstel" when Sparki has an outstanding schema-adjustment. It lives
+  // INSIDE the ride story, so whenever it is set a ride phase (na-rit) is also
+  // set and wins the higher rung — the proposal is then surfaced within that
+  // na-rit Momentblok's consequence. Wiring the honest signal keeps the engine
+  // input truthful without ever leading with a fabricated standalone block.
+  const hasProposal =
+    !!moment &&
+    !moment.suppressed &&
+    moment.story?.consequence.status === "voorstel"
+
+  const leadMoment = selectMoment({
+    healthActive: !!healthActive,
+    ridePhase,
+    hasProposal,
+    plannedWorkoutToday,
+    restDay,
+  })
+
+  const rideLeads =
+    leadMoment === "racedag" ||
+    leadMoment === "na-rit" ||
+    leadMoment === "rit-binnen"
+  const stateLeads = !rideLeads && leadMoment !== "health"
+
+  // Honest weather gate (§5.2 #3): only where it is a real decision factor
+  // (right before a training / on race day) AND it truly resolved for the home
+  // location. Otherwise it is absent (reachable via its own destination).
+  const hw = weather.data
+  const showWeather =
+    weatherAllowed(leadMoment) && !!hw?.available && !!hw.today
 
   const logs = nutritionData?.logs ?? []
   const lastLog = logs[0] ?? null
@@ -138,16 +250,49 @@ function StateDayHome() {
 
   return (
     <ScreenShell section="Home" bg="/concept-lab.png">
-      <StateCard
-        checkInFirst
-        onShowDetails={() => homeView?.setView("full")}
-      />
+      {/* ── The single leading Momentblok (§5.1) — exactly one thing leads ── */}
+      {leadMoment === "health" ? (
+        <HealthMomentBlock />
+      ) : rideLeads ? (
+        // Fresh ride / race day — flag-gated, suppressed when ziek/geblesseerd.
+        <RideMomentBlock />
+      ) : (
+        // Calm toestand leads (voorstel/voor-training/herstel/balans).
+        <StateCard hideCheckIn onShowDetails={() => homeView?.setView("full")} />
+      )}
 
-      {/* NA-RIT moment (Fase 1 "De keten") — only when a ride really just came
-          in via a koppeling; flag-gated, suppressed when ziek/geblesseerd. */}
-      <RideMomentBlock />
+      {/* ── Non-blocking chips (§5.2 #1): check-in + evening follow-up, never at
+          the top, never a blocking modal. ── */}
+      <div className="mt-4 space-y-2">
+        <CheckInChip />
+        <FollowUpChip />
+      </div>
 
-      <section className="mt-2">
+      {/* When a ride/health block leads, the calm toestand still follows below so
+          the State is always reachable — just not as the leader. */}
+      {!stateLeads && (
+        <div className="mt-6">
+          <StateCard hideCheckIn onShowDetails={() => homeView?.setView("full")} />
+        </div>
+      )}
+
+      {/* ── Meerijder-budget (§5.2 #2): at most ONE nudge across all sources. ── */}
+      <div className="mt-6">
+        <MeerijderNudge />
+      </div>
+
+      {/* ── Weer (§5.2 #3): only when it is a real decision factor today. ── */}
+      {showWeather && hw?.today && (
+        <div className="mt-6">
+          <HomeWeatherRow
+            summary={hw.today}
+            locationLabel={hw.locationLabel}
+            advisory={hw.advisory}
+          />
+        </div>
+      )}
+
+      <section className="mt-8">
         <SectionLabel title="Jouw update vandaag" />
         <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
           Eén plek om jezelf bij te werken. Hoe je je voelt staat hierboven — open
@@ -183,12 +328,17 @@ function StateDayHome() {
           <ChevronRight className="h-4 w-4 shrink-0 text-white/25" strokeWidth={1.75} />
         </button>
 
+        {/* Gear coach stays reachable as a self-update tool, but its inline
+            nudge is suppressed here — the meerijder-budget above owns the single
+            nudge for this visit (§5.2 #2). */}
         <div className="mt-7">
-          <MaterialCoach n="" />
+          <MaterialCoach n="" hideNudge />
         </div>
       </section>
 
-      <LeskaartVandaag />
+      {/* Leskaart rides along ONLY on calm learn-room moments (§5.2 #3) — never
+          when a ride, race or safety signal is leading. */}
+      {leskaartAllowed(leadMoment) && <LeskaartVandaag />}
 
       <VoedingScreen open={voedingOpen} onOpenChange={setVoedingOpen} />
     </ScreenShell>

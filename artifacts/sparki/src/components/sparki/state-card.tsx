@@ -34,6 +34,13 @@ export type StateCardProps = {
    * the Core profile page leaves it off.
    */
   checkInFirst?: boolean
+  /**
+   * When true, the card renders NO check-in block at all (neither hoisted nor
+   * calm). Vandaag sets this because the check-in lives there as a standalone
+   * chip under the Momentblok (Fase 2 "De aandachtswet"); other surfaces leave
+   * it off so the card keeps its own in-card check-in.
+   */
+  hideCheckIn?: boolean
 }
 
 // Plain-Dutch labels for the honest "Sparki mist nog" gaps. Internal signal keys
@@ -101,6 +108,7 @@ export function StateCard({
   onShowDetails,
   detailsLabel,
   checkInFirst,
+  hideCheckIn,
 }: StateCardProps = {}) {
   const { data: state, isLoading, isError, refetch } = useSparkiState()
   const checkIn = useStateCheckIn()
@@ -140,7 +148,7 @@ export function StateCard({
   const firstName = state.athleteName?.trim().split(/\s+/)[0] ?? ""
   // Only hoist when there is an outstanding check-in — once today's is recorded
   // the slim "genoteerd" line stays in its calm position below and the Core leads.
-  const hoistCheckIn = !!checkInFirst && showCheckInButtons
+  const hoistCheckIn = !hideCheckIn && !!checkInFirst && showCheckInButtons
 
   const checkInBlock = (
     <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
@@ -278,8 +286,9 @@ export function StateCard({
         </section>
       )}
 
-      {/* ── Level 1: check-in — in its calm position unless hoisted to the top ── */}
-      {!hoistCheckIn && checkInBlock}
+      {/* ── Level 1: check-in — in its calm position unless hoisted to the top,
+          or omitted entirely when the host renders it elsewhere (Vandaag) ── */}
+      {!hideCheckIn && !hoistCheckIn && checkInBlock}
 
       {/* ── Level 2: "Waarom?" — the 2–3 signals behind the position ────────── */}
       <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] backdrop-blur-md">
