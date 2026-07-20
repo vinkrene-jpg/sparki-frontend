@@ -10,12 +10,12 @@ globalThis.require = createRequire(import.meta.url);
 
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
 
-async function buildAll() {
-  const distDir = path.resolve(artifactDir, "dist");
-  await rm(distDir, { recursive: true, force: true });
-
-  await esbuild({
-    entryPoints: [
+// The full set of entrypoints (server + jobs + tests + scripts). A normal
+// `pnpm run build` compiles all of these into ./dist. Individual test workflows
+// instead build ONLY their own entry into an isolated output dir (see
+// scripts/run-test.mjs) so parallel test runs never clobber each other's — or
+// the running server's — dist/.
+const ALL_ENTRIES = [
       path.resolve(artifactDir, "src/index.ts"),
       path.resolve(artifactDir, "src/jobs/knowledge-scan.ts"),
       path.resolve(artifactDir, "src/tests/smoke.ts"),
@@ -80,10 +80,32 @@ async function buildAll() {
       path.resolve(artifactDir, "src/tests/engagement.ts"),
       path.resolve(artifactDir, "src/tests/ride-story.ts"),
       path.resolve(artifactDir, "src/tests/sprint.ts"),
-    ],
+];
+
+async function buildAll() {
+  // DIST_DIR lets an isolated test run target its own output dir instead of the
+  // shared ./dist (default). BUILD_ENTRIES (comma-separated, relative to this
+  // artifact) restricts the build to just those entrypoints — used by
+  // scripts/run-test.mjs so a single test builds only itself, fast and race-free.
+  const distDir = process.env.DIST_DIR
+    ? path.resolve(artifactDir, process.env.DIST_DIR)
+    : path.resolve(artifactDir, "dist");
+  const entryPoints = process.env.BUILD_ENTRIES
+    ? process.env.BUILD_ENTRIES.split(",")
+        .map((p) => p.trim())
+        .filter(Boolean)
+        .map((p) => path.resolve(artifactDir, p))
+    : ALL_ENTRIES;
+  await rm(distDir, { recursive: true, force: true });
+
+  await esbuild({
+    entryPoints,
     platform: "node",
     bundle: true,
     format: "esm",
+    // Keep output layout stable (dist/tests/<name>.mjs, dist/index.mjs) whether
+    // building all entries or a single one.
+    outbase: path.resolve(artifactDir, "src"),
     outdir: distDir,
     outExtension: { ".js": ".mjs" },
     logLevel: "info",
