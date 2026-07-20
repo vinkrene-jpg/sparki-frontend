@@ -24,7 +24,7 @@ import {
 import { useUpcomingWorkouts } from "@/hooks/use-today-workout"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { isSportActive } from "@workspace/feature-flags"
-import { MapPin, Sparkles, Flag, Users, X, Download } from "lucide-react"
+import { MapPin, Sparkles, Flag, Users, X, Download, Smartphone } from "lucide-react"
 
 // Editable list of named meeting points ("verzamelpunten") — e.g. where you
 // pick up a friend. Shared by the interactive builder and the generated-route
@@ -343,6 +343,20 @@ function RouteCard({ route }: { route: SparkiRoute }) {
           Stap-voor-stap navigatie nog niet beschikbaar voor deze route
         </p>
       )}
+
+      <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-2.5">
+        <Smartphone
+          className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300/70"
+          strokeWidth={1.75}
+        />
+        <p className="text-[12px] leading-relaxed text-white/50">
+          <span className="text-white/75">Onderweg navigeren?</span> Turn-by-turn
+          op de kaart doe je in de Sparki-app op je telefoon — deze route staat
+          daar klaar onder <span className="text-white/75">"Kies je route"</span>,
+          tik op <span className="text-white/75">Navigeer</span>. Of download 'm
+          hierboven als GPX/TCX voor je fietscomputer.
+        </p>
+      </div>
     </div>
   )
 }
