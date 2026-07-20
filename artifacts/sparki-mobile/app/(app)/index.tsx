@@ -41,6 +41,23 @@ export default function RouteListScreen() {
         </Pressable>
       </View>
 
+      <View style={styles.recordRow}>
+        <Pressable
+          onPress={() => router.push("/record")}
+          style={[styles.recordBtn, { backgroundColor: c.primary }]}
+        >
+          <Ionicons name="play" size={20} color={c.primaryForeground} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.recordTitle, { color: c.primaryForeground }]}>
+              Start vrije rit
+            </Text>
+            <Text style={[styles.recordSub, { color: c.primaryForeground }]}>
+              Neem een rit op zonder route te kiezen
+            </Text>
+          </View>
+        </Pressable>
+      </View>
+
       {isLoading ? (
         <View style={styles.center}>
           <ActivityIndicator color={c.primary} />
@@ -130,6 +147,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  recordRow: { paddingHorizontal: 20, paddingBottom: 18 },
+  recordBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    borderRadius: 18,
+  },
+  recordTitle: { fontFamily: "Inter_700Bold", fontSize: 16 },
+  recordSub: { fontFamily: "Inter_400Regular", fontSize: 13, marginTop: 2, opacity: 0.85 },
   center: {
     flex: 1,
     alignItems: "center",
