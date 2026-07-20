@@ -24,6 +24,7 @@ import {
   BookOpen,
   ArrowRight,
   Brain,
+  LineChart,
 } from "lucide-react"
 
 type FilterKey = "all" | "renners" | "news" | "coach" | "team" | "race" | "ai"
@@ -626,6 +627,22 @@ export default function FeedPage() {
           })}
         </div>
 
+      </section>
+
+      {/* INZICHT — drill-in to the deeper analysis surface (bio-radar,
+          trainingsverloop). Lives here as an entry, not its own nav tab. */}
+      <section>
+        <SectionLabel title="Inzicht" />
+        <Link
+          href="/lab"
+          className="mt-3 flex items-center justify-between rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-3 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+        >
+          <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white/55">
+            <LineChart className="h-3.5 w-3.5" style={{ color: ACCENT }} />
+            Je trends & patronen in cijfers
+          </span>
+          <ArrowRight className="h-3.5 w-3.5 text-white/30" />
+        </Link>
       </section>
 
       <KnowledgeFeedSection />

@@ -49,6 +49,8 @@ import {
   RefreshCw,
   HelpCircle,
   Compass,
+  Users,
+  ChevronRight,
 } from "lucide-react"
 
 // Tokens that belong to an editor inside the Instellingen sheet. When the app
@@ -500,6 +502,28 @@ export default function YouPage() {
           </div>
         </section>
       )}
+
+      {/* SAMEN TRAINEN — social/team surface has no nav tab; it lives here on
+          the profile (and as a header button) so it stays easy to reach. */}
+      <button
+        type="button"
+        onClick={() => navigate("/samen")}
+        className="flex w-full items-center gap-3.5 rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
+      >
+        <span
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10"
+          style={{ background: "rgba(120,210,230,0.08)" }}
+        >
+          <Users className="h-4 w-4" style={{ color: ACCENT }} strokeWidth={1.75} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[14px] font-medium text-white/90">Samen trainen</p>
+          <p className="mt-0.5 text-[12px] leading-relaxed text-white/45">
+            Je overzicht met vrienden, ploeg en gedeelde momenten.
+          </p>
+        </div>
+        <ChevronRight className="h-4 w-4 shrink-0 text-white/30" strokeWidth={1.75} />
+      </button>
 
       {/* CORE STATUS — de levende Core + dag-check-in + waarom */}
       <section>
