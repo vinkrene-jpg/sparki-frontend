@@ -79,6 +79,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/tests/health-endpoints.ts"),
       path.resolve(artifactDir, "src/tests/engagement.ts"),
       path.resolve(artifactDir, "src/tests/ride-story.ts"),
+      path.resolve(artifactDir, "src/tests/sprint.ts"),
     ],
     platform: "node",
     bundle: true,

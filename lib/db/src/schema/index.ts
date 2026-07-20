@@ -35,3 +35,4 @@ export * from "./telemetry";
 export * from "./intel";
 export * from "./sparki-world";
 export * from "./goals";
+export * from "./sprints";

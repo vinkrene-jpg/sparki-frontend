@@ -379,6 +379,7 @@ function RouteCard({ route }: { route: SparkiRoute }) {
           geometry={geometry}
           nav={nav}
           distanceKm={route.distanceKm ?? null}
+          routeId={route.id}
           onClose={() => setNavigating(false)}
         />
       )}

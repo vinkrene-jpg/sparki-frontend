@@ -65,6 +65,7 @@
     "test:health-endpoints": "pnpm run build && node --enable-source-maps ./dist/tests/health-endpoints.mjs",
     "test:engagement": "pnpm run build && node --enable-source-maps ./dist/tests/engagement.mjs",
     "test:ride-story": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && node --enable-source-maps ./dist/tests/ride-story.mjs",
+    "test:sprint": "pnpm run build && node --enable-source-maps ./dist/tests/sprint.mjs",
     "job:health": "pnpm run build && node --enable-source-maps ./dist/jobs/health-check.mjs",
     "job:reminders": "pnpm run build && node --enable-source-maps ./dist/jobs/reminders.mjs",
     "job:goal-review": "pnpm run build && node --enable-source-maps ./dist/jobs/goal-review.mjs",

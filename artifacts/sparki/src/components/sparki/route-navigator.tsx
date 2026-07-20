@@ -12,10 +12,18 @@ import {
   CornerUpLeft,
   Flag,
   Navigation,
+  Zap,
+  Ban,
+  Trophy,
   type LucideIcon,
 } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
 import type { RouteNavCue } from "@/hooks/use-routes"
+import {
+  useSprintBoards,
+  useSubmitSprint,
+  type SprintBoard,
+} from "@/hooks/use-sprints"
 
 const OFF_ROUTE_METERS = 60
 
@@ -146,12 +154,15 @@ export function RouteNavigator({
   nav,
   distanceKm,
   onClose,
+  routeId = null,
 }: {
   name: string
   geometry: [number, number][]
   nav: RouteNavCue[]
   distanceKm: number | null
   onClose: () => void
+  // When this is a saved route, sprint boards ("bordjes") are detected for it.
+  routeId?: number | null
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
@@ -168,6 +179,36 @@ export function RouteNavigator({
   const [following, setFollowing] = useState(true)
   const [showSteps, setShowSteps] = useState(false)
   const [basemap, setBasemap] = useState<BasemapId>("standaard")
+
+  // ── Bordjes sprinten ──────────────────────────────────────────────
+  const submitSprint = useSubmitSprint()
+  const boardsQuery = useSprintBoards(routeId)
+  const boards = boardsQuery.data?.boards ?? []
+  const boardsAvailable = boardsQuery.data?.available ?? true
+
+  const boardMarkersRef = useRef<L.Marker[]>([])
+  // Rolling speed samples (km/h) with timestamps, for gain/peak over a sprint.
+  const speedHistRef = useRef<{ t: number; kmh: number }[]>([])
+  // Boards already dealt with (passed or cancelled) — keyed by km so a board is
+  // never double-counted within one navigation session.
+  const doneBoardsRef = useRef<Set<number>>(new Set())
+  // Board km we've already spoken a cue for, so we announce each sign once.
+  const spokenBoardRef = useRef<number | null>(null)
+  // On the first GPS fix we mark boards already behind us as done (not scored),
+  // so starting mid-route never retro-awards points.
+  const seededBehindRef = useRef(false)
+
+  // Board we're closing in on (within arming range and not yet handled).
+  const [armedBoard, setArmedBoard] = useState<SprintBoard | null>(null)
+  // Finished sprint result shown briefly with the points earned.
+  const [sprintResult, setSprintResult] = useState<{
+    board: SprintBoard
+    peakKmh: number
+    gainKmh: number
+    basePoints: number
+    bonusPoints: number
+    totalPoints: number
+  } | null>(null)
 
   followRef.current = following
 
@@ -377,6 +418,130 @@ export function RouteNavigator({
   const speedKmh =
     location?.speedMps != null ? Math.round(location.speedMps * 3.6) : null
 
+  // Draw sprint boards on the map once, whenever the set changes.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    for (const m of boardMarkersRef.current) map.removeLayer(m)
+    boardMarkersRef.current = []
+    for (const b of boards) {
+      const icon = L.divIcon({
+        className: "",
+        html: `<span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#facc15;color:#05070e;font-weight:800;font-size:12px;border:2px solid #05070e;box-shadow:0 0 8px rgba(250,204,21,0.7);">⚡</span>`,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+      })
+      const m = L.marker([b.lat, b.lon], { icon })
+        .addTo(map)
+        .bindTooltip(b.placeName, { direction: "top" })
+      boardMarkersRef.current.push(m)
+    }
+    return () => {
+      const mp = mapRef.current
+      if (!mp) return
+      for (const m of boardMarkersRef.current) mp.removeLayer(m)
+      boardMarkersRef.current = []
+    }
+  }, [boards])
+
+  // Track speed, arm the next board, and score a sprint when a board is passed.
+  // Only real GPS speed is used; watts are added later when a meter is linked.
+  useEffect(() => {
+    if (!location || !progress) return
+    const now = Date.now()
+    const kmh = location.speedMps != null ? location.speedMps * 3.6 : null
+    if (kmh != null) {
+      const hist = speedHistRef.current
+      hist.push({ t: now, kmh })
+      while (hist.length && now - hist[0]!.t > 40000) hist.shift()
+    }
+    const traveled = progress.traveledKm
+
+    // On the first fix, any board already behind us was NOT sprinted this
+    // session — mark it done so we never retro-award points for starting
+    // mid-route. Only boards we actually cross afterwards can score.
+    if (!seededBehindRef.current) {
+      seededBehindRef.current = true
+      for (const b of boards) {
+        if (traveled >= b.km) doneBoardsRef.current.add(b.km)
+      }
+      return
+    }
+
+    // Score any board we've just passed.
+    for (const b of boards) {
+      if (doneBoardsRef.current.has(b.km)) continue
+      if (traveled >= b.km) {
+        doneBoardsRef.current.add(b.km)
+        const hist = speedHistRef.current
+        const recent = hist.filter((h) => now - h.t <= 12000)
+        const before = hist.filter(
+          (h) => now - h.t > 12000 && now - h.t <= 30000,
+        )
+        const peakKmh = recent.length
+          ? Math.max(...recent.map((h) => h.kmh))
+          : (kmh ?? 0)
+        const baseline = before.length
+          ? Math.min(...before.map((h) => h.kmh))
+          : recent.length
+            ? Math.min(...recent.map((h) => h.kmh))
+            : 0
+        const gainKmh = Math.max(0, peakKmh - baseline)
+        const basePoints = 10
+        const bonusPoints = Math.min(30, Math.round(gainKmh * 2))
+        setArmedBoard(null)
+        setSprintResult({
+          board: b,
+          peakKmh: Math.round(peakKmh),
+          gainKmh: Math.round(gainKmh),
+          basePoints,
+          bonusPoints,
+          totalPoints: basePoints + bonusPoints,
+        })
+        submitSprint.mutate({
+          routeId,
+          rideType: routeId != null ? "planned" : "free",
+          placeName: b.placeName,
+          km: b.km,
+          speedKmhPeak: Math.round(peakKmh),
+          speedGainKmh: Math.round(gainKmh),
+          status: "scored",
+        })
+      }
+    }
+
+    // Arm the nearest upcoming board within 300 m so the rider gets a heads-up.
+    const upcoming =
+      boards
+        .filter((b) => !doneBoardsRef.current.has(b.km) && b.km > traveled)
+        .sort((a, b) => a.km - b.km)[0] ?? null
+    const nextArmed =
+      upcoming && (upcoming.km - traveled) * 1000 <= 300 ? upcoming : null
+    setArmedBoard(nextArmed)
+
+    // Say it out loud, once per board — a cheeky heads-up before the sign.
+    if (nextArmed && spokenBoardRef.current !== nextArmed.km) {
+      spokenBoardRef.current = nextArmed.km
+      speakCue(
+        `${nextArmed.placeName} komt eraan. Benen leeg, eer op het spel!`,
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location, progress, boards])
+
+  // The result popup is a brief celebration — auto-dismiss after ~5s.
+  useEffect(() => {
+    if (!sprintResult) return
+    const id = window.setTimeout(() => setSprintResult(null), 5000)
+    return () => window.clearTimeout(id)
+  }, [sprintResult])
+
+  // Cancel an armed sprint: skip this board, no points, no save.
+  const cancelArmed = () => {
+    if (armedBoard) doneBoardsRef.current.add(armedBoard.km)
+    setArmedBoard(null)
+  }
+
   const overlay = (
     <div className="fixed inset-0 z-[90] bg-[#05070e]">
       <div ref={containerRef} className="absolute inset-0" />
@@ -413,6 +578,24 @@ export function RouteNavigator({
             </button>
           ))}
         </div>
+
+        {routeId != null && (
+          <div className="pointer-events-auto flex items-center gap-2.5 rounded-xl border border-yellow-400/25 bg-[#070d16]/92 px-3.5 py-2.5 backdrop-blur-md">
+            <Zap
+              className="h-5 w-5 shrink-0 text-yellow-300"
+              strokeWidth={1.75}
+            />
+            <p className="text-[12.5px] leading-snug text-white/70">
+              {boardsQuery.isLoading
+                ? "Bordjes zoeken langs de route…"
+                : !boardsAvailable
+                  ? "Bordjes kunnen nu niet bepaald worden."
+                  : boards.length > 0
+                    ? `${boards.length} ${boards.length === 1 ? "bordje" : "bordjes"} om te sprinten. Gas erop bij de komborden!`
+                    : "Geen plaatsbordjes op deze route — sprinten kan altijd, maar levert hier geen punten op."}
+            </p>
+          </div>
+        )}
 
         {nav.length > 0 ? (
           progress?.offRoute ? (
@@ -497,7 +680,72 @@ export function RouteNavigator({
             </p>
           </div>
         )}
+
+        {armedBoard && !sprintResult && (
+          <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-yellow-400/40 bg-[#1a1405]/92 px-3.5 py-3 backdrop-blur-md">
+            <Zap
+              className="h-6 w-6 shrink-0 animate-pulse text-yellow-300"
+              strokeWidth={2}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-[14px] font-semibold text-yellow-200">
+                Bordje {armedBoard.placeName} in zicht!
+              </p>
+              <p className="text-[12px] text-white/55">
+                Zet 'm op scherp — vol gas tot het kombord.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={cancelArmed}
+              className="flex shrink-0 items-center gap-1 rounded-full border border-white/15 px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/55 transition hover:text-white/85"
+            >
+              <Ban className="h-3.5 w-3.5" strokeWidth={1.75} />
+              Sla over
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Sprint result — a brief celebration over the map, auto-dismisses. */}
+      {sprintResult && (
+        <div className="pointer-events-none absolute inset-0 z-[95] flex items-center justify-center p-4">
+          <div className="pointer-events-auto w-full max-w-xs rounded-3xl border border-yellow-400/40 bg-[#0b0f08]/95 p-5 text-center shadow-2xl backdrop-blur-md">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-yellow-400/15">
+              <Trophy className="h-7 w-7 text-yellow-300" strokeWidth={1.75} />
+            </div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-yellow-300/70">
+              Bordje gepakt
+            </p>
+            <p className="mt-1 text-[18px] font-semibold text-white">
+              {sprintResult.board.placeName}
+            </p>
+            <div className="mt-4 flex items-end justify-center gap-1">
+              <span className="font-mono text-[44px] font-bold leading-none tabular-nums text-yellow-300">
+                +{sprintResult.totalPoints}
+              </span>
+              <span className="mb-1.5 text-[13px] text-white/50">punten</span>
+            </div>
+            <div className="mt-3 flex items-center justify-center gap-4 text-[12px] text-white/55">
+              <span>{sprintResult.basePoints} basis</span>
+              <span className="text-yellow-300/80">
+                +{sprintResult.bonusPoints} bonus
+              </span>
+            </div>
+            <p className="mt-2 text-[12px] text-white/45">
+              Piek {sprintResult.peakKmh} km/u · +{sprintResult.gainKmh} km/u
+              versnelling
+            </p>
+            <button
+              type="button"
+              onClick={() => setSprintResult(null)}
+              className="mt-4 w-full rounded-full bg-yellow-400 px-4 py-2 text-[13px] font-semibold text-[#05070e]"
+            >
+              Vet, door!
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Bottom: recenter + progress + steps toggle */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-stretch gap-2 p-3">
@@ -594,4 +842,19 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 function Divider() {
   return <span className="h-8 w-px bg-white/10" />
+}
+
+// Speak a short Dutch cue via the browser's speech engine. Best-effort: silently
+// does nothing where speech synthesis is unavailable (e.g. some browsers).
+function speakCue(text: string) {
+  try {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return
+    const u = new SpeechSynthesisUtterance(text)
+    u.lang = "nl-NL"
+    u.rate = 1.05
+    window.speechSynthesis.cancel()
+    window.speechSynthesis.speak(u)
+  } catch {
+    // Voice is a nicety — never let it break navigation.
+  }
 }
