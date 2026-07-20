@@ -39,6 +39,8 @@ root causes and their durable fixes:
   several real loops — so in genuinely mountainous terrain a "flat" loop may
   still climb (honest limit, not a bug).
 
+**ORS `summary.ascent` is null (critical gotcha):** ORS GeoJSON `properties.summary.ascent` comes back `null` even with `elevation:true`, so `RouteResult.ascentM` is null. The REAL climb lives in the per-point `ele` values (which ORS does return — every point) and is summed by `summarizeTrack` (that's the elevation the user sees). So any elevation-based candidate ranking MUST derive ascent from the track points (`trackAscentM` in loop-quality.ts), never from `ascentM` — the first "flat preference" fix silently did nothing because it read the null `ascentM`. Verified live at Freiburg (Black Forest): flat now picks ~57 km / ~1019 m vs a single-shot 74–83 km / 2286–3372 m. Distance drift (×1.2) intentionally outranks elevation (×0.8): in terrain where every hilly loop is 80 km+, a 50 km request correctly gets the closest-distance loop rather than a far-too-long hilly one (honest, ORS round_trip length is only approximate — ~14% over is normal in sparse/mountainous networks).
+
 **How to apply / gotchas:**
 - Every loop caller must go through `generateVariedLoop`, NOT `provider.generateLoop`
   directly: manual planner (`routes/routes.ts` generate handler) and the

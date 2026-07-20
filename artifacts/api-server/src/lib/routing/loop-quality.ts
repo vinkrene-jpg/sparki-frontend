@@ -66,17 +66,32 @@ export function pathOverlapFraction(path: [number, number][]): number {
 // distinct seeds and keep the one that backtracks least while staying closest to
 // the requested distance. Falls back honestly to the only usable candidate when
 // others fail; throws only when NONE succeed (same contract as generateLoop).
-// Ascent per km (m/km) for a candidate; null when the provider gave no usable
-// distance/ascent so elevation preference simply doesn't weigh in for it.
+// Total climb (m) for a candidate. ORS's GeoJSON `summary.ascent` is frequently
+// null even with elevation requested, so we fall back to summing the real climb
+// from the per-point elevations ORS DOES return. Never fabricates: null only
+// when there is genuinely no elevation data to read.
+function trackAscentM(result: RouteResult): number | null {
+  if (typeof result.ascentM === "number") return result.ascentM;
+  let gain = 0;
+  let seen = 0;
+  let prev: number | null = null;
+  for (const p of result.points) {
+    if (typeof p.ele !== "number") continue;
+    seen += 1;
+    if (prev != null && p.ele > prev) gain += p.ele - prev;
+    prev = p.ele;
+  }
+  return seen > 1 ? Math.round(gain) : null;
+}
+
+// Ascent per km (m/km) for a candidate; null when there is no usable distance
+// or elevation so the preference simply doesn't weigh in for that candidate.
 function ascentPerKm(result: RouteResult): number | null {
-  if (
-    result.ascentM == null ||
-    result.distanceKm == null ||
-    result.distanceKm <= 0
-  ) {
+  const ascent = trackAscentM(result);
+  if (ascent == null || result.distanceKm == null || result.distanceKm <= 0) {
     return null;
   }
-  return result.ascentM / result.distanceKm;
+  return ascent / result.distanceKm;
 }
 
 // Elevation-match penalty (0 = perfect for the stated preference, higher = worse).

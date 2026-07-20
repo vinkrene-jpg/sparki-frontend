@@ -118,6 +118,48 @@ async function run() {
     assert.equal(best.ascentM, 1400, "hilly wish should pick the hilliest loop");
   }
 
+  // 4) Null-ascent fallback (the actual ORS bug): ascentM is null on every
+  //    candidate, but the point elevations carry the real climb. Flat must still
+  //    pick the flattest by deriving ascent from the points.
+  {
+    // Build a same-distance loop whose ascentM is null but whose points climb by
+    // `gainM` (a single monotonic rise so summed positive delta == gainM).
+    const makeNullAscent = (gainM: number): RouteResult => {
+      const r = makeResult(50, 0);
+      const n = r.points.length;
+      return {
+        ...r,
+        ascentM: null,
+        points: r.points.map((p, idx) => ({
+          ...p,
+          ele: (gainM * idx) / (n - 1),
+        })),
+      };
+    };
+    const provider = fakeProvider([
+      makeNullAscent(1200),
+      makeNullAscent(900),
+      makeNullAscent(120), // flattest via derived climb
+      makeNullAscent(700),
+      makeNullAscent(1500),
+    ]);
+    const best = await generateVariedLoop(provider, {
+      ...baseReq,
+      elevationPreference: "flat",
+    });
+    const derived = best.points.reduce(
+      (acc, p, i) =>
+        i > 0 && typeof p.ele === "number" && typeof best.points[i - 1]!.ele === "number"
+          ? acc + Math.max(0, p.ele - (best.points[i - 1]!.ele as number))
+          : acc,
+      0,
+    );
+    assert.ok(
+      Math.round(derived) === 120,
+      "flat wish should pick the flattest loop even when ascentM is null (derived from points)",
+    );
+  }
+
   console.log("loop-quality selection tests passed");
 }
 
