@@ -20,6 +20,7 @@ import {
   type ConnectorDataType,
 } from "@workspace/db";
 import { parseTcx } from "../lib/tcx-parse";
+import { parseGpx } from "../lib/gpx-parse";
 import {
   summaryToCanonicalActivity,
   ingestActivityFile,
@@ -101,6 +102,54 @@ function sampleTcx(startIso: string): string {
 </TrainingCenterDatabase>`;
 }
 
+// Reproduce EXACTLY the GPX shape a Sparki phone ride serializes
+// (`artifacts/sparki-mobile/lib/ride-gpx.ts` → `buildRideGpx`): a GPX 1.1 track
+// whose <trkpt>s carry only the real lat/lon and the wall-clock <time> each
+// point was recorded (no <ele>/power/HR — the phone doesn't measure them). This
+// mirror is what the mobile save path posts to /api/activity-imports; the test
+// locks the client→parser→ingest contract so a drift in that shape can't
+// silently turn saved rides into parse-failures with no session.
+function buildRideGpx(
+  points: { latitude: number; longitude: number; time: number }[],
+  name: string,
+): string | null {
+  if (points.length < 2) return null;
+  const trkName = (name.trim() || "Sparki rit")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+  const trkpts = points
+    .map(
+      (p) =>
+        `      <trkpt lat="${p.latitude}" lon="${p.longitude}">` +
+        `<time>${new Date(p.time).toISOString()}</time></trkpt>`,
+    )
+    .join("\n");
+  return (
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<gpx version="1.1" creator="Sparki" xmlns="http://www.topografix.com/GPX/1/1">\n` +
+    `  <metadata>\n    <name>${trkName}</name>\n  </metadata>\n` +
+    `  <trk>\n    <name>${trkName}</name>\n    <trkseg>\n${trkpts}\n    </trkseg>\n  </trk>\n` +
+    `</gpx>\n`
+  );
+}
+
+// A short but real recorded ride: a few points along a line over ~30 minutes.
+// Coordinates spaced so the haversine distance is clearly non-zero and the time
+// window gives a real duration.
+function sampleRidePoints(
+  startMs: number,
+): { latitude: number; longitude: number; time: number }[] {
+  return [
+    { latitude: 52.09, longitude: 5.11, time: startMs },
+    { latitude: 52.1, longitude: 5.13, time: startMs + 600_000 },
+    { latitude: 52.11, longitude: 5.16, time: startMs + 1_200_000 },
+    { latitude: 52.12, longitude: 5.18, time: startMs + 1_800_000 },
+  ];
+}
+
 async function resolveDevClerkId(): Promise<string | null> {
   const pinned = process.env.DEV_AUTH_CLERK_ID;
   if (pinned) {
@@ -173,6 +222,66 @@ async function main() {
       "hash-route",
     );
     assert(a === null, "no start time → null (route, not activity)");
+  });
+
+  await run("RideGPX", "Sparki phone ride GPX parses to real distance + duration", () => {
+    const start = Date.parse("2026-06-20T07:00:00.000Z");
+    const gpx = buildRideGpx(sampleRidePoints(start), "Ochtendrit");
+    assert(gpx !== null, "GPX built");
+    const s = parseGpx(gpx!);
+    assert(s !== null, "GPX parsed (client shape matches parser)");
+    assert(s!.pointCount === 4, `4 track points → ${s!.pointCount}`);
+    assert(
+      s!.distanceKm != null && s!.distanceKm > 0,
+      `real distance → ${s!.distanceKm}`,
+    );
+    assert(s!.durationSec === 1800, `duration from time window → ${s!.durationSec}`);
+    assert(
+      s!.startTime === "2026-06-20T07:00:00.000Z",
+      `start time → ${s!.startTime}`,
+    );
+    assert(s!.endTime === "2026-06-20T07:30:00.000Z", `end time → ${s!.endTime}`);
+    // The phone omits elevation, so the parser must honestly report none.
+    assert(s!.elevationGainM === null, "no fabricated elevation");
+    assert(s!.trackName === "Ochtendrit", `track name → ${s!.trackName}`);
+  });
+
+  await run("RideGPX", "phone ride GPX maps to a datable canonical activity", () => {
+    const start = Date.parse("2026-06-20T07:00:00.000Z");
+    const gpx = buildRideGpx(sampleRidePoints(start), "Ochtendrit")!;
+    const a = summaryToCanonicalActivity("gpx", parseGpx(gpx)!, "hash-ride");
+    assert(a !== null, "mapped to activity (has real start time)");
+    assert(a!.startedAt === "2026-06-20T07:00:00.000Z", "start time carried");
+    assert(a!.durationMin === 30, `duration → ${a!.durationMin} min`);
+    assert(a!.distanceKm != null && a!.distanceKm > 0, "distance carried");
+    assert(a!.title === "Ochtendrit", "track name → title");
+  });
+
+  await run("RideGPX", "a <2-point track is rejected honestly (no session)", () => {
+    const start = Date.parse("2026-06-20T07:00:00.000Z");
+    // buildRideGpx refuses to serialize a single-point track (client guard).
+    assert(
+      buildRideGpx([{ latitude: 52.09, longitude: 5.11, time: start }], "x") ===
+        null,
+      "single point → null GPX (never posted)",
+    );
+    // And even if a 1-point GPX reached the parser, it must not become an
+    // activity with fabricated distance/duration. A lone <trkpt> yields a
+    // summary with no distance and no duration.
+    const oneTrkpt =
+      `<?xml version="1.0" encoding="UTF-8"?>\n` +
+      `<gpx version="1.1" creator="Sparki" xmlns="http://www.topografix.com/GPX/1/1">\n` +
+      `  <trk><trkseg>\n` +
+      `      <trkpt lat="52.09" lon="5.11"><time>2026-06-20T07:00:00.000Z</time></trkpt>\n` +
+      `  </trkseg></trk>\n</gpx>\n`;
+    const s = parseGpx(oneTrkpt);
+    assert(s !== null && s.pointCount === 1, "1 point parsed");
+    assert(s!.distanceKm === null, "no distance from a single point");
+    // One timestamp → a zero-length window (never a fabricated positive duration).
+    assert(
+      s!.durationSec === 0 || s!.durationSec === null,
+      `no real duration from a single timestamp → ${s!.durationSec}`,
+    );
   });
 
   await run("Idempotency", "same bytes → same external id", () => {
