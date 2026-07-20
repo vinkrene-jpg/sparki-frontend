@@ -43,6 +43,9 @@ export type LoopRequest = {
   profile: RoutingProfile;
   seed?: number;
   points?: number;
+  // How much climbing the rider wants. Used only to SELECT among real ORS
+  // candidates (flattest / hilliest) — never to fabricate elevation.
+  elevationPreference?: "flat" | "hilly" | "any";
 };
 
 export type PointToPointRequest = {

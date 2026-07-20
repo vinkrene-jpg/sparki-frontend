@@ -66,12 +66,44 @@ export function pathOverlapFraction(path: [number, number][]): number {
 // distinct seeds and keep the one that backtracks least while staying closest to
 // the requested distance. Falls back honestly to the only usable candidate when
 // others fail; throws only when NONE succeed (same contract as generateLoop).
+// Ascent per km (m/km) for a candidate; null when the provider gave no usable
+// distance/ascent so elevation preference simply doesn't weigh in for it.
+function ascentPerKm(result: RouteResult): number | null {
+  if (
+    result.ascentM == null ||
+    result.distanceKm == null ||
+    result.distanceKm <= 0
+  ) {
+    return null;
+  }
+  return result.ascentM / result.distanceKm;
+}
+
+// Elevation-match penalty (0 = perfect for the stated preference, higher = worse).
+// Normalised against ~25 m/km, roughly the span from pancake-flat to clearly
+// hilly terrain. "any" never penalises. This only RANKS real ORS candidates —
+// it never changes a route's actual elevation.
+function elevationPenalty(
+  result: RouteResult,
+  preference: "flat" | "hilly" | "any",
+): number {
+  if (preference === "any") return 0;
+  const apk = ascentPerKm(result);
+  if (apk == null) return 0;
+  const normalized = Math.min(apk / 25, 1);
+  return preference === "flat" ? normalized : 1 - normalized;
+}
+
 export async function generateVariedLoop(
   provider: RoutingProvider,
   req: LoopRequest,
   opts?: { candidates?: number },
 ): Promise<RouteResult> {
-  const n = Math.min(Math.max(opts?.candidates ?? 3, 1), 5);
+  const preference = req.elevationPreference ?? "any";
+  // A stated flat/hilly wish needs more real candidates to choose the best-
+  // matching one; a neutral request stays cheap at 3 ORS calls.
+  const defaultCandidates = preference === "any" ? 3 : 5;
+  const n = Math.min(Math.max(opts?.candidates ?? defaultCandidates, 1), 5);
   const target = req.distanceKm;
   let best: RouteResult | null = null;
   let bestScore = Number.POSITIVE_INFINITY;
@@ -92,19 +124,24 @@ export async function generateVariedLoop(
       continue;
     }
     const overlap = pathOverlapFraction(result.path);
-    // Penalise distance drift so we never pick a clean-looking loop that badly
-    // misses the requested length. Overlap dominates; drift is a tie-breaker.
+    // Distance drift matters strongly: a "clean" loop that is 50% too long is a
+    // worse answer than a slightly-repetitive one at the requested length.
     const drift =
       target > 0 && result.distanceKm != null
         ? Math.abs(result.distanceKm - target) / target
         : 0;
-    const score = overlap + drift * 0.5;
+    const elevation = elevationPenalty(result, preference);
+    // Overlap, distance and elevation-match all weigh in; distance now carries
+    // real weight so the requested length is honoured, and elevation match is
+    // decisive when the rider asked for flat/hilly.
+    const score = overlap + drift * 1.2 + elevation * 0.8;
     if (score < bestScore) {
       bestScore = score;
       best = result;
     }
-    // Good enough — a near-clean loop; no need to spend more ORS calls.
-    if (overlap < 0.08) break;
+    // Good enough — a clean loop, close to the requested length, that already
+    // matches the elevation wish. Only then do we stop spending ORS calls.
+    if (overlap < 0.08 && drift < 0.15 && elevation < 0.35) break;
   }
 
   if (!best) {

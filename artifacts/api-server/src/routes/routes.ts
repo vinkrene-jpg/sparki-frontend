@@ -666,6 +666,7 @@ router.post("/generate", requireAuth, async (req, res) => {
               profile,
               seed,
               points: loopPointsFor(workoutTrainingType),
+              elevationPreference: elevationPreference ?? "any",
             });
 
     const summary = summarizeTrack(routeResult.points);

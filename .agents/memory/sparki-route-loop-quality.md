@@ -17,11 +17,27 @@ got whatever that one loop happened to be.
   edges used more than once. Direction-agnostic, so there-and-back counts as
   overlap. Clean square ≈ 0.0, pure out-and-back ≈ 0.5 (the return leg is half
   the distance).
-- `generateVariedLoop(provider, req, {candidates=3})` — asks ORS for a few real
-  candidates with well-separated seeds (`seed + i*7919`), scores each by
-  `overlap + 0.5*distanceDrift`, keeps the best, early-exits when overlap < 0.08.
-  Falls back to the only usable candidate; throws only when ALL fail (same
-  contract as generateLoop).
+- `generateVariedLoop(provider, req, {candidates})` — asks ORS for a few real
+  candidates with well-separated seeds (`seed + i*7919`) and keeps the best by a
+  multi-signal score: overlap + distance-drift + elevation-match, where each
+  signal ranks REAL provider results only (never fabricates geometry/elevation).
+  Falls back to the only usable candidate; throws only when ALL fail.
+
+**Elevation preference + distance adherence (the "prefs ignored" fix):**
+The original report: pick Vlak + 50 km → got 74 km / 2286 m (both ignored). Two
+root causes and their durable fixes:
+- Distance was barely weighted (drift ×0.5) and early-exit fired on overlap
+  ALONE, so a "clean but far-too-long" loop won. Distance drift now carries real
+  weight and the early-exit is gated on ALL signals together (near-clean AND
+  close-to-target AND elevation-matched), never overlap alone.
+- `elevationPreference` "flat" did NOTHING for cycling — `selectRoutingProfile`
+  only reacts to "hilly" (→ wantsTrail) and ORS round_trip has no "prefer flat"
+  knob. **The honest lever is candidate SELECTION, not the ORS request:** thread
+  `elevationPreference` into `LoopRequest`, generate MORE candidates when a
+  flat/hilly wish is set, and rank by ascent-per-km (flattest for flat, hilliest
+  for hilly). ORS cannot be told to route flat; we can only pick the flattest of
+  several real loops — so in genuinely mountainous terrain a "flat" loop may
+  still climb (honest limit, not a bug).
 
 **How to apply / gotchas:**
 - Every loop caller must go through `generateVariedLoop`, NOT `provider.generateLoop`
