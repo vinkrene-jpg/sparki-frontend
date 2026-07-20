@@ -34,11 +34,20 @@ export type SprintResultRow = {
   occurredAt: string
 }
 
+export type SprintBadge = {
+  key: string
+  label: string
+  description: string
+  achieved: boolean
+  progress: { current: number; target: number } | null
+}
+
 export type SprintSeason = {
   seasonYear: number
   totalPoints: number
   sprintCount: number
   bestSingle: number
+  badges: SprintBadge[]
   recent: SprintResultRow[]
 }
 
@@ -88,5 +97,32 @@ export function useSprintSeason() {
     queryKey: keys.season(),
     staleTime: 5 * 60 * 1000,
     queryFn: () => apiFetch<SprintSeason>("/api/sprints/season"),
+  })
+}
+
+// Share (or unshare) one of your own sprints to the Samen-overzicht.
+export function useShareSprint() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, shared }: { id: number; shared: boolean }) =>
+      apiFetch<{ result: SprintResultRow }>(`/api/sprints/result/${id}/share`, {
+        method: "POST",
+        body: JSON.stringify({ shared }),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.season() })
+    },
+  })
+}
+
+// Reverse-geocode a live GPS point to a place name for free-ride sprint
+// detection. Returns null honestly when the provider can't resolve it.
+export function useLookupPlace() {
+  return useMutation({
+    mutationFn: (point: { lat: number; lon: number }) =>
+      apiFetch<{ placeName: string | null }>("/api/sprints/place", {
+        method: "POST",
+        body: JSON.stringify(point),
+      }),
   })
 }

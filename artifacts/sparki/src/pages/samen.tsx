@@ -43,6 +43,7 @@ import {
   Trash2,
   Sparkles,
   Newspaper,
+  Zap,
   Send,
 } from "lucide-react"
 
@@ -135,6 +136,7 @@ const FEED_ICON: Record<CircleFeedItem["type"] | "news", typeof Activity> = {
   friend_race: Flag,
   friend_buddy: Bike,
   friend_rest: Moon,
+  sprint: Zap,
   news: Newspaper,
 }
 

@@ -160,7 +160,8 @@ export type CircleFeedItem = {
     | "friend_training"
     | "friend_race"
     | "friend_buddy"
-    | "friend_rest";
+    | "friend_rest"
+    | "sprint";
   at: string;
   title: string;
   detail: string | null;

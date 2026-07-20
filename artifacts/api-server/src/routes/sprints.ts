@@ -13,6 +13,8 @@ import {
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { detectSprintBoards, scoreSprint } from "../engines/sprint";
+import { deriveSprintBadges } from "../engines/sprint/badges";
+import { getRoutingProvider } from "../lib/routing";
 
 const router = Router();
 
@@ -196,13 +198,74 @@ router.get("/season", requireAuth, async (req, res) => {
   const totalPoints = scored.reduce((s, r) => s + r.totalPoints, 0);
   const bestSingle = scored.reduce((m, r) => Math.max(m, r.totalPoints), 0);
 
+  const badges = deriveSprintBadges(
+    rows.map((r) => ({
+      totalPoints: r.totalPoints,
+      bonusPoints: r.bonusPoints,
+      speedGainKmh: r.speedGainKmh,
+      placeName: r.placeName,
+      status: r.status as "scored" | "cancelled",
+    })),
+  );
+
   return res.json({
     seasonYear: new Date().getFullYear(),
     totalPoints,
     sprintCount: scored.length,
     bestSingle,
+    badges,
     recent: rows.slice(0, 25),
   });
+});
+
+// POST /api/sprints/place — reverse geocode a live GPS point to a place name so
+// a FREE ride can detect town-sign transitions in real time. Honest: returns
+// placeName:null when the routing provider can't resolve it (never fabricated).
+router.post("/place", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req);
+  if (!clerkId) return res.status(401).json({ error: "Unauthorized" });
+
+  const b = (req.body ?? {}) as Record<string, unknown>;
+  const lat = num(b.lat);
+  const lon = num(b.lon);
+  if (
+    lat === null ||
+    lon === null ||
+    lat < -90 ||
+    lat > 90 ||
+    lon < -180 ||
+    lon > 180
+  ) {
+    return res.status(400).json({ error: "Ongeldige coördinaten" });
+  }
+
+  const placeName = await getRoutingProvider().reverseGeocode({ lat, lon });
+  return res.json({ placeName: placeName ?? null });
+});
+
+// POST /api/sprints/result/:id/share — share (or unshare) one of the caller's
+// own sprints to their Samen-overzicht. Only the owner can toggle it.
+router.post("/result/:id/share", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req);
+  if (!clerkId) return res.status(401).json({ error: "Unauthorized" });
+  const id = num(req.params.id);
+  if (id === null) return res.status(400).json({ error: "Ongeldig id" });
+
+  const b = (req.body ?? {}) as Record<string, unknown>;
+  const shared = b.shared === false ? "false" : "true";
+
+  const [row] = await db
+    .update(sprintResultsTable)
+    .set({ shared })
+    .where(
+      and(
+        eq(sprintResultsTable.id, id),
+        eq(sprintResultsTable.clerkId, clerkId),
+      ),
+    )
+    .returning();
+  if (!row) return res.status(404).json({ error: "Sprint niet gevonden" });
+  return res.json({ result: row });
 });
 
 export default router;

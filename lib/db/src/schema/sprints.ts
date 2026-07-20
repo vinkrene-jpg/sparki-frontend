@@ -88,6 +88,8 @@ export const sprintResultsTable = pgTable(
     bonusPoints: integer("bonus_points").notNull().default(0),
     totalPoints: integer("total_points").notNull().default(0),
     status: text("status").notNull().default("scored"),
+    // Whether the rider chose to share this sprint to their Samen-overzicht.
+    shared: text("shared").notNull().default("false"),
     occurredAt: timestamp("occurred_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

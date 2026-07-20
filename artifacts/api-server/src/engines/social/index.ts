@@ -17,6 +17,7 @@ import {
   athleteProfilesTable,
   trainingSessionsTable,
   racesTable,
+  sprintResultsTable,
   type TeamIdentity,
 } from "@workspace/db";
 import { getEffectivePrivacy } from "../../lib/privacy";
@@ -119,7 +120,8 @@ export type CircleFeedItem = {
     | "friend_training"
     | "friend_race"
     | "friend_buddy"
-    | "friend_rest";
+    | "friend_rest"
+    | "sprint";
   at: Date;
   title: string;
   detail: string | null;
@@ -683,6 +685,61 @@ export async function getCircleFeed(clerkId: string): Promise<CircleFeedItem[]> 
       clerkId,
       memoryId: m.id,
       prompt: m.prompt,
+    });
+  }
+
+  // 4. Shared bordje-sprints — the rider's own, plus friends' who opted into
+  // friend-sharing. Only sprints the owner explicitly shared appear here.
+  const sprintSince = new Date();
+  sprintSince.setDate(sprintSince.getDate() - 14);
+
+  const friends = await listFriends(clerkId);
+  const friendSharers: { clerkId: string; displayName: string }[] = [];
+  for (const f of friends) {
+    const privacy = await getEffectivePrivacy(f.clerkId);
+    if (privacy.shareActivityWithFriends) {
+      friendSharers.push({ clerkId: f.clerkId, displayName: f.displayName });
+    }
+  }
+  const sprintOwnerIds = [clerkId, ...friendSharers.map((f) => f.clerkId)];
+  const nameOfSprinter = new Map(
+    friendSharers.map((f) => [f.clerkId, f.displayName]),
+  );
+
+  const sharedSprints = await db
+    .select({
+      id: sprintResultsTable.id,
+      clerkId: sprintResultsTable.clerkId,
+      placeName: sprintResultsTable.placeName,
+      totalPoints: sprintResultsTable.totalPoints,
+      occurredAt: sprintResultsTable.occurredAt,
+    })
+    .from(sprintResultsTable)
+    .where(
+      and(
+        inArray(sprintResultsTable.clerkId, sprintOwnerIds),
+        eq(sprintResultsTable.shared, "true"),
+        eq(sprintResultsTable.status, "scored"),
+        gte(sprintResultsTable.occurredAt, sprintSince),
+      ),
+    )
+    .orderBy(desc(sprintResultsTable.occurredAt))
+    .limit(20);
+
+  for (const s of sharedSprints) {
+    const mine = s.clerkId === clerkId;
+    items.push({
+      id: `sprint-${s.id}`,
+      type: "sprint",
+      at: s.occurredAt,
+      title: mine
+        ? `Jij sprintte voor het bordje van ${s.placeName}`
+        : `${nameOfSprinter.get(s.clerkId) ?? "Een teamgenoot"} sprintte voor ${s.placeName}`,
+      detail: `${s.totalPoints} sprintpunten`,
+      displayName: mine ? null : (nameOfSprinter.get(s.clerkId) ?? null),
+      clerkId: s.clerkId,
+      memoryId: null,
+      prompt: null,
     });
   }
 
