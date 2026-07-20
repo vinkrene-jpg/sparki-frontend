@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
 
@@ -7,17 +8,139 @@ import type { RidePoint } from "@/hooks/useRideRecorder";
 // registered when the JS bundle loads (a hard requirement of expo-task-manager).
 export const RIDE_TASK = "sparki-ride-location";
 
+// Persistent store for the ride currently in progress. Fixes are written here
+// incrementally as they arrive so that if the OS kills the app mid-ride (memory
+// pressure, crash) the real track survives and can be recovered on relaunch.
+const RIDE_STORE_KEY = "sparki:active-ride";
+
 type Listener = (points: RidePoint[]) => void;
+
+// The shape persisted to disk. Only real device fixes are stored; nothing here
+// is fabricated.
+export type PersistedRide = {
+  // Wall-clock ms the ride started, so a recovered ride keeps its real duration.
+  startedAt: number;
+  points: RidePoint[];
+};
 
 // The raw fixes delivered by the OS while a ride is being recorded. This buffer
 // keeps growing even while the app is backgrounded / the screen is locked,
 // because the OS keeps calling the background task. Nothing here is fabricated —
 // every point is a real device fix the OS handed us.
 let buffer: RidePoint[] = [];
+// Start time of the active ride, mirrored into every persisted snapshot.
+let activeStartedAt: number | null = null;
 const listeners = new Set<Listener>();
 
 function emit(): void {
   for (const l of listeners) l(buffer);
+}
+
+// ---------------------------------------------------------------------------
+// Incremental persistence
+//
+// The background task can be relaunched headlessly by the OS after a kill with a
+// fresh (empty) module state. To avoid clobbering the already-captured track we
+// hydrate `buffer` from disk once at module load and always await that before
+// appending. Writes are throttled so a long ride doesn't hammer AsyncStorage on
+// every one-second batch.
+// ---------------------------------------------------------------------------
+
+const hydration: Promise<void> = (async () => {
+  try {
+    const raw = await AsyncStorage.getItem(RIDE_STORE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as PersistedRide | null;
+    if (parsed && Array.isArray(parsed.points)) {
+      // Only restore if the live buffer hasn't already been seeded by a start.
+      if (buffer.length === 0) buffer = parsed.points;
+      if (activeStartedAt == null && typeof parsed.startedAt === "number") {
+        activeStartedAt = parsed.startedAt;
+      }
+    }
+  } catch {
+    // Corrupt/unreadable store: ignore rather than crash. Recovery simply won't
+    // find a ride — never fabricate one.
+  }
+})();
+
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+let persistPending = false;
+
+async function writeStore(): Promise<void> {
+  persistTimer = null;
+  if (!persistPending) return;
+  persistPending = false;
+  if (activeStartedAt == null) return;
+  try {
+    const snapshot: PersistedRide = { startedAt: activeStartedAt, points: buffer };
+    await AsyncStorage.setItem(RIDE_STORE_KEY, JSON.stringify(snapshot));
+  } catch {
+    // Disk write failed: keep going, the next throttled write retries.
+  }
+}
+
+function schedulePersist(): void {
+  persistPending = true;
+  if (persistTimer) return;
+  persistTimer = setTimeout(() => {
+    void writeStore();
+  }, 4000);
+}
+
+async function flushPersist(): Promise<void> {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
+  await writeStore();
+}
+
+/** The persisted in-progress ride, if any real track survived. Null otherwise. */
+export async function loadRecoverableRide(): Promise<PersistedRide | null> {
+  try {
+    const raw = await AsyncStorage.getItem(RIDE_STORE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PersistedRide | null;
+    if (
+      parsed &&
+      Array.isArray(parsed.points) &&
+      parsed.points.length >= 2 &&
+      typeof parsed.startedAt === "number"
+    ) {
+      return parsed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** Discard the persisted ride (after it has been saved or explicitly dropped). */
+export async function clearRecoverableRide(): Promise<void> {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
+  persistPending = false;
+  activeStartedAt = null;
+  buffer = [];
+  try {
+    await AsyncStorage.removeItem(RIDE_STORE_KEY);
+  } catch {
+    // Ignore: worst case a stale ride is offered again and can be discarded.
+  }
+}
+
+/**
+ * Persist the foreground-only track. When background permission is denied the
+ * fixes come from the hook (not this module's task), so the hook mirrors them
+ * here to get the same crash-safety. Throttled the same way.
+ */
+export function persistForegroundRide(points: RidePoint[], startedAt: number): void {
+  activeStartedAt = startedAt;
+  buffer = points;
+  schedulePersist();
 }
 
 // Register the background task. The OS invokes this with batched location
@@ -28,6 +151,9 @@ TaskManager.defineTask(RIDE_TASK, async ({ data, error }) => {
   const locations = (data as { locations?: Location.LocationObject[] } | null)
     ?.locations;
   if (!locations || locations.length === 0) return;
+  // Restore any pre-kill track before appending, so a headless relaunch never
+  // overwrites the real captured fixes with a fresh empty buffer.
+  await hydration;
   for (const loc of locations) {
     buffer.push({
       latitude: loc.coords.latitude,
@@ -35,6 +161,7 @@ TaskManager.defineTask(RIDE_TASK, async ({ data, error }) => {
       time: loc.timestamp,
     });
   }
+  schedulePersist();
   emit();
 });
 
@@ -68,7 +195,10 @@ export type StartResult = {
  * the rider. Nothing is fabricated when a permission is missing.
  */
 export async function startRideTracker(): Promise<StartResult> {
+  // Start a fresh ride: drop any leftover buffer and stamp a new start time.
+  // Any previously persisted (unrecovered) ride is overwritten from here on.
   buffer = [];
+  activeStartedAt = Date.now();
 
   const fg = await Location.requestForegroundPermissionsAsync();
   if (fg.status !== "granted") {
@@ -127,4 +257,8 @@ export async function stopRideTracker(): Promise<void> {
   if (already) {
     await Location.stopLocationUpdatesAsync(RIDE_TASK).catch(() => {});
   }
+  // Flush the latest fixes to disk immediately. The store is intentionally NOT
+  // cleared here — it is cleared only once the ride is saved (or the recovered
+  // ride is explicitly discarded), so a crash between stop and save can't lose it.
+  await flushPersist();
 }

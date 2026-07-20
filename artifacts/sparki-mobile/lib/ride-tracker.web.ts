@@ -12,6 +12,11 @@ export type StartResult = {
   reason?: string;
 };
 
+export type PersistedRide = {
+  startedAt: number;
+  points: RidePoint[];
+};
+
 export function subscribeRideTracker(
   _listener: (points: RidePoint[]) => void,
 ): () => void {
@@ -23,3 +28,17 @@ export async function startRideTracker(): Promise<StartResult> {
 }
 
 export async function stopRideTracker(): Promise<void> {}
+
+// Web has no persistent OS-level background task and no crash-recovery path
+// (a killed browser tab loses the in-memory watch entirely), so recovery is a
+// no-op here. Never fabricate a recovered ride.
+export async function loadRecoverableRide(): Promise<PersistedRide | null> {
+  return null;
+}
+
+export async function clearRecoverableRide(): Promise<void> {}
+
+export function persistForegroundRide(
+  _points: RidePoint[],
+  _startedAt: number,
+): void {}

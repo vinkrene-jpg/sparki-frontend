@@ -28,5 +28,14 @@ track. Honesty contract: no fixes ⇒ empty track, never fabricated.
 - app.json needs iOS `infoPlist.UIBackgroundModes:["location"]`, Android
   background+foreground-service permissions, and the `expo-location` config
   plugin (`isAndroidBackgroundLocationEnabled`/`isAndroidForegroundServiceEnabled`).
-- Buffer is in-memory only — an OS kill mid-ride loses it (follow-up: persist).
 - Real background behavior only testable in a device dev build, not Expo Go web.
+
+Crash recovery (implemented): fixes persist incrementally to AsyncStorage
+(`sparki:active-ride`, `{startedAt,points}`, throttled ~4s + flush on stop).
+Module hydrates buffer from disk once at load and the background task `await`s
+that BEFORE appending — otherwise a headless OS relaunch (empty module) would
+overwrite the real captured track. Foreground-only path mirrors via
+`persistForegroundRide`. Store cleared only on save/reset/discard (NOT on stop),
+so a crash between stop and save can't lose it. Hook exposes `recoverable` +
+`discardRecovered`; record.tsx offers "Onafgemaakte rit gevonden → Opslaan/
+Verwijderen". Honesty: recovery needs ≥2 real fixes, never fabricated.

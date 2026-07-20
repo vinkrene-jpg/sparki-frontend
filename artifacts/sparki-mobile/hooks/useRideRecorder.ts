@@ -3,6 +3,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { haversineMeters, type LatLon } from "@/lib/geo";
 import type { LiveLocation } from "@/hooks/useLiveLocation";
 import {
+  clearRecoverableRide,
+  loadRecoverableRide,
+  persistForegroundRide,
   startRideTracker,
   stopRideTracker,
   subscribeRideTracker,
@@ -27,9 +30,21 @@ export type RideRecording = {
   // True when background permission was explicitly denied: recording works, but
   // only while the navigate screen is in the foreground.
   backgroundDenied: boolean;
+  // A real, unfinished ride found persisted on disk after an app kill/crash.
+  // Only the actual captured fixes — nothing fabricated. Null when there is none.
+  recoverable: RecoverableRide | null;
   start: () => void;
   stop: () => void;
   reset: () => void;
+  // Drop the recovered ride (rider chose not to keep it).
+  discardRecovered: () => void;
+};
+
+// An in-progress ride recovered from disk after the app was killed mid-ride.
+export type RecoverableRide = {
+  points: RidePoint[];
+  distanceKm: number;
+  startedAt: number;
 };
 
 // Ignore GPS jitter while standing still: a new fix closer than this to the last
@@ -78,6 +93,7 @@ export function useRideRecorder(location: LiveLocation | null): RideRecording {
   const [elapsedSec, setElapsedSec] = useState(0);
   const [backgroundActive, setBackgroundActive] = useState(false);
   const [backgroundDenied, setBackgroundDenied] = useState(false);
+  const [recoverable, setRecoverable] = useState<RecoverableRide | null>(null);
 
   const startedAtRef = useRef<number | null>(null);
   const lastRef = useRef<RidePoint | null>(null);
@@ -103,8 +119,39 @@ export function useRideRecorder(location: LiveLocation | null): RideRecording {
       setDistanceKm((d) => d + moved / 1000);
     }
     lastRef.current = next;
-    setPoints((prev) => [...prev, next]);
+    setPoints((prev) => {
+      const updated = [...prev, next];
+      // Mirror the foreground track to disk so a crash/kill doesn't lose it
+      // even when the OS-level background task isn't running.
+      if (startedAtRef.current != null) {
+        persistForegroundRide(updated, startedAtRef.current);
+      }
+      return updated;
+    });
   }, [recording, location]);
+
+  // On mount, surface any unfinished ride that survived an app kill/crash. Only
+  // offered while not actively recording, so a fresh ride never collides with it.
+  useEffect(() => {
+    let cancelled = false;
+    loadRecoverableRide()
+      .then((ride) => {
+        if (cancelled || !ride) return;
+        const track = buildTrack(ride.points);
+        if (track.points.length < 2) return;
+        setRecoverable({
+          points: track.points,
+          distanceKm: track.distanceKm,
+          startedAt: ride.startedAt,
+        });
+      })
+      .catch(() => {
+        // No recoverable ride, or unreadable store: nothing to offer.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Background path: mirror the OS task buffer while it is active.
   useEffect(() => {
@@ -132,6 +179,8 @@ export function useRideRecorder(location: LiveLocation | null): RideRecording {
     startedAtRef.current = Date.now();
     lastRef.current = null;
     backgroundActiveRef.current = false;
+    // Starting a new ride supersedes any recovered one.
+    setRecoverable(null);
     setPoints([]);
     setDistanceKm(0);
     setElapsedSec(0);
@@ -169,7 +218,16 @@ export function useRideRecorder(location: LiveLocation | null): RideRecording {
     setElapsedSec(0);
     setBackgroundActive(false);
     setBackgroundDenied(false);
+    setRecoverable(null);
     stopRideTracker().catch(() => {});
+    // The ride is finished (saved or dropped): clear the persisted track so it
+    // is never offered again for recovery.
+    clearRecoverableRide().catch(() => {});
+  }, []);
+
+  const discardRecovered = useCallback(() => {
+    setRecoverable(null);
+    clearRecoverableRide().catch(() => {});
   }, []);
 
   return {
@@ -179,8 +237,10 @@ export function useRideRecorder(location: LiveLocation | null): RideRecording {
     elapsedSec,
     backgroundActive,
     backgroundDenied,
+    recoverable,
     start,
     stop,
     reset,
+    discardRecovered,
   };
 }

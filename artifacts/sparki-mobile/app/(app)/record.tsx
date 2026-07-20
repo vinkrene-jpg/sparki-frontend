@@ -89,6 +89,24 @@ export default function RecordScreen() {
     }
   };
 
+  // Save the ride that survived an app kill/crash. Uses the exact same GPX save
+  // path; on success the persisted track is cleared via recorder.reset().
+  const onSaveRecovered = async () => {
+    if (!recorder.recoverable) return;
+    setSaved(null);
+    saveRide.reset();
+    try {
+      const res = await saveRide.mutateAsync({
+        points: recorder.recoverable.points,
+        name: defaultRideName(),
+      });
+      setSaved({ sessionId: res.sessionId });
+      recorder.reset();
+    } catch {
+      // Error surfaced via saveRide.error; recovered track kept so it can retry.
+    }
+  };
+
   const saveError = saveRide.error
     ? String((saveRide.error as Error).message)
     : null;
@@ -241,6 +259,40 @@ export default function RecordScreen() {
                 <Text style={[styles.recNote, { color: c.mutedForeground, flex: 1 }]}>
                   {saveError}
                 </Text>
+              </View>
+            )}
+            {recorder.recoverable && !saved && (
+              <View style={[styles.recCard, { backgroundColor: c.card, borderColor: c.primary, flexWrap: "wrap" }]}>
+                <Ionicons name="save-outline" size={20} color={c.primary} />
+                <Text style={[styles.recNote, { color: c.foreground, flex: 1 }]}>
+                  Onafgemaakte rit gevonden ({recorder.recoverable.distanceKm.toFixed(1)} km).
+                  De opname stopte onverwacht — je kunt hem alsnog opslaan.
+                </Text>
+                <View style={styles.recoverActions}>
+                  <Pressable
+                    onPress={recorder.discardRecovered}
+                    disabled={saveRide.isPending}
+                    hitSlop={8}
+                    style={[styles.recoverGhost, { borderColor: c.border }]}
+                  >
+                    <Text style={[styles.recNote, { color: c.mutedForeground }]}>
+                      Verwijderen
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={onSaveRecovered}
+                    disabled={saveRide.isPending}
+                    style={[styles.recoverSave, { backgroundColor: c.primary, opacity: saveRide.isPending ? 0.6 : 1 }]}
+                  >
+                    {saveRide.isPending ? (
+                      <ActivityIndicator color={c.primaryForeground} />
+                    ) : (
+                      <Text style={[styles.recBtnText, { color: c.primaryForeground, fontSize: 14 }]}>
+                        Opslaan
+                      </Text>
+                    )}
+                  </Pressable>
+                </View>
               </View>
             )}
             {permissionDenied ? (
@@ -398,6 +450,28 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 18,
     borderRadius: 18,
+  },
+  recoverActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 6,
+    alignSelf: "stretch",
+    justifyContent: "flex-end",
+  },
+  recoverGhost: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  recoverSave: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
+    minWidth: 90,
+    alignItems: "center",
+    justifyContent: "center",
   },
   recBtnText: { fontFamily: "Inter_700Bold", fontSize: 16 },
 });
