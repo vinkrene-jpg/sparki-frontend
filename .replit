@@ -100,6 +100,10 @@ args = "test-links-end-isolation"
 task = "workflow.run"
 args = "test-health-endpoints"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "test-ride-recovery"
+
 [[workflows.workflow]]
 name = "test-session-analysis"
 author = "agent"
@@ -327,6 +331,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/api-server run test:health-endpoints"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "test-ride-recovery"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/sparki-mobile run test:ride-tracker"
 
 [workflows.workflow.metadata]
 isValidation = true
