@@ -301,6 +301,22 @@ export default function NavigateScreen() {
           }
         }}
         onDismissSaved={() => setSaved(null)}
+        onSaveRecovered={async () => {
+          if (!recorder.recoverable) return;
+          setSaved(null);
+          saveRide.reset();
+          try {
+            const res = await saveRide.mutateAsync({
+              points: recorder.recoverable.points,
+              name: route.name,
+            });
+            setSaved({ sessionId: res.sessionId });
+            recorder.reset();
+          } catch {
+            // Error surfaced via saveRide.error; recovered track kept so it can retry.
+          }
+        }}
+        onDiscardRecovered={recorder.discardRecovered}
       />
     </View>
   );
@@ -329,6 +345,8 @@ function RideRecorderBar({
   onStart,
   onStop,
   onDismissSaved,
+  onSaveRecovered,
+  onDiscardRecovered,
 }: {
   c: ReturnType<typeof useColors>;
   insets: { bottom: number };
@@ -341,6 +359,8 @@ function RideRecorderBar({
   onStart: () => void;
   onStop: () => void;
   onDismissSaved: () => void;
+  onSaveRecovered: () => void;
+  onDiscardRecovered: () => void;
 }) {
   const bottom = insets.bottom + 16;
 
@@ -422,6 +442,40 @@ function RideRecorderBar({
         <View style={[styles.recErr, { backgroundColor: c.card, borderColor: c.destructive }]}>
           <Ionicons name="alert-circle-outline" size={18} color={c.destructive} />
           <Text style={[styles.recNote, { color: c.mutedForeground, flex: 1 }]}>{saveError}</Text>
+        </View>
+      )}
+      {recorder.recoverable && (
+        <View style={[styles.recCard, { backgroundColor: c.card, borderColor: c.primary, flexWrap: "wrap" }]}>
+          <Ionicons name="save-outline" size={20} color={c.primary} />
+          <Text style={[styles.recNote, { color: c.foreground, flex: 1 }]}>
+            Onafgemaakte rit gevonden ({recorder.recoverable.distanceKm.toFixed(1)} km).
+            De opname stopte onverwacht — je kunt hem alsnog opslaan.
+          </Text>
+          <View style={styles.recoverActions}>
+            <Pressable
+              onPress={onDiscardRecovered}
+              disabled={saving}
+              hitSlop={8}
+              style={[styles.recoverGhost, { borderColor: c.border }]}
+            >
+              <Text style={[styles.recNote, { color: c.mutedForeground }]}>
+                Verwijderen
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={onSaveRecovered}
+              disabled={saving}
+              style={[styles.recoverSave, { backgroundColor: c.primary, opacity: saving ? 0.6 : 1 }]}
+            >
+              {saving ? (
+                <ActivityIndicator color={c.primaryForeground} />
+              ) : (
+                <Text style={[styles.recBtnText, { color: c.primaryForeground, fontSize: 14 }]}>
+                  Opslaan
+                </Text>
+              )}
+            </Pressable>
+          </View>
         </View>
       )}
       {permissionDenied ? (
@@ -684,4 +738,26 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   recBtnText: { fontFamily: "Inter_700Bold", fontSize: 15 },
+  recoverActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 6,
+    alignSelf: "stretch",
+    justifyContent: "flex-end",
+  },
+  recoverGhost: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  recoverSave: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
+    minWidth: 90,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });
