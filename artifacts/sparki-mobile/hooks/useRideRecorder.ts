@@ -2,6 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { haversineMeters, type LatLon } from "@/lib/geo";
 import type { LiveLocation } from "@/hooks/useLiveLocation";
+import {
+  startRideTracker,
+  stopRideTracker,
+  subscribeRideTracker,
+} from "@/lib/ride-tracker";
 
 // A single recorded fix: the real device position plus the wall-clock time it
 // arrived. Timestamps let the backend GPX parser compute the ride duration.
@@ -16,6 +21,12 @@ export type RideRecording = {
   points: RidePoint[];
   distanceKm: number;
   elapsedSec: number;
+  // True while the OS-level background task keeps the ride recording with the
+  // screen locked / the app backgrounded.
+  backgroundActive: boolean;
+  // True when background permission was explicitly denied: recording works, but
+  // only while the navigate screen is in the foreground.
+  backgroundDenied: boolean;
   start: () => void;
   stop: () => void;
   reset: () => void;
@@ -25,28 +36,59 @@ export type RideRecording = {
 // recorded one is dropped, so a stationary rider doesn't inflate the distance.
 const MIN_MOVE_METERS = 5;
 
+// Rebuild the filtered track + real haversine distance from a raw fix list.
+// Used for the background buffer, which is delivered as the full array on every
+// update. Nothing is fabricated: only real fixes that moved far enough are kept.
+function buildTrack(raw: RidePoint[]): { points: RidePoint[]; distanceKm: number } {
+  const out: RidePoint[] = [];
+  let distanceKm = 0;
+  let last: RidePoint | null = null;
+  for (const p of raw) {
+    if (last) {
+      const a: LatLon = { latitude: last.latitude, longitude: last.longitude };
+      const b: LatLon = { latitude: p.latitude, longitude: p.longitude };
+      const moved = haversineMeters(a, b);
+      if (moved < MIN_MOVE_METERS) continue;
+      distanceKm += moved / 1000;
+    }
+    out.push(p);
+    last = p;
+  }
+  return { points: out, distanceKm };
+}
+
 /**
- * Records a live ride by accumulating the real GPS fixes emitted by
- * `useLiveLocation` while recording is active. Nothing is fabricated: when the
- * device emits no location (permission denied / no signal) no points are added,
- * so an empty or too-short track is honestly empty and cannot be saved.
+ * Records a live ride from the real GPS fixes. Two paths, chosen automatically:
  *
- * The elapsed timer runs off the wall clock from `start()` so it keeps counting
- * even between GPS fixes; distance is real haversine over the recorded track.
+ * 1. Background (native, permission granted): an OS-level location task
+ *    (`lib/ride-tracker`) keeps accumulating fixes even when the screen locks or
+ *    the app is backgrounded, so the full ride is captured. The hook mirrors that
+ *    buffer via `subscribeRideTracker`.
+ * 2. Foreground-only (web, or background permission denied): fixes come from the
+ *    `location` prop (`useLiveLocation`), which only streams while the screen is
+ *    in the foreground. The rider is told recording pauses when the screen locks.
+ *
+ * Nothing is fabricated: when the device emits no location no points are added,
+ * so a too-short track is honestly empty and cannot be saved.
  */
 export function useRideRecorder(location: LiveLocation | null): RideRecording {
   const [recording, setRecording] = useState(false);
   const [points, setPoints] = useState<RidePoint[]>([]);
   const [distanceKm, setDistanceKm] = useState(0);
   const [elapsedSec, setElapsedSec] = useState(0);
+  const [backgroundActive, setBackgroundActive] = useState(false);
+  const [backgroundDenied, setBackgroundDenied] = useState(false);
 
   const startedAtRef = useRef<number | null>(null);
   const lastRef = useRef<RidePoint | null>(null);
+  // Ref mirror of backgroundActive so the foreground effect can bail out without
+  // re-subscribing whenever the flag flips.
+  const backgroundActiveRef = useRef(false);
 
-  // Append each new real fix to the track while recording, skipping fixes that
-  // haven't moved far enough to be a genuine displacement.
+  // Foreground path: append each new real fix from the prop. Skipped entirely
+  // while the background tracker owns the track (avoids double-counting).
   useEffect(() => {
-    if (!recording || !location) return;
+    if (!recording || backgroundActiveRef.current || !location) return;
     const next: RidePoint = {
       latitude: location.latitude,
       longitude: location.longitude,
@@ -64,6 +106,17 @@ export function useRideRecorder(location: LiveLocation | null): RideRecording {
     setPoints((prev) => [...prev, next]);
   }, [recording, location]);
 
+  // Background path: mirror the OS task buffer while it is active.
+  useEffect(() => {
+    if (!recording || !backgroundActive) return;
+    const unsub = subscribeRideTracker((raw) => {
+      const track = buildTrack(raw);
+      setPoints(track.points);
+      setDistanceKm(track.distanceKm);
+    });
+    return unsub;
+  }, [recording, backgroundActive]);
+
   // Wall-clock elapsed timer, independent of GPS fix cadence.
   useEffect(() => {
     if (!recording) return;
@@ -78,22 +131,56 @@ export function useRideRecorder(location: LiveLocation | null): RideRecording {
   const start = useCallback(() => {
     startedAtRef.current = Date.now();
     lastRef.current = null;
+    backgroundActiveRef.current = false;
     setPoints([]);
     setDistanceKm(0);
     setElapsedSec(0);
+    setBackgroundActive(false);
+    setBackgroundDenied(false);
     setRecording(true);
+
+    startRideTracker()
+      .then((res) => {
+        if (res.started && res.background) {
+          backgroundActiveRef.current = true;
+          setBackgroundActive(true);
+        } else if (res.backgroundDenied) {
+          setBackgroundDenied(true);
+        }
+      })
+      .catch(() => {
+        // Tracker failed to start (e.g. no capability): keep the foreground
+        // path running rather than losing the ride.
+      });
   }, []);
 
-  const stop = useCallback(() => setRecording(false), []);
+  const stop = useCallback(() => {
+    setRecording(false);
+    stopRideTracker().catch(() => {});
+  }, []);
 
   const reset = useCallback(() => {
     setRecording(false);
     startedAtRef.current = null;
     lastRef.current = null;
+    backgroundActiveRef.current = false;
     setPoints([]);
     setDistanceKm(0);
     setElapsedSec(0);
+    setBackgroundActive(false);
+    setBackgroundDenied(false);
+    stopRideTracker().catch(() => {});
   }, []);
 
-  return { recording, points, distanceKm, elapsedSec, start, stop, reset };
+  return {
+    recording,
+    points,
+    distanceKm,
+    elapsedSec,
+    backgroundActive,
+    backgroundDenied,
+    start,
+    stop,
+    reset,
+  };
 }

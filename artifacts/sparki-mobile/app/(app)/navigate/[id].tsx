@@ -384,6 +384,16 @@ function RideRecorderBar({
                 Wachten op je locatie…
               </Text>
             )}
+            {recorder.backgroundActive ? (
+              <Text style={[styles.recNote, { color: c.mutedForeground }]}>
+                Opname loopt door als je scherm op slot gaat.
+              </Text>
+            ) : recorder.backgroundDenied ? (
+              <Text style={[styles.recNote, { color: c.mutedForeground }]}>
+                Alleen opname met scherm aan. Sta locatie op de achtergrond toe
+                om ook met vergrendeld scherm op te nemen.
+              </Text>
+            ) : null}
           </View>
           <Pressable
             onPress={onStop}

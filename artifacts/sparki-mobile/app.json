@@ -16,13 +16,17 @@
     "ios": {
       "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Sparki gebruikt je locatie om je live op de route te volgen tijdens het navigeren."
+        "NSLocationWhenInUseUsageDescription": "Sparki gebruikt je locatie om je live op de route te volgen tijdens het navigeren.",
+        "UIBackgroundModes": ["location"]
       }
     },
     "android": {
       "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION"
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "web": {
@@ -40,7 +44,10 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Sparki gebruikt je locatie om je live op de route te volgen tijdens het navigeren."
+          "locationWhenInUsePermission": "Sparki gebruikt je locatie om te navigeren en je rit op te nemen.",
+          "locationAlwaysAndWhenInUsePermission": "Sparki gebruikt je locatie om je rit op te nemen, ook als het scherm op slot staat of de app op de achtergrond draait.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ]
     ],
