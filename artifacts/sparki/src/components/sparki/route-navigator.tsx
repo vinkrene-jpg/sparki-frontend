@@ -19,7 +19,55 @@ import type { RouteNavCue } from "@/hooks/use-routes"
 
 const OFF_ROUTE_METERS = 60
 
+type BasemapId = "donker" | "standaard" | "fiets" | "satelliet"
+
+const BASEMAPS: Record<
+  BasemapId,
+  { label: string; url: string; attribution: string; maxZoom: number }
+> = {
+  donker: {
+    label: "Donker",
+    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    maxZoom: 20,
+  },
+  standaard: {
+    label: "Standaard",
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19,
+  },
+  fiets: {
+    label: "Fiets",
+    url: "https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png",
+    attribution:
+      '&copy; <a href="https://www.cyclosm.org">CyclOSM</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 20,
+  },
+  satelliet: {
+    label: "Satelliet",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attribution:
+      "&copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+    maxZoom: 19,
+  },
+}
+
 type LatLon = { lat: number; lon: number }
+
+// Initial bearing (degrees, 0 = north) from point a to point b.
+function bearingDeg(a: LatLon, b: LatLon): number {
+  const lat1 = (a.lat * Math.PI) / 180
+  const lat2 = (b.lat * Math.PI) / 180
+  const dLon = ((b.lon - a.lon) * Math.PI) / 180
+  const y = Math.sin(dLon) * Math.cos(lat2)
+  const x =
+    Math.cos(lat1) * Math.sin(lat2) -
+    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon)
+  return (Math.atan2(y, x) * 180) / Math.PI
+}
 
 // Great-circle distance in metres between two coordinates.
 function haversineM(a: LatLon, b: LatLon): number {
@@ -108,15 +156,18 @@ export function RouteNavigator({
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const meMarkerRef = useRef<L.Marker | null>(null)
+  const tileLayerRef = useRef<L.TileLayer | null>(null)
   const followRef = useRef(true)
+  const prevPosRef = useRef<LatLon | null>(null)
 
   const [location, setLocation] = useState<
-    (LatLon & { speedMps: number | null }) | null
+    (LatLon & { speedMps: number | null; heading: number | null }) | null
   >(null)
   const [geoError, setGeoError] = useState<string | null>(null)
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [following, setFollowing] = useState(true)
   const [showSteps, setShowSteps] = useState(false)
+  const [basemap, setBasemap] = useState<BasemapId>("standaard")
 
   followRef.current = following
 
@@ -174,14 +225,31 @@ export function RouteNavigator({
       (pos) => {
         setGeoError(null)
         setPermissionDenied(false)
-        setLocation({
+        const here: LatLon = {
           lat: pos.coords.latitude,
           lon: pos.coords.longitude,
+        }
+        const gpsHeading =
+          typeof pos.coords.heading === "number" &&
+          !Number.isNaN(pos.coords.heading)
+            ? pos.coords.heading
+            : null
+        // Prefer the device heading; otherwise derive it from movement, but
+        // only when we actually moved far enough to trust the bearing.
+        let heading = gpsHeading
+        const prev = prevPosRef.current
+        if (heading == null && prev && haversineM(prev, here) >= 4) {
+          heading = bearingDeg(prev, here)
+        }
+        if (!prev || haversineM(prev, here) >= 4) prevPosRef.current = here
+        setLocation((cur) => ({
+          ...here,
           speedMps:
             typeof pos.coords.speed === "number" && !Number.isNaN(pos.coords.speed)
               ? pos.coords.speed
               : null,
-        })
+          heading: heading ?? cur?.heading ?? null,
+        }))
       },
       (err) => {
         if (err.code === err.PERMISSION_DENIED) {
@@ -205,14 +273,12 @@ export function RouteNavigator({
       zoomControl: true,
       attributionControl: true,
     })
-    L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-      {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        maxZoom: 19,
-      },
-    ).addTo(map)
+    const initial = BASEMAPS.standaard
+    tileLayerRef.current = L.tileLayer(initial.url, {
+      attribution: initial.attribution,
+      maxZoom: initial.maxZoom,
+      detectRetina: true,
+    }).addTo(map)
 
     const latlngs = path.map((p) => [p.lat, p.lon] as [number, number])
     if (latlngs.length >= 2) {
@@ -241,34 +307,71 @@ export function RouteNavigator({
     })
 
     mapRef.current = map
-    setTimeout(() => map.invalidateSize(), 80)
+
+    // Keep the canvas correctly sized: Leaflet renders into a zero/stale-sized
+    // container if it mounts before layout settles, which looks like the map
+    // "overlapping" or drifting. A rAF pass + ResizeObserver keeps it stable.
+    const raf = requestAnimationFrame(() => map.invalidateSize())
+    const ro = new ResizeObserver(() => map.invalidateSize())
+    ro.observe(containerRef.current)
+
     return () => {
+      cancelAnimationFrame(raf)
+      ro.disconnect()
       map.remove()
       mapRef.current = null
       meMarkerRef.current = null
+      tileLayerRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Move the "me" marker on each position update; follow if enabled.
+  // Swap the base tile layer when the rider picks a different map.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    const cfg = BASEMAPS[basemap]
+    if (tileLayerRef.current) map.removeLayer(tileLayerRef.current)
+    tileLayerRef.current = L.tileLayer(cfg.url, {
+      attribution: cfg.attribution,
+      maxZoom: cfg.maxZoom,
+      detectRetina: true,
+    }).addTo(map)
+    tileLayerRef.current.bringToBack()
+  }, [basemap])
+
+  // Move the "me" arrow on each position update; follow if enabled.
   useEffect(() => {
     const map = mapRef.current
     if (!map || !location) return
     const ll: [number, number] = [location.lat, location.lon]
+    const hasHeading = location.heading != null
+    const rot = location.heading ?? 0
+    const html = hasHeading
+      ? `<span style="display:block;width:26px;height:26px;transform:rotate(${rot}deg);transform-origin:center;">
+           <svg viewBox="0 0 24 24" width="26" height="26" style="filter:drop-shadow(0 0 4px rgba(56,189,248,0.8));">
+             <path d="M12 2 L19 20 L12 15.5 L5 20 Z" fill="#38bdf8" stroke="#05070e" stroke-width="1.4" stroke-linejoin="round"/>
+           </svg>
+         </span>`
+      : `<span style="display:block;width:16px;height:16px;border-radius:9999px;background:#38bdf8;border:2px solid #05070e;box-shadow:0 0 0 3px rgba(56,189,248,0.35),0 0 12px #38bdf8;"></span>`
+    const icon = L.divIcon({
+      className: "",
+      html,
+      iconSize: hasHeading ? [26, 26] : [16, 16],
+      iconAnchor: hasHeading ? [13, 13] : [8, 8],
+    })
     if (!meMarkerRef.current) {
-      meMarkerRef.current = L.marker(ll, {
-        icon: L.divIcon({
-          className: "",
-          html: `<span style="display:block;width:16px;height:16px;border-radius:9999px;background:#38bdf8;border:2px solid #05070e;box-shadow:0 0 0 3px rgba(56,189,248,0.35),0 0 12px #38bdf8;"></span>`,
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
-        }),
-        zIndexOffset: 1000,
-      }).addTo(map)
+      meMarkerRef.current = L.marker(ll, { icon, zIndexOffset: 1000 }).addTo(map)
     } else {
       meMarkerRef.current.setLatLng(ll)
+      meMarkerRef.current.setIcon(icon)
     }
-    if (following) map.setView(ll, Math.max(map.getZoom(), 15), { animate: true })
+    // Pan without changing zoom once we're zoomed in — avoids the jittery
+    // zoom-fighting that made the map feel unstable.
+    if (following) {
+      const targetZoom = map.getZoom() < 15 ? 16 : map.getZoom()
+      map.setView(ll, targetZoom, { animate: true, duration: 0.5 })
+    }
   }, [location, following])
 
   const speedKmh =
@@ -292,6 +395,23 @@ export function RouteNavigator({
           <div className="min-w-0 flex-1 truncate rounded-full border border-white/10 bg-[#070d16]/90 px-3 py-2 text-[13px] text-white/70 backdrop-blur-md">
             {name}
           </div>
+        </div>
+
+        <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 rounded-full border border-white/10 bg-[#070d16]/90 p-1 backdrop-blur-md">
+          {(Object.keys(BASEMAPS) as BasemapId[]).map((id) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setBasemap(id)}
+              className={`rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition ${
+                basemap === id
+                  ? "bg-cyan-400 text-[#05070e]"
+                  : "text-white/55 hover:text-white/85"
+              }`}
+            >
+              {BASEMAPS[id].label}
+            </button>
+          ))}
         </div>
 
         {nav.length > 0 ? (
