@@ -14,9 +14,17 @@
       "backgroundColor": "#05070e"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Sparki gebruikt je locatie om je live op de route te volgen tijdens het navigeren."
+      }
     },
-    "android": {},
+    "android": {
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ]
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
@@ -28,7 +36,13 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Sparki gebruikt je locatie om je live op de route te volgen tijdens het navigeren."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

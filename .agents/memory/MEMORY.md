@@ -107,3 +107,4 @@
 - [Sparki Rit-verhaal](sparki-ride-story.md) — flag `rit_verhaal`; sync line must render independent of fresh story; predictionAvailable strictly pre-hoc; workflow limit hit ⇒ tests via shell.
 - [Sparki route loop quality](sparki-route-loop-quality.md) — generated round-trips backtracked; fix = best-of-N real ORS candidates picked by pathOverlapFraction; ALL loop callers must use generateVariedLoop, never provider.generateLoop.
 - [Sparki mobile nav app](sparki-mobile-nav.md) — Expo/RN turn-by-turn nav; react-native-maps has NO web build ⇒ platform-split component (.tsx native / .web.tsx stub), never runtime require; project-reference libs need dist rebuild after src export changes.
+- [Sparki mobile navigation](sparki-mobile-navigation.md) — react-native-maps native-only (web stub keeps it out of web bundle); GPS needs expo-location plugin + permission strings in app.json even though Expo Go masks the gap.
