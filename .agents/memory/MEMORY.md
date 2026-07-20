@@ -106,3 +106,4 @@
 - [Sparki aandachtswet (Vandaag single-leader)](sparki-aandachtswet.md) — one leading Momentblok (priority chain); ride-along weather/leskaart/nudge must be GATED at render not just imported; "voorstel" rung real but na-rit always co-wins.
 - [Sparki Rit-verhaal](sparki-ride-story.md) — flag `rit_verhaal`; sync line must render independent of fresh story; predictionAvailable strictly pre-hoc; workflow limit hit ⇒ tests via shell.
 - [Sparki route loop quality](sparki-route-loop-quality.md) — generated round-trips backtracked; fix = best-of-N real ORS candidates picked by pathOverlapFraction; ALL loop callers must use generateVariedLoop, never provider.generateLoop.
+- [Sparki mobile nav app](sparki-mobile-nav.md) — Expo/RN turn-by-turn nav; react-native-maps has NO web build ⇒ platform-split component (.tsx native / .web.tsx stub), never runtime require; project-reference libs need dist rebuild after src export changes.

@@ -1,0 +1,154 @@
+import { useAuth } from "@clerk/expo";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { RouteCard } from "@/components/RouteCard";
+import { useColors } from "@/hooks/useColors";
+import { useRoutes } from "@/lib/routes-api";
+
+export default function RouteListScreen() {
+  const c = useColors();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { signOut } = useAuth();
+  const { data: routes, isLoading, isError, error, refetch, isRefetching } =
+    useRoutes();
+
+  return (
+    <View style={[styles.screen, { backgroundColor: c.background }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.eyebrow, { color: c.primary }]}>SPARKI</Text>
+          <Text style={[styles.title, { color: c.foreground }]}>Kies je route</Text>
+        </View>
+        <Pressable
+          onPress={() => signOut()}
+          hitSlop={12}
+          style={[styles.iconBtn, { borderColor: c.border, backgroundColor: c.card }]}
+        >
+          <Ionicons name="log-out-outline" size={20} color={c.mutedForeground} />
+        </Pressable>
+      </View>
+
+      {isLoading ? (
+        <View style={styles.center}>
+          <ActivityIndicator color={c.primary} />
+        </View>
+      ) : isError ? (
+        <View style={styles.center}>
+          <Ionicons name="cloud-offline-outline" size={40} color={c.mutedForeground} />
+          <Text style={[styles.stateTitle, { color: c.foreground }]}>
+            Routes laden lukt niet
+          </Text>
+          <Text style={[styles.stateBody, { color: c.mutedForeground }]}>
+            {(error as Error)?.message ?? "Controleer je verbinding en probeer opnieuw."}
+          </Text>
+          <Pressable
+            onPress={() => refetch()}
+            style={[styles.retry, { borderColor: c.border, backgroundColor: c.card }]}
+          >
+            <Text style={{ color: c.primary, fontFamily: "Inter_600SemiBold" }}>
+              Opnieuw proberen
+            </Text>
+          </Pressable>
+        </View>
+      ) : !routes || routes.length === 0 ? (
+        <View style={styles.center}>
+          <Ionicons name="map-outline" size={40} color={c.mutedForeground} />
+          <Text style={[styles.stateTitle, { color: c.foreground }]}>
+            Nog geen routes
+          </Text>
+          <Text style={[styles.stateBody, { color: c.mutedForeground }]}>
+            Je hebt nog geen opgeslagen routes. Maak of importeer een route in Sparki
+            op het web — daarna verschijnt hij hier om te navigeren.
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={routes}
+          keyExtractor={(r) => String(r.id)}
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingBottom: insets.bottom + 24,
+            gap: 14,
+          }}
+          renderItem={({ item }) => (
+            <RouteCard
+              route={item}
+              onPress={() => router.push(`/navigate/${item.id}`)}
+            />
+          )}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor={c.primary}
+            />
+          }
+        />
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1 },
+  header: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    paddingHorizontal: 20,
+    paddingBottom: 18,
+    gap: 12,
+  },
+  eyebrow: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 12,
+    letterSpacing: 2,
+  },
+  title: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 28,
+    letterSpacing: -0.5,
+    marginTop: 2,
+  },
+  iconBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 40,
+    gap: 12,
+  },
+  stateTitle: { fontFamily: "Inter_600SemiBold", fontSize: 18, marginTop: 4 },
+  stateBody: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  retry: {
+    marginTop: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+});
