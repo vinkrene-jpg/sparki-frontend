@@ -22,3 +22,4 @@ export function getRoutingProvider(name?: string): RoutingProvider {
 
 export * from "./types";
 export * from "./profile-selection";
+export * from "./loop-quality";

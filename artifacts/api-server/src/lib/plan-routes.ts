@@ -16,6 +16,7 @@ import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { summarizeTrack } from "./gpx-parse";
 import {
   getRoutingProvider,
+  generateVariedLoop,
   selectRoutingProfile,
   profileToSurface,
   profileCruisingSpeedKmh,
@@ -154,7 +155,7 @@ export async function generateAndSavePlanRoute(opts: {
       bikeType: bike,
       trainingType: training,
     });
-    const routeResult = await provider.generateLoop({
+    const routeResult = await generateVariedLoop(provider, {
       start,
       distanceKm: targetKm,
       profile,

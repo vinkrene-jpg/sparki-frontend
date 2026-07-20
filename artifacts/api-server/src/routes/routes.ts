@@ -23,6 +23,7 @@ import {
   putCandidate,
   getCandidate,
   getRoutingProvider,
+  generateVariedLoop,
   selectRoutingProfile,
   profileToSurface,
   profileCruisingSpeedKmh,
@@ -659,7 +660,7 @@ router.post("/generate", requireAuth, async (req, res) => {
               end,
               profile,
             })
-          : await provider.generateLoop({
+          : await generateVariedLoop(provider, {
               start: { lat: startLat, lon: startLon },
               distanceKm: targetDistanceKm,
               profile,
