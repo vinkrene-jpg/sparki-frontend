@@ -42,12 +42,21 @@ export type SprintBadge = {
   progress: { current: number; target: number } | null
 }
 
+export type SprintRankRow = {
+  clerkId: string
+  name: string
+  points: number
+  isMe: boolean
+}
+
 export type SprintSeason = {
   seasonYear: number
   totalPoints: number
   sprintCount: number
   bestSingle: number
   badges: SprintBadge[]
+  ranking: SprintRankRow[]
+  myRank: number | null
   recent: SprintResultRow[]
 }
 

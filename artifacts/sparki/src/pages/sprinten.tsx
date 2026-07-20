@@ -7,6 +7,7 @@ import {
   useShareSprint,
   type SprintBadge,
   type SprintResultRow,
+  type SprintRankRow,
 } from "@/hooks/use-sprints"
 
 function Card({
@@ -123,6 +124,45 @@ function RecentSprint({ row }: { row: SprintResultRow }) {
   )
 }
 
+function Ranking({
+  rows,
+  myRank,
+}: {
+  rows: SprintRankRow[]
+  myRank: number | null
+}) {
+  return (
+    <Card title="Klassement met vrienden">
+      {myRank != null && (
+        <p className="mb-3 text-sm text-white/60">
+          Je staat {myRank}e van {rows.length}.
+        </p>
+      )}
+      <div>
+        {rows.map((r, i) => (
+          <div
+            key={r.clerkId}
+            className={`flex items-center justify-between border-b border-white/[0.06] py-2.5 last:border-0 ${
+              r.isMe ? "text-cyan-200" : "text-white/80"
+            }`}
+          >
+            <span className="flex items-center gap-3">
+              <span className="w-5 text-right font-mono text-xs text-white/40">
+                {i + 1}
+              </span>
+              <span className="text-sm">{r.name}</span>
+            </span>
+            <span className="font-mono text-sm">{r.points}</span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-[11px] text-white/40">
+        Alleen sprints die vrienden zelf hebben gedeeld tellen mee.
+      </p>
+    </Card>
+  )
+}
+
 export default function SprintenPage() {
   const [, navigate] = useLocation()
   const { data, isLoading } = useSprintSeason()
@@ -161,6 +201,10 @@ export default function SprintenPage() {
             </div>
           )}
         </Card>
+
+        {data && data.ranking.length > 0 && (
+          <Ranking rows={data.ranking} myRank={data.myRank} />
+        )}
 
         <FreeRideSprint />
 

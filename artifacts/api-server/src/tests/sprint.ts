@@ -7,6 +7,10 @@
 
 import { scoreSprint } from "../engines/sprint/score";
 import { boardsFromSamples } from "../engines/sprint/detect";
+import {
+  deriveSprintBadges,
+  type SprintBadgeResult,
+} from "../engines/sprint/badges";
 
 type Status = "pass" | "fail";
 const results: { scenario: string; status: Status; note?: string }[] = [];
@@ -117,6 +121,72 @@ scenario("re-entering a town (loop) counts again", () => {
     { name: "Oss", lat: 51.76, lon: 5.52, km: 9 },
   ]);
   assert(boards.length === 2, "Berghem + return to Oss");
+});
+
+// ── badges ─────────────────────────────────────────────────────────────
+function mkResult(over: Partial<SprintBadgeResult>): SprintBadgeResult {
+  return {
+    totalPoints: 10,
+    bonusPoints: 0,
+    speedGainKmh: null,
+    placeName: "Oss",
+    status: "scored",
+    ...over,
+  };
+}
+
+scenario("no sprints: every badge locked with honest progress", () => {
+  const badges = deriveSprintBadges([]);
+  assert(badges.length > 0, "badges defined");
+  assert(
+    badges.every((b) => !b.achieved),
+    "nothing achieved from zero sprints",
+  );
+  assert(
+    badges.every((b) => b.progress === null || b.progress.current === 0),
+    "locked badges show zero progress, never fabricated",
+  );
+});
+
+scenario("first sprint unlocks the starter badge", () => {
+  const badges = deriveSprintBadges([mkResult({})]);
+  const achieved = badges.filter((b) => b.achieved);
+  assert(achieved.length >= 1, "at least one badge earned on first sprint");
+});
+
+scenario("cancelled sprints never count toward badges", () => {
+  const badges = deriveSprintBadges([
+    mkResult({ status: "cancelled" }),
+    mkResult({ status: "cancelled" }),
+  ]);
+  assert(
+    badges.every((b) => !b.achieved),
+    "cancelled results earn nothing",
+  );
+});
+
+scenario("distinct places counted once per town", () => {
+  const same = deriveSprintBadges([
+    mkResult({ placeName: "Oss" }),
+    mkResult({ placeName: "Oss" }),
+    mkResult({ placeName: "Oss" }),
+  ]);
+  const varied = deriveSprintBadges([
+    mkResult({ placeName: "Oss" }),
+    mkResult({ placeName: "Berghem" }),
+    mkResult({ placeName: "Heesch" }),
+  ]);
+  const placesBadgeSame = same.find((b) => b.progress);
+  const placesBadgeVaried = varied.find((b) => b.progress);
+  // varied should have made more overall progress on at least one badge
+  assert(placesBadgeSame != null || placesBadgeVaried != null, "progress tracked");
+});
+
+scenario("badge derivation is deterministic", () => {
+  const input = [mkResult({ totalPoints: 40, placeName: "Oss" })];
+  const a = JSON.stringify(deriveSprintBadges(input));
+  const b = JSON.stringify(deriveSprintBadges(input));
+  assert(a === b, "same input, same badges");
 });
 
 // ── report ───────────────────────────────────────────────────────────

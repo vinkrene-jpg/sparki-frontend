@@ -1,11 +1,13 @@
 import { Router } from "express";
-import { and, desc, eq, gte } from "drizzle-orm";
+import { and, desc, eq, gte, or, inArray } from "drizzle-orm";
 import {
   db,
   routesTable,
   routeSprintBoardsTable,
   sprintResultsTable,
   athleteProfilesTable,
+  friendLinksTable,
+  userProfilesTable,
   sprintRideTypes,
   type SprintBoard,
   type RoutePathPoint,
@@ -208,12 +210,79 @@ router.get("/season", requireAuth, async (req, res) => {
     })),
   );
 
+  // Friends-ranking. Honest + privacy-respecting: a friend only appears when
+  // they explicitly SHARED a scored sprint this season (shared="true"). No
+  // shared sprints ⇒ they don't show, and we never expose private tallies.
+  const links = await db
+    .select()
+    .from(friendLinksTable)
+    .where(
+      and(
+        eq(friendLinksTable.status, "accepted"),
+        or(
+          eq(friendLinksTable.requesterClerkId, clerkId),
+          eq(friendLinksTable.addresseeClerkId, clerkId),
+        ),
+      ),
+    );
+  const friendIds = links.map((l) =>
+    l.requesterClerkId === clerkId ? l.addresseeClerkId : l.requesterClerkId,
+  );
+
+  const ranking: { clerkId: string; name: string; points: number; isMe: boolean }[] =
+    [{ clerkId, name: "Jij", points: totalPoints, isMe: true }];
+
+  if (friendIds.length > 0) {
+    const friendRows = await db
+      .select()
+      .from(sprintResultsTable)
+      .where(
+        and(
+          inArray(sprintResultsTable.clerkId, friendIds),
+          eq(sprintResultsTable.status, "scored"),
+          eq(sprintResultsTable.shared, "true"),
+          gte(sprintResultsTable.occurredAt, seasonStart),
+        ),
+      );
+    const byFriend = new Map<string, number>();
+    for (const r of friendRows) {
+      byFriend.set(r.clerkId, (byFriend.get(r.clerkId) ?? 0) + r.totalPoints);
+    }
+    const sharingIds = [...byFriend.keys()];
+    if (sharingIds.length > 0) {
+      const names = await db
+        .select({
+          clerkId: userProfilesTable.clerkId,
+          displayName: userProfilesTable.displayName,
+        })
+        .from(userProfilesTable)
+        .where(inArray(userProfilesTable.clerkId, sharingIds));
+      const nameMap = new Map(
+        names.map((n) => [n.clerkId, n.displayName ?? "Sporter"]),
+      );
+      for (const [fid, pts] of byFriend) {
+        ranking.push({
+          clerkId: fid,
+          name: nameMap.get(fid) ?? "Sporter",
+          points: pts,
+          isMe: false,
+        });
+      }
+    }
+  }
+
+  ranking.sort((a, b) => b.points - a.points);
+  const myRank = ranking.findIndex((r) => r.isMe) + 1;
+
   return res.json({
     seasonYear: new Date().getFullYear(),
     totalPoints,
     sprintCount: scored.length,
     bestSingle,
     badges,
+    // Only meaningful when at least one friend shared — otherwise it's just you.
+    ranking: ranking.length > 1 ? ranking : [],
+    myRank: ranking.length > 1 ? myRank : null,
     recent: rows.slice(0, 25),
   });
 });

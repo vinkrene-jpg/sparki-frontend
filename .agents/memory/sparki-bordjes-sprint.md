@@ -33,8 +33,26 @@ NEW place-name transitions detected by reverse-geocoding sampled route points.
 - Cancel/"Sla over" = discard (skip the board, no row), not a persisted
   cancelled result. Schema still supports `status:"cancelled"` for future use.
 
-## Still pending (follow-up phases)
-- Free-ride live board detection (client reverse-geocode; nav currently
-  planned-route only), real Web Bluetooth power (Cycling Power Service 0x1818),
-  the live 5s wattage overlay on a power+speed rise, and extras
-  (season ranking UI, share to Samen, KOM segments, badges).
+## Free-ride, power, ranking, badges (vervolgfasen)
+- **Free-ride sprinting** (no planned route): watch GPS, `POST /api/sprints/place`
+  reverse-geocodes the live point; a changed place name = a new bordje. First fix
+  only anchors (not scored). `placeName:null` ⇒ no bordje (never fabricated).
+- **Web Bluetooth power** (`use-power-meter.ts`): GATT Cycling Power Service
+  0x1818, measurement char 0x2a63 (int16 watts at byte offset 2, LE). Wired into
+  BOTH route-navigator (planned) and free-ride; `peakWatts5s` sent in submit and
+  the SERVER reconciles the true total via `onSuccess` (client shows optimistic
+  speed-only first). DOM lacks Bluetooth types ⇒ use `any` casts (no @types dep).
+  Unsupported (iOS Safari) ⇒ speed-only, stated plainly.
+- **Ranking** (`/api/sprints/season` → `ranking`,`myRank`): friends-only, and a
+  friend appears ONLY when they explicitly shared (`shared="true"`) a scored
+  sprint this season — never expose private tallies. `ranking:[]`+`myRank:null`
+  when nobody else shared.
+- **Share to Samen**: `POST /api/sprints/result/:id/share` (owner-checked toggle,
+  `shared` text "true"/"false"); social circle-feed injects shared+scored sprints
+  (own + friends who opted in) as `type:"sprint"` items.
+- **Badges** (`engines/sprint/badges.ts`): pure `deriveSprintBadges` over the
+  season tally; locked badges show honest progress, cancelled never count.
+
+## Deferred
+- KOM/segment timing NOT built — needs a segment model + timing capture;
+  fabrication/dead-end risk, so left as a future task.

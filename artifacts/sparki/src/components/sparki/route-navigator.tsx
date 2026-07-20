@@ -24,6 +24,7 @@ import {
   useSubmitSprint,
   type SprintBoard,
 } from "@/hooks/use-sprints"
+import { usePowerMeter } from "@/hooks/use-power-meter"
 
 const OFF_ROUTE_METERS = 60
 
@@ -182,6 +183,7 @@ export function RouteNavigator({
 
   // ── Bordjes sprinten ──────────────────────────────────────────────
   const submitSprint = useSubmitSprint()
+  const power = usePowerMeter()
   const boardsQuery = useSprintBoards(routeId)
   const boards = boardsQuery.data?.boards ?? []
   const boardsAvailable = boardsQuery.data?.available ?? true
@@ -205,6 +207,7 @@ export function RouteNavigator({
     board: SprintBoard
     peakKmh: number
     gainKmh: number
+    peakWatts: number | null
     basePoints: number
     bonusPoints: number
     totalPoints: number
@@ -487,25 +490,48 @@ export function RouteNavigator({
             ? Math.min(...recent.map((h) => h.kmh))
             : 0
         const gainKmh = Math.max(0, peakKmh - baseline)
+        // Real 5-second peak watts from a connected power meter, or null when
+        // no meter is paired — the server awards the watt bonus honestly.
+        const peakWatts5s = power.connected ? power.peakWatts(5) : null
         const basePoints = 10
-        const bonusPoints = Math.min(30, Math.round(gainKmh * 2))
+        const speedBonus = Math.min(30, Math.round(gainKmh * 2))
         setArmedBoard(null)
+        submitSprint.mutate(
+          {
+            routeId,
+            rideType: routeId != null ? "planned" : "free",
+            placeName: b.placeName,
+            km: b.km,
+            speedKmhPeak: Math.round(peakKmh),
+            speedGainKmh: Math.round(gainKmh),
+            peakWatts5s,
+            status: "scored",
+          },
+          {
+            onSuccess: (data) => {
+              const r = data.result
+              setSprintResult({
+                board: b,
+                peakKmh: Math.round(peakKmh),
+                gainKmh: Math.round(gainKmh),
+                peakWatts: peakWatts5s != null ? Math.round(peakWatts5s) : null,
+                basePoints: r.basePoints,
+                bonusPoints: r.bonusPoints,
+                totalPoints: r.totalPoints,
+              })
+            },
+          },
+        )
+        // Optimistic view uses the deterministic speed portion; the server
+        // reconciles the true total (incl. watt bonus) via onSuccess above.
         setSprintResult({
           board: b,
           peakKmh: Math.round(peakKmh),
           gainKmh: Math.round(gainKmh),
+          peakWatts: peakWatts5s != null ? Math.round(peakWatts5s) : null,
           basePoints,
-          bonusPoints,
-          totalPoints: basePoints + bonusPoints,
-        })
-        submitSprint.mutate({
-          routeId,
-          rideType: routeId != null ? "planned" : "free",
-          placeName: b.placeName,
-          km: b.km,
-          speedKmhPeak: Math.round(peakKmh),
-          speedGainKmh: Math.round(gainKmh),
-          status: "scored",
+          bonusPoints: speedBonus,
+          totalPoints: basePoints + speedBonus,
         })
       }
     }
@@ -594,6 +620,25 @@ export function RouteNavigator({
                     ? `${boards.length} ${boards.length === 1 ? "bordje" : "bordjes"} om te sprinten. Gas erop bij de komborden!`
                     : "Geen plaatsbordjes op deze route — sprinten kan altijd, maar levert hier geen punten op."}
             </p>
+            {power.supported && !power.connected && (
+              <button
+                onClick={power.connect}
+                className="pointer-events-auto shrink-0 rounded-full border border-yellow-400/30 px-2.5 py-1 text-[11px] text-yellow-200/90 transition hover:bg-yellow-400/10"
+              >
+                Watt koppelen
+              </button>
+            )}
+            {power.connected && (
+              <span className="pointer-events-none shrink-0 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-[11px] text-cyan-200">
+                {power.watts != null ? `${power.watts} W` : "watt aan"}
+              </span>
+            )}
+            <a
+              href={`${import.meta.env.BASE_URL}sprinten`}
+              className="pointer-events-auto shrink-0 rounded-full border border-yellow-400/30 px-2.5 py-1 text-[11px] text-yellow-200/90 transition hover:bg-yellow-400/10"
+            >
+              Seizoen
+            </a>
           </div>
         )}
 
@@ -735,6 +780,8 @@ export function RouteNavigator({
             <p className="mt-2 text-[12px] text-white/45">
               Piek {sprintResult.peakKmh} km/u · +{sprintResult.gainKmh} km/u
               versnelling
+              {sprintResult.peakWatts != null &&
+                ` · ${sprintResult.peakWatts} W piek`}
             </p>
             <button
               type="button"
