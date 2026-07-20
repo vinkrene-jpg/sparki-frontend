@@ -24,7 +24,8 @@ import {
 import { useUpcomingWorkouts } from "@/hooks/use-today-workout"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { isSportActive } from "@workspace/feature-flags"
-import { MapPin, Sparkles, Flag, Users, X, Download, Smartphone } from "lucide-react"
+import { MapPin, Sparkles, Flag, Users, X, Download, Smartphone, Navigation } from "lucide-react"
+import { RouteNavigator } from "@/components/sparki/route-navigator"
 
 // Editable list of named meeting points ("verzamelpunten") — e.g. where you
 // pick up a friend. Shared by the interactive builder and the generated-route
@@ -214,11 +215,13 @@ function RouteCard({ route }: { route: SparkiRoute }) {
   const del = useDeleteRoute()
   const download = useDownloadRoute()
   const [gpxError, setGpxError] = useState<string | null>(null)
+  const [navigating, setNavigating] = useState(false)
   const profile = route.profile ?? []
   const climbs = route.climbs ?? []
   const nav = route.nav ?? []
   const geometry = route.geometry ?? []
   const canExport = geometry.length > 1
+  const canNavigate = geometry.length > 1
 
   function exportRoute(format: RouteExportFormat) {
     setGpxError(null)
@@ -251,6 +254,17 @@ function RouteCard({ route }: { route: SparkiRoute }) {
           </h3>
         </div>
         <div className="flex shrink-0 items-center gap-3">
+          {canNavigate && (
+            <button
+              type="button"
+              onClick={() => setNavigating(true)}
+              title="Open het navigatievenster — volgt je live positie op de kaart"
+              className="flex items-center gap-1.5 rounded-full bg-cyan-400/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#05070e] transition hover:bg-cyan-300"
+            >
+              <Navigation className="h-3.5 w-3.5" strokeWidth={2} />
+              Navigeer
+            </button>
+          )}
           {canExport && (
             <div className="flex items-center gap-2.5">
               <button
@@ -350,13 +364,24 @@ function RouteCard({ route }: { route: SparkiRoute }) {
           strokeWidth={1.75}
         />
         <p className="text-[12px] leading-relaxed text-white/50">
-          <span className="text-white/75">Onderweg navigeren?</span> Turn-by-turn
-          op de kaart doe je in de Sparki-app op je telefoon — deze route staat
-          daar klaar onder <span className="text-white/75">"Kies je route"</span>,
-          tik op <span className="text-white/75">Navigeer</span>. Of download 'm
-          hierboven als GPX/TCX voor je fietscomputer.
+          <span className="text-white/75">Onderweg navigeren?</span> Tik op{" "}
+          <span className="text-white/75">Navigeer</span> om hier op de kaart je
+          live positie te volgen — je browser vraagt eenmalig toegang tot je
+          locatie. Wil je de rit als training opnemen op de achtergrond? Dat doe
+          je in de Sparki-app op je telefoon. Of download de route hierboven als
+          GPX/TCX voor je fietscomputer.
         </p>
       </div>
+
+      {navigating && (
+        <RouteNavigator
+          name={route.name}
+          geometry={geometry}
+          nav={nav}
+          distanceKm={route.distanceKm ?? null}
+          onClose={() => setNavigating(false)}
+        />
+      )}
     </div>
   )
 }
