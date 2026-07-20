@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RouteMap } from "@/components/RouteMap";
 import { useColors } from "@/hooks/useColors";
 import { useLiveLocation } from "@/hooks/useLiveLocation";
+import { useRideRecorder } from "@/hooks/useRideRecorder";
 import {
   cumulativeKm,
   nearestPointIndex,
@@ -22,7 +23,7 @@ import {
   type LatLon,
 } from "@/lib/geo";
 import { hasMapbox } from "@/lib/mapbox";
-import { useRoute, type RouteStep } from "@/lib/routes-api";
+import { useRoute, useSaveRide, type RouteStep } from "@/lib/routes-api";
 
 const OFF_ROUTE_METERS = 60;
 
@@ -64,6 +65,9 @@ export default function NavigateScreen() {
     Number.isInteger(routeId) ? routeId : null,
   );
   const { location, permission, error: locError } = useLiveLocation(true);
+  const recorder = useRideRecorder(location);
+  const saveRide = useSaveRide();
+  const [saved, setSaved] = useState<null | { sessionId: number | null }>(null);
 
   const [following, setFollowing] = useState(true);
 
@@ -266,6 +270,165 @@ export default function NavigateScreen() {
             />
           </View>
         </View>
+      )}
+
+      {/* ---------- Ride recording ---------- */}
+      <RideRecorderBar
+        c={c}
+        insets={insets}
+        recorder={recorder}
+        location={location}
+        permissionDenied={permission === "denied" || !!locError}
+        saving={saveRide.isPending}
+        saveError={saveRide.error ? String((saveRide.error as Error).message) : null}
+        saved={saved}
+        onStart={() => {
+          setSaved(null);
+          saveRide.reset();
+          recorder.start();
+        }}
+        onStop={async () => {
+          recorder.stop();
+          try {
+            const res = await saveRide.mutateAsync({
+              points: recorder.points,
+              name: route.name,
+            });
+            setSaved({ sessionId: res.sessionId });
+            recorder.reset();
+          } catch {
+            // Error surfaced via saveRide.error; track kept so the rider can retry.
+          }
+        }}
+        onDismissSaved={() => setSaved(null)}
+      />
+    </View>
+  );
+}
+
+function fmtElapsed(sec: number): string {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}
+
+// The "Start rit" recorder. Honest at every step: recording is blocked when
+// there is no location permission (no fabricated track), a too-short ride is
+// rejected by the save client, and save failures are shown with a retry path.
+function RideRecorderBar({
+  c,
+  insets,
+  recorder,
+  location,
+  permissionDenied,
+  saving,
+  saveError,
+  saved,
+  onStart,
+  onStop,
+  onDismissSaved,
+}: {
+  c: ReturnType<typeof useColors>;
+  insets: { bottom: number };
+  recorder: ReturnType<typeof useRideRecorder>;
+  location: ReturnType<typeof useLiveLocation>["location"];
+  permissionDenied: boolean;
+  saving: boolean;
+  saveError: string | null;
+  saved: null | { sessionId: number | null };
+  onStart: () => void;
+  onStop: () => void;
+  onDismissSaved: () => void;
+}) {
+  const bottom = insets.bottom + 16;
+
+  if (saved) {
+    return (
+      <View style={[styles.recWrap, { bottom }]} pointerEvents="box-none">
+        <View style={[styles.recCard, { backgroundColor: c.card, borderColor: c.primary }]}>
+          <Ionicons name="checkmark-circle" size={22} color={c.primary} />
+          <Text style={[styles.recSavedText, { color: c.foreground }]}>
+            {saved.sessionId != null
+              ? "Rit opgeslagen in je trainingen."
+              : "Rit opgeslagen."}
+          </Text>
+          <Pressable onPress={onDismissSaved} hitSlop={10}>
+            <Ionicons name="close" size={20} color={c.mutedForeground} />
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  if (recorder.recording) {
+    return (
+      <View style={[styles.recWrap, { bottom }]} pointerEvents="box-none">
+        <View style={[styles.recCard, { backgroundColor: c.card, borderColor: c.border }]}>
+          <View style={{ flex: 1 }}>
+            <View style={styles.recStatsRow}>
+              <View style={styles.recLive}>
+                <View style={[styles.recDot, { backgroundColor: c.destructive }]} />
+                <Text style={[styles.recLiveLabel, { color: c.destructive }]}>Bezig</Text>
+              </View>
+              <Text style={[styles.recStat, { color: c.foreground }]}>
+                {fmtElapsed(recorder.elapsedSec)}
+              </Text>
+              <Text style={[styles.recStat, { color: c.foreground }]}>
+                {recorder.distanceKm.toFixed(1)} km
+              </Text>
+            </View>
+            {!location && (
+              <Text style={[styles.recNote, { color: c.mutedForeground }]}>
+                Wachten op je locatie…
+              </Text>
+            )}
+          </View>
+          <Pressable
+            onPress={onStop}
+            disabled={saving}
+            style={[styles.recBtn, { backgroundColor: c.primary, opacity: saving ? 0.6 : 1 }]}
+          >
+            {saving ? (
+              <ActivityIndicator color={c.primaryForeground} />
+            ) : (
+              <>
+                <Ionicons name="stop" size={18} color={c.primaryForeground} />
+                <Text style={[styles.recBtnText, { color: c.primaryForeground }]}>
+                  Stop &amp; opslaan
+                </Text>
+              </>
+            )}
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.recWrap, { bottom }]} pointerEvents="box-none">
+      {saveError && (
+        <View style={[styles.recErr, { backgroundColor: c.card, borderColor: c.destructive }]}>
+          <Ionicons name="alert-circle-outline" size={18} color={c.destructive} />
+          <Text style={[styles.recNote, { color: c.mutedForeground, flex: 1 }]}>{saveError}</Text>
+        </View>
+      )}
+      {permissionDenied ? (
+        <View style={[styles.recCard, { backgroundColor: c.card, borderColor: c.border }]}>
+          <Ionicons name="location-outline" size={18} color={c.mutedForeground} />
+          <Text style={[styles.recNote, { color: c.mutedForeground, flex: 1 }]}>
+            Sta locatie toe om een rit op te nemen.
+          </Text>
+        </View>
+      ) : (
+        <Pressable
+          onPress={onStart}
+          style={[styles.recStartBtn, { backgroundColor: c.primary }]}
+        >
+          <Ionicons name="play" size={20} color={c.primaryForeground} />
+          <Text style={[styles.recBtnText, { color: c.primaryForeground }]}>Start rit</Text>
+        </Pressable>
       )}
     </View>
   );
@@ -470,4 +633,45 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
   },
+  recWrap: { position: "absolute", left: 16, right: 16, gap: 8 },
+  recCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  recErr: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  recStatsRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+  recLive: { flexDirection: "row", alignItems: "center", gap: 6 },
+  recDot: { width: 10, height: 10, borderRadius: 5 },
+  recLiveLabel: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  recStat: { fontFamily: "Inter_700Bold", fontSize: 18 },
+  recNote: { fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 2 },
+  recSavedText: { fontFamily: "Inter_600SemiBold", fontSize: 14, flex: 1 },
+  recBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 999,
+  },
+  recStartBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 999,
+  },
+  recBtnText: { fontFamily: "Inter_700Bold", fontSize: 15 },
 });
