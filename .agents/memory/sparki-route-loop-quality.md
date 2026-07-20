@@ -55,3 +55,8 @@ root causes and their durable fixes:
   case cheap). Keep `candidates` ≤ 5.
 - point-to-point and waypoint routes are unaffected (a user-shaped path is already
   intentional) — only round-trips get candidate selection.
+
+## Three distance options (korter/gevraagd/langer)
+- `POST /api/routes/generate/options` (loop-only) returns 3 real candidates at ~0.9×/1.0×/1.2× target, de-duped after clamp (3..200) so near a bound you honestly get <3. Each is a full server-stored candidate + a `variant` label, saveable via `POST /` like any candidate.
+- Shared `buildLoopCandidate(ctx, targetKm)` helper backs BOTH `/generate` (loop branch, early-return) and `/generate/options` so they never drift. ptp/waypoints keep the old inline tail.
+- Built sequentially (each loop fans out several ORS probes; parallel×3 risks rate limits). Frontend: `useGenerateRouteOptions`; loop mode button = "Genereer 3 routes" → chooser cards → pick sets `candidate` → normal preview/save; "← Andere afstand kiezen" back button.

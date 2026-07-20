@@ -7,6 +7,7 @@ import {
   useCreateRoute,
   useDeleteRoute,
   useGenerateRoute,
+  useGenerateRouteOptions,
   useSaveGeneratedRoute,
   useDownloadRoute,
   useDownloadCandidate,
@@ -351,6 +352,7 @@ const inputClass =
 
 function RouteGenerator({ onClose }: { onClose: () => void }) {
   const generate = useGenerateRoute()
+  const genOptions = useGenerateRouteOptions()
   const save = useSaveGeneratedRoute()
   const candidateDownload = useDownloadCandidate()
   const { data: workouts } = useUpcomingWorkouts()
@@ -385,6 +387,8 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
   const [start, setStart] = useState<{ lat: number; lon: number } | null>(null)
   const [geoState, setGeoState] = useState<"idle" | "loading" | "error">("idle")
   const [candidate, setCandidate] = useState<RouteCandidate | null>(null)
+  // Loop mode: the 3 distance variants (korter/gevraagd/langer) to choose from.
+  const [options, setOptions] = useState<RouteCandidate[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
@@ -446,6 +450,41 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
     )
   }
 
+  // Loop mode: ask Sparki for THREE distance variants at once (korter/gevraagd/
+  // langer). The rider picks one, which then flows into the normal candidate
+  // preview + save. A→B and eigen-route modes stay single (their distance is
+  // fixed by the destination / placed points).
+  function runGenerateOptions() {
+    setError(null)
+    setSaved(false)
+    setCandidate(null)
+    setOptions(null)
+    if (!start) {
+      setError("Kies eerst een startpunt (gebruik je locatie)")
+      return
+    }
+    const distNum = parseInt(distance)
+    genOptions.mutate(
+      {
+        mode: "loop",
+        startLat: start.lat,
+        startLon: start.lon,
+        sport,
+        bikeType: sport === "cycling" ? bikeType : undefined,
+        elevationPreference,
+        trainingType,
+        plannedWorkoutId: linkedWorkout ? linkedWorkout.id : undefined,
+        targetDistanceKm:
+          !linkedWorkout && Number.isFinite(distNum) ? distNum : undefined,
+      },
+      {
+        onSuccess: (data) => setOptions(data.options),
+        onError: (e) =>
+          setError(e instanceof Error ? e.message : "Routegeneratie mislukt"),
+      },
+    )
+  }
+
   function runGenerate(nextSeed?: number) {
     setError(null)
     setSaved(false)
@@ -499,6 +538,7 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
         onSuccess: () => {
           setSaved(true)
           setCandidate(null)
+          setOptions(null)
           setWaypoints([])
           setMeetpoints([])
         },
@@ -912,21 +952,75 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
 
       <button
         type="button"
-        onClick={() => runGenerate()}
-        disabled={generate.isPending}
+        onClick={() => (mode === "loop" ? runGenerateOptions() : runGenerate())}
+        disabled={generate.isPending || genOptions.isPending}
         className="mt-4 w-full rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
         style={{ background: ACCENT, color: "#040506" }}
       >
-        {generate.isPending
+        {generate.isPending || genOptions.isPending
           ? "Berekenen…"
           : mode === "waypoints"
             ? "Bereken route"
-            : "Genereer route"}
+            : mode === "loop"
+              ? "Genereer 3 routes"
+              : "Genereer route"}
       </button>
+
+      {/* Loop mode: pick one of the 3 distance variants Sparki proposed */}
+      {mode === "loop" && options && !candidate && (
+        <div className="mt-5 border-t border-white/[0.08] pt-5">
+          <span className="label-xs text-white/35">KIES JE AFSTAND</span>
+          <p className="mt-1 text-[12px] leading-relaxed text-white/40">
+            {options.length > 1
+              ? `Sparki stelde ${options.length} routes voor rond je afstand. Kies degene die past — je ziet daarna de kaart, het hoogteprofiel en de navigatie.`
+              : "Sparki kon rond deze afstand één passende lus vinden. Kies hem om de kaart en navigatie te zien."}
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {options.map((o) => (
+              <button
+                key={o.candidateId}
+                type="button"
+                onClick={() => setCandidate(o)}
+                className="rounded-xl border border-white/[0.1] bg-white/[0.03] p-3.5 text-left transition-colors hover:border-cyan-300/40 hover:bg-cyan-300/[0.06]"
+              >
+                <span
+                  className="font-mono text-[9px] uppercase tracking-[0.16em]"
+                  style={{ color: ACCENT }}
+                >
+                  {(o as RouteCandidate & { variant?: string }).variant ??
+                    "Route"}
+                </span>
+                <div className="mt-1.5 font-sans text-xl font-light tracking-tight text-white/90">
+                  {o.distanceKm != null ? `${Math.round(o.distanceKm)} km` : "—"}
+                </div>
+                <div className="mt-1.5 flex items-center gap-3 font-mono text-[10px] tabular-nums text-white/45">
+                  <span>
+                    {o.elevationGainM != null ? `${o.elevationGainM} m` : "—"}
+                  </span>
+                  <span>·</span>
+                  <span>{formatDuration(o.durationSec)}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Proposed candidate */}
       {candidate && (
         <div className="mt-5 border-t border-white/[0.08] pt-5">
+          {mode === "loop" && options && options.length > 1 && (
+            <button
+              type="button"
+              onClick={() => {
+                setCandidate(null)
+                setMeetpoints([])
+              }}
+              className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-cyan-300/80"
+            >
+              ← Andere afstand kiezen
+            </button>
+          )}
           <h4 className="font-sans text-lg font-light tracking-tight text-white/90">
             {candidate.name}
           </h4>

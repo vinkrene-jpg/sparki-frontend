@@ -501,6 +501,107 @@ router.get("/candidate/:candidateId/tcx", requireAuth, async (req, res) => {
 // the rationale, it never invents geometry. The athlete does NOT pick a routing
 // profile: Sparki auto-selects it from sport + bike type + training + elevation.
 // Persist later via POST /api/routes with source="generated".
+
+// Fully-resolved context for building a loop candidate. Shared by the single-
+// route endpoint (/generate) and the 3-distance chooser (/generate/options) so
+// the two paths can never drift apart. All geometry/metrics come straight from
+// the routing provider; the model only phrases the rationale.
+type LoopCandidateContext = {
+  clerkId: string;
+  provider: ReturnType<typeof getRoutingProvider>;
+  start: { lat: number; lon: number };
+  profile: ReturnType<typeof selectRoutingProfile>;
+  surface: string;
+  sport: string;
+  bikeType: string | null;
+  workoutTrainingType: string;
+  linkedWorkoutTitle: string | null;
+  elevationPreference: "flat" | "hilly" | "any";
+  seed: number | undefined;
+  points: number;
+  startName: string | null;
+  plannedWorkoutId: number | null;
+};
+
+// Build one real loop candidate at a specific target distance, store it server-
+// side and return the response shape. Never fabricates geometry or metrics.
+async function buildLoopCandidate(
+  ctx: LoopCandidateContext,
+  targetDistanceKm: number,
+) {
+  const routeResult = await generateVariedLoop(ctx.provider, {
+    start: ctx.start,
+    distanceKm: targetDistanceKm,
+    profile: ctx.profile,
+    seed: ctx.seed,
+    points: ctx.points,
+    elevationPreference: ctx.elevationPreference,
+  });
+
+  const summary = summarizeTrack(routeResult.points);
+  const distanceKm = summary.distanceKm ?? routeResult.distanceKm;
+  const elevationGainM = summary.elevationGainM ?? routeResult.ascentM;
+  const durationSec = routeResult.durationSec;
+  const nav: RouteStep[] = routeResult.steps;
+
+  const distLabel = distanceKm != null ? `${Math.round(distanceKm)} km` : "";
+  const name = `${ctx.workoutTrainingType}-lus${ctx.startName ? ` vanuit ${ctx.startName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`;
+
+  const rationale = await buildRationale({
+    trainingType: ctx.linkedWorkoutTitle
+      ? `${ctx.workoutTrainingType} (${ctx.linkedWorkoutTitle})`
+      : ctx.workoutTrainingType,
+    profile: ctx.profile,
+    mode: "loop",
+    distanceKm,
+    durationSec,
+    elevationGainM,
+    climbCount: summary.climbs.length,
+    startName: ctx.startName,
+    endName: null,
+  });
+
+  const candidateId = putCandidate({
+    clerkId: ctx.clerkId,
+    name,
+    surface: ctx.surface,
+    distanceKm,
+    durationSec,
+    elevationGainM,
+    profile: summary.profile,
+    climbs: summary.climbs,
+    nav,
+    geometry: routeResult.path,
+    waypoints: [],
+    rationale,
+    plannedWorkoutId: ctx.plannedWorkoutId,
+  });
+
+  return {
+    candidateId,
+    name,
+    surface: ctx.surface,
+    sport: ctx.sport,
+    bikeType: ctx.bikeType,
+    routingProfile: ctx.profile,
+    trainingType: ctx.workoutTrainingType,
+    mode: "loop" as const,
+    distanceKm,
+    durationSec,
+    elevationGainM,
+    profile: summary.profile,
+    climbs: summary.climbs,
+    nav,
+    geometry: routeResult.path,
+    waypoints: [] as [number, number][],
+    rationale,
+    startName: ctx.startName,
+    endName: null,
+    plannedWorkoutId: ctx.plannedWorkoutId,
+    targetDistanceKm,
+  };
+}
+
 router.post("/generate", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const body = (req.body ?? {}) as Record<string, unknown>;
@@ -651,23 +752,44 @@ router.post("/generate", requireAuth, async (req, res) => {
       }
     }
 
+    // Loop mode: build the candidate via the shared helper so the single-route
+    // path and the 3-distance chooser (/generate/options) never drift.
+    if (mode === "loop") {
+      const startName = await provider.reverseGeocode({
+        lat: startLat,
+        lon: startLon,
+      });
+      const candidate = await buildLoopCandidate(
+        {
+          clerkId,
+          provider,
+          start: { lat: startLat, lon: startLon },
+          profile,
+          surface,
+          sport,
+          bikeType,
+          workoutTrainingType,
+          linkedWorkoutTitle,
+          elevationPreference: elevationPreference ?? "any",
+          seed,
+          points: loopPointsFor(workoutTrainingType),
+          startName,
+          plannedWorkoutId,
+        },
+        targetDistanceKm,
+      );
+      res.json({ candidate });
+      return;
+    }
+
     const routeResult =
       mode === "waypoints"
         ? await provider.routeWaypoints({ points: waypoints, profile })
-        : mode === "ptp" && end
-          ? await provider.routePointToPoint({
-              start: { lat: startLat, lon: startLon },
-              end,
-              profile,
-            })
-          : await generateVariedLoop(provider, {
-              start: { lat: startLat, lon: startLon },
-              distanceKm: targetDistanceKm,
-              profile,
-              seed,
-              points: loopPointsFor(workoutTrainingType),
-              elevationPreference: elevationPreference ?? "any",
-            });
+        : await provider.routePointToPoint({
+            start: { lat: startLat, lon: startLon },
+            end: end!,
+            profile,
+          });
 
     const summary = summarizeTrack(routeResult.points);
     const distanceKm = summary.distanceKm ?? routeResult.distanceKm;
@@ -751,11 +873,168 @@ router.post("/generate", requireAuth, async (req, res) => {
         startName,
         endName,
         plannedWorkoutId,
-        targetDistanceKm: mode === "loop" ? targetDistanceKm : null,
+        targetDistanceKm: null,
       },
     });
   } catch (err) {
     req.log.error({ err }, "routes.generate failed");
+    const message =
+      err instanceof Error && err.message
+        ? err.message
+        : "Routegeneratie mislukt";
+    res.status(502).json({ error: message });
+  }
+});
+
+// POST /api/routes/generate/options — loop-only. Instead of a single route,
+// Sparki proposes THREE real loops at different distances (korter ≈ 0,9× /
+// gevraagd 1,0× / langer ≈ 1,2× the target) so the rider can pick. Each option
+// is a fully-computed, server-stored candidate (same shape + a `variant` label)
+// that can be saved via POST / like any other candidate. Nothing is fabricated:
+// distances that collide after rounding/clamping are de-duplicated, so near a
+// clamp bound you may honestly get fewer than three.
+router.post("/generate/options", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = (req.body ?? {}) as Record<string, unknown>;
+
+  const provider = getRoutingProvider();
+  if (!provider.isConfigured()) {
+    res.status(503).json({
+      error:
+        "Routegeneratie is nog niet beschikbaar — de ORS_API_KEY ontbreekt.",
+    });
+    return;
+  }
+
+  if (
+    typeof body.sport === "string" &&
+    !isSportActive(body.sport.toLowerCase())
+  ) {
+    res
+      .status(400)
+      .json({ error: "Deze sport is nog niet beschikbaar in Sparki." });
+    return;
+  }
+  const sport = coerceSport(body.sport);
+  const bikeType = coerceBikeType(body.bikeType);
+  const elevationPreference = coerceElevation(body.elevationPreference);
+  const trainingType =
+    typeof body.trainingType === "string" && body.trainingType.trim()
+      ? body.trainingType.trim()
+      : "duurtraining";
+
+  const startLat = finiteNum(body.startLat);
+  const startLon = finiteNum(body.startLon);
+  if (
+    startLat == null ||
+    startLon == null ||
+    Math.abs(startLat) > 90 ||
+    Math.abs(startLon) > 180
+  ) {
+    res.status(400).json({ error: "Geldig startpunt is verplicht" });
+    return;
+  }
+
+  const seed = finiteNum(body.seed) ?? undefined;
+
+  try {
+    let targetDistanceKm = finiteNum(body.targetDistanceKm);
+    let linkedWorkoutTitle: string | null = null;
+    let workoutDurationMin: number | null = null;
+    let workoutTrainingType = trainingType;
+
+    const plannedWorkoutId =
+      Number.isInteger(Number(body.plannedWorkoutId)) &&
+      Number(body.plannedWorkoutId) > 0
+        ? Number(body.plannedWorkoutId)
+        : null;
+    if (plannedWorkoutId != null) {
+      const [workout] = await db
+        .select()
+        .from(plannedWorkoutsTable)
+        .where(
+          and(
+            eq(plannedWorkoutsTable.id, plannedWorkoutId),
+            eq(plannedWorkoutsTable.clerkId, clerkId),
+          ),
+        )
+        .limit(1);
+      if (!workout) {
+        res.status(400).json({ error: "Ongeldige training-koppeling" });
+        return;
+      }
+      linkedWorkoutTitle = workout.title;
+      workoutDurationMin = workout.targetDurationMin;
+      if (workout.type && workout.type.trim())
+        workoutTrainingType = workout.type;
+    }
+
+    const profile = selectRoutingProfile({
+      sport,
+      bikeType,
+      trainingType: workoutTrainingType,
+      durationMin: workoutDurationMin,
+      targetDistanceKm,
+      elevationPreference,
+    });
+    const surface = profileToSurface(profile);
+
+    if (targetDistanceKm == null && workoutDurationMin != null) {
+      targetDistanceKm =
+        Math.round(
+          (workoutDurationMin / 60) * profileCruisingSpeedKmh(profile),
+        ) || null;
+    }
+    if (targetDistanceKm == null) targetDistanceKm = 40;
+    targetDistanceKm = Math.min(Math.max(targetDistanceKm, 3), 200);
+    const base = targetDistanceKm;
+
+    // korter ≈ 0,9× · gevraagd 1,0× · langer ≈ 1,2×. Clamp to the honest bounds
+    // and de-duplicate so a request near an edge never fabricates variants.
+    const distances = [
+      ...new Set(
+        [Math.round(base * 0.9), base, Math.round(base * 1.2)].map((d) =>
+          Math.min(Math.max(d, 3), 200),
+        ),
+      ),
+    ].sort((a, b) => a - b);
+
+    const startName = await provider.reverseGeocode({
+      lat: startLat,
+      lon: startLon,
+    });
+
+    const ctx: LoopCandidateContext = {
+      clerkId,
+      provider,
+      start: { lat: startLat, lon: startLon },
+      profile,
+      surface,
+      sport,
+      bikeType,
+      workoutTrainingType,
+      linkedWorkoutTitle,
+      elevationPreference: elevationPreference ?? "any",
+      seed,
+      points: loopPointsFor(workoutTrainingType),
+      startName,
+      plannedWorkoutId,
+    };
+
+    // Build sequentially — each loop already fans out several provider probes,
+    // so parallelising all three at once risks tripping ORS rate limits.
+    const options: Array<
+      Awaited<ReturnType<typeof buildLoopCandidate>> & { variant: string }
+    > = [];
+    for (const d of distances) {
+      const candidate = await buildLoopCandidate(ctx, d);
+      const variant = d < base ? "Korter" : d > base ? "Langer" : "Op maat";
+      options.push({ ...candidate, variant });
+    }
+
+    res.json({ options });
+  } catch (err) {
+    req.log.error({ err }, "routes.generate.options failed");
     const message =
       err instanceof Error && err.message
         ? err.message

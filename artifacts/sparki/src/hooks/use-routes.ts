@@ -173,6 +173,22 @@ export function useGenerateRoute() {
   });
 }
 
+// A distance variant returned by the 3-options chooser: a full candidate plus a
+// short label ("Korter" / "Op maat" / "Langer").
+export type RouteOption = RouteCandidate & { variant: string };
+
+// Propose THREE loops at different distances (korter/gevraagd/langer) at once,
+// WITHOUT saving. Loop mode only. Returns the options for the rider to pick.
+export function useGenerateRouteOptions() {
+  return useMutation({
+    mutationFn: (input: GenerateRouteInput) =>
+      apiFetch<{ options: RouteOption[] }>("/api/routes/generate/options", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+  });
+}
+
 // Persist a generated candidate into the routes list (source="generated").
 // Optionally attaches user-authored meeting points ("verzamelpunten").
 export function useSaveGeneratedRoute() {
