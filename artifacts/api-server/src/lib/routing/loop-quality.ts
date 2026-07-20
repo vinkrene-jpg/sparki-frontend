@@ -115,10 +115,14 @@ export async function generateVariedLoop(
   opts?: { candidates?: number },
 ): Promise<RouteResult> {
   const preference = req.elevationPreference ?? "any";
-  // A stated flat/hilly wish needs more real candidates to choose the best-
-  // matching one; a neutral request stays cheap at 3 ORS calls.
-  const defaultCandidates = preference === "any" ? 3 : 5;
-  const n = Math.min(Math.max(opts?.candidates ?? defaultCandidates, 1), 5);
+  // A stated flat/hilly wish needs a wider pool of real candidates to choose the
+  // best-matching one — in hilly terrain the genuinely flat loops only appear in
+  // later seeds, so too small a sample silently returns a hillier route. A
+  // neutral request stays cheap at 3 ORS calls. The early-exit below still stops
+  // as soon as a clean, on-distance, on-elevation loop appears, so the extra
+  // ceiling only costs more calls when a good match is actually hard to find.
+  const defaultCandidates = preference === "any" ? 3 : 8;
+  const n = Math.min(Math.max(opts?.candidates ?? defaultCandidates, 1), 10);
   const target = req.distanceKm;
   let best: RouteResult | null = null;
   let bestScore = Number.POSITIVE_INFINITY;
