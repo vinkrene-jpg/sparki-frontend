@@ -325,6 +325,8 @@ export function RouteNavigator({
     }).addTo(map)
 
     const latlngs = path.map((p) => [p.lat, p.lon] as [number, number])
+    const routeBounds =
+      latlngs.length >= 2 ? L.latLngBounds(latlngs) : null
     if (latlngs.length >= 2) {
       L.polyline(latlngs, { color: ACCENT, weight: 4, opacity: 0.9 }).addTo(map)
       const dot = (color: string) =>
@@ -355,7 +357,12 @@ export function RouteNavigator({
     // Keep the canvas correctly sized: Leaflet renders into a zero/stale-sized
     // container if it mounts before layout settles, which looks like the map
     // "overlapping" or drifting. A rAF pass + ResizeObserver keeps it stable.
-    const raf = requestAnimationFrame(() => map.invalidateSize())
+    const raf = requestAnimationFrame(() => {
+      map.invalidateSize()
+      // Re-fit once the container has its real size — the first fitBounds can
+      // run against a zero/stale-sized canvas, leaving the route line off-screen.
+      if (routeBounds) map.fitBounds(routeBounds, { padding: [40, 40] })
+    })
     const ro = new ResizeObserver(() => map.invalidateSize())
     ro.observe(containerRef.current)
 
@@ -569,11 +576,11 @@ export function RouteNavigator({
   }
 
   const overlay = (
-    <div className="fixed inset-0 z-[90] bg-[#05070e]">
-      <div ref={containerRef} className="absolute inset-0" />
+    <div className="fixed inset-0 z-[90] isolate bg-[#05070e]">
+      <div ref={containerRef} className="absolute inset-0 z-0" />
 
       {/* Top bar: close + next instruction */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col gap-2 p-3">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2 p-3">
         <div className="pointer-events-auto flex items-center gap-2">
           <button
             type="button"
@@ -795,7 +802,7 @@ export function RouteNavigator({
       )}
 
       {/* Bottom: recenter + progress + steps toggle */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-stretch gap-2 p-3">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col items-stretch gap-2 p-3">
         {!following && location && (
           <button
             type="button"
