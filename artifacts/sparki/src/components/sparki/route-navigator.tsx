@@ -337,6 +337,8 @@ export function RouteNavigator({
       zoomControl: true,
       attributionControl: true,
     })
+    // Only the licence-required © credit — no Leaflet software plug.
+    map.attributionControl.setPrefix(false)
     const initial = BASEMAPS.standaard
     tileLayerRef.current = L.tileLayer(initial.url, {
       attribution: initial.attribution,

@@ -156,6 +156,21 @@ optgroup {
   }
 }
 
+/* Kaartvermelding (licentie-plicht OpenStreetMap/CARTO) — zo subtiel mogelijk:
+   klein, halfdoorzichtig, donker, geen witte balk in het donkere ontwerp. */
+.leaflet-control-attribution {
+  background: rgba(5, 7, 14, 0.55) !important;
+  color: rgba(255, 255, 255, 0.28) !important;
+  font-size: 8px !important;
+  line-height: 1.2;
+  padding: 1px 5px !important;
+  border-radius: 6px 0 0 0;
+}
+.leaflet-control-attribution a {
+  color: rgba(255, 255, 255, 0.35) !important;
+  text-decoration: none;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

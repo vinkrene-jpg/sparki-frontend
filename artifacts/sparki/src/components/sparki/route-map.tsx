@@ -115,6 +115,9 @@ export function RouteMap({
       keyboard: interactive,
       touchZoom: interactive,
     })
+    // Only the licence-required © OpenStreetMap/CARTO credit — no Leaflet
+    // software plug, and styled ultra-subtle via CSS (index.css).
+    map.attributionControl.setPrefix(false)
     L.tileLayer(
       "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
       {
