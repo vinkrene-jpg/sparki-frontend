@@ -13,9 +13,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { LiveSensorsPanel } from "@/components/LiveSensorsPanel";
 import { RouteMap } from "@/components/RouteMap";
 import { useColors } from "@/hooks/useColors";
 import { useLiveLocation } from "@/hooks/useLiveLocation";
+import { useGarageSensors, useLiveSensors } from "@/hooks/useLiveSensors";
 import { useRideRecorder, type RidePoint } from "@/hooks/useRideRecorder";
 import { toLatLon, type LatLon } from "@/lib/geo";
 import { hasMapbox } from "@/lib/mapbox";
@@ -57,6 +59,10 @@ export default function RecordScreen() {
   const saveRide = useSaveRide();
   const [saved, setSaved] = useState<null | { sessionId: number | null }>(null);
   const [following, setFollowing] = useState(true);
+  // Live Bluetooth sensors (wattage / hartslag / cadans) from the Fietsengarage.
+  const sensors = useGarageSensors();
+  const live = useLiveSensors();
+  const [showSensors, setShowSensors] = useState(false);
   // After stopping, the recorded track is snapshotted here so it is never lost —
   // not on review-cancel, not on a failed save. The rider can reopen the review
   // to save it, or explicitly discard it. Only an explicit discard drops it.
@@ -198,7 +204,42 @@ export default function RecordScreen() {
           <Ionicons name="radio-button-on" size={16} color={c.primary} />
           <Text style={[styles.titlePillText, { color: c.foreground }]}>Vrije rit</Text>
         </View>
+        <Pressable
+          onPress={() => setShowSensors((s) => !s)}
+          hitSlop={12}
+          style={[
+            styles.backBtn,
+            {
+              backgroundColor: c.card,
+              borderColor: live.anyConnected ? c.primary : c.border,
+              marginLeft: "auto",
+            },
+          ]}
+        >
+          <Ionicons
+            name="bluetooth"
+            size={20}
+            color={live.anyConnected ? c.primary : c.mutedForeground}
+          />
+        </Pressable>
       </View>
+
+      {/* ---------- Sensor panel (saved sensors from the Fietsengarage) ---------- */}
+      {showSensors && (
+        <View style={[styles.sensorsWrap, { top: insets.top + 66 }]}>
+          <LiveSensorsPanel
+            c={c}
+            sensors={sensors.data}
+            sensorsLoading={sensors.isLoading}
+            sensorsError={sensors.isError}
+            support={live.support}
+            connections={live.connections}
+            onConnect={live.connect}
+            onDisconnect={live.disconnect}
+            onClose={() => setShowSensors(false)}
+          />
+        </View>
+      )}
 
       {/* ---------- Location permission notice ---------- */}
       {permissionDenied && (
@@ -239,6 +280,29 @@ export default function RecordScreen() {
               c={c}
             />
           </View>
+          {live.anyConnected && (
+            <View style={[styles.progressBar, { backgroundColor: c.card, borderColor: c.border }]}>
+              <Metric
+                label="Vermogen"
+                value={live.values.watts != null ? `${live.values.watts} W` : "—"}
+                c={c}
+              />
+              <View style={[styles.divider, { backgroundColor: c.border }]} />
+              <Metric
+                label="Hartslag"
+                value={
+                  live.values.heartRate != null ? `${live.values.heartRate}` : "—"
+                }
+                c={c}
+              />
+              <View style={[styles.divider, { backgroundColor: c.border }]} />
+              <Metric
+                label="Cadans"
+                value={live.values.cadence != null ? `${live.values.cadence}` : "—"}
+                c={c}
+              />
+            </View>
+          )}
         </View>
       )}
 
@@ -551,6 +615,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   locNoticeText: { fontFamily: "Inter_400Regular", fontSize: 12, flex: 1 },
+  sensorsWrap: { position: "absolute", left: 16, right: 16, zIndex: 10 },
   bottomStats: {
     position: "absolute",
     left: 16,

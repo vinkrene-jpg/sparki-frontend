@@ -17,6 +17,7 @@
       "supportsTablet": false,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Sparki gebruikt je locatie om je live op de route te volgen tijdens het navigeren.",
+        "NSBluetoothAlwaysUsageDescription": "Sparki gebruikt Bluetooth om je wattagemeter, hartslagband of cadanssensor live uit te lezen tijdens een rit.",
         "UIBackgroundModes": ["location"]
       }
     },
@@ -26,7 +27,9 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_LOCATION"
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.BLUETOOTH_CONNECT"
       ]
     },
     "web": {
@@ -41,6 +44,13 @@
       ],
       "expo-font",
       "expo-web-browser",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "bluetoothAlwaysPermission": "Sparki gebruikt Bluetooth om je wattagemeter, hartslagband of cadanssensor live uit te lezen tijdens een rit."
+        }
+      ],
       [
         "expo-location",
         {

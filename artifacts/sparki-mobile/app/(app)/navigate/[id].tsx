@@ -12,9 +12,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { LiveSensorsPanel } from "@/components/LiveSensorsPanel";
 import { RouteMap } from "@/components/RouteMap";
 import { useColors } from "@/hooks/useColors";
 import { useLiveLocation } from "@/hooks/useLiveLocation";
+import { useGarageSensors, useLiveSensors } from "@/hooks/useLiveSensors";
 import { useRideRecorder } from "@/hooks/useRideRecorder";
 import {
   cumulativeKm,
@@ -70,6 +72,10 @@ export default function NavigateScreen() {
   const [saved, setSaved] = useState<null | { sessionId: number | null }>(null);
 
   const [following, setFollowing] = useState(true);
+  // Live Bluetooth sensors (wattage / hartslag / cadans) from the Fietsengarage.
+  const sensors = useGarageSensors();
+  const live = useLiveSensors();
+  const [showSensors, setShowSensors] = useState(false);
 
   const path: LatLon[] = useMemo(
     () => (route?.geometry ?? []).map(toLatLon),
@@ -220,7 +226,42 @@ export default function NavigateScreen() {
             </Text>
           </View>
         )}
+
+        <Pressable
+          onPress={() => setShowSensors((s) => !s)}
+          hitSlop={12}
+          style={[
+            styles.backBtn,
+            {
+              backgroundColor: c.card,
+              borderColor: live.anyConnected ? c.primary : c.border,
+            },
+          ]}
+        >
+          <Ionicons
+            name="bluetooth"
+            size={20}
+            color={live.anyConnected ? c.primary : c.mutedForeground}
+          />
+        </Pressable>
       </View>
+
+      {/* ---------- Sensor panel (saved sensors from the Fietsengarage) ---------- */}
+      {showSensors && (
+        <View style={[styles.sensorsWrap, { top: insets.top + (hasNav ? 118 : 90) }]}>
+          <LiveSensorsPanel
+            c={c}
+            sensors={sensors.data}
+            sensorsLoading={sensors.isLoading}
+            sensorsError={sensors.isError}
+            support={live.support}
+            connections={live.connections}
+            onConnect={live.connect}
+            onDisconnect={live.disconnect}
+            onClose={() => setShowSensors(false)}
+          />
+        </View>
+      )}
 
       {/* ---------- Location permission notice ---------- */}
       {(permission === "denied" || locError) && (
@@ -269,6 +310,29 @@ export default function NavigateScreen() {
               c={c}
             />
           </View>
+          {live.anyConnected && (
+            <View style={[styles.progressBar, { backgroundColor: c.card, borderColor: c.border }]}>
+              <Metric
+                label="Vermogen"
+                value={live.values.watts != null ? `${live.values.watts} W` : "—"}
+                c={c}
+              />
+              <View style={[styles.divider, { backgroundColor: c.border }]} />
+              <Metric
+                label="Hartslag"
+                value={
+                  live.values.heartRate != null ? `${live.values.heartRate}` : "—"
+                }
+                c={c}
+              />
+              <View style={[styles.divider, { backgroundColor: c.border }]} />
+              <Metric
+                label="Cadans"
+                value={live.values.cadence != null ? `${live.values.cadence}` : "—"}
+                c={c}
+              />
+            </View>
+          )}
         </View>
       )}
 
@@ -655,6 +719,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   locNoticeText: { fontFamily: "Inter_400Regular", fontSize: 12, flex: 1 },
+  sensorsWrap: { position: "absolute", left: 16, right: 16, zIndex: 10 },
   bottom: { position: "absolute", left: 16, right: 16, gap: 12, alignItems: "center" },
   recenter: {
     flexDirection: "row",

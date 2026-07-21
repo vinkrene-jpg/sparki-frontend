@@ -63,6 +63,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
-    "expo-task-manager": "~14.0.9"
+    "expo-task-manager": "~14.0.9",
+    "react-native-ble-plx": "^3.5.1"
   }
 }
