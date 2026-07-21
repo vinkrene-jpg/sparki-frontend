@@ -917,6 +917,23 @@ export async function ensureIntelSeed(opts?: {
     log("knowledge_base flag row created (enabled globally)");
   }
 
+  // The Klimmenverkenner is gated by `climb_explorer`. Same reasoning: a flag
+  // with no row is off for everyone, so create it enabled-globally exactly once;
+  // an admin turning it off later is never overwritten (onConflictDoNothing).
+  const climbFlagRows = await db
+    .insert(featureFlagsTable)
+    .values({
+      key: "climb_explorer",
+      description:
+        "Klimmenverkenner: doorzoekbare beklimmingen/cols/toppen met echte hoogte, afgeleid profiel en omschrijving.",
+      enabledGlobally: true,
+    })
+    .onConflictDoNothing({ target: featureFlagsTable.key })
+    .returning({ key: featureFlagsTable.key });
+  if (climbFlagRows.length > 0) {
+    log("climb_explorer flag row created (enabled globally)");
+  }
+
   const byKind = new Map<string, number>();
   for (const c of CARDS) byKind.set(c.kind, (byKind.get(c.kind) ?? 0) + 1);
 

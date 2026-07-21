@@ -10,6 +10,7 @@ export const FEATURE_KEYS = [
   "premium",
   "knowledge_base",
   "rit_verhaal",
+  "climb_explorer",
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -34,6 +35,8 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
     "Sparki Knowledge Base — daily-scanned sport-science library, browsable news/research surface, and cited retrieval in AI briefs",
   rit_verhaal:
     "De keten (Fase 1) — sync-status, na-rit moment op Vandaag, rit-verhaal met vier hoofdstukken, inline schemagevolg en chat-met-ritcontext",
+  climb_explorer:
+    "Klimmenverkenner — doorzoekbare beklimmingen/cols/toppen (OpenStreetMap) met echte hoogte, afgeleid klimprofiel en omschrijving uit OSM/Wikipedia",
 };
 
 export * from "./sports";

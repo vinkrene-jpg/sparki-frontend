@@ -34,6 +34,7 @@ import RacesPage from "@/pages/races";
 import SprintenPage from "@/pages/sprinten";
 import WedstrijdRoomPage from "@/pages/wedstrijd-room";
 import KnowledgePage from "@/pages/knowledge";
+import KlimmenPage from "@/pages/klimmen";
 import InvitationsPage from "@/pages/invitations";
 import InviteAcceptPage from "@/pages/invite-accept";
 import TesterQrPage from "@/pages/tester-qr";
@@ -530,6 +531,9 @@ function AppRouter() {
                 </Route>
                 <Route path="/kennis">
                   <ProtectedPage component={KnowledgePage} />
+                </Route>
+                <Route path="/klimmen">
+                  <ProtectedPage component={KlimmenPage} />
                 </Route>
                 <Route path="/admin">
                   <ProtectedPage component={AdminPage} />

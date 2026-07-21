@@ -25,6 +25,7 @@ import {
   ArrowRight,
   Brain,
   LineChart,
+  Mountain,
 } from "lucide-react"
 
 type FilterKey = "all" | "renners" | "news" | "coach" | "team" | "race" | "ai"
@@ -237,6 +238,27 @@ function KnowledgeFeedSection() {
           </a>
         ))}
       </div>
+    </section>
+  )
+}
+
+// Flag-gated entry to the Klimmenverkenner — a searchable climb explorer.
+function ClimbsFeedSection() {
+  const enabled = useFeatureFlag("climb_explorer")
+  if (!enabled) return null
+  return (
+    <section>
+      <SectionLabel title="Klimmen" />
+      <Link
+        href="/klimmen"
+        className="mt-3 flex items-center justify-between rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 py-3 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+      >
+        <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white/55">
+          <Mountain className="h-3.5 w-3.5" style={{ color: ACCENT }} />
+          Klimmenverkenner
+        </span>
+        <ArrowRight className="h-3.5 w-3.5 text-white/30" />
+      </Link>
     </section>
   )
 }
@@ -646,6 +668,7 @@ export default function FeedPage() {
       </section>
 
       <KnowledgeFeedSection />
+      <ClimbsFeedSection />
       </>
       )}
 
