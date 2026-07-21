@@ -259,6 +259,12 @@ export function RouteNavigator({
   autoPausedRef.current = autoPaused
   const stillSinceRef = useRef<number | null>(null)
   const [rideSeconds, setRideSeconds] = useState(0)
+  // Ridden track (recorded while riding) — offered for saving when closing.
+  const riddenRef = useRef<LatLon[]>([])
+  const [confirmClose, setConfirmClose] = useState(false)
+  const [saveRideState, setSaveRideState] = useState<
+    "idle" | "saving" | "error"
+  >("idle")
 
   useEffect(() => {
     if (rideState !== "riding") return
@@ -660,7 +666,7 @@ export function RouteNavigator({
     const prev = document.body.style.overflow
     document.body.style.overflow = "hidden"
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !pairingRef.current) onClose()
+      if (e.key === "Escape" && !pairingRef.current) setConfirmClose(true)
     }
     window.addEventListener("keydown", onKey)
     return () => {
@@ -696,6 +702,14 @@ export function RouteNavigator({
           heading = bearingDeg(prev, here)
         }
         if (!prev || haversineM(prev, here) >= 4) prevPosRef.current = here
+        // Record the ridden track (only while actually riding) so the ride —
+        // or the part ridden so far — can be saved as a route when closing.
+        if (rideStateRef.current === "riding") {
+          const last = riddenRef.current[riddenRef.current.length - 1]
+          if (!last || haversineM(last, here) >= 8) {
+            riddenRef.current.push(here)
+          }
+        }
         setLocation((cur) => ({
           ...here,
           speedMps:
@@ -1136,6 +1150,40 @@ export function RouteNavigator({
     metrics.push({ label: "Cadans", value: `${power.cadence} rpm` })
   }
 
+  // Ridden distance so far (km) — gates the "bewaar gereden rit" option so we
+  // never offer to save a track that is too short to be a real route.
+  function riddenKm(): number {
+    const pts = riddenRef.current
+    let m = 0
+    for (let i = 1; i < pts.length; i++) m += haversineM(pts[i - 1]!, pts[i]!)
+    return m / 1000
+  }
+
+  async function saveRiddenRoute() {
+    const pts = riddenRef.current
+    if (pts.length < 2) return
+    setSaveRideState("saving")
+    const now = new Date()
+    const gpx = [
+      `<?xml version="1.0" encoding="UTF-8"?>`,
+      `<gpx version="1.1" creator="Sparki" xmlns="http://www.topografix.com/GPX/1/1">`,
+      `<trk><name>Gereden: ${name.replace(/[<>&]/g, "")} (${now.toLocaleDateString("nl-NL")})</name><trkseg>`,
+      ...pts.map((p) => `<trkpt lat="${p.lat}" lon="${p.lon}"></trkpt>`),
+      `</trkseg></trk></gpx>`,
+    ].join("\n")
+    try {
+      await apiFetch("/api/routes", {
+        method: "POST",
+        body: JSON.stringify({ content: gpx }),
+      })
+      onClose()
+    } catch {
+      setSaveRideState("error")
+    }
+  }
+
+  const canSaveRide = riddenRef.current.length >= 2 && riddenKm() >= 0.2
+
   const overlay = (
     <div className="fixed inset-0 z-[90] isolate bg-[#05070e]">
       <div ref={containerRef} className="absolute inset-0 z-0" />
@@ -1145,11 +1193,11 @@ export function RouteNavigator({
         <div className="pointer-events-auto flex items-center gap-2">
           <button
             type="button"
-            onClick={onClose}
-            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-[#070d16]/90 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 backdrop-blur-md transition hover:text-white"
+            onClick={() => { setSaveRideState("idle"); setConfirmClose(true) }}
+            aria-label="Navigatie sluiten"
+            className="flex shrink-0 items-center justify-center rounded-full border border-white/10 bg-[#070d16]/90 p-2 text-white/60 backdrop-blur-md transition hover:text-white"
           >
-            <X className="h-4 w-4" strokeWidth={1.75} />
-            Sluiten
+            <X className="h-3.5 w-3.5" strokeWidth={1.75} />
           </button>
           <div className="min-w-0 flex-1 truncate rounded-full border border-white/10 bg-[#070d16]/90 px-3 py-2 text-[13px] text-white/70 backdrop-blur-md">
             {name}
@@ -1707,6 +1755,60 @@ export function RouteNavigator({
           trainingen doe je in de Sparki-app op je telefoon.
         </p>
       </div>
+
+      {/* Close confirmation — closing by accident would drop you straight
+          back into Sparki, so the choice is always confirmed first. */}
+      {confirmClose && (
+        <div className="absolute inset-0 z-[95] flex items-end justify-center bg-black/60 p-4 pb-10 backdrop-blur-sm sm:items-center">
+          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#070d16]/95 p-4 backdrop-blur-md">
+            <p className="text-[15px] font-medium text-white/90">
+              Navigatie sluiten?
+            </p>
+            <p className="mt-1 text-[12px] leading-relaxed text-white/50">
+              {canSaveRide
+                ? `Je hebt tot nu toe ${riddenKm().toFixed(1)} km gereden. Je kunt dit gereden stuk eerst als route bewaren.`
+                : "Je gaat terug naar Sparki."}
+            </p>
+            {saveRideState === "error" && (
+              <p className="mt-2 text-[12px] text-[rgba(255,140,120,0.85)]">
+                Bewaren is niet gelukt. Probeer het opnieuw of sluit zonder
+                bewaren.
+              </p>
+            )}
+            <div className="mt-4 flex flex-col gap-2">
+              {canSaveRide && (
+                <button
+                  type="button"
+                  disabled={saveRideState === "saving"}
+                  onClick={() => void saveRiddenRoute()}
+                  className="rounded-full bg-cyan-400/15 px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-200 transition hover:bg-cyan-400/25 disabled:opacity-50"
+                >
+                  {saveRideState === "saving"
+                    ? "Bezig met bewaren…"
+                    : "Bewaar gereden stuk en sluit"}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full border border-white/15 px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:text-white"
+              >
+                {canSaveRide ? "Sluit zonder bewaren" : "Ja, sluit navigatie"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmClose(false)
+                  setSaveRideState("idle")
+                }}
+                className="rounded-full px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/45 transition hover:text-white/80"
+              >
+                Blijf navigeren
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 
