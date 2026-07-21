@@ -32,6 +32,7 @@ import {
   type SprintBoard,
 } from "@/hooks/use-sprints"
 import { usePowerMeter } from "@/hooks/use-power-meter"
+import { apiFetch } from "@/lib/api"
 
 const OFF_ROUTE_METERS = 60
 
@@ -298,6 +299,93 @@ export function RouteNavigator({
   )
   const cumKm = useMemo(() => cumulativeKm(path), [path])
 
+  // ── Vervolg na afwijken van de route ──────────────────────────────
+  // When the rider is >60 m off the planned line, they choose: shortest real
+  // way back ("terug") or a real continuation that rejoins the route further
+  // ahead ("verder"). The connector comes from the routing provider via the
+  // backend — never a drawn straight line. It auto-clears once the rider is
+  // back on the original route.
+  type Detour = {
+    mode: "terug" | "verder"
+    path: LatLon[]
+    cues: RouteNavCue[]
+    distanceKm: number | null
+    rejoinKm: number | null
+  }
+  const [detour, setDetour] = useState<Detour | null>(null)
+  const [detourLoading, setDetourLoading] = useState<
+    "terug" | "verder" | null
+  >(null)
+  const [detourError, setDetourError] = useState<string | null>(null)
+  const detourLineRef = useRef<L.Polyline | null>(null)
+
+  const requestDetour = async (mode: "terug" | "verder") => {
+    if (!location || detourLoading) return
+    setDetourLoading(mode)
+    setDetourError(null)
+    try {
+      const resp = await apiFetch<{
+        mode: "terug" | "verder"
+        path: [number, number][]
+        nav: RouteNavCue[]
+        distanceKm: number | null
+        rejoinKm: number | null
+      }>(`/api/routes/${routeId}/rejoin`, {
+        method: "POST",
+        body: JSON.stringify({ lat: location.lat, lon: location.lon, mode }),
+      })
+      setDetour({
+        mode: resp.mode,
+        path: resp.path.map(([lat, lon]) => ({ lat, lon })),
+        cues: resp.nav ?? [],
+        distanceKm: resp.distanceKm,
+        rejoinKm: resp.rejoinKm,
+      })
+    } catch (err) {
+      let msg = "Kon geen vervolg berekenen. Probeer het opnieuw."
+      if (err instanceof Error) {
+        try {
+          const parsed = JSON.parse(err.message) as { error?: string }
+          if (parsed.error) msg = parsed.error
+        } catch {
+          /* keep generic message */
+        }
+      }
+      setDetourError(msg)
+    } finally {
+      setDetourLoading(null)
+    }
+  }
+
+  // Draw / remove the detour line on the map (dashed, amber — clearly distinct
+  // from the planned route).
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    if (detourLineRef.current) {
+      map.removeLayer(detourLineRef.current)
+      detourLineRef.current = null
+    }
+    if (detour && detour.path.length >= 2) {
+      detourLineRef.current = L.polyline(
+        detour.path.map((p) => [p.lat, p.lon] as [number, number]),
+        {
+          color: "#fbbf24",
+          weight: 5,
+          opacity: 0.95,
+          dashArray: "10 8",
+          interactive: false,
+        },
+      ).addTo(map)
+    }
+    return () => {
+      if (detourLineRef.current && map) {
+        map.removeLayer(detourLineRef.current)
+        detourLineRef.current = null
+      }
+    }
+  }, [detour])
+
   const progress = useMemo(() => {
     if (!location || path.length === 0) return null
     const { index, distanceMeters } = nearestPointIndex(path, location)
@@ -311,16 +399,52 @@ export function RouteNavigator({
     }
   }, [location, path, cumKm])
 
+  // Live progress along an active detour — same honest mechanics as the main
+  // route: nearest point on the real connector line, cues by distance.
+  const detourCumKm = useMemo(
+    () => (detour ? cumulativeKm(detour.path) : []),
+    [detour],
+  )
+  const detourProgress = useMemo(() => {
+    if (!detour || !location || detour.path.length === 0) return null
+    const { index, distanceMeters } = nearestPointIndex(detour.path, location)
+    const traveledKm = detourCumKm[index] ?? 0
+    const totalKm = detourCumKm[detourCumKm.length - 1] ?? 0
+    return {
+      traveledKm,
+      remainingKm: Math.max(0, totalKm - traveledKm),
+      offBy: distanceMeters,
+    }
+  }, [detour, location, detourCumKm])
+
+  // Back on the original route? Then the detour has done its job — clear it.
+  useEffect(() => {
+    if (detour && progress && progress.offBy < 40) setDetour(null)
+  }, [detour, progress])
+  // A fresh off-route moment invalidates an old error message.
+  useEffect(() => {
+    if (!progress?.offRoute) setDetourError(null)
+  }, [progress?.offRoute])
+
   const nextStep: RouteNavCue | null = useMemo(() => {
+    // While a detour is active, its own turn cues lead the way.
+    if (detour && detourProgress) {
+      const ahead = detour.cues.find(
+        (s) => s.km > detourProgress.traveledKm + 0.015,
+      )
+      return ahead ?? detour.cues[detour.cues.length - 1] ?? null
+    }
     if (nav.length === 0 || !progress) return null
     const ahead = nav.find((s) => s.km > progress.traveledKm + 0.015)
     return ahead ?? nav[nav.length - 1] ?? null
-  }, [nav, progress])
+  }, [nav, progress, detour, detourProgress])
 
   const distanceToTurn =
-    nextStep && progress
-      ? Math.max(0, (nextStep.km - progress.traveledKm) * 1000)
-      : null
+    detour && detourProgress && nextStep
+      ? Math.max(0, (nextStep.km - detourProgress.traveledKm) * 1000)
+      : nextStep && progress
+        ? Math.max(0, (nextStep.km - progress.traveledKm) * 1000)
+        : null
 
   // Body scroll lock + Escape to close.
   useEffect(() => {
@@ -966,21 +1090,78 @@ export function RouteNavigator({
           </div>
         )}
 
+        {detour ? (
+          <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-amber-400/40 bg-[#070d16]/92 px-3.5 py-3 backdrop-blur-md">
+            <Navigation
+              className="h-6 w-6 shrink-0 text-amber-300"
+              strokeWidth={1.75}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-medium text-amber-200">
+                {detour.mode === "verder"
+                  ? "Vervolg actief"
+                  : "Terug naar de route"}
+              </p>
+              <p className="truncate text-[12px] text-white/55">
+                {detourProgress
+                  ? `Nog ${fmtMeters(detourProgress.remainingKm * 1000)} tot je de route weer oppikt.`
+                  : "Volg de gele stippellijn tot je de route weer oppikt."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDetour(null)}
+              className="shrink-0 rounded-full border border-white/15 px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/55 transition hover:text-white/85"
+            >
+              Stop
+            </button>
+          </div>
+        ) : null}
+
         {nav.length > 0 ? (
-          progress?.offRoute ? (
-            <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-[rgba(255,120,100,0.5)] bg-[#070d16]/92 px-3.5 py-3 backdrop-blur-md">
-              <TriangleAlert
-                className="h-6 w-6 shrink-0 text-[rgba(255,140,120,0.9)]"
-                strokeWidth={1.75}
-              />
-              <div className="min-w-0">
-                <p className="text-[13px] font-medium text-[rgba(255,140,120,0.95)]">
-                  Van de route
+          progress?.offRoute && !detour ? (
+            <div className="pointer-events-auto flex flex-col gap-2.5 rounded-xl border border-[rgba(255,120,100,0.5)] bg-[#070d16]/92 px-3.5 py-3 backdrop-blur-md">
+              <div className="flex items-center gap-3">
+                <TriangleAlert
+                  className="h-6 w-6 shrink-0 text-[rgba(255,140,120,0.9)]"
+                  strokeWidth={1.75}
+                />
+                <div className="min-w-0">
+                  <p className="text-[13px] font-medium text-[rgba(255,140,120,0.95)]">
+                    Van de route
+                  </p>
+                  <p className="truncate text-[12px] text-white/55">
+                    Je bent {fmtMeters(progress.offBy)} van de route. Wat wil
+                    je doen?
+                  </p>
+                </div>
+              </div>
+              {detourError && (
+                <p className="text-[12px] text-[rgba(255,140,120,0.9)]">
+                  {detourError}
                 </p>
-                <p className="truncate text-[12px] text-white/55">
-                  Je bent {fmtMeters(progress.offBy)} van de route. Keer terug
-                  naar de lijn.
-                </p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => requestDetour("terug")}
+                  disabled={detourLoading != null}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-white/15 px-3 py-2 text-[12px] font-medium text-white/80 transition hover:bg-white/5 disabled:opacity-50"
+                >
+                  <CornerUpLeft className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  {detourLoading === "terug" ? "Bezig…" : "Terug naar route"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => requestDetour("verder")}
+                  disabled={detourLoading != null}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-cyan-400 px-3 py-2 text-[12px] font-semibold text-[#05070e] transition disabled:opacity-50"
+                >
+                  <Navigation className="h-3.5 w-3.5" strokeWidth={2} />
+                  {detourLoading === "verder"
+                    ? "Bezig…"
+                    : "Verder — pik route later op"}
+                </button>
               </div>
             </div>
           ) : nextStep ? (

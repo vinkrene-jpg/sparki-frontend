@@ -422,6 +422,144 @@ router.get("/:id/insight", requireAuth, async (req, res) => {
   }
 });
 
+// Haversine distance in metres between two [lat, lon] points — used to find
+// the nearest point of a stored route to the rider's live position.
+function haversineMeters(
+  aLat: number,
+  aLon: number,
+  bLat: number,
+  bLon: number,
+): number {
+  const R = 6371000;
+  const dLat = ((bLat - aLat) * Math.PI) / 180;
+  const dLon = ((bLon - aLon) * Math.PI) / 180;
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((aLat * Math.PI) / 180) *
+      Math.cos((bLat * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+// Routes don't store the routing profile they were generated with; derive a
+// sensible one from the stored surface so a rejoin path fits the terrain.
+function profileForSurface(surface: string): RoutingProfile {
+  if (surface === "mtb") return "cycling-mountain";
+  if (surface === "gravel" || surface === "pad" || surface === "mixed")
+    return "cycling-regular";
+  return "cycling-road";
+}
+
+// POST /api/routes/:id/rejoin — the rider has deviated from the planned route
+// and chooses how to get back: "terug" routes to the NEAREST point of the
+// original route (shortest real way back), "verder" routes to a point FURTHER
+// AHEAD on the original route (a logical continuation — no backtracking to the
+// deviation point). The connector path comes entirely from the routing
+// provider (real roads); nothing is fabricated. 503 honest when no provider.
+router.post("/:id/rejoin", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const lat = finiteNum(body.lat);
+  const lon = finiteNum(body.lon);
+  const mode = body.mode === "verder" ? "verder" : "terug";
+  if (lat == null || lon == null || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+    res.status(400).json({ error: "Ongeldige positie" });
+    return;
+  }
+  try {
+    const [route] = await db
+      .select()
+      .from(routesTable)
+      .where(and(eq(routesTable.id, id), eq(routesTable.clerkId, clerkId)))
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+    const geometry = (route.geometry as RoutePathPoint[] | null) ?? [];
+    if (geometry.length < 2) {
+      res.status(422).json({
+        error:
+          "Deze route heeft geen opgeslagen lijn op de kaart, dus er kan geen vervolg berekend worden.",
+      });
+      return;
+    }
+    const provider = getRoutingProvider();
+    if (!provider.isConfigured()) {
+      res.status(503).json({
+        error:
+          "Een vervolg berekenen is nu niet beschikbaar — de routedienst is niet gekoppeld.",
+      });
+      return;
+    }
+
+    // Nearest point of the original route + cumulative distance along it.
+    const cumKm: number[] = [0];
+    for (let i = 1; i < geometry.length; i++) {
+      cumKm.push(
+        cumKm[i - 1]! +
+          haversineMeters(
+            geometry[i - 1]![0],
+            geometry[i - 1]![1],
+            geometry[i]![0],
+            geometry[i]![1],
+          ) /
+            1000,
+      );
+    }
+    let nearestIdx = 0;
+    let nearestM = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < geometry.length; i++) {
+      const d = haversineMeters(lat, lon, geometry[i]![0], geometry[i]![1]);
+      if (d < nearestM) {
+        nearestM = d;
+        nearestIdx = i;
+      }
+    }
+
+    // "terug" targets the nearest point; "verder" targets a point far enough
+    // ahead that the connector is a genuine continuation, not a U-turn: at
+    // least 1 km ahead, or twice the current deviation if that's larger.
+    let targetIdx = nearestIdx;
+    if (mode === "verder") {
+      const aheadKm = Math.max(1, (nearestM * 2) / 1000);
+      targetIdx = geometry.length - 1;
+      for (let i = nearestIdx; i < geometry.length; i++) {
+        if (cumKm[i]! - cumKm[nearestIdx]! >= aheadKm) {
+          targetIdx = i;
+          break;
+        }
+      }
+    }
+    const target = geometry[targetIdx]!;
+
+    const result = await provider.routePointToPoint({
+      start: { lat, lon },
+      end: { lat: target[0], lon: target[1] },
+      profile: profileForSurface(route.surface),
+    });
+    res.json({
+      mode,
+      path: result.path,
+      distanceKm: result.distanceKm,
+      durationSec: result.durationSec,
+      nav: result.steps,
+      rejoinKm: Math.round(cumKm[targetIdx]! * 10) / 10,
+    });
+  } catch (err) {
+    req.log.error({ err }, "routes.rejoin failed");
+    res.status(502).json({
+      error:
+        "Kon geen vervolg berekenen — de routedienst gaf geen bruikbaar antwoord.",
+    });
+  }
+});
+
 // GET /api/routes/:id/gpx — download a saved route as a GPX file (owner only).
 // Geometry, elevation and turn-by-turn cues are serialized from the route's real
 // stored data. Routes without geometry (e.g. GPX imports, where we don't store
