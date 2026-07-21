@@ -33,6 +33,8 @@ import {
 } from "@/hooks/use-sprints"
 import { usePowerMeter } from "@/hooks/use-power-meter"
 import { apiFetch } from "@/lib/api"
+import type { PlannedWorkout } from "@/lib/athlete-types"
+import { WorkoutHud } from "@/components/sparki/workout-hud"
 
 const OFF_ROUTE_METERS = 60
 
@@ -203,6 +205,8 @@ export function RouteNavigator({
   distanceKm,
   onClose,
   routeId = null,
+  workout = null,
+  ftp = null,
 }: {
   name: string
   geometry: [number, number][]
@@ -211,6 +215,11 @@ export function RouteNavigator({
   onClose: () => void
   // When this is a saved route, sprint boards ("bordjes") are detected for it.
   routeId?: number | null
+  // Geplande training met blokken voor deze rit — live getoond als tijdblokken
+  // versus zone/wattage, zodat de renner ziet wanneer een interval begint en
+  // wat hij moet leveren.
+  workout?: PlannedWorkout | null
+  ftp?: number | null
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
@@ -1613,6 +1622,17 @@ export function RouteNavigator({
               getoond.
             </p>
           </div>
+        )}
+
+        {workout?.structure && (
+          <WorkoutHud
+            structure={workout.structure}
+            title={workout.title}
+            ftp={ftp}
+            elapsedSec={rideSeconds}
+            liveWatts={power.connected ? power.watts : null}
+            riding={rideState === "riding"}
+          />
         )}
 
         {geoError && (

@@ -3,8 +3,9 @@ import { createPortal } from "react-dom"
 import { ACCENT } from "@/components/sparki/ui"
 import { useLogSession } from "@/hooks/use-sessions"
 import { useCreateWorkout } from "@/hooks/use-today-workout"
-import { Plus, X, Check, CalendarPlus, ClipboardCheck } from "lucide-react"
+import { Plus, X, Check, CalendarPlus, ClipboardCheck, Blocks } from "lucide-react"
 import type { TrainingSession, PlannedWorkout } from "@/lib/athlete-types"
+import { WorkoutBuilder } from "@/components/sparki/training-builder"
 
 const inputClass =
   "w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
@@ -330,7 +331,7 @@ function PlanWorkoutForm({ onDone }: { onDone: () => void }) {
   )
 }
 
-type Mode = "log" | "plan"
+type Mode = "log" | "plan" | "bouwen"
 
 export function AddTrainingModal({ onClose }: { onClose: () => void }) {
   const [mode, setMode] = useState<Mode>("log")
@@ -390,18 +391,23 @@ export function AddTrainingModal({ onClose }: { onClose: () => void }) {
         <div className="mb-4 flex gap-2">
           {tab("log", ClipboardCheck, "Gedaan loggen")}
           {tab("plan", CalendarPlus, "Inplannen")}
+          {tab("bouwen", Blocks, "Blokken")}
         </div>
 
         <p className="mb-4 text-[12px] leading-relaxed text-white/50">
           {mode === "log"
             ? "Een training die je al hebt gedaan en die Sparki nog niet zelf heeft opgehaald."
-            : "Een training die je nog gaat doen — vandaag of een volgende dag."}
+            : mode === "plan"
+              ? "Een training die je nog gaat doen — vandaag of een volgende dag."
+              : "Stel een training met blokken samen — de navigatie toont ze straks live tijdens de rit."}
         </p>
 
         {mode === "log" ? (
           <LogSessionForm onDone={onClose} showHeader={false} />
-        ) : (
+        ) : mode === "plan" ? (
           <PlanWorkoutForm onDone={onClose} />
+        ) : (
+          <WorkoutBuilder onDone={onClose} />
         )}
       </div>
     </div>,

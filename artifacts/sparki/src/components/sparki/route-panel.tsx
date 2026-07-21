@@ -356,6 +356,19 @@ function RouteCard({
   const download = useDownloadRoute()
   const share = useShareRoute()
   const [gpxError, setGpxError] = useState<string | null>(null)
+  // Gestructureerde training voor de navigatie: alleen een ECHT gekoppelde
+  // geplande training (route ↔ workout), nooit een gok. FTP komt uit het echte
+  // profiel; zonder FTP toont de navigatie eerlijk alleen zones.
+  const { data: upcomingForNav } = useUpcomingWorkouts()
+  const { data: dashboardForNav } = useAthleteDashboard()
+  const navWorkout =
+    route.linkedPlannedWorkoutId != null
+      ? (upcomingForNav ?? []).find(
+          (w) =>
+            w.id === route.linkedPlannedWorkoutId && w.structure != null,
+        ) ?? null
+      : null
+  const navFtp = dashboardForNav?.athleteProfile?.ftp ?? null
   // Navigation-open state lives in the URL (?nav=<id>) instead of React state:
   // on phones the browser tab can reload while the system Bluetooth chooser or
   // another app is in the foreground, and plain state would silently dump the
@@ -575,6 +588,8 @@ function RouteCard({
           nav={nav}
           distanceKm={route.distanceKm ?? null}
           routeId={route.id}
+          workout={navWorkout}
+          ftp={navFtp}
           onClose={() => setNavigating(false)}
         />
       )}
