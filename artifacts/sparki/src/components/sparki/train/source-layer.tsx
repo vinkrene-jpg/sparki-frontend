@@ -144,6 +144,19 @@ export function SourceLayer() {
                   Aanpassen lukte niet. Probeer het opnieuw.
                 </p>
               )}
+              {!adapt.isPending && adapt.isSuccess && adapt.data && (
+                <p
+                  className={`mt-2.5 rounded-xl border p-3 text-pretty text-[12px] leading-relaxed ${
+                    adapt.data.adapted
+                      ? "border-cyan-300/20 bg-cyan-300/[0.06] text-cyan-100/80"
+                      : "border-white/[0.08] bg-white/[0.02] text-white/60"
+                  }`}
+                >
+                  {adapt.data.adapted
+                    ? adapt.data.note
+                    : "Geen aanpassing nodig — je voorlopige weken passen nog bij je herstel."}
+                </p>
+              )}
             </>
           )}
 
