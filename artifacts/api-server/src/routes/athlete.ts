@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq, and, gte, lte, desc } from "drizzle-orm";
+import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
 import {
   db,
   userProfilesTable,
@@ -9,7 +9,11 @@ import {
   workoutFeedbackTable,
   athleteDailyMetricsTable,
   ftpHistoryTable,
+  lifeEventsTable,
+  LIFE_EVENT_IMPACTS,
+  LIFE_EVENT_KINDS,
 } from "@workspace/db";
+import type { BusyDay } from "../lib/training/plan-generator";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { generateThreeWeekPlan, autoAdaptPlan } from "../engines/training-plan";
 import {
@@ -728,6 +732,170 @@ router.post("/workouts/:id/feedback", requireAuth, async (req, res) => {
   }
 });
 
+// ── Leefagenda (life events) ─────────────────────────────────────────────────
+// Real athlete-entered context (toetsweek, familieweekend, drukke werkweek).
+// Sparki's plan generator reads these and builds the schedule around them.
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// GET /api/athlete/life-events — upcoming + recent events (last 7 days back).
+router.get("/life-events", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const cutoff = (() => {
+      const d = new Date();
+      d.setUTCDate(d.getUTCDate() - 7);
+      return d.toISOString().split("T")[0]!;
+    })();
+    // Overlap semantics: an event counts as long as it hasn't been over for
+    // more than a week — including long-running events that started earlier.
+    const events = await db
+      .select()
+      .from(lifeEventsTable)
+      .where(
+        and(
+          eq(lifeEventsTable.clerkId, clerkId),
+          gte(
+            sql`coalesce(${lifeEventsTable.endDate}, ${lifeEventsTable.startDate})`,
+            cutoff,
+          ),
+        ),
+      )
+      .orderBy(lifeEventsTable.startDate);
+    res.json({ events });
+  } catch (err) {
+    req.log.error({ err }, "athlete.lifeEvents.list failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/athlete/life-events
+router.post("/life-events", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = req.body as {
+    kind?: string;
+    title?: string;
+    startDate?: string;
+    endDate?: string | null;
+    impact?: string;
+    notes?: string | null;
+  };
+  const kind = String(body.kind ?? "");
+  const title = String(body.title ?? "").trim().slice(0, 120);
+  const impact = String(body.impact ?? "");
+  const startDate = String(body.startDate ?? "");
+  const endDate = body.endDate ? String(body.endDate) : null;
+
+  if (!(LIFE_EVENT_KINDS as readonly string[]).includes(kind)) {
+    res.status(400).json({ error: "invalid_kind" });
+    return;
+  }
+  if (!(LIFE_EVENT_IMPACTS as readonly string[]).includes(impact)) {
+    res.status(400).json({ error: "invalid_impact" });
+    return;
+  }
+  if (!title) {
+    res.status(400).json({ error: "title_required", message: "Geef een korte omschrijving." });
+    return;
+  }
+  if (!DATE_RE.test(startDate) || (endDate !== null && !DATE_RE.test(endDate))) {
+    res.status(400).json({ error: "invalid_date" });
+    return;
+  }
+  if (endDate !== null && endDate < startDate) {
+    res.status(400).json({ error: "invalid_range", message: "Einddatum ligt vóór de startdatum." });
+    return;
+  }
+
+  try {
+    const [event] = await db
+      .insert(lifeEventsTable)
+      .values({
+        clerkId,
+        kind: kind as (typeof LIFE_EVENT_KINDS)[number],
+        title,
+        startDate,
+        endDate,
+        impact: impact as (typeof LIFE_EVENT_IMPACTS)[number],
+        notes: body.notes ? String(body.notes).slice(0, 500) : null,
+      })
+      .returning();
+    res.status(201).json({ event });
+  } catch (err) {
+    req.log.error({ err }, "athlete.lifeEvents.create failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// DELETE /api/athlete/life-events/:id
+router.delete("/life-events/:id", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  if (!Number.isFinite(id)) {
+    res.status(400).json({ error: "invalid_id" });
+    return;
+  }
+  try {
+    const deleted = await db
+      .delete(lifeEventsTable)
+      .where(
+        and(eq(lifeEventsTable.id, id), eq(lifeEventsTable.clerkId, clerkId)),
+      )
+      .returning({ id: lifeEventsTable.id });
+    if (deleted.length === 0) {
+      res.status(404).json({ error: "not_found" });
+      return;
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "athlete.lifeEvents.delete failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Build the per-date busy map the plan generator understands, from the
+// athlete's life events overlapping [start, end]. Strongest impact wins when
+// events overlap (geen_training > alleen_licht > minder_tijd).
+async function loadBusyDays(
+  clerkId: string,
+  start: string,
+  end: string,
+): Promise<Record<string, BusyDay>> {
+  const events = await db
+    .select()
+    .from(lifeEventsTable)
+    .where(
+      and(
+        eq(lifeEventsTable.clerkId, clerkId),
+        lte(lifeEventsTable.startDate, end),
+      ),
+    );
+  const rank: Record<BusyDay["impact"], number> = {
+    minder_tijd: 1,
+    alleen_licht: 2,
+    geen_training: 3,
+  };
+  const map: Record<string, BusyDay> = {};
+  for (const ev of events) {
+    const evEnd = ev.endDate ?? ev.startDate;
+    if (evEnd < start) continue;
+    const d = new Date(
+      (ev.startDate > start ? ev.startDate : start) + "T00:00:00Z",
+    );
+    const stop = evEnd < end ? evEnd : end;
+    while (true) {
+      const iso = d.toISOString().split("T")[0]!;
+      if (iso > stop) break;
+      const existing = map[iso];
+      if (!existing || rank[ev.impact] > rank[existing.impact]) {
+        map[iso] = { impact: ev.impact, label: ev.title };
+      }
+      d.setUTCDate(d.getUTCDate() + 1);
+    }
+  }
+  return map;
+}
+
 // ── POST /api/athlete/plan/generate ──────────────────────────────────────────
 // Generate a real periodized 3-week plan from the athlete's own numbers. Clears
 // any future Sparki-planned, not-yet-done workouts in the window first so the
@@ -762,6 +930,8 @@ router.post("/plan/generate", requireAuth, async (req, res) => {
       return d.toISOString().split("T")[0]!;
     })();
 
+    const busyDays = await loadBusyDays(clerkId, start, end);
+
     const rows = generateThreeWeekPlan({
       ftp: athlete.ftp,
       weeklyHourTarget: athlete.weeklyHourTarget,
@@ -769,6 +939,7 @@ router.post("/plan/generate", requireAuth, async (req, res) => {
       goals: athlete.goals,
       startDate: start,
       weeks: blocks,
+      busyDays,
     });
 
     const inserted = await db.transaction(async (tx) => {

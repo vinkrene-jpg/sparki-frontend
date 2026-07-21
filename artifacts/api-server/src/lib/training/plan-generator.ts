@@ -18,6 +18,13 @@ import type {
   WorkoutRouteNeed,
 } from "@workspace/db";
 
+export type BusyDay = {
+  /** What the day allows: no training / time-capped / only light work. */
+  impact: "geen_training" | "minder_tijd" | "alleen_licht";
+  /** Athlete's own label, e.g. "Toetsweek" — shown honestly in the plan. */
+  label: string;
+};
+
 export type GeneratePlanInput = {
   ftp: number;
   weeklyHourTarget: number;
@@ -27,6 +34,13 @@ export type GeneratePlanInput = {
   startDate: string;
   /** Number of 7-day blocks. Default 3 (2 build + 1 deload). */
   weeks?: number;
+  /**
+   * Life-agenda days (school/familie/werk) keyed by ISO date. The generator
+   * plans AROUND these: geen_training → rest day, alleen_licht → short
+   * recovery spin, minder_tijd → session capped at 45 minutes. Only real,
+   * athlete-entered events reach this map — never assumptions.
+   */
+  busyDays?: Record<string, BusyDay>;
 };
 
 type DayKind =
@@ -354,9 +368,50 @@ export function generateThreeWeekPlan(
     const weekIdx = Math.floor(dayIdx / 7);
     const date = addDays(input.startDate, dayIdx);
     const weekday = new Date(date + "T00:00:00Z").getUTCDay();
-    const kind = dayKindFor(weekday);
+    const busy = input.busyDays?.[date];
+    let kind = dayKindFor(weekday);
     const phase = phaseForWeek(weekIdx, weeks);
     const vol = volumeMultiplier(weekIdx, weeks);
+
+    // Life agenda: the athlete told Sparki this day is (partly) taken.
+    if (busy?.impact === "geen_training" && kind !== "rest") {
+      const structure: WorkoutStructure = {
+        phase,
+        week: weekIdx + 1,
+        intensity: "Rust",
+        primaryZone: 0,
+        routeNeed: "none",
+        equipment: [],
+        blocks: [],
+        recoveryAdvice:
+          "Geen training vandaag — je agenda heeft voorrang. Goede slaap en voeding houden je op koers.",
+        rationale: {
+          whyToday: `Je gaf aan: ${busy.label}. Daarom staat er vandaag bewust geen training — het schema is eromheen gebouwd.`,
+          supportsGoal:
+            "Een schema dat past bij je echte leven houd je vol. Dat levert op termijn meer op dan een gemiste training forceren.",
+          whatToFeel: "Focus op je dag. De training komt op de andere dagen terug.",
+          tooHardSigns: "—",
+          tooLightSigns: "—",
+          safeAdjust:
+            "Komt er onverwacht toch tijd vrij? Houd het bij een korte, lichte rit — het schema rekent niet op extra belasting vandaag.",
+        },
+      };
+      rows.push({
+        scheduledDate: date,
+        type: "rest",
+        title: `Vrij — ${busy.label}`,
+        description: "Geen training: je agenda heeft vandaag voorrang.",
+        targetDurationMin: 0,
+        targetTSS: 0,
+        structure,
+        status: "planned",
+        source: "sparki",
+      });
+      continue;
+    }
+    if (busy?.impact === "alleen_licht" && kind !== "rest") {
+      kind = "recovery";
+    }
 
     if (kind === "rest") {
       const structure: WorkoutStructure = {
@@ -395,7 +450,9 @@ export function generateThreeWeekPlan(
       continue;
     }
 
-    const dur = round5(weeklyMinutes * vol * (DAY_WEIGHT[kind] ?? 0.15));
+    let dur = round5(weeklyMinutes * vol * (DAY_WEIGHT[kind] ?? 0.15));
+    if (busy?.impact === "minder_tijd") dur = Math.min(dur, 45);
+    if (busy?.impact === "alleen_licht") dur = Math.min(dur, 40);
     const built = buildWorkout(kind, dur, phase, input.goals);
     if (!built) continue;
 

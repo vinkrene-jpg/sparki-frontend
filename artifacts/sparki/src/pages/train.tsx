@@ -16,7 +16,8 @@ import {
   AddTrainingButton,
   AddTrainingModal,
 } from "@/components/sparki/add-training"
-import { Bike, Activity, Zap, Plus, Sparkles, Check, ChevronRight } from "lucide-react"
+import { Plus, Sparkles, Check, ChevronRight } from "lucide-react"
+import { workoutIcon } from "@/lib/workout-visual"
 import type { TrainingSession } from "@/lib/athlete-types"
 
 // Sources where Sparki already captured the objective data itself (a connector
@@ -81,7 +82,7 @@ function ConfirmActivityCard({ session }: { session: TrainingSession }) {
   const date = new Date(
     session.sessionDate + "T12:00:00Z",
   ).toLocaleDateString("nl-NL", { weekday: "short", month: "short", day: "numeric" })
-  const Icon = typeIcon(session.type)
+  const Icon = typeIcon(session.type, session.title)
 
   function save() {
     update.mutate({
@@ -190,10 +191,8 @@ function ConfirmActivityCard({ session }: { session: TrainingSession }) {
   )
 }
 
-function typeIcon(type: string) {
-  if (type === "ride") return Bike
-  if (type === "run") return Activity
-  return Zap
+function typeIcon(type: string, title?: string | null) {
+  return workoutIcon(type, title)
 }
 
 /**
@@ -309,7 +308,7 @@ export default function TrainPage() {
               RECENTE SESSIES
             </span>
             {sessions.slice(0, 5).map((s) => {
-              const Icon = typeIcon(s.type)
+              const Icon = typeIcon(s.type, s.title)
               const date = new Date(
                 s.sessionDate + "T12:00:00Z",
               ).toLocaleDateString("nl-NL", {
