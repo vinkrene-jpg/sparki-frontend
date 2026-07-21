@@ -314,7 +314,10 @@ export function TodayLayer() {
             </div>
           )}
 
-          <LinkedRoutePreview plannedWorkoutId={workout.id} />
+          <LinkedRoutePreview
+            plannedWorkoutId={workout.id}
+            workoutStatus={workout.status}
+          />
         </div>
         </>
       ) : (

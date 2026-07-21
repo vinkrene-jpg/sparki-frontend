@@ -323,6 +323,7 @@ export function TrainingDayHome({
 
               <LinkedRoutePreview
                 plannedWorkoutId={data.todayWorkout.id}
+                workoutStatus={data.todayWorkout.status}
                 className="mt-4"
               />
             </>

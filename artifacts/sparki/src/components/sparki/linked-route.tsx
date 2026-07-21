@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Link } from "wouter"
 import {
   Sheet,
   SheetContent,
@@ -249,21 +250,60 @@ function RoutePreviewCard({
 }
 
 // LinkedRoutePreview — surfaces the route(s) saved against a planned workout on
-// the training/home session view. Compact map + distance/duration cards that
-// open the full route detail (map + turn-by-turn nav) on tap. Renders nothing
-// when no route is attached, so it's safe to drop into any workout card.
+// the training/home session view. Three honest states, driven by the workout
+// status when provided:
+//   1. Training nog te doen + route bewaard  → routekaart ("gaan we fietsen").
+//   2. Training nog te doen + geen route     → "nog samen te stellen"-prompt.
+//   3. Training gedaan/overgeslagen          → niets (de kaart reset).
+// Without a status the old behaviour holds: render routes if any, else nothing.
 export function LinkedRoutePreview({
   plannedWorkoutId,
+  workoutStatus,
   className = "",
 }: {
   plannedWorkoutId: number | null | undefined
+  workoutStatus?: string | null
   className?: string
 }) {
-  const { data } = useWorkoutRoutes(plannedWorkoutId)
+  const { data, isLoading } = useWorkoutRoutes(plannedWorkoutId)
   const [active, setActive] = useState<SparkiRoute | null>(null)
   const routes = data?.routes ?? []
 
-  if (routes.length === 0) return null
+  // Don't flash the "nog geen route"-prompt while the route fetch is running.
+  if (isLoading) return null
+
+  // After the ride (or a skipped session) the route card resets — the route
+  // itself stays saved in the Routes chapter, but today's surface is clean.
+  const isDone = workoutStatus === "completed" || workoutStatus === "skipped"
+  if (isDone) return null
+
+  const isPending = workoutStatus === "planned" || workoutStatus === "modified"
+
+  if (routes.length === 0) {
+    // New day, no route yet: say so plainly and offer the way to compose one.
+    if (!isPending) return null
+    return (
+      <div className={className}>
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-white/[0.12] bg-white/[0.02] px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <MapIcon
+              className="h-4 w-4 shrink-0 text-white/35"
+              strokeWidth={1.75}
+            />
+            <p className="truncate text-[12px] text-white/45">
+              Nog geen route voor deze training
+            </p>
+          </div>
+          <Link
+            href="/routes"
+            className="shrink-0 rounded-xl border border-cyan-300/25 bg-cyan-300/[0.08] px-3 py-1.5 font-mono text-[10px] tracking-[0.14em] text-cyan-200/90 transition-colors hover:border-cyan-300/45"
+          >
+            STEL SAMEN
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={className}>
