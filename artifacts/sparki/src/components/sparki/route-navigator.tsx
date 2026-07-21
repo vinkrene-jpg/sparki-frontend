@@ -23,6 +23,9 @@ import {
   Bluetooth,
   Play,
   Pause,
+  Compass,
+  Wind,
+  MapPin,
   type LucideIcon,
 } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
@@ -253,6 +256,18 @@ export function RouteNavigator({
   const [following, setFollowing] = useState(true)
   const [showSteps, setShowSteps] = useState(false)
   const [basemap, setBasemap] = useState<BasemapId>("standaard")
+  // Kaartoriëntatie: noord boven (klassiek) of rijrichting boven (de kaart
+  // draait mee, jij wijst altijd omhoog). Draai gebeurt via CSS-rotatie van
+  // een vergrote kaartlaag; icoontjes draaien via --map-counter-rot terug
+  // zodat ze leesbaar blijven.
+  const [headingUp, setHeadingUp] = useState(false)
+  const rotAccumRef = useRef(0)
+  const [rotDeg, setRotDeg] = useState(0)
+  // Plekken (bezienswaardigheden, café's) aan/uit op de kaart.
+  const [showPois, setShowPois] = useState(true)
+  // Echte actuele wind (Open-Meteo) op je positie — subtiel getoond, nooit
+  // verzonnen: blijft weg zolang er geen echte meting is.
+  const [wind, setWind] = useState<{ kmh: number; dirDeg: number } | null>(null)
   // Per-ride setup (map style, group riding, sensor pairing) is a one-time
   // choice at the start of a ride, so it lives behind a collapsible panel and
   // isn't permanently on screen.
@@ -315,6 +330,12 @@ export function RouteNavigator({
   const startRide = () => {
     setAutoPaused(false)
     stillSinceRef.current = null
+    // Verse rit = verse tellers: intensiteit/belasting/energie beginnen bij
+    // nul, nooit met restjes van een eerdere rit.
+    if (rideState === "idle") {
+      liveCalcRef.current = { win: [], sumP4: 0, n: 0, joules: 0 }
+      setLiveStats(null)
+    }
     setRideState("riding")
   }
   const pauseRide = () => {
@@ -552,13 +573,13 @@ export function RouteNavigator({
       map.removeLayer(poiLayerRef.current)
       poiLayerRef.current = null
     }
-    if (pois.length === 0) return
+    if (!showPois || pois.length === 0) return
     const group = L.layerGroup()
     for (const poi of pois) {
       const emoji = POI_ICONS[poi.kind] ?? "⭐"
       const icon = L.divIcon({
         className: "",
-        html: `<span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:rgba(7,13,22,0.9);border:1px solid rgba(255,255,255,0.25);font-size:14px;box-shadow:0 1px 6px rgba(0,0,0,0.5);">${emoji}</span>`,
+        html: `<span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:rgba(7,13,22,0.9);border:1px solid rgba(255,255,255,0.25);font-size:14px;box-shadow:0 1px 6px rgba(0,0,0,0.5);transform:rotate(var(--map-counter-rot,0deg));">${emoji}</span>`,
         iconSize: [26, 26],
         iconAnchor: [13, 13],
       })
@@ -574,7 +595,7 @@ export function RouteNavigator({
         poiLayerRef.current = null
       }
     }
-  }, [pois])
+  }, [pois, showPois])
 
   const progress = useMemo(() => {
     if (!location || path.length === 0) return null
@@ -860,7 +881,7 @@ export function RouteNavigator({
       // user-controlled content ever enters this divIcon HTML sink.
       const startIcon = L.divIcon({
         className: "",
-        html: `<span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:#0b1622;border:2px solid #4ade80;box-shadow:0 0 0 2px rgba(5,7,14,0.9),0 0 10px rgba(74,222,128,0.6);">
+        html: `<span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:#0b1622;border:2px solid #4ade80;box-shadow:0 0 0 2px rgba(5,7,14,0.9),0 0 10px rgba(74,222,128,0.6);transform:rotate(var(--map-counter-rot,0deg));">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#4ade80" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 22V4"/><path d="M4 4c3-1.8 6 1.8 9 0s5-1 7 0v9c-2-1-4-1.8-7 0s-6-1.8-9 0"/>
             </svg>
@@ -870,7 +891,7 @@ export function RouteNavigator({
       })
       const finishIcon = L.divIcon({
         className: "",
-        html: `<span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:#0b1622;border:2px solid rgba(255,255,255,0.85);box-shadow:0 0 0 2px rgba(5,7,14,0.9),0 0 10px rgba(255,255,255,0.45);">
+        html: `<span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:#0b1622;border:2px solid rgba(255,255,255,0.85);box-shadow:0 0 0 2px rgba(5,7,14,0.9),0 0 10px rgba(255,255,255,0.45);transform:rotate(var(--map-counter-rot,0deg));">
             <svg viewBox="0 0 16 16" width="13" height="13">
               <rect x="2" y="1" width="1.6" height="14" rx="0.8" fill="#e5e7eb"/>
               <g>
@@ -944,6 +965,69 @@ export function RouteNavigator({
     tileLayerRef.current.bringToBack()
   }, [basemap])
 
+  // Rijrichting-boven: houd een doorlopende rotatiehoek bij (altijd de kortste
+  // draai, nooit een 359°→0° zwiep) zodat de kaart rustig meedraait.
+  useEffect(() => {
+    if (!headingUp) return
+    const h = location?.heading
+    if (h == null) return
+    const cur = rotAccumRef.current
+    const delta = ((h - (((cur % 360) + 360) % 360) + 540) % 360) - 180
+    rotAccumRef.current = cur + delta
+    setRotDeg(rotAccumRef.current)
+  }, [location?.heading, headingUp])
+
+  // Bij het wisselen van oriëntatie verandert de kaartlaag van maat — Leaflet
+  // moet dan opnieuw meten, anders klopt het kaartmidden niet meer.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    const id = window.setTimeout(() => {
+      map.invalidateSize()
+      // Alleen hercentreren als de rijder de kaart niet bewust heeft
+      // losgelaten (volgen staat aan) — anders respecteren we de pan.
+      if (location && following)
+        map.setView([location.lat, location.lon], map.getZoom())
+    }, 80)
+    return () => window.clearTimeout(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [headingUp])
+
+  // Echte actuele wind op je positie via Open-Meteo — hooguit één keer per
+  // kwartier ververst. Geen meting = geen windregel (nooit verzonnen).
+  const windFetchedAtRef = useRef(0)
+  useEffect(() => {
+    if (!location) return
+    const now = Date.now()
+    if (now - windFetchedAtRef.current < 15 * 60 * 1000) return
+    windFetchedAtRef.current = now
+    fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${location.lat.toFixed(3)}&longitude=${location.lon.toFixed(3)}&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=kmh`,
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then(
+        (j: {
+          current?: { wind_speed_10m?: unknown; wind_direction_10m?: unknown }
+        } | null) => {
+          const cur = j?.current
+          if (
+            cur &&
+            typeof cur.wind_speed_10m === "number" &&
+            typeof cur.wind_direction_10m === "number"
+          ) {
+            setWind({
+              kmh: Math.round(cur.wind_speed_10m),
+              dirDeg: cur.wind_direction_10m,
+            })
+          }
+        },
+      )
+      .catch(() => {
+        /* eerlijk gat: geen windregel tonen */
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location])
+
   // Move the "me" arrow on each position update; follow if enabled.
   useEffect(() => {
     const map = mapRef.current
@@ -967,7 +1051,7 @@ export function RouteNavigator({
                </span>`
             : ""
         }
-        <span style="position:absolute;left:5px;top:5px;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9999px;background:#38bdf8;border:2px solid #05070e;box-shadow:0 0 0 3px rgba(56,189,248,0.3),0 0 14px rgba(56,189,248,0.8);">
+        <span style="position:absolute;left:5px;top:5px;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9999px;background:#38bdf8;border:2px solid #05070e;box-shadow:0 0 0 3px rgba(56,189,248,0.3),0 0 14px rgba(56,189,248,0.8);transform:rotate(var(--map-counter-rot,0deg));">
           ${bikeSvg}
         </span>
       </span>`
@@ -1062,7 +1146,7 @@ export function RouteNavigator({
     for (const b of boards) {
       const icon = L.divIcon({
         className: "",
-        html: `<span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#facc15;color:#05070e;font-weight:800;font-size:12px;border:2px solid #05070e;box-shadow:0 0 8px rgba(250,204,21,0.7);">⚡</span>`,
+        html: `<span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#facc15;color:#05070e;font-weight:800;font-size:12px;border:2px solid #05070e;box-shadow:0 0 8px rgba(250,204,21,0.7);transform:rotate(var(--map-counter-rot,0deg));">⚡</span>`,
         iconSize: [22, 22],
         iconAnchor: [11, 11],
       })
@@ -1216,6 +1300,54 @@ export function RouteNavigator({
     setArmedBoard(null)
   }
 
+  // ── Live intensiteit, belasting & energie (alleen met échte data) ──
+  // Elke seconde één wattsample; genormaliseerd vermogen via 30s-gemiddelden
+  // tot de vierde macht. Zonder gekoppelde vermogensmeter of bekende FTP
+  // blijft alles eerlijk "—" — nooit een verzonnen getal.
+  const powerWattsRef = useRef<number | null>(null)
+  powerWattsRef.current = power.connected ? power.watts : null
+  const liveCalcRef = useRef<{
+    win: number[]
+    sumP4: number
+    n: number
+    joules: number
+  }>({ win: [], sumP4: 0, n: 0, joules: 0 })
+  const [liveStats, setLiveStats] = useState<{
+    intensity: number
+    tss: number
+    energyPct: number
+  } | null>(null)
+  useEffect(() => {
+    if (rideState !== "riding" || !ftp || ftp <= 0) return
+    const id = window.setInterval(() => {
+      const w = powerWattsRef.current
+      if (w == null) return
+      const c = liveCalcRef.current
+      c.win.push(w)
+      if (c.win.length > 30) c.win.shift()
+      const avg = c.win.reduce((a, b) => a + b, 0) / c.win.length
+      c.sumP4 += avg ** 4
+      c.n += 1
+      c.joules += w
+      const np = (c.sumP4 / c.n) ** 0.25
+      const intensity = np / ftp
+      const tss = ((c.n * np * intensity) / (ftp * 3600)) * 100
+      // Energievoorraad: grove maar eerlijke schatting — volle tank ≈ 90
+      // minuten voluit op FTP. Daarom gelabeld met "±": een indicatie.
+      const budget = ftp * 3600 * 1.5
+      const energyPct = Math.max(
+        0,
+        Math.round(100 - (c.joules / budget) * 100),
+      )
+      setLiveStats({
+        intensity: Math.round(intensity * 100) / 100,
+        tss: Math.round(tss),
+        energyPct,
+      })
+    }, 1000)
+    return () => window.clearInterval(id)
+  }, [rideState, ftp])
+
   // Bottom metrics — always the full set incl. vermogen + cadans, so the
   // rider ziet waar ze horen. Zonder gekoppelde meter staat er eerlijk "—"
   // (nooit een verzonnen getal); koppelen kan via "Watt & cadans koppelen".
@@ -1245,6 +1377,24 @@ export function RouteNavigator({
         power.connected && power.cadence != null
           ? `${power.cadence} rpm`
           : "—",
+    },
+    // Alleen met een NU gekoppelde vermogensmeter én bekende FTP — valt de
+    // meter weg, dan direct weer eerlijk "—" (nooit bevroren oude cijfers).
+    {
+      label: "Intensiteit",
+      value:
+        power.connected && ftp && liveStats
+          ? liveStats.intensity.toFixed(2)
+          : "—",
+    },
+    {
+      label: "Belasting",
+      value: power.connected && ftp && liveStats ? `${liveStats.tss}` : "—",
+    },
+    {
+      label: "Energie ±",
+      value:
+        power.connected && ftp && liveStats ? `${liveStats.energyPct}%` : "—",
     },
   ]
 
@@ -1284,7 +1434,25 @@ export function RouteNavigator({
 
   const overlay = (
     <div className="fixed inset-0 z-[90] isolate bg-[#05070e]">
-      <div ref={containerRef} className="absolute inset-0 z-0" />
+      {/* Kaart, eventueel gedraaid (rijrichting boven). De kaartlaag is dan
+          groter dan het scherm zodat er bij het draaien geen hoeken openvallen;
+          icoontjes draaien via --map-counter-rot terug zodat ze leesbaar
+          blijven. */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <div
+          className="absolute"
+          style={{
+            inset: headingUp ? "-30%" : "0",
+            transform: headingUp ? `rotate(${-rotDeg}deg)` : undefined,
+            transition: "transform 0.6s linear",
+            ["--map-counter-rot" as string]: headingUp
+              ? `${rotDeg}deg`
+              : "0deg",
+          } as React.CSSProperties}
+        >
+          <div ref={containerRef} className="absolute inset-0" />
+        </div>
+      </div>
 
       {/* Top bar: close + next instruction */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2 p-3">
@@ -1326,6 +1494,24 @@ export function RouteNavigator({
             <Info className="h-4 w-4" strokeWidth={1.75} />
           </button>
         </div>
+
+        {/* Subtiele windregel — alleen bij een echte meting. De pijl wijst
+            waar de wind naartoe waait. */}
+        {wind && (
+          <div className="pointer-events-none flex justify-end">
+            <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-[#070d16]/70 px-2.5 py-1 font-mono text-[11px] tabular-nums text-white/50 backdrop-blur-md">
+              <Wind className="h-3 w-3" strokeWidth={1.75} />
+              <ArrowUp
+                className="h-3 w-3"
+                strokeWidth={2.25}
+                style={{
+                  transform: `rotate(${(wind.dirDeg + 180) % 360}deg)`,
+                }}
+              />
+              {wind.kmh} km/u
+            </div>
+          </div>
+        )}
 
         {/* Uitklapbare legenda — legt alleen uit wat ECHT op deze kaart staat. */}
         {showLegend && (
@@ -1426,6 +1612,42 @@ export function RouteNavigator({
                 </p>
               </div>
             )}
+
+            {/* Plekken langs de route aan/uit op de kaart. */}
+            <div>
+              <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+                Plekken op de kaart
+              </p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setShowPois(true)}
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] transition ${
+                    showPois
+                      ? "bg-cyan-400 text-[#05070e]"
+                      : "border border-white/10 text-white/55 hover:text-white/85"
+                  }`}
+                >
+                  <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Tonen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPois(false)}
+                  className={`rounded-full px-3 py-1.5 text-[11px] transition ${
+                    !showPois
+                      ? "bg-cyan-400 text-[#05070e]"
+                      : "border border-white/10 text-white/55 hover:text-white/85"
+                  }`}
+                >
+                  Verbergen
+                </button>
+              </div>
+              <p className="mt-1.5 text-[11px] leading-snug text-white/45">
+                Café’s en bezienswaardigheden langs de route als icoontjes op
+                de kaart.
+              </p>
+            </div>
 
             {/* Group riding — enables the bordjes-sprint game. */}
             <div>
@@ -1751,26 +1973,26 @@ export function RouteNavigator({
           ) : nextStep ? (
             <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-white/10 bg-[#070d16]/92 px-3.5 py-3 backdrop-blur-md">
               <div
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
-                style={{ background: "rgba(56,189,248,0.15)" }}
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl"
+                style={{ background: "rgba(56,189,248,0.18)" }}
               >
                 {(() => {
                   const Icon = describeDir(nextStep.dir).icon
                   return (
                     <Icon
-                      className="h-6 w-6 text-cyan-300"
-                      strokeWidth={2}
+                      className="h-10 w-10 text-cyan-300"
+                      strokeWidth={2.25}
                     />
                   )
                 })()}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-2">
-                  <p className="text-[15px] font-medium text-white/90">
+                  <p className="text-[19px] font-semibold text-white/95">
                     {describeDir(nextStep.dir).label}
                   </p>
                   {distanceToTurn != null && (
-                    <span className="font-mono text-[13px] tabular-nums text-cyan-300">
+                    <span className="font-mono text-[17px] font-semibold tabular-nums text-cyan-300">
                       {fmtMeters(distanceToTurn)}
                     </span>
                   )}
@@ -1918,6 +2140,25 @@ export function RouteNavigator({
         <div className="pointer-events-auto flex items-stretch gap-2">
           <button
             type="button"
+            onClick={() => setHeadingUp((v) => !v)}
+            aria-label={
+              headingUp
+                ? "Nu: rijrichting boven — tik voor noorden boven"
+                : "Nu: noorden boven — tik voor rijrichting boven"
+            }
+            className={`flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border px-3.5 shadow-lg backdrop-blur-md transition ${
+              headingUp
+                ? "border-cyan-400/40 bg-cyan-400/15 text-cyan-200"
+                : "border-white/10 bg-[#070d16]/92 text-white/70 hover:text-white"
+            }`}
+          >
+            <Compass className="h-5 w-5" strokeWidth={1.75} />
+            <span className="font-mono text-[8px] uppercase tracking-[0.1em]">
+              {headingUp ? "Rijricht." : "Noord"}
+            </span>
+          </button>
+          <button
+            type="button"
             onClick={rideState === "riding" ? pauseRide : startRide}
             className={`flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[14px] font-semibold shadow-lg transition ${
               rideState === "riding"
@@ -2052,10 +2293,10 @@ export function RouteNavigator({
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col items-center">
-      <span className="font-mono text-[15px] tabular-nums text-white/90">
+      <span className="font-mono text-[19px] font-semibold tabular-nums text-white/95">
         {value}
       </span>
-      <span className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">
+      <span className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
         {label}
       </span>
     </div>
