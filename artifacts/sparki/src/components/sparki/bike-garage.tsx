@@ -778,7 +778,11 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
           </div>
 
           <div className="mt-2">
-            <WirelessSensorsBlock bikeId={null} sensors={data.sensors ?? []} />
+            <WirelessSensorsBlock
+              bikeId={null}
+              sensors={data.sensors ?? []}
+              bikes={(data.bikes ?? []).map((b) => ({ id: b.id, name: b.name }))}
+            />
           </div>
 
           <Developments />

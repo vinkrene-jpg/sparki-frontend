@@ -70,12 +70,17 @@ export function SensorRow({
   bikeName,
   onDelete,
   onDetach,
+  attachOptions,
+  onAttach,
 }: {
   sensor: GarageSensor
   bikeName?: string | null
   onDelete: () => void
   onDetach?: () => void
+  attachOptions?: { id: number; name: string }[]
+  onAttach?: (bikeId: number) => void
 }) {
+  const [choosingBike, setChoosingBike] = useState(false)
   const Icon = sensor.pairable ? Radio : Watch
   const name =
     [sensor.brand, sensor.model].filter(Boolean).join(" ") ||
@@ -110,6 +115,16 @@ export function SensorRow({
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {onAttach && attachOptions && attachOptions.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setChoosingBike((v) => !v)}
+              className="font-mono text-[9px] uppercase tracking-[0.12em] transition-colors"
+              style={{ color: choosingBike ? ACCENT : "rgba(255,255,255,0.4)" }}
+            >
+              Zet op fiets…
+            </button>
+          )}
           {onDetach && (
             <button
               type="button"
@@ -129,6 +144,23 @@ export function SensorRow({
           </button>
         </div>
       </div>
+      {choosingBike && onAttach && attachOptions && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {attachOptions.map((b) => (
+            <button
+              key={b.id}
+              type="button"
+              onClick={() => {
+                setChoosingBike(false)
+                onAttach(b.id)
+              }}
+              className="rounded-full border border-cyan-400/30 px-3 py-1.5 text-[12px] text-cyan-200 transition hover:bg-cyan-400/10"
+            >
+              {b.name}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -287,9 +319,11 @@ function AddSensorForm({
 export function WirelessSensorsBlock({
   bikeId,
   sensors,
+  bikes,
 }: {
   bikeId: number | null
   sensors: GarageSensor[]
+  bikes?: { id: number; name: string }[]
 }) {
   const del = useDeleteSensor()
   const update = useUpdateSensor()
@@ -312,6 +346,13 @@ export function WirelessSensorsBlock({
               onDetach={
                 bikeId != null
                   ? () => update.mutate({ id: s.id, bikeId: null })
+                  : undefined
+              }
+              attachOptions={bikeId == null ? bikes : undefined}
+              onAttach={
+                bikeId == null && bikes && bikes.length > 0
+                  ? (targetBikeId) =>
+                      update.mutate({ id: s.id, bikeId: targetBikeId })
                   : undefined
               }
             />
