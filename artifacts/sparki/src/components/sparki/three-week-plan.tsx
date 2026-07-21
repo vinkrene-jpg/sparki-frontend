@@ -224,6 +224,33 @@ export function ThreeWeekPlan({
               })}
             </div>
           ))}
+          {/* Legenda — anders zijn de gekleurde stippen betekenisloos. */}
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
+            <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/35">
+              Kleur = intensiteit
+            </span>
+            {[
+              { z: 2, label: "Rustig (Z1–2)" },
+              { z: 3, label: "Tempo (Z3)" },
+              { z: 4, label: "Intervallen (Z4)" },
+              { z: 5, label: "Vol gas (Z5+)" },
+            ].map((it) => (
+              <span key={it.z} className="flex items-center gap-1.5">
+                <span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ background: zoneDot(it.z) }}
+                />
+                <span className="text-[10px] text-white/55">{it.label}</span>
+              </span>
+            ))}
+            <span className="flex items-center gap-1.5">
+              <span className="font-mono text-[9px] text-white/35">rust</span>
+              <span className="text-[10px] text-white/55">rustdag</span>
+            </span>
+            <span className="text-[10px] text-white/40">
+              Getal = belasting (TSS)
+            </span>
+          </div>
           {!hideRegenerate && (
             <button
               type="button"
