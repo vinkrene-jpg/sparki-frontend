@@ -103,6 +103,9 @@ export function useSaveRide() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["routes"] });
+      // The saved ride becomes a backend training session; refresh the ride
+      // list so the measured sensor values show up immediately.
+      qc.invalidateQueries({ queryKey: ["sessions"] });
     },
   });
 }

@@ -56,6 +56,24 @@ export default function RouteListScreen() {
             </Text>
           </View>
         </Pressable>
+        <Pressable
+          onPress={() => router.push("/rides")}
+          style={[
+            styles.ridesBtn,
+            { backgroundColor: c.card, borderColor: c.border },
+          ]}
+        >
+          <Ionicons name="bicycle-outline" size={20} color={c.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.ridesTitle, { color: c.foreground }]}>
+              Mijn ritten
+            </Text>
+            <Text style={[styles.ridesSub, { color: c.mutedForeground }]}>
+              Opgeslagen ritten met gemeten waarden
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={c.mutedForeground} />
+        </Pressable>
       </View>
 
       {isLoading ? (
@@ -147,7 +165,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  recordRow: { paddingHorizontal: 20, paddingBottom: 18 },
+  recordRow: { paddingHorizontal: 20, paddingBottom: 18, gap: 12 },
+  ridesBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  ridesTitle: { fontFamily: "Inter_600SemiBold", fontSize: 15 },
+  ridesSub: { fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 2 },
   recordBtn: {
     flexDirection: "row",
     alignItems: "center",
