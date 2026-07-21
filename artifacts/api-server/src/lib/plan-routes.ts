@@ -74,13 +74,9 @@ function loopPoints(training: TrainingType): number {
   return 5;
 }
 
-const HONESTY_CAVEAT =
-  "Let op: de route is geoptimaliseerd voor je trainingstype en sport, maar verkeerslichten, drukke wegen of het mijden van stadscentra kunnen niet worden gegarandeerd. Afstand, hoogtemeters, duur en navigatie komen rechtstreeks van de routemachine (OpenRouteService).";
-
 // Short Dutch rationale for why the route fits the workout. Uses the AI
 // integration to phrase it, but NEVER to invent geometry — only real numbers
-// are passed in. Deterministic fallback if the AI call fails; honesty caveat is
-// always appended server-side.
+// are passed in. Deterministic fallback if the AI call fails.
 async function buildRationale(input: {
   training: TrainingType;
   profile: RoutingProfile;
@@ -119,9 +115,9 @@ async function buildRationale(input: {
       block && block.type === "text" && block.text.trim()
         ? block.text.trim()
         : fallback;
-    return `${body}\n\n${HONESTY_CAVEAT}`;
+    return body;
   } catch {
-    return `${fallback}\n\n${HONESTY_CAVEAT}`;
+    return fallback;
   }
 }
 

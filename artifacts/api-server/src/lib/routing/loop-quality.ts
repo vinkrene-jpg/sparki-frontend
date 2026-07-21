@@ -109,23 +109,46 @@ function elevationPenalty(
   return preference === "flat" ? normalized : 1 - normalized;
 }
 
+// Scenery wish: select the candidate with the most nature and/or the fewest
+// traffic lights. The caller supplies `environmentOf` (real OpenStreetMap
+// facts per candidate); this module never fetches anything itself and never
+// changes geometry — it only *ranks* real ORS candidates by real map data.
+export type SceneryWish = { nature: boolean; avoidTrafficLights: boolean };
+
+export type CandidateEnvironment = {
+  trafficLights: number | null;
+  forestSharePct: number | null;
+};
+
 export async function generateVariedLoop(
   provider: RoutingProvider,
   req: LoopRequest,
-  opts?: { candidates?: number },
+  opts?: {
+    candidates?: number;
+    scenery?: SceneryWish | null;
+    environmentOf?: (
+      path: [number, number][],
+    ) => Promise<CandidateEnvironment | null>;
+  },
 ): Promise<RouteResult> {
   const preference = req.elevationPreference ?? "any";
+  const scenery =
+    opts?.scenery && (opts.scenery.nature || opts.scenery.avoidTrafficLights)
+      ? opts.scenery
+      : null;
+  const wantsScenery = scenery != null && opts?.environmentOf != null;
   // A stated flat/hilly wish needs a wider pool of real candidates to choose the
   // best-matching one — in hilly terrain the genuinely flat loops only appear in
   // later seeds, so too small a sample silently returns a hillier route. A
   // neutral request stays cheap at 3 ORS calls. The early-exit below still stops
   // as soon as a clean, on-distance, on-elevation loop appears, so the extra
   // ceiling only costs more calls when a good match is actually hard to find.
-  const defaultCandidates = preference === "any" ? 3 : 8;
+  // A scenery wish (natuur / weinig verkeerslichten) also needs a real pool to
+  // compare, so it raises the ceiling and disables the early exit.
+  const defaultCandidates = preference === "any" && !wantsScenery ? 3 : 8;
   const n = Math.min(Math.max(opts?.candidates ?? defaultCandidates, 1), 10);
   const target = req.distanceKm;
-  let best: RouteResult | null = null;
-  let bestScore = Number.POSITIVE_INFINITY;
+  const pool: { result: RouteResult; score: number }[] = [];
   let lastErr: unknown = null;
 
   for (let i = 0; i < n; i++) {
@@ -154,19 +177,58 @@ export async function generateVariedLoop(
     // real weight so the requested length is honoured, and elevation match is
     // decisive when the rider asked for flat/hilly.
     const score = overlap + drift * 1.2 + elevation * 0.8;
-    if (score < bestScore) {
-      bestScore = score;
-      best = result;
-    }
+    pool.push({ result, score });
     // Good enough — a clean loop, close to the requested length, that already
     // matches the elevation wish. Only then do we stop spending ORS calls.
-    if (overlap < 0.08 && drift < 0.15 && elevation < 0.35) break;
+    // With a scenery wish we keep collecting: the environment comparison needs
+    // multiple real candidates to have anything to choose between.
+    if (!wantsScenery && overlap < 0.08 && drift < 0.15 && elevation < 0.35)
+      break;
   }
 
-  if (!best) {
+  if (pool.length === 0) {
     throw lastErr instanceof Error
       ? lastErr
       : new Error("ORS leverde geen bruikbare route op");
   }
-  return best;
+
+  pool.sort((a, b) => a.score - b.score);
+
+  if (wantsScenery && pool.length > 1) {
+    // Compare the best few candidates on real map facts. Environment lookups
+    // are the expensive part (Overpass), so cap at 4 and run them in parallel.
+    // When a lookup fails the candidate simply keeps its base score — we never
+    // guess what the map would have said.
+    const top = pool.slice(0, 4);
+    const envs = await Promise.all(
+      top.map((c) =>
+        opts!.environmentOf!(c.result.path).catch(() => null),
+      ),
+    );
+    let best = top[0]!;
+    let bestTotal = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < top.length; i++) {
+      const c = top[i]!;
+      const env = envs[i];
+      let envPenalty = 0;
+      if (env) {
+        if (scenery!.nature && env.forestSharePct != null) {
+          envPenalty += (1 - env.forestSharePct / 100) * 0.9;
+        }
+        if (scenery!.avoidTrafficLights && env.trafficLights != null) {
+          const km = c.result.distanceKm ?? target;
+          const perKm = km > 0 ? env.trafficLights / km : env.trafficLights;
+          envPenalty += Math.min(perKm / 1.5, 1) * 0.9;
+        }
+      }
+      const total = c.score + envPenalty;
+      if (total < bestTotal) {
+        bestTotal = total;
+        best = c;
+      }
+    }
+    return best.result;
+  }
+
+  return pool[0]!.result;
 }

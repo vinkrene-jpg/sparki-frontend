@@ -140,11 +140,21 @@ function parseMeetpoints(v: unknown): RouteMeetpoint[] {
   return out;
 }
 
-// Honesty caveat — always appended to a generated route's rationale, regardless
-// of what the AI writes. The routing engine can only *prefer* a quiet, scenic
-// route; it cannot guarantee no traffic lights or that city centres are avoided.
-const HONESTY_CAVEAT =
-  "Let op: de route is geoptimaliseerd voor je trainingstype en sport, maar verkeerslichten, drukke wegen of het mijden van stadscentra kunnen niet worden gegarandeerd. Afstand, hoogtemeters, duur en navigatie komen rechtstreeks van de routemachine (OpenRouteService).";
+// Detect a scenery wish in the athlete's free text: more nature and/or fewer
+// traffic-light crossings. These are the two things the loop selector can
+// genuinely steer on (by ranking real candidates on real OpenStreetMap data);
+// everything else in the wish stays prompt-only.
+function detectSceneryWish(
+  wish: string | null,
+): { nature: boolean; avoidTrafficLights: boolean } | null {
+  if (!wish) return null;
+  const w = wish.toLowerCase();
+  const nature = /natuur|bos(?:sen|rijk)?\b|groen|park|heide|duinen/.test(w);
+  const avoidTrafficLights =
+    /verkeerslicht|stoplicht|kruispunt|kruising/.test(w);
+  if (!nature && !avoidTrafficLights) return null;
+  return { nature, avoidTrafficLights };
+}
 
 // Fewer waypoints → longer uninterrupted stretches (better for interval blocks);
 // more waypoints → a more varied, scenic loop (better for endurance).
@@ -170,6 +180,10 @@ async function buildRationale(input: {
   startName: string | null;
   endName: string | null;
   wish: string | null;
+  environment?: {
+    trafficLights: number | null;
+    forestSharePct: number | null;
+  } | null;
 }): Promise<string> {
   const label = activityLabel(input.profile);
   const shape =
@@ -197,8 +211,30 @@ async function buildRationale(input: {
   // afstand/hoogte/ondergrond can be honoured; specific roads, plaatsen or
   // "vermijd X" cannot be guaranteed by the round-trip engine. The prompt must
   // say so plainly and never claim the route passes a place it can't verify.
+  const envFacts =
+    input.environment &&
+    (input.environment.forestSharePct != null ||
+      input.environment.trafficLights != null)
+      ? `\n- Gemeten omgeving (OpenStreetMap): ${[
+          input.environment.forestSharePct != null &&
+            `~${input.environment.forestSharePct}% van de route door bos/natuur`,
+          input.environment.trafficLights != null &&
+            `${input.environment.trafficLights} verkeerslicht(en) op de route`,
+        ]
+          .filter(Boolean)
+          .join(", ")}`
+      : "";
+
+  // What the generator can steer on differs per mode: only the loop generator
+  // compares multiple real candidates on map data (natuur/verkeerslichten);
+  // point-to-point and waypoint routes are a single real route, so claiming
+  // scenery steering there would be an overclaim.
+  const steerCapability =
+    input.mode === "loop"
+      ? `De routegenerator kan sturen op afstand, hoeveel klimwerk (vlak/heuvelachtig), de ondergrond/het profiel, en — door meerdere echte kandidaten te vergelijken op kaartgegevens — op meer natuur en minder verkeerslichten. NIET op specifieke wegen, plaatsen of bezienswaardigheden.`
+      : `De routegenerator kan alleen sturen op afstand, hoeveel klimwerk (vlak/heuvelachtig) en de ondergrond/het profiel — NIET op specifieke wegen, plaatsen, bezienswaardigheden of "vermijd"-verzoeken.`;
   const wishBlock = input.wish
-    ? `\n\nDe renner gaf deze wens op: "${input.wish}".\nDe routegenerator kan alleen sturen op afstand, hoeveel klimwerk (vlak/heuvelachtig) en de ondergrond/het profiel — NIET op specifieke wegen, plaatsen, bezienswaardigheden of "vermijd"-verzoeken. Beoordeel de wens eerlijk:\n- Kon de wens (deels) worden ingevuld via afstand/hoogte/ondergrond? Zeg kort dat het gelukt is.\n- Gaat de wens over een specifieke weg/plaats of een vermijd-verzoek dat de generator niet kan garanderen? Zeg dat eerlijk in gewone taal ("Ik kan de route niet op … sturen") en bied deze route aan als passend alternatief voor de training. Beweer NOOIT dat de route langs een plek gaat die niet in de gegevens staat.`
+    ? `\n\nDe renner gaf deze wens op: "${input.wish}".\n${steerCapability} Beoordeel de wens eerlijk:\n- Kon de wens (deels) worden ingevuld? Zeg kort dat het gelukt is; noem bij een natuur-/verkeerslichtenwens alleen de gemeten omgevingscijfers hierboven (als die er zijn).\n- Gaat de wens over een specifieke weg/plaats of een vermijd-verzoek dat de generator niet kan garanderen? Zeg dat eerlijk in gewone taal ("Ik kan de route niet op … sturen") en bied deze route aan als passend alternatief voor de training. Beweer NOOIT dat de route langs een plek gaat die niet in de gegevens staat.`
     : "";
 
   try {
@@ -210,7 +246,7 @@ async function buildRationale(input: {
       messages: [
         {
           role: "user",
-          content: `Leg in 1-2 Nederlandse zinnen uit waarom deze gegenereerde route past bij de geplande training. Gebruik alleen deze gegevens:\n- Trainingstype: ${input.trainingType}\n- Sport/profiel: ${label}\n- Vorm: ${shape}\n- Afstand: ${input.distanceKm ?? "onbekend"} km\n- Geschatte duur: ${durationLabel ?? "onbekend"}\n- Hoogtemeters: ${input.elevationGainM ?? "onbekend"}\n- Klimmen: ${input.climbCount}\nSchrijf geen garanties over verkeer of stadscentra.${wishBlock}`,
+          content: `Leg in 1-2 Nederlandse zinnen uit waarom deze gegenereerde route past bij de geplande training. Gebruik alleen deze gegevens:\n- Trainingstype: ${input.trainingType}\n- Sport/profiel: ${label}\n- Vorm: ${shape}\n- Afstand: ${input.distanceKm ?? "onbekend"} km\n- Geschatte duur: ${durationLabel ?? "onbekend"}\n- Hoogtemeters: ${input.elevationGainM ?? "onbekend"}\n- Klimmen: ${input.climbCount}${envFacts}\nSchrijf geen garanties over verkeer of stadscentra buiten de gemeten omgevingscijfers.${wishBlock}`,
         },
       ],
     });
@@ -219,9 +255,9 @@ async function buildRationale(input: {
       block && block.type === "text" && block.text.trim()
         ? block.text.trim()
         : fallback;
-    return `${body}\n\n${HONESTY_CAVEAT}`;
+    return body;
   } catch {
-    return `${fallback}\n\n${HONESTY_CAVEAT}`;
+    return fallback;
   }
 }
 
@@ -1012,14 +1048,29 @@ async function buildLoopCandidate(
   ctx: LoopCandidateContext,
   targetDistanceKm: number,
 ) {
-  const routeResult = await generateVariedLoop(ctx.provider, {
-    start: ctx.start,
-    distanceKm: targetDistanceKm,
-    profile: ctx.profile,
-    seed: ctx.seed,
-    points: ctx.points,
-    elevationPreference: ctx.elevationPreference,
-  });
+  const scenery = detectSceneryWish(ctx.wish);
+  const routeResult = await generateVariedLoop(
+    ctx.provider,
+    {
+      start: ctx.start,
+      distanceKm: targetDistanceKm,
+      profile: ctx.profile,
+      seed: ctx.seed,
+      points: ctx.points,
+      elevationPreference: ctx.elevationPreference,
+    },
+    {
+      scenery,
+      environmentOf: scenery ? getRouteEnvironment : undefined,
+    },
+  );
+
+  // With a scenery wish, report the chosen route's real measured environment
+  // (cached — the selector already fetched it) so the rationale can cite real
+  // numbers instead of guessing. Honest null when the lookup failed.
+  const environment = scenery
+    ? await getRouteEnvironment(routeResult.path).catch(() => null)
+    : null;
 
   const summary = summarizeTrack(routeResult.points);
   const distanceKm = summary.distanceKm ?? routeResult.distanceKm;
@@ -1043,6 +1094,7 @@ async function buildLoopCandidate(
     startName: ctx.startName,
     endName: null,
     wish: ctx.wish,
+    environment,
   });
 
   const candidateId = putCandidate({
