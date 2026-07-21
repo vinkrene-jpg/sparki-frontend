@@ -38,7 +38,7 @@ import { CheckInChip } from "@/components/sparki/check-in-chip"
 import { FollowUpChip } from "@/components/sparki/follow-up-chip"
 import { MeerijderNudge } from "@/components/sparki/meerijder-nudge"
 import { HomeWeatherRow } from "@/components/sparki/home-weather-row"
-import { useRideMoment } from "@/hooks/use-ride-story"
+import { useRideMoment, useRideStoryFlag } from "@/hooks/use-ride-story"
 import { useHomeWeather } from "@/hooks/use-home-weather"
 import { useSetHealthStatus } from "@/hooks/use-health-status"
 import {
@@ -181,6 +181,9 @@ function StateDayHome() {
   const { data: dashboard } = useAthleteDashboard()
   const { data: moment } = useRideMoment()
   const weather = useHomeWeather()
+  // Fase 2 "De aandachtswet" is isolated behind the same tester flag as Fase 1
+  // (`rit_verhaal`): flag off ⇒ the prior Vandaag composition renders unchanged.
+  const fase2 = useRideStoryFlag()
 
   // Vandaag is the single place to update yourself as an athlete: how you feel
   // (the check-in chip below the Momentblok) plus your nutrition and your gear.
@@ -247,6 +250,62 @@ function StateDayHome() {
       ? `1 keer gelogd · laatste ${relativeDate(lastLog.logDate)}`
       : `${logs.length} keer gelogd · laatste ${relativeDate(lastLog.logDate)}`
     : "Nog niets gelogd — begin hier"
+
+  // ── Flag off: the prior Vandaag surface, unchanged (no aandachtswet
+  // composition, check-in inside the State Card, inline gear nudge intact). ──
+  if (!fase2) {
+    return (
+      <ScreenShell section="Home" bg="/concept-lab.png">
+        <StateCard
+          checkInFirst
+          onShowDetails={() => homeView?.setView("full")}
+        />
+
+        <section className="mt-2">
+          <SectionLabel title="Jouw update vandaag" />
+          <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
+            Eén plek om jezelf bij te werken. Hoe je je voelt staat hierboven —
+            open je voeding en laat Sparki je materiaal bekijken.
+          </p>
+
+          <div className="mt-5">
+            <AddTrainingButton variant="prominent" />
+          </div>
+
+          <button
+            id="nutrition"
+            type="button"
+            onClick={() => setVoedingOpen(true)}
+            className="mt-5 flex w-full scroll-mt-4 items-center gap-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
+          >
+            <span
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.08]"
+              style={{ background: "rgba(120,210,230,0.08)" }}
+            >
+              <Apple className="h-5 w-5" strokeWidth={1.75} style={{ color: ACCENT }} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-medium text-white/90">
+                Voeding &amp; hydratatie
+              </span>
+              <span className="mt-0.5 block text-[12px] text-white/45">
+                {voedingSummary}
+              </span>
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-white/25" strokeWidth={1.75} />
+          </button>
+
+          <div className="mt-7">
+            <MaterialCoach n="" />
+          </div>
+        </section>
+
+        <LeskaartVandaag />
+
+        <VoedingScreen open={voedingOpen} onOpenChange={setVoedingOpen} />
+      </ScreenShell>
+    )
+  }
 
   return (
     <ScreenShell section="Home" bg="/concept-lab.png">

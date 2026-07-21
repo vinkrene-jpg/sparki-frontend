@@ -1,5 +1,3 @@
-import { useState } from "react"
-import { Check } from "lucide-react"
 import {
   useSparkiState,
   useStateCheckIn,
@@ -9,43 +7,23 @@ import {
 // Check-in als chip (Fase 2 "De aandachtswet", §5.2 #1).
 //
 // One line under the Momentblok — never at the top, never blocking. One tap
-// records how the athlete feels and the chip drops away (a slim "genoteerd" line
-// stays so it never reads as unanswered). Backed by the same real State Engine
-// check-in as the State Card, so the two never diverge.
+// records how the athlete feels and the chip drops away entirely ("zakt weg na
+// invullen"). Backed by the same real State Engine check-in as the State Card,
+// so the two never diverge; the answer stays adjustable in the full analysis.
 
 const OPTIONS: { value: CheckInAnswer; label: string }[] = [
-  { value: "fris", label: "Fris" },
-  { value: "oke", label: "Oké" },
-  { value: "vermoeid", label: "Vermoeid" },
+  { value: "fris", label: "Goed" },
+  { value: "oke", label: "Matig" },
+  { value: "vermoeid", label: "Slecht" },
 ]
 
 export function CheckInChip() {
   const { data: state } = useSparkiState()
   const checkIn = useStateCheckIn()
-  const [reopen, setReopen] = useState(false)
 
-  // Only render once the engine has spoken — no skeleton flicker for a one-liner.
-  if (!state) return null
-
-  const askAgain = !state.checkInDone || reopen
-
-  if (!askAgain) {
-    return (
-      <div className="flex items-center justify-between gap-3 rounded-full border border-white/[0.07] bg-[#070d16]/[0.7] px-4 py-2 backdrop-blur-md">
-        <span className="flex items-center gap-2 text-[13px] text-white/55">
-          <Check className="h-3.5 w-3.5 text-cyan-300/70" strokeWidth={2} />
-          Check-in genoteerd
-        </span>
-        <button
-          type="button"
-          onClick={() => setReopen(true)}
-          className="text-[12px] text-cyan-300/70 transition-colors hover:text-cyan-300"
-        >
-          Aanpassen
-        </button>
-      </div>
-    )
-  }
+  // Only render once the engine has spoken — no skeleton flicker for a
+  // one-liner — and drop away entirely once today's check-in is done.
+  if (!state || state.checkInDone) return null
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-full border border-white/[0.08] bg-[#070d16]/[0.7] px-4 py-2 backdrop-blur-md">
@@ -56,9 +34,7 @@ export function CheckInChip() {
             key={o.value}
             type="button"
             disabled={checkIn.isPending}
-            onClick={() =>
-              checkIn.mutate(o.value, { onSuccess: () => setReopen(false) })
-            }
+            onClick={() => checkIn.mutate(o.value)}
             className="rounded-full border border-white/12 bg-white/[0.04] px-3 py-1 text-[12px] text-white/80 transition-colors hover:border-cyan-300/40 hover:text-cyan-300 disabled:opacity-50"
           >
             {o.label}
