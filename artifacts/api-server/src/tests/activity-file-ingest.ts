@@ -109,17 +109,23 @@ function sampleTcx(startIso: string): string {
 // mirror is what the mobile save path posts to /api/activity-imports; the test
 // locks the client→parser→ingest contract so a drift in that shape can't
 // silently turn saved rides into parse-failures with no session.
-function buildRideGpx(
-  points: { latitude: number; longitude: number; time: number }[],
-  name: string,
-): string | null {
-  if (points.length < 2) return null;
-  const trkName = (name.trim() || "Sparki rit")
+function esc(s: string): string {
+  return s
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
+}
+function buildRideGpx(
+  points: { latitude: number; longitude: number; time: number }[],
+  name: string,
+  note?: string,
+): string | null {
+  if (points.length < 2) return null;
+  const trkName = esc(name.trim() || "Sparki rit");
+  const trimmedNote = (note ?? "").trim();
+  const descEl = trimmedNote ? `    <desc>${esc(trimmedNote)}</desc>\n` : "";
   const trkpts = points
     .map(
       (p) =>
@@ -130,7 +136,7 @@ function buildRideGpx(
   return (
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<gpx version="1.1" creator="Sparki" xmlns="http://www.topografix.com/GPX/1/1">\n` +
-    `  <metadata>\n    <name>${trkName}</name>\n  </metadata>\n` +
+    `  <metadata>\n    <name>${trkName}</name>\n${descEl}  </metadata>\n` +
     `  <trk>\n    <name>${trkName}</name>\n    <trkseg>\n${trkpts}\n    </trkseg>\n  </trk>\n` +
     `</gpx>\n`
   );
@@ -218,6 +224,7 @@ async function main() {
         endTime: null,
         durationSec: null,
         trackName: "Route zonder tijd",
+        notes: null,
       },
       "hash-route",
     );
@@ -244,6 +251,32 @@ async function main() {
     // The phone omits elevation, so the parser must honestly report none.
     assert(s!.elevationGainM === null, "no fabricated elevation");
     assert(s!.trackName === "Ochtendrit", `track name → ${s!.trackName}`);
+    // No note supplied → parser reports none (never fabricated).
+    assert(s!.notes === null, `no note → ${s!.notes}`);
+  });
+
+  await run("RideGPX", "rider name + note flow through GPX into a session", () => {
+    const start = Date.parse("2026-06-20T07:00:00.000Z");
+    const gpx = buildRideGpx(
+      sampleRidePoints(start),
+      "Ronde om het meer",
+      "Lekker gevoel, wind mee op de terugweg.",
+    );
+    assert(gpx !== null, "GPX built with note");
+    const s = parseGpx(gpx!);
+    assert(s !== null, "GPX with note parsed");
+    assert(s!.trackName === "Ronde om het meer", `name → ${s!.trackName}`);
+    assert(
+      s!.notes === "Lekker gevoel, wind mee op de terugweg.",
+      `note from metadata desc → ${s!.notes}`,
+    );
+    const a = summaryToCanonicalActivity("gpx", s!, "hash-note-ride");
+    assert(a !== null, "note ride maps to activity");
+    assert(a!.title === "Ronde om het meer", `title → ${a!.title}`);
+    assert(
+      a!.notes === "Lekker gevoel, wind mee op de terugweg.",
+      `activity carries note → ${a!.notes}`,
+    );
   });
 
   await run("RideGPX", "phone ride GPX maps to a datable canonical activity", () => {

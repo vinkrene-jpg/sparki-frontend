@@ -14,10 +14,20 @@ function escapeXml(s: string): string {
  * device coordinate and the wall-clock <time> it was recorded, so the backend
  * GPX parser derives real distance + duration. No elevation/power/HR is written
  * — the phone doesn't measure them, so they are honestly omitted (never faked).
+ * An optional rider note is written as the metadata <desc> — a real, rider-typed
+ * value; when empty it is omitted entirely (never a placeholder).
  */
-export function buildRideGpx(points: RidePoint[], name: string): string | null {
+export function buildRideGpx(
+  points: RidePoint[],
+  name: string,
+  note?: string,
+): string | null {
   if (points.length < 2) return null;
   const trkName = escapeXml(name.trim() || "Sparki rit");
+  const trimmedNote = (note ?? "").trim();
+  const descEl = trimmedNote
+    ? `    <desc>${escapeXml(trimmedNote)}</desc>\n`
+    : "";
   const trkpts = points
     .map(
       (p) =>
@@ -28,7 +38,7 @@ export function buildRideGpx(points: RidePoint[], name: string): string | null {
   return (
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<gpx version="1.1" creator="Sparki" xmlns="http://www.topografix.com/GPX/1/1">\n` +
-    `  <metadata>\n    <name>${trkName}</name>\n  </metadata>\n` +
+    `  <metadata>\n    <name>${trkName}</name>\n${descEl}  </metadata>\n` +
     `  <trk>\n    <name>${trkName}</name>\n    <trkseg>\n${trkpts}\n    </trkseg>\n  </trk>\n` +
     `</gpx>\n`
   );

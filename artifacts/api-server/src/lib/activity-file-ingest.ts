@@ -120,6 +120,7 @@ export function summaryToCanonicalActivity(
       sport: "cycling", // a bare GPX track carries no sport; hub default
       startedAt,
       title: g.trackName ?? null,
+      notes: g.notes ?? null,
       durationMin,
       distanceKm,
       elevationM: g.elevationGainM ?? null,

@@ -73,8 +73,9 @@ export function useSaveRide() {
     mutationFn: async (input: {
       points: RidePoint[];
       name: string;
+      note?: string;
     }): Promise<SaveRideResult> => {
-      const gpx = buildRideGpx(input.points, input.name);
+      const gpx = buildRideGpx(input.points, input.name, input.note);
       if (!gpx) {
         throw new Error(
           "Deze rit heeft te weinig locatiepunten om op te slaan.",

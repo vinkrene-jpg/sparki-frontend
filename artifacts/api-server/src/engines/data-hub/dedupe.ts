@@ -90,6 +90,7 @@ const MERGEABLE_FIELDS = [
   "tss",
   "intensityFactor",
   "title",
+  "notes",
 ] as const;
 
 /**

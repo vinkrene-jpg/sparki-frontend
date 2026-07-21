@@ -168,6 +168,7 @@ async function ingestActivities(
         tss,
         intensityFactor: numStr(intensityFactor),
         title: a.title ?? null,
+        notes: a.notes ?? null,
       };
       const patch = buildMergePatch(
         existing as unknown as Record<string, unknown>,
@@ -190,6 +191,7 @@ async function ingestActivities(
           type: legacyTypeForSport(a.sport),
           sport: a.sport,
           title: a.title ?? null,
+          notes: a.notes ?? null,
           durationMin: a.durationMin,
           distanceKm: numStr(a.distanceKm),
           elevationM: a.elevationM,

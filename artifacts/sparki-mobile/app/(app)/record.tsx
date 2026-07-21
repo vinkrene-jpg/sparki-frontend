@@ -3,10 +3,12 @@ import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,7 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RouteMap } from "@/components/RouteMap";
 import { useColors } from "@/hooks/useColors";
 import { useLiveLocation } from "@/hooks/useLiveLocation";
-import { useRideRecorder } from "@/hooks/useRideRecorder";
+import { useRideRecorder, type RidePoint } from "@/hooks/useRideRecorder";
 import { toLatLon, type LatLon } from "@/lib/geo";
 import { hasMapbox } from "@/lib/mapbox";
 import { useSaveRide } from "@/lib/routes-api";
@@ -55,6 +57,16 @@ export default function RecordScreen() {
   const saveRide = useSaveRide();
   const [saved, setSaved] = useState<null | { sessionId: number | null }>(null);
   const [following, setFollowing] = useState(true);
+  // After stopping, the recorded track is snapshotted here so it is never lost —
+  // not on review-cancel, not on a failed save. The rider can reopen the review
+  // to save it, or explicitly discard it. Only an explicit discard drops it.
+  const [stoppedPoints, setStoppedPoints] = useState<RidePoint[] | null>(null);
+  // The name/note editor. Opened from the stopped state; cancelling it returns
+  // to the stopped state (track kept), never discards.
+  const [review, setReview] = useState<null | {
+    name: string;
+    note: string;
+  }>(null);
 
   // The live track being recorded, so the rider sees their real trail draw on
   // the map as they move (no planned line exists for a free ride).
@@ -71,21 +83,43 @@ export default function RecordScreen() {
 
   const onStart = () => {
     setSaved(null);
+    setReview(null);
+    setStoppedPoints(null);
     saveRide.reset();
     recorder.start();
   };
 
-  const onStop = async () => {
+  // Stopping does NOT save yet. The recorded track is snapshotted into
+  // `stoppedPoints` before the recorder resets, then the review editor opens so
+  // the rider can name the ride and add a note. The snapshot keeps the track
+  // alive across cancel/retry — nothing is lost.
+  const onStop = () => {
     recorder.stop();
+    setStoppedPoints(recorder.points);
+    setReview({ name: defaultRideName(), note: "" });
+    recorder.reset();
+  };
+
+  // Reopen the name/note editor for an already-stopped (but unsaved) track.
+  const onEditStopped = () => {
+    setReview({ name: defaultRideName(), note: "" });
+    saveRide.reset();
+  };
+
+  const onSaveReview = async () => {
+    if (!review || !stoppedPoints) return;
     try {
       const res = await saveRide.mutateAsync({
-        points: recorder.points,
-        name: defaultRideName(),
+        points: stoppedPoints,
+        name: review.name.trim() || defaultRideName(),
+        note: review.note,
       });
       setSaved({ sessionId: res.sessionId });
-      recorder.reset();
+      setReview(null);
+      setStoppedPoints(null);
     } catch {
-      // Error surfaced via saveRide.error; track kept so the rider can retry.
+      // Error surfaced via saveRide.error; the review AND the stopped track are
+      // kept so the rider can retry without losing anything.
     }
   };
 
@@ -105,6 +139,20 @@ export default function RecordScreen() {
     } catch {
       // Error surfaced via saveRide.error; recovered track kept so it can retry.
     }
+  };
+
+  // Cancelling the editor returns to the stopped state — the recorded track is
+  // preserved so the rider can still save it later. It is NOT discarded here.
+  const onCancelReview = () => {
+    setReview(null);
+    saveRide.reset();
+  };
+
+  // Explicitly discard the recorded track (the rider chose not to keep it).
+  const onDiscardStopped = () => {
+    setReview(null);
+    setStoppedPoints(null);
+    saveRide.reset();
   };
 
   const saveError = saveRide.error
@@ -207,6 +255,124 @@ export default function RecordScreen() {
             <Pressable onPress={() => setSaved(null)} hitSlop={10}>
               <Ionicons name="close" size={20} color={c.mutedForeground} />
             </Pressable>
+          </View>
+        ) : review ? (
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+          >
+            <View style={[styles.reviewCard, { backgroundColor: c.card, borderColor: c.border }]}>
+              <Text style={[styles.reviewTitle, { color: c.foreground }]}>
+                Rit opslaan
+              </Text>
+              <Text style={[styles.reviewSub, { color: c.mutedForeground }]}>
+                {`${stoppedPoints?.length ?? 0} punt${(stoppedPoints?.length ?? 0) === 1 ? "" : "en"} vastgelegd`}
+              </Text>
+
+              <Text style={[styles.fieldLabel, { color: c.mutedForeground }]}>
+                Naam
+              </Text>
+              <TextInput
+                value={review.name}
+                onChangeText={(name) =>
+                  setReview((r) => (r ? { ...r, name } : r))
+                }
+                placeholder={defaultRideName()}
+                placeholderTextColor={c.mutedForeground}
+                style={[
+                  styles.input,
+                  { color: c.foreground, borderColor: c.border, backgroundColor: c.background },
+                ]}
+                maxLength={80}
+                returnKeyType="next"
+              />
+
+              <Text style={[styles.fieldLabel, { color: c.mutedForeground }]}>
+                Notitie (optioneel)
+              </Text>
+              <TextInput
+                value={review.note}
+                onChangeText={(note) =>
+                  setReview((r) => (r ? { ...r, note } : r))
+                }
+                placeholder="Hoe voelde de rit?"
+                placeholderTextColor={c.mutedForeground}
+                style={[
+                  styles.input,
+                  styles.inputMultiline,
+                  { color: c.foreground, borderColor: c.border, backgroundColor: c.background },
+                ]}
+                multiline
+                maxLength={500}
+              />
+
+              {saveError && (
+                <View style={styles.reviewErr}>
+                  <Ionicons name="alert-circle-outline" size={16} color={c.destructive} />
+                  <Text style={[styles.recNote, { color: c.mutedForeground, flex: 1 }]}>
+                    {saveError}
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.reviewActions}>
+                <Pressable
+                  onPress={onCancelReview}
+                  disabled={saveRide.isPending}
+                  style={[styles.reviewCancel, { borderColor: c.border }]}
+                >
+                  <Text style={[styles.reviewCancelText, { color: c.mutedForeground }]}>
+                    Annuleren
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={onSaveReview}
+                  disabled={saveRide.isPending}
+                  style={[
+                    styles.reviewSave,
+                    { backgroundColor: c.primary, opacity: saveRide.isPending ? 0.6 : 1 },
+                  ]}
+                >
+                  {saveRide.isPending ? (
+                    <ActivityIndicator color={c.primaryForeground} />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark" size={18} color={c.primaryForeground} />
+                      <Text style={[styles.recBtnText, { color: c.primaryForeground }]}>
+                        Opslaan
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        ) : stoppedPoints ? (
+          <View style={[styles.reviewCard, { backgroundColor: c.card, borderColor: c.border }]}>
+            <Text style={[styles.reviewTitle, { color: c.foreground }]}>
+              Rit gestopt
+            </Text>
+            <Text style={[styles.reviewSub, { color: c.mutedForeground }]}>
+              {`${stoppedPoints.length} punt${stoppedPoints.length === 1 ? "" : "en"} vastgelegd. Nog niet opgeslagen.`}
+            </Text>
+            <View style={styles.reviewActions}>
+              <Pressable
+                onPress={onDiscardStopped}
+                style={[styles.reviewCancel, { borderColor: c.border }]}
+              >
+                <Text style={[styles.reviewCancelText, { color: c.mutedForeground }]}>
+                  Verwerpen
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={onEditStopped}
+                style={[styles.reviewSave, { backgroundColor: c.primary }]}
+              >
+                <Ionicons name="checkmark" size={18} color={c.primaryForeground} />
+                <Text style={[styles.recBtnText, { color: c.primaryForeground }]}>
+                  Opslaan
+                </Text>
+              </Pressable>
+            </View>
           </View>
         ) : recorder.recording ? (
           <View style={[styles.recCard, { backgroundColor: c.card, borderColor: c.border }]}>
@@ -474,4 +640,52 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   recBtnText: { fontFamily: "Inter_700Bold", fontSize: 16 },
+  reviewCard: {
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 6,
+  },
+  reviewTitle: { fontFamily: "Inter_700Bold", fontSize: 17 },
+  reviewSub: { fontFamily: "Inter_400Regular", fontSize: 12, marginBottom: 4 },
+  fieldLabel: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  input: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  inputMultiline: { minHeight: 64, textAlignVertical: "top" },
+  reviewErr: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 8,
+  },
+  reviewActions: { flexDirection: "row", gap: 10, marginTop: 14 },
+  reviewCancel: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  reviewCancelText: { fontFamily: "Inter_600SemiBold", fontSize: 15 },
+  reviewSave: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
+  },
 });

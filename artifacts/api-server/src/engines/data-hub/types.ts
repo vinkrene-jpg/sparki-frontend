@@ -13,6 +13,8 @@ export interface CanonicalActivity {
   /** ISO timestamp of activity start. */
   startedAt: string;
   title?: string | null;
+  /** A real user-provided note about the activity. Null when none. */
+  notes?: string | null;
   durationMin?: number | null;
   distanceKm?: number | null;
   elevationM?: number | null;

@@ -13,6 +13,9 @@ export type GpxSummary = {
   endTime: string | null;
   durationSec: number | null;
   trackName: string | null;
+  // A real rider-typed note, taken ONLY from the file's <metadata><desc>. Null
+  // when absent — never fabricated and never sourced from waypoint descriptions.
+  notes: string | null;
 };
 
 type TrackPoint = {
@@ -95,6 +98,14 @@ export function parseGpx(content: string): GpxSummary | null {
 
   const nameStr = /<name>\s*([^<]+)<\/name>/i.exec(content)?.[1]?.trim();
 
+  // Rider note lives ONLY in <metadata><desc>. Scope the search to the metadata
+  // block so a waypoint/trkpt <desc> elsewhere in the file is never mistaken for
+  // the ride note.
+  const metadata = /<metadata\b[^>]*>([\s\S]*?)<\/metadata>/i.exec(content)?.[1];
+  const notesStr = metadata
+    ? /<desc>\s*([^<]+)<\/desc>/i.exec(metadata)?.[1]?.trim()
+    : undefined;
+
   return {
     pointCount: points.length,
     distanceKm: distanceKm > 0 ? Math.round(distanceKm * 100) / 100 : null,
@@ -106,6 +117,7 @@ export function parseGpx(content: string): GpxSummary | null {
         ? Math.round((endTime - startTime) / 1000)
         : null,
     trackName: nameStr || null,
+    notes: notesStr || null,
   };
 }
 
