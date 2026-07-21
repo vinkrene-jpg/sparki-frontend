@@ -26,6 +26,12 @@ import {
   Compass,
   Wind,
   MapPin,
+  Camera,
+  Plus,
+  Minus,
+  Share2,
+  Phone,
+  Download,
   type LucideIcon,
 } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
@@ -251,6 +257,10 @@ export function RouteNavigator({
   const [location, setLocation] = useState<
     (LatLon & { speedMps: number | null; heading: number | null }) | null
   >(null)
+  const locationRef = useRef<
+    (LatLon & { speedMps: number | null; heading: number | null }) | null
+  >(null)
+  locationRef.current = location
   const [geoError, setGeoError] = useState<string | null>(null)
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [following, setFollowing] = useState(true)
@@ -314,12 +324,84 @@ export function RouteNavigator({
   autoPausedRef.current = autoPaused
   const stillSinceRef = useRef<number | null>(null)
   const [rideSeconds, setRideSeconds] = useState(0)
+  const rideSecondsRef = useRef(0)
+  rideSecondsRef.current = rideSeconds
   // Ridden track (recorded while riding) — offered for saving when closing.
   const riddenRef = useRef<LatLon[]>([])
   const [confirmClose, setConfirmClose] = useState(false)
   const [saveRideState, setSaveRideState] = useState<
     "idle" | "saving" | "error"
   >("idle")
+
+  // ── Val-alarm ─────────────────────────────────────────────────────
+  // Detectie: plotselinge stop vanaf ≥ 20 km/u gevolgd door ≥ 15 s stilstand
+  // tijdens een rit. Dan verschijnt "Alles oké?" met aftelling; geen reactie →
+  // gekoppelde coach/ouders krijgen een melding met je locatie. 112 bellen
+  // kan de browser niet zelf — er staat een grote belknop (eerlijk).
+  const [crashAlert, setCrashAlert] = useState<
+    | null
+    | { phase: "asking"; secondsLeft: number }
+    | { phase: "sending" }
+    | { phase: "sent"; notified: number }
+    | { phase: "error" }
+  >(null)
+  const crashAlertRef = useRef(crashAlert)
+  crashAlertRef.current = crashAlert
+  const lastFastRef = useRef<number | null>(null)
+  const crashStillSinceRef = useRef<number | null>(null)
+  const crashSnoozeUntilRef = useRef(0)
+
+  const sendCrashAlert = async () => {
+    const loc = locationRef.current
+    if (!loc) {
+      setCrashAlert({ phase: "error" })
+      return
+    }
+    setCrashAlert({ phase: "sending" })
+    try {
+      const data = await apiFetch<{ notified?: number }>(
+        "/api/alerts/crash",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            lat: loc.lat,
+            lon: loc.lon,
+            speedKmh: loc.speedMps != null ? loc.speedMps * 3.6 : undefined,
+          }),
+        },
+      )
+      setCrashAlert({ phase: "sent", notified: data.notified ?? 0 })
+    } catch {
+      setCrashAlert({ phase: "error" })
+    }
+  }
+
+  const dismissCrashAlert = () => {
+    // "Ik ben oké" — 5 minuten geen nieuwe vraag, anders blijft hij terugkomen
+    // bij elk stoplicht na een sprintje.
+    crashSnoozeUntilRef.current = Date.now() + 5 * 60 * 1000
+    crashStillSinceRef.current = null
+    lastFastRef.current = null
+    setCrashAlert(null)
+  }
+
+  // Aftelling: geen reactie binnen 30 s → automatisch waarschuwen.
+  useEffect(() => {
+    if (!crashAlert || crashAlert.phase !== "asking") return
+    if (crashAlert.secondsLeft <= 0) {
+      void sendCrashAlert()
+      return
+    }
+    const id = window.setTimeout(() => {
+      setCrashAlert((c) =>
+        c && c.phase === "asking"
+          ? { phase: "asking", secondsLeft: c.secondsLeft - 1 }
+          : c,
+      )
+    }, 1000)
+    return () => window.clearTimeout(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [crashAlert])
 
   useEffect(() => {
     if (rideState !== "riding") return
@@ -812,8 +894,11 @@ export function RouteNavigator({
   // Init map + route line once.
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
+    // Geen ingebouwde zoomknoppen: die zaten linksboven achter de sluitknop
+    // én draaien mee in rijrichting-modus. Eigen knoppen staan rechts en
+    // draaien nooit mee.
     const map = L.map(containerRef.current, {
-      zoomControl: true,
+      zoomControl: false,
       attributionControl: true,
     })
     // Only the licence-required © credit — no Leaflet software plug.
@@ -1092,8 +1177,9 @@ export function RouteNavigator({
         { lat: location.lat, lon: location.lon },
       )
       const instKmh = dt > 0 ? (dm / dt) * 3.6 : 0
-      // Skip huge gaps (signal loss) and near-stationary samples (stops).
-      // Average speed only accumulates while the ride is actually running.
+      // Afstand telt alleen mee tijdens een lopende rit en zonder gps-gaten;
+      // de ≥3 km/u-drempel filtert gps-ruis bij stilstand (anders "rijd" je
+      // meters terwijl je stilstaat).
       if (
         dt > 0 &&
         dt < 15 &&
@@ -1101,7 +1187,6 @@ export function RouteNavigator({
         rideStateRef.current === "riding"
       ) {
         a.meters += dm
-        a.seconds += dt
       }
 
       // ── Auto-pauze / auto-hervat ────────────────────────────────
@@ -1130,9 +1215,45 @@ export function RouteNavigator({
           }
         }
       }
+
+      // ── Val-detectie ──────────────────────────────────────────────
+      // Alleen tijdens een rit (ook net na auto-pauze): eerst ≥ 20 km/u
+      // gereden, daarna binnen 30 s abrupt < 3 km/u en dat 15 s lang → vraag
+      // "Alles oké?". Na "Ik ben oké" 5 minuten rust.
+      if (dt > 0 && dt < 15 && rideStateRef.current !== "idle") {
+        if (moveKmh >= 20) {
+          lastFastRef.current = now
+          crashStillSinceRef.current = null
+        } else if (moveKmh < 3) {
+          // De 30 s-toets geldt alleen op het MOMENT dat de stilstand begint
+          // (abrupte stop kort na hard rijden). Daarna telt de stilstand
+          // gewoon door — anders mist hij precies de val die 20 s na de
+          // laatste snelle meting begon.
+          if (crashStillSinceRef.current == null) {
+            const wasFast =
+              lastFastRef.current != null && now - lastFastRef.current < 30000
+            if (wasFast) crashStillSinceRef.current = now
+          } else if (
+            now - crashStillSinceRef.current >= 15000 &&
+            crashAlertRef.current == null &&
+            now > crashSnoozeUntilRef.current
+          ) {
+            setCrashAlert({ phase: "asking", secondsLeft: 30 })
+            speakCue("Alles oké? Reageer op je scherm.")
+          }
+        } else {
+          crashStillSinceRef.current = null
+        }
+      }
     }
     a.last = { t: now, lat: location.lat, lon: location.lon }
-    setAvgKmh(a.seconds > 0 ? Math.round((a.meters / a.seconds) * 3.6) : null)
+    // Gemiddelde over de hele rit tot nu toe: afgelegde afstand gedeeld door
+    // de rijtijd op de klok — niet een schuivend gemiddelde dat naar je
+    // actuele snelheid toe kruipt.
+    const rideSecs = rideSecondsRef.current
+    setAvgKmh(
+      rideSecs >= 10 ? Math.round((a.meters / rideSecs) * 3.6) : null,
+    )
   }, [location])
 
   // Draw sprint boards on the map once, whenever the set changes — only in a
@@ -1348,55 +1469,66 @@ export function RouteNavigator({
     return () => window.clearInterval(id)
   }, [rideState, ftp])
 
-  // Bottom metrics — always the full set incl. vermogen + cadans, so the
-  // rider ziet waar ze horen. Zonder gekoppelde meter staat er eerlijk "—"
-  // (nooit een verzonnen getal); koppelen kan via "Watt & cadans koppelen".
-  const metrics: { label: string; value: string }[] = [
+  // Bottom metrics — compact. Vermogen/cadans en de afgeleiden (intensiteit,
+  // belasting, energie) verschijnen ALLEEN met een nu gekoppelde meter: rijen
+  // vol "—" nemen anders schermruimte in zonder iets te zeggen. Koppelen kan
+  // via Instellen → "Watt & cadans koppelen".
+  const metrics: { label: string; value: string; unit?: string }[] = [
     {
       label: "Resterend",
-      value: progress ? `${progress.remainingKm.toFixed(1)} km` : "—",
+      value: progress ? progress.remainingKm.toFixed(1) : "—",
+      unit: progress ? "km" : undefined,
     },
     {
       label: "Totaal",
-      value: distanceKm != null ? `${distanceKm.toFixed(1)} km` : "—",
+      value: distanceKm != null ? distanceKm.toFixed(1) : "—",
+      unit: distanceKm != null ? "km" : undefined,
     },
-    { label: "Snelheid", value: speedKmh != null ? `${speedKmh} km/u` : "—" },
-    { label: "Gem.", value: avgKmh != null ? `${avgKmh} km/u` : "—" },
+    {
+      label: "Snelheid",
+      value: speedKmh != null ? `${speedKmh}` : "—",
+      unit: speedKmh != null ? "km/u" : undefined,
+    },
+    {
+      label: "Gem.",
+      value: avgKmh != null ? `${avgKmh}` : "—",
+      unit: avgKmh != null ? "km/u" : undefined,
+    },
     {
       label: "Rijtijd",
       value: rideState === "idle" ? "—" : fmtRideTime(rideSeconds),
     },
-    {
-      label: "Vermogen",
-      value:
-        power.connected && power.watts != null ? `${power.watts} W` : "—",
-    },
-    {
-      label: "Cadans",
-      value:
-        power.connected && power.cadence != null
-          ? `${power.cadence} rpm`
-          : "—",
-    },
-    // Alleen met een NU gekoppelde vermogensmeter én bekende FTP — valt de
-    // meter weg, dan direct weer eerlijk "—" (nooit bevroren oude cijfers).
-    {
-      label: "Intensiteit",
-      value:
-        power.connected && ftp && liveStats
-          ? liveStats.intensity.toFixed(2)
-          : "—",
-    },
-    {
-      label: "Belasting",
-      value: power.connected && ftp && liveStats ? `${liveStats.tss}` : "—",
-    },
-    {
-      label: "Energie ±",
-      value:
-        power.connected && ftp && liveStats ? `${liveStats.energyPct}%` : "—",
-    },
   ]
+  if (power.connected) {
+    metrics.push(
+      {
+        label: "Vermogen",
+        value: power.watts != null ? `${power.watts}` : "—",
+        unit: power.watts != null ? "W" : undefined,
+      },
+      {
+        label: "Cadans",
+        value: power.cadence != null ? `${power.cadence}` : "—",
+        unit: power.cadence != null ? "rpm" : undefined,
+      },
+    )
+    // Alleen met bekende FTP — valt de meter weg, dan verdwijnen deze rijen
+    // direct weer (nooit bevroren oude cijfers).
+    if (ftp) {
+      metrics.push(
+        {
+          label: "Intensiteit",
+          value: liveStats ? liveStats.intensity.toFixed(2) : "—",
+        },
+        { label: "Belasting", value: liveStats ? `${liveStats.tss}` : "—" },
+        {
+          label: "Energie ±",
+          value: liveStats ? `${liveStats.energyPct}` : "—",
+          unit: liveStats ? "%" : undefined,
+        },
+      )
+    }
+  }
 
   // Ridden distance so far (km) — gates the "bewaar gereden rit" option so we
   // never offer to save a track that is too short to be a real route.
@@ -1432,6 +1564,72 @@ export function RouteNavigator({
 
   const canSaveRide = riddenRef.current.length >= 2 && riddenKm() >= 0.2
 
+  // ── Foto onderweg ─────────────────────────────────────────────────
+  // Opent de camera van de telefoon; daarna direct het deel-menu van het
+  // toestel (WhatsApp, Instagram, …). Zonder deel-menu: nette download zodat
+  // de foto nooit verloren gaat.
+  const photoInputRef = useRef<HTMLInputElement | null>(null)
+  const handlePhotoTaken = async (file: File) => {
+    const shareText = `Onderweg op de fiets 🚴 — genavigeerd met Sparki.`
+    const nav = window.navigator as Navigator & {
+      canShare?: (data: ShareData) => boolean
+    }
+    if (nav.share && nav.canShare?.({ files: [file] })) {
+      try {
+        await nav.share({ files: [file], text: shareText })
+        return
+      } catch {
+        // Geannuleerd of niet gelukt — val terug op downloaden.
+      }
+    }
+    const url = URL.createObjectURL(file)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = file.name || `sparki-foto-${Date.now()}.jpg`
+    a.click()
+    window.setTimeout(() => URL.revokeObjectURL(url), 10000)
+  }
+
+  // ── Rit delen ─────────────────────────────────────────────────────
+  // Via het deel-menu van het toestel (daar zitten Strava, Facebook en
+  // Instagram tussen als die apps geïnstalleerd zijn). Eerlijk: rechtstreeks
+  // in Strava zetten kan alleen via een Strava-koppeling met schrijfrechten —
+  // die is er niet; wél kan de gereden rit als GPX gedownload en in Strava
+  // geüpload worden.
+  const rideShareText = () =>
+    [
+      `🚴 ${riddenKm().toFixed(1)} km gereden in ${fmtRideTime(rideSeconds)}`,
+      avgKmh != null ? ` (gem. ${avgKmh} km/u)` : "",
+      ` — genavigeerd met Sparki.`,
+    ].join("")
+  const canWebShare = typeof navigator !== "undefined" && !!navigator.share
+  const shareRide = async () => {
+    try {
+      await navigator.share({ text: rideShareText() })
+    } catch {
+      // Geannuleerd — niets aan de hand.
+    }
+  }
+  const downloadRideGpx = () => {
+    const pts = riddenRef.current
+    if (pts.length < 2) return
+    const gpx = [
+      `<?xml version="1.0" encoding="UTF-8"?>`,
+      `<gpx version="1.1" creator="Sparki" xmlns="http://www.topografix.com/GPX/1/1">`,
+      `<trk><name>Gereden: ${name.replace(/[<>&]/g, "")}</name><trkseg>`,
+      ...pts.map((p) => `<trkpt lat="${p.lat}" lon="${p.lon}"></trkpt>`),
+      `</trkseg></trk></gpx>`,
+    ].join("\n")
+    const url = URL.createObjectURL(
+      new Blob([gpx], { type: "application/gpx+xml" }),
+    )
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `sparki-rit-${new Date().toISOString().slice(0, 10)}.gpx`
+    a.click()
+    window.setTimeout(() => URL.revokeObjectURL(url), 10000)
+  }
+
   const overlay = (
     <div className="fixed inset-0 z-[90] isolate bg-[#05070e]">
       {/* Kaart, eventueel gedraaid (rijrichting boven). De kaartlaag is dan
@@ -1452,6 +1650,27 @@ export function RouteNavigator({
         >
           <div ref={containerRef} className="absolute inset-0" />
         </div>
+      </div>
+
+      {/* Zoomknoppen — eigen grote knoppen (de standaard Leaflet-knopjes zijn
+          te klein voor onderweg met handschoenen). */}
+      <div className="pointer-events-auto absolute right-2 top-1/2 z-10 flex -translate-y-1/2 flex-col gap-2">
+        <button
+          type="button"
+          onClick={() => mapRef.current?.zoomIn()}
+          aria-label="Inzoomen"
+          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#070d16]/90 text-white/80 shadow-lg backdrop-blur-md transition hover:text-white"
+        >
+          <Plus className="h-5 w-5" strokeWidth={2} />
+        </button>
+        <button
+          type="button"
+          onClick={() => mapRef.current?.zoomOut()}
+          aria-label="Uitzoomen"
+          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#070d16]/90 text-white/80 shadow-lg backdrop-blur-md transition hover:text-white"
+        >
+          <Minus className="h-5 w-5" strokeWidth={2} />
+        </button>
       </div>
 
       {/* Top bar: close + next instruction */}
@@ -1687,6 +1906,29 @@ export function RouteNavigator({
                 </p>
               )}
             </div>
+
+            {/* Stappenplan — volledige lijst aanwijzingen aan/uit. */}
+            {nav.length > 0 && (
+              <div>
+                <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+                  Stappenplan
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowSteps((v) => !v)}
+                  className={`rounded-full px-3 py-1.5 text-[11px] transition ${
+                    showSteps
+                      ? "bg-cyan-400 text-[#05070e]"
+                      : "border border-white/10 text-white/55 hover:text-white/85"
+                  }`}
+                >
+                  {showSteps ? "Verberg stappenplan" : "Toon stappenplan"}
+                </button>
+                <p className="mt-1.5 text-[11px] leading-snug text-white/45">
+                  Alle afslag-aanwijzingen onder elkaar, onderin het scherm.
+                </p>
+              </div>
+            )}
 
             {/* Sensor pairing — watts + cadans over Bluetooth. */}
             <div>
@@ -1971,16 +2213,16 @@ export function RouteNavigator({
               </div>
             </div>
           ) : nextStep ? (
-            <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-white/10 bg-[#070d16]/92 px-3.5 py-3 backdrop-blur-md">
+            <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-white/10 bg-[#070d16]/92 px-3.5 py-2 backdrop-blur-md">
               <div
-                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
                 style={{ background: "rgba(56,189,248,0.18)" }}
               >
                 {(() => {
                   const Icon = describeDir(nextStep.dir).icon
                   return (
                     <Icon
-                      className="h-10 w-10 text-cyan-300"
+                      className="h-8 w-8 text-cyan-300"
                       strokeWidth={2.25}
                     />
                   )
@@ -1988,7 +2230,7 @@ export function RouteNavigator({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-2">
-                  <p className="text-[19px] font-semibold text-white/95">
+                  <p className="text-[17px] font-semibold text-white/95">
                     {describeDir(nextStep.dir).label}
                   </p>
                   {distanceToTurn != null && (
@@ -2160,7 +2402,7 @@ export function RouteNavigator({
           <button
             type="button"
             onClick={rideState === "riding" ? pauseRide : startRide}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[14px] font-semibold shadow-lg transition ${
+            className={`flex items-center justify-center gap-2 rounded-2xl px-7 py-2.5 text-[14px] font-semibold shadow-lg transition ${
               rideState === "riding"
                 ? "border border-white/10 bg-[#070d16]/92 text-white/85 backdrop-blur-md hover:text-white"
                 : "bg-cyan-400 text-[#05070e]"
@@ -2178,23 +2420,36 @@ export function RouteNavigator({
               </>
             )}
           </button>
-        </div>
-
-        <div className="pointer-events-auto grid grid-cols-4 gap-x-2 gap-y-3 rounded-2xl border border-white/10 bg-[#070d16]/92 px-4 py-3 backdrop-blur-md">
-          {metrics.map((m) => (
-            <Metric key={m.label} label={m.label} value={m.value} />
-          ))}
-        </div>
-
-        {nav.length > 0 && (
           <button
             type="button"
-            onClick={() => setShowSteps((v) => !v)}
-            className="pointer-events-auto rounded-full border border-white/10 bg-[#070d16]/90 px-3 py-2 text-center font-mono text-[11px] uppercase tracking-[0.14em] text-white/55 backdrop-blur-md transition hover:text-white/80"
+            onClick={() => photoInputRef.current?.click()}
+            aria-label="Foto maken en delen"
+            className="flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-white/10 bg-[#070d16]/92 px-3.5 text-white/70 shadow-lg backdrop-blur-md transition hover:text-white"
           >
-            {showSteps ? "Verberg stappenplan" : "Toon stappenplan"}
+            <Camera className="h-5 w-5" strokeWidth={1.75} />
+            <span className="font-mono text-[8px] uppercase tracking-[0.1em]">
+              Foto
+            </span>
           </button>
-        )}
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              e.target.value = ""
+              if (f) void handlePhotoTaken(f)
+            }}
+          />
+        </div>
+
+        <div className="pointer-events-auto grid grid-cols-5 gap-x-1.5 gap-y-2 rounded-2xl border border-white/10 bg-[#070d16]/92 px-3 py-2 backdrop-blur-md">
+          {metrics.map((m) => (
+            <Metric key={m.label} label={m.label} value={m.value} unit={m.unit} />
+          ))}
+        </div>
 
         {showSteps && nav.length > 0 && (
           <div className="pointer-events-auto max-h-[38vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#070d16]/95 p-2 backdrop-blur-md">
@@ -2225,11 +2480,123 @@ export function RouteNavigator({
           </div>
         )}
 
-        <p className="pointer-events-none px-2 text-center text-[10px] leading-relaxed text-white/25">
-          Live navigatie in de browser volgt je positie. Een rit opnemen in je
-          trainingen doe je in de Sparki-app op je telefoon.
-        </p>
       </div>
+
+      {/* Val-alarm — "Alles oké?" na een abrupte stop. Eerlijk over wat er
+          gebeurt: melding + locatie naar gekoppelde coach/ouders; 112 bellen
+          doet de renner zelf via de grote belknop. */}
+      {crashAlert && (
+        <div className="absolute inset-0 z-[96] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl border border-red-400/30 bg-[#070d16]/97 p-5 backdrop-blur-md">
+            {crashAlert.phase === "asking" && (
+              <>
+                <p className="text-[20px] font-semibold text-white">
+                  Alles oké?
+                </p>
+                <p className="mt-1 text-[13px] leading-relaxed text-white/60">
+                  Je stopte plotseling. Geen reactie binnen{" "}
+                  <span className="font-mono font-semibold text-white/90">
+                    {crashAlert.secondsLeft}
+                  </span>{" "}
+                  seconden → je gekoppelde coach en ouders krijgen een melding
+                  met je locatie.
+                </p>
+                <div className="mt-4 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={dismissCrashAlert}
+                    className="rounded-full bg-cyan-400 px-4 py-3 text-[14px] font-semibold text-[#05070e]"
+                  >
+                    Ik ben oké
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void sendCrashAlert()}
+                    className="rounded-full border border-white/15 px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:text-white"
+                  >
+                    Waarschuw nu
+                  </button>
+                  <a
+                    href="tel:112"
+                    className="flex items-center justify-center gap-2 rounded-full bg-red-500 px-4 py-3 text-[15px] font-semibold text-white"
+                  >
+                    <Phone className="h-4 w-4" strokeWidth={2} />
+                    Bel 112
+                  </a>
+                </div>
+              </>
+            )}
+            {crashAlert.phase === "sending" && (
+              <p className="text-[15px] text-white/85">
+                Bezig met waarschuwen…
+              </p>
+            )}
+            {crashAlert.phase === "sent" && (
+              <>
+                <p className="text-[17px] font-semibold text-white">
+                  {crashAlert.notified > 0
+                    ? `Melding klaargezet voor ${crashAlert.notified} ${crashAlert.notified === 1 ? "persoon" : "personen"}`
+                    : "Niemand gekoppeld"}
+                </p>
+                <p className="mt-1 text-[13px] leading-relaxed text-white/60">
+                  {crashAlert.notified > 0
+                    ? "Je gekoppelde coach/ouders krijgen een melding met je locatie. Of ze die nu al zien, hangt van hun telefoon af — bel bij nood altijd zelf 112."
+                    : "Er is geen coach of ouder aan je account gekoppeld, dus er is niemand bereikt. Bel bij nood zelf 112."}
+                </p>
+                <div className="mt-4 flex flex-col gap-2">
+                  <a
+                    href="tel:112"
+                    className="flex items-center justify-center gap-2 rounded-full bg-red-500 px-4 py-3 text-[15px] font-semibold text-white"
+                  >
+                    <Phone className="h-4 w-4" strokeWidth={2} />
+                    Bel 112
+                  </a>
+                  <button
+                    type="button"
+                    onClick={dismissCrashAlert}
+                    className="rounded-full border border-white/15 px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:text-white"
+                  >
+                    Sluiten
+                  </button>
+                </div>
+              </>
+            )}
+            {crashAlert.phase === "error" && (
+              <>
+                <p className="text-[17px] font-semibold text-white">
+                  Waarschuwen is niet gelukt
+                </p>
+                <p className="mt-1 text-[13px] leading-relaxed text-white/60">
+                  De melding kon niet verstuurd worden. Bel bij nood zelf 112.
+                </p>
+                <div className="mt-4 flex flex-col gap-2">
+                  <a
+                    href="tel:112"
+                    className="flex items-center justify-center gap-2 rounded-full bg-red-500 px-4 py-3 text-[15px] font-semibold text-white"
+                  >
+                    <Phone className="h-4 w-4" strokeWidth={2} />
+                    Bel 112
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => void sendCrashAlert()}
+                    className="rounded-full border border-white/15 px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:text-white"
+                  >
+                    Probeer opnieuw
+                  </button>
+                  <button
+                    type="button"
+                    onClick={dismissCrashAlert}
+                    className="rounded-full px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-white/45 transition hover:text-white/80"
+                  >
+                    Sluiten
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Close confirmation — closing by accident would drop you straight
           back into Sparki, so the choice is always confirmed first. */}
@@ -2263,6 +2630,36 @@ export function RouteNavigator({
                     : "Bewaar gereden stuk en sluit"}
                 </button>
               )}
+              {canSaveRide && (
+                <div className="flex gap-2">
+                  {canWebShare && (
+                    <button
+                      type="button"
+                      onClick={() => void shareRide()}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-white/15 px-3 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:text-white"
+                    >
+                      <Share2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      Deel rit
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={downloadRideGpx}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-white/15 px-3 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:text-white"
+                  >
+                    <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    GPX
+                  </button>
+                </div>
+              )}
+              {canSaveRide && (
+                <p className="text-[11px] leading-snug text-white/40">
+                  Delen opent het deel-menu van je telefoon (daar staan Strava,
+                  Facebook en Instagram tussen als je die apps hebt). Voor
+                  Strava kun je ook het GPX-bestand downloaden en daar
+                  uploaden.
+                </p>
+              )}
               <button
                 type="button"
                 onClick={onClose}
@@ -2290,13 +2687,26 @@ export function RouteNavigator({
   return createPortal(overlay, document.body)
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({
+  label,
+  value,
+  unit,
+}: {
+  label: string
+  value: string
+  unit?: string
+}) {
   return (
     <div className="flex flex-col items-center">
-      <span className="font-mono text-[19px] font-semibold tabular-nums text-white/95">
+      <span className="font-mono text-[17px] font-semibold tabular-nums leading-tight text-white/95">
         {value}
+        {unit && (
+          <span className="ml-0.5 text-[9px] font-normal text-white/45">
+            {unit}
+          </span>
+        )}
       </span>
-      <span className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
+      <span className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-white/40">
         {label}
       </span>
     </div>

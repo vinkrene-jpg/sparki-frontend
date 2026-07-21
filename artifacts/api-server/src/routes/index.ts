@@ -48,6 +48,7 @@ import engagementRouter from "./engagement";
 import rideStoryRouter from "./ride-story";
 import sprintsRouter from "./sprints";
 import climbsRouter from "./climbs";
+import alertsRouter from "./alerts";
 import devRouter from "./dev";
 
 const router: IRouter = Router();
@@ -101,6 +102,7 @@ router.use("/engagement", engagementRouter);
 router.use("/ride-story", rideStoryRouter);
 router.use("/sprints", sprintsRouter);
 router.use("/climbs", climbsRouter);
+router.use("/alerts", alertsRouter);
 
 // Dev-only routes (preview-athlete switcher). Mounted ONLY outside production so
 // these endpoints simply do not exist on a deployed build.
