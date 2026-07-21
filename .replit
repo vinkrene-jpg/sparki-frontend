@@ -120,6 +120,10 @@ args = "test-sessions-contract"
 task = "workflow.run"
 args = "test-session-detail-track"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "test-session-elevation-profile"
+
 [[workflows.workflow]]
 name = "test-session-analysis"
 author = "agent"
@@ -402,6 +406,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/api-server run test:session-detail-track"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "test-session-elevation-profile"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run test:session-elevation-profile"
 
 [workflows.workflow.metadata]
 outputType = "console"
