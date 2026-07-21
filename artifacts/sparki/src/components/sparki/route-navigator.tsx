@@ -20,6 +20,8 @@ import {
   User,
   Check,
   Bluetooth,
+  Play,
+  Pause,
   type LucideIcon,
 } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
@@ -144,6 +146,15 @@ function describeDir(dir: string): { icon: LucideIcon; label: string } {
   return { icon: ArrowUp, label: dir || "Volg de route" }
 }
 
+function fmtRideTime(totalSeconds: number): string {
+  const h = Math.floor(totalSeconds / 3600)
+  const m = Math.floor((totalSeconds % 3600) / 60)
+  const s = totalSeconds % 60
+  const mm = String(m).padStart(2, "0")
+  const ss = String(s).padStart(2, "0")
+  return h > 0 ? `${h}:${mm}:${ss}` : `${m}:${ss}`
+}
+
 function fmtMeters(m: number): string {
   if (m < 1000) return `${Math.max(0, Math.round(m / 10) * 10)} m`
   return `${(m / 1000).toFixed(1)} km`
@@ -200,6 +211,38 @@ export function RouteNavigator({
     last: { t: number; lat: number; lon: number } | null
   }>({ meters: 0, seconds: 0, last: null })
   const [avgKmh, setAvgKmh] = useState<number | null>(null)
+
+  // ── Rit-status: start / pauze ─────────────────────────────────────
+  // "idle" until the rider presses Start; while paused (manual or auto) the
+  // ride timer and average-speed accumulation stand still. Auto-pause kicks in
+  // after ~5 s of standstill; an auto-pause resumes by itself once the rider
+  // moves again. A manual pause stays paused until the rider presses Hervat.
+  const [rideState, setRideState] = useState<"idle" | "riding" | "paused">(
+    "idle",
+  )
+  const [autoPaused, setAutoPaused] = useState(false)
+  const rideStateRef = useRef(rideState)
+  rideStateRef.current = rideState
+  const autoPausedRef = useRef(autoPaused)
+  autoPausedRef.current = autoPaused
+  const stillSinceRef = useRef<number | null>(null)
+  const [rideSeconds, setRideSeconds] = useState(0)
+
+  useEffect(() => {
+    if (rideState !== "riding") return
+    const id = window.setInterval(() => setRideSeconds((s) => s + 1), 1000)
+    return () => window.clearInterval(id)
+  }, [rideState])
+
+  const startRide = () => {
+    setAutoPaused(false)
+    stillSinceRef.current = null
+    setRideState("riding")
+  }
+  const pauseRide = () => {
+    setAutoPaused(false)
+    setRideState("paused")
+  }
 
   // ── Bordjes sprinten ──────────────────────────────────────────────
   const submitSprint = useSubmitSprint()
@@ -521,9 +564,41 @@ export function RouteNavigator({
       )
       const instKmh = dt > 0 ? (dm / dt) * 3.6 : 0
       // Skip huge gaps (signal loss) and near-stationary samples (stops).
-      if (dt > 0 && dt < 15 && instKmh >= 3) {
+      // Average speed only accumulates while the ride is actually running.
+      if (
+        dt > 0 &&
+        dt < 15 &&
+        instKmh >= 3 &&
+        rideStateRef.current === "riding"
+      ) {
         a.meters += dm
         a.seconds += dt
+      }
+
+      // ── Auto-pauze / auto-hervat ────────────────────────────────
+      // Prefer the device-reported speed when available (less GPS jitter);
+      // fall back to the speed derived from consecutive fixes.
+      const moveKmh =
+        location.speedMps != null ? location.speedMps * 3.6 : instKmh
+      if (dt > 0 && dt < 15) {
+        if (moveKmh < 3) {
+          if (rideStateRef.current === "riding") {
+            if (stillSinceRef.current == null) stillSinceRef.current = now
+            else if (now - stillSinceRef.current >= 5000) {
+              setAutoPaused(true)
+              setRideState("paused")
+              stillSinceRef.current = null
+            }
+          }
+        } else {
+          stillSinceRef.current = null
+          // Only an AUTO pause resumes by itself — a manual pause is a
+          // deliberate choice and waits for the rider.
+          if (rideStateRef.current === "paused" && autoPausedRef.current) {
+            setAutoPaused(false)
+            setRideState("riding")
+          }
+        }
       }
     }
     a.last = { t: now, lat: location.lat, lon: location.lon }
@@ -708,6 +783,10 @@ export function RouteNavigator({
     },
     { label: "Snelheid", value: speedKmh != null ? `${speedKmh} km/u` : "—" },
     { label: "Gem.", value: avgKmh != null ? `${avgKmh} km/u` : "—" },
+    {
+      label: "Rijtijd",
+      value: rideState === "idle" ? "—" : fmtRideTime(rideSeconds),
+    },
   ]
   if (power.connected) {
     metrics.push({
@@ -1047,6 +1126,38 @@ export function RouteNavigator({
             Centreer
           </button>
         )}
+
+        {rideState === "paused" && (
+          <div className="pointer-events-auto mx-auto rounded-full border border-amber-400/30 bg-[#160f05]/92 px-4 py-1.5 text-[12px] font-medium text-amber-200 backdrop-blur-md">
+            {autoPaused
+              ? "Automatisch gepauzeerd — rijd verder om te hervatten"
+              : "Gepauzeerd"}
+          </div>
+        )}
+
+        <div className="pointer-events-auto flex items-stretch gap-2">
+          <button
+            type="button"
+            onClick={rideState === "riding" ? pauseRide : startRide}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[14px] font-semibold shadow-lg transition ${
+              rideState === "riding"
+                ? "border border-white/10 bg-[#070d16]/92 text-white/85 backdrop-blur-md hover:text-white"
+                : "bg-cyan-400 text-[#05070e]"
+            }`}
+          >
+            {rideState === "riding" ? (
+              <>
+                <Pause className="h-4 w-4" strokeWidth={2} />
+                Pauzeer
+              </>
+            ) : (
+              <>
+                <Play className="h-4 w-4" strokeWidth={2} />
+                {rideState === "idle" ? "Start rit" : "Hervat"}
+              </>
+            )}
+          </button>
+        </div>
 
         <div className="pointer-events-auto grid grid-cols-4 gap-x-2 gap-y-3 rounded-2xl border border-white/10 bg-[#070d16]/92 px-4 py-3 backdrop-blur-md">
           {metrics.map((m) => (
