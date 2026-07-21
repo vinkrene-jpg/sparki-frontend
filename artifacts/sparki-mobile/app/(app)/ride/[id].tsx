@@ -79,6 +79,26 @@ export default function RideDetailScreen() {
   const goBack = () =>
     router.canGoBack() ? router.back() : router.replace("/rides");
 
+  // Elevation-cursor position (fraction 0..1 of the ride) while the athlete
+  // scrubs the profile chart; highlights the matching real track point on the
+  // map. Only set while touching; null otherwise.
+  const [cursorFraction, setCursorFraction] = useState<number | null>(null);
+
+  // The matching REAL track point for the cursor: interpolated between the
+  // two nearest stored coordinates so the dot sits exactly on the ridden line.
+  const cursorPoint: LatLon | null = useMemo(() => {
+    if (cursorFraction == null || path.length < 2) return null;
+    const t = cursorFraction * (path.length - 1);
+    const i0 = Math.floor(t);
+    const i1 = Math.min(i0 + 1, path.length - 1);
+    const f = t - i0;
+    return {
+      latitude: path[i0].latitude + (path[i1].latitude - path[i0].latitude) * f,
+      longitude:
+        path[i0].longitude + (path[i1].longitude - path[i0].longitude) * f,
+    };
+  }, [cursorFraction, path]);
+
   const session = data?.session ?? null;
   const hasTrack = path.length >= 2;
   const profile = data?.profile ?? null;
@@ -205,7 +225,12 @@ export default function RideDetailScreen() {
                 { borderColor: c.border, borderRadius: c.radius },
               ]}
             >
-              <TrackMap path={path} primary={c.primary} background={c.background} />
+              <TrackMap
+                path={path}
+                primary={c.primary}
+                background={c.background}
+                highlight={cursorPoint}
+              />
             </View>
           ) : (
             <View
@@ -287,6 +312,7 @@ export default function RideDetailScreen() {
               <ElevationProfile
                 profile={profile!}
                 distanceKm={fmtNum(session.distanceKm)}
+                onCursorChange={hasTrack ? setCursorFraction : undefined}
               />
               {climbs.length > 0 ? (
                 <View style={{ gap: 8, marginTop: 4 }}>

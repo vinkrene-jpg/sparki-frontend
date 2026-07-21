@@ -13,10 +13,13 @@ export function TrackMap({
   path,
   primary,
   background,
+  highlight,
 }: {
   path: LatLon[];
   primary: string;
   background: string;
+  /** Optional real point on the ridden track to highlight (elevation cursor). */
+  highlight?: LatLon | null;
 }) {
   const mapRef = useRef<MapView>(null);
 
@@ -52,10 +55,21 @@ export function TrackMap({
       <Marker coordinate={path[path.length - 1]} anchor={{ x: 0.5, y: 1 }}>
         <Ionicons name="flag" size={26} color={primary} />
       </Marker>
+      {highlight ? (
+        <Marker coordinate={highlight} anchor={{ x: 0.5, y: 0.5 }} zIndex={10}>
+          <View
+            style={[
+              styles.cursorDot,
+              { backgroundColor: primary, borderColor: background },
+            ]}
+          />
+        </Marker>
+      ) : null}
     </MapView>
   );
 }
 
 const styles = StyleSheet.create({
   pin: { width: 16, height: 16, borderRadius: 8, borderWidth: 3 },
+  cursorDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 3 },
 });
