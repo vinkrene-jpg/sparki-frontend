@@ -130,7 +130,9 @@ function TeamIdentitySection() {
         shirtBadge: form.shirtBadge.trim() || null,
         primaryColor: form.primaryColor || null,
         secondaryColor: form.secondaryColor || null,
-        logoUrl: "/club-crest.svg",
+        // Only keep a logo the club actually has — never a canned placeholder
+        // crest pretending to be the real club logo.
+        logoUrl: team?.logoUrl ?? null,
         sport: "cycling",
       },
       { onSuccess: () => setEditing(false) },
