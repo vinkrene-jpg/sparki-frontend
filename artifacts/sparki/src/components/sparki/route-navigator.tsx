@@ -245,8 +245,9 @@ export function RouteNavigator({
   // ── Rit-status: start / pauze ─────────────────────────────────────
   // "idle" until the rider presses Start; while paused (manual or auto) the
   // ride timer and average-speed accumulation stand still. Auto-pause kicks in
-  // after ~5 s of standstill; an auto-pause resumes by itself once the rider
-  // moves again. A manual pause stays paused until the rider presses Hervat.
+  // after ~5 s of standstill. Auto-hervat wint altijd: ELKE pauze (auto én
+  // handmatig) loopt door zodra de rijder echt weer beweegt — zo kan de rit
+  // nooit ongemerkt gepauzeerd blijven terwijl je kilometers verder fietst.
   const [rideState, setRideState] = useState<"idle" | "riding" | "paused">(
     "idle",
   )
@@ -927,9 +928,10 @@ export function RouteNavigator({
           }
         } else {
           stillSinceRef.current = null
-          // Only an AUTO pause resumes by itself — a manual pause is a
-          // deliberate choice and waits for the rider.
-          if (rideStateRef.current === "paused" && autoPausedRef.current) {
+          // Auto-hervat wint ALTIJD: ook een handmatige pauze loopt door zodra
+          // je echt weer rijdt. Anders fiets je 15 km verder en ontdek je pas
+          // dan dat de pauzeknop nog aanstond.
+          if (rideStateRef.current === "paused") {
             setAutoPaused(false)
             setRideState("riding")
           }
@@ -1626,7 +1628,7 @@ export function RouteNavigator({
           <div className="pointer-events-auto mx-auto rounded-full border border-amber-400/30 bg-[#160f05]/92 px-4 py-1.5 text-[12px] font-medium text-amber-200 backdrop-blur-md">
             {autoPaused
               ? "Automatisch gepauzeerd — rijd verder om te hervatten"
-              : "Gepauzeerd"}
+              : "Gepauzeerd — hervat vanzelf zodra je weer rijdt"}
           </div>
         )}
 
