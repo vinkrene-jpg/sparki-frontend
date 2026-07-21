@@ -36,3 +36,39 @@ export function useSessions(limit = 50) {
       }),
   });
 }
+
+// Full session row: everything the summary carries plus the remaining measured
+// fields and the athlete's own note. All nullable — absent means the ride
+// really didn't carry that value.
+export type SessionDetail = SessionSummary & {
+  normalizedPower: number | null;
+  tss: number | null;
+  intensityFactor: string | null;
+  notes: string | null;
+  feelScore: number | null;
+};
+
+// The ridden track as stored at ingest: [lat, lon] tuples, or null when the
+// session has no stored GPS track (e.g. manual entries).
+export type SessionTrackPoint = [number, number];
+
+export type SessionDetailResponse = {
+  session: SessionDetail;
+  track: SessionTrackPoint[] | null;
+};
+
+/**
+ * One saved ride in full — all measured values, the note, and the REAL ridden
+ * track (from the activity file import) when one exists. `track` is null when
+ * no GPS track was stored; the UI must say so honestly, never draw a fake line.
+ */
+export function useSession(id: number | null) {
+  return useQuery({
+    enabled: id != null,
+    queryKey: ["session", id],
+    queryFn: () =>
+      customFetch<SessionDetailResponse>(`/api/athlete/sessions/${id}`, {
+        responseType: "json",
+      }),
+  });
+}

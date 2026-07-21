@@ -5,6 +5,7 @@ import {
   userProfilesTable,
   athleteProfilesTable,
   trainingSessionsTable,
+  activityImportsTable,
   plannedWorkoutsTable,
   workoutFeedbackTable,
   athleteDailyMetricsTable,
@@ -987,6 +988,75 @@ router.get("/sessions", requireAuth, async (req, res) => {
     res.json(sessions);
   } catch (err) {
     req.log.error({ err }, "athlete.sessions GET failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── GET /api/athlete/sessions/:id ────────────────────────────────────────────
+// One session in full (all measured fields + notes) plus the REAL ridden track
+// when the session came from an activity file whose import stored the parsed
+// route geometry. Sessions without a stored track honestly return track: null
+// — the mobile detail screen then says there is no map data, never a fake line.
+router.get("/sessions/:id", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: "Ongeldige rit" });
+    return;
+  }
+  try {
+    const [session] = await db
+      .select()
+      .from(trainingSessionsTable)
+      .where(
+        and(
+          eq(trainingSessionsTable.id, id),
+          eq(trainingSessionsTable.clerkId, clerkId),
+        ),
+      )
+      .limit(1);
+    if (!session) {
+      res.status(404).json({ error: "Rit niet gevonden" });
+      return;
+    }
+
+    // The ridden track lives on the linked activity import (parsedSummary.route
+    // stored at ingest). Owner-scoped by clerkId as defense-in-depth.
+    const [imp] = await db
+      .select({ parsedSummary: activityImportsTable.parsedSummary })
+      .from(activityImportsTable)
+      .where(
+        and(
+          eq(activityImportsTable.linkedTrainingSessionId, session.id),
+          eq(activityImportsTable.clerkId, clerkId),
+        ),
+      )
+      .limit(1);
+
+    const stored = (imp?.parsedSummary as {
+      route?: { geometry?: unknown } | null;
+    } | null)?.route ?? null;
+    // Only accept real numeric [lat, lon(, ele)] tuples — guards against
+    // malformed historical JSON rather than trusting the stored shape blindly.
+    const geometry = Array.isArray(stored?.geometry)
+      ? (stored!.geometry as unknown[]).filter(
+          (p): p is [number, number] =>
+            Array.isArray(p) &&
+            p.length >= 2 &&
+            Number.isFinite(p[0]) &&
+            Number.isFinite(p[1]) &&
+            Math.abs(p[0] as number) <= 90 &&
+            Math.abs(p[1] as number) <= 180,
+        )
+      : [];
+    const track =
+      geometry.length >= 2
+        ? geometry.map((p) => [p[0], p[1]] as [number, number])
+        : null;
+
+    res.json({ session, track });
+  } catch (err) {
+    req.log.error({ err }, "athlete.sessions detail GET failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });

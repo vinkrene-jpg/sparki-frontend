@@ -90,7 +90,12 @@ export default function RidesScreen() {
             paddingBottom: insets.bottom + 24,
             gap: 14,
           }}
-          renderItem={({ item }) => <SessionCard session={item} />}
+          renderItem={({ item }) => (
+            <SessionCard
+              session={item}
+              onPress={() => router.push(`/ride/${item.id}`)}
+            />
+          )}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}

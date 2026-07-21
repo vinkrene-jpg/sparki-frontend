@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
 import type { SessionSummary } from "@/lib/sessions-api";
@@ -41,7 +41,13 @@ const SOURCE_LABEL: Record<string, string> = {
  * cadans) are shown ONLY when the session really carries them — a ride
  * without sensors simply has no sensor row, never zeros or dashes.
  */
-export function SessionCard({ session }: { session: SessionSummary }) {
+export function SessionCard({
+  session,
+  onPress,
+}: {
+  session: SessionSummary;
+  onPress?: () => void;
+}) {
   const c = useColors();
 
   const duration = fmtDuration(session.durationMin);
@@ -66,10 +72,13 @@ export function SessionCard({ session }: { session: SessionSummary }) {
     });
 
   return (
-    <View
-      style={[
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      style={({ pressed }) => [
         styles.card,
         { backgroundColor: c.card, borderColor: c.border, borderRadius: c.radius },
+        pressed && onPress ? { opacity: 0.75 } : null,
       ]}
     >
       <View style={styles.header}>
@@ -81,6 +90,9 @@ export function SessionCard({ session }: { session: SessionSummary }) {
             {SOURCE_LABEL[session.source] ?? session.source}
           </Text>
         </View>
+        {onPress ? (
+          <Ionicons name="chevron-forward" size={16} color={c.mutedForeground} />
+        ) : null}
       </View>
 
       <Text style={[styles.date, { color: c.mutedForeground }]}>
@@ -110,7 +122,7 @@ export function SessionCard({ session }: { session: SessionSummary }) {
           Geen sensorwaarden bij deze rit
         </Text>
       )}
-    </View>
+    </Pressable>
   );
 }
 
