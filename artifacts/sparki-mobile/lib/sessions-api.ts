@@ -55,6 +55,9 @@ export type SessionTrackPoint = [number, number];
 export type SessionDetailResponse = {
   session: SessionDetail;
   track: SessionTrackPoint[] | null;
+  // Id of the linked activity import when a real track is stored — the handle
+  // for saving this ridden ride as a re-ridable route. Null when no track.
+  importId: number | null;
 };
 
 /**

@@ -1023,7 +1023,10 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
     // The ridden track lives on the linked activity import (parsedSummary.route
     // stored at ingest). Owner-scoped by clerkId as defense-in-depth.
     const [imp] = await db
-      .select({ parsedSummary: activityImportsTable.parsedSummary })
+      .select({
+        id: activityImportsTable.id,
+        parsedSummary: activityImportsTable.parsedSummary,
+      })
       .from(activityImportsTable)
       .where(
         and(
@@ -1054,7 +1057,9 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
         ? geometry.map((p) => [p[0], p[1]] as [number, number])
         : null;
 
-    res.json({ session, track });
+    // importId lets the client save this ridden track as a re-ridable route
+    // (POST /api/routes/from-activity). Only meaningful when a track exists.
+    res.json({ session, track, importId: track ? (imp?.id ?? null) : null });
   } catch (err) {
     req.log.error({ err }, "athlete.sessions detail GET failed");
     res.status(500).json({ error: "Internal server error" });

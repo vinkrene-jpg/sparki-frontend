@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -16,6 +16,7 @@ import { TrackMap } from "@/components/TrackMap";
 import { useColors } from "@/hooks/useColors";
 import type { LatLon } from "@/lib/geo";
 import { hasMapbox } from "@/lib/mapbox";
+import { useSaveRideAsRoute } from "@/lib/routes-api";
 import { useSession } from "@/lib/sessions-api";
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -80,6 +81,25 @@ export default function RideDetailScreen() {
   const session = data?.session ?? null;
   const hasTrack = path.length >= 2;
   const showMap = Platform.OS !== "web" && hasMapbox && hasTrack;
+
+  // Save this ridden track as a re-ridable route. Only offered when the ride
+  // really has a stored track AND a linked activity import (importId) — the
+  // backend refuses honestly (422) without one, and we show that message.
+  const importId = data?.importId ?? null;
+  const saveAsRoute = useSaveRideAsRoute();
+  const [savedRouteName, setSavedRouteName] = useState<string | null>(null);
+  const canSaveAsRoute = hasTrack && importId != null;
+
+  const onSaveAsRoute = () => {
+    if (importId == null || saveAsRoute.isPending || savedRouteName) return;
+    saveAsRoute.mutate(
+      {
+        importId,
+        ...(session?.title?.trim() ? { name: session.title.trim() } : {}),
+      },
+      { onSuccess: (route) => setSavedRouteName(route.name) },
+    );
+  };
 
   // Every measured value the session really carries — absent values are simply
   // not listed (never zeros or dashes).
@@ -200,6 +220,54 @@ export default function RideDetailScreen() {
               </Text>
             </View>
           )}
+
+          {/* ---------- Save as re-ridable route (real track only) ---------- */}
+          {canSaveAsRoute ? (
+            savedRouteName ? (
+              <View
+                style={[
+                  styles.saveDone,
+                  { backgroundColor: c.card, borderColor: c.border, borderRadius: c.radius },
+                ]}
+              >
+                <Ionicons name="checkmark-circle" size={18} color={c.primary} />
+                <Text style={[styles.saveDoneText, { color: c.foreground }]}>
+                  Opgeslagen als route "{savedRouteName}" — je vindt hem in je
+                  routelijst.
+                </Text>
+              </View>
+            ) : (
+              <View style={{ gap: 8 }}>
+                <Pressable
+                  onPress={onSaveAsRoute}
+                  disabled={saveAsRoute.isPending}
+                  style={[
+                    styles.saveBtn,
+                    {
+                      backgroundColor: c.primary,
+                      borderRadius: c.radius,
+                      opacity: saveAsRoute.isPending ? 0.6 : 1,
+                    },
+                  ]}
+                >
+                  {saveAsRoute.isPending ? (
+                    <ActivityIndicator color={c.primaryForeground} />
+                  ) : (
+                    <Ionicons name="bookmark-outline" size={18} color={c.primaryForeground} />
+                  )}
+                  <Text style={[styles.saveBtnText, { color: c.primaryForeground }]}>
+                    {saveAsRoute.isPending ? "Bezig met opslaan…" : "Opslaan als route"}
+                  </Text>
+                </Pressable>
+                {saveAsRoute.isError ? (
+                  <Text style={[styles.saveError, { color: c.destructive }]}>
+                    {(saveAsRoute.error as Error)?.message ||
+                      "Opslaan als route is niet gelukt. Probeer het opnieuw."}
+                  </Text>
+                ) : null}
+              </View>
+            )
+          ) : null}
 
           {/* ---------- Measured values ---------- */}
           {metrics.length > 0 ? (
@@ -338,4 +406,31 @@ const styles = StyleSheet.create({
   metricLabel: { flex: 1, fontFamily: "Inter_500Medium", fontSize: 13 },
   metricValue: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
   noteText: { fontFamily: "Inter_400Regular", fontSize: 14, lineHeight: 21 },
+  saveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+  },
+  saveBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 15 },
+  saveDone: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  saveDoneText: {
+    flex: 1,
+    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  saveError: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    lineHeight: 19,
+  },
 });

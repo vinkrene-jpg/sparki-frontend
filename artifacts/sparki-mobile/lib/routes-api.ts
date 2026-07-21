@@ -52,6 +52,28 @@ export function useRoute(id: number | null) {
   });
 }
 
+/**
+ * Save a RIDDEN ride (via its activity import) as a re-ridable route. Calls
+ * the shared POST /api/routes/from-activity endpoint: the route geometry comes
+ * from the real GPS track stored at ingest — the backend honestly refuses
+ * (422) when the import carries no track, and we surface that message as-is.
+ */
+export function useSaveRideAsRoute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { importId: number; name?: string }) =>
+      customFetch<{ route: RouteSummary }>("/api/routes/from-activity", {
+        method: "POST",
+        responseType: "json",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(input),
+      }).then((r) => r.route),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["routes"] });
+    },
+  });
+}
+
 // Shape returned by the shared activity-imports ingest endpoint.
 export type SaveRideResult = {
   import: { id: number; status: string };
