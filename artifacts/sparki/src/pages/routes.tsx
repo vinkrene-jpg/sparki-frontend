@@ -15,10 +15,11 @@ export default function RoutesPage() {
     <ScreenShell section="routes">
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight text-white">
-          Routes
+          Navigatie-training
         </h1>
         <p className="text-sm text-white/55">
-          Plan je route, importeer een GPX en bekijk hem op de kaart.
+          Laat een route maken of importeer een GPX, bekijk hem op de kaart en
+          navigeer onderweg.
         </p>
       </div>
 

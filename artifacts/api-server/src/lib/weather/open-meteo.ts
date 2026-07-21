@@ -145,6 +145,7 @@ export async function getForecast(
 
 export type HourForecast = {
   time: string; // ISO local hour (location timezone), e.g. "2026-07-21T14:00"
+  epochMs: number; // absolute moment of this hour (from utc_offset_seconds)
   tempC: number | null;
   uvIndex: number | null;
   windKmh: number | null;
@@ -163,6 +164,7 @@ type HourlyResponse = {
     wind_direction_10m?: (number | null)[];
     precipitation_probability?: (number | null)[];
   };
+  utc_offset_seconds?: number;
   error?: boolean;
 };
 
@@ -221,8 +223,12 @@ export async function getHourlyForecast(
   if (json.error || !json.hourly?.time) return [];
 
   const h = json.hourly;
+  const offsetMs = (json.utc_offset_seconds ?? 0) * 1000;
   const out: HourForecast[] = (h.time ?? []).map((time, i) => ({
     time,
+    // "time" is local ISO without offset; parse as UTC and subtract the
+    // location's UTC offset to get the true absolute moment.
+    epochMs: Date.parse(`${time}:00Z`) - offsetMs,
     tempC: num(h.temperature_2m?.[i]),
     uvIndex: num(h.uv_index?.[i]),
     windKmh: num(h.wind_speed_10m?.[i]),

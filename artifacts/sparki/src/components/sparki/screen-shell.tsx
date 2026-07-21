@@ -81,7 +81,7 @@ const SECTION_DISPLAY: Record<string, string> = {
   wereld: "WERELD",
   lichaam: "LICHAAM",
   mechanieker: "MECHANIEKER",
-  routes: "ROUTES",
+  routes: "NAVIGATIE-TRAINING",
   kalender: "KALENDER",
   kennisbank: "KENNIS",
   coach: "COACH",

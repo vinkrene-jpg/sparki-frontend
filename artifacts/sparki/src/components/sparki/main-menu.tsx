@@ -35,7 +35,7 @@ const ATHLETE_CHAPTERS: Chapter[] = [
   { href: "/races", icon: Trophy, label: "Wedstrijd", hint: "Races & voorbereiding" },
   { href: "/lichaam", icon: HeartPulse, label: "Lichaam", hint: "Voeding, herstel, gezondheid" },
   { href: "/mechanieker", icon: Wrench, label: "Mechanieker", hint: "Materiaal & onderhoud" },
-  { href: "/routes", icon: Map, label: "Routes", hint: "Routes, GPX & kaart" },
+  { href: "/routes", icon: Map, label: "Navigatie-training", hint: "Routes maken & onderweg navigeren" },
   { href: "/samen", icon: Users, label: "Samen", hint: "Team, vrienden & nieuws" },
   { href: "/you", icon: User, label: "Jij", hint: "Profiel, doelen & koppelingen" },
   { href: "/kalender", icon: CalendarDays, label: "Kalender", hint: "Trainingen & wedstrijden" },

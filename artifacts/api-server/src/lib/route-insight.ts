@@ -131,21 +131,38 @@ export async function getRouteEnvironment(
 ): Promise<RouteEnvironment | null> {
   if (!geometry || geometry.length < 2) return null;
 
-  const sampled = samplePath(geometry, 60);
-  const key = sampled
+  // Dense local samples along the route for the proximity checks.
+  const sampled = samplePath(geometry, 120);
+  const key = samplePath(geometry, 30)
     .map(([la, lo]) => `${la.toFixed(3)},${lo.toFixed(3)}`)
     .join(";");
   const hit = ENV_CACHE.get(key);
   if (hit && Date.now() - hit.at < ENV_CACHE_TTL_MS) return hit.data;
 
-  const coordChain = sampled
-    .map(([la, lo]) => `${la.toFixed(5)},${lo.toFixed(5)}`)
-    .join(",");
-  const query = `[out:json][timeout:10];(
-node["highway"="traffic_signals"](around:30,${coordChain});
-way["landuse"="forest"](around:60,${coordChain});
-way["natural"="wood"](around:60,${coordChain});
-);out geom 400;`;
+  // Around-linestring queries time out on Overpass; a bounding-box query is
+  // cheap and reliable. We fetch everything in the route's bbox (padded) and
+  // filter locally by real distance to the route.
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+  let minLon = Infinity;
+  let maxLon = -Infinity;
+  for (const [la, lo] of sampled) {
+    if (la < minLat) minLat = la;
+    if (la > maxLat) maxLat = la;
+    if (lo < minLon) minLon = lo;
+    if (lo > maxLon) maxLon = lo;
+  }
+  const pad = 0.003; // ~300m
+  // Very large areas would make the bbox query heavy AND meaningless — be
+  // honest and skip instead of fetching half a province.
+  if (maxLat - minLat > 1 || maxLon - minLon > 1.5) return null;
+  const bbox = `${(minLat - pad).toFixed(4)},${(minLon - pad).toFixed(4)},${(maxLat + pad).toFixed(4)},${(maxLon + pad).toFixed(4)}`;
+
+  const query = `[out:json][timeout:20];(
+node["highway"="traffic_signals"](${bbox});
+way["landuse"="forest"](${bbox});
+way["natural"="wood"](${bbox});
+);out geom 800;`;
 
   let elements: OverpassElement[];
   try {
@@ -174,8 +191,15 @@ way["natural"="wood"](around:60,${coordChain});
     return null;
   }
 
+  // Traffic lights actually ON the route: bbox nodes within ~35m of a sampled
+  // route point (samples are dense enough for typical routes).
   const trafficLights = elements.filter(
-    (e) => e.type === "node" && e.tags?.highway === "traffic_signals",
+    (e) =>
+      e.type === "node" &&
+      e.tags?.highway === "traffic_signals" &&
+      e.lat != null &&
+      e.lon != null &&
+      sampled.some((p) => haversineM(p, [e.lat!, e.lon!]) < 35),
   ).length;
 
   // Forest share: fraction of sampled route points that lie within ~120m of a

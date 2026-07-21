@@ -7,7 +7,6 @@ import { useSessions, useUpdateSessionFeel } from "@/hooks/use-sessions"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { ActivityImportPanel } from "@/components/sparki/activity-import-panel"
 import { DocumentAnalysisPanel } from "@/components/sparki/document-analysis-panel"
-import { RoutePanel } from "@/components/sparki/route-panel"
 import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer"
 import { LayerHeading } from "@/components/sparki/train/layer-heading"
 import { SourceLayer } from "@/components/sparki/train/source-layer"
@@ -403,12 +402,20 @@ export default function TrainPage() {
         </div>
 
         {routePlannerEnabled && (
-          <div className="flex flex-col gap-2.5">
-            <p className="font-mono text-[10px] tracking-[0.2em] text-white/35">
-              ROUTES
-            </p>
-            <RoutePanel />
-          </div>
+          <Link
+            href="/routes"
+            className="flex items-center justify-between rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+          >
+            <span className="min-w-0">
+              <span className="block text-[14px] font-medium text-white/90">
+                Navigatie-training
+              </span>
+              <span className="mt-0.5 block text-[12px] text-white/45">
+                Routes maken, GPX en onderweg navigeren — nu een eigen hoofdstuk
+              </span>
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-white/25" strokeWidth={1.75} />
+          </Link>
         )}
       </section>
 

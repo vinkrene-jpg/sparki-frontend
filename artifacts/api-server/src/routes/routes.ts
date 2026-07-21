@@ -378,21 +378,20 @@ router.get("/:id/insight", requireAuth, async (req, res) => {
       precipProbPct: number | null;
     } = null;
     if (hours.length > 0) {
-      // Local-hour string of the requested departure in Europe/Amsterdam —
-      // routes in this product start in NL; Open-Meteo returns local time for
-      // the coordinate, which for NL coordinates is the same zone.
-      const local = new Intl.DateTimeFormat("sv-SE", {
-        timeZone: "Europe/Amsterdam",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-      }).format(depart); // "2026-07-21 14"
-      const wantKey = local.replace(" ", "T") + ":00";
-      const hour =
-        hours.find((h) => h.time === wantKey) ??
-        hours.find((h) => h.time.slice(0, 13) === wantKey.slice(0, 13)) ??
-        null;
+      // Pick the forecast slot closest to the requested absolute moment;
+      // epochMs comes from Open-Meteo's utc_offset_seconds, so this is
+      // timezone-correct for any coordinate. Honest null when >90 min away.
+      const wantMs = depart.getTime();
+      let hour: (typeof hours)[number] | null = null;
+      let best = Infinity;
+      for (const h of hours) {
+        const diff = Math.abs(h.epochMs - wantMs);
+        if (diff < best) {
+          best = diff;
+          hour = h;
+        }
+      }
+      if (best > 90 * 60_000) hour = null;
       if (hour) {
         weather = {
           timeLocal: hour.time,
