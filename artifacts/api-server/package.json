@@ -73,7 +73,8 @@
     "job:health": "pnpm run build && node --enable-source-maps ./dist/jobs/health-check.mjs",
     "job:reminders": "pnpm run build && node --enable-source-maps ./dist/jobs/reminders.mjs",
     "job:goal-review": "pnpm run build && node --enable-source-maps ./dist/jobs/goal-review.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:session-detail-track": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs session-detail-track"
   },
   "dependencies": {
     "@clerk/express": "^2.1.30",
