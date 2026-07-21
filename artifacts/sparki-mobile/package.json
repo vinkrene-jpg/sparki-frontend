@@ -8,7 +8,8 @@
     "build": "node scripts/build.js",
     "serve": "node server/serve.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test:ride-tracker": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks lib/ride-tracker.test.ts"
+    "test:ride-tracker": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks lib/ride-tracker.test.ts",
+    "test:ride-sensor-summary": "node ../../scripts/run-tsx-test.mjs --test lib/ride-sensor-summary.test.ts"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

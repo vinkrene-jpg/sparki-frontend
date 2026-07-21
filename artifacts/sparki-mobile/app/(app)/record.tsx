@@ -23,6 +23,10 @@ import {
   type RidePoint,
   type RideSensorSample,
 } from "@/hooks/useRideRecorder";
+import {
+  formatRideSensorSummary,
+  summarizeRideSensors,
+} from "@/lib/ride-sensor-summary";
 import { toLatLon, type LatLon } from "@/lib/geo";
 import { hasMapbox } from "@/lib/mapbox";
 import { useSaveRide } from "@/lib/routes-api";
@@ -180,6 +184,17 @@ export default function RecordScreen() {
     setStoppedSamples([]);
     saveRide.reset();
   };
+
+  // Real avg/max of the measured sensor readings — computed from the exact
+  // point-matched values that go into the GPX file (same matching path as
+  // buildRideGpx), so this line always matches the export.
+  const sensorSummaryLine = useMemo(
+    () =>
+      formatRideSensorSummary(
+        summarizeRideSensors(stoppedPoints, stoppedSamples),
+      ),
+    [stoppedPoints, stoppedSamples],
+  );
 
   const saveError = saveRide.error
     ? String((saveRide.error as Error).message)
@@ -351,6 +366,11 @@ export default function RecordScreen() {
               <Text style={[styles.reviewSub, { color: c.mutedForeground }]}>
                 {`${stoppedPoints?.length ?? 0} punt${(stoppedPoints?.length ?? 0) === 1 ? "" : "en"} vastgelegd`}
               </Text>
+              {sensorSummaryLine && (
+                <Text style={[styles.reviewSub, { color: c.mutedForeground }]}>
+                  {sensorSummaryLine}
+                </Text>
+              )}
 
               <Text style={[styles.fieldLabel, { color: c.mutedForeground }]}>
                 Naam
@@ -438,6 +458,11 @@ export default function RecordScreen() {
             <Text style={[styles.reviewSub, { color: c.mutedForeground }]}>
               {`${stoppedPoints.length} punt${stoppedPoints.length === 1 ? "" : "en"} vastgelegd. Nog niet opgeslagen.`}
             </Text>
+            {sensorSummaryLine && (
+              <Text style={[styles.reviewSub, { color: c.mutedForeground }]}>
+                {sensorSummaryLine}
+              </Text>
+            )}
             <View style={styles.reviewActions}>
               <Pressable
                 onPress={onDiscardStopped}

@@ -15,6 +15,25 @@ function escapeXml(s: string): string {
 // honest gap instead of smearing an old reading across it.
 const SENSOR_MATCH_MS = 5000;
 
+/**
+ * Match sensor samples to track points exactly the way the GPX writer does:
+ * per point, the nearest-in-time sample within SENSOR_MATCH_MS, or null.
+ * Returned array is aligned with `points`. This is the single source of truth
+ * for "which sensor values land in the file" — the on-screen summary
+ * (`lib/ride-sensor-summary.ts`) aggregates over this same result so it can
+ * never diverge from the export.
+ */
+export function matchSamplesToPoints(
+  points: RidePoint[],
+  sensorSamples: RideSensorSample[] | null | undefined,
+): (RideSensorSample | null)[] {
+  const samples = (sensorSamples ?? [])
+    .slice()
+    .sort((a, b) => a.time - b.time);
+  const cursor = { i: 0 };
+  return points.map((p) => nearestSample(samples, p.time, cursor));
+}
+
 // Find the sample nearest in time to `t` (samples are appended in time order).
 // Returns null when the nearest one is outside the match window — no value is
 // ever carried over from a different moment of the ride.
@@ -63,18 +82,15 @@ export function buildRideGpx(
     ? `    <desc>${escapeXml(trimmedNote)}</desc>\n`
     : "";
 
-  const samples = (sensorSamples ?? [])
-    .slice()
-    .sort((a, b) => a.time - b.time);
-  const cursor = { i: 0 };
+  const matched = matchSamplesToPoints(points, sensorSamples);
   let anySensor = false;
 
   const trkpts = points
-    .map((p) => {
+    .map((p, idx) => {
       const head =
         `      <trkpt lat="${p.latitude}" lon="${p.longitude}">` +
         `<time>${new Date(p.time).toISOString()}</time>`;
-      const s = nearestSample(samples, p.time, cursor);
+      const s = matched[idx] ?? null;
       if (!s) return head + `</trkpt>`;
       const hr =
         s.heartRate != null ? `<gpxtpx:hr>${Math.round(s.heartRate)}</gpxtpx:hr>` : "";
