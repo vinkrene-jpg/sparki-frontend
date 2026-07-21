@@ -38,7 +38,19 @@ export const garageComponentCategories = [
   "groepset",
   "wielen",
   "banden",
-  "onderdeel", // afwijkend los onderdeel (crank, cassette, remmen, …)
+  // Losse aandrijf-/stuuronderdelen — zo kan een renner ook één afwijkend
+  // onderdeel vastleggen (bijv. alleen een Dura-Ace achterderailleur op een
+  // verder Ultegra-fiets).
+  "achterderailleur",
+  "voorderailleur",
+  "crankstel",
+  "cassette",
+  "ketting",
+  "remmen",
+  "cockpit",
+  "zadel",
+  "pedalen",
+  "onderdeel", // overig los onderdeel dat niet in een vaste categorie past
   "helm",
   "kleding",
   "schoenen",

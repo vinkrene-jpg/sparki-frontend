@@ -252,6 +252,7 @@ export const queryKeys = {
     upgrade: (bikeId: number, specialism: string) =>
       ["garage", "upgrade", bikeId, specialism] as const,
     developments: () => ["garage", "developments"] as const,
+    catalog: (category: string) => ["garage", "catalog", category] as const,
     proTeams: () => ["garage", "pro-teams"] as const,
   },
 

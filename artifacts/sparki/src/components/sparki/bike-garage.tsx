@@ -20,6 +20,7 @@ import {
   useAddComponent,
   useDeleteComponent,
   useUpgradeAdvice,
+  useGarageCatalog,
   useGarageDevelopments,
   useProTeams,
   type GarageBike,
@@ -50,7 +51,16 @@ const BIKE_CATEGORIES: { key: GarageComponentCategory; label: string }[] = [
   { key: "groepset", label: "Groepset" },
   { key: "wielen", label: "Wielen" },
   { key: "banden", label: "Banden" },
-  { key: "onderdeel", label: "Los onderdeel" },
+  { key: "achterderailleur", label: "Achterderailleur" },
+  { key: "voorderailleur", label: "Voorderailleur" },
+  { key: "crankstel", label: "Crankstel" },
+  { key: "cassette", label: "Cassette" },
+  { key: "ketting", label: "Ketting" },
+  { key: "remmen", label: "Remmen" },
+  { key: "cockpit", label: "Stuur / cockpit" },
+  { key: "zadel", label: "Zadel" },
+  { key: "pedalen", label: "Pedalen" },
+  { key: "onderdeel", label: "Overig onderdeel" },
 ]
 
 const PERSONAL_CATEGORIES: { key: GarageComponentCategory; label: string }[] = [
@@ -96,6 +106,11 @@ function AssessmentLine({ component }: { component: GarageComponent }) {
       {e.gewicht && (
         <span className="rounded-full bg-white/[0.06] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/55">
           Gewicht: {e.gewicht}
+        </span>
+      )}
+      {e.richtprijs && (
+        <span className="rounded-full bg-white/[0.06] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/55">
+          Richtprijs nieuw: €{e.richtprijs.van}–{e.richtprijs.tot}
         </span>
       )}
       <span className="w-full text-[12px] leading-relaxed text-white/45">
@@ -154,6 +169,10 @@ function AddComponentForm({
   const [brand, setBrand] = useState("")
   const [model, setModel] = useState("")
   const [error, setError] = useState<string | null>(null)
+  // Bekende producten uit de kennisbank voor deze categorie — aantikken vult
+  // merk en model in. Vrije invoer blijft altijd mogelijk.
+  const catalog = useGarageCatalog(category)
+  const catalogItems = catalog.data?.items ?? []
 
   return (
     <div className="space-y-3 rounded-xl border border-white/[0.1] bg-white/[0.03] p-3">
@@ -187,6 +206,36 @@ function AddComponentForm({
           </button>
         ))}
       </div>
+      {catalogItems.length > 0 && (
+        <div>
+          <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/40">
+            Veelgebruikt — tik aan of typ zelf
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {catalogItems.map((it) => {
+              const selected = brand === it.brand && model === it.model
+              return (
+                <button
+                  key={it.key}
+                  type="button"
+                  onClick={() => {
+                    setBrand(it.brand)
+                    setModel(it.model)
+                  }}
+                  className="rounded-full border px-2.5 py-1 text-[11px] transition-colors"
+                  style={
+                    selected
+                      ? { borderColor: ACCENT, color: ACCENT, background: "rgba(120,210,230,0.08)" }
+                      : { borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.55)" }
+                  }
+                >
+                  {it.brand} {it.model}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
       <div className="grid gap-2 sm:grid-cols-2">
         <input
           value={brand}
@@ -300,8 +349,40 @@ function UpgradePanel({ bike }: { bike: GarageBike }) {
               <p className="mt-1 text-[12px] leading-relaxed text-white/50">
                 {s.why}
               </p>
+              {s.besteKoop && (
+                <p
+                  className="mt-1.5 inline-block rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em]"
+                  style={{ color: ACCENT, background: "rgba(120,210,230,0.12)" }}
+                >
+                  Meeste winst per euro
+                </p>
+              )}
+              {s.targets.length > 0 && (
+                <div className="mt-1.5 space-y-1">
+                  {s.targets.map((t) => (
+                    <p
+                      key={`${t.brand}-${t.model}`}
+                      className="text-[12px] leading-relaxed text-white/55"
+                    >
+                      → {t.brand} {t.model}{" "}
+                      <span className="text-white/35">
+                        ({t.klasseLabel.toLowerCase()}
+                        {t.richtprijs
+                          ? `, richtprijs €${t.richtprijs.van}–${t.richtprijs.tot}`
+                          : ""}
+                        )
+                      </span>
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
+          {advice.suggestions.some((s) => s.targets.length > 0) && (
+            <p className="text-[11px] leading-relaxed text-white/35">
+              {advice.prijsToelichting}
+            </p>
+          )}
           {advice.alreadyTop.map((t) => (
             <p key={t.componentId} className="text-[12px] leading-relaxed text-white/40">
               {t.label}

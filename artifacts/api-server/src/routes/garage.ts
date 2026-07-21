@@ -28,6 +28,7 @@ import {
   type Specialism,
 } from "../engines/garage";
 import { getRelevantKnowledge } from "../lib/knowledge/retrieval";
+import { catalogForCategory } from "../lib/garage/knowledge-base";
 
 const router = Router();
 
@@ -321,6 +322,18 @@ router.get("/photo/:bikeId/:idx", requireAuth, async (req, res) => {
     req.log.error({ err }, "garage.photo failed");
     if (!res.headersSent) res.status(404).json({ error: "Foto niet gevonden" });
   }
+});
+
+// GET /api/garage/catalog?categorie= — echte, herkenbare producten uit de
+// gecureerde kennisbank voor de invoer-picker (aantikken i.p.v. typen).
+// Vrije invoer blijft altijd mogelijk; dit is een startpunt, geen beperking.
+router.get("/catalog", requireAuth, (req, res) => {
+  const category = String(req.query.categorie ?? "");
+  if (!(garageComponentCategories as readonly string[]).includes(category)) {
+    res.status(400).json({ error: "Onbekende categorie" });
+    return;
+  }
+  res.json({ items: catalogForCategory(category) });
 });
 
 // POST /api/garage/components — add a component to a bike (or personal gear

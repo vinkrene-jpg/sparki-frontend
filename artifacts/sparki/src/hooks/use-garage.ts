@@ -20,11 +20,24 @@ export type GarageComponentCategory =
   | "groepset"
   | "wielen"
   | "banden"
+  | "achterderailleur"
+  | "voorderailleur"
+  | "crankstel"
+  | "cassette"
+  | "ketting"
+  | "remmen"
+  | "cockpit"
+  | "zadel"
+  | "pedalen"
   | "onderdeel"
   | "helm"
   | "kleding"
   | "schoenen"
   | "anders"
+
+// Indicatieve nieuwprijs (EUR, van–tot) uit de kennisbank — altijd getoond
+// als richtprijs, nooit als actuele winkelprijs.
+export type PriceRange = { van: number; tot: number }
 
 export type ComponentAssessment =
   | {
@@ -37,10 +50,20 @@ export type ComponentAssessment =
         klasseLabel: string
         aero: "laag" | "gemiddeld" | "hoog" | null
         gewicht: "licht" | "gemiddeld" | "zwaar" | null
+        richtprijs: PriceRange | null
         note: string
       }
     }
   | { known: false; reason: string }
+
+export type CatalogItem = {
+  key: string
+  brand: string
+  model: string
+  klasse: "instap" | "amateur" | "elite" | "pro"
+  klasseLabel: string
+  richtprijs: PriceRange | null
+}
 
 export type GarageComponent = {
   id: number
@@ -117,6 +140,14 @@ export type UpgradeAdvice = {
     gain: "groot" | "merkbaar" | "klein"
     gainLabel: string
     why: string
+    targets: {
+      brand: string
+      model: string
+      klasse: string
+      klasseLabel: string
+      richtprijs: PriceRange | null
+    }[]
+    besteKoop: boolean
   }[]
   alreadyTop: { componentId: number; category: string; label: string }[]
   unknown: {
@@ -126,6 +157,7 @@ export type UpgradeAdvice = {
     model: string | null
     reason: string
   }[]
+  prijsToelichting: string
 }
 
 export type DevelopmentItem = {
@@ -273,6 +305,18 @@ export function useUpgradeAdvice(bikeId: number | null, specialism: string | nul
       ),
     enabled: bikeId != null && !!specialism,
     staleTime: 60_000,
+  })
+}
+
+export function useGarageCatalog(category: GarageComponentCategory | null) {
+  return useQuery({
+    queryKey: queryKeys.garage.catalog(category ?? ""),
+    queryFn: () =>
+      apiFetch<{ items: CatalogItem[] }>(
+        `/api/garage/catalog?categorie=${category}`,
+      ),
+    enabled: category != null,
+    staleTime: 30 * 60_000,
   })
 }
 
