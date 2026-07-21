@@ -39,3 +39,14 @@ overwrite the real captured track. Foreground-only path mirrors via
 so a crash between stop and save can't lose it. Hook exposes `recoverable` +
 `discardRecovered`; record.tsx offers "Onafgemaakte rit gevonden → Opslaan/
 Verwijderen". Honesty: recovery needs ≥2 real fixes, never fabricated.
+
+Sensor samples ride along: the persisted snapshot also carries `sensorSamples`
+(mirrored from the hook via `persistRideSensorSamples`, hydration restores it
+too so a headless relaunch never clobbers it), and both recovered-save paths
+pass `recoverable.sensorSamples` into the GPX save. Background/lockscreen
+stretches stay honestly sensor-less (JS interval pauses).
+
+**Test-harness gotcha:** the ride-tracker test's `?fresh=N` cache-busting
+import does NOT re-evaluate the module under tsx — module state (buffers,
+one-shot hydration) is shared across "fresh" imports. Any assertion that needs
+genuine hydration must live in the FIRST test (the only true evaluation).

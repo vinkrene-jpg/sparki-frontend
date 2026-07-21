@@ -80,7 +80,7 @@ async function freshModule() {
   return (await import(`./ride-tracker.ts?fresh=${freshCounter}`)) as typeof import("./ride-tracker");
 }
 
-function seed(ride: { startedAt: unknown; points: unknown }) {
+function seed(ride: { startedAt: unknown; points: unknown; sensorSamples?: unknown }) {
   mem.set(STORE_KEY, JSON.stringify(ride));
 }
 
@@ -92,9 +92,12 @@ function seed(ride: { startedAt: unknown; points: unknown }) {
 
 test("hydration restores the buffer before the background task appends", async () => {
   mem.clear();
-  // A pre-kill track already on disk.
+  // A pre-kill track already on disk, including real sensor readings.
   const preKill = [pt(52.0, 5.0, 1000), pt(52.1, 5.1, 2000)];
-  seed({ startedAt: 1000, points: preKill });
+  const preKillSamples = [
+    { time: 1500, watts: 205, heartRate: 140, cadence: 88 },
+  ];
+  seed({ startedAt: 1000, points: preKill, sensorSamples: preKillSamples });
 
   // Fresh module = simulated headless relaunch with empty in-memory buffer.
   const m = await freshModule();
@@ -115,6 +118,17 @@ test("hydration restores the buffer before the background task appends", async (
     seen,
     [...preKill, newFix],
     "the pre-kill track must be restored, then the new fix appended — never overwritten",
+  );
+
+  // The next flushed snapshot must still carry the pre-kill sensor log: the
+  // relaunched task has no sensor hook running, so an empty in-memory sensor
+  // buffer must never clobber the values measured before the kill.
+  await m.stopRideTracker();
+  const parsed = JSON.parse(mem.get(STORE_KEY)!);
+  assert.deepEqual(
+    parsed.sensorSamples,
+    preKillSamples,
+    "the persisted sensor log from before the kill must survive later flushes",
   );
 });
 
@@ -190,6 +204,56 @@ test("loadRecoverableRide returns null when nothing is stored", async () => {
   mem.clear();
   const m = await freshModule();
   assert.equal(await m.loadRecoverableRide(), null);
+});
+
+// --- Sensor sample persistence -----------------------------------------------
+
+type Sample = { time: number; watts: number | null; heartRate: number | null; cadence: number | null };
+
+function sample(time: number, watts: number | null, hr: number | null, cad: number | null): Sample {
+  return { time, watts, heartRate: hr, cadence: cad };
+}
+
+test("sensor samples are persisted alongside the track and survive to recovery", async () => {
+  mem.clear();
+  const m = await freshModule();
+
+  const points = [pt(52.0, 5.0, 1000), pt(52.1, 5.1, 2000)];
+  const samples = [sample(1000, 210, 145, 92), sample(2000, 220, 147, null)];
+  m.persistForegroundRide(points, 1000);
+  m.persistRideSensorSamples(samples);
+  await m.stopRideTracker();
+
+  const raw = mem.get(STORE_KEY);
+  assert.ok(raw, "expected a persisted snapshot after flush");
+  assert.deepEqual(
+    JSON.parse(raw!).sensorSamples,
+    samples,
+    "the measured sensor values must be persisted with the track",
+  );
+
+  const ride = await m.loadRecoverableRide();
+  assert.ok(ride, "ride must be recoverable");
+  assert.deepEqual(
+    ride!.sensorSamples,
+    samples,
+    "a recovered ride must carry the values measured before the crash",
+  );
+});
+
+test("a ride without sensors recovers with an empty (never fabricated) sensor log", async () => {
+  mem.clear();
+  // Old-format snapshot without sensorSamples (pre-crash from an older build).
+  seed({ startedAt: 1000, points: [pt(52.0, 5.0, 1000), pt(52.1, 5.1, 2000)] });
+  const m = await freshModule();
+
+  const ride = await m.loadRecoverableRide();
+  assert.ok(ride, "old-format snapshot must still be recoverable");
+  assert.equal(
+    ride!.sensorSamples,
+    undefined,
+    "no sensor field is fabricated for a snapshot that never had one",
+  );
 });
 
 test("loadRecoverableRide returns null when startedAt is missing", async () => {

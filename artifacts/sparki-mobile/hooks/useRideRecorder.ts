@@ -6,6 +6,7 @@ import {
   clearRecoverableRide,
   loadRecoverableRide,
   persistForegroundRide,
+  persistRideSensorSamples,
   startRideTracker,
   stopRideTracker,
   subscribeRideTracker,
@@ -66,6 +67,9 @@ export type RecoverableRide = {
   points: RidePoint[];
   distanceKm: number;
   startedAt: number;
+  // Real sensor readings that were persisted before the crash/kill. Empty when
+  // the ride was ridden without sensors — never fabricated.
+  sensorSamples: RideSensorSample[];
 };
 
 // Ignore GPS jitter while standing still: a new fix closer than this to the last
@@ -177,6 +181,9 @@ export function useRideRecorder(
           points: track.points,
           distanceKm: track.distanceKm,
           startedAt: ride.startedAt,
+          sensorSamples: Array.isArray(ride.sensorSamples)
+            ? ride.sensorSamples
+            : [],
         });
       })
       .catch(() => {
@@ -213,6 +220,10 @@ export function useRideRecorder(
         heartRate: v.heartRate,
         cadence: v.cadence,
       });
+      // Mirror the sensor log into the persisted ride snapshot so a crash/kill
+      // keeps the measured values, not just the GPS track. Writes are throttled
+      // inside the tracker, so this is cheap to call every sample.
+      persistRideSensorSamples(sensorSamplesRef.current);
     }, SENSOR_SAMPLE_MS);
     return () => clearInterval(id);
   }, [recording, getSensorValues]);

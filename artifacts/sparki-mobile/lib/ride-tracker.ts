@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
 
-import type { RidePoint } from "@/hooks/useRideRecorder";
+import type { RidePoint, RideSensorSample } from "@/hooks/useRideRecorder";
 
 // Name of the background location task. Defined at module scope so it is
 // registered when the JS bundle loads (a hard requirement of expo-task-manager).
@@ -21,6 +21,10 @@ export type PersistedRide = {
   // Wall-clock ms the ride started, so a recovered ride keeps its real duration.
   startedAt: number;
   points: RidePoint[];
+  // Real Bluetooth sensor readings (watts/heart rate/cadence) logged so far.
+  // Optional: rides without sensors persist no samples. Only readings a real
+  // sensor reported are ever in here — nothing fabricated.
+  sensorSamples?: RideSensorSample[];
 };
 
 // The raw fixes delivered by the OS while a ride is being recorded. This buffer
@@ -30,6 +34,11 @@ export type PersistedRide = {
 let buffer: RidePoint[] = [];
 // Start time of the active ride, mirrored into every persisted snapshot.
 let activeStartedAt: number | null = null;
+// Real sensor readings logged this ride, mirrored from the recorder hook so a
+// crash/kill doesn't lose the measured watts/heart rate/cadence. The hook only
+// samples in the foreground, so background/lockscreen stretches honestly stay
+// without sensor data.
+let sensorBuffer: RideSensorSample[] = [];
 const listeners = new Set<Listener>();
 
 function emit(): void {
@@ -57,6 +66,11 @@ const hydration: Promise<void> = (async () => {
       if (activeStartedAt == null && typeof parsed.startedAt === "number") {
         activeStartedAt = parsed.startedAt;
       }
+      // Restore the pre-kill sensor log too, so a headless relaunch's next
+      // persisted snapshot never clobbers the measured values with an empty log.
+      if (sensorBuffer.length === 0 && Array.isArray(parsed.sensorSamples)) {
+        sensorBuffer = parsed.sensorSamples;
+      }
     }
   } catch {
     // Corrupt/unreadable store: ignore rather than crash. Recovery simply won't
@@ -73,7 +87,11 @@ async function writeStore(): Promise<void> {
   persistPending = false;
   if (activeStartedAt == null) return;
   try {
-    const snapshot: PersistedRide = { startedAt: activeStartedAt, points: buffer };
+    const snapshot: PersistedRide = {
+      startedAt: activeStartedAt,
+      points: buffer,
+      sensorSamples: sensorBuffer,
+    };
     await AsyncStorage.setItem(RIDE_STORE_KEY, JSON.stringify(snapshot));
   } catch {
     // Disk write failed: keep going, the next throttled write retries.
@@ -125,6 +143,7 @@ export async function clearRecoverableRide(): Promise<void> {
   persistPending = false;
   activeStartedAt = null;
   buffer = [];
+  sensorBuffer = [];
   try {
     await AsyncStorage.removeItem(RIDE_STORE_KEY);
   } catch {
@@ -140,6 +159,17 @@ export async function clearRecoverableRide(): Promise<void> {
 export function persistForegroundRide(points: RidePoint[], startedAt: number): void {
   activeStartedAt = startedAt;
   buffer = points;
+  schedulePersist();
+}
+
+/**
+ * Mirror the recorder hook's sensor log into the persisted snapshot so a
+ * crash/kill mid-ride keeps the measured watts/heart rate/cadence, not just the
+ * GPS track. Called on every sample; writes stay throttled with the track.
+ * Only real readings ever reach this — the hook never logs fabricated values.
+ */
+export function persistRideSensorSamples(samples: RideSensorSample[]): void {
+  sensorBuffer = samples;
   schedulePersist();
 }
 
@@ -198,6 +228,7 @@ export async function startRideTracker(): Promise<StartResult> {
   // Start a fresh ride: drop any leftover buffer and stamp a new start time.
   // Any previously persisted (unrecovered) ride is overwritten from here on.
   buffer = [];
+  sensorBuffer = [];
   activeStartedAt = Date.now();
 
   const fg = await Location.requestForegroundPermissionsAsync();

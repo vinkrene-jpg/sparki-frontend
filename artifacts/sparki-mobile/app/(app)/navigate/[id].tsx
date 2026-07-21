@@ -381,6 +381,9 @@ export default function NavigateScreen() {
             const res = await saveRide.mutateAsync({
               points: recorder.recoverable.points,
               name: route.name,
+              // Sensor readings persisted before the crash — the recovered
+              // ride keeps the measured watts/hartslag/cadans up to the kill.
+              sensorSamples: recorder.recoverable.sensorSamples,
             });
             setSaved({ sessionId: res.sessionId });
             recorder.reset();

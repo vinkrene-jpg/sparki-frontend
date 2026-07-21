@@ -1,4 +1,4 @@
-import type { RidePoint } from "@/hooks/useRideRecorder";
+import type { RidePoint, RideSensorSample } from "@/hooks/useRideRecorder";
 
 // Web stub: browsers have no background location task. Recording on web runs
 // foreground-only via the browser Geolocation watch (see useLiveLocation), so
@@ -15,6 +15,8 @@ export type StartResult = {
 export type PersistedRide = {
   startedAt: number;
   points: RidePoint[];
+  // Kept in sync with the native module's shape; unused on web (no recovery).
+  sensorSamples?: RideSensorSample[];
 };
 
 export function subscribeRideTracker(
@@ -42,3 +44,7 @@ export function persistForegroundRide(
   _points: RidePoint[],
   _startedAt: number,
 ): void {}
+
+// No-op on web: there is no crash-recovery store, so there is nothing to
+// mirror the sensor log into. Kept for API parity with the native module.
+export function persistRideSensorSamples(_samples: RideSensorSample[]): void {}
