@@ -332,7 +332,7 @@ function PlanWorkoutForm({ onDone }: { onDone: () => void }) {
 
 type Mode = "log" | "plan"
 
-function AddTrainingModal({ onClose }: { onClose: () => void }) {
+export function AddTrainingModal({ onClose }: { onClose: () => void }) {
   const [mode, setMode] = useState<Mode>("log")
 
   useEffect(() => {

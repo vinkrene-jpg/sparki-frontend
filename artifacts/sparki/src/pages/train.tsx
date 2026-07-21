@@ -17,7 +17,7 @@ import { TodayLayer } from "@/components/sparki/train/today-layer"
 import { PatternsLayer } from "@/components/sparki/train/patterns-layer"
 import {
   AddTrainingButton,
-  LogSessionForm,
+  AddTrainingModal,
 } from "@/components/sparki/add-training"
 import { Bike, Activity, Zap, Plus, Sparkles, Check, ChevronRight } from "lucide-react"
 import type { TrainingSession } from "@/lib/athlete-types"
@@ -209,7 +209,7 @@ function typeIcon(type: string) {
 export default function TrainPage() {
   const { data: sessions, isLoading: sessionsLoading } = useSessions(10)
   const routePlannerEnabled = useFeatureFlag("route_planner")
-  const [showLogForm, setShowLogForm] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
   const [openSession, setOpenSession] = useState<TrainingSession | null>(null)
   const [planHighlight, setPlanHighlight] = useState(false)
   const [, navigate] = useLocation()
@@ -231,17 +231,12 @@ export default function TrainPage() {
     return () => clearTimeout(t)
   }, [focus, navigate])
 
-  // Arrived via a "Log een training" CTA: open the log form and scroll to it.
+  // Arrived via a "Log een training" CTA: open the single shared
+  // "Training toevoegen" modal — the one place to add a training.
   useEffect(() => {
     if (focus !== "logsession") return
-    setShowLogForm(true)
-    const t = setTimeout(() => {
-      document
-        .getElementById("log-session")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" })
-      navigate("/train", { replace: true })
-    }, 200)
-    return () => clearTimeout(t)
+    setAddOpen(true)
+    navigate("/train", { replace: true })
   }, [focus, navigate])
 
   // Activities Sparki already imported (connector/file) that still miss the one
@@ -306,21 +301,14 @@ export default function TrainPage() {
           </div>
         )}
 
-        {!showLogForm && (
-          <button
-            type="button"
-            onClick={() => setShowLogForm(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] py-4 font-sans text-[13px] font-medium text-white/50 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/60"
-          >
-            <Plus className="h-4 w-4" strokeWidth={2} />
-            Sessie toevoegen
-          </button>
-        )}
-        {showLogForm && (
-          <div className="rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
-            <LogSessionForm onDone={() => setShowLogForm(false)} />
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => setAddOpen(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] py-4 font-sans text-[13px] font-medium text-white/50 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/60"
+        >
+          <Plus className="h-4 w-4" strokeWidth={2} />
+          Training toevoegen
+        </button>
 
         {/* Recent sessions */}
         {!sessionsLoading && sessions && sessions.length > 0 && (
@@ -437,6 +425,8 @@ export default function TrainPage() {
           if (!o) setOpenSession(null)
         }}
       />
+
+      {addOpen && <AddTrainingModal onClose={() => setAddOpen(false)} />}
     </ScreenShell>
   )
 }
