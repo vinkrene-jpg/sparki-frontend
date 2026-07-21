@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ElevationProfile } from "@/components/ElevationProfile";
 import { TrackMap } from "@/components/TrackMap";
 import { useColors } from "@/hooks/useColors";
 import type { LatLon } from "@/lib/geo";
@@ -80,6 +81,9 @@ export default function RideDetailScreen() {
 
   const session = data?.session ?? null;
   const hasTrack = path.length >= 2;
+  const profile = data?.profile ?? null;
+  const hasProfile = (profile?.length ?? 0) >= 2;
+  const climbs = data?.climbs ?? [];
   const showMap = Platform.OS !== "web" && hasMapbox && hasTrack;
 
   // Save this ridden track as a re-ridable route. Only offered when the ride
@@ -269,6 +273,60 @@ export default function RideDetailScreen() {
             )
           ) : null}
 
+          {/* ---------- Elevation profile: only when a real one was stored ---------- */}
+          {hasProfile ? (
+            <View
+              style={[
+                styles.card,
+                { backgroundColor: c.card, borderColor: c.border, borderRadius: c.radius },
+              ]}
+            >
+              <Text style={[styles.cardTitle, { color: c.foreground }]}>
+                Hoogteprofiel
+              </Text>
+              <ElevationProfile
+                profile={profile!}
+                distanceKm={fmtNum(session.distanceKm)}
+              />
+              {climbs.length > 0 ? (
+                <View style={{ gap: 8, marginTop: 4 }}>
+                  <Text style={[styles.climbHeader, { color: c.mutedForeground }]}>
+                    Klimmen in deze rit
+                  </Text>
+                  {climbs.map((cl, i) => (
+                    <View key={`${cl.name ?? "klim"}-${i}`} style={styles.metricRow}>
+                      <Ionicons name="trending-up-outline" size={16} color={c.primary} />
+                      <Text
+                        style={[styles.metricLabel, { color: c.foreground }]}
+                        numberOfLines={1}
+                      >
+                        {cl.name ?? `Klim ${i + 1}`}
+                      </Text>
+                      <Text style={[styles.metricValue, { color: c.mutedForeground }]}>
+                        {cl.lengthKm.toFixed(1)} km · {cl.avgGradePct.toFixed(1)}%
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+            </View>
+          ) : hasTrack ? (
+            <View
+              style={[
+                styles.card,
+                { backgroundColor: c.card, borderColor: c.border, borderRadius: c.radius },
+              ]}
+            >
+              <Text style={[styles.cardTitle, { color: c.foreground }]}>
+                Hoogteprofiel
+              </Text>
+              <Text style={[styles.noMapText, { color: c.mutedForeground }]}>
+                Geen hoogtedata bij deze rit — het ritbestand bevatte geen
+                hoogtemetingen.
+              </Text>
+            </View>
+          ) : null}
+
           {/* ---------- Measured values ---------- */}
           {metrics.length > 0 ? (
             <View
@@ -402,6 +460,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   cardTitle: { fontFamily: "Inter_600SemiBold", fontSize: 15 },
+  climbHeader: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
   metricRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   metricLabel: { flex: 1, fontFamily: "Inter_500Medium", fontSize: 13 },
   metricValue: { fontFamily: "Inter_600SemiBold", fontSize: 13 },

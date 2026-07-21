@@ -1037,7 +1037,11 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
       .limit(1);
 
     const stored = (imp?.parsedSummary as {
-      route?: { geometry?: unknown } | null;
+      route?: {
+        geometry?: unknown;
+        profile?: unknown;
+        climbs?: unknown;
+      } | null;
     } | null)?.route ?? null;
     // Only accept real numeric [lat, lon(, ele)] tuples — guards against
     // malformed historical JSON rather than trusting the stored shape blindly.
@@ -1057,9 +1061,54 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
         ? geometry.map((p) => [p[0], p[1]] as [number, number])
         : null;
 
-    // importId lets the client save this ridden track as a re-ridable route
-    // (POST /api/routes/from-activity). Only meaningful when a track exists.
-    res.json({ session, track, importId: track ? (imp?.id ?? null) : null });
+    // Real elevation profile (downsampled metres) stored at ingest. Only
+    // finite numbers pass; anything else means no honest profile → null.
+    const rawProfile = Array.isArray(stored?.profile)
+      ? (stored!.profile as unknown[]).filter(
+          (v): v is number => typeof v === "number" && Number.isFinite(v),
+        )
+      : [];
+    const profile = rawProfile.length >= 2 ? rawProfile : null;
+
+    // Detected climbs from the same ingest parse — validated per entry, never
+    // passed through blindly (older rows may miss fields).
+    const climbs = Array.isArray(stored?.climbs)
+      ? (stored!.climbs as unknown[])
+          .flatMap((raw) => {
+            if (typeof raw !== "object" || raw === null) return [];
+            const cl = raw as {
+              name?: unknown;
+              lengthKm?: unknown;
+              avgGradePct?: unknown;
+              summitKm?: unknown;
+            };
+            if (
+              typeof cl.lengthKm !== "number" ||
+              !Number.isFinite(cl.lengthKm) ||
+              typeof cl.avgGradePct !== "number" ||
+              !Number.isFinite(cl.avgGradePct)
+            ) {
+              return [];
+            }
+            return [
+              {
+                name:
+                  typeof cl.name === "string" && cl.name.trim()
+                    ? cl.name.trim()
+                    : null,
+                lengthKm: cl.lengthKm,
+                avgGradePct: cl.avgGradePct,
+                summitKm:
+                  typeof cl.summitKm === "number" &&
+                  Number.isFinite(cl.summitKm)
+                    ? cl.summitKm
+                    : null,
+              },
+            ];
+          })
+      : [];
+
+    res.json({ session, track, profile, climbs });
   } catch (err) {
     req.log.error({ err }, "athlete.sessions detail GET failed");
     res.status(500).json({ error: "Internal server error" });

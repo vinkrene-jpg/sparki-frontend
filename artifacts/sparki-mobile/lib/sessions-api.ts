@@ -52,12 +52,26 @@ export type SessionDetail = SessionSummary & {
 // session has no stored GPS track (e.g. manual entries).
 export type SessionTrackPoint = [number, number];
 
+// A climb detected at ingest from the real elevation data. `name` and
+// `summitKm` are null when the source data didn't carry them.
+export type SessionClimb = {
+  name: string | null;
+  lengthKm: number;
+  avgGradePct: number;
+  summitKm: number | null;
+};
+
 export type SessionDetailResponse = {
   session: SessionDetail;
   track: SessionTrackPoint[] | null;
   // Id of the linked activity import when a real track is stored — the handle
   // for saving this ridden ride as a re-ridable route. Null when no track.
   importId: number | null;
+  // Downsampled real elevation profile (metres) stored at ingest, or null
+  // when the ride carried no elevation data — the UI must then omit the
+  // chart honestly, never draw a fabricated line.
+  profile: number[] | null;
+  climbs: SessionClimb[];
 };
 
 /**
