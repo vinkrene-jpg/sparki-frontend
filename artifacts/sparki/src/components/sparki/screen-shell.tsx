@@ -1,6 +1,29 @@
 import type { ReactNode } from "react"
 import { useEffect, useState } from "react"
-import { LogOut, RefreshCw, Shield, ChevronLeft, MessageSquarePlus, Menu } from "lucide-react"
+import {
+  LogOut,
+  RefreshCw,
+  Shield,
+  ChevronLeft,
+  MessageSquarePlus,
+  Menu,
+  Sparkles,
+  Home,
+  Dumbbell,
+  Trophy,
+  Radio,
+  User,
+  Users,
+  Activity,
+  Globe,
+  HeartPulse,
+  Wrench,
+  Map as MapIcon,
+  CalendarDays,
+  BookOpen,
+  Film,
+  type LucideIcon,
+} from "lucide-react"
 import { Link } from "wouter"
 import { useClerk, Show } from "@clerk/react"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
@@ -22,11 +45,12 @@ import { useHomeView } from "@/contexts/HomeViewContext"
 import { startTelemetry, trackScreen } from "@/lib/telemetry"
 import { screenForSection } from "@/lib/tracked-screens"
 
-// Sparki's daily coach analysis belongs on the athlete's training-facing
-// surfaces: the day homes (Vandaag, incl. race week → Wedstrijdvoorbereiding),
-// Training, Inzicht (Lab) and Races. It is suppressed on Nieuws/Profiel/Samen/
-// Kennis and on the coach/parent homes (the card itself is athlete-only).
-const COACH_CARD_SECTIONS = new Set(["home", "train", "lab", "races"])
+// Sparki's daily coach analysis ("Sparki Vandaag") is the hero of the Vandaag
+// home ONLY. On other chapters (Training, Inzicht, Races, …) it duplicated
+// Vandaag and blurred each chapter's own identity, so every chapter now leads
+// with its own content. The card itself is athlete-only and is already
+// suppressed on the coach/parent homes.
+const COACH_CARD_SECTIONS = new Set(["home"])
 
 const SECTION_SCENE: Record<string, SceneName> = {
   home: "home",
@@ -63,6 +87,28 @@ const SECTION_DISPLAY: Record<string, string> = {
   coach: "COACH",
   ouder: "OUDER",
   "wedstrijd-room": "WEDSTRIJD-ROOM",
+}
+
+// Per-chapter icon so the header badge makes it instantly recognisable which
+// chapter you're in. Falls back to the Sparki spark for unmapped sections.
+const SECTION_ICON: Record<string, LucideIcon> = {
+  home: Home,
+  train: Dumbbell,
+  races: Trophy,
+  feed: Radio,
+  lab: Activity,
+  you: User,
+  samen: Users,
+  activiteiten: Activity,
+  wereld: Globe,
+  lichaam: HeartPulse,
+  mechanieker: Wrench,
+  routes: MapIcon,
+  kalender: CalendarDays,
+  kennisbank: BookOpen,
+  coach: Users,
+  ouder: Users,
+  "wedstrijd-room": Film,
 }
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -226,6 +272,7 @@ export function ScreenShell({
   const isHome = sectionKey === "home"
   const showCoachCard = COACH_CARD_SECTIONS.has(sectionKey)
   const sectionLabel = SECTION_DISPLAY[section.toLowerCase()] ?? section.toUpperCase()
+  const SectionIcon = SECTION_ICON[section.toLowerCase()] ?? Sparkles
   const coachDecision = useCoachDecision()
   // Vandaag's two surfaces (see HomeViewContext). On the calm State Card surface
   // the dashboard/coach cards are suppressed; on the full analysis surface a top
@@ -288,7 +335,10 @@ export function ScreenShell({
                   <span className="font-mono text-[10px] font-medium tracking-[0.18em]">MENU</span>
                 </button>
                 <div className="flex flex-col items-end gap-1.5">
-                  <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{sectionLabel}</span>
+                  <span className="flex items-center gap-1.5 rounded-full border border-cyan-300/25 bg-cyan-300/[0.07] px-2.5 py-1 text-cyan-200/90">
+                    <SectionIcon className="h-3.5 w-3.5" strokeWidth={2} />
+                    <span className="font-mono text-[10px] font-medium tracking-[0.22em]">{sectionLabel}</span>
+                  </span>
                   <RoleSwitcher />
                 </div>
               </div>
