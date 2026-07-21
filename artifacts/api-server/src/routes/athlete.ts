@@ -909,14 +909,28 @@ router.put("/sessions/:id", requireAuth, async (req, res) => {
     return;
   }
 
-  const { feelScore, notes } = req.body as {
+  const { feelScore, notes, title } = req.body as {
     feelScore?: number | null;
     notes?: string | null;
+    title?: string | null;
   };
 
   if (feelScore != null && (feelScore < 1 || feelScore > 5)) {
     res.status(400).json({ error: "feelScore must be 1-5" });
     return;
+  }
+
+  // Normalise the title: trim, treat empty as cleared, cap length so a stray
+  // paste can't bloat the row. Only title/notes/feel are user-editable here —
+  // objective data stays owned by its source.
+  let normalizedTitle: string | null | undefined = undefined;
+  if (title !== undefined) {
+    const trimmed = (title ?? "").trim();
+    if (trimmed.length > 120) {
+      res.status(400).json({ error: "title must be 120 characters or fewer" });
+      return;
+    }
+    normalizedTitle = trimmed === "" ? null : trimmed;
   }
 
   try {
@@ -942,6 +956,7 @@ router.put("/sessions/:id", requireAuth, async (req, res) => {
       .set({
         ...(feelScore !== undefined ? { feelScore: feelScore ?? null } : {}),
         ...(notes !== undefined ? { notes: notes ?? null } : {}),
+        ...(normalizedTitle !== undefined ? { title: normalizedTitle } : {}),
         updatedAt: new Date(),
       })
       .where(
