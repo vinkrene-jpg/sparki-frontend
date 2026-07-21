@@ -74,6 +74,8 @@ export type GenerateRouteInput = {
   // Ordered [lat, lon] points for an interactive (waypoints) route.
   waypoints?: RouteWaypoint[];
   seed?: number;
+  // Free-text wish for the route ("langs de rivier", "vermijd drukke wegen").
+  wish?: string;
 };
 
 export type RouteCandidate = {

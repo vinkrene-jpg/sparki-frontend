@@ -423,6 +423,7 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
   const [workoutId, setWorkoutId] = useState<string>("")
   const [distance, setDistance] = useState("40")
   const [distanceTouched, setDistanceTouched] = useState(false)
+  const [wish, setWish] = useState("")
   const [destination, setDestination] = useState("")
   const [start, setStart] = useState<{ lat: number; lon: number } | null>(null)
   const [geoState, setGeoState] = useState<"idle" | "loading" | "error">("idle")
@@ -516,6 +517,7 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
         plannedWorkoutId: linkedWorkout ? linkedWorkout.id : undefined,
         targetDistanceKm:
           !linkedWorkout && Number.isFinite(distNum) ? distNum : undefined,
+        wish: wish.trim() ? wish.trim() : undefined,
       },
       {
         onSuccess: (data) => setOptions(data.options),
@@ -561,6 +563,7 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
         destinationText: mode === "ptp" ? destination.trim() : undefined,
         waypoints: mode === "waypoints" ? waypoints : undefined,
         seed: nextSeed,
+        wish: wish.trim() ? wish.trim() : undefined,
       },
       {
         onSuccess: (data) => setCandidate(data.candidate),
@@ -980,6 +983,24 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
           <MeetpointList meetpoints={meetpoints} setMeetpoints={setMeetpoints} />
         </div>
       )}
+
+      {/* Free-text wish — applies to every mode */}
+      <div className="mt-4">
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+          SPECIFIEKE WENS (OPTIONEEL)
+        </label>
+        <textarea
+          className={`${inputClass} min-h-[76px] resize-y`}
+          placeholder="bijv. 'zoveel mogelijk langs het water' of 'liever rustige wegen'"
+          maxLength={400}
+          value={wish}
+          onChange={(e) => setWish(e.target.value)}
+        />
+        <p className="mt-1.5 text-[11px] leading-relaxed text-white/35">
+          Sparki houdt hier rekening mee. Kan een wens niet worden ingevuld, dan
+          zegt Sparki dat eerlijk en biedt een passend alternatief.
+        </p>
+      </div>
 
       {error && (
         <p className="mt-3 text-[12px] text-[rgba(255,140,120,0.85)]">{error}</p>

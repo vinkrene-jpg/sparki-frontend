@@ -79,6 +79,15 @@ function finiteNum(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+// Parse the athlete's free-text wish for the route ("langs de rivier",
+// "vermijd drukke wegen", "veel klimwerk"). Trimmed, collapsed and capped so a
+// runaway paste can't bloat the prompt. Empty/blank → null.
+function parseWish(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const cleaned = v.replace(/\s+/g, " ").trim().slice(0, 400);
+  return cleaned.length > 0 ? cleaned : null;
+}
+
 // Parse an ordered list of user-placed waypoints ([lat, lon] pairs) from the
 // request body, dropping anything malformed or out of range. Used by the
 // interactive (waypoints) generation mode.
@@ -152,6 +161,7 @@ async function buildRationale(input: {
   climbCount: number;
   startName: string | null;
   endName: string | null;
+  wish: string | null;
 }): Promise<string> {
   const label = activityLabel(input.profile);
   const shape =
@@ -175,16 +185,24 @@ async function buildRationale(input: {
 
   const fallback = `Deze ${shape} van ${facts || "de gevraagde afstand"} past bij een ${input.trainingType} (${label}).`;
 
+  // What the routegenerator can actually steer on. Free-text wishes about
+  // afstand/hoogte/ondergrond can be honoured; specific roads, plaatsen or
+  // "vermijd X" cannot be guaranteed by the round-trip engine. The prompt must
+  // say so plainly and never claim the route passes a place it can't verify.
+  const wishBlock = input.wish
+    ? `\n\nDe renner gaf deze wens op: "${input.wish}".\nDe routegenerator kan alleen sturen op afstand, hoeveel klimwerk (vlak/heuvelachtig) en de ondergrond/het profiel — NIET op specifieke wegen, plaatsen, bezienswaardigheden of "vermijd"-verzoeken. Beoordeel de wens eerlijk:\n- Kon de wens (deels) worden ingevuld via afstand/hoogte/ondergrond? Zeg kort dat het gelukt is.\n- Gaat de wens over een specifieke weg/plaats of een vermijd-verzoek dat de generator niet kan garanderen? Zeg dat eerlijk in gewone taal ("Ik kan de route niet op … sturen") en bied deze route aan als passend alternatief voor de training. Beweer NOOIT dat de route langs een plek gaat die niet in de gegevens staat.`
+    : "";
+
   try {
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 400,
       system:
-        "Je bent Sparki, een Nederlandstalige duursportcoach. Schrijf bondig en feitelijk. Verzin NOOIT cijfers, plaatsnamen of garanties die niet in de gegevens staan. Maximaal 2 zinnen.",
+        "Je bent Sparki, een Nederlandstalige duursportcoach. Schrijf bondig en feitelijk. Verzin NOOIT cijfers, plaatsnamen of garanties die niet in de gegevens staan. Maximaal 4 zinnen.",
       messages: [
         {
           role: "user",
-          content: `Leg in 1-2 Nederlandse zinnen uit waarom deze gegenereerde route past bij de geplande training. Gebruik alleen deze gegevens:\n- Trainingstype: ${input.trainingType}\n- Sport/profiel: ${label}\n- Vorm: ${shape}\n- Afstand: ${input.distanceKm ?? "onbekend"} km\n- Geschatte duur: ${durationLabel ?? "onbekend"}\n- Hoogtemeters: ${input.elevationGainM ?? "onbekend"}\n- Klimmen: ${input.climbCount}\nSchrijf geen garanties over verkeer of stadscentra.`,
+          content: `Leg in 1-2 Nederlandse zinnen uit waarom deze gegenereerde route past bij de geplande training. Gebruik alleen deze gegevens:\n- Trainingstype: ${input.trainingType}\n- Sport/profiel: ${label}\n- Vorm: ${shape}\n- Afstand: ${input.distanceKm ?? "onbekend"} km\n- Geschatte duur: ${durationLabel ?? "onbekend"}\n- Hoogtemeters: ${input.elevationGainM ?? "onbekend"}\n- Klimmen: ${input.climbCount}\nSchrijf geen garanties over verkeer of stadscentra.${wishBlock}`,
         },
       ],
     });
@@ -521,6 +539,7 @@ type LoopCandidateContext = {
   points: number;
   startName: string | null;
   plannedWorkoutId: number | null;
+  wish: string | null;
 };
 
 // Build one real loop candidate at a specific target distance, store it server-
@@ -559,6 +578,7 @@ async function buildLoopCandidate(
     climbCount: summary.climbs.length,
     startName: ctx.startName,
     endName: null,
+    wish: ctx.wish,
   });
 
   const candidateId = putCandidate({
@@ -667,6 +687,7 @@ router.post("/generate", requireAuth, async (req, res) => {
   }
 
   const seed = finiteNum(body.seed) ?? undefined;
+  const wish = parseWish(body.wish);
 
   try {
     // Resolve target distance + workout context FIRST, so duration-based sizing
@@ -775,6 +796,7 @@ router.post("/generate", requireAuth, async (req, res) => {
           points: loopPointsFor(workoutTrainingType),
           startName,
           plannedWorkoutId,
+          wish,
         },
         targetDistanceKm,
       );
@@ -828,6 +850,7 @@ router.post("/generate", requireAuth, async (req, res) => {
       climbCount: summary.climbs.length,
       startName,
       endName,
+      wish,
     });
 
     // Store the trusted candidate server-side and hand back an opaque id. Saving
@@ -936,6 +959,7 @@ router.post("/generate/options", requireAuth, async (req, res) => {
   }
 
   const seed = finiteNum(body.seed) ?? undefined;
+  const wish = parseWish(body.wish);
 
   try {
     let targetDistanceKm = finiteNum(body.targetDistanceKm);
@@ -1019,6 +1043,7 @@ router.post("/generate/options", requireAuth, async (req, res) => {
       points: loopPointsFor(workoutTrainingType),
       startName,
       plannedWorkoutId,
+      wish,
     };
 
     // Build sequentially — each loop already fans out several provider probes,

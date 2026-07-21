@@ -114,3 +114,4 @@
 
 - [Sparki ride-navigator](sparki-ride-navigator.md) — cadence from CPS crank data (flag-offset math); moving-avg speed excludes stops; casing+chevrons for route visibility; bordjes gated on per-ride group toggle (reset refs on flip).
 - [Save ridden ride as route](sparki-ridden-route-save.md) — ridden geometry only exists via GPX ingest; persist track in parsedSummary.route, POST /api/routes/from-activity builds source="ridden" route, honest 422 when no track.
+- [Route generation free-text wish](sparki-route-wish.md) — wish goes only into buildRationale prompt (ORS cannot steer roads); honest "kan niet + alternatief", never claim a place not in data.
