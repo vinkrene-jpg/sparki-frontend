@@ -528,7 +528,7 @@ function buildPreparation(
   };
 }
 
-function buildDebrief(past: WorkoutFacts[]): MentalDebrief | null {
+export function buildDebrief(past: WorkoutFacts[]): MentalDebrief | null {
   const recent = past
     .filter((f) => f.inPast && (f.completed || f.missed))
     .sort((a, b) => b.w.scheduledDate.localeCompare(a.w.scheduledDate))[0];

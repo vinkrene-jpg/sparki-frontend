@@ -108,6 +108,10 @@ args = "test-ride-recovery"
 task = "workflow.run"
 args = "test-day-type"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "test-mental"
+
 [[workflows.workflow]]
 name = "test-session-analysis"
 author = "agent"
@@ -360,6 +364,17 @@ args = "pnpm --filter @workspace/sparki run test:day-type"
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow]]
+name = "test-mental"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run test:mental"
+
+[workflows.workflow.metadata]
+isValidation = true
 
 [agent]
 stack = "PNPM_WORKSPACE"
