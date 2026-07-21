@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Link } from "wouter"
 import { useQueryClient } from "@tanstack/react-query"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
@@ -43,6 +44,8 @@ import {
   Trash2,
   Sparkles,
   Newspaper,
+  Globe,
+  ChevronRight,
   Zap,
   Send,
 } from "lucide-react"
@@ -1043,6 +1046,33 @@ function ClubBanner() {
   )
 }
 
+// Sparki World lost its dedicated header button in the app-herindeling; it stays
+// reachable through a clear link on Samen (both are social/discovery surfaces).
+function WereldLink() {
+  return (
+    <Link
+      href="/wereld"
+      className="flex items-center gap-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+    >
+      <span
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.08]"
+        style={{ background: "rgba(120,210,230,0.08)" }}
+      >
+        <Globe className="h-5 w-5" strokeWidth={1.75} style={{ color: ACCENT }} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[14px] font-medium text-white/90">
+          Sparki World
+        </span>
+        <span className="mt-0.5 block text-[12px] text-white/45">
+          Ontdek de virtuele renners en hun verhalen
+        </span>
+      </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-white/25" strokeWidth={1.75} />
+    </Link>
+  )
+}
+
 export default function SamenPage() {
   return (
     <ScreenShell section="samen">
@@ -1070,6 +1100,7 @@ export default function SamenPage() {
       <CircleFeed />
       <Circle />
       <AddFriend />
+      <WereldLink />
     </ScreenShell>
   )
 }

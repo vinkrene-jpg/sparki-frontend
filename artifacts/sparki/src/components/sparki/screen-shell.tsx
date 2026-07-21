@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { useEffect, useState } from "react"
-import { LogOut, RefreshCw, Shield, ChevronLeft, MessageSquarePlus, Users, Globe } from "lucide-react"
+import { LogOut, RefreshCw, Shield, ChevronLeft, MessageSquarePlus, Menu } from "lucide-react"
 import { Link } from "wouter"
 import { useClerk, Show } from "@clerk/react"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
@@ -16,6 +16,7 @@ import { CoachAnalysisCard } from "@/components/sparki/coach/coach-analysis-card
 import { CoachDecisionCard } from "@/components/sparki/coach-decision-card"
 import { OntwikkelprioriteitHomeCard } from "@/components/sparki/ontwikkelprioriteit-home-card"
 import { SparkiChatOverlay } from "@/components/sparki/sparki-chat-overlay"
+import { MainMenu } from "@/components/sparki/main-menu"
 import { useCoachDecision } from "@/contexts/CoachDecisionContext"
 import { useHomeView } from "@/contexts/HomeViewContext"
 import { startTelemetry, trackScreen } from "@/lib/telemetry"
@@ -36,6 +37,10 @@ const SECTION_SCENE: Record<string, SceneName> = {
   samen: "feed",
   activiteiten: "feed",
   wereld: "feed",
+  lichaam: "you",
+  mechanieker: "you",
+  routes: "train",
+  kalender: "train",
 }
 
 // User-facing Dutch label for the section shown in the header. Keeps the internal
@@ -50,6 +55,10 @@ const SECTION_DISPLAY: Record<string, string> = {
   samen: "SAMEN",
   activiteiten: "ACTIVITEITEN",
   wereld: "WERELD",
+  lichaam: "LICHAAM",
+  mechanieker: "MECHANIEKER",
+  routes: "ROUTES",
+  kalender: "KALENDER",
   kennisbank: "KENNIS",
   coach: "COACH",
   ouder: "OUDER",
@@ -169,40 +178,6 @@ function HeadTesterBadge({ number }: { number: number | null }) {
   )
 }
 
-// Fixed, app-wide entry to "Samen trainen" — the social/team surface no longer
-// has its own nav tab, so it lives as a clear top button for athletes.
-function SamenButton() {
-  const { profile } = useUserProfile()
-  if (profile?.activeRole !== "athlete") return null
-  return (
-    <Link
-      href="/samen"
-      aria-label="Samen trainen"
-      title="Samen trainen"
-      className="rounded-full border border-white/15 p-1.5 text-white/60 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
-    >
-      <Users className="h-4 w-4" strokeWidth={1.75} />
-    </Link>
-  )
-}
-
-// Fixed, app-wide entry to "Sparki World" — the transparently-fictional world of
-// Virtual Athletes. Lives as a clear top button for athletes, like Samen.
-function WereldButton() {
-  const { profile } = useUserProfile()
-  if (profile?.activeRole !== "athlete") return null
-  return (
-    <Link
-      href="/wereld"
-      aria-label="Sparki World"
-      title="Sparki World"
-      className="rounded-full border border-white/15 p-1.5 text-white/60 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
-    >
-      <Globe className="h-4 w-4" strokeWidth={1.75} />
-    </Link>
-  )
-}
-
 // Header trigger that opens the global feedback & bug reporter from any screen.
 function FeedbackButton() {
   const { openFeedback } = useFeedback()
@@ -266,6 +241,7 @@ export function ScreenShell({
   }, [fullSurface])
   const { profile } = useUserProfile()
   const [chatOpen, setChatOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#05070e] text-white">
       {/* Per-screen cinematic background — shared structure, scene-specific
@@ -299,10 +275,17 @@ export function ScreenShell({
             <Show when="signed-in">
               <div className="flex items-center gap-3">
                 {profile?.isHeadTester && <HeadTesterBadge number={profile.headTesterNumber ?? null} />}
-                <SamenButton />
-                <WereldButton />
                 <FeedbackButton />
                 <NotificationBell />
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen(true)}
+                  aria-label="Menu openen"
+                  title="Menu"
+                  className="rounded-full border border-white/15 p-1.5 text-white/60 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+                >
+                  <Menu className="h-4 w-4" strokeWidth={1.75} />
+                </button>
                 <div className="flex flex-col items-end gap-1.5">
                   <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{sectionLabel}</span>
                   <RoleSwitcher />
@@ -355,6 +338,7 @@ export function ScreenShell({
 
       {/* App-wide chat window — opened from the SPARKI mark in the header. */}
       <SparkiChatOverlay open={chatOpen} onClose={() => setChatOpen(false)} />
+      <MainMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
     </main>
   )
 }

@@ -11,7 +11,6 @@ import { publishableKeyFromHost } from "@clerk/react/internal";
 import { dark } from "@clerk/themes";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
-import { BottomNav } from "@/components/sparki/bottom-nav";
 import { DayHome } from "@/components/sparki/day-home";
 import { CoachHome } from "@/components/sparki/coach-home";
 import { ParentHome } from "@/components/sparki/parent-home";
@@ -26,6 +25,10 @@ import ActiviteitenPage from "@/pages/activiteiten";
 import CorePlaygroundPage from "@/pages/core-playground";
 import PhotoLabPage from "@/pages/photo-lab";
 import SamenPage from "@/pages/samen";
+import LichaamPage from "@/pages/lichaam";
+import MechaniekerPage from "@/pages/mechanieker";
+import RoutesPage from "@/pages/routes";
+import KalenderPage from "@/pages/kalender";
 import WereldPage from "@/pages/wereld";
 import RacesPage from "@/pages/races";
 import SprintenPage from "@/pages/sprinten";
@@ -352,12 +355,7 @@ function SignedInHomeReady() {
     return <Redirect to="/welkom-tester" />;
   }
 
-  return (
-    <>
-      <RoleHome />
-      <BottomNav />
-    </>
-  );
+  return <RoleHome />;
 }
 
 // Home is role-aware: coaches see their roster, parents see the wellbeing view,
@@ -388,7 +386,6 @@ function ProtectedPage({ component: Page }: { component: React.ComponentType }) 
       <Show when="signed-in">
         <AccountGate>
           <Page />
-          <BottomNav />
         </AccountGate>
       </Show>
       <Show when="signed-out">
@@ -412,7 +409,6 @@ function InviteRoute() {
       <Show when="signed-in">
         <AccountGate>
           <InviteAcceptPage />
-          <BottomNav />
         </AccountGate>
       </Show>
       <Show when="signed-out">
@@ -501,6 +497,18 @@ function AppRouter() {
                 </Route>
                 <Route path="/geluid">
                   <ProtectedPage component={GeluidPage} />
+                </Route>
+                <Route path="/lichaam">
+                  <ProtectedPage component={LichaamPage} />
+                </Route>
+                <Route path="/mechanieker">
+                  <ProtectedPage component={MechaniekerPage} />
+                </Route>
+                <Route path="/routes">
+                  <ProtectedPage component={RoutesPage} />
+                </Route>
+                <Route path="/kalender">
+                  <ProtectedPage component={KalenderPage} />
                 </Route>
                 <Route path="/races">
                   <ProtectedPage component={RacesPage} />

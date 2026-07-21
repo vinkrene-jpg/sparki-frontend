@@ -3,7 +3,6 @@ import { useLocation } from "wouter"
 import { apiFetch } from "@/lib/api"
 import { getDevAthleteId, setDevAthleteId } from "@/lib/dev"
 import { DayHome, type DevCoachOverride } from "@/components/sparki/day-home"
-import { BottomNav } from "@/components/sparki/bottom-nav"
 import type { DayType } from "@/lib/day-type"
 import {
   COACH_SCENARIOS,
@@ -22,6 +21,10 @@ import GeluidPage from "@/pages/geluid"
 import RacesPage from "@/pages/races"
 import WedstrijdRoomPage from "@/pages/wedstrijd-room"
 import SamenPage from "@/pages/samen"
+import LichaamPage from "@/pages/lichaam"
+import MechaniekerPage from "@/pages/mechanieker"
+import RoutesPage from "@/pages/routes"
+import KalenderPage from "@/pages/kalender"
 import WereldPage from "@/pages/wereld"
 import InvitationsPage from "@/pages/invitations"
 import InviteAcceptPage from "@/pages/invite-accept"
@@ -72,6 +75,10 @@ const VIEWS: DevView[] = [
   { label: "Core", path: "/core" },
   { label: "You", path: "/you" },
   { label: "Geluid", path: "/geluid" },
+  { label: "Lichaam", path: "/lichaam" },
+  { label: "Mechanieker", path: "/mechanieker" },
+  { label: "Routes", path: "/routes" },
+  { label: "Kalender", path: "/kalender" },
   { label: "Foto-lab", path: "/photo-lab" },
   { label: "Wedstrijd-room", path: "/wedstrijd-room" },
   { label: "Samen", path: "/samen" },
@@ -390,6 +397,14 @@ export function DevPreview() {
     page = <YouPage />
   } else if (location.startsWith("/geluid")) {
     page = <GeluidPage />
+  } else if (location.startsWith("/lichaam")) {
+    page = <LichaamPage />
+  } else if (location.startsWith("/mechanieker")) {
+    page = <MechaniekerPage />
+  } else if (location.startsWith("/routes")) {
+    page = <RoutesPage />
+  } else if (location.startsWith("/kalender")) {
+    page = <KalenderPage />
   } else if (location.startsWith("/photo-lab")) {
     page = <PhotoLabPage />
     showNav = false
@@ -443,7 +458,6 @@ export function DevPreview() {
         onCoachScenario={setCoachScenario}
       />
       {page}
-      {showNav && <BottomNav />}
     </>
   )
 }

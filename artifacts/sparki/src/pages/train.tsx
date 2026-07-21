@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useLocation } from "wouter"
+import { useLocation, Link } from "wouter"
 import { useFixParams } from "@/hooks/use-missing-input"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { ACCENT } from "@/components/sparki/ui"
@@ -19,7 +19,7 @@ import {
   AddTrainingButton,
   LogSessionForm,
 } from "@/components/sparki/add-training"
-import { Bike, Activity, Zap, Plus, Sparkles, Check } from "lucide-react"
+import { Bike, Activity, Zap, Plus, Sparkles, Check, ChevronRight } from "lucide-react"
 import type { TrainingSession } from "@/lib/athlete-types"
 
 // Sources where Sparki already captured the objective data itself (a connector
@@ -396,6 +396,21 @@ export default function TrainPage() {
           </p>
           <ActivityImportPanel />
         </div>
+
+        <Link
+          href="/activiteiten"
+          className="flex items-center justify-between rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md transition-colors hover:border-cyan-300/30"
+        >
+          <span className="min-w-0">
+            <span className="block text-[14px] font-medium text-white/90">
+              Al je activiteiten
+            </span>
+            <span className="mt-0.5 block text-[12px] text-white/45">
+              Bekijk je volledige geschiedenis van ritten en trainingen
+            </span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-white/25" strokeWidth={1.75} />
+        </Link>
 
         <div className="flex flex-col gap-2.5">
           <p className="font-mono text-[10px] tracking-[0.2em] text-white/35">
