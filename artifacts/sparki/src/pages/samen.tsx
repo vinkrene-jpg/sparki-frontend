@@ -291,7 +291,7 @@ function Circle() {
         <div className="mt-3 h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
       ) : friends.length === 0 ? (
         <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/40">
-          Je hebt nog geen vrienden. Zoek hieronder een sporter om
+          Je hebt nog geen vrienden. Zoek hierboven een sporter om
           samen te trainen.
         </p>
       ) : (
@@ -1098,8 +1098,8 @@ export default function SamenPage() {
       <ClubBanner />
       <FriendRequests />
       <CircleFeed />
-      <Circle />
       <AddFriend />
+      <Circle />
       <WereldLink />
     </ScreenShell>
   )
