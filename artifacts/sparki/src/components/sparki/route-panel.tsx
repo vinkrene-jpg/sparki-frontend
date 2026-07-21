@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react"
+import { useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react"
 import { trackScreen } from "@/lib/telemetry"
 import { SectionLabel, Stat, Divider, ACCENT } from "@/components/sparki/ui"
 import { RouteMap } from "@/components/sparki/route-map"
@@ -44,6 +44,40 @@ import {
 // Editable list of named meeting points ("verzamelpunten") — e.g. where you
 // pick up a friend. Shared by the interactive builder and the generated-route
 // preview so both can drop pickup spots.
+// Eén rij in de puntenlijst van de eigen-routebouwer: label + coördinaten +
+// wisknop. Echte punten van de kaart, nooit verzonnen namen.
+function PointRow({
+  icon,
+  label,
+  point,
+  onRemove,
+}: {
+  icon: ReactNode
+  label: string
+  point: RouteWaypoint
+  onRemove: () => void
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2">
+      {icon}
+      <span className="min-w-0 flex-1 truncate font-sans text-[13px] text-white/90">
+        {label}
+        <span className="ml-2 font-mono text-[10px] text-white/35">
+          {point[0].toFixed(4)}, {point[1].toFixed(4)}
+        </span>
+      </span>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`${label} verwijderen`}
+        className="shrink-0 text-white/30 transition hover:text-[rgba(255,140,120,0.85)]"
+      >
+        <X className="h-3.5 w-3.5" strokeWidth={2} />
+      </button>
+    </div>
+  )
+}
+
 function MeetpointList({
   meetpoints,
   setMeetpoints,
@@ -1573,6 +1607,47 @@ function RouteGenerator({
               </button>
             )}
           </div>
+
+          {/* Puntenlijst — start → routepunten → finish, elk punt wisbaar. */}
+          {allPoints.length > 0 && (
+            <div className="mt-3 flex flex-col gap-2">
+              {startPoint && (
+                <PointRow
+                  icon={<MapPin className="h-3.5 w-3.5 shrink-0" style={{ color: "rgba(120,230,160,0.9)" }} strokeWidth={1.75} />}
+                  label="Startpunt"
+                  point={startPoint}
+                  onRemove={() => {
+                    invalidateStaleRoute()
+                    setStartPoint(null)
+                    setPlaceMode("start")
+                  }}
+                />
+              )}
+              {waypoints.map((p, i) => (
+                <PointRow
+                  key={`${p[0]}-${p[1]}-${i}`}
+                  icon={<Flag className="h-3.5 w-3.5 shrink-0" style={{ color: ACCENT }} strokeWidth={1.75} />}
+                  label={`Routepunt ${i + 1}`}
+                  point={p}
+                  onRemove={() => {
+                    invalidateStaleRoute()
+                    setWaypoints((w) => w.filter((_, idx) => idx !== i))
+                  }}
+                />
+              ))}
+              {endPoint && (
+                <PointRow
+                  icon={<Flag className="h-3.5 w-3.5 shrink-0" style={{ color: "rgba(255,160,90,0.9)" }} strokeWidth={1.75} />}
+                  label="Finish"
+                  point={endPoint}
+                  onRemove={() => {
+                    invalidateStaleRoute()
+                    setEndPoint(null)
+                  }}
+                />
+              )}
+            </div>
+          )}
 
           {/* Editable meeting-point list */}
           <MeetpointList meetpoints={meetpoints} setMeetpoints={setMeetpoints} />
