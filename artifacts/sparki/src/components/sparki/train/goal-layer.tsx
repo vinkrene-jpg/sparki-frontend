@@ -60,7 +60,7 @@ export function GoalLayer() {
         {noGoal && (
           <button
             type="button"
-            onClick={() => navigate("/races?focus=new")}
+            onClick={() => navigate("/you?focus=doelen")}
             className="mt-4 flex items-center gap-1.5 rounded-xl px-4 py-2.5 font-sans text-[13px] font-semibold transition-opacity"
             style={{ background: "rgba(120,210,230,0.9)", color: "#040506" }}
           >
