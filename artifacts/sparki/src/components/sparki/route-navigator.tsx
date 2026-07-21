@@ -433,15 +433,19 @@ export function RouteNavigator({
         if ((cumKm[i] ?? 0) < nextArrowKm) continue
         nextArrowKm = (cumKm[i] ?? 0) + ARROW_SPACING_KM
         const rot = bearingDeg(path[i - 1]!, path[i]!)
+        // A classic arrow (shaft + chevron head) instead of a triangle — an
+        // isosceles triangle reads ambiguously at small sizes, an arrow never
+        // does. Dark under-stroke keeps it legible on any basemap.
         const arrow = L.divIcon({
           className: "",
-          html: `<span style="display:block;width:18px;height:18px;transform:rotate(${rot}deg);transform-origin:center;">
-              <svg viewBox="0 0 24 24" width="18" height="18" style="filter:drop-shadow(0 0 2px rgba(5,7,14,0.9));">
-                <path d="M12 3 L19 13 L12.9 13 L12.9 21 L11.1 21 L11.1 13 L5 13 Z" fill="#ffffff" stroke="#05121f" stroke-width="1.3" stroke-linejoin="round"/>
+          html: `<span style="display:block;width:20px;height:20px;transform:rotate(${rot}deg);transform-origin:center;">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path d="M12 21 V5 M5.5 11.5 L12 4.5 L18.5 11.5" fill="none" stroke="#05121f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 21 V5 M5.5 11.5 L12 4.5 L18.5 11.5" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </span>`,
-          iconSize: [18, 18],
-          iconAnchor: [9, 9],
+          iconSize: [20, 20],
+          iconAnchor: [10, 10],
         })
         L.marker([path[i]!.lat, path[i]!.lon], {
           icon: arrow,
