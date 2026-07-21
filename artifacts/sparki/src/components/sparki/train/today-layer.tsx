@@ -89,6 +89,18 @@ export function TodayLayer() {
         <div className={`${cardClass} flex flex-col gap-4`}>
           {/* Session header */}
           <div>
+            {isPending && (
+              <span
+                className="mb-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.2em]"
+                style={{
+                  borderColor: "rgba(120,210,230,0.25)",
+                  background: "rgba(120,210,230,0.06)",
+                  color: "rgba(120,210,230,0.85)",
+                }}
+              >
+                Gepland · nog te doen
+              </span>
+            )}
             <h3 className="text-balance font-sans text-2xl font-extralight leading-tight tracking-tight">
               {workout.title}
             </h3>
@@ -288,7 +300,7 @@ export function TodayLayer() {
                 style={{ background: ACCENT, color: "#040506" }}
               >
                 <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} />
-                Klaar
+                Markeer als gedaan
               </button>
               <button
                 type="button"
