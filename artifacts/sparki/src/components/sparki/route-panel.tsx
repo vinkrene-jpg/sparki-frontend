@@ -1928,6 +1928,10 @@ export function RoutePanel() {
   const inputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [showGenerator, setShowGenerator] = useState(false)
+  // Snel een eerder bewaarde route kiezen: compacte lijst met namen; tikken
+  // springt direct naar de bijbehorende routekaart hieronder.
+  const [showSavedPicker, setShowSavedPicker] = useState(false)
+  const [highlightId, setHighlightId] = useState<number | null>(null)
   // Prefill for the generator when the rider steers from a route-paspoort
   // ("Vlakker" / "Meer klimmen"). Key forces a fresh generator instance so the
   // preference actually lands in its state.
@@ -2027,7 +2031,52 @@ export function RoutePanel() {
           <Download className="h-4 w-4" strokeWidth={1.75} />
           {create.isPending ? "Verwerken…" : "GPX uploaden"}
         </button>
+        {routes.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowSavedPicker((s) => !s)}
+            className="flex items-center gap-2 rounded-full border border-white/[0.14] px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 hover:text-white/90"
+            style={
+              showSavedPicker
+                ? { borderColor: "rgba(120,210,230,0.5)", color: ACCENT }
+                : undefined
+            }
+          >
+            <Flag className="h-4 w-4" strokeWidth={1.75} />
+            Bewaarde routes ({routes.length})
+          </button>
+        )}
       </div>
+
+      {showSavedPicker && routes.length > 0 && (
+        <div className="mt-3 flex flex-col gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] p-2">
+          {routes.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => {
+                setShowSavedPicker(false)
+                setHighlightId(r.id)
+                setTimeout(() => {
+                  document
+                    .getElementById(`route-${r.id}`)
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                }, 50)
+                setTimeout(() => setHighlightId(null), 2600)
+              }}
+              className="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-white/[0.05]"
+            >
+              <span className="min-w-0 flex-1 truncate text-[13px] text-white/85">
+                {r.name}
+              </span>
+              <span className="shrink-0 font-mono text-[10px] tabular-nums text-white/40">
+                {r.distanceKm != null ? `${r.distanceKm} km` : "—"}
+                {r.elevationGainM != null ? ` · ${r.elevationGainM} m` : ""}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <input
         ref={inputRef}
@@ -2087,12 +2136,22 @@ export function RoutePanel() {
           <div className="h-40 w-full animate-pulse rounded-xl bg-white/[0.06]" />
         ) : routes.length > 0 ? (
           routes.map((r) => (
-            <RouteCard
+            <div
               key={r.id}
-              route={r}
-              onAdjust={adjustRoute}
-              onEditWaypoints={editRouteWaypoints}
-            />
+              id={`route-${r.id}`}
+              className="rounded-2xl transition-shadow duration-500"
+              style={
+                highlightId === r.id
+                  ? { boxShadow: "0 0 0 1.5px rgba(120,210,230,0.55)" }
+                  : undefined
+              }
+            >
+              <RouteCard
+                route={r}
+                onAdjust={adjustRoute}
+                onEditWaypoints={editRouteWaypoints}
+              />
+            </div>
           ))
         ) : (
           <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
