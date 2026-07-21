@@ -605,6 +605,9 @@ function RouteCard({
     setLocation(`${pathname}${q ? `?${q}` : ""}`, { replace: !open })
   }
   const [showPassport, setShowPassport] = useState(false)
+  // Het stappenplan kan lang zijn — standaard ingeklapt zodat de acties
+  // eronder (navigeren, downloads) direct zichtbaar blijven.
+  const [showSteps, setShowSteps] = useState(false)
   const profile = route.profile ?? []
   const climbs = route.climbs ?? []
   const nav = route.nav ?? []
@@ -779,45 +782,60 @@ function RouteCard({
         </p>
       )}
 
+      <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-cyan-300/[0.18] bg-[rgba(120,210,230,0.06)] px-3.5 py-3">
+        <Smartphone
+          className="mt-0.5 h-4 w-4 shrink-0"
+          strokeWidth={1.75}
+          style={{ color: ACCENT }}
+        />
+        <p className="text-[12.5px] leading-relaxed text-white/60">
+          <span className="font-medium text-white/85">Onderweg navigeren?</span>{" "}
+          Tik op <span className="font-medium text-white/85">Navigeer</span> om
+          hier op de kaart je live positie te volgen — je browser vraagt
+          eenmalig toegang tot je locatie. Wil je de rit als training opnemen op
+          de achtergrond? Dat doe je in de Sparki-app op je telefoon. Of
+          download de route hierboven als GPX/TCX voor je fietscomputer.
+        </p>
+      </div>
+
       {nav.length > 0 ? (
-        <div className="mt-4 flex flex-col">
-          {nav.map((n, i) => (
-            <div
-              key={i}
-              className="flex items-baseline gap-3 border-b border-white/[0.05] py-2.5 last:border-0"
-            >
-              <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-cyan-300/70">
-                {n.km}
-              </span>
-              <span className="w-20 shrink-0 break-words text-[13px] tracking-tight text-white/85">
-                {n.dir}
-              </span>
-              <span className="min-w-0 flex-1 break-words text-[12px] text-white/40">
-                {n.note}
-              </span>
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => setShowSteps((s) => !s)}
+            className="font-mono text-[10px] uppercase tracking-[0.16em] transition"
+            style={{ color: ACCENT }}
+          >
+            {showSteps
+              ? "− stappenplan verbergen"
+              : `+ stappenplan (${nav.length} stappen)`}
+          </button>
+          {showSteps && (
+            <div className="mt-2 flex flex-col">
+              {nav.map((n, i) => (
+                <div
+                  key={i}
+                  className="flex items-baseline gap-3 border-b border-white/[0.05] py-2.5 last:border-0"
+                >
+                  <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-cyan-300/70">
+                    {n.km}
+                  </span>
+                  <span className="w-20 shrink-0 break-words text-[13px] tracking-tight text-white/85">
+                    {n.dir}
+                  </span>
+                  <span className="min-w-0 flex-1 break-words text-[12px] text-white/40">
+                    {n.note}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       ) : (
         <p className="mt-4 text-[12px] text-white/30">
           Stap-voor-stap navigatie nog niet beschikbaar voor deze route
         </p>
       )}
-
-      <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-2.5">
-        <Smartphone
-          className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300/70"
-          strokeWidth={1.75}
-        />
-        <p className="text-[12px] leading-relaxed text-white/50">
-          <span className="text-white/75">Onderweg navigeren?</span> Tik op{" "}
-          <span className="text-white/75">Navigeer</span> om hier op de kaart je
-          live positie te volgen — je browser vraagt eenmalig toegang tot je
-          locatie. Wil je de rit als training opnemen op de achtergrond? Dat doe
-          je in de Sparki-app op je telefoon. Of download de route hierboven als
-          GPX/TCX voor je fietscomputer.
-        </p>
-      </div>
 
       {navigating && (
         <RouteNavigator
