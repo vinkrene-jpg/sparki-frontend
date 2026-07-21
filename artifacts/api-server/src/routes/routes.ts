@@ -45,6 +45,7 @@ import {
   windDirectionLabel,
   beaufort,
 } from "../lib/route-insight";
+import { getRoutePois } from "../lib/route-pois";
 
 const router = Router();
 
@@ -556,6 +557,185 @@ router.post("/:id/rejoin", requireAuth, async (req, res) => {
     res.status(502).json({
       error:
         "Kon geen vervolg berekenen — de routedienst gaf geen bruikbaar antwoord.",
+    });
+  }
+});
+
+// GET /api/routes/:id/pois — named sights and cafés/restaurants within ~250m
+// of the route line (OpenStreetMap). Honest 502 when the source doesn't
+// answer; the list is never fabricated.
+router.get("/:id/pois", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  try {
+    const [route] = await db
+      .select()
+      .from(routesTable)
+      .where(and(eq(routesTable.id, id), eq(routesTable.clerkId, clerkId)))
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+    const geometry = (route.geometry as RoutePathPoint[] | null) ?? [];
+    if (geometry.length < 2) {
+      res.status(422).json({
+        error:
+          "Deze route heeft geen opgeslagen lijn op de kaart, dus er kunnen geen plekken langs de route gevonden worden.",
+      });
+      return;
+    }
+    const pois = await getRoutePois(geometry);
+    if (pois == null) {
+      res.status(502).json({
+        error:
+          "Plekken langs de route konden nu niet opgehaald worden — de kaartbron gaf geen antwoord.",
+      });
+      return;
+    }
+    res.json({ pois });
+  } catch (err) {
+    req.log.error({ err }, "routes.pois failed");
+    res.status(500).json({ error: "Kon plekken langs de route niet laden" });
+  }
+});
+
+// POST /api/routes/:id/detour-via — reroute the ride VIA a chosen place (sight
+// or café): a real routed leg from the rider's position to the place, then a
+// real leg from the place back onto the original route at (or ahead of) the
+// place. The target must lie AHEAD of the rider on the route — never routes a
+// rider backwards. Both legs come from the routing provider; nothing is drawn.
+router.post("/:id/detour-via", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const lat = finiteNum(body.lat);
+  const lon = finiteNum(body.lon);
+  const targetLat = finiteNum(body.targetLat);
+  const targetLon = finiteNum(body.targetLon);
+  if (
+    lat == null ||
+    lon == null ||
+    targetLat == null ||
+    targetLon == null ||
+    Math.abs(lat) > 90 ||
+    Math.abs(lon) > 180 ||
+    Math.abs(targetLat) > 90 ||
+    Math.abs(targetLon) > 180
+  ) {
+    res.status(400).json({ error: "Ongeldige positie" });
+    return;
+  }
+  try {
+    const [route] = await db
+      .select()
+      .from(routesTable)
+      .where(and(eq(routesTable.id, id), eq(routesTable.clerkId, clerkId)))
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+    const geometry = (route.geometry as RoutePathPoint[] | null) ?? [];
+    if (geometry.length < 2) {
+      res.status(422).json({
+        error:
+          "Deze route heeft geen opgeslagen lijn op de kaart, dus er kan geen omweg berekend worden.",
+      });
+      return;
+    }
+    const provider = getRoutingProvider();
+    if (!provider.isConfigured()) {
+      res.status(503).json({
+        error:
+          "Een omweg berekenen is nu niet beschikbaar — de routedienst is niet gekoppeld.",
+      });
+      return;
+    }
+
+    const cumKm: number[] = [0];
+    for (let i = 1; i < geometry.length; i++) {
+      cumKm.push(
+        cumKm[i - 1]! +
+          haversineMeters(
+            geometry[i - 1]![0],
+            geometry[i - 1]![1],
+            geometry[i]![0],
+            geometry[i]![1],
+          ) /
+            1000,
+      );
+    }
+    const nearestIdxTo = (pLat: number, pLon: number): number => {
+      let idx = 0;
+      let best = Number.POSITIVE_INFINITY;
+      for (let i = 0; i < geometry.length; i++) {
+        const d = haversineMeters(pLat, pLon, geometry[i]![0], geometry[i]![1]);
+        if (d < best) {
+          best = d;
+          idx = i;
+        }
+      }
+      return idx;
+    };
+    const riderIdx = nearestIdxTo(lat, lon);
+    const placeIdx = nearestIdxTo(targetLat, targetLon);
+    // Never route a rider backwards along the route.
+    if (cumKm[placeIdx]! < cumKm[riderIdx]! - 0.1) {
+      res.status(422).json({
+        error: "Deze plek ligt achter je op de route — kies een plek vooruit.",
+      });
+      return;
+    }
+    const rejoinIdx = Math.max(placeIdx, riderIdx);
+    const rejoin = geometry[rejoinIdx]!;
+    const profile = profileForSurface(route.surface);
+
+    // Two real legs: rider → place, place → back onto the route.
+    const leg1 = await provider.routePointToPoint({
+      start: { lat, lon },
+      end: { lat: targetLat, lon: targetLon },
+      profile,
+    });
+    const leg2 = await provider.routePointToPoint({
+      start: { lat: targetLat, lon: targetLon },
+      end: { lat: rejoin[0], lon: rejoin[1] },
+      profile,
+    });
+
+    const path = [...leg1.path, ...leg2.path.slice(1)];
+    const stopNote = "Je bent bij je tussenstop.";
+    const nav = [
+      ...leg1.steps,
+      { km: leg1.distanceKm, dir: "Aankomst", note: stopNote },
+      ...leg2.steps.map((s) => ({
+        ...s,
+        km: Math.round((s.km + leg1.distanceKm) * 100) / 100,
+      })),
+    ];
+    res.json({
+      mode: "poi",
+      path,
+      distanceKm:
+        Math.round((leg1.distanceKm + leg2.distanceKm) * 100) / 100,
+      durationSec: leg1.durationSec + leg2.durationSec,
+      nav,
+      stopKm: Math.round(leg1.distanceKm * 100) / 100,
+      rejoinKm: Math.round(cumKm[rejoinIdx]! * 10) / 10,
+    });
+  } catch (err) {
+    req.log.error({ err }, "routes.detour-via failed");
+    res.status(502).json({
+      error:
+        "Kon geen omweg berekenen — de routedienst gaf geen bruikbaar antwoord.",
     });
   }
 });
