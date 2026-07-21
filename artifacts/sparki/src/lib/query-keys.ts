@@ -246,6 +246,15 @@ export const queryKeys = {
     nudge: () => ["material", "nudge"] as const,
   },
 
+  garage: {
+    all: () => ["garage"] as const,
+    overview: () => ["garage", "overview"] as const,
+    upgrade: (bikeId: number, specialism: string) =>
+      ["garage", "upgrade", bikeId, specialism] as const,
+    developments: () => ["garage", "developments"] as const,
+    proTeams: () => ["garage", "pro-teams"] as const,
+  },
+
   social: {
     all: () => ["social"] as const,
     friends: () => ["social", "friends"] as const,
