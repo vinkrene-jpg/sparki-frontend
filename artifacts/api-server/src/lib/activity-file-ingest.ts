@@ -124,7 +124,15 @@ export function summaryToCanonicalActivity(
       durationMin,
       distanceKm,
       elevationM: g.elevationGainM ?? null,
+      // Real sensor extensions (Garmin TrackPointExtension hr/cad + <power>)
+      // when the GPX carried them — e.g. a Sparki mobile ride with Bluetooth
+      // sensors. Null when absent, never estimated.
+      avgPower: g.avgPower ?? null,
+      avgHR: g.avgHeartRate ?? null,
+      maxHR: g.maxHeartRate ?? null,
+      avgCadence: g.avgCadence ?? null,
       avgSpeedKph: avgSpeedKph(distanceKm, durationSec),
+      powerBests: g.powerBests ?? null,
       raw: g,
     };
   }

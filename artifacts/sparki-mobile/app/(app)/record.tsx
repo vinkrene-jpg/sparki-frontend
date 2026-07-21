@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -18,7 +18,11 @@ import { RouteMap } from "@/components/RouteMap";
 import { useColors } from "@/hooks/useColors";
 import { useLiveLocation } from "@/hooks/useLiveLocation";
 import { useGarageSensors, useLiveSensors } from "@/hooks/useLiveSensors";
-import { useRideRecorder, type RidePoint } from "@/hooks/useRideRecorder";
+import {
+  useRideRecorder,
+  type RidePoint,
+  type RideSensorSample,
+} from "@/hooks/useRideRecorder";
 import { toLatLon, type LatLon } from "@/lib/geo";
 import { hasMapbox } from "@/lib/mapbox";
 import { useSaveRide } from "@/lib/routes-api";
@@ -55,18 +59,26 @@ export default function RecordScreen() {
   const insets = useSafeAreaInsets();
 
   const { location, permission, error: locError } = useLiveLocation(true);
-  const recorder = useRideRecorder(location);
-  const saveRide = useSaveRide();
-  const [saved, setSaved] = useState<null | { sessionId: number | null }>(null);
-  const [following, setFollowing] = useState(true);
   // Live Bluetooth sensors (wattage / hartslag / cadans) from the Fietsengarage.
   const sensors = useGarageSensors();
   const live = useLiveSensors();
+  // Ref-backed reader so the recorder's 1s sampler always sees the CURRENT
+  // sensor values without re-subscribing on every reading.
+  const liveValuesRef = useRef(live.values);
+  liveValuesRef.current = live.values;
+  const getSensorValues = useCallback(() => liveValuesRef.current, []);
+  const recorder = useRideRecorder(location, getSensorValues);
+  const saveRide = useSaveRide();
+  const [saved, setSaved] = useState<null | { sessionId: number | null }>(null);
+  const [following, setFollowing] = useState(true);
   const [showSensors, setShowSensors] = useState(false);
   // After stopping, the recorded track is snapshotted here so it is never lost —
   // not on review-cancel, not on a failed save. The rider can reopen the review
   // to save it, or explicitly discard it. Only an explicit discard drops it.
   const [stoppedPoints, setStoppedPoints] = useState<RidePoint[] | null>(null);
+  // Sensor readings snapshotted alongside the stopped track, so a save after
+  // review still carries the real measured watts/hartslag/cadans.
+  const [stoppedSamples, setStoppedSamples] = useState<RideSensorSample[]>([]);
   // The name/note editor. Opened from the stopped state; cancelling it returns
   // to the stopped state (track kept), never discards.
   const [review, setReview] = useState<null | {
@@ -91,6 +103,7 @@ export default function RecordScreen() {
     setSaved(null);
     setReview(null);
     setStoppedPoints(null);
+    setStoppedSamples([]);
     saveRide.reset();
     recorder.start();
   };
@@ -102,6 +115,7 @@ export default function RecordScreen() {
   const onStop = () => {
     recorder.stop();
     setStoppedPoints(recorder.points);
+    setStoppedSamples(recorder.getSensorSamples());
     setReview({ name: defaultRideName(), note: "" });
     recorder.reset();
   };
@@ -119,10 +133,12 @@ export default function RecordScreen() {
         points: stoppedPoints,
         name: review.name.trim() || defaultRideName(),
         note: review.note,
+        sensorSamples: stoppedSamples,
       });
       setSaved({ sessionId: res.sessionId });
       setReview(null);
       setStoppedPoints(null);
+      setStoppedSamples([]);
     } catch {
       // Error surfaced via saveRide.error; the review AND the stopped track are
       // kept so the rider can retry without losing anything.
@@ -158,6 +174,7 @@ export default function RecordScreen() {
   const onDiscardStopped = () => {
     setReview(null);
     setStoppedPoints(null);
+    setStoppedSamples([]);
     saveRide.reset();
   };
 
@@ -453,6 +470,11 @@ export default function RecordScreen() {
               {recorder.backgroundActive ? (
                 <Text style={[styles.recNote, { color: c.mutedForeground }]}>
                   Opname loopt door als je scherm op slot gaat.
+                  {live.values.watts != null ||
+                  live.values.heartRate != null ||
+                  live.values.cadence != null
+                    ? " Sensorwaarden (wattage, hartslag, cadans) worden alleen vastgelegd zolang de app open is."
+                    : ""}
                 </Text>
               ) : recorder.backgroundDenied ? (
                 <Text style={[styles.recNote, { color: c.mutedForeground }]}>

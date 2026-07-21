@@ -19,6 +19,24 @@ export type RidePoint = {
   time: number; // epoch ms
 };
 
+// One real sensor reading snapshot, timestamped when it was sampled. Only
+// values a connected Bluetooth sensor actually reported are present — a sample
+// is only logged when at least one value is real, and a null field stays null
+// (never fabricated). Merged onto the GPS track at save time by timestamp.
+export type RideSensorSample = {
+  time: number; // epoch ms
+  watts: number | null;
+  heartRate: number | null;
+  cadence: number | null;
+};
+
+// Live sensor values as read at sample time (matches useLiveSensors values).
+export type LiveSensorSnapshot = {
+  watts: number | null;
+  heartRate: number | null;
+  cadence: number | null;
+};
+
 export type RideRecording = {
   recording: boolean;
   points: RidePoint[];
@@ -38,6 +56,9 @@ export type RideRecording = {
   reset: () => void;
   // Drop the recovered ride (rider chose not to keep it).
   discardRecovered: () => void;
+  // Snapshot of the real sensor readings logged so far this ride. Stable
+  // getter (ref-backed) so reading it doesn't force re-renders each second.
+  getSensorSamples: () => RideSensorSample[];
 };
 
 // An in-progress ride recovered from disk after the app was killed mid-ride.
@@ -86,7 +107,18 @@ function buildTrack(raw: RidePoint[]): { points: RidePoint[]; distanceKm: number
  * Nothing is fabricated: when the device emits no location no points are added,
  * so a too-short track is honestly empty and cannot be saved.
  */
-export function useRideRecorder(location: LiveLocation | null): RideRecording {
+// How often the live sensor values are sampled into the ride log while
+// recording. 1s matches the GPS fix cadence of the background tracker.
+const SENSOR_SAMPLE_MS = 1000;
+
+export function useRideRecorder(
+  location: LiveLocation | null,
+  // Optional reader of the CURRENT live Bluetooth sensor values (watts / heart
+  // rate / cadence). Sampled once per second while recording; only real
+  // readings are logged. JS timers pause while the app is backgrounded, so the
+  // log honestly has gaps when the screen is locked (GPS-only there).
+  getSensorValues?: () => LiveSensorSnapshot,
+): RideRecording {
   const [recording, setRecording] = useState(false);
   const [points, setPoints] = useState<RidePoint[]>([]);
   const [distanceKm, setDistanceKm] = useState(0);
@@ -100,6 +132,8 @@ export function useRideRecorder(location: LiveLocation | null): RideRecording {
   // Ref mirror of backgroundActive so the foreground effect can bail out without
   // re-subscribing whenever the flag flips.
   const backgroundActiveRef = useRef(false);
+  // Real sensor readings logged this ride (ref: read at save time, no renders).
+  const sensorSamplesRef = useRef<RideSensorSample[]>([]);
 
   // Foreground path: append each new real fix from the prop. Skipped entirely
   // while the background tracker owns the track (avoids double-counting).
@@ -164,6 +198,25 @@ export function useRideRecorder(location: LiveLocation | null): RideRecording {
     return unsub;
   }, [recording, backgroundActive]);
 
+  // Sensor sample log: once per second, snapshot the live Bluetooth values.
+  // Only samples with at least one REAL reading are logged — no sensors
+  // connected means an empty log, never zeros. Interval timers pause while the
+  // app is backgrounded, so screen-locked stretches honestly have no samples.
+  useEffect(() => {
+    if (!recording || !getSensorValues) return;
+    const id = setInterval(() => {
+      const v = getSensorValues();
+      if (v.watts == null && v.heartRate == null && v.cadence == null) return;
+      sensorSamplesRef.current.push({
+        time: Date.now(),
+        watts: v.watts,
+        heartRate: v.heartRate,
+        cadence: v.cadence,
+      });
+    }, SENSOR_SAMPLE_MS);
+    return () => clearInterval(id);
+  }, [recording, getSensorValues]);
+
   // Wall-clock elapsed timer, independent of GPS fix cadence.
   useEffect(() => {
     if (!recording) return;
@@ -179,6 +232,7 @@ export function useRideRecorder(location: LiveLocation | null): RideRecording {
     startedAtRef.current = Date.now();
     lastRef.current = null;
     backgroundActiveRef.current = false;
+    sensorSamplesRef.current = [];
     // Starting a new ride supersedes any recovered one.
     setRecoverable(null);
     setPoints([]);
@@ -213,6 +267,7 @@ export function useRideRecorder(location: LiveLocation | null): RideRecording {
     startedAtRef.current = null;
     lastRef.current = null;
     backgroundActiveRef.current = false;
+    sensorSamplesRef.current = [];
     setPoints([]);
     setDistanceKm(0);
     setElapsedSec(0);
@@ -224,6 +279,11 @@ export function useRideRecorder(location: LiveLocation | null): RideRecording {
     // is never offered again for recovery.
     clearRecoverableRide().catch(() => {});
   }, []);
+
+  const getSensorSamples = useCallback(
+    () => sensorSamplesRef.current.slice(),
+    [],
+  );
 
   const discardRecovered = useCallback(() => {
     setRecoverable(null);
@@ -242,5 +302,6 @@ export function useRideRecorder(location: LiveLocation | null): RideRecording {
     stop,
     reset,
     discardRecovered,
+    getSensorSamples,
   };
 }

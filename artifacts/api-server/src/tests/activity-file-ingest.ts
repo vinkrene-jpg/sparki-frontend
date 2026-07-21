@@ -118,25 +118,71 @@ function esc(s: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 }
+type RideSensorSample = {
+  time: number;
+  watts: number | null;
+  heartRate: number | null;
+  cadence: number | null;
+};
+const SENSOR_MATCH_MS = 5000;
+function nearestSample(
+  samples: RideSensorSample[],
+  t: number,
+  fromIdx: { i: number },
+): RideSensorSample | null {
+  if (samples.length === 0) return null;
+  let i = fromIdx.i;
+  while (i + 1 < samples.length && samples[i + 1]!.time <= t) i++;
+  let best = samples[i]!;
+  const next = samples[i + 1];
+  if (next && Math.abs(next.time - t) < Math.abs(best.time - t)) best = next;
+  fromIdx.i = i;
+  return Math.abs(best.time - t) <= SENSOR_MATCH_MS ? best : null;
+}
 function buildRideGpx(
   points: { latitude: number; longitude: number; time: number }[],
   name: string,
   note?: string | null,
+  sensorSamples?: RideSensorSample[],
 ): string | null {
   if (points.length < 2) return null;
   const trkName = esc(name.trim() || "Sparki rit");
   const trimmedNote = (note ?? "").trim();
   const descEl = trimmedNote ? `    <desc>${esc(trimmedNote)}</desc>\n` : "";
+  const samples = (sensorSamples ?? []).slice().sort((a, b) => a.time - b.time);
+  const cursor = { i: 0 };
+  let anySensor = false;
   const trkpts = points
-    .map(
-      (p) =>
+    .map((p) => {
+      const head =
         `      <trkpt lat="${p.latitude}" lon="${p.longitude}">` +
-        `<time>${new Date(p.time).toISOString()}</time></trkpt>`,
-    )
+        `<time>${new Date(p.time).toISOString()}</time>`;
+      const s = nearestSample(samples, p.time, cursor);
+      if (!s) return head + `</trkpt>`;
+      const hr =
+        s.heartRate != null
+          ? `<gpxtpx:hr>${Math.round(s.heartRate)}</gpxtpx:hr>`
+          : "";
+      const cad =
+        s.cadence != null
+          ? `<gpxtpx:cad>${Math.round(s.cadence)}</gpxtpx:cad>`
+          : "";
+      const pwr = s.watts != null ? `<power>${Math.round(s.watts)}</power>` : "";
+      if (!hr && !cad && !pwr) return head + `</trkpt>`;
+      anySensor = true;
+      const tpx =
+        hr || cad
+          ? `<gpxtpx:TrackPointExtension>${hr}${cad}</gpxtpx:TrackPointExtension>`
+          : "";
+      return head + `<extensions>${pwr}${tpx}</extensions></trkpt>`;
+    })
     .join("\n");
+  const gpxtpxNs = anySensor
+    ? ` xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1"`
+    : "";
   return (
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<gpx version="1.1" creator="Sparki" xmlns="http://www.topografix.com/GPX/1/1">\n` +
+    `<gpx version="1.1" creator="Sparki" xmlns="http://www.topografix.com/GPX/1/1"${gpxtpxNs}>\n` +
     `  <metadata>\n    <name>${trkName}</name>\n${descEl}  </metadata>\n` +
     `  <trk>\n    <name>${trkName}</name>\n    <trkseg>\n${trkpts}\n    </trkseg>\n  </trk>\n` +
     `</gpx>\n`
@@ -226,6 +272,12 @@ async function main() {
         durationSec: null,
         trackName: "Route zonder tijd",
         notes: null,
+        avgPower: null,
+        maxPower: null,
+        avgHeartRate: null,
+        maxHeartRate: null,
+        avgCadence: null,
+        powerBests: null,
       },
       "hash-route",
     );
@@ -316,6 +368,51 @@ async function main() {
       s!.durationSec === 0 || s!.durationSec === null,
       `no real duration from a single timestamp → ${s!.durationSec}`,
     );
+  });
+
+  await run("RideGPX", "Bluetooth sensor samples round-trip into real session metrics", () => {
+    const start = Date.parse("2026-06-20T07:00:00.000Z");
+    const points = sampleRidePoints(start);
+    // Real readings near each GPS fix (within the 5s match window).
+    const samples: RideSensorSample[] = [
+      { time: start + 500, watts: 200, heartRate: 130, cadence: 88 },
+      { time: start + 600_000 + 1000, watts: 240, heartRate: 145, cadence: 92 },
+      { time: start + 1_200_000 - 800, watts: 220, heartRate: 150, cadence: null },
+      { time: start + 1_800_000 + 2000, watts: null, heartRate: 155, cadence: 90 },
+    ];
+    const gpx = buildRideGpx(points, "Sensorrit", null, samples);
+    assert(gpx !== null, "GPX built with sensors");
+    assert(gpx!.includes("xmlns:gpxtpx"), "gpxtpx namespace declared");
+    const s = parseGpx(gpx!);
+    assert(s !== null, "sensor GPX parsed");
+    // avg over ONLY points that carried a reading: power (200+240+220)/3=220.
+    assert(s!.avgPower === 220, `avg power → ${s!.avgPower}`);
+    assert(s!.maxPower === 240, `max power → ${s!.maxPower}`);
+    // HR on all 4 points: (130+145+150+155)/4=145.
+    assert(s!.avgHeartRate === 145, `avg HR → ${s!.avgHeartRate}`);
+    assert(s!.maxHeartRate === 155, `max HR → ${s!.maxHeartRate}`);
+    // Cadence on 3 points: (88+92+90)/3=90.
+    assert(s!.avgCadence === 90, `avg cadence → ${s!.avgCadence}`);
+    const a = summaryToCanonicalActivity("gpx", s!, "hash-sensor-ride");
+    assert(a !== null, "sensor ride maps to activity");
+    assert(a!.avgPower === 220, "avg power carried into activity");
+    assert(a!.avgHR === 145, "avg HR carried into activity");
+    assert(a!.maxHR === 155, "max HR carried into activity");
+    assert(a!.avgCadence === 90, "avg cadence carried into activity");
+  });
+
+  await run("RideGPX", "a GPS-only ride stays honestly sensor-free", () => {
+    const start = Date.parse("2026-06-20T07:00:00.000Z");
+    const gpx = buildRideGpx(sampleRidePoints(start), "Zonder sensors")!;
+    assert(!gpx.includes("gpxtpx"), "no sensor namespace without samples");
+    const s = parseGpx(gpx)!;
+    assert(s.avgPower === null, "no fabricated power");
+    assert(s.avgHeartRate === null, "no fabricated HR");
+    assert(s.avgCadence === null, "no fabricated cadence");
+    assert(s.powerBests === null, "no fabricated power bests");
+    const a = summaryToCanonicalActivity("gpx", s, "hash-plain-ride")!;
+    assert(a.avgPower == null, "activity power stays absent");
+    assert(a.avgHR == null, "activity HR stays absent");
   });
 
   await run("Idempotency", "same bytes → same external id", () => {

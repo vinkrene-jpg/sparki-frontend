@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 
 import { buildRideGpx } from "@/lib/ride-gpx";
-import type { RidePoint } from "@/hooks/useRideRecorder";
+import type { RidePoint, RideSensorSample } from "@/hooks/useRideRecorder";
 
 // Turn-by-turn cue as stored by the backend routing engine.
 export type RouteStep = { km: number; dir: string; note: string };
@@ -74,8 +74,18 @@ export function useSaveRide() {
       points: RidePoint[];
       name: string;
       note?: string;
+      // Real Bluetooth sensor readings logged during the ride (watts / heart
+      // rate / cadence). Written into the GPX as standard track-point
+      // extensions so the backend session gets real power/HR data. Optional —
+      // a ride without sensors stays a plain GPS track.
+      sensorSamples?: RideSensorSample[];
     }): Promise<SaveRideResult> => {
-      const gpx = buildRideGpx(input.points, input.name, input.note);
+      const gpx = buildRideGpx(
+        input.points,
+        input.name,
+        input.note,
+        input.sensorSamples,
+      );
       if (!gpx) {
         throw new Error(
           "Deze rit heeft te weinig locatiepunten om op te slaan.",

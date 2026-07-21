@@ -123,3 +123,4 @@
 - [Sparki leefagenda](sparki-life-agenda.md) — athlete-entered life events steer the plan generator; list queries need overlap semantics or ongoing events become invisible but still steer.
 - [Sparki mobile BLE sensors](sparki-mobile-ble-sensors.md) — ble-plx behind platform split + guarded require (Expo Go honest-unsupported); BLE values are base64; horloge/derailleur stay registration-only.
 - [Sparki device sync (Garmin/Wahoo)](sparki-device-sync.md) — full OAuth+push scaffolding, honest configured:false until manufacturer keys; PKCE verifier inside signed state.
+- [Ride BLE sensors → GPX](sparki-ride-sensor-gpx.md) — 1s foreground sampler + ≤5s nearest-match; gpxtpx/power extensions; api-server test mirrors mobile buildRideGpx in lockstep.

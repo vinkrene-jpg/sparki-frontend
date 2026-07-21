@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -67,14 +67,19 @@ export default function NavigateScreen() {
     Number.isInteger(routeId) ? routeId : null,
   );
   const { location, permission, error: locError } = useLiveLocation(true);
-  const recorder = useRideRecorder(location);
+  // Live Bluetooth sensors (wattage / hartslag / cadans) from the Fietsengarage.
+  const sensors = useGarageSensors();
+  const live = useLiveSensors();
+  // Ref-backed reader so the recorder's 1s sampler always sees the CURRENT
+  // sensor values without re-subscribing on every reading.
+  const liveValuesRef = useRef(live.values);
+  liveValuesRef.current = live.values;
+  const getSensorValues = useCallback(() => liveValuesRef.current, []);
+  const recorder = useRideRecorder(location, getSensorValues);
   const saveRide = useSaveRide();
   const [saved, setSaved] = useState<null | { sessionId: number | null }>(null);
 
   const [following, setFollowing] = useState(true);
-  // Live Bluetooth sensors (wattage / hartslag / cadans) from the Fietsengarage.
-  const sensors = useGarageSensors();
-  const live = useLiveSensors();
   const [showSensors, setShowSensors] = useState(false);
 
   const path: LatLon[] = useMemo(
@@ -357,6 +362,9 @@ export default function NavigateScreen() {
             const res = await saveRide.mutateAsync({
               points: recorder.points,
               name: route.name,
+              // Real Bluetooth readings logged this ride — written into the
+              // GPX so the saved training carries measured watts/hartslag/cadans.
+              sensorSamples: recorder.getSensorSamples(),
             });
             setSaved({ sessionId: res.sessionId });
             recorder.reset();

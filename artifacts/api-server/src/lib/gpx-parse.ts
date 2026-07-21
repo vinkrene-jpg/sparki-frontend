@@ -5,6 +5,8 @@
 // Returns null when the content has no parseable track points (caller marks the
 // import "failed" rather than inventing values).
 
+import { createPowerSampleCollector } from "./power-bests";
+
 export type GpxSummary = {
   pointCount: number;
   distanceKm: number | null;
@@ -16,6 +18,18 @@ export type GpxSummary = {
   // A real rider-typed note, taken ONLY from the file's <metadata><desc>. Null
   // when absent — never fabricated and never sourced from waypoint descriptions.
   notes: string | null;
+  // Real per-point sensor extensions (Garmin TrackPointExtension hr/cad and
+  // <power>), as written by bike computers, Strava exports and the Sparki
+  // mobile recorder. Averages/maxima over ONLY the points that carried a
+  // reading; null when the file has none — never estimated.
+  avgPower: number | null;
+  maxPower: number | null;
+  avgHeartRate: number | null;
+  maxHeartRate: number | null;
+  avgCadence: number | null;
+  // Best average power over fixed windows, computed from the REAL timestamped
+  // per-point power samples. Null when the file has no usable power+time data.
+  powerBests: Record<string, number> | null;
 };
 
 type TrackPoint = {
@@ -23,6 +37,10 @@ type TrackPoint = {
   lon: number;
   ele: number | null;
   time: number | null;
+  // Sensor extensions genuinely present on the point; null when absent.
+  hr: number | null;
+  cad: number | null;
+  power: number | null;
 };
 
 function haversineKm(
@@ -60,11 +78,27 @@ function extractTrackPoints(content: string): TrackPoint[] {
     const timeStr = /<time>\s*([^<]+)<\/time>/i.exec(inner)?.[1];
     const ele = eleStr != null ? Number(eleStr) : NaN;
     const t = timeStr != null ? Date.parse(timeStr.trim()) : NaN;
+    // Sensor extensions: Garmin TrackPointExtension hr/cad (any namespace
+    // prefix) and power as <power>/<pwr> (Strava & Sparki convention). Only
+    // values genuinely present are kept — absent stays null.
+    const hrStr = /<(?:\w+:)?hr>\s*([^<]+)<\/(?:\w+:)?hr>/i.exec(inner)?.[1];
+    const cadStr = /<(?:\w+:)?cad(?:ence)?>\s*([^<]+)<\/(?:\w+:)?cad(?:ence)?>/i.exec(
+      inner,
+    )?.[1];
+    const pwrStr = /<(?:\w+:)?(?:power|pwr)>\s*([^<]+)<\/(?:\w+:)?(?:power|pwr)>/i.exec(
+      inner,
+    )?.[1];
+    const hr = hrStr != null ? Number(hrStr) : NaN;
+    const cad = cadStr != null ? Number(cadStr) : NaN;
+    const power = pwrStr != null ? Number(pwrStr) : NaN;
     points.push({
       lat,
       lon,
       ele: Number.isFinite(ele) ? ele : null,
       time: Number.isFinite(t) ? t : null,
+      hr: Number.isFinite(hr) && hr > 0 ? Math.round(hr) : null,
+      cad: Number.isFinite(cad) && cad >= 0 ? Math.round(cad) : null,
+      power: Number.isFinite(power) && power >= 0 ? Math.round(power) : null,
     });
   }
   return points;
@@ -106,6 +140,23 @@ export function parseGpx(content: string): GpxSummary | null {
     ? /<desc>\s*([^<]+)<\/desc>/i.exec(metadata)?.[1]?.trim()
     : undefined;
 
+  // Sensor stats over ONLY the points that genuinely carried a reading.
+  const hrVals = points.map((p) => p.hr).filter((v): v is number => v != null);
+  const cadVals = points.map((p) => p.cad).filter((v): v is number => v != null);
+  const pwrVals = points
+    .map((p) => p.power)
+    .filter((v): v is number => v != null);
+  const avg = (vals: number[]): number | null =>
+    vals.length > 0
+      ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length)
+      : null;
+
+  // Power bests from the real timestamped samples (same collector FIT/TCX use).
+  const collector = createPowerSampleCollector();
+  for (const p of points) {
+    if (p.power != null && p.time != null) collector.add(p.time / 1000, p.power);
+  }
+
   return {
     pointCount: points.length,
     distanceKm: distanceKm > 0 ? Math.round(distanceKm * 100) / 100 : null,
@@ -118,6 +169,12 @@ export function parseGpx(content: string): GpxSummary | null {
         : null,
     trackName: nameStr || null,
     notes: notesStr || null,
+    avgPower: avg(pwrVals),
+    maxPower: pwrVals.length > 0 ? Math.max(...pwrVals) : null,
+    avgHeartRate: avg(hrVals),
+    maxHeartRate: hrVals.length > 0 ? Math.max(...hrVals) : null,
+    avgCadence: avg(cadVals),
+    powerBests: collector.finish(),
   };
 }
 
