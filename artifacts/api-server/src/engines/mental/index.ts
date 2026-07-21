@@ -579,7 +579,9 @@ export function buildDebrief(past: WorkoutFacts[]): MentalDebrief | null {
     : null;
   const reflectionPrompt = hasReflection
     ? null
-    : "Wat er in je hoofd omging staat niet in de data. Voeg het in één keer toe — hoe was je motivatie vooraf en hoe zwaar was het mentaal?";
+    : outcome === "gemist"
+      ? "Wat er in je hoofd omging staat niet in de data. Voeg het in één keer toe — hoe was je motivatie vooraf, en wat gaf de doorslag om niet te rijden?"
+      : "Wat er in je hoofd omging staat niet in de data. Voeg het in één keer toe — hoe was je motivatie vooraf en hoe zwaar was het mentaal?";
   return {
     workoutId: recent.w.id,
     date: recent.w.scheduledDate,

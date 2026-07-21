@@ -303,6 +303,23 @@ async function main() {
     const facts = buildWorkoutFacts([w], [], [], TODAY);
     const d = buildDebrief(facts);
     assert(d && d.outcome === "gemist", `outcome ${d?.outcome} !== gemist`);
+    assert(
+      d!.reflectionPrompt != null &&
+        d!.reflectionPrompt.includes("doorslag om niet te rijden") &&
+        !d!.reflectionPrompt.includes("hoe zwaar was het mentaal"),
+      `gemist prompt must ask doorslag, not mentale zwaarte: ${d!.reflectionPrompt}`,
+    );
+  });
+
+  await scenario("debrief: ridden workout keeps the mentale-zwaarte question", () => {
+    const { w, s } = doneWorkout(-1, 60, 60);
+    const facts = buildWorkoutFacts([w], [s], [], TODAY);
+    const d = buildDebrief(facts);
+    assert(d && d.outcome === "volbracht", `outcome ${d?.outcome} !== volbracht`);
+    assert(
+      d!.reflectionPrompt != null && d!.reflectionPrompt.includes("hoe zwaar was het mentaal"),
+      `ridden prompt must still ask mentale zwaarte: ${d!.reflectionPrompt}`,
+    );
   });
 
   await scenario("debrief: no past workouts → null (never fabricated)", () => {

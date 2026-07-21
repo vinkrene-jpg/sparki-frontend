@@ -252,6 +252,7 @@ function useSaveReflection(workoutId: number) {
 // invite — never a blank form. Fully optional; any single signal is enough.
 function MentalReflectionBlock({ debrief }: { debrief: Debrief }) {
   const existing = debrief.athleteReflection
+  const skipped = debrief.outcome === "gemist"
   const save = useSaveReflection(debrief.workoutId)
   const [editing, setEditing] = useState(false)
   const [motivation, setMotivation] = useState<number | null>(
@@ -336,17 +337,23 @@ function MentalReflectionBlock({ debrief }: { debrief: Debrief }) {
           onChange={setMotivation}
           endpoints={["Geen zin", "Vol goede zin"]}
         />
-        <ScalePicker
-          label="Hoe zwaar was het mentaal?"
-          value={effort}
-          onChange={setEffort}
-          endpoints={["Makkelijk", "Loodzwaar"]}
-        />
+        {!skipped && (
+          <ScalePicker
+            label="Hoe zwaar was het mentaal?"
+            value={effort}
+            onChange={setEffort}
+            endpoints={["Makkelijk", "Loodzwaar"]}
+          />
+        )}
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={2}
-          placeholder="Wat ging er in je hoofd om? (optioneel)…"
+          placeholder={
+            skipped
+              ? "Wat gaf de doorslag om niet te rijden? (optioneel)…"
+              : "Wat ging er in je hoofd om? (optioneel)…"
+          }
           className="w-full resize-none rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-[13px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
         />
       </div>
