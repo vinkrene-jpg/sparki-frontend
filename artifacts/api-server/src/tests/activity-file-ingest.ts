@@ -31,6 +31,7 @@ import {
 import {
   ingestBatch,
   computeActivityDedupeKey,
+  buildMergePatch,
   type NormalizedBatch,
 } from "../engines/data-hub";
 
@@ -331,6 +332,41 @@ async function main() {
     assert(a === b, "same bytes, different filename → same id");
   });
 
+  await run("Merge", "a note fills a missing note (connector had none)", () => {
+    // A Strava ride landed first with no note; the athlete's phone/file export
+    // of the SAME ride carries the rider's note. The merge must fill the gap.
+    const patch = buildMergePatch(
+      { notes: null },
+      { notes: "Lekker gevoel, wind mee op de terugweg." },
+    );
+    assert(
+      patch.notes === "Lekker gevoel, wind mee op de terugweg.",
+      `missing note filled from file → ${String(patch.notes)}`,
+    );
+  });
+
+  await run("Merge", "an existing note is never overwritten by a later source", () => {
+    // The rider's note already lives on the canonical row; a later source (even
+    // one that also has a note) must NOT clobber it — first source wins.
+    const withNote = buildMergePatch(
+      { notes: "Mijn eigen notitie." },
+      { notes: "Iets anders uit een andere bron." },
+    );
+    assert(
+      !("notes" in withNote),
+      `existing note untouched → ${JSON.stringify(withNote)}`,
+    );
+    // And an empty later note likewise can't wipe an existing one.
+    const later = buildMergePatch(
+      { notes: "Mijn eigen notitie." },
+      { notes: null },
+    );
+    assert(
+      !("notes" in later),
+      `existing note survives an empty later source → ${JSON.stringify(later)}`,
+    );
+  });
+
   await run("Unlink", "parsed TCX unlinks back to 'parsed', not 'uploaded'", () => {
     assert(
       unlinkedImportStatus("tcx", true) === "parsed",
@@ -491,6 +527,86 @@ async function main() {
       // Existing (Strava) HR wins; the file fills the missing power.
       assert(s.avgHR === 145, "existing HR preserved");
       assert(s.avgPower === 230, "file filled missing power");
+    });
+
+    await run("Ingest", "a rider's ride note survives merge with a connector import", async () => {
+      await cleanup();
+      // A Strava ride lands first WITHOUT a note.
+      const stravaBatch: NormalizedBatch = {
+        importedDataTypes: ["activities", "training_history"],
+        activities: [
+          {
+            externalId: "strava-note-1",
+            sport: "cycling",
+            startedAt: START,
+            durationMin: 30,
+            avgHR: 145,
+          },
+        ],
+      };
+      const allowed = new Set<ConnectorDataType>([
+        "activities",
+        "training_history",
+      ]);
+      await ingestBatch(clerkId, "strava", stravaBatch, { allowed });
+
+      // The athlete uploads the SAME ride's GPX carrying their note.
+      const start = Date.parse(START);
+      const gpx = buildRideGpx(
+        sampleRidePoints(start),
+        "Ronde om het meer",
+        "Lekker gevoel, wind mee op de terugweg.",
+      )!;
+      await ingestActivityFile(
+        clerkId,
+        "gpx",
+        parseGpx(gpx)!,
+        fileExternalId(gpx, "ride.gpx"),
+      );
+
+      const [afterFill] = await db
+        .select()
+        .from(trainingSessionsTable)
+        .where(
+          and(
+            eq(trainingSessionsTable.clerkId, clerkId),
+            eq(trainingSessionsTable.dedupeKey, dedupeKey),
+          ),
+        );
+      assert(!!afterFill, "merged session exists");
+      assert(
+        afterFill!.notes === "Lekker gevoel, wind mee op de terugweg.",
+        `file note filled the empty connector note → ${String(afterFill!.notes)}`,
+      );
+
+      // A later source with a DIFFERENT note must NOT overwrite the rider's note.
+      const laterBatch: NormalizedBatch = {
+        importedDataTypes: ["activities", "training_history"],
+        activities: [
+          {
+            externalId: "garmin-note-1",
+            sport: "cycling",
+            startedAt: START,
+            durationMin: 30,
+            notes: "Automatische titel van een ander platform.",
+          },
+        ],
+      };
+      await ingestBatch(clerkId, "garmin", laterBatch, { allowed });
+
+      const [afterLater] = await db
+        .select()
+        .from(trainingSessionsTable)
+        .where(
+          and(
+            eq(trainingSessionsTable.clerkId, clerkId),
+            eq(trainingSessionsTable.dedupeKey, dedupeKey),
+          ),
+        );
+      assert(
+        afterLater!.notes === "Lekker gevoel, wind mee op de terugweg.",
+        `existing note never overwritten by a later source → ${String(afterLater!.notes)}`,
+      );
     });
   } finally {
     await cleanup();
