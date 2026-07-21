@@ -282,9 +282,10 @@ export function ScreenShell({
                   onClick={() => setMenuOpen(true)}
                   aria-label="Menu openen"
                   title="Menu"
-                  className="rounded-full border border-white/15 p-1.5 text-white/60 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+                  className="flex items-center gap-1.5 rounded-full border border-cyan-300/40 bg-cyan-300/10 px-2.5 py-1.5 text-cyan-200 transition-colors hover:border-cyan-300/70 hover:bg-cyan-300/20"
                 >
-                  <Menu className="h-4 w-4" strokeWidth={1.75} />
+                  <Menu className="h-4 w-4" strokeWidth={2} />
+                  <span className="font-mono text-[10px] font-medium tracking-[0.18em]">MENU</span>
                 </button>
                 <div className="flex flex-col items-end gap-1.5">
                   <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{sectionLabel}</span>

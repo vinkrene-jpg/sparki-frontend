@@ -110,14 +110,14 @@ export function MainMenu({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex flex-col">
+    <div className="fixed inset-0 z-[80] flex flex-col overflow-y-auto overscroll-contain">
       <button
         type="button"
         aria-label="Menu sluiten"
         onClick={onClose}
-        className="absolute inset-0 bg-[#03050a]/80 backdrop-blur-md"
+        className="fixed inset-0 bg-[#03050a]/80 backdrop-blur-md"
       />
-      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pb-12 pt-12">
+      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pb-16 pt-12">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
