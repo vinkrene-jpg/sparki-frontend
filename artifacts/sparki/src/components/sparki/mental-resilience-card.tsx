@@ -5,11 +5,12 @@
 // staat als er te weinig gepland is.
 
 import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useLocation } from "wouter"
 import { apiFetch } from "@/lib/api"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
+import { Loader2 } from "lucide-react"
 
 type Technique = {
   key: string
@@ -44,6 +45,12 @@ type Preparation = {
   technique: Technique
 }
 
+type AthleteReflection = {
+  motivationBefore: number | null
+  mentalEffort: number | null
+  note: string | null
+}
+
 type Debrief = {
   workoutId: number
   date: string
@@ -51,6 +58,8 @@ type Debrief = {
   outcome: "volbracht" | "ingekort" | "gemist"
   facts: string
   reflection: string
+  athleteReflection: AthleteReflection | null
+  reflectionPrompt: string | null
 }
 
 type MentalOverview = {
@@ -159,6 +168,220 @@ const OUTCOME_LABEL: Record<Debrief["outcome"], string> = {
   volbracht: "Volbracht",
   ingekort: "Ingekort",
   gemist: "Niet gereden",
+}
+
+const MOTIVATION_LABELS = [
+  "Heel weinig zin",
+  "Weinig zin",
+  "Neutraal",
+  "Gemotiveerd",
+  "Heel gemotiveerd",
+]
+const EFFORT_LABELS = [
+  "Mentaal makkelijk",
+  "Redelijk licht",
+  "Gemiddeld",
+  "Mentaal zwaar",
+  "Mentaal loodzwaar",
+]
+
+function ScalePicker({
+  label,
+  value,
+  onChange,
+  endpoints,
+}: {
+  label: string
+  value: number | null
+  onChange: (v: number) => void
+  endpoints: [string, string]
+}) {
+  return (
+    <div>
+      <p className="text-[11px] text-white/45">{label}</p>
+      <div className="mt-1.5 flex gap-1.5">
+        {[1, 2, 3, 4, 5].map((v) => {
+          const active = value === v
+          return (
+            <button
+              key={v}
+              type="button"
+              onClick={() => onChange(v)}
+              className="h-8 flex-1 rounded-lg border font-mono text-[12px] tabular-nums transition-colors"
+              style={{
+                borderColor: active
+                  ? "rgba(120,210,230,0.5)"
+                  : "rgba(255,255,255,0.12)",
+                background: active ? "rgba(120,210,230,0.12)" : "transparent",
+                color: active ? ACCENT : "rgba(255,255,255,0.55)",
+              }}
+            >
+              {v}
+            </button>
+          )
+        })}
+      </div>
+      <div className="mt-1 flex justify-between text-[9px] text-white/30">
+        <span>{endpoints[0]}</span>
+        <span>{endpoints[1]}</span>
+      </div>
+    </div>
+  )
+}
+
+function useSaveReflection(workoutId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: {
+      motivationBefore: number | null
+      mentalEffort: number | null
+      note: string | null
+    }) =>
+      apiFetch(`/api/mental/reflection/${workoutId}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["mental-overview"] })
+    },
+  })
+}
+
+// The athlete's own mental reflection for the debriefed workout. When they
+// already reflected, it is shown back (confirm-first); otherwise one targeted
+// invite — never a blank form. Fully optional; any single signal is enough.
+function MentalReflectionBlock({ debrief }: { debrief: Debrief }) {
+  const existing = debrief.athleteReflection
+  const save = useSaveReflection(debrief.workoutId)
+  const [editing, setEditing] = useState(false)
+  const [motivation, setMotivation] = useState<number | null>(
+    existing?.motivationBefore ?? null,
+  )
+  const [effort, setEffort] = useState<number | null>(
+    existing?.mentalEffort ?? null,
+  )
+  const [note, setNote] = useState(existing?.note ?? "")
+
+  const canSave =
+    motivation != null || effort != null || note.trim().length > 0
+
+  const handleSave = () => {
+    save.mutate(
+      {
+        motivationBefore: motivation,
+        mentalEffort: effort,
+        note: note.trim() ? note.trim() : null,
+      },
+      { onSuccess: () => setEditing(false) },
+    )
+  }
+
+  // Read-only summary of an existing reflection.
+  if (existing && !editing) {
+    return (
+      <div className="mt-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+        <p className="text-[10px] font-medium uppercase tracking-wider text-white/35">
+          Jouw mentale reflectie
+        </p>
+        <div className="mt-1.5 flex flex-col gap-1">
+          {existing.motivationBefore != null && (
+            <p className="text-[12px] text-white/65">
+              Motivatie vooraf:{" "}
+              <span className="text-white/85">
+                {MOTIVATION_LABELS[existing.motivationBefore - 1]}
+              </span>
+            </p>
+          )}
+          {existing.mentalEffort != null && (
+            <p className="text-[12px] text-white/65">
+              Mentaal zwaar:{" "}
+              <span className="text-white/85">
+                {EFFORT_LABELS[existing.mentalEffort - 1]}
+              </span>
+            </p>
+          )}
+          {existing.note && (
+            <p className="text-[12px] italic leading-relaxed text-white/70">
+              “{existing.note}”
+            </p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="mt-2 text-[11px] underline decoration-white/25 underline-offset-2"
+          style={{ color: ACCENT }}
+        >
+          Aanpassen
+        </button>
+      </div>
+    )
+  }
+
+  // Invite / edit form.
+  return (
+    <div className="mt-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+      <p className="text-[10px] font-medium uppercase tracking-wider text-white/35">
+        Jouw mentale reflectie
+      </p>
+      {debrief.reflectionPrompt && !existing && (
+        <p className="mt-1.5 text-[12px] leading-relaxed text-white/55">
+          {debrief.reflectionPrompt}
+        </p>
+      )}
+      <div className="mt-3 flex flex-col gap-3">
+        <ScalePicker
+          label="Hoe was je motivatie vooraf?"
+          value={motivation}
+          onChange={setMotivation}
+          endpoints={["Geen zin", "Vol goede zin"]}
+        />
+        <ScalePicker
+          label="Hoe zwaar was het mentaal?"
+          value={effort}
+          onChange={setEffort}
+          endpoints={["Makkelijk", "Loodzwaar"]}
+        />
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          rows={2}
+          placeholder="Wat ging er in je hoofd om? (optioneel)…"
+          className="w-full resize-none rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-[13px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+        />
+      </div>
+      <div className="mt-3 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!canSave || save.isPending}
+          className="flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[12px] font-medium transition-colors disabled:opacity-40"
+          style={{
+            borderColor: "rgba(120,210,230,0.4)",
+            background: "rgba(120,210,230,0.1)",
+            color: ACCENT,
+          }}
+        >
+          {save.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+          Bewaren
+        </button>
+        {existing && (
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="text-[12px] text-white/45 transition-colors hover:text-white/70"
+          >
+            Annuleren
+          </button>
+        )}
+      </div>
+      {save.isError && (
+        <p className="mt-2 text-[11px] text-red-300/70">
+          Opslaan lukte niet. Probeer het zo opnieuw.
+        </p>
+      )}
+    </div>
+  )
 }
 
 export function MentalResilienceCard({ n }: { n?: string }) {
@@ -354,6 +577,7 @@ export function MentalResilienceCard({ n }: { n?: string }) {
                 <p className="mt-2 text-[12px] leading-relaxed text-white/60">
                   {data.overview.debrief.reflection}
                 </p>
+                <MentalReflectionBlock debrief={data.overview.debrief} />
               </div>
             )}
           </div>

@@ -176,6 +176,41 @@ export const workoutFeedbackTable = pgTable("workout_feedback", {
     .defaultNow(),
 });
 
+// Optional, first-person mental reflection on a completed workout. Where
+// workout_feedback records execution (done/missed/too_hard…), this captures the
+// subjective signal that never shows up in the numbers: how motivated the
+// athlete felt beforehand, how mentally taxing the session was, and one free
+// note about what went on in their head. Exactly one reflection per workout
+// (upserted), so the Mentale Weerbaarheid engine can reason with real feeling
+// data when present and stay honest when it is absent.
+export const workoutMentalReflectionsTable = pgTable(
+  "workout_mental_reflections",
+  {
+    id: serial("id").primaryKey(),
+    clerkId: text("clerk_id")
+      .notNull()
+      .references(() => userProfilesTable.clerkId, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    workoutId: integer("workout_id")
+      .notNull()
+      .unique()
+      .references(() => plannedWorkoutsTable.id, { onDelete: "cascade" }),
+    // 1 (heel weinig zin) – 5 (heel gemotiveerd). Null = niet ingevuld.
+    motivationBefore: integer("motivation_before"),
+    // 1 (mentaal makkelijk) – 5 (mentaal loodzwaar). Null = niet ingevuld.
+    mentalEffort: integer("mental_effort"),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+);
+
 export const insertTrainingSessionSchema = createInsertSchema(
   trainingSessionsTable,
 ).omit({ id: true });
@@ -210,6 +245,15 @@ export const insertWorkoutFeedbackSchema = createInsertSchema(
 ).omit({ id: true });
 export type WorkoutFeedback = typeof workoutFeedbackTable.$inferSelect;
 export type InsertWorkoutFeedback = z.infer<typeof insertWorkoutFeedbackSchema>;
+
+export const insertWorkoutMentalReflectionSchema = createInsertSchema(
+  workoutMentalReflectionsTable,
+).omit({ id: true });
+export type WorkoutMentalReflection =
+  typeof workoutMentalReflectionsTable.$inferSelect;
+export type InsertWorkoutMentalReflection = z.infer<
+  typeof insertWorkoutMentalReflectionSchema
+>;
 
 // ── Canonical structure stored in planned_workouts.structure (jsonb) ─────────
 // Computed by the plan generator from the athlete's real numbers. Shared between

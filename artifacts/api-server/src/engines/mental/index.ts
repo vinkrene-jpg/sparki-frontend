@@ -22,9 +22,11 @@ import {
   plannedWorkoutsTable,
   trainingSessionsTable,
   workoutFeedbackTable,
+  workoutMentalReflectionsTable,
   type PlannedWorkout,
   type TrainingSession,
   type WorkoutFeedback,
+  type WorkoutMentalReflection,
   type WorkoutStructure,
 } from "@workspace/db";
 
@@ -51,7 +53,9 @@ export type MentalPattern = {
     | "inkorten"
     | "afbreken"
     | "motivatie_dip"
-    | "vaste_zwakke_dag";
+    | "vaste_zwakke_dag"
+    | "lage_motivatie_vooraf"
+    | "mentaal_zwaar";
   label: string;
   detail: string; // plain Dutch, with the real counts
   occurrences: number;
@@ -75,6 +79,12 @@ export type MentalPreparation = {
   technique: MentalTechnique;
 };
 
+export type MentalReflection = {
+  motivationBefore: number | null; // 1-5
+  mentalEffort: number | null; // 1-5
+  note: string | null;
+};
+
 export type MentalDebrief = {
   workoutId: number;
   date: string;
@@ -82,6 +92,12 @@ export type MentalDebrief = {
   outcome: "volbracht" | "ingekort" | "gemist";
   facts: string; // real numbers: planned vs actual
   reflection: string; // honest, mental-execution focused
+  // The athlete's own first-person mental reflection for this workout, when
+  // they added one. Null = no subjective signal (the debrief stays honest).
+  athleteReflection: MentalReflection | null;
+  // A prompt inviting the athlete to add their subjective signal; shown only
+  // when no reflection exists yet (intelligent-werkblad: one targeted ask).
+  reflectionPrompt: string | null;
 };
 
 export type MentalOverview = {
@@ -178,6 +194,7 @@ type WorkoutFacts = {
   w: PlannedWorkout;
   session: TrainingSession | null;
   feedback: WorkoutFeedback[];
+  reflection: WorkoutMentalReflection | null;
   inPast: boolean;
   completed: boolean;
   missed: boolean;
@@ -192,8 +209,12 @@ export function buildWorkoutFacts(
   sessions: TrainingSession[],
   feedback: WorkoutFeedback[],
   today: string,
+  reflections: WorkoutMentalReflection[] = [],
 ): WorkoutFacts[] {
   const sessionById = new Map(sessions.map((s) => [s.id, s]));
+  const reflectionByWorkout = new Map(
+    reflections.map((r) => [r.workoutId, r]),
+  );
   const fbByWorkout = new Map<number, WorkoutFeedback[]>();
   for (const f of feedback) {
     const arr = fbByWorkout.get(f.workoutId) ?? [];
@@ -219,6 +240,7 @@ export function buildWorkoutFacts(
       w,
       session,
       feedback: fb,
+      reflection: reflectionByWorkout.get(w.id) ?? null,
       inPast,
       completed,
       missed,
@@ -383,6 +405,33 @@ export function computeMentalOverview(
       });
     }
   }
+  // ── Patterns from the athlete's own reflections (real subjective signal) ─────
+  // Only when they actually reflected — silent otherwise, never inferred.
+  const reflected = scoreWindow.filter((f) => f.reflection != null);
+  const lowMotivation = reflected.filter(
+    (f) => (f.reflection?.motivationBefore ?? 99) <= 2,
+  );
+  if (lowMotivation.length >= 2) {
+    patterns.push({
+      key: "lage_motivatie_vooraf",
+      label: "Weinig zin vooraf",
+      detail: `Bij ${lowMotivation.length} trainingen gaf je zelf aan met weinig motivatie te starten. Dat je toch bent begonnen, is precies de winst — het gevoel vooraf voorspelt de rit niet.`,
+      occurrences: lowMotivation.length,
+      technique: MENTAL_TECHNIQUES.acceptatie,
+    });
+  }
+  const mentallyHeavy = reflected.filter(
+    (f) => (f.reflection?.mentalEffort ?? 0) >= 4,
+  );
+  if (mentallyHeavy.length >= 2) {
+    patterns.push({
+      key: "mentaal_zwaar",
+      label: "Mentaal zware trainingen",
+      detail: `Je noteerde ${mentallyHeavy.length} trainingen als mentaal zwaar. Dat is een echt signaal om het hoofd net zo bewust voor te bereiden als de benen.`,
+      occurrences: mentallyHeavy.length,
+      technique: MENTAL_TECHNIQUES.chunking,
+    });
+  }
 
   // ── Risk factors & advice (from real patterns only) ────────────────────────
   const riskFactors: string[] = [];
@@ -412,6 +461,14 @@ export function computeMentalOverview(
       case "motivatie_dip":
         riskFactors.push("Een dip die doorzet kan van een paar gemiste trainingen een gestopt schema maken.");
         advice.push("Maak de eerstvolgende training bewust makkelijk en kort — één afgemaakte training breekt de spiraal.");
+        break;
+      case "lage_motivatie_vooraf":
+        riskFactors.push("Als weinig zin vooraf de norm wordt, kost elke start meer energie dan de training zelf.");
+        advice.push("Spreek een vaste startroutine af (10 minuten rustig, dan pas beslissen). Je hebt zelf al bewezen dat je ook met weinig zin doorrijdt.");
+        break;
+      case "mentaal_zwaar":
+        riskFactors.push("Structureel mentaal zware trainingen putten je focus uit als je ze alleen op wilskracht rijdt.");
+        advice.push("Bereid je hoofd voor zoals je benen: deel de rit op in blokken en kies vooraf één zin en één focuspunt.");
         break;
     }
   }
@@ -489,12 +546,40 @@ function buildDebrief(past: WorkoutFacts[]): MentalDebrief | null {
       : actual
         ? `Gereden: ${actual} min.`
         : "Geen rit-gegevens gevonden bij deze training.";
-  const reflection =
-    outcome === "volbracht"
-      ? "Afgemaakt zoals gepland — noteer voor jezelf wat vandaag hielp om door te rijden, dat is je recept voor de volgende zware dag."
-      : outcome === "ingekort"
-        ? "De rit werd korter dan gepland. Alleen jij weet wanneer het kantelde: was het je lichaam, of besliste je hoofd? Wat de data laat zien staat hierboven; het moment zelf ken jij het best."
-        : "Deze training is niet gereden. Geen oordeel — wel de vraag: wat was op dat moment de doorslag? Dat antwoord is de sleutel voor de volgende keer.";
+  const r = recent.reflection;
+  const hasReflection =
+    r != null &&
+    (r.motivationBefore != null ||
+      r.mentalEffort != null ||
+      (r.note != null && r.note.trim() !== ""));
+  // When the athlete added their own signal, reflect it back honestly instead
+  // of guessing; otherwise invite exactly that one missing piece.
+  let reflection: string;
+  if (hasReflection) {
+    reflection =
+      outcome === "volbracht"
+        ? "Afgemaakt zoals gepland. Wat je zelf noteerde hieronder is precies het soort signaal dat de cijfers niet laten zien — dat maakt het volgende advies scherper."
+        : outcome === "ingekort"
+          ? "De rit werd korter dan gepland. Dankzij wat je zelf noteerde hoeft Sparki niet te gissen of het je lichaam of je hoofd was."
+          : "Deze training is niet gereden. Wat je erover noteerde hieronder telt mee — geen oordeel, wel context voor de volgende keer.";
+  } else {
+    reflection =
+      outcome === "volbracht"
+        ? "Afgemaakt zoals gepland — noteer voor jezelf wat vandaag hielp om door te rijden, dat is je recept voor de volgende zware dag."
+        : outcome === "ingekort"
+          ? "De rit werd korter dan gepland. Alleen jij weet wanneer het kantelde: was het je lichaam, of besliste je hoofd? Wat de data laat zien staat hierboven; het moment zelf ken jij het best."
+          : "Deze training is niet gereden. Geen oordeel — wel de vraag: wat was op dat moment de doorslag? Dat antwoord is de sleutel voor de volgende keer.";
+  }
+  const athleteReflection: MentalReflection | null = hasReflection
+    ? {
+        motivationBefore: r!.motivationBefore ?? null,
+        mentalEffort: r!.mentalEffort ?? null,
+        note: r!.note?.trim() ? r!.note.trim() : null,
+      }
+    : null;
+  const reflectionPrompt = hasReflection
+    ? null
+    : "Wat er in je hoofd omging staat niet in de data. Voeg het in één keer toe — hoe was je motivatie vooraf en hoe zwaar was het mentaal?";
   return {
     workoutId: recent.w.id,
     date: recent.w.scheduledDate,
@@ -502,6 +587,8 @@ function buildDebrief(past: WorkoutFacts[]): MentalDebrief | null {
     outcome,
     facts,
     reflection,
+    athleteReflection,
+    reflectionPrompt,
   };
 }
 
@@ -529,7 +616,7 @@ export async function getMentalOverview(
     .filter((id): id is number => id != null);
   const workoutIds = workouts.map((w) => w.id);
 
-  const [sessions, feedback] = await Promise.all([
+  const [sessions, feedback, reflections] = await Promise.all([
     sessionIds.length > 0
       ? db
           .select()
@@ -542,9 +629,23 @@ export async function getMentalOverview(
           .from(workoutFeedbackTable)
           .where(inArray(workoutFeedbackTable.workoutId, workoutIds))
       : Promise.resolve([]),
+    workoutIds.length > 0
+      ? db
+          .select()
+          .from(workoutMentalReflectionsTable)
+          .where(
+            inArray(workoutMentalReflectionsTable.workoutId, workoutIds),
+          )
+      : Promise.resolve([]),
   ]);
 
-  const facts = buildWorkoutFacts(workouts, sessions, feedback, today);
+  const facts = buildWorkoutFacts(
+    workouts,
+    sessions,
+    feedback,
+    today,
+    reflections,
+  );
   const base = computeMentalOverview(facts, today);
   return {
     ...base,
@@ -567,6 +668,19 @@ export async function mentalContextBlock(clerkId: string): Promise<string> {
     ];
     for (const p of o.patterns) lines.push(`- Patroon: ${p.label} — ${p.detail}`);
     if (o.patterns.length === 0) lines.push("- Geen opvallende patronen: uitvoering is stabiel.");
+    const ar = o.debrief?.athleteReflection;
+    if (ar) {
+      const bits: string[] = [];
+      if (ar.motivationBefore != null)
+        bits.push(`motivatie vooraf ${ar.motivationBefore}/5`);
+      if (ar.mentalEffort != null)
+        bits.push(`mentaal zwaar ${ar.mentalEffort}/5`);
+      if (ar.note) bits.push(`eigen woorden: "${ar.note}"`);
+      if (bits.length > 0)
+        lines.push(
+          `- Eigen mentale reflectie bij laatste training (${o.debrief!.title}): ${bits.join("; ")}.`,
+        );
+    }
     lines.push(
       "Gebruik dit voor coaching op motivatie/discipline/focus. GEEN medische duiding (geen burn-out/depressie/diagnose). Als de sporter mentaal worstelt met een training: erken het gevoel kort, en geef één concrete techniek (opdelen, ademhaling, zelfspraak, visualisatie, aandacht verleggen of accepteren-en-starten).",
     );
