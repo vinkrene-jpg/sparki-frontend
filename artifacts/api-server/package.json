@@ -51,6 +51,7 @@
     "test:goals": "node ./scripts/run-test.mjs goals",
     "test:scheduled-tasks": "node ./scripts/run-test.mjs scheduled-tasks",
     "test:scheduled-tasks-route": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs scheduled-tasks-route",
+    "test:garage-sensors": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs garage-sensors",
     "test:onboarding-connect-step": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs onboarding-connect-step",
     "test:onboarding-strava-gapfill": "node ./scripts/run-test.mjs onboarding-strava-gapfill",
     "test:feedback-adjust": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs feedback-adjust",

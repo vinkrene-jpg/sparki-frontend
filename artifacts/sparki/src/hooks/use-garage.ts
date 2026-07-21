@@ -73,10 +73,33 @@ export type EquipmentSuggestion = {
   distanceKm: string | null
 }
 
+// Draadloze onderdelen — alleen wattagemeter/hartslagmeter/cadans-snelheid
+// hebben een standaard Bluetooth-profiel dat de browser echt kan koppelen
+// (pairable: true van de server). Horloge en elektronische derailleur zijn
+// registratie-only; dat wordt eerlijk zo getoond.
+export type GarageSensorKind =
+  | "wattagemeter"
+  | "hartslagmeter"
+  | "cadans_snelheid"
+  | "horloge"
+  | "derailleur"
+
+export type GarageSensor = {
+  id: number
+  bikeId: number | null
+  kind: GarageSensorKind
+  brand: string | null
+  model: string | null
+  deviceName: string | null
+  batteryNote: string | null
+  pairable: boolean
+}
+
 export type GarageOverview = {
   bikes: GarageBike[]
   personalGear: GarageComponent[]
   equipmentSuggestions: EquipmentSuggestion[]
+  sensors: GarageSensor[]
 }
 
 export type UpgradeAdvice = {
@@ -196,6 +219,48 @@ export function useDeleteComponent() {
     apiFetch<{ ok: true }>(`/api/garage/components/${id}`, {
       method: "DELETE",
     }),
+  )
+}
+
+export function useAddSensor() {
+  return useGarageMutation(
+    (input: {
+      bikeId?: number | null
+      kind: GarageSensorKind
+      brand?: string
+      model?: string
+      deviceName?: string
+      batteryNote?: string
+    }) =>
+      apiFetch<{ sensor: GarageSensor }>("/api/garage/sensors", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+  )
+}
+
+export function useUpdateSensor() {
+  return useGarageMutation(
+    (input: {
+      id: number
+      bikeId?: number | null
+      brand?: string | null
+      model?: string | null
+      deviceName?: string | null
+      batteryNote?: string | null
+    }) => {
+      const { id, ...rest } = input
+      return apiFetch<{ sensor: GarageSensor }>(`/api/garage/sensors/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(rest),
+      })
+    },
+  )
+}
+
+export function useDeleteSensor() {
+  return useGarageMutation((id: number) =>
+    apiFetch<{ ok: true }>(`/api/garage/sensors/${id}`, { method: "DELETE" }),
   )
 }
 

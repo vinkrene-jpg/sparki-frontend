@@ -4,12 +4,16 @@ import {
   db,
   garageBikesTable,
   garageComponentsTable,
+  garageSensorsTable,
   equipmentTable,
   athleteProfilesTable,
   garageBikeTypes,
   garageComponentCategories,
+  garageSensorKinds,
+  pairableSensorKinds,
   type GarageBike,
   type GarageComponent,
+  type GarageSensorKind,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
@@ -37,13 +41,24 @@ function withAssessment(c: GarageComponent) {
   return { ...c, assessment: assessComponent(c.category, c.brand, c.model) };
 }
 
+// Whether this sensor kind can be live-paired in the browser (standard
+// Bluetooth GATT profile). Watches and electronic derailleurs cannot — that is
+// stated honestly in the UI, never faked.
+function isPairableKind(kind: string): boolean {
+  return (pairableSensorKinds as readonly string[]).includes(kind);
+}
+
+function withPairable<T extends { kind: string }>(s: T) {
+  return { ...s, pairable: isPairableKind(s.kind) };
+}
+
 // GET /api/garage — the whole garage: bikes (with components + honest
 // assessments), personal gear, and unlinked equipment rows (e.g. from Strava)
 // as a starting point so nothing is entered twice.
 router.get("/", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
-    const [bikes, components, equipment] = await Promise.all([
+    const [bikes, components, equipment, sensors] = await Promise.all([
       db
         .select()
         .from(garageBikesTable)
@@ -60,6 +75,11 @@ router.get("/", requireAuth, async (req, res) => {
         .where(
           and(eq(equipmentTable.clerkId, clerkId), eq(equipmentTable.active, true)),
         ),
+      db
+        .select()
+        .from(garageSensorsTable)
+        .where(eq(garageSensorsTable.clerkId, clerkId))
+        .orderBy(garageSensorsTable.id),
     ]);
 
     const linkedEquipmentIds = new Set(
@@ -85,6 +105,7 @@ router.get("/", requireAuth, async (req, res) => {
     res.json({
       bikes: bikes.map((b) => ({ ...b, components: byBike.get(b.id) ?? [] })),
       personalGear: personal,
+      sensors: sensors.map(withPairable),
       equipmentSuggestions: suggestions.map((e) => ({
         id: e.id,
         name: e.name,
@@ -516,6 +537,151 @@ router.get("/pro-teams", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "garage.proTeams failed");
     res.status(500).json({ error: "Kon profploegen niet laden" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Draadloze onderdelen (Bluetooth sensors) — owner-gated CRUD. `pairable` is
+// derived from the kind and returned honestly: only power (GATT 0x1818),
+// heart rate (0x180d) and cadence/speed (0x1816) have a standard Bluetooth
+// profile the browser can read. Watches and electronic derailleurs are
+// register-only equipment; the UI says so in plain Dutch.
+
+async function ownedBikeId(
+  clerkId: string,
+  raw: unknown,
+): Promise<number | null | "invalid" | "notfound"> {
+  if (raw == null) return null;
+  const id = Number(raw);
+  if (!Number.isInteger(id)) return "invalid";
+  const [owned] = await db
+    .select({ id: garageBikesTable.id })
+    .from(garageBikesTable)
+    .where(and(eq(garageBikesTable.id, id), eq(garageBikesTable.clerkId, clerkId)));
+  return owned ? id : "notfound";
+}
+
+// POST /api/garage/sensors — register a wireless part, linked to one of the
+// athlete's bikes or loose (bikeId null).
+router.post("/sensors", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const kind = String(body.kind ?? "");
+  if (!(garageSensorKinds as readonly string[]).includes(kind)) {
+    res.status(400).json({ error: "Onbekend soort draadloos onderdeel" });
+    return;
+  }
+  const bikeId = await ownedBikeId(clerkId, body.bikeId);
+  if (bikeId === "invalid") {
+    res.status(400).json({ error: "Ongeldig fiets-id" });
+    return;
+  }
+  if (bikeId === "notfound") {
+    res.status(404).json({ error: "Fiets niet gevonden" });
+    return;
+  }
+  try {
+    const [row] = await db
+      .insert(garageSensorsTable)
+      .values({
+        clerkId,
+        bikeId,
+        kind: kind as GarageSensorKind,
+        brand: str(body.brand, 80),
+        model: str(body.model, 120),
+        // Device name only makes sense for kinds the browser can really pair.
+        deviceName: isPairableKind(kind) ? str(body.deviceName, 120) : null,
+        batteryNote: str(body.batteryNote, 200),
+      })
+      .returning();
+    res.json({ sensor: withPairable(row!) });
+  } catch (err) {
+    req.log.error({ err }, "garage.addSensor failed");
+    res.status(500).json({ error: "Kon het draadloze onderdeel niet opslaan" });
+  }
+});
+
+// PATCH /api/garage/sensors/:id — update fields or move to another bike
+// (bikeId: null detaches; a bikeId must be the athlete's own bike).
+router.patch("/sensors/:id", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldig id" });
+    return;
+  }
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  try {
+    const [existing] = await db
+      .select()
+      .from(garageSensorsTable)
+      .where(
+        and(eq(garageSensorsTable.id, id), eq(garageSensorsTable.clerkId, clerkId)),
+      );
+    if (!existing) {
+      res.status(404).json({ error: "Draadloos onderdeel niet gevonden" });
+      return;
+    }
+    const updates: Partial<typeof garageSensorsTable.$inferInsert> = {
+      updatedAt: new Date(),
+    };
+    if ("brand" in body) updates.brand = str(body.brand, 80);
+    if ("model" in body) updates.model = str(body.model, 120);
+    if ("batteryNote" in body) updates.batteryNote = str(body.batteryNote, 200);
+    if ("deviceName" in body) {
+      updates.deviceName = isPairableKind(existing.kind)
+        ? str(body.deviceName, 120)
+        : null;
+    }
+    if ("bikeId" in body) {
+      const bikeId = await ownedBikeId(clerkId, body.bikeId);
+      if (bikeId === "invalid") {
+        res.status(400).json({ error: "Ongeldig fiets-id" });
+        return;
+      }
+      if (bikeId === "notfound") {
+        res.status(404).json({ error: "Fiets niet gevonden" });
+        return;
+      }
+      updates.bikeId = bikeId;
+    }
+    const [row] = await db
+      .update(garageSensorsTable)
+      .set(updates)
+      .where(
+        and(eq(garageSensorsTable.id, id), eq(garageSensorsTable.clerkId, clerkId)),
+      )
+      .returning();
+    res.json({ sensor: withPairable(row!) });
+  } catch (err) {
+    req.log.error({ err }, "garage.updateSensor failed");
+    res.status(500).json({ error: "Kon het draadloze onderdeel niet bijwerken" });
+  }
+});
+
+// DELETE /api/garage/sensors/:id — owner-gated.
+router.delete("/sensors/:id", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldig id" });
+    return;
+  }
+  try {
+    const deleted = await db
+      .delete(garageSensorsTable)
+      .where(
+        and(eq(garageSensorsTable.id, id), eq(garageSensorsTable.clerkId, clerkId)),
+      )
+      .returning({ id: garageSensorsTable.id });
+    if (deleted.length === 0) {
+      res.status(404).json({ error: "Draadloos onderdeel niet gevonden" });
+      return;
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "garage.deleteSensor failed");
+    res.status(500).json({ error: "Kon het draadloze onderdeel niet verwijderen" });
   }
 });
 

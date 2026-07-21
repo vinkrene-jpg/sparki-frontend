@@ -32,6 +32,8 @@ import {
   type SprintBoard,
 } from "@/hooks/use-sprints"
 import { usePowerMeter } from "@/hooks/use-power-meter"
+import { useGarage } from "@/hooks/use-garage"
+import { SENSOR_KIND_LABEL } from "@/components/sparki/wireless-sensors"
 import { apiFetch } from "@/lib/api"
 import type { PlannedWorkout } from "@/lib/athlete-types"
 import { WorkoutHud } from "@/components/sparki/workout-hud"
@@ -303,6 +305,17 @@ export function RouteNavigator({
   // ── Bordjes sprinten ──────────────────────────────────────────────
   const submitSprint = useSubmitSprint()
   const power = usePowerMeter()
+  // Saved wireless parts from the Fietsengarage — shown at ride start so the
+  // rider recognises their own sensors. Only kinds the browser can really pair
+  // (pairable: true) are listed here; "Opnieuw koppelen" opens the browser's
+  // own Bluetooth chooser, which always asks for confirmation itself.
+  const garageQuery = useGarage()
+  const savedSensors = (garageQuery.data?.sensors ?? []).filter(
+    (s) => s.pairable,
+  )
+  const bikeNameById = new Map(
+    (garageQuery.data?.bikes ?? []).map((b) => [b.id, b.name]),
+  )
   // While the browser's Bluetooth chooser is open, cancelling it (often via
   // Escape) must NOT also close the whole navigation window.
   const pairingRef = useRef(false)
@@ -1348,6 +1361,25 @@ export function RouteNavigator({
               <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
                 Sensoren
               </p>
+              {savedSensors.length > 0 && (
+                <div className="mb-2 space-y-1">
+                  {savedSensors.map((s) => (
+                    <p key={s.id} className="text-[11px] leading-snug text-white/55">
+                      <span className="text-white/80">
+                        {[s.brand, s.model].filter(Boolean).join(" ") ||
+                          s.deviceName ||
+                          SENSOR_KIND_LABEL[s.kind]}
+                      </span>{" "}
+                      <span className="text-white/35">
+                        · {SENSOR_KIND_LABEL[s.kind]}
+                        {s.bikeId != null && bikeNameById.has(s.bikeId)
+                          ? ` · ${bikeNameById.get(s.bikeId)}`
+                          : ""}
+                      </span>
+                    </p>
+                  ))}
+                </div>
+              )}
               {!power.supported ? (
                 <p className="text-[11px] leading-snug text-white/45">
                   Deze telefoon of browser ondersteunt geen
@@ -1368,14 +1400,24 @@ export function RouteNavigator({
                   </button>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={connectSensors}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/30 px-3 py-1.5 text-[11px] text-cyan-200 transition hover:bg-cyan-400/10"
-                >
-                  <Bluetooth className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  Watt &amp; cadans koppelen
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={connectSensors}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/30 px-3 py-1.5 text-[11px] text-cyan-200 transition hover:bg-cyan-400/10"
+                  >
+                    <Bluetooth className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    {savedSensors.length > 0
+                      ? "Opnieuw koppelen"
+                      : "Watt & cadans koppelen"}
+                  </button>
+                  {savedSensors.length > 0 && (
+                    <p className="mt-1.5 text-[11px] leading-snug text-white/35">
+                      De browser vraagt bij elke rit opnieuw om bevestiging —
+                      dat kan niet automatisch.
+                    </p>
+                  )}
+                </>
               )}
               {power.error && (
                 <p className="mt-1.5 text-[11px] leading-snug text-[rgba(255,180,120,0.9)]">

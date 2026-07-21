@@ -27,7 +27,9 @@ import {
   type GarageComponent,
   type GarageComponentCategory,
   type EquipmentSuggestion,
+  type GarageSensor,
 } from "@/hooks/use-garage"
+import { WirelessSensorsBlock } from "@/components/sparki/wireless-sensors"
 
 const BIKE_TYPES: { key: GarageBikeType; label: string }[] = [
   { key: "race", label: "Racefiets" },
@@ -319,7 +321,13 @@ function UpgradePanel({ bike }: { bike: GarageBike }) {
   )
 }
 
-function BikeCard({ bike }: { bike: GarageBike }) {
+function BikeCard({
+  bike,
+  sensors,
+}: {
+  bike: GarageBike
+  sensors: GarageSensor[]
+}) {
   const deleteBike = useDeleteBike()
   const deleteComponent = useDeleteComponent()
   const addPhoto = useAddBikePhoto()
@@ -461,6 +469,8 @@ function BikeCard({ bike }: { bike: GarageBike }) {
               </button>
             </div>
           )}
+
+          <WirelessSensorsBlock bikeId={bike.id} sensors={sensors} />
 
           <UpgradePanel bike={bike} />
         </div>
@@ -706,7 +716,7 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
           )}
 
           {data.bikes.map((b) => (
-            <BikeCard key={b.id} bike={b} />
+            <BikeCard key={b.id} bike={b} sensors={data.sensors ?? []} />
           ))}
 
           {data.bikes.length === 0 && !addingBike && !adoptSuggestion && (
@@ -765,6 +775,10 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
                 Uitrusting toevoegen
               </button>
             )}
+          </div>
+
+          <div className="mt-2">
+            <WirelessSensorsBlock bikeId={null} sensors={data.sensors ?? []} />
           </div>
 
           <Developments />

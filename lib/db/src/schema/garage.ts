@@ -99,6 +99,59 @@ export const garageComponentsTable = pgTable("garage_components", {
     .defaultNow(),
 });
 
+// Draadloze onderdelen — Bluetooth sensors and wireless equipment. A sensor
+// belongs to the athlete and optionally to one bike (bikeId null = loose gear
+// such as a heart-rate strap that travels with the body, not a bike). Whether a
+// kind can be live-paired in the browser is DERIVED from the kind (standard
+// Bluetooth GATT profiles: power, heart rate, cadence/speed) — a watch or an
+// electronic derailleur uses proprietary protocols the browser cannot read, so
+// those are registered as equipment only, never shown as live-linkable.
+
+export const garageSensorKinds = [
+  "wattagemeter",
+  "hartslagmeter",
+  "cadans_snelheid",
+  "horloge",
+  "derailleur",
+] as const;
+export type GarageSensorKind = (typeof garageSensorKinds)[number];
+
+// Kinds with a standard Bluetooth profile the browser can pair with live.
+export const pairableSensorKinds: readonly GarageSensorKind[] = [
+  "wattagemeter",
+  "hartslagmeter",
+  "cadans_snelheid",
+] as const;
+
+export const garageSensorsTable = pgTable("garage_sensors", {
+  id: serial("id").primaryKey(),
+  clerkId: text("clerk_id")
+    .notNull()
+    .references(() => userProfilesTable.clerkId, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  // Null = loose sensor (not tied to one bike). A deleted bike releases its
+  // sensors instead of destroying them — the device still exists.
+  bikeId: integer("bike_id").references(() => garageBikesTable.id, {
+    onDelete: "set null",
+  }),
+  kind: text("kind").notNull(),
+  brand: text("brand"),
+  model: text("model"),
+  // Bluetooth advertising name captured during a real pairing (pairable kinds
+  // only) — used to recognise the device again at ride start.
+  deviceName: text("device_name"),
+  // Optional plain-text battery note (e.g. "CR2032, vervangen mrt 2026").
+  batteryNote: text("battery_note"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const insertGarageBikeSchema = createInsertSchema(
   garageBikesTable,
 ).omit({ id: true });
