@@ -116,6 +116,25 @@ export function useGeocode() {
   });
 }
 
+// The athlete's own realistic pace (median avg speed of representative recent
+// rides). personalKph is null when there is not enough real ride data — the UI
+// must say so honestly instead of pretending.
+export type RoutePace = {
+  personalKph: number | null;
+  sampleCount: number;
+  windowDays: number;
+};
+
+export function useRoutePace() {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: ["routes", "pace"],
+    queryFn: () => apiFetch<RoutePace>("/api/routes/pace"),
+    enabled: isSignedIn === true || DEV_PREVIEW,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useRoutes() {
   const { isSignedIn } = useUser();
   return useQuery({

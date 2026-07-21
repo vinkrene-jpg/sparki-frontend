@@ -11,6 +11,7 @@ import {
   useSaveGeneratedRoute,
   useDownloadRoute,
   useShareRoute,
+  useRoutePace,
   canShareRouteFiles,
   type RouteExportFormat,
   type SparkiRoute,
@@ -157,6 +158,116 @@ function formatDuration(sec: number | null): string {
   const h = Math.floor(total / 60)
   const m = total % 60
   return h > 0 ? `${h}u ${m}m` : `${m}m`
+}
+
+// Personal tempo block under the route stats. The "Duur" stat above comes from
+// the routeplanner's standard tempo — NOT the rider's own condition. This block
+// is honest about that, shows the expected average speed, defaults it to the
+// rider's own real pace (median of recent rides) when available, and lets the
+// rider adjust it — with the consequence (new duration) recalculated live.
+function TempoBlock({
+  distanceKm,
+  routerDurationSec,
+}: {
+  distanceKm: number | null
+  routerDurationSec: number | null
+}) {
+  const pace = useRoutePace()
+  const personalKph = pace.data?.personalKph ?? null
+  const sampleCount = pace.data?.sampleCount ?? 0
+
+  // Router-implied speed, derivable from its own numbers.
+  const routerKph =
+    distanceKm != null && routerDurationSec != null && routerDurationSec > 0
+      ? Math.round((distanceKm / (routerDurationSec / 3600)) * 10) / 10
+      : null
+
+  // The rider's chosen expected speed. Starts at their own real pace when we
+  // have it, otherwise at the router's tempo. Adjustable in 0,5 km/u steps.
+  const [chosenKph, setChosenKph] = useState<number | null>(null)
+  const effectiveKph = chosenKph ?? personalKph ?? routerKph
+
+  if (distanceKm == null || effectiveKph == null) return null
+
+  const expectedSec = Math.round((distanceKm / effectiveKph) * 3600)
+  const deltaMin =
+    routerDurationSec != null
+      ? Math.round((expectedSec - routerDurationSec) / 60)
+      : null
+
+  const step = (d: number) =>
+    setChosenKph(Math.min(60, Math.max(8, Math.round((effectiveKph + d) * 2) / 2)))
+
+  const basis =
+    personalKph != null
+      ? `Gebaseerd op je eigen ritten: mediaan ${personalKph.toString().replace(".", ",")} km/u over ${sampleCount} recente ritten.`
+      : "Er zijn nog te weinig eigen ritten om je tempo te kennen — dit start op het standaardtempo van de routeplanner."
+
+  return (
+    <div className="mt-3 rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+            Verwacht tempo
+          </p>
+          <div className="mt-1 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => step(-0.5)}
+              aria-label="Langzamer"
+              className="h-6 w-6 rounded-full border border-white/10 font-mono text-[12px] text-white/60 transition hover:text-white/90"
+            >
+              −
+            </button>
+            <span className="font-sans text-[15px] tabular-nums text-white/90">
+              {effectiveKph.toString().replace(".", ",")} km/u
+            </span>
+            <button
+              type="button"
+              onClick={() => step(0.5)}
+              aria-label="Sneller"
+              className="h-6 w-6 rounded-full border border-white/10 font-mono text-[12px] text-white/60 transition hover:text-white/90"
+            >
+              +
+            </button>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+            Jouw verwachte duur
+          </p>
+          <p className="mt-1 font-sans text-[15px] tabular-nums text-white/90">
+            {formatDuration(expectedSec)}
+          </p>
+        </div>
+      </div>
+      <p className="mt-2 text-[11px] leading-relaxed text-white/45">
+        {basis}
+        {" "}De "Duur" hierboven komt van de routeplanner
+        {routerKph != null
+          ? ` (standaardtempo ~${routerKph.toString().replace(".", ",")} km/u)`
+          : ""}
+        , niet van jouw conditie.
+        {deltaMin != null && Math.abs(deltaMin) >= 5 && (
+          <>
+            {" "}Bij dit tempo ben je{" "}
+            <span className="text-white/70">
+              {Math.abs(deltaMin)} min {deltaMin > 0 ? "langer" : "korter"}
+            </span>{" "}
+            onderweg dan de planner rekent.
+          </>
+        )}
+        {personalKph != null &&
+          effectiveKph >= personalKph + 2 && (
+            <>
+              {" "}Let op: dit ligt duidelijk boven je eigen gemiddelde van de
+              afgelopen maanden — reken er alleen op met wind mee of in een
+              groep.
+            </>
+          )}
+      </p>
+    </div>
+  )
 }
 
 function Climbs({ climbs }: { climbs: RouteClimb[] }) {
@@ -545,6 +656,11 @@ function RouteCard({
         <Divider />
         <Stat label="Ondergrond" value={SURFACE_LABEL[route.surface] ?? route.surface} />
       </div>
+
+      <TempoBlock
+        distanceKm={route.distanceKm}
+        routerDurationSec={route.durationSec}
+      />
 
       <Climbs climbs={climbs} />
 

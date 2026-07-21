@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull } from "drizzle-orm";
 import {
   db,
   routesTable,
+  trainingSessionsTable,
   activityImportsTable,
   plannedWorkoutsTable,
   routeSurfaces,
@@ -316,6 +317,66 @@ router.get("/geocode", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "routes.geocode failed");
     res.status(500).json({ error: "Kon adres niet zoeken" });
+  }
+});
+
+// GET /api/routes/pace — the athlete's own realistic riding pace, derived from
+// REAL recent ride data (avg speed of rides in the last 120 days with enough
+// distance to be representative). Used to personalise a route's expected
+// duration honestly: when there is no ride data, personalKph is null and the
+// frontend says so instead of pretending. Declared BEFORE "/:id".
+router.get("/pace", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const cutoff = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+    const rows = await db
+      .select({
+        avgSpeedKph: trainingSessionsTable.avgSpeedKph,
+        distanceKm: trainingSessionsTable.distanceKm,
+      })
+      .from(trainingSessionsTable)
+      .where(
+        and(
+          eq(trainingSessionsTable.clerkId, clerkId),
+          eq(trainingSessionsTable.sport, "cycling"),
+          isNotNull(trainingSessionsTable.avgSpeedKph),
+          gte(trainingSessionsTable.sessionDate, cutoff),
+        ),
+      )
+      .orderBy(desc(trainingSessionsTable.sessionDate))
+      .limit(200);
+
+    // Only rides long enough to reflect a sustainable pace (≥15 km) and with a
+    // plausible speed. Median, not mean, so one fast group ride can't skew it.
+    const speeds = rows
+      .filter((r) => {
+        const d = r.distanceKm != null ? Number(r.distanceKm) : null;
+        const s = r.avgSpeedKph != null ? Number(r.avgSpeedKph) : null;
+        return d != null && d >= 15 && s != null && s >= 8 && s <= 60;
+      })
+      .map((r) => Number(r.avgSpeedKph))
+      .sort((a, b) => a - b);
+
+    if (speeds.length < 3) {
+      // Fewer than 3 representative rides: an honest "not enough data".
+      res.json({ personalKph: null, sampleCount: speeds.length, windowDays: 120 });
+      return;
+    }
+    const mid = Math.floor(speeds.length / 2);
+    const median =
+      speeds.length % 2 === 1
+        ? speeds[mid]
+        : (speeds[mid - 1] + speeds[mid]) / 2;
+    res.json({
+      personalKph: Math.round(median * 10) / 10,
+      sampleCount: speeds.length,
+      windowDays: 120,
+    });
+  } catch (err) {
+    req.log.error({ err }, "routes.pace failed");
+    res.status(500).json({ error: "Kon je eigen tempo niet berekenen" });
   }
 });
 
