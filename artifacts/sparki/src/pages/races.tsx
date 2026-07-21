@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useLocation } from "wouter"
+import { useFixParams } from "@/hooks/use-missing-input"
 import { ChevronLeft, CloudSun, MapPin, Clock, Users, Sparkles, Film } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
@@ -373,6 +374,18 @@ export default function RacesPage() {
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }))
+
+  // Deep-link ?focus=new (e.g. "Voeg een doel toe" op Trainen) opens the create
+  // form directly, then strips the param so a refresh/back doesn't re-open it.
+  const { focus } = useFixParams()
+  const focusHandled = useRef(false)
+  useEffect(() => {
+    if (focus !== "new" || focusHandled.current) return
+    focusHandled.current = true
+    startCreate()
+    setLocation("/races", { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus])
 
   function startCreate() {
     setForm(EMPTY_FORM)
