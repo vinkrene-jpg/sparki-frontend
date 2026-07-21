@@ -187,6 +187,7 @@ const POI_ICONS: Record<string, string> = {
   Monument: "🗿",
   "Ruïne": "🏚️",
   Molen: "🌬️",
+  Fietsenwinkel: "🔧",
 }
 
 // Full-screen live-navigation window for the web. Uses the browser Geolocation
@@ -356,11 +357,13 @@ export function RouteNavigator({
     id: string
     name: string
     kind: string
-    category: "bezienswaardigheid" | "horeca"
+    category: "bezienswaardigheid" | "horeca" | "service"
     lat: number
     lon: number
     routeKm: number
     offRouteM: number
+    openState?: "open" | "closed" | "unknown"
+    openingHours?: string
   }
   const [pois, setPois] = useState<Poi[]>([])
   const [selectedPoi, setSelectedPoi] = useState<Poi | null>(null)
@@ -1342,6 +1345,22 @@ export function RouteNavigator({
                   {selectedPoi.kind} · bij km {selectedPoi.routeKm} ·{" "}
                   {fmtMeters(selectedPoi.offRouteM)} van de route
                 </p>
+                {selectedPoi.category === "service" && (
+                  <p className="truncate text-[12px]">
+                    {selectedPoi.openState === "open" ? (
+                      <span className="text-emerald-300/90">
+                        Nu open
+                        {selectedPoi.openingHours
+                          ? ` · ${selectedPoi.openingHours}`
+                          : ""}
+                      </span>
+                    ) : (
+                      <span className="text-white/45">
+                        Openingstijden onbekend — bel of check vooraf
+                      </span>
+                    )}
+                  </p>
+                )}
               </div>
               <button
                 type="button"
