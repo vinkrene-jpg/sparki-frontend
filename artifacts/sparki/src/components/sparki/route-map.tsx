@@ -64,6 +64,7 @@ export function RouteMap({
   climbs = [],
   center,
   myLocation,
+  focusMyLocation = 0,
   onMapClick,
   onWaypointDrag,
   onWaypointClick,
@@ -85,6 +86,10 @@ export function RouteMap({
   // startpoint) — shown as a distinct "jij bent hier" dot so the rider can
   // always find themselves on the map. Never passed for a guessed location.
   myLocation?: [number, number]
+  // Bump this counter to force the view onto myLocation (street-level zoom),
+  // e.g. when the rider taps "Centreer op mij" — even if the coords are the
+  // same as before and even when a route/waypoints are on the map.
+  focusMyLocation?: number
   onMapClick?: (lat: number, lon: number) => void
   onWaypointDrag?: (index: number, lat: number, lon: number) => void
   onWaypointClick?: (index: number) => void
@@ -123,13 +128,14 @@ export function RouteMap({
     // Only the licence-required © OpenStreetMap/CARTO credit — no Leaflet
     // software plug, and styled ultra-subtle via CSS (index.css).
     map.attributionControl.setPrefix(false)
+    // CARTO "voyager" tiles: soft colours with clearly readable street names.
+    // The earlier dark tiles were too hard to read, even brightness-boosted.
     L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
       {
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
         maxZoom: 19,
-        className: "sparki-map-tiles",
       },
     ).addTo(map)
     map.on("click", (e: L.LeafletMouseEvent) => {
@@ -309,14 +315,25 @@ export function RouteMap({
     } else if (fitPoints.length === 1) {
       map.setView(fitPoints[0]!, 13)
     } else if (myLocation) {
-      // Centred on the rider: close enough to recognise your own streets.
-      map.setView(myLocation, 14)
+      // Centred on the rider: street-level, so you instantly recognise where
+      // you are.
+      map.setView(myLocation, 16)
     } else if (center) {
       map.setView(center, 8)
     }
     // Tiles can mis-size if the container was hidden when initialised.
     setTimeout(() => map.invalidateSize(), 80)
   }, [geometry, waypoints, meetpoints, climbs, isBuilder, center, myLocation])
+
+  // "Centreer op mij": explicitly jump to the rider's position at street-level
+  // zoom, regardless of what else is on the map. Triggered via the counter so
+  // repeated taps keep working even when the coordinates don't change.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !myLocation || focusMyLocation === 0) return
+    map.setView(myLocation, 16, { animate: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusMyLocation])
 
   return (
     <div

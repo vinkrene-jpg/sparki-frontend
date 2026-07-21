@@ -910,6 +910,9 @@ function RouteGenerator({
   const [destination, setDestination] = useState("")
   const [start, setStart] = useState<{ lat: number; lon: number } | null>(null)
   const [geoState, setGeoState] = useState<"idle" | "loading" | "error">("idle")
+  // Counter that forces the builder map to jump to the rider's position at
+  // street-level zoom every time "Centreer op mij" is tapped.
+  const [focusMe, setFocusMe] = useState(0)
   const [candidate, setCandidate] = useState<RouteCandidate | null>(null)
   // Loop mode: the 3 distance variants (korter/gevraagd/langer) to choose from.
   const [options, setOptions] = useState<RouteCandidate[] | null>(null)
@@ -966,6 +969,7 @@ function RouteGenerator({
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setStart({ lat: pos.coords.latitude, lon: pos.coords.longitude })
+        setFocusMe((f) => f + 1)
         setGeoState("idle")
       },
       () => {
@@ -1419,6 +1423,7 @@ function RouteGenerator({
             meetpoints={meetpoints}
             center={start ? [start.lat, start.lon] : [52.1, 5.3]}
             myLocation={start ? [start.lat, start.lon] : undefined}
+            focusMyLocation={focusMe}
             height={320}
             className="mt-3"
             onMapClick={handleMapClick}
