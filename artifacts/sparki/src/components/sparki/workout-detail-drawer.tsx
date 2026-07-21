@@ -321,9 +321,9 @@ export function WorkoutDetailDrawer({
     }
   }
 
-  const route = structure
-    ? routeNeedLabel[structure.routeNeed]
-    : routeNeedLabel.none
+  const route =
+    (structure ? routeNeedLabel[structure.routeNeed] : routeNeedLabel.none) ??
+    routeNeedLabel.none
   const RouteIcon = route.icon
 
   // A training in the future hasn't happened yet, so asking "hoe ging het" is

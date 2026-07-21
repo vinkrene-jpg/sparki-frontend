@@ -13,13 +13,17 @@ import { Loader2, CalendarRange } from "lucide-react"
 
 const DOW = ["MA", "DI", "WO", "DO", "VR", "ZA", "ZO"]
 
+// Local calendar date (YYYY-MM-DD) — built from local getters so the grid, the
+// "vandaag"-highlight and the workout matching all agree with the athlete's own
+// day, never a UTC-shifted day near midnight (local-date UTC off-by-one trap).
 function localDate(d: Date): string {
-  return d.toISOString().split("T")[0]!
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
-// Monday-aligned offset (JS getUTCDay: 0=Sun..6=Sat → 0=Mon..6=Sun).
+// Monday-aligned offset (JS getDay: 0=Sun..6=Sat → 0=Mon..6=Sun).
 function mondayIndex(dateStr: string): number {
-  const day = new Date(dateStr + "T12:00:00Z").getUTCDay()
+  const [y, m, d] = dateStr.split("-").map(Number)
+  const day = new Date(y!, m! - 1, d!, 12).getDay()
   return (day + 6) % 7
 }
 

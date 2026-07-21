@@ -241,7 +241,8 @@ export function TrainingDayHome({
               {data.weekTSS && data.weekTSS.length > 0 && (
                 <div className="mt-5 flex h-24 items-end gap-1.5">
                   {data.weekTSS.map(({ date, tss }) => {
-                    const today = new Date().toISOString().split("T")[0]
+                    const n = new Date()
+                    const today = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`
                     const isToday = date === today
                     const maxTSS = Math.max(...data.weekTSS.map((d) => d.tss), 1)
                     const h = Math.max((tss / maxTSS) * 100, tss > 0 ? 8 : 0)

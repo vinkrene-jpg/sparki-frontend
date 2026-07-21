@@ -419,7 +419,9 @@ function DayHomeInner({
 
   const dayType = devDayTypeOverride ?? detectDayType(ctx)
   const briefing = getDayTypeBriefing(dayType, ctx)
-  const Component = dayHomeRegistry[dayType]
+  // Defensive: an unregistered day type must never render `undefined` (a blank
+  // crash). Fall back to the General homepage so Vandaag always shows something.
+  const Component = dayHomeRegistry[dayType] ?? GeneralDayHome
 
   // ── Adaptive Coach Engine ─────────────────────────────────────────────────
   // Today's real day data feeds the engine. The engine sits between the profile
