@@ -255,7 +255,8 @@ export function PerformanceNumbers({
             <p className="mt-1.5 text-[12px] leading-relaxed text-white/45">
               Deze tabel vult zich met je echte piekwaarden (5 seconden tot 20
               minuten) zodra je een rit met vermogensmeting importeert als FIT- of
-              TCX-bestand. Er wordt niets geschat.
+              TCX-bestand. Eerder geïmporteerde ritten tellen niet mee — importeer
+              ze opnieuw als je die erbij wilt. Er wordt niets geschat.
             </p>
             <button
               type="button"
