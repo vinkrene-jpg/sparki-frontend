@@ -27,6 +27,7 @@ export function LogSessionForm({
   const [form, setForm] = useState<{
     title: string
     type: string
+    sessionDate: string
     durationMin: string
     tss: string
     normalizedPower: string
@@ -35,6 +36,7 @@ export function LogSessionForm({
   }>({
     title: "",
     type: "ride",
+    sessionDate: todayStr(),
     durationMin: "",
     tss: "",
     normalizedPower: "",
@@ -55,7 +57,7 @@ export function LogSessionForm({
     e.preventDefault()
     logSession.mutate(
       {
-        sessionDate: todayStr(),
+        sessionDate: form.sessionDate,
         type: form.type,
         title: form.title || null,
         durationMin: form.durationMin ? parseInt(form.durationMin) : undefined,
@@ -95,6 +97,18 @@ export function LogSessionForm({
             placeholder="Titel (optioneel)"
             value={form.title}
             onChange={set("title")}
+          />
+        </div>
+        <div className="col-span-2">
+          <label className="mb-1.5 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+            WANNEER?
+          </label>
+          <input
+            className={inputClass}
+            type="date"
+            value={form.sessionDate}
+            max={todayStr()}
+            onChange={set("sessionDate")}
           />
         </div>
         <select className={inputClass} value={form.type} onChange={set("type")}>
