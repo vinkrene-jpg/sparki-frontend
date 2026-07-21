@@ -3,11 +3,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -78,6 +80,14 @@ export default function NavigateScreen() {
   const recorder = useRideRecorder(location, getSensorValues);
   const saveRide = useSaveRide();
   const [saved, setSaved] = useState<null | { sessionId: number | null }>(null);
+  // Name/notitie editor for a RECOVERED (crash-survived) ride — same review
+  // step as a normal stop-and-save flow. Cancelling keeps the recoverable ride
+  // (the "Onafgemaakte rit gevonden" card returns); only a successful save
+  // clears the persisted recovery store.
+  const [recoveredReview, setRecoveredReview] = useState<null | {
+    name: string;
+    note: string;
+  }>(null);
 
   const [following, setFollowing] = useState(true);
   const [showSensors, setShowSensors] = useState(false);
@@ -373,23 +383,40 @@ export default function NavigateScreen() {
           }
         }}
         onDismissSaved={() => setSaved(null)}
-        onSaveRecovered={async () => {
+        recoveredReview={recoveredReview}
+        onChangeRecoveredReview={(patch) =>
+          setRecoveredReview((r) => (r ? { ...r, ...patch } : r))
+        }
+        onSaveRecovered={() => {
+          // Same naam/notitie-check as a normal stop: open the editor first.
+          // The recoverable ride stays persisted until the save succeeds.
           if (!recorder.recoverable) return;
           setSaved(null);
           saveRide.reset();
+          setRecoveredReview({ name: route.name, note: "" });
+        }}
+        onSaveRecoveredReview={async () => {
+          if (!recorder.recoverable || !recoveredReview) return;
           try {
             const res = await saveRide.mutateAsync({
               points: recorder.recoverable.points,
-              name: route.name,
+              name: recoveredReview.name.trim() || route.name,
+              note: recoveredReview.note,
               // Sensor readings persisted before the crash — the recovered
               // ride keeps the measured watts/hartslag/cadans up to the kill.
               sensorSamples: recorder.recoverable.sensorSamples,
             });
             setSaved({ sessionId: res.sessionId });
+            setRecoveredReview(null);
             recorder.reset();
           } catch {
             // Error surfaced via saveRide.error; recovered track kept so it can retry.
           }
+        }}
+        onCancelRecoveredReview={() => {
+          // Cancel keeps the recoverable ride — the found-ride card returns.
+          setRecoveredReview(null);
+          saveRide.reset();
         }}
         onDiscardRecovered={recorder.discardRecovered}
       />
@@ -420,7 +447,11 @@ function RideRecorderBar({
   onStart,
   onStop,
   onDismissSaved,
+  recoveredReview,
+  onChangeRecoveredReview,
   onSaveRecovered,
+  onSaveRecoveredReview,
+  onCancelRecoveredReview,
   onDiscardRecovered,
 }: {
   c: ReturnType<typeof useColors>;
@@ -434,7 +465,11 @@ function RideRecorderBar({
   onStart: () => void;
   onStop: () => void;
   onDismissSaved: () => void;
+  recoveredReview: null | { name: string; note: string };
+  onChangeRecoveredReview: (patch: Partial<{ name: string; note: string }>) => void;
   onSaveRecovered: () => void;
+  onSaveRecoveredReview: () => void;
+  onCancelRecoveredReview: () => void;
   onDiscardRecovered: () => void;
 }) {
   const bottom = insets.bottom + 16;
@@ -507,6 +542,93 @@ function RideRecorderBar({
             )}
           </Pressable>
         </View>
+      </View>
+    );
+  }
+
+  // Name/notitie review for a recovered ride — the SAME check a normal stop
+  // goes through before saving. Cancel keeps the recoverable ride.
+  if (recoveredReview && recorder.recoverable) {
+    return (
+      <View style={[styles.recWrap, { bottom }]} pointerEvents="box-none">
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <View style={[styles.reviewCard, { backgroundColor: c.card, borderColor: c.border }]}>
+            <Text style={[styles.reviewTitle, { color: c.foreground }]}>Rit opslaan</Text>
+            <Text style={[styles.reviewSub, { color: c.mutedForeground }]}>
+              {`Herstelde rit van ${recorder.recoverable.distanceKm.toFixed(1)} km`}
+            </Text>
+
+            <Text style={[styles.fieldLabel, { color: c.mutedForeground }]}>Naam</Text>
+            <TextInput
+              value={recoveredReview.name}
+              onChangeText={(name) => onChangeRecoveredReview({ name })}
+              placeholderTextColor={c.mutedForeground}
+              style={[
+                styles.input,
+                { color: c.foreground, borderColor: c.border, backgroundColor: c.background },
+              ]}
+              maxLength={80}
+              returnKeyType="next"
+            />
+
+            <Text style={[styles.fieldLabel, { color: c.mutedForeground }]}>
+              Notitie (optioneel)
+            </Text>
+            <TextInput
+              value={recoveredReview.note}
+              onChangeText={(note) => onChangeRecoveredReview({ note })}
+              placeholder="Hoe voelde de rit?"
+              placeholderTextColor={c.mutedForeground}
+              style={[
+                styles.input,
+                styles.inputMultiline,
+                { color: c.foreground, borderColor: c.border, backgroundColor: c.background },
+              ]}
+              multiline
+              maxLength={500}
+            />
+
+            {saveError && (
+              <View style={styles.reviewErr}>
+                <Ionicons name="alert-circle-outline" size={16} color={c.destructive} />
+                <Text style={[styles.recNote, { color: c.mutedForeground, flex: 1 }]}>
+                  {saveError}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.reviewActions}>
+              <Pressable
+                onPress={onCancelRecoveredReview}
+                disabled={saving}
+                style={[styles.reviewCancel, { borderColor: c.border }]}
+              >
+                <Text style={[styles.reviewCancelText, { color: c.mutedForeground }]}>
+                  Annuleren
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={onSaveRecoveredReview}
+                disabled={saving}
+                style={[
+                  styles.reviewSave,
+                  { backgroundColor: c.primary, opacity: saving ? 0.6 : 1 },
+                ]}
+              >
+                {saving ? (
+                  <ActivityIndicator color={c.primaryForeground} />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark" size={18} color={c.primaryForeground} />
+                    <Text style={[styles.recBtnText, { color: c.primaryForeground }]}>
+                      Opslaan
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       </View>
     );
   }
@@ -835,5 +957,53 @@ const styles = StyleSheet.create({
     minWidth: 90,
     alignItems: "center",
     justifyContent: "center",
+  },
+  reviewCard: {
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 6,
+  },
+  reviewTitle: { fontFamily: "Inter_700Bold", fontSize: 17 },
+  reviewSub: { fontFamily: "Inter_400Regular", fontSize: 12, marginBottom: 4 },
+  fieldLabel: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  input: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  inputMultiline: { minHeight: 64, textAlignVertical: "top" },
+  reviewErr: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 8,
+  },
+  reviewActions: { flexDirection: "row", gap: 10, marginTop: 14 },
+  reviewCancel: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  reviewCancelText: { fontFamily: "Inter_600SemiBold", fontSize: 15 },
+  reviewSave: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
   },
 });

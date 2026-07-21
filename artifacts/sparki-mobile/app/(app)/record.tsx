@@ -89,6 +89,10 @@ export default function RecordScreen() {
     name: string;
     note: string;
   }>(null);
+  // True while the review editor holds a RECOVERED (crash-survived) track. On
+  // save success the persisted recovery store is cleared; on cancel it is kept
+  // so the "Onafgemaakte rit gevonden" card comes back — never silently lost.
+  const [reviewFromRecovery, setReviewFromRecovery] = useState(false);
 
   // The live track being recorded, so the rider sees their real trail draw on
   // the map as they move (no planned line exists for a free ride).
@@ -108,6 +112,7 @@ export default function RecordScreen() {
     setReview(null);
     setStoppedPoints(null);
     setStoppedSamples([]);
+    setReviewFromRecovery(false);
     saveRide.reset();
     recorder.start();
   };
@@ -143,38 +148,46 @@ export default function RecordScreen() {
       setReview(null);
       setStoppedPoints(null);
       setStoppedSamples([]);
+      if (reviewFromRecovery) {
+        // The recovered ride is now safely saved: clear the persisted
+        // recovery store so it is never offered again.
+        setReviewFromRecovery(false);
+        recorder.reset();
+      }
     } catch {
       // Error surfaced via saveRide.error; the review AND the stopped track are
       // kept so the rider can retry without losing anything.
     }
   };
 
-  // Save the ride that survived an app kill/crash. Uses the exact same GPX save
-  // path; on success the persisted track is cleared via recorder.reset().
-  const onSaveRecovered = async () => {
+  // A ride that survived an app kill/crash goes through the SAME name/notitie
+  // review as a normal stop: pressing "Opslaan" opens the editor with the
+  // recovered track snapshotted in. The persisted recovery store is only
+  // cleared after a successful save — cancelling keeps the recoverable ride.
+  const onSaveRecovered = () => {
     if (!recorder.recoverable) return;
     setSaved(null);
     saveRide.reset();
-    try {
-      const res = await saveRide.mutateAsync({
-        points: recorder.recoverable.points,
-        name: defaultRideName(),
-        // Sensor readings persisted before the crash — the recovered ride
-        // keeps the measured watts/hartslag/cadans up to the kill.
-        sensorSamples: recorder.recoverable.sensorSamples,
-      });
-      setSaved({ sessionId: res.sessionId });
-      recorder.reset();
-    } catch {
-      // Error surfaced via saveRide.error; recovered track kept so it can retry.
-    }
+    setStoppedPoints(recorder.recoverable.points);
+    // Sensor readings persisted before the crash — the recovered ride keeps
+    // the measured watts/hartslag/cadans up to the kill.
+    setStoppedSamples(recorder.recoverable.sensorSamples);
+    setReviewFromRecovery(true);
+    setReview({ name: defaultRideName(), note: "" });
   };
 
   // Cancelling the editor returns to the stopped state — the recorded track is
   // preserved so the rider can still save it later. It is NOT discarded here.
+  // For a recovered ride, cancel returns to the "Onafgemaakte rit gevonden"
+  // card instead: the persisted recoverable ride is kept untouched.
   const onCancelReview = () => {
     setReview(null);
     saveRide.reset();
+    if (reviewFromRecovery) {
+      setReviewFromRecovery(false);
+      setStoppedPoints(null);
+      setStoppedSamples([]);
+    }
   };
 
   // Explicitly discard the recorded track (the rider chose not to keep it).
