@@ -1169,8 +1169,9 @@ export function RouteNavigator({
     setArmedBoard(null)
   }
 
-  // Bottom metrics — core four always, watts/cadans appended only when a meter
-  // actually reports them (never fabricated).
+  // Bottom metrics — always the full set incl. vermogen + cadans, so the
+  // rider ziet waar ze horen. Zonder gekoppelde meter staat er eerlijk "—"
+  // (nooit een verzonnen getal); koppelen kan via "Watt & cadans koppelen".
   const metrics: { label: string; value: string }[] = [
     {
       label: "Resterend",
@@ -1186,16 +1187,19 @@ export function RouteNavigator({
       label: "Rijtijd",
       value: rideState === "idle" ? "—" : fmtRideTime(rideSeconds),
     },
-  ]
-  if (power.connected) {
-    metrics.push({
+    {
       label: "Vermogen",
-      value: power.watts != null ? `${power.watts} W` : "—",
-    })
-  }
-  if (power.connected && power.cadence != null) {
-    metrics.push({ label: "Cadans", value: `${power.cadence} rpm` })
-  }
+      value:
+        power.connected && power.watts != null ? `${power.watts} W` : "—",
+    },
+    {
+      label: "Cadans",
+      value:
+        power.connected && power.cadence != null
+          ? `${power.cadence} rpm`
+          : "—",
+    },
+  ]
 
   // Ridden distance so far (km) — gates the "bewaar gereden rit" option so we
   // never offer to save a track that is too short to be a real route.
