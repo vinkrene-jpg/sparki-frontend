@@ -712,23 +712,47 @@ router.post("/:id/detour-via", requireAuth, async (req, res) => {
     });
 
     const path = [...leg1.path, ...leg2.path.slice(1)];
-    const stopNote = "Je bent bij je tussenstop.";
+    // The provider can theoretically omit distance/duration; fall back to the
+    // real path length so the cue offsets stay correct, and be honest (null)
+    // about a missing duration instead of inventing one.
+    const pathKm = (pts: [number, number][]): number => {
+      let km = 0;
+      for (let i = 1; i < pts.length; i++) {
+        km +=
+          haversineMeters(
+            pts[i - 1]![0],
+            pts[i - 1]![1],
+            pts[i]![0],
+            pts[i]![1],
+          ) / 1000;
+      }
+      return km;
+    };
+    const leg1Km = leg1.distanceKm ?? pathKm(leg1.path);
+    const leg2Km = leg2.distanceKm ?? pathKm(leg2.path);
+    const durationSec =
+      leg1.durationSec != null && leg2.durationSec != null
+        ? leg1.durationSec + leg2.durationSec
+        : null;
     const nav = [
       ...leg1.steps,
-      { km: leg1.distanceKm, dir: "Aankomst", note: stopNote },
+      {
+        km: Math.round(leg1Km * 100) / 100,
+        dir: "Aankomst",
+        note: "Je bent bij je tussenstop.",
+      },
       ...leg2.steps.map((s) => ({
         ...s,
-        km: Math.round((s.km + leg1.distanceKm) * 100) / 100,
+        km: Math.round((s.km + leg1Km) * 100) / 100,
       })),
     ];
     res.json({
       mode: "poi",
       path,
-      distanceKm:
-        Math.round((leg1.distanceKm + leg2.distanceKm) * 100) / 100,
-      durationSec: leg1.durationSec + leg2.durationSec,
+      distanceKm: Math.round((leg1Km + leg2Km) * 100) / 100,
+      durationSec,
       nav,
-      stopKm: Math.round(leg1.distanceKm * 100) / 100,
+      stopKm: Math.round(leg1Km * 100) / 100,
       rejoinKm: Math.round(cumKm[rejoinIdx]! * 10) / 10,
     });
   } catch (err) {

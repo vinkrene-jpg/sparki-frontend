@@ -107,15 +107,13 @@ export async function getRoutePois(
   const pad = 0.003; // ~300m
   const bbox = `${(minLat - pad).toFixed(4)},${(minLon - pad).toFixed(4)},${(maxLat + pad).toFixed(4)},${(maxLon + pad).toFixed(4)}`;
 
-  const query = `[out:json][timeout:20];(
-node["tourism"~"^(viewpoint|museum|attraction|artwork)$"]["name"](${bbox});
-way["tourism"~"^(viewpoint|museum|attraction|artwork)$"]["name"](${bbox});
-node["historic"~"^(castle|monument|memorial|ruins)$"]["name"](${bbox});
-way["historic"~"^(castle|monument|memorial|ruins)$"]["name"](${bbox});
-node["man_made"~"^(windmill|watermill)$"]["name"](${bbox});
-way["man_made"~"^(windmill|watermill)$"]["name"](${bbox});
-node["amenity"~"^(cafe|restaurant)$"]["name"](${bbox});
-way["amenity"~"^(cafe|restaurant)$"]["name"](${bbox});
+  // Compact `nwr` clauses: the expanded node+way form times out (504) on
+  // city-sized bboxes; nwr with a 25s budget returns within a few seconds.
+  const query = `[out:json][timeout:25];(
+nwr["tourism"~"^(viewpoint|museum|attraction|artwork)$"]["name"](${bbox});
+nwr["historic"~"^(castle|monument|memorial|ruins)$"]["name"](${bbox});
+nwr["man_made"~"^(windmill|watermill)$"]["name"](${bbox});
+nwr["amenity"~"^(cafe|restaurant)$"]["name"](${bbox});
 );out center 600;`;
 
   let elements: OverpassElement[];

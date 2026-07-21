@@ -105,6 +105,7 @@
 - [Sparki news freshness & ranking](sparki-news-freshness.md) — pipelines gated only on a user-configured Scheduled Deployment silently rot; self-heal via lazy refresh on the READ path; recency-dominant + cross-source dedup + source-diversity curation.
 - [Sparki aandachtswet (Vandaag single-leader)](sparki-aandachtswet.md) — one leading Momentblok (priority chain); ride-along weather/leskaart/nudge must be GATED at render not just imported; "voorstel" rung real but na-rit always co-wins.
 - [Sparki route-paspoort](sparki-route-passport.md) — Overpass around-linestring 504s ⇒ bbox+local filter; Open-Meteo hourly must match on utc_offset epoch, never a fixed NL hour key.
+- [Sparki route POIs & coffee break](sparki-route-pois.md) — Overpass needs compact nwr unions (verbose form 504s) + transient slot 502s; behind-rider guard server-side; nullable ORS totals.
 - [Sparki Rit-verhaal](sparki-ride-story.md) — flag `rit_verhaal`; sync line must render independent of fresh story; predictionAvailable strictly pre-hoc; workflow limit hit ⇒ tests via shell.
 - [Route rejoin after deviation](sparki-route-rejoin.md) — off-route choice terug/verder must be a REAL routed connector (ORS), never a straight line; profile derived from surface; detour is client-only, auto-clears <40 m.
 - [Sparki route loop quality](sparki-route-loop-quality.md) — generated round-trips backtracked; fix = best-of-N real ORS candidates picked by pathOverlapFraction; ALL loop callers must use generateVariedLoop, never provider.generateLoop.

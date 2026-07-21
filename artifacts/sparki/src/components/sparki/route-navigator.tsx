@@ -161,6 +161,34 @@ function fmtMeters(m: number): string {
   return `${(m / 1000).toFixed(1)} km`
 }
 
+// Backend errors carry a plain-Dutch {error} body; show that, else a fallback.
+function parseApiError(err: unknown, fallback: string): string {
+  if (err instanceof Error) {
+    try {
+      const parsed = JSON.parse(err.message) as { error?: string }
+      if (parsed.error) return parsed.error
+    } catch {
+      /* not JSON */
+    }
+  }
+  return fallback
+}
+
+// Emoji per POI kind — static content only (never user text) so the Leaflet
+// divIcon HTML sink stays safe.
+const POI_ICONS: Record<string, string> = {
+  "Café": "☕",
+  Restaurant: "🍴",
+  Uitzichtpunt: "🌄",
+  Museum: "🏛️",
+  Bezienswaardigheid: "⭐",
+  Kunstwerk: "🎨",
+  Kasteel: "🏰",
+  Monument: "🗿",
+  "Ruïne": "🏚️",
+  Molen: "🌬️",
+}
+
 // Full-screen live-navigation window for the web. Uses the browser Geolocation
 // API to follow the rider's real position along the stored route geometry and
 // derives the next turn from the saved nav cues. Honest at every step: it never
@@ -306,18 +334,51 @@ export function RouteNavigator({
   // backend — never a drawn straight line. It auto-clears once the rider is
   // back on the original route.
   type Detour = {
-    mode: "terug" | "verder"
+    mode: "terug" | "verder" | "poi"
     path: LatLon[]
     cues: RouteNavCue[]
     distanceKm: number | null
     rejoinKm: number | null
+    stopName?: string
   }
   const [detour, setDetour] = useState<Detour | null>(null)
   const [detourLoading, setDetourLoading] = useState<
-    "terug" | "verder" | null
+    "terug" | "verder" | "poi" | null
   >(null)
   const [detourError, setDetourError] = useState<string | null>(null)
   const detourLineRef = useRef<L.Polyline | null>(null)
+
+  // ── Plekken langs de route (OpenStreetMap) ────────────────────────
+  // Named sights + cafés/restaurants within ~250 m of the line. Purely real
+  // data: when the source doesn't answer, there are simply no markers (and the
+  // coffee prompt stays away) — nothing is fabricated.
+  type Poi = {
+    id: string
+    name: string
+    kind: string
+    category: "bezienswaardigheid" | "horeca"
+    lat: number
+    lon: number
+    routeKm: number
+    offRouteM: number
+  }
+  const [pois, setPois] = useState<Poi[]>([])
+  const [selectedPoi, setSelectedPoi] = useState<Poi | null>(null)
+  const poiLayerRef = useRef<L.LayerGroup | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    apiFetch<{ pois: Poi[] }>(`/api/routes/${routeId}/pois`)
+      .then((r) => {
+        if (alive) setPois(r.pois ?? [])
+      })
+      .catch(() => {
+        /* honest gap: no markers, no coffee prompt */
+      })
+    return () => {
+      alive = false
+    }
+  }, [routeId])
 
   const requestDetour = async (mode: "terug" | "verder") => {
     if (!location || detourLoading) return
@@ -342,16 +403,46 @@ export function RouteNavigator({
         rejoinKm: resp.rejoinKm,
       })
     } catch (err) {
-      let msg = "Kon geen vervolg berekenen. Probeer het opnieuw."
-      if (err instanceof Error) {
-        try {
-          const parsed = JSON.parse(err.message) as { error?: string }
-          if (parsed.error) msg = parsed.error
-        } catch {
-          /* keep generic message */
-        }
-      }
-      setDetourError(msg)
+      setDetourError(parseApiError(err, "Kon geen vervolg berekenen. Probeer het opnieuw."))
+    } finally {
+      setDetourLoading(null)
+    }
+  }
+
+  // Reroute the ride via a chosen place (sight or café). Both legs are real
+  // routed paths from the backend; the place must lie ahead on the route.
+  const requestPoiDetour = async (poi: Poi) => {
+    if (!location || detourLoading) return null
+    setDetourLoading("poi")
+    setDetourError(null)
+    try {
+      const resp = await apiFetch<{
+        path: [number, number][]
+        nav: RouteNavCue[]
+        distanceKm: number | null
+        rejoinKm: number | null
+      }>(`/api/routes/${routeId}/detour-via`, {
+        method: "POST",
+        body: JSON.stringify({
+          lat: location.lat,
+          lon: location.lon,
+          targetLat: poi.lat,
+          targetLon: poi.lon,
+        }),
+      })
+      setDetour({
+        mode: "poi",
+        path: resp.path.map(([lat, lon]) => ({ lat, lon })),
+        cues: resp.nav ?? [],
+        distanceKm: resp.distanceKm,
+        rejoinKm: resp.rejoinKm,
+        stopName: poi.name,
+      })
+      setSelectedPoi(null)
+      return true
+    } catch (err) {
+      setDetourError(parseApiError(err, "Kon geen omweg berekenen. Probeer het opnieuw."))
+      return false
     } finally {
       setDetourLoading(null)
     }
@@ -386,6 +477,40 @@ export function RouteNavigator({
     }
   }, [detour])
 
+  // POI markers: one layer group, rebuilt when the list arrives. The divIcon
+  // HTML is static emoji only — the (OSM-sourced) name is rendered exclusively
+  // through React in the selection card, never through the HTML sink.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    if (poiLayerRef.current) {
+      map.removeLayer(poiLayerRef.current)
+      poiLayerRef.current = null
+    }
+    if (pois.length === 0) return
+    const group = L.layerGroup()
+    for (const poi of pois) {
+      const emoji = POI_ICONS[poi.kind] ?? "⭐"
+      const icon = L.divIcon({
+        className: "",
+        html: `<span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:rgba(7,13,22,0.9);border:1px solid rgba(255,255,255,0.25);font-size:14px;box-shadow:0 1px 6px rgba(0,0,0,0.5);">${emoji}</span>`,
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
+      })
+      L.marker([poi.lat, poi.lon], { icon, keyboard: false })
+        .on("click", () => setSelectedPoi(poi))
+        .addTo(group)
+    }
+    group.addTo(map)
+    poiLayerRef.current = group
+    return () => {
+      if (poiLayerRef.current) {
+        map.removeLayer(poiLayerRef.current)
+        poiLayerRef.current = null
+      }
+    }
+  }, [pois])
+
   const progress = useMemo(() => {
     if (!location || path.length === 0) return null
     const { index, distanceMeters } = nearestPointIndex(path, location)
@@ -418,13 +543,92 @@ export function RouteNavigator({
   }, [detour, location, detourCumKm])
 
   // Back on the original route? Then the detour has done its job — clear it.
+  // A place-detour (poi) runs close to the original line by design, so it only
+  // clears once the rider reaches the end of the detour path.
   useEffect(() => {
-    if (detour && progress && progress.offBy < 40) setDetour(null)
-  }, [detour, progress])
+    if (!detour || !progress) return
+    if (detour.mode === "poi") {
+      if (
+        detourProgress &&
+        detourProgress.remainingKm < 0.05 &&
+        progress.offBy < 40
+      )
+        setDetour(null)
+      return
+    }
+    if (progress.offBy < 40) setDetour(null)
+  }, [detour, progress, detourProgress])
   // A fresh off-route moment invalidates an old error message.
   useEffect(() => {
     if (!progress?.offRoute) setDetourError(null)
   }, [progress?.offRoute])
+
+  // ── Koffiepauze-voorstel ──────────────────────────────────────────
+  // After every full hour of RIDING time (1u, 2u, 3u, …) a small prompt
+  // appears for 15 seconds suggesting a coffee stop at a real café/restaurant
+  // AHEAD on the route. It stays away when the ride is nearly done (no point
+  // suggesting coffee when you're almost home), when no real horeca lies
+  // ahead, or once the rider has accepted a stop.
+  const COFFEE_MIN_REMAINING_KM = 5
+  const [coffeePrompt, setCoffeePrompt] = useState<{
+    hour: number
+    poi: Poi
+  } | null>(null)
+  const coffeeHandledHourRef = useRef(0)
+  const coffeeAcceptedRef = useRef(false)
+  const coffeeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const nextCafeAhead = useMemo(() => {
+    if (!progress) return null
+    return (
+      pois.find(
+        (p) =>
+          p.category === "horeca" && p.routeKm > progress.traveledKm + 0.2,
+      ) ?? null
+    )
+  }, [pois, progress])
+
+  useEffect(() => {
+    const hour = Math.floor(rideSeconds / 3600)
+    if (
+      hour < 1 ||
+      hour <= coffeeHandledHourRef.current ||
+      coffeeAcceptedRef.current ||
+      rideState !== "riding" ||
+      detour != null ||
+      coffeePrompt != null ||
+      !progress ||
+      progress.remainingKm < COFFEE_MIN_REMAINING_KM ||
+      !nextCafeAhead
+    )
+      return
+    coffeeHandledHourRef.current = hour
+    setCoffeePrompt({ hour, poi: nextCafeAhead })
+    coffeeTimerRef.current = setTimeout(() => setCoffeePrompt(null), 15_000)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rideSeconds])
+
+  useEffect(
+    () => () => {
+      if (coffeeTimerRef.current) clearTimeout(coffeeTimerRef.current)
+    },
+    [],
+  )
+
+  const acceptCoffee = async () => {
+    if (!coffeePrompt) return
+    if (coffeeTimerRef.current) clearTimeout(coffeeTimerRef.current)
+    const ok = await requestPoiDetour(coffeePrompt.poi)
+    if (ok) {
+      coffeeAcceptedRef.current = true
+      setCoffeePrompt(null)
+    }
+  }
+
+  const dismissCoffee = () => {
+    if (coffeeTimerRef.current) clearTimeout(coffeeTimerRef.current)
+    setCoffeePrompt(null)
+  }
 
   const nextStep: RouteNavCue | null = useMemo(() => {
     // While a detour is active, its own turn cues lead the way.
@@ -1090,6 +1294,89 @@ export function RouteNavigator({
           </div>
         )}
 
+        {coffeePrompt && !detour && (
+          <div className="pointer-events-auto flex flex-col gap-2.5 rounded-xl border border-amber-400/40 bg-[#070d16]/92 px-3.5 py-3 backdrop-blur-md">
+            <div className="flex items-center gap-3">
+              <span className="text-[22px] leading-none">☕</span>
+              <div className="min-w-0">
+                <p className="text-[13px] font-medium text-amber-200">
+                  Tijd voor een koffiepauze?
+                </p>
+                <p className="truncate text-[12px] text-white/55">
+                  {coffeePrompt.poi.name} ({coffeePrompt.poi.kind.toLowerCase()})
+                  ligt verderop bij km {coffeePrompt.poi.routeKm}.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={dismissCoffee}
+                className="flex-1 rounded-full border border-white/15 px-3 py-2 text-[12px] font-medium text-white/70 transition hover:bg-white/5"
+              >
+                Nee, doorfietsen
+              </button>
+              <button
+                type="button"
+                onClick={acceptCoffee}
+                disabled={detourLoading != null || !location}
+                className="flex-1 rounded-full bg-amber-400 px-3 py-2 text-[12px] font-semibold text-[#05070e] transition disabled:opacity-50"
+              >
+                {detourLoading === "poi" ? "Bezig…" : "Ja, breng me erheen"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {selectedPoi && !detour && (
+          <div className="pointer-events-auto flex flex-col gap-2.5 rounded-xl border border-white/15 bg-[#070d16]/92 px-3.5 py-3 backdrop-blur-md">
+            <div className="flex items-start gap-3">
+              <span className="text-[22px] leading-none">
+                {POI_ICONS[selectedPoi.kind] ?? "⭐"}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-medium text-white/90">
+                  {selectedPoi.name}
+                </p>
+                <p className="truncate text-[12px] text-white/55">
+                  {selectedPoi.kind} · bij km {selectedPoi.routeKm} ·{" "}
+                  {fmtMeters(selectedPoi.offRouteM)} van de route
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedPoi(null)
+                  setDetourError(null)
+                }}
+                aria-label="Sluiten"
+                className="shrink-0 rounded-full border border-white/15 p-1.5 text-white/55 transition hover:text-white/85"
+              >
+                <X className="h-3.5 w-3.5" strokeWidth={2} />
+              </button>
+            </div>
+            {detourError && (
+              <p className="text-[12px] text-[rgba(255,140,120,0.9)]">
+                {detourError}
+              </p>
+            )}
+            {!location && (
+              <p className="text-[12px] text-white/45">
+                De route verleggen kan zodra je locatie bekend is.
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => requestPoiDetour(selectedPoi)}
+              disabled={detourLoading != null || !location}
+              className="flex items-center justify-center gap-1.5 rounded-full bg-cyan-400 px-3 py-2 text-[12px] font-semibold text-[#05070e] transition disabled:opacity-50"
+            >
+              <Navigation className="h-3.5 w-3.5" strokeWidth={2} />
+              {detourLoading === "poi" ? "Bezig…" : "Route hierlangs"}
+            </button>
+          </div>
+        )}
+
         {detour ? (
           <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-amber-400/40 bg-[#070d16]/92 px-3.5 py-3 backdrop-blur-md">
             <Navigation
@@ -1097,14 +1384,18 @@ export function RouteNavigator({
               strokeWidth={1.75}
             />
             <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-medium text-amber-200">
-                {detour.mode === "verder"
-                  ? "Vervolg actief"
-                  : "Terug naar de route"}
+              <p className="truncate text-[13px] font-medium text-amber-200">
+                {detour.mode === "poi"
+                  ? `Onderweg naar ${detour.stopName ?? "je tussenstop"}`
+                  : detour.mode === "verder"
+                    ? "Vervolg actief"
+                    : "Terug naar de route"}
               </p>
               <p className="truncate text-[12px] text-white/55">
                 {detourProgress
-                  ? `Nog ${fmtMeters(detourProgress.remainingKm * 1000)} tot je de route weer oppikt.`
+                  ? detour.mode === "poi"
+                    ? `Nog ${fmtMeters(detourProgress.remainingKm * 1000)} — daarna pik je de route weer op.`
+                    : `Nog ${fmtMeters(detourProgress.remainingKm * 1000)} tot je de route weer oppikt.`
                   : "Volg de gele stippellijn tot je de route weer oppikt."}
               </p>
             </div>
