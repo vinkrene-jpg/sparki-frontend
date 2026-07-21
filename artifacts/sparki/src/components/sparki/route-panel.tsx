@@ -79,6 +79,40 @@ function PointRow({
   )
 }
 
+// Placeholder-regel voor een nog niet geplaatst punt: legt uit wat je moet
+// doen en zet bij tikken de juiste plaats-modus aan.
+function PlaceholderRow({
+  icon,
+  label,
+  hint,
+  active,
+  onClick,
+}: {
+  icon: ReactNode
+  label: string
+  hint: string
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-2 rounded-xl border border-dashed px-3 py-2 text-left transition ${
+        active
+          ? "border-cyan-300/40 bg-cyan-300/[0.06]"
+          : "border-white/[0.12] bg-transparent hover:border-white/25"
+      }`}
+    >
+      {icon}
+      <span className="min-w-0 flex-1 font-sans text-[13px] text-white/55">
+        {label}
+        <span className="ml-2 text-[11px] text-white/35">{hint}</span>
+      </span>
+    </button>
+  )
+}
+
 function MeetpointList({
   meetpoints,
   setMeetpoints,
@@ -1630,46 +1664,62 @@ function RouteGenerator({
             )}
           </div>
 
-          {/* Puntenlijst — start → routepunten → finish, elk punt wisbaar. */}
-          {allPoints.length > 0 && (
-            <div className="mt-3 flex flex-col gap-2">
-              {startPoint && (
-                <PointRow
-                  icon={<MapPin className="h-3.5 w-3.5 shrink-0" style={{ color: "rgba(120,230,160,0.9)" }} strokeWidth={1.75} />}
-                  label="Startpunt"
-                  point={startPoint}
-                  onRemove={() => {
-                    invalidateStaleRoute()
-                    setStartPoint(null)
-                    setPlaceMode("start")
-                  }}
-                />
-              )}
-              {waypoints.map((p, i) => (
-                <PointRow
-                  key={`${p[0]}-${p[1]}-${i}`}
-                  icon={<Flag className="h-3.5 w-3.5 shrink-0" style={{ color: ACCENT }} strokeWidth={1.75} />}
-                  label={`Routepunt ${i + 1}`}
-                  point={p}
-                  onRemove={() => {
-                    invalidateStaleRoute()
-                    setWaypoints((w) => w.filter((_, idx) => idx !== i))
-                  }}
-                />
-              ))}
-              {endPoint && (
-                <PointRow
-                  icon={<Flag className="h-3.5 w-3.5 shrink-0" style={{ color: "rgba(255,160,90,0.9)" }} strokeWidth={1.75} />}
-                  label="Finish"
-                  point={endPoint}
-                  onRemove={() => {
-                    invalidateStaleRoute()
-                    setEndPoint(null)
-                  }}
-                />
-              )}
-            </div>
-          )}
+          {/* Puntenlijst — start → routepunten → finish, elk punt wisbaar.
+              Altijd zichtbaar in de bouwer: ontbrekende punten tonen een
+              duidelijke placeholder-regel die de plaats-modus activeert. */}
+          <div className="mt-3 flex flex-col gap-2">
+            {startPoint ? (
+              <PointRow
+                icon={<MapPin className="h-3.5 w-3.5 shrink-0" style={{ color: "rgba(120,230,160,0.9)" }} strokeWidth={1.75} />}
+                label="Startpunt"
+                point={startPoint}
+                onRemove={() => {
+                  invalidateStaleRoute()
+                  setStartPoint(null)
+                  setPlaceMode("start")
+                }}
+              />
+            ) : (
+              <PlaceholderRow
+                icon={<MapPin className="h-3.5 w-3.5 shrink-0 text-white/30" strokeWidth={1.75} />}
+                label="Startpunt"
+                hint="Tik op de kaart om je startpunt te plaatsen"
+                active={placeMode === "start"}
+                onClick={() => setPlaceMode("start")}
+              />
+            )}
+            {waypoints.map((p, i) => (
+              <PointRow
+                key={`${p[0]}-${p[1]}-${i}`}
+                icon={<Flag className="h-3.5 w-3.5 shrink-0" style={{ color: ACCENT }} strokeWidth={1.75} />}
+                label={`Routepunt ${i + 1}`}
+                point={p}
+                onRemove={() => {
+                  invalidateStaleRoute()
+                  setWaypoints((w) => w.filter((_, idx) => idx !== i))
+                }}
+              />
+            ))}
+            {endPoint ? (
+              <PointRow
+                icon={<Flag className="h-3.5 w-3.5 shrink-0" style={{ color: "rgba(255,160,90,0.9)" }} strokeWidth={1.75} />}
+                label="Finish"
+                point={endPoint}
+                onRemove={() => {
+                  invalidateStaleRoute()
+                  setEndPoint(null)
+                }}
+              />
+            ) : (
+              <PlaceholderRow
+                icon={<Flag className="h-3.5 w-3.5 shrink-0 text-white/30" strokeWidth={1.75} />}
+                label="Finish"
+                hint="Tik op de kaart om je eindpunt te plaatsen — of laat leeg voor een rondje"
+                active={placeMode === "end"}
+                onClick={() => setPlaceMode("end")}
+              />
+            )}
+          </div>
 
           {/* Editable meeting-point list */}
           <MeetpointList meetpoints={meetpoints} setMeetpoints={setMeetpoints} />
