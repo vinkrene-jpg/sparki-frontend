@@ -390,9 +390,9 @@ function RouteCard({
 
   return (
     <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 basis-44">
+          <div className="flex min-w-0 items-center gap-2">
             <span
               className="font-mono text-[9px] uppercase tracking-[0.18em]"
               style={{ color: ACCENT }}
@@ -407,7 +407,7 @@ function RouteCard({
             {route.name}
           </h3>
         </div>
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex max-w-full flex-wrap items-center justify-end gap-3">
           {canNavigate && (
             <button
               type="button"
