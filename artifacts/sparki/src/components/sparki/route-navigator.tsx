@@ -204,6 +204,20 @@ export function RouteNavigator({
   // ── Bordjes sprinten ──────────────────────────────────────────────
   const submitSprint = useSubmitSprint()
   const power = usePowerMeter()
+  // While the browser's Bluetooth chooser is open, cancelling it (often via
+  // Escape) must NOT also close the whole navigation window.
+  const pairingRef = useRef(false)
+  const connectSensors = async () => {
+    pairingRef.current = true
+    try {
+      await power.connect()
+    } finally {
+      // Small delay so the chooser's closing Escape can't reach our handler.
+      window.setTimeout(() => {
+        pairingRef.current = false
+      }, 400)
+    }
+  }
   const boardsQuery = useSprintBoards(routeId)
   const boards = boardsQuery.data?.boards ?? []
   const boardsAvailable = boardsQuery.data?.available ?? true
@@ -270,7 +284,7 @@ export function RouteNavigator({
     const prev = document.body.style.overflow
     document.body.style.overflow = "hidden"
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose()
+      if (e.key === "Escape" && !pairingRef.current) onClose()
     }
     window.addEventListener("keydown", onKey)
     return () => {
@@ -829,7 +843,7 @@ export function RouteNavigator({
               ) : (
                 <button
                   type="button"
-                  onClick={power.connect}
+                  onClick={connectSensors}
                   className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/30 px-3 py-1.5 text-[11px] text-cyan-200 transition hover:bg-cyan-400/10"
                 >
                   <Bluetooth className="h-3.5 w-3.5" strokeWidth={1.75} />

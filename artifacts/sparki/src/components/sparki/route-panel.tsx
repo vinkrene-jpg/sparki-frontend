@@ -27,6 +27,7 @@ import { useUpcomingWorkouts } from "@/hooks/use-today-workout"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { isSportActive } from "@workspace/feature-flags"
 import { MapPin, Sparkles, Flag, Users, X, Download, Smartphone, Navigation, Share2 } from "lucide-react"
+import { useLocation, useSearch } from "wouter"
 import { RouteNavigator } from "@/components/sparki/route-navigator"
 import { ElevationProfile } from "@/components/sparki/elevation-profile"
 import { useRouteInsight } from "@/hooks/use-routes"
@@ -353,7 +354,21 @@ function RouteCard({
   const download = useDownloadRoute()
   const share = useShareRoute()
   const [gpxError, setGpxError] = useState<string | null>(null)
-  const [navigating, setNavigating] = useState(false)
+  // Navigation-open state lives in the URL (?nav=<id>) instead of React state:
+  // on phones the browser tab can reload while the system Bluetooth chooser or
+  // another app is in the foreground, and plain state would silently dump the
+  // rider out of navigation. With the URL as source of truth, a reload lands
+  // straight back in the open navigation window.
+  const [pathname, setLocation] = useLocation()
+  const search = useSearch()
+  const navigating = new URLSearchParams(search).get("nav") === String(route.id)
+  const setNavigating = (open: boolean) => {
+    const params = new URLSearchParams(window.location.search)
+    if (open) params.set("nav", String(route.id))
+    else params.delete("nav")
+    const q = params.toString()
+    setLocation(`${pathname}${q ? `?${q}` : ""}`, { replace: !open })
+  }
   const [showPassport, setShowPassport] = useState(false)
   const profile = route.profile ?? []
   const climbs = route.climbs ?? []
