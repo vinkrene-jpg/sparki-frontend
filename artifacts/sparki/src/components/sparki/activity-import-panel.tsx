@@ -382,16 +382,18 @@ export function ActivityImportPanel() {
 
   return (
     <section>
-      <div className="flex items-center justify-between">
-        <SectionLabel n="08" title="Activiteit importeren" />
+      <SectionLabel n="08" title="Activiteit importeren" />
+
+      {/* Primary action — a full CTA instead of a small text link, so the main
+          step of this panel is unmissable. */}
+      <div className="mt-3">
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={upload.isPending}
-          className="font-mono text-[10px] uppercase tracking-[0.18em] transition disabled:opacity-50"
-          style={{ color: ACCENT }}
+          className="flex items-center gap-2 rounded-full bg-cyan-400/90 px-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-[#05070e] shadow-[0_0_24px_rgba(34,211,238,0.25)] transition hover:bg-cyan-300 disabled:opacity-50"
         >
-          {upload.isPending ? "uploaden…" : "+ bestand"}
+          {upload.isPending ? "Uploaden…" : "Bestand uploaden"}
         </button>
       </div>
 
@@ -432,10 +434,9 @@ export function ActivityImportPanel() {
               type="button"
               onClick={() => inputRef.current?.click()}
               disabled={upload.isPending}
-              className="mt-2.5 font-mono text-[10px] uppercase tracking-[0.16em] transition hover:opacity-80 disabled:opacity-50"
-              style={{ color: ACCENT }}
+              className="mt-2.5 rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300 transition hover:bg-cyan-300/20 disabled:opacity-50"
             >
-              {upload.isPending ? "uploaden…" : "+ importeer je eerste bestand"}
+              {upload.isPending ? "Uploaden…" : "Importeer je eerste bestand"}
             </button>
           </div>
         )}

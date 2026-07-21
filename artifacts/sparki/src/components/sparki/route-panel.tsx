@@ -1687,33 +1687,40 @@ export function RoutePanel() {
 
   return (
     <section>
-      <div className="flex items-center justify-between">
-        <SectionLabel n="03" title="Route & navigatie" />
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => {
-              setShowGenerator((s) => {
-                if (s) return false
-                setGenPrefill(null)
-                setGenWaypoints(null)
-                return true
-              })
-            }}
-            className="font-mono text-[10px] uppercase tracking-[0.18em] transition"
-            style={{ color: ACCENT }}
-          >
-            {showGenerator ? "− generator" : "+ genereer route"}
-          </button>
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            disabled={create.isPending}
-            className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/45 transition disabled:opacity-50"
-          >
-            {create.isPending ? "verwerken…" : "+ gpx"}
-          </button>
-        </div>
+      <SectionLabel n="03" title="Route & navigatie" />
+
+      {/* Primary action row — the two ways to get a route. "Genereer route" is
+          the main step in this menu, so it renders as a full, filled CTA
+          instead of a small text link. */}
+      <div className="mt-3 flex flex-wrap items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => {
+            setShowGenerator((s) => {
+              if (s) return false
+              setGenPrefill(null)
+              setGenWaypoints(null)
+              return true
+            })
+          }}
+          className={
+            showGenerator
+              ? "flex items-center gap-2 rounded-full border border-cyan-300/35 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-300 transition hover:bg-cyan-300/10"
+              : "flex items-center gap-2 rounded-full bg-cyan-400/90 px-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-[#05070e] shadow-[0_0_24px_rgba(34,211,238,0.25)] transition hover:bg-cyan-300"
+          }
+        >
+          <Sparkles className="h-4 w-4" strokeWidth={1.75} />
+          {showGenerator ? "Sluit generator" : "Genereer route"}
+        </button>
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={create.isPending}
+          className="flex items-center gap-2 rounded-full border border-white/[0.14] px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 hover:text-white/90 disabled:opacity-50"
+        >
+          <Download className="h-4 w-4" strokeWidth={1.75} />
+          {create.isPending ? "Verwerken…" : "GPX uploaden"}
+        </button>
       </div>
 
       <input

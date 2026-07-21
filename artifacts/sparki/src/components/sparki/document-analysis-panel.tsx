@@ -306,16 +306,18 @@ export function DocumentAnalysisPanel() {
 
   return (
     <section>
-      <div className="flex items-center justify-between">
-        <SectionLabel n="09" title="Wedstrijdgids lezen" />
+      <SectionLabel n="09" title="Wedstrijdgids lezen" />
+
+      {/* Primary action — a full CTA instead of a small text link, so the main
+          step of this panel is unmissable. */}
+      <div className="mt-3">
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={upload.isPending}
-          className="font-mono text-[10px] uppercase tracking-[0.18em] transition disabled:opacity-50"
-          style={{ color: ACCENT }}
+          className="flex items-center gap-2 rounded-full bg-cyan-400/90 px-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-[#05070e] shadow-[0_0_24px_rgba(34,211,238,0.25)] transition hover:bg-cyan-300 disabled:opacity-50"
         >
-          {upload.isPending ? "lezen…" : "+ document"}
+          {upload.isPending ? "Lezen…" : "Document uploaden"}
         </button>
       </div>
 
