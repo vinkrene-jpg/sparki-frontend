@@ -113,6 +113,34 @@ scenario("classify maps each maatstaf to its kind", () => {
   )
 })
 
+scenario("gemiste geplande trainingen collapse into ONE uitvoering card", () => {
+  // The three near-identical cards from the field report: same story
+  // ("alle geplande trainingen gemist"), different titles and figures.
+  const a = obs({
+    title: "Geen enkele geplande training gereden in 28 dagen",
+    observationText:
+      "De uitvoeringsscore staat op 15/100: 0 van de 29 geplande sessies zijn gereden.",
+    severity: "important",
+  })
+  const b = obs({
+    title: "29 van de 29 geplande trainingen gemist",
+    observationText:
+      "Alle 29 geplande trainingen in de laatste 28 dagen werden uitgesteld of overgeslagen.",
+  })
+  const c = obs({
+    title: "Alle geplande trainingen gemist in 28 dagen",
+    observationText:
+      "Van de 21 geplande trainingen in de laatste 28 dagen is er geen enkele daadwerkelijk gereden.",
+  })
+  assert(classifyObservation(a) === "uitvoering", "a must classify as uitvoering")
+  assert(classifyObservation(b) === "uitvoering", "b must classify as uitvoering")
+  assert(classifyObservation(c) === "uitvoering", "c must classify as uitvoering")
+  const groups = groupObservations([a, b, c], {})
+  assert(groups.length === 1, `expected 1 card, got ${groups.length}`)
+  assert(groups[0].kind === "uitvoering", "group kind must be uitvoering")
+  assert(groups[0].lead.id === a.id, "strongest (important) observation must lead")
+})
+
 scenario("non-metric observation classifies as 'other'", () => {
   assert(
     classifyObservation(obs({ title: "Weersverwachting voor je wedstrijd", category: "race" })) ===

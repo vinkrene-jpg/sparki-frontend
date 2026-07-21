@@ -28,6 +28,7 @@ export type MetricKind =
   | "volume"
   | "form"
   | "frequency"
+  | "uitvoering"
   | "other"
 
 export type InsightSeries = {
@@ -67,6 +68,14 @@ const KIND_RULES: Array<{ kind: MetricKind; re: RegExp }> = [
   { kind: "fitness", re: /fitheid|fitness|conditie|\bctl\b/i },
   { kind: "volume", re: /volume|belasting|\btss\b|trainingslast/i },
   { kind: "frequency", re: /frequentie|consisten|regelmaat|aantal trainingen/i },
+  // Plan-uitvoering: gemiste/uitgestelde geplande trainingen. Zonder deze regel
+  // vallen "29 van 29 gemist", "Alle geplande trainingen gemist" en "Geen
+  // enkele geplande training gereden" elk in "other" en worden het drie
+  // vrijwel identieke kaarten in plaats van één.
+  {
+    kind: "uitvoering",
+    re: /gemist|uitgesteld|overgeslagen|uitvoering|gepland[e]?\s+(training|sessie|rit)|niet\s+gereden/i,
+  },
 ]
 
 /** Classify an observation to its dominant measurable maatstaf. */
@@ -146,6 +155,12 @@ export function seriesForKind(
     case "frequency": {
       const values = weeklyBuckets(sessions ?? [], 6).map((b) => b.sessions)
       return { values, caption: "Aantal trainingen per week" }
+    }
+    case "uitvoering": {
+      // Echte reeks: het aantal daadwerkelijk gereden trainingen per week —
+      // dat is precies wat een uitvoerings-observatie beschrijft.
+      const values = weeklyBuckets(sessions ?? [], 6).map((b) => b.sessions)
+      return { values, caption: "Gereden trainingen per week" }
     }
     default:
       return null

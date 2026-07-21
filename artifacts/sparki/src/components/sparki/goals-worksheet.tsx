@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Target, Check, X, ChevronDown, Plus } from "lucide-react"
 import {
   useGoalPicture,
@@ -364,11 +364,21 @@ function AddGoalForm({ onClose }: { onClose: () => void }) {
   )
 }
 
-export function GoalsWorksheet() {
+export function GoalsWorksheet({ autoAdd = false }: { autoAdd?: boolean }) {
   const { data, isLoading, isError } = useGoalPicture()
   const decide = useDecideGoalProposal()
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
+
+  // Deep-link "Voeg een doel toe" (bijv. vanaf Trainen): open het formulier
+  // direct zodra de doelen geladen zijn, zodat de gebruiker niet zelf hoeft
+  // te zoeken naar de toevoeg-knop.
+  const autoAddHandled = useRef(false)
+  useEffect(() => {
+    if (!autoAdd || autoAddHandled.current || isLoading) return
+    autoAddHandled.current = true
+    setAdding(true)
+  }, [autoAdd, isLoading])
 
   if (isLoading) {
     return (

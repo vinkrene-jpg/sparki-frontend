@@ -296,14 +296,41 @@ export default function YouPage() {
     if (focus && SETTINGS_FOCUS_TOKENS.has(focus)) setSettingsOpen(true)
   }, [focus])
 
-  // Deep-link from the Home Ontwikkelprioriteit card: scroll the Ontwikkelkompas
-  // section into view, then strip ?focus= so it doesn't linger. Route is
-  // wouter-relative (base prefix handled by wouter), so navigate to "/you".
+  // Deep-link naar een sectie op deze pagina (Ontwikkelkompas, Doelen). Eén
+  // scroll direct na mount is niet genoeg: de inzichtkaarten erboven laden
+  // asynchroon en duwen de sectie daarna weer uit beeld. Daarom blijven we
+  // ~2s her-scrollen tot de lay-out stabiel is, en strippen we ?focus= pas
+  // daarna. Voor "doelen" opent GoalsWorksheet bovendien direct het
+  // toevoeg-formulier (autoAdd hieronder).
+  const [goalsAutoAdd, setGoalsAutoAdd] = useState(false)
   useEffect(() => {
-    if (focus !== "ontwikkelkompas" && focus !== "doelen") return
-    const el = document.getElementById(focus)
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" })
-    navigate("/you", { replace: true })
+    if (focus !== "ontwikkelkompas" && focus !== "doelen") return undefined
+    if (focus === "doelen") setGoalsAutoAdd(true)
+    let lastTop: number | null = null
+    let stableTicks = 0
+    const started = Date.now()
+    const tick = () => {
+      const el = document.getElementById(focus)
+      if (el) {
+        const top = el.getBoundingClientRect().top
+        // Alleen opnieuw scrollen als de sectie sinds de vorige tick is
+        // verschoven (content erboven is bijgeladen).
+        if (lastTop === null || Math.abs(top - lastTop) > 4) {
+          el.scrollIntoView({ behavior: "auto", block: "start" })
+          stableTicks = 0
+        } else {
+          stableTicks += 1
+        }
+        lastTop = el.getBoundingClientRect().top
+      }
+      if (stableTicks >= 3 || Date.now() - started > 2500) {
+        window.clearInterval(interval)
+        navigate("/you", { replace: true })
+      }
+    }
+    const interval = window.setInterval(tick, 250)
+    tick()
+    return () => window.clearInterval(interval)
   }, [focus, navigate])
 
   // Lock body scroll while the sheet is open.
@@ -1008,7 +1035,7 @@ export default function YouPage() {
         <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
           Waar je naartoe werkt — dit seizoen en verder — en hoe je ervoor staat
         </p>
-        <GoalsWorksheet />
+        <GoalsWorksheet autoAdd={goalsAutoAdd} />
       </section>
 
       {/* SFEERBEELD — manage the profile photo. Always present so the Foto-lab

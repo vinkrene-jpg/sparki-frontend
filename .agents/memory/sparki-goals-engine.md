@@ -13,3 +13,12 @@ description: Multi-year goals engine — derived goals never duplicated, proposa
 - **Per-day dedupe must compare Amsterdam LOCAL date**: `(created_at AT TIME ZONE 'Europe/Amsterdam')::date = <nl-date>::date` — never `createdAt >= '<date>T00:00:00Z'` (UTC midnight shifts around local midnight).
 - **Doorvraagladder questions must be resolvable in the UI**: if `nextQuestion.goalId` points at an existing goal, the CTA must open an edit form for THAT goal (date/measure), not always a create-new form — otherwise the ladder stalls forever.
 - Injections into coach analysis / athlete context / training plan are best-effort try/catch, never blocking.
+
+## Deep-link scroll to async-inflating pages
+
+A single scrollIntoView on mount fails on /you: insight cards above load async
+and push the target away, stranding the user mid-page. Deep-link scroll must
+re-scroll on an interval until the target's position is stable (~3 ticks /
+2.5s cap) BEFORE stripping ?focus=. And a "voeg toe" intent must be carried to
+the leaf component (autoAdd prop opens the form once data loads, ref-guarded)
+— scrolling alone is not "working".

@@ -60,3 +60,14 @@ satisfy the word guard by themselves, wrongly merging a watt reading and a
 sleep-minutes reading that coincidentally cite the same numbers. Text-only notes
 never merge here. The `groupObservations` member-count tests still hold because
 they use number-free titles (the pre-pass is a no-op for them).
+
+## Third axis: kind-classification gaps create duplicate CARDS
+
+Text/figure dedupe cannot catch same-story notes whose FIGURES drift (LLM
+re-derives counts: "29 van 29 gemist" vs "21 geplande trainingen"), sharing too
+few numbers (<2 overlap) and too little prose. When such notes all classify to
+`other`, each becomes its own single-member card — three near-identical cards.
+Fix: give the theme its own MetricKind + KIND_RULE (e.g. `uitvoering` for
+gemist/uitgesteld/overgeslagen geplande trainingen) so grouping-by-kind
+collapses them into one lead+members card. When repeated cards appear, check
+classification FIRST before tuning the similarity heuristics.
