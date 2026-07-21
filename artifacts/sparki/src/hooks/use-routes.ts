@@ -279,6 +279,78 @@ async function downloadRouteFile(
   URL.revokeObjectURL(url);
 }
 
+// True when this browser can hand a route file straight to another app via the
+// native share sheet (Android/iOS). Desktop browsers mostly can't — the button
+// should then simply not render (the plain download stays).
+export function canShareRouteFiles(): boolean {
+  if (typeof navigator === "undefined" || !navigator.canShare) return false;
+  try {
+    const probe = new File(["x"], "probe.gpx", { type: "application/gpx+xml" });
+    return navigator.canShare({ files: [probe] });
+  } catch {
+    return false;
+  }
+}
+
+// Fetch the export and open the native share sheet so the athlete can send the
+// route with one tap to their navigation app (Garmin Connect, Komoot, Wahoo…).
+// The phone's share sheet remembers the preferred target on top.
+async function shareRouteFile(
+  endpoint: string,
+  name: string,
+  format: RouteExportFormat,
+) {
+  const res = await fetch(endpoint, { credentials: "include" });
+  if (!res.ok) {
+    let message = `Kon ${format.toUpperCase()} niet ophalen`;
+    try {
+      const data = (await res.json()) as { error?: string };
+      if (data?.error) message = data.error;
+    } catch {
+      // non-JSON error body — keep the default message
+    }
+    throw new Error(message);
+  }
+  const blob = await res.blob();
+  const safeName =
+    (name || "sparki-route")
+      .normalize("NFKD")
+      .replace(/[^\w\s-]/g, "")
+      .trim()
+      .replace(/\s+/g, "-")
+      .toLowerCase() || "sparki-route";
+  const file = new File([blob], `${safeName}.${format}`, {
+    type: format === "gpx" ? "application/gpx+xml" : "application/vnd.garmin.tcx+xml",
+  });
+  if (!navigator.canShare?.({ files: [file] })) {
+    throw new Error("Delen naar een app wordt hier niet ondersteund");
+  }
+  try {
+    await navigator.share({ files: [file], title: name || "Sparki-route" });
+  } catch (err) {
+    // The user closing the share sheet is not an error.
+    if (err instanceof DOMException && err.name === "AbortError") return;
+    throw err;
+  }
+}
+
+// Share a saved route file into another app (navigation app) via the native
+// share sheet.
+export function useShareRoute() {
+  return useMutation({
+    mutationFn: (route: {
+      id: number;
+      name: string;
+      format: RouteExportFormat;
+    }) =>
+      shareRouteFile(
+        `${API_BASE}/api/routes/${route.id}/${route.format}`,
+        route.name,
+        route.format,
+      ),
+  });
+}
+
 // Download a saved route as a GPX or TCX file.
 export function useDownloadRoute() {
   return useMutation({

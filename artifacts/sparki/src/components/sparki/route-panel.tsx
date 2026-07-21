@@ -11,6 +11,8 @@ import {
   useSaveGeneratedRoute,
   useDownloadRoute,
   useDownloadCandidate,
+  useShareRoute,
+  canShareRouteFiles,
   type RouteExportFormat,
   type SparkiRoute,
   type Sport,
@@ -24,7 +26,7 @@ import {
 import { useUpcomingWorkouts } from "@/hooks/use-today-workout"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { isSportActive } from "@workspace/feature-flags"
-import { MapPin, Sparkles, Flag, Users, X, Download, Smartphone, Navigation } from "lucide-react"
+import { MapPin, Sparkles, Flag, Users, X, Download, Smartphone, Navigation, Share2 } from "lucide-react"
 import { RouteNavigator } from "@/components/sparki/route-navigator"
 
 // Editable list of named meeting points ("verzamelpunten") — e.g. where you
@@ -214,6 +216,7 @@ function Climbs({ climbs }: { climbs: RouteClimb[] }) {
 function RouteCard({ route }: { route: SparkiRoute }) {
   const del = useDeleteRoute()
   const download = useDownloadRoute()
+  const share = useShareRoute()
   const [gpxError, setGpxError] = useState<string | null>(null)
   const [navigating, setNavigating] = useState(false)
   const profile = route.profile ?? []
@@ -267,6 +270,31 @@ function RouteCard({ route }: { route: SparkiRoute }) {
           )}
           {canExport && (
             <div className="flex items-center gap-2.5">
+              {canShareRouteFiles() && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGpxError(null)
+                    share.mutate(
+                      { id: route.id, name: route.name, format: "gpx" },
+                      {
+                        onError: (e) =>
+                          setGpxError(
+                            e instanceof Error
+                              ? e.message
+                              : "Delen mislukt",
+                          ),
+                      },
+                    )
+                  }}
+                  disabled={share.isPending}
+                  title="Stuur de route met één tik naar je navigatie-app (Garmin Connect, Komoot, Wahoo…)"
+                  className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-cyan-300/80 disabled:opacity-40"
+                >
+                  <Share2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Naar app
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => exportRoute("gpx")}
