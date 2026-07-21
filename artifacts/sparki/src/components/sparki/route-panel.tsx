@@ -348,9 +348,11 @@ function RoutePassport({
 function RouteCard({
   route,
   onAdjust,
+  onEditWaypoints,
 }: {
   route: SparkiRoute
   onAdjust?: (pref: ElevationPreference) => void
+  onEditWaypoints?: (route: SparkiRoute) => void
 }) {
   const del = useDeleteRoute()
   const download = useDownloadRoute()
@@ -507,14 +509,25 @@ function RouteCard({
         <ElevationProfile profile={profile} distanceKm={route.distanceKm} />
       )}
 
-      <button
-        type="button"
-        onClick={() => setShowPassport((s) => !s)}
-        className="mt-4 font-mono text-[10px] uppercase tracking-[0.16em] transition"
-        style={{ color: ACCENT }}
-      >
-        {showPassport ? "− route-paspoort" : "+ route-paspoort"}
-      </button>
+      <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+        <button
+          type="button"
+          onClick={() => setShowPassport((s) => !s)}
+          className="font-mono text-[10px] uppercase tracking-[0.16em] transition"
+          style={{ color: ACCENT }}
+        >
+          {showPassport ? "− route-paspoort" : "+ route-paspoort"}
+        </button>
+        {onEditWaypoints && geometry.length > 1 && (
+          <button
+            type="button"
+            onClick={() => onEditWaypoints(route)}
+            className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-cyan-300/80"
+          >
+            + wijzig met routepunten
+          </button>
+        )}
+      </div>
       {showPassport && <RoutePassport route={route} onAdjust={onAdjust} />}
 
       <div className="mt-4 flex items-center gap-5 border-t border-white/[0.07] pt-4">
@@ -600,12 +613,40 @@ function RouteCard({
 const inputClass =
   "w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
 
+// Vertaal echte routegeometrie naar een handvol sleepbare routepunten voor de
+// eigen-route-bouwer. We kiezen gelijkmatig verdeelde punten uit de ECHTE lijn
+// (nooit verzonnen posities); bij een lus vervalt het dubbele eindpunt.
+function sampleWaypointsFromGeometry(
+  geometry: [number, number][],
+  n = 8,
+): RouteWaypoint[] {
+  if (geometry.length < 2) return []
+  const first = geometry[0]!
+  const last = geometry[geometry.length - 1]!
+  const isLoop =
+    Math.abs(first[0] - last[0]) < 0.0005 && Math.abs(first[1] - last[1]) < 0.0005
+  const usable = isLoop ? geometry.slice(0, -1) : geometry
+  const count = Math.min(n, usable.length)
+  const points: RouteWaypoint[] = []
+  for (let i = 0; i < count; i++) {
+    const idx = Math.round((i * (usable.length - 1)) / Math.max(1, count - 1))
+    const p = usable[idx]!
+    points.push([p[0], p[1]])
+  }
+  // Bij een lus sluit de bouwer de route door het eerste punt óók als laatste
+  // te plaatsen, zodat het een rondje blijft.
+  if (isLoop && points.length >= 2) points.push([first[0], first[1]])
+  return points
+}
+
 function RouteGenerator({
   onClose,
   initialElevation = null,
+  initialWaypoints = null,
 }: {
   onClose: () => void
   initialElevation?: ElevationPreference | null
+  initialWaypoints?: RouteWaypoint[] | null
 }) {
   const generate = useGenerateRoute()
   const genOptions = useGenerateRouteOptions()
@@ -613,7 +654,9 @@ function RouteGenerator({
   const { data: workouts } = useUpcomingWorkouts()
   const { data: dashboard } = useAthleteDashboard()
 
-  const [mode, setMode] = useState<"loop" | "ptp" | "waypoints">("loop")
+  const [mode, setMode] = useState<"loop" | "ptp" | "waypoints">(
+    initialWaypoints && initialWaypoints.length >= 2 ? "waypoints" : "loop",
+  )
   const [sport, setSport] = useState<Sport>("cycling")
   const [bikeType, setBikeType] = useState<BikeType>("racefiets")
   // Sparki pre-selects the fietstype from the athlete's real profile discipline
@@ -673,8 +716,11 @@ function RouteGenerator({
     }
   }, [workouts, sport, distanceTouched])
 
-  // Interactive builder state (mode === "waypoints").
-  const [waypoints, setWaypoints] = useState<RouteWaypoint[]>([])
+  // Interactive builder state (mode === "waypoints"). Bij "route wijzigen"
+  // start de bouwer met punten uit de ECHTE bestaande routelijn.
+  const [waypoints, setWaypoints] = useState<RouteWaypoint[]>(
+    initialWaypoints && initialWaypoints.length >= 2 ? initialWaypoints : [],
+  )
   const [meetpoints, setMeetpoints] = useState<RouteMeetpoint[]>([])
   const [placeMode, setPlaceMode] = useState<"waypoint" | "meetpoint">(
     "waypoint",
@@ -1432,6 +1478,21 @@ function RouteGenerator({
             >
               Opnieuw genereren
             </button>
+            {candidate.geometry.length > 1 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setWaypoints(sampleWaypointsFromGeometry(candidate.geometry))
+                  setMode("waypoints")
+                  setCandidate(null)
+                  setOptions(null)
+                  setMeetpoints([])
+                }}
+                className="min-w-0 flex-1 basis-40 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20"
+              >
+                Pas aan met routepunten
+              </button>
+            )}
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-white/35">
             Na het bewaren vind je hieronder de route terug — met navigeren,
@@ -1453,9 +1514,29 @@ export function RoutePanel() {
   // ("Vlakker" / "Meer klimmen"). Key forces a fresh generator instance so the
   // preference actually lands in its state.
   const [genPrefill, setGenPrefill] = useState<ElevationPreference | null>(null)
+  // Bestaande route wijzigen: de eigen-route-bouwer start met routepunten uit
+  // de echte routelijn. De key remount de generator zodat de punten landen.
+  const [genWaypoints, setGenWaypoints] = useState<{
+    routeId: number
+    points: RouteWaypoint[]
+  } | null>(null)
+
+  function editRouteWaypoints(route: SparkiRoute) {
+    const points = sampleWaypointsFromGeometry(route.geometry ?? [])
+    if (points.length < 2) return
+    setGenWaypoints({ routeId: route.id, points })
+    setGenPrefill(null)
+    setShowGenerator(true)
+    setTimeout(() => {
+      document
+        .getElementById("route-generator")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }, 50)
+  }
 
   function adjustRoute(pref: ElevationPreference) {
     setGenPrefill(pref)
+    setGenWaypoints(null)
     setShowGenerator(true)
     // Bring the generator into view — it renders above the route list.
     setTimeout(() => {
@@ -1495,7 +1576,14 @@ export function RoutePanel() {
         <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={() => setShowGenerator((s) => !s)}
+            onClick={() => {
+              setShowGenerator((s) => {
+                if (s) return false
+                setGenPrefill(null)
+                setGenWaypoints(null)
+                return true
+              })
+            }}
             className="font-mono text-[10px] uppercase tracking-[0.18em] transition"
             style={{ color: ACCENT }}
           >
@@ -1537,11 +1625,17 @@ export function RoutePanel() {
       {showGenerator && (
         <div className="mt-4" id="route-generator">
           <RouteGenerator
-            key={genPrefill ?? "default"}
+            key={
+              genWaypoints
+                ? `wp-${genWaypoints.routeId}`
+                : (genPrefill ?? "default")
+            }
             initialElevation={genPrefill}
+            initialWaypoints={genWaypoints?.points ?? null}
             onClose={() => {
               setShowGenerator(false)
               setGenPrefill(null)
+              setGenWaypoints(null)
             }}
           />
         </div>
@@ -1552,7 +1646,12 @@ export function RoutePanel() {
           <div className="h-40 w-full animate-pulse rounded-xl bg-white/[0.06]" />
         ) : routes.length > 0 ? (
           routes.map((r) => (
-            <RouteCard key={r.id} route={r} onAdjust={adjustRoute} />
+            <RouteCard
+              key={r.id}
+              route={r}
+              onAdjust={adjustRoute}
+              onEditWaypoints={editRouteWaypoints}
+            />
           ))
         ) : (
           <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
