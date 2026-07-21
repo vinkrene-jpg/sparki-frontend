@@ -29,7 +29,10 @@ import { isSportActive } from "@workspace/feature-flags"
 import { MapPin, Sparkles, Flag, Users, X, Download, Smartphone, Navigation, Share2 } from "lucide-react"
 import { useLocation, useSearch } from "wouter"
 import { RouteNavigator } from "@/components/sparki/route-navigator"
-import { ElevationProfile } from "@/components/sparki/elevation-profile"
+import {
+  ElevationProfile,
+  MiniElevationProfile,
+} from "@/components/sparki/elevation-profile"
 import { useRouteInsight } from "@/hooks/use-routes"
 
 // Editable list of named meeting points ("verzamelpunten") — e.g. where you
@@ -1232,35 +1235,59 @@ function RouteGenerator({
           <span className="label-xs text-white/35">KIES JE AFSTAND</span>
           <p className="mt-1 text-[12px] leading-relaxed text-white/40">
             {options.length > 1
-              ? `Sparki stelde ${options.length} routes voor rond je afstand. Kies degene die past — je ziet daarna de kaart, het hoogteprofiel en de navigatie.`
-              : "Sparki kon rond deze afstand één passende lus vinden. Kies hem om de kaart en navigatie te zien."}
+              ? `Sparki stelde ${options.length} routes voor rond je afstand. Bekijk de kaartjes en het hoogteprofiel, en kies degene die past.`
+              : "Sparki kon rond deze afstand één passende lus vinden. Kies hem om de details en navigatie te zien."}
           </p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
             {options.map((o) => (
-              <button
+              <div
                 key={o.candidateId}
-                type="button"
-                onClick={() => setCandidate(o)}
-                className="rounded-xl border border-white/[0.1] bg-white/[0.03] p-3.5 text-left transition-colors hover:border-cyan-300/40 hover:bg-cyan-300/[0.06]"
+                className="min-w-0 rounded-xl border border-white/[0.1] bg-white/[0.03] p-3 transition-colors hover:border-cyan-300/40"
               >
-                <span
-                  className="font-mono text-[9px] uppercase tracking-[0.16em]"
-                  style={{ color: ACCENT }}
-                >
-                  {(o as RouteCandidate & { variant?: string }).variant ??
-                    "Route"}
-                </span>
-                <div className="mt-1.5 font-sans text-xl font-light tracking-tight text-white/90">
-                  {o.distanceKm != null ? `${Math.round(o.distanceKm)} km` : "—"}
+                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                  <span
+                    className="font-mono text-[9px] uppercase tracking-[0.16em]"
+                    style={{ color: ACCENT }}
+                  >
+                    {(o as RouteCandidate & { variant?: string }).variant ??
+                      "Route"}
+                  </span>
+                  <span className="font-sans text-lg font-light tracking-tight text-white/90">
+                    {o.distanceKm != null
+                      ? `${Math.round(o.distanceKm)} km`
+                      : "—"}
+                  </span>
                 </div>
-                <div className="mt-1.5 flex items-center gap-3 font-mono text-[10px] tabular-nums text-white/45">
-                  <span>
-                    {o.elevationGainM != null ? `${o.elevationGainM} m` : "—"}
+                <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 font-mono text-[10px] tabular-nums text-white/45">
+                  <span className="whitespace-nowrap">
+                    {o.elevationGainM != null
+                      ? `${o.elevationGainM} m omhoog`
+                      : "—"}
                   </span>
                   <span>·</span>
-                  <span>{formatDuration(o.durationSec)}</span>
+                  <span className="whitespace-nowrap">
+                    {formatDuration(o.durationSec)}
+                  </span>
                 </div>
-              </button>
+                {o.geometry.length > 1 && (
+                  <RouteMap
+                    geometry={o.geometry}
+                    height={130}
+                    interactive={false}
+                    className="mt-2.5"
+                  />
+                )}
+                {o.profile.length > 0 && (
+                  <MiniElevationProfile profile={o.profile} />
+                )}
+                <button
+                  type="button"
+                  onClick={() => setCandidate(o)}
+                  className="mt-3 w-full rounded-xl border border-cyan-300/30 py-2 font-sans text-[12px] font-medium text-cyan-200/90 transition-colors hover:bg-cyan-300/[0.08]"
+                >
+                  Kies deze route
+                </button>
+              </div>
             ))}
           </div>
         </div>
@@ -1315,7 +1342,7 @@ function RouteGenerator({
             />
           )}
 
-          <div className="mt-4 flex items-center gap-5 border-t border-white/[0.07] pt-4">
+          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/[0.07] pt-4">
             <Stat
               label="Afstand"
               value={
@@ -1378,7 +1405,7 @@ function RouteGenerator({
             </p>
           )}
 
-          <div className="mt-4 flex gap-3">
+          <div className="mt-4 flex flex-wrap gap-3">
             <button
               type="button"
               onClick={saveCandidate}

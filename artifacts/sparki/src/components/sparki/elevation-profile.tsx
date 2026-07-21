@@ -19,6 +19,36 @@ function slopeColor(slopePct: number): string {
   return SLOPE_BANDS[1].color
 }
 
+// Compacte variant voor kleine keuzekaartjes: alleen de echte hoogtebalkjes,
+// zonder legenda — klein maar leesbaar.
+export function MiniElevationProfile({
+  profile,
+  className = "",
+}: {
+  profile: number[]
+  className?: string
+}) {
+  if (profile.length === 0) return null
+  const max = Math.max(...profile)
+  const min = Math.min(...profile)
+  const span = Math.max(1, max - min)
+  return (
+    <div className={`mt-2 flex h-9 items-end gap-px ${className}`}>
+      {profile.map((p, i) => (
+        <div
+          key={i}
+          className="flex-1 rounded-t-[1px]"
+          style={{
+            height: `${((p - min) / span) * 90 + 10}%`,
+            background:
+              "linear-gradient(180deg, rgba(120,210,230,0.55), rgba(120,210,230,0.08))",
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
 export function ElevationProfile({
   profile,
   distanceKm = null,
