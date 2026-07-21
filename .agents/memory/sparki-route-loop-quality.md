@@ -60,3 +60,6 @@ root causes and their durable fixes:
 - `POST /api/routes/generate/options` (loop-only) returns 3 real candidates at ~0.9×/1.0×/1.2× target, de-duped after clamp (3..200) so near a bound you honestly get <3. Each is a full server-stored candidate + a `variant` label, saveable via `POST /` like any candidate.
 - Shared `buildLoopCandidate(ctx, targetKm)` helper backs BOTH `/generate` (loop branch, early-return) and `/generate/options` so they never drift. ptp/waypoints keep the old inline tail.
 - Built sequentially (each loop fans out several ORS probes; parallel×3 risks rate limits). Frontend: `useGenerateRouteOptions`; loop mode button = "Genereer 3 routes" → chooser cards → pick sets `candidate` → normal preview/save; "← Andere afstand kiezen" back button.
+
+## Lussen >100 km
+ORS `round_trip` weigert alles boven 100.000 m. Lussen >95 km bouwt de provider zelf: waypoints op een cirkel rond de start (straal = lengte/(2π·1,25); seed draait startrichting én draairichting) via de gewone directions-API — echt wegennetwerk, geen straight lines. Cap is 300 km, consistent in provider + routes + frontend. ORS-fouten worden bij de provider naar plain Dutch vertaald (raw naar logs), nooit rauwe JSON in de UI.

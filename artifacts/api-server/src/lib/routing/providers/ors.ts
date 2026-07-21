@@ -101,6 +101,31 @@ export class OrsProvider implements RoutingProvider {
     return isCyclingProfile(profile) ? CYCLING_AVOID : FOOT_AVOID;
   }
 
+  // Vertaal een ORS-fout naar begrijpelijk Nederlands. De rauwe melding staat
+  // al in de logs; hier alleen een eerlijke, leesbare uitleg voor de renner.
+  private dutchOrsError(status: number, raw: string): string {
+    const r = raw.toLowerCase();
+    if (r.includes("could not find routable point") || r.includes("point 0")) {
+      return "Vlak bij dit startpunt is geen berijdbare weg gevonden. Kies een punt dichter bij een weg.";
+    }
+    if (
+      r.includes("route could not be found") ||
+      r.includes("unable to find a route")
+    ) {
+      return "Er is geen route gevonden tussen deze punten. Probeer een ander start- of eindpunt.";
+    }
+    if (r.includes("must not be greater than") || r.includes("maximum")) {
+      return "Deze afstand is te groot voor de routeservice. Probeer een kortere afstand.";
+    }
+    if (status === 429 || r.includes("quota") || r.includes("rate limit")) {
+      return "De routeservice is even overbelast. Probeer het over een paar minuten opnieuw.";
+    }
+    if (status === 401 || status === 403) {
+      return "De routeservice weigert de aanvraag (sleutelprobleem). Dit is een instellingsfout, geen gebruikersfout.";
+    }
+    return `De routeservice kon deze route niet maken (foutcode ${status}). Probeer het opnieuw of pas het startpunt of de afstand aan.`;
+  }
+
   private async directions(
     profile: RoutingProfile,
     body: Record<string, unknown>,
@@ -124,11 +149,14 @@ export class OrsProvider implements RoutingProvider {
     }
 
     if (!res.ok) {
-      const msg =
+      const raw =
         typeof json.error === "string"
           ? json.error
-          : (json.error?.message ?? `ORS-fout (status ${res.status})`);
-      throw new Error(msg);
+          : (json.error?.message ?? "");
+      // Eerlijk maar leesbaar: de rauwe (Engelse) ORS-fout gaat naar de logs,
+      // de gebruiker krijgt een begrijpelijke Nederlandse melding.
+      console.error(`ORS-fout (status ${res.status}): ${raw || text.slice(0, 300)}`);
+      throw new Error(this.dutchOrsError(res.status, raw));
     }
 
     const feature = json.features?.[0];
@@ -199,8 +227,16 @@ export class OrsProvider implements RoutingProvider {
 
   async generateLoop(req: LoopRequest): Promise<RouteResult> {
     const lengthM = Math.round(
-      Math.min(Math.max(req.distanceKm, 3), 200) * 1000,
+      Math.min(Math.max(req.distanceKm, 3), 300) * 1000,
     );
+    // ORS `round_trip` weigert alles boven 100 km ("must not be greater than
+    // 100000.0 meters"). Voor langere lussen bouwen we de rondte zelf: echte
+    // waypoints op een cirkel rond het startpunt, geroute via de gewone
+    // directions-API (die wél lange afstanden aankan). De geometrie blijft
+    // 100% echt wegennetwerk — alleen de tussenpunten kiezen wij.
+    if (lengthM > 95000) {
+      return this.longLoopViaWaypoints(req, lengthM);
+    }
     return this.directions(req.profile, {
       coordinates: [[req.start.lon, req.start.lat]],
       elevation: true,
@@ -214,6 +250,64 @@ export class OrsProvider implements RoutingProvider {
           seed: req.seed ?? Math.floor(Math.random() * 1e6),
         },
       },
+    });
+  }
+
+  // Lange lus (>95 km): waypoints op een cirkel rond de start. De straal is
+  // afgestemd op de gevraagde afstand (wegen zijn ~25% langer dan de ideale
+  // cirkel); de seed draait de startrichting zodat regenereren en best-of-N
+  // selectie echt verschillende lussen opleveren.
+  private async longLoopViaWaypoints(
+    req: LoopRequest,
+    lengthM: number,
+  ): Promise<RouteResult> {
+    const seed = req.seed ?? Math.floor(Math.random() * 1e6);
+    const nPoints = Math.max(4, Math.min(8, req.points ?? 6));
+    const radiusM = lengthM / (2 * Math.PI * 1.25);
+    const startBearing = ((seed % 360) * Math.PI) / 180;
+    const R = 6371000;
+    const lat1 = (req.start.lat * Math.PI) / 180;
+    const lon1 = (req.start.lon * Math.PI) / 180;
+    // Middelpunt van de cirkel ligt op één straal afstand in de startrichting,
+    // zodat het startpunt zelf óp de cirkel ligt.
+    const dest = (
+      fromLat: number,
+      fromLon: number,
+      bearing: number,
+      distM: number,
+    ): [number, number] => {
+      const d = distM / R;
+      const lat2 = Math.asin(
+        Math.sin(fromLat) * Math.cos(d) +
+          Math.cos(fromLat) * Math.sin(d) * Math.cos(bearing),
+      );
+      const lon2 =
+        fromLon +
+        Math.atan2(
+          Math.sin(bearing) * Math.sin(d) * Math.cos(fromLat),
+          Math.cos(d) - Math.sin(fromLat) * Math.sin(lat2),
+        );
+      return [lat2, lon2];
+    };
+    const [cLat, cLon] = dest(lat1, lon1, startBearing, radiusM);
+    // Richting van middelpunt terug naar start bepaalt waar op de cirkel we
+    // beginnen; de overige punten volgen met gelijke hoekstappen (met de klok
+    // mee of tegen, afhankelijk van de seed, voor extra variatie).
+    const backBearing = startBearing + Math.PI;
+    const dir = seed % 2 === 0 ? 1 : -1;
+    const coordinates: [number, number][] = [[req.start.lon, req.start.lat]];
+    for (let i = 1; i < nPoints; i++) {
+      const angle = backBearing + dir * (2 * Math.PI * i) / nPoints;
+      const [wLat, wLon] = dest(cLat, cLon, angle, radiusM);
+      coordinates.push([(wLon * 180) / Math.PI, (wLat * 180) / Math.PI]);
+    }
+    coordinates.push([req.start.lon, req.start.lat]);
+    return this.directions(req.profile, {
+      coordinates,
+      elevation: true,
+      instructions: true,
+      language: "nl",
+      options: { avoid_features: this.avoidFor(req.profile) },
     });
   }
 

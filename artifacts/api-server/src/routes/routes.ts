@@ -1258,7 +1258,7 @@ router.post("/generate", requireAuth, async (req, res) => {
         ) || null;
     }
     if (targetDistanceKm == null) targetDistanceKm = 40;
-    targetDistanceKm = Math.min(Math.max(targetDistanceKm, 3), 200);
+    targetDistanceKm = Math.min(Math.max(targetDistanceKm, 3), 300);
 
     // Resolve an A→B destination from explicit coords or a free-text place.
     let end: { lat: number; lon: number } | null = null;
@@ -1526,7 +1526,7 @@ router.post("/generate/options", requireAuth, async (req, res) => {
         ) || null;
     }
     if (targetDistanceKm == null) targetDistanceKm = 40;
-    targetDistanceKm = Math.min(Math.max(targetDistanceKm, 3), 200);
+    targetDistanceKm = Math.min(Math.max(targetDistanceKm, 3), 300);
     const base = targetDistanceKm;
 
     // korter ≈ 0,9× · gevraagd 1,0× · langer ≈ 1,2×. Clamp to the honest bounds
@@ -1534,7 +1534,7 @@ router.post("/generate/options", requireAuth, async (req, res) => {
     const distances = [
       ...new Set(
         [Math.round(base * 0.9), base, Math.round(base * 1.2)].map((d) =>
-          Math.min(Math.max(d, 3), 200),
+          Math.min(Math.max(d, 3), 300),
         ),
       ),
     ].sort((a, b) => a - b);

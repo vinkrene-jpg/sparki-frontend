@@ -667,7 +667,7 @@ function RouteGenerator({
       const kmh = sport === "running" ? 11 : 28
       const km = Math.max(
         3,
-        Math.min(200, Math.round((nearest.targetDurationMin / 60) * kmh)),
+        Math.min(300, Math.round((nearest.targetDurationMin / 60) * kmh)),
       )
       setDistance(String(km))
     }
@@ -1043,7 +1043,7 @@ function RouteGenerator({
             className={inputClass}
             type="number"
             min={3}
-            max={200}
+            max={300}
             value={linkedWorkout?.targetDurationMin ? "" : distance}
             placeholder={
               linkedWorkout?.targetDurationMin
