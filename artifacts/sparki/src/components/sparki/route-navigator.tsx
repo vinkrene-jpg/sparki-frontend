@@ -15,6 +15,11 @@ import {
   Zap,
   Ban,
   Trophy,
+  SlidersHorizontal,
+  Users,
+  User,
+  Check,
+  Bluetooth,
   type LucideIcon,
 } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
@@ -180,6 +185,21 @@ export function RouteNavigator({
   const [following, setFollowing] = useState(true)
   const [showSteps, setShowSteps] = useState(false)
   const [basemap, setBasemap] = useState<BasemapId>("standaard")
+  // Per-ride setup (map style, group riding, sensor pairing) is a one-time
+  // choice at the start of a ride, so it lives behind a collapsible panel and
+  // isn't permanently on screen.
+  const [setupOpen, setSetupOpen] = useState(false)
+  // Sprinting for "bordjes" only makes sense in a group ride, so it is opt-in.
+  const [withOthers, setWithOthers] = useState(false)
+  // Moving-average speed: accumulated distance/time while actually riding. Stops
+  // (e.g. waiting at a traffic light) are excluded so the average reflects real
+  // riding, not standing still.
+  const avgRef = useRef<{
+    meters: number
+    seconds: number
+    last: { t: number; lat: number; lon: number } | null
+  }>({ meters: 0, seconds: 0, last: null })
+  const [avgKmh, setAvgKmh] = useState<number | null>(null)
 
   // ── Bordjes sprinten ──────────────────────────────────────────────
   const submitSprint = useSubmitSprint()
@@ -328,7 +348,49 @@ export function RouteNavigator({
     const routeBounds =
       latlngs.length >= 2 ? L.latLngBounds(latlngs) : null
     if (latlngs.length >= 2) {
-      L.polyline(latlngs, { color: ACCENT, weight: 4, opacity: 0.9 }).addTo(map)
+      // Draw a dark casing under a bright line so the route stays clearly
+      // visible on any basemap (especially satellite), plus direction arrows so
+      // it's obvious which way to follow.
+      L.polyline(latlngs, {
+        color: "#0a1420",
+        weight: 9,
+        opacity: 0.9,
+        lineJoin: "round",
+        lineCap: "round",
+      }).addTo(map)
+      L.polyline(latlngs, {
+        color: "#22d3ee",
+        weight: 5,
+        opacity: 1,
+        lineJoin: "round",
+        lineCap: "round",
+      }).addTo(map)
+
+      // Place a direction chevron roughly every 350 m, rotated to the local
+      // heading of the route.
+      const ARROW_SPACING_KM = 0.35
+      let nextArrowKm = ARROW_SPACING_KM
+      for (let i = 1; i < path.length; i++) {
+        if ((cumKm[i] ?? 0) < nextArrowKm) continue
+        nextArrowKm = (cumKm[i] ?? 0) + ARROW_SPACING_KM
+        const rot = bearingDeg(path[i - 1]!, path[i]!)
+        const arrow = L.divIcon({
+          className: "",
+          html: `<span style="display:block;width:18px;height:18px;transform:rotate(${rot}deg);transform-origin:center;">
+              <svg viewBox="0 0 24 24" width="18" height="18" style="filter:drop-shadow(0 0 2px rgba(5,7,14,0.9));">
+                <path d="M12 3 L19 13 L12.9 13 L12.9 21 L11.1 21 L11.1 13 L5 13 Z" fill="#ffffff" stroke="#05121f" stroke-width="1.3" stroke-linejoin="round"/>
+              </svg>
+            </span>`,
+          iconSize: [18, 18],
+          iconAnchor: [9, 9],
+        })
+        L.marker([path[i]!.lat, path[i]!.lon], {
+          icon: arrow,
+          interactive: false,
+          keyboard: false,
+        }).addTo(map)
+      }
+
       const dot = (color: string) =>
         L.divIcon({
           className: "",
@@ -428,12 +490,38 @@ export function RouteNavigator({
   const speedKmh =
     location?.speedMps != null ? Math.round(location.speedMps * 3.6) : null
 
-  // Draw sprint boards on the map once, whenever the set changes.
+  // Moving-average speed. We add distance/time between fixes only while actually
+  // moving (≥ 3 km/h), so standing still — e.g. waiting at a traffic light —
+  // never drags the average down. Honest: it's a real average of real riding.
+  useEffect(() => {
+    if (!location) return
+    const now = Date.now()
+    const a = avgRef.current
+    if (a.last) {
+      const dt = (now - a.last.t) / 1000
+      const dm = haversineM(
+        { lat: a.last.lat, lon: a.last.lon },
+        { lat: location.lat, lon: location.lon },
+      )
+      const instKmh = dt > 0 ? (dm / dt) * 3.6 : 0
+      // Skip huge gaps (signal loss) and near-stationary samples (stops).
+      if (dt > 0 && dt < 15 && instKmh >= 3) {
+        a.meters += dm
+        a.seconds += dt
+      }
+    }
+    a.last = { t: now, lat: location.lat, lon: location.lon }
+    setAvgKmh(a.seconds > 0 ? Math.round((a.meters / a.seconds) * 3.6) : null)
+  }, [location])
+
+  // Draw sprint boards on the map once, whenever the set changes — only in a
+  // group ride, where sprinting for bordjes is the point.
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
     for (const m of boardMarkersRef.current) map.removeLayer(m)
     boardMarkersRef.current = []
+    if (!withOthers) return
     for (const b of boards) {
       const icon = L.divIcon({
         className: "",
@@ -452,11 +540,27 @@ export function RouteNavigator({
       for (const m of boardMarkersRef.current) mp.removeLayer(m)
       boardMarkersRef.current = []
     }
-  }, [boards])
+  }, [boards, withOthers])
+
+  // Reconcile sprint state whenever the ride mode flips. Re-seeding forces the
+  // scoring loop to mark every board already behind us as done on its next run,
+  // so switching back to a group ride can never retro-award boards that were
+  // passed while riding solo.
+  useEffect(() => {
+    seededBehindRef.current = false
+    doneBoardsRef.current = new Set()
+    spokenBoardRef.current = null
+    setArmedBoard(null)
+  }, [withOthers])
 
   // Track speed, arm the next board, and score a sprint when a board is passed.
   // Only real GPS speed is used; watts are added later when a meter is linked.
+  // Sprinting only runs in a group ride.
   useEffect(() => {
+    if (!withOthers) {
+      setArmedBoard(null)
+      return
+    }
     if (!location || !progress) return
     const now = Date.now()
     const kmh = location.speedMps != null ? location.speedMps * 3.6 : null
@@ -575,6 +679,30 @@ export function RouteNavigator({
     setArmedBoard(null)
   }
 
+  // Bottom metrics — core four always, watts/cadans appended only when a meter
+  // actually reports them (never fabricated).
+  const metrics: { label: string; value: string }[] = [
+    {
+      label: "Resterend",
+      value: progress ? `${progress.remainingKm.toFixed(1)} km` : "—",
+    },
+    {
+      label: "Totaal",
+      value: distanceKm != null ? `${distanceKm.toFixed(1)} km` : "—",
+    },
+    { label: "Snelheid", value: speedKmh != null ? `${speedKmh} km/u` : "—" },
+    { label: "Gem.", value: avgKmh != null ? `${avgKmh} km/u` : "—" },
+  ]
+  if (power.connected) {
+    metrics.push({
+      label: "Vermogen",
+      value: power.watts != null ? `${power.watts} W` : "—",
+    })
+  }
+  if (power.connected && power.cadence != null) {
+    metrics.push({ label: "Cadans", value: `${power.cadence} rpm` })
+  }
+
   const overlay = (
     <div className="fixed inset-0 z-[90] isolate bg-[#05070e]">
       <div ref={containerRef} className="absolute inset-0 z-0" />
@@ -593,26 +721,129 @@ export function RouteNavigator({
           <div className="min-w-0 flex-1 truncate rounded-full border border-white/10 bg-[#070d16]/90 px-3 py-2 text-[13px] text-white/70 backdrop-blur-md">
             {name}
           </div>
+          <button
+            type="button"
+            onClick={() => setSetupOpen((v) => !v)}
+            aria-label="Rit-instellingen"
+            className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] backdrop-blur-md transition ${
+              setupOpen
+                ? "border-cyan-400/40 bg-cyan-400/15 text-cyan-200"
+                : "border-white/10 bg-[#070d16]/90 text-white/70 hover:text-white"
+            }`}
+          >
+            <SlidersHorizontal className="h-4 w-4" strokeWidth={1.75} />
+            Instellen
+          </button>
         </div>
 
-        <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 rounded-full border border-white/10 bg-[#070d16]/90 p-1 backdrop-blur-md">
-          {(Object.keys(BASEMAPS) as BasemapId[]).map((id) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setBasemap(id)}
-              className={`rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition ${
-                basemap === id
-                  ? "bg-cyan-400 text-[#05070e]"
-                  : "text-white/55 hover:text-white/85"
-              }`}
-            >
-              {BASEMAPS[id].label}
-            </button>
-          ))}
-        </div>
+        {setupOpen && (
+          <div className="pointer-events-auto flex flex-col gap-3 rounded-2xl border border-white/10 bg-[#070d16]/95 p-3 backdrop-blur-md">
+            {/* Map style — a one-time choice at the start of the ride. */}
+            <div>
+              <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+                Kaartweergave
+              </p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {(Object.keys(BASEMAPS) as BasemapId[]).map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setBasemap(id)}
+                    className={`rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition ${
+                      basemap === id
+                        ? "bg-cyan-400 text-[#05070e]"
+                        : "border border-white/10 text-white/55 hover:text-white/85"
+                    }`}
+                  >
+                    {BASEMAPS[id].label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        {routeId != null && (
+            {/* Group riding — enables the bordjes-sprint game. */}
+            <div>
+              <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+                Rij je met anderen?
+              </p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setWithOthers(false)}
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] transition ${
+                    !withOthers
+                      ? "bg-cyan-400 text-[#05070e]"
+                      : "border border-white/10 text-white/55 hover:text-white/85"
+                  }`}
+                >
+                  <User className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Alleen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWithOthers(true)}
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] transition ${
+                    withOthers
+                      ? "bg-cyan-400 text-[#05070e]"
+                      : "border border-white/10 text-white/55 hover:text-white/85"
+                  }`}
+                >
+                  <Users className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Met anderen
+                </button>
+              </div>
+              {withOthers && (
+                <p className="mt-1.5 text-[11px] leading-snug text-white/45">
+                  Sprinten om plaatsbordjes staat aan — gas erop bij de
+                  komborden.
+                </p>
+              )}
+            </div>
+
+            {/* Sensor pairing — watts + cadans over Bluetooth. */}
+            <div>
+              <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+                Sensoren
+              </p>
+              {!power.supported ? (
+                <p className="text-[11px] leading-snug text-white/45">
+                  Deze telefoon of browser ondersteunt geen
+                  Bluetooth-koppeling.
+                </p>
+              ) : power.connected ? (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-[11px] text-cyan-200">
+                    <Check className="h-3.5 w-3.5" strokeWidth={2} />
+                    {power.deviceName ?? "Vermogensmeter"} gekoppeld
+                  </span>
+                  <button
+                    type="button"
+                    onClick={power.disconnect}
+                    className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-white/55 transition hover:text-white/85"
+                  >
+                    Ontkoppel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={power.connect}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/30 px-3 py-1.5 text-[11px] text-cyan-200 transition hover:bg-cyan-400/10"
+                >
+                  <Bluetooth className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Watt &amp; cadans koppelen
+                </button>
+              )}
+              {power.error && (
+                <p className="mt-1.5 text-[11px] leading-snug text-[rgba(255,180,120,0.9)]">
+                  {power.error}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {routeId != null && withOthers && (
           <div className="pointer-events-auto flex items-center gap-2.5 rounded-xl border border-yellow-400/25 bg-[#070d16]/92 px-3.5 py-2.5 backdrop-blur-md">
             <Zap
               className="h-5 w-5 shrink-0 text-yellow-300"
@@ -627,19 +858,6 @@ export function RouteNavigator({
                     ? `${boards.length} ${boards.length === 1 ? "bordje" : "bordjes"} om te sprinten. Gas erop bij de komborden!`
                     : "Geen plaatsbordjes op deze route — sprinten kan altijd, maar levert hier geen punten op."}
             </p>
-            {power.supported && !power.connected && (
-              <button
-                onClick={power.connect}
-                className="pointer-events-auto shrink-0 rounded-full border border-yellow-400/30 px-2.5 py-1 text-[11px] text-yellow-200/90 transition hover:bg-yellow-400/10"
-              >
-                Watt koppelen
-              </button>
-            )}
-            {power.connected && (
-              <span className="pointer-events-none shrink-0 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-[11px] text-cyan-200">
-                {power.watts != null ? `${power.watts} W` : "watt aan"}
-              </span>
-            )}
             <a
               href={`${import.meta.env.BASE_URL}sprinten`}
               className="pointer-events-auto shrink-0 rounded-full border border-yellow-400/30 px-2.5 py-1 text-[11px] text-yellow-200/90 transition hover:bg-yellow-400/10"
@@ -814,21 +1032,10 @@ export function RouteNavigator({
           </button>
         )}
 
-        <div className="pointer-events-auto flex items-center justify-around rounded-2xl border border-white/10 bg-[#070d16]/92 px-4 py-3 backdrop-blur-md">
-          <Metric
-            label="Resterend"
-            value={progress ? `${progress.remainingKm.toFixed(1)} km` : "—"}
-          />
-          <Divider />
-          <Metric
-            label="Totaal"
-            value={distanceKm != null ? `${distanceKm.toFixed(1)} km` : "—"}
-          />
-          <Divider />
-          <Metric
-            label="Snelheid"
-            value={speedKmh != null ? `${speedKmh} km/u` : "—"}
-          />
+        <div className="pointer-events-auto grid grid-cols-4 gap-x-2 gap-y-3 rounded-2xl border border-white/10 bg-[#070d16]/92 px-4 py-3 backdrop-blur-md">
+          {metrics.map((m) => (
+            <Metric key={m.label} label={m.label} value={m.value} />
+          ))}
         </div>
 
         {nav.length > 0 && (
@@ -892,10 +1099,6 @@ function Metric({ label, value }: { label: string; value: string }) {
       </span>
     </div>
   )
-}
-
-function Divider() {
-  return <span className="h-8 w-px bg-white/10" />
 }
 
 // Speak a short Dutch cue via the browser's speech engine. Best-effort: silently

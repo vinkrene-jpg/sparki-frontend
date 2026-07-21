@@ -15,14 +15,37 @@ type PowerState = {
   deviceName: string | null
   // Most recent instantaneous power (W), null until a reading arrives.
   watts: number | null
+  // Most recent crank cadence (rpm), null until a crank reading arrives. Only
+  // power meters that report crank-revolution data expose this — many do not,
+  // so it stays null rather than being fabricated.
+  cadence: number | null
   error: string | null
 }
 
-// Parse instantaneous power (int16, little-endian) from the Cycling Power
-// Measurement characteristic. The first 2 bytes are flags; watts follow.
-function parseInstantaneousPower(dv: DataView): number | null {
-  if (dv.byteLength < 4) return null
-  return dv.getInt16(2, true)
+// Parse the Cycling Power Measurement characteristic (0x2A63). Byte 0-1 are the
+// flags, bytes 2-3 the instantaneous power. Crank-revolution data (used for
+// cadence) is optional and sits after the other optional fields, so its offset
+// depends on which flags are set. Returns the watts plus, when present, the
+// cumulative crank revolutions and last crank event time (1/1024 s units).
+function parseMeasurement(dv: DataView): {
+  watts: number | null
+  crankRevs: number | null
+  crankTime: number | null
+} {
+  if (dv.byteLength < 4) return { watts: null, crankRevs: null, crankTime: null }
+  const flags = dv.getUint16(0, true)
+  const watts = dv.getInt16(2, true)
+  let offset = 4
+  if (flags & 0x0001) offset += 1 // Pedal Power Balance (uint8)
+  if (flags & 0x0004) offset += 2 // Accumulated Torque (uint16)
+  if (flags & 0x0010) offset += 6 // Wheel Revolution Data (uint32 + uint16)
+  let crankRevs: number | null = null
+  let crankTime: number | null = null
+  if (flags & 0x0020 && dv.byteLength >= offset + 4) {
+    crankRevs = dv.getUint16(offset, true)
+    crankTime = dv.getUint16(offset + 2, true)
+  }
+  return { watts, crankRevs, crankTime }
 }
 
 export function usePowerMeter() {
@@ -36,6 +59,7 @@ export function usePowerMeter() {
     connected: false,
     deviceName: null,
     watts: null,
+    cadence: null,
     error: null,
   })
 
@@ -43,18 +67,47 @@ export function usePowerMeter() {
   const charRef = useRef<any>(null)
   // Rolling window of {t, watts} so a 5-second peak can be computed by callers.
   const historyRef = useRef<{ t: number; w: number }[]>([])
+  // Previous crank sample (cumulative revolutions + last event time in 1/1024 s)
+  // and when we last saw the crank actually turn — for cadence + coasting.
+  const crankRef = useRef<{ revs: number; time: number } | null>(null)
+  const lastCrankMoveRef = useRef<number>(0)
 
   const onValue = useCallback((e: Event) => {
     const target = e.target as any
     const dv = target.value
     if (!dv) return
-    const w = parseInstantaneousPower(dv)
-    if (w === null) return
+    const { watts, crankRevs, crankTime } = parseMeasurement(dv)
     const now = Date.now()
-    const hist = historyRef.current
-    hist.push({ t: now, w })
-    while (hist.length && now - hist[0]!.t > 30000) hist.shift()
-    setState((s) => ({ ...s, watts: w }))
+    if (watts !== null) {
+      const hist = historyRef.current
+      hist.push({ t: now, w: watts })
+      while (hist.length && now - hist[0]!.t > 30000) hist.shift()
+    }
+
+    // Derive cadence (rpm) from the change in crank revolutions over the change
+    // in crank event time (units of 1/1024 s), both of which wrap at 65536.
+    let cadence: number | null | undefined
+    if (crankRevs !== null && crankTime !== null) {
+      const prev = crankRef.current
+      if (prev) {
+        const dRevs = (crankRevs - prev.revs + 65536) % 65536
+        const dTime = (crankTime - prev.time + 65536) % 65536
+        if (dTime > 0) {
+          cadence = Math.round((dRevs * 1024 * 60) / dTime)
+          if (dRevs > 0) lastCrankMoveRef.current = now
+        } else if (now - lastCrankMoveRef.current > 2500) {
+          // No new crank event for a while → the rider is coasting.
+          cadence = 0
+        }
+      }
+      crankRef.current = { revs: crankRevs, time: crankTime }
+    }
+
+    setState((s) => ({
+      ...s,
+      watts: watts !== null ? watts : s.watts,
+      cadence: cadence === undefined ? s.cadence : cadence,
+    }))
   }, [])
 
   const connect = useCallback(async () => {
@@ -79,7 +132,16 @@ export function usePowerMeter() {
       await char.startNotifications()
       char.addEventListener("characteristicvaluechanged", onValue)
       device.addEventListener("gattserverdisconnected", () => {
-        setState((s) => ({ ...s, connected: false }))
+        // An unexpected drop must clear live metrics + the crank baseline, so we
+        // never show stale watts/cadence or compute a bogus first cadence on
+        // reconnect against an old crank sample.
+        crankRef.current = null
+        setState((s) => ({
+          ...s,
+          connected: false,
+          watts: null,
+          cadence: null,
+        }))
       })
       setState((s) => ({
         ...s,
@@ -111,7 +173,8 @@ export function usePowerMeter() {
     }
     charRef.current = null
     deviceRef.current = null
-    setState((s) => ({ ...s, connected: false, watts: null }))
+    crankRef.current = null
+    setState((s) => ({ ...s, connected: false, watts: null, cadence: null }))
   }, [onValue])
 
   // Peak average power over the last `seconds` window (W), or null when no real
