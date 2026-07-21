@@ -75,7 +75,7 @@ export function RouteDetailDrawer({
               />
             )}
 
-            <div className="flex items-center gap-5 border-t border-white/[0.07] pt-4">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-white/[0.07] pt-4">
               <Stat
                 label="Afstand"
                 value={route.distanceKm != null ? `${route.distanceKm} km` : "—"}
