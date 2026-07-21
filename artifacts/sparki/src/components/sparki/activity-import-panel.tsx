@@ -1,4 +1,5 @@
 import { useRef, useState } from "react"
+import { Route as RouteIcon } from "lucide-react"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import {
   useActivityImports,
@@ -9,6 +10,7 @@ import {
   type GpxSummary,
   type FitSummary,
 } from "@/hooks/use-activity-imports"
+import { useSaveRideAsRoute } from "@/hooks/use-routes"
 import { useSessions } from "@/hooks/use-sessions"
 import type { TrainingSession } from "@/lib/athlete-types"
 
@@ -240,6 +242,8 @@ function ImportCard({
   sessions: TrainingSession[]
 }) {
   const del = useDeleteActivityImport()
+  const saveRoute = useSaveRideAsRoute()
+  const [savedRoute, setSavedRoute] = useState(false)
   const gpx = isGpxSummary(imp.parsedSummary) ? imp.parsedSummary : null
   const fit = isFitSummary(imp.parsedSummary) ? imp.parsedSummary : null
   const gpxStats: string[] = []
@@ -249,6 +253,10 @@ function ImportCard({
     if (dur) gpxStats.push(dur)
     if (gpx.elevationGainM != null) gpxStats.push(`${gpx.elevationGainM} hm`)
   }
+  // A ridden GPX keeps its real track shape, so it can be saved as a route to
+  // ride back later. Older imports (before tracks were stored) have no geometry
+  // and honestly get no button.
+  const canSaveAsRoute = (gpx?.route?.geometry?.length ?? 0) > 1
 
   return (
     <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md">
@@ -297,6 +305,41 @@ function ImportCard({
           wis
         </button>
       </div>
+      {canSaveAsRoute && (
+        <div className="mt-2.5 border-t border-white/[0.06] pt-2.5">
+          {savedRoute ? (
+            <p className="flex items-center gap-1.5 text-[12px] text-[rgba(140,230,170,0.9)]">
+              <RouteIcon className="h-3.5 w-3.5" />
+              Bewaard als route — terug te vinden bij je routes om nog eens te
+              rijden.
+            </p>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  saveRoute.mutate(
+                    { importId: imp.id },
+                    { onSuccess: () => setSavedRoute(true) },
+                  )
+                }
+                disabled={saveRoute.isPending}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/25 bg-cyan-400/[0.06] px-3 py-1.5 text-[12px] font-medium text-cyan-200/90 transition hover:bg-cyan-400/[0.12] disabled:opacity-40"
+              >
+                <RouteIcon className="h-3.5 w-3.5" />
+                {saveRoute.isPending ? "Bezig…" : "Bewaar als route"}
+              </button>
+              {saveRoute.isError && (
+                <p className="mt-1 text-[12px] text-[rgba(255,140,120,0.8)]">
+                  {saveRoute.error instanceof Error
+                    ? saveRoute.error.message
+                    : "Kon route niet opslaan"}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      )}
       {imp.status !== "failed" && <LinkRow imp={imp} sessions={sessions} />}
     </div>
   )

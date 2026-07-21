@@ -121,7 +121,7 @@ function esc(s: string): string {
 function buildRideGpx(
   points: { latitude: number; longitude: number; time: number }[],
   name: string,
-  note?: string,
+  note?: string | null,
 ): string | null {
   if (points.length < 2) return null;
   const trkName = esc(name.trim() || "Sparki rit");

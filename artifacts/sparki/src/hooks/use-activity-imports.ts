@@ -7,6 +7,18 @@ import { queryKeys } from "@/lib/query-keys";
 export type ActivityImportStatus = "uploaded" | "parsed" | "failed" | "linked";
 export type ActivityImportFileType = "gpx" | "fit" | "tcx" | "csv" | "unknown";
 
+// The real, stored track shape of a ridden GPX — kept at ingest so the ride can
+// later be saved as a re-ridable route. Absent (null) for older imports and any
+// source that doesn't retain geometry.
+export type GpxRoutePayload = {
+  geometry: ([number, number] | [number, number, number])[];
+  profile: number[];
+  climbs: unknown[];
+  distanceKm: number | null;
+  elevationGainM: number | null;
+  trackName: string | null;
+};
+
 export type GpxSummary = {
   pointCount: number;
   distanceKm: number | null;
@@ -15,6 +27,7 @@ export type GpxSummary = {
   endTime: string | null;
   durationSec: number | null;
   trackName: string | null;
+  route?: GpxRoutePayload | null;
 };
 
 // Real metrics decoded from a binary FIT activity file (Garmin/Wahoo/Zwift).

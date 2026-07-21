@@ -162,6 +162,28 @@ export function useCreateRoute() {
   });
 }
 
+// Save a RIDDEN ride (activity import with a stored GPS track) as a re-ridable
+// route. The server builds it from the real stored track, or returns 422 when
+// the ride has no geometry to ride back.
+export function useSaveRideAsRoute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      importId: number;
+      name?: string;
+      surface?: string;
+      visibility?: string;
+    }) =>
+      apiFetch<{ route: SparkiRoute }>("/api/routes/from-activity", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.routes.all() });
+    },
+  });
+}
+
 // Propose an ORS-backed route WITHOUT saving it. Returns the candidate.
 export function useGenerateRoute() {
   return useMutation({

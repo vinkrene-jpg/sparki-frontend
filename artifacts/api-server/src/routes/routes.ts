@@ -1208,6 +1208,109 @@ router.post("/", requireAuth, async (req, res) => {
   }
 });
 
+// POST /api/routes/from-activity — save a RIDDEN ride as a re-ridable route.
+// body: { importId, name?, surface?, visibility? }. The geometry/profile/climbs
+// come from the real track stored on the activity import at ingest — never
+// fabricated. If the import has no stored track (older imports, or non-GPX
+// sources that don't retain geometry), we honestly refuse (422) instead of
+// inventing a path.
+router.post("/from-activity", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const importId =
+    Number.isInteger(Number(body.importId)) && Number(body.importId) > 0
+      ? Number(body.importId)
+      : null;
+  if (importId == null) {
+    res.status(400).json({ error: "importId is verplicht" });
+    return;
+  }
+
+  try {
+    // Only the caller's own import may be read (cross-tenant protection).
+    const [imp] = await db
+      .select()
+      .from(activityImportsTable)
+      .where(
+        and(
+          eq(activityImportsTable.id, importId),
+          eq(activityImportsTable.clerkId, clerkId),
+        ),
+      )
+      .limit(1);
+    if (!imp) {
+      res.status(404).json({ error: "Activiteit niet gevonden" });
+      return;
+    }
+
+    const summary = (imp.parsedSummary ?? null) as {
+      route?: {
+        geometry?: RoutePathPoint[];
+        profile?: number[];
+        climbs?: unknown[];
+        distanceKm?: number | null;
+        elevationGainM?: number | null;
+        trackName?: string | null;
+      } | null;
+    } | null;
+    const stored = summary?.route ?? null;
+    // Defense-in-depth: only accept a real numeric [lat, lon(, ele)] tuple
+    // sequence. Guards against malformed historical JSON rather than trusting
+    // the stored shape blindly.
+    const geometry: RoutePathPoint[] = Array.isArray(stored?.geometry)
+      ? (stored!.geometry.filter(
+          (p): p is RoutePathPoint =>
+            Array.isArray(p) &&
+            p.length >= 2 &&
+            Number.isFinite(p[0]) &&
+            Number.isFinite(p[1]) &&
+            Math.abs(p[0] as number) <= 90 &&
+            Math.abs(p[1] as number) <= 180,
+        ) as RoutePathPoint[])
+      : [];
+    if (!stored || geometry.length < 2) {
+      res.status(422).json({
+        error:
+          "Deze rit heeft geen opgeslagen route om terug te rijden. Alleen ritten met een bewaarde GPS-track kunnen als route worden opgeslagen.",
+      });
+      return;
+    }
+
+    const name =
+      typeof body.name === "string" && body.name.trim()
+        ? body.name.trim()
+        : stored.trackName || imp.fileName || "Gereden route";
+
+    const [route] = await db
+      .insert(routesTable)
+      .values({
+        clerkId,
+        name,
+        surface: coerceSurface(body.surface),
+        visibility: coerceVisibility(body.visibility),
+        status: "ready",
+        distanceKm: stored.distanceKm ?? null,
+        elevationGainM: stored.elevationGainM ?? null,
+        profile: Array.isArray(stored.profile) ? stored.profile : null,
+        climbs:
+          Array.isArray(stored.climbs) && stored.climbs.length > 0
+            ? stored.climbs
+            : null,
+        // A ridden track carries no turn semantics, so nav stays null (the
+        // navigator shows the line without invented directions).
+        nav: null,
+        geometry: stored.geometry as RoutePathPoint[],
+        source: "ridden",
+        linkedActivityImportId: imp.id,
+      })
+      .returning();
+    res.status(201).json({ route });
+  } catch (err) {
+    req.log.error({ err }, "routes.fromActivity failed");
+    res.status(500).json({ error: "Kon route niet opslaan" });
+  }
+});
+
 // DELETE /api/routes/:id — remove a route (owner only).
 router.delete("/:id", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;

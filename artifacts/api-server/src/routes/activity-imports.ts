@@ -8,7 +8,7 @@ import {
   type ActivityImportFileType,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { parseGpx, parseFit, parseTcx } from "../engines/route";
+import { parseGpx, parseGpxRoute, parseFit, parseTcx } from "../engines/route";
 import {
   ingestActivityFile,
   fileExternalId,
@@ -124,11 +124,25 @@ router.post("/", requireAuth, async (req, res) => {
         await insertFailed("Geen geldige trackpunten gevonden in GPX-bestand");
         return;
       }
-      await insertParsed(
-        "gpx",
-        summary as unknown as Record<string, unknown>,
-        fileExternalId(content, fileName),
-      );
+      // Also derive and keep the real track shape (geometry + elevation profile
+      // + detected climbs) so this ridden ride can later be saved as a
+      // re-ridable route — all from the same real <trkpt> data, never fabricated.
+      const route = parseGpxRoute(content);
+      const merged: Record<string, unknown> = {
+        ...(summary as unknown as Record<string, unknown>),
+        route:
+          route && route.geometry.length > 1
+            ? {
+                geometry: route.geometry,
+                profile: route.profile,
+                climbs: route.climbs,
+                distanceKm: route.distanceKm,
+                elevationGainM: route.elevationGainM,
+                trackName: route.trackName,
+              }
+            : null,
+      };
+      await insertParsed("gpx", merged, fileExternalId(content, fileName));
       return;
     }
 
