@@ -10,7 +10,6 @@ import {
   useGenerateRouteOptions,
   useSaveGeneratedRoute,
   useDownloadRoute,
-  useDownloadCandidate,
   useShareRoute,
   canShareRouteFiles,
   type RouteExportFormat,
@@ -423,7 +422,7 @@ function RouteCard({
             </button>
           )}
           {canExport && (
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2.5">
               {canShareRouteFiles() && (
                 <button
                   type="button"
@@ -596,7 +595,6 @@ function RouteGenerator({
   const generate = useGenerateRoute()
   const genOptions = useGenerateRouteOptions()
   const save = useSaveGeneratedRoute()
-  const candidateDownload = useDownloadCandidate()
   const { data: workouts } = useUpcomingWorkouts()
   const { data: dashboard } = useAthleteDashboard()
 
@@ -633,7 +631,6 @@ function RouteGenerator({
   // Loop mode: the 3 distance variants (korter/gevraagd/langer) to choose from.
   const [options, setOptions] = useState<RouteCandidate[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
 
   // Seed the default loop distance from the training plan (nearest planned
   // session's duration) instead of a fixed 40 km. It's only an editable
@@ -699,7 +696,6 @@ function RouteGenerator({
   // fixed by the destination / placed points).
   function runGenerateOptions() {
     setError(null)
-    setSaved(false)
     setCandidate(null)
     setOptions(null)
     if (!start) {
@@ -731,7 +727,6 @@ function RouteGenerator({
 
   function runGenerate(nextSeed?: number) {
     setError(null)
-    setSaved(false)
     if (mode === "waypoints") {
       if (waypoints.length < 2) {
         setError("Plaats minstens twee routepunten op de kaart")
@@ -781,11 +776,13 @@ function RouteGenerator({
       { candidate, meetpoints },
       {
         onSuccess: () => {
-          setSaved(true)
           setCandidate(null)
           setOptions(null)
           setWaypoints([])
           setMeetpoints([])
+          // Eén situatie: sluit de generator zodat alleen de bewaarde
+          // routekaart (met navigeren/GPX/TCX/delen) overblijft.
+          onClose()
         },
         onError: (e) =>
           setError(e instanceof Error ? e.message : "Opslaan mislukt"),
@@ -1207,11 +1204,6 @@ function RouteGenerator({
       {error && (
         <p className="mt-3 text-[12px] text-[rgba(255,140,120,0.85)]">{error}</p>
       )}
-      {saved && (
-        <p className="mt-3 text-[12px]" style={{ color: ACCENT }}>
-          Route opgeslagen in je routes.
-        </p>
-      )}
 
       <button
         type="button"
@@ -1405,75 +1397,31 @@ function RouteGenerator({
             </p>
           )}
 
+          {/* Eén situatie: hier alleen bewaren of opnieuw genereren. Navigeren,
+              GPX/TCX en delen leven op de bewaarde routekaart — niet dubbel. */}
           <div className="mt-4 flex flex-wrap gap-3">
             <button
               type="button"
               onClick={saveCandidate}
               disabled={save.isPending}
-              className="flex-1 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
+              className="min-w-0 flex-1 basis-40 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
               style={{ background: ACCENT, color: "#040506" }}
             >
-              {save.isPending ? "Opslaan…" : "Bewaar"}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setError(null)
-                candidateDownload.mutate(
-                  {
-                    candidateId: candidate.candidateId,
-                    name: candidate.name,
-                    format: "gpx",
-                  },
-                  {
-                    onError: (e) =>
-                      setError(
-                        e instanceof Error ? e.message : "Download mislukt",
-                      ),
-                  },
-                )
-              }}
-              disabled={candidateDownload.isPending}
-              title="Download als GPX voor je fietscomputer"
-              className="flex items-center gap-1.5 rounded-2xl border border-white/[0.12] px-4 py-3.5 font-sans text-[13px] text-white/70 transition-colors hover:border-cyan-300/30 disabled:opacity-50"
-            >
-              <Download className="h-4 w-4" strokeWidth={1.75} />
-              GPX
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setError(null)
-                candidateDownload.mutate(
-                  {
-                    candidateId: candidate.candidateId,
-                    name: candidate.name,
-                    format: "tcx",
-                  },
-                  {
-                    onError: (e) =>
-                      setError(
-                        e instanceof Error ? e.message : "Download mislukt",
-                      ),
-                  },
-                )
-              }}
-              disabled={candidateDownload.isPending}
-              title="Download als TCX-course — meest betrouwbare navigatie op Garmin/Wahoo"
-              className="flex items-center gap-1.5 rounded-2xl border border-white/[0.12] px-4 py-3.5 font-sans text-[13px] text-white/70 transition-colors hover:border-cyan-300/30 disabled:opacity-50"
-            >
-              <Download className="h-4 w-4" strokeWidth={1.75} />
-              TCX
+              {save.isPending ? "Opslaan…" : "Bewaar route"}
             </button>
             <button
               type="button"
               onClick={() => runGenerate(Math.floor(Math.random() * 1e6))}
               disabled={generate.isPending}
-              className="rounded-2xl border border-white/[0.12] px-5 py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20 disabled:opacity-50"
+              className="min-w-0 flex-1 basis-40 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20 disabled:opacity-50"
             >
-              Regenereer
+              Opnieuw genereren
             </button>
           </div>
+          <p className="mt-2 text-[11px] leading-relaxed text-white/35">
+            Na het bewaren vind je hieronder de route terug — met navigeren,
+            downloaden (GPX/TCX) en delen naar je fietscomputer-app.
+          </p>
         </div>
       )}
     </div>
