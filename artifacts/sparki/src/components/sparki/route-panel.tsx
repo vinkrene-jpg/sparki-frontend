@@ -25,6 +25,7 @@ import {
 } from "@/hooks/use-routes"
 import { useUpcomingWorkouts } from "@/hooks/use-today-workout"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
+import { useFriends } from "@/hooks/use-social"
 import { isSportActive } from "@workspace/feature-flags"
 import { MapPin, Sparkles, Flag, Users, X, Download, Smartphone, Navigation, Share2 } from "lucide-react"
 import { useLocation, useSearch } from "wouter"
@@ -932,19 +933,40 @@ function RouteGenerator({
   initialElevation = null,
   initialWaypoints = null,
   onSaved = null,
+  initialSamen = null,
 }: {
   onClose: () => void
   initialElevation?: ElevationPreference | null
   initialWaypoints?: RouteWaypoint[] | null
+  // Bestaande samen-rijden-context (bijv. bij "route aanpassen" vanuit een
+  // lopende navigatie) — vult de keuze voor, zodat die niet stilletjes
+  // verloren gaat.
+  initialSamen?: { withOthers: boolean; maten: string[] } | null
   // Na een geslaagde opslag krijgt de aanroeper de ECHTE bewaarde route terug
-  // (bijv. om direct de navigatie ervan te openen).
-  onSaved?: ((route: SparkiRoute) => void) | null
+  // (bijv. om direct de navigatie ervan te openen), plus de samen-rijden-keuze
+  // zodat die de navigatie in kan (bordjes-sprint + gekozen maten).
+  onSaved?:
+    | ((
+        route: SparkiRoute,
+        samen: { withOthers: boolean; maten: string[] },
+      ) => void)
+    | null
 }) {
   const generate = useGenerateRoute()
   const genOptions = useGenerateRouteOptions()
   const save = useSaveGeneratedRoute()
   const { data: workouts } = useUpcomingWorkouts()
   const { data: dashboard } = useAthleteDashboard()
+  // Samen rijden: hier — bij het samenstellen van de route — kies je of je
+  // alleen of met anderen fietst. "Met anderen" zet het bordjes-sprintspel aan
+  // en laat je echte vrienden kiezen om mee te rijden. De keuze reist mee de
+  // navigatie in; daar hoef je niets meer in te stellen.
+  const { data: friendsData } = useFriends()
+  const friends = friendsData?.friends ?? []
+  const [withOthers, setWithOthers] = useState(
+    initialSamen?.withOthers ?? false,
+  )
+  const [buddyIds, setBuddyIds] = useState<string[]>(initialSamen?.maten ?? [])
 
   const [mode, setMode] = useState<"loop" | "ptp" | "waypoints">(
     initialWaypoints && initialWaypoints.length >= 2 ? "waypoints" : "loop",
@@ -1191,7 +1213,7 @@ function RouteGenerator({
           // Eén situatie: sluit de generator zodat alleen de bewaarde
           // routekaart (met navigeren/GPX/TCX/delen) overblijft.
           onClose()
-          onSaved?.(data.route)
+          onSaved?.(data.route, { withOthers, maten: buddyIds })
         },
         onError: (e) =>
           setError(e instanceof Error ? e.message : "Opslaan mislukt"),
@@ -1676,6 +1698,83 @@ function RouteGenerator({
         <p className="mt-3 text-[12px] text-[rgba(255,140,120,0.85)]">{error}</p>
       )}
 
+      {/* Samen rijden? — de plek waar je bordjes-sprint en je maten kiest. */}
+      <div className="mt-4 border-t border-white/[0.08] pt-4">
+        <span className="label-xs text-white/35">SAMEN RIJDEN?</span>
+        <div className="mt-2 flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              setWithOthers(false)
+              setBuddyIds([])
+            }}
+            className={`rounded-full px-3.5 py-1.5 font-sans text-[12px] transition ${
+              !withOthers
+                ? "bg-cyan-400 text-[#05070e]"
+                : "border border-white/10 text-white/55 hover:text-white/85"
+            }`}
+          >
+            Alleen
+          </button>
+          <button
+            type="button"
+            onClick={() => setWithOthers(true)}
+            className={`rounded-full px-3.5 py-1.5 font-sans text-[12px] transition ${
+              withOthers
+                ? "bg-cyan-400 text-[#05070e]"
+                : "border border-white/10 text-white/55 hover:text-white/85"
+            }`}
+          >
+            Met anderen
+          </button>
+        </div>
+        {withOthers && (
+          <div className="mt-2.5">
+            <p className="text-[12px] leading-relaxed text-white/50">
+              Sprinten om plaatsbordjes staat aan — gas erop bij de komborden.
+              Na het bewaren opent de navigatie direct met deze instelling.
+            </p>
+            {friends.length > 0 ? (
+              <>
+                <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+                  Wie fietst er mee?
+                </p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {friends.map((f) => {
+                    const active = buddyIds.includes(f.clerkId)
+                    return (
+                      <button
+                        key={f.clerkId}
+                        type="button"
+                        onClick={() =>
+                          setBuddyIds((ids) =>
+                            active
+                              ? ids.filter((id) => id !== f.clerkId)
+                              : [...ids, f.clerkId],
+                          )
+                        }
+                        className={`rounded-full px-3 py-1.5 font-sans text-[12px] transition ${
+                          active
+                            ? "border border-cyan-300/50 bg-cyan-300/15 text-cyan-200"
+                            : "border border-white/10 text-white/55 hover:text-white/85"
+                        }`}
+                      >
+                        {f.displayName}
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            ) : (
+              <p className="mt-2 text-[11px] leading-relaxed text-white/35">
+                Nog geen vrienden gekoppeld — voeg ze toe via Samen, dan kun je
+                ze hier kiezen. Sprinten om bordjes werkt ook zonder.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
       <button
         type="button"
         onClick={() => (mode === "loop" ? runGenerateOptions() : runGenerate())}
@@ -2110,18 +2209,46 @@ export function RoutePanel() {
             }
             initialElevation={genPrefill}
             initialWaypoints={genWaypoints?.points ?? null}
-            onSaved={
+            initialSamen={
+              // Bij "route aanpassen" vanuit de navigatie: bestaande
+              // samen-context uit de URL voorvullen, zodat die keuze niet
+              // stilletjes verdwijnt.
               genWaypoints?.returnToNav
-                ? (saved) => {
-                    // De rijder kwam uit het navigatievenster: open direct de
-                    // navigatie van de zojuist bewaarde (aangepaste) route.
-                    // Alleen `nav` wijzigt — overige URL-parameters blijven staan.
-                    const params = new URLSearchParams(window.location.search)
-                    params.set("nav", String(saved.id))
-                    setPanelLocation(`${panelPath}?${params.toString()}`)
+                ? {
+                    withOthers:
+                      new URLSearchParams(window.location.search).get(
+                        "samen",
+                      ) === "1",
+                    maten: (
+                      new URLSearchParams(window.location.search).get(
+                        "maten",
+                      ) ?? ""
+                    )
+                      .split(",")
+                      .filter(Boolean),
                   }
                 : null
             }
+            onSaved={(saved, samen) => {
+              // Twee situaties openen direct de navigatie van de zojuist
+              // bewaarde route: (1) de rijder kwam uit het navigatievenster
+              // ("route aanpassen") — samen-keuze uit de generator (die is
+              // dan voorgevuld met de bestaande context) wordt overgenomen;
+              // (2) hij koos "Met anderen" bij een verse route.
+              if (!genWaypoints?.returnToNav && !samen.withOthers) return
+              const params = new URLSearchParams(window.location.search)
+              params.set("nav", String(saved.id))
+              if (samen.withOthers) {
+                params.set("samen", "1")
+                if (samen.maten.length > 0)
+                  params.set("maten", samen.maten.join(","))
+                else params.delete("maten")
+              } else {
+                params.delete("samen")
+                params.delete("maten")
+              }
+              setPanelLocation(`${panelPath}?${params.toString()}`)
+            }}
             onClose={() => {
               setShowGenerator(false)
               setGenPrefill(null)

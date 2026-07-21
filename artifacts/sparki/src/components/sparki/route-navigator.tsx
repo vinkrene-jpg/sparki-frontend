@@ -33,6 +33,7 @@ import {
   type SprintBoard,
 } from "@/hooks/use-sprints"
 import { usePowerMeter } from "@/hooks/use-power-meter"
+import { useFriends } from "@/hooks/use-social"
 import { useGarage } from "@/hooks/use-garage"
 import { SENSOR_KIND_LABEL } from "@/components/sparki/wireless-sensors"
 import { apiFetch } from "@/lib/api"
@@ -257,7 +258,21 @@ export function RouteNavigator({
   // isn't permanently on screen.
   const [setupOpen, setSetupOpen] = useState(false)
   // Sprinting for "bordjes" only makes sense in a group ride, so it is opt-in.
-  const [withOthers, setWithOthers] = useState(false)
+  // De keuze wordt normaal al bij het genereren van de route gemaakt en reist
+  // mee via de URL (?samen=1&maten=…); de toggle hier blijft als override.
+  const [withOthers, setWithOthers] = useState(
+    () => new URLSearchParams(window.location.search).get("samen") === "1",
+  )
+  // Gekozen maten (vrienden-ids) uit de generator — alleen om eerlijk te
+  // tonen met wie deze rit gereden wordt.
+  const [buddyIds] = useState<string[]>(() => {
+    const raw = new URLSearchParams(window.location.search).get("maten")
+    return raw ? raw.split(",").filter(Boolean) : []
+  })
+  const { data: friendsData } = useFriends()
+  const buddyNames = (friendsData?.friends ?? [])
+    .filter((f) => buddyIds.includes(f.clerkId))
+    .map((f) => f.displayName)
   // Moving-average speed: accumulated distance/time while actually riding. Stops
   // (e.g. waiting at a traffic light) are excluded so the average reflects real
   // riding, not standing still.
@@ -1537,9 +1552,18 @@ export function RouteNavigator({
                   : boards.length > 0
                     ? `${boards.length} ${boards.length === 1 ? "bordje" : "bordjes"} om te sprinten. Gas erop bij de komborden!`
                     : "Geen plaatsbordjes op deze route — sprinten kan altijd, maar levert hier geen punten op."}
+              {buddyNames.length > 0 && (
+                <span className="text-white/45">
+                  {" "}
+                  Samen met {buddyNames.join(", ")}.
+                </span>
+              )}
             </p>
+            {/* Nieuw tabblad: de lopende navigatie blijft gewoon staan. */}
             <a
               href={`${import.meta.env.BASE_URL}sprinten`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="pointer-events-auto shrink-0 rounded-full border border-yellow-400/30 px-2.5 py-1 text-[11px] text-yellow-200/90 transition hover:bg-yellow-400/10"
             >
               Seizoen
