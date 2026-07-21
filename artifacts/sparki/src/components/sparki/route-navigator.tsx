@@ -801,16 +801,41 @@ export function RouteNavigator({
         }).addTo(map)
       }
 
-      const dot = (color: string) =>
-        L.divIcon({
-          className: "",
-          html: `<span style="display:block;width:12px;height:12px;border-radius:9999px;background:${color};box-shadow:0 0 0 3px rgba(5,7,14,0.9),0 0 10px ${color};"></span>`,
-          iconSize: [12, 12],
-          iconAnchor: [6, 6],
-        })
-      L.marker(latlngs[0]!, { icon: dot(ACCENT) }).addTo(map)
+      // Start = green flag, finish = checkered flag. Static SVG only — no
+      // user-controlled content ever enters this divIcon HTML sink.
+      const startIcon = L.divIcon({
+        className: "",
+        html: `<span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:#0b1622;border:2px solid #4ade80;box-shadow:0 0 0 2px rgba(5,7,14,0.9),0 0 10px rgba(74,222,128,0.6);">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#4ade80" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 22V4"/><path d="M4 4c3-1.8 6 1.8 9 0s5-1 7 0v9c-2-1-4-1.8-7 0s-6-1.8-9 0"/>
+            </svg>
+          </span>`,
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
+      })
+      const finishIcon = L.divIcon({
+        className: "",
+        html: `<span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:#0b1622;border:2px solid rgba(255,255,255,0.85);box-shadow:0 0 0 2px rgba(5,7,14,0.9),0 0 10px rgba(255,255,255,0.45);">
+            <svg viewBox="0 0 16 16" width="13" height="13">
+              <rect x="2" y="1" width="1.6" height="14" rx="0.8" fill="#e5e7eb"/>
+              <g>
+                <rect x="4" y="1" width="10" height="8" fill="#e5e7eb"/>
+                <rect x="4" y="1" width="2.5" height="2.66" fill="#0b1622"/>
+                <rect x="9" y="1" width="2.5" height="2.66" fill="#0b1622"/>
+                <rect x="6.5" y="3.66" width="2.5" height="2.66" fill="#0b1622"/>
+                <rect x="11.5" y="3.66" width="2.5" height="2.66" fill="#0b1622"/>
+                <rect x="4" y="6.33" width="2.5" height="2.66" fill="#0b1622"/>
+                <rect x="9" y="6.33" width="2.5" height="2.66" fill="#0b1622"/>
+              </g>
+            </svg>
+          </span>`,
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
+      })
+      L.marker(latlngs[0]!, { icon: startIcon, zIndexOffset: 500 }).addTo(map)
       L.marker(latlngs[latlngs.length - 1]!, {
-        icon: dot("rgba(255,160,90,0.95)"),
+        icon: finishIcon,
+        zIndexOffset: 500,
       }).addTo(map)
       map.fitBounds(L.latLngBounds(latlngs), { padding: [40, 40] })
     } else if (latlngs.length === 1) {
@@ -870,18 +895,31 @@ export function RouteNavigator({
     const ll: [number, number] = [location.lat, location.lon]
     const hasHeading = location.heading != null
     const rot = location.heading ?? 0
-    const html = hasHeading
-      ? `<span style="display:block;width:26px;height:26px;transform:rotate(${rot}deg);transform-origin:center;">
-           <svg viewBox="0 0 24 24" width="26" height="26" style="filter:drop-shadow(0 0 4px rgba(56,189,248,0.8));">
-             <path d="M12 2 L19 20 L12 15.5 L5 20 Z" fill="#38bdf8" stroke="#05070e" stroke-width="1.4" stroke-linejoin="round"/>
-           </svg>
-         </span>`
-      : `<span style="display:block;width:16px;height:16px;border-radius:9999px;background:#38bdf8;border:2px solid #05070e;box-shadow:0 0 0 3px rgba(56,189,248,0.35),0 0 12px #38bdf8;"></span>`
+    // The rider is a cyclist badge (not a bare dot). With a known heading a
+    // direction pointer rotates around the badge; the cyclist itself stays
+    // upright so it always reads as "jij op de fiets".
+    const bikeSvg = `<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#05070e" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>
+      </svg>`
+    const html = `<span style="position:relative;display:block;width:38px;height:38px;">
+        ${
+          hasHeading
+            ? `<span style="position:absolute;inset:0;transform:rotate(${rot}deg);transform-origin:center;">
+                 <svg viewBox="0 0 38 38" width="38" height="38">
+                   <path d="M19 0 L24 9 L14 9 Z" fill="#38bdf8" stroke="#05070e" stroke-width="1.2" stroke-linejoin="round"/>
+                 </svg>
+               </span>`
+            : ""
+        }
+        <span style="position:absolute;left:5px;top:5px;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9999px;background:#38bdf8;border:2px solid #05070e;box-shadow:0 0 0 3px rgba(56,189,248,0.3),0 0 14px rgba(56,189,248,0.8);">
+          ${bikeSvg}
+        </span>
+      </span>`
     const icon = L.divIcon({
       className: "",
       html,
-      iconSize: hasHeading ? [26, 26] : [16, 16],
-      iconAnchor: hasHeading ? [13, 13] : [8, 8],
+      iconSize: [38, 38],
+      iconAnchor: [19, 19],
     })
     if (!meMarkerRef.current) {
       meMarkerRef.current = L.marker(ll, { icon, zIndexOffset: 1000 }).addTo(map)
