@@ -367,6 +367,41 @@ async function main() {
     );
   });
 
+  await run("Merge", "a title fills a missing title (connector had none)", () => {
+    // A connector ride landed first with no title; the athlete's file export of
+    // the SAME ride carries the rider's chosen title. The merge must fill it.
+    const patch = buildMergePatch(
+      { title: null },
+      { title: "Ronde om het meer" },
+    );
+    assert(
+      patch.title === "Ronde om het meer",
+      `missing title filled from file → ${String(patch.title)}`,
+    );
+  });
+
+  await run("Merge", "an existing title is never overwritten by a later source", () => {
+    // The rider's title already lives on the canonical row; a later source (even
+    // a connector's generic auto-title like "Morning Ride") must NOT clobber it.
+    const withTitle = buildMergePatch(
+      { title: "Ronde om het meer" },
+      { title: "Morning Ride" },
+    );
+    assert(
+      !("title" in withTitle),
+      `existing title untouched by auto-title → ${JSON.stringify(withTitle)}`,
+    );
+    // And an empty later title likewise can't wipe an existing one.
+    const later = buildMergePatch(
+      { title: "Ronde om het meer" },
+      { title: null },
+    );
+    assert(
+      !("title" in later),
+      `existing title survives an empty later source → ${JSON.stringify(later)}`,
+    );
+  });
+
   await run("Unlink", "parsed TCX unlinks back to 'parsed', not 'uploaded'", () => {
     assert(
       unlinkedImportStatus("tcx", true) === "parsed",
@@ -606,6 +641,88 @@ async function main() {
       assert(
         afterLater!.notes === "Lekker gevoel, wind mee op de terugweg.",
         `existing note never overwritten by a later source → ${String(afterLater!.notes)}`,
+      );
+    });
+
+    await run("Ingest", "a rider's ride title survives merge with a connector import", async () => {
+      await cleanup();
+      // A Strava ride lands first WITHOUT a title (connectors often omit it or
+      // supply a generic auto-title later).
+      const stravaBatch: NormalizedBatch = {
+        importedDataTypes: ["activities", "training_history"],
+        activities: [
+          {
+            externalId: "strava-title-1",
+            sport: "cycling",
+            startedAt: START,
+            durationMin: 30,
+            avgHR: 145,
+          },
+        ],
+      };
+      const allowed = new Set<ConnectorDataType>([
+        "activities",
+        "training_history",
+      ]);
+      await ingestBatch(clerkId, "strava", stravaBatch, { allowed });
+
+      // The athlete uploads the SAME ride's GPX carrying their chosen title.
+      const start = Date.parse(START);
+      const gpx = buildRideGpx(
+        sampleRidePoints(start),
+        "Ronde om het meer",
+        null,
+      )!;
+      await ingestActivityFile(
+        clerkId,
+        "gpx",
+        parseGpx(gpx)!,
+        fileExternalId(gpx, "ride.gpx"),
+      );
+
+      const [afterFill] = await db
+        .select()
+        .from(trainingSessionsTable)
+        .where(
+          and(
+            eq(trainingSessionsTable.clerkId, clerkId),
+            eq(trainingSessionsTable.dedupeKey, dedupeKey),
+          ),
+        );
+      assert(!!afterFill, "merged session exists");
+      assert(
+        afterFill!.title === "Ronde om het meer",
+        `file title filled the empty connector title → ${String(afterFill!.title)}`,
+      );
+
+      // A later connector source with a generic auto-title ("Morning Ride")
+      // must NOT overwrite the rider's own title.
+      const laterBatch: NormalizedBatch = {
+        importedDataTypes: ["activities", "training_history"],
+        activities: [
+          {
+            externalId: "garmin-title-1",
+            sport: "cycling",
+            startedAt: START,
+            durationMin: 30,
+            title: "Morning Ride",
+          },
+        ],
+      };
+      await ingestBatch(clerkId, "garmin", laterBatch, { allowed });
+
+      const [afterLater] = await db
+        .select()
+        .from(trainingSessionsTable)
+        .where(
+          and(
+            eq(trainingSessionsTable.clerkId, clerkId),
+            eq(trainingSessionsTable.dedupeKey, dedupeKey),
+          ),
+        );
+      assert(
+        afterLater!.title === "Ronde om het meer",
+        `existing title never overwritten by an auto-title → ${String(afterLater!.title)}`,
       );
     });
   } finally {
