@@ -141,6 +141,100 @@ export async function getForecast(
   return out;
 }
 
+// ── Hourly forecast (route-paspoort: weer op de vertrektijd) ────────────────
+
+export type HourForecast = {
+  time: string; // ISO local hour (location timezone), e.g. "2026-07-21T14:00"
+  tempC: number | null;
+  uvIndex: number | null;
+  windKmh: number | null;
+  windGustKmh: number | null;
+  windDirDeg: number | null;
+  precipProbPct: number | null;
+};
+
+type HourlyResponse = {
+  hourly?: {
+    time?: string[];
+    temperature_2m?: (number | null)[];
+    uv_index?: (number | null)[];
+    wind_speed_10m?: (number | null)[];
+    wind_gusts_10m?: (number | null)[];
+    wind_direction_10m?: (number | null)[];
+    precipitation_probability?: (number | null)[];
+  };
+  error?: boolean;
+};
+
+const HOURLY_CACHE = new Map<string, { at: number; data: HourForecast[] }>();
+
+/**
+ * Real hourly forecast for a coordinate (up to `days` days, max 16). Same
+ * honesty contract as getForecast: [] on failure, nothing fabricated.
+ */
+export async function getHourlyForecast(
+  lat: number,
+  lon: number,
+  days = 7,
+): Promise<HourForecast[]> {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return [];
+  const want = Math.min(Math.max(Math.trunc(days), 1), MAX_FORECAST_DAYS);
+  const key = `h:${lat.toFixed(2)},${lon.toFixed(2)}:${want}`;
+  const hit = HOURLY_CACHE.get(key);
+  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.data;
+
+  const url = new URL(OPEN_METEO_BASE);
+  url.searchParams.set("latitude", String(lat));
+  url.searchParams.set("longitude", String(lon));
+  url.searchParams.set("timezone", "auto");
+  url.searchParams.set("forecast_days", String(want));
+  url.searchParams.set(
+    "hourly",
+    [
+      "temperature_2m",
+      "uv_index",
+      "wind_speed_10m",
+      "wind_gusts_10m",
+      "wind_direction_10m",
+      "precipitation_probability",
+    ].join(","),
+  );
+
+  let json: HourlyResponse;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        headers: { Accept: "application/json" },
+        signal: ctrl.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+    if (!res.ok) return [];
+    json = (await res.json()) as HourlyResponse;
+  } catch {
+    return [];
+  }
+  if (json.error || !json.hourly?.time) return [];
+
+  const h = json.hourly;
+  const out: HourForecast[] = (h.time ?? []).map((time, i) => ({
+    time,
+    tempC: num(h.temperature_2m?.[i]),
+    uvIndex: num(h.uv_index?.[i]),
+    windKmh: num(h.wind_speed_10m?.[i]),
+    windGustKmh: num(h.wind_gusts_10m?.[i]),
+    windDirDeg: num(h.wind_direction_10m?.[i]),
+    precipProbPct: num(h.precipitation_probability?.[i]),
+  }));
+
+  HOURLY_CACHE.set(key, { at: Date.now(), data: out });
+  return out;
+}
+
 /** Build a date→forecast lookup for quick per-day joins. */
 export async function getForecastByDate(
   lat: number,

@@ -28,6 +28,8 @@ import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { isSportActive } from "@workspace/feature-flags"
 import { MapPin, Sparkles, Flag, Users, X, Download, Smartphone, Navigation, Share2 } from "lucide-react"
 import { RouteNavigator } from "@/components/sparki/route-navigator"
+import { ElevationProfile } from "@/components/sparki/elevation-profile"
+import { useRouteInsight } from "@/hooks/use-routes"
 
 // Editable list of named meeting points ("verzamelpunten") — e.g. where you
 // pick up a friend. Shared by the interactive builder and the generated-route
@@ -154,28 +156,6 @@ function formatDuration(sec: number | null): string {
   return h > 0 ? `${h}u ${m}m` : `${m}m`
 }
 
-function ElevationProfile({ profile }: { profile: number[] }) {
-  if (profile.length === 0) return null
-  const max = Math.max(...profile)
-  const min = Math.min(...profile)
-  const span = Math.max(1, max - min)
-  return (
-    <div className="mt-4 flex h-16 items-end gap-px">
-      {profile.map((p, i) => (
-        <div
-          key={i}
-          className="flex-1 rounded-t-[1px]"
-          style={{
-            height: `${((p - min) / span) * 90 + 10}%`,
-            background:
-              "linear-gradient(180deg, rgba(120,210,230,0.55), rgba(120,210,230,0.08))",
-          }}
-        />
-      ))}
-    </div>
-  )
-}
-
 function Climbs({ climbs }: { climbs: RouteClimb[] }) {
   if (climbs.length === 0) return null
   return (
@@ -213,12 +193,168 @@ function Climbs({ climbs }: { climbs: RouteClimb[] }) {
   )
 }
 
-function RouteCard({ route }: { route: SparkiRoute }) {
+// Route-paspoort: honest, real facts about the route — grade split from the
+// stored elevation profile, live weather at the chosen departure hour, and
+// environment (traffic lights, forest share) from OpenStreetMap. Blocks whose
+// source can't answer show a plain-Dutch gap; nothing is invented.
+function RoutePassport({
+  route,
+  onAdjust,
+}: {
+  route: SparkiRoute
+  onAdjust?: (pref: ElevationPreference) => void
+}) {
+  // Default departure: next full hour, as datetime-local value.
+  const [departAt, setDepartAt] = useState(() => {
+    const d = new Date(Date.now() + 60 * 60_000)
+    d.setMinutes(0, 0, 0)
+    const pad = (n: number) => String(n).padStart(2, "0")
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:00`
+  })
+  const { data, isLoading, isError } = useRouteInsight(
+    route.id,
+    departAt ? new Date(departAt).toISOString() : null,
+  )
+  const insight = data?.insight
+
+  const rows: { label: string; value: string }[] = []
+  if (insight?.grade) {
+    rows.push(
+      { label: "Vlak", value: `${insight.grade.flatKm} km` },
+      { label: "Stijgend", value: `${insight.grade.upKm} km` },
+      { label: "Dalend", value: `${insight.grade.downKm} km` },
+    )
+  }
+  const w = insight?.weather
+  if (w) {
+    if (w.windBft != null || w.windKmh != null) {
+      rows.push({
+        label: "Wind",
+        value: [
+          w.windBft != null ? `${w.windBft} Bft` : null,
+          w.windDirLabel ? `uit het ${w.windDirLabel}en` : null,
+          w.windKmh != null ? `(${Math.round(w.windKmh)} km/u)` : null,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      })
+    }
+    if (w.tempC != null)
+      rows.push({ label: "Temperatuur", value: `${Math.round(w.tempC)} °C` })
+    if (w.uvIndex != null)
+      rows.push({ label: "Zonkracht (UV)", value: `${Math.round(w.uvIndex)}` })
+    if (w.precipProbPct != null)
+      rows.push({ label: "Kans op neerslag", value: `${w.precipProbPct}%` })
+  }
+  const env = insight?.environment
+  if (env) {
+    if (env.trafficLights != null)
+      rows.push({
+        label: "Verkeerslichten",
+        value: `${env.trafficLights} op de route`,
+      })
+    if (env.forestSharePct != null)
+      rows.push({
+        label: "Door bos",
+        value: `±${env.forestSharePct}% (indicatie)`,
+      })
+  }
+
+  return (
+    <div className="mt-4 rounded-lg border border-white/[0.07] bg-white/[0.03] p-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="label-xs text-white/35">ROUTE-PASPOORT</span>
+        <label className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-white/40">
+          Vertrek
+          <input
+            type="datetime-local"
+            value={departAt}
+            onChange={(e) => setDepartAt(e.target.value)}
+            className="rounded-md border border-white/[0.1] bg-white/[0.04] px-2 py-1 font-sans text-[12px] text-white/80 focus:border-cyan-300/40 focus:outline-none [color-scheme:dark]"
+          />
+        </label>
+      </div>
+
+      {isLoading ? (
+        <p className="mt-3 text-[12px] text-white/35">Feiten worden opgehaald…</p>
+      ) : isError ? (
+        <p className="mt-3 text-[12px] text-white/35">
+          Het route-paspoort kon nu niet worden opgehaald. Probeer het later
+          opnieuw.
+        </p>
+      ) : rows.length > 0 ? (
+        <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+          {rows.map((r) => (
+            <div key={r.label} className="min-w-0">
+              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">
+                {r.label}
+              </p>
+              <p className="break-words text-[13px] tracking-tight text-white/85">
+                {r.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-3 text-[12px] text-white/35">
+          Voor deze route zijn nog geen feiten beschikbaar — er is geen
+          hoogteprofiel of routegeometrie opgeslagen.
+        </p>
+      )}
+
+      {insight && !insight.weather && insight.hasGeometry && !isLoading && (
+        <p className="mt-2 text-[11px] text-white/30">
+          Weerbericht voor dit tijdstip is nog niet beschikbaar (maximaal ±15
+          dagen vooruit).
+        </p>
+      )}
+      {insight && insight.environment == null && !isLoading && (
+        <p className="mt-2 text-[11px] text-white/30">
+          Verkeerslichten en bos-aandeel konden nu niet worden opgehaald uit
+          OpenStreetMap.
+        </p>
+      )}
+
+      {onAdjust && route.source === "gegenereerd" && (
+        <div className="mt-3 border-t border-white/[0.06] pt-3">
+          <p className="text-[11px] text-white/40">
+            Past dit niet? Bouw een nieuwe route met een andere voorkeur:
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => onAdjust("flat")}
+              className="rounded-full border border-white/[0.12] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-white/60 transition hover:border-cyan-300/40 hover:text-cyan-300"
+            >
+              Vlakker
+            </button>
+            <button
+              type="button"
+              onClick={() => onAdjust("hilly")}
+              className="rounded-full border border-white/[0.12] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-white/60 transition hover:border-cyan-300/40 hover:text-cyan-300"
+            >
+              Meer klimmen
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RouteCard({
+  route,
+  onAdjust,
+}: {
+  route: SparkiRoute
+  onAdjust?: (pref: ElevationPreference) => void
+}) {
   const del = useDeleteRoute()
   const download = useDownloadRoute()
   const share = useShareRoute()
   const [gpxError, setGpxError] = useState<string | null>(null)
   const [navigating, setNavigating] = useState(false)
+  const [showPassport, setShowPassport] = useState(false)
   const profile = route.profile ?? []
   const climbs = route.climbs ?? []
   const nav = route.nav ?? []
@@ -337,7 +473,19 @@ function RouteCard({ route }: { route: SparkiRoute }) {
         <RouteMap geometry={geometry} climbs={climbs} className="mt-4" />
       )}
 
-      {profile.length > 0 && <ElevationProfile profile={profile} />}
+      {profile.length > 0 && (
+        <ElevationProfile profile={profile} distanceKm={route.distanceKm} />
+      )}
+
+      <button
+        type="button"
+        onClick={() => setShowPassport((s) => !s)}
+        className="mt-4 font-mono text-[10px] uppercase tracking-[0.16em] transition"
+        style={{ color: ACCENT }}
+      >
+        {showPassport ? "− route-paspoort" : "+ route-paspoort"}
+      </button>
+      {showPassport && <RoutePassport route={route} onAdjust={onAdjust} />}
 
       <div className="mt-4 flex items-center gap-5 border-t border-white/[0.07] pt-4">
         <Stat
@@ -370,13 +518,15 @@ function RouteCard({ route }: { route: SparkiRoute }) {
               key={i}
               className="flex items-baseline gap-3 border-b border-white/[0.05] py-2.5 last:border-0"
             >
-              <span className="w-12 font-mono text-[11px] tabular-nums text-cyan-300/70">
+              <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-cyan-300/70">
                 {n.km}
               </span>
-              <span className="w-20 text-[13px] tracking-tight text-white/85">
+              <span className="w-20 shrink-0 break-words text-[13px] tracking-tight text-white/85">
                 {n.dir}
               </span>
-              <span className="flex-1 text-[12px] text-white/40">{n.note}</span>
+              <span className="min-w-0 flex-1 break-words text-[12px] text-white/40">
+                {n.note}
+              </span>
             </div>
           ))}
         </div>
@@ -418,7 +568,13 @@ function RouteCard({ route }: { route: SparkiRoute }) {
 const inputClass =
   "w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
 
-function RouteGenerator({ onClose }: { onClose: () => void }) {
+function RouteGenerator({
+  onClose,
+  initialElevation = null,
+}: {
+  onClose: () => void
+  initialElevation?: ElevationPreference | null
+}) {
   const generate = useGenerateRoute()
   const genOptions = useGenerateRouteOptions()
   const save = useSaveGeneratedRoute()
@@ -446,7 +602,7 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
     setBikeType(derivedBike)
   }, [derivedBike, bikeTouched])
   const [elevationPreference, setElevationPreference] =
-    useState<ElevationPreference>("any")
+    useState<ElevationPreference>(initialElevation ?? "any")
   const [trainingType, setTrainingType] = useState("duurtraining")
   const [workoutId, setWorkoutId] = useState<string>("")
   const [distance, setDistance] = useState("40")
@@ -1138,7 +1294,10 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
           )}
 
           {candidate.profile.length > 0 && (
-            <ElevationProfile profile={candidate.profile} />
+            <ElevationProfile
+              profile={candidate.profile}
+              distanceKm={candidate.distanceKm}
+            />
           )}
 
           <div className="mt-4 flex items-center gap-5 border-t border-white/[0.07] pt-4">
@@ -1186,10 +1345,10 @@ function RouteGenerator({ onClose }: { onClose: () => void }) {
                     <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-cyan-300/70">
                       {n.km}
                     </span>
-                    <span className="w-24 shrink-0 text-[12px] tracking-tight text-white/85">
+                    <span className="w-24 shrink-0 break-words text-[12px] tracking-tight text-white/85">
                       {n.dir}
                     </span>
-                    <span className="flex-1 text-[12px] text-white/40">
+                    <span className="min-w-0 flex-1 break-words text-[12px] text-white/40">
                       {n.note}
                     </span>
                   </div>
@@ -1285,6 +1444,21 @@ export function RoutePanel() {
   const inputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [showGenerator, setShowGenerator] = useState(false)
+  // Prefill for the generator when the rider steers from a route-paspoort
+  // ("Vlakker" / "Meer klimmen"). Key forces a fresh generator instance so the
+  // preference actually lands in its state.
+  const [genPrefill, setGenPrefill] = useState<ElevationPreference | null>(null)
+
+  function adjustRoute(pref: ElevationPreference) {
+    setGenPrefill(pref)
+    setShowGenerator(true)
+    // Bring the generator into view — it renders above the route list.
+    setTimeout(() => {
+      document
+        .getElementById("route-generator")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }, 50)
+  }
 
   useEffect(() => {
     trackScreen("routes")
@@ -1356,8 +1530,15 @@ export function RoutePanel() {
       )}
 
       {showGenerator && (
-        <div className="mt-4">
-          <RouteGenerator onClose={() => setShowGenerator(false)} />
+        <div className="mt-4" id="route-generator">
+          <RouteGenerator
+            key={genPrefill ?? "default"}
+            initialElevation={genPrefill}
+            onClose={() => {
+              setShowGenerator(false)
+              setGenPrefill(null)
+            }}
+          />
         </div>
       )}
 
@@ -1365,7 +1546,9 @@ export function RoutePanel() {
         {isLoading ? (
           <div className="h-40 w-full animate-pulse rounded-xl bg-white/[0.06]" />
         ) : routes.length > 0 ? (
-          routes.map((r) => <RouteCard key={r.id} route={r} />)
+          routes.map((r) => (
+            <RouteCard key={r.id} route={r} onAdjust={adjustRoute} />
+          ))
         ) : (
           <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
             <p className="text-[12px] leading-relaxed text-white/40">

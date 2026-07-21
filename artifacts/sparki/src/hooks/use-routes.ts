@@ -237,6 +237,51 @@ export function useSaveGeneratedRoute() {
   });
 }
 
+// ── Route-paspoort (insight) ────────────────────────────────────────────────
+// Honest facts about a saved route: grade split from the real elevation
+// profile, live weather at the departure hour, environment (traffic lights,
+// forest share) from OpenStreetMap. Each block is null when the source can't
+// answer — the UI must show the gap, never invent.
+
+export type RouteInsight = {
+  grade: { flatKm: number; upKm: number; downKm: number } | null;
+  weather: {
+    timeLocal: string;
+    tempC: number | null;
+    uvIndex: number | null;
+    windKmh: number | null;
+    windGustKmh: number | null;
+    windBft: number | null;
+    windDirDeg: number | null;
+    windDirLabel: string | null;
+    precipProbPct: number | null;
+  } | null;
+  environment: {
+    trafficLights: number | null;
+    forestSharePct: number | null;
+  } | null;
+  hasGeometry: boolean;
+  hasProfile: boolean;
+};
+
+export function useRouteInsight(
+  id: number | null,
+  departAt: string | null,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["route-insight", id, departAt],
+    enabled: enabled && id != null,
+    staleTime: 10 * 60_000,
+    queryFn: () =>
+      apiFetch<{ insight: RouteInsight }>(
+        `/api/routes/${id}/insight${
+          departAt ? `?departAt=${encodeURIComponent(departAt)}` : ""
+        }`,
+      ),
+  });
+}
+
 // Route export formats. GPX is widely compatible; TCX Course (<CoursePoint>) is
 // the most dependable on-device turn-by-turn format for Garmin Edge / Wahoo
 // ELEMNT head units.

@@ -38,6 +38,13 @@ import {
   type RouteStep,
 } from "../engines/route";
 import { isSportActive } from "@workspace/feature-flags";
+import { getHourlyForecast } from "../lib/weather/open-meteo";
+import {
+  computeGradeSplit,
+  getRouteEnvironment,
+  windDirectionLabel,
+  beaufort,
+} from "../lib/route-insight";
 
 const router = Router();
 
@@ -297,6 +304,122 @@ router.get("/:id", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "routes.get failed");
     res.status(500).json({ error: "Kon route niet laden" });
+  }
+});
+
+// GET /api/routes/:id/insight?departAt=ISO — route-paspoort: honest, real
+// facts about a saved route. Grade split is deterministic from the stored
+// elevation profile; weather comes live from Open-Meteo for the start point at
+// the chosen departure hour; environment (traffic lights, forest share) comes
+// from OpenStreetMap via Overpass. Every block is null when its source can't
+// answer — nothing is fabricated.
+router.get("/:id/insight", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  try {
+    const [route] = await db
+      .select()
+      .from(routesTable)
+      .where(and(eq(routesTable.id, id), eq(routesTable.clerkId, clerkId)))
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+
+    const profile = Array.isArray(route.profile)
+      ? (route.profile as number[])
+      : null;
+    const geometry = Array.isArray(route.geometry)
+      ? (route.geometry as RoutePathPoint[])
+      : null;
+    const distanceKm =
+      route.distanceKm != null ? Number(route.distanceKm) : null;
+
+    const grade = computeGradeSplit(profile, distanceKm);
+
+    // Departure time: valid ISO within the forecast window, else next hour.
+    const departRaw = req.query.departAt
+      ? String(req.query.departAt)
+      : null;
+    let depart = departRaw ? new Date(departRaw) : null;
+    if (!depart || Number.isNaN(depart.getTime())) {
+      depart = new Date(Date.now() + 60 * 60_000);
+    }
+    const maxAhead = new Date(Date.now() + 15 * 24 * 60 * 60_000);
+    if (depart.getTime() > maxAhead.getTime()) depart = maxAhead;
+    if (depart.getTime() < Date.now() - 60 * 60_000) depart = new Date();
+
+    const start = geometry && geometry.length > 0 ? geometry[0] : null;
+
+    const [hours, environment] = await Promise.all([
+      start
+        ? getHourlyForecast(start[0], start[1], 16)
+        : Promise.resolve([]),
+      getRouteEnvironment(geometry),
+    ]);
+
+    // Match the requested hour in the location's local time. Open-Meteo hourly
+    // "time" is local ISO without offset; compare on epoch proximity instead:
+    // pick the forecast hour closest to the requested moment (≤90 min apart).
+    let weather: null | {
+      timeLocal: string;
+      tempC: number | null;
+      uvIndex: number | null;
+      windKmh: number | null;
+      windGustKmh: number | null;
+      windBft: number | null;
+      windDirDeg: number | null;
+      windDirLabel: string | null;
+      precipProbPct: number | null;
+    } = null;
+    if (hours.length > 0) {
+      // Local-hour string of the requested departure in Europe/Amsterdam —
+      // routes in this product start in NL; Open-Meteo returns local time for
+      // the coordinate, which for NL coordinates is the same zone.
+      const local = new Intl.DateTimeFormat("sv-SE", {
+        timeZone: "Europe/Amsterdam",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+      }).format(depart); // "2026-07-21 14"
+      const wantKey = local.replace(" ", "T") + ":00";
+      const hour =
+        hours.find((h) => h.time === wantKey) ??
+        hours.find((h) => h.time.slice(0, 13) === wantKey.slice(0, 13)) ??
+        null;
+      if (hour) {
+        weather = {
+          timeLocal: hour.time,
+          tempC: hour.tempC,
+          uvIndex: hour.uvIndex,
+          windKmh: hour.windKmh,
+          windGustKmh: hour.windGustKmh,
+          windBft: beaufort(hour.windKmh),
+          windDirDeg: hour.windDirDeg,
+          windDirLabel: windDirectionLabel(hour.windDirDeg),
+          precipProbPct: hour.precipProbPct,
+        };
+      }
+    }
+
+    res.json({
+      insight: {
+        grade,
+        weather,
+        environment,
+        hasGeometry: !!(geometry && geometry.length > 1),
+        hasProfile: !!(profile && profile.length > 1),
+      },
+    });
+  } catch (err) {
+    req.log.error({ err }, "routes.insight failed");
+    res.status(500).json({ error: "Kon route-paspoort niet laden" });
   }
 });
 

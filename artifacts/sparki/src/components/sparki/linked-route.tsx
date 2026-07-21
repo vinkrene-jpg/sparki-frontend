@@ -9,6 +9,7 @@ import {
 import { ACCENT, Stat, Divider } from "@/components/sparki/ui"
 import { RouteMap } from "@/components/sparki/route-map"
 import { useWorkoutRoutes, type SparkiRoute } from "@/hooks/use-routes"
+import { ElevationProfile } from "@/components/sparki/elevation-profile"
 import { Map as MapIcon, ChevronRight, Mountain, Clock } from "lucide-react"
 
 const SURFACE_LABEL: Record<string, string> = {
@@ -27,28 +28,6 @@ function formatDuration(sec: number | null): string {
   const h = Math.floor(total / 60)
   const m = total % 60
   return h > 0 ? `${h}u ${m}m` : `${m}m`
-}
-
-function ElevationProfile({ profile }: { profile: number[] }) {
-  if (profile.length === 0) return null
-  const max = Math.max(...profile)
-  const min = Math.min(...profile)
-  const span = Math.max(1, max - min)
-  return (
-    <div className="mt-4 flex h-16 items-end gap-px">
-      {profile.map((p, i) => (
-        <div
-          key={i}
-          className="flex-1 rounded-t-[1px]"
-          style={{
-            height: `${((p - min) / span) * 90 + 10}%`,
-            background:
-              "linear-gradient(180deg, rgba(120,210,230,0.55), rgba(120,210,230,0.08))",
-          }}
-        />
-      ))}
-    </div>
-  )
 }
 
 // Full route detail in a right-side drawer: real map, elevation profile, climbs,
@@ -89,7 +68,12 @@ export function RouteDetailDrawer({
               <RouteMap geometry={geometry} climbs={climbs} />
             )}
 
-            {profile.length > 0 && <ElevationProfile profile={profile} />}
+            {profile.length > 0 && (
+              <ElevationProfile
+                profile={profile}
+                distanceKm={route.distanceKm}
+              />
+            )}
 
             <div className="flex items-center gap-5 border-t border-white/[0.07] pt-4">
               <Stat
@@ -168,10 +152,10 @@ export function RouteDetailDrawer({
                       <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-cyan-300/70">
                         {n.km}
                       </span>
-                      <span className="w-24 shrink-0 text-[13px] tracking-tight text-white/85">
+                      <span className="w-24 shrink-0 break-words text-[13px] tracking-tight text-white/85">
                         {n.dir}
                       </span>
-                      <span className="flex-1 text-[12px] text-white/40">
+                      <span className="min-w-0 flex-1 break-words text-[12px] text-white/40">
                         {n.note}
                       </span>
                     </div>
