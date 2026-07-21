@@ -570,7 +570,7 @@ function RouteCard({
 }: {
   route: SparkiRoute
   onAdjust?: (pref: ElevationPreference) => void
-  onEditWaypoints?: (route: SparkiRoute) => void
+  onEditWaypoints?: (route: SparkiRoute, returnToNav?: boolean) => void
 }) {
   const del = useDeleteRoute()
   const download = useDownloadRoute()
@@ -829,6 +829,17 @@ function RouteCard({
           workout={navWorkout}
           ftp={navFtp}
           onClose={() => setNavigating(false)}
+          onEditRoute={
+            onEditWaypoints
+              ? () => {
+                  // Sluit de navigatie netjes (URL-param weg) en open de
+                  // routebouwer met de echte punten van deze route. Na het
+                  // bewaren keert de rijder vanzelf terug in de navigatie.
+                  setNavigating(false)
+                  onEditWaypoints(route, true)
+                }
+              : null
+          }
         />
       )}
     </div>
@@ -868,10 +879,14 @@ function RouteGenerator({
   onClose,
   initialElevation = null,
   initialWaypoints = null,
+  onSaved = null,
 }: {
   onClose: () => void
   initialElevation?: ElevationPreference | null
   initialWaypoints?: RouteWaypoint[] | null
+  // Na een geslaagde opslag krijgt de aanroeper de ECHTE bewaarde route terug
+  // (bijv. om direct de navigatie ervan te openen).
+  onSaved?: ((route: SparkiRoute) => void) | null
 }) {
   const generate = useGenerateRoute()
   const genOptions = useGenerateRouteOptions()
@@ -1104,7 +1119,7 @@ function RouteGenerator({
     save.mutate(
       { candidate, meetpoints },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           setCandidate(null)
           setOptions(null)
           setStartPoint(null)
@@ -1114,6 +1129,7 @@ function RouteGenerator({
           // Eén situatie: sluit de generator zodat alleen de bewaarde
           // routekaart (met navigeren/GPX/TCX/delen) overblijft.
           onClose()
+          onSaved?.(data.route)
         },
         onError: (e) =>
           setError(e instanceof Error ? e.message : "Opslaan mislukt"),
@@ -1814,12 +1830,16 @@ export function RoutePanel() {
   const [genWaypoints, setGenWaypoints] = useState<{
     routeId: number
     points: RouteWaypoint[]
+    // Kwam de rijder uit het navigatievenster? Dan gaat hij na het bewaren
+    // vanzelf terug de navigatie in (van de aangepaste route).
+    returnToNav: boolean
   } | null>(null)
+  const [panelPath, setPanelLocation] = useLocation()
 
-  function editRouteWaypoints(route: SparkiRoute) {
+  function editRouteWaypoints(route: SparkiRoute, returnToNav = false) {
     const points = sampleWaypointsFromGeometry(route.geometry ?? [])
     if (points.length < 2) return
-    setGenWaypoints({ routeId: route.id, points })
+    setGenWaypoints({ routeId: route.id, points, returnToNav })
     setGenPrefill(null)
     setShowGenerator(true)
     setTimeout(() => {
@@ -1934,6 +1954,18 @@ export function RoutePanel() {
             }
             initialElevation={genPrefill}
             initialWaypoints={genWaypoints?.points ?? null}
+            onSaved={
+              genWaypoints?.returnToNav
+                ? (saved) => {
+                    // De rijder kwam uit het navigatievenster: open direct de
+                    // navigatie van de zojuist bewaarde (aangepaste) route.
+                    // Alleen `nav` wijzigt — overige URL-parameters blijven staan.
+                    const params = new URLSearchParams(window.location.search)
+                    params.set("nav", String(saved.id))
+                    setPanelLocation(`${panelPath}?${params.toString()}`)
+                  }
+                : null
+            }
             onClose={() => {
               setShowGenerator(false)
               setGenPrefill(null)

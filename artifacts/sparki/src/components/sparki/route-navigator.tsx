@@ -219,6 +219,7 @@ export function RouteNavigator({
   routeId = null,
   workout = null,
   ftp = null,
+  onEditRoute = null,
 }: {
   name: string
   geometry: [number, number][]
@@ -232,6 +233,9 @@ export function RouteNavigator({
   // wat hij moet leveren.
   workout?: PlannedWorkout | null
   ftp?: number | null
+  // Route onderweg aanpassen: opent de eigen-route-bouwer met de echte punten
+  // van deze route voorgevuld, en keert na opslaan terug naar de navigatie.
+  onEditRoute?: (() => void) | null
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
@@ -1385,6 +1389,28 @@ export function RouteNavigator({
                 ))}
               </div>
             </div>
+
+            {/* Route onderweg aanpassen — zonder alles kwijt te raken. */}
+            {onEditRoute && (
+              <div>
+                <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+                  Route wijzigen
+                </p>
+                <button
+                  type="button"
+                  onClick={onEditRoute}
+                  className="flex items-center gap-1.5 rounded-full border border-cyan-300/35 px-3 py-1.5 text-[11px] text-cyan-300 transition hover:bg-cyan-300/10"
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Route aanpassen
+                </button>
+                <p className="mt-1.5 text-[11px] leading-relaxed text-white/45">
+                  Opent de routebouwer met de punten van deze route voorgevuld —
+                  voeg een routepunt toe of versleep er één, bewaar, en je komt
+                  vanzelf terug in de navigatie.
+                </p>
+              </div>
+            )}
 
             {/* Group riding — enables the bordjes-sprint game. */}
             <div>
