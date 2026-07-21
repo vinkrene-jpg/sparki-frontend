@@ -989,8 +989,18 @@ function RouteGenerator({
     ...(endPoint ? ["end" as const] : []),
   ]
 
+  // Zodra een routebepalend punt wijzigt (toevoegen, verslepen, verwijderen)
+  // klopt een eerder berekende route niet meer. De oude blauwe lijn en de
+  // eerdere varianten verdwijnen dan direct — eerlijk beeld, geen verouderde
+  // lijn die niet bij de punten past. Opnieuw genereren tekent de nieuwe route.
+  function invalidateStaleRoute() {
+    setCandidate(null)
+    setOptions(null)
+  }
+
   // Combined index (kaartmarker) → welk punt het is.
   function updatePointAt(i: number, next: RouteWaypoint | null) {
+    invalidateStaleRoute()
     const startCount = startPoint ? 1 : 0
     if (startPoint && i === 0) {
       setStartPoint(next)
@@ -1150,17 +1160,21 @@ function RouteGenerator({
   // depending on the active place-mode.
   function handleMapClick(lat: number, lon: number) {
     if (placeMode === "start") {
+      invalidateStaleRoute()
       setStartPoint([lat, lon])
       // Na het startpunt wil je vrijwel altijd tussenpunten plaatsen —
       // automatisch doorschakelen voorkomt dat een tweede tik je startpunt
       // per ongeluk verplaatst.
       setPlaceMode("waypoint")
     } else if (placeMode === "end") {
+      invalidateStaleRoute()
       setEndPoint([lat, lon])
       setPlaceMode("waypoint")
     } else if (placeMode === "waypoint") {
+      invalidateStaleRoute()
       setWaypoints((w) => [...w, [lat, lon]])
     } else {
+      // Verzamelpunten bepalen de route niet — de lijn blijft gewoon kloppen.
       addMeetpoint(lat, lon)
     }
   }
