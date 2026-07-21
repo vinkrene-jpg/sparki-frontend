@@ -185,8 +185,15 @@ function classify(
   tags: Record<string, string>,
 ): { kind: string; category: RoutePoiCategory } | null {
   if (tags.amenity === "cafe") return { kind: "Café", category: "horeca" };
-  if (tags.amenity === "restaurant")
+  if (tags.amenity === "restaurant") {
+    // Italian restaurants get their own kind (own pasta icon on the map).
+    // OSM cuisine can hold multiple values ("italian;pizza") — match honestly
+    // on the real tag only, never guess from the name.
+    const cuisine = (tags.cuisine ?? "").toLowerCase();
+    if (/(^|;|\s)(italian|pasta|pizza)(;|\s|$)/.test(cuisine))
+      return { kind: "Italiaans restaurant", category: "horeca" };
     return { kind: "Restaurant", category: "horeca" };
+  }
   if (tags.tourism === "viewpoint")
     return { kind: "Uitzichtpunt", category: "bezienswaardigheid" };
   if (tags.tourism === "museum")

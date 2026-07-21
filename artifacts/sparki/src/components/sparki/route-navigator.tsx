@@ -179,6 +179,7 @@ function parseApiError(err: unknown, fallback: string): string {
 const POI_ICONS: Record<string, string> = {
   "Café": "☕",
   Restaurant: "🍴",
+  "Italiaans restaurant": "🍝",
   Uitzichtpunt: "🌄",
   Museum: "🏛️",
   Bezienswaardigheid: "⭐",
