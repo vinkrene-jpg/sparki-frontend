@@ -364,9 +364,19 @@ async function shareRouteFile(
       .trim()
       .replace(/\s+/g, "-")
       .toLowerCase() || "sparki-route";
-  const file = new File([blob], `${safeName}.${format}`, {
-    type: format === "gpx" ? "application/gpx+xml" : "application/vnd.garmin.tcx+xml",
-  });
+  // Some share targets (WhatsApp is the known offender) refuse files with an
+  // XML-achtig mimetype like application/gpx+xml. A generic document type is
+  // accepted everywhere and navigation apps pick the file up by extension, so
+  // prefer the specific type but fall back to octet-stream when the browser
+  // (or a picky target) rejects it.
+  const specificType =
+    format === "gpx" ? "application/gpx+xml" : "application/vnd.garmin.tcx+xml";
+  let file = new File([blob], `${safeName}.${format}`, { type: specificType });
+  if (!navigator.canShare?.({ files: [file] })) {
+    file = new File([blob], `${safeName}.${format}`, {
+      type: "application/octet-stream",
+    });
+  }
   if (!navigator.canShare?.({ files: [file] })) {
     throw new Error("Delen naar een app wordt hier niet ondersteund");
   }
@@ -375,7 +385,34 @@ async function shareRouteFile(
   } catch (err) {
     // The user closing the share sheet is not an error.
     if (err instanceof DOMException && err.name === "AbortError") return;
-    throw err;
+    // Retry once with a generic document type — this rescues targets that
+    // reject the specific XML mimetype (e.g. WhatsApp).
+    if (file.type !== "application/octet-stream") {
+      const generic = new File([blob], `${safeName}.${format}`, {
+        type: "application/octet-stream",
+      });
+      if (navigator.canShare?.({ files: [generic] })) {
+        try {
+          await navigator.share({
+            files: [generic],
+            title: name || "Sparki-route",
+          });
+          return;
+        } catch (retryErr) {
+          if (
+            retryErr instanceof DOMException &&
+            retryErr.name === "AbortError"
+          )
+            return;
+          throw new Error(
+            "Delen naar deze app lukte niet. Download het bestand en stuur het los door.",
+          );
+        }
+      }
+    }
+    throw new Error(
+      "Delen naar deze app lukte niet. Download het bestand en stuur het los door.",
+    );
   }
 }
 
