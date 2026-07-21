@@ -37,6 +37,11 @@ export const trainingSessionsTable = pgTable("training_sessions", {
   avgCadence: integer("avg_cadence"),
   avgSpeedKph: numeric("avg_speed_kph", { precision: 5, scale: 2 }),
   maxHR: integer("max_hr"),
+  // Best average power (watts) over fixed windows, computed from REAL
+  // per-sample power data at file ingest (FIT/TCX). Keys are window seconds
+  // ("5", "10", "20", "60", "300", "1200"). Null/absent = the source carried
+  // no per-sample power — never estimated from averages.
+  powerBests: jsonb("power_bests").$type<Record<string, number>>(),
   source: text("source").notNull().default("manual"),
   // Data Hub provenance. `externalRef` = "<provider>:<externalActivityId>" of the
   // primary source; `sources` = every connector that contributed to this row

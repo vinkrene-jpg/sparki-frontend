@@ -34,8 +34,24 @@ export function cleanActivity(a: CanonicalActivity): CanonicalActivity | null {
     maxHR: intOrNull(inRange(a.maxHR, 20, 260)),
     avgCadence: intOrNull(inRange(a.avgCadence, 0, 250)),
     avgSpeedKph: inRange(a.avgSpeedKph, 0, 150),
+    powerBests: cleanPowerBests(a.powerBests),
     tss: intOrNull(inRange(a.tss, 0, 1000)),
   };
+}
+
+// Keep only plausible best-power entries (positive-second windows, 1..3000 W).
+// An empty result is null — absence, not a fake empty table.
+function cleanPowerBests(
+  bests: Record<string, number> | null | undefined,
+): Record<string, number> | null {
+  if (!bests || typeof bests !== "object") return null;
+  const out: Record<string, number> = {};
+  for (const [key, value] of Object.entries(bests)) {
+    const win = Number(key);
+    const w = intOrNull(inRange(value, 1, 3000));
+    if (Number.isInteger(win) && win > 0 && w != null) out[String(win)] = w;
+  }
+  return Object.keys(out).length > 0 ? out : null;
 }
 
 export function cleanDailyMetric(

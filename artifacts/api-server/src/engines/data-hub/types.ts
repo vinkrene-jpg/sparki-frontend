@@ -24,6 +24,8 @@ export interface CanonicalActivity {
   maxHR?: number | null;
   avgCadence?: number | null;
   avgSpeedKph?: number | null;
+  /** Best average power per window-seconds key, from real samples only. */
+  powerBests?: Record<string, number> | null;
   tss?: number | null;
   /** Original payload (kept verbatim in connector_activities.raw). */
   raw?: unknown;

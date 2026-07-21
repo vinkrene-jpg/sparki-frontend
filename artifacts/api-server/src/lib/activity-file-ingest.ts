@@ -143,6 +143,9 @@ export function summaryToCanonicalActivity(
     maxHR: s.maxHeartRate ?? null,
     avgCadence: s.avgCadence ?? null,
     avgSpeedKph: avgSpeedKph(distanceKm, durationSec),
+    // Echte piekvermogens per venster (FIT/TCX met per-seconde vermogen);
+    // GPX kent geen vermogen en heeft dit veld niet.
+    powerBests: "powerBests" in s ? (s.powerBests ?? null) : null,
     raw: s,
   };
 }

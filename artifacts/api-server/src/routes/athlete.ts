@@ -1153,6 +1153,53 @@ router.get("/load", requireAuth, async (req, res) => {
   }
 });
 
+// ── GET /api/athlete/power-bests ─────────────────────────────────────────────
+// Best average power per fixed window (5s/10s/20s/60s/5min/20min), aggregated
+// over all sessions that carry REAL per-sample power bests (computed at
+// FIT/TCX file ingest). Windows without any real data are simply absent —
+// never estimated from session averages.
+router.get("/power-bests", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const rows = await db
+      .select({
+        sessionDate: trainingSessionsTable.sessionDate,
+        powerBests: trainingSessionsTable.powerBests,
+      })
+      .from(trainingSessionsTable)
+      .where(eq(trainingSessionsTable.clerkId, clerkId));
+
+    const recentCutoff = daysAgoStr(42);
+    const allTime: Record<string, { watts: number; date: string }> = {};
+    const recent: Record<string, { watts: number; date: string }> = {};
+    let sessionsWithBests = 0;
+
+    for (const row of rows) {
+      const bests = row.powerBests;
+      if (!bests || typeof bests !== "object") continue;
+      sessionsWithBests += 1;
+      for (const [win, watts] of Object.entries(bests)) {
+        if (typeof watts !== "number" || !Number.isFinite(watts)) continue;
+        const cur = allTime[win];
+        if (!cur || watts > cur.watts) {
+          allTime[win] = { watts, date: row.sessionDate };
+        }
+        if (row.sessionDate >= recentCutoff) {
+          const curR = recent[win];
+          if (!curR || watts > curR.watts) {
+            recent[win] = { watts, date: row.sessionDate };
+          }
+        }
+      }
+    }
+
+    res.json({ allTime, recent, sessionsWithBests });
+  } catch (err) {
+    req.log.error({ err }, "athlete.power-bests GET failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ── GET /api/athlete/ftp ─────────────────────────────────────────────────────
 router.get("/ftp", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;

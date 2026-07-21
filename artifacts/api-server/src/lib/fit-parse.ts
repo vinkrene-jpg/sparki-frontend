@@ -16,6 +16,11 @@
 // no usable messages), so the caller marks the import "failed" with an honest
 // Dutch message instead of inventing values.
 
+import {
+  createPowerSampleCollector,
+  type PowerSampleCollector,
+} from "./power-bests";
+
 export type FitSummary = {
   // Discriminator so the frontend can tell a FIT summary apart from a GpxSummary.
   format: "fit";
@@ -33,6 +38,10 @@ export type FitSummary = {
   // How many per-second record samples we read — surfaced for transparency, not
   // as a performance metric.
   recordCount: number;
+  // Best average power over fixed windows (keys = window seconds), computed
+  // from the REAL timestamped record samples. Null when the file carries no
+  // usable per-sample power — never estimated from averages.
+  powerBests: Record<string, number> | null;
 };
 
 // FIT date_time epoch: seconds since 1989-12-31T00:00:00Z.
@@ -160,6 +169,8 @@ type RecordAgg = {
   prevAlt: number | null;
   ascentM: number;
   hasAltitude: boolean;
+  // Timestamped power samples for best-window computation (real data only).
+  power: PowerSampleCollector;
 };
 
 export function parseFit(buf: Buffer): FitSummary | null {
@@ -195,6 +206,7 @@ export function parseFit(buf: Buffer): FitSummary | null {
       prevAlt: null,
       ascentM: 0,
       hasAltitude: false,
+      power: createPowerSampleCollector(),
     };
 
     let pos = dataStart;
@@ -335,6 +347,9 @@ function harvestRecord(fields: Record<number, number | null>, agg: RecordAgg) {
     agg.powerSum += power;
     agg.powerCount += 1;
     agg.powerMax = agg.powerMax == null ? power : Math.max(agg.powerMax, power);
+    if (time != null && time >= FIT_MIN_REAL_DATE) {
+      agg.power.add(time, power);
+    }
   }
 
   const hr = fields[3];
@@ -443,6 +458,7 @@ function finalize(
     avgCadence,
     calories,
     recordCount: agg.count,
+    powerBests: agg.power.finish(),
   };
 
   // Did we actually recover anything real? If every metric is empty and no

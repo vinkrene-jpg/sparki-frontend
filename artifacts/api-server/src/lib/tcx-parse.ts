@@ -30,7 +30,13 @@ export type TcxSummary = {
   avgCadence: number | null;
   // How many <Trackpoint> samples we read — surfaced for transparency.
   trackpointCount: number;
+  // Best average power over fixed windows (keys = window seconds), computed
+  // from the REAL timestamped trackpoint samples. Null when the file has no
+  // usable per-sample power — never estimated from averages.
+  powerBests: Record<string, number> | null;
 };
+
+import { createPowerSampleCollector } from "./power-bests";
 
 // Match a tag that may carry an XML namespace prefix (e.g. <ns3:Watts>).
 function tagValue(block: string, tag: string): string | null {
@@ -115,6 +121,7 @@ export function parseTcx(content: string): TcxSummary | null {
   let hasAltitude = false;
   let firstTime: number | null = null;
   let lastTime: number | null = null;
+  const powerCollector = createPowerSampleCollector();
 
   const tpRe = /<Trackpoint\b[\s\S]*?<\/Trackpoint>/gi;
   let tp: RegExpExecArray | null;
@@ -137,6 +144,10 @@ export function parseTcx(content: string): TcxSummary | null {
       powerSum += power;
       powerCount += 1;
       powerMax = powerMax == null ? power : Math.max(powerMax, power);
+      if (timeStr) {
+        const t = Date.parse(timeStr);
+        if (Number.isFinite(t)) powerCollector.add(t / 1000, power);
+      }
     }
 
     const hr = nestedValue(block, "HeartRateBpm");
@@ -202,6 +213,7 @@ export function parseTcx(content: string): TcxSummary | null {
     maxHeartRate: hrMax,
     avgCadence: cadenceCount > 0 ? round(cadenceSum / cadenceCount) : null,
     trackpointCount: count,
+    powerBests: powerCollector.finish(),
   };
 
   // Did we recover anything real? A file with an <Activity> but no usable

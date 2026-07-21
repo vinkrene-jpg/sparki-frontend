@@ -3,6 +3,7 @@ import { useLocation } from "wouter"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { StateCard } from "@/components/sparki/state-card"
+import { PerformanceNumbers } from "@/components/sparki/performance-numbers"
 import { ProfileSettings } from "@/components/sparki/profile-settings"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { useClearPhotoDecor } from "@/hooks/use-photo-style"
@@ -552,9 +553,27 @@ export default function YouPage() {
         <ChevronRight className="h-4 w-4 shrink-0 text-white/30" strokeWidth={1.75} />
       </button>
 
+      {/* JOUW GETALLEN — de harde cijfers: FTP, gewicht, beste vermogens,
+          fitheidsscore en verwachte progressie. Alleen echte metingen; wat
+          ontbreekt is eerlijk leeg met een route ernaartoe. */}
+      <section>
+        <SectionLabel n="02" title="Jouw getallen" />
+        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+          De harde cijfers uit je eigen metingen — geen schattingen
+        </p>
+        <div className="mt-3">
+          <PerformanceNumbers
+            profile={profile}
+            ftpHistory={ftpHistory}
+            load={load}
+            bandbreedte={bandbreedte}
+          />
+        </div>
+      </section>
+
       {/* CORE STATUS — de levende Core + dag-check-in + waarom */}
       <section>
-        <SectionLabel n="02" title="Je Core-status" />
+        <SectionLabel n="03" title="Je Core-status" />
         <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
           Hoe je er vandaag voorstaat — en hoe je je voelt
         </p>
@@ -566,7 +585,7 @@ export default function YouPage() {
       {/* WAT HEEFT SPARKI GELEERD */}
       <section>
         <div className="flex items-center justify-between">
-          <SectionLabel n="03" title="Wat tot nu toe opvalt" />
+          <SectionLabel n="04" title="Wat tot nu toe opvalt" />
           {observations.length > 0 && (
             <button
               type="button"
@@ -610,7 +629,7 @@ export default function YouPage() {
 
       {/* STERKE EIGENSCHAPPEN */}
       <InsightSection
-        n="04"
+        n="05"
         title="Sterke eigenschappen"
         blurb="Wat bij jou werkt"
         groups={laneGroups.strengths}
@@ -618,7 +637,7 @@ export default function YouPage() {
 
       {/* ONTWIKKELPUNTEN */}
       <InsightSection
-        n="05"
+        n="06"
         title="Ontwikkelpunten"
         blurb="Waar de meeste winst voor je ligt"
         groups={laneGroups.development}
@@ -626,7 +645,7 @@ export default function YouPage() {
 
       {/* PATRONEN */}
       <InsightSection
-        n="06"
+        n="07"
         title="Terugkerende patronen"
         blurb="Verbanden die over tijd terugkomen in je data"
         groups={laneGroups.patterns}
@@ -636,7 +655,7 @@ export default function YouPage() {
       {/* WAAR SPARKI ONZEKER OVER IS */}
       {(laneGroups.uncertainty.length > 0 || stateMissing.length > 0) && (
         <section>
-          <SectionLabel n="07" title="Waar nog onzekerheid zit" />
+          <SectionLabel n="08" title="Waar nog onzekerheid zit" />
           <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
             Eerlijk gezegd: dit is nog niet zeker
           </p>
@@ -666,7 +685,7 @@ export default function YouPage() {
 
       {/* WELKE INFORMATIE WIL SPARKI VERZAMELEN */}
       <section>
-        <SectionLabel n="08" title="Welke informatie nog ontbreekt" />
+        <SectionLabel n="09" title="Welke informatie nog ontbreekt" />
         <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
           Vul aan wat ontbreekt — elk stukje maakt het beeld scherper
         </p>
@@ -732,7 +751,7 @@ export default function YouPage() {
 
       {/* ONTWIKKELKOMPAS — langetermijndoel + belastbaarheid */}
       <section id="ontwikkelkompas" className="scroll-mt-24">
-        <SectionLabel n="09" title="Je ontwikkelkompas" />
+        <SectionLabel n="10" title="Je ontwikkelkompas" />
         <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
           Waar je naartoe groeit, hoeveel training je lichaam aankan, en hoe je je
           basis ontwikkelt
@@ -1031,7 +1050,7 @@ export default function YouPage() {
       {/* DOELEN — het meerjarige doelenbeeld: eigen doelen + afgeleide doelen,
           dagelijkse voortgang uit de backend, voorstellen alleen na bevestiging. */}
       <section id="doelen" className="scroll-mt-24">
-        <SectionLabel n="10" title="Je doelen" />
+        <SectionLabel n="11" title="Je doelen" />
         <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
           Waar je naartoe werkt — dit seizoen en verder — en hoe je ervoor staat
         </p>
@@ -1041,7 +1060,7 @@ export default function YouPage() {
       {/* SFEERBEELD — manage the profile photo. Always present so the Foto-lab
           is reachable from normal navigation, not only the dev preview. */}
       <section>
-        <SectionLabel n="11" title="Sfeerbeeld" />
+        <SectionLabel n="12" title="Sfeerbeeld" />
         <div className="mt-3">
           <Card>
             <div className="flex items-center gap-2">
