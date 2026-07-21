@@ -63,6 +63,7 @@ export function RouteMap({
   meetpoints = [],
   climbs = [],
   center,
+  myLocation,
   onMapClick,
   onWaypointDrag,
   onWaypointClick,
@@ -80,6 +81,10 @@ export function RouteMap({
   climbs?: RouteClimb[]
   // Fallback view when there's nothing to fit yet (empty builder canvas).
   center?: [number, number]
+  // The rider's REAL current/start position (from geolocation or their saved
+  // startpoint) — shown as a distinct "jij bent hier" dot so the rider can
+  // always find themselves on the map. Never passed for a guessed location.
+  myLocation?: [number, number]
   onMapClick?: (lat: number, lon: number) => void
   onWaypointDrag?: (index: number, lat: number, lon: number) => void
   onWaypointClick?: (index: number) => void
@@ -124,6 +129,7 @@ export function RouteMap({
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
         maxZoom: 19,
+        className: "sparki-map-tiles",
       },
     ).addTo(map)
     map.on("click", (e: L.LeafletMouseEvent) => {
@@ -269,6 +275,29 @@ export function RouteMap({
       })
     }
 
+    // "Jij bent hier" — the rider's real position, distinct from waypoints so
+    // they can always find themselves back after zooming/panning.
+    if (myLocation) {
+      const meIcon = L.divIcon({
+        className: "",
+        html: `<span style="display:block;width:16px;height:16px;border-radius:9999px;background:#fff;border:4px solid ${ACCENT};box-shadow:0 0 0 3px rgba(5,7,14,0.9),0 0 14px ${ACCENT};"></span>`,
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      })
+      const marker = L.marker(myLocation, {
+        icon: meIcon,
+        interactive: true,
+        keyboard: false,
+        zIndexOffset: 500,
+      }).addTo(map)
+      marker.bindTooltip("Jij bent hier", {
+        direction: "top",
+        offset: [0, -10],
+        opacity: 1,
+      })
+      markersRef.current.push(marker)
+    }
+
     // Fit to whatever we have (line, waypoints, or meetpoints).
     const fitPoints: [number, number][] = [
       ...latlngs,
@@ -279,12 +308,15 @@ export function RouteMap({
       map.fitBounds(L.latLngBounds(fitPoints), { padding: [28, 28] })
     } else if (fitPoints.length === 1) {
       map.setView(fitPoints[0]!, 13)
+    } else if (myLocation) {
+      // Centred on the rider: close enough to recognise your own streets.
+      map.setView(myLocation, 14)
     } else if (center) {
       map.setView(center, 8)
     }
     // Tiles can mis-size if the container was hidden when initialised.
     setTimeout(() => map.invalidateSize(), 80)
-  }, [geometry, waypoints, meetpoints, climbs, isBuilder, center])
+  }, [geometry, waypoints, meetpoints, climbs, isBuilder, center, myLocation])
 
   return (
     <div

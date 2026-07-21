@@ -171,6 +171,13 @@ optgroup {
   text-decoration: none;
 }
 
+/* Donkere CARTO-kaarttegels zijn standaard té donker om straatnamen en wegen
+   te lezen. Deze filter tilt de helderheid op zonder het donkere ontwerp te
+   breken — wegen en labels worden leesbaar, de kaart blijft nachtdonker. */
+.sparki-map-tiles {
+  filter: brightness(1.7) contrast(0.95) saturate(1.15);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

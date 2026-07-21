@@ -121,3 +121,4 @@
 - [Route generation free-text wish](sparki-route-wish.md) — wish goes only into buildRationale prompt (ORS cannot steer roads); honest "kan niet + alternatief", never claim a place not in data.
 - [Klimmenverkenner](climb-explorer.md) — Overpass mirror selection: maps.mail.ru works; overpass-api.de 406 in env; overpass.osm.ch is Swiss-only false-empty (never in fallback chain).
 - [Sparki leefagenda](sparki-life-agenda.md) — athlete-entered life events steer the plan generator; list queries need overlap semantics or ongoing events become invisible but still steer.
+- [Sparki device sync (Garmin/Wahoo)](sparki-device-sync.md) — full OAuth+push scaffolding, honest configured:false until manufacturer keys; PKCE verifier inside signed state.

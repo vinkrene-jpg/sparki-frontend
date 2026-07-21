@@ -40,6 +40,7 @@ export function LocationPickerMap({
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
         maxZoom: 19,
+        className: "sparki-map-tiles",
       },
     ).addTo(map)
     map.on("click", (e: L.LeafletMouseEvent) => {

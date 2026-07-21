@@ -34,6 +34,12 @@ import {
   MiniElevationProfile,
 } from "@/components/sparki/elevation-profile"
 import { useRouteInsight } from "@/hooks/use-routes"
+import {
+  useDeviceSyncStatus,
+  useDeviceSyncOAuthReturn,
+  useConnectDevice,
+  useSendRouteToDevice,
+} from "@/hooks/use-device-sync"
 
 // Editable list of named meeting points ("verzamelpunten") — e.g. where you
 // pick up a friend. Shared by the interactive builder and the generated-route
@@ -456,6 +462,107 @@ function RoutePassport({
   )
 }
 
+// ── Fietscomputer-sync (Garmin / Wahoo) ─────────────────────────────────────
+// Cloud-naar-cloud, zoals Komoot: één keer je account koppelen, daarna zet
+// Sparki een route rechtstreeks in je Garmin/Wahoo-account en verschijnt hij
+// vanzelf op je fietscomputer. Eerlijke toestanden: zolang de fabrikant onze
+// serverkoppeling nog niet heeft goedgekeurd, staat dat er gewoon — niets
+// wordt gefaket.
+function DeviceSyncBlock({ routeId }: { routeId: number }) {
+  useDeviceSyncOAuthReturn()
+  const { data } = useDeviceSyncStatus()
+  const connect = useConnectDevice()
+  const send = useSendRouteToDevice()
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const providers = data?.providers ?? []
+  if (providers.length === 0) return null
+  const anyConfigured = providers.some((p) => p.configured)
+
+  return (
+    <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+      <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/40">
+        Naar je fietscomputer
+      </p>
+      {!anyConfigured ? (
+        <p className="mt-1.5 text-[12px] leading-relaxed text-white/50">
+          Rechtstreeks versturen naar Garmin en Wahoo is gebouwd en wacht
+          alleen nog op goedkeuring van de fabrikanten. Tot die tijd werkt
+          downloaden (GPX/TCX) of &ldquo;Naar app&rdquo; gewoon.
+        </p>
+      ) : (
+        <div className="mt-2 flex flex-wrap items-center gap-2.5">
+          {providers.map((p) =>
+            !p.configured ? (
+              <span
+                key={p.provider}
+                className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/30"
+              >
+                {p.label}: wacht op goedkeuring fabrikant
+              </span>
+            ) : p.connected ? (
+              <button
+                key={p.provider}
+                type="button"
+                disabled={send.isPending}
+                onClick={() => {
+                  setMessage(null)
+                  setError(null)
+                  send.mutate(
+                    { routeId, provider: p.provider },
+                    {
+                      onSuccess: (r) => setMessage(r.message),
+                      onError: (e) =>
+                        setError(
+                          e instanceof Error
+                            ? e.message
+                            : "Versturen is niet gelukt.",
+                        ),
+                    },
+                  )
+                }}
+                className="rounded-full bg-cyan-400/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#05070e] transition hover:bg-cyan-300 disabled:opacity-40"
+              >
+                {send.isPending
+                  ? "Bezig…"
+                  : `Zet op mijn ${p.label}`}
+              </button>
+            ) : (
+              <button
+                key={p.provider}
+                type="button"
+                disabled={connect.isPending}
+                onClick={() => {
+                  setError(null)
+                  connect.mutate(p.provider, {
+                    onError: (e) =>
+                      setError(
+                        e instanceof Error
+                          ? e.message
+                          : "Koppelen is niet gelukt.",
+                      ),
+                  })
+                }}
+                className="rounded-full border border-white/[0.14] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/60 transition hover:border-cyan-300/40 hover:text-cyan-300 disabled:opacity-40"
+              >
+                Koppel {p.label}
+              </button>
+            ),
+          )}
+        </div>
+      )}
+      {message && (
+        <p className="mt-2 text-[11px] text-cyan-300/85">{message}</p>
+      )}
+      {error && (
+        <p className="mt-2 text-[11px] text-[rgba(255,140,120,0.85)]">
+          {error}
+        </p>
+      )}
+    </div>
+  )
+}
+
 function RouteCard({
   route,
   onAdjust,
@@ -611,6 +718,8 @@ function RouteCard({
           {gpxError}
         </p>
       )}
+
+      {canExport && <DeviceSyncBlock routeId={route.id} />}
 
       {geometry.length > 1 && (
         <RouteMap geometry={geometry} climbs={climbs} className="mt-4" />
@@ -1309,6 +1418,7 @@ function RouteGenerator({
             waypoints={waypoints}
             meetpoints={meetpoints}
             center={start ? [start.lat, start.lon] : [52.1, 5.3]}
+            myLocation={start ? [start.lat, start.lon] : undefined}
             height={320}
             className="mt-3"
             onMapClick={handleMapClick}

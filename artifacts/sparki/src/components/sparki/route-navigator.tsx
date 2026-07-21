@@ -42,7 +42,13 @@ type BasemapId = "donker" | "standaard" | "fiets" | "satelliet"
 
 const BASEMAPS: Record<
   BasemapId,
-  { label: string; url: string; attribution: string; maxZoom: number }
+  {
+    label: string
+    url: string
+    attribution: string
+    maxZoom: number
+    tileClassName?: string
+  }
 > = {
   donker: {
     label: "Donker",
@@ -50,6 +56,9 @@ const BASEMAPS: Record<
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
     maxZoom: 20,
+    // The raw dark tiles are too dark to read street names — this CSS filter
+    // (index.css) lifts brightness while keeping the night look.
+    tileClassName: "sparki-map-tiles",
   },
   standaard: {
     label: "Standaard",
@@ -757,6 +766,7 @@ export function RouteNavigator({
       attribution: initial.attribution,
       maxZoom: initial.maxZoom,
       detectRetina: true,
+      className: initial.tileClassName ?? "",
     }).addTo(map)
 
     const latlngs = path.map((p) => [p.lat, p.lon] as [number, number])
@@ -893,6 +903,7 @@ export function RouteNavigator({
       attribution: cfg.attribution,
       maxZoom: cfg.maxZoom,
       detectRetina: true,
+      className: cfg.tileClassName ?? "",
     }).addTo(map)
     tileLayerRef.current.bringToBack()
   }, [basemap])
