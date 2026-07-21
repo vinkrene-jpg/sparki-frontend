@@ -945,14 +945,51 @@ function RouteGenerator({
   }, [workouts, sport, distanceTouched])
 
   // Interactive builder state (mode === "waypoints"). Bij "route wijzigen"
-  // start de bouwer met punten uit de ECHTE bestaande routelijn.
+  // start de bouwer met punten uit de ECHTE bestaande routelijn: eerste punt
+  // wordt startpunt, laatste punt eindpunt, de rest tussenpunten.
+  const hasInitial = Boolean(initialWaypoints && initialWaypoints.length >= 2)
+  const [startPoint, setStartPoint] = useState<RouteWaypoint | null>(
+    hasInitial ? initialWaypoints![0]! : null,
+  )
+  const [endPoint, setEndPoint] = useState<RouteWaypoint | null>(
+    hasInitial ? initialWaypoints![initialWaypoints!.length - 1]! : null,
+  )
   const [waypoints, setWaypoints] = useState<RouteWaypoint[]>(
-    initialWaypoints && initialWaypoints.length >= 2 ? initialWaypoints : [],
+    hasInitial ? initialWaypoints!.slice(1, -1) : [],
   )
   const [meetpoints, setMeetpoints] = useState<RouteMeetpoint[]>([])
-  const [placeMode, setPlaceMode] = useState<"waypoint" | "meetpoint">(
-    "waypoint",
-  )
+  const [placeMode, setPlaceMode] = useState<
+    "start" | "waypoint" | "end" | "meetpoint"
+  >("start")
+
+  // Volgorde op de kaart en voor de routeberekening: start → tussen → eind.
+  const allPoints: RouteWaypoint[] = [
+    ...(startPoint ? [startPoint] : []),
+    ...waypoints,
+    ...(endPoint ? [endPoint] : []),
+  ]
+  const allRoles: ("start" | "via" | "end")[] = [
+    ...(startPoint ? ["start" as const] : []),
+    ...waypoints.map(() => "via" as const),
+    ...(endPoint ? ["end" as const] : []),
+  ]
+
+  // Combined index (kaartmarker) → welk punt het is.
+  function updatePointAt(i: number, next: RouteWaypoint | null) {
+    const startCount = startPoint ? 1 : 0
+    if (startPoint && i === 0) {
+      setStartPoint(next)
+    } else if (endPoint && i === startCount + waypoints.length) {
+      setEndPoint(next)
+    } else {
+      const vi = i - startCount
+      setWaypoints((w) =>
+        next
+          ? w.map((p, idx) => (idx === vi ? next : p))
+          : w.filter((_, idx) => idx !== vi),
+      )
+    }
+  }
 
   const linkedWorkout = workoutId
     ? workouts?.find((w) => String(w.id) === workoutId)
@@ -1018,8 +1055,10 @@ function RouteGenerator({
   function runGenerate(nextSeed?: number) {
     setError(null)
     if (mode === "waypoints") {
-      if (waypoints.length < 2) {
-        setError("Plaats minstens twee routepunten op de kaart")
+      if (allPoints.length < 2) {
+        setError(
+          "Plaats minstens twee punten op de kaart (bijv. een start- en een eindpunt)",
+        )
         return
       }
     } else {
@@ -1048,7 +1087,7 @@ function RouteGenerator({
             ? distNum
             : undefined,
         destinationText: mode === "ptp" ? destination.trim() : undefined,
-        waypoints: mode === "waypoints" ? waypoints : undefined,
+        waypoints: mode === "waypoints" ? allPoints : undefined,
         seed: nextSeed,
         wish: wish.trim() ? wish.trim() : undefined,
       },
@@ -1068,6 +1107,8 @@ function RouteGenerator({
         onSuccess: () => {
           setCandidate(null)
           setOptions(null)
+          setStartPoint(null)
+          setEndPoint(null)
           setWaypoints([])
           setMeetpoints([])
           // Eén situatie: sluit de generator zodat alleen de bewaarde
@@ -1092,7 +1133,16 @@ function RouteGenerator({
   // Builder: a map click adds either a route-shaping waypoint or a meetpoint,
   // depending on the active place-mode.
   function handleMapClick(lat: number, lon: number) {
-    if (placeMode === "waypoint") {
+    if (placeMode === "start") {
+      setStartPoint([lat, lon])
+      // Na het startpunt wil je vrijwel altijd tussenpunten plaatsen —
+      // automatisch doorschakelen voorkomt dat een tweede tik je startpunt
+      // per ongeluk verplaatst.
+      setPlaceMode("waypoint")
+    } else if (placeMode === "end") {
+      setEndPoint([lat, lon])
+      setPlaceMode("waypoint")
+    } else if (placeMode === "waypoint") {
       setWaypoints((w) => [...w, [lat, lon]])
     } else {
       addMeetpoint(lat, lon)
@@ -1379,10 +1429,12 @@ function RouteGenerator({
           <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
             TEKEN JE EIGEN ROUTE
           </label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {(
               [
+                { v: "start", l: "Startpunt", icon: MapPin },
                 { v: "waypoint", l: "Routepunt", icon: Flag },
+                { v: "end", l: "Eindpunt", icon: Flag },
                 { v: "meetpoint", l: "Verzamelpunt", icon: Users },
               ] as const
             ).map((p) => {
@@ -1393,7 +1445,7 @@ function RouteGenerator({
                   key={p.v}
                   type="button"
                   onClick={() => setPlaceMode(p.v)}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-[13px] transition-colors"
+                  className="flex min-w-[calc(50%-4px)] flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-[13px] transition-colors sm:min-w-0"
                   style={{
                     borderColor: active
                       ? "rgba(120,210,230,0.5)"
@@ -1412,14 +1464,19 @@ function RouteGenerator({
           </div>
 
           <p className="mt-2 text-[12px] leading-relaxed text-white/40">
-            {placeMode === "waypoint"
-              ? "Tik op de kaart om routepunten te plaatsen. Sleep een punt om het te verplaatsen, tik erop om het te verwijderen. Sparki berekent de échte route via de wegen."
-              : "Tik op de kaart om een verzamelpunt te plaatsen (bijv. clubhuis of café). Verzamelpunten bepalen niet de route — ze markeren waar je samenkomt."}
+            {placeMode === "start"
+              ? "Tik op de kaart om je startpunt (groene S) te zetten. Daarna schakelt Sparki automatisch door naar routepunten."
+              : placeMode === "end"
+                ? "Tik op de kaart om je eindpunt (oranje F) te zetten. Opnieuw tikken in deze stand verplaatst het eindpunt."
+                : placeMode === "waypoint"
+                  ? "Tik op de kaart om routepunten te plaatsen. Sleep een punt om het te verplaatsen, tik erop om het te verwijderen. Sparki berekent de échte route via de wegen. Je zoomniveau blijft staan."
+                  : "Tik op de kaart om een verzamelpunt te plaatsen (bijv. clubhuis of café). Verzamelpunten bepalen niet de route — ze markeren waar je samenkomt."}
           </p>
 
           <RouteMap
             geometry={candidate?.geometry ?? []}
-            waypoints={waypoints}
+            waypoints={allPoints}
+            waypointRoles={allRoles}
             meetpoints={meetpoints}
             center={start ? [start.lat, start.lon] : [52.1, 5.3]}
             myLocation={start ? [start.lat, start.lon] : undefined}
@@ -1427,14 +1484,8 @@ function RouteGenerator({
             height={320}
             className="mt-3"
             onMapClick={handleMapClick}
-            onWaypointDrag={(i, lat, lon) =>
-              setWaypoints((w) =>
-                w.map((p, idx) => (idx === i ? [lat, lon] : p)),
-              )
-            }
-            onWaypointClick={(i) =>
-              setWaypoints((w) => w.filter((_, idx) => idx !== i))
-            }
+            onWaypointDrag={(i, lat, lon) => updatePointAt(i, [lat, lon])}
+            onWaypointClick={(i) => updatePointAt(i, null)}
             onMeetpointClick={(i) =>
               setMeetpoints((m) => m.filter((_, idx) => idx !== i))
             }
@@ -1451,17 +1502,22 @@ function RouteGenerator({
               {geoState === "loading" ? "Locatie…" : "Centreer op mij"}
             </button>
             <span className="font-mono text-[10px] text-white/40">
+              {startPoint ? "start ✓ · " : ""}
+              {endPoint ? "eind ✓ · " : ""}
               {waypoints.length} routepunt{waypoints.length === 1 ? "" : "en"} ·{" "}
               {meetpoints.length} verzamelpunt
               {meetpoints.length === 1 ? "" : "en"}
             </span>
-            {(waypoints.length > 0 || meetpoints.length > 0) && (
+            {(allPoints.length > 0 || meetpoints.length > 0) && (
               <button
                 type="button"
                 onClick={() => {
+                  setStartPoint(null)
+                  setEndPoint(null)
                   setWaypoints([])
                   setMeetpoints([])
                   setCandidate(null)
+                  setPlaceMode("start")
                 }}
                 className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-[rgba(255,140,120,0.85)]"
               >
@@ -1713,7 +1769,15 @@ function RouteGenerator({
               <button
                 type="button"
                 onClick={() => {
-                  setWaypoints(sampleWaypointsFromGeometry(candidate.geometry))
+                  // Nieuwe start/eind/tussen-indeling: eerste punt van de
+                  // echte lijn wordt startpunt, laatste eindpunt, de rest
+                  // tussenpunten. Oude bouwstaat volledig wissen zodat er
+                  // geen verdwaald start/eindpunt achterblijft.
+                  const pts = sampleWaypointsFromGeometry(candidate.geometry)
+                  setStartPoint(pts.length >= 2 ? pts[0]! : null)
+                  setEndPoint(pts.length >= 2 ? pts[pts.length - 1]! : null)
+                  setWaypoints(pts.length >= 2 ? pts.slice(1, -1) : pts)
+                  setPlaceMode("waypoint")
                   setMode("waypoints")
                   setCandidate(null)
                   setOptions(null)

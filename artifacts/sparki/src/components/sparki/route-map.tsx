@@ -60,6 +60,7 @@ export function RouteMap({
   height = 260,
   interactive = true,
   waypoints = [],
+  waypointRoles = [],
   meetpoints = [],
   climbs = [],
   center,
@@ -75,6 +76,9 @@ export function RouteMap({
   height?: number
   interactive?: boolean
   waypoints?: RouteWaypoint[]
+  // Optional role per waypoint (aligned by index): "start" renders a green S,
+  // "end" an orange F, "via" (or missing) the numbered cyan dot.
+  waypointRoles?: ("start" | "via" | "end")[]
   meetpoints?: RouteMeetpoint[]
   // Detected climbs (read-only routes). Each climb with a finite summitKm is
   // plotted as a summit marker anchored to the real track coordinate nearest
@@ -97,6 +101,9 @@ export function RouteMap({
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
+  // Builder mode: fit the view only ONCE. After that the athlete's own
+  // zoom/pan is sacred — placing a waypoint must never snap the map back.
+  const didFitRef = useRef(false)
   const lineRef = useRef<L.Polyline | null>(null)
   const markersRef = useRef<L.Layer[]>([])
 
@@ -178,14 +185,24 @@ export function RouteMap({
         iconAnchor: [6, 6],
       })
 
-    // Numbered, draggable waypoint marker for builder mode.
-    const wpIcon = (n: number) =>
-      L.divIcon({
+    // Numbered, draggable waypoint marker for builder mode. Start and end get
+    // their own colour + letter so the rider always sees where the route
+    // begins (S, green) and ends (F, orange).
+    const wpIcon = (n: number, role: "start" | "via" | "end" = "via") => {
+      const bg =
+        role === "start"
+          ? "rgba(120,230,140,0.95)"
+          : role === "end"
+            ? "rgba(255,160,90,0.95)"
+            : ACCENT
+      const label = role === "start" ? "S" : role === "end" ? "F" : String(n)
+      return L.divIcon({
         className: "",
-        html: `<span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:9999px;background:${ACCENT};color:#040506;font:600 11px/1 ui-sans-serif,system-ui;box-shadow:0 0 0 3px rgba(5,7,14,0.9),0 0 10px ${ACCENT};">${n}</span>`,
+        html: `<span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:9999px;background:${bg};color:#040506;font:600 11px/1 ui-sans-serif,system-ui;box-shadow:0 0 0 3px rgba(5,7,14,0.9),0 0 10px ${bg};">${label}</span>`,
         iconSize: [22, 22],
         iconAnchor: [11, 11],
       })
+    }
 
     // Distinct pin for a named meeting point ("verzamelpunt"). The label is
     // user-authored, so HTML-escape it before injecting into the marker HTML.
@@ -208,7 +225,7 @@ export function RouteMap({
       // Builder: render the user's shaping waypoints (draggable / removable).
       waypoints.forEach(([lat, lon], i) => {
         const marker = L.marker([lat, lon], {
-          icon: wpIcon(i + 1),
+          icon: wpIcon(i + 1, waypointRoles[i] ?? "via"),
           draggable: true,
         }).addTo(map)
         marker.on("dragend", () => {
@@ -304,26 +321,33 @@ export function RouteMap({
       markersRef.current.push(marker)
     }
 
-    // Fit to whatever we have (line, waypoints, or meetpoints).
+    // Fit to whatever we have (line, waypoints, or meetpoints). In builder
+    // mode this happens only ONCE: after the first fit the athlete's own
+    // zoom/pan is kept, so placing a point never snaps the view back out.
     const fitPoints: [number, number][] = [
       ...latlngs,
       ...waypoints.map(([lat, lon]) => [lat, lon] as [number, number]),
       ...meetpoints.map((m) => [m.lat, m.lon] as [number, number]),
     ]
-    if (fitPoints.length >= 2) {
+    if (isBuilder && didFitRef.current) {
+      // Keep the current view — the rider zoomed in on purpose.
+    } else if (fitPoints.length >= 2) {
       map.fitBounds(L.latLngBounds(fitPoints), { padding: [28, 28] })
+      didFitRef.current = true
     } else if (fitPoints.length === 1) {
       map.setView(fitPoints[0]!, 13)
+      didFitRef.current = true
     } else if (myLocation) {
       // Centred on the rider: street-level, so you instantly recognise where
       // you are.
       map.setView(myLocation, 16)
+      didFitRef.current = true
     } else if (center) {
       map.setView(center, 8)
     }
     // Tiles can mis-size if the container was hidden when initialised.
     setTimeout(() => map.invalidateSize(), 80)
-  }, [geometry, waypoints, meetpoints, climbs, isBuilder, center, myLocation])
+  }, [geometry, waypoints, waypointRoles, meetpoints, climbs, isBuilder, center, myLocation])
 
   // "Centreer op mij": explicitly jump to the rider's position at street-level
   // zoom, regardless of what else is on the map. Triggered via the counter so
