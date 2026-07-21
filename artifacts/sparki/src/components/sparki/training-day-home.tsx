@@ -19,7 +19,6 @@ import {
   Skeleton,
 } from "@/components/sparki/home-sections"
 import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer"
-import { LinkedRoutePreview } from "@/components/sparki/linked-route"
 import { QuickActionButton } from "@/components/sparki/coach-input-actions"
 import { GoalContextLine } from "@/components/sparki/goal-context-line"
 import { useState } from "react"
@@ -321,11 +320,6 @@ export function TrainingDayHome({
                 />
               </button>
 
-              <LinkedRoutePreview
-                plannedWorkoutId={data.todayWorkout.id}
-                workoutStatus={data.todayWorkout.status}
-                className="mt-4"
-              />
             </>
           ) : (
             <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">

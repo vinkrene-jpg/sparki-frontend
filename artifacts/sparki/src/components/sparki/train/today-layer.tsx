@@ -6,7 +6,6 @@ import { detectReadinessConflict } from "@/lib/train-intelligence"
 import { LayerHeading } from "@/components/sparki/train/layer-heading"
 import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer"
 import { CorePredictionPanel } from "@/components/sparki/core-prediction-panel"
-import { LinkedRoutePreview } from "@/components/sparki/linked-route"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import { missingTargets } from "@/lib/missing-input"
 import { Stat, Divider, ACCENT } from "@/components/sparki/ui"
@@ -314,10 +313,6 @@ export function TodayLayer() {
             </div>
           )}
 
-          <LinkedRoutePreview
-            plannedWorkoutId={workout.id}
-            workoutStatus={workout.status}
-          />
         </div>
         </>
       ) : (

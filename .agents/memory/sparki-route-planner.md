@@ -82,3 +82,12 @@ bike + training type, regenerate, save like a GPX route.
 - **JSX generic gotcha (replit-cartographer)**: explicit type-arg syntax `<Comp<T> .../>` on a
   JSX element breaks the babel metadata plugin ("Unexpected token"). Make the component take
   `string` props and cast at the call site instead.
+
+## Route/navigatie entry points live ONLY in the Routes chapter (July 2026)
+
+Per user request, Training and the Vandaag home no longer surface any
+route/navigation UI: the "Navigatie-training" link card on /train and the
+LinkedRoutePreview ("Nog geen route — STEL SAMEN" / "JOUW ROUTE") on both
+today-layer and training-day-home were removed. The only entry is the
+main-menu "Navigatie-training" item → /routes. Don't re-add route prompts to
+training surfaces.
