@@ -345,8 +345,12 @@ export function RouteMap({
     } else if (center) {
       map.setView(center, 8)
     }
-    // Tiles can mis-size if the container was hidden when initialised.
-    setTimeout(() => map.invalidateSize(), 80)
+    // Tiles can mis-size if the container was hidden when initialised. Only
+    // run when the map still exists — dev double-mounts would otherwise fire
+    // the timer on an already-removed map and crash.
+    setTimeout(() => {
+      if (mapRef.current === map) map.invalidateSize()
+    }, 80)
   }, [geometry, waypoints, waypointRoles, meetpoints, climbs, isBuilder, center, myLocation])
 
   // "Centreer op mij": explicitly jump to the rider's position at street-level

@@ -27,7 +27,8 @@ import { useUpcomingWorkouts } from "@/hooks/use-today-workout"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useFriends } from "@/hooks/use-social"
 import { isSportActive } from "@workspace/feature-flags"
-import { MapPin, Sparkles, Flag, Users, X, Download, Smartphone, Navigation, Share2 } from "lucide-react"
+import { MapPin, Sparkles, Flag, Users, X, Download, Smartphone, Navigation, Share2, Map as MapIcon } from "lucide-react"
+import { RouteExplorer } from "@/components/sparki/route-explorer"
 import { useLocation, useSearch } from "wouter"
 import { RouteNavigator } from "@/components/sparki/route-navigator"
 import {
@@ -2080,6 +2081,8 @@ export function RoutePanel() {
   // Snel een eerder bewaarde route kiezen: compacte lijst met namen; tikken
   // springt direct naar de bijbehorende routekaart hieronder.
   const [showSavedPicker, setShowSavedPicker] = useState(false)
+  // Kaart-verkenner: volledig scherm met alle routes op één kaart.
+  const [showExplorer, setShowExplorer] = useState(false)
   const [highlightId, setHighlightId] = useState<number | null>(null)
   // Prefill for the generator when the rider steers from a route-paspoort
   // ("Vlakker" / "Meer klimmen"). Key forces a fresh generator instance so the
@@ -2180,6 +2183,16 @@ export function RoutePanel() {
           <Download className="h-4 w-4" strokeWidth={1.75} />
           {create.isPending ? "Verwerken…" : "GPX uploaden"}
         </button>
+        {routes.some((r) => (r.geometry?.length ?? 0) >= 2) && (
+          <button
+            type="button"
+            onClick={() => setShowExplorer(true)}
+            className="flex items-center gap-2 rounded-full border border-white/[0.14] px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 hover:text-white/90"
+          >
+            <MapIcon className="h-4 w-4" strokeWidth={1.75} />
+            Verken op de kaart
+          </button>
+        )}
         {routes.length > 0 && (
           <button
             type="button"
@@ -2225,6 +2238,29 @@ export function RoutePanel() {
             </button>
           ))}
         </div>
+      )}
+
+      {showExplorer && (
+        <RouteExplorer
+          routes={routes}
+          onClose={() => setShowExplorer(false)}
+          onOpenRoute={(id) => {
+            setShowExplorer(false)
+            setHighlightId(id)
+            setTimeout(() => {
+              document
+                .getElementById(`route-${id}`)
+                ?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }, 50)
+            setTimeout(() => setHighlightId(null), 2600)
+          }}
+          onNavigate={(id) => {
+            setShowExplorer(false)
+            const params = new URLSearchParams(window.location.search)
+            params.set("nav", String(id))
+            setPanelLocation(`${panelPath}?${params.toString()}`)
+          }}
+        />
       )}
 
       <input
