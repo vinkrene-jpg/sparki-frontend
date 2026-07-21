@@ -213,10 +213,8 @@ function Explorer() {
 
   const debouncedArea = useDebounced(area, 500)
   const debouncedName = useDebounced(name, 500)
-  const { data, isLoading, isError, error, isFetching } = useClimbSearch(
-    debouncedArea,
-    debouncedName,
-  )
+  const { data, isLoading, isError, error, isFetching, refetch } =
+    useClimbSearch(debouncedArea, debouncedName)
 
   const climbs = useMemo(() => data?.climbs ?? [], [data])
 
@@ -285,7 +283,7 @@ function Explorer() {
             </p>
             <button
               type="button"
-              onClick={() => setArea((a) => a + " ")}
+              onClick={() => refetch()}
               className="mt-3 rounded-xl border border-white/[0.12] px-4 py-2 font-sans text-[12px] text-white/70 transition hover:border-white/25"
             >
               Opnieuw proberen

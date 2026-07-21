@@ -33,6 +33,7 @@ import TesterWelcomePage from "@/pages/tester-welcome"
 import CoachAthletePlanPage from "@/pages/coach-athlete-plan"
 import LandingPage from "@/pages/landing"
 import KnowledgePage from "@/pages/knowledge"
+import KlimmenPage from "@/pages/klimmen"
 import { OnboardingV2 } from "@/components/sparki/onboarding-v2"
 import AdminPage from "@/pages/admin"
 import AdminHealthDetailPage from "@/pages/admin-health-detail"
@@ -84,6 +85,7 @@ const VIEWS: DevView[] = [
   { label: "Samen", path: "/samen" },
   { label: "Wereld", path: "/wereld" },
   { label: "Kennis", path: "/kennis" },
+  { label: "Klimmen", path: "/klimmen" },
   { label: "Invites", path: "/invitations" },
   { label: "Tester-QR", path: "/tester-qr" },
   { label: "Welkom-tester", path: "/welkom-tester" },
@@ -410,6 +412,8 @@ export function DevPreview() {
     showNav = false
   } else if (location.startsWith("/kennis")) {
     page = <KnowledgePage />
+  } else if (location.startsWith("/klimmen")) {
+    page = <KlimmenPage />
   } else if (location.startsWith("/wedstrijd-room")) {
     page = <WedstrijdRoomPage />
   } else if (location.startsWith("/races")) {

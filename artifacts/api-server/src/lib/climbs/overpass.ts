@@ -6,7 +6,10 @@
 
 import { postForm, fetchJson } from "./http";
 
+// Multiple public Overpass mirrors — we try them in order so one blocked/rate-
+// limited host degrades to the next instead of failing the whole feature.
 const ENDPOINTS = [
+  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
   "https://overpass-api.de/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
 ];

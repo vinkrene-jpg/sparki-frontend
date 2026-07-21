@@ -8,6 +8,7 @@
 // error the callers turn into a plain-Dutch "bron onbereikbaar" state.
 
 const ALLOWED_HOSTS = new Set([
+  "maps.mail.ru",
   "overpass-api.de",
   "overpass.kumi.systems",
   "www.wikidata.org",
