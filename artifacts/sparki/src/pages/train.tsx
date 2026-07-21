@@ -12,7 +12,6 @@ import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer"
 import { LayerHeading } from "@/components/sparki/train/layer-heading"
 import { SourceLayer } from "@/components/sparki/train/source-layer"
 import { GoalLayer } from "@/components/sparki/train/goal-layer"
-import { RaceLayer } from "@/components/sparki/train/race-layer"
 import { TodayLayer } from "@/components/sparki/train/today-layer"
 import { PatternsLayer } from "@/components/sparki/train/patterns-layer"
 import {
@@ -276,10 +275,6 @@ export default function TrainPage() {
       >
         <GoalLayer />
       </div>
-
-      {/* Wedstrijden — the calendar goals the plan works toward (races no longer
-          have their own nav tab, so they live here with a drill-in). */}
-      <RaceLayer />
 
       {/* The patterns over time. */}
       <PatternsLayer />
