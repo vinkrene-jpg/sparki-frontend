@@ -16,6 +16,7 @@ import {
   Ban,
   Trophy,
   SlidersHorizontal,
+  Info,
   Users,
   User,
   Check,
@@ -407,6 +408,9 @@ export function RouteNavigator({
   const [pois, setPois] = useState<Poi[]>([])
   const [selectedPoi, setSelectedPoi] = useState<Poi | null>(null)
   const poiLayerRef = useRef<L.LayerGroup | null>(null)
+  // Uitklapbare legenda: legt alleen de icoontjes uit die op DEZE kaart echt
+  // aanwezig zijn (vaste route-iconen + de plek-soorten uit de echte POI-lijst).
+  const [showLegend, setShowLegend] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -1290,7 +1294,72 @@ export function RouteNavigator({
             <SlidersHorizontal className="h-4 w-4" strokeWidth={1.75} />
             Instellen
           </button>
+          <button
+            type="button"
+            onClick={() => setShowLegend((v) => !v)}
+            aria-label="Legenda — uitleg van de icoontjes"
+            className={`flex shrink-0 items-center justify-center rounded-full border p-2 backdrop-blur-md transition ${
+              showLegend
+                ? "border-cyan-400/40 bg-cyan-400/15 text-cyan-200"
+                : "border-white/10 bg-[#070d16]/90 text-white/70 hover:text-white"
+            }`}
+          >
+            <Info className="h-4 w-4" strokeWidth={1.75} />
+          </button>
         </div>
+
+        {/* Uitklapbare legenda — legt alleen uit wat ECHT op deze kaart staat. */}
+        {showLegend && (
+          <div className="pointer-events-auto flex flex-col gap-2 rounded-2xl border border-white/10 bg-[#070d16]/95 p-3 backdrop-blur-md">
+            <div className="flex items-center justify-between">
+              <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+                Wat betekenen de icoontjes?
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowLegend(false)}
+                aria-label="Legenda sluiten"
+                className="rounded-full border border-white/15 p-1 text-white/55 transition hover:text-white/85"
+              >
+                <X className="h-3 w-3" strokeWidth={2} />
+              </button>
+            </div>
+            <ul className="flex flex-col gap-1.5 text-[12px] text-white/70">
+              <li className="flex items-center gap-2.5">
+                <span className="flex h-5 w-6 shrink-0 items-center justify-center text-[14px]">🟢</span>
+                Groene vlag = start van de route · geblokte vlag = finish
+              </li>
+              <li className="flex items-center gap-2.5">
+                <span className="flex h-5 w-6 shrink-0 items-center justify-center text-[14px]">⬆️</span>
+                Witte pijlen op de lijn = rijrichting
+              </li>
+              <li className="flex items-center gap-2.5">
+                <span className="flex h-5 w-6 shrink-0 items-center justify-center text-[14px]">🚴</span>
+                Blauwe stip met pijl = jij, met je kijkrichting
+              </li>
+              {withOthers && boards.length > 0 && (
+                <li className="flex items-center gap-2.5">
+                  <span className="flex h-5 w-6 shrink-0 items-center justify-center text-[14px]">⚡</span>
+                  Geel bordje = plaatsbordje om voor te sprinten
+                </li>
+              )}
+              {Array.from(new Set(pois.map((p) => p.kind))).map((kind) => (
+                <li key={kind} className="flex items-center gap-2.5">
+                  <span className="flex h-5 w-6 shrink-0 items-center justify-center text-[14px]">
+                    {POI_ICONS[kind] ?? "⭐"}
+                  </span>
+                  {kind} — tik erop voor details en “Route hierlangs”
+                </li>
+              ))}
+            </ul>
+            {pois.length === 0 && (
+              <p className="text-[11px] text-white/45">
+                Voor deze route zijn geen plekken (café’s, bezienswaardigheden)
+                gevonden — dan staan er ook geen plek-icoontjes op de kaart.
+              </p>
+            )}
+          </div>
+        )}
 
         {setupOpen && (
           <div className="pointer-events-auto flex flex-col gap-3 rounded-2xl border border-white/10 bg-[#070d16]/95 p-3 backdrop-blur-md">
