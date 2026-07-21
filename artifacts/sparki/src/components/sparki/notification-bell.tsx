@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { createPortal } from "react-dom"
 import { useLocation } from "wouter"
 import {
   useNotifications,
@@ -186,14 +187,18 @@ export function NotificationBell() {
         )}
       </button>
 
-      {open && (
-        <>
+      {open &&
+        createPortal(
+          <>
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-[70]"
             onClick={() => setOpen(false)}
             aria-hidden
           />
-          <div className="absolute right-0 top-7 z-50 w-[18rem] overflow-hidden rounded-xl border border-white/[0.1] bg-[#070d16]/95 shadow-2xl backdrop-blur-xl">
+          {/* Vast aan de viewport (portal naar body) in plaats van aan het
+              belletje: op een smalle telefoon viel het paneel anders links
+              buiten beeld. Breedte wordt begrensd op de schermbreedte. */}
+          <div className="fixed right-3 top-14 z-[71] w-[18rem] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-xl border border-white/[0.1] bg-[#070d16]/95 shadow-2xl backdrop-blur-xl">
             <div className="flex items-center justify-between border-b border-white/[0.08] px-3.5 py-2.5">
               <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/50">
                 Meldingen
@@ -233,8 +238,9 @@ export function NotificationBell() {
               )}
             </div>
           </div>
-        </>
-      )}
+          </>,
+          document.body,
+        )}
     </div>
   )
 }
