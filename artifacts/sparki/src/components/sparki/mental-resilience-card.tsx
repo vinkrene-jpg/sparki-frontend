@@ -161,7 +161,7 @@ const OUTCOME_LABEL: Record<Debrief["outcome"], string> = {
   gemist: "Niet gereden",
 }
 
-export function MentalResilienceCard({ n }: { n: string }) {
+export function MentalResilienceCard({ n }: { n?: string }) {
   const { data, isLoading, isError } = useMentalOverview()
   const [, navigate] = useLocation()
   const [showPrep, setShowPrep] = useState(false)

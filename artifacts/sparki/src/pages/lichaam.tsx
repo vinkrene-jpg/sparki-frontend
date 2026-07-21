@@ -1,9 +1,10 @@
 import { useState } from "react"
-import { Apple, HeartPulse, Brain, ChevronRight } from "lucide-react"
+import { Apple, HeartPulse, ChevronRight } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { VoedingScreen } from "@/components/sparki/voeding-screen"
 import { HealthStatusControl } from "@/components/sparki/health-status-control"
+import { MentalResilienceCard } from "@/components/sparki/mental-resilience-card"
 
 // Hoofdstuk Lichaam — bundelt de bestaande lichaamssurfaces onder één dak:
 // voeding & hydratatie, gezondheid/herstel (ziek/geblesseerd) en een
@@ -74,26 +75,9 @@ export default function LichaamPage() {
         </div>
       </section>
 
-      <section className="mt-8">
-        <SectionLabel title="Mentaal" />
-        <div className="mt-4 flex items-start gap-3 rounded-2xl border border-white/[0.06] bg-[#070d16]/[0.55] p-4 backdrop-blur-md">
-          <span
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.06]"
-            style={{ background: "rgba(255,255,255,0.03)" }}
-          >
-            <Brain className="h-5 w-5 text-white/45" strokeWidth={1.75} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[14px] font-medium text-white/70">
-              Mentaal — binnenkort
-            </p>
-            <p className="mt-0.5 text-[12px] leading-relaxed text-white/40">
-              Hier komt straks je mentale welzijn en veerkracht. Deze plek is
-              gereserveerd; er is nog geen functionaliteit om te tonen.
-            </p>
-          </div>
-        </div>
-      </section>
+      <div className="mt-8">
+        <MentalResilienceCard />
+      </div>
 
       <VoedingScreen open={voedingOpen} onOpenChange={setVoedingOpen} />
     </ScreenShell>
