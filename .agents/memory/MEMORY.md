@@ -110,3 +110,4 @@
 - [Sparki mobile navigation](sparki-mobile-navigation.md) — react-native-maps native-only (web stub keeps it out of web bundle); GPS needs expo-location plugin + permission strings in app.json even though Expo Go masks the gap.
 - [Sparki mobile background ride recording](sparki-mobile-bg-recording.md) — OS TaskManager location task keeps track growing while locked; platform-split ride-tracker (.ts/.web.ts); foreground buffer vs background buffer paths; app.json UIBackgroundModes + Android foreground service.
 - [Sparki bordjes-sprinten](sparki-bordjes-sprint.md) — town-sign sprints; boards=place-name transitions (honest, provider-only), base+speed+watt scoring; seed behind-boards on first fix or mid-route retro-awards; write path must own-check routeId.
+- [Test-workflow boot storm](test-workflow-boot-storm.md) — parallel test boots crash w/ esbuild EAGAIN/SIGABRT; fix = cross-process build semaphore + retry-on-infra-crash tsx runner (cant edit .replit).

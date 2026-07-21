@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { acquireBuildSlot } from "../../../scripts/build-semaphore.mjs";
 
 // Isolated single-test runner.
 //
@@ -37,11 +38,20 @@ const buildEnv = {
   BUILD_ENTRIES: `src/tests/${name}.ts`,
 };
 
-const build = spawnSync(
-  "node",
-  [path.resolve(artifactDir, "build.mjs")],
-  { cwd: artifactDir, env: buildEnv, stdio: "inherit" },
-);
+// Bound how many test builds compile concurrently across ALL test runners so a
+// full-environment boot (many test workflows at once) never storms the process
+// table into `spawn ... EAGAIN` / esbuild SIGABRT.
+const releaseBuildSlot = await acquireBuildSlot(`api-server:${name}`);
+let build;
+try {
+  build = spawnSync(
+    "node",
+    [path.resolve(artifactDir, "build.mjs")],
+    { cwd: artifactDir, env: buildEnv, stdio: "inherit" },
+  );
+} finally {
+  releaseBuildSlot();
+}
 if (build.status !== 0) {
   process.exit(build.status ?? 1);
 }
