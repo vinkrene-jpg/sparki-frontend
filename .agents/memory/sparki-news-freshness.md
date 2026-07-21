@@ -39,3 +39,20 @@ Honesty preserved: only reorders/de-dupes REAL rows, never fabricates.
 ## RSS blockers
 Some publishers 406/403 the bot UA (BikeRadar). `fetchNewsFeed` retries ONCE
 with a browser UA on 401/403/406/429/451. Only re-requests the same public URL.
+
+## maxNew cap starves late-listed feeds (fetch-order slice)
+The scan's `maxNew` budget was applied by slicing new candidates in fetch
+order, so feeds listed first (Cyclingnews/Velo/Escape) consumed the entire cap
+every run and later feeds (WielerFlits/NOS) NEVER ingested — they looked
+"broken" while their RSS was fine.
+
+**Rule:** any global per-run cap over multi-source candidates must be shared
+fairly (round-robin per source) before slicing, or late sources starve forever.
+
+## Dutch titles (title_nl)
+`knowledge_items.title_nl` holds an LLM Dutch translation of the real title
+(proper nouns kept, unchanged if already Dutch). Set at scan-insert; older rows
+heal via `translateMissingNewsTitles` (bounded 30/run) which the read-path
+`maybeRefreshNews` ALWAYS runs (even when the scan itself is fresh). UI renders
+`titleNl ?? title`; the reader shows "Oorspronkelijke kop: …" attribution.
+Ranking gives Dutch outlets a small +2 bonus; recency still dominates.

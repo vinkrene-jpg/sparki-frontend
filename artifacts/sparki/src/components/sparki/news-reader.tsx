@@ -107,8 +107,16 @@ export function NewsReader({
         </div>
 
         <h1 className="mt-5 text-balance font-sans text-2xl font-light leading-tight tracking-tight text-white/95">
-          {item.title}
+          {item.titleNl ?? item.title}
         </h1>
+
+        {/* Original headline stays visible when the shown title is a
+            translation — honest attribution to the real source. */}
+        {item.titleNl && item.titleNl !== item.title && (
+          <p className="mt-2 font-sans text-[13px] font-light italic leading-snug text-white/40">
+            Oorspronkelijke kop: {item.title}
+          </p>
+        )}
 
         {authors && (
           <p className="mt-3 flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-white/45">

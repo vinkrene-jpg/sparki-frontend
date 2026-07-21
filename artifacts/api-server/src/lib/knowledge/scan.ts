@@ -33,7 +33,11 @@ export type ScanResult = {
 // without a summary rather than blocking the whole run).
 async function summariseAndTag(
   item: RawItem,
-): Promise<{ summary: string; disciplines: KnowledgeDiscipline[] } | null> {
+): Promise<{
+  summary: string;
+  titleNl: string | null;
+  disciplines: KnowledgeDiscipline[];
+} | null> {
   const abstract = item.abstract?.slice(0, 6000) ?? "";
   const prompt = `Je bent een sportwetenschappelijke redacteur voor een wielerprestatie-app (Sparki).
 
@@ -51,6 +55,7 @@ Abstract: ${abstract || "(geen abstract beschikbaar)"}
 Geef UITSLUITEND geldige JSON terug, zonder extra tekst:
 {
   "summary": "2-3 zinnen in het Nederlands, neutraal en feitelijk, alleen gebaseerd op bovenstaande tekst",
+  "titleNl": "de titel in natuurlijk Nederlands vertaald; is de titel al Nederlands, geef hem dan ongewijzigd terug; eigennamen (renners, koersen, merken) blijven onvertaald",
   "disciplines": ["..."]
 }`;
 
@@ -66,6 +71,10 @@ Geef UITSLUITEND geldige JSON terug, zonder extra tekst:
 
   const summary =
     typeof parsed.summary === "string" ? parsed.summary.trim() : "";
+  const titleNl =
+    typeof parsed.titleNl === "string" && parsed.titleNl.trim()
+      ? parsed.titleNl.trim().slice(0, 500)
+      : null;
   const rawDisc = Array.isArray(parsed.disciplines) ? parsed.disciplines : [];
   let disciplines = rawDisc
     .filter((d): d is string => typeof d === "string")
@@ -77,7 +86,7 @@ Geef UITSLUITEND geldige JSON terug, zonder extra tekst:
     disciplines = item.type === "news" ? ["sportnieuws"] : ["sportwetenschap"];
   }
   if (!summary) return null;
-  return { summary, disciplines };
+  return { summary, titleNl, disciplines };
 }
 
 function extractJson(text: string): Record<string, unknown> | null {
@@ -131,7 +140,31 @@ export async function runKnowledgeScan(
     .map(([key, item]) => ({ key, item }));
 
   if (typeof opts.maxNew === "number") {
-    newCandidates = newCandidates.slice(0, opts.maxNew);
+    // Share the cap FAIRLY across sources (round-robin) instead of slicing in
+    // fetch order — otherwise feeds listed first consume the whole budget every
+    // run and later feeds (e.g. the Dutch ones) are permanently starved.
+    const bySource = new Map<string, typeof newCandidates>();
+    for (const c of newCandidates) {
+      const s = c.item.source ?? "";
+      const arr = bySource.get(s);
+      if (arr) arr.push(c);
+      else bySource.set(s, [c]);
+    }
+    const groups = [...bySource.values()];
+    const picked: typeof newCandidates = [];
+    let idx = 0;
+    while (picked.length < opts.maxNew) {
+      let took = false;
+      for (const g of groups) {
+        if (idx < g.length && picked.length < opts.maxNew) {
+          picked.push(g[idx]!);
+          took = true;
+        }
+      }
+      if (!took) break;
+      idx++;
+    }
+    newCandidates = picked;
   }
 
   const summariseErrors: string[] = [];
@@ -141,8 +174,7 @@ export async function runKnowledgeScan(
   const enriched = await batchProcess(
     newCandidates,
     async ({ key, item }) => {
-      let result: { summary: string; disciplines: KnowledgeDiscipline[] } | null =
-        null;
+      let result: Awaited<ReturnType<typeof summariseAndTag>> = null;
       try {
         result = await summariseAndTag(item);
       } catch (err) {
@@ -168,6 +200,7 @@ export async function runKnowledgeScan(
         type: item.type,
         provider: item.provider,
         title: item.title,
+        titleNl: enrichment?.titleNl ?? null,
         authors: item.authors,
         source: item.source,
         url: item.url,
@@ -194,6 +227,70 @@ export async function runKnowledgeScan(
     fetchErrors,
     summariseErrors,
   };
+}
+
+// ── Dutch-title backfill ─────────────────────────────────────────────────────
+// Older rows were stored before Dutch titles existed. This translates the REAL
+// stored title of news items that still lack one — pure translation, never a
+// rewrite: proper nouns stay, no facts added. Bounded per run so it heals
+// gradually on the read path without a big burst.
+export async function translateMissingNewsTitles(
+  opts: { max?: number; concurrency?: number } = {},
+): Promise<{ candidates: number; translated: number; errors: string[] }> {
+  const max = opts.max ?? 30;
+  const rows = await db
+    .select({ id: knowledgeItemsTable.id, title: knowledgeItemsTable.title })
+    .from(knowledgeItemsTable)
+    .where(
+      sql`${knowledgeItemsTable.type} = 'news' and ${knowledgeItemsTable.titleNl} is null`,
+    )
+    .orderBy(sql`${knowledgeItemsTable.publishedAt} desc nulls last`)
+    .limit(max);
+
+  const errors: string[] = [];
+  let translated = 0;
+
+  await batchProcess(
+    rows,
+    async (row) => {
+      try {
+        const msg = await anthropic.messages.create({
+          model: MODEL,
+          max_tokens: 300,
+          messages: [
+            {
+              role: "user",
+              content: `Vertaal deze nieuwskop naar natuurlijk Nederlands. STRIKT: alleen vertalen, niets toevoegen of weglaten; eigennamen (renners, koersen, merken, plaatsen) blijven onvertaald; is de kop al Nederlands, geef hem dan exact ongewijzigd terug.
+
+Kop: ${row.title}
+
+Geef UITSLUITEND geldige JSON terug: {"titleNl":"..."}`,
+            },
+          ],
+        });
+        const block = msg.content[0];
+        const text = block && block.type === "text" ? block.text : "";
+        const parsed = extractJson(text);
+        const titleNl =
+          parsed && typeof parsed.titleNl === "string" && parsed.titleNl.trim()
+            ? parsed.titleNl.trim().slice(0, 500)
+            : null;
+        if (!titleNl) return;
+        await db
+          .update(knowledgeItemsTable)
+          .set({ titleNl, updatedAt: new Date() })
+          .where(sql`${knowledgeItemsTable.id} = ${row.id}`);
+        translated++;
+      } catch (err) {
+        errors.push(
+          `#${row.id}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    },
+    { concurrency: opts.concurrency ?? 3, retries: 2 },
+  );
+
+  return { candidates: rows.length, translated, errors };
 }
 
 // Count current library size (used by job logging / admin endpoint).

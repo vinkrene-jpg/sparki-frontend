@@ -7,6 +7,9 @@ import { queryKeys, STALE } from "@/lib/query-keys";
 export type FeedNewsItem = {
   id: number;
   title: string;
+  // Dutch rendering of the title (translation of the real title; null until
+  // translated — then the UI falls back to the original title).
+  titleNl: string | null;
   url: string;
   source: string | null;
   authors: string[];

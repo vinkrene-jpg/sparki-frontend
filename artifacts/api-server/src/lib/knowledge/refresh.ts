@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db, knowledgeItemsTable } from "@workspace/db";
-import { runKnowledgeScan } from "./scan";
+import { runKnowledgeScan, translateMissingNewsTitles } from "./scan";
 import { logger } from "../logger";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -53,19 +53,29 @@ export function maybeRefreshNews(): void {
   inFlight = (async () => {
     try {
       const newest = await newestNewsFetchedMs();
-      // Fresh enough — nothing to do.
-      if (newest !== null && now - newest < STALE_AFTER_MS) return;
-      logger.info({ newest }, "news-refresh: starting background refresh");
-      const result = await runKnowledgeScan({
-        researchProviders: [],
-        perNewsFeed: PER_NEWS_FEED,
-        maxNew: MAX_NEW,
-        concurrency: 3,
-      });
-      logger.info(
-        { newItems: result.newItems, fetched: result.fetched },
-        "news-refresh: done",
-      );
+      // Scan only when stale — but ALWAYS run the bounded Dutch-title backfill
+      // below, so titles stored before translation existed heal themselves on
+      // the read path (same self-healing principle as the news scan itself).
+      if (newest === null || now - newest >= STALE_AFTER_MS) {
+        logger.info({ newest }, "news-refresh: starting background refresh");
+        const result = await runKnowledgeScan({
+          researchProviders: [],
+          perNewsFeed: PER_NEWS_FEED,
+          maxNew: MAX_NEW,
+          concurrency: 3,
+        });
+        logger.info(
+          { newItems: result.newItems, fetched: result.fetched },
+          "news-refresh: done",
+        );
+      }
+      const titles = await translateMissingNewsTitles({ max: 30 });
+      if (titles.candidates > 0) {
+        logger.info(
+          { candidates: titles.candidates, translated: titles.translated },
+          "news-refresh: dutch-title backfill",
+        );
+      }
     } catch (err) {
       logger.warn({ err }, "news-refresh: failed");
     } finally {

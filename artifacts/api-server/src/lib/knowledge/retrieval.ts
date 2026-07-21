@@ -89,6 +89,9 @@ export async function getRelevantKnowledge(opts: {
 export type FeedNewsItem = {
   id: number;
   title: string;
+  // Dutch rendering of the real title (translation; equal to title when the
+  // original is already Dutch). Null until the backfill/scan translated it.
+  titleNl: string | null;
   url: string;
   source: string | null;
   authors: string[];
@@ -126,6 +129,11 @@ function overlapCoefficient(a: Set<string>, b: Set<string>): number {
   for (const w of small) if (large.has(w)) inter++;
   return inter / small.size;
 }
+
+// Dutch-language outlets. The audience is Dutch, so home-country sport news
+// gets a modest score bonus — enough to surface among comparably-fresh
+// international items, small enough that recency still dominates.
+const DUTCH_SOURCES = new Set(["WielerFlits", "NOS Wielrennen", "NOS Sport"]);
 
 // Recency is the dominant signal for a *daily* news stream: fresh items lead,
 // personalisation only breaks ties among comparably-fresh items.
@@ -186,6 +194,7 @@ export async function getPersonalizedNews(opts: {
     const rec = recencyPoints(item.publishedAt, now);
     score += rec;
     if (item.summary) score += 1;
+    if (item.source && DUTCH_SOURCES.has(item.source)) score += 2;
     // idx preserves the DB recency order as a stable tiebreak.
     return { item, score, rec, idx, words: titleWordSet(item.title) };
   });
@@ -226,6 +235,7 @@ export async function getPersonalizedNews(opts: {
   return ordered.slice(0, limit).map(({ item }) => ({
     id: item.id,
     title: item.title,
+    titleNl: item.titleNl ?? null,
     url: item.url,
     source: item.source,
     authors: item.authors,

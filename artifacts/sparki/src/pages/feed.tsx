@@ -279,7 +279,7 @@ export default function FeedPage() {
     id: `news-${n.id}`,
     type: "news" as FilterKey,
     label: "Nieuws",
-    title: n.title,
+    title: n.titleNl ?? n.title,
     body: n.summary ?? n.abstract ?? "",
     source: n.source ?? undefined,
     url: n.url,

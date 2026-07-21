@@ -58,6 +58,10 @@ export const knowledgeItemsTable = pgTable(
     type: text("type").notNull().default("research"),
     provider: text("provider").notNull(),
     title: text("title").notNull(),
+    // Dutch rendering of the title (translated from the real title; equal to
+    // `title` when the original is already Dutch). Null until translated —
+    // the UI then falls back to the original title, never an invented one.
+    titleNl: text("title_nl"),
     // Real author names as fetched (may be empty for some news items).
     authors: text("authors").array().notNull().default([]),
     // Journal / publisher / feed name.
