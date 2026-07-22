@@ -22,7 +22,6 @@ import TrainPage from "@/pages/train";
 import YouPage from "@/pages/you";
 import LabPage from "@/pages/lab";
 import ActiviteitenPage from "@/pages/activiteiten";
-import CorePlaygroundPage from "@/pages/core-playground";
 import PhotoLabPage from "@/pages/photo-lab";
 import SamenPage from "@/pages/samen";
 import LichaamPage from "@/pages/lichaam";
@@ -486,9 +485,6 @@ function AppRouter() {
                 </Route>
                 <Route path="/activiteiten">
                   <ProtectedPage component={ActiviteitenPage} />
-                </Route>
-                <Route path="/core">
-                  <ProtectedPage component={CorePlaygroundPage} />
                 </Route>
                 <Route path="/photo-lab">
                   <ProtectedPage component={PhotoLabPage} />

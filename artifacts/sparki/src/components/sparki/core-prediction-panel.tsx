@@ -1,8 +1,5 @@
 import { useState } from "react"
 import { useCorePrediction } from "@/hooks/use-core-prediction"
-import { stateToCore } from "@/lib/state-to-core"
-import { SparkiCore } from "@/components/sparki/core/sparki-core"
-import type { SparkiState } from "@/hooks/use-sparki-state"
 import type {
   CorePredictionFrame,
   CorePredictionFactor,
@@ -18,64 +15,11 @@ import {
   TrendingUp,
 } from "lucide-react"
 
-// The Core-voorspelpaneel — Sparki's honest forecast of what this training does
-// to the athlete's living Core. It reuses the exact same living-shape Core as
-// Vandaag (no route/star/waypoint metaphor): a filmstrip of the SAME organism
-// at four moments — nu → tijdens → direct na → na herstel. Every number and
-// every line of copy comes from the engine; this panel only renders them. Future
-// frames are hazier because the engine lowers their confidence (never 1.0), and
-// stateToCore turns that into a soft edge. Missing factors are shown honestly.
-
-// Build the Core visual for a predicted frame by reusing the shared state→core
-// mapping. The frame already carries the exact fields the mapping reads, so we
-// hand it a minimal SparkiState — no fabricated meaning is added here.
-function frameToCore(frame: CorePredictionFrame) {
-  const pseudo: SparkiState = {
-    date: "",
-    athleteName: "",
-    x: frame.x,
-    y: frame.y,
-    band: frame.band,
-    tension: frame.tension,
-    distortion: frame.distortion,
-    movement: frame.movement,
-    confidence: frame.confidence,
-    confidenceLabel: "",
-    status: "",
-    action: null,
-    metrics: [],
-    checkInDone: false,
-    why: [],
-    missing: [],
-  }
-  return stateToCore(pseudo)
-}
-
-// Build the Core visual for a MEASURED/ESTIMATED actual moment. Pending moments
-// have no position yet (null) and render an honest placeholder instead. Real data
-// gets full certainty; a coarse estimate is shown a touch hazier (lower confidence).
-function actualFrameToCore(frame: CoreActualFrame) {
-  if (frame.x == null || frame.y == null || frame.band == null) return null
-  const pseudo: SparkiState = {
-    date: "",
-    athleteName: "",
-    x: frame.x,
-    y: frame.y,
-    band: frame.band,
-    tension: frame.tension ?? 0,
-    distortion: frame.distortion ?? 0,
-    movement: frame.movement ?? { direction: "stabiel", label: "" },
-    confidence: frame.status === "estimated" ? 0.6 : 0.95,
-    confidenceLabel: "",
-    status: "",
-    action: null,
-    metrics: [],
-    checkInDone: false,
-    why: [],
-    missing: [],
-  }
-  return stateToCore(pseudo)
-}
+// Het voorspelpaneel — Sparki's eerlijke voorspelling van wat deze training met
+// de renner doet, op vier momenten: nu → tijdens → direct na → na herstel.
+// Elke waarde en elke regel tekst komt uit de engine; dit paneel toont ze alleen.
+// De levende vorm-visual is bewust verwijderd — de momenten worden in woorden
+// en cijfers getoond. Ontbrekende factoren blijven eerlijk zichtbaar.
 
 const cardClass =
   "rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md"
@@ -114,16 +58,12 @@ function ConfidenceBar({ value, label }: { value: number; label: string }) {
 }
 
 function FrameCard({ frame }: { frame: CorePredictionFrame }) {
-  const visual = frameToCore(frame)
   return (
-    <div className="flex min-w-0 flex-col items-center gap-1.5">
+    <div className="flex min-w-0 flex-col items-center gap-1.5 rounded-xl border border-white/[0.06] bg-black/20 px-1.5 py-2.5">
       <span className="truncate font-mono text-[8px] tracking-[0.12em] text-white/45">
         {frame.label.toUpperCase()}
       </span>
-      <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-white/[0.06] bg-black/20">
-        <SparkiCore state={visual} className="h-full w-full" />
-      </div>
-      <span className="w-full truncate text-center text-[10px] capitalize leading-snug text-white/55">
+      <span className="w-full truncate text-center text-[11px] capitalize leading-snug text-white/75">
         {frame.band}
       </span>
       <span className="font-mono text-[8px] tabular-nums text-white/35">
@@ -135,22 +75,12 @@ function FrameCard({ frame }: { frame: CorePredictionFrame }) {
 }
 
 function ActualFrameCard({ frame }: { frame: CoreActualFrame }) {
-  const visual = actualFrameToCore(frame)
   return (
-    <div className="flex min-w-0 flex-col items-center gap-1.5">
+    <div className="flex min-w-0 flex-col items-center gap-1.5 rounded-xl border border-white/[0.06] bg-black/20 px-1.5 py-2.5">
       <span className="truncate font-mono text-[8px] tracking-[0.12em] text-white/45">
         {frame.label.toUpperCase()}
       </span>
-      <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-white/[0.06] bg-black/20">
-        {visual ? (
-          <SparkiCore state={visual} className="h-full w-full" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <Loader2 className="h-3.5 w-3.5 text-white/25" />
-          </div>
-        )}
-      </div>
-      <span className="w-full truncate text-center text-[10px] capitalize leading-snug text-white/55">
+      <span className="w-full truncate text-center text-[11px] capitalize leading-snug text-white/75">
         {frame.band ?? "nog niet"}
       </span>
       <span className="font-mono text-[8px] tabular-nums text-white/35">
@@ -238,7 +168,7 @@ export function CorePredictionPanel({ workoutId }: { workoutId: number }) {
         />
         <div className="min-w-0 flex-1">
           <p className="font-mono text-[9px] tracking-[0.22em] text-cyan-300/70">
-            VOORSPELLING — EFFECT OP JE CORE
+            VOORSPELLING — WAT DEZE TRAINING MET JE DOET
           </p>
           <h3 className="mt-1 text-balance font-sans text-[15px] font-light leading-snug text-white/90">
             {prediction.headline}
@@ -248,8 +178,7 @@ export function CorePredictionPanel({ workoutId }: { workoutId: number }) {
 
       {prediction.predictable ? (
         <>
-          {/* Filmstrip of the living Core through the session — nu → tijdens →
-              direct na → na herstel. All moments stay visible at once. */}
+          {/* Vier momenten in woorden — nu → tijdens → direct na → na herstel. */}
           <div className="grid grid-cols-4 gap-2">
             {prediction.frames.map((f) => (
               <FrameCard key={f.phase} frame={f} />
@@ -267,22 +196,9 @@ export function CorePredictionPanel({ workoutId }: { workoutId: number }) {
           />
         </>
       ) : (
-        <>
-          {/* Honest "now" frame only + why Sparki can't predict yet */}
-          <div className="flex items-center gap-4">
-            {prediction.frames[0] && (
-              <div className="h-[80px] w-[80px] shrink-0 overflow-hidden rounded-xl border border-white/[0.06] bg-black/20">
-                <SparkiCore
-                  state={frameToCore(prediction.frames[0])}
-                  className="h-full w-full"
-                />
-              </div>
-            )}
-            <p className="text-pretty text-[12.5px] leading-relaxed text-white/60">
-              {prediction.summary}
-            </p>
-          </div>
-        </>
+        <p className="text-pretty text-[12.5px] leading-relaxed text-white/60">
+          {prediction.summary}
+        </p>
       )}
 
       {/* Predicted-vs-actual, once the session is executed */}
@@ -298,8 +214,7 @@ export function CorePredictionPanel({ workoutId }: { workoutId: number }) {
               VOORSPELD VS. ECHT
             </span>
           </div>
-          {/* Predicted Core path vs the REAL one, the same living organism at
-              each moment — voorspeld bovenaan, werkelijk eronder, uitgelijnd. */}
+          {/* Voorspeld bovenaan, werkelijk eronder, uitgelijnd per moment. */}
           {cmp.actualPath?.length > 0 && (
             <div className="mt-3 flex flex-col gap-2">
               <div>

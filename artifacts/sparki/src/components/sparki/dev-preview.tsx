@@ -14,7 +14,6 @@ import TrainPage from "@/pages/train"
 import FeedPage from "@/pages/feed"
 import LabPage from "@/pages/lab"
 import ActiviteitenPage from "@/pages/activiteiten"
-import CorePlaygroundPage from "@/pages/core-playground"
 import PhotoLabPage from "@/pages/photo-lab"
 import YouPage from "@/pages/you"
 import GeluidPage from "@/pages/geluid"
@@ -73,7 +72,6 @@ const VIEWS: DevView[] = [
   { label: "Train", path: "/train" },
   { label: "Feed", path: "/feed" },
   { label: "Lab", path: "/lab" },
-  { label: "Vorm", path: "/core" },
   { label: "You", path: "/you" },
   { label: "Geluid", path: "/geluid" },
   { label: "Lichaam", path: "/lichaam" },
@@ -388,8 +386,6 @@ export function DevPreview() {
     page = <TrainPage />
   } else if (location.startsWith("/feed")) {
     page = <FeedPage />
-  } else if (location.startsWith("/core")) {
-    page = <CorePlaygroundPage />
     showNav = false
   } else if (location.startsWith("/lab")) {
     page = <LabPage />

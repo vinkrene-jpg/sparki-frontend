@@ -1,6 +1,5 @@
 import { useState } from "react"
 import { ChevronDown, ChevronRight, ArrowRight, Zap } from "lucide-react"
-import { SparkiCore } from "@/components/sparki/core/sparki-core"
 import {
   useSparkiState,
   useStateCheckIn,
@@ -9,7 +8,6 @@ import {
   type StateMetric,
   type StateBand,
 } from "@/hooks/use-sparki-state"
-import { stateToCore } from "@/lib/state-to-core"
 import { Skeleton } from "@/components/sparki/home-sections"
 
 // Generic State Engine consumer. It renders one honest Sparki toestand (the
@@ -143,11 +141,10 @@ export function StateCard({
   }
 
   const accent = BAND_ACCENT[state.band]
-  const core = stateToCore(state)
   const showCheckInButtons = !state.checkInDone || reCheckIn
   const firstName = state.athleteName?.trim().split(/\s+/)[0] ?? ""
   // Only hoist when there is an outstanding check-in — once today's is recorded
-  // the slim "genoteerd" line stays in its calm position below and the Core leads.
+  // the slim "genoteerd" line stays in its calm position below and the status leads.
   const hoistCheckIn = !hideCheckIn && !!checkInFirst && showCheckInButtons
 
   const checkInBlock = (
@@ -206,28 +203,15 @@ export function StateCard({
           on opening the app (Vandaag only). Drops back below once recorded. ── */}
       {hoistCheckIn && checkInBlock}
 
-      {/* ── Level 1: the living Core ───────────────────────────────────────── */}
-      <section className="relative flex flex-col items-center">
+      {/* ── Level 1: status in woorden — de vorm-visual is bewust verwijderd;
+          de conclusie zelf draagt het scherm. ── */}
+      <section className="relative flex flex-col items-center pt-2">
         {firstName && (
           <p className="text-[14px] font-light tracking-tight text-white/70">
             {greeting()}, {firstName}.
           </p>
         )}
-        <div className="relative -mt-1 h-64 w-full max-w-sm">
-          {/* Instrument-raster achter de Core — bootst de smart-screen-look na.
-              Subtiel, met radiale mask zodat de Core ervóór leesbaar blijft. */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-4 opacity-50 [mask-image:radial-gradient(ellipse_at_center,black_55%,transparent_100%)]"
-            style={{
-              backgroundImage:
-                "linear-gradient(to right, oklch(0.82 0.16 200 / 0.10) 1px, transparent 1px), linear-gradient(to bottom, oklch(0.82 0.16 200 / 0.10) 1px, transparent 1px)",
-              backgroundSize: "32px 32px",
-            }}
-          />
-          <SparkiCore state={core} className="absolute inset-0 h-full w-full" />
-        </div>
-        <div className="mt-1 flex items-center gap-2">
+        <div className="mt-4 flex items-center gap-2">
           <span
             className="font-mono text-[10px] uppercase tracking-[0.24em]"
             style={{ color: accent }}
