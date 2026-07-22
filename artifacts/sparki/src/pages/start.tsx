@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react"
 import { Link } from "wouter"
 import { ArrowRight, Compass, Users, Wrench } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
@@ -9,6 +10,7 @@ import { useSessions } from "@/hooks/use-sessions"
 import { useCircleFeed } from "@/hooks/use-social"
 import { useClubMembership } from "@/hooks/use-club"
 import { useGarage } from "@/hooks/use-garage"
+import { useBikeScanView, frameImageUrl } from "@/hooks/use-bike-scan"
 
 const BAND_LABEL: Record<StateBand, string> = {
   belastbaar: "Belastbaar",
@@ -183,9 +185,43 @@ function ClubToegang() {
 
 // De eigen fiets, prominent en langzaam draaiend. Alleen echte garagedata:
 // zonder fiets in de garage tonen we een eerlijke uitnodiging, geen nepfiets.
+// Is er een echte fietsscan, dan tonen we die ECHTE beelden (langzaam
+// wisselend; bij "verminder beweging" een stilstaand beeld) i.p.v. het model.
+function EigenFietsScanBeeld({ bikeId }: { bikeId: number }) {
+  const { data } = useBikeScanView(bikeId)
+  const [idx, setIdx] = useState(0)
+  const frames = useMemo(
+    () => (data?.frames ?? []).filter((f) => f.cutoutPath),
+    [data],
+  )
+  const reduceMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  useEffect(() => {
+    if (reduceMotion || frames.length < 2) return
+    const t = setInterval(() => setIdx((i) => (i + 1) % frames.length), 2600)
+    return () => clearInterval(t)
+  }, [reduceMotion, frames.length])
+  if (frames.length === 0) return null
+  const frame = frames[idx % frames.length]!
+  return (
+    <img
+      src={frameImageUrl(frame.id, "vrijstaand")}
+      alt="Jouw fiets — echte scanopname"
+      className="h-[190px] w-full object-contain py-2"
+      draggable={false}
+    />
+  )
+}
+
 function EigenFiets() {
   const { data } = useGarage()
   const bike = data?.bikes?.[0] ?? null
+  const { data: scanView } = useBikeScanView(bike?.id ?? null)
+  const hasScan =
+    scanView != null &&
+    scanView.viewMode !== "geen" &&
+    scanView.frames.some((f) => f.cutoutPath)
   if (!bike) {
     return (
       <Link
@@ -202,7 +238,11 @@ function EigenFiets() {
   return (
     <Link href="/mechanieker" className="block" aria-label={`${bike.name} — open Mechanieker`}>
       <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#070d16]/[0.7] backdrop-blur-md">
-        <Bike3D bike={bike} height={190} />
+        {hasScan ? (
+          <EigenFietsScanBeeld bikeId={bike.id} />
+        ) : (
+          <Bike3D bike={bike} height={190} />
+        )}
         <div className="pointer-events-none absolute bottom-2.5 left-4 right-4 flex items-center justify-between">
           <span className="text-[12px] font-medium text-white/80">
             {bike.name}

@@ -18,7 +18,8 @@
     "test:onboarding-resume": "node ../../scripts/run-tsx-test.mjs src/lib/onboarding-resume.test.ts",
     "test:aandachtswet": "node ../../scripts/run-tsx-test.mjs src/lib/aandachtswet.test.ts",
     "test:day-type": "node ../../scripts/run-tsx-test.mjs src/lib/day-type.test.ts",
-    "test:stream-analysis": "node ../../scripts/run-tsx-test.mjs src/lib/stream-analysis.test.ts"
+    "test:stream-analysis": "node ../../scripts/run-tsx-test.mjs src/lib/stream-analysis.test.ts",
+    "test:scan-quality": "node ../../scripts/run-tsx-test.mjs src/lib/scan-quality.test.ts"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -92,8 +93,10 @@
     "@clerk/react": "^6.10.4",
     "@clerk/themes": "^2.4.57",
     "@fontsource-variable/inter": "^5.2.8",
+    "@imgly/background-removal": "^1.7.0",
     "@types/three": "^0.185.1",
     "leaflet": "^1.9.4",
+    "onnxruntime-web": "^1.27.0",
     "qrcode.react": "^4.2.0",
     "three": "^0.185.1"
   }

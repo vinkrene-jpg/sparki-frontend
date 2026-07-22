@@ -102,11 +102,140 @@ export const garageComponentsTable = pgTable("garage_components", {
   category: text("category").notNull(),
   brand: text("brand"),
   model: text("model"),
+  // Uitvoering/variant (bijv. "Di2 12-speed", "C50 tubeless"). Optioneel —
+  // alleen wat de gebruiker echt weet wordt vastgelegd.
+  variant: text("variant"),
+  // Bouwjaar of generatie (bijv. 2023 of "R9200-generatie" → jaartal).
+  modelYear: integer("model_year"),
+  // "mechanisch" | "elektronisch" — alleen zinvol voor aandrijfonderdelen.
+  actuation: text("actuation"),
+  // Aantal versnellingen (bijv. 11, 12). Null = onbekend/n.v.t.
+  speeds: integer("speeds"),
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
+// Fietsscan — begeleide opname van de eigen fiets (identiteitscheck-stijl).
+//
+// Eén scan is één begeleide sessie voor één fiets. Elke goedgekeurde stap
+// levert een frame op: het ORIGINELE beeld blijft altijd bewaard
+// (originalPath) en na achtergrondverwijdering komt daar een vrijstaand PNG
+// bij (cutoutPath). Kwaliteitsmetingen (licht/scherpte/beweging/kadrering)
+// worden per frame vastgelegd zoals ze op het moment van opname zijn gemeten —
+// nooit achteraf verzonnen.
+
+export const bikeScanSteps = [
+  "volledig", // volledige fiets in het kader (linkerzijde, referentie)
+  "links", // linkerzijde
+  "voorzijde", // rond de voorzijde bewegen
+  "rechts", // rechterzijde
+  "aandrijving", // detailopname crank/cassette/derailleur
+  "wielen", // detailopname wielen
+  "cockpit", // detailopname stuur/cockpit
+] as const;
+export type BikeScanStep = (typeof bikeScanSteps)[number];
+
+export type BikeScanFrameQuality = {
+  // 0..1 gemiddelde luminantie van het beeld.
+  brightness: number;
+  // Laplacian-variantie als scherptemaat (hoger = scherper).
+  sharpness: number;
+  // 0..1 aandeel gewijzigde pixels t.o.v. het vorige frame (bewegingsmaat).
+  motion: number;
+  // 0..1 aandeel van het kader dat door het onderwerp wordt gevuld.
+  coverage: number;
+};
+
+export const bikeScansTable = pgTable("bike_scans", {
+  id: serial("id").primaryKey(),
+  clerkId: text("clerk_id")
+    .notNull()
+    .references(() => userProfilesTable.clerkId, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  bikeId: integer("bike_id")
+    .notNull()
+    .references(() => garageBikesTable.id, { onDelete: "cascade" }),
+  // "bezig" | "afgerond" | "afgebroken"
+  status: text("status").notNull().default("bezig"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+});
+
+export const bikeScanFramesTable = pgTable("bike_scan_frames", {
+  id: serial("id").primaryKey(),
+  clerkId: text("clerk_id")
+    .notNull()
+    .references(() => userProfilesTable.clerkId, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  scanId: integer("scan_id")
+    .notNull()
+    .references(() => bikeScansTable.id, { onDelete: "cascade" }),
+  bikeId: integer("bike_id")
+    .notNull()
+    .references(() => garageBikesTable.id, { onDelete: "cascade" }),
+  step: text("step").notNull(),
+  // Volgorde binnen de scan (rondom-frames voor 360-weergave).
+  seq: integer("seq").notNull().default(0),
+  // Origineel beeld — altijd bewaard.
+  originalPath: text("original_path").notNull(),
+  // Vrijstaand PNG (transparante achtergrond) — null zolang de
+  // achtergrondverwijdering nog niet gelukt/goedgekeurd is.
+  cutoutPath: text("cutout_path"),
+  quality: jsonb("quality").$type<BikeScanFrameQuality>(),
+  approved: integer("approved").notNull().default(0), // 0/1 — door checks goedgekeurd
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
+// Productbeelden voor onderdelen (groepset/wielen) — uitsluitend met
+// herkomst. Elke rij is één beeld gekoppeld aan één garage-component, met
+// verplichte bron en licentiestatus. Geen scraping; alleen bronnen waarvan
+// hergebruik is toegestaan of een handmatige upload door de eigenaar.
+
+export const equipmentAssetSources = [
+  "fabrikant", // officiële fabrikantbron
+  "distributeur", // officiële distributeur
+  "catalogus", // gecontroleerde productcatalogus
+  "upload", // handmatige upload door beheerder of gebruiker
+] as const;
+export type EquipmentAssetSource = (typeof equipmentAssetSources)[number];
+
+export const equipmentAssetsTable = pgTable("equipment_assets", {
+  id: serial("id").primaryKey(),
+  clerkId: text("clerk_id")
+    .notNull()
+    .references(() => userProfilesTable.clerkId, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  componentId: integer("component_id")
+    .notNull()
+    .references(() => garageComponentsTable.id, { onDelete: "cascade" }),
+  brand: text("brand").notNull(),
+  model: text("model").notNull(),
+  variant: text("variant"),
+  // Herkomst — verplicht en beperkt tot de vier toegestane brontypes.
+  source: text("source").notNull(),
+  sourceUrl: text("source_url"),
+  // Gebruiksrecht in klare taal (bijv. "eigen foto", "perskit — vrij voor
+  // productweergave"). Verplicht: zonder duidelijke licentie geen beeld.
+  license: text("license").notNull(),
+  imagePath: text("image_path").notNull(),
+  importedAt: timestamp("imported_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });

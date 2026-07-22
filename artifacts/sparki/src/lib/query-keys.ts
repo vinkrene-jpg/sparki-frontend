@@ -258,6 +258,13 @@ export const queryKeys = {
       ["garage", "test-compare", a, b] as const,
   },
 
+  bikeScan: {
+    all: () => ["bike-scan"] as const,
+    view: (bikeId: number) => ["bike-scan", "view", bikeId] as const,
+    assets: (componentId: number) =>
+      ["bike-scan", "assets", componentId] as const,
+  },
+
   social: {
     all: () => ["social"] as const,
     friends: () => ["social", "friends"] as const,

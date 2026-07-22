@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Wrench } from "lucide-react"
+import { Wrench, ScanLine } from "lucide-react"
 import {
   Bike3D,
   BIKE_PART_LABEL,
@@ -7,6 +7,10 @@ import {
   type BikePart,
 } from "@/components/sparki/bike-3d"
 import { useGarage, type GarageBike } from "@/hooks/use-garage"
+import { useBikeScanView } from "@/hooks/use-bike-scan"
+import { BikeScanViewer } from "@/components/sparki/bike-scan-viewer"
+import { BikeScanCapture } from "@/components/sparki/bike-scan-capture"
+import { EquipmentAssetPanel } from "@/components/sparki/equipment-asset-panel"
 
 // 3D-werkblad in de Mechanieker: het eigen-fietsmodel met aanklikbare
 // onderdelen. Een klik op een onderdeel toont UITSLUITEND wat er echt in de
@@ -54,6 +58,11 @@ function PartDetails({ bike, part }: { bike: GarageBike; part: BikePart }) {
               {c.assessment.entry.note ? ` — ${c.assessment.entry.note}` : ""}
             </p>
           )}
+          <EquipmentAssetPanel
+            componentId={c.id}
+            brand={c.brand}
+            model={c.model}
+          />
         </div>
       ))}
     </div>
@@ -65,13 +74,17 @@ export function Bike3DWerkblad() {
   const bikes = garage?.bikes ?? []
   const [bikeId, setBikeId] = useState<number | null>(null)
   const [part, setPart] = useState<BikePart | null>(null)
+  const [scanning, setScanning] = useState(false)
 
-  if (bikes.length === 0) {
+  const bike = bikes.find((b) => b.id === bikeId) ?? bikes[0]
+  const { data: scanView } = useBikeScanView(bike?.id ?? null)
+
+  if (bikes.length === 0 || !bike) {
     // Geen fiets in de garage — geen model tonen (niets te tonen is eerlijk).
     return null
   }
 
-  const bike = bikes.find((b) => b.id === bikeId) ?? bikes[0]
+  const hasScan = scanView != null && scanView.viewMode !== "geen"
 
   return (
     <section aria-label="Jouw fiets in 3D">
@@ -103,6 +116,12 @@ export function Bike3DWerkblad() {
         )}
       </div>
 
+      {hasScan && (
+        <div className="mb-3 overflow-hidden rounded-2xl border border-white/10 bg-[#070d16]/[0.82] backdrop-blur-md">
+          <BikeScanViewer bikeId={bike.id} height={240} />
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#070d16]/[0.82] backdrop-blur-md">
         <Bike3D
           bike={bike}
@@ -115,6 +134,26 @@ export function Bike3DWerkblad() {
           Draai met je vinger of muis · tik een onderdeel aan voor details
         </p>
       </div>
+
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => setScanning(true)}
+          className="inline-flex items-center gap-1.5 rounded-full border border-cyan-300/35 px-3.5 py-1.5 text-[12px] text-cyan-200 hover:border-cyan-300/60"
+        >
+          <ScanLine className="h-3.5 w-3.5" />
+          {hasScan ? "Opnieuw scannen" : "Scan je fiets"}
+        </button>
+        {!hasScan && (
+          <p className="text-right text-[10.5px] leading-tight text-white/35">
+            Leg je echte fiets vast met de camera — stap voor stap, met
+            kwaliteitscontrole per opname.
+          </p>
+        )}
+      </div>
+      {scanning && (
+        <BikeScanCapture bikeId={bike.id} onClose={() => setScanning(false)} />
+      )}
 
       {part && (
         <div className="mt-3">
