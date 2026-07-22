@@ -1,16 +1,16 @@
 {
-  "commit": "9464e4c",
-  "date": "2026-07-22T15:16:41.609Z",
+  "commit": "bb2391f",
+  "date": "2026-07-22T22:04:02.454Z",
   "results": [
     {
       "name": "typecheck",
       "ok": true,
-      "seconds": 20
+      "seconds": 18
     },
     {
       "name": "migraties:drift-check",
       "ok": true,
-      "seconds": 10
+      "seconds": 7
     },
     {
       "name": "unit:web:test:uitleg-content",
@@ -38,6 +38,11 @@
       "seconds": 2
     },
     {
+      "name": "unit:web:test:performance-radar",
+      "ok": true,
+      "seconds": 2
+    },
+    {
       "name": "unit:web:test:core-profile",
       "ok": true,
       "seconds": 2
@@ -55,7 +60,7 @@
     {
       "name": "unit:web:test:onboarding-resume",
       "ok": true,
-      "seconds": 2
+      "seconds": 1
     },
     {
       "name": "unit:web:test:aandachtswet",
@@ -75,7 +80,7 @@
     {
       "name": "unit:web:test:scan-quality",
       "ok": true,
-      "seconds": 2
+      "seconds": 1
     },
     {
       "name": "unit:mobiel:test:ride-tracker",
@@ -100,12 +105,17 @@
     {
       "name": "e2e:test:smoke",
       "ok": true,
-      "seconds": 4
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:store-release",
+      "ok": true,
+      "seconds": 2
     },
     {
       "name": "e2e:test:backup-restore",
       "ok": true,
-      "seconds": 3
+      "seconds": 2
     },
     {
       "name": "e2e:test:race-room",
@@ -115,7 +125,17 @@
     {
       "name": "e2e:test:journey",
       "ok": true,
-      "seconds": 7
+      "seconds": 8
+    },
+    {
+      "name": "e2e:test:kennisbank",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:world-social",
+      "ok": true,
+      "seconds": 6
     },
     {
       "name": "e2e:test:account",
@@ -125,12 +145,12 @@
     {
       "name": "e2e:test:data-hub",
       "ok": true,
-      "seconds": 5
+      "seconds": 4
     },
     {
       "name": "e2e:test:provider-sync",
       "ok": true,
-      "seconds": 4
+      "seconds": 3
     },
     {
       "name": "e2e:test:derived-load",
@@ -140,7 +160,7 @@
     {
       "name": "e2e:test:connector-cleanup",
       "ok": true,
-      "seconds": 3
+      "seconds": 2
     },
     {
       "name": "e2e:test:memory-graph",
@@ -155,22 +175,22 @@
     {
       "name": "e2e:test:voice",
       "ok": true,
-      "seconds": 3
+      "seconds": 2
     },
     {
       "name": "e2e:test:onboarding-v2",
       "ok": true,
-      "seconds": 3
+      "seconds": 2
     },
     {
       "name": "e2e:test:onboarding-personas",
       "ok": true,
-      "seconds": 3
+      "seconds": 2
     },
     {
       "name": "e2e:test:material",
       "ok": true,
-      "seconds": 2
+      "seconds": 3
     },
     {
       "name": "e2e:test:material-nudge",
@@ -190,17 +210,17 @@
     {
       "name": "e2e:test:notifications",
       "ok": true,
-      "seconds": 3
+      "seconds": 2
     },
     {
       "name": "e2e:test:notification-day-count",
       "ok": true,
-      "seconds": 3
+      "seconds": 2
     },
     {
       "name": "e2e:test:notifications-read-batch",
       "ok": true,
-      "seconds": 6
+      "seconds": 5
     },
     {
       "name": "e2e:test:core-prediction",
@@ -210,17 +230,17 @@
     {
       "name": "e2e:test:test-dashboard",
       "ok": true,
-      "seconds": 2
+      "seconds": 1
     },
     {
       "name": "e2e:test:intel",
       "ok": true,
-      "seconds": 3
+      "seconds": 2
     },
     {
       "name": "e2e:test:fit-parse",
       "ok": true,
-      "seconds": 2
+      "seconds": 1
     },
     {
       "name": "e2e:test:activity-file-ingest",
@@ -230,17 +250,17 @@
     {
       "name": "e2e:test:email-channel",
       "ok": true,
-      "seconds": 2
+      "seconds": 1
     },
     {
       "name": "e2e:test:development-goal",
       "ok": true,
-      "seconds": 6
+      "seconds": 10
     },
     {
       "name": "e2e:test:world-media",
       "ok": true,
-      "seconds": 3
+      "seconds": 4
     },
     {
       "name": "e2e:test:world-sim",
@@ -255,12 +275,12 @@
     {
       "name": "e2e:test:world-feed",
       "ok": true,
-      "seconds": 4
+      "seconds": 3
     },
     {
       "name": "e2e:test:world-affinity",
       "ok": true,
-      "seconds": 4
+      "seconds": 3
     },
     {
       "name": "e2e:test:goals",
@@ -270,77 +290,92 @@
     {
       "name": "e2e:test:scheduled-tasks",
       "ok": true,
-      "seconds": 2
+      "seconds": 1
+    },
+    {
+      "name": "e2e:test:attention-notifications",
+      "ok": true,
+      "seconds": 3
     },
     {
       "name": "e2e:test:scheduled-tasks-route",
       "ok": true,
-      "seconds": 6
+      "seconds": 5
     },
     {
       "name": "e2e:test:sessions-contract",
       "ok": true,
-      "seconds": 6
+      "seconds": 5
+    },
+    {
+      "name": "e2e:test:athlete-load",
+      "ok": true,
+      "seconds": 5
     },
     {
       "name": "e2e:test:garage-sensors",
       "ok": true,
-      "seconds": 6
+      "seconds": 5
     },
     {
       "name": "e2e:test:onboarding-connect-step",
       "ok": true,
-      "seconds": 61
+      "seconds": 59
     },
     {
       "name": "e2e:test:onboarding-strava-gapfill",
       "ok": true,
-      "seconds": 4
+      "seconds": 2
     },
     {
       "name": "e2e:test:analysis-quality",
       "ok": true,
-      "seconds": 7
+      "seconds": 5
     },
     {
       "name": "e2e:test:feedback-adjust",
       "ok": true,
-      "seconds": 7
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:plan-execution",
+      "ok": true,
+      "seconds": 5
     },
     {
       "name": "e2e:test:privacy-security",
       "ok": true,
-      "seconds": 8
+      "seconds": 6
     },
     {
       "name": "e2e:test:kernreis",
       "ok": true,
-      "seconds": 7
+      "seconds": 5
     },
     {
       "name": "e2e:test:data-reliability",
       "ok": true,
-      "seconds": 7
+      "seconds": 6
     },
     {
       "name": "e2e:test:cross-account-isolation",
       "ok": true,
-      "seconds": 13
+      "seconds": 12
     },
     {
       "name": "e2e:test:coach-parent-link-isolation",
       "ok": true,
-      "seconds": 9
+      "seconds": 6
     },
     {
       "name": "e2e:test:links-unlink-isolation",
       "ok": true,
-      "seconds": 6
+      "seconds": 5
     },
     {
       "name": "e2e:test:links-end-isolation",
       "ok": true,
-      "seconds": 6
+      "seconds": 5
     },
     {
       "name": "e2e:test:coach-cockpit",
@@ -355,6 +390,11 @@
     {
       "name": "e2e:test:climb-flag-gate",
       "ok": true,
+      "seconds": 5
+    },
+    {
+      "name": "e2e:test:rollout",
+      "ok": true,
       "seconds": 6
     },
     {
@@ -365,22 +405,22 @@
     {
       "name": "e2e:test:parent-environment",
       "ok": true,
-      "seconds": 7
+      "seconds": 6
     },
     {
       "name": "e2e:test:coach-parent-share-nothing",
       "ok": true,
-      "seconds": 7
+      "seconds": 5
     },
     {
       "name": "e2e:test:coach-parent-private-memory",
       "ok": true,
-      "seconds": 6
+      "seconds": 5
     },
     {
       "name": "e2e:test:coach-parent-shared-raw-fields",
       "ok": true,
-      "seconds": 6
+      "seconds": 5
     },
     {
       "name": "e2e:test:health-endpoints",
@@ -408,14 +448,24 @@
       "seconds": 2
     },
     {
+      "name": "e2e:test:health-flow",
+      "ok": true,
+      "seconds": 5
+    },
+    {
+      "name": "e2e:test:support-helpdesk",
+      "ok": true,
+      "seconds": 5
+    },
+    {
       "name": "e2e:test:share-honesty",
       "ok": true,
-      "seconds": 3
+      "seconds": 2
     },
     {
       "name": "e2e:test:garage",
       "ok": true,
-      "seconds": 2
+      "seconds": 1
     },
     {
       "name": "e2e:test:mechanieker",
@@ -425,27 +475,27 @@
     {
       "name": "e2e:test:session-detail-track",
       "ok": true,
-      "seconds": 6
+      "seconds": 5
     },
     {
       "name": "e2e:test:session-elevation-profile",
       "ok": true,
-      "seconds": 6
+      "seconds": 5
     },
     {
       "name": "e2e:test:ingest-elevation-profile",
       "ok": true,
-      "seconds": 6
+      "seconds": 5
     },
     {
       "name": "e2e:test:ingest-elevation-fit-tcx",
       "ok": true,
-      "seconds": 7
+      "seconds": 5
     },
     {
       "name": "e2e:test:road-objects",
       "ok": true,
-      "seconds": 7
+      "seconds": 5
     },
     {
       "name": "e2e:test:source-quality",
@@ -458,24 +508,59 @@
       "seconds": 2
     },
     {
+      "name": "e2e:test:race-flow",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:fueling",
+      "ok": true,
+      "seconds": 5
+    },
+    {
+      "name": "e2e:test:route-chain",
+      "ok": true,
+      "seconds": 5
+    },
+    {
+      "name": "e2e:test:sportpaspoort",
+      "ok": true,
+      "seconds": 5
+    },
+    {
+      "name": "e2e:test:ai-gateway",
+      "ok": true,
+      "seconds": 3
+    },
+    {
       "name": "webbuild",
       "ok": true,
-      "seconds": 35
+      "seconds": 30
     },
     {
       "name": "serverbuild",
       "ok": true,
-      "seconds": 10
+      "seconds": 8
     },
     {
       "name": "mobielcontrole",
       "ok": true,
-      "seconds": 12
+      "seconds": 9
+    },
+    {
+      "name": "storecontrole:mobiel-config",
+      "ok": true,
+      "seconds": 1
+    },
+    {
+      "name": "storecontrole:release-check",
+      "ok": true,
+      "seconds": 1
     },
     {
       "name": "healthcheck:release",
       "ok": true,
-      "seconds": 14
+      "seconds": 13
     }
   ]
 }

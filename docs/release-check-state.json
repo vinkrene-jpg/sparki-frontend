@@ -1,13 +1,13 @@
 {
+  "migraties:drift-check": {
+    "name": "migraties:drift-check",
+    "ok": true,
+    "seconds": 7
+  },
   "typecheck": {
     "name": "typecheck",
     "ok": true,
-    "seconds": 21
-  },
-  "migraties:drift-check": {
-    "name": "migraties:drift-check",
-    "ok": false,
-    "seconds": 11
+    "seconds": 18
   },
   "unit:web:test:uitleg-content": {
     "name": "unit:web:test:uitleg-content",
@@ -57,7 +57,7 @@
   "unit:web:test:onboarding-resume": {
     "name": "unit:web:test:onboarding-resume",
     "ok": true,
-    "seconds": 2
+    "seconds": 1
   },
   "unit:web:test:aandachtswet": {
     "name": "unit:web:test:aandachtswet",
@@ -77,7 +77,7 @@
   "unit:web:test:scan-quality": {
     "name": "unit:web:test:scan-quality",
     "ok": true,
-    "seconds": 2
+    "seconds": 1
   },
   "unit:mobiel:test:ride-tracker": {
     "name": "unit:mobiel:test:ride-tracker",
@@ -92,7 +92,7 @@
   "unit:mobiel:test:upload-queue": {
     "name": "unit:mobiel:test:upload-queue",
     "ok": true,
-    "seconds": 3
+    "seconds": 2
   },
   "unit:mobiel:test:fall-detection": {
     "name": "unit:mobiel:test:fall-detection",
@@ -102,17 +102,17 @@
   "e2e:test:smoke": {
     "name": "e2e:test:smoke",
     "ok": true,
-    "seconds": 4
+    "seconds": 3
   },
   "e2e:test:store-release": {
     "name": "e2e:test:store-release",
     "ok": true,
-    "seconds": 3
+    "seconds": 2
   },
   "e2e:test:backup-restore": {
     "name": "e2e:test:backup-restore",
     "ok": true,
-    "seconds": 3
+    "seconds": 2
   },
   "e2e:test:race-room": {
     "name": "e2e:test:race-room",
@@ -122,17 +122,17 @@
   "e2e:test:journey": {
     "name": "e2e:test:journey",
     "ok": true,
-    "seconds": 6
+    "seconds": 8
   },
   "e2e:test:kennisbank": {
     "name": "e2e:test:kennisbank",
     "ok": true,
-    "seconds": 7
+    "seconds": 6
   },
   "e2e:test:world-social": {
     "name": "e2e:test:world-social",
     "ok": true,
-    "seconds": 7
+    "seconds": 6
   },
   "e2e:test:account": {
     "name": "e2e:test:account",
@@ -147,7 +147,7 @@
   "e2e:test:provider-sync": {
     "name": "e2e:test:provider-sync",
     "ok": true,
-    "seconds": 4
+    "seconds": 3
   },
   "e2e:test:derived-load": {
     "name": "e2e:test:derived-load",
@@ -157,7 +157,7 @@
   "e2e:test:connector-cleanup": {
     "name": "e2e:test:connector-cleanup",
     "ok": true,
-    "seconds": 3
+    "seconds": 2
   },
   "e2e:test:memory-graph": {
     "name": "e2e:test:memory-graph",
@@ -172,17 +172,17 @@
   "e2e:test:voice": {
     "name": "e2e:test:voice",
     "ok": true,
-    "seconds": 3
+    "seconds": 2
   },
   "e2e:test:onboarding-v2": {
     "name": "e2e:test:onboarding-v2",
     "ok": true,
-    "seconds": 3
+    "seconds": 2
   },
   "e2e:test:onboarding-personas": {
     "name": "e2e:test:onboarding-personas",
     "ok": true,
-    "seconds": 3
+    "seconds": 2
   },
   "e2e:test:material": {
     "name": "e2e:test:material",
@@ -192,7 +192,7 @@
   "e2e:test:material-nudge": {
     "name": "e2e:test:material-nudge",
     "ok": true,
-    "seconds": 4
+    "seconds": 3
   },
   "e2e:test:observation": {
     "name": "e2e:test:observation",
@@ -207,17 +207,17 @@
   "e2e:test:notifications": {
     "name": "e2e:test:notifications",
     "ok": true,
-    "seconds": 3
+    "seconds": 2
   },
   "e2e:test:notification-day-count": {
     "name": "e2e:test:notification-day-count",
     "ok": true,
-    "seconds": 3
+    "seconds": 2
   },
   "e2e:test:notifications-read-batch": {
     "name": "e2e:test:notifications-read-batch",
     "ok": true,
-    "seconds": 6
+    "seconds": 5
   },
   "e2e:test:core-prediction": {
     "name": "e2e:test:core-prediction",
@@ -227,32 +227,32 @@
   "e2e:test:test-dashboard": {
     "name": "e2e:test:test-dashboard",
     "ok": true,
-    "seconds": 2
+    "seconds": 1
   },
   "e2e:test:intel": {
     "name": "e2e:test:intel",
     "ok": true,
-    "seconds": 3
+    "seconds": 2
   },
   "e2e:test:fit-parse": {
     "name": "e2e:test:fit-parse",
     "ok": true,
-    "seconds": 2
+    "seconds": 1
   },
   "e2e:test:activity-file-ingest": {
     "name": "e2e:test:activity-file-ingest",
     "ok": true,
-    "seconds": 4
+    "seconds": 3
   },
   "e2e:test:email-channel": {
     "name": "e2e:test:email-channel",
     "ok": true,
-    "seconds": 2
+    "seconds": 1
   },
   "e2e:test:development-goal": {
     "name": "e2e:test:development-goal",
     "ok": true,
-    "seconds": 6
+    "seconds": 10
   },
   "e2e:test:world-media": {
     "name": "e2e:test:world-media",
@@ -272,22 +272,22 @@
   "e2e:test:world-feed": {
     "name": "e2e:test:world-feed",
     "ok": true,
-    "seconds": 4
+    "seconds": 3
   },
   "e2e:test:world-affinity": {
     "name": "e2e:test:world-affinity",
     "ok": true,
-    "seconds": 4
+    "seconds": 3
   },
   "e2e:test:goals": {
     "name": "e2e:test:goals",
     "ok": true,
-    "seconds": 3
+    "seconds": 2
   },
   "e2e:test:scheduled-tasks": {
     "name": "e2e:test:scheduled-tasks",
     "ok": true,
-    "seconds": 2
+    "seconds": 1
   },
   "e2e:test:attention-notifications": {
     "name": "e2e:test:attention-notifications",
@@ -297,42 +297,42 @@
   "e2e:test:scheduled-tasks-route": {
     "name": "e2e:test:scheduled-tasks-route",
     "ok": true,
-    "seconds": 6
+    "seconds": 5
   },
   "e2e:test:sessions-contract": {
     "name": "e2e:test:sessions-contract",
     "ok": true,
-    "seconds": 6
+    "seconds": 5
   },
   "e2e:test:athlete-load": {
     "name": "e2e:test:athlete-load",
     "ok": true,
-    "seconds": 6
+    "seconds": 5
   },
   "e2e:test:garage-sensors": {
     "name": "e2e:test:garage-sensors",
     "ok": true,
-    "seconds": 6
+    "seconds": 5
   },
   "e2e:test:onboarding-connect-step": {
     "name": "e2e:test:onboarding-connect-step",
     "ok": true,
-    "seconds": 53
+    "seconds": 59
   },
   "e2e:test:onboarding-strava-gapfill": {
     "name": "e2e:test:onboarding-strava-gapfill",
     "ok": true,
-    "seconds": 3
+    "seconds": 2
   },
   "e2e:test:analysis-quality": {
     "name": "e2e:test:analysis-quality",
     "ok": true,
-    "seconds": 6
+    "seconds": 5
   },
   "e2e:test:feedback-adjust": {
     "name": "e2e:test:feedback-adjust",
     "ok": true,
-    "seconds": 7
+    "seconds": 6
   },
   "e2e:test:plan-execution": {
     "name": "e2e:test:plan-execution",
@@ -347,6 +347,216 @@
   "e2e:test:kernreis": {
     "name": "e2e:test:kernreis",
     "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:data-reliability": {
+    "name": "e2e:test:data-reliability",
+    "ok": true,
     "seconds": 6
+  },
+  "e2e:test:cross-account-isolation": {
+    "name": "e2e:test:cross-account-isolation",
+    "ok": true,
+    "seconds": 12
+  },
+  "e2e:test:coach-parent-link-isolation": {
+    "name": "e2e:test:coach-parent-link-isolation",
+    "ok": true,
+    "seconds": 6
+  },
+  "e2e:test:links-unlink-isolation": {
+    "name": "e2e:test:links-unlink-isolation",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:links-end-isolation": {
+    "name": "e2e:test:links-end-isolation",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:coach-cockpit": {
+    "name": "e2e:test:coach-cockpit",
+    "ok": true,
+    "seconds": 6
+  },
+  "e2e:test:club": {
+    "name": "e2e:test:club",
+    "ok": true,
+    "seconds": 7
+  },
+  "e2e:test:climb-flag-gate": {
+    "name": "e2e:test:climb-flag-gate",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:rollout": {
+    "name": "e2e:test:rollout",
+    "ok": true,
+    "seconds": 6
+  },
+  "e2e:test:coach-parent-sharing-levels": {
+    "name": "e2e:test:coach-parent-sharing-levels",
+    "ok": true,
+    "seconds": 6
+  },
+  "e2e:test:parent-environment": {
+    "name": "e2e:test:parent-environment",
+    "ok": true,
+    "seconds": 6
+  },
+  "e2e:test:coach-parent-share-nothing": {
+    "name": "e2e:test:coach-parent-share-nothing",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:coach-parent-private-memory": {
+    "name": "e2e:test:coach-parent-private-memory",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:coach-parent-shared-raw-fields": {
+    "name": "e2e:test:coach-parent-shared-raw-fields",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:health-endpoints": {
+    "name": "e2e:test:health-endpoints",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:engagement": {
+    "name": "e2e:test:engagement",
+    "ok": true,
+    "seconds": 2
+  },
+  "e2e:test:ride-story": {
+    "name": "e2e:test:ride-story",
+    "ok": true,
+    "seconds": 6
+  },
+  "e2e:test:sprint": {
+    "name": "e2e:test:sprint",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:mental": {
+    "name": "e2e:test:mental",
+    "ok": true,
+    "seconds": 2
+  },
+  "e2e:test:health-flow": {
+    "name": "e2e:test:health-flow",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:support-helpdesk": {
+    "name": "e2e:test:support-helpdesk",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:share-honesty": {
+    "name": "e2e:test:share-honesty",
+    "ok": true,
+    "seconds": 2
+  },
+  "e2e:test:garage": {
+    "name": "e2e:test:garage",
+    "ok": true,
+    "seconds": 1
+  },
+  "e2e:test:mechanieker": {
+    "name": "e2e:test:mechanieker",
+    "ok": true,
+    "seconds": 6
+  },
+  "e2e:test:session-detail-track": {
+    "name": "e2e:test:session-detail-track",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:session-elevation-profile": {
+    "name": "e2e:test:session-elevation-profile",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:ingest-elevation-profile": {
+    "name": "e2e:test:ingest-elevation-profile",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:ingest-elevation-fit-tcx": {
+    "name": "e2e:test:ingest-elevation-fit-tcx",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:road-objects": {
+    "name": "e2e:test:road-objects",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:source-quality": {
+    "name": "e2e:test:source-quality",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:stream-extraction": {
+    "name": "e2e:test:stream-extraction",
+    "ok": true,
+    "seconds": 2
+  },
+  "e2e:test:race-flow": {
+    "name": "e2e:test:race-flow",
+    "ok": true,
+    "seconds": 6
+  },
+  "e2e:test:fueling": {
+    "name": "e2e:test:fueling",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:route-chain": {
+    "name": "e2e:test:route-chain",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:sportpaspoort": {
+    "name": "e2e:test:sportpaspoort",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:ai-gateway": {
+    "name": "e2e:test:ai-gateway",
+    "ok": true,
+    "seconds": 3
+  },
+  "webbuild": {
+    "name": "webbuild",
+    "ok": true,
+    "seconds": 30
+  },
+  "serverbuild": {
+    "name": "serverbuild",
+    "ok": true,
+    "seconds": 8
+  },
+  "mobielcontrole": {
+    "name": "mobielcontrole",
+    "ok": true,
+    "seconds": 9
+  },
+  "storecontrole:mobiel-config": {
+    "name": "storecontrole:mobiel-config",
+    "ok": true,
+    "seconds": 1
+  },
+  "storecontrole:release-check": {
+    "name": "storecontrole:release-check",
+    "ok": true,
+    "seconds": 1
+  },
+  "healthcheck:release": {
+    "name": "healthcheck:release",
+    "ok": true,
+    "seconds": 13
   }
 }

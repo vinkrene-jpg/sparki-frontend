@@ -56,7 +56,7 @@ Rollen staan in eigen DB: `user_profiles.roles[]` + `active_role` (`lib/db/src/s
 | Mobiel: BLE-sensoren | app | volledig werkend (niet in Expo Go) | Hartslag/vermogen/cadans via `react-native-ble-plx`; horloge/derailleur alleen registratie (`lib/ble-sensors.ts`) |
 | Mobiel: val-alarm | app | gedeeltelijk werkend | GPS-gebaseerde detectie; "meldingen klaargezet", claimt nooit aflevering (`route-navigator.tsx`) |
 | Mobiel: bordjes-sprint, rit delen | app | volledig werkend | Plaatsnaamsprints; Strava-upload + OS-deelmenu (`pages/sprinten.tsx`) |
-| Garmin/Wahoo-sync | instellingen | **nog niet gekoppeld** | OAuth-scaffolding (authorize/callback/disconnect) + route-push-endpoint `/api/device-sync/send`; géén webhooks; eerlijk `configured: false` zonder fabrikantkeys (`lib/connectors/providers/device-sync.ts`) |
+| Garmin/Wahoo-sync | instellingen | **gereed voor externe activatie** | Volledige OAuth-/PKCE-flow, webhook-endpoints (`routes/webhooks.ts`, fail-closed verificatie) en route-push voorbereid; eerlijk `configured: false` zonder fabrikantkeys (`lib/connectors/providers/device-sync.ts`) |
 | Fitbit | registry | **alleen interface** | Registry-entry, geen provider-implementatie |
 | E-mailherinneringen | jobs | gedeeltelijk werkend | Engine + dedupe aanwezig; zonder geverifieerd verzenddomein wordt eerlijk overgeslagen (`lib/email.ts`) |
 
@@ -79,15 +79,15 @@ Centrale ingest: **Data Hub** (`engines/data-hub/`): alle bronnen → `ingestBat
 | Wedstrijden | handmatig + kalender-import | `races` (incl. resultaat, checklist, logistiek) | Race Intelligence | voorbereiding | onbeperkt | ja |
 | Trainingsplannen | Sparki-engine / coach-adoptie | `training_plans`, `plan_days`, `planned_workouts` | deterministische planbouw | training | onbeperkt | ja |
 
-**Exporteren/doorsturen (feitelijk):** routes als **GPX/TCX** (`/api/routes/:id/gpx`, `/tcx`); rit-GPX vanuit mobiele opname (incl. BLE-sensordata als gpxtpx-extensies); **doorsturen naar Strava** (rit-upload, `activity:write`); OS-deelmenu (mobiel). **NIET aanwezig:** volledige account-data-export (alleen `exportAllowed`-vlag), automatische doorstuur naar andere platformen.
+**Exporteren/doorsturen (feitelijk):** routes als **GPX/TCX** (`/api/routes/:id/gpx`, `/tcx`); rit-GPX vanuit mobiele opname (incl. BLE-sensordata als gpxtpx-extensies); **doorsturen naar Strava** (rit-upload, `activity:write`); OS-deelmenu (mobiel); **volledige account-export** (schema-gedreven JSON met tokenmaskering, `routes/account.ts`, rate-limited). **NIET aanwezig:** automatische doorstuur naar andere platformen dan Strava.
 
 ## 5. Bestaande integraties
 
 | Integratie | Status | Details |
 |---|---|---|
-| **Strava** | OAuth ✓ import ✓ export ✓ sync ✓ webhooks ✗ productiegetest: dev-getest | Per-gebruiker OAuth2 (signed state); endpoints `/oauth/token`, `/athlete`, `/athlete/activities`, activity-upload; scopes `read,activity:read_all,profile:read_all,activity:write`; tokens in `connector_connections`; bestanden `lib/connectors/providers/strava.ts`, `strava-oauth.ts`; env `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`. Geen webhooks — sync is pull-gebaseerd. |
-| **Garmin** | configuratie aanwezig, OAuth-scaffolding aanwezig, **nog niet gekoppeld** | `lib/connectors/providers/device-sync.ts` + `routes/device-sync.ts`: OAuth2/PKCE-flow (authorize/callback/disconnect-routes; verifier in signed state) en een route-push-endpoint (`/api/device-sync/send`) voorbereid; **géén webhook-endpoints**. Zonder `GARMIN_CLIENT_ID`/`GARMIN_CLIENT_SECRET` meldt de API eerlijk `configured: false`. Geen import/export/sync actief; niets productiegetest. Vereist Garmin Connect Developer Program-goedkeuring. |
-| **Wahoo** | idem | Zelfde architectuur; env `WAHOO_CLIENT_ID`, `WAHOO_CLIENT_SECRET` (Wahoo Cloud API). |
+| **Strava** | OAuth ✓ import ✓ export ✓ sync ✓ webhooks ✓ (verify-handshake + push-trigger) productiegetest: dev-getest | Per-gebruiker OAuth2 (signed state); endpoints `/oauth/token`, `/athlete`, `/athlete/activities`, activity-upload; scopes `read,activity:read_all,profile:read_all,activity:write`; tokens in `connector_connections`; bestanden `lib/connectors/providers/strava.ts`, `strava-oauth.ts`; env `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`. Webhooks: `/api/webhooks/strava` (verify-token-handshake, idempotent via `webhook_events`) naast pull-sync. |
+| **Garmin** | **gereed voor externe activatie** (wacht op fabrikantkeys) | `lib/connectors/providers/device-sync.ts` + `routes/device-sync.ts`: OAuth2/PKCE-flow (authorize/callback/disconnect; verifier in signed state), route-push-endpoint (`/api/device-sync/send`) én webhook-endpoint `/api/webhooks/garmin` (`?token=GARMIN_WEBHOOK_TOKEN`, fail-closed 403, idempotent via `webhook_events`). Zonder `GARMIN_CLIENT_ID`/`GARMIN_CLIENT_SECRET` meldt de API eerlijk `configured: false`. Vereist Garmin Connect Developer Program-goedkeuring. |
+| **Wahoo** | idem | Zelfde architectuur; webhook `/api/webhooks/wahoo` (`webhook_token`-verificatie, fail-closed); env `WAHOO_CLIENT_ID`, `WAHOO_CLIENT_SECRET` (Wahoo Cloud API). |
 | **Fitbit** | alleen gepland | Registry-entry (`registry.ts`), geen provider-implementatie. |
 | **Google** | niet aanwezig | Alleen `fcm.googleapis.com` als push-endpoint-allowlist-item; geen Google-koppeling. (Google-login kan via Clerk beschikbaar zijn, buiten deze codebase geconfigureerd.) |
 | **OpenRouteService** | import ✓ (routing/geocoding/hoogte) | `lib/routing/providers/ors.ts`; env `ORS_API_KEY`. |
@@ -110,12 +110,12 @@ Centrale ingest: **Data Hub** (`engines/data-hub/`): alle bronnen → `ingestBat
 - **Encryptie:** in transit TLS (platform); at rest platform-niveau (beheerde Postgres); geen kolom-encryptie.
 - **Logging:** pino; `authorization`/`cookie` geredigeerd; prod JSON.
 - **Foutafhandeling:** per-route try/catch met Nederlandse foutteksten; health-probes gooien nooit.
-- **Rate limiting:** **ONTBREEKT** (geen middleware in `app.ts`).
+- **Rate limiting:** aanwezig in productie — per-IP limiter (600/min) in `app.ts` (alleen `NODE_ENV=production`); gevoelige routes (account-export/verwijdering) extra gelimiteerd.
 - **Retry:** frontend TanStack Query-retries; mobiele test-runner retries; geen server-side retry-queue voor mislukte syncs.
 - **Dubbele activiteiten:** Data Hub-dedupe (sport + 5-min startbucket + buurvenster, tolerantie op afstand/duur), veld-merge via `MERGEABLE_FIELDS`.
 - **Synchronisatieconflicten:** bron-prioriteit echt > handmatig > geschat; handmatige override blijft mogelijk.
 - **Accountontkoppeling:** disconnect (lokaal wissen) én revoke (ook bij Strava intrekken) per connector.
-- **Dataverwijdering:** DELETE-routes per entiteit; `ON DELETE CASCADE` op `clerk_id` door het hele schema; `privacy_settings.deleteRequestedAt` bestaat als vlag, maar er is **geen zelfbedienings-"verwijder account"-flow** die de verwijdering ook uitvoert.
+- **Dataverwijdering:** DELETE-routes per entiteit; `ON DELETE CASCADE` op `clerk_id` door het hele schema; zelfbedienings-accountverwijdering met 14-dagen-bedenktermijn en uitzonderingenregister (`routes/account.ts`).
 - **Achtergrondprocessen:** gezondheidscheck (dagelijks), doelen-review (maandelijks), herinneringen (dagelijks), nachtelijke kennis-/nieuwsscan; alle idempotent met dedupe-keys (`lib/scheduled-tasks.ts`, `jobs/`). Nieuws heeft zelfherstellende verversing op het leespad.
 
 ## 7. Privacy en veiligheid
@@ -123,18 +123,18 @@ Centrale ingest: **Data Hub** (`engines/data-hub/`): alle bronnen → `ingestBat
 | Onderdeel | Status | Bewijs |
 |---|---|---|
 | Toestemming (sharing, connector-consent, auditlog) | aanwezig | `routes/privacy.ts`, `consent_audit_log`, `permission_revoked` |
-| Privacyverklaring (leesbare tekst/pagina) | **ONTBREEKT** | `acceptedPrivacyAt`-veld bestaat, maar geen verklaringstekst in frontend |
-| Gebruiksvoorwaarden (leesbare tekst/pagina) | **ONTBREEKT** | idem (`acceptedTermsAt`) |
-| Gegevensinzage | gedeeltelijk | alle eigen data zichtbaar in de app; geen samengevoegd inzage-overzicht |
+| Privacyverklaring (leesbare tekst/pagina) | aanwezig | publieke pagina `/privacy` + in-app via `/api/legal/privacy` (`pages/legal.tsx`, `routes/legal.ts`) |
+| Gebruiksvoorwaarden (leesbare tekst/pagina) | aanwezig | publieke pagina `/voorwaarden` + `/api/legal/terms`, zelfde bron web/mobiel |
+| Gegevensinzage | aanwezig | alle eigen data zichtbaar in de app + volledige account-export als samengevoegd overzicht |
 | Gegevenscorrectie | aanwezig | alle eigen invoer bewerkbaar; profiel-consistentievragen met compare-and-set |
-| Export | gedeeltelijk | GPX/TCX per route/rit; **geen volledige account-export** |
-| Accountverwijdering (zelfbediening) | **ONTBREEKT** | alleen `deleteRequestedAt`-vlag + cascade-schema; geen uitvoerende flow |
+| Export | aanwezig | GPX/TCX per route/rit + volledige schema-gedreven account-export met tokenmaskering (`routes/account.ts`, rate-limited) |
+| Accountverwijdering (zelfbediening) | aanwezig | verwijderflow met 14-dagen-bedenktermijn, uitzonderingenregister en cascade-uitvoering (`routes/account.ts`) |
 | Intrekken van koppelingen | aanwezig | disconnect/revoke-routes |
 | Minderjarigen | aanwezig | `parentConsentRequired/Status`, ouder-rol met `safety_only`, seizoensgewichtsdoel geblokkeerd <17 (RED-S), leeftijd uit volledige geboortedatum |
 | Trainer-/clubrechten | aanwezig | sharing-levels + geteste isolatie; club heeft eigen least-privilege rechtenmodel (`lib/club-permissions.ts`): beheer zonder sportdata, trainers consent-gated, cross-club isolatie |
 | Medische/gevoelige data | gedeeltelijk | HRV/slaap/mentaal privacy-gated (`aiSensitiveAnalysisEnabled`); geen aparte medische-dataclassificatie |
 | Token-/persoonsgegevensbeveiliging | gedeeltelijk | tokens server-only maar plaintext in DB; logs redigeren cookies/authorization; SSRF-allowlists op kalender/push/klimmen; XSS-escaping op kaartlabels |
-| Rate limiting / brute-force-bescherming | **ONTBREEKT** | geen middleware |
+| Rate limiting / brute-force-bescherming | aanwezig (productie) | per-IP limiter in `app.ts` (prod-only) + extra limieten op export-/verwijderroutes |
 
 ## 8. Waarde voor Garmin
 
@@ -158,12 +158,12 @@ Identiek aan §8 (zelfde Data Hub-architectuur; providers zijn bron-agnostisch).
 | # | Punt | Ernst | Bewijs | Benodigde oplossing |
 |---|---|---|---|---|
 | 1 | Geen Garmin/Wahoo API-toegang (keys ontbreken) | kritiek (blokkade) | `device-sync.ts` `configured: false` | Aanmelden Garmin Connect Developer Program / Wahoo Cloud API; daarna dataprovider bouwen |
-| 2 | Geen privacyverklaring en gebruiksvoorwaarden | kritiek voor goedkeuring | geen tekstpagina's in frontend | Juridische teksten opstellen + acceptatieflow koppelen aan bestaande velden |
-| 3 | Geen zelfbedienings-accountverwijdering | hoog | alleen `deleteRequestedAt`-vlag | Verwijderflow bouwen (schema-cascade bestaat al) |
-| 4 | Geen volledige data-export | hoog (AVG + platformvoorwaarden) | alleen GPX/TCX per route | Account-export-endpoint |
+| 2 | ~~Geen privacyverklaring en gebruiksvoorwaarden~~ | opgelost (Golf 28) | `/privacy` + `/voorwaarden` publiek, zelfde bron in-app | — |
+| 3 | ~~Geen zelfbedienings-accountverwijdering~~ | opgelost | verwijderflow met 14-dagen-bedenktermijn (`routes/account.ts`) | — |
+| 4 | ~~Geen volledige data-export~~ | opgelost | schema-gedreven account-export met tokenmaskering | — |
 | 5 | OAuth-tokens plaintext in DB | hoog | `connectors.ts` schema | Kolom-encryptie of secrets-vault |
-| 6 | Geen rate limiting | normaal | `app.ts` | express-rate-limit op auth-/koppel-routes |
-| 7 | Geen webhooks (Strava pull-only) | normaal | geen webhook-routes | Voor Garmin/Wahoo zijn push/webhooks verplicht — er bestaan nu géén webhook-endpoints (alleen OAuth-flow + route-push-endpoint); implementatie kan pas na API-toegang |
+| 6 | ~~Geen rate limiting~~ | opgelost (productie) | per-IP limiter in `app.ts` + limieten op gevoelige routes | — |
+| 7 | ~~Geen webhooks~~ | opgelost (scaffolding) | `/api/webhooks/strava|garmin|wahoo` fail-closed, idempotent (`webhook_events`) | Garmin/Wahoo-activatie wacht alleen op fabrikantkeys |
 | 8 | Productie niet gevalideerd met echte multi-user Strava-sync | normaal | dev-getest via smoke/testworkflows | Productietest na deploy |
 | 9 | Kalender-import parseert HTML van derden | normaal (voorwaarden-risico) | `lib/calendar/` | Toestemming bronnen verifiëren vóór commerciële lancering |
 | 10 | E-mail zonder geverifieerd domein | laag | `lib/email.ts` eerlijk overslaan | Domein verifiëren in Resend |
@@ -175,12 +175,24 @@ Identiek aan §8 (zelfde Data Hub-architectuur; providers zijn bron-agnostisch).
 Eén reproduceerbare releaseflow, hervatbaar en met vastgelegd bewijs:
 
 - **Releasecontrole:** `node scripts/release-check.mjs` (opties `--resume` en `--budget <sec>`; tussenstand in `docs/release-check-state.json`). Fasen in volgorde: typecheck → migratie-driftcontrole → alle web/mobiel-unit-tests → alle api-server e2e-suites (strikt sequentieel, gedeelde dist) → webbuild → serverbuild → mobielcontrole (tsc) → healthcheck in release-modus. Uitvoer: `docs/RELEASE_ACCEPTANCE.md` (per fase status + duur + extern-geblokkeerde punten + eindoordeel).
-- **Migraties:** drizzle push-model, uitsluitend additief. `scripts/check-schema-drift.mjs` onderscheidt echte drift van twee bekende drizzle-vergelijkingslussen (63-tekens-afkapping van constraintnamen; array-default `'{}'` vs `'{}'::text[]`) — beide uitsluitend no-op na verificatie tegen de live catalogus (zelfde tabel + identieke `pg_get_constraintdef`, resp. bestaand kolomdefault). Regressietests: `node scripts/test-check-schema-drift.mjs` (6 synthetische gevallen).
+- **Migraties:** drizzle push-model, uitsluitend additief. `scripts/check-schema-drift.mjs` onderscheidt echte drift van drie bekende drizzle-vergelijkingslussen (63-tekens-afkapping van constraintnamen; array-default `'{}'` — óók de expliciete `'{}'::text[]`-castvorm; ADD+DROP-churn van een gelijknamige UNIQUE-constraint) — alle uitsluitend no-op na verificatie tegen de live catalogus (zelfde tabel + identieke `pg_get_constraintdef`, resp. bestaand kolomdefault). Regressietests: `node scripts/test-check-schema-drift.mjs` (11 synthetische gevallen).
 - **Backup & restore-bewijs:** `test:backup-restore` (api-server) dumpt 10 kerntabellen naar een scratch-schema, herstelt en bewijst rijaantallen, relaties, consents, audit-integriteit en media-checksums (7/7 groen).
 - **Releasebewaking:** hergebruik van de bestaande Health Check engine (§ Admin) — geen parallel systeem. `HEALTH_CHECK_MODE=release pnpm --filter @workspace/api-server run job:health` is de release-gate (rood = exit ≠ 0); dagelijkse/wekelijkse bewaking via dezelfde CLI in Scheduled Deployments; datasync-bewaking via `GET /api/admin/sync-diagnostics`.
 - **Prod-config hardening:** productie weigert te starten zonder `DATABASE_URL`/Clerk-keys en weigert `DEV_AUTH_BYPASS=true`; CORS-allowlist (REPLIT_DOMAINS + `SPARKI_ALLOWED_ORIGINS`) en per-IP rate limiter (600/min) uitsluitend in productie.
 - **Rollback:** Replit-publicatie van een vorige checkpoint her-publiceren; schema is additief dus oudere code blijft draaien op nieuwer schema.
 - **E2E-dekking (acceptatiescenario's → suites):** accounts/rollen (`test:account`, `test:kernreis`), autorisatie-isolatie (`test:cross-account-isolation`, `test:coach-parent-link-isolation`, `test:links-unlink-isolation`, `test:links-end-isolation`), coach/ouder-deelniveaus (`test:coach-parent-*`), data-ingest (`test:data-hub`, `test:activity-file-ingest`, `test:ingest-elevation-*`), planning/coach (`test:coach-cockpit`, `test:feedback-adjust`), privacy (`test:privacy-security`), club (`test:club`), gezondheidscheck (`test:health-endpoints`). Lint = strikte `tsc` over alle pakketten (geen aparte ESLint — bewuste keuze, eerlijk vermeld).
+
+## 11b. Store-distributie (Golf 28) en releasecandidate (Golf 29)
+
+**Store-distributie:** publieke juridische pagina's (`/privacy`, `/voorwaarden`); store-register `docs/store/store-listing.json` (NL-beschrijvingen, machtigingsuitleg, dataveiligheid — placeholders `<productiedomein>` vóór indiening vervangen); versie-advies (`version_requirements.recommended_version` → rustig `updateAdvies`, nooit blokkade); 426-blokkade uitgesteld tijdens actieve rit; distributiekanaal als plafond op releasegroep (`x-sparki-kanaal`, fail-closed). Controles: `check:prod-config` + `scripts/store-release-check.mjs` — beide als fasen in de releasestraat (`storecontrole:*`).
+
+**Releasecandidate (22-07-2026):** volledige releasestraat groen — commit `bb2391f`, 112 fasen (typecheck, driftcontrole, alle unit- en e2e-suites, web-/serverbuild, mobielcontrole, storecontroles, healthcheck release-modus zonder rode storingen). Bewijs: `docs/RELEASE_ACCEPTANCE.md` + `docs/release-check-latest.json`.
+
+**Statuslabels (samenvatting):**
+- **Productieactief:** web-app, api-server, Strava-sync, bestandsimport, planengine, coach-/ouder-/clubomgeving, Journey, Mechanieker, voeding, routes/navigatie, releasebeheer, gezondheidscheck, web push, juridische pagina's, account-export/-verwijdering.
+- **Gereed voor externe activatie:** Garmin/Wahoo (fabrikantkeys), e-mailbezorging (geverifieerd Resend-domein), store-builds (EAS-ondertekening + store-formulieren), productiedomein-placeholders in store-register.
+- **Alleen pilot:** pilotconsent-flow en releasegroepen test/pilot (featureflag-gestuurd).
+- **Bewust uitgeschakeld:** Fitbit (alleen registry-entry), jeugd-gewichtssturing <17 (RED-S), gefabriceerde data overal (eerlijke-gaten-doctrine).
 
 ## 12. Bewijs
 

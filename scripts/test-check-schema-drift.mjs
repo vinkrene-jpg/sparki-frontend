@@ -105,4 +105,88 @@ check("overige statements zijn altijd echte drift", () => {
   assert.equal(r.echteDrift.length, 2);
 });
 
-console.log(`${n}/6 driftclassificatie-tests geslaagd.`);
+// 7. Array-default mét expliciete ::text[]-cast — zelfde lus, zelfde bewijsplicht.
+check("array-default met ::text[]-cast: no-op alleen met catalogusbewijs", () => {
+  const stmt = `ALTER TABLE "tabel_a" ALTER COLUMN "labels" SET DEFAULT '{}'::text[];`;
+  const ja = classificeer([stmt], {
+    catalogusDefinitie: () => "",
+    defaultAlIngesteld: () => true,
+  });
+  assert.equal(ja.echteDrift.length, 0);
+  const nee = classificeer([stmt], {
+    catalogusDefinitie: () => "",
+    defaultAlIngesteld: () => false,
+  });
+  assert.equal(nee.echteDrift.length, 1);
+});
+
+// 8. UNIQUE-churn: ADD + DROP van exact dezelfde naam, catalogus identiek → no-op.
+check("unique-churn met identieke catalogusdefinitie is no-op", () => {
+  const UNIEK_DEF = 'UNIQUE NULLS NOT DISTINCT("route_id","audience","target_clerk_id")';
+  const CATALOGUS = normaliseerFk(
+    "UNIQUE NULLS NOT DISTINCT (route_id, audience, target_clerk_id)",
+  );
+  const r = classificeer(
+    [
+      `ALTER TABLE "route_shares" ADD CONSTRAINT "route_shares_unique" ${UNIEK_DEF};`,
+      `ALTER TABLE "route_shares" DROP CONSTRAINT "route_shares_unique";`,
+    ],
+    { catalogusDefinitie: () => CATALOGUS, defaultAlIngesteld: () => false },
+  );
+  assert.equal(r.echteDrift.length, 0);
+  assert.equal(r.lusParen, 1);
+});
+
+// 9. UNIQUE-churn met AFWIJKENDE catalogusdefinitie → rood.
+check("unique-churn met afwijkende definitie is echte drift", () => {
+  const r = classificeer(
+    [
+      `ALTER TABLE "route_shares" ADD CONSTRAINT "route_shares_unique" UNIQUE NULLS NOT DISTINCT("route_id","audience");`,
+      `ALTER TABLE "route_shares" DROP CONSTRAINT "route_shares_unique";`,
+    ],
+    {
+      catalogusDefinitie: () =>
+        normaliseerFk("UNIQUE NULLS NOT DISTINCT (route_id, audience, target_clerk_id)"),
+      defaultAlIngesteld: () => false,
+    },
+  );
+  assert.ok(r.echteDrift.length >= 2);
+});
+
+// 10. Gelijknamige constraints op TWEE tabellen: elk paar onafhankelijk
+// beoordeeld — één catalogus-geverifieerde lus, één afwijkende → rood.
+check("gelijknamige constraints op verschillende tabellen maskeren elkaar niet", () => {
+  const DEF_A = "UNIQUE NULLS NOT DISTINCT(\"a\",\"b\")";
+  const DEF_B = "UNIQUE NULLS NOT DISTINCT(\"x\",\"y\")";
+  const r = classificeer(
+    [
+      `ALTER TABLE "tabel_a" ADD CONSTRAINT "zelfde_naam" ${DEF_A};`,
+      `ALTER TABLE "tabel_a" DROP CONSTRAINT "zelfde_naam";`,
+      `ALTER TABLE "tabel_b" ADD CONSTRAINT "zelfde_naam" ${DEF_B};`,
+      `ALTER TABLE "tabel_b" DROP CONSTRAINT "zelfde_naam";`,
+    ],
+    {
+      // Alleen tabel_a heeft de definitie al in de catalogus; tabel_b wijkt af.
+      catalogusDefinitie: (table) =>
+        table === "tabel_a"
+          ? normaliseerFk("UNIQUE NULLS NOT DISTINCT (a, b)")
+          : normaliseerFk("UNIQUE NULLS NOT DISTINCT (x, y, z)"),
+      defaultAlIngesteld: () => false,
+    },
+  );
+  assert.equal(r.lusParen, 1, "alleen het tabel_a-paar is een no-op");
+  assert.ok(r.echteDrift.length >= 2, "het tabel_b-paar moet rood blijven");
+});
+
+// 11. Array-default met AFWIJKEND cast-type t.o.v. catalogus → rood.
+check("array-default met afwijkend cast-type is echte drift", () => {
+  const stmt = `ALTER TABLE "tabel_a" ALTER COLUMN "labels" SET DEFAULT '{}'::integer[];`;
+  const r = classificeer([stmt], {
+    catalogusDefinitie: () => "",
+    // Simuleert main(): catalogus heeft '{}'::text[], voorstel cast ::integer[].
+    defaultAlIngesteld: (_t, _c, cast) => (cast ? "'{}'::text[]" === `'{}'${cast}` : true),
+  });
+  assert.equal(r.echteDrift.length, 1, "cast-mismatch moet rood zijn");
+});
+
+console.log(`${n}/11 driftclassificatie-tests geslaagd.`);
