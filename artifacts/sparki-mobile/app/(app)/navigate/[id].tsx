@@ -31,6 +31,12 @@ import { useRoute, useSaveRide, type RouteStep } from "@/lib/routes-api";
 
 const OFF_ROUTE_METERS = 60;
 
+// Hoog-contrast HUD-kleuren voor bovenop de kaart: vrijwel dekkend donker met
+// felle tekst, zodat cijfers en de richtingpijl in vol daglicht leesbaar zijn.
+const HUD_BG = "rgba(4, 7, 14, 0.94)";
+const HUD_TEXT = "#ffffff";
+const HUD_MUTED = "rgba(255,255,255,0.72)";
+
 // Map a routing "dir" token to a Dutch label + arrow icon. Tolerant: unknown
 // values fall back to the raw dir + a generic arrow (never fabricated).
 function describeDir(dir: string): {
@@ -203,23 +209,27 @@ export default function NavigateScreen() {
               </View>
             </View>
           ) : nextStep ? (
-            <View style={[styles.instruction, { backgroundColor: c.card, borderColor: c.border }]}>
-              <View style={[styles.dirCircle, { backgroundColor: c.accent }]}>
-                <Ionicons name={describeDir(nextStep.dir).icon} size={26} color={c.primary} />
+            <View style={[styles.instruction, { backgroundColor: HUD_BG, borderColor: c.primary }]}>
+              <View style={[styles.dirCircleBig, { backgroundColor: c.primary }]}>
+                <Ionicons
+                  name={describeDir(nextStep.dir).icon}
+                  size={36}
+                  color={c.primaryForeground}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 <View style={styles.instrTop}>
-                  <Text style={[styles.instrLabel, { color: c.foreground }]}>
+                  <Text style={[styles.instrLabelBig, { color: HUD_TEXT }]}>
                     {describeDir(nextStep.dir).label}
                   </Text>
                   {distanceToTurn != null && (
-                    <Text style={[styles.instrDist, { color: c.primary }]}>
+                    <Text style={[styles.instrDistBig, { color: c.primary }]}>
                       {fmtMeters(distanceToTurn)}
                     </Text>
                   )}
                 </View>
                 {!!nextStep.note && (
-                  <Text style={[styles.instrNote, { color: c.mutedForeground }]} numberOfLines={2}>
+                  <Text style={[styles.instrNote, { color: HUD_MUTED }]} numberOfLines={2}>
                     {nextStep.note}
                   </Text>
                 )}
@@ -302,48 +312,56 @@ export default function NavigateScreen() {
               </Text>
             </Pressable>
           )}
-          <View style={[styles.progressBar, { backgroundColor: c.card, borderColor: c.border }]}>
-            <Metric
-              label="Resterend"
-              value={progress ? `${progress.remainingKm.toFixed(1)} km` : "—"}
-              c={c}
-            />
-            <View style={[styles.divider, { backgroundColor: c.border }]} />
-            <Metric
-              label="Totaal"
-              value={route.distanceKm != null ? `${route.distanceKm.toFixed(1)} km` : "—"}
-              c={c}
-            />
-            <View style={[styles.divider, { backgroundColor: c.border }]} />
+          <View style={[styles.progressBar, { backgroundColor: HUD_BG, borderColor: c.border }]}>
             <Metric
               label="Snelheid"
               value={
                 location?.speedMps != null
-                  ? `${Math.round(location.speedMps * 3.6)} km/u`
+                  ? `${Math.round(location.speedMps * 3.6)}`
                   : "—"
               }
+              unit="km/u"
+              highlight
+              c={c}
+            />
+            <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.18)" }]} />
+            <Metric
+              label="Resterend"
+              value={progress ? progress.remainingKm.toFixed(1) : "—"}
+              unit="km"
+              c={c}
+            />
+            <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.18)" }]} />
+            <Metric
+              label="Totaal"
+              value={route.distanceKm != null ? route.distanceKm.toFixed(1) : "—"}
+              unit="km"
               c={c}
             />
           </View>
           {live.anyConnected && (
-            <View style={[styles.progressBar, { backgroundColor: c.card, borderColor: c.border }]}>
+            <View style={[styles.progressBar, { backgroundColor: HUD_BG, borderColor: c.border }]}>
               <Metric
                 label="Vermogen"
-                value={live.values.watts != null ? `${live.values.watts} W` : "—"}
+                value={live.values.watts != null ? `${live.values.watts}` : "—"}
+                unit="W"
+                highlight
                 c={c}
               />
-              <View style={[styles.divider, { backgroundColor: c.border }]} />
+              <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.18)" }]} />
               <Metric
                 label="Hartslag"
                 value={
                   live.values.heartRate != null ? `${live.values.heartRate}` : "—"
                 }
+                unit="spm"
                 c={c}
               />
-              <View style={[styles.divider, { backgroundColor: c.border }]} />
+              <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.18)" }]} />
               <Metric
                 label="Cadans"
                 value={live.values.cadence != null ? `${live.values.cadence}` : "—"}
+                unit="rpm"
                 c={c}
               />
             </View>
@@ -698,16 +716,32 @@ function RideRecorderBar({
 function Metric({
   label,
   value,
+  unit,
+  highlight,
   c,
 }: {
   label: string;
   value: string;
+  unit?: string;
+  highlight?: boolean;
   c: ReturnType<typeof useColors>;
 }) {
   return (
     <View style={styles.metric}>
-      <Text style={[styles.metricValue, { color: c.foreground }]}>{value}</Text>
-      <Text style={[styles.metricLabel, { color: c.mutedForeground }]}>{label}</Text>
+      <View style={styles.metricValueRow}>
+        <Text
+          style={[styles.metricValue, { color: highlight ? c.primary : HUD_TEXT }]}
+          numberOfLines={1}
+        >
+          {value}
+        </Text>
+        {unit ? (
+          <Text style={[styles.metricUnit, { color: highlight ? c.primary : HUD_MUTED }]}>
+            {unit}
+          </Text>
+        ) : null}
+      </View>
+      <Text style={[styles.metricLabel, { color: HUD_MUTED }]}>{label}</Text>
     </View>
   );
 }
@@ -835,9 +869,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  dirCircleBig: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   instrTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   instrLabel: { fontFamily: "Inter_700Bold", fontSize: 17 },
+  instrLabelBig: { fontFamily: "Inter_700Bold", fontSize: 22, letterSpacing: -0.3 },
   instrDist: { fontFamily: "Inter_700Bold", fontSize: 16 },
+  instrDistBig: { fontFamily: "Inter_700Bold", fontSize: 21 },
   instrNote: { fontFamily: "Inter_400Regular", fontSize: 13, marginTop: 2 },
   pin: { width: 16, height: 16, borderRadius: 8, borderWidth: 3 },
   locNotice: {
@@ -872,9 +915,11 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   metric: { alignItems: "center", flex: 1 },
-  metricValue: { fontFamily: "Inter_700Bold", fontSize: 18 },
-  metricLabel: { fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 2 },
-  divider: { width: StyleSheet.hairlineWidth, height: 30 },
+  metricValueRow: { flexDirection: "row", alignItems: "baseline", gap: 4 },
+  metricValue: { fontFamily: "Inter_700Bold", fontSize: 28, letterSpacing: -0.5 },
+  metricUnit: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  metricLabel: { fontFamily: "Inter_500Medium", fontSize: 12, marginTop: 2 },
+  divider: { width: StyleSheet.hairlineWidth, height: 40 },
   fbNotice: {
     flexDirection: "row",
     alignItems: "center",
