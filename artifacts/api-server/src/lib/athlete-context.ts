@@ -38,7 +38,12 @@ export function todayStr(): string {
 // prior observations). Single source of truth shared by every Sparki surface
 // (daily brief, ask, and the Input Center) so coaching reasons over the same
 // facts everywhere. Never fabricates — absent data is stated as such.
-export async function buildAthleteContext(clerkId: string): Promise<string> {
+export async function buildAthleteContext(
+  clerkId: string,
+  // Label of the analysis run this context feeds — used for the structured
+  // used/excluded source log so every analysis is auditable per run.
+  analysisLabel: string = "athlete_context",
+): Promise<string> {
   const today = todayStr();
 
   const [
@@ -292,6 +297,25 @@ export async function buildAthleteContext(clerkId: string): Promise<string> {
     parts.push(await mentalContextBlock(clerkId));
   } catch {
     // context stands without it
+  }
+
+  // Source-quality register — the shared "bronnenregister". Every LLM-facing
+  // analysis sees the same per-source reliability/completeness and the hard
+  // rule that invalid sources may not yield conclusions. Fail-closed: when the
+  // register itself cannot be built, the prompt explicitly forbids conclusions
+  // about data quality instead of silently proceeding without the rule.
+  try {
+    const { getSourceQuality, sourceQualityBlock, logSourceUsage } =
+      await import("../engines/source-quality");
+    const register = await getSourceQuality(clerkId);
+    parts.push("");
+    parts.push(sourceQualityBlock(register));
+    logSourceUsage(clerkId, analysisLabel, register);
+  } catch {
+    parts.push("");
+    parts.push(
+      `DATABRONNEN: het kwaliteitsregister van de databronnen kon nu niet worden opgebouwd. HARDE REGEL: behandel ALLE databronnen als niet-geverifieerd — trek geen stellige conclusies uit metingen en zeg er eerlijk bij dat de betrouwbaarheid van de gegevens nu niet vast te stellen is.`,
+    );
   }
 
   return parts.join("\n");

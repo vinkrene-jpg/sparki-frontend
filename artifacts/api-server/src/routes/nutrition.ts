@@ -1443,7 +1443,7 @@ router.get("/guidance", requireAuth, async (req, res) => {
     const level: "youth" | "adult" = isYouth ? "youth" : "adult";
 
     const [context, system] = await Promise.all([
-      buildAthleteContext(clerkId),
+      buildAthleteContext(clerkId, "nutrition_day_analysis"),
       systemPrompt(clerkId),
     ]);
 

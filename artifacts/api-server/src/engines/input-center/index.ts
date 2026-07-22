@@ -309,7 +309,7 @@ export async function postMessage(
     .trim();
 
   const [context, system, knowledge, turnBlocks, history] = await Promise.all([
-    buildAthleteContext(clerkId),
+    buildAthleteContext(clerkId, "input_center"),
     systemPrompt(clerkId),
     gatherKnowledge(clerkId, keywordSeed || "training"),
     buildTurnBlocks(clerkId, text, link, attachments),

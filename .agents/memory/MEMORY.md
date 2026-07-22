@@ -128,3 +128,4 @@
 - [Sparki road-objects engine](sparki-road-objects.md) — zelflerende verkeerslichten-DB: confirm vereist eigen stop-bewijs + idempotente confirm-rij; cel-dedupe kiest expliciet beste, nooit "eerste rij wint".
 - [Sparki device sync (Garmin/Wahoo)](sparki-device-sync.md) — full OAuth+push scaffolding, honest configured:false until manufacturer keys; PKCE verifier inside signed state.
 - [Ride BLE sensors → GPX](sparki-ride-sensor-gpx.md) — 1s foreground sampler + ≤5s nearest-match; gpxtpx/power extensions; api-server test mirrors mobile buildRideGpx in lockstep.
+- [Sparki bronnenregister](sparki-source-quality.md) — central source-quality register; fail-closed prompt rule, sensor "actief" needs real proof, per-analysis used/excluded logging.

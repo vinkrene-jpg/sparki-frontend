@@ -79,7 +79,8 @@
     "test:session-elevation-profile": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs session-elevation-profile",
     "test:ingest-elevation-profile": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs ingest-elevation-profile",
     "test:ingest-elevation-fit-tcx": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs ingest-elevation-fit-tcx",
-    "test:road-objects": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs road-objects"
+    "test:road-objects": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs road-objects",
+    "test:source-quality": "node ./scripts/run-test.mjs source-quality"
   },
   "dependencies": {
     "@clerk/express": "^2.1.30",

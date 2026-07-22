@@ -36,7 +36,7 @@ router.post("/brief", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
     const [context, system] = await Promise.all([
-      buildAthleteContext(clerkId),
+      buildAthleteContext(clerkId, "brief"),
       systemPrompt(clerkId),
     ]);
     const { promptBlock, sources } = await gatherKnowledge(clerkId, context);
@@ -117,7 +117,7 @@ router.post("/ask", requireAuth, async (req, res) => {
 
   try {
     const [context, system] = await Promise.all([
-      buildAthleteContext(clerkId),
+      buildAthleteContext(clerkId, "ask"),
       systemPrompt(clerkId),
     ]);
     const { promptBlock, sources } = await gatherKnowledge(
@@ -198,6 +198,22 @@ router.get("/observations", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "ai.observations failed");
     res.status(500).json({ error: "Failed to load observations" });
+  }
+});
+
+// ── GET /api/ai/sources ──────────────────────────────────────────────────────
+// The central source-quality register ("bronnenregister"): per databron the
+// origin, last measurement, completeness, reliability, sensor status and
+// validity. Read-only; the same register every analysis uses.
+router.get("/sources", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const { getSourceQuality } = await import("../engines/source-quality");
+    const sources = await getSourceQuality(clerkId);
+    res.json({ sources });
+  } catch (err) {
+    req.log.error({ err }, "ai.sources failed");
+    res.status(500).json({ error: "Failed to assess data sources" });
   }
 });
 
@@ -438,7 +454,7 @@ router.post("/workout-explain", requireAuth, async (req, res) => {
     }
 
     const [context, system] = await Promise.all([
-      buildAthleteContext(clerkId),
+      buildAthleteContext(clerkId, "workout_explain"),
       systemPrompt(clerkId),
     ]);
     const workoutBlock = describeWorkout(workout);
@@ -510,7 +526,7 @@ router.post("/workout-explain-extended", requireAuth, async (req, res) => {
     }
 
     const [context, system] = await Promise.all([
-      buildAthleteContext(clerkId),
+      buildAthleteContext(clerkId, "workout_explain_extended"),
       systemPrompt(clerkId),
     ]);
     const workoutBlock = describeWorkout(workout);
@@ -606,7 +622,7 @@ router.post("/workout-adjust", requireAuth, async (req, res) => {
     }
 
     const [context, system] = await Promise.all([
-      buildAthleteContext(clerkId),
+      buildAthleteContext(clerkId, "workout_adjust"),
       systemPrompt(clerkId),
     ]);
     const workoutBlock = describeWorkout(workout);
