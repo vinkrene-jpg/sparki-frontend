@@ -3,9 +3,12 @@ import { and, desc, eq } from "drizzle-orm";
 import {
   db,
   documentAnalysesTable,
+  racePointsTable,
   racesTable,
+  type CandidateRacePoint,
   type ExtractedField,
 } from "@workspace/db";
+import { candidateToInsert } from "../lib/race-points";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
   analyzeDocument,
@@ -119,6 +122,7 @@ router.post("/", requireAuth, async (req, res) => {
         missingFields: result.missingFields,
         followUpQuestions: result.followUpQuestions,
         sourcePages: result.sourcePages,
+        candidatePoints: result.candidatePoints,
       })
       .returning();
     res.status(201).json({ analysis: row });
@@ -263,6 +267,38 @@ router.post("/:id/link", requireAuth, async (req, res) => {
         .where(and(eq(racesTable.id, raceId), eq(racesTable.clerkId, clerkId)));
     }
 
+    // Kandidaat-wedstrijdpunten uit de gids → race_points met status
+    // "voorgesteld". Idempotent: als deze analyse al punten voor deze
+    // wedstrijd aanleverde, worden er geen dubbelen bijgezet.
+    const candidates = Array.isArray(analysis.candidatePoints)
+      ? (analysis.candidatePoints as CandidateRacePoint[])
+      : [];
+    let proposedPoints = 0;
+    if (candidates.length > 0) {
+      const existing = await db
+        .select({ id: racePointsTable.id })
+        .from(racePointsTable)
+        .where(
+          and(
+            eq(racePointsTable.raceId, raceId),
+            eq(racePointsTable.sourceAnalysisId, id),
+          ),
+        )
+        .limit(1);
+      if (existing.length === 0) {
+        const values = candidates.map((c) =>
+          candidateToInsert(c, {
+            raceId,
+            clerkId,
+            analysisId: id,
+            fileName: analysis.fileName,
+          }),
+        );
+        await db.insert(racePointsTable).values(values);
+        proposedPoints = values.length;
+      }
+    }
+
     const [row] = await db
       .update(documentAnalysesTable)
       .set({ linkedRaceId: raceId, updatedAt: new Date() })
@@ -273,7 +309,7 @@ router.post("/:id/link", requireAuth, async (req, res) => {
         ),
       )
       .returning();
-    res.json({ analysis: row, enriched: Object.keys(raceUpdate) });
+    res.json({ analysis: row, enriched: Object.keys(raceUpdate), proposedPoints });
   } catch (err) {
     req.log.error({ err }, "documentAnalyses.link failed");
     res.status(500).json({ error: "Kon document niet koppelen" });

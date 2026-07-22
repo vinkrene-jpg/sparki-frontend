@@ -73,6 +73,11 @@ export const documentAnalysesTable = pgTable("document_analyses", {
   linkedRaceId: integer("linked_race_id").references(() => racesTable.id, {
     onDelete: "set null",
   }),
+  // Kandidaat-wedstrijdpunten (CandidateRacePoint[]) uit de technische gids —
+  // alleen wat letterlijk in het document staat (nooit verzonnen locaties);
+  // bij koppeling aan een wedstrijd worden dit race_points met status
+  // "voorgesteld". Null wanneer de analyse geen punten vond.
+  candidatePoints: jsonb("candidate_points"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

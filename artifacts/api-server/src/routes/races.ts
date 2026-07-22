@@ -72,6 +72,9 @@ type RaceBody = {
   registrationStatus?: string | null;
   goal?: string | null;
   status?: string;
+  // Wedstrijd Intelligence — lokale ronden + persoonlijke opdracht.
+  localLaps?: number | null;
+  assignment?: string | null;
 };
 
 const RACE_STATUSES = ["gepland", "geannuleerd"] as const;
@@ -109,6 +112,13 @@ async function checkRouteOwnership(
     .where(and(eq(routesTable.id, id), eq(routesTable.clerkId, clerkId)))
     .limit(1);
   return r ? id : undefined;
+}
+
+// Lokale ronden: alleen een geheel getal 0–99; alles anders wordt null
+// (= geen lokale ronden vastgelegd).
+function normalizeLocalLaps(v: unknown): number | null {
+  const n = Number(v);
+  return Number.isInteger(n) && n >= 0 && n <= 99 ? n : null;
 }
 
 function normalizePriority(p: string | undefined): string | undefined {
@@ -406,6 +416,10 @@ router.post("/", requireAuth, async (req, res) => {
         category: body.category ?? null,
         registrationStatus: normalizeRegistration(body.registrationStatus) ?? null,
         goal: body.goal ?? null,
+        localLaps: normalizeLocalLaps(body.localLaps) ?? null,
+        assignment: typeof body.assignment === "string" && body.assignment.trim()
+          ? body.assignment.trim().slice(0, 2000)
+          : null,
         status: normalizeStatus(body.status) ?? "gepland",
       })
       .returning();
@@ -512,6 +526,15 @@ router.put("/:id", requireAuth, async (req, res) => {
         // Golf 16 — route alleen (ont)koppelen als hij van deze renner is.
         ...(ownedRouteId !== undefined && { routeId: ownedRouteId }),
         ...(body.category !== undefined && { category: body.category }),
+        ...(body.localLaps !== undefined && {
+          localLaps: normalizeLocalLaps(body.localLaps),
+        }),
+        ...(body.assignment !== undefined && {
+          assignment:
+            typeof body.assignment === "string" && body.assignment.trim()
+              ? body.assignment.trim().slice(0, 2000)
+              : null,
+        }),
         ...(registration !== undefined && { registrationStatus: registration }),
         ...(body.goal !== undefined && { goal: body.goal }),
         ...(status !== undefined && { status }),

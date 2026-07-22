@@ -53,6 +53,12 @@ import {
 } from "@/lib/nav-audio";
 import { useNavAudioPrefs } from "@/lib/nav-audio-settings";
 import {
+  createRaceModeState,
+  finishCueAllowed,
+  nextRacePoint,
+  updateRaceMode,
+} from "@/lib/race-mode";
+import {
   meldNavigatieStart,
   useRejoinRoute,
   useRoute,
@@ -188,13 +194,49 @@ export default function NavigateScreen() {
     };
   }, [location, path, cumKm]);
 
+  // ---------- Wedstrijdmodus ----------
+  // Alleen actief bij usageType "wedstrijd" met een gekoppelde geplande
+  // wedstrijd. De payload bevat UITSLUITEND door de renner bevestigde of
+  // aangepaste punten — onbevestigde AI-voorstellen sturen de rit nooit.
+  const race = route?.usageType === "wedstrijd" ? route.race ?? null : null;
+  const [raceState, setRaceState] = useState(createRaceModeState);
+  useEffect(() => {
+    if (!race || !progress) return;
+    const totalKm = cumKm[cumKm.length - 1] ?? 0;
+    setRaceState((s) => {
+      const r = updateRaceMode(s, {
+        traveledKm: progress.traveledKm,
+        totalKm,
+        localLaps: race.localLaps ?? 1,
+      });
+      return r.state === s ? s : r.state;
+    });
+  }, [race, progress, cumKm]);
+  // Finishcue-gate: bij lokale ronden pas in de laatste ronde.
+  const finishAllowed = !race || finishCueAllowed(raceState, race.localLaps);
+
   // Waypoints zijn géén finish: de server schoont tussen-"Aankomst"-stappen al
   // op, maar oudere lokaal bewaarde kopieën lopen hier nogmaals door dezelfde
   // sanitizer zodat er nooit een finishvlag/-melding halverwege verschijnt.
-  const navSteps: RouteStep[] = useMemo(
+  const navStepsAll: RouteStep[] = useMemo(
     () => (route?.nav ? sanitizeNavSteps(route.nav) : []),
     [route?.nav],
   );
+  // Buiten de laatste ronde valt de "Aankomst"-slotstap weg zodat kaart,
+  // HUD én audio geen finish laten zien op een doorkomst.
+  const navSteps: RouteStep[] = useMemo(() => {
+    if (finishAllowed) return navStepsAll;
+    const last = navStepsAll[navStepsAll.length - 1];
+    const lastIsArrive =
+      !!last && /arrive|finish|aankomst/.test((last.dir || "").toLowerCase());
+    return lastIsArrive ? navStepsAll.slice(0, -1) : navStepsAll;
+  }, [navStepsAll, finishAllowed]);
+
+  // Eerstvolgend wedstrijdpunt vóór de renner (sprint/bergprijs/laatste km…).
+  const upcomingRacePoint = useMemo(() => {
+    if (!race || !progress) return null;
+    return nextRacePoint(race.points, progress.traveledKm, { finishAllowed });
+  }, [race, progress, finishAllowed]);
 
   const nextStep: RouteStep | null = useMemo(() => {
     if (navSteps.length === 0 || !progress) return null;
@@ -484,7 +526,43 @@ export default function NavigateScreen() {
           </View>
         )}
 
-        {nextSignal && !progress?.offRoute && (
+        {/* ---------- Wedstrijdmodus-HUD ---------- */}
+        {race && (
+          <View style={[styles.signalPill, { backgroundColor: HUD_BG, borderColor: c.primary }]}>
+            <Ionicons name="flag-outline" size={16} color={c.primary} />
+            <Text style={[styles.signalText, { color: HUD_TEXT }]}>
+              Wedstrijdmodus · {race.name}
+              {race.localLaps != null && race.localLaps > 1
+                ? ` · ronde ${raceState.lap}/${race.localLaps}`
+                : ""}
+            </Text>
+          </View>
+        )}
+        {race?.assignment ? (
+          <View style={[styles.signalPill, { backgroundColor: HUD_BG, borderColor: c.border }]}>
+            <Ionicons name="clipboard-outline" size={16} color={HUD_MUTED} />
+            <Text style={[styles.signalText, { color: HUD_TEXT }]} numberOfLines={2}>
+              Opdracht: {race.assignment}
+            </Text>
+          </View>
+        ) : null}
+        {upcomingRacePoint && !progress?.offRoute && (
+          <View style={[styles.signalPill, { backgroundColor: HUD_BG, borderColor: "#facc15" }]}>
+            <Ionicons
+              name={upcomingRacePoint.point.kind === "finish" ? "flag" : "locate-outline"}
+              size={16}
+              color="#facc15"
+            />
+            <Text style={[styles.signalText, { color: HUD_TEXT }]} numberOfLines={2}>
+              Nog {fmtMeters(upcomingRacePoint.distanceM)} tot{" "}
+              {upcomingRacePoint.point.label}
+            </Text>
+          </View>
+        )}
+
+        {/* In wedstrijdmodus onderdrukken we niet-koersrelevante meldingen
+            (verkeerslichten/POI's) — het parcours is leidend. */}
+        {!race && nextSignal && !progress?.offRoute && (
           <View
             style={[
               styles.signalPill,

@@ -55,6 +55,36 @@ export type RouteDetail = RouteSummary & {
   nav: RouteStep[] | null;
   geometry: RoutePathPoint[] | null;
   rationale: string | null;
+  /** Gebruiksdoel — "training" | "toertocht" | "wedstrijd". */
+  usageType?: string;
+  /**
+   * Wedstrijdmodus-payload: alleen aanwezig bij usageType "wedstrijd" met een
+   * gekoppelde geplande wedstrijd. Punten zijn UITSLUITEND door de renner
+   * bevestigde/aangepaste punten — nooit onbevestigde AI-voorstellen.
+   */
+  race?: RaceModePayload | null;
+};
+
+/** Bevestigd wedstrijdpunt zoals de kaartcontrole het opleverde. */
+export type RacePointLite = {
+  id: number;
+  kind: string;
+  pointClass: string;
+  label: string;
+  description: string | null;
+  raceKm: number | null;
+  lat: number | null;
+  lng: number | null;
+  status: string;
+};
+
+export type RaceModePayload = {
+  id: number;
+  name: string;
+  raceDate: string;
+  localLaps: number | null;
+  assignment: string | null;
+  points: RacePointLite[];
 };
 
 // Wegobject langs de route (Sparki Traffic Database) — verkeerslichten en
@@ -146,9 +176,10 @@ export function useRoute(id: number | null) {
     enabled: id != null,
     queryKey: ["route", id],
     queryFn: () =>
-      customFetch<{ route: RouteDetail }>(`/api/routes/${id}`, {
-        responseType: "json",
-      }).then((r) => r.route),
+      customFetch<{ route: RouteDetail; race?: RaceModePayload | null }>(
+        `/api/routes/${id}`,
+        { responseType: "json" },
+      ).then((r) => ({ ...r.route, race: r.race ?? null })),
   });
 }
 

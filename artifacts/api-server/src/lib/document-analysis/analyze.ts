@@ -1,9 +1,12 @@
 import { aiMessage, UPLOAD_DATA_RULE } from "../ai/gateway";
 import {
   documentAnalysisKinds,
+  racePointKinds,
+  type CandidateRacePoint,
   type DocumentAnalysisKind,
   type ExtractedField,
 } from "@workspace/db";
+import { coerceCandidatePoints } from "../race-points";
 import {
   ALL_FIELDS,
   DOCUMENT_FIELDS,
@@ -23,6 +26,10 @@ export type AnalysisResult = {
   // het document aangetroffen; alleen ingevuld als het model de pagina echt
   // kon vaststellen, nooit verzonnen).
   sourcePages: Record<string, number>;
+  // Wedstrijd Intelligence — kandidaat-wedstrijdpunten die LETTERLIJK in het
+  // document staan (sprint, bergprijs, bevoorrading, gevaar, finish, …).
+  // Nooit verzonnen; zonder km/coördinaten blijft de locatie onbevestigd.
+  candidatePoints: CandidateRacePoint[];
 };
 
 // Media types Sparki can actually read. PDFs go in as a document block, images
@@ -56,7 +63,10 @@ Schema:
   "summary": korte zin in het Nederlands die zegt wat dit document is,
   "fields": {
     "<key>": { "value": <string of null>, "confidence": "high" | "medium" | "low", "page": <paginanummer of null> }
-  }
+  },
+  "points": [
+    { "kind": een van ${racePointKinds.map((k) => `"${k}"`).join(", ")}, "description": korte Nederlandse omschrijving zoals in het document, "km": <wedstrijdkilometer als getal of null>, "lat": <breedtegraad of null>, "lon": <lengtegraad of null>, "page": <paginanummer of null>, "confidence": "high" | "medium" | "low" }
+  ]
 }
 
 De velden (key: betekenis):
@@ -70,7 +80,12 @@ Strikte regels:
 - date: in formaat JJJJ-MM-DD indien mogelijk, anders zoals vermeld.
 - Twijfel je over een gelezen waarde? Gebruik confidence "low" of "medium".
 - "page": het paginanummer waar je de waarde LETTERLIJK zag (1 = eerste pagina). Weet je de pagina niet zeker, of is het één afbeelding? Zet "page": null. Verzin nooit een pagina.
-- Schrijf alle tekstwaarden en de summary in het Nederlands.`;
+- Schrijf alle tekstwaarden en de summary in het Nederlands.
+
+Regels voor "points" (wedstrijdpunten):
+- Neem ALLEEN punten op die letterlijk in het document staan (bijv. tussensprint, bergprijs, bevoorradingszone, afvalzone, gevaarlijk punt, slecht wegdek, spoorwegovergang, einde neutralisatie, laatste kilometer, lokale ronden, start, finish). Verzin NOOIT een punt.
+- "km": alleen als het document een kilometerpunt noemt; anders null. "lat"/"lon": alleen als het document echte coördinaten bevat; anders null. Verzin nooit een locatie.
+- Staan er geen punten in het document? Geef "points": [].`;
 
 type RawField = { value?: unknown; confidence?: unknown; page?: unknown };
 
@@ -191,6 +206,7 @@ export async function analyzeDocument(
     documentKind?: unknown;
     summary?: unknown;
     fields?: Record<string, RawField>;
+    points?: unknown;
   };
 
   const rawFields = (parsed.fields ?? {}) as Record<string, RawField>;
@@ -238,6 +254,7 @@ export async function analyzeDocument(
     missingFields,
     followUpQuestions,
     sourcePages,
+    candidatePoints: coerceCandidatePoints(parsed.points),
   };
 }
 

@@ -24,6 +24,7 @@ import {
   routeVersionUsagesTable,
   routeShareAudiences,
   racesTable,
+  racePointsTable,
   sprintResultsTable,
   coachAthleteLinksTable,
   clubMembersTable,
@@ -38,6 +39,7 @@ import {
 } from "@workspace/db";
 import { applyLocationPrivacy } from "../lib/world-social/location";
 import { sanitizeNavSteps } from "../lib/routing/nav-sanitize";
+import { activeRacePoints } from "../lib/race-points";
 import { registerRouteUsage } from "../lib/route-usage";
 import { aiMessage } from "../lib/ai/gateway";
 import { requireAuth, getClerkUserId } from "../lib/auth";
@@ -757,7 +759,41 @@ router.get("/:id", requireAuth, async (req, res) => {
       const nav = Array.isArray(route.nav)
         ? sanitizeNavSteps(route.nav as { km: number; dir: string; note: string }[])
         : route.nav;
-      res.json({ route: { ...route, nav } });
+      // Wedstrijdmodus: bij usageType "wedstrijd" gaat de gekoppelde wedstrijd
+      // mee (eerstvolgende op datum) met UITSLUITEND actieve punten
+      // (bevestigd/aangepast) — voorgestelde of afgewezen punten sturen nooit
+      // de live weergave.
+      let race: unknown = null;
+      if (route.usageType === "wedstrijd") {
+        const [linkedRace] = await db
+          .select()
+          .from(racesTable)
+          .where(
+            and(
+              eq(racesTable.routeId, route.id),
+              eq(racesTable.clerkId, clerkId),
+              eq(racesTable.status, "gepland"),
+            ),
+          )
+          .orderBy(asc(racesTable.raceDate))
+          .limit(1);
+        if (linkedRace) {
+          const points = await db
+            .select()
+            .from(racePointsTable)
+            .where(eq(racePointsTable.raceId, linkedRace.id))
+            .orderBy(asc(racePointsTable.raceKm), asc(racePointsTable.id));
+          race = {
+            id: linkedRace.id,
+            name: linkedRace.name,
+            raceDate: linkedRace.raceDate,
+            localLaps: linkedRace.localLaps,
+            assignment: linkedRace.assignment,
+            points: activeRacePoints(points),
+          };
+        }
+      }
+      res.json({ route: { ...route, nav }, race });
       return;
     }
     // Niet-eigenaar: alleen zichtbaar wanneer expliciet gedeeld, en dan altijd
@@ -2470,6 +2506,16 @@ router.put("/:id", requireAuth, async (req, res) => {
       updates.visibility = body.visibility as RouteVisibility;
     }
     if (typeof body.favorite === "boolean") updates.favorite = body.favorite;
+    // Gebruikstype (training | toertocht | wedstrijd) — wedstrijd activeert
+    // Wedstrijdmodus in de live navigatie. Presentatie/gedrag, geen inhoudelijke
+    // routewijziging (geen versie-bump).
+    if (typeof body.usageType === "string") {
+      if (!["training", "toertocht", "wedstrijd"].includes(body.usageType)) {
+        res.status(400).json({ error: "Ongeldig gebruikstype" });
+        return;
+      }
+      updates.usageType = body.usageType;
+    }
     if (typeof body.status === "string") {
       if (!["ready", "archived"].includes(body.status)) {
         res.status(400).json({ error: "Ongeldige status" });

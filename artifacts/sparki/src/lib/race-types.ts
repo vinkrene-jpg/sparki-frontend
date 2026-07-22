@@ -65,6 +65,10 @@ export type Race = {
   checklist: ChecklistState | null;
   teamRiders: TeamRider[] | null;
   routeId: number | null;
+  /** Aantal lokale ronden (wedstrijdmodus) — null = niet vastgelegd. */
+  localLaps: number | null;
+  /** Persoonlijke opdracht voor deze wedstrijd (van coach of renner zelf). */
+  assignment: string | null;
   category: string | null;
   registrationStatus: RaceRegistrationStatus | null;
   goal: string | null;

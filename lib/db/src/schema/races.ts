@@ -74,6 +74,12 @@ export const racesTable = pgTable("races", {
   raceType: text("race_type"), // e.g. "wegwedstrijd", "criterium", "tijdrit"
   result: jsonb("result").$type<RaceResult>(),
 
+  // Wedstrijd Intelligence — lokale ronden (0/null = geen lokale ronden) en de
+  // persoonlijke wedstrijdopdracht (bv. van trainer/ploegleider) los van het
+  // eigen doel. Beide additief en nullable — bestaande rijen onaangetast.
+  localLaps: integer("local_laps"),
+  assignment: text("assignment"),
+
   // Structured, integration-ready sub-objects
   logistics: jsonb("logistics"), // RaceLogisticsInput
   checklist: jsonb("checklist"), // Record<string, boolean> — persisted per race

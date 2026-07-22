@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/sparki/home-sections"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import { ImportFromCalendar } from "@/components/sparki/import-from-calendar"
 import { EquipmentChoicePanel } from "@/components/sparki/equipment-choice"
+import { RacePointsPanel } from "@/components/sparki/race-points-panel"
 import type { CalendarEvent } from "@/lib/calendar-types"
 import {
   useRaces,
@@ -71,6 +72,8 @@ type FormState = {
   registrationStatus: RaceRegistrationStatus | ""
   goal: string
   status: RaceStatus
+  localLaps: string
+  assignment: string
   // logistics
   departureLocation: string
   travelDurationMin: string
@@ -104,6 +107,8 @@ const EMPTY_FORM: FormState = {
   registrationStatus: "",
   goal: "",
   status: "gepland",
+  localLaps: "",
+  assignment: "",
   departureLocation: "",
   travelDurationMin: "",
   arrivalBufferMin: "",
@@ -139,6 +144,8 @@ function raceToForm(r: Race): FormState {
     registrationStatus: r.registrationStatus ?? "",
     goal: r.goal ?? "",
     status: r.status ?? "gepland",
+    localLaps: numStr(r.localLaps),
+    assignment: r.assignment ?? "",
     departureLocation: lg.departureLocation ?? "",
     travelDurationMin: numStr(lg.travelDurationMin),
     arrivalBufferMin: numStr(lg.arrivalBufferMin),
@@ -196,6 +203,8 @@ function formToInput(f: FormState, teamRiders: TeamRider[]): RaceInput {
     registrationStatus: f.registrationStatus === "" ? null : f.registrationStatus,
     goal: str(f.goal),
     status: f.status,
+    localLaps: num(f.localLaps),
+    assignment: str(f.assignment),
     logistics,
     teamRiders: teamRiders.length > 0 ? teamRiders : null,
   }
@@ -640,6 +649,10 @@ export default function RacesPage() {
             editingId != null ? (
               <>
                 <RaceWerkbladPanel raceId={editingId} />
+                <RacePointsPanel
+                  raceId={editingId}
+                  routeId={races.find((r) => r.id === editingId)?.routeId ?? null}
+                />
                 <EquipmentChoicePanel raceId={editingId} />
               </>
             ) : null
@@ -910,6 +923,14 @@ function RaceForm({
           </div>
           <Field label="Technische delen">
             <TextArea value={form.technicalSections} onChange={(e) => set("technicalSections", e.target.value)} placeholder="Afdaling km 80, kasseistrook km 95" />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Lokale ronden">
+              <TextInput inputMode="numeric" value={form.localLaps} onChange={(e) => set("localLaps", e.target.value)} placeholder="3" />
+            </Field>
+          </div>
+          <Field label="Persoonlijke opdracht">
+            <TextArea value={form.assignment} onChange={(e) => set("assignment", e.target.value)} placeholder="Blijf voorin bij de kasseistrook, spring mee met de eerste ontsnapping" />
           </Field>
           <Field label="Weersinschatting">
             <TextArea value={form.weatherNote} onChange={(e) => set("weatherNote", e.target.value)} placeholder="Bewolkt, 12°C, wind ZW 20 km/u" />

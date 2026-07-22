@@ -96,6 +96,10 @@ export const routesTable = pgTable("routes", {
   // generated routes; honesty caveats are baked into this text.
   rationale: text("rationale"),
   source: text("source").notNull().default("manual"),
+  // Gebruikstype van de route: "training" | "toertocht" | "wedstrijd".
+  // Wedstrijd activeert Wedstrijdmodus in de live navigatie (rondetelling,
+  // wedstrijdpunten, onderdrukking van toeristische lagen).
+  usageType: text("usage_type").notNull().default("training"),
   // Favoriet-markering voor de routebibliotheek.
   favorite: boolean("favorite").notNull().default(false),
   // Versienummer: start op 1, +1 bij iedere inhoudelijke wijziging. Trainingen,
