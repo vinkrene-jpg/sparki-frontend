@@ -191,3 +191,41 @@ optgroup {
     @apply font-sans;
   }
 }
+
+/* ── Leesbaarheidslift ──────────────────────────────────────────────────
+   De app gebruikt overal witte tekst met lage dekking (text-white/25 t/m
+   /70). Op de donkere achtergrond leest dat als vaag grijs — vooral op
+   mobiele OLED-schermen. Deze centrale override tilt élke dekkingstrap
+   omhoog, terwijl de onderlinge hiërarchie (bijschrift < label < tekst)
+   intact blijft. Eén plek aanpassen = de hele app scherper, zonder
+   honderden componentwijzigingen. Decoratie (borders/achtergronden)
+   blijft ongemoeid — dit raakt alleen tekstkleur. */
+@layer utilities {
+  .text-white\/20 { color: rgb(255 255 255 / 0.42); }
+  .text-white\/25 { color: rgb(255 255 255 / 0.48); }
+  .text-white\/30 { color: rgb(255 255 255 / 0.54); }
+  .text-white\/35 { color: rgb(255 255 255 / 0.60); }
+  .text-white\/40 { color: rgb(255 255 255 / 0.65); }
+  .text-white\/45 { color: rgb(255 255 255 / 0.70); }
+  .text-white\/50 { color: rgb(255 255 255 / 0.74); }
+  .text-white\/55 { color: rgb(255 255 255 / 0.78); }
+  .text-white\/60 { color: rgb(255 255 255 / 0.82); }
+  .text-white\/65 { color: rgb(255 255 255 / 0.85); }
+  .text-white\/70 { color: rgb(255 255 255 / 0.88); }
+  .text-white\/75 { color: rgb(255 255 255 / 0.91); }
+  .text-white\/80 { color: rgb(255 255 255 / 0.93); }
+  .placeholder\:text-white\/25::placeholder { color: rgb(255 255 255 / 0.48); }
+  .placeholder\:text-white\/30::placeholder { color: rgb(255 255 255 / 0.54); }
+  /* Hover-varianten mee-optillen, anders wordt tekst bij aanwijzen dónkerder
+     dan de opgetilde basiskleur (omgekeerde hiërarchie). Zelfde trap. */
+  .hover\:text-white\/45:hover { color: rgb(255 255 255 / 0.70); }
+  .hover\:text-white\/50:hover { color: rgb(255 255 255 / 0.74); }
+  .hover\:text-white\/60:hover { color: rgb(255 255 255 / 0.82); }
+  .hover\:text-white\/65:hover { color: rgb(255 255 255 / 0.85); }
+  .hover\:text-white\/70:hover { color: rgb(255 255 255 / 0.88); }
+  .hover\:text-white\/75:hover { color: rgb(255 255 255 / 0.91); }
+  .hover\:text-white\/80:hover { color: rgb(255 255 255 / 0.93); }
+  .hover\:text-white\/85:hover { color: rgb(255 255 255 / 0.95); }
+  .hover\:text-white\/90:hover { color: rgb(255 255 255 / 0.97); }
+  .group-hover\:text-white\/50:is(:where(.group):hover *) { color: rgb(255 255 255 / 0.74); }
+}
