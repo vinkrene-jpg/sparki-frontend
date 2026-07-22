@@ -50,6 +50,7 @@ import { SENSOR_KIND_LABEL } from "@/components/sparki/wireless-sensors"
 import { apiFetch } from "@/lib/api"
 import type { PlannedWorkout } from "@/lib/athlete-types"
 import { WorkoutHud } from "@/components/sparki/workout-hud"
+import { buildTimeline, segmentAt } from "@/lib/workout-blocks"
 
 const OFF_ROUTE_METERS = 60
 
@@ -439,6 +440,24 @@ export function RouteNavigator({
   const [rideSeconds, setRideSeconds] = useState(0)
   const rideSecondsRef = useRef(0)
   rideSecondsRef.current = rideSeconds
+
+  // ── Bocht-bewuste intervalstart ──────────────────────────────────
+  // Een intervalblok mag niet midden in een bocht beginnen. Staat er op het
+  // moment dat de blokklok een interval zou instarten een echte afslag vlak
+  // voor je (< TURN_HOLD_M), dan houden we de blokklok vast op de blokgrens
+  // tot de bocht gepasseerd is — met een eerlijke melding. De rittimer zelf
+  // loopt gewoon door; alleen de trainingsblokken schuiven op. Een veiligheids-
+  // plafond voorkomt dat de klok eindeloos blijft wachten.
+  const TURN_HOLD_M = 160
+  const TURN_HOLD_MAX_SEC = 90
+  const [workoutHoldSec, setWorkoutHoldSec] = useState(0)
+  const [turnHold, setTurnHold] = useState(false)
+  const turnHoldRef = useRef(false)
+  turnHoldRef.current = turnHold
+  const workoutHoldRef = useRef(0)
+  workoutHoldRef.current = workoutHoldSec
+  const holdStartedAtSecRef = useRef<number | null>(null)
+  const lastWorkoutTickRef = useRef(0)
   // Ridden track (recorded while riding) — offered for saving when closing.
   const riddenRef = useRef<LatLon[]>([])
   const [confirmClose, setConfirmClose] = useState(false)
@@ -1052,6 +1071,87 @@ export function RouteNavigator({
       : nextStep && progress
         ? Math.max(0, (nextStep.km - progress.traveledKm) * 1000)
         : null
+
+  // ── Bocht-bewuste intervalstart (vervolg) ─────────────────────────
+  // Echte stuurmanoeuvres waarvoor de blokklok even wacht; rechtdoor,
+  // aanhouden en vertrek/aankomst onderbreken een interval niet.
+  const REAL_TURN_DIRS = useMemo(
+    () =>
+      new Set([
+        "Links",
+        "Rechts",
+        "Scherp links",
+        "Scherp rechts",
+        "Rotonde",
+        "Rotonde af",
+        "Keren",
+      ]),
+    [],
+  )
+  const workoutTimeline = useMemo(
+    () => (workout?.structure ? buildTimeline(workout.structure) : []),
+    [workout],
+  )
+  const turnNearRef = useRef(false)
+  turnNearRef.current =
+    nextStep != null &&
+    distanceToTurn != null &&
+    distanceToTurn < TURN_HOLD_M &&
+    REAL_TURN_DIRS.has(nextStep.dir)
+
+  // Wisselt of laadt de training(stijdlijn) tijdens een rit, dan begint de
+  // vasthoud-boekhouding schoon — anders telt de eerste tik een grote sprong
+  // als "hold" en klopt de grensdetectie niet meer.
+  useEffect(() => {
+    lastWorkoutTickRef.current = rideSecondsRef.current
+    holdStartedAtSecRef.current = null
+    setTurnHold(false)
+    setWorkoutHoldSec(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workoutTimeline])
+
+  // Tikt mee met de ritklok: precies op de grens van een intervalblok wordt —
+  // met een echte bocht vlak voor je — de blokklok op die grens vastgehouden
+  // tot de bocht voorbij is (of het veiligheidsplafond bereikt is).
+  useEffect(() => {
+    if (workoutTimeline.length === 0) return
+    const delta = Math.max(0, rideSeconds - lastWorkoutTickRef.current)
+    lastWorkoutTickRef.current = rideSeconds
+    if (delta === 0) return
+
+    const raw = Math.max(0, rideSeconds - workoutHoldRef.current)
+    const seg = segmentAt(workoutTimeline, raw)
+
+    if (turnHoldRef.current) {
+      const heldFor =
+        holdStartedAtSecRef.current != null
+          ? rideSeconds - holdStartedAtSecRef.current
+          : 0
+      if (!turnNearRef.current || heldFor >= TURN_HOLD_MAX_SEC) {
+        // Bocht gepasseerd (of plafond bereikt): de intervalklok start nu.
+        holdStartedAtSecRef.current = null
+        setTurnHold(false)
+      } else {
+        // Blijf vasthouden: de blokklok schuift met de rittijd mee op.
+        setWorkoutHoldSec((v) => v + delta)
+      }
+      return
+    }
+
+    // Grensdetectie: dit tikje kruiste de start van een intervalblok terwijl
+    // er een echte bocht vlak voor je ligt → houd de blokklok op de grens.
+    if (
+      seg != null &&
+      seg.block.kind === "interval" &&
+      raw - seg.startSec < delta + 1 &&
+      seg.startSec > 0 &&
+      turnNearRef.current
+    ) {
+      setWorkoutHoldSec((v) => v + (raw - seg.startSec))
+      holdStartedAtSecRef.current = rideSeconds
+      setTurnHold(true)
+    }
+  }, [rideSeconds, workoutTimeline])
 
   // Body scroll lock + Escape to close.
   useEffect(() => {
@@ -2825,9 +2925,10 @@ export function RouteNavigator({
             structure={workout.structure}
             title={workout.title}
             ftp={ftp}
-            elapsedSec={rideSeconds}
+            elapsedSec={Math.max(0, rideSeconds - workoutHoldSec)}
             liveWatts={power.connected ? power.watts : null}
             riding={rideState === "riding"}
+            turnHold={turnHold}
           />
         )}
 

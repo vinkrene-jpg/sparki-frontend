@@ -1109,7 +1109,19 @@ async function buildLoopCandidate(
   ctx: LoopCandidateContext,
   targetDistanceKm: number,
 ) {
-  const scenery = detectSceneryWish(ctx.wish);
+  // Intervaltraining: elke bocht onderbreekt een blok, dus selecteer op
+  // bochtarme kandidaten (echte ORS-afslagen) én — via echte OpenStreetMap-
+  // data — op zo min mogelijk verkeerslichten. Alleen rangschikken van echte
+  // kandidaten; ORS kan bochten/lichten nooit garanderen en dat beloven we dus
+  // ook nergens.
+  const isInterval = ctx.workoutTrainingType.toLowerCase().includes("interval");
+  const wishScenery = detectSceneryWish(ctx.wish);
+  const scenery = isInterval
+    ? {
+        nature: wishScenery?.nature ?? false,
+        avoidTrafficLights: true,
+      }
+    : wishScenery;
   const routeResult = await generateVariedLoop(
     ctx.provider,
     {
@@ -1123,6 +1135,7 @@ async function buildLoopCandidate(
     {
       scenery,
       environmentOf: scenery ? getRouteEnvironment : undefined,
+      preferUninterrupted: isInterval,
     },
   );
 

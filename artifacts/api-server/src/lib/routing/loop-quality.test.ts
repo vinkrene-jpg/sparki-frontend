@@ -160,6 +160,52 @@ async function run() {
     );
   }
 
+  // 5) preferUninterrupted picks the turn-poorest candidate among similar
+  //    distances (interval trainings: every real turn breaks a block). Turn
+  //    density is counted from the provider's REAL turn-by-turn steps only.
+  {
+    const withTurns = (turns: number): RouteResult => {
+      const r = makeResult(50, 400);
+      return {
+        ...r,
+        steps: Array.from({ length: turns }, (_, i) => ({
+          km: ((i + 1) * 50) / (turns + 1),
+          dir: i % 2 === 0 ? "Links" : "Rechts",
+          note: "afslag",
+        })),
+      };
+    };
+    // Straight continuations must NOT count as turns.
+    const straightOnly: RouteResult = {
+      ...makeResult(50, 400),
+      steps: Array.from({ length: 40 }, (_, i) => ({
+        km: ((i + 1) * 50) / 41,
+        dir: "Rechtdoor",
+        note: "rechtdoor",
+      })),
+    };
+    const provider = fakeProvider([
+      withTurns(80), // very turny
+      withTurns(40),
+      straightOnly, // zero REAL turns → should win
+      withTurns(60),
+      withTurns(25),
+    ]);
+    const best = await generateVariedLoop(
+      provider,
+      { ...baseReq, elevationPreference: "any" },
+      { preferUninterrupted: true },
+    );
+    const realTurns = best.steps.filter((s) =>
+      ["Links", "Rechts"].includes(s.dir),
+    ).length;
+    assert.equal(
+      realTurns,
+      0,
+      "preferUninterrupted should pick the candidate without real turns",
+    );
+  }
+
   console.log("loop-quality selection tests passed");
 }
 

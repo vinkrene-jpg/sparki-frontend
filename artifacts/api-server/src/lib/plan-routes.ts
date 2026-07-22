@@ -25,6 +25,7 @@ import {
   type LatLon,
   type RoutingProfile,
 } from "./routing";
+import { getRouteEnvironment } from "./route-insight";
 
 // Training types the plan engine can request a route for. Steady outdoor rides
 // (duur/tempo) get a route; intervals/recovery/race are handled by the caller's
@@ -151,13 +152,27 @@ export async function generateAndSavePlanRoute(opts: {
       bikeType: bike,
       trainingType: training,
     });
-    const routeResult = await generateVariedLoop(provider, {
-      start,
-      distanceKm: targetKm,
-      profile,
-      seed,
-      points: loopPoints(training),
-    });
+    // Intervaltraining: selecteer op bochtarme kandidaten en (via echte
+    // OpenStreetMap-data) op zo min mogelijk verkeerslichten — elke bocht of
+    // stop onderbreekt een blok. Alleen rangschikken van echte kandidaten.
+    const interval = training === "interval";
+    const routeResult = await generateVariedLoop(
+      provider,
+      {
+        start,
+        distanceKm: targetKm,
+        profile,
+        seed,
+        points: loopPoints(training),
+      },
+      interval
+        ? {
+            preferUninterrupted: true,
+            scenery: { nature: false, avoidTrafficLights: true },
+            environmentOf: getRouteEnvironment,
+          }
+        : undefined,
+    );
     if (routeResult.path.length < 2) return null;
 
     const summary = summarizeTrack(routeResult.points);

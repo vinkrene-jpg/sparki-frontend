@@ -120,6 +120,37 @@ export type CandidateEnvironment = {
   forestSharePct: number | null;
 };
 
+// Real manoeuvres in a candidate's ORS turn-by-turn steps: everything the rider
+// must actually steer for (turns, sharp turns, roundabouts, U-turns). Straight
+// continuations, keep-left/right and depart/arrive are not interruptions.
+const REAL_TURN_DIRS = new Set([
+  "Links",
+  "Rechts",
+  "Scherp links",
+  "Scherp rechts",
+  "Rotonde",
+  "Rotonde af",
+  "Keren",
+]);
+
+// Turns per km for a candidate, counted from the provider's REAL turn-by-turn
+// steps. Null when there is no usable distance so the preference simply does
+// not weigh in (never a guessed density).
+export function turnsPerKm(result: RouteResult): number | null {
+  if (result.distanceKm == null || result.distanceKm <= 0) return null;
+  const turns = result.steps.filter((s) => REAL_TURN_DIRS.has(s.dir)).length;
+  return turns / result.distanceKm;
+}
+
+// Turn-density penalty (0 = turn-poor, 1 = very turny), normalised against
+// ~2.5 turns/km — roughly the difference between open polder roads and a
+// residential-zigzag loop. Only RANKS real ORS candidates; never edits a route.
+function turnDensityPenalty(result: RouteResult): number {
+  const density = turnsPerKm(result);
+  if (density == null) return 0;
+  return Math.min(density / 2.5, 1);
+}
+
 export async function generateVariedLoop(
   provider: RoutingProvider,
   req: LoopRequest,
@@ -129,6 +160,10 @@ export async function generateVariedLoop(
     environmentOf?: (
       path: [number, number][],
     ) => Promise<CandidateEnvironment | null>;
+    // Prefer turn-poor candidates (long uninterrupted stretches) — used for
+    // interval trainings, where every turn breaks a block. Ranks real ORS
+    // candidates by their real turn-by-turn steps; never changes geometry.
+    preferUninterrupted?: boolean;
   },
 ): Promise<RouteResult> {
   const preference = req.elevationPreference ?? "any";
@@ -137,6 +172,7 @@ export async function generateVariedLoop(
       ? opts.scenery
       : null;
   const wantsScenery = scenery != null && opts?.environmentOf != null;
+  const preferUninterrupted = opts?.preferUninterrupted === true;
   // A stated flat/hilly wish needs a wider pool of real candidates to choose the
   // best-matching one — in hilly terrain the genuinely flat loops only appear in
   // later seeds, so too small a sample silently returns a hillier route. A
@@ -145,7 +181,8 @@ export async function generateVariedLoop(
   // ceiling only costs more calls when a good match is actually hard to find.
   // A scenery wish (natuur / weinig verkeerslichten) also needs a real pool to
   // compare, so it raises the ceiling and disables the early exit.
-  const defaultCandidates = preference === "any" && !wantsScenery ? 3 : 8;
+  const defaultCandidates =
+    preference === "any" && !wantsScenery && !preferUninterrupted ? 3 : 8;
   const n = Math.min(Math.max(opts?.candidates ?? defaultCandidates, 1), 10);
   const target = req.distanceKm;
   const pool: { result: RouteResult; score: number }[] = [];
@@ -173,16 +210,26 @@ export async function generateVariedLoop(
         ? Math.abs(result.distanceKm - target) / target
         : 0;
     const elevation = elevationPenalty(result, preference);
+    // For interval trainings turn-poor stretches matter: weigh the candidate's
+    // real turn density in, so the selected loop interrupts blocks the least.
+    const turniness = preferUninterrupted ? turnDensityPenalty(result) : 0;
     // Overlap, distance and elevation-match all weigh in; distance now carries
     // real weight so the requested length is honoured, and elevation match is
     // decisive when the rider asked for flat/hilly.
-    const score = overlap + drift * 1.2 + elevation * 0.8;
+    const score = overlap + drift * 1.2 + elevation * 0.8 + turniness * 0.9;
     pool.push({ result, score });
     // Good enough — a clean loop, close to the requested length, that already
     // matches the elevation wish. Only then do we stop spending ORS calls.
     // With a scenery wish we keep collecting: the environment comparison needs
-    // multiple real candidates to have anything to choose between.
-    if (!wantsScenery && overlap < 0.08 && drift < 0.15 && elevation < 0.35)
+    // multiple real candidates to have anything to choose between. A turn-poor
+    // wish also needs a real pool to compare, so it disables the early exit.
+    if (
+      !wantsScenery &&
+      !preferUninterrupted &&
+      overlap < 0.08 &&
+      drift < 0.15 &&
+      elevation < 0.35
+    )
       break;
   }
 

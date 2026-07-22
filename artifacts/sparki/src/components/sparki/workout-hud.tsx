@@ -22,6 +22,7 @@ export function WorkoutHud({
   elapsedSec,
   liveWatts,
   riding,
+  turnHold = false,
 }: {
   structure: WorkoutStructure
   title: string
@@ -29,6 +30,9 @@ export function WorkoutHud({
   elapsedSec: number
   liveWatts: number | null
   riding: boolean
+  // Bocht vlak vooruit op de blokgrens: de intervalklok wacht tot de bocht
+  // gepasseerd is (gestuurd door de navigator, op echte afslag-aanwijzingen).
+  turnHold?: boolean
 }) {
   const [expanded, setExpanded] = useState(true)
   const segs = buildTimeline(structure)
@@ -98,6 +102,11 @@ export function WorkoutHud({
           {!done && (
             <span className="font-mono text-[13px] tabular-nums text-white/80">
               {formatClock(remaining)}
+            </span>
+          )}
+          {turnHold && (
+            <span className="truncate text-[11px] font-medium text-amber-300">
+              start na de bocht
             </span>
           )}
         </div>
@@ -181,6 +190,11 @@ export function WorkoutHud({
               totaal {formatClock(Math.max(0, totalSec - elapsedSec))}
             </p>
           </div>
+          {turnHold && (
+            <p className="mt-1 text-[12px] font-medium text-amber-300">
+              Bocht vooruit — het interval start zodra je de bocht door bent.
+            </p>
+          )}
           {!riding && (
             <p className="mt-1 text-[11px] text-yellow-300/70">
               De bloktijd loopt alleen tijdens het rijden.
