@@ -12,6 +12,7 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { userProfilesTable } from "./users";
 import { plannedWorkoutsTable } from "./athlete-training";
+import { routesTable } from "./routes";
 
 // Races / events — the athlete's competition calendar (task #4). Entered by the
 // athlete now; the typed shape (typed columns + structured jsonb) is designed so
@@ -39,6 +40,22 @@ export const racesTable = pgTable("races", {
 
   // Travel day (optional) — when set and equal to today, Home becomes Travel Day.
   travelDate: date("travel_date"),
+
+  // Golf 16 — één wedstrijdflow (uitbreidend, migratieveilig; alle velden nullable
+  // of met default zodat bestaande rijen onaangetast blijven).
+  // Gekoppelde parcoursroute (GPX/gegenereerd) — bron voor de parcoursanalyse.
+  routeId: integer("route_id").references(() => routesTable.id, {
+    onDelete: "set null",
+  }),
+  // Startcategorie zoals de organisatie die noemt (bv. "Junioren", "Elite/Belofte").
+  category: text("category"),
+  // Inschrijvingsstatus: "niet_ingeschreven" | "ingeschreven" | "bevestigd".
+  registrationStatus: text("registration_status"),
+  // Persoonlijk doel voor deze wedstrijd, in eigen woorden.
+  goal: text("goal"),
+  // Wedstrijdstatus: "gepland" | "geannuleerd". Geannuleerd blijft zichtbaar in
+  // de lijst maar telt nergens in mee (plan, statistiek, journey-feiten).
+  status: text("status").notNull().default("gepland"),
 
   // Race info (race-day blocks)
   course: text("course"),

@@ -132,6 +132,65 @@ export function useRaceInsight(
   });
 }
 
+// ── Wedstrijddossier (Golf 16) ───────────────────────────────────────────────
+// Course facts + advies-typologie, samengesteld door de dossier-endpoint.
+export type CourseFactKind = "feit" | "afgeleid" | "inschatting" | "ontbreekt";
+
+export type CourseFact = {
+  key: string;
+  label: string;
+  kind: CourseFactKind;
+  value: string | null;
+  origin: string;
+  explanation?: string;
+  confidence?: number;
+  question?: string;
+};
+
+export type RaceCourseAnalysis = {
+  raceId: number;
+  hasRoute: boolean;
+  route: { id: number; name: string } | null;
+  facts: CourseFact[];
+  character: string;
+  gaps: { key: string; label: string; question: string }[];
+};
+
+export type AdviceKind = "feit" | "regel" | "inschatting" | "coachinstructie";
+
+export type RaceAdviceItem = {
+  id: string;
+  domain: "pacing" | "bandendruk" | "warmingup" | "tactiek" | "risico";
+  kind: AdviceKind;
+  title: string;
+  text: string;
+  basis: string;
+  confidence?: number;
+};
+
+export type RaceAdviceSet = {
+  raceId: number;
+  items: RaceAdviceItem[];
+  notPossible: { domain: string; reason: string }[];
+};
+
+export type RaceWerkblad = {
+  phase: "aankomend" | "racedag" | "afgerond" | "geannuleerd";
+  daysUntil: number;
+  course: RaceCourseAnalysis;
+  advice: RaceAdviceSet;
+};
+
+export function useRaceWerkblad(raceId: number | null) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: [...queryKeys.races.all(), "dossier", raceId ?? 0],
+    queryFn: () => apiFetch<RaceWerkblad>(`/api/races/${raceId}/dossier`),
+    enabled: (isSignedIn === true || DEV_PREVIEW) && raceId != null && raceId > 0,
+    staleTime: STALE.live,
+  });
+}
+
 export function useUpdateRaceChecklist() {
   const qc = useQueryClient();
   return useMutation({

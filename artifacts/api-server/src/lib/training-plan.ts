@@ -11,7 +11,7 @@
 //  - When the athlete has an accepted coach, this engine is advisory-only and
 //    NEVER writes planned_workouts (the commit path is gated in the route layer).
 
-import { and, asc, desc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, lte, ne } from "drizzle-orm";
 import {
   db,
   athleteProfilesTable,
@@ -172,7 +172,12 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
       })
       .from(racesTable)
       .where(
-        and(eq(racesTable.clerkId, clerkId), gte(racesTable.raceDate, today)),
+        and(
+          eq(racesTable.clerkId, clerkId),
+          gte(racesTable.raceDate, today),
+          // Geannuleerde wedstrijden sturen het plan niet meer.
+          ne(racesTable.status, "geannuleerd"),
+        ),
       )
       .orderBy(racesTable.raceDate),
   ]);

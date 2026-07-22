@@ -1,4 +1,4 @@
-import { and, eq, desc, gte } from "drizzle-orm";
+import { and, eq, desc, gte, ne } from "drizzle-orm";
 import {
   db,
   userProfilesTable,
@@ -98,7 +98,14 @@ export async function buildAthleteContext(
     db
       .select()
       .from(racesTable)
-      .where(and(eq(racesTable.clerkId, clerkId), gte(racesTable.raceDate, today)))
+      .where(
+        and(
+          eq(racesTable.clerkId, clerkId),
+          gte(racesTable.raceDate, today),
+          // Geannuleerde wedstrijden tellen niet mee in de coachingcontext.
+          ne(racesTable.status, "geannuleerd"),
+        ),
+      )
       .orderBy(racesTable.raceDate)
       .limit(5),
     getContextObservations(clerkId),

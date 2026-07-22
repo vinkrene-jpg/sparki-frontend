@@ -8,7 +8,7 @@
 // Each item carries a stable `dedupeKey` so the delivery job creates/sends it at
 // most once (idempotency lives in the notifications unique index).
 
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, gte, lte, ne } from "drizzle-orm";
 import {
   db,
   athleteDailyMetricsTable,
@@ -162,6 +162,8 @@ async function raceItems(clerkId: string, now: Date): Promise<ReminderItem[]> {
         eq(racesTable.clerkId, clerkId),
         gte(racesTable.raceDate, today),
         lte(racesTable.raceDate, horizon),
+        // Geen herinneringen voor geannuleerde wedstrijden.
+        ne(racesTable.status, "geannuleerd"),
       ),
     );
   return rows.map((r) => {

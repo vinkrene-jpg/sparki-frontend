@@ -8,7 +8,7 @@
 // on-demand) the engine proposes adjustments; NOTHING changes without the
 // athlete's confirmation. Every change is recorded as a goal_events row.
 
-import { and, asc, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, ne, sql } from "drizzle-orm";
 import {
   db,
   athleteGoalsTable,
@@ -268,6 +268,8 @@ async function loadDerivedGoals(
           eq(racesTable.clerkId, clerkId),
           gte(racesTable.raceDate, ctx.todayIso),
           inArray(racesTable.priority, ["A", "B", "C"]),
+          // Geannuleerde wedstrijden leveren geen doelen meer op.
+          ne(racesTable.status, "geannuleerd"),
         ),
       )
       .orderBy(asc(racesTable.raceDate))

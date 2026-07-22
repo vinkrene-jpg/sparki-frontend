@@ -1,10 +1,13 @@
 import { Router } from "express";
 import { eq, and, asc } from "drizzle-orm";
-import { db, racesTable, athleteProfilesTable } from "@workspace/db";
+import { db, racesTable, athleteProfilesTable, routesTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { autoAdaptPlan } from "../engines/training-plan";
 import {
+  buildCourseAnalysis,
+  buildRaceAdvice,
   buildRaceContext,
+  buildRaceDossier,
   buildRaceEvaluation,
   buildRaceIntelEnriched,
   deriveRaceTypeValue,
@@ -56,7 +59,50 @@ type RaceBody = {
   logistics?: unknown;
   checklist?: unknown;
   teamRiders?: unknown;
+  // Golf 16 — één wedstrijdflow.
+  routeId?: number | null;
+  category?: string | null;
+  registrationStatus?: string | null;
+  goal?: string | null;
+  status?: string;
 };
+
+const RACE_STATUSES = ["gepland", "geannuleerd"] as const;
+const REGISTRATION_STATUSES = [
+  "niet_ingeschreven",
+  "ingeschreven",
+  "bevestigd",
+] as const;
+
+function normalizeStatus(s: string | undefined): string | undefined {
+  if (s == null) return undefined;
+  return RACE_STATUSES.includes(s as (typeof RACE_STATUSES)[number]) ? s : undefined;
+}
+function normalizeRegistration(s: string | null | undefined): string | null | undefined {
+  if (s === undefined) return undefined;
+  if (s === null) return null;
+  return REGISTRATION_STATUSES.includes(s as (typeof REGISTRATION_STATUSES)[number])
+    ? s
+    : undefined;
+}
+
+// Verify a route id belongs to the athlete before linking it to a race.
+// Returns the id when owned, null for an explicit unlink, undefined to skip.
+async function checkRouteOwnership(
+  clerkId: string,
+  routeId: number | null | undefined,
+): Promise<number | null | undefined> {
+  if (routeId === undefined) return undefined;
+  if (routeId === null) return null;
+  const id = Number(routeId);
+  if (!Number.isInteger(id) || id <= 0) return undefined;
+  const [r] = await db
+    .select({ id: routesTable.id })
+    .from(routesTable)
+    .where(and(eq(routesTable.id, id), eq(routesTable.clerkId, clerkId)))
+    .limit(1);
+  return r ? id : undefined;
+}
 
 function normalizePriority(p: string | undefined): string | undefined {
   if (p == null) return undefined;
@@ -206,6 +252,94 @@ router.get("/:id/evaluation", requireAuth, async (req, res) => {
   }
 });
 
+// ── GET /api/races/:id/course ────────────────────────────────────────────────
+// Parcoursanalyse uit de gekoppelde route (klimmen, ondergrond, profiel) plus de
+// wedstrijdvelden — elk feit draagt zijn soort (feit/afgeleid/inschatting/
+// ontbreekt). Geen route en geen gidsdata ⇒ eerlijke gaten, nooit verzonnen.
+router.get("/:id/course", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid race id" });
+    return;
+  }
+  try {
+    const [race] = await db
+      .select()
+      .from(racesTable)
+      .where(and(eq(racesTable.id, id), eq(racesTable.clerkId, clerkId)));
+    if (!race) {
+      res.status(404).json({ error: "Race not found" });
+      return;
+    }
+    res.json(await buildCourseAnalysis(race));
+  } catch (err) {
+    req.log.error({ err }, "race course GET failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── GET /api/races/:id/advice ────────────────────────────────────────────────
+// Deterministische adviezen (pacing, bandendruk, warming-up, tactiek, risico's)
+// met typologie; een coachinstructie staat altijd bovenaan en is leidend.
+router.get("/:id/advice", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid race id" });
+    return;
+  }
+  try {
+    const [race] = await db
+      .select()
+      .from(racesTable)
+      .where(and(eq(racesTable.id, id), eq(racesTable.clerkId, clerkId)));
+    if (!race) {
+      res.status(404).json({ error: "Race not found" });
+      return;
+    }
+    const [athlete] = await db
+      .select()
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId));
+    res.json(await buildRaceAdvice(race, athlete ?? null));
+  } catch (err) {
+    req.log.error({ err }, "race advice GET failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── GET /api/races/:id/dossier ───────────────────────────────────────────────
+// Het volledige wedstrijddossier voor de hele flow (info → parcours →
+// voorbereiding → racedag → gekoppelde activiteit → evaluatie), op leesmoment
+// samengesteld uit de bestaande engines — geen tweede bron van waarheid.
+router.get("/:id/dossier", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid race id" });
+    return;
+  }
+  try {
+    const [race] = await db
+      .select()
+      .from(racesTable)
+      .where(and(eq(racesTable.id, id), eq(racesTable.clerkId, clerkId)));
+    if (!race) {
+      res.status(404).json({ error: "Race not found" });
+      return;
+    }
+    const [athlete] = await db
+      .select()
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId));
+    res.json(await buildRaceDossier(race, athlete ?? null));
+  } catch (err) {
+    req.log.error({ err }, "race dossier GET failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ── POST /api/races ──────────────────────────────────────────────────────────
 router.post("/", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
@@ -217,6 +351,7 @@ router.post("/", requireAuth, async (req, res) => {
   }
 
   try {
+    const ownedRouteId = await checkRouteOwnership(clerkId, body.routeId);
     const [race] = await db
       .insert(racesTable)
       .values({
@@ -248,6 +383,12 @@ router.post("/", requireAuth, async (req, res) => {
         logistics: body.logistics ?? null,
         checklist: body.checklist ?? null,
         teamRiders: body.teamRiders ?? null,
+        // Golf 16 — route alleen gekoppeld als hij van deze renner is.
+        routeId: ownedRouteId ?? null,
+        category: body.category ?? null,
+        registrationStatus: normalizeRegistration(body.registrationStatus) ?? null,
+        goal: body.goal ?? null,
+        status: normalizeStatus(body.status) ?? "gepland",
       })
       .returning();
     triggerPlanRefresh(req, clerkId);
@@ -297,6 +438,10 @@ router.put("/:id", requireAuth, async (req, res) => {
       if (derived) autoRaceType = derived;
     }
 
+    const ownedRouteId = await checkRouteOwnership(clerkId, body.routeId);
+    const registration = normalizeRegistration(body.registrationStatus);
+    const status = normalizeStatus(body.status);
+
     const [updated] = await db
       .update(racesTable)
       .set({
@@ -329,6 +474,12 @@ router.put("/:id", requireAuth, async (req, res) => {
         ...(body.logistics !== undefined && { logistics: body.logistics }),
         ...(body.checklist !== undefined && { checklist: body.checklist }),
         ...(body.teamRiders !== undefined && { teamRiders: body.teamRiders }),
+        // Golf 16 — route alleen (ont)koppelen als hij van deze renner is.
+        ...(ownedRouteId !== undefined && { routeId: ownedRouteId }),
+        ...(body.category !== undefined && { category: body.category }),
+        ...(registration !== undefined && { registrationStatus: registration }),
+        ...(body.goal !== undefined && { goal: body.goal }),
+        ...(status !== undefined && { status }),
         updatedAt: new Date(),
       })
       .where(and(eq(racesTable.id, id), eq(racesTable.clerkId, clerkId)))

@@ -94,7 +94,8 @@
     "test:ingest-elevation-fit-tcx": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs ingest-elevation-fit-tcx",
     "test:road-objects": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs road-objects",
     "test:source-quality": "node ./scripts/run-test.mjs source-quality",
-    "test:stream-extraction": "node ./scripts/run-test.mjs stream-extraction"
+    "test:stream-extraction": "node ./scripts/run-test.mjs stream-extraction",
+    "test:race-flow": "node ./scripts/run-test.mjs race-flow"
   },
   "dependencies": {
     "@clerk/express": "^2.1.30",

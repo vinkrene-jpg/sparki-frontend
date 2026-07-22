@@ -8,9 +8,15 @@
 // The term "AI" never appears in any user-facing string.
 
 import { and, eq } from "drizzle-orm";
-import { db, trainingSessionsTable, type Race, type AthleteProfile } from "@workspace/db";
+import {
+  db,
+  journeyReflectionsTable,
+  type Race,
+  type AthleteProfile,
+} from "@workspace/db";
 import { buildRaceFuel, daysUntil } from "./race-intel";
 import { persistObservation } from "./ai-memory";
+import { resolveLinkedActivity } from "./journey";
 
 export type RaceEvalComparison = {
   label: string;
@@ -84,6 +90,21 @@ export function composeRaceEvaluation(
     summary: null,
     confidenceScore: null,
   };
+
+  // Geannuleerde wedstrijd: geen evaluatie, geen vragen om een uitslag en geen
+  // kapotte statistiek — de annulering is zelf het eerlijke antwoord.
+  if (race.status === "geannuleerd") {
+    return {
+      ...base,
+      gaps: [
+        {
+          key: "geannuleerd",
+          label: "Wedstrijd geannuleerd",
+          question: "Deze wedstrijd is geannuleerd en telt nergens in mee.",
+        },
+      ],
+    };
+  }
 
   // Future race (or race day itself) — not evaluable yet, honest about why.
   if (d >= 0) {
@@ -213,31 +234,29 @@ export function composeRaceEvaluation(
   };
 }
 
-// Find a training session logged on the race day — the "matched activity" that a
-// Strava/Garmin import would have produced. Read-only, best-effort.
+// The matched activity is the SAME linked activity as in the wedstrijddossier —
+// resolved via journey's resolveLinkedActivity (correctie-voorrang: handmatig >
+// bewust geen > automatisch de langste sessie op de wedstrijddag). Eén bron van
+// waarheid, dus dossier en evaluatie spreken elkaar nooit tegen.
 async function findMatchedActivity(race: Race): Promise<MatchedActivity> {
   try {
-    const [s] = await db
-      .select({
-        durationMin: trainingSessionsTable.durationMin,
-        distanceKm: trainingSessionsTable.distanceKm,
-        avgPower: trainingSessionsTable.avgPower,
-        tss: trainingSessionsTable.tss,
-      })
-      .from(trainingSessionsTable)
+    const [reflection] = await db
+      .select()
+      .from(journeyReflectionsTable)
       .where(
         and(
-          eq(trainingSessionsTable.clerkId, race.clerkId),
-          eq(trainingSessionsTable.sessionDate, race.raceDate),
+          eq(journeyReflectionsTable.clerkId, race.clerkId),
+          eq(journeyReflectionsTable.raceId, race.id),
         ),
       )
       .limit(1);
-    if (!s) return null;
+    const linked = await resolveLinkedActivity(race, reflection ?? null);
+    if (!linked.session) return null;
     return {
-      durationMin: s.durationMin,
-      distanceKm: s.distanceKm != null ? Number(s.distanceKm) : null,
-      avgPower: s.avgPower,
-      tss: s.tss,
+      durationMin: linked.session.durationMin,
+      distanceKm: linked.session.distanceKm,
+      avgPower: linked.session.avgPower,
+      tss: linked.session.tss,
     };
   } catch {
     return null;

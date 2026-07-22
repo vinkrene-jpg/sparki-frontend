@@ -64,9 +64,23 @@ export type Race = {
   logistics: RaceLogisticsInput | null;
   checklist: ChecklistState | null;
   teamRiders: TeamRider[] | null;
+  routeId: number | null;
+  category: string | null;
+  registrationStatus: RaceRegistrationStatus | null;
+  goal: string | null;
+  status: RaceStatus;
   createdAt: string;
   updatedAt: string;
 };
+
+/** Inschrijvingsstatus — plain Dutch in de UI. */
+export type RaceRegistrationStatus =
+  | "niet_ingeschreven"
+  | "ingeschreven"
+  | "bevestigd";
+
+/** Wedstrijdstatus — geannuleerd telt nergens in mee. */
+export type RaceStatus = "gepland" | "geannuleerd";
 
 /** Payload for creating/updating a race (all optional except create-required). */
 export type RaceInput = Partial<Omit<Race, "id" | "clerkId" | "createdAt" | "updatedAt">> & {

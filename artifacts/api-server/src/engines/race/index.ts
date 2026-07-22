@@ -61,3 +61,24 @@ export type {
   RaceEvalGap,
   MatchedActivity,
 } from "../../lib/race-evaluation";
+
+// Golf 16 — parcoursanalyse (uit de gekoppelde route), advieslaag met typologie
+// (feit/regel/inschatting/coachinstructie — coach altijd leidend) en het
+// samengestelde wedstrijddossier voor de hele flow.
+export {
+  composeCourseAnalysis,
+  buildCourseAnalysis,
+  loadLinkedRoute,
+} from "../../lib/race-course";
+export type {
+  RaceCourseAnalysis,
+  CourseFact,
+  CourseFactKind,
+  CourseRouteSummary,
+} from "../../lib/race-course";
+
+export { composeRaceAdvice, buildRaceAdvice } from "../../lib/race-advice";
+export type { RaceAdvice, RaceAdviceSet, AdviceKind } from "../../lib/race-advice";
+
+export { buildRaceDossier } from "../../lib/race-dossier";
+export type { RaceDossier, RaceDossierPhase } from "../../lib/race-dossier";

@@ -22,7 +22,10 @@ import {
   useUpdateRace,
   useDeleteRace,
   useRaceInsight,
+  useRaceWerkblad,
   type RaceInsight,
+  type CourseFact,
+  type RaceAdviceItem,
 } from "@/hooks/use-races"
 import { useFriends, type FriendSummary } from "@/hooks/use-social"
 import type {
@@ -30,8 +33,16 @@ import type {
   RaceInput,
   RacePriority,
   RaceLogisticsInput,
+  RaceRegistrationStatus,
+  RaceStatus,
   TeamRider,
 } from "@/lib/race-types"
+
+const REGISTRATION_OPTIONS: { value: RaceRegistrationStatus; label: string }[] = [
+  { value: "niet_ingeschreven", label: "Nog niet ingeschreven" },
+  { value: "ingeschreven", label: "Ingeschreven" },
+  { value: "bevestigd", label: "Bevestigd" },
+]
 
 const PRIORITY_OPTIONS: { value: RacePriority; label: string }[] = [
   { value: "A", label: "A-doel" },
@@ -56,6 +67,10 @@ type FormState = {
   teamInfo: string
   coachInstructions: string
   notes: string
+  category: string
+  registrationStatus: RaceRegistrationStatus | ""
+  goal: string
+  status: RaceStatus
   // logistics
   departureLocation: string
   travelDurationMin: string
@@ -85,6 +100,10 @@ const EMPTY_FORM: FormState = {
   teamInfo: "",
   coachInstructions: "",
   notes: "",
+  category: "",
+  registrationStatus: "",
+  goal: "",
+  status: "gepland",
   departureLocation: "",
   travelDurationMin: "",
   arrivalBufferMin: "",
@@ -116,6 +135,10 @@ function raceToForm(r: Race): FormState {
     teamInfo: r.teamInfo ?? "",
     coachInstructions: r.coachInstructions ?? "",
     notes: r.notes ?? "",
+    category: r.category ?? "",
+    registrationStatus: r.registrationStatus ?? "",
+    goal: r.goal ?? "",
+    status: r.status ?? "gepland",
     departureLocation: lg.departureLocation ?? "",
     travelDurationMin: numStr(lg.travelDurationMin),
     arrivalBufferMin: numStr(lg.arrivalBufferMin),
@@ -169,6 +192,10 @@ function formToInput(f: FormState, teamRiders: TeamRider[]): RaceInput {
     teamInfo: str(f.teamInfo),
     coachInstructions: str(f.coachInstructions),
     notes: str(f.notes),
+    category: str(f.category),
+    registrationStatus: f.registrationStatus === "" ? null : f.registrationStatus,
+    goal: str(f.goal),
+    status: f.status,
     logistics,
     teamRiders: teamRiders.length > 0 ? teamRiders : null,
   }
@@ -611,7 +638,10 @@ export default function RacesPage() {
           deleting={deleteRace.isPending}
           extraPanel={
             editingId != null ? (
-              <EquipmentChoicePanel raceId={editingId} />
+              <>
+                <RaceWerkbladPanel raceId={editingId} />
+                <EquipmentChoicePanel raceId={editingId} />
+              </>
             ) : null
           }
         />
@@ -791,9 +821,75 @@ function RaceForm({
               <TextInput value={form.discipline} onChange={(e) => set("discipline", e.target.value)} placeholder="Weg / MTB / Veld" />
             </Field>
           </div>
-          <Field label="Reisdag (optioneel)">
-            <TextInput type="date" value={form.travelDate} onChange={(e) => set("travelDate", e.target.value)} />
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Categorie">
+              <TextInput value={form.category} onChange={(e) => set("category", e.target.value)} placeholder="Junioren / Amateurs / Masters" />
+            </Field>
+            <Field label="Reisdag (optioneel)">
+              <TextInput type="date" value={form.travelDate} onChange={(e) => set("travelDate", e.target.value)} />
+            </Field>
+          </div>
+          <Field label="Inschrijving">
+            <div className="flex flex-wrap gap-1.5">
+              {REGISTRATION_OPTIONS.map((o) => {
+                const active = form.registrationStatus === o.value
+                return (
+                  <button
+                    key={o.value}
+                    type="button"
+                    onClick={() =>
+                      set("registrationStatus", active ? "" : o.value)
+                    }
+                    className="rounded-xl border px-3 py-2 font-mono text-[10px] tracking-[0.08em] transition-colors"
+                    style={{
+                      borderColor: active ? "rgba(120,210,230,0.4)" : "rgba(255,255,255,0.1)",
+                      background: active ? "rgba(120,210,230,0.1)" : "transparent",
+                      color: active ? ACCENT : "rgba(255,255,255,0.5)",
+                    }}
+                  >
+                    {o.label}
+                  </button>
+                )
+              })}
+            </div>
           </Field>
+          <Field label="Doel voor deze wedstrijd">
+            <TextArea value={form.goal} onChange={(e) => set("goal", e.target.value)} placeholder="Top 10 en de finale halen" />
+          </Field>
+          {editing && (
+            <Field label="Status">
+              <div className="flex gap-1.5">
+                {([
+                  { value: "gepland", label: "Gepland" },
+                  { value: "geannuleerd", label: "Geannuleerd" },
+                ] as { value: RaceStatus; label: string }[]).map((o) => {
+                  const active = form.status === o.value
+                  return (
+                    <button
+                      key={o.value}
+                      type="button"
+                      onClick={() => set("status", o.value)}
+                      className="flex-1 rounded-xl border py-2.5 font-mono text-[11px] tracking-[0.1em] transition-colors"
+                      style={{
+                        borderColor: active ? "rgba(120,210,230,0.4)" : "rgba(255,255,255,0.1)",
+                        background: active ? "rgba(120,210,230,0.1)" : "transparent",
+                        color: active ? ACCENT : "rgba(255,255,255,0.5)",
+                      }}
+                    >
+                      {o.label}
+                    </button>
+                  )
+                })}
+              </div>
+              {form.status === "geannuleerd" && (
+                <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
+                  Een geannuleerde wedstrijd telt nergens in mee — niet in je
+                  plan, statistieken of doelen. Hij blijft wel zichtbaar in je
+                  Journey.
+                </p>
+              )}
+            </Field>
+          )}
         </div>
       </section>
 
@@ -994,5 +1090,135 @@ function RaceForm({
 
       {extraPanel}
     </form>
+  )
+}
+
+// ── Wedstrijddossier-werkblad ────────────────────────────────────────────────
+// Toont wat Sparki al weet en adviseert voor deze wedstrijd: parcoursanalyse
+// (feit/afgeleid/inschatting/ontbreekt) en advies (coachinstructie altijd
+// bovenaan). Eerlijk over elk gat — nooit verzonnen.
+const FACT_KIND_LABEL: Record<CourseFact["kind"], string> = {
+  feit: "feit",
+  afgeleid: "afgeleid",
+  inschatting: "inschatting",
+  ontbreekt: "ontbreekt",
+}
+
+const ADVICE_KIND_LABEL: Record<RaceAdviceItem["kind"], string> = {
+  feit: "feit",
+  regel: "vuistregel",
+  inschatting: "inschatting",
+  coachinstructie: "coachinstructie",
+}
+
+function KindTag({ label, strong }: { label: string; strong?: boolean }) {
+  return (
+    <span
+      className="shrink-0 rounded-full px-2 py-0.5 font-mono text-[9px] tracking-[0.12em]"
+      style={
+        strong
+          ? {
+              color: ACCENT,
+              background: "rgba(120,210,230,0.12)",
+              border: "1px solid rgba(120,210,230,0.35)",
+            }
+          : {
+              color: "rgba(255,255,255,0.45)",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.1)",
+            }
+      }
+    >
+      {label}
+    </span>
+  )
+}
+
+function RaceWerkbladPanel({ raceId }: { raceId: number }) {
+  const { data, isLoading } = useRaceWerkblad(raceId)
+  if (isLoading) {
+    return <Skeleton className="h-24 w-full rounded-2xl" />
+  }
+  if (!data) return null
+  const { course, advice } = data
+  const knownFacts = course.facts.filter((f) => f.kind !== "ontbreekt")
+  const missing = course.facts.filter((f) => f.kind === "ontbreekt")
+  return (
+    <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+      <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-cyan-300/70">
+        Parcours & advies
+      </span>
+      <p className="mt-2 text-[12px] leading-relaxed text-white/60">{course.character}</p>
+
+      {knownFacts.length > 0 && (
+        <ul className="mt-3 space-y-2">
+          {knownFacts.map((f) => (
+            <li key={f.key} className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <span className="text-[12px] text-white/45">{f.label}: </span>
+                <span className="text-[12px] text-white/80">{f.value}</span>
+                <span className="ml-1.5 text-[10px] text-white/30">({f.origin})</span>
+              </div>
+              <KindTag label={FACT_KIND_LABEL[f.kind]} />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {missing.length > 0 && (
+        <div className="mt-3 rounded-xl border border-white/[0.07] bg-white/[0.015] p-3">
+          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/40">
+            Nog onbekend
+          </span>
+          <ul className="mt-1.5 space-y-1">
+            {missing.map((f) => (
+              <li key={f.key} className="text-[11px] leading-relaxed text-white/45">
+                {f.label} — {f.question ?? "vul dit aan in het formulier hierboven."}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {advice.items.length > 0 && (
+        <div className="mt-4 space-y-2.5">
+          {advice.items.map((a) => {
+            const coach = a.kind === "coachinstructie"
+            return (
+              <div
+                key={a.id}
+                className="rounded-xl border p-3"
+                style={{
+                  borderColor: coach ? "rgba(120,210,230,0.3)" : "rgba(255,255,255,0.07)",
+                  background: coach ? "rgba(120,210,230,0.05)" : "rgba(255,255,255,0.015)",
+                }}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <h4 className="text-[13px] font-light text-white/85">{a.title}</h4>
+                  <KindTag label={ADVICE_KIND_LABEL[a.kind]} strong={coach} />
+                </div>
+                <p className="mt-1 text-[12px] leading-relaxed text-white/60">{a.text}</p>
+                <p className="mt-1.5 text-[10px] text-white/30">Gebaseerd op: {a.basis}</p>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {advice.notPossible.length > 0 && (
+        <div className="mt-3">
+          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/40">
+            Nog geen advies mogelijk
+          </span>
+          <ul className="mt-1.5 space-y-1">
+            {advice.notPossible.map((n) => (
+              <li key={n.domain} className="text-[11px] leading-relaxed text-white/45">
+                {n.reason}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
   )
 }

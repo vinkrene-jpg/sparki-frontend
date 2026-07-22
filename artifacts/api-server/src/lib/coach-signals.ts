@@ -6,7 +6,7 @@
 // op welke brondata het steunt, hoe zeker Sparki is, waarom dit menselijke
 // beoordeling vraagt en welke actie Sparki voorstelt.
 
-import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, ne } from "drizzle-orm";
 import {
   db,
   athleteDailyMetricsTable,
@@ -129,6 +129,8 @@ export async function buildCoachSignals(
           and(
             eq(racesTable.clerkId, athleteClerkId),
             gte(racesTable.raceDate, today),
+            // Geannuleerde wedstrijden geven geen coachsignalen.
+            ne(racesTable.status, "geannuleerd"),
           ),
         )
         .orderBy(racesTable.raceDate)

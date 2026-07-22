@@ -177,17 +177,23 @@ export async function composeJourney(
 
   for (const r of races) {
     const result = r.result ?? null;
+    const geannuleerd = r.status === "geannuleerd";
     events.push({
       key: `wedstrijd:${r.id}`,
       kind: "wedstrijd",
       date: fmtDate(r.raceDate),
       title: r.name,
-      subtitle: [r.location, r.discipline].filter(Boolean).join(" · ") || null,
+      // Geannuleerde wedstrijden blijven zichtbaar in de tijdlijn (eerlijk
+      // gemarkeerd) maar dragen geen uitslag en tellen nergens als prestatie.
+      subtitle: geannuleerd
+        ? ["Geannuleerd", r.location].filter(Boolean).join(" · ")
+        : [r.location, r.discipline].filter(Boolean).join(" · ") || null,
       ref: { type: "race", id: r.id },
       facts: {
         prioriteit: r.priority,
-        uitslag:
-          result?.position != null
+        uitslag: geannuleerd
+          ? null
+          : result?.position != null
             ? `${result.position}e${result.fieldSize ? ` van ${result.fieldSize}` : ""}`
             : result?.status === "dnf"
               ? "niet gefinisht"
