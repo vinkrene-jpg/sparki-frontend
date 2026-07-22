@@ -96,6 +96,78 @@ const BASEMAPS: Record<
   },
 }
 
+// ── Rit-opties ──────────────────────────────────────────────────────
+// Wat de renner onderweg wil zien/doen — gekozen in het menu vóór de start
+// van de navigatie. De laatste keuze wordt bewaard en staat de volgende keer
+// alvast voorgeselecteerd.
+export type RideOptions = {
+  pois: boolean
+  samen: boolean
+  maten: string[]
+  basemap: BasemapId
+  headingUp: boolean
+}
+
+const RIDE_OPTIONS_KEY = "sparki:rit-opties:v1"
+
+const DEFAULT_RIDE_OPTIONS: RideOptions = {
+  pois: true,
+  samen: false,
+  maten: [],
+  basemap: "standaard",
+  headingUp: false,
+}
+
+export function loadLastRideOptions(): RideOptions {
+  try {
+    const raw = window.localStorage.getItem(RIDE_OPTIONS_KEY)
+    if (!raw) return { ...DEFAULT_RIDE_OPTIONS }
+    const p = JSON.parse(raw) as Partial<RideOptions>
+    return {
+      pois: typeof p.pois === "boolean" ? p.pois : true,
+      samen: typeof p.samen === "boolean" ? p.samen : false,
+      maten: Array.isArray(p.maten)
+        ? p.maten.filter((m): m is string => typeof m === "string")
+        : [],
+      basemap:
+        p.basemap && p.basemap in BASEMAPS
+          ? (p.basemap as BasemapId)
+          : "standaard",
+      headingUp: typeof p.headingUp === "boolean" ? p.headingUp : false,
+    }
+  } catch {
+    return { ...DEFAULT_RIDE_OPTIONS }
+  }
+}
+
+function saveRideOptions(opts: RideOptions) {
+  try {
+    window.localStorage.setItem(RIDE_OPTIONS_KEY, JSON.stringify(opts))
+  } catch {
+    // Opslag vol of geblokkeerd — dan gewoon geen voorselectie volgende keer.
+  }
+}
+
+// Bij een gekoppelde intervaltraining zijn plekken en spelletjes op voorhand
+// overbodig: de renner rijdt blokken en hoort niet afgeleid te worden.
+export function isFocusWorkout(workout: PlannedWorkout | null): boolean {
+  if (!workout) return false
+  if (workout.type.toLowerCase().includes("interval")) return true
+  // Alleen échte intervalblokken tellen — een gewone duurtraining met
+  // warming-up/steady/cooling-down blijft een vrije rit met alle keuzes.
+  return (workout.structure?.blocks ?? []).some((b) => b.kind === "interval")
+}
+
+// Past de intervalregel toe op (bewaarde) opties — ook bij een deep-link die
+// het keuzemenu overslaat.
+export function applyFocusRules(
+  opts: RideOptions,
+  workout: PlannedWorkout | null,
+): RideOptions {
+  if (!isFocusWorkout(workout)) return opts
+  return { ...opts, pois: false, samen: false, maten: [] }
+}
+
 type LatLon = { lat: number; lon: number }
 
 // Initial bearing (degrees, 0 = north) from point a to point b.
@@ -230,6 +302,7 @@ export function RouteNavigator({
   workout = null,
   ftp = null,
   onEditRoute = null,
+  rideOptions = null,
 }: {
   name: string
   geometry: [number, number][]
@@ -246,6 +319,9 @@ export function RouteNavigator({
   // Route onderweg aanpassen: opent de eigen-route-bouwer met de echte punten
   // van deze route voorgevuld, en keert na opslaan terug naar de navigatie.
   onEditRoute?: (() => void) | null
+  // Vooraf gekozen rit-opties (uit het keuzemenu vóór de start). Zonder menu
+  // (deep-link) vallen we terug op de laatst bewaarde keuze of de URL.
+  rideOptions?: RideOptions | null
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
@@ -265,16 +341,18 @@ export function RouteNavigator({
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [following, setFollowing] = useState(true)
   const [showSteps, setShowSteps] = useState(false)
-  const [basemap, setBasemap] = useState<BasemapId>("standaard")
+  const [basemap, setBasemap] = useState<BasemapId>(
+    rideOptions?.basemap ?? "standaard",
+  )
   // Kaartoriëntatie: noord boven (klassiek) of rijrichting boven (de kaart
   // draait mee, jij wijst altijd omhoog). Draai gebeurt via CSS-rotatie van
   // een vergrote kaartlaag; icoontjes draaien via --map-counter-rot terug
   // zodat ze leesbaar blijven.
-  const [headingUp, setHeadingUp] = useState(false)
+  const [headingUp, setHeadingUp] = useState(rideOptions?.headingUp ?? false)
   const rotAccumRef = useRef(0)
   const [rotDeg, setRotDeg] = useState(0)
   // Plekken (bezienswaardigheden, café's) aan/uit op de kaart.
-  const [showPois, setShowPois] = useState(true)
+  const [showPois, setShowPois] = useState(rideOptions?.pois ?? true)
   // Echte actuele wind (Open-Meteo) op je positie — subtiel getoond, nooit
   // verzonnen: blijft weg zolang er geen echte meting is.
   const [wind, setWind] = useState<{ kmh: number; dirDeg: number } | null>(null)
@@ -285,12 +363,15 @@ export function RouteNavigator({
   // Sprinting for "bordjes" only makes sense in a group ride, so it is opt-in.
   // De keuze wordt normaal al bij het genereren van de route gemaakt en reist
   // mee via de URL (?samen=1&maten=…); de toggle hier blijft als override.
-  const [withOthers, setWithOthers] = useState(
-    () => new URLSearchParams(window.location.search).get("samen") === "1",
+  const [withOthers, setWithOthers] = useState(() =>
+    rideOptions
+      ? rideOptions.samen
+      : new URLSearchParams(window.location.search).get("samen") === "1",
   )
-  // Gekozen maten (vrienden-ids) uit de generator — alleen om eerlijk te
-  // tonen met wie deze rit gereden wordt.
+  // Gekozen maten (vrienden-ids) uit het rit-optiesmenu of de generator —
+  // alleen om eerlijk te tonen met wie deze rit gereden wordt.
   const [buddyIds] = useState<string[]>(() => {
+    if (rideOptions) return rideOptions.maten
     const raw = new URLSearchParams(window.location.search).get("maten")
     return raw ? raw.split(",").filter(Boolean) : []
   })
@@ -2710,6 +2791,273 @@ function Metric({
         {label}
       </span>
     </div>
+  )
+}
+
+// ── Rit-optiesmenu ─────────────────────────────────────────────────
+// Verschijnt na een tik op "Navigeer", vóór de navigatie opent: de renner
+// kiest wat hij onderweg wil zien en doen. De laatste keuze staat alvast
+// voorgeselecteerd. Bij een gekoppelde intervaltraining verdwijnen de
+// afleidende keuzes (plekken, samen/bordjes) — die staan dan bewust uit.
+export function RideOptionsMenu({
+  workout = null,
+  onStart,
+  onClose,
+}: {
+  workout?: PlannedWorkout | null
+  onStart: (opts: RideOptions) => void
+  onClose: () => void
+}) {
+  const [opts, setOpts] = useState<RideOptions>(loadLastRideOptions)
+  const { data: friendsData } = useFriends()
+  const friends = friendsData?.friends ?? []
+  const focus = isFocusWorkout(workout)
+
+  const start = () => {
+    // Bewaar de eigen voorkeuren (niet de interval-geforceerde variant), zodat
+    // een volgende vrije rit gewoon de laatste eigen keuze voorselecteert.
+    saveRideOptions(opts)
+    onStart(applyFocusRules(opts, workout))
+  }
+
+  const pill = (active: boolean) =>
+    `rounded-full px-3 py-1.5 font-sans text-[12px] transition ${
+      active
+        ? "bg-cyan-400 text-[#05070e]"
+        : "border border-white/10 text-white/55 hover:text-white/85"
+    }`
+
+  return createPortal(
+    <div className="fixed inset-0 z-[95] flex items-end justify-center sm:items-center">
+      <button
+        type="button"
+        aria-label="Sluiten"
+        onClick={onClose}
+        className="absolute inset-0 bg-[#02040a]/70 backdrop-blur-sm"
+      />
+      <div className="relative max-h-[88vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/[0.1] bg-[#070d16]/[0.97] p-5 backdrop-blur-md sm:rounded-2xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="font-sans text-lg font-light tracking-tight text-white/90">
+              Rit-opties
+            </h3>
+            <p className="mt-0.5 text-[12px] text-white/45">
+              Kies wat je onderweg wilt zien en doen — je laatste keuze staat
+              alvast klaar.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Sluiten"
+            className="rounded-full border border-white/10 p-1.5 text-white/55 transition hover:text-white/85"
+          >
+            <X className="h-4 w-4" strokeWidth={1.75} />
+          </button>
+        </div>
+
+        {focus && (
+          <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-400/25 bg-amber-400/[0.06] px-3.5 py-3">
+            <Zap
+              className="mt-0.5 h-4 w-4 shrink-0 text-amber-300"
+              strokeWidth={1.75}
+            />
+            <p className="text-[12px] leading-relaxed text-white/60">
+              <span className="font-medium text-white/85">
+                Intervaltraining gekoppeld.
+              </span>{" "}
+              Plekken langs de route en samen rijden met bordjes-sprint staan
+              deze rit uit, zodat jij je volledig op je blokken kunt richten.
+            </p>
+          </div>
+        )}
+
+        <div className="mt-4 flex flex-col gap-4">
+          {!focus && (
+            <div>
+              <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+                Plekken langs de route
+              </p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setOpts((o) => ({ ...o, pois: true }))}
+                  className={pill(opts.pois)}
+                >
+                  Tonen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOpts((o) => ({ ...o, pois: false }))}
+                  className={pill(!opts.pois)}
+                >
+                  Verbergen
+                </button>
+              </div>
+              <p className="mt-1.5 text-[11px] leading-snug text-white/45">
+                Café’s en bezienswaardigheden als icoontjes op de kaart, met
+                onderweg een voorstel voor een koffiepauze.
+              </p>
+            </div>
+          )}
+
+          {!focus && (
+            <div>
+              <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+                Samen rijden?
+              </p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpts((o) => ({ ...o, samen: false, maten: [] }))
+                  }
+                  className={`flex items-center gap-1.5 ${pill(!opts.samen)}`}
+                >
+                  <User className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Alleen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOpts((o) => ({ ...o, samen: true }))}
+                  className={`flex items-center gap-1.5 ${pill(opts.samen)}`}
+                >
+                  <Users className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Met anderen
+                </button>
+              </div>
+              {opts.samen && (
+                <>
+                  <p className="mt-1.5 text-[11px] leading-snug text-white/45">
+                    Sprinten om plaatsbordjes staat aan — gas erop bij de
+                    komborden.
+                  </p>
+                  {friends.length > 0 ? (
+                    <>
+                      <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+                        Wie fietst er mee?
+                      </p>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {friends.map((f) => {
+                          const active = opts.maten.includes(f.clerkId)
+                          return (
+                            <button
+                              key={f.clerkId}
+                              type="button"
+                              onClick={() =>
+                                setOpts((o) => ({
+                                  ...o,
+                                  maten: active
+                                    ? o.maten.filter(
+                                        (id) => id !== f.clerkId,
+                                      )
+                                    : [...o.maten, f.clerkId],
+                                }))
+                              }
+                              className={`rounded-full px-3 py-1.5 font-sans text-[12px] transition ${
+                                active
+                                  ? "border border-cyan-300/50 bg-cyan-300/15 text-cyan-200"
+                                  : "border border-white/10 text-white/55 hover:text-white/85"
+                              }`}
+                            >
+                              {f.displayName}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="mt-2 text-[11px] leading-relaxed text-white/35">
+                      Nog geen vrienden gekoppeld — voeg ze toe via Samen, dan
+                      kun je ze hier kiezen. Sprinten om bordjes werkt ook
+                      zonder.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          <div>
+            <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+              Kaartweergave
+            </p>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {(Object.keys(BASEMAPS) as BasemapId[]).map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setOpts((o) => ({ ...o, basemap: id }))}
+                  className={pill(opts.basemap === id)}
+                >
+                  {BASEMAPS[id].label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+              Kaartrichting
+            </p>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setOpts((o) => ({ ...o, headingUp: false }))}
+                className={pill(!opts.headingUp)}
+              >
+                Noord boven
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpts((o) => ({ ...o, headingUp: true }))}
+                className={`flex items-center gap-1.5 ${pill(opts.headingUp)}`}
+              >
+                <Compass className="h-3.5 w-3.5" strokeWidth={1.75} />
+                Rijrichting boven
+              </button>
+            </div>
+          </div>
+
+          {!focus && (
+            <div className="flex items-start gap-2.5 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3.5 py-3">
+              <Trophy
+                className="mt-0.5 h-4 w-4 shrink-0 text-white/30"
+                strokeWidth={1.75}
+              />
+              <p className="text-[11px] leading-relaxed text-white/40">
+                <span className="font-medium text-white/60">
+                  Bergklassement
+                </span>{" "}
+                — wordt nog uitgewerkt: een klassement per klim, ook eerlijk
+                vergeleken op leeftijd en gewicht. Nog niet beschikbaar, dus
+                hier valt nog niets aan te zetten.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-5 flex gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 rounded-full border border-white/15 px-3 py-2.5 text-[13px] font-medium text-white/70 transition hover:bg-white/5"
+          >
+            Annuleer
+          </button>
+          <button
+            type="button"
+            onClick={start}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-[13px] font-semibold transition"
+            style={{ background: ACCENT, color: "#040506" }}
+          >
+            <Navigation className="h-4 w-4" strokeWidth={2} />
+            Start navigatie
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   )
 }
 

@@ -30,7 +30,13 @@ import { isSportActive } from "@workspace/feature-flags"
 import { MapPin, Sparkles, Flag, Users, X, Download, Smartphone, Navigation, Share2, Map as MapIcon } from "lucide-react"
 import { RouteExplorer } from "@/components/sparki/route-explorer"
 import { useLocation, useSearch } from "wouter"
-import { RouteNavigator } from "@/components/sparki/route-navigator"
+import {
+  RouteNavigator,
+  RideOptionsMenu,
+  loadLastRideOptions,
+  applyFocusRules,
+  type RideOptions,
+} from "@/components/sparki/route-navigator"
 import {
   ElevationProfile,
   MiniElevationProfile,
@@ -675,6 +681,28 @@ function RouteCard({
     setLocation(`${pathname}${q ? `?${q}` : ""}`, { replace: !open })
   }
   const [showPassport, setShowPassport] = useState(false)
+  // Rit-optiesmenu: verschijnt na een tik op "Navigeer", vóór de navigatie
+  // opent. Bij een deep-link (?nav=… zonder menu, bv. terug uit de
+  // routebouwer) geldt de laatst bewaarde keuze — de intervalregel blijft
+  // dan ook gewoon van kracht.
+  // De routeverkenner opent het menu via ?ritopties=<id> (na sluiten van de
+  // verkenner-overlay), zodat óók die "Navigeer"-knop eerst langs de keuzes
+  // gaat.
+  const [manualOptionsOpen, setManualOptionsOpen] = useState(false)
+  const urlOptionsOpen =
+    new URLSearchParams(search).get("ritopties") === String(route.id)
+  const rideOptionsOpen = manualOptionsOpen || urlOptionsOpen
+  const closeRideOptions = () => {
+    setManualOptionsOpen(false)
+    if (urlOptionsOpen) {
+      const params = new URLSearchParams(window.location.search)
+      params.delete("ritopties")
+      const q = params.toString()
+      setLocation(`${pathname}${q ? `?${q}` : ""}`, { replace: true })
+    }
+  }
+  const [chosenRideOptions, setChosenRideOptions] =
+    useState<RideOptions | null>(null)
   // Het stappenplan kan lang zijn — standaard ingeklapt zodat de acties
   // eronder (navigeren, downloads) direct zichtbaar blijven.
   const [showSteps, setShowSteps] = useState(false)
@@ -719,7 +747,7 @@ function RouteCard({
           {canNavigate && (
             <button
               type="button"
-              onClick={() => setNavigating(true)}
+              onClick={() => setManualOptionsOpen(true)}
               title="Open het navigatievenster — volgt je live positie op de kaart"
               className="flex items-center gap-1.5 rounded-full bg-cyan-400/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#05070e] transition hover:bg-cyan-300"
             >
@@ -912,6 +940,18 @@ function RouteCard({
         </p>
       )}
 
+      {rideOptionsOpen && (
+        <RideOptionsMenu
+          workout={navWorkout}
+          onClose={closeRideOptions}
+          onStart={(opts) => {
+            setChosenRideOptions(opts)
+            closeRideOptions()
+            setNavigating(true)
+          }}
+        />
+      )}
+
       {navigating && (
         <RouteNavigator
           name={route.name}
@@ -921,6 +961,10 @@ function RouteCard({
           routeId={route.id}
           workout={navWorkout}
           ftp={navFtp}
+          rideOptions={
+            chosenRideOptions ??
+            applyFocusRules(loadLastRideOptions(), navWorkout)
+          }
           onClose={() => setNavigating(false)}
           onEditRoute={
             onEditWaypoints
@@ -2237,9 +2281,11 @@ export function RoutePanel() {
             setTimeout(() => setHighlightId(null), 2600)
           }}
           onNavigate={(id) => {
+            // Eerst het rit-optiesmenu, dan pas de navigatie — dezelfde route
+            // als de "Navigeer"-knop op de routekaart zelf.
             setShowExplorer(false)
             const params = new URLSearchParams(window.location.search)
-            params.set("nav", String(id))
+            params.set("ritopties", String(id))
             setPanelLocation(`${panelPath}?${params.toString()}`)
           }}
         />
