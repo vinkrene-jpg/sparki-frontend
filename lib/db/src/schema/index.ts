@@ -6,6 +6,7 @@ export * from "./athlete-metrics";
 export * from "./races";
 export * from "./race-rooms";
 export * from "./links";
+export * from "./parent";
 export * from "./life-events";
 export * from "./invitations";
 export * from "./feature-flags";

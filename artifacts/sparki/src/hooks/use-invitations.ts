@@ -57,6 +57,20 @@ export function useRevokeInvitation() {
   })
 }
 
+export function useDeclineInvitation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (token: string) =>
+      apiFetch<{ invitation: Invitation }>(
+        `/api/invitations/${token}/decline`,
+        { method: "POST" },
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.invitations.all() })
+    },
+  })
+}
+
 export function useAcceptInvitation() {
   const qc = useQueryClient()
   return useMutation({

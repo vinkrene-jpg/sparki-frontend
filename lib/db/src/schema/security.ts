@@ -29,6 +29,8 @@ export const securityEventKinds = [
   "viewed_by_coach",
   "changed_by_coach",
   "viewed_by_parent",
+  "reported_by_parent",
+  "parent_permissions_changed",
   "viewed_by_admin",
   "rate_limited",
   "auth_denied",

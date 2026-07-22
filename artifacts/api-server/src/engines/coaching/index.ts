@@ -35,3 +35,13 @@ export {
   getEffectiveParentConsent,
   hasRole,
 } from "../../lib/sharing";
+
+// Ouder-/verzorgeromgeving: per-gegevenstype rechten + leeftijdscategorieën.
+export {
+  effectiveParentAccess,
+  athleteAgeTier,
+  getParentLink,
+  sanitizePermissions,
+  PARENT_CATEGORY_LABELS,
+} from "../../lib/parent-permissions";
+export type { EffectiveParentAccess } from "../../lib/parent-permissions";

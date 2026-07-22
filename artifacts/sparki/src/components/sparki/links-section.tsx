@@ -1,11 +1,143 @@
 import { useState } from "react"
-import { Users, UserCog, X, AlertTriangle } from "lucide-react"
-import { SectionLabel } from "@/components/sparki/ui"
+import { Users, UserCog, X, AlertTriangle, Settings2 } from "lucide-react"
+import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import {
   useMyLinks,
   useRevokeLink,
+  useParentsManage,
+  useSetParentPermissions,
+  useReconfirmParent,
   type LinkedPerson,
+  type ManagedParent,
 } from "@/hooks/use-links"
+import type { ParentDataCategory } from "@/hooks/use-parent"
+
+const CATEGORY_ORDER: ParentDataCategory[] = [
+  "planning",
+  "aanwezigheid",
+  "herstel",
+  "gezondheid",
+  "slaap",
+  "locatie",
+  "wedstrijd",
+  "communicatie",
+]
+
+function ParentShareRow({
+  parent,
+  labels,
+}: {
+  parent: ManagedParent
+  labels: Record<ParentDataCategory, string> | undefined
+}) {
+  const setPerms = useSetParentPermissions()
+  const reconfirm = useReconfirmParent()
+  const [open, setOpen] = useState(false)
+  const access = parent.access
+  const [draft, setDraft] = useState<Record<ParentDataCategory, boolean>>(
+    () =>
+      (access?.permissions ?? {
+        planning: false,
+        aanwezigheid: false,
+        herstel: true,
+        gezondheid: true,
+        slaap: false,
+        locatie: false,
+        wedstrijd: false,
+        communicatie: false,
+      }) as Record<ParentDataCategory, boolean>,
+  )
+  if (!access) return null
+  const isAdult = access.tier === "adult"
+  return (
+    <div className="border-t border-white/[0.06] py-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1 text-[13px] text-white/75">
+          Delen met {parent.displayName ?? parent.email ?? "ouder"}
+        </div>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] transition-colors hover:bg-white/[0.06]"
+          style={{ borderColor: "rgba(255,255,255,0.14)", color: "rgba(255,255,255,0.7)" }}
+        >
+          <Settings2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+          {open ? "Sluiten" : "Instellen"}
+        </button>
+      </div>
+      {access.reconfirmRequired && (
+        <div className="mt-2 rounded-xl border border-amber-400/25 bg-amber-400/[0.08] px-3 py-2 text-[12px] text-amber-200/90">
+          Je bent in een nieuwe leeftijdscategorie gekomen. Bevestig opnieuw wat
+          je met deze ouder deelt — tot die tijd geldt alleen het
+          veiligheidsminimum.
+          <button
+            type="button"
+            disabled={reconfirm.isPending}
+            onClick={() => reconfirm.mutate(parent.parentClerkId)}
+            className="ml-2 underline disabled:opacity-40"
+            style={{ color: ACCENT }}
+          >
+            {reconfirm.isPending ? "Bezig…" : "Nu bevestigen"}
+          </button>
+        </div>
+      )}
+      {open && (
+        <div className="mt-2 space-y-1.5">
+          {isAdult && (
+            <p className="text-[11px] text-white/35">
+              Je bent volwassen: je bepaalt volledig zelf wat je deelt. Niets
+              staat verplicht aan.
+            </p>
+          )}
+          {CATEGORY_ORDER.map((c) => {
+            const forced =
+              !isAdult && (c === "gezondheid" || c === "herstel" || c === "slaap") &&
+              access.tier === "u16" &&
+              (c === "gezondheid" || c === "herstel")
+            return (
+              <label
+                key={c}
+                className="flex items-center justify-between text-[12px] text-white/65"
+              >
+                <span>
+                  {labels?.[c] ?? c}
+                  {forced && (
+                    <span className="ml-1.5 text-[10px] text-white/30">
+                      (veiligheidsminimum)
+                    </span>
+                  )}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={forced ? true : draft[c]}
+                  disabled={forced}
+                  onChange={(e) => setDraft({ ...draft, [c]: e.target.checked })}
+                  className="accent-cyan-300"
+                />
+              </label>
+            )
+          })}
+          <div className="pt-1">
+            <button
+              type="button"
+              disabled={setPerms.isPending}
+              onClick={() =>
+                setPerms.mutate(
+                  { parentClerkId: parent.parentClerkId, permissions: draft },
+                  { onSuccess: () => setOpen(false) },
+                )
+              }
+              className="rounded-full border px-3 py-1.5 text-[12px] transition-colors hover:bg-white/[0.06] disabled:opacity-40"
+              style={{ borderColor: "rgba(120,210,230,0.35)", color: ACCENT }}
+            >
+              {setPerms.isPending ? "Opslaan…" : "Opslaan"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function LinkRow({
   person,
@@ -54,6 +186,7 @@ function LinkRow({
 
 export function LinksSection() {
   const { data, isLoading } = useMyLinks()
+  const { data: manageData } = useParentsManage()
   const revoke = useRevokeLink()
   const [notice, setNotice] = useState<string | null>(null)
   const coaches = data?.coaches ?? []
@@ -120,6 +253,15 @@ export function LinksSection() {
             ))}
           </div>
         )}
+        {(manageData?.parents ?? [])
+          .filter((p) => p.status === "accepted")
+          .map((p) => (
+            <ParentShareRow
+              key={`share-${p.parentClerkId}`}
+              parent={p}
+              labels={manageData?.categoryLabels}
+            />
+          ))}
       </div>
       {notice && (
         <div

@@ -51,11 +51,18 @@ export const queryKeys = {
   parent: {
     all: () => ["parent"] as const,
     athletes: () => ["parent", "athletes"] as const,
+    overview: () => ["parent", "overview"] as const,
+    messages: (athleteId: string) =>
+      ["parent", "messages", athleteId] as const,
   },
 
   links: {
     all: () => ["links"] as const,
     mine: () => ["links", "mine"] as const,
+    parents: () => ["links", "parents"] as const,
+    parentReports: () => ["links", "parent-reports"] as const,
+    parentMessages: (parentId: string) =>
+      ["links", "parent-messages", parentId] as const,
   },
 
   connectors: {

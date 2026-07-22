@@ -70,6 +70,7 @@
     "test:club": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs club",
     "test:climb-flag-gate": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs climb-flag-gate",
     "test:coach-parent-sharing-levels": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs coach-parent-sharing-levels",
+    "test:parent-environment": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs parent-environment",
     "test:coach-parent-share-nothing": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs coach-parent-share-nothing",
     "test:coach-parent-private-memory": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs coach-parent-private-memory",
     "test:coach-parent-shared-raw-fields": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs coach-parent-shared-raw-fields",

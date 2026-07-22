@@ -31,6 +31,235 @@ export function useParentAthletes(enabled = true) {
   });
 }
 
+// ── Ouderomgeving (Afbouwgolf 12) ────────────────────────────────────────────
+
+export type ParentDataCategory =
+  | "planning"
+  | "aanwezigheid"
+  | "herstel"
+  | "gezondheid"
+  | "slaap"
+  | "locatie"
+  | "wedstrijd"
+  | "communicatie";
+
+export type ParentAccess = {
+  level: "none" | "safety_only" | "summary";
+  tier: "u16" | "16_17" | "adult" | "unknown";
+  reconfirmRequired: boolean;
+  permissions: Record<ParentDataCategory, boolean>;
+  parentMayEdit: boolean;
+};
+
+export type ParentReport = {
+  id: number;
+  kind: "ziek" | "blessure" | "afwezig";
+  note: string | null;
+  status: "open" | "gezien" | "afgerond";
+  createdAt: string;
+};
+
+export type EmergencyContact = {
+  id: number;
+  name: string;
+  phone: string;
+  relation: string | null;
+  priority: number;
+};
+
+export type ParentOverviewChild = {
+  athleteClerkId: string;
+  displayName: string | null;
+  relationship: string;
+  access: ParentAccess;
+  healthStatus?: string;
+  openReports?: ParentReport[];
+  wellbeing?: {
+    metricDate: string;
+    sleepHours?: string | null;
+    sleepQuality?: number | null;
+    fatigueScore?: number | null;
+    feelScore?: number | null;
+  } | null;
+  today?: { id: number; title: string; type: string; scheduledDate: string }[];
+  races?: {
+    id: number;
+    name: string;
+    raceDate: string;
+    parentDecision: string | null;
+  }[];
+  unreadMessages?: number;
+  emergencyContacts: EmergencyContact[];
+};
+
+export function useParentOverview(enabled = true) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: queryKeys.parent.overview(),
+    queryFn: () =>
+      apiFetch<{ children: ParentOverviewChild[] }>("/api/parent/overview"),
+    enabled: (isSignedIn === true || DEV_PREVIEW) && enabled,
+    staleTime: 60_000,
+  });
+}
+
+export function useUpdateParentPermissions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      athleteClerkId,
+      permissions,
+    }: {
+      athleteClerkId: string;
+      permissions: Record<ParentDataCategory, boolean>;
+    }) =>
+      apiFetch<{ ok: true }>(
+        `/api/parent/athletes/${athleteClerkId}/permissions`,
+        { method: "PUT", body: JSON.stringify({ permissions }) },
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.parent.all() });
+    },
+  });
+}
+
+export function useCreateParentReport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      athleteClerkId,
+      kind,
+      note,
+    }: {
+      athleteClerkId: string;
+      kind: "ziek" | "blessure" | "afwezig";
+      note?: string;
+    }) =>
+      apiFetch<{ report: ParentReport }>(
+        `/api/parent/athletes/${athleteClerkId}/reports`,
+        { method: "POST", body: JSON.stringify({ kind, note }) },
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.parent.all() });
+    },
+  });
+}
+
+export function useParentConfirm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      athleteClerkId,
+      subjectType,
+      subjectId,
+      decision,
+    }: {
+      athleteClerkId: string;
+      subjectType: "race" | "planning" | "club_training";
+      subjectId: string;
+      decision: "bevestigd" | "afgewezen";
+    }) =>
+      apiFetch<{ confirmation: unknown }>(
+        `/api/parent/athletes/${athleteClerkId}/confirmations`,
+        {
+          method: "POST",
+          body: JSON.stringify({ subjectType, subjectId, decision }),
+        },
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.parent.all() });
+    },
+  });
+}
+
+export function useAddEmergencyContact() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      athleteClerkId,
+      name,
+      phone,
+      relation,
+    }: {
+      athleteClerkId: string;
+      name: string;
+      phone: string;
+      relation?: string;
+    }) =>
+      apiFetch<{ contact: EmergencyContact }>(
+        `/api/parent/athletes/${athleteClerkId}/emergency-contacts`,
+        { method: "POST", body: JSON.stringify({ name, phone, relation }) },
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.parent.all() });
+    },
+  });
+}
+
+export function useDeleteEmergencyContact() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      athleteClerkId,
+      id,
+    }: {
+      athleteClerkId: string;
+      id: number;
+    }) =>
+      apiFetch<{ ok: true }>(
+        `/api/parent/athletes/${athleteClerkId}/emergency-contacts/${id}`,
+        { method: "DELETE" },
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.parent.all() });
+    },
+  });
+}
+
+export type ParentMessage = {
+  id: number;
+  senderClerkId: string;
+  body: string;
+  createdAt: string;
+  readAt: string | null;
+};
+
+export function useParentMessages(athleteClerkId: string, enabled = true) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: queryKeys.parent.messages(athleteClerkId),
+    queryFn: () =>
+      apiFetch<{ messages: ParentMessage[] }>(
+        `/api/parent/athletes/${athleteClerkId}/messages`,
+      ),
+    enabled: (isSignedIn === true || DEV_PREVIEW) && enabled,
+    staleTime: 30_000,
+  });
+}
+
+export function useSendParentMessage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      athleteClerkId,
+      body,
+    }: {
+      athleteClerkId: string;
+      body: string;
+    }) =>
+      apiFetch<{ message: ParentMessage }>(
+        `/api/parent/athletes/${athleteClerkId}/messages`,
+        { method: "POST", body: JSON.stringify({ body }) },
+      ),
+    onSuccess: (_d, vars) => {
+      void qc.invalidateQueries({
+        queryKey: queryKeys.parent.messages(vars.athleteClerkId),
+      });
+      void qc.invalidateQueries({ queryKey: queryKeys.parent.overview() });
+    },
+  });
+}
+
 /**
  * A parent ends the link to an athlete from their own side. Scoped server-side
  * to the caller's own parent links; refreshes the list so the child disappears.

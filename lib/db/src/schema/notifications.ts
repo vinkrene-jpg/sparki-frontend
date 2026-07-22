@@ -35,6 +35,10 @@ export const notificationTypes = [
   "something_new",
   // Clubomgeving: reserve doorgeschoven, selectie, clubberichten.
   "club_update",
+  // Ouderomgeving: veiligheidsmelding, toestemming vereist, gewijzigde rechten.
+  "parent_report",
+  "consent_required",
+  "access_changed",
 ] as const;
 export type NotificationType = (typeof notificationTypes)[number];
 

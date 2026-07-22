@@ -16,6 +16,7 @@ import {
   type InvitationRelationship,
 } from "@workspace/db";
 import { createNotification } from "../lib/notifications";
+import { writeAudit } from "../lib/security/audit";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { rateLimit } from "../lib/security/rate-limit";
 import { isAdmin } from "../lib/flags";
@@ -504,6 +505,61 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
       return;
     }
     req.log.error({ err }, "invitations accept failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── POST /api/invitations/:token/decline ────────────────────────────────────
+// Weigeren van een uitnodiging: expliciet, atomair (pending → declined) en met
+// een eerlijke melding naar de uitnodiger. Er wordt géén koppeling of rol
+// aangemaakt.
+router.post("/:token/decline", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const token = String(req.params["token"]);
+  try {
+    await expirePending();
+    const [inv] = await db
+      .select()
+      .from(invitationsTable)
+      .where(eq(invitationsTable.token, token));
+    if (!inv) {
+      res.status(404).json({ error: "Uitnodiging niet gevonden" });
+      return;
+    }
+    if (inv.inviterClerkId === clerkId) {
+      res.status(400).json({ error: "Je kunt je eigen uitnodiging niet weigeren" });
+      return;
+    }
+    const [claimed] = await db
+      .update(invitationsTable)
+      .set({ status: "declined", updatedAt: new Date() })
+      .where(
+        and(eq(invitationsTable.id, inv.id), eq(invitationsTable.status, "pending")),
+      )
+      .returning();
+    if (!claimed) {
+      res
+        .status(409)
+        .json({ error: `Uitnodiging is al ${inv.status}`, status: inv.status });
+      return;
+    }
+    void writeAudit({
+      event: "link_change",
+      actorClerkId: clerkId,
+      subjectClerkId: inv.inviterClerkId,
+      meta: { soort: "uitnodiging", actie: "geweigerd", relationship: inv.relationship },
+      req,
+    });
+    void createNotification({
+      clerkId: inv.inviterClerkId,
+      type: inv.relationship === "coach_athlete" ? "coach_update" : "parent_update",
+      title: "Uitnodiging geweigerd",
+      body: "Je uitnodiging is geweigerd. Er is geen koppeling gemaakt.",
+      actionUrl: "/",
+    });
+    res.json({ invitation: publicView(claimed) });
+  } catch (err) {
+    req.log.error({ err }, "invitations decline failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });

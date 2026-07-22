@@ -7,7 +7,11 @@ import { useLocation } from "wouter"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { ACCENT } from "@/components/sparki/ui"
 import { Skeleton } from "@/components/sparki/home-sections"
-import { useInvitation, useAcceptInvitation } from "@/hooks/use-invitations"
+import {
+  useInvitation,
+  useAcceptInvitation,
+  useDeclineInvitation,
+} from "@/hooks/use-invitations"
 import {
   STATUS_LABEL,
   RELATIONSHIP_LABEL,
@@ -35,8 +39,23 @@ export default function InviteAcceptPage() {
 
   const { data: invite, isLoading, error } = useInvitation(token)
   const accept = useAcceptInvitation()
+  const decline = useDeclineInvitation()
   const [accepted, setAccepted] = useState(false)
+  const [declined, setDeclined] = useState(false)
   const [acceptError, setAcceptError] = useState<string | null>(null)
+
+  function onDecline() {
+    if (!token) return
+    setAcceptError(null)
+    decline.mutate(token, {
+      onSuccess: () => {
+        setDeclined(true)
+        setTimeout(() => setLocation("/"), 1800)
+      },
+      onError: (e) =>
+        setAcceptError(e instanceof Error ? e.message : "Weigeren mislukt."),
+    })
+  }
 
   const isHeadTester = invite?.relationship === "head_tester"
 
@@ -137,17 +156,33 @@ export default function InviteAcceptPage() {
               style={{ borderColor: "rgba(130,220,160,0.3)", background: "rgba(130,220,160,0.06)" }}>
               <p className="text-[14px] font-light text-white/90">Gelukt! Je wordt doorgestuurd…</p>
             </div>
+          ) : declined ? (
+            <div className="rounded-2xl border border-white/[0.12] bg-white/[0.03] p-5 text-center backdrop-blur-md">
+              <p className="text-[14px] font-light text-white/90">
+                Je hebt deze uitnodiging geweigerd. Er is niets gekoppeld.
+              </p>
+            </div>
           ) : (
             <>
               <button
                 type="button"
                 onClick={onAccept}
-                disabled={accept.isPending}
+                disabled={accept.isPending || decline.isPending}
                 className="w-full rounded-xl border py-3.5 font-mono text-[12px] uppercase tracking-[0.18em] transition-colors disabled:opacity-50"
                 style={{ borderColor: "rgba(120,210,230,0.4)", background: "rgba(120,210,230,0.12)", color: ACCENT }}
               >
                 {accept.isPending ? "Accepteren…" : "Uitnodiging accepteren"}
               </button>
+              {!isHeadTester && (
+                <button
+                  type="button"
+                  onClick={onDecline}
+                  disabled={accept.isPending || decline.isPending}
+                  className="w-full rounded-xl border border-white/[0.14] py-3.5 font-mono text-[12px] uppercase tracking-[0.18em] text-white/55 transition-colors hover:bg-white/[0.05] disabled:opacity-50"
+                >
+                  {decline.isPending ? "Weigeren…" : "Uitnodiging weigeren"}
+                </button>
+              )}
               {acceptError && (
                 <p className="text-center text-[12px] text-red-300/80">{acceptError}</p>
               )}
