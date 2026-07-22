@@ -37,6 +37,7 @@ import {
   type RouteMeetpoint,
 } from "@workspace/db";
 import { applyLocationPrivacy } from "../lib/world-social/location";
+import { sanitizeNavSteps } from "../lib/routing/nav-sanitize";
 import { registerRouteUsage } from "../lib/route-usage";
 import { aiMessage } from "../lib/ai/gateway";
 import { requireAuth, getClerkUserId } from "../lib/auth";
@@ -540,7 +541,18 @@ router.get("/", requireAuth, async (req, res) => {
       .where(and(...conds))
       .orderBy(orderBy)
       .limit(limit);
-    res.json({ routes });
+    res.json({
+      routes: routes.map((r) =>
+        Array.isArray(r.nav)
+          ? {
+              ...r,
+              nav: sanitizeNavSteps(
+                r.nav as { km: number; dir: string; note: string }[],
+              ),
+            }
+          : r,
+      ),
+    });
   } catch (err) {
     req.log.error({ err }, "routes.list failed");
     res.status(500).json({ error: "Kon routes niet laden" });
@@ -740,7 +752,12 @@ router.get("/:id", requireAuth, async (req, res) => {
       return;
     }
     if (route.clerkId === clerkId) {
-      res.json({ route });
+      // Oude opgeslagen routes kunnen nog tussen-"Aankomst"-stappen van
+      // waypoints bevatten — opschonen bij het lezen (presentatie, DB blijft).
+      const nav = Array.isArray(route.nav)
+        ? sanitizeNavSteps(route.nav as { km: number; dir: string; note: string }[])
+        : route.nav;
+      res.json({ route: { ...route, nav } });
       return;
     }
     // Niet-eigenaar: alleen zichtbaar wanneer expliciet gedeeld, en dan altijd
@@ -1195,18 +1212,22 @@ router.post("/:id/detour-via", requireAuth, async (req, res) => {
       leg1.durationSec != null && leg2.durationSec != null
         ? leg1.durationSec + leg2.durationSec
         : null;
-    const nav = [
+    // De bewuste tussenstop is géén finish: neutrale "Tussenstop"-stap, en de
+    // sanitizer haalt de aankomststap van het eerste been weg zodat alleen het
+    // echte einde (terug op de route) een aankomst blijft.
+    const nav = sanitizeNavSteps([
       ...leg1.steps,
-      {
-        km: Math.round(leg1Km * 100) / 100,
-        dir: "Aankomst",
-        note: "Je bent bij je tussenstop.",
-      },
       ...leg2.steps.map((s) => ({
         ...s,
         km: Math.round((s.km + leg1Km) * 100) / 100,
       })),
-    ];
+    ]);
+    nav.push({
+      km: Math.round(leg1Km * 100) / 100,
+      dir: "Tussenstop",
+      note: "Je bent bij je tussenstop.",
+    });
+    nav.sort((a, b) => a.km - b.km);
     res.json({
       mode: "poi",
       path,

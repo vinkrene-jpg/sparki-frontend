@@ -38,6 +38,10 @@ export type NavSettings = {
   autoClimb: boolean;
   autoPois: boolean;
   autoSprint: boolean;
+  // Geluidssignalen (korte tonen) en gesproken aanwijzingen tijdens navigatie.
+  // Optioneel bij binnenkomst (oudere clients sturen ze niet mee) — default aan.
+  soundCues: boolean;
+  voiceCues: boolean;
 };
 
 // Valideer een inkomende instellingen-vorm strikt (whitelist). Retourneert een
@@ -59,6 +63,8 @@ function validateNavSettings(
     "autoClimb",
     "autoPois",
     "autoSprint",
+    "soundCues",
+    "voiceCues",
   ]);
   for (const key of Object.keys(body)) {
     if (!allowedKeys.has(key)) {
@@ -114,6 +120,14 @@ function validateNavSettings(
     }
   }
 
+  // Optionele audiovelden: afwezig = aan (bestaand gedrag verandert niet),
+  // aanwezig = strikt boolean.
+  for (const key of ["soundCues", "voiceCues"] as const) {
+    if (key in body && typeof body[key] !== "boolean") {
+      return { ok: false, error: `Ongeldige waarde voor ${key}.` };
+    }
+  }
+
   return {
     ok: true,
     value: {
@@ -125,6 +139,8 @@ function validateNavSettings(
       autoClimb: body.autoClimb as boolean,
       autoPois: body.autoPois as boolean,
       autoSprint: body.autoSprint as boolean,
+      soundCues: typeof body.soundCues === "boolean" ? body.soundCues : true,
+      voiceCues: typeof body.voiceCues === "boolean" ? body.voiceCues : true,
     },
   };
 }

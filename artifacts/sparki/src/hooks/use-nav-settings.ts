@@ -33,6 +33,10 @@ export type NavSettings = {
   autoClimb: boolean;
   autoPois: boolean;
   autoSprint: boolean;
+  // Geluidssignalen (korte tonen) en gesproken aanwijzingen tijdens navigatie.
+  // Optioneel voor oudere opgeslagen instellingen — ontbrekend betekent "aan".
+  soundCues?: boolean;
+  voiceCues?: boolean;
 };
 
 // Haal de opgeslagen navigatie-instellingen op. settings is null wanneer er nog

@@ -5,7 +5,10 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": ["sparki", "sparki-mobile"],
+    "scheme": [
+      "sparki",
+      "sparki-mobile"
+    ],
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -24,24 +27,35 @@
         "NSLocationWhenInUseUsageDescription": "Sparki gebruikt je locatie om te navigeren en je rit op te nemen terwijl je de app gebruikt.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Sparki gebruikt je locatie ook op de achtergrond, zodat je rit volledig wordt opgenomen als het scherm op slot staat. Dit gebeurt alleen tijdens een rit die jij zelf start.",
         "NSBluetoothAlwaysUsageDescription": "Sparki gebruikt Bluetooth om je wattagemeter, hartslagband of cadanssensor live uit te lezen tijdens een rit.",
-        "UIBackgroundModes": ["location"],
+        "UIBackgroundModes": [
+          "location"
+        ],
         "LSSupportsOpeningDocumentsInPlace": true,
         "CFBundleDocumentTypes": [
           {
             "CFBundleTypeName": "GPX-route",
             "LSHandlerRank": "Alternate",
             "CFBundleTypeRole": "Viewer",
-            "LSItemContentTypes": ["com.topografix.gpx"]
+            "LSItemContentTypes": [
+              "com.topografix.gpx"
+            ]
           }
         ],
         "UTImportedTypeDeclarations": [
           {
             "UTTypeIdentifier": "com.topografix.gpx",
             "UTTypeDescription": "GPX-route",
-            "UTTypeConformsTo": ["public.xml", "public.data"],
+            "UTTypeConformsTo": [
+              "public.xml",
+              "public.data"
+            ],
             "UTTypeTagSpecification": {
-              "public.filename-extension": ["gpx"],
-              "public.mime-type": ["application/gpx+xml"]
+              "public.filename-extension": [
+                "gpx"
+              ],
+              "public.mime-type": [
+                "application/gpx+xml"
+              ]
             }
           }
         ]
@@ -73,22 +87,51 @@
       "intentFilters": [
         {
           "action": "VIEW",
-          "category": ["DEFAULT", "BROWSABLE"],
+          "category": [
+            "DEFAULT",
+            "BROWSABLE"
+          ],
           "data": [
-            { "scheme": "content", "mimeType": "application/gpx+xml" },
-            { "scheme": "file", "mimeType": "application/gpx+xml" },
-            { "scheme": "content", "mimeType": "application/octet-stream", "pathPattern": ".*\\.gpx" },
-            { "scheme": "file", "mimeType": "application/octet-stream", "pathPattern": ".*\\.gpx" },
-            { "scheme": "content", "pathPattern": ".*\\.gpx" },
-            { "scheme": "file", "pathPattern": ".*\\.gpx" }
+            {
+              "scheme": "content",
+              "mimeType": "application/gpx+xml"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "application/gpx+xml"
+            },
+            {
+              "scheme": "content",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\.gpx"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\.gpx"
+            },
+            {
+              "scheme": "content",
+              "pathPattern": ".*\\.gpx"
+            },
+            {
+              "scheme": "file",
+              "pathPattern": ".*\\.gpx"
+            }
           ]
         },
         {
           "action": "SEND",
-          "category": ["DEFAULT"],
+          "category": [
+            "DEFAULT"
+          ],
           "data": [
-            { "mimeType": "application/gpx+xml" },
-            { "mimeType": "application/octet-stream" }
+            {
+              "mimeType": "application/gpx+xml"
+            },
+            {
+              "mimeType": "application/octet-stream"
+            }
           ]
         }
       ]
@@ -120,7 +163,8 @@
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true,

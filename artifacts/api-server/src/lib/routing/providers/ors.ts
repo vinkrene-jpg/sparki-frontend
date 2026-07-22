@@ -8,6 +8,7 @@
 // lives in the route generator/UI.
 
 import { isCyclingProfile } from "../profile-selection";
+import { sanitizeNavSteps } from "../nav-sanitize";
 import type {
   GeocodeResult,
   GeoPoint,
@@ -222,7 +223,9 @@ export class OrsProvider implements RoutingProvider {
         if (typeof step.distance === "number") runningM += step.distance;
       }
     }
-    return cues;
+    // Waypoints zijn routevormgevers, geen bestemmingen: alleen de echte
+    // eerste vertrek- en laatste aankomststap blijven staan.
+    return sanitizeNavSteps(cues);
   }
 
   async generateLoop(req: LoopRequest): Promise<RouteResult> {

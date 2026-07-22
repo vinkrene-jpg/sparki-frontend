@@ -12,6 +12,7 @@
     "test:ride-sensor-summary": "node ../../scripts/run-tsx-test.mjs --test lib/ride-sensor-summary.test.ts",
     "test:upload-queue": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks lib/upload-queue.test.ts",
     "test:fall-detection": "node ../../scripts/run-tsx-test.mjs --test lib/fall-detection.test.ts",
+    "test:nav-cues": "node ../../scripts/run-tsx-test.mjs --test lib/nav-cues.test.ts",
     "check:prod-config": "node scripts/check-prod-config.mjs"
   },
   "devDependencies": {
@@ -66,8 +67,10 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
+    "expo-audio": "~1.1.1",
     "expo-file-system": "~19.0.23",
     "expo-sharing": "~14.0.8",
+    "expo-speech": "~14.0.8",
     "expo-task-manager": "~14.0.9",
     "react-native-ble-plx": "^3.5.1",
     "react-native-view-shot": "4.0.3"

@@ -40,6 +40,19 @@ import {
   saveActiveNav,
 } from "@/lib/active-nav";
 import {
+  createCueState,
+  decideCues,
+  sanitizeNavSteps,
+  type CueEngineState,
+} from "@/lib/nav-cues";
+import {
+  playCueSound,
+  prepareNavAudio,
+  releaseNavAudio,
+  speakCue,
+} from "@/lib/nav-audio";
+import { useNavAudioPrefs } from "@/lib/nav-audio-settings";
+import {
   meldNavigatieStart,
   useRejoinRoute,
   useRoute,
@@ -175,11 +188,49 @@ export default function NavigateScreen() {
     };
   }, [location, path, cumKm]);
 
+  // Waypoints zijn géén finish: de server schoont tussen-"Aankomst"-stappen al
+  // op, maar oudere lokaal bewaarde kopieën lopen hier nogmaals door dezelfde
+  // sanitizer zodat er nooit een finishvlag/-melding halverwege verschijnt.
+  const navSteps: RouteStep[] = useMemo(
+    () => (route?.nav ? sanitizeNavSteps(route.nav) : []),
+    [route?.nav],
+  );
+
   const nextStep: RouteStep | null = useMemo(() => {
-    if (!route?.nav || route.nav.length === 0 || !progress) return null;
-    const ahead = route.nav.find((s) => s.km > progress.traveledKm + 0.015);
-    return ahead ?? route.nav[route.nav.length - 1] ?? null;
-  }, [route?.nav, progress]);
+    if (navSteps.length === 0 || !progress) return null;
+    const ahead = navSteps.find((s) => s.km > progress.traveledKm + 0.015);
+    return ahead ?? navSteps[navSteps.length - 1] ?? null;
+  }, [navSteps, progress]);
+
+  // ---------- Geluidssignalen + gesproken aanwijzingen ----------
+  // Instellingen (persistent, zelfde bron als de webpagina Navigatie-
+  // instellingen) + pure cue-engine; audio is best-effort en respecteert de
+  // stilstand/het volume van de telefoon.
+  const audioPrefs = useNavAudioPrefs();
+  const cueStateRef = useRef<CueEngineState>(createCueState());
+  const audioOn = audioPrefs.prefs.soundCues || audioPrefs.prefs.voiceCues;
+  useEffect(() => {
+    if (audioOn && Platform.OS !== "web") void prepareNavAudio();
+    return () => {
+      releaseNavAudio();
+    };
+  }, [audioOn]);
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    if (!progress || navSteps.length === 0) return;
+    if (!audioPrefs.prefs.soundCues && !audioPrefs.prefs.voiceCues) return;
+    const { state, cues } = decideCues(cueStateRef.current, {
+      steps: navSteps,
+      traveledKm: progress.traveledKm,
+      speedMps: location?.speedMps ?? null,
+      offRoute: progress.offRoute,
+    });
+    cueStateRef.current = state;
+    for (const cue of cues) {
+      if (audioPrefs.prefs.soundCues) playCueSound(cue.sound);
+      if (audioPrefs.prefs.voiceCues && cue.speech) speakCue(cue.speech);
+    }
+  }, [progress, navSteps, location?.speedMps, audioPrefs.prefs]);
 
   // ---------- Herberekenen na afwijken (echte gerouteerde verbinding) ----------
   // Bij "van de route" kan de renner kiezen: terug naar de lijn of logisch
@@ -467,6 +518,55 @@ export default function NavigateScreen() {
             color={live.anyConnected ? c.primary : c.mutedForeground}
           />
         </Pressable>
+
+        {/* Geluidssignalen + gesproken aanwijzingen: direct toepasbaar én
+            persistent (zelfde instelling als Navigatie-instellingen op web). */}
+        <View style={styles.audioToggles} pointerEvents="box-none">
+          <Pressable
+            onPress={() => audioPrefs.setSoundCues(!audioPrefs.prefs.soundCues)}
+            hitSlop={10}
+            accessibilityLabel={
+              audioPrefs.prefs.soundCues
+                ? "Geluidssignalen uitzetten"
+                : "Geluidssignalen aanzetten"
+            }
+            style={[
+              styles.backBtn,
+              {
+                backgroundColor: c.card,
+                borderColor: audioPrefs.prefs.soundCues ? c.primary : c.border,
+              },
+            ]}
+          >
+            <Ionicons
+              name={audioPrefs.prefs.soundCues ? "volume-high" : "volume-mute"}
+              size={20}
+              color={audioPrefs.prefs.soundCues ? c.primary : c.mutedForeground}
+            />
+          </Pressable>
+          <Pressable
+            onPress={() => audioPrefs.setVoiceCues(!audioPrefs.prefs.voiceCues)}
+            hitSlop={10}
+            accessibilityLabel={
+              audioPrefs.prefs.voiceCues
+                ? "Gesproken aanwijzingen uitzetten"
+                : "Gesproken aanwijzingen aanzetten"
+            }
+            style={[
+              styles.backBtn,
+              {
+                backgroundColor: c.card,
+                borderColor: audioPrefs.prefs.voiceCues ? c.primary : c.border,
+              },
+            ]}
+          >
+            <Ionicons
+              name={audioPrefs.prefs.voiceCues ? "chatbubble-ellipses" : "chatbubble-ellipses-outline"}
+              size={20}
+              color={audioPrefs.prefs.voiceCues ? c.primary : c.mutedForeground}
+            />
+          </Pressable>
+        </View>
       </View>
 
       {/* ---------- Sensor panel (saved sensors from the Fietsengarage) ---------- */}
@@ -1188,6 +1288,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   locNoticeText: { fontFamily: "Inter_400Regular", fontSize: 12, flex: 1 },
+  audioToggles: { gap: 8 },
   sensorsWrap: { position: "absolute", left: 16, right: 16, zIndex: 10 },
   bottom: { position: "absolute", left: 16, right: 16, gap: 12, alignItems: "center" },
   recenter: {

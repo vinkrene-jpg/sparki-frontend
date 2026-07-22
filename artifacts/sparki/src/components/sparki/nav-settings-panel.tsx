@@ -35,6 +35,8 @@ export const NAV_SETTINGS_DEFAULTS: NavSettings = {
   autoClimb: true,
   autoPois: true,
   autoSprint: false,
+  soundCues: true,
+  voiceCues: true,
 }
 
 function pill(active: boolean) {
@@ -56,7 +58,14 @@ export function NavSettingsPanel() {
 
   useEffect(() => {
     if (data === undefined) return
-    setDraft(data.settings ?? NAV_SETTINGS_DEFAULTS)
+    // Legacy rijen missen soundCues/voiceCues; contract is "afwezig = aan",
+    // dus normaliseer vóór render zodat de toggles de echte status tonen.
+    const s = data.settings
+    setDraft(
+      s
+        ? { ...s, soundCues: s.soundCues !== false, voiceCues: s.voiceCues !== false }
+        : NAV_SETTINGS_DEFAULTS,
+    )
   }, [data])
 
   if (isLoading || draft === null) {
@@ -182,6 +191,14 @@ export function NavSettingsPanel() {
               {
                 k: "autoSprint" as const,
                 l: "Bordjes-sprint standaard aan bij samen rijden",
+              },
+              {
+                k: "soundCues" as const,
+                l: "Geluidssignalen bij afslagen (korte tonen)",
+              },
+              {
+                k: "voiceCues" as const,
+                l: "Gesproken aanwijzingen (bijv. \u201cover 200 meter rechtsaf\u201d)",
               },
             ] satisfies { k: keyof NavSettings; l: string }[]
           ).map(({ k, l }) => (

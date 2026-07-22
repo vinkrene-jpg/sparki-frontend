@@ -58,6 +58,24 @@ navigatie, val-detectie en diagnostiek. Voer dit uit op een echt toestel
 4. **Offline:** zet vliegtuigstand aan tijdens het navigeren.
    - Verwacht: de route en aanwijzingen blijven werken op de lokaal bewaarde
      gegevens; alleen functies die echt netwerk vergen melden dat eerlijk.
+5. **Waypoints & finish:** navigeer een route met tussenwaypoints.
+   - Verwacht: GEEN finishvlag, geluid of gesproken "aankomst" bij een
+     waypoint; alleen de echte eindbestemming geeft de aankomstmelding.
+   - Een via-tussenstop (omrij-punt) toont hoogstens een stille regel
+     "Tussenstop" in de lijst — nooit geluid of spraak.
+6. **Geluidssignalen:** rijd naar een afslag met geluid aan.
+   - Verwacht: vooraankondigingstoon en afslagtoon per afslag, precies één
+     keer per stap/fase (nooit dubbel bij GPS-ruis); scherpe bochten klinken
+     anders; van-de-route klinkt één keer per afwijking.
+7. **Gesproken aanwijzingen:** zet spraak aan.
+   - Verwacht: tijdige melding vóór de afslag (afstand afhankelijk van
+     snelheid), niet dubbel, ook met het scherm uit (achtergrond); met de
+     telefoon op stil/volume laag hoor je niets — de app forceert niets.
+8. **Schakelaars direct van kracht:** zet "Geluidssignalen" of "Gesproken
+   aanwijzingen" uit via de knoppen in het navigatiescherm of via
+   Routes → Navigatie-instellingen (web).
+   - Verwacht: direct stil tijdens de actieve navigatie, keuze blijft bewaard
+     (ook offline lokaal) en geldt web én mobiel.
 
 ## 5. Val-detectie (eerlijk)
 
@@ -92,6 +110,11 @@ Vanuit `artifacts/sparki-mobile`:
 - `pnpm run test:fall-detection` — val-detectie-toestandsmachine
 - `pnpm run test:ride-tracker` — rit-opname (voor-/achtergrondbuffer)
 - `pnpm run test:ride-sensor-summary` — sensorsamenvatting ↔ GPX in lockstep
+- `pnpm run test:nav-cues` — cue-engine (waypoints stil, dedupe, timing)
+
+Vanuit `artifacts/api-server` (via shell):
+
+- `pnpm run test:nav-sanitize` — waypoint-aankomsten server-side opgeschoond
 
 Bij drukte in de omgeving kan de testrunner crashen op procesdruk; draai de
 test dan direct: `npx tsx --test lib/<naam>.test.ts`.

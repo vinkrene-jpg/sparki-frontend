@@ -156,3 +156,4 @@
 - [Sparki Kennisbank governance](sparki-kennisbank.md) — governed knowledge layer: publish=tx+snapshot, usage pins version, retracted final; engines must consume content, not just cite.
 - [Sparki plan-uitvoering & adaptieve voorstellen](sparki-plan-execution.md) — execution link race-safe (manual wins), deterministic verdict/adjust rules, LLM words-only.
 - [Sparki central AI gateway](sparki-ai-gateway.md) — one aiMessage() port for all model calls: killswitch→consent→minor→redaction→dedupe→metadata-only logs; SDK types need direct @anthropic-ai/sdk dep.
+- [Sparki nav audio & waypoint honesty](sparki-nav-audio-cues.md) — waypoints are never destinations: sanitize arrivals at source AND read paths; cues dedupe per step:phase; never force sound past silent mode.
