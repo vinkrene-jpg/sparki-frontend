@@ -149,6 +149,7 @@
 - [Sparki gezondheids- & herstelflow](sparki-health-flow.md) — status raises-only; "hersteld" alleen via expliciete resume-gate (409 bij niet_trainen); opbouwvenster; mobile customFetch returns parsed JSON not Response.
 - [Sparki support helpdesk](sparki-support-helpdesk.md) — deterministic answer matrix, minor fail-closed; ticket find-or-create needs advisory-xact-lock; Dutch stems need `\w*` in `\b` regex groups.
 - [Sparki ouderomgeving](sparki-parent-environment.md) — één rechtenlaag voor ALLE ouder-routes (ook legacy); onbekende leeftijd clampt naar veiligheidsminimum; onbevestigd nooit boven safety-only; caps atomair via advisory lock.
+- [Sparki store-distributie](sparki-store-distribution.md) — kanaal-header is PLAFOND op releasegroep (best-effort); 426 nooit tijdens actieve rit (latch+flush); recommended-versie = alleen rustig advies.
 - [Sparki Sportpaspoort](sparki-sportpaspoort.md) — herkomstlaag bovenop athlete_profiles; waarde+event ALTIJD in één transactie (nooit best-effort .catch); voorstel-besluit + toepassen atomair.
 - [Sparki releasegroepen & uitrol](sparki-release-rollout.md) — auto-stop telt kritieke fouten PER flag (nooit globaal); anonieme meldingen nooit kritiek; 426 heeft latch naast event.
 - [Sparki race flow & advies-typologie](sparki-race-flow.md) — coach-first enforced in compose fn; invalid enums ignored not rejected; geannuleerd filtered at every consumer; foreign routeId silently dropped.

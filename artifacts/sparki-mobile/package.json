@@ -11,7 +11,8 @@
     "test:ride-tracker": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks lib/ride-tracker.test.ts",
     "test:ride-sensor-summary": "node ../../scripts/run-tsx-test.mjs --test lib/ride-sensor-summary.test.ts",
     "test:upload-queue": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks lib/upload-queue.test.ts",
-    "test:fall-detection": "node ../../scripts/run-tsx-test.mjs --test lib/fall-detection.test.ts"
+    "test:fall-detection": "node ../../scripts/run-tsx-test.mjs --test lib/fall-detection.test.ts",
+    "check:prod-config": "node scripts/check-prod-config.mjs"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -37,7 +38,6 @@
     "expo-glass-effect": "~0.1.4",
     "expo-haptics": "~15.0.8",
     "expo-image": "~3.0.11",
-    "expo-image-picker": "~17.0.9",
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.10",
     "expo-location": "~19.0.8",

@@ -17,6 +17,7 @@ import { ParentHome } from "@/components/sparki/parent-home";
 import { OnboardingV2 } from "@/components/sparki/onboarding-v2";
 import { ErrorBoundary } from "@/components/sparki/error-boundary";
 import NotFound from "@/pages/not-found";
+import LegalPage from "@/pages/legal";
 import FeedPage from "@/pages/feed";
 import TrainPage from "@/pages/train";
 import YouPage from "@/pages/you";
@@ -494,6 +495,14 @@ function AppRouter() {
                 {/* REQUIRED — /*? is the only wouter syntax for Clerk OAuth sub-paths */}
                 <Route path="/sign-in/*?" component={SignInPage} />
                 <Route path="/sign-up/*?" component={SignUpPage} />
+                {/* Publieke juridische pagina's — app-stores vereisen een
+                    privacy-URL die zonder inloggen leesbaar is. */}
+                <Route path="/privacy">
+                  <LegalPage kind="privacy" />
+                </Route>
+                <Route path="/voorwaarden">
+                  <LegalPage kind="terms" />
+                </Route>
                 <Route path="/vandaag">
                   <ProtectedPage component={VandaagPage} />
                 </Route>

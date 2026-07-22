@@ -21,6 +21,7 @@ import {
   loadActiveNav,
   type ActiveNav,
 } from "@/lib/active-nav";
+import { onUpdateAdvies } from "@/lib/release";
 import { useRoutes } from "@/lib/routes-api";
 
 export default function RouteListScreen() {
@@ -45,6 +46,11 @@ export default function RouteListScreen() {
   // Ritten die nog in de lokale uploadwachtrij staan (nog niet gesynchroniseerd).
   const { queue } = useUploadQueue();
   const queuedCount = queue.length;
+  // Golf 28 — rustig update-advies (aanbevolen versie). Wegtikbaar, nooit
+  // blokkerend; de harde 426-blokkade loopt via een aparte, aparte laag.
+  const [updateAdvies, setUpdateAdvies] = useState<string | null>(null);
+  const [adviesWeggetikt, setAdviesWeggetikt] = useState(false);
+  useEffect(() => onUpdateAdvies(setUpdateAdvies), []);
 
   return (
     <View style={[styles.screen, { backgroundColor: c.background }]}>
@@ -59,6 +65,13 @@ export default function RouteListScreen() {
           style={[styles.iconBtn, { borderColor: c.border, backgroundColor: c.card, marginRight: 8 }]}
         >
           <Ionicons name="help-buoy-outline" size={20} color={c.mutedForeground} />
+        </Pressable>
+        <Pressable
+          onPress={() => router.push("/instellingen" as Href)}
+          hitSlop={12}
+          style={[styles.iconBtn, { borderColor: c.border, backgroundColor: c.card, marginRight: 8 }]}
+        >
+          <Ionicons name="settings-outline" size={20} color={c.mutedForeground} />
         </Pressable>
         <Pressable
           onPress={() => signOut()}
@@ -94,6 +107,22 @@ export default function RouteListScreen() {
               <Ionicons name="close" size={18} color={c.mutedForeground} />
             </Pressable>
           </Pressable>
+        </View>
+      )}
+
+      {updateAdvies && !adviesWeggetikt && (
+        <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
+          <View style={[styles.resumeCard, { backgroundColor: c.card, borderColor: c.border }]}>
+            <Ionicons name="arrow-up-circle-outline" size={20} color={c.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.ridesSub, { color: c.mutedForeground }]}>
+                {updateAdvies}
+              </Text>
+            </View>
+            <Pressable onPress={() => setAdviesWeggetikt(true)} hitSlop={12}>
+              <Ionicons name="close" size={18} color={c.mutedForeground} />
+            </Pressable>
+          </View>
         </View>
       )}
 

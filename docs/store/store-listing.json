@@ -1,0 +1,64 @@
+{
+  "$comment": "Golf 28 — Store-listing register: één bron voor App Store- en Google Play-formulieren. Alle teksten Nederlands en feitelijk; geen beloften die de app niet waarmaakt.",
+  "app": {
+    "naam": "Sparki",
+    "ondertitel": "Jouw persoonlijke fietscoach",
+    "bundleIdIos": "nl.sparki.app",
+    "packageAndroid": "nl.sparki.app",
+    "categorie": {
+      "appStore": "Health & Fitness",
+      "googlePlay": "Health & Fitness"
+    },
+    "leeftijd": {
+      "appStore": "4+",
+      "googlePlay": "PEGI 3",
+      "toelichting": "Geen ongepaste inhoud. Jeugdgebruikers (<16) krijgen bewust geen gewichtssturing of voedingsgetallen (RED-S-bescherming); delen met coach/ouder is voor minderjarigen fail-closed geregeld."
+    }
+  },
+  "beschrijvingKort": "Ritten opnemen, navigeren en live sensoren — samen met Sparki, je persoonlijke fietscoach.",
+  "beschrijvingLang": "Sparki is de mobiele metgezel van het Sparki Performance Center voor wielrenners.\n\nMET DE APP KUN JE:\n- Ritten opnemen met GPS, ook met het scherm op slot\n- Navigeren over je eigen routes met stap-voor-stap aanwijzingen\n- Wattage, hartslag en cadans live uitlezen via Bluetooth-sensoren\n- Je rit na afloop automatisch als training laten analyseren\n- Valdetectie tijdens de rit (waarschuwt je noodcontacten via de Sparki-omgeving; geen vervanging van 112)\n\nEERLIJK OVER WAT DE APP NIET IS:\n- Geen medisch hulpmiddel en geen nooddienst\n- Advies is trainingsbegeleiding, nooit een medisch oordeel\n- Zonder locatietoegang kun je niet opnemen of navigeren; de rest blijft werken\n\nJe volledige trainingsomgeving (analyses, planning, coach- en ouderomgeving) vind je in de Sparki-webapp. Een Sparki-account is vereist.",
+  "urls": {
+    "privacy": "https://<productiedomein>/privacy",
+    "voorwaarden": "https://<productiedomein>/voorwaarden",
+    "support": "https://<productiedomein>/support",
+    "accountVerwijderen": "https://<productiedomein>/you",
+    "$comment": "Vervang <productiedomein> door het definitieve productiedomein vóór indiening; de paden bestaan al."
+  },
+  "machtigingenToelichting": {
+    "locatie": "Sparki gebruikt locatie om ritten op te nemen en te navigeren. Alleen tijdens een rit die de gebruiker zelf start.",
+    "achtergrondlocatie": "Achtergrondlocatie houdt de ritopname actief als het scherm op slot gaat. Er is dan altijd een zichtbare melding dat de opname loopt; na het stoppen stopt ook de locatiebepaling. Zonder deze toegang werkt opnemen alleen met het scherm aan — dat meldt de app eerlijk.",
+    "bluetooth": "Bluetooth wordt uitsluitend gebruikt om wattagemeters, hartslagbanden en cadanssensoren van de gebruiker live uit te lezen tijdens een rit.",
+    "bewegingssensoren": "Versnellingsmeter/gyroscoop worden tijdens een rit gebruikt voor valdetectie; er wordt niets buiten de rit om gemeten."
+  },
+  "gegevensVeiligheid": {
+    "verzameld": [
+      "Accountgegevens (e-mail, naam) — vereist voor inloggen",
+      "Locatie (alleen tijdens een door de gebruiker gestarte rit)",
+      "Gezondheids- en fitnessdata (vermogen, hartslag, cadans — alleen van eigen gekoppelde sensoren)"
+    ],
+    "nietVerzameld": [
+      "Geen advertentie-tracking",
+      "Geen verkoop van gegevens",
+      "Geen locatie buiten ritten om"
+    ],
+    "verwijdering": "Gebruikers kunnen hun account en gegevens in de app verwijderen (Instellingen → Account), met een hersteltermijn van 14 dagen."
+  },
+  "screenshots": {
+    "formaten": {
+      "iosIphone67": "1290x2796",
+      "iosIphone65": "1242x2688",
+      "androidTelefoon": "1080x1920 (min 320px, max 3840px, 16:9 aanbevolen)",
+      "androidFeatureGraphic": "1024x500"
+    },
+    "aanbevolenSchermen": [
+      "Startscherm (Kies je route)",
+      "Ritopname met live sensoren",
+      "Navigatie met stap-voor-stap aanwijzing",
+      "Instellingen met machtigingenuitleg"
+    ]
+  },
+  "reviewNotities": {
+    "achtergrondlocatie": "Achtergrondlocatie is nodig zodat een ritopname doorloopt met het scherm op slot (fietsers stoppen hun telefoon in de achterzak). De app toont daarbij een permanente voorgrondmelding en stopt de locatiebepaling zodra de rit stopt. De uitlegkaart in de app verschijnt vóór de systeemvraag.",
+    "account": "Een testaccount met wachtwoord wordt bij indiening apart aangeleverd (nooit in dit register opslaan)."
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "cli": {
+    "version": ">= 13.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "ontwikkeling": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "ontwikkeling",
+      "env": {
+        "EXPO_PUBLIC_CHANNEL": "ontwikkeling"
+      }
+    },
+    "android-intern": {
+      "extends": "ontwikkeling",
+      "developmentClient": false,
+      "distribution": "store",
+      "channel": "android-intern",
+      "android": { "buildType": "app-bundle" },
+      "env": {
+        "EXPO_PUBLIC_CHANNEL": "android-intern"
+      }
+    },
+    "play-gesloten": {
+      "distribution": "store",
+      "channel": "play-gesloten",
+      "android": { "buildType": "app-bundle" },
+      "env": {
+        "EXPO_PUBLIC_CHANNEL": "play-gesloten"
+      }
+    },
+    "testflight": {
+      "distribution": "store",
+      "channel": "testflight",
+      "env": {
+        "EXPO_PUBLIC_CHANNEL": "testflight"
+      }
+    },
+    "pilot": {
+      "distribution": "store",
+      "channel": "pilot",
+      "android": { "buildType": "app-bundle" },
+      "env": {
+        "EXPO_PUBLIC_CHANNEL": "pilot"
+      }
+    },
+    "productie": {
+      "distribution": "store",
+      "channel": "productie",
+      "autoIncrement": true,
+      "android": { "buildType": "app-bundle" },
+      "env": {
+        "EXPO_PUBLIC_CHANNEL": "productie"
+      }
+    }
+  },
+  "submit": {
+    "productie": {
+      "android": {
+        "track": "production"
+      },
+      "ios": {}
+    },
+    "play-gesloten": {
+      "android": {
+        "track": "beta"
+      }
+    },
+    "android-intern": {
+      "android": {
+        "track": "internal"
+      }
+    }
+  }
+}

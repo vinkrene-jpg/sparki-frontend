@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { haversineMeters, type LatLon } from "@/lib/geo";
+import { setRideActive } from "@/lib/release";
 import type { LiveLocation } from "@/hooks/useLiveLocation";
 import {
   clearRecoverableRide,
@@ -252,6 +253,8 @@ export function useRideRecorder(
     setBackgroundActive(false);
     setBackgroundDenied(false);
     setRecording(true);
+    // Golf 28: tijdens een actieve rit nooit een versieblokkade tonen.
+    setRideActive(true);
 
     startRideTracker()
       .then((res) => {
@@ -270,11 +273,13 @@ export function useRideRecorder(
 
   const stop = useCallback(() => {
     setRecording(false);
+    setRideActive(false);
     stopRideTracker().catch(() => {});
   }, []);
 
   const reset = useCallback(() => {
     setRecording(false);
+    setRideActive(false);
     startedAtRef.current = null;
     lastRef.current = null;
     backgroundActiveRef.current = false;

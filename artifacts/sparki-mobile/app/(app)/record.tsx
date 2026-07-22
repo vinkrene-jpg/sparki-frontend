@@ -15,10 +15,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { FallAlertCard } from "@/components/FallAlertCard";
 import { LiveSensorsPanel } from "@/components/LiveSensorsPanel";
+import {
+  PermissionDeniedNotice,
+  PermissionExplainer,
+} from "@/components/PermissionExplainer";
 import { RouteMap } from "@/components/RouteMap";
 import { useColors } from "@/hooks/useColors";
 import { useFallDetection } from "@/hooks/useFallDetection";
 import { useLiveLocation } from "@/hooks/useLiveLocation";
+import { useLocationConsent } from "@/hooks/useLocationConsent";
 import { useGarageSensors, useLiveSensors } from "@/hooks/useLiveSensors";
 import {
   useRideRecorder,
@@ -71,7 +76,12 @@ export default function RecordScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const { location, permission, error: locError } = useLiveLocation(true);
+  // Golf 28 — de locatiestream (en dus de systeemvraag) start pas nadat de
+  // toegang al verleend is óf de renner de uitlegkaart bewust heeft doorlopen.
+  const locConsent = useLocationConsent();
+  const { location, permission, error: locError } = useLiveLocation(
+    locConsent.ready,
+  );
   // Live Bluetooth sensors (wattage / hartslag / cadans) from the Fietsengarage.
   const sensors = useGarageSensors();
   const live = useLiveSensors();
@@ -156,7 +166,23 @@ export default function RecordScreen() {
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace("/"));
 
+  // Golf 28 — machtigingenuitleg vóór de systeemvraag: zolang locatie nog niet
+  // is toegekend legt een kaart eerst uit waarom Sparki dit vraagt en wat
+  // weigeren betekent. "Ga verder" start pas daarna de echte opname (en dus de
+  // systeemvraag). Bij al toegekende toegang start de rit direct.
+  const [showPermissionUitleg, setShowPermissionUitleg] = useState(false);
+
+  const onStartPressed = () => {
+    if (!locConsent.ready) {
+      setShowPermissionUitleg(true);
+      return;
+    }
+    onStart();
+  };
+
   const onStart = () => {
+    setShowPermissionUitleg(false);
+    locConsent.consent();
     setSaved(null);
     setReview(null);
     setStoppedPoints(null);
@@ -727,12 +753,20 @@ export default function RecordScreen() {
               </View>
             )}
             {permissionDenied ? (
-              <View style={[styles.recCard, { backgroundColor: c.card, borderColor: c.border }]}>
-                <Ionicons name="location-outline" size={18} color={c.mutedForeground} />
-                <Text style={[styles.recNote, { color: c.mutedForeground, flex: 1 }]}>
-                  Sta locatie toe om een rit op te nemen.
-                </Text>
-              </View>
+              <PermissionDeniedNotice
+                c={c}
+                permission="locatie"
+                message="Zonder locatietoegang kan Sparki geen rit opnemen — er wordt nooit een route verzonnen."
+              />
+            ) : showPermissionUitleg ? (
+              <PermissionExplainer
+                c={c}
+                permission="locatie"
+                extraKeys={["achtergrondlocatie"]}
+                showBatterijHint
+                onContinue={onStart}
+                onDismiss={() => setShowPermissionUitleg(false)}
+              />
             ) : (
               <>
                 {healthWarning && (
@@ -744,7 +778,7 @@ export default function RecordScreen() {
                   </View>
                 )}
               <Pressable
-                onPress={onStart}
+                onPress={onStartPressed}
                 style={[styles.recStartBtn, { backgroundColor: c.primary }]}
               >
                 <Ionicons name="play" size={20} color={c.primaryForeground} />

@@ -11,27 +11,48 @@ import { db, versionRequirementsTable } from "@workspace/db";
 import { logger } from "./logger";
 
 const CACHE_TTL_MS = 10_000;
-let cache: { at: number; rows: Map<string, { minVersion: string; message: string | null }> } | null =
-  null;
+
+type VersionRule = {
+  minVersion: string;
+  recommendedVersion: string | null;
+  message: string | null;
+};
+
+let cache: { at: number; rows: Map<string, VersionRule> } | null = null;
 
 export function invalidateVersionCache(): void {
   cache = null;
 }
 
-async function requirements(): Promise<Map<string, { minVersion: string; message: string | null }>> {
+async function requirements(): Promise<Map<string, VersionRule>> {
   const now = Date.now();
   if (cache && now - cache.at < CACHE_TTL_MS) return cache.rows;
   try {
     const rows = await db.select().from(versionRequirementsTable);
     cache = {
       at: now,
-      rows: new Map(rows.map((r) => [r.platform, { minVersion: r.minVersion, message: r.message }])),
+      rows: new Map(
+        rows.map((r) => [
+          r.platform,
+          {
+            minVersion: r.minVersion,
+            recommendedVersion: r.recommendedVersion,
+            message: r.message,
+          },
+        ]),
+      ),
     };
     return cache.rows;
   } catch (err) {
     logger.error({ err }, "version-requirements read failed");
     return cache?.rows ?? new Map();
   }
+}
+
+/** Versieregel voor een platform (of null als er geen regel is). */
+export async function versionRuleFor(platform: string): Promise<VersionRule | null> {
+  const reqs = await requirements();
+  return reqs.get(platform) ?? null;
 }
 
 /** Vergelijk twee "1.2.3"-versies; ontbrekende delen tellen als 0. */

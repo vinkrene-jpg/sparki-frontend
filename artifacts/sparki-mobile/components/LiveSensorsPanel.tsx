@@ -9,6 +9,7 @@ import {
   type SensorConnState,
 } from "@/hooks/useLiveSensors";
 import type { LiveSensorKind } from "@/lib/ble-sensors";
+import { PERMISSIE_UITLEG } from "@/lib/permissions";
 
 // Plain-Dutch labels per sensor kind — nav copy stays jargon-free.
 const KIND_LABEL: Record<string, string> = {
@@ -95,7 +96,17 @@ export function LiveSensorsPanel({
           de Sparki-webapp (Materiaal → Fietsengarage), dan verschijnen ze hier.
         </Text>
       ) : (
-        [...byKind.entries()].map(([kind, sensor]) => {
+        <>
+        {/* Golf 28 — uitleg vóór de eerste Bluetooth-systeemvraag: zolang nog
+            geen sensor verbonden is, staat hier waarom Sparki dit vraagt en
+            wat weigeren betekent. */}
+        {Object.values(connections).every((s) => s.status !== "connected") && (
+          <Text style={[styles.note, { color: c.mutedForeground }]}>
+            {PERMISSIE_UITLEG.bluetooth.doel}{" "}
+            {PERMISSIE_UITLEG.bluetooth.gevolgWeigeren}
+          </Text>
+        )}
+        {[...byKind.entries()].map(([kind, sensor]) => {
           const conn = connections[kind];
           return (
             <View key={kind} style={styles.sensorRow}>
@@ -142,7 +153,8 @@ export function LiveSensorsPanel({
               )}
             </View>
           );
-        })
+        })}
+        </>
       )}
 
       {support.available && registrationOnly.length > 0 && (

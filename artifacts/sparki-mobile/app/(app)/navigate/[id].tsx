@@ -16,10 +16,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { FallAlertCard } from "@/components/FallAlertCard";
 import { LiveSensorsPanel } from "@/components/LiveSensorsPanel";
+import {
+  PermissionDeniedNotice,
+  PermissionExplainer,
+} from "@/components/PermissionExplainer";
 import { RouteMap } from "@/components/RouteMap";
 import { useColors } from "@/hooks/useColors";
 import { useFallDetection } from "@/hooks/useFallDetection";
 import { useLiveLocation } from "@/hooks/useLiveLocation";
+import { useLocationConsent } from "@/hooks/useLocationConsent";
 import { useGarageSensors, useLiveSensors } from "@/hooks/useLiveSensors";
 import { useRideRecorder } from "@/hooks/useRideRecorder";
 import {
@@ -114,7 +119,12 @@ export default function NavigateScreen() {
   }, [isError, routeId]);
   const route = fetchedRoute ?? offlineRoute;
   const usingOfflineRoute = !fetchedRoute && !!offlineRoute;
-  const { location, permission, error: locError } = useLiveLocation(true);
+  // Golf 28 — de locatiestream (en dus de systeemvraag) start pas nadat de
+  // toegang al verleend is óf de renner de uitlegkaart bewust heeft doorlopen.
+  const locConsent = useLocationConsent();
+  const { location, permission, error: locError } = useLiveLocation(
+    locConsent.ready,
+  );
   // Live Bluetooth sensors (wattage / hartslag / cadans) from the Fietsengarage.
   const sensors = useGarageSensors();
   const live = useLiveSensors();
@@ -557,6 +567,23 @@ export default function NavigateScreen() {
         </View>
       )}
 
+      {/* ---------- Machtigingenuitleg (Golf 28): navigeren kan pas met
+           locatie; de uitleg staat er VÓÓR de systeemvraag. ---------- */}
+      {locConsent.checked && !locConsent.ready && !locError && (
+        <View style={[styles.permissionWrap, { bottom: insets.bottom + 96 }]}>
+          <PermissionExplainer
+            c={c}
+            permission="locatie"
+            extraKeys={["achtergrondlocatie"]}
+            showBatterijHint
+            onContinue={locConsent.consent}
+            onDismiss={() =>
+              router.canGoBack() ? router.back() : router.replace("/")
+            }
+          />
+        </View>
+      )}
+
       {/* ---------- Ride recording ---------- */}
       <RideRecorderBar
         c={c}
@@ -564,10 +591,12 @@ export default function NavigateScreen() {
         recorder={recorder}
         location={location}
         permissionDenied={permission === "denied" || !!locError}
+        locationGranted={locConsent.ready}
         saving={saveRide.isPending}
         saveError={saveRide.error ? String((saveRide.error as Error).message) : null}
         saved={saved}
         onStart={() => {
+          locConsent.consent();
           setSaved(null);
           saveRide.reset();
           recorder.start();
@@ -672,6 +701,7 @@ function RideRecorderBar({
   recorder,
   location,
   permissionDenied,
+  locationGranted,
   saving,
   saveError,
   saved,
@@ -690,6 +720,7 @@ function RideRecorderBar({
   recorder: ReturnType<typeof useRideRecorder>;
   location: ReturnType<typeof useLiveLocation>["location"];
   permissionDenied: boolean;
+  locationGranted: boolean;
   saving: boolean;
   saveError: string | null;
   saved: null | { sessionId: number | null; synced: boolean; syncError: string | null };
@@ -704,6 +735,9 @@ function RideRecorderBar({
   onDiscardRecovered: () => void;
 }) {
   const bottom = insets.bottom + 16;
+
+  // Golf 28 — uitlegkaart vóór de systeemvraag om locatietoegang.
+  const [showPermissionUitleg, setShowPermissionUitleg] = useState(false);
 
   if (saved) {
     return (
@@ -913,15 +947,34 @@ function RideRecorderBar({
         </View>
       )}
       {permissionDenied ? (
-        <View style={[styles.recCard, { backgroundColor: c.card, borderColor: c.border }]}>
-          <Ionicons name="location-outline" size={18} color={c.mutedForeground} />
-          <Text style={[styles.recNote, { color: c.mutedForeground, flex: 1 }]}>
-            Sta locatie toe om een rit op te nemen.
-          </Text>
-        </View>
+        <PermissionDeniedNotice
+          c={c}
+          permission="locatie"
+          message="Zonder locatietoegang kan Sparki je rit niet vastleggen — er wordt nooit een route verzonnen."
+        />
+      ) : showPermissionUitleg ? (
+        <PermissionExplainer
+          c={c}
+          permission="locatie"
+          extraKeys={["achtergrondlocatie"]}
+          showBatterijHint
+          onContinue={() => {
+            setShowPermissionUitleg(false);
+            onStart();
+          }}
+          onDismiss={() => setShowPermissionUitleg(false)}
+        />
       ) : (
         <Pressable
-          onPress={onStart}
+          onPress={() => {
+            // Golf 28 — uitleg vóór de systeemvraag zolang locatie nog niet is
+            // toegekend; bij al toegekende toegang start de rit direct.
+            if (Platform.OS !== "web" && !locationGranted) {
+              setShowPermissionUitleg(true);
+              return;
+            }
+            onStart();
+          }}
           style={[styles.recStartBtn, { backgroundColor: c.primary }]}
         >
           <Ionicons name="play" size={20} color={c.primaryForeground} />
@@ -1181,6 +1234,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   recWrap: { position: "absolute", left: 16, right: 16, gap: 8 },
+  permissionWrap: { position: "absolute", left: 16, right: 16 },
   recCard: {
     flexDirection: "row",
     alignItems: "center",

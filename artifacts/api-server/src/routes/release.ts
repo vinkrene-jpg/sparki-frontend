@@ -32,7 +32,12 @@ import { requireAuth, getClerkUserId } from "../lib/auth";
 import { isAdmin, parsePlatform } from "../lib/flags";
 import { effectiveReleaseGroup, isReleaseGroup } from "../lib/release-groups";
 import { invalidateKillSwitchCache } from "../lib/kill-switches";
-import { invalidateVersionCache, isParsableVersion } from "../lib/version-gate";
+import {
+  invalidateVersionCache,
+  isParsableVersion,
+  versionRuleFor,
+  compareVersions,
+} from "../lib/version-gate";
 import {
   recordError,
   criticalEventCountSince,
@@ -291,8 +296,32 @@ router.post("/pilot-consent", requireAuth, async (req, res) => {
 // ── Versiestatus (client polt dit ook voor het blokkeerscherm) ───────────────
 router.get("/version-check", async (req, res) => {
   // De versionGate-middleware heeft dit verzoek al beoordeeld: wie hier komt,
-  // is compatibel (of stuurt geen versieheader mee).
-  res.json({ ok: true });
+  // is compatibel (of stuurt geen versieheader mee). Golf 28: geef daarnaast
+  // een RUSTIG update-advies terug als er een aanbevolen versie bestaat die
+  // nieuwer is dan wat de client draait — nooit een blokkade.
+  try {
+    const version = req.get("x-sparki-app-version");
+    const platform = req.get("x-sparki-platform") === "mobiel" ? "mobiel" : "web";
+    const rule = await versionRuleFor(platform);
+    let updateAdvies: { recommendedVersion: string; clientVersion: string } | null = null;
+    if (
+      version &&
+      isParsableVersion(version) &&
+      rule?.recommendedVersion &&
+      isParsableVersion(rule.recommendedVersion) &&
+      compareVersions(version, rule.recommendedVersion) < 0
+    ) {
+      updateAdvies = {
+        recommendedVersion: rule.recommendedVersion,
+        clientVersion: version,
+      };
+    }
+    res.json({ ok: true, updateAdvies });
+  } catch (err) {
+    req.log.error({ err }, "release.versionCheck failed");
+    // Nooit een blokkade door deze route: val terug op enkel "ok".
+    res.json({ ok: true, updateAdvies: null });
+  }
 });
 
 // ═════════════════════════════ BEHEER ════════════════════════════════════════

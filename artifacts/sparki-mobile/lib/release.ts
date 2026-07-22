@@ -21,13 +21,57 @@ type VersionBlockListener = (message: string) => void;
 let blockListener: VersionBlockListener | null = null;
 let blockedMessage: string | null = null;
 
+// Golf 28 — tijdens een actieve rit tonen we NOOIT een blokkeerscherm:
+// veiligheid gaat vóór versiehandhaving. De blokkade wordt gelatcht en pas
+// gemeld zodra de rit voorbij is.
+let rideActive = false;
+
+export function setRideActive(active: boolean): void {
+  rideActive = active;
+  if (!active && blockedMessage) blockListener?.(blockedMessage);
+}
+
 export function onVersionBlocked(listener: VersionBlockListener): () => void {
   blockListener = listener;
-  // Was de blokkade er al vóór de listener aanhaakte, meld die alsnog.
-  if (blockedMessage) listener(blockedMessage);
+  // Was de blokkade er al vóór de listener aanhaakte, meld die alsnog —
+  // behalve tijdens een actieve rit (dan volgt de melding na afloop).
+  if (blockedMessage && !rideActive) listener(blockedMessage);
   return () => {
     if (blockListener === listener) blockListener = null;
   };
+}
+
+// ---------------------------------------------------------------------------
+// Rustig update-advies (aanbevolen versie, nooit blokkerend)
+// ---------------------------------------------------------------------------
+
+let updateAdviesMessage: string | null = null;
+let updateAdviesListener: ((message: string | null) => void) | null = null;
+
+export function onUpdateAdvies(
+  listener: (message: string | null) => void,
+): () => void {
+  updateAdviesListener = listener;
+  listener(updateAdviesMessage);
+  return () => {
+    if (updateAdviesListener === listener) updateAdviesListener = null;
+  };
+}
+
+async function checkUpdateAdvies(): Promise<void> {
+  try {
+    const data = await customFetch<{
+      ok: boolean;
+      updateAdvies?: { recommendedVersion: string } | null;
+    }>("/api/release/version-check", { responseType: "json" });
+    const advies = data?.updateAdvies ?? null;
+    updateAdviesMessage = advies
+      ? `Er is een nieuwere versie van Sparki (${advies.recommendedVersion}). Updaten kan wanneer het jou uitkomt.`
+      : null;
+    updateAdviesListener?.(updateAdviesMessage);
+  } catch {
+    // Geen advies kunnen ophalen is geen fout voor de gebruiker.
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -78,9 +122,13 @@ export function installRelease(): void {
   if (installed) return;
   installed = true;
 
+  // Golf 28 — het distributiekanaal (uit eas.json, EXPO_PUBLIC_CHANNEL) gaat
+  // mee zodat de server het kanaal als plafond op de releasegroep kan leggen.
+  const kanaal = process.env.EXPO_PUBLIC_CHANNEL ?? "";
   setDefaultHeaders({
     "x-sparki-app-version": APP_VERSION,
     "x-sparki-platform": "mobiel",
+    ...(kanaal ? { "x-sparki-kanaal": kanaal } : {}),
   });
 
   setErrorStatusHandler((status, body) => {
@@ -92,9 +140,14 @@ export function installRelease(): void {
         : "Deze versie van Sparki is verouderd. Installeer de nieuwste update om verder te gaan.";
     if (!blockedMessage) {
       blockedMessage = message;
-      blockListener?.(message);
+      // Tijdens een actieve rit stellen we het blokkeerscherm uit; de
+      // melding volgt automatisch zodra de rit stopt (setRideActive(false)).
+      if (!rideActive) blockListener?.(message);
     }
   });
+
+  // Rustig update-advies ophalen (niet blokkerend, fout = stil overslaan).
+  void checkUpdateAdvies();
 
   // React Native's globale fouthaak — bestaat niet op web; daar vangt de
   // webapp zelf al fouten via window-listeners.

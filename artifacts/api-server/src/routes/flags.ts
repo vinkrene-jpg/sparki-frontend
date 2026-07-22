@@ -12,7 +12,10 @@ import {
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { resolveFlags, isAdmin, parsePlatform } from "../lib/flags";
-import { effectiveReleaseGroup } from "../lib/release-groups";
+import {
+  effectiveReleaseGroup,
+  effectiveReleaseGroupForRequest,
+} from "../lib/release-groups";
 import { writeAudit } from "../lib/security/audit";
 import { RELEASE_GROUPS, RELEASE_PLATFORMS } from "@workspace/db";
 
@@ -36,7 +39,12 @@ router.get("/", requireAuth, async (req, res) => {
     const activeRole = profile?.activeRole ?? "athlete";
     const flags = await resolveFlags(clerkId, activeRole, {
       isHeadTester: profile?.isHeadTester === true,
-      releaseGroup: await effectiveReleaseGroup(clerkId),
+      // Golf 28: het distributiekanaal (storebuild) werkt als plafond op de
+      // releasegroep — een productie-build gedraagt zich altijd als productie.
+      releaseGroup: await effectiveReleaseGroupForRequest(
+        clerkId,
+        req.get("x-sparki-kanaal"),
+      ),
       platform: parsePlatform(req.get("x-sparki-platform")),
     });
     res.json(flags);

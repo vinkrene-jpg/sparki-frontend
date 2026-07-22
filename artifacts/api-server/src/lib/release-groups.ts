@@ -58,4 +58,40 @@ export async function effectiveReleaseGroup(clerkId: string): Promise<ReleaseGro
   ]);
 }
 
+// ── Distributiekanaal → releasegroep (Golf 28) ───────────────────────────────
+// Mobiele builds sturen hun distributiekanaal mee (header x-sparki-kanaal,
+// gevuld vanuit EXPO_PUBLIC_CHANNEL in eas.json). Het kanaal werkt als PLAFOND
+// op de releasegroep: een productie-storebuild gedraagt zich als "productie",
+// ook als de ingelogde gebruiker in een permissievere groep zit. Onbekende
+// kanaalwaarden vallen fail-closed terug op "productie". Geen header (web,
+// oudere builds) betekent: geen plafond.
+const CHANNEL_GROUPS: Record<string, ReleaseGroup> = {
+  ontwikkeling: "intern",
+  "android-intern": "intern",
+  "play-gesloten": "test",
+  testflight: "test",
+  pilot: "pilot",
+  productie: "productie",
+};
+
+export function channelCap(header: string | undefined | null): ReleaseGroup | null {
+  if (!header || !header.trim()) return null;
+  return CHANNEL_GROUPS[header.trim().toLowerCase()] ?? "productie";
+}
+
+/** Minst permissieve van twee groepen (plafond toepassen). */
+export function leastPermissive(a: ReleaseGroup, b: ReleaseGroup): ReleaseGroup {
+  return RANK[a] > RANK[b] ? a : b;
+}
+
+/** Effectieve groep inclusief kanaalplafond uit de request-header. */
+export async function effectiveReleaseGroupForRequest(
+  clerkId: string,
+  kanaalHeader: string | undefined | null,
+): Promise<ReleaseGroup> {
+  const group = await effectiveReleaseGroup(clerkId);
+  const cap = channelCap(kanaalHeader);
+  return cap ? leastPermissive(group, cap) : group;
+}
+
 export { RELEASE_GROUPS, type ReleaseGroup };

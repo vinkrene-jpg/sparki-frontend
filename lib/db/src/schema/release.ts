@@ -63,6 +63,9 @@ export type KillSwitch = typeof killSwitchesTable.$inferSelect;
 export const versionRequirementsTable = pgTable("version_requirements", {
   platform: text("platform").primaryKey(), // "web" | "mobiel"
   minVersion: text("min_version").notNull(),
+  // Golf 28 — aanbevolen versie: nieuwer dan het minimum. Clients hieronder
+  // krijgen een rustige update-melding, nooit een blokkade.
+  recommendedVersion: text("recommended_version"),
   message: text("message"),
   updatedBy: text("updated_by"),
   updatedAt: timestamp("updated_at", { withTimezone: true })
