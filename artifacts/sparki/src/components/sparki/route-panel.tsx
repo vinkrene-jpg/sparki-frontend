@@ -958,6 +958,8 @@ function RouteCard({
           geometry={geometry}
           nav={nav}
           distanceKm={route.distanceKm ?? null}
+          climbs={route.climbs}
+          elevationProfile={route.profile}
           routeId={route.id}
           workout={navWorkout}
           ftp={navFtp}

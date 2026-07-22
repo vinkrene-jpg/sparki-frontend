@@ -1036,13 +1036,15 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
       )
       .limit(1);
 
-    const stored = (imp?.parsedSummary as {
+    const summaryBlob = imp?.parsedSummary as {
       route?: {
         geometry?: unknown;
         profile?: unknown;
         climbs?: unknown;
       } | null;
-    } | null)?.route ?? null;
+      segments?: unknown;
+    } | null;
+    const stored = summaryBlob?.route ?? null;
     // Only accept real numeric [lat, lon(, ele)] tuples — guards against
     // malformed historical JSON rather than trusting the stored shape blindly.
     const geometry = Array.isArray(stored?.geometry)
@@ -1108,7 +1110,53 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
           })
       : [];
 
-    res.json({ session, track, profile, climbs });
+    // Rit-segmenten (klimmen/afdalingen met echte prestatie) — stored at GPX
+    // ingest. Validated per entry; rides without them honestly return null.
+    const segments = Array.isArray(summaryBlob?.segments)
+      ? (summaryBlob!.segments as unknown[]).flatMap((raw) => {
+          if (typeof raw !== "object" || raw === null) return [];
+          const s = raw as Record<string, unknown>;
+          const num = (v: unknown): number | null =>
+            typeof v === "number" && Number.isFinite(v) ? v : null;
+          const kind = s["kind"];
+          if (kind !== "klim" && kind !== "afdaling") return [];
+          const lengthKm = num(s["lengthKm"]);
+          const avgGradePct = num(s["avgGradePct"]);
+          const elevationDeltaM = num(s["elevationDeltaM"]);
+          if (lengthKm == null || avgGradePct == null || elevationDeltaM == null)
+            return [];
+          return [
+            {
+              kind,
+              name:
+                typeof s["name"] === "string" && s["name"].trim()
+                  ? s["name"].trim()
+                  : kind === "klim"
+                    ? "Klim"
+                    : "Afdaling",
+              startKm: num(s["startKm"]),
+              endKm: num(s["endKm"]),
+              lengthKm,
+              avgGradePct,
+              elevationDeltaM,
+              timeSec: num(s["timeSec"]),
+              avgKmh: num(s["avgKmh"]),
+              maxKmh: num(s["maxKmh"]),
+              avgPowerW: num(s["avgPowerW"]),
+              avgHr: num(s["avgHr"]),
+              vamMPerH: num(s["vamMPerH"]),
+            },
+          ];
+        })
+      : [];
+
+    res.json({
+      session,
+      track,
+      profile,
+      climbs,
+      segments: segments.length > 0 ? segments : null,
+    });
   } catch (err) {
     req.log.error({ err }, "athlete.sessions detail GET failed");
     res.status(500).json({ error: "Internal server error" });

@@ -279,6 +279,181 @@ export function summarizeTrack(
   };
 }
 
+// ── Rit-segmenten ────────────────────────────────────────────────────────────
+// Interesting stretches of a RIDDEN ride: sustained climbs and descents, with
+// the rider's REAL performance on each (time, speed, power, HR, VAM). Every
+// number comes from the file's own trackpoints — time-derived stats are only
+// present when the segment's points genuinely carry timestamps; sensor stats
+// only when the points carried readings. Nothing is estimated.
+
+export type RideSegment = {
+  kind: "klim" | "afdaling";
+  name: string;
+  startKm: number;
+  endKm: number;
+  lengthKm: number;
+  avgGradePct: number;
+  // Positive metres gained (klim) or lost (afdaling).
+  elevationDeltaM: number;
+  timeSec: number | null;
+  avgKmh: number | null;
+  maxKmh: number | null;
+  avgPowerW: number | null;
+  avgHr: number | null;
+  // Klim-only pace metric (vertical metres per hour); needs real time.
+  vamMPerH: number | null;
+};
+
+// Detect sustained monotone ranges by index. `sign` +1 finds ascents (same
+// thresholds as detectClimbs), -1 finds descents on the mirrored elevation.
+function detectMonotoneRanges(
+  points: { ele: number | null }[],
+  cumKm: number[],
+  sign: 1 | -1,
+): { startIdx: number; endIdx: number }[] {
+  const MIN_GAIN_M = 40;
+  const MIN_LENGTH_KM = 0.6;
+  const MIN_GRADE_PCT = 3;
+  const TOLERANCE_M = 12;
+
+  const ranges: { startIdx: number; endIdx: number }[] = [];
+  let startIdx: number | null = null;
+  let topEle = -Infinity;
+  let topIdx = 0;
+  const eleAt = (i: number): number | null => {
+    const e = points[i]!.ele;
+    return e == null ? null : e * sign;
+  };
+
+  const tryClose = () => {
+    if (startIdx == null) return;
+    const startEle = eleAt(startIdx);
+    const endEle = eleAt(topIdx);
+    if (startEle != null && endEle != null) {
+      const gain = endEle - startEle;
+      const lengthKm = cumKm[topIdx]! - cumKm[startIdx]!;
+      if (
+        gain >= MIN_GAIN_M &&
+        lengthKm >= MIN_LENGTH_KM &&
+        (gain / (lengthKm * 1000)) * 100 >= MIN_GRADE_PCT
+      ) {
+        ranges.push({ startIdx, endIdx: topIdx });
+      }
+    }
+    startIdx = null;
+    topEle = -Infinity;
+  };
+
+  for (let i = 0; i < points.length; i++) {
+    const ele = eleAt(i);
+    if (ele == null) continue;
+    if (startIdx == null) {
+      startIdx = i;
+      topEle = ele;
+      topIdx = i;
+      continue;
+    }
+    if (ele >= topEle) {
+      topEle = ele;
+      topIdx = i;
+    } else if (topEle - ele >= TOLERANCE_M) {
+      tryClose();
+      startIdx = i;
+      topEle = ele;
+      topIdx = i;
+    }
+  }
+  tryClose();
+  return ranges;
+}
+
+// Build ride segments (climbs + descents) with the rider's real performance.
+// Returns [] when the track carries no elevation — honest absence.
+export function computeRideSegments(content: string): RideSegment[] {
+  const points = extractTrackPoints(content);
+  if (points.length < 2 || !points.some((p) => p.ele != null)) return [];
+
+  const cumKm: number[] = [0];
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]!;
+    const b = points[i]!;
+    cumKm.push(cumKm[i - 1]! + haversineKm(a.lat, a.lon, b.lat, b.lon));
+  }
+
+  const build = (
+    kind: "klim" | "afdaling",
+    range: { startIdx: number; endIdx: number },
+    ordinal: number,
+  ): RideSegment | null => {
+    const { startIdx, endIdx } = range;
+    const startKm = cumKm[startIdx]!;
+    const endKm = cumKm[endIdx]!;
+    const lengthKm = endKm - startKm;
+    if (!(lengthKm > 0)) return null;
+    const startEle = points[startIdx]!.ele;
+    const endEle = points[endIdx]!.ele;
+    if (startEle == null || endEle == null) return null;
+    const deltaM = Math.abs(endEle - startEle);
+
+    // Real time over the segment: first/last timestamped points inside it.
+    const seg = points.slice(startIdx, endIdx + 1);
+    const times = seg
+      .map((p) => p.time)
+      .filter((t): t is number => t != null);
+    const timeSec =
+      times.length >= 2
+        ? Math.round((Math.max(...times) - Math.min(...times)) / 1000)
+        : null;
+    const hours = timeSec != null && timeSec > 0 ? timeSec / 3600 : null;
+
+    // Max speed from consecutive timestamped points (real deltas only). Guard
+    // against GPS jitter by requiring >= 2 s between the points.
+    let maxKmh: number | null = null;
+    for (let i = startIdx + 1; i <= endIdx; i++) {
+      const a = points[i - 1]!;
+      const b = points[i]!;
+      if (a.time == null || b.time == null) continue;
+      const dtH = (b.time - a.time) / 3_600_000;
+      if (dtH * 3600 < 2) continue;
+      const v = (cumKm[i]! - cumKm[i - 1]!) / dtH;
+      if (Number.isFinite(v) && (maxKmh == null || v > maxKmh)) maxKmh = v;
+    }
+
+    const avgOf = (vals: number[]): number | null =>
+      vals.length > 0
+        ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length)
+        : null;
+    const pw = seg.map((p) => p.power).filter((v): v is number => v != null);
+    const hr = seg.map((p) => p.hr).filter((v): v is number => v != null);
+
+    return {
+      kind,
+      name: `${kind === "klim" ? "Klim" : "Afdaling"} ${ordinal}`,
+      startKm: Math.round(startKm * 100) / 100,
+      endKm: Math.round(endKm * 100) / 100,
+      lengthKm: Math.round(lengthKm * 10) / 10,
+      avgGradePct: Math.round((deltaM / (lengthKm * 1000)) * 1000) / 10,
+      elevationDeltaM: Math.round(deltaM),
+      timeSec,
+      avgKmh: hours != null ? Math.round((lengthKm / hours) * 10) / 10 : null,
+      maxKmh: maxKmh != null ? Math.round(maxKmh * 10) / 10 : null,
+      avgPowerW: avgOf(pw),
+      avgHr: avgOf(hr),
+      vamMPerH:
+        kind === "klim" && hours != null ? Math.round(deltaM / hours) : null,
+    };
+  };
+
+  const climbs = detectMonotoneRanges(points, cumKm, 1)
+    .map((r, i) => build("klim", r, i + 1))
+    .filter((s): s is RideSegment => s != null);
+  const descents = detectMonotoneRanges(points, cumKm, -1)
+    .map((r, i) => build("afdaling", r, i + 1))
+    .filter((s): s is RideSegment => s != null);
+
+  return [...climbs, ...descents].sort((a, b) => a.startKm - b.startKm);
+}
+
 export function parseGpxRoute(content: string): GpxRoute | null {
   const points = extractTrackPoints(content);
   if (points.length === 0) return null;

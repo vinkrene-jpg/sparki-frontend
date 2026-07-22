@@ -8,7 +8,13 @@ import {
   type ActivityImportFileType,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { parseGpx, parseGpxRoute, parseFit, parseTcx } from "../engines/route";
+import {
+  parseGpx,
+  parseGpxRoute,
+  parseFit,
+  parseTcx,
+  computeRideSegments,
+} from "../engines/route";
 import {
   ingestActivityFile,
   fileExternalId,
@@ -128,8 +134,12 @@ router.post("/", requireAuth, async (req, res) => {
       // + detected climbs) so this ridden ride can later be saved as a
       // re-ridable route — all from the same real <trkpt> data, never fabricated.
       const route = parseGpxRoute(content);
+      // Rit-segmenten (klimmen/afdalingen mét echte prestatie per segment) —
+      // alleen aanwezig als de track echte hoogte draagt; anders eerlijk weg.
+      const segments = computeRideSegments(content);
       const merged: Record<string, unknown> = {
         ...(summary as unknown as Record<string, unknown>),
+        segments: segments.length > 0 ? segments : null,
         route:
           route && route.geometry.length > 1
             ? {

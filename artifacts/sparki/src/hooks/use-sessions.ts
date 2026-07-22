@@ -17,6 +17,39 @@ export function useSessions(limit = 20) {
   });
 }
 
+// Rit-segmenten (klimmen/afdalingen met echte prestatie) uit het gekoppelde
+// activiteitenbestand — null wanneer die er eerlijk niet zijn.
+export type RideSegment = {
+  kind: "klim" | "afdaling";
+  name: string;
+  startKm: number | null;
+  endKm: number | null;
+  lengthKm: number;
+  avgGradePct: number;
+  elevationDeltaM: number;
+  timeSec: number | null;
+  avgKmh: number | null;
+  maxKmh: number | null;
+  avgPowerW: number | null;
+  avgHr: number | null;
+  vamMPerH: number | null;
+};
+
+export function useSessionSegments(id: number | null) {
+  const { isSignedIn } = useUser();
+
+  return useQuery({
+    queryKey: ["athlete", "session-segments", id],
+    queryFn: () =>
+      apiFetch<{ segments: RideSegment[] | null }>(
+        `/api/athlete/sessions/${id}`,
+      ),
+    enabled: (isSignedIn === true || DEV_PREVIEW) && id != null,
+    staleTime: STALE.profile,
+    select: (data) => data.segments,
+  });
+}
+
 export function useLogSession() {
   const qc = useQueryClient();
 

@@ -10,6 +10,7 @@ import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { analyzeSession, type InsightTone } from "@/lib/session-analysis"
 import { useRideStory, useRideStoryFlag } from "@/hooks/use-ride-story"
 import { RideStoryChapters } from "@/components/sparki/ride-story"
+import { useSessionSegments, type RideSegment } from "@/hooks/use-sessions"
 import {
   Clock,
   Route as RouteIcon,
@@ -18,7 +19,93 @@ import {
   Zap,
   HeartPulse,
   Activity,
+  TrendingDown,
 } from "lucide-react"
+
+function fmtSegTime(sec: number): string {
+  const m = Math.floor(sec / 60)
+  const s = sec % 60
+  if (m >= 60) {
+    const h = Math.floor(m / 60)
+    return `${h}u${String(m % 60).padStart(2, "0")}`
+  }
+  return `${m}:${String(s).padStart(2, "0")} min`
+}
+
+// Leesbaar verslag per interessant stuk van de rit (klimmen en afdalingen),
+// met uitsluitend écht gemeten waarden — ontbrekende cijfers blijven weg.
+function SegmentReport({ segments }: { segments: RideSegment[] }) {
+  return (
+    <div className="mt-6">
+      <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+        ZO REED JE DE SEGMENTEN
+      </span>
+      <div className="mt-2 flex flex-col gap-2">
+        {segments.map((seg, i) => {
+          const isKlim = seg.kind === "klim"
+          const facts: Array<[string, string]> = []
+          if (seg.timeSec != null) facts.push(["Tijd", fmtSegTime(seg.timeSec)])
+          if (seg.avgKmh != null) facts.push(["Gem.", `${seg.avgKmh} km/u`])
+          if (!isKlim && seg.maxKmh != null)
+            facts.push(["Top", `${seg.maxKmh} km/u`])
+          if (seg.avgPowerW != null)
+            facts.push(["Vermogen", `${seg.avgPowerW} W`])
+          if (seg.avgHr != null) facts.push(["Hartslag", `${seg.avgHr} bpm`])
+          if (isKlim && seg.vamMPerH != null)
+            facts.push(["Klimtempo", `${seg.vamMPerH} m/u`])
+          return (
+            <div
+              key={i}
+              className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3.5"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  {isKlim ? (
+                    <Mountain
+                      className="h-4 w-4 shrink-0"
+                      style={{ color: ACCENT }}
+                      strokeWidth={1.75}
+                    />
+                  ) : (
+                    <TrendingDown
+                      className="h-4 w-4 shrink-0 text-white/50"
+                      strokeWidth={1.75}
+                    />
+                  )}
+                  <span className="text-[14px] font-medium text-white/90">
+                    {seg.name}
+                  </span>
+                </div>
+                <span className="font-mono text-[11px] tabular-nums text-white/45">
+                  {seg.lengthKm} km · {isKlim ? "+" : "−"}
+                  {seg.elevationDeltaM} m · {Math.abs(seg.avgGradePct)}%
+                </span>
+              </div>
+              {facts.length > 0 ? (
+                <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1">
+                  {facts.map(([label, value]) => (
+                    <span
+                      key={label}
+                      className="text-[12px] tabular-nums text-white/65"
+                    >
+                      <span className="text-white/35">{label} </span>
+                      {value}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-[12px] leading-snug text-white/40">
+                  Het bestand van deze rit bevat geen tijden op dit stuk, dus
+                  hier valt eerlijk gezegd niets over je tempo te zeggen.
+                </p>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 const TONE_COLOR: Record<InsightTone, string> = {
   neutral: "rgba(255,255,255,0.4)",
@@ -108,6 +195,11 @@ export function SessionDetailDrawer({
   const storyFlagOn = useRideStoryFlag()
   const { data: story } = useRideStory(
     storyFlagOn && open && session ? session.id : null,
+  )
+  // Segmentverslag: klimmen/afdalingen met echte prestatie uit het gekoppelde
+  // ritbestand. Alleen tonen als ze er echt zijn — geen lege beloftes.
+  const { data: segments } = useSessionSegments(
+    open && session ? session.id : null,
   )
   const showStory = storyFlagOn && story != null && session?.id === story.session.id
   const analysis = session
@@ -260,6 +352,10 @@ export function SessionDetailDrawer({
               </p>
             )}
               </>
+            )}
+
+            {segments != null && segments.length > 0 && (
+              <SegmentReport segments={segments} />
             )}
 
             {session.feelScore != null && (

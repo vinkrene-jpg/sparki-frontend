@@ -305,11 +305,20 @@ export function RouteNavigator({
   ftp = null,
   onEditRoute = null,
   rideOptions = null,
+  climbs = null,
+  elevationProfile = null,
 }: {
   name: string
   geometry: [number, number][]
   nav: RouteNavCue[]
   distanceKm: number | null
+  // Bekende beklimmingen van deze route (uit het echte hoogteprofiel bij het
+  // opslaan/genereren) — voedt de klim-weergave onderweg. Zonder klimmen of
+  // zonder summitKm blijft die weergave eerlijk weg.
+  climbs?: { name: string; lengthKm: number; avgGradePct: number; summitKm?: number }[] | null
+  // Het echte (verkleinde) hoogteprofiel van de route in meters — voor het
+  // klimprofieltje en het stijgingspercentage ter plekke.
+  elevationProfile?: number[] | null
   onClose: () => void
   // When this is a saved route, sprint boards ("bordjes") are detected for it.
   routeId?: number | null
@@ -795,6 +804,128 @@ export function RouteNavigator({
       offBy: distanceMeters,
     }
   }, [location, path, cumKm])
+
+  // ── Klim-weergave ─────────────────────────────────────────────────
+  // Bekende beklimmingen van de route (echt hoogteprofiel, opgeslagen bij het
+  // maken van de route). Nadert de rijder een klim, dan verschijnt die alvast
+  // naast de kaart; óp de klim staan de cijfers groot; na de top verdwijnt
+  // alles weer. Zonder klimgegevens blijft dit eerlijk helemaal weg.
+  const climbWindows = useMemo(
+    () =>
+      (climbs ?? [])
+        .filter(
+          (c) =>
+            typeof c.summitKm === "number" &&
+            Number.isFinite(c.summitKm) &&
+            c.lengthKm > 0,
+        )
+        .map((c) => ({
+          name: c.name,
+          lengthKm: c.lengthKm,
+          avgGradePct: c.avgGradePct,
+          summitKm: c.summitKm as number,
+          startKm: Math.max(0, (c.summitKm as number) - c.lengthKm),
+        }))
+        .sort((a, b) => a.startKm - b.startKm),
+    [climbs],
+  )
+
+  // Hoogte (m) op een km-positie, geïnterpoleerd uit het echte (verkleinde)
+  // routeprofiel. Null zonder bruikbaar profiel — dan geen percentages.
+  const routeTotalKm = distanceKm ?? cumKm[cumKm.length - 1] ?? 0
+  const eleAtKm = useMemo(() => {
+    const prof = elevationProfile
+    if (!prof || prof.length < 2 || !(routeTotalKm > 0)) return null
+    return (km: number): number => {
+      const pos = Math.max(
+        0,
+        Math.min(prof.length - 1, (km / routeTotalKm) * (prof.length - 1)),
+      )
+      const i = Math.floor(pos)
+      const f = pos - i
+      const a = prof[i]!
+      const b = prof[Math.min(i + 1, prof.length - 1)]!
+      return a + (b - a) * f
+    }
+  }, [elevationProfile, routeTotalKm])
+
+  const CLIMB_ANNOUNCE_KM = 1.0
+  const CLIMB_GRACE_KM = 0.1
+  const climbLive = useMemo(() => {
+    if (!progress || detour || climbWindows.length === 0) return null
+    const t = progress.traveledKm
+    for (const c of climbWindows) {
+      if (t >= c.startKm && t <= c.summitKm + CLIMB_GRACE_KM) {
+        // Óp de klim: resterend tot de top + percentage ter plekke (over één
+        // profielstap rond de huidige positie — uit het routeprofiel, geen
+        // live meting).
+        const toTopM = Math.max(0, (c.summitKm - t) * 1000)
+        let gradeNowPct: number | null = null
+        let toClimbM: number | null = null
+        if (eleAtKm && elevationProfile) {
+          const stepKm = Math.max(0.05, routeTotalKm / (elevationProfile.length - 1))
+          const a = eleAtKm(Math.max(c.startKm, t - stepKm / 2))
+          const b = eleAtKm(Math.min(c.summitKm, t + stepKm / 2))
+          const spanKm =
+            Math.min(c.summitKm, t + stepKm / 2) -
+            Math.max(c.startKm, t - stepKm / 2)
+          if (spanKm > 0.01) {
+            gradeNowPct = Math.round(((b - a) / (spanKm * 1000)) * 1000) / 10
+          }
+          toClimbM = Math.max(0, Math.round(eleAtKm(c.summitKm) - eleAtKm(t)))
+        }
+        return { phase: "op" as const, climb: c, toTopM, gradeNowPct, toClimbM }
+      }
+      if (t >= c.startKm - CLIMB_ANNOUNCE_KM && t < c.startKm) {
+        return {
+          phase: "komt" as const,
+          climb: c,
+          inM: (c.startKm - t) * 1000,
+        }
+      }
+    }
+    return null
+  }, [progress, detour, climbWindows, eleAtKm, elevationProfile, routeTotalKm])
+
+  // Klimprofieltje: het echte hoogteverloop van deze klim, met de rijder als
+  // stip. Alleen getekend als er een bruikbaar routeprofiel is.
+  const climbShape = useMemo(() => {
+    if (!climbLive || !eleAtKm) return null
+    const c = climbLive.climb
+    const spanKm = c.summitKm - c.startKm
+    if (!(spanKm > 0)) return null
+    const N = 25
+    const pts: number[] = []
+    for (let i = 0; i < N; i++) {
+      pts.push(eleAtKm(c.startKm + ((c.summitKm - c.startKm) * i) / (N - 1)))
+    }
+    const min = Math.min(...pts)
+    const max = Math.max(...pts)
+    if (!(max > min)) return null
+    const W = 148
+    const H = 40
+    const line = pts
+      .map((e, i) => {
+        const x = (i / (N - 1)) * W
+        const y = H - 4 - ((e - min) / (max - min)) * (H - 8)
+        return `${Math.round(x * 10) / 10},${Math.round(y * 10) / 10}`
+      })
+      .join(" ")
+    const frac =
+      climbLive.phase === "op" && progress
+        ? Math.max(
+            0,
+            Math.min(
+              1,
+              (progress.traveledKm - c.startKm) / spanKm,
+            ),
+          )
+        : 0
+    const dotIdx = Math.round(frac * (N - 1))
+    const dotX = (dotIdx / (N - 1)) * W
+    const dotY = H - 4 - ((pts[dotIdx]! - min) / (max - min)) * (H - 8)
+    return { line, dotX, dotY, W, H, showDot: climbLive.phase === "op" }
+  }, [climbLive, eleAtKm, progress])
 
   // Live progress along an active detour — same honest mechanics as the main
   // route: nearest point on the real connector line, cues by distance.
@@ -1928,6 +2059,107 @@ export function RouteNavigator({
           </div>
         )}
 
+        {/* Klim-weergave: nadert de rijder een bekende klim, dan verschijnt
+            die alvast; óp de klim staan de cijfers groot; na de top verdwijnt
+            alles. Cijfers komen uit het echte hoogteprofiel van de route. */}
+        {climbLive && climbLive.phase === "komt" && (
+          <div className="pointer-events-none flex justify-end">
+            <div className="w-[220px] rounded-2xl border border-white/10 bg-[#070d16]/85 p-3 backdrop-blur-md">
+              <p className="font-mono text-[9px] uppercase tracking-[0.16em]" style={{ color: ACCENT }}>
+                Klim over {fmtMeters(climbLive.inM)}
+              </p>
+              <p className="mt-1 truncate text-[14px] font-semibold text-white/90">
+                {climbLive.climb.name}
+              </p>
+              <p className="mt-0.5 font-mono text-[11px] tabular-nums text-white/55">
+                {climbLive.climb.lengthKm.toFixed(1)} km ·{" "}
+                {climbLive.climb.avgGradePct.toFixed(1)}% gem.
+              </p>
+              {climbShape && (
+                <svg
+                  viewBox={`0 0 ${climbShape.W} ${climbShape.H}`}
+                  className="mt-2 w-full"
+                  aria-hidden="true"
+                >
+                  <polyline
+                    points={climbShape.line}
+                    fill="none"
+                    stroke="rgba(255,255,255,0.45)"
+                    strokeWidth="1.5"
+                  />
+                </svg>
+              )}
+            </div>
+          </div>
+        )}
+        {climbLive && climbLive.phase === "op" && (
+          <div className="pointer-events-none flex justify-end">
+            <div className="w-[240px] rounded-2xl border p-3.5 backdrop-blur-md" style={{ borderColor: "rgba(94,234,255,0.35)", background: "rgba(7,13,22,0.88)" }}>
+              <p className="font-mono text-[9px] uppercase tracking-[0.16em]" style={{ color: ACCENT }}>
+                Op de klim
+              </p>
+              <p className="mt-0.5 truncate text-[14px] font-semibold text-white/90">
+                {climbLive.climb.name}
+              </p>
+              <div className="mt-2 flex items-end gap-4">
+                <div>
+                  <p className="text-[26px] font-semibold leading-none tabular-nums text-white/95">
+                    {fmtMeters(climbLive.toTopM)}
+                  </p>
+                  <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
+                    tot de top
+                  </p>
+                </div>
+                {climbLive.gradeNowPct != null && (
+                  <div>
+                    <p className="text-[26px] font-semibold leading-none tabular-nums" style={{ color: ACCENT }}>
+                      {climbLive.gradeNowPct.toFixed(1)}%
+                    </p>
+                    <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
+                      hier
+                    </p>
+                  </div>
+                )}
+                {climbLive.toClimbM != null && (
+                  <div>
+                    <p className="text-[26px] font-semibold leading-none tabular-nums text-white/95">
+                      {climbLive.toClimbM}
+                    </p>
+                    <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
+                      hm te gaan
+                    </p>
+                  </div>
+                )}
+              </div>
+              {climbShape && (
+                <svg
+                  viewBox={`0 0 ${climbShape.W} ${climbShape.H}`}
+                  className="mt-2.5 w-full"
+                  aria-hidden="true"
+                >
+                  <polyline
+                    points={climbShape.line}
+                    fill="none"
+                    stroke="rgba(255,255,255,0.45)"
+                    strokeWidth="1.5"
+                  />
+                  {climbShape.showDot && (
+                    <circle
+                      cx={climbShape.dotX}
+                      cy={climbShape.dotY}
+                      r="3"
+                      fill={ACCENT}
+                    />
+                  )}
+                </svg>
+              )}
+              <p className="mt-1.5 text-[10px] leading-snug text-white/35">
+                Uit het hoogteprofiel van de route
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Uitklapbare legenda — legt alleen uit wat ECHT op deze kaart staat. */}
         {showLegend && (
           <div className="pointer-events-auto flex flex-col gap-2 rounded-2xl border border-white/10 bg-[#070d16]/95 p-3 backdrop-blur-md">
@@ -3028,6 +3260,14 @@ export function RouteNavigator({
             </div>
           ) : (
             <p className="text-[14px] text-white/45">Volg de route.</p>
+          )}
+          {climbLive && climbLive.phase === "op" && (
+            <p className="font-mono text-[13px] tabular-nums" style={{ color: ACCENT }}>
+              Klim · nog {fmtMeters(climbLive.toTopM)}
+              {climbLive.gradeNowPct != null
+                ? ` · ${climbLive.gradeNowPct.toFixed(1)}%`
+                : ""}
+            </p>
           )}
           <div className="flex items-end gap-8">
             <div className="text-center">
