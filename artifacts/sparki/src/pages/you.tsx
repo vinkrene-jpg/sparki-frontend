@@ -4,6 +4,7 @@ import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { StateCard } from "@/components/sparki/state-card"
 import { PerformanceNumbers } from "@/components/sparki/performance-numbers"
+import { SportPassport } from "@/components/sparki/sport-passport"
 import { ProfileSettings } from "@/components/sparki/profile-settings"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { useClearPhotoDecor } from "@/hooks/use-photo-style"
@@ -576,6 +577,19 @@ export default function YouPage() {
             load={load}
             bandbreedte={bandbreedte}
           />
+        </div>
+      </section>
+
+      {/* SPORTPASPOORT — herleidbaar profiel: herkomst per waarde, open
+          voorstellen (zones-rakende autowijzigingen), geschiedenis,
+          ontwikkeling en een zelf samengestelde export. */}
+      <section id="sportpaspoort" className="scroll-mt-24">
+        <SectionLabel n="02b" title="Sportpaspoort" />
+        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+          Waar iedere waarde vandaan komt — en jij houdt de regie
+        </p>
+        <div className="mt-3">
+          <SportPassport />
         </div>
       </section>
 

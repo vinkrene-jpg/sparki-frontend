@@ -86,6 +86,8 @@ export const queryKeys = {
     load: () => ["athlete", "load"] as const,
     powerBests: () => ["athlete", "power-bests"] as const,
     ftpHistory: () => ["athlete", "ftp"] as const,
+    passport: () => ["athlete", "passport"] as const,
+    passportOntwikkeling: () => ["athlete", "passport", "ontwikkeling"] as const,
     brief: () => ["athlete", "ai", "brief"] as const,
     plan: (from: string, to: string) =>
       ["athlete", "plan", from, to] as const,

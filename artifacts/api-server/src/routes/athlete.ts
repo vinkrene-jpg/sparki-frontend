@@ -233,7 +233,21 @@ router.put("/profile", requireAuth, async (req, res) => {
         .where(eq(userProfilesTable.clerkId, clerkId));
     }
 
-    const [updated] = await db
+    // Sportpaspoort: oude waarden vastleggen zodat iedere wijziging van een
+    // kernveld een herleidbaar event krijgt (nooit stil overschrijven).
+    const [before] = await db
+      .select()
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId))
+      .limit(1);
+
+    // Atomair: profielwijziging + paspoort-events in één transactie — een
+    // kernveld kan nooit veranderen zonder herleidbaar event.
+    const { recordValueEvent, PASSPORT_FIELDS } = await import(
+      "../lib/passport"
+    );
+    const updated = await db.transaction(async (tx) => {
+    const [row] = await tx
       .update(athleteProfilesTable)
       .set({
         ...(ftp != null && { ftp }),
@@ -267,6 +281,37 @@ router.put("/profile", requireAuth, async (req, res) => {
       .where(eq(athleteProfilesTable.clerkId, clerkId))
       .returning();
 
+    // Sportpaspoort-events voor gewijzigde kernvelden — in dezelfde
+    // transactie: mislukt een event, dan wordt de wijziging teruggedraaid
+    // (nooit stil overschrijven, ook niet bij een storing halverwege).
+    if (row && before) {
+      const beforeRec = before as Record<string, unknown>;
+      const updatedRec = row as Record<string, unknown>;
+      for (const field of Object.keys(PASSPORT_FIELDS) as Array<
+        keyof typeof PASSPORT_FIELDS
+      >) {
+        const oldV = beforeRec[field] == null ? null : String(beforeRec[field]);
+        const newV =
+          updatedRec[field] == null ? null : String(updatedRec[field]);
+        if (oldV === newV) continue;
+        await recordValueEvent(
+          {
+            clerkId,
+            field,
+            oldValue: oldV,
+            newValue: newV,
+            origin: "handmatig",
+            source: "profielinstellingen",
+            actorType: "sporter",
+            actorId: clerkId,
+          },
+          tx,
+        );
+      }
+    }
+    return row;
+    });
+
     if (!updated) {
       res.status(404).json({ error: "Profile not found" });
       return;
@@ -299,11 +344,39 @@ router.put("/health-status", requireAuth, async (req, res) => {
   }
 
   try {
-    const [updated] = await db
-      .update(athleteProfilesTable)
-      .set({ healthStatus, updatedAt: new Date() })
-      .where(eq(athleteProfilesTable.clerkId, clerkId))
-      .returning();
+    // Atomair: statuswissel + paspoort-event in één transactie — de status
+    // kan nooit veranderen zonder herleidbaar event.
+    const { recordValueEvent } = await import("../lib/passport");
+    const updated = await db.transaction(async (tx) => {
+      const [beforeHealth] = await tx
+        .select({ healthStatus: athleteProfilesTable.healthStatus })
+        .from(athleteProfilesTable)
+        .where(eq(athleteProfilesTable.clerkId, clerkId))
+        .limit(1);
+
+      const [row] = await tx
+        .update(athleteProfilesTable)
+        .set({ healthStatus, updatedAt: new Date() })
+        .where(eq(athleteProfilesTable.clerkId, clerkId))
+        .returning();
+
+      if (row && beforeHealth && beforeHealth.healthStatus !== row.healthStatus) {
+        await recordValueEvent(
+          {
+            clerkId,
+            field: "healthStatus",
+            oldValue: beforeHealth.healthStatus ?? null,
+            newValue: row.healthStatus ?? null,
+            origin: "handmatig",
+            source: "gezondheidsmelding",
+            actorType: "sporter",
+            actorId: clerkId,
+          },
+          tx,
+        );
+      }
+      return row;
+    });
 
     if (!updated) {
       res.status(404).json({ error: "Profile not found" });

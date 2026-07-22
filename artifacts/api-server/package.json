@@ -98,7 +98,8 @@
     "test:stream-extraction": "node ./scripts/run-test.mjs stream-extraction",
     "test:race-flow": "node ./scripts/run-test.mjs race-flow",
     "test:fueling": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs fueling",
-    "test:route-chain": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-chain"
+    "test:route-chain": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-chain",
+    "test:sportpaspoort": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs sportpaspoort"
   },
   "dependencies": {
     "@clerk/express": "^2.1.30",

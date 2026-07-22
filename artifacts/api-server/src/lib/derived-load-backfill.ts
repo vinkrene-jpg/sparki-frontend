@@ -141,7 +141,51 @@ export async function recalibrateEstimatedFtp(
     .from(athleteProfilesTable)
     .where(eq(athleteProfilesTable.clerkId, clerkId))
     .limit(1);
-  if (!profile || !profile.estimated) return { changed: false, ftp: null };
+  if (!profile) return { changed: false, ftp: null };
+
+  // Zelf ingevoerde/gemeten FTP wordt NOOIT automatisch aangepast — als een
+  // echte inspanning aantoont dat hij te laag staat, wordt dat een
+  // paspoortvoorstel dat de sporter (of bevoegde coach) moet bevestigen,
+  // omdat een FTP-wijziging alle trainingszones verandert.
+  if (!profile.estimated) {
+    if (profile.ftp == null) return { changed: false, ftp: null };
+    const measured = await db
+      .select({
+        sessionDate: trainingSessionsTable.sessionDate,
+        durationMin: trainingSessionsTable.durationMin,
+        normalizedPower: trainingSessionsTable.normalizedPower,
+        avgPower: trainingSessionsTable.avgPower,
+      })
+      .from(trainingSessionsTable)
+      .where(
+        and(
+          eq(trainingSessionsTable.clerkId, clerkId),
+          sql`${trainingSessionsTable.sessionDate} >= (CURRENT_DATE - make_interval(days => ${windowDays}))::date`,
+        ),
+      );
+    const measuredFloor = estimateFtpFloor(measured);
+    if (
+      measuredFloor &&
+      measuredFloor.floorWatts > Math.round(profile.ftp * 1.05)
+    ) {
+      const { createProposal } = await import("./passport");
+      await createProposal({
+        clerkId,
+        field: "ftp",
+        proposedValue: String(measuredFloor.floorWatts),
+        origin: "berekend",
+        source: "bewezen inspanning",
+        reason:
+          measuredFloor.basis.kind === "sustained"
+            ? `Je hield ${measuredFloor.basis.watts} watt vol over ${measuredFloor.basis.durationMin} min op ${measuredFloor.basis.sessionDate} — je FTP is minstens ${measuredFloor.floorWatts} watt.`
+            : `Je reed ${measuredFloor.basis.watts} watt over ${measuredFloor.basis.durationMin} min op ${measuredFloor.basis.sessionDate} — 95%-regel geeft een ondergrens van ${measuredFloor.floorWatts} watt.`,
+        proposedBy: "ftp-ondergrens-engine",
+      }).catch(() => {
+        // Best-effort: een mislukt voorstel mag de backfill nooit breken.
+      });
+    }
+    return { changed: false, ftp: profile.ftp };
+  }
 
   const sessions = await db
     .select({
@@ -163,56 +207,81 @@ export async function recalibrateEstimatedFtp(
     return { changed: false, ftp: profile.ftp };
   }
 
-  await db
-    .update(athleteProfilesTable)
-    .set({
-      ftp: floor.floorWatts,
-      // Still a derived value (a lower bound, not a measurement) — the flag
-      // stays true so a stronger real effort keeps raising it.
-      ftpEstimated: true,
-      updatedAt: new Date(),
-    })
-    .where(
-      and(
-        eq(athleteProfilesTable.clerkId, clerkId),
-        eq(athleteProfilesTable.ftpEstimated, true),
-      ),
-    );
-
-  // Record in ftp_history so ftpAtDate applies the corrected value to rides
-  // from the proof date on. Idempotent PER DAY: at most one derived row per
-  // clerkId+measuredAt — a re-derivation for the same proof date UPDATES that
-  // row instead of stacking same-day duplicates (which would make FTP-at-date
-  // selection order-dependent).
+  // Atomair: FTP-ophoging + ftp_history + paspoort-event in één transactie —
+  // de geschatte FTP kan nooit veranderen zonder herleidbaar event.
   const notes =
     floor.basis.kind === "sustained"
       ? `Ondergrens: ${floor.basis.watts} watt volgehouden over ${floor.basis.durationMin} min`
       : `Ondergrens: 95% van ${floor.basis.watts} watt over ${floor.basis.durationMin} min`;
-  const [existing] = await db
-    .select({ id: ftpHistoryTable.id, ftpWatts: ftpHistoryTable.ftpWatts })
-    .from(ftpHistoryTable)
-    .where(
-      and(
-        eq(ftpHistoryTable.clerkId, clerkId),
-        eq(ftpHistoryTable.measuredAt, floor.basis.sessionDate),
-        eq(ftpHistoryTable.testType, "derived"),
-      ),
-    )
-    .limit(1);
-  if (!existing) {
-    await db.insert(ftpHistoryTable).values({
-      clerkId,
-      measuredAt: floor.basis.sessionDate,
-      ftpWatts: floor.floorWatts,
-      testType: "derived",
-      notes,
-    });
-  } else if (existing.ftpWatts !== floor.floorWatts) {
-    await db
-      .update(ftpHistoryTable)
-      .set({ ftpWatts: floor.floorWatts, notes })
-      .where(eq(ftpHistoryTable.id, existing.id));
-  }
+  const { recordValueEvent } = await import("./passport");
+  await db.transaction(async (tx) => {
+    await tx
+      .update(athleteProfilesTable)
+      .set({
+        ftp: floor.floorWatts,
+        // Still a derived value (a lower bound, not a measurement) — the flag
+        // stays true so a stronger real effort keeps raising it.
+        ftpEstimated: true,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(athleteProfilesTable.clerkId, clerkId),
+          eq(athleteProfilesTable.ftpEstimated, true),
+        ),
+      );
+
+    // Record in ftp_history so ftpAtDate applies the corrected value to rides
+    // from the proof date on. Idempotent PER DAY: at most one derived row per
+    // clerkId+measuredAt — a re-derivation for the same proof date UPDATES that
+    // row instead of stacking same-day duplicates (which would make FTP-at-date
+    // selection order-dependent).
+    const [existing] = await tx
+      .select({ id: ftpHistoryTable.id, ftpWatts: ftpHistoryTable.ftpWatts })
+      .from(ftpHistoryTable)
+      .where(
+        and(
+          eq(ftpHistoryTable.clerkId, clerkId),
+          eq(ftpHistoryTable.measuredAt, floor.basis.sessionDate),
+          eq(ftpHistoryTable.testType, "derived"),
+        ),
+      )
+      .limit(1);
+    if (!existing) {
+      await tx.insert(ftpHistoryTable).values({
+        clerkId,
+        measuredAt: floor.basis.sessionDate,
+        ftpWatts: floor.floorWatts,
+        testType: "derived",
+        notes,
+      });
+    } else if (existing.ftpWatts !== floor.floorWatts) {
+      await tx
+        .update(ftpHistoryTable)
+        .set({ ftpWatts: floor.floorWatts, notes })
+        .where(eq(ftpHistoryTable.id, existing.id));
+    }
+
+    // Sportpaspoort: de automatische ophoging van een SCHATTING blijft
+    // toegestaan (het is een correctie van een geschatte waarde, geen meting),
+    // maar wordt herleidbaar vastgelegd — nooit een stille overschrijving.
+    await recordValueEvent(
+      {
+        clerkId,
+        field: "ftp",
+        oldValue: profile.ftp == null ? null : String(profile.ftp),
+        newValue: String(floor.floorWatts),
+        origin: "berekend",
+        source: "bewezen inspanning",
+        actorType: "engine",
+        actorId: "ftp-ondergrens-engine",
+        measuredAt: floor.basis.sessionDate,
+        note: notes,
+      },
+      tx,
+    );
+  });
+
   return { changed: true, ftp: floor.floorWatts };
 }
 

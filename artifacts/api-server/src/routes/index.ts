@@ -61,6 +61,7 @@ import accountRouter from "./account";
 import legalRouter from "./legal";
 import analysisFeedbackRouter from "./analysis-feedback";
 import journeyRouter from "./journey";
+import passportRouter from "./passport";
 import releaseRouter from "./release";
 
 import { killSwitchGuard } from "../lib/kill-switches";
@@ -80,6 +81,7 @@ router.use("/account", accountRouter);
 router.use("/legal", legalRouter);
 router.use("/analysis-feedback", analysisFeedbackRouter);
 router.use("/journey", journeyRouter);
+router.use("/passport", passportRouter);
 router.use("/onboarding", onboardingRouter);
 router.use("/connectors", connectorsRouter);
 router.use("/device-sync", deviceSyncRouter);
