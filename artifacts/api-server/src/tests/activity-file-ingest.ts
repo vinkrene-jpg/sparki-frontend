@@ -278,6 +278,7 @@ async function main() {
         maxHeartRate: null,
         avgCadence: null,
         powerBests: null,
+        streams: null,
       },
       "hash-route",
     );

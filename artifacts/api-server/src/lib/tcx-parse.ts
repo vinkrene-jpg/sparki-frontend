@@ -34,9 +34,16 @@ export type TcxSummary = {
   // from the REAL timestamped trackpoint samples. Null when the file has no
   // usable per-sample power — never estimated from averages.
   powerBests: Record<string, number> | null;
+  // Downsampled real per-trackpoint streams. Null when the file carried no
+  // usable samples.
+  streams: ActivityStreams | null;
 };
 
 import { createPowerSampleCollector } from "./power-bests";
+import {
+  createStreamCollector,
+  type ActivityStreams,
+} from "./activity-streams";
 
 // Match a tag that may carry an XML namespace prefix (e.g. <ns3:Watts>).
 function tagValue(block: string, tag: string): string | null {
@@ -122,6 +129,7 @@ export function parseTcx(content: string): TcxSummary | null {
   let firstTime: number | null = null;
   let lastTime: number | null = null;
   const powerCollector = createPowerSampleCollector();
+  const streamCollector = createStreamCollector();
 
   const tpRe = /<Trackpoint\b[\s\S]*?<\/Trackpoint>/gi;
   let tp: RegExpExecArray | null;
@@ -176,6 +184,25 @@ export function parseTcx(content: string): TcxSummary | null {
       if (prevAlt != null && alt > prevAlt) ascentM += alt - prevAlt;
       prevAlt = alt;
     }
+
+    // Real stream sample for the visualization layer. Speed lives in a TPX
+    // extension (<ns3:Speed>, m/s) when the device recorded it.
+    if (timeStr) {
+      const t = Date.parse(timeStr);
+      if (Number.isFinite(t)) {
+        const speedMps = tagNumber(block, "Speed");
+        streamCollector.add({
+          tSec: t / 1000,
+          power: power ?? null,
+          heartRate: hr ?? null,
+          cadence: cadence ?? null,
+          speedKph:
+            speedMps != null ? Math.round(speedMps * 3.6 * 10) / 10 : null,
+          elevationM: alt,
+          distanceM: dist,
+        });
+      }
+    }
   }
 
   const startTime =
@@ -214,6 +241,7 @@ export function parseTcx(content: string): TcxSummary | null {
     avgCadence: cadenceCount > 0 ? round(cadenceSum / cadenceCount) : null,
     trackpointCount: count,
     powerBests: powerCollector.finish(),
+    streams: streamCollector.finish(),
   };
 
   // Did we recover anything real? A file with an <Activity> but no usable

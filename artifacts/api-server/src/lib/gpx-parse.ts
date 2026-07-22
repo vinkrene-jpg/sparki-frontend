@@ -6,6 +6,7 @@
 // import "failed" rather than inventing values).
 
 import { createPowerSampleCollector } from "./power-bests";
+import { buildStreams, type ActivityStreams } from "./activity-streams";
 
 export type GpxSummary = {
   pointCount: number;
@@ -30,6 +31,9 @@ export type GpxSummary = {
   // Best average power over fixed windows, computed from the REAL timestamped
   // per-point power samples. Null when the file has no usable power+time data.
   powerBests: Record<string, number> | null;
+  // Downsampled real per-point streams (alleen kanalen die het bestand echt
+  // droeg). Null when the file has no timestamped points.
+  streams: ActivityStreams | null;
 };
 
 type TrackPoint = {
@@ -157,6 +161,28 @@ export function parseGpx(content: string): GpxSummary | null {
     if (p.power != null && p.time != null) collector.add(p.time / 1000, p.power);
   }
 
+  // Real per-point streams: cumulative distance from the real GPS track,
+  // sensors only where the file genuinely carried them.
+  const streamSamples: Parameters<typeof buildStreams>[0] = [];
+  let cumKm = 0;
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i]!;
+    if (i > 0) {
+      const a = points[i - 1]!;
+      cumKm += haversineKm(a.lat, a.lon, p.lat, p.lon);
+    }
+    if (p.time != null) {
+      streamSamples.push({
+        tSec: p.time / 1000,
+        power: p.power,
+        heartRate: p.hr,
+        cadence: p.cad,
+        elevationM: p.ele,
+        distanceM: cumKm * 1000,
+      });
+    }
+  }
+
   return {
     pointCount: points.length,
     distanceKm: distanceKm > 0 ? Math.round(distanceKm * 100) / 100 : null,
@@ -175,6 +201,7 @@ export function parseGpx(content: string): GpxSummary | null {
     maxHeartRate: hrVals.length > 0 ? Math.max(...hrVals) : null,
     avgCadence: avg(cadVals),
     powerBests: collector.finish(),
+    streams: buildStreams(streamSamples),
   };
 }
 

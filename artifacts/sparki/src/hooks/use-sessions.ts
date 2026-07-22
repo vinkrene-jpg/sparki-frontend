@@ -50,6 +50,36 @@ export function useSessionSegments(id: number | null) {
   });
 }
 
+// Volledig sessie-detail inclusief echte streams (vermogen/hartslag/cadans/
+// snelheid/hoogte/temperatuur, gebuiteld bij ingest). streams is eerlijk null
+// wanneer het gekoppelde bestand geen bruikbare samples droeg.
+import type { SessionStreams } from "@/lib/stream-analysis";
+
+export type SessionDetail = {
+  session: TrainingSession;
+  track: Array<[number, number]> | null;
+  profile: number[] | null;
+  climbs: unknown[];
+  segments: RideSegment[] | null;
+  streams: SessionStreams | null;
+  plannedWorkout: {
+    title: string;
+    type: string;
+    structure: import("@/lib/athlete-types").WorkoutStructure | null;
+  } | null;
+};
+
+export function useSessionDetail(id: number | null) {
+  const { isSignedIn } = useUser();
+
+  return useQuery({
+    queryKey: ["athlete", "session-detail", id],
+    queryFn: () => apiFetch<SessionDetail>(`/api/athlete/sessions/${id}`),
+    enabled: (isSignedIn === true || DEV_PREVIEW) && id != null,
+    staleTime: STALE.profile,
+  });
+}
+
 export function useLogSession() {
   const qc = useQueryClient();
 

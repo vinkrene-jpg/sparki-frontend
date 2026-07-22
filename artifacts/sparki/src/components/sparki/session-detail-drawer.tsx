@@ -10,7 +10,13 @@ import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { analyzeSession, type InsightTone } from "@/lib/session-analysis"
 import { useRideStory, useRideStoryFlag } from "@/hooks/use-ride-story"
 import { RideStoryChapters } from "@/components/sparki/ride-story"
-import { useSessionSegments, type RideSegment } from "@/hooks/use-sessions"
+import {
+  useSessionSegments,
+  useSessionDetail,
+  type RideSegment,
+} from "@/hooks/use-sessions"
+import { SessionGraphs } from "@/components/sparki/session-graphs"
+import { computeAge } from "@/lib/age"
 import { ShareRidePanel } from "@/components/sparki/share-ride"
 import {
   Clock,
@@ -202,6 +208,27 @@ export function SessionDetailDrawer({
   const { data: segments } = useSessionSegments(
     open && session ? session.id : null,
   )
+  // Grafieken & analyses: echte meetreeksen (streams) + gekoppeld planschema.
+  const { data: detail } = useSessionDetail(
+    open && session ? session.id : null,
+  )
+  // Geschatte maximale hartslag (leeftijdsformule, Tanaka) — alleen als de
+  // geboortedatum bekend is; altijd als schatting gelabeld in de grafiek.
+  const age = computeAge(profile?.birthDate ?? null, profile?.birthYear ?? null)
+  const estimatedMaxHr = age != null ? Math.round(208 - 0.7 * age) : null
+  // Vorige rit (recentste eerdere sessie, niet handmatig) voor de eerlijke
+  // vergelijking — of de vergelijking mág, beslist assessComparability.
+  const previousSession =
+    session != null
+      ? (recentSessions
+          .filter(
+            (s) =>
+              s.id !== session.id &&
+              s.sessionDate < session.sessionDate &&
+              s.source !== "manual",
+          )
+          .sort((a, b) => (a.sessionDate < b.sessionDate ? 1 : -1))[0] ?? null)
+      : null
   const showStory = storyFlagOn && story != null && session?.id === story.session.id
   const analysis = session
     ? analyzeSession(session, profile, recentSessions)
@@ -357,6 +384,17 @@ export function SessionDetailDrawer({
 
             {segments != null && segments.length > 0 && (
               <SegmentReport segments={segments} />
+            )}
+
+            {session.source !== "manual" && (
+              <SessionGraphs
+                detail={detail}
+                session={session}
+                ftp={profile?.ftp ?? null}
+                maxHr={estimatedMaxHr}
+                maxHrEstimated={estimatedMaxHr != null}
+                previousSession={previousSession}
+              />
             )}
 
             {session.feelScore != null && (

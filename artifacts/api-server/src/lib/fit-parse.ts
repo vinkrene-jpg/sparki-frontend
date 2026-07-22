@@ -20,6 +20,10 @@ import {
   createPowerSampleCollector,
   type PowerSampleCollector,
 } from "./power-bests";
+import {
+  createStreamCollector,
+  type ActivityStreams,
+} from "./activity-streams";
 
 export type FitSummary = {
   // Discriminator so the frontend can tell a FIT summary apart from a GpxSummary.
@@ -42,6 +46,9 @@ export type FitSummary = {
   // from the REAL timestamped record samples. Null when the file carries no
   // usable per-sample power — never estimated from averages.
   powerBests: Record<string, number> | null;
+  // Downsampled real per-record streams (vermogen/hartslag/cadans/snelheid/
+  // hoogte/temperatuur). Null when the file carried no usable samples.
+  streams: ActivityStreams | null;
 };
 
 // FIT date_time epoch: seconds since 1989-12-31T00:00:00Z.
@@ -171,6 +178,8 @@ type RecordAgg = {
   hasAltitude: boolean;
   // Timestamped power samples for best-window computation (real data only).
   power: PowerSampleCollector;
+  // Real per-record stream samples for the visualization layer.
+  streams: ReturnType<typeof createStreamCollector>;
 };
 
 // Optional per-record position collector: called with real GPS samples
@@ -222,6 +231,7 @@ export function parseFit(
       ascentM: 0,
       hasAltitude: false,
       power: createPowerSampleCollector(),
+      streams: createStreamCollector(),
     };
 
     let pos = dataStart;
@@ -419,11 +429,30 @@ function harvestRecord(fields: Record<number, number | null>, agg: RecordAgg) {
   // Prefer enhanced_altitude (field 78, scale 5 offset 500) over altitude
   // (field 2, same scale/offset) when present.
   const altRaw = fields[78] ?? fields[2];
+  let alt: number | null = null;
   if (altRaw != null) {
-    const alt = altRaw / 5 - 500;
+    alt = altRaw / 5 - 500;
     agg.hasAltitude = true;
     if (agg.prevAlt != null && alt > agg.prevAlt) agg.ascentM += alt - agg.prevAlt;
     agg.prevAlt = alt;
+  }
+
+  // Real stream sample for the visualization layer. speed = enhanced_speed
+  // (73) or speed (6), both scale 1000 → m/s. temperature = field 13 (°C).
+  if (time != null && time >= FIT_MIN_REAL_DATE) {
+    const speedRaw = fields[73] ?? fields[6];
+    const temp = fields[13];
+    agg.streams.add({
+      tSec: time,
+      power: power ?? null,
+      heartRate: hr ?? null,
+      cadence: cadence ?? null,
+      speedKph:
+        speedRaw != null ? Math.round((speedRaw / 1000) * 3.6 * 10) / 10 : null,
+      elevationM: alt,
+      temperatureC: temp ?? null,
+      distanceM: distRaw != null ? distRaw / 100 : null,
+    });
   }
 }
 
@@ -510,6 +539,7 @@ function finalize(
     calories,
     recordCount: agg.count,
     powerBests: agg.power.finish(),
+    streams: agg.streams.finish(),
   };
 
   // Did we actually recover anything real? If every metric is empty and no

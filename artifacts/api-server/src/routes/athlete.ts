@@ -1043,8 +1043,40 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
         climbs?: unknown;
       } | null;
       segments?: unknown;
+      streams?: unknown;
     } | null;
     const stored = summaryBlob?.route ?? null;
+
+    // Het geplande blokkenschema dat aan deze sessie hangt (indien de sessie
+    // uit een geplande training kwam) — voor de interval-vergelijking.
+    const [plannedRow] = await db
+      .select({
+        title: plannedWorkoutsTable.title,
+        type: plannedWorkoutsTable.type,
+        structure: plannedWorkoutsTable.structure,
+      })
+      .from(plannedWorkoutsTable)
+      .where(
+        and(
+          eq(plannedWorkoutsTable.sessionId, session.id),
+          eq(plannedWorkoutsTable.clerkId, clerkId),
+        ),
+      )
+      .limit(1);
+    const plannedWorkout = plannedRow ?? null;
+
+    // Real downsampled per-sample streams stored at ingest (FIT/TCX/GPX).
+    // Lightly validated: must carry a time axis of ≥2 buckets; otherwise null.
+    const rawStreams = summaryBlob?.streams as {
+      t?: unknown;
+    } | null;
+    const streams =
+      rawStreams &&
+      Array.isArray(rawStreams.t) &&
+      rawStreams.t.length >= 2 &&
+      rawStreams.t.every((v) => typeof v === "number" && Number.isFinite(v))
+        ? (summaryBlob!.streams as Record<string, unknown>)
+        : null;
     // Only accept real numeric [lat, lon(, ele)] tuples — guards against
     // malformed historical JSON rather than trusting the stored shape blindly.
     const geometry = Array.isArray(stored?.geometry)
@@ -1156,6 +1188,8 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
       profile,
       climbs,
       segments: segments.length > 0 ? segments : null,
+      streams,
+      plannedWorkout,
     });
   } catch (err) {
     req.log.error({ err }, "athlete.sessions detail GET failed");
