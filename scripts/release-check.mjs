@@ -119,6 +119,14 @@ run("serverbuild", "pnpm --filter @workspace/api-server run build");
 // Echte Android/iOS-binaries vereisen EAS-build met winkelcertificaten —
 // een externe toelating, eerlijk als zodanig gemarkeerd in de acceptatie.
 run("mobielcontrole", "pnpm --filter @workspace/sparki-mobile run typecheck");
+// Storegereedheid (Golf 28): mobiele productieconfig + repo-brede storecontrole.
+// Echte Android/iOS-releasebuilds (EAS-ondertekening, store-formulieren) zijn
+// externe stappen — het script print die als checklist, faalt er niet op.
+run(
+  "storecontrole:mobiel-config",
+  "pnpm --filter @workspace/sparki-mobile run check:prod-config",
+);
+run("storecontrole:release-check", "node scripts/store-release-check.mjs");
 
 // ── 5. Healthcheck (release-modus: rood = blokkade) ─────────────────────────
 run(

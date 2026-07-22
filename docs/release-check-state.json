@@ -1,0 +1,352 @@
+{
+  "typecheck": {
+    "name": "typecheck",
+    "ok": true,
+    "seconds": 21
+  },
+  "migraties:drift-check": {
+    "name": "migraties:drift-check",
+    "ok": false,
+    "seconds": 11
+  },
+  "unit:web:test:uitleg-content": {
+    "name": "unit:web:test:uitleg-content",
+    "ok": true,
+    "seconds": 2
+  },
+  "unit:web:test:session-analysis": {
+    "name": "unit:web:test:session-analysis",
+    "ok": true,
+    "seconds": 2
+  },
+  "unit:web:test:insight-grouping": {
+    "name": "unit:web:test:insight-grouping",
+    "ok": true,
+    "seconds": 2
+  },
+  "unit:web:test:ontwikkelprioriteit": {
+    "name": "unit:web:test:ontwikkelprioriteit",
+    "ok": true,
+    "seconds": 2
+  },
+  "unit:web:test:bandbreedte": {
+    "name": "unit:web:test:bandbreedte",
+    "ok": true,
+    "seconds": 2
+  },
+  "unit:web:test:performance-radar": {
+    "name": "unit:web:test:performance-radar",
+    "ok": true,
+    "seconds": 2
+  },
+  "unit:web:test:core-profile": {
+    "name": "unit:web:test:core-profile",
+    "ok": true,
+    "seconds": 2
+  },
+  "unit:web:test:core-profile-bandbreedte": {
+    "name": "unit:web:test:core-profile-bandbreedte",
+    "ok": true,
+    "seconds": 2
+  },
+  "unit:web:test:core-profile-evolution": {
+    "name": "unit:web:test:core-profile-evolution",
+    "ok": true,
+    "seconds": 2
+  },
+  "unit:web:test:onboarding-resume": {
+    "name": "unit:web:test:onboarding-resume",
+    "ok": true,
+    "seconds": 2
+  },
+  "unit:web:test:aandachtswet": {
+    "name": "unit:web:test:aandachtswet",
+    "ok": true,
+    "seconds": 2
+  },
+  "unit:web:test:day-type": {
+    "name": "unit:web:test:day-type",
+    "ok": true,
+    "seconds": 2
+  },
+  "unit:web:test:stream-analysis": {
+    "name": "unit:web:test:stream-analysis",
+    "ok": true,
+    "seconds": 2
+  },
+  "unit:web:test:scan-quality": {
+    "name": "unit:web:test:scan-quality",
+    "ok": true,
+    "seconds": 2
+  },
+  "unit:mobiel:test:ride-tracker": {
+    "name": "unit:mobiel:test:ride-tracker",
+    "ok": true,
+    "seconds": 2
+  },
+  "unit:mobiel:test:ride-sensor-summary": {
+    "name": "unit:mobiel:test:ride-sensor-summary",
+    "ok": true,
+    "seconds": 2
+  },
+  "unit:mobiel:test:upload-queue": {
+    "name": "unit:mobiel:test:upload-queue",
+    "ok": true,
+    "seconds": 3
+  },
+  "unit:mobiel:test:fall-detection": {
+    "name": "unit:mobiel:test:fall-detection",
+    "ok": true,
+    "seconds": 2
+  },
+  "e2e:test:smoke": {
+    "name": "e2e:test:smoke",
+    "ok": true,
+    "seconds": 4
+  },
+  "e2e:test:store-release": {
+    "name": "e2e:test:store-release",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:backup-restore": {
+    "name": "e2e:test:backup-restore",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:race-room": {
+    "name": "e2e:test:race-room",
+    "ok": true,
+    "seconds": 2
+  },
+  "e2e:test:journey": {
+    "name": "e2e:test:journey",
+    "ok": true,
+    "seconds": 6
+  },
+  "e2e:test:kennisbank": {
+    "name": "e2e:test:kennisbank",
+    "ok": true,
+    "seconds": 7
+  },
+  "e2e:test:world-social": {
+    "name": "e2e:test:world-social",
+    "ok": true,
+    "seconds": 7
+  },
+  "e2e:test:account": {
+    "name": "e2e:test:account",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:data-hub": {
+    "name": "e2e:test:data-hub",
+    "ok": true,
+    "seconds": 4
+  },
+  "e2e:test:provider-sync": {
+    "name": "e2e:test:provider-sync",
+    "ok": true,
+    "seconds": 4
+  },
+  "e2e:test:derived-load": {
+    "name": "e2e:test:derived-load",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:connector-cleanup": {
+    "name": "e2e:test:connector-cleanup",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:memory-graph": {
+    "name": "e2e:test:memory-graph",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:context-memory": {
+    "name": "e2e:test:context-memory",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:voice": {
+    "name": "e2e:test:voice",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:onboarding-v2": {
+    "name": "e2e:test:onboarding-v2",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:onboarding-personas": {
+    "name": "e2e:test:onboarding-personas",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:material": {
+    "name": "e2e:test:material",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:material-nudge": {
+    "name": "e2e:test:material-nudge",
+    "ok": true,
+    "seconds": 4
+  },
+  "e2e:test:observation": {
+    "name": "e2e:test:observation",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:profile-consistency": {
+    "name": "e2e:test:profile-consistency",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:notifications": {
+    "name": "e2e:test:notifications",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:notification-day-count": {
+    "name": "e2e:test:notification-day-count",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:notifications-read-batch": {
+    "name": "e2e:test:notifications-read-batch",
+    "ok": true,
+    "seconds": 6
+  },
+  "e2e:test:core-prediction": {
+    "name": "e2e:test:core-prediction",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:test-dashboard": {
+    "name": "e2e:test:test-dashboard",
+    "ok": true,
+    "seconds": 2
+  },
+  "e2e:test:intel": {
+    "name": "e2e:test:intel",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:fit-parse": {
+    "name": "e2e:test:fit-parse",
+    "ok": true,
+    "seconds": 2
+  },
+  "e2e:test:activity-file-ingest": {
+    "name": "e2e:test:activity-file-ingest",
+    "ok": true,
+    "seconds": 4
+  },
+  "e2e:test:email-channel": {
+    "name": "e2e:test:email-channel",
+    "ok": true,
+    "seconds": 2
+  },
+  "e2e:test:development-goal": {
+    "name": "e2e:test:development-goal",
+    "ok": true,
+    "seconds": 6
+  },
+  "e2e:test:world-media": {
+    "name": "e2e:test:world-media",
+    "ok": true,
+    "seconds": 4
+  },
+  "e2e:test:world-sim": {
+    "name": "e2e:test:world-sim",
+    "ok": true,
+    "seconds": 2
+  },
+  "e2e:test:world-consistency": {
+    "name": "e2e:test:world-consistency",
+    "ok": true,
+    "seconds": 2
+  },
+  "e2e:test:world-feed": {
+    "name": "e2e:test:world-feed",
+    "ok": true,
+    "seconds": 4
+  },
+  "e2e:test:world-affinity": {
+    "name": "e2e:test:world-affinity",
+    "ok": true,
+    "seconds": 4
+  },
+  "e2e:test:goals": {
+    "name": "e2e:test:goals",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:scheduled-tasks": {
+    "name": "e2e:test:scheduled-tasks",
+    "ok": true,
+    "seconds": 2
+  },
+  "e2e:test:attention-notifications": {
+    "name": "e2e:test:attention-notifications",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:scheduled-tasks-route": {
+    "name": "e2e:test:scheduled-tasks-route",
+    "ok": true,
+    "seconds": 6
+  },
+  "e2e:test:sessions-contract": {
+    "name": "e2e:test:sessions-contract",
+    "ok": true,
+    "seconds": 6
+  },
+  "e2e:test:athlete-load": {
+    "name": "e2e:test:athlete-load",
+    "ok": true,
+    "seconds": 6
+  },
+  "e2e:test:garage-sensors": {
+    "name": "e2e:test:garage-sensors",
+    "ok": true,
+    "seconds": 6
+  },
+  "e2e:test:onboarding-connect-step": {
+    "name": "e2e:test:onboarding-connect-step",
+    "ok": true,
+    "seconds": 53
+  },
+  "e2e:test:onboarding-strava-gapfill": {
+    "name": "e2e:test:onboarding-strava-gapfill",
+    "ok": true,
+    "seconds": 3
+  },
+  "e2e:test:analysis-quality": {
+    "name": "e2e:test:analysis-quality",
+    "ok": true,
+    "seconds": 6
+  },
+  "e2e:test:feedback-adjust": {
+    "name": "e2e:test:feedback-adjust",
+    "ok": true,
+    "seconds": 7
+  },
+  "e2e:test:plan-execution": {
+    "name": "e2e:test:plan-execution",
+    "ok": true,
+    "seconds": 5
+  },
+  "e2e:test:privacy-security": {
+    "name": "e2e:test:privacy-security",
+    "ok": true,
+    "seconds": 6
+  },
+  "e2e:test:kernreis": {
+    "name": "e2e:test:kernreis",
+    "ok": true,
+    "seconds": 6
+  }
+}
