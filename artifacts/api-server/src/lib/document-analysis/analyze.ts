@@ -1,4 +1,4 @@
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { aiMessage, UPLOAD_DATA_RULE } from "../ai/gateway";
 import {
   documentAnalysisKinds,
   type DocumentAnalysisKind,
@@ -164,10 +164,10 @@ export async function analyzeDocument(
   mediaType: string,
   base64Data: string,
 ): Promise<AnalysisResult> {
-  const message = await anthropic.messages.create({
+  const message = await aiMessage("document_analysis", null, {
     model: "claude-sonnet-4-6",
     max_tokens: 8192,
-    system: SYSTEM,
+    system: `${SYSTEM}\n\n${UPLOAD_DATA_RULE}`,
     messages: [
       {
         role: "user",

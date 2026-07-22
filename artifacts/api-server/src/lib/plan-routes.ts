@@ -12,7 +12,7 @@ import {
   plannedWorkoutsTable,
   type RoutePathPoint,
 } from "@workspace/db";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { aiMessage } from "./ai/gateway";
 import { summarizeTrack } from "./gpx-parse";
 import {
   getRoutingProvider,
@@ -99,7 +99,7 @@ async function buildRationale(input: {
   const fallback = `Deze ${shape} van ${facts || "de gevraagde afstand"} past bij een ${input.training} (${label}).`;
 
   try {
-    const message = await anthropic.messages.create({
+    const message = await aiMessage("route_rationale", null, {
       model: "claude-sonnet-4-6",
       max_tokens: 400,
       system:

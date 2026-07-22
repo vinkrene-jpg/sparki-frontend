@@ -25,7 +25,7 @@ import {
   coachAthleteLinksTable,
   routesTable,
 } from "@workspace/db";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { aiMessage } from "./ai/gateway";
 import { computeReadiness } from "./sharing";
 import { computeLoad, computeRiskSignal, type Load, type RiskSignal } from "./recovery-load";
 import {
@@ -735,7 +735,7 @@ async function buildAiContent(
   };
 
   try {
-    const message = await anthropic.messages.create({
+    const message = await aiMessage("plan_proposals", null, {
       model: "claude-sonnet-4-6",
       max_tokens: 3000,
       system:

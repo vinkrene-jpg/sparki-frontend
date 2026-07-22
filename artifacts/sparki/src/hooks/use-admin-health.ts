@@ -205,6 +205,61 @@ export function useAdminSyncDiagnostics(enabled: boolean) {
   });
 }
 
+
+export interface AiInsightPurpose {
+  purpose: string;
+  label: string;
+  provider: string;
+  model: string;
+  promptVersion: string;
+  inputCategories: string[];
+  consent: string;
+  sensitive: boolean;
+  minorBlocked: boolean;
+  timeoutMs: number;
+  maxRetries: number;
+}
+export interface AiInsightUsage {
+  purpose: string;
+  totalCalls: number;
+  okCalls: number;
+  blockedCalls: number;
+  failedCalls: number;
+  avgLatencyMs: number | null;
+  inputTokens: string | null;
+  outputTokens: string | null;
+  costMicroUsd: string | null;
+  redactedCalls: number;
+  lastCallAt: string | null;
+}
+export interface AiInsightProblem {
+  id: number;
+  purpose: string;
+  provider: string;
+  model: string;
+  status: string;
+  errorCode: string | null;
+  retries: number;
+  latencyMs: number | null;
+  createdAt: string;
+}
+
+export function useAdminAiInsights(enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.admin.aiInsights(),
+    queryFn: () =>
+      apiFetch<{
+        purposes: AiInsightPurpose[];
+        usage: AiInsightUsage[];
+        statuses: { status: string; count: number }[];
+        recentProblems: AiInsightProblem[];
+        last24h: { calls: number; costMicroUsd: string | null };
+      }>("/api/admin/ai-insights"),
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
 export function useAdminHealthBatches(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.admin.healthBatches(),

@@ -1,4 +1,4 @@
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { aiMessage, UPLOAD_DATA_RULE } from "../ai/gateway";
 import type {
   MaterialAdvice,
   MaterialCostEstimate,
@@ -321,6 +321,10 @@ export async function analyzeMaterial(input: {
   // Youth (<16): keep it qualitative — no calorie/gram numbers (RED-S safety).
   // Defaults to adult (numbers shown) when not provided.
   youth?: boolean;
+  /** Voor wie de analyse loopt — vereist voor toestemmingscontrole. */
+  clerkId?: string | null;
+  /** AI-doel: voedingsfoto's lopen als gevoelig doel, materiaal als actie. */
+  purpose?: "material_photo" | "nutrition_photo";
 }): Promise<MaterialAnalysisResult> {
   const { category, photos } = input;
   if (photos.length === 0) {
@@ -362,10 +366,10 @@ Geef je zekerheidsniveau eerlijk aan en vraag om een extra foto als je het niet 
     { type: "text" as const, text: userText },
   ];
 
-  const message = await anthropic.messages.create({
+  const message = await aiMessage("material_photo", null, {
     model: "claude-sonnet-4-6",
     max_tokens: 4096,
-    system: SYSTEM,
+    system: `${SYSTEM}\n\n${UPLOAD_DATA_RULE}`,
     messages: [{ role: "user", content }],
   });
 
@@ -455,6 +459,8 @@ export async function analyzeMealText(input: {
   athleteHint?: string | null;
   // Youth (<16): keep it qualitative — no calorie/gram numbers (RED-S safety).
   youth?: boolean;
+  /** Voor wie de analyse loopt — vereist voor toestemmingscontrole. */
+  clerkId?: string | null;
 }): Promise<MaterialAnalysisResult> {
   const mealText = input.mealText.trim();
   if (!mealText) {
@@ -472,10 +478,10 @@ export async function analyzeMealText(input: {
   const userText = `De renner beschrijft wat hij at of dronk: "${mealText}".${athleteLine}${numbersLine}
 Schat de voedingswaarde van de HELE beschreven hoeveelheid en geef kort, eerlijk advies.`;
 
-  const message = await anthropic.messages.create({
+  const message = await aiMessage("nutrition_text", input.clerkId ?? null, {
     model: "claude-sonnet-4-6",
     max_tokens: 2048,
-    system: SYSTEM_TEXT,
+    system: `${SYSTEM_TEXT}\n\n${UPLOAD_DATA_RULE}`,
     messages: [{ role: "user", content: userText }],
   });
 

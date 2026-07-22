@@ -24,7 +24,7 @@ import {
   connectorConnectionsTable,
   type TrainingSession,
 } from "@workspace/db";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { aiMessage } from "../ai/gateway";
 import { getValidStravaAccessToken } from "../connectors/providers/strava-oauth";
 
 const STRAVA_ACTIVITIES_URL = "https://www.strava.com/api/v3/activities";
@@ -163,7 +163,7 @@ export async function buildShareText(session: TrainingSession): Promise<{
   if (session.notes) facts.push(`Eigen notitie: ${session.notes.slice(0, 300)}`);
 
   try {
-    const message = await anthropic.messages.create({
+    const message = await aiMessage("ride_story", null, {
       model: "claude-sonnet-4-6",
       max_tokens: 300,
       system:

@@ -13,7 +13,7 @@ import {
   coachContextItemsTable,
   type NutritionContext,
 } from "@workspace/db";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { aiMessage, UPLOAD_DATA_RULE } from "../lib/ai/gateway";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { computeAge } from "../lib/age";
 import { getHomeWeather } from "../lib/weather/home";
@@ -463,6 +463,8 @@ router.post("/", requireAuth, async (req, res) => {
           userNote: noteParts.join(". ") || null,
           athleteHint: mealCtx.athleteHint,
           youth: mealCtx.youth,
+          clerkId,
+          purpose: "nutrition_photo",
         });
         if (photoAdvice.advice.summary) {
           void persistObservation({
@@ -504,6 +506,7 @@ router.post("/", requireAuth, async (req, res) => {
           mealText,
           athleteHint: mealCtx.athleteHint,
           youth: mealCtx.youth,
+          clerkId,
         });
         if (photoAdvice.advice.summary) {
           void persistObservation({
@@ -679,6 +682,8 @@ router.post("/:id/photo-advice", requireAuth, async (req, res) => {
         userNote: noteParts.join(". ") || null,
         athleteHint: mealCtx.athleteHint,
         youth: mealCtx.youth,
+        clerkId,
+        purpose: "nutrition_photo",
       });
     } else {
       // Text-only log (no photo) — assess (or re-assess with a correction) the
@@ -695,6 +700,7 @@ router.post("/:id/photo-advice", requireAuth, async (req, res) => {
         mealText,
         athleteHint: mealCtx.athleteHint,
         youth: mealCtx.youth,
+        clerkId,
       });
     }
 
@@ -943,11 +949,10 @@ router.get("/day-analysis", requireAuth, async (req, res) => {
       ? `Deze sporter is ${age} jaar — een jeugdsporter. Houd de analyse LICHT en positief: gewoontes, genoeg en gevarieerd eten, op tijd eten rond de training, genoeg drinken. GEEN calorieën tellen, GEEN gram- of macrodoelen, GEEN prestatiedruk of afval-taal. Veiligheid voorop: eten is brandstof én plezier, nooit minder eten om lichter te worden.`
       : `Geef een concrete, volwassen analyse met echte richtgetallen waar dat eerlijk kan (koolhydraten per uur t.o.v. de duur/intensiteit van de training, vocht, eiwit voor herstel, timing).`;
 
-    const message = await anthropic.messages.create(
-      {
+    const message = await aiMessage("nutrition_photo", clerkId, {
         model: "claude-sonnet-4-6",
         max_tokens: 2000,
-        system: await systemPrompt(clerkId),
+        system: `${await systemPrompt(clerkId)}\n\n${UPLOAD_DATA_RULE}`,
         messages: [
           {
             role: "user",
@@ -990,9 +995,7 @@ Antwoord UITSLUITEND met geldige JSON (geen markdown eromheen):
             ],
           },
         ],
-      },
-      { timeout: 60000, maxRetries: 0 },
-    );
+      });
 
     const block = message.content[0];
     if (!block || block.type !== "text") {
@@ -1522,8 +1525,7 @@ router.get("/fueling-plan", requireAuth, async (req, res) => {
       ? `Deze sporter is ${age} jaar — een jeugdsporter. Houd het plan LICHT en positief: gewone maaltijden op tijd, een gevulde bidon, iets kleins meenemen voor onderweg bij lange ritten, gewoon eten na afloop. GEEN calorieën, GEEN gram- of macrodoelen, GEEN prestatiedruk of afval-taal. Eten is brandstof én plezier; nooit minder eten om lichter te worden.`
       : `Geef een concreet, volwassen plan met echte richtgetallen waar dat eerlijk kan: koolhydraten in de uren vooraf, koolhydraten per uur tijdens (afgestemd op duur en intensiteit — onder de 60–75 minuten is extra voeding tijdens meestal niet nodig, zeg dat dan eerlijk), vocht en natrium, koolhydraten + eiwit direct na, en volwaardige maaltijden in de uren erna.`;
 
-    const message = await anthropic.messages.create(
-      {
+    const message = await aiMessage("nutrition_text", clerkId, {
         model: "claude-sonnet-4-6",
         max_tokens: 2000,
         system: await systemPrompt(clerkId),
@@ -1561,9 +1563,7 @@ Antwoord UITSLUITEND met geldige JSON (geen markdown eromheen):
 Precies deze 4 fasen, in deze volgorde. Platte tekst, gewoon Nederlands, geen Engels, nooit het woord "AI".`,
           },
         ],
-      },
-      { timeout: 60000, maxRetries: 0 },
-    );
+      });
 
     const block = message.content[0];
     if (!block || block.type !== "text") {
@@ -1823,8 +1823,7 @@ router.get("/guidance", requireAuth, async (req, res) => {
         ? `Deze sporter is ${age} jaar (volwassen/serieuze sporter). Ga de diepte in met concrete, toepasbare fueling-begeleiding: gebruik echte richtgetallen waar dat past (bijv. koolhydraten per uur afhankelijk van duur/intensiteit, vocht en natrium, eiwit voor herstel, voor/tijdens/na, wedstrijdvoeding). Stem af op de discipline en trainingsbelasting uit de context. Geef 3 tot 5 onderwerpen.`
         : `De leeftijd van deze sporter is onbekend (geboortejaar niet ingevuld). Geef gebalanceerde, praktische begeleiding voor een volwassen sporter met concrete richtgetallen waar dat past, en noem in de intro kort dat je het advies nog scherper kunt maken zodra het geboortejaar bekend is. Geef 3 tot 4 onderwerpen.`;
 
-    const message = await anthropic.messages.create(
-      {
+    const message = await aiMessage("nutrition_text", clerkId, {
         model: "claude-sonnet-4-6",
         max_tokens: 1800,
         system,
@@ -1834,9 +1833,7 @@ router.get("/guidance", requireAuth, async (req, res) => {
             content: `Atleetcontext:\n${context}\n\n${audienceInstruction}\n\nGeef in het NEDERLANDS Sparki's voedingsbegeleiding voor DEZE sporter. Per onderwerp leg je drie dingen uit: WAT (de kern, één zin, direct leesbaar), WAAROM (waarom dit voor deze sporter belangrijk is) en HOE (concreet hoe je het aanpakt). Stem alles af op de echte data in de context hierboven; verzin niets. Als iets onbekend is, benoem dat eerlijk in plaats van het in te vullen.\n\nAntwoord UITSLUITEND met geldige JSON (geen markdown, geen tekst eromheen) in dit schema:\n{\n  "intro": "1 tot 2 zinnen die kort kaderen waar deze begeleiding over gaat, persoonlijk voor deze sporter.",\n  "topics": [\n    { "title": "kort onderwerp", "what": "de kern in één zin", "why": "waarom dit belangrijk is voor deze sporter", "how": "concreet hoe je het aanpakt" }\n  ]\n}\n\nSchrijf platte tekst in alle velden: GEEN markdown, geen kopjes, geen "#" of sterretjes/bold. Gebruik NOOIT het woord "AI" of "algoritme" — jij bent Sparki.`,
           },
         ],
-      },
-      { timeout: 60000, maxRetries: 0 },
-    );
+      });
 
     const block = message.content[0];
     if (!block || block.type !== "text") {

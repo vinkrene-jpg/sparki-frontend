@@ -50,3 +50,4 @@ export * from "./club";
 export * from "./release";
 export * from "./route-shares";
 export * from "./passport";
+export * from "./ai-gateway";

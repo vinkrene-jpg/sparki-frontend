@@ -38,7 +38,7 @@ import {
 } from "@workspace/db";
 import { applyLocationPrivacy } from "../lib/world-social/location";
 import { registerRouteUsage } from "../lib/route-usage";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { aiMessage } from "../lib/ai/gateway";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
   parseGpxRoute,
@@ -314,7 +314,7 @@ async function buildRationale(input: {
     : "";
 
   try {
-    const message = await anthropic.messages.create({
+    const message = await aiMessage("route_rationale", null, {
       model: "claude-sonnet-4-6",
       max_tokens: 400,
       system:

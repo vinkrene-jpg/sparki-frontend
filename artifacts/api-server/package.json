@@ -103,7 +103,8 @@
     "test:race-flow": "node ./scripts/run-test.mjs race-flow",
     "test:fueling": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs fueling",
     "test:route-chain": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-chain",
-    "test:sportpaspoort": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs sportpaspoort"
+    "test:sportpaspoort": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs sportpaspoort",
+    "test:ai-gateway": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs ai-gateway"
   },
   "dependencies": {
     "@clerk/express": "^2.1.30",
@@ -124,7 +125,8 @@
     "http-proxy-middleware": "^4.1.1",
     "pino": "^9.14.0",
     "pino-http": "^10.5.0",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "@anthropic-ai/sdk": "^0.78.0"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",

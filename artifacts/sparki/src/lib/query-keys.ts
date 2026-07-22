@@ -174,6 +174,7 @@ export const queryKeys = {
     healthBatches: () => ["admin", "health", "batches"] as const,
     scheduledTasks: () => ["admin", "scheduled-tasks"] as const,
     syncDiagnostics: () => ["admin", "sync-diagnostics"] as const,
+    aiInsights: () => ["admin", "ai-insights"] as const,
     feedback: () => ["admin", "feedback"] as const,
     failedImports: () => ["admin", "failed-imports"] as const,
   },

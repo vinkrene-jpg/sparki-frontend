@@ -17,7 +17,7 @@ import {
   type AiPreference,
   type ObservationSignal,
 } from "@workspace/db";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { aiMessage } from "./ai/gateway";
 import { getEffectivePrivacy } from "./privacy";
 import { SPARKI_ENGINE_VERSION } from "./engine-version";
 import { createNotification } from "./notifications";
@@ -292,11 +292,12 @@ function coerceEnum<T extends string>(
 // Ask the model to distil structured observations from generated text. Returns a
 // validated array; never throws on bad model output (returns [] instead).
 export async function extractObservations(
+  clerkId: string,
   sourceText: string,
   contextText: string,
 ): Promise<ExtractedObservation[]> {
   try {
-    const message = await anthropic.messages.create({
+    const message = await aiMessage("observation_extract", clerkId, {
       model: "claude-sonnet-4-6",
       max_tokens: 2048,
       system: EXTRACT_SYSTEM,

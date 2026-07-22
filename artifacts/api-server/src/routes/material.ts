@@ -146,6 +146,7 @@ router.post("/analyze", requireAuth, async (req, res) => {
       photos,
       userNote,
       athleteHint: await athleteHint(clerkId),
+      clerkId,
     });
 
     // Persist photos only after a successful analysis.
@@ -240,6 +241,7 @@ router.post("/:id/photo", requireAuth, async (req, res) => {
       photos: allPhotos,
       userNote: existing.userNote,
       athleteHint: await athleteHint(clerkId),
+      clerkId,
     });
 
     const newPath = await uploadMaterialPhoto(clerkId, newPhotos[0]!);

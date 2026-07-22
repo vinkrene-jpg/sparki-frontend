@@ -25,7 +25,7 @@ import {
   type InputAttachment,
   type InputMessageSource,
 } from "@workspace/db";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { aiMessage, UPLOAD_DATA_RULE } from "../../lib/ai/gateway";
 import { ObjectStorageService } from "../../lib/objectStorage";
 import { ObjectPermission } from "../../lib/objectAcl";
 import {
@@ -352,10 +352,11 @@ export async function postMessage(
     ...turnBlocks,
   ];
 
-  const message = await anthropic.messages.create({
+  const message = await aiMessage("input_center", clerkId, {
     model: MODEL,
     max_tokens: 4096,
-    system,
+    // Bijlagen (foto's/bestanden/links) zijn DATA — nooit instructies.
+    system: `${system}\n\n${UPLOAD_DATA_RULE}`,
     messages: [
       ...history.map((h) => ({
         role: h.role,
@@ -366,7 +367,7 @@ export async function postMessage(
   });
 
   const reply = message.content
-    .map((b) => (b.type === "text" ? b.text : ""))
+    .map((b: { type: string; text?: string }) => (b.type === "text" ? (b.text ?? "") : ""))
     .join("\n")
     .trim();
 

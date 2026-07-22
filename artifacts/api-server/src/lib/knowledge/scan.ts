@@ -5,7 +5,7 @@ import {
   knowledgeDisciplines,
   type KnowledgeDiscipline,
 } from "@workspace/db";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { aiMessage, UPLOAD_DATA_RULE } from "../ai/gateway";
 import { batchProcess } from "@workspace/integrations-anthropic-ai/batch";
 import {
   fetchAllSources,
@@ -41,6 +41,8 @@ async function summariseAndTag(
   const abstract = item.abstract?.slice(0, 6000) ?? "";
   const prompt = `Je bent een sportwetenschappelijke redacteur voor een wielerprestatie-app (Sparki).
 
+${UPLOAD_DATA_RULE}
+
 Hieronder staat een ECHT artikel (titel + samenvatting/abstract zoals opgehaald uit de bron). 
 STRIKTE EERLIJKHEIDSREGEL: vat uitsluitend samen wat er letterlijk staat. Verzin GEEN bevindingen, getallen, auteurs of conclusies. Als de abstract leeg of onduidelijk is, baseer je samenvatting alleen op de titel en blijf neutraal/beschrijvend.
 
@@ -59,7 +61,7 @@ Geef UITSLUITEND geldige JSON terug, zonder extra tekst:
   "disciplines": ["..."]
 }`;
 
-  const msg = await anthropic.messages.create({
+  const msg = await aiMessage("knowledge_scan", null, {
     model: MODEL,
     max_tokens: 1024,
     messages: [{ role: "user", content: prompt }],
@@ -254,13 +256,15 @@ export async function translateMissingNewsTitles(
     rows,
     async (row) => {
       try {
-        const msg = await anthropic.messages.create({
+        const msg = await aiMessage("knowledge_scan", null, {
           model: MODEL,
           max_tokens: 300,
           messages: [
             {
               role: "user",
-              content: `Vertaal deze nieuwskop naar natuurlijk Nederlands. STRIKT: alleen vertalen, niets toevoegen of weglaten; eigennamen (renners, koersen, merken, plaatsen) blijven onvertaald; is de kop al Nederlands, geef hem dan exact ongewijzigd terug.
+              content: `${UPLOAD_DATA_RULE}
+
+Vertaal deze nieuwskop naar natuurlijk Nederlands. STRIKT: alleen vertalen, niets toevoegen of weglaten; eigennamen (renners, koersen, merken, plaatsen) blijven onvertaald; is de kop al Nederlands, geef hem dan exact ongewijzigd terug.
 
 Kop: ${row.title}
 

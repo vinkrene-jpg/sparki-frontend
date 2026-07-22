@@ -12,7 +12,7 @@ import {
   coachChangeProposalsTable,
   type AiObservation,
 } from "@workspace/db";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { aiMessage } from "../lib/ai/gateway";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { killSwitchGuard } from "../lib/kill-switches";
 import { decideAdjustment } from "../lib/adjust-rules";
@@ -58,7 +58,7 @@ router.post("/brief", requireAuth, async (req, res) => {
       .map((b) => `\n\n${b}`)
       .join("");
 
-    const message = await anthropic.messages.create({
+    const message = await aiMessage("brief", clerkId, {
       model: "claude-sonnet-4-6",
       max_tokens: 8192,
       system,
@@ -104,7 +104,7 @@ router.post("/brief", requireAuth, async (req, res) => {
         await recordMemoryEvent(clerkId, "briefing_generated", null, {
           date: today,
         });
-        const extracted = await extractObservations(brief, context);
+        const extracted = await extractObservations(clerkId, brief, context);
         for (const o of extracted) {
           await persistObservation({
             clerkId,
@@ -150,7 +150,7 @@ router.post("/ask", requireAuth, async (req, res) => {
     );
     const knowledgeSection = promptBlock ? `\n\n${promptBlock}` : "";
 
-    const message = await anthropic.messages.create({
+    const message = await aiMessage("ask", clerkId, {
       model: "claude-sonnet-4-6",
       max_tokens: 8192,
       system,
@@ -174,6 +174,7 @@ router.post("/ask", requireAuth, async (req, res) => {
     void (async () => {
       try {
         const extracted = await extractObservations(
+          clerkId,
           `Question: ${question.trim()}\n\nAnswer: ${answer}`,
           context,
         );
@@ -483,8 +484,9 @@ router.post("/workout-explain", requireAuth, async (req, res) => {
     ]);
     const workoutBlock = describeWorkout(workout);
 
-    const message = await anthropic.messages.create(
-      {
+    // Timeout (30s) en 0 retries staan nu centraal in het doelenregister van
+    // de gateway ("workout_explain") — fail fast blijft gedrag.
+    const message = await aiMessage("workout_explain", clerkId, {
         model: "claude-sonnet-4-6",
         max_tokens: 400,
         system,
@@ -494,10 +496,7 @@ router.post("/workout-explain", requireAuth, async (req, res) => {
             content: `Atleetcontext:\n${context}\n\n${workoutBlock}\n\nLeg in het NEDERLANDS in 1 tot 2 zinnen de KERN uit: waarom Sparki JUIST DEZE training vandaag zo plant. Direct leesbaar, geen jargon. Gebruik alleen echte data uit de context hierboven, verzin niets.\n\nAntwoord UITSLUITEND met geldige JSON (geen markdown, geen tekst eromheen): {"short": "..."}\n\nSchrijf platte tekst: GEEN markdown, geen kopjes, geen "#" of sterretjes/bold. Gebruik NOOIT het woord "AI" of "algoritme" — jij bent Sparki.`,
           },
         ],
-      },
-      // Fail fast instead of hanging the spinner: one attempt, hard ceiling.
-      { timeout: 30000, maxRetries: 0 },
-    );
+      });
 
     const block = message.content[0];
     if (!block || block.type !== "text") {
@@ -555,8 +554,8 @@ router.post("/workout-explain-extended", requireAuth, async (req, res) => {
     ]);
     const workoutBlock = describeWorkout(workout);
 
-    const message = await anthropic.messages.create(
-      {
+    // Timeout (60s) en 0 retries staan centraal in het doelenregister.
+    const message = await aiMessage("workout_explain_extended", clerkId, {
         model: "claude-sonnet-4-6",
         max_tokens: 1600,
         system,
@@ -566,12 +565,7 @@ router.post("/workout-explain-extended", requireAuth, async (req, res) => {
             content: `Atleetcontext:\n${context}\n\n${workoutBlock}\n\nLeg in het NEDERLANDS uit waarom Sparki JUIST DEZE training zo plant. Geef twee niveaus: eerst de korte kern, daarna de uitgebreide onderbouwing met meer diepgang en de echte getallen. De uitgebreide versie geeft méér diepgang en data — niet zomaar méér tekst.\n\nAntwoord UITSLUITEND met geldige JSON (geen markdown, geen tekst eromheen) in dit schema:\n{\n  "short": "1 tot 2 zinnen, de kern: waarom deze training vandaag past. Direct leesbaar, geen jargon.",\n  "extended": "2 tot 4 korte alinea's met de trainingsfilosofie toegespitst op deze sessie — relevante principes uit trainingsopbouw, belasting & herstel, progressieve overload, nut van Z2, intensieve blokken, taper/herstelweek, periodisering, blessurepreventie en de relatie tot het hoofddoel. Verwijs naar de echte getallen (duur, TSS, zones, %FTP, week/fase). Platte tekst, alinea's gescheiden door een lege regel."\n}\n\nRegels: gebruik alleen echte data uit de context hierboven, verzin niets. Schrijf platte tekst in beide velden: GEEN markdown, geen kopjes, geen "#" of sterretjes/bold. Gebruik NOOIT het woord "AI" of "algoritme" — jij bent Sparki.`,
           },
         ],
-      },
-      // Fail fast instead of hanging the "Sparki denkt na…" spinner forever: a
-      // single attempt (no retries) with a hard ceiling surfaces the honest
-      // error UI instead of an indefinite spinner.
-      { timeout: 60000, maxRetries: 0 },
-    );
+      });
 
     const block = message.content[0];
     if (!block || block.type !== "text") {
@@ -743,7 +737,7 @@ router.post("/workout-adjust", requireAuth, killSwitchGuard("auto_schema_adjust"
         systemPrompt(clerkId),
       ]);
       const workoutBlock = describeWorkout(workout);
-      const message = await anthropic.messages.create({
+      const message = await aiMessage("workout_adjust", clerkId, {
         model: "claude-sonnet-4-6",
         max_tokens: 600,
         system,

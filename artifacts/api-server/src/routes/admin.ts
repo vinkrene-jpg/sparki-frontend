@@ -26,6 +26,7 @@ import {
 import { isConnectorAvailable } from "../lib/connectors/registry";
 import { buildScheduledTasks } from "../lib/scheduled-tasks";
 import { securityAuditLogTable, analysisFeedbackTable } from "@workspace/db";
+import { AI_PURPOSES } from "../lib/ai/gateway";
 import { rateLimitStats } from "../lib/security/rate-limit";
 
 const router = Router();
@@ -1103,6 +1104,76 @@ router.get("/quality", requireAuth, requireAdmin, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "admin.quality failed");
     res.status(500).json({ error: "Kwaliteitsoverzicht laden mislukt" });
+  }
+});
+
+
+// GET /api/admin/ai-insights — inzicht in de centrale AI-gateway (Golf 25).
+// Toont het doelenregister (configuratie) + echte aggregaties uit ai_call_logs.
+// Uitsluitend metadata — nooit prompt- of antwoordinhoud, nooit geheimen.
+router.get("/ai-insights", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const [perPurpose, perStatus, recentProblems, last24h] = await Promise.all([
+      db.execute(sql`
+        SELECT purpose,
+               count(*)::int AS "totalCalls",
+               count(*) FILTER (WHERE status = 'ok')::int AS "okCalls",
+               count(*) FILTER (WHERE status LIKE 'blocked%')::int AS "blockedCalls",
+               count(*) FILTER (WHERE status IN ('error','timeout','fallback','rejected'))::int AS "failedCalls",
+               round(avg(latency_ms) FILTER (WHERE latency_ms IS NOT NULL))::int AS "avgLatencyMs",
+               sum(input_tokens)::bigint AS "inputTokens",
+               sum(output_tokens)::bigint AS "outputTokens",
+               sum(cost_micro_usd)::bigint AS "costMicroUsd",
+               count(*) FILTER (WHERE redaction_applied)::int AS "redactedCalls",
+               max(created_at) AS "lastCallAt"
+        FROM ai_call_logs
+        GROUP BY purpose
+        ORDER BY purpose
+      `),
+      db.execute(sql`
+        SELECT status, count(*)::int AS "count"
+        FROM ai_call_logs
+        GROUP BY status
+        ORDER BY status
+      `),
+      db.execute(sql`
+        SELECT id, purpose, provider, model, status, error_code AS "errorCode",
+               retries, latency_ms AS "latencyMs", created_at AS "createdAt"
+        FROM ai_call_logs
+        WHERE status NOT IN ('ok')
+        ORDER BY created_at DESC
+        LIMIT 25
+      `),
+      db.execute(sql`
+        SELECT count(*)::int AS "calls",
+               sum(cost_micro_usd)::bigint AS "costMicroUsd"
+        FROM ai_call_logs
+        WHERE created_at > now() - interval '24 hours'
+      `),
+    ]);
+    const purposes = Object.entries(AI_PURPOSES).map(([key, cfg]) => ({
+      purpose: key,
+      label: cfg.label,
+      provider: cfg.provider,
+      model: cfg.model,
+      promptVersion: cfg.promptVersion,
+      inputCategories: cfg.inputCategories,
+      consent: cfg.consent,
+      sensitive: cfg.sensitive,
+      minorBlocked: cfg.minorBlocked,
+      timeoutMs: cfg.timeoutMs,
+      maxRetries: cfg.maxRetries,
+    }));
+    res.json({
+      purposes,
+      usage: perPurpose.rows,
+      statuses: perStatus.rows,
+      recentProblems: recentProblems.rows,
+      last24h: last24h.rows[0] ?? { calls: 0, costMicroUsd: null },
+    });
+  } catch (err) {
+    req.log.error({ err }, "admin.aiInsights failed");
+    res.status(500).json({ error: "AI-inzichten laden mislukt" });
   }
 });
 

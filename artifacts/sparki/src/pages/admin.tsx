@@ -15,6 +15,7 @@ import {
   useAdminFeedback,
   useAdminFailedImports,
   useAdminSyncDiagnostics,
+  useAdminAiInsights,
   useAdminQuality,
   type HealthCheck,
   type HealthBatch,
@@ -237,6 +238,7 @@ export default function AdminPage() {
   const { data: feedbackData } = useAdminFeedback(enabled);
   const { data: importsData } = useAdminFailedImports(enabled);
   const { data: syncDiag } = useAdminSyncDiagnostics(enabled);
+  const { data: aiInsights } = useAdminAiInsights(enabled);
   const runChecks = useRunHealthChecks();
   const { data: quality } = useAdminQuality(enabled);
 
@@ -398,6 +400,92 @@ export default function AdminPage() {
                             {w.provider} · {formatWhen(w.receivedAt)} ·{" "}
                             {w.attempts}x geprobeerd
                             {w.lastError ? ` — ${w.lastError}` : ""}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {aiInsights && (
+              <section className="mt-6">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                  Sparki-denkkracht (gateway)
+                </p>
+                <p className="mt-1 text-[12px] leading-snug text-white/40">
+                  Iedere modelaanroep loopt via één centrale poort met kill
+                  switch, toestemming per doel, redactie en logging — alleen
+                  metadata, nooit inhoud.
+                </p>
+                <p className="mt-2 font-mono text-[10px] text-white/45">
+                  Laatste 24 uur: {aiInsights.last24h.calls} aanroepen
+                  {aiInsights.last24h.costMicroUsd
+                    ? ` · ±$${(Number(aiInsights.last24h.costMicroUsd) / 1_000_000).toFixed(2)} kostenindicatie`
+                    : ""}
+                </p>
+                <div className="mt-3 space-y-2">
+                  {aiInsights.usage.length === 0 && (
+                    <p className="font-mono text-[10px] text-white/35">
+                      Nog geen aanroepen geregistreerd.
+                    </p>
+                  )}
+                  {aiInsights.usage.map((u) => {
+                    const cfg = aiInsights.purposes.find(
+                      (c) => c.purpose === u.purpose,
+                    );
+                    return (
+                      <div
+                        key={u.purpose}
+                        className="rounded-lg border border-white/[0.06] bg-[#070d16]/[0.6] px-3 py-2.5 backdrop-blur-md"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="font-sans text-[13px] text-white/80">
+                            {cfg?.label ?? u.purpose}
+                          </p>
+                          <p className="font-mono text-[10px] tabular-nums text-white/45">
+                            {u.totalCalls} aanroepen
+                            {u.failedCalls > 0 && (
+                              <span className="text-red-400">
+                                {" "}
+                                · {u.failedCalls} mislukt
+                              </span>
+                            )}
+                            {u.blockedCalls > 0 && (
+                              <span className="text-amber-400/80">
+                                {" "}
+                                · {u.blockedCalls} geblokkeerd
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <p className="mt-0.5 font-mono text-[10px] text-white/35">
+                          {cfg
+                            ? `${cfg.model} · ${cfg.promptVersion} · toestemming: ${cfg.consent}${cfg.sensitive ? " · gevoelig" : ""}`
+                            : "doel niet (meer) in register"}
+                          {u.avgLatencyMs != null && ` · ±${u.avgLatencyMs} ms`}
+                          {" · laatste: "}
+                          {formatWhen(u.lastCallAt)}
+                        </p>
+                      </div>
+                    );
+                  })}
+                  {aiInsights.recentProblems.length > 0 && (
+                    <div className="rounded-lg border border-red-400/20 bg-red-400/[0.04] px-3 py-2.5">
+                      <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-red-400/80">
+                        Recente niet-geslaagde aanroepen (
+                        {aiInsights.recentProblems.length})
+                      </p>
+                      <div className="mt-1.5 space-y-1">
+                        {aiInsights.recentProblems.slice(0, 5).map((r) => (
+                          <p
+                            key={r.id}
+                            className="font-mono text-[10px] leading-snug text-white/45"
+                          >
+                            {r.purpose} · {r.status}
+                            {r.errorCode ? ` (${r.errorCode})` : ""} ·{" "}
+                            {formatWhen(r.createdAt)}
                           </p>
                         ))}
                       </div>

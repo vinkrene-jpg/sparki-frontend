@@ -153,3 +153,4 @@
 - [Sparki World sociale omgeving](sparki-world-social.md) — reference-only shares; openbaar = confirm + volwassen/oudertoestemming (fail-closed); route-privacy is read-time transform; dubbele waardering = 200.
 - [Sparki Kennisbank governance](sparki-kennisbank.md) — governed knowledge layer: publish=tx+snapshot, usage pins version, retracted final; engines must consume content, not just cite.
 - [Sparki plan-uitvoering & adaptieve voorstellen](sparki-plan-execution.md) — execution link race-safe (manual wins), deterministic verdict/adjust rules, LLM words-only; "done"+completion≠volledig is NOT completed-as-planned.
+- [Sparki central AI gateway](sparki-ai-gateway.md) — one aiMessage() port for all model calls: killswitch→consent→minor→redaction→dedupe→metadata-only logs; SDK types need direct @anthropic-ai/sdk dep.

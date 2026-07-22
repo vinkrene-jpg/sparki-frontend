@@ -183,8 +183,8 @@ async function probeSparkiAi(): Promise<ProbeResult> {
     );
   }
   try {
-    const { anthropic } = await import("@workspace/integrations-anthropic-ai");
-    await anthropic.messages.create({
+    const { aiMessage } = await import("../ai/gateway");
+    await aiMessage("health_probe", null, {
       model: "claude-haiku-4-5",
       max_tokens: 4,
       messages: [{ role: "user", content: "ping" }],
