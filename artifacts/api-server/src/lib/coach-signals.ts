@@ -16,6 +16,7 @@ import {
   racesTable,
   coachChangeProposalsTable,
   coachSignalActionsTable,
+  healthComplaintsTable,
   type CoachSignalAction,
 } from "@workspace/db";
 import { computeReadiness } from "./sharing";
@@ -75,7 +76,7 @@ export async function buildCoachSignals(
   const today = localDateStr(new Date());
   const signals: CoachSignal[] = [];
 
-  const [profileRows, metrics, recentSessions, pastPlanned, upcomingRaces, openProposals] =
+  const [profileRows, metrics, recentSessions, pastPlanned, upcomingRaces, openProposals, activeComplaints] =
     await Promise.all([
       db
         .select({ healthStatus: athleteProfilesTable.healthStatus })
@@ -144,18 +145,50 @@ export async function buildCoachSignals(
             eq(coachChangeProposalsTable.status, "open"),
           ),
         ),
+      db
+        .select()
+        .from(healthComplaintsTable)
+        .where(
+          and(
+            eq(healthComplaintsTable.clerkId, athleteClerkId),
+            ne(healthComplaintsTable.status, "hersteld"),
+          ),
+        )
+        .orderBy(desc(healthComplaintsTable.createdAt))
+        .limit(5),
     ]);
 
   // 1. Gezondheid (prio 1)
   const health = profileRows[0]?.healthStatus ?? null;
-  if (health && health !== "gezond" && health !== "healthy") {
+  // Opgeslagen statussen zijn ok/sick/injured — alleen de laatste twee zijn
+  // een echte melding; "ok" mag nooit een vals gezondheidssignaal geven.
+  if (health === "sick" || health === "injured") {
     signals.push({
       key: `gezondheid:${health}`,
       category: "gezondheid",
       priority: 1,
       title: "Gezondheidsmelding",
-      changed: `De sporter heeft de gezondheidsstatus "${health}" doorgegeven.`,
-      sources: ["Gezondheidsstatus uit het sportersprofiel"],
+      changed: [
+        `De sporter heeft de gezondheidsstatus "${health}" doorgegeven.`,
+        ...activeComplaints.map((c) => {
+          const parts = [
+            `Klacht: ${c.kind}${c.bodyLocation ? ` (${c.bodyLocation})` : ""}, ernst ${c.severity}, invloed op training: ${c.trainingImpact === "niet_trainen" ? "niet trainen" : c.trainingImpact}, status ${c.status}, sinds ${c.startDate}.`,
+          ];
+          if (c.professionalInstruction?.trim()) {
+            // Professionele instructie ALTIJD letterlijk doorgeven.
+            parts.push(
+              `Instructie zorgverlener (letterlijk): "${c.professionalInstruction.trim()}"`,
+            );
+          }
+          return parts.join(" ");
+        }),
+      ].join(" "),
+      sources: [
+        "Gezondheidsstatus uit het sportersprofiel",
+        ...(activeComplaints.length > 0
+          ? ["Gezondheidsmeldingen van de sporter"]
+          : []),
+      ],
       confidence: "hoog",
       whyHuman:
         "Bij ziekte of blessure hoort een mens te beslissen over rust, aanpassing of contact — niet een rekenregel.",

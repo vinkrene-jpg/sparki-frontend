@@ -1830,6 +1830,8 @@ router.post("/metrics", requireAuth, async (req, res) => {
     sleepQuality,
     fatigueScore,
     feelScore,
+    sorenessScore,
+    stressScore,
     notes,
     weightKg,
   } = req.body as {
@@ -1840,6 +1842,8 @@ router.post("/metrics", requireAuth, async (req, res) => {
     sleepQuality?: number;
     fatigueScore?: number;
     feelScore?: number;
+    sorenessScore?: number;
+    stressScore?: number;
     notes?: string;
     weightKg?: string;
   };
@@ -1858,6 +1862,8 @@ router.post("/metrics", requireAuth, async (req, res) => {
         sleepQuality: sleepQuality ?? null,
         fatigueScore: fatigueScore ?? null,
         feelScore: feelScore ?? null,
+        sorenessScore: sorenessScore ?? null,
+        stressScore: stressScore ?? null,
         notes: notes ?? null,
         weightKg: weightKg ?? null,
       })
@@ -1873,6 +1879,8 @@ router.post("/metrics", requireAuth, async (req, res) => {
           sleepQuality: sleepQuality ?? null,
           fatigueScore: fatigueScore ?? null,
           feelScore: feelScore ?? null,
+          sorenessScore: sorenessScore ?? null,
+          stressScore: stressScore ?? null,
           notes: notes ?? null,
           weightKg: weightKg ?? null,
           updatedAt: new Date(),

@@ -66,6 +66,22 @@ export function composeRaceAdvice(
     });
   }
 
+  // ── Gezondheid — bij ziekte/blessure gaat veiligheid vóór prestatie ──────
+  const hs = athlete?.healthStatus ?? "ok";
+  if (hs === "sick" || hs === "injured") {
+    items.push({
+      id: "gezondheid",
+      domain: "tactiek",
+      kind: "regel",
+      title: hs === "sick" ? "Je staat ziek gemeld" : "Je staat geblesseerd gemeld",
+      text:
+        hs === "sick"
+          ? "Starten met ziekteklachten is een gezondheidsrisico, geen tactische keuze. Overleg met je coach of een arts vóór je start; koorts of klachten onder de nek betekenen niet starten."
+          : "Je staat geblesseerd gemeld. Bespreek met je coach of behandelaar of starten verantwoord is en wat je aanpast; een wedstrijd verergert een blessure sneller dan een training.",
+      basis: "Gezondheidsstatus uit je eigen melding — Sparki stelt geen diagnose.",
+    });
+  }
+
   const km = race.distanceKm != null ? Number(race.distanceKm)
     : course.route?.distanceKm ?? null;
   const elev = race.elevationM ?? (course.route?.elevationGainM != null

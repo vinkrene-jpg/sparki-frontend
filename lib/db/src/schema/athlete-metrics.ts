@@ -26,6 +26,8 @@ export const athleteDailyMetricsTable = pgTable(
     sleepQuality: integer("sleep_quality"),
     fatigueScore: integer("fatigue_score"),
     feelScore: integer("feel_score"),
+    sorenessScore: integer("soreness_score"),
+    stressScore: integer("stress_score"),
     notes: text("notes"),
     weightKg: numeric("weight_kg", { precision: 5, scale: 2 }),
     createdAt: timestamp("created_at", { withTimezone: true })

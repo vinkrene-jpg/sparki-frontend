@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -91,6 +91,30 @@ export default function RecordScreen() {
   }>(null);
   const [following, setFollowing] = useState(true);
   const [showSensors, setShowSensors] = useState(false);
+  // Golf 26 — waarschuwing vóór de start bij ziek/geblesseerd gemeld. Eerlijk:
+  // alleen tonen op basis van de echte status; fetch-fout ⇒ geen waarschuwing
+  // verzinnen (null = onbekend, stil).
+  const [healthWarning, setHealthWarning] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    customFetch<{ healthStatus?: string } | null>("/api/health-flow/overview")
+      .then((data) => {
+        if (cancelled || !data) return;
+        if (data.healthStatus === "sick") {
+          setHealthWarning(
+            "Je staat ziek gemeld. Een rit starten is jouw keuze, maar rustig aan of rust is nu meestal verstandiger.",
+          );
+        } else if (data.healthStatus === "injured") {
+          setHealthWarning(
+            "Je staat geblesseerd gemeld. Start alleen als dat past bij het advies van je coach of behandelaar.",
+          );
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   // In-rit voedingsregistratie: tik-tellers tijdens de rit. Gesnapshot bij
   // stoppen (net als de track) en pas bij succesvol opslaan één keer als
   // voedingslog naar de backend gestuurd.
@@ -710,6 +734,15 @@ export default function RecordScreen() {
                 </Text>
               </View>
             ) : (
+              <>
+                {healthWarning && (
+                  <View style={[styles.recCard, { backgroundColor: c.card, borderColor: c.border }]}>
+                    <Ionicons name="medkit-outline" size={18} color={c.mutedForeground} />
+                    <Text style={[styles.recNote, { color: c.mutedForeground, flex: 1 }]}>
+                      {healthWarning}
+                    </Text>
+                  </View>
+                )}
               <Pressable
                 onPress={onStart}
                 style={[styles.recStartBtn, { backgroundColor: c.primary }]}
@@ -719,6 +752,7 @@ export default function RecordScreen() {
                   Start rit
                 </Text>
               </Pressable>
+              </>
             )}
           </>
         )}

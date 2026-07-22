@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, desc, eq, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 import {
   db,
   parentAthleteLinksTable,
@@ -14,6 +14,7 @@ import {
   parentConfirmationsTable,
   parentMessagesTable,
   parentReportKinds,
+  healthComplaintsTable,
   type ParentAthleteLink,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
@@ -285,6 +286,24 @@ router.get("/overview", requireAuth, async (req, res) => {
             .orderBy(desc(parentReportsTable.createdAt))
             .limit(3);
           child.openReports = openReports;
+          // Golf 26 — klachtensamenvatting: uitsluitend soort + status, nooit
+          // details, notities of professionele instructies (privacy).
+          const complaintRows = await db
+            .select({
+              kind: healthComplaintsTable.kind,
+              status: healthComplaintsTable.status,
+              startDate: healthComplaintsTable.startDate,
+            })
+            .from(healthComplaintsTable)
+            .where(
+              and(
+                eq(healthComplaintsTable.clerkId, athleteId),
+                ne(healthComplaintsTable.status, "hersteld"),
+              ),
+            )
+            .orderBy(desc(healthComplaintsTable.createdAt))
+            .limit(5);
+          child.healthComplaints = complaintRows;
         }
 
         // Algemene herstel-/slaapsamenvatting (nooit vermogensdata).

@@ -6,6 +6,7 @@ import {
   parentAthleteLinksTable,
   userProfilesTable,
   pushSubscriptionsTable,
+  healthSafetyInfoTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { createNotification } from "../lib/notifications";
@@ -72,12 +73,28 @@ router.post("/crash", requireAuth, async (req, res) => {
     new Set([...coaches, ...parents].map((r) => r.recipient)),
   ).filter((r) => r !== clerkId);
 
+  // Golf 26 — zelfgekozen noodinformatie: ALLEEN meesturen wanneer de sporter
+  // dat expliciet heeft aangezet (shareWithContacts). Standaard uit.
+  const [safety] = await db
+    .select({
+      infoText: healthSafetyInfoTable.infoText,
+      shareWithContacts: healthSafetyInfoTable.shareWithContacts,
+    })
+    .from(healthSafetyInfoTable)
+    .where(eq(healthSafetyInfoTable.clerkId, clerkId))
+    .limit(1);
+  const safetyLine =
+    safety?.shareWithContacts && safety.infoText.trim()
+      ? `Noodinformatie (door de renner zelf gedeeld): ${safety.infoText.trim().slice(0, 500)}`
+      : null;
+
   const mapsUrl = `https://www.google.com/maps?q=${lat.toFixed(5)},${lon.toFixed(5)}`;
   const title = `Mogelijk gevallen: ${name}`;
   const body = [
     `${name} reageerde niet na een mogelijke val tijdens een rit.`,
     speedKmh !== null ? `Laatst bekende snelheid: ${speedKmh} km/u.` : null,
     `Locatie: ${mapsUrl}`,
+    safetyLine,
   ]
     .filter(Boolean)
     .join(" ");

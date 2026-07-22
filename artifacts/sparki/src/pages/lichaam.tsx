@@ -1,9 +1,10 @@
 import { useState } from "react"
-import { Apple, HeartPulse, ChevronRight } from "lucide-react"
+import { Apple, ClipboardCheck, ChevronRight } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { VoedingScreen } from "@/components/sparki/voeding-screen"
-import { HealthStatusControl } from "@/components/sparki/health-status-control"
+import { HealthFlowSection } from "@/components/sparki/health-flow-section"
+import { CheckinSheet } from "@/components/sparki/checkin-sheet"
 import { MentalResilienceCard } from "@/components/sparki/mental-resilience-card"
 
 // Hoofdstuk Lichaam — bundelt de bestaande lichaamssurfaces onder één dak:
@@ -11,6 +12,7 @@ import { MentalResilienceCard } from "@/components/sparki/mental-resilience-card
 // gereserveerde plek voor Mentaal (toekomstig werk — geen nep-functionaliteit).
 export default function LichaamPage() {
   const [voedingOpen, setVoedingOpen] = useState(false)
+  const [checkinOpen, setCheckinOpen] = useState(false)
 
   return (
     <ScreenShell section="lichaam">
@@ -51,28 +53,28 @@ export default function LichaamPage() {
 
       <section className="mt-8">
         <SectionLabel title="Gezondheid & herstel" />
-        <div className="mt-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-          <div className="flex items-start gap-3">
-            <span
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.08]"
-              style={{ background: "rgba(120,210,230,0.08)" }}
-            >
-              <HeartPulse className="h-5 w-5" strokeWidth={1.75} style={{ color: ACCENT }} />
+        <HealthFlowSection />
+        <button
+          type="button"
+          onClick={() => setCheckinOpen(true)}
+          className="mt-3 flex w-full items-center gap-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
+        >
+          <span
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.08]"
+            style={{ background: "rgba(120,210,230,0.08)" }}
+          >
+            <ClipboardCheck className="h-5 w-5" strokeWidth={1.75} style={{ color: ACCENT }} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14px] font-medium text-white/90">
+              Check-in
             </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[14px] font-medium text-white/90">
-                Hoe voel je je?
-              </p>
-              <p className="mt-0.5 text-[12px] leading-relaxed text-white/45">
-                Ben je ziek of geblesseerd? Geef het door — je schema past zich
-                erop aan.
-              </p>
-              <div className="mt-3">
-                <HealthStatusControl />
-              </div>
-            </div>
-          </div>
-        </div>
+            <span className="mt-0.5 block text-[12px] text-white/45">
+              Geef door hoe je je voelt — alleen wat vandaag nog ontbreekt
+            </span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-white/25" strokeWidth={1.75} />
+        </button>
       </section>
 
       <div className="mt-8">
@@ -80,6 +82,7 @@ export default function LichaamPage() {
       </div>
 
       <VoedingScreen open={voedingOpen} onOpenChange={setVoedingOpen} />
+      <CheckinSheet open={checkinOpen} onClose={() => setCheckinOpen(false)} />
     </ScreenShell>
   )
 }
