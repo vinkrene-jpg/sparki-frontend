@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { eq } from "drizzle-orm";
 import {
   db,
@@ -5,28 +6,47 @@ import {
   userFlagOverridesTable,
   FEATURE_KEYS,
   type FeatureKey,
+  type ReleaseGroup,
 } from "@workspace/db";
+
+// Platform van de client, uit de X-Sparki-Platform header. Onbekend ⇒ "web"
+// (het bestaande gedrag; mobiel stuurt de header expliciet mee).
+export type ClientPlatform = "web" | "mobiel";
+
+export function parsePlatform(header: string | undefined | null): ClientPlatform {
+  return header === "mobiel" ? "mobiel" : "web";
+}
+
+/**
+ * Deterministische uitrol-bucket 0..99 voor (clerkId, flagKey).
+ * Zelfde gebruiker + zelfde flag ⇒ altijd dezelfde bucket, zodat een
+ * percentage-uitrol stabiel is (niemand "flippert" tussen aan en uit).
+ */
+export function rolloutBucket(clerkId: string, flagKey: string): number {
+  const h = createHash("sha256").update(`${clerkId}:${flagKey}`).digest();
+  return h.readUInt32BE(0) % 100;
+}
 
 /**
  * Resolve all feature flags for a user.
  *
  * Precedence (highest → lowest):
- *   1. User-level override   (user_flag_overrides row)
- *   2. Role match            (flag.enabledRoles includes activeRole)
- *   3. Global default        (flag.enabledGlobally)
- *   4. Head-tester early access — for flags that EXIST (have a row) but aren't yet
- *      enabled by role or globally, head testers get them early (true). This is the
- *      whole point of the Hoofdtester: in-test features turn on for them before
- *      everyone else. The kill-switch is a user-level override (step 1, highest
- *      precedence): set an override=false for that tester to hide a flag from them.
- *      Flags with NO row are not real features → they stay false even for head
- *      testers (we never enable something that isn't registered).
+ *   1. User-level override   (user_flag_overrides row) — negeert platform/percentage
+ *   2. Platformpoort         (flag.enabledPlatforms niet-leeg en platform ontbreekt ⇒ uit)
+ *   3. Rol / releasegroep / globaal — elk van deze zet de flag aan, MAAR alleen
+ *      binnen het uitrolpercentage (deterministische bucket per gebruiker+flag).
+ *   4. Head-tester early access — geregistreerde maar nog niet vrijgegeven flags
+ *      gaan voor hoofdtesters vast aan (kill-switch = override false, stap 1).
  *   5. false
  */
 export async function resolveFlags(
   clerkId: string,
   activeRole: string,
-  opts: { isHeadTester?: boolean } = {},
+  opts: {
+    isHeadTester?: boolean;
+    releaseGroup?: ReleaseGroup;
+    platform?: ClientPlatform;
+  } = {},
 ): Promise<Record<FeatureKey, boolean>> {
   const [flags, overrides] = await Promise.all([
     db.select().from(featureFlagsTable),
@@ -39,6 +59,8 @@ export async function resolveFlags(
   const overrideMap = new Map<string, boolean>(
     overrides.map((o) => [o.flagKey, o.enabled]),
   );
+  const platform = opts.platform ?? "web";
+  const group = opts.releaseGroup ?? "productie";
 
   const result = {} as Record<FeatureKey, boolean>;
 
@@ -52,16 +74,24 @@ export async function resolveFlags(
       result[key] = false;
       continue;
     }
-    if (flag.enabledRoles.includes(activeRole)) {
-      result[key] = true;
+    // Platformpoort: expliciete platformlijst zonder dit platform ⇒ uit.
+    if (flag.enabledPlatforms.length > 0 && !flag.enabledPlatforms.includes(platform)) {
+      result[key] = false;
       continue;
     }
-    if (flag.enabledGlobally) {
-      result[key] = true;
+    const pct = Math.max(0, Math.min(100, flag.rolloutPercentage ?? 100));
+    const inRollout = rolloutBucket(clerkId, key) < pct;
+    const granted =
+      flag.enabledRoles.includes(activeRole) ||
+      flag.enabledGroups.includes(group) ||
+      flag.enabledGlobally;
+    if (granted) {
+      result[key] = inRollout;
       continue;
     }
-    // Head-tester early access: anything not explicitly off (override) and not
-    // yet globally/role-enabled still turns ON for the Hoofdtester.
+    // Head-tester early access: geregistreerde flags die nog niet zijn
+    // vrijgegeven staan voor de Hoofdtester vast aan (geen percentage —
+    // vroege toegang is het hele punt).
     result[key] = opts.isHeadTester === true;
   }
 

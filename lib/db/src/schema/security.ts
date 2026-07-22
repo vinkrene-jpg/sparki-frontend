@@ -36,6 +36,14 @@ export const securityEventKinds = [
   "auth_denied",
   "upload_rejected",
   "suspicious",
+  // Golf 14 — beheeracties voor gecontroleerde uitrol (append-only vastgelegd).
+  "flag_changed",
+  "kill_switch_changed",
+  "pilot_access_changed",
+  "version_requirement_changed",
+  "rollout_autostop",
+  "rollback_recorded",
+  "release_note_published",
 ] as const;
 export type SecurityEventKind = (typeof securityEventKinds)[number];
 

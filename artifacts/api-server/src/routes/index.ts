@@ -60,6 +60,9 @@ import accountRouter from "./account";
 import legalRouter from "./legal";
 import analysisFeedbackRouter from "./analysis-feedback";
 import journeyRouter from "./journey";
+import releaseRouter from "./release";
+
+import { killSwitchGuard } from "../lib/kill-switches";
 
 const router: IRouter = Router();
 
@@ -69,7 +72,7 @@ router.use("/flags", flagsRouter);
 router.use("/athlete", athleteRouter);
 router.use("/races", racesRouter);
 router.use("/invitations", invitationsRouter);
-router.use("/ai", aiRouter);
+router.use("/ai", killSwitchGuard("ai_processing"), aiRouter);
 router.use("/memory", memoryRouter);
 router.use("/privacy", privacyRouter);
 router.use("/account", accountRouter);
@@ -87,7 +90,21 @@ router.use("/parent", parentRouter);
 router.use("/links", linksRouter);
 router.use("/nutrition", nutritionRouter);
 router.use("/notifications", notificationsRouter);
-router.use("/activity-imports", activityImportsRouter);
+// Bestandsimports vallen onder de imports-noodstop; uploads vanaf de telefoon
+// hebben daarnaast een eigen noodstop (mobile_upload) op basis van het
+// X-Sparki-Platform-header.
+router.use(
+  "/activity-imports",
+  killSwitchGuard("imports_sync"),
+  (req, res, next) => {
+    if ((req.get("x-sparki-platform") ?? "").toLowerCase() === "mobiel") {
+      killSwitchGuard("mobile_upload")(req, res, next);
+      return;
+    }
+    next();
+  },
+  activityImportsRouter,
+);
 router.use("/routes", routesRouter);
 router.use("/training-plan", trainingPlanRouter);
 router.use("/bug-reports", bugReportsRouter);
@@ -95,7 +112,7 @@ router.use("/knowledge", knowledgeRouter);
 router.use("/intel", intelRouter);
 router.use("/feed", feedRouter);
 router.use("/social", socialRouter);
-router.use("/voice", voiceRouter);
+router.use("/voice", killSwitchGuard("ai_processing"), voiceRouter);
 router.use(insightsRouter);
 router.use(mentalRouter);
 router.use("/admin", adminRouter);
@@ -104,7 +121,7 @@ router.use(inputCenterRouter);
 router.use("/material", materialRouter);
 router.use("/garage", garageRouter);
 router.use("/bike-scan", bikeScanRouter);
-router.use("/document-analyses", documentAnalysisRouter);
+router.use("/document-analyses", killSwitchGuard("ai_processing"), documentAnalysisRouter);
 router.use("/calendar", calendarRouter);
 router.use("/state", stateRouter);
 router.use("/photo-style", photoStyleRouter);
@@ -122,7 +139,8 @@ router.use("/sprints", sprintsRouter);
 router.use("/climbs", climbsRouter);
 router.use("/alerts", alertsRouter);
 router.use("/share", shareRouter);
-router.use("/clubs", clubRouter);
+router.use("/clubs", killSwitchGuard("club_features"), clubRouter);
+router.use("/release", releaseRouter);
 
 // Dev-only routes (preview-athlete switcher). Mounted ONLY outside production so
 // these endpoints simply do not exist on a deployed build.

@@ -28,6 +28,7 @@ export type BugReportInput = {
   pageUrl?: string | null;
   screenshotUrl?: string | null;
   screenshotObjectPath?: string | null;
+  contextConsent?: boolean;
 };
 
 // A single message in a report's follow-up thread. `authorRole` is who wrote it:

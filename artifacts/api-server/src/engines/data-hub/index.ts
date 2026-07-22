@@ -27,6 +27,7 @@ import {
 import { getHubProvider } from "./providers";
 import { ingestBatch, effectiveImportedDataTypes } from "./ingest";
 import { ensureMaterialNudgeNotification } from "../material";
+import { isKilled } from "../../lib/kill-switches";
 import { refreshDerivedLoadForAthlete } from "../../lib/derived-load-backfill";
 
 export * from "./types";
@@ -191,6 +192,22 @@ export async function runSync(
 ): Promise<RunSyncResult> {
   const def: ConnectorDefinition | undefined = getConnectorDefinition(providerId);
   if (!def) throw new HubError("not_found", "Onbekende koppeling.");
+
+  // Kill switches: imports/synchronisaties globaal, plus externe providers
+  // apart (bestandsimport is geen externe provider). Bestaande data blijft
+  // onaangetast — alleen NIEUWE verwerking stopt.
+  if (await isKilled("imports_sync")) {
+    throw new HubError(
+      "unavailable",
+      "Imports en synchronisaties zijn tijdelijk uitgeschakeld door de beheerder. Probeer het later opnieuw.",
+    );
+  }
+  if (providerId !== "file" && (await isKilled("external_providers"))) {
+    throw new HubError(
+      "unavailable",
+      "Externe koppelingen zijn tijdelijk uitgeschakeld door de beheerder. Probeer het later opnieuw.",
+    );
+  }
 
   if (!def.available) {
     throw new HubError(

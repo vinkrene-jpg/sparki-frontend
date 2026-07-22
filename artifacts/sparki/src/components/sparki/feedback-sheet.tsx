@@ -151,6 +151,9 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+  // Golf 14 — technische context (appversie + verzoek-id) reist alleen mee
+  // wanneer de melder daar expliciet toestemming voor geeft.
+  const [contextConsent, setContextConsent] = useState(true)
 
   const inputCls =
     "w-full rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
@@ -187,6 +190,7 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
         userRole: profile?.activeRole ?? null,
         pageUrl: typeof window !== "undefined" ? window.location.href : location,
         screenshotObjectPath,
+        contextConsent,
       },
       {
         onSuccess: () => {
@@ -332,6 +336,19 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
             <p className="text-[11px] leading-relaxed text-white/35">
               De pagina waar je nu bent en je rol worden automatisch meegestuurd.
             </p>
+
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5">
+              <input
+                type="checkbox"
+                checked={contextConsent}
+                onChange={(e) => setContextConsent(e.target.checked)}
+                className="mt-0.5 h-3.5 w-3.5 accent-cyan-300"
+              />
+              <span className="text-[11px] leading-relaxed text-white/45">
+                Stuur ook technische gegevens mee (appversie en een technisch
+                volgnummer) zodat de oorzaak sneller gevonden wordt.
+              </span>
+            </label>
 
             {error && <p className="text-[12px] text-red-300/85">{error}</p>}
 

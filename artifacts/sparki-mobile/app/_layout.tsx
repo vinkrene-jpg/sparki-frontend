@@ -12,18 +12,23 @@ import { setBaseUrl } from "@workspace/api-client-react";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { VersionBlockScreen } from "@/components/VersionBlockScreen";
 import colors from "@/constants/colors";
+import { installRelease, onVersionBlocked } from "@/lib/release";
 
 // Point the shared API client at the Sparki backend so the mobile bundle can
 // call the same Express API the web app uses.
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (domain) setBaseUrl(`https://${domain}`);
+
+// Golf 14 — platform/versie-headers, 426-blokkade en foutregistratie.
+installRelease();
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
@@ -54,6 +59,10 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+  // Golf 14 — zodra de server 426 antwoordt blokkeert de app volledig.
+  const [versionBlock, setVersionBlock] = useState<string | null>(null);
+
+  useEffect(() => onVersionBlocked(setVersionBlock), []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -77,6 +86,9 @@ export default function RootLayout() {
                 <KeyboardProvider>
                   <StatusBar style="light" />
                   <RootLayoutNav />
+                  {versionBlock ? (
+                    <VersionBlockScreen message={versionBlock} />
+                  ) : null}
                 </KeyboardProvider>
               </GestureHandlerRootView>
             </QueryClientProvider>

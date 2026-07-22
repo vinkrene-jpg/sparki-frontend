@@ -17,6 +17,30 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _defaultHeaders: Record<string, string> = {};
+let _errorStatusHandler: ((status: number, body: unknown) => void) | null = null;
+
+/**
+ * Set headers that are attached to EVERY request (lowest priority — explicit
+ * per-request headers always win). Used by the mobile bundle to send its
+ * platform and app version for the server-side version gate.
+ * Pass `null` to clear.
+ */
+export function setDefaultHeaders(headers: Record<string, string> | null): void {
+  _defaultHeaders = headers ?? {};
+}
+
+/**
+ * Register a callback invoked for every non-OK response (before the ApiError
+ * is thrown), with the HTTP status and the parsed error body. Used by the
+ * mobile bundle to show a blocking screen on 426 (version incompatible).
+ * The handler must never throw. Pass `null` to clear.
+ */
+export function setErrorStatusHandler(
+  handler: ((status: number, body: unknown) => void) | null,
+): void {
+  _errorStatusHandler = handler;
+}
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -335,7 +359,11 @@ export async function customFetch<T = unknown>(
     throw new TypeError(`customFetch: ${method} requests cannot have a body.`);
   }
 
-  const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
+  const headers = mergeHeaders(
+    _defaultHeaders,
+    isRequest(input) ? input.headers : undefined,
+    headersInit,
+  );
 
   if (
     typeof init.body === "string" &&
@@ -364,6 +392,13 @@ export async function customFetch<T = unknown>(
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);
+    if (_errorStatusHandler) {
+      try {
+        _errorStatusHandler(response.status, errorData);
+      } catch {
+        // De statushandler mag een verzoek nooit extra laten falen.
+      }
+    }
     throw new ApiError(response, errorData, requestInfo);
   }
 

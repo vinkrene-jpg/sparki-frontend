@@ -36,6 +36,16 @@ const STATUS_NOTICE: Partial<
   },
 };
 
+// Leid een leesbare schermnaam af uit de pagina-URL (alleen het pad).
+function derivedScreen(pageUrl: string): string | null {
+  try {
+    const path = pageUrl.startsWith("http") ? new URL(pageUrl).pathname : pageUrl.split("?")[0]!;
+    return path || null;
+  } catch {
+    return null;
+  }
+}
+
 function snippetOf(description: string): string {
   const trimmed = description.trim();
   return trimmed.length > 80 ? `${trimmed.slice(0, 79)}…` : trimmed;
@@ -77,6 +87,18 @@ router.post("/", requireAuth, async (req, res) => {
   // canonical path (e.g. /objects/<id>) is what the client sends. We register
   // ownership (private, owner = reporter) now that the bytes exist, then store
   // the path. Admins are additionally allowed to read it on the serve route.
+  // Supportcontext (Golf 14): scherm/appversie/correlatie worden server-side
+  // afgeleid; technische context reist alleen mee met expliciete toestemming.
+  const contextConsent = body.contextConsent === true;
+  const pageUrl = str(body.pageUrl);
+  const screen = str(body.screen) ?? (pageUrl ? derivedScreen(pageUrl) : null);
+  const appVersion = contextConsent
+    ? (str(req.get("x-sparki-app-version")) ?? str(body.appVersion))
+    : null;
+  const correlationId = contextConsent
+    ? String((req as { id?: string | number }).id ?? "") || null
+    : null;
+
   const screenshotObjectPath = str(body.screenshotObjectPath);
   if (screenshotObjectPath) {
     try {
@@ -97,7 +119,11 @@ router.post("/", requireAuth, async (req, res) => {
         description,
         kind,
         userRole: str(body.userRole),
-        pageUrl: str(body.pageUrl),
+        pageUrl,
+        screen,
+        appVersion,
+        correlationId,
+        contextConsent,
         // Prefer the uploaded object path; fall back to a legacy URL string.
         screenshotUrl: screenshotObjectPath ?? str(body.screenshotUrl),
       })
@@ -137,6 +163,10 @@ router.get("/admin", requireAuth, requireAdmin, async (req, res) => {
         userRole: bugReportsTable.userRole,
         kind: bugReportsTable.kind,
         pageUrl: bugReportsTable.pageUrl,
+        screen: bugReportsTable.screen,
+        appVersion: bugReportsTable.appVersion,
+        correlationId: bugReportsTable.correlationId,
+        contextConsent: bugReportsTable.contextConsent,
         description: bugReportsTable.description,
         screenshotUrl: bugReportsTable.screenshotUrl,
         status: bugReportsTable.status,

@@ -11,7 +11,10 @@ import {
   type FeatureKey,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { resolveFlags, isAdmin } from "../lib/flags";
+import { resolveFlags, isAdmin, parsePlatform } from "../lib/flags";
+import { effectiveReleaseGroup } from "../lib/release-groups";
+import { writeAudit } from "../lib/security/audit";
+import { RELEASE_GROUPS, RELEASE_PLATFORMS } from "@workspace/db";
 
 const router = Router();
 
@@ -33,6 +36,8 @@ router.get("/", requireAuth, async (req, res) => {
     const activeRole = profile?.activeRole ?? "athlete";
     const flags = await resolveFlags(clerkId, activeRole, {
       isHeadTester: profile?.isHeadTester === true,
+      releaseGroup: await effectiveReleaseGroup(clerkId),
+      platform: parsePlatform(req.get("x-sparki-platform")),
     });
     res.json(flags);
   } catch (err) {
@@ -70,6 +75,9 @@ router.get("/admin/definitions", requireAuth, requireAdmin, async (req, res) => 
         description: FEATURE_DESCRIPTIONS[key as FeatureKey],
         enabledGlobally: row?.enabledGlobally ?? false,
         enabledRoles: row?.enabledRoles ?? [],
+        enabledGroups: row?.enabledGroups ?? [],
+        enabledPlatforms: row?.enabledPlatforms ?? [],
+        rolloutPercentage: row?.rolloutPercentage ?? 100,
         updatedAt: row?.updatedAt ?? null,
       };
     });
@@ -91,11 +99,15 @@ router.put("/admin/definitions/:key", requireAuth, requireAdmin, async (req, res
     return;
   }
 
-  const { enabledGlobally, enabledRoles, description } = req.body as {
-    enabledGlobally?: boolean;
-    enabledRoles?: string[];
-    description?: string;
-  };
+  const { enabledGlobally, enabledRoles, enabledGroups, enabledPlatforms, rolloutPercentage, description } =
+    req.body as {
+      enabledGlobally?: boolean;
+      enabledRoles?: string[];
+      enabledGroups?: string[];
+      enabledPlatforms?: string[];
+      rolloutPercentage?: number;
+      description?: string;
+    };
 
   if (enabledRoles !== undefined) {
     const invalid = enabledRoles.filter(
@@ -106,6 +118,31 @@ router.put("/admin/definitions/:key", requireAuth, requireAdmin, async (req, res
       return;
     }
   }
+  if (enabledGroups !== undefined) {
+    const invalid = enabledGroups.filter(
+      (g) => !(RELEASE_GROUPS as readonly string[]).includes(g),
+    );
+    if (invalid.length) {
+      res.status(400).json({ error: `Ongeldige releasegroepen: ${invalid.join(", ")}` });
+      return;
+    }
+  }
+  if (enabledPlatforms !== undefined) {
+    const invalid = enabledPlatforms.filter(
+      (p) => !(RELEASE_PLATFORMS as readonly string[]).includes(p),
+    );
+    if (invalid.length) {
+      res.status(400).json({ error: `Ongeldige platforms: ${invalid.join(", ")}` });
+      return;
+    }
+  }
+  if (
+    rolloutPercentage !== undefined &&
+    (!Number.isInteger(rolloutPercentage) || rolloutPercentage < 0 || rolloutPercentage > 100)
+  ) {
+    res.status(400).json({ error: "Uitrolpercentage moet een geheel getal 0–100 zijn" });
+    return;
+  }
 
   try {
     const [updated] = await db
@@ -115,6 +152,9 @@ router.put("/admin/definitions/:key", requireAuth, requireAdmin, async (req, res
         description: description ?? FEATURE_DESCRIPTIONS[key],
         enabledGlobally: enabledGlobally ?? false,
         enabledRoles: enabledRoles ?? [],
+        enabledGroups: enabledGroups ?? [],
+        enabledPlatforms: enabledPlatforms ?? [],
+        rolloutPercentage: rolloutPercentage ?? 100,
         updatedAt: new Date(),
       })
       .onConflictDoUpdate({
@@ -122,11 +162,27 @@ router.put("/admin/definitions/:key", requireAuth, requireAdmin, async (req, res
         set: {
           ...(enabledGlobally !== undefined && { enabledGlobally }),
           ...(enabledRoles !== undefined && { enabledRoles }),
+          ...(enabledGroups !== undefined && { enabledGroups }),
+          ...(enabledPlatforms !== undefined && { enabledPlatforms }),
+          ...(rolloutPercentage !== undefined && { rolloutPercentage }),
           ...(description !== undefined && { description }),
           updatedAt: new Date(),
         },
       })
       .returning();
+    await writeAudit({
+      event: "flag_changed",
+      actorClerkId: getClerkUserId(req),
+      meta: {
+        key,
+        enabledGlobally: updated?.enabledGlobally,
+        enabledRoles: updated?.enabledRoles,
+        enabledGroups: updated?.enabledGroups,
+        enabledPlatforms: updated?.enabledPlatforms,
+        rolloutPercentage: updated?.rolloutPercentage,
+      },
+      req,
+    });
     res.json(updated);
   } catch (err) {
     req.log.error({ err }, "flags.admin.definitions.put failed");
@@ -197,6 +253,13 @@ router.put(
           },
         })
         .returning();
+      await writeAudit({
+        event: "flag_changed",
+        actorClerkId: adminClerkId,
+        subjectClerkId: clerkId,
+        meta: { key, override: enabled, reason: reason ?? null },
+        req,
+      });
       res.json(row);
     } catch (err) {
       req.log.error({ err }, "flags.admin.overrides.put failed");
@@ -256,10 +319,13 @@ router.get(
         .where(eq(userProfilesTable.clerkId, clerkId));
 
       const activeRole = String(profile?.activeRole ?? "athlete");
+      const releaseGroup = await effectiveReleaseGroup(clerkId);
       const flags = await resolveFlags(clerkId, activeRole, {
         isHeadTester: profile?.isHeadTester === true,
+        releaseGroup,
+        platform: parsePlatform(req.get("x-sparki-platform")),
       });
-      res.json({ clerkId, activeRole, flags });
+      res.json({ clerkId, activeRole, releaseGroup, flags });
     } catch (err) {
       req.log.error({ err }, "flags.admin.resolve failed");
       res.status(500).json({ error: "Internal server error" });

@@ -15,6 +15,7 @@ import {
 } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
 import { devAuthBypass } from "./lib/auth";
+import { versionGate } from "./lib/version-gate";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -121,6 +122,11 @@ app.use((req, res, next) => {
   if (id != null) res.setHeader("X-Request-Id", String(id));
   next();
 });
+
+// Versie- en compatibiliteitscontrole: clients onder de minimaal ondersteunde
+// versie krijgen 426 met een Nederlandse melding (web/mobiel tonen daarop een
+// blokkeerscherm). Webhooks en verzoeken zonder versieheader passeren gewoon.
+app.use("/api", versionGate());
 
 app.use("/api", router);
 

@@ -43,6 +43,7 @@ import CoachAthletePlanPage from "@/pages/coach-athlete-plan";
 import CoachCockpitPage from "@/pages/coach-cockpit";
 import LandingPage from "@/pages/landing";
 import AdminPage from "@/pages/admin";
+import { VersionBlockScreen } from "@/components/sparki/version-block-screen";
 import AdminHealthDetailPage from "@/pages/admin-health-detail";
 import StartPage from "@/pages/start";
 import ClubPage from "@/pages/club";
@@ -482,6 +483,7 @@ function AppRouter() {
             <FeedbackProvider>
             <SoundProvider>
             <ErrorBoundary>
+              <VersionBlockScreen />
               <ScrollToTop />
               {DEV_PREVIEW ? (
                 <DevPreview />

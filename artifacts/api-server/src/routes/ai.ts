@@ -14,6 +14,7 @@ import {
 } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { killSwitchGuard } from "../lib/kill-switches";
 import {
   persistObservation,
   recordMemoryEvent,
@@ -598,7 +599,7 @@ type AdjustProposal = {
   } | null;
 };
 
-router.post("/workout-adjust", requireAuth, async (req, res) => {
+router.post("/workout-adjust", requireAuth, killSwitchGuard("auto_schema_adjust"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const { workoutId, feedbackType, note } = req.body as {
     workoutId?: number;

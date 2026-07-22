@@ -51,6 +51,8 @@ export const clubsTable = pgTable("clubs", {
   ownerClerkId: text("owner_clerk_id")
     .notNull()
     .references(() => userProfilesTable.clerkId, { onDelete: "restrict", onUpdate: "cascade" }),
+  // Releasegroep voor gecontroleerde uitrol (pilotclubs): default productie.
+  releaseGroup: text("release_group").notNull().default("productie"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

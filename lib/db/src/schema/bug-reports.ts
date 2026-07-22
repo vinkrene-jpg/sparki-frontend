@@ -3,6 +3,7 @@ import {
   serial,
   integer,
   text,
+  boolean,
   timestamp,
   index,
 } from "drizzle-orm/pg-core";
@@ -35,6 +36,14 @@ export const bugReportsTable = pgTable("bug_reports", {
   pageUrl: text("page_url"),
   description: text("description").notNull(),
   screenshotUrl: text("screenshot_url"),
+  // Golf 14 — automatisch meegestuurde, niet-gevoelige context: scherm,
+  // appversie en correlation-id (server-side afgeleid uit headers/request).
+  screen: text("screen"),
+  appVersion: text("app_version"),
+  correlationId: text("correlation_id"),
+  // Expliciete toestemming van de melder om extra (mogelijk gevoelige)
+  // context mee te sturen. Zonder toestemming wordt NIETS extra's bewaard.
+  contextConsent: boolean("context_consent").notNull().default(false),
   status: text("status").notNull().default("new"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

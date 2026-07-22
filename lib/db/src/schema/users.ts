@@ -30,6 +30,9 @@ export const userProfilesTable = pgTable("user_profiles", {
   // Tester lifecycle: when an admin marks a tester as "Klaar" (done testing).
   // NULL = still Actief/Uitgenodigd. Set/cleared from the tester overview.
   testerCompletedAt: timestamp("tester_completed_at", { withTimezone: true }),
+  // Releasegroep voor gecontroleerde uitrol: intern | test | pilot | productie.
+  // Default "productie" = de meest beperkte groep (fail-closed voor nieuwe features).
+  releaseGroup: text("release_group").notNull().default("productie"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

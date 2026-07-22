@@ -37,6 +37,7 @@ import { RideMomentBlock } from "@/components/sparki/ride-moment-block"
 import { CheckInChip } from "@/components/sparki/check-in-chip"
 import { FollowUpChip } from "@/components/sparki/follow-up-chip"
 import { MeerijderNudge } from "@/components/sparki/meerijder-nudge"
+import { ReleaseNoteCard } from "@/components/sparki/release-note-card"
 import { HomeWeatherRow } from "@/components/sparki/home-weather-row"
 import { MaintenanceSignalsPanel } from "@/components/sparki/maintenance-signals"
 import { useRideMoment, useRideStoryFlag } from "@/hooks/use-ride-story"
@@ -327,6 +328,9 @@ function StateDayHome() {
         <CheckInChip />
         <FollowUpChip />
       </div>
+
+      {/* Golf 14 — releasebericht: rustig, nooit leidend, alleen op Vandaag. */}
+      <ReleaseNoteCard />
 
       {/* When a ride/health block leads, the calm toestand still follows below so
           the State is always reachable — just not as the leader. */}

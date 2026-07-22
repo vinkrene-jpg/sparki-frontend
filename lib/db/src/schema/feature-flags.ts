@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, integer, timestamp, primaryKey } from "drizzle-orm/pg-core";
 import { userProfilesTable } from "./users";
 import {
   FEATURE_KEYS,
@@ -16,6 +16,15 @@ export const featureFlagsTable = pgTable("feature_flags", {
   description: text("description"),
   enabledGlobally: boolean("enabled_globally").notNull().default(false),
   enabledRoles: text("enabled_roles").array().notNull().default([]),
+  // Releasegroepen waarvoor de flag aan staat (intern/test/pilot/productie).
+  // Leeg = geen groepsvrijgave (alleen global/rol/override telt dan).
+  enabledGroups: text("enabled_groups").array().notNull().default([]),
+  // Platforms waarop de flag mag werken. Leeg = alle platforms.
+  enabledPlatforms: text("enabled_platforms").array().notNull().default([]),
+  // Gefaseerde uitrol: percentage gebruikers (deterministische hash op
+  // clerkId+key) waarvoor een group/global-vrijgave daadwerkelijk geldt.
+  // 100 = iedereen in de vrijgegeven doelgroep. Overrides negeren dit.
+  rolloutPercentage: integer("rollout_percentage").notNull().default(100),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
