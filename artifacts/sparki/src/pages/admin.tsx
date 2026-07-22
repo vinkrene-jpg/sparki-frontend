@@ -14,6 +14,7 @@ import {
   useAdminScheduledTasks,
   useAdminFeedback,
   useAdminFailedImports,
+  useAdminQuality,
   type HealthCheck,
   type HealthBatch,
   type ScheduledTask,
@@ -233,6 +234,7 @@ export default function AdminPage() {
   const { data: feedbackData } = useAdminFeedback(enabled);
   const { data: importsData } = useAdminFailedImports(enabled);
   const runChecks = useRunHealthChecks();
+  const { data: quality } = useAdminQuality(enabled);
 
   const grouped = useMemo(() => {
     const map = new Map<string, HealthCheck[]>();
@@ -490,6 +492,113 @@ export default function AdminPage() {
                   ))
                 )}
               </div>
+            </section>
+
+            <section className="mt-8">
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                Kwaliteit van analyses
+              </p>
+              <p className="mt-1 text-[12px] leading-snug text-white/40">
+                Oordelen van sporters en coaches over analyses en adviezen.
+                Feedback wordt alleen geregistreerd — regels veranderen nooit
+                automatisch.
+              </p>
+              {!quality ||
+              Object.keys(quality.totals).length === 0 ? (
+                <p className="mt-3 text-[12px] text-white/30">
+                  Nog geen feedback ontvangen.
+                </p>
+              ) : (
+                <>
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {Object.entries(quality.totals).map(([verdict, count]) => (
+                      <div
+                        key={verdict}
+                        className="rounded-lg border border-white/[0.05] bg-[#070d16]/[0.5] px-3 py-2 backdrop-blur-md"
+                      >
+                        <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+                          {verdict.replace(/_/g, " ")}
+                        </p>
+                        <p className="mt-0.5 font-sans text-lg font-extralight tabular-nums text-white/70">
+                          {count}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  {quality.byEngine.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {quality.byEngine.slice(0, 8).map((e) => (
+                        <div
+                          key={`${e.engine}-${e.engine_version}`}
+                          className="flex items-center justify-between gap-3 rounded-lg border border-white/[0.05] bg-[#070d16]/[0.5] px-3 py-2 backdrop-blur-md"
+                        >
+                          <span className="truncate font-mono text-[10px] text-white/60">
+                            {e.engine} · versie {e.engine_version}
+                          </span>
+                          <span className="shrink-0 font-mono text-[10px] tabular-nums text-white/45">
+                            {e.total} oordelen ·{" "}
+                            <span
+                              style={{
+                                color:
+                                  e.onjuist > 0
+                                    ? STATUS_META.orange.color
+                                    : undefined,
+                              }}
+                            >
+                              {e.onjuist} onjuist
+                            </span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {quality.recentIncorrect.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/30">
+                        Recent als onjuist gemeld
+                      </p>
+                      {quality.recentIncorrect.slice(0, 6).map((r) => (
+                        <div
+                          key={r.id}
+                          className="rounded-xl border p-3 backdrop-blur-md"
+                          style={{
+                            borderColor: STATUS_META.orange.color,
+                            background: STATUS_META.orange.bg,
+                          }}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="font-mono text-[10px] text-white/70">
+                              {r.subjectType} · {r.subjectKey}
+                            </span>
+                            <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-white/40">
+                              {r.actorRole} · {formatWhen(r.updatedAt)}
+                            </span>
+                          </div>
+                          {(r.reasonText || r.reasonCode) && (
+                            <p className="mt-1 text-[12px] leading-snug text-white/55">
+                              {r.reasonText ??
+                                (r.reasonCode
+                                  ? r.reasonCode.replace(/_/g, " ")
+                                  : "")}
+                            </p>
+                          )}
+                          {r.context && (
+                            <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-white/30">
+                              {String(r.context.engine ?? "onbekend")}
+                              {r.context.ruleKey
+                                ? ` · regel ${String(r.context.ruleKey)}`
+                                : ""}
+                              {r.context.engineVersion
+                                ? ` · versie ${String(r.context.engineVersion)}`
+                                : ""}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </section>
 
             <section className="mt-8">

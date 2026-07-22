@@ -54,7 +54,7 @@ function signalOf(intake: SignalIntake, kind: SignalKind): IntakeSignal | null {
   return intake.signals.find((s) => s.kind === kind) ?? null;
 }
 
-const KIND_LABEL: Record<SignalKind, string> = {
+export const KIND_LABEL: Record<SignalKind, string> = {
   training_load: "trainingsbelasting",
   readiness: "check-in van vandaag",
   hrv_trend: "HRV-trend",

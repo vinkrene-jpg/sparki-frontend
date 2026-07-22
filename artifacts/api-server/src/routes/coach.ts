@@ -10,7 +10,9 @@ import {
   plannedWorkoutsTable,
   aiObservationsTable,
 } from "@workspace/db";
+import { analysisFeedbackTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { SPARKI_ENGINE_VERSION } from "../lib/engine-version";
 import { writeAudit } from "../lib/security/audit";
 import { sessionSeed } from "../lib/variation";
 import { computeReadiness } from "../engines/recovery-load";
@@ -448,6 +450,181 @@ router.post("/athletes/:athleteId/plan/adopt", requireAuth, async (req, res) => 
   }
 });
 
+// POST /api/coach/athletes/:athleteId/plan/decision — de coach beoordeelt een
+// voorstel van Sparki expliciet: overnemen (accept), aanpassen (adjust) of
+// afwijzen (reject, reden verplicht). "accept" hergebruikt het bestaande
+// adopt-pad; "adjust"/"reject" registreren alleen het besluit. Elk besluit
+// wordt idempotent vastgelegd in de feedbacklus (één rij per coach+voorstel) —
+// en past NOOIT automatisch analyseregels aan.
+router.post(
+  "/athletes/:athleteId/plan/decision",
+  requireAuth,
+  async (req, res) => {
+    const coachId = getClerkUserId(req)!;
+    if (!(await requireCoach(coachId, res))) return;
+    const athleteId = String(req.params.athleteId);
+
+    const body = (req.body ?? {}) as {
+      planDayId?: unknown;
+      decision?: unknown;
+      reasonText?: unknown;
+      adjustedNote?: unknown;
+    };
+    const planDayId = Number(body.planDayId);
+    const decision = String(body.decision ?? "");
+    const reasonText =
+      typeof body.reasonText === "string"
+        ? body.reasonText.trim().slice(0, 500) || null
+        : null;
+    const adjustedNote =
+      typeof body.adjustedNote === "string"
+        ? body.adjustedNote.trim().slice(0, 500) || null
+        : null;
+
+    if (!Number.isInteger(planDayId) || planDayId <= 0) {
+      res.status(400).json({ error: "Ongeldige dag" });
+      return;
+    }
+    if (!["accept", "adjust", "reject"].includes(decision)) {
+      res.status(400).json({ error: "Ongeldig besluit" });
+      return;
+    }
+    if (decision === "reject" && !reasonText) {
+      res.status(400).json({ error: "Geef een reden bij afwijzen." });
+      return;
+    }
+    if (decision === "adjust" && !adjustedNote) {
+      res.status(400).json({ error: "Geef aan wat je aanpast." });
+      return;
+    }
+
+    try {
+      // Toestemmingsgate — identiek aan het adopt-pad (fail-closed).
+      if (!(await hasAcceptedCoachLink(coachId, athleteId))) {
+        res.status(403).json({ error: "Geen gekoppelde atleet" });
+        return;
+      }
+      const sharing = await coachSharingLevel(athleteId);
+      if (sharing === "none") {
+        res.status(403).json({ error: "Atleet deelt geen data" });
+        return;
+      }
+
+      const view = await loadPlanView(athleteId);
+      if (!view || view.plan.mode !== "advisory") {
+        res.status(404).json({ error: "Geen adviesschema beschikbaar" });
+        return;
+      }
+      const day = view.days.find((d) => d.id === planDayId);
+      if (!day) {
+        res.status(404).json({ error: "Dag niet gevonden" });
+        return;
+      }
+
+      // Accept = het bestaande overnemen-pad (nooit een parallel schrijfpad):
+      // een coach-sessie op die datum, zonder bestaande te overschrijven.
+      let adopted = false;
+      if (decision === "accept" || decision === "adjust") {
+        const [existing] = await db
+          .select({ id: plannedWorkoutsTable.id })
+          .from(plannedWorkoutsTable)
+          .where(
+            and(
+              eq(plannedWorkoutsTable.clerkId, athleteId),
+              eq(plannedWorkoutsTable.scheduledDate, day.dayDate),
+              eq(plannedWorkoutsTable.source, "coach"),
+            ),
+          )
+          .limit(1);
+        if (!existing && !day.isRest) {
+          await db.insert(plannedWorkoutsTable).values({
+            clerkId: athleteId,
+            scheduledDate: day.dayDate,
+            type: planDayToWorkoutType(day.trainingType),
+            title: day.workout?.title ?? day.focus,
+            description:
+              decision === "adjust"
+                ? [day.rationale, `Aangepast door coach: ${adjustedNote}`]
+                    .filter(Boolean)
+                    .join(" — ")
+                : (day.rationale ?? null),
+            targetDurationMin: day.estDurationMin ?? null,
+            status: "planned",
+            source: "coach",
+          });
+          adopted = true;
+        }
+      }
+
+      // Registreer het besluit idempotent in de feedbacklus.
+      const verdict =
+        decision === "reject"
+          ? "niet_opgevolgd"
+          : decision === "adjust"
+            ? "opgevolgd"
+            : "opgevolgd";
+      const [feedback] = await db
+        .insert(analysisFeedbackTable)
+        .values({
+          clerkId: athleteId,
+          actorClerkId: coachId,
+          actorRole: "coach",
+          subjectType: "coach_proposal",
+          subjectKey: `plan_day:${planDayId}`,
+          verdict,
+          reasonCode: decision === "reject" ? "anders" : null,
+          reasonText: decision === "adjust" ? adjustedNote : reasonText,
+          actionKind: decision === "adjust" ? "training_aangepast" : null,
+          context: {
+            engine: "training-plan",
+            ruleKey: `decision:${decision}`,
+            engineVersion: SPARKI_ENGINE_VERSION,
+            confidenceScore: null,
+            confidenceLevel: null,
+            severity: null,
+            category: "planning",
+            missingData: [],
+            computedAt: new Date().toISOString(),
+          },
+        })
+        .onConflictDoUpdate({
+          target: [
+            analysisFeedbackTable.actorClerkId,
+            analysisFeedbackTable.subjectType,
+            analysisFeedbackTable.subjectKey,
+          ],
+          // Volledige overschrijving bij herbeoordeling: ook reasonCode en de
+          // contextmomentopname mee-updaten, anders blijft de verantwoording
+          // van het oude besluit staan (breekt herleidbaarheid + aggregaties).
+          set: {
+            verdict,
+            reasonCode: decision === "reject" ? "anders" : null,
+            reasonText: decision === "adjust" ? adjustedNote : reasonText,
+            actionKind: decision === "adjust" ? "training_aangepast" : null,
+            context: {
+              engine: "training-plan",
+              ruleKey: `decision:${decision}`,
+              engineVersion: SPARKI_ENGINE_VERSION,
+              confidenceScore: null,
+              confidenceLevel: null,
+              severity: null,
+              category: "planning",
+              missingData: [],
+              computedAt: new Date().toISOString(),
+            },
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
+
+      res.status(201).json({ decision, adopted, feedback });
+    } catch (err) {
+      req.log.error({ err }, "coach.plan-decision failed");
+      res.status(500).json({ error: "Besluit opslaan mislukt" });
+    }
+  },
+);
+
 // ── Athlete-facing daily coach analysis (no role gate; your own data) ─────────
 
 // GET /api/coach/analysis — Sparki's deterministic six-part analysis for the
@@ -458,7 +635,14 @@ router.get("/analysis", requireAuth, async (req, res) => {
     const analysis = await runCoachAnalysis(clerkId, {
       variationSeed: sessionSeed(req),
     });
-    res.json(analysis);
+    // Verantwoording: iedere uitgeleverde analyse draagt engine + versie +
+    // tijdstip, zodat elke conclusie herleidbaar is naar haar berekening.
+    res.json({
+      ...analysis,
+      engine: "observation",
+      engineVersion: SPARKI_ENGINE_VERSION,
+      generatedAt: new Date().toISOString(),
+    });
   } catch (err) {
     req.log.error({ err }, "coach.analysis failed");
     res.status(500).json({ error: "Kon je analyse niet samenstellen" });
@@ -530,7 +714,12 @@ router.post("/followup", requireAuth, async (req, res) => {
     const analysis = await runCoachAnalysis(clerkId, {
       variationSeed: sessionSeed(req),
     });
-    res.json(analysis);
+    res.json({
+      ...analysis,
+      engine: "observation",
+      engineVersion: SPARKI_ENGINE_VERSION,
+      generatedAt: new Date().toISOString(),
+    });
   } catch (err) {
     req.log.error({ err }, "coach.followup failed");
     res.status(500).json({ error: "Kon je antwoord niet verwerken" });

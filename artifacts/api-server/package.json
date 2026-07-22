@@ -55,6 +55,7 @@
     "test:garage-sensors": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs garage-sensors",
     "test:onboarding-connect-step": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs onboarding-connect-step",
     "test:onboarding-strava-gapfill": "node ./scripts/run-test.mjs onboarding-strava-gapfill",
+    "test:analysis-quality": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs analysis-quality",
     "test:feedback-adjust": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs feedback-adjust",
     "test:privacy-security": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs privacy-security",
     "test:kernreis": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs kernreis",

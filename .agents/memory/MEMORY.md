@@ -131,4 +131,5 @@
 - [Sparki session graphs](sparki-session-graphs.md) — streams only at ingest (old sessions honest-null), connectNulls=false, comparability-gated comparison, Tanaka maxHR labeled as schatting.
 - [Sparki bronnenregister](sparki-source-quality.md) — central source-quality register; fail-closed prompt rule, sensor "actief" needs real proof, per-analysis used/excluded logging.
 - [Sparki privacy & accountbeheer](sparki-privacy-security.md) — schema-driven export w/ token masking, 14d delete window + exceptions register, fire-and-forget audits (tests must sleep), minor fail-closed sharing.
+- [Sparki analysekwaliteit & feedbacklus](sparki-analysis-feedback.md) — idempotente feedback-upsert moet de HELE rij verversen (incl. reasonCode+context) of oude verantwoording blijft staan.
 - [Sparki fietsscan](sparki-bike-scan.md) — original saved before cutout; viewMode fotos on ANY frames; @imgly bg-removal needs direct onnxruntime-web dep for vite build; asset provenance mandatory.

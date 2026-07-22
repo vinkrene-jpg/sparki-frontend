@@ -16,6 +16,7 @@ import {
   type InsightGroup,
 } from "@/lib/insight-grouping"
 import { GraphInsightCard } from "@/components/sparki/insight/graph-insight-card"
+import { AnalysisFeedback } from "@/components/sparki/analysis-feedback"
 import { ACCENT } from "@/components/sparki/ui"
 
 const SIGNAL_LABEL: Record<ObservationSignal["kind"], string> = {
@@ -144,6 +145,27 @@ function GroupExtended({
           </ul>
         </div>
       )}
+
+      {/* Verantwoording: waar deze conclusie vandaan komt (engine/regel/versie). */}
+      {(lead.engine || lead.engineVersion) && (
+        <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/25">
+          Bron: {lead.engine ?? "onbekend"}
+          {lead.ruleKey ? ` · regel ${lead.ruleKey}` : ""}
+          {lead.engineVersion ? ` · versie ${lead.engineVersion}` : ""}
+          {" · "}
+          {new Date(lead.createdAt).toLocaleDateString("nl-NL")}
+        </p>
+      )}
+      {(lead.missingData?.length ?? 0) > 0 && (
+        <p className="text-[11px] leading-relaxed text-amber-100/50">
+          Ontbrak bij deze berekening: {lead.missingData!.join(", ")}
+        </p>
+      )}
+
+      <AnalysisFeedback
+        subjectType="observation"
+        subjectKey={String(lead.id)}
+      />
 
       <div className="flex items-center gap-3 border-t border-white/[0.06] pt-2.5">
         {saved && (

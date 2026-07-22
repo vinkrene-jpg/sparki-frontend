@@ -107,6 +107,13 @@ export const aiObservationsTable = pgTable(
     alternativeExplanations: jsonb("alternative_explanations").$type<string[]>(),
     confidenceScore: numeric("confidence_score", { precision: 3, scale: 2 }),
     recommendedAction: text("recommended_action"),
+    // Herleidbaarheid (Afbouwgolf 4): welke engine en regel deze conclusie
+    // produceerde, onder welke softwareversie, en welke data ontbrak. Samen met
+    // signals/confidenceScore/createdAt vormt dit de volledige verantwoording.
+    engine: text("engine"),
+    ruleKey: text("rule_key"),
+    engineVersion: text("engine_version"),
+    missingData: jsonb("missing_data").$type<string[]>(),
     status: text("status").notNull().default("new"),
     // Stable hash of (category + detectedPattern/title) used to skip re-saving the
     // same observation. Null for free-form manual notes.

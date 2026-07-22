@@ -13,7 +13,7 @@ import {
 } from "../../lib/ai-memory";
 import type { ObservationSignal } from "@workspace/db";
 import { gatherSignals, buildSignals } from "./intake";
-import { deriveObservations } from "./observations";
+import { deriveObservations, KIND_LABEL } from "./observations";
 import { detectContradictions, buildFollowUps } from "./contradiction";
 import { generateAdvice } from "./advice";
 import {
@@ -291,6 +291,9 @@ export async function runCoachAnalysis(
         alternativeExplanations: o.confidence.uncertainties,
         recommendedAction: analysis.advice.headline,
         dedupeKey: `coach:${o.topic}:${analysis.date}`,
+        engine: "observation",
+        ruleKey: o.topic,
+        missingData: o.signalsMissing.map((k) => KIND_LABEL[k] ?? k),
       };
       await persistObservation(input);
     }

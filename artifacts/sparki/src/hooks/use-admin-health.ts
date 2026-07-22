@@ -196,6 +196,47 @@ export function useRunSingleHealthCheck() {
   });
 }
 
+// Kwaliteitsdashboard van de feedbacklus op analyses.
+export type QualityEngineRow = {
+  engine: string;
+  engine_version: string;
+  total: number;
+  onjuist: number;
+  nuttig: number;
+  opvolging: number;
+  opgevolgd: number;
+};
+export type QualityRuleRow = {
+  engine: string;
+  rule_key: string;
+  total: number;
+  onjuist: number;
+};
+export type QualityIncorrectRow = {
+  id: number;
+  subjectType: string;
+  subjectKey: string;
+  actorRole: string;
+  reasonCode: string | null;
+  reasonText: string | null;
+  context: Record<string, unknown> | null;
+  updatedAt: string;
+};
+export type AdminQuality = {
+  totals: Record<string, number>;
+  byEngine: QualityEngineRow[];
+  byRule: QualityRuleRow[];
+  recentIncorrect: QualityIncorrectRow[];
+};
+
+export function useAdminQuality(enabled: boolean) {
+  return useQuery({
+    queryKey: ["admin", "quality"],
+    enabled,
+    queryFn: () => apiFetch<AdminQuality>("/api/admin/quality"),
+  });
+}
+
 // Acknowledge a failure as handled ("Markeer als opgelost").
 export function useResolveHealthCheck() {
   const qc = useQueryClient();

@@ -26,6 +26,12 @@ export type AiObservation = {
   confidenceScore: string | null;
   recommendedAction: string | null;
   status: "new" | "acknowledged" | "saved" | "dismissed" | "outdated";
+  // Verantwoording: welke engine/regel/versie deze conclusie maakte en welke
+  // data daarbij ontbrak.
+  engine: string | null;
+  ruleKey: string | null;
+  engineVersion: string | null;
+  missingData: string[] | null;
   createdAt: string;
 };
 

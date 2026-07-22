@@ -25,7 +25,7 @@ import {
 } from "../lib/test-dashboard/scoring";
 import { isConnectorAvailable } from "../lib/connectors/registry";
 import { buildScheduledTasks } from "../lib/scheduled-tasks";
-import { securityAuditLogTable } from "@workspace/db";
+import { securityAuditLogTable, analysisFeedbackTable } from "@workspace/db";
 import { rateLimitStats } from "../lib/security/rate-limit";
 
 const router = Router();
@@ -972,6 +972,77 @@ router.get("/security", requireAuth, requireAdmin, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "admin.security failed");
     res.status(500).json({ error: "Beveiligingsoverzicht kon niet geladen worden." });
+  }
+});
+
+// ── GET /api/admin/quality ───────────────────────────────────────────────────
+// Kwaliteitsdashboard van de feedbacklus: totalen per oordeel, kwaliteit per
+// engine/regel/versie (aandeel "onjuist"), en de recentste onjuist-meldingen
+// met hun berekeningscontext. Puur lezend — feedback wijzigt nooit regels.
+router.get("/quality", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const totalsRows = await db
+      .select({
+        verdict: analysisFeedbackTable.verdict,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(analysisFeedbackTable)
+      .groupBy(analysisFeedbackTable.verdict);
+
+    const byEngine = (
+      await db.execute(sql`
+        SELECT
+          COALESCE(context->>'engine', 'onbekend') AS engine,
+          COALESCE(context->>'engineVersion', 'onbekend') AS engine_version,
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE verdict = 'onjuist')::int AS onjuist,
+          COUNT(*) FILTER (WHERE verdict = 'nuttig')::int AS nuttig,
+          COUNT(*) FILTER (WHERE verdict IN ('opgevolgd','niet_opgevolgd'))::int AS opvolging,
+          COUNT(*) FILTER (WHERE verdict = 'opgevolgd')::int AS opgevolgd
+        FROM analysis_feedback
+        GROUP BY 1, 2
+        ORDER BY total DESC
+        LIMIT 50
+      `)
+    ).rows;
+
+    const byRule = (
+      await db.execute(sql`
+        SELECT
+          COALESCE(context->>'engine', 'onbekend') AS engine,
+          COALESCE(context->>'ruleKey', 'onbekend') AS rule_key,
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE verdict = 'onjuist')::int AS onjuist
+        FROM analysis_feedback
+        GROUP BY 1, 2
+        ORDER BY onjuist DESC, total DESC
+        LIMIT 50
+      `)
+    ).rows;
+
+    const recentIncorrect = await db
+      .select({
+        id: analysisFeedbackTable.id,
+        subjectType: analysisFeedbackTable.subjectType,
+        subjectKey: analysisFeedbackTable.subjectKey,
+        actorRole: analysisFeedbackTable.actorRole,
+        reasonCode: analysisFeedbackTable.reasonCode,
+        reasonText: analysisFeedbackTable.reasonText,
+        context: analysisFeedbackTable.context,
+        updatedAt: analysisFeedbackTable.updatedAt,
+      })
+      .from(analysisFeedbackTable)
+      .where(eq(analysisFeedbackTable.verdict, "onjuist"))
+      .orderBy(desc(analysisFeedbackTable.updatedAt))
+      .limit(25);
+
+    const totals: Record<string, number> = {};
+    for (const r of totalsRows) totals[r.verdict] = r.count;
+
+    res.json({ totals, byEngine, byRule, recentIncorrect });
+  } catch (err) {
+    req.log.error({ err }, "admin.quality failed");
+    res.status(500).json({ error: "Kwaliteitsoverzicht laden mislukt" });
   }
 });
 

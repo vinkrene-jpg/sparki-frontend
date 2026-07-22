@@ -107,6 +107,10 @@ export type CoachAnalysis = {
   advice: Advice;
   actions: CoachAction[];
   missing: string[];
+  // Verantwoording: engine, versie en tijdstip van deze berekening.
+  engine?: string;
+  engineVersion?: string;
+  generatedAt?: string;
 };
 
 export type CoachFeedbackSignal =

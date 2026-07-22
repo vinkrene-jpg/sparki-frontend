@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useLocation } from "wouter"
+import { AnalysisFeedback } from "@/components/sparki/analysis-feedback"
 import {
   Activity,
   ChevronDown,
@@ -203,6 +204,33 @@ function WhyContent({
 
       <MissingList kinds={missingKinds} />
       <ReasonBlock confidence={data.advice.confidence} />
+
+      {/* Verantwoording: waar deze analyse vandaan komt en wanneer die is
+          berekend — elke conclusie blijft herleidbaar. */}
+      {(data.engine || data.engineVersion) && (
+        <p className="border-t border-white/[0.06] pt-2.5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/25">
+          Bron: {data.engine ?? "onbekend"}
+          {data.engineVersion ? ` · versie ${data.engineVersion}` : ""}
+          {data.generatedAt
+            ? ` · ${new Date(data.generatedAt).toLocaleString("nl-NL")}`
+            : ""}
+        </p>
+      )}
+
+      {/* Oordeel over deze analyse (idempotent — één oordeel per dag-analyse). */}
+      <AnalysisFeedback
+        subjectType="coach_analysis"
+        subjectKey={`analysis:${data.date}`}
+        context={{
+          engine: data.engine ?? "observation",
+          engineVersion: data.engineVersion,
+          confidenceScore: data.advice.confidence.score / 100,
+          confidenceLevel: data.advice.confidence.level,
+          category: "coaching",
+          missingData: missingKinds,
+          computedAt: data.generatedAt,
+        }}
+      />
     </div>
   )
 }

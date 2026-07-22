@@ -19,6 +19,7 @@ import {
 } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { getEffectivePrivacy } from "./privacy";
+import { SPARKI_ENGINE_VERSION } from "./engine-version";
 import { createNotification } from "./notifications";
 
 const ACTIVE_STATUSES = ["new", "acknowledged", "saved"] as const;
@@ -42,6 +43,11 @@ export type ObservationInput = {
   recommendedAction?: string | null;
   expiresAt?: Date | null;
   dedupeKey?: string | null;
+  // Herleidbaarheid: producerende engine, regel en versie + ontbrekende data.
+  engine?: string | null;
+  ruleKey?: string | null;
+  engineVersion?: string | null;
+  missingData?: string[] | null;
 };
 
 function computeDedupeKey(input: ObservationInput): string {
@@ -120,6 +126,10 @@ export async function persistObservation(
       confidenceScore:
         input.confidenceScore != null ? input.confidenceScore.toFixed(2) : null,
       recommendedAction: input.recommendedAction ?? null,
+      engine: input.engine ?? null,
+      ruleKey: input.ruleKey ?? null,
+      engineVersion: input.engineVersion ?? SPARKI_ENGINE_VERSION,
+      missingData: input.missingData ?? null,
       dedupeKey,
       expiresAt: input.expiresAt ?? null,
     })

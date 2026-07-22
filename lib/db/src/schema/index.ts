@@ -10,6 +10,7 @@ export * from "./life-events";
 export * from "./invitations";
 export * from "./feature-flags";
 export * from "./ai-memory";
+export * from "./analysis-feedback";
 export * from "./context-memory";
 export * from "./social";
 export * from "./privacy";
