@@ -35,6 +35,7 @@ import {
   saveActiveNav,
 } from "@/lib/active-nav";
 import {
+  meldNavigatieStart,
   useRejoinRoute,
   useRoute,
   useRouteRoadObjects,
@@ -96,6 +97,9 @@ export default function NavigateScreen() {
   useEffect(() => {
     if (fetchedRoute && Number.isInteger(routeId)) {
       void saveActiveNav(routeId, fetchedRoute);
+      // Golf 19 — meld de backend dat de navigatie met deze routeversie start
+      // (versiegebruik, idempotent). Best-effort: blokkeert navigatie nooit.
+      void meldNavigatieStart(routeId);
     }
   }, [fetchedRoute, routeId]);
   useEffect(() => {

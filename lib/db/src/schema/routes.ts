@@ -6,6 +6,9 @@ import {
   real,
   jsonb,
   timestamp,
+  boolean,
+  uniqueIndex,
+  index,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -93,6 +96,17 @@ export const routesTable = pgTable("routes", {
   // generated routes; honesty caveats are baked into this text.
   rationale: text("rationale"),
   source: text("source").notNull().default("manual"),
+  // Favoriet-markering voor de routebibliotheek.
+  favorite: boolean("favorite").notNull().default(false),
+  // Versienummer: start op 1, +1 bij iedere inhoudelijke wijziging. Trainingen,
+  // wedstrijden en activiteiten leggen vast welke versie zij gebruikten
+  // (route_version_usages), zodat "welke versie reed ik?" altijd eerlijk is.
+  version: integer("version").notNull().default(1),
+  // Soft delete: gezet wanneer de route verwijderd wordt terwijl er nog
+  // historie (wedstrijddossier, activiteit, versiegebruik) aan hangt. De rij
+  // blijft bestaan zodat historie nooit beschadigt; de bibliotheek verbergt
+  // verwijderde routes.
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
   linkedActivityImportId: integer("linked_activity_import_id").references(
     () => activityImportsTable.id,
     { onDelete: "set null" },

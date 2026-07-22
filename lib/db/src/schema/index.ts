@@ -47,3 +47,4 @@ export * from "./journey";
 export * from "./coach-cockpit";
 export * from "./club";
 export * from "./release";
+export * from "./route-shares";

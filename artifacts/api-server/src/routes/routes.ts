@@ -1,5 +1,17 @@
 import { Router } from "express";
-import { and, desc, eq, gte, isNotNull } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  isNotNull,
+  isNull,
+  ne,
+  or,
+} from "drizzle-orm";
 import {
   db,
   routesTable,
@@ -8,12 +20,24 @@ import {
   plannedWorkoutsTable,
   routeSurfaces,
   routeVisibilities,
+  routeSharesTable,
+  routeVersionUsagesTable,
+  routeShareAudiences,
+  racesTable,
+  sprintResultsTable,
+  coachAthleteLinksTable,
+  clubMembersTable,
+  athleteProfilesTable,
+  userProfilesTable,
+  type RouteShareAudience,
   type RouteSurface,
   type RouteVisibility,
   type RoutePathPoint,
   type RouteWaypoint,
   type RouteMeetpoint,
 } from "@workspace/db";
+import { applyLocationPrivacy } from "../lib/world-social/location";
+import { registerRouteUsage } from "../lib/route-usage";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
@@ -313,6 +337,137 @@ async function buildRationale(input: {
   }
 }
 
+// ── Golf 19: bibliotheek, delen & privacy ──────────────────────────────────
+
+type RouteRow = typeof routesTable.$inferSelect;
+
+// Huisadres van de eigenaar (voor de privacyzone bij delen). Null = onbekend;
+// applyLocationPrivacy valt dan fail-closed terug op start/einde verbergen.
+async function ownerHome(
+  clerkId: string,
+): Promise<{ lat: number; lon: number } | null> {
+  const [p] = await db
+    .select({
+      homeLat: athleteProfilesTable.homeLat,
+      homeLon: athleteProfilesTable.homeLon,
+    })
+    .from(athleteProfilesTable)
+    .where(eq(athleteProfilesTable.clerkId, clerkId))
+    .limit(1);
+  return p?.homeLat != null && p?.homeLon != null
+    ? { lat: Number(p.homeLat), lon: Number(p.homeLon) }
+    : null;
+}
+
+// Actieve clubs van een gebruiker.
+async function activeClubIds(clerkId: string): Promise<number[]> {
+  const rows = await db
+    .select({ clubId: clubMembersTable.clubId })
+    .from(clubMembersTable)
+    .where(
+      and(eq(clubMembersTable.clerkId, clerkId), isNull(clubMembersTable.endedAt)),
+    );
+  return rows.map((r) => r.clubId);
+}
+
+// Mag deze kijker (niet-eigenaar) de route zien? Gedeeld met:
+// - persoon: expliciet aan deze gebruiker
+// - coach: kijker is geaccepteerde coach van de eigenaar
+// - club/team: kijker en eigenaar zijn actieve leden van dezelfde club
+async function canViewSharedRoute(
+  route: RouteRow,
+  viewerClerkId: string,
+): Promise<boolean> {
+  const shares = await db
+    .select()
+    .from(routeSharesTable)
+    .where(eq(routeSharesTable.routeId, route.id));
+  if (shares.length === 0) return false;
+  if (
+    shares.some(
+      (s) => s.audience === "persoon" && s.targetClerkId === viewerClerkId,
+    )
+  ) {
+    return true;
+  }
+  if (shares.some((s) => s.audience === "coach")) {
+    const [link] = await db
+      .select({ status: coachAthleteLinksTable.status })
+      .from(coachAthleteLinksTable)
+      .where(
+        and(
+          eq(coachAthleteLinksTable.coachClerkId, viewerClerkId),
+          eq(coachAthleteLinksTable.athleteClerkId, route.clerkId),
+          eq(coachAthleteLinksTable.status, "accepted"),
+        ),
+      )
+      .limit(1);
+    if (link) return true;
+  }
+  if (shares.some((s) => s.audience === "club" || s.audience === "team")) {
+    const [mine, theirs] = await Promise.all([
+      activeClubIds(viewerClerkId),
+      activeClubIds(route.clerkId),
+    ]);
+    if (mine.some((c) => theirs.includes(c))) return true;
+  }
+  return false;
+}
+
+// Kijkersweergave: exacte privé-startlocaties worden NOOIT automatisch
+// gedeeld. Start/einde afgekapt + privacyzone rond het huis van de eigenaar
+// (fail-closed wanneer het huisadres onbekend is). Het hoogteprofiel is
+// per-punt gekoppeld aan de originele geometrie en zou na afkappen niet meer
+// kloppen — dus eerlijk null. Navigatie-aanwijzingen idem (start klopt niet
+// meer). Totalen (afstand/hoogtemeters) blijven de echte totalen van de route.
+function viewerRouteView(route: RouteRow, home: { lat: number; lon: number } | null) {
+  const raw = Array.isArray(route.geometry)
+    ? (route.geometry as RoutePathPoint[]).map((p) => ({
+        lat: Number(p[0]),
+        lon: Number(p[1]),
+      }))
+    : [];
+  const track = applyLocationPrivacy(
+    raw,
+    { hideStartEnd: true, privacyZone: true, simplify: true },
+    home,
+  );
+  return {
+    ...route,
+    geometry: track ? track.map((p) => [p.lat, p.lon] as RoutePathPoint) : null,
+    nav: null,
+    waypoints: null,
+    profile: null,
+    gedeeld: true,
+    origineel: false,
+    privacyNote:
+      "Start en einde van deze route zijn afgeschermd voor de privacy van de maker.",
+  };
+}
+
+// Wordt deze route nog ergens in historie gebruikt? Dan mag zij nooit hard
+// verdwijnen (wedstrijddossier, sprints en versiegebruik blijven kloppen).
+async function routeIsReferenced(routeId: number): Promise<boolean> {
+  const [race] = await db
+    .select({ id: racesTable.id })
+    .from(racesTable)
+    .where(eq(racesTable.routeId, routeId))
+    .limit(1);
+  if (race) return true;
+  const [sprint] = await db
+    .select({ id: sprintResultsTable.id })
+    .from(sprintResultsTable)
+    .where(eq(sprintResultsTable.routeId, routeId))
+    .limit(1);
+  if (sprint) return true;
+  const [usage] = await db
+    .select({ id: routeVersionUsagesTable.id })
+    .from(routeVersionUsagesTable)
+    .where(eq(routeVersionUsagesTable.routeId, routeId))
+    .limit(1);
+  return Boolean(usage);
+}
+
 // GET /api/routes — caller's saved routes, newest first.
 //   ?limit=N                 — cap the number of rows (1–100, default 30)
 //   ?plannedWorkoutId=N      — only routes linked to that planned workout
@@ -324,24 +479,159 @@ router.get("/", requireAuth, async (req, res) => {
     Number(req.query.plannedWorkoutId) > 0
       ? Number(req.query.plannedWorkoutId)
       : null;
+  // Bibliotheek-parameters: zoeken, scope en sortering.
+  const q =
+    typeof req.query.q === "string" ? req.query.q.trim().slice(0, 100) : "";
+  const scope =
+    typeof req.query.scope === "string" &&
+    ["mijn", "favoriet", "archief", "wedstrijd"].includes(req.query.scope)
+      ? req.query.scope
+      : "mijn";
+  const sort =
+    typeof req.query.sort === "string" &&
+    ["nieuwste", "afstand", "hoogte", "naam"].includes(req.query.sort)
+      ? req.query.sort
+      : "nieuwste";
   try {
-    const where =
-      plannedWorkoutId != null
-        ? and(
-            eq(routesTable.clerkId, clerkId),
-            eq(routesTable.linkedPlannedWorkoutId, plannedWorkoutId),
-          )
-        : eq(routesTable.clerkId, clerkId);
+    const conds = [
+      eq(routesTable.clerkId, clerkId),
+      isNull(routesTable.deletedAt),
+    ];
+    if (plannedWorkoutId != null) {
+      conds.push(eq(routesTable.linkedPlannedWorkoutId, plannedWorkoutId));
+    }
+    if (q) conds.push(ilike(routesTable.name, `%${q}%`));
+    if (scope === "favoriet") conds.push(eq(routesTable.favorite, true));
+    if (scope === "archief") {
+      conds.push(eq(routesTable.status, "archived"));
+    } else {
+      // Gearchiveerde routes blijven bestaan maar staan niet tussen de rest.
+      conds.push(ne(routesTable.status, "archived"));
+    }
+    if (scope === "wedstrijd") {
+      const raceRoutes = await db
+        .select({ routeId: racesTable.routeId })
+        .from(racesTable)
+        .where(
+          and(eq(racesTable.clerkId, clerkId), isNotNull(racesTable.routeId)),
+        );
+      const ids = [
+        ...new Set(
+          raceRoutes.map((r) => r.routeId).filter((v): v is number => v != null),
+        ),
+      ];
+      if (ids.length === 0) {
+        res.json({ routes: [] });
+        return;
+      }
+      conds.push(inArray(routesTable.id, ids));
+    }
+    const orderBy =
+      sort === "afstand"
+        ? desc(routesTable.distanceKm)
+        : sort === "hoogte"
+          ? desc(routesTable.elevationGainM)
+          : sort === "naam"
+            ? asc(routesTable.name)
+            : desc(routesTable.createdAt);
     const routes = await db
       .select()
       .from(routesTable)
-      .where(where)
-      .orderBy(desc(routesTable.createdAt))
+      .where(and(...conds))
+      .orderBy(orderBy)
       .limit(limit);
     res.json({ routes });
   } catch (err) {
     req.log.error({ err }, "routes.list failed");
     res.status(500).json({ error: "Kon routes niet laden" });
+  }
+});
+
+// GET /api/routes/gedeeld — routes die MET de aanvrager gedeeld zijn:
+// rechtstreeks (persoon), als geaccepteerde coach van de eigenaar, of via een
+// gedeelde club/team. Geeft de veilige kijkersweergave in lijstvorm (alleen
+// metadata — geometrie wordt pas bij het detail opgehaald, getransformeerd).
+router.get("/gedeeld", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const shares = await db
+      .select({
+        share: routeSharesTable,
+        route: routesTable,
+      })
+      .from(routeSharesTable)
+      .innerJoin(routesTable, eq(routeSharesTable.routeId, routesTable.id))
+      .where(
+        and(
+          isNull(routesTable.deletedAt),
+          ne(routesTable.clerkId, clerkId),
+        ),
+      )
+      .orderBy(desc(routeSharesTable.createdAt))
+      .limit(300);
+    if (shares.length === 0) {
+      res.json({ routes: [] });
+      return;
+    }
+    // Coach- en clubrelaties één keer ophalen, daarna lokaal filteren.
+    const [coachOf, myClubs] = await Promise.all([
+      db
+        .select({ athleteClerkId: coachAthleteLinksTable.athleteClerkId })
+        .from(coachAthleteLinksTable)
+        .where(
+          and(
+            eq(coachAthleteLinksTable.coachClerkId, clerkId),
+            eq(coachAthleteLinksTable.status, "accepted"),
+          ),
+        ),
+      activeClubIds(clerkId),
+    ]);
+    const coachedIds = new Set(coachOf.map((r) => r.athleteClerkId));
+    const ownerIds = [...new Set(shares.map((s) => s.route.clerkId))];
+    const clubmates = new Set<string>();
+    if (myClubs.length > 0 && ownerIds.length > 0) {
+      const rows = await db
+        .select({ clerkId: clubMembersTable.clerkId })
+        .from(clubMembersTable)
+        .where(
+          and(
+            inArray(clubMembersTable.clubId, myClubs),
+            inArray(clubMembersTable.clerkId, ownerIds),
+            isNull(clubMembersTable.endedAt),
+          ),
+        );
+      for (const r of rows) clubmates.add(r.clerkId);
+    }
+    const seen = new Set<number>();
+    const routes: unknown[] = [];
+    for (const { share, route } of shares) {
+      if (seen.has(route.id)) continue;
+      const visible =
+        (share.audience === "persoon" && share.targetClerkId === clerkId) ||
+        (share.audience === "coach" && coachedIds.has(route.clerkId)) ||
+        ((share.audience === "club" || share.audience === "team") &&
+          clubmates.has(route.clerkId));
+      if (!visible) continue;
+      seen.add(route.id);
+      // Lijstweergave: metadata zonder geometrie/nav — nooit exacte punten.
+      routes.push({
+        id: route.id,
+        name: route.name,
+        surface: route.surface,
+        distanceKm: route.distanceKm,
+        durationSec: route.durationSec,
+        elevationGainM: route.elevationGainM,
+        source: route.source,
+        version: route.version,
+        createdAt: route.createdAt,
+        gedeeld: true,
+        gedeeldVia: share.audience,
+      });
+    }
+    res.json({ routes });
+  } catch (err) {
+    req.log.error({ err }, "routes.shared-with-me failed");
+    res.status(500).json({ error: "Kon gedeelde routes niet laden" });
   }
 });
 
@@ -443,13 +733,26 @@ router.get("/:id", requireAuth, async (req, res) => {
     const [route] = await db
       .select()
       .from(routesTable)
-      .where(and(eq(routesTable.id, id), eq(routesTable.clerkId, clerkId)))
+      .where(and(eq(routesTable.id, id), isNull(routesTable.deletedAt)))
       .limit(1);
     if (!route) {
       res.status(404).json({ error: "Route niet gevonden" });
       return;
     }
-    res.json({ route });
+    if (route.clerkId === clerkId) {
+      res.json({ route });
+      return;
+    }
+    // Niet-eigenaar: alleen zichtbaar wanneer expliciet gedeeld, en dan altijd
+    // in de veilige kijkersweergave (start/einde afgeschermd). Geen deelrecht
+    // ⇒ 404 (bestaan niet lekken).
+    const allowed = await canViewSharedRoute(route, clerkId);
+    if (!allowed) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+    const home = await ownerHome(route.clerkId);
+    res.json({ route: viewerRouteView(route, home) });
   } catch (err) {
     req.log.error({ err }, "routes.get failed");
     res.status(500).json({ error: "Kon route niet laden" });
@@ -1162,6 +1465,8 @@ type LoopCandidateContext = {
   startName: string | null;
   plannedWorkoutId: number | null;
   wish: string | null;
+  // Hoogtemeter-doel: rangschikt echte kandidaten, garandeert niets.
+  targetElevationGainM?: number | null;
 };
 
 // Build one real loop candidate at a specific target distance, store it server-
@@ -1202,6 +1507,7 @@ async function buildLoopCandidate(
         ? candidateEnvironmentOf(scenery.nature)
         : undefined,
       preferUninterrupted: wantsUninterrupted,
+      targetAscentM: ctx.targetElevationGainM ?? null,
     },
   );
 
@@ -1372,6 +1678,42 @@ router.post("/generate", requireAuth, async (req, res) => {
   const seed = finiteNum(body.seed) ?? undefined;
   const wish = parseWish(body.wish);
 
+  // Hoogtemeter-doel (alleen lus): Sparki kiest de ECHTE kandidaat die het
+  // dichtst bij dit doel ligt — nooit een garantie, wel een eerlijke keuze.
+  const rawElevTarget = finiteNum(body.targetElevationGainM);
+  const targetElevationGainM =
+    rawElevTarget != null && rawElevTarget > 0
+      ? Math.min(rawElevTarget, 10000)
+      : null;
+
+  // Via-punten (alleen lus): de lus wordt als echte wegroute door deze punten
+  // gelegd (start → via's → start).
+  const viaPoints = mode === "loop" ? parseWaypoints(body.viaPoints) : [];
+  const viaLoop = mode === "loop" && viaPoints.length > 0;
+
+  // Vermijd-voorkeuren met een EERLIJK rapport: wat is echt toegepast en wat
+  // kan de routebron niet garanderen. Nooit stilletjes negeren.
+  const avoidBody =
+    body.avoid && typeof body.avoid === "object"
+      ? (body.avoid as Record<string, unknown>)
+      : {};
+  const avoidReport: {
+    toegepast: string[];
+    nietMogelijk: { wens: string; reden: string }[];
+  } = { toegepast: [], nietMogelijk: [] };
+  if (avoidBody.veerponten === true) {
+    // ORS vermijdt veerponten al in alle fietsprofielen — echt toegepast.
+    avoidReport.toegepast.push("veerponten");
+  }
+  const avoidOnverhard = avoidBody.onverhard === true;
+  if (avoidBody.drukkeWegen === true) {
+    avoidReport.nietMogelijk.push({
+      wens: "drukke wegen",
+      reden:
+        "De routebron kan verkeersdrukte niet meten. Het fietsprofiel kiest wel zoveel mogelijk fietsvriendelijke wegen, maar drukte vermijden kan Sparki niet garanderen.",
+    });
+  }
+
   try {
     // Resolve target distance + workout context FIRST, so duration-based sizing
     // and profile selection can use the linked workout's intent.
@@ -1406,7 +1748,7 @@ router.post("/generate", requireAuth, async (req, res) => {
     }
 
     // Auto-select the routing profile — the athlete never picks one.
-    const profile = selectRoutingProfile({
+    let profile = selectRoutingProfile({
       sport,
       bikeType,
       trainingType: workoutTrainingType,
@@ -1414,6 +1756,14 @@ router.post("/generate", requireAuth, async (req, res) => {
       targetDistanceKm,
       elevationPreference,
     });
+    // "Vermijd onverhard": echt toepasbaar door het verharde-wegen-profiel te
+    // kiezen (cycling-road) — eerlijk gemeld in het rapport.
+    if (avoidOnverhard && profile !== "cycling-road") {
+      profile = "cycling-road";
+      avoidReport.toegepast.push("onverhard (via het wegprofiel)");
+    } else if (avoidOnverhard) {
+      avoidReport.toegepast.push("onverhard");
+    }
     const surface = profileToSurface(profile);
 
     // Size a loop's target distance: explicit value > workout duration × speed
@@ -1458,7 +1808,7 @@ router.post("/generate", requireAuth, async (req, res) => {
 
     // Loop mode: build the candidate via the shared helper so the single-route
     // path and the 3-distance chooser (/generate/options) never drift.
-    if (mode === "loop") {
+    if (mode === "loop" && !viaLoop) {
       const startName = await provider.reverseGeocode({
         lat: startLat,
         lon: startLon,
@@ -1480,21 +1830,32 @@ router.post("/generate", requireAuth, async (req, res) => {
           startName,
           plannedWorkoutId,
           wish,
+          targetElevationGainM,
         },
         targetDistanceKm,
       );
-      res.json({ candidate });
+      res.json({ candidate: { ...candidate, avoidReport } });
       return;
     }
 
+    // Lus met via-punten: een echte wegroute start → via's → start.
     const routeResult =
       mode === "waypoints"
         ? await provider.routeWaypoints({ points: waypoints, profile })
-        : await provider.routePointToPoint({
-            start: { lat: startLat, lon: startLon },
-            end: end!,
-            profile,
-          });
+        : viaLoop
+          ? await provider.routeWaypoints({
+              points: [
+                { lat: startLat, lon: startLon },
+                ...viaPoints,
+                { lat: startLat, lon: startLon },
+              ],
+              profile,
+            })
+          : await provider.routePointToPoint({
+              start: { lat: startLat, lon: startLon },
+              end: end!,
+              profile,
+            });
 
     const summary = summarizeTrack(routeResult.points);
     const distanceKm = summary.distanceKm ?? routeResult.distanceKm;
@@ -1506,7 +1867,9 @@ router.post("/generate", requireAuth, async (req, res) => {
     // a waypoints route the last placed point is the "end".
     const endPoint =
       end ??
-      (mode === "waypoints" ? waypoints[waypoints.length - 1]! : null);
+      (mode === "waypoints" && !viaLoop
+        ? waypoints[waypoints.length - 1]!
+        : null);
     const [startName, resolvedEndName] = await Promise.all([
       provider.reverseGeocode({ lat: startLat, lon: startLon }),
       endPoint ? provider.reverseGeocode(endPoint) : Promise.resolve(endLabel),
@@ -1550,8 +1913,11 @@ router.post("/generate", requireAuth, async (req, res) => {
       climbs: summary.climbs,
       nav,
       geometry: routeResult.path,
-      waypoints:
-        mode === "waypoints" ? waypoints.map((p) => [p.lat, p.lon]) : [],
+      waypoints: viaLoop
+        ? viaPoints.map((p) => [p.lat, p.lon])
+        : mode === "waypoints"
+          ? waypoints.map((p) => [p.lat, p.lon])
+          : [],
       rationale,
       plannedWorkoutId,
     });
@@ -1573,13 +1939,17 @@ router.post("/generate", requireAuth, async (req, res) => {
         climbs: summary.climbs,
         nav,
         geometry: routeResult.path,
-        waypoints:
-          mode === "waypoints" ? waypoints.map((p) => [p.lat, p.lon]) : [],
+        waypoints: viaLoop
+          ? viaPoints.map((p) => [p.lat, p.lon])
+          : mode === "waypoints"
+            ? waypoints.map((p) => [p.lat, p.lon])
+            : [],
         rationale,
         startName,
         endName,
         plannedWorkoutId,
         targetDistanceKm: null,
+        avoidReport,
       },
     });
   } catch (err) {
@@ -2019,7 +2389,539 @@ router.post("/from-activity", requireAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/routes/:id — remove a route (owner only).
+// PUT /api/routes/:id — bewerk een route (alleen eigenaar). Inhoudelijke
+// wijzigingen (naam, ondergrond, meetpunten) verhogen het versienummer, zodat
+// eerder vastgelegd versiegebruik eerlijk naar de oude versie blijft wijzen.
+// Niet-inhoudelijk (favoriet, zichtbaarheid, archiveren) laat de versie staan.
+router.put("/:id", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  try {
+    const [route] = await db
+      .select()
+      .from(routesTable)
+      .where(
+        and(
+          eq(routesTable.id, id),
+          eq(routesTable.clerkId, clerkId),
+          isNull(routesTable.deletedAt),
+        ),
+      )
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+    const updates: Record<string, unknown> = {};
+    let inhoudelijk = false;
+    if (typeof body.name === "string" && body.name.trim()) {
+      const name = body.name.trim().slice(0, 120);
+      if (name !== route.name) {
+        updates.name = name;
+        inhoudelijk = true;
+      }
+    }
+    if (typeof body.surface === "string") {
+      if (!(routeSurfaces as readonly string[]).includes(body.surface)) {
+        res.status(400).json({ error: "Ongeldige ondergrond" });
+        return;
+      }
+      if (body.surface !== route.surface) {
+        updates.surface = body.surface as RouteSurface;
+        inhoudelijk = true;
+      }
+    }
+    if (body.meetpoints !== undefined) {
+      const meetpoints = parseMeetpoints(body.meetpoints);
+      updates.meetpoints = meetpoints;
+      inhoudelijk = true;
+    }
+    if (typeof body.visibility === "string") {
+      if (!(routeVisibilities as readonly string[]).includes(body.visibility)) {
+        res.status(400).json({ error: "Ongeldige zichtbaarheid" });
+        return;
+      }
+      updates.visibility = body.visibility as RouteVisibility;
+    }
+    if (typeof body.favorite === "boolean") updates.favorite = body.favorite;
+    if (typeof body.status === "string") {
+      if (!["ready", "archived"].includes(body.status)) {
+        res.status(400).json({ error: "Ongeldige status" });
+        return;
+      }
+      updates.status = body.status;
+    }
+    if (Object.keys(updates).length === 0) {
+      res.json({ route });
+      return;
+    }
+    if (inhoudelijk) updates.version = route.version + 1;
+    const [updated] = await db
+      .update(routesTable)
+      .set(updates)
+      .where(eq(routesTable.id, id))
+      .returning();
+    res.json({ route: updated });
+  } catch (err) {
+    req.log.error({ err }, "routes.update failed");
+    res.status(500).json({ error: "Kon route niet bijwerken" });
+  }
+});
+
+// POST /api/routes/:id/duplicate — kopieer een eigen route (of een met jou
+// gedeelde route naar je eigen bibliotheek; dan wordt de VEILIGE kijkers-
+// geometrie gekopieerd, nooit de exacte start van de eigenaar).
+router.post("/:id/duplicate", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  try {
+    const [route] = await db
+      .select()
+      .from(routesTable)
+      .where(and(eq(routesTable.id, id), isNull(routesTable.deletedAt)))
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+    const isOwner = route.clerkId === clerkId;
+    let source: Record<string, unknown> = route;
+    if (!isOwner) {
+      const allowed = await canViewSharedRoute(route, clerkId);
+      if (!allowed) {
+        res.status(404).json({ error: "Route niet gevonden" });
+        return;
+      }
+      const home = await ownerHome(route.clerkId);
+      source = viewerRouteView(route, home) as Record<string, unknown>;
+      if (!source.geometry) {
+        res.status(422).json({
+          error:
+            "Deze gedeelde route heeft na privacy-afscherming geen bruikbare geometrie om te kopiëren.",
+        });
+        return;
+      }
+    }
+    const [copy] = await db
+      .insert(routesTable)
+      .values({
+        clerkId,
+        name: `${route.name} (kopie)`,
+        source: route.source,
+        surface: route.surface as RouteSurface,
+        visibility: "prive",
+        status: "ready",
+        distanceKm: route.distanceKm,
+        durationSec: route.durationSec,
+        elevationGainM: route.elevationGainM,
+        geometry: source.geometry as RoutePathPoint[] | null,
+        profile: (isOwner ? route.profile : null) as never,
+        nav: (isOwner ? route.nav : null) as never,
+        waypoints: (isOwner ? route.waypoints : null) as never,
+        meetpoints: (isOwner ? route.meetpoints : null) as never,
+      })
+      .returning();
+    res.status(201).json({ route: copy });
+  } catch (err) {
+    req.log.error({ err }, "routes.duplicate failed");
+    res.status(500).json({ error: "Kon route niet kopiëren" });
+  }
+});
+
+// ── Delen ──────────────────────────────────────────────────────────────────
+
+// POST /api/routes/:id/delen — deel een route (alleen eigenaar) met coach,
+// club, team of één persoon. Idempotent: nogmaals delen met dezelfde doelgroep
+// geeft de bestaande rij terug.
+router.post("/:id/delen", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const audience =
+    typeof body.audience === "string" &&
+    (routeShareAudiences as readonly string[]).includes(body.audience)
+      ? (body.audience as RouteShareAudience)
+      : null;
+  if (!audience) {
+    res.status(400).json({ error: "Ongeldige doelgroep" });
+    return;
+  }
+  const targetClerkId =
+    typeof body.targetClerkId === "string" && body.targetClerkId.trim()
+      ? body.targetClerkId.trim()
+      : null;
+  if (audience === "persoon" && !targetClerkId) {
+    res
+      .status(400)
+      .json({ error: "Delen met een persoon vereist een gebruiker" });
+    return;
+  }
+  try {
+    const [route] = await db
+      .select()
+      .from(routesTable)
+      .where(
+        and(
+          eq(routesTable.id, id),
+          eq(routesTable.clerkId, clerkId),
+          isNull(routesTable.deletedAt),
+        ),
+      )
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+    if (audience === "persoon") {
+      const [target] = await db
+        .select({ clerkId: userProfilesTable.clerkId })
+        .from(userProfilesTable)
+        .where(eq(userProfilesTable.clerkId, targetClerkId!))
+        .limit(1);
+      if (!target) {
+        res.status(400).json({ error: "Deze gebruiker bestaat niet" });
+        return;
+      }
+      if (target.clerkId === clerkId) {
+        res.status(400).json({ error: "Je kunt niet met jezelf delen" });
+        return;
+      }
+    }
+    const [created] = await db
+      .insert(routeSharesTable)
+      .values({
+        routeId: id,
+        ownerClerkId: clerkId,
+        audience,
+        targetClerkId: audience === "persoon" ? targetClerkId : null,
+      })
+      .onConflictDoNothing()
+      .returning();
+    if (created) {
+      res.status(201).json({ share: created });
+      return;
+    }
+    const [existing] = await db
+      .select()
+      .from(routeSharesTable)
+      .where(
+        and(
+          eq(routeSharesTable.routeId, id),
+          eq(routeSharesTable.audience, audience),
+          audience === "persoon"
+            ? eq(routeSharesTable.targetClerkId, targetClerkId!)
+            : isNull(routeSharesTable.targetClerkId),
+        ),
+      )
+      .limit(1);
+    res.json({ share: existing ?? null });
+  } catch (err) {
+    req.log.error({ err }, "routes.share failed");
+    res.status(500).json({ error: "Kon route niet delen" });
+  }
+});
+
+// GET /api/routes/:id/delen — bestaande deel-instellingen (alleen eigenaar).
+router.get("/:id/delen", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  try {
+    const [route] = await db
+      .select({ id: routesTable.id })
+      .from(routesTable)
+      .where(
+        and(
+          eq(routesTable.id, id),
+          eq(routesTable.clerkId, clerkId),
+          isNull(routesTable.deletedAt),
+        ),
+      )
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+    const shares = await db
+      .select()
+      .from(routeSharesTable)
+      .where(eq(routeSharesTable.routeId, id))
+      .orderBy(asc(routeSharesTable.createdAt));
+    res.json({ shares });
+  } catch (err) {
+    req.log.error({ err }, "routes.shares.list failed");
+    res.status(500).json({ error: "Kon deel-instellingen niet laden" });
+  }
+});
+
+// DELETE /api/routes/:id/delen/:shareId — stop met delen (alleen eigenaar).
+router.delete("/:id/delen/:shareId", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  const shareId = Number(String(req.params.shareId));
+  if (!Number.isInteger(id) || !Number.isInteger(shareId)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  try {
+    const deleted = await db
+      .delete(routeSharesTable)
+      .where(
+        and(
+          eq(routeSharesTable.id, shareId),
+          eq(routeSharesTable.routeId, id),
+          eq(routeSharesTable.ownerClerkId, clerkId),
+        ),
+      )
+      .returning({ id: routeSharesTable.id });
+    if (deleted.length === 0) {
+      res.status(404).json({ error: "Deel-instelling niet gevonden" });
+      return;
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "routes.shares.delete failed");
+    res.status(500).json({ error: "Kon delen niet stoppen" });
+  }
+});
+
+// POST /api/routes/:id/navigatie-start — de mobiele navigatie meldt dat zij
+// met deze routeversie start; legt versiegebruik vast (context "navigatie",
+// contextId = versienummer, idempotent per versie).
+router.post("/:id/navigatie-start", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  try {
+    const [route] = await db
+      .select()
+      .from(routesTable)
+      .where(and(eq(routesTable.id, id), isNull(routesTable.deletedAt)))
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+    if (route.clerkId !== clerkId) {
+      const allowed = await canViewSharedRoute(route, clerkId);
+      if (!allowed) {
+        res.status(404).json({ error: "Route niet gevonden" });
+        return;
+      }
+    }
+    await registerRouteUsage(route, "navigatie", route.version, clerkId);
+    res.json({ ok: true, version: route.version });
+  } catch (err) {
+    req.log.error({ err }, "routes.navStart failed");
+    res.status(500).json({ error: "Kon navigatiestart niet vastleggen" });
+  }
+});
+
+// GET /api/routes/:id/vergelijk?importId= — vergelijk de geplande route met
+// een ECHT gereden activiteit (GPS-track uit een import van de renner zelf).
+// Alles deterministisch uit echte punten: dekking, afwijkingen, afstand- en
+// hoogteverschil en gemiste meetpunten. Geen track ⇒ eerlijke 422.
+router.get("/:id/vergelijk", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  const importId = Number(String(req.query.importId ?? ""));
+  if (!Number.isInteger(id) || !Number.isInteger(importId)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  try {
+    const [route] = await db
+      .select()
+      .from(routesTable)
+      .where(
+        and(
+          eq(routesTable.id, id),
+          eq(routesTable.clerkId, clerkId),
+          isNull(routesTable.deletedAt),
+        ),
+      )
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+    const routePoints = Array.isArray(route.geometry)
+      ? (route.geometry as RoutePathPoint[]).map((p) => ({
+          lat: Number(p[0]),
+          lon: Number(p[1]),
+        }))
+      : [];
+    if (routePoints.length < 2) {
+      res.status(422).json({
+        error: "Deze route heeft geen opgeslagen geometrie om te vergelijken.",
+      });
+      return;
+    }
+    const [imp] = await db
+      .select()
+      .from(activityImportsTable)
+      .where(
+        and(
+          eq(activityImportsTable.id, importId),
+          eq(activityImportsTable.clerkId, clerkId),
+        ),
+      )
+      .limit(1);
+    if (!imp) {
+      res.status(404).json({ error: "Activiteit niet gevonden" });
+      return;
+    }
+    const summary = (imp.parsedSummary ?? {}) as Record<string, unknown>;
+    // Het gereden spoor zit in parsedSummary.route — bij GPX-imports is dat
+    // een object ({ geometry: [[lat,lon,(ele)]...] }), historisch soms direct
+    // een array. Beide vormen zijn echt; alles anders is eerlijk "geen track".
+    const routePayload = summary.route as unknown;
+    const rawTrack = Array.isArray(routePayload)
+      ? (routePayload as unknown[])
+      : routePayload != null &&
+          typeof routePayload === "object" &&
+          Array.isArray((routePayload as { geometry?: unknown }).geometry)
+        ? ((routePayload as { geometry: unknown[] }).geometry)
+        : [];
+    const ridden = rawTrack
+      .map((p) => {
+        const arr = p as [number, number];
+        return Array.isArray(arr) && arr.length >= 2
+          ? { lat: Number(arr[0]), lon: Number(arr[1]) }
+          : null;
+      })
+      .filter(
+        (p): p is { lat: number; lon: number } =>
+          p != null && Number.isFinite(p.lat) && Number.isFinite(p.lon),
+      );
+    if (ridden.length < 2) {
+      res.status(422).json({
+        error:
+          "Deze activiteit heeft geen GPS-track; vergelijken kan alleen met een echt gereden spoor.",
+      });
+      return;
+    }
+    // Subsample beide sporen voor een betaalbare maar eerlijke vergelijking.
+    const sample = <T>(arr: T[], max: number): T[] => {
+      if (arr.length <= max) return arr;
+      const step = arr.length / max;
+      const out: T[] = [];
+      for (let i = 0; i < max; i++) out.push(arr[Math.floor(i * step)]!);
+      return out;
+    };
+    const plan = sample(routePoints, 400);
+    const track = sample(ridden, 1200);
+    const NEAR_M = 60;
+    const covered: boolean[] = plan.map((rp) => {
+      for (const tp of track) {
+        if (haversineMeters(rp.lat, rp.lon, tp.lat, tp.lon) <= NEAR_M) return true;
+      }
+      return false;
+    });
+    const coveredCount = covered.filter(Boolean).length;
+    const coverage = coveredCount / plan.length;
+    // Afwijkingssegmenten: aaneengesloten stukken van ≥3 niet-gedekte punten.
+    const deviations: { fromIndex: number; toIndex: number; lengthKm: number }[] =
+      [];
+    let runStart = -1;
+    for (let i = 0; i <= covered.length; i++) {
+      const off = i < covered.length && !covered[i];
+      if (off && runStart === -1) runStart = i;
+      if (!off && runStart !== -1) {
+        if (i - runStart >= 3) {
+          let lengthM = 0;
+          for (let j = runStart; j < i - 1; j++) {
+            lengthM += haversineMeters(plan[j]!.lat, plan[j]!.lon, plan[j + 1]!.lat, plan[j + 1]!.lon);
+          }
+          deviations.push({
+            fromIndex: runStart,
+            toIndex: i - 1,
+            lengthKm: Math.round((lengthM / 1000) * 10) / 10,
+          });
+        }
+        runStart = -1;
+      }
+    }
+    // Gemiste meetpunten (binnen 150 m van het gereden spoor = gehaald).
+    const meetpoints = Array.isArray(route.meetpoints)
+      ? (route.meetpoints as RouteMeetpoint[])
+      : [];
+    const missedMeetpoints = meetpoints.filter((mp) => {
+      const pt = { lat: Number(mp.lat), lon: Number(mp.lon) };
+      if (!Number.isFinite(pt.lat) || !Number.isFinite(pt.lon)) return false;
+      return !track.some((tp) => haversineMeters(pt.lat, pt.lon, tp.lat, tp.lon) <= 150);
+    });
+    const distanceKmRidden =
+      typeof summary.distanceKm === "number" ? summary.distanceKm : null;
+    const elevationGainMRidden =
+      typeof summary.elevationGainM === "number"
+        ? summary.elevationGainM
+        : null;
+    // Versiegebruik: deze activiteit is (achteraf) aan deze routeversie
+    // gekoppeld — idempotent per activiteit.
+    await registerRouteUsage(route, "activiteit", importId, clerkId);
+    res.json({
+      vergelijk: {
+        routeId: route.id,
+        routeVersion: route.version,
+        importId,
+        dekkingPct: Math.round(coverage * 100),
+        afwijkingen: deviations,
+        afstand: {
+          planKm: route.distanceKm,
+          geredenKm: distanceKmRidden,
+          verschilKm:
+            distanceKmRidden != null && route.distanceKm != null
+              ? Math.round((distanceKmRidden - route.distanceKm) * 10) / 10
+              : null,
+        },
+        hoogte: {
+          planM: route.elevationGainM,
+          geredenM: elevationGainMRidden,
+          verschilM:
+            elevationGainMRidden != null && route.elevationGainM != null
+              ? Math.round(elevationGainMRidden - route.elevationGainM)
+              : null,
+        },
+        meetpunten: {
+          totaal: meetpoints.length,
+          gemist: missedMeetpoints.map((mp) => ({
+            name: mp.name ?? null,
+            lat: mp.lat,
+            lon: mp.lon,
+          })),
+        },
+      },
+    });
+  } catch (err) {
+    req.log.error({ err }, "routes.compare failed");
+    res.status(500).json({ error: "Kon vergelijking niet maken" });
+  }
+});
+
+// DELETE /api/routes/:id — verwijderen (alleen eigenaar). Wordt de route nog
+// ergens in historie gebruikt (wedstrijd, sprint, versiegebruik), dan wordt
+// zij ZACHT verwijderd (deletedAt) zodat dossiers blijven kloppen; anders mag
+// de rij echt weg. Deel-instellingen vervallen in beide gevallen.
 router.delete("/:id", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = Number(String(req.params.id));
@@ -2028,15 +2930,32 @@ router.delete("/:id", requireAuth, async (req, res) => {
     return;
   }
   try {
-    const deleted = await db
-      .delete(routesTable)
-      .where(and(eq(routesTable.id, id), eq(routesTable.clerkId, clerkId)))
-      .returning({ id: routesTable.id });
-    if (deleted.length === 0) {
+    const [route] = await db
+      .select()
+      .from(routesTable)
+      .where(
+        and(
+          eq(routesTable.id, id),
+          eq(routesTable.clerkId, clerkId),
+          isNull(routesTable.deletedAt),
+        ),
+      )
+      .limit(1);
+    if (!route) {
       res.status(404).json({ error: "Route niet gevonden" });
       return;
     }
-    res.json({ ok: true });
+    await db.delete(routeSharesTable).where(eq(routeSharesTable.routeId, id));
+    if (await routeIsReferenced(id)) {
+      await db
+        .update(routesTable)
+        .set({ deletedAt: new Date() })
+        .where(eq(routesTable.id, id));
+      res.json({ ok: true, soft: true });
+      return;
+    }
+    await db.delete(routesTable).where(eq(routesTable.id, id));
+    res.json({ ok: true, soft: false });
   } catch (err) {
     req.log.error({ err }, "routes.delete failed");
     res.status(500).json({ error: "Kon route niet verwijderen" });

@@ -169,6 +169,10 @@ export async function generateVariedLoop(
     // interval trainings, where every turn breaks a block. Ranks real ORS
     // candidates by their real turn-by-turn steps; never changes geometry.
     preferUninterrupted?: boolean;
+    // Hoogtemeter-doel: kies de ECHTE kandidaat waarvan de gemeten stijging
+    // het dichtst bij dit doel ligt. Alleen rangschikken van echte
+    // ORS-kandidaten — het doel wordt nooit "gemaakt" of gegarandeerd.
+    targetAscentM?: number | null;
   },
 ): Promise<RouteResult> {
   const preference = req.elevationPreference ?? "any";
@@ -178,6 +182,12 @@ export async function generateVariedLoop(
       : null;
   const wantsScenery = scenery != null && opts?.environmentOf != null;
   const preferUninterrupted = opts?.preferUninterrupted === true;
+  const targetAscentM =
+    typeof opts?.targetAscentM === "number" &&
+    Number.isFinite(opts.targetAscentM) &&
+    opts.targetAscentM >= 0
+      ? opts.targetAscentM
+      : null;
   // A stated flat/hilly wish needs a wider pool of real candidates to choose the
   // best-matching one — in hilly terrain the genuinely flat loops only appear in
   // later seeds, so too small a sample silently returns a hillier route. A
@@ -187,7 +197,12 @@ export async function generateVariedLoop(
   // A scenery wish (natuur / weinig verkeerslichten) also needs a real pool to
   // compare, so it raises the ceiling and disables the early exit.
   const defaultCandidates =
-    preference === "any" && !wantsScenery && !preferUninterrupted ? 3 : 8;
+    preference === "any" &&
+    !wantsScenery &&
+    !preferUninterrupted &&
+    targetAscentM == null
+      ? 3
+      : 8;
   const n = Math.min(Math.max(opts?.candidates ?? defaultCandidates, 1), 10);
   const target = req.distanceKm;
   const pool: { result: RouteResult; score: number }[] = [];
@@ -221,7 +236,22 @@ export async function generateVariedLoop(
     // Overlap, distance and elevation-match all weigh in; distance now carries
     // real weight so the requested length is honoured, and elevation match is
     // decisive when the rider asked for flat/hilly.
-    const score = overlap + drift * 1.2 + elevation * 0.8 + turniness * 0.9;
+    // Hoogtemeter-doel: afstand tussen de ECHT gemeten stijging van deze
+    // kandidaat en het doel, genormaliseerd. Kandidaten zonder leesbare
+    // hoogtedata krijgen geen bonus of straf (nooit gegokt).
+    let ascentMiss = 0;
+    if (targetAscentM != null) {
+      const ascent = trackAscentM(result);
+      if (ascent != null) {
+        ascentMiss = Math.min(
+          Math.abs(ascent - targetAscentM) / Math.max(targetAscentM, 100),
+          1.5,
+        );
+      }
+    }
+    const score =
+      overlap + drift * 1.2 + elevation * 0.8 + turniness * 0.9 +
+      ascentMiss * 1.0;
     pool.push({ result, score });
     // Good enough — a clean loop, close to the requested length, that already
     // matches the elevation wish. Only then do we stop spending ORS calls.
@@ -231,6 +261,7 @@ export async function generateVariedLoop(
     if (
       !wantsScenery &&
       !preferUninterrupted &&
+      targetAscentM == null &&
       overlap < 0.08 &&
       drift < 0.15 &&
       elevation < 0.35

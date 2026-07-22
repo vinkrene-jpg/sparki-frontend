@@ -492,6 +492,182 @@ export function useDownloadCandidate() {
   });
 }
 
+// ── Routebibliotheek (Golf 19) ──────────────────────────────────────────────
+
+export type RouteScope = "mijn" | "favoriet" | "archief" | "wedstrijd";
+export type RouteSort = "nieuwste" | "afstand" | "hoogte" | "naam";
+
+// Zoeken/filteren/sorteren in de eigen bibliotheek.
+export function useRouteLibrary(q: string, scope: RouteScope, sort: RouteSort) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: ["routes", "library", q, scope, sort],
+    queryFn: () =>
+      apiFetch<{ routes: SparkiRoute[] }>(
+        `/api/routes?limit=100&scope=${scope}&sort=${sort}${
+          q ? `&q=${encodeURIComponent(q)}` : ""
+        }`,
+      ),
+    enabled: isSignedIn === true || DEV_PREVIEW,
+    staleTime: 60_000,
+  });
+}
+
+export type SharedRouteListItem = {
+  id: number;
+  name: string;
+  surface: string;
+  distanceKm: number | null;
+  durationSec: number | null;
+  elevationGainM: number | null;
+  source: string;
+  version: number;
+  createdAt: string;
+  gedeeld: true;
+  gedeeldVia: string;
+};
+
+// Routes die MET mij gedeeld zijn (alleen metadata; geometrie pas bij detail,
+// privacy-afgeschermd).
+export function useSharedRoutes(enabled = true) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: ["routes", "gedeeld"],
+    queryFn: () =>
+      apiFetch<{ routes: SharedRouteListItem[] }>("/api/routes/gedeeld"),
+    enabled: enabled && (isSignedIn === true || DEV_PREVIEW),
+    staleTime: 60_000,
+  });
+}
+
+// Route bijwerken: naam, favoriet, archiveren/herstellen. Inhoudelijke
+// wijzigingen (naam) verhogen server-side het versienummer.
+export function useUpdateRoute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      id: number;
+      name?: string;
+      favorite?: boolean;
+      status?: "ready" | "archived";
+    }) =>
+      apiFetch<{ route: SparkiRoute }>(`/api/routes/${input.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          ...(input.name !== undefined && { name: input.name }),
+          ...(input.favorite !== undefined && { favorite: input.favorite }),
+          ...(input.status !== undefined && { status: input.status }),
+        }),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.routes.all() });
+      void qc.invalidateQueries({ queryKey: ["routes", "library"] });
+    },
+  });
+}
+
+export function useDuplicateRoute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<{ route: SparkiRoute }>(`/api/routes/${id}/duplicate`, {
+        method: "POST",
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.routes.all() });
+      void qc.invalidateQueries({ queryKey: ["routes", "library"] });
+    },
+  });
+}
+
+export type RouteShare = {
+  id: number;
+  routeId: number;
+  audience: string;
+  targetClerkId: string | null;
+  createdAt: string;
+};
+
+export function useRouteShares(routeId: number | null) {
+  return useQuery({
+    queryKey: ["routes", "shares", routeId],
+    enabled: routeId != null,
+    queryFn: () =>
+      apiFetch<{ shares: RouteShare[] }>(`/api/routes/${routeId}/delen`),
+  });
+}
+
+export function useShareRouteWith() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      routeId: number;
+      audience: "coach" | "club" | "team" | "persoon";
+      targetClerkId?: string;
+    }) =>
+      apiFetch<{ share: RouteShare | null }>(
+        `/api/routes/${input.routeId}/delen`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            audience: input.audience,
+            ...(input.targetClerkId && { targetClerkId: input.targetClerkId }),
+          }),
+        },
+      ),
+    onSuccess: (_d, v) => {
+      void qc.invalidateQueries({ queryKey: ["routes", "shares", v.routeId] });
+    },
+  });
+}
+
+export function useUnshareRoute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { routeId: number; shareId: number }) =>
+      apiFetch<{ ok: true }>(
+        `/api/routes/${input.routeId}/delen/${input.shareId}`,
+        { method: "DELETE" },
+      ),
+    onSuccess: (_d, v) => {
+      void qc.invalidateQueries({ queryKey: ["routes", "shares", v.routeId] });
+    },
+  });
+}
+
+// Vergelijking plan ↔ echt gereden activiteit (deterministisch uit echte
+// GPS-punten; de server weigert eerlijk met 422 als er geen track is).
+export type RouteVergelijk = {
+  routeId: number;
+  routeVersion: number;
+  importId: number;
+  dekkingPct: number;
+  afwijkingen: { fromIndex: number; toIndex: number; lengthKm: number }[];
+  afstand: {
+    planKm: number | null;
+    geredenKm: number | null;
+    verschilKm: number | null;
+  };
+  hoogte: {
+    planM: number | null;
+    geredenM: number | null;
+    verschilM: number | null;
+  };
+  meetpunten: {
+    totaal: number;
+    gemist: { name: string | null; lat: number; lon: number }[];
+  };
+};
+
+export function useRouteVergelijk() {
+  return useMutation({
+    mutationFn: (input: { routeId: number; importId: number }) =>
+      apiFetch<{ vergelijk: RouteVergelijk }>(
+        `/api/routes/${input.routeId}/vergelijk?importId=${input.importId}`,
+      ),
+  });
+}
+
 export function useDeleteRoute() {
   const qc = useQueryClient();
   return useMutation({

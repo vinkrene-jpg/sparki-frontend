@@ -2,6 +2,7 @@ import { Router } from "express";
 import { eq, and, asc } from "drizzle-orm";
 import { db, racesTable, athleteProfilesTable, routesTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { registerRouteUsage } from "../lib/route-usage";
 import { autoAdaptPlan } from "../engines/training-plan";
 import {
   buildCourseAnalysis,
@@ -392,6 +393,23 @@ router.post("/", requireAuth, async (req, res) => {
         status: normalizeStatus(body.status) ?? "gepland",
       })
       .returning();
+    // Golf 19 — leg vast WELKE routeversie aan deze wedstrijd is gekoppeld.
+    if (race && race.routeId != null) {
+      const [route] = await db
+        .select({
+          id: routesTable.id,
+          name: routesTable.name,
+          version: routesTable.version,
+        })
+        .from(routesTable)
+        .where(eq(routesTable.id, race.routeId))
+        .limit(1);
+      if (route) {
+        await registerRouteUsage(route, "wedstrijd", race.id, clerkId).catch(
+          (err) => req.log.error({ err }, "race route usage failed"),
+        );
+      }
+    }
     triggerPlanRefresh(req, clerkId);
     res.status(201).json(race);
   } catch (err) {
@@ -489,6 +507,26 @@ router.put("/:id", requireAuth, async (req, res) => {
     if (!updated) {
       res.status(404).json({ error: "Race not found" });
       return;
+    }
+    // Golf 19 — nieuw gekoppelde route: versiegebruik vastleggen (idempotent).
+    if (
+      updated.routeId != null &&
+      updated.routeId !== existing.routeId
+    ) {
+      const [route] = await db
+        .select({
+          id: routesTable.id,
+          name: routesTable.name,
+          version: routesTable.version,
+        })
+        .from(routesTable)
+        .where(eq(routesTable.id, updated.routeId))
+        .limit(1);
+      if (route) {
+        await registerRouteUsage(route, "wedstrijd", updated.id, clerkId).catch(
+          (err) => req.log.error({ err }, "race route usage failed"),
+        );
+      }
     }
     triggerPlanRefresh(req, clerkId);
     // When a result is saved for a race that has already happened, run the

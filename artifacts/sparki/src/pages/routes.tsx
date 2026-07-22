@@ -3,6 +3,7 @@ import { Flag, ChevronRight } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { RoutePanel } from "@/components/sparki/route-panel"
+import { RouteLibrary } from "@/components/sparki/route-library"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 
 // Hoofdstuk Routes — bundelt routes, GPX en kaart. De routeplanner is
@@ -42,6 +43,13 @@ export default function RoutesPage() {
             </p>
           </div>
         )}
+      </section>
+
+      <section className="mt-8">
+        <SectionLabel title="Routebibliotheek" />
+        <div className="mt-4">
+          <RouteLibrary />
+        </div>
       </section>
 
       <section className="mt-8">

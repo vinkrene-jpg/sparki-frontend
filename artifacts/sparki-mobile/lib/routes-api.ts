@@ -28,7 +28,28 @@ export type RouteSummary = {
   durationSec: number | null;
   source: string;
   createdAt: string;
+  /** Routeversie — telt op bij inhoudelijke wijzigingen (Golf 19). */
+  version?: number;
 };
+
+/**
+ * Meld aan de backend dat de navigatie met deze route start. De backend legt
+ * vast WELKE routeversie gebruikt wordt (idempotent per versie) en geeft het
+ * actuele versienummer terug. Best-effort: mislukken blokkeert navigatie nooit.
+ */
+export async function meldNavigatieStart(
+  routeId: number,
+): Promise<number | null> {
+  try {
+    const r = await customFetch<{ ok: boolean; version: number }>(
+      `/api/routes/${routeId}/navigatie-start`,
+      { method: "POST", responseType: "json" },
+    );
+    return typeof r.version === "number" ? r.version : null;
+  } catch {
+    return null;
+  }
+}
 
 export type RouteDetail = RouteSummary & {
   nav: RouteStep[] | null;
