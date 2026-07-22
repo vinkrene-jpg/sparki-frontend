@@ -5,7 +5,6 @@ import {
   RefreshCw,
   Shield,
   ChevronLeft,
-  MessageSquarePlus,
   Menu,
   Sparkles,
   Home,
@@ -27,7 +26,6 @@ import {
 import { Link } from "wouter"
 import { useClerk, Show } from "@clerk/react"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
-import { useFeedback } from "@/contexts/FeedbackContext"
 import { useTeamIdentity } from "@/hooks/use-social"
 import { CinematicScene, type SceneName } from "@/components/sparki/cinematic-scene"
 import { NotificationBell } from "@/components/sparki/notification-bell"
@@ -224,20 +222,19 @@ function HeadTesterBadge({ number }: { number: number | null }) {
   )
 }
 
-// Header trigger that opens the global feedback & bug reporter from any screen.
-function FeedbackButton() {
-  const { openFeedback } = useFeedback()
-  return (
-    <button
-      type="button"
-      onClick={openFeedback}
-      aria-label="Feedback & bug melden"
-      title="Feedback & bug melden"
-      className="rounded-full border border-white/15 p-1.5 text-white/60 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
-    >
-      <MessageSquarePlus className="h-4 w-4" strokeWidth={1.75} />
-    </button>
-  )
+// Persoonlijke context in het midden van de bovenbalk: dagdeel-groet + voornaam
+// voor ingelogde gebruikers, anders de datum. Bewust klein en rustig — de balk
+// mag de aandacht nooit opeisen.
+function HeaderContext({ displayName }: { displayName: string | null }) {
+  const firstName = displayName?.trim().split(/\s+/)[0] ?? null
+  if (firstName) {
+    // Alleen de voornaam — de pagina zelf begroet al ("Goedemorgen, …"),
+    // dus de balk blijft stil en dubbelt de groet niet.
+    return <span className="truncate text-[13px] text-white/80">{firstName}</span>
+  }
+  const now = new Date()
+  const label = now.toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long" })
+  return <span className="truncate text-[13px] text-white/60">{label.charAt(0).toUpperCase() + label.slice(1)}</span>
 }
 
 export function ScreenShell({
@@ -296,55 +293,64 @@ export function ScreenShell({
       <CinematicScene scene={scene} image={bg} />
 
       <div className="relative z-10 mx-auto flex max-w-md flex-col gap-10 px-6 pb-32 pt-12">
-        <header className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => setChatOpen(true)}
-            aria-label="Vraag Sparki — open de chat"
-            title="Vraag Sparki"
-            className="flex items-center gap-2 rounded-full transition-opacity hover:opacity-80"
-          >
+        {/* Rustige premium bovenbalk — drie zones, geen knoppengordijn.
+            Links alleen het merk, midden de persoonlijke context, rechts
+            maximaal drie stille iconen (meldingen · Vraag Sparki · menu).
+            Alles wat context is (hoofdstuk, rol, club, tester) verhuist naar
+            de subtiele regel eronder; acties zoals feedback leven in het menu. */}
+        <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
+          <span className="flex items-center gap-2" aria-label="Sparki">
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-300/60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-300" />
             </span>
             <span className="font-mono text-[11px] tracking-[0.35em] text-white/70">SPARKI</span>
-          </button>
-          <div className="flex items-center gap-3">
-            {/* The home scene is only ever reached by an authenticated user (or
-                Development Preview), so the club crest renders outside the
-                signed-in gate to stay visible in preview too. It returns null
-                when no club identity is set. */}
-            {isHome && <ClubCrest />}
-            <Show when="signed-out">
-              <span className="font-mono text-[10px] tracking-[0.22em] text-white/30">{sectionLabel}</span>
-            </Show>
+          </span>
+          <div className="flex min-w-0 justify-center">
+            <HeaderContext displayName={profile?.displayName ?? null} />
+          </div>
+          <div className="flex items-center gap-3.5">
             <Show when="signed-in">
-              <div className="flex items-center gap-3">
-                {profile?.isHeadTester && <HeadTesterBadge number={profile.headTesterNumber ?? null} />}
-                <FeedbackButton />
-                <NotificationBell />
-                <button
-                  type="button"
-                  onClick={() => setMenuOpen(true)}
-                  aria-label="Menu openen"
-                  title="Menu"
-                  className="flex items-center gap-1.5 rounded-full border border-cyan-300/40 bg-cyan-300/10 px-2.5 py-1.5 text-cyan-200 transition-colors hover:border-cyan-300/70 hover:bg-cyan-300/20"
-                >
-                  <Menu className="h-4 w-4" strokeWidth={2} />
-                  <span className="font-mono text-[10px] font-medium tracking-[0.18em]">MENU</span>
-                </button>
-                <div className="flex flex-col items-end gap-1.5">
-                  <span className="flex items-center gap-1.5 rounded-full border border-cyan-300/25 bg-cyan-300/[0.07] px-2.5 py-1 text-cyan-200/90">
-                    <SectionIcon className="h-3.5 w-3.5" strokeWidth={2} />
-                    <span className="font-mono text-[10px] font-medium tracking-[0.22em]">{sectionLabel}</span>
-                  </span>
-                  <RoleSwitcher />
-                </div>
-              </div>
+              <NotificationBell />
             </Show>
+            <button
+              type="button"
+              onClick={() => setChatOpen(true)}
+              aria-label="Vraag Sparki — open de chat"
+              title="Vraag Sparki"
+              className="text-white/60 transition-colors hover:text-cyan-300"
+            >
+              <Sparkles className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              aria-label="Menu openen"
+              title="Menu"
+              className="text-white/60 transition-colors hover:text-cyan-300"
+            >
+              <Menu className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            </button>
           </div>
         </header>
+
+        {/* Subtiele paginaregel onder de balk: hoofdstuktitel links, stille
+            context (club, tester, rolwissel) rechts. Geen dubbele "Vandaag"-
+            knop meer — de pagina zelf vertelt waar je bent. */}
+        <div className="-mt-6 flex items-center justify-between gap-3">
+          <span className="flex items-center gap-1.5 text-white/50">
+            <SectionIcon className="h-3.5 w-3.5" strokeWidth={1.75} />
+            <span className="font-mono text-[10px] tracking-[0.28em] uppercase">{sectionLabel}</span>
+          </span>
+          <span className="flex items-center gap-2.5">
+            {isHome && <ClubCrest />}
+            <Show when="signed-in">
+              <span className="flex items-center gap-2.5">
+                {profile?.isHeadTester && <HeadTesterBadge number={profile.headTesterNumber ?? null} />}
+                <RoleSwitcher />
+              </span>
+            </Show>
+          </span>
+        </div>
 
         {/* Top-anchored Terug from the full analysis back to the State Card. */}
         {fullSurface && (
@@ -387,7 +393,10 @@ export function ScreenShell({
           calm home for follow-ups — so we never double-ask the same question. */}
       {!bare && section.toLowerCase() !== "samen" && !stateSurface && <FollowUpPrompt />}
 
-      {/* App-wide chat window — opened from the SPARKI mark in the header. */}
+      {/* App-wide chat window — opened from the chat icon on the right of the
+          header. Chat + menu staan bewust buiten de signed-in gate: alle
+          ScreenShell-routes zijn al beschermd, en zo blijven ze ook werken in
+          Development Preview Mode (waar geen Clerk-sessie bestaat). */}
       <SparkiChatOverlay open={chatOpen} onClose={() => setChatOpen(false)} />
       <MainMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
     </main>

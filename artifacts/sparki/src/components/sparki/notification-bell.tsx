@@ -178,6 +178,7 @@ export function NotificationBell() {
         onClick={() => setOpen((v) => !v)}
         className="relative font-mono text-[13px] text-white/45 transition-colors hover:text-cyan-300/80"
         title="Meldingen"
+        aria-label="Meldingen"
       >
         <span aria-hidden>🔔</span>
         {unreadCount > 0 && (

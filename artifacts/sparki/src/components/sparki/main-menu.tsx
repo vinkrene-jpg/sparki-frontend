@@ -14,8 +14,10 @@ import {
   UserPlus,
   Radio,
   X,
+  MessageSquarePlus,
 } from "lucide-react"
 import { useLocation } from "wouter"
+import { useFeedback } from "@/contexts/FeedbackContext"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
 import { useMyLinks } from "@/hooks/use-links"
 
@@ -76,6 +78,7 @@ export function MainMenu({
   onClose: () => void
 }) {
   const [pathname, setLocation] = useLocation()
+  const { openFeedback } = useFeedback()
   const { profile } = useUserProfile()
   const role = profile?.activeRole as Role | undefined
   // Club gate — an accepted/pending coach link is the honest signal that the
@@ -188,6 +191,20 @@ export function MainMenu({
             )
           })}
         </div>
+
+        {/* Feedback verhuisde uit de bovenbalk hierheen — het menu is de rustige
+            plek voor secundaire acties. */}
+        <button
+          type="button"
+          onClick={() => {
+            onClose()
+            openFeedback()
+          }}
+          className="mt-6 flex items-center gap-2.5 self-start rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+        >
+          <MessageSquarePlus className="h-4 w-4" strokeWidth={1.75} />
+          Feedback of bug melden
+        </button>
       </div>
     </div>,
     document.body,
