@@ -35,6 +35,8 @@ export const notificationTypes = [
   "something_new",
   // Clubomgeving: reserve doorgeschoven, selectie, clubberichten.
   "club_update",
+  // Sparki World: reacties/waarderingen op je gedeelde items en moderatie.
+  "world_update",
   // Ouderomgeving: veiligheidsmelding, toestemming vereist, gewijzigde rechten.
   "parent_report",
   "consent_required",

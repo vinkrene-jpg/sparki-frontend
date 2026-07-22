@@ -14,6 +14,7 @@ import {
   persistRaceEvaluation,
 } from "../engines/race";
 import { buildRaceInsight } from "../lib/race-insight";
+import { removeWorldRefsForSource } from "./world-social";
 import type { RaceResult } from "@workspace/db";
 
 const router = Router();
@@ -559,6 +560,8 @@ router.delete("/:id", requireAuth, async (req, res) => {
       return;
     }
     triggerPlanRefresh(req, clerkId);
+    // Sparki World: gedeelde referenties naar deze wedstrijd opruimen.
+    await removeWorldRefsForSource(clerkId, "race", id);
     res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "races DELETE failed");

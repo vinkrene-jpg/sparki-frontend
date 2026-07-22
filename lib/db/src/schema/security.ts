@@ -44,6 +44,12 @@ export const securityEventKinds = [
   "rollout_autostop",
   "rollback_recorded",
   "release_note_published",
+  // Golf 18 — Sparki World (veilige sociale omgeving).
+  "share_changed",
+  "user_blocked",
+  "user_unblocked",
+  "content_reported",
+  "moderation_action",
 ] as const;
 export type SecurityEventKind = (typeof securityEventKinds)[number];
 

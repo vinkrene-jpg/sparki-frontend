@@ -38,6 +38,7 @@ export * from "./core-predictions";
 export * from "./telemetry";
 export * from "./intel";
 export * from "./sparki-world";
+export * from "./world-social";
 export * from "./goals";
 export * from "./sprints";
 export * from "./road-objects";

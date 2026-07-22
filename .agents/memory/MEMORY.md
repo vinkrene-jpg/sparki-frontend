@@ -146,3 +146,4 @@
 - [Sparki ouderomgeving](sparki-parent-environment.md) — één rechtenlaag voor ALLE ouder-routes (ook legacy); onbekende leeftijd clampt naar veiligheidsminimum; onbevestigd nooit boven safety-only; caps atomair via advisory lock.
 - [Sparki releasegroepen & uitrol](sparki-release-rollout.md) — auto-stop telt kritieke fouten PER flag (nooit globaal); anonieme meldingen nooit kritiek; 426 heeft latch naast event.
 - [Sparki race flow & advies-typologie](sparki-race-flow.md) — coach-first enforced in compose fn; invalid enums ignored not rejected; geannuleerd filtered at every consumer; foreign routeId silently dropped.
+- [Sparki World sociale omgeving](sparki-world-social.md) — reference-only shares; openbaar = confirm + volwassen/oudertoestemming (fail-closed); route-privacy is read-time transform; dubbele waardering = 200.

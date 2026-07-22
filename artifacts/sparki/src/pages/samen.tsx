@@ -24,6 +24,7 @@ import {
   type SentProposal,
 } from "@/hooks/use-social"
 import { useFeedNews, type FeedNewsItem } from "@/hooks/use-feed-news"
+import { WorldSocialSection } from "@/components/sparki/world-social-section"
 import {
   useAnswerFollowUp,
   useDismissFollowUp,
@@ -1097,6 +1098,7 @@ export default function SamenPage() {
       <TrainTogether />
       <ClubBanner />
       <FriendRequests />
+      <WorldSocialSection />
       <CircleFeed />
       <AddFriend />
       <Circle />

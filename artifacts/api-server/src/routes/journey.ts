@@ -31,6 +31,7 @@ import {
 import { buildRaceContext } from "../engines/race";
 import { computeAge } from "../lib/age";
 import { ObjectStorageService } from "../lib/objectStorage";
+import { removeWorldRefsForSource } from "./world-social";
 
 // Journey — één persoonlijke tijdlijn + wedstrijddossier, samengesteld uit
 // bestaande data. Geen parallel archief: dit registreert alleen wat nergens
@@ -426,6 +427,8 @@ router.delete(
         res.status(404).json({ error: "Gebeurtenis niet gevonden" });
         return;
       }
+      // Sparki World: gedeelde referenties naar dit moment opruimen.
+      await removeWorldRefsForSource(clerkId, "journey_item", id);
       res.json({ ok: true });
     } catch (err) {
       req.log.error({ err }, "journey.item-delete failed");
@@ -602,6 +605,8 @@ router.delete(
         res.status(404).json({ error: "Media niet gevonden" });
         return;
       }
+      // Sparki World: gedeelde referenties naar deze media opruimen.
+      await removeWorldRefsForSource(clerkId, "journey_media", id);
       res.json({ ok: true });
     } catch (err) {
       req.log.error({ err }, "journey.media-delete failed");
