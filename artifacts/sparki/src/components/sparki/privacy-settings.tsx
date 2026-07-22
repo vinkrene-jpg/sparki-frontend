@@ -175,8 +175,9 @@ export function PrivacySettingsSection() {
         )}
       </div>
       <p className="mt-2 px-1 text-[11px] leading-snug text-white/30">
-        Toestemming voor voorwaarden en ouderlijke goedkeuring volgt in een latere
-        fase. Je keuzes worden bijgehouden in een toestemmingslogboek.
+        Je keuzes worden bijgehouden in een toestemmingslogboek. De volledige
+        voorwaarden, export en accountverwijdering vind je hieronder bij
+        Privacy en account.
       </p>
     </section>
   )

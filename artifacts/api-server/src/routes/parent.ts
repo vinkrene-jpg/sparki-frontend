@@ -9,6 +9,7 @@ import {
   plannedWorkoutsTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { writeAudit } from "../lib/security/audit";
 import {
   parentSharingLevel,
   hasAcceptedParentLink,
@@ -145,6 +146,13 @@ router.get("/athletes/:athleteId/context", requireAuth, async (req, res) => {
       res.json({ sharing, memories: [], message: "Atleet deelt geen data" });
       return;
     }
+    void writeAudit({
+      event: "viewed_by_parent",
+      actorClerkId: parentId,
+      subjectClerkId: athleteId,
+      meta: { rol: "ouder", niveau: sharing },
+      req,
+    });
     const memories = await getAthleteContextForViewer(athleteId);
     res.json({ sharing, memories });
   } catch (err) {

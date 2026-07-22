@@ -53,6 +53,8 @@ import climbsRouter from "./climbs";
 import alertsRouter from "./alerts";
 import shareRouter from "./share";
 import devRouter from "./dev";
+import accountRouter from "./account";
+import legalRouter from "./legal";
 
 const router: IRouter = Router();
 
@@ -65,6 +67,8 @@ router.use("/invitations", invitationsRouter);
 router.use("/ai", aiRouter);
 router.use("/memory", memoryRouter);
 router.use("/privacy", privacyRouter);
+router.use("/account", accountRouter);
+router.use("/legal", legalRouter);
 router.use("/onboarding", onboardingRouter);
 router.use("/connectors", connectorsRouter);
 router.use("/device-sync", deviceSyncRouter);

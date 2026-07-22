@@ -7,6 +7,8 @@ import {
 } from "../lib/objectStorage";
 import { ObjectPermission } from "../lib/objectAcl";
 import { isAdmin } from "../lib/flags";
+import { rateLimit } from "../lib/security/rate-limit";
+import { writeAudit } from "../lib/security/audit";
 
 // Object storage routes for the Sparki Input Center.
 //
@@ -21,9 +23,25 @@ const objectStorageService = new ObjectStorageService();
 
 // POST /api/storage/uploads/request-url — request a presigned upload URL.
 // Body: { name, size, contentType }. Returns { uploadURL, objectPath }.
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25 MB
+const ALLOWED_UPLOAD_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+  "application/pdf",
+  "application/gpx+xml",
+  "application/xml",
+  "text/xml",
+  "application/octet-stream", // FIT-bestanden
+  "text/plain",
+];
+
 router.post(
   "/storage/uploads/request-url",
   requireAuth,
+  rateLimit({ scope: "uploads", max: 30, windowMs: 10 * 60_000 }),
   async (req: Request, res: Response) => {
     const clerkId = getClerkUserId(req)!;
     const body = req.body as {
@@ -36,6 +54,27 @@ router.post(
       typeof body.contentType === "string" ? body.contentType : "";
     if (!name || !contentType) {
       res.status(400).json({ error: "name en contentType zijn verplicht" });
+      return;
+    }
+    const size = typeof body.size === "number" ? body.size : null;
+    if (size != null && (size <= 0 || size > MAX_UPLOAD_BYTES)) {
+      void writeAudit({
+        event: "upload_rejected",
+        actorClerkId: clerkId,
+        meta: { reden: "grootte", size },
+        req,
+      });
+      res.status(400).json({ error: "Bestand is te groot (maximaal 25 MB)." });
+      return;
+    }
+    if (!ALLOWED_UPLOAD_TYPES.includes(contentType.toLowerCase().split(";")[0].trim())) {
+      void writeAudit({
+        event: "upload_rejected",
+        actorClerkId: clerkId,
+        meta: { reden: "bestandstype", contentType },
+        req,
+      });
+      res.status(400).json({ error: "Dit bestandstype wordt niet ondersteund." });
       return;
     }
 

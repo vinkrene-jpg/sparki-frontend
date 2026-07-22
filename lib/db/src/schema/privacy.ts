@@ -38,6 +38,9 @@ export const privacySettingsTable = pgTable("privacy_settings", {
   consentVersion: text("consent_version").notNull().default("1"),
   acceptedTermsAt: timestamp("accepted_terms_at", { withTimezone: true }),
   acceptedPrivacyAt: timestamp("accepted_privacy_at", { withTimezone: true }),
+  // Welke documentversie precies is geaccepteerd (gekoppeld aan legal_documents).
+  acceptedTermsVersion: text("accepted_terms_version"),
+  acceptedPrivacyVersion: text("accepted_privacy_version"),
   parentConsentRequired: boolean("parent_consent_required")
     .notNull()
     .default(false),

@@ -1,12 +1,33 @@
 import { and, eq } from "drizzle-orm";
 import {
   db,
+  athleteProfilesTable,
   coachAthleteLinksTable,
   parentAthleteLinksTable,
   userProfilesTable,
   type AthleteDailyMetric,
 } from "@workspace/db";
 import { getEffectivePrivacy } from "./privacy";
+import { computeAge } from "./age";
+
+// Minderjarigen (<16): delen met een coach vereist ouderlijke toestemming.
+// Zonder geaccepteerde toestemming valt het coach-deelniveau terug op "none",
+// ongeacht wat er in de instellingen staat (fail-closed). Onbekende leeftijd
+// telt NIET als minderjarig — we weigeren alleen op basis van echte data.
+export async function isMinorAthlete(
+  athleteClerkId: string,
+): Promise<boolean> {
+  const [athlete] = await db
+    .select({
+      birthDate: athleteProfilesTable.birthDate,
+      birthYear: athleteProfilesTable.birthYear,
+    })
+    .from(athleteProfilesTable)
+    .where(eq(athleteProfilesTable.clerkId, athleteClerkId));
+  if (!athlete) return false;
+  const age = computeAge(athlete.birthDate, athlete.birthYear);
+  return age != null && age < 16;
+}
 
 /**
  * A coarse, heuristic readiness read derived from the latest self-reported daily
@@ -80,10 +101,18 @@ export async function hasAcceptedParentLink(
   return row?.status === "accepted";
 }
 
-/** Resolve the athlete's coach-sharing preference. */
+/**
+ * Resolve the athlete's coach-sharing preference. For minors (<16) without
+ * accepted parental consent this is forced to "none" (fail-closed).
+ */
 export async function coachSharingLevel(athleteClerkId: string) {
   const p = await getEffectivePrivacy(athleteClerkId);
-  return p.dataSharingCoach as "none" | "summary" | "full";
+  const level = p.dataSharingCoach as "none" | "summary" | "full";
+  if (level === "none") return level;
+  if (p.parentConsentStatus !== "accepted" && (await isMinorAthlete(athleteClerkId))) {
+    return "none" as const;
+  }
+  return level;
 }
 
 /** Resolve the athlete's parent-sharing preference. */

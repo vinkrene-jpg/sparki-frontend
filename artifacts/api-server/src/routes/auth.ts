@@ -7,6 +7,7 @@ import {
   hasRealSession,
   getClerkVerifiedEmail,
 } from "../lib/auth";
+import { writeAudit } from "../lib/security/audit";
 import { ensureAccount } from "../lib/account";
 import { isAdmin } from "../lib/flags";
 import { assignHeadTesterNumber } from "../engines/insights";
@@ -183,6 +184,13 @@ router.put("/me/role", requireAuth, async (req, res) => {
       .where(eq(userProfilesTable.clerkId, clerkId))
       .returning();
 
+    void writeAudit({
+      event: "role_change",
+      actorClerkId: clerkId,
+      subjectClerkId: clerkId,
+      meta: { van: profile.activeRole, naar: role },
+      req,
+    });
     res.json(updated);
   } catch (err) {
     req.log.error({ err }, "auth.me.role failed");

@@ -71,6 +71,7 @@ const ALL_ENTRIES = [
       path.resolve(artifactDir, "src/tests/kernreis.ts"),
       path.resolve(artifactDir, "src/tests/data-reliability.ts"),
       path.resolve(artifactDir, "src/tests/cross-account-isolation.ts"),
+      path.resolve(artifactDir, "src/tests/privacy-security.ts"),
       path.resolve(artifactDir, "src/tests/coach-parent-link-isolation.ts"),
       path.resolve(artifactDir, "src/tests/links-unlink-isolation.ts"),
       path.resolve(artifactDir, "src/tests/links-end-isolation.ts"),

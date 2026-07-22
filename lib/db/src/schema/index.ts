@@ -39,3 +39,4 @@ export * from "./sparki-world";
 export * from "./goals";
 export * from "./sprints";
 export * from "./road-objects";
+export * from "./security";

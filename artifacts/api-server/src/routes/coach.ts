@@ -11,6 +11,7 @@ import {
   aiObservationsTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { writeAudit } from "../lib/security/audit";
 import { sessionSeed } from "../lib/variation";
 import { computeReadiness } from "../engines/recovery-load";
 import {
@@ -163,6 +164,13 @@ router.get("/athletes/:athleteId", requireAuth, async (req, res) => {
       res.json({ sharing, athlete: null, message: "Atleet deelt geen data" });
       return;
     }
+    void writeAudit({
+      event: "viewed_by_coach",
+      actorClerkId: coachId,
+      subjectClerkId: athleteId,
+      meta: { rol: "coach", niveau: sharing },
+      req,
+    });
 
     const [profile] = await db
       .select({

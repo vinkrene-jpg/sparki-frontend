@@ -25,6 +25,8 @@ import {
 } from "../lib/test-dashboard/scoring";
 import { isConnectorAvailable } from "../lib/connectors/registry";
 import { buildScheduledTasks } from "../lib/scheduled-tasks";
+import { securityAuditLogTable } from "@workspace/db";
+import { rateLimitStats } from "../lib/security/rate-limit";
 
 const router = Router();
 
@@ -196,7 +198,7 @@ router.get("/health", requireAuth, requireAdmin, async (req, res) => {
     const agg = await db.execute(sql`
       SELECT
         (SELECT count(*) FROM user_profiles)::int AS active_users,
-        (SELECT count(*) FROM user_profiles WHERE created_at > now() - interval '7 days')::int AS new_registrations,
+        (SELECT count(*) FROM user_profiles WHERE at > now() - interval '7 days')::int AS new_registrations,
         (SELECT count(*) FROM bug_reports WHERE status = 'new')::int AS open_bug_reports,
         (SELECT count(*) FROM workout_feedback)::int AS feedback_messages,
         (SELECT count(*) FROM activity_imports WHERE status = 'failed')::int AS failed_imports,
@@ -447,7 +449,7 @@ router.get("/test-dashboard", requireAuth, requireAdmin, async (req, res) => {
       ev_agg AS (
         SELECT clerk_id,
                count(DISTINCT (created_at AT TIME ZONE 'UTC')::date)
-                 FILTER (WHERE created_at > now() - interval '30 days')::int
+                 FILTER (WHERE at > now() - interval '30 days')::int
                  AS active_days_30,
                max(created_at) AS last_activity_at,
                count(*) FILTER (WHERE type = 'feature_use')::int AS feature_uses
@@ -935,6 +937,41 @@ router.get("/health/batches", requireAuth, requireAdmin, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "admin.health.batches failed");
     res.status(500).json({ error: "Kon de testgeschiedenis niet laden" });
+  }
+});
+
+// GET /api/admin/security — beveiligingsoverzicht: recente auditgebeurtenissen
+// (onveranderbaar log) + actuele rate-limit-teller. Alleen voor beheerders.
+router.get("/security", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const limitRaw = Number.parseInt(String(req.query.limit ?? "100"), 10);
+    const limit = Number.isFinite(limitRaw)
+      ? Math.min(Math.max(limitRaw, 1), 500)
+      : 100;
+    const event = req.query.event ? String(req.query.event) : null;
+    const rows = await db
+      .select()
+      .from(securityAuditLogTable)
+      .where(event ? eq(securityAuditLogTable.event, event) : undefined)
+      .orderBy(desc(securityAuditLogTable.at))
+      .limit(limit);
+    const [counts] = (
+      await db.execute(sql`
+        SELECT
+          count(*)::int AS totaal,
+          count(*) FILTER (WHERE at > now() - interval '24 hours')::int AS laatste24u,
+          count(*) FILTER (WHERE event = 'rate_limited' AND at > now() - interval '24 hours')::int AS geblokkeerd24u
+        FROM security_audit_log
+      `)
+    ).rows as Array<Record<string, unknown>>;
+    res.json({
+      audit: rows,
+      samenvatting: counts ?? { totaal: 0, laatste24u: 0, geblokkeerd24u: 0 },
+      rateLimits: rateLimitStats,
+    });
+  } catch (err) {
+    req.log.error({ err }, "admin.security failed");
+    res.status(500).json({ error: "Beveiligingsoverzicht kon niet geladen worden." });
   }
 });
 

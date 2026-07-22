@@ -2,6 +2,7 @@ import { createHmac, randomBytes, createHash, timingSafeEqual } from "node:crypt
 import { eq, and } from "drizzle-orm";
 import { db, connectorConnectionsTable } from "@workspace/db";
 import { publicBaseUrl } from "./strava-oauth";
+import { decryptSecret, encryptSecret } from "../../token-crypto";
 
 // ── Fietscomputer-sync (Garmin / Wahoo) ──────────────────────────────────────
 // Cloud-to-cloud route sync, the way Komoot does it: the athlete links their
@@ -262,19 +263,19 @@ export async function getValidDeviceAccessToken(
   }
   const expMs = row.tokenExpiresAt ? new Date(row.tokenExpiresAt).getTime() : 0;
   if (expMs - Date.now() > 60_000) {
-    return row.accessToken;
+    return decryptSecret(row.accessToken)!;
   }
   if (!row.refreshToken) {
     throw new Error(
       `${DEVICE_PROVIDER_LABEL[provider]}-toegang is verlopen. Koppel opnieuw.`,
     );
   }
-  const refreshed = await refreshDeviceToken(provider, row.refreshToken);
+  const refreshed = await refreshDeviceToken(provider, decryptSecret(row.refreshToken)!);
   await db
     .update(connectorConnectionsTable)
     .set({
-      accessToken: refreshed.access_token,
-      refreshToken: refreshed.refresh_token ?? row.refreshToken,
+      accessToken: encryptSecret(refreshed.access_token),
+      refreshToken: encryptSecret(refreshed.refresh_token ?? decryptSecret(row.refreshToken)),
       tokenExpiresAt: refreshed.expires_in
         ? new Date(Date.now() + refreshed.expires_in * 1000)
         : null,

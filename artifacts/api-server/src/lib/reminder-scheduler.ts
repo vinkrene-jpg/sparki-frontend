@@ -16,6 +16,7 @@
 
 import { deliverReminders } from "../engines/reminders";
 import { logger } from "./logger";
+import { processDueAccountDeletions } from "./account-privacy";
 
 let started = false;
 let inFlight = false;
@@ -66,6 +67,11 @@ export function startReminderScheduler(): void {
         { reminders: "scheduler", ...summary },
         "in-process reminder run done",
       );
+      // Zelfde ritme: voer verlopen accountverwijderingen definitief uit.
+      const deleted = await processDueAccountDeletions();
+      if (deleted > 0) {
+        logger.info({ deleted }, "due account deletions executed");
+      }
     } catch (err) {
       logger.error({ err, reminders: "scheduler" }, "in-process reminder run failed");
     } finally {

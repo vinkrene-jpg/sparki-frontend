@@ -1,6 +1,7 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { eq, and } from "drizzle-orm";
 import { db, connectorConnectionsTable } from "@workspace/db";
+import { decryptSecret, encryptSecret } from "../../token-crypto";
 
 // ── Per-user Strava OAuth ────────────────────────────────────────────────────
 // Each athlete authorizes their OWN Strava account; tokens are stored per user
@@ -220,14 +221,14 @@ export async function getValidStravaAccessToken(clerkId: string): Promise<string
   }
   const expMs = row.tokenExpiresAt ? new Date(row.tokenExpiresAt).getTime() : 0;
   if (expMs - Date.now() > 60_000) {
-    return row.accessToken;
+    return decryptSecret(row.accessToken)!;
   }
-  const refreshed = await refreshStravaToken(row.refreshToken);
+  const refreshed = await refreshStravaToken(decryptSecret(row.refreshToken)!);
   await db
     .update(connectorConnectionsTable)
     .set({
-      accessToken: refreshed.access_token,
-      refreshToken: refreshed.refresh_token,
+      accessToken: encryptSecret(refreshed.access_token),
+      refreshToken: encryptSecret(refreshed.refresh_token),
       tokenExpiresAt: new Date(refreshed.expires_at * 1000),
       updatedAt: new Date(),
     })

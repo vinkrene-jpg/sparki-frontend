@@ -15,6 +15,7 @@ import {
 } from "@workspace/db";
 import { createNotification } from "../lib/notifications";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { rateLimit } from "../lib/security/rate-limit";
 import { isAdmin } from "../lib/flags";
 import { assignHeadTesterNumber } from "../engines/insights";
 
@@ -77,7 +78,7 @@ function publicView(inv: Invitation) {
 //   relationship "coach_athlete"  → creator must have the coach role
 //   relationship "parent_athlete" → creator must have the parent role
 //   relationship "none"           → role grant, creator must be admin
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", requireAuth, rateLimit({ scope: "invitations", max: 10, windowMs: 60 * 60_000 }), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const body = req.body as CreateBody;
 

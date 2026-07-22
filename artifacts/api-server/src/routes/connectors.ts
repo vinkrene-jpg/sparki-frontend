@@ -24,6 +24,7 @@ import {
   allowedReturnHosts,
   isStravaConfigured,
 } from "../lib/connectors/providers/strava-oauth";
+import { decryptSecret, encryptSecret } from "../lib/token-crypto";
 
 const router = Router();
 
@@ -248,7 +249,7 @@ router.post("/:id/revoke", requireAuth, async (req, res) => {
           ),
         );
       if (existing?.accessToken) {
-        await deauthorizeStrava(existing.accessToken);
+        await deauthorizeStrava(decryptSecret(existing.accessToken)!);
       }
     }
     await db
@@ -361,8 +362,8 @@ router.get("/strava/callback", async (req, res) => {
         clerkId: state.clerkId,
         provider: "strava",
         status: "connected",
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
+        accessToken: encryptSecret(tokens.access_token),
+        refreshToken: encryptSecret(tokens.refresh_token),
         tokenExpiresAt: new Date(tokens.expires_at * 1000),
         externalUserId,
         scopes,
@@ -377,8 +378,8 @@ router.get("/strava/callback", async (req, res) => {
         ],
         set: {
           status: "connected",
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token,
+          accessToken: encryptSecret(tokens.access_token),
+          refreshToken: encryptSecret(tokens.refresh_token),
           tokenExpiresAt: new Date(tokens.expires_at * 1000),
           externalUserId,
           scopes,

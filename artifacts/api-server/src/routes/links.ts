@@ -7,6 +7,7 @@ import {
   userProfilesTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { writeAudit } from "../lib/security/audit";
 
 const router = Router();
 
@@ -65,6 +66,15 @@ router.delete("/coach/:coachClerkId", requireAuth, async (req, res) => {
         ),
       );
     const removed = result.rowCount ?? 0;
+    if (removed > 0) {
+      void writeAudit({
+        event: "link_change",
+        actorClerkId: me,
+        subjectClerkId: me,
+        meta: { soort: "coach", coachClerkId: String(req.params.coachClerkId) },
+        req,
+      });
+    }
     res.json({ ok: true, removed });
   } catch (err) {
     req.log.error({ err }, "links.revoke-coach failed");
@@ -85,6 +95,15 @@ router.delete("/parent/:parentClerkId", requireAuth, async (req, res) => {
         ),
       );
     const removed = result.rowCount ?? 0;
+    if (removed > 0) {
+      void writeAudit({
+        event: "link_change",
+        actorClerkId: me,
+        subjectClerkId: me,
+        meta: { soort: "ouder", parentClerkId: String(req.params.parentClerkId) },
+        req,
+      });
+    }
     res.json({ ok: true, removed });
   } catch (err) {
     req.log.error({ err }, "links.revoke-parent failed");
@@ -109,6 +128,13 @@ router.delete("/as-coach/:athleteClerkId", requireAuth, async (req, res) => {
           ),
         ),
       );
+    void writeAudit({
+      event: "link_change",
+      actorClerkId: me,
+      subjectClerkId: String(req.params.athleteClerkId),
+      meta: { soort: "coach", beeindigdDoor: "coach" },
+      req,
+    });
     res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "links.end-as-coach failed");
@@ -133,6 +159,13 @@ router.delete("/as-parent/:athleteClerkId", requireAuth, async (req, res) => {
           ),
         ),
       );
+    void writeAudit({
+      event: "link_change",
+      actorClerkId: me,
+      subjectClerkId: String(req.params.athleteClerkId),
+      meta: { soort: "ouder", beeindigdDoor: "ouder" },
+      req,
+    });
     res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "links.end-as-parent failed");

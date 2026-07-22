@@ -23,6 +23,7 @@ import {
   publicBaseUrl,
   allowedReturnHosts,
 } from "../lib/connectors/providers/strava-oauth";
+import { decryptSecret, encryptSecret } from "../lib/token-crypto";
 
 // ── Fietscomputer-sync routes ────────────────────────────────────────────────
 // Cloud-to-cloud route delivery to Garmin Connect / Wahoo (the Komoot model).
@@ -132,8 +133,8 @@ router.get("/:provider/callback", async (req, res) => {
         clerkId: payload.clerkId,
         provider,
         status: "connected",
-        accessToken: token.access_token,
-        refreshToken: token.refresh_token ?? null,
+        accessToken: encryptSecret(token.access_token),
+        refreshToken: encryptSecret(token.refresh_token ?? null),
         tokenExpiresAt: token.expires_in
           ? new Date(Date.now() + token.expires_in * 1000)
           : null,
@@ -147,8 +148,8 @@ router.get("/:provider/callback", async (req, res) => {
         ],
         set: {
           status: "connected",
-          accessToken: token.access_token,
-          refreshToken: token.refresh_token ?? null,
+          accessToken: encryptSecret(token.access_token),
+          refreshToken: encryptSecret(token.refresh_token ?? null),
           tokenExpiresAt: token.expires_in
             ? new Date(Date.now() + token.expires_in * 1000)
             : null,
