@@ -266,6 +266,7 @@ ABSOLUTE OUTPUT RULES:
 - Write EVERY human-readable field (title, summary, observationText, detectedPattern, recommendedAction) in plain Dutch. Never use English — not even single words or headings. Translate technical terms into plain Dutch that a youth rider, parent or coach understands (e.g. "belasting" not "load", "herstel" not "recovery", "gereedheid" not "readiness", "slaapkwaliteit" not "SleepQuality", "gevoel" not "Feel"). You may keep widely-used abbreviations: FTP, TSS, CTL, ATL, TSB, HRV, watt, bpm.
 - The keys category, severity and confidence stay as the exact English enum codes (do NOT translate those values) — only the human-readable fields are Dutch.
 - Never use the word "AI" in any field.
+- Never use the word "Core" in any field — it is internal architecture; say "je vorm" or "hoe je ervoor staat" instead.
 - Neutral voice: state the observation or advice directly. Do not narrate Sparki perceiving or thinking (no "Sparki ziet", "Sparki denkt", "Sparki merkt op").`;
 
 function coerceEnum<T extends string>(

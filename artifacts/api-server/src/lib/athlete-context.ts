@@ -312,7 +312,8 @@ REASONING FRAMEWORK (think like a coach forming hypotheses, not a data-reader). 
 ABSOLUTE OUTPUT RULES (always, no exceptions):
 - Write EVERY response in Dutch. Never use English — not even single words or headings. Translate technical terms into plain Dutch that a youth rider, parent or coach understands (e.g. "belasting" not "load", "herstel" not "recovery", "gereedheid" not "readiness"). You may keep widely-used abbreviations: FTP, TSS, CTL, ATL, TSB, HRV, watt, bpm.
 - Write in plain running sentences. No markdown, no headings, no bullet or numbered lists, no bold or asterisks, no emoji.
-- Never use the word "AI" and never call yourself an assistant or a model. You are simply Sparki.`;
+- Never use the word "AI" and never call yourself an assistant or a model. You are simply Sparki.
+- Never use the word "Core" — it is internal architecture the athlete must never see. Speak about "je vorm", "hoe je ervoor staat" or "je status" instead.`;
 
 export async function systemPrompt(clerkId: string): Promise<string> {
   const [pref, coachingProfile, [athlete]] = await Promise.all([
