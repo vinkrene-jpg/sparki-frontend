@@ -11,6 +11,7 @@ import { analyzeSession, type InsightTone } from "@/lib/session-analysis"
 import { useRideStory, useRideStoryFlag } from "@/hooks/use-ride-story"
 import { RideStoryChapters } from "@/components/sparki/ride-story"
 import { useSessionSegments, type RideSegment } from "@/hooks/use-sessions"
+import { ShareRidePanel } from "@/components/sparki/share-ride"
 import {
   Clock,
   Route as RouteIcon,
@@ -379,6 +380,8 @@ export function SessionDetailDrawer({
                 </p>
               </div>
             )}
+
+            <ShareRidePanel session={session} open={open} />
           </>
         )}
       </SheetContent>

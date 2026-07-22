@@ -13,8 +13,11 @@ const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
 const STRAVA_DEAUTHORIZE_URL = "https://www.strava.com/oauth/deauthorize";
 
 // Scopes Sparki needs: read the athlete's profile (weight/FTP) and their
-// activities. `read` is the baseline scope.
-export const STRAVA_SCOPES = "read,activity:read_all,profile:read_all";
+// activities, plus `activity:write` so the athlete can upload rides recorded
+// in Sparki to their own Strava account. `read` is the baseline scope.
+// Existing connections keep their originally granted scopes; uploading then
+// honestly asks the athlete to reconnect.
+export const STRAVA_SCOPES = "read,activity:read_all,profile:read_all,activity:write";
 
 interface StravaConfig {
   clientId: string;
