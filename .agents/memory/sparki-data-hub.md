@@ -45,3 +45,6 @@ Prod DB schema NOT pushed: new tables (`connector_activities`, `equipment`,
 `connector_consents`, `sync_runs`) + extended `training_sessions`
 (sport/avgCadence/avgSpeedKph/maxHR/externalRef/dedupeKey/sources[]) and `races`
 (raceType/result jsonb). Push before deploy.
+
+## Dag-niveau dedupe voor handmatige sessies (Afbouwgolf 1)
+Handmatige sessies hebben geen starttijd ⇒ geen dedupeKey; dedupe gebeurt op dag+type+plausibiliteit. **Regel:** merge NOOIT zonder minstens één sterke vergelijker (duur of afstand aan BEIDE kanten aanwezig en geldig) — `activitiesPlausiblyEqual` geeft effectief true bij ontbrekende velden, wat anders stille dataloss (over-merge) veroorzaakt. Valideer numerieke route-invoer hard (400 bij NaN) zodat NaN nooit de dedupe-beslissing in gaat. Zelfde guard geldt in de hub-import wanneer manual rows als merge-kandidaat meegaan.

@@ -621,6 +621,21 @@ router.post("/workout-adjust", requireAuth, async (req, res) => {
       return;
     }
 
+    // Coachautoriteit: op een coachtraining doet Sparki géén eigen
+    // aanpassingsvoorstel. Eerlijk en deterministisch antwoord (geen model-
+    // aanroep), zodat de sporter weet waarom en wat de vervolgstap is.
+    if (workout.source === "coach") {
+      const proposal: AdjustProposal = {
+        recommendation: "keep",
+        title: "Overleg dit met je coach",
+        message:
+          "Deze training staat in het schema van je coach. Sparki past coachtrainingen niet zelf aan. Je feedback is opgeslagen en zichtbaar voor je coach — bespreek samen of de training anders moet.",
+        changes: null,
+      };
+      res.json({ proposal, coachOwned: true });
+      return;
+    }
+
     const [context, system] = await Promise.all([
       buildAthleteContext(clerkId, "workout_adjust"),
       systemPrompt(clerkId),

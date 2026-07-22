@@ -80,6 +80,7 @@ export type ProfilePatch = Partial<InsertAthleteProfile>;
 
 export type FactKey =
   | "coachingMode"
+  | "developmentGoal"
   | "ftp"
   | "weightKg"
   | "loadCapacity"
@@ -152,6 +153,16 @@ const COMPETITION_OPTIONS: FactOption[] = [
   { value: "national", label: "Nationaal / eliteniveau" },
 ];
 
+// Zelfde enum als het Ontwikkelkompas op /you — één bron, twee ingangen.
+const DEVELOPMENT_GOAL_OPTIONS: FactOption[] = [
+  { value: "recreatief", label: "Recreatief & fit blijven" },
+  { value: "granfondo", label: "Toertochten & gran fondo's rijden" },
+  { value: "topamateur", label: "Meestrijden als topamateur" },
+  { value: "elite_u23", label: "Doorgroeien naar elite/U23" },
+  { value: "prof", label: "De weg naar prof" },
+  { value: "persoonlijk", label: "Een eigen, persoonlijk doel" },
+];
+
 const COACHING_OPTIONS: FactOption[] = [
   { value: "sparki", label: "Trainen met Sparki" },
   { value: "coach", label: "Trainen met een coach" },
@@ -168,6 +179,21 @@ const FACTS: FactDef[] = [
     isKnown: (p) => p.coachingMode != null,
     parse: (v) =>
       v === "sparki" || v === "coach" ? { coachingMode: v } : null,
+  },
+  {
+    key: "developmentGoal",
+    prompt: "Waar wil jij als renner naartoe?",
+    help: "Je doel bepaalt waar elke coachingskeuze tegen wordt afgewogen — van je weekopbouw tot het advies na een rit.",
+    inputType: "choice",
+    options: DEVELOPMENT_GOAL_OPTIONS,
+    basePriority: 96,
+    regeneratePlan: true,
+    isKnown: (p) => p.developmentGoal != null,
+    parse: (v) =>
+      typeof v === "string" &&
+      DEVELOPMENT_GOAL_OPTIONS.some((o) => o.value === v)
+        ? { developmentGoal: v }
+        : null,
   },
   {
     key: "ftp",

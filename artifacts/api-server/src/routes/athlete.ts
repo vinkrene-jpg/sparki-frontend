@@ -24,6 +24,7 @@ import {
 } from "../engines/profile";
 import { computeLoad } from "../engines/recovery-load";
 import { captureContext } from "../engines/context-memory";
+import { ingestManualSession } from "../lib/manual-session-ingest";
 
 const router = Router();
 
@@ -561,6 +562,42 @@ router.put("/workouts/:id", requireAuth, async (req, res) => {
   }
 
   try {
+    // Coachautoriteit: een training van de coach mag Sparki/de sporter hier
+    // niet inhoudelijk herschrijven. Status (gedaan/overgeslagen) en het
+    // koppelen van een uitgevoerde sessie blijven wél toegestaan — dat is
+    // registratie, geen herprogrammering.
+    const [current] = await db
+      .select({
+        id: plannedWorkoutsTable.id,
+        source: plannedWorkoutsTable.source,
+      })
+      .from(plannedWorkoutsTable)
+      .where(
+        and(
+          eq(plannedWorkoutsTable.id, id),
+          eq(plannedWorkoutsTable.clerkId, clerkId),
+        ),
+      );
+    if (!current) {
+      res.status(404).json({ error: "Workout not found" });
+      return;
+    }
+    const touchesContent =
+      title != null ||
+      description != null ||
+      scheduledDate != null ||
+      targetDurationMin != null ||
+      targetTSS != null ||
+      structure != null;
+    if (current.source === "coach" && touchesContent) {
+      res.status(403).json({
+        error:
+          "Deze training komt van je coach. Sparki past die niet aan — bespreek een wijziging met je coach.",
+        coachOwned: true,
+      });
+      return;
+    }
+
     const [updated] = await db
       .update(plannedWorkoutsTable)
       .set({
@@ -1234,28 +1271,51 @@ router.post("/sessions", requireAuth, async (req, res) => {
     res.status(400).json({ error: "sessionDate is required" });
     return;
   }
+  // Harde numerieke validatie: ongeldige cijfers mogen nooit de dedupe- of
+  // belastingscoreberekening in (NaN maakt vergelijkingen betekenisloos).
+  const numeriek: [string, unknown][] = [
+    ["durationMin", durationMin],
+    ["elevationM", elevationM],
+    ["normalizedPower", normalizedPower],
+    ["avgPower", avgPower],
+    ["avgHR", avgHR],
+    ["tss", tss],
+    ["feelScore", feelScore],
+  ];
+  for (const [veld, waarde] of numeriek) {
+    if (waarde != null && (typeof waarde !== "number" || !Number.isFinite(waarde))) {
+      res.status(400).json({ error: `Ongeldige waarde voor ${veld}` });
+      return;
+    }
+  }
+  if (
+    distanceKm != null &&
+    distanceKm !== "" &&
+    !Number.isFinite(Number(distanceKm))
+  ) {
+    res.status(400).json({ error: "Ongeldige waarde voor distanceKm" });
+    return;
+  }
 
   try {
-    const [session] = await db
-      .insert(trainingSessionsTable)
-      .values({
-        clerkId,
-        sessionDate,
-        type: type ?? "ride",
-        title: title ?? null,
-        durationMin: durationMin ?? null,
-        distanceKm: distanceKm ?? null,
-        elevationM: elevationM ?? null,
-        normalizedPower: normalizedPower ?? null,
-        avgPower: avgPower ?? null,
-        avgHR: avgHR ?? null,
-        tss: tss ?? null,
-        intensityFactor: intensityFactor ?? null,
-        notes: notes ?? null,
-        feelScore: feelScore ?? null,
-        source: "manual",
-      })
-      .returning();
+    // Via de Data Hub-regels: dag-niveau dedupe (zelfde dag + zelfde type +
+    // plausibel dezelfde rit ⇒ samenvoegen, nooit dubbel tellen) en een
+    // afgeleide belastingscore waar vermogen + FTP dat toelaten.
+    const { session, merged } = await ingestManualSession(clerkId, {
+      sessionDate,
+      type: type ?? "ride",
+      title: title ?? null,
+      durationMin: durationMin ?? null,
+      distanceKm: distanceKm ?? null,
+      elevationM: elevationM ?? null,
+      normalizedPower: normalizedPower ?? null,
+      avgPower: avgPower ?? null,
+      avgHR: avgHR ?? null,
+      tss: tss ?? null,
+      intensityFactor: intensityFactor ?? null,
+      notes: notes ?? null,
+      feelScore: feelScore ?? null,
+    });
 
     // Pick up a personal-context moment from the logbook notes (best-effort,
     // privacy-gated inside captureContext — never blocks the session response).
@@ -1266,7 +1326,7 @@ router.post("/sessions", requireAuth, async (req, res) => {
     }
 
     triggerPlanRefresh(req, clerkId);
-    res.status(201).json(session);
+    res.status(merged ? 200 : 201).json({ ...session, merged });
   } catch (err) {
     req.log.error({ err }, "athlete.sessions POST failed");
     res.status(500).json({ error: "Internal server error" });

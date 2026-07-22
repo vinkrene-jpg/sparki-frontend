@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import {
   db,
   trainingSessionsTable,
@@ -142,7 +142,48 @@ async function ingestActivities(
           inArray(trainingSessionsTable.dedupeKey, candidateKeys),
         ),
       );
-    const existing = candidates.find((c) =>
+    // Handmatig gelogde sessies hebben geen starttijd en dus geen dedupeKey.
+    // Neem zelfde-dag handmatige sessies van hetzelfde type mee als merge-
+    // kandidaat, zodat "eerst handmatig gelogd, daarna geïmporteerd" nooit
+    // dubbel telt. De tolerantie-check hieronder bewaakt valse merges.
+    const manualCandidates = await db
+      .select()
+      .from(trainingSessionsTable)
+      .where(
+        and(
+          eq(trainingSessionsTable.clerkId, clerkId),
+          eq(trainingSessionsTable.sessionDate, dateOf(a.startedAt)),
+          isNull(trainingSessionsTable.dedupeKey),
+          eq(trainingSessionsTable.type, legacyTypeForSport(a.sport)),
+        ),
+      );
+    // Strengheidsregel voor handmatige kandidaten: die matchen alleen op dag
+    // (geen tijd-bucket), dus zonder minstens één sterke vergelijker (duur of
+    // afstand aan beide kanten) mergen we nooit — anders veegt een import een
+    // losstaande handmatige training weg.
+    const hasStrongComparator = (c: {
+      durationMin: number | null;
+      distanceKm: string | null;
+    }) => {
+      const candDur =
+        typeof c.durationMin === "number" && Number.isFinite(c.durationMin)
+          ? c.durationMin
+          : null;
+      const candDistRaw = c.distanceKm != null ? Number(c.distanceKm) : null;
+      const candDist =
+        candDistRaw != null && Number.isFinite(candDistRaw) ? candDistRaw : null;
+      return (
+        (a.durationMin != null && candDur != null) ||
+        (a.distanceKm != null && candDist != null)
+      );
+    };
+    const allCandidates = [
+      ...candidates,
+      ...manualCandidates.filter(
+        (m) => !candidates.some((c) => c.id === m.id) && hasStrongComparator(m),
+      ),
+    ];
+    const existing = allCandidates.find((c) =>
       activitiesPlausiblyEqual(c, {
         durationMin: a.durationMin,
         distanceKm: a.distanceKm,
@@ -178,7 +219,17 @@ async function ingestActivities(
       const sources = mergeSources(existing.sources ?? null, provider);
       await db
         .update(trainingSessionsTable)
-        .set({ ...patch, sources, updatedAt: new Date() })
+        .set({
+          ...patch,
+          sources,
+          // Een handmatige rij krijgt nu een echte starttijd-fingerprint en
+          // sport van de import, zodat volgende imports haar wél via de
+          // dedupeKey vinden.
+          ...(existing.dedupeKey == null
+            ? { dedupeKey, sport: existing.sport ?? a.sport }
+            : {}),
+          updatedAt: new Date(),
+        })
         .where(eq(trainingSessionsTable.id, existing.id));
       sessionId = existing.id;
       sessionDedupeKey = existing.dedupeKey ?? dedupeKey;
