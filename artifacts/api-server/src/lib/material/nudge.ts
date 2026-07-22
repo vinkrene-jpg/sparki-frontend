@@ -220,6 +220,13 @@ export async function ensureMaterialNudgeNotification(
       body: nudge.message,
       priority: "low",
       actionUrl: nudge.actionUrl,
+      // Golf 24: centrale contractvelden — materiaal-categorie, herkomst en een
+      // oplossingssleutel zodat een geregistreerde onderhoudsactie de melding
+      // laat verdwijnen (zie routes/garage.ts).
+      category: "materiaal",
+      source: "materiaalcoach",
+      audience: "athlete",
+      resolutionKey: `materiaal:${nudge.category}`,
     })
     .returning({ id: notificationsTable.id });
 

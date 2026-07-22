@@ -24,7 +24,14 @@ import { logger } from "../../lib/logger";
 import { emailChannelStatus, sendEmail } from "../../lib/email";
 import { pushChannelStatus, sendPush } from "../../lib/push";
 import { buildDueReminders, type ReminderItem } from "./build";
-import { getPrefs, allows } from "./preferences";
+import {
+  getPrefs,
+  allows,
+  allowsCategory,
+  channelAllowed,
+} from "./preferences";
+import { TYPE_CATEGORY } from "../../lib/notifications";
+import type { NotificationType } from "@workspace/db";
 
 export type DeliverOptions = {
   now?: Date;
@@ -128,7 +135,14 @@ export async function deliverReminders(
       );
       continue;
     }
-    const allowed = due.filter((it) => allows(prefs, it.kind as ReminderKind));
+    const allowed = due.filter(
+      (it) =>
+        allows(prefs, it.kind as ReminderKind) &&
+        allowsCategory(
+          prefs,
+          TYPE_CATEGORY[it.type as NotificationType] ?? "systeem",
+        ),
+    );
     if (allowed.length === 0) continue;
     summary.athletesWithReminders++;
     summary.itemsDue += allowed.length;
@@ -190,7 +204,12 @@ export async function deliverReminders(
       // 2. Push to every device — but only for a freshly-created notification, so
       //    a re-run never re-pushes. Dead endpoints (404/410) are pruned. Push is
       //    independent of email: it can land even when email is unconfigured.
-      if (freshlyCreated && canPush && subs.length > 0) {
+      const itemCategory =
+        TYPE_CATEGORY[item.type as NotificationType] ?? "systeem";
+      const pushAllowed = channelAllowed(prefs, "push", itemCategory, now);
+      const emailAllowed = channelAllowed(prefs, "email", itemCategory, now);
+
+      if (freshlyCreated && canPush && pushAllowed && subs.length > 0) {
         for (const sub of subs) {
           const r = await sendPush(
             { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
@@ -234,7 +253,10 @@ export async function deliverReminders(
 
       if (row.sentAt) continue; // already delivered by email — never resend
 
-      if (!canEmail || !athlete.email) {
+      // Kanaal uit of stille uren: geen e-mail nu. sentAt blijft bewust NULL —
+      // maar tijdens stille uren mag een volgende run hem ná het venster alsnog
+      // sturen; bij kanaal-uit slaan we definitief over (geteld als skipped).
+      if (!canEmail || !athlete.email || !emailAllowed) {
         summary.emailsSkipped++;
         continue;
       }

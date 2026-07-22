@@ -117,6 +117,7 @@
 - [Sparki bordjes-sprinten](sparki-bordjes-sprint.md) — town-sign sprints; boards=place-name transitions (honest, provider-only), base+speed+watt scoring; seed behind-boards on first fix or mid-route retro-awards; write path must own-check routeId.
 - [Sparki Coachomgeving (cockpit)](sparki-coach-cockpit.md) — coach-writable resources need an owner column (link-gate ≠ ownership); open-proposal idempotency via partial unique index; or(empty)=500.
 - [Sparki routeketen](sparki-route-chain.md) — share-uniqueness needs nullsNotDistinct (NULL targets duplicate); version bumps only on inhoudelijke edits; soft-delete only with usage history.
+- [Sparki contextuele aandacht & meldingen](sparki-attention-notifications.md) — central category registry, critical never-off, resolutionKey open-dedupe + resolve lifecycle, quiet hours dampen only push/email.
 - [Test-workflow boot storm](test-workflow-boot-storm.md) — parallel test boots crash w/ esbuild EAGAIN/SIGABRT; fix = cross-process build semaphore + retry-on-infra-crash tsx runner (cant edit .replit).
 
 - [Sparki ride-navigator](sparki-ride-navigator.md) — cadence from CPS crank data (flag-offset math); moving-avg speed excludes stops; casing+chevrons for route visibility; bordjes gated on per-ride group toggle (reset refs on flip).

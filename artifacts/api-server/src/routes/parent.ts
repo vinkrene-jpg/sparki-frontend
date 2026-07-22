@@ -256,6 +256,10 @@ router.get("/overview", requireAuth, async (req, res) => {
             title: "Herbevestiging ouder-toegang nodig",
             body: `Je leeftijdscategorie is veranderd. Bevestig opnieuw wat je met je ouder/verzorger deelt.`,
             actionUrl: "/you?focus=connections",
+            source: "ouder-toezicht",
+            // Verdwijnt vanzelf zodra de sporter herbevestigt (resolutionKey
+            // wordt opgelost in de reconfirm-route).
+            resolutionKey: `herbevestiging:${athleteId}`,
             dedupeWithin: {
               type: "consent_required",
               matchBody: `Je leeftijdscategorie is veranderd. Bevestig opnieuw wat je met je ouder/verzorger deelt.`,
@@ -507,6 +511,8 @@ router.put("/athletes/:athleteId/permissions", requireAuth, async (req, res) => 
         title: "Toegang ouder/verzorger gewijzigd",
         body: "Je ouder/verzorger heeft aangepast welke gegevens gedeeld worden. Bekijk het bij je koppelingen.",
         actionUrl: "/you?focus=connections",
+        source: "ouder-toezicht",
+        expiresAt: new Date(Date.now() + 14 * 86_400_000),
       });
     }
     res.json({ ok: true });

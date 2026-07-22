@@ -495,6 +495,8 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
         }-uitnodiging geaccepteerd.`,
         athleteClerkId: clerkId,
         actionUrl: "/",
+        source: "uitnodigingen",
+        audience: role === "coach" ? "coach" : "parent",
       });
     }
 
@@ -556,6 +558,8 @@ router.post("/:token/decline", requireAuth, async (req, res) => {
       title: "Uitnodiging geweigerd",
       body: "Je uitnodiging is geweigerd. Er is geen koppeling gemaakt.",
       actionUrl: "/",
+      source: "uitnodigingen",
+      audience: inv.relationship === "coach_athlete" ? "coach" : "parent",
     });
     res.json({ invitation: publicView(claimed) });
   } catch (err) {

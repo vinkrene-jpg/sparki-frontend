@@ -8,6 +8,7 @@ import {
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
+  activeNotificationFilter,
   getUnreadDayCount,
   groupNotificationsByDay,
 } from "../lib/notifications";
@@ -116,7 +117,49 @@ router.put("/preferences", requireAuth, async (req, res) => {
       patch[kind] = body[kind] as boolean;
     }
   }
+  // Golf 24: kanalen, categorieën en stille uren.
+  const boolKeys = [
+    "channelPush",
+    "channelInApp",
+    "channelEmail",
+    "catCoach",
+    "catClub",
+    "catSocial",
+    "catMaterial",
+    "catSync",
+  ] as const;
+  for (const key of boolKeys) {
+    if (typeof body[key] === "boolean") patch[key] = body[key] as boolean;
+  }
+  const HHMM = /^([01]?\d|2[0-3]):([0-5]\d)$/;
+  for (const key of ["quietHoursStart", "quietHoursEnd"] as const) {
+    const v = body[key];
+    if (v === null) patch[key] = null;
+    else if (typeof v === "string") {
+      if (!HHMM.test(v.trim())) {
+        res.status(400).json({ error: "Ongeldige tijd voor stille uren (gebruik UU:MM)" });
+        return;
+      }
+      patch[key] = v.trim();
+    }
+  }
   try {
+    // Stille uren zijn een venster: allebei gezet of allebei leeg — beoordeeld
+    // op het SAMENGEVOEGDE resultaat (huidige voorkeuren + patch), zodat een
+    // gedeeltelijke update nooit een half venster kan achterlaten.
+    if ("quietHoursStart" in patch || "quietHoursEnd" in patch) {
+      const current = await getPrefs(clerkId);
+      const start =
+        "quietHoursStart" in patch ? patch.quietHoursStart : current.quietHoursStart;
+      const end =
+        "quietHoursEnd" in patch ? patch.quietHoursEnd : current.quietHoursEnd;
+      if ((start == null) !== (end == null)) {
+        res
+          .status(400)
+          .json({ error: "Stille uren hebben een begin- én eindtijd nodig" });
+        return;
+      }
+    }
     const preferences = await updatePrefs(clerkId, patch);
     res.json({ preferences });
   } catch (err) {
@@ -131,12 +174,19 @@ router.get("/", requireAuth, async (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 30, 100);
   const unreadOnly = String(req.query.unread) === "true";
   try {
+    // Read-path hygiene (Golf 24): expired and resolved notifications never
+    // reach the bell — a notification disappears when its situation is fixed
+    // or its validity window has passed.
     const where = unreadOnly
       ? and(
           eq(notificationsTable.clerkId, clerkId),
           isNull(notificationsTable.readAt),
+          activeNotificationFilter(),
         )
-      : eq(notificationsTable.clerkId, clerkId);
+      : and(
+          eq(notificationsTable.clerkId, clerkId),
+          activeNotificationFilter(),
+        );
     const notifications = await db
       .select()
       .from(notificationsTable)

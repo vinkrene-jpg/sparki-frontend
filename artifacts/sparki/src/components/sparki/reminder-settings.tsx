@@ -196,6 +196,14 @@ export function ReminderSettingsSection() {
         )}
       </div>
 
+      {p && (
+        <ChannelsAndQuietHours
+          p={p}
+          busy={busy}
+          set={set}
+        />
+      )}
+
       <RhythmReadout />
 
       <PushSettingsRow />
@@ -206,6 +214,123 @@ export function ReminderSettingsSection() {
         netjes in de app staan.
       </p>
     </section>
+  )
+}
+
+// ── Kanalen, stille uren en categorieën (Golf 24) ────────────────────────────
+// Kanalen bepalen WAAR een melding aankomt; stille uren bepalen WANNEER push en
+// e-mail zwijgen (in de app blijft alles staan); categorieën bepalen WAT je
+// wilt volgen. Privacy- en veiligheidsmeldingen kunnen nooit uit — die zijn te
+// belangrijk om te missen.
+function ChannelsAndQuietHours({
+  p,
+  busy,
+  set,
+}: {
+  p: ReminderPreferences
+  busy: boolean
+  set: (patch: Partial<ReminderPreferences>) => void
+}) {
+  const quietOn = p.quietHoursStart != null && p.quietHoursEnd != null
+
+  return (
+    <>
+      <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 backdrop-blur-md">
+        <div className="divide-y divide-white/[0.06]">
+          <Row
+            icon={Smartphone}
+            title="Kanaal: telefoonmelding"
+            desc="Meldingen op je telefoon (push). Zet dit uit en Sparki stuurt niets meer naar je telefoon — behalve bij privacy of veiligheid."
+          >
+            <Toggle
+              on={p.channelPush}
+              disabled={busy}
+              onClick={() => set({ channelPush: !p.channelPush })}
+            />
+          </Row>
+          <Row
+            icon={Bell}
+            title="Kanaal: e-mail"
+            desc="Herinneringen per e-mail. In de app blijft alles altijd zichtbaar."
+          >
+            <Toggle
+              on={p.channelEmail}
+              disabled={busy}
+              onClick={() => set({ channelEmail: !p.channelEmail })}
+            />
+          </Row>
+          <Row
+            icon={Clock}
+            title="Stille uren"
+            desc={
+              quietOn
+                ? `Tussen ${p.quietHoursStart} en ${p.quietHoursEnd} blijven push en e-mail stil. Alleen privacy- en veiligheidsmeldingen komen er doorheen.`
+                : "Kies een venster waarin Sparki je niet stoort met push of e-mail. In de app blijft alles gewoon staan."
+            }
+          >
+            <Toggle
+              on={quietOn}
+              disabled={busy}
+              onClick={() =>
+                quietOn
+                  ? set({ quietHoursStart: null, quietHoursEnd: null })
+                  : set({ quietHoursStart: "22:00", quietHoursEnd: "07:00" })
+              }
+            />
+          </Row>
+          {quietOn && (
+            <div className="flex items-center gap-3 py-3.5 pl-12">
+              <label className="flex items-center gap-2 text-[12px] text-white/50">
+                Van
+                <input
+                  type="time"
+                  value={p.quietHoursStart ?? "22:00"}
+                  disabled={busy}
+                  onChange={(e) => set({ quietHoursStart: e.target.value })}
+                  className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-[13px] text-white/85 [color-scheme:dark]"
+                />
+              </label>
+              <label className="flex items-center gap-2 text-[12px] text-white/50">
+                tot
+                <input
+                  type="time"
+                  value={p.quietHoursEnd ?? "07:00"}
+                  disabled={busy}
+                  onChange={(e) => set({ quietHoursEnd: e.target.value })}
+                  className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-[13px] text-white/85 [color-scheme:dark]"
+                />
+              </label>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] px-4 backdrop-blur-md">
+        <div className="divide-y divide-white/[0.06]">
+          {(
+            [
+              ["catCoach", "Coach en begeleiding", "Berichten en updates van je coach."],
+              ["catClub", "Club", "Clubtrainingen, wedstrijden en clubberichten."],
+              ["catSocial", "Sociaal", "Nieuws en updates uit je kring."],
+              ["catMaterial", "Materiaal", "Onderhoudsadviezen van de Materiaalcoach."],
+              ["catSync", "Synchronisatie", "Meldingen als een gegevenskoppeling hapert."],
+            ] as const
+          ).map(([key, title, desc]) => (
+            <Row key={key} icon={Bell} title={title} desc={desc}>
+              <Toggle
+                on={p[key]}
+                disabled={busy}
+                onClick={() => set({ [key]: !p[key] } as Partial<ReminderPreferences>)}
+              />
+            </Row>
+          ))}
+        </div>
+      </div>
+      <p className="mt-2 px-1 text-[11px] leading-snug text-white/30">
+        Privacy- en veiligheidsmeldingen kun je niet uitzetten — die zijn te
+        belangrijk om te missen.
+      </p>
+    </>
   )
 }
 

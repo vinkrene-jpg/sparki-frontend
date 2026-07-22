@@ -29,6 +29,23 @@ export const reminderPreferencesTable = pgTable("reminder_preferences", {
   // Smartly-timed "er is iets nieuws voor je" nudge — only fires when there is
   // genuinely new content, at a moment the athlete tends to be receptive.
   pulse: boolean("pulse").notNull().default(true),
+  // ── Golf 24: kanalen, stille uren en categorieën (additief) ────────────────
+  // Kanaal-schakelaars. In-app uit betekent: alleen kritieke privacy/
+  // veiligheidsmeldingen blijven zichtbaar (nooit volledig uitschakelbaar).
+  channelPush: boolean("channel_push").notNull().default(true),
+  channelInApp: boolean("channel_in_app").notNull().default(true),
+  channelEmail: boolean("channel_email").notNull().default(true),
+  // Stille uren, lokale tijd Europe/Amsterdam, "HH:MM". Binnen het venster gaan
+  // push en e-mail niet uit (in-app rij blijft gewoon bestaan); kritieke
+  // veiligheids-/privacymeldingen passeren de stille uren wél.
+  quietHoursStart: text("quiet_hours_start"),
+  quietHoursEnd: text("quiet_hours_end"),
+  // Categorie-schakelaars bovenop de bestaande per-type schakelaars.
+  catCoach: boolean("cat_coach").notNull().default(true),
+  catClub: boolean("cat_club").notNull().default(true),
+  catSocial: boolean("cat_social").notNull().default(true),
+  catMaterial: boolean("cat_material").notNull().default(true),
+  catSync: boolean("cat_sync").notNull().default(true),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -89,11 +89,12 @@ router.post("/crash", requireAuth, async (req, res) => {
     await createNotification({
       clerkId: recipient,
       athleteClerkId: clerkId,
-      type: "system",
+      type: "security_alert",
       priority: "high",
       title,
       body,
       actionUrl: mapsUrl,
+      source: "val-alarm",
     });
 
     if (canPush) {

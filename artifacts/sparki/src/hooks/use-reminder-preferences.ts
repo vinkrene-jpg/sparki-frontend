@@ -12,6 +12,16 @@ export type ReminderPreferences = {
   races: boolean;
   profile: boolean;
   pulse: boolean;
+  channelPush: boolean;
+  channelInApp: boolean;
+  channelEmail: boolean;
+  quietHoursStart: string | null;
+  quietHoursEnd: string | null;
+  catCoach: boolean;
+  catClub: boolean;
+  catSocial: boolean;
+  catMaterial: boolean;
+  catSync: boolean;
 };
 
 export function useReminderPreferences(enabled = true) {

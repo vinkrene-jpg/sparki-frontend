@@ -73,6 +73,7 @@ const ALL_ENTRIES = [
       path.resolve(artifactDir, "src/jobs/goal-review.ts"),
       path.resolve(artifactDir, "src/tests/goals.ts"),
       path.resolve(artifactDir, "src/tests/scheduled-tasks.ts"),
+      path.resolve(artifactDir, "src/tests/attention-notifications.ts"),
       path.resolve(artifactDir, "src/tests/scheduled-tasks-route.ts"),
       path.resolve(artifactDir, "src/tests/onboarding-connect-step.ts"),
       path.resolve(artifactDir, "src/tests/onboarding-strava-gapfill.ts"),

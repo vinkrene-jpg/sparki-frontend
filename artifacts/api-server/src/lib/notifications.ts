@@ -1,14 +1,60 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, gt, isNull, or, sql, type SQL } from "drizzle-orm";
 import {
   db,
   notificationsTable,
   type Notification,
   type NotificationType,
   type NotificationPriority,
+  type NotificationCategory,
 } from "@workspace/db";
 
-// Small reusable notification service. In-app only for now (no push/email).
-// Recipient = clerkId; athleteClerkId is who the notification is *about*.
+// Central notification layer (Golf 24). Every notification carries the full
+// contract: type + category + priority, validity (expiresAt), source, audience
+// (role entitlement), action (actionUrl), read/handled state (readAt/
+// resolvedAt) and a dedupe key. Recipient = clerkId; athleteClerkId is who the
+// notification is *about*.
+
+export type NotificationAudience = "athlete" | "coach" | "parent" | "club";
+
+// Every type maps to exactly ONE category — the single source of truth used by
+// preferences (category toggles), quiet hours and the read path. Old rows with
+// category NULL derive it from `type` via this map.
+export const TYPE_CATEGORY: Record<NotificationType, NotificationCategory> = {
+  ai_observation: "training",
+  training_reminder: "training",
+  recovery_warning: "herstel",
+  race_reminder: "wedstrijd",
+  coach_update: "coach",
+  parent_update: "ouder",
+  system: "systeem",
+  checkin_reminder: "herstel",
+  followup_question: "training",
+  profile_nudge: "systeem",
+  something_new: "sociaal",
+  club_update: "club",
+  world_update: "sociaal",
+  parent_report: "ouder",
+  consent_required: "ouder",
+  access_changed: "privacy",
+  sync_error: "sync",
+  security_alert: "veiligheid",
+};
+
+// Critical categories can never be fully switched off (spec: privacy/security/
+// safety). They are delivered restrained (in-app + push only, high priority)
+// but always reach the user.
+export const CRITICAL_CATEGORIES: ReadonlySet<NotificationCategory> = new Set([
+  "privacy",
+  "veiligheid",
+]);
+
+export function categoryOf(n: {
+  category?: string | null;
+  type: string;
+}): NotificationCategory {
+  if (n.category) return n.category as NotificationCategory;
+  return TYPE_CATEGORY[n.type as NotificationType] ?? "systeem";
+}
 
 export type CreateNotificationInput = {
   clerkId: string;
@@ -18,8 +64,23 @@ export type CreateNotificationInput = {
   priority?: NotificationPriority;
   athleteClerkId?: string | null;
   actionUrl?: string | null;
-  // When set, skip creating a duplicate if an unread notification with the same
-  // (clerkId, type, dedupeBody) already exists. Keeps the center from flooding.
+  // Category override; defaults to the type's registry category.
+  category?: NotificationCategory;
+  // Where the notification originated (e.g. "reminders", "data-hub", "coach").
+  // Used for delivery/error logging without sensitive content.
+  source?: string;
+  // Which role the recipient holds for this notification (entitlement guard).
+  audience?: NotificationAudience;
+  // Validity: after this moment the notification is no longer shown/delivered.
+  expiresAt?: Date | null;
+  // Resolution key: when the underlying situation is fixed, all open rows with
+  // this key are resolved (they disappear). E.g. "sync:<connectionId>".
+  resolutionKey?: string | null;
+  // Hard idempotency key (partial unique index) — preferred dedupe mechanism:
+  // the same event never creates a second row, read or unread.
+  dedupeKey?: string | null;
+  // Legacy soft-dedupe: skip when an unread row with the same (type, body)
+  // exists. Kept for existing producers; new producers should use dedupeKey.
   dedupeWithin?: { type: NotificationType; matchBody: string };
 };
 
@@ -43,18 +104,80 @@ export async function createNotification(
       if (existing) return;
     }
 
-    await db.insert(notificationsTable).values({
-      clerkId: input.clerkId,
-      athleteClerkId: input.athleteClerkId ?? null,
-      type: input.type,
-      title: input.title,
-      body: input.body ?? null,
-      priority: input.priority ?? "normal",
-      actionUrl: input.actionUrl ?? null,
-    });
+    // An unresolved open row for the same situation (resolutionKey) must not be
+    // duplicated either — one situation, one notification.
+    if (input.resolutionKey) {
+      const [open] = await db
+        .select({ id: notificationsTable.id })
+        .from(notificationsTable)
+        .where(
+          and(
+            eq(notificationsTable.clerkId, input.clerkId),
+            eq(notificationsTable.resolutionKey, input.resolutionKey),
+            isNull(notificationsTable.resolvedAt),
+          ),
+        )
+        .limit(1);
+      if (open) return;
+    }
+
+    await db
+      .insert(notificationsTable)
+      .values({
+        clerkId: input.clerkId,
+        athleteClerkId: input.athleteClerkId ?? null,
+        type: input.type,
+        title: input.title,
+        body: input.body ?? null,
+        priority: input.priority ?? "normal",
+        actionUrl: input.actionUrl ?? null,
+        category: input.category ?? TYPE_CATEGORY[input.type] ?? "systeem",
+        source: input.source ?? null,
+        audience: input.audience ?? "athlete",
+        expiresAt: input.expiresAt ?? null,
+        resolutionKey: input.resolutionKey ?? null,
+        dedupeKey: input.dedupeKey ?? null,
+      })
+      .onConflictDoNothing();
   } catch {
     // Notifications are best-effort: never let a failure here break the caller.
   }
+}
+
+// Resolve every open notification for a situation that is now fixed (sync
+// restored, consent granted, material action done, workout changed, …). The
+// rows stay for history but disappear from the bell and unread counts.
+export async function resolveNotifications(
+  clerkId: string,
+  resolutionKey: string,
+): Promise<void> {
+  try {
+    const now = new Date();
+    await db
+      .update(notificationsTable)
+      .set({ resolvedAt: now })
+      .where(
+        and(
+          eq(notificationsTable.clerkId, clerkId),
+          eq(notificationsTable.resolutionKey, resolutionKey),
+          isNull(notificationsTable.resolvedAt),
+        ),
+      );
+  } catch {
+    // Best-effort, same contract as createNotification.
+  }
+}
+
+// Read-path hygiene: only active notifications are shown or counted — not
+// expired (validity window) and not resolved (situation fixed).
+export function activeNotificationFilter(now: Date = new Date()): SQL {
+  return and(
+    isNull(notificationsTable.resolvedAt),
+    or(
+      isNull(notificationsTable.expiresAt),
+      gt(notificationsTable.expiresAt, now),
+    ),
+  )!;
 }
 
 export async function getUnreadCount(clerkId: string): Promise<number> {
@@ -65,6 +188,7 @@ export async function getUnreadCount(clerkId: string): Promise<number> {
       and(
         eq(notificationsTable.clerkId, clerkId),
         isNull(notificationsTable.readAt),
+        activeNotificationFilter(),
       ),
     );
   return row?.count ?? 0;
@@ -84,6 +208,7 @@ export async function getUnreadDayCount(clerkId: string): Promise<number> {
       and(
         eq(notificationsTable.clerkId, clerkId),
         isNull(notificationsTable.readAt),
+        activeNotificationFilter(),
       ),
     );
   return row?.count ?? 0;

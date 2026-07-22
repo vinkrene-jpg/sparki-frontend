@@ -41,8 +41,31 @@ export const notificationTypes = [
   "parent_report",
   "consent_required",
   "access_changed",
+  // Golf 24: centrale meldingslaag — synchronisatiefout (verdwijnt bij herstel),
+  // en kritieke privacy/veiligheidsmeldingen (nooit volledig uitschakelbaar).
+  "sync_error",
+  "security_alert",
 ] as const;
 export type NotificationType = (typeof notificationTypes)[number];
+
+// Golf 24: iedere melding hoort bij één categorie. Voorkeuren en stille uren
+// werken per categorie; `veiligheid` en `privacy` zijn kritiek en kunnen nooit
+// volledig worden uitgeschakeld (wel terughoudend geleverd).
+export const notificationCategories = [
+  "training",
+  "wedstrijd",
+  "herstel",
+  "coach",
+  "club",
+  "ouder",
+  "materiaal",
+  "sync",
+  "privacy",
+  "veiligheid",
+  "sociaal",
+  "systeem",
+] as const;
+export type NotificationCategory = (typeof notificationCategories)[number];
 
 export const notificationPriorities = ["low", "normal", "high"] as const;
 export type NotificationPriority = (typeof notificationPriorities)[number];
@@ -71,6 +94,26 @@ export const notificationsTable = pgTable(
     // When the out-of-app delivery (email) actually went out. NULL = not yet
     // delivered (in-app only, or pending/failed email — the job retries).
     sentAt: timestamp("sent_at", { withTimezone: true }),
+    // ── Golf 24: centrale meldingscontract (additief) ────────────────────────
+    // Categorie (zie notificationCategories); NULL op oude rijen = afgeleid van
+    // `type` op het leespad. Voorkeuren/stille uren werken per categorie.
+    category: text("category"),
+    // Waar de melding vandaan komt (bijv. "reminders", "data-hub", "coach",
+    // "club", "materiaal") — voor logging/diagnose zonder gevoelige inhoud.
+    source: text("source"),
+    // Doelgroep-rol van de ontvanger op moment van aanmaken: athlete/coach/
+    // parent/club. Bewaakt dat een melding alleen binnen de eigen bevoegdheid
+    // wordt getoond, ook als rollen later wijzigen.
+    audience: text("audience"),
+    // Geldigheidsperiode: na dit moment wordt de melding niet meer getoond of
+    // geleverd (verlopen ≠ verwijderd; de rij blijft voor historie).
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    // Opgelost: de onderliggende situatie is voorbij (sync hersteld, toestemming
+    // gegeven, materiaal-actie afgerond, …). Opgeloste meldingen verdwijnen.
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    // Sleutel waarop een oplossing meldingen wegneemt, bijv.
+    // "sync:<connectionId>" of "consent:<linkId>". NULL = niet oplosbaar.
+    resolutionKey: text("resolution_key"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -80,6 +123,12 @@ export const notificationsTable = pgTable(
     uniqueIndex("notif_clerk_dedupe_idx")
       .on(t.clerkId, t.dedupeKey)
       .where(sql`${t.dedupeKey} IS NOT NULL`),
+    // Eén open situatie ⇒ één melding, ook onder gelijktijdige schrijvers: de
+    // read-then-insert in createNotification is best-effort; deze partiële
+    // unieke index is de harde garantie (opgeloste rijen tellen niet mee).
+    uniqueIndex("notif_clerk_open_resolution_idx")
+      .on(t.clerkId, t.resolutionKey)
+      .where(sql`${t.resolutionKey} IS NOT NULL AND ${t.resolvedAt} IS NULL`),
   ],
 );
 

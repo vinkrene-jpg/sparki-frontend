@@ -6,6 +6,7 @@ import {
   athleteProfilesTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { resolveNotifications } from "../lib/notifications";
 import {
   MATERIAL_CATEGORIES,
   getCategory,
@@ -168,6 +169,10 @@ router.post("/analyze", requireAuth, async (req, res) => {
         costEstimate: result.costEstimate,
       })
       .returning();
+
+    // Golf 24: een geregistreerde controle van dit onderdeel lost de open
+    // materiaal-melding op — de melding verdwijnt uit de bel.
+    await resolveNotifications(clerkId, `materiaal:${category.key}`);
 
     res.json({ analysis: row });
   } catch (err) {

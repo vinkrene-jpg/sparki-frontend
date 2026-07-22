@@ -17,7 +17,10 @@ import {
   sanitizePermissions,
   PARENT_CATEGORY_LABELS,
 } from "../engines/coaching";
-import { createNotification } from "../lib/notifications";
+import {
+  createNotification,
+  resolveNotifications,
+} from "../lib/notifications";
 
 const router = Router();
 
@@ -282,6 +285,9 @@ router.put(
         body: "De sporter heeft aangepast welke gegevens met jou gedeeld worden.",
         athleteClerkId: me,
         actionUrl: "/",
+        source: "koppelingen",
+        audience: "parent",
+        expiresAt: new Date(Date.now() + 14 * 86_400_000),
       });
       res.json({ ok: true });
     } catch (err) {
@@ -330,6 +336,8 @@ router.post(
         meta: { soort: "herbevestiging", parentClerkId: parentId, tier },
         req,
       });
+      // Golf 24: de herbevestiging is gedaan — de open melding verdwijnt.
+      await resolveNotifications(me, `herbevestiging:${me}`);
       res.json({ ok: true, tier });
     } catch (err) {
       req.log.error({ err }, "links.parent-reconfirm failed");
