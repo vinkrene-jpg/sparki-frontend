@@ -63,8 +63,7 @@ function drawShareImage(session: TrainingSession): HTMLCanvasElement {
   }
   if (session.elevationM != null) stats.push([`${session.elevationM}`, "hoogtemeters"])
   if (session.avgPower != null) stats.push([`${session.avgPower}`, "W gem."])
-  if (session.avgSpeedKph != null && session.avgSpeedKph !== "")
-    stats.push([`${session.avgSpeedKph}`, "km/u gem."])
+  if (session.avgHR != null) stats.push([`${session.avgHR}`, "bpm gem."])
 
   let sy = 520
   for (const [value, unit] of stats.slice(0, 5)) {

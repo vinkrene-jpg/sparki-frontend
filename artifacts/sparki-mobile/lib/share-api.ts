@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { customFetch } from "@workspace/api-client-react";
+import { ApiError, customFetch } from "@workspace/api-client-react";
 
 // Deeltekst + mogelijkheden voor één rit, uit dezelfde backend als het web.
 // De tekst is opgebouwd uit uitsluitend echte ritwaarden.
@@ -20,32 +20,35 @@ export type ShareInfo = {
 export function useShareInfo(sessionId: number | null, enabled: boolean) {
   return useQuery({
     queryKey: ["share", "session", sessionId],
-    queryFn: async () => {
-      const res = await customFetch(`/api/share/session/${sessionId}`);
-      if (!res.ok) throw new Error("Deeltekst kon niet worden opgesteld");
-      return (await res.json()) as ShareInfo;
-    },
+    queryFn: () =>
+      customFetch<ShareInfo>(`/api/share/session/${sessionId}`, {
+        responseType: "json",
+      }),
     enabled: enabled && sessionId != null,
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
 }
 
+// Eerlijke foutmelding uit de backend halen (die stuurt plain-Dutch `error`).
+export function shareErrorMessage(err: unknown): string {
+  if (err instanceof ApiError) {
+    const data = err.data as { error?: unknown } | null;
+    if (data && typeof data.error === "string") return data.error;
+  }
+  return "Uploaden naar Strava is niet gelukt.";
+}
+
 export function useShareToStrava() {
   return useMutation({
-    mutationFn: async (input: { sessionId: number; description: string | null }) => {
-      const res = await customFetch(`/api/share/session/${input.sessionId}/strava`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: input.description }),
-      });
-      const data = (await res.json().catch(() => null)) as
-        | { ok?: boolean; url?: string; error?: string }
-        | null;
-      if (!res.ok || !data?.ok || typeof data.url !== "string") {
-        throw new Error(data?.error ?? "Uploaden naar Strava is niet gelukt");
-      }
-      return { url: data.url };
-    },
+    mutationFn: (input: { sessionId: number; description: string | null }) =>
+      customFetch<{ ok: boolean; url: string }>(
+        `/api/share/session/${input.sessionId}/strava`,
+        {
+          method: "POST",
+          responseType: "json",
+          body: JSON.stringify({ description: input.description }),
+        },
+      ),
   });
 }

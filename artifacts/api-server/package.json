@@ -69,6 +69,7 @@
     "test:ride-story": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs ride-story",
     "test:sprint": "node ./scripts/run-test.mjs sprint",
     "test:mental": "node ./scripts/run-test.mjs mental",
+    "test:share-honesty": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs share-honesty",
     "test:garage": "node ./scripts/run-test.mjs garage",
     "job:health": "pnpm run build && node --enable-source-maps ./dist/jobs/health-check.mjs",
     "job:reminders": "pnpm run build && node --enable-source-maps ./dist/jobs/reminders.mjs",

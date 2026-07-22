@@ -64,7 +64,9 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
+    "expo-sharing": "~14.0.8",
     "expo-task-manager": "~14.0.9",
-    "react-native-ble-plx": "^3.5.1"
+    "react-native-ble-plx": "^3.5.1",
+    "react-native-view-shot": "4.0.3"
   }
 }

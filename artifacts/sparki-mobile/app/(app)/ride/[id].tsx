@@ -1,11 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import * as Sharing from "expo-sharing";
+import React, { useMemo, useRef, useState } from "react";
+import { captureRef } from "react-native-view-shot";
 import {
   ActivityIndicator,
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -19,6 +22,7 @@ import type { LatLon } from "@/lib/geo";
 import { hasMapbox } from "@/lib/mapbox";
 import { useSaveRideAsRoute } from "@/lib/routes-api";
 import { useSession } from "@/lib/sessions-api";
+import { shareErrorMessage, useShareInfo, useShareToStrava } from "@/lib/share-api";
 
 const SOURCE_LABEL: Record<string, string> = {
   file: "Opgenomen rit",
@@ -113,6 +117,52 @@ export default function RideDetailScreen() {
   const saveAsRoute = useSaveRideAsRoute();
   const [savedRouteName, setSavedRouteName] = useState<string | null>(null);
   const canSaveAsRoute = hasTrack && importId != null;
+
+  // Delen — deeltekst met echte waarden via het officiële deelmenu van het
+  // toestel, plus (indien toegestaan) uploaden naar het eigen Strava-account.
+  const share = useShareInfo(session?.id ?? null, session != null);
+  const stravaUpload = useShareToStrava();
+  const [shareBusy, setShareBusy] = useState(false);
+  const [imageBusy, setImageBusy] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const statsCardRef = useRef<View>(null);
+
+  const onShare = async () => {
+    if (!share.data || shareBusy) return;
+    setShareBusy(true);
+    try {
+      await Share.share({ message: share.data.text });
+    } catch {
+      // Annuleren of deelmenu-fout — geen actie nodig.
+    } finally {
+      setShareBusy(false);
+    }
+  };
+
+  // Deel de statistiekkaart (echte waarden) als afbeelding via het officiële
+  // deelmenu. De kaart in beeld wordt vastgelegd — niets wordt bijgetekend.
+  const onShareImage = async () => {
+    if (imageBusy || Platform.OS === "web") return;
+    setImageBusy(true);
+    setImageError(null);
+    try {
+      const available = await Sharing.isAvailableAsync();
+      if (!available) {
+        setImageError("Delen van bestanden wordt op dit toestel niet ondersteund.");
+        return;
+      }
+      const uri = await captureRef(statsCardRef, {
+        format: "png",
+        quality: 1,
+        result: "tmpfile",
+      });
+      await Sharing.shareAsync(uri, { mimeType: "image/png" });
+    } catch {
+      setImageError("Afbeelding delen is niet gelukt.");
+    } finally {
+      setImageBusy(false);
+    }
+  };
 
   const onSaveAsRoute = () => {
     if (importId == null || saveAsRoute.isPending || savedRouteName) return;
@@ -296,6 +346,191 @@ export default function RideDetailScreen() {
                 ) : null}
               </View>
             )
+          ) : null}
+
+          {/* ---------- Delen: deelmenu + officiële Strava-upload ---------- */}
+          {share.isLoading ? (
+            <View
+              style={[
+                styles.card,
+                { backgroundColor: c.card, borderColor: c.border, borderRadius: c.radius },
+              ]}
+            >
+              <Text style={[styles.cardTitle, { color: c.foreground }]}>
+                Deel deze rit
+              </Text>
+              <View style={[styles.shareRow]}>
+                <ActivityIndicator color={c.primary} />
+                <Text style={[styles.shareNote, { color: c.mutedForeground }]}>
+                  Deeltekst wordt opgesteld…
+                </Text>
+              </View>
+            </View>
+          ) : share.isError ? (
+            <View
+              style={[
+                styles.card,
+                { backgroundColor: c.card, borderColor: c.border, borderRadius: c.radius },
+              ]}
+            >
+              <Text style={[styles.cardTitle, { color: c.foreground }]}>
+                Deel deze rit
+              </Text>
+              <Text style={[styles.shareNote, { color: c.mutedForeground, marginTop: 6 }]}>
+                De deeltekst kon nu niet worden opgesteld.
+              </Text>
+              <Pressable
+                onPress={() => share.refetch()}
+                style={[
+                  styles.stravaBtn,
+                  { borderColor: c.border, borderRadius: c.radius },
+                ]}
+              >
+                <Ionicons name="refresh-outline" size={16} color={c.primary} />
+                <Text style={{ color: c.primary, fontFamily: "Inter_600SemiBold", fontSize: 13 }}>
+                  Opnieuw proberen
+                </Text>
+              </Pressable>
+            </View>
+          ) : share.data ? (
+            <View
+              style={[
+                styles.card,
+                { backgroundColor: c.card, borderColor: c.border, borderRadius: c.radius },
+              ]}
+            >
+              <Text style={[styles.cardTitle, { color: c.foreground }]}>
+                Deel deze rit
+              </Text>
+
+              {/* Statistiekkaart met echte waarden — dit blok wordt als
+                  afbeelding vastgelegd bij "Deel afbeelding". */}
+              <View
+                ref={statsCardRef}
+                collapsable={false}
+                style={[styles.shareStatsCard, { borderRadius: c.radius }]}
+              >
+                <Text style={styles.shareStatsDate}>
+                  {fmtDate(session.sessionDate).toUpperCase()}
+                </Text>
+                <Text style={styles.shareStatsTitle} numberOfLines={2}>
+                  {session.title?.trim() || "Rit"}
+                </Text>
+                <View style={styles.shareStatsRow}>
+                  {metrics.slice(0, 4).map((m) => (
+                    <View key={m.label} style={{ minWidth: "40%" }}>
+                      <Text style={styles.shareStatsValue}>{m.value}</Text>
+                      <Text style={styles.shareStatsLabel}>{m.label}</Text>
+                    </View>
+                  ))}
+                </View>
+                <Text style={styles.shareStatsBrand}>SPARKI</Text>
+              </View>
+
+              <Text style={[styles.shareText, { color: c.mutedForeground }]}>
+                {share.data.text}
+              </Text>
+              <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
+                <Pressable
+                  onPress={onShare}
+                  disabled={shareBusy}
+                  style={[
+                    styles.saveBtn,
+                    {
+                      flex: 1,
+                      backgroundColor: c.primary,
+                      borderRadius: c.radius,
+                      opacity: shareBusy ? 0.6 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons name="share-outline" size={18} color={c.primaryForeground} />
+                  <Text style={[styles.saveBtnText, { color: c.primaryForeground }]}>
+                    Delen…
+                  </Text>
+                </Pressable>
+                {Platform.OS !== "web" ? (
+                  <Pressable
+                    onPress={onShareImage}
+                    disabled={imageBusy}
+                    style={[
+                      styles.saveBtn,
+                      {
+                        flex: 1,
+                        borderWidth: 1,
+                        borderColor: c.border,
+                        backgroundColor: c.card,
+                        borderRadius: c.radius,
+                        opacity: imageBusy ? 0.6 : 1,
+                      },
+                    ]}
+                  >
+                    {imageBusy ? (
+                      <ActivityIndicator color={c.primary} />
+                    ) : (
+                      <Ionicons name="image-outline" size={18} color={c.primary} />
+                    )}
+                    <Text style={[styles.saveBtnText, { color: c.primary }]}>
+                      Deel afbeelding
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+              {imageError ? (
+                <Text style={[styles.saveError, { color: c.destructive, marginTop: 8 }]}>
+                  {imageError}
+                </Text>
+              ) : null}
+              {share.data.capabilities.strava.canUpload ? (
+                stravaUpload.isSuccess ? (
+                  <View style={[styles.shareRow]}>
+                    <Ionicons name="checkmark-circle" size={16} color={c.primary} />
+                    <Text style={[styles.shareNote, { color: c.foreground }]}>
+                      Staat op Strava.
+                    </Text>
+                  </View>
+                ) : (
+                  <Pressable
+                    onPress={() =>
+                      !stravaUpload.isPending &&
+                      stravaUpload.mutate({
+                        sessionId: session.id,
+                        description: share.data.text,
+                      })
+                    }
+                    style={[
+                      styles.stravaBtn,
+                      {
+                        borderColor: c.border,
+                        borderRadius: c.radius,
+                        opacity: stravaUpload.isPending ? 0.6 : 1,
+                      },
+                    ]}
+                  >
+                    {stravaUpload.isPending ? (
+                      <ActivityIndicator color={c.primary} />
+                    ) : (
+                      <Ionicons name="cloud-upload-outline" size={16} color={c.primary} />
+                    )}
+                    <Text style={{ color: c.primary, fontFamily: "Inter_600SemiBold", fontSize: 13 }}>
+                      {stravaUpload.isPending ? "Bezig met uploaden…" : "Zet op Strava"}
+                    </Text>
+                  </Pressable>
+                )
+              ) : share.data.capabilities.strava.reason ? (
+                <Text style={[styles.shareNote, { color: c.mutedForeground, marginTop: 10 }]}>
+                  {share.data.capabilities.strava.reason}
+                </Text>
+              ) : null}
+              {stravaUpload.isError ? (
+                <Text style={[styles.saveError, { color: c.destructive, marginTop: 8 }]}>
+                  {shareErrorMessage(stravaUpload.error)}
+                </Text>
+              ) : null}
+              <Text style={[styles.shareNote, { color: c.mutedForeground, marginTop: 10 }]}>
+                {share.data.capabilities.platformNote}
+              </Text>
+            </View>
           ) : null}
 
           {/* ---------- Elevation profile: only when a real one was stored ---------- */}
@@ -517,6 +752,60 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     fontSize: 13,
     lineHeight: 19,
+  },
+  shareText: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19, marginTop: 6 },
+  shareStatsCard: {
+    backgroundColor: "#05070e",
+    padding: 18,
+    marginTop: 10,
+    gap: 4,
+  },
+  shareStatsDate: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 10,
+    letterSpacing: 2,
+    color: "rgba(125,227,244,0.75)",
+  },
+  shareStatsTitle: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 22,
+    color: "rgba(255,255,255,0.95)",
+    marginTop: 2,
+  },
+  shareStatsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 14,
+    marginTop: 12,
+  },
+  shareStatsValue: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 18,
+    color: "rgba(255,255,255,0.92)",
+  },
+  shareStatsLabel: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 11,
+    color: "rgba(255,255,255,0.45)",
+    marginTop: 1,
+  },
+  shareStatsBrand: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+    letterSpacing: 3,
+    color: "rgba(125,227,244,0.9)",
+    marginTop: 14,
+  },
+  shareNote: { fontFamily: "Inter_400Regular", fontSize: 12, lineHeight: 17 },
+  shareRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10 },
+  stravaBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderWidth: 1,
+    paddingVertical: 10,
+    marginTop: 10,
   },
   saveError: {
     fontFamily: "Inter_400Regular",
