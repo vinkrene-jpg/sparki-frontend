@@ -25,6 +25,7 @@ import { useAdminBugReports } from "@/hooks/use-bug-reports";
 import { FeedbackInbox } from "@/components/sparki/feedback-inbox";
 import { ReleaseAdminSection } from "@/components/sparki/release-admin";
 import { KennisbankAdminSection } from "@/components/sparki/knowledge-admin";
+import { SupportAdminSection } from "@/components/sparki/support-admin";
 import {
   STATUS_META,
   CATEGORY_LABEL,
@@ -767,6 +768,8 @@ export default function AdminPage() {
                 </>
               )}
             </section>
+
+            <SupportAdminSection />
 
             <ReleaseAdminSection />
 

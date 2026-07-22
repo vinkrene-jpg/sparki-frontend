@@ -49,6 +49,7 @@ import StartPage from "@/pages/start";
 import ClubPage from "@/pages/club";
 import ClubBeheerPage from "@/pages/club-beheer";
 import PaspoortPage from "@/pages/paspoort";
+import SupportPage from "@/pages/support";
 import { apiFetch } from "@/lib/api";
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
@@ -504,6 +505,9 @@ function AppRouter() {
                 </Route>
                 <Route path="/paspoort">
                   <ProtectedPage component={PaspoortPage} />
+                </Route>
+                <Route path="/support">
+                  <ProtectedPage component={SupportPage} />
                 </Route>
                 <Route path="/train">
                   <ProtectedPage component={TrainPage} />

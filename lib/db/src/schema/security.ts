@@ -50,6 +50,11 @@ export const securityEventKinds = [
   "user_unblocked",
   "content_reported",
   "moderation_action",
+  // Golf 27 — AI-helpdesk & supportautomatisering (beheeracties).
+  "support_ticket_changed",
+  "support_reply_sent",
+  "support_known_issue_changed",
+  "support_article_published",
 ] as const;
 export type SecurityEventKind = (typeof securityEventKinds)[number];
 

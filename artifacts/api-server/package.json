@@ -87,6 +87,7 @@
     "test:sprint": "node ./scripts/run-test.mjs sprint",
     "test:mental": "node ./scripts/run-test.mjs mental",
     "test:health-flow": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs health-flow",
+    "test:support-helpdesk": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs support-helpdesk",
     "test:share-honesty": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs share-honesty",
     "test:garage": "node ./scripts/run-test.mjs garage",
     "test:mechanieker": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs mechanieker",

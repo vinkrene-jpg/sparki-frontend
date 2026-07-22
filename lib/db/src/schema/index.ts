@@ -46,6 +46,7 @@ export * from "./road-objects";
 export * from "./security";
 export * from "./journey";
 export * from "./coach-cockpit";
+export * from "./support";
 export * from "./club";
 export * from "./release";
 export * from "./route-shares";

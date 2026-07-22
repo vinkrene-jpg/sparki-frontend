@@ -54,6 +54,13 @@ export default function RouteListScreen() {
           <Text style={[styles.title, { color: c.foreground }]}>Kies je route</Text>
         </View>
         <Pressable
+          onPress={() => router.push("/support" as Href)}
+          hitSlop={12}
+          style={[styles.iconBtn, { borderColor: c.border, backgroundColor: c.card, marginRight: 8 }]}
+        >
+          <Ionicons name="help-buoy-outline" size={20} color={c.mutedForeground} />
+        </Pressable>
+        <Pressable
           onPress={() => signOut()}
           hitSlop={12}
           style={[styles.iconBtn, { borderColor: c.border, backgroundColor: c.card }]}

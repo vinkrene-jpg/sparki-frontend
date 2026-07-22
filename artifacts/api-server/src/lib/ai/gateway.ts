@@ -84,6 +84,18 @@ export const AI_PURPOSES = {
     timeoutMs: 60_000,
     maxRetries: 1,
   },
+  helpdesk: {
+    label: "Helpdesk-antwoord (verwoording uit beheerde bronnen)",
+    provider: "anthropic",
+    model: MODEL,
+    promptVersion: "helpdesk-v1",
+    inputCategories: ["vraagtekst", "kennisbronnen", "supportstatus"],
+    consent: "explicit_action",
+    sensitive: false,
+    minorBlocked: false,
+    timeoutMs: 45_000,
+    maxRetries: 1,
+  },
   workout_explain: {
     label: "Trainingsuitleg (kort)",
     provider: "anthropic",

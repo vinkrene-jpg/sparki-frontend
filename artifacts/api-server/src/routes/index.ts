@@ -23,6 +23,7 @@ import activityImportsRouter from "./activity-imports";
 import routesRouter from "./routes";
 import trainingPlanRouter from "./training-plan";
 import bugReportsRouter from "./bug-reports";
+import supportRouter from "./support";
 import knowledgeRouter from "./knowledge";
 import knowledgeAdminRouter from "./knowledge-admin";
 import intelRouter from "./intel";
@@ -114,6 +115,7 @@ router.use(
 router.use("/routes", routesRouter);
 router.use("/training-plan", trainingPlanRouter);
 router.use("/bug-reports", bugReportsRouter);
+router.use("/support", supportRouter);
 router.use("/knowledge", knowledgeRouter);
 router.use("/knowledge-beheer", knowledgeAdminRouter);
 router.use("/intel", intelRouter);
