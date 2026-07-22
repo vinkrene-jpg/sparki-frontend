@@ -21,6 +21,8 @@ import nutritionRouter from "./nutrition";
 import notificationsRouter from "./notifications";
 import activityImportsRouter from "./activity-imports";
 import routesRouter from "./routes";
+import routeProposalsRouter from "./route-proposals";
+import navSettingsRouter from "./nav-settings";
 import trainingPlanRouter from "./training-plan";
 import bugReportsRouter from "./bug-reports";
 import supportRouter from "./support";
@@ -112,7 +114,9 @@ router.use(
   },
   activityImportsRouter,
 );
+router.use("/routes", routeProposalsRouter);
 router.use("/routes", routesRouter);
+router.use("/nav-settings", navSettingsRouter);
 router.use("/training-plan", trainingPlanRouter);
 router.use("/bug-reports", bugReportsRouter);
 router.use("/support", supportRouter);

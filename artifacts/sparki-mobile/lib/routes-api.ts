@@ -174,6 +174,32 @@ export function useSaveRideAsRoute() {
   });
 }
 
+/**
+ * Importeer een GPX-bestand als route. Post de rauwe bestandsinhoud naar
+ * hetzelfde POST /api/routes-eindpunt dat de webapp gebruikt: de server parse't
+ * de GPX, berekent afstand/hoogte en ontdubbelt op inhoud. Serverfouten (bv.
+ * een bestand zonder track) komen als eerlijke Nederlandse meldingen van de
+ * backend terug en worden onveranderd getoond.
+ */
+export function useImportGpx() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { content: string; name?: string }) =>
+      customFetch<{ route: RouteSummary }>("/api/routes", {
+        method: "POST",
+        responseType: "json",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          content: input.content,
+          ...(input.name ? { name: input.name } : {}),
+        }),
+      }).then((r) => r.route),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["routes"] });
+    },
+  });
+}
+
 // Shape returned by the shared activity-imports ingest endpoint.
 export type ActivityImportResult = {
   import: { id: number; status: string };

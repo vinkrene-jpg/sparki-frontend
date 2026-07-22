@@ -50,6 +50,8 @@ export * from "./support";
 export * from "./club";
 export * from "./release";
 export * from "./route-shares";
+export * from "./route-proposals";
+export * from "./nav-settings";
 export * from "./passport";
 export * from "./ai-gateway";
 export * from "./health";

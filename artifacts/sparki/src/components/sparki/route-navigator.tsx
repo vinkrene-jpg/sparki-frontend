@@ -45,6 +45,7 @@ import {
   type SprintBoard,
 } from "@/hooks/use-sprints"
 import { usePowerMeter } from "@/hooks/use-power-meter"
+import { useNavSettings, type NavDataField } from "@/hooks/use-nav-settings"
 import { useFriends } from "@/hooks/use-social"
 import { useGarage } from "@/hooks/use-garage"
 import { SENSOR_KIND_LABEL } from "@/components/sparki/wireless-sensors"
@@ -307,6 +308,7 @@ export function RouteNavigator({
   ftp = null,
   onEditRoute = null,
   rideOptions = null,
+  rideOptionsExplicit = false,
   climbs = null,
   elevationProfile = null,
 }: {
@@ -335,6 +337,10 @@ export function RouteNavigator({
   // Vooraf gekozen rit-opties (uit het keuzemenu vóór de start). Zonder menu
   // (deep-link) vallen we terug op de laatst bewaarde keuze of de URL.
   rideOptions?: RideOptions | null
+  // Alleen true wanneer de renner ZELF het startmenu heeft doorlopen; bij een
+  // fallback (laatst bewaarde keuze/deep-link) mogen de opgeslagen
+  // navigatie-instellingen de standaard invullen.
+  rideOptionsExplicit?: boolean
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
@@ -366,6 +372,21 @@ export function RouteNavigator({
   const [rotDeg, setRotDeg] = useState(0)
   // Plekken (bezienswaardigheden, café's) aan/uit op de kaart.
   const [showPois, setShowPois] = useState(rideOptions?.pois ?? true)
+  // Persistente navigatie-instellingen (/routes → Navigatie-instellingen).
+  // Expliciete keuzes uit het startmenu (rideOptions) winnen altijd; de
+  // opgeslagen instellingen vullen alleen de standaard in.
+  const { data: navSettingsData } = useNavSettings()
+  const navSettings = navSettingsData?.settings ?? null
+  const navSettingsAppliedRef = useRef(false)
+  useEffect(() => {
+    if (!navSettings || navSettingsAppliedRef.current) return
+    navSettingsAppliedRef.current = true
+    if (!rideOptionsExplicit) {
+      setHeadingUp(navSettings.headingUp)
+      setShowPois(navSettings.autoPois)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navSettings])
   // Echte actuele wind (Open-Meteo) op je positie — subtiel getoond, nooit
   // verzonnen: blijft weg zolang er geen echte meting is.
   const [wind, setWind] = useState<{ kmh: number; dirDeg: number } | null>(null)
@@ -1960,6 +1981,46 @@ export function RouteNavigator({
     }
   }
 
+  // Persistente datavelden-keuze toepassen: alleen velden waarvoor hier een
+  // echte live-waarde bestaat worden getoond (eerlijk — geen lege beloftes),
+  // begrensd op het gekozen maximum. Zonder opgeslagen keuze: alles zoals nu.
+  const FIELD_TO_METRIC: Partial<Record<NavDataField, string>> = {
+    snelheid: "Snelheid",
+    gemiddelde: "Gem.",
+    afstand: "Totaal",
+    resterend: "Resterend",
+    tijd: "Rijtijd",
+    bewegingstijd: "Rijtijd",
+    vermogen: "Vermogen",
+    cadans: "Cadans",
+  }
+  let visibleMetrics = metrics
+  if (navSettings) {
+    const seen = new Set<string>()
+    const picked = navSettings.dataFields
+      .map((f) => FIELD_TO_METRIC[f])
+      .filter((l): l is string => !!l && !seen.has(l) && (seen.add(l), true))
+      .map((l) => metrics.find((m) => m.label === l))
+      .filter((m): m is (typeof metrics)[number] => !!m)
+      .slice(0, navSettings.maxFields)
+    if (picked.length > 0) visibleMetrics = picked
+  }
+  const metricSize = navSettings?.fontSize ?? "normaal"
+  const metricsBar = (
+    <div className="pointer-events-auto grid grid-cols-5 gap-x-1.5 gap-y-2 rounded-2xl border border-white/10 bg-[#070d16]/92 px-3 py-2 backdrop-blur-md">
+      {visibleMetrics.map((m) => (
+        <Metric
+          key={m.label}
+          label={m.label}
+          value={m.value}
+          unit={m.unit}
+          size={metricSize}
+        />
+      ))}
+    </div>
+  )
+  const metricsOnTop = navSettings?.barPosition === "boven"
+
   // Ridden distance so far (km) — gates the "bewaar gereden rit" option so we
   // never offer to save a track that is too short to be a real route.
   function riddenKm(): number {
@@ -2105,6 +2166,7 @@ export function RouteNavigator({
 
       {/* Top bar: close + next instruction */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2 p-3">
+        {metricsOnTop && metricsBar}
         <div className="pointer-events-auto flex items-center gap-2">
           <button
             type="button"
@@ -3108,11 +3170,7 @@ export function RouteNavigator({
           />
         </div>
 
-        <div className="pointer-events-auto grid grid-cols-5 gap-x-1.5 gap-y-2 rounded-2xl border border-white/10 bg-[#070d16]/92 px-3 py-2 backdrop-blur-md">
-          {metrics.map((m) => (
-            <Metric key={m.label} label={m.label} value={m.value} unit={m.unit} />
-          ))}
-        </div>
+        {!metricsOnTop && metricsBar}
 
         {showSteps && nav.length > 0 && (
           <div className="pointer-events-auto max-h-[38vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#070d16]/95 p-2 backdrop-blur-md">
@@ -3424,14 +3482,18 @@ function Metric({
   label,
   value,
   unit,
+  size = "normaal",
 }: {
   label: string
   value: string
   unit?: string
+  size?: "klein" | "normaal" | "groot"
 }) {
+  const valueSize =
+    size === "klein" ? "text-[14px]" : size === "groot" ? "text-[22px]" : "text-[17px]"
   return (
     <div className="flex flex-col items-center">
-      <span className="font-mono text-[17px] font-semibold tabular-nums leading-tight text-white/95">
+      <span className={`font-mono ${valueSize} font-semibold tabular-nums leading-tight text-white/95`}>
         {value}
         {unit && (
           <span className="ml-0.5 text-[9px] font-normal text-white/45">

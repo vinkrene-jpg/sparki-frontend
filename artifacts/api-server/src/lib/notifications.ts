@@ -33,6 +33,7 @@ export const TYPE_CATEGORY: Record<NotificationType, NotificationCategory> = {
   something_new: "sociaal",
   club_update: "club",
   world_update: "sociaal",
+  route_proposal: "sociaal",
   parent_report: "ouder",
   consent_required: "ouder",
   access_changed: "privacy",

@@ -48,6 +48,11 @@ import {
   useConnectDevice,
   useSendRouteToDevice,
 } from "@/hooks/use-device-sync"
+import {
+  useRouteProposals,
+  useProposeRoute,
+  useRespondToProposal,
+} from "@/hooks/use-route-proposals"
 
 // Editable list of named meeting points ("verzamelpunten") — e.g. where you
 // pick up a friend. Shared by the interactive builder and the generated-route
@@ -727,6 +732,16 @@ function RouteCard({
   // Het stappenplan kan lang zijn — standaard ingeklapt zodat de acties
   // eronder (navigeren, downloads) direct zichtbaar blijven.
   const [showSteps, setShowSteps] = useState(false)
+  // Delen-menu: bestand naar app, link kopiëren, WhatsApp of een voorstel
+  // aan een fietsmaatje (alleen geaccepteerde vrienden).
+  const [shareOpen, setShareOpen] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
+  const [showFriendPick, setShowFriendPick] = useState(false)
+  const [proposalSent, setProposalSent] = useState(false)
+  const { data: friendsData } = useFriends()
+  const cardFriends = friendsData?.friends ?? []
+  const propose = useProposeRoute()
+  const shareLink = `${window.location.origin}${import.meta.env.BASE_URL}routes?view=bewaard&route=${route.id}`
   const profile = route.profile ?? []
   const climbs = route.climbs ?? []
   const nav = route.nav ?? []
@@ -746,7 +761,10 @@ function RouteCard({
   }
 
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+    <div
+      id={`route-card-${route.id}`}
+      className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1 basis-44">
           <div className="flex min-w-0 items-center gap-2">
@@ -778,31 +796,143 @@ function RouteCard({
           )}
           {canExport && (
             <div className="flex flex-wrap items-center gap-2.5">
-              {canShareRouteFiles() && (
+              <div className="relative">
                 <button
                   type="button"
-                  onClick={() => {
-                    setGpxError(null)
-                    share.mutate(
-                      { id: route.id, name: route.name, format: "gpx" },
-                      {
-                        onError: (e) =>
-                          setGpxError(
-                            e instanceof Error
-                              ? e.message
-                              : "Delen mislukt",
-                          ),
-                      },
-                    )
-                  }}
-                  disabled={share.isPending}
-                  title="Stuur de route met één tik naar je navigatie-app (Garmin Connect, Komoot, Wahoo…)"
-                  className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-cyan-300/80 disabled:opacity-40"
+                  onClick={() => setShareOpen((v) => !v)}
+                  title="Deel deze route — als bestand, link of via WhatsApp"
+                  className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-cyan-300/80"
                 >
                   <Share2 className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  Naar app
+                  Delen
                 </button>
-              )}
+                {shareOpen && (
+                  <div className="absolute right-0 top-7 z-30 w-56 rounded-xl border border-white/[0.12] bg-[#0a1220] p-1.5 shadow-xl shadow-black/50">
+                    {canShareRouteFiles() && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShareOpen(false)
+                          setGpxError(null)
+                          share.mutate(
+                            { id: route.id, name: route.name, format: "gpx" },
+                            {
+                              onError: (e) =>
+                                setGpxError(
+                                  e instanceof Error
+                                    ? e.message
+                                    : "Delen mislukt",
+                                ),
+                            },
+                          )
+                        }}
+                        disabled={share.isPending}
+                        className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-white/[0.06] disabled:opacity-40"
+                      >
+                        Bestand naar app (GPX)
+                        <span className="mt-0.5 block text-[10px] text-white/35">
+                          Garmin Connect, Komoot, Wahoo…
+                        </span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setShareOpen(false)
+                        setGpxError(null)
+                        try {
+                          await navigator.clipboard.writeText(shareLink)
+                          setLinkCopied(true)
+                          window.setTimeout(() => setLinkCopied(false), 2500)
+                        } catch {
+                          setGpxError(
+                            "Kopiëren lukte niet — selecteer en kopieer de link handmatig: " +
+                              shareLink,
+                          )
+                        }
+                      }}
+                      className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-white/[0.06]"
+                    >
+                      {linkCopied ? "Link gekopieerd ✓" : "Link kopiëren"}
+                      <span className="mt-0.5 block text-[10px] text-white/35">
+                        Werkt voor iedereen met een Sparki-account
+                      </span>
+                    </button>
+                    <a
+                      href={`https://wa.me/?text=${encodeURIComponent(
+                        `Fiets je mee? Route "${route.name}"${
+                          route.distanceKm ? ` (${route.distanceKm} km)` : ""
+                        } in Sparki: ${shareLink}`,
+                      )}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => setShareOpen(false)}
+                      className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-white/[0.06]"
+                    >
+                      Via WhatsApp
+                      <span className="mt-0.5 block text-[10px] text-white/35">
+                        Stuur de link naar wie je wilt
+                      </span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setShowFriendPick((v) => !v)}
+                      className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-white/[0.06]"
+                    >
+                      {proposalSent
+                        ? "Voorstel verstuurd ✓"
+                        : "Stel voor aan fietsmaatje"}
+                      <span className="mt-0.5 block text-[10px] text-white/35">
+                        Je maatje kan accepteren, afwijzen of aanpassen
+                      </span>
+                    </button>
+                    {showFriendPick && (
+                      <div className="border-t border-white/[0.08] pt-1">
+                        {cardFriends.length === 0 ? (
+                          <p className="px-3 py-2 text-[11px] text-white/40">
+                            Nog geen fietsmaatjes — voeg eerst iemand toe via
+                            Samen.
+                          </p>
+                        ) : (
+                          cardFriends.map((f) => (
+                            <button
+                              key={f.clerkId}
+                              type="button"
+                              disabled={propose.isPending}
+                              onClick={() => {
+                                setGpxError(null)
+                                propose.mutate(
+                                  { routeId: route.id, toClerkId: f.clerkId },
+                                  {
+                                    onSuccess: () => {
+                                      setProposalSent(true)
+                                      setShowFriendPick(false)
+                                      setShareOpen(false)
+                                      window.setTimeout(
+                                        () => setProposalSent(false),
+                                        3000,
+                                      )
+                                    },
+                                    onError: (e) =>
+                                      setGpxError(
+                                        e instanceof Error
+                                          ? e.message
+                                          : "Voorstel versturen mislukt",
+                                      ),
+                                  },
+                                )
+                              }}
+                              className="block w-full rounded-lg px-3 py-1.5 text-left text-[12px] text-cyan-200/85 transition hover:bg-white/[0.06] disabled:opacity-40"
+                            >
+                              → {f.displayName}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => exportRoute("gpx")}
@@ -988,6 +1118,7 @@ function RouteCard({
             chosenRideOptions ??
             applyFocusRules(loadLastRideOptions(), navWorkout)
           }
+          rideOptionsExplicit={chosenRideOptions != null}
           onClose={() => setNavigating(false)}
           onEditRoute={
             onEditWaypoints
@@ -1115,6 +1246,13 @@ function RouteGenerator({
   // Loop mode: the 3 distance variants (korter/gevraagd/langer) to choose from.
   const [options, setOptions] = useState<RouteCandidate[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Wizard: vier duidelijke stappen, daarna een apart resultaatscherm.
+  // Zodra er een berekende route (of varianten) is, verdwijnen de stappen en
+  // toont alleen het resultaat — terugkeren kan altijd.
+  const [step, setStep] = useState(1)
+  const showResult = options !== null || candidate !== null
+  const stepVisible = (n: number) => !showResult && step === n
 
   // Interactive builder state (mode === "waypoints"). Bij "route wijzigen"
   // start de bouwer met punten uit de ECHTE bestaande routelijn: eerste punt
@@ -1363,10 +1501,53 @@ function RouteGenerator({
         )}
       </div>
 
+      {/* Stappenteller — vier duidelijke stappen, resultaat apart */}
+      {!showResult && (
+        <div className="mt-4 flex items-center gap-2">
+          {[1, 2, 3, 4].map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => n < step && setStep(n)}
+              className="flex items-center gap-2"
+              disabled={n >= step}
+            >
+              <span
+                className="flex h-6 w-6 items-center justify-center rounded-full border font-mono text-[11px]"
+                style={{
+                  borderColor:
+                    n === step ? "rgba(120,210,230,0.6)" : "rgba(255,255,255,0.12)",
+                  background: n === step ? "rgba(120,210,230,0.12)" : "transparent",
+                  color:
+                    n === step
+                      ? ACCENT
+                      : n < step
+                        ? "rgba(120,210,230,0.55)"
+                        : "rgba(255,255,255,0.35)",
+                }}
+              >
+                {n}
+              </span>
+              {n < 4 && <span className="h-px w-4 bg-white/10" />}
+            </button>
+          ))}
+          <span className="ml-1 font-mono text-[10px] uppercase tracking-[0.14em] text-white/40">
+            {step === 1
+              ? "Waar rijd je?"
+              : step === 2
+                ? "Fiets & training"
+                : step === 3
+                  ? "Wensen & samen"
+                  : "Controleren"}
+          </span>
+        </div>
+      )}
+
       {/* Stap 1 — vorm: bepaalt wat je op de kaart doet */}
+      {stepVisible(1) && (<>
       <div className="mt-5">
         <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
-          1 · WAT VOOR ROUTE?
+          WAT VOOR ROUTE?
         </label>
         <div className="flex gap-2">
           {(
@@ -1398,7 +1579,7 @@ function RouteGenerator({
           Lus/A→B: tik = startpunt. Eigen route: tik = punten plaatsen. */}
       <div className="mt-4">
         <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
-          2 · KIES OP DE KAART
+          KIES OP DE KAART
         </label>
         <p className="text-[12px] leading-relaxed text-white/40">
           {mode === "waypoints"
@@ -1494,9 +1675,10 @@ function RouteGenerator({
             )}
         </div>
       </div>
+      </>)}
 
       {/* Sport — only shown when more than one sport family is active */}
-      {SPORT_OPTIONS.length > 1 && (
+      {stepVisible(2) && SPORT_OPTIONS.length > 1 && (
       <div className="mt-5">
         <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
           SPORT
@@ -1533,7 +1715,7 @@ function RouteGenerator({
       )}
 
       {/* Bike type — only for cycling; Sparki auto-selects the routing profile */}
-      {sport === "cycling" && (
+      {stepVisible(2) && sport === "cycling" && (
         <div className="mt-4">
           <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
             FIETSTYPE
@@ -1581,6 +1763,7 @@ function RouteGenerator({
       )}
 
       {/* Elevation preference */}
+      {stepVisible(2) && (<>
       <div className="mt-4">
         <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
           HOOGTEVOORKEUR
@@ -1654,9 +1837,10 @@ function RouteGenerator({
           </select>
         </div>
       </div>
+      </>)}
 
       {/* Distance (loop, manual) */}
-      {mode === "loop" && (
+      {stepVisible(1) && mode === "loop" && (
         <div className="mt-4">
           <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
             DOELAFSTAND (KM)
@@ -1684,7 +1868,7 @@ function RouteGenerator({
       )}
 
       {/* Destination (ptp) */}
-      {mode === "ptp" && (
+      {stepVisible(1) && mode === "ptp" && (
         <div className="mt-4">
           <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
             BESTEMMING
@@ -1699,7 +1883,7 @@ function RouteGenerator({
       )}
 
       {/* Interactive builder — waypoints + verzamelpunten */}
-      {mode === "waypoints" && (
+      {stepVisible(1) && mode === "waypoints" && (
         <div className="mt-4">
           <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
             TEKEN JE EIGEN ROUTE
@@ -1801,6 +1985,7 @@ function RouteGenerator({
       )}
 
       {/* Free-text wish — applies to every mode */}
+      {stepVisible(3) && (<>
       <div className="mt-4">
         <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
           SPECIFIEKE WENS (OPTIONEEL)
@@ -1898,20 +2083,155 @@ function RouteGenerator({
           </div>
         )}
       </div>
+      </>)}
 
-      <button
-        type="button"
-        onClick={() => (mode === "loop" ? runGenerateOptions() : runGenerate())}
-        disabled={generate.isPending || genOptions.isPending}
-        className="mt-4 w-full rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
-        style={{ background: ACCENT, color: "#040506" }}
-      >
-        {generate.isPending || genOptions.isPending
-          ? "Berekenen…"
-          : mode === "waypoints"
-            ? "Bereken route"
-            : "Genereer route"}
-      </button>
+      {/* Stap 4 — samenvatting: alles nog één keer nalopen vóór het rekenen */}
+      {stepVisible(4) && (
+        <div className="mt-5 rounded-2xl border border-white/[0.1] bg-white/[0.03] p-4">
+          <span className="label-xs text-white/35">JOUW KEUZES</span>
+          <div className="mt-2.5 flex flex-col gap-1.5 text-[13px] text-white/75">
+            <p>
+              <span className="text-white/40">Route: </span>
+              {mode === "loop"
+                ? "Lus (rondje)"
+                : mode === "ptp"
+                  ? "A → B"
+                  : "Eigen route"}
+              {mode === "loop" &&
+                (linkedWorkout?.targetDurationMin
+                  ? ` · afstand volgt uit de gekoppelde training`
+                  : ` · doel ${distance || "40"} km`)}
+              {mode === "ptp" &&
+                (destination.trim() ? ` · naar ${destination.trim()}` : "")}
+              {mode === "waypoints" &&
+                ` · ${allPoints.length} punt${allPoints.length === 1 ? "" : "en"}`}
+            </p>
+            <p>
+              <span className="text-white/40">Start: </span>
+              {mode === "waypoints"
+                ? startPoint
+                  ? `${startPoint[0].toFixed(4)}, ${startPoint[1].toFixed(4)}`
+                  : "nog niet geplaatst"
+                : start
+                  ? `${start.lat.toFixed(4)}, ${start.lon.toFixed(4)}`
+                  : "nog niet gekozen"}
+            </p>
+            <p>
+              <span className="text-white/40">Fiets & hoogte: </span>
+              {sport === "cycling"
+                ? BIKE_OPTIONS.find((b) => b.value === bikeType)?.label ?? bikeType
+                : SPORT_OPTIONS.find((s) => s.value === sport)?.label ?? sport}
+              {" · "}
+              {ELEVATION_OPTIONS.find((e) => e.value === elevationPreference)
+                ?.label ?? elevationPreference}
+            </p>
+            <p>
+              <span className="text-white/40">Training: </span>
+              {linkedWorkout
+                ? `gekoppeld aan ${linkedWorkout.title}`
+                : trainingType.charAt(0).toUpperCase() + trainingType.slice(1)}
+            </p>
+            {wish.trim() && (
+              <p>
+                <span className="text-white/40">Wens: </span>
+                {wish.trim()}
+              </p>
+            )}
+            <p>
+              <span className="text-white/40">Samen: </span>
+              {withOthers
+                ? `met anderen (bordjes-sprint aan${
+                    buddyIds.length > 0
+                      ? `, ${buddyIds.length} maat${buddyIds.length === 1 ? "" : "jes"}`
+                      : ""
+                  })`
+                : "alleen"}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!showResult && (
+        <div className="mt-4 flex gap-3">
+          {step > 1 && (
+            <button
+              type="button"
+              onClick={() => setStep((s) => Math.max(1, s - 1))}
+              className="min-w-0 flex-1 basis-32 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20"
+            >
+              ← Terug
+            </button>
+          )}
+          {step < 4 ? (
+            <button
+              type="button"
+              onClick={() => {
+                // Eerlijke controle vóór het doorgaan: zonder plek op de kaart
+                // valt er niets te berekenen.
+                if (step === 1) {
+                  setError(null)
+                  if (mode === "waypoints") {
+                    if (allPoints.length < 2) {
+                      setError(
+                        "Plaats minstens twee punten op de kaart (bijv. een start- en een eindpunt)",
+                      )
+                      return
+                    }
+                  } else if (!start) {
+                    setError("Kies eerst een startpunt (gebruik je locatie)")
+                    return
+                  } else if (mode === "ptp" && !destination.trim()) {
+                    setError("Vul een bestemming in voor een A→B route")
+                    return
+                  }
+                }
+                setStep((s) => Math.min(4, s + 1))
+              }}
+              className="min-w-0 flex-[2] basis-40 rounded-2xl py-3.5 font-sans text-[13px] font-semibold"
+              style={{ background: ACCENT, color: "#040506" }}
+            >
+              Verder →
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() =>
+                mode === "loop" ? runGenerateOptions() : runGenerate()
+              }
+              disabled={generate.isPending || genOptions.isPending}
+              className="min-w-0 flex-[2] basis-40 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
+              style={{ background: ACCENT, color: "#040506" }}
+            >
+              {generate.isPending || genOptions.isPending
+                ? "Berekenen…"
+                : mode === "waypoints"
+                  ? "Bereken route"
+                  : "Genereer route"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Resultaatscherm — eigen weergave, los van de stappen */}
+      {showResult && (
+        <div className="mt-4 flex items-center justify-between">
+          <span className="font-mono text-[10px] tracking-[0.22em] text-cyan-300/80">
+            RESULTAAT
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setCandidate(null)
+              setOptions(null)
+              setMeetpoints([])
+              setStep(4)
+            }}
+            className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-cyan-300/80"
+          >
+            ← terug naar de stappen
+          </button>
+        </div>
+      )}
 
       {/* Loop mode: pick one of the 3 distance variants Sparki proposed */}
       {mode === "loop" && options && !candidate && (
@@ -2144,7 +2464,16 @@ function RouteGenerator({
   )
 }
 
-export function RoutePanel() {
+export function RoutePanel({
+  view = null,
+}: {
+  // Welk deel van de planner tonen? null = alles (legacy), anders één van de
+  // keuzes van het navigatiehoofdscherm.
+  view?: "maken" | "gpx" | "bewaard" | null
+}) {
+  const showMaken = view === null || view === "maken"
+  const showGpx = view === null || view === "gpx"
+  const showBewaard = view === null || view === "bewaard" || view === "gpx"
   const { data, isLoading } = useRoutes()
   const create = useCreateRoute()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -2199,6 +2528,27 @@ export function RoutePanel() {
 
   const routes = data?.routes ?? []
 
+  // Gedeelde link (?route=<id>): scroll naar de bijbehorende routekaart en
+  // licht hem even op — zo landt een ontvanger direct op de juiste route.
+  useEffect(() => {
+    if (!showBewaard) return
+    const raw = new URLSearchParams(window.location.search).get("route")
+    const id = raw ? Number(raw) : NaN
+    if (!Number.isFinite(id)) return
+    setHighlightId(id)
+    const t1 = setTimeout(() => {
+      document
+        .getElementById(`route-${id}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }, 300)
+    const t2 = setTimeout(() => setHighlightId(null), 3000)
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
+    }
+    // Alleen opnieuw wanneer de routes binnenkomen (dan bestaat het element).
+  }, [showBewaard, routes.length])
+
   async function onFile(file: File) {
     setError(null)
     if (!file.name.toLowerCase().endsWith(".gpx")) {
@@ -2223,16 +2573,18 @@ export function RoutePanel() {
       {/* Secondary action row — de planner zelf staat ALTIJD open (kaart-eerst,
           zoals Komoot); hier alleen de nevenwegen: GPX, verkennen, bewaard. */}
       <div className="mt-3 flex flex-wrap items-center gap-2.5">
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={create.isPending}
-          className="flex items-center gap-2 rounded-full border border-white/[0.14] px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 hover:text-white/90 disabled:opacity-50"
-        >
-          <Download className="h-4 w-4" strokeWidth={1.75} />
-          {create.isPending ? "Verwerken…" : "GPX uploaden"}
-        </button>
-        {routes.some((r) => (r.geometry?.length ?? 0) >= 2) && (
+        {showGpx && (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={create.isPending}
+            className="flex items-center gap-2 rounded-full border border-white/[0.14] px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 hover:text-white/90 disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" strokeWidth={1.75} />
+            {create.isPending ? "Verwerken…" : "GPX uploaden"}
+          </button>
+        )}
+        {showBewaard && routes.some((r) => (r.geometry?.length ?? 0) >= 2) && (
           <button
             type="button"
             onClick={() => setShowExplorer(true)}
@@ -2242,7 +2594,7 @@ export function RoutePanel() {
             Verken op de kaart
           </button>
         )}
-        {routes.length > 0 && (
+        {showBewaard && view === null && routes.length > 0 && (
           <button
             type="button"
             onClick={() => setShowSavedPicker((s) => !s)}
@@ -2326,16 +2678,23 @@ export function RoutePanel() {
         }}
       />
 
-      <p className="mt-2 text-[12px] leading-relaxed text-white/35">
-        Plan je route direct op de kaart: kies je startpunt, stel afstand en
-        voorkeuren in en genereer. Of upload een GPX-bestand voor een echt
-        hoogteprofiel.
-      </p>
+      {showMaken ? (
+        <p className="mt-2 text-[12px] leading-relaxed text-white/35">
+          Plan je route direct op de kaart: kies je startpunt, stel afstand en
+          voorkeuren in en genereer{view === null ? ". Of upload een GPX-bestand voor een echt hoogteprofiel." : "."}
+        </p>
+      ) : showGpx ? (
+        <p className="mt-2 text-[12px] leading-relaxed text-white/35">
+          Upload een GPX-bestand (max 11 MB) — Sparki leest de echte lijn en het
+          hoogteprofiel en zet hem bij je bewaarde routes.
+        </p>
+      ) : null}
 
       {error && (
         <p className="mt-2 text-[12px] text-[rgba(255,140,120,0.85)]">{error}</p>
       )}
 
+      {showMaken && (
       <div className="mt-4" id="route-generator">
           <RouteGenerator
             key={
@@ -2391,7 +2750,11 @@ export function RoutePanel() {
             }}
           />
       </div>
+      )}
 
+      {showBewaard && <RouteProposalsInbox />}
+
+      {showBewaard && (
       <div className="mt-4 space-y-4">
         {isLoading ? (
           <div className="h-40 w-full animate-pulse rounded-xl bg-white/[0.06]" />
@@ -2423,6 +2786,103 @@ export function RoutePanel() {
           </div>
         )}
       </div>
+      )}
     </section>
+  )
+}
+
+// Routevoorstellen van fietsmaatjes: open ontvangen voorstellen kun je hier
+// accepteren of afwijzen; verstuurde voorstellen tonen hun status. Verschijnt
+// alleen wanneer er echt voorstellen zijn — geen lege beloftes.
+function RouteProposalsInbox() {
+  const { data } = useRouteProposals()
+  const respond = useRespondToProposal()
+  const [error, setError] = useState<string | null>(null)
+  const ontvangen = (data?.ontvangen ?? []).filter((p) => p.status === "open")
+  const verstuurd = (data?.verstuurd ?? []).slice(0, 3)
+  if (ontvangen.length === 0 && verstuurd.length === 0) return null
+
+  const statusLabel: Record<string, string> = {
+    open: "Wacht op reactie",
+    geaccepteerd: "Geaccepteerd",
+    afgewezen: "Afgewezen",
+    aangepast: "Aangepast",
+  }
+
+  return (
+    <div className="mt-4 rounded-xl border border-cyan-300/[0.18] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-200/70">
+        Routevoorstellen
+      </p>
+      {ontvangen.map((p) => (
+        <div
+          key={p.id}
+          className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5"
+        >
+          <div className="min-w-0">
+            <p className="text-[13px] text-white/85">
+              {p.fromName} stelt "{p.route?.name ?? "een route"}" voor
+              {p.route?.distanceKm ? ` · ${p.route.distanceKm} km` : ""}
+            </p>
+            {p.note && (
+              <p className="mt-0.5 text-[11px] text-white/45">{p.note}</p>
+            )}
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              disabled={respond.isPending}
+              onClick={() => {
+                setError(null)
+                respond.mutate(
+                  { id: p.id, actie: "accepteer" },
+                  {
+                    onError: (e) =>
+                      setError(
+                        e instanceof Error ? e.message : "Reageren mislukt",
+                      ),
+                  },
+                )
+              }}
+              className="rounded-full bg-cyan-400/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[#05070e] transition hover:bg-cyan-300 disabled:opacity-40"
+            >
+              Accepteer
+            </button>
+            <button
+              type="button"
+              disabled={respond.isPending}
+              onClick={() => {
+                setError(null)
+                respond.mutate(
+                  { id: p.id, actie: "wijs_af" },
+                  {
+                    onError: (e) =>
+                      setError(
+                        e instanceof Error ? e.message : "Reageren mislukt",
+                      ),
+                  },
+                )
+              }}
+              className="rounded-full border border-white/[0.14] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/60 transition hover:border-white/30 disabled:opacity-40"
+            >
+              Wijs af
+            </button>
+          </div>
+        </div>
+      ))}
+      {verstuurd.length > 0 && (
+        <div className="mt-3 space-y-1">
+          {verstuurd.map((p) => (
+            <p key={p.id} className="text-[11px] text-white/40">
+              Aan {p.toName}: "{p.route?.name ?? "route"}" —{" "}
+              {statusLabel[p.status] ?? p.status}
+            </p>
+          ))}
+        </div>
+      )}
+      {error && (
+        <p className="mt-2 text-[12px] text-[rgba(255,140,120,0.85)]">{error}</p>
+      )}
+    </div>
   )
 }

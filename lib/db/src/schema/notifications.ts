@@ -37,6 +37,9 @@ export const notificationTypes = [
   "club_update",
   // Sparki World: reacties/waarderingen op je gedeelde items en moderatie.
   "world_update",
+  // Routedeling: een fietsmaatje stelt je een route voor, of reageert op jouw
+  // voorstel (geaccepteerd/afgewezen/aangepast).
+  "route_proposal",
   // Ouderomgeving: veiligheidsmelding, toestemming vereist, gewijzigde rechten.
   "parent_report",
   "consent_required",
