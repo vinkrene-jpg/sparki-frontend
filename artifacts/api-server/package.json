@@ -10,6 +10,7 @@
     "scan:knowledge": "pnpm run build && node --enable-source-maps ./dist/jobs/knowledge-scan.mjs",
     "test:smoke": "node ./scripts/run-test.mjs smoke",
     "test:race-room": "node ./scripts/run-test.mjs race-room",
+    "test:journey": "node ./scripts/run-test.mjs journey",
     "test:account": "node ./scripts/run-test.mjs account",
     "test:data-hub": "node ./scripts/run-test.mjs data-hub",
     "test:derived-load": "node ./scripts/run-test.mjs derived-load",

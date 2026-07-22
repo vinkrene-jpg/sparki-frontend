@@ -56,6 +56,7 @@ import devRouter from "./dev";
 import accountRouter from "./account";
 import legalRouter from "./legal";
 import analysisFeedbackRouter from "./analysis-feedback";
+import journeyRouter from "./journey";
 
 const router: IRouter = Router();
 
@@ -71,6 +72,7 @@ router.use("/privacy", privacyRouter);
 router.use("/account", accountRouter);
 router.use("/legal", legalRouter);
 router.use("/analysis-feedback", analysisFeedbackRouter);
+router.use("/journey", journeyRouter);
 router.use("/onboarding", onboardingRouter);
 router.use("/connectors", connectorsRouter);
 router.use("/device-sync", deviceSyncRouter);

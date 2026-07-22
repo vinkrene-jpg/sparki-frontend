@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { useLocation, useRoute } from "wouter"
+import { Link, useLocation, useRoute } from "wouter"
 import {
   Heart,
   MessageCircle,
@@ -742,9 +742,14 @@ export default function WereldPage() {
         />
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-cyan-300/80" strokeWidth={1.75} />
-            <h1 className="text-[20px] font-semibold text-white">Sparki World</h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Globe className="h-5 w-5 text-cyan-300/80" strokeWidth={1.75} />
+              <h1 className="text-[20px] font-semibold text-white">Sparki World</h1>
+            </div>
+            <Link href="/journey" className="text-[11px] text-cyan-300/80 hover:text-cyan-300">
+              Jouw Journey
+            </Link>
           </div>
 
           <div className="flex gap-2">

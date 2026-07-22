@@ -565,6 +565,13 @@ export default function RacesPage() {
             </button>
             <button
               type="button"
+              onClick={() => setLocation("/journey")}
+              className="rounded-full border border-white/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
+            >
+              Journey
+            </button>
+            <button
+              type="button"
               onClick={startImport}
               className="rounded-full border border-white/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
             >

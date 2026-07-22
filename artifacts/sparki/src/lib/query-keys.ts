@@ -277,6 +277,12 @@ export const queryKeys = {
     team: () => ["social", "team"] as const,
   },
 
+  journey: {
+    all: () => ["journey"] as const,
+    timeline: (kinds: string) => ["journey", "timeline", kinds] as const,
+    dossier: (raceId: number) => ["journey", "dossier", raceId] as const,
+  },
+
   raceRooms: {
     all: () => ["race-rooms"] as const,
     list: () => ["race-rooms", "list"] as const,

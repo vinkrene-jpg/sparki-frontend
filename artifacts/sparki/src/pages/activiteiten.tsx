@@ -163,9 +163,14 @@ export default function ActiviteitenPage() {
   return (
     <ScreenShell section="activiteiten">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight text-white">
-          Je ritten
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold tracking-tight text-white">
+            Je ritten
+          </h1>
+          <Link href="/journey" className="text-[11px] text-cyan-300/80 hover:text-cyan-300">
+            Journey
+          </Link>
+        </div>
         <p className="text-sm text-white/55">
           Al je ritten — wat je deed, hoe het ging. Tik op een rit
           voor de volledige uitlezing en analyse.

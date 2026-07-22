@@ -95,9 +95,14 @@ function RecenteActiviteit() {
         <h2 className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/40">
           Recente activiteit
         </h2>
-        <Link href="/activiteiten" className="text-[11px] text-cyan-300/80 hover:text-cyan-300">
-          Alles
-        </Link>
+        <span className="flex items-center gap-3">
+          <Link href="/journey" className="text-[11px] text-cyan-300/80 hover:text-cyan-300">
+            Journey
+          </Link>
+          <Link href="/activiteiten" className="text-[11px] text-cyan-300/80 hover:text-cyan-300">
+            Alles
+          </Link>
+        </span>
       </div>
       <div className="space-y-1.5">
         {sessions.slice(0, 3).map((s) => (

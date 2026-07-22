@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useLocation } from "wouter"
+import { Link, useLocation } from "wouter"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { StateCard } from "@/components/sparki/state-card"
@@ -457,14 +457,22 @@ export default function YouPage() {
             Wat er van je bekend is
           </h1>
         </div>
-        <button
-          type="button"
-          onClick={() => setSettingsOpen(true)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/12 text-white/55 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
-          aria-label="Instellingen"
-        >
-          <Settings className="h-4 w-4" strokeWidth={1.75} />
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/journey"
+            className="rounded-full border border-white/12 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/55 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+          >
+            Journey
+          </Link>
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/12 text-white/55 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+            aria-label="Instellingen"
+          >
+            <Settings className="h-4 w-4" strokeWidth={1.75} />
+          </button>
+        </div>
       </section>
 
       {/* WIE BEN JIJ ALS SPORTER */}
