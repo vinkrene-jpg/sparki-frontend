@@ -98,13 +98,20 @@ const MERGEABLE_FIELDS = [
  * Build a patch that fills gaps in `existing` from `incoming`. Existing non-null
  * values win (the first source to provide a field keeps it); incoming only fills
  * what's missing. Returns an empty object when there's nothing to add.
+ *
+ * Handmatige correcties zijn heilig: velden in `manualFields` worden NOOIT
+ * gevuld of overschreven door een merge — ook niet wanneer de sporter het veld
+ * bewust heeft leeggemaakt (null).
  */
 export function buildMergePatch(
   existing: Record<string, unknown>,
   incoming: Record<string, unknown>,
+  manualFields?: string[] | null,
 ): Record<string, unknown> {
+  const manual = new Set(manualFields ?? []);
   const patch: Record<string, unknown> = {};
   for (const f of MERGEABLE_FIELDS) {
+    if (manual.has(f)) continue;
     const have = existing[f];
     const next = incoming[f];
     if ((have === null || have === undefined) && next !== null && next !== undefined) {
@@ -112,6 +119,25 @@ export function buildMergePatch(
     }
   }
   return patch;
+}
+
+/**
+ * Per-veld herkomst bijwerken: registreer `provider` als bron voor ieder veld
+ * dat in deze schrijfactie een echte waarde kreeg. Bestaande herkomst blijft
+ * staan (de eerste bron die een veld leverde, houdt het).
+ */
+export function updateFieldSources(
+  existing: Record<string, string> | null | undefined,
+  written: Record<string, unknown>,
+  provider: string,
+): Record<string, string> {
+  const out: Record<string, string> = { ...(existing ?? {}) };
+  for (const f of MERGEABLE_FIELDS) {
+    if (f in written && written[f] !== null && written[f] !== undefined && !out[f]) {
+      out[f] = provider;
+    }
+  }
+  return out;
 }
 
 export function mergeSources(existing: string[] | null, provider: string): string[] {

@@ -1388,12 +1388,25 @@ router.put("/sessions/:id", requireAuth, async (req, res) => {
       return;
     }
 
+    // Handmatige correcties markeren: velden die de sporter hier zelf aanpast
+    // mogen bij een latere connector-merge nooit opnieuw gevuld/overschreven
+    // worden. Herkomst per veld wordt eerlijk op "handmatig" gezet.
+    const touched: string[] = [];
+    if (notes !== undefined) touched.push("notes");
+    if (normalizedTitle !== undefined) touched.push("title");
+    const manualFields = [
+      ...new Set([...(existing.manualFields ?? []), ...touched]),
+    ];
+    const fieldSources = { ...(existing.fieldSources ?? {}) };
+    for (const f of touched) fieldSources[f] = "handmatig";
+
     const [session] = await db
       .update(trainingSessionsTable)
       .set({
         ...(feelScore !== undefined ? { feelScore: feelScore ?? null } : {}),
         ...(notes !== undefined ? { notes: notes ?? null } : {}),
         ...(normalizedTitle !== undefined ? { title: normalizedTitle } : {}),
+        ...(touched.length > 0 ? { manualFields, fieldSources } : {}),
         updatedAt: new Date(),
       })
       .where(

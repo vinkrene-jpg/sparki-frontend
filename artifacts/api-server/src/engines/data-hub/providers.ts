@@ -3,6 +3,11 @@ import {
   syncStrava,
   fetchStravaActivities,
 } from "../../lib/connectors/providers/strava";
+import {
+  fetchGarminActivities,
+  fetchWahooWorkouts,
+  fetchDeviceExternalUserId,
+} from "../../lib/connectors/providers/device-sync";
 import type { HubProvider } from "./types";
 
 // Registered hub adapters. Adding a real platform later = implement its
@@ -37,8 +42,51 @@ const stravaProvider: HubProvider = {
   },
 };
 
+// Garmin & Wahoo: direct per-user OAuth (device-sync flow) + activity fetch via
+// their cloud APIs. Everything flows through the central ingest pipeline
+// (persistedExternally: false) so cross-source dedupe/merge/provenance apply.
+// Only claim imported data types when data actually came back — never
+// aspirational.
+const garminProvider: HubProvider = {
+  id: "garmin",
+  async fetchAndNormalize(ctx) {
+    const activities = await fetchGarminActivities(ctx.clerkId, {
+      backfill: ctx.backfill === true,
+    });
+    const externalUserId = await fetchDeviceExternalUserId(ctx.clerkId, "garmin");
+    const importedDataTypes: ConnectorDataType[] =
+      activities.length > 0 ? ["activities", "training_history"] : [];
+    return {
+      externalUserId,
+      importedDataTypes,
+      activities,
+      persistedExternally: false,
+    };
+  },
+};
+
+const wahooProvider: HubProvider = {
+  id: "wahoo",
+  async fetchAndNormalize(ctx) {
+    const activities = await fetchWahooWorkouts(ctx.clerkId, {
+      backfill: ctx.backfill === true,
+    });
+    const externalUserId = await fetchDeviceExternalUserId(ctx.clerkId, "wahoo");
+    const importedDataTypes: ConnectorDataType[] =
+      activities.length > 0 ? ["activities", "training_history"] : [];
+    return {
+      externalUserId,
+      importedDataTypes,
+      activities,
+      persistedExternally: false,
+    };
+  },
+};
+
 const PROVIDERS: Record<string, HubProvider> = {
   strava: stravaProvider,
+  garmin: garminProvider,
+  wahoo: wahooProvider,
 };
 
 export function getHubProvider(id: string): HubProvider | undefined {

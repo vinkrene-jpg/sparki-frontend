@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { eq, and } from "drizzle-orm";
-import { db, connectorConnectionsTable } from "@workspace/db";
+import { eq, and, desc } from "drizzle-orm";
+import { db, connectorConnectionsTable, syncRunsTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
   connectorRegistry,
@@ -25,6 +25,11 @@ import {
   isStravaConfigured,
 } from "../lib/connectors/providers/strava-oauth";
 import { decryptSecret, encryptSecret } from "../lib/token-crypto";
+import {
+  isDeviceProvider,
+  isDeviceProviderConfigured,
+  buildDeviceAuthorizeUrl,
+} from "../lib/connectors/providers/device-sync";
 
 const router = Router();
 
@@ -57,6 +62,17 @@ function effectiveAvailability(id: string): {
     return {
       available: false,
       unavailableReason: "Strava-koppeling wordt nog ingesteld.",
+    };
+  }
+  // Garmin/Wahoo: beschikbaar zodra de fabrikant-sleutels in de omgeving staan
+  // (registry berekent dit al bij het opstarten — hier expliciet herbevestigd
+  // zodat de UI nooit een koppelknop toont zonder werkende credentials).
+  if (isDeviceProvider(id) && !isDeviceProviderConfigured(id)) {
+    return {
+      available: false,
+      unavailableReason:
+        def.unavailableReason ??
+        "Deze koppeling wacht nog op goedkeuring van de fabrikant.",
     };
   }
   return {
@@ -185,6 +201,90 @@ router.post("/:id/sync", requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/connectors/:id/runs — recente synchronisatie-historie voor deze
+// gebruiker+platform (sporter-syncbeheer: wat is er wanneer gelukt/mislukt).
+router.get("/:id/runs", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = String(req.params.id);
+  if (!getConnectorDefinition(id)) {
+    res.status(404).json({ error: "Onbekende koppeling." });
+    return;
+  }
+  try {
+    const runs = await db
+      .select({
+        id: syncRunsTable.id,
+        trigger: syncRunsTable.trigger,
+        status: syncRunsTable.status,
+        startedAt: syncRunsTable.startedAt,
+        finishedAt: syncRunsTable.finishedAt,
+        counts: syncRunsTable.counts,
+        importedDataTypes: syncRunsTable.importedDataTypes,
+        error: syncRunsTable.error,
+      })
+      .from(syncRunsTable)
+      .where(
+        and(
+          eq(syncRunsTable.clerkId, clerkId),
+          eq(syncRunsTable.provider, id),
+        ),
+      )
+      .orderBy(desc(syncRunsTable.startedAt))
+      .limit(20);
+    res.json({ runs });
+  } catch (err) {
+    req.log.error({ err }, "connectors.runs failed");
+    res.status(500).json({ error: "Kon de synchronisatie-historie niet laden." });
+  }
+});
+
+// POST /api/connectors/:id/backfill — historische import: zelfde syncpad, maar
+// de adapter haalt diepere historie op (trigger "backfill"). Dedupe/consent/
+// provenance zijn identiek — bestaande en handmatig gecorrigeerde gegevens
+// worden nooit overschreven.
+router.post("/:id/backfill", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = String(req.params.id);
+  const def = getConnectorDefinition(id);
+  if (!def) {
+    res.status(404).json({ error: "Onbekende koppeling." });
+    return;
+  }
+  const eff = effectiveAvailability(id);
+  if (!eff.available) {
+    res.status(400).json({
+      error: "unavailable",
+      message:
+        eff.unavailableReason ??
+        def.unavailableReason ??
+        "Deze koppeling is nog niet beschikbaar.",
+    });
+    return;
+  }
+  try {
+    await runSync(clerkId, id, "backfill");
+    res.json({ connector: await buildConnectorItem(clerkId, id) });
+  } catch (err) {
+    if (err instanceof HubError) {
+      const status =
+        err.code === "not_found"
+          ? 404
+          : err.code === "unavailable"
+            ? 400
+            : err.code === "unsupported"
+              ? 501
+              : 502;
+      res.status(status).json({ error: err.code, message: err.message });
+      return;
+    }
+    req.log.error({ err }, "connectors.backfill failed");
+    res.status(502).json({
+      error: "backfill_failed",
+      message: "Historische import mislukt.",
+    });
+  }
+});
+
 // NOTE: the old POST /:id/start endpoint (record a "koppelen gestart"
 // status="pending" shell for not-yet-wired platforms) has been removed: it
 // created connections that could never be completed or configured — a
@@ -289,10 +389,37 @@ router.get("/:id/authorize", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = String(req.params.id);
   const def = getConnectorDefinition(id);
-  if (!def || def.authType !== "oauth" || id !== "strava") {
+  if (
+    !def ||
+    def.authType !== "oauth" ||
+    (id !== "strava" && !isDeviceProvider(id))
+  ) {
     res
       .status(400)
       .json({ error: "unsupported", message: "Deze koppeling kan niet zo gekoppeld worden." });
+    return;
+  }
+  // Garmin/Wahoo delen de bestaande device-sync OAuth-flow (zelfde
+  // connector_connections-rij) — geen tweede koppelpad.
+  if (isDeviceProvider(id)) {
+    if (!isDeviceProviderConfigured(id)) {
+      res.status(503).json({
+        error: "not_configured",
+        message: "Deze koppeling wacht nog op goedkeuring van de fabrikant.",
+      });
+      return;
+    }
+    try {
+      const returnTo =
+        typeof req.query.returnTo === "string" ? req.query.returnTo : "";
+      const url = buildDeviceAuthorizeUrl({ provider: id, clerkId, returnTo });
+      res.json({ url });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Kon de koppeling niet starten.";
+      req.log.error({ err }, "connectors.authorize device failed");
+      res.status(400).json({ error: "authorize_failed", message });
+    }
     return;
   }
   if (!isStravaConfigured()) {

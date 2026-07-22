@@ -1,4 +1,5 @@
 import type { ConnectorDataType } from "@workspace/db";
+import { isDeviceProviderConfigured } from "./providers/device-sync";
 
 export type ConnectorCategory = "sport" | "health";
 
@@ -66,7 +67,10 @@ export const connectorRegistry: ConnectorDefinition[] = [
     id: "garmin",
     displayName: "Garmin Connect",
     category: "sport",
-    available: false,
+    // Flips automatically the moment de fabrikant-goedkeuring binnen is en de
+    // GARMIN_CLIENT_ID/SECRET in de omgeving staan. Eerlijk: zonder sleutels
+    // blijft de koppeling "nog niet beschikbaar".
+    available: isDeviceProviderConfigured("garmin"),
     authType: "oauth",
     provides: [
       "profile",
@@ -83,7 +87,9 @@ export const connectorRegistry: ConnectorDefinition[] = [
       "training_load",
       "injury_fatigue_risk",
     ],
-    unavailableReason: OAUTH_PENDING,
+    ...(isDeviceProviderConfigured("garmin")
+      ? {}
+      : { unavailableReason: OAUTH_PENDING }),
   },
   {
     id: "trainingpeaks",
@@ -223,7 +229,8 @@ export const connectorRegistry: ConnectorDefinition[] = [
     id: "wahoo",
     displayName: "Wahoo",
     category: "sport",
-    available: false,
+    // Zie Garmin: automatisch beschikbaar zodra WAHOO_CLIENT_ID/SECRET bestaan.
+    available: isDeviceProviderConfigured("wahoo"),
     authType: "oauth",
     provides: [
       "ftp",
@@ -232,7 +239,9 @@ export const connectorRegistry: ConnectorDefinition[] = [
       "training_history",
       "training_load",
     ],
-    unavailableReason: OAUTH_PENDING,
+    ...(isDeviceProviderConfigured("wahoo")
+      ? {}
+      : { unavailableReason: OAUTH_PENDING }),
   },
   {
     id: "zwift",

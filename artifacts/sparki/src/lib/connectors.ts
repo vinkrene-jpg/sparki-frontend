@@ -94,6 +94,38 @@ export async function disconnectConnector(id: string): Promise<ConnectorItem> {
   return data.connector
 }
 
+export async function backfillConnector(id: string): Promise<ConnectorItem> {
+  const data = await apiFetch<{ connector: ConnectorItem }>(
+    `/api/connectors/${id}/backfill`,
+    { method: "POST" },
+  )
+  return data.connector
+}
+
+export interface SyncRun {
+  id: string
+  trigger: string
+  status: string
+  startedAt: string
+  finishedAt: string | null
+  counts: { fetched?: number; created?: number; merged?: number; skipped?: number } | null
+  importedDataTypes: string[] | null
+  error: string | null
+}
+
+export async function fetchConnectorRuns(id: string): Promise<SyncRun[]> {
+  const data = await apiFetch<{ runs: SyncRun[] }>(`/api/connectors/${id}/runs`)
+  return data.runs
+}
+
+export const SYNC_TRIGGER_LABELS: Record<string, string> = {
+  manual: "Handmatig",
+  scheduled: "Automatisch",
+  initial: "Eerste import",
+  webhook: "Automatisch (nieuw op platform)",
+  backfill: "Historische import",
+}
+
 export async function revokeConnector(id: string): Promise<ConnectorItem> {
   const data = await apiFetch<{ connector: ConnectorItem }>(
     `/api/connectors/${id}/revoke`,

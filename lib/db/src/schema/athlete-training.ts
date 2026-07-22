@@ -50,6 +50,14 @@ export const trainingSessionsTable = pgTable("training_sessions", {
   externalRef: text("external_ref"),
   dedupeKey: text("dedupe_key"),
   sources: jsonb("sources").$type<string[]>().default([]),
+  // Per-veld herkomst: welke bron (provider of "handmatig") dit veld als
+  // eerste leverde, bijv. { "avgPower": "garmin", "notes": "handmatig" }.
+  // Alleen gezet voor velden met een echte waarde — nooit aspirationeel.
+  fieldSources: jsonb("field_sources").$type<Record<string, string>>(),
+  // Velden die de sporter zelf heeft gecorrigeerd. Een merge vanuit een
+  // connector mag deze velden NOOIT overschrijven of opnieuw vullen — ook
+  // niet wanneer de sporter het veld bewust heeft leeggemaakt.
+  manualFields: jsonb("manual_fields").$type<string[]>(),
   // Mechanieker: welke fiets is voor deze rit gebruikt. Auto-gekoppeld
   // (Strava-gear of enige actieve fiets) of handmatig gecorrigeerd; km/uren
   // per fiets/component worden hier ALTIJD uit afgeleid (idempotent — een

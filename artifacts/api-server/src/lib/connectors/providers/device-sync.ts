@@ -389,3 +389,262 @@ export async function pushRouteToDevice(opts: {
     });
   }
 }
+
+// ── Activiteiten-import (Data Hub-adapters) ──────────────────────────────────
+// Garmin Wellness API en Wahoo Cloud API. Pure normalizers (direct testbaar)
+// plus fetchers die via de reguliere token-refresh lopen. Eerlijk: velden die
+// de bron niet levert blijven null — nooit geschat of verzonnen.
+
+import { matchSport, type HubSport } from "../../../engines/data-hub/sports";
+import type { CanonicalActivity } from "../../../engines/data-hub/types";
+
+const GARMIN_ACTIVITIES_URL =
+  "https://apis.garmin.com/wellness-api/rest/activities";
+const GARMIN_USER_ID_URL = "https://apis.garmin.com/wellness-api/rest/user/id";
+const WAHOO_WORKOUTS_URL = "https://api.wahooligan.com/v1/workouts";
+const WAHOO_USER_URL = "https://api.wahooligan.com/v1/user";
+
+function finiteOrNull(v: unknown): number | null {
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
+/**
+ * Normalize one Garmin Wellness activity summary to a canonical activity.
+ * Returns null when the record lacks the minimum (id + starttijd).
+ */
+export function normalizeGarminActivity(
+  raw: Record<string, unknown>,
+): CanonicalActivity | null {
+  const externalId =
+    raw["summaryId"] != null ? String(raw["summaryId"]) : null;
+  const startSec = finiteOrNull(raw["startTimeInSeconds"]);
+  if (!externalId || startSec == null) return null;
+
+  const sport: HubSport =
+    matchSport(typeof raw["activityType"] === "string" ? (raw["activityType"] as string) : null) ??
+    "cycling";
+  const durationSec = finiteOrNull(raw["durationInSeconds"]);
+  const distanceM = finiteOrNull(raw["distanceInMeters"]);
+  const speedMs = finiteOrNull(raw["averageSpeedInMetersPerSecond"]);
+
+  return {
+    externalId,
+    sport,
+    startedAt: new Date(startSec * 1000).toISOString(),
+    title:
+      typeof raw["activityName"] === "string" && raw["activityName"].trim()
+        ? (raw["activityName"] as string).trim()
+        : null,
+    notes: null,
+    durationMin: durationSec != null ? Math.round(durationSec / 60) : null,
+    distanceKm: distanceM != null ? Math.round((distanceM / 1000) * 100) / 100 : null,
+    elevationM:
+      finiteOrNull(raw["totalElevationGainInMeters"]) != null
+        ? Math.round(finiteOrNull(raw["totalElevationGainInMeters"])!)
+        : null,
+    avgPower:
+      finiteOrNull(raw["averagePowerInWatts"]) != null
+        ? Math.round(finiteOrNull(raw["averagePowerInWatts"])!)
+        : null,
+    normalizedPower: null,
+    avgHR:
+      finiteOrNull(raw["averageHeartRateInBeatsPerMinute"]) != null
+        ? Math.round(finiteOrNull(raw["averageHeartRateInBeatsPerMinute"])!)
+        : null,
+    maxHR:
+      finiteOrNull(raw["maxHeartRateInBeatsPerMinute"]) != null
+        ? Math.round(finiteOrNull(raw["maxHeartRateInBeatsPerMinute"])!)
+        : null,
+    avgCadence:
+      finiteOrNull(raw["averageBikeCadenceInRoundsPerMinute"]) != null
+        ? Math.round(finiteOrNull(raw["averageBikeCadenceInRoundsPerMinute"])!)
+        : null,
+    avgSpeedKph:
+      speedMs != null ? Math.round(speedMs * 3.6 * 10) / 10 : null,
+    powerBests: null,
+    tss: null,
+    raw,
+  };
+}
+
+// Wahoo workout_type_id → hub sport. Wahoo levert numerieke type-ids; alleen
+// bekende families worden gemapt. Onbekend valt terug op cycling (Wahoo is
+// primair een fietscomputer) — nooit een verzonnen andere sport.
+const WAHOO_RUNNING_IDS = new Set([1, 3, 4, 5, 56, 57]);
+const WAHOO_WALKING_IDS = new Set([6, 34]);
+const WAHOO_SWIMMING_IDS = new Set([29, 30]);
+const WAHOO_MTB_IDS = new Set([62]);
+const WAHOO_GRAVEL_IDS = new Set([63]);
+
+function wahooSport(typeId: number | null): HubSport {
+  if (typeId == null) return "cycling";
+  if (WAHOO_RUNNING_IDS.has(typeId)) return "running";
+  if (WAHOO_WALKING_IDS.has(typeId)) return "hiking";
+  if (WAHOO_SWIMMING_IDS.has(typeId)) return "swimming";
+  if (WAHOO_MTB_IDS.has(typeId)) return "mountainbike";
+  if (WAHOO_GRAVEL_IDS.has(typeId)) return "gravel";
+  return "cycling";
+}
+
+/**
+ * Normalize one Wahoo workout to a canonical activity. Returns null when the
+ * record lacks the minimum (id + starttijd).
+ */
+export function normalizeWahooWorkout(
+  raw: Record<string, unknown>,
+): CanonicalActivity | null {
+  const id = raw["id"];
+  const starts = typeof raw["starts"] === "string" ? raw["starts"] : null;
+  if (id == null || !starts) return null;
+  const startDate = new Date(starts);
+  if (Number.isNaN(startDate.getTime())) return null;
+
+  const summary = (raw["workout_summary"] ?? {}) as Record<string, unknown>;
+  const num = (v: unknown): number | null => {
+    if (typeof v === "number" && Number.isFinite(v)) return v;
+    if (typeof v === "string" && v.trim() !== "") {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
+  };
+
+  const durationSec = num(summary["duration_active_accum"]) ?? num(summary["duration_total_accum"]);
+  const minutes = num(raw["minutes"]);
+  const distanceM = num(summary["distance_accum"]);
+  const speedMs = num(summary["speed_avg"]);
+  const np = num(summary["power_bike_np_last"]);
+
+  return {
+    externalId: String(id),
+    sport: wahooSport(num(raw["workout_type_id"])),
+    startedAt: startDate.toISOString(),
+    title:
+      typeof raw["name"] === "string" && raw["name"].trim()
+        ? (raw["name"] as string).trim()
+        : null,
+    notes: null,
+    durationMin:
+      durationSec != null
+        ? Math.round(durationSec / 60)
+        : minutes != null
+          ? Math.round(minutes)
+          : null,
+    distanceKm: distanceM != null ? Math.round((distanceM / 1000) * 100) / 100 : null,
+    elevationM: num(summary["ascent_accum"]) != null ? Math.round(num(summary["ascent_accum"])!) : null,
+    avgPower: num(summary["power_avg"]) != null ? Math.round(num(summary["power_avg"])!) : null,
+    normalizedPower: np != null && np > 0 ? Math.round(np) : null,
+    avgHR: num(summary["heart_rate_avg"]) != null ? Math.round(num(summary["heart_rate_avg"])!) : null,
+    maxHR: null,
+    avgCadence: num(summary["cadence_avg"]) != null ? Math.round(num(summary["cadence_avg"])!) : null,
+    avgSpeedKph: speedMs != null ? Math.round(speedMs * 3.6 * 10) / 10 : null,
+    powerBests: null,
+    tss: null,
+    raw,
+  };
+}
+
+// Sync-diepte: normale sync kijkt een week terug, backfill haalt de diepere
+// historie op. Garmin's activities-endpoint accepteert maximaal een 24-uurs
+// uploadvenster per aanroep, dus we lopen per dag terug.
+const GARMIN_SYNC_DAYS = 7;
+const GARMIN_BACKFILL_DAYS = 60;
+const WAHOO_PER_PAGE = 50;
+const WAHOO_SYNC_PAGES = 2;
+const WAHOO_BACKFILL_PAGES = 12;
+
+async function deviceApiGet(
+  url: string,
+  accessToken: string,
+  providerLabel: string,
+): Promise<unknown> {
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(
+      `${providerLabel} gaf een fout (status ${res.status}${detail ? `: ${detail.slice(0, 200)}` : ""}).`,
+    );
+  }
+  return res.json();
+}
+
+/**
+ * Fetch + normalize Garmin activities for this user, walking back per 24h
+ * upload window (API limit). `backfill` reaches deeper into history.
+ */
+export async function fetchGarminActivities(
+  clerkId: string,
+  opts: { backfill?: boolean } = {},
+): Promise<CanonicalActivity[]> {
+  const accessToken = await getValidDeviceAccessToken(clerkId, "garmin");
+  const days = opts.backfill ? GARMIN_BACKFILL_DAYS : GARMIN_SYNC_DAYS;
+  const nowSec = Math.floor(Date.now() / 1000);
+  const out: CanonicalActivity[] = [];
+  for (let d = 0; d < days; d++) {
+    const end = nowSec - d * 86400;
+    const start = end - 86400;
+    const url = `${GARMIN_ACTIVITIES_URL}?uploadStartTimeInSeconds=${start}&uploadEndTimeInSeconds=${end}`;
+    const data = await deviceApiGet(url, accessToken, "Garmin");
+    if (Array.isArray(data)) {
+      for (const item of data) {
+        const norm = normalizeGarminActivity(item as Record<string, unknown>);
+        if (norm) out.push(norm);
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Fetch + normalize Wahoo workouts for this user (paginated, newest first).
+ * `backfill` walks more pages back into history.
+ */
+export async function fetchWahooWorkouts(
+  clerkId: string,
+  opts: { backfill?: boolean } = {},
+): Promise<CanonicalActivity[]> {
+  const accessToken = await getValidDeviceAccessToken(clerkId, "wahoo");
+  const maxPages = opts.backfill ? WAHOO_BACKFILL_PAGES : WAHOO_SYNC_PAGES;
+  const out: CanonicalActivity[] = [];
+  for (let page = 1; page <= maxPages; page++) {
+    const url = `${WAHOO_WORKOUTS_URL}?page=${page}&per_page=${WAHOO_PER_PAGE}`;
+    const data = (await deviceApiGet(url, accessToken, "Wahoo")) as {
+      workouts?: unknown[];
+    };
+    const workouts = Array.isArray(data?.workouts) ? data.workouts : [];
+    for (const item of workouts) {
+      const norm = normalizeWahooWorkout(item as Record<string, unknown>);
+      if (norm) out.push(norm);
+    }
+    if (workouts.length < WAHOO_PER_PAGE) break;
+  }
+  return out;
+}
+
+/**
+ * Externe gebruikers-id van de gekoppelde fabrikant-account (voor webhook-
+ * matching). Null wanneer het endpoint niets bruikbaars teruggeeft.
+ */
+export async function fetchDeviceExternalUserId(
+  clerkId: string,
+  provider: DeviceProvider,
+): Promise<string | null> {
+  const accessToken = await getValidDeviceAccessToken(clerkId, provider);
+  try {
+    if (provider === "garmin") {
+      const data = (await deviceApiGet(GARMIN_USER_ID_URL, accessToken, "Garmin")) as {
+        userId?: unknown;
+      };
+      return data?.userId != null ? String(data.userId) : null;
+    }
+    const data = (await deviceApiGet(WAHOO_USER_URL, accessToken, "Wahoo")) as {
+      id?: unknown;
+    };
+    return data?.id != null ? String(data.id) : null;
+  } catch {
+    // Diagnostisch veld — een fout hier mag een sync nooit laten falen.
+    return null;
+  }
+}

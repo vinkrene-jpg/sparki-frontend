@@ -16,14 +16,18 @@ import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import {
   fetchConnectors,
   syncConnector,
+  backfillConnector,
+  fetchConnectorRuns,
   beginOauthConnect,
   disconnectConnector,
   revokeConnector,
   dataTypeLabel,
   formatLastSync,
   READINESS_LABELS,
+  SYNC_TRIGGER_LABELS,
   type ConnectorItem,
   type ReadinessState,
+  type SyncRun,
 } from "@/lib/connectors"
 import {
   shouldGatherAfterOAuth,
@@ -207,6 +211,78 @@ function ConsentDialog({
   )
 }
 
+// Sync-historie per platform: echte sync_runs-rijen (wanneer, hoe getriggerd,
+// wat is er opgehaald/aangemaakt, of het lukte). Laadt pas bij openklappen.
+function RunsPanel({ connectorId }: { connectorId: string }) {
+  const [runs, setRuns] = useState<SyncRun[] | null>(null)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    fetchConnectorRuns(connectorId)
+      .then((r) => {
+        if (alive) setRuns(r)
+      })
+      .catch(() => {
+        if (alive) setFailed(true)
+      })
+    return () => {
+      alive = false
+    }
+  }, [connectorId])
+
+  if (failed) {
+    return (
+      <p className="pl-12 text-[11px] text-red-400">
+        Kon de synchronisatie-historie niet laden.
+      </p>
+    )
+  }
+  if (runs === null) {
+    return (
+      <p className="flex items-center gap-1.5 pl-12 text-[11px] text-white/40">
+        <Loader2 className="h-3 w-3 animate-spin" /> Historie laden…
+      </p>
+    )
+  }
+  if (runs.length === 0) {
+    return (
+      <p className="pl-12 text-[11px] text-white/40">
+        Nog geen synchronisaties uitgevoerd.
+      </p>
+    )
+  }
+  return (
+    <div className="flex flex-col gap-1.5 pl-12">
+      {runs.map((r) => {
+        const ok = r.status === "success"
+        const created = r.counts?.created ?? 0
+        const merged = r.counts?.merged ?? 0
+        return (
+          <div key={r.id} className="flex flex-col gap-0.5">
+            <span className="font-mono text-[10px] tracking-wide text-white/50">
+              {formatLastSync(r.startedAt) ?? r.startedAt} ·{" "}
+              {SYNC_TRIGGER_LABELS[r.trigger] ?? r.trigger} ·{" "}
+              <span className={ok ? "text-emerald-400/80" : "text-red-400/90"}>
+                {ok
+                  ? created + merged > 0
+                    ? `${created} nieuw, ${merged} samengevoegd`
+                    : "geen nieuwe gegevens"
+                  : "mislukt"}
+              </span>
+            </span>
+            {!ok && r.error && (
+              <span className="text-[10px] leading-snug text-red-400/70">
+                {r.error}
+              </span>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function ConnectionRow({
   connector,
   busy,
@@ -214,6 +290,7 @@ function ConnectionRow({
   onDisconnect,
   onRevoke,
   onSync,
+  onBackfill,
 }: {
   connector: ConnectorItem
   busy: boolean
@@ -221,7 +298,9 @@ function ConnectionRow({
   onDisconnect: (id: string) => void
   onRevoke: (id: string) => void
   onSync: (id: string) => void
+  onBackfill: (id: string) => void
 }) {
+  const [showRuns, setShowRuns] = useState(false)
   const isAvailable = connector.available
   const isConnected = isAvailable && connector.status === "connected"
   const isError = isAvailable && connector.status === "error"
@@ -333,6 +412,30 @@ function ConnectionRow({
           {connector.errorStatus}
         </p>
       )}
+
+      {isConnected && (
+        <div className="flex flex-wrap items-center gap-3 pl-12">
+          <button
+            type="button"
+            onClick={() => onBackfill(connector.id)}
+            disabled={busy}
+            className="font-mono text-[9px] tracking-[0.15em] text-white/35 transition-colors hover:text-white/60 disabled:opacity-40"
+            title="Haal oudere activiteiten van dit platform op"
+          >
+            OUDERE ACTIVITEITEN OPHALEN
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowRuns((v) => !v)}
+            aria-expanded={showRuns}
+            className="font-mono text-[9px] tracking-[0.15em] text-white/35 transition-colors hover:text-white/60"
+          >
+            {showRuns ? "HISTORIE VERBERGEN" : "SYNC-HISTORIE"}
+          </button>
+        </div>
+      )}
+
+      {isConnected && showRuns && <RunsPanel connectorId={connector.id} />}
 
       {isConnected && (
         <button
@@ -498,6 +601,23 @@ export function ConnectionsSection({
       replace(await syncConnector(id))
     } catch (e) {
       setError(e instanceof Error ? e.message : "Synchroniseren mislukt.")
+      void load()
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  // Historische import: zelfde Data Hub-pad, maar de adapter haalt diepere
+  // historie op. Handmatige correcties blijven altijd staan.
+  const handleBackfill = async (id: string) => {
+    setBusyId(id)
+    setError(null)
+    setNotice(null)
+    try {
+      replace(await backfillConnector(id))
+      setNotice("Historische import afgerond.")
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Historische import mislukt.")
       void load()
     } finally {
       setBusyId(null)

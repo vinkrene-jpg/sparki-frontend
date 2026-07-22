@@ -18,6 +18,7 @@ import {
   candidateDedupeKeys,
   activitiesPlausiblyEqual,
   buildMergePatch,
+  updateFieldSources,
   mergeSources,
 } from "./dedupe";
 import { cleanActivity, cleanDailyMetric, cleanFtp } from "./validation";
@@ -244,16 +245,25 @@ async function persistOneActivity(
         title: a.title ?? null,
         notes: a.notes ?? null,
       };
+      // Handmatige correcties van de sporter zijn onaantastbaar: die velden
+      // worden nooit (opnieuw) gevuld door een connector-merge.
       const patch = buildMergePatch(
         existing as unknown as Record<string, unknown>,
         incoming,
+        existing.manualFields ?? null,
       );
       const sources = mergeSources(existing.sources ?? null, provider);
+      const fieldSources = updateFieldSources(
+        existing.fieldSources ?? null,
+        patch,
+        provider,
+      );
       await tx
         .update(trainingSessionsTable)
         .set({
           ...patch,
           sources,
+          fieldSources,
           // Een handmatige rij krijgt nu een echte starttijd-fingerprint en
           // sport van de import, zodat volgende imports haar wél via de
           // dedupeKey vinden.
@@ -292,6 +302,27 @@ async function persistOneActivity(
           externalRef: `${provider}:${a.externalId}`,
           dedupeKey,
           sources: [provider],
+          // Per-veld herkomst voor alle velden die deze bron echt leverde.
+          fieldSources: updateFieldSources(
+            null,
+            {
+              durationMin: a.durationMin,
+              distanceKm: numStr(a.distanceKm),
+              elevationM: a.elevationM,
+              normalizedPower: a.normalizedPower,
+              avgPower: a.avgPower,
+              avgHR: a.avgHR,
+              maxHR: a.maxHR,
+              avgCadence: a.avgCadence,
+              avgSpeedKph: numStr(a.avgSpeedKph),
+              powerBests: a.powerBests ?? null,
+              tss,
+              intensityFactor: numStr(intensityFactor),
+              title: a.title ?? null,
+              notes: a.notes ?? null,
+            },
+            provider,
+          ),
         })
         .returning({ id: trainingSessionsTable.id });
       sessionId = inserted!.id;

@@ -78,6 +78,8 @@ export interface NormalizedBatch {
 
 export interface SyncContext {
   clerkId: string;
+  /** True bij historische backfill: de adapter haalt diepere historie op. */
+  backfill?: boolean;
 }
 
 // A platform adapter. `fetchAndNormalize` exists only where data can flow today;

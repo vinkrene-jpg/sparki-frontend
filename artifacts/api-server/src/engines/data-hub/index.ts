@@ -215,7 +215,7 @@ export async function runSync(
     // Tijdelijke netwerk-/serverfouten krijgen automatisch een herkansing;
     // permanente fouten falen direct en zichtbaar.
     const batch = await withTransientRetry(() =>
-      provider.fetchAndNormalize!({ clerkId }),
+      provider.fetchAndNormalize!({ clerkId, backfill: trigger === "backfill" }),
     );
 
     const counts: SyncRunCounts = batch.persistedExternally

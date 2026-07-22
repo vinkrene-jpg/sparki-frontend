@@ -145,7 +145,13 @@ export const syncRunStatuses = [
 ] as const;
 export type SyncRunStatus = (typeof syncRunStatuses)[number];
 
-export const syncRunTriggers = ["manual", "scheduled", "onboarding"] as const;
+export const syncRunTriggers = [
+  "manual",
+  "scheduled",
+  "onboarding",
+  "webhook",
+  "backfill",
+] as const;
 export type SyncRunTrigger = (typeof syncRunTriggers)[number];
 
 // Per-data-type counts written from one ingest run.
@@ -184,6 +190,49 @@ export const syncRunsTable = pgTable("sync_runs", {
     .notNull()
     .defaultNow(),
 });
+
+// ── Webhook-events ───────────────────────────────────────────────────────────
+// Every inbound push notification (Strava/Garmin/Wahoo) lands here FIRST, with
+// a per-provider unique event id. The unique index makes processing idempotent:
+// a redelivered webhook inserts nothing and is skipped, never double-ingested.
+export const webhookEventStatuses = [
+  "received",
+  "processed",
+  "skipped",
+  "failed",
+] as const;
+export type WebhookEventStatus = (typeof webhookEventStatuses)[number];
+
+export const webhookEventsTable = pgTable(
+  "webhook_events",
+  {
+    id: serial("id").primaryKey(),
+    provider: text("provider").notNull(),
+    // Provider-side stable event id (e.g. Strava object_id+aspect, Garmin
+    // summaryId, Wahoo workout id+event type).
+    eventId: text("event_id").notNull(),
+    // Resolved Sparki user, when the external user id matched a connection.
+    clerkId: text("clerk_id"),
+    // External user id as reported by the provider (for diagnostics).
+    externalUserId: text("external_user_id"),
+    payload: jsonb("payload"),
+    status: text("status").notNull().default("received"),
+    attempts: integer("attempts").notNull().default(0),
+    lastError: text("last_error"),
+    receivedAt: timestamp("received_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+  },
+  (t) => [unique("unique_webhook_event").on(t.provider, t.eventId)],
+);
+
+export const insertWebhookEventSchema = createInsertSchema(
+  webhookEventsTable,
+).omit({ id: true });
+export const selectWebhookEventSchema = createSelectSchema(webhookEventsTable);
+export type WebhookEvent = typeof webhookEventsTable.$inferSelect;
+export type InsertWebhookEvent = z.infer<typeof insertWebhookEventSchema>;
 
 export const insertConnectorActivitySchema = createInsertSchema(
   connectorActivitiesTable,
