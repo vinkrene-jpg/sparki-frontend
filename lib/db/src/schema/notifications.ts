@@ -33,6 +33,8 @@ export const notificationTypes = [
   // Smartly-timed nudge when there is GENUINELY new content for the athlete
   // (a real new insight or fresh news), delivered at a receptive moment.
   "something_new",
+  // Clubomgeving: reserve doorgeschoven, selectie, clubberichten.
+  "club_update",
 ] as const;
 export type NotificationType = (typeof notificationTypes)[number];
 

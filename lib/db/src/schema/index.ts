@@ -43,3 +43,4 @@ export * from "./road-objects";
 export * from "./security";
 export * from "./journey";
 export * from "./coach-cockpit";
+export * from "./club";

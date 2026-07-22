@@ -66,6 +66,7 @@
     "test:links-unlink-isolation": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs links-unlink-isolation",
     "test:links-end-isolation": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs links-end-isolation",
     "test:coach-cockpit": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs coach-cockpit",
+    "test:club": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs club",
     "test:climb-flag-gate": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs climb-flag-gate",
     "test:coach-parent-sharing-levels": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs coach-parent-sharing-levels",
     "test:coach-parent-share-nothing": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs coach-parent-share-nothing",

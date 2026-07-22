@@ -139,3 +139,4 @@
 - [Sparki fietsscan](sparki-bike-scan.md) — original saved before cutout; viewMode fotos on ANY frames; @imgly bg-removal needs direct onnxruntime-web dep for vite build; asset provenance mandatory.
 - [tsx module-mock tests & CJS](tsx-module-mock-cjs.md) — mock.module first, lazy `import()` promise (no top-level await, no static import) or the real native module loads/CJS transform fails.
 - [Mobile ride sync honesty](sparki-mobile-ride-sync.md) — "veilig op je telefoon" claims require fail-closed storage writes; detector/queue state must reset across ride lifecycle.
+- [Sparki clubomgeving](sparki-club.md) — least-privilege clubrechten; limieten óók bij invite-accept, club-scoped ID-checks, FOR UPDATE op signup; jeugd-consent fail-closed.

@@ -48,6 +48,7 @@ import sparkiWorldRouter from "./sparki-world";
 import raceRoomsRouter from "./race-rooms";
 import goalsRouter from "./goals";
 import engagementRouter from "./engagement";
+import clubRouter from "./club";
 import rideStoryRouter from "./ride-story";
 import sprintsRouter from "./sprints";
 import climbsRouter from "./climbs";
@@ -119,6 +120,7 @@ router.use("/sprints", sprintsRouter);
 router.use("/climbs", climbsRouter);
 router.use("/alerts", alertsRouter);
 router.use("/share", shareRouter);
+router.use("/clubs", clubRouter);
 
 // Dev-only routes (preview-athlete switcher). Mounted ONLY outside production so
 // these endpoints simply do not exist on a deployed build.

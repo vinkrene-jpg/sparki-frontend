@@ -27,7 +27,7 @@ Rollen staan in eigen DB: `user_profiles.roles[]` + `active_role` (`lib/db/src/s
 |---|---|---|---|
 | **Sporter (athlete)** | Verplichte flow: quick-start-vragen → **connect-stap** (koppelen verplicht getoond, koppelen zelf optioneel) → gap-fill van alléén ontbrekende velden (`routes/onboarding.ts`) | Alle eigen data | Alles op eigen data: invoeren, koppelen, verwijderen, delen instellen |
 | **Trainer/Coach** | Via uitnodiging (token, `routes/invitations.ts`) → `coach_athlete_links` | Per atleet afhankelijk van `data_sharing_coach`: `none` / `summary` (readiness + volgende sessie) / `full` (+ ruwe metrics 14 dagen). Persoonlijke context alleen geabstraheerd, nooit ruwe woorden (`routes/coach.ts`) | Adviesplan voorstellen en overnemen naar atleet-schema (`/api/coach/athletes/:id/plan/adopt`); koppeling beëindigen |
-| **Club** | **Geen aparte rol.** `/club`-pagina bestaat (`pages/club.tsx`) en toont trainer(s), clubtrainingen, wedstrijden en clubfeed op basis van bestaande coach-links — geen club-entiteit in de database | Zie links | — |
+| **Club** | Eigen club-entiteit + rollen (owner/admin/trainer/teammanager/parent/member) via clubuitnodigingen (`routes/club.ts`, `routes/invitations.ts`, `lib/club-permissions.ts`). Beheerders zien NOOIT sportdata; trainers alleen toegewezen sporters mét consent (jeugd: alleen ouder, fail-closed) | Consent-gated samenvattingen | Trainingen/wedstrijden/berichten/leden/pakket beheren; export zonder sportdata; audit-log |
 | **Ouder/verzorger (parent)** | Via uitnodiging → `parent_athlete_links` | `data_sharing_parent`: `none` / `safety_only` (alleen gezondheid/welzijn, géén vermogensdata) / `summary` (+ komend schema) (`routes/parent.ts`) | Toezicht; koppeling beëindigen |
 | **Beheerder (admin)** | Allowlist | Gezondheidscheck-dashboard, testersbeheer, geplande-taken-status (`routes/admin.ts`) | Checks draaien, uitnodigingen, storingen markeren |
 
@@ -46,7 +46,7 @@ Rollen staan in eigen DB: `user_profiles.roles[]` + `active_role` (`lib/db/src/s
 | Voeding | sheet in app | volledig werkend | Logs met foto's, leeftijdsgebonden advies (<16 licht), seizoensdoel alléén 17+ (RED-S-bescherming) (`routes/nutrition.ts`) |
 | Mechanieker | `/mechanieker` | volledig werkend | Garage (fietsen/onderdelen/sensoren), foto-advies, begeleide **fietsscan** met achtergrondverwijdering en eerlijke 360-weergave (≥8 echte cutouts), productbeelden met verplichte herkomst (`routes/bike-scan.ts`, `routes/garage.ts`) |
 | Navigatie/Routes | `/routes` + mobiel | volledig werkend | Routegeneratie (ORS, best-of-N lussen), klimmenverkenner (Overpass), route-paspoort, POI's/koffiestop; mobiel turn-by-turn + herroutering (`routes/routes.ts`, `sparki-mobile/app/navigate/[id].tsx`) |
-| Club | `/club` | gedeeltelijk werkend | Weergave op basis van coach-links; **geen club-entiteit/rol in DB** (`pages/club.tsx`) |
+| Club | `/club`, `/club/beheer` | volledig werkend | Club-entiteit met rollen, clubtrainingen (aanmelden/reserve/aanwezigheid, nooit coachtraining overschrijven), wedstrijden + beschikbaarheid, berichten, jeugd-consent fail-closed, pakketten/limieten, export, audit (`routes/club.ts`, `pages/club.tsx`, `pages/club-beheer.tsx`); 16 acceptatietests (`test:club`) |
 | Feed/Sociaal | `/feed`, `/samen` | volledig werkend | Nieuws (echte bronnen, zelfherstellende verversing), Ontdekken-reel (transparant-fictieve Sparki World), vriendenfeed privacy-fail-closed (`routes/feed.ts`, `routes/social.ts`) |
 | Sportpaspoort | `/paspoort` | volledig werkend | Profiel, doelen, FTP/CTL/TSB, 90-dagen-ontwikkeling, materiaal; printstijl voor PDF (`pages/paspoort.tsx`) |
 | Profiel (Jij) | `/you` | volledig werkend | Afgeleid levend profiel (lenzen/identiteit/evolutie), Ontwikkelkompas, instellingen-sheet (`pages/you.tsx`) |
@@ -131,7 +131,7 @@ Centrale ingest: **Data Hub** (`engines/data-hub/`): alle bronnen → `ingestBat
 | Accountverwijdering (zelfbediening) | **ONTBREEKT** | alleen `deleteRequestedAt`-vlag + cascade-schema; geen uitvoerende flow |
 | Intrekken van koppelingen | aanwezig | disconnect/revoke-routes |
 | Minderjarigen | aanwezig | `parentConsentRequired/Status`, ouder-rol met `safety_only`, seizoensgewichtsdoel geblokkeerd <17 (RED-S), leeftijd uit volledige geboortedatum |
-| Trainer-/clubrechten | aanwezig (trainer), club beperkt | sharing-levels + geteste isolatie; club heeft geen eigen rechtenmodel |
+| Trainer-/clubrechten | aanwezig | sharing-levels + geteste isolatie; club heeft eigen least-privilege rechtenmodel (`lib/club-permissions.ts`): beheer zonder sportdata, trainers consent-gated, cross-club isolatie |
 | Medische/gevoelige data | gedeeltelijk | HRV/slaap/mentaal privacy-gated (`aiSensitiveAnalysisEnabled`); geen aparte medische-dataclassificatie |
 | Token-/persoonsgegevensbeveiliging | gedeeltelijk | tokens server-only maar plaintext in DB; logs redigeren cookies/authorization; SSRF-allowlists op kalender/push/klimmen; XSS-escaping op kaartlabels |
 | Rate limiting / brute-force-bescherming | **ONTBREEKT** | geen middleware |
@@ -167,7 +167,7 @@ Identiek aan §8 (zelfde Data Hub-architectuur; providers zijn bron-agnostisch).
 | 8 | Productie niet gevalideerd met echte multi-user Strava-sync | normaal | dev-getest via smoke/testworkflows | Productietest na deploy |
 | 9 | Kalender-import parseert HTML van derden | normaal (voorwaarden-risico) | `lib/calendar/` | Toestemming bronnen verifiëren vóór commerciële lancering |
 | 10 | E-mail zonder geverifieerd domein | laag | `lib/email.ts` eerlijk overslaan | Domein verifiëren in Resend |
-| 11 | Club zonder eigen rechtenmodel | laag | geen club-tabellen | Alleen bouwen indien gewenst |
+| 11 | ~~Club zonder eigen rechtenmodel~~ | opgelost | clubtabellen + rechtenlaag gebouwd (Golf 10) | — |
 | 12 | Fitbit alleen registry-entry | laag | `registry.ts` | Verwijderen of bouwen |
 
 ## 11. Bewijs

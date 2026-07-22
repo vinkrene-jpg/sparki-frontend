@@ -2,6 +2,7 @@ import {
   pgTable,
   serial,
   text,
+  integer,
   timestamp,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
@@ -36,6 +37,13 @@ export const invitationRelationships = [
   "parent_athlete",
   "none",
   "head_tester",
+  // Clubuitnodigingen: op accepteren wordt een actieve club_members-rij
+  // aangemaakt met de bijbehorende clubrol. clubId is dan verplicht.
+  "club_member",
+  "club_trainer",
+  "club_admin",
+  "club_teammanager",
+  "club_parent",
 ] as const;
 export type InvitationRelationship = (typeof invitationRelationships)[number];
 
@@ -55,6 +63,9 @@ export const invitationsTable = pgTable("invitations", {
 
   // Optional intended recipient (display only — acceptance is token-based).
   email: text("email"),
+
+  // Voor club-relaties: de club waarvoor deze uitnodiging geldt.
+  clubId: integer("club_id"),
 
   status: text("status").notNull().default("pending"),
   acceptedByClerkId: text("accepted_by_clerk_id").references(

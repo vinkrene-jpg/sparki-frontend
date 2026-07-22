@@ -1,12 +1,14 @@
 import { Router } from "express";
 import { randomBytes } from "node:crypto";
-import { eq, and, desc, lt } from "drizzle-orm";
+import { eq, and, desc, lt, isNull } from "drizzle-orm";
 import {
   db,
   invitationsTable,
   userProfilesTable,
   coachAthleteLinksTable,
   parentAthleteLinksTable,
+  clubMembersTable,
+  clubAuditLogTable,
   validRoles,
   invitationRelationships,
   type Role,
@@ -18,6 +20,16 @@ import { requireAuth, getClerkUserId } from "../lib/auth";
 import { rateLimit } from "../lib/security/rate-limit";
 import { isAdmin } from "../lib/flags";
 import { assignHeadTesterNumber } from "../engines/insights";
+import {
+  getClubContext,
+  canManageClub,
+  checkCapacityForNew,
+  checkCapacityByClubId,
+  writeClubAudit,
+} from "../lib/club-permissions";
+
+// Abort-signaal binnen de accept-transactie: club zit vol → eerlijke 409.
+class ClubCapacityError extends Error {}
 
 const router = Router();
 
@@ -28,6 +40,16 @@ type CreateBody = {
   targetRole?: string;
   email?: string | null;
   expiresInDays?: number;
+  clubId?: number;
+};
+
+// Clubrelaties: welke clubrol hoort bij welke uitnodiging.
+const CLUB_RELATIONSHIP_ROLES: Record<string, string> = {
+  club_member: "member",
+  club_trainer: "trainer",
+  club_admin: "admin",
+  club_teammanager: "teammanager",
+  club_parent: "parent",
 };
 
 function newToken(): string {
@@ -118,6 +140,63 @@ router.post("/", requireAuth, rateLimit({ scope: "invitations", max: 10, windowM
       }
       targetRole = "athlete";
       createdByRole = "admin";
+    } else if (relationship in CLUB_RELATIONSHIP_ROLES) {
+      // Clubuitnodiging: alleen clubbeheer (owner/admin) van de betreffende
+      // club mag deze maken, en het pakket moet ruimte hebben (eerlijke
+      // blokkade zonder dataverlies).
+      const clubId = typeof body.clubId === "number" ? body.clubId : NaN;
+      if (!Number.isFinite(clubId)) {
+        res.status(400).json({ error: "Een clubuitnodiging vereist een clubId." });
+        return;
+      }
+      const ctx = await getClubContext(clubId, clerkId);
+      if (!ctx || !canManageClub(ctx)) {
+        res.status(403).json({ error: "Alleen de clubbeheerder kan clubuitnodigingen maken." });
+        return;
+      }
+      const cap = await checkCapacityForNew(
+        ctx,
+        relationship === "club_trainer" ? "trainer" : "member",
+      );
+      if (!cap.ok) {
+        res.status(409).json({ error: cap.reason });
+        return;
+      }
+      targetRole =
+        relationship === "club_trainer"
+          ? "coach"
+          : relationship === "club_parent"
+            ? "parent"
+            : "athlete";
+      createdByRole = ctx.membership.role;
+
+      const clubDays =
+        typeof body.expiresInDays === "number" && body.expiresInDays > 0
+          ? Math.min(body.expiresInDays, 365)
+          : DEFAULT_EXPIRY_DAYS;
+      const [clubInv] = await db
+        .insert(invitationsTable)
+        .values({
+          token: newToken(),
+          inviterClerkId: clerkId,
+          createdByRole,
+          targetRole,
+          relationship,
+          clubId,
+          email: body.email?.trim() || null,
+          status: "pending",
+          expiresAt: new Date(Date.now() + clubDays * 24 * 60 * 60 * 1000),
+        })
+        .returning();
+      await writeClubAudit({
+        clubId,
+        actorClerkId: clerkId,
+        action: "lid_uitgenodigd",
+        targetType: "member",
+        detail: { relationship, email: body.email?.trim() || null },
+      });
+      res.status(201).json(publicView(clubInv!));
+      return;
     } else if (relationship === "parent_athlete") {
       if (!roles.includes("parent")) {
         res
@@ -334,6 +413,51 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
           .update(userProfilesTable)
           .set({ isHeadTester: true, updatedAt: new Date() })
           .where(eq(userProfilesTable.clerkId, clerkId));
+      } else if (relationship in CLUB_RELATIONSHIP_ROLES && inv.clubId != null) {
+        // Clubuitnodiging: maak (of heractiveer) het actieve lidmaatschap met
+        // de bijbehorende clubrol. Bestaand actief lidmaatschap blijft staan
+        // (partiële unique index) — dan alleen de rol bijwerken als de nieuwe
+        // uitnodiging een andere rol geeft.
+        const clubRole = CLUB_RELATIONSHIP_ROLES[relationship]!;
+        const [existing] = await tx
+          .select()
+          .from(clubMembersTable)
+          .where(
+            and(
+              eq(clubMembersTable.clubId, inv.clubId),
+              eq(clubMembersTable.clerkId, clerkId),
+              isNull(clubMembersTable.endedAt),
+            ),
+          );
+        if (existing) {
+          if (existing.role !== clubRole) {
+            await tx
+              .update(clubMembersTable)
+              .set({ role: clubRole, updatedAt: new Date() })
+              .where(eq(clubMembersTable.id, existing.id));
+          }
+        } else {
+          // Pakketlimieten óók bij accepteren afdwingen: een eerder gemaakte
+          // uitnodiging mag een volgeraakte club niet alsnog overschrijden.
+          const cap = await checkCapacityByClubId(
+            inv.clubId,
+            clubRole === "trainer" ? "trainer" : "member",
+          );
+          if (!cap.ok) throw new ClubCapacityError(cap.reason);
+          await tx.insert(clubMembersTable).values({
+            clubId: inv.clubId,
+            clerkId,
+            role: clubRole,
+          });
+        }
+        await tx.insert(clubAuditLogTable).values({
+          clubId: inv.clubId,
+          actorClerkId: clerkId,
+          action: "lid_toegetreden",
+          targetType: "member",
+          targetId: clerkId,
+          detail: { relationship },
+        });
       }
 
       return claimed;
@@ -375,6 +499,10 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
 
     res.json({ invitation: publicView(result), roles: nextRoles });
   } catch (err) {
+    if (err instanceof ClubCapacityError) {
+      res.status(409).json({ error: err.message });
+      return;
+    }
     req.log.error({ err }, "invitations accept failed");
     res.status(500).json({ error: "Internal server error" });
   }

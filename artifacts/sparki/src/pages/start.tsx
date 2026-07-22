@@ -8,7 +8,7 @@ import { useUserProfile } from "@/contexts/UserContext"
 import { useSparkiState, type StateBand } from "@/hooks/use-sparki-state"
 import { useSessions } from "@/hooks/use-sessions"
 import { useCircleFeed } from "@/hooks/use-social"
-import { useClubMembership } from "@/hooks/use-club"
+import { useClubMembership, useMyClubs } from "@/hooks/use-club"
 import { useGarage } from "@/hooks/use-garage"
 import { useBikeScanView, frameImageUrl } from "@/hooks/use-bike-scan"
 
@@ -164,13 +164,17 @@ function FeedSociaalToegang() {
   )
 }
 
-// Club — alleen zichtbaar bij een echte, geaccepteerde koppeling met een
-// trainer op Sparki. Zonder geldige koppeling bestaat dit blok niet.
+// Club — zichtbaar bij een echt clublidmaatschap óf een geaccepteerde
+// koppeling met een trainer op Sparki. Zonder geldige basis bestaat dit blok niet.
 function ClubToegang() {
   const { isMember, team, coaches } = useClubMembership()
-  if (!isMember) return null
-  const name = team?.clubName || coaches[0]?.displayName || "Jouw club"
-  const color = team?.primaryColor ?? "rgba(120,210,230,1)"
+  const { data: myClubs } = useMyClubs()
+  const clubRow = (myClubs ?? [])[0] ?? null
+  if (!clubRow && !isMember) return null
+  const name =
+    clubRow?.club?.name || team?.clubName || coaches[0]?.displayName || "Jouw club"
+  const color =
+    clubRow?.club?.primaryColor ?? team?.primaryColor ?? "rgba(120,210,230,1)"
   return (
     <Link
       href="/club"
@@ -180,7 +184,7 @@ function ClubToegang() {
       <span className="min-w-0">
         <span className="block text-[13px] font-medium text-white/90">{name}</span>
         <span className="text-[11px] text-white/45">
-          Trainer, team en clubtrainingen
+          {clubRow ? "Clubtrainingen, wedstrijden en berichten" : "Trainer, team en clubtrainingen"}
         </span>
       </span>
       <ArrowRight className="h-4 w-4 shrink-0 text-white/35" />

@@ -46,6 +46,7 @@ import AdminPage from "@/pages/admin";
 import AdminHealthDetailPage from "@/pages/admin-health-detail";
 import StartPage from "@/pages/start";
 import ClubPage from "@/pages/club";
+import ClubBeheerPage from "@/pages/club-beheer";
 import PaspoortPage from "@/pages/paspoort";
 import { apiFetch } from "@/lib/api";
 import SignInPage from "@/pages/sign-in";
@@ -492,6 +493,9 @@ function AppRouter() {
                 <Route path="/sign-up/*?" component={SignUpPage} />
                 <Route path="/vandaag">
                   <ProtectedPage component={VandaagPage} />
+                </Route>
+                <Route path="/club/beheer">
+                  <ProtectedPage component={ClubBeheerPage} />
                 </Route>
                 <Route path="/club">
                   <ProtectedPage component={ClubPage} />
