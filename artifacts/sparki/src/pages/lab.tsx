@@ -245,10 +245,10 @@ export default function LabPage() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="font-mono text-[10px] tracking-[0.22em] text-cyan-300/70">
-              CORE SPEELTUIN
+              VORM-SPEELTUIN
             </p>
             <p className="mt-1 text-[14px] font-medium text-white/85">
-              Speel met de levende Core
+              Speel met de levende vorm
             </p>
             <p className="mt-0.5 text-pretty text-[12px] leading-relaxed text-white/45">
               Stuur de vorm volledig met de hand en test of je de toestand in een

@@ -297,7 +297,7 @@ export default function PhotoLabPage() {
               <div className="rounded-2xl border border-white/10 bg-[#070d16]/70 px-4 py-4">
                 <p className="text-sm leading-relaxed text-white/75">
                   Wil je deze foto als sfeerbeeld op je profiel? Hij komt dan
-                  bovenaan je Sparki Core te staan.
+                  bovenaan je profiel te staan.
                 </p>
                 <button
                   type="button"

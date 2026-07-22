@@ -248,7 +248,7 @@ export default function CorePlaygroundPage() {
           Terug
         </button>
         <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
-          CORE SPEELTUIN
+          VORM-SPEELTUIN
         </span>
         <button
           type="button"
@@ -304,7 +304,7 @@ export default function CorePlaygroundPage() {
         {/* Sliders follow the reading priority: positie > kleur > vorm >
             beweging. Wijzig iets en de Core schuift er langzaam naartoe. */}
         <div className="space-y-6">
-          <Group n="1" title="Positie" hint="Waar zit mijn Core? (belangrijkste)">
+          <Group n="1" title="Positie" hint="Waar zit de vorm? (belangrijkste)">
             <Slider
               label="Positie X"
               value={state.x}
@@ -325,7 +325,7 @@ export default function CorePlaygroundPage() {
             />
           </Group>
 
-          <Group n="2" title="Kleur" hint="Welke kleur heeft mijn Core?">
+          <Group n="2" title="Kleur" hint="Welke kleur heeft de vorm?">
             <Slider
               label="Kleur"
               value={state.hue}
@@ -338,7 +338,7 @@ export default function CorePlaygroundPage() {
             />
           </Group>
 
-          <Group n="3" title="Vorm" hint="Hoe vervormt mijn Core?">
+          <Group n="3" title="Vorm" hint="Hoe vervormt de vorm?">
             <Slider
               label="Grootte"
               value={state.size}

@@ -437,7 +437,7 @@ export default function YouPage() {
             <div className="pointer-events-none absolute inset-0 bg-[#05070e]/25" />
             <div className="absolute bottom-0 left-0 right-0 p-4">
               <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-cyan-300/80">
-                Sparki Core
+                Jouw profiel
               </p>
               <p className="mt-1 text-lg font-light tracking-tight text-white">
                 {profile?.displayName ?? "Jouw profiel"}
@@ -451,7 +451,7 @@ export default function YouPage() {
       <section className="flex items-center justify-between">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-cyan-300/70">
-            Sparki Core
+            Jouw profiel
           </p>
           <h1 className="mt-1 font-sans text-2xl font-extralight tracking-tight text-white">
             Wat er van je bekend is
@@ -573,7 +573,7 @@ export default function YouPage() {
 
       {/* CORE STATUS — de levende Core + dag-check-in + waarom */}
       <section>
-        <SectionLabel n="03" title="Je Core-status" />
+        <SectionLabel n="03" title="Je status vandaag" />
         <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
           Hoe je er vandaag voorstaat — en hoe je je voelt
         </p>

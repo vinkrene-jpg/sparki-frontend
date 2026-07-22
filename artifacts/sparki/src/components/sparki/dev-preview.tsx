@@ -73,7 +73,7 @@ const VIEWS: DevView[] = [
   { label: "Train", path: "/train" },
   { label: "Feed", path: "/feed" },
   { label: "Lab", path: "/lab" },
-  { label: "Core", path: "/core" },
+  { label: "Vorm", path: "/core" },
   { label: "You", path: "/you" },
   { label: "Geluid", path: "/geluid" },
   { label: "Lichaam", path: "/lichaam" },

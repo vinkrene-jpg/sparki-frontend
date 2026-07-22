@@ -409,7 +409,7 @@ export function computePrediction(input: PredictInput): CorePrediction {
       confidenceLabel: "te weinig om te voorspellen",
       headline: "Sparki kan het effect nog niet voorspellen",
       summary:
-        "Er is nog geen geplande belasting of opbouw voor deze training. Vul de belasting of de blokken in, dan voorspelt Sparki het effect op je Core.",
+        "Er is nog geen geplande belasting of opbouw voor deze training. Vul de belasting of de blokken in, dan voorspelt Sparki het effect op hoe je ervoor staat.",
       predictable: false,
       comparison: null,
     };
