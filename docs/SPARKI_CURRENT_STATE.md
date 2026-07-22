@@ -170,7 +170,19 @@ Identiek aan §8 (zelfde Data Hub-architectuur; providers zijn bron-agnostisch).
 | 11 | ~~Club zonder eigen rechtenmodel~~ | opgelost | clubtabellen + rechtenlaag gebouwd (Golf 10) | — |
 | 12 | Fitbit alleen registry-entry | laag | `registry.ts` | Verwijderen of bouwen |
 
-## 11. Bewijs
+## 11. Releasestraat en productieacceptatie (Golf 13)
+
+Eén reproduceerbare releaseflow, hervatbaar en met vastgelegd bewijs:
+
+- **Releasecontrole:** `node scripts/release-check.mjs` (opties `--resume` en `--budget <sec>`; tussenstand in `docs/release-check-state.json`). Fasen in volgorde: typecheck → migratie-driftcontrole → alle web/mobiel-unit-tests → alle api-server e2e-suites (strikt sequentieel, gedeelde dist) → webbuild → serverbuild → mobielcontrole (tsc) → healthcheck in release-modus. Uitvoer: `docs/RELEASE_ACCEPTANCE.md` (per fase status + duur + extern-geblokkeerde punten + eindoordeel).
+- **Migraties:** drizzle push-model, uitsluitend additief. `scripts/check-schema-drift.mjs` onderscheidt echte drift van twee bekende drizzle-vergelijkingslussen (63-tekens-afkapping van constraintnamen; array-default `'{}'` vs `'{}'::text[]`) — beide uitsluitend no-op na verificatie tegen de live catalogus (zelfde tabel + identieke `pg_get_constraintdef`, resp. bestaand kolomdefault). Regressietests: `node scripts/test-check-schema-drift.mjs` (6 synthetische gevallen).
+- **Backup & restore-bewijs:** `test:backup-restore` (api-server) dumpt 10 kerntabellen naar een scratch-schema, herstelt en bewijst rijaantallen, relaties, consents, audit-integriteit en media-checksums (7/7 groen).
+- **Releasebewaking:** hergebruik van de bestaande Health Check engine (§ Admin) — geen parallel systeem. `HEALTH_CHECK_MODE=release pnpm --filter @workspace/api-server run job:health` is de release-gate (rood = exit ≠ 0); dagelijkse/wekelijkse bewaking via dezelfde CLI in Scheduled Deployments; datasync-bewaking via `GET /api/admin/sync-diagnostics`.
+- **Prod-config hardening:** productie weigert te starten zonder `DATABASE_URL`/Clerk-keys en weigert `DEV_AUTH_BYPASS=true`; CORS-allowlist (REPLIT_DOMAINS + `SPARKI_ALLOWED_ORIGINS`) en per-IP rate limiter (600/min) uitsluitend in productie.
+- **Rollback:** Replit-publicatie van een vorige checkpoint her-publiceren; schema is additief dus oudere code blijft draaien op nieuwer schema.
+- **E2E-dekking (acceptatiescenario's → suites):** accounts/rollen (`test:account`, `test:kernreis`), autorisatie-isolatie (`test:cross-account-isolation`, `test:coach-parent-link-isolation`, `test:links-unlink-isolation`, `test:links-end-isolation`), coach/ouder-deelniveaus (`test:coach-parent-*`), data-ingest (`test:data-hub`, `test:activity-file-ingest`, `test:ingest-elevation-*`), planning/coach (`test:coach-cockpit`, `test:feedback-adjust`), privacy (`test:privacy-security`), club (`test:club`), gezondheidscheck (`test:health-endpoints`). Lint = strikte `tsc` over alle pakketten (geen aparte ESLint — bewuste keuze, eerlijk vermeld).
+
+## 12. Bewijs
 
 - **Routers:** `artifacts/api-server/src/routes/` (55 bestanden, zie `index.ts` voor registraties).
 - **Schema:** `lib/db/src/schema/` — o.a. `users.ts`, `athlete-profiles.ts`, `links.ts`, `privacy.ts`, `connectors.ts`, `garage.ts`, `knowledge.ts`.

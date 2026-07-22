@@ -78,10 +78,6 @@ args = "test-coach-parent-private-memory"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "activity-file-ingest"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "test-coach-parent-share-nothing"
 
 [[workflows.workflow.tasks]]
@@ -293,17 +289,6 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/api-server run test:coach-parent-private-memory"
-
-[workflows.workflow.metadata]
-isValidation = true
-
-[[workflows.workflow]]
-name = "activity-file-ingest"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pnpm --filter @workspace/api-server run test:activity-file-ingest"
 
 [workflows.workflow.metadata]
 isValidation = true

@@ -9,6 +9,7 @@
     "start": "node --enable-source-maps ./dist/index.mjs",
     "scan:knowledge": "pnpm run build && node --enable-source-maps ./dist/jobs/knowledge-scan.mjs",
     "test:smoke": "node ./scripts/run-test.mjs smoke",
+    "test:backup-restore": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs backup-restore",
     "test:race-room": "node ./scripts/run-test.mjs race-room",
     "test:journey": "node ./scripts/run-test.mjs journey",
     "test:account": "node ./scripts/run-test.mjs account",

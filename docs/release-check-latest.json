@@ -1,0 +1,481 @@
+{
+  "commit": "9464e4c",
+  "date": "2026-07-22T15:16:41.609Z",
+  "results": [
+    {
+      "name": "typecheck",
+      "ok": true,
+      "seconds": 20
+    },
+    {
+      "name": "migraties:drift-check",
+      "ok": true,
+      "seconds": 10
+    },
+    {
+      "name": "unit:web:test:uitleg-content",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "unit:web:test:session-analysis",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "unit:web:test:insight-grouping",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "unit:web:test:ontwikkelprioriteit",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "unit:web:test:bandbreedte",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "unit:web:test:core-profile",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "unit:web:test:core-profile-bandbreedte",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "unit:web:test:core-profile-evolution",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "unit:web:test:onboarding-resume",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "unit:web:test:aandachtswet",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "unit:web:test:day-type",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "unit:web:test:stream-analysis",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "unit:web:test:scan-quality",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "unit:mobiel:test:ride-tracker",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "unit:mobiel:test:ride-sensor-summary",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "unit:mobiel:test:upload-queue",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "unit:mobiel:test:fall-detection",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "e2e:test:smoke",
+      "ok": true,
+      "seconds": 4
+    },
+    {
+      "name": "e2e:test:backup-restore",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:race-room",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "e2e:test:journey",
+      "ok": true,
+      "seconds": 7
+    },
+    {
+      "name": "e2e:test:account",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:data-hub",
+      "ok": true,
+      "seconds": 5
+    },
+    {
+      "name": "e2e:test:provider-sync",
+      "ok": true,
+      "seconds": 4
+    },
+    {
+      "name": "e2e:test:derived-load",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:connector-cleanup",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:memory-graph",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:context-memory",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:voice",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:onboarding-v2",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:onboarding-personas",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:material",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "e2e:test:material-nudge",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:observation",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:profile-consistency",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:notifications",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:notification-day-count",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:notifications-read-batch",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:core-prediction",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:test-dashboard",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "e2e:test:intel",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:fit-parse",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "e2e:test:activity-file-ingest",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:email-channel",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "e2e:test:development-goal",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:world-media",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:world-sim",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "e2e:test:world-consistency",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "e2e:test:world-feed",
+      "ok": true,
+      "seconds": 4
+    },
+    {
+      "name": "e2e:test:world-affinity",
+      "ok": true,
+      "seconds": 4
+    },
+    {
+      "name": "e2e:test:goals",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "e2e:test:scheduled-tasks",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "e2e:test:scheduled-tasks-route",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:sessions-contract",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:garage-sensors",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:onboarding-connect-step",
+      "ok": true,
+      "seconds": 61
+    },
+    {
+      "name": "e2e:test:onboarding-strava-gapfill",
+      "ok": true,
+      "seconds": 4
+    },
+    {
+      "name": "e2e:test:analysis-quality",
+      "ok": true,
+      "seconds": 7
+    },
+    {
+      "name": "e2e:test:feedback-adjust",
+      "ok": true,
+      "seconds": 7
+    },
+    {
+      "name": "e2e:test:privacy-security",
+      "ok": true,
+      "seconds": 8
+    },
+    {
+      "name": "e2e:test:kernreis",
+      "ok": true,
+      "seconds": 7
+    },
+    {
+      "name": "e2e:test:data-reliability",
+      "ok": true,
+      "seconds": 7
+    },
+    {
+      "name": "e2e:test:cross-account-isolation",
+      "ok": true,
+      "seconds": 13
+    },
+    {
+      "name": "e2e:test:coach-parent-link-isolation",
+      "ok": true,
+      "seconds": 9
+    },
+    {
+      "name": "e2e:test:links-unlink-isolation",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:links-end-isolation",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:coach-cockpit",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:club",
+      "ok": true,
+      "seconds": 7
+    },
+    {
+      "name": "e2e:test:climb-flag-gate",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:coach-parent-sharing-levels",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:parent-environment",
+      "ok": true,
+      "seconds": 7
+    },
+    {
+      "name": "e2e:test:coach-parent-share-nothing",
+      "ok": true,
+      "seconds": 7
+    },
+    {
+      "name": "e2e:test:coach-parent-private-memory",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:coach-parent-shared-raw-fields",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:health-endpoints",
+      "ok": true,
+      "seconds": 5
+    },
+    {
+      "name": "e2e:test:engagement",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "e2e:test:ride-story",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:sprint",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:mental",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "e2e:test:share-honesty",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:garage",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "e2e:test:mechanieker",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:session-detail-track",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:session-elevation-profile",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:ingest-elevation-profile",
+      "ok": true,
+      "seconds": 6
+    },
+    {
+      "name": "e2e:test:ingest-elevation-fit-tcx",
+      "ok": true,
+      "seconds": 7
+    },
+    {
+      "name": "e2e:test:road-objects",
+      "ok": true,
+      "seconds": 7
+    },
+    {
+      "name": "e2e:test:source-quality",
+      "ok": true,
+      "seconds": 3
+    },
+    {
+      "name": "e2e:test:stream-extraction",
+      "ok": true,
+      "seconds": 2
+    },
+    {
+      "name": "webbuild",
+      "ok": true,
+      "seconds": 35
+    },
+    {
+      "name": "serverbuild",
+      "ok": true,
+      "seconds": 10
+    },
+    {
+      "name": "mobielcontrole",
+      "ok": true,
+      "seconds": 12
+    },
+    {
+      "name": "healthcheck:release",
+      "ok": true,
+      "seconds": 14
+    }
+  ]
+}

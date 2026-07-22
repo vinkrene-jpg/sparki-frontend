@@ -42,7 +42,59 @@ app.use(
 // Clerk proxy must be before body parsers (streams raw bytes)
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
-app.use(cors({ credentials: true, origin: true }));
+// CORS — in productie alleen eigen domeinen (zelfde-origin verkeer heeft geen
+// CORS nodig; dit sluit cross-site cookie-gebruik uit). In dev blijft het open
+// zodat de Vite-proxy en previews werken.
+const allowedOrigins = new Set(
+  [
+    ...(process.env.REPLIT_DOMAINS ?? "").split(","),
+    ...(process.env.SPARKI_ALLOWED_ORIGINS ?? "").split(","),
+  ]
+    .map((d) => d.trim())
+    .filter(Boolean)
+    .map((d) => (d.startsWith("http") ? d : `https://${d}`)),
+);
+app.use(
+  cors({
+    credentials: true,
+    origin:
+      process.env.NODE_ENV === "production"
+        ? (origin, cb) => cb(null, !origin || allowedOrigins.has(origin))
+        : true,
+  }),
+);
+
+// Eenvoudige rate-limiter (alleen productie): per IP een glijdend venster.
+// Geen externe afhankelijkheid; beschermt tegen brute force en runaway loops.
+if (process.env.NODE_ENV === "production") {
+  const WINDOW_MS = 60_000;
+  const MAX_REQ = 600; // ruim voor normaal app-gebruik
+  const hits = new Map<string, { count: number; windowStart: number }>();
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, h] of hits) {
+      if (now - h.windowStart > WINDOW_MS) hits.delete(ip);
+    }
+  }, WINDOW_MS).unref();
+  app.use("/api", (req, res, next) => {
+    const ip = req.ip ?? "onbekend";
+    const now = Date.now();
+    const h = hits.get(ip);
+    if (!h || now - h.windowStart > WINDOW_MS) {
+      hits.set(ip, { count: 1, windowStart: now });
+      next();
+      return;
+    }
+    h.count += 1;
+    if (h.count > MAX_REQ) {
+      res
+        .status(429)
+        .json({ error: "Te veel verzoeken. Probeer het zo opnieuw." });
+      return;
+    }
+    next();
+  });
+}
 app.use(express.json({ limit: "12mb" }));
 app.use(express.urlencoded({ extended: true, limit: "12mb" }));
 

@@ -6,6 +6,23 @@ import { backfillDerivedLoad } from "./lib/derived-load-backfill";
 import { cleanupStaleConnectorShells } from "./lib/connectors/cleanup";
 import { startReminderScheduler } from "./lib/reminder-scheduler";
 
+// Productie faalt hard bij ontbrekende verplichte configuratie — liever een
+// duidelijke boot-fout dan een half-werkende app met stille gaten.
+if (process.env.NODE_ENV === "production") {
+  const required = ["DATABASE_URL", "CLERK_SECRET_KEY", "CLERK_PUBLISHABLE_KEY"];
+  const missing = required.filter((k) => !process.env[k]);
+  if (missing.length > 0) {
+    throw new Error(
+      `Verplichte productie-omgevingsvariabelen ontbreken: ${missing.join(", ")}`,
+    );
+  }
+  if (process.env.DEV_AUTH_BYPASS === "true") {
+    throw new Error(
+      "DEV_AUTH_BYPASS mag nooit aan staan in productie (auth-bypass).",
+    );
+  }
+}
+
 const rawPort = process.env["PORT"];
 
 if (!rawPort) {

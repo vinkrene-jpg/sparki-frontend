@@ -136,6 +136,8 @@ function sensibleValue(p: Persona, q: OnboardingQuestion): unknown {
   switch (q.key) {
     case "coachingMode":
       return p.coachingMode;
+    case "developmentGoal":
+      return p.wantsIntensive ? "elite_u23" : "granfondo";
     case "ftp":
       return p.experience === "elite" ? 330 : p.experience === "advanced" ? 290 : 230;
     case "weightKg":
@@ -423,8 +425,8 @@ for (const j of journeys) {
         j.accepted.length === j.order.length,
         `niet elke gestelde vraag werd beantwoord (${j.accepted.length}/${j.order.length})`,
       );
-      // Floor: today's catalog is 12 profielfeiten + 8 begeleidingsdimensies.
-      assert(j.accepted.length >= 20, `te weinig vragen gesteld: ${j.accepted.length}`);
+      // Floor: today's catalog is 13 profielfeiten + 8 begeleidingsdimensies.
+      assert(j.accepted.length >= 21, `te weinig vragen gesteld: ${j.accepted.length}`);
     });
   }
 
@@ -478,7 +480,7 @@ check("evaluatie(b): vraagomvang verschilt NIET op begeleidingsbehoefte", () =>
   // does not add deeper questions. If this ever changes, revisit the report.
   assert(
     intensiveWilling.order.length === casualWilling.order.length &&
-      intensiveWilling.order.length === 20,
+      intensiveWilling.order.length === 21,
     `intensief=${intensiveWilling.order.length} vs casual=${casualWilling.order.length}`,
   ),
 );

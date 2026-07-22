@@ -97,6 +97,7 @@
 - [Sparki bundle anatomy](sparki-bundle-anatomy.md) — the scary multi-MB bundle is the api-server SERVER esbuild (not browser-shipped); manualChunks is a caching win, real cut needs route-lazy.
 - [pino worker-transport flaky](pino-worker-transport-flaky.md) — pino-pretty worker transport races process-exit in tests/jobs ("worker is not a function"); use sync in-process stream, prod stays JSON.
 - [Non-destructive constraint migration](db-nondestructive-constraint-migration.md) — idempotent guarded ADD CONSTRAINT + md5 before/after proof; drizzle-kit push --strict --verbose aborts at TTY prompt = safe diff (applies nothing).
+- [Drizzle push no-op drift-lussen](drizzle-push-drift-loops.md) — 63-char naamafkapping + array-default '{}' zijn eeuwige diffs; alleen wegfilteren na catalogusverificatie (pg_get_constraintdef), nooit op naamprefix alleen.
 - [Sparki file-import as Data Hub source](sparki-file-import-source.md) — GPX/FIT/TCX uploads ingest via `ingestBatch` provider "file" (not a silo); content-only externalId; timeless GPX ≠ activity; unlink uses PARSEABLE_FILE_TYPES.
 - [Deployment liveness probes bare /api](deploy-liveness-bare-api.md) — platform pings the service base path (not only startup healthz); api router needs get("/") too or republish flaps unhealthy.
 - [api-server test build race](api-server-test-build-race.md) — parallel test:* workflows share one dist/ + rm-rebuild ⇒ "service was stopped"; restart them strictly sequentially; per-workflow isolated build is the real fix.

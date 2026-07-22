@@ -927,9 +927,9 @@ const unwiredChecks: CheckDefinition[] = [
       try {
         const failed = await db.execute(sql`
           SELECT count(*)::int AS n FROM activity_imports
-          WHERE status = 'failed' AND created_at > now() - interval '7 days'`);
+          WHERE status = 'failed' AND uploaded_at > now() - interval '7 days'`);
         const lastOk = await db.execute(sql`
-          SELECT max(created_at) AS t FROM activity_imports
+          SELECT max(uploaded_at) AS t FROM activity_imports
           WHERE status IN ('linked','parsed')`);
         const nFailed = Number((failed.rows[0] as { n: number }).n);
         const lastOkAt = (lastOk.rows[0] as { t: string | null }).t;
