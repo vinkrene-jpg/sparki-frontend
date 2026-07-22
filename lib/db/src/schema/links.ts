@@ -16,6 +16,9 @@ export const coachAthleteLinksTable = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    // Wanneer de coach deze atleet voor het laatst bewust heeft beoordeeld
+    // (dashboardknop "Beoordeeld"). Null = nog nooit.
+    lastReviewedAt: timestamp("last_reviewed_at", { withTimezone: true }),
   },
   (t) => [primaryKey({ columns: [t.coachClerkId, t.athleteClerkId] })],
 );

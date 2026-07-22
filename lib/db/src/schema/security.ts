@@ -27,6 +27,7 @@ export const securityEventKinds = [
   "sessions_ended",
   "connector_revoked",
   "viewed_by_coach",
+  "changed_by_coach",
   "viewed_by_parent",
   "viewed_by_admin",
   "rate_limited",

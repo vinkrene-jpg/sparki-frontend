@@ -30,6 +30,7 @@ import InviteAcceptPage from "@/pages/invite-accept"
 import TesterQrPage from "@/pages/tester-qr"
 import TesterWelcomePage from "@/pages/tester-welcome"
 import CoachAthletePlanPage from "@/pages/coach-athlete-plan"
+import CoachCockpitPage from "@/pages/coach-cockpit"
 import LandingPage from "@/pages/landing"
 import StartPage from "@/pages/start"
 import ClubPage from "@/pages/club"
@@ -92,6 +93,7 @@ const VIEWS: DevView[] = [
   { label: "Tester-QR", path: "/tester-qr" },
   { label: "Welkom-tester", path: "/welkom-tester" },
   { label: "Coach Plan", path: "/coach/athletes/demo/plan" },
+  { label: "Coach Cockpit", path: "/coach/athletes/demo/cockpit" },
   { label: "Admin", path: "/admin" },
 ]
 
@@ -445,6 +447,11 @@ export function DevPreview() {
   } else if (location.startsWith("/welkom-tester")) {
     page = <TesterWelcomePage />
     showNav = false
+  } else if (
+    location.startsWith("/coach/athletes/") &&
+    location.includes("/cockpit")
+  ) {
+    page = <CoachCockpitPage />
   } else if (location.startsWith("/coach/athletes/")) {
     page = <CoachAthletePlanPage />
   } else if (location.startsWith("/invite/")) {

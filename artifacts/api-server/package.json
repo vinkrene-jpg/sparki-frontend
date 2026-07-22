@@ -65,6 +65,7 @@
     "test:coach-parent-link-isolation": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs coach-parent-link-isolation",
     "test:links-unlink-isolation": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs links-unlink-isolation",
     "test:links-end-isolation": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs links-end-isolation",
+    "test:coach-cockpit": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs coach-cockpit",
     "test:coach-parent-sharing-levels": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs coach-parent-sharing-levels",
     "test:coach-parent-share-nothing": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs coach-parent-share-nothing",
     "test:coach-parent-private-memory": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs coach-parent-private-memory",

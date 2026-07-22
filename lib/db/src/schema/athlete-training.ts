@@ -72,6 +72,10 @@ export const plannedWorkoutsTable = pgTable("planned_workouts", {
   structure: jsonb("structure"),
   status: text("status").notNull().default("planned"),
   source: text("source").notNull().default("sparki"),
+  // Bij source="coach": welke coach deze training heeft aangemaakt. Alleen die
+  // coach mag de training wijzigen/herhalen (cross-coach isolatie). Nullable
+  // voor bestaande rijen van vóór deze kolom (legacy: elke gekoppelde coach).
+  coachClerkId: text("coach_clerk_id"),
   sessionId: integer("session_id").references(() => trainingSessionsTable.id, {
     onDelete: "set null",
   }),

@@ -40,6 +40,7 @@ import InviteAcceptPage from "@/pages/invite-accept";
 import TesterQrPage from "@/pages/tester-qr";
 import TesterWelcomePage from "@/pages/tester-welcome";
 import CoachAthletePlanPage from "@/pages/coach-athlete-plan";
+import CoachCockpitPage from "@/pages/coach-cockpit";
 import LandingPage from "@/pages/landing";
 import AdminPage from "@/pages/admin";
 import AdminHealthDetailPage from "@/pages/admin-health-detail";
@@ -578,6 +579,9 @@ function AppRouter() {
                 </Route>
                 <Route path="/coach/athletes/:athleteId/plan">
                   <ProtectedPage component={CoachAthletePlanPage} />
+                </Route>
+                <Route path="/coach/athletes/:athleteId/cockpit">
+                  <ProtectedPage component={CoachCockpitPage} />
                 </Route>
                 <Route path="/invite/:token">
                   <InviteRoute />

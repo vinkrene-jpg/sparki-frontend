@@ -9,6 +9,7 @@ import {
   aiCoachingIntensities,
   aiExplanationLevels,
   plannedWorkoutsTable,
+  coachChangeProposalsTable,
   type AiObservation,
 } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
@@ -625,11 +626,61 @@ router.post("/workout-adjust", requireAuth, async (req, res) => {
     // aanpassingsvoorstel. Eerlijk en deterministisch antwoord (geen model-
     // aanroep), zodat de sporter weet waarom en wat de vervolgstap is.
     if (workout.source === "coach") {
+      // Leg de aanleiding als OPEN wijzigingsvoorstel voor aan de coach —
+      // Sparki past de coachtraining nooit zelf aan. Idempotent per training:
+      // geen tweede open voorstel voor dezelfde training.
+      const wantsProposal = [
+        "too_hard",
+        "pain",
+        "tired",
+        "too_light",
+        "missed",
+        "move",
+      ].includes(feedbackType);
+      if (wantsProposal) try {
+        const [existing] = await db
+          .select({ id: coachChangeProposalsTable.id })
+          .from(coachChangeProposalsTable)
+          .where(
+            and(
+              eq(coachChangeProposalsTable.workoutId, workout.id),
+              eq(coachChangeProposalsTable.status, "open"),
+            ),
+          )
+          .limit(1);
+        if (!existing) {
+          // Race-veilig: de partiële unique index (workout_id WHERE status='open')
+          // dwingt hooguit één open voorstel af; een gelijktijdige tweede insert
+          // wordt stil overgeslagen.
+          await db.insert(coachChangeProposalsTable).values({
+            athleteClerkId: clerkId,
+            workoutId: workout.id,
+            reason: `De sporter ${FEEDBACK_LABEL[feedbackType]}${note?.trim() ? ` — toelichting: "${note.trim().slice(0, 300)}"` : ""} bij "${workout.title}" (${workout.scheduledDate}).`,
+            changes:
+              feedbackType === "too_hard" || feedbackType === "pain" || feedbackType === "tired"
+                ? {
+                    targetDurationMin: workout.targetDurationMin
+                      ? Math.round(workout.targetDurationMin * 0.7)
+                      : undefined,
+                    intensity: "herstel",
+                  }
+                : feedbackType === "too_light"
+                  ? {
+                      targetTSS: workout.targetTSS
+                        ? Math.round(workout.targetTSS * 1.15)
+                        : 60,
+                    }
+                  : { cancel: true },
+          }).onConflictDoNothing();
+        }
+      } catch (proposalErr) {
+        req.log.error({ err: proposalErr }, "coach change proposal persist failed");
+      }
       const proposal: AdjustProposal = {
         recommendation: "keep",
         title: "Overleg dit met je coach",
         message:
-          "Deze training staat in het schema van je coach. Sparki past coachtrainingen niet zelf aan. Je feedback is opgeslagen en zichtbaar voor je coach — bespreek samen of de training anders moet.",
+          "Deze training staat in het schema van je coach. Sparki past coachtrainingen niet zelf aan. Je feedback ligt nu als voorstel bij je coach — die beslist of de training anders moet.",
         changes: null,
       };
       res.json({ proposal, coachOwned: true });
