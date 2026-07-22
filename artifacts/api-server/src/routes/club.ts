@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, eq, desc, asc, gte, isNull, inArray } from "drizzle-orm";
+import { and, eq, desc, asc, gte, isNull, inArray, sql } from "drizzle-orm";
 import {
   db,
   clubsTable,
@@ -18,6 +18,8 @@ import {
   clubConsentsTable,
   clubSubscriptionsTable,
   clubAuditLogTable,
+  clubLocationsTable,
+  clubConsentScopes,
   userProfilesTable,
   athleteProfilesTable,
   plannedWorkoutsTable,
@@ -37,10 +39,20 @@ import {
   countActive,
   assignedAthleteIds,
   hasClubConsent,
+  grantedConsentScopes,
   isMinorForClub,
   isLinkedParent,
   writeClubAudit,
   CLUB_PACKAGES,
+  canManageTrainings,
+  canRecordAttendance,
+  canManageTrainerAssignments,
+  TRAINER_LIKE_ROLES,
+  TRAINER_COUNT_ROLES,
+  canEditMaterial,
+  canPostMessages,
+  canViewConsentedData,
+  clubStatusAllowsMutation,
   type ClubContext,
 } from "../lib/club-permissions";
 import { computeAge } from "../lib/age";
@@ -76,6 +88,37 @@ async function ctxOr403(
   return ctx;
 }
 
+// Schrijfacties (plannen, aanmelden, berichten) alleen bij een actieve club.
+// Bekijken blijft bij elke status mogelijk — er verdwijnt nooit data.
+function clubWritableOr409(ctx: ClubContext, res: import("express").Response): boolean {
+  if (ctx.club.status !== "actief") {
+    res.status(409).json({
+      error: "Deze club is op dit moment niet actief. Bekijken kan, wijzigen niet.",
+    });
+    return false;
+  }
+  return true;
+}
+
+// Korte, leesbare deelnamecode (zonder verwarrende tekens als 0/O, 1/I).
+const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+function generateJoinCode(len = 8): string {
+  let out = "";
+  for (let i = 0; i < len; i++) out += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+  return out;
+}
+
+// Clubstatus-bewaking voor mutaties: geschorst/beeindigd = alleen-lezen
+// (behalve beheer). Geeft true terug als de mutatie door mag.
+function statusGuard(ctx: ClubContext, res: import("express").Response): boolean {
+  const check = clubStatusAllowsMutation(ctx);
+  if (!check.ok) {
+    res.status(403).json({ error: check.reason });
+    return false;
+  }
+  return true;
+}
+
 async function profilesByIds(ids: string[]) {
   if (ids.length === 0) return new Map<string, { displayName: string | null; email: string }>();
   const rows = await db
@@ -109,6 +152,9 @@ router.post("/", requireAuth, async (req, res) => {
           contactEmail: str(req.body?.contactEmail),
           website: str(req.body?.website),
           primaryColor: str(req.body?.primaryColor),
+          secondaryColor: str(req.body?.secondaryColor),
+          contactPhone: str(req.body?.contactPhone),
+          joinCode: generateJoinCode(),
           ownerClerkId: clerkId,
         })
         .returning();
@@ -163,6 +209,103 @@ router.get("/", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "clubs list failed");
     res.status(500).json({ error: "Clubs ophalen is niet gelukt." });
+  }
+});
+
+// ── Aansluiten met clubcode of teamcode ──────────────────────────────────────
+// Een bestaand account sluit aan zonder persoonlijke uitnodiging. Capaciteit
+// en pakketlimieten gelden ook hier (eerlijk 409). Teamcode = clublid + team.
+router.post("/join", requireAuth, async (req, res) => {
+  try {
+    const clerkId = getClerkUserId(req)!;
+    const code = str(req.body?.code)?.toUpperCase();
+    if (!code) {
+      res.status(400).json({ error: "Vul een clubcode of teamcode in." });
+      return;
+    }
+    const [byClub] = await db.select().from(clubsTable).where(eq(clubsTable.joinCode, code));
+    let club = byClub ?? null;
+    let team: typeof clubTeamsTable.$inferSelect | null = null;
+    if (!club) {
+      const [byTeam] = await db
+        .select()
+        .from(clubTeamsTable)
+        .where(eq(clubTeamsTable.joinCode, code));
+      if (byTeam) {
+        team = byTeam;
+        const [c] = await db.select().from(clubsTable).where(eq(clubsTable.id, byTeam.clubId));
+        club = c ?? null;
+      }
+    }
+    if (!club) {
+      res.status(404).json({ error: "Deze code is niet (meer) geldig. Controleer de code bij je club." });
+      return;
+    }
+    if (club.status !== "actief") {
+      res.status(409).json({ error: "Deze club neemt op dit moment geen nieuwe leden aan." });
+      return;
+    }
+    const existing = await getClubContext(club.id, clerkId);
+    if (existing) {
+      res.status(409).json({ error: "Je bent al lid van deze club." });
+      return;
+    }
+    // Pakketlimieten gelden ook bij aansluiten met een code. Capaciteitscheck
+    // en insert zitten in één transactie met een advisory lock per club, zodat
+    // gelijktijdige joins de limiet niet kunnen overschrijden.
+    const joined = await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(881100, ${club.id})`);
+      const [subscription] = await tx
+        .select()
+        .from(clubSubscriptionsTable)
+        .where(eq(clubSubscriptionsTable.clubId, club.id));
+      const cap = await checkCapacityForNew(
+        { club, membership: { role: "member" }, subscription: subscription ?? null } as unknown as ClubContext,
+        "member",
+        tx,
+      );
+      if (!cap.ok) {
+        return { error: cap.reason ?? "Deze club zit vol." } as const;
+      }
+      // Teamcapaciteit (maxSize) eerlijk bewaken.
+      if (team?.maxSize != null) {
+        const rows = await tx
+          .select({ id: clubTeamMembersTable.id })
+          .from(clubTeamMembersTable)
+          .where(and(eq(clubTeamMembersTable.teamId, team.id), isNull(clubTeamMembersTable.endedAt)));
+        if (rows.length >= team.maxSize) {
+          return { error: "Dit team zit vol. Vraag de club om een andere indeling." } as const;
+        }
+      }
+      const [member] = await tx
+        .insert(clubMembersTable)
+        .values({ clubId: club.id, clerkId, role: "member" })
+        .returning();
+      if (team) {
+        await tx
+          .insert(clubTeamMembersTable)
+          .values({ teamId: team.id, clerkId })
+          .onConflictDoNothing();
+      }
+      return { member: member! } as const;
+    });
+    if ("error" in joined) {
+      res.status(409).json({ error: joined.error });
+      return;
+    }
+    const member = joined.member;
+    await writeClubAudit({
+      clubId: club.id,
+      actorClerkId: clerkId,
+      action: "lid_aangesloten_met_code",
+      targetType: "member",
+      targetId: member!.id,
+      detail: { via: team ? "teamcode" : "clubcode", teamId: team?.id ?? null },
+    });
+    res.status(201).json({ club, team, membership: member });
+  } catch (err) {
+    req.log.error({ err }, "club join failed");
+    res.status(500).json({ error: "Aansluiten is niet gelukt." });
   }
 });
 
@@ -272,12 +415,30 @@ router.put("/:clubId", requireAuth, async (req, res) => {
       return;
     }
     const patch: Record<string, unknown> = { updatedAt: new Date() };
-    for (const key of ["name", "description", "location", "contactEmail", "website", "primaryColor", "logoUrl"] as const) {
+    for (const key of ["name", "description", "location", "contactEmail", "contactPhone", "website", "primaryColor", "secondaryColor", "logoUrl"] as const) {
       if (typeof req.body?.[key] === "string") patch[key] = req.body[key].trim() || null;
     }
     if (typeof req.body?.name === "string" && !req.body.name.trim()) {
       res.status(400).json({ error: "De clubnaam mag niet leeg zijn." });
       return;
+    }
+    // Clubstatus wijzigen: alleen de eigenaar (commerciële voorbereiding).
+    if (typeof req.body?.status === "string") {
+      const status = req.body.status.trim();
+      if (!["actief", "beperkt", "geschorst", "beeindigd"].includes(status)) {
+        res.status(400).json({ error: "Onbekende clubstatus." });
+        return;
+      }
+      if (!hasClubRole(ctx, ["owner"])) {
+        res.status(403).json({ error: "Alleen de clubeigenaar kan de clubstatus wijzigen." });
+        return;
+      }
+      patch["status"] = status;
+    }
+    // Modules aan/uit (jsonb array van bekende sleutels).
+    if (Array.isArray(req.body?.modules)) {
+      const known = ["trainingen", "wedstrijden", "berichten", "materiaal"];
+      patch["modules"] = req.body.modules.filter((m: unknown) => typeof m === "string" && known.includes(m));
     }
     const [updated] = await db
       .update(clubsTable)
@@ -295,6 +456,153 @@ router.put("/:clubId", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "club update failed");
     res.status(500).json({ error: "Clubprofiel wijzigen is niet gelukt." });
+  }
+});
+
+// Deelnamecode (club of team) opnieuw genereren — beheer.
+router.post("/:clubId/join-code", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de clubbeheerder kan de deelnamecode vernieuwen." });
+      return;
+    }
+    const teamId = req.body?.teamId != null ? intParam(req.body.teamId) : null;
+    const code = generateJoinCode();
+    if (teamId != null) {
+      const [team] = await db
+        .update(clubTeamsTable)
+        .set({ joinCode: code, updatedAt: new Date() })
+        .where(and(eq(clubTeamsTable.id, teamId), eq(clubTeamsTable.clubId, ctx.club.id)))
+        .returning();
+      if (!team) {
+        res.status(404).json({ error: "Team niet gevonden." });
+        return;
+      }
+      await writeClubAudit({ clubId: ctx.club.id, actorClerkId: ctx.membership.clerkId, action: "teamcode_vernieuwd", targetType: "team", targetId: teamId });
+      res.json({ teamId, joinCode: code });
+      return;
+    }
+    await db.update(clubsTable).set({ joinCode: code, updatedAt: new Date() }).where(eq(clubsTable.id, ctx.club.id));
+    await writeClubAudit({ clubId: ctx.club.id, actorClerkId: ctx.membership.clerkId, action: "clubcode_vernieuwd", targetType: "club", targetId: ctx.club.id });
+    res.json({ joinCode: code });
+  } catch (err) {
+    req.log.error({ err }, "club join-code failed");
+    res.status(500).json({ error: "Deelnamecode vernieuwen is niet gelukt." });
+  }
+});
+
+// ── Locaties ──────────────────────────────────────────────────────────────────
+
+router.get("/:clubId/locations", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    const rows = await db
+      .select()
+      .from(clubLocationsTable)
+      .where(eq(clubLocationsTable.clubId, ctx.club.id))
+      .orderBy(asc(clubLocationsTable.name));
+    res.json(rows);
+  } catch (err) {
+    req.log.error({ err }, "club locations failed");
+    res.status(500).json({ error: "Locaties ophalen is niet gelukt." });
+  }
+});
+
+router.post("/:clubId/locations", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de clubbeheerder beheert locaties." });
+      return;
+    }
+    const name = str(req.body?.name);
+    if (!name) {
+      res.status(400).json({ error: "Geef de locatie een naam." });
+      return;
+    }
+    const [row] = await db
+      .insert(clubLocationsTable)
+      .values({
+        clubId: ctx.club.id,
+        name,
+        address: str(req.body?.address),
+        notes: str(req.body?.notes),
+        routeId: req.body?.routeId != null ? intParam(req.body.routeId) : null,
+        createdByClerkId: ctx.membership.clerkId,
+      })
+      .returning();
+    await writeClubAudit({ clubId: ctx.club.id, actorClerkId: ctx.membership.clerkId, action: "locatie_aangemaakt", targetType: "location", targetId: row!.id });
+    res.status(201).json(row);
+  } catch (err) {
+    req.log.error({ err }, "club location create failed");
+    res.status(500).json({ error: "Locatie aanmaken is niet gelukt." });
+  }
+});
+
+router.put("/:clubId/locations/:locationId", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de clubbeheerder beheert locaties." });
+      return;
+    }
+    const locationId = intParam(req.params["locationId"]);
+    const patch: Record<string, unknown> = { updatedAt: new Date() };
+    for (const key of ["name", "address", "notes"] as const) {
+      if (typeof req.body?.[key] === "string") patch[key] = req.body[key].trim() || null;
+    }
+    if (patch["name"] === null) delete patch["name"];
+    if (req.body?.routeId === null) patch["routeId"] = null;
+    else if (Number.isInteger(req.body?.routeId)) patch["routeId"] = req.body.routeId;
+    const [row] = await db
+      .update(clubLocationsTable)
+      .set(patch)
+      .where(and(eq(clubLocationsTable.id, locationId ?? -1), eq(clubLocationsTable.clubId, ctx.club.id)))
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Locatie niet gevonden." });
+      return;
+    }
+    await writeClubAudit({ clubId: ctx.club.id, actorClerkId: ctx.membership.clerkId, action: "locatie_gewijzigd", targetType: "location", targetId: row.id });
+    res.json(row);
+  } catch (err) {
+    req.log.error({ err }, "club location update failed");
+    res.status(500).json({ error: "Locatie wijzigen is niet gelukt." });
+  }
+});
+
+// ── Clubkalender (trainingen + wedstrijden samengevoegd) ─────────────────────
+
+router.get("/:clubId/calendar", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    const from = str(req.query["from"]) ?? new Date().toISOString().slice(0, 10);
+    const [trainings, races] = await Promise.all([
+      db
+        .select()
+        .from(clubTrainingsTable)
+        .where(and(eq(clubTrainingsTable.clubId, ctx.club.id), gte(clubTrainingsTable.trainingDate, from)))
+        .orderBy(asc(clubTrainingsTable.trainingDate)),
+      db
+        .select()
+        .from(clubRaceEventsTable)
+        .where(and(eq(clubRaceEventsTable.clubId, ctx.club.id), gte(clubRaceEventsTable.raceDate, from)))
+        .orderBy(asc(clubRaceEventsTable.raceDate)),
+    ]);
+    const items = [
+      ...trainings.map((t) => ({ kind: "training" as const, date: t.trainingDate, time: t.startTime, item: t })),
+      ...races.map((r) => ({ kind: "wedstrijd" as const, date: r.raceDate, time: r.meetTime, item: r })),
+    ].sort((a, b) => (a.date === b.date ? (a.time ?? "").localeCompare(b.time ?? "") : a.date.localeCompare(b.date)));
+    res.json(items);
+  } catch (err) {
+    req.log.error({ err }, "club calendar failed");
+    res.status(500).json({ error: "Clubkalender ophalen is niet gelukt." });
   }
 });
 
@@ -466,7 +774,10 @@ router.put("/:clubId/members/:memberId/role", requireAuth, async (req, res) => {
       res.status(400).json({ error: "Draag eerst het eigenaarschap over voordat je deze rol wijzigt." });
       return;
     }
-    if (role === "trainer" && target.role !== "trainer") {
+    if (
+      TRAINER_COUNT_ROLES.includes(role as never) &&
+      !TRAINER_COUNT_ROLES.includes(target.role as never)
+    ) {
       const cap = await checkCapacityForNew(ctx, "trainer");
       if (!cap.ok) {
         res.status(409).json({ error: cap.reason });
@@ -571,10 +882,49 @@ router.post("/:clubId/teams", requireAuth, async (req, res) => {
       name,
       description: str(req.body?.description),
       managerClerkId: str(req.body?.managerClerkId),
+      category: str(req.body?.category),
+      level: str(req.body?.level),
+      season: str(req.body?.season),
+      trainingDays: str(req.body?.trainingDays),
+      defaultLocation: str(req.body?.defaultLocation),
+      maxSize: req.body?.maxSize != null ? intParam(req.body.maxSize) : null,
+      joinCode: generateJoinCode(),
     })
     .returning();
   await writeClubAudit({ clubId: ctx.club.id, actorClerkId: ctx.membership.clerkId, action: "team_aangemaakt", targetType: "team", targetId: team!.id });
   res.status(201).json(team);
+});
+
+router.put("/:clubId/teams/:teamId", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de clubbeheerder kan teams wijzigen." });
+      return;
+    }
+    const teamId = intParam(req.params["teamId"]);
+    const patch: Record<string, unknown> = { updatedAt: new Date() };
+    for (const key of ["name", "description", "category", "level", "season", "trainingDays", "defaultLocation", "managerClerkId"] as const) {
+      if (typeof req.body?.[key] === "string") patch[key] = req.body[key].trim() || null;
+    }
+    if (patch["name"] === null) delete patch["name"];
+    if (req.body?.maxSize !== undefined) patch["maxSize"] = req.body.maxSize == null ? null : intParam(req.body.maxSize);
+    const [team] = await db
+      .update(clubTeamsTable)
+      .set(patch)
+      .where(and(eq(clubTeamsTable.id, teamId ?? -1), eq(clubTeamsTable.clubId, ctx.club.id)))
+      .returning();
+    if (!team) {
+      res.status(404).json({ error: "Team niet gevonden." });
+      return;
+    }
+    await writeClubAudit({ clubId: ctx.club.id, actorClerkId: ctx.membership.clerkId, action: "team_gewijzigd", targetType: "team", targetId: team.id });
+    res.json(team);
+  } catch (err) {
+    req.log.error({ err }, "club team update failed");
+    res.status(500).json({ error: "Team wijzigen is niet gelukt." });
+  }
 });
 
 router.post("/:clubId/groups", requireAuth, async (req, res) => {
@@ -597,6 +947,10 @@ router.post("/:clubId/groups", requireAuth, async (req, res) => {
       level: str(req.body?.level),
       description: str(req.body?.description),
       trainerClerkId: str(req.body?.trainerClerkId),
+      season: str(req.body?.season),
+      trainingDays: str(req.body?.trainingDays),
+      defaultLocation: str(req.body?.defaultLocation),
+      maxSize: req.body?.maxSize != null ? intParam(req.body.maxSize) : null,
     })
     .returning();
   await writeClubAudit({ clubId: ctx.club.id, actorClerkId: ctx.membership.clerkId, action: "groep_aangemaakt", targetType: "group", targetId: group!.id });
@@ -695,8 +1049,8 @@ router.post("/:clubId/trainer-assignments", requireAuth, async (req, res) => {
   try {
     const ctx = await ctxOr403(req, res);
     if (!ctx) return;
-    if (!canManageClub(ctx)) {
-      res.status(403).json({ error: "Alleen de clubbeheerder wijst trainers toe." });
+    if (!canManageTrainerAssignments(ctx)) {
+      res.status(403).json({ error: "Alleen beheer of de hoofdtrainer wijst trainers toe." });
       return;
     }
     const trainerClerkId = str(req.body?.trainerClerkId);
@@ -707,8 +1061,8 @@ router.post("/:clubId/trainer-assignments", requireAuth, async (req, res) => {
       return;
     }
     const trainerCtx = await getClubContext(ctx.club.id, trainerClerkId);
-    if (!trainerCtx || trainerCtx.membership.role !== "trainer") {
-      res.status(400).json({ error: "Deze persoon is geen actieve trainer van de club." });
+    if (!trainerCtx || !TRAINER_LIKE_ROLES.includes(trainerCtx.membership.role as never)) {
+      res.status(400).json({ error: "Deze persoon heeft geen trainersrol in de club." });
       return;
     }
     // Cross-club isolatie: het team of de groep moet van DEZE club zijn.
@@ -747,18 +1101,16 @@ router.post("/:clubId/trainer-assignments", requireAuth, async (req, res) => {
 
 // ── Clubtrainingen ────────────────────────────────────────────────────────────
 
-function canPlanTraining(ctx: ClubContext): boolean {
-  return hasClubRole(ctx, ["owner", "admin", "trainer"]);
-}
-
 router.post("/:clubId/trainings", requireAuth, async (req, res) => {
   try {
     const ctx = await ctxOr403(req, res);
     if (!ctx) return;
-    if (!canPlanTraining(ctx)) {
+    if (!clubWritableOr409(ctx, res)) return;
+    if (!canManageTrainings(ctx)) {
       res.status(403).json({ error: "Alleen beheer of een trainer kan clubtrainingen plannen." });
       return;
     }
+    if (!statusGuard(ctx, res)) return;
     const title = str(req.body?.title);
     const trainingDate = str(req.body?.trainingDate);
     if (!title || !trainingDate || !/^\d{4}-\d{2}-\d{2}$/.test(trainingDate)) {
@@ -782,6 +1134,9 @@ router.post("/:clubId/trainings", requireAuth, async (req, res) => {
         maxParticipants: req.body?.maxParticipants != null ? intParam(req.body.maxParticipants) : null,
         durationMin: req.body?.durationMin != null ? intParam(req.body.durationMin) : null,
         routeId: req.body?.routeId != null ? intParam(req.body.routeId) : null,
+        materialInfo: str(req.body?.materialInfo),
+        safetyInfo: str(req.body?.safetyInfo),
+        locationId: req.body?.locationId != null ? intParam(req.body.locationId) : null,
         createdByClerkId: ctx.membership.clerkId,
       })
       .returning();
@@ -811,7 +1166,7 @@ router.get("/:clubId/trainings", requireAuth, async (req, res) => {
             .from(clubTrainingSignupsTable)
             .where(inArray(clubTrainingSignupsTable.trainingId, ids))
         : [];
-    const manage = canPlanTraining(ctx);
+    const manage = canManageTrainings(ctx);
     const names = manage ? await profilesByIds(signups.map((s) => s.clerkId)) : new Map();
     res.json(
       trainings.map((t) => {
@@ -822,6 +1177,7 @@ router.get("/:clubId/trainings", requireAuth, async (req, res) => {
             aangemeld: su.filter((s) => s.status === "aangemeld").length,
             afgemeld: su.filter((s) => s.status === "afgemeld").length,
             reserve: su.filter((s) => s.status === "reserve").length,
+            misschien: su.filter((s) => s.status === "misschien").length,
           },
           mySignup: su.find((s) => s.clerkId === ctx.membership.clerkId) ?? null,
           signups: manage
@@ -843,6 +1199,7 @@ router.put("/:clubId/trainings/:trainingId", requireAuth, async (req, res) => {
   try {
     const ctx = await ctxOr403(req, res);
     if (!ctx) return;
+    if (!clubWritableOr409(ctx, res)) return;
     const trainingId = intParam(req.params["trainingId"]);
     const [training] = await db
       .select()
@@ -853,19 +1210,31 @@ router.put("/:clubId/trainings/:trainingId", requireAuth, async (req, res) => {
       return;
     }
     const isOwnTraining = training.trainerClerkId === ctx.membership.clerkId || training.createdByClerkId === ctx.membership.clerkId;
-    if (!canManageClub(ctx) && !(hasClubRole(ctx, ["trainer"]) && isOwnTraining)) {
+    const fullEdit =
+      canManageClub(ctx) ||
+      hasClubRole(ctx, ["hoofdtrainer"]) ||
+      (hasClubRole(ctx, ["trainer", "assistent"]) && isOwnTraining);
+    // Mechanieker: mag ALLEEN materiaal- en veiligheidsinformatie bijwerken.
+    const materialOnly = !fullEdit && canEditMaterial(ctx);
+    if (!fullEdit && !materialOnly) {
       res.status(403).json({ error: "Alleen beheer of de eigen trainer kan deze training wijzigen." });
       return;
     }
     const patch: Record<string, unknown> = { updatedAt: new Date() };
-    for (const key of ["title", "startTime", "location", "level", "goal", "notes", "status"] as const) {
+    const textKeys = materialOnly
+      ? (["materialInfo", "safetyInfo"] as const)
+      : (["title", "startTime", "location", "level", "goal", "notes", "status", "materialInfo", "safetyInfo"] as const);
+    for (const key of textKeys) {
       if (typeof req.body?.[key] === "string") patch[key] = req.body[key].trim() || null;
     }
     if (patch["title"] === null) delete patch["title"];
-    if (typeof req.body?.trainingDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(req.body.trainingDate))
-      patch["trainingDate"] = req.body.trainingDate;
-    if (req.body?.maxParticipants !== undefined) patch["maxParticipants"] = intParam(req.body.maxParticipants);
-    if (req.body?.durationMin !== undefined) patch["durationMin"] = intParam(req.body.durationMin);
+    if (!materialOnly) {
+      if (typeof req.body?.trainingDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(req.body.trainingDate))
+        patch["trainingDate"] = req.body.trainingDate;
+      if (req.body?.maxParticipants !== undefined) patch["maxParticipants"] = intParam(req.body.maxParticipants);
+      if (req.body?.durationMin !== undefined) patch["durationMin"] = intParam(req.body.durationMin);
+      if (req.body?.locationId !== undefined) patch["locationId"] = req.body.locationId == null ? null : intParam(req.body.locationId);
+    }
     const [updated] = await db
       .update(clubTrainingsTable)
       .set(patch)
@@ -885,6 +1254,7 @@ router.post("/:clubId/trainings/:trainingId/signup", requireAuth, async (req, re
   try {
     const ctx = await ctxOr403(req, res);
     if (!ctx) return;
+    if (!clubWritableOr409(ctx, res)) return;
     const trainingId = intParam(req.params["trainingId"]);
     const wanted = str(req.body?.status) ?? "aangemeld";
     if (!clubSignupStatuses.includes(wanted as never)) {
@@ -930,9 +1300,10 @@ router.post("/:clubId/trainings/:trainingId/signup", requireAuth, async (req, re
             .values({ trainingId: training.id, clerkId, status, note: str(req.body?.note) })
             .returning();
 
-      // Afmelding maakt plek vrij: promoveer de langst wachtende reserve.
+      // Afmelding of "misschien" maakt plek vrij: promoveer de langst
+      // wachtende reserve.
       let promoted: typeof row | null = null;
-      if (mine?.status === "aangemeld" && status === "afgemeld") {
+      if (mine?.status === "aangemeld" && (status === "afgemeld" || status === "misschien")) {
         const reserve = existing
           .filter((s) => s.status === "reserve" && s.clerkId !== clerkId)
           .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[0];
@@ -1003,6 +1374,7 @@ router.post("/:clubId/trainings/:trainingId/link-schedule", requireAuth, async (
   try {
     const ctx = await ctxOr403(req, res);
     if (!ctx) return;
+    if (!clubWritableOr409(ctx, res)) return;
     const trainingId = intParam(req.params["trainingId"]);
     const mode = str(req.body?.mode) ?? "toevoegen"; // toevoegen | vervangen
     const replaceWorkoutId = req.body?.replaceWorkoutId != null ? intParam(req.body.replaceWorkoutId) : null;
@@ -1108,8 +1480,8 @@ router.put("/:clubId/trainings/:trainingId/attendance", requireAuth, async (req,
       return;
     }
     const isTrainer = training.trainerClerkId === ctx.membership.clerkId || training.createdByClerkId === ctx.membership.clerkId;
-    if (!canManageClub(ctx) && !isTrainer) {
-      res.status(403).json({ error: "Alleen de trainer van deze training of beheer registreert aanwezigheid." });
+    if (!canManageClub(ctx) && !isTrainer && !canRecordAttendance(ctx)) {
+      res.status(403).json({ error: "Alleen de trainer van deze training, een assistent of beheer registreert aanwezigheid." });
       return;
     }
     const entries = Array.isArray(req.body?.entries) ? req.body.entries : [];
@@ -1117,7 +1489,7 @@ router.put("/:clubId/trainings/:trainingId/attendance", requireAuth, async (req,
     for (const e of entries) {
       const clerkId = str(e?.clerkId);
       const attendance = str(e?.attendance);
-      if (!clerkId || !attendance || !["aanwezig", "afwezig"].includes(attendance)) continue;
+      if (!clerkId || !attendance || !["aanwezig", "afwezig", "te_laat"].includes(attendance)) continue;
       const rows = await db
         .update(clubTrainingSignupsTable)
         .set({ attendance, updatedAt: new Date() })
@@ -1148,14 +1520,31 @@ router.post("/:clubId/races", requireAuth, async (req, res) => {
   try {
     const ctx = await ctxOr403(req, res);
     if (!ctx) return;
+    if (!clubWritableOr409(ctx, res)) return;
     if (!canManageRaces(ctx)) {
       res.status(403).json({ error: "Alleen beheer of een teammanager kan clubwedstrijden beheren." });
       return;
     }
+    if (!statusGuard(ctx, res)) return;
     const name = str(req.body?.name);
     const raceDate = str(req.body?.raceDate);
     if (!name || !raceDate || !/^\d{4}-\d{2}-\d{2}$/.test(raceDate)) {
       res.status(400).json({ error: "Naam en een geldige datum zijn verplicht." });
+      return;
+    }
+    // Dubbele invoer voorkomen: zelfde club + naam + datum bestaat al.
+    const [dup] = await db
+      .select({ id: clubRaceEventsTable.id })
+      .from(clubRaceEventsTable)
+      .where(
+        and(
+          eq(clubRaceEventsTable.clubId, ctx.club.id),
+          eq(clubRaceEventsTable.name, name),
+          eq(clubRaceEventsTable.raceDate, raceDate),
+        ),
+      );
+    if (dup) {
+      res.status(409).json({ error: "Deze wedstrijd staat al in de clubkalender (zelfde naam en datum)." });
       return;
     }
     const [event] = await db
@@ -1220,7 +1609,11 @@ router.put("/:clubId/races/:eventId", requireAuth, async (req, res) => {
   try {
     const ctx = await ctxOr403(req, res);
     if (!ctx) return;
-    if (!canManageRaces(ctx)) {
+    if (!clubWritableOr409(ctx, res)) return;
+    // Mechanieker: mag ALLEEN de materiaalinformatie van een wedstrijd bijwerken.
+    const raceFullEdit = canManageRaces(ctx);
+    const raceMaterialOnly = !raceFullEdit && canEditMaterial(ctx);
+    if (!raceFullEdit && !raceMaterialOnly) {
       res.status(403).json({ error: "Alleen beheer of een teammanager kan clubwedstrijden beheren." });
       return;
     }
@@ -1234,11 +1627,14 @@ router.put("/:clubId/races/:eventId", requireAuth, async (req, res) => {
       return;
     }
     const patch: Record<string, unknown> = { updatedAt: new Date() };
-    for (const key of ["name", "location", "discipline", "meetPoint", "meetTime", "transportInfo", "materialInfo", "notes", "resultSummary", "debrief", "status"] as const) {
+    const raceKeys = raceMaterialOnly
+      ? (["materialInfo"] as const)
+      : (["name", "location", "discipline", "meetPoint", "meetTime", "transportInfo", "materialInfo", "notes", "resultSummary", "debrief", "status"] as const);
+    for (const key of raceKeys) {
       if (typeof req.body?.[key] === "string") patch[key] = req.body[key].trim() || null;
     }
     if (patch["name"] === null) delete patch["name"];
-    if (typeof req.body?.raceDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(req.body.raceDate))
+    if (!raceMaterialOnly && typeof req.body?.raceDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(req.body.raceDate))
       patch["raceDate"] = req.body.raceDate;
     const [updated] = await db
       .update(clubRaceEventsTable)
@@ -1258,6 +1654,7 @@ router.post("/:clubId/races/:eventId/selection", requireAuth, async (req, res) =
   try {
     const ctx = await ctxOr403(req, res);
     if (!ctx) return;
+    if (!clubWritableOr409(ctx, res)) return;
     if (!canManageRaces(ctx)) {
       res.status(403).json({ error: "Alleen beheer of een teammanager beheert de selectie." });
       return;
@@ -1310,6 +1707,7 @@ router.put("/:clubId/races/:eventId/availability", requireAuth, async (req, res)
   try {
     const ctx = await ctxOr403(req, res);
     if (!ctx) return;
+    if (!clubWritableOr409(ctx, res)) return;
     const eventId = intParam(req.params["eventId"]);
     const availability = str(req.body?.availability);
     if (eventId == null || !availability || !["beschikbaar", "niet_beschikbaar", "onbekend"].includes(availability)) {
@@ -1433,6 +1831,12 @@ router.post("/:clubId/messages", requireAuth, async (req, res) => {
   try {
     const ctx = await ctxOr403(req, res);
     if (!ctx) return;
+    if (!clubWritableOr409(ctx, res)) return;
+    if (!canPostMessages(ctx)) {
+      res.status(403).json({ error: "Met een alleen-lezen rol kun je geen berichten plaatsen." });
+      return;
+    }
+    if (!statusGuard(ctx, res)) return;
     const body = str(req.body?.body);
     if (!body) {
       res.status(400).json({ error: "Het bericht mag niet leeg zijn." });
@@ -1591,7 +1995,7 @@ router.get("/:clubId/consents/mine", requireAuth, async (req, res) => {
     const ctx = await ctxOr403(req, res);
     if (!ctx) return;
     const clerkId = getClerkUserId(req)!;
-    const [row] = await db
+    const rows = await db
       .select()
       .from(clubConsentsTable)
       .where(
@@ -1601,7 +2005,13 @@ router.get("/:clubId/consents/mine", requireAuth, async (req, res) => {
         ),
       );
     const minor = await isMinorForClub(clerkId);
-    res.json({ consent: row ?? null, isMinor: minor });
+    // Compatibel: `consent` blijft de training_summary-rij; `consents` = alle scopes.
+    res.json({
+      consent: rows.find((r) => r.scope === "training_summary") ?? null,
+      consents: rows,
+      scopes: clubConsentScopes,
+      isMinor: minor,
+    });
   } catch (err) {
     req.log.error({ err }, "club consent mine failed");
     res.status(500).json({ error: "Toestemming ophalen is niet gelukt." });
@@ -1614,7 +2024,12 @@ router.post("/:clubId/consents", requireAuth, async (req, res) => {
     const clubId = intParam(req.params["clubId"]);
     const athleteClerkId = str(req.body?.athleteClerkId) ?? clerkId;
     const action = str(req.body?.action) ?? "grant"; // grant | revoke
-    if (clubId == null || !["grant", "revoke"].includes(action)) {
+    const scope = str(req.body?.scope) ?? "training_summary";
+    if (
+      clubId == null ||
+      !["grant", "revoke"].includes(action) ||
+      !(clubConsentScopes as readonly string[]).includes(scope)
+    ) {
       res.status(400).json({ error: "Ongeldige invoer." });
       return;
     }
@@ -1651,7 +2066,7 @@ router.post("/:clubId/consents", requireAuth, async (req, res) => {
       .values({
         clubId,
         athleteClerkId,
-        scope: "training_summary",
+        scope,
         status: action === "grant" ? "granted" : "revoked",
         grantedByClerkId: clerkId,
         grantedByRelation,
@@ -1681,7 +2096,7 @@ router.post("/:clubId/consents", requireAuth, async (req, res) => {
       action: action === "grant" ? "consent_gegeven" : "consent_ingetrokken",
       targetType: "consent",
       targetId: athleteClerkId,
-      detail: { relatie: grantedByRelation },
+      detail: { relatie: grantedByRelation, scope },
     });
     res.json(row);
   } catch (err) {
@@ -1696,7 +2111,7 @@ router.get("/:clubId/trainer/athletes", requireAuth, async (req, res) => {
   try {
     const ctx = await ctxOr403(req, res);
     if (!ctx) return;
-    if (!hasClubRole(ctx, ["trainer"])) {
+    if (!canViewConsentedData(ctx)) {
       res.status(403).json({ error: "Alleen trainers hebben deze weergave." });
       return;
     }
@@ -1704,11 +2119,12 @@ router.get("/:clubId/trainer/athletes", requireAuth, async (req, res) => {
     const names = await profilesByIds(ids);
     const result = [];
     for (const id of ids) {
-      const consent = await hasClubConsent(ctx.club.id, id);
+      const scopes = await grantedConsentScopes(ctx.club.id, id);
       result.push({
         clerkId: id,
         displayName: names.get(id)?.displayName ?? null,
-        consent,
+        consent: scopes.includes("training_summary"),
+        consentScopes: scopes,
       });
     }
     res.json(result);
@@ -1722,7 +2138,7 @@ router.get("/:clubId/trainer/athletes/:athleteId/summary", requireAuth, async (r
   try {
     const ctx = await ctxOr403(req, res);
     if (!ctx) return;
-    if (!hasClubRole(ctx, ["trainer"])) {
+    if (!canViewConsentedData(ctx)) {
       res.status(403).json({ error: "Alleen trainers hebben deze weergave." });
       return;
     }
@@ -1757,12 +2173,23 @@ router.get("/:clubId/trainer/athletes/:athleteId/summary", requireAuth, async (r
       .orderBy(desc(trainingSessionsTable.sessionDate));
     const totalMin = sessions.reduce((s, r) => s + (r.durationMin ?? 0), 0);
     const totalKm = sessions.reduce((s, r) => s + (r.distanceKm ? Number(r.distanceKm) : 0), 0);
+    // Transparantie: inzage in sportdata wordt altijd vastgelegd.
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "sportdata_ingezien",
+      targetType: "member",
+      targetId: athleteId,
+      detail: { scope: "training_summary" },
+    });
+    const consentScopes = await grantedConsentScopes(ctx.club.id, athleteId);
     res.json({
       periodDays: 28,
       sessionCount: sessions.length,
       totalDurationMin: totalMin,
       totalDistanceKm: Math.round(totalKm * 10) / 10,
       lastSessionDate: sessions[0]?.sessionDate ?? null,
+      consentScopes,
     });
   } catch (err) {
     req.log.error({ err }, "club trainer summary failed");

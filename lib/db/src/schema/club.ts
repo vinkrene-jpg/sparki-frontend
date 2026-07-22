@@ -30,12 +30,26 @@ import { userProfilesTable } from "./users";
 export const clubRoles = [
   "owner", // clubeigenaar
   "admin", // clubbeheerder
+  "hoofdtrainer", // trainerrechten + trainer-toewijzingen beheren
   "trainer",
+  "assistent", // helpt bij trainingen (aanwezigheid), geen sportdata-inzage
   "teammanager",
+  "mechanieker", // mag materiaalvelden bijwerken, verder alleen-lezen
   "member", // lid (renner)
   "parent", // ouder/verzorger
+  "vrijwilliger", // leest kalender/berichten, geen beheer
+  "alleen_lezen", // strikt alleen-lezen
 ] as const;
 export type ClubRole = (typeof clubRoles)[number];
+
+// Clubstatus (commerciële voorbereiding): beperkt = geen nieuwe toevoegingen,
+// geschorst/beeindigd = alleen-lezen voor iedereen behalve eigenaar/beheer.
+export const clubStatuses = ["actief", "beperkt", "geschorst", "beeindigd"] as const;
+export type ClubStatus = (typeof clubStatuses)[number];
+
+// Beschikbare modules per club (aan/uit); default alles aan.
+export const clubModules = ["trainingen", "wedstrijden", "berichten", "materiaal"] as const;
+export type ClubModule = (typeof clubModules)[number];
 
 export const clubsTable = pgTable("clubs", {
   id: serial("id").primaryKey(),
@@ -46,8 +60,18 @@ export const clubsTable = pgTable("clubs", {
   sport: text("sport").notNull().default("wielrennen"),
   logoUrl: text("logo_url"),
   primaryColor: text("primary_color"),
+  secondaryColor: text("secondary_color"),
   contactEmail: text("contact_email"),
+  contactPhone: text("contact_phone"),
   website: text("website"),
+  // Clubstatus: actief | beperkt | geschorst | beeindigd.
+  status: text("status").notNull().default("actief"),
+  // Beschikbare modules (jsonb array van clubModules-sleutels); null = alles.
+  modules: jsonb("modules"),
+  // Korte deelnamecode ("clubcode") waarmee bestaande accounts kunnen
+  // aansluiten zonder persoonlijke uitnodiging. Regenereerbaar door beheer.
+  // Uniek zodat een code nooit naar meerdere clubs kan wijzen.
+  joinCode: text("join_code").unique(),
   ownerClerkId: text("owner_clerk_id")
     .notNull()
     .references(() => userProfilesTable.clerkId, { onDelete: "restrict", onUpdate: "cascade" }),
@@ -97,6 +121,16 @@ export const clubTeamsTable = pgTable("club_teams", {
     .references(() => clubsTable.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description"),
+  // Categorie/niveau/seizoen in gewone taal, bv. "U15", "wedstrijd", "2026".
+  category: text("category"),
+  level: text("level"),
+  season: text("season"),
+  // Vaste trainingsdagen (jsonb array, bv. ["dinsdag","donderdag"]).
+  trainingDays: jsonb("training_days"),
+  defaultLocation: text("default_location"),
+  maxSize: integer("max_size"),
+  // Korte teamcode om direct bij dit team aan te sluiten (uniek).
+  joinCode: text("join_code").unique(),
   // Teammanager is een clublid met rol teammanager; hier de aanwijzing per team.
   managerClerkId: text("manager_clerk_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -112,6 +146,10 @@ export const clubGroupsTable = pgTable("club_groups", {
   description: text("description"),
   // Niveau in gewone taal, bv. "jeugd U15", "recreanten", "wedstrijd".
   level: text("level"),
+  season: text("season"),
+  trainingDays: jsonb("training_days"),
+  defaultLocation: text("default_location"),
+  maxSize: integer("max_size"),
   trainerClerkId: text("trainer_clerk_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -129,9 +167,15 @@ export const clubTeamMembersTable = pgTable(
       .notNull()
       .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
     role: text("role").notNull().default("renner"), // renner | reserve | begeleider
+    // Historie: verlaten zet endedAt, verwijdert de rij nooit.
+    endedAt: timestamp("ended_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("club_team_members_unique").on(t.teamId, t.clerkId)],
+  (t) => [
+    uniqueIndex("club_team_members_active_unique")
+      .on(t.teamId, t.clerkId)
+      .where(sql`ended_at IS NULL`),
+  ],
 );
 
 export const clubGroupMembersTable = pgTable(
@@ -144,9 +188,35 @@ export const clubGroupMembersTable = pgTable(
     clerkId: text("clerk_id")
       .notNull()
       .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("club_group_members_unique").on(t.groupId, t.clerkId)],
+  (t) => [
+    uniqueIndex("club_group_members_active_unique")
+      .on(t.groupId, t.clerkId)
+      .where(sql`ended_at IS NULL`),
+  ],
+);
+
+// ── Vaste clublocaties & parcoursen ──────────────────────────────────────────
+// Herbruikbare verzamel-/trainingslocaties; optioneel gekoppeld aan een
+// bestaande route (soft reference, eigendom in de routelaag gecontroleerd).
+export const clubLocationsTable = pgTable(
+  "club_locations",
+  {
+    id: serial("id").primaryKey(),
+    clubId: integer("club_id")
+      .notNull()
+      .references(() => clubsTable.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    address: text("address"),
+    routeId: integer("route_id"),
+    notes: text("notes"),
+    createdByClerkId: text("created_by_clerk_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("club_locations_club_idx").on(t.clubId)],
 );
 
 // Trainers toegewezen aan een team of groep zien alleen sporters BINNEN die
@@ -199,6 +269,13 @@ export const clubTrainingsTable = pgTable(
     groupId: integer("group_id").references(() => clubGroupsTable.id, { onDelete: "set null" }),
     maxParticipants: integer("max_participants"),
     durationMin: integer("duration_min"),
+    // Materiaal- en veiligheidsafspraken in gewone taal.
+    materialInfo: text("material_info"),
+    safetyInfo: text("safety_info"),
+    // Vaste clublocatie (optioneel, naast het vrije location-veld).
+    locationId: integer("location_id").references(() => clubLocationsTable.id, {
+      onDelete: "set null",
+    }),
     notes: text("notes"),
     status: text("status").notNull().default("gepland"), // gepland | geannuleerd | afgerond
     createdByClerkId: text("created_by_clerk_id").notNull(),
@@ -208,7 +285,7 @@ export const clubTrainingsTable = pgTable(
   (t) => [index("club_trainings_club_date_idx").on(t.clubId, t.trainingDate)],
 );
 
-export const clubSignupStatuses = ["aangemeld", "afgemeld", "reserve"] as const;
+export const clubSignupStatuses = ["aangemeld", "afgemeld", "misschien", "reserve"] as const;
 export type ClubSignupStatus = (typeof clubSignupStatuses)[number];
 
 export const clubTrainingSignupsTable = pgTable(
@@ -223,7 +300,7 @@ export const clubTrainingSignupsTable = pgTable(
       .references(() => userProfilesTable.clerkId, { onDelete: "cascade", onUpdate: "cascade" }),
     status: text("status").notNull().default("aangemeld"),
     // Aanwezigheid geregistreerd door trainer ná de training.
-    attendance: text("attendance"), // aanwezig | afwezig | null (niet geregistreerd)
+    attendance: text("attendance"), // aanwezig | afwezig | te_laat | null (niet geregistreerd)
     // Bewuste koppeling aan het individuele schema (planned_workouts, source
     // "club"). Nooit automatisch — alleen na expliciete keuze bij een conflict
     // of via "zet in mijn schema".
@@ -260,7 +337,11 @@ export const clubRaceEventsTable = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("club_race_events_club_date_idx").on(t.clubId, t.raceDate)],
+  (t) => [
+    index("club_race_events_club_date_idx").on(t.clubId, t.raceDate),
+    // Geen dubbele wedstrijden: zelfde club + naam + datum bestaat maar één keer.
+    uniqueIndex("club_race_events_dedupe_unique").on(t.clubId, t.name, t.raceDate),
+  ],
 );
 
 export const clubRaceSelectionsTable = pgTable(
@@ -333,7 +414,19 @@ export const clubMessageReadsTable = pgTable(
 // Per (club, sporter) een expliciete toestemming voor het delen van sportdata
 // met toegewezen trainers. Voor minderjarigen mag ALLEEN een gekoppelde ouder
 // deze geven. Intrekken werkt direct; alles wordt geauditeerd.
-export const clubConsentScopes = ["training_summary"] as const;
+// Per-categorie toestemming. "training_summary" is de bestaande basisscope
+// (samenvatting zonder gevoelige details); daarnaast expliciete categorieën.
+export const clubConsentScopes = [
+  "training_summary",
+  "vermogen",
+  "hartslag",
+  "belasting",
+  "herstel",
+  "slaap",
+  "voeding",
+  "blessures",
+  "coaching",
+] as const;
 export type ClubConsentScope = (typeof clubConsentScopes)[number];
 
 export const clubConsentsTable = pgTable(

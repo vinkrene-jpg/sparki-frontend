@@ -461,6 +461,105 @@ async function main() {
     assert(gate.status === 403, `oud-lid: verwacht 403, kreeg ${gate.status}`);
   });
 
+  // 17. Clubcode: beheer vernieuwt; buitenstaander sluit aan; dubbel → 409.
+  await scenario("clubcode: vernieuwen beheer-only; join met code; dubbel 409", async () => {
+    const denyRegen = await req("POST", `/api/clubs/${clubId}/join-code`, clerkAdult);
+    assert(denyRegen.status === 403, `lid vernieuwt code: verwacht 403, kreeg ${denyRegen.status}`);
+    const regen = await req("POST", `/api/clubs/${clubId}/join-code`, clerkOwner);
+    assert(regen.status === 200 && typeof regen.json?.joinCode === "string", `vernieuwen: ${regen.status}`);
+    const code = regen.json.joinCode as string;
+    const bad = await req("POST", "/api/clubs/join", clerkOutsider, { code: "ONZINCODE1" });
+    assert(bad.status === 404, `ongeldige code: verwacht 404, kreeg ${bad.status}`);
+    const join = await req("POST", "/api/clubs/join", clerkOutsider, { code });
+    assert(join.status === 201 && join.json?.membership?.role === "member", `join: verwacht 201 member, kreeg ${join.status}`);
+    const dup = await req("POST", "/api/clubs/join", clerkOutsider, { code });
+    assert(dup.status === 409, `dubbel join: verwacht 409, kreeg ${dup.status}`);
+  });
+
+  // 18. Clubstatus: alleen owner; niet-actief blokkeert nieuwe joins + plannen.
+  await scenario("clubstatus: owner-only; beperkt blokkeert join en plannen", async () => {
+    const denyStatus = await req("PUT", `/api/clubs/${clubId}`, clerkManager, { status: "beperkt" });
+    assert(denyStatus.status === 403, `teammanager zet status: verwacht 403, kreeg ${denyStatus.status}`);
+    const set = await req("PUT", `/api/clubs/${clubId}`, clerkOwner, { status: "beperkt" });
+    assert(set.status === 200 && set.json?.status === "beperkt", `status zetten: ${set.status}`);
+    const regen = await req("POST", `/api/clubs/${clubId}/join-code`, clerkOwner);
+    const joinBlocked = await req("POST", "/api/clubs/join", clerkAdult2, { code: regen.json?.joinCode });
+    assert(joinBlocked.status === 409, `join bij beperkt: verwacht 409, kreeg ${joinBlocked.status}`);
+    const planBlocked = await req("POST", `/api/clubs/${clubId}/trainings`, clerkTrainer, {
+      title: "Mag niet",
+      trainingDate: isoOffset(5),
+    });
+    assert(planBlocked.status !== 201, `plannen bij beperkt hoort geblokkeerd, kreeg ${planBlocked.status}`);
+    const back = await req("PUT", `/api/clubs/${clubId}`, clerkOwner, { status: "actief" });
+    assert(back.status === 200 && back.json?.status === "actief", `terug naar actief: ${back.status}`);
+  });
+
+  // 19. Aanmeldstatus "misschien": telt niet als plek, blijft misschien.
+  await scenario("aanmelden: status 'misschien' neemt geen plek in", async () => {
+    const ok = await req("POST", `/api/clubs/${clubId}/trainings`, clerkTrainer, {
+      title: "Misschien-test",
+      trainingDate: isoOffset(4),
+      maxParticipants: 1,
+    });
+    assert(ok.status === 201, `training maken: ${ok.status}`);
+    const tid = ok.json.id;
+    const maybe = await req("POST", `/api/clubs/${clubId}/trainings/${tid}/signup`, clerkYouth, { status: "misschien" });
+    assert(maybe.status === 200 && maybe.json?.signup?.status === "misschien", `misschien: ${maybe.status} ${maybe.json?.signup?.status}`);
+    const a = await req("POST", `/api/clubs/${clubId}/trainings/${tid}/signup`, clerkAdult, { status: "aangemeld" });
+    assert(a.status === 200 && a.json?.signup?.status === "aangemeld", `misschien nam plek in: ${a.json?.signup?.status}`);
+  });
+
+  // 20. Consent per onderdeel: extra scope gated apart, mine toont scopes.
+  await scenario("consent per scope: vermogen apart; mine toont scopes", async () => {
+    const badScope = await req("POST", `/api/clubs/${clubId}/consents`, clerkAdult, { action: "grant", scope: "raar" });
+    assert(badScope.status === 400, `onbekende scope: verwacht 400, kreeg ${badScope.status}`);
+    const grant = await req("POST", `/api/clubs/${clubId}/consents`, clerkAdult, { action: "grant", scope: "vermogen" });
+    assert(grant.status === 200 && grant.json?.scope === "vermogen", `grant vermogen: ${grant.status}`);
+    const mine = await req("GET", `/api/clubs/${clubId}/consents/mine`, clerkAdult);
+    assert(mine.status === 200 && Array.isArray(mine.json?.consents), `mine: ${mine.status}`);
+    const granted = mine.json.consents.filter((c: any) => c.status === "granted").map((c: any) => c.scope);
+    assert(granted.includes("vermogen") && granted.includes("training_summary"), `scopes onvolledig: ${granted.join(",")}`);
+    const summary = await req("GET", `/api/clubs/${clubId}/trainer/athletes/${clerkAdult}/summary`, clerkTrainer);
+    assert(summary.status === 200 && Array.isArray(summary.json?.consentScopes) && summary.json.consentScopes.includes("vermogen"), "summary mist consentScopes");
+    const revoke = await req("POST", `/api/clubs/${clubId}/consents`, clerkAdult, { action: "revoke", scope: "vermogen" });
+    assert(revoke.status === 200 && revoke.json?.status === "revoked", `revoke: ${revoke.status}`);
+  });
+
+  // 21. Locaties: lid 403, beheer maakt aan, lijst toont.
+  await scenario("locaties: beheer-only aanmaken, leden zien lijst", async () => {
+    const deny = await req("POST", `/api/clubs/${clubId}/locations`, clerkAdult, { name: "Mag niet" });
+    assert(deny.status === 403, `lid maakt locatie: verwacht 403, kreeg ${deny.status}`);
+    const ok = await req("POST", `/api/clubs/${clubId}/locations`, clerkOwner, { name: "Clubhuis", address: "Dorpsstraat 1" });
+    assert(ok.status === 201 && ok.json?.id, `beheer maakt locatie: ${ok.status}`);
+    const list = await req("GET", `/api/clubs/${clubId}/locations`, clerkAdult);
+    assert(list.status === 200 && list.json.some((l: any) => l.id === ok.json.id), "locatie niet in lijst");
+  });
+
+  // 22. Nieuwe rollen: rolwijziging naar mechanieker; alleen_lezen mag niet plannen.
+  await scenario("nieuwe rollen: mechanieker toewijsbaar; alleen_lezen plant niet", async () => {
+    const [m] = await db
+      .select()
+      .from(clubMembersTable)
+      .where(and(eq(clubMembersTable.clubId, clubId), eq(clubMembersTable.clerkId, clerkUnknownAge)));
+    const toMech = await req("PUT", `/api/clubs/${clubId}/members/${m!.id}/role`, clerkOwner, { role: "mechanieker" });
+    assert(toMech.status === 200, `naar mechanieker: ${toMech.status}: ${JSON.stringify(toMech.json)}`);
+    const toRead = await req("PUT", `/api/clubs/${clubId}/members/${m!.id}/role`, clerkOwner, { role: "alleen_lezen" });
+    assert(toRead.status === 200, `naar alleen_lezen: ${toRead.status}`);
+    const plan = await req("POST", `/api/clubs/${clubId}/trainings`, clerkUnknownAge, { title: "X", trainingDate: isoOffset(6) });
+    assert(plan.status === 403, `alleen_lezen plant: verwacht 403, kreeg ${plan.status}`);
+    const view = await req("GET", `/api/clubs/${clubId}/trainings`, clerkUnknownAge);
+    assert(view.status === 200, `alleen_lezen kijkt: verwacht 200, kreeg ${view.status}`);
+  });
+
+  // 23. Clubkalender: trainingen + wedstrijden samengevoegd, leden mogen kijken.
+  await scenario("kalender: samengevoegd overzicht voor leden", async () => {
+    const r = await req("GET", `/api/clubs/${clubId}/calendar`, clerkAdult);
+    assert(r.status === 200 && Array.isArray(r.json?.items ?? r.json), `kalender: ${r.status}`);
+    const items = Array.isArray(r.json) ? r.json : r.json.items;
+    assert(items.some((i: any) => i.kind === "training" || i.type === "training"), "kalender mist trainingen");
+    assert(items.some((i: any) => i.kind === "wedstrijd" || i.kind === "race" || i.type === "race"), "kalender mist wedstrijden");
+  });
+
   await stopServer();
   await cleanup();
 

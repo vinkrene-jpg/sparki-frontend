@@ -60,9 +60,67 @@ export function hasClubRole(ctx: ClubContext, roles: ClubRole[]): boolean {
   return roles.includes(ctx.membership.role as ClubRole);
 }
 
+// Trainerachtige rollen: mogen trainingen zien vanuit trainersperspectief.
+// hoofdtrainer = trainer + trainer-toewijzingen beheren; assistent helpt bij
+// aanwezigheid maar krijgt NOOIT consent-gated sportdata.
+export const TRAINER_LIKE_ROLES: ClubRole[] = ["hoofdtrainer", "trainer", "assistent"];
+// Rollen die tegen de trainerslimiet van het pakket tellen.
+export const TRAINER_COUNT_ROLES: ClubRole[] = ["hoofdtrainer", "trainer", "assistent"];
+// Strikt alleen-lezen rollen: geen berichten plaatsen, geen mutaties.
+export const READ_ONLY_ROLES: ClubRole[] = ["vrijwilliger", "alleen_lezen"];
+
 // Beheerrechten (clubprofiel, uitnodigingen, teams/groepen, export, audit).
 export function canManageClub(ctx: ClubContext): boolean {
   return hasClubRole(ctx, ["owner", "admin"]);
+}
+
+// Trainingen/wedstrijden aanmaken en aanwezigheid registreren.
+export function canManageTrainings(ctx: ClubContext): boolean {
+  return canManageClub(ctx) || hasClubRole(ctx, ["hoofdtrainer", "trainer", "teammanager"]);
+}
+
+// Aanwezigheid registreren mag ook een assistent.
+export function canRecordAttendance(ctx: ClubContext): boolean {
+  return canManageTrainings(ctx) || hasClubRole(ctx, ["assistent"]);
+}
+
+// Trainer-toewijzingen beheren: beheer én hoofdtrainer.
+export function canManageTrainerAssignments(ctx: ClubContext): boolean {
+  return canManageClub(ctx) || hasClubRole(ctx, ["hoofdtrainer"]);
+}
+
+// Materiaalvelden (materiaalafspraken op trainingen/wedstrijden) bijwerken.
+export function canEditMaterial(ctx: ClubContext): boolean {
+  return canManageTrainings(ctx) || hasClubRole(ctx, ["mechanieker"]);
+}
+
+// Berichten plaatsen: iedereen behalve strikt alleen-lezen rollen.
+export function canPostMessages(ctx: ClubContext): boolean {
+  return !hasClubRole(ctx, READ_ONLY_ROLES);
+}
+
+// Consent-gated sportdata inzien: alleen echte trainers (assistent NIET).
+export function canViewConsentedData(ctx: ClubContext): boolean {
+  return hasClubRole(ctx, ["hoofdtrainer", "trainer"]);
+}
+
+// Clubstatus-bewaking: beperkt/geschorst/beeindigd blokkeert nieuwe
+// toevoegingen; geschorst/beeindigd blokkeert álle mutaties behalve door
+// eigenaar/beheer (die moeten kunnen opruimen/heractiveren). Data blijft staan.
+export function clubStatusAllowsMutation(
+  ctx: ClubContext,
+): { ok: true } | { ok: false; reason: string } {
+  const status = (ctx.club as { status?: string }).status ?? "actief";
+  if (status === "actief") return { ok: true };
+  if (status === "beperkt") return { ok: true }; // alleen nieuwe leden/trainers geblokkeerd (capaciteitslaag)
+  if (canManageClub(ctx)) return { ok: true };
+  return {
+    ok: false,
+    reason:
+      status === "geschorst"
+        ? "De club is tijdelijk geschorst. Bekijken kan, wijzigen niet. Neem contact op met het clubbeheer."
+        : "De club is beëindigd. Gegevens blijven leesbaar, maar wijzigen kan niet meer.",
+  };
 }
 
 // ── Pakket & limieten ─────────────────────────────────────────────────────────
@@ -76,15 +134,19 @@ export const CLUB_PACKAGES: Record<
   groei: { label: "Groei", maxMembers: 200, maxTrainers: 25 },
 };
 
-export async function countActive(clubId: number): Promise<{
+type DbExecutor = Pick<typeof db, "select" | "insert" | "update" | "execute">;
+
+export async function countActive(clubId: number, dbx: DbExecutor = db): Promise<{
   members: number;
   trainers: number;
 }> {
-  const rows = await db
+  const rows = await dbx
     .select({ role: clubMembersTable.role })
     .from(clubMembersTable)
     .where(and(eq(clubMembersTable.clubId, clubId), isNull(clubMembersTable.endedAt)));
-  const trainers = rows.filter((r) => r.role === "trainer").length;
+  const trainers = rows.filter((r) =>
+    TRAINER_COUNT_ROLES.includes(r.role as ClubRole),
+  ).length;
   return { members: rows.length, trainers };
 }
 
@@ -93,6 +155,7 @@ export async function countActive(clubId: number): Promise<{
 export async function checkCapacityForNew(
   ctx: ClubContext,
   kind: "member" | "trainer",
+  dbx: DbExecutor = db,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
   const sub = ctx.subscription;
   if (!sub) return { ok: true };
@@ -110,7 +173,7 @@ export async function checkCapacityForNew(
         "De proefperiode is afgelopen. Kies een pakket om nieuwe leden of trainers toe te voegen; bestaande gegevens blijven bewaard.",
     };
   }
-  const counts = await countActive(ctx.club.id);
+  const counts = await countActive(ctx.club.id, dbx);
   if (kind === "trainer" && counts.trainers >= sub.maxTrainers) {
     return {
       ok: false,
@@ -188,6 +251,7 @@ export async function assignedAthleteIds(
 export async function hasClubConsent(
   clubId: number,
   athleteClerkId: string,
+  scope: string = "training_summary",
 ): Promise<boolean> {
   const [row] = await db
     .select()
@@ -196,11 +260,29 @@ export async function hasClubConsent(
       and(
         eq(clubConsentsTable.clubId, clubId),
         eq(clubConsentsTable.athleteClerkId, athleteClerkId),
-        eq(clubConsentsTable.scope, "training_summary"),
+        eq(clubConsentsTable.scope, scope),
         eq(clubConsentsTable.status, "granted"),
       ),
     );
   return !!row;
+}
+
+// Alle verleende consent-scopes van een sporter binnen een club.
+export async function grantedConsentScopes(
+  clubId: number,
+  athleteClerkId: string,
+): Promise<string[]> {
+  const rows = await db
+    .select({ scope: clubConsentsTable.scope })
+    .from(clubConsentsTable)
+    .where(
+      and(
+        eq(clubConsentsTable.clubId, clubId),
+        eq(clubConsentsTable.athleteClerkId, athleteClerkId),
+        eq(clubConsentsTable.status, "granted"),
+      ),
+    );
+  return rows.map((r) => r.scope);
 }
 
 // Minderjarig (<16): consent mag ALLEEN door een gekoppelde ouder worden

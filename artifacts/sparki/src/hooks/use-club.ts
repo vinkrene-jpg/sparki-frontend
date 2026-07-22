@@ -24,7 +24,18 @@ export function useClubMembership() {
 
 // ── Echte clubomgeving ───────────────────────────────────────────────────────
 
-export type ClubRole = "owner" | "admin" | "trainer" | "teammanager" | "parent" | "member"
+export type ClubRole =
+  | "owner"
+  | "admin"
+  | "hoofdtrainer"
+  | "trainer"
+  | "assistent"
+  | "teammanager"
+  | "mechanieker"
+  | "vrijwilliger"
+  | "alleen_lezen"
+  | "parent"
+  | "member"
 
 export type Club = {
   id: number
@@ -32,9 +43,23 @@ export type Club = {
   description: string | null
   location: string | null
   contactEmail: string | null
+  contactPhone: string | null
   website: string | null
   logoUrl: string | null
   primaryColor: string | null
+  secondaryColor: string | null
+  status: string
+  modules: string[] | null
+  joinCode: string | null
+}
+
+export type ClubLocation = {
+  id: number
+  name: string
+  address: string | null
+  notes: string | null
+  routeId: number | null
+  active?: boolean | null
 }
 
 export type ClubMembershipRow = {
@@ -54,7 +79,10 @@ export type ClubTraining = {
   durationMin: number | null
   maxParticipants: number | null
   status: string
-  counts: { aangemeld: number; afgemeld: number; reserve: number }
+  materialInfo?: string | null
+  safetyInfo?: string | null
+  locationId?: number | null
+  counts: { aangemeld: number; afgemeld: number; reserve: number; misschien: number }
   mySignup: { id: number; status: string; attendance: string | null; plannedWorkoutId: number | null } | null
   signups?: { clerkId: string; status: string; attendance: string | null; displayName: string | null }[]
 }
@@ -156,7 +184,7 @@ export function useClubTrainings(clubId: number | null) {
 export function useClubSignup(clubId: number | null) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ trainingId, status, note }: { trainingId: number; status: "aangemeld" | "afgemeld"; note?: string }) =>
+    mutationFn: ({ trainingId, status, note }: { trainingId: number; status: "aangemeld" | "afgemeld" | "misschien"; note?: string }) =>
       apiFetch(`/api/clubs/${clubId}/trainings/${trainingId}/signup`, {
         method: "POST",
         body: JSON.stringify({ status, note }),
@@ -227,7 +255,12 @@ export function useMarkClubMessageRead(clubId: number | null) {
 }
 
 export function useMyClubConsent(clubId: number | null) {
-  return useQuery<{ consent: { status: string; grantedByRelation: string } | null; isMinor: boolean }>({
+  return useQuery<{
+    consent: { status: string; grantedByRelation: string } | null
+    consents: { scope: string; status: string; grantedByRelation: string }[]
+    scopes: string[]
+    isMinor: boolean
+  }>({
     queryKey: ["clubs", clubId, "consent"],
     queryFn: () => apiFetch(`/api/clubs/${clubId}/consents/mine`),
     enabled: clubId != null,
@@ -237,7 +270,7 @@ export function useMyClubConsent(clubId: number | null) {
 export function useSetClubConsent(clubId: number | null) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { action: "grant" | "revoke"; athleteClerkId?: string }) =>
+    mutationFn: (body: { action: "grant" | "revoke"; athleteClerkId?: string; scope?: string }) =>
       apiFetch(`/api/clubs/${clubId}/consents`, { method: "POST", body: JSON.stringify(body) }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["clubs", clubId, "consent"] })
@@ -319,6 +352,86 @@ export function useSetClubPackage(clubId: number | null) {
         body: JSON.stringify({ packageKey }),
       }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs", clubId] }),
+  })
+}
+
+export function useJoinClub() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (code: string) =>
+      apiFetch("/api/clubs/join", { method: "POST", body: JSON.stringify({ code }) }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs"] }),
+  })
+}
+
+export function useUpdateClub(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      apiFetch(`/api/clubs/${clubId}`, { method: "PUT", body: JSON.stringify(body) }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs"] }),
+  })
+}
+
+export function useRegenerateJoinCode(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (teamId?: number) =>
+      apiFetch(`/api/clubs/${clubId}/join-code`, {
+        method: "POST",
+        body: JSON.stringify(teamId != null ? { teamId } : {}),
+      }) as Promise<{ joinCode: string; teamId?: number }>,
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs"] }),
+  })
+}
+
+export function useClubLocations(clubId: number | null) {
+  return useQuery<ClubLocation[]>({
+    queryKey: ["clubs", clubId, "locations"],
+    queryFn: () => apiFetch(`/api/clubs/${clubId}/locations`),
+    enabled: clubId != null,
+  })
+}
+
+export function useCreateClubLocation(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { name: string; address?: string; notes?: string }) =>
+      apiFetch(`/api/clubs/${clubId}/locations`, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs", clubId, "locations"] }),
+  })
+}
+
+export type ClubCalendarItem = {
+  kind: "training" | "wedstrijd"
+  date: string
+  time: string | null
+  item: { id: number; title?: string; name?: string; location?: string | null; status?: string }
+}
+
+export function useClubCalendar(clubId: number | null) {
+  return useQuery<ClubCalendarItem[]>({
+    queryKey: ["clubs", clubId, "calendar"],
+    queryFn: () => apiFetch(`/api/clubs/${clubId}/calendar`),
+    enabled: clubId != null,
+  })
+}
+
+export function useUpdateClubTeam(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ teamId, ...body }: { teamId: number } & Record<string, unknown>) =>
+      apiFetch(`/api/clubs/${clubId}/teams/${teamId}`, { method: "PUT", body: JSON.stringify(body) }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs", clubId] }),
+  })
+}
+
+export function useUpdateClubTraining(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ trainingId, ...body }: { trainingId: number } & Record<string, unknown>) =>
+      apiFetch(`/api/clubs/${clubId}/trainings/${trainingId}`, { method: "PUT", body: JSON.stringify(body) }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["clubs", clubId, "trainings"] }),
   })
 }
 

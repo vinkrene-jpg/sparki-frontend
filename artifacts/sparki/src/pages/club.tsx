@@ -28,6 +28,7 @@ import {
   useMyClubConsent,
   useSetClubConsent,
   useCreateClub,
+  useJoinClub,
   type ClubTraining,
 } from "@/hooks/use-club"
 import { usePlanWindow } from "@/hooks/use-training-plan"
@@ -49,6 +50,18 @@ const CARD = "rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] px-3.5 p
 const EMPTY = "rounded-xl border border-white/[0.07] bg-[#070d16]/60 px-3.5 py-3 text-[12px] text-white/45"
 const H2 = "mb-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.24em] text-white/40"
 
+const CONSENT_SCOPES: { key: string; label: string }[] = [
+  { key: "training_summary", label: "Samenvatting" },
+  { key: "vermogen", label: "Vermogen" },
+  { key: "hartslag", label: "Hartslag" },
+  { key: "belasting", label: "Belasting" },
+  { key: "herstel", label: "Herstel" },
+  { key: "slaap", label: "Slaap" },
+  { key: "voeding", label: "Voeding" },
+  { key: "blessures", label: "Blessures" },
+  { key: "coaching", label: "Coaching" },
+]
+
 function TrainingCard({ t, clubId }: { t: ClubTraining; clubId: number }) {
   const signup = useClubSignup(clubId)
   const link = useClubLinkSchedule(clubId)
@@ -57,7 +70,7 @@ function TrainingCard({ t, clubId }: { t: ClubTraining; clubId: number }) {
   const mine = t.mySignup
   const vol = t.maxParticipants != null && t.counts.aangemeld >= t.maxParticipants
 
-  const doSignup = (status: "aangemeld" | "afgemeld") => {
+  const doSignup = (status: "aangemeld" | "afgemeld" | "misschien") => {
     setError(null)
     signup.mutate(
       { trainingId: t.id, status },
@@ -81,6 +94,7 @@ function TrainingCard({ t, clubId }: { t: ClubTraining; clubId: number }) {
           </p>
           <p className="mt-0.5 text-[11px] text-white/35">
             {t.counts.aangemeld} aangemeld
+            {t.counts.misschien > 0 ? ` · ${t.counts.misschien} misschien` : ""}
             {t.counts.reserve > 0 ? ` · ${t.counts.reserve} reserve` : ""}
             {t.maxParticipants != null ? ` · max ${t.maxParticipants}` : ""}
             {vol && !mine ? " · vol (aanmelden = reservelijst)" : ""}
@@ -102,6 +116,11 @@ function TrainingCard({ t, clubId }: { t: ClubTraining; clubId: number }) {
               <XCircle className="h-3.5 w-3.5" /> Afgemeld
             </span>
           )}
+          {mine?.status === "misschien" && (
+            <span className="flex items-center gap-1 text-[11px] text-sky-300/85">
+              <AlertTriangle className="h-3.5 w-3.5" /> Misschien
+            </span>
+          )}
           {mine?.status === "aangemeld" || mine?.status === "reserve" ? (
             <button
               onClick={() => doSignup("afgemeld")}
@@ -111,17 +130,32 @@ function TrainingCard({ t, clubId }: { t: ClubTraining; clubId: number }) {
               Afmelden
             </button>
           ) : (
-            <button
-              onClick={() => doSignup("aangemeld")}
-              disabled={signup.isPending}
-              className="rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-2.5 py-1 text-[11px] text-cyan-200 hover:border-cyan-300/60"
-            >
-              Aanmelden
-            </button>
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => doSignup("misschien")}
+                disabled={signup.isPending || mine?.status === "misschien"}
+                className="rounded-lg border border-white/15 px-2.5 py-1 text-[11px] text-white/70 hover:border-white/30 disabled:opacity-40"
+              >
+                Misschien
+              </button>
+              <button
+                onClick={() => doSignup("aangemeld")}
+                disabled={signup.isPending}
+                className="rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-2.5 py-1 text-[11px] text-cyan-200 hover:border-cyan-300/60"
+              >
+                Aanmelden
+              </button>
+            </div>
           )}
         </div>
       </div>
       {t.goal && <p className="mt-1.5 text-[12px] text-white/55">{t.goal}</p>}
+      {t.materialInfo && (
+        <p className="mt-1.5 text-[11px] text-white/50">Materiaal: {t.materialInfo}</p>
+      )}
+      {t.safetyInfo && (
+        <p className="mt-1 text-[11px] text-amber-200/80">Veiligheid: {t.safetyInfo}</p>
+      )}
       {error && <p className="mt-1.5 text-[11px] text-rose-300/85">{error}</p>}
       {mine?.status === "aangemeld" && conflicts.length > 0 && (
         <div className="mt-2 rounded-lg border border-amber-300/25 bg-amber-300/[0.06] px-3 py-2">
@@ -327,19 +361,30 @@ function RealClubView({ clubId }: { clubId: number }) {
           ) : (
             <>
               <p className="text-[12px] text-white/55">
-                {consent?.consent?.status === "granted"
-                  ? "Je toegewezen clubtrainers zien een samenvatting van je trainingen (aantal, duur, afstand). Nooit meer dan dat zonder jouw keuze."
-                  : "Clubtrainers zien nu géén trainingsgegevens van je. Geef toestemming om samenvattingen te delen."}
+                Kies per onderdeel wat je toegewezen clubtrainers mogen zien.
+                Zonder toestemming zien trainers níéts van je trainingsgegevens.
               </p>
-              <button
-                onClick={() =>
-                  setConsent.mutate({ action: consent?.consent?.status === "granted" ? "revoke" : "grant" })
-                }
-                disabled={setConsent.isPending}
-                className="mt-2 rounded-lg border border-white/15 px-2.5 py-1 text-[11px] text-white/75 hover:border-white/30"
-              >
-                {consent?.consent?.status === "granted" ? "Toestemming intrekken" : "Toestemming geven"}
-              </button>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {CONSENT_SCOPES.map(({ key, label }) => {
+                  const granted = (consent?.consents ?? []).some(
+                    (c) => c.scope === key && c.status === "granted",
+                  )
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setConsent.mutate({ action: granted ? "revoke" : "grant", scope: key })}
+                      disabled={setConsent.isPending}
+                      className={`rounded-lg border px-2.5 py-1 text-[11px] ${
+                        granted
+                          ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200"
+                          : "border-white/15 text-white/60 hover:border-white/30"
+                      }`}
+                    >
+                      {granted ? "✓ " : ""}{label}
+                    </button>
+                  )
+                })}
+              </div>
             </>
           )}
         </div>
@@ -543,14 +588,58 @@ function StartClubCard() {
   )
 }
 
+function JoinClubCard() {
+  const join = useJoinClub()
+  const prefill = new URLSearchParams(window.location.search).get("code") ?? ""
+  const [code, setCode] = useState(prefill)
+  const [error, setError] = useState<string | null>(null)
+
+  return (
+    <div className={CARD}>
+      <p className="text-[13px] text-white/85">Lid worden met een clubcode</p>
+      <p className="mt-0.5 text-[12px] text-white/50">
+        Heb je van je club een code (of QR-code) gekregen? Vul die hier in om lid te worden.
+      </p>
+      <form
+        className="mt-2 flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault()
+          setError(null)
+          if (!code.trim()) return
+          join.mutate(code.trim(), {
+            onError: (err) => setError(err instanceof Error ? err.message : "Niet gelukt."),
+          })
+        }}
+      >
+        <input
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          placeholder="Clubcode"
+          className="min-w-0 flex-1 rounded-lg border border-white/15 bg-transparent px-3 py-2 text-[13px] uppercase tracking-wider text-white/85 placeholder:normal-case placeholder:tracking-normal placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+        />
+        <button
+          type="submit"
+          disabled={join.isPending || !code.trim()}
+          className="rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-3 py-2 text-[12px] text-cyan-200 disabled:opacity-40"
+        >
+          {join.isPending ? "Bezig…" : "Lid worden"}
+        </button>
+      </form>
+      {error && <p className="mt-1.5 text-[11px] text-rose-300/85">{error}</p>}
+    </div>
+  )
+}
+
 export default function ClubPage() {
   const { data: myClubs, isLoading: clubsLoading } = useMyClubs()
   const legacy = useClubMembership()
+  const [chosenClubId, setChosenClubId] = useState<number | null>(null)
 
+  const rows = useMemo(() => myClubs ?? [], [myClubs])
   const activeClubId = useMemo(() => {
-    const rows = myClubs ?? []
+    if (chosenClubId != null && rows.some((r) => r.membership.clubId === chosenClubId)) return chosenClubId
     return rows.length > 0 ? rows[0]!.membership.clubId : null
-  }, [myClubs])
+  }, [rows, chosenClubId])
 
   if (clubsLoading || legacy.isLoading) {
     return (
@@ -563,18 +652,48 @@ export default function ClubPage() {
   if (activeClubId != null) {
     return (
       <ScreenShell section="club">
+        {rows.length > 1 && (
+          <div className="mb-4 flex flex-wrap gap-1.5" aria-label="Kies club">
+            {rows.map((r) => (
+              <button
+                key={r.membership.clubId}
+                onClick={() => setChosenClubId(r.membership.clubId)}
+                className={`rounded-lg border px-2.5 py-1 text-[11px] ${
+                  r.membership.clubId === activeClubId
+                    ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200"
+                    : "border-white/15 text-white/60 hover:border-white/30"
+                }`}
+              >
+                {r.club?.name ?? `Club ${r.membership.clubId}`}
+              </button>
+            ))}
+          </div>
+        )}
         <RealClubView clubId={activeClubId} />
       </ScreenShell>
     )
   }
 
   // Geen clubomgeving: trainer-koppeling als eerlijke fallback, anders de
-  // mogelijkheid om zelf een club te starten.
+  // mogelijkheid om lid te worden met een code of zelf een club te starten.
   if (legacy.isMember) {
     return (
       <ScreenShell section="club">
         <div className="flex flex-col gap-6">
           <LegacyCoachView />
+          <JoinClubCard />
+          <StartClubCard />
+        </div>
+      </ScreenShell>
+    )
+  }
+
+  // Kwam de renner binnen via een clubcode (QR), dan moet die hier terechtkunnen.
+  if (new URLSearchParams(window.location.search).get("code")) {
+    return (
+      <ScreenShell section="club">
+        <div className="flex flex-col gap-6">
+          <JoinClubCard />
           <StartClubCard />
         </div>
       </ScreenShell>

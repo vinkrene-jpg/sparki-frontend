@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Redirect, useLocation } from "wouter"
-import { ArrowLeft, Users, CalendarDays, Trophy, Package, ClipboardList, Link2 } from "lucide-react"
+import { ArrowLeft, Users, CalendarDays, Trophy, Package, ClipboardList, Link2, MapPin, QrCode, Settings2 } from "lucide-react"
+import { QRCodeCanvas } from "qrcode.react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import {
   useMyClubs,
@@ -13,7 +14,12 @@ import {
   useClubSubscription,
   useSetClubPackage,
   useCreateClubInvite,
+  useUpdateClub,
+  useRegenerateJoinCode,
+  useClubLocations,
+  useCreateClubLocation,
   type ClubRole,
+  type Club,
 } from "@/hooks/use-club"
 
 // Clubbeheer — alleen zichtbaar voor owner/admin. Leden & rollen,
@@ -27,10 +33,29 @@ const BTN = "rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-3 py-1.5 tex
 const ROLE_LABELS: Record<ClubRole, string> = {
   owner: "Eigenaar",
   admin: "Beheerder",
+  hoofdtrainer: "Hoofdtrainer",
   trainer: "Trainer",
+  assistent: "Assistent-trainer",
   teammanager: "Teammanager",
+  mechanieker: "Mechanieker",
+  vrijwilliger: "Vrijwilliger",
+  alleen_lezen: "Alleen lezen",
   parent: "Ouder",
   member: "Lid",
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  actief: "Actief",
+  beperkt: "Beperkt (alleen lezen)",
+  geschorst: "Geschorst",
+  beeindigd: "Beëindigd",
+}
+
+const MODULE_LABELS: Record<string, string> = {
+  trainingen: "Trainingen",
+  wedstrijden: "Wedstrijden",
+  berichten: "Berichten",
+  materiaal: "Materiaal",
 }
 
 const INVITE_OPTIONS = [
@@ -40,6 +65,202 @@ const INVITE_OPTIONS = [
   { relationship: "club_parent", label: "Ouder" },
   { relationship: "club_admin", label: "Beheerder" },
 ]
+
+function ClubSettingsSection({ club, isOwner }: { club: Club; isOwner: boolean }) {
+  const update = useUpdateClub(club.id)
+  const [contactPhone, setContactPhone] = useState(club.contactPhone ?? "")
+  const [primaryColor, setPrimaryColor] = useState(club.primaryColor ?? "#78d2e6")
+  const [secondaryColor, setSecondaryColor] = useState(club.secondaryColor ?? "#0b1626")
+  const [msg, setMsg] = useState<string | null>(null)
+  const modules = club.modules ?? ["trainingen", "wedstrijden", "berichten", "materiaal"]
+
+  return (
+    <section aria-label="Clubinstellingen">
+      <h2 className={H2}><Settings2 className="h-3 w-3" /> Clubinstellingen</h2>
+      <div className={`${CARD} space-y-2.5`}>
+        <div className="flex gap-2">
+          <input
+            value={contactPhone}
+            onChange={(e) => setContactPhone(e.target.value)}
+            placeholder="Contacttelefoon"
+            className={INPUT}
+          />
+        </div>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-1.5 text-[11px] text-white/55">
+            Clubkleur
+            <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="h-7 w-9 cursor-pointer rounded border border-white/15 bg-transparent" />
+          </label>
+          <label className="flex items-center gap-1.5 text-[11px] text-white/55">
+            Tweede kleur
+            <input type="color" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="h-7 w-9 cursor-pointer rounded border border-white/15 bg-transparent" />
+          </label>
+        </div>
+        <div>
+          <p className="mb-1 text-[11px] text-white/45">Onderdelen (uitzetten verbergt het onderdeel voor leden):</p>
+          <div className="flex flex-wrap gap-1.5">
+            {Object.entries(MODULE_LABELS).map(([key, label]) => {
+              const on = modules.includes(key)
+              return (
+                <button
+                  key={key}
+                  onClick={() => {
+                    setMsg(null)
+                    const next = on ? modules.filter((m) => m !== key) : [...modules, key]
+                    update.mutate({ modules: next }, { onError: (err) => setMsg(err instanceof Error ? err.message : "Niet gelukt.") })
+                  }}
+                  disabled={update.isPending}
+                  className={`rounded-lg border px-2.5 py-1 text-[11px] ${
+                    on ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200" : "border-white/15 text-white/60 hover:border-white/30"
+                  }`}
+                >
+                  {on ? "✓ " : ""}{label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        {isOwner && (
+          <div>
+            <p className="mb-1 text-[11px] text-white/45">Clubstatus (alleen eigenaar): {STATUS_LABELS[club.status] ?? club.status}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(STATUS_LABELS).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    setMsg(null)
+                    update.mutate({ status: key }, { onError: (err) => setMsg(err instanceof Error ? err.message : "Niet gelukt.") })
+                  }}
+                  disabled={update.isPending}
+                  className={`rounded-lg border px-2.5 py-1 text-[11px] ${
+                    club.status === key ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200" : "border-white/15 text-white/60 hover:border-white/30"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[10px] text-white/35">
+              Bij een andere status dan "Actief" zijn aanmelden, plannen en berichten geblokkeerd; bekijken blijft mogelijk.
+            </p>
+          </div>
+        )}
+        <button
+          onClick={() => {
+            setMsg(null)
+            update.mutate(
+              { contactPhone: contactPhone.trim() || null, primaryColor, secondaryColor },
+              {
+                onSuccess: () => setMsg("Opgeslagen."),
+                onError: (err) => setMsg(err instanceof Error ? err.message : "Niet gelukt."),
+              },
+            )
+          }}
+          disabled={update.isPending}
+          className={BTN}
+        >
+          Opslaan
+        </button>
+        {msg && <p className="text-[11px] text-white/60">{msg}</p>}
+      </div>
+    </section>
+  )
+}
+
+function JoinCodeSection({ club }: { club: Club }) {
+  const regen = useRegenerateJoinCode(club.id)
+  const [error, setError] = useState<string | null>(null)
+  const code = club.joinCode
+  const joinUrl = code ? `${window.location.origin}/club?code=${code}` : null
+
+  return (
+    <section aria-label="Clubcode">
+      <h2 className={H2}><QrCode className="h-3 w-3" /> Clubcode & QR</h2>
+      <div className={CARD}>
+        {code ? (
+          <div className="flex items-start gap-4">
+            <div className="rounded-lg bg-white p-2">
+              <QRCodeCanvas value={joinUrl ?? code} size={104} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[12px] text-white/55">Leden kunnen met deze code (of QR) direct lid worden:</p>
+              <p className="mt-1 font-mono text-lg tracking-[0.2em] text-cyan-200">{code}</p>
+              <button
+                onClick={() => void navigator.clipboard.writeText(code)}
+                className="mt-1 text-[11px] text-cyan-300/80 hover:text-cyan-300"
+              >
+                Kopieer code
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-[12px] text-white/55">Er is nog geen clubcode. Maak er één aan.</p>
+        )}
+        <button
+          onClick={() => {
+            setError(null)
+            regen.mutate(undefined, { onError: (err) => setError(err instanceof Error ? err.message : "Niet gelukt.") })
+          }}
+          disabled={regen.isPending}
+          className={`${BTN} mt-2`}
+        >
+          {code ? "Nieuwe code (oude vervalt)" : "Maak clubcode"}
+        </button>
+        {error && <p className="mt-1.5 text-[11px] text-rose-300/85">{error}</p>}
+      </div>
+    </section>
+  )
+}
+
+function LocationsSection({ clubId }: { clubId: number }) {
+  const { data: locations } = useClubLocations(clubId)
+  const create = useCreateClubLocation(clubId)
+  const [name, setName] = useState("")
+  const [address, setAddress] = useState("")
+  const [msg, setMsg] = useState<string | null>(null)
+
+  return (
+    <section aria-label="Locaties">
+      <h2 className={H2}><MapPin className="h-3 w-3" /> Vaste locaties</h2>
+      <div className="space-y-1.5">
+        {(locations ?? []).map((l) => (
+          <div key={l.id} className={CARD}>
+            <p className="text-[13px] text-white/85">{l.name}</p>
+            {l.address && <p className="text-[11px] text-white/40">{l.address}</p>}
+            {l.notes && <p className="mt-0.5 text-[11px] text-white/45">{l.notes}</p>}
+          </div>
+        ))}
+        {(locations ?? []).length === 0 && (
+          <p className="rounded-xl border border-white/[0.07] bg-[#070d16]/60 px-3.5 py-3 text-[12px] text-white/45">
+            Nog geen vaste locaties. Handig voor terugkerende trainingslocaties.
+          </p>
+        )}
+      </div>
+      <form
+        className={`${CARD} mt-1.5 space-y-2`}
+        onSubmit={(e) => {
+          e.preventDefault()
+          setMsg(null)
+          if (!name.trim()) { setMsg("Geef de locatie een naam."); return }
+          create.mutate(
+            { name: name.trim(), address: address.trim() || undefined },
+            {
+              onSuccess: () => { setMsg("Locatie toegevoegd."); setName(""); setAddress("") },
+              onError: (err) => setMsg(err instanceof Error ? err.message : "Niet gelukt."),
+            },
+          )
+        }}
+      >
+        <div className="flex gap-2">
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Naam (bijv. Clubhuis)" className={INPUT} />
+          <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Adres (optioneel)" className={INPUT} />
+        </div>
+        {msg && <p className="text-[11px] text-white/60">{msg}</p>}
+        <button type="submit" disabled={create.isPending} className={BTN}>Voeg locatie toe</button>
+      </form>
+    </section>
+  )
+}
 
 function InviteSection({ clubId }: { clubId: number }) {
   const invite = useCreateClubInvite()
@@ -372,7 +593,10 @@ export default function ClubBeheerPage() {
           </section>
         )}
 
+        {mine.club && <ClubSettingsSection club={mine.club} isOwner={myRole === "owner"} />}
+        {mine.club && <JoinCodeSection club={mine.club} />}
         <InviteSection clubId={clubId} />
+        <LocationsSection clubId={clubId} />
         <MembersSection clubId={clubId} myRole={myRole} />
         <PlanTrainingSection clubId={clubId} />
         <PlanRaceSection clubId={clubId} />
