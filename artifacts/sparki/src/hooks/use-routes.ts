@@ -279,6 +279,13 @@ export type RouteInsight = {
     trafficLights: number | null;
     forestSharePct: number | null;
   } | null;
+  // Wegobjecten uit de eigen Sparki-database (verkeerslichten, rotondes,
+  // drempels, spoorwegovergangen) — null wanneer de bron niet antwoordde.
+  roadObjects: {
+    counts: Record<string, number>;
+    signalsPerKm: number | null;
+    estimatedTimeLossSec: number | null;
+  } | null;
   hasGeometry: boolean;
   hasProfile: boolean;
 };

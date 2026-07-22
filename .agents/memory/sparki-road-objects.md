@@ -15,3 +15,5 @@ description: Zelflerende wegobjecten-engine (verkeerslichten eerst) — leerlogi
 
 **Why:** de database is gedeelde, zelflerende kennis; elke schrijf-/keuzepad moet aantoonbaar niet manipuleerbaar en deterministisch-beste zijn.
 **How to apply:** elk nieuw road-object-kind of nieuw bevestigingspad hergebruikt dit bewijs+idempotentie-patroon en de best-per-cel-dedupe.
+
+**Planner-integratie:** rittype-sturing hoort in kandidaat-RANKING (CandidateEnvironment.stopObstacles uit eigen DB, fallback op kale lichten), niet in de ORS-aanroep — ORS kan wegen niet vermijden. Meet de gekozen route altijd ná selectie na (honest counts in response/insight); junction=roundabout zijn WAYS → Overpass `out center` nodig, anders nul rotondes.

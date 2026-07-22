@@ -37,7 +37,9 @@ import {
   type ElevationPreference,
   type RoutingProfile,
   type RouteStep,
+  type CandidateEnvironment,
 } from "../engines/route";
+import { getRoadObjectsAlongRoute } from "../engines/road-objects";
 import { isSportActive } from "@workspace/feature-flags";
 import { getHourlyForecast } from "../lib/weather/open-meteo";
 import {
@@ -162,8 +164,46 @@ function detectSceneryWish(
 function loopPointsFor(trainingType: string): number {
   const t = trainingType.toLowerCase();
   if (t.includes("interval")) return 2;
+  if (t.includes("tempo")) return 3;
   if (t.includes("herstel") || t.includes("recovery")) return 4;
   return 5;
+}
+
+// Totaal aantal onderbrekende wegobjecten uit de Sparki Traffic Database:
+// verkeerslichten, spoorwegovergangen, rotondes en drempels onderbreken
+// allemaal een aaneengesloten trainingsblok.
+function stopObstaclesFrom(counts: Record<string, number>): number {
+  return (
+    (counts["traffic_signal"] ?? 0) +
+    (counts["railway_crossing"] ?? 0) +
+    (counts["roundabout"] ?? 0) +
+    (counts["speed_bump"] ?? 0)
+  );
+}
+
+// Omgevings-feiten per lus-kandidaat voor de selector: onderbrekende
+// wegobjecten komen altijd uit de eigen wegobjecten-database (incl. zelflerende
+// bevestigingen + OSM-corridorsync); het bos-aandeel vergt een aparte
+// Overpass-call en wordt alleen opgehaald bij een natuurwens. Eerlijk null
+// wanneer geen van beide bronnen antwoordt — er wordt nooit iets verzonnen.
+function candidateEnvironmentOf(wantsNature: boolean) {
+  return async (
+    path: [number, number][],
+  ): Promise<CandidateEnvironment | null> => {
+    const [env, road] = await Promise.all([
+      wantsNature
+        ? getRouteEnvironment(path).catch(() => null)
+        : Promise.resolve(null),
+      getRoadObjectsAlongRoute(path).catch(() => null),
+    ]);
+    if (!env && !road) return null;
+    return {
+      trafficLights:
+        road?.counts["traffic_signal"] ?? env?.trafficLights ?? null,
+      forestSharePct: env?.forestSharePct ?? null,
+      stopObstacles: road ? stopObstaclesFrom(road.counts) : null,
+    };
+  };
 }
 
 // Build a short Dutch rationale for why the route fits the workout. Uses the AI
@@ -184,6 +224,10 @@ async function buildRationale(input: {
   environment?: {
     trafficLights: number | null;
     forestSharePct: number | null;
+    speedBumps?: number | null;
+    roundabouts?: number | null;
+    railwayCrossings?: number | null;
+    estimatedTimeLossSec?: number | null;
   } | null;
 }): Promise<string> {
   const label = activityLabel(input.profile);
@@ -212,18 +256,25 @@ async function buildRationale(input: {
   // afstand/hoogte/ondergrond can be honoured; specific roads, plaatsen or
   // "vermijd X" cannot be guaranteed by the round-trip engine. The prompt must
   // say so plainly and never claim the route passes a place it can't verify.
+  const env = input.environment;
+  const envParts = env
+    ? [
+        env.forestSharePct != null &&
+          `~${env.forestSharePct}% van de route door bos/natuur`,
+        env.trafficLights != null &&
+          `${env.trafficLights} verkeerslicht(en) op de route`,
+        env.roundabouts != null && `${env.roundabouts} rotonde(s)`,
+        env.speedBumps != null && `${env.speedBumps} drempel(s)`,
+        env.railwayCrossings != null &&
+          `${env.railwayCrossings} spoorwegovergang(en)`,
+        env.estimatedTimeLossSec != null &&
+          env.estimatedTimeLossSec > 0 &&
+          `geschat ±${Math.round(env.estimatedTimeLossSec / 60)} min stilstand door verkeerslichten`,
+      ].filter(Boolean)
+    : [];
   const envFacts =
-    input.environment &&
-    (input.environment.forestSharePct != null ||
-      input.environment.trafficLights != null)
-      ? `\n- Gemeten omgeving (OpenStreetMap): ${[
-          input.environment.forestSharePct != null &&
-            `~${input.environment.forestSharePct}% van de route door bos/natuur`,
-          input.environment.trafficLights != null &&
-            `${input.environment.trafficLights} verkeerslicht(en) op de route`,
-        ]
-          .filter(Boolean)
-          .join(", ")}`
+    envParts.length > 0
+      ? `\n- Gemeten omgeving (wegobjecten-database + OpenStreetMap): ${envParts.join(", ")}`
       : "";
 
   // What the generator can steer on differs per mode: only the loop generator
@@ -232,7 +283,7 @@ async function buildRationale(input: {
   // scenery steering there would be an overclaim.
   const steerCapability =
     input.mode === "loop"
-      ? `De routegenerator kan sturen op afstand, hoeveel klimwerk (vlak/heuvelachtig), de ondergrond/het profiel, en — door meerdere echte kandidaten te vergelijken op kaartgegevens — op meer natuur en minder verkeerslichten. NIET op specifieke wegen, plaatsen of bezienswaardigheden.`
+      ? `De routegenerator kan sturen op afstand, hoeveel klimwerk (vlak/heuvelachtig), de ondergrond/het profiel, en — door meerdere echte kandidaten te vergelijken op kaartgegevens — op meer natuur en minder onderbrekingen (verkeerslichten, rotondes, drempels, spoorwegovergangen). NIET op specifieke wegen, plaatsen of bezienswaardigheden.`
       : `De routegenerator kan alleen sturen op afstand, hoeveel klimwerk (vlak/heuvelachtig) en de ondergrond/het profiel — NIET op specifieke wegen, plaatsen, bezienswaardigheden of "vermijd"-verzoeken.`;
   const wishBlock = input.wish
     ? `\n\nDe renner gaf deze wens op: "${input.wish}".\n${steerCapability} Beoordeel de wens eerlijk:\n- Kon de wens (deels) worden ingevuld? Zeg kort dat het gelukt is; noem bij een natuur-/verkeerslichtenwens alleen de gemeten omgevingscijfers hierboven (als die er zijn).\n- Gaat de wens over een specifieke weg/plaats of een vermijd-verzoek dat de generator niet kan garanderen? Zeg dat eerlijk in gewone taal ("Ik kan de route niet op … sturen") en bied deze route aan als passend alternatief voor de training. Beweer NOOIT dat de route langs een plek gaat die niet in de gegevens staat.`
@@ -454,11 +505,14 @@ router.get("/:id/insight", requireAuth, async (req, res) => {
 
     const start = geometry && geometry.length > 0 ? geometry[0] : null;
 
-    const [hours, environment] = await Promise.all([
+    const [hours, environment, roadObjects] = await Promise.all([
       start
         ? getHourlyForecast(start[0], start[1], 16)
         : Promise.resolve([]),
       getRouteEnvironment(geometry),
+      // Eigen wegobjecten-database (verkeerslichten, rotondes, drempels,
+      // spoorwegovergangen) langs deze route — honest null bij een stille bron.
+      getRoadObjectsAlongRoute(geometry).catch(() => null),
     ]);
 
     // Match the requested hour in the location's local time. Open-Meteo hourly
@@ -510,6 +564,13 @@ router.get("/:id/insight", requireAuth, async (req, res) => {
         grade,
         weather,
         environment,
+        roadObjects: roadObjects
+          ? {
+              counts: roadObjects.counts,
+              signalsPerKm: roadObjects.signalsPerKm,
+              estimatedTimeLossSec: roadObjects.estimatedTimeLossSec,
+            }
+          : null,
         hasGeometry: !!(geometry && geometry.length > 1),
         hasProfile: !!(profile && profile.length > 1),
       },
@@ -1109,14 +1170,17 @@ async function buildLoopCandidate(
   ctx: LoopCandidateContext,
   targetDistanceKm: number,
 ) {
-  // Intervaltraining: elke bocht onderbreekt een blok, dus selecteer op
-  // bochtarme kandidaten (echte ORS-afslagen) én — via echte OpenStreetMap-
-  // data — op zo min mogelijk verkeerslichten. Alleen rangschikken van echte
-  // kandidaten; ORS kan bochten/lichten nooit garanderen en dat beloven we dus
-  // ook nergens.
-  const isInterval = ctx.workoutTrainingType.toLowerCase().includes("interval");
+  // Interval- en tempotraining: elke onderbreking (bocht, verkeerslicht,
+  // rotonde, drempel, spoorwegovergang) breekt een blok. Selecteer daarom op
+  // bochtarme kandidaten (echte ORS-afslagen) én — via de eigen wegobjecten-
+  // database + OpenStreetMap — op zo min mogelijk onderbrekende wegobjecten.
+  // Alleen rangschikken van echte kandidaten; ORS kan dit nooit garanderen en
+  // dat beloven we dus ook nergens.
+  const trainingLower = ctx.workoutTrainingType.toLowerCase();
+  const wantsUninterrupted =
+    trainingLower.includes("interval") || trainingLower.includes("tempo");
   const wishScenery = detectSceneryWish(ctx.wish);
-  const scenery = isInterval
+  const scenery = wantsUninterrupted
     ? {
         nature: wishScenery?.nature ?? false,
         avoidTrafficLights: true,
@@ -1134,17 +1198,37 @@ async function buildLoopCandidate(
     },
     {
       scenery,
-      environmentOf: scenery ? getRouteEnvironment : undefined,
-      preferUninterrupted: isInterval,
+      environmentOf: scenery
+        ? candidateEnvironmentOf(scenery.nature)
+        : undefined,
+      preferUninterrupted: wantsUninterrupted,
     },
   );
 
-  // With a scenery wish, report the chosen route's real measured environment
-  // (cached — the selector already fetched it) so the rationale can cite real
-  // numbers instead of guessing. Honest null when the lookup failed.
-  const environment = scenery
-    ? await getRouteEnvironment(routeResult.path).catch(() => null)
-    : null;
+  // Meet de gekozen route na: wegobjecten komen altijd uit de eigen database
+  // (30-min cache — de selector heeft ze vaak al opgehaald); het bos-aandeel
+  // alleen bij een natuurwens (aparte Overpass-call). Honest null bij een
+  // stille bron — de uitleg noemt dan simpelweg geen omgevingscijfers.
+  const [envRaw, roadObjects] = await Promise.all([
+    scenery?.nature
+      ? getRouteEnvironment(routeResult.path).catch(() => null)
+      : Promise.resolve(null),
+    getRoadObjectsAlongRoute(routeResult.path).catch(() => null),
+  ]);
+  const environment =
+    envRaw || roadObjects
+      ? {
+          trafficLights:
+            roadObjects?.counts["traffic_signal"] ??
+            envRaw?.trafficLights ??
+            null,
+          forestSharePct: envRaw?.forestSharePct ?? null,
+          speedBumps: roadObjects?.counts["speed_bump"] ?? null,
+          roundabouts: roadObjects?.counts["roundabout"] ?? null,
+          railwayCrossings: roadObjects?.counts["railway_crossing"] ?? null,
+          estimatedTimeLossSec: roadObjects?.estimatedTimeLossSec ?? null,
+        }
+      : null;
 
   const summary = summarizeTrack(routeResult.points);
   const distanceKm = summary.distanceKm ?? routeResult.distanceKm;
@@ -1209,6 +1293,15 @@ async function buildLoopCandidate(
     endName: null,
     plannedWorkoutId: ctx.plannedWorkoutId,
     targetDistanceKm,
+    // Echte wegobjecten op de gekozen route (eigen database + OSM-sync);
+    // null wanneer de bron nu niet antwoordde — nooit verzonnen.
+    roadObjects: roadObjects
+      ? {
+          counts: roadObjects.counts,
+          signalsPerKm: roadObjects.signalsPerKm,
+          estimatedTimeLossSec: roadObjects.estimatedTimeLossSec,
+        }
+      : null,
   };
 }
 

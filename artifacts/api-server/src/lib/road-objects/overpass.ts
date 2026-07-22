@@ -103,10 +103,16 @@ export async function syncOsmSignalsForBbox(bbox: BBox): Promise<number | null> 
   if (at && Date.now() - at < SYNC_TTL_MS) return 0;
 
   const bboxStr = `${bbox.south.toFixed(4)},${bbox.west.toFixed(4)},${bbox.north.toFixed(4)},${bbox.east.toFixed(4)}`;
+  // Compacte unie (uitgebreide vormen geven 504 op stadsgrote bboxes):
+  // verkeerslichten, spoorwegovergangen, rotondes (mini-rotonde-nodes én
+  // rotonde-wegen via "out center") en snelheidsdrempels.
   const query = `[out:json][timeout:25];(
 node["highway"="traffic_signals"](${bboxStr});
 node["railway"="level_crossing"](${bboxStr});
-);out 4000;`;
+node["highway"="mini_roundabout"](${bboxStr});
+way["junction"="roundabout"](${bboxStr});
+node["traffic_calming"~"^(bump|hump|table|cushion)$"](${bboxStr});
+);out center 4000;`;
 
   const elements = await runQuery(query);
   if (elements === null) {
@@ -121,7 +127,13 @@ node["railway"="level_crossing"](${bboxStr});
     if (lat == null || lon == null) continue;
     const tags = el.tags ?? {};
     const kind =
-      tags.railway === "level_crossing" ? ("railway_crossing" as const) : ("traffic_signal" as const);
+      tags.railway === "level_crossing"
+        ? ("railway_crossing" as const)
+        : tags.highway === "mini_roundabout" || tags.junction === "roundabout"
+          ? ("roundabout" as const)
+          : tags.traffic_calming != null
+            ? ("speed_bump" as const)
+            : ("traffic_signal" as const);
     objects.push({
       kind,
       externalId: `${el.type}/${el.id}`,

@@ -118,6 +118,11 @@ export type SceneryWish = { nature: boolean; avoidTrafficLights: boolean };
 export type CandidateEnvironment = {
   trafficLights: number | null;
   forestSharePct: number | null;
+  // Optioneel: totaal aantal onderbrekende wegobjecten (verkeerslichten +
+  // spoorwegovergangen + rotondes + drempels) uit de Sparki Traffic Database.
+  // Wanneer aanwezig weegt dit zwaarder dan alleen het lichten-aantal — een
+  // intervalblok wordt door élk van deze objecten onderbroken.
+  stopObstacles?: number | null;
 };
 
 // Real manoeuvres in a candidate's ORS turn-by-turn steps: everything the rider
@@ -262,10 +267,15 @@ export async function generateVariedLoop(
         if (scenery!.nature && env.forestSharePct != null) {
           envPenalty += (1 - env.forestSharePct / 100) * 0.9;
         }
-        if (scenery!.avoidTrafficLights && env.trafficLights != null) {
-          const km = c.result.distanceKm ?? target;
-          const perKm = km > 0 ? env.trafficLights / km : env.trafficLights;
-          envPenalty += Math.min(perKm / 1.5, 1) * 0.9;
+        if (scenery!.avoidTrafficLights) {
+          // Eigen wegobjecten-database (lichten + overwegen + rotondes +
+          // drempels) heeft voorrang; anders het kale lichten-aantal.
+          const obstacles = env.stopObstacles ?? env.trafficLights;
+          if (obstacles != null) {
+            const km = c.result.distanceKm ?? target;
+            const perKm = km > 0 ? obstacles / km : obstacles;
+            envPenalty += Math.min(perKm / 1.5, 1) * 0.9;
+          }
         }
       }
       const total = c.score + envPenalty;

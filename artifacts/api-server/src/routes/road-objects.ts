@@ -1,7 +1,8 @@
 // Sparki Traffic Database — API.
 //
-// - GET  /api/road-objects/along-route/:routeId — verkeerslichten en
-//   spoorwegovergangen langs een eigen route (met OSM-sync + cache).
+// - GET  /api/road-objects/along-route/:routeId — wegobjecten (verkeerslichten,
+//   spoorwegovergangen, rotondes, drempels) langs een eigen route (met
+//   OSM-sync + cache).
 // - GET  /api/road-objects/session/:importId/stops — de gedetecteerde stops
 //   ("waarschijnlijk gestopt voor rood licht") van een eigen ge-uploade rit.
 // - POST /api/road-objects/:id/confirm — handmatige bevestiging van een

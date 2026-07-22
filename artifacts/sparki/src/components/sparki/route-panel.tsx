@@ -443,18 +443,39 @@ function RoutePassport({
       rows.push({ label: "Kans op neerslag", value: `${w.precipProbPct}%` })
   }
   const env = insight?.environment
-  if (env) {
-    if (env.trafficLights != null)
+  const road = insight?.roadObjects
+  // Verkeerslichten: eigen wegobjecten-database heeft voorrang (bevat ook
+  // zelflerende bevestigingen); anders het kale OpenStreetMap-aantal.
+  const lights = road?.counts["traffic_signal"] ?? env?.trafficLights ?? null
+  if (lights != null)
+    rows.push({ label: "Verkeerslichten", value: `${lights} op de route` })
+  if (road) {
+    if (road.counts["roundabout"] != null)
       rows.push({
-        label: "Verkeerslichten",
-        value: `${env.trafficLights} op de route`,
+        label: "Rotondes",
+        value: `${road.counts["roundabout"]} op de route`,
       })
-    if (env.forestSharePct != null)
+    if (road.counts["speed_bump"] != null)
       rows.push({
-        label: "Door bos",
-        value: `±${env.forestSharePct}% (indicatie)`,
+        label: "Drempels",
+        value: `${road.counts["speed_bump"]} op de route`,
+      })
+    if ((road.counts["railway_crossing"] ?? 0) > 0)
+      rows.push({
+        label: "Spoorwegovergangen",
+        value: `${road.counts["railway_crossing"]} op de route`,
+      })
+    if (road.estimatedTimeLossSec != null && road.estimatedTimeLossSec > 0)
+      rows.push({
+        label: "Stilstand (schatting)",
+        value: `±${Math.max(1, Math.round(road.estimatedTimeLossSec / 60))} min door verkeerslichten`,
       })
   }
+  if (env?.forestSharePct != null)
+    rows.push({
+      label: "Door bos",
+      value: `±${env.forestSharePct}% (indicatie)`,
+    })
 
   return (
     <div className="mt-4 rounded-lg border border-white/[0.07] bg-white/[0.03] p-3.5">

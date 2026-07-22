@@ -12,6 +12,8 @@ import { effectiveConfidence, objectsInBbox } from "./store";
 const NEAR_ROUTE_M: Record<string, number> = {
   traffic_signal: 40,
   railway_crossing: 60,
+  roundabout: 40,
+  speed_bump: 30,
 };
 
 // Alleen objecten waar we redelijk zeker van zijn tellen mee in de navigatie.
@@ -71,7 +73,14 @@ export async function getRoadObjectsAlongRoute(
   opts?: { kinds?: RoadObjectKind[]; skipOsmSync?: boolean },
 ): Promise<RouteRoadObjectsResult | null> {
   if (!geometry || geometry.length < 2) return null;
-  const kinds = opts?.kinds ?? (["traffic_signal", "railway_crossing"] as RoadObjectKind[]);
+  const kinds =
+    opts?.kinds ??
+    ([
+      "traffic_signal",
+      "railway_crossing",
+      "roundabout",
+      "speed_bump",
+    ] as RoadObjectKind[]);
 
   const key = `${kinds.join("+")}|${cacheKey(geometry)}`;
   const hit = RESULT_CACHE.get(key);
