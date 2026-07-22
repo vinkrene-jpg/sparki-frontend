@@ -37,6 +37,84 @@ function isGpxSummary(v: unknown): v is GpxSummary {
   )
 }
 
+// Gedetecteerde stops uit de Sparki Traffic Database (bewaard bij de upload).
+type RoadStop = {
+  stopSec: number
+  atSec: number
+  candidates: { kind: string; confidence: number }[]
+}
+
+const STOP_LABELS: Record<string, string> = {
+  traffic_signal: "verkeerslicht",
+  railway_crossing: "spoorwegovergang",
+  junction: "kruispunt",
+  pause: "pauze",
+}
+
+function roadStopsOf(v: unknown): RoadStop[] {
+  const raw =
+    v && typeof v === "object" ? (v as { roadStops?: unknown }).roadStops : null
+  if (!Array.isArray(raw)) return []
+  return raw.filter(
+    (s): s is RoadStop =>
+      !!s &&
+      typeof s === "object" &&
+      typeof (s as RoadStop).stopSec === "number" &&
+      Array.isArray((s as RoadStop).candidates),
+  )
+}
+
+function fmtAt(sec: number): string {
+  const h = Math.floor(sec / 3600)
+  const m = Math.floor((sec % 3600) / 60)
+  return h > 0 ? `${h}u${String(m).padStart(2, "0")}` : `${m} min`
+}
+
+// Ritanalyse: echte stilstanden met de meest waarschijnlijke oorzaak, bv.
+// "waarschijnlijk gestopt voor een verkeerslicht (72%)".
+function StopsRow({ stops }: { stops: RoadStop[] }) {
+  const [open, setOpen] = useState(false)
+  const signalCount = stops.filter(
+    (s) => s.candidates[0]?.kind === "traffic_signal",
+  ).length
+  return (
+    <div className="mt-2.5 border-t border-white/[0.06] pt-2.5">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="font-mono text-[11px] text-white/45 transition hover:text-white/70"
+      >
+        {stops.length} {stops.length === 1 ? "stop" : "stops"} onderweg
+        {signalCount > 0 &&
+          ` · ${signalCount}× waarschijnlijk voor een verkeerslicht`}{" "}
+        {open ? "▴" : "▾"}
+      </button>
+      {open && (
+        <ul className="mt-2 space-y-1">
+          {stops.slice(0, 12).map((s, i) => {
+            const top = s.candidates[0]
+            return (
+              <li
+                key={i}
+                className="font-mono text-[11px] tabular-nums text-white/55"
+              >
+                Na {fmtAt(s.atSec)} · {s.stopSec} s stil
+                {top && (
+                  <>
+                    {" — waarschijnlijk "}
+                    {STOP_LABELS[top.kind] ?? top.kind} (
+                    {Math.round(top.confidence * 100)}%)
+                  </>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 function isFitSummary(v: unknown): v is FitSummary {
   return (
     !!v && typeof v === "object" && (v as { format?: string }).format === "fit"
@@ -339,6 +417,9 @@ function ImportCard({
             </>
           )}
         </div>
+      )}
+      {roadStopsOf(imp.parsedSummary).length > 0 && (
+        <StopsRow stops={roadStopsOf(imp.parsedSummary)} />
       )}
       {imp.status !== "failed" && <LinkRow imp={imp} sessions={sessions} />}
     </div>

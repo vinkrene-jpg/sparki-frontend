@@ -125,5 +125,6 @@
 - [Sparki val-alarm](sparki-crash-alert.md) — 30s-window only when stillness latch starts (else misses late stops); "notified" = klaargezette meldingen, copy never claims delivery.
 - [Leaflet full-screen explorer traps](leaflet-multi-route-explorer.md) — layers before first setView crash bringToFront; guard queued invalidateSize against removed maps.
 - [Sparki rit delen](sparki-ride-share.md) — Strava = manual activity (never fabricate timestamps); socials only via OS share menu; expo-sharing shares file w/o text, Share.share url iOS-only.
+- [Sparki road-objects engine](sparki-road-objects.md) — zelflerende verkeerslichten-DB: confirm vereist eigen stop-bewijs + idempotente confirm-rij; cel-dedupe kiest expliciet beste, nooit "eerste rij wint".
 - [Sparki device sync (Garmin/Wahoo)](sparki-device-sync.md) — full OAuth+push scaffolding, honest configured:false until manufacturer keys; PKCE verifier inside signed state.
 - [Ride BLE sensors → GPX](sparki-ride-sensor-gpx.md) — 1s foreground sampler + ≤5s nearest-match; gpxtpx/power extensions; api-server test mirrors mobile buildRideGpx in lockstep.

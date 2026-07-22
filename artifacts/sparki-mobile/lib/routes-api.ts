@@ -29,6 +29,43 @@ export type RouteDetail = RouteSummary & {
   rationale: string | null;
 };
 
+// Wegobject langs de route (Sparki Traffic Database) — verkeerslichten en
+// spoorwegovergangen met hun positie langs de routelijn.
+export type RouteRoadObject = {
+  id: number;
+  kind: string;
+  lat: number;
+  lon: number;
+  roadName: string | null;
+  confidence: number;
+  routeKm: number;
+};
+
+export type RouteRoadObjects = {
+  available: boolean;
+  reason?: string;
+  objects?: RouteRoadObject[];
+  counts?: Record<string, number>;
+  estimatedTimeLossSec?: number | null;
+};
+
+/**
+ * Bekende wegobjecten langs een route (echte OSM- en detectiedata uit de
+ * eigen database; nooit verzonnen). Niet-blokkerend voor navigatie: bij een
+ * fout blijft de HUD gewoon zonder verkeerslicht-regel werken.
+ */
+export function useRouteRoadObjects(id: number | null) {
+  return useQuery({
+    enabled: id != null,
+    staleTime: 10 * 60_000,
+    queryKey: ["route-road-objects", id],
+    queryFn: () =>
+      customFetch<RouteRoadObjects>(`/api/road-objects/along-route/${id}`, {
+        responseType: "json",
+      }),
+  });
+}
+
 /** All saved routes for the signed-in athlete (owner-scoped by the backend). */
 export function useRoutes() {
   return useQuery({

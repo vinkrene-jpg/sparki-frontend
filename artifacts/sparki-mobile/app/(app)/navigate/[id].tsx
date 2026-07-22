@@ -27,7 +27,12 @@ import {
   type LatLon,
 } from "@/lib/geo";
 import { hasMapbox } from "@/lib/mapbox";
-import { useRoute, useSaveRide, type RouteStep } from "@/lib/routes-api";
+import {
+  useRoute,
+  useRouteRoadObjects,
+  useSaveRide,
+  type RouteStep,
+} from "@/lib/routes-api";
 
 const OFF_ROUTE_METERS = 60;
 
@@ -129,6 +134,29 @@ export default function NavigateScreen() {
     nextStep && progress
       ? Math.max(0, (nextStep.km - progress.traveledKm) * 1000)
       : null;
+
+  // Verkeerslichten langs de route uit de Sparki Traffic Database (echte
+  // OSM- en detectiedata). Best-effort: zonder data geen regel in de HUD.
+  const { data: roadObjects } = useRouteRoadObjects(
+    Number.isInteger(routeId) ? routeId : null,
+  );
+  const nextSignal = useMemo(() => {
+    const objs = roadObjects?.objects;
+    if (!objs || objs.length === 0 || !progress) return null;
+    const ahead = objs.filter(
+      (o) =>
+        o.kind === "traffic_signal" &&
+        o.routeKm >= progress.traveledKm - 0.02,
+    );
+    if (ahead.length === 0) return null;
+    return {
+      distanceM: Math.max(
+        0,
+        Math.round((ahead[0].routeKm - progress.traveledKm) * 1000),
+      ),
+      remaining: ahead.length,
+    };
+  }, [roadObjects?.objects, progress]);
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace("/"));
 
@@ -248,6 +276,23 @@ export default function NavigateScreen() {
             <Ionicons name="information-circle-outline" size={24} color={c.mutedForeground} />
             <Text style={[styles.instrNote, { color: c.mutedForeground, flex: 1 }]}>
               Deze route heeft geen afslag-aanwijzingen. De lijn wordt wel getoond.
+            </Text>
+          </View>
+        )}
+
+        {nextSignal && !progress?.offRoute && (
+          <View
+            style={[
+              styles.signalPill,
+              { backgroundColor: HUD_BG, borderColor: c.border },
+            ]}
+          >
+            <Ionicons name="alert-circle-outline" size={16} color="#facc15" />
+            <Text style={[styles.signalText, { color: HUD_TEXT }]}>
+              Nog {fmtMeters(nextSignal.distanceM)} tot verkeerslicht
+              {nextSignal.remaining > 1
+                ? ` · ${nextSignal.remaining} op de rest van je route`
+                : ""}
             </Text>
           </View>
         )}
@@ -882,6 +927,18 @@ const styles = StyleSheet.create({
   instrDist: { fontFamily: "Inter_700Bold", fontSize: 16 },
   instrDistBig: { fontFamily: "Inter_700Bold", fontSize: 21 },
   instrNote: { fontFamily: "Inter_400Regular", fontSize: 13, marginTop: 2 },
+  signalPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  signalText: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
   pin: { width: 16, height: 16, borderRadius: 8, borderWidth: 3 },
   locNotice: {
     position: "absolute",

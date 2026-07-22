@@ -173,7 +173,22 @@ type RecordAgg = {
   power: PowerSampleCollector;
 };
 
-export function parseFit(buf: Buffer): FitSummary | null {
+// Optional per-record position collector: called with real GPS samples
+// (degrees + epoch ms) while parsing. Used by the road-objects engine for
+// stop detection — the summary itself stays unchanged.
+export type FitPositionCollector = (
+  lat: number,
+  lon: number,
+  timeMs: number,
+) => void;
+
+// FIT stores coordinates as sint32 "semicircles": degrees = v × (180 / 2^31).
+const SEMICIRCLE_TO_DEG = 180 / 2 ** 31;
+
+export function parseFit(
+  buf: Buffer,
+  onPosition?: FitPositionCollector,
+): FitSummary | null {
   try {
     if (buf.length < 14) return null;
 
@@ -221,9 +236,17 @@ export function parseFit(buf: Buffer): FitSummary | null {
         const localType = (recordHeader >> 5) & 0x03;
         const def = localDefs.get(localType);
         if (!def) return safeFinalize(session, agg);
-        pos = consumeDataMessage(buf, pos, def, session, agg, (s) => {
-          session = s;
-        });
+        pos = consumeDataMessage(
+          buf,
+          pos,
+          def,
+          session,
+          agg,
+          (s) => {
+            session = s;
+          },
+          onPosition,
+        );
         continue;
       }
 
@@ -276,9 +299,17 @@ export function parseFit(buf: Buffer): FitSummary | null {
       // Data message.
       const def = localDefs.get(localType);
       if (!def) return safeFinalize(session, agg);
-      pos = consumeDataMessage(buf, pos, def, session, agg, (s) => {
-        session = s;
-      });
+      pos = consumeDataMessage(
+        buf,
+        pos,
+        def,
+        session,
+        agg,
+        (s) => {
+          session = s;
+        },
+        onPosition,
+      );
     }
 
     return finalize(session, agg);
@@ -298,6 +329,7 @@ function consumeDataMessage(
   session: Record<number, number | null> | null,
   agg: RecordAgg,
   setSession: (s: Record<number, number | null>) => void,
+  onPosition?: FitPositionCollector,
 ): number {
   let pos = start;
   const collected: Record<number, number | null> = {};
@@ -321,6 +353,25 @@ function consumeDataMessage(
     setSession(collected);
   } else if (def.globalNum === MSG_RECORD) {
     harvestRecord(collected, agg);
+    // Real GPS sample: position_lat (0) / position_long (1) in semicircles +
+    // a real calendar timestamp (253). Only forwarded when all three exist.
+    if (onPosition) {
+      const t = collected[253];
+      const latRaw = collected[0];
+      const lonRaw = collected[1];
+      if (
+        t != null &&
+        t >= FIT_MIN_REAL_DATE &&
+        latRaw != null &&
+        lonRaw != null
+      ) {
+        const lat = latRaw * SEMICIRCLE_TO_DEG;
+        const lon = lonRaw * SEMICIRCLE_TO_DEG;
+        if (Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && (lat !== 0 || lon !== 0)) {
+          onPosition(lat, lon, (t + FIT_EPOCH_OFFSET_SEC) * 1000);
+        }
+      }
+    }
   } else if (def.globalNum === MSG_FILE_ID) {
     // file_id.type (field 0): 4 = activity. We don't reject other types — some
     // exporters mislabel — but parsing only succeeds if real data follows.

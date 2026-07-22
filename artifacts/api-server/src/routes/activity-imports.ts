@@ -20,6 +20,12 @@ import {
   fileExternalId,
   unlinkedImportStatus,
 } from "../lib/activity-file-ingest";
+import {
+  extractTimedTrackFromGpx,
+  extractTimedTrackFromTcx,
+  recordStops,
+  type TimedTrackPoint,
+} from "../engines/road-objects";
 
 const router = Router();
 
@@ -89,6 +95,25 @@ router.post("/", requireAuth, async (req, res) => {
   // session and the import is "linked"; a timeless GPX (a bare route) has no
   // session and stays "parsed". A Data Hub hiccup never loses the parse — the
   // import is still recorded, with an honest note that no session was created.
+  // Zelflerende wegobjecten: echte stops uit de van tijd voorziene track
+  // voeden de Sparki Traffic Database (verkeerslichten/spoorwegovergangen).
+  // Best-effort — een storing hier mag een upload nooit laten mislukken.
+  // Retourneert de gedetecteerde stops (met kansverdeling) zodat ze in de
+  // parsedSummary bewaard worden en de ritanalyse ze later kan tonen.
+  const learnRoadObjects = async (
+    track: TimedTrackPoint[],
+    externalId: string,
+  ) => {
+    if (track.length < 3) return null;
+    try {
+      const result = await recordStops(clerkId, externalId, track);
+      return result.stops.length > 0 ? result.stops : null;
+    } catch (err) {
+      req.log.error({ err }, "activityImports.roadObjects failed");
+      return null;
+    }
+  };
+
   const insertParsed = async (
     kind: "gpx" | "fit" | "tcx",
     summary: Record<string, unknown>,
@@ -152,7 +177,13 @@ router.post("/", requireAuth, async (req, res) => {
               }
             : null,
       };
-      await insertParsed("gpx", merged, fileExternalId(content, fileName));
+      const gpxExternalId = fileExternalId(content, fileName);
+      const gpxStops = await learnRoadObjects(
+        extractTimedTrackFromGpx(content),
+        gpxExternalId,
+      );
+      if (gpxStops) merged.roadStops = gpxStops;
+      await insertParsed("gpx", merged, gpxExternalId);
       return;
     }
 
@@ -162,18 +193,23 @@ router.post("/", requireAuth, async (req, res) => {
         return;
       }
       const buf = Buffer.from(contentBase64, "base64");
-      const summary = parseFit(buf);
+      // Verzamel tijdens het parsen de echte GPS-samples (positie + tijd) voor
+      // stop-detectie — het samenvattingsresultaat verandert hier niet door.
+      const fitTrack: TimedTrackPoint[] = [];
+      const summary = parseFit(buf, (lat, lon, timeMs) => {
+        fitTrack.push({ lat, lon, timeMs });
+      });
       if (!summary) {
         await insertFailed(
           "Geen geldige trainingsgegevens gevonden in FIT-bestand",
         );
         return;
       }
-      await insertParsed(
-        "fit",
-        summary as unknown as Record<string, unknown>,
-        fileExternalId(buf, fileName),
-      );
+      const fitExternalId = fileExternalId(buf, fileName);
+      const fitStops = await learnRoadObjects(fitTrack, fitExternalId);
+      const fitSummary = summary as unknown as Record<string, unknown>;
+      if (fitStops) fitSummary.roadStops = fitStops;
+      await insertParsed("fit", fitSummary, fitExternalId);
       return;
     }
 
@@ -185,11 +221,14 @@ router.post("/", requireAuth, async (req, res) => {
         );
         return;
       }
-      await insertParsed(
-        "tcx",
-        summary as unknown as Record<string, unknown>,
-        fileExternalId(content, fileName),
+      const tcxExternalId = fileExternalId(content, fileName);
+      const tcxStops = await learnRoadObjects(
+        extractTimedTrackFromTcx(content),
+        tcxExternalId,
       );
+      const tcxSummary = summary as unknown as Record<string, unknown>;
+      if (tcxStops) tcxSummary.roadStops = tcxStops;
+      await insertParsed("tcx", tcxSummary, tcxExternalId);
       return;
     }
 
