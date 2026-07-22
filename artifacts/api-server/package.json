@@ -13,6 +13,7 @@
     "test:journey": "node ./scripts/run-test.mjs journey",
     "test:account": "node ./scripts/run-test.mjs account",
     "test:data-hub": "node ./scripts/run-test.mjs data-hub",
+    "test:provider-sync": "node ./scripts/run-test.mjs provider-sync",
     "test:derived-load": "node ./scripts/run-test.mjs derived-load",
     "test:connector-cleanup": "node ./scripts/run-test.mjs connector-cleanup",
     "test:memory-graph": "node ./scripts/run-test.mjs memory-graph",

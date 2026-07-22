@@ -14,6 +14,7 @@ import {
   useAdminScheduledTasks,
   useAdminFeedback,
   useAdminFailedImports,
+  useAdminSyncDiagnostics,
   useAdminQuality,
   type HealthCheck,
   type HealthBatch,
@@ -233,6 +234,7 @@ export default function AdminPage() {
   const { data: bugData } = useAdminBugReports(enabled);
   const { data: feedbackData } = useAdminFeedback(enabled);
   const { data: importsData } = useAdminFailedImports(enabled);
+  const { data: syncDiag } = useAdminSyncDiagnostics(enabled);
   const runChecks = useRunHealthChecks();
   const { data: quality } = useAdminQuality(enabled);
 
@@ -324,6 +326,81 @@ export default function AdminPage() {
                   {scheduledData.tasks.map((t) => (
                     <ScheduledTaskRow key={t.key} t={t} />
                   ))}
+                </div>
+              </section>
+            )}
+
+            {syncDiag && syncDiag.providers.length > 0 && (
+              <section className="mt-6">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                  Automatische datasync
+                </p>
+                <p className="mt-1 text-[12px] leading-snug text-white/40">
+                  Echte synchronisaties en webhook-meldingen per platform —
+                  alleen wat aantoonbaar gebeurd is.
+                </p>
+                <div className="mt-3 space-y-2">
+                  {syncDiag.providers.map((p) => (
+                    <div
+                      key={p.provider}
+                      className="rounded-lg border border-white/[0.06] bg-[#070d16]/[0.6] px-3 py-2.5 backdrop-blur-md"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="font-sans text-[13px] capitalize text-white/80">
+                          {p.provider}
+                        </p>
+                        <p className="font-mono text-[10px] tabular-nums text-white/45">
+                          {p.totalRuns} runs
+                          {p.failedRuns > 0 && (
+                            <span className="text-red-400">
+                              {" "}
+                              · {p.failedRuns} mislukt
+                            </span>
+                          )}
+                          {p.partialRuns > 0 && (
+                            <span className="text-amber-400/80">
+                              {" "}
+                              · {p.partialRuns} deels
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      <p className="mt-0.5 font-mono text-[10px] text-white/35">
+                        Laatste run: {formatWhen(p.lastRunAt)}
+                        {p.lastSuccessAt
+                          ? ` · laatst gelukt: ${formatWhen(p.lastSuccessAt)}`
+                          : " · nog nooit gelukt"}
+                      </p>
+                    </div>
+                  ))}
+                  {syncDiag.webhooks.length > 0 && (
+                    <p className="px-1 font-mono text-[10px] text-white/40">
+                      Webhooks:{" "}
+                      {syncDiag.webhooks
+                        .map((w) => `${w.provider} ${w.status}: ${w.count}`)
+                        .join(" · ")}
+                    </p>
+                  )}
+                  {syncDiag.failedWebhooks.length > 0 && (
+                    <div className="rounded-lg border border-red-400/20 bg-red-400/[0.04] px-3 py-2.5">
+                      <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-red-400/80">
+                        Mislukte webhook-meldingen (
+                        {syncDiag.failedWebhooks.length})
+                      </p>
+                      <div className="mt-1.5 space-y-1">
+                        {syncDiag.failedWebhooks.slice(0, 5).map((w) => (
+                          <p
+                            key={w.id}
+                            className="font-mono text-[10px] leading-snug text-white/45"
+                          >
+                            {w.provider} · {formatWhen(w.receivedAt)} ·{" "}
+                            {w.attempts}x geprobeerd
+                            {w.lastError ? ` — ${w.lastError}` : ""}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </section>
             )}

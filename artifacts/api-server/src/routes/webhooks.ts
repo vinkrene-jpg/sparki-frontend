@@ -9,8 +9,11 @@ import { handleWebhookEvent } from "../engines/data-hub/webhooks";
 //    gekoppelde gebruiker — nooit tot datamutatie op basis van de payload zelf.
 //  • Wahoo: ieder event bevat een webhook_token die gelijk moet zijn aan
 //    WAHOO_WEBHOOK_TOKEN (mismatch ⇒ 403, niets vastgelegd).
-//  • Garmin: pushes per gebruiker met userId; onbekende userId ⇒ eerlijk
-//    "skipped", nooit een fout naar Garmin (die zou anders blijven herhalen).
+//  • Garmin: het Health-pushmodel draagt geen signature per event. Daarom is
+//    het endpoint verified via een geheim in de geregistreerde URL zelf:
+//    POST /garmin?token=<GARMIN_WEBHOOK_TOKEN>. Fail-closed: geen token
+//    geconfigureerd of mismatch ⇒ 403 en er wordt niets vastgelegd. Onbekende
+//    userId ⇒ eerlijk "skipped", nooit een fout naar Garmin terug.
 // Alle events worden idempotent vastgelegd (unieke provider+eventId) en
 // verwerkt via de reguliere Data Hub-sync — zelfde consent/dedupe/provenance.
 // Endpoints antwoorden altijd snel met 200 zodat platformen niet eindeloos
@@ -59,6 +62,14 @@ router.post("/strava", async (req, res) => {
 // Garmin Health push: { activities: [ { userId, summaryId, ... } ] } (of
 // activityDetails). Per item één idempotent event.
 router.post("/garmin", async (req, res) => {
+  // Verified webhook: het geheim zit in de geregistreerde URL (?token=…).
+  // Fail-closed — zonder geconfigureerd token wordt niets geaccepteerd.
+  const expected = process.env["GARMIN_WEBHOOK_TOKEN"]?.trim();
+  const provided = String(req.query["token"] ?? "");
+  if (!expected || provided !== expected) {
+    res.status(403).json({ error: "Verificatie mislukt" });
+    return;
+  }
   res.status(200).json({ received: true });
   const body = req.body as Record<string, unknown>;
   const items: Record<string, unknown>[] = [];

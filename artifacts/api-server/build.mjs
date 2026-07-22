@@ -27,6 +27,7 @@ const ALL_ENTRIES = [
       path.resolve(artifactDir, "src/tests/journey.ts"),
       path.resolve(artifactDir, "src/tests/account.ts"),
       path.resolve(artifactDir, "src/tests/data-hub.ts"),
+      path.resolve(artifactDir, "src/tests/provider-sync.ts"),
       path.resolve(artifactDir, "src/tests/memory-graph.ts"),
       path.resolve(artifactDir, "src/tests/context-memory.ts"),
       path.resolve(artifactDir, "src/tests/voice.ts"),

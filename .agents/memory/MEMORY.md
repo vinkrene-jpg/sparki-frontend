@@ -128,6 +128,7 @@
 - [Sparki rit delen](sparki-ride-share.md) — Strava = manual activity (never fabricate timestamps); socials only via OS share menu; expo-sharing shares file w/o text, Share.share url iOS-only.
 - [Sparki road-objects engine](sparki-road-objects.md) — zelflerende verkeerslichten-DB: confirm vereist eigen stop-bewijs + idempotente confirm-rij; cel-dedupe kiest expliciet beste, nooit "eerste rij wint".
 - [Sparki device sync (Garmin/Wahoo)](sparki-device-sync.md) — full OAuth+push scaffolding, honest configured:false until manufacturer keys; PKCE verifier inside signed state.
+- [Device sync webhooks + provenance](sparki-device-webhooks.md) — fail-closed webhook secrets (Garmin URL-token), skipped≠failed, manualFields sacred, sync status vocab success/partial/failed not "error".
 - [Ride BLE sensors → GPX](sparki-ride-sensor-gpx.md) — 1s foreground sampler + ≤5s nearest-match; gpxtpx/power extensions; api-server test mirrors mobile buildRideGpx in lockstep.
 - [Sparki session graphs](sparki-session-graphs.md) — streams only at ingest (old sessions honest-null), connectNulls=false, comparability-gated comparison, Tanaka maxHR labeled as schatting.
 - [Sparki bronnenregister](sparki-source-quality.md) — central source-quality register; fail-closed prompt rule, sensor "actief" needs real proof, per-analysis used/excluded logging.

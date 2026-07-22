@@ -845,6 +845,66 @@ router.get("/failed-imports", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// GET /api/admin/sync-diagnostics — automatische datasync-diagnostiek.
+// Echte rijen uit sync_runs + webhook_events: per platform de laatste runs,
+// foutpercentages en webhook-verwerking. Geen aannames — alleen wat er
+// aantoonbaar gebeurd is.
+router.get(
+  "/sync-diagnostics",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const [perProvider, recentRuns, webhookStats, recentWebhookFailures] =
+        await Promise.all([
+          db.execute(sql`
+            SELECT provider,
+                   count(*)::int AS "totalRuns",
+                   count(*) FILTER (WHERE status = 'failed')::int AS "failedRuns",
+                   count(*) FILTER (WHERE status = 'partial')::int AS "partialRuns",
+                   max(started_at) AS "lastRunAt",
+                   max(started_at) FILTER (WHERE status = 'success') AS "lastSuccessAt"
+            FROM sync_runs
+            GROUP BY provider
+            ORDER BY provider
+          `),
+          db.execute(sql`
+            SELECT sr.id, sr.provider, sr.trigger, sr.status,
+                   sr.started_at AS "startedAt", sr.finished_at AS "finishedAt",
+                   sr.counts, sr.error, up.display_name AS "userName"
+            FROM sync_runs sr
+            LEFT JOIN user_profiles up ON up.clerk_id = sr.clerk_id
+            ORDER BY sr.started_at DESC
+            LIMIT 30
+          `),
+          db.execute(sql`
+            SELECT provider, status, count(*)::int AS "count"
+            FROM webhook_events
+            GROUP BY provider, status
+            ORDER BY provider, status
+          `),
+          db.execute(sql`
+            SELECT id, provider, event_id AS "eventId", status, attempts,
+                   last_error AS "lastError", received_at AS "receivedAt"
+            FROM webhook_events
+            WHERE status = 'failed'
+            ORDER BY received_at DESC
+            LIMIT 20
+          `),
+        ]);
+      res.json({
+        providers: perProvider.rows,
+        recentRuns: recentRuns.rows,
+        webhooks: webhookStats.rows,
+        failedWebhooks: recentWebhookFailures.rows,
+      });
+    } catch (err) {
+      req.log.error({ err }, "admin.syncDiagnostics failed");
+      res.status(500).json({ error: "Kon de sync-diagnostiek niet laden" });
+    }
+  },
+);
+
 // GET /api/admin/scheduled-tasks — "Geplande taken"-overzicht.
 //
 // Honesty contract: the server cannot read the Replit deployment config, so it

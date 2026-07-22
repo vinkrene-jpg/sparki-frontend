@@ -108,7 +108,7 @@ export interface SyncRun {
   status: string
   startedAt: string
   finishedAt: string | null
-  counts: { fetched?: number; created?: number; merged?: number; skipped?: number } | null
+  counts: { activities?: number; merged?: number; skipped?: number; errors?: number } | null
   importedDataTypes: string[] | null
   error: string | null
 }

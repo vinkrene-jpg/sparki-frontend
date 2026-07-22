@@ -255,8 +255,8 @@ function RunsPanel({ connectorId }: { connectorId: string }) {
   return (
     <div className="flex flex-col gap-1.5 pl-12">
       {runs.map((r) => {
-        const ok = r.status === "success"
-        const created = r.counts?.created ?? 0
+        const ok = r.status === "success" || r.status === "partial"
+        const created = r.counts?.activities ?? 0
         const merged = r.counts?.merged ?? 0
         return (
           <div key={r.id} className="flex flex-col gap-0.5">
@@ -694,6 +694,7 @@ export function ConnectionsSection({
                     onDisconnect={handleDisconnect}
                     onRevoke={handleRevoke}
                     onSync={handleSync}
+                    onBackfill={handleBackfill}
                   />
                 ))}
               </div>
@@ -742,6 +743,7 @@ export function ConnectionsSection({
                       onDisconnect={handleDisconnect}
                       onRevoke={handleRevoke}
                       onSync={handleSync}
+                      onBackfill={handleBackfill}
                     />
                   ))}
                 </div>

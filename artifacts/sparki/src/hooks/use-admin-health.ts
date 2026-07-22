@@ -153,6 +153,58 @@ export function useAdminScheduledTasks(enabled: boolean) {
   });
 }
 
+export type SyncDiagProvider = {
+  provider: string;
+  totalRuns: number;
+  failedRuns: number;
+  partialRuns: number;
+  lastRunAt: string | null;
+  lastSuccessAt: string | null;
+};
+
+export type SyncDiagRun = {
+  id: string;
+  provider: string;
+  trigger: string;
+  status: string;
+  startedAt: string;
+  finishedAt: string | null;
+  counts: { fetched?: number; created?: number; merged?: number } | null;
+  error: string | null;
+  userName: string | null;
+};
+
+export type SyncDiagWebhook = {
+  provider: string;
+  status: string;
+  count: number;
+};
+
+export type SyncDiagFailedWebhook = {
+  id: string;
+  provider: string;
+  eventId: string;
+  status: string;
+  attempts: number;
+  lastError: string | null;
+  receivedAt: string;
+};
+
+export function useAdminSyncDiagnostics(enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.admin.syncDiagnostics(),
+    queryFn: () =>
+      apiFetch<{
+        providers: SyncDiagProvider[];
+        recentRuns: SyncDiagRun[];
+        webhooks: SyncDiagWebhook[];
+        failedWebhooks: SyncDiagFailedWebhook[];
+      }>("/api/admin/sync-diagnostics"),
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
 export function useAdminHealthBatches(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.admin.healthBatches(),
