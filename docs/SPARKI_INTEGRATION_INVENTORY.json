@@ -1,0 +1,690 @@
+{
+  "generatedAt": "2026-07-22",
+  "source": "Directe code-inspectie van de Sparki-monorepo; geen aannames. Statuswaarden: volledig_werkend | gedeeltelijk_werkend | alleen_interface | nog_niet_gekoppeld | buiten_gebruik | ontbreekt",
+  "platform": {
+    "web": {
+      "path": "artifacts/sparki",
+      "stack": "React + Vite + Wouter + TanStack Query + Tailwind v4"
+    },
+    "api": {
+      "path": "artifacts/api-server",
+      "stack": "Express 5 + Drizzle ORM + PostgreSQL"
+    },
+    "mobile": {
+      "path": "artifacts/sparki-mobile",
+      "stack": "Expo / React Native (native build vereist voor BLE en achtergrondlocatie)"
+    },
+    "auth": "Replit-beheerde Clerk (cookie-gebaseerd op web); rollen in eigen DB (user_profiles.roles)",
+    "aiServices": "Anthropic + Gemini via Replit AI-proxy; alleen proza — cijfers en beslissingen deterministisch"
+  },
+  "roles": [
+    {
+      "role": "athlete",
+      "default": true,
+      "sees": "alle eigen data",
+      "may": "alles op eigen data; delen instellen; connectors koppelen/intrekken"
+    },
+    {
+      "role": "coach",
+      "linkTable": "coach_athlete_links",
+      "sharingLevels": [
+        "none",
+        "summary",
+        "full"
+      ],
+      "may": "adviesplan voorstellen en adopteren; context alleen geabstraheerd"
+    },
+    {
+      "role": "parent",
+      "linkTable": "parent_athlete_links",
+      "sharingLevels": [
+        "none",
+        "safety_only",
+        "summary"
+      ],
+      "may": "toezicht op welzijn; geen vermogensdata bij safety_only"
+    },
+    {
+      "role": "club",
+      "exists": false,
+      "note": "Geen club-rol of club-entiteit in DB; /club-pagina toont data via bestaande coach-links"
+    },
+    {
+      "role": "admin",
+      "mechanism": "SPARKI_ADMIN_IDS allowlist (geen DB-rol)",
+      "may": "gezondheidscheck, testersbeheer, geplande taken"
+    }
+  ],
+  "onboarding": {
+    "steps": [
+      "quick-start-vragen",
+      "connect-stap (verplicht getoond, koppelen optioneel)",
+      "gap-fill van alleen ontbrekende velden",
+      "adaptieve vervolgvragen"
+    ],
+    "evidence": "artifacts/api-server/src/routes/onboarding.ts"
+  },
+  "featureMatrix": [
+    {
+      "chapter": "Vandaag",
+      "route": "/vandaag",
+      "status": "volledig_werkend"
+    },
+    {
+      "chapter": "Training",
+      "route": "/train",
+      "status": "volledig_werkend"
+    },
+    {
+      "chapter": "Wedstrijd",
+      "route": "/races",
+      "status": "volledig_werkend"
+    },
+    {
+      "chapter": "Lichaam (Lab)",
+      "route": "/lab",
+      "status": "volledig_werkend"
+    },
+    {
+      "chapter": "Voeding",
+      "route": "sheet",
+      "status": "volledig_werkend",
+      "note": "seizoensgewichtsdoel alleen 17+ (RED-S)"
+    },
+    {
+      "chapter": "Mechanieker",
+      "route": "/mechanieker",
+      "status": "volledig_werkend",
+      "note": "incl. begeleide fietsscan met achtergrondverwijdering; 360 alleen bij >=8 echte cutouts"
+    },
+    {
+      "chapter": "Navigatie/Routes",
+      "route": "/routes + mobiel",
+      "status": "volledig_werkend"
+    },
+    {
+      "chapter": "Club",
+      "route": "/club",
+      "status": "gedeeltelijk_werkend",
+      "note": "geen eigen entiteit/rechtenmodel"
+    },
+    {
+      "chapter": "Feed/Sociaal",
+      "route": "/feed, /samen",
+      "status": "volledig_werkend"
+    },
+    {
+      "chapter": "Sportpaspoort",
+      "route": "/paspoort",
+      "status": "volledig_werkend",
+      "note": "printstijl voor PDF"
+    },
+    {
+      "chapter": "Profiel",
+      "route": "/you",
+      "status": "volledig_werkend"
+    },
+    {
+      "chapter": "Kennis",
+      "route": "/kennis",
+      "status": "volledig_werkend",
+      "note": "achter feature-flag"
+    },
+    {
+      "chapter": "Admin gezondheidscheck",
+      "route": "/admin",
+      "status": "volledig_werkend"
+    },
+    {
+      "chapter": "Mobiel: achtergrond-ritregistratie",
+      "status": "volledig_werkend",
+      "note": "native build vereist"
+    },
+    {
+      "chapter": "Mobiel: BLE-sensoren",
+      "status": "volledig_werkend",
+      "note": "niet in Expo Go; horloge/derailleur alleen registratie"
+    },
+    {
+      "chapter": "Mobiel: val-alarm",
+      "status": "gedeeltelijk_werkend",
+      "note": "claimt nooit aflevering van meldingen"
+    },
+    {
+      "chapter": "Mobiel: bordjes-sprint / rit delen",
+      "status": "volledig_werkend"
+    },
+    {
+      "chapter": "Garmin/Wahoo-sync",
+      "status": "nog_niet_gekoppeld",
+      "note": "OAuth+push-scaffolding aanwezig; configured:false zonder fabrikantkeys"
+    },
+    {
+      "chapter": "Fitbit",
+      "status": "alleen_interface",
+      "note": "registry-entry zonder implementatie"
+    },
+    {
+      "chapter": "E-mailherinneringen",
+      "status": "gedeeltelijk_werkend",
+      "note": "eerlijk overslaan zonder geverifieerd domein"
+    }
+  ],
+  "sportsData": [
+    {
+      "type": "activiteiten",
+      "sources": [
+        "strava",
+        "gpx/fit/tcx-upload",
+        "mobiele opname",
+        "handmatig"
+      ],
+      "tables": [
+        "training_sessions",
+        "connector_activities",
+        "activity_imports"
+      ],
+      "processing": "Data Hub dedupe + merge + TSS-afleiding",
+      "deletable": true
+    },
+    {
+      "type": "vermogen",
+      "sources": [
+        "fit/tcx-streams",
+        "ble",
+        "strava-samenvatting"
+      ],
+      "tables": [
+        "activity_imports.parsed_summary.streams (JSONB, geen aparte tabel)",
+        "training_sessions (avg_power, normalized_power, power_bests)"
+      ],
+      "processing": "power bests bij parse; FTP-ondergrens; TSS",
+      "deletable": true
+    },
+    {
+      "type": "hartslag",
+      "sources": [
+        "streams",
+        "ble"
+      ],
+      "tables": [
+        "training_sessions (avg_hr, max_hr)",
+        "activity_imports.parsed_summary.streams (JSONB, geen aparte tabel)"
+      ],
+      "deletable": true
+    },
+    {
+      "type": "hrv",
+      "sources": [
+        "handmatige check-in"
+      ],
+      "tables": [
+        "athlete_daily_metrics"
+      ],
+      "deletable": true
+    },
+    {
+      "type": "cadans",
+      "sources": [
+        "streams",
+        "ble"
+      ],
+      "tables": [
+        "activity_imports.parsed_summary.streams (JSONB, geen aparte tabel)",
+        "training_sessions (avg_cadence)"
+      ],
+      "deletable": true
+    },
+    {
+      "type": "snelheid/gps/hoogte",
+      "sources": [
+        "gpx/fit/tcx",
+        "mobiele opname"
+      ],
+      "tables": [
+        "activity_imports.parsed_summary.streams (JSONB, geen aparte tabel)",
+        "activity_imports.parsed_summary.route",
+        "routes.profile"
+      ],
+      "deletable": true
+    },
+    {
+      "type": "slaap/herstel",
+      "sources": [
+        "check-in"
+      ],
+      "tables": [
+        "athlete_daily_metrics"
+      ],
+      "deletable": true
+    },
+    {
+      "type": "voeding",
+      "sources": [
+        "handmatig + foto's"
+      ],
+      "tables": [
+        "nutrition_hydration_logs",
+        "nutrition_season_goals"
+      ],
+      "deletable": true
+    },
+    {
+      "type": "gewicht",
+      "sources": [
+        "handmatig",
+        "strava-profiel"
+      ],
+      "tables": [
+        "athlete_profiles.weight_kg",
+        "athlete_daily_metrics"
+      ],
+      "deletable": "overschrijfbaar"
+    },
+    {
+      "type": "materiaal",
+      "sources": [
+        "handmatig",
+        "fietsscan-foto's"
+      ],
+      "tables": [
+        "garage_bikes",
+        "garage_components",
+        "garage_sensors",
+        "bike_scans",
+        "bike_scan_frames",
+        "equipment_assets"
+      ],
+      "deletable": true
+    },
+    {
+      "type": "wedstrijden",
+      "sources": [
+        "handmatig",
+        "kalender-import"
+      ],
+      "tables": [
+        "races"
+      ],
+      "deletable": true
+    },
+    {
+      "type": "trainingsplannen",
+      "sources": [
+        "sparki-engine",
+        "coach-adoptie"
+      ],
+      "tables": [
+        "training_plans",
+        "plan_days",
+        "planned_workouts"
+      ],
+      "deletable": true
+    }
+  ],
+  "export": {
+    "routeGpx": true,
+    "routeTcx": true,
+    "rideGpxWithSensorExtensions": true,
+    "forwardToStrava": true,
+    "fullAccountExport": false,
+    "note": "exportAllowed-vlag bestaat; geen volledige account-export-endpoint"
+  },
+  "integrations": [
+    {
+      "name": "Strava",
+      "status": "volledig_werkend",
+      "planned": false,
+      "config": true,
+      "oauth": true,
+      "import": true,
+      "export": true,
+      "sync": true,
+      "webhooks": false,
+      "productionTested": false,
+      "endpoints": [
+        "https://www.strava.com/oauth/token",
+        "/api/v3/athlete",
+        "/api/v3/athlete/activities",
+        "activity-upload"
+      ],
+      "scopes": "read,activity:read_all,profile:read_all,activity:write",
+      "files": [
+        "artifacts/api-server/src/lib/connectors/providers/strava.ts",
+        "strava-oauth.ts"
+      ],
+      "envVars": [
+        "STRAVA_CLIENT_ID",
+        "STRAVA_CLIENT_SECRET"
+      ]
+    },
+    {
+      "name": "Garmin",
+      "status": "nog_niet_gekoppeld",
+      "planned": true,
+      "config": true,
+      "oauth": "scaffolding: authorize/callback/disconnect-routes aanwezig (OAuth2/PKCE, verifier in signed state); geen webhook-endpoints",
+      "import": false,
+      "export": false,
+      "sync": false,
+      "webhooks": false,
+      "productionTested": false,
+      "files": [
+        "artifacts/api-server/src/lib/connectors/providers/device-sync.ts",
+        "artifacts/api-server/src/routes/device-sync.ts"
+      ],
+      "envVars": [
+        "GARMIN_CLIENT_ID",
+        "GARMIN_CLIENT_SECRET"
+      ],
+      "blocker": "Garmin Connect Developer Program-goedkeuring + API-keys vereist; UI meldt eerlijk configured:false",
+      "notePush": "route-push endpoint /api/device-sync/send aanwezig (stuurt route naar apparaat zodra gekoppeld)"
+    },
+    {
+      "name": "Wahoo",
+      "status": "nog_niet_gekoppeld",
+      "planned": true,
+      "config": true,
+      "oauth": "scaffolding: authorize/callback/disconnect-routes aanwezig (OAuth2); geen webhook-endpoints",
+      "import": false,
+      "export": false,
+      "sync": false,
+      "webhooks": false,
+      "productionTested": false,
+      "files": [
+        "artifacts/api-server/src/lib/connectors/providers/device-sync.ts"
+      ],
+      "envVars": [
+        "WAHOO_CLIENT_ID",
+        "WAHOO_CLIENT_SECRET"
+      ],
+      "blocker": "Wahoo Cloud API-toegang vereist",
+      "notePush": "route-push endpoint /api/device-sync/send aanwezig (stuurt route naar apparaat zodra gekoppeld)"
+    },
+    {
+      "name": "Fitbit",
+      "status": "alleen_interface",
+      "planned": true,
+      "config": false,
+      "oauth": false,
+      "files": [
+        "registry.ts entry zonder provider"
+      ]
+    },
+    {
+      "name": "Google",
+      "status": "ontbreekt",
+      "note": "alleen fcm.googleapis.com in push-allowlist; eventuele Google-login zit in Clerk (buiten repo)"
+    },
+    {
+      "name": "OpenRouteService",
+      "status": "volledig_werkend",
+      "import": true,
+      "endpoints": [
+        "/v2/directions",
+        "/geocode/search",
+        "/geocode/reverse"
+      ],
+      "files": [
+        "src/lib/routing/providers/ors.ts"
+      ],
+      "envVars": [
+        "ORS_API_KEY"
+      ]
+    },
+    {
+      "name": "Mapbox",
+      "status": "volledig_werkend",
+      "use": "tiles (mobiel)",
+      "envVars": [
+        "MAPBOX_ACCESS_TOKEN",
+        "EXPO_PUBLIC_MAPBOX_TOKEN"
+      ]
+    },
+    {
+      "name": "Overpass/OSM",
+      "status": "volledig_werkend",
+      "import": true,
+      "files": [
+        "src/lib/climbs/overpass.ts",
+        "src/lib/road-objects/overpass.ts"
+      ],
+      "note": "mirror-fallback; SSRF-allowlist in climbs/http.ts"
+    },
+    {
+      "name": "Open-Meteo",
+      "status": "volledig_werkend",
+      "import": true,
+      "files": [
+        "src/lib/weather/open-meteo.ts"
+      ],
+      "envVars": []
+    },
+    {
+      "name": "Resend (e-mail)",
+      "status": "gedeeltelijk_werkend",
+      "note": "via Replit-connector; eerlijk overslaan zonder geverifieerd domein",
+      "files": [
+        "src/lib/email.ts"
+      ],
+      "envVars": [
+        "REMINDER_FROM_EMAIL"
+      ]
+    },
+    {
+      "name": "Web push (VAPID)",
+      "status": "volledig_werkend",
+      "files": [
+        "src/lib/push.ts"
+      ],
+      "envVars": [
+        "VAPID_PUBLIC_KEY",
+        "VAPID_PRIVATE_KEY",
+        "VAPID_SUBJECT"
+      ],
+      "note": "host-allowlist als SSRF-guard"
+    },
+    {
+      "name": "Anthropic",
+      "status": "volledig_werkend",
+      "files": [
+        "lib/integrations-anthropic-ai/"
+      ],
+      "envVars": [
+        "AI_INTEGRATIONS_ANTHROPIC_API_KEY",
+        "AI_INTEGRATIONS_ANTHROPIC_BASE_URL"
+      ]
+    },
+    {
+      "name": "Gemini",
+      "status": "volledig_werkend",
+      "files": [
+        "lib/integrations-gemini-ai/"
+      ],
+      "envVars": [
+        "AI_INTEGRATIONS_GEMINI_API_KEY",
+        "AI_INTEGRATIONS_GEMINI_BASE_URL"
+      ]
+    },
+    {
+      "name": "Wedstrijdkalenders (Fietssport, We-Tri, KNWU)",
+      "status": "gedeeltelijk_werkend",
+      "note": "Fietssport/We-Tri volledig; KNWU eerlijk-beperkt (mijn.knwu.nl onbereikbaar)",
+      "files": [
+        "src/lib/calendar/"
+      ]
+    },
+    {
+      "name": "BLE-sensoren (lokaal)",
+      "status": "volledig_werkend",
+      "note": "hartslag/vermogen/cadans; geen cloud",
+      "files": [
+        "artifacts/sparki-mobile/lib/ble-sensors.ts"
+      ]
+    }
+  ],
+  "architecture": {
+    "dataFlow": "bron → toestemming (connector-consent per datatype) → import (runSync/ingestBatch) → validatie → opslag (ruwe rij + samengevoegde sessie) → analyse (deterministisch; taalmodel alleen proza, privacy-gated) → visualisatie → export/verwijdering",
+    "tokenStorage": {
+      "table": "connector_connections",
+      "encryptedAtApplicationLevel": false,
+      "sentToClient": false
+    },
+    "logging": "pino; authorization/cookie geredigeerd",
+    "rateLimiting": false,
+    "retries": "frontend TanStack Query; geen server-side retry-queue",
+    "dedupe": "sport + 5-min startbucket + buurvenster + tolerantie; veld-merge via MERGEABLE_FIELDS",
+    "conflictResolution": "echt > handmatig > geschat; handmatige override blijft",
+    "disconnect": "disconnect (lokaal) en revoke (ook bij provider) per connector",
+    "deletion": "DELETE-routes per entiteit; ON DELETE CASCADE op clerk_id; deleteRequestedAt-vlag zonder uitvoerende flow",
+    "scheduledJobs": [
+      "job:health (dagelijks)",
+      "job:goal-review (maandelijks)",
+      "job:reminders (dagelijks)",
+      "nachtelijke kennis-/nieuwsscan"
+    ]
+  },
+  "privacySecurity": {
+    "consent": {
+      "status": "aanwezig",
+      "evidence": [
+        "routes/privacy.ts",
+        "consent_audit_log"
+      ]
+    },
+    "privacyPolicyText": {
+      "status": "ontbreekt"
+    },
+    "termsOfServiceText": {
+      "status": "ontbreekt"
+    },
+    "dataAccess": {
+      "status": "gedeeltelijk",
+      "note": "eigen data zichtbaar; geen samengevoegd inzage-overzicht"
+    },
+    "dataCorrection": {
+      "status": "aanwezig"
+    },
+    "fullExport": {
+      "status": "ontbreekt"
+    },
+    "selfServiceAccountDeletion": {
+      "status": "ontbreekt",
+      "note": "cascade-schema bestaat; flow niet"
+    },
+    "connectorRevocation": {
+      "status": "aanwezig"
+    },
+    "minors": {
+      "status": "aanwezig",
+      "note": "parentConsent, safety_only, gewichtsdoel geblokkeerd <17 (RED-S)"
+    },
+    "tokenSecurity": {
+      "status": "gedeeltelijk",
+      "note": "server-only maar plaintext in DB"
+    },
+    "rateLimiting": {
+      "status": "ontbreekt"
+    },
+    "ssrfGuards": {
+      "status": "aanwezig",
+      "scope": [
+        "calendar",
+        "push",
+        "climbs"
+      ],
+      "note": "niet op alle externe fetches (o.a. Open-Meteo/Overpass directe URL's naar vaste hosts)"
+    }
+  },
+  "risks": [
+    {
+      "id": 1,
+      "risk": "Geen Garmin/Wahoo API-toegang",
+      "severity": "kritiek",
+      "evidence": "device-sync.ts configured:false",
+      "fix": "developer-programma's aanvragen; provider bouwen"
+    },
+    {
+      "id": 2,
+      "risk": "Geen privacyverklaring/gebruiksvoorwaarden",
+      "severity": "kritiek",
+      "evidence": "geen tekstpagina's in frontend",
+      "fix": "juridische teksten + acceptatieflow"
+    },
+    {
+      "id": 3,
+      "risk": "Geen zelfbedienings-accountverwijdering",
+      "severity": "hoog",
+      "evidence": "alleen deleteRequestedAt-vlag",
+      "fix": "verwijderflow bouwen"
+    },
+    {
+      "id": 4,
+      "risk": "Geen volledige data-export",
+      "severity": "hoog",
+      "evidence": "alleen GPX/TCX per route",
+      "fix": "account-export-endpoint"
+    },
+    {
+      "id": 5,
+      "risk": "OAuth-tokens plaintext in DB",
+      "severity": "hoog",
+      "evidence": "connector_connections schema",
+      "fix": "kolom-encryptie"
+    },
+    {
+      "id": 6,
+      "risk": "Geen rate limiting",
+      "severity": "normaal",
+      "evidence": "app.ts",
+      "fix": "express-rate-limit"
+    },
+    {
+      "id": 7,
+      "risk": "Geen webhooks (pull-only sync)",
+      "severity": "normaal",
+      "evidence": "geen webhook-routes",
+      "fix": "verplicht voor Garmin/Wahoo; na API-toegang implementeren"
+    },
+    {
+      "id": 8,
+      "risk": "Productie niet gevalideerd met echte multi-user sync",
+      "severity": "normaal",
+      "evidence": "dev-getest",
+      "fix": "productietest"
+    },
+    {
+      "id": 9,
+      "risk": "Kalender-import parseert HTML van derden",
+      "severity": "normaal",
+      "evidence": "lib/calendar/",
+      "fix": "brontoestemming verifiëren"
+    },
+    {
+      "id": 10,
+      "risk": "E-mail zonder geverifieerd domein",
+      "severity": "laag",
+      "evidence": "lib/email.ts",
+      "fix": "domein verifiëren"
+    },
+    {
+      "id": 11,
+      "risk": "Club zonder rechtenmodel",
+      "severity": "laag",
+      "evidence": "geen club-tabellen",
+      "fix": "optioneel bouwen"
+    },
+    {
+      "id": 12,
+      "risk": "Fitbit alleen registry-entry",
+      "severity": "laag",
+      "evidence": "registry.ts",
+      "fix": "verwijderen of bouwen"
+    }
+  ],
+  "notReliablyDeterminable": [
+    "Clerk-loginproviders (geconfigureerd buiten deze repository)",
+    "Productiestatus van Scheduled Deployments (Replit-gebruikersconfiguratie)",
+    "Werkelijke productie-secrets (alleen dev-omgeving zichtbaar)"
+  ]
+}
