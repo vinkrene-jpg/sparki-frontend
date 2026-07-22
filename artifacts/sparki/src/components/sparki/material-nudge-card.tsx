@@ -35,7 +35,7 @@ export function MaterialNudgeCard({
           <div className="mt-3 flex items-center gap-3">
             <button
               type="button"
-              onClick={() => navigate(`/?materiaal=${nudge.category}`)}
+              onClick={() => navigate(`/vandaag?materiaal=${nudge.category}`)}
               className="rounded-lg px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-black transition disabled:opacity-50"
               style={{ background: ACCENT }}
             >

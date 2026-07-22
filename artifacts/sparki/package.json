@@ -92,7 +92,9 @@
     "@clerk/react": "^6.10.4",
     "@clerk/themes": "^2.4.57",
     "@fontsource-variable/inter": "^5.2.8",
+    "@types/three": "^0.185.1",
     "leaflet": "^1.9.4",
-    "qrcode.react": "^4.2.0"
+    "qrcode.react": "^4.2.0",
+    "three": "^0.185.1"
   }
 }

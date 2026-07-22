@@ -1,4 +1,4 @@
-import { Home, Activity, Compass, Dumbbell, User, UserPlus, Radio } from "lucide-react"
+import { Home, Sun, Compass, Dumbbell, User, UserPlus, Radio } from "lucide-react"
 import { Link, useLocation } from "wouter"
 import { useUserProfile } from "@/contexts/UserContext"
 import type { Role } from "@/contexts/UserContext"
@@ -9,14 +9,12 @@ type NavItem = {
   label: string
 }
 
-// Experience-first navigation (approved restructure):
-// Vandaag · Activiteiten · Ontdekken · Trainen · Jij.
-// Nieuws + Kennis + Inzicht are being merged into Ontdekken; Races folds into
-// Trainen; Samen is reachable from the profile/header; Core is an internal
-// engine with no nav entry.
+// Start-first navigation: Start (hoofdstukken-overzicht) · Vandaag (dagplanning)
+// · Ontdekken · Trainen · Jij. Activiteiten, Samen, Mechanieker enz. zijn
+// bereikbaar via het hoofdstukkenraster op Start en het hoofdmenu.
 const ATHLETE_NAV: NavItem[] = [
-  { href: "/", icon: Home, label: "Vandaag" },
-  { href: "/activiteiten", icon: Activity, label: "Activiteiten" },
+  { href: "/", icon: Home, label: "Start" },
+  { href: "/vandaag", icon: Sun, label: "Vandaag" },
   { href: "/feed", icon: Compass, label: "Ontdekken" },
   { href: "/train", icon: Dumbbell, label: "Trainen" },
   { href: "/you", icon: User, label: "Jij" },

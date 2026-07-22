@@ -31,6 +31,9 @@ import TesterQrPage from "@/pages/tester-qr"
 import TesterWelcomePage from "@/pages/tester-welcome"
 import CoachAthletePlanPage from "@/pages/coach-athlete-plan"
 import LandingPage from "@/pages/landing"
+import StartPage from "@/pages/start"
+import ClubPage from "@/pages/club"
+import PaspoortPage from "@/pages/paspoort"
 import KnowledgePage from "@/pages/knowledge"
 import KlimmenPage from "@/pages/klimmen"
 import { OnboardingV2 } from "@/components/sparki/onboarding-v2"
@@ -67,7 +70,8 @@ type DevView = {
 const VIEWS: DevView[] = [
   { label: "Landing", path: LANDING_PATH },
   { label: "Onboarding", path: ONBOARDING_PATH },
-  { label: "Home", path: "/" },
+  { label: "Start", path: "/" },
+  { label: "Vandaag", path: "/vandaag" },
   { label: "Activiteiten", path: "/activiteiten" },
   { label: "Train", path: "/train" },
   { label: "Feed", path: "/feed" },
@@ -382,6 +386,15 @@ export function DevPreview() {
       />
     )
     showNav = false
+  } else if (location.startsWith("/vandaag")) {
+    page = (
+      <DayHome devDayTypeOverride={dayType} devCoachOverride={devCoachOverride} />
+    )
+    isHome = true
+  } else if (location.startsWith("/club")) {
+    page = <ClubPage />
+  } else if (location.startsWith("/paspoort")) {
+    page = <PaspoortPage />
   } else if (location.startsWith("/train")) {
     page = <TrainPage />
   } else if (location.startsWith("/feed")) {
@@ -438,10 +451,7 @@ export function DevPreview() {
     page = <InviteAcceptPage />
     showNav = false
   } else {
-    page = (
-      <DayHome devDayTypeOverride={dayType} devCoachOverride={devCoachOverride} />
-    )
-    isHome = true
+    page = <StartPage />
   }
 
   return (

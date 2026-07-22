@@ -115,7 +115,7 @@ async function main() {
       "never-checked nudge should have null lastCheckedAt",
     );
     assert(
-      nudge!.actionUrl === "/?materiaal=chain&n=1",
+      nudge!.actionUrl === "/vandaag?materiaal=chain&n=1",
       `unexpected actionUrl ${nudge!.actionUrl}`,
     );
     assert(

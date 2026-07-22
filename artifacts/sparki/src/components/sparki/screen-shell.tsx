@@ -1,8 +1,6 @@
 import type { ReactNode } from "react"
 import { useEffect, useState } from "react"
 import {
-  LogOut,
-  RefreshCw,
   Shield,
   ChevronLeft,
   Menu,
@@ -24,8 +22,8 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { Link } from "wouter"
-import { useClerk, Show } from "@clerk/react"
-import { useUserProfile, type Role } from "@/contexts/UserContext"
+import { Show } from "@clerk/react"
+import { useUserProfile } from "@/contexts/UserContext"
 import { useTeamIdentity } from "@/hooks/use-social"
 import { CinematicScene, type SceneName } from "@/components/sparki/cinematic-scene"
 import { NotificationBell } from "@/components/sparki/notification-bell"
@@ -51,6 +49,9 @@ import { screenForSection } from "@/lib/tracked-screens"
 const COACH_CARD_SECTIONS = new Set(["home"])
 
 const SECTION_SCENE: Record<string, SceneName> = {
+  start: "home",
+  club: "feed",
+  paspoort: "you",
   home: "home",
   train: "train",
   feed: "feed",
@@ -68,6 +69,9 @@ const SECTION_SCENE: Record<string, SceneName> = {
 // User-facing Dutch label for the section shown in the header. Keeps the internal
 // `section` key (which drives the scene) in English while presenting plain Dutch.
 const SECTION_DISPLAY: Record<string, string> = {
+  start: "START",
+  club: "CLUB",
+  paspoort: "SPORTPASPOORT",
   home: "VANDAAG",
   train: "TRAINING",
   races: "RACES",
@@ -90,6 +94,9 @@ const SECTION_DISPLAY: Record<string, string> = {
 // Per-chapter icon so the header badge makes it instantly recognisable which
 // chapter you're in. Falls back to the Sparki spark for unmapped sections.
 const SECTION_ICON: Record<string, LucideIcon> = {
+  start: Home,
+  club: Users,
+  paspoort: User,
   home: Home,
   train: Dumbbell,
   races: Trophy,
@@ -107,56 +114,6 @@ const SECTION_ICON: Record<string, LucideIcon> = {
   coach: Users,
   ouder: Users,
   "wedstrijd-room": Film,
-}
-
-const ROLE_LABEL: Record<Role, string> = {
-  athlete: "Sporter",
-  coach: "Coach",
-  parent: "Ouder",
-}
-
-function RoleSwitcher() {
-  const { profile, switchRole } = useUserProfile()
-  const { signOut } = useClerk()
-  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "")
-
-  if (!profile) return null
-
-  const roles = profile.roles as Role[]
-  const active = profile.activeRole as Role
-
-  const cycleRole = () => {
-    const idx = roles.indexOf(active)
-    const next = roles[(idx + 1) % roles.length]
-    if (next !== active) void switchRole(next)
-  }
-
-  return (
-    <div className="flex items-center gap-3">
-      {roles.length > 1 ? (
-        <button
-          type="button"
-          onClick={cycleRole}
-          className="flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
-          title="Wissel van rol"
-        >
-          <RefreshCw className="h-2.5 w-2.5 opacity-70" strokeWidth={2} />
-          {ROLE_LABEL[active]}
-        </button>
-      ) : (
-        <span className="font-mono text-[10px] tracking-[0.14em] uppercase text-white/40">{ROLE_LABEL[active]}</span>
-      )}
-      <button
-        type="button"
-        onClick={() => signOut({ redirectUrl: basePath || "/" })}
-        className="flex items-center gap-1 text-white/35 transition-colors hover:text-cyan-300/80"
-        title="Uitloggen"
-        aria-label="Uitloggen"
-      >
-        <LogOut className="h-3.5 w-3.5" strokeWidth={1.75} />
-      </button>
-    </div>
-  )
 }
 
 // Subtle club crest shown on the home header when the athlete has set a club
@@ -198,28 +155,6 @@ function HomeProfilePrompt() {
   const { profile } = useUserProfile()
   if (!profile || profile.activeRole !== "athlete") return null
   return <ProfilePromptCard />
-}
-
-// Subtle "Head Tester #001" mark in the header — quiet, premium, never shouty.
-function HeadTesterBadge({ number }: { number: number | null }) {
-  const label =
-    typeof number === "number"
-      ? `#${String(number).padStart(3, "0")}`
-      : null
-  return (
-    <span
-      title={label ? `Head Tester ${label}` : "Head Tester"}
-      className="flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em]"
-      style={{
-        color: "oklch(0.82 0.16 200)",
-        background: "rgba(120,210,230,0.07)",
-        border: "1px solid rgba(120,210,230,0.22)",
-      }}
-    >
-      <Shield className="h-2.5 w-2.5" strokeWidth={2} />
-      {label ? `Tester ${label}` : "Tester"}
-    </span>
-  )
 }
 
 // Persoonlijke context in het midden van de bovenbalk: dagdeel-groet + voornaam
@@ -314,15 +249,6 @@ export function ScreenShell({
             </Show>
             <button
               type="button"
-              onClick={() => setChatOpen(true)}
-              aria-label="Vraag Sparki — open de chat"
-              title="Vraag Sparki"
-              className="text-white/60 transition-colors hover:text-cyan-300"
-            >
-              <Sparkles className="h-[18px] w-[18px]" strokeWidth={1.75} />
-            </button>
-            <button
-              type="button"
               onClick={() => setMenuOpen(true)}
               aria-label="Menu openen"
               title="Menu"
@@ -333,23 +259,15 @@ export function ScreenShell({
           </div>
         </header>
 
-        {/* Subtiele paginaregel onder de balk: hoofdstuktitel links, stille
-            context (club, tester, rolwissel) rechts. Geen dubbele "Vandaag"-
-            knop meer — de pagina zelf vertelt waar je bent. */}
+        {/* Subtiele paginaregel onder de balk: alleen hoofdstuktitel links en
+            eventueel het clubembleem. Rolwissel, testerbadge en Vraag Sparki
+            verhuisden naar het hoofdmenu — de balk blijft rustig. */}
         <div className="-mt-6 flex items-center justify-between gap-3">
           <span className="flex items-center gap-1.5 text-white/50">
             <SectionIcon className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="font-mono text-[10px] tracking-[0.28em] uppercase">{sectionLabel}</span>
           </span>
-          <span className="flex items-center gap-2.5">
-            {isHome && <ClubCrest />}
-            <Show when="signed-in">
-              <span className="flex items-center gap-2.5">
-                {profile?.isHeadTester && <HeadTesterBadge number={profile.headTesterNumber ?? null} />}
-                <RoleSwitcher />
-              </span>
-            </Show>
-          </span>
+          {(isHome || sectionKey === "start") && <ClubCrest />}
         </div>
 
         {/* Top-anchored Terug from the full analysis back to the State Card. */}
@@ -398,7 +316,11 @@ export function ScreenShell({
           ScreenShell-routes zijn al beschermd, en zo blijven ze ook werken in
           Development Preview Mode (waar geen Clerk-sessie bestaat). */}
       <SparkiChatOverlay open={chatOpen} onClose={() => setChatOpen(false)} />
-      <MainMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <MainMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onOpenChat={() => setChatOpen(true)}
+      />
     </main>
   )
 }

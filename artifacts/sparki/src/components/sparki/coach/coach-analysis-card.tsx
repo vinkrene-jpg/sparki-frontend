@@ -57,7 +57,7 @@ const ACTION_ROUTE: Record<CoachActionKind, string> = {
   adjust_training: "/train?focus=plan",
   rest: "/train?focus=plan",
   check_in: "/train?focus=plan",
-  nutrition: "/?focus=nutrition",
+  nutrition: "/vandaag?focus=nutrition",
   add_race: "/races",
   check_gear: "/races",
 }

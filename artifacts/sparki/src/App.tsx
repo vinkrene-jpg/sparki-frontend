@@ -42,6 +42,9 @@ import CoachAthletePlanPage from "@/pages/coach-athlete-plan";
 import LandingPage from "@/pages/landing";
 import AdminPage from "@/pages/admin";
 import AdminHealthDetailPage from "@/pages/admin-health-detail";
+import StartPage from "@/pages/start";
+import ClubPage from "@/pages/club";
+import PaspoortPage from "@/pages/paspoort";
 import { apiFetch } from "@/lib/api";
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
@@ -359,8 +362,19 @@ function SignedInHomeReady() {
 }
 
 // Home is role-aware: coaches see their roster, parents see the wellbeing view,
-// athletes see the day-type homepage engine.
+// athletes land on the Startscherm (chapter overview). The day-type engine
+// (dagplanning) lives in its own hoofdstuk on /vandaag.
 function RoleHome() {
+  const { profile } = useUserProfile();
+  if (profile?.activeRole === "coach") return <CoachHome />;
+  if (profile?.activeRole === "parent") return <ParentHome />;
+  return <StartPage />;
+}
+
+// Vandaag — the daily-planning chapter. Athletes get the day-type homepage
+// engine; coach and parent keep their role home here too, so "Vandaag" in
+// their navigation always works.
+function VandaagPage() {
   const { profile } = useUserProfile();
   if (profile?.activeRole === "coach") return <CoachHome />;
   if (profile?.activeRole === "parent") return <ParentHome />;
@@ -474,6 +488,15 @@ function AppRouter() {
                 {/* REQUIRED — /*? is the only wouter syntax for Clerk OAuth sub-paths */}
                 <Route path="/sign-in/*?" component={SignInPage} />
                 <Route path="/sign-up/*?" component={SignUpPage} />
+                <Route path="/vandaag">
+                  <ProtectedPage component={VandaagPage} />
+                </Route>
+                <Route path="/club">
+                  <ProtectedPage component={ClubPage} />
+                </Route>
+                <Route path="/paspoort">
+                  <ProtectedPage component={PaspoortPage} />
+                </Route>
                 <Route path="/train">
                   <ProtectedPage component={TrainPage} />
                 </Route>
