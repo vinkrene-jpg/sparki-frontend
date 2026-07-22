@@ -15,12 +15,12 @@
 - [Sparki Smart Missing Input Flow](sparki-missing-input.md) — registry + focus/return/retry empty-state framework.
 - [Sparki Strava per-user OAuth](sparki-strava-oauth.md) — Strava is direct per-user OAuth into connector_connections (NOT Replit proxy); signed-state callback, redirect_uri from REPLIT_DOMAINS not req.host.
 - [Strava activity import via Data Hub](sparki-strava-activity-import.md) — provider w/ activities must ingest via hub (persistedExternally:false) or sessions stay empty.
-- [Sparki Onboarding V2](sparki-onboarding-v2.md) — adaptive Q&A engine: fixed catalog (high-guidance only changes tone, not breadth), nonsense fails honestly w/ skip escape (no alt path), Q&A-only le.
+- [Sparki Onboarding V2](sparki-onboarding-v2.md) — adaptive Q&A engine: fixed catalog, nonsense fails honestly w/ skip escape; Q&A-only leaves hours/FTP estimated.
 - [Sparki Voice & Personality Engine](sparki-voice-engine.md) — deterministic tone/trust/empathy engine; refuses to fabricate (null), empathy-before-humor, trust gates tones.
 - [Sparki Circle unified feed](sparki-circle.md) — /samen merges follow-ups+friends+races+news; suppress global FollowUpPrompt on samen via `section` not `scene`; "Jouw overzicht" not "Circle-feed".
 - [Sparki Social & Team](sparki-social-team.md) — Samen page; ScreenShell scene-fallback leaks home-only UI (gate on explicit section); team-update null clears columns; sport keys need Dutch labels.
 - [Sparki two-tier explanation standard](sparki-tiered-explanation.md) — short-by-default + "Uitgebreid" expand (TieredExplanation); only tier where REAL extended data exists, never fabricate depth on one-liners.
-- [Sparki personal-context memory](sparki-context-memory.md) — deterministic Dutch detection, evening follow-ups, privacy-gated persist, viewer projection omits raw statement/response. Plus: JSX \u es.
+- [Sparki personal-context memory](sparki-context-memory.md) — deterministic Dutch detection, privacy-gated persist; JSX \u escapes do not work in text/attr strings.
 - [Sparki memory graph](sparki-memory-graph.md) — deterministic cross-domain "verbanden": confidence never 1.0, rules stay silent on weak evidence, persist accounting created+deduped+gated===derived.
 - [Sparki Data Hub](sparki-data-hub.md) — central multi-platform engine; dedupe key=sport+start-bucket only (not dur/dist) w/ neighbour match + tolerance; activity consent is AND; 4-state readiness; single runSync path.
 - [Sparki account-readiness gate](sparki-account-readiness.md) — EVERY signed-in surface must render through one AccountGate (profile required), not Clerk auth alone.
@@ -73,7 +73,7 @@
 - [Open choices tracker](open-choices-convention.md) — START every turn: read `.agents/open-choices.md`, surface unresolved choices in chat; add when I ask, remove when decided.
 - [Sparki Web Push + profile nudges](sparki-web-push.md) — push endpoints are server-fetched URLs ⇒ host-allowlist SSRF guard at subscribe AND send; push only freshly-created rows; dedupe uses passed `now`.
 - [LLM prompt Dutch coverage](llm-prompt-dutch-coverage.md) — each LLM prompt needs its OWN Dutch rule; EXTRACT_SYSTEM lacked it → English observation cards on /you.
-- [Sparki Ontwikkelmodel](sparki-ontwikkelmodel.md) — long-term dev model: structured developmentGoal enum + deterministic honest belastbaarheid (first-window, no fake years) + /you Ontwikkelkompas (d.
+- [Sparki Ontwikkelmodel](sparki-ontwikkelmodel.md) — structured developmentGoal enum + deterministic honest belastbaarheid + /you Ontwikkelkompas.
 - [ImageMagick SVG glow](imagemagick-svg-glow.md) — MSVG ignores feGaussianBlur/filters; build icon glows with radialGradient layers, regenerate ALL PNG derivatives (OS-cached).
 - [Sparki Sound Studio](sparki-sound-studio.md) — original audio identity + in-app wekker; web can't ring locked phone (state it); dedupe on LOCAL date; optimistic restore even on first write.
 - [Sparki World architecture](sparki-world.md) — transparently-fictional Virtual Athletes island; cache-first Media Engine (promptKey UNIQUE, avatars carry slug/scenes don't); hard wall to real data; honest gaps.
@@ -90,7 +90,7 @@
 - [Sparki nutrition season goal](sparki-season-goal.md) — 17+ only (RED-S refusal), deterministic ≤0,5 kg/wk steering, one-question doorvraag ladder; round-trip-validate calendar dates.
 - [Sparki derived belastingscore](sparki-derived-tss.md) — TSS derived from power+FTP at ingest + boot self-heal; advisory locks need ONE client (never pool.query); new merge fields must join MERGEABLE_FIELDS.
 - [Sparki Doelen-engine](sparki-goals-engine.md) — derived goals never duplicated as rows; dedupe = DB unique index+onConflict (not read-then-insert); per-day checks compare Amsterdam local date.
-- [Sparki scheduled-tasks overview test](sparki-scheduled-tasks-test.md) — /admin "Geplande taken" status: unit-test pure classify/build + route test seeding one FRESH newest trace per job (global agg.
+- [Sparki scheduled-tasks overview test](sparki-scheduled-tasks-test.md) — unit-test pure classify/build + route test seeds one fresh newest trace per job to catch column/dedupeKey drift.
 - [Sparki exact age from DOB](sparki-exact-age.md) — compute age from full birth_date via shared computeAge (never currentYear-birthYear); DOB is authoritative, always re-derives birthYear in lockstep.
 - [Sparki mandatory onboarding connect step](sparki-onboarding-connect-step.md) — onboarding routes through connect→gap-fill before first plan; connect step mandatory but connecting optional (honesty).
 - [Cross-account isolation testing](cross-account-isolation.md) — athlete-owned :id routes deny B via clerkId filter; nutrition DELETE is a silent 200 no-op (assert row survives, not 404).
@@ -112,15 +112,13 @@
 - [Route rejoin after deviation](sparki-route-rejoin.md) — off-route choice terug/verder must be a REAL routed connector (ORS), never a straight line; profile derived from surface.
 - [Sparki route loop quality](sparki-route-loop-quality.md) — generated round-trips backtracked; fix = best-of-N real ORS candidates picked by pathOverlapFraction.
 - [Sparki mobile nav app](sparki-mobile-nav.md) — Expo/RN turn-by-turn nav; react-native-maps has NO web build ⇒ platform-split component (.tsx native / .web.tsx stub), never runtime require.
-- [Sparki mobile navigation](sparki-mobile-navigation.md) — react-native-maps native-only (web stub keeps it out of web bundle).
 - [Sparki mobile background ride recording](sparki-mobile-bg-recording.md) — OS TaskManager location task keeps track growing while locked; platform-split ride-tracker (.ts/.web.ts).
 - [Sparki bordjes-sprinten](sparki-bordjes-sprint.md) — town-sign sprints; boards=place-name transitions (honest, provider-only), base+speed+watt scoring.
 - [Sparki Coachomgeving (cockpit)](sparki-coach-cockpit.md) — coach-writable resources need an owner column (link-gate ≠ ownership); open-proposal idempotency via partial unique index; or(empty)=500.
 - [Sparki routeketen](sparki-route-chain.md) — share-uniqueness needs nullsNotDistinct (NULL targets duplicate); version bumps only on inhoudelijke edits; soft-delete only with usage history.
 - [Sparki contextuele aandacht & meldingen](sparki-attention-notifications.md) — central category registry, critical never-off, resolutionKey open-dedupe + resolve lifecycle, quiet hours dampen only push/email.
 - [Test-workflow boot storm](test-workflow-boot-storm.md) — parallel test boots crash w/ esbuild EAGAIN/SIGABRT; fix = cross-process build semaphore + retry-on-infra-crash tsx runner (cant edit .replit).
-
-- [Sparki ride-navigator](sparki-ride-navigator.md) — cadence from CPS crank data (flag-offset math); moving-avg speed excludes stops; casing+chevrons for route visibility.
+- [Sparki ride-navigator](sparki-ride-navigator.md) — CPS crank cadence, moving-avg speed, climbfases uit lib/nav-live (SSOT); elk "klaar met rit"-pad moet clearSavedRide of spookherstel; pagehide-persist.
 - [Save ridden ride as route](sparki-ridden-route-save.md) — ridden geometry only exists via GPX ingest.
 - [Route generation free-text wish](sparki-route-wish.md) — wish goes only into buildRationale prompt (ORS cannot steer roads); honest "kan niet + alternatief", never claim a place not in data.
 - [Klimmenverkenner](climb-explorer.md) — Overpass mirror selection: maps.mail.ru works; overpass-api.de 406 in env; overpass.osm.ch is Swiss-only false-empty (never in fallback chain).

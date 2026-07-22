@@ -21,7 +21,8 @@
     "test:aandachtswet": "node ../../scripts/run-tsx-test.mjs src/lib/aandachtswet.test.ts",
     "test:day-type": "node ../../scripts/run-tsx-test.mjs src/lib/day-type.test.ts",
     "test:stream-analysis": "node ../../scripts/run-tsx-test.mjs src/lib/stream-analysis.test.ts",
-    "test:scan-quality": "node ../../scripts/run-tsx-test.mjs src/lib/scan-quality.test.ts"
+    "test:scan-quality": "node ../../scripts/run-tsx-test.mjs src/lib/scan-quality.test.ts",
+    "test:nav-live": "node ../../scripts/run-tsx-test.mjs src/lib/nav-live.test.ts"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",

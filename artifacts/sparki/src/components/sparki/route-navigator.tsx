@@ -34,6 +34,10 @@ import {
   Download,
   BatteryLow,
   Battery,
+  Square,
+  ChevronDown,
+  ChevronUp,
+  GripHorizontal,
   type LucideIcon,
 } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
@@ -52,9 +56,70 @@ import { SENSOR_KIND_LABEL } from "@/components/sparki/wireless-sensors"
 import { apiFetch } from "@/lib/api"
 import type { PlannedWorkout } from "@/lib/athlete-types"
 import { WorkoutHud } from "@/components/sparki/workout-hud"
+import {
+  climbPhaseAt,
+  smoothedClimbGradePct,
+  snapBarOffset,
+  updateAvgSpeed,
+  displayAvgKmh,
+  summarizeRide,
+  buildRideGpx as buildLiveRideGpx,
+  type ClimbWindow,
+  type TrackPoint,
+  type SensorSample,
+} from "@/lib/nav-live"
 import { buildTimeline, segmentAt } from "@/lib/workout-blocks"
 
 const OFF_ROUTE_METERS = 60
+
+// Opgenomen rit overleeft "Route aanpassen" (unmount → routebouwer → terug):
+// track + sensordata + rijtijd gaan even naar sessionStorage en worden bij
+// terugkomst hersteld. Max 6 uur oud — daarna is het eerlijk een nieuwe rit.
+type SavedRide = {
+  track: TrackPoint[]
+  sensors: SensorSample[]
+  rideSeconds: number
+  savedAt: number
+}
+const SAVED_RIDE_MAX_AGE_MS = 6 * 3600 * 1000
+function savedRideKey(routeId: number | null) {
+  return `sparki:nav-rit:${routeId ?? "los"}`
+}
+function readSavedRide(routeId: number | null): SavedRide | null {
+  try {
+    const raw = sessionStorage.getItem(savedRideKey(routeId))
+    if (!raw) return null
+    const v = JSON.parse(raw) as SavedRide
+    if (
+      !Array.isArray(v.track) ||
+      typeof v.savedAt !== "number" ||
+      Date.now() - v.savedAt > SAVED_RIDE_MAX_AGE_MS
+    )
+      return null
+    return {
+      track: v.track,
+      sensors: Array.isArray(v.sensors) ? v.sensors : [],
+      rideSeconds: typeof v.rideSeconds === "number" ? v.rideSeconds : 0,
+      savedAt: v.savedAt,
+    }
+  } catch {
+    return null
+  }
+}
+function writeSavedRide(routeId: number | null, ride: SavedRide) {
+  try {
+    sessionStorage.setItem(savedRideKey(routeId), JSON.stringify(ride))
+  } catch {
+    // Opslag vol/geblokkeerd — dan geen herstel, maar de rit zelf loopt door.
+  }
+}
+function clearSavedRide(routeId: number | null) {
+  try {
+    sessionStorage.removeItem(savedRideKey(routeId))
+  } catch {
+    // niets
+  }
+}
 
 type BasemapId = "donker" | "standaard" | "fiets" | "satelliet"
 
@@ -450,8 +515,12 @@ export function RouteNavigator({
   // after ~5 s of standstill. Auto-hervat wint altijd: ELKE pauze (auto én
   // handmatig) loopt door zodra de rijder echt weer beweegt — zo kan de rit
   // nooit ongemerkt gepauzeerd blijven terwijl je kilometers verder fietst.
+  // Herstel van een lopende rit na "Route aanpassen" (component unmount).
+  const restoredRideRef = useRef<SavedRide | null>(readSavedRide(routeId))
   const [rideState, setRideState] = useState<"idle" | "riding" | "paused">(
-    "idle",
+    restoredRideRef.current && restoredRideRef.current.track.length >= 2
+      ? "paused"
+      : "idle",
   )
   const [autoPaused, setAutoPaused] = useState(false)
   const rideStateRef = useRef(rideState)
@@ -459,7 +528,9 @@ export function RouteNavigator({
   const autoPausedRef = useRef(autoPaused)
   autoPausedRef.current = autoPaused
   const stillSinceRef = useRef<number | null>(null)
-  const [rideSeconds, setRideSeconds] = useState(0)
+  const [rideSeconds, setRideSeconds] = useState(
+    restoredRideRef.current?.rideSeconds ?? 0,
+  )
   const rideSecondsRef = useRef(0)
   rideSecondsRef.current = rideSeconds
 
@@ -480,12 +551,67 @@ export function RouteNavigator({
   workoutHoldRef.current = workoutHoldSec
   const holdStartedAtSecRef = useRef<number | null>(null)
   const lastWorkoutTickRef = useRef(0)
-  // Ridden track (recorded while riding) — offered for saving when closing.
-  const riddenRef = useRef<LatLon[]>([])
+  // Ridden track (recorded while riding, met tijden en — waar de telefoon die
+  // geeft — hoogte) plus losse sensorsamples (watt/cadans). Samen vormen ze
+  // bij het afronden het ritoverzicht en de GPX voor de Data Hub.
+  const riddenRef = useRef<TrackPoint[]>(restoredRideRef.current?.track ?? [])
+  const sensorsRef = useRef<SensorSample[]>(
+    restoredRideRef.current?.sensors ?? [],
+  )
+  const persistRide = () => {
+    if (riddenRef.current.length < 2) return
+    writeSavedRide(routeId, {
+      track: riddenRef.current,
+      sensors: sensorsRef.current,
+      rideSeconds: rideSecondsRef.current,
+      savedAt: Date.now(),
+    })
+  }
+  // Laatste redmiddel-persist: bij wegnavigeren/verversen (pagehide) en bij
+  // unmount de rit veiligstellen, zodat herstel nooit méér dan een paar
+  // punten mist — ook tussen twee periodieke persist-momenten in.
+  const persistRideRef = useRef<() => void>(() => {})
+  persistRideRef.current = persistRide
+  useEffect(() => {
+    const onPageHide = () => persistRideRef.current()
+    window.addEventListener("pagehide", onPageHide)
+    return () => {
+      window.removeEventListener("pagehide", onPageHide)
+      persistRideRef.current()
+    }
+  }, [])
   const [confirmClose, setConfirmClose] = useState(false)
   const [saveRideState, setSaveRideState] = useState<
     "idle" | "saving" | "error"
   >("idle")
+  // Rit opslaan in Sparki (Data Hub) + daarna Strava/delen.
+  const [uploadState, setUploadState] = useState<
+    "idle" | "uploading" | "done" | "error"
+  >("idle")
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [uploadedSessionId, setUploadedSessionId] = useState<number | null>(
+    null,
+  )
+  const [stravaAvailable, setStravaAvailable] = useState<boolean | null>(null)
+  const [stravaState, setStravaState] = useState<
+    "idle" | "busy" | "done" | "error"
+  >("idle")
+  const [stravaError, setStravaError] = useState<string | null>(null)
+  const [discardArmed, setDiscardArmed] = useState(false)
+  // Klimfinder-paneel inklapbaar; klapt automatisch weer open bij een nieuwe klim.
+  const [climbPanelCollapsed, setClimbPanelCollapsed] = useState(false)
+  // Databalk verticaal versleepbaar met snap-posities (0 / 15% / 30% vanaf onder).
+  const [barOffsetFrac, setBarOffsetFrac] = useState<number>(() => {
+    try {
+      const raw = sessionStorage.getItem("sparki:nav-balk-offset")
+      const v = raw != null ? Number(raw) : 0
+      return snapBarOffset(Number.isFinite(v) ? v : 0)
+    } catch {
+      return 0
+    }
+  })
+  const barDragRef = useRef<{ startY: number; startFrac: number } | null>(null)
+  const [barDragFrac, setBarDragFrac] = useState<number | null>(null)
 
   // ── Val-alarm ─────────────────────────────────────────────────────
   // Detectie: plotselinge stop vanaf ≥ 20 km/u gevolgd door ≥ 15 s stilstand
@@ -770,6 +896,48 @@ export function RouteNavigator({
     }
   }
 
+  // "Terug naar startpunt": een echte geroutere omweg terug naar het beginpunt
+  // van de route — zelfde eerlijke mechaniek als een plek-omweg.
+  const requestBackToStart = async () => {
+    const start = path[0]
+    if (!location || detourLoading || !start) return null
+    setDetourLoading("poi")
+    setDetourError(null)
+    try {
+      const resp = await apiFetch<{
+        path: [number, number][]
+        nav: RouteNavCue[]
+        distanceKm: number | null
+        rejoinKm: number | null
+      }>(`/api/routes/${routeId}/detour-via`, {
+        method: "POST",
+        body: JSON.stringify({
+          lat: location.lat,
+          lon: location.lon,
+          targetLat: start.lat,
+          targetLon: start.lon,
+        }),
+      })
+      setDetour({
+        mode: "poi",
+        path: resp.path.map(([lat, lon]) => ({ lat, lon })),
+        cues: resp.nav ?? [],
+        distanceKm: resp.distanceKm,
+        rejoinKm: resp.rejoinKm,
+        stopName: "het startpunt",
+      })
+      setSetupOpen(false)
+      return true
+    } catch (err) {
+      setDetourError(
+        parseApiError(err, "Kon geen route terug naar het startpunt berekenen."),
+      )
+      return false
+    } finally {
+      setDetourLoading(null)
+    }
+  }
+
   // Draw / remove the detour line on the map (dashed, amber — clearly distinct
   // from the planned route).
   useEffect(() => {
@@ -890,43 +1058,36 @@ export function RouteNavigator({
     }
   }, [elevationProfile, routeTotalKm])
 
-  const CLIMB_ANNOUNCE_KM = 1.0
-  const CLIMB_GRACE_KM = 0.1
+  // Klimfases uit de geteste rekenkern (nav-live): komt → op → top → einde.
+  // Het percentage ter plekke wordt gladgestreken over een venster ín de
+  // rijrichting en is op de klim per definitie nooit negatief.
   const climbLive = useMemo(() => {
     if (!progress || detour || climbWindows.length === 0) return null
-    const t = progress.traveledKm
-    for (const c of climbWindows) {
-      if (t >= c.startKm && t <= c.summitKm + CLIMB_GRACE_KM) {
-        // Óp de klim: resterend tot de top + percentage ter plekke (over één
-        // profielstap rond de huidige positie — uit het routeprofiel, geen
-        // live meting).
-        const toTopM = Math.max(0, (c.summitKm - t) * 1000)
-        let gradeNowPct: number | null = null
-        let toClimbM: number | null = null
-        if (eleAtKm && elevationProfile) {
-          const stepKm = Math.max(0.05, routeTotalKm / (elevationProfile.length - 1))
-          const a = eleAtKm(Math.max(c.startKm, t - stepKm / 2))
-          const b = eleAtKm(Math.min(c.summitKm, t + stepKm / 2))
-          const spanKm =
-            Math.min(c.summitKm, t + stepKm / 2) -
-            Math.max(c.startKm, t - stepKm / 2)
-          if (spanKm > 0.01) {
-            gradeNowPct = Math.round(((b - a) / (spanKm * 1000)) * 1000) / 10
-          }
-          toClimbM = Math.max(0, Math.round(eleAtKm(c.summitKm) - eleAtKm(t)))
-        }
-        return { phase: "op" as const, climb: c, toTopM, gradeNowPct, toClimbM }
-      }
-      if (t >= c.startKm - CLIMB_ANNOUNCE_KM && t < c.startKm) {
-        return {
-          phase: "komt" as const,
-          climb: c,
-          inM: (c.startKm - t) * 1000,
-        }
-      }
+    const ph = climbPhaseAt(climbWindows as ClimbWindow[], progress.traveledKm)
+    if (!ph) return null
+    if (ph.phase === "komt" || ph.phase === "einde") return ph
+    let gradeNowPct: number | null = null
+    let toClimbM: number | null = null
+    if (eleAtKm) {
+      gradeNowPct = smoothedClimbGradePct(
+        eleAtKm,
+        progress.traveledKm,
+        ph.climb.startKm,
+        ph.climb.summitKm,
+      )
+      toClimbM = Math.max(
+        0,
+        Math.round(eleAtKm(ph.climb.summitKm) - eleAtKm(progress.traveledKm)),
+      )
     }
-    return null
-  }, [progress, detour, climbWindows, eleAtKm, elevationProfile, routeTotalKm])
+    return { ...ph, gradeNowPct, toClimbM }
+  }, [progress, detour, climbWindows, eleAtKm])
+
+  // Nieuwe klim ⇒ paneel klapt automatisch weer open.
+  const climbNameForPanel = climbLive?.climb.name ?? null
+  useEffect(() => {
+    setClimbPanelCollapsed(false)
+  }, [climbNameForPanel])
 
   // Klimprofieltje: het echte hoogteverloop van deze klim, met de rijder als
   // stip. Alleen getekend als er een bruikbaar routeprofiel is.
@@ -952,8 +1113,9 @@ export function RouteNavigator({
         return `${Math.round(x * 10) / 10},${Math.round(y * 10) / 10}`
       })
       .join(" ")
+    const onClimb = climbLive.phase === "op" || climbLive.phase === "top"
     const frac =
-      climbLive.phase === "op" && progress
+      onClimb && progress
         ? Math.max(
             0,
             Math.min(
@@ -961,11 +1123,13 @@ export function RouteNavigator({
               (progress.traveledKm - c.startKm) / spanKm,
             ),
           )
-        : 0
+        : climbLive.phase === "einde"
+          ? 1
+          : 0
     const dotIdx = Math.round(frac * (N - 1))
     const dotX = (dotIdx / (N - 1)) * W
     const dotY = H - 4 - ((pts[dotIdx]! - min) / (max - min)) * (H - 8)
-    return { line, dotX, dotY, W, H, showDot: climbLive.phase === "op" }
+    return { line, dotX, dotY, W, H, frac, showDot: onClimb }
   }, [climbLive, eleAtKm, progress])
 
   // Live progress along an active detour — same honest mechanics as the main
@@ -1221,7 +1385,18 @@ export function RouteNavigator({
         if (rideStateRef.current === "riding") {
           const last = riddenRef.current[riddenRef.current.length - 1]
           if (!last || haversineM(last, here) >= 8) {
-            riddenRef.current.push(here)
+            riddenRef.current.push({
+              ...here,
+              t: Date.now(),
+              ele:
+                typeof pos.coords.altitude === "number" &&
+                !Number.isNaN(pos.coords.altitude)
+                  ? Math.round(pos.coords.altitude * 10) / 10
+                  : null,
+            })
+            // Elke ~10 punten even bewaren, zodat "Route aanpassen" of een
+            // per ongeluk ververste pagina de rit niet kwijtraakt.
+            if (riddenRef.current.length % 10 === 0) persistRide()
           }
         }
         setLocation((cur) => ({
@@ -1700,8 +1875,21 @@ export function RouteNavigator({
     // de rijtijd op de klok — niet een schuivend gemiddelde dat naar je
     // actuele snelheid toe kruipt.
     const rideSecs = rideSecondsRef.current
+    // Vanaf de eerste seconde van de rit een echt getal met één decimaal
+    // (0,0 bij de start) — nooit meer "—" zodra de rit loopt. Een eenmaal
+    // berekende waarde valt cumulatief nooit terug naar niets. De rekenregel
+    // zelf leeft in lib/nav-live (updateAvgSpeed) — één bron van waarheid.
+    const avgNext = updateAvgSpeed(
+      { meters: 0, lastKmh: null },
+      a.meters,
+      rideSecs,
+    )
     setAvgKmh(
-      rideSecs >= 10 ? Math.round((a.meters / rideSecs) * 3.6) : null,
+      avgNext.lastKmh != null
+        ? avgNext.lastKmh
+        : rideStateRef.current !== "idle"
+          ? 0
+          : null,
     )
   }, [location])
 
@@ -1920,6 +2108,24 @@ export function RouteNavigator({
     return () => window.clearInterval(id)
   }, [rideState, ftp])
 
+  // Losse sensorsamples (1 s) tijdens de rit — óók zonder FTP: ze gaan mee in
+  // de GPX (power/cadans) zodat de opgeslagen sessie de echte meterdata bevat.
+  const powerConnectedRef = useRef(false)
+  powerConnectedRef.current = power.connected
+  const powerCadenceRef = useRef<number | null>(null)
+  powerCadenceRef.current = power.connected ? power.cadence : null
+  useEffect(() => {
+    if (rideState !== "riding") return
+    const id = window.setInterval(() => {
+      if (!powerConnectedRef.current) return
+      const w = powerWattsRef.current
+      const c = powerCadenceRef.current
+      if (w == null && c == null) return
+      sensorsRef.current.push({ t: Date.now(), watts: w, cadence: c })
+    }, 1000)
+    return () => window.clearInterval(id)
+  }, [rideState])
+
   // Bottom metrics — compact. Vermogen/cadans en de afgeleiden (intensiteit,
   // belasting, energie) verschijnen ALLEEN met een nu gekoppelde meter: rijen
   // vol "—" nemen anders schermruimte in zonder iets te zeggen. Koppelen kan
@@ -1941,9 +2147,15 @@ export function RouteNavigator({
       unit: speedKmh != null ? "km/u" : undefined,
     },
     {
+      // Zodra de rit gestart is altijd een echt getal (0,0 aan de start),
+      // nooit "—" — een gemiddelde bestaat vanaf de eerste seconde.
       label: "Gem.",
-      value: avgKmh != null ? `${avgKmh}` : "—",
-      unit: avgKmh != null ? "km/u" : undefined,
+      value:
+        displayAvgKmh(
+          { meters: 0, lastKmh: avgKmh },
+          rideState !== "idle",
+        ) ?? "—",
+      unit: rideState !== "idle" || avgKmh != null ? "km/u" : undefined,
     },
     {
       label: "Rijtijd",
@@ -2006,20 +2218,80 @@ export function RouteNavigator({
     if (picked.length > 0) visibleMetrics = picked
   }
   const metricSize = navSettings?.fontSize ?? "normaal"
+  const metricsOnTop = navSettings?.barPosition === "boven"
+  // Versleepbaar (alleen onderaan): pak de greep en schuif de balk omhoog;
+  // hij snapt op 0 / 15% / 30% vanaf de onderkant en onthoudt de keuze.
+  const effBarFrac = barDragFrac ?? barOffsetFrac
+  const onBarPointerDown = (e: React.PointerEvent) => {
+    barDragRef.current = { startY: e.clientY, startFrac: barOffsetFrac }
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+  }
+  const onBarPointerMove = (e: React.PointerEvent) => {
+    const d = barDragRef.current
+    if (!d) return
+    const frac = Math.max(
+      0,
+      Math.min(0.3, d.startFrac + (d.startY - e.clientY) / window.innerHeight),
+    )
+    setBarDragFrac(frac)
+  }
+  const onBarPointerUp = () => {
+    const d = barDragRef.current
+    barDragRef.current = null
+    if (d == null) return
+    setBarDragFrac((cur) => {
+      const snapped = snapBarOffset(cur ?? barOffsetFrac)
+      setBarOffsetFrac(snapped)
+      try {
+        sessionStorage.setItem("sparki:nav-balk-offset", String(snapped))
+      } catch {
+        // niets — dan onthoudt hij het alleen deze sessie niet
+      }
+      return null
+    })
+  }
   const metricsBar = (
-    <div className="pointer-events-auto grid grid-cols-5 gap-x-1.5 gap-y-2 rounded-2xl border border-white/10 bg-[#070d16]/92 px-3 py-2 backdrop-blur-md">
-      {visibleMetrics.map((m) => (
-        <Metric
-          key={m.label}
-          label={m.label}
-          value={m.value}
-          unit={m.unit}
-          size={metricSize}
-        />
-      ))}
+    <div
+      className="pointer-events-auto rounded-2xl border border-white/10 bg-[#070d16]/92 backdrop-blur-md"
+      style={
+        !metricsOnTop
+          ? {
+              transform: `translateY(${-effBarFrac * 100}vh)`,
+              transition: barDragFrac == null ? "transform 160ms ease-out" : undefined,
+            }
+          : undefined
+      }
+    >
+      {!metricsOnTop && (
+        <div
+          className="flex cursor-grab touch-none items-center justify-center pt-1 active:cursor-grabbing"
+          onPointerDown={onBarPointerDown}
+          onPointerMove={onBarPointerMove}
+          onPointerUp={onBarPointerUp}
+          onPointerCancel={onBarPointerUp}
+          aria-label="Databalk verslepen"
+          role="slider"
+          aria-valuemin={0}
+          aria-valuemax={30}
+          aria-valuenow={Math.round(effBarFrac * 100)}
+          tabIndex={0}
+        >
+          <GripHorizontal className="h-4 w-4 text-white/35" strokeWidth={2} />
+        </div>
+      )}
+      <div className="grid grid-cols-5 gap-x-1.5 gap-y-2 px-3 pb-2 pt-1">
+        {visibleMetrics.map((m) => (
+          <Metric
+            key={m.label}
+            label={m.label}
+            value={m.value}
+            unit={m.unit}
+            size={metricSize}
+          />
+        ))}
+      </div>
     </div>
   )
-  const metricsOnTop = navSettings?.barPosition === "boven"
 
   // Ridden distance so far (km) — gates the "bewaar gereden rit" option so we
   // never offer to save a track that is too short to be a real route.
@@ -2047,6 +2319,7 @@ export function RouteNavigator({
         method: "POST",
         body: JSON.stringify({ content: gpx }),
       })
+      clearSavedRide(routeId)
       onClose()
     } catch {
       setSaveRideState("error")
@@ -2054,6 +2327,72 @@ export function RouteNavigator({
   }
 
   const canSaveRide = riddenRef.current.length >= 2 && riddenKm() >= 0.2
+
+  // ── Ritafronding: opslaan in Sparki (Data Hub) ────────────────────
+  // Stop → ritoverzicht → Opslaan bouwt een GPX met tijd/sensordata en zet
+  // hem via de bestaande import-route in de Data Hub; daarna wordt gecheckt
+  // of doorzetten naar Strava beschikbaar is (capabilities — eerlijk).
+  const saveRideToSparki = async () => {
+    const pts = riddenRef.current
+    if (pts.length < 2 || uploadState === "uploading") return
+    setUploadState("uploading")
+    setUploadError(null)
+    try {
+      const gpx = buildLiveRideGpx(name, pts, sensorsRef.current)
+      const resp = await apiFetch<{
+        import: unknown
+        parsed: unknown
+        sessionId: number | null
+      }>("/api/activity-imports", {
+        method: "POST",
+        body: JSON.stringify({
+          fileName: `sparki-rit-${new Date().toISOString().slice(0, 10)}.gpx`,
+          content: gpx,
+        }),
+      })
+      clearSavedRide(routeId)
+      setUploadedSessionId(resp.sessionId)
+      setUploadState("done")
+      if (resp.sessionId) {
+        try {
+          const share = await apiFetch<{
+            capabilities?: { strava?: { available?: boolean } }
+          }>(`/api/share/session/${resp.sessionId}`)
+          setStravaAvailable(!!share.capabilities?.strava?.available)
+        } catch {
+          setStravaAvailable(false)
+        }
+      }
+    } catch (err) {
+      setUploadState("error")
+      setUploadError(
+        parseApiError(err, "Opslaan is niet gelukt. Probeer het opnieuw."),
+      )
+    }
+  }
+
+  const sendRideToStrava = async () => {
+    if (!uploadedSessionId || stravaState === "busy") return
+    setStravaState("busy")
+    setStravaError(null)
+    try {
+      await apiFetch<{ ok: boolean; url?: string }>(
+        `/api/share/session/${uploadedSessionId}/strava`,
+        { method: "POST", body: JSON.stringify({}) },
+      )
+      setStravaState("done")
+    } catch (err) {
+      setStravaState("error")
+      setStravaError(
+        parseApiError(err, "Doorzetten naar Strava is niet gelukt."),
+      )
+    }
+  }
+
+  const discardRide = () => {
+    clearSavedRide(routeId)
+    onClose()
+  }
 
   // ── Foto onderweg ─────────────────────────────────────────────────
   // Opent de camera van de telefoon; daarna direct het deel-menu van het
@@ -2257,69 +2596,145 @@ export function RouteNavigator({
             </div>
           </div>
         )}
-        {climbLive && climbLive.phase === "op" && (
-          <div className="pointer-events-none flex justify-end">
-            <div className="w-[240px] rounded-2xl border p-3.5 backdrop-blur-md" style={{ borderColor: "rgba(94,234,255,0.35)", background: "rgba(7,13,22,0.88)" }}>
-              <p className="font-mono text-[9px] uppercase tracking-[0.16em]" style={{ color: ACCENT }}>
-                Op de klim
-              </p>
-              <p className="mt-0.5 truncate text-[14px] font-semibold text-white/90">
-                {climbLive.climb.name}
-              </p>
-              <div className="mt-2 flex items-end gap-4">
-                <div>
-                  <p className="text-[26px] font-semibold leading-none tabular-nums text-white/95">
-                    {fmtMeters(climbLive.toTopM)}
-                  </p>
-                  <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
-                    tot de top
+        {climbLive &&
+          (climbLive.phase === "op" || climbLive.phase === "top") &&
+          !climbPanelCollapsed && (
+            <div className="pointer-events-auto w-full rounded-2xl border backdrop-blur-md" style={{ borderColor: "rgba(94,234,255,0.35)", background: "rgba(7,13,22,0.9)" }}>
+              <div className="flex items-center justify-between px-3.5 pt-2.5">
+                <p className="font-mono text-[9px] uppercase tracking-[0.16em]" style={{ color: ACCENT }}>
+                  {climbLive.phase === "top" ? "Bijna boven!" : "Op de klim"} ·{" "}
+                  <span className="normal-case tracking-normal text-white/70">
+                    {climbLive.climb.name}
+                  </span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setClimbPanelCollapsed(true)}
+                  aria-label="Klimpaneel inklappen"
+                  className="rounded-full border border-white/15 p-1 text-white/55 transition hover:text-white/85"
+                >
+                  <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} />
+                </button>
+              </div>
+              {/* 60/40: links het klimprofiel met de fietser, rechts de cijfers. */}
+              <div className="flex items-stretch gap-3 px-3.5 pb-3 pt-1.5">
+                <div className="relative basis-[60%]">
+                  {climbShape ? (
+                    <>
+                      <svg
+                        viewBox={`0 0 ${climbShape.W} ${climbShape.H}`}
+                        preserveAspectRatio="none"
+                        className="h-[74px] w-full"
+                        aria-hidden="true"
+                      >
+                        <polyline
+                          points={`0,${climbShape.H} ${climbShape.line} ${climbShape.W},${climbShape.H}`}
+                          fill="rgba(94,234,255,0.12)"
+                          stroke="none"
+                        />
+                        <polyline
+                          points={climbShape.line}
+                          fill="none"
+                          stroke="rgba(255,255,255,0.5)"
+                          strokeWidth="1.5"
+                        />
+                      </svg>
+                      {climbShape.showDot && (
+                        <span
+                          className="pointer-events-none absolute -translate-x-1/2 -translate-y-full text-[16px] leading-none"
+                          style={{
+                            left: `${(climbShape.dotX / climbShape.W) * 100}%`,
+                            top: `${(climbShape.dotY / climbShape.H) * 100}%`,
+                          }}
+                          aria-hidden="true"
+                        >
+                          🚴
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-[11px] text-white/45">
+                      Geen bruikbaar hoogteprofiel voor deze klim.
+                    </p>
+                  )}
+                  <p className="mt-1 text-[10px] leading-snug text-white/35">
+                    Uit het hoogteprofiel van de route
                   </p>
                 </div>
-                {climbLive.gradeNowPct != null && (
-                  <div>
-                    <p className="text-[26px] font-semibold leading-none tabular-nums" style={{ color: ACCENT }}>
-                      {climbLive.gradeNowPct.toFixed(1)}%
-                    </p>
-                    <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
-                      hier
-                    </p>
+                <div className="flex basis-[40%] flex-col justify-center gap-2">
+                  <div className="flex items-end gap-3">
+                    <div>
+                      <p className="text-[24px] font-semibold leading-none tabular-nums text-white/95">
+                        {fmtMeters(climbLive.toTopM)}
+                      </p>
+                      <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
+                        tot de top
+                      </p>
+                    </div>
+                    {climbLive.gradeNowPct != null && (
+                      <div>
+                        <p className="text-[24px] font-semibold leading-none tabular-nums" style={{ color: ACCENT }}>
+                          {climbLive.gradeNowPct.toFixed(1)}%
+                        </p>
+                        <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
+                          hier
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
-                {climbLive.toClimbM != null && (
-                  <div>
-                    <p className="text-[26px] font-semibold leading-none tabular-nums text-white/95">
-                      {climbLive.toClimbM}
-                    </p>
-                    <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
-                      hm te gaan
-                    </p>
+                  <div className="flex items-end gap-3">
+                    {climbLive.toClimbM != null && (
+                      <div>
+                        <p className="text-[18px] font-semibold leading-none tabular-nums text-white/90">
+                          {climbLive.toClimbM}
+                        </p>
+                        <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
+                          hm te gaan
+                        </p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-[18px] font-semibold leading-none tabular-nums text-white/90">
+                        {climbLive.climb.avgGradePct.toFixed(1)}%
+                      </p>
+                      <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-white/40">
+                        gem. klim
+                      </p>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
-              {climbShape && (
-                <svg
-                  viewBox={`0 0 ${climbShape.W} ${climbShape.H}`}
-                  className="mt-2.5 w-full"
-                  aria-hidden="true"
-                >
-                  <polyline
-                    points={climbShape.line}
-                    fill="none"
-                    stroke="rgba(255,255,255,0.45)"
-                    strokeWidth="1.5"
-                  />
-                  {climbShape.showDot && (
-                    <circle
-                      cx={climbShape.dotX}
-                      cy={climbShape.dotY}
-                      r="3"
-                      fill={ACCENT}
-                    />
-                  )}
-                </svg>
-              )}
-              <p className="mt-1.5 text-[10px] leading-snug text-white/35">
-                Uit het hoogteprofiel van de route
+            </div>
+          )}
+        {climbLive &&
+          (climbLive.phase === "op" || climbLive.phase === "top") &&
+          climbPanelCollapsed && (
+            <div className="pointer-events-auto flex justify-end">
+              <button
+                type="button"
+                onClick={() => setClimbPanelCollapsed(false)}
+                className="flex items-center gap-2 rounded-2xl border px-3 py-2 text-left backdrop-blur-md"
+                style={{ borderColor: "rgba(94,234,255,0.35)", background: "rgba(7,13,22,0.88)" }}
+              >
+                <span className="text-[14px]" aria-hidden="true">🚴</span>
+                <span className="font-mono text-[11px] tabular-nums text-white/85">
+                  {fmtMeters(climbLive.toTopM)} tot top
+                  {climbLive.gradeNowPct != null
+                    ? ` · ${climbLive.gradeNowPct.toFixed(1)}%`
+                    : ""}
+                </span>
+                <ChevronUp className="h-3.5 w-3.5 text-white/55" strokeWidth={2} />
+              </button>
+            </div>
+          )}
+        {climbLive && climbLive.phase === "einde" && (
+          <div className="pointer-events-none flex justify-end">
+            <div className="w-[220px] rounded-2xl border p-3 backdrop-blur-md" style={{ borderColor: "rgba(94,234,255,0.35)", background: "rgba(7,13,22,0.88)" }}>
+              <p className="font-mono text-[9px] uppercase tracking-[0.16em]" style={{ color: ACCENT }}>
+                Top bereikt
+              </p>
+              <p className="mt-1 truncate text-[14px] font-semibold text-white/90">
+                {climbLive.climb.name} — goed gedaan!
               </p>
             </div>
           </div>
@@ -2416,18 +2831,35 @@ export function RouteNavigator({
                 <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
                   Route wijzigen
                 </p>
-                <button
-                  type="button"
-                  onClick={onEditRoute}
-                  className="flex items-center gap-1.5 rounded-full border border-cyan-300/35 px-3 py-1.5 text-[11px] text-cyan-300 transition hover:bg-cyan-300/10"
-                >
-                  <SlidersHorizontal className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  Route aanpassen
-                </button>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Track + rijtijd eerst veiligstellen: de routebouwer
+                      // unmount dit scherm, bij terugkomst gaat de rit door.
+                      persistRide()
+                      onEditRoute()
+                    }}
+                    className="flex items-center gap-1.5 rounded-full border border-cyan-300/35 px-3 py-1.5 text-[11px] text-cyan-300 transition hover:bg-cyan-300/10"
+                  >
+                    <SlidersHorizontal className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    Route aanpassen
+                  </button>
+                  <button
+                    type="button"
+                    disabled={detourLoading != null || !location}
+                    onClick={() => void requestBackToStart()}
+                    className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] text-white/70 transition hover:text-white disabled:opacity-40"
+                  >
+                    <CornerUpLeft className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    Terug naar startpunt
+                  </button>
+                </div>
                 <p className="mt-1.5 text-[11px] leading-relaxed text-white/45">
-                  Opent de routebouwer met de punten van deze route voorgevuld —
-                  voeg een routepunt toe of versleep er één, bewaar, en je komt
-                  vanzelf terug in de navigatie.
+                  Route aanpassen opent de routebouwer met de punten voorgevuld —
+                  je gereden rit en rijtijd blijven bewaard en lopen daarna
+                  gewoon door. Terug naar startpunt berekent een echte route
+                  vanaf hier naar het beginpunt.
                 </p>
               </div>
             )}
@@ -3145,6 +3577,22 @@ export function RouteNavigator({
               </>
             )}
           </button>
+          {rideState !== "idle" && (
+            <button
+              type="button"
+              onClick={() => {
+                persistRide()
+                setConfirmClose(true)
+              }}
+              aria-label="Stop en rond de rit af"
+              className="flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-red-400/40 bg-red-500/15 px-3.5 text-red-200 shadow-lg backdrop-blur-md transition hover:bg-red-500/25"
+            >
+              <Square className="h-5 w-5" strokeWidth={2} />
+              <span className="font-mono text-[8px] uppercase tracking-[0.1em]">
+                Stop
+              </span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => photoInputRef.current?.click()}
@@ -3321,87 +3769,203 @@ export function RouteNavigator({
 
       {/* Close confirmation — closing by accident would drop you straight
           back into Sparki, so the choice is always confirmed first. */}
-      {confirmClose && (
+      {confirmClose && (() => {
+        const summary = summarizeRide(
+          riddenRef.current,
+          rideSeconds,
+          sensorsRef.current,
+        )
+        return (
         <div className="absolute inset-0 z-[95] flex items-end justify-center bg-black/60 p-4 pb-10 backdrop-blur-sm sm:items-center">
-          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#070d16]/95 p-4 backdrop-blur-md">
-            <p className="text-[15px] font-medium text-white/90">
-              Navigatie sluiten?
-            </p>
-            <p className="mt-1 text-[12px] leading-relaxed text-white/50">
-              {canSaveRide
-                ? `Je hebt tot nu toe ${riddenKm().toFixed(1)} km gereden. Je kunt dit gereden stuk eerst als route bewaren.`
-                : "Je gaat terug naar Sparki."}
-            </p>
-            {saveRideState === "error" && (
-              <p className="mt-2 text-[12px] text-[rgba(255,140,120,0.85)]">
-                Bewaren is niet gelukt. Probeer het opnieuw of sluit zonder
-                bewaren.
-              </p>
-            )}
-            <div className="mt-4 flex flex-col gap-2">
-              {canSaveRide && (
-                <button
-                  type="button"
-                  disabled={saveRideState === "saving"}
-                  onClick={() => void saveRiddenRoute()}
-                  className="rounded-full bg-cyan-400/15 px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-200 transition hover:bg-cyan-400/25 disabled:opacity-50"
-                >
-                  {saveRideState === "saving"
-                    ? "Bezig met bewaren…"
-                    : "Bewaar gereden stuk en sluit"}
-                </button>
-              )}
-              {canSaveRide && (
-                <div className="flex gap-2">
-                  {canWebShare && (
-                    <button
-                      type="button"
-                      onClick={() => void shareRide()}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-white/15 px-3 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:text-white"
-                    >
-                      <Share2 className="h-3.5 w-3.5" strokeWidth={1.75} />
-                      Deel rit
-                    </button>
-                  )}
+          <div className="max-h-[85vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-white/10 bg-[#070d16]/95 p-4 backdrop-blur-md">
+            {uploadState === "done" ? (
+              <>
+                <p className="text-[15px] font-medium text-white/90">
+                  Rit opgeslagen in Sparki ✓
+                </p>
+                <p className="mt-1 text-[12px] leading-relaxed text-white/50">
+                  {uploadedSessionId
+                    ? "Je rit staat tussen je activiteiten en telt mee in je belasting."
+                    : "Het bestand is binnen, maar er kon nog geen activiteit van gemaakt worden — kijk later bij je activiteiten."}
+                </p>
+                {uploadedSessionId && stravaAvailable && stravaState !== "done" && (
                   <button
                     type="button"
-                    onClick={downloadRideGpx}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-white/15 px-3 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:text-white"
+                    disabled={stravaState === "busy"}
+                    onClick={() => void sendRideToStrava()}
+                    className="mt-3 w-full rounded-full bg-cyan-400/15 px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-200 transition hover:bg-cyan-400/25 disabled:opacity-50"
                   >
-                    <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
-                    GPX
+                    {stravaState === "busy"
+                      ? "Bezig met doorzetten…"
+                      : "Zet door naar Strava"}
+                  </button>
+                )}
+                {stravaState === "done" && (
+                  <p className="mt-3 text-[12px] text-cyan-200">
+                    Doorgezet naar Strava ✓
+                  </p>
+                )}
+                {stravaState === "error" && stravaError && (
+                  <p className="mt-3 text-[12px] text-[rgba(255,140,120,0.85)]">
+                    {stravaError}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="mt-3 w-full rounded-full bg-cyan-400 px-4 py-2.5 text-[13px] font-semibold text-[#05070e]"
+                >
+                  Terug naar Sparki
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-[15px] font-medium text-white/90">
+                  Rit afronden
+                </p>
+                {/* Ritoverzicht — alleen wat er echt gemeten is. */}
+                <div className="mt-3 grid grid-cols-3 gap-y-3">
+                  <div>
+                    <p className="text-[18px] font-semibold tabular-nums text-white/95">
+                      {summary.distanceKm.toFixed(1)}
+                    </p>
+                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/40">km</p>
+                  </div>
+                  <div>
+                    <p className="text-[18px] font-semibold tabular-nums text-white/95">
+                      {fmtRideTime(summary.movingSec)}
+                    </p>
+                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/40">rijtijd</p>
+                  </div>
+                  <div>
+                    <p className="text-[18px] font-semibold tabular-nums text-white/95">
+                      {summary.avgKmh != null
+                        ? summary.avgKmh.toFixed(1).replace(".", ",")
+                        : "—"}
+                    </p>
+                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/40">gem. km/u</p>
+                  </div>
+                  {summary.elevationM != null && (
+                    <div>
+                      <p className="text-[18px] font-semibold tabular-nums text-white/95">
+                        {Math.round(summary.elevationM!)}
+                      </p>
+                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/40">hoogtemeters</p>
+                    </div>
+                  )}
+                  {summary.avgCadence != null && (
+                    <div>
+                      <p className="text-[18px] font-semibold tabular-nums text-white/95">
+                        {Math.round(summary.avgCadence!)}
+                      </p>
+                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/40">gem. cadans</p>
+                    </div>
+                  )}
+                  {summary.avgWatts != null && (
+                    <div>
+                      <p className="text-[18px] font-semibold tabular-nums text-white/95">
+                        {Math.round(summary.avgWatts!)}
+                      </p>
+                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/40">gem. watt</p>
+                    </div>
+                  )}
+                </div>
+                {uploadState === "error" && uploadError && (
+                  <p className="mt-3 text-[12px] text-[rgba(255,140,120,0.85)]">
+                    {uploadError}
+                  </p>
+                )}
+                <div className="mt-4 flex flex-col gap-2">
+                  {canSaveRide && (
+                    <button
+                      type="button"
+                      disabled={uploadState === "uploading"}
+                      onClick={() => void saveRideToSparki()}
+                      className="rounded-full bg-cyan-400 px-4 py-2.5 text-[13px] font-semibold text-[#05070e] transition disabled:opacity-50"
+                    >
+                      {uploadState === "uploading"
+                        ? "Bezig met opslaan…"
+                        : "Opslaan in Sparki"}
+                    </button>
+                  )}
+                  {canSaveRide && (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={saveRideState === "saving"}
+                        onClick={() => void saveRiddenRoute()}
+                        className="flex flex-1 items-center justify-center rounded-full border border-white/15 px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/70 transition hover:text-white disabled:opacity-50"
+                      >
+                        {saveRideState === "saving" ? "Bezig…" : "Bewaar als route"}
+                      </button>
+                      {canWebShare && (
+                        <button
+                          type="button"
+                          onClick={() => void shareRide()}
+                          className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-white/15 px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/70 transition hover:text-white"
+                        >
+                          <Share2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                          Deel
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={downloadRideGpx}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-white/15 px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/70 transition hover:text-white"
+                      >
+                        <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
+                        GPX
+                      </button>
+                    </div>
+                  )}
+                  {saveRideState === "error" && (
+                    <p className="text-[12px] text-[rgba(255,140,120,0.85)]">
+                      Bewaren als route is niet gelukt. Probeer het opnieuw.
+                    </p>
+                  )}
+                  {!canSaveRide && (
+                    <p className="text-[12px] leading-relaxed text-white/50">
+                      Deze rit is te kort om op te slaan (minder dan 200 meter
+                      gemeten).
+                    </p>
+                  )}
+                  {/* Weggooien vraagt twee keer — een rit is niet terug te halen. */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (discardArmed) discardRide()
+                      else setDiscardArmed(true)
+                    }}
+                    className={`rounded-full border px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] transition ${
+                      discardArmed
+                        ? "border-red-400/50 bg-red-500/20 text-red-200"
+                        : "border-white/15 text-white/70 hover:text-white"
+                    }`}
+                  >
+                    {discardArmed
+                      ? "Zeker weten? Tik nogmaals om weg te gooien"
+                      : "Weggooien"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmClose(false)
+                      setSaveRideState("idle")
+                      setDiscardArmed(false)
+                      setUploadState("idle")
+                      setUploadError(null)
+                    }}
+                    className="rounded-full px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/45 transition hover:text-white/80"
+                  >
+                    Blijf navigeren
                   </button>
                 </div>
-              )}
-              {canSaveRide && (
-                <p className="text-[11px] leading-snug text-white/40">
-                  Delen opent het deel-menu van je telefoon (daar staan Strava,
-                  Facebook en Instagram tussen als je die apps hebt). Voor
-                  Strava kun je ook het GPX-bestand downloaden en daar
-                  uploaden.
-                </p>
-              )}
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-full border border-white/15 px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:text-white"
-              >
-                {canSaveRide ? "Sluit zonder bewaren" : "Ja, sluit navigatie"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setConfirmClose(false)
-                  setSaveRideState("idle")
-                }}
-                className="rounded-full px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/45 transition hover:text-white/80"
-              >
-                Blijf navigeren
-              </button>
-            </div>
+              </>
+            )}
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {/* Zuinig scherm — bijna-zwart (echte winst op OLED): alleen het
           hoognodige. Navigatie, valalarm en het opnemen van de rit lopen
@@ -3423,7 +3987,7 @@ export function RouteNavigator({
           ) : (
             <p className="text-[14px] text-white/45">Volg de route.</p>
           )}
-          {climbLive && climbLive.phase === "op" && (
+          {climbLive && (climbLive.phase === "op" || climbLive.phase === "top") && (
             <p className="font-mono text-[13px] tabular-nums" style={{ color: ACCENT }}>
               Klim · nog {fmtMeters(climbLive.toTopM)}
               {climbLive.gradeNowPct != null
@@ -3489,19 +4053,20 @@ function Metric({
   unit?: string
   size?: "klein" | "normaal" | "groot"
 }) {
+  // Leesbaar op de fiets: waarden minimaal 18px, labels 12px.
   const valueSize =
-    size === "klein" ? "text-[14px]" : size === "groot" ? "text-[22px]" : "text-[17px]"
+    size === "klein" ? "text-[18px]" : size === "groot" ? "text-[26px]" : "text-[20px]"
   return (
     <div className="flex flex-col items-center">
       <span className={`font-mono ${valueSize} font-semibold tabular-nums leading-tight text-white/95`}>
         {value}
         {unit && (
-          <span className="ml-0.5 text-[9px] font-normal text-white/45">
+          <span className="ml-0.5 text-[11px] font-normal text-white/45">
             {unit}
           </span>
         )}
       </span>
-      <span className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-white/40">
+      <span className="mt-0.5 font-mono text-[12px] uppercase tracking-[0.08em] text-white/40">
         {label}
       </span>
     </div>
