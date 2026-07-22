@@ -5,6 +5,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { ACCENT } from "@/components/sparki/ui"
+import { UitlegDot } from "@/components/viz/uitleg"
 import type { TrainingSession } from "@/lib/athlete-types"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { analyzeSession, type InsightTone } from "@/lib/session-analysis"
@@ -164,10 +165,12 @@ function Metric({
   icon: Icon,
   label,
   value,
+  uitlegKey,
 }: {
   icon: typeof Clock
   label: string
   value: string
+  uitlegKey?: string
 }) {
   return (
     <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-3">
@@ -176,6 +179,7 @@ function Metric({
         <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
           {label}
         </span>
+        {uitlegKey && <UitlegDot uitlegKey={uitlegKey} label={label} />}
       </div>
       <p className="mt-1.5 font-sans text-lg font-light tabular-nums text-white/90">
         {value}
@@ -243,7 +247,12 @@ export function SessionDetailDrawer({
     : ""
 
   // Which real metrics do we actually have? Honest readback only.
-  const metrics: Array<{ icon: typeof Clock; label: string; value: string }> =
+  const metrics: Array<{
+    icon: typeof Clock
+    label: string
+    value: string
+    uitlegKey?: string
+  }> =
     []
   if (session) {
     if (session.durationMin != null)
@@ -265,7 +274,12 @@ export function SessionDetailDrawer({
         value: `${session.elevationM} m`,
       })
     if (session.tss != null)
-      metrics.push({ icon: Activity, label: "TSS", value: `${session.tss}` })
+      metrics.push({
+        icon: Activity,
+        label: "Belasting (TSS)",
+        value: `${session.tss}`,
+        uitlegKey: "belasting",
+      })
     if (session.intensityFactor != null && session.intensityFactor !== "")
       metrics.push({
         icon: Gauge,
@@ -369,6 +383,7 @@ export function SessionDetailDrawer({
                     icon={m.icon}
                     label={m.label}
                     value={m.value}
+                    uitlegKey={m.uitlegKey}
                   />
                 ))}
               </div>

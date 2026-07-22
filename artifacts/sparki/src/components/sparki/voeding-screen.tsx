@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sheet"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { TieredExplanation } from "@/components/sparki/tiered-explanation"
+import { UitlegDot } from "@/components/viz/uitleg"
 import { AnalysisResult, UploadPanel } from "@/components/sparki/material-coach"
 import {
   useNutritionLogs,
@@ -1255,7 +1256,10 @@ function FuelingPlanSection() {
 
   return (
     <section>
-      <SectionLabel title="Voedingsplan voor je training" />
+      <span className="inline-flex items-center gap-1">
+        <SectionLabel title="Voedingsplan voor je training" />
+        <UitlegDot uitlegKey="voedingsadvies" label="Voedingsplan" />
+      </span>
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
         Staat je training of wedstrijd al in je schema? Dan krijg je vooraf een
         plan in vier fasen: voorbereiding, tijdens, direct erna en de uren

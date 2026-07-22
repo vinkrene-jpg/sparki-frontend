@@ -1,6 +1,8 @@
 import { usePowerBests } from "@/hooks/use-power-bests"
 import { useStartFix } from "@/hooks/use-missing-input"
 import { ACCENT } from "@/components/sparki/ui"
+import { UitlegDot } from "@/components/viz/uitleg"
+import type { UitlegPersoonlijk } from "@/lib/uitleg-content"
 import { ArrowRight, TrendingUp, TrendingDown, Minus } from "lucide-react"
 import type { AthleteProfile, FtpHistoryEntry } from "@/lib/athlete-types"
 import type { LoadData } from "@/hooks/use-load"
@@ -52,11 +54,15 @@ function Stat({
   unit,
   label,
   accent,
+  uitlegKey,
+  persoonlijk,
 }: {
   value: string
   unit?: string
   label: string
   accent?: boolean
+  uitlegKey?: string
+  persoonlijk?: UitlegPersoonlijk
 }) {
   return (
     <div className="flex-1 text-center">
@@ -69,8 +75,9 @@ function Stat({
           <span className="ml-0.5 text-[11px] text-white/40">{unit}</span>
         )}
       </p>
-      <p className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
+      <p className="mt-0.5 inline-flex items-center gap-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
         {label}
+        {uitlegKey && <UitlegDot uitlegKey={uitlegKey} label={label} persoonlijk={persoonlijk} />}
       </p>
     </div>
   )
@@ -108,13 +115,31 @@ export function PerformanceNumbers({
   // FTP-metingen, nieuwste eerst (zo komen ze binnen), max 4 regels.
   const ftpRows = (ftpHistory ?? []).slice(0, 4)
 
+  // Persoonlijke waarden voor het "Bij jou"-blok in de uitleg.
+  const persoonlijk: UitlegPersoonlijk = {
+    ftp,
+    ftpEstimated: null,
+    weightKg: weight,
+    ctl: load?.ctl ?? null,
+    atl: load?.atl ?? null,
+    tsb: load?.tsb ?? null,
+    heeftVermogensdata: bests != null ? hasBests : null,
+  }
+
   return (
     <div className="flex flex-col gap-2.5">
       {/* KERNGETALLEN */}
       <Card>
         <MicroLabel>Kerngetallen</MicroLabel>
         <div className="mt-3 flex items-stretch">
-          <Stat value={ftp != null ? String(ftp) : "—"} unit="W" label="FTP" accent />
+          <Stat
+            value={ftp != null ? String(ftp) : "—"}
+            unit="W"
+            label="FTP"
+            accent
+            uitlegKey="ftp"
+            persoonlijk={persoonlijk}
+          />
           <div className="border-l border-white/[0.07]" />
           <Stat value={wkg ?? "—"} unit="W/kg" label="Per kilo" />
           <div className="border-l border-white/[0.07]" />
@@ -169,13 +194,26 @@ export function PerformanceNumbers({
         </div>
         {load ? (
           <div className="mt-3 flex items-stretch">
-            <Stat value={String(load.ctl)} label="Fitheid" accent />
+            <Stat
+              value={String(load.ctl)}
+              label="Fitheid"
+              accent
+              uitlegKey="fitheid"
+              persoonlijk={persoonlijk}
+            />
             <div className="border-l border-white/[0.07]" />
-            <Stat value={String(load.atl)} label="Vermoeidheid" />
+            <Stat
+              value={String(load.atl)}
+              label="Vermoeidheid"
+              uitlegKey="vermoeidheid"
+              persoonlijk={persoonlijk}
+            />
             <div className="border-l border-white/[0.07]" />
             <Stat
               value={load.tsb > 0 ? `+${load.tsb}` : String(load.tsb)}
               label="Vorm"
+              uitlegKey="vorm"
+              persoonlijk={persoonlijk}
             />
           </div>
         ) : (
@@ -188,7 +226,10 @@ export function PerformanceNumbers({
 
       {/* BESTE VERMOGENS — tabel per venster */}
       <Card>
-        <MicroLabel>Beste vermogens</MicroLabel>
+        <span className="inline-flex items-center gap-1">
+          <MicroLabel>Beste vermogens</MicroLabel>
+          <UitlegDot uitlegKey="records" label="Beste vermogens" persoonlijk={persoonlijk} />
+        </span>
         {hasBests && bests ? (
           <>
             <table className="mt-3 w-full border-collapse text-left">

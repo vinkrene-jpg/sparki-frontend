@@ -4,6 +4,7 @@ import { BikeGarage } from "@/components/sparki/bike-garage"
 import { MaterialTest } from "@/components/sparki/material-test"
 import { Bike3DWerkblad } from "@/components/sparki/bike-3d-werkblad"
 import { MaintenanceSignalsPanel } from "@/components/sparki/maintenance-signals"
+import { UitlegDot } from "@/components/viz/uitleg"
 import { SectionLabel } from "@/components/sparki/ui"
 
 // Hoofdstuk Mechanieker — bundelt de materiaalcoach: materiaalcheck, onderhoud
@@ -22,7 +23,10 @@ export default function MechaniekerPage() {
       </div>
 
       <section className="mt-8">
-        <SectionLabel n="" title="Onderhoudssignalen" />
+        <span className="inline-flex items-center gap-1">
+          <SectionLabel n="" title="Onderhoudssignalen" />
+          <UitlegDot uitlegKey="materiaalstatus" label="Onderhoudssignalen" />
+        </span>
         <div className="mt-3">
           <MaintenanceSignalsPanel context="garage" />
         </div>

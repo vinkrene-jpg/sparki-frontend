@@ -7,6 +7,7 @@ import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
 import { Sparkles } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
+import { UitlegDot } from "@/components/viz/uitleg"
 import { useUpdateRaceChecklist } from "@/hooks/use-races"
 import {
   useMaterialChecklistOverlay,
@@ -127,6 +128,12 @@ export function PrepTimeline({ phases }: { phases: PrepPhase[] }) {
 export function RaceDayReport({ report }: { report: RaceDayReportData }) {
   return (
     <div className="space-y-3">
+      <div className="flex items-center gap-1 px-1">
+        <span className="font-mono text-[10px] tracking-[0.22em] text-white/45">
+          WEDSTRIJDANALYSE
+        </span>
+        <UitlegDot uitlegKey="wedstrijdanalyse" label="Wedstrijdanalyse" />
+      </div>
       {report.sections.map((section) => (
         <div
           key={section.id}

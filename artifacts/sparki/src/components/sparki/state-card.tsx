@@ -9,6 +9,7 @@ import {
   type StateBand,
 } from "@/hooks/use-sparki-state"
 import { Skeleton } from "@/components/sparki/home-sections"
+import { UitlegDot } from "@/components/viz/uitleg"
 
 // Generic State Engine consumer. It renders one honest Sparki toestand (the
 // living Core + status + coach action + check-in + the 2–3 "Waarom?" signals)
@@ -149,9 +150,12 @@ export function StateCard({
 
   const checkInBlock = (
     <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
-      <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/35">
-        Check-in van vandaag
-      </p>
+      <span className="inline-flex items-center gap-0.5">
+        <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/35">
+          Check-in van vandaag
+        </p>
+        <UitlegDot uitlegKey="readiness" label="Check-in van vandaag" />
+      </span>
       {showCheckInButtons ? (
         <>
           <p className="mt-2 text-[14px] leading-relaxed text-white/75">
@@ -260,6 +264,7 @@ export function StateCard({
             <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
               Sparki adviseert
             </p>
+            <UitlegDot uitlegKey="trainingsadvies" label="Trainingsadvies" />
           </div>
           <p className="mt-2.5 text-[15px] font-medium leading-snug text-white">
             {state.action.label}

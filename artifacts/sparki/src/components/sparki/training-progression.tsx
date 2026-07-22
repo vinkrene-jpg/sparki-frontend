@@ -2,6 +2,7 @@ import { useLocation } from "wouter"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { Sparkline } from "@/components/sparki/primitives"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
+import { UitlegDot } from "@/components/viz/uitleg"
 import {
   weeklyBuckets,
   trendDir,
@@ -80,8 +81,9 @@ export function TrainingProgression({
           {/* Fitness (CTL) trajectory */}
           <div className="mt-4 rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
             <div className="flex items-baseline justify-between">
-              <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+              <span className="inline-flex items-center gap-1 font-mono text-[10px] tracking-[0.2em] text-white/35">
                 FITHEID (CTL)
+                <UitlegDot uitlegKey="fitheid" label="Fitheid (CTL)" />
               </span>
               {hasCtl && (
                 <span className="font-mono text-[10px] tracking-wide text-white/35">
@@ -135,11 +137,12 @@ export function TrainingProgression({
           {/* Weekly training volume */}
           <div className="mt-4 rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
             <div className="flex items-baseline justify-between">
-              <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+              <span className="inline-flex items-center gap-1 font-mono text-[10px] tracking-[0.2em] text-white/35">
                 TRAININGSVOLUME · {weeks} WEKEN
+                <UitlegDot uitlegKey="belasting" label="Trainingsvolume" />
               </span>
               <span className="font-mono text-[10px] tracking-wide text-white/35">
-                TSS / week
+                belasting / week
               </span>
             </div>
             {totalSessions < 2 ? (
