@@ -2,6 +2,21 @@
 
 A Sparki-powered cycling performance app for athletes, coaches, and parents — migrated from Next.js/Vercel to a Replit pnpm monorepo.
 
+## Vaste afbouwregels (VERPLICHT — voorrang op ruim geformuleerde opdrachten)
+
+Volledige tekst in `AGENTS.md`; deze regels gelden voor alle huidige en volgende afbouwgolven:
+1. Afbouwen = behouden, herstellen, verbinden en gericht aanvullen — niet opnieuw bouwen.
+2. Inventariseer vóór iedere wijziging bestaande pagina's/componenten, API's/engines, datamodellen/migraties, rollen/privacyregels, tests/gebruikersflows.
+3. Hergebruik bestaande code als primaire route — geen parallel systeem, tweede databasebron, dubbele engine, nieuwe route of vervangend scherm voor iets dat al bestaat.
+4. Vervangen mag alleen als herstel aantoonbaar technisch onverantwoord is, compatibiliteit + data behouden blijven, regressietests vóór en na bestaan, en de reden kort in de commitdocumentatie staat.
+5. Geen brede refactor, hernoeming, frameworkwissel of architectuurwijziging tenzij strikt nodig voor de golf.
+6. Databasewijzigingen uitsluitend uitbreidend en migratieveilig — nooit bestaande data, relaties of historie verwijderen.
+7. Behoud bestaand uiterlijk en gedrag waar correct; pas alleen aan wat defect, dubbel, onvolledig of noodzakelijk ontbrekend is.
+8. Nieuwe functionaliteit (Club, Abonnementen, …) sluit aan op bestaande gebruikers, rollen, privacy, Data Hub, Journey, Coach en navigatie — geen losstaand product binnen Sparki.
+9. Alle bestaande relevante tests blijven groen; voeg regressietests toe voor ieder gewijzigd bestaand onderdeel.
+10. Bij twijfel: behoud de bestaande implementatie en voeg de minimaal noodzakelijke uitbreiding toe. Stel geen vragen.
+Controleer ook reeds ingeplande afbouwgolven tijdens uitvoering tegen deze regels.
+
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
