@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, desc, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import {
   db,
   parentAthleteLinksTable,
@@ -19,9 +19,7 @@ import {
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { writeAudit } from "../lib/security/audit";
 import {
-  parentSharingLevel,
   coachSharingLevel,
-  hasAcceptedParentLink,
   hasRole,
   getEffectiveParentConsent,
   effectiveParentAccess,
@@ -50,7 +48,7 @@ router.get("/athletes", requireAuth, async (req, res) => {
   }
   try {
     const links = await db
-      .select({ athleteClerkId: parentAthleteLinksTable.athleteClerkId })
+      .select()
       .from(parentAthleteLinksTable)
       .where(
         and(
@@ -58,11 +56,11 @@ router.get("/athletes", requireAuth, async (req, res) => {
           eq(parentAthleteLinksTable.status, "accepted"),
         ),
       );
-    const ids = links.map((l) => l.athleteClerkId);
-    if (ids.length === 0) {
+    if (links.length === 0) {
       res.json({ athletes: [] });
       return;
     }
+    const ids = links.map((l) => l.athleteClerkId);
 
     const profiles = await db
       .select({
@@ -79,41 +77,51 @@ router.get("/athletes", requireAuth, async (req, res) => {
 
     const athletes = await Promise.all(
       profiles.map(async (p) => {
-        const sharing = await parentSharingLevel(p.clerkId);
+        const link = links.find((l) => l.athleteClerkId === p.clerkId)!;
         const consent = await getEffectiveParentConsent(p.clerkId);
+        // Per-categorie rechten van déze koppeling — zelfde fail-closed laag
+        // als /overview (kill-switch, leeftijdstier, herbevestiging).
+        const access = await effectiveParentAccess(link);
+        const perm = access.permissions;
         const base = {
           athleteClerkId: p.clerkId,
           displayName: p.displayName,
-          sharing,
+          sharing: access.level,
           parentConsentStatus: consent.parentConsentStatus,
         };
-        if (sharing === "none") return base;
+        if (access.level === "none") return base;
 
-        const [metric] = await db
-          .select()
-          .from(athleteDailyMetricsTable)
-          .where(eq(athleteDailyMetricsTable.clerkId, p.clerkId))
-          .orderBy(desc(athleteDailyMetricsTable.metricDate))
-          .limit(1);
+        const result: Record<string, unknown> = { ...base };
 
-        // Wellbeing/safety signals only — no power/training-performance data.
-        const wellbeing = metric
-          ? {
-              metricDate: metric.metricDate,
-              sleepHours: metric.sleepHours,
-              sleepQuality: metric.sleepQuality,
-              fatigueScore: metric.fatigueScore,
-              feelScore: metric.feelScore,
-            }
-          : null;
+        if (perm.gezondheid) {
+          result.healthStatus = p.healthStatus;
+        }
 
-        const result: Record<string, unknown> = {
-          ...base,
-          healthStatus: p.healthStatus,
-          wellbeing,
-        };
+        // Welzijnssignalen alleen per toegestane categorie — nooit
+        // vermogens-/prestatiedata.
+        if (perm.herstel || perm.slaap) {
+          const [metric] = await db
+            .select()
+            .from(athleteDailyMetricsTable)
+            .where(eq(athleteDailyMetricsTable.clerkId, p.clerkId))
+            .orderBy(desc(athleteDailyMetricsTable.metricDate))
+            .limit(1);
+          result.wellbeing = metric
+            ? {
+                metricDate: metric.metricDate,
+                ...(perm.slaap
+                  ? {
+                      sleepHours: metric.sleepHours,
+                      sleepQuality: metric.sleepQuality,
+                      fatigueScore: metric.fatigueScore,
+                    }
+                  : {}),
+                ...(perm.herstel ? { feelScore: metric.feelScore } : {}),
+              }
+            : null;
+        }
 
-        if (sharing === "summary") {
+        if (perm.planning) {
           const schedule = await db
             .select({
               scheduledDate: plannedWorkoutsTable.scheduledDate,
@@ -152,12 +160,17 @@ router.get("/athletes/:athleteId/context", requireAuth, async (req, res) => {
   }
   const athleteId = String(req.params.athleteId);
   try {
-    if (!(await hasAcceptedParentLink(parentId, athleteId))) {
+    const link = await getParentLink(parentId, athleteId);
+    if (!link || link.status !== "accepted") {
       res.status(403).json({ error: "Geen gekoppelde atleet" });
       return;
     }
-    const sharing = await parentSharingLevel(athleteId);
-    if (sharing === "none") {
+    // Zelfde fail-closed rechtenlaag als /overview: context valt onder het
+    // veiligheidssignaal (gezondheid) en respecteert kill-switch, tier en
+    // herbevestiging.
+    const access = await effectiveParentAccess(link);
+    const sharing = access.level;
+    if (sharing === "none" || !access.permissions.gezondheid) {
       res.json({ sharing, memories: [], message: "Atleet deelt geen data" });
       return;
     }
@@ -659,25 +672,34 @@ router.post(
         res.status(400).json({ error: "Naam en telefoonnummer zijn verplicht" });
         return;
       }
-      const existing = await db
-        .select({ id: emergencyContactsTable.id })
-        .from(emergencyContactsTable)
-        .where(eq(emergencyContactsTable.athleteClerkId, athleteId));
-      if (existing.length >= 5) {
+      // Atomair: advisory-lock per sporter, zodat gelijktijdige verzoeken de
+      // limiet van 5 niet kunnen overschrijden (count-then-insert race).
+      const contact = await db.transaction(async (tx) => {
+        await tx.execute(
+          sql`SELECT pg_advisory_xact_lock(hashtext(${`noodcontact:${athleteId}`}))`,
+        );
+        const existing = await tx
+          .select({ id: emergencyContactsTable.id })
+          .from(emergencyContactsTable)
+          .where(eq(emergencyContactsTable.athleteClerkId, athleteId));
+        if (existing.length >= 5) return null;
+        const [row] = await tx
+          .insert(emergencyContactsTable)
+          .values({
+            athleteClerkId: athleteId,
+            name,
+            phone,
+            relation,
+            priority: existing.length + 1,
+            createdByClerkId: parentId,
+          })
+          .returning();
+        return row;
+      });
+      if (!contact) {
         res.status(400).json({ error: "Maximaal 5 noodcontacten" });
         return;
       }
-      const [contact] = await db
-        .insert(emergencyContactsTable)
-        .values({
-          athleteClerkId: athleteId,
-          name,
-          phone,
-          relation,
-          priority: existing.length + 1,
-          createdByClerkId: parentId,
-        })
-        .returning();
       void writeAudit({
         event: "link_change",
         actorClerkId: parentId,

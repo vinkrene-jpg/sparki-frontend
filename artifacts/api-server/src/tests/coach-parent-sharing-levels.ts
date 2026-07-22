@@ -52,6 +52,7 @@ import {
   parentAthleteLinksTable,
   userProfilesTable,
   privacySettingsTable,
+  athleteProfilesTable,
   athleteDailyMetricsTable,
   plannedWorkoutsTable,
   personalContextMemoriesTable,
@@ -557,6 +558,26 @@ async function main() {
     "parent summary: roster adds the upcoming schedule on top of wellbeing",
     async () => {
       await setSharing("full", "summary");
+      // Golf 12: onbekende leeftijd is fail-closed (veiligheidsminimum) —
+      // geef de sporter dus een volwassen geboortedatum zodat de
+      // summary-standaarden überhaupt kunnen gelden.
+      await db
+        .update(athleteProfilesTable)
+        .set({ birthDate: "1990-01-01", birthYear: 1990 })
+        .where(eq(athleteProfilesTable.clerkId, clerkAthlete));
+      // Golf 12: onbevestigde rechten blijven op het veiligheidsminimum;
+      // pas ná bevestiging door de sporter gelden de summary-standaarden
+      // (incl. planning). Bevestig hier expliciet, zoals de sporter dat via
+      // PUT /api/links/parent/:id/permissions zou doen.
+      await db
+        .update(parentAthleteLinksTable)
+        .set({ consentConfirmedAt: new Date(), ageTierAtConsent: "adult" })
+        .where(
+          and(
+            eq(parentAthleteLinksTable.parentClerkId, clerkParent),
+            eq(parentAthleteLinksTable.athleteClerkId, clerkAthlete),
+          ),
+        );
       const r = await req("GET", "/api/parent/athletes", clerkParent);
       assert(r.status === 200, `roster expected 200, got ${r.status}`);
       const e = parentAthleteEntry(r.json);

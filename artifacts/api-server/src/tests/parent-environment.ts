@@ -616,6 +616,55 @@ async function main() {
     assert(rows.length === 1 && link?.status === "accepted", "koppeling gewijzigd door decline");
   });
 
+  // 15 — Onbekende leeftijd: fail-closed op veiligheidsminimum, ook mét
+  // eerder bevestigde bredere rechten; parentMayEdit blijft false.
+  await scenario("onbekende leeftijd: nooit meer dan veiligheidsminimum", async () => {
+    // Adult had zojuist herbevestigde rechten incl. planning (scenario 9).
+    await db
+      .update(athleteProfilesTable)
+      .set({ birthDate: null, birthYear: null })
+      .where(eq(athleteProfilesTable.clerkId, clerkAdult));
+    const ov = await req("GET", "/api/parent/overview", clerkParent);
+    const child = childEntry(ov.json, clerkAdult);
+    assert(child.access.tier === "unknown", `tier ${child.access.tier}`);
+    assert(child.access.parentMayEdit === false, "parentMayEdit moet false zijn");
+    assert(child.access.permissions.planning === false, "planning moet dicht bij onbekende leeftijd");
+    assert(child.access.permissions.gezondheid === true, "veiligheidsminimum moet open blijven");
+    // Ook de legacy-route /api/parent/athletes volgt dezelfde rechtenlaag.
+    const legacy = await req("GET", "/api/parent/athletes", clerkParent);
+    const entry = (legacy.json?.athletes as any[]).find(
+      (a) => a.athleteClerkId === clerkAdult,
+    );
+    assert(entry, "kind ontbreekt in /athletes");
+    assert(entry.schedule === undefined, "schedule mag niet lekken zonder planning-recht");
+    await db
+      .update(athleteProfilesTable)
+      .set({ birthDate: birthDateForAge(20) })
+      .where(eq(athleteProfilesTable.clerkId, clerkAdult));
+  });
+
+  // 16 — Noodcontact-limiet houdt stand onder gelijktijdige verzoeken.
+  await scenario("noodcontacten: limiet houdt onder gelijktijdigheid", async () => {
+    // Teen heeft 0 contacten; vuur 8 tegelijk af — er mogen er max 5 landen.
+    const attempts = await Promise.all(
+      Array.from({ length: 8 }, (_, i) =>
+        req(
+          "POST",
+          `/api/parent/athletes/${clerkTeen}/emergency-contacts`,
+          clerkParent,
+          { name: `Race ${i}`, phone: `06-11111${i}` },
+        ),
+      ),
+    );
+    const created = attempts.filter((a) => a.status === 201).length;
+    assert(created === 5, `verwacht 5 aangemaakt, kreeg ${created}`);
+    const rows = await db
+      .select({ id: emergencyContactsTable.id })
+      .from(emergencyContactsTable)
+      .where(eq(emergencyContactsTable.athleteClerkId, clerkTeen));
+    assert(rows.length === 5, `verwacht 5 rijen, kreeg ${rows.length}`);
+  });
+
   await cleanup();
   await stopServer();
 

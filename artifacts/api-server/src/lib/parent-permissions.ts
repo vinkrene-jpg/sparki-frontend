@@ -146,6 +146,16 @@ export async function effectiveParentAccess(
         : defaultsForLevel("safety_only");
   }
 
+  // Onbekende leeftijd: fail-closed — nooit méér dan het veiligheidsminimum,
+  // ook niet wanneer er eerder bredere rechten bevestigd zijn.
+  if (tier === "unknown") {
+    const safeOnly = allOff();
+    for (const c of SAFETY_CATEGORIES) {
+      safeOnly[c] = permissions[c];
+    }
+    permissions = safeOnly;
+  }
+
   if (reconfirmRequired) {
     if (tier === "adult") {
       // Volwassen sporter: alle toegang dicht tot die sporter herbevestigt.

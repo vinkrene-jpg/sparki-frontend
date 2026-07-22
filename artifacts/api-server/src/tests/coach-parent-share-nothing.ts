@@ -53,6 +53,7 @@ import {
   parentAthleteLinksTable,
   userProfilesTable,
   privacySettingsTable,
+  athleteProfilesTable,
   athleteDailyMetricsTable,
   plannedWorkoutsTable,
   personalContextMemoriesTable,
@@ -467,6 +468,23 @@ async function main() {
   // Proves the "none" legs above withheld REAL data, not that the seed was empty.
   // The links never changed; only the athlete's preference flipped back.
   await setSharing("full", "summary");
+  // Golf 12: onbevestigde rechten blijven op het veiligheidsminimum en
+  // onbekende leeftijd is fail-closed. Geef de sporter een volwassen
+  // geboortedatum en bevestig de summary-rechten expliciet, zoals de sporter
+  // dat via PUT /api/links/parent/:id/permissions zou doen.
+  await db
+    .update(athleteProfilesTable)
+    .set({ birthDate: "1990-01-01", birthYear: 1990 })
+    .where(eq(athleteProfilesTable.clerkId, clerkAthlete));
+  await db
+    .update(parentAthleteLinksTable)
+    .set({ consentConfirmedAt: new Date(), ageTierAtConsent: "adult" })
+    .where(
+      and(
+        eq(parentAthleteLinksTable.parentClerkId, clerkParent),
+        eq(parentAthleteLinksTable.athleteClerkId, clerkAthlete),
+      ),
+    );
 
   await scenario(
     "restore coach roster: full sharing surfaces readiness + raw latestMetric",
