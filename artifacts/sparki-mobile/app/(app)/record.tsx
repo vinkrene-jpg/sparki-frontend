@@ -32,6 +32,13 @@ import {
 import { toLatLon, type LatLon } from "@/lib/geo";
 import { hasMapbox } from "@/lib/mapbox";
 import { useSaveRide } from "@/lib/routes-api";
+import { customFetch } from "@workspace/api-client-react";
+
+// In-rit registratie: één tik = één bidon (~500 ml) of één eetmoment (~25 g
+// koolhydraten). Bewust grove, eerlijke schattingen — de renner corrigeert
+// desgewenst later in het voedingsscherm op het web.
+const BIDON_ML = 500;
+const EETMOMENT_G = 25;
 
 function fmtElapsed(sec: number): string {
   const h = Math.floor(sec / 3600);
@@ -84,6 +91,16 @@ export default function RecordScreen() {
   }>(null);
   const [following, setFollowing] = useState(true);
   const [showSensors, setShowSensors] = useState(false);
+  // In-rit voedingsregistratie: tik-tellers tijdens de rit. Gesnapshot bij
+  // stoppen (net als de track) en pas bij succesvol opslaan één keer als
+  // voedingslog naar de backend gestuurd.
+  const [bidons, setBidons] = useState(0);
+  const [eetmomenten, setEetmomenten] = useState(0);
+  // De ritdatum wordt bij het STOPPEN gesnapshot (net als de track), zodat
+  // een later opslaan (bijv. na middernacht) de voedingslog op de echte ritdag
+  // zet en niet op de opslagdag.
+  const [stoppedFuel, setStoppedFuel] = useState<{ bidons: number; eats: number; logDate: string } | null>(null);
+  const [fuelLogged, setFuelLogged] = useState<null | "ok" | "failed">(null);
   // After stopping, the recorded track is snapshotted here so it is never lost —
   // not on review-cancel, not on a failed save. The rider can reopen the review
   // to save it, or explicitly discard it. Only an explicit discard drops it.
@@ -122,6 +139,10 @@ export default function RecordScreen() {
     setStoppedSamples([]);
     setReviewFromRecovery(false);
     saveRide.reset();
+    setBidons(0);
+    setEetmomenten(0);
+    setStoppedFuel(null);
+    setFuelLogged(null);
     recorder.start();
   };
 
@@ -133,6 +154,13 @@ export default function RecordScreen() {
     recorder.stop();
     setStoppedPoints(recorder.points);
     setStoppedSamples(recorder.getSensorSamples());
+    const now = new Date();
+    const rideDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    setStoppedFuel(
+      bidons > 0 || eetmomenten > 0
+        ? { bidons, eats: eetmomenten, logDate: rideDate }
+        : null,
+    );
     setReview({ name: defaultRideName(), note: "" });
     recorder.reset();
   };
@@ -162,6 +190,30 @@ export default function RecordScreen() {
       setReview(null);
       setStoppedPoints(null);
       setStoppedSamples([]);
+      // In-rit geregistreerde voeding wordt nu — één keer — als echt
+      // voedingslog opgeslagen. Mislukt dit, dan melden we dat eerlijk; er
+      // wordt nooit een tweede (dubbele) poging op de achtergrond gedaan.
+      if (stoppedFuel) {
+        const fuel = stoppedFuel;
+        setStoppedFuel(null);
+        try {
+          await customFetch("/api/nutrition", {
+            method: "POST",
+            responseType: "json",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              logDate: fuel.logDate,
+              context: "training_day",
+              duringTrainingFluidMl: fuel.bidons * BIDON_ML,
+              duringTrainingCarbsGrams: fuel.eats * EETMOMENT_G,
+              notes: `Tijdens de rit geregistreerd: ${fuel.bidons} bidon(s) (~${BIDON_ML} ml per stuk) en ${fuel.eats} eetmoment(en) (~${EETMOMENT_G} g koolhydraten per stuk).`,
+            }),
+          });
+          setFuelLogged("ok");
+        } catch {
+          setFuelLogged("failed");
+        }
+      }
       if (reviewFromRecovery) {
         // The recovered ride is now safely saved: clear the persisted
         // recovery store so it is never offered again.
@@ -517,6 +569,29 @@ export default function RecordScreen() {
             </View>
           </View>
         ) : recorder.recording ? (
+          <>
+          <View style={styles.fuelRow}>
+            <Pressable
+              onPress={() => setBidons((v) => v + 1)}
+              style={[styles.fuelBtn, { backgroundColor: c.card, borderColor: c.border }]}
+            >
+              <Ionicons name="water-outline" size={26} color={c.primary} />
+              <Text style={[styles.fuelBtnLabel, { color: c.foreground }]}>Bidon</Text>
+              <Text style={[styles.fuelBtnCount, { color: c.mutedForeground }]}>
+                {bidons} × ~{BIDON_ML} ml
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setEetmomenten((v) => v + 1)}
+              style={[styles.fuelBtn, { backgroundColor: c.card, borderColor: c.border }]}
+            >
+              <Ionicons name="fast-food-outline" size={26} color={c.primary} />
+              <Text style={[styles.fuelBtnLabel, { color: c.foreground }]}>Eetmoment</Text>
+              <Text style={[styles.fuelBtnCount, { color: c.mutedForeground }]}>
+                {eetmomenten} × ~{EETMOMENT_G} g
+              </Text>
+            </Pressable>
+          </View>
           <View style={[styles.recCard, { backgroundColor: c.card, borderColor: c.border }]}>
             <View style={{ flex: 1 }}>
               <View style={styles.recLive}>
@@ -564,8 +639,27 @@ export default function RecordScreen() {
               )}
             </Pressable>
           </View>
+          </>
         ) : (
           <>
+            {fuelLogged === "ok" && (
+              <View style={[styles.recCard, { backgroundColor: c.card, borderColor: c.border }]}>
+                <Ionicons name="checkmark-circle-outline" size={18} color={c.primary} />
+                <Text style={[styles.recNote, { color: c.mutedForeground, flex: 1 }]}>
+                  Je bidons en eetmomenten van de rit staan in je voedingslog.
+                </Text>
+              </View>
+            )}
+            {fuelLogged === "failed" && (
+              <View style={[styles.recCard, { backgroundColor: c.card, borderColor: c.destructive }]}>
+                <Ionicons name="alert-circle-outline" size={18} color={c.destructive} />
+                <Text style={[styles.recNote, { color: c.mutedForeground, flex: 1 }]}>
+                  Je rit is opgeslagen, maar je bidons/eetmomenten konden niet
+                  naar je voedingslog. Log ze desgewenst zelf in het
+                  voedingsscherm.
+                </Text>
+              </View>
+            )}
             {saveError && (
               <View style={[styles.recErr, { backgroundColor: c.card, borderColor: c.destructive }]}>
                 <Ionicons name="alert-circle-outline" size={18} color={c.destructive} />
@@ -662,6 +756,17 @@ function Metric({
 }
 
 const styles = StyleSheet.create({
+  fuelRow: { flexDirection: "row", gap: 10, marginBottom: 10 },
+  fuelBtn: {
+    flex: 1,
+    alignItems: "center",
+    gap: 2,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: 14,
+  },
+  fuelBtnLabel: { fontFamily: "Inter_600SemiBold", fontSize: 15 },
+  fuelBtnCount: { fontFamily: "Inter_400Regular", fontSize: 12 },
   fill: { flex: 1 },
   center: { alignItems: "center", justifyContent: "center", gap: 12 },
   stateTitle: { fontFamily: "Inter_600SemiBold", fontSize: 18 },

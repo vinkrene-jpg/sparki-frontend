@@ -46,6 +46,9 @@ export const nutritionHydrationLogsTable = pgTable(
     }),
     bodyWeightAfter: numeric("body_weight_after", { precision: 5, scale: 2 }),
     stomachIssues: boolean("stomach_issues").notNull().default(false),
+    // Ervaren energie tijdens/na de inspanning (1 = leeg, 5 = sterk). Optioneel,
+    // alleen wat de sporter zelf aangeeft — nooit afgeleid of verzonnen.
+    energyFeel: integer("energy_feel"),
     notes: text("notes"),
     // Optional real photos of the meal/drink, stored in object storage (owner ACL).
     // Only normalized object paths ("/objects/...") are kept here, never raw bytes.
@@ -84,6 +87,35 @@ export const nutritionSeasonGoalsTable = pgTable("nutrition_season_goals", {
 });
 
 export type NutritionSeasonGoal = typeof nutritionSeasonGoalsTable.$inferSelect;
+
+// Voedingsvoorkeuren & context van de sporter — alleen relevante velden, door
+// de sporter zelf ingevuld. Verwerking in analyses/advies gebeurt uitsluitend
+// met expliciete toestemming (consentAt gezet); zonder toestemming worden deze
+// velden nergens in prompts of adviezen gebruikt (fail-closed).
+export const nutritionPreferencesTable = pgTable("nutrition_preferences", {
+  id: serial("id").primaryKey(),
+  clerkId: text("clerk_id")
+    .notNull()
+    .unique()
+    .references(() => userProfilesTable.clerkId, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  // Allergieën/intoleranties in eigen woorden (bv. "lactose, pinda").
+  allergies: text("allergies"),
+  // Voedingsvoorkeuren (bv. vegetarisch, geen gels).
+  preferences: text("preferences"),
+  // Producten die de sporter echt in huis/beschikbaar heeft.
+  availableProducts: text("available_products"),
+  // Persoonlijke maag-darmervaringen (bv. "gels vallen zwaar bij hoge intensiteit").
+  gutExperiences: text("gut_experiences"),
+  // Toestemming om bovenstaande gegevens te verwerken in advies en analyses.
+  consentAt: timestamp("consent_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type NutritionPreferences = typeof nutritionPreferencesTable.$inferSelect;
 
 export const insertNutritionHydrationLogSchema = createInsertSchema(
   nutritionHydrationLogsTable,

@@ -142,6 +142,7 @@
 - [tsx module-mock tests & CJS](tsx-module-mock-cjs.md) — mock.module first, lazy `import()` promise (no top-level await, no static import) or the real native module loads/CJS transform fails.
 - [Mobile ride sync honesty](sparki-mobile-ride-sync.md) — "veilig op je telefoon" claims require fail-closed storage writes; detector/queue state must reset across ride lifecycle.
 - [Sparki clubomgeving](sparki-club.md) — least-privilege clubrechten; limieten óók bij invite-accept, club-scoped ID-checks, FOR UPDATE op signup; jeugd-consent fail-closed.
+- [Sparki fueling engine](sparki-fueling-engine.md) — deterministic richtwaarden SSOT (LLM phrases, never computes); jeugd no-numbers; consent fail-closed; mobile fuel snapshot date at STOP not save.
 - [Sparki ouderomgeving](sparki-parent-environment.md) — één rechtenlaag voor ALLE ouder-routes (ook legacy); onbekende leeftijd clampt naar veiligheidsminimum; onbevestigd nooit boven safety-only; caps atomair via advisory lock.
 - [Sparki releasegroepen & uitrol](sparki-release-rollout.md) — auto-stop telt kritieke fouten PER flag (nooit globaal); anonieme meldingen nooit kritiek; 426 heeft latch naast event.
 - [Sparki race flow & advies-typologie](sparki-race-flow.md) — coach-first enforced in compose fn; invalid enums ignored not rejected; geannuleerd filtered at every consumer; foreign routeId silently dropped.

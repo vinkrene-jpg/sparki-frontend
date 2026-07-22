@@ -24,6 +24,7 @@ export type NutritionLog = {
   bodyWeightBefore: string | null;
   bodyWeightAfter: string | null;
   stomachIssues: boolean;
+  energyFeel: number | null;
   notes: string | null;
   photoPaths: string[];
   createdAt: string;
@@ -40,6 +41,7 @@ export type NutritionLogInput = {
   bodyWeightBefore?: string | null;
   bodyWeightAfter?: string | null;
   stomachIssues?: boolean;
+  energyFeel?: number | null;
   notes?: string | null;
   photos?: PhotoPayload[];
 };
@@ -169,6 +171,44 @@ export function useNutritionGuidance(enabled = true) {
   });
 }
 
+export type FuelRange = { min: number; max: number };
+export type FuelItemKind =
+  | "richtwaarde"
+  | "voorkeur"
+  | "coachinstructie"
+  | "ontbreekt";
+export type FuelItem = { kind: FuelItemKind; text: string };
+
+export type SessionFuelTargets = {
+  level: "youth" | "adult";
+  durationMin: number | null;
+  carbsPerHourG: FuelRange | null;
+  fluidPerHourMl: FuelRange | null;
+  sodiumPerHourMg: FuelRange | null;
+  preCarbsG: FuelRange | null;
+  recoveryCarbsG: FuelRange | null;
+  recoveryProteinG: FuelRange | null;
+  heatWarning: boolean;
+  items: FuelItem[];
+  gaps: string[];
+};
+
+export type FuelComparison = {
+  carbs: {
+    plannedPerHourG: FuelRange | null;
+    loggedTotalG: number | null;
+    verdict: string;
+  } | null;
+  fluid: {
+    plannedPerHourMl: FuelRange | null;
+    loggedTotalMl: number | null;
+    verdict: string;
+  } | null;
+  energyFeel: number | null;
+  stomachIssues: boolean;
+  notes: string[];
+};
+
 export type NutritionDayAnalysis = {
   date: string;
   level: "youth" | "adult";
@@ -179,6 +219,8 @@ export type NutritionDayAnalysis = {
   photoCount: number;
   trainedThatDay: boolean;
   plannedThatDay: boolean;
+  vergelijking: FuelComparison | null;
+  giSignal: string | null;
 };
 
 export type NutritionDayResult = {
@@ -207,6 +249,7 @@ export type FuelingPlan = {
   gaps: string[];
   raceCount: number;
   workoutCount: number;
+  richtwaarden: SessionFuelTargets | null;
 };
 
 export type FuelingPlanResult = {
@@ -288,5 +331,63 @@ export function useDeleteNutritionLog() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.nutrition.all() });
     },
+  });
+}
+
+// ── Voedingsvoorkeuren — eigen producten, allergieën, ervaringen (met consent) ─
+
+export type NutritionPreferences = {
+  allergies: string | null;
+  preferences: string | null;
+  availableProducts: string | null;
+  gutExperiences: string | null;
+  consent: boolean;
+  updatedAt: string;
+};
+
+export function useNutritionPreferences(enabled = true) {
+  return useQuery({
+    queryKey: ["nutrition", "preferences"],
+    queryFn: () =>
+      apiFetch<{ preferences: NutritionPreferences | null }>(
+        "/api/nutrition/preferences",
+      ),
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+export function useUpdateNutritionPreferences() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      allergies?: string | null;
+      preferences?: string | null;
+      availableProducts?: string | null;
+      gutExperiences?: string | null;
+      consent: boolean;
+    }) =>
+      apiFetch<{ preferences: NutritionPreferences }>(
+        "/api/nutrition/preferences",
+        { method: "PUT", body: JSON.stringify(input) },
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["nutrition", "preferences"] });
+    },
+  });
+}
+
+// Deterministische richtwaarden voor vandaag — zelfde rekenkern als het plan,
+// zonder prozalaag. Goedkoop, dus een gewone query.
+export function useSessionTargets(date: string, enabled = true) {
+  return useQuery({
+    queryKey: ["nutrition", "session-targets", date],
+    queryFn: () =>
+      apiFetch<{ targets: (SessionFuelTargets & { date: string }) | null; reason?: string }>(
+        `/api/nutrition/session-targets?date=${encodeURIComponent(date)}`,
+      ),
+    enabled,
+    staleTime: 5 * 60_000,
+    retry: false,
   });
 }

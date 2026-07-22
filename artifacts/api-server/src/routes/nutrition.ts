@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
 import {
   db,
   nutritionHydrationLogsTable,
@@ -9,11 +9,20 @@ import {
   plannedWorkoutsTable,
   racesTable,
   nutritionSeasonGoalsTable,
+  nutritionPreferencesTable,
+  coachContextItemsTable,
   type NutritionContext,
 } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { computeAge } from "../lib/age";
+import { getHomeWeather } from "../lib/weather/home";
+import { computeLoad } from "../lib/recovery-load";
+import {
+  computeSessionFuelTargets,
+  compareFuelPlanToLogs,
+  type SessionFuelTargets,
+} from "../lib/fueling";
 import { analyzeNutritionLog } from "../lib/nutrition-rules";
 import { persistObservation } from "../engines/coaching";
 import { buildAthleteContext, systemPrompt } from "../lib/athlete-context";
@@ -32,6 +41,142 @@ import {
 const router = Router();
 
 const MAX_PHOTOS = 4;
+
+// ── Deterministische ondersteuning voor het voedingsplan ────────────────────
+// Verzamelt wat ECHT bekend is rond een dag: voorkeuren (alleen mét
+// toestemming), letterlijke coachinstructies over voeding, temperatuur thuis
+// en de vormbalans. Ontbreekt iets, dan blijft het null — nooit verzonnen.
+
+const NUTRITION_KEYWORD_RE =
+  /\b(voeding|eten|eet|drink|bidon|gel|gels|koolhydra|vocht|natrium|maaltijd|nuchter|reep|sportdrank)/i;
+
+async function loadNutritionPrefs(clerkId: string) {
+  const [row] = await db
+    .select()
+    .from(nutritionPreferencesTable)
+    .where(eq(nutritionPreferencesTable.clerkId, clerkId));
+  return row ?? null;
+}
+
+async function nutritionCoachInstructions(
+  clerkId: string,
+  date: string,
+): Promise<string[]> {
+  const rows = await db
+    .select({ body: coachContextItemsTable.body })
+    .from(coachContextItemsTable)
+    .where(
+      and(
+        eq(coachContextItemsTable.athleteClerkId, clerkId),
+        or(
+          isNull(coachContextItemsTable.startDate),
+          lte(coachContextItemsTable.startDate, date),
+        ),
+        or(
+          isNull(coachContextItemsTable.endDate),
+          gte(coachContextItemsTable.endDate, date),
+        ),
+      ),
+    )
+    .orderBy(desc(coachContextItemsTable.updatedAt));
+  return rows
+    .map((r) => r.body)
+    .filter((b) => NUTRITION_KEYWORD_RE.test(b))
+    .slice(0, 3);
+}
+
+type DayEffort = {
+  durationMin: number | null;
+  isRace: boolean;
+  targetTss: number | null;
+};
+
+function summarizeDayEffort(
+  planned: Array<{ targetDurationMin: number | null; targetTSS: number | null; status: string }>,
+  races: Array<{ distanceKm: unknown }>,
+): DayEffort {
+  const open = planned.filter((p) => p.status !== "completed");
+  const durations = open
+    .map((p) => p.targetDurationMin)
+    .filter((d): d is number => d != null);
+  return {
+    durationMin: durations.length > 0 ? Math.max(...durations) : null,
+    isRace: races.length > 0,
+    targetTss: open.reduce<number | null>(
+      (acc, p) => (p.targetTSS == null ? acc : (acc ?? 0) + p.targetTSS),
+      null,
+    ),
+  };
+}
+
+async function buildDayFuelTargets(
+  clerkId: string,
+  date: string,
+  athlete: { weightKg: unknown } | undefined,
+  isYouth: boolean,
+  effort: DayEffort,
+): Promise<SessionFuelTargets> {
+  const [profileRows, recentSessions, prefs, coachInstructions] =
+    await Promise.all([
+      db
+        .select({
+          homeLat: athleteProfilesTable.homeLat,
+          homeLon: athleteProfilesTable.homeLon,
+          homeLabel: athleteProfilesTable.homeLabel,
+        })
+        .from(athleteProfilesTable)
+        .where(eq(athleteProfilesTable.clerkId, clerkId)),
+      db
+        .select({
+          sessionDate: trainingSessionsTable.sessionDate,
+          tss: trainingSessionsTable.tss,
+        })
+        .from(trainingSessionsTable)
+        .where(
+          and(
+            eq(trainingSessionsTable.clerkId, clerkId),
+            gte(
+              trainingSessionsTable.sessionDate,
+              new Date(Date.now() - 90 * 24 * 3600 * 1000)
+                .toISOString()
+                .slice(0, 10),
+            ),
+          ),
+        ),
+      loadNutritionPrefs(clerkId),
+      nutritionCoachInstructions(clerkId, date),
+    ]);
+
+  const home = profileRows[0];
+  let tempC: number | null = null;
+  try {
+    const weather = await getHomeWeather(
+      home?.homeLat,
+      home?.homeLon,
+      home?.homeLabel ?? null,
+    );
+    tempC = weather.todayForecast?.tempMaxC ?? null;
+  } catch {
+    tempC = null;
+  }
+
+  const load = computeLoad(recentSessions);
+  const consented = prefs?.consentAt != null;
+
+  return computeSessionFuelTargets({
+    durationMin: effort.durationMin,
+    isRace: effort.isRace,
+    targetTss: effort.targetTss,
+    tempC,
+    weightKg: athlete?.weightKg != null ? Number(athlete.weightKg) : null,
+    isYouth,
+    tsb: recentSessions.length > 0 ? load.tsb : null,
+    availableProducts: consented ? (prefs?.availableProducts ?? null) : null,
+    allergies: consented ? (prefs?.allergies ?? null) : null,
+    gutExperiences: consented ? (prefs?.gutExperiences ?? null) : null,
+    coachInstructions,
+  });
+}
 
 // Local category for meal-photo assessment on a nutrition log. Deliberately NOT
 // in the Materiaalcoach registry: this path is triggered by the rider logging a
@@ -267,6 +412,10 @@ router.post("/", requireAuth, async (req, res) => {
         bodyWeightBefore: numStr(body.bodyWeightBefore),
         bodyWeightAfter: numStr(body.bodyWeightAfter),
         stomachIssues: body.stomachIssues === true,
+        energyFeel: (() => {
+          const v = intOrNull(body.energyFeel);
+          return v != null && v >= 1 && v <= 5 ? v : null;
+        })(),
         notes: strOrNull(body.notes),
         photoPaths,
       })
@@ -661,6 +810,53 @@ router.get("/day-analysis", requireAuth, async (req, res) => {
       ),
     );
 
+    // Deterministische vergelijking gepland vs. geregistreerd — alle
+    // voedingslogs van deze dag met trainings-/wedstrijdcontext tellen samen
+    // precies één keer mee, ongeacht hoe vaak de dag geanalyseerd wordt.
+    const effort = summarizeDayEffort(
+      planned,
+      await db
+        .select({ distanceKm: racesTable.distanceKm })
+        .from(racesTable)
+        .where(and(eq(racesTable.clerkId, clerkId), eq(racesTable.raceDate, date))),
+    );
+    const dayTargets = await buildDayFuelTargets(clerkId, date, athlete, isYouth, effort);
+    const fuellingLogs = logs.filter((l) =>
+      l.context === "training_day" || l.context === "race_day",
+    );
+    const actualDurations = sessions
+      .map((sess) => sess.durationMin)
+      .filter((d): d is number => d != null);
+    const vergelijking =
+      !isYouth && fuellingLogs.length > 0 && (sessions.length > 0 || planned.length > 0)
+        ? compareFuelPlanToLogs(
+            dayTargets,
+            fuellingLogs,
+            actualDurations.length > 0 ? Math.max(...actualDurations) : null,
+          )
+        : null;
+
+    // Terugkerende maag-darmklachten (≥3 logs in 14 dagen) — eerlijk signaal
+    // zonder diagnose: verwijs naar ouder/coach/professional.
+    const since14 = new Date(new Date(date + "T12:00:00Z").getTime() - 14 * 24 * 3600 * 1000)
+      .toISOString()
+      .slice(0, 10);
+    const giRows = await db
+      .select({ id: nutritionHydrationLogsTable.id })
+      .from(nutritionHydrationLogsTable)
+      .where(
+        and(
+          eq(nutritionHydrationLogsTable.clerkId, clerkId),
+          eq(nutritionHydrationLogsTable.stomachIssues, true),
+          gte(nutritionHydrationLogsTable.logDate, since14),
+          lte(nutritionHydrationLogsTable.logDate, date),
+        ),
+      );
+    const giSignal =
+      giRows.length >= 3
+        ? `Je meldde de afgelopen twee weken ${giRows.length} keer maag-darmklachten. Een oorzaak is hieruit niet vast te stellen — bespreek dit patroon met ${isYouth ? "je ouder of coach en eventueel een (sport)arts" : "je coach of een (sport)arts/sportdiëtist"}.`
+        : null;
+
     // Real meal photos of the day (capped) as visual evidence.
     const photoInputs: MaterialPhotoInput[] = [];
     for (const log of logs) {
@@ -690,6 +886,7 @@ router.get("/day-analysis", requireAuth, async (req, res) => {
         if (l.duringTrainingSodiumMg != null)
           parts.push(`${l.duringTrainingSodiumMg} mg natrium tijdens`);
         if (l.stomachIssues) parts.push("maag-darmklachten gehad");
+        if (l.energyFeel != null) parts.push(`energiegevoel ${l.energyFeel} van 5`);
         if (l.notes) parts.push(`notitie: ${l.notes}`);
         if (l.photoPaths.length > 0)
           parts.push(`${l.photoPaths.length} foto('s) — zie bijgevoegde beelden`);
@@ -842,6 +1039,8 @@ Antwoord UITSLUITEND met geldige JSON (geen markdown eromheen):
         photoCount: photoInputs.length,
         trainedThatDay: sessions.length > 0,
         plannedThatDay: planned.length > 0,
+        vergelijking,
+        giSignal,
       },
     });
   } catch (err) {
@@ -1257,6 +1456,17 @@ router.get("/fueling-plan", requireAuth, async (req, res) => {
     const age = computeAge(athlete?.birthDate, athlete?.birthYear);
     const isYouth = age != null && age < YOUTH_AGE_CUTOFF;
 
+    // Deterministische rekenkern: richtwaarden uit duur/intensiteit/gewicht/
+    // temperatuur/vormbalans + voorkeuren (mét toestemming) + letterlijke
+    // coachinstructies. Deze bandbreedtes zijn leidend voor de prozalaag.
+    const richtwaarden = await buildDayFuelTargets(
+      clerkId,
+      date,
+      athlete,
+      isYouth,
+      summarizeDayEffort(openPlanned, dayRaces),
+    );
+
     const seasonBlock = await seasonGoalPromptBlock(
       clerkId,
       age,
@@ -1315,6 +1525,10 @@ GEPLAND OP ${date}:
 ${effortLines.join("\n")}
 
 ${seasonBlock ? seasonBlock + "\n\n" : ""}${audienceRule}
+
+BEREKENDE RICHTWAARDEN (leidend — wijk hier niet van af, verzin geen andere getallen):
+${richtwaarden.items.map((i) => `- [${i.kind}] ${i.text}`).join("\n")}
+${richtwaarden.items.some((i) => i.kind === "coachinstructie") ? "\nLET OP: regels met [coachinstructie] komen letterlijk van de coach en gaan vóór alles; neem ze onveranderd over in de betreffende fase." : ""}
 
 EERLIJKHEID (verplicht): baseer hoeveelheden op de geplande duur en intensiteit die hierboven staan. Ontbreekt de duur of intensiteit, zeg dat dan bij "gaps" en houd het advies daar voorzichtig in plaats van getallen te verzinnen. Starttijd is onbekend — formuleer timing relatief ("2 tot 3 uur voor de start"), nooit met kloktijden.
 
@@ -1406,10 +1620,147 @@ Precies deze 4 fasen, in deze volgorde. Platte tekst, gewoon Nederlands, geen En
         gaps,
         raceCount: dayRaces.length,
         workoutCount: openPlanned.length,
+        richtwaarden,
       },
     });
   } catch (err) {
     req.log.error({ err }, "nutrition.fueling-plan failed");
+    res.status(500).json({ error: "Sparki is even niet bereikbaar" });
+  }
+});
+
+// ── Voedingsvoorkeuren (GET/PUT /api/nutrition/preferences) ─────────────────
+// Alleen relevante velden, door de sporter zelf ingevuld. Verwerking in advies
+// en analyses gebeurt uitsluitend met expliciete toestemming (consent=true);
+// zonder toestemming worden de velden opgeslagen maar nergens gebruikt.
+
+router.get("/preferences", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const row = await loadNutritionPrefs(clerkId);
+    res.json({
+      preferences: row
+        ? {
+            allergies: row.allergies,
+            preferences: row.preferences,
+            availableProducts: row.availableProducts,
+            gutExperiences: row.gutExperiences,
+            consent: row.consentAt != null,
+            updatedAt: row.updatedAt,
+          }
+        : null,
+    });
+  } catch (err) {
+    req.log.error({ err }, "nutrition.preferences.get failed");
+    res.status(500).json({ error: "Sparki is even niet bereikbaar" });
+  }
+});
+
+router.put("/preferences", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const clip = (v: unknown): string | null => {
+    const t = strOrNull(v);
+    return t ? t.slice(0, 1000) : null;
+  };
+  const consent = body.consent === true;
+  try {
+    const existing = await loadNutritionPrefs(clerkId);
+    const values = {
+      allergies: clip(body.allergies),
+      preferences: clip(body.preferences),
+      availableProducts: clip(body.availableProducts),
+      gutExperiences: clip(body.gutExperiences),
+      // Toestemming: expliciet aan/uit. Bestaande consentAt blijft staan
+      // zolang consent true blijft; uitzetten maakt verwerking direct dicht.
+      consentAt: consent ? (existing?.consentAt ?? new Date()) : null,
+      updatedAt: new Date(),
+    };
+    const [row] = await db
+      .insert(nutritionPreferencesTable)
+      .values({ clerkId, ...values })
+      .onConflictDoUpdate({
+        target: nutritionPreferencesTable.clerkId,
+        set: values,
+      })
+      .returning();
+    res.json({
+      preferences: {
+        allergies: row.allergies,
+        preferences: row.preferences,
+        availableProducts: row.availableProducts,
+        gutExperiences: row.gutExperiences,
+        consent: row.consentAt != null,
+        updatedAt: row.updatedAt,
+      },
+    });
+  } catch (err) {
+    req.log.error({ err }, "nutrition.preferences.put failed");
+    res.status(500).json({ error: "Sparki is even niet bereikbaar" });
+  }
+});
+
+// ── GET /api/nutrition/session-targets ──────────────────────────────────────
+// De deterministische richtwaarden voor de inspanning van een dag, zonder
+// prozalaag: bandbreedtes met soort-tags (richtwaarde/voorkeur/coachinstructie/
+// ontbreekt). Dit is dezelfde rekenkern als achter het voedingsplan.
+
+router.get("/session-targets", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const rawDate = strOrNull(req.query.date);
+  const date =
+    rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate)
+      ? rawDate
+      : new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Europe/Amsterdam",
+        }).format(new Date());
+  try {
+    const [[athlete], planned, dayRaces] = await Promise.all([
+      db
+        .select({
+          birthYear: athleteProfilesTable.birthYear,
+          birthDate: athleteProfilesTable.birthDate,
+          weightKg: athleteProfilesTable.weightKg,
+        })
+        .from(athleteProfilesTable)
+        .where(eq(athleteProfilesTable.clerkId, clerkId)),
+      db
+        .select()
+        .from(plannedWorkoutsTable)
+        .where(
+          and(
+            eq(plannedWorkoutsTable.clerkId, clerkId),
+            eq(plannedWorkoutsTable.scheduledDate, date),
+          ),
+        ),
+      db
+        .select()
+        .from(racesTable)
+        .where(
+          and(eq(racesTable.clerkId, clerkId), eq(racesTable.raceDate, date)),
+        ),
+    ]);
+    const openPlanned = planned.filter((p) => p.status !== "completed");
+    if (openPlanned.length === 0 && dayRaces.length === 0) {
+      res.json({
+        targets: null,
+        reason:
+          "Er staat voor deze dag geen training of wedstrijd gepland, dus er zijn geen richtwaarden te berekenen.",
+      });
+      return;
+    }
+    const age = computeAge(athlete?.birthDate, athlete?.birthYear);
+    const isYouth = age != null && age < YOUTH_AGE_CUTOFF;
+    const targets = await buildDayFuelTargets(
+      clerkId,
+      date,
+      athlete,
+      isYouth,
+      summarizeDayEffort(openPlanned, dayRaces),
+    );
+    res.json({ targets: { date, ...targets } });
+  } catch (err) {
+    req.log.error({ err }, "nutrition.session-targets failed");
     res.status(500).json({ error: "Sparki is even niet bereikbaar" });
   }
 });

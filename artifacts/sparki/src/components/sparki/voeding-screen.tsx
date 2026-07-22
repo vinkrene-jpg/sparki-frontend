@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { useLocation } from "wouter"
 import { Camera, Loader2, Trash2, X, Sparkles } from "lucide-react"
 import { trackScreen } from "@/lib/telemetry"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
@@ -25,6 +26,11 @@ import {
   useFuelingPlan,
   useSeasonGoal,
   useUpdateSeasonGoal,
+  useNutritionPreferences,
+  useUpdateNutritionPreferences,
+  useSessionTargets,
+  type FuelItem,
+  type SessionFuelTargets,
   type NutritionContext,
   type NutritionLog,
   type MealPhotoAdvice,
@@ -172,6 +178,7 @@ function LogForm() {
   const [preFood, setPreFood] = useState("")
   const [postFood, setPostFood] = useState("")
   const [stomach, setStomach] = useState(false)
+  const [energyFeel, setEnergyFeel] = useState<number | null>(null)
   const [notes, setNotes] = useState("")
   const [photos, setPhotos] = useState<StagedPhoto[]>([])
   const [photoError, setPhotoError] = useState<string | null>(null)
@@ -208,6 +215,7 @@ function LogForm() {
     setPreFood("")
     setPostFood("")
     setStomach(false)
+    setEnergyFeel(null)
     setNotes("")
     setPhotos([])
     setPhotoError(null)
@@ -234,6 +242,7 @@ function LogForm() {
         preTrainingFood: preFood.trim() || null,
         postTrainingFood: postFood.trim() || null,
         stomachIssues: stomach,
+        energyFeel,
         notes: notes.trim() || null,
         photos: photos.map((p) => p.payload),
       },
@@ -387,6 +396,29 @@ function LogForm() {
           />
           Maag-darmklachten gehad
         </label>
+
+        <div>
+          <p className="text-[12px] text-white/55">
+            Hoe was je energiegevoel? (optioneel)
+          </p>
+          <div className="mt-2 flex gap-1.5">
+            {[1, 2, 3, 4, 5].map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setEnergyFeel(energyFeel === v ? null : v)}
+                className={`h-9 w-9 rounded-lg border font-mono text-[12px] transition ${
+                  energyFeel === v
+                    ? "border-cyan-300/60 bg-cyan-300/15 text-cyan-200"
+                    : "border-white/[0.1] bg-white/[0.03] text-white/50"
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 text-[11px] text-white/30">1 = leeg · 5 = sterk</p>
+        </div>
 
         {create.isError && (
           <p className="text-[12px] text-red-300/80">
@@ -1249,6 +1281,200 @@ const PHASE_HINTS: Record<string, string> = {
   herstel: "De rest van de dag",
 }
 
+const KIND_LABELS: Record<string, string> = {
+  richtwaarde: "Richtwaarde",
+  voorkeur: "Jouw voorkeur",
+  coachinstructie: "Coach",
+  ontbreekt: "Ontbreekt",
+}
+
+const KIND_STYLES: Record<string, string> = {
+  richtwaarde: "border-cyan-300/30 text-cyan-200/80",
+  voorkeur: "border-emerald-300/30 text-emerald-200/80",
+  coachinstructie: "border-amber-300/40 text-amber-200/90",
+  ontbreekt: "border-white/20 text-white/45",
+}
+
+function FuelItemList({ items }: { items: FuelItem[] }) {
+  return (
+    <ul className="space-y-2">
+      {items.map((it, i) => (
+        <li key={i} className="flex items-start gap-2">
+          <span
+            className={`mt-0.5 shrink-0 rounded border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] ${KIND_STYLES[it.kind] ?? KIND_STYLES.richtwaarde}`}
+          >
+            {KIND_LABELS[it.kind] ?? it.kind}
+          </span>
+          <span className="text-[12px] leading-relaxed text-white/70">
+            {it.text}
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+// ── Richtwaarden voor vandaag — deterministisch, zelfde rekenkern als het plan ─
+function SessionTargetsSection({ enabled }: { enabled: boolean }) {
+  const { data, isLoading } = useSessionTargets(todayIso(), enabled)
+  const [, navigate] = useLocation()
+  const targets = data?.targets ?? null
+  if (isLoading) return null
+  return (
+    <section>
+      <SectionLabel title="Richtwaarden voor vandaag" />
+      {targets ? (
+        <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+          {targets.items.some((i) => i.kind === "coachinstructie") && (
+            <p className="mb-2 text-[11px] leading-relaxed text-amber-200/80">
+              Je coach heeft instructies over voeding — die gaan vóór de
+              richtwaarden hieronder.
+            </p>
+          )}
+          <FuelItemList items={targets.items} />
+          {targets.gaps.length > 0 && (
+            <ul className="mt-3 space-y-1 border-t border-white/[0.06] pt-3">
+              {targets.gaps.map((g, i) => (
+                <li key={i} className="text-[11px] leading-relaxed text-white/40">
+                  · {g}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : (
+        <div className="mt-2">
+          <p className="text-[12px] leading-relaxed text-white/40">
+            {data?.reason ??
+              "Er staat vandaag geen training of wedstrijd gepland, dus er zijn geen richtwaarden te berekenen."}
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate("/train")}
+            className="mt-2 rounded-full border border-white/[0.12] bg-white/[0.06] px-3 py-1.5 text-[12px] font-medium text-white/80 transition hover:bg-white/[0.1]"
+          >
+            Plan een training
+          </button>
+        </div>
+      )}
+    </section>
+  )
+}
+
+// ── Voedingsvoorkeuren — eigen producten, allergieën, ervaringen ─────────────
+function PreferencesSection({ enabled }: { enabled: boolean }) {
+  const { data, isLoading } = useNutritionPreferences(enabled)
+  const update = useUpdateNutritionPreferences()
+  const prefs = data?.preferences ?? null
+  const [editing, setEditing] = useState(false)
+  const [allergies, setAllergies] = useState("")
+  const [preferences, setPreferences] = useState("")
+  const [products, setProducts] = useState("")
+  const [gut, setGut] = useState("")
+  const [consent, setConsent] = useState(false)
+
+  useEffect(() => {
+    if (!editing && prefs) {
+      setAllergies(prefs.allergies ?? "")
+      setPreferences(prefs.preferences ?? "")
+      setProducts(prefs.availableProducts ?? "")
+      setGut(prefs.gutExperiences ?? "")
+      setConsent(prefs.consent)
+    }
+  }, [prefs, editing])
+
+  if (isLoading) return null
+
+  return (
+    <section>
+      <SectionLabel title="Jouw voorkeuren & producten" />
+      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
+        Allergieën, voorkeuren en wat je zelf in huis hebt. Alleen met jouw
+        toestemming gebruikt Sparki dit in je voedingsplan en analyses.
+      </p>
+      {!editing ? (
+        <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+          {prefs &&
+          (prefs.allergies || prefs.preferences || prefs.availableProducts || prefs.gutExperiences) ? (
+            <div className="space-y-1.5 text-[12px] leading-relaxed text-white/65">
+              {prefs.allergies && <p>Allergieën/intoleranties: {prefs.allergies}</p>}
+              {prefs.preferences && <p>Voorkeuren: {prefs.preferences}</p>}
+              {prefs.availableProducts && <p>Eigen producten: {prefs.availableProducts}</p>}
+              {prefs.gutExperiences && <p>Maag-darmervaringen: {prefs.gutExperiences}</p>}
+              <p className={prefs.consent ? "text-emerald-300/70" : "text-white/40"}>
+                {prefs.consent
+                  ? "Toestemming gegeven: dit wordt meegenomen in je advies."
+                  : "Nog geen toestemming: dit wordt bewaard maar nergens gebruikt."}
+              </p>
+            </div>
+          ) : (
+            <p className="text-[12px] leading-relaxed text-white/40">
+              Nog niets ingevuld.
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em]"
+            style={{ color: ACCENT }}
+          >
+            {prefs ? "Aanpassen" : "Invullen"}
+          </button>
+        </div>
+      ) : (
+        <div className="mt-3 space-y-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+          <input className={inputCls} placeholder="Allergieën of intoleranties (bijv. lactose)" value={allergies} onChange={(e) => setAllergies(e.target.value)} />
+          <input className={inputCls} placeholder="Voedingsvoorkeuren (bijv. vegetarisch, geen gels)" value={preferences} onChange={(e) => setPreferences(e.target.value)} />
+          <input className={inputCls} placeholder="Producten die je zelf in huis hebt" value={products} onChange={(e) => setProducts(e.target.value)} />
+          <textarea className={`${inputCls} min-h-[52px] resize-none`} placeholder="Maag-darmervaringen (bijv. gels vallen zwaar bij hoge intensiteit)" value={gut} onChange={(e) => setGut(e.target.value)} />
+          <label className="flex items-start gap-2 text-[12px] leading-relaxed text-white/55">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-cyan-400"
+            />
+            Ik geef toestemming om dit te gebruiken in mijn voedingsplan en
+            analyses. Zonder vinkje wordt het bewaard maar nergens gebruikt.
+          </label>
+          {update.isError && (
+            <p className="text-[12px] text-red-300/80">Kon je voorkeuren niet opslaan. Probeer het opnieuw.</p>
+          )}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              disabled={update.isPending}
+              onClick={() =>
+                update.mutate(
+                  {
+                    allergies: allergies.trim() || null,
+                    preferences: preferences.trim() || null,
+                    availableProducts: products.trim() || null,
+                    gutExperiences: gut.trim() || null,
+                    consent,
+                  },
+                  { onSuccess: () => setEditing(false) },
+                )
+              }
+              className="rounded-lg px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-black disabled:opacity-50"
+              style={{ background: ACCENT }}
+            >
+              {update.isPending ? "Opslaan…" : "Opslaan"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="font-mono text-[11px] uppercase tracking-[0.16em] text-white/45"
+            >
+              Annuleren
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
 function FuelingPlanSection() {
   const fueling = useFuelingPlan()
   const result = fueling.data
@@ -1335,6 +1561,16 @@ function FuelingPlanSection() {
                 </p>
               </div>
             ))}
+            {plan.richtwaarden && plan.richtwaarden.items.length > 0 && (
+              <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+                  Waar dit plan op rekent
+                </p>
+                <div className="mt-2">
+                  <FuelItemList items={plan.richtwaarden.items} />
+                </div>
+              </div>
+            )}
             {plan.gaps.length > 0 && (
               <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
                 <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
@@ -1465,6 +1701,30 @@ function DayAnalysisSection() {
                 )}
               </div>
             ))}
+            {analysis.vergelijking && (
+              <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+                  Gepland vs. geregistreerd
+                </p>
+                <div className="mt-2 space-y-1.5 text-[12px] leading-relaxed text-white/70">
+                  {analysis.vergelijking.carbs && <p>{analysis.vergelijking.carbs.verdict}</p>}
+                  {analysis.vergelijking.fluid && <p>{analysis.vergelijking.fluid.verdict}</p>}
+                  {analysis.vergelijking.energyFeel != null && (
+                    <p>Energiegevoel: {analysis.vergelijking.energyFeel} van 5.</p>
+                  )}
+                  {analysis.vergelijking.notes.map((n, i) => (
+                    <p key={i} className="text-white/55">{n}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+            {analysis.giSignal && (
+              <div className="rounded-2xl border border-amber-300/25 bg-amber-300/[0.05] p-4">
+                <p className="text-[12px] leading-relaxed text-amber-200/85">
+                  {analysis.giSignal}
+                </p>
+              </div>
+            )}
             {analysis.gaps.length > 0 && (
               <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
                 <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
@@ -1552,9 +1812,11 @@ export function VoedingScreen({
           </SheetHeader>
 
           <LogForm />
-          <SeasonGoalSection enabled={open} />
+          <SessionTargetsSection enabled={open} />
           <FuelingPlanSection />
           <DayAnalysisSection />
+          <PreferencesSection enabled={open} />
+          <SeasonGoalSection enabled={open} />
           <GuidanceSection enabled={open} />
           <PhotoAdviceSection />
           <RecentLogs />
