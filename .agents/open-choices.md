@@ -5,7 +5,7 @@
 > open punten kort in de chat. Nieuwe keuze gesteld → hier toevoegen. Beslist → hier
 > weghalen (of naar "Beslist" verplaatsen). Nooit een keuze stilletjes laten vallen.
 
-Laatst bijgewerkt: 2026-06-29.
+Laatst bijgewerkt: 2026-07-22.
 
 ## Wacht op jouw keuze
 
@@ -29,6 +29,13 @@ Laatst bijgewerkt: 2026-06-29.
 10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav.
 
 ## Beslist (archief)
+- **2026-07-22 — Routes: opruimen + archief (nog te bouwen, groot):**
+  (1) Niet-gekozen routevoorstellen direct verwijderen; een bewaard maar na
+  30 dagen niet gereden voorstel verdwijnt vanzelf. (2) Gereden tochten op
+  tijd geordend (nieuwste eerst, per maand gegroepeerd) met zoekveld en
+  filters, én — zoals Komoot — gereden routes zichtbaar op een kaart voor
+  andere gebruikers, aanklikbaar met directe details. Dit is een grote
+  vervolgstap na de plannerherinrichting.
 - **2026-07-12 — Strategie geïntegreerd (verfijnt eerdere verdienmodel-beslissing):**
   alle rennersfuncties zijn 24 maanden gratis vanaf de FORMELE start van de "stabiele
   publieke bèta" (harde criteria: 3 schone release-candidates, geen rode defects,

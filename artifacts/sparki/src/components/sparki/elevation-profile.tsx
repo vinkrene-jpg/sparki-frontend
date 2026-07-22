@@ -33,7 +33,7 @@ export function MiniElevationProfile({
   const min = Math.min(...profile)
   const span = Math.max(1, max - min)
   return (
-    <div className={`mt-2 flex h-9 items-end gap-px ${className}`}>
+    <div className={`mt-2 flex h-12 items-end gap-px ${className}`}>
       {profile.map((p, i) => (
         <div
           key={i}
@@ -81,7 +81,7 @@ export function ElevationProfile({
 
   return (
     <div className={className}>
-      <div className="mt-4 flex h-16 items-end gap-px">
+      <div className="mt-4 flex h-28 items-end gap-px sm:h-36">
         {profile.map((p, i) => (
           <div
             key={i}

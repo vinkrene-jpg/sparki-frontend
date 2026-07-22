@@ -795,7 +795,12 @@ function RouteCard({
       {canExport && <DeviceSyncBlock routeId={route.id} />}
 
       {geometry.length > 1 && (
-        <RouteMap geometry={geometry} climbs={climbs} className="mt-4" />
+        <RouteMap
+          geometry={geometry}
+          climbs={climbs}
+          height={430}
+          className="mt-4"
+        />
       )}
 
       {profile.length > 0 && (
@@ -1029,10 +1034,12 @@ function RouteGenerator({
   const [trainingType, setTrainingType] = useState("duurtraining")
   const [workoutId, setWorkoutId] = useState<string>("")
   const [distance, setDistance] = useState("40")
-  const [distanceTouched, setDistanceTouched] = useState(false)
   const [wish, setWish] = useState("")
   const [destination, setDestination] = useState("")
   const [start, setStart] = useState<{ lat: number; lon: number } | null>(null)
+  // De ECHTE positie van de rijder (alleen gezet na geslaagde geolocatie) —
+  // los van `start`, want een startpunt kan ook een kaart-tik elders zijn.
+  const [myLoc, setMyLoc] = useState<[number, number] | null>(null)
   const [geoState, setGeoState] = useState<"idle" | "loading" | "error">("idle")
   // Counter that forces the builder map to jump to the rider's position at
   // street-level zoom every time "Centreer op mij" is tapped.
@@ -1041,32 +1048,6 @@ function RouteGenerator({
   // Loop mode: the 3 distance variants (korter/gevraagd/langer) to choose from.
   const [options, setOptions] = useState<RouteCandidate[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-
-  // Seed the default loop distance from the training plan (nearest planned
-  // session's duration) instead of a fixed 40 km. It's only an editable
-  // starting suggestion — a route linked to a workout still derives its true
-  // distance server-side.
-  useEffect(() => {
-    if (distanceTouched) return
-    const list = workouts ?? []
-    const today = new Date().toISOString().split("T")[0]!
-    const upcoming = list
-      .filter((w) => w.targetDurationMin && w.scheduledDate >= today)
-      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))[0]
-    const nearest =
-      upcoming ??
-      list
-        .filter((w) => w.targetDurationMin)
-        .sort((a, b) => b.scheduledDate.localeCompare(a.scheduledDate))[0]
-    if (nearest?.targetDurationMin) {
-      const kmh = sport === "running" ? 11 : 28
-      const km = Math.max(
-        3,
-        Math.min(300, Math.round((nearest.targetDurationMin / 60) * kmh)),
-      )
-      setDistance(String(km))
-    }
-  }, [workouts, sport, distanceTouched])
 
   // Interactive builder state (mode === "waypoints"). Bij "route wijzigen"
   // start de bouwer met punten uit de ECHTE bestaande routelijn: eerste punt
@@ -1140,6 +1121,7 @@ function RouteGenerator({
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setStart({ lat: pos.coords.latitude, lon: pos.coords.longitude })
+        setMyLoc([pos.coords.latitude, pos.coords.longitude])
         setFocusMe((f) => f + 1)
         setGeoState("idle")
       },
@@ -1266,8 +1248,14 @@ function RouteGenerator({
   }
 
   // Builder: a map click adds either a route-shaping waypoint or a meetpoint,
-  // depending on the active place-mode.
+  // depending on the active place-mode. In lus/A→B mode a tap simply sets the
+  // startpoint — the map is the primary input, not a hidden extra.
   function handleMapClick(lat: number, lon: number) {
+    if (mode !== "waypoints") {
+      invalidateStaleRoute()
+      setStart({ lat, lon })
+      return
+    }
     if (placeMode === "start") {
       invalidateStaleRoute()
       setStartPoint([lat, lon])
@@ -1294,16 +1282,150 @@ function RouteGenerator({
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4" style={{ color: ACCENT }} strokeWidth={1.75} />
           <span className="font-mono text-[10px] tracking-[0.22em] text-cyan-300/80">
-            ROUTE GENEREREN
+            ROUTE PLANNEN
           </span>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="font-mono text-[10px] text-white/35 transition hover:text-white/60"
-        >
-          sluit
-        </button>
+        {(initialWaypoints || initialElevation) && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="font-mono text-[10px] text-white/35 transition hover:text-white/60"
+          >
+            begin opnieuw
+          </button>
+        )}
+      </div>
+
+      {/* Stap 1 — vorm: bepaalt wat je op de kaart doet */}
+      <div className="mt-5">
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+          1 · WAT VOOR ROUTE?
+        </label>
+        <div className="flex gap-2">
+          {(
+            [
+              { v: "loop", l: "Lus (rondje)" },
+              { v: "ptp", l: "A → B" },
+              { v: "waypoints", l: "Eigen route" },
+            ] as const
+          ).map((m) => (
+            <button
+              key={m.v}
+              type="button"
+              onClick={() => setMode(m.v)}
+              className="flex-1 rounded-xl border py-2.5 text-[13px] transition-colors"
+              style={{
+                borderColor:
+                  mode === m.v ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.1)",
+                background: mode === m.v ? "rgba(120,210,230,0.12)" : "transparent",
+                color: mode === m.v ? ACCENT : "rgba(255,255,255,0.6)",
+              }}
+            >
+              {m.l}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Stap 2 — de kaart: hét hart van de planner, altijd direct zichtbaar.
+          Lus/A→B: tik = startpunt. Eigen route: tik = punten plaatsen. */}
+      <div className="mt-4">
+        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+          2 · KIES OP DE KAART
+        </label>
+        <p className="text-[12px] leading-relaxed text-white/40">
+          {mode === "waypoints"
+            ? placeMode === "start"
+              ? "Tik op de kaart om je startpunt (groene S) te zetten. Daarna schakelt de kaart automatisch door naar routepunten."
+              : placeMode === "end"
+                ? "Tik op de kaart om je eindpunt (oranje F) te zetten. Opnieuw tikken in deze stand verplaatst het eindpunt."
+                : placeMode === "waypoint"
+                  ? "Tik op de kaart om routepunten te plaatsen. Sleep een punt om het te verplaatsen, tik erop om het te verwijderen. De route wordt via de échte wegen berekend."
+                  : "Tik op de kaart om een verzamelpunt te plaatsen (bijv. clubhuis of café). Verzamelpunten bepalen niet de route — ze markeren waar je samenkomt."
+            : start
+              ? "Startpunt staat op de kaart — versleep de S of tik ergens anders om hem te verplaatsen."
+              : "Tik op de kaart waar je wilt starten, of gebruik je eigen locatie."}
+        </p>
+        <RouteMap
+          geometry={candidate?.geometry ?? []}
+          waypoints={
+            mode === "waypoints"
+              ? allPoints
+              : start
+                ? [[start.lat, start.lon]]
+                : []
+          }
+          waypointRoles={mode === "waypoints" ? allRoles : ["start"]}
+          meetpoints={meetpoints}
+          center={start ? [start.lat, start.lon] : [52.1, 5.3]}
+          myLocation={myLoc ?? undefined}
+          focusMyLocation={focusMe}
+          height={420}
+          className="mt-2.5"
+          onMapClick={handleMapClick}
+          onWaypointDrag={(i, lat, lon) => {
+            if (mode === "waypoints") {
+              updatePointAt(i, [lat, lon])
+            } else {
+              invalidateStaleRoute()
+              setStart({ lat, lon })
+            }
+          }}
+          onWaypointClick={(i) => {
+            if (mode === "waypoints") {
+              updatePointAt(i, null)
+            } else {
+              invalidateStaleRoute()
+              setStart(null)
+            }
+          }}
+          onMeetpointClick={(i) =>
+            setMeetpoints((m) => m.filter((_, idx) => idx !== i))
+          }
+        />
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={useMyLocation}
+            disabled={geoState === "loading"}
+            className="flex items-center gap-2 rounded-full border border-white/[0.14] px-3.5 py-2 font-sans text-[12px] text-white/70 transition hover:border-cyan-300/30 disabled:opacity-50"
+          >
+            <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
+            {geoState === "loading" ? "Locatie ophalen…" : "Gebruik mijn locatie"}
+          </button>
+          {mode === "waypoints" ? (
+            <span className="font-mono text-[10px] text-white/40">
+              {startPoint ? "start ✓ · " : ""}
+              {endPoint ? "eind ✓ · " : ""}
+              {waypoints.length} routepunt{waypoints.length === 1 ? "" : "en"} ·{" "}
+              {meetpoints.length} verzamelpunt
+              {meetpoints.length === 1 ? "" : "en"}
+            </span>
+          ) : (
+            start && (
+              <span className="font-mono text-[10px] text-white/40">
+                Startpunt: {start.lat.toFixed(4)}, {start.lon.toFixed(4)}
+              </span>
+            )
+          )}
+          {mode === "waypoints" &&
+            (allPoints.length > 0 || meetpoints.length > 0) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setStartPoint(null)
+                  setEndPoint(null)
+                  setWaypoints([])
+                  setMeetpoints([])
+                  setCandidate(null)
+                  setPlaceMode("start")
+                }}
+                className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-[rgba(255,140,120,0.85)]"
+              >
+                wis alles
+              </button>
+            )}
+        </div>
       </div>
 
       {/* Sport — only shown when more than one sport family is active */}
@@ -1351,8 +1473,8 @@ function RouteGenerator({
           </label>
           {derivedBike && !bikeTouched && (
             <p className="mb-2 text-[11px] leading-relaxed text-cyan-300/55">
-              Sparki koos dit op basis van je discipline. Pas aan als je vandaag
-              een andere fiets pakt.
+              Voorgekozen op basis van je discipline. Pas aan als je vandaag een
+              andere fiets pakt.
             </p>
           )}
           <div className="flex gap-2">
@@ -1424,37 +1546,6 @@ function RouteGenerator({
         </div>
       </div>
 
-      {/* Mode toggle */}
-      <div className="mt-4">
-        <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
-          VORM
-        </label>
-        <div className="flex gap-2">
-          {(
-            [
-              { v: "loop", l: "Lus (rondje)" },
-              { v: "ptp", l: "A → B" },
-              { v: "waypoints", l: "Eigen route" },
-            ] as const
-          ).map((m) => (
-            <button
-              key={m.v}
-              type="button"
-              onClick={() => setMode(m.v)}
-              className="flex-1 rounded-xl border py-2.5 text-[13px] transition-colors"
-              style={{
-                borderColor:
-                  mode === m.v ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.1)",
-                background: mode === m.v ? "rgba(120,210,230,0.12)" : "transparent",
-                color: mode === m.v ? ACCENT : "rgba(255,255,255,0.6)",
-              }}
-            >
-              {m.l}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Training type + workout link */}
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div>
@@ -1514,15 +1605,12 @@ function RouteGenerator({
                 ? `≈ afgeleid uit ${linkedWorkout.targetDurationMin}m training`
                 : "40"
             }
-            onChange={(e) => {
-              setDistanceTouched(true)
-              setDistance(e.target.value)
-            }}
+            onChange={(e) => setDistance(e.target.value)}
             disabled={!!linkedWorkout?.targetDurationMin}
           />
-          {!linkedWorkout?.targetDurationMin && !distanceTouched && (
+          {!!linkedWorkout?.targetDurationMin && (
             <p className="mt-1.5 text-[11px] leading-relaxed text-white/35">
-              Geschat op basis van je geplande trainingsduur — pas gerust aan.
+              De afstand volgt uit de gekoppelde training.
             </p>
           )}
         </div>
@@ -1540,25 +1628,6 @@ function RouteGenerator({
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
           />
-        </div>
-      )}
-
-      {/* Start location — loop/ptp only */}
-      {mode !== "waypoints" && (
-        <div className="mt-4">
-          <button
-            type="button"
-            onClick={useMyLocation}
-            disabled={geoState === "loading"}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.12] py-3 font-sans text-[13px] text-white/70 transition-colors hover:border-cyan-300/30 disabled:opacity-50"
-          >
-            <MapPin className="h-4 w-4" strokeWidth={1.75} />
-            {geoState === "loading"
-              ? "Locatie ophalen…"
-              : start
-                ? `Startpunt: ${start.lat.toFixed(4)}, ${start.lon.toFixed(4)}`
-                : "Gebruik mijn locatie"}
-          </button>
         </div>
       )}
 
@@ -1600,69 +1669,6 @@ function RouteGenerator({
                 </button>
               )
             })}
-          </div>
-
-          <p className="mt-2 text-[12px] leading-relaxed text-white/40">
-            {placeMode === "start"
-              ? "Tik op de kaart om je startpunt (groene S) te zetten. Daarna schakelt Sparki automatisch door naar routepunten."
-              : placeMode === "end"
-                ? "Tik op de kaart om je eindpunt (oranje F) te zetten. Opnieuw tikken in deze stand verplaatst het eindpunt."
-                : placeMode === "waypoint"
-                  ? "Tik op de kaart om routepunten te plaatsen. Sleep een punt om het te verplaatsen, tik erop om het te verwijderen. Sparki berekent de échte route via de wegen. Je zoomniveau blijft staan."
-                  : "Tik op de kaart om een verzamelpunt te plaatsen (bijv. clubhuis of café). Verzamelpunten bepalen niet de route — ze markeren waar je samenkomt."}
-          </p>
-
-          <RouteMap
-            geometry={candidate?.geometry ?? []}
-            waypoints={allPoints}
-            waypointRoles={allRoles}
-            meetpoints={meetpoints}
-            center={start ? [start.lat, start.lon] : [52.1, 5.3]}
-            myLocation={start ? [start.lat, start.lon] : undefined}
-            focusMyLocation={focusMe}
-            height={320}
-            className="mt-3"
-            onMapClick={handleMapClick}
-            onWaypointDrag={(i, lat, lon) => updatePointAt(i, [lat, lon])}
-            onWaypointClick={(i) => updatePointAt(i, null)}
-            onMeetpointClick={(i) =>
-              setMeetpoints((m) => m.filter((_, idx) => idx !== i))
-            }
-          />
-
-          <div className="mt-3 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={useMyLocation}
-              disabled={geoState === "loading"}
-              className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-white/50 transition hover:text-white/80 disabled:opacity-50"
-            >
-              <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
-              {geoState === "loading" ? "Locatie…" : "Centreer op mij"}
-            </button>
-            <span className="font-mono text-[10px] text-white/40">
-              {startPoint ? "start ✓ · " : ""}
-              {endPoint ? "eind ✓ · " : ""}
-              {waypoints.length} routepunt{waypoints.length === 1 ? "" : "en"} ·{" "}
-              {meetpoints.length} verzamelpunt
-              {meetpoints.length === 1 ? "" : "en"}
-            </span>
-            {(allPoints.length > 0 || meetpoints.length > 0) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setStartPoint(null)
-                  setEndPoint(null)
-                  setWaypoints([])
-                  setMeetpoints([])
-                  setCandidate(null)
-                  setPlaceMode("start")
-                }}
-                className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-[rgba(255,140,120,0.85)]"
-              >
-                wis alles
-              </button>
-            )}
           </div>
 
           {/* Puntenlijst — start → routepunten → finish, elk punt wisbaar.
@@ -1740,8 +1746,8 @@ function RouteGenerator({
           onChange={(e) => setWish(e.target.value)}
         />
         <p className="mt-1.5 text-[11px] leading-relaxed text-white/35">
-          Sparki houdt hier rekening mee. Kan een wens niet worden ingevuld, dan
-          zegt Sparki dat eerlijk en biedt een passend alternatief.
+          Hier wordt rekening mee gehouden. Kan een wens niet worden ingevuld,
+          dan hoor je dat eerlijk — met een passend alternatief.
         </p>
       </div>
 
@@ -1837,41 +1843,39 @@ function RouteGenerator({
           ? "Berekenen…"
           : mode === "waypoints"
             ? "Bereken route"
-            : mode === "loop"
-              ? "Genereer 3 routes"
-              : "Genereer route"}
+            : "Genereer route"}
       </button>
 
       {/* Loop mode: pick one of the 3 distance variants Sparki proposed */}
       {mode === "loop" && options && !candidate && (
         <div className="mt-5 border-t border-white/[0.08] pt-5">
-          <span className="label-xs text-white/35">KIES JE AFSTAND</span>
+          <span className="label-xs text-white/35">KIES JE ROUTE</span>
           <p className="mt-1 text-[12px] leading-relaxed text-white/40">
             {options.length > 1
-              ? `Sparki stelde ${options.length} routes voor rond je afstand. Bekijk de kaartjes en het hoogteprofiel, en kies degene die past.`
-              : "Sparki kon rond deze afstand één passende lus vinden. Kies hem om de details en navigatie te zien."}
+              ? "Varianten rond je gekozen afstand — korter, zoals gevraagd en langer. Bekijk de kaart en het hoogteprofiel en kies wat past."
+              : "Rond deze afstand is één passende lus gevonden. Kies hem om de details en navigatie te zien."}
           </p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <div className="mt-3 grid gap-4 lg:grid-cols-3">
             {options.map((o) => (
               <div
                 key={o.candidateId}
-                className="min-w-0 rounded-xl border border-white/[0.1] bg-white/[0.03] p-3 transition-colors hover:border-cyan-300/40"
+                className="min-w-0 rounded-2xl border border-white/[0.1] bg-white/[0.03] p-4 transition-colors hover:border-cyan-300/40"
               >
-                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5">
                   <span
-                    className="font-mono text-[9px] uppercase tracking-[0.16em]"
+                    className="font-mono text-[10px] uppercase tracking-[0.16em]"
                     style={{ color: ACCENT }}
                   >
                     {(o as RouteCandidate & { variant?: string }).variant ??
                       "Route"}
                   </span>
-                  <span className="font-sans text-lg font-light tracking-tight text-white/90">
+                  <span className="font-sans text-2xl font-light tracking-tight text-white/90">
                     {o.distanceKm != null
                       ? `${Math.round(o.distanceKm)} km`
                       : "—"}
                   </span>
                 </div>
-                <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 font-mono text-[10px] tabular-nums text-white/45">
+                <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 font-mono text-[11px] tabular-nums text-white/45">
                   <span className="whitespace-nowrap">
                     {o.elevationGainM != null
                       ? `${o.elevationGainM} m omhoog`
@@ -1885,9 +1889,9 @@ function RouteGenerator({
                 {o.geometry.length > 1 && (
                   <RouteMap
                     geometry={o.geometry}
-                    height={130}
+                    height={220}
                     interactive={false}
-                    className="mt-2.5"
+                    className="mt-3"
                   />
                 )}
                 {o.profile.length > 0 && (
@@ -1896,7 +1900,7 @@ function RouteGenerator({
                 <button
                   type="button"
                   onClick={() => setCandidate(o)}
-                  className="mt-3 w-full rounded-xl border border-cyan-300/30 py-2 font-sans text-[12px] font-medium text-cyan-200/90 transition-colors hover:bg-cyan-300/[0.08]"
+                  className="mt-3.5 w-full rounded-xl border border-cyan-300/30 py-2.5 font-sans text-[13px] font-medium text-cyan-200/90 transition-colors hover:bg-cyan-300/[0.08]"
                 >
                   Kies deze route
                 </button>
@@ -1939,6 +1943,7 @@ function RouteGenerator({
                 onMeetpointClick={(i) =>
                   setMeetpoints((m) => m.filter((_, idx) => idx !== i))
                 }
+                height={430}
                 className="mt-3"
               />
               <MeetpointList
@@ -2077,7 +2082,6 @@ export function RoutePanel() {
   const create = useCreateRoute()
   const inputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
-  const [showGenerator, setShowGenerator] = useState(false)
   // Snel een eerder bewaarde route kiezen: compacte lijst met namen; tikken
   // springt direct naar de bijbehorende routekaart hieronder.
   const [showSavedPicker, setShowSavedPicker] = useState(false)
@@ -2104,7 +2108,6 @@ export function RoutePanel() {
     if (points.length < 2) return
     setGenWaypoints({ routeId: route.id, points, returnToNav })
     setGenPrefill(null)
-    setShowGenerator(true)
     setTimeout(() => {
       document
         .getElementById("route-generator")
@@ -2115,7 +2118,6 @@ export function RoutePanel() {
   function adjustRoute(pref: ElevationPreference) {
     setGenPrefill(pref)
     setGenWaypoints(null)
-    setShowGenerator(true)
     // Bring the generator into view — it renders above the route list.
     setTimeout(() => {
       document
@@ -2151,29 +2153,9 @@ export function RoutePanel() {
     <section>
       <SectionLabel n="03" title="Route & navigatie" />
 
-      {/* Primary action row — the two ways to get a route. "Genereer route" is
-          the main step in this menu, so it renders as a full, filled CTA
-          instead of a small text link. */}
+      {/* Secondary action row — de planner zelf staat ALTIJD open (kaart-eerst,
+          zoals Komoot); hier alleen de nevenwegen: GPX, verkennen, bewaard. */}
       <div className="mt-3 flex flex-wrap items-center gap-2.5">
-        <button
-          type="button"
-          onClick={() => {
-            setShowGenerator((s) => {
-              if (s) return false
-              setGenPrefill(null)
-              setGenWaypoints(null)
-              return true
-            })
-          }}
-          className={
-            showGenerator
-              ? "flex items-center gap-2 rounded-full border border-cyan-300/35 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-300 transition hover:bg-cyan-300/10"
-              : "flex items-center gap-2 rounded-full bg-cyan-400/90 px-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-[#05070e] shadow-[0_0_24px_rgba(34,211,238,0.25)] transition hover:bg-cyan-300"
-          }
-        >
-          <Sparkles className="h-4 w-4" strokeWidth={1.75} />
-          {showGenerator ? "Sluit generator" : "Genereer route"}
-        </button>
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
@@ -2276,17 +2258,16 @@ export function RoutePanel() {
       />
 
       <p className="mt-2 text-[12px] leading-relaxed text-white/35">
-        Laat Sparki een route genereren die past bij je training en sport — Sparki
-        kiest automatisch het juiste routeprofiel. Of upload een GPX-bestand voor
-        een echt hoogteprofiel.
+        Plan je route direct op de kaart: kies je startpunt, stel afstand en
+        voorkeuren in en genereer. Of upload een GPX-bestand voor een echt
+        hoogteprofiel.
       </p>
 
       {error && (
         <p className="mt-2 text-[12px] text-[rgba(255,140,120,0.85)]">{error}</p>
       )}
 
-      {showGenerator && (
-        <div className="mt-4" id="route-generator">
+      <div className="mt-4" id="route-generator">
           <RouteGenerator
             key={
               genWaypoints
@@ -2336,13 +2317,11 @@ export function RoutePanel() {
               setPanelLocation(`${panelPath}?${params.toString()}`)
             }}
             onClose={() => {
-              setShowGenerator(false)
               setGenPrefill(null)
               setGenWaypoints(null)
             }}
           />
-        </div>
-      )}
+      </div>
 
       <div className="mt-4 space-y-4">
         {isLoading ? (
@@ -2369,18 +2348,9 @@ export function RoutePanel() {
         ) : (
           <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
             <p className="text-[12px] leading-relaxed text-white/40">
-              Nog geen routes opgeslagen — laat Sparki er één opbouwen op basis
-              van je startpunt, fiets en afstand.
+              Nog geen routes opgeslagen — plan er hierboven één op de kaart, of
+              upload een GPX-bestand.
             </p>
-            {!showGenerator && (
-              <button
-                type="button"
-                onClick={() => setShowGenerator(true)}
-                className="mt-3 rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300 transition hover:bg-cyan-300/20"
-              >
-                Genereer je eerste route
-              </button>
-            )}
           </div>
         )}
       </div>
