@@ -7,6 +7,7 @@ import {
   garageSensorsTable,
   equipmentTable,
   athleteProfilesTable,
+  trainingSessionsTable,
   garageBikeTypes,
   garageComponentCategories,
   garageSensorKinds,
@@ -29,6 +30,7 @@ import {
 } from "../engines/garage";
 import { getRelevantKnowledge } from "../lib/knowledge/retrieval";
 import { catalogForCategory } from "../lib/garage/knowledge-base";
+import { estimateUpgrade, compareTestRides } from "../lib/garage/material-test";
 
 const router = Router();
 
@@ -492,6 +494,88 @@ router.get("/upgrade", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "garage.upgrade failed");
     res.status(500).json({ error: "Kon het upgrade-advies niet opstellen" });
+  }
+});
+
+// POST /api/garage/test/estimate — modelschatting vooraf voor een geplande
+// upgrade (bij de mechanieker in te voeren merk + type). Klasse-vergelijking
+// uit de kennisbank, expliciet gelabeld als schatting; onbekend = eerlijk geen
+// schatting. Levert ook de best passende testmodus + de zelfde-dag-spelregel.
+router.post("/test/estimate", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const category = str(req.body?.category, 40);
+  const brand = str(req.body?.brand, 80);
+  const model = str(req.body?.model, 120);
+  const currentComponentId = Number(req.body?.currentComponentId);
+  if (!category || !(garageComponentCategories as readonly string[]).includes(category)) {
+    res.status(400).json({ error: "Kies een geldige onderdeel-categorie" });
+    return;
+  }
+  if (!brand && !model) {
+    res.status(400).json({ error: "Vul merk en type van de geplande upgrade in" });
+    return;
+  }
+  try {
+    let current: { brand: string | null; model: string | null } | null = null;
+    if (Number.isInteger(currentComponentId)) {
+      const [c] = await db
+        .select()
+        .from(garageComponentsTable)
+        .where(
+          and(
+            eq(garageComponentsTable.id, currentComponentId),
+            eq(garageComponentsTable.clerkId, clerkId),
+          ),
+        );
+      if (!c) {
+        res.status(404).json({ error: "Huidig onderdeel niet gevonden" });
+        return;
+      }
+      if (c.category !== category) {
+        res.status(400).json({ error: "Het gekozen onderdeel valt in een andere categorie" });
+        return;
+      }
+      current = { brand: c.brand, model: c.model };
+    }
+    res.json({ estimate: estimateUpgrade(category, brand, model, current) });
+  } catch (err) {
+    req.log.error({ err }, "garage.test.estimate failed");
+    res.status(500).json({ error: "Kon de modelschatting niet opstellen" });
+  }
+});
+
+// GET /api/garage/test/compare?a=&b= — eerlijke vergelijking van twee ECHTE
+// ritten (opstelling A vs B). Alleen echte metingen naast elkaar; een duiding
+// alleen bij een schone test (zelfde dag, zelfde sport, gelijke afstand),
+// anders kanttekeningen die uitleggen wat de vergelijking vertroebelt.
+router.get("/test/compare", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const idA = Number(req.query.a);
+  const idB = Number(req.query.b);
+  if (!Number.isInteger(idA) || !Number.isInteger(idB) || idA === idB) {
+    res.status(400).json({ error: "Kies twee verschillende ritten" });
+    return;
+  }
+  try {
+    const rows = await db
+      .select()
+      .from(trainingSessionsTable)
+      .where(
+        and(
+          inArray(trainingSessionsTable.id, [idA, idB]),
+          eq(trainingSessionsTable.clerkId, clerkId),
+        ),
+      );
+    const a = rows.find((r) => r.id === idA);
+    const b = rows.find((r) => r.id === idB);
+    if (!a || !b) {
+      res.status(404).json({ error: "Rit niet gevonden" });
+      return;
+    }
+    res.json({ comparison: compareTestRides(a, b) });
+  } catch (err) {
+    req.log.error({ err }, "garage.test.compare failed");
+    res.status(500).json({ error: "Kon de ritten niet vergelijken" });
   }
 });
 

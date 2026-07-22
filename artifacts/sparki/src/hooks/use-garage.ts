@@ -338,3 +338,85 @@ export function useProTeams() {
     staleTime: 30 * 60_000,
   })
 }
+
+// ── Vergelijkingstest (materiaal A vs B) ────────────────────────────────────
+// Modelschatting vooraf is expliciet gelabeld ("modelschatting — geen meting");
+// de rit-vergelijking zet alleen ECHTE metingen naast elkaar.
+
+export type TestMode = {
+  key: "vlak-constant" | "klim" | "vlak-duur" | "beperkt-meetbaar"
+  title: string
+  protocol: string
+  meting: string
+}
+
+export type UpgradeEstimate =
+  | {
+      known: true
+      label: "modelschatting"
+      planned: {
+        brand: string
+        model: string
+        klasse: string
+        klasseLabel: string
+        aero: string | null
+        gewicht: string | null
+        note: string
+      }
+      current: {
+        brand: string | null
+        model: string | null
+        klasseLabel: string | null
+        known: boolean
+      } | null
+      klasseStappen: number | null
+      verwachting: string
+      testMode: TestMode
+      sameDayRule: string
+    }
+  | { known: false; reason: string }
+
+export type RideMetric = {
+  key: string
+  label: string
+  a: number | null
+  b: number | null
+  delta: number | null
+  unit: string
+}
+
+export type RideComparison = {
+  a: { id: number; date: string; title: string | null }
+  b: { id: number; date: string; title: string | null }
+  metrics: RideMetric[]
+  warnings: string[]
+  verdict: string | null
+  sameDayRule: string
+}
+
+export function useTestEstimate() {
+  return useMutation({
+    mutationFn: (data: {
+      category: GarageComponentCategory
+      brand: string
+      model: string
+      currentComponentId?: number
+    }) =>
+      apiFetch<{ estimate: UpgradeEstimate }>("/api/garage/test/estimate", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+  })
+}
+
+export function useCompareTestRides(a: number | null, b: number | null) {
+  return useQuery({
+    queryKey: queryKeys.garage.testCompare(a ?? 0, b ?? 0),
+    queryFn: () =>
+      apiFetch<{ comparison: RideComparison }>(
+        `/api/garage/test/compare?a=${a}&b=${b}`,
+      ),
+    enabled: a != null && b != null && a !== b,
+    staleTime: 60_000,
+  })
+}

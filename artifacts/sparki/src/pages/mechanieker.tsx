@@ -1,6 +1,7 @@
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { MaterialCoach } from "@/components/sparki/material-coach"
 import { BikeGarage } from "@/components/sparki/bike-garage"
+import { MaterialTest } from "@/components/sparki/material-test"
 
 // Hoofdstuk Mechanieker — bundelt de materiaalcoach: materiaalcheck, onderhoud
 // en foto-gedreven advies over je fiets en uitrusting.
@@ -19,6 +20,10 @@ export default function MechaniekerPage() {
 
       <section className="mt-8">
         <BikeGarage n="" />
+      </section>
+
+      <section className="mt-10">
+        <MaterialTest />
       </section>
 
       <section className="mt-10">

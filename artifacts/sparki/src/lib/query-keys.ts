@@ -254,6 +254,8 @@ export const queryKeys = {
     developments: () => ["garage", "developments"] as const,
     catalog: (category: string) => ["garage", "catalog", category] as const,
     proTeams: () => ["garage", "pro-teams"] as const,
+    testCompare: (a: number, b: number) =>
+      ["garage", "test-compare", a, b] as const,
   },
 
   social: {

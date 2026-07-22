@@ -49,3 +49,7 @@ confidence) for material cases only.
   category. Plain Dutch, dismissable, never mandatory.
 - **Test gotcha:** the engine queries `material_analyses` directly, so the dev DB must have the schema
   pushed (`pnpm --filter @workspace/db run push`) or every case after the empty-data one fails.
+
+## Vergelijkingstest (materiaal A/B)
+- `lib/garage/material-test.ts`: modelschatting = klasse-vergelijking uit kennisbank (label "modelschatting — geen meting", onbekend ⇒ eerlijk geen schatting); testmodus deterministisch per categorie+aero/gewicht.
+- **Verdict-gating is hard**: `compareTestRides` geeft alleen een duiding bij NUL warnings én vermogen op beide ritten; elke vertroebelende factor (andere dag/sport, afstand >5%, hoogteverschil, geen power) ⇒ verdict null. Nooit een speed-only conclusie.
