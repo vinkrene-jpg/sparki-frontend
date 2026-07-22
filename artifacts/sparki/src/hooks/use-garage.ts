@@ -65,6 +65,12 @@ export type CatalogItem = {
   richtprijs: PriceRange | null
 }
 
+export type GarageComponentStatus =
+  | "in_gebruik"
+  | "vervangen"
+  | "defect_vermoed"
+  | "defect_vastgesteld"
+
 export type GarageComponent = {
   id: number
   bikeId: number | null
@@ -72,6 +78,10 @@ export type GarageComponent = {
   brand: string | null
   model: string | null
   notes: string | null
+  installedAt: string | null
+  source: string
+  confirmed: boolean
+  status: GarageComponentStatus
   assessment: ComponentAssessment
 }
 
@@ -84,6 +94,9 @@ export type GarageBike = {
   equipmentId: number | null
   photoPaths: string[]
   notes: string | null
+  buildYear: number | null
+  purpose: string | null
+  status: "actief" | "archief"
   components: GarageComponent[]
 }
 
@@ -206,6 +219,8 @@ export function useAddBike() {
       model?: string
       equipmentId?: number
       notes?: string
+      buildYear?: number
+      purpose?: string
     }) =>
       apiFetch<{ bike: GarageBike }>("/api/garage/bikes", {
         method: "POST",
@@ -419,4 +434,231 @@ export function useCompareTestRides(a: number | null, b: number | null) {
     enabled: a != null && b != null && a !== b,
     staleTime: 60_000,
   })
+}
+
+// ── Mechanieker: gebruik, logboek, signalen en materiaalkeuze ───────────────
+
+export type BikeUsage = {
+  km: number
+  hours: number
+  rides: number
+  firstRide: string | null
+  lastRide: string | null
+}
+
+export type ComponentUsageInfo = BikeUsage & {
+  basis: "montagedatum" | "registratie"
+  since: string | null
+}
+
+export function useGarageUsage() {
+  return useQuery({
+    queryKey: ["garage", "usage"] as const,
+    queryFn: () =>
+      apiFetch<{ usage: Record<string, BikeUsage>; autoLinked: number }>(
+        "/api/garage/usage",
+      ),
+    staleTime: 60_000,
+  })
+}
+
+export function useComponentUsage(componentId: number | null) {
+  return useQuery({
+    queryKey: ["garage", "component-usage", componentId ?? 0] as const,
+    queryFn: () =>
+      apiFetch<{ usage: ComponentUsageInfo }>(
+        `/api/garage/components/${componentId}/usage`,
+      ),
+    enabled: componentId != null,
+    staleTime: 60_000,
+  })
+}
+
+export type MaintenanceSignal = {
+  level: "controleadvies" | "vermoedelijke_slijtage" | "vastgesteld_defect"
+  bikeId: number
+  bikeName: string
+  componentId: number | null
+  category: string
+  label: string
+  message: string
+  advice: string
+  usedKm: number | null
+  thresholdKm: number | null
+}
+
+export function useMaintenanceSignals(
+  context: "vandaag" | "wedstrijd" | "garage",
+) {
+  return useQuery({
+    queryKey: ["garage", "signals", context] as const,
+    queryFn: () =>
+      apiFetch<{ signals: MaintenanceSignal[] }>(
+        `/api/garage/signals?context=${context}`,
+      ),
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useUpdateBike() {
+  return useGarageMutation(
+    (input: {
+      id: number
+      name?: string
+      brand?: string | null
+      model?: string | null
+      notes?: string | null
+      bikeType?: GarageBikeType
+      buildYear?: number | null
+      purpose?: string | null
+      status?: "actief" | "archief"
+    }) => {
+      const { id, ...body } = input
+      return apiFetch<{ bike: GarageBike }>(`/api/garage/bikes/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      })
+    },
+  )
+}
+
+export function useUpdateComponent() {
+  return useGarageMutation(
+    (input: {
+      id: number
+      brand?: string | null
+      model?: string | null
+      notes?: string | null
+      installedAt?: string | null
+      confirmed?: boolean
+      status?: GarageComponentStatus
+    }) => {
+      const { id, ...body } = input
+      return apiFetch<{ component: GarageComponent }>(
+        `/api/garage/components/${id}`,
+        { method: "PATCH", body: JSON.stringify(body) },
+      )
+    },
+  )
+}
+
+export type ComponentEvent = {
+  id: number
+  componentId: number
+  eventType:
+    | "onderhoud"
+    | "reparatie"
+    | "vervanging"
+    | "controle"
+    | "defect_vastgesteld"
+  eventDate: string
+  note: string | null
+  kmAtEvent: string | null
+  photoPaths: string[]
+  createdAt: string
+}
+
+export function useComponentEvents(componentId: number | null) {
+  return useQuery({
+    queryKey: ["garage", "events", componentId ?? 0] as const,
+    queryFn: () =>
+      apiFetch<{ events: ComponentEvent[] }>(
+        `/api/garage/components/${componentId}/events`,
+      ),
+    enabled: componentId != null,
+  })
+}
+
+export function useAddComponentEvent() {
+  return useGarageMutation(
+    (input: {
+      componentId: number
+      eventType: ComponentEvent["eventType"]
+      eventDate: string
+      note?: string
+      photos?: { data: string; mediaType: string }[]
+    }) => {
+      const { componentId, ...body } = input
+      return apiFetch<{ event: ComponentEvent; component: GarageComponent }>(
+        `/api/garage/components/${componentId}/events`,
+        { method: "POST", body: JSON.stringify(body) },
+      )
+    },
+  )
+}
+
+export function useDeleteComponentEvent() {
+  return useGarageMutation((eventId: number) =>
+    apiFetch<{ ok: true }>(`/api/garage/events/${eventId}`, {
+      method: "DELETE",
+    }),
+  )
+}
+
+export function useSetSessionBike() {
+  return useGarageMutation(
+    (input: { sessionId: number; bikeId: number | null }) =>
+      apiFetch<{ ok: true }>(`/api/garage/sessions/${input.sessionId}/bike`, {
+        method: "PUT",
+        body: JSON.stringify({ bikeId: input.bikeId }),
+      }),
+  )
+}
+
+export type EquipmentChoice = {
+  id: number
+  raceId: number | null
+  workoutId: number | null
+  bikeId: number | null
+  wheels: string | null
+  tires: string | null
+  pressureBar: string | null
+  cassette: string | null
+  other: string | null
+  notes: string | null
+}
+
+export function useEquipmentChoice(target: {
+  raceId?: number
+  workoutId?: number
+}) {
+  const param =
+    target.raceId != null
+      ? `raceId=${target.raceId}`
+      : target.workoutId != null
+        ? `workoutId=${target.workoutId}`
+        : null
+  return useQuery({
+    queryKey: [
+      "garage",
+      "choice",
+      target.raceId ?? 0,
+      target.workoutId ?? 0,
+    ] as const,
+    queryFn: () =>
+      apiFetch<{ choice: EquipmentChoice | null }>(
+        `/api/garage/choices?${param}`,
+      ),
+    enabled: param != null,
+  })
+}
+
+export function useSaveEquipmentChoice() {
+  return useGarageMutation(
+    (input: {
+      raceId?: number
+      workoutId?: number
+      bikeId?: number | null
+      wheels?: string | null
+      tires?: string | null
+      pressureBar?: number | null
+      cassette?: string | null
+      other?: string | null
+      notes?: string | null
+    }) =>
+      apiFetch<{ choice: EquipmentChoice }>("/api/garage/choices", {
+        method: "PUT",
+        body: JSON.stringify(input),
+      }),
+  )
 }

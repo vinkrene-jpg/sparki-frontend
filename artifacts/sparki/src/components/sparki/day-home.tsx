@@ -38,6 +38,7 @@ import { CheckInChip } from "@/components/sparki/check-in-chip"
 import { FollowUpChip } from "@/components/sparki/follow-up-chip"
 import { MeerijderNudge } from "@/components/sparki/meerijder-nudge"
 import { HomeWeatherRow } from "@/components/sparki/home-weather-row"
+import { MaintenanceSignalsPanel } from "@/components/sparki/maintenance-signals"
 import { useRideMoment, useRideStoryFlag } from "@/hooks/use-ride-story"
 import { useHomeWeather } from "@/hooks/use-home-weather"
 import { useSetHealthStatus } from "@/hooks/use-health-status"
@@ -350,6 +351,14 @@ function StateDayHome() {
           />
         </div>
       )}
+
+      {/* Onderhoudssignalen rijden alleen mee als er echt iets is (compact =
+          null bij geen signalen) — de aandachtswet blijft intact: dit blok
+          leidt nooit, het waarschuwt alleen bij vermoede slijtage of een
+          zelf-geregistreerd defect. */}
+      <div className="mt-6">
+        <MaintenanceSignalsPanel context="vandaag" compact />
+      </div>
 
       <section className="mt-8">
         <SectionLabel title="Jouw update vandaag" />

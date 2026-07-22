@@ -50,6 +50,16 @@ export const trainingSessionsTable = pgTable("training_sessions", {
   externalRef: text("external_ref"),
   dedupeKey: text("dedupe_key"),
   sources: jsonb("sources").$type<string[]>().default([]),
+  // Mechanieker: welke fiets is voor deze rit gebruikt. Auto-gekoppeld
+  // (Strava-gear of enige actieve fiets) of handmatig gecorrigeerd; km/uren
+  // per fiets/component worden hier ALTIJD uit afgeleid (idempotent — een
+  // verwijderde activiteit corrigeert de stand vanzelf). Geen FK-referentie
+  // om een import-cyclus tussen schema-bestanden te vermijden; koppeling is
+  // "set null"-gedrag via de route (fiets weg ⇒ sessie ontkoppeld).
+  bikeId: integer("bike_id"),
+  // "auto" | "handmatig" — handmatige keuze wordt nooit door auto-koppeling
+  // overschreven.
+  bikeLinkSource: text("bike_link_source"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

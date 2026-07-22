@@ -89,6 +89,7 @@ const ALL_ENTRIES = [
       path.resolve(artifactDir, "src/tests/sprint.ts"),
       path.resolve(artifactDir, "src/tests/mental.ts"),
       path.resolve(artifactDir, "src/tests/garage.ts"),
+      path.resolve(artifactDir, "src/tests/mechanieker.ts"),
       path.resolve(artifactDir, "src/tests/road-objects.ts"),
 ];
 

@@ -118,6 +118,11 @@ export function Bike3DWerkblad() {
 
       {hasScan && (
         <div className="mb-3 overflow-hidden rounded-2xl border border-white/10 bg-[#070d16]/[0.82] backdrop-blur-md">
+          {/* Eerlijke benaming: dit zijn je eigen foto's die je rondom kunt
+              bekijken — geen 3D-model. */}
+          <p className="px-4 pt-3 font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
+            Interactieve fotoweergave
+          </p>
           <BikeScanViewer bikeId={bike.id} height={240} />
         </div>
       )}

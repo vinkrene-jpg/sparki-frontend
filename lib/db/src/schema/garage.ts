@@ -5,7 +5,12 @@ import {
   text,
   jsonb,
   timestamp,
+  boolean,
+  date,
+  numeric,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { userProfilesTable } from "./users";
@@ -71,6 +76,13 @@ export const garageBikesTable = pgTable("garage_bikes", {
   name: text("name").notNull(),
   brand: text("brand"),
   model: text("model"),
+  // Bouwjaar van de fiets (bijv. 2023). Null = onbekend.
+  buildYear: integer("build_year"),
+  // Gebruiksdoel in klare taal (bijv. "training", "wedstrijd", "woon-werk").
+  purpose: text("purpose"),
+  // "actief" | "archief" — een gearchiveerde fiets blijft bestaan (historie!)
+  // maar doet niet meer mee in auto-koppeling en materiaalkeuze-voorstellen.
+  status: text("status").notNull().default("actief"),
   // Optional link to an existing equipment row (e.g. Strava bike) so imported
   // gear is the starting point instead of duplicate manual entry.
   equipmentId: integer("equipment_id").references(() => equipmentTable.id, {
@@ -112,6 +124,20 @@ export const garageComponentsTable = pgTable("garage_components", {
   // Aantal versnellingen (bijv. 11, 12). Null = onbekend/n.v.t.
   speeds: integer("speeds"),
   notes: text("notes"),
+  // Montagedatum (YYYY-MM-DD). Gebruik (km/uren) wordt ALTIJD afgeleid uit
+  // gekoppelde activiteiten vanaf deze datum — nooit als teller bijgehouden.
+  installedAt: date("installed_at"),
+  // Herkomst van deze registratie: "handmatig" | "scan" | "import".
+  source: text("source").notNull().default("handmatig"),
+  // Automatische herkenning (source="scan") begint onbevestigd; de gebruiker
+  // bevestigt of corrigeert. Handmatige invoer is per definitie bevestigd.
+  confirmed: boolean("confirmed").notNull().default(true),
+  // "in_gebruik" | "vervangen" | "defect_vermoed" | "defect_vastgesteld".
+  // "defect_vastgesteld" komt UITSLUITEND uit een gebruikersmelding/event,
+  // nooit uit een foto-analyse.
+  status: text("status").notNull().default("in_gebruik"),
+  // Bewijs-/detailfoto's (object-storage paden), eigenaar-gecontroleerd.
+  photoPaths: jsonb("photo_paths").$type<string[]>().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -293,6 +319,94 @@ export const garageSensorsTable = pgTable("garage_sensors", {
     .defaultNow(),
 });
 
+// ---------------------------------------------------------------------------
+// Componentgebeurtenissen — onderhoud, reparaties, vervangingen, controles en
+// vastgestelde defecten per component. Dit is het logboek waaruit de
+// onderhoudshistorie en de "vastgesteld defect"-status komen. Een vervanging
+// start een nieuwe gebruikshistorie: de route zet dan ook installedAt van het
+// component op de vervangingsdatum (gebruik wordt afgeleid vanaf die datum).
+
+export const componentEventTypes = [
+  "onderhoud",
+  "reparatie",
+  "vervanging",
+  "controle",
+  "defect_vastgesteld",
+] as const;
+export type ComponentEventType = (typeof componentEventTypes)[number];
+
+export const componentEventsTable = pgTable("component_events", {
+  id: serial("id").primaryKey(),
+  clerkId: text("clerk_id")
+    .notNull()
+    .references(() => userProfilesTable.clerkId, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  componentId: integer("component_id")
+    .notNull()
+    .references(() => garageComponentsTable.id, { onDelete: "cascade" }),
+  eventType: text("event_type").notNull(),
+  eventDate: date("event_date").notNull(),
+  note: text("note"),
+  // Werkelijke afgeleide kilometerstand van het component op het moment van
+  // het event (uit gekoppelde activiteiten) — vastgelegd als momentopname.
+  kmAtEvent: numeric("km_at_event", { precision: 9, scale: 1 }),
+  // Bewijsfoto's (object-storage paden), eigenaar-gecontroleerd geserveerd.
+  photoPaths: jsonb("photo_paths").$type<string[]>().notNull().default([]),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
+// Materiaalkeuze per wedstrijd of training — welke fiets/wielen/banden/druk/
+// cassette de renner kiest. Advies wordt live berekend uit ECHTE gegevens
+// (parcours, weer, onderhoudssignalen); alleen de KEUZE wordt opgeslagen.
+
+export const equipmentChoicesTable = pgTable(
+  "equipment_choices",
+  {
+  id: serial("id").primaryKey(),
+  clerkId: text("clerk_id")
+    .notNull()
+    .references(() => userProfilesTable.clerkId, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  // Precies één context: een wedstrijd (raceId) óf een geplande training
+  // (workoutId). Beide null is ongeldig (route-guard).
+  raceId: integer("race_id"),
+  workoutId: integer("workout_id"),
+  bikeId: integer("bike_id").references(() => garageBikesTable.id, {
+    onDelete: "set null",
+  }),
+  wheels: text("wheels"),
+  tires: text("tires"),
+  // Bandendruk in bar (bijv. 4.8). Null = nog niet gekozen.
+  pressureBar: numeric("pressure_bar", { precision: 4, scale: 2 }),
+  cassette: text("cassette"),
+  other: text("other"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  },
+  (t) => [
+    // Precies één keuze per doel — partiële unieke indexen zodat de route een
+    // atomische ON CONFLICT-upsert kan doen (geen read-then-write race).
+    uniqueIndex("equipment_choices_race_uq")
+      .on(t.clerkId, t.raceId)
+      .where(sql`${t.raceId} IS NOT NULL`),
+    uniqueIndex("equipment_choices_workout_uq")
+      .on(t.clerkId, t.workoutId)
+      .where(sql`${t.workoutId} IS NOT NULL`),
+  ],
+);
+
 export const insertGarageBikeSchema = createInsertSchema(
   garageBikesTable,
 ).omit({ id: true });
@@ -303,6 +417,22 @@ export const insertGarageComponentSchema = createInsertSchema(
 export const selectGarageComponentSchema = createSelectSchema(
   garageComponentsTable,
 );
+
+export const insertComponentEventSchema = createInsertSchema(
+  componentEventsTable,
+).omit({ id: true });
+export const selectComponentEventSchema =
+  createSelectSchema(componentEventsTable);
+export const insertEquipmentChoiceSchema = createInsertSchema(
+  equipmentChoicesTable,
+).omit({ id: true });
+export const selectEquipmentChoiceSchema =
+  createSelectSchema(equipmentChoicesTable);
+
+export type ComponentEvent = typeof componentEventsTable.$inferSelect;
+export type InsertComponentEvent = z.infer<typeof insertComponentEventSchema>;
+export type EquipmentChoice = typeof equipmentChoicesTable.$inferSelect;
+export type InsertEquipmentChoice = z.infer<typeof insertEquipmentChoiceSchema>;
 
 export type GarageBike = typeof garageBikesTable.$inferSelect;
 export type InsertGarageBike = z.infer<typeof insertGarageBikeSchema>;

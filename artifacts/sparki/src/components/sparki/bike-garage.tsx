@@ -9,6 +9,8 @@ import {
   Newspaper,
   Trophy,
   TrendingUp,
+  Wrench,
+  Check,
 } from "lucide-react"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { fileToResizedPhoto } from "@/hooks/use-material"
@@ -16,13 +18,21 @@ import {
   useGarage,
   useAddBike,
   useDeleteBike,
+  useUpdateBike,
   useAddBikePhoto,
   useAddComponent,
   useDeleteComponent,
+  useUpdateComponent,
   useUpgradeAdvice,
   useGarageCatalog,
   useGarageDevelopments,
+  useGarageUsage,
+  useComponentUsage,
+  useComponentEvents,
+  useAddComponentEvent,
   useProTeams,
+  type BikeUsage,
+  type ComponentEvent,
   type GarageBike,
   type GarageBikeType,
   type GarageComponent,
@@ -120,6 +130,171 @@ function AssessmentLine({ component }: { component: GarageComponent }) {
   )
 }
 
+const COMPONENT_STATUS_LABEL: Record<string, string> = {
+  in_gebruik: "In gebruik",
+  vervangen: "Vervangen",
+  defect_vermoed: "Mogelijk versleten",
+  defect_vastgesteld: "Defect vastgesteld",
+}
+
+const EVENT_TYPE_OPTIONS: { key: ComponentEvent["eventType"]; label: string }[] = [
+  { key: "onderhoud", label: "Onderhoud" },
+  { key: "reparatie", label: "Reparatie" },
+  { key: "vervanging", label: "Vervangen" },
+  { key: "controle", label: "Gecontroleerd" },
+  { key: "defect_vastgesteld", label: "Defect vastgesteld" },
+]
+
+function todayStr(): string {
+  const d = new Date()
+  const p = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
+// Logboek + registratie van onderhoud/reparatie/vervanging per onderdeel.
+function ComponentLogboek({ component }: { component: GarageComponent }) {
+  const { data } = useComponentEvents(component.id)
+  const { data: usageData } = useComponentUsage(component.id)
+  const addEvent = useAddComponentEvent()
+  const [adding, setAdding] = useState(false)
+  const [eventType, setEventType] =
+    useState<ComponentEvent["eventType"]>("onderhoud")
+  const [eventDate, setEventDate] = useState(todayStr())
+  const [note, setNote] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const events = data?.events ?? []
+  const usage = usageData?.usage
+
+  return (
+    <div className="mt-2 space-y-2 border-t border-white/[0.06] pt-2">
+      {usage && usage.rides > 0 ? (
+        <p className="text-[11px] text-white/45">
+          {Math.round(usage.km)} km · {usage.hours.toFixed(1)} uur ·{" "}
+          {usage.rides} ritten sinds{" "}
+          {usage.basis === "montagedatum" ? "montage" : "registratie"}
+          {usage.since ? ` (${usage.since})` : ""} — afgeleid uit je gekoppelde
+          ritten.
+        </p>
+      ) : (
+        <p className="text-[11px] text-white/35">
+          Nog geen gekoppelde ritten voor dit onderdeel — kilometers en uren
+          verschijnen zodra ritten aan deze fiets gekoppeld zijn.
+        </p>
+      )}
+
+      {events.length > 0 && (
+        <div className="space-y-1">
+          {events.map((e) => (
+            <p key={e.id} className="text-[11.5px] leading-snug text-white/55">
+              <span className="text-white/75">
+                {EVENT_TYPE_OPTIONS.find((o) => o.key === e.eventType)?.label ??
+                  e.eventType}
+              </span>{" "}
+              · {e.eventDate}
+              {e.kmAtEvent != null &&
+                ` · ${Math.round(Number(e.kmAtEvent))} km-stand`}
+              {e.note && <span className="text-white/40"> — {e.note}</span>}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {adding ? (
+        <div className="space-y-2 rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5">
+          <div className="flex flex-wrap gap-1.5">
+            {EVENT_TYPE_OPTIONS.map((o) => (
+              <button
+                key={o.key}
+                type="button"
+                onClick={() => setEventType(o.key)}
+                className="rounded-full border px-2.5 py-1 text-[11px]"
+                style={
+                  eventType === o.key
+                    ? { borderColor: ACCENT, color: ACCENT, background: "rgba(120,210,230,0.08)" }
+                    : { borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }
+                }
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+          {eventType === "vervanging" && (
+            <p className="text-[11px] leading-snug text-white/45">
+              Bij vervangen begint de kilometertelling van dit onderdeel opnieuw
+              vanaf deze datum.
+            </p>
+          )}
+          {eventType === "defect_vastgesteld" && (
+            <p className="text-[11px] leading-snug text-amber-200/70">
+              Rijd niet verder op een onderdeel dat je zelf als defect
+              beoordeelt voordat het gecontroleerd of vervangen is.
+            </p>
+          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="date"
+              value={eventDate}
+              onChange={(e) => setEventDate(e.target.value)}
+              className="rounded-lg border border-white/[0.1] bg-white/[0.03] px-2.5 py-1.5 text-[12px] text-white/85 outline-none focus:border-cyan-300/40"
+            />
+            <input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Notitie (optioneel)"
+              className="min-w-0 flex-1 rounded-lg border border-white/[0.1] bg-white/[0.03] px-2.5 py-1.5 text-[12px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
+            />
+          </div>
+          {error && <p className="text-[11.5px] text-red-300/80">{error}</p>}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              disabled={addEvent.isPending || !eventDate}
+              onClick={() => {
+                setError(null)
+                addEvent.mutate(
+                  {
+                    componentId: component.id,
+                    eventType,
+                    eventDate,
+                    note: note.trim() || undefined,
+                  },
+                  {
+                    onSuccess: () => {
+                      setAdding(false)
+                      setNote("")
+                    },
+                    onError: () => setError("Kon dit niet opslaan."),
+                  },
+                )
+              }}
+              className="rounded-lg px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-black disabled:opacity-50"
+              style={{ background: ACCENT }}
+            >
+              {addEvent.isPending ? "Bezig…" : "Vastleggen"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setAdding(false)}
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/40"
+            >
+              Annuleren
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/50 transition-colors hover:text-cyan-200"
+        >
+          <Wrench className="h-3 w-3" strokeWidth={1.75} />
+          Onderhoud of vervanging vastleggen
+        </button>
+      )}
+    </div>
+  )
+}
+
 function ComponentRow({
   component,
   onDelete,
@@ -127,10 +302,23 @@ function ComponentRow({
   component: GarageComponent
   onDelete: () => void
 }) {
+  const update = useUpdateComponent()
+  const [open, setOpen] = useState(false)
+  const statusTone =
+    component.status === "defect_vastgesteld"
+      ? { color: "rgb(252,165,165)", background: "rgba(252,165,165,0.1)" }
+      : component.status === "defect_vermoed"
+        ? { color: "rgb(253,230,138)", background: "rgba(253,230,138,0.1)" }
+        : { color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.06)" }
+
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="min-w-0 text-left"
+        >
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
             {CATEGORY_LABEL[component.category] ?? component.category}
           </p>
@@ -138,17 +326,55 @@ function ComponentRow({
             {[component.brand, component.model].filter(Boolean).join(" ") ||
               "Merk en model nog onbekend"}
           </p>
+        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {component.status !== "in_gebruik" && (
+            <span
+              className="rounded-full px-2 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.1em]"
+              style={statusTone}
+            >
+              {COMPONENT_STATUS_LABEL[component.status] ?? component.status}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={onDelete}
+            aria-label="Onderdeel verwijderen"
+            className="text-white/25 transition-colors hover:text-red-300/70"
+          >
+            <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+          </button>
         </div>
+      </div>
+      {/* Herkend uit een scan of foto maar nog niet bevestigd — de renner
+          bevestigt zelf; nooit stilzwijgend als vaststaand behandelen. */}
+      {!component.confirmed && component.source !== "handmatig" && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-cyan-300/20 bg-cyan-300/[0.05] px-2.5 py-2">
+          <p className="min-w-0 flex-1 text-[11.5px] leading-snug text-white/60">
+            Herkend uit je foto's — klopt dit onderdeel?
+          </p>
+          <button
+            type="button"
+            disabled={update.isPending}
+            onClick={() => update.mutate({ id: component.id, confirmed: true })}
+            className="inline-flex items-center gap-1 rounded-full border border-cyan-300/40 px-2.5 py-1 text-[11px] text-cyan-200 disabled:opacity-50"
+          >
+            <Check className="h-3 w-3" strokeWidth={2} />
+            Klopt
+          </button>
+        </div>
+      )}
+      <AssessmentLine component={component} />
+      {open && <ComponentLogboek component={component} />}
+      {!open && (
         <button
           type="button"
-          onClick={onDelete}
-          aria-label="Onderdeel verwijderen"
-          className="shrink-0 text-white/25 transition-colors hover:text-red-300/70"
+          onClick={() => setOpen(true)}
+          className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/35 transition-colors hover:text-white/60"
         >
-          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+          Gebruik & logboek
         </button>
-      </div>
-      <AssessmentLine component={component} />
+      )}
     </div>
   )
 }
@@ -405,11 +631,14 @@ function UpgradePanel({ bike }: { bike: GarageBike }) {
 function BikeCard({
   bike,
   sensors,
+  usage,
 }: {
   bike: GarageBike
   sensors: GarageSensor[]
+  usage?: BikeUsage
 }) {
   const deleteBike = useDeleteBike()
+  const updateBike = useUpdateBike()
   const deleteComponent = useDeleteComponent()
   const addPhoto = useAddBikePhoto()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -443,7 +672,24 @@ function BikeCard({
               {BIKE_TYPE_LABEL[bike.bikeType] ?? bike.bikeType}
               {(bike.brand || bike.model) &&
                 ` · ${[bike.brand, bike.model].filter(Boolean).join(" ")}`}
+              {bike.buildYear != null && ` · ${bike.buildYear}`}
+              {bike.status === "archief" && " · Archief"}
             </p>
+            {usage && usage.rides > 0 ? (
+              <p className="mt-0.5 text-[11px] text-white/45">
+                {Math.round(usage.km)} km · {usage.hours.toFixed(1)} uur ·{" "}
+                {usage.rides} ritten — uit je gekoppelde ritten
+              </p>
+            ) : (
+              <p className="mt-0.5 text-[11px] text-white/30">
+                Nog geen ritten aan deze fiets gekoppeld
+              </p>
+            )}
+            {bike.purpose && (
+              <p className="mt-0.5 truncate text-[11px] text-white/40">
+                {bike.purpose}
+              </p>
+            )}
           </div>
         </div>
         <ChevronRight
@@ -538,9 +784,24 @@ function BikeCard({
               )}
               <button
                 type="button"
+                disabled={updateBike.isPending}
+                onClick={() =>
+                  updateBike.mutate({
+                    id: bike.id,
+                    status: bike.status === "archief" ? "actief" : "archief",
+                  })
+                }
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/35 transition-colors hover:text-white/70 disabled:opacity-40"
+              >
+                {bike.status === "archief"
+                  ? "Terug naar actief"
+                  : "Naar archief"}
+              </button>
+              <button
+                type="button"
                 disabled={deleteBike.isPending}
                 onClick={() => {
-                  if (window.confirm(`"${bike.name}" en alle onderdelen verwijderen?`)) {
+                  if (window.confirm(`"${bike.name}" en alle onderdelen verwijderen? De ritten zelf blijven bestaan; alleen de koppeling met deze fiets verdwijnt.`)) {
                     deleteBike.mutate(bike.id)
                   }
                 }}
@@ -572,6 +833,8 @@ function AddBikeForm({
   const [name, setName] = useState(suggestion?.name ?? "")
   const [brand, setBrand] = useState(suggestion?.brand ?? "")
   const [model, setModel] = useState(suggestion?.model ?? "")
+  const [buildYear, setBuildYear] = useState("")
+  const [purpose, setPurpose] = useState("")
   const [error, setError] = useState<string | null>(null)
 
   return (
@@ -626,6 +889,21 @@ function AddBikeForm({
           className="rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
         />
       </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <input
+          value={buildYear}
+          onChange={(e) => setBuildYear(e.target.value)}
+          inputMode="numeric"
+          placeholder="Bouwjaar (optioneel)"
+          className="rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
+        />
+        <input
+          value={purpose}
+          onChange={(e) => setPurpose(e.target.value)}
+          placeholder="Waarvoor gebruik je 'm? (bijv. wedstrijden)"
+          className="rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-[13px] text-white/85 placeholder-white/25 outline-none focus:border-cyan-300/40"
+        />
+      </div>
       {error && <p className="text-[12px] text-red-300/80">{error}</p>}
       <button
         type="button"
@@ -639,6 +917,8 @@ function AddBikeForm({
               brand: brand.trim() || undefined,
               model: model.trim() || undefined,
               equipmentId: suggestion?.id,
+              buildYear: buildYear.trim() ? Number(buildYear) : undefined,
+              purpose: purpose.trim() || undefined,
             },
             {
               onSuccess: onClose,
@@ -739,7 +1019,9 @@ function ProTeams() {
 
 export function BikeGarage({ n = "" }: { n?: string } = {}) {
   const { data, isLoading, isError } = useGarage()
+  const { data: usageData } = useGarageUsage()
   const deleteComponent = useDeleteComponent()
+  const [showArchive, setShowArchive] = useState(false)
   const [addingBike, setAddingBike] = useState(false)
   const [adoptSuggestion, setAdoptSuggestion] =
     useState<EquipmentSuggestion | null>(null)
@@ -796,9 +1078,43 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
             />
           )}
 
-          {data.bikes.map((b) => (
-            <BikeCard key={b.id} bike={b} sensors={data.sensors ?? []} />
-          ))}
+          {data.bikes
+            .filter((b) => b.status !== "archief")
+            .map((b) => (
+              <BikeCard
+                key={b.id}
+                bike={b}
+                sensors={data.sensors ?? []}
+                usage={usageData?.usage[String(b.id)]}
+              />
+            ))}
+
+          {data.bikes.some((b) => b.status === "archief") && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowArchive((v) => !v)}
+                className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition-colors hover:text-white/65"
+              >
+                {showArchive ? "Archief verbergen" : "Archief tonen"} (
+                {data.bikes.filter((b) => b.status === "archief").length})
+              </button>
+              {showArchive && (
+                <div className="mt-2 space-y-3">
+                  {data.bikes
+                    .filter((b) => b.status === "archief")
+                    .map((b) => (
+                      <BikeCard
+                        key={b.id}
+                        bike={b}
+                        sensors={data.sensors ?? []}
+                        usage={usageData?.usage[String(b.id)]}
+                      />
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {data.bikes.length === 0 && !addingBike && !adoptSuggestion && (
             <p className="text-[13px] leading-relaxed text-white/45">

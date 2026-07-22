@@ -48,6 +48,32 @@ function parseBase64Image(body: Record<string, unknown>): {
   return { base64: data.trim(), mediaType };
 }
 
+// Server-side her-validatie van de client-meting — dezelfde drempels als
+// artifacts/sparki/src/lib/scan-quality.ts (QUALITY_LIMITS). De server slaat
+// geen frame op dat volgens de eigen meting al afgekeurd had moeten worden en
+// geeft de concrete heropname-reden terug.
+const QUALITY_LIMITS = {
+  minBrightness: 0.16,
+  maxBrightness: 0.93,
+  minSharpness: 28,
+  maxMotion: 0.28,
+  minCoverage: 0.06,
+} as const;
+
+function qualityRejection(q: BikeScanFrameQuality): string | null {
+  if (q.brightness < QUALITY_LIMITS.minBrightness)
+    return "Te donker — zoek meer licht en maak de opname opnieuw.";
+  if (q.brightness > QUALITY_LIMITS.maxBrightness)
+    return "Te licht — vermijd tegenlicht en maak de opname opnieuw.";
+  if (q.motion > QUALITY_LIMITS.maxMotion)
+    return "Te veel beweging — houd je telefoon stil en maak de opname opnieuw.";
+  if (q.sharpness < QUALITY_LIMITS.minSharpness)
+    return "Onscherp — wacht tot de camera scherpstelt en maak de opname opnieuw.";
+  if (q.coverage < QUALITY_LIMITS.minCoverage)
+    return "Weinig detail in beeld — zet de fiets volledig in het kader en maak de opname opnieuw.";
+  return null;
+}
+
 function parseQuality(v: unknown): BikeScanFrameQuality | null {
   if (!v || typeof v !== "object") return null;
   const q = v as Record<string, unknown>;
@@ -127,6 +153,17 @@ router.post("/:scanId/frame", requireAuth, async (req, res) => {
     !image
   ) {
     res.status(400).json({ error: "Ongeldige opname" });
+    return;
+  }
+  if (!quality) {
+    res.status(400).json({ error: "Kwaliteitsmeting ontbreekt bij deze opname" });
+    return;
+  }
+  const rejection = qualityRejection(quality);
+  if (rejection) {
+    // Eerlijke afkeuring: het frame wordt NIET opgeslagen; de renner krijgt
+    // precies één concrete heropname-instructie terug.
+    res.status(422).json({ error: rejection, heropname: true });
     return;
   }
   try {

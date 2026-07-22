@@ -1,13 +1,17 @@
 import { Router } from "express";
-import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   db,
   garageBikesTable,
   garageComponentsTable,
   garageSensorsTable,
+  componentEventsTable,
+  equipmentChoicesTable,
   equipmentTable,
   athleteProfilesTable,
   trainingSessionsTable,
+  racesTable,
+  plannedWorkoutsTable,
   garageBikeTypes,
   garageComponentCategories,
   garageSensorKinds,
@@ -16,6 +20,18 @@ import {
   type GarageComponent,
   type GarageSensorKind,
 } from "@workspace/db";
+import {
+  autoLinkSessions,
+  bikeUsageSince,
+  componentUsage,
+  garageUsageOverview,
+  setSessionBike,
+  unlinkBikeSessions,
+} from "../lib/bike-usage";
+import {
+  maintenanceSignals,
+  relevantSignals,
+} from "../lib/maintenance-signals";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
   uploadMaterialPhoto,
@@ -38,6 +54,25 @@ const MAX_PHOTOS_PER_BIKE = 4;
 
 function str(v: unknown, max = 120): string | null {
   return typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
+}
+
+function parseBuildYear(v: unknown): number | null {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  if (!Number.isInteger(n) || n < 1970 || n > new Date().getFullYear() + 1) {
+    return null;
+  }
+  return n;
+}
+
+// YYYY-MM-DD, rond-tripbaar (geen "2024-02-31").
+function parseDateStr(v: unknown): string | null {
+  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
+  const d = new Date(`${v}T12:00:00Z`);
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== v) {
+    return null;
+  }
+  return v;
 }
 
 function withAssessment(c: GarageComponent) {
@@ -167,6 +202,8 @@ router.post("/bikes", requireAuth, async (req, res) => {
         model: str(body.model, 120),
         equipmentId,
         notes: str(body.notes, 500),
+        buildYear: parseBuildYear(body.buildYear),
+        purpose: str(body.purpose, 200),
       })
       .returning();
     res.json({ bike: { ...row, components: [] } });
@@ -205,6 +242,16 @@ router.patch("/bikes/:id", requireAuth, async (req, res) => {
     }
     set.bikeType = t;
   }
+  if (body.buildYear !== undefined) set.buildYear = parseBuildYear(body.buildYear);
+  if (body.purpose !== undefined) set.purpose = str(body.purpose, 200);
+  if (body.status !== undefined) {
+    const s = String(body.status);
+    if (!["actief", "archief"].includes(s)) {
+      res.status(400).json({ error: "Status is actief of archief" });
+      return;
+    }
+    set.status = s;
+  }
   try {
     const [row] = await db
       .update(garageBikesTable)
@@ -239,6 +286,8 @@ router.delete("/bikes/:id", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Fiets niet gevonden" });
       return;
     }
+    // De activiteiten blijven bestaan; alleen de koppeling verdwijnt.
+    await unlinkBikeSessions(clerkId, id);
     res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "garage.deleteBike failed");
@@ -371,6 +420,15 @@ router.post("/components", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Kies eerst een fiets voor dit onderdeel" });
     return;
   }
+  // Montagedatum (optioneel) — de basis voor de afgeleide km-historie.
+  let installedAt: string | null = null;
+  if (body.installedAt != null) {
+    installedAt = parseDateStr(body.installedAt);
+    if (!installedAt) {
+      res.status(400).json({ error: "Ongeldige montagedatum (JJJJ-MM-DD)" });
+      return;
+    }
+  }
   try {
     const [row] = await db
       .insert(garageComponentsTable)
@@ -381,6 +439,7 @@ router.post("/components", requireAuth, async (req, res) => {
         brand: str(body.brand, 80),
         model: str(body.model, 120),
         notes: str(body.notes, 300),
+        installedAt,
       })
       .returning();
     res.json({ component: withAssessment(row!) });
@@ -403,6 +462,25 @@ router.patch("/components/:id", requireAuth, async (req, res) => {
   if (body.brand !== undefined) set.brand = str(body.brand, 80);
   if (body.model !== undefined) set.model = str(body.model, 120);
   if (body.notes !== undefined) set.notes = str(body.notes, 300);
+  if (body.installedAt !== undefined) {
+    const d = body.installedAt === null ? null : parseDateStr(body.installedAt);
+    if (body.installedAt !== null && !d) {
+      res.status(400).json({ error: "Ongeldige montagedatum (JJJJ-MM-DD)" });
+      return;
+    }
+    set.installedAt = d;
+  }
+  // Bevestiging van een herkend/gescand onderdeel — expliciete gebruikersactie.
+  if (body.confirmed !== undefined) set.confirmed = !!body.confirmed;
+  if (body.status !== undefined) {
+    const s = String(body.status);
+    const allowed = ["in_gebruik", "vervangen", "defect_vermoed", "defect_vastgesteld"];
+    if (!allowed.includes(s)) {
+      res.status(400).json({ error: "Onbekende onderdeelstatus" });
+      return;
+    }
+    set.status = s;
+  }
   try {
     const [row] = await db
       .update(garageComponentsTable)
@@ -779,6 +857,452 @@ router.delete("/sensors/:id", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "garage.deleteSensor failed");
     res.status(500).json({ error: "Kon het draadloze onderdeel niet verwijderen" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Mechanieker — gebruik, onderhoudslogboek, signalen en materiaalkeuze.
+
+// GET /api/garage/usage — km/uren/ritten per fiets, ALTIJD live afgeleid uit
+// de gekoppelde activiteiten (idempotent, corrigeert zichzelf). Voert eerst de
+// auto-koppeling uit zodat nieuwe ritten meteen meetellen.
+router.get("/usage", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const linked = await autoLinkSessions(clerkId);
+    const usage = await garageUsageOverview(clerkId);
+    res.json({
+      usage: Object.fromEntries(usage),
+      autoLinked: linked,
+    });
+  } catch (err) {
+    req.log.error({ err }, "garage.usage failed");
+    res.status(500).json({ error: "Kon het fietsgebruik niet berekenen" });
+  }
+});
+
+// GET /api/garage/components/:id/usage — gebruik van één onderdeel sinds
+// montage (of registratie — dat wordt eerlijk benoemd via `basis`).
+router.get("/components/:id/usage", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldig id" });
+    return;
+  }
+  try {
+    const [component] = await db
+      .select()
+      .from(garageComponentsTable)
+      .where(
+        and(
+          eq(garageComponentsTable.id, id),
+          eq(garageComponentsTable.clerkId, clerkId),
+        ),
+      );
+    if (!component) {
+      res.status(404).json({ error: "Onderdeel niet gevonden" });
+      return;
+    }
+    res.json({ usage: await componentUsage(clerkId, component) });
+  } catch (err) {
+    req.log.error({ err }, "garage.componentUsage failed");
+    res.status(500).json({ error: "Kon het gebruik niet berekenen" });
+  }
+});
+
+// GET /api/garage/signals?context= — onderhoudssignalen (controleadvies /
+// vermoedelijke slijtage / vastgesteld defect). Context bepaalt de filtering:
+// vandaag (alleen urgent), wedstrijd (alles), garage (alles, standaard).
+router.get("/signals", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const ctxRaw = String(req.query.context ?? "garage");
+  const context = (["vandaag", "wedstrijd", "garage"] as const).includes(
+    ctxRaw as "garage",
+  )
+    ? (ctxRaw as "vandaag" | "wedstrijd" | "garage")
+    : "garage";
+  try {
+    await autoLinkSessions(clerkId);
+    const signals = await maintenanceSignals(clerkId);
+    res.json({ signals: relevantSignals(signals, context) });
+  } catch (err) {
+    req.log.error({ err }, "garage.signals failed");
+    res.status(500).json({ error: "Kon de onderhoudssignalen niet opstellen" });
+  }
+});
+
+// ── Onderhoudslogboek per onderdeel (component_events) ─────────────────────
+
+const EVENT_TYPES = [
+  "onderhoud",
+  "reparatie",
+  "vervanging",
+  "controle",
+  "defect_vastgesteld",
+] as const;
+
+// GET /api/garage/components/:id/events — logboek, nieuwste eerst.
+router.get("/components/:id/events", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldig id" });
+    return;
+  }
+  try {
+    const events = await db
+      .select()
+      .from(componentEventsTable)
+      .where(
+        and(
+          eq(componentEventsTable.componentId, id),
+          eq(componentEventsTable.clerkId, clerkId),
+        ),
+      )
+      .orderBy(desc(componentEventsTable.eventDate), desc(componentEventsTable.id));
+    res.json({ events });
+  } catch (err) {
+    req.log.error({ err }, "garage.events.list failed");
+    res.status(500).json({ error: "Kon het logboek niet laden" });
+  }
+});
+
+// POST /api/garage/components/:id/events — registreer onderhoud/reparatie/
+// vervanging/controle/defect. Gevolgen zijn expliciet en uitlegbaar:
+// - "vervanging": montagedatum van het onderdeel schuift naar de eventdatum
+//   (nieuwe kilometrage-historie) en de status wordt weer "in_gebruik".
+// - "defect_vastgesteld": onderdeelstatus wordt "defect_vastgesteld" — dit is
+//   de ENIGE weg naar een vastgesteld defect (nooit uit foto's afgeleid).
+// - optionele bewijsfoto's (base64) worden in objectopslag bewaard.
+router.post("/components/:id/events", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(req.params.id);
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const eventType = String(body.eventType ?? "");
+  const eventDate = parseDateStr(body.eventDate);
+  if (!Number.isInteger(id) || !(EVENT_TYPES as readonly string[]).includes(eventType)) {
+    res.status(400).json({ error: "Ongeldig logboek-item" });
+    return;
+  }
+  if (!eventDate) {
+    res.status(400).json({ error: "Een geldige datum (JJJJ-MM-DD) is verplicht" });
+    return;
+  }
+  try {
+    const [component] = await db
+      .select()
+      .from(garageComponentsTable)
+      .where(
+        and(
+          eq(garageComponentsTable.id, id),
+          eq(garageComponentsTable.clerkId, clerkId),
+        ),
+      );
+    if (!component) {
+      res.status(404).json({ error: "Onderdeel niet gevonden" });
+      return;
+    }
+    // Bewijsfoto's (optioneel, max 3 per event).
+    const photoPaths: string[] = [];
+    const photos = Array.isArray(body.photos) ? body.photos.slice(0, 3) : [];
+    for (const p of photos) {
+      if (!p || typeof p !== "object") continue;
+      const rec = p as Record<string, unknown>;
+      let data = typeof rec.data === "string" ? rec.data : "";
+      let mediaType =
+        typeof rec.mediaType === "string" ? rec.mediaType : "image/jpeg";
+      const dataUrl = data.match(/^data:([^;]+);base64,(.*)$/s);
+      if (dataUrl) {
+        mediaType = dataUrl[1]!;
+        data = dataUrl[2]!;
+      }
+      if (!data.trim() || !/^image\//.test(mediaType)) continue;
+      photoPaths.push(
+        await uploadMaterialPhoto(clerkId, { base64: data.trim(), mediaType }),
+      );
+    }
+    // km-stand op het moment van het event: live afgeleid (eerlijk, geen teller).
+    let kmAtEvent: number | null = null;
+    if (component.bikeId != null) {
+      const totals = await bikeUsageSince(
+        clerkId,
+        component.bikeId,
+        component.installedAt,
+      );
+      kmAtEvent = Math.round(totals.km);
+    }
+    const [event] = await db
+      .insert(componentEventsTable)
+      .values({
+        clerkId,
+        componentId: id,
+        eventType,
+        eventDate,
+        note: str(body.note, 500),
+        kmAtEvent: kmAtEvent != null ? String(kmAtEvent) : null,
+        photoPaths,
+      })
+      .returning();
+    // Statusgevolgen van het event op het onderdeel zelf.
+    const compSet: Partial<GarageComponent> = { updatedAt: new Date() };
+    if (eventType === "vervanging") {
+      compSet.installedAt = eventDate;
+      compSet.status = "in_gebruik";
+    } else if (eventType === "defect_vastgesteld") {
+      compSet.status = "defect_vastgesteld";
+    } else if (
+      eventType === "reparatie" &&
+      (component.status === "defect_vastgesteld" ||
+        component.status === "defect_vermoed")
+    ) {
+      compSet.status = "in_gebruik";
+    }
+    const [updated] = await db
+      .update(garageComponentsTable)
+      .set(compSet)
+      .where(eq(garageComponentsTable.id, id))
+      .returning();
+    res.json({ event, component: withAssessment(updated!) });
+  } catch (err) {
+    req.log.error({ err }, "garage.events.create failed");
+    res.status(502).json({ error: "Kon het logboek-item niet opslaan" });
+  }
+});
+
+// DELETE /api/garage/events/:eventId — verwijder één logboek-item. Statussen
+// worden NIET automatisch teruggedraaid (dat blijft een bewuste gebruikersactie
+// via het onderdeel zelf) — dat wordt in de UI zo benoemd.
+router.delete("/events/:eventId", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const eventId = Number(req.params.eventId);
+  if (!Number.isInteger(eventId)) {
+    res.status(400).json({ error: "Ongeldig id" });
+    return;
+  }
+  try {
+    const rows = await db
+      .delete(componentEventsTable)
+      .where(
+        and(
+          eq(componentEventsTable.id, eventId),
+          eq(componentEventsTable.clerkId, clerkId),
+        ),
+      )
+      .returning({ id: componentEventsTable.id });
+    if (rows.length === 0) {
+      res.status(404).json({ error: "Logboek-item niet gevonden" });
+      return;
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "garage.events.delete failed");
+    res.status(500).json({ error: "Kon het logboek-item niet verwijderen" });
+  }
+});
+
+// GET /api/garage/events/:eventId/photo/:idx — bewijsfoto (owner-gated).
+router.get("/events/:eventId/photo/:idx", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const eventId = Number(req.params.eventId);
+  const idx = Number(req.params.idx);
+  if (!Number.isInteger(eventId) || !Number.isInteger(idx) || idx < 0) {
+    res.status(400).json({ error: "Ongeldig verzoek" });
+    return;
+  }
+  try {
+    const [row] = await db
+      .select({ photoPaths: componentEventsTable.photoPaths })
+      .from(componentEventsTable)
+      .where(
+        and(
+          eq(componentEventsTable.id, eventId),
+          eq(componentEventsTable.clerkId, clerkId),
+        ),
+      );
+    const path = row?.photoPaths?.[idx];
+    if (!path) {
+      res.status(404).json({ error: "Foto niet gevonden" });
+      return;
+    }
+    const stream = await streamMaterialPhoto(path, res);
+    stream.on("error", (err) => {
+      req.log.error({ err }, "garage.eventPhoto stream failed");
+      if (!res.headersSent) res.status(500).end();
+    });
+    stream.pipe(res);
+  } catch (err) {
+    req.log.error({ err }, "garage.eventPhoto failed");
+    if (!res.headersSent) res.status(404).json({ error: "Foto niet gevonden" });
+  }
+});
+
+// ── Activiteit ↔ fiets ──────────────────────────────────────────────────────
+
+// PUT /api/garage/sessions/:sessionId/bike { bikeId | null } — handmatige
+// koppeling of bewuste ontkoppeling; wint altijd van de auto-koppeling.
+router.put("/sessions/:sessionId/bike", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const sessionId = Number(req.params.sessionId);
+  const raw = (req.body ?? {}).bikeId;
+  const bikeId = raw == null ? null : Number(raw);
+  if (!Number.isInteger(sessionId) || (bikeId != null && !Number.isInteger(bikeId))) {
+    res.status(400).json({ error: "Ongeldig verzoek" });
+    return;
+  }
+  try {
+    const ok = await setSessionBike(clerkId, sessionId, bikeId);
+    if (!ok) {
+      res.status(404).json({ error: "Rit of fiets niet gevonden" });
+      return;
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "garage.sessionBike failed");
+    res.status(500).json({ error: "Kon de fiets niet aan de rit koppelen" });
+  }
+});
+
+// ── Materiaalkeuze per wedstrijd of training (equipment_choices) ────────────
+
+async function ownedTarget(
+  clerkId: string,
+  raceId: number | null,
+  workoutId: number | null,
+): Promise<boolean> {
+  if (raceId != null) {
+    const [r] = await db
+      .select({ id: racesTable.id })
+      .from(racesTable)
+      .where(and(eq(racesTable.id, raceId), eq(racesTable.clerkId, clerkId)));
+    return !!r;
+  }
+  if (workoutId != null) {
+    const [w] = await db
+      .select({ id: plannedWorkoutsTable.id })
+      .from(plannedWorkoutsTable)
+      .where(
+        and(
+          eq(plannedWorkoutsTable.id, workoutId),
+          eq(plannedWorkoutsTable.clerkId, clerkId),
+        ),
+      );
+    return !!w;
+  }
+  return false;
+}
+
+// GET /api/garage/choices?raceId= of ?workoutId= — de materiaalkeuze.
+router.get("/choices", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const raceId = req.query.raceId != null ? Number(req.query.raceId) : null;
+  const workoutId = req.query.workoutId != null ? Number(req.query.workoutId) : null;
+  if (
+    (raceId == null) === (workoutId == null) ||
+    (raceId != null && !Number.isInteger(raceId)) ||
+    (workoutId != null && !Number.isInteger(workoutId))
+  ) {
+    res.status(400).json({ error: "Geef precies één wedstrijd of training op" });
+    return;
+  }
+  try {
+    const conds = [eq(equipmentChoicesTable.clerkId, clerkId)];
+    conds.push(
+      raceId != null
+        ? eq(equipmentChoicesTable.raceId, raceId)
+        : eq(equipmentChoicesTable.workoutId, workoutId!),
+    );
+    const [choice] = await db
+      .select()
+      .from(equipmentChoicesTable)
+      .where(and(...conds))
+      .orderBy(desc(equipmentChoicesTable.id))
+      .limit(1);
+    res.json({ choice: choice ?? null });
+  } catch (err) {
+    req.log.error({ err }, "garage.choices.get failed");
+    res.status(500).json({ error: "Kon de materiaalkeuze niet laden" });
+  }
+});
+
+// PUT /api/garage/choices — leg de materiaalkeuze vast (upsert per doel).
+// Precies één van raceId/workoutId; de fiets moet van de renner zijn.
+router.put("/choices", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const raceId = body.raceId != null ? Number(body.raceId) : null;
+  const workoutId = body.workoutId != null ? Number(body.workoutId) : null;
+  if (
+    (raceId == null) === (workoutId == null) ||
+    (raceId != null && !Number.isInteger(raceId)) ||
+    (workoutId != null && !Number.isInteger(workoutId))
+  ) {
+    res.status(400).json({ error: "Geef precies één wedstrijd of training op" });
+    return;
+  }
+  let bikeId: number | null = null;
+  if (body.bikeId != null) {
+    const id = Number(body.bikeId);
+    if (!Number.isInteger(id)) {
+      res.status(400).json({ error: "Ongeldig fiets-id" });
+      return;
+    }
+    const [owned] = await db
+      .select({ id: garageBikesTable.id })
+      .from(garageBikesTable)
+      .where(and(eq(garageBikesTable.id, id), eq(garageBikesTable.clerkId, clerkId)));
+    if (!owned) {
+      res.status(404).json({ error: "Fiets niet gevonden" });
+      return;
+    }
+    bikeId = id;
+  }
+  const pressure = body.pressureBar != null ? Number(body.pressureBar) : null;
+  if (pressure != null && (!Number.isFinite(pressure) || pressure <= 0 || pressure > 12)) {
+    res.status(400).json({ error: "Bandenspanning moet tussen 0 en 12 bar liggen" });
+    return;
+  }
+  try {
+    if (!(await ownedTarget(clerkId, raceId, workoutId))) {
+      res.status(404).json({ error: "Wedstrijd of training niet gevonden" });
+      return;
+    }
+    const values = {
+      clerkId,
+      raceId,
+      workoutId,
+      bikeId,
+      wheels: str(body.wheels, 160),
+      tires: str(body.tires, 160),
+      pressureBar: pressure != null ? String(pressure) : null,
+      cassette: str(body.cassette, 160),
+      other: str(body.other, 300),
+      notes: str(body.notes, 500),
+      updatedAt: new Date(),
+    };
+    // Atomische upsert per doel via de partiële unieke index — geen
+    // read-then-write race, dus nooit twee keuzes voor dezelfde wedstrijd/
+    // training bij gelijktijdige opslag.
+    const { clerkId: _c, raceId: _r, workoutId: _w, ...updatable } = values;
+    const [choice] = await db
+      .insert(equipmentChoicesTable)
+      .values(values)
+      .onConflictDoUpdate({
+        target:
+          raceId != null
+            ? [equipmentChoicesTable.clerkId, equipmentChoicesTable.raceId]
+            : [equipmentChoicesTable.clerkId, equipmentChoicesTable.workoutId],
+        targetWhere:
+          raceId != null
+            ? sql`${equipmentChoicesTable.raceId} IS NOT NULL`
+            : sql`${equipmentChoicesTable.workoutId} IS NOT NULL`,
+        set: updatable,
+      })
+      .returning();
+    res.json({ choice });
+  } catch (err) {
+    req.log.error({ err }, "garage.choices.put failed");
+    res.status(500).json({ error: "Kon de materiaalkeuze niet opslaan" });
   }
 });
 

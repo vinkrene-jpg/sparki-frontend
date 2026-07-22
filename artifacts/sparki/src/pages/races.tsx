@@ -14,6 +14,7 @@ import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { Skeleton } from "@/components/sparki/home-sections"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import { ImportFromCalendar } from "@/components/sparki/import-from-calendar"
+import { EquipmentChoicePanel } from "@/components/sparki/equipment-choice"
 import type { CalendarEvent } from "@/lib/calendar-types"
 import {
   useRaces,
@@ -608,6 +609,11 @@ export default function RacesPage() {
           onCancel={closeForm}
           onDelete={handleDelete}
           deleting={deleteRace.isPending}
+          extraPanel={
+            editingId != null ? (
+              <EquipmentChoicePanel raceId={editingId} />
+            ) : null
+          }
         />
       ) : isLoading ? (
         <div className="space-y-3">
@@ -682,6 +688,7 @@ function RaceForm({
   onCancel,
   onDelete,
   deleting,
+  extraPanel,
 }: {
   form: FormState
   set: <K extends keyof FormState>(key: K, value: FormState[K]) => void
@@ -698,6 +705,7 @@ function RaceForm({
   onCancel: () => void
   onDelete: () => void
   deleting: boolean
+  extraPanel?: React.ReactNode
 }) {
   // Sparki gathers first: derive everything available for this race, then fill
   // the genuinely-empty fields once per distinct (location/date/discipline) set.
@@ -983,6 +991,8 @@ function RaceForm({
           {deleting ? "Verwijderen…" : "Verwijderen"}
         </button>
       )}
+
+      {extraPanel}
     </form>
   )
 }
