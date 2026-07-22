@@ -309,13 +309,14 @@ router.get("/:id/advice", requireAuth, async (req, res) => {
       .select()
       .from(athleteProfilesTable)
       .where(eq(athleteProfilesTable.clerkId, clerkId));
-    const advies = await buildRaceAdvice(race, athlete ?? null);
-    // Golf 21 — beheerde vakkennis (domein wedstrijd) als compacte bronnen.
+    // Golf 21 — beheerde vakkennis (domein wedstrijd) gaat MEE de adviesset in
+    // (als letterlijke "feit"-items) én terug als compacte bronvermeldingen.
     const managedItems = await getActiveKnowledge({
       domain: "wedstrijd",
       discipline: race.discipline ?? null,
       limit: 4,
     });
+    const advies = await buildRaceAdvice(race, athlete ?? null, managedItems);
     res.json({ ...advies, bronnen: buildSourceCitations(managedItems) });
     void recordKnowledgeUsage(managedItems, "race", clerkId, `race:${id}`).catch(
       (err) => req.log.error({ err }, "race advice knowledge usage failed"),

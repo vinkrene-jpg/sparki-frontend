@@ -9,7 +9,7 @@
 // Niets wordt verzonnen: ontbreekt de data voor een advies, dan zegt het advies
 // dat eerlijk of verschijnt het niet. Geen nepvoorspellingen ("je wordt 5e").
 
-import type { Race, AthleteProfile } from "@workspace/db";
+import type { Race, AthleteProfile, ManagedKnowledgeItem } from "@workspace/db";
 import type { WeatherSummary } from "./weather/assess";
 import { getRaceWeather } from "./weather/race";
 import { buildCourseAnalysis, type RaceCourseAnalysis } from "./race-course";
@@ -19,7 +19,7 @@ export type AdviceKind = "feit" | "regel" | "inschatting" | "coachinstructie";
 
 export type RaceAdvice = {
   id: string;
-  domain: "pacing" | "bandendruk" | "warmingup" | "tactiek" | "risico";
+  domain: "pacing" | "bandendruk" | "warmingup" | "tactiek" | "risico" | "vakkennis";
   kind: AdviceKind;
   title: string;
   text: string;
@@ -49,6 +49,7 @@ export function composeRaceAdvice(
   athlete: AthleteProfile | null,
   course: RaceCourseAnalysis,
   weather: WeatherSummary | null,
+  managedKnowledge: ManagedKnowledgeItem[] = [],
 ): RaceAdviceSet {
   const items: RaceAdvice[] = [];
   const notPossible: { domain: string; reason: string }[] = [];
@@ -214,6 +215,26 @@ export function composeRaceAdvice(
     confidence: 0.5,
   });
 
+  // ── Beheerde vakkennis (Golf 21) — letterlijk uit de kennisbank ───────────
+  // De gecontroleerde brontekst wordt als "feit" opgenomen, met de bron
+  // transparant in de basis. Nooit geherformuleerd of aangevuld.
+  for (const k of managedKnowledge) {
+    items.push({
+      id: `vakkennis-${k.id}-v${k.version}`,
+      domain: "vakkennis",
+      kind: "feit",
+      title: k.topic,
+      text: k.body,
+      basis: [
+        `Bron: ${k.sourceName} (versie ${k.version}, betrouwbaarheid ${k.reliability})`,
+        k.limitations ? `Let op: ${k.limitations}` : null,
+        k.professionalCheck ?? null,
+      ]
+        .filter(Boolean)
+        .join(" — "),
+    });
+  }
+
   // Coachinstructie gegarandeerd vooraan (stabiel verder).
   items.sort((a, b) =>
     (a.kind === "coachinstructie" ? 0 : 1) - (b.kind === "coachinstructie" ? 0 : 1),
@@ -227,11 +248,15 @@ export function composeRaceAdvice(
 export async function buildRaceAdvice(
   race: Race,
   athlete: AthleteProfile | null,
+  managedKnowledge: ManagedKnowledgeItem[] = [],
 ): Promise<RaceAdviceSet & { course: RaceCourseAnalysis }> {
   const [course, raceWeather] = await Promise.all([
     buildCourseAnalysis(race),
     getRaceWeather(race.location, race.raceDate).catch(() => null),
   ]);
   const weather: WeatherSummary | null = raceWeather?.weather ?? null;
-  return { ...composeRaceAdvice(race, athlete, course, weather), course };
+  return {
+    ...composeRaceAdvice(race, athlete, course, weather, managedKnowledge),
+    course,
+  };
 }
