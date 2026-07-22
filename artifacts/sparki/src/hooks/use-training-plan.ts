@@ -7,6 +7,8 @@ import type {
   PlannedWorkout,
   PlannedWorkoutDetail,
   SparkiAdjustProposal,
+  WorkoutChange,
+  WorkoutCompletion,
   WorkoutFeedback,
   WorkoutFeedbackType,
 } from "@/lib/athlete-types";
@@ -71,16 +73,28 @@ export function useSubmitFeedback() {
       workoutId,
       feedbackType,
       note,
+      rpe,
+      completion,
+      deviationReason,
     }: {
       workoutId: number;
       feedbackType: WorkoutFeedbackType;
       note?: string;
+      rpe?: number | null;
+      completion?: WorkoutCompletion | null;
+      deviationReason?: string;
     }) =>
       apiFetch<{ feedback: WorkoutFeedback }>(
         `/api/athlete/workouts/${workoutId}/feedback`,
         {
           method: "POST",
-          body: JSON.stringify({ feedbackType, note }),
+          body: JSON.stringify({
+            feedbackType,
+            note,
+            ...(rpe != null && { rpe }),
+            ...(completion != null && { completion }),
+            ...(deviationReason?.trim() && { deviationReason }),
+          }),
         },
       ),
     onSuccess: (_data, vars) => {
@@ -130,15 +144,77 @@ export function useWorkoutAdjust() {
       workoutId,
       feedbackType,
       note,
+      rpe,
+      completion,
     }: {
       workoutId: number;
       feedbackType: WorkoutFeedbackType;
       note?: string;
+      rpe?: number | null;
+      completion?: WorkoutCompletion | null;
     }) =>
       apiFetch<{ proposal: SparkiAdjustProposal }>("/api/ai/workout-adjust", {
         method: "POST",
-        body: JSON.stringify({ workoutId, feedbackType, note }),
+        body: JSON.stringify({
+          workoutId,
+          feedbackType,
+          note,
+          ...(rpe != null && { rpe }),
+          ...(completion != null && { completion }),
+        }),
       }),
+  });
+}
+
+/** Wijzigingshistorie van één geplande training (append-only log). */
+export function useWorkoutHistory(id: number | null, enabled: boolean) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: ["athlete", "workout", "history", id ?? "none"],
+    queryFn: () =>
+      apiFetch<{ changes: WorkoutChange[] }>(
+        `/api/athlete/workouts/${id}/history`,
+      ),
+    enabled: (isSignedIn === true || DEV_PREVIEW) && id != null && enabled,
+    staleTime: 30_000,
+  });
+}
+
+/** Koppel of ontkoppel een activiteit aan een geplande training. */
+export function useLinkWorkoutSession() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      sessionId,
+    }: {
+      id: number;
+      sessionId: number | null;
+    }) =>
+      apiFetch<PlannedWorkout>(`/api/athlete/workouts/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ sessionId }),
+      }),
+    onSuccess: (_data, vars) => {
+      void qc.invalidateQueries({ queryKey: queryKeys.athlete.workout(vars.id) });
+      void qc.invalidateQueries({ queryKey: ["athlete", "workout", "history", vars.id] });
+      void qc.invalidateQueries({ queryKey: queryKeys.athlete.all() });
+    },
+  });
+}
+
+/** Annuleer (zacht) een geplande training — telt nergens meer mee. */
+export function useCancelWorkout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<PlannedWorkout>(`/api/athlete/workouts/${id}`, {
+        method: "DELETE",
+      }),
+    onSuccess: (_data, id) => {
+      void qc.invalidateQueries({ queryKey: queryKeys.athlete.workout(id) });
+      void qc.invalidateQueries({ queryKey: queryKeys.athlete.all() });
+    },
   });
 }
 

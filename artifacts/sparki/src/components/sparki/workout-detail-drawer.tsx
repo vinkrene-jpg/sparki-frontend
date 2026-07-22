@@ -19,9 +19,14 @@ import {
   useWorkoutExplainExtended,
   useWorkoutAdjust,
   useApplyProposal,
+  useWorkoutHistory,
+  useLinkWorkoutSession,
+  useCancelWorkout,
 } from "@/hooks/use-training-plan"
+import { useSessions } from "@/hooks/use-sessions"
 import type {
   WorkoutBlock,
+  WorkoutCompletion,
   WorkoutFeedbackType,
   WorkoutRouteNeed,
   SparkiAdjustProposal,
@@ -39,6 +44,11 @@ import {
   Check,
   X,
   Loader2,
+  History,
+  Link2,
+  Unlink,
+  Ban,
+  HeartPulse,
 } from "lucide-react"
 
 const zoneColor: Record<number, string> = {
@@ -241,8 +251,15 @@ export function WorkoutDetailDrawer({
   const explainExtended = useWorkoutExplainExtended()
   const adjust = useWorkoutAdjust()
   const applyProposal = useApplyProposal()
+  const linkSession = useLinkWorkoutSession()
+  const cancelWorkout = useCancelWorkout()
 
   const [note, setNote] = useState("")
+  const [rpe, setRpe] = useState<number | null>(null)
+  const [completion, setCompletion] = useState<WorkoutCompletion | null>(null)
+  const [deviationReason, setDeviationReason] = useState("")
+  const [showHistory, setShowHistory] = useState(false)
+  const [confirmCancel, setConfirmCancel] = useState(false)
   const [explanation, setExplanation] = useState<{
     short: string
     extended: string | null
@@ -252,9 +269,18 @@ export function WorkoutDetailDrawer({
     null,
   )
 
+  const history = useWorkoutHistory(open ? workoutId : null, showHistory)
+  // Same-day activities for handmatig koppelen.
+  const { data: recentSessions } = useSessions(30)
+
   // Reset transient state when the drawer target changes.
   const resetTransient = () => {
     setNote("")
+    setRpe(null)
+    setCompletion(null)
+    setDeviationReason("")
+    setShowHistory(false)
+    setConfirmCancel(false)
     setExplanation(null)
     setProposal(null)
     setActiveFeedback(null)
@@ -297,11 +323,16 @@ export function WorkoutDetailDrawer({
         workoutId: workout.id,
         feedbackType: type,
         note,
+        rpe,
+        completion,
+        deviationReason,
       })
       const res = await adjust.mutateAsync({
         workoutId: workout.id,
         feedbackType: type,
         note,
+        rpe,
+        completion,
       })
       setProposal(res.proposal)
     } catch {
@@ -575,6 +606,86 @@ export function WorkoutDetailDrawer({
                   ? "Deze training komt er nog aan. Klopt er iets niet of past het beter op een andere dag? Dan stemt Sparki je plan er vast op af."
                   : "Laat weten hoe het ging — Sparki past je plan zo nodig aan."}
               </p>
+              {!isUpcoming && (
+                <div className="flex flex-col gap-3 rounded-xl border border-white/[0.07] bg-white/[0.03] px-3.5 py-3">
+                  <div>
+                    <p className="mb-1.5 flex items-center gap-1.5 font-mono text-[9px] tracking-[0.2em] text-white/40">
+                      <HeartPulse className="h-3 w-3" strokeWidth={1.75} />
+                      HOE ZWAAR VOELDE HET? (RPE 1–10, OPTIONEEL)
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setRpe(rpe === n ? null : n)}
+                          className="h-7 w-7 rounded-full border font-mono text-[11px] tabular-nums transition-colors"
+                          style={{
+                            borderColor:
+                              rpe === n
+                                ? "rgba(120,210,230,0.5)"
+                                : "rgba(255,255,255,0.1)",
+                            background:
+                              rpe === n ? "rgba(120,210,230,0.12)" : "transparent",
+                            color: rpe === n ? ACCENT : "rgba(255,255,255,0.5)",
+                          }}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="mb-1.5 font-mono text-[9px] tracking-[0.2em] text-white/40">
+                      AFGEMAAKT? (OPTIONEEL)
+                    </p>
+                    <div className="flex gap-2">
+                      {(
+                        [
+                          { value: "volledig", label: "Volledig" },
+                          { value: "gedeeltelijk", label: "Gedeeltelijk" },
+                          { value: "niet", label: "Niet" },
+                        ] as { value: WorkoutCompletion; label: string }[]
+                      ).map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() =>
+                            setCompletion(
+                              completion === opt.value ? null : opt.value,
+                            )
+                          }
+                          className="rounded-full border px-3 py-1 font-sans text-[12px] transition-colors"
+                          style={{
+                            borderColor:
+                              completion === opt.value
+                                ? "rgba(120,210,230,0.5)"
+                                : "rgba(255,255,255,0.1)",
+                            background:
+                              completion === opt.value
+                                ? "rgba(120,210,230,0.12)"
+                                : "transparent",
+                            color:
+                              completion === opt.value
+                                ? ACCENT
+                                : "rgba(255,255,255,0.55)",
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {(completion === "gedeeltelijk" || completion === "niet") && (
+                    <input
+                      value={deviationReason}
+                      onChange={(e) => setDeviationReason(e.target.value)}
+                      placeholder="Waarom anders dan gepland? (optioneel)…"
+                      className="w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2 font-sans text-[13px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+                    />
+                  )}
+                </div>
+              )}
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
@@ -633,9 +744,34 @@ export function WorkoutDetailDrawer({
                   <p className="mt-2 text-[13px] leading-relaxed text-white/70">
                     {proposal.message}
                   </p>
-                  <div className="mt-3 inline-flex rounded-full bg-white/[0.06] px-2.5 py-1 font-mono text-[9px] tracking-[0.15em] text-white/55">
-                    {recommendationLabel(proposal.recommendation).toUpperCase()}
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex rounded-full bg-white/[0.06] px-2.5 py-1 font-mono text-[9px] tracking-[0.15em] text-white/55">
+                      {recommendationLabel(proposal.recommendation).toUpperCase()}
+                    </span>
+                    {proposal.confidence != null && (
+                      <span className="inline-flex rounded-full bg-white/[0.06] px-2.5 py-1 font-mono text-[9px] tracking-[0.15em] text-white/45">
+                        ZEKERHEID {Math.round(proposal.confidence * 100)}%
+                      </span>
+                    )}
                   </div>
+                  {proposal.basis && proposal.basis.length > 0 && (
+                    <div className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 py-3">
+                      <p className="mb-1.5 font-mono text-[9px] tracking-[0.2em] text-white/35">
+                        WAAROM DIT VOORSTEL
+                      </p>
+                      <ul className="flex flex-col gap-1">
+                        {proposal.basis.map((b, i) => (
+                          <li
+                            key={i}
+                            className="flex items-start gap-2 text-[12px] leading-relaxed text-white/60"
+                          >
+                            <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-cyan-300/50" />
+                            {b}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   {proposal.changes && (
                     <div className="mt-4 flex gap-2.5">
                       <button
@@ -687,11 +823,198 @@ export function WorkoutDetailDrawer({
                           {FEEDBACK_OPTIONS.find((o) => o.type === f.feedbackType)
                             ?.label ?? f.feedbackType}
                         </span>
+                        {f.rpe != null && (
+                          <span className="font-mono tabular-nums text-white/40">
+                            RPE {f.rpe}
+                          </span>
+                        )}
+                        {f.completion && (
+                          <span className="text-white/40">{f.completion}</span>
+                        )}
                         {f.note && <span className="text-white/35">— {f.note}</span>}
                       </div>
                     ))}
                   </div>
                 </div>
+              )}
+            </section>
+
+            {/* 05 UITVOERING — gekoppelde activiteit (koppel/ontkoppel). */}
+            {!isUpcoming && (
+              <section className="flex flex-col gap-3">
+                <SectionHead n="05" title="Uitvoering" icon={Link2} />
+                {workout.sessionId != null ? (
+                  <div className="flex items-center justify-between rounded-xl border border-white/[0.07] bg-white/[0.03] px-3.5 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <Check className="h-4 w-4 text-cyan-300/70" strokeWidth={2} />
+                      <span className="text-[12px] text-white/70">
+                        Gekoppeld aan activiteit #{workout.sessionId}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        linkSession.mutate({ id: workout.id, sessionId: null })
+                      }
+                      disabled={linkSession.isPending}
+                      className="flex items-center gap-1.5 rounded-full border border-white/[0.12] px-3 py-1.5 font-sans text-[11px] text-white/55 transition-colors hover:text-white/80 disabled:opacity-50"
+                    >
+                      <Unlink className="h-3 w-3" strokeWidth={1.75} />
+                      Ontkoppel
+                    </button>
+                  </div>
+                ) : (
+                  (() => {
+                    const sameDay = (recentSessions ?? []).filter(
+                      (s) => s.sessionDate === workout.scheduledDate,
+                    )
+                    if (sameDay.length === 0) {
+                      return (
+                        <p className="text-[12px] leading-relaxed text-white/40">
+                          Nog geen activiteit gekoppeld. Zodra er een rit van{" "}
+                          {new Date(
+                            workout.scheduledDate + "T12:00:00Z",
+                          ).toLocaleDateString("nl-NL", {
+                            day: "numeric",
+                            month: "long",
+                          })}{" "}
+                          binnenkomt, koppelt Sparki die automatisch — of koppel
+                          hier zelf zodra die er is.
+                        </p>
+                      )
+                    }
+                    return (
+                      <div className="flex flex-col gap-2">
+                        <p className="text-[12px] text-white/45">
+                          Activiteiten van dezelfde dag — koppel de juiste:
+                        </p>
+                        {sameDay.map((s) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() =>
+                              linkSession.mutate({
+                                id: workout.id,
+                                sessionId: s.id,
+                              })
+                            }
+                            disabled={linkSession.isPending}
+                            className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-2.5 text-left transition-colors hover:border-cyan-300/30 disabled:opacity-50"
+                          >
+                            <span className="text-[12px] text-white/75">
+                              {s.title ?? s.type}
+                            </span>
+                            <span className="font-mono text-[11px] tabular-nums text-white/45">
+                              {s.durationMin != null ? `${s.durationMin} min` : ""}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )
+                  })()
+                )}
+                {linkSession.isError && (
+                  <p className="text-[12px] text-red-300/70">
+                    Koppelen is niet gelukt. Controleer of de activiteit op
+                    dezelfde dag valt.
+                  </p>
+                )}
+              </section>
+            )}
+
+            {/* 06 HISTORIE & BEHEER */}
+            <section className="flex flex-col gap-3">
+              <SectionHead n="06" title="Historie & beheer" icon={History} />
+              <button
+                type="button"
+                onClick={() => setShowHistory((v) => !v)}
+                className="flex w-fit items-center gap-1.5 font-mono text-[10px] tracking-[0.18em] text-white/45 transition-colors hover:text-white/80"
+              >
+                <History className="h-3.5 w-3.5" strokeWidth={1.75} />
+                {showHistory ? "VERBERG WIJZIGINGEN" : "TOON WIJZIGINGEN"}
+              </button>
+              {showHistory && (
+                <div className="flex flex-col gap-1.5">
+                  {history.isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-white/40" />
+                  ) : (history.data?.changes ?? []).length === 0 ? (
+                    <p className="text-[12px] text-white/40">
+                      Nog geen wijzigingen geregistreerd.
+                    </p>
+                  ) : (
+                    (history.data?.changes ?? []).map((c) => (
+                      <div
+                        key={c.id}
+                        className="flex items-start gap-2 text-[11px] leading-relaxed text-white/45"
+                      >
+                        <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-white/25" />
+                        <span>
+                          <span className="font-mono text-[10px] text-white/35">
+                            {new Date(c.createdAt).toLocaleDateString("nl-NL", {
+                              day: "numeric",
+                              month: "short",
+                            })}
+                          </span>{" "}
+                          <span className="text-white/65">{c.action}</span>
+                          {c.reason && (
+                            <span className="text-white/40"> — {c.reason}</span>
+                          )}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+              {workout.source !== "coach" &&
+                workout.status !== "cancelled" &&
+                workout.status !== "completed" && (
+                  <div className="mt-1">
+                    {confirmCancel ? (
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-[12px] text-white/55">
+                          Training echt annuleren?
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            cancelWorkout.mutate(workout.id, {
+                              onSuccess: () => setConfirmCancel(false),
+                            })
+                          }
+                          disabled={cancelWorkout.isPending}
+                          className="rounded-full border border-red-300/30 px-3 py-1 font-sans text-[12px] text-red-300/80 disabled:opacity-50"
+                        >
+                          {cancelWorkout.isPending ? "Bezig…" : "Ja, annuleer"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmCancel(false)}
+                          className="rounded-full border border-white/[0.12] px-3 py-1 font-sans text-[12px] text-white/55"
+                        >
+                          Nee
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmCancel(true)}
+                        className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.18em] text-white/35 transition-colors hover:text-red-300/70"
+                      >
+                        <Ban className="h-3.5 w-3.5" strokeWidth={1.75} />
+                        TRAINING ANNULEREN
+                      </button>
+                    )}
+                    {cancelWorkout.isError && (
+                      <p className="mt-1.5 text-[12px] text-red-300/70">
+                        Annuleren is niet gelukt. Probeer het opnieuw.
+                      </p>
+                    )}
+                  </div>
+                )}
+              {workout.status === "cancelled" && (
+                <p className="text-[12px] text-white/40">
+                  Deze training is geannuleerd en telt nergens meer mee.
+                </p>
               )}
             </section>
           </div>

@@ -105,17 +105,32 @@ export type WorkoutFeedbackType =
   | "tired"
   | "move";
 
+export type WorkoutCompletion = "volledig" | "gedeeltelijk" | "niet";
+
 export type WorkoutFeedback = {
   id: number;
   clerkId: string;
   workoutId: number;
   feedbackType: WorkoutFeedbackType;
   note: string | null;
+  rpe: number | null;
+  completion: WorkoutCompletion | null;
+  deviationReason: string | null;
   createdAt: string;
 };
 
 export type PlannedWorkoutDetail = PlannedWorkout & {
   feedback: WorkoutFeedback[];
+};
+
+export type WorkoutChange = {
+  id: number;
+  workoutId: number;
+  action: string;
+  reason: string | null;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+  createdAt: string;
 };
 
 export type SparkiAdjustProposal = {
@@ -129,6 +144,10 @@ export type SparkiAdjustProposal = {
     newDate?: string;
     title?: string;
   } | null;
+  /** Deterministische onderbouwing van Sparki's beslislaag. */
+  basis?: string[];
+  /** 0–1 zekerheid van het voorstel. */
+  confidence?: number;
 };
 
 export type TrainingSession = {

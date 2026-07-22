@@ -198,6 +198,43 @@ export const workoutFeedbackTable = pgTable("workout_feedback", {
   // done | missed | too_hard | too_light | pain | tired | move
   feedbackType: text("feedback_type").notNull(),
   note: text("note"),
+  // Compacte na-training-feedback (Golf 23, additief; null = niet ingevuld):
+  // ervaren zwaarte 1–10 (RPE).
+  rpe: integer("rpe"),
+  // Uitvoering: volledig | gedeeltelijk | niet.
+  completion: text("completion"),
+  // Korte reden van afwijking in eigen woorden (bijv. "te weinig tijd").
+  deviationReason: text("deviation_reason"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ── Wijzigingshistorie per geplande training (Golf 23) ───────────────────────
+// Append-only. Iedere inhoudelijke wijziging aan een planned_workout is
+// herleidbaar: wat was het (before), wat werd het (after), wie deed het
+// (actor: sporter | coach | sparki), waarom (reason) en wanneer. Auto-koppeling
+// van een uitgevoerde activiteit en het lazy "gemist"-oordeel loggen hier ook.
+export const plannedWorkoutChangesTable = pgTable("planned_workout_changes", {
+  id: serial("id").primaryKey(),
+  clerkId: text("clerk_id")
+    .notNull()
+    .references(() => userProfilesTable.clerkId, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  workoutId: integer("workout_id")
+    .notNull()
+    .references(() => plannedWorkoutsTable.id, { onDelete: "cascade" }),
+  // aangemaakt | gewijzigd | verplaatst | geannuleerd | gemist |
+  // gekoppeld | ontkoppeld | status
+  action: text("action").notNull(),
+  // sporter | coach | sparki
+  actor: text("actor").notNull(),
+  reason: text("reason"),
+  // Alleen de gewijzigde velden (voor/na) — geen volledige rijsnapshots.
+  before: jsonb("before").$type<Record<string, unknown>>(),
+  after: jsonb("after").$type<Record<string, unknown>>(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -272,6 +309,15 @@ export const insertWorkoutFeedbackSchema = createInsertSchema(
 ).omit({ id: true });
 export type WorkoutFeedback = typeof workoutFeedbackTable.$inferSelect;
 export type InsertWorkoutFeedback = z.infer<typeof insertWorkoutFeedbackSchema>;
+
+export const insertPlannedWorkoutChangeSchema = createInsertSchema(
+  plannedWorkoutChangesTable,
+).omit({ id: true });
+export type PlannedWorkoutChange =
+  typeof plannedWorkoutChangesTable.$inferSelect;
+export type InsertPlannedWorkoutChange = z.infer<
+  typeof insertPlannedWorkoutChangeSchema
+>;
 
 export const insertWorkoutMentalReflectionSchema = createInsertSchema(
   workoutMentalReflectionsTable,

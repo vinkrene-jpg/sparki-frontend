@@ -151,3 +151,4 @@
 - [Sparki race flow & advies-typologie](sparki-race-flow.md) — coach-first enforced in compose fn; invalid enums ignored not rejected; geannuleerd filtered at every consumer; foreign routeId silently dropped.
 - [Sparki World sociale omgeving](sparki-world-social.md) — reference-only shares; openbaar = confirm + volwassen/oudertoestemming (fail-closed); route-privacy is read-time transform; dubbele waardering = 200.
 - [Sparki Kennisbank governance](sparki-kennisbank.md) — governed knowledge layer: publish=tx+snapshot, usage pins version, retracted final; engines must consume content, not just cite.
+- [Sparki plan-uitvoering & adaptieve voorstellen](sparki-plan-execution.md) — execution link race-safe (manual wins), deterministic verdict/adjust rules, LLM words-only; "done"+completion≠volledig is NOT completed-as-planned.

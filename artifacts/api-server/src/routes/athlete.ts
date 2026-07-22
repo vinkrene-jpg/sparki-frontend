@@ -7,6 +7,7 @@ import {
   trainingSessionsTable,
   activityImportsTable,
   plannedWorkoutsTable,
+  plannedWorkoutChangesTable,
   workoutFeedbackTable,
   athleteDailyMetricsTable,
   ftpHistoryTable,
@@ -26,6 +27,12 @@ import { computeLoad } from "../engines/recovery-load";
 import { computeLoadSeries } from "../lib/recovery-load";
 import { captureContext } from "../engines/context-memory";
 import { ingestManualSession } from "../lib/manual-session-ingest";
+import {
+  autoLinkSession,
+  classifyExecution,
+  logWorkoutChange,
+  markOverdueAsMissed,
+} from "../lib/workout-execution";
 
 const router = Router();
 
@@ -489,6 +496,11 @@ router.get("/workouts/today", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const today = todayStr();
   try {
+    // Zelfherstel: verlopen geplande trainingen zonder uitvoering eerlijk
+    // als "gemist" markeren voordat we lezen (lui, geen aparte job nodig).
+    await markOverdueAsMissed(clerkId, today).catch((err) =>
+      req.log.error({ err }, "markOverdueAsMissed failed"),
+    );
     const [workout] = await db
       .select()
       .from(plannedWorkoutsTable)
@@ -511,6 +523,10 @@ router.get("/workouts", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const { from, to } = req.query as { from?: string; to?: string };
   try {
+    // Zelfde luie zelfherstel als /workouts/today.
+    await markOverdueAsMissed(clerkId, todayStr()).catch((err) =>
+      req.log.error({ err }, "markOverdueAsMissed failed"),
+    );
     const workouts = await db
       .select()
       .from(plannedWorkoutsTable)
@@ -635,16 +651,18 @@ router.put("/workouts/:id", requireAuth, async (req, res) => {
     return;
   }
 
+  // Expliciet ontkoppelen: sessionId is aanwezig in de body én null.
+  const wantsUnlink =
+    Object.prototype.hasOwnProperty.call(req.body ?? {}, "sessionId") &&
+    (req.body as { sessionId?: number | null }).sessionId === null;
+
   try {
     // Coachautoriteit: een training van de coach mag Sparki/de sporter hier
     // niet inhoudelijk herschrijven. Status (gedaan/overgeslagen) en het
     // koppelen van een uitgevoerde sessie blijven wél toegestaan — dat is
     // registratie, geen herprogrammering.
     const [current] = await db
-      .select({
-        id: plannedWorkoutsTable.id,
-        source: plannedWorkoutsTable.source,
-      })
+      .select()
       .from(plannedWorkoutsTable)
       .where(
         and(
@@ -655,6 +673,47 @@ router.put("/workouts/:id", requireAuth, async (req, res) => {
     if (!current) {
       res.status(404).json({ error: "Workout not found" });
       return;
+    }
+    // Handmatige koppeling: de gekozen activiteit moet van de sporter zelf
+    // zijn en op dezelfde dag vallen als de geplande training — anders is de
+    // koppeling betekenisloos en zou de uitvoeringshistorie liegen.
+    let linkedVerdict: string | null = null;
+    if (sessionId != null) {
+      const [sess] = await db
+        .select({
+          id: trainingSessionsTable.id,
+          sessionDate: trainingSessionsTable.sessionDate,
+          durationMin: trainingSessionsTable.durationMin,
+          tss: trainingSessionsTable.tss,
+          sport: trainingSessionsTable.sport,
+          type: trainingSessionsTable.type,
+        })
+        .from(trainingSessionsTable)
+        .where(
+          and(
+            eq(trainingSessionsTable.id, sessionId),
+            eq(trainingSessionsTable.clerkId, clerkId),
+          ),
+        );
+      if (!sess) {
+        res.status(404).json({ error: "Activiteit niet gevonden" });
+        return;
+      }
+      const targetDate = scheduledDate ?? current.scheduledDate;
+      if (sess.sessionDate !== targetDate) {
+        res.status(400).json({
+          error:
+            "Deze activiteit valt op een andere dag dan de geplande training.",
+        });
+        return;
+      }
+      // Handmatige koppeling krijgt hetzelfde eerlijke uitvoeringsoordeel.
+      if (status == null) {
+        linkedVerdict = classifyExecution(sess, {
+          targetDurationMin: current.targetDurationMin,
+          targetTSS: current.targetTSS,
+        }).verdict;
+      }
     }
     const touchesContent =
       title != null ||
@@ -672,10 +731,19 @@ router.put("/workouts/:id", requireAuth, async (req, res) => {
       return;
     }
 
+    const effectiveStatus =
+      status != null
+        ? status
+        : linkedVerdict != null
+          ? linkedVerdict
+          : wantsUnlink
+            ? "planned"
+            : null;
+
     const [updated] = await db
       .update(plannedWorkoutsTable)
       .set({
-        ...(status != null && { status }),
+        ...(effectiveStatus != null && { status: effectiveStatus }),
         ...(title != null && { title }),
         ...(description != null && { description }),
         ...(scheduledDate != null && { scheduledDate }),
@@ -683,6 +751,7 @@ router.put("/workouts/:id", requireAuth, async (req, res) => {
         ...(targetTSS != null && { targetTSS }),
         ...(structure != null && { structure }),
         ...(sessionId != null && { sessionId }),
+        ...(wantsUnlink && { sessionId: null }),
         updatedAt: new Date(),
       })
       .where(
@@ -697,9 +766,172 @@ router.put("/workouts/:id", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Workout not found" });
       return;
     }
+
+    // Wijzigingshistorie: alleen de velden die echt veranderd zijn.
+    const before: Record<string, unknown> = {};
+    const after: Record<string, unknown> = {};
+    const cur = current as unknown as Record<string, unknown>;
+    const upd = updated as unknown as Record<string, unknown>;
+    for (const veld of [
+      "status",
+      "title",
+      "description",
+      "scheduledDate",
+      "targetDurationMin",
+      "targetTSS",
+      "sessionId",
+    ]) {
+      if (cur[veld] !== upd[veld]) {
+        before[veld] = cur[veld] ?? null;
+        after[veld] = upd[veld] ?? null;
+      }
+    }
+    if (structure != null) {
+      before["structure"] = current.structure ?? null;
+      after["structure"] = updated.structure ?? null;
+    }
+    if (Object.keys(after).length > 0) {
+      const action =
+        sessionId != null
+          ? "gekoppeld"
+          : wantsUnlink
+            ? "ontkoppeld"
+            : scheduledDate != null && scheduledDate !== current.scheduledDate
+              ? "verplaatst"
+              : status != null && Object.keys(after).length === 1
+                ? "status"
+                : "gewijzigd";
+      const bodyReason = (req.body as { reason?: string }).reason;
+      await logWorkoutChange({
+        clerkId,
+        workoutId: id,
+        action,
+        actor: "sporter",
+        reason:
+          typeof bodyReason === "string" && bodyReason.trim()
+            ? bodyReason.trim().slice(0, 500)
+            : null,
+        before,
+        after,
+      }).catch((err) =>
+        req.log.error({ err }, "athlete.workouts PUT history log failed"),
+      );
+    }
+
     res.json(updated);
   } catch (err) {
     req.log.error({ err }, "athlete.workouts PUT failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── DELETE /api/athlete/workouts/:id ─────────────────────────────────────────
+// Annuleren = zachte statuswissel (geen rij weg — historie en plan blijven
+// herleidbaar). Coachtrainingen annuleert de sporter hier niet zelf.
+router.delete("/workouts/:id", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid workout id" });
+    return;
+  }
+  try {
+    const [current] = await db
+      .select({
+        id: plannedWorkoutsTable.id,
+        source: plannedWorkoutsTable.source,
+        status: plannedWorkoutsTable.status,
+      })
+      .from(plannedWorkoutsTable)
+      .where(
+        and(
+          eq(plannedWorkoutsTable.id, id),
+          eq(plannedWorkoutsTable.clerkId, clerkId),
+        ),
+      );
+    if (!current) {
+      res.status(404).json({ error: "Workout not found" });
+      return;
+    }
+    if (current.source === "coach") {
+      res.status(403).json({
+        error:
+          "Deze training komt van je coach. Sparki annuleert die niet — bespreek dit met je coach.",
+        coachOwned: true,
+      });
+      return;
+    }
+    if (current.status === "cancelled") {
+      res.json({ ok: true, status: "cancelled" });
+      return;
+    }
+    const bodyReason = (req.body as { reason?: string } | undefined)?.reason;
+    await db
+      .update(plannedWorkoutsTable)
+      .set({ status: "cancelled", updatedAt: new Date() })
+      .where(
+        and(
+          eq(plannedWorkoutsTable.id, id),
+          eq(plannedWorkoutsTable.clerkId, clerkId),
+        ),
+      );
+    await logWorkoutChange({
+      clerkId,
+      workoutId: id,
+      action: "geannuleerd",
+      actor: "sporter",
+      reason:
+        typeof bodyReason === "string" && bodyReason.trim()
+          ? bodyReason.trim().slice(0, 500)
+          : null,
+      before: { status: current.status },
+      after: { status: "cancelled" },
+    }).catch((err) =>
+      req.log.error({ err }, "athlete.workouts DELETE history log failed"),
+    );
+    res.json({ ok: true, status: "cancelled" });
+  } catch (err) {
+    req.log.error({ err }, "athlete.workouts DELETE failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── GET /api/athlete/workouts/:id/history ────────────────────────────────────
+// Volledige wijzigingshistorie van één geplande training (append-only log).
+router.get("/workouts/:id/history", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid workout id" });
+    return;
+  }
+  try {
+    const [workout] = await db
+      .select({ id: plannedWorkoutsTable.id })
+      .from(plannedWorkoutsTable)
+      .where(
+        and(
+          eq(plannedWorkoutsTable.id, id),
+          eq(plannedWorkoutsTable.clerkId, clerkId),
+        ),
+      );
+    if (!workout) {
+      res.status(404).json({ error: "Workout not found" });
+      return;
+    }
+    const changes = await db
+      .select()
+      .from(plannedWorkoutChangesTable)
+      .where(
+        and(
+          eq(plannedWorkoutChangesTable.workoutId, id),
+          eq(plannedWorkoutChangesTable.clerkId, clerkId),
+        ),
+      )
+      .orderBy(desc(plannedWorkoutChangesTable.createdAt));
+    res.json({ changes });
+  } catch (err) {
+    req.log.error({ err }, "athlete.workouts.history failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -764,9 +996,12 @@ router.post("/workouts/:id/feedback", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Invalid workout id" });
     return;
   }
-  const { feedbackType, note } = req.body as {
+  const { feedbackType, note, rpe, completion, deviationReason } = req.body as {
     feedbackType?: string;
     note?: string;
+    rpe?: number | null;
+    completion?: string | null;
+    deviationReason?: string | null;
   };
   if (
     !feedbackType ||
@@ -775,6 +1010,27 @@ router.post("/workouts/:id/feedback", requireAuth, async (req, res) => {
     res.status(400).json({
       error: `feedbackType must be one of: ${FEEDBACK_TYPES.join(", ")}`,
     });
+    return;
+  }
+  if (
+    rpe != null &&
+    (typeof rpe !== "number" || !Number.isInteger(rpe) || rpe < 1 || rpe > 10)
+  ) {
+    res.status(400).json({ error: "rpe moet een geheel getal 1–10 zijn" });
+    return;
+  }
+  const COMPLETIONS = ["volledig", "gedeeltelijk", "niet"] as const;
+  if (
+    completion != null &&
+    !(COMPLETIONS as readonly string[]).includes(completion)
+  ) {
+    res.status(400).json({
+      error: `completion moet één van ${COMPLETIONS.join(", ")} zijn`,
+    });
+    return;
+  }
+  if (deviationReason != null && typeof deviationReason !== "string") {
+    res.status(400).json({ error: "Ongeldige deviationReason" });
     return;
   }
 
@@ -796,7 +1052,18 @@ router.post("/workouts/:id/feedback", requireAuth, async (req, res) => {
 
     const [feedback] = await db
       .insert(workoutFeedbackTable)
-      .values({ clerkId, workoutId: id, feedbackType, note: note ?? null })
+      .values({
+        clerkId,
+        workoutId: id,
+        feedbackType,
+        note: note ?? null,
+        rpe: rpe ?? null,
+        completion: completion ?? null,
+        deviationReason:
+          deviationReason && deviationReason.trim()
+            ? deviationReason.trim().slice(0, 500)
+            : null,
+      })
       .returning();
 
     // Let Sparki pick up a personal-context moment from the feedback note
@@ -808,10 +1075,15 @@ router.post("/workouts/:id/feedback", requireAuth, async (req, res) => {
       );
     }
 
-    // Mirror terminal feedback to the workout status.
+    // Mirror terminal feedback to the workout status. "gedeeltelijk" is een
+    // eerlijker oordeel dan een botte "completed".
     const newStatus =
       feedbackType === "done"
-        ? "completed"
+        ? completion === "gedeeltelijk"
+          ? "partial"
+          : completion === "niet"
+            ? "skipped"
+            : "completed"
         : feedbackType === "missed"
           ? "skipped"
           : null;
@@ -831,9 +1103,15 @@ router.post("/workouts/:id/feedback", requireAuth, async (req, res) => {
     // as planned vs deviating informs the begeleidingsprofiel. "missed" carries
     // no how-they-train signal, so it is left out.
     if (feedbackType !== "missed") {
+      // "Done" alleen als de sporter óók echt volledig heeft uitgevoerd:
+      // completion "gedeeltelijk"/"niet" spreekt "done" tegen en telt als
+      // afwijken van het plan (geen vals structured-signaal).
+      const fullyDone =
+        feedbackType === "done" &&
+        (completion == null || completion === "volledig");
       void deriveFromTraining(clerkId, {
         hadPlannedSession: true,
-        completedAsPlanned: feedbackType === "done",
+        completedAsPlanned: fullyDone,
       }).catch((err) => req.log.error({ err }, "deriveFromTraining failed"));
     }
 
@@ -1396,6 +1674,21 @@ router.post("/sessions", requireAuth, async (req, res) => {
     if (notes && notes.trim()) {
       captureContext(clerkId, notes.trim()).catch((err) =>
         req.log.error({ err }, "athlete.sessions context capture failed"),
+      );
+    }
+
+    // Uitvoeringskoppeling (Golf 23): verbind een NIEUWE handmatige activiteit
+    // met de geplande training van die dag. Best-effort — nooit blokkerend.
+    if (!merged) {
+      autoLinkSession(clerkId, {
+        id: session.id,
+        sessionDate: session.sessionDate,
+        sport: session.sport,
+        type: session.type,
+        durationMin: session.durationMin,
+        tss: session.tss,
+      }).catch((err) =>
+        req.log.error({ err }, "athlete.sessions auto-link failed"),
       );
     }
 

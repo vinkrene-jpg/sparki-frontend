@@ -15,6 +15,7 @@ import {
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { killSwitchGuard } from "../lib/kill-switches";
+import { decideAdjustment } from "../lib/adjust-rules";
 import {
   persistObservation,
   recordMemoryEvent,
@@ -618,14 +619,20 @@ type AdjustProposal = {
     newDate?: string;
     title?: string;
   } | null;
+  /** Deterministische onderbouwing (Golf 23) — letterlijk toonbaar. */
+  basis?: string[];
+  /** 0–1 zekerheid van de deterministische beslislaag. */
+  confidence?: number;
 };
 
 router.post("/workout-adjust", requireAuth, killSwitchGuard("auto_schema_adjust"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
-  const { workoutId, feedbackType, note } = req.body as {
+  const { workoutId, feedbackType, note, rpe, completion } = req.body as {
     workoutId?: number;
     feedbackType?: string;
     note?: string;
+    rpe?: number | null;
+    completion?: string | null;
   };
   const id = Number(workoutId);
   if (!Number.isInteger(id)) {
@@ -709,55 +716,73 @@ router.post("/workout-adjust", requireAuth, killSwitchGuard("auto_schema_adjust"
       return;
     }
 
-    const [context, system] = await Promise.all([
-      buildAthleteContext(clerkId, "workout_adjust"),
-      systemPrompt(clerkId),
-    ]);
-    const workoutBlock = describeWorkout(workout);
+    // Deterministische beslislaag (Golf 23): de aanbeveling, wijzigingen,
+    // onderbouwing en zekerheid komen uit pure regels — reproduceerbaar en
+    // nooit "creatief". Het taalmodel verwoordt hieronder alleen kop + uitleg.
     const today = todayStr();
-
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1200,
-      system,
-      messages: [
-        {
-          role: "user",
-          content: `Atleetcontext:\n${context}\n\n${workoutBlock}\n\nDE ATLEET ${FEEDBACK_LABEL[feedbackType].toUpperCase()}${note?.trim() ? ` — eigen toelichting: "${note.trim()}"` : ""}.\n\nBepaal als Sparki het beste antwoord en geef een concreet voorstel. Vandaag is ${today}. Antwoord UITSLUITEND met geldige JSON (geen markdown, geen tekst eromheen) in dit schema:\n{\n  "recommendation": "keep" | "adjust" | "move" | "recovery" | "replan_week",\n  "title": "korte kop (max 6 woorden, Nederlands)",\n  "message": "2-4 zinnen uitleg in het Nederlands, coachend en concreet, verwijzend naar de echte data",\n  "changes": null | {\n    "targetDurationMin"?: number,\n    "targetTSS"?: number,\n    "intensity"?: "string",\n    "newDate"?: "YYYY-MM-DD",\n    "title"?: "string"\n  }\n}\n\nRegels: bij "keep" is changes null. Bij "move" zet je newDate (een logische datum vanaf vandaag). Bij "adjust"/"recovery" geef je realistische nieuwe targetDurationMin/targetTSS/intensity. Bij pijn/blessure kies je herstel of verplaatsen, nooit zwaarder. Gebruik NOOIT het woord "AI" — jij bent Sparki.`,
-        },
-      ],
+    const decision = decideAdjustment({
+      feedbackType,
+      rpe: typeof rpe === "number" ? rpe : null,
+      completion: typeof completion === "string" ? completion : null,
+      workout: {
+        targetDurationMin: workout.targetDurationMin,
+        targetTSS: workout.targetTSS,
+        scheduledDate: workout.scheduledDate,
+        title: workout.title,
+      },
+      today,
     });
 
-    const block = message.content[0];
-    if (!block || block.type !== "text") {
-      res.status(500).json({ error: "Unexpected Sparki response" });
-      return;
-    }
-
-    // Parse the JSON robustly (strip any stray fencing).
-    let proposal: AdjustProposal | null = null;
+    // Verwoording door Sparki — met deterministische Nederlandse fallback als
+    // het model niet (bruikbaar) antwoordt. Het voorstel zelf verandert nooit.
+    let title = decision.fallbackTitle;
+    let messageText = decision.fallbackMessage;
     try {
-      const raw = block.text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "");
-      const start = raw.indexOf("{");
-      const end = raw.lastIndexOf("}");
-      const json = start >= 0 && end >= 0 ? raw.slice(start, end + 1) : raw;
-      proposal = JSON.parse(json) as AdjustProposal;
-    } catch {
-      proposal = null;
+      const [context, system] = await Promise.all([
+        buildAthleteContext(clerkId, "workout_adjust"),
+        systemPrompt(clerkId),
+      ]);
+      const workoutBlock = describeWorkout(workout);
+      const message = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 600,
+        system,
+        messages: [
+          {
+            role: "user",
+            content: `Atleetcontext:\n${context}\n\n${workoutBlock}\n\nDE ATLEET ${FEEDBACK_LABEL[feedbackType].toUpperCase()}${note?.trim() ? ` — eigen toelichting: "${note.trim()}"` : ""}.\n\nSparki heeft al besloten (dit besluit staat VAST, verander er niets aan):\n- aanbeveling: ${decision.recommendation}\n- wijzigingen: ${JSON.stringify(decision.changes)}\n- onderbouwing: ${decision.basis.join(" ")}\n\nVerwoord dit besluit voor de atleet. Vandaag is ${today}. Antwoord UITSLUITEND met geldige JSON (geen markdown):\n{\n  "title": "korte kop (max 6 woorden, Nederlands)",\n  "message": "2-4 zinnen uitleg in het Nederlands, coachend en concreet, trouw aan het vaststaande besluit"\n}\n\nGebruik NOOIT het woord "AI" — jij bent Sparki. Noem geen andere getallen dan die in het besluit staan.`,
+          },
+        ],
+      });
+      const block = message.content[0];
+      if (block && block.type === "text") {
+        const raw = block.text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "");
+        const start = raw.indexOf("{");
+        const end = raw.lastIndexOf("}");
+        const json = start >= 0 && end >= 0 ? raw.slice(start, end + 1) : raw;
+        const parsed = JSON.parse(json) as { title?: unknown; message?: unknown };
+        if (
+          typeof parsed.title === "string" &&
+          parsed.title.trim() &&
+          typeof parsed.message === "string" &&
+          parsed.message.trim()
+        ) {
+          title = parsed.title.trim();
+          messageText = parsed.message.trim();
+        }
+      }
+    } catch (llmErr) {
+      req.log.warn({ err: llmErr }, "ai.workout-adjust wording fallback used");
     }
 
-    const valid =
-      proposal &&
-      ["keep", "adjust", "move", "recovery", "replan_week"].includes(
-        proposal.recommendation,
-      ) &&
-      typeof proposal.title === "string" &&
-      typeof proposal.message === "string";
-
-    if (!valid) {
-      res.status(502).json({ error: "Sparki could not form a proposal" });
-      return;
-    }
+    const proposal: AdjustProposal = {
+      recommendation: decision.recommendation,
+      title,
+      message: messageText,
+      changes: decision.changes,
+      basis: decision.basis,
+      confidence: decision.confidence,
+    };
 
     res.json({ proposal });
   } catch (err) {

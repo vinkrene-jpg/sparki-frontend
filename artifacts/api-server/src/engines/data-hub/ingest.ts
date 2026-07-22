@@ -22,6 +22,7 @@ import {
   mergeSources,
 } from "./dedupe";
 import { cleanActivity, cleanDailyMetric, cleanFtp } from "./validation";
+import { autoLinkSession } from "../../lib/workout-execution";
 
 export interface IngestOptions {
   /** Data types the user has NOT revoked for this provider (default-grant). */
@@ -222,6 +223,8 @@ async function persistOneActivity(
     // Tellers pas NA een geslaagde commit bijwerken — bij een rollback mag de
     // mislukte activiteit niet als "nieuw"/"samengevoegd" meetellen.
     let outcome: "merged" | "created" | null = null;
+    let createdSessionId: number | null = null;
+    let createdTss: number | null = null;
     await db.transaction(async (tx) => {
     let sessionId: number;
     // Provenance rows share the canonical session's key so all sources for one
@@ -326,6 +329,8 @@ async function persistOneActivity(
         })
         .returning({ id: trainingSessionsTable.id });
       sessionId = inserted!.id;
+      createdSessionId = inserted!.id;
+      createdTss = tss ?? null;
       outcome = "created";
     }
 
@@ -357,6 +362,25 @@ async function persistOneActivity(
     });
     if (outcome === "merged") counts.merged = (counts.merged ?? 0) + 1;
     if (outcome === "created") counts.activities = (counts.activities ?? 0) + 1;
+
+    // Uitvoeringskoppeling: verbind de nieuwe activiteit met de geplande
+    // training van die dag (Golf 23). Best-effort — een koppelfout mag een
+    // geslaagde import nooit terugdraaien of laten mislukken.
+    if (outcome === "created" && createdSessionId != null) {
+      try {
+        await autoLinkSession(clerkId, {
+          id: createdSessionId,
+          sessionDate: dateOf(a.startedAt),
+          sport: a.sport,
+          type: legacyTypeForSport(a.sport),
+          durationMin: a.durationMin ?? null,
+          tss: createdTss,
+        });
+      } catch {
+        // Bewust stil: de import is geslaagd; koppeling probeert de volgende
+        // lezer/lazy-selfheal opnieuw niet — handmatig koppelen blijft mogelijk.
+      }
+    }
   }
 }
 
