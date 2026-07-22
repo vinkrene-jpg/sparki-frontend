@@ -473,3 +473,9 @@ id = "J7hFoJ3OIs4JjwkeRP8bW"
 uri = "file://docs/product/NIEUWE_KERNERVARING.md"
 type = "text"
 title = "Ontwerp: nieuwe kernervaring voor de renner"
+
+[[outputs]]
+id = "bS2Dtt-kNISW3vw84EvNO"
+uri = "file://docs/review-bundle/sparki-reviewbundel.zip"
+type = "unspecified"
+title = "Sparki reviewbundel (voor ChatGPT-codecontrole)"
