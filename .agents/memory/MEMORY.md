@@ -135,6 +135,7 @@
 - [Sparki analysekwaliteit & feedbacklus](sparki-analysis-feedback.md) — idempotente feedback-upsert moet de HELE rij verversen (incl. reasonCode+context) of oude verantwoording blijft staan.
 - [Sparki Journey & wedstrijddossier](sparki-journey.md) — composed timeline (no duplication); minor media fail-closed; share-card must enforce "gedeeld" server-side (400), never UI-only.
 - [Sparki Mechanieker & materiaalkring](sparki-mechanieker.md) — km altijd afgeleid (nooit teller), defect alleen uit eigen registratie, onConflictDoUpdate partial index needs `targetWhere` not `where`.
+- [Sparki uitleglaag](sparki-uitleglaag.md) — centraal uitleg-registry + UitlegDot; "Bij jou" alleen uit echte waarden, nooit verzonnen; bare TSS heet "Belasting (TSS)".
 - [Sparki fietsscan](sparki-bike-scan.md) — original saved before cutout; viewMode fotos on ANY frames; @imgly bg-removal needs direct onnxruntime-web dep for vite build; asset provenance mandatory.
 - [tsx module-mock tests & CJS](tsx-module-mock-cjs.md) — mock.module first, lazy `import()` promise (no top-level await, no static import) or the real native module loads/CJS transform fails.
 - [Mobile ride sync honesty](sparki-mobile-ride-sync.md) — "veilig op je telefoon" claims require fail-closed storage writes; detector/queue state must reset across ride lifecycle.

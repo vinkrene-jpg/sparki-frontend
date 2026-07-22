@@ -131,7 +131,7 @@ export function LogSessionForm({
         <input
           className={inputClass}
           type="number"
-          placeholder="TSS"
+          placeholder="Belasting (TSS)"
           value={form.tss}
           onChange={set("tss")}
           min={1}
@@ -302,7 +302,7 @@ function PlanWorkoutForm({ onDone }: { onDone: () => void }) {
           <input
             className={inputClass}
             type="number"
-            placeholder="Doel-TSS (optioneel)"
+            placeholder="Doelbelasting (TSS, optioneel)"
             value={form.targetTSS}
             onChange={set("targetTSS")}
             min={1}

@@ -475,7 +475,7 @@ export function TrainingDayHome({
               )}
               {lastSession.tss != null && (
                 <AnalysisStat
-                  label="TSS"
+                  label="Belasting (TSS)"
                   value={String(lastSession.tss)}
                   accent
                 />
