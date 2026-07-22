@@ -44,6 +44,64 @@ export function computeLoad(
   };
 }
 
+export type LoadPoint = {
+  date: string;
+  ctl: number;
+  atl: number;
+  tsb: number;
+  tss: number;
+};
+
+/**
+ * Same load model as computeLoad, but also returns the day-by-day series for
+ * the trailing `chartDays` window (pre-warmed over the trailing ~90 days so
+ * the model state is identical). ONE implementation: routes must use this
+ * instead of re-implementing the EWMA inline. TSS per date is summed once per
+ * session row — an activity never counts double.
+ */
+export function computeLoadSeries(
+  sessions: Array<{ sessionDate: string; tss: number | null }>,
+  chartDays = 42,
+): Load & { chartData: LoadPoint[] } {
+  const days = Math.max(7, Math.min(90, Math.round(chartDays)));
+  const tssByDate = new Map<string, number>();
+  for (const s of sessions) {
+    if (s.tss != null) {
+      tssByDate.set(s.sessionDate, (tssByDate.get(s.sessionDate) ?? 0) + s.tss);
+    }
+  }
+
+  const today = new Date();
+  let ctl = 0;
+  let atl = 0;
+  const chartData: LoadPoint[] = [];
+
+  for (let i = 90; i >= 0; i--) {
+    const d = new Date(today);
+    d.setUTCDate(d.getUTCDate() - i);
+    const dateStr = d.toISOString().split("T")[0]!;
+    const tss = tssByDate.get(dateStr) ?? 0;
+    ctl = ctl + (tss - ctl) / 42;
+    atl = atl + (tss - atl) / 7;
+    if (i <= days) {
+      chartData.push({
+        date: dateStr,
+        ctl: Math.round(ctl),
+        atl: Math.round(atl),
+        tsb: Math.round(ctl - atl),
+        tss,
+      });
+    }
+  }
+
+  return {
+    ctl: Math.round(ctl),
+    atl: Math.round(atl),
+    tsb: Math.round(ctl - atl),
+    chartData,
+  };
+}
+
 export type RiskLevel = "low" | "moderate" | "high";
 
 export type RiskSignal = {

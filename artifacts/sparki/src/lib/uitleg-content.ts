@@ -152,6 +152,30 @@ export const UITLEG: Record<string, Uitleg> = {
     hoe: "Opgebouwd uit vaste, controleerbare regels over je belasting, je vorm, je check-in en je geplande wedstrijden. Ontbreekt er data, dan wordt het advies voorzichtiger en staat erbij wat er mist. Jij beslist altijd zelf.",
     versie: 1,
   },
+  performanceRadar: {
+    wat: "Je capaciteitsprofiel over zes signalen: fitheid, vorm, herstel, vermogen, gevoel en regelmaat.",
+    waarom: "Eén getal zegt weinig over een renner. Zes assen naast elkaar laten zien waar je sterk bent en waar ruimte zit — zonder een verzonnen totaalscore.",
+    hoe: "Iedere as wordt berekend uit echte data: fitheid/vorm/herstel uit je belastingsmodel (90 dagen), vermogen uit je FTP en gewicht (W/kg, schaal 2,0–5,5), gevoel en regelmaat uit je sessies van de laatste 28 dagen. Ontbreekt de data voor een as, dan wordt die as niet getekend en staat eronder wat er mist.",
+    versie: 1,
+  },
+  readinessTrend: {
+    wat: "Het verloop van je dagelijkse gevoel-score uit je check-ins, over de gekozen periode.",
+    waarom: "Eén slechte dag zegt weinig; een dalende lijn over weken wel. De trend laat zien of je opbouw vol te houden is.",
+    hoe: "Iedere ingevulde check-in telt als één punt (gevoel 1–5, getoond als 0–100). Dagen zonder check-in ontbreken gewoon in de lijn — er wordt niets ingevuld of geschat.",
+    versie: 1,
+  },
+  hrvTrend: {
+    wat: "Het verloop van je hartritmevariatie (HRV) uit je check-ins, in milliseconden.",
+    waarom: "Een dalende HRV over meerdere dagen kan wijzen op oplopende vermoeidheid of stress. De trend zegt meer dan één losse meting.",
+    hoe: "Alleen zelf ingevoerde HRV-waarden uit je check-in tellen mee, over de gekozen periode. Dagen zonder meting ontbreken in de lijn. Vergelijk vooral met je eigen normale waarden — HRV verschilt sterk per persoon.",
+    versie: 1,
+  },
+  ftpOntwikkeling: {
+    wat: "Je huidige FTP uit je Sportpaspoort, met daaronder je geregistreerde tests en metingen door de tijd.",
+    waarom: "Zo zie je of je drempelvermogen zich ontwikkelt. De grote waarde is altijd dezelfde als in je Sportpaspoort — er bestaat maar één FTP in Sparki.",
+    hoe: "De balken zijn je FTP-registraties (tests, schattingen, correcties) op datum. Pas je je FTP aan in je Sportpaspoort, dan verandert hij hier automatisch mee.",
+    versie: 1,
+  },
   records: {
     wat: "Je beste vermogens over vaste tijdsduren, van 5 seconden tot 20 minuten.",
     waarom: "Je records laten zien waar je sterk bent (sprint, aanval of duurvermogen) en of je vooruitgaat ten opzichte van eerder.",

@@ -13,6 +13,7 @@
     "test:insight-grouping": "node ../../scripts/run-tsx-test.mjs src/lib/insight-grouping.test.ts",
     "test:ontwikkelprioriteit": "node ../../scripts/run-tsx-test.mjs src/lib/ontwikkelprioriteit.test.ts",
     "test:bandbreedte": "node ../../scripts/run-tsx-test.mjs src/lib/bandbreedte.test.ts",
+    "test:performance-radar": "node ../../scripts/run-tsx-test.mjs src/lib/performance-radar.test.ts",
     "test:core-profile": "node ../../scripts/run-tsx-test.mjs src/lib/core-profile.test.ts",
     "test:core-profile-bandbreedte": "node ../../scripts/run-tsx-test.mjs src/lib/core-profile-bandbreedte.test.ts",
     "test:core-profile-evolution": "node ../../scripts/run-tsx-test.mjs src/lib/core-profile-evolution.test.ts",

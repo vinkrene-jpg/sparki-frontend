@@ -18,6 +18,8 @@ import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer"
 import { TrainingProgression } from "@/components/sparki/training-progression"
 import { MentalResilienceCard } from "@/components/sparki/mental-resilience-card"
 import type { TrainingSession } from "@/lib/athlete-types"
+import { computePerformanceRadar } from "@/lib/performance-radar"
+import { UitlegDot } from "@/components/viz/uitleg"
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />
@@ -38,10 +40,12 @@ function Delta({ value }: { value: number }) {
 
 function FtpBars({
   history,
+  currentFtp,
 }: {
   history: Array<{ ftpWatts: number; measuredAt: string }>
+  currentFtp: number | null
 }) {
-  if (history.length === 0) {
+  if (history.length === 0 && currentFtp == null) {
     return (
       <MissingInputNotice
         compact
@@ -57,20 +61,26 @@ function FtpBars({
   const sorted = [...history].sort((a, b) =>
     a.measuredAt.localeCompare(b.measuredAt),
   )
-  const maxW = Math.max(...sorted.map((h) => h.ftpWatts))
+  const maxW = sorted.length > 0 ? Math.max(...sorted.map((h) => h.ftpWatts)) : 0
 
   const first = sorted[0]?.ftpWatts ?? 0
-  const last = sorted[sorted.length - 1]?.ftpWatts ?? 0
-  const delta = last - first
+  const lastTest = sorted[sorted.length - 1]?.ftpWatts ?? 0
+  const delta = sorted.length > 0 ? lastTest - first : 0
+  // SSOT: de grote waarde is ALTIJD je huidige profiel-FTP (Sportpaspoort) —
+  // een correctie daar werkt hier direct door.
+  const shown = currentFtp ?? lastTest
 
   return (
     <div>
       <div className="flex items-end justify-between">
         <div className="flex items-baseline gap-1.5">
           <span className="font-sans text-4xl font-extralight tabular-nums">
-            {last}
+            {shown}
           </span>
           <span className="font-mono text-[11px] text-white/35">W</span>
+          <span className="font-mono text-[10px] text-white/30">
+            · uit je Sportpaspoort
+          </span>
         </div>
         {delta !== 0 && (
           <span
@@ -115,67 +125,42 @@ function FtpBars({
   )
 }
 
+const PERIODS = [14, 30, 90] as const
+
+function localTodayIso(): string {
+  const d = new Date()
+  const p = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
 export default function LabPage() {
+  const [periodDays, setPeriodDays] = useState<number>(14)
   const { data: load, isLoading: loadLoading } = useLoad()
   const { data: ftpHistory, isLoading: ftpLoading } = useFtpHistory()
   const { data: sessions, isLoading: sessionsLoading } = useSessions(60)
-  const { data: metrics, isLoading: metricsLoading } = useDailyMetrics(14)
+  const { data: metrics, isLoading: metricsLoading } = useDailyMetrics(periodDays)
   const { data: profile } = useAthleteExtendedProfile()
   const [, navigate] = useLocation()
   const [openSession, setOpenSession] = useState<TrainingSession | null>(null)
 
-  const clamp = (v: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v))
-
-  const feelScores = (sessions ?? [])
-    .filter((s) => s.feelScore != null)
-    .map((s) => s.feelScore!)
-  const avgFeel =
-    feelScores.length > 0
-      ? feelScores.reduce((a, b) => a + b, 0) / feelScores.length / 5
-      : 0.5
-
-  const lastFtp =
-    (ftpHistory ?? []).length > 0
-      ? [...(ftpHistory ?? [])]
-          .sort((a, b) => a.measuredAt.localeCompare(b.measuredAt))
-          .at(-1)?.ftpWatts ?? 0
-      : 0
-
-  const bioAxes = [
-    {
-      key: "fitness",
-      label: "Fitness",
-      level: load ? clamp(load.ctl / 80) : 0.5,
-    },
-    { key: "feel", label: "Voel", level: avgFeel || 0.5 },
-    {
-      key: "form",
-      label: "Form",
-      level: load ? clamp((load.tsb + 30) / 60) : 0.5,
-    },
-    {
-      key: "power",
-      label: "Power",
-      level:
-        lastFtp > 0
-          ? clamp(lastFtp / 350)
-          : profile?.ftp
-            ? clamp(profile.ftp / 350)
-            : 0.5,
-    },
-    {
-      key: "recovery",
-      label: "Herstel",
-      level: load
-        ? clamp(1 - load.atl / Math.max(load.ctl * 1.5, 60))
-        : 0.5,
-    },
-    {
-      key: "consistency",
-      label: "Consistentie",
-      level: clamp((sessions ?? []).length / 10),
-    },
-  ]
+  // Eerlijke radar: pure berekening, per as herleidbaar; ontbrekende assen
+  // worden niet getekend (nooit een neutrale 0.5-placeholder).
+  const radarAxes = computePerformanceRadar({
+    load: load ?? null,
+    sessions: (sessions ?? []).map((s) => ({
+      sessionDate: s.sessionDate,
+      feelScore: s.feelScore ?? null,
+    })),
+    ftpWatts: profile?.ftp ?? null,
+    weightKg: profile?.weightKg != null ? Number(profile.weightKg) : null,
+    todayIso: localTodayIso(),
+  })
+  const measurableAxes = radarAxes.filter((a) => a.level != null) as Array<{
+    key: string
+    label: string
+    level: number
+  }>
+  const missingAxes = radarAxes.filter((a) => a.level == null)
 
   // Readiness history from feel scores in daily metrics (proxy for v0 readiness trend)
   const readinessHistory = (metrics ?? [])
@@ -198,18 +183,9 @@ export default function LabPage() {
     .filter((m) => m.hrv != null)
     .map((m) => m.hrv!)
 
-  // Only surface the radar once there is real signal behind it — otherwise the
-  // axes would fall back to neutral 0.5 placeholders and present a fake reading.
-  const hasRadarData =
-    !!load ||
-    (sessions?.length ?? 0) > 0 ||
-    (ftpHistory?.length ?? 0) > 0 ||
-    feelScores.length > 0 ||
-    profile?.ftp != null
   const radarLoading = loadLoading || sessionsLoading
-  // Honest, derived insight — the strongest axis computed from real numbers,
-  // never a hardcoded claim.
-  const strongestAxis = [...bioAxes].sort((a, b) => b.level - a.level)[0]
+  // Honest, derived insight — the strongest measurable axis, never a claim.
+  const strongestAxis = [...measurableAxes].sort((a, b) => b.level - a.level)[0]
 
   return (
     <ScreenShell section="Lab">
@@ -239,16 +215,21 @@ export default function LabPage() {
       {/* 01 PERFORMANCE RADAR */}
       <section className="flex flex-col items-center">
         <div className="flex w-full items-center justify-between">
-          <SectionLabel n="01" title="Performance Radar" />
+          <div className="flex items-center gap-1.5">
+            <SectionLabel n="01" title="Performance Radar" />
+            <UitlegDot uitlegKey="performanceRadar" label="Performance Radar" />
+          </div>
         </div>
         {radarLoading ? (
           <Skeleton className="mt-4 h-[260px] w-[260px] rounded-full" />
-        ) : hasRadarData ? (
+        ) : measurableAxes.length >= 3 ? (
           <>
-            <BioRadar size={260} accent={ACCENT} axes={bioAxes} />
+            <BioRadar size={260} accent={ACCENT} axes={measurableAxes} />
             <p className="mt-1 max-w-[18rem] text-pretty text-center text-[12px] leading-relaxed text-white/40">
-              Je capaciteitsprofiel over zes signalen, berekend uit je belasting,
-              sessies en check-ins. Je sterkste signaal nu: {strongestAxis.label}.
+              {measurableAxes.length === radarAxes.length
+                ? "Alle zes signalen berekend uit je eigen data."
+                : `${measurableAxes.length} van ${radarAxes.length} signalen meetbaar — alleen die worden getekend.`}{" "}
+              Je sterkste signaal nu: {strongestAxis?.label}.
             </p>
           </>
         ) : (
@@ -257,14 +238,49 @@ export default function LabPage() {
             Sparki je capaciteitsprofiel kan opbouwen.
           </p>
         )}
+        {!radarLoading && missingAxes.length > 0 && (
+          <div className="mt-3 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
+            <p className="font-mono text-[9px] tracking-[0.2em] text-white/35">
+              NOG NIET MEETBAAR
+            </p>
+            <ul className="mt-1.5 space-y-1">
+              {missingAxes.map((a) => (
+                <li key={a.key} className="text-[11px] leading-relaxed text-white/45">
+                  <span className="text-white/70">{a.label}</span> — {a.missingReason}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
 
       {/* 02 READINESS HISTORY */}
       <section>
-        <SectionLabel n="02" title="Readiness history" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <SectionLabel n="02" title="Readiness history" />
+            <UitlegDot uitlegKey="readinessTrend" label="Readiness-trend" />
+          </div>
+          <div className="flex items-center gap-1">
+            {PERIODS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPeriodDays(p)}
+                className={`rounded-full border px-2.5 py-1 font-mono text-[10px] tabular-nums transition-colors ${
+                  periodDays === p
+                    ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-200"
+                    : "border-white/[0.08] text-white/40 hover:text-white/60"
+                }`}
+              >
+                {p}d
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="mt-4 flex items-baseline justify-between">
           <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
-            14 DAGEN
+            {periodDays} DAGEN
           </span>
           {readinessHistory.length > 1 && (
             <span className="font-mono text-[11px] tabular-nums text-cyan-300/80">
@@ -306,7 +322,15 @@ export default function LabPage() {
 
       {/* 03 HRV TREND */}
       <section>
-        <SectionLabel n="03" title="HRV trend" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <SectionLabel n="03" title="HRV trend" />
+            <UitlegDot uitlegKey="hrvTrend" label="HRV-trend" />
+          </div>
+          <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+            {periodDays} DAGEN
+          </span>
+        </div>
         {metricsLoading ? (
           <Skeleton className="mt-4 h-16 w-full" />
         ) : todayHrv != null ? (
@@ -356,12 +380,22 @@ export default function LabPage() {
 
       {/* 04 FTP ONTWIKKELING */}
       <section>
-        <SectionLabel n="04" title="FTP ontwikkeling" />
+        <div className="flex items-center gap-1.5">
+          <SectionLabel n="04" title="FTP ontwikkeling" />
+          <UitlegDot
+            uitlegKey="ftpOntwikkeling"
+            label="FTP-ontwikkeling"
+            persoonlijk={{ ftp: profile?.ftp ?? null }}
+          />
+        </div>
         <div className="mt-4">
           {ftpLoading ? (
             <Skeleton className="h-24 w-full" />
           ) : (
-            <FtpBars history={ftpHistory ?? []} />
+            <FtpBars
+              history={ftpHistory ?? []}
+              currentFtp={profile?.ftp ?? null}
+            />
           )}
         </div>
       </section>

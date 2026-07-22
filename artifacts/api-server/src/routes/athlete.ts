@@ -23,6 +23,7 @@ import {
   deriveFromTraining,
 } from "../engines/profile";
 import { computeLoad } from "../engines/recovery-load";
+import { computeLoadSeries } from "../lib/recovery-load";
 import { captureContext } from "../engines/context-memory";
 import { ingestManualSession } from "../lib/manual-session-ingest";
 
@@ -1601,9 +1602,14 @@ router.post("/metrics", requireAuth, async (req, res) => {
 });
 
 // ── GET /api/athlete/load ────────────────────────────────────────────────────
+// SSOT: dezelfde `computeLoadSeries` als de rest van Sparki (dashboard, plan,
+// doelen) — geen tweede belastingsmodel. `?days=` stuurt alleen het
+// grafiekvenster (7–90); het model zelf blijft altijd over 90 dagen gewarmd.
 router.get("/load", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
+    const rawDays = Number(String(req.query.days ?? "42"));
+    const chartDays = Number.isFinite(rawDays) ? rawDays : 42;
     const sessions = await db
       .select({
         sessionDate: trainingSessionsTable.sessionDate,
@@ -1617,59 +1623,7 @@ router.get("/load", requireAuth, async (req, res) => {
         ),
       );
 
-    const tssByDate = new Map<string, number>();
-    for (const s of sessions) {
-      if (s.tss != null) {
-        tssByDate.set(
-          s.sessionDate,
-          (tssByDate.get(s.sessionDate) ?? 0) + s.tss,
-        );
-      }
-    }
-
-    const today = new Date();
-    let ctl = 0;
-    let atl = 0;
-
-    // Pre-warm: days 90 → 43
-    for (let i = 90; i > 42; i--) {
-      const d = new Date(today);
-      d.setUTCDate(d.getUTCDate() - i);
-      const tss = tssByDate.get(d.toISOString().split("T")[0]!) ?? 0;
-      ctl = ctl + (tss - ctl) / 42;
-      atl = atl + (tss - atl) / 7;
-    }
-
-    // Chart data: last 42 days
-    const chartData: Array<{
-      date: string;
-      ctl: number;
-      atl: number;
-      tsb: number;
-      tss: number;
-    }> = [];
-    for (let i = 42; i >= 0; i--) {
-      const d = new Date(today);
-      d.setUTCDate(d.getUTCDate() - i);
-      const dateStr = d.toISOString().split("T")[0]!;
-      const tss = tssByDate.get(dateStr) ?? 0;
-      ctl = ctl + (tss - ctl) / 42;
-      atl = atl + (tss - atl) / 7;
-      chartData.push({
-        date: dateStr,
-        ctl: Math.round(ctl),
-        atl: Math.round(atl),
-        tsb: Math.round(ctl - atl),
-        tss,
-      });
-    }
-
-    res.json({
-      ctl: Math.round(ctl),
-      atl: Math.round(atl),
-      tsb: Math.round(ctl - atl),
-      chartData,
-    });
+    res.json(computeLoadSeries(sessions, chartDays));
   } catch (err) {
     req.log.error({ err }, "athlete.load failed");
     res.status(500).json({ error: "Internal server error" });

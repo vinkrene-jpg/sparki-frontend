@@ -144,6 +144,7 @@
 - [Mobile ride sync honesty](sparki-mobile-ride-sync.md) — "veilig op je telefoon" claims require fail-closed storage writes; detector/queue state must reset across ride lifecycle.
 - [Sparki clubomgeving](sparki-club.md) — least-privilege clubrechten; limieten óók bij invite-accept, club-scoped ID-checks, FOR UPDATE op signup; jeugd-consent fail-closed.
 - [Sparki fueling engine](sparki-fueling-engine.md) — deterministic richtwaarden SSOT (LLM phrases, never computes); jeugd no-numbers; consent fail-closed; mobile fuel snapshot date at STOP not save.
+- [Sparki Performance Lab](sparki-performance-lab.md) — één belastingsmodel via computeLoadSeries (nooit inline EWMA in routes); radar-assen zonder data zijn null+reden, nooit 0.5.
 - [Sparki ouderomgeving](sparki-parent-environment.md) — één rechtenlaag voor ALLE ouder-routes (ook legacy); onbekende leeftijd clampt naar veiligheidsminimum; onbevestigd nooit boven safety-only; caps atomair via advisory lock.
 - [Sparki Sportpaspoort](sparki-sportpaspoort.md) — herkomstlaag bovenop athlete_profiles; waarde+event ALTIJD in één transactie (nooit best-effort .catch); voorstel-besluit + toepassen atomair.
 - [Sparki releasegroepen & uitrol](sparki-release-rollout.md) — auto-stop telt kritieke fouten PER flag (nooit globaal); anonieme meldingen nooit kritiek; 426 heeft latch naast event.
