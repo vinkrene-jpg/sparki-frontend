@@ -25,11 +25,18 @@ async function requireClimbFlag(
   }
   try {
     const [profile] = await db
-      .select({ activeRole: userProfilesTable.activeRole })
+      .select({
+        activeRole: userProfilesTable.activeRole,
+        isHeadTester: userProfilesTable.isHeadTester,
+      })
       .from(userProfilesTable)
       .where(eq(userProfilesTable.clerkId, clerkId));
     const activeRole = String(profile?.activeRole ?? "athlete");
-    const flags = await resolveFlags(clerkId, activeRole);
+    // Zelfde precedence als GET /api/flags: head-tester early access telt mee,
+    // anders toont de UI de functie terwijl de API 403 geeft.
+    const flags = await resolveFlags(clerkId, activeRole, {
+      isHeadTester: profile?.isHeadTester === true,
+    });
     if (!flags.climb_explorer) {
       res.status(403).json({ error: "Klimmenverkenner niet ingeschakeld" });
       return;
