@@ -32,6 +32,8 @@ import {
   Share2,
   Phone,
   Download,
+  BatteryLow,
+  Battery,
   type LucideIcon,
 } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
@@ -356,6 +358,27 @@ export function RouteNavigator({
   // Echte actuele wind (Open-Meteo) op je positie — subtiel getoond, nooit
   // verzonnen: blijft weg zolang er geen echte meting is.
   const [wind, setWind] = useState<{ kmh: number; dirDeg: number } | null>(null)
+  // ── Batterijmodus ─────────────────────────────────────────────────
+  // Waar de browser het toestaat (o.a. Android/Chrome) lezen we de echte
+  // batterijstand uit. Op iPhone geeft de browser die niet vrij — dan tonen
+  // we dat eerlijk en blijft alleen de handmatige spaarstand over. We
+  // voorspellen pas iets als we het leeglopen tijdens DEZE rit echt gemeten
+  // hebben (nooit een verzonnen prognose).
+  const [battery, setBattery] = useState<{
+    level: number
+    charging: boolean
+  } | null>(null)
+  const batterySamplesRef = useRef<{ t: number; level: number }[]>([])
+  const [drainPerMin, setDrainPerMin] = useState<number | null>(null)
+  // Spaarstand: donkere kaart, plekken/wind/kaartdraaiing uit + zuinig scherm.
+  const [ecoMode, setEcoMode] = useState(false)
+  const [dimmed, setDimmed] = useState(false)
+  const [ecoPromptDismissed, setEcoPromptDismissed] = useState(false)
+  // Zolang de spaarstand aan staat, gelden deze afgeleide waarden — de eigen
+  // keuzes blijven bewaard en komen terug zodra de spaarstand uitgaat.
+  const poisVisible = ecoMode ? false : showPois
+  const headingUpActive = ecoMode ? false : headingUp
+  const activeBasemap: BasemapId = ecoMode ? "donker" : basemap
   // Per-ride setup (map style, group riding, sensor pairing) is a one-time
   // choice at the start of a ride, so it lives behind a collapsible panel and
   // isn't permanently on screen.
@@ -736,7 +759,7 @@ export function RouteNavigator({
       map.removeLayer(poiLayerRef.current)
       poiLayerRef.current = null
     }
-    if (!showPois || pois.length === 0) return
+    if (!poisVisible || pois.length === 0) return
     const group = L.layerGroup()
     for (const poi of pois) {
       const emoji = POI_ICONS[poi.kind] ?? "⭐"
@@ -758,7 +781,7 @@ export function RouteNavigator({
         poiLayerRef.current = null
       }
     }
-  }, [pois, showPois])
+  }, [pois, poisVisible])
 
   const progress = useMemo(() => {
     if (!location || path.length === 0) return null
@@ -1120,7 +1143,7 @@ export function RouteNavigator({
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-    const cfg = BASEMAPS[basemap]
+    const cfg = BASEMAPS[activeBasemap]
     if (tileLayerRef.current) map.removeLayer(tileLayerRef.current)
     tileLayerRef.current = L.tileLayer(cfg.url, {
       attribution: cfg.attribution,
@@ -1129,19 +1152,19 @@ export function RouteNavigator({
       className: cfg.tileClassName ?? "",
     }).addTo(map)
     tileLayerRef.current.bringToBack()
-  }, [basemap])
+  }, [activeBasemap])
 
   // Rijrichting-boven: houd een doorlopende rotatiehoek bij (altijd de kortste
   // draai, nooit een 359°→0° zwiep) zodat de kaart rustig meedraait.
   useEffect(() => {
-    if (!headingUp) return
+    if (!headingUpActive) return
     const h = location?.heading
     if (h == null) return
     const cur = rotAccumRef.current
     const delta = ((h - (((cur % 360) + 360) % 360) + 540) % 360) - 180
     rotAccumRef.current = cur + delta
     setRotDeg(rotAccumRef.current)
-  }, [location?.heading, headingUp])
+  }, [location?.heading, headingUpActive])
 
   // Bij het wisselen van oriëntatie verandert de kaartlaag van maat — Leaflet
   // moet dan opnieuw meten, anders klopt het kaartmidden niet meer.
@@ -1157,13 +1180,15 @@ export function RouteNavigator({
     }, 80)
     return () => window.clearTimeout(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [headingUp])
+  }, [headingUpActive])
 
   // Echte actuele wind op je positie via Open-Meteo — hooguit één keer per
   // kwartier ververst. Geen meting = geen windregel (nooit verzonnen).
   const windFetchedAtRef = useRef(0)
   useEffect(() => {
     if (!location) return
+    // Spaarstand: geen extra netwerkverkeer voor de windregel.
+    if (ecoMode) return
     const now = Date.now()
     if (now - windFetchedAtRef.current < 15 * 60 * 1000) return
     windFetchedAtRef.current = now
@@ -1192,7 +1217,73 @@ export function RouteNavigator({
         /* eerlijk gat: geen windregel tonen */
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location])
+  }, [location, ecoMode])
+
+  // Batterijstand live uitlezen — alleen waar de browser dit vrijgeeft.
+  useEffect(() => {
+    type BatteryManagerLike = {
+      level: number
+      charging: boolean
+      addEventListener: (ev: string, fn: () => void) => void
+      removeEventListener: (ev: string, fn: () => void) => void
+    }
+    const nav = window.navigator as Navigator & {
+      getBattery?: () => Promise<BatteryManagerLike>
+    }
+    if (!nav.getBattery) return
+    let alive = true
+    let bat: BatteryManagerLike | null = null
+    const update = () => {
+      if (alive && bat) setBattery({ level: bat.level, charging: bat.charging })
+    }
+    nav
+      .getBattery()
+      .then((b) => {
+        if (!alive) return
+        bat = b
+        update()
+        b.addEventListener("levelchange", update)
+        b.addEventListener("chargingchange", update)
+      })
+      .catch(() => {
+        /* eerlijk gat: geen batterijstand tonen */
+      })
+    return () => {
+      alive = false
+      if (bat) {
+        bat.removeEventListener("levelchange", update)
+        bat.removeEventListener("chargingchange", update)
+      }
+    }
+  }, [])
+
+  // Leegloopsnelheid meten tijdens de rit: pas na ≥ 4 minuten én ≥ 1,5%
+  // gemeten verbruik doen we een uitspraak. Aan de lader of stilstaand
+  // (rit niet gestart) meten we niet.
+  useEffect(() => {
+    if (!battery) return
+    if (battery.charging || rideStateRef.current === "idle") {
+      batterySamplesRef.current = []
+      setDrainPerMin(null)
+      return
+    }
+    const samples = batterySamplesRef.current
+    const last = samples[samples.length - 1]
+    if (!last || last.level !== battery.level)
+      samples.push({ t: Date.now(), level: battery.level })
+    const first = samples[0]
+    const latest = samples[samples.length - 1]
+    if (
+      first &&
+      latest &&
+      latest.t - first.t >= 4 * 60 * 1000 &&
+      first.level - latest.level >= 0.015
+    ) {
+      setDrainPerMin(
+        (first.level - latest.level) / ((latest.t - first.t) / 60000),
+      )
+    }
+  }, [battery])
 
   // Move the "me" arrow on each position update; follow if enabled.
   useEffect(() => {
@@ -1243,6 +1334,30 @@ export function RouteNavigator({
 
   const speedKmh =
     location?.speedMps != null ? Math.round(location.speedMps * 3.6) : null
+
+  // Batterij vs. rit: alleen een uitspraak met een écht gemeten leegloop-
+  // snelheid én een echt rijtempo — anders zeggen we niets.
+  const rideMinutesLeft =
+    progress && avgKmh != null && avgKmh > 3
+      ? (progress.remainingKm / avgKmh) * 60
+      : null
+  const batteryMinutesLeft =
+    battery && !battery.charging && drainPerMin != null && drainPerMin > 0
+      ? battery.level / drainPerMin
+      : null
+  const batteryShortfall =
+    rideMinutesLeft != null &&
+    batteryMinutesLeft != null &&
+    batteryMinutesLeft < rideMinutesLeft * 1.1
+
+  const enableEco = () => {
+    setEcoMode(true)
+    setDimmed(true)
+  }
+  const disableEco = () => {
+    setEcoMode(false)
+    setDimmed(false)
+  }
 
   // Moving-average speed. We add distance/time between fixes only while actually
   // moving (≥ 3 km/h), so standing still — e.g. waiting at a traffic light —
@@ -1721,10 +1836,10 @@ export function RouteNavigator({
         <div
           className="absolute"
           style={{
-            inset: headingUp ? "-30%" : "0",
-            transform: headingUp ? `rotate(${-rotDeg}deg)` : undefined,
+            inset: headingUpActive ? "-30%" : "0",
+            transform: headingUpActive ? `rotate(${-rotDeg}deg)` : undefined,
             transition: "transform 0.6s linear",
-            ["--map-counter-rot" as string]: headingUp
+            ["--map-counter-rot" as string]: headingUpActive
               ? `${rotDeg}deg`
               : "0deg",
           } as React.CSSProperties}
@@ -1797,7 +1912,7 @@ export function RouteNavigator({
 
         {/* Subtiele windregel — alleen bij een echte meting. De pijl wijst
             waar de wind naartoe waait. */}
-        {wind && (
+        {wind && !ecoMode && (
           <div className="pointer-events-none flex justify-end">
             <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-[#070d16]/70 px-2.5 py-1 font-mono text-[11px] tabular-nums text-white/50 backdrop-blur-md">
               <Wind className="h-3 w-3" strokeWidth={1.75} />
@@ -1878,9 +1993,10 @@ export function RouteNavigator({
                   <button
                     key={id}
                     type="button"
+                    disabled={ecoMode}
                     onClick={() => setBasemap(id)}
-                    className={`rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition ${
-                      basemap === id
+                    className={`rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition disabled:opacity-40 ${
+                      activeBasemap === id
                         ? "bg-cyan-400 text-[#05070e]"
                         : "border border-white/10 text-white/55 hover:text-white/85"
                     }`}
@@ -1889,6 +2005,12 @@ export function RouteNavigator({
                   </button>
                 ))}
               </div>
+              {ecoMode && (
+                <p className="mt-1.5 text-[11px] leading-snug text-white/45">
+                  Spaarstand aan: de kaart blijft donker. Zet de spaarstand uit
+                  om te wisselen.
+                </p>
+              )}
             </div>
 
             {/* Route onderweg aanpassen — zonder alles kwijt te raken. */}
@@ -1921,9 +2043,10 @@ export function RouteNavigator({
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
+                  disabled={ecoMode}
                   onClick={() => setShowPois(true)}
-                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] transition ${
-                    showPois
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] transition disabled:opacity-40 ${
+                    poisVisible
                       ? "bg-cyan-400 text-[#05070e]"
                       : "border border-white/10 text-white/55 hover:text-white/85"
                   }`}
@@ -1933,9 +2056,10 @@ export function RouteNavigator({
                 </button>
                 <button
                   type="button"
+                  disabled={ecoMode}
                   onClick={() => setShowPois(false)}
-                  className={`rounded-full px-3 py-1.5 text-[11px] transition ${
-                    !showPois
+                  className={`rounded-full px-3 py-1.5 text-[11px] transition disabled:opacity-40 ${
+                    !poisVisible
                       ? "bg-cyan-400 text-[#05070e]"
                       : "border border-white/10 text-white/55 hover:text-white/85"
                   }`}
@@ -1944,8 +2068,9 @@ export function RouteNavigator({
                 </button>
               </div>
               <p className="mt-1.5 text-[11px] leading-snug text-white/45">
-                Café’s en bezienswaardigheden langs de route als icoontjes op
-                de kaart.
+                {ecoMode
+                  ? "Spaarstand aan: plekken staan uit om de batterij te sparen."
+                  : "Café’s en bezienswaardigheden langs de route als icoontjes op de kaart."}
               </p>
             </div>
 
@@ -2080,6 +2205,56 @@ export function RouteNavigator({
                 </p>
               )}
             </div>
+
+            {/* Batterij — spaarstand voor lange ritten. */}
+            <div>
+              <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+                Batterij
+              </p>
+              {battery ? (
+                <p className="text-[11px] leading-snug text-white/55">
+                  {Math.round(battery.level * 100)}%
+                  {battery.charging ? " · aan de lader" : ""}
+                  {batteryMinutesLeft != null
+                    ? ` · bij dit verbruik nog ~${Math.round(batteryMinutesLeft)} min`
+                    : ""}
+                </p>
+              ) : (
+                <p className="text-[11px] leading-snug text-white/45">
+                  Deze telefoon of browser geeft de batterijstand niet vrij —
+                  de spaarstand kun je wel handmatig aanzetten.
+                </p>
+              )}
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={disableEco}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
+                    !ecoMode
+                      ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-200"
+                      : "border-white/10 text-white/55 hover:text-white/85"
+                  }`}
+                >
+                  Normaal
+                </button>
+                <button
+                  type="button"
+                  onClick={enableEco}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
+                    ecoMode
+                      ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-200"
+                      : "border-white/10 text-white/55 hover:text-white/85"
+                  }`}
+                >
+                  Spaarstand
+                </button>
+              </div>
+              <p className="mt-1.5 text-[11px] leading-snug text-white/35">
+                Spaarstand: donkere kaart, plekken/wind/kaartdraaiing uit en
+                een bijna-zwart zuinig scherm met alleen het hoognodige. Het
+                valalarm en het opnemen van je rit blijven gewoon aan.
+              </p>
+            </div>
           </div>
         )}
 
@@ -2113,6 +2288,74 @@ export function RouteNavigator({
             >
               Seizoen
             </a>
+          </div>
+        )}
+
+        {/* Batterijwaarschuwing — alleen bij een echt gemeten tekort. */}
+        {batteryShortfall && !ecoMode && !ecoPromptDismissed && battery && (
+          <div className="pointer-events-auto flex flex-col gap-2.5 rounded-xl border border-red-400/40 bg-[#070d16]/92 px-3.5 py-3 backdrop-blur-md">
+            <div className="flex items-center gap-3">
+              <BatteryLow
+                className="h-5 w-5 shrink-0 text-red-300"
+                strokeWidth={1.75}
+              />
+              <div className="min-w-0">
+                <p className="text-[13px] font-medium text-red-200">
+                  Batterij {Math.round(battery.level * 100)}% — haalt het einde
+                  vermoedelijk niet
+                </p>
+                <p className="text-[12px] leading-snug text-white/55">
+                  Bij dit verbruik nog ~{Math.round(batteryMinutesLeft!)} min
+                  batterij, terwijl de rit nog ~{Math.round(rideMinutesLeft!)}{" "}
+                  min duurt. De spaarstand zet plekken, wind en kaartdraaiing
+                  uit, maakt de kaart donker en toont een zuinig scherm.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setEcoPromptDismissed(true)}
+                className="flex-1 rounded-full border border-white/15 px-3 py-2 text-[12px] font-medium text-white/70 transition hover:bg-white/5"
+              >
+                Niet nu
+              </button>
+              <button
+                type="button"
+                onClick={enableEco}
+                className="flex-1 rounded-full bg-red-400 px-3 py-2 text-[12px] font-semibold text-[#05070e] transition"
+              >
+                Spaarstand aan
+              </button>
+            </div>
+          </div>
+        )}
+
+        {ecoMode && !dimmed && (
+          <div className="pointer-events-auto flex items-center gap-2.5 rounded-xl border border-white/10 bg-[#070d16]/92 px-3.5 py-2.5 backdrop-blur-md">
+            <Battery
+              className="h-5 w-5 shrink-0 text-white/60"
+              strokeWidth={1.75}
+            />
+            <p className="flex-1 text-[12.5px] leading-snug text-white/70">
+              Spaarstand aan
+              {battery ? ` · batterij ${Math.round(battery.level * 100)}%` : ""}
+              .
+            </p>
+            <button
+              type="button"
+              onClick={() => setDimmed(true)}
+              className="shrink-0 rounded-full border border-white/15 px-2.5 py-1 text-[11px] text-white/70 transition hover:bg-white/5"
+            >
+              Zuinig scherm
+            </button>
+            <button
+              type="button"
+              onClick={disableEco}
+              className="shrink-0 rounded-full border border-white/15 px-2.5 py-1 text-[11px] text-white/55 transition hover:text-white/85"
+            >
+              Uit
+            </button>
           </div>
         )}
 
@@ -2463,21 +2706,24 @@ export function RouteNavigator({
         <div className="pointer-events-auto flex items-stretch gap-2">
           <button
             type="button"
+            disabled={ecoMode}
             onClick={() => setHeadingUp((v) => !v)}
             aria-label={
-              headingUp
-                ? "Nu: rijrichting boven — tik voor noorden boven"
-                : "Nu: noorden boven — tik voor rijrichting boven"
+              ecoMode
+                ? "Spaarstand aan: kaartdraaiing staat uit"
+                : headingUpActive
+                  ? "Nu: rijrichting boven — tik voor noorden boven"
+                  : "Nu: noorden boven — tik voor rijrichting boven"
             }
-            className={`flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border px-3.5 shadow-lg backdrop-blur-md transition ${
-              headingUp
+            className={`flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border px-3.5 shadow-lg backdrop-blur-md transition disabled:opacity-40 ${
+              headingUpActive
                 ? "border-cyan-400/40 bg-cyan-400/15 text-cyan-200"
                 : "border-white/10 bg-[#070d16]/92 text-white/70 hover:text-white"
             }`}
           >
             <Compass className="h-5 w-5" strokeWidth={1.75} />
             <span className="font-mono text-[8px] uppercase tracking-[0.1em]">
-              {headingUp ? "Rijricht." : "Noord"}
+              {headingUpActive ? "Rijricht." : "Noord"}
             </span>
           </button>
           <button
@@ -2760,6 +3006,68 @@ export function RouteNavigator({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Zuinig scherm — bijna-zwart (echte winst op OLED): alleen het
+          hoognodige. Navigatie, valalarm en het opnemen van de rit lopen
+          gewoon door. */}
+      {dimmed && (
+        <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center gap-8 bg-black px-6">
+          {nextStep && distanceToTurn != null ? (
+            <div className="text-center">
+              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-white/35">
+                Volgende
+              </p>
+              <p className="mt-1 text-[26px] font-semibold leading-tight text-white/85">
+                {fmtMeters(distanceToTurn)}
+              </p>
+              <p className="mt-1 max-w-[280px] text-[14px] leading-snug text-white/55">
+                {nextStep.note || nextStep.dir}
+              </p>
+            </div>
+          ) : (
+            <p className="text-[14px] text-white/45">Volg de route.</p>
+          )}
+          <div className="flex items-end gap-8">
+            <div className="text-center">
+              <p className="text-[30px] font-semibold leading-none text-white/85">
+                {speedKmh != null ? speedKmh : "—"}
+              </p>
+              <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-white/35">
+                km/u
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-[30px] font-semibold leading-none text-white/85">
+                {progress ? progress.remainingKm.toFixed(1) : "—"}
+              </p>
+              <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-white/35">
+                km te gaan
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-[30px] font-semibold leading-none text-white/85">
+                {rideState === "idle" ? "—" : fmtRideTime(rideSeconds)}
+              </p>
+              <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-white/35">
+                rijtijd
+              </p>
+            </div>
+          </div>
+          {battery && (
+            <p className="text-[12px] text-white/40">
+              Batterij {Math.round(battery.level * 100)}%
+              {battery.charging ? " · aan de lader" : ""}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => setDimmed(false)}
+            className="rounded-full border border-white/15 px-4 py-2 text-[12px] text-white/60 transition hover:text-white/90"
+          >
+            Kaart tonen
+          </button>
         </div>
       )}
     </div>
