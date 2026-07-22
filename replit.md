@@ -26,6 +26,7 @@ Controleer ook reeds ingeplande afbouwgolven tijdens uitvoering tegen deze regel
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - `pnpm --filter @workspace/db run build` — generate TypeScript declarations for lib/db
 - `pnpm --filter @workspace/api-server run job:goal-review` — maandelijkse doelen-review job (Scheduled Deployment: cron `0 6 1 * *`, timezone Europe/Amsterdam; optioneel `GOAL_REVIEW_MAX_ATHLETES` als veiligheidsklep)
+- Handmatig mobiel testprotocol: `docs/mobile-testprotocol.md` (rit-sync, BLE, navigatie, val-detectie, sprints, diagnostiek)
 - Required env: `DATABASE_URL` — Postgres connection string
 - Required env: `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` — auto-provisioned by Clerk setup
 - Dev-only env: `DEV_AUTH_BYPASS=true` — enables Development Preview Mode (auth/onboarding bypass). Set by the api-server `dev` script. Optional `DEV_AUTH_CLERK_ID` pins which dev user to resolve (defaults to first `user_profiles` row).

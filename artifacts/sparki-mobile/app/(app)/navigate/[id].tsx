@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -14,9 +14,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { FallAlertCard } from "@/components/FallAlertCard";
 import { LiveSensorsPanel } from "@/components/LiveSensorsPanel";
 import { RouteMap } from "@/components/RouteMap";
 import { useColors } from "@/hooks/useColors";
+import { useFallDetection } from "@/hooks/useFallDetection";
 import { useLiveLocation } from "@/hooks/useLiveLocation";
 import { useGarageSensors, useLiveSensors } from "@/hooks/useLiveSensors";
 import { useRideRecorder } from "@/hooks/useRideRecorder";
@@ -28,9 +30,17 @@ import {
 } from "@/lib/geo";
 import { hasMapbox } from "@/lib/mapbox";
 import {
+  clearActiveNav,
+  loadActiveNav,
+  saveActiveNav,
+} from "@/lib/active-nav";
+import {
+  useRejoinRoute,
   useRoute,
   useRouteRoadObjects,
   useSaveRide,
+  type RejoinResult,
+  type RouteDetail,
   type RouteStep,
 } from "@/lib/routes-api";
 
@@ -76,9 +86,30 @@ export default function NavigateScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const { data: route, isLoading, isError, error } = useRoute(
+  const { data: fetchedRoute, isLoading, isError, error } = useRoute(
     Number.isInteger(routeId) ? routeId : null,
   );
+  // Offline-bestendig: zodra de route binnen is wordt hij lokaal bewaard;
+  // valt het netwerk daarna weg (of herstart de app), dan navigeren we door
+  // op de bewaarde kopie van dezelfde echte routedata.
+  const [offlineRoute, setOfflineRoute] = useState<RouteDetail | null>(null);
+  useEffect(() => {
+    if (fetchedRoute && Number.isInteger(routeId)) {
+      void saveActiveNav(routeId, fetchedRoute);
+    }
+  }, [fetchedRoute, routeId]);
+  useEffect(() => {
+    if (!isError || !Number.isInteger(routeId)) return;
+    let alive = true;
+    void loadActiveNav().then((nav) => {
+      if (alive && nav && nav.routeId === routeId) setOfflineRoute(nav.route);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [isError, routeId]);
+  const route = fetchedRoute ?? offlineRoute;
+  const usingOfflineRoute = !fetchedRoute && !!offlineRoute;
   const { location, permission, error: locError } = useLiveLocation(true);
   // Live Bluetooth sensors (wattage / hartslag / cadans) from the Fietsengarage.
   const sensors = useGarageSensors();
@@ -89,8 +120,14 @@ export default function NavigateScreen() {
   liveValuesRef.current = live.values;
   const getSensorValues = useCallback(() => liveValuesRef.current, []);
   const recorder = useRideRecorder(location, getSensorValues);
+  // Val-alarm: alleen actief tijdens een lopende opname.
+  const fall = useFallDetection(location, recorder.recording);
   const saveRide = useSaveRide();
-  const [saved, setSaved] = useState<null | { sessionId: number | null }>(null);
+  const [saved, setSaved] = useState<null | {
+    sessionId: number | null;
+    synced: boolean;
+    syncError: string | null;
+  }>(null);
   // Name/notitie editor for a RECOVERED (crash-survived) ride — same review
   // step as a normal stop-and-save flow. Cancelling keeps the recoverable ride
   // (the "Onafgemaakte rit gevonden" card returns); only a successful save
@@ -129,6 +166,44 @@ export default function NavigateScreen() {
     const ahead = route.nav.find((s) => s.km > progress.traveledKm + 0.015);
     return ahead ?? route.nav[route.nav.length - 1] ?? null;
   }, [route?.nav, progress]);
+
+  // ---------- Herberekenen na afwijken (echte gerouteerde verbinding) ----------
+  // Bij "van de route" kan de renner kiezen: terug naar de lijn of logisch
+  // verder. Het verbindingsstuk komt ALTIJD van de routedienst (nooit een
+  // rechte lijn) en verdwijnt vanzelf zodra de renner de lijn weer raakt.
+  const rejoin = useRejoinRoute(Number.isInteger(routeId) ? routeId : null);
+  const [detour, setDetour] = useState<RejoinResult | null>(null);
+  const detourPath: LatLon[] = useMemo(
+    () => (detour?.path ?? []).map(toLatLon),
+    [detour?.path],
+  );
+  useEffect(() => {
+    // Terug op de routelijn → verbindingsstuk opruimen.
+    if (detour && progress && !progress.offRoute) setDetour(null);
+  }, [detour, progress]);
+  const detourNext = useMemo(() => {
+    if (!detour || !location || detourPath.length === 0) return null;
+    const { index } = nearestPointIndex(detourPath, location);
+    const cum = cumulativeKm(detourPath);
+    const traveled = cum[index] ?? 0;
+    const step =
+      detour.nav.find((s) => s.km > traveled + 0.015) ??
+      detour.nav[detour.nav.length - 1] ??
+      null;
+    return step
+      ? { step, distanceM: Math.max(0, (step.km - traveled) * 1000) }
+      : null;
+  }, [detour, location, detourPath]);
+  const requestRejoin = useCallback(
+    (mode: "terug" | "verder") => {
+      if (!location || rejoin.isPending) return;
+      rejoin.mutate(
+        { lat: location.latitude, lon: location.longitude, mode },
+        { onSuccess: (result) => setDetour(result) },
+      );
+    },
+    [location, rejoin],
+  );
 
   const distanceToTurn =
     nextStep && progress
@@ -193,6 +268,7 @@ export default function NavigateScreen() {
       {showMap ? (
         <RouteMap
           path={path}
+          detourPath={detourPath.length >= 2 ? detourPath : undefined}
           location={location}
           following={following}
           onUserPan={() => setFollowing(false)}
@@ -227,15 +303,69 @@ export default function NavigateScreen() {
 
         {hasNav ? (
           progress?.offRoute ? (
-            <View style={[styles.instruction, { backgroundColor: c.card, borderColor: c.destructive }]}>
-              <Ionicons name="warning-outline" size={26} color={c.destructive} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.instrLabel, { color: c.destructive }]}>Van de route</Text>
-                <Text style={[styles.instrNote, { color: c.mutedForeground }]} numberOfLines={2}>
-                  Je bent {fmtMeters(progress.offBy)} van de route. Keer terug naar de lijn.
-                </Text>
+            detour && detourNext ? (
+              <View style={[styles.instruction, { backgroundColor: HUD_BG, borderColor: "#facc15" }]}>
+                <View style={[styles.dirCircleBig, { backgroundColor: "#facc15" }]}>
+                  <Ionicons
+                    name={describeDir(detourNext.step.dir).icon}
+                    size={36}
+                    color="#04070e"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.instrTop}>
+                    <Text style={[styles.instrLabelBig, { color: HUD_TEXT }]}>
+                      {describeDir(detourNext.step.dir).label}
+                    </Text>
+                    <Text style={[styles.instrDistBig, { color: "#facc15" }]}>
+                      {fmtMeters(detourNext.distanceM)}
+                    </Text>
+                  </View>
+                  <Text style={[styles.instrNote, { color: HUD_MUTED }]} numberOfLines={2}>
+                    {detour.mode === "terug"
+                      ? "Nieuw stuk terug naar je route."
+                      : "Nieuw stuk — je pikt de route verderop weer op."}
+                  </Text>
+                </View>
               </View>
-            </View>
+            ) : (
+              <View style={[styles.instruction, { backgroundColor: c.card, borderColor: c.destructive }]}>
+                <Ionicons name="warning-outline" size={26} color={c.destructive} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.instrLabel, { color: c.destructive }]}>Van de route</Text>
+                  <Text style={[styles.instrNote, { color: c.mutedForeground }]} numberOfLines={2}>
+                    {rejoin.isPending
+                      ? "Nieuw stuk wordt berekend…"
+                      : rejoin.isError
+                        ? (rejoin.error as Error)?.message ??
+                          "Kon geen vervolg berekenen. Keer terug naar de lijn."
+                        : `Je bent ${fmtMeters(progress.offBy)} van de route.`}
+                  </Text>
+                  {!rejoin.isPending && (
+                    <View style={styles.rejoinRow}>
+                      <Pressable
+                        onPress={() => requestRejoin("terug")}
+                        disabled={!location}
+                        style={[styles.rejoinBtn, { backgroundColor: c.primary }]}
+                      >
+                        <Text style={[styles.rejoinBtnText, { color: c.primaryForeground }]}>
+                          Terug naar de route
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => requestRejoin("verder")}
+                        disabled={!location}
+                        style={[styles.rejoinBtn, { borderWidth: 1, borderColor: c.border }]}
+                      >
+                        <Text style={[styles.rejoinBtnText, { color: c.foreground }]}>
+                          Rij verder
+                        </Text>
+                      </Pressable>
+                    </View>
+                  )}
+                </View>
+              </View>
+            )
           ) : nextStep ? (
             <View style={[styles.instruction, { backgroundColor: HUD_BG, borderColor: c.primary }]}>
               <View style={[styles.dirCircleBig, { backgroundColor: c.primary }]}>
@@ -276,6 +406,15 @@ export default function NavigateScreen() {
             <Ionicons name="information-circle-outline" size={24} color={c.mutedForeground} />
             <Text style={[styles.instrNote, { color: c.mutedForeground, flex: 1 }]}>
               Deze route heeft geen afslag-aanwijzingen. De lijn wordt wel getoond.
+            </Text>
+          </View>
+        )}
+
+        {usingOfflineRoute && (
+          <View style={[styles.signalPill, { backgroundColor: HUD_BG, borderColor: c.border }]}>
+            <Ionicons name="cloud-offline-outline" size={16} color={HUD_MUTED} />
+            <Text style={[styles.signalText, { color: HUD_TEXT }]}>
+              Geen verbinding — je navigeert op de bewaarde route.
             </Text>
           </View>
         )}
@@ -439,8 +578,17 @@ export default function NavigateScreen() {
               // GPX so the saved training carries measured watts/hartslag/cadans.
               sensorSamples: recorder.getSensorSamples(),
             });
-            setSaved({ sessionId: res.sessionId });
+            // Ook zonder netwerk is de rit nu veilig: hij staat in de lokale
+            // uploadwachtrij en gaat automatisch alsnog omhoog. Het lokale
+            // opnamespoor mag dus pas HIER worden opgeruimd.
+            setSaved({
+              sessionId: res.sessionId,
+              synced: res.synced,
+              syncError: res.syncError,
+            });
             recorder.reset();
+            // Rit afgerond → deze navigatie is niet meer "actief" voor hervatten.
+            void clearActiveNav();
           } catch {
             // Error surfaced via saveRide.error; track kept so the rider can retry.
           }
@@ -469,9 +617,14 @@ export default function NavigateScreen() {
               // ride keeps the measured watts/hartslag/cadans up to the kill.
               sensorSamples: recorder.recoverable.sensorSamples,
             });
-            setSaved({ sessionId: res.sessionId });
+            setSaved({
+              sessionId: res.sessionId,
+              synced: res.synced,
+              syncError: res.syncError,
+            });
             setRecoveredReview(null);
             recorder.reset();
+            void clearActiveNav();
           } catch {
             // Error surfaced via saveRide.error; recovered track kept so it can retry.
           }
@@ -483,6 +636,17 @@ export default function NavigateScreen() {
         }}
         onDiscardRecovered={recorder.discardRecovered}
       />
+
+      {/* ---------- Val-alarm overlay ---------- */}
+      {fall.alert && (
+        <FallAlertCard
+          c={c}
+          alert={fall.alert}
+          onOk={fall.dismiss}
+          onSendNow={() => void fall.sendNow()}
+          onClose={fall.close}
+        />
+      )}
     </View>
   );
 }
@@ -524,7 +688,7 @@ function RideRecorderBar({
   permissionDenied: boolean;
   saving: boolean;
   saveError: string | null;
-  saved: null | { sessionId: number | null };
+  saved: null | { sessionId: number | null; synced: boolean; syncError: string | null };
   onStart: () => void;
   onStop: () => void;
   onDismissSaved: () => void;
@@ -541,11 +705,17 @@ function RideRecorderBar({
     return (
       <View style={[styles.recWrap, { bottom }]} pointerEvents="box-none">
         <View style={[styles.recCard, { backgroundColor: c.card, borderColor: c.primary }]}>
-          <Ionicons name="checkmark-circle" size={22} color={c.primary} />
+          <Ionicons
+            name={saved.synced ? "checkmark-circle" : "cloud-offline-outline"}
+            size={22}
+            color={c.primary}
+          />
           <Text style={[styles.recSavedText, { color: c.foreground }]}>
-            {saved.sessionId != null
-              ? "Rit opgeslagen in je trainingen."
-              : "Rit opgeslagen."}
+            {saved.synced
+              ? saved.sessionId != null
+                ? "Rit opgeslagen in je trainingen."
+                : "Rit opgeslagen."
+              : "Rit veilig bewaard op je telefoon. Uploaden lukt nu niet en wordt automatisch opnieuw geprobeerd."}
           </Text>
           <Pressable onPress={onDismissSaved} hitSlop={10}>
             <Ionicons name="close" size={20} color={c.mutedForeground} />
@@ -927,6 +1097,15 @@ const styles = StyleSheet.create({
   instrDist: { fontFamily: "Inter_700Bold", fontSize: 16 },
   instrDistBig: { fontFamily: "Inter_700Bold", fontSize: 21 },
   instrNote: { fontFamily: "Inter_400Regular", fontSize: 13, marginTop: 2 },
+  rejoinRow: { flexDirection: "row", gap: 8, marginTop: 8 },
+  rejoinBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rejoinBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
   signalPill: {
     flexDirection: "row",
     alignItems: "center",

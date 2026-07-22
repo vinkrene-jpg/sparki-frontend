@@ -105,15 +105,21 @@ export function LiveSensorsPanel({
                 </Text>
                 <Text style={[styles.sensorSub, { color: c.mutedForeground }]}>
                   {conn.status === "connected"
-                    ? `Verbonden${conn.deviceName ? ` met ${conn.deviceName}` : ""}`
+                    ? `Verbonden${conn.deviceName ? ` met ${conn.deviceName}` : ""}${
+                        conn.batteryPercent != null
+                          ? ` · batterij ${conn.batteryPercent}%`
+                          : ""
+                      }`
                     : conn.status === "connecting"
                       ? "Zoeken…"
-                      : conn.status === "error"
-                        ? conn.error ?? "Verbinden mislukt."
-                        : KIND_LABEL[kind] ?? kind}
+                      : conn.status === "reconnecting"
+                        ? "Verbinding weggevallen — opnieuw verbinden…"
+                        : conn.status === "error"
+                          ? conn.error ?? "Verbinden mislukt."
+                          : KIND_LABEL[kind] ?? kind}
                 </Text>
               </View>
-              {conn.status === "connecting" ? (
+              {conn.status === "connecting" || conn.status === "reconnecting" ? (
                 <ActivityIndicator color={c.primary} />
               ) : conn.status === "connected" ? (
                 <Pressable

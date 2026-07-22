@@ -2,6 +2,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 
 import { buildRideGpx } from "@/lib/ride-gpx";
+import {
+  enqueueRideUpload,
+  getUploadQueue,
+  processUploadQueue,
+  type QueuedRide,
+  type UploadOutcome,
+} from "@/lib/upload-queue";
 import type { RidePoint, RideSensorSample } from "@/hooks/useRideRecorder";
 
 // Turn-by-turn cue as stored by the backend routing engine.
@@ -77,6 +84,41 @@ export function useRoutes() {
   });
 }
 
+// Antwoord van POST /api/routes/:id/rejoin — een ECHT gerouteerd verbindings-
+// stuk (via de routedienst) terug naar de routelijn, nooit een rechte lijn.
+export type RejoinResult = {
+  mode: "terug" | "verder";
+  path: RoutePathPoint[];
+  distanceKm: number;
+  durationSec: number | null;
+  nav: RouteStep[];
+  rejoinKm: number;
+};
+
+/**
+ * Herbereken een vervolg wanneer de renner van de route is geraakt:
+ * "terug" = kortste echte weg terug naar de lijn, "verder" = logisch vervolg
+ * naar een punt verderop. Fouten (geen routedienst, geen lijn) komen als
+ * eerlijke Nederlandse meldingen van de backend en worden onveranderd getoond.
+ */
+export function useRejoinRoute(routeId: number | null) {
+  return useMutation({
+    mutationFn: async (input: {
+      lat: number;
+      lon: number;
+      mode: "terug" | "verder";
+    }): Promise<RejoinResult> => {
+      if (routeId == null) throw new Error("Geen route geopend.");
+      return customFetch<RejoinResult>(`/api/routes/${routeId}/rejoin`, {
+        method: "POST",
+        responseType: "json",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(input),
+      });
+    },
+  });
+}
+
 /** A single saved route including geometry + turn-by-turn nav. */
 export function useRoute(id: number | null) {
   return useQuery({
@@ -112,11 +154,43 @@ export function useSaveRideAsRoute() {
 }
 
 // Shape returned by the shared activity-imports ingest endpoint.
-export type SaveRideResult = {
+export type ActivityImportResult = {
   import: { id: number; status: string };
   parsed: boolean;
   sessionId: number | null;
 };
+
+// Resultaat van een rit opslaan. `synced` is alleen true na een echte 2xx van
+// de backend. Bij `synced: false` staat de rit veilig in de lokale wachtrij en
+// wordt hij automatisch opnieuw geprobeerd — de rit is dan NIET verloren.
+export type SaveRideResult = {
+  synced: boolean;
+  localId: string;
+  sessionId: number | null;
+  // Eerlijke uitleg wanneer de upload (nog) niet gelukt is.
+  syncError: string | null;
+};
+
+/** De echte upload van één wachtrij-item naar de gedeelde backend. */
+export async function uploadQueuedRide(entry: QueuedRide): Promise<UploadOutcome> {
+  try {
+    const res = await customFetch<ActivityImportResult>("/api/activity-imports", {
+      method: "POST",
+      responseType: "json",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ fileName: entry.fileName, content: entry.gpx }),
+    });
+    return { ok: true, sessionId: res.sessionId };
+  } catch (err) {
+    return {
+      ok: false,
+      error:
+        err instanceof Error && err.message
+          ? err.message
+          : "Uploaden is niet gelukt.",
+    };
+  }
+}
 
 /**
  * Save a recorded ride to the shared backend. The recorded GPS track is
@@ -125,6 +199,14 @@ export type SaveRideResult = {
  * Hub: it becomes a real training session (distance/duration/geometry) that
  * every downstream analysis engine consumes. Nothing is fabricated — a track
  * with fewer than 2 real fixes cannot build a GPX and is rejected honestly.
+ *
+ * Betrouwbaarheid: de rit krijgt een lokaal rit-ID en gaat EERST de lokale
+ * uploadwachtrij in (op disk). Daarna wordt direct één upload geprobeerd.
+ * Lukt die niet (geen netwerk/serverfout), dan blijft de rit bewaard en wordt
+ * hij later automatisch opnieuw geprobeerd. Het wachtrij-item wordt pas
+ * verwijderd nadat de backend met een 2xx heeft bevestigd; de backend
+ * ontdubbelt op bestandsinhoud, dus een dubbele poging levert nooit een
+ * dubbele activiteit op.
  */
 export function useSaveRide() {
   const qc = useQueryClient();
@@ -150,17 +232,42 @@ export function useSaveRide() {
           "Deze rit heeft te weinig locatiepunten om op te slaan.",
         );
       }
-      const fileName = `${input.name.trim() || "rit"}-${new Date()
-        .toISOString()
-        .slice(0, 10)}.gpx`;
-      return customFetch<SaveRideResult>("/api/activity-imports", {
-        method: "POST",
-        responseType: "json",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ fileName, content: gpx }),
-      });
+      const name = input.name.trim() || "rit";
+      const fileName = `${name}-${new Date().toISOString().slice(0, 10)}.gpx`;
+      // Eerst veilig lokaal in de wachtrij — de rit kan hierna niet meer
+      // verloren gaan, ook niet als de upload zo direct mislukt. Mislukt het
+      // opslaan zelf, dan melden we dat eerlijk (de opname blijft in beeld).
+      let localId: string;
+      try {
+        localId = await enqueueRideUpload({ fileName, gpx, name });
+      } catch {
+        throw new Error(
+          "De rit kon niet op je telefoon worden bewaard (opslag vol of niet beschikbaar). Laat dit scherm open en probeer het opnieuw.",
+        );
+      }
+      const result = await processUploadQueue(uploadQueuedRide, { force: true });
+      const synced = result.uploaded.includes(localId);
+      if (synced) {
+        return {
+          synced: true,
+          localId,
+          sessionId: result.lastSessionId,
+          syncError: null,
+        };
+      }
+      const queue = await getUploadQueue();
+      const entry = queue.find((e) => e.localId === localId);
+      return {
+        synced: false,
+        localId,
+        sessionId: null,
+        syncError:
+          entry?.lastError ??
+          "Uploaden is nu niet gelukt. De rit staat veilig op je telefoon en wordt automatisch opnieuw geprobeerd.",
+      };
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (!res.synced) return;
       qc.invalidateQueries({ queryKey: ["routes"] });
       // The saved ride becomes a backend training session; refresh the ride
       // list so the measured sensor values show up immediately.

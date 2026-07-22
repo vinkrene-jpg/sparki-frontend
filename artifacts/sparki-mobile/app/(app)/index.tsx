@@ -1,7 +1,7 @@
 import { useAuth } from "@clerk/expo";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React from "react";
+import { useRouter, type Href } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -15,6 +15,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { RouteCard } from "@/components/RouteCard";
 import { useColors } from "@/hooks/useColors";
+import { useUploadQueue } from "@/hooks/useUploadQueue";
+import {
+  clearActiveNav,
+  loadActiveNav,
+  type ActiveNav,
+} from "@/lib/active-nav";
 import { useRoutes } from "@/lib/routes-api";
 
 export default function RouteListScreen() {
@@ -24,6 +30,21 @@ export default function RouteListScreen() {
   const { signOut } = useAuth();
   const { data: routes, isLoading, isError, error, refetch, isRefetching } =
     useRoutes();
+  // Onderbroken navigatie (app herstart of gesloten tijdens navigeren) —
+  // eerlijk aanbieden om te hervatten, of bewust op te ruimen.
+  const [activeNav, setActiveNav] = useState<ActiveNav | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void loadActiveNav().then((nav) => {
+      if (alive) setActiveNav(nav);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  // Ritten die nog in de lokale uploadwachtrij staan (nog niet gesynchroniseerd).
+  const { queue } = useUploadQueue();
+  const queuedCount = queue.length;
 
   return (
     <View style={[styles.screen, { backgroundColor: c.background }]}>
@@ -40,6 +61,56 @@ export default function RouteListScreen() {
           <Ionicons name="log-out-outline" size={20} color={c.mutedForeground} />
         </Pressable>
       </View>
+
+      {activeNav && (
+        <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
+          <Pressable
+            onPress={() => router.push(`/navigate/${activeNav.routeId}`)}
+            style={[styles.resumeCard, { backgroundColor: c.card, borderColor: c.primary }]}
+          >
+            <Ionicons name="navigate" size={20} color={c.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.ridesTitle, { color: c.foreground }]}>
+                Navigatie hervatten
+              </Text>
+              <Text style={[styles.ridesSub, { color: c.mutedForeground }]}>
+                {activeNav.route.name} — je was hier nog mee bezig.
+              </Text>
+            </View>
+            <Pressable
+              hitSlop={10}
+              onPress={() => {
+                void clearActiveNav();
+                setActiveNav(null);
+              }}
+            >
+              <Ionicons name="close" size={18} color={c.mutedForeground} />
+            </Pressable>
+          </Pressable>
+        </View>
+      )}
+
+      {queuedCount > 0 && (
+        <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
+          <Pressable
+            onPress={() => router.push("/diagnostiek" as Href)}
+            style={[styles.resumeCard, { backgroundColor: c.card, borderColor: c.border }]}
+          >
+            <Ionicons name="cloud-upload-outline" size={20} color={c.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.ridesTitle, { color: c.foreground }]}>
+                {queuedCount === 1
+                  ? "1 rit wacht op uploaden"
+                  : `${queuedCount} ritten wachten op uploaden`}
+              </Text>
+              <Text style={[styles.ridesSub, { color: c.mutedForeground }]}>
+                Veilig bewaard op je telefoon. Bekijk of probeer opnieuw.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={c.mutedForeground} />
+          </Pressable>
+        </View>
+      )}
 
       <View style={styles.recordRow}>
         <Pressable
@@ -166,6 +237,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   recordRow: { paddingHorizontal: 20, paddingBottom: 18, gap: 12 },
+  resumeCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 18,
+    borderWidth: 1,
+  },
   ridesBtn: {
     flexDirection: "row",
     alignItems: "center",

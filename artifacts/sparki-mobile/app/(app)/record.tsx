@@ -13,9 +13,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { FallAlertCard } from "@/components/FallAlertCard";
 import { LiveSensorsPanel } from "@/components/LiveSensorsPanel";
 import { RouteMap } from "@/components/RouteMap";
 import { useColors } from "@/hooks/useColors";
+import { useFallDetection } from "@/hooks/useFallDetection";
 import { useLiveLocation } from "@/hooks/useLiveLocation";
 import { useGarageSensors, useLiveSensors } from "@/hooks/useLiveSensors";
 import {
@@ -72,8 +74,14 @@ export default function RecordScreen() {
   liveValuesRef.current = live.values;
   const getSensorValues = useCallback(() => liveValuesRef.current, []);
   const recorder = useRideRecorder(location, getSensorValues);
+  // Val-alarm: alleen actief tijdens een lopende opname.
+  const fall = useFallDetection(location, recorder.recording);
   const saveRide = useSaveRide();
-  const [saved, setSaved] = useState<null | { sessionId: number | null }>(null);
+  const [saved, setSaved] = useState<null | {
+    sessionId: number | null;
+    synced: boolean;
+    syncError: string | null;
+  }>(null);
   const [following, setFollowing] = useState(true);
   const [showSensors, setShowSensors] = useState(false);
   // After stopping, the recorded track is snapshotted here so it is never lost —
@@ -144,7 +152,13 @@ export default function RecordScreen() {
         note: review.note,
         sensorSamples: stoppedSamples,
       });
-      setSaved({ sessionId: res.sessionId });
+      // Ook zonder netwerk is de rit nu veilig: hij staat in de lokale
+      // uploadwachtrij en gaat automatisch alsnog omhoog.
+      setSaved({
+        sessionId: res.sessionId,
+        synced: res.synced,
+        syncError: res.syncError,
+      });
       setReview(null);
       setStoppedPoints(null);
       setStoppedSamples([]);
@@ -358,11 +372,17 @@ export default function RecordScreen() {
       <View style={[styles.recWrap, { bottom: insets.bottom + 16 }]} pointerEvents="box-none">
         {saved ? (
           <View style={[styles.recCard, { backgroundColor: c.card, borderColor: c.primary }]}>
-            <Ionicons name="checkmark-circle" size={22} color={c.primary} />
+            <Ionicons
+              name={saved.synced ? "checkmark-circle" : "cloud-offline-outline"}
+              size={22}
+              color={c.primary}
+            />
             <Text style={[styles.recSavedText, { color: c.foreground }]}>
-              {saved.sessionId != null
-                ? "Rit opgeslagen in je trainingen."
-                : "Rit opgeslagen."}
+              {saved.synced
+                ? saved.sessionId != null
+                  ? "Rit opgeslagen in je trainingen."
+                  : "Rit opgeslagen."
+                : "Rit veilig bewaard op je telefoon. Uploaden lukt nu niet en wordt automatisch opnieuw geprobeerd."}
             </Text>
             <Pressable onPress={() => setSaved(null)} hitSlop={10}>
               <Ionicons name="close" size={20} color={c.mutedForeground} />
@@ -609,6 +629,17 @@ export default function RecordScreen() {
           </>
         )}
       </View>
+
+      {/* ---------- Val-alarm overlay ---------- */}
+      {fall.alert && (
+        <FallAlertCard
+          c={c}
+          alert={fall.alert}
+          onOk={fall.dismiss}
+          onSendNow={() => void fall.sendNow()}
+          onClose={fall.close}
+        />
+      )}
     </View>
   );
 }

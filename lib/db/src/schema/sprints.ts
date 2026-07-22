@@ -9,6 +9,7 @@ import {
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { userProfilesTable } from "./users";
@@ -88,6 +89,10 @@ export const sprintResultsTable = pgTable(
     bonusPoints: integer("bonus_points").notNull().default(0),
     totalPoints: integer("total_points").notNull().default(0),
     status: text("status").notNull().default("scored"),
+    // Client-side idempotency key (per sprint-moment, assigned at detection).
+    // A retried upload of the same sprint never creates a duplicate row.
+    // Null for legacy rows and clients that don't send one.
+    clientKey: text("client_key"),
     // Whether the rider chose to share this sprint to their Samen-overzicht.
     shared: text("shared").notNull().default("false"),
     occurredAt: timestamp("occurred_at", { withTimezone: true })
@@ -97,7 +102,13 @@ export const sprintResultsTable = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("sprint_results_clerk_idx").on(t.clerkId, t.occurredAt)],
+  (t) => [
+    index("sprint_results_clerk_idx").on(t.clerkId, t.occurredAt),
+    // Partial unique index: dedupe only when a clientKey is present.
+    uniqueIndex("sprint_results_client_key_uq")
+      .on(t.clerkId, t.clientKey)
+      .where(sql`client_key IS NOT NULL`),
+  ],
 );
 
 export const insertSprintResultSchema = createInsertSchema(

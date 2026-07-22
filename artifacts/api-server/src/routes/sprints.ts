@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, desc, eq, gte, or, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, or, inArray, sql } from "drizzle-orm";
 import {
   db,
   routesTable,
@@ -123,6 +123,12 @@ router.post("/result", requireAuth, async (req, res) => {
       ? (b.rideType as SprintRideType)
       : "free";
   const cancelled = b.status === "cancelled";
+  // Idempotentiesleutel van de client (per sprint-moment). Een herhaalde
+  // upload van dezelfde sprint maakt nooit een dubbele rij.
+  const clientKey =
+    typeof b.clientKey === "string" && b.clientKey.trim()
+      ? b.clientKey.trim().slice(0, 120)
+      : null;
   const routeId = num(b.routeId);
   const km = num(b.km);
   const speedKmhPeak = num(b.speedKmhPeak);
@@ -156,24 +162,51 @@ router.post("/result", requireAuth, async (req, res) => {
     ? { basePoints: 0, bonusPoints: 0, totalPoints: 0 }
     : scoreSprint({ speedGainKmh, peakWatts5s, ftpWatts: ftp });
 
-  const [row] = await db
-    .insert(sprintResultsTable)
-    .values({
-      clerkId,
-      routeId: rideType === "planned" ? routeId : null,
-      rideType,
-      placeName,
-      km,
-      speedKmhPeak,
-      speedGainKmh,
-      avgWatts,
-      peakWatts5s,
-      basePoints: score.basePoints,
-      bonusPoints: score.bonusPoints,
-      totalPoints: score.totalPoints,
-      status: cancelled ? "cancelled" : "scored",
-    })
-    .returning();
+  const values = {
+    clerkId,
+    routeId: rideType === "planned" ? routeId : null,
+    rideType,
+    placeName,
+    km,
+    speedKmhPeak,
+    speedGainKmh,
+    avgWatts,
+    peakWatts5s,
+    basePoints: score.basePoints,
+    bonusPoints: score.bonusPoints,
+    totalPoints: score.totalPoints,
+    status: cancelled ? "cancelled" : "scored",
+    clientKey,
+  };
+
+  // Met een clientKey is de insert idempotent: een herhaalde upload van
+  // dezelfde sprint (offline-retry, dubbele tik) raakt de partiële unieke
+  // index en geeft de bestaande rij terug in plaats van een duplicaat.
+  const [row] = clientKey
+    ? await db
+        .insert(sprintResultsTable)
+        .values(values)
+        .onConflictDoNothing({
+          target: [sprintResultsTable.clerkId, sprintResultsTable.clientKey],
+          where: sql`client_key IS NOT NULL`,
+        })
+        .returning()
+    : await db.insert(sprintResultsTable).values(values).returning();
+
+  if (!row && clientKey) {
+    const [existing] = await db
+      .select()
+      .from(sprintResultsTable)
+      .where(
+        and(
+          eq(sprintResultsTable.clerkId, clerkId),
+          eq(sprintResultsTable.clientKey, clientKey),
+        ),
+      )
+      .limit(1);
+    if (existing) return res.status(200).json({ result: existing, deduped: true });
+    return res.status(500).json({ error: "Sprint kon niet worden opgeslagen" });
+  }
 
   return res.status(201).json({ result: row });
 });

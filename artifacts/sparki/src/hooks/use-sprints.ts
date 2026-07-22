@@ -70,6 +70,22 @@ export type SprintSubmission = {
   avgWatts?: number | null
   peakWatts5s?: number | null
   status?: "scored" | "cancelled"
+  // Idempotentiesleutel per sprint-moment: een herhaalde upload van dezelfde
+  // sprint maakt op de server nooit een dubbele rij.
+  clientKey?: string
+}
+
+// Stabiele sleutel voor één sprint-moment, toegekend op het moment van
+// detectie. Route + bordje + tijd (afgerond op 10 s) — een retry of dubbele
+// tik binnen datzelfde moment levert dezelfde sleutel op.
+export function makeSprintClientKey(
+  routeId: number | null,
+  placeName: string,
+  km: number | null,
+  now: number = Date.now(),
+): string {
+  const bucket = Math.round(now / 10_000)
+  return `${routeId ?? "free"}:${placeName}:${km ?? "-"}:${bucket}`
 }
 
 const keys = {

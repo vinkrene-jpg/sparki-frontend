@@ -11,6 +11,7 @@ import type { LiveLocation } from "@/hooks/useLiveLocation";
 // (which imports native-only modules) is never pulled into the web bundle.
 export function RouteMap({
   path,
+  detourPath,
   location,
   following,
   onUserPan,
@@ -18,6 +19,8 @@ export function RouteMap({
   background,
 }: {
   path: LatLon[];
+  /** Echt gerouteerd verbindingsstuk terug naar de lijn (herberekening). */
+  detourPath?: LatLon[];
   location: LiveLocation | null;
   following: boolean;
   onUserPan: () => void;
@@ -60,6 +63,22 @@ export function RouteMap({
       {/* Witte omlijning onder de routelijn zodat de lijn op elke ondergrond afsteekt. */}
       <Polyline coordinates={path} strokeColor="rgba(255,255,255,0.9)" strokeWidth={10} />
       <Polyline coordinates={path} strokeColor={primary} strokeWidth={6} />
+      {/* Herberekend verbindingsstuk (gestippeld geel) bovenop de routelijn. */}
+      {detourPath && detourPath.length >= 2 && (
+        <>
+          <Polyline
+            coordinates={detourPath}
+            strokeColor="rgba(255,255,255,0.9)"
+            strokeWidth={9}
+          />
+          <Polyline
+            coordinates={detourPath}
+            strokeColor="#facc15"
+            strokeWidth={5}
+            lineDashPattern={[14, 10]}
+          />
+        </>
+      )}
       <Marker coordinate={path[0]} anchor={{ x: 0.5, y: 0.5 }}>
         <View style={[styles.pin, { backgroundColor: primary, borderColor: background }]} />
       </Marker>

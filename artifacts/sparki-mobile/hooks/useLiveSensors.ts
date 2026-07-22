@@ -25,9 +25,12 @@ export type GarageSensor = {
 };
 
 export type SensorConnState = {
-  status: "idle" | "connecting" | "connected" | "error";
+  status: "idle" | "connecting" | "connected" | "reconnecting" | "error";
   deviceName: string | null;
   error: string | null;
+  // Echte batterijstand (0–100%) uit de standaard Battery Service, of null
+  // wanneer de sensor die niet aanbiedt — nooit geschat.
+  batteryPercent: number | null;
 };
 
 export type LiveSensorValues = {
@@ -36,7 +39,16 @@ export type LiveSensorValues = {
   heartRate: number | null;
 };
 
-const IDLE: SensorConnState = { status: "idle", deviceName: null, error: null };
+const IDLE: SensorConnState = {
+  status: "idle",
+  deviceName: null,
+  error: null,
+  batteryPercent: null,
+};
+
+// Automatisch herverbinden na een weggevallen verbinding: 3 pogingen met
+// oplopende wachttijd. Daarna een eerlijke foutmelding met handmatige retry.
+const RECONNECT_DELAYS_MS = [2000, 5000, 15000];
 
 const LIVE_KINDS: readonly LiveSensorKind[] = [
   "wattagemeter",
@@ -84,6 +96,21 @@ export function useLiveSensors() {
   });
 
   const handlesRef = useRef<Partial<Record<LiveSensorKind, SensorHandle>>>({});
+  // Naam van het gekoppelde apparaat per soort, zodat automatisch herverbinden
+  // dezelfde sensor terugzoekt. Timers + pogingteller voor de backoff.
+  const preferredRef = useRef<Partial<Record<LiveSensorKind, string | null>>>({});
+  const reconnectTimerRef = useRef<
+    Partial<Record<LiveSensorKind, ReturnType<typeof setTimeout>>>
+  >({});
+  const reconnectAttemptRef = useRef<Partial<Record<LiveSensorKind, number>>>({});
+  const unmountedRef = useRef(false);
+
+  const clearReconnect = useCallback((kind: LiveSensorKind) => {
+    const t = reconnectTimerRef.current[kind];
+    if (t) clearTimeout(t);
+    delete reconnectTimerRef.current[kind];
+    reconnectAttemptRef.current[kind] = 0;
+  }, []);
 
   const clearValuesFor = useCallback((kind: LiveSensorKind) => {
     setValues((v) => ({
@@ -99,20 +126,30 @@ export function useLiveSensors() {
 
   const disconnect = useCallback(
     (kind: LiveSensorKind) => {
+      clearReconnect(kind);
       handlesRef.current[kind]?.stop();
       delete handlesRef.current[kind];
       setConnections((c) => ({ ...c, [kind]: IDLE }));
       clearValuesFor(kind);
     },
-    [clearValuesFor],
+    [clearValuesFor, clearReconnect],
   );
 
-  const connect = useCallback(
-    async (kind: LiveSensorKind, preferredName?: string | null) => {
-      if (handlesRef.current[kind]) return;
+  // Eén verbindpoging. `isReconnect` bepaalt de getoonde status; bij een
+  // weggevallen verbinding wordt automatisch (max 3x, oplopende wachttijd)
+  // dezelfde sensor teruggezocht voordat een eerlijke fout blijft staan.
+  const attemptConnect = useCallback(
+    async (kind: LiveSensorKind, isReconnect: boolean) => {
+      if (handlesRef.current[kind] || unmountedRef.current) return;
+      const preferredName = preferredRef.current[kind] ?? null;
       setConnections((c) => ({
         ...c,
-        [kind]: { status: "connecting", deviceName: null, error: null },
+        [kind]: {
+          status: isReconnect ? "reconnecting" : "connecting",
+          deviceName: c[kind].deviceName,
+          error: null,
+          batteryPercent: null,
+        },
       }));
       try {
         const handle = await connectSensor(kind, {
@@ -126,27 +163,67 @@ export function useLiveSensors() {
           },
           onDisconnect: () => {
             delete handlesRef.current[kind];
-            setConnections((c) => ({
-              ...c,
-              [kind]: {
-                status: "error",
-                deviceName: null,
-                error: "Verbinding met de sensor is weggevallen.",
-              },
-            }));
             clearValuesFor(kind);
+            if (unmountedRef.current) return;
+            const attempt = (reconnectAttemptRef.current[kind] ?? 0) + 1;
+            if (attempt <= RECONNECT_DELAYS_MS.length) {
+              reconnectAttemptRef.current[kind] = attempt;
+              setConnections((c) => ({
+                ...c,
+                [kind]: {
+                  status: "reconnecting",
+                  deviceName: c[kind].deviceName,
+                  error: null,
+                  batteryPercent: null,
+                },
+              }));
+              reconnectTimerRef.current[kind] = setTimeout(() => {
+                delete reconnectTimerRef.current[kind];
+                void attemptConnect(kind, true);
+              }, RECONNECT_DELAYS_MS[attempt - 1]);
+            } else {
+              reconnectAttemptRef.current[kind] = 0;
+              setConnections((c) => ({
+                ...c,
+                [kind]: {
+                  status: "error",
+                  deviceName: null,
+                  error:
+                    "Verbinding met de sensor is weggevallen en herverbinden is niet gelukt. Controleer de sensor en probeer opnieuw.",
+                  batteryPercent: null,
+                },
+              }));
+            }
           },
         });
+        // Herverbonden of eerste keer verbonden: pogingteller terug naar nul.
+        reconnectAttemptRef.current[kind] = 0;
         handlesRef.current[kind] = handle;
+        // Bewaar de echte apparaatnaam zodat een volgende herverbinding
+        // dezelfde sensor terugzoekt.
+        if (handle.deviceName) preferredRef.current[kind] = handle.deviceName;
         setConnections((c) => ({
           ...c,
           [kind]: {
             status: "connected",
             deviceName: handle.deviceName,
             error: null,
+            batteryPercent: handle.batteryPercent,
           },
         }));
       } catch (err) {
+        if (unmountedRef.current) return;
+        const attempt = reconnectAttemptRef.current[kind] ?? 0;
+        if (isReconnect && attempt < RECONNECT_DELAYS_MS.length) {
+          // Herverbindpoging mislukt: volgende poging met langere wachttijd.
+          reconnectAttemptRef.current[kind] = attempt + 1;
+          reconnectTimerRef.current[kind] = setTimeout(() => {
+            delete reconnectTimerRef.current[kind];
+            void attemptConnect(kind, true);
+          }, RECONNECT_DELAYS_MS[attempt]);
+          return;
+        }
+        reconnectAttemptRef.current[kind] = 0;
         setConnections((c) => ({
           ...c,
           [kind]: {
@@ -156,6 +233,7 @@ export function useLiveSensors() {
               err instanceof Error && err.message
                 ? err.message
                 : "Kon geen verbinding maken met de sensor.",
+            batteryPercent: null,
           },
         }));
       }
@@ -163,8 +241,19 @@ export function useLiveSensors() {
     [clearValuesFor],
   );
 
+  const connect = useCallback(
+    async (kind: LiveSensorKind, preferredName?: string | null) => {
+      if (handlesRef.current[kind]) return;
+      clearReconnect(kind);
+      preferredRef.current[kind] = preferredName ?? null;
+      await attemptConnect(kind, false);
+    },
+    [attemptConnect, clearReconnect],
+  );
+
   const disconnectAll = useCallback(() => {
     for (const kind of LIVE_KINDS) {
+      clearReconnect(kind);
       handlesRef.current[kind]?.stop();
       delete handlesRef.current[kind];
     }
@@ -176,10 +265,15 @@ export function useLiveSensors() {
     setValues({ watts: null, cadence: null, heartRate: null });
   }, []);
 
-  // Drop all connections when the screen unmounts — no orphaned radios.
+  // Drop all connections when the screen unmounts — no orphaned radios and
+  // no reconnect timers that keep scanning after the rider left the screen.
   useEffect(() => {
     return () => {
+      unmountedRef.current = true;
       for (const kind of LIVE_KINDS) {
+        const t = reconnectTimerRef.current[kind];
+        if (t) clearTimeout(t);
+        delete reconnectTimerRef.current[kind];
         handlesRef.current[kind]?.stop();
         delete handlesRef.current[kind];
       }

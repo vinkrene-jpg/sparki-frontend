@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { MapPin, Play, Square, Zap, Bluetooth } from "lucide-react"
-import { useLookupPlace, useSubmitSprint } from "@/hooks/use-sprints"
+import {
+  makeSprintClientKey,
+  useLookupPlace,
+  useSubmitSprint,
+} from "@/hooks/use-sprints"
 import { usePowerMeter } from "@/hooks/use-power-meter"
 
 // Free-ride ("vrije rit") sprinting: no planned route. We watch real GPS, ask
@@ -81,6 +85,8 @@ export function FreeRideSprint() {
           speedKmhPeak,
           speedGainKmh,
           peakWatts5s,
+          // Idempotent per sprint-moment: een retry maakt nooit een dubbele rij.
+          clientKey: makeSprintClientKey(null, placeName, null, now),
         },
         {
           onSuccess: (data) => {

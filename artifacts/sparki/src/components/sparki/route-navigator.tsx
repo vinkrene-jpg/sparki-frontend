@@ -39,6 +39,7 @@ import {
 import { ACCENT } from "@/components/sparki/ui"
 import type { RouteNavCue } from "@/hooks/use-routes"
 import {
+  makeSprintClientKey,
   useSprintBoards,
   useSubmitSprint,
   type SprintBoard,
@@ -1786,6 +1787,8 @@ export function RouteNavigator({
             speedGainKmh: Math.round(gainKmh),
             peakWatts5s,
             status: "scored",
+            // Idempotent per sprint-moment: een retry maakt nooit een dubbele rij.
+            clientKey: makeSprintClientKey(routeId, b.placeName, b.km, now),
           },
           {
             onSuccess: (data) => {

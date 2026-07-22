@@ -21,6 +21,9 @@ export type SensorReading = {
 
 export type SensorHandle = {
   deviceName: string | null;
+  // Echte batterijstand (0–100%) uit de standaard Battery Service (0x180F),
+  // of null wanneer de sensor die dienst niet aanbiedt — nooit geschat.
+  batteryPercent: number | null;
   stop: () => void;
 };
 
@@ -37,6 +40,10 @@ const CHARACTERISTIC_BY_KIND: Record<LiveSensorKind, string> = {
   hartslagmeter: "00002a37-0000-1000-8000-00805f9b34fb",
   cadans_snelheid: "00002a5b-0000-1000-8000-00805f9b34fb",
 };
+
+// Standard GATT Battery Service / Battery Level characteristic.
+const BATTERY_SERVICE = "0000180f-0000-1000-8000-00805f9b34fb";
+const BATTERY_CHAR = "00002a19-0000-1000-8000-00805f9b34fb";
 
 // How long the scanner keeps looking for the preferred (previously paired)
 // device before honestly settling for the first matching sensor it saw.
@@ -268,6 +275,22 @@ export async function connectSensor(
   const connected = await device.connect({ timeout: 10000 });
   await connected.discoverAllServicesAndCharacteristics();
 
+  // Batterijstand: één echte uitlezing van de standaard Battery Service. Niet
+  // elke sensor biedt die aan — dan blijft hij eerlijk null (nooit geschat).
+  let batteryPercent: number | null = null;
+  try {
+    const ch = await connected.readCharacteristicForService(
+      BATTERY_SERVICE,
+      BATTERY_CHAR,
+    );
+    if (ch?.value) {
+      const bytes = base64ToBytes(String(ch.value));
+      if (bytes.length >= 1 && bytes[0]! <= 100) batteryPercent = bytes[0]!;
+    }
+  } catch {
+    // Geen batterijdienst op dit apparaat — eerlijk onbekend.
+  }
+
   // Cadence state across notifications (power crank data or CSC crank data).
   let prevCrank: CrankSample | null = null;
   const lastMoveAt = { t: 0 };
@@ -312,6 +335,7 @@ export async function connectSensor(
 
   return {
     deviceName: device.name ?? device.localName ?? null,
+    batteryPercent,
     stop: () => {
       stopped = true;
       try {
