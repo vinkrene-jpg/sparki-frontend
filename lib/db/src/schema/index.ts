@@ -32,6 +32,7 @@ export * from "./input-center";
 export * from "./material";
 export * from "./garage";
 export * from "./document-analyses";
+export * from "./knowledge-governance";
 export * from "./coach-followup-answers";
 export * from "./photo-lab";
 export * from "./core-predictions";

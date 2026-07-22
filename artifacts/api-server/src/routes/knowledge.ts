@@ -9,6 +9,12 @@ import {
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { resolveFlags, isAdmin } from "../lib/flags";
+import { managedKnowledgeDomains } from "@workspace/db";
+import {
+  getActiveKnowledge,
+  buildSourceCitations,
+  submitKnowledgeFeedback,
+} from "../lib/knowledge/governance";
 import {
   runKnowledgeScan,
   knowledgeCount,
@@ -172,6 +178,50 @@ router.get("/explain", requireAuth, requireKnowledgeFlag, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "knowledge.explain failed");
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ─────────────────────────────────────────────
+// GET /api/knowledge/bronnen?domain=&topic=&discipline=
+// Publiek (ingelogd): compacte bronvermelding van ACTIEVE beheerde kennis.
+// Geen knowledge_base-flag nodig: bronvermelding hoort bij ieder advies.
+// ─────────────────────────────────────────────
+router.get("/bronnen", requireAuth, async (req, res) => {
+  const domain = String(req.query.domain ?? "").trim();
+  const topic = String(req.query.topic ?? "").trim();
+  const discipline = String(req.query.discipline ?? "").trim();
+  try {
+    const items = await getActiveKnowledge({
+      domain: (managedKnowledgeDomains as readonly string[]).includes(domain)
+        ? (domain as (typeof managedKnowledgeDomains)[number])
+        : undefined,
+      topicLike: topic || null,
+      discipline: discipline || null,
+      limit: 8,
+    });
+    res.json({ bronnen: buildSourceCitations(items) });
+  } catch (err) {
+    req.log.error({ err }, "knowledge.bronnen failed");
+    res.status(500).json({ error: "Bronnen konden niet worden geladen" });
+  }
+});
+
+// ─────────────────────────────────────────────
+// POST /api/knowledge/feedback — fout melden op een kennisitem.
+// ─────────────────────────────────────────────
+router.post("/feedback", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const itemId = Number((req.body ?? {}).itemId);
+  const message = String((req.body ?? {}).message ?? "").trim();
+  if (!Number.isInteger(itemId) || !message)
+    return res.status(400).json({ error: "itemId en message zijn verplicht" });
+  try {
+    const result = await submitKnowledgeFeedback({ itemId, clerkId, message });
+    if (!result.ok) return res.status(404).json({ error: result.error });
+    return res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "knowledge.feedback failed");
+    return res.status(500).json({ error: "Feedback kon niet worden verstuurd" });
   }
 });
 

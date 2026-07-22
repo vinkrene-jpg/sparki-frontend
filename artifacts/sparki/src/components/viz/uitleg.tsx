@@ -1,7 +1,10 @@
 import { useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { Info, X } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
 import { ACCENT } from "@/components/sparki/ui"
+import { apiFetch } from "@/lib/api"
+import { BronVermelding, type Bron } from "@/components/sparki/bron-vermelding"
 import {
   UITLEG,
   buildUitlegContextRegels,
@@ -97,6 +100,18 @@ export function UitlegDot({
 
   const contextRegels =
     uitlegKey != null ? buildUitlegContextRegels(String(uitlegKey), persoonlijk) : []
+
+  // Golf 21 — beheerde bronnen bij dit onderwerp (alleen opgehaald zodra de
+  // uitleg openstaat; geen bronnen = sectie eerlijk afwezig).
+  const bronnenQuery = useQuery({
+    queryKey: ["uitleg-bronnen", uitlegKey ?? null],
+    queryFn: () =>
+      apiFetch<{ bronnen: Bron[] }>(
+        `/api/knowledge/bronnen?topic=${encodeURIComponent(String(uitlegKey))}`,
+      ),
+    enabled: open && uitlegKey != null,
+    staleTime: 5 * 60 * 1000,
+  })
 
   return (
     <>
@@ -195,6 +210,8 @@ export function UitlegDot({
                   </div>
                 </div>
               )}
+
+              <BronVermelding bronnen={bronnenQuery.data?.bronnen} />
             </div>
           </div>,
           document.body,

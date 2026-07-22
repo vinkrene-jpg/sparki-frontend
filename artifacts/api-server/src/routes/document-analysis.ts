@@ -118,6 +118,7 @@ router.post("/", requireAuth, async (req, res) => {
         foundFields: result.foundFields,
         missingFields: result.missingFields,
         followUpQuestions: result.followUpQuestions,
+        sourcePages: result.sourcePages,
       })
       .returning();
     res.status(201).json({ analysis: row });

@@ -30,6 +30,12 @@ import {
   gatherKnowledge,
 } from "../lib/athlete-context";
 import { sessionSeed, rotateWithinGroups } from "../lib/variation";
+import {
+  getActiveKnowledge,
+  knowledgeSourceBlock,
+  buildSourceCitations,
+  recordKnowledgeUsage,
+} from "../lib/knowledge/governance";
 
 const router = Router();
 
@@ -41,8 +47,15 @@ router.post("/brief", requireAuth, async (req, res) => {
       buildAthleteContext(clerkId, "brief"),
       systemPrompt(clerkId),
     ]);
-    const { promptBlock, sources } = await gatherKnowledge(clerkId, context);
-    const knowledgeSection = promptBlock ? `\n\n${promptBlock}` : "";
+    const [{ promptBlock, sources }, managedItems] = await Promise.all([
+      gatherKnowledge(clerkId, context),
+      getActiveKnowledge({ domain: ["training", "herstel"], limit: 4 }),
+    ]);
+    const managedBlock = knowledgeSourceBlock(managedItems);
+    const knowledgeSection = [promptBlock, managedBlock]
+      .filter(Boolean)
+      .map((b) => `\n\n${b}`)
+      .join("");
 
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
@@ -62,7 +75,15 @@ router.post("/brief", requireAuth, async (req, res) => {
       return;
     }
     const brief = block.text;
-    res.json({ brief, sources });
+    res.json({
+      brief,
+      sources,
+      bronnen: buildSourceCitations(managedItems),
+    });
+    // Herleidbaarheid: pin de gebruikte kennisversies (best-effort).
+    void recordKnowledgeUsage(managedItems, "vandaag", clerkId).catch((err) =>
+      req.log.error({ err }, "ai.brief knowledge usage record failed"),
+    );
 
     // Persist memory after responding (best-effort; never blocks the response).
     void (async () => {

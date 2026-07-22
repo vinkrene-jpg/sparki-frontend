@@ -19,6 +19,10 @@ export type AnalysisResult = {
   foundFields: string[];
   missingFields: string[];
   followUpQuestions: string[];
+  // Golf 21 — bronpagina per gevonden veld (fieldKey -> paginanummer zoals in
+  // het document aangetroffen; alleen ingevuld als het model de pagina echt
+  // kon vaststellen, nooit verzonnen).
+  sourcePages: Record<string, number>;
 };
 
 // Media types Sparki can actually read. PDFs go in as a document block, images
@@ -51,7 +55,7 @@ Schema:
   "documentKind": een van ${documentAnalysisKinds.map((k) => `"${k}"`).join(", ")},
   "summary": korte zin in het Nederlands die zegt wat dit document is,
   "fields": {
-    "<key>": { "value": <string of null>, "confidence": "high" | "medium" | "low" }
+    "<key>": { "value": <string of null>, "confidence": "high" | "medium" | "low", "page": <paginanummer of null> }
   }
 }
 
@@ -65,9 +69,10 @@ Strikte regels:
 - startTime: in 24-uurs notatie indien mogelijk (bijv. "10:30").
 - date: in formaat JJJJ-MM-DD indien mogelijk, anders zoals vermeld.
 - Twijfel je over een gelezen waarde? Gebruik confidence "low" of "medium".
+- "page": het paginanummer waar je de waarde LETTERLIJK zag (1 = eerste pagina). Weet je de pagina niet zeker, of is het één afbeelding? Zet "page": null. Verzin nooit een pagina.
 - Schrijf alle tekstwaarden en de summary in het Nederlands.`;
 
-type RawField = { value?: unknown; confidence?: unknown };
+type RawField = { value?: unknown; confidence?: unknown; page?: unknown };
 
 function coerceConfidence(v: unknown): ExtractedField["confidence"] {
   return v === "high" || v === "medium" || v === "low" ? v : null;
@@ -190,6 +195,7 @@ export async function analyzeDocument(
 
   const rawFields = (parsed.fields ?? {}) as Record<string, RawField>;
   const extractedFields: Record<string, ExtractedField> = {};
+  const sourcePages: Record<string, number> = {};
   for (const key of FIELD_KEYS) {
     const raw = rawFields[key];
     const value =
@@ -203,6 +209,17 @@ export async function analyzeDocument(
       value,
       confidence: value == null ? null : coerceConfidence(raw?.confidence),
     };
+    // Bronpagina alleen bewaren als er echt een waarde én een geldig
+    // paginanummer is — eerlijk afwezig in alle andere gevallen.
+    const page = raw?.page;
+    if (
+      value != null &&
+      typeof page === "number" &&
+      Number.isInteger(page) &&
+      page >= 1
+    ) {
+      sourcePages[key] = page;
+    }
   }
 
   const { foundFields, missingFields, followUpQuestions } =
@@ -220,6 +237,7 @@ export async function analyzeDocument(
     foundFields,
     missingFields,
     followUpQuestions,
+    sourcePages,
   };
 }
 

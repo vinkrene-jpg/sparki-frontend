@@ -23,6 +23,7 @@ import {
 import { useAdminBugReports } from "@/hooks/use-bug-reports";
 import { FeedbackInbox } from "@/components/sparki/feedback-inbox";
 import { ReleaseAdminSection } from "@/components/sparki/release-admin";
+import { KennisbankAdminSection } from "@/components/sparki/knowledge-admin";
 import {
   STATUS_META,
   CATEGORY_LABEL,
@@ -680,6 +681,8 @@ export default function AdminPage() {
             </section>
 
             <ReleaseAdminSection />
+
+            <KennisbankAdminSection />
 
             <section className="mt-8">
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">

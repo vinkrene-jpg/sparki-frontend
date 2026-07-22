@@ -66,6 +66,10 @@ export const documentAnalysesTable = pgTable("document_analyses", {
   // Targeted Dutch follow-up questions for the missing/uncertain fields.
   followUpQuestions: jsonb("follow_up_questions"),
   errorMessage: text("error_message"),
+  // Golf 21 — bronpagina's per geëxtraheerd veld: fieldKey -> paginanummer(s)
+  // zoals door het model in het document aangetroffen (eerlijk: null/afwezig
+  // wanneer de pagina niet vast te stellen is, nooit verzonnen).
+  sourcePages: jsonb("source_pages"),
   linkedRaceId: integer("linked_race_id").references(() => racesTable.id, {
     onDelete: "set null",
   }),

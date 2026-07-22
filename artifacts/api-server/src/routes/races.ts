@@ -15,6 +15,11 @@ import {
   persistRaceEvaluation,
 } from "../engines/race";
 import { buildRaceInsight } from "../lib/race-insight";
+import {
+  getActiveKnowledge,
+  buildSourceCitations,
+  recordKnowledgeUsage,
+} from "../lib/knowledge/governance";
 import { removeWorldRefsForSource } from "./world-social";
 import type { RaceResult } from "@workspace/db";
 
@@ -304,7 +309,17 @@ router.get("/:id/advice", requireAuth, async (req, res) => {
       .select()
       .from(athleteProfilesTable)
       .where(eq(athleteProfilesTable.clerkId, clerkId));
-    res.json(await buildRaceAdvice(race, athlete ?? null));
+    const advies = await buildRaceAdvice(race, athlete ?? null);
+    // Golf 21 — beheerde vakkennis (domein wedstrijd) als compacte bronnen.
+    const managedItems = await getActiveKnowledge({
+      domain: "wedstrijd",
+      discipline: race.discipline ?? null,
+      limit: 4,
+    });
+    res.json({ ...advies, bronnen: buildSourceCitations(managedItems) });
+    void recordKnowledgeUsage(managedItems, "race", clerkId, `race:${id}`).catch(
+      (err) => req.log.error({ err }, "race advice knowledge usage failed"),
+    );
   } catch (err) {
     req.log.error({ err }, "race advice GET failed");
     res.status(500).json({ error: "Internal server error" });

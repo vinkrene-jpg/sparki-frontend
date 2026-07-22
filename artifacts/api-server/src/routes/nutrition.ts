@@ -27,6 +27,12 @@ import { analyzeNutritionLog } from "../lib/nutrition-rules";
 import { persistObservation } from "../engines/coaching";
 import { buildAthleteContext, systemPrompt } from "../lib/athlete-context";
 import {
+  getActiveKnowledge,
+  knowledgeSourceBlock,
+  buildSourceCitations,
+  recordKnowledgeUsage,
+} from "../lib/knowledge/governance";
+import {
   normalizeMediaType,
   uploadMaterialPhoto,
   streamMaterialPhoto,
@@ -1467,14 +1473,22 @@ router.get("/fueling-plan", requireAuth, async (req, res) => {
       summarizeDayEffort(openPlanned, dayRaces),
     );
 
-    const seasonBlock = await seasonGoalPromptBlock(
-      clerkId,
-      age,
-      athlete?.weightKg != null ? Number(athlete.weightKg) : null,
-      new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Amsterdam" }).format(
-        new Date(),
+    const [seasonBlock, managedItems] = await Promise.all([
+      seasonGoalPromptBlock(
+        clerkId,
+        age,
+        athlete?.weightKg != null ? Number(athlete.weightKg) : null,
+        new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Amsterdam" }).format(
+          new Date(),
+        ),
       ),
-    );
+      getActiveKnowledge({
+        domain: "voeding",
+        audience: isYouth ? "jeugd" : "sporter",
+        limit: 4,
+      }),
+    ]);
+    const managedBlock = knowledgeSourceBlock(managedItems);
 
     const effortLines: string[] = [];
     for (const r of dayRaces) {
@@ -1524,7 +1538,7 @@ ${personLines.join("\n")}
 GEPLAND OP ${date}:
 ${effortLines.join("\n")}
 
-${seasonBlock ? seasonBlock + "\n\n" : ""}${audienceRule}
+${seasonBlock ? seasonBlock + "\n\n" : ""}${managedBlock ? managedBlock + "\n\n" : ""}${audienceRule}
 
 BEREKENDE RICHTWAARDEN (leidend — wijk hier niet van af, verzin geen andere getallen):
 ${richtwaarden.items.map((i) => `- [${i.kind}] ${i.text}`).join("\n")}
@@ -1621,8 +1635,13 @@ Precies deze 4 fasen, in deze volgorde. Platte tekst, gewoon Nederlands, geen En
         raceCount: dayRaces.length,
         workoutCount: openPlanned.length,
         richtwaarden,
+        bronnen: buildSourceCitations(managedItems),
       },
     });
+    // Herleidbaarheid: pin de gebruikte kennisversies (best-effort).
+    void recordKnowledgeUsage(managedItems, "voeding", clerkId, `fueling:${date}`).catch(
+      (err) => req.log.error({ err }, "nutrition.fueling-plan knowledge usage failed"),
+    );
   } catch (err) {
     req.log.error({ err }, "nutrition.fueling-plan failed");
     res.status(500).json({ error: "Sparki is even niet bereikbaar" });
