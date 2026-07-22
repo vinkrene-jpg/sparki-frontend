@@ -11,7 +11,7 @@ import {
   type SyncRunCounts,
 } from "@workspace/db";
 import { deriveTss, ftpAtDate, type FtpEntry } from "../../lib/derived-load";
-import type { NormalizedBatch } from "./types";
+import type { CanonicalActivity, NormalizedBatch } from "./types";
 import { legacyTypeForSport } from "./sports";
 import {
   computeActivityDedupeKey,
@@ -103,6 +103,31 @@ async function ingestActivities(
       counts.skipped = (counts.skipped ?? 0) + 1;
       continue;
     }
+    try {
+      await persistOneActivity(clerkId, provider, a, rawActivity, ftpCtx, counts);
+    } catch (err) {
+      // Eén kapotte activiteit mag nooit de rest van de batch laten verdwijnen.
+      // De transactie in persistOneActivity heeft alles van DEZE activiteit
+      // teruggedraaid (geen halve rijen); we tellen de fout eerlijk mee zodat
+      // de sync-run zichtbaar "partial" wordt in plaats van stil dataverlies.
+      counts.errors = (counts.errors ?? 0) + 1;
+      const msg = err instanceof Error ? err.message : String(err);
+      const samples = (counts.errorSamples ??= []);
+      if (samples.length < 5)
+        samples.push(`${provider}:${a.externalId}: ${msg}`.slice(0, 300));
+    }
+  }
+}
+
+async function persistOneActivity(
+  clerkId: string,
+  provider: string,
+  a: CanonicalActivity,
+  rawActivity: CanonicalActivity,
+  ftpCtx: Awaited<ReturnType<typeof loadFtpContext>>,
+  counts: SyncRunCounts,
+): Promise<void> {
+  {
     // Providers like Strava never send a belastingscore. Derive it from the
     // activity's own power and the FTP at that date (standard formula, see
     // lib/derived-load). Provider-supplied scores always win; when nothing is
@@ -190,6 +215,13 @@ async function ingestActivities(
       }),
     );
 
+    // Alle schrijfacties voor DEZE activiteit (sessie + herkomstrij) vormen één
+    // geheel: of alles staat er, of niets. Nooit een sessie zonder herkomst of
+    // andersom (gedeeltelijk opgeslagen import).
+    // Tellers pas NA een geslaagde commit bijwerken — bij een rollback mag de
+    // mislukte activiteit niet als "nieuw"/"samengevoegd" meetellen.
+    let outcome: "merged" | "created" | null = null;
+    await db.transaction(async (tx) => {
     let sessionId: number;
     // Provenance rows share the canonical session's key so all sources for one
     // activity are queryable by a single dedupeKey.
@@ -217,7 +249,7 @@ async function ingestActivities(
         incoming,
       );
       const sources = mergeSources(existing.sources ?? null, provider);
-      await db
+      await tx
         .update(trainingSessionsTable)
         .set({
           ...patch,
@@ -233,9 +265,9 @@ async function ingestActivities(
         .where(eq(trainingSessionsTable.id, existing.id));
       sessionId = existing.id;
       sessionDedupeKey = existing.dedupeKey ?? dedupeKey;
-      counts.merged = (counts.merged ?? 0) + 1;
+      outcome = "merged";
     } else {
-      const [inserted] = await db
+      const [inserted] = await tx
         .insert(trainingSessionsTable)
         .values({
           clerkId,
@@ -263,11 +295,11 @@ async function ingestActivities(
         })
         .returning({ id: trainingSessionsTable.id });
       sessionId = inserted!.id;
-      counts.activities = (counts.activities ?? 0) + 1;
+      outcome = "created";
     }
 
     // Raw provenance row (idempotent per provider activity id).
-    await db
+    await tx
       .insert(connectorActivitiesTable)
       .values({
         clerkId,
@@ -291,6 +323,9 @@ async function ingestActivities(
           importedAt: new Date(),
         },
       });
+    });
+    if (outcome === "merged") counts.merged = (counts.merged ?? 0) + 1;
+    if (outcome === "created") counts.activities = (counts.activities ?? 0) + 1;
   }
 }
 

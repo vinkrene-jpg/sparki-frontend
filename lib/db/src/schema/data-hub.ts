@@ -158,6 +158,8 @@ export type SyncRunCounts = {
   equipment?: number;
   raceResults?: number;
   errors?: number;
+  /** Plain-language samples of per-activity failures (max a handful). */
+  errorSamples?: string[];
 };
 
 export const syncRunsTable = pgTable("sync_runs", {

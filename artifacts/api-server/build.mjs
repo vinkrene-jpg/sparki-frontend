@@ -69,6 +69,7 @@ const ALL_ENTRIES = [
       path.resolve(artifactDir, "src/tests/onboarding-strava-gapfill.ts"),
       path.resolve(artifactDir, "src/tests/feedback-adjust.ts"),
       path.resolve(artifactDir, "src/tests/kernreis.ts"),
+      path.resolve(artifactDir, "src/tests/data-reliability.ts"),
       path.resolve(artifactDir, "src/tests/cross-account-isolation.ts"),
       path.resolve(artifactDir, "src/tests/coach-parent-link-isolation.ts"),
       path.resolve(artifactDir, "src/tests/links-unlink-isolation.ts"),

@@ -46,5 +46,8 @@ Prod DB schema NOT pushed: new tables (`connector_activities`, `equipment`,
 (sport/avgCadence/avgSpeedKph/maxHR/externalRef/dedupeKey/sources[]) and `races`
 (raceType/result jsonb). Push before deploy.
 
+## Betrouwbaarheidslaag — tellers, rollback en retry
+**Regels:** (1) alle writes per activiteit (sessie + provenance) in één transactie; sync-tellers (`activities`/`merged`) pas NA de commit ophogen, anders telt een teruggerolde activiteit mee en klopt de boekhouding niet. (2) Batch loopt door bij één kapotte activiteit (per-activiteit catch → `counts.errors` + `errorSamples`), sync_run wordt eerlijk `partial`. (3) Retry alleen op transiënte fouten (netwerk/5xx/429), permanente fouten falen direct. **Testtruc:** een `raw`-payload met circulaire verwijzing passeert alle validatie maar breekt de jsonb-serialisatie NA de sessie-insert — perfect om rollback-halverwege te bewijzen zonder mocks. **Ketentest:** `test:data-reliability` (vaste synthetische atleet `synthetic_ketentest_atleet`, 12 scenario's). Centrale error-middleware: bekende 4xx (body-parser) blijven 4xx, alleen echte serverfouten 500; altijd generiek Nederlands + X-Request-Id.
+
 ## Dag-niveau dedupe voor handmatige sessies (Afbouwgolf 1)
 Handmatige sessies hebben geen starttijd ⇒ geen dedupeKey; dedupe gebeurt op dag+type+plausibiliteit. **Regel:** merge NOOIT zonder minstens één sterke vergelijker (duur of afstand aan BEIDE kanten aanwezig en geldig) — `activitiesPlausiblyEqual` geeft effectief true bij ontbrekende velden, wat anders stille dataloss (over-merge) veroorzaakt. Valideer numerieke route-invoer hard (400 bij NaN) zodat NaN nooit de dedupe-beslissing in gaat. Zelfde guard geldt in de hub-import wanneer manual rows als merge-kandidaat meegaan.

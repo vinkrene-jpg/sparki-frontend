@@ -841,6 +841,179 @@ const unwiredChecks: CheckDefinition[] = [
       return r;
     },
   },
+  {
+    key: "data_hub_sync",
+    category: "connector",
+    title: "Databronnen & synchronisatie",
+    description:
+      "Controleert of imports uit databronnen (Strava, bestanden, mobiel) goed doorlopen: vastgelopen of mislukte synchronisaties en de laatste geslaagde verwerking.",
+    responsibleModule: "Data Hub (synchronisatie)",
+    userImpact: impact(
+      "Nieuwe ritten komen niet of onvolledig binnen; analyses en het schema lopen achter.",
+    ),
+    urgency: "high",
+    remediation:
+      "Open de koppeling van de sporter en start de synchronisatie opnieuw. Vastgelopen runs (langer dan een uur 'bezig') wijzen op een crash tijdens verwerken — controleer de serverlogs met het tijdstip van de run.",
+    probe: async () => {
+      const start = performance.now();
+      try {
+        const stuck = await db.execute(sql`
+          SELECT count(*)::int AS n FROM sync_runs
+          WHERE status = 'running' AND started_at < now() - interval '1 hour'`);
+        const recentFailed = await db.execute(sql`
+          SELECT count(*)::int AS n FROM sync_runs
+          WHERE status IN ('failed','partial') AND started_at > now() - interval '48 hours'`);
+        const lastOk = await db.execute(sql`
+          SELECT max(finished_at) AS t FROM sync_runs WHERE status = 'success'`);
+        const nStuck = Number((stuck.rows[0] as { n: number }).n);
+        const nFailed = Number((recentFailed.rows[0] as { n: number }).n);
+        const lastOkAt = (lastOk.rows[0] as { t: string | null }).t;
+        const took = ms(start);
+        const lastLine = lastOkAt
+          ? `Laatste geslaagde verwerking: ${new Date(lastOkAt).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" })}.`
+          : "Nog geen geslaagde synchronisatie geregistreerd.";
+        if (nStuck > 0) {
+          return {
+            status: "red",
+            passed: false,
+            responseTimeMs: took,
+            message: `${nStuck} synchronisatie(s) staan langer dan een uur op 'bezig' (vastgelopen). ${lastLine}`,
+            technicalDetails: `stuck=${nStuck}, failed/partial 48u=${nFailed}`,
+            urgency: "high",
+          };
+        }
+        if (nFailed > 0) {
+          return {
+            status: "orange",
+            passed: false,
+            responseTimeMs: took,
+            message: `${nFailed} synchronisatie(s) in de afgelopen 48 uur mislukt of gedeeltelijk. ${lastLine}`,
+            technicalDetails: `failed/partial 48u=${nFailed}`,
+          };
+        }
+        return {
+          status: "green",
+          passed: true,
+          responseTimeMs: took,
+          message: `Geen vastgelopen of mislukte synchronisaties. ${lastLine}`,
+          technicalDetails: `stuck=0, failed/partial 48u=0`,
+        };
+      } catch (err) {
+        return {
+          status: "red",
+          passed: false,
+          responseTimeMs: ms(start),
+          message: "De synchronisatie-status kan niet uit de database gelezen worden.",
+          technicalDetails: err instanceof Error ? err.message : String(err),
+        };
+      }
+    },
+  },
+  {
+    key: "activity_import_errors",
+    category: "connector",
+    title: "Bestand-imports (GPX/FIT/TCX)",
+    description:
+      "Controleert of geüploade activiteitenbestanden goed verwerkt worden en of er mislukte imports open staan.",
+    responsibleModule: "Data Hub (bestand-import)",
+    userImpact: impact(
+      "Geüploade ritten verschijnen niet in het overzicht; de sporter denkt dat data kwijt is.",
+    ),
+    urgency: "medium",
+    remediation:
+      "Bekijk de mislukte imports (status 'failed' met foutreden). Een kapot bestand kan de sporter opnieuw exporteren en uploaden; een terugkerende parsefout is een bug in de verwerking.",
+    probe: async () => {
+      const start = performance.now();
+      try {
+        const failed = await db.execute(sql`
+          SELECT count(*)::int AS n FROM activity_imports
+          WHERE status = 'failed' AND created_at > now() - interval '7 days'`);
+        const lastOk = await db.execute(sql`
+          SELECT max(created_at) AS t FROM activity_imports
+          WHERE status IN ('linked','parsed')`);
+        const nFailed = Number((failed.rows[0] as { n: number }).n);
+        const lastOkAt = (lastOk.rows[0] as { t: string | null }).t;
+        const took = ms(start);
+        const lastLine = lastOkAt
+          ? `Laatste geslaagde bestand-import: ${new Date(lastOkAt).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" })}.`
+          : "Nog geen geslaagde bestand-import geregistreerd.";
+        if (nFailed > 0) {
+          return {
+            status: "orange",
+            passed: false,
+            responseTimeMs: took,
+            message: `${nFailed} bestand-import(s) mislukt in de afgelopen 7 dagen (met zichtbare foutreden per bestand). ${lastLine}`,
+            technicalDetails: `failed 7d=${nFailed}`,
+          };
+        }
+        return {
+          status: "green",
+          passed: true,
+          responseTimeMs: took,
+          message: `Geen mislukte bestand-imports in de afgelopen 7 dagen. ${lastLine}`,
+        };
+      } catch (err) {
+        return {
+          status: "red",
+          passed: false,
+          responseTimeMs: ms(start),
+          message: "De import-status kan niet uit de database gelezen worden.",
+          technicalDetails: err instanceof Error ? err.message : String(err),
+        };
+      }
+    },
+  },
+  {
+    key: "duplicate_activities",
+    category: "database",
+    title: "Dubbele activiteiten",
+    description:
+      "Controleert of dezelfde activiteit meerdere keren als aparte sessie is opgeslagen (dubbele trainingsbelasting).",
+    responsibleModule: "Data Hub (deduplicatie)",
+    userImpact: impact(
+      "Trainingsbelasting en analyses tellen dezelfde rit dubbel — vorm en advies kloppen dan niet.",
+    ),
+    urgency: "high",
+    remediation:
+      "Zoek de sessies met dezelfde herkomstsleutel (dedupe_key) per sporter en voeg ze samen of verwijder de dubbele. Onderzoek daarna welke bron langs de deduplicatie is gekomen.",
+    probe: async () => {
+      const start = performance.now();
+      try {
+        const dups = await db.execute(sql`
+          SELECT count(*)::int AS n FROM (
+            SELECT clerk_id, dedupe_key FROM training_sessions
+            WHERE dedupe_key IS NOT NULL
+            GROUP BY clerk_id, dedupe_key HAVING count(*) > 1
+          ) d`);
+        const nDups = Number((dups.rows[0] as { n: number }).n);
+        const took = ms(start);
+        if (nDups > 0) {
+          return {
+            status: "red",
+            passed: false,
+            responseTimeMs: took,
+            message: `${nDups} activiteit(en) staan dubbel opgeslagen — de belasting telt dubbel.`,
+            technicalDetails: `duplicate (clerk_id, dedupe_key) groepen: ${nDups}`,
+            urgency: "high",
+          };
+        }
+        return {
+          status: "green",
+          passed: true,
+          responseTimeMs: took,
+          message: "Geen dubbele activiteiten gevonden: iedere rit telt precies één keer.",
+        };
+      } catch (err) {
+        return {
+          status: "red",
+          passed: false,
+          responseTimeMs: ms(start),
+          message: "De duplicaten-controle kan niet uitgevoerd worden.",
+          technicalDetails: err instanceof Error ? err.message : String(err),
+        };
+      }
+    },
+  },
 ];
 
 // Connector checks are generated from the registry so adding a platform there

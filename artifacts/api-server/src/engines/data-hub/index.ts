@@ -136,6 +136,43 @@ async function recordConnectionError(
     .catch(() => {});
 }
 
+// ── Transient-fout herkenning + retry ────────────────────────────────────────
+// Netwerkstoringen en tijdelijke serverfouten (5xx / rate limit) zijn geen
+// permanente fouten: één automatische herkansing met korte backoff lost ze
+// meestal op. Permanente fouten (auth, 4xx, parsefouten) worden NIET herhaald —
+// die moeten zichtbaar falen.
+export function isTransientError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  const status = (err as { status?: number } | null)?.status;
+  if (typeof status === "number")
+    return status === 429 || (status >= 500 && status < 600);
+  return /fetch failed|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|ENOTFOUND|socket hang up|network|timeout|429|50[0-4]/i.test(
+    msg,
+  );
+}
+
+const sleep = (msDelay: number) =>
+  new Promise((resolve) => setTimeout(resolve, msDelay));
+
+/** Run `fn`, retrying up to `retries` times ONLY on transient errors. */
+export async function withTransientRetry<T>(
+  fn: () => Promise<T>,
+  retries = 2,
+  baseDelayMs = 500,
+): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt === retries || !isTransientError(err)) throw err;
+      await sleep(baseDelayMs * Math.pow(2, attempt));
+    }
+  }
+  throw lastErr;
+}
+
 export interface RunSyncResult {
   run: SyncRun;
   counts: SyncRunCounts;
@@ -175,7 +212,11 @@ export async function runSync(
 
   try {
     const allowed = await loadAllowedDataTypes(clerkId, providerId);
-    const batch = await provider.fetchAndNormalize({ clerkId });
+    // Tijdelijke netwerk-/serverfouten krijgen automatisch een herkansing;
+    // permanente fouten falen direct en zichtbaar.
+    const batch = await withTransientRetry(() =>
+      provider.fetchAndNormalize!({ clerkId }),
+    );
 
     const counts: SyncRunCounts = batch.persistedExternally
       ? {}
@@ -193,13 +234,19 @@ export async function runSync(
       now,
     );
 
+    // Eerlijk loggen: als individuele activiteiten faalden is de run "partial",
+    // met de foutvoorbeelden erbij — nooit een stille "success" met dataverlies.
+    const hadErrors = (counts.errors ?? 0) > 0;
     const [finished] = await db
       .update(syncRunsTable)
       .set({
-        status: "success",
+        status: hadErrors ? "partial" : "success",
         finishedAt: new Date(),
         counts,
         importedDataTypes,
+        error: hadErrors
+          ? `${counts.errors} activiteit(en) niet verwerkt: ${(counts.errorSamples ?? []).join(" | ")}`.slice(0, 1000)
+          : null,
       })
       .where(eq(syncRunsTable.id, runId))
       .returning();
