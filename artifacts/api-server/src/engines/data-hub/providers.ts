@@ -2,6 +2,7 @@ import type { ConnectorDataType } from "@workspace/db";
 import {
   syncStrava,
   fetchStravaActivities,
+  fetchStravaActivityById,
 } from "../../lib/connectors/providers/strava";
 import {
   fetchGarminActivities,
@@ -24,8 +25,34 @@ import type { HubProvider } from "./types";
 const stravaProvider: HubProvider = {
   id: "strava",
   async fetchAndNormalize(ctx) {
+    // Gerichte webhook-sync: haal precies de gemelde activiteit(en) op — geen
+    // volledige lijstopvraag, geen profielsync. Een 404 (verwijderd/privé)
+    // levert eerlijk niets op.
+    if (ctx.activityIds && ctx.activityIds.length > 0) {
+      const targeted: Awaited<ReturnType<typeof fetchStravaActivities>> = [];
+      for (const id of ctx.activityIds) {
+        const one = await fetchStravaActivityById(ctx.clerkId, id);
+        if (one) targeted.push(one);
+      }
+      const importedDataTypes: ConnectorDataType[] =
+        targeted.length > 0 ? ["activities", "training_history"] : [];
+      return {
+        importedDataTypes,
+        activities: targeted,
+        persistedExternally: false,
+      };
+    }
+
     const profile = await syncStrava(ctx.clerkId);
-    const activities = await fetchStravaActivities(ctx.clerkId);
+    // Inhaalsync (afterEpochSec): alleen activiteiten ná het laatste
+    // succesvolle syncmoment, in begrensde batches — nooit de hele historie
+    // opnieuw bij het openen van de app.
+    const activities = await fetchStravaActivities(
+      ctx.clerkId,
+      ctx.afterEpochSec != null
+        ? { afterEpochSec: ctx.afterEpochSec, maxPages: 5 }
+        : {},
+    );
 
     const importedDataTypes: ConnectorDataType[] = [...profile.importedDataTypes];
     // Only claim activity/history import when activities were actually returned.

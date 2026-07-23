@@ -8,7 +8,7 @@
 // registry `available` flag. Routing, ingest, dedup, consent, readiness and
 // logging are all platform-agnostic and handled here.
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import {
   db,
   connectorConnectionsTable,
@@ -52,7 +52,12 @@ export {
 export type { IngestOptions } from "./ingest";
 
 // Honest, typed failure so the API can map it to the right status code.
-export type HubErrorCode = "not_found" | "unavailable" | "unsupported" | "sync_failed";
+export type HubErrorCode =
+  | "not_found"
+  | "unavailable"
+  | "unsupported"
+  | "sync_failed"
+  | "busy";
 
 export class HubError extends Error {
   code: HubErrorCode;
@@ -124,7 +129,10 @@ async function upsertConnection(
         disconnectedAt: null,
         connectedAt: now,
         importedDataTypes,
-        externalUserId: externalUserId ?? null,
+        // Gerichte webhook-syncs leveren geen extern gebruikers-id op — het
+        // bestaande id mag dan NOOIT worden gewist, anders lossen volgende
+        // webhooks niet meer op naar deze gebruiker.
+        externalUserId: sql`COALESCE(EXCLUDED.external_user_id, ${connectorConnectionsTable.externalUserId})`,
         permissionRevoked: false,
         errorStatus: null,
         updatedAt: now,
@@ -213,10 +221,48 @@ export interface RunSyncResult {
  * connection. Throws a typed HubError for platforms that can't fetch live data
  * yet (so they surface honestly, never a fake success).
  */
+export interface RunSyncOptions {
+  /** Gerichte sync: alléén deze provider-activiteit-id's (webhook-pad). */
+  activityIds?: string[];
+  /** Inhaalsync: alleen activiteiten ná dit tijdstip (unix-seconden). */
+  afterEpochSec?: number;
+}
+
+// Een sync-run die langer dan dit "running" staat is vrijwel zeker gecrasht
+// (proces herstart); die blokkeert een nieuwe sync niet meer.
+const RUNNING_SYNC_FRESH_MS = 10 * 60 * 1000;
+
+/**
+ * Gelijktijdigheidswacht: loopt er al een verse sync voor deze gebruiker+
+ * platform, dan wordt een nieuwe niet gestart (geblokkeerd, niet gestapeld).
+ * Dedupe maakt dubbele verwerking onschadelijk, maar dubbel ophalen verspilt
+ * rate-limit en kan runs door elkaar laten lopen.
+ */
+export async function hasFreshRunningSync(
+  clerkId: string,
+  providerId: string,
+  now: Date = new Date(),
+): Promise<boolean> {
+  const [running] = await db
+    .select({ startedAt: syncRunsTable.startedAt })
+    .from(syncRunsTable)
+    .where(
+      and(
+        eq(syncRunsTable.clerkId, clerkId),
+        eq(syncRunsTable.provider, providerId),
+        eq(syncRunsTable.status, "running"),
+      ),
+    )
+    .limit(1);
+  if (!running?.startedAt) return false;
+  return now.getTime() - new Date(running.startedAt).getTime() < RUNNING_SYNC_FRESH_MS;
+}
+
 export async function runSync(
   clerkId: string,
   providerId: string,
   trigger: SyncRunTrigger = "manual",
+  opts: RunSyncOptions = {},
 ): Promise<RunSyncResult> {
   const def: ConnectorDefinition | undefined = getConnectorDefinition(providerId);
   if (!def) throw new HubError("not_found", "Onbekende koppeling.");
@@ -248,11 +294,42 @@ export async function runSync(
     throw new HubError("unsupported", "Koppeling nog niet ondersteund.");
   }
 
-  const [run] = await db
-    .insert(syncRunsTable)
-    .values({ clerkId, provider: providerId, trigger, status: "running" })
-    .returning();
-  const runId = run!.id;
+  // Gelijktijdige syncs worden geblokkeerd (niet gestapeld). Geen run-rij en
+  // geen verbindingsfout — de lopende sync doet het werk al. De controle en
+  // het aanmaken van de run-rij gebeuren ATOMAIR binnen één transactie met een
+  // advisory lock per gebruiker+koppeling, zodat twee gelijktijdige aanroepen
+  // (webhook + inhaalsync + handmatig) nooit allebei kunnen starten.
+  const run = await db.transaction(async (tx) => {
+    await tx.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtext(${`${clerkId}:${providerId}:sync`}))`,
+    );
+    const [running] = await tx
+      .select({ startedAt: syncRunsTable.startedAt })
+      .from(syncRunsTable)
+      .where(
+        and(
+          eq(syncRunsTable.clerkId, clerkId),
+          eq(syncRunsTable.provider, providerId),
+          eq(syncRunsTable.status, "running"),
+        ),
+      )
+      .limit(1);
+    if (
+      running?.startedAt &&
+      Date.now() - new Date(running.startedAt).getTime() < RUNNING_SYNC_FRESH_MS
+    ) {
+      throw new HubError(
+        "busy",
+        "Er loopt al een synchronisatie voor deze koppeling.",
+      );
+    }
+    const [created] = await tx
+      .insert(syncRunsTable)
+      .values({ clerkId, provider: providerId, trigger, status: "running" })
+      .returning();
+    return created!;
+  });
+  const runId = run.id;
   const now = new Date();
 
   try {
@@ -260,7 +337,12 @@ export async function runSync(
     // Tijdelijke netwerk-/serverfouten krijgen automatisch een herkansing;
     // permanente fouten falen direct en zichtbaar.
     const batch = await withTransientRetry(() =>
-      provider.fetchAndNormalize!({ clerkId, backfill: trigger === "backfill" }),
+      provider.fetchAndNormalize!({
+        clerkId,
+        backfill: trigger === "backfill",
+        activityIds: opts.activityIds,
+        afterEpochSec: opts.afterEpochSec,
+      }),
     );
 
     const counts: SyncRunCounts = batch.persistedExternally

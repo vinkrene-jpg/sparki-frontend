@@ -198,31 +198,65 @@ function normalizeStravaActivity(
   };
 }
 
+// Fout met HTTP-status eraan, zodat de transient-detectie van de Data Hub
+// (isTransientError kijkt naar `.status`) 429/5xx als tijdelijk herkent.
+function stravaHttpError(message: string, status: number): Error {
+  const err = new Error(message) as Error & { status: number };
+  err.status = status;
+  return err;
+}
+
+function throwForStravaStatus(status: number, context: string): never {
+  if (status === 401 || status === 403) {
+    throw stravaHttpError("Strava-toegang is verlopen. Koppel opnieuw.", status);
+  }
+  if (status === 429) {
+    throw stravaHttpError(
+      "Strava-limiet bereikt. Probeer het later opnieuw.",
+      status,
+    );
+  }
+  throw stravaHttpError(context, status);
+}
+
+export interface FetchStravaActivitiesOptions {
+  /** Alleen activiteiten gestart ná dit tijdstip (unix-seconden) — inhaalsync. */
+  afterEpochSec?: number;
+  /** Maximaal aantal pagina's per aanroep (begrensde batch, rate-limit-vriendelijk). */
+  maxPages?: number;
+}
+
 /**
  * Fetch the authenticated athlete's recent real Strava activities and normalise
  * them into the hub's canonical shape. Returns ONLY what Strava actually returns
  * (no fabrication); the central ingest pipeline handles validation, cross-source
  * dedup/merge, consent, and provenance.
+ *
+ * Met `afterEpochSec` (inhaalsync) levert Strava de resultaten oudste-eerst;
+ * zonder dat veld nieuwste-eerst. Beide paden zijn idempotent dankzij de
+ * centrale dedupe — opnieuw draaien geeft nooit duplicaten.
  */
 export async function fetchStravaActivities(
   clerkId: string,
+  opts: FetchStravaActivitiesOptions = {},
 ): Promise<CanonicalActivity[]> {
   const accessToken = await getValidStravaAccessToken(clerkId);
   const out: CanonicalActivity[] = [];
+  const maxPages = opts.maxPages ?? ACTIVITIES_MAX_PAGES;
 
-  for (let page = 1; page <= ACTIVITIES_MAX_PAGES; page++) {
-    const res = await fetch(
-      `${STRAVA_API}/athlete/activities?per_page=${ACTIVITIES_PER_PAGE}&page=${page}`,
-      { headers: { Authorization: `Bearer ${accessToken}` } },
-    );
-    if (res.status === 401) {
-      throw new Error("Strava-toegang is verlopen. Koppel opnieuw.");
+  for (let page = 1; page <= maxPages; page++) {
+    const params = new URLSearchParams({
+      per_page: String(ACTIVITIES_PER_PAGE),
+      page: String(page),
+    });
+    if (opts.afterEpochSec != null) {
+      params.set("after", String(Math.max(0, Math.floor(opts.afterEpochSec))));
     }
-    if (res.status === 429) {
-      throw new Error("Strava-limiet bereikt. Probeer het later opnieuw.");
-    }
+    const res = await fetch(`${STRAVA_API}/athlete/activities?${params}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
     if (!res.ok) {
-      throw new Error("Kon je Strava-activiteiten niet laden.");
+      throwForStravaStatus(res.status, "Kon je Strava-activiteiten niet laden.");
     }
     const batch = (await res.json()) as StravaSummaryActivity[];
     if (!Array.isArray(batch) || batch.length === 0) break;
@@ -235,4 +269,26 @@ export async function fetchStravaActivities(
   }
 
   return out;
+}
+
+/**
+ * Gerichte ophaling van één Strava-activiteit (webhook-pad): precies de
+ * activiteit uit de melding, geen volledige lijstopvraag. Een 404 (verwijderd
+ * of privé gemaakt) geeft eerlijk `null` terug — nooit een verzonnen record.
+ */
+export async function fetchStravaActivityById(
+  clerkId: string,
+  activityId: string,
+): Promise<CanonicalActivity | null> {
+  const accessToken = await getValidStravaAccessToken(clerkId);
+  const res = await fetch(
+    `${STRAVA_API}/activities/${encodeURIComponent(activityId)}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    throwForStravaStatus(res.status, "Kon deze Strava-activiteit niet laden.");
+  }
+  const act = (await res.json()) as StravaSummaryActivity;
+  return normalizeStravaActivity(act);
 }

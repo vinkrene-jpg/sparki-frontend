@@ -80,6 +80,17 @@ export interface SyncContext {
   clerkId: string;
   /** True bij historische backfill: de adapter haalt diepere historie op. */
   backfill?: boolean;
+  /**
+   * Gerichte sync (webhook): haal alléén deze provider-activiteit-id's op in
+   * plaats van een volledige lijstopvraag. Provider-adapters die dit niet
+   * ondersteunen negeren het veld (dan draait een reguliere sync).
+   */
+  activityIds?: string[];
+  /**
+   * Inhaalsync: haal alleen activiteiten op die ná dit tijdstip (unix-seconden)
+   * zijn gestart. Gebruikt door de hervatbare catch-up na een offline periode.
+   */
+  afterEpochSec?: number;
 }
 
 // A platform adapter. `fetchAndNormalize` exists only where data can flow today;

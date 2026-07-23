@@ -250,10 +250,19 @@ async function persistOneActivity(
       };
       // Handmatige correcties van de sporter zijn onaantastbaar: die velden
       // worden nooit (opnieuw) gevuld door een connector-merge.
+      // Velden die deze bron zélf eerder leverde mogen wel worden ververst —
+      // een op het platform gewijzigde activiteit (titel, afstand) werkt dan
+      // door zonder waarden van andere bronnen of de sporter te overschrijven.
+      const ownFields = new Set(
+        Object.entries(existing.fieldSources ?? {})
+          .filter(([, src]) => src === provider)
+          .map(([f]) => f),
+      );
       const patch = buildMergePatch(
         existing as unknown as Record<string, unknown>,
         incoming,
         existing.manualFields ?? null,
+        ownFields,
       );
       const sources = mergeSources(existing.sources ?? null, provider);
       const fieldSources = updateFieldSources(

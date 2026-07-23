@@ -102,11 +102,18 @@ const MERGEABLE_FIELDS = [
  * Handmatige correcties zijn heilig: velden in `manualFields` worden NOOIT
  * gevuld of overschreven door een merge — ook niet wanneer de sporter het veld
  * bewust heeft leeggemaakt (null).
+ *
+ * `refreshFields` (optioneel): velden die EERDER door dezélfde bron zijn
+ * geleverd. Wanneer die bron een gewijzigde waarde meldt (bijv. een op Strava
+ * aangepaste titel of gecorrigeerde afstand), mag haar eigen waarde worden
+ * ververst. Waarden van ándere bronnen of handmatige correcties blijven
+ * onaangeroerd — eerste-bron-wint blijft gelden tussen bronnen.
  */
 export function buildMergePatch(
   existing: Record<string, unknown>,
   incoming: Record<string, unknown>,
   manualFields?: string[] | null,
+  refreshFields?: Set<string> | null,
 ): Record<string, unknown> {
   const manual = new Set(manualFields ?? []);
   const patch: Record<string, unknown> = {};
@@ -114,7 +121,11 @@ export function buildMergePatch(
     if (manual.has(f)) continue;
     const have = existing[f];
     const next = incoming[f];
-    if ((have === null || have === undefined) && next !== null && next !== undefined) {
+    if (next === null || next === undefined) continue;
+    if (have === null || have === undefined) {
+      patch[f] = next;
+    } else if (refreshFields?.has(f) && next !== have) {
+      // Zelfde bron leverde dit veld eerder — haar update mag doorwerken.
       patch[f] = next;
     }
   }

@@ -156,3 +156,4 @@
 - [Sparki Volgauto](sparki-volgauto.md) — fietsroute blijft intact (aparte laag); server DB-vorm is contract-SSOT, consumers her-declareren niet op gevoel; meetpoint carKm nullable; wissel na 120s, ETA altijd "geschat".
 - [Sparki startup black screen](sparki-startup-black-screen.md) — niets rendert tot clerk-js laadt (Show=null); drie vaste vangnetlagen (splash, root boundary, ClerkStartupGate) nooit verwijderen.
 - [Sparki live locatie delen](sparki-live-location.md) — opt-in per-sessie delen: authz herchecked at EVERY read (incl. minor fail-closed in group branch), idle-expiry anchored on last position not startedAt, one position row = no history.
+- [Strava webhook-first sync](sparki-strava-webhook-sync.md) — partial syncs must COALESCE identity fields (never null externalUserId); busy gate atomic via pg_advisory_xact_lock in one tx.

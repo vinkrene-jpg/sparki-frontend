@@ -25,7 +25,9 @@ import {
   formatLastSync,
   READINESS_LABELS,
   SYNC_TRIGGER_LABELS,
+  CONNECT_STATUS_LABELS,
   type ConnectorItem,
+  type ConnectStatus,
   type ReadinessState,
   type SyncRun,
 } from "@/lib/connectors"
@@ -68,6 +70,32 @@ const READINESS_STYLE: Record<
     border: "rgba(255,255,255,0.1)",
     bg: "rgba(255,255,255,0.03)",
   },
+}
+
+// Kleuren per centrale Sparki Connect-status (zelfde model als onboarding en
+// mobiel): groen = echt gekoppeld, cyaan = bezig, amber = actie van de sporter
+// nodig, grijs = neutraal/niet gekoppeld.
+const CONNECT_STATUS_STYLE: Record<ConnectStatus, { color: string; border: string; bg: string }> = {
+  not_connected: { color: "rgba(255,255,255,0.45)", border: "rgba(255,255,255,0.12)", bg: "rgba(255,255,255,0.04)" },
+  connecting: { color: ACCENT, border: "rgba(120,210,230,0.25)", bg: "rgba(120,210,230,0.08)" },
+  connected: { color: "rgb(110,231,183)", border: "rgba(110,231,183,0.25)", bg: "rgba(110,231,183,0.08)" },
+  sync_in_progress: { color: ACCENT, border: "rgba(120,210,230,0.25)", bg: "rgba(120,210,230,0.08)" },
+  action_required: { color: "rgb(251,191,36)", border: "rgba(251,191,36,0.25)", bg: "rgba(251,191,36,0.08)" },
+  temporarily_unavailable: { color: "rgb(251,191,36)", border: "rgba(251,191,36,0.22)", bg: "rgba(251,191,36,0.06)" },
+  permission_revoked: { color: "rgb(251,191,36)", border: "rgba(251,191,36,0.25)", bg: "rgba(251,191,36,0.08)" },
+  disconnected: { color: "rgba(255,255,255,0.45)", border: "rgba(255,255,255,0.12)", bg: "rgba(255,255,255,0.04)" },
+}
+
+function ConnectStatusBadge({ status }: { status: ConnectStatus }) {
+  const s = CONNECT_STATUS_STYLE[status]
+  return (
+    <span
+      className="shrink-0 rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide"
+      style={{ color: s.color, borderColor: s.border, background: s.bg }}
+    >
+      {CONNECT_STATUS_LABELS[status]}
+    </span>
+  )
 }
 
 function ReadinessBadge({ state }: { state: ReadinessState }) {
@@ -302,8 +330,17 @@ function ConnectionRow({
 }) {
   const [showRuns, setShowRuns] = useState(false)
   const isAvailable = connector.available
-  const isConnected = isAvailable && connector.status === "connected"
+  // Centraal Sparki Connect-statusmodel — zelfde bron als onboarding en mobiel.
+  const cs = connector.connect.status
+  const isConnected = isAvailable && (cs === "connected" || cs === "sync_in_progress")
   const isError = isAvailable && connector.status === "error"
+  // Eén duidelijke herstelactie: opnieuw verbinden bij ingetrokken toestemming
+  // of wanneer een actie van de sporter nodig is (bijv. verlopen toegang).
+  const needsReconnect =
+    isAvailable && (cs === "action_required" || cs === "permission_revoked")
+  const lastSync = formatLastSync(
+    connector.connect.lastSuccessfulSyncAt ?? connector.lastSyncAt,
+  )
 
   return (
     <div className="flex flex-col gap-3 py-3.5">
@@ -324,9 +361,11 @@ function ConnectionRow({
           </span>
           {isConnected ? (
             <span className="font-mono text-[10px] tracking-wide text-white/40">
-              {formatLastSync(connector.lastSyncAt)
-                ? `Laatst gesynct ${formatLastSync(connector.lastSyncAt)}`
-                : "Gekoppeld"}
+              {cs === "sync_in_progress"
+                ? "Gegevens worden nu opgehaald…"
+                : lastSync
+                  ? `Laatst gesynct ${lastSync}`
+                  : "Gekoppeld — nog niet gesynct"}
             </span>
           ) : (
             !isAvailable &&
@@ -336,17 +375,34 @@ function ConnectionRow({
               </span>
             )
           )}
-          {connector.permissionRevoked && (
+          {isAvailable && !isConnected && lastSync && cs !== "not_connected" && (
+            <span className="font-mono text-[10px] tracking-wide text-white/40">
+              Laatst gesynct {lastSync}
+            </span>
+          )}
+          {cs === "permission_revoked" && (
             <span className="font-mono text-[10px] tracking-wide text-amber-400/80">
-              Toegang ingetrokken — opnieuw koppelen
+              Toegang ingetrokken — verbind opnieuw om verder te gaan
+            </span>
+          )}
+          {cs === "action_required" && (
+            <span className="font-mono text-[10px] tracking-wide text-amber-400/80">
+              Er is een actie nodig — verbind opnieuw
+            </span>
+          )}
+          {cs === "temporarily_unavailable" && (
+            <span className="font-mono text-[10px] tracking-wide text-amber-400/70">
+              Tijdelijk niet beschikbaar — Sparki probeert het vanzelf opnieuw
             </span>
           )}
         </div>
 
         {!isAvailable ? (
           <UpcomingBadge />
+        ) : isConnected || cs !== "not_connected" ? (
+          <ConnectStatusBadge status={cs} />
         ) : (
-          !isConnected && <ReadinessBadge state={connector.readiness.state} />
+          <ReadinessBadge state={connector.readiness.state} />
         )}
 
         {isConnected && (
@@ -386,8 +442,10 @@ function ConnectionRow({
           >
             {busy ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : isError || connector.permissionRevoked ? (
-              "Opnieuw"
+            ) : needsReconnect || isError ? (
+              "Opnieuw verbinden"
+            ) : cs === "temporarily_unavailable" ? (
+              "Probeer nu"
             ) : (
               "Koppel"
             )}

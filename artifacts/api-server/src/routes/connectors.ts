@@ -33,6 +33,8 @@ import {
   isDeviceProviderConfigured,
   buildDeviceAuthorizeUrl,
 } from "../lib/connectors/providers/device-sync";
+import { maybeScheduleStravaCatchUp } from "../engines/data-hub/strava-sync";
+import { ensureStravaWebhookSubscriptionOnce } from "../lib/connectors/providers/strava-webhook";
 
 const router = Router();
 
@@ -171,6 +173,11 @@ router.get("/", requireAuth, async (req, res) => {
       );
     const runningProviders = new Set(runningRuns.map((r) => r.provider));
 
+    // Webhook-eerst: geen zware sync bij het openen van deze lijst. Alleen
+    // wanneer de laatste Strava-sync verouderd (>24u) of mislukt is, start op
+    // de achtergrond een begrensde inhaalsync (fire-and-forget, hervatbaar).
+    void maybeScheduleStravaCatchUp(clerkId, req.log).catch(() => {});
+
     const connectors = connectorRegistry.map((def) =>
       toConnectorItem(
         def,
@@ -235,7 +242,9 @@ router.post("/:id/sync", requireAuth, async (req, res) => {
             ? 400
             : err.code === "unsupported"
               ? 501
-              : 502;
+              : err.code === "busy"
+                ? 409
+                : 502;
       res.status(status).json({ error: err.code, message: err.message });
       return;
     }
@@ -316,7 +325,9 @@ router.post("/:id/backfill", requireAuth, async (req, res) => {
             ? 400
             : err.code === "unsupported"
               ? 501
-              : 502;
+              : err.code === "busy"
+                ? 409
+                : 502;
       res.status(status).json({ error: err.code, message: err.message });
       return;
     }
@@ -598,6 +609,15 @@ router.get("/strava/callback", async (req, res) => {
     } catch (importErr) {
       req.log.warn({ err: importErr }, "strava.callback initial import failed");
     }
+
+    // Webhook-eerst: zorg (idempotent, app-breed) dat het Strava-abonnement
+    // bestaat zodat nieuwe activiteiten via push binnenkomen. Best-effort en
+    // eerlijk: zonder verify-token blijft dit uit en dekt de inhaalsync het gat.
+    void ensureStravaWebhookSubscriptionOnce()
+      .then((s) => {
+        if (!s.active) req.log.warn({ reason: s.reason }, "strava.webhook not active");
+      })
+      .catch((err) => req.log.warn({ err }, "strava.webhook ensure failed"));
 
     res.redirect(safeReturnUrl(returnTo, "connected"));
   } catch (err) {

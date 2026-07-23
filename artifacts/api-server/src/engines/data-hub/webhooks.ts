@@ -5,7 +5,7 @@ import {
   webhookEventsTable,
   type WebhookEvent,
 } from "@workspace/db";
-import { runSync } from "./index";
+import { runSync, HubError, type RunSyncOptions } from "./index";
 
 // ── Webhook-verwerking (Data Hub) ────────────────────────────────────────────
 // Iedere binnenkomende push-melding (Strava/Garmin/Wahoo) wordt EERST idempotent
@@ -91,8 +91,38 @@ export async function processWebhookEvent(event: WebhookEvent): Promise<{
       .where(eq(webhookEventsTable.id, event.id));
     return { status: "skipped" };
   }
+  // ── Strava: gericht, niet grofmazig ────────────────────────────────────────
+  // Een Strava-melding noemt precies één activiteit. We halen dan alléén die
+  // activiteit op (geen volledige lijstsync per webhook). "delete"-meldingen
+  // worden eerlijk overgeslagen: Sparki verwijdert nooit lokale trainingsdata
+  // op basis van een extern signaal — de sporter blijft eigenaar van zijn data.
+  const payload = (event.payload ?? {}) as {
+    object_type?: string;
+    object_id?: number | string;
+    aspect_type?: string;
+  };
+  const syncOpts: RunSyncOptions = {};
+  if (event.provider === "strava" && payload.object_type === "activity") {
+    if (payload.aspect_type === "delete") {
+      await db
+        .update(webhookEventsTable)
+        .set({
+          status: "skipped",
+          attempts,
+          lastError:
+            "Verwijdering op Strava — Sparki verwijdert nooit lokale trainingsdata op basis van een extern signaal.",
+          processedAt: new Date(),
+        })
+        .where(eq(webhookEventsTable.id, event.id));
+      return { status: "skipped" };
+    }
+    if (payload.object_id != null) {
+      syncOpts.activityIds = [String(payload.object_id)];
+    }
+  }
+
   try {
-    await runSync(event.clerkId, event.provider, "webhook");
+    await runSync(event.clerkId, event.provider, "webhook", syncOpts);
     await db
       .update(webhookEventsTable)
       .set({
@@ -105,6 +135,20 @@ export async function processWebhookEvent(event: WebhookEvent): Promise<{
     return { status: "processed" };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    // Er loopt al een sync voor deze gebruiker+platform: geen fout, maar een
+    // eerlijke overslag — de lopende sync of de inhaalsync pakt dit op.
+    if (err instanceof HubError && err.code === "busy") {
+      await db
+        .update(webhookEventsTable)
+        .set({
+          status: "skipped",
+          attempts,
+          lastError: message.slice(0, 500),
+          processedAt: new Date(),
+        })
+        .where(eq(webhookEventsTable.id, event.id));
+      return { status: "skipped" };
+    }
     await db
       .update(webhookEventsTable)
       .set({
