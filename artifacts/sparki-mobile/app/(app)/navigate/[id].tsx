@@ -1,8 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import * as Battery from "expo-battery";
 import {
   ActivityIndicator,
+  AppState,
   KeyboardAvoidingView,
   PixelRatio,
   Platform,
@@ -44,6 +46,22 @@ import {
   type MatchLatLon,
 } from "@/lib/route-match";
 import { hasMapbox } from "@/lib/mapbox";
+import {
+  ageFriendsLocally,
+  clusterFriendMarkers,
+  decideUpdateIntervalMs,
+  type FriendCluster,
+} from "@/lib/live-share";
+import {
+  postLivePosition,
+  stopLiveShareNow,
+  useFriendLivePositions,
+  useGroupRideOptions,
+  useLiveShareSession,
+  useShareableFriends,
+  useStartLiveShare,
+  useStopLiveShare,
+} from "@/lib/live-share-api";
 import {
   clearActiveNav,
   loadActiveNav,
@@ -230,6 +248,114 @@ export default function NavigateScreen() {
     const t = setInterval(send, 20_000);
     return () => clearInterval(t);
   }, [volgautoPlan?.enabled, volgautoRole, location, routeId]);
+
+  // ---------- Vrienden live op de kaart (Opdracht 4) ----------
+  // Delen staat standaard UIT (keuze "niemand"). De renner kiest per
+  // navigatiesessie expliciet vrienden of een groepsrit; stoppen kan altijd
+  // direct en de sessie eindigt vanzelf bij het verlaten van dit scherm.
+  const [shareOpen, setShareOpen] = useState(false);
+  const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
+  const shareSession = useLiveShareSession(true);
+  const sharing = !!shareSession.data;
+  const startShare = useStartLiveShare();
+  const stopShare = useStopLiveShare();
+  const shareableFriends = useShareableFriends(shareOpen);
+  const groupOptions = useGroupRideOptions(shareOpen);
+  const startedShareHereRef = useRef(false);
+  const shareOnlineRef = useRef(true);
+  const [friendDetail, setFriendDetail] = useState<FriendCluster | null>(null);
+
+  // Eigen positie versturen — adaptief interval (stilstand/scherm/netwerk).
+  // Bij netwerkverlies wordt niets verstuurd of in een wachtrij gezet.
+  const locationRef = useRef(location);
+  locationRef.current = location;
+  // Echte apparaat-invoer voor het adaptieve interval: schermstatus via
+  // AppState, batterijniveau via expo-battery (best-effort; onbekend = niet
+  // "bijna leeg" aannemen).
+  const screenOnRef = useRef(AppState.currentState === "active");
+  const batteryLowRef = useRef(false);
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      screenOnRef.current = state === "active";
+    });
+    return () => sub.remove();
+  }, []);
+  useEffect(() => {
+    if (!sharing) return;
+    let alive = true;
+    const readBattery = async () => {
+      try {
+        const level = await Battery.getBatteryLevelAsync();
+        if (alive && typeof level === "number" && level >= 0) {
+          batteryLowRef.current = level <= 0.2;
+        }
+      } catch {
+        // Onbekend batterijniveau: eerlijk niets aannemen.
+      }
+    };
+    void readBattery();
+    const sub = Battery.addBatteryLevelListener(({ batteryLevel }) => {
+      if (typeof batteryLevel === "number" && batteryLevel >= 0) {
+        batteryLowRef.current = batteryLevel <= 0.2;
+      }
+    });
+    return () => {
+      alive = false;
+      sub.remove();
+    };
+  }, [sharing]);
+  useEffect(() => {
+    if (!sharing) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const tick = async () => {
+      if (cancelled) return;
+      const loc = locationRef.current;
+      const interval = decideUpdateIntervalMs({
+        speedMps: loc?.speedMps ?? null,
+        screenOn: screenOnRef.current,
+        batteryLow: batteryLowRef.current,
+        online: shareOnlineRef.current,
+      });
+      if (loc && interval != null) {
+        const ok = await postLivePosition({
+          lat: loc.latitude,
+          lon: loc.longitude,
+          speedMps: loc.speedMps ?? null,
+          headingDeg: loc.heading ?? null,
+        });
+        shareOnlineRef.current = ok;
+      } else if (!shareOnlineRef.current) {
+        // Voorzichtige herverbindingspoging zonder oude posities te sturen.
+        shareOnlineRef.current = true;
+      }
+      timer = setTimeout(tick, interval ?? 30_000);
+    };
+    void tick();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [sharing]);
+
+  // Auto-stop: scherm verlaten = delen stoppen (best-effort; de server laat
+  // een stille sessie ook zelf verlopen).
+  useEffect(() => {
+    return () => {
+      if (startedShareHereRef.current) void stopLiveShareNow();
+    };
+  }, []);
+
+  // Vriendposities die IK mag zien; veroudering wordt lokaal eerlijk
+  // doorgerekend wanneer de laatste poll ouder wordt.
+  const friendPositions = useFriendLivePositions(true);
+  const friendClusters = useMemo(() => {
+    const raw = friendPositions.data ?? [];
+    const msSinceFetch = friendPositions.dataUpdatedAt
+      ? Date.now() - friendPositions.dataUpdatedAt
+      : 0;
+    return clusterFriendMarkers(ageFriendsLocally(raw, msSinceFetch));
+  }, [friendPositions.data, friendPositions.dataUpdatedAt]);
 
   // Responsive lay-out: schermmaten + systeem-fontschaal voor de databalk
   // en de kaart/klimkaart-verdeling (geen vaste toestelhoogtes).
@@ -617,6 +743,8 @@ export default function NavigateScreen() {
             onUserPan={() => setFollowing(false)}
             primary={c.primary}
             background={c.background}
+            friendClusters={friendClusters}
+            onFriendPress={(cl) => setFriendDetail(cl)}
           />
         </View>
       ) : (
@@ -1019,6 +1147,40 @@ export default function NavigateScreen() {
           ]}
           pointerEvents="box-none"
         >
+          {/* Live delen: zichtbare status + snelle toegang. Standaard UIT. */}
+          <Pressable
+            onPress={() => setShareOpen(true)}
+            style={[
+              styles.sharePill,
+              {
+                backgroundColor: sharing ? c.primary : c.card,
+                borderColor: sharing ? c.primary : c.border,
+              },
+            ]}
+          >
+            <Ionicons
+              name={sharing ? "radio-outline" : "people-outline"}
+              size={16}
+              color={sharing ? c.primaryForeground : c.mutedForeground}
+            />
+            <Text
+              style={{
+                color: sharing ? c.primaryForeground : c.mutedForeground,
+                fontFamily: "Inter_600SemiBold",
+                fontSize: 12,
+              }}
+            >
+              {sharing
+                ? shareSession.data?.audience === "groep"
+                  ? "Live delen: groepsrit"
+                  : `Live delen: ${shareSession.data?.viewerCount ?? 0} ${
+                      (shareSession.data?.viewerCount ?? 0) === 1
+                        ? "vriend"
+                        : "vrienden"
+                    }`
+                : "Locatie delen: uit"}
+            </Text>
+          </Pressable>
           {!following && (
             <Pressable
               onPress={() => setFollowing(true)}
@@ -1135,6 +1297,11 @@ export default function NavigateScreen() {
         }}
         onStop={async () => {
           recorder.stop();
+          // Rit gestopt = live delen stopt automatisch (geen naloop).
+          if (startedShareHereRef.current) {
+            startedShareHereRef.current = false;
+            void stopLiveShareNow();
+          }
           try {
             const res = await saveRide.mutateAsync({
               points: recorder.points,
@@ -1201,6 +1368,180 @@ export default function NavigateScreen() {
         }}
         onDiscardRecovered={recorder.discardRecovered}
       />
+
+      {/* ---------- Live delen: keuzepaneel ---------- */}
+      {shareOpen && (
+        <View style={styles.shareBackdrop}>
+          <View style={[styles.shareSheet, { backgroundColor: c.card, borderColor: c.border }]}>
+            <View style={styles.shareHead}>
+              <Text style={[styles.shareTitle, { color: c.foreground }]}>
+                Locatie delen tijdens deze rit
+              </Text>
+              <Pressable onPress={() => setShareOpen(false)} hitSlop={10}>
+                <Ionicons name="close" size={22} color={c.mutedForeground} />
+              </Pressable>
+            </View>
+            <Text style={[styles.shareNote, { color: c.mutedForeground }]}>
+              Standaard uit. Alleen tijdens deze rit, alleen voor wie jij kiest.
+              Er wordt geen locatiegeschiedenis bewaard — bij stoppen verdwijnt je positie direct.
+            </Text>
+
+            {sharing ? (
+              <>
+                <Text style={[styles.shareNote, { color: c.foreground }]}>
+                  {shareSession.data?.audience === "groep"
+                    ? "Je deelt nu met je groepsrit."
+                    : `Je deelt nu met ${shareSession.data?.viewerCount ?? 0} ${
+                        (shareSession.data?.viewerCount ?? 0) === 1 ? "vriend" : "vrienden"
+                      }.`}
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    startedShareHereRef.current = false;
+                    stopShare.mutate();
+                    setShareOpen(false);
+                  }}
+                  style={[styles.shareAction, { backgroundColor: c.destructive }]}
+                >
+                  <Ionicons name="stop-circle-outline" size={18} color="#fff" />
+                  <Text style={styles.shareActionText}>Stop met delen</Text>
+                </Pressable>
+              </>
+            ) : (
+              <ScrollView style={{ maxHeight: 320 }}>
+                <Text style={[styles.shareSection, { color: c.mutedForeground }]}>
+                  Geselecteerde vrienden
+                </Text>
+                {shareableFriends.isLoading ? (
+                  <ActivityIndicator color={c.primary} />
+                ) : (shareableFriends.data ?? []).length === 0 ? (
+                  <Text style={[styles.shareNote, { color: c.mutedForeground }]}>
+                    Je hebt nog geen geaccepteerde vrienden om mee te delen.
+                  </Text>
+                ) : (
+                  (shareableFriends.data ?? []).map((f) => {
+                    const on = selectedFriends.has(f.clerkId);
+                    return (
+                      <Pressable
+                        key={f.clerkId}
+                        onPress={() =>
+                          setSelectedFriends((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(f.clerkId)) next.delete(f.clerkId);
+                            else next.add(f.clerkId);
+                            return next;
+                          })
+                        }
+                        style={[styles.shareRow, { borderColor: c.border }]}
+                      >
+                        <Ionicons
+                          name={on ? "checkbox" : "square-outline"}
+                          size={20}
+                          color={on ? c.primary : c.mutedForeground}
+                        />
+                        <Text style={{ color: c.foreground, fontFamily: "Inter_500Medium", flex: 1 }}>
+                          {f.name || "Onbekend"}
+                        </Text>
+                      </Pressable>
+                    );
+                  })
+                )}
+                {selectedFriends.size > 0 && (
+                  <Pressable
+                    disabled={startShare.isPending}
+                    onPress={() =>
+                      startShare.mutate(
+                        { audience: "vrienden", friendClerkIds: [...selectedFriends] },
+                        {
+                          onSuccess: () => {
+                            startedShareHereRef.current = true;
+                            setShareOpen(false);
+                          },
+                        },
+                      )
+                    }
+                    style={[styles.shareAction, { backgroundColor: c.primary, opacity: startShare.isPending ? 0.6 : 1 }]}
+                  >
+                    <Ionicons name="radio-outline" size={18} color={c.primaryForeground} />
+                    <Text style={[styles.shareActionText, { color: c.primaryForeground }]}>
+                      Deel met {selectedFriends.size} {selectedFriends.size === 1 ? "vriend" : "vrienden"}
+                    </Text>
+                  </Pressable>
+                )}
+
+                <Text style={[styles.shareSection, { color: c.mutedForeground }]}>
+                  Groepsrit van vandaag
+                </Text>
+                {groupOptions.isLoading ? (
+                  <ActivityIndicator color={c.primary} />
+                ) : (groupOptions.data ?? []).length === 0 ? (
+                  <Text style={[styles.shareNote, { color: c.mutedForeground }]}>
+                    Geen groepsrit gevonden waarvoor je vandaag bent aangemeld.
+                  </Text>
+                ) : (
+                  (groupOptions.data ?? []).map((g) => (
+                    <Pressable
+                      key={g.clubTrainingId}
+                      disabled={startShare.isPending}
+                      onPress={() =>
+                        startShare.mutate(
+                          { audience: "groep", clubTrainingId: g.clubTrainingId },
+                          {
+                            onSuccess: () => {
+                              startedShareHereRef.current = true;
+                              setShareOpen(false);
+                            },
+                          },
+                        )
+                      }
+                      style={[styles.shareRow, { borderColor: c.border }]}
+                    >
+                      <Ionicons name="people-circle-outline" size={20} color={c.primary} />
+                      <Text style={{ color: c.foreground, fontFamily: "Inter_500Medium", flex: 1 }}>
+                        {g.title}
+                        {g.startTime ? ` · ${g.startTime}` : ""}
+                      </Text>
+                    </Pressable>
+                  ))
+                )}
+                {startShare.isError && (
+                  <Text style={[styles.shareNote, { color: c.destructive }]}>
+                    {(startShare.error as Error)?.message ?? "Delen starten lukte niet."}
+                  </Text>
+                )}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* ---------- Vriend-detail (tik op marker) ---------- */}
+      {friendDetail && (
+        <View style={styles.shareBackdrop}>
+          <View style={[styles.shareSheet, { backgroundColor: c.card, borderColor: c.border }]}>
+            <View style={styles.shareHead}>
+              <Text style={[styles.shareTitle, { color: c.foreground }]}>
+                {friendDetail.members.length > 1
+                  ? `${friendDetail.members.length} vrienden dicht bij elkaar`
+                  : friendDetail.members[0]?.name ?? "Vriend"}
+              </Text>
+              <Pressable onPress={() => setFriendDetail(null)} hitSlop={10}>
+                <Ionicons name="close" size={22} color={c.mutedForeground} />
+              </Pressable>
+            </View>
+            {friendDetail.members.map((m) => (
+              <View key={m.clerkId} style={[styles.shareRow, { borderColor: c.border }]}>
+                <Text style={{ color: c.foreground, fontFamily: "Inter_500Medium", flex: 1 }}>
+                  {m.name}
+                </Text>
+                <Text style={{ color: m.statusKind === "live" ? c.primary : c.mutedForeground, fontSize: 12 }}>
+                  {m.status}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
 
       {/* ---------- Val-alarm overlay ---------- */}
       {fall.alert && (
@@ -1796,6 +2137,61 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 999,
   },
+  sharePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  shareBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(4,7,14,0.55)",
+    justifyContent: "flex-end",
+    padding: 16,
+    zIndex: 60,
+  },
+  shareSheet: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 16,
+    gap: 10,
+  },
+  shareHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  shareTitle: { fontFamily: "Inter_700Bold", fontSize: 16, flex: 1 },
+  shareNote: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 18 },
+  shareSection: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  shareRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  shareAction: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 10,
+  },
+  shareActionText: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 14 },
   progressBar: {
     flexDirection: "row",
     alignItems: "center",

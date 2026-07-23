@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef } from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import MapView, { Marker, Polyline, UrlTile } from "react-native-maps";
 
 import type { LatLon } from "@/lib/geo";
+import type { FriendCluster } from "@/lib/live-share";
 import { cameraForLocation } from "@/lib/map-camera";
 import { MAPBOX_TILE_URL } from "@/lib/mapbox";
 import type { LiveLocation } from "@/hooks/useLiveLocation";
@@ -18,6 +19,8 @@ export function RouteMap({
   onUserPan,
   primary,
   background,
+  friendClusters,
+  onFriendPress,
 }: {
   path: LatLon[];
   /** Echt gerouteerd verbindingsstuk terug naar de lijn (herberekening). */
@@ -28,6 +31,9 @@ export function RouteMap({
   onUserPan: () => void;
   primary: string;
   background: string;
+  /** Kleine vriendmarkers (Opdracht 4) — nooit dominant over navigatie. */
+  friendClusters?: FriendCluster[];
+  onFriendPress?: (cluster: FriendCluster) => void;
 }) {
   const mapRef = useRef<MapView>(null);
 
@@ -97,6 +103,33 @@ export function RouteMap({
           (camera-koers = rijkoers) altijd recht vooruit wijst. Zonder echte
           koers (stilstand/opstart) tonen we een neutrale stip — nooit een
           verzonnen richting. */}
+      {/* Vrienden live op de kaart: kleine, rustige markers (initialen of
+          clusteraantal). Bewust lage zIndex — de navigatie blijft leidend.
+          Alleen ECHT ontvangen posities; zonder coördinaten geen marker. */}
+      {(friendClusters ?? []).map((cluster, i) => (
+        <Marker
+          key={`friend-${i}-${cluster.members[0]?.clerkId ?? i}`}
+          coordinate={{ latitude: cluster.lat, longitude: cluster.lon }}
+          anchor={{ x: 0.5, y: 0.5 }}
+          zIndex={5}
+          tracksViewChanges={false}
+          onPress={() => onFriendPress?.(cluster)}
+        >
+          <View
+            style={[
+              styles.friendMarker,
+              cluster.members.some((m) => m.statusKind !== "live") &&
+                styles.friendMarkerStale,
+            ]}
+          >
+            <Text style={styles.friendMarkerText}>
+              {cluster.members.length > 1
+                ? String(cluster.members.length)
+                : cluster.members[0]?.initials ?? "?"}
+            </Text>
+          </View>
+        </Marker>
+      ))}
       {location &&
         (location.heading != null ? (
           <Marker
@@ -132,6 +165,22 @@ export function RouteMap({
 
 const styles = StyleSheet.create({
   pin: { width: 16, height: 16, borderRadius: 8, borderWidth: 3 },
+  friendMarker: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#38bdf8",
+    borderWidth: 2,
+    borderColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  friendMarkerStale: { opacity: 0.55 },
+  friendMarkerText: {
+    color: "#04070e",
+    fontSize: 10,
+    fontWeight: "700",
+  },
   riderDot: {
     width: 26,
     height: 26,

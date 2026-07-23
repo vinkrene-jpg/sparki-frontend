@@ -119,7 +119,8 @@
     "test:ai-gateway": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs ai-gateway",
     "test:social-privacy": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs social-privacy",
     "test:plan-details": "node ./scripts/run-test.mjs plan-details",
-    "test:plan-lifecycle": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs plan-lifecycle"
+    "test:plan-lifecycle": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs plan-lifecycle",
+    "test:live-location": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs live-location"
   },
   "dependencies": {
     "@clerk/express": "^2.1.30",

@@ -16,7 +16,6 @@
 - [Sparki Onboarding V2](sparki-onboarding-v2.md) — adaptive Q&A engine: fixed catalog, nonsense fails honestly w/ skip escape; Q&A-only leaves hours/FTP estimated.
 - [Sparki Voice & Personality Engine](sparki-voice-engine.md) — deterministic tone/trust/empathy engine; refuses to fabricate (null), empathy-before-humor, trust gates tones.
 - [Sparki Samen/Circle feed](sparki-circle.md) — /samen unified feed; ScreenShell scene-fallback leaks home-only UI (gate on explicit `section`); feed privacy fail-closed ([team detail](sparki-social-team.md)).
-- [Sparki two-tier explanation standard](sparki-tiered-explanation.md) — short-by-default + "Uitgebreid" expand (TieredExplanation); only tier where REAL extended data exists, never fabricate depth on one-liners.
 - [Sparki personal-context memory](sparki-context-memory.md) — deterministic Dutch detection, privacy-gated persist; JSX \u escapes do not work in text/attr strings.
 - [Sparki memory graph](sparki-memory-graph.md) — deterministic cross-domain "verbanden": confidence never 1.0, rules stay silent on weak evidence, persist accounting created+deduped+gated===derived.
 - [Sparki Data Hub](sparki-data-hub.md) — dedupe key=sport+start-bucket (not dur/dist) + neighbour match; activity consent is AND; single runSync path.
@@ -26,7 +25,7 @@
 - [Sparki account re-link](sparki-account-relink.md) — re-created Clerk account (same verified email) re-links to existing profile; identity email MUST come from Clerk server-side, never req.body.
 - [Sparki Context Engine V2](sparki-context-engine-v2.md) — coaching "reasoning" lives in SPARKI_SYSTEM prompt + buildAthleteContext richness; ai_observations already has confidence/expiresAt/pattern.
 - [Sparki auth/sync email collision](sparki-sync-email-collision.md) — seeded demo row with a real email bricks onboarding (FK 500 → "Profile not found" 404s); sync must verify parent before child insert.
-- [Leaflet divIcon HTML sink (XSS)](leaflet-divicon-xss.md) — L.divIcon({html}) renders raw HTML; user labels must be escaped at sink AND markup-stripped server-side.
+- [Leaflet traps](leaflet-divicon-xss.md) — divIcon html is an XSS sink (escape at sink + strip server-side); layers before first setView crash bringToFront ([explorer](leaflet-multi-route-explorer.md)).
 - [Connector data ownership](sparki-connectors-ownership.md) — Replit account-level connectors are wrong for per-user third-party data; use per-user OAuth, tokens in connector_connections.
 - [Vite config PORT/BASE_PATH build trap](vite-config-build-port-trap.md) — module-level throw on PORT/BASE_PATH breaks `vite build`/deploy; gate on command==='serve', keep config sync.
 - [Post-merge integration breaks](post-merge-integration-breaks.md) — concurrent task-agent merges leave stale cross-task imports/columns; run typecheck + api-server esbuild before publishing.
@@ -100,8 +99,7 @@
 - [Sparki engagement engine](sparki-engagement-engine.md) — healthy pull-to-return: learns real open rhythm from tester_events, honest default when thin.
 - [Sparki news freshness & ranking](sparki-news-freshness.md) — pipelines gated only on a user-configured Scheduled Deployment silently rot; self-heal via lazy refresh on the READ path.
 - [Sparki aandachtswet (Vandaag single-leader)](sparki-aandachtswet.md) — one leading Momentblok (priority chain); ride-along weather/leskaart/nudge must be GATED at render not just imported.
-- [Sparki route-paspoort + POIs](sparki-route-passport.md) — Overpass: bbox+local filter en compacte nwr-unions (verbose vormen 504'en); Open-Meteo hourly matcht op utc_offset epoch ([POIs](sparki-route-pois.md)).
-- [Power bests pipeline](sparki-power-bests.md) — bests computed only at FIT/TCX parse; no backfill (raw files not retained); gaps=0W, collector takes seconds not ms.
+- [Sparki route-paspoort + POIs + Overpass](sparki-route-passport.md) — Overpass: bbox+compacte nwr-unions (verbose 504t); mirror keuze maps.mail.ru, nooit osm.ch ([POIs](sparki-route-pois.md), [klimmen](climb-explorer.md)).
 - [Sparki Rit-verhaal](sparki-ride-story.md) — flag `rit_verhaal`; sync line must render independent of fresh story; predictionAvailable strictly pre-hoc; workflow limit hit ⇒ tests via shell.
 - [ORS routing honesty](sparki-route-rejoin.md) — rejoin connectors must be REAL routed paths (never straight lines); loops = best-of-N candidates by pathOverlapFraction ([loops](sparki-route-loop-quality.md)).
 - [Sparki mobile nav app](sparki-mobile-nav.md) — RN native-only libs (maps, TaskManager tracker) need platform-split files (.tsx/.web.ts stub), never runtime require ([bg recording](sparki-mobile-bg-recording.md)).
@@ -115,21 +113,19 @@
 - [Sparki ride-navigator](sparki-ride-navigator.md) — CPS crank cadence, moving-avg speed, climbfases uit lib/nav-live (SSOT); elk "klaar met rit"-pad moet clearSavedRide of spookherstel ([rit als route](sparki-ridden-route-save.md)).
 - [Route generation free-text wish](sparki-route-wish.md) — wish goes only into buildRationale prompt (ORS cannot steer roads); honest "kan niet + alternatief", never claim a place not in data.
 - [Sparki route remarks + wegtypen](sparki-route-remarks.md) — Overpass geometry nulls: filter before .lat; no-surface tag = altijd "onbekend" ([surfaces](sparki-route-surfaces.md)).
-- [Klimmenverkenner](climb-explorer.md) — Overpass mirror selection: maps.mail.ru works; overpass-api.de 406 in env; overpass.osm.ch is Swiss-only false-empty (never in fallback chain).
 - [Sparki leefagenda](sparki-life-agenda.md) — athlete-entered life events steer the plan generator; list queries need overlap semantics or ongoing events become invisible but still steer.
 - [Sparki mobile BLE sensors](sparki-mobile-ble-sensors.md) — ble-plx guarded require (Expo Go honest-unsupported); BLE values base64; 1s sampler → GPX gpxtpx/power ([GPX](sparki-ride-sensor-gpx.md)).
 - [Sparki val-alarm](sparki-crash-alert.md) — 30s-window only when stillness latch starts (else misses late stops); "notified" = klaargezette meldingen, copy never claims delivery.
-- [Leaflet full-screen explorer traps](leaflet-multi-route-explorer.md) — layers before first setView crash bringToFront; guard queued invalidateSize against removed maps.
 - [Sparki rit delen](sparki-ride-share.md) — Strava = manual activity (never fabricate timestamps); socials only via OS share menu; expo-sharing shares file w/o text, Share.share url iOS-only.
 - [Sparki road-objects engine](sparki-road-objects.md) — zelflerende verkeerslichten-DB: confirm vereist eigen stop-bewijs + idempotente confirm-rij; cel-dedupe kiest expliciet beste, nooit "eerste rij wint".
 - [Sparki device sync (Garmin/Wahoo)](sparki-device-sync.md) — honest configured:false until manufacturer keys; fail-closed webhook secrets, manualFields sacred ([webhooks](sparki-device-webhooks.md)).
-- [Sparki session graphs](sparki-session-graphs.md) — streams only at ingest (old sessions honest-null), connectNulls=false, comparability-gated comparison, Tanaka maxHR labeled as schatting.
+- [Sparki session graphs + power bests](sparki-session-graphs.md) — streams/bests only at ingest (no backfill, old sessions honest-null), connectNulls=false, Tanaka maxHR = schatting ([bests](sparki-power-bests.md)).
 - [Sparki bronnenregister](sparki-source-quality.md) — central source-quality register; fail-closed prompt rule, sensor "actief" needs real proof, per-analysis used/excluded logging.
 - [Sparki privacy & accountbeheer](sparki-privacy-security.md) — schema-driven export w/ token masking, 14d delete window + exceptions register, fire-and-forget audits (tests must sleep), minor fail-closed sharing.
 - [Sparki analysekwaliteit & feedbacklus](sparki-analysis-feedback.md) — idempotente feedback-upsert moet de HELE rij verversen (incl. reasonCode+context) of oude verantwoording blijft staan.
 - [Sparki Journey & wedstrijddossier](sparki-journey.md) — composed timeline (no duplication); minor media fail-closed; share-card must enforce "gedeeld" server-side (400), never UI-only.
 - [Sparki Mechanieker & materiaalkring](sparki-mechanieker.md) — km altijd afgeleid (nooit teller), defect alleen uit eigen registratie, onConflictDoUpdate partial index needs `targetWhere` not `where`.
-- [Sparki uitleglaag](sparki-uitleglaag.md) — centraal uitleg-registry + UitlegDot; "Bij jou" alleen uit echte waarden, nooit verzonnen; bare TSS heet "Belasting (TSS)".
+- [Sparki uitleglaag](sparki-uitleglaag.md) — centraal uitleg-registry + UitlegDot; "Bij jou" alleen echte waarden; short-by-default + "Uitgebreid" alleen bij echte diepte ([tiered](sparki-tiered-explanation.md)).
 - [Sparki fietsscan](sparki-bike-scan.md) — original saved before cutout; viewMode fotos on ANY frames; @imgly bg-removal needs direct onnxruntime-web dep for vite build; asset provenance mandatory.
 - [tsx module-mock tests & CJS](tsx-module-mock-cjs.md) — mock.module first, lazy `import()` promise (no top-level await, no static import) or the real native module loads/CJS transform fails.
 - [Mobile ride sync honesty](sparki-mobile-ride-sync.md) — "veilig op je telefoon" claims require fail-closed storage writes; detector/queue state must reset across ride lifecycle.
@@ -158,3 +154,4 @@
 - [Sparki centraal humorniveau](sparki-humor-level.md) — één centrale humorlaag, instelling geldt app-breed, nooit inline grappen; humor nooit op medisch/veiligheid/privacy/fouten/betalingen.
 - [Add-training flow split](sparki-add-training-split.md) — chooser-first modal; plan_details whitelist 400s executed keys; contextDate prop useless until a real caller wires it.
 - [Sparki Volgauto](sparki-volgauto.md) — fietsroute blijft intact (aparte laag); server DB-vorm is contract-SSOT, consumers her-declareren niet op gevoel; meetpoint carKm nullable; wissel na 120s, ETA altijd "geschat".
+- [Sparki live locatie delen](sparki-live-location.md) — opt-in per-sessie delen: authz herchecked at EVERY read (incl. minor fail-closed in group branch), idle-expiry anchored on last position not startedAt, one position row = no history.
