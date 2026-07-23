@@ -7,6 +7,8 @@ export type LiveLocation = {
   longitude: number;
   heading: number | null;
   speedMps: number | null;
+  // GPS-nauwkeurigheid in meters (null wanneer het platform die niet meldt).
+  accuracyM: number | null;
 };
 
 export type PermissionState = "unknown" | "granted" | "denied";
@@ -55,6 +57,9 @@ export function useLiveLocation(active: boolean) {
               speedMps: Number.isFinite(pos.coords.speed)
                 ? pos.coords.speed
                 : null,
+              accuracyM: Number.isFinite(pos.coords.accuracy)
+                ? pos.coords.accuracy
+                : null,
             });
           },
           (err) => {
@@ -101,6 +106,10 @@ export function useLiveLocation(active: boolean) {
             speedMps:
               pos.coords.speed != null && pos.coords.speed >= 0
                 ? pos.coords.speed
+                : null,
+            accuracyM:
+              pos.coords.accuracy != null && pos.coords.accuracy > 0
+                ? pos.coords.accuracy
                 : null,
           });
         },

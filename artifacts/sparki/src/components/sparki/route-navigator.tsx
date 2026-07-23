@@ -69,8 +69,15 @@ import {
   type SensorSample,
 } from "@/lib/nav-live"
 import { buildTimeline, segmentAt } from "@/lib/workout-blocks"
+import {
+  corridorMeters,
+  createOffRouteState,
+  displayPosition,
+  matchToRoute,
+  updateOffRoute,
+  type MatchLatLon,
+} from "@/lib/route-match"
 
-const OFF_ROUTE_METERS = 60
 
 // Opgenomen rit overleeft "Route aanpassen" (unmount → routebouwer → terug):
 // track + sensordata + rijtijd gaan even naar sessionStorage en worden bij
@@ -415,10 +422,20 @@ export function RouteNavigator({
   const prevPosRef = useRef<LatLon | null>(null)
 
   const [location, setLocation] = useState<
-    (LatLon & { speedMps: number | null; heading: number | null }) | null
+    | (LatLon & {
+        speedMps: number | null
+        heading: number | null
+        accuracyM: number | null
+      })
+    | null
   >(null)
   const locationRef = useRef<
-    (LatLon & { speedMps: number | null; heading: number | null }) | null
+    | (LatLon & {
+        speedMps: number | null
+        heading: number | null
+        accuracyM: number | null
+      })
+    | null
   >(null)
   locationRef.current = location
   const [geoError, setGeoError] = useState<string | null>(null)
@@ -1001,18 +1018,62 @@ export function RouteNavigator({
     }
   }, [pois, poisVisible])
 
+  // Map-matching: kaart, voortgang én afwijkingsdetectie gebruiken dezelfde
+  // gematchte positie op hetzelfde routeSEGMENT (niet losse routepunten).
+  const matchPath: MatchLatLon[] = useMemo(
+    () => path.map((p) => ({ lat: p.lat, lon: p.lon })),
+    [path],
+  )
+  const matchHintRef = useRef<number | null>(null)
+  const match = useMemo(() => {
+    if (!location || matchPath.length === 0) return null
+    return matchToRoute(
+      matchPath,
+      cumKm,
+      { lat: location.lat, lon: location.lon },
+      matchHintRef.current,
+    )
+  }, [location, matchPath, cumKm])
+  // Hint pas ná de commit bijwerken (geen ref-mutatie tijdens render).
+  useEffect(() => {
+    matchHintRef.current = match ? match.segIndex : null
+  }, [match])
+
+  // Afwijkingsdetectie met dynamische corridor (GPS-nauwkeurigheid +
+  // snelheid), hysterese, meerdere opeenvolgende metingen, minimale duur,
+  // GPS-sprongfilter en episode-onderdrukking. Eén meting is nooit genoeg;
+  // terug op de route herstelt automatisch.
+  const offRouteRef = useRef(createOffRouteState())
+  const [offRouteActive, setOffRouteActive] = useState(false)
+  useEffect(() => {
+    if (!location || !match) return
+    const upd = updateOffRoute(offRouteRef.current, {
+      lat: location.lat,
+      lon: location.lon,
+      timestampMs: Date.now(),
+      distanceM: match.distanceM,
+      alongKm: match.alongKm,
+      accuracyM: location.accuracyM,
+      speedMps: location.speedMps,
+    })
+    offRouteRef.current = upd.state
+    setOffRouteActive((cur) =>
+      upd.state.active === cur ? cur : upd.state.active,
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location, match])
+
   const progress = useMemo(() => {
-    if (!location || path.length === 0) return null
-    const { index, distanceMeters } = nearestPointIndex(path, location)
-    const traveledKm = cumKm[index] ?? 0
+    if (!match) return null
+    const traveledKm = match.alongKm
     const totalKm = cumKm[cumKm.length - 1] ?? 0
     return {
       traveledKm,
       remainingKm: Math.max(0, totalKm - traveledKm),
-      offRoute: distanceMeters > OFF_ROUTE_METERS,
-      offBy: distanceMeters,
+      offRoute: offRouteActive,
+      offBy: match.distanceM,
     }
-  }, [location, path, cumKm])
+  }, [match, cumKm, offRouteActive])
 
   // ── Klim-weergave ─────────────────────────────────────────────────
   // Bekende beklimmingen van de route (echt hoogteprofiel, opgeslagen bij het
@@ -1406,6 +1467,12 @@ export function RouteNavigator({
               ? pos.coords.speed
               : null,
           heading: heading ?? cur?.heading ?? null,
+          accuracyM:
+            typeof pos.coords.accuracy === "number" &&
+            Number.isFinite(pos.coords.accuracy) &&
+            pos.coords.accuracy > 0
+              ? pos.coords.accuracy
+              : null,
         }))
       },
       (err) => {
@@ -1714,10 +1781,18 @@ export function RouteNavigator({
   }, [battery])
 
   // Move the "me" arrow on each position update; follow if enabled.
+  // Zelfde positiebron als voortgang/afwijking: op de route gematcht zolang
+  // we binnen de corridor zitten, anders eerlijk de ruwe GPS-positie.
   useEffect(() => {
     const map = mapRef.current
     if (!map || !location) return
-    const ll: [number, number] = [location.lat, location.lon]
+    const shown = displayPosition(
+      { lat: location.lat, lon: location.lon },
+      match,
+      offRouteActive,
+      corridorMeters(location.accuracyM, location.speedMps),
+    )
+    const ll: [number, number] = [shown.lat, shown.lon]
     const hasHeading = location.heading != null
     const rot = location.heading ?? 0
     // The rider is a cyclist badge (not a bare dot). With a known heading a
@@ -1758,7 +1833,7 @@ export function RouteNavigator({
       const targetZoom = map.getZoom() < 15 ? 16 : map.getZoom()
       map.setView(ll, targetZoom, { animate: true, duration: 0.5 })
     }
-  }, [location, following])
+  }, [location, following, match, offRouteActive])
 
   const speedKmh =
     location?.speedMps != null ? Math.round(location.speedMps * 3.6) : null

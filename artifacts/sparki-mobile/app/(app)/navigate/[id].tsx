@@ -33,6 +33,14 @@ import {
   toLatLon,
   type LatLon,
 } from "@/lib/geo";
+import {
+  corridorMeters,
+  createOffRouteState,
+  displayPosition,
+  matchToRoute,
+  updateOffRoute,
+  type MatchLatLon,
+} from "@/lib/route-match";
 import { hasMapbox } from "@/lib/mapbox";
 import {
   clearActiveNav,
@@ -68,8 +76,6 @@ import {
   type RouteDetail,
   type RouteStep,
 } from "@/lib/routes-api";
-
-const OFF_ROUTE_METERS = 60;
 
 // Hoog-contrast HUD-kleuren voor bovenop de kaart: vrijwel dekkend donker met
 // felle tekst, zodat cijfers en de richtingpijl in vol daglicht leesbaar zijn.
@@ -179,20 +185,76 @@ export default function NavigateScreen() {
   );
   const cumKm = useMemo(() => cumulativeKm(path), [path]);
 
-  // Derive progress + next turn from the athlete's real position along the path.
+  // Map-matching: kaart, voortgang én afwijkingsdetectie gebruiken dezelfde
+  // gematchte positie op hetzelfde routeSEGMENT (niet losse routepunten).
+  const matchPath: MatchLatLon[] = useMemo(
+    () => path.map((p) => ({ lat: p.latitude, lon: p.longitude })),
+    [path],
+  );
+  const matchHintRef = useRef<number | null>(null);
+  const match = useMemo(() => {
+    if (!location || matchPath.length === 0) return null;
+    return matchToRoute(
+      matchPath,
+      cumKm,
+      { lat: location.latitude, lon: location.longitude },
+      matchHintRef.current,
+    );
+  }, [location, matchPath, cumKm]);
+  // Hint pas ná de commit bijwerken (geen ref-mutatie tijdens render).
+  useEffect(() => {
+    matchHintRef.current = match ? match.segIndex : null;
+  }, [match]);
+
+  // Afwijkingsdetectie met dynamische corridor (GPS-nauwkeurigheid +
+  // snelheid), hysterese, meerdere opeenvolgende metingen, minimale duur,
+  // GPS-sprongfilter en episode-onderdrukking. Eén meting is nooit genoeg;
+  // terug op de route herstelt automatisch.
+  const offRouteRef = useRef(createOffRouteState());
+  const [offRouteActive, setOffRouteActive] = useState(false);
+  useEffect(() => {
+    if (!location || !match) return;
+    const upd = updateOffRoute(offRouteRef.current, {
+      lat: location.latitude,
+      lon: location.longitude,
+      timestampMs: Date.now(),
+      distanceM: match.distanceM,
+      alongKm: match.alongKm,
+      accuracyM: location.accuracyM,
+      speedMps: location.speedMps,
+    });
+    offRouteRef.current = upd.state;
+    if (upd.state.active !== offRouteActive) setOffRouteActive(upd.state.active);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location, match]);
+
+  // Zelfde positiebron voor de kaart als voor voortgang/afwijking: op de
+  // route gematcht zolang we binnen de corridor zitten, anders eerlijk de
+  // ruwe GPS-positie.
+  const displayLocation = useMemo(() => {
+    if (!location) return location;
+    const shown = displayPosition(
+      { lat: location.latitude, lon: location.longitude },
+      match,
+      offRouteActive,
+      corridorMeters(location.accuracyM, location.speedMps),
+    );
+    return { ...location, latitude: shown.lat, longitude: shown.lon };
+  }, [location, match, offRouteActive]);
+
+  // Derive progress + next turn from the map-matched position along the path.
   const progress = useMemo(() => {
-    if (!location || path.length === 0) return null;
-    const { index, distanceMeters } = nearestPointIndex(path, location);
-    const traveledKm = cumKm[index] ?? 0;
+    if (!match) return null;
+    const traveledKm = match.alongKm;
     const totalKm = cumKm[cumKm.length - 1] ?? 0;
     const remainingKm = Math.max(0, totalKm - traveledKm);
     return {
       traveledKm,
       remainingKm,
-      offRoute: distanceMeters > OFF_ROUTE_METERS,
-      offBy: distanceMeters,
+      offRoute: offRouteActive,
+      offBy: match.distanceM,
     };
-  }, [location, path, cumKm]);
+  }, [match, cumKm, offRouteActive]);
 
   // ---------- Wedstrijdmodus ----------
   // Alleen actief bij usageType "wedstrijd" met een gekoppelde geplande
@@ -376,7 +438,7 @@ export default function NavigateScreen() {
         <RouteMap
           path={path}
           detourPath={detourPath.length >= 2 ? detourPath : undefined}
-          location={location}
+          location={displayLocation}
           following={following}
           onUserPan={() => setFollowing(false)}
           primary={c.primary}
