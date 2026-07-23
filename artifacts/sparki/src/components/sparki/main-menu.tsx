@@ -15,6 +15,7 @@ import { useClerk } from "@clerk/react"
 import { useFeedback } from "@/contexts/FeedbackContext"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
 import { useClubMembership } from "@/hooks/use-club"
+import { useAdminWhoami } from "@/hooks/use-bug-reports"
 import { chaptersForRole } from "@/lib/chapters"
 
 // Hoofdmenu — één bron van waarheid met het startscherm (lib/chapters). Naast
@@ -50,6 +51,10 @@ export function MainMenu({
   const role = profile?.activeRole as Role | undefined
   // Club-poort: alleen een GEACCEPTEERDE trainerkoppeling telt. Nooit gefingeerd.
   const { isMember } = useClubMembership()
+  // Admin-ingang: alleen zichtbaar wanneer de server bevestigt dat dit account
+  // admin is (whoami) — de echte poort blijft server-side op elke admin-route.
+  const { data: adminWho } = useAdminWhoami()
+  const isAdmin = adminWho?.isAdmin === true
 
   useEffect(() => {
     if (!open) return
@@ -208,6 +213,16 @@ export function MainMenu({
             >
               <IdCard className="h-4 w-4" strokeWidth={1.75} />
               Sportpaspoort
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => go("/admin")}
+              className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+            >
+              <Shield className="h-4 w-4" strokeWidth={1.75} />
+              Admin
             </button>
           )}
           <button
