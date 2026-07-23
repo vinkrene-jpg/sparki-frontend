@@ -51,10 +51,25 @@ export const privacySettingsTable = pgTable("privacy_settings", {
   dataSharingParent: text("data_sharing_parent")
     .notNull()
     .default("safety_only"),
-  aiMemoryEnabled: boolean("ai_memory_enabled").notNull().default(true),
+  // ── Aparte, intrekbare toestemmingen voor externe modelverwerking ─────────
+  // Fail-closed: ontbrekend bewijs (geen rij, of kolom false) = geen toestemming.
+  // Standaard UIT — de gebruiker zet ze expliciet aan in de instellingen.
+  aiMemoryEnabled: boolean("ai_memory_enabled").notNull().default(false),
   aiSensitiveAnalysisEnabled: boolean("ai_sensitive_analysis_enabled")
     .notNull()
-    .default(true),
+    .default(false),
+  // Gezondheids- en mentale analyse (voeding, vermoeidheid, stemming).
+  aiHealthAnalysisEnabled: boolean("ai_health_analysis_enabled")
+    .notNull()
+    .default(false),
+  // Foto-/beeldanalyse (materiaalfoto's, voedingsfoto's, Foto-lab).
+  aiVisionEnabled: boolean("ai_vision_enabled").notNull().default(false),
+  // Documentanalyse (wedstrijdgidsen, technische documenten).
+  aiDocumentAnalysisEnabled: boolean("ai_document_analysis_enabled")
+    .notNull()
+    .default(false),
+  // Gepersonaliseerde coaching-formulering (dagupdate, chat, plan-uitleg).
+  aiCoachingEnabled: boolean("ai_coaching_enabled").notNull().default(false),
   // Friend feed sharing. Fail-closed: off by default, so a friend never sees
   // your activity updates (training afgerond, wedstrijd gepland, rustdag) until
   // you explicitly opt in. Sensitive states (ziek/blessure) are never shared.

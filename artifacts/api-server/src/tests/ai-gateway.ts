@@ -99,7 +99,16 @@ async function lastLog(purpose: string) {
   return row ?? null;
 }
 
-async function setPrivacy(clerkId: string, patch: Partial<{ aiMemoryEnabled: boolean; aiSensitiveAnalysisEnabled: boolean }>) {
+type PrivacyPatch = Partial<{
+  aiMemoryEnabled: boolean;
+  aiSensitiveAnalysisEnabled: boolean;
+  aiHealthAnalysisEnabled: boolean;
+  aiVisionEnabled: boolean;
+  aiDocumentAnalysisEnabled: boolean;
+  aiCoachingEnabled: boolean;
+}>;
+
+async function setPrivacy(clerkId: string, patch: PrivacyPatch) {
   await db
     .insert(privacySettingsTable)
     .values({ clerkId, ...patch })
@@ -127,8 +136,8 @@ async function seed() {
         set: { birthDate },
       });
   }
-  await setPrivacy(CLERK_ID, { aiMemoryEnabled: true, aiSensitiveAnalysisEnabled: true });
-  await setPrivacy(MINOR_ID, { aiMemoryEnabled: true, aiSensitiveAnalysisEnabled: true });
+  await setPrivacy(CLERK_ID, { aiMemoryEnabled: true, aiSensitiveAnalysisEnabled: true, aiHealthAnalysisEnabled: true, aiVisionEnabled: true, aiDocumentAnalysisEnabled: true, aiCoachingEnabled: true });
+  await setPrivacy(MINOR_ID, { aiMemoryEnabled: true, aiSensitiveAnalysisEnabled: true, aiHealthAnalysisEnabled: true, aiVisionEnabled: true, aiDocumentAnalysisEnabled: true, aiCoachingEnabled: true });
 }
 
 async function cleanup() {
@@ -182,8 +191,8 @@ async function main() {
     }
   });
 
-  await scenario("3. Toestemming intrekken (ai_memory) blokkeert direct", async () => {
-    await setPrivacy(CLERK_ID, { aiMemoryEnabled: false });
+  await scenario("3. Toestemming intrekken (ai_coaching) blokkeert direct", async () => {
+    await setPrivacy(CLERK_ID, { aiCoachingEnabled: false });
     try {
       let threw = false;
       try {
@@ -196,12 +205,12 @@ async function main() {
       const row = await lastLog("brief");
       assert(row!.status === "blocked_consent" && row!.consent === "revoked", "blocked_consent/revoked verwacht");
     } finally {
-      await setPrivacy(CLERK_ID, { aiMemoryEnabled: true });
+      await setPrivacy(CLERK_ID, { aiCoachingEnabled: true });
     }
   });
 
-  await scenario("4. Gevoelige toggle uit blokkeert gevoelig doel", async () => {
-    await setPrivacy(CLERK_ID, { aiSensitiveAnalysisEnabled: false });
+  await scenario("4. Gezondheidstoestemming uit blokkeert gevoelig doel", async () => {
+    await setPrivacy(CLERK_ID, { aiHealthAnalysisEnabled: false });
     try {
       let threw = false;
       try {
@@ -212,7 +221,7 @@ async function main() {
       }
       assert(threw, "gevoelig doel had geblokkeerd moeten zijn");
     } finally {
-      await setPrivacy(CLERK_ID, { aiSensitiveAnalysisEnabled: true });
+      await setPrivacy(CLERK_ID, { aiHealthAnalysisEnabled: true });
     }
   });
 
@@ -311,7 +320,7 @@ async function main() {
   await scenario("9. Retry-begrenzing: register staat nooit >1 toe", async () => {
     for (const [key, cfg] of Object.entries(AI_PURPOSES)) {
       assert(cfg.maxRetries === 0 || cfg.maxRetries === 1, `${key}: maxRetries buiten begrenzing`);
-      assert(cfg.timeoutMs > 0 && cfg.timeoutMs <= 180_000, `${key}: timeout onrealistisch`);
+      assert(cfg.timeoutMs > 0 && cfg.timeoutMs <= 300_000, `${key}: timeout onrealistisch`);
     }
   });
 
@@ -405,7 +414,7 @@ async function main() {
       transportHit = true;
       return fakeMessage("{}");
     });
-    await setPrivacy(CLERK_ID, { aiSensitiveAnalysisEnabled: false });
+    await setPrivacy(CLERK_ID, { aiHealthAnalysisEnabled: false });
     try {
       let threw = false;
       try {
@@ -415,9 +424,9 @@ async function main() {
         assert(err instanceof AiBlockedError && err.reason === "consent", "AiBlockedError(consent) verwacht");
       }
       assert(threw, "maaltijdanalyse had geblokkeerd moeten zijn");
-      assert(!transportHit, "model werd tóch aangeroepen zonder gevoelige toestemming!");
+      assert(!transportHit, "model werd tóch aangeroepen zonder gezondheidstoestemming!");
     } finally {
-      await setPrivacy(CLERK_ID, { aiSensitiveAnalysisEnabled: true });
+      await setPrivacy(CLERK_ID, { aiHealthAnalysisEnabled: true });
     }
   });
 

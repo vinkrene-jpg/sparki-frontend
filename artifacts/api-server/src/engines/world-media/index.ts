@@ -29,6 +29,7 @@ import {
 } from "@workspace/db";
 import { generateImage, editImage } from "@workspace/integrations-gemini-ai/image";
 import { generateVideo } from "@workspace/integrations-gemini-ai/video";
+import { aiMediaCall } from "../../lib/ai/gateway";
 import { ObjectStorageService } from "../../lib/objectStorage";
 
 const svc = new ObjectStorageService();
@@ -840,15 +841,20 @@ export async function resolveMedia(
   const aspectRatio = input.aspectRatio ?? (isVideo ? "16:9" : "1:1");
   // Video clips go through Veo; images through the image model. Both return the
   // same { b64_json, mimeType } shape so upload/persist stays uniform.
+  // Standaardgeneratoren lopen via de centrale gateway (aiMediaCall): kill
+  // switch, rate limit, timeout en metadata-logging. World-media bevat geen
+  // atleetdata (fictieve scènes), dus toestemmingssoort "system".
   const generate =
     deps.generate ??
     (isVideo
       ? (p: string) =>
-          generateVideo(p, {
-            aspectRatio: aspectRatio === "9:16" ? "9:16" : "16:9",
-            durationSeconds: 6,
-          })
-      : generateImage);
+          aiMediaCall("world_media_video", null, () =>
+            generateVideo(p, {
+              aspectRatio: aspectRatio === "9:16" ? "9:16" : "16:9",
+              durationSeconds: 6,
+            }),
+          )
+      : (p: string) => aiMediaCall("world_media_image", null, () => generateImage(p)));
   const upload = deps.upload ?? uploadPublic;
   const promptKey = buildPromptKey(input.purpose, input.attributes);
 
@@ -1051,10 +1057,11 @@ export async function getOrCreatePostPhoto(
   let generate = deps.generate;
   if (!generate && athlete.avatarObjectPath) {
     const ref = athlete.avatarObjectPath;
-    generate = async (p: string) => {
-      const bytes = await svc.getObjectBytes(ref);
-      return editImage({ base64: bytes.base64, mimeType: bytes.mimeType }, p);
-    };
+    generate = (p: string) =>
+      aiMediaCall("world_media_image", null, async () => {
+        const bytes = await svc.getObjectBytes(ref);
+        return editImage({ base64: bytes.base64, mimeType: bytes.mimeType }, p);
+      });
   }
 
   return resolveMedia(

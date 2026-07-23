@@ -74,6 +74,19 @@ async function cleanup() {
     .where(inArray(userProfilesTable.clerkId, ids));
 }
 
+
+// Nieuwe standaard is fail-closed (geheugen UIT); persist-scenario's zetten de
+// toestemming expliciet aan, zoals een echte gebruiker in de instellingen doet.
+async function allowMemory(clerkId: string) {
+  await db
+    .insert(privacySettingsTable)
+    .values({ clerkId, aiMemoryEnabled: true })
+    .onConflictDoUpdate({
+      target: privacySettingsTable.clerkId,
+      set: { aiMemoryEnabled: true },
+    });
+}
+
 // A fixed reference moment: Monday 2026-06-22 10:00 local. Detection timing is
 // asserted relative to this so the test is deterministic.
 const NOW = new Date(2026, 5, 22, 10, 0, 0);
@@ -210,6 +223,7 @@ async function main() {
   await scenario("captureContext bewaart + plant follow-up + velden", async () => {
     const athlete = newId("capture");
     await ensureAccount(athlete, emailFor(athlete), "Pupil", silentLogger);
+    await allowMemory(athlete);
     const res = await captureContext(
       athlete,
       "ik heb morgen examen dus niet getraind",
@@ -242,6 +256,7 @@ async function main() {
   await scenario("follow-up: due → beantwoorden zet followUpDone", async () => {
     const athlete = newId("lifecycle");
     await ensureAccount(athlete, emailFor(athlete), "Pupil", silentLogger);
+    await allowMemory(athlete);
     const res = await captureContext(athlete, "ik heb morgen examen");
     const id = res.memory!.id;
     const future = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
@@ -262,6 +277,7 @@ async function main() {
   await scenario("follow-up: overslaan (dismiss)", async () => {
     const athlete = newId("dismiss");
     await ensureAccount(athlete, emailFor(athlete), "Pupil", silentLogger);
+    await allowMemory(athlete);
     const res = await captureContext(athlete, "ik heb morgen examen");
     const out = await dismissFollowUp(athlete, res.memory!.id);
     assert(out && out.status === "dismissed", "niet gedismissed");
@@ -274,6 +290,7 @@ async function main() {
   await scenario("athleet: niet meer gebruiken en verwijderen", async () => {
     const athlete = newId("control");
     await ensureAccount(athlete, emailFor(athlete), "Pupil", silentLogger);
+    await allowMemory(athlete);
     const res = await captureContext(athlete, "ik heb morgen examen");
     const id = res.memory!.id;
     await setContextEnabled(athlete, id, false);
@@ -291,7 +308,9 @@ async function main() {
     const a = newId("owner_a");
     const b = newId("owner_b");
     await ensureAccount(a, emailFor(a), "A", silentLogger);
+    await allowMemory(a);
     await ensureAccount(b, emailFor(b), "B", silentLogger);
+    await allowMemory(b);
     const res = await captureContext(a, "ik heb morgen examen");
     const id = res.memory!.id;
     const stolen = await answerFollowUp(b, id, "hack");
@@ -306,6 +325,7 @@ async function main() {
   await scenario("privacy: privé verborgen, gedeeld zichtbaar voor viewer", async () => {
     const athlete = newId("visibility");
     await ensureAccount(athlete, emailFor(athlete), "Pupil", silentLogger);
+    await allowMemory(athlete);
     const res = await captureContext(athlete, "ik heb morgen examen");
     const id = res.memory!.id;
     // Default private → viewer sees nothing.
@@ -321,6 +341,7 @@ async function main() {
   await scenario("privacy: viewer-projectie verbergt ruwe tekst", async () => {
     const athlete = newId("viewer");
     await ensureAccount(athlete, emailFor(athlete), "Pupil", silentLogger);
+    await allowMemory(athlete);
     const res = await captureContext(
       athlete,
       "ik heb slecht geslapen door stress thuis",
@@ -339,6 +360,7 @@ async function main() {
   await scenario("privacy: gepauzeerde memory verborgen voor viewer", async () => {
     const athlete = newId("viewer_disabled");
     await ensureAccount(athlete, emailFor(athlete), "Pupil", silentLogger);
+    await allowMemory(athlete);
     const res = await captureContext(athlete, "ik heb morgen examen");
     await setContextVisibility(athlete, res.memory!.id, "shared");
     await setContextEnabled(athlete, res.memory!.id, false);

@@ -121,7 +121,8 @@
     "test:social-privacy": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs social-privacy",
     "test:plan-details": "node ./scripts/run-test.mjs plan-details",
     "test:plan-lifecycle": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs plan-lifecycle",
-    "test:live-location": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs live-location"
+    "test:live-location": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs live-location",
+    "test:ai-consent": "node ./scripts/run-test.mjs ai-consent"
   },
   "dependencies": {
     "@clerk/express": "^2.1.30",

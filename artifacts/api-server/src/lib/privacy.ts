@@ -8,6 +8,10 @@ export type EffectivePrivacy = Pick<
   PrivacySettings,
   | "aiMemoryEnabled"
   | "aiSensitiveAnalysisEnabled"
+  | "aiHealthAnalysisEnabled"
+  | "aiVisionEnabled"
+  | "aiDocumentAnalysisEnabled"
+  | "aiCoachingEnabled"
   | "shareActivityWithFriends"
   | "dataSharingCoach"
   | "dataSharingParent"
@@ -16,9 +20,15 @@ export type EffectivePrivacy = Pick<
   | "exportAllowed"
 >;
 
+// Fail-closed: zonder opgeslagen rij is er géén bewijs van toestemming, dus
+// alle externe-verwerkingstoestemmingen staan standaard UIT.
 const DEFAULTS: EffectivePrivacy = {
-  aiMemoryEnabled: true,
-  aiSensitiveAnalysisEnabled: true,
+  aiMemoryEnabled: false,
+  aiSensitiveAnalysisEnabled: false,
+  aiHealthAnalysisEnabled: false,
+  aiVisionEnabled: false,
+  aiDocumentAnalysisEnabled: false,
+  aiCoachingEnabled: false,
   shareActivityWithFriends: false,
   dataSharingCoach: "summary",
   dataSharingParent: "safety_only",
@@ -38,6 +48,10 @@ export async function getEffectivePrivacy(
   return {
     aiMemoryEnabled: row.aiMemoryEnabled,
     aiSensitiveAnalysisEnabled: row.aiSensitiveAnalysisEnabled,
+    aiHealthAnalysisEnabled: row.aiHealthAnalysisEnabled,
+    aiVisionEnabled: row.aiVisionEnabled,
+    aiDocumentAnalysisEnabled: row.aiDocumentAnalysisEnabled,
+    aiCoachingEnabled: row.aiCoachingEnabled,
     shareActivityWithFriends: row.shareActivityWithFriends,
     dataSharingCoach: row.dataSharingCoach,
     dataSharingParent: row.dataSharingParent,

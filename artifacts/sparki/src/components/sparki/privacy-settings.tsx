@@ -139,6 +139,58 @@ export function PrivacySettingsSection() {
             </Row>
 
             <Row
+              icon={ShieldCheck}
+              title="Gezondheid & mentaal"
+              desc="Sta analyse van gezondheids- en mentale signalen toe (voeding, vermoeidheid, stemming). Uit = deze onderwerpen blijven buiten de analyse."
+            >
+              <Toggle
+                on={p.aiHealthAnalysisEnabled}
+                disabled={busy}
+                onClick={() =>
+                  set({ aiHealthAnalysisEnabled: !p.aiHealthAnalysisEnabled })
+                }
+              />
+            </Row>
+
+            <Row
+              icon={ShieldCheck}
+              title="Foto-analyse"
+              desc="Sta toe dat foto's die jij uploadt (materiaal, voeding, Foto-lab) worden geanalyseerd. Uit = fotofuncties staan uit."
+            >
+              <Toggle
+                on={p.aiVisionEnabled}
+                disabled={busy}
+                onClick={() => set({ aiVisionEnabled: !p.aiVisionEnabled })}
+              />
+            </Row>
+
+            <Row
+              icon={ShieldCheck}
+              title="Documentanalyse"
+              desc="Sta toe dat documenten die jij uploadt (wedstrijdgidsen, technische documenten) worden gelezen en samengevat."
+            >
+              <Toggle
+                on={p.aiDocumentAnalysisEnabled}
+                disabled={busy}
+                onClick={() =>
+                  set({ aiDocumentAnalysisEnabled: !p.aiDocumentAnalysisEnabled })
+                }
+              />
+            </Row>
+
+            <Row
+              icon={Brain}
+              title="Persoonlijke coaching"
+              desc="Sta toe dat adviezen en uitleg persoonlijk voor jou worden verwoord. Uit = je krijgt alleen de vaste, feitelijke weergave."
+            >
+              <Toggle
+                on={p.aiCoachingEnabled}
+                disabled={busy}
+                onClick={() => set({ aiCoachingEnabled: !p.aiCoachingEnabled })}
+              />
+            </Row>
+
+            <Row
               icon={Users}
               title="Delen met coach"
               desc="Bepaal hoeveel van jouw data jouw gekoppelde coach ziet."

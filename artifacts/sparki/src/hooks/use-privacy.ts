@@ -14,6 +14,10 @@ export type PrivacySettings = {
   dataSharingParent: "none" | "safety_only" | "summary";
   aiMemoryEnabled: boolean;
   aiSensitiveAnalysisEnabled: boolean;
+  aiHealthAnalysisEnabled: boolean;
+  aiVisionEnabled: boolean;
+  aiDocumentAnalysisEnabled: boolean;
+  aiCoachingEnabled: boolean;
   marketingConsent: boolean;
   exportAllowed: boolean;
   deleteRequestedAt: string | null;

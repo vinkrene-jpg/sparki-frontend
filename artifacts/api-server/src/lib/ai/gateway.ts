@@ -37,13 +37,53 @@ import { logger } from "../logger";
 // een onbekend doel wordt geweigerd.
 
 export type ConsentKind =
-  | "ai_memory" // vereist aiMemoryEnabled (dagelijkse analyse/geheugen)
+  | "ai_memory" // vereist aiMemoryEnabled (geheugen/langdurige context)
+  | "ai_health" // vereist aiHealthAnalysisEnabled (gezondheid/mentaal/voeding)
+  | "ai_vision" // vereist aiVisionEnabled (foto-/beeldanalyse)
+  | "ai_document" // vereist aiDocumentAnalysisEnabled (documentanalyse)
+  | "ai_coaching" // vereist aiCoachingEnabled (gepersonaliseerde coaching)
   | "explicit_action" // gebruiker start de actie zelf (upload, delen, vraag)
   | "system"; // beheer/systeem (healthcheck, kennisscan) — geen atleetdata
 
+// Welke privacy-toggle bij welke toestemmingssoort hoort. Ontbrekend bewijs
+// (geen rij of toggle uit) = geen toestemming (fail-closed). null = geen
+// aparte toggle nodig (gebruikersactie of systeemdoel zonder atleetdata).
+const CONSENT_FIELD: Record<
+  ConsentKind,
+  | "aiMemoryEnabled"
+  | "aiHealthAnalysisEnabled"
+  | "aiVisionEnabled"
+  | "aiDocumentAnalysisEnabled"
+  | "aiCoachingEnabled"
+  | null
+> = {
+  ai_memory: "aiMemoryEnabled",
+  ai_health: "aiHealthAnalysisEnabled",
+  ai_vision: "aiVisionEnabled",
+  ai_document: "aiDocumentAnalysisEnabled",
+  ai_coaching: "aiCoachingEnabled",
+  explicit_action: null,
+  system: null,
+};
+
+const CONSENT_MESSAGE: Record<ConsentKind, string> = {
+  ai_memory:
+    "Sparki-geheugen staat uit in je privacy-instellingen. Zet 'Sparki-geheugen' aan om dit te gebruiken.",
+  ai_health:
+    "Gezondheids- en mentale analyse staat uit in je privacy-instellingen. Zet die toestemming aan om dit te gebruiken.",
+  ai_vision:
+    "Foto-analyse staat uit in je privacy-instellingen. Zet die toestemming aan om dit te gebruiken.",
+  ai_document:
+    "Documentanalyse staat uit in je privacy-instellingen. Zet die toestemming aan om dit te gebruiken.",
+  ai_coaching:
+    "Persoonlijke coaching-formulering staat uit in je privacy-instellingen. Zet die toestemming aan om dit te gebruiken.",
+  explicit_action: "",
+  system: "",
+};
+
 export interface AiPurposeConfig {
   label: string;
-  provider: "anthropic";
+  provider: "anthropic" | "gemini";
   model: string;
   promptVersion: string;
   /** Toegestane inputcategorieën — documentatie + logging, géén inhoud. */
@@ -66,7 +106,7 @@ export const AI_PURPOSES = {
     model: MODEL,
     promptVersion: "brief-v2",
     inputCategories: ["trainingscontext", "kennisbronnen"],
-    consent: "ai_memory",
+    consent: "ai_coaching",
     sensitive: false,
     minorBlocked: false,
     timeoutMs: 60_000,
@@ -78,7 +118,7 @@ export const AI_PURPOSES = {
     model: MODEL,
     promptVersion: "ask-v2",
     inputCategories: ["trainingscontext", "vraagtekst", "kennisbronnen"],
-    consent: "explicit_action",
+    consent: "ai_coaching",
     sensitive: false,
     minorBlocked: false,
     timeoutMs: 60_000,
@@ -102,7 +142,7 @@ export const AI_PURPOSES = {
     model: MODEL,
     promptVersion: "workout-explain-v2",
     inputCategories: ["trainingscontext", "trainingsstructuur"],
-    consent: "explicit_action",
+    consent: "ai_coaching",
     sensitive: false,
     minorBlocked: false,
     timeoutMs: 30_000,
@@ -114,7 +154,7 @@ export const AI_PURPOSES = {
     model: MODEL,
     promptVersion: "workout-explain-ext-v2",
     inputCategories: ["trainingscontext", "trainingsstructuur"],
-    consent: "explicit_action",
+    consent: "ai_coaching",
     sensitive: false,
     minorBlocked: false,
     timeoutMs: 60_000,
@@ -126,7 +166,7 @@ export const AI_PURPOSES = {
     model: MODEL,
     promptVersion: "workout-adjust-v2",
     inputCategories: ["deterministisch besluit", "trainingsstructuur"],
-    consent: "explicit_action",
+    consent: "ai_coaching",
     sensitive: false,
     minorBlocked: false,
     timeoutMs: 30_000,
@@ -150,7 +190,7 @@ export const AI_PURPOSES = {
     model: MODEL,
     promptVersion: "plan-proposals-v2",
     inputCategories: ["deterministisch plan", "feedback"],
-    consent: "explicit_action",
+    consent: "ai_coaching",
     sensitive: false,
     minorBlocked: false,
     timeoutMs: 60_000,
@@ -162,7 +202,7 @@ export const AI_PURPOSES = {
     model: MODEL,
     promptVersion: "material-photo-v2",
     inputCategories: ["gebruikersfoto (upload)"],
-    consent: "explicit_action",
+    consent: "ai_vision",
     sensitive: false,
     minorBlocked: false,
     timeoutMs: 90_000,
@@ -174,7 +214,7 @@ export const AI_PURPOSES = {
     model: MODEL,
     promptVersion: "nutrition-photo-v2",
     inputCategories: ["gebruikersfoto (upload)"],
-    consent: "explicit_action",
+    consent: "ai_vision",
     sensitive: true, // voeding/gezondheid — valt onder aiSensitiveAnalysisEnabled
     // Niet jeugd-geblokkeerd: de prompts zijn al leeftijdsgestuurd (RED-S-veilig).
     minorBlocked: false,
@@ -187,7 +227,7 @@ export const AI_PURPOSES = {
     model: MODEL,
     promptVersion: "nutrition-text-v2",
     inputCategories: ["deterministische richtwaarden", "voedingslog"],
-    consent: "explicit_action",
+    consent: "ai_health",
     sensitive: true, // voeding/gezondheid — valt onder aiSensitiveAnalysisEnabled
     // Niet jeugd-geblokkeerd: de rekenkern is al leeftijdsgestuurd (RED-S-veilig).
     minorBlocked: false,
@@ -200,7 +240,7 @@ export const AI_PURPOSES = {
     model: MODEL,
     promptVersion: "document-analysis-v2",
     inputCategories: ["geüpload document (data, geen instructie)"],
-    consent: "explicit_action",
+    consent: "ai_document",
     sensitive: false,
     minorBlocked: false,
     timeoutMs: 120_000,
@@ -236,7 +276,7 @@ export const AI_PURPOSES = {
     model: MODEL,
     promptVersion: "route-rationale-v2",
     inputCategories: ["routekenmerken", "routewens (vrije tekst)"],
-    consent: "explicit_action",
+    consent: "ai_coaching",
     sensitive: false,
     minorBlocked: false,
     timeoutMs: 45_000,
@@ -248,7 +288,7 @@ export const AI_PURPOSES = {
     model: MODEL,
     promptVersion: "input-center-v2",
     inputCategories: ["vrije tekst / bijlage van de gebruiker"],
-    consent: "explicit_action",
+    consent: "ai_coaching",
     sensitive: false,
     minorBlocked: false,
     timeoutMs: 90_000,
@@ -266,6 +306,43 @@ export const AI_PURPOSES = {
     timeoutMs: 20_000,
     maxRetries: 0,
   },
+  // ── Mediadoelen (Gemini) — lopen via aiMediaCall, zelfde poorten ───────────
+  photo_style: {
+    label: "Foto-lab: eigen foto in Sparki-stijl",
+    provider: "gemini",
+    model: "gemini-2.5-flash-image",
+    promptVersion: "photo-style-v1",
+    inputCategories: ["gebruikersfoto (upload)"],
+    consent: "ai_vision",
+    sensitive: false,
+    minorBlocked: false,
+    timeoutMs: 120_000,
+    maxRetries: 0,
+  },
+  world_media_image: {
+    label: "Sparki World: fictief beeld (systeem)",
+    provider: "gemini",
+    model: "gemini-2.5-flash-image",
+    promptVersion: "world-media-v1",
+    inputCategories: ["fictieve scèneomschrijving (geen atleetdata)"],
+    consent: "system",
+    sensitive: false,
+    minorBlocked: false,
+    timeoutMs: 180_000,
+    maxRetries: 0,
+  },
+  world_media_video: {
+    label: "Sparki World: fictieve clip (systeem)",
+    provider: "gemini",
+    model: "veo-3.0-fast-generate-001",
+    promptVersion: "world-media-v1",
+    inputCategories: ["fictieve scèneomschrijving (geen atleetdata)"],
+    consent: "system",
+    sensitive: false,
+    minorBlocked: false,
+    timeoutMs: 300_000,
+    maxRetries: 0,
+  },
 } as const satisfies Record<string, AiPurposeConfig>;
 
 export type AiPurpose = keyof typeof AI_PURPOSES;
@@ -278,6 +355,7 @@ export class AiBlockedError extends Error {
       | "consent"
       | "minor"
       | "killswitch"
+      | "rate_limit"
       | "unknown_purpose",
     message: string,
   ) {
@@ -535,6 +613,97 @@ export function __setAiTransportForTests(t: Transport | null): void {
   transport = t ?? ((params, opts) => anthropic.messages.create(params, opts) as Promise<Anthropic.Message>);
 }
 
+// ── Rate limiting ────────────────────────────────────────────────────────────
+// Eenvoudige glijdende-venster-begrenzing per gebruiker per doel (in-memory).
+// Beschermt tegen runaway-lussen en misbruik; nooit stiller dan een eerlijke
+// AiBlockedError. Systeem-aanroepen (clerkId null) delen één emmer per doel.
+const RATE_LIMIT_MAX = 30;
+const RATE_LIMIT_WINDOW_MS = 5 * 60_000;
+const rateBuckets = new Map<string, number[]>();
+
+function checkRateLimit(purpose: string, clerkId: string | null): boolean {
+  const key = `${purpose}:${clerkId ?? "system"}`;
+  const now = Date.now();
+  const bucket = (rateBuckets.get(key) ?? []).filter(
+    (t) => now - t < RATE_LIMIT_WINDOW_MS,
+  );
+  if (bucket.length >= RATE_LIMIT_MAX) {
+    rateBuckets.set(key, bucket);
+    return false;
+  }
+  bucket.push(now);
+  rateBuckets.set(key, bucket);
+  return true;
+}
+
+export function __resetAiRateLimitForTests(): void {
+  rateBuckets.clear();
+}
+
+// ── Gezamenlijke poorten (tekst én media) ────────────────────────────────────
+// Kill switch, toestemming, jeugdcheck en rate limit in één plek, zodat
+// aiMessage en aiMediaCall exact dezelfde regels afdwingen.
+async function enforceGates(
+  purpose: string,
+  clerkId: string | null,
+  config: AiPurposeConfig,
+): Promise<string> {
+  // 1. Kill switch (bestaand domein ai_processing).
+  try {
+    await ensureAlive("ai_processing");
+  } catch (err) {
+    if (err instanceof KillSwitchError) {
+      await logCall({ clerkId, purpose, config, consent: "unchecked", status: "blocked_killswitch" });
+      throw new AiBlockedError("killswitch", err.message);
+    }
+    throw err;
+  }
+
+  // 2. Toestemming — per aanroep gelezen (fail-closed), intrekken werkt direct.
+  let consent = "not_required";
+  if (config.consent !== "system") {
+    const field = CONSENT_FIELD[config.consent];
+    if (field && !clerkId) {
+      // Persoonsgebonden toestemming zonder gebruiker is per definitie
+      // ontbrekend bewijs — nooit versturen.
+      await logCall({ clerkId, purpose, config, consent: "missing", status: "blocked_consent" });
+      throw new AiBlockedError("consent", CONSENT_MESSAGE[config.consent]);
+    }
+    if (clerkId) {
+      const privacy = await getEffectivePrivacy(clerkId);
+      if (field && !privacy[field]) {
+        await logCall({ clerkId, purpose, config, consent: "revoked", status: "blocked_consent" });
+        throw new AiBlockedError("consent", CONSENT_MESSAGE[config.consent]);
+      }
+      if (config.sensitive && !privacy.aiHealthAnalysisEnabled) {
+        await logCall({ clerkId, purpose, config, consent: "revoked", status: "blocked_consent" });
+        throw new AiBlockedError("consent", CONSENT_MESSAGE.ai_health);
+      }
+      consent = "granted";
+
+      // 3. Strengere jeugdbegrenzing: hard geblokkeerde doelen (fail-closed).
+      if (config.minorBlocked && (await isMinorOrUnknown(clerkId))) {
+        await logCall({ clerkId, purpose, config, consent, status: "blocked_minor" });
+        throw new AiBlockedError(
+          "minor",
+          "Deze analyse is niet beschikbaar. Sparki is hier bewust terughoudend voor jonge sporters.",
+        );
+      }
+    }
+  }
+
+  // 4. Rate limit (per gebruiker per doel).
+  if (!checkRateLimit(purpose, clerkId)) {
+    await logCall({ clerkId, purpose, config, consent, status: "blocked_rate_limit" });
+    throw new AiBlockedError(
+      "rate_limit",
+      "Even rustig aan — er zijn net veel verzoeken gedaan. Probeer het over een paar minuten opnieuw.",
+    );
+  }
+
+  return consent;
+}
+
 // In-flight-bewaking: dezelfde logische verwerking loopt nooit dubbel.
 const inFlight = new Map<string, Promise<Anthropic.Message>>();
 
@@ -562,46 +731,8 @@ export async function aiMessage(
     throw new AiBlockedError("unknown_purpose", `Onbekend AI-doel: ${purpose}`);
   }
 
-  // 1. Kill switch (bestaand domein ai_processing).
-  try {
-    await ensureAlive("ai_processing");
-  } catch (err) {
-    if (err instanceof KillSwitchError) {
-      await logCall({ clerkId, purpose, config, consent: "unchecked", status: "blocked_killswitch" });
-      throw new AiBlockedError("killswitch", err.message);
-    }
-    throw err;
-  }
-
-  // 2. Toestemming — per aanroep gelezen, dus intrekken werkt direct.
-  let consent = "not_required";
-  if (clerkId && config.consent !== "system") {
-    const privacy = await getEffectivePrivacy(clerkId);
-    if (config.consent === "ai_memory" && !privacy.aiMemoryEnabled) {
-      await logCall({ clerkId, purpose, config, consent: "revoked", status: "blocked_consent" });
-      throw new AiBlockedError(
-        "consent",
-        "Sparki-analyse staat uit in je privacy-instellingen. Zet 'Sparki-geheugen' aan om dit te gebruiken.",
-      );
-    }
-    if (config.sensitive && !privacy.aiSensitiveAnalysisEnabled) {
-      await logCall({ clerkId, purpose, config, consent: "revoked", status: "blocked_consent" });
-      throw new AiBlockedError(
-        "consent",
-        "Analyse van gevoelige gegevens staat uit in je privacy-instellingen.",
-      );
-    }
-    consent = "granted";
-
-    // 3. Strengere jeugdbegrenzing: hard geblokkeerde doelen (fail-closed).
-    if (config.minorBlocked && (await isMinorOrUnknown(clerkId))) {
-      await logCall({ clerkId, purpose, config, consent, status: "blocked_minor" });
-      throw new AiBlockedError(
-        "minor",
-        "Deze analyse is niet beschikbaar. Sparki is hier bewust terughoudend voor jonge sporters.",
-      );
-    }
-  }
+  // 1-4. Kill switch, toestemming, jeugdcheck, rate limit — gedeelde poorten.
+  const consent = await enforceGates(purpose, clerkId, config);
 
   // 4. Dataminimalisatie (vangnet-redactie).
   const { params: cleanParams, redacted } = redactParams(params);
@@ -657,6 +788,68 @@ export async function aiMessage(
 
   if (flightKey) inFlight.set(flightKey, run);
   return run;
+}
+
+// ── De centrale media-aanroep (beeld/video, Gemini) ─────────────────────────
+/**
+ * Voer een beeld-/video-modelaanroep uit via de gateway. Dezelfde poorten als
+ * aiMessage (kill switch, toestemming, jeugd, rate limit, timeout, metadata-
+ * logging). De provider-functie wordt als closure aangeleverd; de gateway
+ * bepaalt of die überhaupt mag draaien. Er wordt nooit inhoud (prompt, foto,
+ * bytes) gelogd — alleen metadata. Bij providerfalen: AiUnavailableError,
+ * nooit een verzonnen resultaat.
+ */
+export async function aiMediaCall<T>(
+  purpose: AiPurpose,
+  clerkId: string | null,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const config: AiPurposeConfig = AI_PURPOSES[purpose];
+  if (!config) {
+    throw new AiBlockedError("unknown_purpose", `Onbekend AI-doel: ${purpose}`);
+  }
+
+  const consent = await enforceGates(purpose, clerkId, config);
+
+  const started = Date.now();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    // Timeout-bewaking: de onderliggende aanroep kan niet altijd afgebroken
+    // worden, maar de caller krijgt gegarandeerd binnen timeoutMs een eerlijk
+    // antwoord (resultaat of AiUnavailableError).
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`media call timed out after ${config.timeoutMs}ms`)),
+        config.timeoutMs,
+      );
+    });
+    const result = await Promise.race([fn(), timeoutPromise]);
+    await logCall({
+      clerkId,
+      purpose,
+      config,
+      consent,
+      status: "ok",
+      latencyMs: Date.now() - started,
+    });
+    return result;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const isTimeout = /timed?\s?out|timeout/i.test(msg);
+    await logCall({
+      clerkId,
+      purpose,
+      config,
+      consent,
+      status: isTimeout ? "timeout" : "error",
+      latencyMs: Date.now() - started,
+      // Alleen een korte technische code — nooit inhoud.
+      errorCode: msg.slice(0, 120),
+    });
+    throw new AiUnavailableError();
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 /** Fallback-registratie: provider faalde, deterministische tekst gebruikt. */

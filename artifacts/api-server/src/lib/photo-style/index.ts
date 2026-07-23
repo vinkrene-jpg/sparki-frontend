@@ -1,6 +1,15 @@
 import { editImage } from "@workspace/integrations-gemini-ai/image";
+import { aiMediaCall } from "../ai/gateway";
 import { ObjectStorageService } from "../objectStorage";
 import { getObjectAclPolicy } from "../objectAcl";
+
+// Provider-functie injecteerbaar voor tests: zo kan de test bewijzen dat er
+// zonder toestemming NOOIT een provider-aanroep plaatsvindt.
+type EditImageFn = typeof editImage;
+let editImageImpl: EditImageFn = editImage;
+export function __setEditImageForTests(fn: EditImageFn | null): void {
+  editImageImpl = fn ?? editImage;
+}
 
 // Raised when a caller tries to claim an object that another user already owns.
 // The route maps this to 403 (never 500) so the access denial stays honest.
@@ -113,9 +122,14 @@ export async function stylizePhoto(
   originalPath: string,
 ): Promise<StylizeResult> {
   const original = await readPhotoBase64(originalPath);
-  const edited = await editImage(
-    { base64: original.base64, mimeType: original.mediaType },
-    SPARKI_STYLE_PROMPT,
+  // Via de centrale gateway: toestemming (foto-analyse), kill switch, rate
+  // limit, timeout en metadata-logging. Zonder toestemming wordt er niets
+  // verstuurd en komt er geen verzonnen resultaat terug.
+  const edited = await aiMediaCall("photo_style", clerkId, () =>
+    editImageImpl(
+      { base64: original.base64, mimeType: original.mediaType },
+      SPARKI_STYLE_PROMPT,
+    ),
   );
   const styledPath = await uploadStyledPhoto(clerkId, {
     base64: edited.b64_json,
