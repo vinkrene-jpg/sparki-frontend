@@ -144,6 +144,7 @@
 - [Sparki support helpdesk](sparki-support-helpdesk.md) — deterministic answer matrix, minor fail-closed; ticket find-or-create needs advisory-xact-lock; Dutch stems need `\w*` in `\b` regex groups.
 - [Sparki wedstrijdpunten & wedstrijdmodus](sparki-race-points.md) — AI-gids levert alleen voorstellen (nooit actief); status nooit terug naar voorgesteld; mobile race field non-optional.
 - [Sparki wedstrijdexport](sparki-race-export.md) — GPX/FIT export: round-trip verify before release, workout never fabricated, guide-diff reconfirm (>1 km move = disappeared+new by design).
+- [Sparki sociale privacy](sparki-social-privacy.md) — profiel-visibility check op ÁLLE ontdekkingspaden (search/verzoek/match), neutrale weigering blocked=hidden=missing, blokkeren atomair.
 - [Sparki ouderomgeving](sparki-parent-environment.md) — één rechtenlaag voor ALLE ouder-routes (ook legacy); onbekende leeftijd clampt naar veiligheidsminimum; onbevestigd nooit boven safety-only.
 - [Sparki routevoorstellen & nav-instellingen](sparki-route-proposals.md) — proposals-router vóór /:id-router; accept in één transactie; nav-defaults via rideOptionsExplicit (rideOptions is nooit null).
 - [Sparki store-distributie](sparki-store-distribution.md) — kanaal-header is PLAFOND op releasegroep (best-effort); 426 nooit tijdens actieve rit (latch+flush); recommended-versie = alleen rustig advies.
