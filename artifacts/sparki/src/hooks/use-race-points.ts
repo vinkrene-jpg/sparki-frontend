@@ -37,6 +37,8 @@ export type RacePoint = {
   lng: number | null
   confidence: "high" | "medium" | "low" | null
   status: RacePointStatus
+  needsReconfirm: boolean
+  reviewNote: string | null
   createdAt: string
   updatedAt: string
 }

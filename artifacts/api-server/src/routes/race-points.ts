@@ -224,6 +224,12 @@ router.patch("/:raceId/points/:pointId", requireAuth, async (req, res) => {
     } else if (moved) {
       updates.status = "aangepast";
     }
+    // Herbevestiging (nieuwe-gids-diff): iedere expliciete bevestiging,
+    // aanpassing of verplaatsing door de renner heft de vraag op.
+    if (updates.status === "bevestigd" || updates.status === "aangepast") {
+      updates.needsReconfirm = false;
+      updates.reviewNote = null;
+    }
 
     if (Object.keys(updates).length === 0) {
       res.json({ point: existing });

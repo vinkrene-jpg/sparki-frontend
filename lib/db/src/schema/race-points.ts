@@ -4,6 +4,7 @@ import {
   text,
   integer,
   real,
+  boolean,
   timestamp,
   index,
 } from "drizzle-orm/pg-core";
@@ -88,6 +89,12 @@ export const racePointsTable = pgTable(
     // handmatige punten (de renner stelt het zelf vast).
     confidence: text("confidence"),
     status: text("status").notNull().default("voorgesteld"), // RacePointStatus
+    // Nieuwe-gids-diff: true wanneer een latere technische gids dit punt op
+    // een andere plek/kilometer zet — het punt blijft actief maar vraagt om
+    // herbevestiging door de renner. reviewNote legt in gewone taal uit wat
+    // er in de nieuwe gids anders is (nooit automatisch overschreven).
+    needsReconfirm: boolean("needs_reconfirm").notNull().default(false),
+    reviewNote: text("review_note"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

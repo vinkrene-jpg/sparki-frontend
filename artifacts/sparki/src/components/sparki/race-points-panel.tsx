@@ -189,7 +189,17 @@ export function RacePointsPanel({
                         wedstrijd
                       </span>
                     )}
+                    {p.needsReconfirm && (
+                      <span className="rounded-full border border-amber-400/40 px-2 py-0.5 text-[10px] text-amber-300/90">
+                        herbevestigen
+                      </span>
+                    )}
                   </div>
+                  {p.needsReconfirm && p.reviewNote && (
+                    <p className="mt-1 text-[11px] leading-relaxed text-amber-200/70">
+                      {p.reviewNote}
+                    </p>
+                  )}
                   {p.description && (
                     <p className="mt-1 text-[11px] leading-relaxed text-white/50">
                       {p.description}
@@ -207,7 +217,14 @@ export function RacePointsPanel({
                 </div>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                {p.status !== "bevestigd" && p.status !== "afgewezen" && (
+                {p.needsReconfirm && p.status !== "afgewezen" && (
+                  <PanelBtn
+                    onClick={() => update.mutate({ pointId: p.id, status: "bevestigd" })}
+                  >
+                    Herbevestig
+                  </PanelBtn>
+                )}
+                {!p.needsReconfirm && p.status !== "bevestigd" && p.status !== "afgewezen" && (
                   <PanelBtn
                     onClick={() => update.mutate({ pointId: p.id, status: "bevestigd" })}
                   >

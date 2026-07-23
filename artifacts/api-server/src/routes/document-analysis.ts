@@ -3,12 +3,14 @@ import { and, desc, eq } from "drizzle-orm";
 import {
   db,
   documentAnalysesTable,
+  raceExportsTable,
   racePointsTable,
   racesTable,
   type CandidateRacePoint,
   type ExtractedField,
 } from "@workspace/db";
 import { candidateToInsert } from "../lib/race-points";
+import { diffGuidePoints } from "../lib/race-export/guide-diff";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
   analyzeDocument,
@@ -269,13 +271,18 @@ router.post("/:id/link", requireAuth, async (req, res) => {
 
     // Kandidaat-wedstrijdpunten uit de gids → race_points met status
     // "voorgesteld". Idempotent: als deze analyse al punten voor deze
-    // wedstrijd aanleverde, worden er geen dubbelen bijgezet.
+    // wedstrijd aanleverde, worden er geen dubbelen bijgezet. Heeft de
+    // wedstrijd al punten uit een EERDERE gids, dan draait de gids-diff:
+    // gewijzigde actieve punten vragen herbevestiging (nooit automatisch
+    // overschreven), alleen echt nieuwe kandidaten komen erbij als voorstel,
+    // en eerdere exporten worden als "verouderd" gemarkeerd.
     const candidates = Array.isArray(analysis.candidatePoints)
       ? (analysis.candidatePoints as CandidateRacePoint[])
       : [];
     let proposedPoints = 0;
+    let reconfirmPoints = 0;
     if (candidates.length > 0) {
-      const existing = await db
+      const fromThisAnalysis = await db
         .select({ id: racePointsTable.id })
         .from(racePointsTable)
         .where(
@@ -285,17 +292,88 @@ router.post("/:id/link", requireAuth, async (req, res) => {
           ),
         )
         .limit(1);
-      if (existing.length === 0) {
-        const values = candidates.map((c) =>
-          candidateToInsert(c, {
-            raceId,
-            clerkId,
-            analysisId: id,
-            fileName: analysis.fileName,
-          }),
-        );
-        await db.insert(racePointsTable).values(values);
-        proposedPoints = values.length;
+      if (fromThisAnalysis.length === 0) {
+        const existingPoints = await db
+          .select()
+          .from(racePointsTable)
+          .where(eq(racePointsTable.raceId, raceId));
+        if (existingPoints.length === 0) {
+          const values = candidates.map((c) =>
+            candidateToInsert(c, {
+              raceId,
+              clerkId,
+              analysisId: id,
+              fileName: analysis.fileName,
+            }),
+          );
+          await db.insert(racePointsTable).values(values);
+          proposedPoints = values.length;
+        } else {
+          const diff = diffGuidePoints(existingPoints, candidates, analysis.fileName);
+          if (diff.newCandidates.length > 0) {
+            const values = diff.newCandidates.map((c) =>
+              candidateToInsert(c, {
+                raceId,
+                clerkId,
+                analysisId: id,
+                fileName: analysis.fileName,
+              }),
+            );
+            await db.insert(racePointsTable).values(values);
+            proposedPoints = values.length;
+          }
+          for (const u of diff.updateProposals) {
+            await db
+              .update(racePointsTable)
+              .set({
+                raceKm: u.raceKm,
+                description: u.description,
+                sourceAnalysisId: id,
+                sourceFile: analysis.fileName,
+                updatedAt: new Date(),
+              })
+              .where(
+                and(
+                  eq(racePointsTable.id, u.pointId),
+                  eq(racePointsTable.raceId, raceId),
+                  eq(racePointsTable.status, "voorgesteld"),
+                ),
+              );
+          }
+          const flagged = [...diff.reconfirm, ...diff.disappeared];
+          for (const f of flagged) {
+            await db
+              .update(racePointsTable)
+              .set({
+                needsReconfirm: true,
+                reviewNote: f.note,
+                updatedAt: new Date(),
+              })
+              .where(
+                and(
+                  eq(racePointsTable.id, f.pointId),
+                  eq(racePointsTable.raceId, raceId),
+                ),
+              );
+          }
+          reconfirmPoints = flagged.length;
+          // Wijzigt de nieuwe gids iets (nieuw, aangepast of verdwenen)?
+          // Dan zijn eerder gemaakte exportbestanden ingehaald.
+          if (proposedPoints > 0 || flagged.length > 0 || diff.updateProposals.length > 0) {
+            await db
+              .update(raceExportsTable)
+              .set({
+                status: "verouderd",
+                staleReason: `Nieuwe technische gids gekoppeld (${analysis.fileName}).`,
+              })
+              .where(
+                and(
+                  eq(raceExportsTable.raceId, raceId),
+                  eq(raceExportsTable.status, "actueel"),
+                ),
+              );
+          }
+        }
       }
     }
 
@@ -309,7 +387,12 @@ router.post("/:id/link", requireAuth, async (req, res) => {
         ),
       )
       .returning();
-    res.json({ analysis: row, enriched: Object.keys(raceUpdate), proposedPoints });
+    res.json({
+      analysis: row,
+      enriched: Object.keys(raceUpdate),
+      proposedPoints,
+      reconfirmPoints,
+    });
   } catch (err) {
     req.log.error({ err }, "documentAnalyses.link failed");
     res.status(500).json({ error: "Kon document niet koppelen" });

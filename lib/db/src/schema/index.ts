@@ -5,6 +5,7 @@ export * from "./athlete-training";
 export * from "./athlete-metrics";
 export * from "./races";
 export * from "./race-points";
+export * from "./race-exports";
 export * from "./race-rooms";
 export * from "./links";
 export * from "./parent";

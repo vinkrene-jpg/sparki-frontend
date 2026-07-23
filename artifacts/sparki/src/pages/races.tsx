@@ -16,6 +16,7 @@ import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import { ImportFromCalendar } from "@/components/sparki/import-from-calendar"
 import { EquipmentChoicePanel } from "@/components/sparki/equipment-choice"
 import { RacePointsPanel } from "@/components/sparki/race-points-panel"
+import { RaceExportCenter } from "@/components/sparki/race-export-center"
 import type { CalendarEvent } from "@/lib/calendar-types"
 import {
   useRaces,
@@ -653,6 +654,7 @@ export default function RacesPage() {
                   raceId={editingId}
                   routeId={races?.find((r) => r.id === editingId)?.routeId ?? null}
                 />
+                <RaceExportCenter raceId={editingId} />
                 <EquipmentChoicePanel raceId={editingId} />
               </>
             ) : null
