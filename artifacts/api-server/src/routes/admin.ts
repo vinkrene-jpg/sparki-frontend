@@ -1339,7 +1339,69 @@ router.post(
         ftp_watts: number;
       }[];
 
+      // (c) FTP-actualisatie: staat het profiel nog op een afgeleide schatting
+      // terwijl er een NIEUWERE echte invoer (handmatig/import) in ftp_history
+      // staat, dan hoort die echte waarde het profiel te zijn. De droogdraai
+      // toont wat er zou gebeuren; apply draait het bestaande zelfherstel
+      // (recalibrateEstimatedFtp) dat de echte waarde overneemt, ftpEstimated
+      // op false zet en oudere afgeleide rijen als [achterhaald] markeert —
+      // zonder ook maar één historierij te verwijderen.
+      const ftpState = (
+        await db.execute(
+          sql`SELECT p.ftp, p.ftp_estimated,
+                     r.ftp_watts AS echte_watts, r.measured_at AS echte_datum,
+                     d.id AS afgeleide_id, d.ftp_watts AS afgeleide_watts,
+                     d.measured_at AS afgeleide_datum
+              FROM athlete_profiles p
+              LEFT JOIN LATERAL (
+                SELECT ftp_watts, measured_at FROM ftp_history
+                WHERE clerk_id = p.clerk_id AND test_type <> 'derived'
+                ORDER BY measured_at DESC LIMIT 1
+              ) r ON true
+              LEFT JOIN LATERAL (
+                SELECT id, ftp_watts, measured_at FROM ftp_history
+                WHERE clerk_id = p.clerk_id AND test_type = 'derived'
+                  AND coalesce(notes, '') NOT LIKE '[achterhaald]%'
+                ORDER BY measured_at DESC LIMIT 1
+              ) d ON true
+              WHERE p.clerk_id = ${target}`,
+        )
+      ).rows[0] as
+        | {
+            ftp: number | null;
+            ftp_estimated: boolean;
+            echte_watts: number | null;
+            echte_datum: string | null;
+            afgeleide_id: number | null;
+            afgeleide_watts: number | null;
+            afgeleide_datum: string | null;
+          }
+        | undefined;
+      const ftpActualisatie =
+        ftpState &&
+        ftpState.ftp_estimated === true &&
+        ftpState.echte_watts != null &&
+        (ftpState.afgeleide_datum == null ||
+          ftpState.echte_datum! >= ftpState.afgeleide_datum)
+          ? {
+              nodig: true as const,
+              profielNu: { ftp: ftpState.ftp, geschat: true },
+              wordt: { ftp: ftpState.echte_watts, geschat: false },
+              teMarkerenAlsAchterhaald:
+                ftpState.afgeleide_id == null
+                  ? []
+                  : [
+                      {
+                        id: ftpState.afgeleide_id,
+                        watts: ftpState.afgeleide_watts,
+                        datum: ftpState.afgeleide_datum,
+                      },
+                    ],
+            }
+          : { nodig: false as const };
+
       let removed = { observaties: 0, ftpHistorie: 0 };
+      let ftpGeactualiseerd = false;
       if (apply === true) {
         if (englishObs.length > 0) {
           const r = await db.execute(
@@ -1363,6 +1425,15 @@ router.post(
           );
           removed.ftpHistorie = r.rowCount ?? dupFtp.length;
         }
+        if (ftpActualisatie.nodig) {
+          // Bestaand zelfherstel doet dit atomair: profiel-FTP + paspoort-
+          // event + [achterhaald]-markering in één transactie.
+          const { recalibrateEstimatedFtp } = await import(
+            "../lib/derived-load-backfill"
+          );
+          const r = await recalibrateEstimatedFtp(target);
+          ftpGeactualiseerd = r.changed;
+        }
       }
 
       res.json({
@@ -1374,8 +1445,10 @@ router.post(
             aangemaakt: o.created_at,
           })),
           dubbeleFtpHistorie: dupFtp,
+          ftpActualisatie,
         },
         verwijderd: removed,
+        ftpGeactualiseerd,
       });
     } catch (err) {
       req.log.error({ err }, "admin.dataTrustCleanup failed");

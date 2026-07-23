@@ -252,6 +252,52 @@ async function main() {
       .from(athleteProfilesTable)
       .where(eq(athleteProfilesTable.clerkId, A));
     assert(p?.ftp === 258 && p?.est === false, `profiel niet hersteld: ${p?.ftp}/${p?.est}`);
+    // De achterhaalde afgeleide rij blijft bestaan maar is gemarkeerd …
+    const [derivedRow] = await db
+      .select({ notes: ftpHistoryTable.notes })
+      .from(ftpHistoryTable)
+      .where(
+        and(
+          eq(ftpHistoryTable.clerkId, A),
+          eq(ftpHistoryTable.testType, "derived"),
+          eq(ftpHistoryTable.measuredAt, "2026-06-01"),
+        ),
+      );
+    assert(derivedRow, "afgeleide rij is ten onrechte verwijderd");
+    assert(
+      (derivedRow!.notes ?? "").startsWith("[achterhaald]"),
+      `afgeleide rij niet gemarkeerd: ${derivedRow!.notes}`,
+    );
+    // … en verschijnt niet meer in de toonbare FTP-historie.
+    const hist = await req("GET", "/api/athlete/ftp", A);
+    assert(hist.status === 200, `ftp-historie status ${hist.status}`);
+    const shownDerived = (hist.json ?? []).filter(
+      (r: any) => r.testType === "derived" && r.measuredAt === "2026-06-01",
+    );
+    assert(shownDerived.length === 0, "achterhaalde rij wordt nog getoond");
+    // … en telt óók niet meer mee in afgeleide berekeningen: een rit van
+    // 60 min op 258 W NP moet met FTP 258 (IF 1.0) scoren, niet met 331.
+    const [tssSess] = await db
+      .insert(trainingSessionsTable)
+      .values({
+        clerkId: A,
+        sessionDate: "2026-06-10",
+        durationMin: 60,
+        normalizedPower: 258,
+      })
+      .returning({ id: trainingSessionsTable.id });
+    const { backfillTssForAthlete } = await import(
+      "../lib/derived-load-backfill"
+    );
+    await backfillTssForAthlete(A);
+    const [scored] = await db
+      .select({
+        tss: trainingSessionsTable.tss,
+        intensityFactor: trainingSessionsTable.intensityFactor,
+      })
+      .from(trainingSessionsTable)
+      .where(eq(trainingSessionsTable.id, tssSess!.id));
+    assert(scored?.tss === 100, `verwacht TSS 100 (FTP 258), kreeg ${scored?.tss}`);
   });
 
   // 4b. Een echte (niet-geschatte) FTP wordt daarna NOOIT stil verhoogd.
@@ -339,6 +385,11 @@ async function main() {
     assert(
       (dry.json?.kandidaten?.dubbeleFtpHistorie ?? []).length === 1,
       "dubbele ftp-rij niet herkend",
+    );
+    // Profiel is hier al echt (scenario 4) ⇒ geen actualisatie nodig.
+    assert(
+      dry.json?.kandidaten?.ftpActualisatie?.nodig === false,
+      "ftpActualisatie onterecht nodig bij echte FTP",
     );
 
     const applied = await req("POST", "/api/admin/data-trust/cleanup", A, {

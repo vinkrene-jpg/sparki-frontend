@@ -2273,10 +2273,18 @@ router.get("/power-bests", requireAuth, async (req, res) => {
 router.get("/ftp", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
+    // Achterhaalde afgeleide rijen (gemarkeerd bij zelfherstel) blijven in de
+    // database staan maar zijn niet toonbaar: een oudere afgeleide schatting
+    // naast een echte waarde zou anders als geldige FTP gelezen worden.
     const history = await db
       .select()
       .from(ftpHistoryTable)
-      .where(eq(ftpHistoryTable.clerkId, clerkId))
+      .where(
+        and(
+          eq(ftpHistoryTable.clerkId, clerkId),
+          sql`NOT (${ftpHistoryTable.testType} = 'derived' AND coalesce(${ftpHistoryTable.notes}, '') LIKE '[achterhaald]%')`,
+        ),
+      )
       .orderBy(desc(ftpHistoryTable.measuredAt));
     res.json(history);
   } catch (err) {

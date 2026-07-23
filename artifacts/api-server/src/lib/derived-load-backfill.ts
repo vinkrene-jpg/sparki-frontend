@@ -85,7 +85,14 @@ export async function backfillTssForAthlete(clerkId: string): Promise<{
         ftpWatts: ftpHistoryTable.ftpWatts,
       })
       .from(ftpHistoryTable)
-      .where(eq(ftpHistoryTable.clerkId, clerkId))
+      .where(
+        and(
+          eq(ftpHistoryTable.clerkId, clerkId),
+          // Achterhaalde afgeleide rijen tellen nergens meer mee — ook niet
+          // in de belastingscore-afleiding.
+          sql`NOT (${ftpHistoryTable.testType} = 'derived' AND coalesce(${ftpHistoryTable.notes}, '') LIKE '[achterhaald]%')`,
+        ),
+      )
   ).map((e) => ({ measuredAt: e.measuredAt, ftpWatts: e.ftpWatts }));
 
   let updated = 0;
@@ -236,6 +243,18 @@ export async function recalibrateEstimatedFtp(
             eq(athleteProfilesTable.ftpEstimated, true),
           ),
         );
+      // Afgeleide rijen die OUDER zijn dan de echte waarde zijn achterhaald:
+      // ze blijven bestaan (historie is heilig) maar worden gemarkeerd zodat
+      // ze niet meer als toonbare FTP-waarde verschijnen. Idempotent: een al
+      // gemarkeerde rij wordt niet nogmaals geprefixt.
+      await tx.execute(
+        sql`UPDATE ftp_history
+            SET notes = '[achterhaald] ' || coalesce(notes, '')
+            WHERE clerk_id = ${clerkId}
+              AND test_type = 'derived'
+              AND measured_at <= ${latestReal.measuredAt}
+              AND coalesce(notes, '') NOT LIKE '[achterhaald]%'`,
+      );
       if (profile.ftp !== latestReal.ftpWatts) {
         await recordRepair(
           {
