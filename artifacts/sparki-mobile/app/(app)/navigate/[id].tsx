@@ -97,6 +97,8 @@ import {
   type RouteDetail,
   type RouteStep,
 } from "@/lib/routes-api";
+import { VolgautoDriverMode } from "@/components/VolgautoDriverMode";
+import { postVolgautoPosition, useVolgautoPlan } from "@/lib/volgauto-api";
 
 // Hoog-contrast HUD-kleuren voor bovenop de kaart: vrijwel dekkend donker met
 // felle tekst, zodat cijfers en de richtingpijl in vol daglicht leesbaar zijn.
@@ -199,6 +201,35 @@ export default function NavigateScreen() {
 
   const [following, setFollowing] = useState(true);
   const [showSensors, setShowSensors] = useState(false);
+
+  // ---------- Volgauto (Opdracht 3) ----------
+  // Alleen wanneer de route-instelling "Deze route wordt gevolgd door een
+  // volgauto" AAN staat, krijgt de gebruiker vóór de start een rolkeuze.
+  // "Ik fiets" verandert NIETS aan de fietsnavigatie (alleen best-effort
+  // positie delen); "Ik bestuur de volgauto" opent een eigen automodus met de
+  // aparte autoroute. Best-effort: zonder netwerk geen rolkeuze, gewoon fietsen.
+  const { data: volgautoPlan } = useVolgautoPlan(
+    Number.isInteger(routeId) ? routeId : null,
+  );
+  const [volgautoRole, setVolgautoRole] = useState<"renner" | "volgauto" | null>(
+    null,
+  );
+  useEffect(() => {
+    // Renner deelt (met plan aan) elke ~20s zijn positie zodat de volgauto
+    // een GESCHATTE wachttijd kan tonen. Mislukken blokkeert navigatie nooit.
+    if (!volgautoPlan?.enabled || volgautoRole !== "renner") return;
+    if (!location || !Number.isInteger(routeId)) return;
+    const send = () =>
+      void postVolgautoPosition(routeId, {
+        role: "renner",
+        lat: location.latitude,
+        lon: location.longitude,
+        speedMps: location.speedMps ?? null,
+      });
+    send();
+    const t = setInterval(send, 20_000);
+    return () => clearInterval(t);
+  }, [volgautoPlan?.enabled, volgautoRole, location, routeId]);
 
   // Responsive lay-out: schermmaten + systeem-fontschaal voor de databalk
   // en de kaart/klimkaart-verdeling (geen vaste toestelhoogtes).
@@ -509,6 +540,51 @@ export default function NavigateScreen() {
           <Text style={{ color: c.primary, fontFamily: "Inter_600SemiBold" }}>Terug</Text>
         </Pressable>
       </View>
+    );
+  }
+
+  // ---------- Volgauto-rolkeuze / automodus ----------
+  // Alleen wanneer de instelling aan staat. "Ik fiets" laat de fietsnavigatie
+  // volledig ongewijzigd; de automodus is een eigen scherm met de aparte
+  // autoroute. Grote knoppen (veiligheid) + verplichte disclaimer.
+  if (volgautoPlan?.enabled && volgautoRole === null) {
+    return (
+      <View style={[styles.fill, styles.center, { backgroundColor: c.background, padding: 24 }]}>
+        <Ionicons name="car-sport-outline" size={44} color={c.primary} />
+        <Text style={[styles.stateTitle, { color: c.foreground, fontSize: 22 }]}>
+          Wie ben jij op deze rit?
+        </Text>
+        <Text style={[styles.stateBody, { color: c.mutedForeground }]}>
+          Deze route wordt gevolgd door een volgauto.
+        </Text>
+        <Pressable
+          onPress={() => setVolgautoRole("renner")}
+          style={[styles.rolePick, { backgroundColor: c.primary }]}
+        >
+          <Ionicons name="bicycle" size={26} color="#0b0f16" />
+          <Text style={styles.rolePickText}>Ik fiets</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setVolgautoRole("volgauto")}
+          style={[styles.rolePick, { backgroundColor: "#f59e0b" }]}
+        >
+          <Ionicons name="car" size={26} color="#0b0f16" />
+          <Text style={styles.rolePickText}>Ik bestuur de volgauto</Text>
+        </Pressable>
+        <Text style={[styles.stateBody, { color: c.mutedForeground, fontSize: 12 }]}>
+          {volgautoPlan.disclaimer}
+        </Text>
+      </View>
+    );
+  }
+  if (volgautoPlan?.enabled && volgautoRole === "volgauto") {
+    return (
+      <VolgautoDriverMode
+        routeId={routeId}
+        plan={volgautoPlan}
+        location={location}
+        onExit={goBack}
+      />
     );
   }
 
@@ -1584,6 +1660,21 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   center: { alignItems: "center", justifyContent: "center", gap: 12 },
   stateTitle: { fontFamily: "Inter_600SemiBold", fontSize: 18 },
+  rolePick: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    alignSelf: "stretch",
+    borderRadius: 16,
+    paddingVertical: 18,
+    marginTop: 14,
+  },
+  rolePickText: {
+    color: "#0b0f16",
+    fontFamily: "Inter_700Bold",
+    fontSize: 18,
+  },
   stateBody: { fontFamily: "Inter_400Regular", fontSize: 14, textAlign: "center", lineHeight: 20 },
   backPill: {
     marginTop: 8,

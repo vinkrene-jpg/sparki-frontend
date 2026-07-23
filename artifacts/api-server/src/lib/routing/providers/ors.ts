@@ -82,6 +82,7 @@ export class OrsProvider implements RoutingProvider {
     "cycling-regular",
     "foot-walking",
     "foot-hiking",
+    "driving-car",
   ];
 
   isConfigured(): boolean {
@@ -99,6 +100,9 @@ export class OrsProvider implements RoutingProvider {
   }
 
   private avoidFor(profile: RoutingProfile): readonly string[] {
+    // driving-car: ORS routeert een auto zelf alleen over wegen die het
+    // wegennet als autotoegankelijk kent; wij vermijden alleen veerponten.
+    if (profile === "driving-car") return FOOT_AVOID;
     return isCyclingProfile(profile) ? CYCLING_AVOID : FOOT_AVOID;
   }
 

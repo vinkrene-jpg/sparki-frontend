@@ -70,6 +70,9 @@ export function profileToSurface(profile: RoutingProfile): RouteSurface {
       return "asfalt";
     case "foot-hiking":
       return "pad";
+    case "driving-car":
+      // Volgauto rijdt op de openbare weg; alleen relevant voor overlays.
+      return "asfalt";
   }
 }
 
@@ -88,6 +91,9 @@ export function profileCruisingSpeedKmh(profile: RoutingProfile): number {
       return 5;
     case "foot-hiking":
       return 4.5;
+    case "driving-car":
+      // Conservatief gemiddelde voor een volgauto op gemengde wegen.
+      return 45;
   }
 }
 
@@ -109,5 +115,7 @@ export function activityLabel(profile: RoutingProfile): string {
       return "wandel-/looproute (verhard)";
     case "foot-hiking":
       return "hike-/trailroute (paden)";
+    case "driving-car":
+      return "volgauto (autoroute)";
   }
 }

@@ -38,6 +38,7 @@ const ALL_ENTRIES = [
       path.resolve(artifactDir, "src/tests/provider-sync.ts"),
       path.resolve(artifactDir, "src/tests/memory-graph.ts"),
       path.resolve(artifactDir, "src/tests/context-memory.ts"),
+      path.resolve(artifactDir, "src/tests/volgauto.ts"),
       path.resolve(artifactDir, "src/tests/voice.ts"),
       path.resolve(artifactDir, "src/tests/onboarding-v2.ts"),
       path.resolve(artifactDir, "src/tests/onboarding-personas.ts"),

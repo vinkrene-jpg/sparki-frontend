@@ -9,6 +9,10 @@ export const routingProfiles = [
   "cycling-regular",
   "foot-walking",
   "foot-hiking",
+  // Voertuigprofiel voor de volgauto (Opdracht 3). Wordt NOOIT gebruikt voor
+  // fietsroutes; alleen voor de afzonderlijke voertuiggeschikte route en
+  // auto-rejoins. Renners kiezen dit profiel nooit zelf.
+  "driving-car",
 ] as const;
 export type RoutingProfile = (typeof routingProfiles)[number];
 

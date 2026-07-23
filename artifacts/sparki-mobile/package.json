@@ -16,6 +16,7 @@
     "test:route-match": "node ../../scripts/run-tsx-test.mjs --test lib/route-match.test.ts",
     "test:nav-hud": "node ../../scripts/run-tsx-test.mjs --test lib/nav-hud.test.ts",
     "test:off-route-choice": "node ../../scripts/run-tsx-test.mjs --test lib/off-route-choice.test.ts",
+    "test:volgauto-meet": "node ../../scripts/run-tsx-test.mjs --test lib/volgauto-meet.test.ts",
     "check:prod-config": "node scripts/check-prod-config.mjs"
   },
   "devDependencies": {

@@ -24,6 +24,7 @@ import notificationsRouter from "./notifications";
 import activityImportsRouter from "./activity-imports";
 import routesRouter from "./routes";
 import routeProposalsRouter from "./route-proposals";
+import volgautoRouter from "./volgauto";
 import navSettingsRouter from "./nav-settings";
 import trainingPlanRouter from "./training-plan";
 import bugReportsRouter from "./bug-reports";
@@ -119,6 +120,7 @@ router.use(
   activityImportsRouter,
 );
 router.use("/routes", routeProposalsRouter);
+router.use("/routes", volgautoRouter);
 router.use("/routes", routesRouter);
 router.use("/nav-settings", navSettingsRouter);
 router.use("/training-plan", trainingPlanRouter);

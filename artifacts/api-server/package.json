@@ -24,6 +24,7 @@
     "test:connector-cleanup": "node ./scripts/run-test.mjs connector-cleanup",
     "test:memory-graph": "node ./scripts/run-test.mjs memory-graph",
     "test:context-memory": "node ./scripts/run-test.mjs context-memory",
+    "test:volgauto": "node ./scripts/run-test.mjs volgauto",
     "test:voice": "node ./scripts/run-test.mjs voice",
     "test:onboarding-v2": "node ./scripts/run-test.mjs onboarding-v2",
     "test:onboarding-personas": "node ./scripts/run-test.mjs onboarding-personas",

@@ -54,6 +54,7 @@ import {
   type RouteRemark,
 } from "@/hooks/use-route-remarks"
 import { RouteRemarksPanel } from "@/components/sparki/route-remarks"
+import { VolgautoPanel } from "@/components/sparki/volgauto-panel"
 import {
   useRouteSurfaces,
   useRouteSurfacesPreview,
@@ -1201,6 +1202,15 @@ function RouteCard({
             setPosKm(r.routeKm)
             setFocusPoint((f) => ({ lat: r.lat, lon: r.lon, seq: (f?.seq ?? 0) + 1 }))
           }}
+          className="mt-4"
+        />
+      )}
+
+      {geometry.length > 1 && (
+        <VolgautoPanel
+          routeId={route.id}
+          bikeDistanceKm={route.distanceKm}
+          bikeDurationSec={route.durationSec}
           className="mt-4"
         />
       )}
