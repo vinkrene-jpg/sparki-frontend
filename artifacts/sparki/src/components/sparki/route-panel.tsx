@@ -23,7 +23,11 @@ import {
   type RouteMeetpoint,
   type RouteClimb,
 } from "@/hooks/use-routes"
-import { useUpcomingWorkouts } from "@/hooks/use-today-workout"
+import type { PlannedWorkout } from "@/lib/athlete-types"
+import {
+  useUpcomingWorkouts,
+  useWorkoutSearch,
+} from "@/hooks/use-today-workout"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useFriends } from "@/hooks/use-social"
 import { isSportActive } from "@workspace/feature-flags"
@@ -1321,7 +1325,15 @@ function RouteGenerator({
   const generate = useGenerateRoute()
   const genOptions = useGenerateRouteOptions()
   const save = useSaveGeneratedRoute()
-  const { data: workouts } = useUpcomingWorkouts()
+  const {
+    data: workouts,
+    isError: workoutsError,
+  } = useUpcomingWorkouts()
+  // Zoeken in overige echte trainingen (zelfde centrale kalenderbron, breder
+  // venster). Pas actief zodra de rijder echt zoekt — nooit een tweede bron.
+  const [workoutSearch, setWorkoutSearch] = useState("")
+  const searchActive = workoutSearch.trim().length >= 2
+  const { data: searchWorkouts } = useWorkoutSearch(searchActive)
   const { data: dashboard } = useAthleteDashboard()
   // Samen rijden: hier — bij het samenstellen van de route — kies je of je
   // alleen of met anderen fietst. "Met anderen" zet het bordjes-sprintspel aan
@@ -1968,22 +1980,81 @@ function RouteGenerator({
           <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
             KOPPEL TRAINING
           </label>
-          <select
-            className={inputClass}
-            value={workoutId}
-            onChange={(e) => {
-              setWorkoutId(e.target.value)
-              const w = workouts?.find((x) => String(x.id) === e.target.value)
-              if (w) setTrainingType(w.type || trainingType)
-            }}
-          >
-            <option value="">Geen</option>
-            {(workouts ?? []).map((w) => (
-              <option key={w.id} value={String(w.id)}>
-                {w.scheduledDate} · {w.title}
-              </option>
-            ))}
-          </select>
+          {(() => {
+            // Alleen echte, nog niet aan een uitvoering gekoppelde trainingen
+            // uit de centrale kalender (planned_workouts) van de sporter zelf.
+            const linkable = (w: PlannedWorkout) =>
+              w.sessionId == null &&
+              w.status !== "completed" &&
+              w.status !== "skipped" &&
+              w.status !== "cancelled"
+            const nearby = (workouts ?? []).filter(linkable)
+            const q = workoutSearch.trim().toLowerCase()
+            const extra = searchActive
+              ? (searchWorkouts ?? []).filter(
+                  (w) =>
+                    linkable(w) &&
+                    !nearby.some((n) => n.id === w.id) &&
+                    (w.title.toLowerCase().includes(q) ||
+                      w.scheduledDate.includes(q)),
+                )
+              : []
+            return (
+              <>
+                <select
+                  className={inputClass}
+                  value={workoutId}
+                  onChange={(e) => {
+                    setWorkoutId(e.target.value)
+                    const w =
+                      nearby.find((x) => String(x.id) === e.target.value) ??
+                      extra.find((x) => String(x.id) === e.target.value)
+                    if (w) setTrainingType(w.type || trainingType)
+                  }}
+                >
+                  <option value="">Geen</option>
+                  {nearby.map((w) => (
+                    <option key={w.id} value={String(w.id)}>
+                      {w.scheduledDate} · {w.title}
+                    </option>
+                  ))}
+                  {extra.length > 0 && (
+                    <optgroup label="Overige trainingen (zoekresultaat)">
+                      {extra.map((w) => (
+                        <option key={w.id} value={String(w.id)}>
+                          {w.scheduledDate} · {w.title}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+                <input
+                  className={`${inputClass} mt-2`}
+                  type="text"
+                  placeholder="Zoek in overige trainingen…"
+                  value={workoutSearch}
+                  onChange={(e) => setWorkoutSearch(e.target.value)}
+                />
+                {workoutsError ? (
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-red-300/70">
+                    Je trainingen konden niet worden geladen. Probeer het
+                    later opnieuw — er worden nooit voorbeeldtrainingen
+                    getoond.
+                  </p>
+                ) : nearby.length === 0 && !searchActive ? (
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-white/35">
+                    Geen open trainingen rond vandaag in je kalender. Plan
+                    een training in of zoek hierboven in je overige
+                    trainingen.
+                  </p>
+                ) : searchActive && extra.length === 0 ? (
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-white/35">
+                    Geen overige trainingen gevonden voor “{workoutSearch.trim()}”.
+                  </p>
+                ) : null}
+              </>
+            )
+          })()}
         </div>
       </div>
       </>)}

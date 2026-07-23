@@ -16,23 +16,55 @@ export function useTodayWorkout() {
   });
 }
 
+// Alle workout-lijstqueries delen dit prefix zodat aanmaken/wijzigen/verwijderen
+// van een training ELKE koppellijst direct ververst (geen verouderde cache).
+export const WORKOUTS_LIST_KEY = [
+  ...queryKeys.athlete.all(),
+  "workouts",
+] as const;
+
+function localDateStr(offsetDays: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  // Lokale kalenderdag (geen UTC-shift rond middernacht).
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 // Planned workouts in a window around today (recent + upcoming), for linking a
 // generated route to a workout. Defaults to last 7 days through next 21 days.
 export function useUpcomingWorkouts() {
   const { isSignedIn } = useUser();
-  const from = new Date();
-  from.setDate(from.getDate() - 7);
-  const to = new Date();
-  to.setDate(to.getDate() + 21);
-  const fromStr = from.toISOString().split("T")[0]!;
-  const toStr = to.toISOString().split("T")[0]!;
+  const fromStr = localDateStr(-7);
+  const toStr = localDateStr(21);
   return useQuery({
-    queryKey: [...queryKeys.athlete.all(), "workouts", "window", fromStr, toStr],
+    queryKey: [...WORKOUTS_LIST_KEY, "window", fromStr, toStr],
     queryFn: () =>
       apiFetch<PlannedWorkout[]>(
         `/api/athlete/workouts?from=${fromStr}&to=${toStr}`,
       ),
     enabled: isSignedIn === true || DEV_PREVIEW,
+    staleTime: STALE.session,
+  });
+}
+
+// Zoeken in overige echte trainingen (buiten het venster rond vandaag): brede
+// periode uit dezelfde centrale kalenderbron; filtering op titel gebeurt bij de
+// aanroeper. Geen aparte databron, geen fallback — bij een API-fout toont de
+// UI de fout en nooit vervangende gegevens.
+export function useWorkoutSearch(enabled: boolean) {
+  const { isSignedIn } = useUser();
+  const fromStr = localDateStr(-365);
+  const toStr = localDateStr(365);
+  return useQuery({
+    queryKey: [...WORKOUTS_LIST_KEY, "search", fromStr, toStr],
+    queryFn: () =>
+      apiFetch<PlannedWorkout[]>(
+        `/api/athlete/workouts?from=${fromStr}&to=${toStr}`,
+      ),
+    enabled: (isSignedIn === true || DEV_PREVIEW) && enabled,
     staleTime: STALE.session,
   });
 }
@@ -49,6 +81,7 @@ export function useCreateWorkout() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.athlete.todayWorkout() });
       void qc.invalidateQueries({ queryKey: queryKeys.athlete.dashboard() });
+      void qc.invalidateQueries({ queryKey: WORKOUTS_LIST_KEY });
     },
   });
 }
@@ -65,6 +98,7 @@ export function useUpdateWorkout() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.athlete.todayWorkout() });
       void qc.invalidateQueries({ queryKey: queryKeys.athlete.dashboard() });
+      void qc.invalidateQueries({ queryKey: WORKOUTS_LIST_KEY });
     },
   });
 }

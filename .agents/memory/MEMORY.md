@@ -12,7 +12,7 @@
 - [Sparki connector honesty model](sparki-connectors-honesty.md) — pending shells persist consent but import no data; "don't re-ask data" only for real connections; readiness must use effective availability.
 - [Sparki wedstrijdkalender-import](sparki-calendar-import.md) — Fietssport+We-Tri real/parseable; KNWU full calendar+login unreachable SPA (honest-limited, never faked); regex parsers, SSRF allowlist.
 - [Sparki Smart Missing Input Flow](sparki-missing-input.md) — registry + focus/return/retry empty-state framework.
-- [Sparki Strava OAuth + import](sparki-strava-oauth.md) — direct per-user OAuth into connector_connections (not Replit proxy); redirect_uri from REPLIT_DOMAINS; activities must ingest via Data Hub ([detail](sparki-strava-activity-import.md)).
+- [Sparki Strava OAuth + import](sparki-strava-oauth.md) — per-user OAuth into connector_connections; redirect_uri from REPLIT_DOMAINS; activities ingest via Data Hub ([detail](sparki-strava-activity-import.md)).
 - [Sparki Onboarding V2](sparki-onboarding-v2.md) — adaptive Q&A engine: fixed catalog, nonsense fails honestly w/ skip escape; Q&A-only leaves hours/FTP estimated.
 - [Sparki Voice & Personality Engine](sparki-voice-engine.md) — deterministic tone/trust/empathy engine; refuses to fabricate (null), empathy-before-humor, trust gates tones.
 - [Sparki Samen/Circle feed](sparki-circle.md) — /samen unified feed; ScreenShell scene-fallback leaks home-only UI (gate on explicit `section`); feed privacy fail-closed ([team detail](sparki-social-team.md)).
@@ -158,3 +158,4 @@
 - [Sparki nav audio & waypoint honesty](sparki-nav-audio-cues.md) — waypoints are never destinations: sanitize arrivals at source AND read paths; cues dedupe per step:phase; never force sound past silent mode.
 - [Sparki route-match engine](sparki-route-match.md) — never point-match GPS to sparse route points; segment projection + off-route state machine, byte-mirrored web↔mobiel, one position source for map/progress/deviation.
 - [Sparki rit-einde & rit-inkorten](sparki-ride-trim.md) — pure ride-flow engine at 1Hz tick; auto-trim always undoable pre-save; trim is metadata-only (first original wins), duration estimate honest-null on zero distance.
+- [Workout koppellijst honesty](sparki-workout-linklist.md) — "mockdata" = seeded dev-QA rows + stale query cache; DELETE is soft-cancel (status=cancelled) ⇒ pickers must filter; list queries share one invalidation prefix.
