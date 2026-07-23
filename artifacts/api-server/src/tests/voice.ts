@@ -13,6 +13,7 @@ import { ensureAccount, silentLogger } from "../lib/account";
 import {
   composeVoice,
   isToneUnlocked,
+  isToneAvailable,
   computeScore,
   scoreToTier,
   computeTrust,
@@ -162,6 +163,20 @@ function main() {
       assert(line!.tone === tone, `verkeerde tone: ${line!.tone}`);
     });
   }
+
+  // ── Humorniveau (Instellingen > Sparki-stijl > Humor) ───────────────────────
+  scenario("humorniveau: 'uit' blokkeert humor op ELK vertrouwensniveau", () => {
+    for (const tier of ["nieuw", "kennismaking", "vertrouwd", "maat"] as const) {
+      assert(!isToneAvailable("dry_humor", tier, "uit"), `dry_humor lekte bij uit/${tier}`);
+      assert(!isToneAvailable("cynical", tier, "uit"), `cynical lekte bij uit/${tier}`);
+    }
+  });
+  scenario("humorniveau: 'uit' laat niet-humor tonen intact", () =>
+    assert(isToneAvailable("supportive", "nieuw", "uit") && isToneAvailable("curious", "kennismaking", "uit"), "'uit' blokkeerde zakelijke tonen"));
+  scenario("humorniveau: 'subtiel' geeft droge humor alleen bij maat", () =>
+    assert(isToneAvailable("dry_humor", "maat", "subtiel") && !isToneAvailable("dry_humor", "vertrouwd", "subtiel") && !isToneAvailable("cynical", "maat", "subtiel"), "subtiel gating fout"));
+  scenario("humorniveau: 'uitgesproken' opent droge humor vanaf kennismaking", () =>
+    assert(isToneAvailable("dry_humor", "kennismaking", "uitgesproken") && isToneAvailable("cynical", "vertrouwd", "uitgesproken") && !isToneAvailable("cynical", "nieuw", "uitgesproken"), "uitgesproken gating fout"));
 
   // ── Trust override: locked humor falls back to a safe voice for new users ───
   scenario("gating: nieuw vraagt droge humor → valt terug op veilige stijl", () => {

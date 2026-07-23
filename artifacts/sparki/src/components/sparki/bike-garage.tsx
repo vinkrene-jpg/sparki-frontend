@@ -13,6 +13,7 @@ import {
   Check,
 } from "lucide-react"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
+import { HumorLine } from "@/components/sparki/humor-line"
 import { fileToResizedPhoto } from "@/hooks/use-material"
 import {
   useGarage,
@@ -1117,10 +1118,13 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
           )}
 
           {data.bikes.length === 0 && !addingBike && !adoptSuggestion && (
-            <p className="text-[13px] leading-relaxed text-white/45">
-              Nog geen fietsen in je garage. Voeg je eerste fiets toe — daarna
-              kan Sparki je uitrusting eerlijk beoordelen.
-            </p>
+            <div className="space-y-1.5">
+              <p className="text-[13px] leading-relaxed text-white/45">
+                Nog geen fietsen in je garage. Voeg je eerste fiets toe — daarna
+                kan Sparki je uitrusting eerlijk beoordelen.
+              </p>
+              <HumorLine context="empty_garage" />
+            </div>
           )}
 
           {addingBike ? (

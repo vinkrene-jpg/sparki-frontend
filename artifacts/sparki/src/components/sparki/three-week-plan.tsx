@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
+import { HumorLine } from "@/components/sparki/humor-line"
 import { usePlanWindow, useGeneratePlan } from "@/hooks/use-training-plan"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { DayDetailDrawer } from "@/components/sparki/day-detail-drawer"
@@ -101,9 +102,12 @@ export function ThreeWeekPlan({
       {!hideLabel && <SectionLabel n="00" title="Plan · 3 weken" />}
 
       {isLoading ? (
-        <div className="mt-5 flex items-center gap-2 text-[13px] text-white/40">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Plan laden…
+        <div className="mt-5 space-y-1.5">
+          <div className="flex items-center gap-2 text-[13px] text-white/40">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Plan laden…
+          </div>
+          <HumorLine context="loading" />
         </div>
       ) : !hasPlan ? (
         hideEmptyCta ? (

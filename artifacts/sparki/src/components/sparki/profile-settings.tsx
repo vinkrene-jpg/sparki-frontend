@@ -22,6 +22,7 @@ import { AdminPanel, TesterAccessLinks } from "@/components/sparki/admin-panel"
 import { SparkiVoiceSection } from "@/components/sparki/sparki-voice"
 import { useAiPreferences, useUpdateAiPreferences } from "@/hooks/use-ai-memory"
 import { HUMOR_LEVELS, HUMOR_LEVEL_LABELS, HUMOR_LEVEL_BLURBS, type HumorLevel } from "@/lib/humor"
+import { HumorLine } from "@/components/sparki/humor-line"
 import { FoundingSection } from "@/components/sparki/insights-section"
 import {
   useAthleteExtendedProfile,
@@ -357,6 +358,12 @@ function SparkiStyleSection({ autoOpen, onSaved }: EditorProps = {}) {
           <p className="pl-[76px] text-[11px] text-red-300/80">
             Opslaan is niet gelukt. Probeer het opnieuw.
           </p>
+        ) : update.isSuccess && current !== "uit" ? (
+          <HumorLine
+            context="success_save"
+            seedSalt={current}
+            className="pl-[76px]"
+          />
         ) : null}
       </div>
     </section>

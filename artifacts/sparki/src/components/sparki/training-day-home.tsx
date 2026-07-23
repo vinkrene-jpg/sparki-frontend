@@ -1,5 +1,6 @@
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
+import { HumorLine } from "@/components/sparki/humor-line"
 import { SparkiCore } from "@/components/sparki/sparki-core"
 import { BioRadar } from "@/components/sparki/bio-radar"
 import { Sparkline } from "@/components/sparki/primitives"
@@ -335,6 +336,7 @@ export function TrainingDayHome({
                 Geen training gepland — voeg een wedstrijd toe en Sparki plant je
                 opbouw.
               </p>
+              <HumorLine context="recovery_day" className="mt-1.5" />
               <div className="mt-3">
                 <QuickActionButton action="race" />
               </div>

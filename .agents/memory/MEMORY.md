@@ -116,8 +116,7 @@
 - [Sparki ride-navigator](sparki-ride-navigator.md) — CPS crank cadence, moving-avg speed, climbfases uit lib/nav-live (SSOT); elk "klaar met rit"-pad moet clearSavedRide of spookherstel; pagehide-persist.
 - [Save ridden ride as route](sparki-ridden-route-save.md) — ridden geometry only exists via GPX ingest.
 - [Route generation free-text wish](sparki-route-wish.md) — wish goes only into buildRationale prompt (ORS cannot steer roads); honest "kan niet + alternatief", never claim a place not in data.
-- [Sparki route remarks](sparki-route-remarks.md) — Overpass geometry can hold null entries/center (nodes outside bbox); filter before .lat or the endpoint 500s while clean-fixture tests stay green.
-- [Sparki wegtypen & fietsgeschiktheid](sparki-route-surfaces.md) — no-surface tag = altijd "onbekend" (ook path/footway); geometry-preview keys need robust fingerprints; segments carry route indexes for map highlights.
+- [Sparki route remarks + wegtypen](sparki-route-remarks.md) — Overpass geometry nulls: filter before .lat; no-surface tag = altijd "onbekend" ([surfaces](sparki-route-surfaces.md)).
 - [Klimmenverkenner](climb-explorer.md) — Overpass mirror selection: maps.mail.ru works; overpass-api.de 406 in env; overpass.osm.ch is Swiss-only false-empty (never in fallback chain).
 - [Sparki leefagenda](sparki-life-agenda.md) — athlete-entered life events steer the plan generator; list queries need overlap semantics or ongoing events become invisible but still steer.
 - [Sparki mobile BLE sensors](sparki-mobile-ble-sensors.md) — ble-plx behind platform split + guarded require (Expo Go honest-unsupported); BLE values are base64; horloge/derailleur stay registration-only.
@@ -142,8 +141,7 @@
 - [Sparki Performance Lab](sparki-performance-lab.md) — één belastingsmodel via computeLoadSeries (nooit inline EWMA in routes); radar-assen zonder data zijn null+reden, nooit 0.5.
 - [Sparki gezondheids- & herstelflow](sparki-health-flow.md) — status raises-only; "hersteld" alleen via expliciete resume-gate (409 bij niet_trainen); opbouwvenster; mobile customFetch returns parsed JSON not Response.
 - [Sparki support helpdesk](sparki-support-helpdesk.md) — deterministic answer matrix, minor fail-closed; ticket find-or-create needs advisory-xact-lock; Dutch stems need `\w*` in `\b` regex groups.
-- [Sparki wedstrijdpunten & wedstrijdmodus](sparki-race-points.md) — AI-gids levert alleen voorstellen (nooit actief); status nooit terug naar voorgesteld; mobile race field non-optional.
-- [Sparki wedstrijdexport](sparki-race-export.md) — GPX/FIT export: round-trip verify before release, workout never fabricated, guide-diff reconfirm (>1 km move = disappeared+new by design).
+- [Sparki wedstrijdpunten + export](sparki-race-points.md) — gids levert alleen voorstellen, status nooit terug naar voorgesteld; export round-trip verify, workout never fabricated ([export](sparki-race-export.md)).
 - [Sparki sociale privacy](sparki-social-privacy.md) — profiel-visibility check op ÁLLE ontdekkingspaden (search/verzoek/match), neutrale weigering blocked=hidden=missing, blokkeren atomair.
 - [Sparki ouderomgeving](sparki-parent-environment.md) — één rechtenlaag voor ALLE ouder-routes (ook legacy); onbekende leeftijd clampt naar veiligheidsminimum; onbevestigd nooit boven safety-only.
 - [Sparki routevoorstellen & nav-instellingen](sparki-route-proposals.md) — proposals-router vóór /:id-router; accept in één transactie; nav-defaults via rideOptionsExplicit (rideOptions is nooit null).
@@ -160,3 +158,4 @@
 - [Sparki rit-einde & rit-inkorten](sparki-ride-trim.md) — pure ride-flow engine at 1Hz tick; auto-trim always undoable pre-save; trim is metadata-only (first original wins), duration estimate honest-null on zero distance.
 - [Workout koppellijst honesty](sparki-workout-linklist.md) — "mockdata" = seeded dev-QA rows + stale query cache; DELETE is soft-cancel (status=cancelled) ⇒ pickers must filter; list queries share one invalidation prefix.
 - [Sparki data-trust audit](sparki-data-trust.md) — provenance endpoint uses constant table allowlist (never request-driven sql.raw); 403-gate testbaar via per-call env-flip terwijl IS_DEV gecached blijft.
+- [Sparki centraal humorniveau](sparki-humor-level.md) — één humorlaag (lib/humor.ts + voice isToneAvailable); instelling ai_preferences.humor_level geldt app-breed, nooit inline grappen; humor nooit op medisch/veiligheid/privacy/fouten/betalingen.

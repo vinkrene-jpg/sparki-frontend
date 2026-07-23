@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Link } from "wouter"
+import { HumorLine } from "@/components/sparki/humor-line"
 import {
   Clock,
   Route as RouteIcon,
@@ -237,6 +238,7 @@ export default function ActiviteitenPage() {
             Koppel je fietscomputer of Strava, dan verschijnen je ritten hier
             vanzelf — met al je meetgegevens.
           </p>
+          <HumorLine context="empty_training" className="mx-auto mt-2 max-w-xs" />
           <Link
             href="/you?focus=connections"
             className="mt-4 inline-block rounded-full bg-[oklch(0.82_0.16_200)] px-5 py-2 text-sm font-semibold text-black transition hover:brightness-110"

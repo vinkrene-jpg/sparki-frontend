@@ -3,6 +3,7 @@ import { Link } from "wouter"
 import { useQueryClient } from "@tanstack/react-query"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
+import { HumorLine } from "@/components/sparki/humor-line"
 import { queryKeys } from "@/lib/query-keys"
 import {
   useFriends,

@@ -40,13 +40,19 @@ router.get("/", requireAuth, async (req, res) => {
       : "normaal";
 
     // The five styles, each demonstrated on a neutral "good form" moment so the
-    // athlete hears the difference. `forceTone` renders even locked styles; the
-    // `unlocked` flag tells the UI which ones Sparki actually uses for them now.
+    // athlete hears the difference. `forceTone` renders even trust-locked styles;
+    // the `unlocked` flag tells the UI which ones Sparki actually uses for them
+    // now. HARD RULE: when the humor setting blocks a tone at EVERY trust tier
+    // (e.g. humor "uit"), no humorous sample text is emitted at all — "uit" is
+    // truly off, also in previews.
     const styles = voiceTones.map((tone: VoiceTone) => {
-      const line = composeVoice(
-        { event: "good_form", tone, trust: trust.tier, sport: "general", seed: 0 },
-        true,
-      );
+      const allowedByHumorSetting = isToneAvailable(tone, "maat", humorLevel);
+      const line = allowedByHumorSetting
+        ? composeVoice(
+            { event: "good_form", tone, trust: trust.tier, sport: "general", seed: 0 },
+            true,
+          )
+        : null;
       return {
         tone,
         label: TONE_LABELS[tone],

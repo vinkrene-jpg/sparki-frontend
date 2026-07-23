@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react"
 import { trackScreen } from "@/lib/telemetry"
 import { SectionLabel, Stat, Divider, ACCENT } from "@/components/sparki/ui"
+import { HumorLine } from "@/components/sparki/humor-line"
 import { RouteMap } from "@/components/sparki/route-map"
 import {
   useRoutes,
@@ -3052,6 +3053,7 @@ export function RoutePanel({
               Nog geen routes opgeslagen — plan er hierboven één op de kaart, of
               upload een GPX-bestand.
             </p>
+            <HumorLine context="empty_routes" className="mt-1.5" />
           </div>
         )}
       </div>
