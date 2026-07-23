@@ -18,6 +18,10 @@ import {
   useRemoveFriend,
   useCreateProposal,
   useRespondToProposal,
+  useSocialOverview,
+  useUnfollowUser,
+  useMatchContacts,
+  type PersonSummary,
   type FriendSummary,
   type CircleFeedItem,
   type ReceivedProposal,
@@ -49,7 +53,11 @@ import {
   ChevronRight,
   Zap,
   Send,
+  UserCircle,
+  Link2,
+  BookUser,
 } from "lucide-react"
+import { useCreateInvitation } from "@/hooks/use-invitations"
 
 // ── Shared atoms ─────────────────────────────────────────────────────────────
 function GlassCard({
@@ -278,6 +286,311 @@ function AddFriend() {
   )
 }
 
+// ── Netwerkoverzicht: vrienden / volgers / gevolgd ───────────────────────────
+function PersonRow({
+  person,
+  action,
+}: {
+  person: PersonSummary
+  action?: React.ReactNode
+}) {
+  return (
+    <GlassCard>
+      <div className="flex items-center gap-3">
+        <Avatar name={person.displayName} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[14px] text-white/90">
+            {person.displayName}
+          </p>
+          <p className="truncate font-mono text-[10px] tracking-wide text-white/40">
+            {[sportLabel(person.sport), person.club].filter(Boolean).join(" · ") ||
+              "Sporter"}
+          </p>
+        </div>
+        <Link
+          href={`/profiel/${person.clerkId}`}
+          aria-label="Profiel bekijken"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-white/12 text-white/40 transition-colors hover:text-white/80"
+        >
+          <UserCircle className="h-4 w-4" strokeWidth={1.75} />
+        </Link>
+        {action}
+      </div>
+    </GlassCard>
+  )
+}
+
+function NetwerkOverzicht() {
+  const { data, isLoading } = useSocialOverview()
+  const unfollow = useUnfollowUser()
+  const [tab, setTab] = useState<"volgers" | "gevolgd" | null>(null)
+  const counts = data?.counts
+
+  const TABS = [
+    { key: "vrienden" as const, label: "Mijn vrienden", n: counts?.vrienden },
+    { key: "volgers" as const, label: "Volgers", n: counts?.volgers },
+    { key: "gevolgd" as const, label: "Gevolgd", n: counts?.gevolgd },
+  ]
+
+  return (
+    <section>
+      <SectionLabel n="01" title="Jouw netwerk" />
+      {isLoading ? (
+        <div className="mt-3 h-14 animate-pulse rounded-2xl bg-white/[0.05]" />
+      ) : (
+        <>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() =>
+                  t.key === "vrienden"
+                    ? document
+                        .getElementById("mijn-vrienden")
+                        ?.scrollIntoView({ behavior: "smooth" })
+                    : setTab(tab === t.key ? null : t.key)
+                }
+                className="rounded-2xl border p-3 text-center transition-colors"
+                style={{
+                  borderColor:
+                    tab === t.key
+                      ? "rgba(120,210,230,0.4)"
+                      : "rgba(255,255,255,0.08)",
+                  background:
+                    tab === t.key
+                      ? "rgba(120,210,230,0.07)"
+                      : "rgba(7,13,22,0.82)",
+                }}
+              >
+                <p className="text-[20px] font-light text-white">{t.n ?? 0}</p>
+                <p className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-white/45">
+                  {t.label}
+                </p>
+              </button>
+            ))}
+          </div>
+          {tab === "volgers" && (
+            <div className="mt-2 flex flex-col gap-2">
+              {(data?.volgers ?? []).length === 0 ? (
+                <p className="px-1 text-[12px] text-white/40">
+                  Nog niemand volgt je.
+                </p>
+              ) : (
+                data!.volgers.map((p) => <PersonRow key={p.clerkId} person={p} />)
+              )}
+            </div>
+          )}
+          {tab === "gevolgd" && (
+            <div className="mt-2 flex flex-col gap-2">
+              {(data?.gevolgd ?? []).length === 0 ? (
+                <p className="px-1 text-[12px] text-white/40">
+                  Je volgt nog niemand. Open een profiel en kies "Volgen".
+                </p>
+              ) : (
+                data!.gevolgd.map((p) => (
+                  <PersonRow
+                    key={p.clerkId}
+                    person={p}
+                    action={
+                      <button
+                        type="button"
+                        disabled={unfollow.isPending}
+                        onClick={() => unfollow.mutate(p.clerkId)}
+                        className="rounded-full border border-white/12 px-3 py-1.5 font-sans text-[11px] text-white/50 disabled:opacity-40"
+                      >
+                        Ontvolgen
+                      </button>
+                    }
+                  />
+                ))
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  )
+}
+
+// ── Mensen vinden: contacten (met toestemming) + uitnodigingslink ────────────
+async function sha256Hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(input),
+  )
+  return [...new Uint8Array(buf)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+}
+
+function MensenVinden() {
+  const match = useMatchContacts()
+  const send = useSendFriendRequest()
+  const createInvite = useCreateInvitation()
+  const [contactState, setContactState] = useState<
+    "idle" | "unsupported" | "busy" | "done"
+  >("idle")
+  const [matches, setMatches] = useState<PersonSummary[]>([])
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  const pickContacts = async () => {
+    // Contact Picker API: de gebruiker kiest ZELF welke contacten hij deelt.
+    // Alleen sha256-hashes van e-mailadressen gaan naar de server; er wordt
+    // niets opgeslagen en geen adresboek geüpload.
+    const nav = navigator as Navigator & {
+      contacts?: { select: (p: string[], o?: { multiple?: boolean }) => Promise<{ email?: string[] }[]> }
+    }
+    if (!nav.contacts?.select) {
+      setContactState("unsupported")
+      return
+    }
+    try {
+      setContactState("busy")
+      const picked = await nav.contacts.select(["email"], { multiple: true })
+      const emails = picked
+        .flatMap((c) => c.email ?? [])
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean)
+      if (emails.length === 0) {
+        setContactState("done")
+        setMatches([])
+        return
+      }
+      const hashes = await Promise.all(emails.map(sha256Hex))
+      const result = await match.mutateAsync(hashes)
+      setMatches(result.matches ?? [])
+      setContactState("done")
+    } catch {
+      setContactState("idle")
+    }
+  }
+
+  const makeInviteLink = () => {
+    createInvite.mutate(
+      { relationship: "friend_athlete" } as never,
+      {
+        onSuccess: (inv: { token?: string }) => {
+          if (inv?.token)
+            setInviteUrl(`${window.location.origin}/uitnodiging/${inv.token}`)
+        },
+      },
+    )
+  }
+
+  return (
+    <section>
+      <SectionLabel title="Mensen vinden" />
+      <div className="mt-3 flex flex-col gap-2">
+        <GlassCard>
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10">
+              <BookUser className="h-4 w-4" style={{ color: ACCENT }} strokeWidth={1.75} />
+            </span>
+            <div className="flex-1">
+              <p className="text-[13.5px] text-white/85">Zoek via je contacten</p>
+              <p className="mt-0.5 text-pretty text-[12px] leading-relaxed text-white/45">
+                Jij kiest zelf welke contacten je deelt. Alleen versleutelde
+                controlegetallen van e-mailadressen worden vergeleken — je
+                adresboek wordt nooit geüpload of bewaard.
+              </p>
+              {contactState === "unsupported" ? (
+                <p className="mt-2 text-[12px] text-white/40">
+                  Contacten kiezen wordt door deze browser niet ondersteund.
+                  Gebruik de zoekfunctie of een uitnodigingslink.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  disabled={contactState === "busy"}
+                  onClick={pickContacts}
+                  className="mt-2 rounded-full border border-cyan-300/30 bg-cyan-300/[0.08] px-3.5 py-1.5 font-sans text-[12px] font-medium disabled:opacity-40"
+                  style={{ color: ACCENT }}
+                >
+                  {contactState === "busy" ? "Vergelijken…" : "Contacten kiezen"}
+                </button>
+              )}
+              {contactState === "done" && (
+                <div className="mt-2 flex flex-col gap-2">
+                  {matches.length === 0 ? (
+                    <p className="text-[12px] text-white/40">
+                      Geen van je gekozen contacten is op Sparki gevonden.
+                    </p>
+                  ) : (
+                    matches.map((m) => (
+                      <PersonRow
+                        key={m.clerkId}
+                        person={m}
+                        action={
+                          <button
+                            type="button"
+                            disabled={send.isPending}
+                            onClick={() => send.mutate(m.clerkId)}
+                            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 font-sans text-[12px] font-semibold disabled:opacity-40"
+                            style={{ background: ACCENT, color: "#040506" }}
+                          >
+                            <UserPlus className="h-3.5 w-3.5" strokeWidth={2} />
+                            Toevoegen
+                          </button>
+                        }
+                      />
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </GlassCard>
+
+        <GlassCard>
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10">
+              <Link2 className="h-4 w-4" style={{ color: ACCENT }} strokeWidth={1.75} />
+            </span>
+            <div className="flex-1">
+              <p className="text-[13.5px] text-white/85">Nodig uit via een link</p>
+              <p className="mt-0.5 text-[12px] leading-relaxed text-white/45">
+                Deel een persoonlijke link. Wie accepteert, wordt direct je
+                vriend op Sparki.
+              </p>
+              {inviteUrl ? (
+                <div className="mt-2 flex items-center gap-2">
+                  <code className="min-w-0 flex-1 truncate rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 font-mono text-[11px] text-white/70">
+                    {inviteUrl}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void navigator.clipboard?.writeText(inviteUrl)
+                      setCopied(true)
+                      setTimeout(() => setCopied(false), 2000)
+                    }}
+                    className="shrink-0 rounded-full px-3 py-1.5 font-sans text-[12px] font-semibold"
+                    style={{ background: ACCENT, color: "#040506" }}
+                  >
+                    {copied ? "Gekopieerd" : "Kopieer"}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={createInvite.isPending}
+                  onClick={makeInviteLink}
+                  className="mt-2 rounded-full border border-cyan-300/30 bg-cyan-300/[0.08] px-3.5 py-1.5 font-sans text-[12px] font-medium disabled:opacity-40"
+                  style={{ color: ACCENT }}
+                >
+                  {createInvite.isPending ? "Bezig…" : "Maak uitnodigingslink"}
+                </button>
+              )}
+            </div>
+          </div>
+        </GlassCard>
+      </div>
+    </section>
+  )
+}
+
 // ── Circle (friends list) ────────────────────────────────────────────────────
 function Circle() {
   const { data, isLoading } = useFriends()
@@ -286,7 +599,7 @@ function Circle() {
   const friends = data?.friends ?? []
 
   return (
-    <section>
+    <section id="mijn-vrienden">
       <SectionLabel n="04" title="Mijn vrienden" />
       {isLoading ? (
         <div className="mt-3 h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
@@ -314,6 +627,13 @@ function Circle() {
                       : ""}
                   </p>
                 </div>
+                <Link
+                  href={`/profiel/${f.clerkId}`}
+                  aria-label="Profiel bekijken"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/12 text-white/40 transition-colors hover:text-white/80"
+                >
+                  <UserCircle className="h-4 w-4" strokeWidth={1.75} />
+                </Link>
                 <button
                   type="button"
                   aria-label={
@@ -1094,13 +1414,15 @@ export default function SamenPage() {
         </div>
       </section>
 
+      <NetwerkOverzicht />
+      <FriendRequests />
       <Proposals />
       <TrainTogether />
       <ClubBanner />
-      <FriendRequests />
       <WorldSocialSection />
       <CircleFeed />
       <AddFriend />
+      <MensenVinden />
       <Circle />
       <WereldLink />
     </ScreenShell>

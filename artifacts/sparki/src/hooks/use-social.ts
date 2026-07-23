@@ -332,3 +332,159 @@ export function useSaveTeamIdentity() {
     onSuccess: invalidate,
   });
 }
+
+// ── Netwerk: overzicht, volgen, blokkeren, privacy, profiel ──────────────────
+
+export type PersonSummary = {
+  clerkId: string;
+  displayName: string;
+  sport: string | null;
+  club: string | null;
+};
+
+export type SocialOverview = {
+  counts: { vrienden: number; volgers: number; gevolgd: number };
+  volgers: PersonSummary[];
+  gevolgd: PersonSummary[];
+  friends: FriendSummary[];
+};
+
+export function useSocialOverview() {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: queryKeys.social.overview(),
+    queryFn: () => apiFetch<SocialOverview>("/api/social/overview"),
+    enabled: enabledInPreview(isSignedIn),
+    staleTime: STALE.session,
+  });
+}
+
+export function useFollowUser() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (clerkId: string) =>
+      apiFetch(`/api/social/follow/${clerkId}`, { method: "POST" }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUnfollowUser() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (clerkId: string) =>
+      apiFetch(`/api/social/follow/${clerkId}`, { method: "DELETE" }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useBlockedUsers() {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: queryKeys.social.blocks(),
+    queryFn: () => apiFetch<{ blocked: PersonSummary[] }>("/api/social/blocks"),
+    enabled: enabledInPreview(isSignedIn),
+    staleTime: STALE.session,
+  });
+}
+
+export function useBlockUser() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (clerkId: string) =>
+      apiFetch(`/api/social/blocks/${clerkId}`, { method: "POST" }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUnblockUser() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (clerkId: string) =>
+      apiFetch(`/api/social/blocks/${clerkId}`, { method: "DELETE" }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useReportUser() {
+  return useMutation({
+    mutationFn: ({ clerkId, reason }: { clerkId: string; reason?: string }) =>
+      apiFetch("/api/social/reports", {
+        method: "POST",
+        body: JSON.stringify({ clerkId, reason: reason ?? null }),
+      }),
+  });
+}
+
+export type PrivacyCategoryInfo = { key: string; label: string; uitleg: string };
+export type ProfilePrivacy = {
+  categories: Record<string, string>;
+  registry: PrivacyCategoryInfo[];
+  audiences: string[];
+};
+
+export function useProfilePrivacy() {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: queryKeys.social.privacy(),
+    queryFn: () => apiFetch<ProfilePrivacy>("/api/social/privacy"),
+    enabled: enabledInPreview(isSignedIn),
+    staleTime: STALE.session,
+  });
+}
+
+export function useUpdateProfilePrivacy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (categories: Record<string, string>) =>
+      apiFetch("/api/social/privacy", {
+        method: "PUT",
+        body: JSON.stringify({ categories }),
+      }),
+    onSuccess: () =>
+      void qc.invalidateQueries({ queryKey: queryKeys.social.privacy() }),
+  });
+}
+
+export type PublicProfileView = {
+  clerkId: string;
+  relation: string;
+  displayName: string | null;
+  sport: string | null;
+  club: string | null;
+  team: string | null;
+  counts: { vrienden: number; volgers: number } | null;
+  trainingSummary: {
+    last28dCount: number;
+    last28dHours: number;
+    lastTrainingDate: string | null;
+  } | null;
+  nextRace: { name: string; date: string } | null;
+  volgIk: boolean;
+  isVriend: boolean;
+  verzoekMogelijk: boolean;
+  zichtbaar: Record<string, boolean>;
+};
+
+export function usePublicProfile(clerkId: string | null) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: queryKeys.social.profile(clerkId ?? ""),
+    queryFn: () =>
+      apiFetch<{ profile: PublicProfileView }>(
+        `/api/social/profile/${clerkId}`,
+      ),
+    enabled: enabledInPreview(isSignedIn) && Boolean(clerkId),
+    staleTime: STALE.live,
+    retry: false,
+  });
+}
+
+export function useMatchContacts() {
+  return useMutation({
+    mutationFn: (hashes: string[]) =>
+      apiFetch<{ matches: PersonSummary[] }>("/api/social/contacts/match", {
+        method: "POST",
+        body: JSON.stringify({ hashes }),
+      }),
+  });
+}

@@ -14,6 +14,7 @@ import {
   type Role,
   type Invitation,
   type InvitationRelationship,
+  friendLinksTable,
 } from "@workspace/db";
 import { createNotification } from "../lib/notifications";
 import { writeAudit } from "../lib/security/audit";
@@ -198,6 +199,11 @@ router.post("/", requireAuth, rateLimit({ scope: "invitations", max: 10, windowM
       });
       res.status(201).json(publicView(clubInv!));
       return;
+    } else if (relationship === "friend_athlete") {
+      // Vriendenuitnodiging: iedere ingelogde sporter mag vrienden
+      // uitnodigen via een link.
+      targetRole = "athlete";
+      createdByRole = "athlete";
     } else if (relationship === "parent_athlete") {
       if (!roles.includes("parent")) {
         res
@@ -407,6 +413,24 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
               parentAthleteLinksTable.athleteClerkId,
             ],
             set: { status: "accepted" },
+          });
+      } else if (relationship === "friend_athlete") {
+        // Vriendenuitnodiging: direct geaccepteerde vriendschap tussen
+        // uitnodiger en accepteerder (self-accept is hierboven al geblokkeerd).
+        await tx
+          .insert(friendLinksTable)
+          .values({
+            requesterClerkId: inv.inviterClerkId,
+            addresseeClerkId: clerkId,
+            status: "accepted",
+            respondedAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: [
+              friendLinksTable.requesterClerkId,
+              friendLinksTable.addresseeClerkId,
+            ],
+            set: { status: "accepted", respondedAt: new Date() },
           });
       } else if (relationship === "head_tester") {
         // Mark the accepter as Sparki's Hoofdtester. No peer link row.

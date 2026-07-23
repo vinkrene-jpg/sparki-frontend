@@ -6,6 +6,7 @@ import {
   boolean,
   timestamp,
   unique,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -51,6 +52,74 @@ export const friendLinksTable = pgTable(
   },
   (t) => [unique().on(t.requesterClerkId, t.addresseeClerkId)],
 );
+
+// ── Volgen (eenzijdig) ───────────────────────────────────────────────────────
+// Los van vriendschap: `follower` volgt `followee` eenzijdig. Volgen kan alleen
+// wanneer het profiel van de gevolgde dit toestaat (server-side afgedwongen).
+export const followLinksTable = pgTable(
+  "follow_links",
+  {
+    id: serial("id").primaryKey(),
+    followerClerkId: text("follower_clerk_id")
+      .notNull()
+      .references(() => userProfilesTable.clerkId, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    followeeClerkId: text("followee_clerk_id")
+      .notNull()
+      .references(() => userProfilesTable.clerkId, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [unique().on(t.followerClerkId, t.followeeClerkId)],
+);
+
+// ── Per-categorie profielprivacy ─────────────────────────────────────────────
+// Eén rij per gebruiker. `categories` is een map categorie → publiek
+// (iedereen | sparki | volgers | vrienden | begeleiders | alleen_ik).
+// Ontbrekende categorieën vallen terug op de server-side defaults
+// (gezondheid en live locatie standaard "alleen_ik").
+export const profilePrivacyTable = pgTable("profile_privacy", {
+  clerkId: text("clerk_id")
+    .primaryKey()
+    .references(() => userProfilesTable.clerkId, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  categories: jsonb("categories")
+    .$type<Record<string, string>>()
+    .notNull()
+    .default({}),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ── Rapportages (blokkeren zit in world_blocks) ──────────────────────────────
+export const socialReportsTable = pgTable("social_reports", {
+  id: serial("id").primaryKey(),
+  reporterClerkId: text("reporter_clerk_id")
+    .notNull()
+    .references(() => userProfilesTable.clerkId, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  reportedClerkId: text("reported_clerk_id")
+    .notNull()
+    .references(() => userProfilesTable.clerkId, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  reason: text("reason"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 // ── Club / team identity ─────────────────────────────────────────────────────
 // One row per athlete. Holds the club/team branding shown subtly in profile/home.
@@ -160,6 +229,9 @@ export const selectTeamIdentitySchema =
   createSelectSchema(teamIdentitiesTable);
 
 export type FriendLink = typeof friendLinksTable.$inferSelect;
+export type FollowLink = typeof followLinksTable.$inferSelect;
+export type ProfilePrivacy = typeof profilePrivacyTable.$inferSelect;
+export type SocialReport = typeof socialReportsTable.$inferSelect;
 export type TeamIdentity = typeof teamIdentitiesTable.$inferSelect;
 export type GroupTrainingProposal =
   typeof groupTrainingProposalsTable.$inferSelect;

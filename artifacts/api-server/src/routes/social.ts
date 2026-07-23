@@ -18,6 +18,17 @@ import {
   listReceivedProposals,
   getTeamIdentity,
   setTeamIdentity,
+  getSocialOverview,
+  followUser,
+  unfollowUser,
+  blockUser,
+  unblockUser,
+  listBlockedUsers,
+  reportUser,
+  getProfilePrivacy,
+  updateProfilePrivacy,
+  getPublicProfile,
+  matchContacts,
 } from "../engines/social";
 
 const router = Router();
@@ -26,6 +37,184 @@ function parseId(raw: unknown): number | null {
   const n = Number(raw);
   return Number.isInteger(n) && n > 0 ? n : null;
 }
+
+// ── Overzicht: vrienden / volgers / gevolgd ──────────────────────────────────
+
+router.get("/overview", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const friends = await listFriends(clerkId);
+    const overview = await getSocialOverview(clerkId, friends.length);
+    res.json({ ...overview, friends });
+  } catch (err) {
+    req.log.error({ err }, "social.overview failed");
+    res.status(500).json({ error: "Kon je netwerk niet laden." });
+  }
+});
+
+// ── Volgen ───────────────────────────────────────────────────────────────────
+
+router.post("/follow/:clerkId", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const result = await followUser(clerkId, String(req.params.clerkId));
+    if (!result.ok) {
+      res.status(409).json({ error: result.reason });
+      return;
+    }
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "social.follow failed");
+    res.status(500).json({ error: "Volgen mislukt." });
+  }
+});
+
+router.delete("/follow/:clerkId", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const removed = await unfollowUser(clerkId, String(req.params.clerkId));
+    if (!removed) {
+      res.status(404).json({ error: "Je volgt deze sporter niet." });
+      return;
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "social.unfollow failed");
+    res.status(500).json({ error: "Ontvolgen mislukt." });
+  }
+});
+
+// ── Blokkeren & rapporteren ──────────────────────────────────────────────────
+
+router.get("/blocks", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    res.json({ blocked: await listBlockedUsers(clerkId) });
+  } catch (err) {
+    req.log.error({ err }, "social.blocks.list failed");
+    res.status(500).json({ error: "Kon blokkades niet laden." });
+  }
+});
+
+router.post("/blocks/:clerkId", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const target = String(req.params.clerkId);
+  if (target === clerkId) {
+    res.status(400).json({ error: "Je kunt jezelf niet blokkeren." });
+    return;
+  }
+  try {
+    await blockUser(clerkId, target);
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "social.blocks.create failed");
+    res.status(500).json({ error: "Blokkeren mislukt." });
+  }
+});
+
+router.delete("/blocks/:clerkId", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const removed = await unblockUser(clerkId, String(req.params.clerkId));
+    if (!removed) {
+      res.status(404).json({ error: "Geen blokkade gevonden." });
+      return;
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "social.blocks.remove failed");
+    res.status(500).json({ error: "Deblokkeren mislukt." });
+  }
+});
+
+router.post("/reports", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const target = String(body.clerkId ?? "");
+  if (!target || target === clerkId) {
+    res.status(400).json({ error: "Ongeldige melding." });
+    return;
+  }
+  try {
+    await reportUser(clerkId, target, body.reason ? String(body.reason) : null);
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "social.reports failed");
+    res.status(500).json({ error: "Melden mislukt." });
+  }
+});
+
+// ── Per-categorie privacy ────────────────────────────────────────────────────
+
+router.get("/privacy", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    res.json(await getProfilePrivacy(clerkId));
+  } catch (err) {
+    req.log.error({ err }, "social.privacy.get failed");
+    res.status(500).json({ error: "Kon privacy-instellingen niet laden." });
+  }
+});
+
+router.put("/privacy", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const updates =
+    body.categories && typeof body.categories === "object"
+      ? (body.categories as Record<string, unknown>)
+      : {};
+  try {
+    const result = await updateProfilePrivacy(clerkId, updates);
+    if (!result.ok) {
+      res.status(400).json({ error: result.reason });
+      return;
+    }
+    res.json({ ok: true, categories: result.categories });
+  } catch (err) {
+    req.log.error({ err }, "social.privacy.put failed");
+    res.status(500).json({ error: "Opslaan mislukt." });
+  }
+});
+
+// ── Profielweergave ──────────────────────────────────────────────────────────
+
+router.get("/profile/:clerkId", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const profile = await getPublicProfile(clerkId, String(req.params.clerkId));
+    if (!profile) {
+      // Neutraal en fail-closed: bestaat-niet, geblokkeerd en afgeschermd
+      // geven exact dezelfde uitkomst.
+      res.status(404).json({ error: "Dit profiel is niet beschikbaar." });
+      return;
+    }
+    res.json({ profile });
+  } catch (err) {
+    req.log.error({ err }, "social.profile failed");
+    res.status(500).json({ error: "Kon profiel niet laden." });
+  }
+});
+
+// ── Contactmatching (privacyvriendelijk, niets wordt opgeslagen) ─────────────
+
+router.post("/contacts/match", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const hashes = Array.isArray(body.hashes)
+    ? body.hashes.map((h) => String(h))
+    : [];
+  try {
+    const result = await matchContacts(clerkId, hashes);
+    if (!result.ok) {
+      res.status(400).json({ error: result.reason });
+      return;
+    }
+    res.json({ matches: result.matches });
+  } catch (err) {
+    req.log.error({ err }, "social.contacts.match failed");
+    res.status(500).json({ error: "Contacten vergelijken mislukt." });
+  }
+});
 
 // ── Friends / Circle ─────────────────────────────────────────────────────────
 

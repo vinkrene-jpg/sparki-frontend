@@ -44,6 +44,9 @@ export const invitationRelationships = [
   "club_admin",
   "club_teammanager",
   "club_parent",
+  // Vriendenuitnodiging: op accepteren ontstaat een geaccepteerde friend_link
+  // tussen uitnodiger en accepteerder.
+  "friend_athlete",
 ] as const;
 export type InvitationRelationship = (typeof invitationRelationships)[number];
 

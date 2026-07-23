@@ -13,6 +13,7 @@ import { trackScreen } from "@/lib/telemetry"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { PrivacySettingsSection } from "@/components/sparki/privacy-settings"
 import { AccountPrivacyPanel } from "@/components/sparki/account-privacy-panel"
+import { ProfilePrivacyGrid } from "@/components/sparki/profile-privacy-grid"
 import { ReminderSettingsSection } from "@/components/sparki/reminder-settings"
 import { ConnectionsSection } from "@/components/sparki/connections-section"
 import { LinksSection } from "@/components/sparki/links-section"
@@ -1271,6 +1272,7 @@ export function ProfileSettings({
       </FocusTarget>
 
       <PrivacySettingsSection />
+      <ProfilePrivacyGrid />
       <AccountPrivacyPanel />
 
       <ReminderSettingsSection />

@@ -286,6 +286,10 @@ export const queryKeys = {
     suggestion: () => ["social", "suggestion"] as const,
     proposals: () => ["social", "proposals"] as const,
     team: () => ["social", "team"] as const,
+    overview: () => ["social", "overview"] as const,
+    blocks: () => ["social", "blocks"] as const,
+    privacy: () => ["social", "privacy"] as const,
+    profile: (clerkId: string) => ["social", "profile", clerkId] as const,
   },
 
   journey: {

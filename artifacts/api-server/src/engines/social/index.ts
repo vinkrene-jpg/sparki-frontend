@@ -22,6 +22,15 @@ import {
 } from "@workspace/db";
 import { getEffectivePrivacy } from "../../lib/privacy";
 import { getDueFollowUps } from "../context-memory";
+import {
+  isBlockedBetween,
+  loadPrivacyFor,
+  getViewerRelation,
+  categoryVisible,
+} from "../../lib/profile-privacy";
+import { createNotification } from "../../lib/notifications";
+
+export * from "./network";
 
 // ── Types surfaced to the API layer ──────────────────────────────────────────
 export type FriendSummary = {
@@ -210,10 +219,26 @@ export async function searchAthletes(
     .limit(50);
   const matched = rows
     .filter((r) => (r.displayName ?? "").toLowerCase().includes(q))
-    .slice(0, 12);
+    .slice(0, 24);
   if (matched.length === 0) return [];
 
-  const ids = matched.map((r) => r.clerkId);
+  // Fail-closed: geblokkeerde relaties en profielen die op profielniveau
+  // niet zichtbaar zijn voor deze kijker verschijnen NOOIT in zoekresultaten.
+  const visible: typeof matched = [];
+  for (const r of matched) {
+    if (visible.length >= 12) break;
+    if (await isBlockedBetween(viewer, r.clerkId)) continue;
+    const [relation, categories] = await Promise.all([
+      getViewerRelation(viewer, r.clerkId),
+      loadPrivacyFor(r.clerkId),
+    ]);
+    if (!categoryVisible(relation, categories, "profiel")) continue;
+    visible.push(r);
+  }
+  const matchedVisible = visible;
+  if (matchedVisible.length === 0) return [];
+
+  const ids = matchedVisible.map((r) => r.clerkId);
   // Existing relations in either direction.
   const links = await db
     .select()
@@ -289,7 +314,20 @@ export async function sendFriendRequest(
     .select({ clerkId: userProfilesTable.clerkId })
     .from(userProfilesTable)
     .where(eq(userProfilesTable.clerkId, addressee));
-  if (!target) return { ok: false, reason: "Deze sporter bestaat niet." };
+  // Neutrale weigering: bestaat-niet en geblokkeerd zijn niet te
+  // onderscheiden — geen lek via foutmeldingen.
+  if (!target)
+    return { ok: false, reason: "Dit verzoek kan niet worden verstuurd." };
+  if (await isBlockedBetween(requester, addressee))
+    return { ok: false, reason: "Dit verzoek kan niet worden verstuurd." };
+  // Fail-closed: een profiel dat op profielniveau niet zichtbaar is voor de
+  // aanvrager krijgt dezelfde neutrale weigering als niet-bestaand/geblokkeerd.
+  const [relForRequest, catsForRequest] = await Promise.all([
+    getViewerRelation(requester, addressee),
+    loadPrivacyFor(addressee),
+  ]);
+  if (!categoryVisible(relForRequest, catsForRequest, "profiel"))
+    return { ok: false, reason: "Dit verzoek kan niet worden verstuurd." };
 
   const [existing] = await db
     .select()
@@ -311,7 +349,12 @@ export async function sendFriendRequest(
       return { ok: false, reason: "Jullie zijn al verbonden." };
     if (existing.status === "pending")
       return { ok: false, reason: "Er staat al een verzoek open." };
-    // A previously declined row: reopen it as a fresh request from requester.
+    // Eerder geweigerd: dezelfde aanvrager mag NIET opnieuw vragen
+    // (geen herhaald lastigvallen). Alleen als de weigeraar zelf nu het
+    // initiatief neemt, wordt de rij heropend als vers verzoek.
+    if (existing.requesterClerkId === requester) {
+      return { ok: false, reason: "Dit verzoek kan niet worden verstuurd." };
+    }
     await db
       .update(friendLinksTable)
       .set({
@@ -321,13 +364,31 @@ export async function sendFriendRequest(
         respondedAt: null,
       })
       .where(eq(friendLinksTable.id, existing.id));
+    await notifyFriendRequest(requester, addressee);
     return { ok: true };
   }
 
   await db
     .insert(friendLinksTable)
     .values({ requesterClerkId: requester, addresseeClerkId: addressee });
+  await notifyFriendRequest(requester, addressee);
   return { ok: true };
+}
+
+async function notifyFriendRequest(
+  requester: string,
+  addressee: string,
+): Promise<void> {
+  const names = await displayNames([requester]);
+  await createNotification({
+    clerkId: addressee,
+    type: "world_update",
+    title: "Nieuw vriendschapsverzoek",
+    body: `${names.get(requester) ?? "Een sporter"} wil je toevoegen als vriend. Bekijk het verzoek bij Samen.`,
+    category: "sociaal",
+    source: "social",
+    dedupeKey: `friend-request:${requester}:${addressee}`,
+  }).catch(() => undefined);
 }
 
 export async function respondFriendRequest(
@@ -351,6 +412,18 @@ export async function respondFriendRequest(
     )
     .returning();
   if (!row) return { ok: false, reason: "Verzoek niet gevonden." };
+  if (accept) {
+    const names = await displayNames([viewer]);
+    await createNotification({
+      clerkId: row.requesterClerkId,
+      type: "world_update",
+      title: "Vriendschapsverzoek geaccepteerd",
+      body: `${names.get(viewer) ?? "Een sporter"} heeft je verzoek geaccepteerd. Jullie zijn nu vrienden op Sparki.`,
+      category: "sociaal",
+      source: "social",
+      dedupeKey: `friend-accept:${row.id}`,
+    }).catch(() => undefined);
+  }
   return { ok: true };
 }
 

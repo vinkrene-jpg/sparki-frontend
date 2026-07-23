@@ -25,6 +25,7 @@ import LabPage from "@/pages/lab";
 import ActiviteitenPage from "@/pages/activiteiten";
 import PhotoLabPage from "@/pages/photo-lab";
 import SamenPage from "@/pages/samen";
+import ProfielPage from "@/pages/profiel";
 import LichaamPage from "@/pages/lichaam";
 import MechaniekerPage from "@/pages/mechanieker";
 import RoutesPage from "@/pages/routes";
@@ -565,6 +566,9 @@ function AppRouter() {
                 </Route>
                 <Route path="/journey/wedstrijd/:raceId">
                   <ProtectedPage component={JourneyPage} />
+                </Route>
+                <Route path="/profiel/:clerkId">
+                  <ProtectedPage component={ProfielPage} />
                 </Route>
                 <Route path="/samen">
                   <ProtectedPage component={SamenPage} />
