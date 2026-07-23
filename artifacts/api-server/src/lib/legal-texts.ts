@@ -98,14 +98,52 @@ Bij belangrijke wijzigingen van deze voorwaarden vragen we opnieuw je akkoord; d
 ## 10. Toepasselijk recht
 Op deze voorwaarden is Nederlands recht van toepassing.`;
 
-const SEEDS: Array<{ kind: "privacy" | "terms"; title: string; bodyMd: string }> = [
+const GEZONDHEID_MD = `# Gezondheids- en trainingsdisclaimer Sparki
+
+*Versie 1.0 — geldig vanaf 23 juli 2026*
+
+## 1. Sportbegeleiding, geen medische zorg
+Sparki geeft trainings-, voedings- en herstelinzichten op basis van jouw eigen gegevens. Dit is sportbegeleiding — géén medisch advies, diagnose of behandeling.
+
+## 2. Raadpleeg bij twijfel een arts
+Heb je gezondheidsklachten, een blessure, pijn op de borst, duizeligheid, een chronische aandoening of twijfel je over je belastbaarheid? Raadpleeg dan altijd eerst een arts of sportarts voordat je (verder) traint.
+
+## 3. Luister naar je lichaam
+Volg nooit een trainingsadvies op dat tegen het oordeel van een arts of tegen duidelijke signalen van je eigen lichaam ingaat. Stop bij alarmsignalen en zoek zo nodig direct medische hulp.
+
+## 4. Eigen verantwoordelijkheid
+Trainen brengt altijd risico's mee. Jij (of je ouder/voogd als je minderjarig bent) blijft zelf verantwoordelijk voor de beslissing om een training, wedstrijd of route uit te voeren, en voor veilige omstandigheden onderweg (verkeer, weer, materiaal).
+
+## 5. Gegevens zijn hulpmiddelen
+Vermogens-, hartslag- en herstelwaarden in Sparki zijn hulpmiddelen op basis van de door jou gekoppelde bronnen. Ze kunnen onvolledig of onnauwkeurig zijn en vervangen nooit een medisch oordeel.
+
+## 6. Wijzigingen
+Bij een nieuwe versie van deze disclaimer vragen we opnieuw je akkoord. De versie en datum van jouw akkoord worden vastgelegd.`;
+
+// ── Centraal register van verplichte documenten ──────────────────────────────
+// Dit is de enige plek die bepaalt welke documenten verplicht geaccepteerd
+// moeten zijn. De actieve versie per document komt uit legal_documents
+// (hoogste published_at); een nieuwe verplichte versie = nieuwe rij publiceren.
+export const REQUIRED_LEGAL_KINDS = ["terms", "privacy", "gezondheid"] as const;
+export type RequiredLegalKind = (typeof REQUIRED_LEGAL_KINDS)[number];
+
+export function isRequiredLegalKind(kind: string): kind is RequiredLegalKind {
+  return (REQUIRED_LEGAL_KINDS as readonly string[]).includes(kind);
+}
+
+const SEEDS: Array<{ kind: RequiredLegalKind; title: string; bodyMd: string }> = [
   { kind: "privacy", title: "Privacyverklaring", bodyMd: PRIVACY_MD },
   { kind: "terms", title: "Gebruiksvoorwaarden", bodyMd: TERMS_MD },
+  {
+    kind: "gezondheid",
+    title: "Gezondheids- en trainingsdisclaimer",
+    bodyMd: GEZONDHEID_MD,
+  },
 ];
 
 /** Actieve (nieuwste) versie van een juridisch document; zaait versie 1.0 indien afwezig. */
 export async function getActiveLegalDocument(
-  kind: "privacy" | "terms",
+  kind: RequiredLegalKind,
 ): Promise<LegalDocument> {
   const [existing] = await db
     .select()

@@ -16,6 +16,7 @@ import { CoachHome } from "@/components/sparki/coach-home";
 import { ParentHome } from "@/components/sparki/parent-home";
 import { OnboardingV2 } from "@/components/sparki/onboarding-v2";
 import { ErrorBoundary } from "@/components/sparki/error-boundary";
+import { ConsentGate } from "@/components/consent-gate";
 import NotFound from "@/pages/not-found";
 import LegalPage from "@/pages/legal";
 import FeedPage from "@/pages/feed";
@@ -217,7 +218,9 @@ function AccountGate({ children }: { children: React.ReactNode }) {
   if (!profile) {
     return <AccountNotReady error={error} onRetry={() => void refetch()} />;
   }
-  return <>{children}</>;
+  // Na accountgereedheid volgt de verplichte juridische acceptatie. De echte
+  // blokkade zit server-side (consentGate-middleware); dit is de voorkant.
+  return <ConsentGate>{children}</ConsentGate>;
 }
 
 // Home is gated by the same AccountGate as every other signed-in surface, so the

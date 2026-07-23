@@ -30,10 +30,6 @@ args = "test-core-profile"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "test-bandbreedte"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "test-core-profile-evolution"
 
 [[workflows.workflow.tasks]]
@@ -157,17 +153,6 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/sparki run test:core-profile"
-
-[workflows.workflow.metadata]
-isValidation = true
-
-[[workflows.workflow]]
-name = "test-bandbreedte"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pnpm --filter @workspace/sparki run test:bandbreedte"
 
 [workflows.workflow.metadata]
 isValidation = true

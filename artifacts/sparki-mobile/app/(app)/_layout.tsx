@@ -3,6 +3,7 @@ import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { Redirect, Stack } from "expo-router";
 import React, { useEffect } from "react";
 
+import ConsentGate from "@/components/ConsentGate";
 import colors from "@/constants/colors";
 import { useUploadQueue } from "@/hooks/useUploadQueue";
 
@@ -25,12 +26,16 @@ export default function AppLayout() {
   if (!isLoaded) return null;
   if (!isSignedIn) return <Redirect href="/sign-in" />;
 
+  // Verplichte juridische acceptatie — zelfde server-side status als web
+  // (/api/legal/status); de server blokkeert persoonlijke routes zelf al.
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.light.background },
-      }}
-    />
+    <ConsentGate>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.light.background },
+        }}
+      />
+    </ConsentGate>
   );
 }

@@ -74,10 +74,15 @@ import passportRouter from "./passport";
 import releaseRouter from "./release";
 
 import { killSwitchGuard } from "../lib/kill-switches";
+import { consentGate } from "../middlewares/consentGate";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+// Verplichte juridische acceptatie — blokkeert alles behalve de allowlist
+// (health, /auth, /legal, /webhooks, /release) tot alle actieve document-
+// versies geaccepteerd zijn. Zie middlewares/consentGate.ts.
+router.use(consentGate);
 router.use("/auth", authRouter);
 router.use("/flags", flagsRouter);
 router.use("/athlete", athleteRouter);

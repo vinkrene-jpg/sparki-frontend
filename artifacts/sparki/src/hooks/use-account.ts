@@ -37,8 +37,10 @@ export type AccountOverview = {
   } | null;
 };
 
+export type LegalKind = "terms" | "privacy" | "gezondheid";
+
 export type LegalDoc = {
-  kind: "privacy" | "terms";
+  kind: LegalKind;
   version: string;
   title: string;
   bodyMd: string;
@@ -57,7 +59,7 @@ export function useAccountOverview(enabled = true) {
   });
 }
 
-export function useLegalDocument(kind: "privacy" | "terms", enabled = true) {
+export function useLegalDocument(kind: LegalKind, enabled = true) {
   return useQuery({
     queryKey: ["legal", kind],
     queryFn: () => apiFetch<LegalDoc>(`/api/legal/${kind}`),
@@ -66,15 +68,54 @@ export function useLegalDocument(kind: "privacy" | "terms", enabled = true) {
   });
 }
 
+export type ConsentDocumentStatus = {
+  kind: LegalKind;
+  title: string;
+  requiredVersion: string;
+  accepted: boolean;
+  acceptedVersion: string | null;
+  acceptedAt: string | null;
+};
+
+export type ConsentStatus = {
+  complete: boolean;
+  documents: ConsentDocumentStatus[];
+};
+
+// Server-side acceptatiestatus — de enige waarheid; de UI toont alleen wat de
+// server zegt en de server blokkeert zelf tot alles geaccepteerd is.
+export function useConsentStatus(enabled = true) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: ["legal", "status"],
+    queryFn: () => apiFetch<ConsentStatus>("/api/legal/status"),
+    enabled: (isSignedIn === true || DEV_PREVIEW) && enabled,
+    staleTime: 30_000,
+  });
+}
+
 export function useAcceptLegal() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (kind: "privacy" | "terms") =>
+    mutationFn: (kind: LegalKind) =>
       apiFetch<{ ok: true; version: string }>(`/api/legal/${kind}/accept`, {
         method: "POST",
       }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["privacy"] });
+      void qc.invalidateQueries({ queryKey: ["legal", "status"] });
+      void qc.invalidateQueries({ queryKey: KEY });
+    },
+  });
+}
+
+export function useRevokeLegal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (kind: LegalKind) =>
+      apiFetch<{ ok: true }>(`/api/legal/${kind}/revoke`, { method: "POST" }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["legal", "status"] });
       void qc.invalidateQueries({ queryKey: KEY });
     },
   });

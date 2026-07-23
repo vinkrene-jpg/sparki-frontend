@@ -22,3 +22,5 @@ reaped when that call ends. The repo already uses one-shot commands as workflows
 **How to apply:** if a job needs to outlive a single bash invocation, never reach
 for nohup/setsid — register a console workflow and poll it. If it MUST stay in
 bash, it has to finish inside one call's timeout (≤120s).
+
+**Workflow limit bug:** configureWorkflow enforces a hard 10-workflow limit with a stale count (says 32/10 even after removals) — removing a workflow is possible but re-adding is NOT. Never remove existing test workflows to make room; run long builds/tests via shell in ≤115s chunks instead (mobile build: METRO_KEEP_CACHE=1 + free METRO_PORT makes a second warm run finish in time).

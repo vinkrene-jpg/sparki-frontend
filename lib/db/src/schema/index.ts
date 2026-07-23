@@ -46,6 +46,7 @@ export * from "./goals";
 export * from "./sprints";
 export * from "./road-objects";
 export * from "./security";
+export * from "./legal-acceptances";
 export * from "./journey";
 export * from "./coach-cockpit";
 export * from "./support";
