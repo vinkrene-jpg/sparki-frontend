@@ -386,3 +386,30 @@ export function useAdminProvenance(clerkId: string) {
     staleTime: 30_000,
   });
 }
+
+export interface DataTrustCleanupResult {
+  modus: "droogdraai" | "uitgevoerd";
+  kandidaten: {
+    engelstaligeObservaties: { id: number; titel: string; aangemaakt: string }[];
+    dubbeleFtpHistorie: { id: number }[];
+    ftpActualisatie: { nodig: boolean };
+    historischeFietskoppelingen: { aantal: number; km: number };
+  };
+  verwijderd: { observaties: number; ftpHistorie: number };
+  ftpGeactualiseerd: boolean;
+  fietsOntkoppeld: number;
+}
+
+export function useAdminDataTrustCleanup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ clerkId, apply }: { clerkId: string; apply: boolean }) =>
+      apiFetch<DataTrustCleanupResult>("/api/admin/data-trust/cleanup", {
+        method: "POST",
+        body: JSON.stringify({ clerkId, apply }),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.admin.all() });
+    },
+  });
+}

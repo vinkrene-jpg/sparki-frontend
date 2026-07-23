@@ -18,6 +18,7 @@ import {
   useAdminAiInsights,
   useAdminQuality,
   useAdminProvenance,
+  useAdminDataTrustCleanup,
   type HealthCheck,
   type HealthBatch,
   type ScheduledTask,
@@ -303,6 +304,100 @@ function ProvenanceSection() {
               </p>
             </div>
           ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// Gegevens-opschoning — controleert eerst (droogdraai) en voert daarna pas
+// gericht uit. Verwijdert alléén vervuiling (Engelstalige observaties,
+// dubbele import-FTP-rijen), actualiseert een geschatte FTP en maakt
+// historische fiets-autokoppelingen los. Echte data blijft altijd staan.
+function DataTrustCleanupSection() {
+  const [input, setInput] = useState("");
+  const cleanup = useAdminDataTrustCleanup();
+  const r = cleanup.data;
+  const target = input.trim();
+  return (
+    <section className="mt-8">
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+        Gegevens-opschoning
+      </p>
+      <p className="mt-1 text-[12px] leading-snug text-white/40">
+        Controleer eerst wat er precies gevonden wordt (droogdraai). Pas
+        daarna voer je de opschoning uit. Er wordt nooit echte data
+        verwijderd: alleen vervuiling wordt opgeruimd en foute automatische
+        koppelingen worden losgemaakt.
+      </p>
+      <div className="mt-3 flex gap-2">
+        <input
+          className="flex-1 rounded-lg border border-white/[0.08] bg-[#070d16]/[0.82] px-3 py-2 text-[13px] text-white/85 outline-none backdrop-blur-md placeholder:text-white/25"
+          placeholder="clerkId van de gebruiker…"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+        />
+        <button
+          type="button"
+          disabled={!target || cleanup.isPending}
+          onClick={() => cleanup.mutate({ clerkId: target, apply: false })}
+          className="rounded-lg border border-white/[0.12] px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 disabled:opacity-40"
+        >
+          Droogdraai
+        </button>
+        <button
+          type="button"
+          disabled={!target || cleanup.isPending || r?.modus !== "droogdraai"}
+          onClick={() => {
+            if (
+              window.confirm(
+                "Opschoning definitief uitvoeren? Dit verwijdert alleen de getoonde vervuiling; echte data blijft staan.",
+              )
+            ) {
+              cleanup.mutate({ clerkId: target, apply: true });
+            }
+          }}
+          className="rounded-lg border px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition disabled:opacity-40"
+          style={{ borderColor: ACCENT, color: ACCENT }}
+        >
+          Uitvoeren
+        </button>
+      </div>
+      {cleanup.isPending && (
+        <p className="mt-3 text-[12px] text-white/30">Bezig…</p>
+      )}
+      {cleanup.isError && !cleanup.isPending && (
+        <p className="mt-3 text-[12px] text-red-300/70">
+          Opschoning mislukt. Er is niets gewijzigd.
+        </p>
+      )}
+      {r && !cleanup.isPending && (
+        <div className="mt-3 rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3 backdrop-blur-md">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/50">
+            {r.modus === "droogdraai" ? "Droogdraai — nog niets gewijzigd" : "Uitgevoerd"}
+          </p>
+          <ul className="mt-2 space-y-1 text-[12px] leading-snug text-white/65">
+            <li>
+              Engelstalige observaties gevonden:{" "}
+              {r.kandidaten.engelstaligeObservaties.length}
+              {r.modus === "uitgevoerd" && ` · verwijderd: ${r.verwijderd.observaties}`}
+            </li>
+            <li>
+              Dubbele FTP-importrijen gevonden: {r.kandidaten.dubbeleFtpHistorie.length}
+              {r.modus === "uitgevoerd" && ` · verwijderd: ${r.verwijderd.ftpHistorie}`}
+            </li>
+            <li>
+              FTP-actualisatie nodig: {r.kandidaten.ftpActualisatie.nodig ? "ja" : "nee"}
+              {r.modus === "uitgevoerd" &&
+                ` · uitgevoerd: ${r.ftpGeactualiseerd ? "ja" : "niet nodig"}`}
+            </li>
+            <li>
+              Historische fietskoppelingen: {r.kandidaten.historischeFietskoppelingen.aantal}
+              {r.kandidaten.historischeFietskoppelingen.aantal > 0 &&
+                ` (± ${Math.round(r.kandidaten.historischeFietskoppelingen.km)} km)`}
+              {r.modus === "uitgevoerd" && ` · losgemaakt: ${r.fietsOntkoppeld}`}
+            </li>
+          </ul>
         </div>
       )}
     </section>
@@ -747,6 +842,8 @@ export default function AdminPage() {
             </section>
 
             <ProvenanceSection />
+
+            <DataTrustCleanupSection />
 
             <section className="mt-8">
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
