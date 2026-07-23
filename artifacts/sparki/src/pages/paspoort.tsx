@@ -136,7 +136,10 @@ export default function PaspoortPage() {
           {athlete?.heightCm != null && <Row label="Lengte" value={`${athlete.heightCm} cm`} />}
           {athlete?.weightKg != null && <Row label="Gewicht" value={`${Number(athlete.weightKg).toLocaleString("nl-NL")} kg`} />}
           {athlete?.weeklyHourTarget != null && (
-            <Row label="Trainingsuren per week" value={`${athlete.weeklyHourTarget} u`} />
+            <Row
+              label="Trainingsuren per week"
+              value={`${athlete.weeklyHourTarget} u${athlete.weeklyHourTargetEstimated ? " (schatting)" : ""}`}
+            />
           )}
           {!athlete?.discipline && !athlete?.birthDate && athlete?.weightKg == null && (
             <p className="py-1 text-[12px] text-white/45 print:text-neutral-500">
@@ -154,7 +157,9 @@ export default function PaspoortPage() {
         </Section>
 
         <Section title="Kernmetingen">
-          {athlete?.ftp != null && <Row label="FTP" value={`${athlete.ftp} W`} />}
+          {athlete?.ftp != null && (
+            <Row label="FTP" value={`${athlete.ftp} W${athlete.ftpEstimated ? " (schatting)" : ""}`} />
+          )}
           {athlete?.wkg != null && <Row label="Vermogen per kg" value={`${athlete.wkg.toFixed(1)} W/kg`} />}
           {load && <Row label="Fitheid (CTL)" value={`${Math.round(load.ctl)}`} />}
           {load && <Row label="Vormbalans (TSB)" value={`${Math.round(load.tsb)}`} />}

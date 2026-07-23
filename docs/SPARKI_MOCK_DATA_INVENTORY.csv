@@ -9,3 +9,8 @@ dev-database user_profiles (dev_qa_athlete),database (dev),dev-preview gebruiker
 productie-database,database (prod),geen vondsten,-,-,geen,2 echte gebruikers; nul test-/seedaccounts
 artifacts/sparki (frontend),sparki web,geen vondsten,-,-,geen,lege datasets renderen eerlijke lege staten; geen fallback-arrays
 artifacts/sparki-mobile,mobiel,geen vondsten,-,-,geen,geen mock-/seeddata gevonden
+prod athlete_profiles (ftp=331 geschat),database (prod),foute afgeleide waarde,5 (fout-afgeleid),ja,zelfherstel bij boot/recalibratie,Strava-import zette ftpEstimated niet op false; engine adopteert nu nieuwste echte invoer (258)
+prod training_sessions (bike auto-links historisch),database (prod),foute auto-koppeling,5 (fout-afgeleid),ja,zelfherstel in autoLinkSessions,ritten ouder dan registratiedatum fiets worden losgemaakt; gear_id/handmatig blijft
+prod ai_observations (Engelstalige rijen),database (prod),vervuiling van voor taalcorrectie,5 (vervuiling),ja,verwijderbaar via admin-opschoning (droogdraai+apply),POST /api/admin/data-trust/cleanup
+prod ftp_history (dubbele importrijen),database (prod),importduplicaten,5 (vervuiling),nee,verwijderbaar via admin-opschoning (droogdraai+apply),oudste rij blijft; import dedupliceert voortaan per dag
+dev-database user_profiles (JSON-blob clerk_id + 2x test_consent_*),database (dev),testresidu,5 (test),nee,verwijderd,residu van plan-lifecycle- en consent-tests

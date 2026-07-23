@@ -187,6 +187,77 @@ export async function recalibrateEstimatedFtp(
     return { changed: false, ftp: profile.ftp };
   }
 
+  // Zelfherstel vóór alles: staat er een ECHTE invoer (handmatig of uit een
+  // provider) in ftp_history die NIEUWER is dan de nieuwste afgeleide rij,
+  // dan is het profiel ten onrechte als schatting blijven staan (oude bug:
+  // de import zette ftpEstimated niet op false). De echte waarde wint —
+  // herleidbaar via een paspoort-event, nooit stil.
+  const [latestReal] = await db
+    .select({
+      measuredAt: ftpHistoryTable.measuredAt,
+      ftpWatts: ftpHistoryTable.ftpWatts,
+    })
+    .from(ftpHistoryTable)
+    .where(
+      and(
+        eq(ftpHistoryTable.clerkId, clerkId),
+        sql`${ftpHistoryTable.testType} <> 'derived'`,
+      ),
+    )
+    .orderBy(sql`${ftpHistoryTable.measuredAt} DESC`)
+    .limit(1);
+  const [latestDerived] = await db
+    .select({ measuredAt: ftpHistoryTable.measuredAt })
+    .from(ftpHistoryTable)
+    .where(
+      and(
+        eq(ftpHistoryTable.clerkId, clerkId),
+        eq(ftpHistoryTable.testType, "derived"),
+      ),
+    )
+    .orderBy(sql`${ftpHistoryTable.measuredAt} DESC`)
+    .limit(1);
+  if (
+    latestReal &&
+    (!latestDerived || latestReal.measuredAt >= latestDerived.measuredAt)
+  ) {
+    const { recordValueEvent: recordRepair } = await import("./passport");
+    await db.transaction(async (tx) => {
+      await tx
+        .update(athleteProfilesTable)
+        .set({
+          ftp: latestReal.ftpWatts,
+          ftpEstimated: false,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(athleteProfilesTable.clerkId, clerkId),
+            eq(athleteProfilesTable.ftpEstimated, true),
+          ),
+        );
+      if (profile.ftp !== latestReal.ftpWatts) {
+        await recordRepair(
+          {
+            clerkId,
+            field: "ftp",
+            oldValue: profile.ftp == null ? null : String(profile.ftp),
+            newValue: String(latestReal.ftpWatts),
+            origin: "handmatig",
+            source: "eigen invoer/import (zelfherstel)",
+            actorType: "engine",
+            actorId: "ftp-ondergrens-engine",
+            measuredAt: latestReal.measuredAt,
+            note:
+              "Zelfherstel: je eigen (geïmporteerde of handmatige) FTP is leidend boven een oudere afgeleide schatting.",
+          },
+          tx,
+        );
+      }
+    });
+    return { changed: true, ftp: latestReal.ftpWatts };
+  }
+
   const sessions = await db
     .select({
       sessionDate: trainingSessionsTable.sessionDate,
@@ -204,6 +275,26 @@ export async function recalibrateEstimatedFtp(
   const floor = estimateFtpFloor(sessions);
   if (!floor) return { changed: false, ftp: profile.ftp };
   if (profile.ftp != null && floor.floorWatts <= profile.ftp) {
+    return { changed: false, ftp: profile.ftp };
+  }
+
+  // Een ECHTE invoer die NIEUWER is dan de bewijsdatum van de ondergrens wint
+  // altijd: geen automatische ophoging — hoogstens een paspoortvoorstel.
+  if (latestReal && latestReal.measuredAt >= floor.basis.sessionDate) {
+    if (floor.floorWatts > Math.round(latestReal.ftpWatts * 1.05)) {
+      const { createProposal } = await import("./passport");
+      await createProposal({
+        clerkId,
+        field: "ftp",
+        proposedValue: String(floor.floorWatts),
+        origin: "berekend",
+        source: "bewezen inspanning",
+        reason: `Je reed ${floor.basis.watts} watt over ${floor.basis.durationMin} min op ${floor.basis.sessionDate} — dat wijst op een FTP van minstens ${floor.floorWatts} watt, hoger dan je huidige waarde.`,
+        proposedBy: "ftp-ondergrens-engine",
+      }).catch(() => {
+        // Best-effort: een mislukt voorstel mag de backfill nooit breken.
+      });
+    }
     return { changed: false, ftp: profile.ftp };
   }
 

@@ -93,6 +93,26 @@ export async function autoLinkSessions(clerkId: string): Promise<{
   const activeBikes = bikes.filter((b) => b.status === "actief");
   if (bikes.length === 0) return { linkedByGear: 0, linkedBySingleBike: 0 };
 
+  // Zelfherstel (idempotent): eerder automatisch gekoppelde ritten van VÓÓR de
+  // registratiedatum van de fiets worden losgemaakt — die koppeling was een
+  // aanname zonder bewijs en blies kilometerstanden op met historische ritten.
+  // Ritten met écht bewijs (Strava gear_id) worden hieronder direct opnieuw
+  // gekoppeld; handmatige keuzes worden nooit aangeraakt.
+  for (const bike of bikes) {
+    const regDate = bike.createdAt.toISOString().slice(0, 10);
+    await db
+      .update(trainingSessionsTable)
+      .set({ bikeId: null, bikeLinkSource: null })
+      .where(
+        and(
+          eq(trainingSessionsTable.clerkId, clerkId),
+          eq(trainingSessionsTable.bikeId, bike.id),
+          eq(trainingSessionsTable.bikeLinkSource, "auto"),
+          sql`${trainingSessionsTable.sessionDate} < ${regDate}`,
+        ),
+      );
+  }
+
   // gear_id (Strava) → bikeId, via equipment.external_id → bikes.equipment_id.
   const equipmentIds = bikes
     .map((b) => b.equipmentId)
@@ -122,6 +142,7 @@ export async function autoLinkSessions(clerkId: string): Promise<{
   const sessions = await db
     .select({
       id: trainingSessionsTable.id,
+      sessionDate: trainingSessionsTable.sessionDate,
     })
     .from(trainingSessionsTable)
     .where(
@@ -157,6 +178,13 @@ export async function autoLinkSessions(clerkId: string): Promise<{
   let linkedBySingleBike = 0;
   const singleActive: GarageBike | null =
     activeBikes.length === 1 ? activeBikes[0]! : null;
+  // Eén-fiets-terugval geldt alleen voor ritten VANAF de registratiedatum van
+  // die fiets: historische ritten (bijv. jaren oude Strava-import) zijn
+  // aantoonbaar niet per se op deze fiets gereden. Zonder bewijs (gear_id)
+  // blijven die eerlijk ongekoppeld — de gebruiker kan zelf koppelen.
+  const singleActiveSince: string | null = singleActive
+    ? singleActive.createdAt.toISOString().slice(0, 10)
+    : null;
 
   for (const s of sessions) {
     const gearId = gearBySession.get(s.id);
@@ -164,7 +192,11 @@ export async function autoLinkSessions(clerkId: string): Promise<{
     if (gearId && gearToBike.has(gearId)) {
       bikeId = gearToBike.get(gearId)!;
       linkedByGear++;
-    } else if (singleActive) {
+    } else if (
+      singleActive &&
+      singleActiveSince != null &&
+      s.sessionDate >= singleActiveSince
+    ) {
       bikeId = singleActive.id;
       linkedBySingleBike++;
     }

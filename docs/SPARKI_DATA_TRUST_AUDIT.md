@@ -1,6 +1,6 @@
 # Sparki Data-Trust Audit — applicatiebrede controle op mockdata
 
-Datum: 23 juli 2026 · Scope: alle modules (web, api-server, mobiel, mockup-sandbox) + database (dev én productie)
+Datum: 23 juli 2026 (aangevuld met Opdracht 0A.1 — data-trust herstellen) · Scope: alle modules (web, api-server, mobiel, mockup-sandbox) + database (dev én productie)
 
 ## Doel
 
@@ -59,6 +59,39 @@ controleerbare echte herkomst heeft.
   achter — aanbeveling: bij toekomstige testonderhoud dezelfde volledige
   cleanup toepassen.
 
+### Opdracht 0A.1 — foute afgeleide waarden in productie (23 juli 2026)
+
+Drie structurele fouten gevonden en verholpen (productie-DB is voor de agent
+alleen-lezen; alle herstel is daarom **zelfherstellend bij het draaien van de
+engines**, plus een gerichte admin-opschoning):
+
+1. **FTP bleef ten onrechte "schatting" (331 W) terwijl er nieuwere echte
+   invoer was (handmatig 250, Strava 258).** Oorzaak: de Strava-import schreef
+   wél een `ftp_history`-rij maar zette `ftpEstimated` nooit op `false`,
+   waardoor de ondergrens-engine de schatting bleef ophogen.
+   Fix: (a) import zet nu `ftpEstimated=false` en dedupliceert per dag;
+   (b) `recalibrateEstimatedFtp` heeft een zelfherstel-stap: staat er een echte
+   (niet-afgeleide) `ftp_history`-rij die minstens zo nieuw is als de nieuwste
+   afgeleide rij, dan wordt die echte waarde overgenomen (met herleidbaar
+   paspoort-event) en stopt het automatisch ophogen; een nieuwere echte invoer
+   blokkeert elke auto-verhoging — hoogstens een paspoortvoorstel.
+2. **Fiets-autokoppeling koppelde ALLE historische ritten aan de enige actieve
+   fiets**, waardoor kilometerstanden en onderhoudsadvies (±3800 km) verzonnen
+   waren. Fix: de enkelvoudige-fiets-fallback koppelt alleen ritten vanaf de
+   registratiedatum van de fiets, en een idempotente zelfherstel-stap maakt
+   eerdere foute auto-koppelingen (rit ouder dan de fiets) weer los. Koppeling
+   met écht bewijs (Strava gear_id) en handmatige keuzes blijven onaangetast.
+3. **Schattingen stonden niet als schatting op het scherm.** Fix: FTP en
+   weekuren tonen nu "(schatting)" op het Sportpaspoort en in de
+   profielinstellingen zodra de bijbehorende `…Estimated`-vlag waar is.
+
+**Opschoning productie (René):** Engelstalige observaties van vóór de
+taalcorrectie en dubbele `ftp_history`-importrijen zijn via de nieuwe
+admin-opschoning verwijderbaar: `POST /api/admin/data-trust/cleanup`
+(alleen admin; standaard droogdraai die exact toont wat weg zou gaan,
+verwijderen alleen met `apply=true`). Echte data (191 sessies, gewicht,
+vriendkoppeling, garagefiets, echte FTP-metingen) blijft onaangeroerd.
+
 ## Nieuwe waarborgen
 
 1. **Admin-gegevensbroncontrole** — `/admin` → sectie "Gegevensbroncontrole"
@@ -68,13 +101,21 @@ controleerbare echte herkomst heeft.
    record-id, laatste update, berekeningstoelichting en herkomstoordeel. Lege
    blokken tonen eerlijk "geen brondata — eerlijk leeg"; een mislukte controle
    toont "controle mislukt", nooit vervangende cijfers.
-2. **Regressietest `test:data-trust`** (12/12 geslaagd, run via shell:
+2. **Regressietest `test:data-trust`** (16/16 geslaagd, run via shell:
    `pnpm --filter @workspace/api-server run test:data-trust`):
    - leeg account is op 8 kernoppervlakken eerlijk leeg (geen fallbackdata);
    - twee-gebruikers-isolatie (training van A onzichtbaar voor B);
    - gegevensbroncontrole: 403 voor niet-admin (echte adminlijst, fail-closed),
      echte bron + juiste telling + record-id voor admin, 404 bij onbekende
-     gebruiker.
+     gebruiker;
+   - FTP-zelfherstel: echte invoer wint van een oudere afgeleide schatting, en
+     een echte FTP wordt daarna nooit automatisch aangepast;
+   - fiets-autokoppeling: historische ritten (van vóór de registratiedatum)
+     worden niet gekoppeld en eerdere foute auto-koppelingen worden losgemaakt;
+   - admin-opschoning: droogdraai herkent exact de vervuiling (Engelstalige
+     observaties, dubbele ftp-rijen) en `apply` verwijdert alléén die rijen.
+3. **Admin-opschoning `POST /api/admin/data-trust/cleanup`** — gerichte,
+   controleerbare opschoning per gebruiker met verplichte droogdraai-stap.
 
 ## Opschoning uitgevoerd
 

@@ -13,6 +13,7 @@ export type AthleteProfile = {
   activeRole: string;
   id: number;
   ftp: number | null;
+  ftpEstimated: boolean | null;
   weightKg: string | null;
   heightCm: number | null;
   birthYear: number | null;
@@ -21,6 +22,7 @@ export type AthleteProfile = {
   goals: string | null;
   developmentGoal: string | null;
   weeklyHourTarget: number | null;
+  weeklyHourTargetEstimated: boolean | null;
   trainingDaysPerWeek: number | null;
   healthStatus: "ok" | "sick" | "injured";
   zones: Zone[] | null;

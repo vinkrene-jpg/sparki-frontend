@@ -1278,4 +1278,110 @@ router.get("/data-provenance", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// ── POST /api/admin/data-trust/cleanup ──────────────────────────────────────
+// Gerichte opschoning van aantoonbare datavervuiling voor één gebruiker
+// (alleen admin). Standaard een DROOGDRAAI die exact laat zien wat er weg zou
+// gaan; pas met apply=true wordt er echt verwijderd. Raakt NOOIT echte
+// gebruikersdata: alleen (a) Engelstalige observaties van vóór de
+// taal-correctie in de prompts en (b) dubbele ftp_history-rijen die door een
+// import zonder unieke sleutel dubbel zijn weggeschreven (de oudste blijft).
+router.post(
+  "/data-trust/cleanup",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    const { clerkId, apply } = req.body as {
+      clerkId?: string;
+      apply?: boolean;
+    };
+    const target = String(clerkId ?? "").trim();
+    if (!target) {
+      res.status(400).json({ error: "clerkId is verplicht" });
+      return;
+    }
+    try {
+      // (a) Engelstalige observaties: bevatten duidelijke Engelse woorden en
+      // géén Nederlandse functiewoorden. De droogdraai toont de titels zodat
+      // de beheerder dit controleert vóór verwijderen.
+      const englishObs = (
+        await db.execute(
+          sql`SELECT id, title, created_at
+              FROM ai_observations
+              WHERE clerk_id = ${target}
+                AND (title || ' ' || coalesce(observation_text, '')) ~* '\\y(you|your|yours|weekly|increase|decrease|improving|consistency|sessions)\\y'
+                AND (title || ' ' || coalesce(observation_text, '')) !~* '\\y(je|jouw|jij|een|het|deze|niet|wordt|meer)\\y'
+              ORDER BY created_at`,
+        )
+      ).rows as { id: number; title: string; created_at: string }[];
+
+      // (b) Dubbele ftp_history-IMPORTrijen (zelfde gebruiker+datum+type+watts):
+      // alles behalve de rij met het laagste id is een importduplicaat.
+      // Alleen import-bronnen (strava) komen in aanmerking — handmatige of
+      // coach-invoer wordt hier NOOIT aangeraakt, ook niet als die dubbel is.
+      const dupFtp = (
+        await db.execute(
+          sql`SELECT id, measured_at, test_type, ftp_watts
+              FROM ftp_history
+              WHERE clerk_id = ${target}
+                AND test_type = 'strava'
+                AND id NOT IN (
+                  SELECT min(id) FROM ftp_history
+                  WHERE clerk_id = ${target}
+                    AND test_type = 'strava'
+                  GROUP BY measured_at, test_type, ftp_watts
+                )
+              ORDER BY measured_at`,
+        )
+      ).rows as {
+        id: number;
+        measured_at: string;
+        test_type: string;
+        ftp_watts: number;
+      }[];
+
+      let removed = { observaties: 0, ftpHistorie: 0 };
+      if (apply === true) {
+        if (englishObs.length > 0) {
+          const r = await db.execute(
+            sql`DELETE FROM ai_observations
+                WHERE clerk_id = ${target}
+                  AND id IN (${sql.join(
+                    englishObs.map((o) => sql`${o.id}`),
+                    sql`, `,
+                  )})`,
+          );
+          removed.observaties = r.rowCount ?? englishObs.length;
+        }
+        if (dupFtp.length > 0) {
+          const r = await db.execute(
+            sql`DELETE FROM ftp_history
+                WHERE clerk_id = ${target}
+                  AND id IN (${sql.join(
+                    dupFtp.map((o) => sql`${o.id}`),
+                    sql`, `,
+                  )})`,
+          );
+          removed.ftpHistorie = r.rowCount ?? dupFtp.length;
+        }
+      }
+
+      res.json({
+        modus: apply === true ? "uitgevoerd" : "droogdraai",
+        kandidaten: {
+          engelstaligeObservaties: englishObs.map((o) => ({
+            id: o.id,
+            titel: o.title,
+            aangemaakt: o.created_at,
+          })),
+          dubbeleFtpHistorie: dupFtp,
+        },
+        verwijderd: removed,
+      });
+    } catch (err) {
+      req.log.error({ err }, "admin.dataTrustCleanup failed");
+      res.status(500).json({ error: "Opschoning mislukt" });
+    }
+  },
+);
+
 export default router;

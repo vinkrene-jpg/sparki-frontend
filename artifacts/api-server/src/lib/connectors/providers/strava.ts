@@ -86,16 +86,38 @@ export async function syncStrava(clerkId: string): Promise<ProviderSyncResult> {
     athlete.ftp <= 600
   ) {
     profilePatch.ftp = athlete.ftp;
-    await db
-      .insert(ftpHistoryTable)
-      .values({
+    // Een FTP die de renner zelf op Strava heeft ingesteld is een echte
+    // instelling, geen schatting — anders blijft de ondergrens-engine een
+    // oude "bewezen" waarde over deze echte waarde heen zetten.
+    profilePatch.ftpEstimated = false;
+    // Idempotent per dag: er is geen unique constraint, dus dedupliceer
+    // expliciet in plaats van te vertrouwen op onConflictDoNothing.
+    const measuredAt = todayStr();
+    const [existingFtp] = await db
+      .select({ id: ftpHistoryTable.id, ftpWatts: ftpHistoryTable.ftpWatts })
+      .from(ftpHistoryTable)
+      .where(
+        and(
+          eq(ftpHistoryTable.clerkId, clerkId),
+          eq(ftpHistoryTable.measuredAt, measuredAt),
+          eq(ftpHistoryTable.testType, "strava"),
+        ),
+      )
+      .limit(1);
+    if (!existingFtp) {
+      await db.insert(ftpHistoryTable).values({
         clerkId,
-        measuredAt: todayStr(),
+        measuredAt,
         ftpWatts: athlete.ftp,
         testType: "strava",
         notes: "Geïmporteerd uit Strava",
-      })
-      .onConflictDoNothing();
+      });
+    } else if (existingFtp.ftpWatts !== athlete.ftp) {
+      await db
+        .update(ftpHistoryTable)
+        .set({ ftpWatts: athlete.ftp })
+        .where(eq(ftpHistoryTable.id, existingFtp.id));
+    }
     imported.add("ftp");
   }
 

@@ -17,8 +17,11 @@ import {
   trainingSessionsTable,
   userProfilesTable,
   athleteProfilesTable,
+  ftpHistoryTable,
+  garageBikesTable,
+  aiObservationsTable,
 } from "@workspace/db";
-import { inArray } from "drizzle-orm";
+import { inArray, eq, and } from "drizzle-orm";
 
 const RUN = `test_trust_${Date.now()}`;
 const A = `${RUN}_a`;
@@ -225,6 +228,139 @@ async function main() {
     assert(r.status === 404, `verwacht 404, kreeg ${r.status}`);
   });
   process.env["DEV_AUTH_BYPASS"] = savedBypass;
+
+  // 4. FTP-zelfherstel: een profiel dat onterecht als schatting bleef staan
+  //    (oude bug: import zette ftpEstimated niet op false) wordt bij de
+  //    recalibratie hersteld naar de nieuwste ECHTE invoer.
+  const { recalibrateEstimatedFtp } = await import(
+    "../lib/derived-load-backfill"
+  );
+  await scenario("ftp-zelfherstel: echte invoer wint van oude schatting", async () => {
+    await db
+      .update(athleteProfilesTable)
+      .set({ ftp: 331, ftpEstimated: true })
+      .where(eq(athleteProfilesTable.clerkId, A));
+    await db.insert(ftpHistoryTable).values([
+      { clerkId: A, measuredAt: "2026-06-01", ftpWatts: 331, testType: "derived" },
+      { clerkId: A, measuredAt: "2026-06-26", ftpWatts: 258, testType: "strava" },
+    ]);
+    const r = await recalibrateEstimatedFtp(A);
+    assert(r.changed === true, "zelfherstel voerde geen wijziging door");
+    assert(r.ftp === 258, `verwacht 258, kreeg ${r.ftp}`);
+    const [p] = await db
+      .select({ ftp: athleteProfilesTable.ftp, est: athleteProfilesTable.ftpEstimated })
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, A));
+    assert(p?.ftp === 258 && p?.est === false, `profiel niet hersteld: ${p?.ftp}/${p?.est}`);
+  });
+
+  // 4b. Een echte (niet-geschatte) FTP wordt daarna NOOIT stil verhoogd.
+  await scenario("ftp: echte waarde wordt niet automatisch aangepast", async () => {
+    const r = await recalibrateEstimatedFtp(A);
+    assert(r.changed === false, "echte FTP werd onterecht gewijzigd");
+    assert(r.ftp === 258, `FTP veranderde naar ${r.ftp}`);
+  });
+
+  // 5. Fiets-autokoppeling: ritten van vóór de registratiedatum van de fiets
+  //    worden NIET gekoppeld en een eerdere foute auto-koppeling wordt
+  //    losgemaakt (zelfherstel) — handmatige keuzes blijven staan.
+  await scenario("fiets-autokoppeling: geen historische ritten meer", async () => {
+    const { autoLinkSessions } = await import("../lib/bike-usage");
+    const [bike] = await db
+      .insert(garageBikesTable)
+      .values({ clerkId: A, name: "Trust-testfiets" })
+      .returning({ id: garageBikesTable.id });
+    assert(bike, "geen fiets aangemaakt");
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const [oldSess] = await db
+      .insert(trainingSessionsTable)
+      .values({
+        clerkId: A,
+        sessionDate: "2022-05-01",
+        durationMin: 90,
+        bikeId: bike!.id,
+        bikeLinkSource: "auto",
+      })
+      .returning({ id: trainingSessionsTable.id });
+    const [newSess] = await db
+      .insert(trainingSessionsTable)
+      .values({ clerkId: A, sessionDate: todayStr, durationMin: 60 })
+      .returning({ id: trainingSessionsTable.id });
+    await autoLinkSessions(A);
+    const [oldRow] = await db
+      .select({ bikeId: trainingSessionsTable.bikeId })
+      .from(trainingSessionsTable)
+      .where(eq(trainingSessionsTable.id, oldSess!.id));
+    assert(oldRow?.bikeId == null, "historische rit bleef gekoppeld");
+    const [newRow] = await db
+      .select({ bikeId: trainingSessionsTable.bikeId })
+      .from(trainingSessionsTable)
+      .where(eq(trainingSessionsTable.id, newSess!.id));
+    assert(newRow?.bikeId === bike!.id, "rit ná registratie niet gekoppeld");
+  });
+
+  // 6. Admin-opschoning: droogdraai toont exact de vervuiling (Engelstalige
+  //    observaties + dubbele ftp-rijen), apply verwijdert alléén die rijen.
+  await scenario("opschoning: droogdraai + gerichte verwijdering", async () => {
+    const [engObs] = await db
+      .insert(aiObservationsTable)
+      .values({
+        clerkId: A,
+        sourceType: "test",
+        title: "Your training consistency is improving",
+        observationText: "You completed more sessions this month.",
+      })
+      .returning({ id: aiObservationsTable.id });
+    const [nlObs] = await db
+      .insert(aiObservationsTable)
+      .values({
+        clerkId: A,
+        sourceType: "test",
+        title: "Je trainingsritme wordt stabieler",
+        observationText: "Je hebt deze maand meer getraind dan vorige maand.",
+      })
+      .returning({ id: aiObservationsTable.id });
+    await db.insert(ftpHistoryTable).values([
+      { clerkId: A, measuredAt: "2026-07-01", ftpWatts: 260, testType: "strava" },
+      { clerkId: A, measuredAt: "2026-07-01", ftpWatts: 260, testType: "strava" },
+    ]);
+
+    const dry = await req("POST", "/api/admin/data-trust/cleanup", A, {
+      clerkId: A,
+    });
+    assert(dry.status === 200, `droogdraai status ${dry.status}`);
+    assert(dry.json?.modus === "droogdraai", "geen droogdraai-modus");
+    const engIds = (dry.json?.kandidaten?.engelstaligeObservaties ?? []).map(
+      (o: any) => o.id,
+    );
+    assert(engIds.includes(engObs!.id), "Engelse observatie niet herkend");
+    assert(!engIds.includes(nlObs!.id), "Nederlandse observatie onterecht kandidaat");
+    assert(
+      (dry.json?.kandidaten?.dubbeleFtpHistorie ?? []).length === 1,
+      "dubbele ftp-rij niet herkend",
+    );
+
+    const applied = await req("POST", "/api/admin/data-trust/cleanup", A, {
+      clerkId: A,
+      apply: true,
+    });
+    assert(applied.status === 200, `apply status ${applied.status}`);
+    assert(applied.json?.verwijderd?.observaties >= 1, "observatie niet verwijderd");
+    assert(applied.json?.verwijderd?.ftpHistorie === 1, "ftp-duplicaat niet verwijderd");
+    const [nlStill] = await db
+      .select({ id: aiObservationsTable.id })
+      .from(aiObservationsTable)
+      .where(eq(aiObservationsTable.id, nlObs!.id));
+    assert(nlStill, "Nederlandse observatie is onterecht verwijderd");
+    const dupLeft = await db
+      .select({ id: ftpHistoryTable.id })
+      .from(ftpHistoryTable)
+      .where(
+        and(eq(ftpHistoryTable.clerkId, A), eq(ftpHistoryTable.measuredAt, "2026-07-01")),
+      );
+    assert(dupLeft.length === 1, `verwacht 1 overgebleven rij, kreeg ${dupLeft.length}`);
+  });
 
   await cleanup();
   if (server) await new Promise<void>((res) => server!.close(() => res()));

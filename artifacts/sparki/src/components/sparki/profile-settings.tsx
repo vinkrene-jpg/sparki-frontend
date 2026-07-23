@@ -802,7 +802,9 @@ function WeeklyHoursInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
   return (
     <button type="button" onClick={() => setEditing(true)} className="flex items-center gap-2">
       <span className="font-mono text-[11px] tracking-wide text-white/40">
-        {profile?.weeklyHourTarget ? `${profile.weeklyHourTarget} u/wk` : "Niet ingesteld"}
+        {profile?.weeklyHourTarget
+          ? `${profile.weeklyHourTarget} u/wk${profile.weeklyHourTargetEstimated ? " (schatting)" : ""}`
+          : "Niet ingesteld"}
       </span>
       <Pencil className="h-3 w-3 text-white/20" strokeWidth={1.75} />
     </button>
