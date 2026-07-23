@@ -154,4 +154,5 @@
 - [Sparki centraal humorniveau](sparki-humor-level.md) — één centrale humorlaag, instelling geldt app-breed, nooit inline grappen; humor nooit op medisch/veiligheid/privacy/fouten/betalingen.
 - [Add-training flow split](sparki-add-training-split.md) — chooser-first modal; plan_details whitelist 400s executed keys; contextDate prop useless until a real caller wires it.
 - [Sparki Volgauto](sparki-volgauto.md) — fietsroute blijft intact (aparte laag); server DB-vorm is contract-SSOT, consumers her-declareren niet op gevoel; meetpoint carKm nullable; wissel na 120s, ETA altijd "geschat".
+- [Sparki startup black screen](sparki-startup-black-screen.md) — niets rendert tot clerk-js laadt (Show=null); drie vaste vangnetlagen (splash, root boundary, ClerkStartupGate) nooit verwijderen.
 - [Sparki live locatie delen](sparki-live-location.md) — opt-in per-sessie delen: authz herchecked at EVERY read (incl. minor fail-closed in group branch), idle-expiry anchored on last position not startedAt, one position row = no history.

@@ -3,10 +3,16 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import { installErrorReporting } from "./lib/error-reporting";
+import { ErrorBoundary } from "@/components/sparki/error-boundary";
 
 installErrorReporting();
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Buitenste vangnet: een crash op app-niveau mag nooit een zwart scherm geven.
+createRoot(document.getElementById("root")!).render(
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>,
+);
 
 // Register the service worker that powers Web Push (profile nudges + reminders
 // on the phone lock screen). Scoped to the app base path so deep links resolve

@@ -199,7 +199,7 @@ router.get("/health", requireAuth, requireAdmin, async (req, res) => {
     const agg = await db.execute(sql`
       SELECT
         (SELECT count(*) FROM user_profiles)::int AS active_users,
-        (SELECT count(*) FROM user_profiles WHERE at > now() - interval '7 days')::int AS new_registrations,
+        (SELECT count(*) FROM user_profiles WHERE created_at > now() - interval '7 days')::int AS new_registrations,
         (SELECT count(*) FROM bug_reports WHERE status = 'new')::int AS open_bug_reports,
         (SELECT count(*) FROM workout_feedback)::int AS feedback_messages,
         (SELECT count(*) FROM activity_imports WHERE status = 'failed')::int AS failed_imports,

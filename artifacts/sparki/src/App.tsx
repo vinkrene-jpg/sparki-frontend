@@ -455,6 +455,46 @@ function ScrollToTop() {
   return null;
 }
 
+// Zolang Clerk nog laadt, rendert de app anders NIETS (Show-componenten geven
+// null terug) — dat was in productie zichtbaar als een zwart scherm. Toon
+// daarom altijd een laadindicator, en na lang wachten een eerlijk bericht.
+function ClerkStartupGate({ children }: { children: React.ReactNode }) {
+  const { isLoaded } = useUser();
+  const [slow, setSlow] = useState(false);
+
+  useEffect(() => {
+    if (isLoaded) return;
+    const timer = window.setTimeout(() => setSlow(true), 12000);
+    return () => window.clearTimeout(timer);
+  }, [isLoaded]);
+
+  if (isLoaded) return <>{children}</>;
+
+  return (
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#040506] px-6 text-center">
+      <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-cyan-300/25 border-t-cyan-300/90" />
+      <p className="text-sm font-semibold text-white/75">
+        Sparki wordt geladen…
+      </p>
+      {slow && (
+        <>
+          <p className="max-w-xs text-sm text-white/40">
+            Dit duurt langer dan normaal. Controleer je verbinding of laad de
+            app opnieuw.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-1 rounded-full border border-cyan-300/40 px-5 py-2 text-sm font-semibold text-cyan-300/90"
+          >
+            Opnieuw laden
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 function AppRouter() {
   const [, setLocation] = useLocation();
 
@@ -494,6 +534,7 @@ function AppRouter() {
               {DEV_PREVIEW ? (
                 <DevPreview />
               ) : (
+              <ClerkStartupGate>
               <Switch>
                 <Route path="/" component={HomeRedirect} />
                 {/* REQUIRED — /*? is the only wouter syntax for Clerk OAuth sub-paths */}
@@ -614,6 +655,7 @@ function AppRouter() {
                 </Route>
                 <Route component={NotFound} />
               </Switch>
+              </ClerkStartupGate>
               )}
             </ErrorBoundary>
             </SoundProvider>

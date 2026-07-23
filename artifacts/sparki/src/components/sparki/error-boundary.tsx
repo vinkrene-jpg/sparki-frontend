@@ -27,7 +27,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#040506] px-6 text-center">
             <span className="text-2xl">⚡</span>
             <p className="font-sans text-base font-semibold text-white/80">
-              Something went wrong
+              Er ging iets mis
             </p>
             <p className="max-w-xs text-sm text-white/40">
               {this.state.error.message}
@@ -37,7 +37,7 @@ export class ErrorBoundary extends Component<Props, State> {
               onClick={() => this.setState({ error: null })}
               className="mt-2 rounded-full border border-white/10 px-4 py-2 text-xs text-white/50 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/80"
             >
-              Try again
+              Probeer opnieuw
             </button>
           </div>
         )
