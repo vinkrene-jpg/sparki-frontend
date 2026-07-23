@@ -89,6 +89,17 @@ export type PlannedWorkout = {
   targetDurationMin: number | null;
   targetTSS: number | null;
   structure: WorkoutStructure | null;
+  // Planningsdetails (alleen vooraf-velden; uitgevoerde ervaring leeft in
+  // TrainingSession, nooit hier).
+  planDetails: {
+    discipline?: string;
+    goal?: string;
+    targetDistanceKm?: number;
+    intensity?: string;
+    bikeId?: number;
+    nutritionNote?: string;
+  } | null;
+  routeId: number | null;
   status: string;
   source: string;
   sessionId: number | null;

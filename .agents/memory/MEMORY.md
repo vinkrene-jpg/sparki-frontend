@@ -157,3 +157,4 @@
 - [Workout koppellijst honesty](sparki-workout-linklist.md) — "mockdata" = seeded dev-QA rows + stale query cache; DELETE is soft-cancel (status=cancelled) ⇒ pickers must filter; list queries share one invalidation prefix.
 - [Sparki data-trust audit](sparki-data-trust.md) — provenance endpoint uses constant table allowlist (never request-driven sql.raw); 403-gate testbaar via per-call env-flip terwijl IS_DEV gecached blijft.
 - [Sparki centraal humorniveau](sparki-humor-level.md) — één humorlaag (lib/humor.ts + voice isToneAvailable); instelling ai_preferences.humor_level geldt app-breed, nooit inline grappen; humor nooit op medisch/veiligheid/privacy/fouten/betalingen.
+- [Add-training flow split](sparki-add-training-split.md) — chooser-first modal; plan_details whitelist 400s executed keys; contextDate prop useless until a real caller wires it.

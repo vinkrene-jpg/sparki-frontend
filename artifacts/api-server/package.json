@@ -116,7 +116,8 @@
     "test:route-proposal": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-proposal",
     "test:sportpaspoort": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs sportpaspoort",
     "test:ai-gateway": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs ai-gateway",
-    "test:social-privacy": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs social-privacy"
+    "test:social-privacy": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs social-privacy",
+    "test:plan-details": "node ./scripts/run-test.mjs plan-details"
   },
   "dependencies": {
     "@clerk/express": "^2.1.30",

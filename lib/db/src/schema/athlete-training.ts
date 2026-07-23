@@ -119,6 +119,19 @@ export const plannedWorkoutsTable = pgTable("planned_workouts", {
   // circular schema import; ownership is enforced in the route layer.
   planId: integer("plan_id"),
   routeId: integer("route_id"),
+  // Planningsdetails (Training inplannen-flow): uitsluitend vooraf-velden —
+  // fietsdiscipline, doel, geplande afstand, intensiteit/zones, materiaal
+  // (bikeId, soft ref net als routeId) en voedingsinstructie. Uitgevoerde
+  // ervaring (gevoel, werkelijke belasting) hoort hier NOOIT in; die leeft
+  // in training_sessions. Null = gewoon geen extra details.
+  planDetails: jsonb("plan_details").$type<{
+    discipline?: string;
+    goal?: string;
+    targetDistanceKm?: number;
+    intensity?: string;
+    bikeId?: number;
+    nutritionNote?: string;
+  }>(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

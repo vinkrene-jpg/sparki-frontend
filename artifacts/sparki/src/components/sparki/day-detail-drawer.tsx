@@ -5,6 +5,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { ACCENT } from "@/components/sparki/ui"
+import { AddTrainingButton } from "@/components/sparki/add-training"
 import type { PlannedWorkout, WorkoutRouteNeed } from "@/lib/athlete-types"
 import { Bike, Activity, Zap, Moon, ChevronRight, Gauge, Clock, X } from "lucide-react"
 
@@ -104,6 +105,7 @@ export function DayDetailDrawer({
                 <Moon className="h-5 w-5 text-white/25" strokeWidth={1.5} />
               </div>
               <p className="text-[13px] text-white/35">Niets gepland deze dag</p>
+              {date && <AddTrainingButton variant="inline" contextDate={date} />}
             </div>
           ) : (
             <div className="flex flex-col gap-3">
@@ -190,6 +192,7 @@ export function DayDetailDrawer({
                   </button>
                 )
               })}
+              {date && <AddTrainingButton variant="inline" contextDate={date} />}
             </div>
           )}
         </div>

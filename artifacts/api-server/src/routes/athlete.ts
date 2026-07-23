@@ -27,6 +27,7 @@ import { computeLoad } from "../engines/recovery-load";
 import { computeLoadSeries } from "../lib/recovery-load";
 import { captureContext } from "../engines/context-memory";
 import { ingestManualSession } from "../lib/manual-session-ingest";
+import { sanitizePlanDetails } from "../lib/plan-details";
 import {
   computeTrimPreview,
   sliceProfile,
@@ -563,6 +564,8 @@ router.post("/workouts", requireAuth, async (req, res) => {
     targetTSS,
     structure,
     source,
+    planDetails,
+    routeId,
   } = req.body as {
     scheduledDate: string;
     type?: string;
@@ -572,11 +575,39 @@ router.post("/workouts", requireAuth, async (req, res) => {
     targetTSS?: number;
     structure?: unknown;
     source?: string;
+    planDetails?: unknown;
+    routeId?: number;
   };
 
   if (!scheduledDate || !title) {
     res.status(400).json({ error: "scheduledDate and title are required" });
     return;
+  }
+
+  // Planningsdetails (Training inplannen-flow): whitelist + eerlijke 400 bij
+  // ongeldige of uitgevoerde-ervaring-velden.
+  const sanitized = sanitizePlanDetails(planDetails);
+  if (!sanitized.ok) {
+    res.status(400).json({ error: sanitized.error });
+    return;
+  }
+
+  // Route is een soft reference — eigendom hier expliciet controleren zodat
+  // een vreemd route-id nooit aan een training hangt.
+  let checkedRouteId: number | null = null;
+  if (routeId != null) {
+    if (typeof routeId !== "number" || !Number.isInteger(routeId) || routeId <= 0) {
+      res.status(400).json({ error: "Ongeldige route" });
+      return;
+    }
+    const owned = await db.execute(
+      sql`SELECT id FROM routes WHERE id = ${routeId} AND clerk_id = ${clerkId} LIMIT 1`,
+    );
+    if (owned.rows.length === 0) {
+      res.status(400).json({ error: "Route niet gevonden" });
+      return;
+    }
+    checkedRouteId = routeId;
   }
 
   // Day-type engine distinguishes coach- vs Sparki-planned workouts
@@ -595,6 +626,8 @@ router.post("/workouts", requireAuth, async (req, res) => {
         targetDurationMin: targetDurationMin ?? null,
         targetTSS: targetTSS ?? null,
         structure: structure ?? null,
+        planDetails: sanitized.details,
+        routeId: checkedRouteId,
         status: "planned",
         source: workoutSource,
       })
