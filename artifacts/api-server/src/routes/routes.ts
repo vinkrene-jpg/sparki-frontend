@@ -76,6 +76,11 @@ import {
   beaufort,
 } from "../lib/route-insight";
 import { getRoutePois } from "../lib/route-pois";
+import {
+  getRouteRemarks,
+  computeDataRemarks,
+  remarksSource,
+} from "../lib/route-remarks";
 
 const router = Router();
 
@@ -1072,6 +1077,102 @@ router.post("/:id/rejoin", requireAuth, async (req, res) => {
       error:
         "Kon geen vervolg berekenen — de routedienst gaf geen bruikbaar antwoord.",
     });
+  }
+});
+
+// POST /api/routes/remarks-preview — routeopmerkingen voor een NOG NIET
+// opgeslagen route (routebouwer): de client stuurt de echte provider-geometrie
+// mee. Zelfde eerlijke bron/contract als GET /:id/remarks. Declared before the
+// /:id routes so "remarks-preview" never parses as an id.
+router.post("/remarks-preview", requireAuth, async (req, res) => {
+  try {
+    const raw = (req.body ?? {}) as { geometry?: unknown };
+    const geomIn = Array.isArray(raw.geometry) ? raw.geometry : null;
+    if (!geomIn || geomIn.length < 2 || geomIn.length > 20000) {
+      res.status(400).json({ error: "Ongeldige routegeometrie" });
+      return;
+    }
+    const geometry: RoutePathPoint[] = [];
+    for (const p of geomIn) {
+      if (!Array.isArray(p) || p.length < 2) {
+        res.status(400).json({ error: "Ongeldige routegeometrie" });
+        return;
+      }
+      const la = Number(p[0]);
+      const lo = Number(p[1]);
+      if (!Number.isFinite(la) || !Number.isFinite(lo) || Math.abs(la) > 90 || Math.abs(lo) > 180) {
+        res.status(400).json({ error: "Ongeldige routegeometrie" });
+        return;
+      }
+      geometry.push([la, lo]);
+    }
+    const remarks = await getRouteRemarks(geometry);
+    if (remarks == null) {
+      res.status(502).json({
+        error:
+          "Routeopmerkingen konden nu niet opgehaald worden — de kaartbron gaf geen antwoord.",
+      });
+      return;
+    }
+    res.json({
+      remarks,
+      dataRemarks: computeDataRemarks({
+        hasProfile: true, // builder preview: hoogte wordt apart getoond
+        hasDistance: true,
+        pointCount: geometry.length,
+      }),
+      source: remarksSource(),
+    });
+  } catch (err) {
+    req.log.error({ err }, "routes.remarks-preview failed");
+    res.status(500).json({ error: "Kon routeopmerkingen niet laden" });
+  }
+});
+
+// GET /api/routes/:id/remarks — echte waarschuwingen/bijzonderheden op de
+// route (veerpont, trap, poort, onverhard/slecht wegdek, beperkte toegang,
+// natuurgebied, voorde) uit OpenStreetMap-tags. Eerlijke 502 als de bron niet
+// antwoordt; er wordt nooit een waarschuwing verzonnen.
+router.get("/:id/remarks", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  try {
+    const [route] = await db
+      .select()
+      .from(routesTable)
+      .where(and(eq(routesTable.id, id), eq(routesTable.clerkId, clerkId)))
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+    const geometry = (route.geometry as RoutePathPoint[] | null) ?? [];
+    const profile = (route.profile as number[] | null) ?? [];
+    const dataRemarks = computeDataRemarks({
+      hasProfile: profile.length > 1,
+      hasDistance: route.distanceKm != null && route.distanceKm > 0,
+      pointCount: geometry.length,
+    });
+    if (geometry.length < 2) {
+      res.json({ remarks: null, dataRemarks, source: remarksSource() });
+      return;
+    }
+    const remarks = await getRouteRemarks(geometry);
+    if (remarks == null) {
+      res.status(502).json({
+        error:
+          "Routeopmerkingen konden nu niet opgehaald worden — de kaartbron gaf geen antwoord.",
+      });
+      return;
+    }
+    res.json({ remarks, dataRemarks, source: remarksSource() });
+  } catch (err) {
+    req.log.error({ err }, "routes.remarks failed");
+    res.status(500).json({ error: "Kon routeopmerkingen niet laden" });
   }
 });
 

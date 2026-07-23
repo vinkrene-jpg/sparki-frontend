@@ -39,8 +39,19 @@ import {
 } from "@/components/sparki/route-navigator"
 import {
   ElevationProfile,
+  InteractiveElevationProfile,
   MiniElevationProfile,
+  type ProfileMarker,
 } from "@/components/sparki/elevation-profile"
+import {
+  useRouteRemarks,
+  useRouteRemarksPreview,
+  type RouteRemark,
+} from "@/hooks/use-route-remarks"
+import { RouteRemarksPanel } from "@/components/sparki/route-remarks"
+import { useQuery } from "@tanstack/react-query"
+import { apiFetch } from "@/lib/api"
+import type { RacePoint } from "@/hooks/use-race-points"
 import { useRouteInsight } from "@/hooks/use-routes"
 import {
   useDeviceSyncStatus,
@@ -749,6 +760,67 @@ function RouteCard({
   const canExport = geometry.length > 1
   const canNavigate = geometry.length > 1
 
+  // Interactief hoogteprofiel ↔ kaart: gedeelde km-positie (twee-weg sync).
+  const [posKm, setPosKm] = useState<number | null>(null)
+  const [focusPoint, setFocusPoint] = useState<{
+    lat: number
+    lon: number
+    seq: number
+  }>()
+  // Routeopmerkingen uit echte OSM-gegevens (server, gecachet).
+  const remarksQuery = useRouteRemarks(geometry.length > 1 ? route.id : null)
+  const remarkMarkers = (remarksQuery.data?.remarks ?? []).map((r) => ({
+    id: r.id,
+    lat: r.lat,
+    lon: r.lon,
+    label: r.label,
+  }))
+  // Wedstrijdroute? Dan levert de bestaande route-detailroute een race-blok
+  // met UITSLUITEND actieve (bevestigde/aangepaste) punten — die tonen we
+  // boven het hoogteprofiel. Geen wedstrijd = geen extra fetch-resultaat.
+  const raceBlockQuery = useQuery({
+    queryKey: ["route-race-block", route.id],
+    enabled: route.usageType === "wedstrijd",
+    staleTime: 5 * 60_000,
+    queryFn: () =>
+      apiFetch<{ race?: { points: RacePoint[] } | null }>(
+        `/api/routes/${route.id}`,
+      ),
+    select: (d) => d.race?.points ?? [],
+  })
+  const profileMarkers: ProfileMarker[] = [
+    ...(route.distanceKm != null && route.distanceKm > 0
+      ? ([
+          { km: 0, label: "Start", kind: "start" },
+          { km: route.distanceKm, label: "Finish", kind: "finish" },
+        ] as ProfileMarker[])
+      : []),
+    ...climbs
+      .filter((c) => Number.isFinite(c.summitKm))
+      .map((c) => ({
+        km: c.summitKm as number,
+        label: `Top: ${c.name}`,
+        kind: "klim" as const,
+      })),
+    ...(raceBlockQuery.data ?? [])
+      .filter((p) => p.raceKm != null)
+      .map((p) => ({
+        km: p.raceKm as number,
+        label: p.label,
+        kind: (p.pointClass === "wedstrijd"
+          ? "wedstrijd"
+          : "info") as ProfileMarker["kind"],
+      })),
+    // Routeopmerkingen (echte OSM-gegevens) ook op het hoogteprofiel.
+    ...(remarksQuery.data?.remarks ?? [])
+      .filter((r) => Number.isFinite(r.routeKm))
+      .map((r) => ({
+        km: r.routeKm,
+        label: r.label,
+        kind: "opmerking" as ProfileMarker["kind"],
+      })),
+  ]
+
   function exportRoute(format: RouteExportFormat) {
     setGpxError(null)
     download.mutate(
@@ -979,11 +1051,34 @@ function RouteCard({
           climbs={climbs}
           height={430}
           className="mt-4"
+          positionKm={posKm}
+          onTrackPositionSelect={setPosKm}
+          remarkMarkers={remarkMarkers}
+          focusPoint={focusPoint}
         />
       )}
 
       {profile.length > 0 && (
-        <ElevationProfile profile={profile} distanceKm={route.distanceKm} />
+        <InteractiveElevationProfile
+          profile={profile}
+          distanceKm={route.distanceKm}
+          markers={profileMarkers}
+          positionKm={posKm}
+          onPositionChange={setPosKm}
+        />
+      )}
+
+      {geometry.length > 1 && (
+        <RouteRemarksPanel
+          data={remarksQuery.data}
+          isLoading={remarksQuery.isLoading}
+          isError={remarksQuery.isError}
+          onShowOnMap={(r: RouteRemark) => {
+            setPosKm(r.routeKm)
+            setFocusPoint((f) => ({ lat: r.lat, lon: r.lon, seq: (f?.seq ?? 0) + 1 }))
+          }}
+          className="mt-4"
+        />
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -1243,6 +1338,11 @@ function RouteGenerator({
   // street-level zoom every time "Centreer op mij" is tapped.
   const [focusMe, setFocusMe] = useState(0)
   const [candidate, setCandidate] = useState<RouteCandidate | null>(null)
+  // Interactief hoogteprofiel voor de voorgestelde route (kaartklik blijft in
+  // de bouwer voor verzamelpunten — positie kiezen gaat hier via het profiel).
+  const [candPosKm, setCandPosKm] = useState<number | null>(null)
+  // Routeopmerkingen-voorproef op de echte kandidaat-geometrie.
+  const candRemarks = useRouteRemarksPreview(candidate?.geometry ?? null)
   // Loop mode: the 3 distance variants (korter/gevraagd/langer) to choose from.
   const [options, setOptions] = useState<RouteCandidate[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -2332,6 +2432,13 @@ function RouteGenerator({
                 }
                 height={430}
                 className="mt-3"
+                positionKm={candPosKm}
+                remarkMarkers={(candRemarks.data?.remarks ?? []).map((r) => ({
+                  id: r.id,
+                  lat: r.lat,
+                  lon: r.lon,
+                  label: r.label,
+                }))}
               />
               <MeetpointList
                 meetpoints={meetpoints}
@@ -2341,9 +2448,39 @@ function RouteGenerator({
           )}
 
           {candidate.profile.length > 0 && (
-            <ElevationProfile
+            <InteractiveElevationProfile
               profile={candidate.profile}
               distanceKm={candidate.distanceKm}
+              markers={
+                candidate.distanceKm != null && candidate.distanceKm > 0
+                  ? [
+                      { km: 0, label: "Start", kind: "start" },
+                      {
+                        km: candidate.distanceKm,
+                        label: "Finish",
+                        kind: "finish",
+                      },
+                      ...candidate.climbs
+                        .filter((c) => Number.isFinite(c.summitKm))
+                        .map((c) => ({
+                          km: c.summitKm as number,
+                          label: `Top: ${c.name}`,
+                          kind: "klim" as const,
+                        })),
+                    ]
+                  : []
+              }
+              positionKm={candPosKm}
+              onPositionChange={setCandPosKm}
+            />
+          )}
+
+          {candidate.geometry.length > 1 && (
+            <RouteRemarksPanel
+              data={candRemarks.data}
+              isLoading={candRemarks.isLoading}
+              isError={candRemarks.isError}
+              className="mt-4"
             />
           )}
 

@@ -48,6 +48,7 @@ export type SparkiRoute = {
   meetpoints: RouteMeetpoint[] | null;
   rationale: string | null;
   source: string;
+  usageType: string | null;
   linkedActivityImportId: number | null;
   linkedPlannedWorkoutId: number | null;
   createdAt: string;

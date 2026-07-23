@@ -70,6 +70,10 @@ export function RouteMap({
   onWaypointDrag,
   onWaypointClick,
   onMeetpointClick,
+  positionKm = null,
+  onTrackPositionSelect,
+  remarkMarkers = [],
+  focusPoint,
 }: {
   geometry: [number, number][]
   className?: string
@@ -98,6 +102,16 @@ export function RouteMap({
   onWaypointDrag?: (index: number, lat: number, lon: number) => void
   onWaypointClick?: (index: number) => void
   onMeetpointClick?: (index: number) => void
+  // Positie-cursor van het interactieve hoogteprofiel: een witte stip op het
+  // ECHTE trackpunt dat het dichtst bij deze km ligt (twee-weg sync).
+  positionKm?: number | null
+  // Read-only modus: klik op/bij de routelijn (≤ ~250 m) kiest de
+  // dichtstbijzijnde km — het hoogteprofiel volgt. Nooit actief in de bouwer.
+  onTrackPositionSelect?: (km: number) => void
+  // Routeopmerkingen (veerpont, onverhard, poort, …) als waarschuwingsmarkers.
+  remarkMarkers?: { id: string; lat: number; lon: number; label: string }[]
+  // Pan/zoom naar dit punt wanneer `seq` verspringt ("toon op kaart").
+  focusPoint?: { lat: number; lon: number; seq: number }
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
@@ -117,6 +131,11 @@ export function RouteMap({
   wpClickRef.current = onWaypointClick
   const mpClickRef = useRef(onMeetpointClick)
   mpClickRef.current = onMeetpointClick
+  const posSelectRef = useRef(onTrackPositionSelect)
+  posSelectRef.current = onTrackPositionSelect
+  const geometryRef = useRef(geometry)
+  geometryRef.current = geometry
+  const posMarkerRef = useRef<L.Marker | null>(null)
 
   const isBuilder = Boolean(onMapClick)
 
@@ -146,7 +165,27 @@ export function RouteMap({
       },
     ).addTo(map)
     map.on("click", (e: L.LeafletMouseEvent) => {
-      clickRef.current?.(e.latlng.lat, e.latlng.lng)
+      if (clickRef.current) {
+        clickRef.current(e.latlng.lat, e.latlng.lng)
+        return
+      }
+      // Read-only + interactief profiel: klik bij de route kiest de km van het
+      // dichtstbijzijnde ECHTE trackpunt (geen interpolatie buiten de track).
+      const sel = posSelectRef.current
+      const geom = geometryRef.current
+      if (!sel || geom.length < 2) return
+      let bestIdx = -1
+      let bestD = Infinity
+      for (let i = 0; i < geom.length; i++) {
+        const d = map.distance(e.latlng, L.latLng(geom[i]![0], geom[i]![1]))
+        if (d < bestD) {
+          bestD = d
+          bestIdx = i
+        }
+      }
+      if (bestIdx < 0 || bestD > 250) return
+      const cum = cumulativeKm(geom)
+      sel(Math.round(cum[bestIdx]! * 100) / 100)
     })
     mapRef.current = map
     return () => {
@@ -298,6 +337,36 @@ export function RouteMap({
       })
     }
 
+    // Routeopmerkingen — oranje waarschuwingsdriehoekjes op het echte punt
+    // (veerpont, onverhard, poort, …). Labels komen uit onze eigen classifier
+    // (met OSM-namen erin), dus escapen vóór de HTML-sink.
+    if (remarkMarkers.length > 0) {
+      const remarkIcon = L.divIcon({
+        className: "",
+        html: `<span style="display:flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:6px;background:rgba(255,170,70,0.95);color:#1a0f05;font:700 12px/1 ui-sans-serif,system-ui;box-shadow:0 0 0 2px rgba(5,7,14,0.9),0 0 8px rgba(255,170,70,0.6);">!</span>`,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+      })
+      remarkMarkers.forEach((r) => {
+        const marker = L.marker([r.lat, r.lon], {
+          icon: remarkIcon,
+          interactive: true,
+          keyboard: false,
+          zIndexOffset: 300,
+        }).addTo(map)
+        marker.bindTooltip(escapeHtml(r.label), {
+          direction: "top",
+          offset: [0, -10],
+          opacity: 1,
+        })
+        marker.on("click", (e) => {
+          L.DomEvent.stopPropagation(e)
+          marker.openTooltip()
+        })
+        markersRef.current.push(marker)
+      })
+    }
+
     // "Jij bent hier" — the rider's real position, distinct from waypoints so
     // they can always find themselves back after zooming/panning.
     if (myLocation) {
@@ -351,7 +420,50 @@ export function RouteMap({
     setTimeout(() => {
       if (mapRef.current === map) map.invalidateSize()
     }, 80)
-  }, [geometry, waypoints, waypointRoles, meetpoints, climbs, isBuilder, center, myLocation])
+  }, [geometry, waypoints, waypointRoles, meetpoints, climbs, isBuilder, center, myLocation, remarkMarkers])
+
+  // Positie-cursor van het interactieve hoogteprofiel: witte stip op het echte
+  // trackpunt dat het dichtst bij positionKm ligt. Eigen effect zodat slepen
+  // over het profiel alleen deze marker verplaatst (geen volledige re-render).
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    if (positionKm == null || geometry.length < 2) {
+      posMarkerRef.current?.remove()
+      posMarkerRef.current = null
+      return
+    }
+    const cum = cumulativeKm(geometry)
+    const at = geometry[nearestIdxForKm(cum, positionKm)]
+    if (!at) return
+    if (!posMarkerRef.current) {
+      const icon = L.divIcon({
+        className: "",
+        html: `<span style="display:block;width:14px;height:14px;border-radius:9999px;background:#fff;border:3px solid ${ACCENT};box-shadow:0 0 0 2px rgba(5,7,14,0.9),0 0 12px ${ACCENT};"></span>`,
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+      })
+      posMarkerRef.current = L.marker(at, {
+        icon,
+        interactive: false,
+        keyboard: false,
+        zIndexOffset: 600,
+      }).addTo(map)
+    } else {
+      posMarkerRef.current.setLatLng(at)
+    }
+  }, [positionKm, geometry])
+
+  // "Toon op kaart" voor een routeopmerking: pan/zoom naar het punt zodra de
+  // seq verspringt (herhaald tikken blijft werken bij gelijke coördinaten).
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !focusPoint || focusPoint.seq === 0) return
+    map.setView([focusPoint.lat, focusPoint.lon], Math.max(map.getZoom(), 15), {
+      animate: true,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusPoint?.seq])
 
   // "Centreer op mij": explicitly jump to the rider's position at street-level
   // zoom, regardless of what else is on the map. Triggered via the counter so
