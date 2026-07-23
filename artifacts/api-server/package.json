@@ -22,6 +22,7 @@
     "test:provider-sync": "node ./scripts/run-test.mjs provider-sync",
     "test:derived-load": "node ./scripts/run-test.mjs derived-load",
     "test:connector-cleanup": "node ./scripts/run-test.mjs connector-cleanup",
+    "test:connect-status": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs connect-status",
     "test:memory-graph": "node ./scripts/run-test.mjs memory-graph",
     "test:context-memory": "node ./scripts/run-test.mjs context-memory",
     "test:volgauto": "node ./scripts/run-test.mjs volgauto",

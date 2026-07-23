@@ -39,6 +39,7 @@ import WedstrijdRoomPage from "@/pages/wedstrijd-room";
 import JourneyPage from "@/pages/journey";
 import KnowledgePage from "@/pages/knowledge";
 import MeerPage from "@/pages/meer";
+import SparkiConnectPage from "@/pages/sparki-connect";
 import KlimmenPage from "@/pages/klimmen";
 import InvitationsPage from "@/pages/invitations";
 import InviteAcceptPage from "@/pages/invite-accept";
@@ -663,6 +664,9 @@ function AppRouter() {
                 </Route>
                 <Route path="/meer">
                   <ProtectedPage component={MeerPage} />
+                </Route>
+                <Route path="/connect">
+                  <ProtectedPage component={SparkiConnectPage} />
                 </Route>
                 <Route path="/klimmen">
                   <ProtectedPage component={KlimmenPage} />

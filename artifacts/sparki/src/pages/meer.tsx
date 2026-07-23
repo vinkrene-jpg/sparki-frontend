@@ -1,4 +1,4 @@
-import { Shield, LifeBuoy } from "lucide-react"
+import { Shield, LifeBuoy, Link2, Settings } from "lucide-react"
 import { useLocation } from "wouter"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { ChapterGrid } from "@/components/sparki/chapter-grid"
@@ -42,6 +42,25 @@ export default function MeerPage() {
 
       <div className="mt-4">
         <ChapterGrid chapters={chapters} />
+      </div>
+
+      <div className="mt-6">
+        <div className="flex items-center gap-2">
+          <Settings className="h-4 w-4 text-white/45" strokeWidth={1.75} />
+          <h2 className="font-sans text-[15px] font-light text-white/80">
+            Instellingen
+          </h2>
+        </div>
+        <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setLocation("/connect")}
+            className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+          >
+            <Link2 className="h-4 w-4" strokeWidth={1.75} />
+            Sparki Connect — koppelingen &amp; import
+          </button>
+        </div>
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-2.5">

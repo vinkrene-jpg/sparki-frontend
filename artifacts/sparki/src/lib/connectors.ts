@@ -30,6 +30,59 @@ export const READINESS_LABELS: Record<ReadinessState, string> = {
   voorbereid: "Voorbereid",
 }
 
+// Centraal Sparki Connect-statusmodel (server-side afgeleid). Zelfde bron voor
+// onboarding, instellingen, web en mobiel.
+export type ConnectStatus =
+  | "not_connected"
+  | "connecting"
+  | "connected"
+  | "sync_in_progress"
+  | "action_required"
+  | "temporarily_unavailable"
+  | "permission_revoked"
+  | "disconnected"
+
+export interface ConnectState {
+  status: ConnectStatus
+  connectedAt: string | null
+  lastSuccessfulSyncAt: string | null
+  lastSyncAttemptAt: string | null
+  lastErrorCategory: "auth" | "permission" | "temporary" | "unknown" | null
+  permissionState: "granted" | "revoked" | "none"
+  tokenAvailable: boolean
+  disconnectedAt: string | null
+  createdAt: string | null
+  updatedAt: string | null
+}
+
+export type ConnectCapability =
+  | "activity_import"
+  | "health_data"
+  | "workout_export"
+  | "route_export"
+  | "webhook_sync"
+  | "file_import"
+
+export type CapabilityStatus =
+  | "available"
+  | "prepared_not_active"
+  | "awaiting_official_access"
+  | "unsupported"
+
+export type CapabilityMap = Record<ConnectCapability, CapabilityStatus>
+
+// Plain-Nederlandse labels voor de centrale status (geen technische termen).
+export const CONNECT_STATUS_LABELS: Record<ConnectStatus, string> = {
+  not_connected: "Niet gekoppeld",
+  connecting: "Koppelen gestart",
+  connected: "Gekoppeld",
+  sync_in_progress: "Bezig met ophalen",
+  action_required: "Actie nodig",
+  temporarily_unavailable: "Tijdelijk niet beschikbaar",
+  permission_revoked: "Toestemming ingetrokken",
+  disconnected: "Verbroken",
+}
+
 // Shape returned by GET /api/connectors — registry definition merged with this
 // user's real connection row. Drives both the onboarding connect step and the
 // Settings management panel (single source of truth, no duplication).
@@ -48,6 +101,8 @@ export interface ConnectorItem {
   permissionRevoked: boolean
   connectedAt: string | null
   readiness: ConnectorReadiness
+  connect: ConnectState
+  capabilities: CapabilityMap
 }
 
 export async function fetchConnectors(): Promise<ConnectorItem[]> {

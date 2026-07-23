@@ -34,6 +34,7 @@ import CoachCockpitPage from "@/pages/coach-cockpit"
 import LandingPage from "@/pages/landing"
 import StartPage from "@/pages/start"
 import MeerPage from "@/pages/meer"
+import SparkiConnectPage from "@/pages/sparki-connect"
 import ClubPage from "@/pages/club"
 import PaspoortPage from "@/pages/paspoort"
 import KnowledgePage from "@/pages/knowledge"
@@ -457,6 +458,8 @@ export function DevPreview() {
     page = <CoachAthletePlanPage />
   } else if (location.startsWith("/meer")) {
     page = <MeerPage />
+  } else if (location.startsWith("/connect")) {
+    page = <SparkiConnectPage />
   } else if (location.startsWith("/invite/")) {
     page = <InviteAcceptPage />
     showNav = false

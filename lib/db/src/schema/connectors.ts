@@ -63,6 +63,15 @@ export const connectorConnectionsTable = pgTable(
     refreshToken: text("refresh_token"),
     tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
     connectedAt: timestamp("connected_at", { withTimezone: true }),
+    // Centraal statusmodel (Sparki Connect): laatste synchronisatiepoging
+    // (geslaagd of niet). `lastSyncAt` blijft de laatst GESLAAGDE sync.
+    lastSyncAttemptAt: timestamp("last_sync_attempt_at", { withTimezone: true }),
+    // Coarse-grained foutcategorie voor de laatste mislukte sync:
+    // "auth" | "permission" | "temporary" | "unknown". Nooit een technische
+    // foutcode voor de gebruiker — alleen intern voor statusafleiding.
+    lastErrorCategory: text("last_error_category"),
+    // Wanneer de gebruiker de koppeling zelf heeft verbroken.
+    disconnectedAt: timestamp("disconnected_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

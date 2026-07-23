@@ -12,6 +12,9 @@ import {
   loadAllowedDataTypes,
   ingestBatch,
   effectiveImportedDataTypes,
+  deriveConnectState,
+  deriveCapabilities,
+  FILE_IMPORT_CAPABILITIES,
 } from "../engines/integration";
 import {
   buildStravaAuthorizeUrl,
@@ -81,20 +84,16 @@ function effectiveAvailability(id: string): {
   };
 }
 
-// Build the public connector shape (registry definition + this user's live row +
-// 4-state readiness). The Data Hub owns the actual sync pipeline (runSync).
-async function buildConnectorItem(clerkId: string, id: string) {
-  const def = getConnectorDefinition(id)!;
-  const eff = effectiveAvailability(id);
-  const [row] = await db
-    .select()
-    .from(connectorConnectionsTable)
-    .where(
-      and(
-        eq(connectorConnectionsTable.clerkId, clerkId),
-        eq(connectorConnectionsTable.provider, id),
-      ),
-    );
+// Eén gedeelde bouwer voor het publieke connector-object: registrydefinitie +
+// live rij van deze gebruiker + 4-state readiness + het centrale Sparki
+// Connect-statusmodel + eerlijke capabilitystatus. Bevat NOOIT tokens of
+// andere credentials — alleen het afgeleide feit `tokenAvailable`.
+function toConnectorItem(
+  def: NonNullable<ReturnType<typeof getConnectorDefinition>>,
+  row: (typeof connectorConnectionsTable.$inferSelect) | undefined,
+  eff: { available: boolean; unavailableReason: string | null },
+  syncRunning: boolean,
+) {
   return {
     id: def.id,
     displayName: def.displayName,
@@ -110,7 +109,41 @@ async function buildConnectorItem(clerkId: string, id: string) {
     permissionRevoked: row?.permissionRevoked ?? false,
     connectedAt: row?.connectedAt ?? null,
     readiness: resolveReadiness(def, row?.status, eff.available),
+    // Centraal statusmodel — zelfde bron voor onboarding, instellingen en mobiel.
+    connect: deriveConnectState(row ?? null, { syncRunning }),
+    capabilities: deriveCapabilities(def, eff.available),
   };
+}
+
+// Loopt er op dit moment een echte sync-run voor deze gebruiker+platform?
+async function hasRunningSync(clerkId: string, provider: string): Promise<boolean> {
+  const [running] = await db
+    .select({ id: syncRunsTable.id })
+    .from(syncRunsTable)
+    .where(
+      and(
+        eq(syncRunsTable.clerkId, clerkId),
+        eq(syncRunsTable.provider, provider),
+        eq(syncRunsTable.status, "running"),
+      ),
+    )
+    .limit(1);
+  return Boolean(running);
+}
+
+async function buildConnectorItem(clerkId: string, id: string) {
+  const def = getConnectorDefinition(id)!;
+  const eff = effectiveAvailability(id);
+  const [row] = await db
+    .select()
+    .from(connectorConnectionsTable)
+    .where(
+      and(
+        eq(connectorConnectionsTable.clerkId, clerkId),
+        eq(connectorConnectionsTable.provider, id),
+      ),
+    );
+  return toConnectorItem(def, row, eff, await hasRunningSync(clerkId, id));
 }
 
 // GET /api/connectors — modular registry merged with this user's connection
@@ -125,28 +158,38 @@ router.get("/", requireAuth, async (req, res) => {
       .where(eq(connectorConnectionsTable.clerkId, clerkId));
     const byProvider = new Map(rows.map((r) => [r.provider, r]));
 
-    const connectors = connectorRegistry.map((def) => {
-      const row = byProvider.get(def.id);
-      const eff = effectiveAvailability(def.id);
-      return {
-        id: def.id,
-        displayName: def.displayName,
-        category: def.category,
-        available: eff.available,
-        authType: def.authType,
-        provides: def.provides,
-        unavailableReason: eff.unavailableReason,
-        status: row?.status ?? "disconnected",
-        lastSyncAt: row?.lastSyncAt ?? null,
-        importedDataTypes: row?.importedDataTypes ?? [],
-        errorStatus: row?.errorStatus ?? null,
-        permissionRevoked: row?.permissionRevoked ?? false,
-        connectedAt: row?.connectedAt ?? null,
-        readiness: resolveReadiness(def, row?.status, eff.available),
-      };
-    });
+    // Eén query voor lopende sync-runs van deze gebruiker (voor de
+    // sync_in_progress-status), in plaats van één query per platform.
+    const runningRuns = await db
+      .select({ provider: syncRunsTable.provider })
+      .from(syncRunsTable)
+      .where(
+        and(
+          eq(syncRunsTable.clerkId, clerkId),
+          eq(syncRunsTable.status, "running"),
+        ),
+      );
+    const runningProviders = new Set(runningRuns.map((r) => r.provider));
 
-    res.json({ connectors });
+    const connectors = connectorRegistry.map((def) =>
+      toConnectorItem(
+        def,
+        byProvider.get(def.id),
+        effectiveAvailability(def.id),
+        runningProviders.has(def.id),
+      ),
+    );
+
+    // De ingebouwde FIT/GPX/TCX-bestandsimport is een echte, werkende bron
+    // (Data Hub-provider "file") — geen externe koppeling, dus apart teruggegeven.
+    res.json({
+      connectors,
+      fileImport: {
+        id: "file",
+        displayName: "Bestand importeren (FIT / GPX / TCX)",
+        capabilities: FILE_IMPORT_CAPABILITIES,
+      },
+    });
   } catch (err) {
     req.log.error({ err }, "connectors.list failed");
     res.status(500).json({ error: "Kon koppelingen niet laden." });
@@ -317,6 +360,8 @@ router.post("/:id/disconnect", requireAuth, async (req, res) => {
           tokenExpiresAt: null,
           connectedAt: null,
           errorStatus: null,
+          lastErrorCategory: null,
+          disconnectedAt: now,
           updatedAt: now,
         },
       });
@@ -513,6 +558,10 @@ router.get("/strava/callback", async (req, res) => {
           connectedAt: now,
           permissionRevoked: false,
           errorStatus: null,
+          // Herkoppelen wist de oude foutcategorie en verbreek-historie, zodat
+          // het centrale statusmodel niet met verouderde velden blijft zitten.
+          lastErrorCategory: null,
+          disconnectedAt: null,
           updatedAt: now,
         },
       });
@@ -536,6 +585,7 @@ router.get("/strava/callback", async (req, res) => {
             // Report only what consent actually let us persist.
             importedDataTypes: effectiveImportedDataTypes(batch, allowed),
             lastSyncAt: new Date(),
+            lastSyncAttemptAt: new Date(),
             updatedAt: new Date(),
           })
           .where(

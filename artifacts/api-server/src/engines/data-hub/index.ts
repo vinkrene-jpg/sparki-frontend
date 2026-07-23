@@ -33,6 +33,10 @@ import {
   resolveNotifications,
 } from "../../lib/notifications";
 import { refreshDerivedLoadForAthlete } from "../../lib/derived-load-backfill";
+import {
+  categorizeConnectError,
+  type ErrorCategory,
+} from "../../lib/connectors/connect-status";
 
 export * from "./types";
 export * from "./sports";
@@ -98,6 +102,9 @@ async function upsertConnection(
       provider,
       status: "connected",
       lastSyncAt: now,
+      lastSyncAttemptAt: now,
+      lastErrorCategory: null,
+      disconnectedAt: null,
       connectedAt: now,
       importedDataTypes,
       externalUserId: externalUserId ?? null,
@@ -112,6 +119,9 @@ async function upsertConnection(
       set: {
         status: "connected",
         lastSyncAt: now,
+        lastSyncAttemptAt: now,
+        lastErrorCategory: null,
+        disconnectedAt: null,
         connectedAt: now,
         importedDataTypes,
         externalUserId: externalUserId ?? null,
@@ -127,16 +137,30 @@ async function recordConnectionError(
   provider: string,
   message: string,
   now: Date,
+  category: ErrorCategory,
 ): Promise<void> {
   await db
     .insert(connectorConnectionsTable)
-    .values({ clerkId, provider, status: "error", errorStatus: message })
+    .values({
+      clerkId,
+      provider,
+      status: "error",
+      errorStatus: message,
+      lastSyncAttemptAt: now,
+      lastErrorCategory: category,
+    })
     .onConflictDoUpdate({
       target: [
         connectorConnectionsTable.clerkId,
         connectorConnectionsTable.provider,
       ],
-      set: { status: "error", errorStatus: message, updatedAt: now },
+      set: {
+        status: "error",
+        errorStatus: message,
+        lastSyncAttemptAt: now,
+        lastErrorCategory: category,
+        updatedAt: now,
+      },
     })
     .catch(() => {});
 }
@@ -299,7 +323,13 @@ export async function runSync(
       .set({ status: "failed", finishedAt: new Date(), error: message })
       .where(eq(syncRunsTable.id, runId))
       .catch(() => {});
-    await recordConnectionError(clerkId, providerId, message, now);
+    await recordConnectionError(
+      clerkId,
+      providerId,
+      message,
+      now,
+      categorizeConnectError(err),
+    );
     // Golf 24: één actieve synchronisatiefout-melding per koppeling (nooit een
     // stapel bij herhaalde mislukkingen); verdwijnt vanzelf zodra een volgende
     // sync slaagt (resolutionKey) of na 7 dagen (geldigheid).

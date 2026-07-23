@@ -12,6 +12,9 @@
 // Connector catalog / capability registry.
 export * from "../../lib/connectors/registry";
 
+// Sparki Connect — centraal statusmodel + eerlijke capabilitystatus.
+export * from "../../lib/connectors/connect-status";
+
 // Provider sync implementations.
 export * from "../../lib/connectors/providers/strava";
 
