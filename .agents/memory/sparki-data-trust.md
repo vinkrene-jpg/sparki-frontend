@@ -16,7 +16,8 @@ description: How mockdata honesty is guarded app-wide and gotchas in testing the
 - Elke importbron die een ECHTE meting schrijft (bv. Strava-FTP) moet de bijbehorende `*_estimated`-vlag expliciet op false zetten, anders blijft de schattingsmotor (FTP-vloer) eroverheen "verbeteren".
 - Boot-self-heal in `recalibrateEstimatedFtp`: nieuwste niet-afgeleide ftp_history-rij wint van afgeleide; een nieuwere echte invoer blokkeert auto-raise (alleen voorstel). Prod is read-only voor de agent → herstel loopt via boot/engine of admin-endpoint `POST /api/admin/data-trust/cleanup` (droogdraai standaard, `apply=true`).
 - Cleanup-verwijderingen strikt beperken tot importbronnen (`test_type='strava'`); handmatige/coach-rijen nooit aanraken, ook dubbele niet.
-- Fiets-autokoppeling: `bikeLinkSource='auto'`-sessies vóór de registratiedatum van de fiets zijn vervuiling; single-bike fallback alleen ≥ registratiedatum.
+- Fiets-autokoppeling: `bikeLinkSource='auto'`-sessies vóór de registratiedatum van de fiets zijn vervuiling; single-bike fallback alleen ≥ registratiedatum. Cleanup-stap (d) draait `autoLinkSessions` direct via apply (nooit wachten op sync); handmatige koppelingen blijven altijd staan.
+- Planherstel na FTP-correctie is automatisch: workoutstructuur slaat alleen `targetPctFtp`-percentages op, watts worden bij weergave uit het profiel-FTP berekend; `target_tss` is FTP-onafhankelijk. Nooit een plan herbouwen om een FTP-fix.
 
 ## Achterhaalde afgeleide FTP-rijen
 - "Niet toonbaar zonder verwijderen" = notes-prefix `[achterhaald] ` op derived-rijen, gezet in dezelfde transactie als het zelfherstel dat de echte FTP overneemt (idempotent).

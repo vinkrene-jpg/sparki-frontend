@@ -391,6 +391,11 @@ async function main() {
       dry.json?.kandidaten?.ftpActualisatie?.nodig === false,
       "ftpActualisatie onterecht nodig bij echte FTP",
     );
+    // Historische fietskoppelingen zijn in scenario 5 al zelfhersteld ⇒ 0.
+    assert(
+      dry.json?.kandidaten?.historischeFietskoppelingen?.aantal === 0,
+      "historische fietskoppelingen onterecht gevonden na zelfherstel",
+    );
 
     const applied = await req("POST", "/api/admin/data-trust/cleanup", A, {
       clerkId: A,
@@ -411,6 +416,69 @@ async function main() {
         and(eq(ftpHistoryTable.clerkId, A), eq(ftpHistoryTable.measuredAt, "2026-07-01")),
       );
     assert(dupLeft.length === 1, `verwacht 1 overgebleven rij, kreeg ${dupLeft.length}`);
+  });
+
+  // 7. Opschoning stap (d): historische auto-koppeling wordt via apply direct
+  //    losgemaakt; een handmatige historische koppeling blijft onaangeraakt.
+  await scenario("opschoning: historische fietskoppeling direct losgemaakt", async () => {
+    const [bike2] = await db
+      .insert(garageBikesTable)
+      .values({ clerkId: A, name: "Trust-testfiets 2" })
+      .returning({ id: garageBikesTable.id });
+    const [autoSess] = await db
+      .insert(trainingSessionsTable)
+      .values({
+        clerkId: A,
+        sessionDate: "2021-03-01",
+        durationMin: 75,
+        bikeId: bike2!.id,
+        bikeLinkSource: "auto",
+      })
+      .returning({ id: trainingSessionsTable.id });
+    const [manualSess] = await db
+      .insert(trainingSessionsTable)
+      .values({
+        clerkId: A,
+        sessionDate: "2021-03-02",
+        durationMin: 45,
+        bikeId: bike2!.id,
+        bikeLinkSource: "manual",
+      })
+      .returning({ id: trainingSessionsTable.id });
+
+    const dry = await req("POST", "/api/admin/data-trust/cleanup", A, {
+      clerkId: A,
+    });
+    assert(
+      dry.json?.kandidaten?.historischeFietskoppelingen?.aantal === 1,
+      `verwacht 1 historische auto-koppeling, kreeg ${dry.json?.kandidaten?.historischeFietskoppelingen?.aantal}`,
+    );
+
+    const applied = await req("POST", "/api/admin/data-trust/cleanup", A, {
+      clerkId: A,
+      apply: true,
+    });
+    assert(applied.status === 200, `apply status ${applied.status}`);
+    assert(
+      applied.json?.fietsOntkoppeld === 1,
+      `verwacht fietsOntkoppeld 1, kreeg ${applied.json?.fietsOntkoppeld}`,
+    );
+    const [autoRow] = await db
+      .select({ bikeId: trainingSessionsTable.bikeId })
+      .from(trainingSessionsTable)
+      .where(eq(trainingSessionsTable.id, autoSess!.id));
+    assert(autoRow?.bikeId == null, "historische auto-koppeling bleef staan");
+    const [manualRow] = await db
+      .select({
+        bikeId: trainingSessionsTable.bikeId,
+        src: trainingSessionsTable.bikeLinkSource,
+      })
+      .from(trainingSessionsTable)
+      .where(eq(trainingSessionsTable.id, manualSess!.id));
+    assert(
+      manualRow?.bikeId === bike2!.id && manualRow?.src === "manual",
+      "handmatige koppeling is onterecht aangeraakt",
+    );
   });
 
   await cleanup();

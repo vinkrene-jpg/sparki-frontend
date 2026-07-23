@@ -1400,8 +1400,25 @@ router.post(
             }
           : { nodig: false as const };
 
+      // (d) Fiets-autokoppeling: ritten van vóór de registratiedatum van een
+      // fiets die tóch automatisch gekoppeld staan (oude bug). De droogdraai
+      // telt ze; apply draait het bestaande zelfherstel (autoLinkSessions)
+      // dat alleen auto-koppelingen losmaakt — handmatige keuzes blijven.
+      const historischGekoppeld = (
+        await db.execute(
+          sql`SELECT count(*)::int AS aantal,
+                     coalesce(round(sum(s.distance_km)::numeric, 0), 0)::float AS km
+              FROM training_sessions s
+              JOIN garage_bikes b ON b.id = s.bike_id
+              WHERE s.clerk_id = ${target}
+                AND s.bike_link_source = 'auto'
+                AND s.session_date < b.created_at::date`,
+        )
+      ).rows[0] as { aantal: number; km: number };
+
       let removed = { observaties: 0, ftpHistorie: 0 };
       let ftpGeactualiseerd = false;
+      let fietsOntkoppeld = 0;
       if (apply === true) {
         if (englishObs.length > 0) {
           const r = await db.execute(
@@ -1434,6 +1451,21 @@ router.post(
           const r = await recalibrateEstimatedFtp(target);
           ftpGeactualiseerd = r.changed;
         }
+        if (historischGekoppeld.aantal > 0) {
+          const { autoLinkSessions } = await import("../lib/bike-usage");
+          await autoLinkSessions(target);
+          const na = (
+            await db.execute(
+              sql`SELECT count(*)::int AS aantal
+                  FROM training_sessions s
+                  JOIN garage_bikes b ON b.id = s.bike_id
+                  WHERE s.clerk_id = ${target}
+                    AND s.bike_link_source = 'auto'
+                    AND s.session_date < b.created_at::date`,
+            )
+          ).rows[0] as { aantal: number };
+          fietsOntkoppeld = historischGekoppeld.aantal - na.aantal;
+        }
       }
 
       res.json({
@@ -1446,9 +1478,11 @@ router.post(
           })),
           dubbeleFtpHistorie: dupFtp,
           ftpActualisatie,
+          historischeFietskoppelingen: historischGekoppeld,
         },
         verwijderd: removed,
         ftpGeactualiseerd,
+        fietsOntkoppeld,
       });
     } catch (err) {
       req.log.error({ err }, "admin.dataTrustCleanup failed");
