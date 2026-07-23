@@ -992,7 +992,10 @@ router.post("/:id/rejoin", requireAuth, async (req, res) => {
   const body = (req.body ?? {}) as Record<string, unknown>;
   const lat = finiteNum(body.lat);
   const lon = finiteNum(body.lon);
-  const mode = body.mode === "verder" ? "verder" : "terug";
+  const mode =
+    body.mode === "verder" || body.mode === "bestemming"
+      ? (body.mode as "verder" | "bestemming")
+      : "terug";
   if (lat == null || lon == null || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
     res.status(400).json({ error: "Ongeldige positie" });
     return;
@@ -1051,8 +1054,13 @@ router.post("/:id/rejoin", requireAuth, async (req, res) => {
     // "terug" targets the nearest point; "verder" targets a point far enough
     // ahead that the connector is a genuine continuation, not a U-turn: at
     // least 1 km ahead, or twice the current deviation if that's larger.
+    // "bestemming" berekent een nieuw vervolg rechtstreeks naar het EINDPUNT
+    // van de originele route — de opgeslagen route zelf (incl. eventuele
+    // wedstrijdpunten) blijft onaangeroerd; dit is altijd een overlay.
     let targetIdx = nearestIdx;
-    if (mode === "verder") {
+    if (mode === "bestemming") {
+      targetIdx = geometry.length - 1;
+    } else if (mode === "verder") {
       const aheadKm = Math.max(1, (nearestM * 2) / 1000);
       targetIdx = geometry.length - 1;
       for (let i = nearestIdx; i < geometry.length; i++) {

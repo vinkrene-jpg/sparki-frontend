@@ -4,12 +4,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  PixelRatio,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -60,6 +62,25 @@ import {
   speakCue,
 } from "@/lib/nav-audio";
 import { useNavAudioPrefs } from "@/lib/nav-audio-settings";
+import {
+  chooseMetricLayout,
+  metricContainerWidthPx,
+} from "@/lib/hud-metrics";
+import { computeNavLayout } from "@/lib/nav-layout";
+import {
+  buildClimbWindows,
+  climbPhaseAt,
+  climbProfileSlice,
+  type ClimbPhase,
+} from "@/lib/nav-climb";
+import {
+  allowNewRejoinRequest,
+  createOffRoutePromptState,
+  offRouteOptions,
+  registerDismiss,
+  shouldShowOffRoutePrompt,
+  type RejoinRequestMark,
+} from "@/lib/off-route-choice";
 import {
   createRaceModeState,
   finishCueAllowed,
@@ -179,6 +200,11 @@ export default function NavigateScreen() {
   const [following, setFollowing] = useState(true);
   const [showSensors, setShowSensors] = useState(false);
 
+  // Responsive lay-out: schermmaten + systeem-fontschaal voor de databalk
+  // en de kaart/klimkaart-verdeling (geen vaste toestelhoogtes).
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const fontScale = PixelRatio.getFontScale();
+
   const path: LatLon[] = useMemo(
     () => (route?.geometry ?? []).map(toLatLon),
     [route?.geometry],
@@ -212,6 +238,12 @@ export default function NavigateScreen() {
   // terug op de route herstelt automatisch.
   const offRouteRef = useRef(createOffRouteState());
   const [offRouteActive, setOffRouteActive] = useState(false);
+  const [offEpisode, setOffEpisode] = useState(0);
+  // Keuzekaart-status: "negeren" sluit de kaart voor deze episode; hij komt
+  // alleen terug bij een RELEVANT gegroeide afwijking of een nieuwe episode.
+  const [offPrompt, setOffPrompt] = useState(createOffRoutePromptState);
+  // Herberekenlus-beveiliging: nieuw rejoin-verzoek pas na afkoeltijd/verplaatsing.
+  const rejoinMarkRef = useRef<RejoinRequestMark | null>(null);
   useEffect(() => {
     if (!location || !match) return;
     const upd = updateOffRoute(offRouteRef.current, {
@@ -225,6 +257,7 @@ export default function NavigateScreen() {
     });
     offRouteRef.current = upd.state;
     if (upd.state.active !== offRouteActive) setOffRouteActive(upd.state.active);
+    if (upd.state.episode !== offEpisode) setOffEpisode(upd.state.episode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location, match]);
 
@@ -364,20 +397,72 @@ export default function NavigateScreen() {
       : null;
   }, [detour, location, detourPath]);
   const requestRejoin = useCallback(
-    (mode: "terug" | "verder") => {
+    (mode: "terug" | "verder" | "bestemming") => {
       if (!location || rejoin.isPending) return;
+      const pos = { lat: location.latitude, lon: location.longitude };
+      // Nooit een herberekenlus: een nieuw verzoek pas na afkoeltijd of
+      // echte verplaatsing sinds het vorige verzoek.
+      if (!allowNewRejoinRequest(rejoinMarkRef.current, Date.now(), pos)) return;
+      rejoinMarkRef.current = { atMs: Date.now(), ...pos };
       rejoin.mutate(
-        { lat: location.latitude, lon: location.longitude, mode },
+        { ...pos, mode },
         { onSuccess: (result) => setDetour(result) },
       );
     },
     [location, rejoin],
   );
 
+  // Keuzekaart tonen? Puur en herhaalvrij: nieuwe episode → één kaart;
+  // "negeren" houdt hem dicht tot de afwijking relevant groeit.
+  const showOffRouteCard =
+    offRouteActive &&
+    shouldShowOffRoutePrompt(offPrompt, {
+      active: offRouteActive,
+      episode: offEpisode,
+      distanceM: match?.distanceM ?? 0,
+      hasDetour: !!detour,
+    });
+  const dismissOffRouteCard = useCallback(() => {
+    setOffPrompt((s) => registerDismiss(s, offEpisode, match?.distanceM ?? 0));
+  }, [offEpisode, match?.distanceM]);
+
   const distanceToTurn =
     nextStep && progress
       ? Math.max(0, (nextStep.km - progress.traveledKm) * 1000)
       : null;
+
+  // ---------- Klimkaart (alleen uit ECHTE routeklimdata; anders afwezig) ----------
+  const climbWindows = useMemo(
+    () => buildClimbWindows(route?.climbs ?? null),
+    [route?.climbs],
+  );
+  const climbPhase: ClimbPhase | null = useMemo(
+    () => (progress ? climbPhaseAt(climbWindows, progress.traveledKm) : null),
+    [climbWindows, progress],
+  );
+  const climbSlice = useMemo(
+    () =>
+      climbPhase
+        ? climbProfileSlice(
+            route?.profile ?? null,
+            route?.distanceKm ?? null,
+            climbPhase.climb,
+          )
+        : null,
+    [climbPhase, route?.profile, route?.distanceKm],
+  );
+  // De klimkaart meet zijn eigen hoogte; de lay-outkern begrenst die en
+  // bepaalt hoeveel ruimte de kaart overhoudt (nooit overlap, herstel bij sluiten).
+  const [climbPanelMeasuredH, setClimbPanelMeasuredH] = useState(0);
+  const navLayout = computeNavLayout({
+    screenWidth,
+    screenHeight,
+    topInset: insets.top,
+    bottomInset: insets.bottom,
+    climbPanelHeight: climbPhase ? climbPanelMeasuredH : null,
+  });
+  // Beschikbare breedte per metric in de databalk (3 naast elkaar).
+  const metricW = metricContainerWidthPx(screenWidth - 32, 3);
 
   // Verkeerslichten langs de route uit de Sparki Traffic Database (echte
   // OSM- en detectiedata). Best-effort: zonder data geen regel in de HUD.
@@ -435,15 +520,29 @@ export default function NavigateScreen() {
     <View style={[styles.fill, { backgroundColor: c.background }]}>
       {/* ---------- Map ---------- */}
       {showMap ? (
-        <RouteMap
-          path={path}
-          detourPath={detourPath.length >= 2 ? detourPath : undefined}
-          location={displayLocation}
-          following={following}
-          onUserPan={() => setFollowing(false)}
-          primary={c.primary}
-          background={c.background}
-        />
+        // De kaartcontainer eindigt boven de klimkaart (nooit overlap);
+        // zonder klimkaart krijgt de kaart de volledige ruimte terug. De
+        // camerastand (zoom/rotatie/positie) blijft daarbij ongemoeid.
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: navLayout.mapHeight,
+            overflow: "hidden",
+          }}
+        >
+          <RouteMap
+            path={path}
+            detourPath={detourPath.length >= 2 ? detourPath : undefined}
+            location={displayLocation}
+            following={following}
+            onUserPan={() => setFollowing(false)}
+            primary={c.primary}
+            background={c.background}
+          />
+        </View>
       ) : (
         <MapFallback
           c={c}
@@ -497,11 +596,13 @@ export default function NavigateScreen() {
                   </Text>
                 </View>
               </View>
-            ) : (
+            ) : showOffRouteCard ? (
               <View style={[styles.instruction, { backgroundColor: c.card, borderColor: c.destructive }]}>
                 <Ionicons name="warning-outline" size={26} color={c.destructive} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.instrLabel, { color: c.destructive }]}>Van de route</Text>
+                  <Text style={[styles.instrLabel, { color: c.destructive }]}>
+                    Je bent van de route afgeweken.
+                  </Text>
                   <Text style={[styles.instrNote, { color: c.mutedForeground }]} numberOfLines={2}>
                     {rejoin.isPending
                       ? "Nieuw stuk wordt berekend…"
@@ -511,28 +612,51 @@ export default function NavigateScreen() {
                         : `Je bent ${fmtMeters(progress.offBy)} van de route.`}
                   </Text>
                   {!rejoin.isPending && (
-                    <View style={styles.rejoinRow}>
-                      <Pressable
-                        onPress={() => requestRejoin("terug")}
-                        disabled={!location}
-                        style={[styles.rejoinBtn, { backgroundColor: c.primary }]}
-                      >
-                        <Text style={[styles.rejoinBtnText, { color: c.primaryForeground }]}>
-                          Terug naar de route
-                        </Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => requestRejoin("verder")}
-                        disabled={!location}
-                        style={[styles.rejoinBtn, { borderWidth: 1, borderColor: c.border }]}
-                      >
-                        <Text style={[styles.rejoinBtnText, { color: c.foreground }]}>
-                          Rij verder
-                        </Text>
-                      </Pressable>
+                    <View style={styles.rejoinCol}>
+                      {offRouteOptions(!!race).map((opt) => (
+                        <Pressable
+                          key={opt.id}
+                          onPress={() =>
+                            opt.id === "negeren"
+                              ? dismissOffRouteCard()
+                              : requestRejoin(opt.id)
+                          }
+                          disabled={opt.id !== "negeren" && !location}
+                          style={[
+                            styles.rejoinBtn,
+                            opt.primary
+                              ? { backgroundColor: c.primary }
+                              : { borderWidth: 1, borderColor: c.border },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.rejoinBtnText,
+                              { color: opt.primary ? c.primaryForeground : c.foreground },
+                            ]}
+                          >
+                            {opt.label}
+                          </Text>
+                          <Text
+                            style={[styles.rejoinBtnDetail, { color: opt.primary ? c.primaryForeground : c.mutedForeground }]}
+                            numberOfLines={2}
+                          >
+                            {opt.detail}
+                          </Text>
+                        </Pressable>
+                      ))}
                     </View>
                   )}
                 </View>
+              </View>
+            ) : (
+              // Genegeerd: kaart blijft dicht (geen spam), wel een eerlijke
+              // compacte statusregel zolang de afwijking voortduurt.
+              <View style={[styles.instruction, { backgroundColor: c.card, borderColor: c.border }]}>
+                <Ionicons name="warning-outline" size={20} color={c.mutedForeground} />
+                <Text style={[styles.instrNote, { color: c.mutedForeground, flex: 1 }]}>
+                  Van de route ({fmtMeters(progress.offBy)}) — je koos negeren; je originele route blijft actief.
+                </Text>
               </View>
             )
           ) : nextStep ? (
@@ -736,9 +860,89 @@ export default function NavigateScreen() {
         </View>
       )}
 
+      {/* ---------- Klimkaart: onderaan, kaart krimpt erboven (geen overlap) ---------- */}
+      {showMap && climbPhase && (
+        <View
+          onLayout={(e) => {
+            const h = Math.round(e.nativeEvent.layout.height);
+            if (h !== climbPanelMeasuredH) setClimbPanelMeasuredH(h);
+          }}
+          style={[
+            styles.climbPanel,
+            {
+              bottom: insets.bottom,
+              maxHeight: navLayout.climbPanelMaxHeight,
+              backgroundColor: HUD_BG,
+              borderColor: c.primary,
+            },
+          ]}
+        >
+          <View style={styles.climbHead}>
+            <Ionicons name="trending-up" size={18} color={c.primary} />
+            <Text style={[styles.climbTitle, { color: HUD_TEXT }]} numberOfLines={1}>
+              {climbPhase.climb.name}
+            </Text>
+            <Text style={[styles.climbMeta, { color: HUD_MUTED }]}>
+              {climbPhase.climb.lengthKm.toFixed(1)} km ·{" "}
+              {climbPhase.climb.avgGradePct ? `${climbPhase.climb.avgGradePct.toFixed(1)}%` : "—"}
+            </Text>
+          </View>
+          <Text style={[styles.climbPhaseText, { color: HUD_TEXT }]}>
+            {climbPhase.phase === "komt"
+              ? `Klim over ${fmtMeters(climbPhase.inM)}`
+              : climbPhase.phase === "op"
+                ? `Nog ${fmtMeters(climbPhase.toTopM)} tot de top`
+                : climbPhase.phase === "top"
+                  ? "Bijna boven!"
+                  : "Top gepasseerd — goed gedaan."}
+          </Text>
+          {climbSlice ? (
+            <View style={styles.climbProfileRow}>
+              {(() => {
+                const min = Math.min(...climbSlice);
+                const span = Math.max(1, Math.max(...climbSlice) - min);
+                const doneFrac =
+                  climbPhase.phase === "op" || climbPhase.phase === "top"
+                    ? climbPhase.fracDone
+                    : climbPhase.phase === "einde"
+                      ? 1
+                      : 0;
+                return climbSlice.map((ele, i) => (
+                  <View
+                    key={i}
+                    style={{
+                      flex: 1,
+                      alignSelf: "flex-end",
+                      height: 8 + ((ele - min) / span) * 40,
+                      backgroundColor:
+                        i / (climbSlice.length - 1) <= doneFrac
+                          ? c.primary
+                          : "rgba(255,255,255,0.28)",
+                      marginHorizontal: 1,
+                      borderTopLeftRadius: 2,
+                      borderTopRightRadius: 2,
+                    }}
+                  />
+                ));
+              })()}
+            </View>
+          ) : (
+            <Text style={[styles.climbMeta, { color: HUD_MUTED }]}>
+              Geen hoogteprofiel voor deze route beschikbaar.
+            </Text>
+          )}
+        </View>
+      )}
+
       {/* ---------- Bottom: progress + recenter ---------- */}
       {Platform.OS !== "web" && hasMapbox && hasGeometry && (
-        <View style={[styles.bottom, { bottom: insets.bottom + 16 }]} pointerEvents="box-none">
+        <View
+          style={[
+            styles.bottom,
+            { bottom: insets.bottom + 16 + navLayout.climbPanelHeight },
+          ]}
+          pointerEvents="box-none"
+        >
           {!following && (
             <Pressable
               onPress={() => setFollowing(true)}
@@ -746,7 +950,7 @@ export default function NavigateScreen() {
             >
               <Ionicons name="locate" size={20} color={c.primaryForeground} />
               <Text style={{ color: c.primaryForeground, fontFamily: "Inter_600SemiBold" }}>
-                Centreer
+                Terug naar mijn positie
               </Text>
             </Pressable>
           )}
@@ -760,6 +964,8 @@ export default function NavigateScreen() {
               }
               unit="km/u"
               highlight
+              widthPx={metricW}
+              fontScale={fontScale}
               c={c}
             />
             <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.18)" }]} />
@@ -767,6 +973,8 @@ export default function NavigateScreen() {
               label="Resterend"
               value={progress ? progress.remainingKm.toFixed(1) : "—"}
               unit="km"
+              widthPx={metricW}
+              fontScale={fontScale}
               c={c}
             />
             <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.18)" }]} />
@@ -774,6 +982,8 @@ export default function NavigateScreen() {
               label="Totaal"
               value={route.distanceKm != null ? route.distanceKm.toFixed(1) : "—"}
               unit="km"
+              widthPx={metricW}
+              fontScale={fontScale}
               c={c}
             />
           </View>
@@ -784,6 +994,8 @@ export default function NavigateScreen() {
                 value={live.values.watts != null ? `${live.values.watts}` : "—"}
                 unit="W"
                 highlight
+                widthPx={metricW}
+                fontScale={fontScale}
                 c={c}
               />
               <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.18)" }]} />
@@ -793,6 +1005,8 @@ export default function NavigateScreen() {
                   live.values.heartRate != null ? `${live.values.heartRate}` : "—"
                 }
                 unit="spm"
+                widthPx={metricW}
+                fontScale={fontScale}
                 c={c}
               />
               <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.18)" }]} />
@@ -800,6 +1014,8 @@ export default function NavigateScreen() {
                 label="Cadans"
                 value={live.values.cadence != null ? `${live.values.cadence}` : "—"}
                 unit="rpm"
+                widthPx={metricW}
+                fontScale={fontScale}
                 c={c}
               />
             </View>
@@ -1230,30 +1446,57 @@ function Metric({
   value,
   unit,
   highlight,
+  widthPx,
+  fontScale,
   c,
 }: {
   label: string;
   value: string;
   unit?: string;
   highlight?: boolean;
+  /** Beschikbare containerbreedte (px) voor waarde + eenheid. */
+  widthPx?: number;
+  /** Systeem-fontschaal (PixelRatio.getFontScale()). */
+  fontScale?: number;
   c: ReturnType<typeof useColors>;
 }) {
+  // Begrensde container: past waarde+eenheid niet naast elkaar (grote
+  // getallen of grote systeemletters), dan komt de eenheid ONDER de waarde —
+  // nooit afgekapte of overlappende cijfers.
+  const layout =
+    widthPx != null
+      ? chooseMetricLayout(value, unit ?? "", widthPx, fontScale ?? 1)
+      : "row";
+  const valueColor = highlight ? c.primary : HUD_TEXT;
+  const unitColor = highlight ? c.primary : HUD_MUTED;
   return (
     <View style={styles.metric}>
-      <View style={styles.metricValueRow}>
-        <Text
-          style={[styles.metricValue, { color: highlight ? c.primary : HUD_TEXT }]}
-          numberOfLines={1}
-        >
-          {value}
-        </Text>
-        {unit ? (
-          <Text style={[styles.metricUnit, { color: highlight ? c.primary : HUD_MUTED }]}>
-            {unit}
+      {layout === "stacked" ? (
+        <View style={styles.metricValueCol}>
+          <Text style={[styles.metricValue, { color: valueColor }]} numberOfLines={1}>
+            {value}
           </Text>
-        ) : null}
-      </View>
-      <Text style={[styles.metricLabel, { color: HUD_MUTED }]}>{label}</Text>
+          {unit ? (
+            <Text style={[styles.metricUnit, { color: unitColor }]} numberOfLines={1}>
+              {unit}
+            </Text>
+          ) : null}
+        </View>
+      ) : (
+        <View style={styles.metricValueRow}>
+          <Text style={[styles.metricValue, { color: valueColor }]} numberOfLines={1}>
+            {value}
+          </Text>
+          {unit ? (
+            <Text style={[styles.metricUnit, { color: unitColor }]} numberOfLines={1}>
+              {unit}
+            </Text>
+          ) : null}
+        </View>
+      )}
+      <Text style={[styles.metricLabel, { color: HUD_MUTED }]} numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -1395,6 +1638,29 @@ const styles = StyleSheet.create({
   instrDistBig: { fontFamily: "Inter_700Bold", fontSize: 21 },
   instrNote: { fontFamily: "Inter_400Regular", fontSize: 13, marginTop: 2 },
   rejoinRow: { flexDirection: "row", gap: 8, marginTop: 8 },
+  rejoinCol: { gap: 8, marginTop: 8 },
+  rejoinBtnDetail: { fontFamily: "Inter_400Regular", fontSize: 11, marginTop: 2 },
+  metricValueCol: { alignItems: "center" },
+  climbPanel: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    borderTopWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 12,
+    gap: 6,
+  },
+  climbHead: { flexDirection: "row", alignItems: "center", gap: 8 },
+  climbTitle: { fontFamily: "Inter_600SemiBold", fontSize: 15, flex: 1 },
+  climbMeta: { fontFamily: "Inter_400Regular", fontSize: 12 },
+  climbPhaseText: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  climbProfileRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    height: 52,
+    marginTop: 2,
+  },
   rejoinBtn: {
     paddingHorizontal: 12,
     paddingVertical: 8,

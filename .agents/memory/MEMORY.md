@@ -105,6 +105,7 @@
 - [Sparki Rit-verhaal](sparki-ride-story.md) — flag `rit_verhaal`; sync line must render independent of fresh story; predictionAvailable strictly pre-hoc; workflow limit hit ⇒ tests via shell.
 - [ORS routing honesty](sparki-route-rejoin.md) — rejoin connectors must be REAL routed paths (never straight lines); loops = best-of-N candidates by pathOverlapFraction ([loops](sparki-route-loop-quality.md)).
 - [Sparki mobile nav app](sparki-mobile-nav.md) — Expo/RN turn-by-turn nav; react-native-maps has NO web build ⇒ platform-split component (.tsx native / .web.tsx stub), never runtime require.
+- [Sparki nav HUD & off-route keuze](sparki-nav-hud-offroute.md) — overlays krimpen de kaart (nooit overlap); free camera = geen animateCamera; off-route kaart per episode + rejoin-cooldown, route nooit auto-vervangen.
 - [Sparki mobile background ride recording](sparki-mobile-bg-recording.md) — OS TaskManager location task keeps track growing while locked; platform-split ride-tracker (.ts/.web.ts).
 - [Sparki bordjes-sprinten](sparki-bordjes-sprint.md) — town-sign sprints; boards=place-name transitions (honest, provider-only), base+speed+watt scoring.
 - [Sparki Coachomgeving (cockpit)](sparki-coach-cockpit.md) — coach-writable resources need an owner column (link-gate ≠ ownership); open-proposal idempotency via partial unique index; or(empty)=500.
@@ -112,8 +113,7 @@
 - [Sparki contextuele aandacht & meldingen](sparki-attention-notifications.md) — central category registry, critical never-off, resolutionKey open-dedupe + resolve lifecycle, quiet hours dampen only push/email.
 - [Test-workflow boot storm](test-workflow-boot-storm.md) — parallel test boots crash w/ esbuild EAGAIN/SIGABRT; fix = cross-process build semaphore + retry-on-infra-crash tsx runner (cant edit .replit).
 - [Sparki plan lifecycle](sparki-plan-lifecycle.md) — pause/resume/delete scoped to ONE resolveCurrentPlan id (newest active else newest paused); never status-wide bulk updates; sessions never touched.
-- [Sparki ride-navigator](sparki-ride-navigator.md) — CPS crank cadence, moving-avg speed, climbfases uit lib/nav-live (SSOT); elk "klaar met rit"-pad moet clearSavedRide of spookherstel; pagehide-persist.
-- [Save ridden ride as route](sparki-ridden-route-save.md) — ridden geometry only exists via GPX ingest.
+- [Sparki ride-navigator](sparki-ride-navigator.md) — CPS crank cadence, moving-avg speed, climbfases uit lib/nav-live (SSOT); elk "klaar met rit"-pad moet clearSavedRide of spookherstel ([rit als route](sparki-ridden-route-save.md)).
 - [Route generation free-text wish](sparki-route-wish.md) — wish goes only into buildRationale prompt (ORS cannot steer roads); honest "kan niet + alternatief", never claim a place not in data.
 - [Sparki route remarks + wegtypen](sparki-route-remarks.md) — Overpass geometry nulls: filter before .lat; no-surface tag = altijd "onbekend" ([surfaces](sparki-route-surfaces.md)).
 - [Klimmenverkenner](climb-explorer.md) — Overpass mirror selection: maps.mail.ru works; overpass-api.de 406 in env; overpass.osm.ch is Swiss-only false-empty (never in fallback chain).

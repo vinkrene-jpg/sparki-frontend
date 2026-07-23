@@ -4,6 +4,7 @@ import { Platform, StyleSheet, View } from "react-native";
 import MapView, { Marker, Polyline, UrlTile } from "react-native-maps";
 
 import type { LatLon } from "@/lib/geo";
+import { cameraForLocation } from "@/lib/map-camera";
 import { MAPBOX_TILE_URL } from "@/lib/mapbox";
 import type { LiveLocation } from "@/hooks/useLiveLocation";
 
@@ -23,23 +24,20 @@ export function RouteMap({
   detourPath?: LatLon[];
   location: LiveLocation | null;
   following: boolean;
+  /** Elke handmatige kaartbeweging (pannen, pinch-zoom, draaien). */
   onUserPan: () => void;
   primary: string;
   background: string;
 }) {
   const mapRef = useRef<MapView>(null);
 
+  // Vrije modus (following=false): geen enkele animateCamera — de kaart
+  // blijft exact waar de gebruiker hem zette (zoom, positie én rotatie).
   useEffect(() => {
-    if (!following || !location || !mapRef.current) return;
-    mapRef.current.animateCamera(
-      {
-        center: { latitude: location.latitude, longitude: location.longitude },
-        heading: location.heading ?? 0,
-        pitch: 45,
-        zoom: 16,
-      },
-      { duration: 800 },
-    );
+    if (!mapRef.current) return;
+    const cam = cameraForLocation(following, location);
+    if (!cam) return;
+    mapRef.current.animateCamera(cam, { duration: 800 });
   }, [location, following]);
 
   if (path.length < 2) return null;
@@ -56,7 +54,16 @@ export function RouteMap({
       }}
       showsUserLocation={!location}
       showsMyLocationButton={false}
+      rotateEnabled
+      pitchEnabled
+      zoomEnabled
+      scrollEnabled
       onPanDrag={onUserPan}
+      // Pinch-zoom en tweevinger-rotatie geven geen onPanDrag; elke door een
+      // GEBAAR veroorzaakte regiowijziging schakelt óók naar vrije modus.
+      onRegionChange={(_region, details) => {
+        if (details?.isGesture) onUserPan();
+      }}
       mapType={Platform.OS === "android" ? "none" : "standard"}
     >
       <UrlTile urlTemplate={MAPBOX_TILE_URL} tileSize={512} zIndex={-1} />

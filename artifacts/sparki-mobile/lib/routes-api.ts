@@ -55,6 +55,17 @@ export type RouteDetail = RouteSummary & {
   nav: RouteStep[] | null;
   geometry: RoutePathPoint[] | null;
   rationale: string | null;
+  /** Genormaliseerd ECHT hoogteprofiel (downsampled ele-waarden) of null. */
+  profile?: number[] | null;
+  /** Gedetecteerde beklimmingen uit het echte hoogteprofiel, of null. */
+  climbs?:
+    | {
+        name?: string | null;
+        lengthKm?: number | null;
+        avgGradePct?: number | null;
+        summitKm?: number | null;
+      }[]
+    | null;
   /** Gebruiksdoel — "training" | "toertocht" | "wedstrijd". */
   usageType?: string;
   /**
@@ -138,7 +149,7 @@ export function useRoutes() {
 // Antwoord van POST /api/routes/:id/rejoin — een ECHT gerouteerd verbindings-
 // stuk (via de routedienst) terug naar de routelijn, nooit een rechte lijn.
 export type RejoinResult = {
-  mode: "terug" | "verder";
+  mode: "terug" | "verder" | "bestemming";
   path: RoutePathPoint[];
   distanceKm: number;
   durationSec: number | null;
@@ -157,7 +168,7 @@ export function useRejoinRoute(routeId: number | null) {
     mutationFn: async (input: {
       lat: number;
       lon: number;
-      mode: "terug" | "verder";
+      mode: "terug" | "verder" | "bestemming";
     }): Promise<RejoinResult> => {
       if (routeId == null) throw new Error("Geen route geopend.");
       return customFetch<RejoinResult>(`/api/routes/${routeId}/rejoin`, {
