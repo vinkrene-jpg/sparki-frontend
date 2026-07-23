@@ -1,9 +1,13 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useLocation } from "wouter"
 import {
   Archive,
   ArchiveRestore,
   Copy,
   GitCompareArrows,
+  MoreVertical,
+  Navigation,
+  Pencil,
   Search,
   Share2,
   Star,
@@ -28,10 +32,14 @@ import {
 } from "@/hooks/use-routes"
 import { useActivityImports } from "@/hooks/use-activity-imports"
 import { ACCENT } from "@/components/sparki/ui"
+import { displayRouteName } from "@/lib/route-name"
 
-// Routebibliotheek (Golf 19) — zoeken, filteren, favorieten, delen,
-// archiveren, dupliceren en plan↔gereden vergelijken. Alles komt uit echte
-// opgeslagen routes; lege of onmogelijke situaties worden eerlijk benoemd.
+// Routebibliotheek (Golf 19, opgeknapt) — zoeken, filteren, favorieten,
+// delen, archiveren, dupliceren en plan↔gereden vergelijken. Iedere kaart is
+// nu volledig aanklikbaar en opent de bestaande routedetailkaart onder
+// "Bewaarde routes" (?view=bewaard&route=<id>). Beheer zit in een
+// driepuntenmenu; alles komt uit echte opgeslagen routes en lege of
+// onmogelijke situaties worden eerlijk benoemd.
 
 const SCOPES: { key: RouteScope | "gedeeld"; label: string }[] = [
   { key: "mijn", label: "Mijn routes" },
@@ -55,16 +63,115 @@ const AUDIENCE_LABEL: Record<string, string> = {
   persoon: "Persoon",
 }
 
+const SURFACE_LABEL: Record<string, string> = {
+  asfalt: "Asfalt",
+  racefiets: "Racefiets",
+  road: "Racefiets",
+  gravel: "Gravel",
+  mtb: "MTB",
+  mixed: "Gemengd",
+  pad: "Pad/trail",
+  cycling: "Fiets",
+}
+
+function surfaceLabel(s: string | null | undefined): string | null {
+  if (!s || s === "unknown") return null
+  return SURFACE_LABEL[s] ?? s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+function sourceLabel(source: string): string {
+  switch (source) {
+    case "generated":
+      return "Gegenereerd"
+    case "imported":
+      return "GPX"
+    case "manual":
+      return "Zelf gebouwd"
+    case "ridden":
+      return "Gereden"
+    case "gedeeld":
+      return "Gedeeld"
+    default:
+      return source
+  }
+}
+
 function fmtKm(v: number | null | undefined) {
   return typeof v === "number" ? `${Math.round(v * 10) / 10} km` : "—"
 }
 
+// Kleine, eerlijke routepreview: de echte opgeslagen routegeometrie als
+// SVG-lijn (vorm van de route). Geen geometrie = geen nep-kaartje.
+function RoutePreview({ geometry }: { geometry: [number, number][] | null }) {
+  const path = useMemo(() => {
+    if (!geometry || geometry.length < 2) return null
+    const lats = geometry.map((p) => p[0])
+    const lons = geometry.map((p) => p[1])
+    const minLat = Math.min(...lats)
+    const maxLat = Math.max(...lats)
+    const minLon = Math.min(...lons)
+    const maxLon = Math.max(...lons)
+    const spanLat = Math.max(maxLat - minLat, 1e-6)
+    const spanLon = Math.max(maxLon - minLon, 1e-6)
+    // Aspect behouden binnen 72×72 met marge.
+    const size = 64
+    const pad = 4
+    const scale = Math.min((size - pad * 2) / spanLon, (size - pad * 2) / spanLat)
+    const w = spanLon * scale
+    const h = spanLat * scale
+    const ox = (size - w) / 2
+    const oy = (size - h) / 2
+    // Dunne routes niet ieder punt tekenen — max ~120 punten.
+    const step = Math.max(1, Math.floor(geometry.length / 120))
+    const pts: string[] = []
+    for (let i = 0; i < geometry.length; i += step) {
+      const [lat, lon] = geometry[i]
+      const x = ox + (lon - minLon) * scale
+      const y = oy + (maxLat - lat) * scale
+      pts.push(`${x.toFixed(1)},${y.toFixed(1)}`)
+    }
+    const last = geometry[geometry.length - 1]
+    pts.push(
+      `${(ox + (last[1] - minLon) * scale).toFixed(1)},${(oy + (maxLat - last[0]) * scale).toFixed(1)}`,
+    )
+    return pts.join(" ")
+  }, [geometry])
+
+  return (
+    <div
+      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-white/[0.08]"
+      style={{ background: "rgba(120,210,230,0.06)" }}
+      aria-hidden
+    >
+      {path ? (
+        <svg viewBox="0 0 64 64" className="h-full w-full">
+          <polyline
+            points={path}
+            fill="none"
+            stroke={ACCENT}
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity={0.9}
+          />
+        </svg>
+      ) : (
+        <span className="px-1 text-center text-[9px] leading-tight text-white/30">
+          Geen kaartlijn
+        </span>
+      )}
+    </div>
+  )
+}
+
 export function RouteLibrary() {
+  const [, setLocation] = useLocation()
   const [q, setQ] = useState("")
   const [scope, setScope] = useState<RouteScope | "gedeeld">("mijn")
   const [sort, setSort] = useState<RouteSort>("nieuwste")
   const [openShareId, setOpenShareId] = useState<number | null>(null)
   const [openCompareId, setOpenCompareId] = useState<number | null>(null)
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null)
 
   const libScope: RouteScope = scope === "gedeeld" ? "mijn" : scope
   const lib = useRouteLibrary(q, libScope, sort)
@@ -72,8 +179,26 @@ export function RouteLibrary() {
   const update = useUpdateRoute()
   const duplicate = useDuplicateRoute()
   const del = useDeleteRoute()
+  const imports = useActivityImports()
+  // "Vergelijk met rit" alleen tonen wanneer er ECHT een gereden rit
+  // (geïmporteerde activiteit) beschikbaar is om mee te vergelijken.
+  const hasRiddenRide = (imports.data?.imports?.length ?? 0) > 0
 
   const routes = lib.data?.routes ?? []
+
+  // Aantallen per filter — alleen wanneer echt bekend (geladen), nooit een gok.
+  const countFor = (key: RouteScope | "gedeeld"): number | null => {
+    if (key === "gedeeld")
+      return shared.data ? shared.data.routes.length : null
+    return key === libScope && scope !== "gedeeld" && lib.data
+      ? routes.length
+      : null
+  }
+
+  const openRoute = (id: number) =>
+    setLocation(`/routes?view=bewaard&route=${id}`)
+  const startNavigate = (id: number) =>
+    setLocation(`/routes?view=bewaard&ritopties=${id}`)
 
   return (
     <div className="flex flex-col gap-4">
@@ -104,20 +229,26 @@ export function RouteLibrary() {
 
       {/* Scope-tabs */}
       <div className="flex flex-wrap gap-1.5">
-        {SCOPES.map((s) => (
-          <button
-            key={s.key}
-            type="button"
-            onClick={() => setScope(s.key)}
-            className={`rounded-full border px-3 py-1.5 text-[12px] transition-colors ${
-              scope === s.key
-                ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-100"
-                : "border-white/[0.08] bg-[#070d16]/[0.55] text-white/55 hover:text-white/80"
-            }`}
-          >
-            {s.label}
-          </button>
-        ))}
+        {SCOPES.map((s) => {
+          const n = countFor(s.key)
+          return (
+            <button
+              key={s.key}
+              type="button"
+              onClick={() => setScope(s.key)}
+              className={`rounded-full border px-3 py-1.5 text-[12px] transition-colors ${
+                scope === s.key
+                  ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-100"
+                  : "border-white/[0.08] bg-[#070d16]/[0.55] text-white/55 hover:text-white/80"
+              }`}
+            >
+              {s.label}
+              {n != null ? (
+                <span className="ml-1 tabular-nums opacity-70">({n})</span>
+              ) : null}
+            </button>
+          )
+        })}
       </div>
 
       {scope === "gedeeld" ? (
@@ -140,138 +271,269 @@ export function RouteLibrary() {
                   : "Nog geen opgeslagen routes. Maak er een met de routeplanner hierboven."}
         </p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {routes.map((r) => (
-            <li
-              key={r.id}
-              className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md"
-            >
-              <div className="flex items-start gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-medium text-white/90">
-                    {r.name}
-                  </p>
-                  <p className="mt-0.5 text-[12px] text-white/45">
-                    {fmtKm(r.distanceKm)}
-                    {typeof r.elevationGainM === "number"
-                      ? ` · ${Math.round(r.elevationGainM)} hm`
-                      : ""}
-                    {typeof (r as SparkiRoute & { version?: number }).version ===
-                    "number"
-                      ? ` · versie ${(r as SparkiRoute & { version?: number }).version}`
-                      : ""}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    update.mutate({
-                      id: r.id,
-                      favorite: !(r as SparkiRoute & { favorite?: boolean })
-                        .favorite,
-                    })
-                  }
-                  aria-label="Favoriet"
-                  className="rounded-lg p-1.5 text-white/40 transition-colors hover:text-yellow-200"
+        <ul className="flex flex-col gap-3 pb-[env(safe-area-inset-bottom)]">
+          {routes.map((r) => {
+            const fav = (r as SparkiRoute & { favorite?: boolean }).favorite
+            const named = displayRouteName(r.name, r.distanceKm)
+            const wegtype = surfaceLabel(r.surface)
+            const canNavigate = (r.geometry?.length ?? 0) >= 2
+            return (
+              <li key={r.id} className="relative">
+                {/* Volledige kaart aanklikbaar → bestaande routedetailkaart */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openRoute(r.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      openRoute(r.id)
+                    }
+                  }}
+                  aria-label={`Open route ${named.display}`}
+                  className="cursor-pointer rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3.5 backdrop-blur-md transition-colors hover:border-cyan-300/30"
                 >
-                  <Star
-                    className="h-4 w-4"
-                    fill={
-                      (r as SparkiRoute & { favorite?: boolean }).favorite
-                        ? "currentColor"
-                        : "none"
-                    }
-                    style={
-                      (r as SparkiRoute & { favorite?: boolean }).favorite
-                        ? { color: "#fde68a" }
-                        : undefined
-                    }
-                  />
-                </button>
-              </div>
-              <div className="mt-2.5 flex flex-wrap gap-1.5">
-                <ActionBtn
-                  icon={<Share2 className="h-3.5 w-3.5" />}
-                  label="Delen"
-                  onClick={() =>
-                    setOpenShareId(openShareId === r.id ? null : r.id)
-                  }
-                />
-                <ActionBtn
-                  icon={<GitCompareArrows className="h-3.5 w-3.5" />}
-                  label="Vergelijk met rit"
-                  onClick={() =>
-                    setOpenCompareId(openCompareId === r.id ? null : r.id)
-                  }
-                />
-                <ActionBtn
-                  icon={<Copy className="h-3.5 w-3.5" />}
-                  label="Dupliceer"
-                  onClick={() => duplicate.mutate(r.id)}
-                />
-                {r.status === "archived" ? (
-                  <ActionBtn
-                    icon={<ArchiveRestore className="h-3.5 w-3.5" />}
-                    label="Herstel"
-                    onClick={() => update.mutate({ id: r.id, status: "ready" })}
-                  />
-                ) : (
-                  <ActionBtn
-                    icon={<Archive className="h-3.5 w-3.5" />}
-                    label="Archiveer"
-                    onClick={() =>
-                      update.mutate({ id: r.id, status: "archived" })
-                    }
+                  <div className="flex items-start gap-3">
+                    <RoutePreview geometry={r.geometry} />
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="line-clamp-2 text-[14px] font-medium leading-snug text-white/90"
+                        title={r.name}
+                      >
+                        {named.display}
+                      </p>
+                      <p className="mt-1 text-[12.5px] tabular-nums text-white/60">
+                        {fmtKm(r.distanceKm)}
+                        {typeof r.elevationGainM === "number"
+                          ? ` · ${Math.round(r.elevationGainM)} hm`
+                          : ""}
+                      </p>
+                      <p className="mt-0.5 truncate text-[11px] text-white/40">
+                        {[
+                          !named.cleaned && named.startHint
+                            ? `Start: ${named.startHint}`
+                            : null,
+                          wegtype,
+                          sourceLabel(r.source),
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          update.mutate({ id: r.id, favorite: !fav })
+                        }}
+                        aria-label={
+                          fav ? "Verwijder uit favorieten" : "Maak favoriet"
+                        }
+                        className="rounded-lg p-1.5 text-white/40 transition-colors hover:text-yellow-200"
+                      >
+                        <Star
+                          className="h-4 w-4"
+                          fill={fav ? "currentColor" : "none"}
+                          style={fav ? { color: "#fde68a" } : undefined}
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setOpenMenuId(openMenuId === r.id ? null : r.id)
+                        }}
+                        aria-label="Meer acties"
+                        aria-expanded={openMenuId === r.id}
+                        className="rounded-lg p-1.5 text-white/40 transition-colors hover:text-white/85"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Primaire acties */}
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openRoute(r.id)
+                      }}
+                      className="rounded-full bg-cyan-400/90 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#05070e] transition hover:bg-cyan-300"
+                    >
+                      Route bekijken
+                    </button>
+                    {canNavigate && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          startNavigate(r.id)
+                        }}
+                        className="flex items-center gap-1.5 rounded-full border border-white/[0.14] px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition hover:border-cyan-300/40 hover:text-cyan-200"
+                      >
+                        <Navigation className="h-3 w-3" strokeWidth={2} />
+                        Navigeer
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {openMenuId === r.id && (
+                  <RouteMenu
+                    onClose={() => setOpenMenuId(null)}
+                    items={[
+                      {
+                        icon: <Pencil className="h-3.5 w-3.5" />,
+                        label: "Naam wijzigen",
+                        onClick: () => {
+                          const next = window.prompt(
+                            "Nieuwe naam voor deze route:",
+                            r.name,
+                          )
+                          if (next && next.trim() && next.trim() !== r.name)
+                            update.mutate({ id: r.id, name: next.trim() })
+                        },
+                      },
+                      {
+                        icon: <Share2 className="h-3.5 w-3.5" />,
+                        label: "Delen",
+                        onClick: () => {
+                          setOpenCompareId(null)
+                          setOpenShareId(openShareId === r.id ? null : r.id)
+                        },
+                      },
+                      ...(hasRiddenRide
+                        ? [
+                            {
+                              icon: (
+                                <GitCompareArrows className="h-3.5 w-3.5" />
+                              ),
+                              label: "Vergelijk met rit",
+                              onClick: () => {
+                                setOpenShareId(null)
+                                setOpenCompareId(
+                                  openCompareId === r.id ? null : r.id,
+                                )
+                              },
+                            },
+                          ]
+                        : []),
+                      {
+                        icon: <Copy className="h-3.5 w-3.5" />,
+                        label: "Dupliceer",
+                        onClick: () => duplicate.mutate(r.id),
+                      },
+                      r.status === "archived"
+                        ? {
+                            icon: <ArchiveRestore className="h-3.5 w-3.5" />,
+                            label: "Herstel uit archief",
+                            onClick: () =>
+                              update.mutate({ id: r.id, status: "ready" }),
+                          }
+                        : {
+                            icon: <Archive className="h-3.5 w-3.5" />,
+                            label: "Archiveer",
+                            onClick: () =>
+                              update.mutate({ id: r.id, status: "archived" }),
+                          },
+                      {
+                        icon: <Trash2 className="h-3.5 w-3.5" />,
+                        label: "Verwijder",
+                        danger: true,
+                        onClick: () => {
+                          if (
+                            window.confirm(
+                              "Deze route verwijderen? Wordt hij nog in een wedstrijd of historie gebruikt, dan blijft het dossier kloppen.",
+                            )
+                          )
+                            del.mutate(r.id)
+                        },
+                      },
+                    ]}
                   />
                 )}
-                <ActionBtn
-                  icon={<Trash2 className="h-3.5 w-3.5" />}
-                  label="Verwijder"
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        "Deze route verwijderen? Wordt hij nog in een wedstrijd of historie gebruikt, dan blijft het dossier kloppen.",
-                      )
-                    )
-                      del.mutate(r.id)
-                  }}
-                />
-              </div>
-              {openShareId === r.id && (
-                <SharePanel routeId={r.id} onClose={() => setOpenShareId(null)} />
-              )}
-              {openCompareId === r.id && (
-                <ComparePanel
-                  routeId={r.id}
-                  onClose={() => setOpenCompareId(null)}
-                />
-              )}
-            </li>
-          ))}
+
+                {openShareId === r.id && (
+                  <SharePanel
+                    routeId={r.id}
+                    onClose={() => setOpenShareId(null)}
+                  />
+                )}
+                {openCompareId === r.id && (
+                  <ComparePanel
+                    routeId={r.id}
+                    onClose={() => setOpenCompareId(null)}
+                  />
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
     </div>
   )
 }
 
-function ActionBtn({
-  icon,
-  label,
-  onClick,
+// Driepuntenmenu — klein absoluut menu binnen de kaart, sluit bij tik/klik
+// buiten het menu en bij Escape.
+function RouteMenu({
+  items,
+  onClose,
 }: {
-  icon: React.ReactNode
-  label: string
-  onClick: () => void
+  items: {
+    icon: React.ReactNode
+    label: string
+    onClick: () => void
+    danger?: boolean
+  }[]
+  onClose: () => void
 }) {
+  const ref = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+    }
+    document.addEventListener("pointerdown", onDown)
+    document.addEventListener("keydown", onKey)
+    return () => {
+      document.removeEventListener("pointerdown", onDown)
+      document.removeEventListener("keydown", onKey)
+    }
+  }, [onClose])
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-1.5 text-[11.5px] text-white/65 transition-colors hover:border-cyan-300/30 hover:text-white/90"
+    <div
+      ref={ref}
+      role="menu"
+      className="absolute right-2 top-12 z-[70] w-52 overflow-hidden rounded-xl border border-white/[0.12] bg-[#0a1220] py-1 shadow-xl shadow-black/50"
+      onClick={(e) => e.stopPropagation()}
     >
-      {icon}
-      {label}
-    </button>
+      {items.map((it) => (
+        <button
+          key={it.label}
+          type="button"
+          role="menuitem"
+          onClick={() => {
+            onClose()
+            it.onClick()
+          }}
+          className={`flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-[13px] transition-colors ${
+            it.danger
+              ? "text-rose-300/85 hover:bg-rose-400/10"
+              : "text-white/75 hover:bg-white/[0.06] hover:text-white/95"
+          }`}
+        >
+          {it.icon}
+          {it.label}
+        </button>
+      ))}
+    </div>
   )
 }
 
@@ -297,7 +559,7 @@ function SharedList({
       </p>
     )
   return (
-    <ul className="flex flex-col gap-2">
+    <ul className="flex flex-col gap-3">
       {items.map((r) => (
         <li
           key={r.id}
@@ -305,7 +567,7 @@ function SharedList({
         >
           <Users className="h-4 w-4 shrink-0" style={{ color: ACCENT }} />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[14px] font-medium text-white/90">
+            <p className="line-clamp-2 text-[14px] font-medium leading-snug text-white/90">
               {r.name}
             </p>
             <p className="mt-0.5 text-[12px] text-white/45">
@@ -340,7 +602,7 @@ function SharePanel({
   const has = (aud: string) => existing.some((s) => s.audience === aud)
 
   return (
-    <div className="mt-3 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+    <div className="mt-2 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
       <div className="flex items-center justify-between">
         <p className="text-[12px] font-medium text-white/70">Delen met</p>
         <button
@@ -422,7 +684,7 @@ function ComparePanel({
   )
 
   return (
-    <div className="mt-3 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+    <div className="mt-2 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
       <div className="flex items-center justify-between">
         <p className="text-[12px] font-medium text-white/70">
           Vergelijk plan met een gereden rit

@@ -962,7 +962,7 @@ function RouteCard({
               · {route.source}
             </span>
           </div>
-          <h3 className="mt-1 truncate font-sans text-lg font-light tracking-tight text-white/90">
+          <h3 className="mt-1 line-clamp-2 font-sans text-lg font-light leading-snug tracking-tight text-white/90">
             {route.name}
           </h3>
         </div>
