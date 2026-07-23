@@ -28,6 +28,12 @@ import { computeLoadSeries } from "../lib/recovery-load";
 import { captureContext } from "../engines/context-memory";
 import { ingestManualSession } from "../lib/manual-session-ingest";
 import {
+  computeTrimPreview,
+  sliceProfile,
+  validateTrimRange,
+  type TrimGeometryPoint,
+} from "../lib/ride-trim";
+import {
   autoLinkSession,
   classifyExecution,
   logWorkoutChange,
@@ -1571,17 +1577,269 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
         })
       : [];
 
+    // Actieve trim ("Rit inkorten"): de kaart/het profiel tonen het ingekorte
+    // bereik; de ruwe opname in parsed_summary blijft onaangetast zodat
+    // herstellen altijd kan. Ongeldig geworden bereiken (bijv. door een
+    // her-import) worden eerlijk genegeerd, nooit half toegepast.
+    const trim = session.trimEdit;
+    const trimValid =
+      trim != null &&
+      track != null &&
+      validateTrimRange(track.length, trim.startIndex, trim.endIndex) === null;
+    const outTrack = trimValid
+      ? track!.slice(trim!.startIndex, trim!.endIndex + 1)
+      : track;
+    const outProfile =
+      trimValid && track
+        ? sliceProfile(profile, track.length, trim!.startIndex, trim!.endIndex)
+        : profile;
+
     res.json({
       session,
-      track,
-      profile,
+      track: outTrack,
+      profile: outProfile,
       climbs,
       segments: segments.length > 0 ? segments : null,
       streams,
       plannedWorkout,
+      trimEdit: trimValid ? trim : null,
+      trackPointCount: track?.length ?? 0,
     });
   } catch (err) {
     req.log.error({ err }, "athlete.sessions detail GET failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── Rit inkorten ─────────────────────────────────────────────────────────────
+// Laad een eigen sessie mét de bewaarde track-geometrie ([lat, lon, ele?]).
+// Sessies zonder bewaarde track kunnen niet worden ingekort (eerlijke 422).
+async function loadOwnedSessionWithGeometry(clerkId: string, id: number) {
+  const [session] = await db
+    .select()
+    .from(trainingSessionsTable)
+    .where(
+      and(
+        eq(trainingSessionsTable.id, id),
+        eq(trainingSessionsTable.clerkId, clerkId),
+      ),
+    )
+    .limit(1);
+  if (!session) return { session: null, geometry: [] as TrimGeometryPoint[] };
+  const [imp] = await db
+    .select({ parsedSummary: activityImportsTable.parsedSummary })
+    .from(activityImportsTable)
+    .where(
+      and(
+        eq(activityImportsTable.linkedTrainingSessionId, session.id),
+        eq(activityImportsTable.clerkId, clerkId),
+      ),
+    )
+    .limit(1);
+  const stored = (imp?.parsedSummary as { route?: { geometry?: unknown } | null } | null)
+    ?.route ?? null;
+  const geometry: TrimGeometryPoint[] = Array.isArray(stored?.geometry)
+    ? (stored!.geometry as unknown[]).flatMap((p) =>
+        Array.isArray(p) &&
+        p.length >= 2 &&
+        Number.isFinite(p[0]) &&
+        Number.isFinite(p[1]) &&
+        Math.abs(p[0] as number) <= 90 &&
+        Math.abs(p[1] as number) <= 180
+          ? [
+              [
+                p[0] as number,
+                p[1] as number,
+                typeof p[2] === "number" && Number.isFinite(p[2])
+                  ? (p[2] as number)
+                  : undefined,
+              ] as TrimGeometryPoint,
+            ]
+          : [],
+      )
+    : [];
+  return { session, geometry };
+}
+
+// POST /api/athlete/sessions/:id/trim-preview — herbereken statistieken voor
+// een voorgesteld bereik ZONDER iets op te slaan (voorvertoning in de app).
+router.post("/sessions/:id/trim-preview", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: "Ongeldige rit" });
+    return;
+  }
+  try {
+    const { session, geometry } = await loadOwnedSessionWithGeometry(clerkId, id);
+    if (!session) {
+      res.status(404).json({ error: "Rit niet gevonden" });
+      return;
+    }
+    if (geometry.length < 2) {
+      res.status(422).json({
+        error: "Deze rit heeft geen bewaarde track en kan niet worden ingekort",
+      });
+      return;
+    }
+    const { startIndex, endIndex } = req.body as {
+      startIndex?: unknown;
+      endIndex?: unknown;
+    };
+    const rangeErr = validateTrimRange(geometry.length, startIndex, endIndex);
+    if (rangeErr) {
+      res.status(400).json({ error: rangeErr });
+      return;
+    }
+    // De oorspronkelijke statistieken zijn de basis voor de proportionele
+    // duurschatting — bij een al ingekorte rit dus de ORIGINELEN uit trimEdit.
+    const original = session.trimEdit?.original ?? {
+      durationMin: session.durationMin,
+      distanceKm: session.distanceKm,
+      elevationM: session.elevationM,
+      avgSpeedKph: session.avgSpeedKph,
+    };
+    res.json({
+      preview: computeTrimPreview(
+        geometry,
+        startIndex as number,
+        endIndex as number,
+        original,
+      ),
+    });
+  } catch (err) {
+    req.log.error({ err }, "athlete.sessions trim-preview failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/athlete/sessions/:id/trim — pas het inkorten toe: statistieken
+// worden herberekend en de ORIGINELEN worden in trim_edit bewaard zodat de
+// bewerking altijd volledig terug te draaien is. De ruwe opname blijft staan.
+router.post("/sessions/:id/trim", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: "Ongeldige rit" });
+    return;
+  }
+  try {
+    const { session, geometry } = await loadOwnedSessionWithGeometry(clerkId, id);
+    if (!session) {
+      res.status(404).json({ error: "Rit niet gevonden" });
+      return;
+    }
+    if (geometry.length < 2) {
+      res.status(422).json({
+        error: "Deze rit heeft geen bewaarde track en kan niet worden ingekort",
+      });
+      return;
+    }
+    const { startIndex, endIndex } = req.body as {
+      startIndex?: unknown;
+      endIndex?: unknown;
+    };
+    const rangeErr = validateTrimRange(geometry.length, startIndex, endIndex);
+    if (rangeErr) {
+      res.status(400).json({ error: rangeErr });
+      return;
+    }
+    // Bij een tweede inkorting blijven de ALLEREERSTE originelen bewaard —
+    // herstellen brengt altijd de onbewerkte rit terug.
+    const original = session.trimEdit?.original ?? {
+      durationMin: session.durationMin,
+      distanceKm: session.distanceKm,
+      elevationM: session.elevationM,
+      avgSpeedKph: session.avgSpeedKph,
+    };
+    const preview = computeTrimPreview(
+      geometry,
+      startIndex as number,
+      endIndex as number,
+      original,
+    );
+    const trimEdit = {
+      startIndex: startIndex as number,
+      endIndex: endIndex as number,
+      trimmedAt: new Date().toISOString(),
+      durationEstimated: preview.durationEstimated,
+      original,
+    };
+    const [updated] = await db
+      .update(trainingSessionsTable)
+      .set({
+        trimEdit,
+        durationMin: preview.durationMin,
+        distanceKm: String(preview.distanceKm),
+        // Hoogte alleen wanneer echt herberekenbaar; anders eerlijk null.
+        elevationM: preview.elevationM,
+        avgSpeedKph:
+          preview.avgSpeedKph != null ? String(preview.avgSpeedKph) : null,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(trainingSessionsTable.id, id),
+          eq(trainingSessionsTable.clerkId, clerkId),
+        ),
+      )
+      .returning();
+    res.json({ session: updated, preview });
+  } catch (err) {
+    req.log.error({ err }, "athlete.sessions trim failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// DELETE /api/athlete/sessions/:id/trim — herstel de oorspronkelijke rit:
+// originele statistieken terug, trim weg. De ruwe opname stond er altijd nog.
+router.delete("/sessions/:id/trim", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = parseInt(String(req.params["id"]), 10);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: "Ongeldige rit" });
+    return;
+  }
+  try {
+    const [session] = await db
+      .select()
+      .from(trainingSessionsTable)
+      .where(
+        and(
+          eq(trainingSessionsTable.id, id),
+          eq(trainingSessionsTable.clerkId, clerkId),
+        ),
+      )
+      .limit(1);
+    if (!session) {
+      res.status(404).json({ error: "Rit niet gevonden" });
+      return;
+    }
+    if (!session.trimEdit) {
+      res.status(400).json({ error: "Deze rit is niet ingekort" });
+      return;
+    }
+    const original = session.trimEdit.original;
+    const [updated] = await db
+      .update(trainingSessionsTable)
+      .set({
+        trimEdit: null,
+        durationMin: original.durationMin,
+        distanceKm: original.distanceKm,
+        elevationM: original.elevationM,
+        avgSpeedKph: original.avgSpeedKph,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(trainingSessionsTable.id, id),
+          eq(trainingSessionsTable.clerkId, clerkId),
+        ),
+      )
+      .returning();
+    res.json({ session: updated });
+  } catch (err) {
+    req.log.error({ err }, "athlete.sessions trim restore failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });

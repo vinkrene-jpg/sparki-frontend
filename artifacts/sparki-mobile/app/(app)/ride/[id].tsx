@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { captureRef } from "react-native-view-shot";
 import {
   ActivityIndicator,
@@ -21,7 +21,12 @@ import { useColors } from "@/hooks/useColors";
 import type { LatLon } from "@/lib/geo";
 import { hasMapbox } from "@/lib/mapbox";
 import { useSaveRideAsRoute } from "@/lib/routes-api";
-import { useSession } from "@/lib/sessions-api";
+import {
+  useApplyTrim,
+  useRestoreTrim,
+  useSession,
+  useTrimPreview,
+} from "@/lib/sessions-api";
 import { shareErrorMessage, useShareInfo, useShareToStrava } from "@/lib/share-api";
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -162,6 +167,48 @@ export default function RideDetailScreen() {
     } finally {
       setImageBusy(false);
     }
+  };
+
+  // ── Rit inkorten ───────────────────────────────────────────────────────────
+  // Verplaats het begin- en/of eindpunt van de bewaarde rit. Statistieken
+  // worden op de server herberekend uit de ECHTE track; de ruwe opname blijft
+  // bewaard zodat herstellen altijd kan. De duur is een schatting (de bewaarde
+  // geometrie draagt geen tijd) en wordt ook zo benoemd.
+  const trimEdit = data?.trimEdit ?? null;
+  const fullPointCount = data?.trackPointCount ?? 0;
+  const canTrim = fullPointCount >= 4;
+  const [trimOpen, setTrimOpen] = useState(false);
+  const [trimStart, setTrimStart] = useState(0);
+  const [trimEnd, setTrimEnd] = useState(0);
+  const trimPreview = useTrimPreview(session?.id ?? null);
+  const applyTrim = useApplyTrim(session?.id ?? null);
+  const restoreTrim = useRestoreTrim(session?.id ?? null);
+  const trimStep = Math.max(1, Math.round(fullPointCount / 100));
+
+  const openTrim = () => {
+    setTrimStart(trimEdit?.startIndex ?? 0);
+    setTrimEnd(trimEdit?.endIndex ?? Math.max(0, fullPointCount - 1));
+    trimPreview.reset();
+    setTrimOpen(true);
+  };
+
+  // Voorvertoning automatisch verversen (licht gedebounced) bij elk verschoven
+  // begin/einde — niets wordt opgeslagen tot "Inkorten toepassen".
+  useEffect(() => {
+    if (!trimOpen || !session || trimEnd <= trimStart) return;
+    const t = setTimeout(() => {
+      trimPreview.mutate({ startIndex: trimStart, endIndex: trimEnd });
+    }, 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trimOpen, trimStart, trimEnd, session?.id]);
+
+  const onApplyTrim = () => {
+    if (applyTrim.isPending || trimEnd <= trimStart) return;
+    applyTrim.mutate(
+      { startIndex: trimStart, endIndex: trimEnd },
+      { onSuccess: () => setTrimOpen(false) },
+    );
   };
 
   const onSaveAsRoute = () => {
@@ -346,6 +393,204 @@ export default function RideDetailScreen() {
                 ) : null}
               </View>
             )
+          ) : null}
+
+          {/* ---------- Rit inkorten: begin/einde verplaatsen, herstelbaar ---------- */}
+          {canTrim ? (
+            <View
+              style={[
+                styles.card,
+                { backgroundColor: c.card, borderColor: c.border, borderRadius: c.radius },
+              ]}
+            >
+              <Text style={[styles.cardTitle, { color: c.foreground }]}>
+                Rit inkorten
+              </Text>
+              {trimEdit && !trimOpen ? (
+                <View style={{ gap: 8, marginTop: 6 }}>
+                  <Text style={[styles.shareNote, { color: c.mutedForeground }]}>
+                    Deze rit is ingekort
+                    {trimEdit.durationEstimated
+                      ? " (duur geschat op basis van afstand)"
+                      : ""}
+                    . De volledige opname blijft bewaard.
+                  </Text>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <Pressable
+                      onPress={openTrim}
+                      style={[styles.stravaBtn, { borderColor: c.border, borderRadius: c.radius }]}
+                    >
+                      <Ionicons name="cut-outline" size={16} color={c.primary} />
+                      <Text style={{ color: c.primary, fontFamily: "Inter_600SemiBold", fontSize: 13 }}>
+                        Aanpassen
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => !restoreTrim.isPending && restoreTrim.mutate()}
+                      style={[styles.stravaBtn, { borderColor: c.border, borderRadius: c.radius }]}
+                    >
+                      {restoreTrim.isPending ? (
+                        <ActivityIndicator size="small" color={c.primary} />
+                      ) : (
+                        <Ionicons name="refresh-outline" size={16} color={c.primary} />
+                      )}
+                      <Text style={{ color: c.primary, fontFamily: "Inter_600SemiBold", fontSize: 13 }}>
+                        Volledige rit herstellen
+                      </Text>
+                    </Pressable>
+                  </View>
+                  {restoreTrim.isError ? (
+                    <Text style={[styles.saveError, { color: c.destructive }]}>
+                      {(restoreTrim.error as Error)?.message || "Herstellen is niet gelukt."}
+                    </Text>
+                  ) : null}
+                </View>
+              ) : !trimOpen ? (
+                <View style={{ gap: 8, marginTop: 6 }}>
+                  <Text style={[styles.shareNote, { color: c.mutedForeground }]}>
+                    Verplaats het begin- of eindpunt (bijv. wanneer de opname te
+                    lang doorliep). Afstand en hoogte worden echt herberekend;
+                    de duur wordt geschat op basis van afstand. Altijd
+                    terug te draaien.
+                  </Text>
+                  <Pressable
+                    onPress={openTrim}
+                    style={[styles.stravaBtn, { borderColor: c.border, borderRadius: c.radius, alignSelf: "flex-start" }]}
+                  >
+                    <Ionicons name="cut-outline" size={16} color={c.primary} />
+                    <Text style={{ color: c.primary, fontFamily: "Inter_600SemiBold", fontSize: 13 }}>
+                      Rit inkorten
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={{ gap: 10, marginTop: 6 }}>
+                  {(
+                    [
+                      {
+                        label: "Begin",
+                        value: trimStart,
+                        dec: () => setTrimStart((v) => Math.max(0, v - trimStep)),
+                        inc: () =>
+                          setTrimStart((v) => Math.min(trimEnd - 1, v + trimStep)),
+                      },
+                      {
+                        label: "Einde",
+                        value: trimEnd,
+                        dec: () =>
+                          setTrimEnd((v) => Math.max(trimStart + 1, v - trimStep)),
+                        inc: () =>
+                          setTrimEnd((v) =>
+                            Math.min(fullPointCount - 1, v + trimStep),
+                          ),
+                      },
+                    ] as const
+                  ).map((row) => (
+                    <View
+                      key={row.label}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+                    >
+                      <Text
+                        style={{
+                          color: c.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                          fontSize: 13,
+                          width: 48,
+                        }}
+                      >
+                        {row.label}
+                      </Text>
+                      <Pressable
+                        onPress={row.dec}
+                        hitSlop={8}
+                        style={[styles.iconBtn, { borderColor: c.border, backgroundColor: c.background }]}
+                      >
+                        <Ionicons name="remove" size={18} color={c.foreground} />
+                      </Pressable>
+                      <Text
+                        style={{
+                          color: c.foreground,
+                          fontFamily: "Inter_600SemiBold",
+                          fontSize: 13,
+                          minWidth: 72,
+                          textAlign: "center",
+                        }}
+                      >
+                        {fullPointCount > 1
+                          ? `${Math.round((row.value / (fullPointCount - 1)) * 100)}%`
+                          : "0%"}
+                      </Text>
+                      <Pressable
+                        onPress={row.inc}
+                        hitSlop={8}
+                        style={[styles.iconBtn, { borderColor: c.border, backgroundColor: c.background }]}
+                      >
+                        <Ionicons name="add" size={18} color={c.foreground} />
+                      </Pressable>
+                    </View>
+                  ))}
+                  {trimPreview.isPending ? (
+                    <View style={styles.shareRow}>
+                      <ActivityIndicator size="small" color={c.primary} />
+                      <Text style={[styles.shareNote, { color: c.mutedForeground }]}>
+                        Voorvertoning wordt berekend…
+                      </Text>
+                    </View>
+                  ) : trimPreview.data ? (
+                    <Text style={[styles.shareNote, { color: c.foreground }]}>
+                      {`Nieuw: ${trimPreview.data.preview.distanceKm.toFixed(1)} km`}
+                      {trimPreview.data.preview.durationMin != null
+                        ? ` · ±${trimPreview.data.preview.durationMin} min (geschat)`
+                        : ""}
+                      {trimPreview.data.preview.elevationM != null
+                        ? ` · ${trimPreview.data.preview.elevationM} hm`
+                        : " · hoogte niet herberekenbaar"}
+                    </Text>
+                  ) : trimPreview.isError ? (
+                    <Text style={[styles.saveError, { color: c.destructive }]}>
+                      {(trimPreview.error as Error)?.message ||
+                        "Voorvertoning is niet gelukt."}
+                    </Text>
+                  ) : null}
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <Pressable
+                      onPress={onApplyTrim}
+                      disabled={applyTrim.isPending}
+                      style={[
+                        styles.stravaBtn,
+                        {
+                          borderColor: c.primary,
+                          borderRadius: c.radius,
+                          opacity: applyTrim.isPending ? 0.6 : 1,
+                        },
+                      ]}
+                    >
+                      {applyTrim.isPending ? (
+                        <ActivityIndicator size="small" color={c.primary} />
+                      ) : (
+                        <Ionicons name="checkmark" size={16} color={c.primary} />
+                      )}
+                      <Text style={{ color: c.primary, fontFamily: "Inter_600SemiBold", fontSize: 13 }}>
+                        Inkorten toepassen
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setTrimOpen(false)}
+                      style={[styles.stravaBtn, { borderColor: c.border, borderRadius: c.radius }]}
+                    >
+                      <Text style={{ color: c.mutedForeground, fontFamily: "Inter_600SemiBold", fontSize: 13 }}>
+                        Annuleren
+                      </Text>
+                    </Pressable>
+                  </View>
+                  {applyTrim.isError ? (
+                    <Text style={[styles.saveError, { color: c.destructive }]}>
+                      {(applyTrim.error as Error)?.message || "Inkorten is niet gelukt."}
+                    </Text>
+                  ) : null}
+                </View>
+              )}
+            </View>
           ) : null}
 
           {/* ---------- Delen: deelmenu + officiële Strava-upload ---------- */}

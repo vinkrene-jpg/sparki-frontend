@@ -68,6 +68,22 @@ export const trainingSessionsTable = pgTable("training_sessions", {
   // "auto" | "handmatig" — handmatige keuze wordt nooit door auto-koppeling
   // overschreven.
   bikeLinkSource: text("bike_link_source"),
+  // Rit inkorten: actieve trim-bewerking (start/eind-index in de bewaarde
+  // track-geometrie) mét de OORSPRONKELIJKE statistieken zodat inkorten
+  // altijd volledig terug te draaien is. Null = geen trim actief. De ruwe
+  // opname in activity_imports.parsed_summary blijft ALTIJD onaangetast.
+  trimEdit: jsonb("trim_edit").$type<{
+    startIndex: number;
+    endIndex: number;
+    trimmedAt: string;
+    durationEstimated: boolean;
+    original: {
+      durationMin: number | null;
+      distanceKm: string | null;
+      elevationM: number | null;
+      avgSpeedKph: string | null;
+    };
+  }>(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

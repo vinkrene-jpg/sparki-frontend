@@ -156,3 +156,4 @@
 - [Sparki central AI gateway](sparki-ai-gateway.md) — one aiMessage() port for all model calls: killswitch→consent→minor→redaction→dedupe→metadata-only logs; SDK types need direct @anthropic-ai/sdk dep.
 - [Sparki nav audio & waypoint honesty](sparki-nav-audio-cues.md) — waypoints are never destinations: sanitize arrivals at source AND read paths; cues dedupe per step:phase; never force sound past silent mode.
 - [Sparki route-match engine](sparki-route-match.md) — never point-match GPS to sparse route points; segment projection + off-route state machine, byte-mirrored web↔mobiel, one position source for map/progress/deviation.
+- [Sparki rit-einde & rit-inkorten](sparki-ride-trim.md) — pure ride-flow engine at 1Hz tick; auto-trim always undoable pre-save; trim is metadata-only (first original wins), duration estimate honest-null on zero distance.

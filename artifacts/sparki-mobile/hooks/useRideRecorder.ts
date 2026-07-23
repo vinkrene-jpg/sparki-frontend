@@ -4,6 +4,14 @@ import { haversineMeters, type LatLon } from "@/lib/geo";
 import { setRideActive } from "@/lib/release";
 import type { LiveLocation } from "@/hooks/useLiveLocation";
 import {
+  createRideFlowState,
+  manualPause as flowManualPause,
+  manualResume as flowManualResume,
+  rideFlowTick,
+  type PauseState,
+  type RideFlowState,
+} from "@/lib/ride-flow";
+import {
   clearRecoverableRide,
   loadRecoverableRide,
   persistForegroundRide,
@@ -39,11 +47,36 @@ export type LiveSensorSnapshot = {
   cadence: number | null;
 };
 
+// Een pauzevenster tijdens de rit. `end === null` betekent: nu gepauzeerd.
+export type PauseInterval = { start: number; end: number | null };
+
+// Een door de flow-engine voorgesteld rit-einde (waarschijnlijke autorit na de
+// fietsrit). Alleen echte, gecombineerde signalen leiden hiertoe — zie
+// `lib/ride-flow.ts`.
+export type RideEndSuggestion = {
+  confidence: "strong" | "weak";
+  lastBikePointIndex: number;
+  lastBikeTime: number;
+  reasons: string[];
+  suggestedAt: number;
+};
+
 export type RideRecording = {
   recording: boolean;
   points: RidePoint[];
   distanceKm: number;
   elapsedSec: number;
+  // Bewegingstijd: verstreken tijd minus alle (auto/handmatige) pauzes.
+  movingSec: number;
+  // Pauzestatus van de rit (rijdend / automatisch / handmatig gepauzeerd).
+  pauseState: PauseState;
+  // Handmatig pauzeren; hervatten kan handmatig én gebeurt automatisch zodra
+  // meerdere opeenvolgende metingen echt fietsen laten zien.
+  pauseRide: () => void;
+  resumeRide: () => void;
+  // Actueel einde-voorstel van de flow-engine (autorit herkend), of null.
+  endSuggestion: RideEndSuggestion | null;
+  dismissEndSuggestion: () => void;
   // True while the OS-level background task keeps the ride recording with the
   // screen locked / the app backgrounded.
   backgroundActive: boolean;
@@ -80,11 +113,21 @@ const MIN_MOVE_METERS = 5;
 // Rebuild the filtered track + real haversine distance from a raw fix list.
 // Used for the background buffer, which is delivered as the full array on every
 // update. Nothing is fabricated: only real fixes that moved far enough are kept.
-function buildTrack(raw: RidePoint[]): { points: RidePoint[]; distanceKm: number } {
+function buildTrack(
+  raw: RidePoint[],
+  pauses: PauseInterval[] = [],
+): { points: RidePoint[]; distanceKm: number } {
   const out: RidePoint[] = [];
   let distanceKm = 0;
   let last: RidePoint | null = null;
   for (const p of raw) {
+    // Punten binnen een (auto/handmatig) pauzevenster tellen niet mee voor de
+    // track of de afstand — de rit stond toen stil.
+    if (
+      pauses.some((w) => p.time >= w.start && (w.end == null || p.time <= w.end))
+    ) {
+      continue;
+    }
     if (last) {
       const a: LatLon = { latitude: last.latitude, longitude: last.longitude };
       const b: LatLon = { latitude: p.latitude, longitude: p.longitude };
@@ -131,19 +174,45 @@ export function useRideRecorder(
   const [backgroundActive, setBackgroundActive] = useState(false);
   const [backgroundDenied, setBackgroundDenied] = useState(false);
   const [recoverable, setRecoverable] = useState<RecoverableRide | null>(null);
+  const [pauseState, setPauseState] = useState<PauseState>("riding");
+  const [movingSec, setMovingSec] = useState(0);
+  const [endSuggestion, setEndSuggestion] = useState<RideEndSuggestion | null>(
+    null,
+  );
 
   const startedAtRef = useRef<number | null>(null);
   const lastRef = useRef<RidePoint | null>(null);
+  // Flow-engine (auto-pauze/hervatting + rit-einde-detectie) — puur, in
+  // `lib/ride-flow.ts`, gevoed met 1 Hz echte metingen hieronder.
+  const flowRef = useRef<RideFlowState>(createRideFlowState());
+  const pausesRef = useRef<PauseInterval[]>([]);
+  const pausedRef = useRef(false);
+  const locRef = useRef<LiveLocation | null>(null);
+  const flowPrevLocRef = useRef<LiveLocation | null>(null);
+  // Ref-spiegel van points zodat de 1 Hz engine-tick geen re-subscribes vraagt.
+  const pointsRef = useRef<RidePoint[]>([]);
   // Ref mirror of backgroundActive so the foreground effect can bail out without
   // re-subscribing whenever the flag flips.
   const backgroundActiveRef = useRef(false);
   // Real sensor readings logged this ride (ref: read at save time, no renders).
   const sensorSamplesRef = useRef<RideSensorSample[]>([]);
 
+  // Spiegel de laatste locatie + points voor de 1 Hz flow-engine-tick.
+  useEffect(() => {
+    locRef.current = location;
+  }, [location]);
+
+  useEffect(() => {
+    pointsRef.current = points;
+  }, [points]);
+
   // Foreground path: append each new real fix from the prop. Skipped entirely
   // while the background tracker owns the track (avoids double-counting).
   useEffect(() => {
     if (!recording || backgroundActiveRef.current || !location) return;
+    // Tijdens een (auto/handmatige) pauze worden geen punten of afstand
+    // toegevoegd — de rit staat stil.
+    if (pausedRef.current) return;
     const next: RidePoint = {
       latitude: location.latitude,
       longitude: location.longitude,
@@ -199,7 +268,7 @@ export function useRideRecorder(
   useEffect(() => {
     if (!recording || !backgroundActive) return;
     const unsub = subscribeRideTracker((raw) => {
-      const track = buildTrack(raw);
+      const track = buildTrack(raw, pausesRef.current);
       setPoints(track.points);
       setDistanceKm(track.distanceKm);
     });
@@ -229,22 +298,126 @@ export function useRideRecorder(
     return () => clearInterval(id);
   }, [recording, getSensorValues]);
 
-  // Wall-clock elapsed timer, independent of GPS fix cadence.
+  // Wall-clock elapsed timer, independent of GPS fix cadence. Also derives the
+  // real moving time: elapsed minus all pause windows.
   useEffect(() => {
     if (!recording) return;
     const id = setInterval(() => {
       if (startedAtRef.current != null) {
-        setElapsedSec(Math.floor((Date.now() - startedAtRef.current) / 1000));
+        const now = Date.now();
+        setElapsedSec(Math.floor((now - startedAtRef.current) / 1000));
+        const pausedMs = pausesRef.current.reduce(
+          (sum, w) => sum + Math.max(0, (w.end ?? now) - w.start),
+          0,
+        );
+        setMovingSec(
+          Math.max(
+            0,
+            Math.floor((now - startedAtRef.current - pausedMs) / 1000),
+          ),
+        );
       }
     }, 1000);
     return () => clearInterval(id);
   }, [recording]);
+
+  // 1 Hz flow-engine-tick: voedt de pure engine met echte metingen (GPS-
+  // snelheid/verplaatsing, richting, cadans/vermogen) en verwerkt de events
+  // (auto-pauze, auto-hervatting, rit-einde-suggestie). JS-timers pauzeren op
+  // de achtergrond, dus dit werkt eerlijk alleen met het scherm aan.
+  useEffect(() => {
+    if (!recording) return;
+    const id = setInterval(() => {
+      const now = Date.now();
+      const loc = locRef.current;
+      const prev = flowPrevLocRef.current;
+      flowPrevLocRef.current = loc;
+      const movedM =
+        loc && prev
+          ? haversineMeters(
+              { latitude: prev.latitude, longitude: prev.longitude },
+              { latitude: loc.latitude, longitude: loc.longitude },
+            )
+          : 0;
+      const sensors = getSensorValues ? getSensorValues() : null;
+      const res = rideFlowTick(flowRef.current, {
+        t: now,
+        speedMps: loc?.speedMps ?? null,
+        movedM,
+        headingDeg: loc?.heading ?? null,
+        cadence: sensors?.cadence ?? null,
+        watts: sensors?.watts ?? null,
+        distToFinishM: null,
+        pointIndex: Math.max(0, pointsRef.current.length - 1),
+      });
+      flowRef.current = res.state;
+      for (const ev of res.events) {
+        if (ev.kind === "auto_pause") {
+          pausesRef.current.push({ start: now, end: null });
+          pausedRef.current = true;
+          lastRef.current = null;
+          setPauseState("auto_paused");
+        } else if (ev.kind === "auto_resume") {
+          const open = pausesRef.current[pausesRef.current.length - 1];
+          if (open && open.end == null) open.end = now;
+          pausedRef.current = false;
+          setPauseState("riding");
+        } else if (ev.kind === "end_suggested") {
+          setEndSuggestion((cur) => {
+            // Een sterke suggestie verdringt een zwakke; nooit andersom.
+            if (cur && cur.confidence === "strong" && ev.confidence === "weak") {
+              return cur;
+            }
+            return {
+              confidence: ev.confidence,
+              lastBikePointIndex: ev.lastBikePointIndex,
+              lastBikeTime: ev.lastBikeTime,
+              reasons: ev.reasons,
+              suggestedAt: now,
+            };
+          });
+        }
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [recording, getSensorValues]);
+
+  const pauseRide = useCallback(() => {
+    if (pausedRef.current) return;
+    const now = Date.now();
+    flowRef.current = flowManualPause(flowRef.current);
+    pausesRef.current.push({ start: now, end: null });
+    pausedRef.current = true;
+    lastRef.current = null;
+    setPauseState("manual_paused");
+  }, []);
+
+  const resumeRide = useCallback(() => {
+    if (!pausedRef.current) return;
+    const now = Date.now();
+    flowRef.current = flowManualResume(flowRef.current);
+    const open = pausesRef.current[pausesRef.current.length - 1];
+    if (open && open.end == null) open.end = now;
+    pausedRef.current = false;
+    setPauseState("riding");
+  }, []);
+
+  const dismissEndSuggestion = useCallback(() => {
+    setEndSuggestion(null);
+  }, []);
 
   const start = useCallback(() => {
     startedAtRef.current = Date.now();
     lastRef.current = null;
     backgroundActiveRef.current = false;
     sensorSamplesRef.current = [];
+    flowRef.current = createRideFlowState();
+    pausesRef.current = [];
+    pausedRef.current = false;
+    flowPrevLocRef.current = null;
+    setPauseState("riding");
+    setMovingSec(0);
+    setEndSuggestion(null);
     // Starting a new ride supersedes any recovered one.
     setRecoverable(null);
     setPoints([]);
@@ -274,6 +447,11 @@ export function useRideRecorder(
   const stop = useCallback(() => {
     setRecording(false);
     setRideActive(false);
+    // Een nog open pauzevenster netjes afsluiten voor de eindstatistieken.
+    const open = pausesRef.current[pausesRef.current.length - 1];
+    if (open && open.end == null) open.end = Date.now();
+    pausedRef.current = false;
+    setPauseState("riding");
     stopRideTracker().catch(() => {});
   }, []);
 
@@ -284,6 +462,13 @@ export function useRideRecorder(
     lastRef.current = null;
     backgroundActiveRef.current = false;
     sensorSamplesRef.current = [];
+    flowRef.current = createRideFlowState();
+    pausesRef.current = [];
+    pausedRef.current = false;
+    flowPrevLocRef.current = null;
+    setPauseState("riding");
+    setMovingSec(0);
+    setEndSuggestion(null);
     setPoints([]);
     setDistanceKm(0);
     setElapsedSec(0);
@@ -311,6 +496,12 @@ export function useRideRecorder(
     points,
     distanceKm,
     elapsedSec,
+    movingSec,
+    pauseState,
+    pauseRide,
+    resumeRide,
+    endSuggestion,
+    dismissEndSuggestion,
     backgroundActive,
     backgroundDenied,
     recoverable,

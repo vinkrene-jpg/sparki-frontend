@@ -152,6 +152,14 @@ export default function RecordScreen() {
   // save success the persisted recovery store is cleared; on cancel it is kept
   // so the "Onafgemaakte rit gevonden" card comes back — never silently lost.
   const [reviewFromRecovery, setReviewFromRecovery] = useState(false);
+  // Automatisch vastgesteld rit-einde: bewaart de VOLLEDIGE opname naast de
+  // ingekorte track, zodat "Toch hele opname bewaren" altijd kan. Nooit wordt
+  // er iets weggegooid zonder dat de renner het terug kan halen.
+  const [autoEnded, setAutoEnded] = useState<null | { reasons: string[] }>(null);
+  const [fullStopped, setFullStopped] = useState<null | {
+    points: RidePoint[];
+    samples: RideSensorSample[];
+  }>(null);
 
   // The live track being recorded, so the rider sees their real trail draw on
   // the map as they move (no planned line exists for a free ride).
@@ -188,6 +196,8 @@ export default function RecordScreen() {
     setStoppedPoints(null);
     setStoppedSamples([]);
     setReviewFromRecovery(false);
+    setAutoEnded(null);
+    setFullStopped(null);
     saveRide.reset();
     setBidons(0);
     setEetmomenten(0);
@@ -200,10 +210,34 @@ export default function RecordScreen() {
   // `stoppedPoints` before the recorder resets, then the review editor opens so
   // the rider can name the ride and add a note. The snapshot keeps the track
   // alive across cancel/retry — nothing is lost.
-  const onStop = () => {
+  const onStop = (trimAtMs?: number | null, autoReasons?: string[]) => {
     recorder.stop();
-    setStoppedPoints(recorder.points);
-    setStoppedSamples(recorder.getSensorSamples());
+    const allPoints = recorder.points;
+    const allSamples = recorder.getSensorSamples();
+    if (trimAtMs != null) {
+      // Slim rit-einde: alleen het waarschijnlijke fietsgedeelte gaat de
+      // review in; de volledige opname blijft beschikbaar voor correctie.
+      const trimmedPoints = allPoints.filter((p) => p.time <= trimAtMs);
+      const trimmedSamples = allSamples.filter((s) => s.time <= trimAtMs);
+      // Alleen inkorten als er echt een fietsgedeelte overblijft.
+      if (trimmedPoints.length >= 2) {
+        setStoppedPoints(trimmedPoints);
+        setStoppedSamples(trimmedSamples);
+        setFullStopped({ points: allPoints, samples: allSamples });
+        setAutoEnded({ reasons: autoReasons ?? [] });
+      } else {
+        setStoppedPoints(allPoints);
+        setStoppedSamples(allSamples);
+        setFullStopped(null);
+        setAutoEnded(null);
+      }
+    } else {
+      setStoppedPoints(allPoints);
+      setStoppedSamples(allSamples);
+      setFullStopped(null);
+      setAutoEnded(null);
+    }
+    recorder.dismissEndSuggestion();
     const now = new Date();
     const rideDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     setStoppedFuel(
@@ -240,6 +274,8 @@ export default function RecordScreen() {
       setReview(null);
       setStoppedPoints(null);
       setStoppedSamples([]);
+      setAutoEnded(null);
+      setFullStopped(null);
       // In-rit geregistreerde voeding wordt nu — één keer — als echt
       // voedingslog opgeslagen. Mislukt dit, dan melden we dat eerlijk; er
       // wordt nooit een tweede (dubbele) poging op de achtergrond gedaan.
@@ -311,8 +347,32 @@ export default function RecordScreen() {
     setReview(null);
     setStoppedPoints(null);
     setStoppedSamples([]);
+    setAutoEnded(null);
+    setFullStopped(null);
     saveRide.reset();
   };
+
+  // Correctie op het automatisch vastgestelde einde: zet de VOLLEDIGE opname
+  // terug in de review. De renner houdt altijd het laatste woord.
+  const onKeepFullRecording = () => {
+    if (!fullStopped) return;
+    setStoppedPoints(fullStopped.points);
+    setStoppedSamples(fullStopped.samples);
+    setAutoEnded(null);
+    setFullStopped(null);
+  };
+
+  // Sterke zekerheid dat de rit voorbij is (bijv. doorrijden met de auto):
+  // stop automatisch en kort de opname in tot het laatste waarschijnlijke
+  // fietspunt. De review opent daarna gewoon — niets wordt zonder de renner
+  // definitief gemaakt en de volledige opname blijft herstelbaar.
+  const endSuggestion = recorder.endSuggestion;
+  useEffect(() => {
+    if (!recorder.recording || !endSuggestion) return;
+    if (endSuggestion.confidence !== "strong") return;
+    onStop(endSuggestion.lastBikeTime, endSuggestion.reasons);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recorder.recording, endSuggestion]);
 
   // Real avg/max of the measured sensor readings — computed from the exact
   // point-matched values that go into the GPX file (same matching path as
@@ -506,6 +566,32 @@ export default function RecordScreen() {
                   {sensorSummaryLine}
                 </Text>
               )}
+              {autoEnded && (
+                <View style={[styles.reviewErr, { alignItems: "flex-start" }]}>
+                  <Ionicons name="flag-outline" size={16} color={c.primary} />
+                  <View style={{ flex: 1, gap: 6 }}>
+                    <Text style={[styles.recNote, { color: c.mutedForeground }]}>
+                      Het einde van je rit is automatisch vastgesteld
+                      {autoEnded.reasons.length > 0
+                        ? ` (${autoEnded.reasons.join(", ")})`
+                        : ""}
+                      . Alles daarna is weggelaten uit deze rit.
+                    </Text>
+                    {fullStopped && (
+                      <Pressable onPress={onKeepFullRecording} hitSlop={8}>
+                        <Text
+                          style={[
+                            styles.recNote,
+                            { color: c.primary, fontFamily: "Inter_600SemiBold" },
+                          ]}
+                        >
+                          Toch de hele opname bewaren
+                        </Text>
+                      </Pressable>
+                    )}
+                  </View>
+                </View>
+              )}
 
               <Text style={[styles.fieldLabel, { color: c.mutedForeground }]}>
                 Naam
@@ -620,6 +706,38 @@ export default function RecordScreen() {
           </View>
         ) : recorder.recording ? (
           <>
+          {endSuggestion && endSuggestion.confidence === "weak" && (
+            <View style={[styles.recCard, { backgroundColor: c.card, borderColor: c.primary, flexWrap: "wrap" }]}>
+              <Ionicons name="flag-outline" size={18} color={c.primary} />
+              <Text style={[styles.recNote, { color: c.foreground, flex: 1 }]}>
+                Is je rit al klaar? Het lijkt erop dat je niet meer fietst
+                {endSuggestion.reasons.length > 0
+                  ? ` (${endSuggestion.reasons[0]})`
+                  : ""}
+                .
+              </Text>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <Pressable
+                  onPress={() =>
+                    onStop(endSuggestion.lastBikeTime, endSuggestion.reasons)
+                  }
+                  style={[styles.recBtn, { backgroundColor: c.primary }]}
+                >
+                  <Text style={[styles.recBtnText, { color: c.primaryForeground }]}>
+                    Rit hier beëindigen
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={recorder.dismissEndSuggestion}
+                  style={[styles.recBtn, { backgroundColor: c.card, borderWidth: 1, borderColor: c.border }]}
+                >
+                  <Text style={[styles.recBtnText, { color: c.foreground }]}>
+                    Ik fiets nog
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
           <View style={styles.fuelRow}>
             <Pressable
               onPress={() => setBidons((v) => v + 1)}
@@ -645,9 +763,40 @@ export default function RecordScreen() {
           <View style={[styles.recCard, { backgroundColor: c.card, borderColor: c.border }]}>
             <View style={{ flex: 1 }}>
               <View style={styles.recLive}>
-                <View style={[styles.recDot, { backgroundColor: c.destructive }]} />
-                <Text style={[styles.recLiveLabel, { color: c.destructive }]}>Bezig</Text>
+                <View
+                  style={[
+                    styles.recDot,
+                    {
+                      backgroundColor:
+                        recorder.pauseState === "riding"
+                          ? c.destructive
+                          : c.mutedForeground,
+                    },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.recLiveLabel,
+                    {
+                      color:
+                        recorder.pauseState === "riding"
+                          ? c.destructive
+                          : c.mutedForeground,
+                    },
+                  ]}
+                >
+                  {recorder.pauseState === "riding"
+                    ? "Bezig"
+                    : recorder.pauseState === "auto_paused"
+                      ? "Automatisch gepauzeerd"
+                      : "Gepauzeerd"}
+                </Text>
               </View>
+              {recorder.pauseState !== "riding" && (
+                <Text style={[styles.recNote, { color: c.mutedForeground }]}>
+                  Hervat vanzelf zodra je weer fietst.
+                </Text>
+              )}
               {!location && (
                 <Text style={[styles.recNote, { color: c.mutedForeground }]}>
                   Wachten op je locatie…
@@ -670,7 +819,27 @@ export default function RecordScreen() {
               ) : null}
             </View>
             <Pressable
-              onPress={onStop}
+              onPress={
+                recorder.pauseState === "riding"
+                  ? recorder.pauseRide
+                  : recorder.resumeRide
+              }
+              style={[
+                styles.recBtn,
+                { backgroundColor: c.card, borderWidth: 1, borderColor: c.border },
+              ]}
+            >
+              <Ionicons
+                name={recorder.pauseState === "riding" ? "pause" : "play"}
+                size={18}
+                color={c.foreground}
+              />
+              <Text style={[styles.recBtnText, { color: c.foreground }]}>
+                {recorder.pauseState === "riding" ? "Pauze" : "Hervat"}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => onStop()}
               disabled={saveRide.isPending}
               style={[
                 styles.recBtn,

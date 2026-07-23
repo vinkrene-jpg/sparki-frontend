@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 
 // A saved training session as stored by the backend Data Hub. Sensor fields
@@ -61,6 +61,37 @@ export type SessionClimb = {
   summitKm: number | null;
 };
 
+// Actieve "Rit inkorten"-bewerking: het gekozen bereik in de bewaarde track
+// plus de OORSPRONKELIJKE statistieken (voor volledig herstel). Null = geen
+// trim actief. De duur is een schatting op basis van afstand (de bewaarde
+// geometrie draagt geen tijd) — durationEstimated maakt dat expliciet.
+export type SessionTrimEdit = {
+  startIndex: number;
+  endIndex: number;
+  trimmedAt: string;
+  durationEstimated: boolean;
+  original: {
+    durationMin: number | null;
+    distanceKm: string | null;
+    elevationM: number | null;
+    avgSpeedKph: string | null;
+  };
+};
+
+// Voorvertoning van herberekende statistieken voor een gekozen bereik.
+export type TrimPreview = {
+  startIndex: number;
+  endIndex: number;
+  pointCount: number;
+  distanceKm: number;
+  fullDistanceKm: number;
+  distanceFraction: number;
+  elevationM: number | null;
+  durationMin: number | null;
+  durationEstimated: boolean;
+  avgSpeedKph: number | null;
+};
+
 export type SessionDetailResponse = {
   session: SessionDetail;
   track: SessionTrackPoint[] | null;
@@ -72,7 +103,55 @@ export type SessionDetailResponse = {
   // chart honestly, never draw a fabricated line.
   profile: number[] | null;
   climbs: SessionClimb[];
+  // Actieve trim; de getoonde track/profiel zijn dan al ingekort. De ruwe
+  // opname blijft op de server bewaard (volledig herstelbaar).
+  trimEdit?: SessionTrimEdit | null;
+  // Aantal punten in de VOLLEDIGE bewaarde track (basis voor trim-indexen).
+  trackPointCount?: number;
 };
+
+/** Voorvertoning van "Rit inkorten" — slaat niets op. */
+export function useTrimPreview(id: number | null) {
+  return useMutation({
+    mutationFn: (range: { startIndex: number; endIndex: number }) =>
+      customFetch<{ preview: TrimPreview }>(
+        `/api/athlete/sessions/${id}/trim-preview`,
+        { method: "POST", body: JSON.stringify(range), responseType: "json" },
+      ),
+  });
+}
+
+/** Pas "Rit inkorten" toe. De originele statistieken blijven herstelbaar. */
+export function useApplyTrim(id: number | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (range: { startIndex: number; endIndex: number }) =>
+      customFetch<{ session: SessionDetail; preview: TrimPreview }>(
+        `/api/athlete/sessions/${id}/trim`,
+        { method: "POST", body: JSON.stringify(range), responseType: "json" },
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["session", id] });
+      qc.invalidateQueries({ queryKey: ["sessions"] });
+    },
+  });
+}
+
+/** Herstel de volledige rit (maak het inkorten ongedaan). */
+export function useRestoreTrim(id: number | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      customFetch<{ session: SessionDetail }>(
+        `/api/athlete/sessions/${id}/trim`,
+        { method: "DELETE", responseType: "json" },
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["session", id] });
+      qc.invalidateQueries({ queryKey: ["sessions"] });
+    },
+  });
+}
 
 /**
  * One saved ride in full — all measured values, the note, and the REAL ridden
