@@ -1,0 +1,11 @@
+locatie,artifact,soort,categorie,gebruikersgericht,actie,toelichting
+artifacts/mockup-sandbox/src/components/Prototype.tsx,mockup-sandbox,hardcoded voorbeeldactiviteiten,5 (mock),nee,gedocumenteerd,design-sandbox voor canvas-previews; geen productoppervlak; wordt niet als product gedeployed
+artifacts/api-server/src/jobs (world-seed),api-server,virtuele Sparki World-renners,4 (bewust fictief),ja (als fictief gelabeld),behouden,transparant fictief productonderdeel met harde muur naar echte gebruikersdata
+artifacts/api-server/src/jobs (intel-seed),api-server,kennisbank-basisinhoud,3 (externe echte bron),ja,behouden,echte literatuur/kennisitems; geen persoonlijke data
+dev-database user_profiles (test-intel-athlete),database (dev),testaccount,5 (test),nee,verwijderd,residu van eerdere test
+dev-database user_profiles (test_fueling_user),database (dev),testaccount,5 (test),nee,verwijderd,residu van eerdere test
+dev-database user_profiles (4x test_koppel_*),database (dev),testaccounts,5 (test),nee,verwijderd,residu van koppellijst-tests
+dev-database user_profiles (dev_qa_athlete),database (dev),dev-preview gebruiker,n.v.t. (tooling),nee,behouden,vereist voor Development Preview Mode (DEV_AUTH_BYPASS)
+productie-database,database (prod),geen vondsten,-,-,geen,2 echte gebruikers; nul test-/seedaccounts
+artifacts/sparki (frontend),sparki web,geen vondsten,-,-,geen,lege datasets renderen eerlijke lege staten; geen fallback-arrays
+artifacts/sparki-mobile,mobiel,geen vondsten,-,-,geen,geen mock-/seeddata gevonden

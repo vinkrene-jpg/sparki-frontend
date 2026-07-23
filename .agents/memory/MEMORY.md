@@ -159,3 +159,4 @@
 - [Sparki route-match engine](sparki-route-match.md) — never point-match GPS to sparse route points; segment projection + off-route state machine, byte-mirrored web↔mobiel, one position source for map/progress/deviation.
 - [Sparki rit-einde & rit-inkorten](sparki-ride-trim.md) — pure ride-flow engine at 1Hz tick; auto-trim always undoable pre-save; trim is metadata-only (first original wins), duration estimate honest-null on zero distance.
 - [Workout koppellijst honesty](sparki-workout-linklist.md) — "mockdata" = seeded dev-QA rows + stale query cache; DELETE is soft-cancel (status=cancelled) ⇒ pickers must filter; list queries share one invalidation prefix.
+- [Sparki data-trust audit](sparki-data-trust.md) — provenance endpoint uses constant table allowlist (never request-driven sql.raw); 403-gate testbaar via per-call env-flip terwijl IS_DEV gecached blijft.

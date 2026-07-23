@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, Redirect } from "wouter";
 import { useUser } from "@clerk/react";
 import { DEV_PREVIEW } from "@/lib/dev";
@@ -17,6 +17,7 @@ import {
   useAdminSyncDiagnostics,
   useAdminAiInsights,
   useAdminQuality,
+  useAdminProvenance,
   type HealthCheck,
   type HealthBatch,
   type ScheduledTask,
@@ -224,6 +225,89 @@ const FEEDBACK_LABEL: Record<string, string> = {
   tired: "Moe",
   move: "Verplaatst",
 };
+
+// Gegevensbroncontrole — alleen zichtbaar op deze admin-pagina (gewone
+// gebruikers komen hier nooit). Toont per gegevensblok de echte bron,
+// record-id, berekening, laatste update en de gebruiker waaraan de rijen
+// gebonden zijn. Bij een fout of ontbrekende data: eerlijke melding.
+function ProvenanceSection() {
+  const [input, setInput] = useState("");
+  const [target, setTarget] = useState("");
+  const { data, isError, isFetching } = useAdminProvenance(target);
+  return (
+    <section className="mt-8">
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+        Gegevensbroncontrole
+      </p>
+      <p className="mt-1 text-[12px] leading-snug text-white/40">
+        Controleer per gegevensblok waar de zichtbare informatie vandaan komt:
+        brontabel, record-id, berekening, laatste update en de gebruiker
+        waaraan de gegevens gebonden zijn. Alleen voor admins/testers.
+      </p>
+      <form
+        className="mt-3 flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setTarget(input.trim());
+        }}
+      >
+        <input
+          className="flex-1 rounded-lg border border-white/[0.08] bg-[#070d16]/[0.82] px-3 py-2 text-[13px] text-white/85 outline-none backdrop-blur-md placeholder:text-white/25"
+          placeholder="clerkId van de gebruiker…"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+        />
+        <button
+          type="submit"
+          className="rounded-lg border border-white/[0.12] px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30"
+        >
+          Controleer
+        </button>
+      </form>
+      {isFetching && (
+        <p className="mt-3 text-[12px] text-white/30">Bezig met controleren…</p>
+      )}
+      {isError && target && !isFetching && (
+        <p className="mt-3 text-[12px] text-red-300/70">
+          Controle mislukt of gebruiker niet gevonden. Er worden nooit
+          vervangende gegevens getoond.
+        </p>
+      )}
+      {data && !isFetching && (
+        <div className="mt-3 space-y-2">
+          <p className="text-[12px] text-white/55">
+            {data.gebruiker.naam} · {data.gebruiker.email} ·{" "}
+            <span className="font-mono text-[10px]">{data.gebruiker.clerkId}</span>
+          </p>
+          {data.surfaces.map((s) => (
+            <div
+              key={s.key}
+              className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3 backdrop-blur-md"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[13px] text-white/85">{s.label}</span>
+                <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-white/40">
+                  {s.aantalRecords ?? "?"} records
+                </span>
+              </div>
+              <p className="mt-1 font-mono text-[10px] text-white/35">
+                Bron: {s.bron}
+                {s.laatsteRecordId != null && ` · laatste record-id ${s.laatsteRecordId}`}
+                {s.laatsteUpdate && ` · laatste update ${formatWhen(s.laatsteUpdate)}`}
+              </p>
+              <p className="mt-1 text-[11px] leading-snug text-white/45">
+                {s.berekening}
+              </p>
+              <p className="mt-1 text-[11px] text-white/35">
+                Herkomst: {s.herkomst} · gebruiker {s.gebruiker}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
 
 export default function AdminPage() {
   const { isSignedIn } = useUser();
@@ -661,6 +745,8 @@ export default function AdminPage() {
                 )}
               </div>
             </section>
+
+            <ProvenanceSection />
 
             <section className="mt-8">
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">

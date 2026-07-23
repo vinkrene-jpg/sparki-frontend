@@ -20,6 +20,7 @@ const ALL_ENTRIES = [
       path.resolve(artifactDir, "src/jobs/knowledge-scan.ts"),
       path.resolve(artifactDir, "src/tests/smoke.ts"),
       path.resolve(artifactDir, "src/tests/koppellijst-workouts.ts"),
+      path.resolve(artifactDir, "src/tests/data-trust.ts"),
       path.resolve(artifactDir, "src/tests/race-export.ts"),
       path.resolve(artifactDir, "src/tests/route-remarks.ts"),
       path.resolve(artifactDir, "src/tests/route-surfaces.ts"),

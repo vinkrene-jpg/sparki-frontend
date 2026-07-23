@@ -359,3 +359,30 @@ export function useResolveHealthCheck() {
     },
   });
 }
+
+// ── Gegevensbroncontrole (alleen admin/testers) ──────────────────────────────
+export interface ProvenanceSurface {
+  key: string;
+  label: string;
+  bron: string;
+  berekening: string;
+  aantalRecords: number | null;
+  laatsteRecordId: number | null;
+  laatsteUpdate: string | null;
+  gebruiker: string;
+  herkomst: string;
+}
+
+export function useAdminProvenance(clerkId: string) {
+  const target = clerkId.trim();
+  return useQuery({
+    queryKey: [...queryKeys.admin.all(), "provenance", target],
+    queryFn: () =>
+      apiFetch<{
+        gebruiker: { clerkId: string; email: string; naam: string };
+        surfaces: ProvenanceSurface[];
+      }>(`/api/admin/data-provenance?clerkId=${encodeURIComponent(target)}`),
+    enabled: target.length > 0,
+    staleTime: 30_000,
+  });
+}

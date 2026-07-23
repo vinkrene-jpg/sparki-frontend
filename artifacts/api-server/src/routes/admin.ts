@@ -1177,4 +1177,105 @@ router.get("/ai-insights", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// ── GET /api/admin/data-provenance ──────────────────────────────────────────
+// Gegevensbroncontrole (alleen admin/testers): laat per zichtbaar gegevensblok
+// zien waar de informatie vandaan komt — brontabel, record-id's, laatste
+// update en aan welke gebruiker (clerkId) de rijen gebonden zijn. Alles komt
+// LIVE uit de database; er wordt niets berekend of verzonnen. Een leeg blok
+// betekent eerlijk: geen brondata aanwezig voor deze gebruiker.
+const PROVENANCE_SURFACES: {
+  key: string;
+  label: string;
+  table: string;
+  clerkCol: string;
+  updatedCol: string;
+  berekening: string;
+}[] = [
+  { key: "profiel", label: "Profiel (Jij)", table: "athlete_profiles", clerkCol: "clerk_id", updatedCol: "updated_at", berekening: "Directe gebruikersinvoer + connector-import; geen afleiding." },
+  { key: "kalender", label: "Kalender & trainingen", table: "planned_workouts", clerkCol: "clerk_id", updatedCol: "updated_at", berekening: "Plan-engine of handmatige invoer; koppellijst leest dezelfde rijen." },
+  { key: "sessies", label: "Activiteiten (sessies)", table: "training_sessions", clerkCol: "clerk_id", updatedCol: "updated_at", berekening: "Import (Strava/bestand) of handmatig; belasting (TSS) afgeleid uit vermogen+FTP indien aanwezig." },
+  { key: "doelen", label: "Doelen", table: "athlete_goals", clerkCol: "clerk_id", updatedCol: "updated_at", berekening: "Gebruikersinvoer; afgeleide doelen dragen hun bron in de rij." },
+  { key: "routes", label: "Routes", table: "routes", clerkCol: "clerk_id", updatedCol: "updated_at", berekening: "ORS-generatie of GPX-import; nooit verzonnen geometrie." },
+  { key: "wedstrijden", label: "Wedstrijden", table: "races", clerkCol: "clerk_id", updatedCol: "updated_at", berekening: "Gebruikersinvoer of kalenderimport; verrijking alleen uit echte bronnen." },
+  { key: "voeding", label: "Voeding", table: "nutrition_hydration_logs", clerkCol: "clerk_id", updatedCol: "created_at", berekening: "Eigen registraties; richtwaarden deterministisch uit duur/intensiteit." },
+  { key: "meldingen", label: "Meldingen", table: "notifications", clerkCol: "clerk_id", updatedCol: "created_at", berekening: "Gebeurtenis-gedreven; nooit gegenereerd zonder aanleiding." },
+  { key: "observaties", label: "Sparki-observaties", table: "ai_observations", clerkCol: "clerk_id", updatedCol: "created_at", berekening: "Deterministische engine over echte sessies/profiel; confidence < 100." },
+  { key: "chat", label: "Vraag Sparki (chat)", table: "sparki_input_messages", clerkCol: "clerk_id", updatedCol: "created_at", berekening: "Eigen gesprekshistorie; alleen zichtbaar binnen de sessie." },
+];
+
+router.get("/data-provenance", requireAuth, requireAdmin, async (req, res) => {
+  const target = String(req.query["clerkId"] ?? "").trim();
+  if (!target) {
+    res.status(400).json({ error: "clerkId is verplicht" });
+    return;
+  }
+  try {
+    const [user] = (
+      await db.execute(
+        sql`SELECT clerk_id, email, display_name FROM user_profiles WHERE clerk_id = ${target}`,
+      )
+    ).rows as { clerk_id: string; email: string; display_name: string }[];
+    if (!user) {
+      res.status(404).json({ error: "Gebruiker niet gevonden" });
+      return;
+    }
+    const surfaces = [];
+    for (const s of PROVENANCE_SURFACES) {
+      try {
+        const rows = (
+          await db.execute(
+            sql`SELECT count(*)::int AS n,
+                       max(${sql.raw(s.updatedCol)}) AS latest,
+                       (SELECT id FROM ${sql.raw(s.table)}
+                        WHERE ${sql.raw(s.clerkCol)} = ${target}
+                        ORDER BY ${sql.raw(s.updatedCol)} DESC NULLS LAST LIMIT 1) AS latest_id
+                FROM ${sql.raw(s.table)}
+                WHERE ${sql.raw(s.clerkCol)} = ${target}`,
+          )
+        ).rows as { n: number; latest: string | null; latest_id: number | null }[];
+        const row = rows[0];
+        surfaces.push({
+          key: s.key,
+          label: s.label,
+          bron: `${s.table} (kolom ${s.clerkCol})`,
+          berekening: s.berekening,
+          aantalRecords: row?.n ?? 0,
+          laatsteRecordId: row?.latest_id ?? null,
+          laatsteUpdate: row?.latest ?? null,
+          gebruiker: target,
+          herkomst:
+            (row?.n ?? 0) > 0
+              ? "directe of afgeleide echte gebruikersdata"
+              : "geen brondata — eerlijk leeg",
+        });
+      } catch (err) {
+        // Eerlijke fout per blok — nooit vervangen door verzonnen cijfers.
+        req.log.error({ err, surface: s.key }, "admin.dataProvenance surface failed");
+        surfaces.push({
+          key: s.key,
+          label: s.label,
+          bron: `${s.table} (kolom ${s.clerkCol})`,
+          berekening: s.berekening,
+          aantalRecords: null,
+          laatsteRecordId: null,
+          laatsteUpdate: null,
+          gebruiker: target,
+          herkomst: "controle mislukt — bron niet bereikbaar",
+        });
+      }
+    }
+    res.json({
+      gebruiker: {
+        clerkId: user.clerk_id,
+        email: user.email,
+        naam: user.display_name,
+      },
+      surfaces,
+    });
+  } catch (err) {
+    req.log.error({ err }, "admin.dataProvenance failed");
+    res.status(500).json({ error: "Gegevensbroncontrole mislukt" });
+  }
+});
+
 export default router;
