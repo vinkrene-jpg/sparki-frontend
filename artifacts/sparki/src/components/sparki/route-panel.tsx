@@ -32,7 +32,7 @@ import {
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useFriends } from "@/hooks/use-social"
 import { isSportActive } from "@workspace/feature-flags"
-import { MapPin, Sparkles, Flag, Users, X, Download, Smartphone, Navigation, Share2, Map as MapIcon } from "lucide-react"
+import { MapPin, Sparkles, Flag, Users, X, Download, Navigation, Share2, Map as MapIcon } from "lucide-react"
 import { RouteExplorer } from "@/components/sparki/route-explorer"
 import { useLocation, useSearch } from "wouter"
 import {
@@ -378,6 +378,92 @@ function TempoBlock({
             </>
           )}
       </p>
+    </div>
+  )
+}
+
+// Compacte, eerlijke uitleg bij "Navigeer". Sparki draait hier als website of
+// PWA in de browser — daarin kan de navigator: live positie volgen, route-
+// aanwijzingen op het scherm tonen (incl. afwijkingswaarschuwing), en de rit
+// registreren met automatische pauze/hervatting. Wat NIET kan op dit platform:
+// doorlopen met het scherm uit of op de achtergrond (geen wake lock, de
+// browser stopt locatie-updates), en gesproken afslag-aanwijzingen bestaan
+// niet. Daarom noemen we die functies hier bewust niet — geen loze beloftes.
+function NavigateInfoCard() {
+  const [more, setMore] = useState(false)
+  // Echte capability-check: bestaat locatiebepaling op dit apparaat?
+  // (Achtergrond-tracking bestaat in de browser/PWA per definitie niet —
+  // geen wake lock, watchPosition stopt bij scherm-uit — dus die regel is
+  // altijd waar op dit platform en geen aanname.)
+  const hasGeo =
+    typeof navigator !== "undefined" && "geolocation" in navigator
+  return (
+    <div className="mt-4 rounded-xl border border-cyan-300/[0.18] bg-[rgba(120,210,230,0.06)] px-3.5 py-3">
+      <div className="flex items-start gap-2.5">
+        <Navigation
+          className="mt-0.5 h-4 w-4 shrink-0"
+          strokeWidth={1.75}
+          style={{ color: ACCENT }}
+        />
+        <div className="min-w-0 text-[12.5px] leading-relaxed text-white/60">
+          <p className="font-medium text-white/85">Navigeren met Sparki</p>
+          {hasGeo ? (
+            <>
+              <p>
+                Tik op{" "}
+                <span className="font-medium text-white/85">Navigeer</span> om
+                deze route te openen en je positie onderweg te volgen.
+              </p>
+              <p>Sparki registreert tijdens het navigeren ook je rit.</p>
+              <p>
+                Op dit apparaat moet Sparki geopend blijven — met het scherm
+                uit stopt het volgen.
+              </p>
+            </>
+          ) : (
+            <p>
+              Deze browser ondersteunt geen locatiebepaling, dus live volgen
+              werkt hier niet. Download de route hierboven als GPX/TCX voor je
+              fietscomputer.
+            </p>
+          )}
+          {more && hasGeo && (
+            <ul className="mt-2 flex list-disc flex-col gap-1 pl-4 text-white/55">
+              <li>
+                Locatietoestemming wordt pas gevraagd op het moment dat de
+                navigatie start — niet eerder, en alleen voor je locatie.
+                Weiger je, dan meldt het navigatiescherm dat meteen duidelijk.
+              </li>
+              <li>
+                Je ziet routeaanwijzingen op het scherm en krijgt een
+                waarschuwing als je van de route afwijkt. Gesproken
+                afslag-aanwijzingen zijn er niet.
+              </li>
+              <li>
+                De ritregistratie pauzeert automatisch als je stilstaat en
+                hervat zodra je weer rijdt.
+              </li>
+              <li>
+                Onderweg wordt je rit tussentijds bewaard: keer je terug naar
+                een gestarte navigatie, dan gaat dezelfde rit gewoon verder —
+                er wordt niets dubbel geregistreerd.
+              </li>
+              <li>
+                Liever je fietscomputer? Download de route hierboven als
+                GPX/TCX.
+              </li>
+            </ul>
+          )}
+          <button
+            type="button"
+            onClick={() => setMore((m) => !m)}
+            className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.16em] transition"
+            style={{ color: ACCENT }}
+          >
+            {more ? "− minder" : "+ Meer over navigeren"}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -1169,21 +1255,7 @@ function RouteCard({
         </p>
       )}
 
-      <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-cyan-300/[0.18] bg-[rgba(120,210,230,0.06)] px-3.5 py-3">
-        <Smartphone
-          className="mt-0.5 h-4 w-4 shrink-0"
-          strokeWidth={1.75}
-          style={{ color: ACCENT }}
-        />
-        <p className="text-[12.5px] leading-relaxed text-white/60">
-          <span className="font-medium text-white/85">Onderweg navigeren?</span>{" "}
-          Tik op <span className="font-medium text-white/85">Navigeer</span> om
-          hier op de kaart je live positie te volgen — je browser vraagt
-          eenmalig toegang tot je locatie. Wil je de rit als training opnemen op
-          de achtergrond? Dat doe je in de Sparki-app op je telefoon. Of
-          download de route hierboven als GPX/TCX voor je fietscomputer.
-        </p>
-      </div>
+      <NavigateInfoCard />
 
       {nav.length > 0 ? (
         <div className="mt-4">

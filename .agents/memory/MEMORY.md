@@ -103,8 +103,7 @@
 - [Sparki route-paspoort + POIs](sparki-route-passport.md) — Overpass: bbox+local filter en compacte nwr-unions (verbose vormen 504'en); Open-Meteo hourly matcht op utc_offset epoch ([POIs](sparki-route-pois.md)).
 - [Power bests pipeline](sparki-power-bests.md) — bests computed only at FIT/TCX parse; no backfill (raw files not retained); gaps=0W, collector takes seconds not ms.
 - [Sparki Rit-verhaal](sparki-ride-story.md) — flag `rit_verhaal`; sync line must render independent of fresh story; predictionAvailable strictly pre-hoc; workflow limit hit ⇒ tests via shell.
-- [Route rejoin after deviation](sparki-route-rejoin.md) — off-route choice terug/verder must be a REAL routed connector (ORS), never a straight line; profile derived from surface.
-- [Sparki route loop quality](sparki-route-loop-quality.md) — generated round-trips backtracked; fix = best-of-N real ORS candidates picked by pathOverlapFraction.
+- [ORS routing honesty](sparki-route-rejoin.md) — rejoin connectors must be REAL routed paths (never straight lines); loops = best-of-N candidates by pathOverlapFraction ([loops](sparki-route-loop-quality.md)).
 - [Sparki mobile nav app](sparki-mobile-nav.md) — Expo/RN turn-by-turn nav; react-native-maps has NO web build ⇒ platform-split component (.tsx native / .web.tsx stub), never runtime require.
 - [Sparki mobile background ride recording](sparki-mobile-bg-recording.md) — OS TaskManager location task keeps track growing while locked; platform-split ride-tracker (.ts/.web.ts).
 - [Sparki bordjes-sprinten](sparki-bordjes-sprint.md) — town-sign sprints; boards=place-name transitions (honest, provider-only), base+speed+watt scoring.
