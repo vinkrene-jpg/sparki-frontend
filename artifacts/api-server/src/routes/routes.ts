@@ -81,6 +81,12 @@ import {
   computeDataRemarks,
   remarksSource,
 } from "../lib/route-remarks";
+import {
+  getRouteSurfaces,
+  computeBikeSuitability,
+  maxSlopePct,
+  surfacesSource,
+} from "../lib/route-surfaces";
 
 const router = Router();
 
@@ -1126,6 +1132,101 @@ router.post("/remarks-preview", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "routes.remarks-preview failed");
     res.status(500).json({ error: "Kon routeopmerkingen niet laden" });
+  }
+});
+
+// POST /api/routes/surfaces-preview — wegtypen/ondergrond-analyse voor een NOG
+// NIET opgeslagen route (routebouwer). Zelfde eerlijke bron/contract als
+// GET /:id/surfaces. Declared before the /:id routes.
+router.post("/surfaces-preview", requireAuth, async (req, res) => {
+  try {
+    const raw = (req.body ?? {}) as { geometry?: unknown; profile?: unknown; distanceKm?: unknown };
+    const geomIn = Array.isArray(raw.geometry) ? raw.geometry : null;
+    if (!geomIn || geomIn.length < 2 || geomIn.length > 20000) {
+      res.status(400).json({ error: "Ongeldige routegeometrie" });
+      return;
+    }
+    const geometry: RoutePathPoint[] = [];
+    for (const p of geomIn) {
+      if (!Array.isArray(p) || p.length < 2) {
+        res.status(400).json({ error: "Ongeldige routegeometrie" });
+        return;
+      }
+      const la = Number(p[0]);
+      const lo = Number(p[1]);
+      if (!Number.isFinite(la) || !Number.isFinite(lo) || Math.abs(la) > 90 || Math.abs(lo) > 180) {
+        res.status(400).json({ error: "Ongeldige routegeometrie" });
+        return;
+      }
+      geometry.push([la, lo]);
+    }
+    const analysis = await getRouteSurfaces(geometry);
+    if (analysis == null) {
+      res.status(502).json({
+        error: "Wegtypen konden nu niet opgehaald worden — de kaartbron gaf geen antwoord.",
+      });
+      return;
+    }
+    const profile = Array.isArray(raw.profile)
+      ? (raw.profile as unknown[]).map(Number).filter(Number.isFinite)
+      : [];
+    const distanceKm = Number(raw.distanceKm);
+    const slope = maxSlopePct(profile, Number.isFinite(distanceKm) ? distanceKm : null);
+    res.json({
+      surfaces: analysis,
+      suitability: computeBikeSuitability(analysis, { maxSlopePct: slope }),
+      maxSlopePct: slope,
+      source: surfacesSource(),
+    });
+  } catch (err) {
+    req.log.error({ err }, "routes.surfaces-preview failed");
+    res.status(500).json({ error: "Kon wegtypen niet laden" });
+  }
+});
+
+// GET /api/routes/:id/surfaces — wegtypen/ondergrond van de volledige route
+// uit OpenStreetMap-tags + deterministische geschiktheid per fietstype.
+// Eerlijke 502 als de bron niet antwoordt; er wordt nooit een wegtype verzonnen.
+router.get("/:id/surfaces", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(String(req.params.id));
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldige id" });
+    return;
+  }
+  try {
+    const [route] = await db
+      .select()
+      .from(routesTable)
+      .where(and(eq(routesTable.id, id), eq(routesTable.clerkId, clerkId)))
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+    const geometry = (route.geometry as RoutePathPoint[] | null) ?? [];
+    if (geometry.length < 2) {
+      res.json({ surfaces: null, suitability: null, maxSlopePct: null, source: surfacesSource() });
+      return;
+    }
+    const analysis = await getRouteSurfaces(geometry);
+    if (analysis == null) {
+      res.status(502).json({
+        error: "Wegtypen konden nu niet opgehaald worden — de kaartbron gaf geen antwoord.",
+      });
+      return;
+    }
+    const profile = (route.profile as number[] | null) ?? [];
+    const slope = maxSlopePct(profile, route.distanceKm ?? null);
+    res.json({
+      surfaces: analysis,
+      suitability: computeBikeSuitability(analysis, { maxSlopePct: slope }),
+      maxSlopePct: slope,
+      source: surfacesSource(),
+    });
+  } catch (err) {
+    req.log.error({ err }, "routes.surfaces failed");
+    res.status(500).json({ error: "Kon wegtypen niet laden" });
   }
 });
 

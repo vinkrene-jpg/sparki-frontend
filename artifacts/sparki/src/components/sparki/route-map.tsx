@@ -74,6 +74,7 @@ export function RouteMap({
   onTrackPositionSelect,
   remarkMarkers = [],
   focusPoint,
+  highlightPaths = [],
 }: {
   geometry: [number, number][]
   className?: string
@@ -112,6 +113,9 @@ export function RouteMap({
   remarkMarkers?: { id: string; lat: number; lon: number; label: string }[]
   // Pan/zoom naar dit punt wanneer `seq` verspringt ("toon op kaart").
   focusPoint?: { lat: number; lon: number; seq: number }
+  // Wegtype-highlight: op te lichten routegedeelten (echte geometrie-slices)
+  // in de kleur van het gekozen wegtype.
+  highlightPaths?: { positions: [number, number][]; color: string }[]
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
@@ -136,6 +140,7 @@ export function RouteMap({
   const geometryRef = useRef(geometry)
   geometryRef.current = geometry
   const posMarkerRef = useRef<L.Marker | null>(null)
+  const highlightLayerRef = useRef<L.LayerGroup | null>(null)
 
   const isBuilder = Boolean(onMapClick)
 
@@ -453,6 +458,39 @@ export function RouteMap({
       posMarkerRef.current.setLatLng(at)
     }
   }, [positionKm, geometry])
+
+  // Wegtype-highlight: gekleurde overlay-lijnen op de betreffende
+  // routegedeelten. Eigen effect + eigen laag, zodat selecteren/deselecteren
+  // de rest van de kaart niet opnieuw opbouwt.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    highlightLayerRef.current?.remove()
+    highlightLayerRef.current = null
+    if (highlightPaths.length === 0) return
+    const layer = L.layerGroup()
+    highlightPaths.forEach((h) => {
+      if (h.positions.length < 2) return
+      L.polyline(h.positions, {
+        color: "#05070e",
+        weight: 9,
+        opacity: 0.85,
+        interactive: false,
+      }).addTo(layer)
+      L.polyline(h.positions, {
+        color: h.color,
+        weight: 5,
+        opacity: 0.95,
+        interactive: false,
+      }).addTo(layer)
+    })
+    layer.addTo(map)
+    highlightLayerRef.current = layer
+    return () => {
+      highlightLayerRef.current?.remove()
+      highlightLayerRef.current = null
+    }
+  }, [highlightPaths])
 
   // "Toon op kaart" voor een routeopmerking: pan/zoom naar het punt zodra de
   // seq verspringt (herhaald tikken blijft werken bij gelijke coördinaten).

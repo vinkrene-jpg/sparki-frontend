@@ -21,6 +21,7 @@ const ALL_ENTRIES = [
       path.resolve(artifactDir, "src/tests/smoke.ts"),
       path.resolve(artifactDir, "src/tests/race-export.ts"),
       path.resolve(artifactDir, "src/tests/route-remarks.ts"),
+      path.resolve(artifactDir, "src/tests/route-surfaces.ts"),
       path.resolve(artifactDir, "src/tests/fueling.ts"),
       path.resolve(artifactDir, "src/tests/backup-restore.ts"),
       path.resolve(artifactDir, "src/tests/coach-cockpit.ts"),

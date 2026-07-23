@@ -49,6 +49,15 @@ import {
   type RouteRemark,
 } from "@/hooks/use-route-remarks"
 import { RouteRemarksPanel } from "@/components/sparki/route-remarks"
+import {
+  useRouteSurfaces,
+  useRouteSurfacesPreview,
+  type SurfaceKind,
+} from "@/hooks/use-route-surfaces"
+import {
+  RouteSurfacesPanel,
+  SURFACE_COLORS,
+} from "@/components/sparki/route-surfaces"
 import { useQuery } from "@tanstack/react-query"
 import { apiFetch } from "@/lib/api"
 import type { RacePoint } from "@/hooks/use-race-points"
@@ -775,6 +784,18 @@ function RouteCard({
     lon: r.lon,
     label: r.label,
   }))
+  // Wegtypen & ondergrond + geschiktheid per fietstype (echte OSM-tags).
+  const surfacesQuery = useRouteSurfaces(geometry.length > 1 ? route.id : null)
+  const [surfaceKind, setSurfaceKind] = useState<SurfaceKind | null>(null)
+  const surfaceHighlights =
+    surfaceKind && surfacesQuery.data?.surfaces
+      ? surfacesQuery.data.surfaces.segments
+          .filter((s) => s.kind === surfaceKind)
+          .map((s) => ({
+            positions: geometry.slice(s.fromIdx, s.toIdx + 1),
+            color: SURFACE_COLORS[surfaceKind],
+          }))
+      : []
   // Wedstrijdroute? Dan levert de bestaande route-detailroute een race-blok
   // met UITSLUITEND actieve (bevestigde/aangepaste) punten — die tonen we
   // boven het hoogteprofiel. Geen wedstrijd = geen extra fetch-resultaat.
@@ -1055,6 +1076,7 @@ function RouteCard({
           onTrackPositionSelect={setPosKm}
           remarkMarkers={remarkMarkers}
           focusPoint={focusPoint}
+          highlightPaths={surfaceHighlights}
         />
       )}
 
@@ -1065,6 +1087,17 @@ function RouteCard({
           markers={profileMarkers}
           positionKm={posKm}
           onPositionChange={setPosKm}
+        />
+      )}
+
+      {geometry.length > 1 && (
+        <RouteSurfacesPanel
+          data={surfacesQuery.data}
+          isLoading={surfacesQuery.isLoading}
+          isError={surfacesQuery.isError}
+          selectedKind={surfaceKind}
+          onSelectKind={setSurfaceKind}
+          className="mt-4"
         />
       )}
 
@@ -1343,6 +1376,22 @@ function RouteGenerator({
   const [candPosKm, setCandPosKm] = useState<number | null>(null)
   // Routeopmerkingen-voorproef op de echte kandidaat-geometrie.
   const candRemarks = useRouteRemarksPreview(candidate?.geometry ?? null)
+  // Wegtypen-voorproef + geschiktheid per fietstype op de kandidaat.
+  const candSurfaces = useRouteSurfacesPreview(
+    candidate?.geometry ?? null,
+    candidate?.profile ?? null,
+    candidate?.distanceKm ?? null,
+  )
+  const [candSurfaceKind, setCandSurfaceKind] = useState<SurfaceKind | null>(null)
+  const candSurfaceHighlights =
+    candSurfaceKind && candidate && candSurfaces.data?.surfaces
+      ? candSurfaces.data.surfaces.segments
+          .filter((s) => s.kind === candSurfaceKind)
+          .map((s) => ({
+            positions: candidate.geometry.slice(s.fromIdx, s.toIdx + 1),
+            color: SURFACE_COLORS[candSurfaceKind],
+          }))
+      : []
   // Loop mode: the 3 distance variants (korter/gevraagd/langer) to choose from.
   const [options, setOptions] = useState<RouteCandidate[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -2439,6 +2488,7 @@ function RouteGenerator({
                   lon: r.lon,
                   label: r.label,
                 }))}
+                highlightPaths={candSurfaceHighlights}
               />
               <MeetpointList
                 meetpoints={meetpoints}
@@ -2472,6 +2522,17 @@ function RouteGenerator({
               }
               positionKm={candPosKm}
               onPositionChange={setCandPosKm}
+            />
+          )}
+
+          {candidate.geometry.length > 1 && (
+            <RouteSurfacesPanel
+              data={candSurfaces.data}
+              isLoading={candSurfaces.isLoading}
+              isError={candSurfaces.isError}
+              selectedKind={candSurfaceKind}
+              onSelectKind={setCandSurfaceKind}
+              className="mt-4"
             />
           )}
 

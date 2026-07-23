@@ -117,6 +117,7 @@
 - [Save ridden ride as route](sparki-ridden-route-save.md) — ridden geometry only exists via GPX ingest.
 - [Route generation free-text wish](sparki-route-wish.md) — wish goes only into buildRationale prompt (ORS cannot steer roads); honest "kan niet + alternatief", never claim a place not in data.
 - [Sparki route remarks](sparki-route-remarks.md) — Overpass geometry can hold null entries/center (nodes outside bbox); filter before .lat or the endpoint 500s while clean-fixture tests stay green.
+- [Sparki wegtypen & fietsgeschiktheid](sparki-route-surfaces.md) — no-surface tag = altijd "onbekend" (ook path/footway); geometry-preview keys need robust fingerprints; segments carry route indexes for map highlights.
 - [Klimmenverkenner](climb-explorer.md) — Overpass mirror selection: maps.mail.ru works; overpass-api.de 406 in env; overpass.osm.ch is Swiss-only false-empty (never in fallback chain).
 - [Sparki leefagenda](sparki-life-agenda.md) — athlete-entered life events steer the plan generator; list queries need overlap semantics or ongoing events become invisible but still steer.
 - [Sparki mobile BLE sensors](sparki-mobile-ble-sensors.md) — ble-plx behind platform split + guarded require (Expo Go honest-unsupported); BLE values are base64; horloge/derailleur stay registration-only.
