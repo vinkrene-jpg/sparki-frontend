@@ -1,0 +1,115 @@
+{
+  "meta": {
+    "generatedAt": "2026-07-23",
+    "branch": "main",
+    "commitSha": "7cd4cad218984deb1921b61cf213e7d33115148d",
+    "source": "actual codebase inspection (code is leading; plans are not evidence)",
+    "companionDocument": "docs/SPARKI_TECHNICAL_INVENTORY.md"
+  },
+  "architecture": {
+    "type": "pnpm monorepo",
+    "runtime": "Node.js 24, TypeScript 5.9",
+    "workspaces": [
+      { "name": "@workspace/sparki", "path": "artifacts/sparki", "kind": "web", "stack": "React + Vite + Wouter + TanStack Query + Tailwind v4" },
+      { "name": "@workspace/api-server", "path": "artifacts/api-server", "kind": "api", "stack": "Express 5 + @clerk/express + Drizzle ORM, esbuild CJS bundle, port 8080" },
+      { "name": "@workspace/sparki-mobile", "path": "artifacts/sparki-mobile", "kind": "mobile", "stack": "Expo / React Native (Expo Router)" },
+      { "name": "@workspace/db", "path": "lib/db", "kind": "shared", "stack": "Drizzle schema + migrations (PostgreSQL)" }
+    ],
+    "auth": {
+      "provider": "Replit-managed Clerk",
+      "web": "cookie-based (no Bearer tokens); Vite proxy /api -> localhost:8080",
+      "files": ["artifacts/api-server/src/middlewares/clerkProxyMiddleware.ts", "artifacts/sparki/src/App.tsx", "artifacts/api-server/src/routes/auth.ts"],
+      "devBypass": "DEV_AUTH_BYPASS=true AND NODE_ENV!=production (fail-closed)"
+    },
+    "layering": "routes (src/routes) -> engine facades (src/engines, 38) -> domain libs (src/lib); see docs/engine-architecture.md",
+    "jobs": ["artifacts/api-server/src/jobs/goal-review.ts", "artifacts/api-server/src/jobs/health-check.ts", "artifacts/api-server/src/jobs/knowledge-scan.ts", "artifacts/api-server/src/jobs/reminders.ts"]
+  },
+  "database": {
+    "engine": "PostgreSQL + Drizzle ORM",
+    "schemaDir": "lib/db/src/schema",
+    "schemaFileCount": 62,
+    "tableCount": 161,
+    "clusters": {
+      "identity": { "tables": ["user_profiles", "athlete_profiles", "ftp_history", "athlete_daily_metrics"], "files": ["users.ts", "athlete-profiles.ts", "athlete-metrics.ts"] },
+      "links": { "tables": ["coach_athlete_links", "parent_athlete_links", "friend_links", "follow_links", "profile_privacy", "team_identities"], "files": ["links.ts", "social.ts"] },
+      "training": { "tables": ["training_sessions", "planned_workouts", "training_plans", "plan_days", "workout_feedback", "planned_workout_changes", "workout_mental_reflections"], "files": ["athlete-training.ts"] },
+      "dataHub": { "tables": ["connector_connections", "connector_activities", "connector_consents", "sync_runs", "webhook_events", "activity_imports"], "files": ["connectors.ts", "activity-imports.ts"] },
+      "ai": { "tables": ["ai_call_logs", "ai_observations", "ai_memory_events", "ai_preferences", "personal_context_memories", "core_predictions", "document_analyses", "material_analyses"], "files": ["ai-gateway.ts", "ai-memory.ts", "context-memory.ts", "core-predictions.ts", "document-analyses.ts", "material.ts"] },
+      "races": { "tables": ["races", "race_points", "race_exports", "race_rooms", "race_room_items", "race_room_compilations"], "files": ["races.ts", "race-points.ts", "race-exports.ts", "race-rooms.ts"] },
+      "routesNav": { "tables": ["routes", "route_proposals", "route_shares", "route_version_usages", "nav_settings", "road_objects", "road_object_reports", "route_sprint_boards", "sprint_results", "volgauto_plans", "volgauto_reports", "volgauto_positions", "live_location_sessions", "live_location_grants", "live_location_positions"], "files": ["routes.ts", "route-proposals.ts", "route-shares.ts", "nav-settings.ts", "road-objects.ts", "sprints.ts", "volgauto.ts", "live-location.ts"] },
+      "club": { "tableCount": 16, "examples": ["clubs", "club_members", "club_teams", "club_trainings", "club_subscriptions", "club_audit_log"], "files": ["club.ts"] },
+      "coachCockpit": { "tables": ["coach_signal_actions", "coach_messages", "coach_context_items", "coach_change_proposals"], "files": ["coach-cockpit.ts"] },
+      "parent": { "tables": ["parent_reports", "emergency_contacts", "parent_confirmations", "parent_messages"], "files": ["parent.ts"] },
+      "garage": { "tables": ["garage_bikes", "garage_components", "garage_sensors", "bike_scans", "bike_scan_frames", "equipment_choices", "component_events"], "files": ["garage.ts"] },
+      "nutrition": { "tables": ["nutrition_preferences", "nutrition_hydration_logs", "nutrition_season_goals"], "files": ["nutrition.ts"] },
+      "knowledge": { "tables": ["managed_knowledge_items", "managed_knowledge_versions", "knowledge_usage_events", "knowledge_feedback", "knowledge_items", "intel_cards", "intel_interactions"], "files": ["knowledge-governance.ts", "knowledge.ts", "intel.ts"] },
+      "healthPrivacy": { "tables": ["health_complaints", "health_safety_info", "privacy_settings", "consent_audit_log", "security_audit_log", "health_check_results"], "files": ["health.ts", "privacy.ts", "security.ts", "health-checks.ts"] },
+      "world": { "tables": ["virtual_athletes", "virtual_events", "virtual_posts", "virtual_media", "user_virtual_follows", "user_virtual_affinity", "world_shared_items", "world_reactions", "world_blocks", "world_reports"], "files": ["sparki-world.ts", "world-social.ts"] },
+      "adminRelease": { "tables": ["feature_flags", "user_flag_overrides", "kill_switches", "version_requirements", "rollout_guards", "release_notes", "error_groups", "error_events", "invitations", "tester_events", "bug_reports", "support_tickets"], "files": ["feature-flags.ts", "release.ts", "invitations.ts", "telemetry.ts", "bug-reports.ts", "support.ts"] },
+      "misc": { "tables": ["journey_items", "journey_media", "journey_reflections", "athlete_goals", "goal_events", "goal_proposals", "passport_value_events", "passport_proposals", "life_events", "notifications", "push_subscriptions", "onboarding_state", "photo_lab_uploads", "audio_preferences", "reminder_preferences", "legal_documents", "coaching_profiles", "helpdesk_turns"], "files": ["journey.ts", "goals.ts", "passport.ts", "life-events.ts", "notifications.ts", "push-subscriptions.ts", "onboarding.ts", "photo-lab.ts", "audio-preferences.ts", "reminder-preferences.ts", "support.ts", "coaching-profile.ts"] }
+    }
+  },
+  "rolesAndPermissions": {
+    "roles": ["athlete", "coach", "parent"],
+    "storage": "user_profiles.roles[] + active_role (own DB, not Clerk)",
+    "admin": "env allowlist SPARKI_ADMIN_IDS (artifacts/api-server/src/routes/admin.ts, src/lib/flags.ts)",
+    "coach": "accepted coach_athlete_links + sharing level; per-workout ownership planned_workouts.coach_clerk_id (routes/coach-cockpit.ts)",
+    "parent": "single permission layer artifacts/api-server/src/lib/parent-permissions.ts; unknown age clamps to safety minimum",
+    "minorsFailClosed": ["routes/journey.ts (media never shared)", "routes/world-social.ts (public sharing needs parental consent)", "routes/live-location.ts (group sharing limited to friends/guardians, rechecked at read)", "lib/fueling.ts (<16 no numbers)", "lib/club-permissions.ts (youth consent)"],
+    "featureFlags": ["artifacts/api-server/src/lib/flags.ts", "artifacts/api-server/src/lib/kill-switches.ts"]
+  },
+  "web": {
+    "pagesDir": "artifacts/sparki/src/pages",
+    "pageCount": 38,
+    "pages": ["landing", "sign-in", "sign-up", "start", "activiteiten", "feed", "train", "lab", "you", "samen", "routes", "klimmen", "sprinten", "races", "wedstrijd-room", "journey", "kalender", "knowledge", "wereld", "lichaam", "geluid", "paspoort", "profiel", "mechanieker", "photo-lab", "coach-cockpit", "coach-athlete-plan", "club", "club-beheer", "admin", "admin-health-detail", "invitations", "invite-accept", "tester-qr", "tester-welcome", "support", "legal", "not-found"],
+    "componentCount": 128,
+    "componentsDir": "artifacts/sparki/src/components/sparki",
+    "hookCount": 81,
+    "hooksDir": "artifacts/sparki/src/hooks"
+  },
+  "mobile": {
+    "appDir": "artifacts/sparki-mobile/app",
+    "screens": ["(auth)/sign-in", "(auth)/sign-up", "(app)/index", "(app)/navigate/[id]", "(app)/ride/[id]", "(app)/record", "(app)/rides", "(app)/gpx-import", "(app)/instellingen", "(app)/diagnostiek", "(app)/support", "+not-found"],
+    "libDir": "artifacts/sparki-mobile/lib",
+    "libModuleCount": 43,
+    "keyLibs": ["ride-tracker.ts", "route-match.ts", "nav-cues.ts", "nav-audio.ts", "ble-sensors.ts", "fall-detection.ts", "live-share.ts", "race-mode.ts", "volgauto-meet.ts", "upload-queue.ts", "off-route-choice.ts", "ride-flow.ts"]
+  },
+  "api": {
+    "routesDir": "artifacts/api-server/src/routes",
+    "routeFileCount": 74,
+    "mountFile": "artifacts/api-server/src/routes/index.ts",
+    "basePath": "/api",
+    "mounts": ["/auth", "/flags", "/athlete", "/races", "/invitations", "/ai", "/memory", "/privacy", "/account", "/legal", "/analysis-feedback", "/journey", "/health-flow", "/passport", "/onboarding", "/connectors", "/device-sync", "/webhooks", "/hub", "/coach", "/parent", "/links", "/nutrition", "/notifications", "/routes", "/nav-settings", "/training-plan", "/bug-reports", "/support", "/knowledge", "/knowledge-beheer", "/intel", "/feed", "/social", "/live-location", "/voice", "/admin", "/material", "/garage", "/bike-scan", "/document-analyses", "/calendar", "/state", "/photo-style", "/core-prediction", "/telemetry", "/road-objects", "/weather", "/audio", "/world", "/world-social", "/goals", "/engagement", "/ride-story", "/sprints", "/climbs", "/alerts", "/share", "/clubs", "/release", "/dev (dev only)"],
+    "rootRouters": ["health", "insights", "mental", "storage", "input-center", "race-rooms"],
+    "killSwitchGuarded": ["/ai", "/voice", "/document-analyses", "/clubs"]
+  },
+  "engines": {
+    "dir": "artifacts/api-server/src/engines",
+    "count": 38,
+    "names": ["audio", "coaching", "context-memory", "core-prediction", "data-hub", "document-analysis", "engagement", "garage", "goals", "input-center", "insights", "integration", "intel", "knowledge", "material", "memory-graph", "mental", "observation", "onboarding", "profile", "race", "race-room", "recovery-load", "reminders", "road-objects", "route", "share", "social", "source-quality", "sprint", "state", "training-plan", "voice", "world-affinity", "world-feed", "world-media", "world-population", "world-simulation"]
+  },
+  "ai": {
+    "gateway": "artifacts/api-server/src/lib/ai/gateway.ts",
+    "principle": "one aiMessage() port: killswitch -> consent -> minor rules -> redaction -> dedupe -> metadata-only logging (ai_call_logs); deterministic engines compute, LLM only phrases",
+    "consumers": ["engines/observation", "engines/coaching", "engines/document-analysis", "engines/material", "engines/voice", "routes/ai.ts (chat)", "routes/photo-style.ts (Gemini relight)", "lib/ride-story.ts"]
+  },
+  "externalIntegrations": [
+    { "name": "Clerk (Replit-managed)", "purpose": "auth", "files": ["artifacts/api-server/src/middlewares/clerkProxyMiddleware.ts"] },
+    { "name": "Strava", "purpose": "per-user OAuth activity import + webhook", "files": ["artifacts/api-server/src/lib/connectors/providers/strava-oauth.ts", "artifacts/api-server/src/lib/connectors/providers/strava.ts"] },
+    { "name": "Garmin/Wahoo", "purpose": "device sync shells (honest not-available without manufacturer keys)", "files": ["artifacts/api-server/src/lib/connectors/providers/device-sync.ts", "artifacts/api-server/src/routes/webhooks.ts"] },
+    { "name": "openrouteservice (ORS)", "purpose": "route generation, volgauto", "files": ["artifacts/api-server/src/lib/routing/providers/ors.ts", "artifacts/api-server/src/lib/volgauto"] },
+    { "name": "Overpass / OpenStreetMap", "purpose": "surfaces, remarks, POIs, climbs, traffic lights", "files": ["artifacts/api-server/src/lib/route-surfaces.ts", "artifacts/api-server/src/lib/route-remarks.ts", "artifacts/api-server/src/lib/route-pois.ts", "artifacts/api-server/src/lib/road-objects/overpass.ts"] },
+    { "name": "Open-Meteo", "purpose": "weather", "files": ["artifacts/api-server/src/lib/weather"] },
+    { "name": "Mapbox", "purpose": "mobile maps", "files": ["artifacts/sparki-mobile/lib/mapbox.ts"] },
+    { "name": "Resend", "purpose": "email (honest-limited)", "files": ["artifacts/api-server/src/lib/email.ts"] },
+    { "name": "Web Push (VAPID)", "purpose": "notifications", "files": ["artifacts/api-server/src/lib/push.ts"] },
+    { "name": "Replit Object Storage", "purpose": "photos/files", "files": ["artifacts/api-server/src/lib/objectStorage.ts", "artifacts/api-server/src/lib/objectAcl.ts"] },
+    { "name": "Anthropic / Gemini", "purpose": "AI", "files": ["artifacts/api-server/src/lib/ai/gateway.ts", "artifacts/api-server/src/routes/photo-style.ts"] },
+    { "name": "Calendar sources (Fietssport, We-Tri, KNWU-limited)", "purpose": "race calendar import", "files": ["artifacts/api-server/src/lib/calendar"] }
+  ],
+  "moduleCount": {
+    "total": 42,
+    "definition": "38 backend engine modules + 4 workspaces (web, api-server, mobile, shared db)"
+  },
+  "deliverables": ["docs/SPARKI_TECHNICAL_INVENTORY.md", "docs/sparki-system-inventory.json"]
+}
