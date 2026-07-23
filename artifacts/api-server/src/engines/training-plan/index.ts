@@ -14,6 +14,7 @@ export {
   maybeRollForward,
   autoAdaptPlan,
   loadPlanView,
+  resolveCurrentPlan,
 } from "../../lib/training-plan";
 export type {
   PlanInputs,

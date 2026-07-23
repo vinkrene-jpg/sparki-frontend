@@ -19,7 +19,7 @@
 - [Sparki two-tier explanation standard](sparki-tiered-explanation.md) — short-by-default + "Uitgebreid" expand (TieredExplanation); only tier where REAL extended data exists, never fabricate depth on one-liners.
 - [Sparki personal-context memory](sparki-context-memory.md) — deterministic Dutch detection, privacy-gated persist; JSX \u escapes do not work in text/attr strings.
 - [Sparki memory graph](sparki-memory-graph.md) — deterministic cross-domain "verbanden": confidence never 1.0, rules stay silent on weak evidence, persist accounting created+deduped+gated===derived.
-- [Sparki Data Hub](sparki-data-hub.md) — central multi-platform engine; dedupe key=sport+start-bucket only (not dur/dist) w/ neighbour match + tolerance; activity consent is AND; 4-state readiness; single runSync path.
+- [Sparki Data Hub](sparki-data-hub.md) — dedupe key=sport+start-bucket (not dur/dist) + neighbour match; activity consent is AND; single runSync path.
 - [Sparki account-readiness gate](sparki-account-readiness.md) — EVERY signed-in surface must render through one AccountGate (profile required), not Clerk auth alone.
 - [Sparki in-app news reader](sparki-news-reader.md) — news clicks open an in-app reader (never navigate away); copyright = excerpt + source attribution, never full text.
 - [Sparki phased multi-sport](sparki-phased-sports.md) — sports registry is SSOT; isSportActive gates entry points only (not engine); validate raw sport BEFORE coerce-to-cycling default.
@@ -39,7 +39,7 @@
 - [Sparki Admin Health Check engine](sparki-health-check.md) — honesty contract: real probe or GREY, never fake green; probes never throw; isAdmin dev-bypass; wouter Link no nested <a>.
 - [Coach plan adoption](coach-plan-adoption.md) — coach adopts advisory plan_days into athlete-owned planned_workouts (source="coach", planId null); dedupe by date+source, never overwrite.
 - [Sparki general-day concrete advice](sparki-day-advice.md) — no-plan Home day shows one deterministic explainable session (lib/day-advice); readiness SSOT in lib/readiness; TSB guard; race framing base/build only.
-- [Sparki Race Intelligence](sparki-race-intel.md) — deterministic prep/report/fuel/checklist; never fabricate, cheapest fuel tier first; central engine field model found/derived/missing ([engine](sparki-race-intel-engine.md)).
+- [Sparki Race Intelligence](sparki-race-intel.md) — never fabricate, cheapest fuel tier first; field model found/derived/missing ([engine](sparki-race-intel-engine.md)).
 - [Sparki Input Center & ACL timing](sparki-input-center.md) — one central composer; object ACL can only be set AFTER bytes exist (presign→PUT→set-ACL-on-persist), never before.
 - [Sparki Materiaalcoach](sparki-materiaalcoach.md) — photo-driven honest advice; confidence-gated extra-photo ask; cost only for material kind; photos in object storage, owner-checked serve.
 - [Sparki Document Analysis](sparki-document-analysis.md) — reads race/technical guides (PDF/image) via Anthropic document block; honest gevonden/ontbreekt + deterministic follow-ups; links+enriches races.
@@ -49,7 +49,7 @@
 - [Sparki self-update hub](sparki-self-update-hub.md) — Vandaag = sole self-input surface (state view); deep-links must force state view; move ALL producers (incl backend nudge) with a relocated panel.
 - [Sparki trainingsverloop & readback](sparki-progression.md) — trend/development UI derives from existing real series (useLoad+useSessions), no new endpoint; empty-state routes to the cause's flow.
 - [Sparki coach card dedup](sparki-coach-card-dedup.md) — lenses are subsets of "Wat valt op" → dedupe at presentation, lead with one insight, depth behind disclosure.
-- [Sparki State Engine + State Card](sparki-state-engine.md) — engine belongs to NO screen; StateCard drill-in via onShowDetails prop; card metrics from State Engine not dashboard ([opening](sparki-state-card-opening.md)).
+- [Sparki State Engine + State Card](sparki-state-engine.md) — engine belongs to NO screen; drill-in via onShowDetails prop; metrics from engine not dashboard ([opening](sparki-state-card-opening.md)).
 - [Adaptive Coach Engine V1](adaptive-coach-engine.md) — deterministic decision layer (decideCoach); surfaced via CoachDecisionContext→ScreenShell across all home day-types; dev override fail-closed.
 - [Sparki Core visual-language prototype](sparki-core-playground.md) — living-shape design contract: calm-not-jerky, uncertainty=hazy, good↔bad X/Y cross, stretch=2 strong pulls; frontend-only before any engine.
 - [Sparki Photo Lab](photo-lab.md) — isolated Gemini relight flow; ACL-claim must reject takeover (unowned/self only); @google/* externalized so genai must be direct api-server dep.
@@ -111,6 +111,7 @@
 - [Sparki routeketen](sparki-route-chain.md) — share-uniqueness needs nullsNotDistinct (NULL targets duplicate); version bumps only on inhoudelijke edits; soft-delete only with usage history.
 - [Sparki contextuele aandacht & meldingen](sparki-attention-notifications.md) — central category registry, critical never-off, resolutionKey open-dedupe + resolve lifecycle, quiet hours dampen only push/email.
 - [Test-workflow boot storm](test-workflow-boot-storm.md) — parallel test boots crash w/ esbuild EAGAIN/SIGABRT; fix = cross-process build semaphore + retry-on-infra-crash tsx runner (cant edit .replit).
+- [Sparki plan lifecycle](sparki-plan-lifecycle.md) — pause/resume/delete scoped to ONE resolveCurrentPlan id (newest active else newest paused); never status-wide bulk updates; sessions never touched.
 - [Sparki ride-navigator](sparki-ride-navigator.md) — CPS crank cadence, moving-avg speed, climbfases uit lib/nav-live (SSOT); elk "klaar met rit"-pad moet clearSavedRide of spookherstel; pagehide-persist.
 - [Save ridden ride as route](sparki-ridden-route-save.md) — ridden geometry only exists via GPX ingest.
 - [Route generation free-text wish](sparki-route-wish.md) — wish goes only into buildRationale prompt (ORS cannot steer roads); honest "kan niet + alternatief", never claim a place not in data.
@@ -122,7 +123,7 @@
 - [Leaflet full-screen explorer traps](leaflet-multi-route-explorer.md) — layers before first setView crash bringToFront; guard queued invalidateSize against removed maps.
 - [Sparki rit delen](sparki-ride-share.md) — Strava = manual activity (never fabricate timestamps); socials only via OS share menu; expo-sharing shares file w/o text, Share.share url iOS-only.
 - [Sparki road-objects engine](sparki-road-objects.md) — zelflerende verkeerslichten-DB: confirm vereist eigen stop-bewijs + idempotente confirm-rij; cel-dedupe kiest expliciet beste, nooit "eerste rij wint".
-- [Sparki device sync (Garmin/Wahoo)](sparki-device-sync.md) — honest configured:false until manufacturer keys; PKCE in signed state; fail-closed webhook secrets, manualFields sacred ([webhooks](sparki-device-webhooks.md)).
+- [Sparki device sync (Garmin/Wahoo)](sparki-device-sync.md) — honest configured:false until manufacturer keys; fail-closed webhook secrets, manualFields sacred ([webhooks](sparki-device-webhooks.md)).
 - [Ride BLE sensors → GPX](sparki-ride-sensor-gpx.md) — 1s foreground sampler + ≤5s nearest-match; gpxtpx/power extensions; api-server test mirrors mobile buildRideGpx in lockstep.
 - [Sparki session graphs](sparki-session-graphs.md) — streams only at ingest (old sessions honest-null), connectNulls=false, comparability-gated comparison, Tanaka maxHR labeled as schatting.
 - [Sparki bronnenregister](sparki-source-quality.md) — central source-quality register; fail-closed prompt rule, sensor "actief" needs real proof, per-analysis used/excluded logging.
@@ -137,7 +138,7 @@
 - [Sparki clubomgeving](sparki-club.md) — least-privilege clubrechten; limieten óók bij invite-accept, club-scoped ID-checks, FOR UPDATE op signup; jeugd-consent fail-closed.
 - [Sparki fueling engine](sparki-fueling-engine.md) — deterministic richtwaarden SSOT (LLM phrases, never computes); jeugd no-numbers; consent fail-closed; mobile fuel snapshot date at STOP not save.
 - [Sparki Performance Lab](sparki-performance-lab.md) — één belastingsmodel via computeLoadSeries (nooit inline EWMA in routes); radar-assen zonder data zijn null+reden, nooit 0.5.
-- [Sparki gezondheids- & herstelflow](sparki-health-flow.md) — status raises-only; "hersteld" alleen via expliciete resume-gate (409 bij niet_trainen); opbouwvenster; mobile customFetch returns parsed JSON not Response.
+- [Sparki gezondheids- & herstelflow](sparki-health-flow.md) — status raises-only; "hersteld" alleen via resume-gate (409 bij niet_trainen); mobile customFetch returns parsed JSON not Response.
 - [Sparki support helpdesk](sparki-support-helpdesk.md) — deterministic answer matrix, minor fail-closed; ticket find-or-create needs advisory-xact-lock; Dutch stems need `\w*` in `\b` regex groups.
 - [Sparki wedstrijdpunten + export](sparki-race-points.md) — gids levert alleen voorstellen, status nooit terug naar voorgesteld; export round-trip verify, workout never fabricated ([export](sparki-race-export.md)).
 - [Sparki sociale privacy](sparki-social-privacy.md) — profiel-visibility check op ÁLLE ontdekkingspaden (search/verzoek/match), neutrale weigering blocked=hidden=missing, blokkeren atomair.
@@ -152,9 +153,9 @@
 - [Sparki plan-uitvoering & adaptieve voorstellen](sparki-plan-execution.md) — execution link race-safe (manual wins), deterministic verdict/adjust rules, LLM words-only.
 - [Sparki central AI gateway](sparki-ai-gateway.md) — one aiMessage() port for all model calls: killswitch→consent→minor→redaction→dedupe→metadata-only logs; SDK types need direct @anthropic-ai/sdk dep.
 - [Sparki nav audio & waypoint honesty](sparki-nav-audio-cues.md) — waypoints are never destinations: sanitize arrivals at source AND read paths; cues dedupe per step:phase; never force sound past silent mode.
-- [Sparki route-match engine](sparki-route-match.md) — never point-match GPS to sparse route points; segment projection + off-route state machine, byte-mirrored web↔mobiel, one position source for map/progress/deviation.
-- [Sparki rit-einde & rit-inkorten](sparki-ride-trim.md) — pure ride-flow engine at 1Hz tick; auto-trim always undoable pre-save; trim is metadata-only (first original wins), duration estimate honest-null on zero distance.
-- [Workout koppellijst honesty](sparki-workout-linklist.md) — "mockdata" = seeded dev-QA rows + stale query cache; DELETE is soft-cancel (status=cancelled) ⇒ pickers must filter; list queries share one invalidation prefix.
+- [Sparki route-match engine](sparki-route-match.md) — never point-match GPS to sparse route points; segment projection + off-route state machine, one position source, byte-mirrored web↔mobiel.
+- [Sparki rit-einde & rit-inkorten](sparki-ride-trim.md) — auto-trim always undoable pre-save; trim is metadata-only (first original wins); duration honest-null on zero distance.
+- [Workout koppellijst honesty](sparki-workout-linklist.md) — DELETE is soft-cancel (status=cancelled) ⇒ pickers must filter; list queries share one invalidation prefix.
 - [Sparki data-trust audit](sparki-data-trust.md) — provenance endpoint uses constant table allowlist (never request-driven sql.raw); 403-gate testbaar via per-call env-flip terwijl IS_DEV gecached blijft.
-- [Sparki centraal humorniveau](sparki-humor-level.md) — één humorlaag (lib/humor.ts + voice isToneAvailable); instelling ai_preferences.humor_level geldt app-breed, nooit inline grappen; humor nooit op medisch/veiligheid/privacy/fouten/betalingen.
+- [Sparki centraal humorniveau](sparki-humor-level.md) — één centrale humorlaag, instelling geldt app-breed, nooit inline grappen; humor nooit op medisch/veiligheid/privacy/fouten/betalingen.
 - [Add-training flow split](sparki-add-training-split.md) — chooser-first modal; plan_details whitelist 400s executed keys; contextDate prop useless until a real caller wires it.

@@ -331,6 +331,11 @@ export type PlanDay = {
 
 export type PlanHeader = {
   id: number;
+  name: string;
+  maker: string;
+  source: string;
+  createdAt: string;
+  goal: string;
   mode: "autonomous" | "advisory";
   status: string;
   summary: string | null;
@@ -424,6 +429,48 @@ export function useGenerateTrainingPlan() {
       qc.invalidateQueries({ queryKey: queryKeys.trainingPlan.all() });
       qc.invalidateQueries({ queryKey: queryKeys.athlete.todayWorkout() });
       qc.invalidateQueries({ queryKey: queryKeys.routes.all() });
+    },
+  });
+}
+
+export function usePauseTrainingPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<{ paused: boolean }>("/api/training-plan/pause", {
+        method: "POST",
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.trainingPlan.all() });
+      qc.invalidateQueries({ queryKey: queryKeys.athlete.todayWorkout() });
+    },
+  });
+}
+
+export function useResumeTrainingPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<{ resumed: boolean }>("/api/training-plan/resume", {
+        method: "POST",
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.trainingPlan.all() });
+      qc.invalidateQueries({ queryKey: queryKeys.athlete.todayWorkout() });
+    },
+  });
+}
+
+export function useDeleteTrainingPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<{ deleted: boolean }>("/api/training-plan", {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.trainingPlan.all() });
+      qc.invalidateQueries({ queryKey: queryKeys.athlete.todayWorkout() });
     },
   });
 }

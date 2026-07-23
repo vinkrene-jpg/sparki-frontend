@@ -999,17 +999,30 @@ function hashSeed(s: string): number {
 // Assemble the full plan view: every plan day enriched with its committed
 // workout status and any attached real route. Shared by the athlete's own
 // training-plan route and the coach's read-only advisory view.
-export async function loadPlanView(clerkId: string) {
-  const [plan] = await db
+// Resolve the single "current" plan: the newest active plan, or — when none is
+// active — the newest paused plan. This is the ONE resolution rule shared by
+// the plan view and all lifecycle writes (pause/resume/delete) so they can
+// never act on a different plan than the one shown.
+export async function resolveCurrentPlan(clerkId: string) {
+  const candidates = await db
     .select()
     .from(trainingPlansTable)
     .where(
       and(
         eq(trainingPlansTable.clerkId, clerkId),
-        eq(trainingPlansTable.status, "active"),
+        inArray(trainingPlansTable.status, ["active", "paused"]),
       ),
     )
-    .limit(1);
+    .orderBy(desc(trainingPlansTable.id));
+  return (
+    candidates.find((p) => p.status === "active") ?? candidates[0] ?? null
+  );
+}
+
+export async function loadPlanView(clerkId: string) {
+  // Show the current plan (active preferred, else newest paused) so the
+  // athlete can see its state and resume/delete it (honest lifecycle view).
+  const plan = await resolveCurrentPlan(clerkId);
   if (!plan) return null;
 
   const days = await db
@@ -1073,9 +1086,26 @@ export async function loadPlanView(clerkId: string) {
     };
   });
 
+  const snapshot = (plan.inputSnapshot ?? null) as {
+    nextRace?: { name?: string; raceDate?: string } | null;
+    phase?: string;
+  } | null;
+  const snapRace = snapshot?.nextRace ?? null;
+
   return {
     plan: {
       id: plan.id,
+      // Honest metadata: who/what created this plan and what it was built for.
+      name:
+        plan.mode === "advisory"
+          ? "Sparki-adviesplan (3 weken)"
+          : "Sparki-basisplan (3 weken)",
+      maker: "Sparki (automatische planner)",
+      source: plan.mode === "advisory" ? "advies" : "autonoom",
+      createdAt: plan.createdAt,
+      goal: snapRace?.name
+        ? `Toewerken naar ${snapRace.name}${snapRace.raceDate ? ` (${snapRace.raceDate})` : ""}`
+        : "Geen wedstrijddoel vastgelegd — algemene opbouw",
       mode: plan.mode,
       status: plan.status,
       summary: plan.summary,

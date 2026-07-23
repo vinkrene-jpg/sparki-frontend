@@ -6,8 +6,12 @@ import {
   useTrainingPlan,
   useGenerateTrainingPlan,
   useAdaptTrainingPlan,
+  usePauseTrainingPlan,
+  useResumeTrainingPlan,
+  useDeleteTrainingPlan,
   useSavePlanSetup,
   type PlanDay,
+  type PlanHeader,
   type DayWeather,
   type WeatherSeverity,
   type WeatherAdvisory,
@@ -30,6 +34,118 @@ import {
   AlertTriangle,
   Utensils,
 } from "lucide-react"
+
+// Honest plan metadata + lifecycle controls (pauzeren / hervatten / verwijderen).
+// Every value comes straight from the plan record — nothing invented.
+function PlanMetaCard({ plan }: { plan: PlanHeader }) {
+  const pause = usePauseTrainingPlan()
+  const resume = useResumeTrainingPlan()
+  const del = useDeleteTrainingPlan()
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const paused = plan.status === "paused"
+  const created = new Date(plan.createdAt).toLocaleDateString("nl-NL", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  })
+  const period = `${formatDay(plan.weekStartDate)} – ${formatDay(plan.horizonEndDate)}`
+  return (
+    <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-[10px] tracking-[0.25em] text-white/40">
+          OVER DIT PLAN
+        </span>
+        <span
+          className={`rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.15em] ${
+            paused
+              ? "bg-amber-400/10 text-amber-300/80"
+              : "bg-cyan-300/10 text-cyan-300/80"
+          }`}
+        >
+          {paused ? "GEPAUZEERD" : "ACTIEF"}
+        </span>
+      </div>
+      <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 text-[12px] sm:grid-cols-2">
+        {[
+          ["Naam", plan.name],
+          ["Aangemaakt", created],
+          ["Bron", plan.source === "advies" ? "Sparki-advies (coach aanwezig)" : "Automatisch opgebouwd door Sparki"],
+          ["Maker", plan.maker],
+          ["Doelstelling", plan.goal],
+          ["Actieve periode", period],
+        ].map(([label, value]) => (
+          <div key={label} className="flex flex-col">
+            <dt className="font-mono text-[10px] tracking-[0.15em] text-white/30">
+              {label.toUpperCase()}
+            </dt>
+            <dd className="text-white/70">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      {paused && (
+        <p className="mt-3 text-[12px] leading-relaxed text-amber-200/70">
+          Dit plan staat op pauze: er worden geen nieuwe weken opgebouwd en het
+          telt niet mee als actief schema. Hervat het wanneer je er klaar voor
+          bent.
+        </p>
+      )}
+      <div className="mt-4 flex flex-wrap gap-2 border-t border-white/[0.06] pt-3">
+        {paused ? (
+          <button
+            type="button"
+            onClick={() => resume.mutate()}
+            disabled={resume.isPending}
+            className="rounded-xl border border-cyan-300/25 px-3.5 py-2 font-sans text-[12px] font-medium text-cyan-300/80 transition hover:border-cyan-300/50 disabled:opacity-50"
+          >
+            {resume.isPending ? "Hervatten…" : "Plan hervatten"}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => pause.mutate()}
+            disabled={pause.isPending}
+            className="rounded-xl border border-white/[0.15] px-3.5 py-2 font-sans text-[12px] font-medium text-white/60 transition hover:border-amber-300/40 hover:text-amber-200/80 disabled:opacity-50"
+          >
+            {pause.isPending ? "Pauzeren…" : "Plan pauzeren"}
+          </button>
+        )}
+        {confirmDelete ? (
+          <>
+            <button
+              type="button"
+              onClick={() => del.mutate()}
+              disabled={del.isPending}
+              className="rounded-xl border border-red-400/40 bg-red-400/10 px-3.5 py-2 font-sans text-[12px] font-medium text-red-300 transition hover:border-red-400/70 disabled:opacity-50"
+            >
+              {del.isPending ? "Verwijderen…" : "Ja, verwijder dit plan"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(false)}
+              className="rounded-xl border border-white/[0.15] px-3.5 py-2 font-sans text-[12px] text-white/60"
+            >
+              Annuleren
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            className="rounded-xl border border-white/[0.15] px-3.5 py-2 font-sans text-[12px] font-medium text-white/60 transition hover:border-red-400/40 hover:text-red-300/80"
+          >
+            Plan verwijderen
+          </button>
+        )}
+      </div>
+      {confirmDelete && (
+        <p className="mt-2 text-[11px] leading-relaxed text-white/45">
+          Dit verwijdert het schema en de geplande (nog niet gereden) trainingen
+          eruit. Al gereden trainingen blijven altijd bewaard.
+        </p>
+      )}
+    </div>
+  )
+}
 
 const WEEKDAYS: { value: string; label: string }[] = [
   { value: "mon", label: "Ma" },
@@ -808,6 +924,10 @@ export function TrainingPlanPanel() {
               )}
             </div>
           )}
+
+          {/* Honest plan metadata + lifecycle controls */}
+          <PlanMetaCard plan={data.plan} />
+
 
           {/* Committed 7-day week */}
           <div className="mt-5">

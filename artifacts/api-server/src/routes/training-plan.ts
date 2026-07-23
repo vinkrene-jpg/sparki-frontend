@@ -4,11 +4,14 @@
 // engine never writes planned_workouts — coach workouts are never overwritten.
 
 import { Router } from "express";
-import { and, asc, eq, gte } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, ne } from "drizzle-orm";
 import {
   db,
   coachAthleteLinksTable,
   racesTable,
+  trainingPlansTable,
+  planDaysTable,
+  plannedWorkoutsTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
@@ -18,6 +21,7 @@ import {
   adaptPlan,
   maybeRollForward,
   loadPlanView,
+  resolveCurrentPlan,
 } from "../engines/training-plan";
 import { getRaceWeather } from "../lib/weather/race";
 
@@ -166,6 +170,117 @@ router.post("/adapt", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "training-plan.adapt failed");
     res.status(500).json({ error: "Kon trainingsschema niet aanpassen" });
+  }
+});
+
+// POST /api/training-plan/pause — pause the CURRENT plan (kept, not deleted).
+// Scoped to the single plan the view resolves to — never a bulk status flip.
+router.post("/pause", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const current = await resolveCurrentPlan(clerkId);
+    if (!current || current.status !== "active") {
+      res.status(404).json({ error: "Geen actief schema om te pauzeren" });
+      return;
+    }
+    await db
+      .update(trainingPlansTable)
+      .set({ status: "paused", updatedAt: new Date() })
+      .where(
+        and(
+          eq(trainingPlansTable.id, current.id),
+          eq(trainingPlansTable.clerkId, clerkId),
+        ),
+      );
+    const view = await loadPlanView(clerkId);
+    res.json({ paused: true, plan: view?.plan ?? null, days: view?.days ?? [] });
+  } catch (err) {
+    req.log.error({ err }, "training-plan.pause failed");
+    res.status(500).json({ error: "Kon schema niet pauzeren" });
+  }
+});
+
+// POST /api/training-plan/resume — resume the CURRENT paused plan. Any other
+// stale paused plans are archived so the single-active invariant holds.
+router.post("/resume", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const current = await resolveCurrentPlan(clerkId);
+    if (!current || current.status !== "paused") {
+      res.status(404).json({ error: "Geen gepauzeerd schema om te hervatten" });
+      return;
+    }
+    await db.transaction(async (tx) => {
+      // Archive any OTHER lingering paused plans first (defensive invariant).
+      await tx
+        .update(trainingPlansTable)
+        .set({ status: "archived", updatedAt: new Date() })
+        .where(
+          and(
+            eq(trainingPlansTable.clerkId, clerkId),
+            eq(trainingPlansTable.status, "paused"),
+            ne(trainingPlansTable.id, current.id),
+          ),
+        );
+      await tx
+        .update(trainingPlansTable)
+        .set({ status: "active", updatedAt: new Date() })
+        .where(
+          and(
+            eq(trainingPlansTable.id, current.id),
+            eq(trainingPlansTable.clerkId, clerkId),
+          ),
+        );
+    });
+    const view = await loadPlanView(clerkId);
+    res.json({ resumed: true, plan: view?.plan ?? null, days: view?.days ?? [] });
+  } catch (err) {
+    req.log.error({ err }, "training-plan.resume failed");
+    res.status(500).json({ error: "Kon schema niet hervatten" });
+  }
+});
+
+// DELETE /api/training-plan — delete the current (active or paused) plan,
+// including its plan days and still-planned generated workouts. Completed
+// sessions are never touched.
+router.delete("/", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const current = await resolveCurrentPlan(clerkId);
+    if (!current) {
+      res.status(404).json({ error: "Geen schema om te verwijderen" });
+      return;
+    }
+    const ids = [current.id];
+    await db.transaction(async (tx) => {
+      await tx.delete(planDaysTable).where(inArray(planDaysTable.planId, ids));
+      await tx
+        .delete(plannedWorkoutsTable)
+        .where(
+          and(
+            eq(plannedWorkoutsTable.clerkId, clerkId),
+            inArray(plannedWorkoutsTable.planId, ids),
+            eq(plannedWorkoutsTable.status, "planned"),
+          ),
+        );
+      // Any remaining (completed) workouts keep their history; detach the plan.
+      await tx
+        .update(plannedWorkoutsTable)
+        .set({ planId: null })
+        .where(
+          and(
+            eq(plannedWorkoutsTable.clerkId, clerkId),
+            inArray(plannedWorkoutsTable.planId, ids),
+          ),
+        );
+      await tx
+        .delete(trainingPlansTable)
+        .where(inArray(trainingPlansTable.id, ids));
+    });
+    res.json({ deleted: true, planIds: ids });
+  } catch (err) {
+    req.log.error({ err }, "training-plan.delete failed");
+    res.status(500).json({ error: "Kon schema niet verwijderen" });
   }
 });
 
