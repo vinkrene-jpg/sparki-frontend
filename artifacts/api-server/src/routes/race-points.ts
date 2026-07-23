@@ -233,7 +233,9 @@ router.patch("/:raceId/points/:pointId", requireAuth, async (req, res) => {
     const [point] = await db
       .update(racePointsTable)
       .set(updates)
-      .where(eq(racePointsTable.id, pointId))
+      .where(
+        and(eq(racePointsTable.id, pointId), eq(racePointsTable.raceId, raceId)),
+      )
       .returning();
     res.json({ point });
   } catch (err) {

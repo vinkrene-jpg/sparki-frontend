@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { apiFetch } from "@/lib/custom-fetch"
+import { apiFetch } from "@/lib/api"
 
 // Wedstrijdpunten — kaartcontrole. AI levert alleen voorstellen (status
 // "voorgesteld" mét bron + betrouwbaarheid); hier bevestigt/verplaatst/wijst

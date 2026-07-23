@@ -62,7 +62,7 @@ export type RouteDetail = RouteSummary & {
    * gekoppelde geplande wedstrijd. Punten zijn UITSLUITEND door de renner
    * bevestigde/aangepaste punten — nooit onbevestigde AI-voorstellen.
    */
-  race?: RaceModePayload | null;
+  race: RaceModePayload | null;
 };
 
 /** Bevestigd wedstrijdpunt zoals de kaartcontrole het opleverde. */

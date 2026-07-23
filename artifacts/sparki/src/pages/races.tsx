@@ -651,7 +651,7 @@ export default function RacesPage() {
                 <RaceWerkbladPanel raceId={editingId} />
                 <RacePointsPanel
                   raceId={editingId}
-                  routeId={races.find((r) => r.id === editingId)?.routeId ?? null}
+                  routeId={races?.find((r) => r.id === editingId)?.routeId ?? null}
                 />
                 <EquipmentChoicePanel raceId={editingId} />
               </>
