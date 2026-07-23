@@ -33,6 +33,7 @@ import CoachAthletePlanPage from "@/pages/coach-athlete-plan"
 import CoachCockpitPage from "@/pages/coach-cockpit"
 import LandingPage from "@/pages/landing"
 import StartPage from "@/pages/start"
+import MeerPage from "@/pages/meer"
 import ClubPage from "@/pages/club"
 import PaspoortPage from "@/pages/paspoort"
 import KnowledgePage from "@/pages/knowledge"
@@ -454,6 +455,8 @@ export function DevPreview() {
     page = <CoachCockpitPage />
   } else if (location.startsWith("/coach/athletes/")) {
     page = <CoachAthletePlanPage />
+  } else if (location.startsWith("/meer")) {
+    page = <MeerPage />
   } else if (location.startsWith("/invite/")) {
     page = <InviteAcceptPage />
     showNav = false

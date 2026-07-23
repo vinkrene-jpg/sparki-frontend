@@ -13,6 +13,11 @@ import {
   Radio,
   Compass,
   Activity,
+  Globe,
+  BookOpen,
+  IdCard,
+  Mountain,
+  Music,
   type LucideIcon,
 } from "lucide-react"
 import type { Role } from "@/contexts/UserContext"
@@ -35,11 +40,31 @@ export const ATHLETE_CHAPTERS: Chapter[] = [
   { href: "/activiteiten", icon: Activity, label: "Activiteiten", hint: "Jouw ritten" },
   { href: "/lichaam", icon: HeartPulse, label: "Lichaam", hint: "Voeding, herstel, gezondheid" },
   { href: "/mechanieker", icon: Wrench, label: "Mechanieker", hint: "Materiaal & onderhoud" },
-  { href: "/routes", icon: Map, label: "Navigatie-training", hint: "Routes & navigeren" },
+  { href: "/routes", icon: Map, label: "Rijden", hint: "Routes & navigeren" },
   { href: "/samen", icon: Users, label: "Samen", hint: "Team & vrienden" },
   { href: "/feed", icon: Compass, label: "Ontdekken", hint: "Nieuws & inspiratie" },
   { href: "/kalender", icon: CalendarDays, label: "Kalender", hint: "Trainingen & wedstrijden" },
   { href: "/you", icon: User, label: "Jij", hint: "Profiel & doelen" },
+]
+
+// Onderdelen achter de hoofdknop "Meer" (sporter). Alles wat niet in de vijf
+// hoofdkeuzes (Vandaag · Trainen · Rijden · Wedstrijd · Meer) zit, blijft hier
+// bereikbaar — er verdwijnt niets. Club en Admin worden op de Meer-pagina
+// conditioneel toegevoegd (echte koppeling resp. server-bevestigde admin).
+export const ATHLETE_MEER_CHAPTERS: Chapter[] = [
+  { href: "/you", icon: User, label: "Jij", hint: "Profiel, instellingen & koppelingen" },
+  { href: "/lichaam", icon: HeartPulse, label: "Lichaam", hint: "Voeding, herstel, gezondheid" },
+  { href: "/mechanieker", icon: Wrench, label: "Mechanieker", hint: "Materiaal & onderhoud" },
+  { href: "/samen", icon: Users, label: "Samen", hint: "Team & vrienden" },
+  { href: "/wereld", icon: Globe, label: "Sparki World", hint: "Virtuele renners" },
+  { href: "/feed", icon: Compass, label: "Ontdekken", hint: "Nieuws & inspiratie" },
+  { href: "/activiteiten", icon: Activity, label: "Activiteiten", hint: "Jouw ritten" },
+  { href: "/kalender", icon: CalendarDays, label: "Kalender", hint: "Trainingen & wedstrijden" },
+  { href: "/kennis", icon: BookOpen, label: "Kennis", hint: "Kennisbank & inzichten" },
+  { href: "/paspoort", icon: IdCard, label: "Sportpaspoort", hint: "Jouw gegevens & herkomst" },
+  { href: "/klimmen", icon: Mountain, label: "Klimmen", hint: "Klimmenverkenner" },
+  { href: "/geluid", icon: Music, label: "Geluid", hint: "Geluiden & wekker" },
+  { href: "/", icon: Home, label: "Startoverzicht", hint: "Alle hoofdstukken" },
 ]
 
 export const CLUB_CHAPTER: Chapter = {
@@ -61,6 +86,31 @@ export const PARENT_CHAPTERS: Chapter[] = [
   { href: "/feed", icon: Radio, label: "Nieuws", hint: "Wat er speelt" },
   { href: "/invitations", icon: UserPlus, label: "Uitnodigen", hint: "Koppelen" },
   { href: "/you", icon: User, label: "Profiel", hint: "Jouw gegevens" },
+]
+
+// Hoofdnavigatie (onderbalk) — pure data zodat de navigatieregressietest dit
+// zonder React kan importeren. Sporter: precies vijf hoofdkeuzes.
+export type NavEntry = { href: string; label: string }
+
+export const ATHLETE_NAV_ENTRIES: NavEntry[] = [
+  { href: "/vandaag", label: "Vandaag" },
+  { href: "/train", label: "Trainen" },
+  { href: "/routes", label: "Rijden" },
+  { href: "/races", label: "Wedstrijd" },
+  { href: "/meer", label: "Meer" },
+]
+
+export const COACH_NAV_ENTRIES: NavEntry[] = [
+  { href: "/", label: "Vandaag" },
+  { href: "/invitations", label: "Uitnodigen" },
+  { href: "/you", label: "Profiel" },
+]
+
+export const PARENT_NAV_ENTRIES: NavEntry[] = [
+  { href: "/", label: "Vandaag" },
+  { href: "/feed", label: "Nieuws" },
+  { href: "/invitations", label: "Uitnodigen" },
+  { href: "/you", label: "Profiel" },
 ]
 
 export function chaptersForRole(

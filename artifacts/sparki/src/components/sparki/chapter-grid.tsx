@@ -1,7 +1,7 @@
 import { useLocation } from "wouter"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
 import { useClubMembership } from "@/hooks/use-club"
-import { chaptersForRole } from "@/lib/chapters"
+import { chaptersForRole, type Chapter } from "@/lib/chapters"
 
 // Herbruikbaar hoofdstukkenraster. Ontworpen om op gangbare telefoons zonder
 // verticaal scrollen te passen: drie kolommen met compacte, automatisch
@@ -11,15 +11,19 @@ import { chaptersForRole } from "@/lib/chapters"
 export function ChapterGrid({
   onNavigate,
   compact = false,
+  chapters: chaptersProp,
 }: {
   onNavigate?: () => void
   compact?: boolean
+  // Optioneel: expliciete lijst (bijv. de Meer-pagina). Zonder prop blijft het
+  // rooster de rolgebonden hoofdstukkenlijst tonen (startscherm/hoofdmenu).
+  chapters?: Chapter[]
 }) {
   const [pathname, setLocation] = useLocation()
   const { profile } = useUserProfile()
   const role = profile?.activeRole as Role | undefined
   const { isMember } = useClubMembership()
-  const chapters = chaptersForRole(role, isMember)
+  const chapters = chaptersProp ?? chaptersForRole(role, isMember)
 
   const go = (href: string) => {
     onNavigate?.()

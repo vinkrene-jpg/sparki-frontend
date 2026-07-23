@@ -1,37 +1,51 @@
-import { Home, Sun, Compass, Dumbbell, User, UserPlus, Radio } from "lucide-react"
+import {
+  Home,
+  Sun,
+  Dumbbell,
+  Map,
+  Trophy,
+  LayoutGrid,
+  User,
+  UserPlus,
+  Radio,
+  type LucideIcon,
+} from "lucide-react"
 import { Link, useLocation } from "wouter"
 import { useUserProfile } from "@/contexts/UserContext"
 import type { Role } from "@/contexts/UserContext"
+import {
+  ATHLETE_NAV_ENTRIES,
+  COACH_NAV_ENTRIES,
+  PARENT_NAV_ENTRIES,
+  type NavEntry,
+} from "@/lib/chapters"
 
-type NavItem = {
-  href: string
-  icon: typeof Home
-  label: string
+type NavItem = NavEntry & { icon: LucideIcon }
+
+// Vijf hoofdkeuzes voor de sporter: Vandaag · Trainen · Rijden · Wedstrijd ·
+// Meer. Alle overige hoofdstukken (Jij, Lichaam, Mechanieker, Samen, enz.)
+// blijven bereikbaar via Meer, het startoverzicht (/) en het hoofdmenu.
+// De lijsten zelf staan in lib/chapters (één bron van waarheid + testbaar);
+// hier worden alleen de iconen eraan gekoppeld.
+const NAV_ICONS: Record<string, LucideIcon> = {
+  "/vandaag": Sun,
+  "/train": Dumbbell,
+  "/routes": Map,
+  "/races": Trophy,
+  "/meer": LayoutGrid,
+  "/": Home,
+  "/invitations": UserPlus,
+  "/you": User,
+  "/feed": Radio,
 }
 
-// Start-first navigation: Start (hoofdstukken-overzicht) · Vandaag (dagplanning)
-// · Ontdekken · Trainen · Jij. Activiteiten, Samen, Mechanieker enz. zijn
-// bereikbaar via het hoofdstukkenraster op Start en het hoofdmenu.
-const ATHLETE_NAV: NavItem[] = [
-  { href: "/", icon: Home, label: "Start" },
-  { href: "/vandaag", icon: Sun, label: "Vandaag" },
-  { href: "/feed", icon: Compass, label: "Ontdekken" },
-  { href: "/train", icon: Dumbbell, label: "Trainen" },
-  { href: "/you", icon: User, label: "Jij" },
-]
+function withIcons(entries: NavEntry[]): NavItem[] {
+  return entries.map((e) => ({ ...e, icon: NAV_ICONS[e.href] ?? Home }))
+}
 
-const COACH_NAV: NavItem[] = [
-  { href: "/", icon: Home, label: "Vandaag" },
-  { href: "/invitations", icon: UserPlus, label: "Uitnodigen" },
-  { href: "/you", icon: User, label: "Profiel" },
-]
-
-const PARENT_NAV: NavItem[] = [
-  { href: "/", icon: Home, label: "Vandaag" },
-  { href: "/feed", icon: Radio, label: "Nieuws" },
-  { href: "/invitations", icon: UserPlus, label: "Uitnodigen" },
-  { href: "/you", icon: User, label: "Profiel" },
-]
+const ATHLETE_NAV: NavItem[] = withIcons(ATHLETE_NAV_ENTRIES)
+const COACH_NAV: NavItem[] = withIcons(COACH_NAV_ENTRIES)
+const PARENT_NAV: NavItem[] = withIcons(PARENT_NAV_ENTRIES)
 
 function navForRole(role: Role | null | undefined): NavItem[] {
   if (role === "coach") return COACH_NAV

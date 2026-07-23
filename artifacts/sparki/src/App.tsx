@@ -16,6 +16,7 @@ import { CoachHome } from "@/components/sparki/coach-home";
 import { ParentHome } from "@/components/sparki/parent-home";
 import { OnboardingV2 } from "@/components/sparki/onboarding-v2";
 import { ErrorBoundary } from "@/components/sparki/error-boundary";
+import { BottomNav } from "@/components/sparki/bottom-nav";
 import { ConsentGate } from "@/components/consent-gate";
 import NotFound from "@/pages/not-found";
 import LegalPage from "@/pages/legal";
@@ -37,6 +38,7 @@ import SprintenPage from "@/pages/sprinten";
 import WedstrijdRoomPage from "@/pages/wedstrijd-room";
 import JourneyPage from "@/pages/journey";
 import KnowledgePage from "@/pages/knowledge";
+import MeerPage from "@/pages/meer";
 import KlimmenPage from "@/pages/klimmen";
 import InvitationsPage from "@/pages/invitations";
 import InviteAcceptPage from "@/pages/invite-accept";
@@ -404,12 +406,45 @@ function HomeRedirect() {
   );
 }
 
+// Fallback bij een paginacrash: Nederlandse melding MÉT de onderbalk, zodat
+// je altijd naar een ander onderdeel kunt — één kapot menu-item mag nooit de
+// navigatie meetrekken.
+function PageErrorFallback() {
+  return (
+    <>
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#040506] px-6 pb-28 text-center">
+        <span className="text-2xl">⚡</span>
+        <p className="font-sans text-base font-semibold text-white/80">
+          Er ging iets mis op deze pagina
+        </p>
+        <p className="max-w-xs text-sm text-white/40">
+          Kies hieronder een ander onderdeel, of probeer het opnieuw.
+        </p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="mt-2 rounded-full border border-white/10 px-4 py-2 text-xs text-white/50 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/80"
+        >
+          Probeer opnieuw
+        </button>
+      </div>
+      <BottomNav />
+    </>
+  );
+}
+
 function ProtectedPage({ component: Page }: { component: React.ComponentType }) {
+  const [pathname] = useLocation();
   return (
     <>
       <Show when="signed-in">
         <AccountGate>
-          <Page />
+          {/* Foutisolatie per pagina: een fout in één menu-item mag nooit de
+              hele app (of navigatie) meetrekken. De boundary reset per route
+              (key) en de fallback houdt de onderbalk bruikbaar. */}
+          <ErrorBoundary key={pathname} fallback={<PageErrorFallback />}>
+            <Page />
+          </ErrorBoundary>
         </AccountGate>
       </Show>
       <Show when="signed-out">
@@ -625,6 +660,9 @@ function AppRouter() {
                 </Route>
                 <Route path="/kennis">
                   <ProtectedPage component={KnowledgePage} />
+                </Route>
+                <Route path="/meer">
+                  <ProtectedPage component={MeerPage} />
                 </Route>
                 <Route path="/klimmen">
                   <ProtectedPage component={KlimmenPage} />
