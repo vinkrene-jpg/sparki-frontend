@@ -1,209 +1,106 @@
-# Sparki — Actuele feitelijke inventarisatie (t.b.v. Garmin- en Wahoo-goedkeuring)
+# Sparki — Functionele Current State
 
-Datum: 22 juli 2026. Bron: directe code-inspectie van deze repository (pnpm-monorepo). Geen aannames; elk onderdeel is gemarkeerd met status en bewijs (bestandspad/route/tabel). Onderdelen die niet bestaan of niet betrouwbaar vastgesteld konden worden zijn expliciet gemarkeerd.
+**Peildatum:** 23 juli 2026 · **Branch:** `main` · **Commit-basis:** `7cd4cad2…` (zie `docs/SPARKI_TECHNICAL_INVENTORY.md` en `docs/sparki-system-inventory.json`).
+Bron: directe inspectie van de actuele code. Statustabel per module: `docs/SPARKI_MODULE_STATUS.md`; gebruikersflows: `docs/SPARKI_USER_FLOWS.md`.
 
-Statuslegenda: **volledig werkend** · **gedeeltelijk werkend** · **alleen interface** · **nog niet gekoppeld** · **buiten gebruik**
+**Statuslegenda** (gebruikt in alle drie de documenten):
+- **Volledig** — frontend, backend en database gekoppeld; de gebruiker kan de functie echt gebruiken; regressietest aanwezig.
+- **Gedeeltelijk** — werkt, met een bewuste, eerlijk gecommuniceerde beperking.
+- **Voorbereid** — code + schema aanwezig maar niet actief door een externe afhankelijkheid; UI toont dit eerlijk (grijs, nooit nep-groen).
+- **Placeholder / Niet bereikbaar** — niet aangetroffen: de codebase bevat geen dode knoppen of nep-schermen (het Health-Check-honestheidscontract in `artifacts/api-server/src/lib/health/checks.ts` dwingt "echt proben of grijs" af).
 
 ---
 
-## 1. Samenvatting van Sparki nu
+## 1. Onboarding & Sportpaspoort — Volledig
 
-Sparki is een Nederlandstalig wielerplatform (web + mobiele app) voor renners, coaches en ouders/verzorgers. Kern:
+- **Gebruiker kan:** aanmelden via Clerk (`/sign-in`, `/sign-up`), wordt JIT geprovisioned (`POST /api/auth/sync` → `user_profiles` + `athlete_profiles`), doorloopt adaptieve vraagflow met verplichte connect-stap (koppelen zelf optioneel — eerlijkheid) en Strava-gap-fill; halverwege hervatten kan.
+- **Rollen:** iedereen (athlete standaard); rolwissel `PUT /api/auth/me/role` (`routes/auth.ts`).
+- **Koppeling:** `routes/onboarding.ts` + `engines/onboarding` ↔ tabel `onboarding_state`; web `pages/start.tsx` + onboarding-componenten. Tests: `test-onboarding-resume`, `test-onboarding-connect-step`, `test-onboarding-strava-gapfill`.
+- **Sportpaspoort** (`/paspoort`, `pages/paspoort.tsx`): herkomstlaag bovenop `athlete_profiles` — elke waarde met bron + historie (`passport_value_events`), voorstellen met atomair besluit+toepassing (`passport_proposals`). Routes `routes/passport.ts`.
 
-- **Web-app** (`artifacts/sparki`, React + Vite): dagcoaching ("Vandaag"), trainingsplan-engine, wedstrijden, routes, materiaal ("Mechanieker" incl. begeleide fietsscan), voeding, sociaal ("Samen"), club, sportpaspoort, kennisbank, admin-gezondheidscheck.
-- **API-server** (`artifacts/api-server`, Express 5 + Drizzle/PostgreSQL): 50+ routers (`src/routes/index.ts`), centrale **Data Hub** (multi-bron activiteiten-ingest met deduplicatie), deterministische coach-/observatie-engines, taalmodel-analyse (Anthropic/Gemini via Replit AI-proxy) voor uitsluitend proza.
-- **Mobiele app** (`artifacts/sparki-mobile`, Expo/React Native): turn-by-turn-navigatie, achtergrond-ritregistratie, BLE-sensoren (hartslag/vermogen/cadans), val-alarm, bordjes-sprints, rit delen.
-- **Auth**: Replit-beheerde Clerk (cookie-gebaseerd op web); rollen in eigen DB.
-- **Databronnen nu echt actief**: Strava (per-gebruiker OAuth, import + export), bestandsupload (GPX/FIT/TCX), handmatige invoer, Open-Meteo (weer), OpenRouteService (routes), Overpass/OSM, wedstrijdkalenders (Fietssport, We-Tri, KNWU beperkt).
-- **Garmin en Wahoo**: OAuth-/push-scaffolding aanwezig, maar **nog niet gekoppeld** — er zijn geen fabrikant-API-keys; de UI meldt dit eerlijk (`configured: false`). Zie §5.
+## 2. Today (Vandaag), trainingen, plannen & coaching — Volledig
 
-Productdoctrine (afdwingbaar in code en tests): eerlijke gaten (nooit gefabriceerde data), plain Dutch, geen "AI"-terminologie in gebruikersteksten, privacy-gated analyse.
+- **Vandaag** (`pages/start.tsx` + `components/sparki/screen-shell.tsx`): dagtype-engine (rust/training/wedstrijd/algemeen), één leidend Momentblok (aandachtswet), State Card, coach-analyse met presentatievariatie (`lib/variation.ts`), thuisweer (Open-Meteo, `lib/weather/home.ts`), concreet dagadvies zonder plan.
+- **Trainingen:** toevoegen opgesplitst plannen/registreren (`add-training.tsx`, server-whitelist `lib/plan-details.ts`), GPX/FIT/TCX-import via Data Hub (`lib/activity-file-ingest.ts`), afgeleide belastingsscore uit power+FTP (`lib/derived-load.ts`), sessiegrafieken + power bests alleen bij ingest (oude sessies eerlijk leeg).
+- **Plannen:** autonome plan-engine — deterministische getallen, LLM alleen prose (`engines/training-plan`, tabellen `training_plans`/`plan_days`/`planned_workouts`); per-sessie-caps; leefagenda stuurt mee (`life_events`); lifecycle pauze/hervat/verwijder; uitvoering + adaptieve voorstellen (`lib/workout-execution.ts`, `lib/adjust-rules.ts`); feedbacklus (`workout_feedback`, test `test-feedback-adjust`).
+- **Coaching door Sparki:** observatie-engine met ≥2-signalen-regel (`engines/observation`), voice/personality met centraal humorniveau (`engines/voice`, `ai_preferences.humor_level`), Vraag Sparki-chat (header-overlay, sessie-scoped thread, `routes/ai.ts` + input-center), Core-voorspelling per training (`engines/core-prediction`, `core_predictions`).
 
-## 2. Gebruikers en rollen
+## 3. Coach- & ouderomgeving — Volledig
 
-Rollen staan in eigen DB: `user_profiles.roles[]` + `active_role` (`lib/db/src/schema/users.ts`). Waarden: `athlete` (standaard), `coach`, `parent`. Admin is géén DB-rol maar een allowlist-check (`isAdmin`, env `SPARKI_ADMIN_IDS`; dev-bypass in ontwikkelmodus).
+- **Coach-cockpit** (`/coach`, `pages/coach-cockpit.tsx` + `coach-home.tsx`): signalen per sporter (`lib/coach-signals.ts`), planning-CRUD incl. bulk, berichten, contextitems (transparant voor de sporter), audit. Sparki overschrijft coachtrainingen nooit: sporterfeedback → `coach_change_proposals`; alleen coachbesluit past aan. Cross-coach-isolatie via `planned_workouts.coach_clerk_id`. Routes `routes/coach-cockpit.ts` + `routes/coach.ts` (sharing-niveaus none/summary/full). Test `test:coach-cockpit` (19).
+- **Ouderomgeving:** één rechtenlaag `lib/parent-permissions.ts` op álle ouder-routes (`routes/parent.ts`); onbekende leeftijd clampt naar veiligheidsminimum; onbevestigde ouder maximaal safety-only. Tabellen `parent_reports`, `emergency_contacts`, `parent_confirmations`, `parent_messages`. Tests: zes coach-parent-suites + link-isolatie (`test-links-end-isolation`, `test-links-unlink-isolation`).
+- **Koppelingen:** token-uitnodigingen met atomaire accept (`routes/invitations.ts`), `coach_athlete_links`/`parent_athlete_links`; beëindigen wist toegang direct.
 
-| Rol | Onboarding | Ziet | Mag |
-|---|---|---|---|
-| **Sporter (athlete)** | Verplichte flow: quick-start-vragen → **connect-stap** (koppelen verplicht getoond, koppelen zelf optioneel) → gap-fill van alléén ontbrekende velden (`routes/onboarding.ts`) | Alle eigen data | Alles op eigen data: invoeren, koppelen, verwijderen, delen instellen |
-| **Trainer/Coach** | Via uitnodiging (token, `routes/invitations.ts`) → `coach_athlete_links` | Per atleet afhankelijk van `data_sharing_coach`: `none` / `summary` (readiness + volgende sessie) / `full` (+ ruwe metrics 14 dagen). Persoonlijke context alleen geabstraheerd, nooit ruwe woorden (`routes/coach.ts`) | Adviesplan voorstellen en overnemen naar atleet-schema (`/api/coach/athletes/:id/plan/adopt`); koppeling beëindigen |
-| **Club** | Eigen club-entiteit + rollen (owner/admin/trainer/teammanager/parent/member) via clubuitnodigingen (`routes/club.ts`, `routes/invitations.ts`, `lib/club-permissions.ts`). Beheerders zien NOOIT sportdata; trainers alleen toegewezen sporters mét consent (jeugd: alleen ouder, fail-closed) | Consent-gated samenvattingen | Trainingen/wedstrijden/berichten/leden/pakket beheren; export zonder sportdata; audit-log |
-| **Ouder/verzorger (parent)** | Via uitnodiging → `parent_athlete_links` | `data_sharing_parent`: `none` / `safety_only` (alleen gezondheid/welzijn, géén vermogensdata) / `summary` (+ komend schema) (`routes/parent.ts`) | Toezicht; koppeling beëindigen |
-| **Beheerder (admin)** | Allowlist | Gezondheidscheck-dashboard, testersbeheer, geplande-taken-status (`routes/admin.ts`) | Checks draaien, uitnodigingen, storingen markeren |
+## 4. Lab — Volledig
 
-**Toestemmingen** (`lib/db/src/schema/privacy.ts`, `routes/privacy.ts`): `privacy_settings` per gebruiker met o.a. `dataSharingCoach`, `dataSharingParent`, `parentConsentRequired/Status`, `aiMemoryEnabled`, `aiSensitiveAnalysisEnabled`, `shareActivityWithFriends`, `marketingConsent`, `exportAllowed`, `acceptedTermsAt/acceptedPrivacyAt`, plus **append-only consent-auditlog** (`consent_audit_log`). Per connector kan toegang worden ingetrokken (`permission_revoked`; disconnect/revoke-routes in `routes/connectors.ts`).
+- `/lab` (`pages/lab.tsx`): één belastingsmodel via `computeLoadSeries` (`lib/derived-load.ts`, `engines/recovery-load`); vorm/vermoeidheid/fitheid; radar-assen zonder data eerlijk `null` + reden (nooit 0.5); trainingsverloop uit echte series; FTP-vloerafleiding (eerlijke ondergrens, alleen geschatte FTP omhoog); mentale reflecties (`routes/mental.ts`, `workout_mental_reflections`, test `test-mental`); gezondheids-/herstelflow (status raises-only, "hersteld" alleen via resume-gate, `routes/health-flow.ts`).
 
-**Isolatie is getest**: cross-account-, coach/parent-sharing- en link-isolatie hebben eigen testworkflows (test-cross-account-isolation, test-coach-parent-* — allemaal groen).
+## 5. Wedstrijden & Race Intelligence — Volledig (Wahoo/Karoo-sync bewust afwezig)
 
-## 3. Functiematrix per hoofdstuk
+- **Wedstrijden** (`/races`, `pages/races.tsx`): CRUD, kalenderimport (Fietssport + We-Tri volledig; KNWU eerlijk "limited" — SPA zonder bereikbare API, `lib/calendar/`), advies-typologie coach-first, wedstrijddossier in Journey, Wedstrijd-room (`routes/race-rooms.ts` + `pages/wedstrijd-room.tsx`).
+- **Race Intelligence:** veldmodel found/derived/missing, nooit verzonnen (`lib/race-intel.ts`, `engines/race`); wedstrijddagweer via `lib/weather/race.ts`.
+- **Wedstrijdpunten:** `race_points` met statusmodel voorgesteld→bevestigd/aangepast/afgewezen (nooit terug); gids-upload levert alleen voorstellen mét bron/pagina/betrouwbaarheid; kaartcontrole met deterministische km-snap (`components/sparki/race-points-panel.tsx`, `routes/race-points.ts`).
+- **Export:** GPX + Garmin FIT Course + FIT Workout (workout alleen bij echte warming-up/gekoppelde training — nooit verzonnen stappen); validatie vooraf + round-trip-verificatie; historie `race_exports`; gids-diff zet punten op `needsReconfirm` en exports op "verouderd" (`lib/race-export/`, `routes/race-exports.ts`). **Wahoo/Karoo:** alleen eerlijke uitleg, geen sync-knop. Tests `test:race-points` (9) + `test:race-export` (17).
 
-| Hoofdstuk | Route | Status | Kern (bewijs) |
-|---|---|---|---|
-| Vandaag | `/vandaag` | volledig werkend | Dagtype-engine, één leidend Momentblok, coach-beslislaag, weer (Open-Meteo), zelf-invoerhub (`pages/vandaag.tsx`, engines) |
-| Training | `/train` | volledig werkend | Vierlagen-opbouw (bron/doel/vandaag/patronen), planengine met per-sessie-caps, feedback→aanpassingsvoorstel (`pages/train.tsx`, `training-plan.ts`) |
-| Wedstrijd | `/races` | volledig werkend | Race Intelligence (voorbereiding/rapport/fuel/checklist, deterministisch), kalender-import Fietssport/We-Tri/KNWU-beperkt, documentanalyse van wedstrijdgidsen (`routes/races.ts`, `lib/calendar/`) |
-| Lichaam (Lab/Inzicht) | `/lab` | volledig werkend | Belasting (afgeleide TSS), vorm/vermoeidheid, sessiegrafieken (streams alleen bij ingest; oud = eerlijk leeg), FTP-ondergrens-afleiding (`pages/lab.tsx`) |
-| Voeding | sheet in app | volledig werkend | Logs met foto's, leeftijdsgebonden advies (<16 licht), seizoensdoel alléén 17+ (RED-S-bescherming) (`routes/nutrition.ts`) |
-| Mechanieker | `/mechanieker` | volledig werkend | Garage (fietsen/onderdelen/sensoren), foto-advies, begeleide **fietsscan** met achtergrondverwijdering en eerlijke 360-weergave (≥8 echte cutouts), productbeelden met verplichte herkomst (`routes/bike-scan.ts`, `routes/garage.ts`) |
-| Navigatie/Routes | `/routes` + mobiel | volledig werkend | Routegeneratie (ORS, best-of-N lussen), klimmenverkenner (Overpass), route-paspoort, POI's/koffiestop; mobiel turn-by-turn + herroutering (`routes/routes.ts`, `sparki-mobile/app/navigate/[id].tsx`) |
-| Club | `/club`, `/club/beheer` | volledig werkend | Club-entiteit met rollen, clubtrainingen (aanmelden/reserve/aanwezigheid, nooit coachtraining overschrijven), wedstrijden + beschikbaarheid, berichten, jeugd-consent fail-closed, pakketten/limieten, export, audit (`routes/club.ts`, `pages/club.tsx`, `pages/club-beheer.tsx`); 16 acceptatietests (`test:club`) |
-| Feed/Sociaal | `/feed`, `/samen` | volledig werkend | Nieuws (echte bronnen, zelfherstellende verversing), Ontdekken-reel (transparant-fictieve Sparki World), vriendenfeed privacy-fail-closed (`routes/feed.ts`, `routes/social.ts`) |
-| Sportpaspoort | `/paspoort` | volledig werkend | Profiel, doelen, FTP/CTL/TSB, 90-dagen-ontwikkeling, materiaal; printstijl voor PDF (`pages/paspoort.tsx`) |
-| Profiel (Jij) | `/you` | volledig werkend | Afgeleid levend profiel (lenzen/identiteit/evolutie), Ontwikkelkompas, instellingen-sheet (`pages/you.tsx`) |
-| Kennis | `/kennis` | volledig werkend | Kennisbank + "Voor jou"-intel, achter feature-flag (`routes/knowledge.ts`, `routes/intel.ts`) |
-| Admin | `/admin` | volledig werkend | Gezondheidscheck-engine (echt proben of GRIJS, nooit nep-groen), geplande taken, testers (`routes/admin.ts`) |
-| Mobiel: achtergrond-ritregistratie | app | volledig werkend (native build vereist) | OS-taak blijft loggen bij vergrendeld scherm (`sparki-mobile/lib/ride-tracker.ts`) |
-| Mobiel: BLE-sensoren | app | volledig werkend (niet in Expo Go) | Hartslag/vermogen/cadans via `react-native-ble-plx`; horloge/derailleur alleen registratie (`lib/ble-sensors.ts`) |
-| Mobiel: val-alarm | app | gedeeltelijk werkend | GPS-gebaseerde detectie; "meldingen klaargezet", claimt nooit aflevering (`route-navigator.tsx`) |
-| Mobiel: bordjes-sprint, rit delen | app | volledig werkend | Plaatsnaamsprints; Strava-upload + OS-deelmenu (`pages/sprinten.tsx`) |
-| Garmin/Wahoo-sync | instellingen | **gereed voor externe activatie** | Volledige OAuth-/PKCE-flow, webhook-endpoints (`routes/webhooks.ts`, fail-closed verificatie) en route-push voorbereid; eerlijk `configured: false` zonder fabrikantkeys (`lib/connectors/providers/device-sync.ts`) |
-| Fitbit | registry | **alleen interface** | Registry-entry, geen provider-implementatie |
-| E-mailherinneringen | jobs | gedeeltelijk werkend | Engine + dedupe aanwezig; zonder geverifieerd verzenddomein wordt eerlijk overgeslagen (`lib/email.ts`) |
+## 6. Routes, GPX, course-points, technische gids & wedstrijdmodus — Volledig
 
-## 4. Sportdata: ontvangen · opslaan · analyseren · visualiseren · aanpassen · exporteren · doorsturen
+- **Routes** (`/routes`, `pages/routes.tsx`): planner + generator (ORS via `lib/routing/providers/ors.ts`; echte routes of eerlijk niets; vrije-tekstwens alleen in rationale), routeketen (delen/versies/soft-delete, `route_shares`/`route_version_usages`), route-paspoort + POI's (Overpass), routevoorstellen (`routes/route-proposals.ts`), GPX-import (web + mobiel `gpx-import.tsx`), gereden rit als route bewaren.
+- **Technische gids:** documentanalyse via Anthropic document block → eerlijk gevonden/ontbreekt + deterministische vervolgvragen; verrijkt races en levert puntvoorstellen (`engines/document-analysis`, tabel `document_analyses`).
+- **Wedstrijdmodus mobiel:** `sparki-mobile/lib/race-mode.ts` — rondeteller via wrap-detectie, finish-cue alleen laatste ronde, POI's/verkeerslicht onderdrukt (11 tests).
+- **Course-points:** actieve punten reizen mee in `GET /api/routes/:id` (`race`-blok) en in FIT/GPX-export.
 
-Centrale ingest: **Data Hub** (`engines/data-hub/`): alle bronnen → `ingestBatch` → validatie → deduplicatie (sport + start-bucket + buurvenster-tolerantie, `dedupe.ts`) → samengevoegde `training_sessions`; ruwe brondata blijft herleidbaar in `connector_activities.raw`.
+## 7. Hoogteprofiel, routeopmerkingen & wegtypen — Volledig
 
-| Gegeven | Bron | Opslag (tabel) | Verwerking | Doel | Bewaartermijn | Verwijderbaar |
-|---|---|---|---|---|---|---|
-| Activiteiten | Strava, GPX/FIT/TCX-upload, mobiele ritopname | `training_sessions`, `connector_activities`, `activity_imports` | dedupe, samenvoegen, TSS-afleiding | analyse/coaching | onbeperkt | ja (DELETE-routes; cascade bij profielverwijdering) |
-| Vermogen | FIT/TCX-streams, BLE (mobiel), Strava-samenvatting | streams in `activity_imports.parsed_summary` (max 720 buckets); `avg/normalized_power` in sessies | power bests bij parse, FTP-ondergrens, TSS | belasting/vorm | onbeperkt | ja (via import/sessie) |
-| Hartslag | idem | idem (`avg_hr`, `max_hr`, streams) | zones, sessiegrafieken | idem | onbeperkt | ja |
-| HRV | handmatige check-in | `athlete_daily_metrics.hrv` | readiness/herstel | dagadvies | onbeperkt | ja |
-| Cadans | streams/BLE | streams + `avg_cadence` | grafieken | techniek | onbeperkt | ja |
-| Snelheid/GPS/hoogte | GPX/FIT/TCX, mobiele opname | streams; track in `parsed_summary.route`; hoogteprofiel in `routes.profile` | hoogte-/klimanalyse, "rit als route bewaren" | navigatie/analyse | onbeperkt | ja |
-| Slaap/herstel | check-in | `athlete_daily_metrics` (`sleep_hours`, `sleep_quality`, `fatigue_score`, `feel_score`) | observatie-engine | coaching | onbeperkt | ja |
-| Voeding | handmatig + foto's | `nutrition_hydration_logs`, `nutrition_season_goals` | leeftijdsgebonden regels | fueling | onbeperkt | ja (DELETE aanwezig) |
-| Gewicht | handmatig / Strava-profiel | `athlete_profiles.weight_kg` (SSOT), daily metrics | seizoensdoel-sturing (≤0,5 kg/wk, 17+) | gezondheid | actueel veld | overschrijfbaar |
-| Materiaal | handmatig + fietsscan-foto's | `garage_*`, `bike_scans`, `bike_scan_frames`, `equipment_assets` (verplichte bron+licentie) | foto-advies, slijtage | onderhoud | onbeperkt | ja |
-| Wedstrijden | handmatig + kalender-import | `races` (incl. resultaat, checklist, logistiek) | Race Intelligence | voorbereiding | onbeperkt | ja |
-| Trainingsplannen | Sparki-engine / coach-adoptie | `training_plans`, `plan_days`, `planned_workouts` | deterministische planbouw | training | onbeperkt | ja |
+- Interactief hoogteprofiel (`components/sparki/elevation-profile.tsx`: sleep ↔ kaartsync, gradiëntkleuren, markers); ingest-hoogte uit GPX/FIT/TCX (tests `test-ingest-elevation-profile`, `test-ingest-elevation-fit-tcx`, `test-session-elevation-profile`).
+- Routeopmerkingen uit echte OSM-tags (`lib/route-remarks.ts`, `GET /api/routes/:id/remarks`, ODbL-bron zichtbaar; nooit een verzonnen waarschuwing; 16 testscenario's).
+- Wegtypen/ondergrond + fietsgeschiktheid (`lib/route-surfaces.ts`, `GET /api/routes/:id/surfaces`; 10 categorieën; >40% onbekend ⇒ eerlijk "onvoldoende gegevens"; 24 testscenario's). Afhankelijk van Overpass-beschikbaarheid; storing wordt eerlijk getoond (502/datanotitie), nooit gemaskeerd.
 
-**Exporteren/doorsturen (feitelijk):** routes als **GPX/TCX** (`/api/routes/:id/gpx`, `/tcx`); rit-GPX vanuit mobiele opname (incl. BLE-sensordata als gpxtpx-extensies); **doorsturen naar Strava** (rit-upload, `activity:write`); OS-deelmenu (mobiel); **volledige account-export** (schema-gedreven JSON met tokenmaskering, `routes/account.ts`, rate-limited). **NIET aanwezig:** automatische doorstuur naar andere platformen dan Strava.
+## 8. Voeding — Volledig (jeugdbeperking is bewust beleid)
 
-## 5. Bestaande integraties
+- Voeding-sheet (`components/sparki`-sheet, geen aparte pagina): deterministische rekenkern `lib/fueling.ts` (koolhydraten/vocht/natrium per duur/intensiteit/warmte; LLM formuleert alleen); <16 bewust géén getallen (RED-S); consent fail-closed (`nutrition_preferences.consentAt`); seizoensdoel 17+ (`nutrition_season_goals`, max 0,5 kg/week); daganalyse plan↔registratie; mobiele bidon/eetmoment-tikkers met snapshot bij STOP. Routes `routes/nutrition.ts`. Test `test:fueling` (16).
 
-| Integratie | Status | Details |
-|---|---|---|
-| **Strava** | OAuth ✓ import ✓ export ✓ sync ✓ webhooks ✓ (verify-handshake + push-trigger) productiegetest: dev-getest | Per-gebruiker OAuth2 (signed state); endpoints `/oauth/token`, `/athlete`, `/athlete/activities`, activity-upload; scopes `read,activity:read_all,profile:read_all,activity:write`; tokens in `connector_connections`; bestanden `lib/connectors/providers/strava.ts`, `strava-oauth.ts`; env `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`. Webhooks: `/api/webhooks/strava` (verify-token-handshake, idempotent via `webhook_events`) naast pull-sync. |
-| **Garmin** | **gereed voor externe activatie** (wacht op fabrikantkeys) | `lib/connectors/providers/device-sync.ts` + `routes/device-sync.ts`: OAuth2/PKCE-flow (authorize/callback/disconnect; verifier in signed state), route-push-endpoint (`/api/device-sync/send`) én webhook-endpoint `/api/webhooks/garmin` (`?token=GARMIN_WEBHOOK_TOKEN`, fail-closed 403, idempotent via `webhook_events`). Zonder `GARMIN_CLIENT_ID`/`GARMIN_CLIENT_SECRET` meldt de API eerlijk `configured: false`. Vereist Garmin Connect Developer Program-goedkeuring. |
-| **Wahoo** | idem | Zelfde architectuur; webhook `/api/webhooks/wahoo` (`webhook_token`-verificatie, fail-closed); env `WAHOO_CLIENT_ID`, `WAHOO_CLIENT_SECRET` (Wahoo Cloud API). |
-| **Fitbit** | alleen gepland | Registry-entry (`registry.ts`), geen provider-implementatie. |
-| **Google** | niet aanwezig | Alleen `fcm.googleapis.com` als push-endpoint-allowlist-item; geen Google-koppeling. (Google-login kan via Clerk beschikbaar zijn, buiten deze codebase geconfigureerd.) |
-| **OpenRouteService** | import ✓ (routing/geocoding/hoogte) | `lib/routing/providers/ors.ts`; env `ORS_API_KEY`. |
-| **Mapbox** | tiles ✓ | Mobiele kaartweergave; env `MAPBOX_ACCESS_TOKEN` / `EXPO_PUBLIC_MAPBOX_TOKEN`. |
-| **Overpass/OSM** | import ✓ | Klimmen, wegobjecten, POI's; meerdere mirrors met fallback (`lib/climbs/overpass.ts`, `lib/road-objects/overpass.ts`). |
-| **Open-Meteo** | import ✓ | Dag-/uurweer, uur-matching op utc_offset (`lib/weather/open-meteo.ts`); geen key. |
-| **Resend (e-mail)** | configuratie ✓, eerlijk-beperkt | Via Replit-connector (`lib/email.ts`); zonder geverifieerd domein slaat verzending eerlijk over. |
-| **Web push (VAPID)** | volledig ✓ | `lib/push.ts` met host-allowlist (SSRF-guard); env `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`. |
-| **Anthropic / Gemini** | volledig ✓ (via Replit AI-proxy) | Proza-generatie, documentanalyse, foto-advies; `lib/integrations-anthropic-ai/`, `lib/integrations-gemini-ai/`; env `AI_INTEGRATIONS_*`. Cijfers/beslissingen blijven deterministisch. |
-| **Wedstrijdkalenders** | Fietssport ✓, We-Tri ✓, KNWU eerlijk-beperkt | Regex-parsers, SSRF-allowlist (`lib/calendar/`); KNWU: alleen server-gerenderde "Komende wedstrijden", `mijn.knwu.nl` onbereikbaar — niet nagebootst. |
-| **BLE-sensoren (lokaal)** | volledig ✓ (native build) | Hartslag/vermogen/cadans in `sparki-mobile/lib/ble-sensors.ts`; geen cloud-koppeling. |
+## 9. Mechanieker & fietsscan — Volledig
 
-## 6. Architectuur en datastromen
+- `/mechanieker` (`pages/mechanieker.tsx`): multi-fiets garage; km/uren altijd live afgeleid uit `training_sessions.bike_id` (nooit een teller); auto-koppeling gokt nooit; onderhoudssignalen (`lib/maintenance-signals.ts`, defect alleen uit eigen registratie); materiaalkeuze per rit (`equipment_choices`). Test `test:mechanieker` (17).
+- **Fietsscan** (`routes/bike-scan.ts`, tabellen `bike_scans`/`bike_scan_frames`): foto-frames → "Interactieve fotoweergave" (eerlijk zo genoemd; alleen het parametrische model heet 3D); achtergrondverwijdering client-side (@imgly); origineel altijd bewaard; verplichte assetherkomst.
+- **Materiaalcoach** (`routes/material.ts`, `material_analyses`): foto-gedreven eerlijk advies, confidence-gated extra-foto-vraag, foto's in object storage met owner-checked serve.
 
-**Route van data:** bron (Strava/bestand/handmatig/mobiel) → **toestemming** (connector-consent per datatype; `effectiveImportedDataTypes` filtert import op consent) → **import** (`runSync`/`ingestBatch`) → **validatie** (parser-checks, tijdloze GPX ≠ activiteit) → **opslag** (ruwe rij + samengevoegde sessie) → **analyse** (deterministische engines; taalmodel alleen proza, privacy-gated persist) → **visualisatie** (React, sessiegrafieken met eerlijke gaten) → **export/verwijdering** (GPX/TCX, Strava-upload; DELETE-routes, cascade).
+## 10. Sociaal & ritten delen — Volledig
 
-- **API-architectuur:** Express 5-routers onder `/api`, engine-laag (`engines/<naam>` facades) tussen routes en lib.
-- **Authenticatie:** Clerk (cookie), `requireAuth` middleware; mobiel gebruikt dezelfde API.
-- **OAuth/tokenopslag:** per-gebruiker tokens in `connector_connections` (`access_token`/`refresh_token` als text, **niet versleuteld op applicatieniveau**; nooit naar client gestuurd). Refresh bij verlopen.
-- **Encryptie:** in transit TLS (platform); at rest platform-niveau (beheerde Postgres); geen kolom-encryptie.
-- **Logging:** pino; `authorization`/`cookie` geredigeerd; prod JSON.
-- **Foutafhandeling:** per-route try/catch met Nederlandse foutteksten; health-probes gooien nooit.
-- **Rate limiting:** aanwezig in productie — per-IP limiter (600/min) in `app.ts` (alleen `NODE_ENV=production`); gevoelige routes (account-export/verwijdering) extra gelimiteerd.
-- **Retry:** frontend TanStack Query-retries; mobiele test-runner retries; geen server-side retry-queue voor mislukte syncs.
-- **Dubbele activiteiten:** Data Hub-dedupe (sport + 5-min startbucket + buurvenster, tolerantie op afstand/duur), veld-merge via `MERGEABLE_FIELDS`.
-- **Synchronisatieconflicten:** bron-prioriteit echt > handmatig > geschat; handmatige override blijft mogelijk.
-- **Accountontkoppeling:** disconnect (lokaal wissen) én revoke (ook bij Strava intrekken) per connector.
-- **Dataverwijdering:** DELETE-routes per entiteit; `ON DELETE CASCADE` op `clerk_id` door het hele schema; zelfbedienings-accountverwijdering met 14-dagen-bedenktermijn en uitzonderingenregister (`routes/account.ts`).
-- **Achtergrondprocessen:** gezondheidscheck (dagelijks), doelen-review (maandelijks), herinneringen (dagelijks), nachtelijke kennis-/nieuwsscan; alle idempotent met dedupe-keys (`lib/scheduled-tasks.ts`, `jobs/`). Nieuws heeft zelfherstellende verversing op het leespad.
+- Samen-feed (`/samen`), vrienden/volgen (`friend_links`/`follow_links`), profielprivacy op álle ontdekkingspaden (zoeken/verzoek/match; neutrale weigering), blokkeren atomair, groepstrainingsvoorstellen (`routes/social.ts`).
+- **Live locatie tijdens navigatie:** opt-in per sessie (standaard uit), autorisatie bij élke lezing herchecked, minderjarig fail-closed in groepen, geen locatiegeschiedenis (`routes/live-location.ts`, `sparki-mobile/lib/live-share.ts`; 21+10 tests).
+- **Rit delen:** deelkaart met whitelist-velden; Strava = handmatige activity (nooit verzonnen timestamps); socials via OS-deelmenu (`routes/share.ts`, `lib/share/ride-share.ts`, mobiel `lib/share-api.ts`). World-social: alleen referentie-deling; openbaar vereist volwassen-/oudertoestemming (`routes/world-social.ts`).
 
-## 7. Privacy en veiligheid
+## 11. Clubomgeving — Volledig
 
-| Onderdeel | Status | Bewijs |
-|---|---|---|
-| Toestemming (sharing, connector-consent, auditlog) | aanwezig | `routes/privacy.ts`, `consent_audit_log`, `permission_revoked` |
-| Privacyverklaring (leesbare tekst/pagina) | aanwezig | publieke pagina `/privacy` + in-app via `/api/legal/privacy` (`pages/legal.tsx`, `routes/legal.ts`) |
-| Gebruiksvoorwaarden (leesbare tekst/pagina) | aanwezig | publieke pagina `/voorwaarden` + `/api/legal/terms`, zelfde bron web/mobiel |
-| Gegevensinzage | aanwezig | alle eigen data zichtbaar in de app + volledige account-export als samengevoegd overzicht |
-| Gegevenscorrectie | aanwezig | alle eigen invoer bewerkbaar; profiel-consistentievragen met compare-and-set |
-| Export | aanwezig | GPX/TCX per route/rit + volledige schema-gedreven account-export met tokenmaskering (`routes/account.ts`, rate-limited) |
-| Accountverwijdering (zelfbediening) | aanwezig | verwijderflow met 14-dagen-bedenktermijn, uitzonderingenregister en cascade-uitvoering (`routes/account.ts`) |
-| Intrekken van koppelingen | aanwezig | disconnect/revoke-routes |
-| Minderjarigen | aanwezig | `parentConsentRequired/Status`, ouder-rol met `safety_only`, seizoensgewichtsdoel geblokkeerd <17 (RED-S), leeftijd uit volledige geboortedatum |
-| Trainer-/clubrechten | aanwezig | sharing-levels + geteste isolatie; club heeft eigen least-privilege rechtenmodel (`lib/club-permissions.ts`): beheer zonder sportdata, trainers consent-gated, cross-club isolatie |
-| Medische/gevoelige data | gedeeltelijk | HRV/slaap/mentaal privacy-gated (`aiSensitiveAnalysisEnabled`); geen aparte medische-dataclassificatie |
-| Token-/persoonsgegevensbeveiliging | gedeeltelijk | tokens server-only maar plaintext in DB; logs redigeren cookies/authorization; SSRF-allowlists op kalender/push/klimmen; XSS-escaping op kaartlabels |
-| Rate limiting / brute-force-bescherming | aanwezig (productie) | per-IP limiter in `app.ts` (prod-only) + extra limieten op export-/verwijderroutes |
+- `/club` + `/club-beheer`: 16 tabellen (`lib/db/src/schema/club.ts`); least-privilege rechten (`lib/club-permissions.ts` — beheerders zien nooit sportdata); teams/groepen/locaties; clubtrainingen met aanmelden/reserve (FOR UPDATE op signup); wedstrijdselecties; berichten; jeugd-consent fail-closed; abonnementen/limieten (ook bij invite-accept); audit-log. Router achter `killSwitchGuard("club_features")` (`routes/index.ts` r.164).
 
-## 8. Waarde voor Garmin
+## 12. AI-helpdesk — Volledig
 
-Feitelijk gebouwd en werkend (boven "activiteiten opslaan"):
+- `/support` (web) + mobiel supportscherm: deterministische antwoordmatrix eerst, LLM daarna; minderjarig fail-closed; tickets met advisory-lock find-or-create (`support_tickets`, `helpdesk_turns`); bekende problemen + artikelen (`support_known_issues`, `support_articles`). Routes `routes/support.ts`, engine `lib/support/`.
 
-- Trainingsanalyse: afgeleide belasting (TSS uit vermogen+FTP), vorm/vermoeidheid, power bests, FTP-ondergrens-afleiding.
-- Interactieve sessiegrafieken (vermogen/hartslag/cadans/snelheid/hoogte, eerlijke gaten).
-- Deterministische dagcoaching en trainingsplannen met feedback-lus en per-sessie-caps.
-- Wedstrijdvoorbereiding (Race Intelligence, kalender-import, documentanalyse van wedstrijdgidsen).
-- Routefunctionaliteit: generatie, klimmenverkenner, route-paspoort, turn-by-turn (mobiel), GPX/TCX-export.
-- Materiaalbeheer incl. fietsscan; sportpaspoort; trainer- en ouderkoppeling met granulaire sharing; contextafhankelijke analyses (leefagenda, geheugengraf); doel- en ontwikkelingsweergave (Ontwikkelkompas).
+## 13. Contextuele uitleg — Volledig
 
-Voor Garmin-gebruikers zou een koppeling betekenen: automatische activiteiten-import in dit analyse-/coachingsecosysteem via de al gebouwde Data Hub (dedupe met Strava/bestanden al bewezen). **Nog niet gebouwd:** de Garmin-dataprovider zelf (wacht op API-toegang).
+- Uitleglaag: `UitlegDot` (`components/viz/uitleg.tsx`) + centraal registry `artifacts/sparki/src/lib/uitleg-content.ts` (Wat/Waarom/Hoe + eerlijke "Bij jou" uit echte profiel-/loadwaarden); tweelaags kort/uitgebreid alleen waar echte diepte bestaat; "Belasting (TSS)"-naamgeving. Test `test:uitleg-content`.
 
-## 9. Waarde voor Wahoo
+## 14. Meldingen — Volledig (e-mail Gedeeltelijk)
 
-Identiek aan §8 (zelfde Data Hub-architectuur; providers zijn bron-agnostisch). Extra relevant voor Wahoo: geplande workouts bestaan gestructureerd (`planned_workouts.structure` met blokken/zones/%FTP) — technisch fundament voor workout-push naar headunits, maar **een exportformaat/push naar Wahoo is niet gebouwd**.
+- Centraal categorieregister; kritiek nooit uit; resolutionKey-dedupe + resolve-lifecycle; quiet hours dempen alleen push/e-mail (`routes/notifications.ts`, `routes/alerts.ts`, tabel `notifications`); dagvouwing in de bel (1 regel per Amsterdamse kalenderdag).
+- **Web push:** Volledig — VAPID + SSRF-hostallowlist (`lib/push.ts`, `push_subscriptions`).
+- **E-mail:** Gedeeltelijk — geen geverifieerd verzenddomein; Resend-sandbox bezorgt alleen aan de accounteigenaar; reminders slaan eerlijk over i.p.v. nep-verzenden (`lib/email.ts`, toelichting regels 9–19; Health Check toont dit oranje/grijs).
 
-## 10. Risico's en ontbrekende onderdelen
+## 15. Beheer & privacy — Volledig
 
-| # | Punt | Ernst | Bewijs | Benodigde oplossing |
-|---|---|---|---|---|
-| 1 | Geen Garmin/Wahoo API-toegang (keys ontbreken) | kritiek (blokkade) | `device-sync.ts` `configured: false` | Aanmelden Garmin Connect Developer Program / Wahoo Cloud API; daarna dataprovider bouwen |
-| 2 | ~~Geen privacyverklaring en gebruiksvoorwaarden~~ | opgelost (Golf 28) | `/privacy` + `/voorwaarden` publiek, zelfde bron in-app | — |
-| 3 | ~~Geen zelfbedienings-accountverwijdering~~ | opgelost | verwijderflow met 14-dagen-bedenktermijn (`routes/account.ts`) | — |
-| 4 | ~~Geen volledige data-export~~ | opgelost | schema-gedreven account-export met tokenmaskering | — |
-| 5 | OAuth-tokens plaintext in DB | hoog | `connectors.ts` schema | Kolom-encryptie of secrets-vault |
-| 6 | ~~Geen rate limiting~~ | opgelost (productie) | per-IP limiter in `app.ts` + limieten op gevoelige routes | — |
-| 7 | ~~Geen webhooks~~ | opgelost (scaffolding) | `/api/webhooks/strava|garmin|wahoo` fail-closed, idempotent (`webhook_events`) | Garmin/Wahoo-activatie wacht alleen op fabrikantkeys |
-| 8 | Productie niet gevalideerd met echte multi-user Strava-sync | normaal | dev-getest via smoke/testworkflows | Productietest na deploy |
-| 9 | Kalender-import parseert HTML van derden | normaal (voorwaarden-risico) | `lib/calendar/` | Toestemming bronnen verifiëren vóór commerciële lancering |
-| 10 | E-mail zonder geverifieerd domein | laag | `lib/email.ts` eerlijk overslaan | Domein verifiëren in Resend |
-| 11 | ~~Club zonder eigen rechtenmodel~~ | opgelost | clubtabellen + rechtenlaag gebouwd (Golf 10) | — |
-| 12 | Fitbit alleen registry-entry | laag | `registry.ts` | Verwijderen of bouwen |
+- **Admin** (`/admin`, allowlist `SPARKI_ADMIN_IDS`): Health-Check-engine met echte probes en vier eerlijke statussen (`lib/health/checks.ts`, `health_check_*`; CLI-job als release-gate); testeroverzicht + telemetrie (`tester_events`); sync-diagnostiek; kennisbeheer (`/knowledge-beheer`); releasegroepen/uitrol met auto-stop per flag (`routes/release.ts`, `rollout_guards`); kill switches; feature flags; foutenregister (`error_groups`/`error_events`).
+- **Privacy:** schema-gedreven export met tokenmaskering; 14-dagen verwijdervenster + uitzonderingenregister; consent-audit-log (append-only); security-audit-log; data-trust herkomst-endpoint met constante tabel-allowlist. Routes `routes/privacy.ts`, `routes/account.ts`; test `test-cross-account-isolation`.
 
-## 11. Releasestraat en productieacceptatie (Golf 13)
+## 16. Mobiele ritregistratie, navigatie & Bluetooth — Volledig (BLE Gedeeltelijk; device-sync Voorbereid)
 
-Eén reproduceerbare releaseflow, hervatbaar en met vastgelegd bewijs:
+- **Ritregistratie:** achtergrondtracking (TaskManager, `lib/ride-tracker.ts` — native build vereist), auto-trim altijd ongedaan te maken (`api-server lib/ride-trim.ts`), upload-queue met fail-closed opslag (`lib/upload-queue.ts`), rit-herstel na crash, val-alarm (30s-venster; meldingen "klaargezet", bezorging nooit geclaimd — `lib/fall-detection.ts`), bordjes-sprints (`route_sprint_boards`/`sprint_results`), GPX met sensordata (`lib/ride-gpx.ts`).
+- **Navigatie** (`app/(app)/navigate/[id].tsx`): route-match state machine (`lib/route-match.ts`), HUD, audio-cues (waypoints nooit bestemmingen, `lib/nav-cues.ts`), off-route-keuze per episode, klimfases, zelflerende verkeerslichten (`road_objects`), volgauto-modus (renner/volgauto-rolkeuze), wedstrijdmodus, live locatie delen.
+- **BLE-sensoren:** **Gedeeltelijk** — hartslag/vermogen/cadans via ble-plx werken alleen in de volledige app-build; in Expo Go/web eerlijk "niet ondersteund" (`lib/ble-sensors.ts` r.68).
+- **Garmin/Wahoo device-sync:** **Voorbereid** — volledige OAuth-/webhook-code aanwezig (`lib/connectors/providers/device-sync.ts` r.14, `routes/webhooks.ts` fail-closed), maar zonder fabrikantsleutels `configured: false` en eerlijk "niet beschikbaar" in de UI.
 
-- **Releasecontrole:** `node scripts/release-check.mjs` (opties `--resume` en `--budget <sec>`; tussenstand in `docs/release-check-state.json`). Fasen in volgorde: typecheck → migratie-driftcontrole → alle web/mobiel-unit-tests → alle api-server e2e-suites (strikt sequentieel, gedeelde dist) → webbuild → serverbuild → mobielcontrole (tsc) → healthcheck in release-modus. Uitvoer: `docs/RELEASE_ACCEPTANCE.md` (per fase status + duur + extern-geblokkeerde punten + eindoordeel).
-- **Migraties:** drizzle push-model, uitsluitend additief. `scripts/check-schema-drift.mjs` onderscheidt echte drift van drie bekende drizzle-vergelijkingslussen (63-tekens-afkapping van constraintnamen; array-default `'{}'` — óók de expliciete `'{}'::text[]`-castvorm; ADD+DROP-churn van een gelijknamige UNIQUE-constraint) — alle uitsluitend no-op na verificatie tegen de live catalogus (zelfde tabel + identieke `pg_get_constraintdef`, resp. bestaand kolomdefault). Regressietests: `node scripts/test-check-schema-drift.mjs` (11 synthetische gevallen).
-- **Backup & restore-bewijs:** `test:backup-restore` (api-server) dumpt 10 kerntabellen naar een scratch-schema, herstelt en bewijst rijaantallen, relaties, consents, audit-integriteit en media-checksums (7/7 groen).
-- **Releasebewaking:** hergebruik van de bestaande Health Check engine (§ Admin) — geen parallel systeem. `HEALTH_CHECK_MODE=release pnpm --filter @workspace/api-server run job:health` is de release-gate (rood = exit ≠ 0); dagelijkse/wekelijkse bewaking via dezelfde CLI in Scheduled Deployments; datasync-bewaking via `GET /api/admin/sync-diagnostics`.
-- **Prod-config hardening:** productie weigert te starten zonder `DATABASE_URL`/Clerk-keys en weigert `DEV_AUTH_BYPASS=true`; CORS-allowlist (REPLIT_DOMAINS + `SPARKI_ALLOWED_ORIGINS`) en per-IP rate limiter (600/min) uitsluitend in productie.
-- **Rollback:** Replit-publicatie van een vorige checkpoint her-publiceren; schema is additief dus oudere code blijft draaien op nieuwer schema.
-- **E2E-dekking (acceptatiescenario's → suites):** accounts/rollen (`test:account`, `test:kernreis`), autorisatie-isolatie (`test:cross-account-isolation`, `test:coach-parent-link-isolation`, `test:links-unlink-isolation`, `test:links-end-isolation`), coach/ouder-deelniveaus (`test:coach-parent-*`), data-ingest (`test:data-hub`, `test:activity-file-ingest`, `test:ingest-elevation-*`), planning/coach (`test:coach-cockpit`, `test:feedback-adjust`), privacy (`test:privacy-security`), club (`test:club`), gezondheidscheck (`test:health-endpoints`). Lint = strikte `tsc` over alle pakketten (geen aparte ESLint — bewuste keuze, eerlijk vermeld).
+---
 
-## 11b. Store-distributie (Golf 28) en releasecandidate (Golf 29)
-
-**Store-distributie:** publieke juridische pagina's (`/privacy`, `/voorwaarden`); store-register `docs/store/store-listing.json` (NL-beschrijvingen, machtigingsuitleg, dataveiligheid — placeholders `<productiedomein>` vóór indiening vervangen); versie-advies (`version_requirements.recommended_version` → rustig `updateAdvies`, nooit blokkade); 426-blokkade uitgesteld tijdens actieve rit; distributiekanaal als plafond op releasegroep (`x-sparki-kanaal`, fail-closed). Controles: `check:prod-config` + `scripts/store-release-check.mjs` — beide als fasen in de releasestraat (`storecontrole:*`).
-
-**Releasecandidate (22-07-2026):** volledige releasestraat groen — commit `bb2391f`, 112 fasen (typecheck, driftcontrole, alle unit- en e2e-suites, web-/serverbuild, mobielcontrole, storecontroles, healthcheck release-modus zonder rode storingen). Bewijs: `docs/RELEASE_ACCEPTANCE.md` + `docs/release-check-latest.json`.
-
-**Statuslabels (samenvatting):**
-- **Productieactief:** web-app, api-server, Strava-sync, bestandsimport, planengine, coach-/ouder-/clubomgeving, Journey, Mechanieker, voeding, routes/navigatie, releasebeheer, gezondheidscheck, web push, juridische pagina's, account-export/-verwijdering.
-- **Gereed voor externe activatie:** Garmin/Wahoo (fabrikantkeys), e-mailbezorging (geverifieerd Resend-domein), store-builds (EAS-ondertekening + store-formulieren), productiedomein-placeholders in store-register.
-- **Alleen pilot:** pilotconsent-flow en releasegroepen test/pilot (featureflag-gestuurd).
-- **Bewust uitgeschakeld:** Fitbit (alleen registry-entry), jeugd-gewichtssturing <17 (RED-S), gefabriceerde data overal (eerlijke-gaten-doctrine).
-
-## 12. Bewijs
-
-- **Routers:** `artifacts/api-server/src/routes/` (55 bestanden, zie `index.ts` voor registraties).
-- **Schema:** `lib/db/src/schema/` — o.a. `users.ts`, `athlete-profiles.ts`, `links.ts`, `privacy.ts`, `connectors.ts`, `garage.ts`, `knowledge.ts`.
-- **Data Hub:** `artifacts/api-server/src/engines/data-hub/` (`ingest.ts`, `dedupe.ts`).
-- **Integraties:** `src/lib/connectors/providers/` (strava.ts, strava-oauth.ts, device-sync.ts, registry.ts), `src/lib/routing/providers/ors.ts`, `src/lib/weather/open-meteo.ts`, `src/lib/calendar/`, `src/lib/push.ts`, `src/lib/email.ts`.
-- **Tests (groen op 22-07-2026):** 30+ testworkflows, o.a. cross-account-isolatie, coach/parent-sharing-levels, sessie-contract, ingest-hoogteprofielen, onboarding-connect-stap, geplande taken; plus scan-quality unit-tests.
-- **Machineleesbare inventaris:** `docs/SPARKI_INTEGRATION_INVENTORY.json`.
-
-### Niet betrouwbaar vaststelbaar vanuit de code
-- Clerk-loginproviders (bijv. Google-login) — geconfigureerd buiten deze repository.
-- Productiestatus van Scheduled Deployments (gebruikersconfiguratie in Replit, niet in code).
-- Werkelijke productie-secrets (alleen dev-omgeving zichtbaar: `STRAVA_CLIENT_ID/SECRET`, `MAPBOX_ACCESS_TOKEN`, `VAPID_PRIVATE_KEY` aanwezig).
+**Samenvattend:** 22 gecontroleerde modulegebieden; 19 Volledig, 3 met een eerlijk gecommuniceerde beperking (e-mailbezorging, BLE buiten native build, Garmin/Wahoo-sync voorbereid). Geen placeholders of onbereikbare functies aangetroffen.
