@@ -100,8 +100,7 @@
 - [Sparki engagement engine](sparki-engagement-engine.md) — healthy pull-to-return: learns real open rhythm from tester_events, honest default when thin.
 - [Sparki news freshness & ranking](sparki-news-freshness.md) — pipelines gated only on a user-configured Scheduled Deployment silently rot; self-heal via lazy refresh on the READ path.
 - [Sparki aandachtswet (Vandaag single-leader)](sparki-aandachtswet.md) — one leading Momentblok (priority chain); ride-along weather/leskaart/nudge must be GATED at render not just imported.
-- [Sparki route-paspoort](sparki-route-passport.md) — Overpass around-linestring 504s ⇒ bbox+local filter; Open-Meteo hourly must match on utc_offset epoch, never a fixed NL hour key.
-- [Sparki route POIs & coffee break](sparki-route-pois.md) — Overpass needs compact nwr unions (verbose form 504s) + transient slot 502s; behind-rider guard server-side; nullable ORS totals.
+- [Sparki route-paspoort + POIs](sparki-route-passport.md) — Overpass: bbox+local filter en compacte nwr-unions (verbose vormen 504'en); Open-Meteo hourly matcht op utc_offset epoch ([POIs](sparki-route-pois.md)).
 - [Power bests pipeline](sparki-power-bests.md) — bests computed only at FIT/TCX parse; no backfill (raw files not retained); gaps=0W, collector takes seconds not ms.
 - [Sparki Rit-verhaal](sparki-ride-story.md) — flag `rit_verhaal`; sync line must render independent of fresh story; predictionAvailable strictly pre-hoc; workflow limit hit ⇒ tests via shell.
 - [Route rejoin after deviation](sparki-route-rejoin.md) — off-route choice terug/verder must be a REAL routed connector (ORS), never a straight line; profile derived from surface.

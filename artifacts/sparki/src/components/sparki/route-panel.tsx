@@ -2861,7 +2861,7 @@ export function RoutePanel({
             className="flex items-center gap-2 rounded-full border border-white/[0.14] px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 hover:text-white/90"
           >
             <MapIcon className="h-4 w-4" strokeWidth={1.75} />
-            Verken op de kaart
+            Bewaarde routes op kaart
           </button>
         )}
         {showBewaard && view === null && routes.length > 0 && (
