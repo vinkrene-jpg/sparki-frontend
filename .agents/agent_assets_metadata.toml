@@ -479,3 +479,9 @@ id = "bS2Dtt-kNISW3vw84EvNO"
 uri = "file://docs/review-bundle/sparki-reviewbundel.zip"
 type = "unspecified"
 title = "Sparki reviewbundel (voor ChatGPT-codecontrole)"
+
+[[outputs]]
+id = "AV5Nc6PDsDJwATk3-ORfz"
+uri = "file://docs/SPARKI_REVIEW_BUNDLE.zip"
+type = "unspecified"
+title = "Sparki Reviewbundel (9 documenten)"
