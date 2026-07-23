@@ -1,0 +1,15 @@
+=== git status --short ===
+?? docs/SOURCE_EXPORT_GIT_STATUS.txt
+?? docs/SOURCE_EXPORT_METADATA.txt
+
+=== git status ===
+On branch main
+Your branch is ahead of 'origin/main' by 284 commits.
+  (use "git push" to publish your local commits)
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	docs/SOURCE_EXPORT_GIT_STATUS.txt
+	docs/SOURCE_EXPORT_METADATA.txt
+
+nothing added to commit but untracked files present (use "git add" to track)

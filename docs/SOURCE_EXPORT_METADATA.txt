@@ -1,0 +1,20 @@
+SPARKI SOURCE EXPORT METADATA
+Exportdatum/tijd: 2026-07-23 11:57:52 UTC (2026-07-23 13:57 CEST)
+Branch: main
+Commit: 9915bd9a19c129581c04ec37c4e17c31a07e5f74
+Node: v24.13.0
+pnpm: 10.26.1
+
+Opgenomen hoofddirectories:
+- artifacts/ (sparki, api-server, sparki-mobile, mockup-sandbox)
+- lib/
+- scripts/
+- docs/
+- rootbestanden: package.json, pnpm-lock.yaml, pnpm-workspace.yaml, tsconfig*.json, replit.md, AGENTS.md, .replit, overige root-md/config
+
+Uitgesloten categorieën:
+- node_modules/, .git/, dist/, build/, coverage/, .expo/, .cache/, .local/, .agents/, tmp/, caches/tijdelijke bestanden
+- runtime-logs (*.log), database-dumps, object-storagebestanden, geüploade gebruikersfoto's/documenten (attached_assets/), screenshots/
+- .env-bestanden, secrets, keys, tokens, credentials
+- .migration-backup/ (legacy Next.js backup, geen actuele broncode)
+- eerdere zip/bundle-exports (sparki-backup.bundle, *.zip)
