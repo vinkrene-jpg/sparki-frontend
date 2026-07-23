@@ -174,6 +174,10 @@ export type AiCoachingIntensity = (typeof aiCoachingIntensities)[number];
 export const aiExplanationLevels = ["simple", "normal", "expert"] as const;
 export type AiExplanationLevel = (typeof aiExplanationLevels)[number];
 
+// Centraal instelbaar humorniveau — "Instellingen > Sparki-stijl > Humor".
+export const humorLevels = ["uit", "subtiel", "normaal", "uitgesproken"] as const;
+export type HumorLevel = (typeof humorLevels)[number];
+
 export const aiPreferencesTable = pgTable("ai_preferences", {
   clerkId: text("clerk_id")
     .primaryKey()
@@ -183,6 +187,7 @@ export const aiPreferencesTable = pgTable("ai_preferences", {
     .default("supportive"),
   coachingIntensity: text("coaching_intensity").notNull().default("normal"),
   explanationLevel: text("explanation_level").notNull().default("normal"),
+  humorLevel: text("humor_level").notNull().default("normaal"),
   sensitiveTopics: jsonb("sensitive_topics").$type<string[]>().default([]),
   preferredUnits: text("preferred_units").notNull().default("metric"),
   createdAt: timestamp("created_at", { withTimezone: true })

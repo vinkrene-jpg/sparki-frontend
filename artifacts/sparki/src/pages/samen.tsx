@@ -604,10 +604,13 @@ function Circle() {
       {isLoading ? (
         <div className="mt-3 h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
       ) : friends.length === 0 ? (
-        <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/40">
-          Je hebt nog geen vrienden. Zoek hierboven een sporter om
-          samen te trainen.
-        </p>
+        <div className="mt-3 space-y-1.5">
+          <p className="text-pretty text-[13px] leading-relaxed text-white/40">
+            Je hebt nog geen vrienden. Zoek hierboven een sporter om
+            samen te trainen.
+          </p>
+          <HumorLine context="empty_social" />
+        </div>
       ) : (
         <div className="mt-3 flex flex-col gap-2">
           {friends.map((f: FriendSummary) => (

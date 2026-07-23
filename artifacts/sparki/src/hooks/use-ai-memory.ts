@@ -94,6 +94,7 @@ export type AiPreferences = {
   communicationStyle: "direct" | "supportive" | "analytical" | "concise" | "detailed";
   coachingIntensity: "low" | "normal" | "high";
   explanationLevel: "simple" | "normal" | "expert";
+  humorLevel: "uit" | "subtiel" | "normaal" | "uitgesproken";
   sensitiveTopics: string[];
   preferredUnits: string;
 };

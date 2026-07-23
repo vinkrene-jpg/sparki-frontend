@@ -5,7 +5,7 @@
 // should live anywhere else.
 
 export * from "./types";
-export { composeVoice, isToneUnlocked } from "./compose";
+export { composeVoice, isToneUnlocked, isToneAvailable } from "./compose";
 export { insightLineAllowed } from "./policy";
 export { computeTrust, computeScore, scoreToTier } from "./trust";
 export { EVENTS, SPORT_NOUN } from "./phrases";

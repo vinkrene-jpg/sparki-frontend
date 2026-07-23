@@ -10,6 +10,7 @@
 //  4. Determinism. Same input + seed → same line (testable, no surprises).
 
 import type {
+  HumorLevel,
   TrustTier,
   VoiceInput,
   VoiceLine,
@@ -32,6 +33,41 @@ const HUMOR_TONES: VoiceTone[] = ["dry_humor", "cynical"];
 /** Pure: is a style allowed to speak at this trust tier? */
 export function isToneUnlocked(tone: VoiceTone, tier: TrustTier): boolean {
   return TIER_TONES[tier].includes(tone);
+}
+
+const TIER_ORDER: TrustTier[] = ["nieuw", "kennismaking", "vertrouwd", "maat"];
+const tierAtLeast = (tier: TrustTier, min: TrustTier) =>
+  TIER_ORDER.indexOf(tier) >= TIER_ORDER.indexOf(min);
+
+/**
+ * Pure: is a style available given BOTH the trust tier and the user-chosen
+ * humor level ("Instellingen > Sparki-stijl > Humor")?
+ *  - Non-humor tones follow trust gating only.
+ *  - uit          → humor never speaks.
+ *  - subtiel      → only dry_humor, and only at the highest trust ("maat").
+ *  - normaal      → historical behavior: trust-only gating.
+ *  - uitgesproken → dry_humor already from "kennismaking", cynical from "vertrouwd".
+ * Empathy (setbacks) and focus (race build-up) suppression stay absolute and are
+ * enforced elsewhere — this gate can only further restrict or earlier unlock.
+ */
+export function isToneAvailable(
+  tone: VoiceTone,
+  tier: TrustTier,
+  humorLevel: HumorLevel = "normaal",
+): boolean {
+  if (!HUMOR_TONES.includes(tone)) return isToneUnlocked(tone, tier);
+  switch (humorLevel) {
+    case "uit":
+      return false;
+    case "subtiel":
+      return tone === "dry_humor" && tier === "maat";
+    case "uitgesproken":
+      return tone === "dry_humor"
+        ? tierAtLeast(tier, "kennismaking")
+        : tierAtLeast(tier, "vertrouwd");
+    default:
+      return isToneUnlocked(tone, tier);
+  }
 }
 
 function hashSeed(s: string): number {
@@ -127,11 +163,11 @@ function resolveTone(
   // styles). It must still have authored lines for this event.
   if (forceTone && input.tone && hasLines(input.tone)) return input.tone;
 
-  // A style may actually speak here only if it is unlocked at this tier, has
-  // authored lines, and — on a focus moment (race build-up) — is not humor.
-  // Wedstrijdmodus: rust, vertrouwen, focus — geen losse grappen.
+  // A style may actually speak here only if it is available at this tier AND
+  // humor level, has authored lines, and — on a focus moment (race build-up) —
+  // is not humor. Wedstrijdmodus: rust, vertrouwen, focus — geen losse grappen.
   const speakable = (t: VoiceTone) =>
-    isToneUnlocked(t, input.trust) &&
+    isToneAvailable(t, input.trust, input.humorLevel) &&
     hasLines(t) &&
     (!cfg.focus || !HUMOR_TONES.includes(t));
 
@@ -141,8 +177,9 @@ function resolveTone(
   // Fall back to the event default if speakable.
   if (speakable(defaultTone)) return defaultTone;
 
-  // Otherwise the first speakable tone in tier order.
-  for (const t of TIER_TONES[input.trust]) {
+  // Otherwise the first speakable tone in full tier order ("uitgesproken" can
+  // make humor available beyond the trust tier's own list).
+  for (const t of TIER_TONES.maat) {
     if (speakable(t)) return t;
   }
 

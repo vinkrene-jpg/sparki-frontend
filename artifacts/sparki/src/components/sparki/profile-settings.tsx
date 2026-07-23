@@ -20,6 +20,8 @@ import { LinksSection } from "@/components/sparki/links-section"
 import { BugReportForm } from "@/components/sparki/bug-report-form"
 import { AdminPanel, TesterAccessLinks } from "@/components/sparki/admin-panel"
 import { SparkiVoiceSection } from "@/components/sparki/sparki-voice"
+import { useAiPreferences, useUpdateAiPreferences } from "@/hooks/use-ai-memory"
+import { HUMOR_LEVELS, HUMOR_LEVEL_LABELS, HUMOR_LEVEL_BLURBS, type HumorLevel } from "@/lib/humor"
 import { FoundingSection } from "@/components/sparki/insights-section"
 import {
   useAthleteExtendedProfile,
@@ -287,6 +289,76 @@ function TeamIdentitySection() {
           Voeg je club & team toe
         </button>
       )}
+    </section>
+  )
+}
+
+// ── Sparki-stijl: centraal instelbaar humorniveau ────────────────────────────
+// "Instellingen > Sparki-stijl > Humor". Per gebruiker opgeslagen in
+// ai_preferences.humor_level; werkt app-breed via de centrale humorlaag
+// (lib/humor.ts) en de voice-engine op de server.
+function SparkiStyleSection({ autoOpen, onSaved }: EditorProps = {}) {
+  const { data, isLoading } = useAiPreferences()
+  const update = useUpdateAiPreferences()
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (autoOpen && ref.current) {
+      ref.current.scrollIntoView({ behavior: "smooth", block: "center" })
+    }
+  }, [autoOpen])
+
+  const current: HumorLevel = (HUMOR_LEVELS as readonly string[]).includes(
+    String(data?.preferences?.humorLevel),
+  )
+    ? (data!.preferences.humorLevel as HumorLevel)
+    : "normaal"
+
+  const choose = (level: HumorLevel) => {
+    if (level === current) return
+    update.mutate({ humorLevel: level }, { onSuccess: () => onSaved?.() })
+  }
+
+  return (
+    <section ref={ref}>
+      <SectionLabel n="03b" title="Sparki-stijl" />
+      <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
+        Hoeveel droge humor mag Sparki gebruiken? Dit geldt overal in de app.
+        Bij medische signalen, veiligheid, privacy en andere serieuze momenten
+        blijft Sparki altijd zakelijk — ongeacht deze instelling.
+      </p>
+      <div className="mt-3 space-y-2">
+        <div className="flex items-center gap-3">
+          <span className="w-16 shrink-0 text-[11px] uppercase tracking-wider text-white/40">
+            Humor
+          </span>
+          <div className="flex flex-1 flex-wrap gap-1.5">
+            {HUMOR_LEVELS.map((level) => (
+              <button
+                key={level}
+                type="button"
+                disabled={isLoading || update.isPending}
+                onClick={() => choose(level)}
+                className={`rounded-full border px-3 py-1.5 text-[12px] tracking-tight transition-colors ${
+                  current === level
+                    ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-200"
+                    : "border-white/10 bg-white/[0.04] text-white/60 hover:border-white/25"
+                }`}
+              >
+                {HUMOR_LEVEL_LABELS[level]}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="pl-[76px] text-[11px] leading-relaxed text-white/35">
+          {HUMOR_LEVEL_BLURBS[current]}
+        </p>
+        {update.isError ? (
+          <p className="pl-[76px] text-[11px] text-red-300/80">
+            Opslaan is niet gelukt. Probeer het opnieuw.
+          </p>
+        ) : null}
+      </div>
     </section>
   )
 }
@@ -1253,6 +1325,11 @@ export function ProfileSettings({
           })}
         </div>
       </section>
+
+      {/* SPARKI-STIJL */}
+      <FocusTarget token="humor" focus={focus}>
+        <SparkiStyleSection autoOpen={focus === "humor"} onSaved={onCompleteFix} />
+      </FocusTarget>
 
       {/* HOE SPARKI KLINKT */}
       <section>

@@ -9,10 +9,13 @@
 import { Router } from "express";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { listContextMemories } from "../engines/context-memory";
+import { getPreferences } from "../lib/ai-memory";
 import {
   computeTrust,
   composeVoice,
-  isToneUnlocked,
+  isToneAvailable,
+  humorLevels,
+  type HumorLevel,
   memoryTopic,
   voiceTones,
   TONE_LABELS,
@@ -26,7 +29,15 @@ const router = Router();
 router.get("/", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
-    const trust = await computeTrust(clerkId);
+    const [trust, pref] = await Promise.all([
+      computeTrust(clerkId),
+      getPreferences(clerkId),
+    ]);
+    const humorLevel: HumorLevel = (humorLevels as readonly string[]).includes(
+      String(pref?.humorLevel ?? ""),
+    )
+      ? (pref!.humorLevel as HumorLevel)
+      : "normaal";
 
     // The five styles, each demonstrated on a neutral "good form" moment so the
     // athlete hears the difference. `forceTone` renders even locked styles; the
@@ -40,7 +51,7 @@ router.get("/", requireAuth, async (req, res) => {
         tone,
         label: TONE_LABELS[tone],
         line: line?.text ?? "",
-        unlocked: isToneUnlocked(tone, trust.tier),
+        unlocked: isToneAvailable(tone, trust.tier, humorLevel),
       };
     });
 
@@ -80,6 +91,7 @@ router.get("/", requireAuth, async (req, res) => {
         tierBlurb: TIER_BLURB[trust.tier],
         signals: trust.signals,
       },
+      humorLevel,
       styles,
       memoryHook: memoryHook?.text ?? null,
       openLoop: openLoop?.text ?? null,

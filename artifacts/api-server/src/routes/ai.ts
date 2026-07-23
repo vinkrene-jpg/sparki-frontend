@@ -8,6 +8,7 @@ import {
   aiCommunicationStyles,
   aiCoachingIntensities,
   aiExplanationLevels,
+  humorLevels,
   plannedWorkoutsTable,
   coachChangeProposalsTable,
   type AiObservation,
@@ -321,6 +322,7 @@ router.get("/preferences", requireAuth, async (req, res) => {
         communicationStyle: "supportive",
         coachingIntensity: "normal",
         explanationLevel: "normal",
+        humorLevel: "normaal",
         sensitiveTopics: [],
         preferredUnits: "metric",
       },
@@ -339,7 +341,10 @@ router.put("/preferences", requireAuth, async (req, res) => {
   const communicationStyle = body.communicationStyle;
   const coachingIntensity = body.coachingIntensity;
   const explanationLevel = body.explanationLevel;
+  const humorLevel = body.humorLevel;
   const valid =
+    (humorLevel === undefined ||
+      (humorLevels as readonly string[]).includes(String(humorLevel))) &&
     (communicationStyle === undefined ||
       (aiCommunicationStyles as readonly string[]).includes(
         String(communicationStyle),
@@ -366,6 +371,7 @@ router.put("/preferences", requireAuth, async (req, res) => {
       ? String(coachingIntensity)
       : "normal",
     explanationLevel: explanationLevel ? String(explanationLevel) : "normal",
+    humorLevel: humorLevel ? String(humorLevel) : "normaal",
     sensitiveTopics: Array.isArray(body.sensitiveTopics)
       ? (body.sensitiveTopics as string[])
       : [],
@@ -384,6 +390,7 @@ router.put("/preferences", requireAuth, async (req, res) => {
           communicationStyle: values.communicationStyle,
           coachingIntensity: values.coachingIntensity,
           explanationLevel: values.explanationLevel,
+          humorLevel: values.humorLevel,
           sensitiveTopics: values.sensitiveTopics,
           preferredUnits: values.preferredUnits,
           updatedAt: values.updatedAt,

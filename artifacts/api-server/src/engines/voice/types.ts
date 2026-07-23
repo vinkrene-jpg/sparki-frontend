@@ -19,6 +19,12 @@ export type VoiceTone = (typeof voiceTones)[number];
 export const trustTiers = ["nieuw", "kennismaking", "vertrouwd", "maat"] as const;
 export type TrustTier = (typeof trustTiers)[number];
 
+/** Centraal instelbaar humorniveau ("Instellingen > Sparki-stijl > Humor").
+ *  Mirrors `humorLevels` in the DB schema; the engine keeps its own copy so it
+ *  stays a pure, dependency-free layer. */
+export const humorLevels = ["uit", "subtiel", "normaal", "uitgesproken"] as const;
+export type HumorLevel = (typeof humorLevels)[number];
+
 /** The situations Sparki reacts to. Setback events force empathy over humor. */
 export const voiceEvents = [
   "greeting",
@@ -61,6 +67,8 @@ export type VoiceInput = {
   trust: TrustTier;
   /** Preferred style. The engine may override it for safety (setbacks) or trust. */
   tone?: VoiceTone;
+  /** User-chosen humor level. Default "normaal" (= historical trust-only gating). */
+  humorLevel?: HumorLevel;
   sport?: SportType;
   memory?: MemoryRef | null;
   /** Open-loop / pattern events only fire when there is real evidence to point at. */

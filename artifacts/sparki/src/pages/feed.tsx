@@ -155,6 +155,7 @@ function EmptyTab({ active }: { active: FilterKey }) {
       <p className="mx-auto max-w-xs text-pretty text-[12px] leading-relaxed text-white/40">
         {c.text}
       </p>
+      <HumorLine context="empty_feed" seedSalt={active} className="mx-auto mt-2 max-w-xs" />
       {c.href && c.cta && (
         <Link
           href={c.href}
