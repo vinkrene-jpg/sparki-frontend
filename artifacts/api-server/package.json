@@ -103,6 +103,8 @@
     "job:health": "pnpm run build && node --enable-source-maps ./dist/jobs/health-check.mjs",
     "job:reminders": "pnpm run build && node --enable-source-maps ./dist/jobs/reminders.mjs",
     "job:goal-review": "pnpm run build && node --enable-source-maps ./dist/jobs/goal-review.mjs",
+    "job:sync": "pnpm run build && node --enable-source-maps ./dist/jobs/connector-sync.mjs",
+    "test:connect-sync": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs connect-sync",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:session-detail-track": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs session-detail-track",
     "test:session-elevation-profile": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs session-elevation-profile",

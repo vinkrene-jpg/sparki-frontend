@@ -348,6 +348,12 @@ export async function runSync(
     const counts: SyncRunCounts = batch.persistedExternally
       ? {}
       : await ingestBatch(clerkId, providerId, batch, { allowed });
+    // Logboek-eerlijkheid: hoeveel activiteiten leverde de bron aan (vóór
+    // dedupe)? Samen met activities (nieuw), merged (samengevoegd/bijgewerkt),
+    // skipped (overgeslagen) en errors vormt dit het volledige sync-logboek.
+    if (!batch.persistedExternally) {
+      counts.received = batch.activities?.length ?? 0;
+    }
 
     // Report only what consent actually let us persist — never claim activity
     // import when the user revoked activities/training_history.

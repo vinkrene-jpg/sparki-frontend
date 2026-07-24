@@ -77,6 +77,8 @@ const ALL_ENTRIES = [
       path.resolve(artifactDir, "src/jobs/health-check.ts"),
       path.resolve(artifactDir, "src/jobs/reminders.ts"),
       path.resolve(artifactDir, "src/jobs/goal-review.ts"),
+      path.resolve(artifactDir, "src/jobs/connector-sync.ts"),
+      path.resolve(artifactDir, "src/tests/connect-sync.ts"),
       path.resolve(artifactDir, "src/tests/goals.ts"),
       path.resolve(artifactDir, "src/tests/scheduled-tasks.ts"),
       path.resolve(artifactDir, "src/tests/attention-notifications.ts"),

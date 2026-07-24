@@ -34,6 +34,10 @@ export interface ConnectState {
   /** True wanneer er server-side een geldig token voor deze gebruiker ligt.
    *  NOOIT het token zelf — alleen het feit dat het bestaat. */
   tokenAvailable: boolean;
+  /** True wanneer de toestemming verlopen is: het toegangstoken is over datum
+   *  en er is geen vernieuwingstoken om het stil te verversen. De sporter moet
+   *  opnieuw koppelen. */
+  consentExpired: boolean;
   disconnectedAt: Date | null;
   createdAt: Date | null;
   updatedAt: Date | null;
@@ -89,9 +93,13 @@ function normalizeErrorCategory(v: string | null | undefined): ErrorCategory | n
  */
 export function deriveConnectState(
   row: ConnectorConnection | null | undefined,
-  opts: { syncRunning?: boolean } = {},
+  opts: { syncRunning?: boolean; now?: Date } = {},
 ): ConnectState {
-  const base: Omit<ConnectState, "status" | "permissionState" | "tokenAvailable"> = {
+  const now = opts.now ?? new Date();
+  const base: Omit<
+    ConnectState,
+    "status" | "permissionState" | "tokenAvailable" | "consentExpired"
+  > = {
     connectedAt: row?.connectedAt ?? null,
     lastSuccessfulSyncAt: row?.lastSyncAt ?? null,
     lastSyncAttemptAt: row?.lastSyncAttemptAt ?? null,
@@ -101,6 +109,16 @@ export function deriveConnectState(
     updatedAt: row?.updatedAt ?? null,
   };
   const tokenAvailable = Boolean(row?.accessToken);
+  // Toestemming verlopen = token over datum ZONDER vernieuwingstoken. Met een
+  // vernieuwingstoken ververst de adapter stil; dan is er niets aan de hand.
+  const consentExpired = Boolean(
+    row &&
+      row.status === "connected" &&
+      row.accessToken &&
+      !row.refreshToken &&
+      row.tokenExpiresAt &&
+      new Date(row.tokenExpiresAt).getTime() < now.getTime(),
+  );
   const permissionState: PermissionState = !row
     ? "none"
     : row.permissionRevoked || row.status === "revoked"
@@ -129,12 +147,16 @@ export function deriveConnectState(
         ? "temporarily_unavailable"
         : "action_required";
   } else if (row.status === "connected") {
-    status = opts.syncRunning ? "sync_in_progress" : "connected";
+    status = consentExpired
+      ? "action_required"
+      : opts.syncRunning
+        ? "sync_in_progress"
+        : "connected";
   } else {
     status = "not_connected";
   }
 
-  return { status, permissionState, tokenAvailable, ...base };
+  return { status, permissionState, tokenAvailable, consentExpired, ...base };
 }
 
 // ── Eerlijke capabilitystatus per platform ──────────────────────────────────

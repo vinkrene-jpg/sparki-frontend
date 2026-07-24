@@ -50,6 +50,8 @@ export interface ConnectState {
   lastErrorCategory: "auth" | "permission" | "temporary" | "unknown" | null
   permissionState: "granted" | "revoked" | "none"
   tokenAvailable: boolean
+  /** Toestemming verlopen: token over datum zonder vernieuwingstoken. */
+  consentExpired: boolean
   disconnectedAt: string | null
   createdAt: string | null
   updatedAt: string | null

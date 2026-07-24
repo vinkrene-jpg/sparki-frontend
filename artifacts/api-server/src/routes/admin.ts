@@ -958,6 +958,17 @@ router.get(
         | { last_at?: string | Date | null; total?: number }
         | undefined;
 
+      // ── job:sync — nieuwste GEPLANDE koppelingen-inhaalsync + aantal echt
+      //    gekoppelde platforms (bepaalt of afwezigheid eerlijk "grijs" is). ──
+      const connectorSyncTrace = await db.execute(sql`
+        SELECT
+          (SELECT max(started_at) FROM sync_runs WHERE trigger = 'scheduled') AS last_at,
+          (SELECT count(*) FROM connector_connections WHERE status = 'connected')::int AS connected
+      `);
+      const connectorSyncRow = connectorSyncTrace.rows[0] as
+        | { last_at?: string | Date | null; connected?: number }
+        | undefined;
+
       const toDate = (v: string | Date | null | undefined): Date | null =>
         v ? new Date(v) : null;
 
@@ -971,6 +982,8 @@ router.get(
         activeGoals: Number(goalRow?.active_goals ?? 0),
         reminderLast: toDate(reminderRow?.last_at),
         knowledgeLast: toDate(knowledgeRow?.last_at),
+        connectorSyncLast: toDate(connectorSyncRow?.last_at),
+        connectedConnections: Number(connectorSyncRow?.connected ?? 0),
       });
 
       res.json({ tasks, missing });

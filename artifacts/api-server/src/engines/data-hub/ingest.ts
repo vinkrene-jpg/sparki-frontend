@@ -20,6 +20,8 @@ import {
   buildMergePatch,
   updateFieldSources,
   mergeSources,
+  buildMergeLogEntry,
+  appendMergeLog,
 } from "./dedupe";
 import { cleanActivity, cleanDailyMetric, cleanFtp } from "./validation";
 import { autoLinkSession } from "../../lib/workout-execution";
@@ -270,12 +272,29 @@ async function persistOneActivity(
         patch,
         provider,
       );
+      // Intern conflictlogboek: leg vast welke bron erbij kwam, welke velden
+      // verschilden en waarom de behouden waarde won. Alleen intern zichtbaar
+      // (beheer/ondersteuning) — de sporter ziet nooit een duplicaat.
+      const mergeLog = appendMergeLog(
+        existing.mergeLog ?? null,
+        buildMergeLogEntry(
+          existing as unknown as Record<string, unknown> & {
+            fieldSources?: Record<string, string> | null;
+            manualFields?: string[] | null;
+          },
+          incoming,
+          patch,
+          provider,
+          sources,
+        ),
+      );
       await tx
         .update(trainingSessionsTable)
         .set({
           ...patch,
           sources,
           fieldSources,
+          mergeLog,
           // Een handmatige rij krijgt nu een echte starttijd-fingerprint en
           // sport van de import, zodat volgende imports haar wél via de
           // dedupeKey vinden.

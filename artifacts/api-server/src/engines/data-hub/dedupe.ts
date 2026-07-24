@@ -156,3 +156,103 @@ export function mergeSources(existing: string[] | null, provider: string): strin
   set.add(provider);
   return [...set];
 }
+
+// ── Intern samenvoeg-/conflictlogboek ────────────────────────────────────────
+
+export interface MergeLogEntry {
+  at: string;
+  source: string;
+  sources: string[];
+  differences: {
+    field: string;
+    kept: string | number | null;
+    offered: string | number | null;
+    keptSource: string;
+  }[];
+  reason: string;
+}
+
+// Bewaar maximaal zoveel samenvoegregels per sessie (oudste vervalt eerst).
+export const MERGE_LOG_MAX = 20;
+
+function loggableValue(v: unknown): string | number | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "number" || typeof v === "string") return v;
+  return JSON.stringify(v).slice(0, 200);
+}
+
+/**
+ * Bouw één regel voor het interne conflictlogboek van een samenvoeging:
+ * welke bron erbij kwam, welke velden verschilden (behouden vs aangeboden)
+ * en waarom de behouden waarde won. `patch` bevat de velden die deze bron
+ * WEL mocht schrijven; alles wat verschilt maar niet in de patch zit is een
+ * echt conflict waar de bestaande waarde won.
+ */
+export function buildMergeLogEntry(
+  existing: Record<string, unknown> & {
+    fieldSources?: Record<string, string> | null;
+    manualFields?: string[] | null;
+  },
+  incoming: Record<string, unknown>,
+  patch: Record<string, unknown>,
+  provider: string,
+  sourcesAfter: string[],
+  now: Date = new Date(),
+): MergeLogEntry {
+  const manual = new Set(existing.manualFields ?? []);
+  const fieldSources = existing.fieldSources ?? {};
+  const differences: MergeLogEntry["differences"] = [];
+  let manualHit = false;
+  for (const f of MERGEABLE_FIELDS) {
+    const offered = incoming[f];
+    if (offered === null || offered === undefined) continue;
+    if (f in patch) continue; // deze bron mocht schrijven — geen conflict
+    const kept = existing[f];
+    if (kept === null || kept === undefined) {
+      // niet geschreven én niets behouden ⇒ handmatig leeggemaakt veld
+      if (manual.has(f)) {
+        manualHit = true;
+        differences.push({
+          field: f,
+          kept: null,
+          offered: loggableValue(offered),
+          keptSource: "handmatig",
+        });
+      }
+      continue;
+    }
+    // Vergelijk als string zodat numeric-kolommen ("42.00" vs 42) eerlijk matchen.
+    if (String(kept) === String(offered)) continue;
+    if (manual.has(f)) manualHit = true;
+    differences.push({
+      field: f,
+      kept: loggableValue(kept),
+      offered: loggableValue(offered),
+      keptSource: manual.has(f) ? "handmatig" : (fieldSources[f] ?? "onbekend"),
+    });
+  }
+  const refreshed = Object.keys(patch).some(
+    (f) => existing[f] !== null && existing[f] !== undefined,
+  );
+  const reason = manualHit
+    ? "handmatige correcties zijn heilig; overige velden: eerste bron wint"
+    : refreshed
+      ? "eigen eerder geleverde velden ververst; overige velden: eerste bron wint"
+      : "eerste bron wint; latere bronnen vullen alleen ontbrekende velden aan";
+  return {
+    at: now.toISOString(),
+    source: provider,
+    sources: sourcesAfter,
+    differences,
+    reason,
+  };
+}
+
+/** Voeg een regel toe aan het logboek, begrensd tot MERGE_LOG_MAX regels. */
+export function appendMergeLog(
+  existing: MergeLogEntry[] | null | undefined,
+  entry: MergeLogEntry,
+): MergeLogEntry[] {
+  const log = [...(existing ?? []), entry];
+  return log.slice(-MERGE_LOG_MAX);
+}

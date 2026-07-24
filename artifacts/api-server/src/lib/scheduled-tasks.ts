@@ -17,7 +17,7 @@ export type StatusColor = "green" | "orange" | "grey";
 export const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface ScheduledTask {
-  key: "health" | "goal_review" | "reminders" | "knowledge_scan";
+  key: "health" | "goal_review" | "reminders" | "knowledge_scan" | "connector_sync";
   title: string;
   description: string;
   runCommand: string;
@@ -41,6 +41,10 @@ export interface ScheduledTaskTraces {
   activeGoals: number;
   reminderLast: Date | null;
   knowledgeLast: Date | null;
+  /** Nieuwste GEPLANDE sync-run (trigger "scheduled") uit sync_runs. */
+  connectorSyncLast: Date | null;
+  /** Aantal echt gekoppelde platform-verbindingen (connected). */
+  connectedConnections: number;
 }
 
 // Classify a data trace into an honest status. `lastRunAt` = the newest trace
@@ -62,8 +66,15 @@ export function buildScheduledTasks(
   traces: ScheduledTaskTraces,
   now: number = Date.now(),
 ): ScheduledTasksResult {
-  const { healthLast, goalLast, activeGoals, reminderLast, knowledgeLast } =
-    traces;
+  const {
+    healthLast,
+    goalLast,
+    activeGoals,
+    reminderLast,
+    knowledgeLast,
+    connectorSyncLast,
+    connectedConnections,
+  } = traces;
 
   // ── job:health ─────────────────────────────────────────────────────────────
   const health = classify(healthLast, 8, now);
@@ -152,7 +163,37 @@ export function buildScheduledTasks(
       : "De kennisbank is nog leeg. Controleer of de Scheduled Deployment 'job:knowledge' is aangemaakt vóór livegang.",
   };
 
-  const tasks = [healthTask, goalTask, reminderTask, knowledgeTask];
+  // ── job:sync (Sparki Connect inhaalsync) ─────────────────────────────────
+  const syncCls = classify(connectorSyncLast, 2, now);
+  let syncStatus: StatusColor = syncCls.statusColor;
+  let syncMessage: string;
+  if (connectorSyncLast) {
+    syncMessage = syncCls.recent
+      ? "De geplande koppelingen-sync draait: er is recent een automatische inhaalsync uitgevoerd."
+      : "De laatste automatische inhaalsync is meer dan twee dagen oud. Mogelijk draait de geplande taak niet meer, of alle koppelingen waren steeds actueel.";
+  } else if (connectedConnections === 0) {
+    // Eerlijk: zonder gekoppelde platforms valt er niets in te halen.
+    syncStatus = "grey";
+    syncMessage =
+      "Er zijn nog geen gekoppelde platforms, dus er valt niets automatisch te synchroniseren. Zodra sporters een platform koppelen, hoort hier resultaat te verschijnen.";
+  } else {
+    syncStatus = "grey";
+    syncMessage = `Er zijn ${connectedConnections} gekoppelde platform(s), maar nog nooit een geplande inhaalsync gezien. Controleer of de Scheduled Deployment 'job:sync' is aangemaakt.`;
+  }
+  const syncTask: ScheduledTask = {
+    key: "connector_sync",
+    title: "Koppelingen-inhaalsync",
+    description:
+      "Controleert dagelijks alle gekoppelde platforms en haalt gemiste activiteiten begrensd in (webhooks blijven het primaire kanaal).",
+    runCommand: "pnpm --filter @workspace/api-server run job:sync",
+    schedule: "Dagelijks 05:00 (cron 0 5 * * *)",
+    traceLabel: "Laatste geplande inhaalsync",
+    lastRunAt: connectorSyncLast ? connectorSyncLast.toISOString() : null,
+    statusColor: syncStatus,
+    message: syncMessage,
+  };
+
+  const tasks = [healthTask, goalTask, reminderTask, knowledgeTask, syncTask];
   const missing = tasks.filter((t) => t.statusColor === "grey").length;
 
   return { tasks, missing };

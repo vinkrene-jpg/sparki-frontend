@@ -156,6 +156,8 @@ export type SyncRunTrigger = (typeof syncRunTriggers)[number];
 
 // Per-data-type counts written from one ingest run.
 export type SyncRunCounts = {
+  /** Aantal activiteiten dat de bron in deze run aanleverde (vóór dedupe). */
+  received?: number;
   activities?: number;
   merged?: number;
   skipped?: number;

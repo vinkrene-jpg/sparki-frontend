@@ -13,6 +13,25 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { userProfilesTable } from "./users";
 
+// Eén regel in het interne samenvoeg-/conflictlogboek van een sessie.
+export type SessionMergeLogEntry = {
+  /** ISO-tijdstip van deze samenvoeging. */
+  at: string;
+  /** Bron die erbij kwam (bijv. "strava", "garmin", "file"). */
+  source: string;
+  /** Alle bronnen ná deze samenvoeging. */
+  sources: string[];
+  /** Velden waar de aangeboden waarde afweek van de behouden waarde. */
+  differences: {
+    field: string;
+    kept: string | number | null;
+    offered: string | number | null;
+    keptSource: string;
+  }[];
+  /** Waarom de behouden waarden wonnen (eerste bron wint / handmatig heilig / eigen veld ververst). */
+  reason: string;
+};
+
 export const trainingSessionsTable = pgTable("training_sessions", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
@@ -58,6 +77,12 @@ export const trainingSessionsTable = pgTable("training_sessions", {
   // connector mag deze velden NOOIT overschrijven of opnieuw vullen — ook
   // niet wanneer de sporter het veld bewust heeft leeggemaakt.
   manualFields: jsonb("manual_fields").$type<string[]>(),
+  // Intern conflictlogboek van de Data Hub-samenvoeging: wanneer meerdere
+  // bronnen dezelfde echte activiteit leveren, staat hier per samenvoeging
+  // welke bron erbij kwam, welke velden verschilden (behouden vs aangeboden
+  // waarde) en waarom de behouden waarde won. Uitsluitend intern (beheer/
+  // ondersteuning) — nooit als duplicaat aan de sporter getoond.
+  mergeLog: jsonb("merge_log").$type<SessionMergeLogEntry[]>(),
   // Mechanieker: welke fiets is voor deze rit gebruikt. Auto-gekoppeld
   // (Strava-gear of enige actieve fiets) of handmatig gecorrigeerd; km/uren
   // per fiets/component worden hier ALTIJD uit afgeleid (idempotent — een

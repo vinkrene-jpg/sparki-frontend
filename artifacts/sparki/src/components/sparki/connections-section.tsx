@@ -427,7 +427,9 @@ function ConnectionRow({
           )}
           {cs === "action_required" && (
             <span className="font-mono text-[10px] tracking-wide text-amber-400/80">
-              Er is een actie nodig — verbind opnieuw
+              {connector.connect.consentExpired
+                ? "Toestemming verlopen — verbind opnieuw om te blijven synchroniseren"
+                : "Er is een actie nodig — verbind opnieuw"}
             </span>
           )}
           {cs === "temporarily_unavailable" && (

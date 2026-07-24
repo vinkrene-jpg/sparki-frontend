@@ -58,6 +58,8 @@ function freshTraces(overrides: Partial<ScheduledTaskTraces> = {}): ScheduledTas
     activeGoals: 3,
     reminderLast: daysAgo(1),
     knowledgeLast: daysAgo(1),
+    connectorSyncLast: daysAgo(1),
+    connectedConnections: 2,
     ...overrides,
   };
 }
@@ -87,12 +89,18 @@ scenario("classify: past cadence → orange, not recent", () => {
 });
 
 // ── buildScheduledTasks: shape / presence contract ─────────────────────────
-scenario("all 4 jobs present with a valid statusColor", () => {
+scenario("all 5 jobs present with a valid statusColor", () => {
   const { tasks } = buildScheduledTasks(freshTraces(), NOW);
   const keys = tasks.map((t) => t.key).sort();
   assert(
     JSON.stringify(keys) ===
-      JSON.stringify(["goal_review", "health", "knowledge_scan", "reminders"]),
+      JSON.stringify([
+        "connector_sync",
+        "goal_review",
+        "health",
+        "knowledge_scan",
+        "reminders",
+      ]),
     `unexpected keys: ${keys.join(",")}`,
   );
   for (const t of tasks) {
@@ -162,16 +170,58 @@ scenario("no traces at all → health/reminders/knowledge grey with honest messa
       activeGoals: 0,
       reminderLast: null,
       knowledgeLast: null,
+      connectorSyncLast: null,
+      connectedConnections: 0,
     },
     NOW,
   );
-  for (const key of ["health", "reminders", "knowledge_scan"] as const) {
+  for (const key of ["health", "reminders", "knowledge_scan", "connector_sync"] as const) {
     const t = tasks.find((x) => x.key === key)!;
     assert(t.statusColor === "grey", `${key} must be grey with no trace, got ${t.statusColor}`);
     assert(t.lastRunAt === null, `${key} lastRunAt must be null`);
   }
-  // all 4 grey (goal_review grey via no-active-goals branch)
-  assert(missing === 4, `expected missing 4, got ${missing}`);
+  // all 5 grey (goal_review grey via no-active-goals branch)
+  assert(missing === 5, `expected missing 5, got ${missing}`);
+});
+
+// ── connector-sync honest branches ─────────────────────────────────────────
+scenario("connector-sync: stale after >2 days", () => {
+  const fresh = buildScheduledTasks(freshTraces({ connectorSyncLast: daysAgo(2) }), NOW);
+  assert(
+    fresh.tasks.find((t) => t.key === "connector_sync")!.statusColor === "green",
+    "2 days is within the sync cadence",
+  );
+  const stale = buildScheduledTasks(freshTraces({ connectorSyncLast: daysAgo(4) }), NOW);
+  assert(
+    stale.tasks.find((t) => t.key === "connector_sync")!.statusColor === "orange",
+    "4 days must be stale for connector-sync",
+  );
+});
+
+scenario("connector-sync: no connections → honest grey (expected, not a failure)", () => {
+  const { tasks } = buildScheduledTasks(
+    freshTraces({ connectorSyncLast: null, connectedConnections: 0 }),
+    NOW,
+  );
+  const t = tasks.find((x) => x.key === "connector_sync")!;
+  assert(t.statusColor === "grey", `expected grey, got ${t.statusColor}`);
+  assert(
+    t.message.includes("nog geen gekoppelde platforms"),
+    `unexpected message: ${t.message}`,
+  );
+});
+
+scenario("connector-sync: connections but no scheduled run → grey deployment warning", () => {
+  const { tasks } = buildScheduledTasks(
+    freshTraces({ connectorSyncLast: null, connectedConnections: 3 }),
+    NOW,
+  );
+  const t = tasks.find((x) => x.key === "connector_sync")!;
+  assert(t.statusColor === "grey", `expected grey, got ${t.statusColor}`);
+  assert(
+    t.message.includes("3 gekoppelde platform(s)") && t.message.includes("job:sync"),
+    `unexpected message: ${t.message}`,
+  );
 });
 
 // ── goal-review honest-grey branches ────────────────────────────────────────
