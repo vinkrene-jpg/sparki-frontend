@@ -1,0 +1,15 @@
+artifacts/sparki-mobile/app/(app)/diagnostiek.tsx
+artifacts/sparki-mobile/app/(app)/gpx-import.tsx
+artifacts/sparki-mobile/app/(app)/index.tsx
+artifacts/sparki-mobile/app/(app)/instellingen.tsx
+artifacts/sparki-mobile/app/(app)/_layout.tsx
+artifacts/sparki-mobile/app/(app)/navigate/[id].tsx
+artifacts/sparki-mobile/app/(app)/record.tsx
+artifacts/sparki-mobile/app/(app)/ride/[id].tsx
+artifacts/sparki-mobile/app/(app)/rides.tsx
+artifacts/sparki-mobile/app/(app)/support.tsx
+artifacts/sparki-mobile/app/(auth)/_layout.tsx
+artifacts/sparki-mobile/app/(auth)/sign-in.tsx
+artifacts/sparki-mobile/app/(auth)/sign-up.tsx
+artifacts/sparki-mobile/app/_layout.tsx
+artifacts/sparki-mobile/app/+not-found.tsx

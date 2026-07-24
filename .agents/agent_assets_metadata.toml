@@ -485,3 +485,9 @@ id = "AV5Nc6PDsDJwATk3-ORfz"
 uri = "file://docs/SPARKI_REVIEW_BUNDLE.zip"
 type = "unspecified"
 title = "Sparki Reviewbundel (9 documenten)"
+
+[[outputs]]
+id = "wMgZuT4JFb0YalxLGAlzC"
+uri = "file://export/sparki-current-state-export.zip"
+type = "unspecified"
+title = "Sparki Current State Export (nulmeting, 24 juli 2026)"

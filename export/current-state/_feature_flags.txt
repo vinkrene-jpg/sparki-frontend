@@ -1,0 +1,11 @@
+ai_observations | f | 100
+climb_explorer | t | 100
+coach_portal | f | 100
+garmin | f | 100
+knowledge_base | t | 100
+parent_portal | f | 100
+premium | f | 100
+rit_verhaal | f | 100
+route_planner | t | 100
+strava | f | 100
+testing_tools | f | 100
