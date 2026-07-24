@@ -154,3 +154,4 @@
 - [Sparki startup black screen](sparki-startup-black-screen.md) — niets rendert tot clerk-js laadt (Show=null); drie vaste vangnetlagen (splash, root boundary, ClerkStartupGate) nooit verwijderen.
 - [Sparki live locatie delen](sparki-live-location.md) — opt-in per-sessie delen: authz herchecked at EVERY read (incl. minor fail-closed in group branch), idle-expiry anchored on last position not startedAt, one position row = no history.
 - [Sparki Connect sync layer](sparki-connect-sync-layer.md) — bounded merge_log jsonb, consentExpired (no refreshToken only), scheduled catch-up reuses shouldCatchUp + busy=skip; honest no-mock job test.
+- [Sparki Data Origin framework](sparki-data-origin.md) — herkomst/explain-laag; sync-ID alleen bij bewijsbare run-koppeling (nooit "nieuwste run"); drizzle ALL(${array})-trap.

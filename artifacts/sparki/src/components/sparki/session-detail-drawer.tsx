@@ -19,6 +19,7 @@ import {
 import { SessionGraphs } from "@/components/sparki/session-graphs"
 import { computeAge } from "@/lib/age"
 import { ShareRidePanel } from "@/components/sparki/share-ride"
+import { HerkomstKnop } from "@/components/sparki/herkomst-sheet"
 import {
   Clock,
   Route as RouteIcon,
@@ -334,6 +335,10 @@ export function SessionDetailDrawer({
                 <span className="rounded-full border border-white/[0.12] px-2.5 py-1 font-mono text-[10px] tracking-wide text-white/50">
                   Bron: {sourceLabel(session.source)}
                 </span>
+                <HerkomstKnop
+                  target={{ type: "session", id: session.id }}
+                  compact
+                />
               </div>
             </SheetHeader>
 

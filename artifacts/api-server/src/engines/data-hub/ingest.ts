@@ -11,6 +11,7 @@ import {
   type SyncRunCounts,
 } from "@workspace/db";
 import { deriveTss, ftpAtDate, type FtpEntry } from "../../lib/derived-load";
+import { recordComputation } from "../data-origin";
 import type { CanonicalActivity, NormalizedBatch } from "./types";
 import { legacyTypeForSport } from "./sports";
 import {
@@ -360,6 +361,36 @@ async function persistOneActivity(
       createdSessionId = inserted!.id;
       createdTss = tss ?? null;
       outcome = "created";
+
+      // Herleidbaarheid (Data Origin): registreer de afgeleide belastingscore
+      // in dezelfde transactie als de sessie zelf.
+      if (a.tss == null && tss != null && intensityFactor != null) {
+        await recordComputation(
+          {
+            clerkId,
+            subjectType: "derived_tss",
+            subjectId: String(inserted!.id),
+            engine: "deriveTss",
+            engineVersion: "1",
+            parameters: {
+              durationMin: a.durationMin,
+              normalizedPower: a.normalizedPower,
+              avgPower: a.avgPower,
+            },
+            inputs: [
+              {
+                bron: provider,
+                tabel: "training_sessions",
+                recordId: inserted!.id,
+                veld: "avgPower/normalizedPower/durationMin",
+              },
+              { bron: "derived", tabel: "ftp_history", veld: "ftp_watts" },
+            ],
+            reliability: "afgeleid",
+          },
+          tx,
+        );
+      }
     }
 
     // Raw provenance row (idempotent per provider activity id).

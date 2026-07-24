@@ -27,6 +27,7 @@ import { computeLoad } from "../engines/recovery-load";
 import { computeLoadSeries } from "../lib/recovery-load";
 import { captureContext } from "../engines/context-memory";
 import { ingestManualSession } from "../lib/manual-session-ingest";
+import { sessionOrigin, findSessionSyncRun } from "../engines/data-origin";
 import { sanitizePlanDetails } from "../lib/plan-details";
 import {
   computeTrimPreview,
@@ -1454,6 +1455,7 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
       .select({
         id: activityImportsTable.id,
         parsedSummary: activityImportsTable.parsedSummary,
+        fileType: activityImportsTable.fileType,
       })
       .from(activityImportsTable)
       .where(
@@ -1627,6 +1629,18 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
         ? sliceProfile(profile, track.length, trim!.startIndex, trim!.endIndex)
         : profile;
 
+    // Herkomst-metadata (additief): waar deze sessie vandaan komt, via welke
+    // synchronisatie, en welke velden handmatig/uit welke bron kwamen.
+    const syncRunId = await findSessionSyncRun(
+      clerkId,
+      session.source,
+      session.createdAt ?? null,
+    );
+    const herkomst = sessionOrigin(session, {
+      syncRunId,
+      apparaat: imp?.fileType ? `bestand (${imp.fileType})` : null,
+    });
+
     res.json({
       session,
       track: outTrack,
@@ -1637,6 +1651,7 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
       plannedWorkout,
       trimEdit: trimValid ? trim : null,
       trackPointCount: track?.length ?? 0,
+      herkomst,
     });
   } catch (err) {
     req.log.error({ err }, "athlete.sessions detail GET failed");
@@ -2215,7 +2230,21 @@ router.get("/load", requireAuth, async (req, res) => {
         ),
       );
 
-    res.json(computeLoadSeries(sessions, chartDays));
+    const series = computeLoadSeries(sessions, chartDays);
+    // Herkomst-metadata (additief): welke engine, parameters en brondata.
+    res.json({
+      ...series,
+      herkomst: {
+        engine: "computeLoadSeries",
+        versie: "1",
+        parameters: { chartDays, modelDays: 90 },
+        bron: "training_sessions.tss (gemeten of afgeleid)",
+        aantalSessies: sessions.length,
+        betrouwbaarheid: sessions.length > 0 ? "afgeleid" : "onvoldoende",
+        melding:
+          sessions.length > 0 ? null : "Onvoldoende gegevens beschikbaar.",
+      },
+    });
   } catch (err) {
     req.log.error({ err }, "athlete.load failed");
     res.status(500).json({ error: "Internal server error" });

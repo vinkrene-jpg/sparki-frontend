@@ -413,3 +413,57 @@ export function useAdminDataTrustCleanup() {
     },
   });
 }
+
+// ── Data Trust Dashboard ────────────────────────────────────────────────────
+// Platformbreed overzicht van datasets, ontbrekende gegevens, conflicten,
+// duplicaten, syncfouten, onbekende bronnen en geregistreerde berekeningen.
+// Alles live geteld op de server — geen cache, geen schattingen.
+
+export interface DataTrustDashboard {
+  datasets: {
+    bron: string;
+    sessies: number;
+    zonder_belastingscore: number;
+    laatste_update: string | null;
+  }[];
+  ontbrekend: {
+    totaal: number;
+    zonder_vermogen: number;
+    zonder_hartslag: number;
+    zonder_duur: number;
+    zonder_belastingscore: number;
+  } | null;
+  conflicten: {
+    sessies_met_merge: number;
+    merge_gebeurtenissen: number;
+  } | null;
+  duplicaten: { groepen: number; overtollige_rijen: number } | null;
+  syncfouten: {
+    telling: { totaal: number; laatste_7_dagen: number } | null;
+    recent: {
+      id: number;
+      provider: string;
+      trigger: string;
+      started_at: string;
+      error: string | null;
+    }[];
+  };
+  onbekendeBronnen: { bron: string; sessies: number }[];
+  berekeningen: {
+    type: string;
+    engine: string;
+    aantal: number;
+    laatste: string | null;
+  }[];
+  opgehaald: string;
+}
+
+export function useAdminDataTrustDashboard(enabled: boolean) {
+  return useQuery({
+    queryKey: [...queryKeys.admin.all(), "data-trust-dashboard"] as const,
+    queryFn: () =>
+      apiFetch<DataTrustDashboard>("/api/admin/data-trust/dashboard"),
+    enabled,
+    staleTime: 30_000,
+  });
+}

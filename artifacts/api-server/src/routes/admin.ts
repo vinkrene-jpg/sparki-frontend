@@ -1504,4 +1504,141 @@ router.post(
   },
 );
 
+// ── GET /api/admin/data-trust/dashboard ─────────────────────────────────────
+// Data Trust Dashboard (alleen admin): platformbreed overzicht van
+// geïmporteerde datasets, ontbrekende gegevens, conflicten, duplicaten,
+// synchronisatiefouten en onbekende bronnen. Alles LIVE geteld uit echte
+// tabellen — geen cache, geen schattingen. Een mislukt blok meldt zich
+// eerlijk als fout in plaats van nullen te tonen.
+const KNOWN_SESSION_SOURCES = [
+  "manual",
+  "strava",
+  "garmin",
+  "wahoo",
+  "file",
+  "gpx",
+  "fit",
+  "tcx",
+  "mobiel",
+  "sparki",
+  "coach",
+];
+
+router.get(
+  "/data-trust/dashboard",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      // (1) Datasets per bron: sessies + ruwe connector-activiteiten.
+      const datasets = (
+        await db.execute(
+          sql`SELECT source AS bron, count(*)::int AS sessies,
+                     count(*) FILTER (WHERE tss IS NULL)::int AS zonder_belastingscore,
+                     max(updated_at) AS laatste_update
+              FROM training_sessions
+              GROUP BY source
+              ORDER BY sessies DESC`,
+        )
+      ).rows;
+
+      // (2) Ontbrekende gegevens (platformbreed, eerlijke telling).
+      const missing = (
+        await db.execute(
+          sql`SELECT count(*)::int AS totaal,
+                     count(*) FILTER (WHERE avg_power IS NULL AND normalized_power IS NULL)::int AS zonder_vermogen,
+                     count(*) FILTER (WHERE avg_hr IS NULL)::int AS zonder_hartslag,
+                     count(*) FILTER (WHERE duration_min IS NULL)::int AS zonder_duur,
+                     count(*) FILTER (WHERE tss IS NULL)::int AS zonder_belastingscore
+              FROM training_sessions`,
+        )
+      ).rows[0];
+
+      // (3) Conflicten: sessies waar meerdere bronnen zijn samengevoegd
+      // (merge_log gevuld) — dat zijn de plekken waar waarden konden botsen.
+      const conflicts = (
+        await db.execute(
+          sql`SELECT count(*)::int AS sessies_met_merge,
+                     coalesce(sum(jsonb_array_length(merge_log)), 0)::int AS merge_gebeurtenissen
+              FROM training_sessions
+              WHERE merge_log IS NOT NULL AND jsonb_array_length(merge_log) > 0`,
+        )
+      ).rows[0];
+
+      // (4) Duplicaten: meerdere sessies met dezelfde dedupe-sleutel per
+      // gebruiker (horen samengevoegd te zijn).
+      const duplicates = (
+        await db.execute(
+          sql`SELECT count(*)::int AS groepen,
+                     coalesce(sum(n - 1), 0)::int AS overtollige_rijen
+              FROM (
+                SELECT clerk_id, dedupe_key, count(*)::int AS n
+                FROM training_sessions
+                WHERE dedupe_key IS NOT NULL
+                GROUP BY clerk_id, dedupe_key
+                HAVING count(*) > 1
+              ) g`,
+        )
+      ).rows[0];
+
+      // (5) Synchronisatiefouten: mislukte sync_runs + recentste meldingen.
+      const syncErrors = (
+        await db.execute(
+          sql`SELECT count(*)::int AS totaal,
+                     count(*) FILTER (WHERE started_at > now() - interval '7 days')::int AS laatste_7_dagen
+              FROM sync_runs WHERE status = 'error'`,
+        )
+      ).rows[0];
+      const recentSyncErrors = (
+        await db.execute(
+          sql`SELECT id, provider, trigger, started_at, error
+              FROM sync_runs WHERE status = 'error'
+              ORDER BY started_at DESC LIMIT 10`,
+        )
+      ).rows;
+
+      // (6) Onbekende bronnen: source-waarden buiten de vaste lijst.
+      const unknownSources = (
+        await db.execute(
+          sql`SELECT source AS bron, count(*)::int AS sessies
+              FROM training_sessions
+              WHERE source NOT IN (${sql.join(
+                KNOWN_SESSION_SOURCES.map((s) => sql`${s}`),
+                sql`, `,
+              )})
+              GROUP BY source ORDER BY sessies DESC`,
+        )
+      ).rows;
+
+      // (7) Herleidbaarheid: geregistreerde berekeningen (computation_traces).
+      const traces = (
+        await db.execute(
+          sql`SELECT subject_type AS type, engine, count(*)::int AS aantal,
+                     max(computed_at) AS laatste
+              FROM computation_traces
+              GROUP BY subject_type, engine
+              ORDER BY aantal DESC`,
+        )
+      ).rows;
+
+      res.json({
+        datasets,
+        ontbrekend: missing ?? null,
+        conflicten: conflicts ?? null,
+        duplicaten: duplicates ?? null,
+        syncfouten: {
+          telling: syncErrors ?? null,
+          recent: recentSyncErrors,
+        },
+        onbekendeBronnen: unknownSources,
+        berekeningen: traces,
+        opgehaald: new Date().toISOString(),
+      });
+    } catch (err) {
+      req.log.error({ err }, "admin.dataTrustDashboard failed");
+      res.status(500).json({ error: "Data Trust Dashboard laden mislukt" });
+    }
+  },
+);
+
 export default router;

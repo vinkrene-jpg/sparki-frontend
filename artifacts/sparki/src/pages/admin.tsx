@@ -20,6 +20,7 @@ import {
   useAdminQuality,
   useAdminProvenance,
   useAdminDataTrustCleanup,
+  useAdminDataTrustDashboard,
   type HealthCheck,
   type HealthBatch,
   type ScheduledTask,
@@ -347,6 +348,193 @@ export function ProvenanceSection() {
               </p>
             </div>
           ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// Data Trust Dashboard — platformbreed, live geteld overzicht van waar de
+// gegevens vandaan komen en waar het schuurt: datasets per bron, ontbrekende
+// waarden, samenvoegconflicten, duplicaten, syncfouten, onbekende bronnen en
+// geregistreerde berekeningen. Een mislukte ophaalactie meldt zich eerlijk.
+export function DataTrustDashboardSection({ enabled }: { enabled: boolean }) {
+  const { data, isLoading, isError } = useAdminDataTrustDashboard(enabled);
+  const num = (v: unknown) => (typeof v === "number" ? v : 0);
+  return (
+    <section className="mt-8">
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+        Gegevensvertrouwen
+      </p>
+      <p className="mt-1 text-[12px] leading-snug text-white/40">
+        Live overzicht van alle datasets, ontbrekende gegevens, conflicten,
+        duplicaten en synchronisatiefouten — rechtstreeks uit de database
+        geteld, zonder schattingen.
+      </p>
+      {isLoading && (
+        <p className="mt-3 text-[12px] text-white/40">Bezig met tellen…</p>
+      )}
+      {isError && (
+        <p className="mt-3 text-[12px] text-amber-300/80">
+          Overzicht kon nu niet worden opgehaald.
+        </p>
+      )}
+      {data && (
+        <div className="mt-3 space-y-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {[
+              {
+                label: "Ontbrekend vermogen",
+                value: num(data.ontbrekend?.zonder_vermogen),
+                total: num(data.ontbrekend?.totaal),
+              },
+              {
+                label: "Ontbrekende hartslag",
+                value: num(data.ontbrekend?.zonder_hartslag),
+                total: num(data.ontbrekend?.totaal),
+              },
+              {
+                label: "Zonder belastingscore",
+                value: num(data.ontbrekend?.zonder_belastingscore),
+                total: num(data.ontbrekend?.totaal),
+              },
+              {
+                label: "Duplicaatgroepen",
+                value: num(data.duplicaten?.groepen),
+                total: null,
+              },
+            ].map((c) => (
+              <div
+                key={c.label}
+                className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-3 backdrop-blur-md"
+              >
+                <p className="text-[18px] font-light text-white/90">
+                  {c.value}
+                  {c.total != null && (
+                    <span className="text-[11px] text-white/35">
+                      {" "}
+                      / {c.total}
+                    </span>
+                  )}
+                </p>
+                <p className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-white/40">
+                  {c.label}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/35">
+              Datasets per bron
+            </p>
+            {data.datasets.length === 0 ? (
+              <p className="mt-1 text-[12px] text-white/40">
+                Nog geen sessies in de database.
+              </p>
+            ) : (
+              <div className="mt-1.5 space-y-1">
+                {data.datasets.map((d) => (
+                  <div
+                    key={d.bron}
+                    className="flex items-center justify-between rounded-lg border border-white/[0.06] px-3 py-1.5"
+                  >
+                    <span className="text-[12px] text-white/75">{d.bron}</span>
+                    <span className="font-mono text-[11px] text-white/45">
+                      {d.sessies} sessies
+                      {d.zonder_belastingscore > 0
+                        ? ` · ${d.zonder_belastingscore} zonder belastingscore`
+                        : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-white/[0.08] p-3">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/35">
+                Samenvoegingen (mogelijke conflicten)
+              </p>
+              <p className="mt-1 text-[12px] text-white/60">
+                {num(data.conflicten?.sessies_met_merge)} sessies met
+                samengevoegde bronnen ·{" "}
+                {num(data.conflicten?.merge_gebeurtenissen)} samenvoegingen
+              </p>
+            </div>
+            <div className="rounded-xl border border-white/[0.08] p-3">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/35">
+                Synchronisatiefouten
+              </p>
+              <p className="mt-1 text-[12px] text-white/60">
+                {num(data.syncfouten.telling?.totaal)} totaal ·{" "}
+                {num(data.syncfouten.telling?.laatste_7_dagen)} in de laatste 7
+                dagen
+              </p>
+            </div>
+          </div>
+
+          {data.syncfouten.recent.length > 0 && (
+            <div className="space-y-1">
+              {data.syncfouten.recent.slice(0, 5).map((e) => (
+                <div
+                  key={e.id}
+                  className="rounded-lg border px-3 py-1.5"
+                  style={{
+                    borderColor: STATUS_META.red.color,
+                    background: STATUS_META.red.bg,
+                  }}
+                >
+                  <p className="text-[12px] text-white/75">
+                    {e.provider} · {e.trigger} · {formatWhen(e.started_at)}
+                  </p>
+                  {e.error && (
+                    <p className="mt-0.5 text-[11px] leading-snug text-white/50">
+                      {e.error}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {data.onbekendeBronnen.length > 0 && (
+            <p className="text-[12px] text-amber-300/80">
+              Onbekende bronnen gevonden:{" "}
+              {data.onbekendeBronnen
+                .map((b) => `${b.bron} (${b.sessies})`)
+                .join(", ")}
+            </p>
+          )}
+
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/35">
+              Geregistreerde berekeningen
+            </p>
+            {data.berekeningen.length === 0 ? (
+              <p className="mt-1 text-[12px] text-white/40">
+                Nog geen berekeningen geregistreerd.
+              </p>
+            ) : (
+              <div className="mt-1.5 space-y-1">
+                {data.berekeningen.map((b) => (
+                  <div
+                    key={`${b.type}-${b.engine}`}
+                    className="flex items-center justify-between rounded-lg border border-white/[0.06] px-3 py-1.5"
+                  >
+                    <span className="text-[12px] text-white/75">
+                      {b.type} · {b.engine}
+                    </span>
+                    <span className="font-mono text-[11px] text-white/45">
+                      {b.aantal}×
+                      {b.laatste ? ` · laatst ${formatWhen(b.laatste)}` : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </section>
@@ -925,6 +1113,8 @@ export default function AdminPage() {
             </section>
 
             <ProvenanceSection />
+
+            <DataTrustDashboardSection enabled={enabled} />
 
             <DataTrustCleanupSection />
 

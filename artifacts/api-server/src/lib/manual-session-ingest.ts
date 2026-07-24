@@ -22,6 +22,7 @@ import {
   mergeSources,
 } from "../engines/data-hub/dedupe";
 import { deriveTss, ftpAtDate, type FtpEntry } from "./derived-load";
+import { recordComputation } from "../engines/data-origin";
 import { athleteProfilesTable, ftpHistoryTable } from "@workspace/db";
 
 export interface ManualSessionInput {
@@ -77,17 +78,29 @@ export async function ingestManualSession(
   // Belastingscore afleiden zoals de hub dat doet, als die niet is opgegeven.
   let tss = input.tss ?? null;
   let intensityFactor = input.intensityFactor ?? null;
+  let derivedTssParams: Record<string, unknown> | null = null;
   if (tss == null) {
     const ftpCtx = await loadFtp(clerkId);
+    const ftpUsed = ftpAtDate(
+      ftpCtx.history,
+      input.sessionDate,
+      ftpCtx.profileFtp,
+    );
     const derived = deriveTss({
       durationMin: input.durationMin ?? null,
       normalizedPower: input.normalizedPower ?? null,
       avgPower: input.avgPower ?? null,
-      ftp: ftpAtDate(ftpCtx.history, input.sessionDate, ftpCtx.profileFtp),
+      ftp: ftpUsed,
     });
     if (derived) {
       tss = derived.tss;
       intensityFactor = String(derived.intensityFactor);
+      derivedTssParams = {
+        ftp: ftpUsed,
+        durationMin: input.durationMin ?? null,
+        normalizedPower: input.normalizedPower ?? null,
+        avgPower: input.avgPower ?? null,
+      };
     }
   }
 
@@ -194,5 +207,27 @@ export async function ingestManualSession(
       sources: ["manual"],
     })
     .returning();
+  // Herleidbaarheid: registreer de afgeleide belastingscore met engine,
+  // parameters en brondata (Data Origin-framework).
+  if (derivedTssParams && inserted) {
+    await recordComputation({
+      clerkId,
+      subjectType: "derived_tss",
+      subjectId: String(inserted.id),
+      engine: "deriveTss",
+      engineVersion: "1",
+      parameters: derivedTssParams,
+      inputs: [
+        {
+          bron: "manual",
+          tabel: "training_sessions",
+          recordId: inserted.id,
+          veld: "avgPower/normalizedPower/durationMin",
+        },
+        { bron: "derived", tabel: "ftp_history", veld: "ftp_watts" },
+      ],
+      reliability: "afgeleid",
+    });
+  }
   return { session: inserted!, merged: false };
 }

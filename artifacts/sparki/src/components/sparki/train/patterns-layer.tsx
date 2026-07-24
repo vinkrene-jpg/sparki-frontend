@@ -15,6 +15,7 @@ import { LayerHeading } from "@/components/sparki/train/layer-heading"
 import { TrainingProgression } from "@/components/sparki/training-progression"
 import { GraphInsightCard } from "@/components/sparki/insight/graph-insight-card"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
+import { HerkomstKnop } from "@/components/sparki/herkomst-sheet"
 import { ACCENT } from "@/components/sparki/ui"
 import { Loader2, Search } from "lucide-react"
 import type { ReactNode } from "react"
@@ -102,6 +103,11 @@ function renderGroupExtended(group: InsightGroup): ReactNode | undefined {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+      {typeof lead.id === "number" && (
+        <div className="pt-1">
+          <HerkomstKnop target={{ type: "observation", id: lead.id }} compact />
         </div>
       )}
     </div>

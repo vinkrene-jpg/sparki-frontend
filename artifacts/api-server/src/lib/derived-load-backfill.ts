@@ -31,6 +31,7 @@ import {
   medianWeeklyHours,
   type FtpEntry,
 } from "./derived-load";
+import { recordComputation } from "../engines/data-origin";
 
 // Advisory lock so overlapping instances (autoscale) don't do the same work
 // twice. Distinct from the world-seed lock id.
@@ -109,7 +110,7 @@ export async function backfillTssForAthlete(clerkId: string): Promise<{
       skipped++;
       continue;
     }
-    await db
+    const changed = await db
       .update(trainingSessionsTable)
       .set({
         tss: derived.tss,
@@ -123,7 +124,35 @@ export async function backfillTssForAthlete(clerkId: string): Promise<{
           // a real (provider- or user-supplied) score always wins.
           isNull(trainingSessionsTable.tss),
         ),
-      );
+      )
+      .returning({ id: trainingSessionsTable.id });
+    // Herleidbaarheid (Data Origin): alleen registreren als de update echt
+    // landde (de guard kan hem stil overslaan).
+    if (changed.length > 0) {
+      await recordComputation({
+        clerkId,
+        subjectType: "derived_tss",
+        subjectId: String(row.id),
+        engine: "deriveTss",
+        engineVersion: "1",
+        parameters: {
+          ftp,
+          durationMin: row.durationMin,
+          normalizedPower: row.normalizedPower,
+          avgPower: row.avgPower,
+        },
+        inputs: [
+          {
+            bron: "derived",
+            tabel: "training_sessions",
+            recordId: row.id,
+            veld: "avgPower/normalizedPower/durationMin",
+          },
+          { bron: "derived", tabel: "ftp_history", veld: "ftp_watts" },
+        ],
+        reliability: "afgeleid",
+      });
+    }
     updated++;
   }
   return { updated, skipped };

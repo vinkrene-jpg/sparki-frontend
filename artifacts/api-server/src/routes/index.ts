@@ -72,6 +72,7 @@ import journeyRouter from "./journey";
 import healthFlowRouter from "./health-flow";
 import passportRouter from "./passport";
 import releaseRouter from "./release";
+import dataOriginRouter from "./data-origin";
 
 import { killSwitchGuard } from "../lib/kill-switches";
 import { consentGate } from "../middlewares/consentGate";
@@ -96,6 +97,7 @@ router.use("/privacy", privacyRouter);
 router.use("/account", accountRouter);
 router.use("/legal", legalRouter);
 router.use("/analysis-feedback", analysisFeedbackRouter);
+router.use("/data-origin", dataOriginRouter);
 router.use("/journey", journeyRouter);
 router.use("/health-flow", healthFlowRouter);
 router.use("/passport", passportRouter);
