@@ -28,6 +28,14 @@ import { buildScheduledTasks } from "../lib/scheduled-tasks";
 import { securityAuditLogTable, analysisFeedbackTable } from "@workspace/db";
 import { AI_PURPOSES } from "../lib/ai/gateway";
 import { rateLimitStats } from "../lib/security/rate-limit";
+import { userEntitlementsTable } from "@workspace/db";
+import {
+  resolveEntitlements,
+  isValidMode,
+  isValidVariant,
+  isValidEntitlementType,
+} from "../lib/entitlements";
+import { writeAudit } from "../lib/security/audit";
 
 const router = Router();
 
@@ -1637,6 +1645,252 @@ router.get(
     } catch (err) {
       req.log.error({ err }, "admin.dataTrustDashboard failed");
       res.status(500).json({ error: "Data Trust Dashboard laden mislukt" });
+    }
+  },
+);
+
+// ── Entitlement-beheer (commerciële rechten, gescheiden van flags) ──────────
+
+// GET /api/admin/entitlements/users?query= — zoek gebruikers op e-mail/naam/
+// clerkId en toon modus + variant.
+router.get(
+  "/entitlements/users",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const query = String(req.query.query ?? "").trim();
+      const like = `%${query}%`;
+      const result = await db.execute(sql`
+        SELECT clerk_id, email, display_name, entitlement_mode, product_variant
+        FROM user_profiles
+        WHERE ${query === "" ? sql`true` : sql`(email ILIKE ${like} OR display_name ILIKE ${like} OR clerk_id ILIKE ${like})`}
+        ORDER BY created_at DESC
+        LIMIT 25
+      `);
+      res.json({ users: result.rows });
+    } catch (err) {
+      req.log.error({ err }, "admin.entitlements.users failed");
+      res.status(500).json({ error: "Kon gebruikers niet laden" });
+    }
+  },
+);
+
+// GET /api/admin/entitlements/:clerkId — volledige entitlementstatus van één
+// gebruiker (gelogd in het auditlog).
+router.get(
+  "/entitlements/:clerkId",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const subject = String(req.params.clerkId);
+      const resolved = await resolveEntitlements(subject);
+      const rows = await db
+        .select()
+        .from(userEntitlementsTable)
+        .where(eq(userEntitlementsTable.clerkId, subject))
+        .orderBy(desc(userEntitlementsTable.createdAt));
+      await writeAudit({
+        event: "entitlements_viewed_by_admin",
+        actorClerkId: getClerkUserId(req),
+        subjectClerkId: subject,
+        req,
+      });
+      res.json({
+        entitlement_mode: resolved.entitlementMode,
+        product_variant: resolved.productVariant,
+        commercial_features: resolved.commercialFeatures,
+        entitlements: rows,
+      });
+    } catch (err) {
+      req.log.error({ err }, "admin.entitlements.get failed");
+      res.status(500).json({ error: "Kon rechten niet laden" });
+    }
+  },
+);
+
+// PUT /api/admin/entitlements/:clerkId/mode — wijzig entitlementmodus en/of
+// productvariant. subscription vereist een geldige variant (fail-closed).
+router.put(
+  "/entitlements/:clerkId/mode",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const subject = String(req.params.clerkId);
+      const mode = req.body?.entitlementMode;
+      const rawVariant = req.body?.productVariant ?? null;
+      if (!isValidMode(mode)) {
+        res.status(400).json({ error: "Ongeldige entitlementmodus" });
+        return;
+      }
+      if (rawVariant !== null && !isValidVariant(rawVariant)) {
+        res.status(400).json({ error: "Ongeldige productvariant" });
+        return;
+      }
+      if (mode === "subscription" && rawVariant === null) {
+        res.status(400).json({
+          error: "Abonnementsmodus vereist een productvariant",
+        });
+        return;
+      }
+      const [before] = await db
+        .select({
+          entitlementMode: userProfilesTable.entitlementMode,
+          productVariant: userProfilesTable.productVariant,
+        })
+        .from(userProfilesTable)
+        .where(eq(userProfilesTable.clerkId, subject));
+      if (!before) {
+        res.status(404).json({ error: "Gebruiker niet gevonden" });
+        return;
+      }
+      await db
+        .update(userProfilesTable)
+        .set({
+          entitlementMode: mode,
+          productVariant: rawVariant,
+          updatedAt: new Date(),
+        })
+        .where(eq(userProfilesTable.clerkId, subject));
+      await writeAudit({
+        event: "entitlement_mode_changed",
+        actorClerkId: getClerkUserId(req),
+        subjectClerkId: subject,
+        meta: {
+          from: { mode: before.entitlementMode, variant: before.productVariant },
+          to: { mode, variant: rawVariant },
+        },
+        req,
+      });
+      res.json({ ok: true, entitlement_mode: mode, product_variant: rawVariant });
+    } catch (err) {
+      req.log.error({ err }, "admin.entitlements.mode failed");
+      res.status(500).json({ error: "Kon modus niet wijzigen" });
+    }
+  },
+);
+
+// POST /api/admin/entitlements/:clerkId — ken een persoonlijk recht toe
+// (add-on, proefrecht, contentrecht of tijdelijk pakket). Altijd gelogd.
+router.post(
+  "/entitlements/:clerkId",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const subject = String(req.params.clerkId);
+      const entitlementKey = String(req.body?.entitlementKey ?? "").trim();
+      const entitlementType = req.body?.entitlementType;
+      const source = String(req.body?.source ?? "admin").trim() || "admin";
+      const endsAtRaw = req.body?.endsAt ?? null;
+      if (!entitlementKey) {
+        res.status(400).json({ error: "entitlementKey is verplicht" });
+        return;
+      }
+      if (!isValidEntitlementType(entitlementType)) {
+        res.status(400).json({ error: "Ongeldig entitlementtype" });
+        return;
+      }
+      let endsAt: Date | null = null;
+      if (endsAtRaw !== null && endsAtRaw !== "") {
+        endsAt = new Date(String(endsAtRaw));
+        if (Number.isNaN(endsAt.getTime())) {
+          res.status(400).json({ error: "Ongeldige einddatum" });
+          return;
+        }
+      }
+      // Tijdelijke rechten vereisen een einddatum (anders zijn ze permanent).
+      if (
+        (entitlementType === "temporary_addon" ||
+          entitlementType === "trial" ||
+          entitlementType === "temporary_package") &&
+        !endsAt
+      ) {
+        res.status(400).json({
+          error: "Tijdelijke rechten vereisen een einddatum",
+        });
+        return;
+      }
+      const [profile] = await db
+        .select({ clerkId: userProfilesTable.clerkId })
+        .from(userProfilesTable)
+        .where(eq(userProfilesTable.clerkId, subject));
+      if (!profile) {
+        res.status(404).json({ error: "Gebruiker niet gevonden" });
+        return;
+      }
+      const actor = getClerkUserId(req);
+      const [row] = await db
+        .insert(userEntitlementsTable)
+        .values({
+          clerkId: subject,
+          entitlementKey,
+          entitlementType: String(entitlementType),
+          status: "active",
+          source,
+          endsAt,
+          createdBy: actor,
+        })
+        .returning();
+      await writeAudit({
+        event: "entitlement_granted",
+        actorClerkId: actor,
+        subjectClerkId: subject,
+        meta: {
+          id: row.id,
+          key: entitlementKey,
+          type: String(entitlementType),
+          source,
+          endsAt: endsAt ? endsAt.toISOString() : null,
+        },
+        req,
+      });
+      res.json({ ok: true, entitlement: row });
+    } catch (err) {
+      req.log.error({ err }, "admin.entitlements.grant failed");
+      res.status(500).json({ error: "Kon recht niet toekennen" });
+    }
+  },
+);
+
+// POST /api/admin/entitlements/:clerkId/:id/revoke — trek een recht in
+// (status revoked; rij blijft bestaan voor herleidbaarheid).
+router.post(
+  "/entitlements/:clerkId/:id/revoke",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const subject = String(req.params.clerkId);
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id) || id <= 0) {
+        res.status(400).json({ error: "Ongeldig id" });
+        return;
+      }
+      const [row] = await db
+        .update(userEntitlementsTable)
+        .set({ status: "revoked", updatedAt: new Date() })
+        .where(
+          sql`${userEntitlementsTable.id} = ${id} AND ${userEntitlementsTable.clerkId} = ${subject} AND ${userEntitlementsTable.status} = 'active'`,
+        )
+        .returning();
+      if (!row) {
+        res.status(404).json({ error: "Recht niet gevonden of al ingetrokken" });
+        return;
+      }
+      await writeAudit({
+        event: "entitlement_revoked",
+        actorClerkId: getClerkUserId(req),
+        subjectClerkId: subject,
+        meta: { id: row.id, key: row.entitlementKey, type: row.entitlementType },
+        req,
+      });
+      res.json({ ok: true, entitlement: row });
+    } catch (err) {
+      req.log.error({ err }, "admin.entitlements.revoke failed");
+      res.status(500).json({ error: "Kon recht niet intrekken" });
     }
   },
 );

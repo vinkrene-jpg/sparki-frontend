@@ -28,6 +28,7 @@ import {
 import { useAdminBugReports } from "@/hooks/use-bug-reports";
 import { FeedbackInbox } from "@/components/sparki/feedback-inbox";
 import { ReleaseAdminSection } from "@/components/sparki/release-admin";
+import { EntitlementsAdminSection } from "@/components/sparki/entitlements-admin";
 import { KennisbankAdminSection } from "@/components/sparki/knowledge-admin";
 import { SupportAdminSection } from "@/components/sparki/support-admin";
 import {
@@ -1228,6 +1229,8 @@ export default function AdminPage() {
             <SupportAdminSection />
 
             <ReleaseAdminSection />
+
+            <EntitlementsAdminSection />
 
             <KennisbankAdminSection />
 

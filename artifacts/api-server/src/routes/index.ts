@@ -72,6 +72,7 @@ import journeyRouter from "./journey";
 import healthFlowRouter from "./health-flow";
 import passportRouter from "./passport";
 import releaseRouter from "./release";
+import entitlementsRouter from "./entitlements";
 import dataOriginRouter from "./data-origin";
 import aiFoundationRouter from "./ai-foundation";
 
@@ -172,6 +173,7 @@ router.use("/alerts", alertsRouter);
 router.use("/share", shareRouter);
 router.use("/clubs", killSwitchGuard("club_features"), clubRouter);
 router.use("/release", releaseRouter);
+router.use("/entitlements", entitlementsRouter);
 
 // Dev-only routes (preview-athlete switcher). Mounted ONLY outside production so
 // these endpoints simply do not exist on a deployed build.

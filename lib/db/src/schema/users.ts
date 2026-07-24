@@ -33,6 +33,17 @@ export const userProfilesTable = pgTable("user_profiles", {
   // Releasegroep voor gecontroleerde uitrol: intern | test | pilot | productie.
   // Default "productie" = de meest beperkte groep (fail-closed voor nieuwe features).
   releaseGroup: text("release_group").notNull().default("productie"),
+  // Commerciële entitlementmodus. Bestaande gebruikers blijven
+  // "legacy_unrestricted": hun toegang blijft exact zoals vóór de invoering
+  // van entitlements (lege entitlementtabellen veranderen niets).
+  // "subscription" = fail-closed: toegang alleen met commercieel recht.
+  entitlementMode: text("entitlement_mode")
+    .notNull()
+    .default("legacy_unrestricted"),
+  // Productvariant (sparki_go|sparki_basic|sparki_performance|sparki_pro).
+  // NULL voor legacy-gebruikers; alleen verplicht bij mode=subscription.
+  // BEWUST niet automatisch gevuld voor bestaande gebruikers.
+  productVariant: text("product_variant"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

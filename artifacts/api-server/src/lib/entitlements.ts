@@ -1,0 +1,297 @@
+// Centrale commerciële entitlementlaag — GESCHEIDEN van operationele
+// feature-flags (lib/flags.ts). Eén waarheid voor toegang:
+//
+//   effective_access = commercial_entitlement
+//                      AND role_permission
+//                      AND operational_feature_enabled
+//                      AND no_active_kill_switch
+//
+// - legacy_unrestricted: gedrag exact zoals vóór entitlements — lege
+//   entitlementtabellen veranderen niets, flags blijven operationeel bepalend.
+// - subscription: fail-closed — ontbrekend/onbekend/vervallen recht = geen
+//   commerciële toegang. Een gewone operationele flag creëert nooit een
+//   commercieel recht. Een fout in deze laag zet nooit alles aan.
+
+import { eq, and } from "drizzle-orm";
+import {
+  db,
+  userProfilesTable,
+  userEntitlementsTable,
+  variantFeatureGrantsTable,
+  ENTITLEMENT_MODES,
+  PRODUCT_VARIANTS,
+  ENTITLEMENT_TYPES,
+  type EntitlementMode,
+  type ProductVariant,
+  type UserEntitlement,
+  type FeatureKey,
+  type ReleaseGroup,
+} from "@workspace/db";
+import { resolveFlags, type ClientPlatform } from "./flags";
+import { isKilled, type KillSwitchKey } from "./kill-switches";
+import { logger } from "./logger";
+
+export function isValidMode(v: unknown): v is EntitlementMode {
+  return typeof v === "string" && (ENTITLEMENT_MODES as readonly string[]).includes(v);
+}
+export function isValidVariant(v: unknown): v is ProductVariant {
+  return typeof v === "string" && (PRODUCT_VARIANTS as readonly string[]).includes(v);
+}
+export function isValidEntitlementType(v: unknown): boolean {
+  return typeof v === "string" && (ENTITLEMENT_TYPES as readonly string[]).includes(v);
+}
+
+export interface ActiveEntitlement {
+  id: number;
+  entitlementKey: string;
+  entitlementType: string;
+  source: string;
+  startsAt: Date;
+  endsAt: Date | null;
+}
+
+export interface ResolvedEntitlements {
+  entitlementMode: EntitlementMode;
+  productVariant: ProductVariant | null;
+  /** Actieve persoonlijke rechten (status active, binnen geldigheidsperiode). */
+  activeEntitlements: ActiveEntitlement[];
+  /** Rechten die door ends_at verlopen zijn (informatief, geen toegang). */
+  expiredEntitlements: ActiveEntitlement[];
+  /**
+   * Effectieve commerciële feature-rechten per featureKey.
+   * legacy_unrestricted ⇒ elke key geldt als commercieel toegestaan (gedrag
+   * van vóór entitlements); commercialFeatures bevat dan alleen expliciete
+   * persoonlijke rechten (informatief).
+   */
+  commercialFeatures: Record<
+    string,
+    { source: string; expiresAt: string | null }
+  >;
+  /** true wanneer de entitlementgegevens niet gelezen konden worden. */
+  degraded: boolean;
+}
+
+function isEntitlementActive(e: UserEntitlement, now: Date): boolean {
+  if (e.status !== "active") return false; // onbekende status ⇒ fail-closed
+  if (e.startsAt && e.startsAt > now) return false;
+  if (e.endsAt && e.endsAt <= now) return false;
+  return true;
+}
+
+function isEntitlementExpired(e: UserEntitlement, now: Date): boolean {
+  return e.status === "active" && !!e.endsAt && e.endsAt <= now;
+}
+
+function toActive(e: UserEntitlement): ActiveEntitlement {
+  return {
+    id: e.id,
+    entitlementKey: e.entitlementKey,
+    entitlementType: e.entitlementType,
+    source: e.source,
+    startsAt: e.startsAt,
+    endsAt: e.endsAt,
+  };
+}
+
+/**
+ * Centrale server-side resolver van commerciële rechten voor één gebruiker.
+ * Leest modus + variant uit user_profiles en persoonlijke rechten uit
+ * user_entitlements; variant-features komen uit variant_feature_grants.
+ */
+export async function resolveEntitlements(
+  clerkId: string,
+): Promise<ResolvedEntitlements> {
+  const [profile] = await db
+    .select({
+      entitlementMode: userProfilesTable.entitlementMode,
+      productVariant: userProfilesTable.productVariant,
+    })
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkId, clerkId));
+  if (!profile) {
+    // Onbekende gebruiker ⇒ fail-closed subscription zonder rechten.
+    return {
+      entitlementMode: "subscription",
+      productVariant: null,
+      activeEntitlements: [],
+      expiredEntitlements: [],
+      commercialFeatures: {},
+      degraded: false,
+    };
+  }
+
+  const mode: EntitlementMode = isValidMode(profile.entitlementMode)
+    ? profile.entitlementMode
+    : "subscription"; // onbekende modus ⇒ fail-closed
+  const variant: ProductVariant | null = isValidVariant(profile.productVariant)
+    ? profile.productVariant
+    : null; // onbekende variant ⇒ geen variantrechten
+
+  const now = new Date();
+  let rows: UserEntitlement[] = [];
+  let degraded = false;
+  try {
+    rows = await db
+      .select()
+      .from(userEntitlementsTable)
+      .where(eq(userEntitlementsTable.clerkId, clerkId));
+  } catch (err) {
+    // Fout in de entitlementlaag mag nooit rechten verzinnen. Legacy blijft
+    // werken (rechten daar niet nodig); subscription blijft fail-closed leeg.
+    degraded = true;
+    logger.error({ err, clerkId }, "entitlements read failed");
+  }
+
+  const active = rows.filter((e) => isEntitlementActive(e, now)).map(toActive);
+  const expired = rows
+    .filter((e) => isEntitlementExpired(e, now))
+    .map(toActive);
+
+  const commercialFeatures: ResolvedEntitlements["commercialFeatures"] = {};
+
+  // Variant-features (alleen zinvol bij subscription met geldige variant).
+  if (mode === "subscription" && variant) {
+    try {
+      const grants = await db
+        .select()
+        .from(variantFeatureGrantsTable)
+        .where(
+          and(
+            eq(variantFeatureGrantsTable.productVariant, variant),
+            eq(variantFeatureGrantsTable.enabled, true),
+          ),
+        );
+      for (const g of grants) {
+        commercialFeatures[g.featureKey] = {
+          source: `variant:${variant}`,
+          expiresAt: null,
+        };
+      }
+    } catch (err) {
+      degraded = true;
+      logger.error({ err, clerkId }, "variant grants read failed");
+    }
+  }
+
+  // Persoonlijke feature-rechten: add-ons, proefrechten en tijdelijke
+  // pakketten dragen een featureKey als entitlement_key. route_content is een
+  // contentrecht (blijft in activeEntitlements, geen feature-key).
+  for (const e of active) {
+    if (
+      e.entitlementType === "permanent_addon" ||
+      e.entitlementType === "temporary_addon" ||
+      e.entitlementType === "trial" ||
+      e.entitlementType === "temporary_package"
+    ) {
+      const existing = commercialFeatures[e.entitlementKey];
+      const expiresAt = e.endsAt ? e.endsAt.toISOString() : null;
+      // Permanent recht wint van tijdelijk recht op dezelfde key.
+      if (!existing || (existing.expiresAt && !expiresAt)) {
+        commercialFeatures[e.entitlementKey] = {
+          source: `entitlement:${e.entitlementType}:${e.source}`,
+          expiresAt,
+        };
+      }
+    }
+  }
+
+  return {
+    entitlementMode: mode,
+    productVariant: variant,
+    activeEntitlements: active,
+    expiredEntitlements: expired,
+    commercialFeatures,
+    degraded,
+  };
+}
+
+export interface FeatureAccessResult {
+  allowed: boolean;
+  commercial_entitled: boolean;
+  operationally_enabled: boolean;
+  role_allowed: boolean;
+  blocked_by_kill_switch: boolean;
+  source: string;
+  reason: string;
+  expires_at: string | null;
+  variant: ProductVariant | null;
+  entitlement_mode: EntitlementMode;
+}
+
+export interface FeatureAccessContext {
+  clerkId: string;
+  activeRole: string;
+  isHeadTester?: boolean;
+  releaseGroup?: ReleaseGroup;
+  platform?: ClientPlatform;
+  /** Bestaande rol-/privacyregels blijven daarnaast gelden; standaard true. */
+  roleAllowed?: boolean;
+  /** Kill-switchdomein waaronder deze feature valt (indien van toepassing). */
+  killSwitchKey?: KillSwitchKey;
+}
+
+/**
+ * Eén centrale toegangsevaluator — geen tweede waarheid hiernaast.
+ * Combineert: commercieel recht, rolrecht, operationele flag, kill-switch.
+ */
+export async function resolveFeatureAccess(
+  ctx: FeatureAccessContext,
+  featureKey: FeatureKey,
+): Promise<FeatureAccessResult> {
+  const [entitlements, flags, killed] = await Promise.all([
+    resolveEntitlements(ctx.clerkId),
+    resolveFlags(ctx.clerkId, ctx.activeRole, {
+      isHeadTester: ctx.isHeadTester,
+      releaseGroup: ctx.releaseGroup,
+      platform: ctx.platform,
+    }),
+    ctx.killSwitchKey ? isKilled(ctx.killSwitchKey) : Promise.resolve(false),
+  ]);
+
+  const roleAllowed = ctx.roleAllowed !== false;
+  const operationallyEnabled = flags[featureKey] === true;
+
+  let commercialEntitled = false;
+  let source = "none";
+  let expiresAt: string | null = null;
+  if (entitlements.entitlementMode === "legacy_unrestricted") {
+    // Bewuste uitzondering (productbesluit): legacy-gebruikers behouden hun
+    // huidige toegang exact — óók bij een leesfout in de entitlementtabellen,
+    // want hun toegang hangt daar per definitie niet van af. Een fout kan zo
+    // nooit iets EXTRA ontgrendelen (flags blijven bepalend), alleen bestaande
+    // toegang beschermen. Subscription blijft fail-closed: bij degraded zijn
+    // er geen rechten en dus geen toegang.
+    commercialEntitled = true;
+    source = "legacy_unrestricted";
+  } else {
+    const grant = entitlements.commercialFeatures[featureKey];
+    if (grant) {
+      commercialEntitled = true;
+      source = grant.source;
+      expiresAt = grant.expiresAt;
+    }
+  }
+
+  const allowed =
+    commercialEntitled && roleAllowed && operationallyEnabled && !killed;
+
+  let reason: string;
+  if (killed) reason = "geblokkeerd door actieve kill-switch";
+  else if (!commercialEntitled) reason = "geen commercieel recht";
+  else if (!roleAllowed) reason = "rol geeft geen toegang";
+  else if (!operationallyEnabled) reason = "operationele flag staat uit";
+  else reason = "toegestaan";
+
+  return {
+    allowed,
+    commercial_entitled: commercialEntitled,
+    operationally_enabled: operationallyEnabled,
+    role_allowed: roleAllowed,
+    blocked_by_kill_switch: killed,
+    source,
+    reason,
+    expires_at: expiresAt,
+    variant: entitlements.productVariant,
+    entitlement_mode: entitlements.entitlementMode,
+  };
+}

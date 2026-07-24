@@ -62,3 +62,4 @@ export * from "./passport";
 export * from "./ai-gateway";
 export * from "./health";
 export * from "./live-location";
+export * from "./entitlements";

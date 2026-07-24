@@ -92,7 +92,7 @@
 - [Drizzle push no-op drift-lussen](drizzle-push-drift-loops.md) — 63-char naamafkapping + array-default '{}' zijn eeuwige diffs.
 - [Sparki file-import as Data Hub source](sparki-file-import-source.md) — GPX/FIT/TCX uploads ingest via `ingestBatch` provider "file" (not a silo); content-only externalId; timeless GPX ≠ activity.
 - [Deployment liveness probes bare /api](deploy-liveness-bare-api.md) — platform pings the service base path (not only startup healthz); api router needs get("/") too or republish flaps unhealthy.
-- [api-server test build race](api-server-test-build-race.md) — parallel test:* workflows share one dist/ ⇒ run strictly sequentially; boot storms crash esbuild ([semaphore](test-workflow-boot-storm.md)).
+- [api-server test build race](api-server-test-build-race.md) — parallel test:* workflows share one dist/ ⇒ run strictly sequentially; parallel boots crash esbuild EAGAIN/SIGABRT — cross-process build semaphore + retry runner ([detail](test-workflow-boot-storm.md)).
 - [Sparki per-session caps](sparki-session-caps.md) — plan engine caps single-session minutes per DayKind×experience; unrealistic weekly quota underfills honestly, never a 6h ride; wedstrijd keeps 360.
 - [Sparki engagement engine](sparki-engagement-engine.md) — healthy pull-to-return: learns real open rhythm from tester_events, honest default when thin.
 - [Sparki aandachtswet (Vandaag single-leader)](sparki-aandachtswet.md) — one leading Momentblok (priority chain); ride-along weather/leskaart/nudge must be GATED at render not just imported.
@@ -104,7 +104,6 @@
 - [Sparki bordjes-sprinten](sparki-bordjes-sprint.md) — town-sign sprints; boards=place-name transitions (honest, provider-only), base+speed+watt scoring.
 - [Sparki Coachomgeving (cockpit)](sparki-coach-cockpit.md) — coach-writable resources need an owner column (link-gate ≠ ownership); open-proposal idempotency via partial unique index; or(empty)=500.
 - [Sparki routeketen](sparki-route-chain.md) — share-uniqueness needs nullsNotDistinct (NULL targets duplicate); version bumps only on inhoudelijke edits; soft-delete only with usage history.
-- [Test-workflow boot storm](test-workflow-boot-storm.md) — parallel test boots crash w/ esbuild EAGAIN/SIGABRT; fix = cross-process build semaphore + retry-on-infra-crash tsx runner (cant edit .replit).
 - [Sparki plan lifecycle](sparki-plan-lifecycle.md) — pause/resume/delete scoped to ONE resolveCurrentPlan id (newest active else newest paused); never status-wide bulk updates; sessions never touched.
 - [Sparki ride-navigator](sparki-ride-navigator.md) — CPS crank cadence, moving-avg speed, climbfases uit lib/nav-live (SSOT); elk "klaar met rit"-pad moet clearSavedRide of spookherstel ([rit als route](sparki-ridden-route-save.md)).
 - [Route generation free-text wish](sparki-route-wish.md) — wish goes only into buildRationale prompt (ORS cannot steer roads); honest "kan niet + alternatief", never claim a place not in data.
@@ -157,3 +156,4 @@
 - [Sparki Foundation engines](sparki-foundation-engines.md) — 7 deterministic engines + routing orchestrator behind ai_foundation flag; nullsNotDistinct evidence upsert; flag rows must be seeded for override FK.
 - [Flag fetch vs Clerk handshake race](sparki-flag-fetch-race.md) — one-shot /api/flags 403 during auth settling silently disables ALL features; flag fetch must retry + refetch after sync.
 - [Expo build port + Metro watch traps](sparki-mobile-build-port.md) — probe Metro port (busy port = silent interactive-prompt hang); blockList volatile dist dirs or fs.watch ENOENT kills expo.
+- [Sparki entitlement-fundament](sparki-entitlements.md) — commercial rights layer AND flags (never OR); legacy_unrestricted is the deliberate degraded-read carve-out; empty variant grants = sales-start switch.

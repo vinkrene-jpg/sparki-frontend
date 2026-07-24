@@ -55,6 +55,11 @@ export const securityEventKinds = [
   "support_reply_sent",
   "support_known_issue_changed",
   "support_article_published",
+  // Entitlement-fundament — commerciële rechten gescheiden van feature-flags.
+  "entitlement_mode_changed",
+  "entitlement_granted",
+  "entitlement_revoked",
+  "entitlements_viewed_by_admin",
 ] as const;
 export type SecurityEventKind = (typeof securityEventKinds)[number];
 
