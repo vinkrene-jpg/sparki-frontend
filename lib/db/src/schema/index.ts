@@ -23,6 +23,7 @@ export * from "./activity-imports";
 export * from "./connectors";
 export * from "./data-hub";
 export * from "./data-origin";
+export * from "./ai-foundation";
 export * from "./routes";
 export * from "./notifications";
 export * from "./reminder-preferences";

@@ -11,6 +11,7 @@ export const FEATURE_KEYS = [
   "knowledge_base",
   "rit_verhaal",
   "climb_explorer",
+  "ai_foundation",
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -37,6 +38,8 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
     "De keten (Fase 1) — sync-status, na-rit moment op Vandaag, rit-verhaal met vier hoofdstukken, inline schemagevolg en chat-met-ritcontext",
   climb_explorer:
     "Klimmenverkenner — doorzoekbare beklimmingen/cols/toppen (OpenStreetMap) met echte hoogte, afgeleid klimprofiel en omschrijving uit OSM/Wikipedia",
+  ai_foundation:
+    "Sparki Foundation — orchestrator + zeven analyse-engines (data, kennis, sportersmodel, strategie, patronen, beslisondersteuning, uitlegbaarheid); niets staat automatisch aan",
 };
 
 export * from "./sports";

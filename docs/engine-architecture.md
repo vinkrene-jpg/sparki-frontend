@@ -156,6 +156,23 @@ Edges in words:
   `athlete_daily_metrics`).
 - **Owns tables:** `connector_connections` (per-user tokens + connection state).
 
+### 9. Foundation — `engines/ai-foundation`
+- **Responsibility:** the orchestrated analysis foundation: seven engines behind
+  interfaces (Data, Knowledge, Athlete Model, Strategy, Pattern, Decision
+  Support, Explainability) plus a routing-only orchestrator. Facades over
+  existing SSOT math (`computeLoadSeries`, `computeReadiness`, `computeZones`)
+  and existing provenance (`engines/data-origin`) — no parallel systems.
+  Deterministic engines only; honest `ontbrekend` lists; confidence always
+  <100; decision support always returns multiple scenarios, never one advice.
+  Gated end-to-end by the `ai_foundation` feature flag (default off).
+- **Entry points:** `createFoundationContainer` (DI, per-engine overrides for
+  tests), `runFoundationAnalyse`, `FOUNDATION_CONFIG` (versions + parameters),
+  the seven `create*Engine` factories and all contracts (`contracts.ts`).
+- **Depends on:** Recovery & Load (sessions/metrics/load math), Athlete Profile
+  (`athlete_profiles`), Knowledge (`knowledge_items`), Data Origin
+  (`recordComputation`), feature flags.
+- **Owns tables:** `knowledge_evidence`, `athlete_model_extensions`.
+
 ## Data-model overview (table ownership)
 
 Each product table has exactly one owning engine. Other engines read through the
@@ -171,6 +188,7 @@ owner's entry points rather than querying directly.
 | Recovery & Load   | `athlete_daily_metrics`, `training_sessions`, `workout_feedback`    |
 | Knowledge         | `knowledge_items`                                                   |
 | Integration       | `connector_connections`                                            |
+| Foundation        | `knowledge_evidence`, `athlete_model_extensions`                    |
 
 Cross-cutting tables not owned by a single engine (used as infrastructure by
 many): `feature_flags` / overrides, `privacy_settings`, `notifications`,

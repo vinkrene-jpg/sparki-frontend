@@ -128,7 +128,8 @@
     "test:plan-lifecycle": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs plan-lifecycle",
     "test:live-location": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs live-location",
     "test:ai-consent": "node ./scripts/run-test.mjs ai-consent",
-    "test:data-origin": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs data-origin"
+    "test:data-origin": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs data-origin",
+    "test:ai-foundation": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs ai-foundation"
   },
   "dependencies": {
     "@clerk/express": "^2.1.30",
