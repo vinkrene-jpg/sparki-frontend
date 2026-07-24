@@ -233,9 +233,28 @@ const FEEDBACK_LABEL: Record<string, string> = {
 // record-id, berekening, laatste update en de gebruiker waaraan de rijen
 // gebonden zijn. Bij een fout of ontbrekende data: eerlijke melding.
 function ProvenanceSection() {
+  const { profile } = useUserProfile();
+  const ownClerkId = profile?.clerkId ?? "";
   const [input, setInput] = useState("");
+  const [prefilled, setPrefilled] = useState(false);
+  useEffect(() => {
+    // Vul één keer vooraf in met de eigen server-side sessie; daarna blijft
+    // het veld gewoon bewerkbaar (nooit overschrijven wat de admin typt).
+    // Er wordt bewust géén automatische controle gestart.
+    if (!prefilled && ownClerkId) {
+      setInput(ownClerkId);
+      setPrefilled(true);
+    }
+  }, [prefilled, ownClerkId]);
   const [target, setTarget] = useState("");
   const { data, isError, isFetching } = useAdminProvenance(target);
+  const trimmedInput = input.trim();
+  const isOwnAccount = ownClerkId !== "" && trimmedInput === ownClerkId;
+  const ownLabel = profile
+    ? profile.displayName
+      ? `${profile.displayName} (${profile.email})`
+      : profile.email
+    : null;
   return (
     <section className="mt-8">
       <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
@@ -266,6 +285,29 @@ function ProvenanceSection() {
           Controleer
         </button>
       </form>
+      {ownClerkId !== "" && (
+        <p className="mt-2 text-[12px] leading-snug">
+          {isOwnAccount ? (
+            <span className="text-white/50">
+              Dit is jouw huidige account{ownLabel ? `: ${ownLabel}` : ""}.
+            </span>
+          ) : (
+            <>
+              <span className="text-amber-300/80">
+                Let op: dit is een ánder account dan waarmee je nu bent
+                ingelogd{ownLabel ? ` (${ownLabel})` : ""}.
+              </span>{" "}
+              <button
+                type="button"
+                onClick={() => setInput(ownClerkId)}
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/60 underline underline-offset-2 transition hover:text-white/85"
+              >
+                Terug naar eigen account
+              </button>
+            </>
+          )}
+        </p>
+      )}
       {isFetching && (
         <p className="mt-3 text-[12px] text-white/30">Bezig met controleren…</p>
       )}
