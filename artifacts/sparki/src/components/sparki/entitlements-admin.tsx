@@ -1,7 +1,7 @@
 // Entitlement-fundament — beheer van commerciële rechten, gescheiden van de
 // operationele feature-flags. Alles praat rechtstreeks met
 // /api/admin/entitlements/* — geen verzonnen data; lege staten zijn eerlijk.
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
@@ -83,6 +83,14 @@ export function EntitlementsAdminSection() {
   const [grantType, setGrantType] = useState<string>("permanent_addon");
   const [grantEnds, setGrantEnds] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  // Deep-link: /admin#rechtenbeheer scrollt naar deze sectie zodra hij er is.
+  useEffect(() => {
+    if (window.location.hash === "#rechtenbeheer") {
+      rootRef.current?.scrollIntoView({ block: "start" });
+    }
+  }, []);
 
   const usersQ = useQuery({
     queryKey: ["admin", "entitlements", "users", query],
@@ -158,7 +166,7 @@ export function EntitlementsAdminSection() {
   };
 
   return (
-    <div className={cardCls}>
+    <div className={cardCls} id="rechtenbeheer" ref={rootRef}>
       <p className={labelCls}>Rechtenbeheer (abonnementsfundament)</p>
       <p className="mt-1 text-[12px] leading-snug text-white/40">
         Commerciële rechten staan los van de operationele functieschakelaars.
