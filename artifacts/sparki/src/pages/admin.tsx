@@ -232,7 +232,7 @@ const FEEDBACK_LABEL: Record<string, string> = {
 // gebruikers komen hier nooit). Toont per gegevensblok de echte bron,
 // record-id, berekening, laatste update en de gebruiker waaraan de rijen
 // gebonden zijn. Bij een fout of ontbrekende data: eerlijke melding.
-function ProvenanceSection() {
+export function ProvenanceSection() {
   const { profile } = useUserProfile();
   const ownClerkId = profile?.clerkId ?? "";
   const [input, setInput] = useState("");
@@ -357,7 +357,7 @@ function ProvenanceSection() {
 // gericht uit. Verwijdert alléén vervuiling (Engelstalige observaties,
 // dubbele import-FTP-rijen), actualiseert een geschatte FTP en maakt
 // historische fiets-autokoppelingen los. Echte data blijft altijd staan.
-function DataTrustCleanupSection() {
+export function DataTrustCleanupSection() {
   const { profile } = useUserProfile();
   const ownClerkId = profile?.clerkId ?? "";
   const [input, setInput] = useState("");
