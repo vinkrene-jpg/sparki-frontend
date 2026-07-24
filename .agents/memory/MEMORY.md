@@ -156,3 +156,4 @@
 - [Sparki Connect sync layer](sparki-connect-sync-layer.md) — bounded merge_log jsonb, consentExpired (no refreshToken only), scheduled catch-up reuses shouldCatchUp + busy=skip; honest no-mock job test.
 - [Sparki Data Origin framework](sparki-data-origin.md) — herkomst/explain-laag; sync-ID alleen bij bewijsbare run-koppeling (nooit "nieuwste run"); drizzle ALL(${array})-trap.
 - [Sparki Foundation engines](sparki-foundation-engines.md) — 7 deterministic engines + routing orchestrator behind ai_foundation flag; nullsNotDistinct evidence upsert; flag rows must be seeded for override FK.
+- [Flag fetch vs Clerk handshake race](sparki-flag-fetch-race.md) — one-shot /api/flags 403 during auth settling silently disables ALL features; flag fetch must retry + refetch after sync.
