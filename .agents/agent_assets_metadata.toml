@@ -491,3 +491,9 @@ id = "wMgZuT4JFb0YalxLGAlzC"
 uri = "file://export/sparki-current-state-export.zip"
 type = "unspecified"
 title = "Sparki Current State Export (nulmeting, 24 juli 2026)"
+
+[[outputs]]
+id = "KtDHJ6CEjr4V5vdjWb1O5"
+uri = "file://SPARKI_CURRENT_STATE.md"
+type = "text"
+title = "SPARKI_CURRENT_STATE.md — officiële technische nulmeting"
