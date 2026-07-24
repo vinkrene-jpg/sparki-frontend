@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, Redirect } from "wouter";
 import { useUser } from "@clerk/react";
 import { DEV_PREVIEW } from "@/lib/dev";
+import { useUserProfile } from "@/contexts/UserContext";
 import { ACCENT } from "@/components/sparki/ui";
 import {
   useAdminWhoami,
@@ -315,10 +316,27 @@ function ProvenanceSection() {
 // dubbele import-FTP-rijen), actualiseert een geschatte FTP en maakt
 // historische fiets-autokoppelingen los. Echte data blijft altijd staan.
 function DataTrustCleanupSection() {
+  const { profile } = useUserProfile();
+  const ownClerkId = profile?.clerkId ?? "";
   const [input, setInput] = useState("");
+  const [prefilled, setPrefilled] = useState(false);
+  useEffect(() => {
+    // Vul één keer vooraf in met de eigen server-side sessie; daarna blijft
+    // het veld gewoon bewerkbaar (nooit overschrijven wat de admin typt).
+    if (!prefilled && ownClerkId) {
+      setInput(ownClerkId);
+      setPrefilled(true);
+    }
+  }, [prefilled, ownClerkId]);
   const cleanup = useAdminDataTrustCleanup();
   const r = cleanup.data;
   const target = input.trim();
+  const isOwnAccount = ownClerkId !== "" && target === ownClerkId;
+  const ownLabel = profile
+    ? profile.displayName
+      ? `${profile.displayName} (${profile.email})`
+      : profile.email
+    : null;
   return (
     <section className="mt-8">
       <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
@@ -363,6 +381,29 @@ function DataTrustCleanupSection() {
           Uitvoeren
         </button>
       </div>
+      {ownClerkId !== "" && (
+        <p className="mt-2 text-[12px] leading-snug">
+          {isOwnAccount ? (
+            <span className="text-white/50">
+              Dit is jouw huidige account{ownLabel ? `: ${ownLabel}` : ""}.
+            </span>
+          ) : (
+            <>
+              <span className="text-amber-300/80">
+                Let op: dit is een ánder account dan waarmee je nu bent
+                ingelogd{ownLabel ? ` (${ownLabel})` : ""}.
+              </span>{" "}
+              <button
+                type="button"
+                onClick={() => setInput(ownClerkId)}
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/60 underline underline-offset-2 transition hover:text-white/85"
+              >
+                Terug naar eigen account
+              </button>
+            </>
+          )}
+        </p>
+      )}
       {cleanup.isPending && (
         <p className="mt-3 text-[12px] text-white/30">Bezig…</p>
       )}
