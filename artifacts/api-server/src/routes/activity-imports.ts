@@ -19,6 +19,7 @@ import {
   ingestActivityFile,
   fileExternalId,
   unlinkedImportStatus,
+  FILE_PARSER_VERSION,
 } from "../lib/activity-file-ingest";
 import {
   extractTimedTrackFromGpx,
@@ -82,12 +83,67 @@ router.post("/", requireAuth, async (req, res) => {
       : "";
   const fileType = detectType(fileName);
 
+  // ── Eerlijke voorcontrole (validatie vóór verwerking) ──
+  // Onbekende bestandstypen worden geweigerd met een duidelijke uitleg — geen
+  // stille placeholder-rij voor bv. .jpg of .docx. CSV blijft (bestaand gedrag)
+  // een eerlijk bewaarde placeholder totdat er een echte parser is.
+  if (fileType === "unknown") {
+    res.status(400).json({
+      error:
+        "Dit bestandstype wordt niet ondersteund. Sparki leest FIT-, GPX- en TCX-bestanden.",
+    });
+    return;
+  }
+  const isBinary = fileType === "fit";
+  if (!isBinary && !content.trim()) {
+    res.status(400).json({ error: "Het bestand is leeg" });
+    return;
+  }
+  if (isBinary && !contentBase64.trim()) {
+    res.status(400).json({ error: "Het bestand is leeg" });
+    return;
+  }
+  // Server-side groottegrens (de JSON-bodylimiet vangt dit meestal al af, maar
+  // hier krijgt de gebruiker een duidelijke Nederlandse uitleg).
+  const MAX_TEXT_BYTES = 11 * 1024 * 1024;
+  const MAX_FIT_BYTES = 8 * 1024 * 1024;
+  if (!isBinary && Buffer.byteLength(content, "utf8") > MAX_TEXT_BYTES) {
+    res.status(400).json({ error: "Bestand te groot (max 11 MB)" });
+    return;
+  }
+
   const insertFailed = async (errorMessage: string) => {
     const [row] = await db
       .insert(activityImportsTable)
-      .values({ clerkId, fileName, fileType, status: "failed", errorMessage })
+      .values({
+        clerkId,
+        fileName,
+        fileType,
+        status: "failed",
+        errorMessage,
+        parserVersion: FILE_PARSER_VERSION,
+      })
       .returning();
     res.status(201).json({ import: row, parsed: false });
+  };
+
+  // ── Duplicaatwaarschuwing vóór opslaan ──
+  // Zelfde bytes (ook onder een andere bestandsnaam) → geen tweede import-rij
+  // en geen nieuwe ingest; de gebruiker krijgt een eerlijke melding met de
+  // bestaande import. De training zelf bestaat al (ingest is idempotent).
+  const findDuplicate = async (checksum: string) => {
+    const [existing] = await db
+      .select()
+      .from(activityImportsTable)
+      .where(
+        and(
+          eq(activityImportsTable.clerkId, clerkId),
+          eq(activityImportsTable.checksum, checksum),
+        ),
+      )
+      .orderBy(desc(activityImportsTable.uploadedAt))
+      .limit(1);
+    return existing ?? null;
   };
 
   // Persist a parsed file AND route it through the canonical Data Hub. When the
@@ -121,6 +177,7 @@ router.post("/", requireAuth, async (req, res) => {
   ) => {
     let sessionId: number | null = null;
     let ingestError: string | null = null;
+    let dedupeStatus: "new" | "merged_existing" | "route_only" | null = null;
     try {
       const result = await ingestActivityFile(
         clerkId,
@@ -129,6 +186,15 @@ router.post("/", requireAuth, async (req, res) => {
         externalId,
       );
       sessionId = result.sessionId;
+      // Eerlijke dedupe-uitkomst uit de echte ingest-telling: nieuw aangemaakt,
+      // samengevoegd met een bestaande activiteit (bv. dezelfde rit via
+      // Strava), of alleen een route (geen starttijd → geen training).
+      dedupeStatus =
+        sessionId == null
+          ? "route_only"
+          : (result.counts.merged ?? 0) > 0
+            ? "merged_existing"
+            : "new";
     } catch (err) {
       req.log.error({ err }, "activityImports.ingest failed");
       ingestError = "Bestand verwerkt, maar er kon geen sessie worden aangemaakt";
@@ -143,6 +209,9 @@ router.post("/", requireAuth, async (req, res) => {
         parsedSummary: summary,
         linkedTrainingSessionId: sessionId,
         errorMessage: ingestError,
+        checksum: externalId,
+        parserVersion: FILE_PARSER_VERSION,
+        dedupeStatus,
       })
       .returning();
     res.status(201).json({ import: row, parsed: true, sessionId });
@@ -178,6 +247,16 @@ router.post("/", requireAuth, async (req, res) => {
             : null,
       };
       const gpxExternalId = fileExternalId(content, fileName);
+      const gpxDup = await findDuplicate(gpxExternalId);
+      if (gpxDup) {
+        res.status(200).json({
+          duplicate: true,
+          import: gpxDup,
+          message:
+            "Dit bestand is al geïmporteerd — het is niet opnieuw opgeslagen.",
+        });
+        return;
+      }
       const gpxStops = await learnRoadObjects(
         extractTimedTrackFromGpx(content),
         gpxExternalId,
@@ -193,6 +272,25 @@ router.post("/", requireAuth, async (req, res) => {
         return;
       }
       const buf = Buffer.from(contentBase64, "base64");
+      if (buf.length === 0) {
+        res.status(400).json({ error: "Het bestand is leeg" });
+        return;
+      }
+      if (buf.length > MAX_FIT_BYTES) {
+        res.status(400).json({ error: "Bestand te groot (max 8 MB)" });
+        return;
+      }
+      const fitDupId = fileExternalId(buf, fileName);
+      const fitDup = await findDuplicate(fitDupId);
+      if (fitDup) {
+        res.status(200).json({
+          duplicate: true,
+          import: fitDup,
+          message:
+            "Dit bestand is al geïmporteerd — het is niet opnieuw opgeslagen.",
+        });
+        return;
+      }
       // Verzamel tijdens het parsen de echte GPS-samples (positie + tijd) voor
       // stop-detectie — het samenvattingsresultaat verandert hier niet door.
       const fitTrack: TimedTrackPoint[] = [];
@@ -222,6 +320,16 @@ router.post("/", requireAuth, async (req, res) => {
         return;
       }
       const tcxExternalId = fileExternalId(content, fileName);
+      const tcxDup = await findDuplicate(tcxExternalId);
+      if (tcxDup) {
+        res.status(200).json({
+          duplicate: true,
+          import: tcxDup,
+          message:
+            "Dit bestand is al geïmporteerd — het is niet opnieuw opgeslagen.",
+        });
+        return;
+      }
       const tcxStops = await learnRoadObjects(
         extractTimedTrackFromTcx(content),
         tcxExternalId,
@@ -232,7 +340,19 @@ router.post("/", requireAuth, async (req, res) => {
       return;
     }
 
-    // TCX/CSV (and unknown): record the upload honestly as a placeholder.
+    // CSV: record the upload honestly as a placeholder (no parser yet). Wel
+    // met checksum, zodat een dubbele upload herkend wordt.
+    const csvChecksum = fileExternalId(content, fileName);
+    const csvDup = await findDuplicate(csvChecksum);
+    if (csvDup) {
+      res.status(200).json({
+        duplicate: true,
+        import: csvDup,
+        message:
+          "Dit bestand is al geïmporteerd — het is niet opnieuw opgeslagen.",
+      });
+      return;
+    }
     const [row] = await db
       .insert(activityImportsTable)
       .values({
@@ -243,6 +363,7 @@ router.post("/", requireAuth, async (req, res) => {
         parsedSummary: {
           note: "Bestand geregistreerd. Parsing voor dit formaat komt later.",
         },
+        checksum: csvChecksum,
       })
       .returning();
     res.status(201).json({ import: row, parsed: false });

@@ -59,6 +59,21 @@ export type ActivityImport = {
   parsedSummary: GpxSummary | FitSummary | Record<string, unknown> | null;
   errorMessage: string | null;
   linkedTrainingSessionId: number | null;
+  // Bronherkomst — null voor oudere imports (eerlijk afwezig, nooit verzonnen).
+  checksum?: string | null;
+  parserVersion?: string | null;
+  dedupeStatus?: "new" | "merged_existing" | "route_only" | null;
+};
+
+// Antwoord op een upload: bij een byte-identiek bestand (ook hernoemd) komt
+// `duplicate: true` terug mét de bestaande import — er wordt niets dubbel
+// opgeslagen.
+export type UploadActivityResponse = {
+  import: ActivityImport;
+  parsed?: boolean;
+  sessionId?: number | null;
+  duplicate?: boolean;
+  message?: string;
 };
 
 export function useActivityImports() {
@@ -80,7 +95,7 @@ export function useUploadActivity() {
       content?: string
       contentBase64?: string
     }) =>
-      apiFetch<{ import: ActivityImport; parsed: boolean }>(
+      apiFetch<UploadActivityResponse>(
         "/api/activity-imports",
         { method: "POST", body: JSON.stringify(input) },
       ),

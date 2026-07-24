@@ -46,6 +46,17 @@ export const activityImportsTable = pgTable("activity_imports", {
   status: text("status").notNull().default("uploaded"),
   parsedSummary: jsonb("parsed_summary"),
   errorMessage: text("error_message"),
+  // ── Bronherkomst (additief; oudere rijen blijven eerlijk null) ──
+  // SHA-1 van de bestandsinhoud — dezelfde waarde als het Data Hub-externalId,
+  // zodat een hernoemd maar byte-identiek bestand herkend wordt.
+  checksum: text("checksum"),
+  // Versie van de parser die dit bestand verwerkte (voor herleidbaarheid).
+  parserVersion: text("parser_version"),
+  // Uitkomst van de centrale deduplicatie: "new" (nieuwe activiteit),
+  // "merged_existing" (samengevoegd met bestaande activiteit),
+  // "route_only" (geen starttijd — route, geen training), of null (niet van
+  // toepassing, bv. mislukte parse of oudere import).
+  dedupeStatus: text("dedupe_status"),
   linkedTrainingSessionId: integer("linked_training_session_id").references(
     () => trainingSessionsTable.id,
     { onDelete: "set null" },

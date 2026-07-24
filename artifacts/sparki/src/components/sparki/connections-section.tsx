@@ -125,6 +125,46 @@ function UpcomingBadge() {
   )
 }
 
+// ── Eerlijke functiestatus per platform (bv. Garmin) ────────────────────────
+// De server beoordeelt intern per functie wat de echte staat is; hier vertalen
+// we dat naar gewone Nederlandse zinnen. Interne codes of tokens komen nooit
+// in beeld.
+const CAPABILITY_LABELS: Record<string, string> = {
+  activity_import: "Activiteiten ophalen",
+  health_data: "Gezondheidsgegevens",
+  workout_export: "Trainingen versturen",
+  route_export: "Routes versturen",
+  webhook_sync: "Automatisch bijwerken",
+}
+
+const CAPABILITY_STATUS_TEXT: Record<string, string> = {
+  available: "Gekoppeld zodra je verbindt",
+  prepared_not_active: "Nog niet beschikbaar",
+  awaiting_official_access: "Deze functie wacht nog op goedkeuring",
+}
+
+// Toont voor een nog-niet-beschikbaar platform eerlijk welke functies er
+// bestaan en waar ze op wachten — nooit een belofte die de code niet waarmaakt.
+function CapabilityList({ capabilities }: { capabilities: Record<string, string> }) {
+  const rows = Object.entries(CAPABILITY_LABELS)
+    .map(([key, label]) => ({
+      label,
+      text: CAPABILITY_STATUS_TEXT[capabilities[key] ?? "unsupported"],
+    }))
+    .filter((r): r is { label: string; text: string } => !!r.text)
+  if (rows.length === 0) return null
+  return (
+    <ul className="flex flex-col gap-1">
+      {rows.map((r) => (
+        <li key={r.label} className="flex items-baseline gap-1.5 text-[11px] leading-snug">
+          <span className="text-white/55">{r.label}</span>
+          <span className="text-white/30">— {r.text}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 // Compact list of the data types Sparki can use from a platform once connected.
 function DataTypeChips({ types }: { types: string[] }) {
   if (types.length === 0) return null
@@ -459,6 +499,13 @@ function ConnectionRow({
       <div className="pl-12">
         {isConnected && connector.importedDataTypes.length > 0 ? (
           <DataTypeChips types={connector.importedDataTypes} />
+        ) : !isAvailable &&
+          Object.values(connector.capabilities ?? {}).some(
+            (s) => s === "awaiting_official_access" || s === "prepared_not_active",
+          ) ? (
+          // Nog niet beschikbaar platform (bv. Garmin): eerlijk per functie
+          // laten zien wat er bestaat en waar het op wacht.
+          <CapabilityList capabilities={connector.capabilities} />
         ) : (
           <DataTypeChips types={connector.provides} />
         )}

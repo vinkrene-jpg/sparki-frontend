@@ -432,12 +432,14 @@ export function ActivityImportPanel() {
   const upload = useUploadActivity()
   const inputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
   const imports = data?.imports ?? []
   const sessionList = sessions ?? []
 
   async function onFile(file: File) {
     setError(null)
+    setNotice(null)
     const isFit = file.name.toLowerCase().endsWith(".fit")
     // FIT is sent base64-encoded (binary), which inflates ~33%; the JSON body
     // cap is 12 MB, so hold FIT to 8 MB raw. Text formats keep the 11 MB cap.
@@ -446,7 +448,40 @@ export function ActivityImportPanel() {
       setError(`Bestand te groot (max ${isFit ? 8 : 11} MB)`)
       return
     }
-    const onError = () => setError("Upload mislukt — probeer opnieuw")
+    // Serverfouten dragen een duidelijke Nederlandse uitleg (bv. "Dit
+    // bestandstype wordt niet ondersteund") — toon die, nooit een codemelding.
+    const onError = (e: unknown) => {
+      // apiFetch geeft de ruwe responsetekst door; de server stuurt
+      // {"error":"..."} met een Nederlandse uitleg — haal die eruit.
+      let msg: string | null = null
+      if (e instanceof Error && e.message) {
+        try {
+          const parsed = JSON.parse(e.message) as { error?: unknown }
+          if (typeof parsed.error === "string") msg = parsed.error
+        } catch {
+          // geen JSON — val terug op de standaardmelding
+        }
+      }
+      setError(msg ?? "Upload mislukt — probeer opnieuw")
+    }
+    // Eerlijke duplicaatmelding: hetzelfde bestand (ook hernoemd) wordt niet
+    // opnieuw opgeslagen; samengevoegde ritten worden benoemd.
+    const onSuccess = (r: {
+      duplicate?: boolean
+      message?: string
+      import?: { dedupeStatus?: string | null }
+    }) => {
+      if (r.duplicate) {
+        setNotice(
+          r.message ??
+            "Dit bestand is al geïmporteerd — het is niet opnieuw opgeslagen.",
+        )
+      } else if (r.import?.dedupeStatus === "merged_existing") {
+        setNotice(
+          "Deze rit bestond al (bijvoorbeeld via een gekoppeld platform) — de gegevens zijn samengevoegd, niet dubbel opgeslagen.",
+        )
+      }
+    }
     if (isFit) {
       const buf = await file.arrayBuffer()
       const bytes = new Uint8Array(buf)
@@ -454,11 +489,11 @@ export function ActivityImportPanel() {
       for (let i = 0; i < bytes.length; i++)
         binary += String.fromCharCode(bytes[i]!)
       const contentBase64 = btoa(binary)
-      upload.mutate({ fileName: file.name, contentBase64 }, { onError })
+      upload.mutate({ fileName: file.name, contentBase64 }, { onError, onSuccess })
       return
     }
     const content = await file.text()
-    upload.mutate({ fileName: file.name, content }, { onError })
+    upload.mutate({ fileName: file.name, content }, { onError, onSuccess })
   }
 
   return (
@@ -491,12 +526,16 @@ export function ActivityImportPanel() {
       />
 
       <p className="mt-2 text-[12px] leading-relaxed text-white/35">
-        GPX en FIT worden direct geanalyseerd — FIT bevat ook je echte vermogen,
-        hartslag en cadans. TCX/CSV worden bewaard voor latere verwerking.
+        FIT, GPX en TCX worden direct geanalyseerd — FIT en TCX bevatten ook je
+        echte vermogen, hartslag en cadans. Hetzelfde bestand twee keer uploaden
+        kan geen kwaad: Sparki herkent het en slaat niets dubbel op.
       </p>
 
       {error && (
         <p className="mt-2 text-[12px] text-[rgba(255,140,120,0.85)]">{error}</p>
+      )}
+      {notice && (
+        <p className="mt-2 text-[12px] text-[rgba(245,200,110,0.9)]">{notice}</p>
       )}
 
       <div className="mt-4 space-y-3">

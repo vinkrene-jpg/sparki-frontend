@@ -48,3 +48,5 @@ must be computed from that same effective value, not the static registry flag,
 or Strava-without-creds shows `available:false` yet a "beschikbaar" badge.
 **How to apply:** pass effective availability into `resolveReadiness(...)` at
 every call site, not `def.available`.
+
+**Health-data gate:** a provider declaring health types in `provides` says nothing about ingest reality — the `health_data` capability may only be `available`/`awaiting_official_access` for providers in `HEALTH_INGEST_PROVIDERS` (a real, tested health fetcher; empty today). Anything else is `prepared_not_active`. Declaring "recovery" while only fetching activities (Garmin) must never read as "waiting on approval only".

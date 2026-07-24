@@ -168,6 +168,11 @@ const HEALTH_TYPES = new Set([
 // echt zodra de officiële fabrikantssleutels aanwezig zijn.
 const DEVICE_PUSH_PROVIDERS = new Set(["garmin", "wahoo"]);
 
+// Platforms met een echte, werkende gezondheidsdata-ophaling (fetcher die
+// slaap/HRV/rusthartslag/herstel daadwerkelijk ingest). Vandaag: geen enkel —
+// pas toevoegen wanneer de fetch-code bestaat en getest is.
+const HEALTH_INGEST_PROVIDERS = new Set<string>([]);
+
 /**
  * Status wanneer een capability in principe bestaat maar vandaag niet actief
  * is: OAuth-platforms wachten op officiële toegang/goedkeuring; native en
@@ -197,10 +202,17 @@ export function deriveCapabilities(
       : inactiveStatus(def)
     : "unsupported";
 
+  // Gezondheidsdata: alleen "available" wanneer er een ÉCHTE ophaal-
+  // implementatie bestaat én de omgeving werkt. Vandaag heeft geen enkel
+  // platform een gezondheidsdata-fetcher (Garmin haalt alleen activiteiten op),
+  // dus een platform dat gezondheidsdata belooft is hoogstens "voorbereid" —
+  // nooit "wacht alleen nog op goedkeuring" alsof de code er al ligt.
   const healthData = def.provides.some((t) => HEALTH_TYPES.has(t))
-    ? effectiveAvailable
-      ? "available"
-      : inactiveStatus(def)
+    ? HEALTH_INGEST_PROVIDERS.has(def.id)
+      ? effectiveAvailable
+        ? "available"
+        : inactiveStatus(def)
+      : "prepared_not_active"
     : "unsupported";
 
   // Route-export: alleen platforms met een echte pushimplementatie. Actief

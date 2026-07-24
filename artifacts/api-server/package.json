@@ -23,6 +23,7 @@
     "test:derived-load": "node ./scripts/run-test.mjs derived-load",
     "test:connector-cleanup": "node ./scripts/run-test.mjs connector-cleanup",
     "test:connect-status": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs connect-status",
+    "test:connect-import": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs connect-import",
     "test:strava-sync": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs strava-sync",
     "test:memory-graph": "node ./scripts/run-test.mjs memory-graph",
     "test:context-memory": "node ./scripts/run-test.mjs context-memory",

@@ -38,6 +38,11 @@ import type { CanonicalActivity, NormalizedBatch } from "../engines/data-hub/typ
 // don't pretend to know it.
 export const FILE_PROVIDER = "file";
 
+// Versie van de bestandsparsers, bewaard bij iedere import zodat later
+// herleidbaar is met welke parserlogica een bestand is verwerkt. Ophogen bij
+// inhoudelijke parserwijzigingen (GPX/FIT/TCX).
+export const FILE_PARSER_VERSION = "sparki-file/1";
+
 export type ParsedFileKind = "gpx" | "fit" | "tcx";
 
 export type ActivityFileIngestResult = {
