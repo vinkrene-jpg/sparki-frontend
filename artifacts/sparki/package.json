@@ -27,7 +27,8 @@
     "test:route-name": "node ../../scripts/run-tsx-test.mjs src/lib/route-name.test.ts",
     "test:add-training-flow": "node ../../scripts/run-tsx-test.mjs src/lib/add-training-flow.test.ts",
     "test:navigation": "node ../../scripts/run-tsx-test.mjs src/lib/navigation.test.ts",
-    "test:admin-account-prefill": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/admin-account-prefill.test.tsx"
+    "test:admin-account-prefill": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/admin-account-prefill.test.tsx",
+    "test:admin-page-smoke": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/admin-page-smoke.test.tsx"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.11.1",
