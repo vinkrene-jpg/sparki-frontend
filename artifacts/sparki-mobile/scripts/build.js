@@ -1,4 +1,5 @@
 const fs = require("fs");
+const net = require("net");
 const path = require("path");
 const { spawn } = require("child_process");
 const { Readable } = require("stream");
@@ -20,7 +21,46 @@ function findWorkspaceRoot(startDir) {
 }
 
 const workspaceRoot = findWorkspaceRoot(projectRoot);
-const metroPort = process.env.METRO_PORT || "8081";
+let metroPort = process.env.METRO_PORT || "8081";
+
+function isPortFree(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.once("error", () => resolve(false));
+    server.once("listening", () => {
+      server.close(() => resolve(true));
+    });
+    server.listen(Number(port), "127.0.0.1");
+  });
+}
+
+async function ensureFreeMetroPort() {
+  if (await checkMetroHealth()) {
+    // A healthy Metro is already serving this port; startMetro will reuse it.
+    return;
+  }
+  if (process.env.METRO_PORT) {
+    if (!(await isPortFree(metroPort))) {
+      exitWithError(
+        `METRO_PORT=${metroPort} is set but the port is already in use by another process`,
+      );
+    }
+    return;
+  }
+  if (await isPortFree(metroPort)) {
+    return;
+  }
+  for (let candidate = 8090; candidate < 8140; candidate++) {
+    if (await isPortFree(candidate)) {
+      console.log(
+        `Port ${metroPort} is busy, using free port ${candidate} for Metro`,
+      );
+      metroPort = String(candidate);
+      return;
+    }
+  }
+  exitWithError(`No free Metro port found (tried ${metroPort} and 8090-8139)`);
+}
 const basePath = (process.env.BASE_PATH || "/").replace(/\/+$/, "");
 
 function exitWithError(message) {
@@ -537,6 +577,7 @@ async function main() {
   prepareDirectories(timestamp);
   clearMetroCache();
 
+  await ensureFreeMetroPort();
   await startMetro(domain, expoPublicReplId);
 
   const downloadTimeout = 600000;

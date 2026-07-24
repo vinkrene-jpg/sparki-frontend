@@ -62,9 +62,8 @@
 - [Sparki experience-first restructure](sparki-experience-restructure.md) — approved Beleven→Ontdekken→Begrijpen→Verbeteren reorg; 5-tab nav (Vandaag·Activiteiten·Ontdekken·Trainen·Jij).
 - [Sparki home weather](sparki-home-weather.md) — real Open-Meteo for home location on everyday surfaces; home-advisory representative session must be ≥120min or heat reads diverge from daily-advice engine.
 - [Drizzle onConflict partial index](drizzle-onconflict-partial-index.md) — onConflictDoNothing predicate is `where` not `targetWhere`; wrong key fails silently (inserts "succeed" but nothing persists).
-- [Sparki reminder delivery](sparki-reminder-delivery.md) — scheduled email reminders engine; idempotent via notifications dedupeKey+sentAt; email honest-limited (no verified domain) skips, never fake-sends.
+- [Sparki reminder delivery](sparki-reminder-delivery.md) — idempotent via dedupeKey+sentAt; email honest-limited skips, never fake-sends; push = SSRF host-allowlist, only fresh rows ([push](sparki-web-push.md)).
 - [Open choices tracker](open-choices-convention.md) — START every turn: read `.agents/open-choices.md`, surface unresolved choices in chat; add when I ask, remove when decided.
-- [Sparki Web Push + profile nudges](sparki-web-push.md) — push endpoints are server-fetched URLs ⇒ host-allowlist SSRF guard at subscribe AND send; push only freshly-created rows; dedupe uses passed `now`.
 - [LLM prompt Dutch coverage](llm-prompt-dutch-coverage.md) — each LLM prompt needs its OWN Dutch rule; EXTRACT_SYSTEM lacked it → English observation cards on /you.
 - [Sparki Ontwikkelmodel](sparki-ontwikkelmodel.md) — structured developmentGoal enum + deterministic honest belastbaarheid + /you Ontwikkelkompas.
 - [ImageMagick SVG glow](imagemagick-svg-glow.md) — MSVG ignores feGaussianBlur/filters; build icon glows with radialGradient layers, regenerate ALL PNG derivatives (OS-cached).
@@ -93,7 +92,7 @@
 - [Drizzle push no-op drift-lussen](drizzle-push-drift-loops.md) — 63-char naamafkapping + array-default '{}' zijn eeuwige diffs.
 - [Sparki file-import as Data Hub source](sparki-file-import-source.md) — GPX/FIT/TCX uploads ingest via `ingestBatch` provider "file" (not a silo); content-only externalId; timeless GPX ≠ activity.
 - [Deployment liveness probes bare /api](deploy-liveness-bare-api.md) — platform pings the service base path (not only startup healthz); api router needs get("/") too or republish flaps unhealthy.
-- [api-server test build race](api-server-test-build-race.md) — parallel test:* workflows share one dist/ + rm-rebuild ⇒ "service was stopped"; restart them strictly sequentially.
+- [api-server test build race](api-server-test-build-race.md) — parallel test:* workflows share one dist/ ⇒ run strictly sequentially; boot storms crash esbuild ([semaphore](test-workflow-boot-storm.md)).
 - [Sparki per-session caps](sparki-session-caps.md) — plan engine caps single-session minutes per DayKind×experience; unrealistic weekly quota underfills honestly, never a 6h ride; wedstrijd keeps 360.
 - [Sparki engagement engine](sparki-engagement-engine.md) — healthy pull-to-return: learns real open rhythm from tester_events, honest default when thin.
 - [Sparki aandachtswet (Vandaag single-leader)](sparki-aandachtswet.md) — one leading Momentblok (priority chain); ride-along weather/leskaart/nudge must be GATED at render not just imported.
@@ -157,3 +156,4 @@
 - [Sparki Data Origin framework](sparki-data-origin.md) — herkomst/explain-laag; sync-ID alleen bij bewijsbare run-koppeling (nooit "nieuwste run"); drizzle ALL(${array})-trap.
 - [Sparki Foundation engines](sparki-foundation-engines.md) — 7 deterministic engines + routing orchestrator behind ai_foundation flag; nullsNotDistinct evidence upsert; flag rows must be seeded for override FK.
 - [Flag fetch vs Clerk handshake race](sparki-flag-fetch-race.md) — one-shot /api/flags 403 during auth settling silently disables ALL features; flag fetch must retry + refetch after sync.
+- [Expo build port + Metro watch traps](sparki-mobile-build-port.md) — probe Metro port (busy port = silent interactive-prompt hang); blockList volatile dist dirs or fs.watch ENOENT kills expo.
