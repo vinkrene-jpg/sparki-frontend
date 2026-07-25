@@ -1,0 +1,116 @@
+schema: sparki.ux00b.r3.figma_handoff
+version: "R3"
+date: "2026-07-25"
+
+task:
+  id: UX_00B-R3
+  mode: READ_ONLY_MAPPING_CORRECTION
+  objective: RESTORE_R2_CONTENT_DESCRIPTIONS_AND_USE_NEW_NONCACHED_CORRECTED_FIGMA_NODES
+
+authority:
+  figma_file_name: "Sparki Commercial UX — Approved Wave 1"
+  figma_file_key: "wDUBmQvIFFDpaah5JyskFp"
+  figma_file_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp"
+  page_node_id: "0:1"
+  revision: CONTENT_ALIGNMENT_2026-07-25
+  node_revision: NEW_NODE_IDS_TO_PREVENT_STALE_PUBLIC_RENDER
+
+frames:
+  GO_ROUTE_HOME_MOBILE:
+    figma_node_id: "20:2"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=20-2"
+    size: "390x844"
+  GO_ROUTE_WORKSPACE_DESKTOP:
+    figma_node_id: "20:27"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=20-27"
+    size: "1440x900"
+  GO_ROUTE_DETAIL_MOBILE:
+    figma_node_id: "20:62"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=20-62"
+    size: "390x844"
+  COMPLETE_TODAY_MOBILE:
+    figma_node_id: "20:88"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=20-88"
+    size: "390x844"
+  COMPLETE_TODAY_DESKTOP:
+    figma_node_id: "20:135"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=20-135"
+    size: "1440x900"
+  COMPLETE_PLAN_DESKTOP:
+    figma_node_id: "20:170"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=20-170"
+    size: "1440x900"
+  SHARED_ONBOARDING_MOBILE:
+    figma_node_id: "20:221"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=20-221"
+    size: "390x844"
+  SHARED_SUBSCRIPTION_DESKTOP:
+    figma_node_id: "20:240"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=20-240"
+    size: "1440x900"
+
+verified_corrected_content:
+  GO_ROUTE_HOME_MOBILE:
+    - PLACE_OR_AREA_SEARCH
+    - RECOMMENDATIONS
+    - BOTTOM_NAV_MAP_ROUTES_SAVED_MORE
+  GO_ROUTE_WORKSPACE_DESKTOP:
+    - NAV_ROUTES_SAVED_NAVIGATE_PROFILE
+    - ROUTE_LIST_AND_SELECTED_ROUTE
+  GO_ROUTE_DETAIL_MOBILE:
+    - ELEVATION_PROFILE
+    - SURFACE_PERCENTAGES
+    - GPX_AND_NAVIGATION_ACTIONS
+  COMPLETE_TODAY_MOBILE:
+    - RECOVERY_GOOD
+    - TRAINING_VIEW_ACTION
+    - WEEK_STRIP
+    - COMPLETE_BOTTOM_NAV
+  COMPLETE_TODAY_DESKTOP:
+    - PLAN_NAV_LABEL
+    - READINESS_RATIONALE_LINK
+    - WEEK_OVERVIEW
+    - SEASON_CONTEXT
+  COMPLETE_PLAN_DESKTOP:
+    - GOALS
+    - SEASON_PHASES
+    - WEEK_TOTALS
+    - WHY_THIS_WEEK
+    - PLAN_ADJUST_ACTION
+  SHARED_ONBOARDING_MOBILE:
+    - TWO_COMPLETED_AND_ONE_PENDING_STEP
+    - ACTIVITIES_CONNECT_PRIMARY_CTA
+    - WHEN_IS_IT_ENOUGH_COPY
+  SHARED_SUBSCRIPTION_DESKTOP:
+    - CONCEPT_PRICES_BADGE
+    - PACKAGE_CONTENT
+    - SAFETY_NOT_BEHIND_PAYWALL_BAR
+
+verification:
+  editable_frames: true
+  automated_content_and_size_check: PASS_8_OF_8
+  required_content_missing: 0
+  production_code_changed: false
+
+replit_execution:
+  required:
+    - RESTORE_R2_CONTENT_DESCRIPTIONS_FROM_VERSION_BEFORE_STALE_2_NODE_REVERIFICATION
+    - REPLACE_ONLY_FIGMA_NODE_METADATA_WITH_THIS_R3_HANDOFF
+    - OPEN_ALL_8_NEW_20_NODE_URLS_WITHOUT_REUSING_2_NODE_SCREENSHOTS
+    - UPDATE_ONLY_docs/UX_00B_FIGMA_CODE_MAPPING.yaml
+    - REPORT_PASS_OR_EXACT_MISMATCH_PER_FRAME
+  prohibited:
+    - USE_ANY_2_COLON_NODE_AS_CURRENT_AUTHORITY
+    - PRODUCTION_CODE_CHANGE
+    - UI_IMPLEMENTATION
+    - FEATURE_BUILD
+    - EVIDENCE_ZIP
+    - EXTERNAL_RESEARCH
+  acceptance:
+    - ALL_8_NEW_20_NODE_IDS_RECORDED
+    - R2_CONTENT_DESCRIPTIONS_RESTORED
+    - YAML_VALID
+    - WORKTREE_CHANGED_ONLY_IN_MAPPING_FILE
+  completion_response:
+    max_lines: 12
+    stop_after_delivery: true
