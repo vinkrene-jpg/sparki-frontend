@@ -1,0 +1,43 @@
+{
+  "at": "2026-07-25T06:33:19.202Z",
+  "node": "v24.13.0",
+  "thresholds": {
+    "minFrames": 50,
+    "minDetectionFraction": 0.8,
+    "minJointMeanVisibility": 0.7,
+    "coreJoints": [
+      "shoulder",
+      "hip",
+      "knee",
+      "ankle"
+    ]
+  },
+  "checks": [
+    {
+      "name": "old_rounding_would_have_masked_0_7996",
+      "ok": true,
+      "detail": "Math.round(0.7996*1000)/1000 === 0.8 — daarom moet de poort ongerond toetsen"
+    },
+    {
+      "name": "boundary_0_7996_fails_closed",
+      "ok": true,
+      "detail": "verdict=ONVOLDOENDE_BETROUWBAAR stats=null pedal=null reasons=persoon_niet_betrouwbaar_gedetecteerd"
+    },
+    {
+      "name": "boundary_0_7996_reported_honestly",
+      "ok": true,
+      "detail": "gerapporteerde fractie=0.7996 (niet gemaskeerd tot 0.8)"
+    },
+    {
+      "name": "boundary_0_79996_fails_closed_despite_presentation_rounding_to_0_8",
+      "ok": true,
+      "detail": "verdict=ONVOLDOENDE_BETROUWBAAR gepresenteerde fractie=0.8 (presentatie rondt tot 0.8, poort faalt toch op ongerond 0.79996)"
+    },
+    {
+      "name": "boundary_0_8000_passes_when_other_gates_pass",
+      "ok": true,
+      "detail": "verdict=BETROUWBAAR fractie=0.8 kneeMean=170.98 cycles=800"
+    }
+  ],
+  "verdict": "PASS"
+}

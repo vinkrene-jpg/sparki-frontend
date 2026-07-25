@@ -94,7 +94,9 @@ De meetengine (`src/angles.mjs`) heeft een deterministische fail-closed-poort (`
 - **Retry bewezen idempotent**: geforceerde timeout (`pose_worker_timeout`, SIGKILL) → retry van exact dezelfde clip slaagt en levert **bit-identieke** numerieke output aan een onafhankelijke tweede run (knie gem. 134,52°, 29 cycli — gelijk aan §4). De worker is stateless per framemap; tempmappen worden ook bij timeout opgeruimd (privacyproef check `temp_cleanup_after_timeout`).
 - **Geldige clips onveranderd**: de poort verandert niets aan de cijfers van geldige clips (regressie-anker `valid_clip_passes_gate_unchanged`).
 
-Aandachtspunten voor de productieversie (BF_03-acceptatie, géén open BF_00-poort): vergelijk de detectiefractie ongerond met de 0,8-drempel (afronding op 3 decimalen laat 0,7996 nu net door), en geef ook elleboog/pols/voet een minimum-n per hoek (nu alleen eerlijk gerapporteerd via `n`, gefilterd door per-frame visibility ≥ 0,5).
+**Grenswaardecorrectie (BF_00R-E1, 25 juli 2026)**: de betrouwbaarheidspoort toetst nu op de **ongeronde** detectiefractie én de ongeronde gewrichtszichtbaarheid; afronden gebeurt uitsluitend voor presentatie (4 decimalen, zodat een grensgeval zichtbaar blijft). Uitvoerbaar grenswaardebewijs: `node src/reliability-boundary-proof.mjs` → `results/reliability_boundary_proof.json`, verdict PASS (exitcode 0): fractie 0,7996 (7996/10000) → `ONVOLDOENDE_BETROUWBAAR` met `stats=null` en `pedal=null`, eerlijk gerapporteerd als 0,7996 (niet gemaskeerd tot 0,8); fractie 0,79996 (79996/100000) → eveneens fail-closed hoewel zelfs de 4-decimalen-presentatie dit tot 0,8 afrondt (bewijst rond-onafhankelijkheid onder elke presentatieprecisie); fractie exact 0,8000 (8000/10000) → toegestaan wanneer alle overige poorten slagen (`BETROUWBAAR` met echte metingen). De geldige clips blijven numeriek onveranderd (regressie-anker `valid_clip_passes_gate_unchanged`, opnieuw PASS na de correctie).
+
+Resterend aandachtspunt voor de productieversie (BF_03-acceptatie, géén open BF_00-poort): geef ook elleboog/pols/voet een minimum-n per hoek (nu alleen eerlijk gerapporteerd via `n`, gefilterd door per-frame visibility ≥ 0,5).
 
 ## 5. Privacyproef
 
@@ -130,6 +132,9 @@ node src/bench.mjs repeat:1                      # herhaalbaarheidsrun (1..5)
 node src/bench.mjs conc:3                        # gelijktijdigheid (1/3/5)
 node src/privacy-proof.mjs                       # privacyproef (§5)
 node src/fail-closed-proof.mjs                   # fail-closed- + retrybewijs (§4b)
+node src/reliability-boundary-proof.mjs          # grenswaardebewijs poortdrempel 0,8 (§4b)
 ```
 
-Omgevingsvereisten (gepind): Python 3.11.14 + `mediapipe==0.10.35`, Node v24.13.0, ffmpeg 6.1.2; modellen via sha256 (§1B). Alle proeven zijn op 25 juli 2026 integraal opnieuw uitgevoerd in deze omgeving: 5/5 clips 100% detectie met identieke hoekgemiddelden, privacyproef PASS, fail-closed-proef PASS.
+Omgevingsvereisten (gepind): Python 3.11.14 + `mediapipe==0.10.35`, Node v24.13.0, ffmpeg 6.1.2; modellen via sha256 (§1B). Alle proeven zijn op 25 juli 2026 integraal opnieuw uitgevoerd in deze omgeving, en bij de BF_00R-E1-afsluiting dezelfde dag nogmaals ná de grenswaardecorrectie: 5/5 clips 100% detectie met identieke hoekgemiddelden (clip1 140,26° / clip2 134,52° / clip3 135,62° / clip4 144,68° / clip5 144,30°), herhaalbaarheid 5/5 bit-identiek (knie gem. 134,52°, 29 cycli, 86,6 rpm), privacyproef PASS, fail-closed-+retryproef PASS, grenswaardebewijs PASS — alle exitcodes 0, nul waarschuwingen.
+
+Bronreferentie voor de definitieve bewijsstand: `BF_00_EVIDENCE_PROVENANCE.yaml` in het evidencepakket (exacte HEAD-commit + schone werkboom); dit vervangt eerdere losse snapshot-/commitvermeldingen in de BF_00-rapporten.

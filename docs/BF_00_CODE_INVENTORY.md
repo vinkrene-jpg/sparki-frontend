@@ -2,7 +2,7 @@
 
 Status: READ-ONLY inventarisatie (geen productiecode gewijzigd).
 Bron: masterplan v2.27, `EQUIPMENT_BIKE_FIT.replit_tasks.BF_00`.
-Snapshot: main, na commit 96a2cf0d (alle paden hieronder zijn geverifieerd te bestaan; geen aangenomen paden).
+Bronreferentie: `BF_00_EVIDENCE_PROVENANCE.yaml` in het evidencepakket (één consistente HEAD-commit voor de definitieve bewijsstand; alle paden hieronder zijn geverifieerd te bestaan; geen aangenomen paden).
 
 ---
 

@@ -10,6 +10,7 @@ BF_00:
   WEB_FALLBACK_TEST: PASS # WASM-fileset-resolve bewezen + bestaand productie-WASM-precedent; fallbackroute gedocumenteerd, niet als start nodig
   REPEATABILITY_TEST: PASS # 5 identieke runs bit-identiek (tolerantie 0.00); herbevestigd 25-07-2026 met 2 extra bit-identieke runs op dezelfde waarden
   FAIL_CLOSED_TEST: PASS # uitvoerbaar bewijs src/fail-closed-proof.mjs (results/fail_closed_proof.json): 2 persoonloze clips + te korte opname -> ONVOLDOENDE_BETROUWBAAR zonder metingen; ongeldig bestand -> foutpad, nooit metingen
+  RELIABILITY_BOUNDARY_TEST: PASS # BF_00R-E1: poort toetst op ONGERONDE detectiefractie (afronden alleen presentatie); src/reliability-boundary-proof.mjs (results/reliability_boundary_proof.json): 0.7996 -> ONVOLDOENDE_BETROUWBAAR met stats=null en pedal=null; 0.79996 -> ook fail-closed hoewel 4-decimalen-presentatie tot 0.8 afrondt (rond-onafhankelijk onder elke presentatieprecisie); exact 0.8000 -> toegestaan wanneer alle overige poorten slagen; exitcode 0
   RETRY_TEST: PASS # geforceerde timeout -> retry van dezelfde clip slaagt en is bit-identiek aan onafhankelijke run (worker stateless/idempotent, bewezen i.p.v. geclaimd)
   PRIVACY_TEST: PASS # uitvoerbaar bewijs src/privacy-proof.mjs (results/privacy_proof.json): eigenaargebonden + non-owner deny, delete-at-sweep, delete-now, temp-cleanup na timeout, geen landmark-payload in logs; lokale inferentie; herbevestigd 25-07-2026
   CV_PROVIDER_SELECTION: PASS
@@ -22,5 +23,5 @@ BF_00:
     ffmpeg: 6.1.2
     model_full_sha256: 4eaa5eb7a98365221087693fcc286334cf0858e2eb6e15b506aa4a7ecdcec4ad
     model_lite_sha256: 59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a
-  COMMIT_SHA: 69ca3c8fb7f641f437ece1f6e2980c3dcd2161bb # commit met het volledige prototype + bewijsbasis; de BF_00R-afronding (fail-closed-gate, retrybewijs, hervalidatie) zit in de checkpoint-commit van taak BF_00R (gerapporteerd in het taakverslag)
-  REVERIFIED_AT: 2026-07-25 # alle 5 clips opnieuw verwerkt (100% detectie, kniehoeken identiek aan tabel), privacyproef + fail-closed-proef PASS op dezelfde dag
+  SOURCE_REFERENCE: BF_00_EVIDENCE_PROVENANCE.yaml # één consistente bronreferentie voor de definitieve bewijsstand (exacte HEAD-commit + schone werkboom); vervangt eerdere losse commit-/snapshotclaims in de BF_00-rapporten
+  REVERIFIED_AT: 2026-07-25 # BF_00R-E1: alle 5 clips opnieuw verwerkt (100% detectie, kniehoeken identiek aan tabel), herhaalbaarheid 5/5 bit-identiek, privacyproef + fail-closed-/retryproef + grenswaardebewijs PASS, alle exitcodes 0, nul waarschuwingen — uitgevoerd NA de grenswaardecorrectie

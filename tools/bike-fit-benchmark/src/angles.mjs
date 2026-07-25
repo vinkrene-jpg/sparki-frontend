@@ -110,9 +110,13 @@ export function assessReliability(frames, side) {
   const reasons = [];
   const total = frames.length;
   const detected = frames.filter((f) => f.landmarks).length;
-  const detectionFraction = total ? Math.round((detected / total) * 1000) / 1000 : 0;
+  // BF_00R-E1: de poort toetst ALTIJD op de ongeronde fractie; afronden gebeurt
+  // uitsluitend voor presentatie (4 decimalen, zodat een grensgeval als 0.7996
+  // zichtbaar blijft en niet als 0.8 gepresenteerd wordt terwijl de poort faalt).
+  const detectionFractionRaw = total ? detected / total : 0;
+  const detectionFraction = Math.round(detectionFractionRaw * 10000) / 10000;
   if (total < t.minFrames) reasons.push("te_weinig_frames");
-  if (detectionFraction < t.minDetectionFraction) reasons.push("persoon_niet_betrouwbaar_gedetecteerd");
+  if (detectionFractionRaw < t.minDetectionFraction) reasons.push("persoon_niet_betrouwbaar_gedetecteerd");
   const jointMeanVisibility = {};
   for (const j of t.coreJoints) {
     const vals = [];
@@ -121,9 +125,10 @@ export function assessReliability(frames, side) {
       const lm = f.landmarks.find((l) => l.name === `${side}_${j}`);
       if (lm) vals.push(lm.visibility);
     }
-    const mean = vals.length ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 1000) / 1000 : null;
-    jointMeanVisibility[j] = mean;
-    if (mean === null || mean < t.minJointMeanVisibility) reasons.push(`gewricht_onbetrouwbaar:${j}`);
+    // Zelfde defectklasse als hierboven: vergelijk ongerond, rond alleen voor presentatie.
+    const meanRaw = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    jointMeanVisibility[j] = meanRaw === null ? null : Math.round(meanRaw * 10000) / 10000;
+    if (meanRaw === null || meanRaw < t.minJointMeanVisibility) reasons.push(`gewricht_onbetrouwbaar:${j}`);
   }
   return { ok: reasons.length === 0, detectionFraction, jointMeanVisibility, reasons };
 }
