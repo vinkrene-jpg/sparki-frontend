@@ -539,3 +539,15 @@ id = "KT1yPLBtTnPYHhgdPciZn"
 uri = "file://UX_00A_COMPLETE_EVIDENCE.zip"
 type = "unspecified"
 title = "UX_00A — Compleet bewijspakket (ZIP)"
+
+[[outputs]]
+id = "6ROiA_s5y0ybYiK0A1nxW"
+uri = "file://docs/UX_00B_DELIVERY.zip"
+type = "unspecified"
+title = "UX_00B — Figma↔code-mapping (zip)"
+
+[[outputs]]
+id = "DwoebE7Vrd16aSdlJmgOE"
+uri = "file://docs/UX_00B_FIGMA_CODE_MAPPING.yaml"
+type = "unspecified"
+title = "UX_00B_FIGMA_CODE_MAPPING.yaml"
