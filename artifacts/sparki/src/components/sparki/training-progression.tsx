@@ -25,11 +25,22 @@ const CTL_VERDICT: Record<TrendDir, string> = {
 const VOLUME_VERDICT: Record<TrendDir, string> = {
   up: "Je trainingsvolume neemt toe vergeleken met de weken ervoor.",
   flat: "Je trainingsvolume blijft gelijkmatig — mooie regelmaat.",
-  down: "Je trainingsvolume daalt — minder belasting dan eerder.",
+  down: "Je trainingsvolume daalt — minder trainingstijd dan eerder.",
 }
 
 const trendColor = (d: TrendDir) =>
   d === "down" ? "rgba(255,140,120,0.9)" : ACCENT
+
+// Weekvolume als uren, Nederlands genoteerd ("4,5u"); onder het uur in minuten.
+function formatHours(totalMin: number) {
+  if (totalMin < 60) return `${totalMin}m`
+  const hours = totalMin / 60
+  const rounded = Math.round(hours * 10) / 10
+  const label = Number.isInteger(rounded)
+    ? String(rounded)
+    : rounded.toFixed(1).replace(".", ",")
+  return `${label}u`
+}
 
 export function TrainingProgression({
   sessions,
@@ -48,7 +59,9 @@ export function TrainingProgression({
   const weeks = 6
   const buckets = weeklyBuckets(sessions ?? [], weeks)
   const totalSessions = buckets.reduce((a, b) => a + b.sessions, 0)
-  const maxTss = Math.max(1, ...buckets.map((b) => b.totalTss))
+  // Volume = trainingstijd. Elke gelogde rit heeft een duur; TSS bestaat
+  // alleen bij ritten met vermogensdata en zou echte ritten onzichtbaar maken.
+  const maxMin = Math.max(1, ...buckets.map((b) => b.totalMin))
 
   // CTL (fitness) trajectory over the load window.
   const ctlSeries = (chartData ?? []).map((d) => d.ctl).filter((v) => v >= 0)
@@ -139,10 +152,10 @@ export function TrainingProgression({
             <div className="flex items-baseline justify-between">
               <span className="inline-flex items-center gap-1 font-mono text-[10px] tracking-[0.2em] text-white/35">
                 TRAININGSVOLUME · {weeks} WEKEN
-                <UitlegDot uitlegKey="belasting" label="Trainingsvolume" />
+                <UitlegDot uitlegKey="trainingsvolume" label="Trainingsvolume" />
               </span>
               <span className="font-mono text-[10px] tracking-wide text-white/35">
-                belasting / week
+                uren / week
               </span>
             </div>
             {totalSessions < 2 ? (
@@ -168,7 +181,7 @@ export function TrainingProgression({
               <>
                 <div className="mt-4 flex h-24 items-end gap-2">
                   {buckets.map((b, i) => {
-                    const h = (b.totalTss / maxTss) * 80 + 4
+                    const h = (b.totalMin / maxMin) * 80 + 4
                     const isLast = i === buckets.length - 1
                     return (
                       <div
@@ -176,7 +189,7 @@ export function TrainingProgression({
                         className="flex flex-1 flex-col items-center gap-1.5"
                       >
                         <span className="font-mono text-[9px] tabular-nums text-white/35">
-                          {b.totalTss > 0 ? b.totalTss : ""}
+                          {b.totalMin > 0 ? formatHours(b.totalMin) : ""}
                         </span>
                         <div className="relative h-20 w-full">
                           <div

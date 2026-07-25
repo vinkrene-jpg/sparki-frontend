@@ -25,6 +25,7 @@ const VEREISTE_KEYS = [
   // Golf 9: kerngetallen, advies en analyses
   "ftp",
   "belasting",
+  "trainingsvolume",
   "fitheid",
   "vermoeidheid",
   "vorm",

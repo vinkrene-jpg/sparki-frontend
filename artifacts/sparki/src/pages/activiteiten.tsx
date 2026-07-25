@@ -8,6 +8,7 @@ import {
   Zap,
   HeartPulse,
   Flame,
+  Gauge,
   ChevronRight,
   Search,
   Activity as ActivityIcon,
@@ -68,6 +69,21 @@ function relativeDate(iso: string) {
 
 type Metric = { icon: typeof Clock; value: string }
 
+// Gemiddelde snelheid: de opgeslagen waarde van de bron als die er is, anders
+// echte wiskunde uit afstand en duur. Geen van beide aanwezig → geen chip.
+function avgSpeed(s: TrainingSession): number | null {
+  const stored = s.avgSpeedKph != null ? Number(s.avgSpeedKph) : NaN
+  if (Number.isFinite(stored) && stored > 0) return stored
+  const km = s.distanceKm != null && s.distanceKm !== "" ? Number(s.distanceKm) : NaN
+  if (Number.isFinite(km) && km > 0 && s.durationMin != null && s.durationMin > 0)
+    return km / (s.durationMin / 60)
+  return null
+}
+
+function formatKmh(v: number) {
+  return `${(Math.round(v * 10) / 10).toLocaleString("nl-NL")} km/u`
+}
+
 // Honest readback only — a metric chip is shown only when the value really
 // exists on the session. Sessions store aggregates; per-second curves live in
 // the detail view when stream data was imported. Nothing is fabricated here.
@@ -76,6 +92,8 @@ function sessionMetrics(s: TrainingSession): Metric[] {
   if (s.durationMin != null) out.push({ icon: Clock, value: `${s.durationMin} min` })
   if (s.distanceKm != null && s.distanceKm !== "")
     out.push({ icon: RouteIcon, value: `${s.distanceKm} km` })
+  const speed = avgSpeed(s)
+  if (speed != null) out.push({ icon: Gauge, value: formatKmh(speed) })
   if (s.elevationM != null) out.push({ icon: Mountain, value: `${s.elevationM} hm` })
   if (s.normalizedPower != null)
     out.push({ icon: Zap, value: `${s.normalizedPower} W` })

@@ -381,7 +381,7 @@ export function computeMentalOverview(
       patterns.push({
         key: "vaste_zwakke_dag",
         label: `Vaste lastige dag: ${DAY_NAMES[day]}`,
-        detail: `${n} van de gemiste of verschoven trainingen vielen op ${DAY_NAMES[day]}. Dat wijst eerder op agenda of routine dan op je benen.`,
+        detail: `${n} van de gemiste of verschoven geplande trainingen in de afgelopen ${SCORE_WINDOW_DAYS} dagen vielen op ${DAY_NAMES[day]}. Dat wijst eerder op agenda of routine dan op je benen.`,
         occurrences: n,
         technique: MENTAL_TECHNIQUES.zelfspraak,
       });

@@ -149,8 +149,12 @@ export function seriesForKind(
       return { values, unit: "TSB", caption: "Je vorm (TSB) over de periode" }
     }
     case "volume": {
-      const values = weeklyBuckets(sessions ?? [], 6).map((b) => b.totalTss)
-      return { values, unit: "TSS", caption: "Je trainingsvolume per week" }
+      // Tijd is de eerlijke volumemaat: elke gelogde rit heeft een duur,
+      // terwijl TSS alleen bestaat bij ritten met vermogensdata.
+      const values = weeklyBuckets(sessions ?? [], 6).map((b) =>
+        Math.round((b.totalMin / 60) * 10) / 10,
+      )
+      return { values, unit: "uur", caption: "Je trainingsvolume per week" }
     }
     case "frequency": {
       const values = weeklyBuckets(sessions ?? [], 6).map((b) => b.sessions)

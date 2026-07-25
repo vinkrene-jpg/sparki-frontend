@@ -17,6 +17,7 @@ import {
 } from "@workspace/db";
 import type { BusyDay } from "../lib/training/plan-generator";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { maybeScheduleStravaCatchUp } from "../engines/data-hub/strava-sync";
 import { generateThreeWeekPlan, autoAdaptPlan } from "../engines/training-plan";
 import {
   computeZones,
@@ -425,6 +426,11 @@ router.get("/dashboard", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const today = todayStr();
   const ninetyDaysAgo = daysAgoStr(90);
+
+  // Zelfherstellende sync: dit is het eerste dat de app bij openen ophaalt.
+  // Als de laatste Strava-sync verouderd (>24u) of mislukt is, start op de
+  // achtergrond een begrensde inhaalsync — nooit blokkerend voor deze request.
+  void maybeScheduleStravaCatchUp(clerkId, req.log).catch(() => {});
 
   try {
     const [athleteProfile] = await db
@@ -1407,6 +1413,9 @@ router.get("/sessions", requireAuth, async (req, res) => {
     parseInt(String(req.query["limit"] ?? "20"), 10),
     500,
   );
+  // Zelfherstellende sync op het leespad (zie /dashboard): wie zijn ritten
+  // bekijkt terwijl de koppeling stilviel, krijgt zo automatisch een inhaalsync.
+  void maybeScheduleStravaCatchUp(clerkId, req.log).catch(() => {});
   try {
     const sessions = await db
       .select()

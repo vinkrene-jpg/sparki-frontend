@@ -81,7 +81,7 @@ export async function runScheduledConnectorSync(opts: {
     summary.checked++;
     try {
       const [lastRun] = await db
-        .select({ status: syncRunsTable.status })
+        .select({ status: syncRunsTable.status, startedAt: syncRunsTable.startedAt })
         .from(syncRunsTable)
         .where(
           and(
@@ -91,7 +91,12 @@ export async function runScheduledConnectorSync(opts: {
         )
         .orderBy(desc(syncRunsTable.startedAt))
         .limit(1);
-      const decision = shouldCatchUp(row, lastRun?.status ?? null, now);
+      const decision = shouldCatchUp(
+        row,
+        lastRun?.status ?? null,
+        now,
+        lastRun?.startedAt ?? null,
+      );
       if (!decision.catchUp) {
         summary.skipped++;
         continue;

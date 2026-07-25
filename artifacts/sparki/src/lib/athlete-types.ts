@@ -175,6 +175,7 @@ export type TrainingSession = {
   normalizedPower: number | null;
   avgPower: number | null;
   avgHR: number | null;
+  avgSpeedKph: string | null;
   tss: number | null;
   intensityFactor: string | null;
   notes: string | null;

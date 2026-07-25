@@ -82,9 +82,11 @@ export function trendDir(first: number, last: number, rel = 0.05): TrendDir {
 }
 
 /**
- * Compare the average weekly TSS of the most recent `window` complete weeks
- * against the `window` weeks before them. Returns null when there isn't enough
- * data on both sides to make an honest comparison.
+ * Compare the average weekly training TIME of the most recent `window`
+ * complete weeks against the `window` weeks before them. Time is the honest
+ * volume metric: every logged ride has a duration, while TSS only exists for
+ * rides with power data — a TSS-based trend would silently ignore real rides.
+ * Returns null when there isn't enough data on both sides.
  */
 export function volumeTrend(
   buckets: WeekBucket[],
@@ -94,7 +96,7 @@ export function volumeTrend(
   const recent = buckets.slice(-window)
   const prior = buckets.slice(-window * 2, -window)
   const avg = (arr: WeekBucket[]) =>
-    arr.reduce((a, b) => a + b.totalTss, 0) / arr.length
+    arr.reduce((a, b) => a + b.totalMin, 0) / arr.length
   const recentAvg = avg(recent)
   const priorAvg = avg(prior)
   if (recentAvg === 0 && priorAvg === 0) return null

@@ -28,6 +28,11 @@ import { runSync, HubError } from "./index";
 /** Ouder dan dit = verouderd; de inhaalsync komt in actie. */
 export const STALE_SYNC_HOURS = 24;
 
+// Minimale wachttijd tussen twee inhaalpogingen. Zonder deze rem zou tijdens
+// een Strava-storing (of bij een kapot token dat nog "connected" staat) elke
+// app-opening opnieuw een poging vuren en het gedeelde rate-limit opeten.
+export const RETRY_COOLDOWN_MIN = 15;
+
 // Overlap bij het bepalen van het "vanaf"-moment: klokverschil, vertraagde
 // webhooks en een sync die midden in een upload viel worden zo opgevangen.
 // Dedupe maakt de overlap onschadelijk.
@@ -46,29 +51,44 @@ export interface CatchUpDecision {
     | "nooit_gesynct"
     | "verouderd"
     | "vorige_sync_mislukt"
+    | "recent_geprobeerd"
     | "actueel";
 }
 
 /**
  * Pure beslisregel: is een inhaalsync nodig? Alleen voor een echt verbonden
  * koppeling mét token, wanneer er nooit is gesynct, de laatste sync ouder is
- * dan STALE_SYNC_HOURS, of de laatst afgeronde run mislukte.
+ * dan STALE_SYNC_HOURS, of de laatst afgeronde run mislukte. Als er minder dan
+ * RETRY_COOLDOWN_MIN minuten geleden al een poging is gestart, wachten we
+ * eerst af (rem tegen herhaald vuren tijdens een storing).
  */
 export function shouldCatchUp(
   row: Pick<ConnectorConnection, "status" | "accessToken" | "lastSyncAt"> | null,
   lastRunStatus: string | null,
   now: Date = new Date(),
+  lastRunStartedAt: Date | null = null,
 ): CatchUpDecision {
   if (!row) return { catchUp: false, reason: "geen_koppeling" };
   if (row.status !== "connected")
     return { catchUp: false, reason: "niet_verbonden" };
   if (!row.accessToken) return { catchUp: false, reason: "geen_token" };
-  if (!row.lastSyncAt) return { catchUp: true, reason: "nooit_gesynct" };
+  const coolingDown =
+    lastRunStartedAt != null &&
+    now.getTime() - new Date(lastRunStartedAt).getTime() <
+      RETRY_COOLDOWN_MIN * 60_000;
+  if (!row.lastSyncAt) {
+    if (coolingDown) return { catchUp: false, reason: "recent_geprobeerd" };
+    return { catchUp: true, reason: "nooit_gesynct" };
+  }
   const ageMs = now.getTime() - new Date(row.lastSyncAt).getTime();
-  if (ageMs > STALE_SYNC_HOURS * 3_600_000)
+  if (ageMs > STALE_SYNC_HOURS * 3_600_000) {
+    if (coolingDown) return { catchUp: false, reason: "recent_geprobeerd" };
     return { catchUp: true, reason: "verouderd" };
-  if (lastRunStatus === "failed")
+  }
+  if (lastRunStatus === "failed") {
+    if (coolingDown) return { catchUp: false, reason: "recent_geprobeerd" };
     return { catchUp: true, reason: "vorige_sync_mislukt" };
+  }
   return { catchUp: false, reason: "actueel" };
 }
 
@@ -115,7 +135,7 @@ export async function maybeScheduleStravaCatchUp(
     .limit(1);
 
   const [lastFinishedRun] = await db
-    .select({ status: syncRunsTable.status })
+    .select({ status: syncRunsTable.status, startedAt: syncRunsTable.startedAt })
     .from(syncRunsTable)
     .where(
       and(
@@ -129,6 +149,8 @@ export async function maybeScheduleStravaCatchUp(
   const decision = shouldCatchUp(
     row ?? null,
     lastFinishedRun?.status ?? null,
+    new Date(),
+    lastFinishedRun?.startedAt ?? null,
   );
   if (!decision.catchUp) return { ...decision, scheduled: false };
   if (inFlight.has(clerkId)) return { ...decision, scheduled: false };

@@ -110,6 +110,12 @@ export const UITLEG: Record<string, Uitleg> = {
     hoe: "Uit een test, een schatting of afgeleid uit je beste inspanningen. Een geschatte FTP is een ondergrens, geen exacte meting — dat staat er dan eerlijk bij.",
     versie: 1,
   },
+  trainingsvolume: {
+    wat: "Je trainingsvolume: hoeveel uur je per week hebt getraind.",
+    waarom: "Tijd is de eerlijkste maat voor hoeveel je traint: elke geregistreerde rit heeft een duur, ook zonder vermogensmeter. Zo telt elke echte rit mee in het beeld.",
+    hoe: "We tellen de duur van al je geregistreerde trainingen per week bij elkaar op. Alleen wat is vastgelegd telt mee — koppel je bronnen om het beeld compleet te houden.",
+    versie: 1,
+  },
   belasting: {
     wat: "De belastingsscore (TSS) van een training: hoe zwaar die was voor jouw lichaam, in één getal.",
     waarom: "Zo tellen een korte intensieve training en een lange rustige rit eerlijk mee in hetzelfde model. Rond de 100 staat voor een uur voluit op je drempel.",
