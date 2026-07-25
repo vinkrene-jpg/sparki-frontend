@@ -1,9 +1,10 @@
 schema: sparki.ux00b.figma_code_mapping
-version: "R3"
+version: "R4"
 date: "2026-07-25"
-task: UX_00B-R3 (node-verversing — herstelt de R2-inhoudsbeschrijvingen en vervangt uitsluitend de Figma-nodegegevens door de nieuwe 20:*-frames; de code-mapping is ongewijzigd)
+task: UX_00B-R4 (definitieve node-verversing — behoudt de R2-inhoudsbeschrijvingen en code-mapping; vervangt uitsluitend versie, node-ID's, URL's en verificatiestatus door de definitieve 30:*-eindnodes)
 supersedes_reason:
-  - R3: de oude 2:*-nodes serveerden een verouderde publieke render; de frames zijn opnieuw gepubliceerd als 20:*-nodes in hetzelfde bestand, de R2-inhoudsbeschrijvingen zijn hersteld en alleen de Figma-nodegegevens zijn vervangen
+  - R4: de definitieve 30:*-eindnodes zijn aangemaakt nadat alle correcties waren doorgevoerd en zijn daarna niet meer bewerkt; alle 5 eerder gerapporteerde inhoudsafwijkingen (R3) zijn hierin opgelost
+  - R3: de oude 2:*-nodes serveerden een verouderde publieke render; de frames waren tussentijds opnieuw gepubliceerd als 20:*-nodes waarin 5 inhoudsafwijkingen tegen de R2-beschrijvingen zijn vastgesteld
   - R1 gebruikte de legacy file key Ru9gEfRRI2hMlO7psxrDrN en contract-node-ID's 34:2 t/m 34:9 die niet in een echt Figma-bestand bewezen waren
   - het echte, bewerkbare Figma-bestand met de 8 goedgekeurde frames is nu aangeleverd (UX_00B_REAL_FIGMA_HANDOFF); alle Figma-metadata is daarop gecorrigeerd
 authority:
@@ -13,25 +14,25 @@ authority:
   figma_file_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp"
   figma_wave_1_page_node: "0:1"
   node_id_status: >-
-    R3 GEVERIFIEERD_IN_BROWSER (2026-07-25) — na hernieuwde publicatie van de frames zijn alle 8
-    nieuwe node-URL's onafhankelijk in de browser geopend; de oude 2:*-nodes en eerder opgeslagen
-    screenshots zijn niet als autoriteit gebruikt. Per node-ID klopt het geselecteerde frame met
-    naam en maat: 20:2 "01 GO — Route home / Mobile" 390x844, 20:27 "02 GO — Route workspace /
-    Desktop" 1440x900, 20:62 "03 GO — Route detail / Mobile" 390x844, 20:88 "04 Complete — Vandaag /
-    Mobile" 390x844, 20:135 "05 Complete — Vandaag / Desktop" 1440x900, 20:170 "06 Complete —
-    Trainingsplan / Desktop" 1440x900, 20:221 "07 Shared — Onboarding / Mobile" 390x844, 20:240
-    "08 Shared — Subscription / Desktop" 1440x900. Inhoudscontrole tegen de herstelde
-    R2-frame_inhoud: 20:62, 20:88 en 20:240 PASS; afwijkingen — 20:2 fietstype-chips
-    (Racefiets/Gravel/MTB) niet zichtbaar; 20:27 knop "Nieuwe route" niet zichtbaar; 20:135
-    trainingskaart toont één actie ("Training bekijken"), geen twee; 20:170 doelenrij aanwezig
-    zonder zichtbare A/B/C-labels; 20:221 geen voortgangsbalk (wel 3-staps-checklist).
+    R4 GEVERIFIEERD_IN_BROWSER (2026-07-25) — alle 8 definitieve 30:*-node-URL's zijn onafhankelijk
+    in de browser geopend; oudere 2:*- en 20:*-nodes of eerder opgeslagen screenshots zijn niet als
+    autoriteit gebruikt. Per node-ID klopt het geselecteerde frame met naam en maat: 30:2 "01 GO —
+    Route home / Mobile" 390x844, 30:33 "02 GO — Route workspace / Desktop" 1440x900, 30:70 "03 GO —
+    Route detail / Mobile" 390x844, 30:96 "04 Complete — Vandaag / Mobile" 390x844, 30:143
+    "05 Complete — Vandaag / Desktop" 1440x900, 30:180 "06 Complete — Trainingsplan / Desktop"
+    1440x900, 30:237 "07 Shared — Onboarding / Mobile" 390x844, 30:258 "08 Shared — Subscription /
+    Desktop" 1440x900. Inhoudscontrole tegen de R2-frame_inhoud: 8 van 8 PASS. De 5 in R3
+    gerapporteerde afwijkingen zijn opgelost: 30:2 toont de fietstype-chips (Racefiets/Gravel/MTB),
+    30:33 toont de knop "Nieuwe route", 30:143 toont twee acties ("Training openen" en "Planning
+    aanpassen"), 30:180 toont A/B/C-labels op de doelenrij, 30:237 toont een voortgangsbalk boven
+    de 3-staps-checklist.
   legacy_screenshot_note: >-
     de screenshot-bestandsnamen hieronder (…_34-2.png t/m …_34-9.png) zijn de fysieke bestandsnamen
     uit het R1-correctiepakket en blijven als visueel bewijs staan; het cijfer in de bestandsnaam is
     een legacy-label, de geldige node-ID staat in figma_node_id/figma_url.
 
 repository_state:
-  head_sha: 686d0ebccdc83f692e2ca8ab2313da0cabb20c5f
+  head_sha: c16a9702bd20b98d96fc56ea9e771438635f7c48
   branch: main
   worktree_after: uitsluitend dit bestand docs/UX_00B_FIGMA_CODE_MAPPING.yaml gewijzigd (plus platform-geplaatste uploads/screenshot in attached_assets/, buiten de opdracht om door het platform toegevoegd)
   productie_code_gewijzigd: nee
@@ -41,8 +42,8 @@ mapping_count: 8_van_8
 frame_mapping:
 
   GO_ROUTE_HOME_MOBILE:
-    figma_node_id: "20:2"
-    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=20-2"
+    figma_node_id: "30:2"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=30-2"
     screenshot: approved_figma_frames/01_GO_ROUTE_HOME_MOBILE_34-2.png (390x844)
     frame_inhoud: kop "Waar wil je vandaag fietsen?", plaats/gebied-zoekveld, fietstype-chips (Racefiets/Gravel/MTB), "Aanbevolen voor jou"-routekaarten, GO-bottomnav (Kaart/Routes/Opgeslagen/Meer)
     current_route: /routes
@@ -69,17 +70,17 @@ frame_mapping:
     relevant_tests: geen bestaande geautomatiseerde test dekt de routes-homepagina; route-API's indirect via workflows test-ingest-elevation-profile / test-ingest-elevation-fit-tcx
 
   GO_ROUTE_WORKSPACE_DESKTOP:
-    figma_node_id: "20:27"
-    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=20-27"
+    figma_node_id: "30:33"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=30-33"
     screenshot: approved_figma_frames/02_GO_ROUTE_WORKSPACE_DESKTOP_34-3.png (1440x900)
     frame_inhoud: linkernav (Routes/Opgeslagen/Navigeren/Profiel), "Routes ontdekken" met filterchips, lijst + grote kaart + zwevende detailkaart, knop "Nieuwe route"
     current_route: /routes (zelfde enkele kolom als mobiel — geen desktopworkspace)
     entry_component_path: artifacts/sparki/src/pages/routes.tsx
     reusable_component_symbols:
       - RouteDiscover (lijst + voorstellen), route-map.tsx (kaart), RoutePanel (nieuwe route/planner), route-explorer.tsx, klimmenverkenner (pages/klimmen.tsx)
-    styles_or_tokens: identiek aan 20:2; er bestaat géén breekpuntlaag — ScreenShell rendert altijd max-w-md (screen-shell.tsx:271)
-    data_and_service_dependencies: gelijk aan 20:2 (routes/route-proposals-API's)
-    auth_permission_flag_entitlement_dependencies: gelijk aan 20:2
+    styles_or_tokens: identiek aan 2:320; er bestaat géén breekpuntlaag — ScreenShell rendert altijd max-w-md (screen-shell.tsx:271)
+    data_and_service_dependencies: gelijk aan 2:320 (routes/route-proposals-API's)
+    auth_permission_flag_entitlement_dependencies: gelijk aan 2:320
     reuse_adapt_new_decisions:
       - element: routelijst met metadata — REUSE (RouteDiscover/RouteLibrary datamodel + kaarten)
       - element: grote kaart met geselecteerde route — REUSE (route-map.tsx)
@@ -91,8 +92,8 @@ frame_mapping:
     relevant_tests: geen desktop-layouttests aanwezig
 
   GO_ROUTE_DETAIL_MOBILE:
-    figma_node_id: "20:62"
-    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=20-62"
+    figma_node_id: "30:70"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=30-70"
     screenshot: approved_figma_frames/03_GO_ROUTE_DETAIL_MOBILE_34-4.png (390x844)
     frame_inhoud: kaartheader, titel + samenvatting, stats (afstand/hoogte/tijd), "Profiel en ondergrond" (hoogteprofiel + % asfalt/gravel/fietspad), acties "GPX downloaden" en "Start navigatie"
     current_route: /routes (routedetail binnen RoutePanel)
@@ -117,8 +118,8 @@ frame_mapping:
     relevant_tests: workflows test-session-elevation-profile, test-ingest-elevation-profile, test-ingest-elevation-fit-tcx; route-export round-trip zit in de race-exporttests
 
   COMPLETE_TODAY_MOBILE:
-    figma_node_id: "20:88"
-    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=20-88"
+    figma_node_id: "30:96"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=30-96"
     screenshot: approved_figma_frames/04_COMPLETE_TODAY_MOBILE_34-5.png (390x844)
     frame_inhoud: kop "Vandaag" + statuspil "Herstel goed", gereedheidsscore 82 met conclusiezin, één leidende trainingskaart (blokvisualisatie, "Training bekijken"), "Deze week"-strip, COMPLETE-bottomnav (Vandaag/Plan/Rijden/Activiteiten/Meer)
     current_route: /vandaag
@@ -143,16 +144,16 @@ frame_mapping:
     relevant_tests: workflows test-day-type, test-core-profile, test-core-profile-evolution, test-session-analysis; lib/aandachtswet.test.ts
 
   COMPLETE_TODAY_DESKTOP:
-    figma_node_id: "20:135"
-    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=20-135"
+    figma_node_id: "30:143"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=30-143"
     screenshot: approved_figma_frames/05_COMPLETE_TODAY_DESKTOP_34-6.png (1440x900)
     frame_inhoud: persistente linkernav (Vandaag/Plan/Rijden/Activiteiten/Ontdekken), gereedheid + onderbouwingslink, trainingskaart met twee acties, "Deze week"-rail rechts, "Seizoen in beeld"-band (hoofddoel, fase, fasetegels)
     current_route: /vandaag (zelfde mobiele kolom)
-    entry_component_path: als 20:88 (DayHome)
-    reusable_component_symbols: als 20:88 + useRaceContext (hooks/use-races.ts, hoofddoel/wedstrijden), use-goals.ts (doelen), TrainingPlanPanel — training-plan-panel.tsx:826 (plan-/fasegegevens)
-    styles_or_tokens: als 20:88; geen desktop-breekpunt aanwezig
-    data_and_service_dependencies: als 20:88 + races-/goals-API's (seizoensdoel + fase)
-    auth_permission_flag_entitlement_dependencies: als 20:88
+    entry_component_path: als 2:326 (DayHome)
+    reusable_component_symbols: als 2:326 + useRaceContext (hooks/use-races.ts, hoofddoel/wedstrijden), use-goals.ts (doelen), TrainingPlanPanel — training-plan-panel.tsx:826 (plan-/fasegegevens)
+    styles_or_tokens: als 2:326; geen desktop-breekpunt aanwezig
+    data_and_service_dependencies: als 2:326 + races-/goals-API's (seizoensdoel + fase)
+    auth_permission_flag_entitlement_dependencies: als 2:326
     reuse_adapt_new_decisions:
       - element: gereedheid + "Bekijk onderbouwing" — ADAPT (uitleglaag/UitlegDot-registry bestaat; als tekstlink herschikken)
       - element: weekrail met vinkjes/vandaag-markering — ADAPT (weekdata bestaat; railvorm nieuw)
@@ -160,11 +161,11 @@ frame_mapping:
       - element: persistente linkernav + utility-top — NEW (bestaat nergens)
       - element: multi-pane desktopgrid — NEW
     verified_gaps: geen; uitsluitend layout-/shellwerk bovenop bestaande data
-    relevant_tests: als 20:88
+    relevant_tests: als 2:326
 
   COMPLETE_PLAN_DESKTOP:
-    figma_node_id: "20:170"
-    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=20-170"
+    figma_node_id: "30:180"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=30-180"
     screenshot: approved_figma_frames/06_COMPLETE_PLAN_DESKTOP_34-7.png (1440x900)
     frame_inhoud: kop "Trainingsplan" met A/B/C-doelenrij, seizoensopbouw-fasebalk (Basis/Opbouw·nu/Specifiek/Taper), weekgrid Ma-Zo, weekoverzicht-inspector (totalen + "Waarom deze week?"), knop "Plan aanpassen"
     current_route: /train (vierlagen-werkblad) + plangegevens in TrainingPlanPanel
@@ -188,8 +189,8 @@ frame_mapping:
     relevant_tests: workflows test-feedback-adjust, test-sessions-contract, test-session-analysis, test-scheduled-tasks
 
   SHARED_ONBOARDING_MOBILE:
-    figma_node_id: "20:221"
-    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=20-221"
+    figma_node_id: "30:237"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=30-237"
     screenshot: approved_figma_frames/07_SHARED_ONBOARDING_MOBILE_34-8.png (390x844)
     frame_inhoud: kop "Je kunt bijna beginnen", voortgangsbalk, 3-staps-checklist (Profiel ✓, Fiets gekoppeld ✓, Activiteiten koppelen •3), uitlegkaart "Wanneer is het genoeg?", primaire knop "Activiteiten koppelen", "Overslaan"
     current_route: onboarding-gate in App.tsx (geen los pad; audit via /_dev/onboarding in dev-preview.tsx)
@@ -212,8 +213,8 @@ frame_mapping:
     relevant_tests: workflows test-onboarding-connect-step, test-onboarding-strava-gapfill, test-onboarding-resume
 
   SHARED_SUBSCRIPTION_DESKTOP:
-    figma_node_id: "20:240"
-    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=20-240"
+    figma_node_id: "30:258"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=30-258"
     screenshot: approved_figma_frames/08_SHARED_SUBSCRIPTION_DESKTOP_34-9.png (1440x900)
     frame_inhoud: kop "Kies de Sparki die bij je past", badge "Conceptprijzen", drie pakketten GO (gratis) / COMPLETE (€24,99/maand) / CLUB (prijs per club), eerlijkheidsbalk "veiligheidsfuncties niet achter betaalmuur"
     current_route: afwezig — er bestaat geen gebruikersgerichte abonnement-/prijzenpagina
@@ -236,7 +237,7 @@ frame_mapping:
 
 shared_shell_mapping:
   mobile_navigation: BottomNav — artifacts/sparki/src/components/sparki/bottom-nav.tsx; entries komen statisch uit lib/chapters.ts (ATHLETE_NAV_ENTRIES :93 = Vandaag/Trainen/Routes/Wedstrijd/Meer, aparte COACH-/PARENT-varianten), iconen via NAV_ICONS (:30); er is géén runtime-configureerbare tabbalk — de contract-tabs (COMPLETE- en GO-set) vergen aanpassing van deze SSOT
-  desktop_navigation: afwezig — alleen overlay main-menu.tsx binnen ScreenShell; de persistente linker-/topnav uit frames 20:27/20:135/20:170 is NEW
+  desktop_navigation: afwezig — alleen overlay main-menu.tsx binnen ScreenShell; de persistente linker-/topnav uit frames 2:322/2:328/2:330 is NEW
   responsive_breakpoints: afwezig — ScreenShell rendert één max-w-md kolom (screen-shell.tsx:271); de contractbreekpunten (≤767 / 768-1199 / ≥1200) zijn NEW
   light_dark_system_theme: afwezig — index.css @theme is uitsluitend donker (--color-background oklch(0.07 0 0), regel 11) zonder licht- of systeemvariant; licht-eerst tokenset is NEW, accent-cyan (regel 40) blijft behouden
 
@@ -245,7 +246,7 @@ UX_01:
     Eén afgebakend increment, conform contractvolgorde IMPLEMENT_TOKENS_AND_APP_SHELL_FIRST:
     (1) licht-eerst tokenset als tweede themalaag naast de bestaande donkere tokens (geen verwijdering),
     (2) één nieuwe responsieve AppShell-component (mobiel: persistente bottomnav; desktop >=1200px:
-    persistente linkernav + utility-top), (3) uitsluitend /vandaag (frames 20:88 + 20:135) rendert via deze
+    persistente linkernav + utility-top), (3) uitsluitend /vandaag (frames 2:326 + 2:328) rendert via deze
     shell, achter een nieuwe feature-flag commercial_shell (default UIT). Alle overige pagina's blijven
     ongewijzigd op ScreenShell.
   exact_files_expected_to_change:
@@ -253,7 +254,7 @@ UX_01:
     - artifacts/sparki/src/components/sparki/app-shell.tsx (nieuw)
     - artifacts/sparki/src/components/sparki/day-home.tsx (shellkeuze achter flag)
     - flag-seed voor commercial_shell (bestaand flags-mechanisme, api-server)
-  explicit_non_scope: geen wijziging aan engines/API's/schema; geen andere pagina's; geen GO/COMPLETE-pakketsplitsing; geen abonnementenscherm (20:240 wacht op prijzen-/billingbesluit); geen verwijdering van het donkere thema
+  explicit_non_scope: geen wijziging aan engines/API's/schema; geen andere pagina's; geen GO/COMPLETE-pakketsplitsing; geen abonnementenscherm (2:334 wacht op prijzen-/billingbesluit); geen verwijdering van het donkere thema
   acceptance_tests:
     - bestaande workflows groen — test-day-type, test-core-profile, test-core-profile-evolution, test-session-analysis
     - visuele regressie /vandaag op 390x844 en 1440x900, flag AAN en UIT
@@ -262,4 +263,4 @@ UX_01:
   estimated_replit_effort_band: M (1-2 werkdagen, één taak)
 
 blockers:
-  - 20:240 SHARED_SUBSCRIPTION_DESKTOP kan niet eerlijk gebouwd worden zonder besluit over de prijs-/billingbron (geen mock-UI toegestaan volgens projectwet); de mapping zelf is volledig
+  - 2:334 SHARED_SUBSCRIPTION_DESKTOP kan niet eerlijk gebouwd worden zonder besluit over de prijs-/billingbron (geen mock-UI toegestaan volgens projectwet); de mapping zelf is volledig

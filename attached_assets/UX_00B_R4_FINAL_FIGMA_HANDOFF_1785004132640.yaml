@@ -1,0 +1,86 @@
+schema: sparki.ux00b.r4.final_figma_handoff
+version: "R4"
+date: "2026-07-25"
+
+task:
+  id: UX_00B-R4
+  mode: READ_ONLY_FINAL_MAPPING
+  objective: USE_FINAL_UNTOUCHED_NONCACHED_FIGMA_NODES
+
+authority:
+  figma_file_name: "Sparki Commercial UX — Approved Wave 1"
+  figma_file_key: "wDUBmQvIFFDpaah5JyskFp"
+  figma_file_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp"
+  page_node_id: "0:1"
+  visual_authority: APPROVED_PNGS_01_THROUGH_08
+  content_revision: APPROVED_PNG_VISUAL_GAPS_2026-07-25
+  node_policy: FINAL_NODES_CREATED_AFTER_ALL_CORRECTIONS_AND_NOT_EDITED_AFTER_CREATION
+
+frames:
+  GO_ROUTE_HOME_MOBILE:
+    figma_node_id: "30:2"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=30-2"
+    size: "390x844"
+  GO_ROUTE_WORKSPACE_DESKTOP:
+    figma_node_id: "30:33"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=30-33"
+    size: "1440x900"
+  GO_ROUTE_DETAIL_MOBILE:
+    figma_node_id: "30:70"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=30-70"
+    size: "390x844"
+  COMPLETE_TODAY_MOBILE:
+    figma_node_id: "30:96"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=30-96"
+    size: "390x844"
+  COMPLETE_TODAY_DESKTOP:
+    figma_node_id: "30:143"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=30-143"
+    size: "1440x900"
+  COMPLETE_PLAN_DESKTOP:
+    figma_node_id: "30:180"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=30-180"
+    size: "1440x900"
+  SHARED_ONBOARDING_MOBILE:
+    figma_node_id: "30:237"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=30-237"
+    size: "390x844"
+  SHARED_SUBSCRIPTION_DESKTOP:
+    figma_node_id: "30:258"
+    figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=30-258"
+    size: "1440x900"
+
+verification:
+  frame_count: 8
+  editable_frames: true
+  dimensions: PASS_8_OF_8
+  required_approved_content: PASS_8_OF_8
+  required_content_missing: 0
+  five_previously_reported_gaps:
+    bike_type_chips: PASS
+    new_route_button: PASS
+    two_training_actions: PASS
+    goal_priority_abc: PASS
+    onboarding_progress_bar: PASS
+  production_code_changed: false
+
+replit_execution:
+  required:
+    - RETAIN_R2_CODE_MAPPING_AND_CONTENT_DESCRIPTIONS
+    - REPLACE_ONLY_FIGMA_VERSION_NODE_IDS_URLS_AND_VERIFICATION_STATUS_WITH_R4
+    - OPEN_ALL_8_30_NODE_URLS
+    - UPDATE_ONLY_docs/UX_00B_FIGMA_CODE_MAPPING.yaml
+  prohibited:
+    - USE_2_OR_20_NODE_SCREENSHOTS_AS_CURRENT_AUTHORITY
+    - PRODUCTION_CODE_CHANGE
+    - UI_IMPLEMENTATION
+    - FEATURE_BUILD
+    - EVIDENCE_ZIP
+  acceptance:
+    - ALL_8_30_NODE_IDS_RECORDED
+    - ALL_8_BROWSER_VERIFIED
+    - YAML_VALID
+    - ONLY_MAPPING_FILE_CHANGED
+  completion_response:
+    max_lines: 12
+    stop_after_delivery: true
