@@ -13,20 +13,29 @@ authority:
   figma_wave_1_page_node: "0:1"
   node_id_status: >-
     GEVERIFIEERD_IN_BROWSER — na publiekmaking van de link-share (t-parameter, 2026-07-25) zijn
-    alle 8 node-URL's onafhankelijk in de browser geopend. Per node-ID klopt het geselecteerde
-    frame met naam, maat en inhoud: 2:320 "01 GO — Route home / Mobile" 390x844, 2:322 "02 GO —
+    alle 8 node-URL's onafhankelijk in de browser geopend, en op 2026-07-25 opnieuw geopend en
+    herverifieerd na revisie CONTENT_ALIGNMENT_2026-07-25. Per node-ID klopt het geselecteerde
+    frame met naam en maat: 2:320 "01 GO — Route home / Mobile" 390x844, 2:322 "02 GO —
     Route workspace / Desktop" 1440x900, 2:324 "03 GO — Route detail / Mobile" 390x844, 2:326
     "04 Complete — Vandaag / Mobile" 390x844, 2:328 "05 Complete — Vandaag / Desktop" 1440x900,
     2:330 "06 Complete — Trainingsplan / Desktop" 1440x900, 2:332 "07 Shared — Onboarding /
     Mobile" 390x844, 2:334 "08 Shared — Subscription / Desktop" 1440x900. Bestandsnaam bevestigd
     als "Sparki Commercial UX — Approved Wave 1"; frames zijn echte, bewerkbare Figma-frames
-    (geen geplaatste afbeeldingen: framelabels, maatbadges en canvas-selectie zichtbaar). Inhoud
-    komt overeen met de handoff-render en met de frame_inhoud-beschrijvingen hieronder; geen
-    visuele of code-mismatch gevonden.
+    (geen geplaatste afbeeldingen: framelabels, maatbadges en canvas-selectie zichtbaar).
+  content_alignment_reverification: >-
+    Herverificatie 2026-07-25 na CONTENT_ALIGNMENT_2026-07-25: alle 8 frames tonen inhoudelijke
+    wijzigingen t.o.v. de eerdere frame_inhoud-beschrijvingen (één afwijkingscluster per frame,
+    consistent met de 8 corrected_mismatches in de handoff). De frame_inhoud-beschrijvingen
+    hieronder zijn daarop gecorrigeerd en komen nu overeen met de frames zoals in de browser
+    waargenomen. De repository-code-mapping (paden, symbolen, REUSE/ADAPT/NEW-besluiten) is
+    behouden; alleen feitelijke frame-verwijzingen dáárin (tab-sets, chip-/knoplabels, vervallen
+    elementen) zijn meegecorrigeerd.
   legacy_screenshot_note: >-
     de screenshot-bestandsnamen hieronder (…_34-2.png t/m …_34-9.png) zijn de fysieke bestandsnamen
     uit het R1-correctiepakket en blijven als visueel bewijs staan; het cijfer in de bestandsnaam is
-    een legacy-label, de geldige node-ID staat in figma_node_id/figma_url.
+    een legacy-label, de geldige node-ID staat in figma_node_id/figma_url. Na
+    CONTENT_ALIGNMENT_2026-07-25 tonen die PNG's mogelijk de oudere framestand; de frame_inhoud
+    hieronder volgt de actuele frames in Figma.
 
 repository_state:
   head_sha: ed5e9a4e1b739bbd08d828822a8c3088da4df072
@@ -42,7 +51,7 @@ frame_mapping:
     figma_node_id: "2:320"
     figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=2-320"
     screenshot: approved_figma_frames/01_GO_ROUTE_HOME_MOBILE_34-2.png (390x844)
-    frame_inhoud: kop "Waar wil je vandaag fietsen?", plaats/gebied-zoekveld, fietstype-chips (Racefiets/Gravel/MTB), "Aanbevolen voor jou"-routekaarten, GO-bottomnav (Kaart/Routes/Opgeslagen/Meer)
+    frame_inhoud: kop "Waar wil je vandaag fietsen?" met subtekst, voorkeur-/zoekveld "Racefiets · Gravel · rustig", filterchips (Dichtbij/Gravel/50 km), "Aanbevolen voor jou"-routekaarten met afstand/hoogte/tijd + "Alles bekijken", GO-bottomnav (Vandaag/Routes/Training/Meer, Routes actief)
     current_route: /routes
     entry_component_path: artifacts/sparki/src/pages/routes.tsx (RoutesPage; keuzekaarten + ?view=-parameter)
     reusable_component_symbols:
@@ -58,9 +67,9 @@ frame_mapping:
     reuse_adapt_new_decisions:
       - element: routevoorstellen-lijst ("Aanbevolen voor jou") — REUSE (RouteDiscover + route-proposals-API)
       - element: opgeslagen-routes-toegang — REUSE (RouteLibrary)
-      - element: plaats/gebied-zoekveld — ADAPT (location-picker-map bestaat; als los zoekveld op home nieuw te componeren)
-      - element: fietstype-chips als primaire filter — ADAPT (fietstype bestaat in routegeneratie-opties in RoutePanel; als home-filter nieuw geplaatst)
-      - element: GO-bottomnav Kaart/Routes/Opgeslagen/Meer — NEW (huidige BottomNav heeft de 5-tab COMPLETE-achtige set; geen GO-variant)
+      - element: voorkeur-/zoekveld ("Racefiets · Gravel · rustig") — ADAPT (location-picker-map en routegeneratie-opties bestaan; als los veld op home nieuw te componeren)
+      - element: filterchips Dichtbij/Gravel/50 km — ADAPT (bestaan als generator-opties in RoutePanel, niet als home-filters)
+      - element: GO-bottomnav Vandaag/Routes/Training/Meer — NEW (huidige BottomNav heeft de 5-tab COMPLETE-achtige set; geen GO-variant)
       - element: licht werkoppervlak zonder fotoachtergrond — NEW (huidige shell is cinematisch donker)
     verified_gaps:
       - er is geen apart "GO"-product in code; /routes is één gedeelde pagina binnen één app
@@ -70,7 +79,7 @@ frame_mapping:
     figma_node_id: "2:322"
     figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=2-322"
     screenshot: approved_figma_frames/02_GO_ROUTE_WORKSPACE_DESKTOP_34-3.png (1440x900)
-    frame_inhoud: linkernav (Routes/Opgeslagen/Navigeren/Profiel), "Routes ontdekken" met filterchips, lijst + grote kaart + zwevende detailkaart, knop "Nieuwe route"
+    frame_inhoud: linkernav SPARKI GO (Vandaag/Routes/Training/Activiteiten/Ontdekken, Routes actief), kop "Routes ontdekken" met voorkeurregel "Binnen 30 km · Racefiets · 40–70 km · Rustig tempo" en "12 routes gevonden", routelijst + grote kaart met geselecteerde route en zwevende detailkaart ("Route bekijken"); geen aparte knop "Nieuwe route" in het frame
     current_route: /routes (zelfde enkele kolom als mobiel — geen desktopworkspace)
     entry_component_path: artifacts/sparki/src/pages/routes.tsx
     reusable_component_symbols:
@@ -80,8 +89,8 @@ frame_mapping:
     auth_permission_flag_entitlement_dependencies: gelijk aan 2:320
     reuse_adapt_new_decisions:
       - element: routelijst met metadata — REUSE (RouteDiscover/RouteLibrary datamodel + kaarten)
-      - element: grote kaart met geselecteerde route — REUSE (route-map.tsx)
-      - element: filterchips (afstand/fietstype/wegkarakter) — ADAPT (bestaan als generator-opties in RoutePanel, niet als lijstfilters)
+      - element: grote kaart met geselecteerde route + detailkaart — REUSE (route-map.tsx)
+      - element: voorkeur-/metadata-regel (afstand/fietstype/tempo) — ADAPT (bestaan als generator-opties in RoutePanel, niet als lijstweergave)
       - element: lijst-detail-kaart drieluik — NEW (geen multi-pane layout in de codebase)
       - element: persistente linkernavigatie — NEW (nu alleen overlay-menu main-menu.tsx)
     verified_gaps:
@@ -92,7 +101,7 @@ frame_mapping:
     figma_node_id: "2:324"
     figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=2-324"
     screenshot: approved_figma_frames/03_GO_ROUTE_DETAIL_MOBILE_34-4.png (390x844)
-    frame_inhoud: kaartheader, titel + samenvatting, stats (afstand/hoogte/tijd), "Profiel en ondergrond" (hoogteprofiel + % asfalt/gravel/fietspad), acties "GPX downloaden" en "Start navigatie"
+    frame_inhoud: terugkoppeling "‹ Routes", kaartheader, titel + samenvatting ("Sallandse Heuvelrug — Rustige route door bos en open landschap."), stats (afstand 51,8 km / hoogte 420 m / tijd 2:18), sectie "Profiel en ondergrond" met alleen een hoogteprofiel-lijn (geen percentageverdeling asfalt/gravel/fietspad in het frame), acties "GPX downloaden" en "Start navigatie"
     current_route: /routes (routedetail binnen RoutePanel)
     entry_component_path: artifacts/sparki/src/components/sparki/route-panel.tsx
     reusable_component_symbols:
@@ -107,7 +116,7 @@ frame_mapping:
     auth_permission_flag_entitlement_dependencies: requireAuth + eigenaarschapscheck op :id (clerkId-filter)
     reuse_adapt_new_decisions:
       - element: hoogteprofiel — REUSE (InteractiveElevationProfile)
-      - element: ondergrond/wegtypen-verdeling — REUSE (RouteSurfacesPanel; onbekend blijft eerlijk "onbekend")
+      - element: ondergrond/wegtypen-verdeling — REUSE (RouteSurfacesPanel; onbekend blijft eerlijk "onbekend"; frame toont na CONTENT_ALIGNMENT alleen de profiel-lijn, de verdeling blijft beschikbaar als die terugkomt)
       - element: GPX downloaden — REUSE (bestaand endpoint routes.ts:1683)
       - element: start navigatie — REUSE (RouteNavigator web; mobiele nav-app artifacts/sparki-mobile)
       - element: kaartheader + sticky actiebalk-layout — ADAPT (inhoud bestaat, compositie/licht thema nieuw)
@@ -118,7 +127,7 @@ frame_mapping:
     figma_node_id: "2:326"
     figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=2-326"
     screenshot: approved_figma_frames/04_COMPLETE_TODAY_MOBILE_34-5.png (390x844)
-    frame_inhoud: kop "Vandaag" + statuspil "Herstel goed", gereedheidsscore 82 met conclusiezin, één leidende trainingskaart (blokvisualisatie, "Training bekijken"), "Deze week"-strip, COMPLETE-bottomnav (Vandaag/Plan/Rijden/Activiteiten/Meer)
+    frame_inhoud: kop "Vandaag" + statuspil "Rustige dag", gereedheidsscore 82 met conclusiezin ("Je kunt de geplande training uitvoeren" + "Voldoende herstel. Blijf alert op hoe het voelt."), één leidende trainingskaart "Tempo met korte blokken" (75 min, blokvisualisatie, knop "Training starten"), "Deze week"-strip Ma-Zo (4 t/m 10, Di actief); geen bottomnav zichtbaar in het frame
     current_route: /vandaag
     entry_component_path: artifacts/sparki/src/App.tsx:586 → artifacts/sparki/src/components/sparki/day-home.tsx (DayHome)
     reusable_component_symbols:
@@ -133,9 +142,9 @@ frame_mapping:
     reuse_adapt_new_decisions:
       - element: één leidende actie per toestand — REUSE (aandachtswet-prioriteitsketen bestaat en is getest)
       - element: gereedheid + conclusiezin — ADAPT (StateCard toont toestand/check-in; prominente 0-100-badge is een presentatiewijziging)
-      - element: trainingskaart met blokvisualisatie — ADAPT (workoutgegevens + iconen bestaan; blok-balkjes-visual is nieuw tekenwerk)
-      - element: weekstrip Ma-Zo met dagminuten — ADAPT (ThreeWeekPlan bevat de data; compacte stripvorm is nieuw)
-      - element: COMPLETE-bottomnav (Vandaag/Plan/Rijden/Activiteiten/Meer) — ADAPT (tabset staat statisch in lib/chapters.ts ATHLETE_NAV_ENTRIES :93, huidige sporter-default Vandaag/Trainen/Routes/Wedstrijd/Meer; aanpassen = die SSOT wijzigen, geen runtime-configuratie aanwezig)
+      - element: trainingskaart met blokvisualisatie + "Training starten" — ADAPT (workoutgegevens + iconen bestaan; blok-balkjes-visual is nieuw tekenwerk)
+      - element: weekstrip Ma-Zo met dagnummers — ADAPT (ThreeWeekPlan bevat de data; compacte stripvorm is nieuw)
+      - element: COMPLETE-navigatieset — ADAPT (frame 2:326 toont na CONTENT_ALIGNMENT geen bottomnav; de nav-set volgt uit desktopframe 2:328 = Vandaag/Training/Rijden/Activiteiten/Ontdekken; tabset staat statisch in lib/chapters.ts ATHLETE_NAV_ENTRIES :93, huidige sporter-default Vandaag/Trainen/Routes/Wedstrijd/Meer; aanpassen = die SSOT wijzigen, geen runtime-configuratie aanwezig)
       - element: licht werkoppervlak — NEW (tokenlaag)
     verified_gaps: geen ontbrekende databron; alle frame-inhoud is uit bestaande engines afleidbaar
     relevant_tests: workflows test-day-type, test-core-profile, test-core-profile-evolution, test-session-analysis; lib/aandachtswet.test.ts
@@ -144,7 +153,14 @@ frame_mapping:
     figma_node_id: "2:328"
     figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=2-328"
     screenshot: approved_figma_frames/05_COMPLETE_TODAY_DESKTOP_34-6.png (1440x900)
-    frame_inhoud: persistente linkernav (Vandaag/Plan/Rijden/Activiteiten/Ontdekken), gereedheid + onderbouwingslink, trainingskaart met twee acties, "Deze week"-rail rechts, "Seizoen in beeld"-band (hoofddoel, fase, fasetegels)
+    frame_inhoud: >-
+      persistente linkernav (Vandaag/Training/Rijden/Activiteiten/Ontdekken, Vandaag actief),
+      kop "Vandaag" + datumregel "Donderdag 25 juli", gereedheid 82 met conclusiezin (geen aparte
+      onderbouwingslink in het frame), trainingskaart "Tempo met korte blokken" met
+      "Doel: duurvermogen onderhouden" en één actie "Training starten",
+      "Deze week"-samenvattingskaart rechtsboven (3 trainingen • 7 uur 20 min),
+      "Seizoen in beeld"-band (fasen Basis/Opbouw/Specifiek/Taper +
+      "Hoofddoel: Limburgs Mooiste • 8 september")
     current_route: /vandaag (zelfde mobiele kolom)
     entry_component_path: als 2:326 (DayHome)
     reusable_component_symbols: als 2:326 + useRaceContext (hooks/use-races.ts, hoofddoel/wedstrijden), use-goals.ts (doelen), TrainingPlanPanel — training-plan-panel.tsx:826 (plan-/fasegegevens)
@@ -152,8 +168,8 @@ frame_mapping:
     data_and_service_dependencies: als 2:326 + races-/goals-API's (seizoensdoel + fase)
     auth_permission_flag_entitlement_dependencies: als 2:326
     reuse_adapt_new_decisions:
-      - element: gereedheid + "Bekijk onderbouwing" — ADAPT (uitleglaag/UitlegDot-registry bestaat; als tekstlink herschikken)
-      - element: weekrail met vinkjes/vandaag-markering — ADAPT (weekdata bestaat; railvorm nieuw)
+      - element: gereedheid + conclusiezin — ADAPT (uitleglaag/UitlegDot-registry bestaat; de eerdere aparte "Bekijk onderbouwing"-link staat na CONTENT_ALIGNMENT niet meer in het frame)
+      - element: samenvattingskaart "Deze week" — ADAPT (weekdata bestaat; kaartvorm met totalen is nieuw)
       - element: fasetegels "Seizoen in beeld" — ADAPT (plan-/fasegegevens bestaan in TrainingPlanPanel; bandcompositie nieuw)
       - element: persistente linkernav + utility-top — NEW (bestaat nergens)
       - element: multi-pane desktopgrid — NEW
@@ -164,7 +180,7 @@ frame_mapping:
     figma_node_id: "2:330"
     figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=2-330"
     screenshot: approved_figma_frames/06_COMPLETE_PLAN_DESKTOP_34-7.png (1440x900)
-    frame_inhoud: kop "Trainingsplan" met A/B/C-doelenrij, seizoensopbouw-fasebalk (Basis/Opbouw·nu/Specifiek/Taper), weekgrid Ma-Zo, weekoverzicht-inspector (totalen + "Waarom deze week?"), knop "Plan aanpassen"
+    frame_inhoud: kop "Trainingsplan" met subtekst, doelenrij met drie doelen (Limburgs Mooiste actief / Clubkampioenschap / Winterbasis, zonder A/B/C-labels), seizoensopbouw-fasebalk (Basis / Opbouw actief / Specifiek / Taper), weekgrid "Week 31 · 24–30 juli" Ma-Zo (Herstel/Tempo/Duur/Rust/Kracht/Lange rit/Vrij), "Weekoverzicht"-paneel met totalen (Totale belasting 79, Trainingsbelasting 342, Kracht 50 min, Rustdagen 2); geen "Waarom deze week?"-tekst en geen knop "Plan aanpassen" in het frame
     current_route: /train (vierlagen-werkblad) + plangegevens in TrainingPlanPanel
     entry_component_path: artifacts/sparki/src/pages/train.tsx (SourceLayer/GoalLayer/TodayLayer/PatternsLayer uit components/sparki/train/)
     reusable_component_symbols:
@@ -173,14 +189,14 @@ frame_mapping:
       - SessionDetailDrawer (sessie-inspector), add-training.tsx (toevoegen), useSessions/useUpdateSessionFeel
       - leefagenda + adaptieve voorstellen (planuitvoering, feedback→aanpassing met reden)
     styles_or_tokens: als overige frames (donker, één kolom)
-    data_and_service_dependencies: plan-/sessies-/doelen-/races-API's; deterministische planengine op de api-server (aanpassingsvoorstellen met reden — dekt "Waarom deze week?")
+    data_and_service_dependencies: plan-/sessies-/doelen-/races-API's; deterministische planengine op de api-server (aanpassingsvoorstellen met reden)
     auth_permission_flag_entitlement_dependencies: requireAuth; plangerelateerde flags; coach-adoptielaag apart (coach-cockpit)
     reuse_adapt_new_decisions:
       - element: weekgrid met sessies per dag — ADAPT (ThreeWeekPlan/TrainingPlanPanel hebben data en interactie; gridvorm nieuw)
-      - element: A/B/C-doelenrij — ADAPT (wedstrijden + doelen bestaan; prioriteitsrij als kop nieuw samenstellen)
+      - element: doelenrij (drie doelen) — ADAPT (wedstrijden + doelen bestaan; doelenrij als kop nieuw samenstellen; A/B/C-labels staan na CONTENT_ALIGNMENT niet meer in het frame)
       - element: fasebalk seizoensopbouw — ADAPT (fase-informatie bestaat in planengine)
       - element: weekoverzicht-totalen — ADAPT (afleidbaar uit bestaande sessies/belastingsmodel)
-      - element: uitleg "Waarom deze week?" — REUSE (rationale-teksten bestaan in de planflow; neutrale toon verplicht)
+      - element: uitleg "Waarom deze week?" — REUSE (na CONTENT_ALIGNMENT niet meer in het frame; rationale-teksten bestaan in de planflow als dit terugkomt; neutrale toon verplicht)
       - element: volledige-periode-tijdlijn + inspector-drieluik — NEW (layout)
     verified_gaps: volledige seizoenstijdlijn in één scherm bestaat niet als component; de data wel
     relevant_tests: workflows test-feedback-adjust, test-sessions-contract, test-session-analysis, test-scheduled-tasks
@@ -189,7 +205,7 @@ frame_mapping:
     figma_node_id: "2:332"
     figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=2-332"
     screenshot: approved_figma_frames/07_SHARED_ONBOARDING_MOBILE_34-8.png (390x844)
-    frame_inhoud: kop "Je kunt bijna beginnen", voortgangsbalk, 3-staps-checklist (Profiel ✓, Fiets gekoppeld ✓, Activiteiten koppelen •3), uitlegkaart "Wanneer is het genoeg?", primaire knop "Activiteiten koppelen", "Overslaan"
+    frame_inhoud: kop "Je kunt bijna beginnen" met subtekst ("Sparki heeft alleen deze basis nodig…"), 3-staps-checklist alle drie afgevinkt (Profiel ✓, Fiets gekoppeld ✓, Activiteiten koppelen ✓ — "Strava, Garmin of handmatig"), uitlegkaart "Wanneer is het genoeg?", primaire knop "Achteraf koppelen", "Overslaan" rechtsboven; geen voortgangsbalk in het frame
     current_route: onboarding-gate in App.tsx (geen los pad; audit via /_dev/onboarding in dev-preview.tsx)
     entry_component_path: artifacts/sparki/src/components/sparki/onboarding-v2.tsx (OnboardingV2 :132)
     reusable_component_symbols:
@@ -199,12 +215,11 @@ frame_mapping:
       - lib/onboarding-resume.ts (+ .test.ts) — hervatten na redirect
     styles_or_tokens: donker; knopstijl in onboarding-v2.tsx:84
     data_and_service_dependencies: onboarding- en connector-API's (onboarding.ts, connectors.ts); Strava-OAuth per gebruiker
-    auth_permission_flag_entitlement_dependencies: Clerk-sessie vereist; connectstap verplicht, koppelen zelf optioneel (eerlijkheidscontract — matcht "Overslaan" in het frame)
+    auth_permission_flag_entitlement_dependencies: Clerk-sessie vereist; connectstap verplicht, koppelen zelf optioneel (eerlijkheidscontract — matcht "Achteraf koppelen"/"Overslaan" in het frame)
     reuse_adapt_new_decisions:
-      - element: verplichte laatste stap "Activiteiten koppelen" met ontsnapping — REUSE (exact zo gebouwd en getest)
+      - element: verplichte connectstap met ontsnapping — REUSE (exact zo gebouwd en getest; frame-CTA heet na CONTENT_ALIGNMENT "Achteraf koppelen", met "Overslaan" als tweede uitgang)
       - element: checklist met afgevinkte stappen — ADAPT (stappen bestaan als narratieve flow; checklist-samenvatting is presentatie)
       - element: uitlegkaart "Wanneer is het genoeg?" — ADAPT (uitleglaag bestaat; deze copy is nieuw)
-      - element: voortgangsbalk — ADAPT (stapvolgorde bestaat; balk is presentatie)
       - element: licht thema — NEW (tokenlaag)
     verified_gaps: geen; dit is het best gedekte frame
     relevant_tests: workflows test-onboarding-connect-step, test-onboarding-strava-gapfill, test-onboarding-resume
@@ -213,7 +228,7 @@ frame_mapping:
     figma_node_id: "2:334"
     figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=2-334"
     screenshot: approved_figma_frames/08_SHARED_SUBSCRIPTION_DESKTOP_34-9.png (1440x900)
-    frame_inhoud: kop "Kies de Sparki die bij je past", badge "Conceptprijzen", drie pakketten GO (gratis) / COMPLETE (€24,99/maand) / CLUB (prijs per club), eerlijkheidsbalk "veiligheidsfuncties niet achter betaalmuur"
+    frame_inhoud: kop "Kies de Sparki die bij je past" met subtekst ("Begin eenvoudig. Breid alleen uit met onderdelen die je daadwerkelijk gebruikt."), "Mijn account" rechtsboven, drie pakketten GO ("Gratis starten", "Start met Go") / COMPLETE (€24,99/maand, "Kies Complete") / CLUB ("Prijs per club", "Bespreek Club") met functielijstjes, onderbalk "Eenvoud als uitgangspunt — alle onderdelen zijn later aan of uit te zetten; je behoudt altijd een herkenbare Sparki-basis"; geen badge "Conceptprijzen" en geen aparte veiligheidsfuncties-balk in het frame
     current_route: afwezig — er bestaat geen gebruikersgerichte abonnement-/prijzenpagina
     entry_component_path: afwezig; bestaand fundament — artifacts/sparki/src/components/sparki/entitlements-admin.tsx (beheer), artifacts/api-server/src/lib/entitlements.ts:101 (resolveEntitlements), routes/entitlements.ts (GET met requireAuth)
     reusable_component_symbols:
@@ -226,8 +241,8 @@ frame_mapping:
     reuse_adapt_new_decisions:
       - element: rechtenresolutie per gebruiker — REUSE (resolveEntitlements)
       - element: clubcontext — REUSE (bestaande clubomgeving)
-      - element: pakketkaarten + prijzen + upgradepad — NEW (frame toont zelf "Conceptprijzen"; geen backendbron)
-      - element: eerlijkheidsbalk veiligheidsfuncties — NEW (copy; strookt met bestaand productbeleid)
+      - element: pakketkaarten + prijzen + upgradepad — NEW (prijzen zijn concept; geen backendbron; de eerdere "Conceptprijzen"-badge staat na CONTENT_ALIGNMENT niet meer in het frame)
+      - element: onderbalk "Eenvoud als uitgangspunt" — NEW (copy; vervangt in het frame de eerdere veiligheidsfuncties-balk; het beleid veiligheid-nooit-achter-betaalmuur blijft onverkort gelden)
     verified_gaps:
       - geen prijzen/billing in schema of API — dit frame is het enige van de 8 dat een nieuwe datalaag nodig heeft vóór een eerlijke build (geen mock-UI toegestaan)
     relevant_tests: geen bestaande tests; entitlements-gedrag indirect via flag-/releasetests
