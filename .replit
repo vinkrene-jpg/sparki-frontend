@@ -459,3 +459,6 @@ VAPID_PUBLIC_KEY = "BE_zshRDB06c6BP5jf0KqW58sejO_57nStUboT-LDb8qMvPXgSUV7VbZQmWI
 VAPID_SUBJECT = "mailto:notificaties@sparki.app"
 
 [userenv.development]
+
+[objectStorage]
+defaultBucketID = "replit-objstore-26c63990-dec3-42e3-b3ed-3f8d9932257c"
