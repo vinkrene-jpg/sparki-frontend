@@ -1,0 +1,65 @@
+OPDRACHT — BEWIJSVEILIG ARCHIVEREN EN PUBLIEKE ZIPS AFSCHERMEN
+
+DOEL
+Bewijsbestanden behouden, maar voorkomen dat oude export-zips publiek worden meegeserveerd.
+
+HARD SCOPE
+Geen productiecode, UI, database, schema, API, tests of functionaliteit wijzigen.
+Geen bewijsbestanden inhoudelijk wijzigen.
+Geen nieuwe bewijs-zip maken.
+Niets uit attached_assets/ wijzigen, verplaatsen of verwijderen.
+
+UITVOERING
+
+1. Inventariseer alle .zip-bestanden in het project.
+
+2. Maak:
+docs/EVIDENCE_ARCHIVE_INVENTORY.md
+
+Noteer per bestand:
+- volledig pad;
+- bestandsgrootte;
+- SHA-256;
+- Git-status: tracked/untracked;
+- categorie: afgekeurde oplevering, actuele oplevering, invoer, backup of historisch bewijs;
+- publiek bereikbaar: ja/nee;
+- voorgenomen actie.
+
+3. Behoud ongewijzigd:
+- docs/UX_00B_DELIVERY.zip
+  Status: afgekeurde/historische UX_00B-oplevering; noodzakelijk bewijs.
+- docs/UX_00B_FIGMA_CODE_MAPPING.yaml
+  Status: actuele R1-oplevering.
+- alle bestanden in attached_assets/.
+- UX_00A-bewijzen.
+- overige historische bewijs- en backupbundels buiten publieke mappen.
+
+4. Verplaats uitsluitend .zip-bestanden uit:
+artifacts/sparki/public/
+
+naar:
+docs/evidence/archive/public_exports/
+
+Gebruik voor tracked bestanden git mv, zodat de geschiedenis behouden blijft.
+
+5. Controleer vóór en na iedere verplaatsing dat de SHA-256 identiek blijft.
+
+6. Verwijder geen andere zipbestanden. Verwijder geen Git-geschiedenis.
+
+7. Controleer na de verplaatsing:
+- de app compileert;
+- publieke routes serveren de verplaatste zips niet meer;
+- er bestaan geen codeverwijzingen die door de verplaatsing breken;
+- de werkboom bevat uitsluitend deze archiveringswijzigingen en het inventarisdocument.
+
+OPLEVERING
+Rapporteer:
+- volledige inventaris;
+- exact welke bestanden zijn verplaatst;
+- SHA-256 vóór en na;
+- welke bestanden bewust zijn blijven staan;
+- bewijs dat oude exports niet meer publiek bereikbaar zijn;
+- git diff/status;
+- commit-hash.
+
+Stop bij een verwijzing vanuit productiecode die door verplaatsing zou breken. Rapporteer die eerst en wijzig dan niets.

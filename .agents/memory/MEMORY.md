@@ -156,3 +156,4 @@
 - [Sparki EU-uitrol & meertaligheid](sparki-eu-rollout.md) — beslist: EU-breed, alle EU-talen, landensites; copy zit nu hard-coded NL in UI én LLM-prompts — nieuwe copy in presentatielaag houden.
 - [Sparki app-brede zoek + auto-Terug](sparki-app-search-terug.md) — ScreenShell auto-Terug on non-nav-root pages; pages with an OWN back MUST pass terug={false} (grep all pages, 8 were missed first pass).
 - [Sparki aandacht-rotatie](sparki-attention-rotation.md) — ignored non-critical ride-alongs pause after 3 shown days (never critical, never forever); consumers must fail-open on query ERROR, not only on success.
+- [Sparki bewijsarchief](sparki-bewijsarchief.md) — evidence files live in bewijsarchief/ + SHA-256 inventory; never modify/delete; public export-zips only removed after byte-identical verified private copy.

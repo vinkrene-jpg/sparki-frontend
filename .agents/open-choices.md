@@ -5,9 +5,16 @@
 > open punten kort in de chat. Nieuwe keuze gesteld → hier toevoegen. Beslist → hier
 > weghalen (of naar "Beslist" verplaatsen). Nooit een keuze stilletjes laten vallen.
 
-Laatst bijgewerkt: 2026-07-22.
+Laatst bijgewerkt: 2026-07-25.
 
 ## Wacht op jouw keuze
+
+### Gegevens-opschoning productie (OD_005) — per onderdeel akkoord?
+0. **Opschoning eigen account in productie** — droogdraai is alleen-lezen uitgevoerd
+   (25 jul): (a) 15 Engelstalige observaties van 22–23 juni, (b) 1 dubbele
+   Strava-FTP-importrij (id 7, 258 W, 26 juni). FTP-actualisatie en fietskoppelingen:
+   niets te doen. Wacht op per-onderdeel akkoord; uitvoeren gaat via /admin →
+   Gegevens-opschoning in de gepubliceerde app.
 
 ### Mentale Training — sterrensysteem
 4. **Wát de sterren precies regelen** — diepgang per kaart instelbaar, één globale
