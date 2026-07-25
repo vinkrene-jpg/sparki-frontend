@@ -527,3 +527,9 @@ id = "upC10UMMhqcyziDTwqiDQ"
 uri = "file://.local/exports/BF_00_evidence.zip"
 type = "unspecified"
 title = "BF_00_evidence.zip — volledig bewijspakket (BF_00R-E1)"
+
+[[outputs]]
+id = "2GDC6UkeWtBKBYaHk1tGT"
+uri = "file://.local/exports/BF_00R_E2_evidence_2506b09.zip"
+type = "unspecified"
+title = "BF_00R_E2_evidence_2506b09.zip — gerepareerd bewijspakket (E2)"
