@@ -67,7 +67,7 @@ export default function WedstrijdRoomPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null)
 
   return (
-    <ScreenShell section="wedstrijd-room" bare bg="/concept-lab.png">
+    <ScreenShell section="wedstrijd-room" bare terug={false} bg="/concept-lab.png">
       {selectedId == null ? (
         <RoomList
           onOpen={setSelectedId}

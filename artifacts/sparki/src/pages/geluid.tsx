@@ -79,7 +79,7 @@ export default function GeluidPage() {
   };
 
   return (
-    <ScreenShell section="geluid" bare>
+    <ScreenShell section="geluid" bare terug={false}>
       <div className="flex flex-col gap-6">
         <button
           type="button"

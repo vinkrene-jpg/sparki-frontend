@@ -168,7 +168,7 @@ export default function SprintenPage() {
   const { data, isLoading } = useSprintSeason()
 
   return (
-    <ScreenShell section="sprinten" bare>
+    <ScreenShell section="sprinten" bare terug={false}>
       <div className="flex flex-col gap-6">
         <button
           type="button"

@@ -198,7 +198,7 @@ export default function SupportPage() {
   const [openArticle, setOpenArticle] = useState<number | null>(null);
 
   return (
-    <ScreenShell section="you">
+    <ScreenShell section="you" terug={false}>
       <div className="mx-auto w-full max-w-2xl px-4 pb-28 pt-4">
         <Link
           href="/you"

@@ -88,7 +88,7 @@ export default function PaspoortPage() {
   }
 
   return (
-    <ScreenShell section="paspoort">
+    <ScreenShell section="paspoort" terug={false}>
       {/* Printstijl: witte, professionele weergave zonder app-chrome. */}
       <style>{`
         @media print {

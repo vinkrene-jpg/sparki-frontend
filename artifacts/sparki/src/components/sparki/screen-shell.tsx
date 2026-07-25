@@ -4,6 +4,7 @@ import {
   Shield,
   ChevronLeft,
   Menu,
+  Search,
   Sparkles,
   Home,
   Dumbbell,
@@ -21,7 +22,7 @@ import {
   Film,
   type LucideIcon,
 } from "lucide-react"
-import { Link } from "wouter"
+import { Link, useLocation } from "wouter"
 import { Show } from "@clerk/react"
 import { useUserProfile } from "@/contexts/UserContext"
 import { useTeamIdentity } from "@/hooks/use-social"
@@ -36,6 +37,12 @@ import { CoachDecisionCard } from "@/components/sparki/coach-decision-card"
 import { OntwikkelprioriteitHomeCard } from "@/components/sparki/ontwikkelprioriteit-home-card"
 import { SparkiChatOverlay } from "@/components/sparki/sparki-chat-overlay"
 import { MainMenu } from "@/components/sparki/main-menu"
+import { ZoekOverlay } from "@/components/sparki/zoek-overlay"
+import {
+  ATHLETE_NAV_ENTRIES,
+  COACH_NAV_ENTRIES,
+  PARENT_NAV_ENTRIES,
+} from "@/lib/chapters"
 import { useCoachDecision } from "@/contexts/CoachDecisionContext"
 import { useHomeView } from "@/contexts/HomeViewContext"
 import { startTelemetry, trackScreen } from "@/lib/telemetry"
@@ -172,10 +179,26 @@ function HeaderContext({ displayName }: { displayName: string | null }) {
   return <span className="truncate text-[13px] text-white/60">{label.charAt(0).toUpperCase() + label.slice(1)}</span>
 }
 
+// Hoofdnavigatie-wortels per rol: op deze paden toont de schil géén
+// automatische "Terug" — dit zijn de startpunten van de onderbalk zelf.
+function navRootsForRole(role: string | null | undefined): Set<string> {
+  const entries =
+    role === "coach"
+      ? COACH_NAV_ENTRIES
+      : role === "parent"
+        ? PARENT_NAV_ENTRIES
+        : ATHLETE_NAV_ENTRIES
+  const roots = new Set(entries.map((e) => e.href))
+  roots.add("/")
+  roots.add("/vandaag")
+  return roots
+}
+
 export function ScreenShell({
   section,
   bg = "/concept-lab.png",
   bare = false,
+  terug = true,
   children,
 }: {
   section: string
@@ -185,6 +208,10 @@ export function ScreenShell({
   // moments like the head-tester welcome that own their full content and must
   // not be smothered by the shared home chrome.
   bare?: boolean
+  // Automatische top-anchored "Terug" op diepere pagina's (alles wat geen
+  // nav-wortel is voor de actieve rol). Zet terug={false} op pagina's die al
+  // een eigen terugknop bovenaan hebben, zodat er nooit twee staan.
+  terug?: boolean
   children: ReactNode
 }) {
   const sectionKey = section.toLowerCase()
@@ -221,6 +248,19 @@ export function ScreenShell({
   const { profile } = useUserProfile()
   const [chatOpen, setChatOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [zoekOpen, setZoekOpen] = useState(false)
+
+  // Automatische "Terug" op diepere pagina's: alles wat geen nav-wortel is
+  // voor de actieve rol krijgt bovenaan een terugknop, tenzij de pagina zelf
+  // al één heeft (terug={false}). Terug = browsergeschiedenis; zonder
+  // geschiedenis (direct geopend) valt hij terug op het startoverzicht.
+  const [pathname, setLocation] = useLocation()
+  const navRoots = navRootsForRole(profile?.activeRole)
+  const showAutoTerug = terug && !navRoots.has(pathname)
+  const goBack = () => {
+    if (window.history.length > 1) window.history.back()
+    else setLocation("/")
+  }
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#05070e] text-white">
       {/* Per-screen cinematic background — shared structure, scene-specific
@@ -249,6 +289,15 @@ export function ScreenShell({
             </Show>
             <button
               type="button"
+              onClick={() => setZoekOpen(true)}
+              aria-label="Zoeken"
+              title="Zoeken"
+              className="text-white/60 transition-colors hover:text-cyan-300"
+            >
+              <Search className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            </button>
+            <button
+              type="button"
               onClick={() => setMenuOpen(true)}
               aria-label="Menu openen"
               title="Menu"
@@ -269,6 +318,18 @@ export function ScreenShell({
           </span>
           {(isHome || sectionKey === "start") && <ClubCrest />}
         </div>
+
+        {/* Automatische top-anchored Terug op diepere pagina's. */}
+        {showAutoTerug && (
+          <button
+            type="button"
+            onClick={goBack}
+            className="-mt-4 flex items-center gap-1.5 self-start rounded-full border border-white/15 px-3 py-1.5 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Terug
+          </button>
+        )}
 
         {/* Top-anchored Terug from the full analysis back to the State Card. */}
         {fullSurface && (
@@ -316,6 +377,7 @@ export function ScreenShell({
           ScreenShell-routes zijn al beschermd, en zo blijven ze ook werken in
           Development Preview Mode (waar geen Clerk-sessie bestaat). */}
       <SparkiChatOverlay open={chatOpen} onClose={() => setChatOpen(false)} />
+      <ZoekOverlay open={zoekOpen} onClose={() => setZoekOpen(false)} />
       <MainMenu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}

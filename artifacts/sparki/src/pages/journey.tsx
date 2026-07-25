@@ -89,7 +89,7 @@ export default function JourneyPage() {
   const raceId = params ? Number(params.raceId) : null
 
   return (
-    <ScreenShell section="journey" bare bg="/concept-lab.png">
+    <ScreenShell section="journey" bare terug={false} bg="/concept-lab.png">
       {raceId != null && Number.isFinite(raceId) ? (
         <RaceDossierView raceId={raceId} />
       ) : (

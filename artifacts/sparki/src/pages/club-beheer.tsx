@@ -566,7 +566,7 @@ export default function ClubBeheerPage() {
   const myRole = mine.membership.role
 
   return (
-    <ScreenShell section="club" bare>
+    <ScreenShell section="club" bare terug={false}>
       <div className="flex flex-col gap-8">
         <header className="flex items-center gap-3">
           <button

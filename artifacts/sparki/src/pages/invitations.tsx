@@ -158,7 +158,7 @@ export default function InvitationsPage() {
   }
 
   return (
-    <ScreenShell section="You" bg="/concept-lab.png">
+    <ScreenShell section="You" terug={false} bg="/concept-lab.png">
       <header>
         <button
           type="button"

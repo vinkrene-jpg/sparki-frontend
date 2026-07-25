@@ -294,7 +294,7 @@ export default function CoachAthletePlanPage() {
   }
 
   return (
-    <ScreenShell section="Coach" bg="/concept-lab.png">
+    <ScreenShell section="Coach" terug={false} bg="/concept-lab.png">
       <div className="space-y-5">
         <Link
           href="/"

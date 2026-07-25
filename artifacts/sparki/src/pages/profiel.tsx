@@ -57,7 +57,7 @@ export default function ProfielPage() {
   const profile = data?.profile
 
   return (
-    <ScreenShell section="samen" bare>
+    <ScreenShell section="samen" bare terug={false}>
       <button
         type="button"
         onClick={() => navigate("/samen")}
