@@ -12,6 +12,7 @@ export const FEATURE_KEYS = [
   "rit_verhaal",
   "climb_explorer",
   "ai_foundation",
+  "commercial_shell",
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -40,6 +41,8 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
     "Klimmenverkenner — doorzoekbare beklimmingen/cols/toppen (OpenStreetMap) met echte hoogte, afgeleid klimprofiel en omschrijving uit OSM/Wikipedia",
   ai_foundation:
     "Sparki Foundation — orchestrator + zeven analyse-engines (data, kennis, sportersmodel, strategie, patronen, beslisondersteuning, uitlegbaarheid); niets staat automatisch aan",
+  commercial_shell:
+    "Commerciële lichte schil — Vandaag in de lichte commerciële vormgeving (mobiel + desktop), zelfde echte data en acties; uit = huidige donkere Vandaag",
 };
 
 export * from "./sports";

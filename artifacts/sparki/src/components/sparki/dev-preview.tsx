@@ -3,6 +3,7 @@ import { useLocation } from "wouter"
 import { apiFetch } from "@/lib/api"
 import { getDevAthleteId, setDevAthleteId } from "@/lib/dev"
 import { DayHome, type DevCoachOverride } from "@/components/sparki/day-home"
+import { CommercialToday } from "@/components/sparki/commercial-shell"
 import type { DayType } from "@/lib/day-type"
 import {
   COACH_SCENARIOS,
@@ -48,6 +49,7 @@ import AdminHealthDetailPage from "@/pages/admin-health-detail"
 
 const LANDING_PATH = "/_dev/landing"
 const ONBOARDING_PATH = "/_dev/onboarding"
+const COMMERCIAL_PATH = "/_dev/commercial"
 
 // Dev-only preview of each day type (blueprint §4). "Auto" uses the real engine
 // detection; the rest force a specific day type so every homepage is visible
@@ -78,6 +80,7 @@ const VIEWS: DevView[] = [
   { label: "Onboarding", path: ONBOARDING_PATH },
   { label: "Start", path: "/" },
   { label: "Vandaag", path: "/vandaag" },
+  { label: "Commercieel", path: COMMERCIAL_PATH },
   { label: "Activiteiten", path: "/activiteiten" },
   { label: "Train", path: "/train" },
   { label: "Feed", path: "/feed" },
@@ -391,6 +394,11 @@ export function DevPreview() {
         onComplete={() => setLocation("/")}
       />
     )
+    showNav = false
+  } else if (location.startsWith(COMMERCIAL_PATH)) {
+    // Commerciële lichte schil — preview van Vandaag in de nieuwe vormgeving
+    // met dezelfde echte data (flag: commercial_shell blijft default UIT).
+    page = <CommercialToday />
     showNav = false
   } else if (location.startsWith("/vandaag")) {
     page = (

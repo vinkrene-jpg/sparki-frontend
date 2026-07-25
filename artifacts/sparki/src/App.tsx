@@ -12,6 +12,8 @@ import { dark } from "@clerk/themes";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { DayHome } from "@/components/sparki/day-home";
+import { CommercialToday } from "@/components/sparki/commercial-shell";
+import { useFeatureFlag } from "@/hooks/use-feature-flag";
 import { CoachHome } from "@/components/sparki/coach-home";
 import { ParentHome } from "@/components/sparki/parent-home";
 import { OnboardingV2 } from "@/components/sparki/onboarding-v2";
@@ -388,8 +390,12 @@ function RoleHome() {
 // their navigation always works.
 function VandaagPage() {
   const { profile } = useUserProfile();
+  // Commerciële lichte schil (default UIT) — zelfde echte data en acties,
+  // alleen een andere presentatie. Uit = exact de huidige donkere Vandaag.
+  const commercialShell = useFeatureFlag("commercial_shell");
   if (profile?.activeRole === "coach") return <CoachHome />;
   if (profile?.activeRole === "parent") return <ParentHome />;
+  if (commercialShell) return <CommercialToday />;
   return <DayHome />;
 }
 
