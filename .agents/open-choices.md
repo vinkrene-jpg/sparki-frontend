@@ -17,8 +17,6 @@ Laatst bijgewerkt: 2026-07-22.
    mentale beoordeling (privacy-gated — alleen met toestemming). Zie "Beslist".
 
 ### Gevonden in de geschiedenis — graag bevestigen of nog actueel
-5. **Route op de kaart bewerken** — route zélf vormen (tik/sleep punten) / losse
-   verzamelpunten plaatsen / allebei. (Nu: alleen GPX-import, geen interactieve kaart.)
 7. **Productie-database bijwerken** — schema-wijzigingen ook op de live (gepubliceerde)
    database toepassen, zodat het na publiceren meteen werkt. (Terugkerend bij elke deploy.)
 8. **Achtergrond achter de Core / het Ride-scherm** — welke scène je daar wilt zien.
@@ -28,6 +26,12 @@ Laatst bijgewerkt: 2026-07-22.
 10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav.
 
 ## Beslist (archief)
+- **2026-07-25 — Route op de kaart bewerken (punt 5): allebei** — route zélf vormen
+  (punten tikken/slepen) én losse verzamelpunten plaatsen. Bleek al volledig gebouwd
+  in de eigen-routebouwer ("Route laten maken" → "Eigen route"): start/tussen/eind-
+  punten tikken en verslepen op de kaart, plus verzamelpunten die bij de route worden
+  opgeslagen en later voor gemiste-verzamelpunt-analyse worden gebruikt. Geen bouwwerk
+  meer nodig; de eerdere notitie "alleen GPX-import" was verouderd.
 - **2026-07-25 — Route downloaden (GPX-export):** gebouwd — "Download GPX" in het
   driepuntenmenu van de routebibliotheek (alleen bij routes met echte kaartlijn).
 - **2026-07-22 — Routes: opruimen + archief (GEBOUWD 25 jul):**
