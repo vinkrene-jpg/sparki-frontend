@@ -9,13 +9,6 @@ Laatst bijgewerkt: 2026-07-25.
 
 ## Wacht op jouw keuze
 
-### Gegevens-opschoning productie (OD_005) — per onderdeel akkoord?
-0. **Opschoning eigen account in productie** — droogdraai is alleen-lezen uitgevoerd
-   (25 jul): (a) 15 Engelstalige observaties van 22–23 juni, (b) 1 dubbele
-   Strava-FTP-importrij (id 7, 258 W, 26 juni). FTP-actualisatie en fietskoppelingen:
-   niets te doen. Wacht op per-onderdeel akkoord; uitvoeren gaat via /admin →
-   Gegevens-opschoning in de gepubliceerde app.
-
 ### Mentale Training — sterrensysteem
 4. **Wát de sterren precies regelen** — diepgang per kaart instelbaar, één globale
    diepgang-voorkeur in je profiel, of iets anders. Onderwerpen al gekozen (6).
@@ -33,6 +26,12 @@ Laatst bijgewerkt: 2026-07-25.
 10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav.
 
 ## Beslist (archief)
+- **2026-07-25 — Gegevens-opschoning productie (OD_005): allebei.** De 15 Engelstalige
+  observaties (22–23 juni) én de dubbele Strava-FTP-rij (id 7) mogen weg. Uitvoering
+  door RENE zelf in de gepubliceerde app via /admin → Gegevens-opschoning
+  (droogdraai → uitvoeren); SPARKI_ADMIN_IDS staat al goed in productie. Daarna
+  controleert de agent alleen-lezen dat beide opgeruimd zijn. FTP-actualisatie en
+  fietskoppelingen: was al in orde, geen actie.
 - **2026-07-25 — Route op de kaart bewerken (punt 5): allebei** — route zélf vormen
   (punten tikken/slepen) én losse verzamelpunten plaatsen. Bleek al volledig gebouwd
   in de eigen-routebouwer ("Route laten maken" → "Eigen route"): start/tussen/eind-
