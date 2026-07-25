@@ -96,9 +96,46 @@ export function detectPedalCycles(frames, side, minVisibility = 0.5) {
   return { cycles, cadenceRpm: cadenceRpm === null ? null : Math.round(cadenceRpm * 10) / 10, samples: series.length };
 }
 
+// Fail-closed reliability gate: deterministic thresholds. Below any of them the
+// recording is UNRELIABLE and NO measurements may be produced (BF_00R punt 5).
+export const RELIABILITY_THRESHOLDS = {
+  minFrames: 50, // < 5 s at 10 fps sampled = too short to measure
+  minDetectionFraction: 0.8, // person must be detected in >= 80% of frames
+  minJointMeanVisibility: 0.7, // core joints must be confidently visible
+  coreJoints: ["shoulder", "hip", "knee", "ankle"], // needed for knee/hip/torso
+};
+
+export function assessReliability(frames, side) {
+  const t = RELIABILITY_THRESHOLDS;
+  const reasons = [];
+  const total = frames.length;
+  const detected = frames.filter((f) => f.landmarks).length;
+  const detectionFraction = total ? Math.round((detected / total) * 1000) / 1000 : 0;
+  if (total < t.minFrames) reasons.push("te_weinig_frames");
+  if (detectionFraction < t.minDetectionFraction) reasons.push("persoon_niet_betrouwbaar_gedetecteerd");
+  const jointMeanVisibility = {};
+  for (const j of t.coreJoints) {
+    const vals = [];
+    for (const f of frames) {
+      if (!f.landmarks) continue;
+      const lm = f.landmarks.find((l) => l.name === `${side}_${j}`);
+      if (lm) vals.push(lm.visibility);
+    }
+    const mean = vals.length ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 1000) / 1000 : null;
+    jointMeanVisibility[j] = mean;
+    if (mean === null || mean < t.minJointMeanVisibility) reasons.push(`gewricht_onbetrouwbaar:${j}`);
+  }
+  return { ok: reasons.length === 0, detectionFraction, jointMeanVisibility, reasons };
+}
+
 export function analyze(poseJson, minVisibility = 0.5) {
   const frames = poseJson.frames;
   const side = pickSide(frames);
+  const reliability = assessReliability(frames, side);
+  if (!reliability.ok) {
+    // Fail-closed: no angles, no pedal metrics, no advice-grade output.
+    return { side, verdict: "ONVOLDOENDE_BETROUWBAAR", reliability, stats: null, pedal: null };
+  }
   const perFrame = [];
   for (const f of frames) {
     if (!f.landmarks) { perFrame.push(null); continue; }
@@ -116,7 +153,7 @@ export function analyze(poseJson, minVisibility = 0.5) {
         }
       : { n: 0, min: null, max: null, mean: null };
   }
-  return { side, stats, pedal: detectPedalCycles(frames, side, minVisibility) };
+  return { side, verdict: "BETROUWBAAR", reliability, stats, pedal: detectPedalCycles(frames, side, minVisibility) };
 }
 
 const round2 = (v) => Math.round(v * 100) / 100;

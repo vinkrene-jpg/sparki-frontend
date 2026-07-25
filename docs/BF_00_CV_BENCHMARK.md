@@ -24,7 +24,7 @@ Datum uitvoering: 25 juli 2026. Omgeving: Replit-container, Linux, 8 vCPU, 16 GB
   - `pose_landmarker_full.task` — `4eaa5eb7a98365221087693fcc286334cf0858e2eb6e15b506aa4a7ecdcec4ad`
   - `pose_landmarker_lite.task` — `59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a`
 - Pijplijn (`src/pipeline.mjs` + `worker/pose_worker.py`): ffmpeg decodeert frames (PNG + exacte timestamps) → Python-childprocess draait `PoseLandmarker.detect_for_video` in VIDEO-modus → landmarks + visibility/presence per frame als JSON op stdout.
-- Fout-/timeout-/retrygedrag: harde timeout in Node (SIGKILL) — bewezen (`pose_worker_timeout`); worker-exitcodes 2 (input), 3 (model), 4 (runtime) met alléén foutklasse op stderr — bewezen (`input_error: FileNotFoundError`, exit 2). Retry is veilig: worker is stateless en idempotent per framemap.
+- Fout-/timeout-/retrygedrag: harde timeout in Node (SIGKILL) — bewezen (`pose_worker_timeout`); worker-exitcodes 2 (input), 3 (model), 4 (runtime) met alléén foutklasse op stderr — bewezen (`input_error: FileNotFoundError`, exit 2). Retry is veilig én bewezen (niet alleen geclaimd): zie §4b.
 - Reproduceerbare start: `cd tools/bike-fit-benchmark && node src/bench.mjs clip:clip2:10fps`.
 
 ### Kandidaat C — WEB_WASM (browser)
@@ -82,7 +82,17 @@ Eerlijke kanttekening: één poging tot een vijfvoudige mixed-run werd tweemaal 
 
 `src/angles.mjs` berekent puur geometrisch (atan2 op landmarkcoördinaten): kniehoek, heuphoek, enkelhoek, romphoek t.o.v. horizon, ellebooghoek, plus pedaalcyclusdetectie (enkel-y-drempels) en cadans. Er komt nergens een LLM of generatief model voor; het hele pad is ffmpeg → MediaPipe → rekenkundige functies.
 
-**Herhaalbaarheid**: 5 identieke runs (clip2, 10 fps, model full, zelfde engine-/modelversie) geven **bit-identieke** uitkomsten: knie 109,69–171,70° gem. 134,52°, heup 98,54°, enkel 144,33°, romp 32,84°, elleboog 125,02°, 29 cycli, 86,6 rpm — 5/5 exact gelijk (tolerantie 0,00). Ruwe data: `results/benchmark_parts.jsonl` (`repeat_1`…`repeat_5`).
+**Herhaalbaarheid**: 5 identieke runs (clip2, 10 fps, model full, zelfde engine-/modelversie) geven **bit-identieke** uitkomsten: knie 109,69–171,70° gem. 134,52°, heup 98,54°, enkel 144,33°, romp 32,84°, elleboog 125,02°, 29 cycli, 86,6 rpm — 5/5 exact gelijk (tolerantie 0,00). Ruwe data: `results/benchmark_parts.jsonl` (`repeat_1`…`repeat_5`). Herbevestigd bij de BF_00R-afronding (25 juli 2026): twee extra onafhankelijke runs zijn opnieuw bit-identiek aan elkaar én aan bovenstaande waarden (`results/fail_closed_proof.json`, check `retry_succeeds_bit_identical` + `valid_clip_passes_gate_unchanged`), en alle 5 manifestclips zijn dezelfde dag opnieuw volledig verwerkt met 100% detectie en identieke kniehoekgemiddelden (`benchmark_parts.jsonl`, entries 25-07-2026).
+
+## 4b. Fail-closed- en retrybewijs (BF_00R-afronding)
+
+De meetengine (`src/angles.mjs`) heeft een deterministische fail-closed-poort (`assessReliability`): minimaal 50 frames, persoon gedetecteerd in ≥ 80% van de frames, en gemiddelde visibility ≥ 0,7 voor schouder/heup/knie/enkel aan de gekozen zijde. Onder elke drempel is het verdict `ONVOLDOENDE_BETROUWBAAR` en zijn `stats` en `pedal` **null** — geen metingen, geen advies. Uitvoerbaar bewijs: `node src/fail-closed-proof.mjs` → `results/fail_closed_proof.json`, verdict PASS (25 juli 2026):
+
+- **Persoonloze clips fail-closed**: twee gegenereerde clips zonder persoon (`clips-invalid/invalid1_geen_persoon_testbeeld.mp4` testbeeld, `invalid2_donker_leeg.mp4` donker+ruis) → detectie 0%, verdict `ONVOLDOENDE_BETROUWBAAR`, redenen benoemd (`persoon_niet_betrouwbaar_gedetecteerd`, per gewricht `gewricht_onbetrouwbaar:*`), nul metingen.
+- **Te korte opname fail-closed**: 3 s-fragment van een geldige clip → `te_weinig_frames`, nul metingen.
+- **Ongeldig bestand = foutpad**: niet-bestaand/ondecodeerbaar bestand eindigt in de ffmpeg-foutafhandeling; er ontstaat nooit een meetresultaat.
+- **Retry bewezen idempotent**: geforceerde timeout (`pose_worker_timeout`, SIGKILL) → retry van exact dezelfde clip slaagt en levert **bit-identieke** numerieke output aan een onafhankelijke tweede run (knie gem. 134,52°, 29 cycli — gelijk aan §4). De worker is stateless per framemap; tempmappen worden ook bij timeout opgeruimd (privacyproef check `temp_cleanup_after_timeout`).
+- **Geldige clips onveranderd**: de poort verandert niets aan de cijfers van geldige clips (regressie-anker `valid_clip_passes_gate_unchanged`).
 
 ## 5. Privacyproef
 
@@ -117,4 +127,7 @@ node src/bench.mjs clip:clip2:10fps              # per-clip run (ook clip1..5, :
 node src/bench.mjs repeat:1                      # herhaalbaarheidsrun (1..5)
 node src/bench.mjs conc:3                        # gelijktijdigheid (1/3/5)
 node src/privacy-proof.mjs                       # privacyproef (§5)
+node src/fail-closed-proof.mjs                   # fail-closed- + retrybewijs (§4b)
 ```
+
+Omgevingsvereisten (gepind): Python 3.11.14 + `mediapipe==0.10.35`, Node v24.13.0, ffmpeg 6.1.2; modellen via sha256 (§1B). Alle proeven zijn op 25 juli 2026 integraal opnieuw uitgevoerd in deze omgeving: 5/5 clips 100% detectie met identieke hoekgemiddelden, privacyproef PASS, fail-closed-proef PASS.

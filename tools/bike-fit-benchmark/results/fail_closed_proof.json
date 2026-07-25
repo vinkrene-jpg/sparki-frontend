@@ -1,0 +1,42 @@
+{
+  "at": "2026-07-25T05:49:58.191Z",
+  "node": "v24.13.0",
+  "checks": [
+    {
+      "name": "fail_closed_invalid1_testbeeld",
+      "ok": true,
+      "detail": "verdict=ONVOLDOENDE_BETROUWBAAR detectionFraction=0 reasons=persoon_niet_betrouwbaar_gedetecteerd,gewricht_onbetrouwbaar:shoulder,gewricht_onbetrouwbaar:hip,gewricht_onbetrouwbaar:knee,gewricht_onbetrouwbaar:ankle"
+    },
+    {
+      "name": "fail_closed_invalid2_donker",
+      "ok": true,
+      "detail": "verdict=ONVOLDOENDE_BETROUWBAAR detectionFraction=0 reasons=persoon_niet_betrouwbaar_gedetecteerd,gewricht_onbetrouwbaar:shoulder,gewricht_onbetrouwbaar:hip,gewricht_onbetrouwbaar:knee,gewricht_onbetrouwbaar:ankle"
+    },
+    {
+      "name": "fail_closed_too_short",
+      "ok": true,
+      "detail": "frames=32 reasons=te_weinig_frames"
+    },
+    {
+      "name": "error_path_invalid_file",
+      "ok": true,
+      "detail": "error=Command failed: ffmpeg -y -v error -i /home/runner/workspace/tools/bike-fit-benc"
+    },
+    {
+      "name": "retry_first_attempt_times_out",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "retry_succeeds_bit_identical",
+      "ok": true,
+      "detail": "kneeMean=134.52 cycles=29"
+    },
+    {
+      "name": "valid_clip_passes_gate_unchanged",
+      "ok": true,
+      "detail": "kneeMean=134.52 hipMean=98.54 cycles=29"
+    }
+  ],
+  "verdict": "PASS"
+}
