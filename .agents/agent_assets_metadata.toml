@@ -503,3 +503,9 @@ id = "cEybXhZreAAnqq48pbU-v"
 uri = "file://docs/SPARKI_EVIDENCE_MATRIX_v1.yaml"
 type = "unspecified"
 title = "Sparki Evidence Matrix v1 (voor masterplan v2.26)"
+
+[[outputs]]
+id = "Sj6eTX8F4ZAaEtrwAb6eN"
+uri = "file://docs/SPARKI_EVIDENCE_MATRIX_v1.1.yaml"
+type = "unspecified"
+title = "Sparki Evidence Matrix v1.1 (getoetst aan Masterplan v2.26)"

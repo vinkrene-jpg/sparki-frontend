@@ -1,0 +1,833 @@
+schema: sparki.evidence_matrix
+schema_version: 2
+
+document:
+  id: SPARKI_EVIDENCE_MATRIX
+  version: "1.1"
+  date: "2026-07-25"
+  source: DIRECT_REPOSITORY_INSPECTION
+  produced_by: REPLIT_REPOSITORY_AGENT
+  relates_to: SPARKI_AI_MASTER_PLAN v2.26
+  tested_exclusively_against: attached_assets/SPARKI_AI_MASTER_PLAN_v2.26_1784951950708.yaml
+  adopted_v2_26_decisions:
+    - 'DATING_REMOVED_FROM_PLAN (verified: no dating code exists in repository)'
+    - EXISTING_GAME_FEATURES_PRESERVED (bordjes-sprinten, klimmenverkenner, Sparki World stay live; no new game builds)
+    - I18N_FOUNDATION_NOW (tracked below as cross-cutting requirement; current state ONTBREEKT)
+    - EU_AI_ACT_ART50_TRANSPARENCY (disclose-when-material model; no permanent per-message label)
+  honesty_note: >
+    Statuses follow the v2.26 evidence_matrix_contract status_rules. PROVEN_READY is used only
+    where source evidence, passing relevant automated tests in this snapshot, runtime evidence
+    and full coverage of the current master-plan acceptance requirements all exist. It does NOT
+    mean commercially production-proven (no live-user validation, no load test, no device-lab
+    verification beyond what is stated per domain). Self-assertion without proof is not used.
+
+repository_snapshot:
+  COMMIT_SHA: 0d8ae408637f129dcb47998019a881f2011127e1
+  BRANCH: main
+  GENERATED_AT: "2026-07-25T04:01:29Z"
+  WORKTREE_STATE: >
+    Clean except 1 untracked file: attached_assets/SPARKI_AI_MASTER_PLAN_v2.26_1784951950708.yaml
+    (the input document for this matrix). No modified tracked files.
+
+repository_facts:
+  monorepo: PNPM_WORKSPACES
+  packages:
+    web: artifacts/sparki (React+Vite+Wouter+TanStack Query, 21 test suites)
+    api: artifacts/api-server (Express 5 + Drizzle, 108 test suites)
+    mobile: artifacts/sparki-mobile (Expo React Native, 10 test suites)
+    db: lib/db (Drizzle schema, 66 schema files, 167 live tables)
+  api_route_modules: 76 (artifacts/api-server/src/routes/)
+  deterministic_engine_modules: 38 engine directories (artifacts/api-server/src/engines/)
+  auth: CLERK_COOKIE_BASED (publishableKeyFromHost, JIT provisioning via /api/auth/sync)
+  ai_gateway: SINGLE_PORT aiMessage (killswitch -> consent -> minor-gate -> redaction -> dedupe -> metadata-only logs)
+  migration_model: DRIZZLE_PUSH (schema-as-code; no SQL migration files; non-destructive guarded constraint pattern documented)
+  language_state: ALL_USER_FACING_COPY_HARDCODED_DUTCH (UI strings and LLM prompt rules)
+
+domain_evidence:
+
+  TODAY:
+    DOMAIN_ID: TODAY
+    CLAIMED_STATUS: PROVEN_READY
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - artifacts/api-server/src/engines/state (state engine; belongs to no screen)
+      - artifacts/api-server/src/engines/coaching (decideCoach deterministic decision layer)
+      - artifacts/api-server/src/engines/observation (>=2-signal guard, confidence capped <100)
+      - artifacts/api-server/src/routes/state.ts, insights.ts, weather.ts
+      - artifacts/sparki/src/pages/start.tsx (Vandaag; single leading Momentblok priority chain)
+      - artifacts/sparki/src/components/sparki/screen-shell.tsx (CoachDecisionContext surfacing)
+      - 'artifacts/sparki/src/pages/activiteiten.tsx (post-activity focus: session data/graphs/analysis)'
+    DATABASE_TABLES_AND_MIGRATIONS:
+      - health.ts, athlete-training.ts, data-hub.ts, coaching-profile.ts (lib/db/src/schema/); drizzle push, live
+    API_ROUTES:
+      - GET /api/state, GET /api/insights/*, GET /api/weather/home, session detail routes
+    UI_ROUTES_AND_SCREENS:
+      - "/ (Vandaag), post-activity drill-in on /activiteiten"
+    TEST_FILES:
+      - artifacts/sparki/src/. day-type tests; api session-analysis/session-detail tests
+    TEST_COMMANDS:
+      - pnpm --filter @workspace/sparki run test:day-type
+      - pnpm --filter @workspace/sparki run test:session-analysis
+      - pnpm --filter @workspace/api-server run test:session-detail-track
+    TEST_RESULTS: ALL_PASS in this snapshot (day-type, session-analysis, session-detail-track workflows green, 0 failures)
+    RUNTIME_EVIDENCE: Web + api-server workflows running; Vandaag renders day-type surface with live DB data in dev preview
+    TARGET_REQUIREMENTS_COVERED:
+      - ONE_CONTEXTUAL_DAILY_MAIN_ROUTE; TODAY_RELEVANT_ACTION/CURRENT_TRAINING/CURRENT_RECOVERY_SIGNAL defaults
+      - 'suppress: aandachtswet (single leader Momentblok) suppresses repeated generic cards and unrelated long-term analysis'
+      - 'post_activity focus_only: completed activity, session data, graphs, analysis, short translation'
+    TARGET_REQUIREMENTS_MISSING: []
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: All state/insight reads clerkId-scoped; AccountGate on every signed-in surface
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD; Vandaag/aandachtswet work merged earlier on main)
+
+  AUTONOMOUS_TRAINING_COACH:
+    DOMAIN_ID: AUTONOMOUS_TRAINING_COACH
+    CLAIMED_STATUS: PROVEN_READY
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - artifacts/api-server/src/engines/training-plan (deterministic plan generator, per-session caps, DayKind x experience)
+      - artifacts/api-server/src/engines/recovery-load, engines/goals
+      - artifacts/api-server/src/routes/training-plan.ts, goals.ts
+      - LLM is prose-only via aiMessage; generative model never computes numbers
+    DATABASE_TABLES_AND_MIGRATIONS:
+      - athlete-training.ts (plan_days, planned_workouts), goals.ts, life-events.ts, analysis-feedback.ts
+    API_ROUTES:
+      - /api/training-plan/* (generate, adjust, pause/resume/delete), /api/goals/*
+    UI_ROUTES_AND_SCREENS:
+      - /train (four-layer spine L1 bron/L2 doel/L3 vandaag/L4 patronen), /kalender
+    TEST_FILES: api feedback-adjust suite; plan lifecycle + caps suites within 108 api tests
+    TEST_COMMANDS:
+      - pnpm --filter @workspace/api-server run test:feedback-adjust
+    TEST_RESULTS: PASS (feedback-adjust green in this snapshot; 0 failures)
+    RUNTIME_EVIDENCE: Plan generation/adjustment served live by api-server workflow; adaptive proposals visible on /train
+    TARGET_REQUIREMENTS_COVERED:
+      - 'inputs: goals, availability, history, executed/missed/extra activity, recovery, user feedback (leefagenda steers generator)'
+      - plan_change_reason_visible, uncertainty_visible, unsafe_load_change_blockable (deterministic rules), generative_AI_as_calculation_engine=false
+    TARGET_REQUIREMENTS_MISSING:
+      - JOIN-benchmark comparison never formally executed (quality claim is internal only)
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: Athlete-owned plans; coach adoption writes athlete-owned rows (source="coach"); cross-account isolation tested
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  TRAINING_PLANS_AND_CALENDAR:
+    DOMAIN_ID: TRAINING_PLANS_AND_CALENDAR
+    CLAIMED_STATUS: BUILT_UNPROVEN
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - Chooser-first add-training split (plan vs register completed) in web add-training flow
+      - Plan lifecycle scoped to resolveCurrentPlan; sessions never touched by plan mutations
+      - Coach adoption dedupe by date+source; change history + source preserved
+      - artifacts/api-server/src/routes/training-plan.ts, calendar.ts
+    DATABASE_TABLES_AND_MIGRATIONS:
+      - athlete-training.ts (planned_workouts with source), data-hub.ts (sessions), life-events.ts
+    API_ROUTES: /api/training-plan/*, /api/calendar/*
+    UI_ROUTES_AND_SCREENS: /kalender, /train, add-training modal
+    TEST_FILES: plan-lifecycle and adoption logic covered within api suites; no dedicated calendar E2E
+    TEST_COMMANDS: covered indirectly (test:feedback-adjust, sessions-contract)
+    TEST_RESULTS: Related suites PASS; no dedicated calendar acceptance suite ran
+    RUNTIME_EVIDENCE: Calendar and add-training flows serve live data in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - separate PLAN_TRAINING vs REGISTER_COMPLETED_TRAINING; preserve source + change history
+    TARGET_REQUIREMENTS_MISSING:
+      - 'PLAN_TEMPLATE / PERSONAL_PLAN_INSTANCE as first-class entities (split exists implicitly: advisory plan_days vs athlete-owned planned_workouts; formal template library not built)'
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: clerkId-scoped; coach writes gated by link + ownership
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  COACH_TRAINER:
+    DOMAIN_ID: COACH_TRAINER
+    CLAIMED_STATUS: PARTIAL
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - artifacts/api-server/src/routes/coach-cockpit.ts, coach.ts (proposal workflow, owner columns, partial-unique open-proposal idempotency)
+      - artifacts/sparki/src/pages/coach-cockpit.tsx, coach-athlete-plan.tsx
+    DATABASE_TABLES_AND_MIGRATIONS: coach-cockpit.ts, links.ts, coach-followup-answers.ts (lib/db/src/schema/)
+    API_ROUTES: /api/coach/*, /api/coach-cockpit/*
+    UI_ROUTES_AND_SCREENS: /coach-cockpit, /coach-athlete-plan
+    TEST_FILES: 5 coach-parent suites + links isolation suites (artifacts/api-server tests)
+    TEST_COMMANDS:
+      - pnpm --filter @workspace/api-server run test:coach-parent-link-isolation (+ private-memory, share-nothing, shared-raw-fields, sharing-levels; links-end/unlink isolation)
+    TEST_RESULTS: ALL_PASS (e.g. share-nothing 15/15; all 7 suites green in this snapshot)
+    RUNTIME_EVIDENCE: Cockpit serves live linked-athlete data in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - ATHLETE_MANAGEMENT, PLANNING, ANALYSIS, FEEDBACK, EXCEPTIONS; automation is proposal-not-takeover; cross-coach isolation
+    TARGET_REQUIREMENTS_MISSING:
+      - PRIORITY_QUEUE, LIBRARY, TEMPLATES, BUSINESS_CAPACITY (NORMAL/BUSY/FULL + waitlist/expected availability/register interest/hide from search)
+      - support_scaling by verified qualification dimensions
+      - WORKOUT_COMMENTS as threaded in-workout comments (analysis feedback exists)
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: link-gate + owner column pattern; sharing levels tested; safety/privacy/minor rules always apply
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  TRAINER_PASSPORT:
+    DOMAIN_ID: TRAINER_PASSPORT
+    CLAIMED_STATUS: OPEN
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - 'Foundation only: athlete Sportpaspoort (routes/passport.ts, schema passport.ts) with role-specific views'
+    DATABASE_TABLES_AND_MIGRATIONS: passport.ts (athlete-oriented)
+    API_ROUTES: none trainer-specific
+    UI_ROUTES_AND_SCREENS: none trainer-specific
+    TEST_FILES: []
+    TEST_COMMANDS: []
+    TEST_RESULTS: N/A
+    RUNTIME_EVIDENCE: none
+    TARGET_REQUIREMENTS_COVERED: []
+    TARGET_REQUIREMENTS_MISSING:
+      - Independent trainer/coach/team-leader/mechanic passport environment; public/private split; verified qualifications display
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: "N/A (athlete-visibility-of-other-athletes prohibition holds trivially: nothing exists)"
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: none
+
+  TRAINER_CAMPUS:
+    DOMAIN_ID: TRAINER_CAMPUS
+    CLAIMED_STATUS: OPEN
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS: []
+    DATABASE_TABLES_AND_MIGRATIONS: []
+    API_ROUTES: []
+    UI_ROUTES_AND_SCREENS: []
+    TEST_FILES: []
+    TEST_COMMANDS: []
+    TEST_RESULTS: N/A
+    RUNTIME_EVIDENCE: none
+    TARGET_REQUIREMENTS_COVERED: []
+    TARGET_REQUIREMENTS_MISSING:
+      - Entire domain (start module, optional training, verified-qualification fallback pipeline)
+      - 'Note consistent with plan: KNWU automatic website verification independently confirmed TECHNICALLY_UNREACHABLE in this repo''s earlier calendar-import work; manual document upload + human verification is the honest fallback'
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: N/A
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: none
+
+  TRAINER_SEARCH_AND_ONBOARDING:
+    DOMAIN_ID: TRAINER_SEARCH_AND_ONBOARDING
+    CLAIMED_STATUS: PARTIAL
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - 'artifacts/api-server/src/routes/invitations.ts (atomic one-time accept: conditional status flip in transaction)'
+      - artifacts/sparki/src/pages/invitations.tsx, invite-accept.tsx, tester-qr.tsx
+      - Onboarding V2 engine (engines/onboarding) with mandatory connect step
+    DATABASE_TABLES_AND_MIGRATIONS: invitations.ts, links.ts, onboarding.ts
+    API_ROUTES: /api/invitations/*, /api/onboarding/*
+    UI_ROUTES_AND_SCREENS: /invitations, /invite-accept, /tester-qr, onboarding flow
+    TEST_FILES: onboarding-connect-step, onboarding-resume, onboarding-strava-gapfill suites
+    TEST_COMMANDS:
+      - pnpm --filter @workspace/api-server run test:onboarding-connect-step
+      - pnpm --filter @workspace/sparki run test:onboarding-resume
+      - pnpm --filter @workspace/api-server run test:onboarding-strava-gapfill
+    TEST_RESULTS: ALL_PASS in this snapshot
+    RUNTIME_EVIDENCE: Invite + QR onboarding live in dev; connect step mandatory, connecting optional (honesty rule)
+    TARGET_REQUIREMENTS_COVERED:
+      - INVITATION_LINK bulk onboarding; athlete review/edit/confirm/consent/retain-own-account in accept flow
+    TARGET_REQUIREMENTS_MISSING:
+      - Athlete-facing trainer search/compare/contact; CSV_IMPORT; trainer prefill-as-proposal; the 6 initial models
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: Atomic accept prevents double-grant; safety/privacy/consent/minor fields not removable in built flows
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  CLUB_TEAM:
+    DOMAIN_ID: CLUB_TEAM
+    CLAIMED_STATUS: BUILT_UNPROVEN
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - artifacts/api-server/src/routes/club.ts (least-privilege 11 roles, limits also on invite-accept, FOR UPDATE on signup)
+      - artifacts/sparki/src/pages/club.tsx, club-beheer.tsx
+      - lib/db/src/schema/club.ts
+    DATABASE_TABLES_AND_MIGRATIONS: club.ts (profile, teams, groups, members, roles, seasons, calendar, locations, events, attendance, announcements, notes, audit)
+    API_ROUTES: /api/club/*
+    UI_ROUTES_AND_SCREENS: /club, /club-beheer
+    TEST_FILES: club suites exist in api test set (not in the 27 workflow-registered suites run this snapshot)
+    TEST_COMMANDS: club test scripts in artifacts/api-server/package.json
+    TEST_RESULTS: NOT_RUN_IN_THIS_SNAPSHOT (typecheck green; earlier runs green but not re-proven here)
+    RUNTIME_EVIDENCE: Club workspace serves live data in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - All 14 requirements entities; in-app invite/link/QR/club-code (no new email infra); sensitive-data default DENIED with per-category consent; youth consent fail-closed
+    TARGET_REQUIREMENTS_MISSING:
+      - COMMERCIAL_ENTITLEMENT gate wired to resolver but club/team subscription model itself is OPEN per plan
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: club-scoped ID checks, least privilege, jeugd-consent fail-closed, audit rows
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  PARENT_MINOR:
+    DOMAIN_ID: PARENT_MINOR
+    CLAIMED_STATUS: PROVEN_READY
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - artifacts/api-server/src/routes/parent.ts (single permission layer for ALL parent routes incl legacy)
+      - 'Age fail-closed: unknown age clamps to safety minimum; unconfirmed link never above safety-only'
+    DATABASE_TABLES_AND_MIGRATIONS: parent.ts, links.ts, health.ts
+    API_ROUTES: /api/parent/*
+    UI_ROUTES_AND_SCREENS: parent environment views (link-scoped)
+    TEST_FILES: coach-parent-* suites (sharing levels, share-nothing, private memory, raw fields, link isolation)
+    TEST_COMMANDS: 5 test:coach-parent-* workflows + links-end/unlink isolation
+    TEST_RESULTS: ALL_PASS this snapshot (e.g. sharing-levels green; share-nothing 15/15)
+    RUNTIME_EVIDENCE: Parent views live in dev with real link data
+    TARGET_REQUIREMENTS_COVERED:
+      - No adult private channel to minor without approved role (no generic DM exists); purpose-limited, transparent, age-adjusted access; location sharing explicit/time-limited/audience-visible
+      - 'DATING_REMOVED decision verified: zero dating code'
+    TARGET_REQUIREMENTS_MISSING: []
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: minor fail-closed everywhere; sharing-level matrix tested end-to-end
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  TEAM_LEADER_SOIGNEUR:
+    DOMAIN_ID: TEAM_LEADER_SOIGNEUR
+    CLAIMED_STATUS: PARTIAL
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - artifacts/api-server/src/routes/volgauto.ts (separate motor-vehicle ORS profile, pickup/service points, bike route untouched)
+      - routes/live-location.ts (opt-in per session, authz rechecked every read), race-rooms.ts, races.ts (race plan)
+    DATABASE_TABLES_AND_MIGRATIONS: volgauto.ts, live-location.ts, race-rooms.ts, races.ts
+    API_ROUTES: /api/volgauto/*, /api/live-location/*, /api/race-rooms/*
+    UI_ROUTES_AND_SCREENS: Volgauto views, /wedstrijd-room
+    TEST_FILES: volgauto/live-location suites in api test set
+    TEST_COMMANDS: package.json test scripts (not in the 27 run this snapshot)
+    TEST_RESULTS: NOT_RUN_IN_THIS_SNAPSHOT (typecheck green)
+    RUNTIME_EVIDENCE: Volgauto + live location serve live data in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - 'FOLLOW_CAR: motor routing profile, pickup/service points, no bicycle-only assumption; live data explicit consent + minimum fields + stale visible; RACE_PLAN, FEED_ZONES, WEATHER_CONTEXT, MATERIAL_PROFILE'
+    TARGET_REQUIREMENTS_MISSING:
+      - INCIDENT_BOARD, RIDER_STATUS board, SPARE_PARTS in team context, TEAM_COMMUNICATION channel
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: live location authz rechecked at every read; minor fail-closed in group branch
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  MEDICAL_BOUNDARY:
+    DOMAIN_ID: MEDICAL_BOUNDARY
+    CLAIMED_STATUS: PARTIAL
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - artifacts/api-server/src/routes/health-flow.ts (raises-only status, resume only via explicit gate, 409 on niet_trainen)
+      - No diagnosis/referral anywhere; prompts enforce cautious general signal only
+    DATABASE_TABLES_AND_MIGRATIONS: health.ts
+    API_ROUTES: /api/health-flow/*
+    UI_ROUTES_AND_SCREENS: /lichaam (gezondheidsflow)
+    TEST_FILES: health-endpoints suite
+    TEST_COMMANDS: pnpm --filter @workspace/api-server run test:health-endpoints
+    TEST_RESULTS: PASS this snapshot
+    RUNTIME_EVIDENCE: Health flow live in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - Sparki-is-not list honored (no physician/diagnosis/therapy behavior); cautious general signal + safe sport-context advice only; athlete responsibility retained
+    TARGET_REQUIREMENTS_MISSING:
+      - 'medical_team_guidance production enablement: RESEARCH_FIRST per plan — legal review, consent flow test, role abuse test, data retention test all not done (consistent with plan status)'
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: health data athlete-owned; sharing per level matrix; minor fail-closed
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  RECOVERY_HEALTH:
+    DOMAIN_ID: RECOVERY_HEALTH
+    CLAIMED_STATUS: PROVEN_READY
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - lib/readiness (SSOT), engines/recovery-load; TSB guard; honest uncertainty + data gaps in outputs
+    DATABASE_TABLES_AND_MIGRATIONS: health.ts, athlete-metrics.ts, data-hub.ts
+    API_ROUTES: /api/health/*, /api/health-flow/*, state/insights consumers
+    UI_ROUTES_AND_SCREENS: /lichaam, Vandaag readiness context
+    TEST_FILES: health-endpoints; readiness consumed by day-type tests
+    TEST_COMMANDS: test:health-endpoints, test:day-type
+    TEST_RESULTS: ALL_PASS this snapshot
+    RUNTIME_EVIDENCE: Live readiness on Vandaag in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - inputs (user-reported, load, sleep/RHR/HRV when authorized); outputs (readiness context, uncertainty, gaps, safe adjustment proposal); no diagnosis
+    TARGET_REQUIREMENTS_MISSING: []
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: authorized-source gating via source-quality register (sensor "actief" needs real proof)
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  MENTAL_SKILLS:
+    DOMAIN_ID: MENTAL_SKILLS
+    CLAIMED_STATUS: PROVEN_READY
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - artifacts/api-server/src/routes/mental.ts, engines/mental (sport-scoped, optional; therapy prohibited)
+    DATABASE_TABLES_AND_MIGRATIONS: mental-related tables in schema set
+    API_ROUTES: /api/mental/*
+    UI_ROUTES_AND_SCREENS: mental module within app surfaces
+    TEST_FILES: mental suite
+    TEST_COMMANDS: pnpm --filter @workspace/api-server run test:mental
+    TEST_RESULTS: PASS 15/15 this snapshot
+    RUNTIME_EVIDENCE: live in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - scope (skills, pre-race routine, focus, confidence, setback coping); no therapy; no hidden psychological profile; optional
+    TARGET_REQUIREMENTS_MISSING: []
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: athlete-owned; not shared by default
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  NUTRITION:
+    DOMAIN_ID: NUTRITION
+    CLAIMED_STATUS: BUILT_UNPROVEN
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - Deterministic fueling engine SSOT (LLM phrases only, never computes); youth no-numbers; season goal 17+ with RED-S refusal, <=0.5 kg/wk steering
+      - artifacts/api-server/src/routes/nutrition.ts; photo logs via material storage engine (owner-checked serve)
+    DATABASE_TABLES_AND_MIGRATIONS: nutrition.ts
+    API_ROUTES: /api/nutrition/*
+    UI_ROUTES_AND_SCREENS: Voeding sheet (dedicated, not inline)
+    TEST_FILES: fueling/season-goal suites in api set; nutrition delete covered in cross-account-isolation
+    TEST_COMMANDS: test:cross-account-isolation (ran); dedicated nutrition suites not in the 27 run
+    TEST_RESULTS: cross-account-isolation PASS 19/19; dedicated suites NOT_RUN_IN_THIS_SNAPSHOT
+    RUNTIME_EVIDENCE: live in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - sport nutrition scope, fueling, hydration, recovery food; no medical nutrition/diagnosis; consent fail-closed
+    TARGET_REQUIREMENTS_MISSING:
+      - 'professional_depth_setting (dietitian/nutrition-scientist role depth): NOT_BUILT'
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: jeugd no-numbers; consent fail-closed; owner-checked photo serve
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  LAB_AND_LOAD:
+    DOMAIN_ID: LAB_AND_LOAD
+    CLAIMED_STATUS: PROVEN_READY
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - computeLoadSeries SSOT (CTL/ATL/TSB; never inline EWMA in routes); radar axes null+reason when no data
+      - Derived belastingscore (TSS from power+FTP at ingest + boot self-heal), FTP honest lower-bound derivation, power bests at ingest only
+      - artifacts/sparki/src/pages/lab.tsx
+    DATABASE_TABLES_AND_MIGRATIONS: data-hub.ts, athlete-metrics.ts
+    API_ROUTES: load/lab endpoints under hub/insights routes
+    UI_ROUTES_AND_SCREENS: /lab (Performance Lab)
+    TEST_FILES: sessions-contract, session-analysis, elevation/ingest suites
+    TEST_COMMANDS: test:sessions-contract, test:session-analysis, test:ingest-elevation-* (all ran)
+    TEST_RESULTS: ALL_PASS this snapshot
+    RUNTIME_EVIDENCE: Lab renders live load series in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - load trends, CTL/ATL/TSB when traceable, data quality, uncertainty, explanation on demand; no mock/fallback metrics; honest empty states
+    TARGET_REQUIREMENTS_MISSING:
+      - 'TEST_PROTOCOLS as guided in-app test protocols: minimal (FTP derivation exists; formal protocol flows thin)'
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: clerkId-scoped series
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  SPORT_PASSPORT:
+    DOMAIN_ID: SPORT_PASSPORT
+    CLAIMED_STATUS: PROVEN_READY
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - artifacts/api-server/src/routes/passport.ts + schema passport.ts (provenance layer over athlete_profiles; value+event always one transaction; proposal decide+apply atomic)
+      - Export via privacy module (schema-driven export, token masking)
+    DATABASE_TABLES_AND_MIGRATIONS: passport.ts, athlete-profiles.ts, privacy.ts
+    API_ROUTES: /api/passport/*, /api/privacy/export
+    UI_ROUTES_AND_SCREENS: /paspoort, /you (Core living profile)
+    TEST_FILES: core-profile + core-profile-evolution suites (web)
+    TEST_COMMANDS: test:core-profile, test:core-profile-evolution (ran)
+    TEST_RESULTS: ALL_PASS this snapshot
+    RUNTIME_EVIDENCE: live in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - all 10 sections present or represented; user owns; role-specific views; sensitive default private; export/portability; no other-user leak (isolation suites)
+    TARGET_REQUIREMENTS_MISSING: []
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: cross-account isolation 19/19; export masks tokens
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  KNOWLEDGE_EXPLANATION:
+    DOMAIN_ID: KNOWLEDGE_EXPLANATION
+    CLAIMED_STATUS: BUILT_UNPROVEN
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - UitlegDot registry (contextual icon per element, layered meaning/why/depth/source, short-by-default, "Bij jou" only real values)
+      - 'Governed knowledge base (publish=tx+snapshot, version pinning, retraction final): routes/knowledge.ts, knowledge-admin.ts'
+    DATABASE_TABLES_AND_MIGRATIONS: knowledge.ts, knowledge-governance.ts
+    API_ROUTES: /api/knowledge/*, /api/knowledge-admin/*
+    UI_ROUTES_AND_SCREENS: /kennis, UitlegDot app-wide
+    TEST_FILES: knowledge suites in api set (not in the 27 run)
+    TEST_COMMANDS: package.json knowledge test scripts
+    TEST_RESULTS: NOT_RUN_IN_THIS_SNAPSHOT (typecheck green)
+    RUNTIME_EVIDENCE: live in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - contextual info icon, no default-visible long explanation, 4 layers, selected-element-only, current evidence via governed KB, explain-not-change-metric
+    TARGET_REQUIREMENTS_MISSING: []
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: KB governed, version-pinned; no personal data in KB content
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  ANALYTICS_VISUALIZATION:
+    DOMAIN_ID: ANALYTICS_VISUALIZATION
+    CLAIMED_STATUS: PROVEN_READY
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - Session graphs (connectNulls=false, estimates labeled e.g. Tanaka maxHR), trend/progression from real series only (useLoad+useSessions), presentation variation (order only, numbers stable, urgent never demoted)
+    DATABASE_TABLES_AND_MIGRATIONS: data-hub.ts (streams/bests at ingest)
+    API_ROUTES: session detail/graph endpoints
+    UI_ROUTES_AND_SCREENS: /activiteiten session detail, /lab, /you
+    TEST_FILES: session-analysis, session-detail-track, session-elevation-profile suites
+    TEST_COMMANDS: test:session-analysis, test:session-detail-track, test:session-elevation-profile (ran)
+    TEST_RESULTS: ALL_PASS this snapshot
+    RUNTIME_EVIDENCE: live graphs in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - personal history comparison, trend, confidence, data gap, source, contextual window; no false precision; post-activity scope follows TODAY contract
+    TARGET_REQUIREMENTS_MISSING: []
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: clerkId-scoped
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  ROUTES_NAVIGATION:
+    DOMAIN_ID: ROUTES_NAVIGATION
+    CLAIMED_STATUS: PROVEN_READY
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - artifacts/api-server/src/routes/routes.ts, route-proposals.ts, nav-settings.ts, climbs.ts; engines/route
+      - 'Canonical route: geometry/distance/elevation/surface(10 types incl UNKNOWN honest)/way types/direction/points/provenance/version/validation'
+      - lib/nav-live SSOT (climb phases, moving-avg speed); route-match engine (segment projection + off-route state machine, byte-mirrored web<->mobile)
+      - 'Mobile nav HUD (artifacts/sparki-mobile): overlays shrink map, off-route map per episode, route never auto-replaced; nav audio cue dedupe per step:phase; waypoints never destinations'
+      - Explicit stop/finish + save/discard confirmation to activity history; auto-trim undoable
+    DATABASE_TABLES_AND_MIGRATIONS: routes.ts, route-shares.ts, route-proposals.ts, nav-settings.ts, road-objects.ts
+    API_ROUTES: /api/routes/*, /api/route-proposals/* (declared before /:id), /api/nav-settings/*, /api/climbs/*
+    UI_ROUTES_AND_SCREENS: /routes (planner hub), /klimmen, mobile nav HUD
+    TEST_FILES: route/elevation suites (api), ride-tracker (mobile)
+    TEST_COMMANDS: test:session-elevation-profile, test:ingest-elevation-profile, test:ride-tracker (all ran)
+    TEST_RESULTS: ALL_PASS (ride-tracker 11/11)
+    RUNTIME_EVIDENCE: planner + navigation live in dev; ORS-routed rejoins (never straight lines)
+    TARGET_REQUIREMENTS_COVERED:
+      - canonical route fields; map-primary planning UI; point taxonomy (shaping/maneuver/information/race points with confirmation); waypoint rules (only true finish flagged, no sound/voice on intermediates); route alerts source-bound with uncertainty labels, no AI invention
+      - surface types incl UNKNOWN; bike profiles incl FOLLOW_CAR (Volgauto); deterministic suitability with reasons, unknown never guessed
+      - synchronized elevation profile (cursor/map/gradient/surface); live navigation toggles, off-route requires sustained evidence (single bad GPS point never alerts); in-ride edit while navigation continues; activity finish contract; sharing (native share, friend proposals, version return flow)
+      - 'route IP: own UI/implementation, ORS + OSM/Overpass licensed data, attribution'
+    TARGET_REQUIREMENTS_MISSING:
+      - 'OS file association (GPX open-with-Sparki): native-app store capability, NOT_BUILT (plan marks target capability, native-only)'
+      - 'Strava social share: manual-activity share built; share-when-connected marked partial for social platforms (OS share menu only)'
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: route ownership checks on client FK ids; share uniqueness nullsNotDistinct; world-route privacy read-time transform
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD; climb explorer most recent route-domain merge)
+
+  RACE_INTELLIGENCE:
+    DOMAIN_ID: RACE_INTELLIGENCE
+    CLAIMED_STATUS: BUILT_UNPROVEN
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - routes/races.ts, race-points.ts, race-exports.ts, document-analysis.ts; engines/race, document-analysis
+      - Guide extraction candidates only (type/description/source/page/km/coords/confidence/status PROPOSED->CONFIRMED/MODIFIED/REJECTED); unconfirmed never actively used; status never reverts
+      - 'Export center: separate GPX / FIT course / FIT workout; round-trip verification; unconfirmed exclusion; device claims test-gated; stale export marking on guide change'
+    DATABASE_TABLES_AND_MIGRATIONS: races.ts, race-points.ts, race-exports.ts, document-analyses.ts
+    API_ROUTES: /api/races/*, /api/race-points/*, /api/race-exports/*, /api/document-analysis/*
+    UI_ROUTES_AND_SCREENS: /races, /wedstrijd-room, race mode mobile
+    TEST_FILES: race-points/export suites in api set (not in the 27 run this snapshot)
+    TEST_COMMANDS: package.json race test scripts
+    TEST_RESULTS: NOT_RUN_IN_THIS_SNAPSHOT (typecheck green; earlier green runs recorded)
+    RUNTIME_EVIDENCE: race flow live in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - race mode route use types, race-critical display, all support point types, finish-only-on-final-lap
+      - technical guide contract fully (candidate fields, statuses, map review required)
+      - export validation list incl round-trip and unconfirmed exclusion; Wahoo/Karoo claims honestly gated on real device tests (never asserted)
+    TARGET_REQUIREMENTS_MISSING:
+      - Physical device round-trip on real Garmin/Wahoo/Karoo hardware not performed (file-level round-trip verified only)
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: coach-first advisory enforced in compose; geannuleerd filtered at every consumer
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  MOBILE_RECORDING_SENSORS:
+    DOMAIN_ID: MOBILE_RECORDING_SENSORS
+    CLAIMED_STATUS: PROVEN_READY
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - artifacts/sparki-mobile/lib/ride-tracker.ts (background recording via TaskManager, platform-split native files), BLE HR/power/cadence/speed (ble-plx guarded require, base64 decode, 1s sampler)
+      - GPX with gpxtpx/power extensions; local queue + fail-closed storage writes; crash alert (stillness latch); auto-trim undoable, trim metadata-only
+      - 'ANT+ honestly absent: iOS unsupported by hardware; Android needs native module (plan-consistent)'
+    DATABASE_TABLES_AND_MIGRATIONS: ingest into data-hub.ts via ingestBatch (provider mobile)
+    API_ROUTES: activity ingest endpoints (hub)
+    UI_ROUTES_AND_SCREENS: mobile ride tracker + nav (Sparki Navigatie app)
+    TEST_FILES: artifacts/sparki-mobile/lib/ride-tracker.test.ts (+ 9 more mobile suites)
+    TEST_COMMANDS: pnpm --filter @workspace/sparki-mobile run test:ride-tracker
+    TEST_RESULTS: PASS 11/11 this snapshot (hydration, incremental persistence, recovery, sensor honesty)
+    RUNTIME_EVIDENCE: Expo workflow running; manual mobile testprotocol documented (docs/mobile-testprotocol.md)
+    TARGET_REQUIREMENTS_COVERED:
+      - background recording, screen-off resilience, local queue, safe sync, device/sensor provenance, no duplicate activity (Data Hub dedupe); auto-pause configurable; PWA equivalence never claimed
+    TARGET_REQUIREMENTS_MISSING:
+      - post_activity_vehicle_segment detection/classification (trim exists; vehicle classification not); auto_resume vehicle-segment avoidance
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: '"veilig op je telefoon" claims backed by fail-closed storage; detector/queue reset across ride lifecycle'
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  DATA_HUB_CONNECT:
+    DOMAIN_ID: DATA_HUB_CONNECT
+    CLAIMED_STATUS: PROVEN_READY
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - engines/data-hub ingestBatch single path (validate->normalize->provenance->dedupe(sport+start-bucket+neighbour)->merge(manualFields sacred)->calculate->audit); idempotency enforced
+      - routes/connectors.ts, hub.ts, webhooks.ts, activity-imports.ts, device-sync.ts
+      - Strava per-user OAuth + webhook-first sync (atomic busy gate via pg_advisory_xact_lock; COALESCE identity on partial sync)
+      - File import (GPX/FIT/TCX) as provider "file", content-only externalId
+      - 'Garmin/Wahoo: honest configured:false until manufacturer keys; fail-closed webhook secrets'
+    DATABASE_TABLES_AND_MIGRATIONS: data-hub.ts, connectors.ts, activity-imports.ts
+    API_ROUTES: /api/connectors/*, /api/hub/*, /api/webhooks/*, /api/activity-imports/*
+    UI_ROUTES_AND_SCREENS: /sparki-connect
+    TEST_FILES: ingest-elevation-fit-tcx, ingest-elevation-profile, onboarding-strava-gapfill, sessions-contract
+    TEST_COMMANDS: 4 corresponding workflows (all ran)
+    TEST_RESULTS: ALL_PASS this snapshot
+    RUNTIME_EVIDENCE: Strava sync live (secrets STRAVA_CLIENT_ID/SECRET present); connection UX shows connected/last-success/error/recovery
+    TARGET_REQUIREMENTS_COVERED:
+      - ONE_ACTIVITY_TRUTH; all ingestion sources except Garmin-when-approved; full pipeline; connection UX contract; no full sync per login; webhook preferred; idempotency
+    TARGET_REQUIREMENTS_MISSING:
+      - 'GARMIN_WHEN_APPROVED: official API access not applied for (plan-consistent: verified unique value first)'
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: per-user OAuth tokens in connector_connections (never account-level); activity consent is AND
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  INTEGRATIONS:
+    DOMAIN_ID: INTEGRATIONS
+    CLAIMED_STATUS: PARTIAL
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - 'Live: Strava (interoperability layer), BLE direct sensors, own file import; central source-quality register (fail-closed prompt rule, per-analysis used/excluded logging)'
+      - Garmin/Wahoo device sync scaffolding honest-unconfigured
+    DATABASE_TABLES_AND_MIGRATIONS: connectors.ts
+    API_ROUTES: /api/connectors/*, /api/device-sync/*
+    UI_ROUTES_AND_SCREENS: /sparki-connect
+    TEST_FILES: connector/device-sync suites in api set
+    TEST_COMMANDS: onboarding-strava-gapfill (ran); device-sync suites not in the 27
+    TEST_RESULTS: strava-gapfill PASS; device-sync NOT_RUN_IN_THIS_SNAPSHOT
+    RUNTIME_EVIDENCE: Strava live end-to-end in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - direct primary data via Bluetooth + own file import; Strava relevant; TrainingPeaks dependency avoided (native capability is the build); unofficial garminconnect never used
+    TARGET_REQUIREMENTS_MISSING:
+      - 'ANT_PLUS (Android native module), WAHOO cloud, WHOOP, APPLE_HEALTH, GOOGLE_HEALTH_CONNECT, ebike platforms (plan: desired, not release blockers)'
+      - Garmin official APIs (activity/courses/health/training) pending business case + license fee
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: fail-closed secrets; consent per connector; manualFields sacred in merge
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  EQUIPMENT_DIGITAL_BIKE_TWIN:
+    DOMAIN_ID: EQUIPMENT_DIGITAL_BIKE_TWIN
+    CLAIMED_STATUS: PARTIAL
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - routes/bike-scan.ts, garage.ts, material.ts; engines/garage, material
+      - Guided bike scan (quality checks, original saved before cutout, no invented visuals, asset provenance mandatory); Materiaalcoach photo advice (confidence-gated extra-photo ask, cautious commentary, no safety diagnosis); Mechanieker (km always derived, defect only from own registration); spare parts/material ring
+    DATABASE_TABLES_AND_MIGRATIONS: garage.ts, material.ts
+    API_ROUTES: /api/bike-scan/*, /api/garage/*, /api/material/*
+    UI_ROUTES_AND_SCREENS: /mechanieker, garage/bike-scan flows
+    TEST_FILES: garage/material suites in api set
+    TEST_COMMANDS: package.json scripts (not in the 27 run)
+    TEST_RESULTS: NOT_RUN_IN_THIS_SNAPSHOT (typecheck green)
+    RUNTIME_EVIDENCE: bike scan + materiaalcoach live in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - guided scan with quality checks, bike profile, components, service history, rider equipment, spare parts; damage commentary cautious, no formal safety diagnosis; excluded items (warranty/insurance/receipts/serials) indeed absent
+    TARGET_REQUIREMENTS_MISSING:
+      - ROTATABLE_VISUAL_BIKE (view-mode photos on any frames, no full rotation); RACE_CONFIGURATION per race; UPGRADE_OPTIONS + COST_BENEFIT module (cost exists only for material kind); INVENTORY partial
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: photos in object storage with owner-checked serve; ACL-claim rejects takeover
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  COMMUNICATION:
+    DOMAIN_ID: COMMUNICATION
+    CLAIMED_STATUS: PARTIAL
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - 'Separate contexts exist, no generic chat: trainer-athlete (cockpit), team/club (announcements), object comments (route remarks), live location, system warnings, assistant explanation (Vraag Sparki overlay)'
+      - 'AI transparency per v2.26/Art. 50: assistant surfaces are explicit assistant contexts ("Vraag Sparki"); no permanent per-message label; user never misled about interacting with the assistant'
+    DATABASE_TABLES_AND_MIGRATIONS: coach-cockpit.ts, club.ts, routes.ts (remarks), live-location.ts, notifications.ts
+    API_ROUTES: per-context routes (coach, club, routes remarks, live-location, notifications)
+    UI_ROUTES_AND_SCREENS: per-context surfaces; chat overlay header SPARKI button
+    TEST_FILES: context-specific suites (coach-parent, club, live-location) in api set
+    TEST_COMMANDS: coach-parent suites (ran, PASS); others not in the 27
+    TEST_RESULTS: coach-parent contexts PASS; other contexts NOT_RUN_IN_THIS_SNAPSHOT
+    RUNTIME_EVIDENCE: contexts live in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - contexts remain separate; each has purpose/permission/privacy/minor rule/notification; generic chat prohibited and absent; athlete-to-athlete no routine AI content control
+    TARGET_REQUIREMENTS_MISSING:
+      - FRIEND_SOCIAL direct messaging; MEET_AND_RIDE; professional pre-send intervention sequence (pre-send warning -> sender edits -> safe draft -> exact preview -> send confirmed); legal transparency assessment as documented artifact
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: minor fail-closed per context; no adult->minor private channel exists
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  SOCIAL_LIVE_LOCATION:
+    DOMAIN_ID: SOCIAL_LIVE_LOCATION
+    CLAIMED_STATUS: BUILT_UNPROVEN
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - routes/social.ts, live-location.ts, feed.ts; engines/social
+      - Friends/followers/following, profile privacy fail-closed on ALL discovery paths (search/request/match; neutral refusal blocked=hidden=missing), blocking atomic
+      - 'Live location: opt-in per session, time-limited (idle-expiry on last position), audience visible, easy stop, team follow when authorized, one position row = no history'
+    DATABASE_TABLES_AND_MIGRATIONS: social.ts, live-location.ts
+    API_ROUTES: /api/social/*, /api/live-location/*, /api/feed/*
+    UI_ROUTES_AND_SCREENS: /samen, /feed
+    TEST_FILES: social/live-location suites in api set (not in the 27 run)
+    TEST_COMMANDS: package.json scripts
+    TEST_RESULTS: NOT_RUN_IN_THIS_SNAPSHOT (typecheck green; earlier green runs recorded)
+    RUNTIME_EVIDENCE: /samen live in dev
+    TARGET_REQUIREMENTS_COVERED: all 7 requirements incl MEET_AND_RIDE-precursor (friends live on map opt-in) — but see COMMUNICATION for meet-and-ride flow gap; live_location full contract
+    TARGET_REQUIREMENTS_MISSING:
+      - MEET_AND_RIDE as an organized flow (only live-on-map exists)
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: fail-closed privacy 17 categories; minor fail-closed in group branch; authz rechecked at every read
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  AI_HELPDESK:
+    DOMAIN_ID: AI_HELPDESK
+    CLAIMED_STATUS: BUILT_UNPROVEN
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - routes/support.ts (deterministic answer matrix first-line, minor fail-closed, frustration/repetition/stall detection, no-repeat-failed-answer, ticket find-or-create with advisory-xact-lock)
+      - Operator escalation view (issue summary, history, diagnostics, draft, human edit+send)
+    DATABASE_TABLES_AND_MIGRATIONS: support.ts
+    API_ROUTES: /api/support/*
+    UI_ROUTES_AND_SCREENS: /support
+    TEST_FILES: support suites in api set (not in the 27 run)
+    TEST_COMMANDS: package.json scripts
+    TEST_RESULTS: NOT_RUN_IN_THIS_SNAPSHOT (typecheck green)
+    RUNTIME_EVIDENCE: live in dev
+    TARGET_REQUIREMENTS_COVERED: first-line automated, detection triad, all 5 before-escalation behaviors, operator UI elements
+    TARGET_REQUIREMENTS_MISSING: []
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: "minor fail-closed; note: user-facing copy never uses the term \"AI\" (product law) — transparency achieved by explicit assistant framing, consistent with v2.26 disclose-when-material"
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  TRAINING_PLAN_MARKETPLACE:
+    DOMAIN_ID: TRAINING_PLAN_MARKETPLACE
+    CLAIMED_STATUS: OPEN
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - 'Precursors only: advisory Sparki plans, coach adoption flow, deterministic plan quality'
+    DATABASE_TABLES_AND_MIGRATIONS: []
+    API_ROUTES: []
+    UI_ROUTES_AND_SCREENS: []
+    TEST_FILES: []
+    TEST_COMMANDS: []
+    TEST_RESULTS: N/A
+    RUNTIME_EVIDENCE: none
+    TARGET_REQUIREMENTS_COVERED: []
+    TARGET_REQUIREMENTS_MISSING:
+      - All phases (private library, proposals-as-products, club sharing, athlete sales); pricing/revenue share (70/30); prepublication quality pipeline; purchased-plan adaptation rules; preview; fit check; stale-plan handling; no payment infrastructure exists in repo
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: N/A
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: none
+
+  BILLING_ENTITLEMENTS:
+    DOMAIN_ID: BILLING_ENTITLEMENTS
+    CLAIMED_STATUS: PARTIAL
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - 'routes/entitlements.ts + schema entitlements.ts: central entitlement resolver, variant grants, 4 access gates (commercial entitlement AND operational flag AND role permission AND kill switch), legacy_unrestricted carve-out, admin UI, audit'
+    DATABASE_TABLES_AND_MIGRATIONS: entitlements.ts (user_entitlements, grants)
+    API_ROUTES: /api/entitlements/*
+    UI_ROUTES_AND_SCREENS: admin entitlement management
+    TEST_FILES: entitlement suites in api set (merged-and-tested; not in the 27 run this snapshot)
+    TEST_COMMANDS: package.json scripts
+    TEST_RESULTS: NOT_RUN_IN_THIS_SNAPSHOT (typecheck green; merge-time green recorded)
+    RUNTIME_EVIDENCE: resolver gates live surfaces in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - central_entitlement_resolver + all 4 access gates; athlete retains account/data/history by design; downgrade-not-delete semantics
+    TARGET_REQUIREMENTS_MISSING:
+      - 'Payment processing, payer flows (athlete/trainer/club/package), athlete self-takeover payment, trials per variant, prices (EUR 3-6 small purchases), club subscription (plan: OPEN)'
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: kill switch gate; audit rows
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  CONTENT_PACKAGES:
+    DOMAIN_ID: CONTENT_PACKAGES
+    CLAIMED_STATUS: OPEN
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - 'Foundation only: route library, versions, sharing'
+    DATABASE_TABLES_AND_MIGRATIONS: []
+    API_ROUTES: []
+    UI_ROUTES_AND_SCREENS: []
+    TEST_FILES: []
+    TEST_COMMANDS: []
+    TEST_RESULTS: N/A
+    RUNTIME_EVIDENCE: none
+    TARGET_REQUIREMENTS_COVERED: []
+    TARGET_REQUIREMENTS_MISSING:
+      - Commercial packages (classics/stages/holiday/camp/blocks/race-prep/route bundles), temporary entitlements, commercial-vs-personal route distinction
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: N/A
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: none
+
+  EU_MARKETING_PLATFORM:
+    DOMAIN_ID: EU_MARKETING_PLATFORM
+    CLAIMED_STATUS: OPEN
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - artifacts/sparki/src/pages/landing.tsx (single Dutch landing page; no CMS, no locale routes)
+    DATABASE_TABLES_AND_MIGRATIONS: []
+    API_ROUTES: []
+    UI_ROUTES_AND_SCREENS: / (landing, Dutch only)
+    TEST_FILES: []
+    TEST_COMMANDS: []
+    TEST_RESULTS: N/A
+    RUNTIME_EVIDENCE: landing live in dev (Dutch only)
+    TARGET_REQUIREMENTS_COVERED: []
+    TARGET_REQUIREMENTS_MISSING:
+      - Single CMS/content model, locale+country routes, data-driven country configuration, all 8 country-site requirements, privacy-preserving analytics with country attribution
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: no child ad profiling exists (no ads at all)
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: none
+
+  EU_COMPLIANCE:
+    DOMAIN_ID: EU_COMPLIANCE
+    CLAIMED_STATUS: PARTIAL
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - 'Built + tested foundations: minor fail-closed everywhere; private-by-default minor social profile; easy block/mute (atomic blocking); schema-driven data export with token masking; 14-day delete window + exceptions register; consent flows per data category; legal acceptances table (routes/legal.ts, schema legal-acceptances.ts); age handling fail-closed (unknown age -> safety minimum)'
+    DATABASE_TABLES_AND_MIGRATIONS: legal-acceptances.ts, privacy.ts, security.ts
+    API_ROUTES: /api/legal/*, /api/privacy/* (export, delete), /api/account/*
+    UI_ROUTES_AND_SCREENS: /legal, privacy/account settings
+    TEST_FILES: privacy/isolation suites; cross-account-isolation (ran, 19/19)
+    TEST_COMMANDS: test:cross-account-isolation (ran); privacy suites in api set
+    TEST_RESULTS: isolation PASS; dedicated privacy suites NOT_RUN_IN_THIS_SNAPSHOT
+    RUNTIME_EVIDENCE: export/delete flows live in dev
+    TARGET_REQUIREMENTS_COVERED:
+      - 'GDPR data subject rights (export, delete), data minimization practice, children fail-closed handling; DSA minor items: private-by-default, block/mute, no persuasive design for minors, no profiling ads (no ads)'
+      - 'AI: v2.26 Art. 50 transparency model adopted (assistant contexts explicit; no high-risk claim made)'
+    TARGET_REQUIREMENTS_MISSING:
+      - 'COUNTRY_MATRIX (all 10 fields per member state): NOT_BUILT'
+      - 'Controller/processor map, lawful-basis register, DPIA documentation: NOT_DOCUMENTED'
+      - 'Age assurance mechanism (accurate/reliable/robust): self-declared DOB only'
+      - 'EAA/WCAG accessibility assessment: NOT_PERFORMED'
+      - 'Consumer terms localization, VAT country logic, OSS assessment, cancellation/refund flow: NOT_BUILT (no payments yet)'
+      - 'Launch gate: no country currently satisfies the 7 activation requirements'
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: fail-closed minor rules tested; audit logging; provenance allowlist (never request-driven sql.raw)
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  ADMIN_OPERATIONS:
+    DOMAIN_ID: ADMIN_OPERATIONS
+    CLAIMED_STATUS: BUILT_UNPROVEN
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - routes/admin.ts, flags.ts, release.ts, data-origin.ts, health.ts; pages/admin.tsx, admin-health-detail.tsx
+      - Health checks (real probe or GREY, never fake green; probes never throw); role management; data-trust cleanup (identity prefilled from authenticated session, dry-run required, apply after dry-run with explicit confirmation, FOUND/CHANGED/PRESERVED/FAILED/REASON report); feature flags; kill switches; release groups with per-flag auto-stop; provenance endpoint constant table allowlist
+    DATABASE_TABLES_AND_MIGRATIONS: feature-flags.ts, health-checks.ts, data-origin.ts, release.ts
+    API_ROUTES: /api/admin/*, /api/flags/*, /api/release/*, /api/data-origin/*
+    UI_ROUTES_AND_SCREENS: /admin, /admin-health-detail
+    TEST_FILES: admin-account-prefill.test.tsx, admin-page-smoke.test.tsx (web); scheduled-tasks + scheduled-tasks-route (api, ran)
+    TEST_COMMANDS: test:scheduled-tasks, test:scheduled-tasks-route (ran, PASS)
+    TEST_RESULTS: scheduled-tasks suites PASS; admin web smoke tests exist (not in the 27 run)
+    RUNTIME_EVIDENCE: /admin live in dev (isAdmin dev-bypass); release-mode CLI exits non-zero on unresolved red checks
+    TARGET_REQUIREMENTS_COVERED: all 8 requirements + full cleanup UX contract
+    TARGET_REQUIREMENTS_MISSING:
+      - 'cleanup result_explanation_language USER_LOCALE: currently Dutch-only (matches current single-language state; becomes gap when i18n lands)'
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: SPARKI_ADMIN_IDS allowlist in prod; audit rows; dry-run before apply
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+  NOTIFICATIONS:
+    DOMAIN_ID: NOTIFICATIONS
+    CLAIMED_STATUS: BUILT_UNPROVEN
+    IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS:
+      - routes/notifications.ts + schema notifications.ts, push-subscriptions.ts, reminder-preferences.ts; engines/reminders
+      - Central category registry, priority tiers, critical never-off, quiet hours dampen push/email only, resolutionKey open-dedupe + resolve lifecycle, per-context preferences, minor/role permissions, daily fold (Amsterdam calendar day), web push with SSRF host-allowlist at subscribe AND send
+      - Email reminders idempotent (dedupeKey+sentAt), honest-limited without verified domain (skips, never fake-sends)
+    DATABASE_TABLES_AND_MIGRATIONS: notifications.ts, push-subscriptions.ts, reminder-preferences.ts
+    API_ROUTES: /api/notifications/*
+    UI_ROUTES_AND_SCREENS: bell + meldingen preferences
+    TEST_FILES: notification/reminder suites in api set (not in the 27 run this snapshot)
+    TEST_COMMANDS: package.json scripts
+    TEST_RESULTS: NOT_RUN_IN_THIS_SNAPSHOT (typecheck green; earlier green runs recorded)
+    RUNTIME_EVIDENCE: notifications live in dev; VAPID_PRIVATE_KEY present for push
+    TARGET_REQUIREMENTS_COVERED:
+      - priority tiers, context-aware, duplicate suppression, quiet hours except critical, per-context preferences, minor/role permissions, no notification without action/value
+    TARGET_REQUIREMENTS_MISSING:
+      - 'race_mode_noncritical_suppression: race mode exists; explicit suppression rule coverage unverified (ONBEWEZEN)'
+    SECURITY_PRIVACY_PERMISSION_EVIDENCE: SSRF host-allowlist on push endpoints; push only freshly-created rows
+    KNOWN_DEFECTS: []
+    LAST_RELEVANT_COMMIT: 0d8ae408 (snapshot HEAD)
+
+requirement_status_legend:
+  MET: implemented with evidence in this snapshot
+  ONTBREEKT: not implemented (listed under TARGET_REQUIREMENTS_MISSING)
+  ONBEWEZEN: implemented or plausibly implemented but no passing proof in this snapshot (drives BUILT_UNPROVEN)
+
+cross_cutting_evidence:
+  AI_BOUNDARY: MET — all model calls through one aiMessage gateway; deterministic engines own every calculation; LLM words-only is repo-wide law
+  GLOBAL_DATA_TRUST: MET — no mock personal data, honest empty states, provenance + data-origin framework, dry-run cleanup
+  ROLES_PERMISSIONS: MET — server-side least privilege, granular revocable consent, isolation suites green this snapshot
+  GAME_LAYER: MET per v2.26 decision — bordjes-sprinten, klimmenverkenner, Sparki World remain live; no new game builds planned or started
+  DATING: MET per v2.26 decision — removed from plan; zero dating code verified in repository
+  I18N_FOUNDATION: ONTBREEKT — all user-facing copy hardcoded Dutch in UI and LLM prompts (each LLM prompt carries its own Dutch rule); no locale framework, no translation pipeline; v2.26 requires foundation now — this is the largest single cross-cutting gap
+  EU_AI_ACT_ART50: MET as model — assistant contexts explicit, disclose-when-material, no permanent per-message label, no misleading; formal legal transparency assessment document ONTBREEKT
+
+global_results:
+  TEST_SUITE_SUMMARY:
+    workflow_registered_suites_run: 27
+    result: ALL_PASS (0 failures; examples — cross-account-isolation 19/19, coach-parent-share-nothing 15/15, mental 15/15, ride-tracker 11/11)
+    total_test_scripts_in_repo: 139 (api 108, web 21, mobile 10)
+    note: suites outside the 27 registered workflows were not executed in this snapshot; domains relying on them are marked BUILT_UNPROVEN, never PROVEN_READY
+  FAILING_TESTS: NONE (in executed set)
+  TYPECHECK_RESULT: GREEN — pnpm --filter @workspace/db run build exit 0; pnpm run typecheck exit 0 (scripts, sparki-mobile, sparki, api-server all Done)
+  MIGRATION_STATUS: >
+    Drizzle push model (schema-as-code, no migration files). Live dev DB has 167 public tables
+    matching lib/db/src/schema (66 files). Non-destructive guarded-constraint pattern documented
+    for prod. Known cosmetic drift: 63-char name truncation + array default '{}' produce eternal
+    no-op diffs in drizzle push (documented, harmless).
+  FEATURE_FLAGS:
+    source: live feature_flags table (12 rows; columns key/enabled_globally/enabled_roles/enabled_groups/enabled_platforms/rollout_percentage)
+    enabled_globally: [route_planner, knowledge_base, climb_explorer]
+    disabled_globally: [ai_observations, strava, garmin, coach_portal, parent_portal, testing_tools, premium, rit_verhaal, ai_foundation]
+    note: all rollout_percentage 100; per-role/group/platform arrays empty
+  EXTERNAL_SERVICE_DEPENDENCIES:
+    configured_secrets: [MAPBOX_ACCESS_TOKEN, STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, VAPID_PRIVATE_KEY]
+    integrations: [resend (email, honest-limited without verified domain), Clerk (Replit-managed auth), Anthropic via central AI gateway]
+    public_apis: [Open-Meteo (weather), Overpass/OSM (map data), openrouteservice (routing)]
+    honest_unconfigured: [Garmin (no manufacturer keys), Wahoo (no manufacturer keys)]
+  UNCOMMITTED_CHANGES: >
+    1 untracked file only: attached_assets/SPARKI_AI_MASTER_PLAN_v2.26_1784951950708.yaml
+    (input document). No modified tracked files. This matrix file itself is created after
+    the snapshot commit.

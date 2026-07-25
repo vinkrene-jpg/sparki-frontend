@@ -1,0 +1,2434 @@
+schema: sparki.master_plan
+schema_version: 1
+
+document:
+  id: SPARKI_AI_MASTER_PLAN
+  version: "2.26"
+  date: "2026-07-25"
+  format: YAML
+  language_mode: controlled_english_identifiers
+  audience:
+    - AI_ORCHESTRATOR
+    - REPLIT_AGENT
+  status: AUTHORITATIVE_PRODUCT_TARGET
+  technical_state_status: PARTIALLY_EVIDENCED
+  build_authority: USER_REQUEST_REQUIRED
+  predecessor:
+    file: SPARKI_AI_MASTER_PLAN_v2.25.yaml
+    status: SUPERSEDED
+    change_reason:
+      - EU_WIDE_ROLLOUT_CONFIRMED
+      - ALL_24_OFFICIAL_EU_LANGUAGES_CONFIRMED
+      - COUNTRY_MARKETING_SITES_CONFIRMED
+      - I18N_ARCHITECTURE_GATE_ADDED
+      - EU_COUNTRY_COMPLIANCE_MATRIX_ADDED
+      - REPLIT_REPOSITORY_REVIEW_INTAKE_ADDED
+      - MACHINE_EVIDENCE_MATRIX_CONTRACT_ADDED
+      - EXISTING_GAME_CODE_PRESERVATION_CLARIFIED
+      - ADULT_DATING_REMOVED
+      - AI_TRANSPARENCY_CONFLICT_RESOLVED
+  migration_history:
+    - source: SPARKI_AI_MASTER_PLAN_v2.24_EXECUTABLE_PRODUCT_SPECIFICATION_FRAMEWORK.md
+      status: SUPERSEDED
+      defects:
+        - VERSION_HEADER_2_14_CONFLICTED_WITH_FILENAME_2_24
+        - SESSION_VERSION_2_17_CONFLICTED_WITH_FILENAME_2_24
+        - HUMAN_PROSE_AND_MACHINE_CONTRACTS_MIXED
+        - DUPLICATE_AND_STALE_DECISIONS
+        - COLLABORATION_CONTRACT_MISSING
+        - ACTIVE_ROADMAP_GAME_REMOVAL_MISSING
+        - CURRENT_ADMIN_CLEANUP_EVIDENCE_MISSING
+  invariants:
+    - ONE_DOCUMENT_VERSION
+    - NO_SILENT_SCOPE_CHANGE
+    - NO_OPEN_DECISION_INVENTION
+    - NEWEST_EXPLICIT_USER_DECISION_WINS
+    - CURRENT_CODE_WINS_FOR_TECHNICAL_FACTS
+    - MASTER_PLAN_WINS_FOR_TARGET_PRODUCT_RULES
+
+precedence:
+  order:
+    - rank: 1
+      source: CURRENT_WORKING_CODE_AND_RUNTIME_EVIDENCE
+      scope: CURRENT_TECHNICAL_STATE
+    - rank: 2
+      source: EXPLICIT_USER_DECISION
+      scope: PRODUCT_DIRECTION_AND_CONSTRAINTS
+      ordering: NEWEST_FIRST
+    - rank: 3
+      source: THIS_MASTER_PLAN
+      scope: TARGET_STATE_AND_BUILD_GOVERNANCE
+    - rank: 4
+      source: VERIFIED_PRIMARY_EXTERNAL_SOURCE
+      scope: MARKET_TECHNICAL_LEGAL_AND_INTEGRATION_FACTS
+    - rank: 5
+      source: OLDER_ROADMAP_OR_CONVERSATION
+      scope: HISTORICAL_CONTEXT_ONLY
+  conflict_protocol:
+    detect: REQUIRED
+    auto_resolve_when_precedence_is_unambiguous: true
+    preserve_superseded_record: true
+    ask_user_only_when:
+      - FUNDAMENTAL_PRODUCT_CHOICE_REMAINS_OPEN
+      - SAME_PRIORITY_SOURCES_CONFLICT
+      - CODE_CONFLICT_CHANGES_PRODUCT_INTENT
+    prohibit:
+      - ASSISTANT_MEMORY_AS_PROJECT_SOURCE
+      - UNVERIFIED_ASSISTANT_CLAIM_AS_DECISION
+      - OLD_CONVERSATION_OVERRIDE_OF_NEW_DECISION
+
+collaboration_contract:
+  authority:
+    product_owner: RENE
+    assistant_role:
+      - RESEARCH_OWNER
+      - SPECIFICATION_OWNER
+      - CONSISTENCY_OWNER
+      - EVIDENCE_OWNER
+      - COMPETITIVE_REVIEW_OWNER
+    replit_role:
+      - IMPLEMENT_APPROVED_SMALL_TASK
+      - REPORT_EVIDENCE
+      - NO_PRODUCT_DECISION_AUTHORITY
+  user_review_model:
+    user_reads_or_reviews_master_plan: false
+    user_controls_by_questions: true
+    assistant_must_answer_from_evidence: true
+    assistant_owns_document_validation: true
+    user_approval_of_document_text_required: false
+    user_request_before_product_build_required: true
+  communication:
+    style: BUSINESS_DIRECT
+    pleasing_behavior: PROHIBITED
+    functional_disagreement: REQUIRED
+    max_explanation_sentences: 10
+    preferred_explanation_sentences: LESS_THAN_10
+    invented_context: PROHIBITED
+    invented_fact: PROHIBITED
+    invented_decision: PROHIBITED
+    uncertainty:
+      disclose: REQUIRED
+      convert_to_fact: PROHIBITED
+    question_policy:
+      ask_only_real_product_decisions: true
+      ask_for_sake_of_asking: false
+      ask_detail_implied_by_confirmed_rules: false
+      only_fundamental_choices_return_to_user: true
+    continuity:
+      reask_confirmed_choice: PROHIBITED
+      reopen_only_for:
+        - NEW_EVIDENCE
+        - CURRENT_CODE_CONFLICT
+        - MARKET_CHANGE
+        - SAFETY_OR_LEGAL_CONFLICT
+      process_new_answer_into_next_document_version: REQUIRED
+  legacy_communication_list:
+    claimed_count: 17
+    claimed_origin:
+      user_points: 14
+      assistant_additions: 3
+    exact_source_recovered: false
+    reconstruction_by_assumption: PROHIBITED
+    current_explicit_contract_wins: true
+
+research_contract:
+  trigger: EVERY_MATERIAL_DISCUSSION_OR_SPECIFICATION
+  geographic_scope: GLOBAL
+  required_dimensions:
+    - DIRECT_COMPETITORS
+    - ADJACENT_INDUSTRIES
+    - CURRENT_TECHNOLOGY
+    - CURRENT_RESEARCH_AND_PRACTICE
+    - PLATFORM_AND_VENDOR_CHANGES
+    - DATA_ACCESS_AND_FORMAT_LIMITATIONS
+    - LEGAL_AND_LICENSE_RISK
+    - COMMERCIAL_MODEL
+  source_priority:
+    - OFFICIAL_PRIMARY_SOURCE
+    - STANDARD_OWNER
+    - PEER_REVIEWED_RESEARCH
+    - REGULATOR
+    - RELIABLE_SECONDARY_SOURCE
+  output_required:
+    - DATE_CHECKED
+    - SOURCE_URL
+    - FACT
+    - PRODUCT_IMPACT
+    - CONFIDENCE
+  stale_research_policy:
+    time_sensitive_claim_requires_recheck: true
+    unsupported_claim_must_not_drive_build: true
+  failure_definition:
+    later_user_question_reveals_foreseeable_major_omission: ASSISTANT_RESEARCH_FAILURE
+
+economic_contract:
+  primary_objective: PROFITABLE_SCALABLE_PRODUCT
+  decision_filters:
+    - USER_VALUE
+    - WILLINGNESS_TO_PAY
+    - COMPETITIVE_STRENGTH
+    - DEVELOPMENT_COST
+    - OPERATING_COST
+    - SUPPORT_COST
+    - VENDOR_DEPENDENCY
+    - RETENTION_VALUE
+    - MARKET_SHARE_POTENTIAL
+  quality_rule:
+    every_commercial_core_domain:
+      minimum: EXCELLENT
+      comparison: BEST_RELEVANT_SPECIALIST_PRODUCTS
+      superficial_breadth: PROHIBITED
+      technically_present_but_untrusted: NOT_COMMERCIAL_READY
+  stop_or_challenge_when:
+    - FUNCTION_HAS_NO_CLEAR_USER_OR_COMMERCIAL_VALUE
+    - FUNCTION_WEAKENS_CORE_QUALITY
+    - FUNCTION_CREATES_UNCONTROLLED_MAINTENANCE_COST
+    - FUNCTION_DUPLICATES_EXISTING_ARCHITECTURE
+    - FUNCTION_INCREASES_VENDOR_LOCK_IN_WITHOUT_UNIQUE_VALUE
+
+source_truth:
+  current_technical_truth:
+    required:
+      - CURRENT_SOURCE_CODE
+      - CURRENT_RUNTIME
+      - CURRENT_DATABASE_SCHEMA
+      - CURRENT_TEST_RESULTS
+    available_in_this_revision: false
+    reason: PROVIDED_CURRENT_STATE_ZIP_TRUNCATED_AND_MISSING_CENTRAL_DIRECTORY
+    consequence:
+      - NO_COMPLETE_CODE_STATE_CLAIMS
+      - REPORTED_RESULTS_LABELED_REPORTED_OR_USER_OBSERVED
+      - NEXT_BUILD_TASK_REQUIRES_VALID_CURRENT_STATE_EXPORT_OR_DIRECT_REPOSITORY_ACCESS
+  target_truth:
+    source: THIS_DOCUMENT
+  build_convergence:
+    method: SMALL_EVIDENCED_INCREMENTAL_REPLIT_TASKS
+    rewrite_working_system_without_proven_need: PROHIBITED
+    parallel_engine_or_data_source: PROHIBITED
+
+current_evidence:
+  as_of: "2026-07-25"
+  code_export:
+    file: sparki-current-state-export.zip
+    status: INVALID_TRUNCATED
+    usable_for_code_audit: false
+  entitlement_foundation:
+    evidence_type: CONVERSATION_REPORTED
+    reported_commit: 696be15
+    reported:
+      - USER_ENTITLEMENTS
+      - VARIANT_FEATURE_GRANTS
+      - CENTRAL_RESOLVER
+      - API_ROUTES
+      - ADMIN_SECTION
+      - AUDIT
+      - FOUR_ACCESS_GATES
+    production_validation: BLOCKED_AT_TIME_OF_REPORT
+  sparki_connect:
+    evidence_type: SCREENSHOT_REPORTED
+    assignment_1:
+      reported_tests_passed: 19
+      status: REPORTED_COMPLETE_NOT_CODE_VERIFIED
+    assignment_2:
+      reported_tests_passed: 29
+      status: REPORTED_COMPLETE_NOT_CODE_VERIFIED
+    assignment_3:
+      status: NOT_CONFIRMED_COMPLETE
+    assignment_4:
+      status: REPORTED_COMPLETE_BY_LATER_SCREEN_CONTEXT_NOT_CODE_VERIFIED
+  repository_review_2026_07_25:
+    evidence_type: REPLIT_REPOSITORY_ASSERTION_PENDING_EVIDENCE_MATRIX
+    readiness_change_allowed_from_assertion_only: false
+    reported_built_and_tested:
+      - DATA_HUB_CONNECT
+      - STRAVA_USER_OAUTH_AND_WEBHOOK_SYNC
+      - ROUTES_NAVIGATION
+      - RACE_INTELLIGENCE
+      - EXPORT_CENTER
+      - COACH_COCKPIT
+      - CLUB_TEAM
+      - PARENT_MINOR
+      - ENTITLEMENT_FOUNDATION
+      - ADMIN_OPERATIONS
+      - NOTIFICATIONS
+      - HUMOR_LAYER
+      - EXPLANATION_LAYER
+      - MOBILE_RECORDING_SENSORS
+      - SPORT_PASSPORT_WITH_PROVENANCE
+    reported_partial:
+      - VARIANT_PRESENTATION_DEPTH
+      - MEDICAL_BOUNDARY
+      - TRAINER_SEARCH_AND_ONBOARDING
+    reported_not_built:
+      - TRAINER_CAMPUS
+      - MARKETPLACE
+      - PAYMENT_INFRASTRUCTURE
+      - TRAINER_PASSPORT_SEPARATE_ENVIRONMENT
+      - MEDICAL_TEAM_CONSENT_FLOW
+    reported_specifics:
+      entitlement_commit: 696be15
+      club_role_count: 11
+    required_next_evidence: DOMAIN_EVIDENCE_MATRIX
+  admin_data_cleanup:
+    evidence_type: USER_OBSERVED
+    administrator_roles_visible: true
+    administrator_roles_working: true
+    clerk_id_prefilled: true
+    dry_run_working: true
+    apply_run_status: NOT_REPORTED
+    dry_run_result:
+      english_observations_found: 15
+      duplicate_ftp_import_rows: 1
+      ftp_update_required: false
+      historical_bike_links:
+        count: 108
+        approximate_distance_km: 3770
+    unresolved:
+      - CLASSIFY_15_ENGLISH_OBSERVATIONS
+      - DECIDE_CLEANUP_ACTION_FOR_1_DUPLICATE_FTP_IMPORT_ROW
+      - VERIFY_108_HISTORICAL_BIKE_LINKS_BEFORE_DELETION_OR_RETENTION
+      - PROVE_POST_APPLY_EMPTY_OR_REAL_DATA_STATES
+
+product_scope:
+  primary_sport: CYCLING
+  geographic_target:
+    region: EUROPEAN_UNION
+    member_state_coverage: ALL_CURRENT_EU_MEMBER_STATES
+    rollout_model: PHASED_COUNTRY_ACTIVATION
+    single_shared_product: true
+    country_specific_codebases: PROHIBITED
+  language_target:
+    coverage: ALL_24_OFFICIAL_EU_LANGUAGES
+    locales:
+      - bg
+      - hr
+      - cs
+      - da
+      - nl
+      - en
+      - et
+      - fi
+      - fr
+      - de
+      - el
+      - hu
+      - ga
+      - it
+      - lv
+      - lt
+      - mt
+      - pl
+      - pt
+      - ro
+      - sk
+      - sl
+      - es
+      - sv
+    current_active_product_locale: nl-NL
+    additional_locale_activation: PHASED
+    all_24_required_at_full_EU_rollout: true
+  country_marketing:
+    one_localized_marketing_platform: REQUIRED
+    country_specific_marketing_experience: REQUIRED
+    separate_country_site_codebases: PROHIBITED
+    app_build_dependency: NONE_EXCEPT_SHARED_BRAND_PRODUCT_AND_LEGAL_FACTS
+  multisport:
+    status: DEFERRED
+    gate: CYCLING_COMPLETE_STABLE_AND_COMMERCIALLY_STRONG
+  excluded_scope:
+    ADULT_DATING:
+      status: REMOVED_BY_USER_DECISION
+      decision_date: "2026-07-25"
+      implementation_reported: false
+      reintroduction_requires_new_explicit_user_decision: true
+  club_environment:
+    status: IN_SCOPE
+    commercial_priority: HIGH
+  active_game_layer:
+    status: REMOVED_FROM_ACTIVE_ROADMAP
+    removed:
+      - SPARKI_TILES
+      - TILES_FRIEND_DUEL
+      - NEW_ROADS_HUNTER
+      - CLIMB_PASSPORT_GAME
+      - CLUB_MAP_BADGES
+      - SURPRISE_ROUTE_GAME
+    existing_runtime_features:
+      policy: PRESERVE_CURRENT_BEHAVIOR
+      examples_reported_by_replit:
+        - SIGN_SPRINTING
+        - CLIMB_EXPLORER
+        - SPARKI_WORLD
+      disable_delete_or_migrate: PROHIBITED_WITHOUT_EXPLICIT_USER_DECISION
+      new_development: PROHIBITED
+      maintenance_for_SECURITY_PRIVACY_DATA_LOSS_OR_BREAKAGE: ALLOWED
+    rebuild_requires_new_explicit_user_decision: true
+  product_goal:
+    - JOIN_GRADE_AUTONOMOUS_TRAINING_COACH
+    - TRAININGPEAKS_GRADE_COACH_WORKFLOW
+    - KOMOOT_GRADE_ROUTE_CLARITY_AND_USABILITY
+    - TRUSTED_DATA_AND_SYNC
+    - DISTINCT_RACE_AND_TEAM_VALUE
+    - ONE_SIMPLE_DAILY_EXPERIENCE
+
+product_variants:
+  codebase: ONE_SHARED
+  data_model: ONE_SHARED
+  variants:
+    SPARKI_GO:
+      users:
+        - OLDER_RIDER
+        - CONVENTIONAL_BIKE
+        - EBIKE
+      defaults:
+        - VERY_SIMPLE
+        - LARGE_TOUCH_TARGETS
+        - CLEAR_VOICE
+        - LOW_INFORMATION_DENSITY
+    SPARKI_BASIC:
+      users:
+        - YOUNG_RIDER
+        - BEGINNING_RIDER
+    SPARKI_PERFORMANCE:
+      users:
+        - AMATEUR_RIDER
+        - RECREATIONAL_RIDER_SEEKING_STRUCTURED_IMPROVEMENT
+    SPARKI_PRO:
+      users:
+        - COMPETITIVE_RACER
+  controls:
+    - ENTITLEMENTS
+    - PRESENTATION_DEPTH
+    - DEFAULTS
+    - ADD_ONS
+  upgrade: SUPPORTED
+  downgrade:
+    supported: true
+    history_preserved: true
+  interface_simplification_without_entitlement_loss: REQUIRED
+
+architecture:
+  current_reported_stack:
+    confidence: REPORTED_NOT_CURRENTLY_CODE_VERIFIED
+    web: REACT_VITE
+    api: EXPRESS_5
+    database: POSTGRESQL_DRIZZLE
+    mobile: EXPO_REACT_NATIVE
+    primary_experience: PWA
+  core:
+    - CENTRAL_DATA_HUB
+    - CANONICAL_ACTIVITY_AND_TRAINING_MODEL
+    - DETERMINISTIC_DECISION_ENGINES
+    - AI_ORCHESTRATION_LAYER
+    - CENTRAL_ENTITLEMENT_RESOLVER
+    - ROLE_AND_PERMISSION_ENGINE
+    - AUDIT_AND_OBSERVABILITY
+  AI_boundary:
+    AI_allowed:
+      - EXPLANATION
+      - SUMMARIZATION
+      - DOCUMENT_INTERPRETATION
+      - IMAGE_INTERPRETATION
+      - PROPOSAL_GENERATION
+      - CONTEXTUAL_COMMUNICATION
+    deterministic_required:
+      - TRAINING_LOAD_CALCULATION
+      - ZONE_CALCULATION
+      - ROUTE_DISTANCE
+      - ROUTE_PROGRESS
+      - ROUND_COUNTING
+      - START_FINISH_LOGIC
+      - PERMISSION_DECISION
+      - ENTITLEMENT_DECISION
+      - DATA_VALIDATION
+      - DEDUPLICATION
+      - SAFETY_BLOCK_RULE
+    AI_never:
+      - INVENT_PERSONAL_DATA
+      - INVENT_ROUTE_HAZARD
+      - INVENT_MEDICAL_FACT
+      - SILENTLY_OVERRIDE_HUMAN_DECISION
+      - DETERMINE_ACCESS_RIGHTS
+  internationalization:
+    status: ARCHITECTURE_FOUNDATION_REQUIRED_NOW
+    rollout_rule:
+      active_locale_during_core_completion: nl-NL
+      add_multiple_languages_before_foundation: PROHIBITED
+      wait_until_full_app_completion_before_foundation: PROHIBITED
+    user_facing_text:
+      hardcoded_in_component: PROHIBITED_FOR_NEW_OR_CHANGED_CODE
+      key_catalog: REQUIRED
+      namespace_by_domain: REQUIRED
+      interpolation: ICU_MESSAGE_FORMAT_OR_EQUIVALENT
+      pluralization: CLDR_COMPATIBLE
+      gender_and_grammar_context: SUPPORTED
+      rich_text_tokens: CONTROLLED
+    locale_resolution:
+      inputs:
+        - USER_EXPLICIT_CHOICE
+        - ACCOUNT_PREFERENCE
+        - DEVICE_LOCALE
+        - COUNTRY_SITE_CONTEXT
+      user_choice_wins: true
+      persisted_per_user: true
+      BCP47: REQUIRED
+    localization_dimensions:
+      - LANGUAGE
+      - COUNTRY
+      - DATE
+      - TIME
+      - TIMEZONE
+      - NUMBER
+      - DECIMAL_SEPARATOR
+      - CURRENCY
+      - UNITS
+      - LEGAL_COPY
+      - AGE_RULE
+      - TAX
+    translation_catalog:
+      source_locale: nl-NL
+      operational_pivot_locale: en
+      translation_memory: REQUIRED
+      controlled_glossary:
+        - CYCLING_TERMS
+        - TRAINING_TERMS
+        - SAFETY_TERMS
+        - LEGAL_TERMS
+        - MEDICAL_BOUNDARY_TERMS
+      key_deletion_and_rename_audited: true
+      unused_key_detection: REQUIRED
+      missing_key_detection: REQUIRED
+    fallback:
+      noncritical:
+        order:
+          - REQUESTED_LOCALE
+          - en
+          - KEY_IDENTIFIER_VISIBLE_IN_NONPRODUCTION_ONLY
+      critical:
+        runtime_fallback_to_unapproved_translation: PROHIBITED
+        missing_translation: BLOCK_LOCALE_RELEASE
+    quality:
+      machine_translation_allowed_for_first_draft: true
+      human_or_specialist_review_required:
+        - SAFETY_WARNING
+        - CONSENT
+        - MINOR_FLOW
+        - LEGAL_COPY
+        - BILLING
+        - MEDICAL_BOUNDARY
+        - RACE_CRITICAL_INSTRUCTION
+      pseudo_localization: REQUIRED
+      long_string_layout_test: REQUIRED
+      locale_snapshot_tests: REQUIRED
+      right_to_left_architecture_ready: REQUIRED
+      right_to_left_active_locale_required_now: false
+    AI_generated_text:
+      semantic_structured_output_before_language_realization: REQUIRED_WHERE_PRACTICAL
+      locale_explicit_in_request: REQUIRED
+      per_domain_hardcoded_write_in_Dutch_rule: PROHIBITED
+      factual_and_safety_rules_language_independent: REQUIRED
+      generated_translation_of_critical_fixed_warning: PROHIBITED
+      user_locale_output: REQUIRED
+      source_and_uncertainty_preserved_across_translation: REQUIRED
+    migration:
+      inventory_all_hardcoded_UI_strings: REQUIRED
+      inventory_all_prompt_language_directives: REQUIRED
+      prioritize:
+        - AUTH
+        - ONBOARDING
+        - TODAY
+        - TRAINING
+        - SAFETY
+        - CONSENT
+        - BILLING
+        - NAVIGATION
+        - NOTIFICATIONS
+      no_big_bang_rewrite: true
+      migrate_per_domain_with_regression_tests: true
+
+global_data_trust:
+  prohibited_personal_sources:
+    - MOCK
+    - SEED
+    - DEMO
+    - HARDCODED
+    - ERROR_FALLBACK
+  missing_data: HONEST_EMPTY_STATE
+  api_error: EXPLICIT_UNAVAILABLE_STATE
+  provenance_required: true
+  derived_metric_traceability_required: true
+  duplicate_handling:
+    automatic_merge_only_when_high_confidence_and_reversible: true
+    otherwise: FLAG_FOR_REVIEW
+  cleanup:
+    dry_run_before_apply: REQUIRED
+    audit_log: REQUIRED
+    reversible_when_possible: REQUIRED
+    target_identity_from_authenticated_server_session: REQUIRED
+    manual_clerk_id_lookup_by_user: PROHIBITED
+  release_gate:
+    - ZERO_UNAPPROVED_PERSONAL_MOCK_DATA
+    - HONEST_EMPTY_STATES
+    - ALL_PERSONAL_METRICS_TRACEABLE
+    - PRODUCTION_AND_TEST_DATA_SEPARATED
+
+roles:
+  platform_roles:
+    - ATHLETE
+    - TRAINER
+    - COACH
+    - PARENT_GUARDIAN
+    - CLUB_ADMIN
+    - TEAM_LEADER
+    - MECHANIC
+    - ADMINISTRATOR
+  test_account:
+    rene_role_switcher: REQUIRED
+    cross_role_data_leak: PROHIBITED
+  permission_model:
+    server_side_enforcement: REQUIRED
+    least_privilege: REQUIRED
+    explicit_consent_for_sensitive_categories: REQUIRED
+    consent:
+      - GRANULAR
+      - REVOCABLE
+      - TIMESTAMPED
+      - ACTOR_RECORDED
+
+domain_registry:
+  TODAY:
+    level: A
+    target: ONE_CONTEXTUAL_DAILY_MAIN_ROUTE
+    benchmark: JOIN
+    default:
+      - TODAY_RELEVANT_ACTION
+      - CURRENT_TRAINING
+      - CURRENT_RECOVERY_SIGNAL
+    suppress:
+      - UNRELATED_LONG_TERM_ANALYSIS
+      - REPEATED_GENERIC_CARDS
+    post_activity:
+      focus_only:
+        - COMPLETED_ACTIVITY
+        - SESSION_DATA
+        - SESSION_GRAPHS
+        - SESSION_ANALYSIS
+        - SHORT_TRANSLATION
+
+  AUTONOMOUS_TRAINING_COACH:
+    level: A
+    benchmark: JOIN
+    quality:
+      - SIMPLE
+      - ADAPTIVE
+      - RELIABLE
+      - TRANSPARENT
+      - DAILY_USABLE
+    inputs:
+      - GOALS
+      - AVAILABILITY
+      - TRAINING_HISTORY
+      - EXECUTED_ACTIVITY
+      - MISSED_ACTIVITY
+      - EXTRA_ACTIVITY
+      - RECOVERY
+      - USER_FEEDBACK
+    rules:
+      plan_change_reason_visible: true
+      uncertainty_visible: true
+      unsafe_load_change_blockable: true
+      generative_AI_as_calculation_engine: false
+
+  TRAINING_PLANS_AND_CALENDAR:
+    level: A
+    canonical_entities:
+      - PLANNED_TRAINING
+      - COMPLETED_ACTIVITY
+      - TRAINING_BLOCK
+      - PLAN_TEMPLATE
+      - PERSONAL_PLAN_INSTANCE
+    add_training_flow:
+      separate:
+        - PLAN_TRAINING
+        - REGISTER_COMPLETED_TRAINING
+    preserve:
+      - ORIGINAL_TEMPLATE
+      - PERSONAL_ASSIGNED_VERSION
+      - CHANGE_HISTORY
+      - SOURCE
+
+  COACH_TRAINER:
+    level: A
+    benchmark: TRAININGPEAKS
+    requirements:
+      - ATHLETE_MANAGEMENT
+      - PLANNING
+      - ANALYSIS
+      - FEEDBACK
+      - WORKOUT_COMMENTS
+      - EXCEPTIONS
+      - PRIORITY_QUEUE
+      - LIBRARY
+      - TEMPLATES
+      - BUSINESS_CAPACITY
+    support_scaling:
+      dimensions:
+        - VERIFIED_QUALIFICATIONS
+        - EXPERIENCE
+        - ATHLETE_RISK
+        - DATA_CONFIDENCE
+        - WORKLOAD
+      lower_verified_expertise:
+        - MORE_EXPLANATION
+        - MORE_GUARDRAILS
+        - MORE_CONFIRMATIONS
+        - MORE_WARNINGS
+      higher_verified_expertise:
+        - MORE_ANALYSIS
+        - MORE_PREPARATION
+        - LESS_INTRUSION
+      safety_privacy_minor_rules_always_apply: true
+    trainer_capacity:
+      states:
+        - NORMAL
+        - BUSY
+        - FULL
+      full_options:
+        - WAITLIST
+        - EXPECTED_AVAILABILITY
+        - REGISTER_INTEREST
+        - HIDE_FROM_SEARCH
+      automation_is_proposal_not_takeover: true
+
+  TRAINER_PASSPORT:
+    level: B
+    layout_relation: SAME_HIGH_LEVEL_STRUCTURE_AS_ATHLETE_PASSPORT
+    independent_role_environment: true
+    role_variants:
+      - TRAINER
+      - COACH
+      - TEAM_LEADER
+      - MECHANIC
+    public:
+      - PROFESSIONAL_IDENTITY
+      - SPECIALISMS
+      - VERIFIED_QUALIFICATIONS
+      - SELF_REPORTED_EXPERIENCE_LABELED
+      - SPARKI_MODULES
+      - AVAILABILITY
+    private:
+      - INTERNAL_NOTES
+      - LINKED_RELATIONSHIPS
+      - PRIVATE_CAPACITY_DATA
+    athlete_visibility_of_other_athletes: PROHIBITED
+
+  TRAINER_CAMPUS:
+    level: B
+    required_start_module:
+      duration_minutes:
+        min: 60
+        max: 90
+      result_label: SPARKI_PLATFORM_TRAINED
+      formal_diploma_claim: false
+      scope:
+        - SAFE_PLATFORM_USE
+        - DATA
+        - AI_LIMITS
+        - PRIVACY
+        - MINORS
+        - COMMUNICATION
+        - ETHICS
+    optional_training:
+      duration_hours:
+        min: 15
+        max: 25
+      formal_diploma_claim: false
+      scope:
+        - TRAINING_THEORY
+        - ZONES
+        - LOAD_AND_RECOVERY
+        - PERIODIZATION
+        - ANALYSIS
+        - COMMUNICATION
+        - YOUTH
+        - RACING
+        - MENTAL_SKILLS
+        - AI_REVIEW
+    KNWU:
+      replace: false
+      verified_qualification_display: true
+      future_partnership_research: true
+      automatic_website_verification:
+        replit_reported_status: TECHNICALLY_UNREACHABLE
+        independently_verified: false
+        may_not_drive_final_implementation_claim: true
+      fallback_target:
+        - MANUAL_DOCUMENT_UPLOAD
+        - ISSUER_AND_QUALIFICATION_METADATA
+        - HUMAN_VERIFICATION
+        - EXPIRY_AND_REVERIFICATION
+        - AUDIT_TRAIL
+    generic_skill_labels:
+      starter_expert: PROHIBITED
+
+  TRAINER_SEARCH_AND_ONBOARDING:
+    level: B
+    athlete_search_compare_contact: FREE
+    trainer_price_visibility_initially_trainer_controlled: true
+    bulk_onboarding:
+      - INVITATION_LINK
+      - CSV_IMPORT
+    trainer_prefill_is_proposal: true
+    athlete_must:
+      - REVIEW
+      - EDIT
+      - CONFIRM
+      - CONSENT
+      - RETAIN_OWN_ACCOUNT
+    initial_models:
+      - YOUTH_RIDER
+      - RACER
+      - RECREATIONAL
+      - RESTARTER
+      - RETURN_AFTER_INJURY
+      - CLUB_TEAM_ENTRY
+    mandatory_fields_not_removable:
+      - SAFETY
+      - PRIVACY
+      - CONSENT
+      - MINOR_SAFEGUARDING
+
+  CLUB_TEAM:
+    level: A
+    commercial_priority: HIGH
+    own_entity_and_workspace: REQUIRED
+    requirements:
+      - CLUB_PROFILE
+      - TEAMS
+      - GROUPS
+      - MEMBERS
+      - ROLES
+      - SEASONS
+      - TRAINING_CALENDAR
+      - LOCATIONS
+      - EVENTS
+      - ATTENDANCE
+      - ANNOUNCEMENTS
+      - TEAM_NOTES
+      - AUDIT
+      - COMMERCIAL_ENTITLEMENT
+    email:
+      existing_proven_service_may_be_reused: true
+      new_general_email_infrastructure_in_club_task: PROHIBITED
+      alternatives:
+        - IN_APP_INVITE
+        - PERSONAL_LINK
+        - QR
+        - CLUB_CODE
+    sensitive_data:
+      default_access: DENIED
+      explicit_category_consent_required:
+        - POWER
+        - HEART_RATE
+        - LOAD
+        - RECOVERY
+        - SLEEP
+        - NUTRITION
+        - INJURY
+        - PERSONAL_COACHING
+
+  PARENT_MINOR:
+    level: B
+    adult_private_channel_to_minor_without_approved_role: PROHIBITED
+    access:
+      purpose_limited: true
+      transparent: true
+      age_and_context_adjusted: true
+    location_sharing:
+      explicit: true
+      time_limited: true
+      audience_visible: true
+
+  TEAM_LEADER_SOIGNEUR:
+    level: B
+    requirements:
+      - AUTHORIZED_RIDER_OVERVIEW
+      - RACE_PLAN
+      - FEED_ZONES
+      - INCIDENT_BOARD
+      - WEATHER_CONTEXT
+      - RIDER_STATUS
+      - MATERIAL_PROFILE
+      - SPARE_PARTS
+      - TEAM_COMMUNICATION
+    live_data:
+      explicit_athlete_consent: REQUIRED
+      minimum_necessary_fields: REQUIRED
+      stale_state_visible: REQUIRED
+    follow_car:
+      motor_vehicle_routing_profile: REQUIRED
+      bicycle_only_access_assumption: PROHIBITED
+      pickup_and_service_points: REQUIRED
+
+  MEDICAL_BOUNDARY:
+    level: B
+    Sparki_is_not:
+      - PHYSICIAN
+      - GENERAL_PRACTITIONER
+      - PSYCHOLOGIST
+      - DIAGNOSTIC_SYSTEM
+      - THERAPIST
+    Sparki_may:
+      - CAUTIOUS_GENERAL_SIGNAL
+      - SAFE_SPORT_CONTEXT_ADVICE
+    referral_by_Sparki: PROHIBITED
+    athlete_responsibility: RETAINED
+    medical_team_guidance:
+      role_limited: true
+      formal_credential_verification_required: false
+      athlete_explicit_consent_required: true
+      athlete_owns_data: true
+      sharing_per_item_or_topic: true
+      automatic_broad_trainer_access: false
+      valid_restriction_overrides_Sparki: true
+      production_enablement:
+        status: RESEARCH_FIRST
+        required:
+          - LEGAL_REVIEW
+          - CONSENT_FLOW_TEST
+          - ROLE_ABUSE_TEST
+          - DATA_RETENTION_TEST
+
+  RECOVERY_HEALTH:
+    level: B
+    inputs:
+      - USER_REPORTED_STATE
+      - TRAINING_LOAD
+      - SLEEP_WHEN_AUTHORIZED
+      - STRESS_WHEN_AUTHORIZED
+      - RESTING_HEART_RATE_WHEN_AUTHORIZED
+      - HRV_WHEN_AUTHORIZED_AND_AVAILABLE
+    output:
+      - GENERAL_READINESS_CONTEXT
+      - UNCERTAINTY
+      - DATA_GAPS
+      - SAFE_TRAINING_ADJUSTMENT_PROPOSAL
+    diagnosis: PROHIBITED
+
+  MENTAL_SKILLS:
+    level: B
+    scope:
+      - SPORT_MENTAL_SKILLS
+      - PRE_RACE_ROUTINE
+      - FOCUS
+      - CONFIDENCE
+      - COPING_WITH_SETBACK
+    therapy: PROHIBITED
+    hidden_psychological_profile: PROHIBITED
+    optional: true
+
+  NUTRITION:
+    level: B
+    scope:
+      - SPORT_NUTRITION_CONTEXT
+      - TRAINING_AND_RACE_FUELING
+      - HYDRATION
+      - RECOVERY_FOOD_CONTEXT
+    professional_depth_setting: REQUIRED
+    medical_nutrition_or_diagnosis: PROHIBITED
+    professional_role_future:
+      - DIETITIAN
+      - NUTRITION_SCIENTIST
+
+  LAB_AND_LOAD:
+    level: B
+    requirements:
+      - LOAD_TRENDS
+      - CTL_ATL_TSB_WHEN_TRACEABLE
+      - TEST_PROTOCOLS
+      - DATA_QUALITY
+      - UNCERTAINTY
+      - EXPLANATION_ON_DEMAND
+    mock_or_fallback_metrics: PROHIBITED
+    missing_data: HONEST_EMPTY_STATE
+
+  SPORT_PASSPORT:
+    level: B
+    objective: USER_OWNED_PORTABLE_SPORT_PROFILE
+    sections:
+      - IDENTITY
+      - GOALS
+      - DISCIPLINE
+      - EXPERIENCE
+      - TESTS
+      - ZONES
+      - EQUIPMENT
+      - TRAINING_HISTORY_SUMMARY
+      - PERMISSIONS
+      - PROVENANCE
+    user_owns: true
+    role_specific_views: REQUIRED
+    sensitive_fields_default_private: true
+    export_and_portability: REQUIRED
+    other_user_data_leak: PROHIBITED
+
+  KNOWLEDGE_EXPLANATION:
+    level: B
+    contextual_info_icon: REQUIRED
+    default_visible_long_explanation: PROHIBITED
+    layers:
+      - PLAIN_MEANING
+      - WHY_RELEVANT
+      - TECHNICAL_DEPTH
+      - SOURCE_AND_UNCERTAINTY
+    selected_element_only: true
+    global_screen_explanation_for_local_term: PROHIBITED
+    current_evidence_required: true
+    generative_AI_may_explain_but_not_change_underlying_metric: true
+
+  ANALYTICS_VISUALIZATION:
+    level: B
+    visual_first: true
+    requirements:
+      - PERSONAL_HISTORY_COMPARISON
+      - TREND
+      - CONFIDENCE
+      - DATA_GAP
+      - SOURCE
+      - CONTEXTUAL_TIME_WINDOW
+    no_metric_without_actionable_or_explanatory_value: true
+    no_false_precision: true
+    post_activity_scope_follows_TODAY_contract: true
+
+  ROUTES_NAVIGATION:
+    level: A
+    benchmark: KOMOOT
+    canonical_route:
+      required:
+        - OWNER_OR_SOURCE
+        - GEOMETRY
+        - DISTANCE
+        - ELEVATION
+        - SURFACE
+        - WAY_TYPES
+        - DIRECTION
+        - START
+        - FINISH
+        - POINTS
+        - PROVENANCE
+        - VERSION
+        - VALIDATION_STATE
+    planning_UI:
+      allowed:
+        - ONE_CLEAR_SCREEN
+        - SHORT_GUIDED_FLOW
+      prohibited:
+        - LONG_VERTICAL_FORM
+        - DECORATIVE_DUPLICATE_MAP
+        - OLD_ROUTE_CARDS_IN_CREATION_FLOW
+        - HIDDEN_WAYPOINT_ORDER
+      map_primary: true
+      preserve_state_on_back: true
+      advanced_options_progressive: true
+    point_taxonomy:
+      ROUTE_SHAPING_POINT:
+        affects_geometry: true
+        notification: false
+        finish_flag: false
+        achievement: false
+      NAVIGATION_MANEUVER:
+        types:
+          - LEFT
+          - RIGHT
+          - SHARP_TURN
+          - ROUNDABOUT
+          - OFF_ROUTE
+        notification: USER_CONFIGURABLE
+      INFORMATION_POINT:
+        types:
+          - FEED
+          - WATER
+          - FOOD
+          - COFFEE
+          - HAZARD
+          - BAD_SURFACE
+          - SIGHT
+      RACE_POINT:
+        types:
+          - START
+          - NEUTRALIZATION_END
+          - SPRINT
+          - KOM
+          - LAP
+          - LAST_KILOMETER
+          - FINISH
+        critical_AI_extraction_requires_confirmation: true
+    waypoint_rules:
+      only_true_finish_has_finish_flag: true
+      intermediate_marker: NEUTRAL_OR_NUMBERED
+      sound_on_intermediate_waypoint: false
+      voice_on_intermediate_waypoint: false
+    route_alerts:
+      sources:
+        - ROUTE_PROVIDER
+        - LICENSED_MAP_DATA
+        - OSM_TAG
+        - CONFIRMED_RACE_INFORMATION
+      AI_invention: PROHIBITED
+      uncertainty_label: REQUIRED
+      examples:
+        - ACCESS_LIMITATION
+        - POSSIBLE_UNPAVED
+        - BAD_SURFACE
+        - PROTECTED_AREA
+        - FERRY
+        - STAIRS
+        - GATE
+        - TECHNICAL_PASSAGE
+        - INCOMPLETE_DATA
+    surface_types:
+      - ASPHALT
+      - PAVED_CYCLE_PATH
+      - PAVERS
+      - COBBLES
+      - COMPACT_GRAVEL
+      - LOOSE_GRAVEL
+      - UNPAVED
+      - FOREST_PATH
+      - SINGLETRACK
+      - UNKNOWN
+    bike_profiles:
+      - ROAD
+      - GRAVEL
+      - MTB
+      - TOURING
+      - EBIKE
+      - FOLLOW_CAR
+    suitability:
+      deterministic: true
+      factors:
+        - SURFACE
+        - WAY_TYPE
+        - GRADIENT
+        - ACCESS
+      explain_reason: REQUIRED
+      unknown_must_not_be_guessed: true
+    elevation_profile:
+      type: CONTINUOUS_LINE_WITH_LIGHT_FILL
+      synchronized:
+        - MAP_MARKER
+        - PROFILE_CURSOR
+        - DISTANCE
+        - ELEVATION
+        - GRADIENT
+        - SURFACE
+        - WAY_TYPE
+      interaction:
+        - DRAGGABLE_CURSOR
+        - MAP_SELECTION_MOVES_CURSOR
+        - COLLAPSIBLE
+        - MOBILE_READABLE
+      climb_boundaries_must_be_correct: true
+      descent_must_not_render_as_climb: true
+    active_climb:
+      responsive_target_ratio:
+        map_percent: 40
+        profile_percent: 60
+      hard_ratio: false
+      rider_indicator: CLEAR_BIKE_OR_DIRECTION_MARKER
+      show:
+        - REMAINING_DISTANCE
+        - CURRENT_GRADIENT
+        - UPCOMING_GRADIENT
+        - REMAINING_ASCENT
+        - SUMMIT
+    live_navigation:
+      phone_audio:
+        turn_signal_toggle: REQUIRED
+        voice_toggle: REQUIRED
+        no_duplicate_instruction: REQUIRED
+        background_and_screen_off_where_platform_supports: REQUIRED
+        respect_device_volume_silent_mode_bluetooth: REQUIRED
+      data_panel:
+        user_configurable_metrics: true
+        draggable_vertical_range_percent:
+          min: 0
+          max: 30
+        readable_font_and_contrast: REQUIRED
+        average_speed_must_not_disappear_at_low_speed: true
+      in_ride_route_edit:
+        - ADD_OR_MOVE_WAYPOINT
+        - SHORTEN
+        - EXTEND
+        - ROUTE_HOME
+        - ROUTE_START
+      navigation_must_continue_during_edit: true
+      off_route_alert_requires_sustained_evidence: true
+      single_bad_GPS_point_alert: PROHIBITED
+    activity_finish:
+      explicit_stop_finish_button: REQUIRED
+      summary_popup_on_map: REQUIRED
+      actions:
+        - SAVE_WITH_CONFIRMATION
+        - DISCARD_WITH_CONFIRMATION
+      save_destination: ACTIVITY_HISTORY
+      route_generator_list_destination: PROHIBITED
+    sharing:
+      native_share: REQUIRED
+      route_proposal_to_friend: REQUIRED
+      friend_can_propose_changes: true
+      version_return_flow: REQUIRED
+      Strava_and_social_share: REQUIRED_WHEN_CONNECTED_AND_AUTHORIZED
+      OS_file_association:
+        GPX_open_with_Sparki: TARGET_CAPABILITY
+        supported_surface: NATIVE_MOBILE_APP_ONLY
+        PWA_support_claim: PROHIBITED
+    route_IP:
+      competitor_reference: FUNCTIONAL_ONLY
+      prohibited_copy:
+        - SOURCE_CODE
+        - TEXT
+        - ICON
+        - IMAGE
+        - SCREEN_LAYOUT
+        - COLOR_SYSTEM
+        - ANIMATION
+        - BRAND
+        - PROTECTED_DATA
+      require:
+        - OWN_UI
+        - OWN_IMPLEMENTATION
+        - OFFICIAL_API
+        - LICENSED_DATA
+        - LICENSE_AND_ATTRIBUTION_REGISTER
+
+  RACE_INTELLIGENCE:
+    level: A
+    race_mode:
+      route_use_types:
+        - TRAINING
+        - TOUR
+        - RACE
+      display: RACE_CRITICAL_ONLY
+      support:
+        - OFFICIAL_START_FINISH
+        - NEUTRALIZATION
+        - LOCAL_LAPS
+        - SPRINTS
+        - KOM
+        - HAZARDS
+        - FEED_ZONES
+        - DECISIVE_CLIMBS
+        - TACTICAL_CUES
+        - PERSONAL_RACE_TASK
+      finish_only_on_final_official_lap: true
+    technical_guide:
+      inputs:
+        - PDF
+        - IMAGE
+        - OFFICIAL_ROUTE
+        - ROUTE_MAP
+      AI_output_is_candidate_only: true
+      candidate_required:
+        - TYPE
+        - DESCRIPTION
+        - SOURCE_FILE
+        - SOURCE_PAGE
+        - RACE_KILOMETER
+        - COORDINATES_WHEN_FOUND
+        - CONFIDENCE
+        - STATUS
+      statuses:
+        - PROPOSED
+        - CONFIRMED
+        - MODIFIED
+        - REJECTED
+      unconfirmed_point_active_use: PROHIBITED
+      user_or_trainer_map_review: REQUIRED
+    export_center:
+      outputs:
+        GPX:
+          role: UNIVERSAL_ROUTE_BASE
+        GARMIN_FIT_COURSE:
+          role: ROUTE_ELEVATION_NAVIGATION_CONFIRMED_COURSE_POINTS
+        FIT_WORKOUT:
+          role: SEPARATE_STRUCTURED_WARMUP_OR_WORKOUT
+      no_single_file_for_route_race_info_and_workout: true
+      route_shaping_points_as_course_points: PROHIBITED
+      device_claims_require_real_test: true
+      WAHOO:
+        file_import_candidates:
+          - FIT
+          - GPX
+          - TCX
+        optimized_claim: ONLY_AFTER_DEVICE_TEST
+      KAROO:
+        GPX_POI_support_assumption: PROHIBITED
+        optimized_claim: ONLY_AFTER_DEVICE_TEST
+      validation:
+        - FILE_INTEGRITY
+        - ROUND_TRIP
+        - START_FINISH
+        - POINT_ORDER
+        - LAP_LOGIC
+        - UNCONFIRMED_POINT_EXCLUSION
+        - TARGET_DEVICE_COMPATIBILITY
+      versioning:
+        preserve_old_guide: true
+        diff_new_guide: true
+        require_reconfirmation_of_changed_points: true
+        mark_old_export_stale: true
+
+  MOBILE_RECORDING_SENSORS:
+    level: B
+    platform_boundary:
+      background_screen_off_recording: NATIVE_MOBILE_APP_ONLY
+      PWA_equivalence_claim: PROHIBITED
+      ANT_PLUS:
+        IOS: NOT_SUPPORTED
+        ANDROID: NATIVE_MODULE_AND_DEVICE_SUPPORT_REQUIRED
+    sensors:
+      - GPS
+      - HEART_RATE
+      - POWER
+      - CADENCE
+      - SPEED
+    protocols:
+      - BLUETOOTH
+      - ANT_PLUS_WHEN_PLATFORM_SUPPORTS
+    requirements:
+      - BACKGROUND_RECORDING
+      - SCREEN_OFF_RESILIENCE
+      - LOCAL_QUEUE
+      - SAFE_SYNC
+      - DEVICE_AND_SENSOR_PROVENANCE
+      - NO_DUPLICATE_ACTIVITY
+    auto_pause: CONFIGURABLE
+    auto_resume:
+      valid_movement_required: true
+      avoid_vehicle_segment: true
+    post_activity_vehicle_segment:
+      detect: true
+      user_can_correct: true
+      original_preserved: true
+
+  DATA_HUB_CONNECT:
+    level: A
+    objective: ONE_ACTIVITY_TRUTH
+    ingestion:
+      - STRAVA
+      - GARMIN_WHEN_APPROVED
+      - FIT
+      - GPX
+      - TCX
+      - MOBILE
+      - MANUAL
+    pipeline:
+      - VALIDATE
+      - NORMALIZE
+      - PROVENANCE
+      - DEDUPLICATE
+      - MERGE
+      - CALCULATE
+      - AUDIT
+    connection_UX:
+      show_only:
+        - CONNECTED_STATE
+        - LAST_SUCCESS
+        - SYNC_IN_PROGRESS
+        - ERROR
+        - RECOVERY_ACTION
+    full_sync_each_login: PROHIBITED
+    official_push_or_webhook_preferred: true
+    polling_only_when_justified: true
+    idempotency: REQUIRED
+
+  INTEGRATIONS:
+    level: B
+    direct_primary_cycling_data:
+      - BLUETOOTH
+      - ANT_PLUS
+      - OWN_FILE_IMPORT
+    STRAVA:
+      role: BROAD_INTEROPERABILITY_LAYER
+      status: RELEVANT
+    GARMIN:
+      acquisition_context:
+        acquired:
+          - TRAININGPEAKS
+          - TRAINHEROIC
+        announcement_date: "2026-07-22"
+        impact:
+          - ECOSYSTEM_COMPETITION_INCREASED
+          - DEPENDENCY_RISK_INCREASED
+          - NATIVE_SPARki_CAPABILITY_PRIORITY_INCREASED
+      official_apis:
+        - ACTIVITY_API
+        - COURSES_API
+        - HEALTH_API
+        - TRAINING_API
+      health_API:
+        commercial_license_fee: REQUIRED
+        access_approval: REQUIRED
+        consent: REQUIRED
+      unofficial_python_garminconnect:
+        production_use: PROHIBITED
+      priority:
+        only_verified_unique_value: true
+    TRAININGPEAKS:
+      dependency: PROHIBITED
+      connection: DESIRED_IF_FEASIBLE
+      native_capability: REQUIRED
+    desired:
+      - WAHOO
+      - WHOOP
+      - APPLE_HEALTH
+      - GOOGLE_HEALTH_CONNECT
+      - EBIKE_PLATFORMS
+    desired_does_not_equal_release_blocker: true
+
+  EQUIPMENT_DIGITAL_BIKE_TWIN:
+    level: B
+    requirements:
+      - GUIDED_BIKE_SCAN
+      - ROTATABLE_VISUAL_BIKE
+      - BIKE_PROFILE
+      - COMPONENTS
+      - SERVICE_HISTORY
+      - RIDER_EQUIPMENT_PROFILE
+      - RACE_CONFIGURATION
+      - SPARE_PARTS
+      - INVENTORY
+      - UPGRADE_OPTIONS
+      - COST_BENEFIT
+    guided_scan:
+      one_guided_capture: true
+      quality_checks:
+        - FULL_BIKE_IN_FRAME
+        - DISTANCE
+        - LIGHT
+        - SHARPNESS
+        - LEFT
+        - FRONT
+        - RIGHT
+        - DETAILS
+      invented_bike_visual: PROHIBITED
+    damage_AI:
+      cautious_general_commentary: true
+      formal_safety_diagnosis: PROHIBITED
+      final_responsibility:
+        - USER
+        - MECHANIC
+    excluded:
+      - WARRANTY
+      - INSURANCE
+      - RECEIPTS
+      - SERIAL_NUMBERS
+
+  COMMUNICATION:
+    level: B
+    contexts_must_remain_separate:
+      - FRIEND_SOCIAL
+      - MEET_AND_RIDE
+      - TRAINER_ATHLETE
+      - TEAM_CLUB
+      - TEAM_LEADER_MECHANIC
+      - OBJECT_COMMENTS
+      - LIVE_LOCATION
+      - SYSTEM_WARNING
+      - AI_EXPLANATION
+    generic_chat_for_all: PROHIBITED
+    each_context_requires:
+      - PURPOSE
+      - PERMISSION
+      - PRIVACY
+      - MINOR_RULE
+      - NOTIFICATION
+      - RETENTION
+    AI_disclosure:
+      permanent_label_each_message: false
+      never_display_AI_origin_rule: PROHIBITED
+      user_must_not_be_misled_about_AI_interaction: true
+      legal_transparency_assessment: REQUIRED
+      disclose_when_material:
+        - USER_INTERACTS_WITH_AI_SYSTEM_WHEN_LEGALLY_REQUIRED
+        - AI_GENERATED_OR_MANIPULATED_CONTENT_WHEN_LEGALLY_REQUIRED
+        - HUMAN_INTERVENTION
+        - CONSENT
+        - RISK
+        - RESPONSIBILITY
+        - SENSITIVE_DECISION
+    athlete_to_athlete:
+      routine_AI_content_control: false
+      severe_abuse_boundary: true
+    professional_to_athlete:
+      monitor:
+        - PROFESSIONAL_BOUNDARY
+        - POWER_ABUSE
+        - PRIVACY
+        - SAFETY
+        - INTEGRITY
+      direct_critical_sport_tone_allowed: true
+      intervention_only_for_clear_violation: true
+      uncertain_case:
+        rewrite: false
+        block: false
+        optional_signal: true
+      intervention_sequence:
+        - PRE_SEND_WARNING
+        - SENDER_EDITS
+        - OPTIONAL_SAFE_DRAFT
+        - EXACT_FINAL_PREVIEW
+        - SEND_CONFIRMED_TEXT
+      silent_rewrite: PROHIBITED
+      severe_content_block: ALLOWED
+
+  SOCIAL_LIVE_LOCATION:
+    level: B
+    requirements:
+      - FRIENDS
+      - FOLLOWERS
+      - FOLLOWING
+      - PROFILE_VIEW
+      - INVITE
+      - PRIVACY
+      - MEET_AND_RIDE
+    live_location:
+      opt_in: true
+      time_limited: true
+      audience_visible: true
+      easy_stop: true
+      team_follow_when_authorized: true
+  AI_HELPDESK:
+    level: B
+    first_line: AI
+    detect:
+      - FRUSTRATION
+      - REPETITION
+      - STALLED_USER
+    before_human_escalation:
+      - CHANGE_APPROACH
+      - SHORTEN
+      - SCREEN_SPECIFIC_STEPS
+      - SUMMARIZE
+      - DO_NOT_REPEAT_FAILED_ANSWER
+    human_operator: RENE_OR_AUTHORIZED_OPERATOR
+    operator_UI:
+      - ISSUE_SUMMARY
+      - RELEVANT_HISTORY
+      - DIAGNOSTICS
+      - AI_DRAFT
+      - HUMAN_EDIT_AND_SEND
+
+  TRAINING_PLAN_MARKETPLACE:
+    level: B
+    phases:
+      - TRAINER_PRIVATE_LIBRARY
+      - SPARKI_GENERATED_PROPOSALS
+      - CLUB_TEAM_SHARING
+      - ATHLETE_SALES
+      - TRAINER_TO_TRAINER_LATER
+    external_trainer_plan:
+      trainer_sets_price: true
+      revenue_share:
+        trainer_percent: 70
+        Sparki_percent: 30
+      placement_fee_initial: 0
+      multiweek_provisional_min_eur: 9.95
+      final_price_status: OPEN
+      trainer_retains_authorship: true
+    Sparki_plan:
+      allowed: true
+      label: DEVELOPED_BY_SPARKI
+      artificial_ranking_above_trainer_plan: PROHIBITED
+    prepublication_quality:
+      automatic_first: true
+      human_only:
+        - DOUBT
+        - RISK
+        - REPORT
+        - SAMPLE
+      checks:
+        - PURPOSE
+        - TARGET_GROUP
+        - LOGIC
+        - PROGRESSION
+        - RECOVERY
+        - CONSISTENCY
+        - EXECUTABILITY
+        - EQUIPMENT
+        - ADAPTATION_LIMITS
+        - ROLE_BOUNDARY
+        - FALSE_PROMISE
+        - AUTHORSHIP
+        - READABILITY
+        - COMMERCIAL_CLARITY
+    purchased_plan_adaptation:
+      allowed:
+        - AVAILABILITY
+        - MISSED_TRAINING
+        - RECOVERY
+        - EXECUTION
+      silent_change_prohibited:
+        - MAIN_GOAL
+        - TRAINING_PHILOSOPHY
+        - CORE_STRUCTURE
+      original_author_credit: RETAINED
+      detailed_source_split_to_athlete: NOT_REQUIRED
+      material_change_explanation: REQUIRED
+    preview:
+      - SAMPLE_WEEK
+      - SAMPLE_WORKOUTS
+      - PARTIAL_OR_BLURRED_DETAIL
+    reviews:
+      launch: DEFERRED
+      gate:
+        - SUFFICIENT_BUYERS
+        - SUFFICIENT_TRAINERS
+        - SUFFICIENT_SALES
+        - ACTUAL_USE
+      verified_buyer_only: true
+    fit_check:
+      outcomes:
+        - SUITABLE
+        - SUITABLE_WITH_ATTENTION
+        - PROBABLY_NOT_SUITABLE
+      default_unsafe_category: PROHIBITED
+    stale_plan:
+      automatic_removal_by_age: false
+      warning_when_likely_stale: true
+      remove_only:
+        - SERIOUS_ERROR
+        - MISLEADING
+        - UNUSABLE
+        - INCOMPATIBLE
+        - REPEATED_COMPLAINT
+    first_Sparki_plan_publication:
+      practical_reviewer: RENE
+      explicit_publication_approval: REQUIRED
+      label: DEVELOPED_AND_REVIEWED_BY_SPARKI
+
+  BILLING_ENTITLEMENTS:
+    level: B
+    payer:
+      - ATHLETE
+      - TRAINER
+      - CLUB_TEAM
+      - TRAINER_COACH_PACKAGE
+    athlete_always_retains:
+      - ACCOUNT
+      - DATA_OWNERSHIP
+      - PERSONAL_HISTORY
+    payer_stop:
+      account_deleted: false
+      history_deleted: false
+      data_locked: false
+      downgrade: true
+      athlete_self_takeover_payment: true
+    relationship_end:
+      delivered_plan_readable: true
+      delivered_feedback_readable: true
+      historical_analysis_readable: true
+      trainer_template_and_method_remain_trainer_property: true
+      personal_assigned_plan_remains_athlete_usable: true
+      athlete_resale_or_claim_as_own: PROHIBITED
+      trainer_private_notes_remain_private: true
+    variants_and_add_ons:
+      central_entitlement_resolver: REQUIRED
+      access_gates:
+        - COMMERCIAL_ENTITLEMENT
+        - OPERATIONAL_FLAG
+        - ROLE_PERMISSION
+        - KILL_SWITCH
+    small_purchase_preferred_eur:
+      min: 3
+      max: 6
+    higher_price:
+      requires_large_or_high_value_package: true
+      requires_justification: true
+    trial:
+      every_variant: REQUIRED
+      duration: OPEN
+    club_team_subscription: OPEN
+
+  CONTENT_PACKAGES:
+    level: C
+    in_scope:
+      - CLASSICS
+      - STAGES
+      - CYCLING_HOLIDAY
+      - TRAINING_CAMP
+      - TEMPORARY_TRAINING_BLOCK
+      - RACE_PREPARATION
+      - ROUTE_BUNDLE
+    access:
+      - ONE_TIME
+      - TEMPORARY_ENTITLEMENT
+      - ADD_ON_SUBSCRIPTION
+    route_store_location:
+      - NAVIGATION
+      - SAVED_ROUTES
+    commercial_and_personal_routes_must_remain_distinguishable: true
+
+  EU_MARKETING_PLATFORM:
+    level: B
+    objective: COUNTRY_LOCALIZED_ACQUISITION_WITHOUT_DUPLICATED_SITE_MAINTENANCE
+    architecture:
+      single_codebase: REQUIRED
+      single_CMS_or_content_model: REQUIRED
+      locale_and_country_routes: REQUIRED
+      shared_design_system: REQUIRED
+      country_configuration: DATA_DRIVEN
+    country_site_required:
+      - LOCAL_LANGUAGE
+      - LOCAL_VALUE_PROPOSITION
+      - LOCAL_PRICING_AND_CURRENCY_WHERE_APPLICABLE
+      - LOCAL_LEGAL_COPY
+      - LOCAL_CONTACT_AND_SUPPORT_EXPECTATION
+      - COUNTRY_SPECIFIC_SEO_METADATA
+      - CONSENT_AND_COOKIE_CONFIGURATION
+      - APP_DEEP_LINKS
+    prohibited:
+      - COPY_PASTE_COUNTRY_CODEBASE
+      - UNSUPPORTED_LOCAL_CLAIM
+      - AUTOMATIC_UNREVIEWED_LEGAL_TRANSLATION
+      - COUNTRY_LAUNCH_WITHOUT_SUPPORT_COVERAGE
+    release_independence:
+      app_core_development_blocked_by_marketing_site: false
+      shared_product_fact_registry: REQUIRED
+      shared_entitlement_and_price_source: REQUIRED
+    analytics:
+      privacy_preserving: REQUIRED
+      country_and_campaign_attribution: REQUIRED
+      child_profiling_for_ads: PROHIBITED
+
+  EU_COMPLIANCE:
+    level: A
+    country_matrix:
+      required: true
+      key: EU_MEMBER_STATE
+      fields:
+        - DATA_PROTECTION_AUTHORITY
+        - CHILD_DIGITAL_CONSENT_AGE
+        - AGE_ASSURANCE_REQUIREMENT
+        - CONSUMER_TERMS
+        - SUBSCRIPTION_CANCELLATION
+        - PRICE_AND_VAT
+        - COOKIE_AND_TRACKING_RULES
+        - REQUIRED_LEGAL_LANGUAGE
+        - ACCESSIBILITY_IMPLEMENTATION
+        - SUPPORT_AND_COMPLAINT_ROUTE
+    GDPR:
+      controller_processor_map: REQUIRED
+      lawful_basis_per_processing_purpose: REQUIRED
+      data_minimization: REQUIRED
+      data_subject_rights: REQUIRED
+      DPIA_for_high_risk_processing: REQUIRED_WHEN_APPLICABLE
+      children:
+        consent_age_varies_by_member_state:
+          min: 13
+          max: 16
+        parental_consent_when_required: REQUIRED
+        reasonable_age_and_consent_verification: REQUIRED
+        child_facing_copy_clear_and_plain: REQUIRED
+    DSA_minor_safety:
+      applicability_assessment_per_service: REQUIRED
+      private_by_default_for_minor_social_profile: REQUIRED
+      easy_block_and_mute: REQUIRED
+      group_add_requires_minor_consent: REQUIRED
+      persuasive_design_for_minors: PROHIBITED
+      profiling_ads_to_known_minor: PROHIBITED
+      reporting_and_feedback: REQUIRED
+      age_assurance:
+        accurate: REQUIRED
+        reliable: REQUIRED
+        robust: REQUIRED
+        nonintrusive: REQUIRED
+        nondiscriminatory: REQUIRED
+    accessibility:
+      EAA_scope_assessment: REQUIRED
+      ecommerce_is_covered_category: true
+      WCAG_aligned_product_standard: REQUIRED
+      older_user_SPARKI_GO_does_not_replace_accessibility: true
+    consumer_and_tax:
+      consumer_terms_localized: REQUIRED
+      price_total_and_recurring_nature_clear: REQUIRED
+      cancellation_and_refund_flow: REQUIRED
+      VAT_country_logic: REQUIRED
+      OSS_assessment_and_registration: REQUIRED_BEFORE_CROSS_BORDER_B2C_SALES
+    AI:
+      AI_Act_classification_per_use_case: REQUIRED
+      transparency_and_AI_literacy_assessment: REQUIRED
+      high_risk_claim_without_legal_classification: PROHIBITED
+    launch_gate:
+      country_activation_requires:
+        - COUNTRY_MATRIX_COMPLETE
+        - LEGAL_COPY_APPROVED
+        - MINOR_FLOW_TESTED
+        - CONSENT_FLOW_TESTED
+        - BILLING_AND_VAT_TESTED
+        - ACCESSIBILITY_TESTED
+        - SUPPORT_LANGUAGE_AVAILABLE
+
+  ADMIN_OPERATIONS:
+    level: B
+    requirements:
+      - HEALTH_CHECKS
+      - ROLE_MANAGEMENT
+      - DATA_TRUST_CLEANUP
+      - AUDIT_LOG
+      - FEATURE_FLAGS
+      - KILL_SWITCHES
+      - FAILURE_VISIBILITY
+      - ROLLBACK_VISIBILITY
+    cleanup_UX:
+      authenticated_user_identity_prefilled: true
+      dry_run: REQUIRED
+      result_explanation_language: USER_LOCALE
+      apply_after_dry_run: REQUIRED
+      apply_requires_explicit_confirmation: true
+      report:
+        - FOUND
+        - CHANGED
+        - PRESERVED
+        - FAILED
+        - REASON
+
+  NOTIFICATIONS:
+    level: B
+    priority:
+      - CRITICAL_SAFETY
+      - TIME_CRITICAL_ACTION
+      - IMPORTANT_EXCEPTION
+      - ROUTINE_INFORMATION
+      - OPTIONAL_SOCIAL
+    context_aware: true
+    duplicate_suppression: REQUIRED
+    quiet_hours: REQUIRED_EXCEPT_CRITICAL
+    per_context_preferences: REQUIRED
+    minor_and_role_permissions: REQUIRED
+    no_notification_without_action_or_value: true
+    race_mode_noncritical_suppression: REQUIRED
+
+interface_contract:
+  principles:
+    - CONTEXTUAL
+    - TIME_DEPENDENT
+    - VISUAL_FIRST
+    - CONCISE_SECOND
+    - PROGRESSIVE_DISCLOSURE
+    - MOBILE_FIRST
+    - ONE_PRIMARY_ACTION
+    - NO_UNNECESSARY_CARD_GRID
+    - NO_SMALL_LOW_CONTRAST_TEXT
+  explanation_icon:
+    default_hidden: true
+    layers:
+      - PLAIN_SHORT_MEANING
+      - WHY_IT_MATTERS
+      - OPTIONAL_TECHNICAL_DEPTH
+    context_exact_to_selected_element: true
+  terminology:
+    technical_term_without_contextual_explanation: PROHIBITED
+  personalization:
+    information_density_by_variant_and_user: true
+    communication_style_adaptive: true
+    critical_safety_information_never_hidden: true
+  humor:
+    architecture_and_setting: REQUIRED
+    values:
+      - OFF
+      - SUBTLE
+      - NORMAL
+      - PRONOUNCED
+    active_now: false
+    activation_requires_review_and_test: true
+  personification_of_Sparki:
+    default: PROHIBITED
+
+safety_intervention:
+  inputs:
+    - TRAINER_QUALIFICATION
+    - TRAINER_VERIFICATION
+    - ATHLETE_LEVEL
+    - TRAINING_HISTORY
+    - LOAD_TOLERANCE
+    - ATHLETE_AGE
+    - SIGNAL_SEVERITY
+    - SIGNAL_COMBINATION
+    - DATA_RELIABILITY
+    - CONSEQUENCE
+  levels:
+    ADVICE:
+      trigger: ORDINARY_DEVIATION
+    WARNING_REASSESS:
+      trigger: SERIOUS_RISK
+    TEMPORARY_BLOCK:
+      trigger: ACUTE_RED_FLAG
+  rules:
+    deterministic_rules_and_real_data: REQUIRED
+    freeform_AI_opinion_as_trigger: PROHIBITED
+    first_recipient: RESPONSIBLE_TRAINER
+    automatic_broadcast_to_athlete_parent_club_medical_team: PROHIBITED
+    appropriate_concern_must_be_visible: true
+    commercial_value: DIFFERENTIATOR
+
+competitive_contract:
+  dimensions:
+    AUTONOMOUS_COACH:
+      benchmark:
+        - JOIN
+      minimum:
+        - ADAPTIVITY
+        - SIMPLICITY
+        - RELIABILITY
+        - TRANSPARENCY
+        - DAILY_USE
+    COACH_PLATFORM:
+      benchmark:
+        - TRAININGPEAKS
+      minimum:
+        - PLANNING
+        - ANALYSIS
+        - FEEDBACK
+        - ATHLETE_MANAGEMENT
+        - COMMENTS
+        - WORKFLOW_EFFICIENCY
+    ROUTES:
+      benchmark:
+        - KOMOOT
+        - RIDE_WITH_GPS
+      minimum:
+        - ROUTE_CLARITY
+        - SURFACE_AND_WAY_TYPES
+        - ELEVATION_INTERACTION
+        - MOBILE_USABILITY
+        - RELIABLE_NAVIGATION
+    DEVICES:
+      benchmark:
+        - GARMIN
+        - WAHOO
+        - HAMMERHEAD_KAROO
+      minimum:
+        - VALID_FILES
+        - DEVICE_SPECIFIC_COMPATIBILITY
+        - NO_FALSE_CROSS_DEVICE_CLAIM
+    SPORT_SOCIAL:
+      benchmark:
+        - STRAVA
+      minimum:
+        - SHARING
+        - FRIENDS
+        - ACTIVITY_CONTEXT
+    quality_gate:
+      core_flow_complete: REQUIRED
+      real_data: REQUIRED
+      permissions: PROVEN
+      failure_recovery: PROVEN
+      human_usability: PROVEN
+      commercial_value: EXPLICIT
+      specialist_comparison: PASSED
+
+testing_contract:
+  strategy: AGENTS_FIRST
+  automated:
+    - FUNCTIONAL
+    - TECHNICAL
+    - DATA_TRUST
+    - PRIVACY
+    - PERMISSION
+    - REGRESSION
+    - ACCESSIBILITY
+    - OFFLINE
+    - PERFORMANCE
+    - EDGE_CASE
+    - ABUSE_WHERE_RELEVANT
+  practice:
+    RENE:
+      app_testing:
+        - UNDERSTANDABILITY
+        - USABILITY
+        - RECREATIONAL_TRAINING
+        - GOAL_ORIENTED_TRAINING
+        - ROUTES
+        - EQUIPMENT
+        - GENERAL_GUIDANCE
+        - COACH_ENVIRONMENT
+        - CLUB_ENVIRONMENT
+      master_plan_document_review: false
+    DYLAN:
+      app_testing:
+        - COMPETITIVE_USE
+        - TRAINING_LOAD
+        - RACE_MODE
+        - MOBILE_RECORDING
+        - SPORT_DATA
+        - REAL_TRAINING_AND_RACE_CONTEXT
+  external_coach_or_club_validation:
+    mandatory_before_first_internal_test: false
+    optional_later: true
+  every_defect_requires_regression_test: true
+  code_written_equals_done: false
+
+readiness:
+  enum:
+    - NOT_READY
+    - SPECIFICATION_READY
+    - BUILD_READY
+    - TECHNICALLY_PROVEN
+    - PILOT_READY
+    - COMMERCIAL_READY
+    - PROVEN_MATURE
+  rule:
+    code_or_UI_exists_is_not_ready: true
+    current_code_unavailable_means_no_upgrade_of_readiness: true
+  domain_status:
+    TODAY: SPECIFICATION_READY
+    AUTONOMOUS_TRAINING_COACH: SPECIFICATION_READY
+    TRAINING_PLANS_AND_CALENDAR: SPECIFICATION_READY
+    COACH_TRAINER: SPECIFICATION_READY
+    CLUB_TEAM: SPECIFICATION_READY
+    ROUTES_NAVIGATION: SPECIFICATION_READY
+    RACE_INTELLIGENCE: SPECIFICATION_READY
+    DATA_HUB_CONNECT: SPECIFICATION_READY
+    PRIVACY_DATA_TRUST: SPECIFICATION_READY
+    SUPPORTING_DOMAINS: SPECIFICATION_READY
+
+execution_framework:
+  domain_spec_required:
+    - PURPOSE
+    - PRIMARY_USER
+    - SECONDARY_USER
+    - COMMERCIAL_VALUE
+    - SPECIALIST_BENCHMARK
+    - ENTRY
+    - END_TO_END_FLOW
+    - SCREENS
+    - ACTIONS
+    - AUTOMATION
+    - AI_BOUNDARY
+    - DATA_SOURCES
+    - DATA_OWNER
+    - EMPTY_STATE
+    - ERRORS
+    - ROLES
+    - PERMISSIONS
+    - PRIVACY
+    - AUDIT
+    - COMMERCIAL_ACCESS
+    - ENTITLEMENTS
+    - DOWNGRADE
+    - BUILD_PHASES
+    - DEPENDENCIES
+    - AGENT_TESTS
+    - HUMAN_TESTS
+    - READINESS
+    - LATER
+    - OPEN_DECISIONS
+  replit_task_required:
+    - TASK_ID
+    - DOMAIN_ID
+    - OBJECTIVE
+    - PROVEN_CURRENT_STATE
+    - PRESERVE
+    - SCOPE
+    - OUT_OF_SCOPE
+    - FILES
+    - DATA_MODEL
+    - MIGRATION
+    - API_CONTRACT
+    - ROLE_PERMISSION_PRIVACY
+    - DETERMINISTIC_LOGIC
+    - AI_LOGIC
+    - EMPTY_ERROR_STATES
+    - TESTS
+    - ACCEPTANCE
+    - REGRESSION
+    - EVIDENCE
+    - COMMIT_REPORT
+  task_size:
+    one_complete_testable_increment: REQUIRED
+    split_when_Replit_window_or_risk_is_too_large: REQUIRED
+    one_task_may_not_hide_multiple_large_modules: true
+  replit_prohibited:
+    - REWRITE_STABLE_SYSTEM_WITHOUT_PROVEN_NEED
+    - PARALLEL_ENGINE
+    - PARALLEL_DATA_SOURCE
+    - PERSONAL_MOCK_DATA
+    - SCOPE_EXPANSION
+    - PRODUCT_DECISION
+    - DONE_WITHOUT_EVIDENCE
+    - UNPROVEN_EMAIL_INFRASTRUCTURE
+    - COMPETITOR_ASSET_COPY
+  next_task_gate:
+    valid_current_state_evidence: REQUIRED
+    unresolved_critical_data_trust_issue: BLOCKS_UNRELATED_BUILD
+    fixed_roadmap_task_id: REQUIRED
+    no_new_feature_outside_master_plan: REQUIRED
+  evidence_matrix_contract:
+    format: YAML
+    producer: REPLIT_REPOSITORY_AGENT
+    repository_snapshot:
+      - COMMIT_SHA
+      - BRANCH
+      - GENERATED_AT
+      - WORKTREE_STATE
+    per_domain_required:
+      - DOMAIN_ID
+      - CLAIMED_STATUS
+      - IMPLEMENTATION_FILE_PATHS_AND_SYMBOLS
+      - DATABASE_TABLES_AND_MIGRATIONS
+      - API_ROUTES
+      - UI_ROUTES_AND_SCREENS
+      - TEST_FILES
+      - TEST_COMMANDS
+      - TEST_RESULTS
+      - RUNTIME_EVIDENCE
+      - TARGET_REQUIREMENTS_COVERED
+      - TARGET_REQUIREMENTS_MISSING
+      - SECURITY_PRIVACY_PERMISSION_EVIDENCE
+      - KNOWN_DEFECTS
+      - LAST_RELEVANT_COMMIT
+    status_rules:
+      PROVEN_READY:
+        requires:
+          - SOURCE_EVIDENCE
+          - PASSING_RELEVANT_TESTS
+          - RUNTIME_EVIDENCE
+          - ALL_CURRENT_MASTER_PLAN_ACCEPTANCE_REQUIREMENTS_MET
+        self_assertion_only: PROHIBITED
+      BUILT_UNPROVEN:
+        definition: IMPLEMENTATION_EXISTS_BUT_PROOF_OR_ACCEPTANCE_COVERAGE_IS_INCOMPLETE
+      PARTIAL:
+        definition: MATERIAL_TARGET_REQUIREMENTS_ARE_NOT_IMPLEMENTED
+      OPEN:
+        definition: NO_MATERIAL_IMPLEMENTATION
+      DEFERRED:
+        definition: EXPLICITLY_OUTSIDE_ACTIVE_BUILD_SEQUENCE
+    global_required:
+      - TEST_SUITE_SUMMARY
+      - FAILING_TESTS
+      - TYPECHECK_RESULT
+      - MIGRATION_STATUS
+      - FEATURE_FLAGS
+      - EXTERNAL_SERVICE_DEPENDENCIES
+      - UNCOMMITTED_CHANGES
+    prose_only_matrix: PROHIBITED
+
+release_contract:
+  critical_failure:
+    safety_privacy_permission_or_data_leak:
+      action: BLOCK_OR_LIMIT_AFFECTED_FUNCTION
+    unreliable_personal_data_or_coaching:
+      action:
+        - SUSPEND_AFFECTED_OUTPUT
+        - HONEST_UNAVAILABLE_STATE
+    noncritical:
+      action:
+        - LOG
+        - WARN
+        - KEEP_AVAILABLE_WHEN_RESPONSIBLE
+  rollback:
+    allowed_for_critical_failure: true
+    target: LAST_PROVEN_STABLE_VERSION
+    conditions:
+      - SAFE
+      - TECHNICALLY_POSSIBLE
+      - AUDITABLE
+      - NO_DATA_LOSS
+  production_evidence:
+    - BUILD_ID
+    - COMMIT
+    - MIGRATION_STATE
+    - TEST_RESULT
+    - FEATURE_FLAG_STATE
+    - MONITORING
+    - ROLLBACK_PATH
+
+research_evidence:
+  - id: GARMIN_TP_TH_ACQUISITION_2026_07_22
+    checked: "2026-07-25"
+    source_type: OFFICIAL_COMPANY
+    url: https://www.garmin.com/en-US/newsroom/press-release/corporate/garmin-acquires-trainingpeaks-and-trainheroic-leading-endurance-and-strength-training-platforms-for-athletes-and-coaches/
+    fact: GARMIN_ACQUIRED_TRAININGPEAKS_AND_TRAINHEROIC
+    product_impact:
+      - INCREASE_NATIVE_COACHING_PRIORITY
+      - REDUCE_STRATEGIC_DEPENDENCY
+      - PERIODIC_COMPETITOR_REVIEW
+    confidence: HIGH
+  - id: GARMIN_FIT_COURSE_WORKOUT
+    checked: "2026-07-25"
+    source_type: OFFICIAL_DEVELOPER
+    url: https://developer.garmin.com/fit/cookbook/encoding-course-files/
+    fact: FIT_SDK_DEFINES_SEPARATE_COURSE_AND_WORKOUT_ENCODING
+    product_impact:
+      - GENERATE_SEPARATE_FIT_COURSE
+      - GENERATE_SEPARATE_FIT_WORKOUT
+      - VALIDATE_WITH_FIT_SDK
+    confidence: HIGH
+  - id: GARMIN_HEALTH_API
+    checked: "2026-07-25"
+    source_type: OFFICIAL_DEVELOPER
+    url: https://developer.garmin.com/gc-developer-program/health-api/
+    fact:
+      - ALL_DAY_HEALTH_METRICS_AVAILABLE_AFTER_APPROVAL_AND_USER_CONSENT
+      - COMMERCIAL_USE_REQUIRES_LICENSE_FEE
+    product_impact:
+      - BUSINESS_CASE_REQUIRED
+      - NO_UNOFFICIAL_PRODUCTION_CONNECTOR
+      - GARMIN_NOT_VERSION_ONE_BLOCKER_WITHOUT_UNIQUE_VALUE
+    confidence: HIGH
+  - id: WAHOO_ROUTE_IMPORT
+    checked: "2026-07-25"
+    source_type: OFFICIAL_SUPPORT
+    url: https://support.wahoofitness.com/hc/en-us/articles/25936827245970-Import-a-FIT-GPX-or-TCX-route-file-via-the-Wahoo-app-for-ELEMNT-ACE-BOLT-3-and-ROAM-3
+    fact: CURRENT_WAHOO_APP_SUPPORTS_FIT_GPX_TCX_ROUTE_IMPORT_FOR_LISTED_DEVICES
+    product_impact:
+      - TEST_PER_DEVICE_AND_APP_VERSION
+      - DO_NOT_CLAIM_ALL_WAHOO_DEVICES
+    confidence: HIGH
+  - id: KAROO_POI_LIMIT
+    checked: "2026-07-25"
+    source_type: OFFICIAL_SUPPORT
+    url: https://support.hammerhead.io/hc/en-us/articles/360036632794-Dashboard-Importing-POIs-from-RideWithGPS
+    fact: KAROO_POI_SYNC_VIA_RIDEWITHGPS_SUPPORTED_WHILE_POI_FROM_GPX_NOT_SHOWN
+    product_impact:
+      - NO_GENERIC_GPX_POI_COMPATIBILITY_CLAIM
+      - DEVICE_SPECIFIC_EXPORT_TEST
+    confidence: HIGH
+  - id: KOMOOT_ROUTE_REFERENCE
+    checked: "2026-07-25"
+    source_type: OFFICIAL_SUPPORT
+    url: https://support.komoot.com/hc/en-us/articles/10194270667034-Plan-routes-on-the-website
+    fact:
+      - MAP_PRIMARY_ROUTE_PLANNING
+      - ROUTE_ALERTS
+      - ELEVATION_SURFACE_AND_WAY_TYPE_REVIEW
+      - PROFILE_MAP_INTERACTION
+    product_impact:
+      - USE_AS_FUNCTIONAL_BENCHMARK_ONLY
+      - RETAIN_OWN_DESIGN_AND_IMPLEMENTATION
+    confidence: HIGH
+  - id: KOMOOT_NAVIGATION_REFERENCE
+    checked: "2026-07-25"
+    source_type: OFFICIAL_SUPPORT
+    url: https://support.komoot.com/hc/en-us/articles/10207935661338-Navigate-a-saved-route
+    fact:
+      - OPTIONAL_VOICE
+      - IN_RIDE_ROUTE_ADJUSTMENT
+      - EXPLICIT_FINISH_AND_SAVE
+      - CONFIGURABLE_NAVIGATION_INFORMATION
+    product_impact:
+      - MATCH_OR_EXCEED_FLOW_CLARITY_WITH_OWN_UI
+    confidence: HIGH
+  - id: JOIN_ADAPTIVE_REFERENCE
+    checked: "2026-07-25"
+    source_type: OFFICIAL_PRODUCT
+    url: https://join.cc/training-plans
+    fact:
+      - PERSONALIZED_PLAN
+      - DATA_BASED_FITNESS_ASSESSMENT
+      - ADAPTATION_TO_EXECUTION_AND_CONTEXT
+    product_impact:
+      - JOIN_GRADE_CORE_REQUIRED
+    confidence: MEDIUM_HIGH
+  - id: TRAININGPEAKS_COACH_REFERENCE
+    checked: "2026-07-25"
+    source_type: OFFICIAL_PRODUCT
+    url: https://www.trainingpeaks.com/become-a-coach/
+    fact:
+      - ATHLETE_MANAGEMENT
+      - PERFORMANCE_DASHBOARDS
+      - COMPLIANCE
+      - FEED_NOTIFICATIONS
+      - IN_WORKOUT_COMMENTS
+      - COACH_BUSINESS_SCALING
+      - TRAINING_PLAN_MARKETPLACE
+    product_impact:
+      - COACH_WORKFLOW_BENCHMARK
+      - CAPACITY_AND_VOLUME_PRICING_RESEARCH
+    confidence: HIGH
+  - id: EU_OFFICIAL_LANGUAGES_24
+    checked: "2026-07-25"
+    source_type: OFFICIAL_EU
+    url: https://european-union.europa.eu/principles-countries-history/languages_en
+    fact: EU_HAS_24_OFFICIAL_LANGUAGES
+    product_impact:
+      - LANGUAGE_TARGET_ENUM_MUST_CONTAIN_24_UNIQUE_LANGUAGES
+      - LANGUAGE_AVAILABILITY_AND_COUNTRY_AVAILABILITY_MUST_REMAIN_SEPARATE
+    confidence: HIGH
+  - id: EU_GDPR_CHILD_CONSENT
+    checked: "2026-07-25"
+    source_type: OFFICIAL_EU
+    url: https://commission.europa.eu/law/law-topic/data-protection/information-business-and-organisations/legal-grounds-processing-data/are-there-any-specific-safeguards-data-about-children_en
+    fact:
+      - MEMBER_STATE_CHILD_DIGITAL_CONSENT_THRESHOLD_VARIES_FROM_13_TO_16
+      - REASONABLE_PARENTAL_CONSENT_VERIFICATION_IS_REQUIRED_WHEN_CONSENT_IS_REQUIRED
+      - CHILD_FACING_INFORMATION_MUST_BE_CLEAR_AND_PLAIN
+    product_impact:
+      - COUNTRY_COMPLIANCE_MATRIX_REQUIRED
+      - ONE_EU_WIDE_MINOR_CONSENT_AGE_IS_PROHIBITED
+      - MINOR_FLOW_LOCALIZATION_IS_RELEASE_CRITICAL
+    confidence: HIGH
+  - id: EU_DSA_MINOR_PROTECTION_GUIDELINES
+    checked: "2026-07-25"
+    source_type: OFFICIAL_EU
+    url: https://digital-strategy.ec.europa.eu/library/commission-publishes-guidelines-protection-minors
+    fact:
+      - MINOR_ACCOUNTS_SHOULD_BE_PRIVATE_BY_DEFAULT
+      - MINORS_REQUIRE_ACCESSIBLE_BLOCK_MUTE_AND_REPORT_CONTROLS
+      - PERSUASIVE_AND_ADDICTIVE_DESIGN_FOR_MINORS_REQUIRES_RESTRICTION
+      - AGE_ASSURANCE_SHOULD_BE_ACCURATE_RELIABLE_ROBUST_NONINTRUSIVE_AND_NONDISCRIMINATORY
+    product_impact:
+      - DSA_APPLICABILITY_ASSESSMENT_PER_SERVICE
+      - MINOR_SAFETY_DEFAULTS_REQUIRED
+      - ENGAGEMENT_OPTIMIZATION_CANNOT_OVERRIDE_MINOR_SAFETY
+    confidence: HIGH
+  - id: EU_ACCESSIBILITY_ACT
+    checked: "2026-07-25"
+    source_type: OFFICIAL_EU
+    url: https://commission.europa.eu/strategy-and-policy/policies/justice-and-fundamental-rights/disability/european-accessibility-act-eaa_en
+    fact: ECOMMERCE_IS_WITHIN_EUROPEAN_ACCESSIBILITY_ACT_COVERED_PRODUCT_AND_SERVICE_CATEGORIES
+    product_impact:
+      - ACCESSIBILITY_IS_COUNTRY_LAUNCH_GATE
+      - MARKETING_AND_PURCHASE_FLOWS_REQUIRE_ACCESSIBILITY_VALIDATION
+    confidence: HIGH
+  - id: EU_VAT_ONE_STOP_SHOP
+    checked: "2026-07-25"
+    source_type: OFFICIAL_EU
+    url: https://vat-one-stop-shop.ec.europa.eu/one-stop-shop_en
+    fact: VAT_OSS_CAN_CENTRALIZE_REGISTRATION_DECLARATION_AND_PAYMENT_FOR_RELEVANT_CROSS_BORDER_B2C_SUPPLIES
+    product_impact:
+      - VAT_COUNTRY_LOGIC_REQUIRED
+      - OSS_ELIGIBILITY_AND_REGISTRATION_ASSESSMENT_REQUIRED_BEFORE_CROSS_BORDER_SALES
+    confidence: HIGH
+  - id: EU_AI_ACT_TIMELINE_2026_CHANGE
+    checked: "2026-07-25"
+    source_type: OFFICIAL_EU
+    url: https://digital-strategy.ec.europa.eu/en/news/eu-agrees-simplify-ai-rules-boost-innovation-and-ban-nudification-apps-protect-citizens
+    fact: AI_ACT_IMPLEMENTATION_TIMELINE_AND_SIMPLIFICATION_MEASURES_CHANGED_IN_2026
+    product_impact:
+      - RECHECK_CURRENT_LEGAL_TIMELINE_BEFORE_EACH_AI_USE_CASE_RELEASE
+      - DO_NOT_ENCODE_STALE_SINGLE_DATE_AS_GLOBAL_AI_COMPLIANCE_RULE
+    confidence: HIGH
+  - id: EU_AI_ACT_ARTICLE_50_TRANSPARENCY
+    checked: "2026-07-25"
+    source_type: OFFICIAL_EU
+    url: https://digital-strategy.ec.europa.eu/en/factpages/quick-facts-transparency-rules-ai-systems
+    fact:
+      - ARTICLE_50_TRANSPARENCY_RULES_REQUIRE_RECOGNITION_OF_AI_INTERACTION_IN_APPLICABLE_CASES
+      - TRANSPARENCY_RULES_APPLY_FROM_2026_08_02_SUBJECT_TO_SCOPE_EXCEPTIONS_AND_CURRENT_AMENDMENTS
+    product_impact:
+      - ABSOLUTE_NEVER_DISPLAY_AI_RULE_IS_PROHIBITED
+      - DISCLOSURE_MUST_BE_DESIGNED_PER_USE_CASE
+      - AI_ORIGIN_MUST_NOT_BE_MISREPRESENTED
+    confidence: HIGH
+
+open_decisions:
+  - id: OD_001
+    subject: EXACT_VARIANT_PRICE
+    status: OPEN
+    required_before: COMMERCIAL_LAUNCH
+  - id: OD_002
+    subject: EXACT_TRIAL_DURATION_AND_TERMS
+    status: OPEN
+    required_before: COMMERCIAL_LAUNCH
+  - id: OD_003
+    subject: CLUB_AND_TEAM_SUBSCRIPTION_MODEL
+    status: OPEN
+    required_before: CLUB_COMMERCIAL_LAUNCH
+  - id: OD_004
+    subject: LEGACY_17_POINT_COLLABORATION_LIST_EXACT_TEXT
+    status: SOURCE_NOT_RECOVERED
+    action: DO_NOT_RECONSTRUCT
+    current_contract_precedence: collaboration_contract
+  - id: OD_005
+    subject: DATA_CLEANUP_APPLY_DECISION_FOR_CURRENT_ACCOUNT
+    status: OPEN
+    required_input: REVIEW_DRY_RUN_ITEMS_WITH_PROVENANCE
+  - id: OD_006
+    subject: FIRST_COUNTRY_ACTIVATION_SEQUENCE_AFTER_NETHERLANDS
+    status: OPEN
+    required_before: FIRST_NON_NL_COUNTRY_BUILD
+  - id: OD_007
+    subject: COUNTRY_MARKETING_URL_STRATEGY
+    options:
+      - SHARED_DOMAIN_SUBDIRECTORIES
+      - SHARED_DOMAIN_SUBDOMAINS
+      - COUNTRY_CODE_TOP_LEVEL_DOMAINS
+      - CONTROLLED_HYBRID
+    status: OPEN
+    required_before: EU_MARKETING_PLATFORM_BUILD
+  - id: OD_008
+    subject: TRANSLATION_QUALITY_OPERATING_MODEL
+    status: OPEN
+    required_before: FIRST_NON_NL_LOCALE_RELEASE
+  - id: OD_009
+    subject: SUPPORT_LANGUAGE_COVERAGE_AND_SERVICE_LEVEL
+    status: OPEN
+    required_before: EACH_COUNTRY_ACTIVATION
+next_controlled_sequence:
+  - index: 1
+    action: RESOLVE_ADMIN_DRY_RUN_FINDINGS
+    build_type: DATA_TRUST_ONLY
+  - index: 2
+    action: OBTAIN_VALID_CURRENT_CODE_EXPORT_REPOSITORY_ACCESS_OR_MACHINE_EVIDENCE_MATRIX
+    build_type: READ_ONLY
+    immediate_route: REPLIT_GENERATES_EVIDENCE_MATRIX_FROM_CURRENT_REPOSITORY
+    contract: execution_framework.evidence_matrix_contract
+  - index: 3
+    action: MAP_CODE_TO_DOMAIN_REGISTRY
+    build_type: READ_ONLY
+  - index: 4
+    action: CREATE_EVIDENCE_MATRIX
+    states:
+      - PROVEN_READY
+      - BUILT_UNPROVEN
+      - PARTIAL
+      - OPEN
+      - DEFERRED
+  - index: 5
+    action: ESTABLISH_I18N_FOUNDATION_AND_MIGRATION_BASELINE
+    build_type: ARCHITECTURE_AND_INCREMENTAL_MIGRATION
+    constraints:
+      - NL_NL_REMAINS_ONLY_ACTIVE_PRODUCT_LOCALE
+      - INVENTORY_HARDCODED_UI_TEXT
+      - INVENTORY_PROMPT_LANGUAGE_DIRECTIVES
+      - CENTRAL_KEY_CATALOG
+      - BCP47_LOCALE_RESOLUTION
+      - ICU_AND_CLDR_COMPATIBILITY
+      - NO_BIG_BANG_REWRITE
+      - NO_NEW_OR_CHANGED_HARDCODED_USER_FACING_TEXT
+    completion_evidence:
+      - PSEUDOLOCALIZATION_TEST
+      - LONG_STRING_LAYOUT_TEST
+      - MISSING_KEY_TEST
+      - ONE_MIGRATED_PRIORITY_DOMAIN_WITH_REGRESSION_TESTS
+  - index: 6
+    action: SELECT_NEXT_SMALL_BUILD_TASK
+    constraints:
+      - ACTIVE_ROADMAP_ONLY
+      - NO_GAME_LAYER
+      - NO_UNRESOLVED_CRITICAL_DATA_TRUST_BLOCKER
+      - COMMERCIAL_AND_COMPETITIVE_VALUE_EXPLICIT
+      - I18N_FOUNDATION_GATE_SATISFIED_FOR_NEW_OR_CHANGED_USER_FACING_TEXT
+
+validation_contract:
+  required:
+    - YAML_PARSE_SUCCESS
+    - DOCUMENT_VERSION_EQUALS_FILENAME_VERSION
+    - UNIQUE_OPEN_DECISION_IDS
+    - UNIQUE_RESEARCH_EVIDENCE_IDS
+    - NO_STALE_INTERNAL_VERSION_REFERENCE
+    - NO_GAME_LAYER_IN_ACTIVE_SEQUENCE
+    - NO_USER_DOCUMENT_REVIEW_REQUIREMENT
+    - NO_BUILD_STATE_UPGRADE_WITHOUT_CODE_EVIDENCE
+    - ALL_TIME_SENSITIVE_EXTERNAL_FACTS_HAVE_DATE_AND_SOURCE
+    - EXACTLY_24_UNIQUE_OFFICIAL_EU_LANGUAGE_CODES
+    - NL_NL_ONLY_ACTIVE_LOCALE_DURING_CORE_COMPLETION
+    - NO_NEW_OR_CHANGED_HARDCODED_USER_FACING_TEXT
+    - COUNTRY_COMPLIANCE_MATRIX_COMPLETE_BEFORE_COUNTRY_ACTIVATION
+    - CRITICAL_TRANSLATIONS_APPROVED_BEFORE_LOCALE_RELEASE
+    - ADULT_DATING_ABSENT_FROM_ACTIVE_PRODUCT_SCOPE
+    - EXISTING_GAME_CODE_NOT_REMOVED_BY_ROADMAP_EXCLUSION
+    - READINESS_CHANGES_REQUIRE_DOMAIN_EVIDENCE_MATRIX
