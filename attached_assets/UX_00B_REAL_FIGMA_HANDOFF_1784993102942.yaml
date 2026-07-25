@@ -1,0 +1,79 @@
+task:
+  id: UX_00B-R2
+  mode: READ_ONLY_METADATA_CORRECTION
+  objective: REPLACE_UNPROVEN_OR_LEGACY_FIGMA_METADATA_WITH_VERIFIED_EDITABLE_FRAMES
+
+authority:
+  figma_file:
+    name: "Sparki Commercial UX — Approved Wave 1"
+    file_key: "wDUBmQvIFFDpaah5JyskFp"
+    url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp"
+    page_node_id: "0:1"
+  verified_frames:
+    GO_ROUTE_HOME_MOBILE:
+      node_id: "2:320"
+      size: "390x844"
+      url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=2-320"
+    GO_ROUTE_WORKSPACE_DESKTOP:
+      node_id: "2:322"
+      size: "1440x900"
+      url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=2-322"
+    GO_ROUTE_DETAIL_MOBILE:
+      node_id: "2:324"
+      size: "390x844"
+      url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=2-324"
+    COMPLETE_TODAY_MOBILE:
+      node_id: "2:326"
+      size: "390x844"
+      url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=2-326"
+    COMPLETE_TODAY_DESKTOP:
+      node_id: "2:328"
+      size: "1440x900"
+      url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=2-328"
+    COMPLETE_PLAN_DESKTOP:
+      node_id: "2:330"
+      size: "1440x900"
+      url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=2-330"
+    SHARED_ONBOARDING_MOBILE:
+      node_id: "2:332"
+      size: "390x844"
+      url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=2-332"
+    SHARED_SUBSCRIPTION_DESKTOP:
+      node_id: "2:334"
+      size: "1440x900"
+      url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=2-334"
+
+verification:
+  editable_framed_design: true
+  frame_count: 8
+  mobile_render_checked: "2:320"
+  desktop_render_checked:
+    - "2:322"
+    - "2:334"
+  production_code_changed: false
+  warning: APPROVED_PNGS_ARE_VISUAL_INPUT; FIGMA_FRAMES_ARE_NEW_EDITABLE_RECONSTRUCTIONS
+
+replit_execution:
+  required:
+    - OPEN_AND_VERIFY_ALL_8_NODE_URLS
+    - REPLACE_LEGACY_FILE_KEY_Ru9gEfRRI2hMlO7psxrDrN
+    - REPLACE_LEGACY_NODE_IDS_34_2_THROUGH_34_9
+    - UPDATE_ONLY_docs/UX_00B_FIGMA_CODE_MAPPING.yaml
+    - PRESERVE_EXISTING_VERIFIED_REPOSITORY_CODE_MAPPING
+    - REPORT_ANY_VISUAL_OR_CODE_MISMATCH_AS_BLOCKER
+  prohibited:
+    - PRODUCTION_CODE_CHANGE
+    - UI_IMPLEMENTATION
+    - FIGMA_IMPORT_AS_NEW_REACT_PROJECT
+    - FEATURE_BUILD
+    - EXTERNAL_RESEARCH
+    - EVIDENCE_ZIP
+    - REWRITE_OF_ALREADY_VERIFIED_CODE_PATHS_WITHOUT_NEW_REPOSITORY_EVIDENCE
+  acceptance:
+    - FIGMA_FILE_KEY_EQUALS_wDUBmQvIFFDpaah5JyskFp
+    - ALL_8_REAL_NODE_IDS_RECORDED
+    - NO_NOT_PROVEN_FIGMA_FIELDS_REMAIN
+    - WORKTREE_CHANGED_ONLY_IN_SINGLE_MAPPING_FILE
+  completion_response:
+    max_lines: 8
+    stop_after_delivery: true
