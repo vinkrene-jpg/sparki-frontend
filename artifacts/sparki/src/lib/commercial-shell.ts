@@ -54,6 +54,21 @@ export function bandTone(band: string | null | undefined): BandTone | null {
   return null
 }
 
+// Presentatie-herformulering (alleen deze schil): de engine-zin voor "geen
+// richting zichtbaar" leest hier als datamelding. Alleen deze exacte zin wordt
+// herschreven; alle andere engine-teksten gaan ongewijzigd door.
+const TREND_LABEL_REWRITES: Record<string, string> = {
+  "Nog te weinig om een richting te zien":
+    "Nog onvoldoende recente gegevens voor een betrouwbare trend.",
+}
+
+export function movementLabel(
+  label: string | null | undefined,
+): string | null {
+  if (!label) return null
+  return TREND_LABEL_REWRITES[label] ?? label
+}
+
 // ── Seizoensfasen ────────────────────────────────────────────────────────────
 export const SEASON_PHASES = ["Basis", "Opbouw", "Specifiek", "Taper"] as const
 
@@ -105,22 +120,30 @@ export type WeekStripDay = {
   isToday: boolean
 }
 
+/** 0 = maandag … 6 = zondag — vaste weekvolgorde Ma–Zo. */
+function mondayFirstIndex(date: string): number {
+  const d = new Date(date + "T12:00:00Z")
+  return (d.getUTCDay() + 6) % 7
+}
+
 export function buildWeekStrip(
   weekTSS: ReadonlyArray<{ date: string; tss: number }>,
   todayISO: string,
 ): WeekStripDay[] {
-  return weekTSS.map(({ date, tss }) => {
-    const d = new Date(date + "T12:00:00Z")
-    const label = capitalize(
-      d.toLocaleDateString("nl-NL", { weekday: "short" }).slice(0, 2),
-    )
-    return {
-      date,
-      label,
-      value: tss > 0 ? String(Math.round(tss)) : "—",
-      isToday: date === todayISO,
-    }
-  })
+  return [...weekTSS]
+    .sort((a, b) => mondayFirstIndex(a.date) - mondayFirstIndex(b.date))
+    .map(({ date, tss }) => {
+      const d = new Date(date + "T12:00:00Z")
+      const label = capitalize(
+        d.toLocaleDateString("nl-NL", { weekday: "short" }).slice(0, 2),
+      )
+      return {
+        date,
+        label,
+        value: tss > 0 ? String(Math.round(tss)) : "—",
+        isToday: date === todayISO,
+      }
+    })
 }
 
 // ── Blokvisualisatie van de training ─────────────────────────────────────────

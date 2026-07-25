@@ -16,6 +16,7 @@ import {
   buildWeekStrip,
   formatRaceDate,
   localISODate,
+  movementLabel,
   nearestUpcomingRace,
   workoutPhaseLabel,
 } from "./commercial-shell"
@@ -94,6 +95,21 @@ scenario("bandTone volgt de band en faalt eerlijk op onbekend", () => {
   assert(bandTone("x") === null, "onbekend → null")
 })
 
+// ── Trendtekst (presentatie-herformulering) ──────────────────────────────────
+scenario("movementLabel herschrijft alleen de 'geen richting'-zin", () => {
+  assert(
+    movementLabel("Nog te weinig om een richting te zien") ===
+      "Nog onvoldoende recente gegevens voor een betrouwbare trend.",
+    "engine-zin wordt herschreven",
+  )
+  assert(
+    movementLabel("Je vorm stijgt") === "Je vorm stijgt",
+    "andere engine-teksten gaan ongewijzigd door",
+  )
+  assert(movementLabel(null) === null, "null → null")
+  assert(movementLabel("") === null, "lege string → null")
+})
+
 // ── Seizoensfasen ────────────────────────────────────────────────────────────
 scenario("fasevertaling dekt de plan-fasen en niets meer", () => {
   assert(workoutPhaseLabel("base") === "Basis", "base → Basis")
@@ -130,6 +146,27 @@ scenario("buildWeekStrip toont echte belasting en — voor lege dagen", () => {
   assert(strip[5]!.isToday === true, "vandaag gemarkeerd")
   assert(strip.filter((d) => d.isToday).length === 1, "precies één vandaag")
   assert(strip[0]!.label.length === 2, "korte daglabel (2 tekens)")
+})
+
+scenario("buildWeekStrip zet de volgorde vast op Ma–Zo", () => {
+  // Dashboard levert de week zondag-eerst aan (Zo 19 juli … Za 25 juli).
+  const sundayFirst = [
+    { date: "2026-07-19", tss: 10 }, // zondag
+    { date: "2026-07-20", tss: 20 }, // maandag
+    { date: "2026-07-21", tss: 30 },
+    { date: "2026-07-22", tss: 40 },
+    { date: "2026-07-23", tss: 50 },
+    { date: "2026-07-24", tss: 60 },
+    { date: "2026-07-25", tss: 70 }, // zaterdag
+  ]
+  const strip = buildWeekStrip(sundayFirst, "2026-07-25")
+  assert(
+    strip.map((d) => d.label).join(",") === "Ma,Di,Wo,Do,Vr,Za,Zo",
+    `volgorde is ${strip.map((d) => d.label).join(",")}`,
+  )
+  assert(strip[0]!.date === "2026-07-20", "maandag staat vooraan")
+  assert(strip[6]!.date === "2026-07-19", "zondag staat achteraan")
+  assert(strip[5]!.isToday === true, "vandaag (za) blijft correct gemarkeerd")
 })
 
 // ── Blokbalkjes ──────────────────────────────────────────────────────────────

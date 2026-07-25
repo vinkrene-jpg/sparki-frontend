@@ -24,6 +24,7 @@ import {
   formatDayHeader,
   formatRaceDate,
   localISODate,
+  movementLabel,
   nearestUpcomingRace,
   workoutPhaseLabel,
   type BandTone,
@@ -183,16 +184,15 @@ function ReadinessCard() {
       />
     )
 
-  const label = bandLabel(data.band)
+  // De band ("Belastbaar") staat al in de statuspil rechtsboven — de kaart
+  // toont alleen de statuszin, zodat de status niet dubbel leest.
+  const trend = movementLabel(data.movement.label)
   return (
     <section className="c-card p-5" aria-label="Toestand vandaag">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        {label && <span className="text-2xl font-semibold">{label}</span>}
-        <span className="text-base font-medium">{data.status}</span>
-      </div>
-      {data.movement.label && (
+      <p className="text-xl font-semibold">{data.status}</p>
+      {trend && (
         <p className="mt-2 text-sm" style={{ color: "var(--c-ink-soft)" }}>
-          {data.movement.label}
+          {trend}
         </p>
       )}
       <details className="mt-3">
@@ -382,32 +382,56 @@ function SeasonBand() {
   )
   const goalRace = nearestUpcomingRace(races.data, localISODate())
 
+  // Eerlijke lege toestand: zonder hoofddoel én zonder seizoensplan tonen we
+  // géén faseband (die zou een plan suggereren dat er niet is) — alleen de
+  // melding en één actie naar de bestaande doelenflow (wedstrijden).
+  if (!goalRace && !activePhase) {
+    return (
+      <section className="mt-8 hidden lg:block" aria-label="Seizoen in beeld">
+        <h2 className="text-lg font-semibold">Seizoen in beeld</h2>
+        <div className="c-card mt-3 p-5">
+          <p className="text-sm" style={{ color: "var(--c-ink-soft)" }}>
+            Nog geen hoofddoel ingesteld.
+          </p>
+          <Link href="/races" className="c-btn-outline mt-3">
+            Hoofddoel instellen
+          </Link>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="mt-8 hidden lg:block" aria-label="Seizoen in beeld">
       <h2 className="text-lg font-semibold">Seizoen in beeld</h2>
       <div className="c-card mt-3 p-5">
-        <div className="flex gap-8">
-          {SEASON_PHASES.map((p) => {
-            const active = p === activePhase
-            return (
-              <span
-                key={p}
-                className="pb-1 text-sm"
-                style={
-                  active
-                    ? {
-                        fontWeight: 700,
-                        borderBottom: "2px solid var(--c-accent-ink)",
-                      }
-                    : { color: "var(--c-ink-soft)" }
-                }
-              >
-                {p}
-              </span>
-            )
-          })}
-        </div>
-        <p className="mt-4 text-sm" style={{ color: "var(--c-ink-soft)" }}>
+        {activePhase && (
+          <div className="flex gap-8">
+            {SEASON_PHASES.map((p) => {
+              const active = p === activePhase
+              return (
+                <span
+                  key={p}
+                  className="pb-1 text-sm"
+                  style={
+                    active
+                      ? {
+                          fontWeight: 700,
+                          borderBottom: "2px solid var(--c-accent-ink)",
+                        }
+                      : { color: "var(--c-ink-soft)" }
+                  }
+                >
+                  {p}
+                </span>
+              )
+            })}
+          </div>
+        )}
+        <p
+          className={`text-sm ${activePhase ? "mt-4" : ""}`}
+          style={{ color: "var(--c-ink-soft)" }}
+        >
           {goalRace
             ? `Hoofddoel: ${goalRace.name} · ${formatRaceDate(goalRace.raceDate)}` +
               (activePhase ? ` · fase: ${activePhase.toLowerCase()}` : "")
