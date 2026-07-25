@@ -82,7 +82,7 @@ Eerlijke kanttekening: één poging tot een vijfvoudige mixed-run werd tweemaal 
 
 `src/angles.mjs` berekent puur geometrisch (atan2 op landmarkcoördinaten): kniehoek, heuphoek, enkelhoek, romphoek t.o.v. horizon, ellebooghoek, plus pedaalcyclusdetectie (enkel-y-drempels) en cadans. Er komt nergens een LLM of generatief model voor; het hele pad is ffmpeg → MediaPipe → rekenkundige functies.
 
-**Herhaalbaarheid**: 5 identieke runs (clip2, 10 fps, model full, zelfde engine-/modelversie) geven **bit-identieke** uitkomsten: knie 109,69–171,70° gem. 134,52°, heup 98,54°, enkel 144,33°, romp 32,84°, elleboog 125,02°, 29 cycli, 86,6 rpm — 5/5 exact gelijk (tolerantie 0,00). Ruwe data: `results/benchmark_parts.jsonl` (`repeat_1`…`repeat_5`). Herbevestigd bij de BF_00R-afronding (25 juli 2026): twee extra onafhankelijke runs zijn opnieuw bit-identiek aan elkaar én aan bovenstaande waarden (`results/fail_closed_proof.json`, check `retry_succeeds_bit_identical` + `valid_clip_passes_gate_unchanged`), en alle 5 manifestclips zijn dezelfde dag opnieuw volledig verwerkt met 100% detectie en identieke kniehoekgemiddelden (`benchmark_parts.jsonl`, entries 25-07-2026).
+**Herhaalbaarheid**: 5 identieke runs (clip2, 10 fps, model full, zelfde engine-/modelversie) geven **bit-identieke** uitkomsten: knie 109,69–171,70° gem. 134,52°, heup 98,54°, enkel 144,33°, romp 32,84°, elleboog 125,02°, 29 cycli, 86,6 rpm — 5/5 exact gelijk (tolerantie 0,00). Ruwe data: `results/benchmark_parts.jsonl` (`repeat_1`…`repeat_5`). Herbevestigd bij de BF_00R-afronding (25 juli 2026): twee extra onafhankelijke runs zijn opnieuw bit-identiek aan elkaar én aan bovenstaande waarden (`results/fail_closed_proof.json`, check `retry_succeeds_bit_identical` + `valid_clip_passes_gate_unchanged`), en alle 5 manifestclips zijn dezelfde dag opnieuw volledig verwerkt met 100% detectie en identieke kniehoekgemiddelden (clip1/3/4/5: `benchmark_parts.jsonl`, entries 25-07-2026; clip2: de twee runs in `fail_closed_proof.json`).
 
 ## 4b. Fail-closed- en retrybewijs (BF_00R-afronding)
 
@@ -93,6 +93,8 @@ De meetengine (`src/angles.mjs`) heeft een deterministische fail-closed-poort (`
 - **Ongeldig bestand = foutpad**: niet-bestaand/ondecodeerbaar bestand eindigt in de ffmpeg-foutafhandeling; er ontstaat nooit een meetresultaat.
 - **Retry bewezen idempotent**: geforceerde timeout (`pose_worker_timeout`, SIGKILL) → retry van exact dezelfde clip slaagt en levert **bit-identieke** numerieke output aan een onafhankelijke tweede run (knie gem. 134,52°, 29 cycli — gelijk aan §4). De worker is stateless per framemap; tempmappen worden ook bij timeout opgeruimd (privacyproef check `temp_cleanup_after_timeout`).
 - **Geldige clips onveranderd**: de poort verandert niets aan de cijfers van geldige clips (regressie-anker `valid_clip_passes_gate_unchanged`).
+
+Aandachtspunten voor de productieversie (BF_03-acceptatie, géén open BF_00-poort): vergelijk de detectiefractie ongerond met de 0,8-drempel (afronding op 3 decimalen laat 0,7996 nu net door), en geef ook elleboog/pols/voet een minimum-n per hoek (nu alleen eerlijk gerapporteerd via `n`, gefilterd door per-frame visibility ≥ 0,5).
 
 ## 5. Privacyproef
 
