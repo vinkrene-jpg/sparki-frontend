@@ -1,0 +1,24 @@
+schema: sparki.bf00.evidence_provenance
+schema_version: 1
+HEAD_COMMIT_SHA: 596fad542a579274676238ee9538910a1acd6c01
+BRANCH: main
+WORKTREE_DIRTY: false
+GENERATED_AT: "2026-07-25T06:37:41Z"
+VERIFICATION:
+  worktree_check_command: git status --porcelain=v1 -uno
+  tracked_modified_files: 0
+  head_command: git rev-parse HEAD
+NOTE: >
+  Enige consistente bronreferentie voor de definitieve BF_00R-E1-bewijsstand.
+  Alle rapporten, broncode, clips, modellen en ruwe resultaten in dit pakket
+  komen exact uit de bovengenoemde commit; het pakket is gegenereerd NA die
+  definitieve commit vanuit een schone werkboom. Dit vervangt eerdere losse
+  snapshot-/commitvermeldingen in de BF_00-rapporten.
+CONTENTS:
+  reports: [BF_00_CV_BENCHMARK.md, BF_00_CODE_INVENTORY.md, BF_00_GATE_RESULTS.yaml]
+  source: [src/ (7 .mjs), worker/pose_worker.py, package.json, package-lock.json]
+  clips: 5 geldige testclips (mp4)
+  clips_invalid: 2 fail-closed-testclips (mp4)
+  models: [pose_landmarker_full.task, pose_landmarker_lite.task]
+  results: [benchmark_parts.jsonl, candidate_a_node_inprocess.json, fail_closed_proof.json, privacy_proof.json, reliability_boundary_proof.json]
+  checksums: SHA256SUMS.txt (alle bestanden behalve zichzelf, geverifieerd met sha256sum -c)

@@ -521,3 +521,9 @@ id = "Q_FwZw_b2nqzSjd3z-Jmn"
 uri = "file://exports/BF_00_evidence.zip"
 type = "unspecified"
 title = "BF_00 bewijs-export (docs + tests + benchmarks + evidence)"
+
+[[outputs]]
+id = "upC10UMMhqcyziDTwqiDQ"
+uri = "file://.local/exports/BF_00_evidence.zip"
+type = "unspecified"
+title = "BF_00_evidence.zip — volledig bewijspakket (BF_00R-E1)"
