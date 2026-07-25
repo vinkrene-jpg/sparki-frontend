@@ -551,3 +551,9 @@ id = "DwoebE7Vrd16aSdlJmgOE"
 uri = "file://docs/UX_00B_FIGMA_CODE_MAPPING.yaml"
 type = "unspecified"
 title = "UX_00B_FIGMA_CODE_MAPPING.yaml"
+
+[[outputs]]
+id = "Cl-6qG9uDLz_a612Pwat-"
+uri = "file://docs/ONTWIKKEL_HERSTELLOG.md"
+type = "text"
+title = "Sparki — logboek herstelwerk en correctierondes"
