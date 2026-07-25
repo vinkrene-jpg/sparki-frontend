@@ -97,7 +97,7 @@ function RecenteActiviteit() {
         </h2>
         <span className="flex items-center gap-3">
           <Link href="/journey" className="text-[11px] text-cyan-300/80 hover:text-cyan-300">
-            Journey
+            Jouw verhaal
           </Link>
           <Link href="/activiteiten" className="text-[11px] text-cyan-300/80 hover:text-cyan-300">
             Alles

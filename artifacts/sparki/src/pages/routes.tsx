@@ -97,7 +97,7 @@ export default function RoutesPage() {
         <>
           <div className="flex flex-col gap-2">
             <h1 className="text-2xl font-semibold tracking-tight text-white">
-              Navigatie-training
+              Routes
             </h1>
             <p className="text-sm text-white/55">
               Laat een route maken of importeer een GPX, bekijk hem op de kaart

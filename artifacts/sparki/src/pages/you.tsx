@@ -463,7 +463,7 @@ export default function YouPage() {
             href="/journey"
             className="rounded-full border border-white/12 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/55 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
           >
-            Journey
+            Jouw verhaal
           </Link>
           <button
             type="button"

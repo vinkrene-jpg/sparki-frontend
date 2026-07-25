@@ -254,7 +254,7 @@ export default function ActiviteitenPage() {
             Je ritten
           </h1>
           <Link href="/journey" className="text-[11px] text-cyan-300/80 hover:text-cyan-300">
-            Journey
+            Jouw verhaal
           </Link>
         </div>
         <p className="text-sm text-white/55">

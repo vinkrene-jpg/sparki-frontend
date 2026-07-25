@@ -37,29 +37,29 @@ export const ATHLETE_CHAPTERS: Chapter[] = [
   { href: "/train", icon: Dumbbell, label: "Trainen", hint: "Schema & verloop" },
   { href: "/races", icon: Trophy, label: "Wedstrijd", hint: "Races & voorbereiding" },
   { href: "/activiteiten", icon: Activity, label: "Activiteiten", hint: "Jouw ritten" },
-  { href: "/lichaam", icon: HeartPulse, label: "Lichaam", hint: "Voeding, herstel, gezondheid" },
-  { href: "/mechanieker", icon: Wrench, label: "Mechanieker", hint: "Materiaal & onderhoud" },
-  { href: "/routes", icon: Map, label: "Rijden", hint: "Routes & navigeren" },
+  { href: "/lichaam", icon: HeartPulse, label: "Lichaam", hint: "Voeding & herstel" },
+  { href: "/mechanieker", icon: Wrench, label: "Mechanieker", hint: "Fiets & onderhoud" },
+  { href: "/routes", icon: Map, label: "Routes", hint: "Maken & navigeren" },
   { href: "/samen", icon: Users, label: "Samen", hint: "Team & vrienden" },
   { href: "/feed", icon: Compass, label: "Ontdekken", hint: "Nieuws & inspiratie" },
-  { href: "/kalender", icon: CalendarDays, label: "Kalender", hint: "Trainingen & wedstrijden" },
+  { href: "/kalender", icon: CalendarDays, label: "Kalender", hint: "Planning & seizoen" },
   { href: "/you", icon: User, label: "Jij", hint: "Profiel & doelen" },
 ]
 
 // Onderdelen achter de hoofdknop "Meer" (sporter). Alles wat niet in de vijf
-// hoofdkeuzes (Vandaag · Trainen · Rijden · Wedstrijd · Meer) zit, blijft hier
+// hoofdkeuzes (Vandaag · Trainen · Routes · Wedstrijd · Meer) zit, blijft hier
 // bereikbaar — er verdwijnt niets. Club en Admin worden op de Meer-pagina
 // conditioneel toegevoegd (echte koppeling resp. server-bevestigde admin).
 export const ATHLETE_MEER_CHAPTERS: Chapter[] = [
-  { href: "/you", icon: User, label: "Jij", hint: "Profiel, instellingen & koppelingen" },
-  { href: "/lichaam", icon: HeartPulse, label: "Lichaam", hint: "Voeding, herstel, gezondheid" },
-  { href: "/mechanieker", icon: Wrench, label: "Mechanieker", hint: "Materiaal & onderhoud" },
+  { href: "/you", icon: User, label: "Jij", hint: "Profiel & doelen" },
+  { href: "/lichaam", icon: HeartPulse, label: "Lichaam", hint: "Voeding & herstel" },
+  { href: "/mechanieker", icon: Wrench, label: "Mechanieker", hint: "Fiets & onderhoud" },
   { href: "/samen", icon: Users, label: "Samen", hint: "Team & vrienden" },
   { href: "/feed", icon: Compass, label: "Ontdekken", hint: "Nieuws & inspiratie" },
   { href: "/activiteiten", icon: Activity, label: "Activiteiten", hint: "Jouw ritten" },
-  { href: "/kalender", icon: CalendarDays, label: "Kalender", hint: "Trainingen & wedstrijden" },
-  { href: "/kennis", icon: BookOpen, label: "Kennis", hint: "Kennisbank & inzichten" },
-  { href: "/paspoort", icon: IdCard, label: "Sportpaspoort", hint: "Jouw gegevens & herkomst" },
+  { href: "/kalender", icon: CalendarDays, label: "Kalender", hint: "Planning & seizoen" },
+  { href: "/kennis", icon: BookOpen, label: "Kennis", hint: "Kennis & inzichten" },
+  { href: "/paspoort", icon: IdCard, label: "Sportpaspoort", hint: "Jouw gegevens" },
   { href: "/klimmen", icon: Mountain, label: "Klimmen", hint: "Klimmenverkenner" },
   { href: "/geluid", icon: Music, label: "Geluid", hint: "Geluiden & wekker" },
   { href: "/", icon: Home, label: "Startoverzicht", hint: "Alle hoofdstukken" },
@@ -69,7 +69,7 @@ export const CLUB_CHAPTER: Chapter = {
   href: "/club",
   icon: Building2,
   label: "Club",
-  hint: "Trainer, team & clubleven",
+  hint: "Team & clubleven",
 }
 
 export const COACH_CHAPTERS: Chapter[] = [
@@ -93,7 +93,7 @@ export type NavEntry = { href: string; label: string }
 export const ATHLETE_NAV_ENTRIES: NavEntry[] = [
   { href: "/vandaag", label: "Vandaag" },
   { href: "/train", label: "Trainen" },
-  { href: "/routes", label: "Rijden" },
+  { href: "/routes", label: "Routes" },
   { href: "/races", label: "Wedstrijd" },
   { href: "/meer", label: "Meer" },
 ]

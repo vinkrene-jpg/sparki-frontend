@@ -11,6 +11,10 @@ import {
   type CoachScenarioKey,
 } from "@/lib/coach-engine"
 import TrainPage from "@/pages/train"
+import JourneyPage from "@/pages/journey"
+import SprintenPage from "@/pages/sprinten"
+import SupportPage from "@/pages/support"
+import ProfielPage from "@/pages/profiel"
 import FeedPage from "@/pages/feed"
 import LabPage from "@/pages/lab"
 import ActiviteitenPage from "@/pages/activiteiten"
@@ -427,6 +431,14 @@ export function DevPreview() {
     page = <KlimmenPage />
   } else if (location.startsWith("/wedstrijd-room")) {
     page = <WedstrijdRoomPage />
+  } else if (location.startsWith("/journey")) {
+    page = <JourneyPage />
+  } else if (location.startsWith("/sprinten")) {
+    page = <SprintenPage />
+  } else if (location.startsWith("/support")) {
+    page = <SupportPage />
+  } else if (location.startsWith("/profiel/")) {
+    page = <ProfielPage />
   } else if (location.startsWith("/races")) {
     page = <RacesPage />
   } else if (location.startsWith("/samen")) {

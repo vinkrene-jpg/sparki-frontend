@@ -209,7 +209,7 @@ export default function SupportPage() {
         <div className="mt-3 flex items-center gap-2.5">
           <LifeBuoy className="h-5 w-5 text-cyan-300" strokeWidth={1.5} />
           <h1 className="font-sans text-2xl font-extralight text-white/95">
-            Help &amp; support
+            Hulp &amp; ondersteuning
           </h1>
         </div>
         <p className="mt-1 text-[13px] leading-snug text-white/45">

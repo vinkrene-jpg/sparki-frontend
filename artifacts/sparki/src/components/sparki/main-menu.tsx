@@ -231,7 +231,7 @@ export function MainMenu({
             className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
           >
             <LifeBuoy className="h-4 w-4" strokeWidth={1.75} />
-            Help &amp; support
+            Hulp &amp; ondersteuning
           </button>
           <button
             type="button"

@@ -748,7 +748,7 @@ export default function WereldPage() {
               <h1 className="text-[20px] font-semibold text-white">Sparki World</h1>
             </div>
             <Link href="/journey" className="text-[11px] text-cyan-300/80 hover:text-cyan-300">
-              Jouw Journey
+              Jouw verhaal
             </Link>
           </div>
 

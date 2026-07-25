@@ -138,7 +138,7 @@ function TimelineView() {
           </button>
           <div>
             <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
-              JOURNEY
+              TIJDLIJN
             </span>
             <h1 className="text-lg font-semibold text-white">Jouw verhaal</h1>
           </div>
@@ -182,7 +182,7 @@ function TimelineView() {
         ) : isError ? (
           <div className={cardClass}>
             <p className="text-sm text-white/70">
-              De Journey kon nu niet worden geladen. Probeer het opnieuw.
+              Je verhaal kon nu niet worden geladen. Probeer het opnieuw.
             </p>
           </div>
         ) : (data?.events.length ?? 0) === 0 ? (

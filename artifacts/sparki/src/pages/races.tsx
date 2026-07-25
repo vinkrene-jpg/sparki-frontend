@@ -606,7 +606,7 @@ export default function RacesPage() {
               onClick={() => setLocation("/journey")}
               className="rounded-full border border-white/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
             >
-              Journey
+              Jouw verhaal
             </button>
             <button
               type="button"
@@ -900,7 +900,7 @@ function RaceForm({
                 <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
                   Een geannuleerde wedstrijd telt nergens in mee — niet in je
                   plan, statistieken of doelen. Hij blijft wel zichtbaar in je
-                  Journey.
+                  verhaal.
                 </p>
               )}
             </Field>

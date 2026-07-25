@@ -40,7 +40,7 @@ const TREFWOORDEN: Record<string, string[]> = {
   "/geluid": ["geluid", "geluiden", "wekker", "alarm", "muziek"],
   "/club": ["club", "trainer", "clubleven", "vereniging"],
   "/": ["start", "startoverzicht", "hoofdstukken", "overzicht"],
-  "/support": ["hulp", "support", "helpdesk", "vragen", "probleem", "contact"],
+  "/support": ["hulp", "ondersteuning", "support", "helpdesk", "vragen", "probleem", "contact"],
   "/journey": ["journey", "verhaal", "dossier", "terugblik", "mijlpalen"],
   "/connect": ["koppelen", "bronnen", "strava", "garmin", "wahoo", "importeren"],
   "/lab": ["inzicht", "lab", "cijfers", "analyse", "belasting", "vorm"],
@@ -52,15 +52,15 @@ const TREFWOORDEN: Record<string, string[]> = {
 // Extra ingangen die niet in de hoofdstukkenlijsten staan maar wel een eigen
 // pagina hebben. Alleen paden die echt bestaan in App.tsx.
 const EXTRA_ATHLETE: ZoekIngang[] = [
-  { href: "/support", label: "Help & support", hint: "Hulp & vragen", trefwoorden: TREFWOORDEN["/support"] },
-  { href: "/journey", label: "Journey", hint: "Jouw verhaal & dossier", trefwoorden: TREFWOORDEN["/journey"] },
+  { href: "/support", label: "Hulp & ondersteuning", hint: "Hulp & vragen", trefwoorden: TREFWOORDEN["/support"] },
+  { href: "/journey", label: "Jouw verhaal", hint: "Tijdlijn & dossier", trefwoorden: TREFWOORDEN["/journey"] },
   { href: "/connect", label: "Koppelingen", hint: "Bronnen verbinden", trefwoorden: TREFWOORDEN["/connect"] },
   { href: "/lab", label: "Inzicht", hint: "Cijfers & analyse", trefwoorden: TREFWOORDEN["/lab"] },
   { href: "/meer", label: "Meer", hint: "Alle onderdelen", trefwoorden: TREFWOORDEN["/meer"] },
 ]
 
 const EXTRA_COACH_PARENT: ZoekIngang[] = [
-  { href: "/support", label: "Help & support", hint: "Hulp & vragen", trefwoorden: TREFWOORDEN["/support"] },
+  { href: "/support", label: "Hulp & ondersteuning", hint: "Hulp & vragen", trefwoorden: TREFWOORDEN["/support"] },
 ]
 
 function metTrefwoorden(chapters: { href: string; label: string; hint: string }[]): ZoekIngang[] {

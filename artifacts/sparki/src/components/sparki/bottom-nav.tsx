@@ -22,7 +22,7 @@ import {
 
 type NavItem = NavEntry & { icon: LucideIcon }
 
-// Vijf hoofdkeuzes voor de sporter: Vandaag · Trainen · Rijden · Wedstrijd ·
+// Vijf hoofdkeuzes voor de sporter: Vandaag · Trainen · Routes · Wedstrijd ·
 // Meer. Alle overige hoofdstukken (Jij, Lichaam, Mechanieker, Samen, enz.)
 // blijven bereikbaar via Meer, het startoverzicht (/) en het hoofdmenu.
 // De lijsten zelf staan in lib/chapters (één bron van waarheid + testbaar);

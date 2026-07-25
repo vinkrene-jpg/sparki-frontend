@@ -12,7 +12,7 @@ import {
 } from "@/lib/chapters"
 
 // "Meer" — de vijfde hoofdknop. Bundelt alle hoofdstukken die niet in de vier
-// vaste hoofdkeuzes (Vandaag · Trainen · Rijden · Wedstrijd) zitten. Er wordt
+// vaste hoofdkeuzes (Vandaag · Trainen · Routes · Wedstrijd) zitten. Er wordt
 // hier niets nieuws gebouwd: elke tegel verwijst naar een bestaande pagina.
 // Club verschijnt alleen bij een echte, geaccepteerde trainerkoppeling; de
 // Admin-ingang alleen als de server dit account als admin bevestigt.
@@ -70,7 +70,7 @@ export default function MeerPage() {
           className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
         >
           <LifeBuoy className="h-4 w-4" strokeWidth={1.75} />
-          Help &amp; support
+          Hulp &amp; ondersteuning
         </button>
         {isAdmin && (
           <button
@@ -79,7 +79,7 @@ export default function MeerPage() {
             className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
           >
             <Shield className="h-4 w-4" strokeWidth={1.75} />
-            Admin
+            Beheer
           </button>
         )}
       </div>
