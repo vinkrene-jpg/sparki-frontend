@@ -509,3 +509,9 @@ id = "Sj6eTX8F4ZAaEtrwAb6eN"
 uri = "file://docs/SPARKI_EVIDENCE_MATRIX_v1.1.yaml"
 type = "unspecified"
 title = "Sparki Evidence Matrix v1.1 (getoetst aan Masterplan v2.26)"
+
+[[outputs]]
+id = "Oc3FgA65ERGjFBm4RDpxe"
+uri = "file://docs/BF_00_CODE_INVENTORY.md"
+type = "text"
+title = "BF_00 — Code-inventarisatie Sparki Bike Fit"
