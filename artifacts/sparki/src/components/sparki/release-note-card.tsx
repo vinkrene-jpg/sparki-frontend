@@ -2,6 +2,11 @@
 // ongelezen releasebericht (nooit een stapel) en, voor pilotdeelnemers die de
 // voorwaarden nog niet bevestigden, één keer de pilotbevestiging. Wegklikken
 // markeert het bericht als gelezen; daarna verschijnt het nooit meer.
+//
+// Aandacht-rotatie: een releasebericht dat een paar dagen genegeerd wordt,
+// pauzeert een paar dagen (het blijft ongelezen en komt daarna terug, of het
+// volgende ongelezen bericht krijgt de ruimte). De pilotbevestiging rouleert
+// bewust NIET — dat is een echte toestemmingsstap, geen nieuwtje.
 import { X, Sparkles } from "lucide-react";
 import {
   useReleaseNotes,
@@ -9,18 +14,27 @@ import {
   usePilotStatus,
   useAcceptPilotConsent,
 } from "@/hooks/use-release";
+import {
+  useSuppressedAttentionKeys,
+  useReportAttentionSeen,
+} from "@/hooks/use-attention";
 
 export function ReleaseNoteCard() {
   const notes = useReleaseNotes();
   const markRead = useMarkReleaseNoteRead();
   const pilot = usePilotStatus();
   const acceptConsent = useAcceptPilotConsent();
+  const { suppressed, ready: attentionReady } = useSuppressedAttentionKeys();
 
   const needsConsent =
     pilot.data?.inPilot === true && pilot.data.consentGiven === false;
 
   const unread = (notes.data?.notes ?? []).filter((n) => !n.read);
-  const note = unread[0] ?? null;
+  const note = attentionReady
+    ? (unread.find((n) => !suppressed.has(`release:${n.id}`)) ?? null)
+    : null;
+
+  useReportAttentionSeen(note ? `release:${note.id}` : null);
 
   if (!needsConsent && !note) return null;
 

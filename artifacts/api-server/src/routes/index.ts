@@ -76,6 +76,7 @@ import entitlementsRouter from "./entitlements";
 import dataOriginRouter from "./data-origin";
 import aiFoundationRouter from "./ai-foundation";
 import searchRouter from "./search";
+import attentionRouter from "./attention";
 
 import { killSwitchGuard } from "../lib/kill-switches";
 import { consentGate } from "../middlewares/consentGate";
@@ -172,6 +173,7 @@ router.use("/ride-story", rideStoryRouter);
 router.use("/sprints", sprintsRouter);
 router.use("/climbs", climbsRouter);
 router.use("/alerts", alertsRouter);
+router.use("/attention", attentionRouter);
 router.use("/share", shareRouter);
 router.use("/clubs", killSwitchGuard("club_features"), clubRouter);
 router.use("/release", releaseRouter);

@@ -36,6 +36,7 @@
     "test:observation": "node ./scripts/run-test.mjs observation",
     "test:profile-consistency": "node ./scripts/run-test.mjs profile-consistency",
     "test:notifications": "node ./scripts/run-test.mjs notifications",
+    "test:attention-rotation": "node ./scripts/run-test.mjs attention-rotation",
     "test:notification-day-count": "node ./scripts/run-test.mjs notification-day-count",
     "test:notifications-read-batch": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs notifications-read-batch",
     "test:core-prediction": "node ./scripts/run-test.mjs core-prediction",

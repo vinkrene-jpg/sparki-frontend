@@ -15,6 +15,10 @@ import type { OnboardingQuestion } from "@/components/sparki/profile-prompt-card
 import { ConnectorRecoveryNudge } from "@/components/sparki/connector-recovery-nudge"
 import { ProfilePromptCard } from "@/components/sparki/profile-prompt-card"
 import { MaterialNudgeCard } from "@/components/sparki/material-nudge-card"
+import {
+  useSuppressedAttentionKeys,
+  useReportAttentionSeen,
+} from "@/hooks/use-attention"
 import { pickNudge, type NudgeSource } from "@/lib/aandachtswet"
 
 // Meerijder-budget (Fase 2 "De aandachtswet", §5.2 #2).
@@ -25,6 +29,12 @@ import { pickNudge, type NudgeSource } from "@/lib/aandachtswet"
 // and renders only the single highest-ranked one (connector > material >
 // engagement > reminder). Health is deliberately absent here: it is prio 1 in
 // the Momentblok itself, never a nudge.
+//
+// Aandacht-rotatie: een nudge die een paar dagen getoond is zonder dat de
+// renner er iets mee deed, pauzeert een paar dagen (server-side, per item).
+// Zo blijft dezelfde kaart — zoals de kettingcheck — nooit een week staan; de
+// volgende bron (of niets) krijgt de ruimte. De onderliggende situatie blijft
+// gewoon bestaan en bereikbaar via haar eigen plek.
 
 // Mirror of connector-recovery-nudge's recoveryKind: a truly-wired, connected
 // platform that imported nothing OR whose last sync errored needs recovery.
@@ -110,20 +120,33 @@ export function MeerijderNudge() {
         "/api/onboarding/next-questions?limit=1",
       ),
   })
+  const { suppressed, ready: attentionReady } = useSuppressedAttentionKeys()
 
-  // Athlete-scoped surface only — coaches/parents have their own home.
-  if (profile && profile.activeRole !== "athlete") return null
-
+  const isAthlete = !profile || profile.activeRole === "athlete"
   const materialNudge = materialData?.nudge ?? null
   const reminder = unreadReminder(notificationsData?.groups ?? [])
+  const brokenConnector = (connectors ?? []).find(needsRecovery) ?? null
+  const question = questionsData?.questions?.[0] ?? null
 
-  const available: NudgeSource[] = []
-  if ((connectors ?? []).some(needsRecovery)) available.push("connector")
-  if (materialNudge && !materialNudge.dismissed) available.push("material")
-  if ((questionsData?.questions?.length ?? 0) > 0) available.push("engagement")
-  if (reminder) available.push("reminder")
+  // Stabiele identiteit per item: nieuwe situatie ⇒ nieuwe sleutel ⇒ verse
+  // aandacht. Gepauzeerde bronnen doen deze dagen niet mee in het budget.
+  const keyFor: Partial<Record<NudgeSource, string>> = {}
+  if (brokenConnector) keyFor.connector = `nudge:verbinding:${brokenConnector.id}`
+  if (materialNudge && !materialNudge.dismissed)
+    keyFor.material = `nudge:materiaal:${materialNudge.category}:${materialNudge.notificationId}`
+  if (question) keyFor.engagement = `nudge:profielvraag:${question.key}`
+  if (reminder) keyFor.reminder = `nudge:herinnering:${reminder.id}`
 
-  const chosen = pickNudge(available)
+  const available = (Object.keys(keyFor) as NudgeSource[]).filter(
+    (s) => !suppressed.has(keyFor[s]!),
+  )
+  const chosen = isAthlete && attentionReady ? pickNudge(available) : null
+
+  // Meld pas dat het item in beeld was als het echt gerenderd wordt.
+  useReportAttentionSeen(chosen ? keyFor[chosen]! : null)
+
+  // Athlete-scoped surface only — coaches/parents have their own home.
+  if (!isAthlete) return null
   if (!chosen) return null
 
   if (chosen === "connector") return <ConnectorRecoveryNudge />

@@ -1,5 +1,9 @@
 import { AlertTriangle, Wrench, Info } from "lucide-react"
 import { useMaintenanceSignals, type MaintenanceSignal } from "@/hooks/use-garage"
+import {
+  useSuppressedAttentionKeys,
+  useReportAttentionSeen,
+} from "@/hooks/use-attention"
 
 // Onderhoudssignalen uit de garage — altijd afgeleid uit echte gekoppelde
 // ritten en eigen registraties. Drie eerlijke niveaus:
@@ -8,6 +12,11 @@ import { useMaintenanceSignals, type MaintenanceSignal } from "@/hooks/use-garag
 // - vastgesteld defect: door de renner zelf geregistreerd (nooit uit foto's afgeleid)
 // De boodschap blijft voorzichtig: Sparki adviseert controleren, stelt nooit
 // zelf een defect vast.
+//
+// Aandacht-rotatie (alleen context "vandaag"): een controleadvies of
+// vermoedelijke slijtage die dagenlang genegeerd wordt, pauzeert een paar dagen
+// en komt daarna terug zolang de situatie echt bestaat. Een vastgesteld defect
+// rouleert NOOIT, en in de garage/wedstrijd-context wordt altijd alles getoond.
 
 const LEVEL_STYLE: Record<
   MaintenanceSignal["level"],
@@ -33,6 +42,16 @@ const LEVEL_STYLE: Record<
   },
 }
 
+// Stabiele rotatie-identiteit per signaal: per onderdeel (of per fiets als er
+// geen onderdeel is) én per niveau — verergert een signaal van controleadvies
+// naar vermoedelijke slijtage, dan is dat een nieuwe sleutel en dus verse
+// aandacht. Een vastgesteld defect krijgt bewust géén sleutel (rouleert nooit).
+function attentionKeyFor(s: MaintenanceSignal): string | null {
+  if (s.level === "vastgesteld_defect") return null
+  const target = s.componentId != null ? `${s.componentId}` : `fiets-${s.bikeId ?? "0"}`
+  return `onderhoud:${s.level}:${target}`
+}
+
 export function MaintenanceSignalsPanel({
   context,
   compact = false,
@@ -41,7 +60,29 @@ export function MaintenanceSignalsPanel({
   compact?: boolean
 }) {
   const { data, isLoading } = useMaintenanceSignals(context)
-  const signals = data?.signals ?? []
+  const rotates = context === "vandaag"
+  const { suppressed, ready: attentionReady } = useSuppressedAttentionKeys()
+
+  const allSignals = data?.signals ?? []
+  // Alleen op Vandaag rouleren niet-kritieke signalen; garage en wedstrijd
+  // tonen altijd alles. Zolang de rotatiestatus laadt tonen we niets extra's
+  // weg (fail-open zodra bekend, nooit oneerlijk verzwegen).
+  const signals =
+    rotates && attentionReady
+      ? allSignals.filter((s) => {
+          const key = attentionKeyFor(s)
+          return key == null || !suppressed.has(key)
+        })
+      : allSignals
+
+  // Meld alleen wat hier echt in beeld staat (alleen op Vandaag).
+  const seenKeys = rotates
+    ? signals
+        .map(attentionKeyFor)
+        .filter((k): k is string => k != null)
+        .slice(0, 12)
+    : []
+  useReportAttentionSeen(seenKeys.length > 0 ? seenKeys : null)
 
   if (isLoading && !compact) {
     return <p className="text-[12px] text-white/40">Bezig…</p>
