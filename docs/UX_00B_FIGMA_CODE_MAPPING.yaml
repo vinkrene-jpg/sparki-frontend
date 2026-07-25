@@ -1,0 +1,188 @@
+# UX_00B — Figma ↔ code-mapping voor de UX_00A-baseline
+# Alleen-lezen oplevering; geen productiecode gewijzigd.
+#
+# Eerlijkheidsgrenzen (verplicht te lezen):
+# - Er bestaat GEEN Figma-bestand in dit project en er is geen Figma-toegang
+#   (geen API-sleutel, geen bestands-URL). Alle figma_node_id-velden zijn
+#   daarom NOT_PROVEN. De figma_frame-namen zijn VOORSTELLEN voor de aan te
+#   maken frames, 1-op-1 gekoppeld aan de bestaande UX_00A-screenshots.
+# - Bron van de schermenlijst: docs/UX_00A_SCREEN_MATRIX.csv (14 rijen) en
+#   docs/UX_00A_EVIDENCE/ (12 screenshots). Er zijn geen schermen toegevoegd
+#   of weggelaten ten opzichte van UX_00A.
+# - Alle codepaden hieronder zijn geverifieerd in de huidige broncode
+#   (25-07-2026). Labels/copy weerspiegelen de stand ná de R10/R8/naamgeving-
+#   herstelronde (o.a. "Jouw verhaal", "Routes", "Hulp & ondersteuning").
+# - Screenshot 01 (onboarding) is gemaakt via het dev-preview-pad
+#   /_dev/onboarding; in productie rendert dezelfde component via de
+#   onboarding-gate in App.tsx.
+
+meta:
+  taak: UX_00B
+  doel: koppel elk UX_00A-frame aan zijn exacte code-bron zodat ontwerp (Figma)
+    en code dezelfde waarheid delen
+  invoer:
+    - docs/UX_00A_SCREEN_MATRIX.csv
+    - docs/UX_00A_EVIDENCE/ (12 screenshots, 390x844 en 1440x900)
+  figma_bestand: afwezig — frames nog aan te maken; namen hieronder zijn voorstellen
+  datum: 2026-07-25
+
+# Gedeelde bouwstenen — gelden voor álle frames hieronder.
+gedeelde_lagen:
+  schil:
+    beschrijving: vaste app-schil met woordmerk, hoofdstuk-chip, zoek- en
+      menu-icoon, auto-Terug op niet-wortelpagina's en cinematische
+      blauw-zwarte achtergrond
+    code:
+      - artifacts/sparki/src/components/sparki/screen-shell.tsx  # ScreenShell + SECTION_DISPLAY/SECTION_ICON
+      - artifacts/sparki/src/components/sparki/bottom-nav.tsx
+      - artifacts/sparki/src/components/sparki/main-menu.tsx
+  ontwerp_tokens:
+    bestand: artifacts/sparki/src/index.css  # Tailwind v4 @theme-blok (regels 7-40)
+    kern:
+      font_sans: "'Inter Variable', 'Inter', ui-sans-serif, …"  # --font-sans
+      accent_cyan: "oklch(0.82 0.16 200)"                        # --accent-cyan
+      achtergrond: "oklch(0.07 0 0)"                             # --color-background
+      kaart: "oklch(0.12 0 0)"                                   # --color-card
+    runtime_accent: artifacts/sparki/src/components/sparki/ui.tsx  # ACCENT = rgba(120,210,230,1) + SectionLabel
+  hoofdstukkenregister:
+    beschrijving: één bron voor tegel-labels, hints en routes (per rol)
+    code: artifacts/sparki/src/lib/chapters.ts
+  routering:
+    productie: artifacts/sparki/src/App.tsx          # wouter-router + ProtectedPage/AccountGate
+    dev_preview: artifacts/sparki/src/components/sparki/dev-preview.tsx  # eigen padtabel, alleen dev
+
+frames:
+  - scherm: onboarding
+    figma_frame: "01 Onboarding / stap 1"
+    figma_node_id: NOT_PROVEN  # geen Figma-bestand
+    screenshots:
+      mobiel: docs/UX_00A_EVIDENCE/01_onboarding_mobiel.jpg   # 390x844
+      desktop: docs/UX_00A_EVIDENCE/01_onboarding_desktop.jpg # 1440x900
+    route:
+      productie: via onboarding-gate op "/" (App.tsx, geen los pad)
+      audit_pad: /_dev/onboarding (alleen dev-preview)
+    code:
+      pagina_entry: artifacts/sparki/src/App.tsx  # OnboardingV2 gerenderd door de gate
+      kerncomponenten:
+        - artifacts/sparki/src/components/sparki/onboarding-v2.tsx  # adaptieve vraagflow, CTA "Verder"
+        - artifacts/sparki/src/components/sparki/onboarding-gap-fill.tsx
+    toestanden_in_bewijs: alleen stap 1; fout/laad NOT_PROVEN (conform UX_00A)
+
+  - scherm: vandaag
+    figma_frame: "02 Vandaag / gevulde dagstart"
+    figma_node_id: NOT_PROVEN
+    screenshots:
+      mobiel: docs/UX_00A_EVIDENCE/02_vandaag_mobiel.jpg
+      desktop: docs/UX_00A_EVIDENCE/02_vandaag_desktop.jpg
+    route:
+      productie: /vandaag  # App.tsx → ProtectedPage(VandaagPage) → DayHome
+    code:
+      pagina_entry: artifacts/sparki/src/App.tsx  # function VandaagPage (regel ±389)
+      kerncomponenten:
+        - artifacts/sparki/src/components/sparki/day-home.tsx        # dagtype-orkestratie
+        - artifacts/sparki/src/components/sparki/state-card.tsx      # leidende statuskaart
+        - artifacts/sparki/src/components/sparki/training-day-home.tsx
+        - artifacts/sparki/src/components/sparki/check-in-chip.tsx
+        - artifacts/sparki/src/components/sparki/follow-up-chip.tsx
+        - artifacts/sparki/src/components/sparki/home-weather-row.tsx
+        - artifacts/sparki/src/components/sparki/add-training.tsx    # AddTrainingButton
+      submappen: artifacts/sparki/src/components/sparki/day-homes/   # varianten per dagtype
+    toestanden_in_bewijs: gevulde staat met adviesdata; overige dagtypen niet in UX_00A-bewijs
+
+  - scherm: kalender_seizoen
+    figma_frame: "03 Kalender / lege seizoensweergave"
+    figma_node_id: NOT_PROVEN
+    screenshots:
+      mobiel: docs/UX_00A_EVIDENCE/03_kalender_mobiel.jpg
+      desktop: docs/UX_00A_EVIDENCE/03_kalender_desktop.jpg
+    route:
+      productie: /kalender
+    code:
+      pagina_entry: artifacts/sparki/src/pages/kalender.tsx
+      sectie_ankers:  # regelnummers in kalender.tsx, geverifieerd
+        - "Aankomend (SectionLabel, regel ±133)"
+        - "Wedstrijdkalender (regel ±205)"
+        - "Leefagenda (regel ±231-248)"
+      kerncomponenten:
+        - artifacts/sparki/src/components/sparki/screen-shell.tsx
+        - artifacts/sparki/src/components/sparki/ui.tsx  # SectionLabel
+        - artifacts/sparki/src/lib/workout-visual.ts     # workoutIcon
+    toestanden_in_bewijs: lege staten (dev-omgeving zonder data); fout/laad NOT_PROVEN
+
+  - scherm: activiteit_analyse
+    figma_frame: "04 Activiteiten / lege staat met koppel-CTA"
+    figma_node_id: NOT_PROVEN
+    screenshots:
+      mobiel: docs/UX_00A_EVIDENCE/04_activiteiten_mobiel.jpg
+      desktop: docs/UX_00A_EVIDENCE/04_activiteiten_desktop.jpg
+    route:
+      productie: /activiteiten
+    code:
+      pagina_entry: artifacts/sparki/src/pages/activiteiten.tsx
+      cta_anker: '"Koppeling instellen" (activiteiten.tsx regel ±389)'
+      kerncomponenten:
+        - artifacts/sparki/src/components/sparki/session-detail-drawer.tsx  # rit-detail (NOT_PROVEN in bewijs — geen data)
+        - artifacts/sparki/src/components/sparki/training-progression.tsx
+        - artifacts/sparki/src/components/sparki/humor-line.tsx
+    naamgeving_update: >-
+      link rechtsboven heet nu "Jouw verhaal" (was "Journey" ten tijde van de
+      UX_00A-screenshots — frame in Figma op de nieuwe naam baseren)
+    toestanden_in_bewijs: lege staat; rit-detail/analyse NOT_PROVEN
+
+  - scherm: routes
+    figma_frame: "05 Routes / keuzescherm met 5 actiekaarten"
+    figma_node_id: NOT_PROVEN
+    screenshots:
+      mobiel: docs/UX_00A_EVIDENCE/05_routes_mobiel.jpg
+      desktop: docs/UX_00A_EVIDENCE/05_routes_desktop.jpg
+    route:
+      productie: /routes
+    code:
+      pagina_entry: artifacts/sparki/src/pages/routes.tsx  # kaarten-register incl. "Route laten maken" (regels ±29/64)
+      kerncomponenten:
+        - artifacts/sparki/src/components/sparki/route-panel.tsx
+        - artifacts/sparki/src/components/sparki/route-library.tsx     # Routebibliotheek onder de vouw
+        - artifacts/sparki/src/components/sparki/route-discover.tsx
+        - artifacts/sparki/src/components/sparki/nav-settings-panel.tsx
+    naamgeving_update: >-
+      het UX_00A-risico "Navigatie-training ≠ Rijden ≠ /routes" is hersteld —
+      hoofdstuk heet nu overal "Routes" (chapters.ts, h1, chip); Figma-frame op
+      de nieuwe naam baseren
+    toestanden_in_bewijs: gevulde keuzestaat; bibliotheek-lege-staat niet in beeld
+
+  - scherm: functies_ontdekken
+    figma_frame: "06 Meer / hoofdstukkengrid"
+    figma_node_id: NOT_PROVEN
+    screenshots:
+      mobiel: docs/UX_00A_EVIDENCE/06_meer_functies_mobiel.jpg
+      desktop: docs/UX_00A_EVIDENCE/06_meer_functies_desktop.jpg
+    route:
+      productie: /meer
+    code:
+      pagina_entry: artifacts/sparki/src/pages/meer.tsx
+      kerncomponenten:
+        - artifacts/sparki/src/components/sparki/chapter-grid.tsx  # ChapterGrid (rol- en clubbewust)
+        - artifacts/sparki/src/lib/chapters.ts                     # labels + hints (SSOT)
+    naamgeving_update: >-
+      "Help & support" en "Admin" heten nu "Hulp & ondersteuning" en "Beheer";
+      afgekapte subtitels (R8) zijn ingekort — Figma-frame op de nieuwe copy
+      baseren
+    toestanden_in_bewijs: functie-status in-gebruik/gearchiveerd bestaat niet op dit scherm
+
+  - scherm: abonnement_upgrade
+    figma_frame: "07 Abonnement — NOG TE ONTWERPEN (geen bestaand scherm)"
+    figma_node_id: NOT_PROVEN
+    screenshots: geen — scherm bestaat niet (conform UX_00A)
+    route:
+      productie: afwezig — geen sporterroute voor abonnement of upgrade
+    code:
+      bestaand_fundament:
+        - artifacts/sparki/src/components/sparki/entitlements-admin.tsx  # alleen admin-UI
+        - "backend-entitlementslaag (rechten = AND met feature-flags)"
+      pagina_entry: afwezig
+    toestanden_in_bewijs: NOT_PROVEN op alle UX_00A-assen; dit frame is een
+      ontwerp-opgave voor UX_01, geen mapping van bestaande code
+
+niet_gemapt:
+  - reden: buiten UX_00A-scope, dus buiten deze mapping
+    voorbeelden: [/train, /races, /samen, /feed, /you, /journey, /klimmen, /kennis]
