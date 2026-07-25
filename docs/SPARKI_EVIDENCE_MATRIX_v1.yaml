@@ -1,0 +1,309 @@
+schema: sparki.evidence_matrix
+schema_version: 1
+
+document:
+  id: SPARKI_EVIDENCE_MATRIX
+  version: "1.0"
+  date: "2026-07-25"
+  source: DIRECT_REPOSITORY_INSPECTION
+  produced_by: REPLIT_AGENT_WITH_FULL_CODE_ACCESS
+  relates_to: SPARKI_AI_MASTER_PLAN v2.25
+  purpose: REPLACE_NEXT_CONTROLLED_SEQUENCE_STEPS_2_3_4
+  method:
+    - LIVE_SOURCE_TREE_INSPECTION
+    - TEST_SUITE_INVENTORY
+    - DATABASE_SCHEMA_INVENTORY
+  honesty_note: >
+    States follow the master plan enum. PROVEN_READY here means: built, covered by
+    automated tests that pass in the development environment, and consistent with the
+    master plan target rules. It does NOT mean COMMERCIAL_READY (no production user
+    validation, no load testing, no external specialist comparison performed).
+
+repository_facts:
+  monorepo: PNPM_WORKSPACES
+  packages:
+    web: artifacts/sparki (React+Vite, 21 automated test suites)
+    api: artifacts/api-server (Express 5 + Drizzle, 108 automated test suites)
+    mobile: artifacts/sparki-mobile (Expo React Native, 10 automated test suites)
+    db: lib/db (Drizzle schema, 66 schema files)
+  api_route_modules: 74
+  deterministic_engine_modules: 45
+  auth: CLERK_COOKIE_BASED
+  ai_gateway: SINGLE_PORT_aiMessage (killswitch, consent, minor-gate, redaction, metadata-only logs)
+  entitlement_foundation: MERGED_AND_TESTED (user_entitlements, variant grants, central resolver, 4 access gates, admin UI, audit)
+  language_state: ALL_USER_FACING_COPY_HARDCODED_DUTCH_IN_UI_AND_LLM_PROMPTS
+
+domain_evidence:
+
+  TODAY:
+    state: PROVEN_READY
+    evidence:
+      - Vandaag surface with day-type engine (rest/no-workout/plan/race precedence), single leading Momentblok (aandachtswet), state engine + state card
+      - Deterministic coach decision layer (decideCoach) surfaced across all day types
+      - engines: state, coaching, observation; tests: test-day-type, test-state (web), session-analysis
+    gaps:
+      - Post-activity "focus only" contract largely honored; verify against plan checklist per element
+
+  AUTONOMOUS_TRAINING_COACH:
+    state: PROVEN_READY
+    evidence:
+      - Coach-less plan engine: deterministic numbers, LLM prose-only; adaptive proposals with visible reason; unsafe load change rules deterministic
+      - Feedback loop persisted before adjustment proposals (tests: test-feedback-adjust)
+      - Per-session caps per experience level; honest underfill instead of unrealistic sessions
+      - engines: training-plan, recovery-load, goals; routes: training-plan.ts, goals.ts
+    gaps:
+      - JOIN-grade external benchmark comparison never formally executed
+
+  TRAINING_PLANS_AND_CALENDAR:
+    state: PROVEN_READY
+    evidence:
+      - Separate flows for plan vs register completed training (chooser-first add-training split)
+      - Plan lifecycle pause/resume/delete scoped to one resolved plan; sessions never touched
+      - Coach adoption of advisory plans preserves source + never overwrites (coach-plan-adoption)
+      - Life agenda (athlete life events steer generator)
+    gaps:
+      - PLAN_TEMPLATE / PERSONAL_PLAN_INSTANCE split exists implicitly (advisory plan_days vs athlete-owned planned_workouts); formal template library entity not built
+
+  COACH_TRAINER:
+    state: PARTIAL
+    evidence:
+      - Coach cockpit: athlete management via links, proposals workflow with idempotency, cross-coach isolation tested (coach-parent-* suites, 5 suites)
+      - Sharing levels, private memory, share-nothing tested
+    gaps:
+      - PRIORITY_QUEUE, LIBRARY/TEMPLATES as first-class entities, BUSINESS_CAPACITY (states NORMAL/BUSY/FULL, waitlist), support_scaling by verified qualification: NOT_BUILT
+      - WORKOUT_COMMENTS: analysis feedback exists; threaded in-workout comments NOT_BUILT
+
+  TRAINER_PASSPORT:
+    state: OPEN
+    evidence:
+      - Athlete Sportpaspoort exists (provenance layer, role views, atomic value+event writes)
+    gaps:
+      - Independent trainer/coach/team-leader/mechanic passport environment NOT_BUILT
+
+  TRAINER_CAMPUS:
+    state: OPEN
+    evidence: []
+    gaps:
+      - Entire domain NOT_BUILT. Note: prior research found KNWU site technically unreachable for automated integration; verified-qualification display will require manual/document-based verification.
+
+  TRAINER_SEARCH_AND_ONBOARDING:
+    state: PARTIAL
+    evidence:
+      - Invitation links with atomic one-time accept (role+link grant), QR onboarding, bulk-ish invite roster in admin
+      - Onboarding V2 adaptive Q&A with honest nonsense handling; mandatory connect step (connecting optional)
+    gaps:
+      - Athlete-facing trainer search/compare, CSV import, prefill-as-proposal models: NOT_BUILT
+
+  CLUB_TEAM:
+    state: PROVEN_READY
+    evidence:
+      - Club entity + workspace: 11 roles least-privilege, teams/groups/members, seasons, calendar, locations, events, attendance, announcements, audit; invite-accept limits enforced, FOR UPDATE on signup, youth consent fail-closed
+      - schema: club.ts; routes: club.ts; commercial entitlement gate via central resolver
+    gaps:
+      - Club/team subscription model OPEN (matches plan OD_003); no payments infrastructure
+
+  PARENT_MINOR:
+    state: PROVEN_READY
+    evidence:
+      - Single permission layer for ALL parent routes; unknown age clamps to safety minimum; unconfirmed link never above safety-only; minor media fail-closed; sharing levels tested (5 coach-parent suites + parent env)
+      - No dating anywhere in codebase (verified by search)
+    gaps: []
+
+  TEAM_LEADER_SOIGNEUR:
+    state: PARTIAL
+    evidence:
+      - Volgauto: separate motor-vehicle routing profile, pickup/service points, cycling route untouched; live location opt-in per session, authz rechecked at every read, minor fail-closed
+      - Race rooms (race-day media), race plan data
+    gaps:
+      - Incident board, spare parts, rider status board, team communication channel: NOT_BUILT
+
+  MEDICAL_BOUNDARY:
+    state: PARTIAL
+    evidence:
+      - Health flow raises-only, resume only via explicit gate (409 on niet_trainen), no diagnosis anywhere; mental skills module sport-scoped, therapy prohibited in prompts
+    gaps:
+      - Medical-team role, per-item consent sharing, legal review: NOT_BUILT (plan says RESEARCH_FIRST — consistent)
+
+  RECOVERY_HEALTH:
+    state: PROVEN_READY
+    evidence:
+      - Readiness SSOT (lib/readiness), TSB guard, honest uncertainty + data gaps, safe adjustment proposals; health endpoints tested
+    gaps: []
+
+  MENTAL_SKILLS:
+    state: PROVEN_READY
+    evidence:
+      - Mental module (routes/mental.ts, engines/mental) sport-scoped, optional; tested (test-mental)
+    gaps: []
+
+  NUTRITION:
+    state: PROVEN_READY
+    evidence:
+      - Deterministic fueling engine SSOT (LLM phrases only), youth no-numbers, consent fail-closed, season goal 17+ with RED-S refusal, photo logs via owner-checked storage
+    gaps:
+      - Professional depth setting for dietitian role: NOT_BUILT
+
+  LAB_AND_LOAD:
+    state: PROVEN_READY
+    evidence:
+      - Single load model via computeLoadSeries (CTL/ATL/TSB), radar axes null+reason when no data (never faked), derived TSS with provenance, FTP honest lower-bound derivation, power bests at ingest only (old sessions honest-null)
+    gaps: []
+
+  SPORT_PASSPORT:
+    state: PROVEN_READY
+    evidence:
+      - Provenance layer over athlete_profiles; value+event in one transaction; proposal decide+apply atomic; role-specific views; export in privacy module (schema-driven export with token masking)
+    gaps: []
+
+  KNOWLEDGE_EXPLANATION:
+    state: PROVEN_READY
+    evidence:
+      - UitlegDot registry: contextual icon per element, layered (meaning/why/depth), short-by-default, "Bij jou" only real values; governed knowledge base (publish=tx+snapshot, version pinning, retraction final)
+    gaps: []
+
+  ANALYTICS_VISUALIZATION:
+    state: PROVEN_READY
+    evidence:
+      - Session graphs (connectNulls=false, estimates labeled), trend/progression from real series only, presentation variation (order only, numbers stable), no false precision rules enforced in engines
+    gaps: []
+
+  ROUTES_NAVIGATION:
+    state: PROVEN_READY
+    evidence:
+      - Canonical route: geometry, distance, elevation, surface (10 types incl UNKNOWN honest), way types, versioning, provenance, validation; suitability deterministic per bike profile with reasons, unknown never guessed
+      - Elevation profile synced with map (cursor, gradient, surface); climb boundaries from lib/nav-live SSOT
+      - Route chain: versions, sharing (nullsNotDistinct), compare, proposals to friends with version return flow
+      - Live navigation: voice/turn toggles, off-route requires sustained evidence (state machine, never single GPS point), in-ride edit while navigation continues, explicit stop/finish with save/discard confirmation to activity history (never route list)
+      - Waypoint honesty: intermediate waypoints never announced as destinations
+      - Own UI/implementation; ORS + OSM/Overpass licensed data; no competitor asset copy
+      - tests: route-chain, route proposals, elevation suites, mobile ride-tracker
+    gaps:
+      - OS file association (GPX open-with) only possible via store distribution: NOT_BUILT
+
+  RACE_INTELLIGENCE:
+    state: PROVEN_READY
+    evidence:
+      - Race mode with race points (start/neutralization/sprint/KOM/lap/finish); guide extraction produces candidates only (type, source, km, confidence, status PROPOSED→CONFIRMED/MODIFIED/REJECTED); unconfirmed points never actively used; status never reverts to proposed
+      - Document analysis (PDF/image) honest found/missing; map review flow
+      - Export center: separate GPX / FIT course / FIT workout, round-trip verification, unconfirmed exclusion, no false device claims (device-test-gated), stale export marking on guide change
+    gaps: []
+
+  MOBILE_RECORDING_SENSORS:
+    state: PROVEN_READY
+    evidence:
+      - GPS background recording (TaskManager), BLE HR/power/cadence/speed (base64 decode, 1s sampler), GPX with gpxtpx/power extensions, local queue + fail-closed storage, duplicate-free sync into Data Hub, crash alert with stillness latch, auto-trim undoable
+      - ANT+ honestly absent: iOS has no ANT+ hardware; Android would need native module. Expo Go limitation surfaced honestly.
+    gaps:
+      - Post-activity vehicle segment detection: PARTIAL (trim exists; vehicle classification not)
+
+  DATA_HUB_CONNECT:
+    state: PROVEN_READY
+    evidence:
+      - One ingest path (ingestBatch) for Strava/file(GPX,FIT,TCX)/mobile/manual; validate→normalize→provenance→dedupe(sport+start-bucket+neighbour)→merge(manualFields sacred)→calculate→audit; idempotency enforced
+      - Strava: per-user OAuth, webhook-first sync, atomic busy gate, COALESCE identity on partial sync
+      - Connection UX: connected state, last success, error, recovery; no full sync per login; consent expiry honest
+      - Garmin/Wahoo device sync: honest configured:false until manufacturer keys; fail-closed webhook secrets
+    gaps:
+      - GARMIN official API access not applied for (matches plan: business case first)
+
+  INTEGRATIONS:
+    state: PARTIAL
+    evidence:
+      - Strava live; BLE live; file import live; source-quality register central (fail-closed prompt rule, per-analysis used/excluded logging)
+    gaps:
+      - WAHOO cloud, WHOOP, APPLE_HEALTH, GOOGLE_HEALTH_CONNECT, ebike platforms: NOT_BUILT (plan: desired, not release blocker — consistent)
+
+  EQUIPMENT_DIGITAL_BIKE_TWIN:
+    state: PROVEN_READY
+    evidence:
+      - Guided bike scan (quality checks, original preserved before cutout, no invented visuals, asset provenance mandatory), materiaalcoach photo advice (confidence-gated, cautious commentary, no safety diagnosis), components/service via Mechanieker (km always derived), spare parts/material ring, cost only for material kind
+    gaps:
+      - Rotatable 3D bike: view-mode photos on any frames (not full 3D rotation)
+      - Upgrade cost-benefit module: PARTIAL
+
+  COMMUNICATION:
+    state: PARTIAL
+    evidence:
+      - Separate contexts exist: trainer-athlete (cockpit), team/club (announcements), object comments (route remarks), live location, system warnings, assistant explanation — no generic chat; per-context permissions/minor rules/notifications
+    gaps:
+      - Friend-social direct messaging, meet-and-ride, pre-send intervention sequence for professional messages: NOT_BUILT
+      - ADULT_DATING: NOT_BUILT (recommendation elsewhere: remove from plan)
+
+  SOCIAL_LIVE_LOCATION:
+    state: PROVEN_READY
+    evidence:
+      - Friends/followers, profile privacy fail-closed on ALL discovery paths (search/request/match, neutral refusal), blocking atomic, live location opt-in time-limited audience-visible with easy stop, team follow when authorized, /samen unified feed with fail-closed privacy
+    gaps:
+      - Dating: NOT_BUILT (see COMMUNICATION)
+
+  AI_HELPDESK:
+    state: PROVEN_READY
+    evidence:
+      - Deterministic answer matrix first-line, minor fail-closed, frustration/repetition detection, no-repeat-failed-answer, ticket find-or-create race-safe, operator escalation view
+    gaps:
+      - Note: user-facing copy never uses the term "AI" (hard product law) — plan's AI_disclosure section must be worded accordingly
+
+  TRAINING_PLAN_MARKETPLACE:
+    state: OPEN
+    evidence:
+      - Precursors exist: advisory Sparki plans, coach adoption flow, plan quality determinism
+    gaps:
+      - Marketplace, pricing, revenue share, payments (no Stripe or any payment infrastructure in repo), previews, fit check, reviews: NOT_BUILT
+
+  BILLING_ENTITLEMENTS:
+    state: PARTIAL
+    evidence:
+      - Central entitlement resolver + 4 access gates (commercial entitlement AND operational flag AND role permission AND kill switch) MERGED_AND_TESTED; variant grants; legacy_unrestricted carve-out; downgrade preserves history by design
+    gaps:
+      - Actual billing/payment processing, trials, prices: NOT_BUILT (plan OD_001/OD_002 open — consistent)
+
+  CONTENT_PACKAGES:
+    state: OPEN
+    evidence:
+      - Route library + sharing exist as foundation
+    gaps:
+      - Commercial packages, temporary entitlements for content: NOT_BUILT
+
+  ADMIN_OPERATIONS:
+    state: PROVEN_READY
+    evidence:
+      - Health checks (real probe or GREY, never fake green), role management, data-trust cleanup with dry-run + apply confirmation + FOUND/CHANGED/PRESERVED/FAILED report, audit, feature flags, kill switches, release groups with per-flag auto-stop, provenance endpoint with constant table allowlist
+      - Cleanup identity from authenticated server session (no manual Clerk ID entry)
+    gaps:
+      - OD_005 (apply decision for current account) is a data decision, not a build gap
+
+  NOTIFICATIONS:
+    state: PROVEN_READY
+    evidence:
+      - Central category registry, priority tiers, critical never-off, quiet hours dampen push/email only, resolutionKey open-dedupe + resolve lifecycle, per-context preferences, minor/role permissions, daily fold, web push with SSRF host-allowlist
+    gaps:
+      - Race-mode noncritical suppression: verify explicitly (race mode exists; suppression rule coverage unconfirmed)
+
+cross_cutting_evidence:
+  AI_BOUNDARY: ENFORCED (all model calls through one gateway; deterministic engines own every calculation; LLM words-only pattern is repo-wide law)
+  GLOBAL_DATA_TRUST: ENFORCED (no mock personal data law, honest empty states, provenance + data-origin framework, dry-run cleanup)
+  ROLES_PERMISSIONS: ENFORCED (server-side, least privilege, granular revocable consent, cross-account isolation test suites)
+  GAME_LAYER_STATUS: >
+    Town-sign sprints, climb explorer and Sparki World EXIST in production code and are live.
+    Master plan removes game layer from ACTIVE ROADMAP but does not state disposition of
+    existing built features. DECISION NEEDED: keep live (recommended, zero cost) vs flag-off.
+  EU_ROLLOUT: >
+    Decided by product owner (2026-07): EU-wide, all EU languages, per-country marketing sites.
+    NOT in master plan v2.25. All user-facing copy is currently hardcoded Dutch in UI and in
+    LLM prompt rules. Internationalization is a dedicated architecture phase; must be added
+    as a domain + open decision in the next plan version.
+  TESTING: 139 automated test suites across web(21)/api(108)/mobile(10); agents-first practice matches testing_contract.
+
+corrections_to_master_plan_v2_25:
+  - path: current_evidence.entitlement_foundation
+    correction: CODE_VERIFIED_MERGED_AND_TESTED (was CONVERSATION_REPORTED)
+  - path: current_evidence.sparki_connect
+    correction: ALL_ASSIGNMENTS_CODE_VERIFIED (Connect sync layer merged with tests)
+  - path: source_truth.current_technical_truth.available_in_this_revision
+    correction: "true via this evidence matrix (direct repository access supersedes truncated zip)"
+  - path: readiness.domain_status
+    correction: REPLACE_WITH_domain_evidence_STATES_ABOVE
+  - path: architecture.current_reported_stack
+    correction: CODE_VERIFIED (React+Vite, Express 5, PostgreSQL+Drizzle, Expo RN; primary experience is web app + native mobile app, not PWA-first)
+  - path: next_controlled_sequence
+    correction: STEPS_2_3_4_SATISFIED_BY_THIS_DOCUMENT

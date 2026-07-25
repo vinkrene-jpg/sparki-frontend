@@ -497,3 +497,9 @@ id = "KtDHJ6CEjr4V5vdjWb1O5"
 uri = "file://SPARKI_CURRENT_STATE.md"
 type = "text"
 title = "SPARKI_CURRENT_STATE.md — officiële technische nulmeting"
+
+[[outputs]]
+id = "cEybXhZreAAnqq48pbU-v"
+uri = "file://docs/SPARKI_EVIDENCE_MATRIX_v1.yaml"
+type = "unspecified"
+title = "Sparki Evidence Matrix v1 (voor masterplan v2.26)"
