@@ -12,12 +12,17 @@ authority:
   figma_file_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp"
   figma_wave_1_page_node: "0:1"
   node_id_status: >-
-    GEVERIFIEERD_UIT_OFFICIELE_HANDOFF — file key, alle 8 node-ID's, framematen en URL's komen uit
-    UX_00B_REAL_FIGMA_HANDOFF (opdrachtgever) en kloppen met de meegeleverde paginarender waarop de
-    8 frames zichtbaar zijn. Eerlijkheidsnotitie: het bestand staat achter een Figma-loginmuur
-    (geen publieke link-share) en er is geen Figma-koppeling in dit project, dus de node-URL's
-    konden niet onafhankelijk in de browser geopend worden; poging gedaan, loginscherm vastgelegd
-    in attached_assets/screenshots/figma_com_design_wDUBmQvIFFDpaah5JyskFp.png.
+    GEVERIFIEERD_IN_BROWSER — na publiekmaking van de link-share (t-parameter, 2026-07-25) zijn
+    alle 8 node-URL's onafhankelijk in de browser geopend. Per node-ID klopt het geselecteerde
+    frame met naam, maat en inhoud: 2:320 "01 GO — Route home / Mobile" 390x844, 2:322 "02 GO —
+    Route workspace / Desktop" 1440x900, 2:324 "03 GO — Route detail / Mobile" 390x844, 2:326
+    "04 Complete — Vandaag / Mobile" 390x844, 2:328 "05 Complete — Vandaag / Desktop" 1440x900,
+    2:330 "06 Complete — Trainingsplan / Desktop" 1440x900, 2:332 "07 Shared — Onboarding /
+    Mobile" 390x844, 2:334 "08 Shared — Subscription / Desktop" 1440x900. Bestandsnaam bevestigd
+    als "Sparki Commercial UX — Approved Wave 1"; frames zijn echte, bewerkbare Figma-frames
+    (geen geplaatste afbeeldingen: framelabels, maatbadges en canvas-selectie zichtbaar). Inhoud
+    komt overeen met de handoff-render en met de frame_inhoud-beschrijvingen hieronder; geen
+    visuele of code-mismatch gevonden.
   legacy_screenshot_note: >-
     de screenshot-bestandsnamen hieronder (…_34-2.png t/m …_34-9.png) zijn de fysieke bestandsnamen
     uit het R1-correctiepakket en blijven als visueel bewijs staan; het cijfer in de bestandsnaam is
