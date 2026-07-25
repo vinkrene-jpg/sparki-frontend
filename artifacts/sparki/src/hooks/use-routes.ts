@@ -514,6 +514,31 @@ export function useRouteLibrary(q: string, scope: RouteScope, sort: RouteSort) {
   });
 }
 
+// Openbaar gemaakte, echt gereden routes van andere gebruikers — geometrie is
+// al privacy-afgeschermd door de server (start/einde weg, privacyzone).
+export type DiscoverRoute = {
+  id: number;
+  name: string;
+  surface: string;
+  distanceKm: number | null;
+  elevationGainM: number | null;
+  source: string;
+  createdAt: string;
+  eigenaarNaam: string;
+  geometry: [number, number][] | null;
+  privacyNote: string;
+};
+
+export function useDiscoverRoutes() {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: ["routes", "ontdek"],
+    queryFn: () => apiFetch<{ routes: DiscoverRoute[] }>("/api/routes/ontdek"),
+    enabled: isSignedIn === true || DEV_PREVIEW,
+    staleTime: 5 * 60_000,
+  });
+}
+
 export type SharedRouteListItem = {
   id: number;
   name: string;
@@ -551,6 +576,7 @@ export function useUpdateRoute() {
       name?: string;
       favorite?: boolean;
       status?: "ready" | "archived";
+      visibility?: string;
     }) =>
       apiFetch<{ route: SparkiRoute }>(`/api/routes/${input.id}`, {
         method: "PUT",
@@ -558,6 +584,9 @@ export function useUpdateRoute() {
           ...(input.name !== undefined && { name: input.name }),
           ...(input.favorite !== undefined && { favorite: input.favorite }),
           ...(input.status !== undefined && { status: input.status }),
+          ...(input.visibility !== undefined && {
+            visibility: input.visibility,
+          }),
         }),
       }),
     onSuccess: () => {

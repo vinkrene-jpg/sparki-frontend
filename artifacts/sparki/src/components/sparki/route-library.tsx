@@ -4,7 +4,9 @@ import {
   Archive,
   ArchiveRestore,
   Copy,
+  Download,
   GitCompareArrows,
+  Globe2,
   MoreVertical,
   Navigation,
   Pencil,
@@ -19,6 +21,7 @@ import {
   useRouteLibrary,
   useSharedRoutes,
   useUpdateRoute,
+  useDownloadRoute,
   useDuplicateRoute,
   useDeleteRoute,
   useRouteShares,
@@ -177,6 +180,7 @@ export function RouteLibrary() {
   const lib = useRouteLibrary(q, libScope, sort)
   const shared = useSharedRoutes(scope === "gedeeld")
   const update = useUpdateRoute()
+  const download = useDownloadRoute()
   const duplicate = useDuplicateRoute()
   const del = useDeleteRoute()
   const imports = useActivityImports()
@@ -403,6 +407,65 @@ export function RouteLibrary() {
                         onClick: () => {
                           setOpenCompareId(null)
                           setOpenShareId(openShareId === r.id ? null : r.id)
+                        },
+                      },
+                      ...(canNavigate
+                        ? [
+                            {
+                              icon: <Download className="h-3.5 w-3.5" />,
+                              label: "Download GPX",
+                              onClick: () => {
+                                download.mutate(
+                                  {
+                                    id: r.id,
+                                    name: r.name,
+                                    format: "gpx" as const,
+                                  },
+                                  {
+                                    onError: (err) =>
+                                      window.alert(
+                                        err instanceof Error
+                                          ? err.message
+                                          : "Kon GPX niet downloaden",
+                                      ),
+                                  },
+                                )
+                              },
+                            },
+                          ]
+                        : []),
+                      {
+                        icon: <Globe2 className="h-3.5 w-3.5" />,
+                        label:
+                          (r as SparkiRoute & { visibility?: string })
+                            .visibility === "public"
+                            ? "Openbaar uitzetten"
+                            : "Openbaar zetten",
+                        onClick: () => {
+                          const isPublic =
+                            (r as SparkiRoute & { visibility?: string })
+                              .visibility === "public"
+                          if (
+                            !isPublic &&
+                            !window.confirm(
+                              "Openbaar zetten? Andere gebruikers zien deze route dan op de kaart onder 'Ontdek gereden routes'. Start en einde blijven voor hen afgeschermd.",
+                            )
+                          )
+                            return
+                          update.mutate(
+                            {
+                              id: r.id,
+                              visibility: isPublic ? "private" : "public",
+                            },
+                            {
+                              onError: (err) =>
+                                window.alert(
+                                  err instanceof Error
+                                    ? err.message
+                                    : "Kon zichtbaarheid niet wijzigen",
+                                ),
+                            },
+                          )
                         },
                       },
                       ...(hasRiddenRide

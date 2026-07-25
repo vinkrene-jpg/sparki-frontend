@@ -6,6 +6,7 @@ import {
   Map as MapIcon,
   Download,
   Bookmark,
+  Globe2,
   Settings2,
 } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
@@ -13,14 +14,22 @@ import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { RoutePanel } from "@/components/sparki/route-panel"
 import { RouteLibrary } from "@/components/sparki/route-library"
 import { NavSettingsPanel } from "@/components/sparki/nav-settings-panel"
+import { RouteDiscover } from "@/components/sparki/route-discover"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 
-type RoutesView = "maken" | "gpx" | "bewaard" | "instellingen" | null
+type RoutesView =
+  | "maken"
+  | "gpx"
+  | "bewaard"
+  | "ontdek"
+  | "instellingen"
+  | null
 
 const VIEW_TITLES: Record<Exclude<RoutesView, null>, string> = {
   maken: "Route laten maken",
   gpx: "GPX importeren",
   bewaard: "Bewaarde routes",
+  ontdek: "Ontdek gereden routes",
   instellingen: "Navigatie-instellingen",
 }
 
@@ -37,6 +46,7 @@ export default function RoutesPage() {
     rawView === "maken" ||
     rawView === "gpx" ||
     rawView === "bewaard" ||
+    rawView === "ontdek" ||
     rawView === "instellingen"
       ? rawView
       : params.get("nav") || params.get("ritopties") || params.get("route")
@@ -66,6 +76,12 @@ export default function RoutesPage() {
       title: "Bewaarde routes",
       sub: "Navigeren, delen, downloaden en aanpassen",
       icon: Bookmark,
+    },
+    {
+      v: "ontdek",
+      title: "Ontdek gereden routes",
+      sub: "Openbare routes van andere gebruikers op de kaart",
+      icon: Globe2,
     },
     {
       v: "instellingen",
@@ -191,6 +207,8 @@ export default function RoutesPage() {
           <div className="mt-6">
             {view === "instellingen" ? (
               <NavSettingsPanel />
+            ) : view === "ontdek" ? (
+              <RouteDiscover />
             ) : routePlannerEnabled ? (
               <RoutePanel view={view} />
             ) : (

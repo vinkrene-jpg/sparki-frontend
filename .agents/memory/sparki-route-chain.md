@@ -9,3 +9,7 @@ description: Route library/share/version-usage design decisions and Postgres NUL
 - **Soft vs hard delete:** DELETE soft-deletes (deletedAt) only when usage history exists; otherwise hard delete. All read paths must filter `isNull(deletedAt)`.
 - **Viewer privacy projection:** shared-route detail nulls nav/waypoints/profile and returns simplified geometry + privacyNote; non-eligible viewers get 404 (fail-closed), including write-ish endpoints like navigatie-start.
 - **Ridden-track source:** vergelijk endpoint reads `activity_imports.parsedSummary.route.geometry` (GpxRoutePayload object), not a bare array — support both shapes, honest 422 when neither.
+
+## Ontdek gereden routes (openbaar, 25 jul 2026)
+- Openbare zichtbaarheid is drielaags fail-closed voor minderjarigen: schrijfpad (PUT 403 + safeVisibility op alle create-paden), leespad `/ontdek` (isMinorAthlete-filter) ÉN `canViewSharedRoute` (public ⇒ eigenaar niet minderjarig). Alleen het schrijfpad afdwingen is onvoldoende: legacy-rijen kunnen al public staan.
+- `/ontdek` staat vóór `/:id` gedeclareerd; kijkersgeometrie altijd via viewerRouteView met de ownerHome van de EIGENAAR per route.

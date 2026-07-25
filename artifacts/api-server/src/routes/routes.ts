@@ -9,6 +9,7 @@ import {
   inArray,
   isNotNull,
   isNull,
+  lt,
   ne,
   or,
 } from "drizzle-orm";
@@ -43,6 +44,7 @@ import { activeRacePoints } from "../lib/race-points";
 import { registerRouteUsage } from "../lib/route-usage";
 import { aiMessage } from "../lib/ai/gateway";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { isMinorAthlete } from "../lib/sharing";
 import {
   parseGpxRoute,
   summarizeTrack,
@@ -102,6 +104,17 @@ function coerceVisibility(v: unknown): RouteVisibility {
     (routeVisibilities as readonly string[]).includes(v)
     ? (v as RouteVisibility)
     : "private";
+}
+
+// Zichtbaarheid bij aanmaken: als "public" gevraagd wordt door een
+// minderjarige valt de route stil terug op privé (fail-closed).
+async function safeVisibility(
+  clerkId: string,
+  v: unknown,
+): Promise<RouteVisibility> {
+  const vis = coerceVisibility(v);
+  if (vis === "public" && (await isMinorAthlete(clerkId))) return "private";
+  return vis;
 }
 
 function coerceSport(v: unknown): Sport {
@@ -392,6 +405,13 @@ async function canViewSharedRoute(
   route: RouteRow,
   viewerClerkId: string,
 ): Promise<boolean> {
+  // Openbare routes zijn voor iedere ingelogde gebruiker zichtbaar — altijd in
+  // de veilige kijkersweergave. Fail-closed voor minderjarigen: ook als een
+  // route (bijv. een oude rij) tóch op openbaar staat, blijft een route van
+  // een minderjarige eigenaar onzichtbaar voor anderen.
+  if (route.visibility === "public") {
+    return !(await isMinorAthlete(route.clerkId));
+  }
   const shares = await db
     .select()
     .from(routeSharesTable)
@@ -482,11 +502,86 @@ async function routeIsReferenced(routeId: number): Promise<boolean> {
   return Boolean(usage);
 }
 
+// Opruimregel (besloten 22 juli): een bewaard routevoorstel (gegenereerde
+// route) dat na 30 dagen nog nooit gereden is, verdwijnt vanzelf. Lui
+// uitgevoerd op het leespad van de bibliotheek — geen aparte job nodig.
+// Uitdrukkelijk NIET opgeruimd: favorieten, gearchiveerde routes, routes met
+// verzendingen/koppelingen (training, activiteit, delen) en routes met
+// historie (wedstrijd, sprint, versiegebruik) — die zijn bewust bewaard of
+// aantoonbaar gebruikt. Verwijderen is hier definitief veilig omdat alleen
+// referentieloze rijen in aanmerking komen.
+const PROPOSAL_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+async function cleanupUnriddenProposals(
+  clerkId: string,
+  log: { warn: (obj: unknown, msg: string) => void },
+): Promise<void> {
+  try {
+    const cutoff = new Date(Date.now() - PROPOSAL_MAX_AGE_MS);
+    const stale = await db
+      .select({ id: routesTable.id })
+      .from(routesTable)
+      .where(
+        and(
+          eq(routesTable.clerkId, clerkId),
+          eq(routesTable.source, "generated"),
+          eq(routesTable.favorite, false),
+          ne(routesTable.status, "archived"),
+          isNull(routesTable.deletedAt),
+          isNull(routesTable.linkedPlannedWorkoutId),
+          isNull(routesTable.linkedActivityImportId),
+          lt(routesTable.createdAt, cutoff),
+        ),
+      )
+      .limit(25);
+    if (stale.length === 0) return;
+    const ids = stale.map((r) => r.id);
+    // Alles met historie of delingen blijft staan — set-gebaseerd bepalen.
+    const [usages, races, sprints, shares] = await Promise.all([
+      db
+        .select({ routeId: routeVersionUsagesTable.routeId })
+        .from(routeVersionUsagesTable)
+        .where(inArray(routeVersionUsagesTable.routeId, ids)),
+      db
+        .select({ routeId: racesTable.routeId })
+        .from(racesTable)
+        .where(inArray(racesTable.routeId, ids)),
+      db
+        .select({ routeId: sprintResultsTable.routeId })
+        .from(sprintResultsTable)
+        .where(inArray(sprintResultsTable.routeId, ids)),
+      db
+        .select({ routeId: routeSharesTable.routeId })
+        .from(routeSharesTable)
+        .where(inArray(routeSharesTable.routeId, ids)),
+    ]);
+    const keep = new Set<number>();
+    for (const r of usages) if (r.routeId != null) keep.add(r.routeId);
+    for (const r of races) if (r.routeId != null) keep.add(r.routeId);
+    for (const r of sprints) if (r.routeId != null) keep.add(r.routeId);
+    for (const r of shares) keep.add(r.routeId);
+    const removable = ids.filter((id) => !keep.has(id));
+    if (removable.length === 0) return;
+    await db
+      .delete(routesTable)
+      .where(
+        and(
+          eq(routesTable.clerkId, clerkId),
+          inArray(routesTable.id, removable),
+        ),
+      );
+  } catch (err) {
+    // Opruimen mag het laden van de bibliotheek nooit blokkeren.
+    log.warn({ err }, "routes.cleanup-unridden-proposals failed");
+  }
+}
+
 // GET /api/routes — caller's saved routes, newest first.
 //   ?limit=N                 — cap the number of rows (1–100, default 30)
 //   ?plannedWorkoutId=N      — only routes linked to that planned workout
 router.get("/", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
+  await cleanupUnriddenProposals(clerkId, req.log);
   const limit = Math.min(Math.max(Number(req.query.limit) || 30, 1), 100);
   const plannedWorkoutId =
     Number.isInteger(Number(req.query.plannedWorkoutId)) &&
@@ -657,6 +752,95 @@ router.get("/gedeeld", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "routes.shared-with-me failed");
     res.status(500).json({ error: "Kon gedeelde routes niet laden" });
+  }
+});
+
+// GET /api/routes/ontdek — openbaar gemaakte, echt gereden routes van andere
+// gebruikers, op de kaart te tonen. Alleen routes die de eigenaar bewust
+// openbaar heeft gezet én die aantoonbaar gereden zijn (bron "ridden" of met
+// versiegebruik). Geometrie altijd in de veilige kijkersweergave (start/einde
+// afgeschermd, privacyzone, vereenvoudigd). Routes van minderjarige eigenaren
+// verschijnen nooit (fail-closed). Gedeclareerd vóór "/:id".
+router.get("/ontdek", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const rows = await db
+      .select()
+      .from(routesTable)
+      .where(
+        and(
+          eq(routesTable.visibility, "public"),
+          ne(routesTable.clerkId, clerkId),
+          isNull(routesTable.deletedAt),
+          ne(routesTable.status, "archived"),
+          isNotNull(routesTable.geometry),
+        ),
+      )
+      .orderBy(desc(routesTable.createdAt))
+      .limit(100);
+    if (rows.length === 0) {
+      res.json({ routes: [] });
+      return;
+    }
+    const ids = rows.map((r) => r.id);
+    const usages = await db
+      .select({ routeId: routeVersionUsagesTable.routeId })
+      .from(routeVersionUsagesTable)
+      .where(inArray(routeVersionUsagesTable.routeId, ids));
+    const usedIds = new Set(usages.map((u) => u.routeId));
+    const ridden = rows.filter(
+      (r) => r.source === "ridden" || usedIds.has(r.id),
+    );
+    if (ridden.length === 0) {
+      res.json({ routes: [] });
+      return;
+    }
+    // Eigenaren één keer beoordelen: minderjarig ⇒ nooit openbaar tonen.
+    const ownerIds = [...new Set(ridden.map((r) => r.clerkId))];
+    const minorByOwner = new Map<string, boolean>();
+    await Promise.all(
+      ownerIds.map(async (owner) => {
+        minorByOwner.set(owner, await isMinorAthlete(owner));
+      }),
+    );
+    const owners = await db
+      .select({
+        clerkId: userProfilesTable.clerkId,
+        displayName: userProfilesTable.displayName,
+      })
+      .from(userProfilesTable)
+      .where(inArray(userProfilesTable.clerkId, ownerIds));
+    const nameByOwner = new Map(owners.map((o) => [o.clerkId, o.displayName]));
+    const homeByOwner = new Map<
+      string,
+      { lat: number; lon: number } | null
+    >();
+    await Promise.all(
+      ownerIds.map(async (owner) => {
+        homeByOwner.set(owner, await ownerHome(owner));
+      }),
+    );
+    const routes = ridden
+      .filter((r) => minorByOwner.get(r.clerkId) !== true)
+      .map((r) => {
+        const view = viewerRouteView(r, homeByOwner.get(r.clerkId) ?? null);
+        return {
+          id: r.id,
+          name: r.name,
+          surface: r.surface,
+          distanceKm: r.distanceKm,
+          elevationGainM: r.elevationGainM,
+          source: r.source,
+          createdAt: r.createdAt,
+          eigenaarNaam: nameByOwner.get(r.clerkId) ?? "Onbekende renner",
+          geometry: view.geometry,
+          privacyNote: view.privacyNote,
+        };
+      });
+    res.json({ routes });
+  } catch (err) {
+    req.log.error({ err }, "routes.discover failed");
+    res.status(500).json({ error: "Kon openbare routes niet laden" });
   }
 });
 
@@ -2448,7 +2632,7 @@ router.post("/", requireAuth, async (req, res) => {
           clerkId,
           name,
           surface: coerceSurface(stored.surface),
-          visibility: coerceVisibility(body.visibility),
+          visibility: await safeVisibility(clerkId, body.visibility),
           status: "ready",
           distanceKm: stored.distanceKm,
           durationSec: stored.durationSec,
@@ -2531,7 +2715,7 @@ router.post("/", requireAuth, async (req, res) => {
         clerkId,
         name,
         surface: coerceSurface(body.surface),
-        visibility: coerceVisibility(body.visibility),
+        visibility: await safeVisibility(clerkId, body.visibility),
         status: "ready",
         distanceKm: parsed.distanceKm,
         elevationGainM: parsed.elevationGainM,
@@ -2632,7 +2816,7 @@ router.post("/from-activity", requireAuth, async (req, res) => {
         clerkId,
         name,
         surface: coerceSurface(body.surface),
-        visibility: coerceVisibility(body.visibility),
+        visibility: await safeVisibility(clerkId, body.visibility),
         status: "ready",
         distanceKm: stored.distanceKm ?? null,
         elevationGainM: stored.elevationGainM ?? null,
@@ -2711,6 +2895,14 @@ router.put("/:id", requireAuth, async (req, res) => {
     if (typeof body.visibility === "string") {
       if (!(routeVisibilities as readonly string[]).includes(body.visibility)) {
         res.status(400).json({ error: "Ongeldige zichtbaarheid" });
+        return;
+      }
+      // Fail-closed: minderjarigen kunnen een route nooit openbaar zetten.
+      if (body.visibility === "public" && (await isMinorAthlete(clerkId))) {
+        res.status(403).json({
+          error:
+            "Openbaar delen is niet beschikbaar voor renners onder de 18.",
+        });
         return;
       }
       updates.visibility = body.visibility as RouteVisibility;

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Link } from "wouter"
 import { HumorLine } from "@/components/sparki/humor-line"
 import {
@@ -9,6 +9,7 @@ import {
   HeartPulse,
   Flame,
   ChevronRight,
+  Search,
   Activity as ActivityIcon,
 } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
@@ -150,16 +151,82 @@ function ActivityCard({
   )
 }
 
+// Maandkop op basis van de LOKALE kalenderdag (sessionDate is een datum
+// zonder tijd; middag-UTC voorkomt datumverschuiving rond middernacht).
+function monthKey(iso: string) {
+  const d = new Date(iso + "T12:00:00Z")
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`
+}
+
+function monthLabel(key: string) {
+  const [y, m] = key.split("-").map(Number)
+  const label = new Date(Date.UTC(y!, (m ?? 1) - 1, 15)).toLocaleDateString(
+    "nl-NL",
+    { month: "long", year: "numeric" },
+  )
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
+
 export default function ActiviteitenPage() {
-  const { data: sessions, isLoading, isError, refetch } = useSessions(40)
+  // Volledig archief: tijd-geordend met zoeken en filters. 500 is de eerlijke
+  // servergrens — meer dan genoeg voor jaren aan ritten.
+  const { data: sessions, isLoading, isError, refetch } = useSessions(500)
   const { data: load, isLoading: loadLoading } = useLoad()
   const [selected, setSelected] = useState<TrainingSession | null>(null)
   const [open, setOpen] = useState(false)
+  const [q, setQ] = useState("")
+  const [typeFilter, setTypeFilter] = useState<string | null>(null)
+  const [monthFilter, setMonthFilter] = useState<string | null>(null)
 
   const openSession = (s: TrainingSession) => {
     setSelected(s)
     setOpen(true)
   }
+
+  // Filteropties komen uit de échte data — geen verzonnen categorieën.
+  const typeOptions = useMemo(() => {
+    const seen = new Map<string, string>()
+    for (const s of sessions ?? []) {
+      const key = s.type.toLowerCase()
+      if (!seen.has(key)) seen.set(key, typeLabel(s.type))
+    }
+    return [...seen.entries()].map(([key, label]) => ({ key, label }))
+  }, [sessions])
+
+  const monthOptions = useMemo(() => {
+    const keys = new Set<string>()
+    for (const s of sessions ?? []) keys.add(monthKey(s.sessionDate))
+    return [...keys].sort().reverse()
+  }, [sessions])
+
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase()
+    return (sessions ?? []).filter((s) => {
+      if (typeFilter && s.type.toLowerCase() !== typeFilter) return false
+      if (monthFilter && monthKey(s.sessionDate) !== monthFilter) return false
+      if (needle) {
+        const hay = [s.title ?? "", typeLabel(s.type), sourceLabel(s.source)]
+          .join(" ")
+          .toLowerCase()
+        if (!hay.includes(needle)) return false
+      }
+      return true
+    })
+  }, [sessions, q, typeFilter, monthFilter])
+
+  // Tijd-geordend archief: groepering per maand, nieuwste eerst.
+  const grouped = useMemo(() => {
+    const map = new Map<string, TrainingSession[]>()
+    for (const s of filtered) {
+      const key = monthKey(s.sessionDate)
+      const list = map.get(key)
+      if (list) list.push(s)
+      else map.set(key, [s])
+    }
+    return [...map.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1))
+  }, [filtered])
+
+  const hasFilters = q.trim() !== "" || typeFilter != null || monthFilter != null
 
   return (
     <ScreenShell section="activiteiten">
@@ -197,9 +264,67 @@ export default function ActiviteitenPage() {
       ) : null}
 
       {sessions && sessions.length > 0 ? (
-        <h2 className="text-base font-semibold tracking-tight text-white/90">
-          Alle ritten
-        </h2>
+        <section className="flex flex-col gap-3">
+          <h2 className="text-base font-semibold tracking-tight text-white/90">
+            Alle ritten
+          </h2>
+          {/* Zoeken + filters: alleen op echte velden (titel, type, bron). */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Zoek op titel, type of bron…"
+                className="w-full rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] py-2 pl-9 pr-3 text-[13px] text-white/85 placeholder:text-white/30 outline-none backdrop-blur-md focus:border-cyan-300/40"
+              />
+            </div>
+            <select
+              value={monthFilter ?? ""}
+              onChange={(e) => setMonthFilter(e.target.value || null)}
+              className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] px-3 py-2 text-[13px] text-white/75 outline-none backdrop-blur-md"
+              aria-label="Filter op maand"
+            >
+              <option value="">Alle maanden</option>
+              {monthOptions.map((m) => (
+                <option key={m} value={m}>
+                  {monthLabel(m)}
+                </option>
+              ))}
+            </select>
+          </div>
+          {typeOptions.length > 1 ? (
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => setTypeFilter(null)}
+                className={`rounded-full border px-3 py-1.5 text-[12px] transition-colors ${
+                  typeFilter == null
+                    ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-100"
+                    : "border-white/[0.08] bg-[#070d16]/[0.55] text-white/55 hover:text-white/80"
+                }`}
+              >
+                Alles
+              </button>
+              {typeOptions.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() =>
+                    setTypeFilter(typeFilter === t.key ? null : t.key)
+                  }
+                  className={`rounded-full border px-3 py-1.5 text-[12px] transition-colors ${
+                    typeFilter === t.key
+                      ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-100"
+                      : "border-white/[0.08] bg-[#070d16]/[0.55] text-white/55 hover:text-white/80"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </section>
       ) : null}
 
       {isLoading ? (
@@ -246,10 +371,30 @@ export default function ActiviteitenPage() {
             Koppeling instellen
           </Link>
         </div>
+      ) : filtered.length === 0 ? (
+        <p className="rounded-2xl border border-white/[0.06] bg-[#070d16]/[0.55] p-4 text-[13px] text-white/45 backdrop-blur-md">
+          {hasFilters
+            ? "Geen ritten gevonden met deze zoekterm of filters."
+            : "Geen ritten gevonden."}
+        </p>
       ) : (
-        <div className="flex flex-col gap-3">
-          {sessions.map((s) => (
-            <ActivityCard key={s.id} session={s} onOpen={() => openSession(s)} />
+        <div className="flex flex-col gap-5">
+          {grouped.map(([key, list]) => (
+            <section key={key} className="flex flex-col gap-3">
+              <h3 className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+                {monthLabel(key)}
+                <span className="ml-2 tabular-nums text-white/25">
+                  {list.length} {list.length === 1 ? "rit" : "ritten"}
+                </span>
+              </h3>
+              {list.map((s) => (
+                <ActivityCard
+                  key={s.id}
+                  session={s}
+                  onOpen={() => openSession(s)}
+                />
+              ))}
+            </section>
           ))}
         </div>
       )}

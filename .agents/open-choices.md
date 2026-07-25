@@ -19,7 +19,6 @@ Laatst bijgewerkt: 2026-07-22.
 ### Gevonden in de geschiedenis — graag bevestigen of nog actueel
 5. **Route op de kaart bewerken** — route zélf vormen (tik/sleep punten) / losse
    verzamelpunten plaatsen / allebei. (Nu: alleen GPX-import, geen interactieve kaart.)
-6. **Route downloaden (GPX-export)** — een exportknop bij routes. (Nu: niet gekoppeld.)
 7. **Productie-database bijwerken** — schema-wijzigingen ook op de live (gepubliceerde)
    database toepassen, zodat het na publiceren meteen werkt. (Terugkerend bij elke deploy.)
 8. **Achtergrond achter de Core / het Ride-scherm** — welke scène je daar wilt zien.
@@ -29,7 +28,9 @@ Laatst bijgewerkt: 2026-07-22.
 10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav.
 
 ## Beslist (archief)
-- **2026-07-22 — Routes: opruimen + archief (nog te bouwen, groot):**
+- **2026-07-25 — Route downloaden (GPX-export):** gebouwd — "Download GPX" in het
+  driepuntenmenu van de routebibliotheek (alleen bij routes met echte kaartlijn).
+- **2026-07-22 — Routes: opruimen + archief (GEBOUWD 25 jul):**
   (1) Niet-gekozen routevoorstellen direct verwijderen; een bewaard maar na
   30 dagen niet gereden voorstel verdwijnt vanzelf. (2) Gereden tochten op
   tijd geordend (nieuwste eerst, per maand gegroepeerd) met zoekveld en

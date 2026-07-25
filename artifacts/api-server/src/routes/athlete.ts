@@ -1405,7 +1405,7 @@ router.get("/sessions", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const limit = Math.min(
     parseInt(String(req.query["limit"] ?? "20"), 10),
-    100,
+    500,
   );
   try {
     const sessions = await db
