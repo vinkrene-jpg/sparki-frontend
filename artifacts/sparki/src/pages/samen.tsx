@@ -29,7 +29,6 @@ import {
   type SentProposal,
 } from "@/hooks/use-social"
 import { useFeedNews, type FeedNewsItem } from "@/hooks/use-feed-news"
-import { WorldSocialSection } from "@/components/sparki/world-social-section"
 import {
   useAnswerFollowUp,
   useDismissFollowUp,
@@ -50,8 +49,6 @@ import {
   Trash2,
   Sparkles,
   Newspaper,
-  Globe,
-  ChevronRight,
   Zap,
   Send,
   UserCircle,
@@ -335,7 +332,7 @@ function NetwerkOverzicht() {
 
   return (
     <section>
-      <SectionLabel n="01" title="Jouw netwerk" />
+      <SectionLabel n="02" title="Jouw netwerk" />
       {isLoading ? (
         <div className="mt-3 h-14 animate-pulse rounded-2xl bg-white/[0.05]" />
       ) : (
@@ -601,7 +598,7 @@ function Circle() {
 
   return (
     <section id="mijn-vrienden">
-      <SectionLabel n="04" title="Mijn vrienden" />
+      <SectionLabel n="01" title="Mijn vrienden" />
       {isLoading ? (
         <div className="mt-3 h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
       ) : friends.length === 0 ? (
@@ -857,7 +854,7 @@ function CircleFeed() {
 
   return (
     <section>
-      <SectionLabel n="03" title="Jouw overzicht" />
+      <SectionLabel n="05" title="Jouw overzicht" />
       {isLoading ? (
         <div className="mt-3 h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
       ) : isError ? (
@@ -902,7 +899,7 @@ function TrainTogether() {
 
   return (
     <section>
-      <SectionLabel n="02" title="Samen trainen" />
+      <SectionLabel n="04" title="Samen trainen" />
       <div className="mt-3">
         {suggestion?.available ? (
           <GlassCard className="border-cyan-300/20 bg-cyan-300/[0.04]">
@@ -1276,7 +1273,7 @@ function Proposals() {
   if (isLoading) {
     return (
       <section>
-        <SectionLabel n="01" title="Voorstellen" />
+        <SectionLabel n="03" title="Voorstellen" />
         <div className="mt-3 h-16 animate-pulse rounded-2xl bg-white/[0.05]" />
       </section>
     )
@@ -1284,7 +1281,7 @@ function Proposals() {
 
   return (
     <section>
-      <SectionLabel n="01" title="Voorstellen" />
+      <SectionLabel n="03" title="Voorstellen" />
       {received.length === 0 && sent.length === 0 ? (
         <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/40">
           Nog geen voorstellen. Maak er een via "Samen trainen" hieronder.
@@ -1371,33 +1368,6 @@ function ClubBanner() {
   )
 }
 
-// Sparki World lost its dedicated header button in the app-herindeling; it stays
-// reachable through a clear link on Samen (both are social/discovery surfaces).
-function WereldLink() {
-  return (
-    <Link
-      href="/wereld"
-      className="flex items-center gap-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md transition-colors hover:border-cyan-300/30"
-    >
-      <span
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.08]"
-        style={{ background: "rgba(120,210,230,0.08)" }}
-      >
-        <Globe className="h-5 w-5" strokeWidth={1.75} style={{ color: ACCENT }} />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[14px] font-medium text-white/90">
-          Sparki World
-        </span>
-        <span className="mt-0.5 block text-[12px] text-white/45">
-          Ontdek de virtuele renners en hun verhalen
-        </span>
-      </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-white/25" strokeWidth={1.75} />
-    </Link>
-  )
-}
-
 export default function SamenPage() {
   return (
     <ScreenShell section="samen">
@@ -1418,17 +1388,17 @@ export default function SamenPage() {
         </div>
       </section>
 
+      {/* Mensen vinden, uitnodigen en je vrienden staan bewust bovenaan —
+          dat is waar je op Samen het eerst naar zoekt. */}
+      <MensenVinden />
+      <AddFriend />
+      <Circle />
       <NetwerkOverzicht />
       <FriendRequests />
       <Proposals />
       <TrainTogether />
       <ClubBanner />
-      <WorldSocialSection />
       <CircleFeed />
-      <AddFriend />
-      <MensenVinden />
-      <Circle />
-      <WereldLink />
     </ScreenShell>
   )
 }

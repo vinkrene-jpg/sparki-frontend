@@ -78,7 +78,7 @@ test("alle hoofdstukken en Meer-onderdelen blijven bereikbaar", () => {
 
 test("Meer bevat de verplichte onderdelen", () => {
   const hrefs = new Set(ATHLETE_MEER_CHAPTERS.map((c) => c.href))
-  for (const verplicht of ["/you", "/lichaam", "/mechanieker", "/samen", "/wereld", "/kennis"]) {
+  for (const verplicht of ["/you", "/lichaam", "/mechanieker", "/samen", "/kennis"]) {
     assert.ok(hrefs.has(verplicht), `Meer mist ${verplicht}`)
   }
 })

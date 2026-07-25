@@ -13,7 +13,7 @@ import {
   coachChangeProposalsTable,
   type AiObservation,
 } from "@workspace/db";
-import { aiMessage } from "../lib/ai/gateway";
+import { aiMessage, AiBlockedError } from "../lib/ai/gateway";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { killSwitchGuard } from "../lib/kill-switches";
 import { decideAdjustment } from "../lib/adjust-rules";
@@ -125,6 +125,12 @@ router.post("/brief", requireAuth, async (req, res) => {
       }
     })();
   } catch (err) {
+    // Bewuste blokkade (privacy-instelling, minderjarig, killswitch) is geen
+    // serverfout — geef de eerlijke reden terug in plaats van een 500.
+    if (err instanceof AiBlockedError) {
+      res.status(403).json({ error: err.message, reason: err.reason });
+      return;
+    }
     req.log.error({ err }, "ai.brief failed");
     res.status(500).json({ error: "Sparki service unavailable" });
   }
@@ -199,6 +205,10 @@ router.post("/ask", requireAuth, async (req, res) => {
       }
     })();
   } catch (err) {
+    if (err instanceof AiBlockedError) {
+      res.status(403).json({ error: err.message, reason: err.reason });
+      return;
+    }
     req.log.error({ err }, "ai.ask failed");
     res.status(500).json({ error: "Sparki service unavailable" });
   }
@@ -529,6 +539,10 @@ router.post("/workout-explain", requireAuth, async (req, res) => {
     }
     res.json({ short });
   } catch (err) {
+    if (err instanceof AiBlockedError) {
+      res.status(403).json({ error: err.message, reason: err.reason });
+      return;
+    }
     req.log.error({ err }, "ai.workout-explain failed");
     res.status(500).json({ error: "Sparki service unavailable" });
   }
@@ -601,6 +615,10 @@ router.post("/workout-explain-extended", requireAuth, async (req, res) => {
     }
     res.json({ extended });
   } catch (err) {
+    if (err instanceof AiBlockedError) {
+      res.status(403).json({ error: err.message, reason: err.reason });
+      return;
+    }
     req.log.error({ err }, "ai.workout-explain-extended failed");
     res.status(500).json({ error: "Sparki service unavailable" });
   }

@@ -32,7 +32,6 @@ import LichaamPage from "@/pages/lichaam";
 import MechaniekerPage from "@/pages/mechanieker";
 import RoutesPage from "@/pages/routes";
 import KalenderPage from "@/pages/kalender";
-import WereldPage from "@/pages/wereld";
 import RacesPage from "@/pages/races";
 import SprintenPage from "@/pages/sprinten";
 import WedstrijdRoomPage from "@/pages/wedstrijd-room";
@@ -652,12 +651,6 @@ function AppRouter() {
                 </Route>
                 <Route path="/samen">
                   <ProtectedPage component={SamenPage} />
-                </Route>
-                <Route path="/wereld">
-                  <ProtectedPage component={WereldPage} />
-                </Route>
-                <Route path="/wereld/athlete/:slug">
-                  <ProtectedPage component={WereldPage} />
                 </Route>
                 <Route path="/kennis">
                   <ProtectedPage component={KnowledgePage} />

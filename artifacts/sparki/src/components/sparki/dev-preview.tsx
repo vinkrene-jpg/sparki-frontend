@@ -24,7 +24,6 @@ import LichaamPage from "@/pages/lichaam"
 import MechaniekerPage from "@/pages/mechanieker"
 import RoutesPage from "@/pages/routes"
 import KalenderPage from "@/pages/kalender"
-import WereldPage from "@/pages/wereld"
 import InvitationsPage from "@/pages/invitations"
 import InviteAcceptPage from "@/pages/invite-accept"
 import TesterQrPage from "@/pages/tester-qr"
@@ -88,7 +87,6 @@ const VIEWS: DevView[] = [
   { label: "Foto-lab", path: "/photo-lab" },
   { label: "Wedstrijd-room", path: "/wedstrijd-room" },
   { label: "Samen", path: "/samen" },
-  { label: "Wereld", path: "/wereld" },
   { label: "Kennis", path: "/kennis" },
   { label: "Klimmen", path: "/klimmen" },
   { label: "Invites", path: "/invitations" },
@@ -433,8 +431,6 @@ export function DevPreview() {
     page = <RacesPage />
   } else if (location.startsWith("/samen")) {
     page = <SamenPage />
-  } else if (location.startsWith("/wereld")) {
-    page = <WereldPage />
   } else if (location.startsWith("/admin/health/")) {
     page = <AdminHealthDetailPage />
     showNav = false
