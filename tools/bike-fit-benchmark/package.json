@@ -1,0 +1,10 @@
+{
+  "name": "bike-fit-benchmark",
+  "private": true,
+  "version": "0.0.1",
+  "description": "BF_00R isolated CV benchmark harness — NOT production code",
+  "type": "module",
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^0.10.22-rc.20250304"
+  }
+}

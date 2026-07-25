@@ -69,7 +69,7 @@ Onderbouwing vanuit de bestaande code:
 - De repo bewijst al twee runtime-routes voor klassieke ML: (a) client-side WASM/ONNX (`@imgly/background-removal` + `onnxruntime-web` in `@workspace/sparki` — met de bekende les dat `onnxruntime-web` een directe dependency moet zijn voor de vite-build), en (b) server-side native verwerking (ffmpeg in api-server).
 - **Startmodus = server-side**: video wordt toch al veilig geüpload (privacy-model hieronder), server-side geeft deterministische, reproduceerbare output (golden tests, versie-pinning) onafhankelijk van het toestel van de gebruiker — vereist voor `REPEAT_RUN_IDENTICAL_NUMERIC_OUTPUT` (BF_03-acceptatie). On-device verwerking blijft MP-"PREFERRED when proven feasible" en kan later achter dezelfde adapter.
 - **Adapterinterface** exact volgens MP (frames+timestamps+metadata in; model-id/versie, landmark-schema, coördinaten+confidence per frame, device, duur uit). Implementatie als api-server-engine (`engines/<bike-fit>`-patroon, zie `docs/engine-architecture.md`-conventie), modelversie gepind en geauditeerd.
-- **Nog niet gedaan (eerlijk)**: geen licentie-review, geen benchmark op doelplatformen, geen wielrenner-occlusietest, geen prestatie-prototype op doeltoestellen. Dit zijn de MP-selectiepoorten (`selection_gate`) en horen bij de eerste uitvoerende stap van BF_03; een prestatie-prototype op doelplatform is als acceptatie-eis van BF_00 hier expliciet NIET geleverd omdat er geen doeltoestel in deze omgeving beschikbaar is — gemarkeerd als openstaand bewijs.
+- **Selectiepoorten gesloten (BF_00R)**: licentie-review (Apache-2.0), server-runtime-prototype (kandidaat A NODE_IN_PROCESS afgewezen met bewijs; kandidaat B ISOLATED_PYTHON_WORKER PASS), occlusietest, performance-/geheugen-/gelijktijdigheidsbenchmark, herhaalbaarheidsbewijs en privacyproef zijn geleverd — zie `docs/BF_00_CV_BENCHMARK.md`, `docs/BF_00_GATE_RESULTS.yaml` en `tools/bike-fit-benchmark/`. Definitieve keuze: **ISOLATED_PYTHON_WORKER** (mediapipe==0.10.35, modellen sha256-gepind). On-device/doeltoestel-prestatie blijft de MP-"PREFERRED when proven feasible"-route achter dezelfde adapter (WEB_WASM-fallback gedocumenteerd).
 
 ## 4. Media-privacy-dreigingsmodel (video + pose-data = gevoelige persoonsgegevens)
 
@@ -97,7 +97,7 @@ Onderbouwing vanuit de bestaande code:
 ## 6. Risico's
 
 1. **Mobiele capture is greenfield** — sparki-mobile heeft geen camera-stack; native capture (60fps, stabiel, statief-geleiding) is het grootste nieuwe oppervlak. Web-fallback dempt dit; live-PWA-gelijkwaardigheid mag niet geclaimd worden.
-2. **CV-selectiepoorten onbewezen** — licentie, occlusie bij fietshouding (heup/knie deels bedekt door frame/arm) en deviceprestatie zijn onbekend; adapter-abstractie beperkt de schade van een providerwissel.
+2. **CV-selectiepoorten gesloten (BF_00R)** — licentie, occlusie en serverprestatie zijn bewezen (`docs/BF_00_CV_BENCHMARK.md`); resterend risico: validatie op écht rijdersmateriaal (BF_05) en on-device-prestatie (latere adapterroute); adapter-abstractie beperkt de schade van een providerwissel.
 3. **Server-side videoverwerkingslast** — pose op 20s@60fps is zwaarder dan de bestaande ffmpeg-montages; verwerkings-timeout/retry en wachtrij (idempotent) zijn verplicht; kosten/latency pas meetbaar in BF_03.
 4. **Validatieafhankelijkheid van externen** — BF_05 vereist professionele 3D-referentie en gekwalificeerde fitter-review; zonder die kan er nooit een aanbeveling live (MP blokkeert dat terecht hard).
 5. **Consent-doelbinding** — hergebruik van het generieke `aiVisionEnabled` zou doelbinding schenden; er is een expliciet video-analyse-consent per doel nodig (klein schema-uitbreidingspunt in BF_01).
@@ -105,4 +105,4 @@ Onderbouwing vanuit de bestaande code:
 
 ## 7. Buiten scope gebleven (conform BF_00)
 
-Geen productiefeature gebouwd, geen nieuwe parallelle service, geen dependency geïnstalleerd, geen schema gewijzigd. Openstaand bewijs: doelplatform-prestatieprototype (geen doeltoestel beschikbaar in deze omgeving) — expliciet gemarkeerd, niet gefingeerd.
+Geen productiefeature gebouwd, geen nieuwe parallelle service, geen productie-dependency toegevoegd, geen schema gewijzigd. Benchmarktooling staat uitsluitend geïsoleerd onder `tools/bike-fit-benchmark/` (buiten pnpm-workspace). Alle BF_00-technische poorten zijn gesloten (BF_00R): zie `docs/BF_00_GATE_RESULTS.yaml` (OPEN_GATES: 0). Echt-rijdersmateriaal-validatie is per masterplan een BF_05-poort.

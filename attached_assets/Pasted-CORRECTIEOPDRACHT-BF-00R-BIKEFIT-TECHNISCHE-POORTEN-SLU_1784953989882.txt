@@ -1,0 +1,133 @@
+CORRECTIEOPDRACHT — BF_00R BIKEFIT TECHNISCHE POORTEN SLUITEN
+
+Gebruik SPARKI_AI_MASTER_PLAN_v2.28.yaml.
+
+BF_00 is NIET afgerond. De verplichte technische bewijsvoering ontbreekt:
+- geen werkend pose-analyseprototype;
+- geen bewezen server-runtime voor MediaPipe binnen de huidige Node/Express-architectuur;
+- geen licentie-uitkomst;
+- geen fietser-occlusietest;
+- geen performance-, geheugen- en latentiemetingen;
+- geen onderbouwde definitieve CV-providerkeuze.
+
+DOEL
+Sluit alle openstaande BF_00-poorten met werkende prototypes en reproduceerbaar bewijs. Geen poort mag OPEN blijven. Een kandidaat krijgt PASS of REJECTED_WITH_SELECTED_ALTERNATIVE.
+
+TOEGESTANE WIJZIGINGEN
+- Maak uitsluitend geïsoleerde benchmarkcode onder tools/bike-fit-benchmark/.
+- Werk docs/BF_00_CODE_INVENTORY.md bij.
+- Maak docs/BF_00_CV_BENCHMARK.md.
+- Maak docs/BF_00_GATE_RESULTS.yaml.
+- Geen productieroutes, databasewijzigingen, productie-UI of parallel mediasysteem.
+- Geen onbewezen productie-dependency toevoegen.
+
+1. RUNTIMEPROTOTYPE
+Bouw en test minimaal:
+A. MediaPipe Pose Landmarker server-side vanuit de huidige Node/Express-runtime.
+B. Wanneer A niet betrouwbaar ondersteund wordt: geïsoleerde Python-worker/child-process met MediaPipe.
+C. Alleen wanneer A en B afvallen: web/WASM-verwerking als alternatief.
+
+Bewijs per kandidaat:
+- exacte package- en modelversie;
+- officiële platformondersteuning;
+- installatie en reproduceerbare start;
+- invoer van ffmpeg-frames met timestamps;
+- uitvoer van landmarks en confidence;
+- fout-, timeout- en retrygedrag;
+- operationele gevolgen voor deployment;
+- licentie, modellicentie en redistributierechten.
+
+2. FIETSVIDEOTESTSET
+Test minimaal vijf zijaanzichtclips:
+- verschillende rijders/lichaamsverhoudingen;
+- racefiets en minimaal één gravel- of MTB-positie;
+- verschillende kleding en lichtomstandigheden;
+- zichtbare occlusie door armen, frame en fietspositie;
+- minimaal 15 seconden stabiel trappen;
+- 720p30 en minimaal één 1080p60-bron.
+
+Gebruik uitsluitend eigen, expliciet toegestane of correct gelicentieerde testmedia.
+Als geschikte clips ontbreken: bouw direct een private tijdelijke web-upload voor René, vraag exact om vijf clips en rond de taak pas af nadat deze clips zijn getest.
+
+3. BENCHMARK
+Meet per kandidaat en clip:
+- decodeertijd;
+- analysetijd;
+- totale verwerkingstijd;
+- piekgeheugen;
+- CPU-belasting;
+- verwerkte frames per seconde;
+- geldig-landmarkpercentage;
+- confidence per vereist gewricht;
+- aantal complete pedaalcycli;
+- timeout- en foutpercentage;
+- herhaalbaarheid over minimaal vijf identieke runs.
+
+Test minimaal:
+- volledige framerate;
+- gecontroleerde framesampling;
+- 20 seconden video;
+- gelijktijdige verwerking van 1, 3 en 5 analyses.
+
+4. FUNCTIONELE PROEF
+Bereken deterministisch uit de landmarks:
+- kniehoek;
+- heuphoek;
+- enkelhoek;
+- romphoek;
+- ellebooghoek;
+- pedaalcyclusdetectie.
+
+Bewijs dat dezelfde video, modelversie en engineversie binnen een vastgelegde numerieke tolerantie reproduceerbare resultaten geven.
+Een LLM of generatief vision-model mag nergens in het numerieke pad voorkomen.
+
+5. PRIVACYPROEF
+Bewijs:
+- tijdelijke video is eigenaargebonden;
+- geen videoframes of landmarks in logs;
+- tijdelijke bestanden worden ook na fout/timeout verwijderd;
+- raw-video-delete-at werkt;
+- provider gebruikt beelden niet voor modeltraining;
+- minderjarigen blijven fail-closed.
+
+6. DEFINITIEF ARCHITECTUURBESLUIT
+Kies exact één startarchitectuur:
+- NODE_IN_PROCESS;
+- ISOLATED_PYTHON_WORKER;
+- WEB_WASM;
+- OTHER_PROVEN_OPTION.
+
+Leg vast:
+- waarom deze optie wint;
+- welke opties zijn afgewezen en waarom;
+- deployment- en onderhoudsgevolgen;
+- kosten- en schaalrisico;
+- adapterinterface;
+- modelversiepinnen;
+- rollback- en providerwisselroute.
+
+7. GATE_RESULTS
+docs/BF_00_GATE_RESULTS.yaml bevat minimaal:
+
+BF_00:
+  CODE_INVENTORY: PASS
+  REUSE_DECISIONS: PASS
+  LICENSE_GATE: PASS|REJECTED_WITH_SELECTED_ALTERNATIVE
+  RUNTIME_PROTOTYPE: PASS
+  CYCLING_OCCLUSION_TEST: PASS
+  SERVER_PERFORMANCE_TEST: PASS
+  WEB_FALLBACK_TEST: PASS
+  REPEATABILITY_TEST: PASS
+  PRIVACY_TEST: PASS
+  CV_PROVIDER_SELECTION: PASS
+  OPEN_GATES: 0
+  SELECTED_ARCHITECTURE: <exacte waarde>
+  COMMIT_SHA: <sha>
+
+ACCEPTATIE
+- OPEN_GATES is exact 0.
+- Er bestaat een werkelijk uitvoerbaar prototype.
+- Alle testcommando’s, ruwe resultaten en gebruikte clips zijn herleidbaar.
+- Geen “later onderzoeken”, “nog testen” of onbewezen aanname.
+- BF_01 mag pas worden gestart nadat BF_00_GATE_RESULTS.yaml volledig slaagt.
+- Commit alle rapporten en benchmarkcode en rapporteer commit-SHA.

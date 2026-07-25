@@ -12,6 +12,7 @@
 - [Sparki connector honesty model](sparki-connectors-honesty.md) — pending shells persist consent, import niets; readiness = effectieve beschikbaarheid; per-user OAuth ([ownership](sparki-connectors-ownership.md)).
 - [Sparki wedstrijdkalender-import](sparki-calendar-import.md) — Fietssport+We-Tri real/parseable; KNWU full calendar+login unreachable SPA (honest-limited, never faked); regex parsers, SSRF allowlist.
 - [Sparki Smart Missing Input Flow](sparki-missing-input.md) — registry + focus/return/retry empty-state framework.
+- [Sparki Bike Fit BF_00](sparki-bike-fit-bf00.md) — CV keuze ISOLATED_PYTHON_WORKER; tasks-vision npm is browser-only (faalt op DOM); gates eisen uitgevoerd bewijs, niet future-tense.
 - [Sparki Strava OAuth + import](sparki-strava-oauth.md) — per-user OAuth; redirect_uri from REPLIT_DOMAINS; ingest via Data Hub ([import](sparki-strava-activity-import.md), [webhooks](sparki-strava-webhook-sync.md)).
 - [Sparki Onboarding V2](sparki-onboarding-v2.md) — adaptive Q&A engine: fixed catalog, nonsense fails honestly w/ skip escape; Q&A-only leaves hours/FTP estimated.
 - [Sparki Voice & Personality Engine](sparki-voice-engine.md) — deterministic tone/trust/empathy engine; refuses to fabricate (null), empathy-before-humor, trust gates tones.

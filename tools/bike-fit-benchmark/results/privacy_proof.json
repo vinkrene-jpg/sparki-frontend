@@ -1,0 +1,36 @@
+{
+  "at": "2026-07-25T04:59:38.404Z",
+  "checks": [
+    {
+      "name": "owner_can_read",
+      "ok": true,
+      "detail": "/home/runner/workspace/tools/bike-fit-benchmark/results/privacy_store/user_A/raw_video.mp4"
+    },
+    {
+      "name": "non_owner_denied",
+      "ok": true
+    },
+    {
+      "name": "delete_at_sweep_removes_expired",
+      "ok": true
+    },
+    {
+      "name": "delete_at_sweep_keeps_unexpired",
+      "ok": true
+    },
+    {
+      "name": "user_delete_now",
+      "ok": true
+    },
+    {
+      "name": "temp_cleanup_after_timeout",
+      "ok": true,
+      "detail": "bf00 dirs before=0 after=0"
+    },
+    {
+      "name": "no_landmark_payload_in_results_log",
+      "ok": true
+    }
+  ],
+  "verdict": "PASS"
+}

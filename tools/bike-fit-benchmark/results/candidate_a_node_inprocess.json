@@ -1,0 +1,26 @@
+{
+  "candidate": "NODE_IN_PROCESS",
+  "package": "@mediapipe/tasks-vision",
+  "steps": [
+    {
+      "name": "package_installed",
+      "ok": true,
+      "detail": "version 0.10.22-rc.20250304"
+    },
+    {
+      "name": "esm_import",
+      "ok": true,
+      "detail": "exports: DrawingUtils,FaceDetector,FaceLandmarker,FaceStylizer,FilesetResolver,GestureRecognizer…"
+    },
+    {
+      "name": "wasm_fileset_resolve",
+      "ok": true
+    },
+    {
+      "name": "landmarker_create",
+      "ok": false,
+      "detail": "document is not defined"
+    }
+  ],
+  "verdict": "FAIL"
+}
