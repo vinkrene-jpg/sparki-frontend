@@ -1,0 +1,46 @@
+[
+  {
+    "label": "mobiel-390x844",
+    "viewport": "390x844",
+    "landing_title": "Sparki — Performance Center",
+    "landing_h1": [
+      "Sparki PerformanceCenter"
+    ],
+    "landing_buttons": [
+      "Get started free",
+      "Sign in"
+    ],
+    "body_bg": "rgb(4, 5, 6)",
+    "root_bg": "rgb(4, 5, 6)",
+    "signin_url": "https://sparki-frontend.replit.app/sign-in",
+    "signin_has_email_field": 1,
+    "signin_has_clerk_root": 2,
+    "signin_text_sample": "Welcome back Sign in to your Sparki account Continue with Google or Email address Password Continue Don’t have an account? Sign up",
+    "console_errors_warnings": [],
+    "failed_requests": [],
+    "http_400plus": []
+  },
+  {
+    "label": "desktop-1440x900",
+    "viewport": "1440x900",
+    "landing_title": "Sparki — Performance Center",
+    "landing_h1": [
+      "Sparki PerformanceCenter"
+    ],
+    "landing_buttons": [
+      "Get started free",
+      "Sign in"
+    ],
+    "body_bg": "rgb(4, 5, 6)",
+    "root_bg": "rgb(4, 5, 6)",
+    "signin_url": "https://sparki-frontend.replit.app/sign-in",
+    "signin_has_email_field": 1,
+    "signin_has_clerk_root": 2,
+    "signin_text_sample": "Welcome back Sign in to your Sparki account Continue with Google or Email address Password Continue Don’t have an account? Sign up",
+    "vandaag_final_url": "https://sparki-frontend.replit.app/sign-in",
+    "vandaag_text_sample": "Welcome back Sign in to your Sparki account Continue with Google or Email address Password Continue Don’t have an account? Sign up",
+    "console_errors_warnings": [],
+    "failed_requests": [],
+    "http_400plus": []
+  }
+]

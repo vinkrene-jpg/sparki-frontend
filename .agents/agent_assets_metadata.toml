@@ -647,3 +647,39 @@ id = "gMszJxG7ZsOziQH--I7z6"
 uri = "file://test-artifacts/CUX_02A/git-diff-stat.txt"
 type = "text"
 title = "Git diff --stat (scopebewijs)"
+
+[[outputs]]
+id = "lakVh9BR-pwRTxIw-oqja"
+uri = "file://test-artifacts/PUB_02/mobiel-390x844-landing-fullpage.jpg"
+type = "image"
+title = "Productie mobiel 390×844 — landing (volledige pagina)"
+
+[[outputs]]
+id = "mNAxgY0oE2E1aMo6mNqD1"
+uri = "file://test-artifacts/PUB_02/mobiel-390x844-signin.jpg"
+type = "image"
+title = "Productie mobiel 390×844 — inlogpagina"
+
+[[outputs]]
+id = "_yDXwWYWqzoBA4xz_ntTg"
+uri = "file://test-artifacts/PUB_02/desktop-1440x900-landing-fullpage.jpg"
+type = "image"
+title = "Productie desktop 1440×900 — landing (volledige pagina)"
+
+[[outputs]]
+id = "cEZ9ot1roSR5IpnR-tGjN"
+uri = "file://test-artifacts/PUB_02/desktop-1440x900-signin.jpg"
+type = "image"
+title = "Productie desktop 1440×900 — inlogpagina"
+
+[[outputs]]
+id = "4SJn4rM6XB1AoHsMFqkUZ"
+uri = "file://test-artifacts/PUB_02/desktop-1440x900-vandaag-uitgelogd.jpg"
+type = "image"
+title = "Productie desktop — /vandaag uitgelogd (redirect naar inloggen)"
+
+[[outputs]]
+id = "R1xRJxzF3iHBInLjUFiXg"
+uri = "file://test-artifacts/PUB_02/resultaten-browsercontrole.json"
+type = "unspecified"
+title = "Letterlijke browsercontrole-resultaten (JSON)"
