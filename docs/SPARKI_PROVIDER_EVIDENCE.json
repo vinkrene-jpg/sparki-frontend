@@ -1,0 +1,55 @@
+{
+  "opdracht": "RN_01A2 — Providerrechten, attributie en schaalbaarheid voorbereiden",
+  "datum": "2026-07-26",
+  "productiecodeGewijzigd": false,
+  "providerVervangenOfToegevoegd": false,
+  "geheimenInRapporten": "geen — alleen namen van omgevingsvariabelen (ORS_API_KEY, EXPO_PUBLIC_MAPBOX_TOKEN, MAPBOX_ACCESS_TOKEN), nooit waarden",
+  "uitgevoerdeControles": [
+    "grep op mapbox/api.mapbox in artifacts (mobiele tegelbron + alle consumenten)",
+    "grep op openrouteservice/ORS_ (routing-provider + health-probe)",
+    "grep op cartocdn/tile.openstreetmap/cyclosm/arcgisonline/esri (alle webtegelbronnen + attributiestrings)",
+    "grep op overpass/nominatim/open-meteo (alle OSM-data- en weerconsumenten)",
+    "grep op tegel-URL-sjablonen {z}/{x}/{y} (volledigheid tegelbronnen)",
+    "grep op attribution in artifacts (welke attributie bestaat waar)",
+    "grep op OpenStreetMap/©/copyright in artifacts/sparki-mobile (bewijs: nul treffers — geen enkele attributie op mobiel)",
+    "bestandsinspectie: sparki-mobile/lib/mapbox.ts, api-server lib/climbs/http.ts + geocode.ts, lib/weather/open-meteo.ts, route-navigator.tsx laagconfiguratie",
+    "hergebruik navigatie-audit RN_01A (docs/SPARKI_RN_01A_PROVIDER_RISK.md, _OPEN_DECISIONS.md) als vertrekpunt — geen parallel systeem"
+  ],
+  "officieleBronnen": [
+    { "provider": "Mapbox", "url": "https://docs.mapbox.com/help/dive-deeper/attribution/", "opgehaald": "2026-07-26", "kern": "logo + tekst-attributie (© Mapbox, © OpenStreetMap, Improve this map) verplicht; logo mag van hoek wisselen maar niet weg" },
+    { "provider": "Mapbox", "url": "https://www.mapbox.com/pricing", "opgehaald": "2026-07-26 (zoekresultaat)", "kern": "Raster Tiles API gefactureerd per tegelverzoek; plan/limieten accountafhankelijk" },
+    { "provider": "OpenRouteService", "url": "https://openrouteservice.org/restrictions/", "opgehaald": "2026-07-26", "kern": "fiets max 6.000 km; round-trip/alternatieven max 100 km; avoid-areas 150 km; 50 waypoints; 3 alternatieven; hoogte 2.000 punten; dagquota plan-afhankelijk (dashboard)" },
+    { "provider": "OpenRouteService", "url": "https://openrouteservice.org/plans/", "opgehaald": "2026-07-26 (verwijzing)", "kern": "freemium-plannen; tier van het huidige account niet uit repo af te leiden" },
+    { "provider": "CARTO", "url": "https://docs.carto.com/faqs/carto-basemaps", "opgehaald": "2026-07-26", "kern": "citaat: 'For commercial purposes, you will need an Enterprise license in order to use the CARTO Basemaps.'" },
+    { "provider": "OSM-standaardtegels", "url": "https://operations.osmfoundation.org/policies/tiles/", "opgehaald": "2026-07-26", "kern": "donatie-gefinancierd, geen SLA; attributie + identificerende User-Agent/Referer verplicht; cache ≥7 dagen; bulk-download verboden; blokkade zonder aankondiging mogelijk" },
+    { "provider": "CyclOSM", "url": "https://openmaps.fr/tile-usage-policy.html", "opgehaald": "2026-07-26 (zoekresultaat)", "kern": "OSM-France fair-use, best-effort, geen SLA; niet voor commercieel productiegebruik" },
+    { "provider": "Esri World Imagery", "url": "https://www.esri.com/en-us/legal/terms/web-site-service", "opgehaald": "2026-07-26 (zoekresultaat)", "kern": "kosteloos gebruik beperkt tot niet-inkomstengenererend + attributie; commercieel vereist ArcGIS-licentie" },
+    { "provider": "Overpass API", "url": "https://wiki.openstreetmap.org/wiki/Overpass_API", "opgehaald": "2026-07-26 (zoekresultaat)", "kern": "publieke instanties voor gematigd gebruik; zwaar/commercieel gebruik kan geweigerd/gethrottled worden" },
+    { "provider": "Nominatim", "url": "https://operations.osmfoundation.org/policies/nominatim/", "opgehaald": "2026-07-26", "kern": "max 1 verzoek/s; identificerende User-Agent/Referer verplicht (stock-UA volstaat niet); attributie verplicht; geen bulk; app moet zonder update kunnen wisselen" },
+    { "provider": "Open-Meteo", "url": "https://open-meteo.com/en/terms", "opgehaald": "2026-07-26", "kern": "gratis API uitsluitend niet-commercieel (10.000/dag, 5.000/uur, 600/min); apps met abonnementen/advertenties = commercieel; CC BY 4.0-attributie verplicht; commercieel = betaald abonnement" },
+    { "provider": "Wikipedia/Wikidata", "url": "https://en.wikipedia.org/wiki/Wikipedia:Copyrights", "opgehaald": "2026-07-26 (referentie)", "kern": "Wikipedia-tekst CC BY-SA (naamsvermelding + link); Wikidata CC0" }
+  ],
+  "kernbevindingen": [
+    "Mobiel: nul attributie aangetroffen (grep bewijst afwezigheid van logo én tekst) — bevestigt releaseblokkade RB-2; implementatiespec ligt klaar, niet gebouwd",
+    "Web: attributie aanwezig en correct op alle vijf kaartcomponenten (CARTO/OSM/CyclOSM/Esri)",
+    "CARTO: commercieel gebruik vereist aantoonbaar Enterprise-licentie — hard citaat uit officiële FAQ (RB-1 nu met bron onderbouwd)",
+    "ORS: officiële per-verzoek-restricties gedocumenteerd; round-trip/alternatieven max 100 km raakt de lusgenerator; dagquota alleen in dashboard zichtbaar (RB-3 → accountchecklist)",
+    "NIEUW t.o.v. RN_01A: Open-Meteo gratis endpoint is uitsluitend niet-commercieel — abonnement verplicht vóór commerciële lancering; webnavigator roept het endpoint bovendien rechtstreeks client-side aan",
+    "Privacy-aandachtspunt: Overpass-mirrorvolgorde stuurt route-bounding-boxes eerst naar maps.mail.ru (VK/RU); volgauto gebruikt uitsluitend die server — beslissing René",
+    "Nominatim: identificerende User-Agent aanwezig (SparkiKlimmen/1.0) — voldoet aan de kern van de policy; 1 req/s niet technisch afgedwongen (feitelijk gebruik is licht)"
+  ],
+  "onzekerhedenExpliciet": [
+    "Mapbox-accountplan, tokentoewijzing (EXPO_PUBLIC_MAPBOX_TOKEN vs MAPBOX_ACCESS_TOKEN) en maandverbruik: alleen in het Mapbox-account controleerbaar",
+    "ORS-tier en dag-/minuutquota van de huidige sleutel: alleen in het ORS-dashboard controleerbaar",
+    "Werkelijke tegel- en API-volumes per dag: geen telemetrie aanwezig — NIET_TE_VERIFIËREN",
+    "CyclOSM- en Esri-samenvattingen steunen op zoekresultaten van de officiële pagina's (samenvattingsniveau); de genoemde URL's zijn de juiste plek voor de letterlijke tekst",
+    "Of elke weer- en klimweergave in de UI al bronvermelding toont is niet scherm-voor-scherm geverifieerd; de attributiespec behandelt dit als te bouwen/te verifiëren"
+  ],
+  "opgeleverdeBestanden": [
+    "docs/SPARKI_PROVIDER_REGISTER.md",
+    "docs/SPARKI_PROVIDER_COMPLIANCE_MATRIX.csv",
+    "docs/SPARKI_PROVIDER_ACCOUNT_CHECKLIST.md",
+    "docs/SPARKI_ATTRIBUTION_IMPLEMENTATION_SPEC.md",
+    "docs/SPARKI_PROVIDER_EVIDENCE.json"
+  ]
+}
