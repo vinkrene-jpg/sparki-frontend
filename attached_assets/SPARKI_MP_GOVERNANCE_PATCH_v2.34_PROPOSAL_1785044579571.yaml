@@ -1,0 +1,52 @@
+meta:
+  project: Sparki
+  document_type: master_plan_governance_patch_proposal
+  target_master_plan: SPARKI_AI_MASTER_PLAN_v2.34.yaml
+  source_master_plan: SPARKI_AI_MASTER_PLAN_v2.33.yaml
+  status: PROPOSED_NOT_APPLIED
+  origin: CLAUDE_REVIEW_ADAPTED_BY_CHATGPT
+proposed_rules:
+  DAYCARD_MASTER_PLAN_CONSISTENCY:
+    rule: Before a daycard status change is accepted, compare it with readiness.domain_status in the active master plan.
+    conflict_effect: BLOCK_STATUS_UPGRADE_AND_DEPENDENT_TASK_ASSIGNMENT
+  EVIDENCE_STATUS_REQUIRED:
+    enum:
+    - PROVEN_READY
+    - BUILT_UNPROVEN
+    - PARTIAL
+    - OPEN
+    - DEFERRED
+    rule: Every implementation or readiness claim must include an evidence status; naked scores are prohibited.
+  TASK_SCORE_SEPARATION:
+    allowed: TASK_ACCEPTANCE_PERCENT
+    rule: Task acceptance may express completion of a narrowly scoped assignment but cannot upgrade the readiness of
+      its parent domain.
+  COST_CONTROL:
+    threshold_estimated_hours: 2
+    before:
+    - ESTIMATED_EFFORT_HOURS_RANGE
+    - COST_EXPECTATION_LEVEL
+    - ESTIMATED_DIRECT_COST_EUR_IF_OBSERVABLE
+    - COST_BASIS
+    after:
+    - ACTUAL_EFFORT_HOURS_IF_OBSERVABLE
+    - ACTUAL_DIRECT_COST_EUR_IF_OBSERVABLE
+    - ACTUAL_COST_SOURCE
+    - ESTIMATE_VARIANCE_NOTE
+    unknown_rule: Record UNKNOWN when actual cost is not observable; never fabricate.
+  REVIEW_ROLE:
+    first_check: CHATGPT_MP_GUARD
+    second_check: CLAUDE_OR_EQUIVALENT_INDEPENDENT_REVIEWER
+    second_check_required_for:
+    - READINESS_UPGRADE
+    - RELEASE_GATE_CLEARANCE
+    - CONFLICT_BETWEEN_DAYCARD_AND_MASTER_PLAN
+    final_approval: RENE
+corrections_to_original_review:
+- item: EVIDENCE_STATUS_COUNT
+  original: FOUR
+  corrected: FIVE_INCLUDING_DEFERRED
+- item: SCORE_HANDLING
+  original: ALL_SCORES_BOUND_DIRECTLY_TO_DOMAIN_READINESS
+  corrected: READINESS_SCORES_ARE_PROHIBITED; TASK_ACCEPTANCE_PERCENT_IS_ALLOWED ONLY AS A TASK-SPECIFIC NON-READINESS
+    FIELD.

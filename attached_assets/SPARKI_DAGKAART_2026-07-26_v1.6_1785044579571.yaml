@@ -1,0 +1,446 @@
+meta:
+  project: Sparki
+  document_type: day_card
+  date: 2026-07-26
+  version: 1.6
+  purpose: Daily continuity record used alongside the versioned AI Master Plan so that decisions, active work, blockers,
+    evidence and the next step are preserved between sessions.
+source_of_truth:
+  master_plan: SPARKI_AI_MASTER_PLAN_v2.33.yaml
+  session_addendum: SPARKI_SESSION_ADDENDUM_2026-07-25.yaml
+  rule: The current repository plus the active master plan and session addendum remain authoritative. This day card records
+    today's decisions and execution order; it does not replace the master plan.
+working_method:
+  max_active_tasks: 1
+  agent_first: true
+  replit_agent_instruction_rule: Every Replit assignment must state whether it is agent-executable, what the agent may
+    decide independently, the exact technical result, what may not be changed, mandatory tests, proof artifacts and whether
+    human acceptance is still required.
+  architecture_rule: First inspect and reuse existing code. Do not create parallel systems, rewrite working engines,
+    change API or data models without necessity, or introduce mock, demo, seed, fallback or hardcoded personal data.
+  completion_rule: A task may receive TASK_ACCEPTANCE_PERCENT 100 only after all task-specific behavior, regression tests,
+    browser validation and evidence artifacts are independently verified. This task score never upgrades DOMAIN_READINESS.
+release_1_direction:
+  products:
+  - Sparki GO
+  - Sparki Complete
+  release_blockers_in_order:
+  - CUX_01R1 independently close and prove
+  - Close data-trust and admin-cleanup
+  - Reliably finish routes and navigation
+  - Build and prove entitlements, subscriptions and payments
+  - Close Dutch legal, privacy and accessibility gates
+active_task:
+  id: CUX_01R1
+  title: Definitively close Today screen mobile and desktop
+  status: ready_for_replit_assignment
+  required_outcomes:
+  - Mobile and desktop Today screen satisfy all agreed presentation rules
+  - Mobile season card is visible and reachable by normal scrolling
+  - Week order is always Ma-Di-Wo-Do-Vr-Za-Zo
+  - Exactly one status pill with label Belastbaar
+  - Main text is exactly: Je bent goed belastbaar.
+  - Trend text is exactly: Nog onvoldoende recente gegevens voor een betrouwbare trend.
+  - Empty training state and existing plan action work
+  - Existing season, plan, routes, engines, APIs and data models are reused
+  - Unit, component, browser, typecheck and relevant regression tests pass
+  required_evidence:
+  - Mobile screenshot 390x844 at top
+  - Mobile screenshot 390x844 with season card visible
+  - Desktop screenshot 1440x900
+  - Machine-readable test output
+  - List of commands and results
+  domain_id: TODAY
+  domain_readiness_from_master_plan: SPECIFICATION_READY
+  evidence_status: BUILT_UNPROVEN
+  task_acceptance:
+    current_percent: 92
+    target_percent: 100
+    meaning: TASK_SPECIFIC_ONLY
+    upgrades_domain_readiness: false
+  cost_expectation:
+    threshold_applies: true
+    estimated_effort_hours_range: 2-5
+    cost_expectation_level: MEDIUM
+    estimated_direct_cost_eur: UNKNOWN
+    cost_basis: Task breadth; actual Replit usage pricing not supplied in evidence.
+    actual_effort_hours: PENDING
+    actual_direct_cost_eur: PENDING_PLATFORM_OR_USER_DATA
+next_task:
+  id: CUX_02
+  title: Sparki Visual Atmosphere System
+  status: blocked_until_CUX_01R1_passes
+  agent_executable: true
+  scope_order:
+  - Today screen first
+  - Then routes and navigation
+  - Then post-activity screens
+  - Then planning and other primary screens
+  design_direction:
+  - Keep the interface white, clean, calm and readable
+  - Add more sport atmosphere and emotion without copying Komoot or Strava
+  - 'Let real sport context create the atmosphere: route maps, altitude profiles, activity photos, terrain, race context
+    and genuine user data'
+  - Use subtle contextual color surfaces, controlled depth and stronger Sparki accents
+  - Maximum one dominant visual element per screen
+  - Never invent personal, route, training or performance data to fill empty states
+  - Preserve accessibility, simplicity and data-trust
+  execution_rule: Do not combine CUX_02 with CUX_01R1. Functional acceptance comes first; the visual atmosphere layer
+    is a separate controlled task to keep regressions attributable.
+ux_reference_principles:
+  komoot: The outdoor environment, map, route, elevation, terrain and real photos provide the atmosphere; the surrounding
+    interface stays calm.
+  strava: The completed sport performance, route shape, statistics, achievements, photos and shareable summaries provide
+    the atmosphere.
+  sparki: 'The current personal sport context determines the central visual element: planned training before exercise,
+    real activity after exercise, calm recovery context, or course and race context around competition.'
+near_complete_components_for_later_agent_closeout:
+- name: Central Data Hub
+  domain_id: DATA_HUB_CONNECT
+  domain_readiness_from_master_plan: TECHNICALLY_PROVEN
+  evidence_status: PROVEN_READY
+- name: Sport passport
+  domain_id: SPORT_PASSPORT
+  domain_readiness_from_master_plan: TECHNICALLY_PROVEN
+  evidence_status: PROVEN_READY
+- name: Recovery and load readiness
+  domain_id: RECOVERY_HEALTH
+  domain_readiness_from_master_plan: TECHNICALLY_PROVEN
+  evidence_status: PROVEN_READY
+- name: Graphs and analyses
+  domain_id: ANALYTICS_VISUALIZATION
+  domain_readiness_from_master_plan: TECHNICALLY_PROVEN
+  evidence_status: PROVEN_READY
+- name: Strava synchronization
+  domain_id: DATA_HUB_CONNECT
+  domain_readiness_from_master_plan: TECHNICALLY_PROVEN
+  evidence_status: BUILT_UNPROVEN
+  note: Specific Strava implementation is reported built but still requires repository evidence.
+- name: Parent and minor flow
+  domain_id: PARENT_MINOR
+  domain_readiness_from_master_plan: TECHNICALLY_PROVEN
+  evidence_status: PROVEN_READY
+- name: Mental skills
+  domain_id: MENTAL_SKILLS
+  domain_readiness_from_master_plan: TECHNICALLY_PROVEN
+  evidence_status: PROVEN_READY
+- name: Contextual explanations
+  domain_id: SUPPORTING_DOMAINS
+  domain_readiness_from_master_plan: SPECIFICATION_READY
+  evidence_status: BUILT_UNPROVEN
+- name: Export center
+  domain_id: SUPPORTING_DOMAINS
+  domain_readiness_from_master_plan: SPECIFICATION_READY
+  evidence_status: BUILT_UNPROVEN
+- name: Notifications
+  domain_id: SUPPORTING_DOMAINS
+  domain_readiness_from_master_plan: SPECIFICATION_READY
+  evidence_status: BUILT_UNPROVEN
+- name: Admin and management
+  domain_id: PRIVACY_DATA_TRUST
+  domain_readiness_from_master_plan: SPECIFICATION_READY
+  evidence_status: PARTIAL
+  note: Dry-run is observed; apply-run and post-apply proof remain open.
+session_close_protocol:
+  update_at_end_of_session:
+  - completed tasks with task acceptance and evidence status
+  - master plan consistency check for every status change
+  - changed files and produced artifacts
+  - estimated versus actual effort and direct cost when observable
+  - decisions made today
+  - newly found blockers and risks
+  - exact next Replit assignment
+  - items that must not be reopened without evidence
+  resume_instruction: At the next session, read the active master plan, latest addendum and newest day card first. Continue
+    with the listed active or next task and do not redefine the roadmap unless repository evidence requires it.
+replit_protocol:
+  mode: APPEND_ONLY
+  authority:
+    product_decisions: RENE_CHATGPT
+    repository_facts: REPLIT
+  instructions:
+  - READ_DAYCARD_FIRST
+  - EXECUTE_ACTIVE_TASK_ONLY
+  - INSPECT_AND_REUSE_EXISTING_CODE
+  - USE_REPOSITORY_AS_TECHNICAL_SOURCE
+  - NO_SCOPE_EXPANSION
+  - NO_PARALLEL_SYSTEMS
+  - NO_UNAPPROVED_PRODUCT_DECISIONS
+  - NO_FULL_DAYCARD_REWRITE
+  - STOP_AFTER_ACTIVE_TASK
+  replit_may_add:
+  - REP_STATE
+  - REP_CHANGED_FILES
+  - REP_TEST_RESULTS
+  - REP_ARTIFACTS
+  - REP_REGRESSIONS
+  - REP_BLOCKERS
+  - REP_TECH_RISKS
+  - REP_NEXT_RECOMMENDATION
+  replit_may_not_change:
+  - DECISIONS
+  - SCOPE
+  - PRIORITY
+  - RELEASE_ORDER
+  - UX_RULES
+  - ARCHITECTURE_RULES
+  - SOURCE_OF_TRUTH
+  - ACTIVE_TASK
+  proposals:
+    key: REP_PROPOSAL
+    required_status: PENDING_RENE_CHATGPT_APPROVAL
+    auto_apply: false
+  required_output:
+    format: YAML_PATCH_ONLY
+    prose: false
+    full_daycard_rewrite: false
+  completion_output_template:
+    REP_STATE: null
+    REP_CHANGED_FILES: []
+    REP_TEST_RESULTS: []
+    REP_ARTIFACTS: []
+    REP_REGRESSIONS: []
+    REP_BLOCKERS: []
+    REP_TECH_RISKS: []
+    REP_NEXT_RECOMMENDATION: null
+    REP_PROPOSAL:
+      STATUS: PENDING_RENE_CHATGPT_APPROVAL
+      ITEMS: []
+daycard_update_policy:
+  owner: CHATGPT
+  mode: AUTO_UPDATE_DURING_ACTIVE_CONVERSATION
+  update_triggers:
+  - MATERIAL_DECISION
+  - TASK_COMPLETED
+  - NEW_BLOCKER
+  - REPLIT_ADDENDUM_RECEIVED
+  - NEXT_STEP_CHANGED
+  - SOURCE_OF_TRUTH_CHANGED
+  after_update:
+    show_compact_changelog: true
+    show_download_link: true
+    show_full_daycard: false
+    wait_for_user_request: false
+  limitations:
+  - NO_BACKGROUND_UPDATES_OUTSIDE_ACTIVE_CONVERSATION
+  - NO_SILENT_PRODUCT_DIRECTION_CHANGES
+  - NO_REPLIT_PATCH_AUTO_ACCEPTANCE_WITHOUT_REVIEW
+release_clarification_protocol:
+  mode: SPECIFY_WHILE_REPLIT_BUILDS
+  parallel_code_tasks: false
+  goal: Resolve only product decisions that cannot be derived safely from the repository.
+  rules:
+  - DO_NOT_INTERRUPT_ACTIVE_REPLIT_TASK
+  - NO_SECOND_BUILD_TASK_IN_PARALLEL
+  - ASK_MINIMUM_DECISION_SET
+  - ENCODE_APPROVED_ANSWERS_IN_DAYCARD
+  - CONVERT_APPROVED_DECISIONS_TO_NEXT_TECHNICAL_TASK
+  clarification_order:
+  - REL_01_RELEASE_PACKAGING_AND_SUBSCRIPTIONS
+  - REL_02_ROUTES_AND_NAVIGATION_SCOPE
+  - REL_03_DATA_TRUST_AND_ADMIN_CLEANUP_POLICY
+  - REL_04_LEGAL_PRIVACY_ACCESSIBILITY
+  - REL_05_NEAR_COMPLETE_MODULE_CLOSURE_ORDER
+  already_clear:
+  - PWA_FIRST
+  - CYCLING_FIRST
+  - GO_AND_COMPLETE_AS_PROVISIONAL_RELEASE_PACKAGING
+  - NO_PARALLEL_SYSTEMS
+  - AGENTS_FIRST_TESTING
+  - NETHERLANDS_FIRST_RELEASE
+  - CUX_02_AFTER_CUX_01R1
+  open_decisions:
+  - FINAL_TIER_CONTENT
+  - FINAL_PRICE_AND_TRIAL
+  - PAYMENT_CHANNEL
+  - ROUTE_NAVIGATION_MINIMUM_ACCEPTANCE
+  - DATA_CLEANUP_APPLY_POLICY
+  - AGE_AND_PARENTAL_CONSENT_BOUNDARIES
+  - CANCELLATION_REFUND_SUPPORT_RULES
+  - ACCESSIBILITY_ACCEPTANCE_LEVEL
+release_packaging:
+  status: APPROVED
+  payment_provider: STRIPE
+  billing_channel: WEB_PWA
+  annual_plans: DEFERRED
+  tiers:
+    FREE:
+      price_eur_month: 0.0
+      trial_days: 0
+      purpose: COMPETITIVE_ROUTE_PLANNER_TEST_AND_ACQUISITION
+      includes:
+      - ROUTE_PLANNER
+      - GPX_IMPORT
+      - GPX_EXPORT
+      - ROUTE_DISCOVERY_ON_MAP
+      - SPARKI_CURATED_ROUTES
+      - LATER_MODERATED_USER_PUBLISHED_ROUTES
+      - BASIC_ONLINE_VISUAL_NAVIGATION
+      excludes:
+      - VOICE_TURN_BY_TURN_NAVIGATION
+      - OFFLINE_MAPS
+      - AUTOMATIC_REROUTING
+      - ADVANCED_OFF_ROUTE_HANDLING
+      - CLIMB_AND_DESCENT_GUIDANCE
+      - RIDE_RECORDING
+      - ANT_PLUS_SENSOR_CONNECTIVITY
+      - BLUETOOTH_SENSOR_CONNECTIVITY
+      - ADVANCED_ANALYSIS
+      - COACHING
+    GO:
+      price_eur_month: 2.99
+      trial_days: 7
+      purpose: RELIABLE_FULL_NAVIGATION_AND_RIDE_PRODUCT_COMPETING_WITH_KOMOOT_CLASS_APPS
+      includes:
+      - ALL_FREE_FEATURES
+      - VOICE_TURN_BY_TURN_NAVIGATION
+      - OFFLINE_MAPS
+      - AUTOMATIC_REROUTING
+      - ADVANCED_OFF_ROUTE_HANDLING
+      - CLIMB_AND_DESCENT_GUIDANCE
+      - BASIC_RIDE_RECORDING
+      - ANT_PLUS_SENSOR_CONNECTIVITY
+      - BLUETOOTH_SENSOR_CONNECTIVITY
+      - RECORD_HEART_RATE_POWER_CADENCE_SPEED
+      sensor_scope: CONNECT_AND_RECORD_ONLY
+    COMPLETE:
+      price_eur_month: 9.99
+      trial_days: 14
+      positioning: COMPLETE_FOR_THE_INDIVIDUAL_ATHLETE
+      includes:
+      - ALL_GO_FEATURES
+      - TODAY
+      - TRAINING_PLANS
+      - CALENDAR
+      - AUTONOMOUS_COACHING
+      - RECOVERY
+      - TRAINING_LOAD
+      - ANALYSES
+      - STRAVA_SYNC
+      - ADVANCED_SENSOR_ANALYSIS
+      price_policy: PRICE_MAY_INCREASE_AFTER_MATERIAL_NEW_MODULES_ARE_ADDED
+      community_status: FULL_SOCIAL_FEED_AND_STRONG_COMMUNITY_NOT_IN_RELEASE_1
+route_discovery_release_1:
+  status: APPROVED
+  tiers:
+  - FREE
+  - GO
+  - COMPLETE
+  requirements:
+  - SHOW_SELECTABLE_ROUTES_DIRECTLY_ON_NAVIGATION_MAP
+  - ALLOW_FAST_ROUTE_SELECTION_WITHOUT_REBUILDING_ROUTE
+  - SUPPORT_FILTERS_AND_ROUTE_SPECIFICATIONS
+  - INCLUDE_SPARKI_CURATED_ROUTES_AT_LAUNCH
+  - PREPARE_FOR_LATER_USER_PUBLISHED_ROUTES
+  - NO_FULL_SOCIAL_FEED_REQUIRED_FOR_RELEASE_1
+  - NO_EMPTY_COMMUNITY_DEPENDENCY
+  privacy_rules:
+  - DO_NOT_EXPOSE_PRIVATE_HOME_START_LOCATIONS
+  - USER_PUBLISHED_ROUTES_REQUIRE_VISIBILITY_AND_PRIVACY_CONTROLS
+  - MODERATION_REQUIRED_BEFORE_PUBLIC_DISCOVERY
+sensor_entitlement_policy:
+  status: APPROVED
+  FREE: DISABLED
+  GO: ENABLED_FOR_LIVE_DISPLAY_AND_RECORDING
+  COMPLETE: ENABLED_WITH_ADVANCED_ANALYSIS_AND_COACHING_USE
+  principle: DO_NOT_ARTIFICIALLY_BLOCK_HARDWARE_CONNECTIVITY_BETWEEN_PAID_TIERS
+open_release_decisions_update:
+  resolved:
+  - BASIC_FREE_NAVIGATION
+  - FINAL_MONTHLY_PRICES
+  - FINAL_TIER_CONTENT_BASELINE
+  - GO_NAVIGATION_DIFFERENTIATION
+  - PAYMENT_PROVIDER
+  - ROUTE_DISCOVERY_AVAILABLE_IN_FREE
+  - ROUTE_DISCOVERY_BASELINE
+  - SENSOR_ENTITLEMENT_SPLIT
+  - TRIAL_LENGTHS
+  still_open:
+  - STRIPE_PRODUCT_PRICE_IDS
+  - TRIAL_PAYMENT_METHOD_REQUIREMENT
+  - CANCELLATION_AND_REFUND_POLICY
+  - USER_ROUTE_PUBLICATION_TIMING
+  - EARLY_ADOPTER_PRICE_POLICY
+navigation_entitlement_policy:
+  status: APPROVED
+  FREE:
+    mode: BASIC_ONLINE_VISUAL_NAVIGATION
+    includes:
+    - ROUTE_LINE
+    - CURRENT_POSITION
+    - NEXT_DIRECTION_VISUAL
+    - BASIC_DISTANCE_REMAINING
+    excludes:
+    - VOICE_GUIDANCE
+    - OFFLINE_MAPS
+    - AUTOMATIC_REROUTING
+    - ADVANCED_OFF_ROUTE_HANDLING
+    - CLIMB_AND_DESCENT_GUIDANCE
+    - RIDE_RECORDING
+    - SENSOR_CONNECTIVITY
+  GO:
+    mode: FULL_RELIABLE_NAVIGATION
+    includes:
+    - VOICE_GUIDANCE
+    - OFFLINE_MAPS
+    - AUTOMATIC_REROUTING
+    - ADVANCED_OFF_ROUTE_HANDLING
+    - CLIMB_AND_DESCENT_GUIDANCE
+    - RIDE_RECORDING
+    - SENSOR_CONNECTIVITY
+  principle: FREE_PROVES_ROUTE_QUALITY; GO_MONETIZES_RELIABILITY_AND_OUTDOOR_USE
+master_plan_consistency_guard:
+  status: ENFORCED
+  master_plan_section: readiness.domain_status
+  evidence_status_enum:
+  - PROVEN_READY
+  - BUILT_UNPROVEN
+  - PARTIAL
+  - OPEN
+  - DEFERRED
+  rules:
+  - NO_NAKED_READINESS_SCORE
+  - EVERY_DOMAIN_STATUS_FIELD_REQUIRES_DOMAIN_ID
+  - EVERY_DOMAIN_STATUS_FIELD_REQUIRES_DOMAIN_READINESS_FROM_MASTER_PLAN
+  - EVERY_IMPLEMENTATION_CLAIM_REQUIRES_EVIDENCE_STATUS
+  - DAYCARD_MAY_NOT_UPGRADE_MASTER_PLAN_READINESS
+  - DISCREPANCY_BLOCKS_STATUS_UPGRADE_AND_DEPENDENT_TASK_ASSIGNMENT
+  task_score_rule:
+    allowed_field: TASK_ACCEPTANCE_PERCENT
+    scope: TASK_SPECIFIC_ONLY
+    must_not_be_used_as_domain_readiness: true
+  review_roles:
+    first_check: CHATGPT_MP_GUARD
+    independent_second_check_for_readiness_upgrade_or_release_gate: CLAUDE_OR_EQUIVALENT_INDEPENDENT_REVIEWER
+    rene_approval_required: true
+  required_check_output:
+    MP_CONSISTENCY_CHECK:
+    - PASS
+    - FAIL
+    MASTER_PLAN_VERSION: REQUIRED
+    DOMAIN_ID: REQUIRED
+    CURRENT_MP_READINESS: REQUIRED
+    REQUESTED_CHANGE: REQUIRED
+    EVIDENCE_STATUS: REQUIRED
+    CONFLICTS: REQUIRED
+cost_control:
+  status: ENFORCED
+  threshold:
+    estimated_work_hours_greater_than: 2
+  before_assignment_required:
+  - ESTIMATED_EFFORT_HOURS_RANGE
+  - COST_EXPECTATION_LEVEL
+  - ESTIMATED_DIRECT_COST_EUR_IF_OBSERVABLE
+  - COST_BASIS
+  after_assignment_required:
+  - ACTUAL_EFFORT_HOURS_IF_OBSERVABLE
+  - ACTUAL_DIRECT_COST_EUR_IF_OBSERVABLE
+  - ACTUAL_COST_SOURCE
+  - ESTIMATE_VARIANCE_NOTE
+  allowed_cost_expectation_levels:
+  - LOW
+  - MEDIUM
+  - HIGH
+  - UNKNOWN
+  no_fabrication_rule: When Replit or the user does not provide actual usage or cost data, record UNKNOWN; never estimate
+    it as fact.
