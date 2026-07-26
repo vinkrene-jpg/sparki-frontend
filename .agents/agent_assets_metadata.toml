@@ -557,3 +557,21 @@ id = "Cl-6qG9uDLz_a612Pwat-"
 uri = "file://docs/ONTWIKKEL_HERSTELLOG.md"
 type = "text"
 title = "Sparki — logboek herstelwerk en correctierondes"
+
+[[outputs]]
+id = "0yvjw4TnE5qKXyPFoT47X"
+uri = "file://screenshots/ux01r1-mobiel-390x844.jpg"
+type = "image"
+title = "UX_01-R1 — mobiel 390×844"
+
+[[outputs]]
+id = "YdNgWCJrrZT5w3YLq8_Ar"
+uri = "file://screenshots/ux01r1-desktop-1440x900.jpg"
+type = "image"
+title = "UX_01-R1 — desktop 1440×900"
+
+[[outputs]]
+id = "oTbAJQcVAb9N9Vxr3xiSG"
+uri = "file://screenshots/ux01r1-testuitvoer.log"
+type = "unspecified"
+title = "UX_01-R1 — testuitvoer (14/14 + regressie + typecheck)"
