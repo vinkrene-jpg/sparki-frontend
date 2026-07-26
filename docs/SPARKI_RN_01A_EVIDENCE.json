@@ -1,0 +1,55 @@
+{
+  "audit": "RN_01A — Technische controle kaarten en navigatie",
+  "commit": "149b37da03ca837fd47a0f0c1e37ada3c303cd59",
+  "date": "2026-07-26",
+  "startedUtc": "2026-07-26T07:23:51Z",
+  "durationApprox": "±35 minuten (ruim binnen de 4-uursgrens)",
+  "commandsExecuted": [
+    "git log -1 (commit + datum)",
+    "node -e ... package.json scriptinventarisatie (sparki, sparki-mobile, api-server)",
+    "node -e ... kaartbibliotheek-inventarisatie (leaflet 1.9.4, react-native-maps 1.18.0)",
+    "grep provider-endpoints (openrouteservice, overpass, mapbox, nominatim, tegelservers)",
+    "pnpm run test:nav-live / test:navigation / test:route-name (web)",
+    "pnpm run test:route-match / test:nav-hud / test:off-route-choice / test:nav-cues / test:volgauto-meet / test:ride-tracker / test:ride-sensor-summary (mobiel)",
+    "pnpm run test:route-chain / test:route-proposal / test:route-surfaces / test:route-remarks / test:road-objects / test:volgauto / test:nav-sanitize / test:climb-flag-gate (api-server, sequentieel)",
+    "printenv-aanwezigheidscheck ORS_API_KEY / MAPBOX_ACCESS_TOKEN / OPENROUTESERVICE_API_KEY (alleen aanwezigheid, geen waarden)",
+    "3 read-only code-explores (web, mobiel, api-server)",
+    "git status --porcelain (bevestiging geen productiecode gewijzigd)"
+  ],
+  "testResults": {
+    "web": { "nav-live": "pass", "navigation": "pass", "route-name": "pass" },
+    "mobiel": {
+      "route-match": "pass", "nav-hud": "pass", "off-route-choice": "pass",
+      "nav-cues": "pass", "volgauto-meet": "pass", "ride-tracker": "pass",
+      "ride-sensor-summary": "pass"
+    },
+    "api-server": {
+      "route-chain": "17/17", "route-proposal": "10/10", "route-surfaces": "24/24",
+      "route-remarks": "17/17", "road-objects": "18/18", "volgauto": "18/18",
+      "nav-sanitize": "pass", "climb-flag-gate": "3/3"
+    }
+  },
+  "providersFound": {
+    "routing": "OpenRouteService (ORS_API_KEY aanwezig; directions, round_trip, geocode)",
+    "osmData": "Overpass — mirrors maps.mail.ru / overpass-api.de / kumi.systems (strategie verschilt per module)",
+    "geocodingClimbs": "Nominatim (publiek)",
+    "tilesMobile": "Mapbox raster dark-v11 (EXPO_PUBLIC_MAPBOX_TOKEN)",
+    "tilesWeb": "CARTO Voyager/Dark, CyclOSM, Esri World Imagery, tile.openstreetmap.org"
+  },
+  "filesChanged": [
+    "docs/SPARKI_RN_01A_CURRENT_STATE.md (nieuw, audit)",
+    "docs/SPARKI_RN_01A_PROVIDER_RISK.md (nieuw, audit)",
+    "docs/SPARKI_RN_01A_OPEN_DECISIONS.md (nieuw, audit)",
+    "docs/SPARKI_RN_01A_EVIDENCE.json (nieuw, audit)"
+  ],
+  "noProductionCodeChanged": true,
+  "verificationOfNoChange": "git status --porcelain toonde vóór het schrijven van de auditbestanden uitsluitend het aangeleverde opdrachtbestand in attached_assets/; geen enkele productiebron gewijzigd.",
+  "notVerifiable": [
+    "ORS-accounttier en daglimieten (niet in repo)",
+    "Mapbox-accounttier en tegelvolumes",
+    "CARTO/Esri/OSM-tegelvoorwaarden voor dit specifieke gebruik",
+    "Echt GPS-/batterijgedrag op fysiek toestel",
+    "Initiële kaartlaadtijd en geheugengebruik (niet gemeten in deze omgeving)",
+    "Naleving Nominatim usage policy (rate/User-Agent)"
+  ]
+}
