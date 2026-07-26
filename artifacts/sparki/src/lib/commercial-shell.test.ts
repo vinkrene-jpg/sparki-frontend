@@ -10,17 +10,21 @@ import {
   COMMERCIAL_COPY,
   COMMERCIAL_DESKTOP_NAV,
   COMMERCIAL_MOBILE_NAV,
+  DECOR_BACKDROP,
+  PRESENTATION_STATES,
   SEASON_PHASES,
   bandLabel,
   bandTone,
   buildBlockBars,
   buildSeasonView,
   buildWeekStrip,
+  derivePresentationState,
   formatRaceDate,
   localISODate,
   movementLabel,
   nearestUpcomingRace,
   workoutPhaseLabel,
+  type PresentationInput,
 } from "./commercial-shell"
 import type { WorkoutBlock } from "./athlete-types"
 
@@ -335,6 +339,125 @@ scenario("alleen een actieve fase (zonder doel) toont plan, eerlijk zonder doelr
     assert(v.showPhaseBand === true, "faseband zichtbaar")
     assert(v.line === COMMERCIAL_COPY.seasonEmpty, "doelregel blijft eerlijk leeg")
   }
+})
+
+// ── Presentatietoestand (CUX_02A — sfeerlaag) ────────────────────────────────
+scenario("presentatietoestand is deterministisch (zelfde invoer → zelfde uitvoer)", () => {
+  const inputs: PresentationInput[] = []
+  for (const band of ["belastbaar", "solide", "wisselend", "kwetsbaar", null, "onzin"])
+    for (const hasTodayWorkout of [true, false])
+      for (const goalRaceIsToday of [true, false])
+        inputs.push({ band, hasTodayWorkout, goalRaceIsToday })
+  for (const input of inputs) {
+    const a = derivePresentationState(input)
+    const b = derivePresentationState({ ...input })
+    assert(a === b, `niet deterministisch voor ${JSON.stringify(input)}`)
+    assert(
+      (PRESENTATION_STATES as readonly string[]).includes(a),
+      `onbekende toestand ${a}`,
+    )
+  }
+})
+
+scenario("ontbrekende of onduidelijke toestand → neutraal (nooit gissen)", () => {
+  const base = { hasTodayWorkout: false, goalRaceIsToday: false }
+  assert(derivePresentationState({ band: null, ...base }) === "neutral", "null → neutral")
+  assert(
+    derivePresentationState({ band: undefined, ...base }) === "neutral",
+    "undefined → neutral",
+  )
+  assert(
+    derivePresentationState({ band: "onzin", ...base }) === "neutral",
+    "onbekende band → neutral",
+  )
+  // "wisselend" is echt maar onduidelijk: kleur mag geen sterkere conclusie
+  // suggereren dan de tekst — dus neutraal, óók met een geplande training.
+  assert(
+    derivePresentationState({ band: "wisselend", ...base }) === "neutral",
+    "wisselend → neutral",
+  )
+  assert(
+    derivePresentationState({
+      band: "wisselend",
+      hasTodayWorkout: true,
+      goalRaceIsToday: false,
+    }) === "neutral",
+    "wisselend + training blijft neutral",
+  )
+})
+
+scenario("presentatietoestand volgt de echte context, wedstrijddag gaat voor", () => {
+  assert(
+    derivePresentationState({
+      band: "belastbaar",
+      hasTodayWorkout: false,
+      goalRaceIsToday: false,
+    }) === "ready",
+    "positieve band zonder training → ready",
+  )
+  assert(
+    derivePresentationState({
+      band: "solide",
+      hasTodayWorkout: true,
+      goalRaceIsToday: false,
+    }) === "training",
+    "positieve band mét training → training",
+  )
+  assert(
+    derivePresentationState({
+      band: "kwetsbaar",
+      hasTodayWorkout: true,
+      goalRaceIsToday: false,
+    }) === "recovery",
+    "kwetsbaar → recovery, ook met geplande training",
+  )
+  assert(
+    derivePresentationState({
+      band: "kwetsbaar",
+      hasTodayWorkout: true,
+      goalRaceIsToday: true,
+    }) === "race",
+    "hoofddoel vandaag gaat voor alles",
+  )
+  assert(
+    derivePresentationState({
+      band: null,
+      hasTodayWorkout: false,
+      goalRaceIsToday: true,
+    }) === "race",
+    "wedstrijddag ook zonder band",
+  )
+})
+
+scenario("sfeerlaag kent geen alarm-/roodtoestand en verzint geen conclusies", () => {
+  const states = PRESENTATION_STATES as readonly string[]
+  assert(states.length === 5, "precies vijf toestanden")
+  for (const bad of ["alarm", "critical", "danger", "warning", "error"]) {
+    assert(!states.includes(bad), `verboden toestand ${bad}`)
+  }
+  // Kwetsbaar mag nooit iets luiders opleveren dan de bestaande tekst/pil.
+  assert(
+    derivePresentationState({
+      band: "kwetsbaar",
+      hasTodayWorkout: false,
+      goalRaceIsToday: false,
+    }) === "recovery",
+    "kwetsbaar blijft rustig (recovery)",
+  )
+})
+
+// ── Decoratieve fallback (CUX_02A) ──────────────────────────────────────────
+scenario("decoratieve fallback is aria-hidden en bevat geen data-elementen", () => {
+  assert(DECOR_BACKDROP.ariaHidden === true, "aria-hidden verplicht")
+  assert(DECOR_BACKDROP.paths.length >= 2, "meerdere abstracte lijnen")
+  for (const d of DECOR_BACKDROP.paths) {
+    // Alleen padcommando's (M/C/S/L/Q/Z), coördinaten en witruimte — geen
+    // tekst, labels, cijferannotaties of als data herkenbare assen.
+    assert(/^[MCSLQZmcslqz0-9 .,-]+$/.test(d), `ongeldig pad: ${d}`)
+    assert(d.trimStart().startsWith("M"), "pad begint met M (pure lijn)")
+  }
+  const dims = DECOR_BACKDROP.viewBox.split(" ").map(Number)
+  assert(dims.length === 4 && dims.every((n) => Number.isFinite(n)), "geldige viewBox")
 })
 
 // ── Rapportage ───────────────────────────────────────────────────────────────

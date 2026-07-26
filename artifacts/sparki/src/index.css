@@ -281,3 +281,50 @@ optgroup {
   outline: 2px solid var(--c-accent-ink);
   outline-offset: 2px;
 }
+
+/* ── CUX_02A — sfeerlaag (semantische tokens, alleen presentatie) ────────────
+   Zeer lichte wassingen per presentatietoestand op de hoofdkaart; tekst blijft
+   --c-ink / --c-ink-soft (AA-contrast blijft ruim gehaald op deze tinten).
+   Er bestaat bewust géén alarm-/roodtint in deze laag. */
+.commercial-light {
+  --c-atm-ready: linear-gradient(150deg, #e4f4ec 0%, #ffffff 60%);
+  --c-atm-training: linear-gradient(150deg, #e2f2f7 0%, #ffffff 60%);
+  --c-atm-race: linear-gradient(150deg, #e7ecf8 0%, #ffffff 60%);
+  --c-atm-recovery: linear-gradient(150deg, #eef1ee 0%, #ffffff 60%);
+  --c-atm-neutral: #ffffff;
+}
+.commercial-light .c-hero,
+.commercial-light .c-season {
+  position: relative;
+  overflow: hidden;
+}
+.commercial-light .c-hero[data-atmosphere="ready"] { background: var(--c-atm-ready); }
+.commercial-light .c-hero[data-atmosphere="training"] { background: var(--c-atm-training); }
+.commercial-light .c-hero[data-atmosphere="race"] { background: var(--c-atm-race); }
+.commercial-light .c-hero[data-atmosphere="recovery"] { background: var(--c-atm-recovery); }
+.commercial-light .c-hero[data-atmosphere="neutral"] { background: var(--c-atm-neutral); }
+/* Decoratieve routeachtige lijnen — puur sfeer (aria-hidden in de markup). */
+.commercial-light .c-decor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 55%;
+  color: var(--c-accent-ink);
+  opacity: 0.08;
+  pointer-events: none;
+}
+.commercial-light .c-decor-soft { opacity: 0.05; }
+/* Subtiel semantisch accent op de trainingskaart (alleen bij echte training). */
+.commercial-light .c-training { border-top: 3px solid var(--c-accent); }
+/* Toegankelijkheid: beweging respecteert de systeeminstelling. */
+@media (prefers-reduced-motion: reduce) {
+  .commercial-light *,
+  .commercial-light *::before,
+  .commercial-light *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

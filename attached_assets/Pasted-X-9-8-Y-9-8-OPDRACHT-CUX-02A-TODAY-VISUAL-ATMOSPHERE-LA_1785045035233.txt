@@ -1,0 +1,447 @@
+X=9,8 | Y=9,8
+
+OPDRACHT — CUX_02A TODAY VISUAL ATMOSPHERE LAYER
+
+AGENT-UITVOERBAARHEID
+
+AGENT_EXECUTABLE: JA
+HUMAN_VISUAL_ACCEPTANCE_REQUIRED: JA
+FINAL_SELF_APPROVAL_BY_REPLIT: VERBODEN
+
+CLASSIFICATION:
+APPROVED_COMMERCIAL_UX_GATE_CONTINUATION
+
+MASTER_PLAN_CHECK:
+INTENTIONAL_DEVIATION_APPROVED_BY_RENE
+
+Deze taak stond nog niet letterlijk in SPARKI_AI_MASTER_PLAN_v2.33, maar is door René expliciet goedgekeurd als vervolgstap op CUX_01R1.
+
+Behandel dit uitsluitend als een begrensde presentatiecorrectie van het bestaande Vandaag-scherm, niet als een nieuwe productfunctie.
+
+KOSTENVERWACHTING
+
+ESTIMATED_EFFORT_HOURS_RANGE: 3-6
+COST_EXPECTATION_LEVEL: MEDIUM
+ESTIMATED_DIRECT_COST_EUR: UNKNOWN
+
+Rapporteer achteraf:
+- werkelijke agent-/werktijd wanneer aantoonbaar;
+- werkelijke platformkosten wanneer aantoonbaar;
+- anders UNKNOWN, nooit een bedrag verzinnen.
+
+DOEL
+
+Maak het bestaande commerciële Vandaag-scherm minder klinisch en meer sportief, sfeervol en herkenbaar als Sparki.
+
+Behoud:
+- de witte, rustige en overzichtelijke basis;
+- alle inhoud, teksten, links en functionele uitkomsten van CUX_01R1;
+- mobiele eenvoud;
+- volledige desktopinformatie;
+- toegankelijkheid;
+- data-trust;
+- bestaande feature-flagarchitectuur.
+
+Voeg toe:
+- subtiele sportieve sfeer;
+- meer visuele hiërarchie;
+- gecontroleerde diepte;
+- contextuele kleurvlakken;
+- een duidelijkere Sparki-identiteit;
+- maximaal één dominant visueel element per scherm.
+
+Geen kopie maken van Komoot, Strava of een andere applicatie.
+
+ACTIEVE SCOPE
+
+Alleen:
+
+- het commerciële Vandaag-scherm;
+- mobiel en desktop;
+- de bestaande commercial-shell-implementatie;
+- de bestaande feature flag commercial_shell;
+- presentatielaag, visuele tokens en direct bijbehorende tests.
+
+Niet uitrollen naar:
+- routes;
+- navigatie;
+- activiteit na afloop;
+- planning;
+- Lab;
+- profiel;
+- coach;
+- club;
+- andere schermen.
+
+BESTAANDE IMPLEMENTATIE
+
+Inventariseer en hergebruik minimaal:
+
+- artifacts/sparki/src/lib/commercial-shell.ts
+- artifacts/sparki/src/components/sparki/commercial-shell.tsx
+- artifacts/sparki/src/lib/commercial-shell.test.ts
+- bestaande centrale CSS-, token- en componentbestanden die deze shell aantoonbaar gebruikt;
+- bestaande Playwright-/browservalidatie.
+
+Werk vanuit de actuele repository.
+
+Bestandsnamen hierboven zijn bekende ingangen, geen toestemming om onnodig parallelle bestanden te maken.
+
+HARD LIMITS
+
+MAXIMUM_PRODUCTION_FILES_CHANGED: 6
+MAXIMUM_NEW_RUNTIME_DEPENDENCIES: 0
+NEW_ROUTE: VERBODEN
+NEW_API: VERBODEN
+DATABASE_CHANGE: VERBODEN
+SCHEMA_CHANGE: VERBODEN
+ENGINE_CHANGE: VERBODEN
+NEW_FEATURE_FLAG: VERBODEN
+PUBLISH_OR_DEPLOY: VERBODEN
+EXTERNAL_RESEARCH_DURING_TASK: VERBODEN
+
+Stop en rapporteer een blokkade wanneer:
+- meer dan zes productiebestanden nodig lijken;
+- bestaande datastromen niet kunnen worden hergebruikt;
+- een API-, database-, schema- of enginewijziging nodig lijkt;
+- een tweede parallel Vandaag-systeem nodig lijkt;
+- de opdracht functionele productscope begint toe te voegen.
+
+VISUELE RICHTING
+
+1. WITTE BASIS BEHOUDEN
+
+Het scherm blijft:
+- licht;
+- rustig;
+- duidelijk;
+- ruim genoeg;
+- goed leesbaar.
+
+Maak niet iedere kaart felgekleurd.
+
+Gebruik sfeer gericht en selectief.
+
+2. ÉÉN DOMINANT VISUEEL ELEMENT
+
+Per scherm mag maximaal één onderdeel visueel dominant zijn.
+
+Voor Vandaag is dit bij voorkeur de primaire belastbaarheids-/dagcontextkaart.
+
+Andere kaarten ondersteunen de hiërarchie en concurreren niet met de hoofdkaart.
+
+3. CONTEXTUELE HOOFDKAART
+
+Geef de primaire kaart een subtiele contextuele sfeerlaag op basis van uitsluitend bestaande, aantoonbare schermstatus.
+
+Gebruik een deterministische presentatiefunctie of bestaande variantmapping.
+
+Toegestane semantische presentatietoestanden zijn bijvoorbeeld:
+
+- READY
+- TRAINING
+- RACE
+- RECOVERY
+- NEUTRAL_LOW_DATA
+
+Gebruik alleen toestanden die uit bestaande viewdata kunnen worden afgeleid.
+
+Regels:
+- onvoldoende data krijgt een neutrale uitstraling;
+- een positieve toestand mag een rustige groen-, blauw- of tealachtige tint gebruiken;
+- gebruik rood of een alarmkleur alleen wanneer de bestaande logica werkelijk een kritieke toestand levert;
+- kleur mag nooit een sterkere medische, herstel- of prestatieconclusie suggereren dan de tekst en bestaande engine-uitkomst;
+- de bestaande teksten blijven leidend.
+
+4. ECHTE SPORTCONTEXT EERST
+
+Controleer of de bestaande Today-viewdata al een van onderstaande echte bronnen bevat:
+
+- echte activiteitfoto;
+- echte route- of kaartpreview;
+- echte routepolyline;
+- echt hoogteprofiel;
+- echte trainingsdiscipline;
+- echte wedstrijdcontext;
+- echte seizoenscontext.
+
+Gebruik zo’n bron alleen wanneer deze al via de bestaande datastroom beschikbaar is.
+
+Verboden:
+- API uitbreiden voor deze taak;
+- nieuwe persoonlijke data ophalen;
+- een route of hoogteprofiel verzinnen;
+- demo-, seed- of fallbackpersoonsdata tonen;
+- externe foto’s of auteursrechtelijk materiaal toevoegen.
+
+5. DECORATIEVE FALLBACK
+
+Wanneer geen echte visuele sportcontext beschikbaar is, mag een abstracte decoratieve Sparki-achtergrond worden gebruikt, bijvoorbeeld:
+
+- subtiele topografische lijnen;
+- een rustige routeachtige lijnvorm;
+- een zachte geometrische beweging;
+- een beperkt kleurverloop.
+
+Deze fallback:
+
+- is duidelijk decoratief;
+- bevat geen cijfers, assen, locaties of datapuntlabels;
+- wordt niet gepresenteerd als werkelijk hoogteprofiel of route;
+- gebruikt aria-hidden;
+- heeft geen betekenis voor schermlezers;
+- mag niet op persoonlijke sportdata lijken.
+
+6. WEEKOVERZICHT
+
+Behoud exact de weekvolgorde:
+
+Ma – Di – Wo – Do – Vr – Za – Zo
+
+Maak het weekoverzicht visueel meer één samenhangend onderdeel en minder zeven losse witte elementen.
+
+Behoud:
+- huidige dag herkenbaar;
+- geplande of uitgevoerde status herkenbaar;
+- voldoende contrast;
+- compacte mobiele presentatie;
+- geen horizontale scroll.
+
+Verander geen weeklogica.
+
+7. TRAININGSKAART
+
+Behoud alle bestaande teksten, acties en routes.
+
+Wanneer bestaande echte trainingscontext beschikbaar is, mag de presentatie daarvan worden versterkt met:
+
+- bestaand discipline-icoon;
+- bestaande trainingscategorie;
+- bestaande route- of sessiecontext;
+- een subtiele semantische accentkleur.
+
+Wanneer geen training gepland staat:
+- behoud de bestaande eerlijke lege toestand;
+- toon geen illustratie die een geplande training suggereert;
+- behoud “Bekijk je plan” en de bestaande route naar /train.
+
+8. SEIZOENSKAART
+
+Behoud:
+- “Seizoen in beeld”;
+- bestaande echte seizoensinformatie wanneer aanwezig;
+- “Nog geen hoofddoel ingesteld.” wanneer geen doel bestaat;
+- bestaande actie naar /races.
+
+De kaart mag een subtiele sportieve of topografische achtergrond krijgen.
+
+Zonder echt seizoen of hoofddoel:
+- geen verzonnen fase;
+- geen verzonnen tijdlijn;
+- geen fictief hoogteprofiel;
+- geen nepwedstrijd;
+- alleen decoratieve achtergrond zonder databetekenis.
+
+9. KAARTSTIJL
+
+Gebruik bij voorkeur bestaande componentvarianten en centrale designtokens.
+
+Alleen wanneer noodzakelijk:
+- voeg semantische atmosfeertokens toe aan het bestaande centrale token- of CSS-systeem;
+- gebruik geen losse willekeurige hexwaarden verspreid over componenten;
+- documenteer de nieuwe semantische tokens kort;
+- maak geen tweede design system.
+
+Gewenste eigenschappen:
+- subtiele borders;
+- zeer beperkte schaduwdiepte;
+- rustige gelaagdheid;
+- voldoende witruimte;
+- heldere primaire actie;
+- consequente afrondingen;
+- geen glas-/blur-effect dat leesbaarheid vermindert;
+- geen overmatige gradients;
+- geen dashboard vol gekleurde tegels.
+
+10. MOBILE FIRST
+
+Valideer minimaal op:
+
+- 390 × 844;
+- 320 × 568 als smalle randcontrole;
+- 1440 × 900 desktop.
+
+Mobiel:
+- geen horizontale overflow;
+- geen tekstafkapping;
+- ondernavigatie bedekt geen inhoud;
+- hoofdactie blijft bereikbaar;
+- sfeer neemt niet te veel verticale ruimte in;
+- belangrijke informatie blijft boven decoratie staan.
+
+Desktop:
+- geen uitgerekte mobiele kaart;
+- bestaande tweekoloms- of workspacehiërarchie behouden;
+- sfeer mag rijker zijn dan mobiel, maar niet drukker;
+- voldoende informatiestructuur.
+
+11. TOEGANKELIJKHEID
+
+Behoud of verbeter:
+- semantische HTML;
+- keyboardfocus;
+- zichtbare focusstijl;
+- button- en linklabels;
+- schermlezerstructuur;
+- reduced-motionvoorkeur;
+- voldoende tekstcontrast.
+
+Gebruik bestaande toegankelijkheidstooling wanneer aanwezig.
+
+Voeg geen nieuwe runtime dependency toe.
+
+Wanneer geen automatische contrasttool aanwezig is:
+- rapporteer de berekende contrastverhouding van alle nieuw gewijzigde tekst-/achtergrondcombinaties;
+- minimaal WCAG AA voor gewone tekst;
+- geen kritieke toegankelijkheidsfout accepteren.
+
+12. DARK EN FEATURE FLAG
+
+Deze taak bouwt geen nieuwe dark mode.
+
+Wel verplicht:
+- feature flag commercial_shell blijft standaard uit;
+- feature flag uit levert exact de bestaande productie-Today op;
+- bestaande donkere omgeving buiten deze commerciële shell mag niet worden beschadigd;
+- geen globale kleurwijziging die andere schermen beïnvloedt.
+
+TECHNISCHE IMPLEMENTATIERICHTING
+
+De Replit Agent mag zelfstandig de minimaal passende implementatie kiezen.
+
+Voorkeur:
+
+- bestaande tokens en componentvarianten hergebruiken;
+- presentatietoestand deterministisch afleiden;
+- sfeerselectie scheiden van domeinlogica;
+- visuele variant testbaar maken, bijvoorbeeld via een pure mapping of stabiel data-attribuut;
+- geen businesslogica in CSS stoppen;
+- geen data-engine wijzigen.
+
+Voeg alleen een nieuwe helper toe wanneer die:
+- uitsluitend presentatiegedrag bevat;
+- in bestaande bestanden past;
+- unit-testbaar is;
+- geen nieuw parallel model vormt.
+
+VERPLICHTE TESTS
+
+Behoud alle CUX_01R1-tests.
+
+Voeg of breid tests uit voor minimaal:
+
+1. alle exacte CUX_01R1-teksten blijven ongewijzigd;
+2. weekvolgorde blijft altijd Ma–Zo;
+3. links blijven /train en /races;
+4. feature flag uit geeft ongewijzigde bestaande Today;
+5. presentatietoestand wordt deterministisch uit bestaande data bepaald;
+6. onvoldoende data resulteert in NEUTRAL_LOW_DATA of equivalente neutrale variant;
+7. positieve toestand suggereert geen sterkere conclusie dan de bestaande tekst;
+8. zonder echte visuele sportdata wordt uitsluitend de decoratieve fallback gebruikt;
+9. decoratieve fallback is aria-hidden;
+10. decoratieve fallback bevat geen cijfers, labels of als data herkenbare assen;
+11. met reeds beschikbare echte sportcontext wordt die context gebruikt zonder fallbackdata;
+12. maximaal één dominant visueel element wordt gerenderd;
+13. geen horizontale overflow op 320 × 568 en 390 × 844;
+14. onderste navigatie bedekt geen inhoud;
+15. keyboardfocus blijft zichtbaar;
+16. reduced-motion wordt gerespecteerd;
+17. bestaande regressietests blijven groen;
+18. typecheck slaagt;
+19. productie-build slaagt.
+
+BROWSEREVIDENCE
+
+Maak minimaal:
+
+- mobiel 390 × 844, bovenste scherm;
+- mobiel 390 × 844, volledige relevante Today-inhoud;
+- smal mobiel 320 × 568;
+- desktop 1440 × 900;
+- toestand met onvoldoende data;
+- toestand met beschikbare echte context, uitsluitend wanneer bestaande veilige testfixtures dit al ondersteunen.
+
+Gebruik geen productie-mockdata.
+
+Bestaande testfixtures mogen uitsluitend in test/dev-preview worden gebruikt en mogen niet in productiecode terechtkomen.
+
+BEWIJSMAP
+
+Gebruik:
+
+test-artifacts/CUX_02A/
+
+Neem op:
+
+- screenshots;
+- machineleesbare testresultaten;
+- testuitvoer.log;
+- gewijzigde-bestandenlijst;
+- git diff --stat;
+- feature-flagcontrole;
+- contrastcontrole;
+- overzicht van gebruikte echte context versus decoratieve fallback.
+
+ACCEPTATIE
+
+CUX_02A is door Replit alleen technisch gerapporteerd wanneer:
+
+- scope beperkt bleef tot Today;
+- maximaal zes productiebestanden zijn gewijzigd;
+- geen runtime dependency is toegevoegd;
+- geen API, database, schema of engine is gewijzigd;
+- geen persoonlijke mock- of fallbackdata is toegevoegd;
+- de huidige functies en teksten volledig behouden zijn;
+- mobiel en desktop visueel rustiger én sfeervoller zijn;
+- toegankelijkheid niet is verslechterd;
+- alle tests en builds slagen;
+- alle bewijsartefacten aanwezig zijn.
+
+Replit mag de definitieve visuele kwaliteit niet zelf goedkeuren.
+
+EINDSTATUS MOET ZIJN:
+
+REPLIT_REPORTED_PENDING_RENE_CHATGPT_VISUAL_ACCEPTANCE
+
+Niet:
+
+COMPLETED
+PROVEN_READY
+RELEASED
+
+EINDRAPPORT
+
+Lever uitsluitend de append-only YAML-patch uit de dagkaart met:
+
+REP_STATE
+REP_CHANGED_FILES
+REP_TEST_RESULTS
+REP_ARTIFACTS
+REP_REGRESSIONS
+REP_BLOCKERS
+REP_TECH_RISKS
+REP_NEXT_RECOMMENDATION
+REP_PROPOSAL
+
+Rapporteer daarnaast in de daarvoor bestemde kostenvelden:
+
+ACTUAL_EFFORT_HOURS
+ACTUAL_DIRECT_COST_EUR
+ACTUAL_COST_SOURCE
+ESTIMATE_VARIANCE_NOTE
+
+Gebruik UNKNOWN wanneer werkelijke gegevens niet aantoonbaar beschikbaar zijn.
+
+Stop na CUX_02A.
+
+Begin niet aan routes, data-trust, Stripe, rechten, abonnementen of andere schermen.

@@ -17,19 +17,49 @@ import {
   COMMERCIAL_COPY,
   COMMERCIAL_DESKTOP_NAV,
   COMMERCIAL_MOBILE_NAV,
+  DECOR_BACKDROP,
   SEASON_PHASES,
   bandLabel,
   bandTone,
   buildBlockBars,
   buildSeasonView,
   buildWeekStrip,
+  derivePresentationState,
   formatDayHeader,
   localISODate,
   movementLabel,
   nearestUpcomingRace,
   workoutPhaseLabel,
   type BandTone,
+  type PresentationState,
 } from "@/lib/commercial-shell"
+
+// ── Decoratieve sfeerachtergrond (CUX_02A) ───────────────────────────────────
+// Abstracte routeachtige lijnen — puur decoratief (aria-hidden), zonder
+// cijfers, assen of labels. Wordt alleen als fallback gebruikt: de bestaande
+// Vandaag-datastroom bevat geen echte foto, routepreview of hoogteprofiel.
+function DecorBackdrop({ soft = false }: { soft?: boolean }) {
+  return (
+    <svg
+      viewBox={DECOR_BACKDROP.viewBox}
+      aria-hidden="true"
+      focusable="false"
+      preserveAspectRatio="none"
+      className={soft ? "c-decor c-decor-soft" : "c-decor"}
+    >
+      {DECOR_BACKDROP.paths.map((d) => (
+        <path
+          key={d}
+          d={d}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.5}
+          vectorEffect="non-scaling-stroke"
+        />
+      ))}
+    </svg>
+  )
+}
 
 // ── Toestand-pil ─────────────────────────────────────────────────────────────
 const PILL_STYLES: Record<BandTone, { background: string; color: string }> = {
@@ -173,7 +203,10 @@ function ErrorCard({ label, onRetry }: { label: string; onRetry: () => void }) {
 }
 
 // ── Toestandkaart (echte State Engine, geen verzonnen score) ─────────────────
-function ReadinessCard() {
+// CUX_02A: dit is het ene dominante visuele element van Vandaag. De sfeerlaag
+// (data-atmosphere + decoratieve lijnen) is puur presentatie en volgt de
+// deterministische presentatietoestand; de teksten blijven leidend.
+function ReadinessCard({ presentation }: { presentation: PresentationState }) {
   const { data, isLoading, isError, refetch } = useSparkiState()
 
   if (isLoading) return <SkeletonCard label="Je toestand wordt geladen…" />
@@ -189,42 +222,49 @@ function ReadinessCard() {
   // toont alleen de statuszin, zodat de status niet dubbel leest.
   const trend = movementLabel(data.movement.label)
   return (
-    <section className="c-card p-5" aria-label="Toestand vandaag">
-      <p className="text-xl font-semibold">{data.status}</p>
-      {trend && (
-        <p className="mt-2 text-sm" style={{ color: "var(--c-ink-soft)" }}>
-          {trend}
-        </p>
-      )}
-      <details className="mt-3">
-        <summary
-          className="cursor-pointer text-sm font-semibold"
-          style={{ color: "var(--c-accent-ink)" }}
-        >
-          Bekijk onderbouwing
-        </summary>
-        <ul className="mt-2 space-y-1.5">
-          {data.why.map((w) => (
-            <li key={w.kind} className="text-sm">
-              <span className="font-medium">{w.label}:</span>{" "}
-              <span style={{ color: "var(--c-ink-soft)" }}>{w.reading}</span>
-            </li>
-          ))}
-          {data.why.length === 0 && (
-            <li className="text-sm" style={{ color: "var(--c-ink-soft)" }}>
-              Nog geen signalen voor vandaag.
-            </li>
-          )}
-        </ul>
-        {data.missing.length > 0 && (
+    <section
+      className="c-card c-hero p-5"
+      data-atmosphere={presentation}
+      aria-label="Toestand vandaag"
+    >
+      <DecorBackdrop />
+      <div className="relative">
+        <p className="text-xl font-semibold">{data.status}</p>
+        {trend && (
           <p className="mt-2 text-sm" style={{ color: "var(--c-ink-soft)" }}>
-            Ontbreekt nog: {data.missing.join(", ")}
+            {trend}
           </p>
         )}
-        <p className="mt-2 text-xs" style={{ color: "var(--c-ink-soft)" }}>
-          Zekerheid: {data.confidenceLabel}
-        </p>
-      </details>
+        <details className="mt-3">
+          <summary
+            className="cursor-pointer text-sm font-semibold"
+            style={{ color: "var(--c-accent-ink)" }}
+          >
+            Bekijk onderbouwing
+          </summary>
+          <ul className="mt-2 space-y-1.5">
+            {data.why.map((w) => (
+              <li key={w.kind} className="text-sm">
+                <span className="font-medium">{w.label}:</span>{" "}
+                <span style={{ color: "var(--c-ink-soft)" }}>{w.reading}</span>
+              </li>
+            ))}
+            {data.why.length === 0 && (
+              <li className="text-sm" style={{ color: "var(--c-ink-soft)" }}>
+                Nog geen signalen voor vandaag.
+              </li>
+            )}
+          </ul>
+          {data.missing.length > 0 && (
+            <p className="mt-2 text-sm" style={{ color: "var(--c-ink-soft)" }}>
+              Ontbreekt nog: {data.missing.join(", ")}
+            </p>
+          )}
+          <p className="mt-2 text-xs" style={{ color: "var(--c-ink-soft)" }}>
+            Zekerheid: {data.confidenceLabel}
+          </p>
+        </details>
+      </div>
     </section>
   )
 }
@@ -281,7 +321,8 @@ function TrainingSection() {
           </span>
         )}
       </div>
-      <div className="c-card mt-3 p-5">
+      {/* Subtiel semantisch accent alleen bij een echte geplande training. */}
+      <div className="c-card c-training mt-3 p-5">
         {goal && <p className="text-sm font-semibold">Doel: {goal}</p>}
         {w.description && (
           <p
@@ -335,24 +376,34 @@ function WeekStrip({ variant }: { variant: "mobile" | "desktop" }) {
   }
   const strip = buildWeekStrip(week, localISODate())
 
+  // CUX_02A: mobiel is de week één samenhangende kaart (7 kolommen met
+  // binnenlijnen) in plaats van zeven losse witte blokjes — zelfde weeklogica.
   return (
     <div
       className={
-        variant === "mobile" ? "mt-3 grid grid-cols-7 gap-1.5" : "mt-3 space-y-2"
+        variant === "mobile"
+          ? "c-card mt-3 grid grid-cols-7 overflow-hidden"
+          : "mt-3 space-y-2"
       }
     >
-      {strip.map((d) =>
+      {strip.map((d, i) =>
         variant === "mobile" ? (
           <div
             key={d.date}
-            className="c-card flex flex-col items-center gap-1 px-1 py-2.5"
-            style={
-              d.isToday
-                ? { borderColor: "var(--c-accent-ink)", background: "#e3f6fa" }
-                : undefined
-            }
+            className="flex flex-col items-center gap-1 px-1 py-2.5"
+            style={{
+              borderLeft: i > 0 ? "1px solid var(--c-line)" : undefined,
+              background: d.isToday ? "#e3f6fa" : undefined,
+            }}
           >
-            <span className="text-[10px]" style={{ color: "var(--c-ink-soft)" }}>
+            <span
+              className="text-[10px]"
+              style={
+                d.isToday
+                  ? { color: "var(--c-accent-ink)", fontWeight: 700 }
+                  : { color: "var(--c-ink-soft)" }
+              }
+            >
               {d.label}
             </span>
             <span className="num text-sm">{d.value}</span>
@@ -390,20 +441,26 @@ function SeasonBand() {
   // faseband (die zou een plan suggereren dat er niet is) — alleen de melding
   // en één actie naar de bestaande wedstrijd-/doelenflow. Zichtbaar op mobiel
   // én desktop (Figma 30:96 / 30:143).
+  // CUX_02A: de kaart krijgt een zeer zachte decoratieve achtergrond (aria-
+  // hidden, geen databetekenis) — zonder doel of seizoen blijft de melding
+  // eerlijk en wordt er niets verzonnen.
   if (view.kind === "empty") {
     return (
       <section className="mt-8" aria-label={COMMERCIAL_COPY.seasonTitle}>
         <h2 className="text-lg font-semibold">{COMMERCIAL_COPY.seasonTitle}</h2>
-        <div className="c-card mt-3 p-5">
-          <p className="text-sm" style={{ color: "var(--c-ink-soft)" }}>
-            {COMMERCIAL_COPY.seasonEmpty}
-          </p>
-          <Link
-            href={COMMERCIAL_COPY.seasonEmptyActionHref}
-            className="c-btn-outline mt-3"
-          >
-            {COMMERCIAL_COPY.seasonEmptyAction}
-          </Link>
+        <div className="c-card c-season mt-3 p-5">
+          <DecorBackdrop soft />
+          <div className="relative">
+            <p className="text-sm" style={{ color: "var(--c-ink-soft)" }}>
+              {COMMERCIAL_COPY.seasonEmpty}
+            </p>
+            <Link
+              href={COMMERCIAL_COPY.seasonEmptyActionHref}
+              className="c-btn-outline mt-3"
+            >
+              {COMMERCIAL_COPY.seasonEmptyAction}
+            </Link>
+          </div>
         </div>
       </section>
     )
@@ -412,44 +469,47 @@ function SeasonBand() {
   return (
     <section className="mt-8" aria-label={COMMERCIAL_COPY.seasonTitle}>
       <h2 className="text-lg font-semibold">{COMMERCIAL_COPY.seasonTitle}</h2>
-      <div className="c-card mt-3 p-5">
-        {view.showPhaseBand && (
-          <div className="flex flex-wrap gap-x-8 gap-y-2">
-            {SEASON_PHASES.map((p) => {
-              const active = p === activePhase
-              return (
-                <span
-                  key={p}
-                  className="pb-1 text-sm"
-                  style={
-                    active
-                      ? {
-                          fontWeight: 700,
-                          borderBottom: "2px solid var(--c-accent-ink)",
-                        }
-                      : { color: "var(--c-ink-soft)" }
-                  }
-                >
-                  {p}
-                </span>
-              )
-            })}
-          </div>
-        )}
-        <p
-          className={`text-sm ${view.showPhaseBand ? "mt-4" : ""}`}
-          style={{ color: "var(--c-ink-soft)" }}
-        >
-          {view.line}
-        </p>
-        <div className="mt-3 text-right">
-          <Link
-            href="/train"
-            className="text-sm font-semibold"
-            style={{ color: "var(--c-accent-ink)" }}
+      <div className="c-card c-season mt-3 p-5">
+        <DecorBackdrop soft />
+        <div className="relative">
+          {view.showPhaseBand && (
+            <div className="flex flex-wrap gap-x-8 gap-y-2">
+              {SEASON_PHASES.map((p) => {
+                const active = p === activePhase
+                return (
+                  <span
+                    key={p}
+                    className="pb-1 text-sm"
+                    style={
+                      active
+                        ? {
+                            fontWeight: 700,
+                            borderBottom: "2px solid var(--c-accent-ink)",
+                          }
+                        : { color: "var(--c-ink-soft)" }
+                    }
+                  >
+                    {p}
+                  </span>
+                )
+              })}
+            </div>
+          )}
+          <p
+            className={`text-sm ${view.showPhaseBand ? "mt-4" : ""}`}
+            style={{ color: "var(--c-ink-soft)" }}
           >
-            Volledig plan bekijken ›
-          </Link>
+            {view.line}
+          </p>
+          <div className="mt-3 text-right">
+            <Link
+              href="/train"
+              className="text-sm font-semibold"
+              style={{ color: "var(--c-accent-ink)" }}
+            >
+              Volledig plan bekijken ›
+            </Link>
+          </div>
         </div>
       </div>
     </section>
@@ -460,7 +520,18 @@ function SeasonBand() {
 export function CommercialToday() {
   const state = useSparkiState()
   const dash = useAthleteDashboard()
+  const races = useRaces()
   const planWeek = dash.data?.todayWorkout?.structure?.week ?? null
+
+  // CUX_02A: presentatietoestand deterministisch uit bestaande viewdata —
+  // dezelfde hooks, geen nieuwe datastromen. Ontbrekende data blijft neutraal.
+  const todayISO = localISODate()
+  const goalRace = nearestUpcomingRace(races.data, todayISO)
+  const presentation = derivePresentationState({
+    band: state.data?.band ?? null,
+    hasTodayWorkout: dash.data?.todayWorkout != null,
+    goalRaceIsToday: goalRace?.raceDate === todayISO,
+  })
 
   return (
     <CommercialShell band={state.data?.band}>
@@ -473,7 +544,7 @@ export function CommercialToday() {
 
         <div className="mt-5 lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-6">
           <div className="min-w-0">
-            <ReadinessCard />
+            <ReadinessCard presentation={presentation} />
             <TrainingSection />
             {/* Mobiel — weekstrip onder de training */}
             <section className="mt-8 lg:hidden" aria-label="Deze week">

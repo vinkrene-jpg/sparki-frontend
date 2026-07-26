@@ -194,6 +194,57 @@ export const COMMERCIAL_COPY = {
   noTrainingActionHref: "/train",
 } as const
 
+// ── Presentatietoestand (CUX_02A — sfeerlaag, alleen presentatie) ────────────
+// Deterministische afleiding uit uitsluitend bestaande viewdata (State-Engine-
+// band, wel/geen geplande training, hoofddoel-op-vandaag). De toestand stuurt
+// alleen een subtiele sfeerlaag (CSS) op de hoofdkaart aan en trekt nooit een
+// sterkere conclusie dan de bestaande tekst:
+//  - ontbrekende of onduidelijke data → neutral (geen tint);
+//  - "wisselend" → neutral (kleur mag niets extra's suggereren);
+//  - "kwetsbaar" → recovery (rustig, gedempt — géén alarmkleur);
+//  - er bestaat bewust géén alarm-/roodtoestand in deze laag.
+export const PRESENTATION_STATES = [
+  "ready",
+  "training",
+  "race",
+  "recovery",
+  "neutral",
+] as const
+
+export type PresentationState = (typeof PRESENTATION_STATES)[number]
+
+export type PresentationInput = {
+  band: string | null | undefined
+  hasTodayWorkout: boolean
+  goalRaceIsToday: boolean
+}
+
+export function derivePresentationState(
+  input: PresentationInput,
+): PresentationState {
+  if (input.goalRaceIsToday) return "race"
+  if (input.band === "kwetsbaar") return "recovery"
+  if (bandTone(input.band) == null) return "neutral"
+  if (input.band === "wisselend") return "neutral"
+  if (input.hasTodayWorkout) return "training"
+  return "ready"
+}
+
+// ── Decoratieve fallback (CUX_02A) ──────────────────────────────────────────
+// Abstracte, routeachtige lijnen als sfeerachtergrond wanneer er geen echte
+// visuele sportcontext (foto, routepreview, hoogteprofiel) in de bestaande
+// datastroom zit. Puur decoratief: aria-hidden, geen cijfers, assen, labels
+// of datapunten — en het wordt nergens als echt hoogteprofiel gepresenteerd.
+export const DECOR_BACKDROP = {
+  ariaHidden: true,
+  viewBox: "0 0 400 160",
+  paths: [
+    "M0 118 C 70 92 130 138 205 104 C 268 76 330 96 400 74",
+    "M0 140 C 80 118 150 152 230 124 C 300 100 350 118 400 102",
+    "M0 96 C 60 76 120 108 190 86 C 262 62 328 80 400 54",
+  ],
+} as const
+
 // ── Seizoenweergave (beslislogica — testbaar zonder React) ──────────────────
 // empty  → geen hoofddoel én geen seizoensplan: één eerlijke lege toestand
 //          met één actie naar de bestaande wedstrijd-/doelenflow, géén faseband.

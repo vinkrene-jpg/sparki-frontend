@@ -1,0 +1,5 @@
+ .../src/components/sparki/commercial-shell.tsx     | 255 +++++++++++++--------
+ artifacts/sparki/src/index.css                     |  47 ++++
+ artifacts/sparki/src/lib/commercial-shell.test.ts  | 123 ++++++++++
+ artifacts/sparki/src/lib/commercial-shell.ts       |  51 +++++
+ 4 files changed, 384 insertions(+), 92 deletions(-)

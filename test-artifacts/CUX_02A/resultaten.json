@@ -1,0 +1,62 @@
+{
+  "opdracht": "CUX_02A — Today Visual Atmosphere Layer",
+  "datum": "2026-07-26",
+  "eindstatus": "REPLIT_REPORTED_PENDING_RENE_CHATGPT_VISUAL_ACCEPTANCE",
+  "unittests": {
+    "commando": "pnpm --filter @workspace/sparki run test:commercial-shell",
+    "resultaat": "27/27 scenario's geslaagd",
+    "nieuwe_scenarios": [
+      "presentatietoestand is deterministisch (zelfde invoer → zelfde uitvoer)",
+      "ontbrekende of onduidelijke toestand → neutraal (nooit gissen)",
+      "presentatietoestand volgt de echte context, wedstrijddag gaat voor",
+      "sfeerlaag kent geen alarm-/roodtoestand en verzint geen conclusies",
+      "decoratieve fallback is aria-hidden en bevat geen data-elementen"
+    ],
+    "log": "testuitvoer.log"
+  },
+  "typecheck": { "commando": "pnpm run typecheck", "resultaat": "geslaagd (alle packages)" },
+  "productiebuild": { "commando": "pnpm --filter @workspace/sparki run build", "resultaat": "geslaagd (vite build ✓, 31.17s)" },
+  "browser_bewijs": {
+    "screenshots": [
+      "commercial-390x844.jpg",
+      "commercial-320x568.jpg",
+      "commercial-1440x900.jpg",
+      "vandaag-flag-uit-390x844.jpg"
+    ],
+    "dom_controles_playwright": {
+      "status": "success",
+      "controles": [
+        "precies één [data-atmosphere]-element na laden (laad-/fouttoestand heeft er bewust geen)",
+        "alle .c-decor svg's: aria-hidden=true, focusable=false, geen tekst/title, pointer-events none",
+        "geen los woord 'AI' in zichtbare tekst",
+        "'Bekijk onderbouwing' uitklap werkt (details open, uitlegtekst zichtbaar)",
+        "zichtbare focusring rgb(11,114,133) via :focus-visible na 3× Tab",
+        "geen JavaScript-console-errors"
+      ]
+    }
+  },
+  "flag_check": {
+    "flag": "commercial_shell",
+    "resultaat": "geen rij in feature_flags (0 rows) → standaard UIT; /vandaag toont ongewijzigde donkere Vandaag (zie vandaag-flag-uit-390x844.jpg); App.tsx niet aangeraakt",
+    "bestand": "flag-check.txt"
+  },
+  "contrast": {
+    "norm": "WCAG 2.1 AA",
+    "resultaat": "22/22 combinaties AA-normaal (≥4.5) én AA-groot (≥3.0); gradients getoetst op donkerste tint",
+    "bestand": "contrastrapport.md"
+  },
+  "scope": {
+    "productiebestanden_gewijzigd": 3,
+    "bestanden": [
+      "artifacts/sparki/src/lib/commercial-shell.ts",
+      "artifacts/sparki/src/components/sparki/commercial-shell.tsx",
+      "artifacts/sparki/src/index.css"
+    ],
+    "testbestand": "artifacts/sparki/src/lib/commercial-shell.test.ts",
+    "nieuwe_dependencies": 0,
+    "routes_api_db_engines_flags_gewijzigd": false,
+    "git_diff_stat": "git-diff-stat.txt"
+  },
+  "copy": "alle CUX_01R1-teksten en -links ongewijzigd behouden (COMMERCIAL_COPY ongewijzigd, unittest 'vaste teksten luiden exact volgens de opdracht' blijft groen)",
+  "echte_context_vs_fallback": "echte-context-vs-fallback.md"
+}

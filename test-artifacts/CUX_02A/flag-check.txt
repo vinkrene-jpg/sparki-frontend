@@ -1,0 +1,5 @@
+ key | enabled_globally | enabled_roles | enabled_groups | enabled_platforms 
+-----+------------------+---------------+----------------+-------------------
+(0 rows)
+
+commercial_shell: GEEN rij in feature_flags (0 rows) => flag staat standaard UIT; /vandaag-gating in App.tsx onaangeraakt (zie vandaag-flag-uit-390x844.jpg)
