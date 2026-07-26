@@ -1,0 +1,160 @@
+OPDRACHT — EINDRAPPORT EN CONSISTENTIECONTROLE VAN DE TWEE AUDITS
+
+Doel:
+Rond de twee zojuist uitgevoerde audits administratief en inhoudelijk af in één helder eindrapport, zonder productiecode, data, configuratie of runtimegedrag te wijzigen.
+
+Betrokken opdrachten:
+1. Controle op nep-, demo- en foutieve gebruikersdata (DT_01A)
+2. Providerrechten, attributie en schaalbaarheid voorbereiden (RN_01A2)
+
+BELANGRIJK
+Dit is uitsluitend een review- en rapportageopdracht.
+
+Niet toegestaan:
+- geen productiecode wijzigen;
+- geen databasegegevens wijzigen of verwijderen;
+- geen migraties;
+- geen provider vervangen;
+- geen attributie implementeren;
+- geen UI aanpassen;
+- geen deployment;
+- geen nieuwe technische oplossing bouwen;
+- geen bestaande auditbevinding stil corrigeren zonder dit expliciet te benoemen.
+
+CONTROLE 1 — BESTANDEN DT_01A
+
+Controleer of deze vier bestanden bestaan, inhoudelijk compleet zijn en onderling overeenkomen:
+
+- docs/SPARKI_DATA_TRUST_AUDIT.md
+- docs/SPARKI_MOCK_DATA_INVENTORY.csv
+- docs/SPARKI_DATA_TRUST_DRY_RUN.json
+- docs/SPARKI_DATA_TRUST_EVIDENCE.json
+
+Rapporteer:
+- belangrijkste bevindingen;
+- concrete geloofwaardigheidsrisico’s;
+- gevonden mock-, seed-, demo-, fallback- en hardcoded persoonlijke data;
+- welke gegevens aantoonbaar echt zijn;
+- welke gegevens UNKNOWN_REQUIRES_REVIEW blijven;
+- welke items later veilig in quarantaine kunnen;
+- welke items nooit automatisch verwijderd mogen worden;
+- bevestiging dat alleen read-only productiequeries zijn uitgevoerd;
+- bevestiging dat geen productiegegevens zijn gewijzigd.
+
+CONTROLE 2 — BESTANDEN RN_01A2
+
+Controleer of deze vijf bestanden bestaan, inhoudelijk compleet zijn en onderling overeenkomen:
+
+- docs/SPARKI_PROVIDER_REGISTER.md
+- docs/SPARKI_PROVIDER_COMPLIANCE_MATRIX.csv
+- docs/SPARKI_PROVIDER_ACCOUNT_CHECKLIST.md
+- docs/SPARKI_ATTRIBUTION_IMPLEMENTATION_SPEC.md
+- docs/SPARKI_PROVIDER_EVIDENCE.json
+
+Rapporteer:
+- belangrijkste providerblokkades;
+- welke commerciële gebruiksrechten bewezen zijn;
+- welke rechten of accounttiers nog niet bewezen zijn;
+- verplichte attributie per provider;
+- cache-, offline- en rate-limitvoorwaarden;
+- productie- en schaalrisico’s;
+- beslissingen die René buiten de code moet nemen;
+- kleinste veilige latere bouwopdracht.
+
+CONTROLE 3 — EXTRA BESTANDEN
+
+Controleer ook:
+
+- sparki-provider-compliance.md
+- MEMORY.md
+
+Leg exact uit:
+- waarom sparki-provider-compliance.md is aangemaakt;
+- of dit alleen een samenvatting is;
+- dat dit bestand geen alternatieve bron van waarheid vormt;
+- welke informatie in MEMORY.md is toegevoegd of gewijzigd;
+- waarom die wijziging noodzakelijk was;
+- of daarin productbesluiten, aannames of tijdelijke conclusies zijn opgeslagen.
+
+Wanneer deze bestanden onnodig, dubbel of verwarrend zijn:
+- verwijder ze niet;
+- rapporteer het probleem en adviseer wat later moet gebeuren.
+
+CONTROLE 4 — NAVIGATIEBESLUITEN RECONCILIËREN
+
+Vergelijk de navigatie-audit en providerdocumentatie expliciet met bestaande goedgekeurde besluiten.
+
+Vaststaand productbesluit:
+Na een bevestigde afwijking moet Sparki automatisch op de achtergrond een nieuwe route berekenen.
+
+Behandel dit niet als open productbeslissing.
+
+Leg vast:
+- huidig gedrag in de code: gebruiker krijgt een keuzekaart;
+- goedgekeurd gewenst gedrag: automatische herberekening op de achtergrond;
+- classificatie: IMPLEMENTATIEGAT, niet OPEN BESLISSING.
+
+Off-route-detectie:
+De audit heeft aangetoond:
+- dynamische corridor van 50 tot 150 meter;
+- sprongfilter;
+- alarm na 3 metingen én 6 seconden;
+- bestaande testdekking.
+
+Sluit daarom de generieke open vraag “kwantitatieve off-route-drempel bepalen”.
+
+Laat alleen als open staan:
+- echte toestelvalidatie;
+- percentage valse meldingen;
+- batterijverbruik;
+- uitzonderingssituaties en eventuele tuning.
+
+CONTROLE 5 — GIT EN WIJZIGINGEN
+
+Voer git status en git diff uit.
+
+Rapporteer exact:
+- alle gewijzigde bestanden;
+- alle nieuw aangemaakte bestanden;
+- bevestiging dat geen productiecode is gewijzigd;
+- bevestiging dat geen configuratie, database-schema of dependency is gewijzigd;
+- bevestiging dat geen geheimen, sleutels of accountgegevens in de documentatie staan.
+
+VERPLICHT EINDRAPPORT
+
+Maak:
+
+docs/SPARKI_AUDITS_FINAL_REVIEW_2026-07-26.md
+
+Gebruik deze vaste indeling:
+
+1. Samenvatting
+2. Status DT_01A
+3. Status RN_01A2
+4. Belangrijkste datavertrouwensrisico’s
+5. Belangrijkste provider- en licentierisico’s
+6. Bewezen feiten
+7. Niet bewezen of nog extern te controleren
+8. Reconciliatie met bestaande productbesluiten
+9. Uitleg wijzigingen MEMORY.md
+10. Status sparki-provider-compliance.md
+11. Volledige lijst gewijzigde bestanden
+12. Bevestiging dat productiecode en productiegegevens onaangeraakt zijn
+13. Open blokkades
+14. Kleinste veilige vervolgstap
+15. Advies: GO, GO_MET_VOORWAARDEN of NO_GO
+
+EINDANTWOORD AAN RENÉ
+
+Geef na afronding uitsluitend:
+
+- status van beide audits;
+- advies GO / GO_MET_VOORWAARDEN / NO_GO;
+- tien belangrijkste bevindingen;
+- open blokkades;
+- beslissingen die René zelf moet nemen;
+- bevestiging welke bestanden gewijzigd zijn;
+- bevestiging dat geen productiecode of productiegegevens zijn gewijzigd;
+- pad naar het eindrapport.
+
+Start daarna geen nieuwe opdracht.
