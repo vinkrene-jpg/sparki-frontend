@@ -1,0 +1,272 @@
+.theme-sporty-pride {
+  /* Sporty Pride / High Energy Dark Theme */
+  --sp-bg: #090a0c;
+  --sp-card: #15171c;
+  --sp-card-hover: #1c1e24;
+  --sp-text-main: #ffffff;
+  --sp-text-muted: #8a91a6;
+  --sp-border: #262933;
+  
+  --sp-accent: #ff5900;       /* Aggressive orange */
+  --sp-accent-glow: rgba(255, 89, 0, 0.2);
+  --sp-success: #00ff66;      /* Green light */
+  --sp-success-glow: rgba(0, 255, 102, 0.15);
+  
+  background-color: var(--sp-bg);
+  color: var(--sp-text-main);
+  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 5rem; /* space for fixed nav */
+}
+
+.theme-sporty-pride * {
+  box-sizing: border-box;
+}
+
+/* Typography styles */
+.theme-sporty-pride .sp-brand {
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--sp-text-main);
+}
+
+.theme-sporty-pride .sp-number-huge {
+  font-weight: 900;
+  font-size: 3.5rem;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.theme-sporty-pride .sp-number-large {
+  font-weight: 800;
+  font-size: 2.25rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.theme-sporty-pride .sp-title-caps {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.875rem;
+  color: var(--sp-text-muted);
+}
+
+/* Hero Section */
+.theme-sporty-pride .sp-hero {
+  position: relative;
+  width: 100%;
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.5rem;
+  background-size: cover;
+  background-position: center 20%;
+  background-repeat: no-wrap;
+}
+
+.theme-sporty-pride .sp-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* Dark gradient to ensure text readability (AA contrast) */
+  background: linear-gradient(to bottom, rgba(9, 10, 12, 0.4) 0%, rgba(9, 10, 12, 0.8) 50%, rgba(9, 10, 12, 1) 100%);
+}
+
+.theme-sporty-pride .sp-hero-content {
+  position: relative;
+  z-index: 10;
+}
+
+.theme-sporty-pride .sp-top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 20;
+}
+
+/* Readiness indicator */
+.theme-sporty-pride .sp-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 1.5rem;
+  color: var(--sp-success);
+  text-shadow: 0 0 20px var(--sp-success-glow);
+}
+
+.theme-sporty-pride .sp-status-dot {
+  width: 12px;
+  height: 12px;
+  background-color: var(--sp-success);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--sp-success);
+}
+
+/* Cards */
+.theme-sporty-pride .sp-card {
+  background-color: var(--sp-card);
+  border-left: 4px solid var(--sp-accent);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-sporty-pride .sp-card-neutral {
+  background-color: var(--sp-card);
+  border-left: 4px solid var(--sp-border);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+/* Details toggle */
+.theme-sporty-pride details summary {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--sp-text-muted);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 0;
+}
+.theme-sporty-pride details summary::-webkit-details-marker {
+  display: none;
+}
+.theme-sporty-pride details summary::before {
+  content: "+";
+  color: var(--sp-accent);
+  font-size: 1.2rem;
+  line-height: 0.5;
+}
+.theme-sporty-pride details[open] summary::before {
+  content: "−";
+}
+
+/* Action button */
+.theme-sporty-pride .sp-btn {
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  background-color: var(--sp-accent);
+  color: #fff;
+  text-align: center;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 2px;
+  text-decoration: none;
+  margin-top: 1rem;
+  transition: all 0.2s;
+}
+.theme-sporty-pride .sp-btn:active {
+  transform: scale(0.98);
+}
+
+/* Bottom Nav */
+.theme-sporty-pride .sp-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(21, 23, 28, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--sp-border);
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 50;
+}
+
+.theme-sporty-pride .sp-nav-item {
+  flex: 1;
+  padding: 1rem 0.25rem;
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sp-text-muted);
+  text-decoration: none;
+}
+
+.theme-sporty-pride .sp-nav-item[aria-current="page"] {
+  color: var(--sp-accent);
+}
+
+/* Week Strip */
+.theme-sporty-pride .sp-week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  background-color: var(--sp-border);
+  border: 1px solid var(--sp-border);
+}
+
+.theme-sporty-pride .sp-day-col {
+  background-color: var(--sp-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem 0.25rem;
+}
+
+.theme-sporty-pride .sp-day-col.is-today {
+  background-color: var(--sp-card);
+  position: relative;
+}
+.theme-sporty-pride .sp-day-col.is-today::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: var(--sp-accent);
+}
+
+.theme-sporty-pride .sp-day-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--sp-text-muted);
+  margin-bottom: 0.25rem;
+}
+.theme-sporty-pride .sp-day-col.is-today .sp-day-label {
+  color: var(--sp-text-main);
+}
+
+.theme-sporty-pride .sp-day-val {
+  font-size: 1rem;
+  font-weight: 800;
+}
+.theme-sporty-pride .sp-day-col.is-today .sp-day-val {
+  color: var(--sp-accent);
+}
+
+/* Block bars */
+.theme-sporty-pride .sp-block-track {
+  display: flex;
+  height: 2rem;
+  gap: 4px;
+  background-color: var(--sp-bg);
+  padding: 4px;
+  border-radius: 2px;
+}
+.theme-sporty-pride .sp-block-segment {
+  height: 100%;
+  border-radius: 1px;
+}

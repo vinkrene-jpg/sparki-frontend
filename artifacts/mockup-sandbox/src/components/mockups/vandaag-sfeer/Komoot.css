@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
+
+.komoot-buitengevoel {
+  --k-bg: #f4f2ec;
+  --k-surface: #ffffff;
+  --k-ink: #2b332e;
+  --k-ink-soft: #68736c;
+  --k-accent: #d8623b;
+  --k-accent-hover: #c45431;
+  --k-forest: #223c2d;
+  --k-forest-soft: #385946;
+  --k-line: #e6e2da;
+  
+  background-color: var(--k-bg);
+  color: var(--k-ink);
+  font-family: 'Outfit', sans-serif;
+  min-height: 100dvh;
+  padding-bottom: 100px; /* space for nav */
+}
+
+.komoot-buitengevoel .k-card {
+  background: var(--k-surface);
+  border-radius: 24px;
+  box-shadow: 0 8px 30px rgba(34, 60, 45, 0.04), 0 2px 8px rgba(34, 60, 45, 0.02);
+  position: relative;
+  overflow: hidden;
+}
+
+.komoot-buitengevoel .k-btn {
+  background: var(--k-forest);
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 99px;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+.komoot-buitengevoel .k-btn:hover {
+  background: #172a1f;
+}
+.komoot-buitengevoel .k-btn-outline {
+  background: transparent;
+  color: var(--k-forest);
+  border: 2px solid var(--k-forest);
+}
+
+.komoot-buitengevoel details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.komoot-buitengevoel details > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Custom Block Bar styles */
+.komoot-buitengevoel .k-block-container {
+  display: flex;
+  align-items: flex-end;
+  height: 48px;
+  gap: 4px;
+}
+.komoot-buitengevoel .k-block {
+  border-radius: 6px;
+  min-width: 4px;
+  transition: height 0.3s ease;
+}
+
+/* Nav */
+.komoot-buitengevoel .k-nav {
+  background: var(--k-surface);
+  border-top: 1px solid var(--k-line);
+  padding-bottom: env(safe-area-inset-bottom);
+}

@@ -9,6 +9,13 @@ Laatst bijgewerkt: 2026-07-25.
 
 ## Wacht op jouw keuze
 
+### Vandaag-scherm sfeerrichting (canvas, 26 jul)
+0. **Welke sfeer voor het commerciële Vandaag-scherm** — drie frames staan naast
+   elkaar op het canvas: Huidig (klinisch afgewezen), "Buitengevoel" (warm,
+   fotografisch, buitenwereld leidt) of "Sportieve trots" (donker, energiek,
+   grote cijfers leiden). Ook mengvormen mogelijk (bijv. warme foto-kop +
+   sportieve cijfers). Pas na keuze wordt de echte app aangepast.
+
 ### Mentale Training — sterrensysteem
 4. **Wát de sterren precies regelen** — diepgang per kaart instelbaar, één globale
    diepgang-voorkeur in je profiel, of iets anders. Onderwerpen al gekozen (6).
