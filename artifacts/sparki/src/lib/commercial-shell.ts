@@ -180,3 +180,37 @@ export function nearestUpcomingRace<T extends UpcomingRaceLike>(
     .sort((a, b) => a.raceDate.localeCompare(b.raceDate))
   return upcoming[0] ?? null
 }
+
+// ── Vaste teksten (exacte copy — één bron voor component én tests) ──────────
+export const COMMERCIAL_COPY = {
+  seasonTitle: "Seizoen in beeld",
+  seasonEmpty: "Nog geen hoofddoel ingesteld.",
+  seasonEmptyAction: "Hoofddoel instellen",
+  seasonEmptyActionHref: "/races",
+  trendInsufficient:
+    "Nog onvoldoende recente gegevens voor een betrouwbare trend.",
+  noTraining: "Geen training gepland voor vandaag.",
+  noTrainingAction: "Bekijk je plan",
+  noTrainingActionHref: "/train",
+} as const
+
+// ── Seizoenweergave (beslislogica — testbaar zonder React) ──────────────────
+// empty  → geen hoofddoel én geen seizoensplan: één eerlijke lege toestand
+//          met één actie naar de bestaande wedstrijd-/doelenflow, géén faseband.
+// plan   → er bestaat echte seizoensinformatie: faseband alleen als er een
+//          actieve fase is; de regel toont uitsluitend afleidbare gegevens.
+export type SeasonView =
+  | { kind: "empty" }
+  | { kind: "plan"; showPhaseBand: boolean; line: string }
+
+export function buildSeasonView(
+  goalRace: UpcomingRaceLike | null,
+  activePhase: (typeof SEASON_PHASES)[number] | null,
+): SeasonView {
+  if (!goalRace && !activePhase) return { kind: "empty" }
+  const line = goalRace
+    ? `Hoofddoel: ${goalRace.name} · ${formatRaceDate(goalRace.raceDate)}` +
+      (activePhase ? ` · fase: ${activePhase.toLowerCase()}` : "")
+    : COMMERCIAL_COPY.seasonEmpty
+  return { kind: "plan", showPhaseBand: activePhase != null, line }
+}

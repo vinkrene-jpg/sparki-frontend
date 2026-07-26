@@ -1,0 +1,256 @@
+X=9,8 | Y=9,8
+
+OPDRACHT — CUX_01R1 DEFINITIEF SLUITEN
+
+AGENT-UITVOERBAARHEID
+
+Uitvoerbaar door Replit Agent: JA
+
+De Replit Agent mag zelfstandig:
+- de actuele repository, componenten, routes en tests inventariseren;
+- bepalen in welke bestaande bestanden de minimale correctie hoort;
+- bestaande testconventies en screenshot tooling hergebruiken;
+- ontbrekende unit-, component- en browsertests toevoegen;
+- kleine presentatiecorrecties uitvoeren die direct nodig zijn voor onderstaande acceptatiecriteria.
+
+Menselijke controle is alleen nodig voor:
+- de uiteindelijke visuele beoordeling van de mobiele en desktop-screenshot;
+- een blokkade waarbij de repository twee aantoonbaar tegenstrijdige productregels bevat.
+
+De agent mag niet om algemene productkeuzes of technische aanwijzingen vragen wanneer de bestaande code en deze opdracht voldoende duidelijkheid geven.
+
+DOEL
+
+Sluit CUX_01R1 volledig en aantoonbaar af.
+
+De huidige desktopweergave is visueel vrijwel correct. In de aangeleverde mobiele weergave ontbreekt de kaart “Seizoen in beeld” terwijl hiervoor verticale ruimte beschikbaar is.
+
+Na deze opdracht moet het Vandaag-scherm op mobiel en desktop voldoen aan alle functionele, visuele en testbare eisen hieronder.
+
+BELANGRIJKE ARCHITECTUURREGELS
+
+- Werk uitsluitend in de bestaande CUX_01/commercial-shell-implementatie.
+- Inventariseer eerst wat al bestaat en hergebruik dit.
+- Geen nieuwe parallelle Vandaag-pagina bouwen.
+- Geen complete componentherschrijving.
+- Geen wijziging aan trainings-, herstel-, belasting-, seizoen- of coachingengines.
+- Geen wijziging aan API-contracten, databaseschema’s of datamodellen.
+- Geen hardcoded persoonlijke voorbeelddata toevoegen.
+- Geen mock- of fallbackdata gebruiken om het scherm gevuld te laten lijken.
+- Geen andere roadmaponderdelen meenemen.
+- Geen algemene designrefactor uitvoeren.
+- Bestaand correct gedrag moet behouden blijven.
+
+BEKENDE BESTANDEN
+
+Controleer minimaal de bestaande implementatie rond:
+
+- src/lib/commercial-shell.ts
+- src/components/sparki/commercial-shell.tsx
+- src/lib/commercial-shell.test.ts
+
+Gebruik daarnaast de werkelijk gekoppelde route-, component-, test- en browserbestanden die via repository-inspectie worden gevonden.
+
+WIJZIGING 1 — SEIZOENKAART OP MOBIEL
+
+Wanneer de gebruiker geen hoofddoel of bruikbaar seizoensplan heeft, moet ook op mobiel een compacte kaart zichtbaar zijn.
+
+Verplichte inhoud:
+
+Kop:
+“Seizoen in beeld”
+
+Lege toestand:
+“Nog geen hoofddoel ingesteld.”
+
+Actie:
+“Hoofddoel instellen”
+
+Gedrag:
+- de actie gebruikt de bestaande wedstrijd-/hoofddoelflow;
+- geen nieuwe route of tweede hoofddoelflow maken;
+- geen faseband of verzonnen seizoeninformatie tonen;
+- geen tweede lege toestand tonen;
+- geen dubbele actie tonen;
+- de kaart moet op mobiel volledig bereikbaar zijn door normaal verticaal scrollen;
+- de vaste onderste navigatie mag de kaart of actie niet bedekken.
+
+Mobiele volgorde:
+
+1. paginakop en datum;
+2. belastbaarheidskaart;
+3. training-van-vandaag-kaart;
+4. Deze week;
+5. Seizoen in beeld;
+6. normale onderzijde van de pagina;
+7. vaste mobiele navigatie.
+
+Desktop mag de bestaande logische tweekolomsindeling behouden, zolang dezelfde seizoenstoestand zichtbaar en bruikbaar blijft.
+
+WIJZIGING 2 — STATUS ZONDER DUBBELING
+
+Behoud exact één compacte statuspil rechtsboven:
+
+“Belastbaar”
+
+De hoofdkaart bevat:
+
+“Je bent goed belastbaar.”
+
+Er mag nergens op hetzelfde scherm nog een tweede statuspil of dubbele statuskop verschijnen.
+
+WIJZIGING 3 — BETROUWBAARHEIDSTEKST
+
+Gebruik exact:
+
+“Nog onvoldoende recente gegevens voor een betrouwbare trend.”
+
+Deze tekst hoort uitsluitend bij een toestand waarin daadwerkelijk onvoldoende recente gegevens aanwezig zijn.
+
+Toon geen verzonnen trend, score of historie.
+
+WIJZIGING 4 — WEEKVOLGORDE
+
+De weekvolgorde moet altijd zijn:
+
+Ma – Di – Wo – Do – Vr – Za – Zo
+
+Dit moet onafhankelijk zijn van:
+- de invoervolgorde van de weekdata;
+- de huidige weekdag;
+- mobiel of desktop;
+- ontbrekende trainingsdata.
+
+De huidige dag mag visueel worden gemarkeerd, maar mag niet naar het begin of einde van de lijst worden verplaatst.
+
+WIJZIGING 5 — TRAINING LEGE TOESTAND
+
+Wanneer vandaag geen training gepland staat, toon:
+
+“Geen training gepland voor vandaag.”
+
+Actie:
+
+“Bekijk je plan”
+
+De actie moet naar de bestaande plan-/kalenderflow leiden.
+
+Geen nieuwe planningsroute maken.
+
+WIJZIGING 6 — BESTAAND SEIZOENSGEDRAG BEHOUDEN
+
+Controleer tevens de toestand waarin wél een geldig hoofddoel en/of seizoensplan bestaat.
+
+Daarbij geldt:
+- bestaande echte seizoensinformatie behouden;
+- geen lege toestand tonen wanneer geldige informatie bestaat;
+- geen regressie in fase-, doel- of seizoensweergave;
+- uitsluitend gegevens tonen die aantoonbaar uit de bestaande databron komen.
+
+VERPLICHTE AUTOMATISCHE TESTS
+
+Voeg tests toe of breid bestaande tests uit voor minimaal:
+
+1. weekdata in willekeurige invoervolgorde wordt als Ma–Zo weergegeven;
+2. ontbrekende weekdata verandert de dagvolgorde niet;
+3. exact één statuspil “Belastbaar” wordt gerenderd;
+4. de hoofdzin luidt exact “Je bent goed belastbaar.”;
+5. de trendzin luidt exact volgens deze opdracht;
+6. zonder training verschijnt de juiste lege toestand en bestaande planactie;
+7. zonder hoofddoel verschijnt de seizoenskaart op mobiel;
+8. zonder hoofddoel verschijnt dezelfde inhoud op desktop;
+9. zonder hoofddoel is geen faseband zichtbaar;
+10. de actie “Hoofddoel instellen” gebruikt de bestaande flow;
+11. met geldig hoofddoel verdwijnt de lege toestand;
+12. met geldig seizoensplan blijft bestaande echte informatie zichtbaar;
+13. mobiele navigatie bedekt geen content of actie;
+14. er ontstaan geen horizontale overflow- of afkapfouten.
+
+VERPLICHTE BROWSERVALIDATIE
+
+Voer een echte browservalidatie uit op minimaal:
+
+Mobiel:
+- viewport 390 × 844;
+- begin bovenaan de pagina;
+- maak tevens bewijs dat “Seizoen in beeld” door normaal scrollen bereikbaar is;
+- controleer klikbaarheid van “Bekijk je plan”;
+- controleer klikbaarheid van “Hoofddoel instellen”;
+- controleer de vaste onderste navigatie.
+
+Desktop:
+- viewport 1440 × 900;
+- controleer volledige indeling;
+- controleer weekvolgorde;
+- controleer seizoenstoestand;
+- controleer beide acties.
+
+Gebruik de bestaande browser-/E2E-tooling van het project.
+
+Als die tooling ontbreekt, voeg alleen de minimale passende testconfiguratie toe. Introduceer geen tweede testframework wanneer al een browserframework aanwezig is.
+
+TESTUITVOER
+
+Voer minimaal uit:
+
+- alle direct betrokken unit- en componenttests;
+- alle direct betrokken browser-/E2E-tests;
+- typecheck;
+- lint voor gewijzigde bestanden of het bestaande projectcommando;
+- bestaande relevante regressietests.
+
+Los alleen regressies op die door deze opdracht ontstaan.
+
+Bewaar machineleesbare testresultaten volgens de bestaande repositoryconventie.
+
+BEWIJSARTEFACTEN
+
+Lever minimaal op:
+
+- mobiele screenshot 390 × 844 bovenaan;
+- mobiele screenshot 390 × 844 met de seizoenskaart zichtbaar;
+- desktopscreenshot 1440 × 900;
+- machineleesbare testuitvoer;
+- overzicht van uitgevoerde commando’s en resultaten.
+
+Gebruik de bestaande artifactmap.
+
+Wanneer geen conventie bestaat, gebruik:
+
+test-artifacts/CUX_01R1/
+
+ACCEPTATIECRITERIA — 100/100
+
+CUX_01R1 is alleen afgerond wanneer:
+
+- mobiel en desktop aan alle bovenstaande regels voldoen;
+- de seizoenskaart op mobiel aanwezig en bereikbaar is;
+- alle teksten exact kloppen;
+- de week altijd Ma–Zo is;
+- geen dubbele status zichtbaar is;
+- geen mock-, demo- of fallback-persoonsdata is toegevoegd;
+- bestaande routes en engines zijn hergebruikt;
+- alle verplichte tests slagen;
+- typecheck en relevante regressietests slagen;
+- screenshots en machineleesbare testresultaten zijn geleverd;
+- geen openstaande bekende afwijking resteert.
+
+Als één criterium niet slaagt, rapporteer CUX_01R1 niet als afgerond.
+
+EINDRAPPORT
+
+Geef na uitvoering uitsluitend een compact technisch rapport met:
+
+1. resultaat: GESLAAGD of NIET GESLAAGD;
+2. gewijzigde bestaande bestanden;
+3. eventueel nieuw toegevoegd testbestand, met reden;
+4. exacte oorzaak van de ontbrekende mobiele seizoenskaart;
+5. uitgevoerde testcommando’s;
+6. aantallen geslaagde en mislukte tests;
+7. locaties van screenshots en testartefacten;
+8. bevestiging dat engines, API’s en datamodellen onaangeraakt zijn;
+9. resterende blokkades, uitsluitend wanneer werkelijk aanwezig.
+
+Stop na deze opdracht.
+
+Start niet zelfstandig met data-trust, routes, betalingen of andere roadmaponderdelen.

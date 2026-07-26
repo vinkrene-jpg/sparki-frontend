@@ -7,12 +7,14 @@
 // Exits non-zero on any failure.
 import {
   COMMERCIAL_ACCOUNT_NAV,
+  COMMERCIAL_COPY,
   COMMERCIAL_DESKTOP_NAV,
   COMMERCIAL_MOBILE_NAV,
   SEASON_PHASES,
   bandLabel,
   bandTone,
   buildBlockBars,
+  buildSeasonView,
   buildWeekStrip,
   formatRaceDate,
   localISODate,
@@ -169,6 +171,49 @@ scenario("buildWeekStrip zet de volgorde vast op Ma–Zo", () => {
   assert(strip[5]!.isToday === true, "vandaag (za) blijft correct gemarkeerd")
 })
 
+scenario("buildWeekStrip: willekeurige invoervolgorde wordt altijd Ma–Zo", () => {
+  // Bewust husselen — de volgorde van aanlevering mag niets uitmaken.
+  const shuffled = [
+    { date: "2026-07-23", tss: 50 }, // donderdag
+    { date: "2026-07-19", tss: 10 }, // zondag
+    { date: "2026-07-25", tss: 70 }, // zaterdag
+    { date: "2026-07-20", tss: 20 }, // maandag
+    { date: "2026-07-24", tss: 60 }, // vrijdag
+    { date: "2026-07-21", tss: 30 }, // dinsdag
+    { date: "2026-07-22", tss: 40 }, // woensdag
+  ]
+  const strip = buildWeekStrip(shuffled, "2026-07-22")
+  assert(
+    strip.map((d) => d.label).join(",") === "Ma,Di,Wo,Do,Vr,Za,Zo",
+    `volgorde is ${strip.map((d) => d.label).join(",")}`,
+  )
+  assert(
+    strip.map((d) => d.date).join(",") ===
+      "2026-07-20,2026-07-21,2026-07-22,2026-07-23,2026-07-24,2026-07-25,2026-07-19",
+    "datums volgen de Ma–Zo-volgorde, niet de invoervolgorde",
+  )
+  // Vandaag (wo) wordt gemarkeerd maar NIET verplaatst.
+  assert(strip[2]!.isToday === true, "vandaag blijft op de wo-positie")
+  assert(strip.filter((d) => d.isToday).length === 1, "precies één vandaag")
+})
+
+scenario("buildWeekStrip: ontbrekende weekdata verandert de volgorde niet", () => {
+  // Slechts drie aangeleverde dagen, bewust door elkaar.
+  const partial = [
+    { date: "2026-07-24", tss: 0 }, // vrijdag — geen belasting
+    { date: "2026-07-20", tss: 35 }, // maandag
+    { date: "2026-07-22", tss: 0 }, // woensdag — geen belasting
+  ]
+  const strip = buildWeekStrip(partial, "2026-07-22")
+  assert(
+    strip.map((d) => d.label).join(",") === "Ma,Wo,Vr",
+    `volgorde is ${strip.map((d) => d.label).join(",")}`,
+  )
+  assert(strip[0]!.value === "35", "echte belasting blijft staan")
+  assert(strip[1]!.value === "—", "ontbrekende belasting toont — (niets verzonnen)")
+  assert(strip[2]!.value === "—", "ontbrekende belasting toont — (niets verzonnen)")
+})
+
 // ── Blokbalkjes ──────────────────────────────────────────────────────────────
 scenario("buildBlockBars accentueert alleen het zwaarste blok", () => {
   const blocks: WorkoutBlock[] = [
@@ -212,6 +257,84 @@ scenario("nearestUpcomingRace kiest de dichtstbijzijnde toekomstige", () => {
 
 scenario("formatRaceDate toont een Nederlandse datum", () => {
   assert(formatRaceDate("2026-09-16") === "16 september", "16 september")
+})
+
+// ── Vaste teksten (exacte copy, CUX_01R1) ────────────────────────────────────
+scenario("vaste teksten luiden exact volgens de opdracht", () => {
+  assert(
+    COMMERCIAL_COPY.trendInsufficient ===
+      "Nog onvoldoende recente gegevens voor een betrouwbare trend.",
+    "trendzin exact",
+  )
+  assert(
+    COMMERCIAL_COPY.noTraining === "Geen training gepland voor vandaag.",
+    "training-lege-toestand exact",
+  )
+  assert(COMMERCIAL_COPY.noTrainingAction === "Bekijk je plan", "planactie exact")
+  assert(COMMERCIAL_COPY.seasonTitle === "Seizoen in beeld", "seizoenkop exact")
+  assert(
+    COMMERCIAL_COPY.seasonEmpty === "Nog geen hoofddoel ingesteld.",
+    "seizoen-lege-toestand exact",
+  )
+  assert(
+    COMMERCIAL_COPY.seasonEmptyAction === "Hoofddoel instellen",
+    "hoofddoelactie exact",
+  )
+  assert(
+    movementLabel("Nog te weinig om een richting te zien") ===
+      COMMERCIAL_COPY.trendInsufficient,
+    "herschreven engine-zin gebruikt exact dezelfde copy-bron",
+  )
+})
+
+scenario("acties gebruiken bestaande flows (geen nieuwe routes)", () => {
+  assert(
+    COMMERCIAL_COPY.seasonEmptyActionHref === "/races",
+    "Hoofddoel instellen → bestaande wedstrijd-/doelenflow (/races)",
+  )
+  assert(
+    COMMERCIAL_COPY.noTrainingActionHref === "/train",
+    "Bekijk je plan → bestaande plan-/kalenderflow (/train)",
+  )
+})
+
+// ── Seizoenweergave (buildSeasonView) ────────────────────────────────────────
+scenario("zonder hoofddoel én zonder fase → één lege toestand, geen faseband", () => {
+  const v = buildSeasonView(null, null)
+  assert(v.kind === "empty", "lege toestand")
+})
+
+scenario("met geldig hoofddoel verdwijnt de lege toestand", () => {
+  const v = buildSeasonView({ name: "NK Weg", raceDate: "2026-09-16" }, null)
+  assert(v.kind === "plan", "geen lege toestand meer")
+  if (v.kind === "plan") {
+    assert(v.showPhaseBand === false, "geen faseband zonder actieve fase")
+    assert(
+      v.line === "Hoofddoel: NK Weg · 16 september",
+      `regel is "${v.line}"`,
+    )
+  }
+})
+
+scenario("met geldig seizoensplan blijft echte informatie zichtbaar", () => {
+  const v = buildSeasonView({ name: "NK Weg", raceDate: "2026-09-16" }, "Opbouw")
+  assert(v.kind === "plan", "planweergave")
+  if (v.kind === "plan") {
+    assert(v.showPhaseBand === true, "faseband zichtbaar bij actieve fase")
+    assert(
+      v.line === "Hoofddoel: NK Weg · 16 september · fase: opbouw",
+      `regel is "${v.line}"`,
+    )
+  }
+})
+
+scenario("alleen een actieve fase (zonder doel) toont plan, eerlijk zonder doelregel", () => {
+  const v = buildSeasonView(null, "Basis")
+  assert(v.kind === "plan", "fase-informatie is echt → geen lege toestand")
+  if (v.kind === "plan") {
+    assert(v.showPhaseBand === true, "faseband zichtbaar")
+    assert(v.line === COMMERCIAL_COPY.seasonEmpty, "doelregel blijft eerlijk leeg")
+  }
 })
 
 // ── Rapportage ───────────────────────────────────────────────────────────────

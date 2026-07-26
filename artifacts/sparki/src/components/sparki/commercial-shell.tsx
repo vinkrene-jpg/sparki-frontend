@@ -14,15 +14,16 @@ import { useSparkiState } from "@/hooks/use-sparki-state"
 import { useRaces } from "@/hooks/use-races"
 import {
   COMMERCIAL_ACCOUNT_NAV,
+  COMMERCIAL_COPY,
   COMMERCIAL_DESKTOP_NAV,
   COMMERCIAL_MOBILE_NAV,
   SEASON_PHASES,
   bandLabel,
   bandTone,
   buildBlockBars,
+  buildSeasonView,
   buildWeekStrip,
   formatDayHeader,
-  formatRaceDate,
   localISODate,
   movementLabel,
   nearestUpcomingRace,
@@ -253,11 +254,12 @@ function TrainingSection() {
     return (
       <section className="mt-6" aria-label="Training vandaag">
         <div className="c-card p-5">
-          <p className="text-base font-medium">
-            Geen training gepland voor vandaag.
-          </p>
-          <Link href="/train" className="c-btn-outline mt-3">
-            Bekijk je plan
+          <p className="text-base font-medium">{COMMERCIAL_COPY.noTraining}</p>
+          <Link
+            href={COMMERCIAL_COPY.noTrainingActionHref}
+            className="c-btn-outline mt-3"
+          >
+            {COMMERCIAL_COPY.noTrainingAction}
           </Link>
         </div>
       </section>
@@ -382,19 +384,25 @@ function SeasonBand() {
   )
   const goalRace = nearestUpcomingRace(races.data, localISODate())
 
-  // Eerlijke lege toestand: zonder hoofddoel én zonder seizoensplan tonen we
-  // géén faseband (die zou een plan suggereren dat er niet is) — alleen de
-  // melding en één actie naar de bestaande doelenflow (wedstrijden).
-  if (!goalRace && !activePhase) {
+  const view = buildSeasonView(goalRace, activePhase)
+
+  // Eerlijke lege toestand: zonder hoofddoel én zonder seizoensplan géén
+  // faseband (die zou een plan suggereren dat er niet is) — alleen de melding
+  // en één actie naar de bestaande wedstrijd-/doelenflow. Zichtbaar op mobiel
+  // én desktop (Figma 30:96 / 30:143).
+  if (view.kind === "empty") {
     return (
-      <section className="mt-8 hidden lg:block" aria-label="Seizoen in beeld">
-        <h2 className="text-lg font-semibold">Seizoen in beeld</h2>
+      <section className="mt-8" aria-label={COMMERCIAL_COPY.seasonTitle}>
+        <h2 className="text-lg font-semibold">{COMMERCIAL_COPY.seasonTitle}</h2>
         <div className="c-card mt-3 p-5">
           <p className="text-sm" style={{ color: "var(--c-ink-soft)" }}>
-            Nog geen hoofddoel ingesteld.
+            {COMMERCIAL_COPY.seasonEmpty}
           </p>
-          <Link href="/races" className="c-btn-outline mt-3">
-            Hoofddoel instellen
+          <Link
+            href={COMMERCIAL_COPY.seasonEmptyActionHref}
+            className="c-btn-outline mt-3"
+          >
+            {COMMERCIAL_COPY.seasonEmptyAction}
           </Link>
         </div>
       </section>
@@ -402,11 +410,11 @@ function SeasonBand() {
   }
 
   return (
-    <section className="mt-8 hidden lg:block" aria-label="Seizoen in beeld">
-      <h2 className="text-lg font-semibold">Seizoen in beeld</h2>
+    <section className="mt-8" aria-label={COMMERCIAL_COPY.seasonTitle}>
+      <h2 className="text-lg font-semibold">{COMMERCIAL_COPY.seasonTitle}</h2>
       <div className="c-card mt-3 p-5">
-        {activePhase && (
-          <div className="flex gap-8">
+        {view.showPhaseBand && (
+          <div className="flex flex-wrap gap-x-8 gap-y-2">
             {SEASON_PHASES.map((p) => {
               const active = p === activePhase
               return (
@@ -429,13 +437,10 @@ function SeasonBand() {
           </div>
         )}
         <p
-          className={`text-sm ${activePhase ? "mt-4" : ""}`}
+          className={`text-sm ${view.showPhaseBand ? "mt-4" : ""}`}
           style={{ color: "var(--c-ink-soft)" }}
         >
-          {goalRace
-            ? `Hoofddoel: ${goalRace.name} · ${formatRaceDate(goalRace.raceDate)}` +
-              (activePhase ? ` · fase: ${activePhase.toLowerCase()}` : "")
-            : "Nog geen hoofddoel ingesteld."}
+          {view.line}
         </p>
         <div className="mt-3 text-right">
           <Link

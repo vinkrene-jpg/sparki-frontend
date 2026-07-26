@@ -1,0 +1,51 @@
+{
+  "opdracht": "CUX_01R1",
+  "datum": "2026-07-26",
+  "resultaat": "GESLAAGD",
+  "oorzaakMobieleSeizoenskaart": "SeasonBand-sectie stond op `hidden lg:block` (alleen desktop); mobiel werd de kaart dus nooit gerenderd.",
+  "gewijzigdeBestanden": [
+    "artifacts/sparki/src/lib/commercial-shell.ts",
+    "artifacts/sparki/src/components/sparki/commercial-shell.tsx",
+    "artifacts/sparki/src/lib/commercial-shell.test.ts"
+  ],
+  "nieuweTestbestanden": [],
+  "commandos": [
+    { "cmd": "pnpm --filter @workspace/sparki run test:commercial-shell", "resultaat": "22/22 geslaagd" },
+    { "cmd": "pnpm --filter @workspace/sparki run test:day-type", "resultaat": "6/6 geslaagd" },
+    { "cmd": "pnpm --filter @workspace/sparki run test:core-profile", "resultaat": "26/26 geslaagd" },
+    { "cmd": "pnpm --filter @workspace/sparki run test:core-profile-evolution", "resultaat": "16/16 geslaagd" },
+    { "cmd": "pnpm --filter @workspace/sparki run test:session-analysis", "resultaat": "13/13 geslaagd" },
+    { "cmd": "pnpm --filter @workspace/sparki run test:onboarding-resume", "resultaat": "16/16 geslaagd" },
+    { "cmd": "pnpm --filter @workspace/sparki run test:ontwikkelprioriteit", "resultaat": "13/13 geslaagd" },
+    { "cmd": "pnpm --filter @workspace/sparki exec tsc --noEmit", "resultaat": "geen typefouten" },
+    { "cmd": "pnpm --filter @workspace/sparki run build", "resultaat": "productie-build geslaagd" },
+    { "cmd": "browservalidatie mobiel 390x844 (Playwright-testagent, /_dev/commercial)", "resultaat": "geslaagd — alle checks incl. scroll, klikbaarheid, nav-bedekking, overflow" },
+    { "cmd": "browservalidatie desktop 1440x900 (Playwright-testagent, /_dev/commercial)", "resultaat": "geslaagd — indeling, weekvolgorde, seizoenstoestand, beide acties" }
+  ],
+  "lint": "geen apart lintcommando aanwezig in het project; typecheck (tsc --noEmit) is het bestaande kwaliteitscommando",
+  "verplichteTests": {
+    "1_weekWillekeurigeVolgorde": "unit — buildWeekStrip husseltest: Ma–Zo",
+    "2_ontbrekendeWeekdata": "unit — partiële week behoudt Ma→Zo-volgorde, — voor lege dagen",
+    "3_eenStatuspil": "browser — precies één zichtbare pil 'Belastbaar' (mobiel én desktop)",
+    "4_hoofdzin": "browser + unit — exact 'Je bent goed belastbaar.'",
+    "5_trendzin": "unit + browser — exact 'Nog onvoldoende recente gegevens voor een betrouwbare trend.'",
+    "6_trainingLeeg": "unit (copy+href) + browser — lege toestand + 'Bekijk je plan' → /train",
+    "7_seizoenskaartMobiel": "browser mobiel — kaart aanwezig en volledig bereikbaar",
+    "8_seizoenskaartDesktop": "browser desktop — zelfde inhoud zichtbaar",
+    "9_geenFaseband": "unit (buildSeasonView empty) + browser — geen Basis/Opbouw/Specifiek/Taper",
+    "10_bestaandeFlow": "unit (href /races) + browser — klik → /races",
+    "11_geldigHoofddoel": "unit — buildSeasonView met doel → lege toestand verdwijnt",
+    "12_geldigSeizoensplan": "unit — faseband + echte doelregel blijven",
+    "13_navBedektNiets": "browser mobiel — knop volledig zichtbaar/klikbaar boven navigatiebalk",
+    "14_geenOverflow": "browser — scrollWidth <= innerWidth, geen afgekapte teksten"
+  },
+  "artefacten": [
+    "test-artifacts/CUX_01R1/mobiel-390x844-boven.jpg",
+    "test-artifacts/CUX_01R1/mobiel-390x844-seizoenskaart.jpg",
+    "test-artifacts/CUX_01R1/desktop-1440x900.jpg",
+    "test-artifacts/CUX_01R1/testuitvoer.log",
+    "test-artifacts/CUX_01R1/resultaten.json"
+  ],
+  "onaangeraakt": "engines, API-contracten, databaseschema's en datamodellen zijn niet gewijzigd; geen mock- of fallbackdata toegevoegd",
+  "blokkades": []
+}
