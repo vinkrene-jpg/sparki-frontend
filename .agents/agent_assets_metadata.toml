@@ -580,25 +580,25 @@ title = "UX_01-R1 — testuitvoer (14/14 + regressie + typecheck)"
 id = "P6CabEiuafOesC6ho2Uom"
 uri = "file://test-artifacts/CUX_02A/commercial-390x844.jpg"
 type = "image"
-title = "Commerciële Vandaag — mobiel 390×844"
+title = "Commerciële Vandaag mét sfeerlaag — mobiel 390×844"
 
 [[outputs]]
 id = "PMrWM20GOIaMouz-DmQpo"
 uri = "file://test-artifacts/CUX_02A/commercial-320x568.jpg"
 type = "image"
-title = "Commerciële Vandaag — smal mobiel 320×568"
+title = "Commerciële Vandaag mét sfeerlaag — smal mobiel 320×568"
 
 [[outputs]]
 id = "ilDdFRHQTopUMl_vC6YZx"
 uri = "file://test-artifacts/CUX_02A/commercial-1440x900.jpg"
 type = "image"
-title = "Commerciële Vandaag — desktop 1440×900"
+title = "Commerciële Vandaag mét sfeerlaag — desktop 1440×900"
 
 [[outputs]]
 id = "DkGd1iRgC86ezntBHuqmn"
 uri = "file://test-artifacts/CUX_02A/vandaag-flag-uit-390x844.jpg"
 type = "image"
-title = "/vandaag met flag UIT — ongewijzigde donkere Vandaag"
+title = "Ter vergelijking: /vandaag met flag UIT (ongewijzigd)"
 
 [[outputs]]
 id = "MpQiRQzGk7iZgt-uNM5cs"
