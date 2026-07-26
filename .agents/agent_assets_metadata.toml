@@ -575,3 +575,63 @@ id = "oTbAJQcVAb9N9Vxr3xiSG"
 uri = "file://screenshots/ux01r1-testuitvoer.log"
 type = "unspecified"
 title = "UX_01-R1 — testuitvoer (14/14 + regressie + typecheck)"
+
+[[outputs]]
+id = "P6CabEiuafOesC6ho2Uom"
+uri = "file://test-artifacts/CUX_02A/commercial-390x844.jpg"
+type = "image"
+title = "Commerciële Vandaag — mobiel 390×844"
+
+[[outputs]]
+id = "PMrWM20GOIaMouz-DmQpo"
+uri = "file://test-artifacts/CUX_02A/commercial-320x568.jpg"
+type = "image"
+title = "Commerciële Vandaag — smal mobiel 320×568"
+
+[[outputs]]
+id = "ilDdFRHQTopUMl_vC6YZx"
+uri = "file://test-artifacts/CUX_02A/commercial-1440x900.jpg"
+type = "image"
+title = "Commerciële Vandaag — desktop 1440×900"
+
+[[outputs]]
+id = "DkGd1iRgC86ezntBHuqmn"
+uri = "file://test-artifacts/CUX_02A/vandaag-flag-uit-390x844.jpg"
+type = "image"
+title = "/vandaag met flag UIT — ongewijzigde donkere Vandaag"
+
+[[outputs]]
+id = "MpQiRQzGk7iZgt-uNM5cs"
+uri = "file://test-artifacts/CUX_02A/resultaten.json"
+type = "unspecified"
+title = "Resultaten (machineleesbaar)"
+
+[[outputs]]
+id = "XwbNWHWN7KvP-I4CYD5Iw"
+uri = "file://test-artifacts/CUX_02A/testuitvoer.log"
+type = "unspecified"
+title = "Testuitvoer (27/27 unittests)"
+
+[[outputs]]
+id = "ojSC82-j2NGA5bv9zxkGy"
+uri = "file://test-artifacts/CUX_02A/contrastrapport.md"
+type = "text"
+title = "Contrastrapport WCAG 2.1 AA"
+
+[[outputs]]
+id = "rnpm9wdl21VZbK6VrmaIa"
+uri = "file://test-artifacts/CUX_02A/echte-context-vs-fallback.md"
+type = "text"
+title = "Echte context vs. decoratieve fallback"
+
+[[outputs]]
+id = "DdvUnnv6lNdq3LRUjSpyx"
+uri = "file://test-artifacts/CUX_02A/flag-check.txt"
+type = "text"
+title = "Flag-check commercial_shell (standaard UIT)"
+
+[[outputs]]
+id = "gMszJxG7ZsOziQH--I7z6"
+uri = "file://test-artifacts/CUX_02A/git-diff-stat.txt"
+type = "text"
+title = "Git diff --stat (scopebewijs)"
