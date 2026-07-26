@@ -1,131 +1,89 @@
-# Sparki Data-Trust Audit — applicatiebrede controle op mockdata
+# Sparki Data-Trust Audit — DT_01A (controle nep-, demo- en foutieve gebruikersdata)
 
-Datum: 23 juli 2026 (aangevuld met Opdracht 0A.1 — data-trust herstellen) · Scope: alle modules (web, api-server, mobiel, mockup-sandbox) + database (dev én productie)
+**Datum:** 26 juli 2026 · **Commit onderzocht:** ed68b4e · **Aard:** uitsluitend audit + dry-run — geen productiecode, UI, engines, schema of data gewijzigd. Vervangt en actualiseert de audit van 23 juli 2026 (Opdracht 0A.1, samengevat onderaan).
 
 ## Doel
+Applicatiebreed vaststellen of Sparki persoonlijke gegevens, trainingen, planning, belasting, herstel, routes, wedstrijden, sociale gegevens of adviezen toont die niet aantoonbaar uit echte gebruikersdata komen. Een lege toestand is beter dan geloofwaardige maar onjuiste persoonlijke data.
 
-Vaststellen dat nergens in Sparki mock-, seed-, demo- of fallbackdata als
-persoonlijke gebruikersdata wordt getoond, en dat elke zichtbare waarde een
-controleerbare echte herkomst heeft.
+## Aanpak en bewijs
+1. Drie read-only code-inventarisaties: web-frontend (`artifacts/sparki`), api-server (`artifacts/api-server`), mobiel + gedeelde libs (`artifacts/sparki-mobile`, `lib/db`, `lib/feature-flags`).
+2. Alleen-lezen databasecontrole van de **ontwikkeldatabase** (alle ~150 tabellen geïnventariseerd, gevulde tabellen per eigenaar uitgesplitst) én de **productiedatabase** (read-only replica).
+3. Bestaande regressietest uitgevoerd: `test:data-trust` → **17/17 scenario's geslaagd** (leeg account overal eerlijk leeg; gegevensbroncontrole; FTP-zelfherstel; fiets-autokoppeling; opschoning-droogdraai).
+4. Classificatie van elk item volgens het verplichte 9-klassenmodel; volledige lijst in `docs/SPARKI_MOCK_DATA_INVENTORY.csv` (34 items), tellingen/quarantainelijst in `docs/SPARKI_DATA_TRUST_DRY_RUN.json`, bronnen in `docs/SPARKI_DATA_TRUST_EVIDENCE.json`.
 
-## Aanpak
+## Kernconclusie
+**Er wordt nergens mock-, demo- of voorbeelddata als persoonlijke gebruikersdata getoond.** De architectuur is aantoonbaar "eerlijk-leeg-eerst". Wel zijn in de productiedatabase **twee restanten van foutieve afgeleide metriek** gevonden (zie bevinding P01/P02) die met het reeds bestaande, droogdraai-verplichte opschoonmechanisme verwijderd kunnen worden — ná menselijke bevestiging, niet in deze opdracht.
 
-1. Geautomatiseerde codescan van alle vier de artifacts (patronen: mock, seed,
-   demo, sample, fixture, fallback-arrays, hardcoded persoonsdata).
-2. Databasescan (dev + productie) op seed-/testaccounts en verweesde testrijen.
-3. Classificatie van elke vondst in vijf herkomstcategorieën (zie hieronder).
-4. Nieuwe admin-gegevensbroncontrole (`GET /api/admin/data-provenance`) die per
-   gegevensblok bron-tabel, record-id, berekening, laatste update en gebruiker
-   toont.
-5. Geautomatiseerde regressietest `test:data-trust` (12 scenario's).
+## Bevindingen per verplicht scopegebied
 
-## Herkomstcategorieën
+### Vandaag
+- Aanhef: echte voornaam; ontbreekt die dan neutraal "Atleet" (label, geen dataclaim) — `home-sections.tsx`.
+- Weer: echte Open-Meteo-forecast voor de echte thuislocatie; zonder forecast expliciet "Sparki laat hier geen schatting zien" — `general-day-home.tsx`.
+- Zonder check-in/metrics: oproep om in te checken; geen verzonnen herstelwaarden.
 
-| Categorie | Betekenis | Toegestaan zichtbaar als persoonlijke data? |
-|---|---|---|
-| 1. Directe gebruikersdata | door de gebruiker ingevoerd of geüpload | ja |
-| 2. Afgeleide echte data | deterministisch berekend uit categorie 1 (TSS, readiness, observaties) | ja, met uitleg |
-| 3. Externe echte bron | Strava/OSM/Open-Meteo e.d., met bronvermelding | ja, met bron |
-| 4. Bewust fictief product | Sparki World virtuele renners — transparant fictief, harde muur naar echte data | ja, mits als fictief gelabeld |
-| 5. Mock/seed/test/fallback | voorbeelddata, demo-rijen, stille fallbacks | **nee — nooit** |
+### Trainingskalender, plannen, training koppelen/toevoegen
+- Lege kalender ⇒ lege lijst (vastgelegd in test, `koppellijst-workouts.ts`).
+- Workout-TSS wordt uit de échte workoutstructuur geschat en expliciet als schatting gemarkeerd (`engines/core-prediction/tss.ts`).
+- FTP-invoerveld toont "bijv. 250" — instructieplaceholder, wordt nooit als waarde opgeslagen.
 
-## Bevindingen
+### Lab, CTL/ATL/TSB/TSS en herstel
+- `deriveTss` geeft `null` zonder power/FTP — nooit een verzonnen belastingscore (`lib/derived-load.ts`).
+- `ftpAtDate` valt terug op profiel-FTP mét `ftp_estimated`-vlag; test bewijst dat echte metingen winnen van schattingen.
+- UI (`performance-numbers.tsx`): "—" plus eerlijke meldingen ("FTP en gewicht zijn nog niet bekend", "Nog geen trainingsbelasting bekend", "Nog geen beste vermogens bekend").
+- **Bevinding P01 (productie):** in `ftp_history` staat een afgeleide rij van **410 W (25 mei 2026) zonder `[achterhaald]`-markering**, terwijl er nieuwere echte metingen zijn (manual 250 op 22 juni; Strava 258/272 op 26 juni; manual 345 op 9/12 juli). De tweede afgeleide rij (331 W, zelfde dag) is wél gemarkeerd. Classificatie: `STALE_OR_INVALID_PERSONAL_METRIC`. Gevolg: de 410 W-rij blijft zichtbaar in de FTP-historie en kan TSS/IF-afleidingen rond eind mei vertekenen. Het actuele profiel-FTP is correct (345 W, niet-geschat). Oorzaak is read-only niet vaststelbaar; herstel kan via het bestaande zelfherstel/markeermechanisme of de admin-opschoning — ná menselijke bevestiging.
+- **Bevinding P02 (productie):** 4 dubbele Strava-importrijen (272 W, alle 26 juni 2026) staan er nog — de import dedupliceert inmiddels per dag, maar de bestaande opschoning (`POST /api/admin/data-trust/cleanup`, standaard droogdraai) is voor deze rijen nooit met `apply` uitgevoerd. Classificatie: `STALE_OR_INVALID_PERSONAL_METRIC` (vervuiling, geen tonings-risico van vreemde data: het zijn echte eigen metingen, alleen dubbel).
 
-### Code (alle artifacts)
+### Doelen en wedstrijden
+- Clerk-gebonden tabellen; productie: 1 race, dev: 0 rijen. Geen vervuiling aangetroffen.
 
-- **Frontend (`artifacts/sparki`)** — schoon. Geen mock-arrays als persoonlijke
-  data; lege datasets renderen eerlijke lege staten (`?? []` + Smart Missing
-  Input Flow). Geen stille fallback die een API-fout door verzonnen data vervangt.
-- **API-server** — schoon. `world-seed`/`intel-seed` zijn bewuste
-  productfeatures (categorie 4: transparant fictieve Sparki World-renners met
-  harde muur naar echte gebruikersdata), géén mockdata. `DEV_AUTH_BYPASS`
-  faalt gesloten in productie (vereist NODE_ENV≠production én expliciete flag).
-  Alle persoonlijke-data-queries zijn clerkId-gescoped.
-- **Mobiel (`artifacts/sparki-mobile`)** — schoon.
-- **Mockup-sandbox** — `Prototype.tsx` bevat hardcoded voorbeeldactiviteiten.
-  Onschadelijk: dit is de design-sandbox (canvas-previews), geen
-  gebruikersgerichte omgeving, en wordt niet mee-gedeployed als product. Alleen
-  gedocumenteerd, niet verwijderd.
+### Routes en ritten
+- ORS-fouten worden vertaald naar eerlijke Nederlandse uitleg; nooit een gefabriceerde rechte-lijn-route (`lib/routing/providers/ors.ts`).
+- Rittitel-fallback "Rit" en mobiele ritnaam "Ochtendrit/Middagrit" zijn tijd-/typelabels, geen persoonlijke metriek.
+- Productie: 391 sessies en 9 routes, alle clerk-gebonden aan de 2 echte gebruikers.
 
-### Database
+### Materiaal en fietsen
+- `garage_bikes` clerk-gebonden (productie: 1 fiets). Regel "km altijd afgeleid, nooit een teller" geborgd; historische foute auto-koppelingen worden door het bestaande zelfherstel losgemaakt (getest in `test:data-trust`).
 
-- **Productie**: schoon — 2 echte gebruikers, nul testaccounts.
-- **Dev**: 6 achtergebleven testaccounts verwijderd (`test-intel-athlete`,
-  `test_fueling_user`, 4× `test_koppel_*`). `dev_qa_athlete` bewust behouden
-  (dat is de Development Preview-gebruiker).
-- **Structurele oorzaak**: sommige oudere tests ruimden hun
-  `user_profiles`-rijen niet op na afloop. De nieuwe `data-trust`-test ruimt
-  alles op (incl. user/athlete-profielen); bestaande tests laten soms residu
-  achter — aanbeveling: bij toekomstige testonderhoud dezelfde volledige
-  cleanup toepassen.
+### Vrienden, feed en sociale gegevens
+- Vriendverzoeken renderen niets bij geen data; naamfallbacks "Onbekend"/"Sparki-vriend" zijn labels bij een ontbrekende naam van een échte vriend, geen verzonnen personen.
+- **Sparki World is transparant fictief bij ontwerp:** eigen `virtual_*`-tabellen (215 atleten, 610 media, 116 posts, 117 events in dev én prod), feed levert altijd `fictional: true`, seedscript heeft een honesty-gate tegen onmogelijke waarden. Productfeature, géén mockdata; mag nooit automatisch worden verwijderd.
 
-### Opdracht 0A.1 — foute afgeleide waarden in productie (23 juli 2026)
+### Coach-, ouder- en clubomgeving
+- User-binding via `requireAuth` + clerkId-filters; bestaande isolatiesuites (cross-account, coach/parent-sharing-niveaus, links-unlink/end) dekken dit af.
 
-Drie structurele fouten gevonden en verholpen (productie-DB is voor de agent
-alleen-lezen; alle herstel is daarom **zelfherstellend bij het draaien van de
-engines**, plus een gerichte admin-opschoning):
+### Adminfuncties
+- Gegevensbroncontrole `/api/admin/data-provenance`: per oppervlak bron-tabel/record-id/telling uit een vaste allowlist; lege blokken tonen "geen brondata — eerlijk leeg"; getest (incl. 404 onbekende gebruiker, 403 niet-admin fail-closed).
+- Opschoning `POST /api/admin/data-trust/cleanup`: standaard droogdraai, verwijderen alleen met `apply=true`. **In deze audit is géén apply uitgevoerd.**
 
-1. **FTP bleef ten onrechte "schatting" (331 W) terwijl er nieuwere echte
-   invoer was (handmatig 250, Strava 258).** Oorzaak: de Strava-import schreef
-   wél een `ftp_history`-rij maar zette `ftpEstimated` nooit op `false`,
-   waardoor de ondergrens-engine de schatting bleef ophogen.
-   Fix: (a) import zet nu `ftpEstimated=false` en dedupliceert per dag;
-   (b) `recalibrateEstimatedFtp` heeft een zelfherstel-stap: staat er een echte
-   (niet-afgeleide) `ftp_history`-rij die minstens zo nieuw is als de nieuwste
-   afgeleide rij, dan wordt die echte waarde overgenomen (met herleidbaar
-   paspoort-event) en stopt het automatisch ophogen; een nieuwere echte invoer
-   blokkeert elke auto-verhoging — hoogstens een paspoortvoorstel.
-2. **Fiets-autokoppeling koppelde ALLE historische ritten aan de enige actieve
-   fiets**, waardoor kilometerstanden en onderhoudsadvies (±3800 km) verzonnen
-   waren. Fix: de enkelvoudige-fiets-fallback koppelt alleen ritten vanaf de
-   registratiedatum van de fiets, en een idempotente zelfherstel-stap maakt
-   eerdere foute auto-koppelingen (rit ouder dan de fiets) weer los. Koppeling
-   met écht bewijs (Strava gear_id) en handmatige keuzes blijven onaangetast.
-3. **Schattingen stonden niet als schatting op het scherm.** Fix: FTP en
-   weekuren tonen nu "(schatting)" op het Sportpaspoort en in de
-   profielinstellingen zodra de bijbehorende `…Estimated`-vlag waar is.
+### API-fallbacks en foutafhandeling
+- Weer: lege lijst bij falen. Modelaanroep: 500 met eerlijke melding. Frontend: letterlijke foutweergave of "Er ging iets mis"-melding; error-boundary met eerlijke crashmelding.
+- Modeladviezen: context bevat alleen echte records, ontbrekend gaat expliciet als "missing" mee, prompt verbiedt verzinnen en eist bronvermelding. Restrisico inherent aan taalmodellen, gemitigeerd.
+- **Bevinding P03 (productie):** 161 observaties; of daar nog Engelstalige rijen van vóór de taalcorrectie tussen staan is read-only niet betrouwbaar vast te stellen → `UNKNOWN_REQUIRES_REVIEW`; het bestaande droogdraai-endpoint kan dit exact tonen.
 
-**Opschoning productie (René):** Engelstalige observaties van vóór de
-taalcorrectie en dubbele `ftp_history`-importrijen zijn via de nieuwe
-admin-opschoning verwijderbaar: `POST /api/admin/data-trust/cleanup`
-(alleen admin; standaard droogdraai die exact toont wat weg zou gaan,
-verwijderen alleen met `apply=true`). Echte data (191 sessies, gewicht,
-vriendkoppeling, garagefiets, echte FTP-metingen) blijft onaangeroerd.
+### Seed-, fixture-, demo- en ontwikkeldata
+- Seedscripts gebruiken herkenbare prefixes (`seed_va_`, `seed_preview_`) en domeinen (`@virtual.sparki`, `@preview.sparki`). **Geen enkele `seed_%`-rij in dev of productie `user_profiles`.**
+- Testfixtures ("Testrit", "Test Vriend") staan uitsluitend in `*.test.ts`-bestanden; niet geïmporteerd door productiecode.
+- Canvas-mockups (`artifacts/mockup-sandbox`, o.a. `Prototype.tsx` en de Vandaag-sfeervarianten) bevatten voorbeeldwaarden maar zijn ontwerp-previews in een apart artifact dat nooit als product wordt geleverd.
+- **Dev-QA-account** `dev_qa_a…` ("Lars de Vries", `@sparki.dev`, gewicht 68,50 kg, 1988 tester-events, 1 flag-override, 3 head-tester-uitnodigingen): bewust behouden Development Preview-gebruiker (gedocumenteerd in de 0A.1-audit; `DEV_AUTH_CLERK_ID`/eerste profielrij). Alleen in de ontwikkeldatabase; classificatie `SEED` (dev-tooling), niet gebruikersgericht.
 
-## Nieuwe waarborgen
+### Hardcoded persoonsgegevens en sportwaarden
+- Geen hardcoded persoonsgegevens van echte personen in productiecode (web, api, mobiel). Sensor-UUID's en navigatie-instructies ("linksaf") zijn functionele constanten.
 
-1. **Admin-gegevensbroncontrole** — `/admin` → sectie "Gegevensbroncontrole"
-   (alleen admins/testers; server-side 403 voor anderen). Per gegevensblok
-   (profiel, kalender, sessies, doelen, routes, wedstrijden, voeding,
-   meldingen, observaties, chat): brontabel + kolom, aantal records, laatste
-   record-id, laatste update, berekeningstoelichting en herkomstoordeel. Lege
-   blokken tonen eerlijk "geen brondata — eerlijk leeg"; een mislukte controle
-   toont "controle mislukt", nooit vervangende cijfers.
-2. **Regressietest `test:data-trust`** (16/16 geslaagd, run via shell:
-   `pnpm --filter @workspace/api-server run test:data-trust`):
-   - leeg account is op 8 kernoppervlakken eerlijk leeg (geen fallbackdata);
-   - twee-gebruikers-isolatie (training van A onzichtbaar voor B);
-   - gegevensbroncontrole: 403 voor niet-admin (echte adminlijst, fail-closed),
-     echte bron + juiste telling + record-id voor admin, 404 bij onbekende
-     gebruiker;
-   - FTP-zelfherstel: echte invoer wint van een oudere afgeleide schatting, en
-     een echte FTP wordt daarna nooit automatisch aangepast;
-   - fiets-autokoppeling: historische ritten (van vóór de registratiedatum)
-     worden niet gekoppeld en eerdere foute auto-koppelingen worden losgemaakt;
-   - admin-opschoning: droogdraai herkent exact de vervuiling (Engelstalige
-     observaties, dubbele ftp-rijen) en `apply` verwijdert alléén die rijen.
-3. **Admin-opschoning `POST /api/admin/data-trust/cleanup`** — gerichte,
-   controleerbare opschoning per gebruiker met verplichte droogdraai-stap.
+## Herkomstkolommen in het schema
+- Mét herkomst: `training_sessions` (source/sources/field_sources/manual_fields), `computation_traces` (reliability: gemeten/afgeleid/geschat), `knowledge_items` (provider/source), `road_objects` (source), `intel_cards` (source_label/source_url), alle `virtual_*`-tabellen (fictie per definitie).
+- Zonder herkomstkolom (acceptabel — directe gebruikersinvoer/instellingen): `user_profiles`, `privacy_settings`, `audio_preferences`, `push_subscriptions`.
 
-## Opschoning uitgevoerd
+## Stopregelbeoordeling
+Geen stop nodig: echte en niet-echte data zijn overal betrouwbaar te onderscheiden (clerk-binding, aparte `virtual_*`-tabellen, herkomstkolommen, seed-prefixes, dev-domeinen). De drie productie-onzekerheden (P01–P03) zijn onderscheidbaar en gemarkeerd; er is geen situatie waarin echte gebruikersdata onherkenbaar vermengd is met mockdata.
 
-Alleen aantoonbaar seed-/testmateriaal is verwijderd (de 6 dev-testaccounts
-hierboven, herkenbaar aan `test_`-prefixen en testdomein-e-mails). Er is geen
-productiedata of echte gebruikersdata aangeraakt.
+## Verplichte auditvragen — items met verhoogde aandacht
+Voor elk CSV-item zijn UI/API, veld, bron, user-binding, gedrag bij ontbrekende data, gedrag bij fout, verwarringsrisico, voorstel en risico vastgelegd. Samengevat voor de risicogevallen:
+1. **P01 — afgeleide FTP 410 W zonder markering (prod):** getoond in FTP-historie (Sportpaspoort/instellingen); bron `ftp_history.test_type='derived'`; gebonden aan één echte gebruiker; risico middel (historie + afleidingen rond mei 2026); voorstel: markeren `[achterhaald]` via bestaand mechanisme na menselijke bevestiging — historie nooit deleten.
+2. **P02 — 4 dubbele Strava-FTP-rijen (prod):** eigen echte metingen, alleen dubbel; risico laag; voorstel: bestaande cleanup-droogdraai → apply na bevestiging (oudste rij blijft).
+3. **P03 — mogelijk Engelstalige observaties (prod):** `UNKNOWN_REQUIRES_REVIEW`; exact vast te stellen via cleanup-droogdraai.
+4. **A05 — modeladvies:** kan taalkundig stellig ogen; guards aanwezig (alleen-echte-context, verzinverbod, bronplicht); geen wijziging in deze golf.
 
-## Conclusie
-
-Sparki toont nergens mock-, seed- of fallbackdata als persoonlijke data.
-Alle persoonlijke oppervlakken zijn clerkId-gescoped, falen eerlijk en zijn nu
-controleerbaar via de admin-gegevensbroncontrole en geborgd met een
-geautomatiseerde regressietest.
+## Samenvatting eerdere audit (Opdracht 0A.1, 23 juli 2026)
+- 6 achtergebleven dev-testaccounts (`test_*`) destijds verwijderd; `dev_qa_athlete` bewust behouden als Development Preview-gebruiker.
+- Drie structurele fouten hersteld: Strava-import zet `ftpEstimated=false` + dedupliceert per dag; fiets-autokoppeling koppelt alleen vanaf registratiedatum + zelfherstel voor historische foutkoppelingen; schattingen tonen "(schatting)" in UI.
+- Waarborgen sindsdien: admin-gegevensbroncontrole, `test:data-trust`-regressietest, admin-opschoning met verplichte droogdraai.

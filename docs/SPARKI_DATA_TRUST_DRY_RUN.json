@@ -1,0 +1,80 @@
+{
+  "opdracht": "DT_01A — Controle op nep-, demo- en foutieve gebruikersdata",
+  "datum": "2026-07-26",
+  "commit": "ed68b4e",
+  "mutatiesUitgevoerd": 0,
+  "applyUitgevoerd": false,
+  "aantallenPerClassificatie": {
+    "VERIFIED_REAL_USER_DATA": 9,
+    "VERIFIED_SYSTEM_REFERENCE_DATA": 7,
+    "FALLBACK": 7,
+    "SEED": 5,
+    "DEMO": 2,
+    "STALE_OR_INVALID_PERSONAL_METRIC": 2,
+    "MOCK": 1,
+    "UNKNOWN_REQUIRES_REVIEW": 1,
+    "HARDCODED_PERSONAL_DATA": 0
+  },
+  "aantallenPerModule": {
+    "Vandaag": 2,
+    "Training/planning": 2,
+    "Ritten/sessies": 3,
+    "Lab/FTP/belasting": 4,
+    "Sparki World": 2,
+    "Samen/vrienden": 1,
+    "Mobiel": 3,
+    "Routes": 1,
+    "Chat/advies": 2,
+    "Auth/dev": 1,
+    "Accounts": 4,
+    "Telemetrie": 2,
+    "Flags": 2,
+    "Uitnodigingen": 1,
+    "Kennis/intel": 2,
+    "Overige persoonlijke modules (leeg)": 1,
+    "Canvas-ontwerp (geen productoppervlak)": 1
+  },
+  "quarantaineKandidatenNaMenselijkeBevestiging": [
+    {
+      "id": "P01",
+      "omgeving": "productie",
+      "record": "ftp_history: afgeleide rij 410 W (2026-05-25) zonder [achterhaald]-markering",
+      "voorgesteldMechanisme": "bestaand zelfherstel/markeermechanisme (notes-prefix [achterhaald], alleen test_type='derived') — markeren, nooit deleten",
+      "verwachtUiGevolg": "410 W verdwijnt uit de getoonde FTP-historie; TSS/IF-afleidingen rond eind mei 2026 gebruiken weer een reële FTP; actueel profiel-FTP (345, niet-geschat) verandert niet"
+    },
+    {
+      "id": "P02",
+      "omgeving": "productie",
+      "record": "ftp_history: 4 dubbele Strava-importrijen (272 W, 2026-06-26)",
+      "voorgesteldMechanisme": "bestaand POST /api/admin/data-trust/cleanup — verplichte droogdraai eerst, apply alleen na bevestiging; strikt beperkt tot importbron-rijen (test_type='strava'), oudste rij blijft",
+      "verwachtUiGevolg": "FTP-historie toont één rij per importdag; geen waardeverandering"
+    },
+    {
+      "id": "P03",
+      "omgeving": "productie",
+      "record": "ai_observations: mogelijk Engelstalige rijen van vóór de taalcorrectie (aantal onbekend; 161 observaties totaal)",
+      "voorgesteldMechanisme": "eerst bestaande cleanup-droogdraai draaien om het exacte aantal te zien; pas daarna beslissen",
+      "verwachtUiGevolg": "eventuele Engelstalige regels verdwijnen uit observatie-historie; Nederlandstalige observaties blijven"
+    }
+  ],
+  "nooitAutomatischVerwijderen": [
+    "Alle data van echte gebruikers (prod: 2 accounts, 391 sessies, 9 routes, 1 race, 1 fiets, gewichten, echte FTP-metingen manual/strava; dev: profiel Rene Vink)",
+    "ftp_history-historie als geheel — achterhaalde afgeleide rijen worden gemarkeerd, nooit verwijderd; alleen importduplicaten vallen onder het bestaande cleanup-beleid",
+    "Sparki World virtual_*-tabellen (215 atleten, 610 media, 116 posts, 117 events) — bewust transparant fictief productonderdeel",
+    "intel_cards (32), knowledge_items (144), feature_flags (12) — systeem-/referentiedata",
+    "dev-QA-gebruiker dev_qa_a… — nodig voor Development Preview Mode; verwijdering zou dev-preview naar het echte account laten vallen",
+    "invitations-historie (accepted/expired) — auditspoor",
+    "handmatige en coach-ingevoerde waarden, ongeacht duplicaten (bestaand beleid)"
+  ],
+  "menselijkeBevestigingVereist": [
+    "Alle drie quarantainekandidaten (P01, P02, P03) — geen enkele opschoning zonder expliciete bevestiging van de eigenaar",
+    "Optioneel: dev-QA-persona 'Lars de Vries' hernoemen naar een herkenbaar niet-persoonsnaam-label (bijv. 'Dev Preview') — cosmetisch, geen verplichting"
+  ],
+  "verwachteUiGevolgenNaOpschoning": [
+    "Vandaag, kalender, Lab, routes, wedstrijden, materiaal, sociaal: geen zichtbare verandering — deze tonen al uitsluitend echte, clerk-gebonden data of eerlijke lege staten",
+    "FTP-historie (Sportpaspoort/profiel): 410 W-uitschieter en 4 duplicaatrijen verdwijnen uit de weergave",
+    "Observaties: eventuele Engelstalige restregels verdwijnen",
+    "Development Preview Mode (alleen dev): ongewijzigd zolang de dev-QA-gebruiker blijft bestaan"
+  ],
+  "stopregel": "Niet getriggerd — echte en niet-echte data zijn overal onderscheidbaar (clerk-binding, aparte virtual_*-tabellen, herkomstkolommen, seed-prefixes); onzekerheden zijn expliciet als UNKNOWN_REQUIRES_REVIEW gemarkeerd in plaats van aangeraakt"
+}

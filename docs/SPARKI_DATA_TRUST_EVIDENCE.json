@@ -1,0 +1,43 @@
+{
+  "opdracht": "DT_01A — Controle op nep-, demo- en foutieve gebruikersdata (audit + dry-run)",
+  "datum": "2026-07-26",
+  "commitOnderzocht": "ed68b4e",
+  "mutatiesUitgevoerd": false,
+  "uitgevoerdeControles": [
+    "3 read-only code-inventarisaties (web-frontend artifacts/sparki, api-server artifacts/api-server, mobiel artifacts/sparki-mobile + lib/db + lib/feature-flags)",
+    "grep productiecode op mockData/DEMO_/sampleData/dummyData/FAKE_/placeholder-patronen (alleen treffers in testbestanden en commentaar)",
+    "grep op dev_qa / persoonsnamen (aanmaakscript dev-QA-account niet in repo; herkomst gedocumenteerd in 0A.1-audit)",
+    "pnpm --filter @workspace/api-server run test:data-trust (via shell, sequentieel)",
+    "Ontwikkeldatabase alleen-lezen: volledige tabellenlijst; user_profiles per clerk-prefix + emaildomein; training_sessions/ftp_history/routes/races/planned_workouts/athlete_goals/garage_bikes/tester_events/invitations/user_flag_overrides per eigenaar; virtual_*-, intel-, knowledge- en flag-tellingen; athlete_profiles-inhoud",
+    "Productiedatabase alleen-lezen (read-replica): user_profiles per soort; kernvolumes (sessies, ftp_history, observaties, virtual_athletes, routes, races, fietsen); ftp_history volledig (test_type, waarde, datum, [achterhaald]-markering); athlete_profiles FTP-status",
+    "git status --porcelain (bevestiging: alleen auditdocumenten toegevoegd/gewijzigd)"
+  ],
+  "testResultaten": {
+    "test:data-trust": "17/17 scenario's geslaagd — o.a. leeg account overal eerlijk leeg; twee-gebruikers-isolatie; gegevensbroncontrole 403/404/echte bron; FTP-zelfherstel (echte invoer wint, echte waarde nooit auto-aangepast); fiets-autokoppeling historisch losgemaakt; cleanup-droogdraai + gerichte verwijdering"
+  },
+  "databankBevindingenDev": {
+    "user_profiles": "2 rijen: user_3FT… (Rene Vink, gmail — echt) en dev_qa_a… (Lars de Vries, @sparki.dev — bewust behouden Development Preview-gebruiker)",
+    "seedRijen": "0 rijen met seed_%-prefix",
+    "persoonlijkeTabellen": "training_sessions, ftp_history, routes, races, planned_workouts, athlete_goals, garage_bikes, athlete_daily_metrics, ai_observations, computation_traces, sync_runs, connector_connections, notifications: alle 0 rijen",
+    "sparkiWorld": "virtual_athletes 215, virtual_media 610, virtual_posts 116, virtual_events 117 (aparte tabellen)",
+    "referentie": "intel_cards 32, knowledge_items 144, feature_flags 12",
+    "devQaResten": "tester_events 1988, user_flag_overrides 1, invitations 3 (alle gebonden aan dev_qa_a…)"
+  },
+  "databankBevindingenProd": {
+    "user_profiles": "2 echte gebruikers; 0 seed-/test-/dev-accounts",
+    "volumes": "training_sessions 391, ftp_history 10, ai_observations 161, virtual_athletes 215, routes 9, races 1, garage_bikes 1",
+    "ftpHistory": "manual 345 (2026-07-12), manual 345 (2026-07-09), strava 4×272 + 1×258 (2026-06-26), manual 250 (2026-06-22), derived 410 (2026-05-25, NIET gemarkeerd), derived 331 (2026-05-25, [achterhaald])",
+    "athleteProfiles": "FTP 345 en 258, beide ftp_estimated=false, beide met gewicht"
+  },
+  "eerdereAudit": "docs-historie: Opdracht 0A.1 (23 juli 2026) — 6 test_*-accounts destijds uit dev verwijderd, dev_qa bewust behouden; waarborgen: /api/admin/data-provenance, test:data-trust, POST /api/admin/data-trust/cleanup (droogdraai-verplicht)",
+  "opgeleverdeBestanden": [
+    "docs/SPARKI_DATA_TRUST_AUDIT.md",
+    "docs/SPARKI_MOCK_DATA_INVENTORY.csv",
+    "docs/SPARKI_DATA_TRUST_DRY_RUN.json",
+    "docs/SPARKI_DATA_TRUST_EVIDENCE.json"
+  ],
+  "nietTeVerifierenReadOnly": [
+    "Exact aantal Engelstalige ai_observations in productie (patroonherkenning op read-replica niet betrouwbaar; bestaande cleanup-droogdraai kan dit exact tonen)",
+    "Oorzaak waarom de afgeleide 410 W-rij niet gemarkeerd is (vereist schrijfpad-analyse met reproductie; buiten scope van deze audit)"
+  ]
+}
