@@ -147,3 +147,4 @@
 - [Sparki provider compliance](sparki-provider-compliance.md) — CARTO/OSM/Esri-tegels niet commercieel zonder contract; Open-Meteo free tier non-commercial-only (+client-side call); mobiel mist Mapbox-attributie; ORS round-trip max 100 km.
 - [Sparki commerciële schil](sparki-commercial-shell.md) — presentation-only shell (flag commercial_shell): exact copy via one COMMERCIAL_COPY const; `hidden lg:` drops mobile content; browser checks via Playwright subagent on /_dev/commercial.
 - [Sparki bewijsarchief](sparki-bewijsarchief.md) — evidence files live in bewijsarchief/ + SHA-256 inventory; never modify/delete; public export-zips only removed after byte-identical verified private copy.
+- [Sparki publicatiecontrole](sparki-publish-check.md) — static serve ⇒ alleen dist/public is publiek; dev-routes bewijzen via bundle-grep na verse build, live site via curl van de prod-JS.

@@ -1,0 +1,202 @@
+AGENT
+X=9,8 | Y=9,8
+
+OPDRACHT — PUBLICATIECONTROLE VAN HET NIEUWE VANDAAG-SCHERM
+
+DOEL
+
+Voer uitsluitend de laatste technische en operationele controle uit voordat het gemigreerde commerciële Vandaag-scherm naar productie mag.
+
+Nog niet publiceren.
+
+AFBAKENING
+
+Controleer alleen:
+- het nieuwe Vandaag-scherm;
+- de centrale design-systemfundering die dit scherm gebruikt;
+- de directe productie-impact van deze wijziging.
+
+Niet wijzigen:
+- andere schermen;
+- engines;
+- API-contracten;
+- database- of schemastructuur;
+- rollen of authenticatie;
+- routefunctionaliteit;
+- taak #293;
+- productiedata.
+
+CONTROLE 1 — WIJZIGINGSBEREIK
+
+Toon exact:
+- welke commits bij deze publicatie horen;
+- welke bestanden worden gepubliceerd;
+- of er onbedoelde wijzigingen buiten Vandaag en het centrale designsysteem meekomen;
+- of tijdelijke screenshots, ZIP-bestanden, testexports of previewbestanden buiten de bedoelde sfeerfoto worden meegepubliceerd.
+
+Blokkeer publicatie wanneer onverwachte bestanden of wijzigingen meekomen.
+
+CONTROLE 2 — PRODUCTIECONFIGURATIE
+
+Controleer:
+- dat de DEV-badge en preview-overlay niet in productie verschijnen;
+- dat `/dev/design` en andere interne testpagina’s niet publiek toegankelijk zijn;
+- dat ontwikkel- of mockroutes niet worden geactiveerd;
+- dat productie-environmentvariabelen correct worden gebruikt;
+- dat foutopsporing en uitgebreide ontwikkellogs niet zichtbaar worden voor gebruikers;
+- dat de sfeerfoto in de productiebuild wordt opgenomen en correct wordt geladen.
+
+CONTROLE 3 — DATA-TRUST
+
+Controleer het Vandaag-scherm met:
+- gebruiker met geplande training;
+- gebruiker zonder geplande training;
+- gebruiker met hersteldata;
+- gebruiker zonder hersteldata;
+- toestands-API fout;
+- dashboard-API fout;
+- stale cache plus dashboardfout;
+- lege wedstrijddata.
+
+Verifieer:
+- fout wint altijd van oude cache;
+- geen mock-, demo-, seed-, fallback- of hardcoded persoonlijke data;
+- ontbrekende data toont een eerlijke lege toestand;
+- geen verzonnen coachadvies;
+- geen voorbeeldtraining als echte training;
+- weekwaarden tonen alleen echte data of `—`.
+
+CONTROLE 4 — FUNCTIONELE REGRESSIE
+
+Controleer:
+- Vandaag-route opent correct;
+- bestaande navigatie werkt;
+- `Bekijk je plan` opent de juiste bestaande route;
+- training openen werkt wanneer echte training aanwezig is;
+- uitklapbare herstelonderbouwing werkt;
+- weekdagselectie werkt;
+- mobiele hoofdnavigatie werkt;
+- desktopzijbalk werkt;
+- terugnavigatie werkt;
+- authenticatie en autorisatie zijn ongewijzigd.
+
+CONTROLE 5 — RESPONSIVE EN VISUEEL
+
+Controleer minimaal:
+- mobiel 390 × 874;
+- mobiel met langere pagina;
+- tablet;
+- desktop 1440 × 900.
+
+Verifieer:
+- geen horizontale overflow;
+- geen afgesneden of overlappende tekst;
+- geen onverwachte lege schermdelen;
+- sticky mobiele navigatie werkt correct;
+- sfeerfoto schaalt correct;
+- contrast blijft voldoende;
+- aanraakvlakken minimaal 44 px;
+- geen Unicode- of emoji-iconen;
+- maximaal één primaire actie.
+
+CONTROLE 6 — TOEGANKELIJKHEID
+
+Controleer:
+- toetsenbordnavigatie op desktop;
+- zichtbare focusstatus;
+- semantische knop- en linkelementen;
+- alt-gedrag van de decoratieve sfeerfoto;
+- status wordt niet alleen met kleur gecommuniceerd;
+- screenreaderlabels van `DsWeek`;
+- uitklapbare herstelkaart heeft correcte aria-status;
+- navigatie heeft correcte actieve status.
+
+CONTROLE 7 — TECHNISCHE TESTS
+
+Voer uit:
+- typecheck van alle projecten;
+- alle bestaande workflows;
+- alle Sparki-shelltests;
+- designsysteemtests;
+- Vandaag-paginatests;
+- navigatietests;
+- productiebuild tweemaal achter elkaar.
+
+Voer daarnaast uit:
+- controle op nieuwe losse kleurwaarden;
+- controle op resterende productie-Unicode-iconen;
+- controle op consolefouten;
+- controle op mislukte netwerkrequests;
+- controle op ontbrekende assets;
+- controle op nieuwe bundelwaarschuwingen.
+
+CONTROLE 8 — DATABASE EN MIGRATIES
+
+Controleer expliciet:
+- of deze publicatie een databasewijziging vereist;
+- of er openstaande migraties zijn die niets met Vandaag te maken hebben;
+- of publicatie veilig kan zonder productiedatabase-update.
+
+Voer geen database-update uit.
+
+Wanneer een databasewijziging toch noodzakelijk blijkt:
+- publicatie blokkeren;
+- exact rapporteren waarom;
+- geen migratie starten zonder expliciete goedkeuring van René.
+
+CONTROLE 9 — TERUGVALPLAN
+
+Leg vóór publicatie vast:
+- huidige productiecommit;
+- nieuwe kandidaatcommit;
+- exacte rollbackprocedure;
+- welke service opnieuw gestart moet worden;
+- hoe snel kan worden teruggezet;
+- welke controles direct na rollback nodig zijn.
+
+Voer nog geen rollback uit.
+
+NIET DOEN
+
+- Niet publiceren.
+- Geen productiedatabase wijzigen.
+- Geen nieuwe functies bouwen.
+- Geen visuele verbeteringen toevoegen.
+- Geen ander scherm migreren.
+- Taak #293 niet starten.
+- Geen brede refactor.
+- Geen automatische reparaties buiten aantoonbare publicatieblokkades.
+
+ACCEPTATIECRITERIA
+
+De publicatiecontrole is alleen groen wanneer:
+
+1. uitsluitend de bedoelde wijzigingen worden meegenomen;
+2. geen DEV-overlay of interne route publiek verschijnt;
+3. alle data-trustscenario’s correct werken;
+4. alle bestaande interacties behouden zijn;
+5. mobiel en desktop foutloos renderen;
+6. toegankelijkheidscontrole geen blokkerende fout geeft;
+7. alle typechecks en tests slagen;
+8. beide productiebuilds slagen;
+9. geen databasewijziging nodig is;
+10. rollbackprocedure aantoonbaar gereed is;
+11. niets is gepubliceerd.
+
+RAPPORTAGE
+
+Rapporteer uitsluitend:
+
+1. kandidaatcommit en huidige productiecommit;
+2. exacte bestanden en wijzigingen in publicatiebereik;
+3. uitslag productieconfiguratiecontrole;
+4. uitslag data-trustscenario’s;
+5. uitslag functionele regressie;
+6. uitslag responsive, visuele en toegankelijkheidscontrole;
+7. exacte resultaten van typecheck, tests en beide builds;
+8. database- en migratiebeoordeling;
+9. rollbackprocedure;
+10. expliciet eindoordeel:
+   - `PUBLICATIE GEREED`
+   - of `PUBLICATIE GEBLOKKEERD`
+11. expliciete bevestiging dat nog niets is gepubliceerd.
