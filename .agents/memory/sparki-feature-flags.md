@@ -45,3 +45,5 @@ Root `tsconfig.json` references it; `lib/db/tsconfig.json` and `artifacts/sparki
 **onConflictDoUpdate.set must not include PK columns** — for `userFlagOverridesTable`, the composite PK is `(clerkId, flagKey)`. The `set` object in `onConflictDoUpdate` must only contain non-PK columns (`enabled`, `setBy`, `reason`, `setAt`). Drizzle's TS types enforce this — including a PK column in `set` causes a "does not exist" overload error.
 
 **Composite PK target syntax** — use `target: [table.col1, table.col2]` (column array, not constraint name) for `onConflictDoUpdate` with composite PKs. This compiles clean.
+
+**Prod-activering van een flag (launch-switch):** géén schrijftoegang tot de prod-DB en geen flag-beheer-UI — de bestaande weg is het boot-seed-patroon in de intel-seed (insert definitierij `enabledGlobally: true` + `onConflictDoNothing` op key; 3e gebruik: commercial_shell, launch 27-07-2026). Rij ontstaat bij de eerstvolgende publish/boot; een latere admin-beslissing (uit) wordt nooit overschreven. Let op: FEATURE_DESCRIPTIONS beschreef de flag nog als de oude "lichte schil" — omschrijvingen verouderen stil.

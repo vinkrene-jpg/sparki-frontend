@@ -36,3 +36,5 @@ the durable fix, not sequential restarts.
 - `run-test.mjs` recursively locates the emitted `<name>.mjs` because the pino esbuild plugin
   perturbs output layout — don't assume a fixed path.
 - Non-test scripts (jobs/seeds/scan/start) still use the full `pnpm run build` into `./dist`.
+
+**Losse suite via shell:** `test:entitlements` zet als enige zelf GEEN `NODE_ENV=development`/`DEV_AUTH_BYPASS=true` (andere flag-suites wel) — los draaien zonder die env geeft een 401-cascade op admin-scenario's die op een regressie lijkt. Eerst env exporteren, dan pas de fail geloven.

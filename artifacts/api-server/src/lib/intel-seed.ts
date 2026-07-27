@@ -868,6 +868,35 @@ export async function ensureIntelSeed(opts?: {
   let inserted = 0;
   let updated = 0;
 
+  // Launch-switch: het commerciële Vandaag-scherm is gegate op `commercial_shell`.
+  // Deze seed staat bewust VÓÓR de (zware) kaarten-loop en heeft eigen
+  // foutafhandeling: een fout in de kaarten-seed mag de launch-flag nooit stil
+  // blokkeren, en een flag-fout houdt omgekeerd de kaarten-refresh niet tegen.
+  // De rij wordt precies één keer globaal-aan aangemaakt (launch-besluit
+  // 27-07-2026); een latere beheerbeslissing (uitzetten via de admin-API)
+  // wordt nooit overschreven (onConflictDoNothing).
+  try {
+    const commercialFlagRows = await db
+      .insert(featureFlagsTable)
+      .values({
+        key: "commercial_shell",
+        description:
+          "Commerciële schil: het nieuwe donkere commerciële Vandaag-scherm voor sporters; uit = klassieke Vandaag (DayHome).",
+        enabledGlobally: true,
+      })
+      .onConflictDoNothing({ target: featureFlagsTable.key })
+      .returning({ key: featureFlagsTable.key });
+    if (commercialFlagRows.length > 0) {
+      log("commercial_shell flag row created (enabled globally)");
+    }
+  } catch (err) {
+    // Luid en grep-baar: een mislukte launch-flag-seed mag nooit onzichtbaar
+    // blijven. Bij de volgende boot probeert de seed het gewoon opnieuw.
+    log(
+      `LAUNCH-FLAG SEED FAILED (commercial_shell): ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
   for (const card of CARDS) {
     const existing = await db
       .select({ id: intelCardsTable.id })
