@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, Redirect, useRoute } from "wouter";
+import { ArrowLeft } from "lucide-react";
 import { useUser } from "@clerk/react";
 import { DEV_PREVIEW } from "@/lib/dev";
 import { ACCENT } from "@/components/sparki/ui";
@@ -53,9 +54,9 @@ export default function AdminHealthDetailPage() {
         <div className="flex items-center justify-between">
           <Link
             href="/admin"
-            className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-white/70"
+            className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-white/70"
           >
-            ← Terug naar overzicht
+            <ArrowLeft className="h-3 w-3" aria-hidden="true" /> Terug naar overzicht
           </Link>
           <div className="flex gap-2">
             <button

@@ -111,6 +111,7 @@
 - [Sparki Mechanieker & materiaalkring](sparki-mechanieker.md) — km altijd afgeleid (nooit teller), defect alleen uit eigen registratie, onConflictDoUpdate partial index needs `targetWhere` not `where`.
 - [Sparki uitleglaag](sparki-uitleglaag.md) — centraal uitleg-registry + UitlegDot; "Bij jou" alleen echte waarden; short-by-default + "Uitgebreid" alleen bij echte diepte ([tiered](sparki-tiered-explanation.md)).
 - [tsx module-mock tests & CJS](tsx-module-mock-cjs.md) — mock.module first, lazy `import()` promise (no top-level await, no static import) or the real native module loads/CJS transform fails.
+- [Sparki designsysteem](sparki-design-system.md) — tokens in index.css @theme + .type-* + ds/-primitives, /_dev/design; node-page-tests: classic JSX eist React-import, mocks dekken VOLLEDIG import-oppervlak.
 - [Mobile ride sync honesty](sparki-mobile-ride-sync.md) — "veilig op je telefoon" claims require fail-closed storage writes; detector/queue state must reset across ride lifecycle.
 - [Sparki clubomgeving](sparki-club.md) — least-privilege clubrechten; limieten óók bij invite-accept, club-scoped ID-checks, FOR UPDATE op signup; jeugd-consent fail-closed.
 - [Sparki fueling engine](sparki-fueling-engine.md) — deterministic richtwaarden SSOT (LLM phrases, never computes); jeugd no-numbers; consent fail-closed; mobile fuel snapshot date at STOP not save.

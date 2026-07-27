@@ -32,7 +32,7 @@ import {
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useFriends } from "@/hooks/use-social"
 import { isSportActive } from "@workspace/feature-flags"
-import { MapPin, Sparkles, Flag, Users, X, Download, Navigation, Share2, Map as MapIcon } from "lucide-react"
+import { ArrowLeft, MapPin, Sparkles, Flag, Users, X, Download, Navigation, Share2, Map as MapIcon } from "lucide-react"
 import { RouteExplorer } from "@/components/sparki/route-explorer"
 import { useLocation, useSearch } from "wouter"
 import {
@@ -2460,9 +2460,9 @@ function RouteGenerator({
             <button
               type="button"
               onClick={() => setStep((s) => Math.max(1, s - 1))}
-              className="min-w-0 flex-1 basis-32 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20"
+              className="inline-flex min-w-0 flex-1 basis-32 items-center justify-center gap-1.5 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20"
             >
-              ← Terug
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Terug
             </button>
           )}
           {step < 4 ? (
@@ -2529,9 +2529,9 @@ function RouteGenerator({
               setMeetpoints([])
               setStep(4)
             }}
-            className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-cyan-300/80"
+            className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-cyan-300/80"
           >
-            ← terug naar de stappen
+            <ArrowLeft className="h-3 w-3" aria-hidden="true" /> terug naar de stappen
           </button>
         </div>
       )}
@@ -2610,9 +2610,9 @@ function RouteGenerator({
                 setCandidate(null)
                 setMeetpoints([])
               }}
-              className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-cyan-300/80"
+              className="mb-2 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-cyan-300/80"
             >
-              ← Andere afstand kiezen
+              <ArrowLeft className="h-3 w-3" aria-hidden="true" /> Andere afstand kiezen
             </button>
           )}
           <h4 className="font-sans text-lg font-light tracking-tight text-white/90">

@@ -2,7 +2,7 @@
 // Optimistic local state so toggles feel instant; the mutation syncs to the DB.
 
 import { useEffect, useMemo, useState } from "react"
-import { Sparkles } from "lucide-react"
+import { Check, Sparkles } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
 import { useUpdateRaceChecklist } from "@/hooks/use-races"
 import { useMaterialAnalyses } from "@/hooks/use-material"
@@ -153,7 +153,7 @@ export function PrepChecklist({ race }: { race: Race }) {
                   color: "#04121a",
                 }}
               >
-                {checked ? "✓" : ""}
+                {checked ? <Check size={11} strokeWidth={3} aria-hidden="true" /> : null}
               </span>
               <span
                 className={`flex-1 text-[12.5px] ${checked ? "text-white/85" : "text-white/55"}`}

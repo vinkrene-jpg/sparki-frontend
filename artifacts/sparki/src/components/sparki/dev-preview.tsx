@@ -46,10 +46,12 @@ import KlimmenPage from "@/pages/klimmen"
 import { OnboardingV2 } from "@/components/sparki/onboarding-v2"
 import AdminPage from "@/pages/admin"
 import AdminHealthDetailPage from "@/pages/admin-health-detail"
+import DevDesignSystemPage from "@/pages/dev-design-system"
 
 const LANDING_PATH = "/_dev/landing"
 const ONBOARDING_PATH = "/_dev/onboarding"
 const COMMERCIAL_PATH = "/_dev/commercial"
+const DESIGN_PATH = "/_dev/design"
 
 // Dev-only preview of each day type (blueprint §4). "Auto" uses the real engine
 // detection; the rest force a specific day type so every homepage is visible
@@ -81,6 +83,7 @@ const VIEWS: DevView[] = [
   { label: "Start", path: "/" },
   { label: "Vandaag", path: "/vandaag" },
   { label: "Commercieel", path: COMMERCIAL_PATH },
+  { label: "Design system", path: DESIGN_PATH },
   { label: "Activiteiten", path: "/activiteiten" },
   { label: "Train", path: "/train" },
   { label: "Feed", path: "/feed" },
@@ -399,6 +402,10 @@ export function DevPreview() {
     // Commerciële lichte schil — preview van Vandaag in de nieuwe vormgeving
     // met dezelfde echte data (flag: commercial_shell blijft default UIT).
     page = <CommercialToday />
+    showNav = false
+  } else if (location.startsWith(DESIGN_PATH)) {
+    // Interne designsysteem-testpagina — tokens, typografie en componenten.
+    page = <DevDesignSystemPage />
     showNav = false
   } else if (location.startsWith("/vandaag")) {
     page = (

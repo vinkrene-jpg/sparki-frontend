@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Redirect } from "wouter";
+import { ArrowLeft } from "lucide-react";
 import { useUser } from "@clerk/react";
 import { DEV_PREVIEW } from "@/lib/dev";
 import { useUserProfile } from "@/contexts/UserContext";
@@ -720,9 +721,9 @@ export default function AdminPage() {
         <div className="flex items-center justify-between">
           <Link
             href="/"
-            className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-white/70"
+            className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-white/70"
           >
-            ← Terug
+            <ArrowLeft className="h-3 w-3" aria-hidden="true" /> Terug
           </Link>
           <button
             type="button"

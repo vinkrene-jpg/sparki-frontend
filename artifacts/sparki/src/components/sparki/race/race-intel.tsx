@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
-import { Sparkles } from "lucide-react"
+import { Check, Sparkles } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
 import { UitlegDot } from "@/components/viz/uitleg"
 import { useUpdateRaceChecklist } from "@/hooks/use-races"
@@ -114,8 +114,9 @@ export function PrepTimeline({ phases }: { phases: PrepPhase[] }) {
             </button>
           )}
           {p.askTechnicalGuide && p.technicalGuideReceived && (
-            <p className="mt-2 text-[11px]" style={{ color: "rgba(130,230,170,0.85)" }}>
-              ✓ Technische gids verwerkt
+            <p className="mt-2 flex items-center gap-1.5 text-[11px]" style={{ color: "rgba(130,230,170,0.85)" }}>
+              <Check className="h-3 w-3" aria-hidden="true" />
+              Technische gids verwerkt
             </p>
           )}
         </div>
@@ -412,7 +413,7 @@ export function MultiDayChecklist({
                         color: "#04121a",
                       }}
                     >
-                      {checked ? "✓" : ""}
+                      {checked ? <Check size={11} strokeWidth={3} aria-hidden="true" /> : null}
                     </span>
                     <span className={`flex-1 text-[12.5px] ${checked ? "text-white/85" : "text-white/55"}`}>
                       {group.itemLabels[i] ?? id}

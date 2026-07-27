@@ -8,3 +8,8 @@ Rule: in `node:test` files run via tsx with `--experimental-test-module-mocks`, 
 **Why:** static imports are hoisted above `mock.module(...)`, so the real native module (e.g. AsyncStorage) loads before the mock exists; and tsx transforms test files to CJS, so top-level `await import(...)` fails with "Top-level await is currently not supported with the cjs output format".
 
 **How to apply:** `mock.module` first, then a non-awaited `import()` promise at module level, destructure inside each test. Types via `import("./x").Type`.
+
+## Aanvulling (jul 2026) — zie ook sparki-design-system.md
+- `namedExports` moet het VOLLEDIGE import-oppervlak van de echte module dekken; een later toegevoegde export op de pagina breekt de test met een loader-SyntaxError die alleen de eerste ontbrekende naam noemt.
+- Harnas compileert JSX klassiek (tsconfig `jsx: preserve`): elk gerenderd `.tsx` heeft runtime `import * as React from "react"` nodig.
+- `@/lib/api` laadt niet onder node (top-level `import.meta.env`); houd hem via mocks buiten de graf.

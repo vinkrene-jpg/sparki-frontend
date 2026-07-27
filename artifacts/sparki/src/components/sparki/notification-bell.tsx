@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { createPortal } from "react-dom"
+import { Bell } from "lucide-react"
 import { useLocation } from "wouter"
 import {
   useNotifications,
@@ -180,7 +181,7 @@ export function NotificationBell() {
         title="Meldingen"
         aria-label="Meldingen"
       >
-        <span aria-hidden>🔔</span>
+        <Bell className="h-4 w-4" aria-hidden="true" />
         {unreadCount > 0 && (
           <span className="absolute -right-1.5 -top-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-cyan-300 px-1 font-mono text-[8px] font-bold text-black">
             {unreadCount > 9 ? "9+" : unreadCount}

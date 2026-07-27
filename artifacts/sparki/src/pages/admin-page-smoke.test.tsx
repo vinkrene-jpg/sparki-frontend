@@ -274,6 +274,11 @@ mock.module("@/hooks/use-admin-health", {
         : { batches: [], releaseChecks: [] },
     }),
     useAdminScheduledTasks: () => ({ data: scheduledData() }),
+    useAdminDataTrustDashboard: () => ({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+    }),
     useAdminFeedback: () => ({
       data: filled
         ? {
@@ -351,7 +356,7 @@ mock.module("wouter", {
 });
 
 mock.module("@/lib/dev", {
-  namedExports: { DEV_PREVIEW: false },
+  namedExports: { DEV_PREVIEW: false, getDevAthleteId: () => null },
 });
 
 mock.module("@/components/sparki/ui", {
@@ -374,6 +379,9 @@ mock.module("@/components/sparki/knowledge-admin", {
 });
 mock.module("@/components/sparki/support-admin", {
   namedExports: { SupportAdminSection: () => "[support-admin]" },
+});
+mock.module("@/components/sparki/entitlements-admin", {
+  namedExports: { EntitlementsAdminSection: () => "[entitlements-admin]" },
 });
 
 mock.module("@/lib/health-status", {

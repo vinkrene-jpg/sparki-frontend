@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
+import { MapPin } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
 import type { Race } from "@/lib/race-types"
 
@@ -66,7 +67,12 @@ export function RaceSummaryCard({ race }: { race: Race }) {
       </div>
       {(race.location || race.discipline) && (
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-white/40">
-          {race.location && <span>📍 {race.location}</span>}
+          {race.location && (
+            <span className="inline-flex items-center gap-1">
+              <MapPin className="h-3 w-3" aria-hidden="true" />
+              {race.location}
+            </span>
+          )}
           {race.discipline && <span className="capitalize">{race.discipline}</span>}
         </div>
       )}

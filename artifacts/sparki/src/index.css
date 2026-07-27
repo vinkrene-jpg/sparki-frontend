@@ -33,6 +33,31 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* ── Sparki-designsysteem: semantische tokens ─────────────────────────
+     Centrale laag (zie docs/SPARKI_DESIGN_SYSTEM.md). Nieuwe losse kleur-
+     waarden horen HIER en nergens anders. Bestaande shadcn-tokens hierboven
+     blijven geldig; deze laag voegt de Sparki-semantiek toe.
+     Tekst primair = --color-foreground (text-foreground/text-white);
+     standaardrand = --color-border (border-border of border-white/10). */
+  --color-app: #050608;                 /* app-achtergrond (body) */
+  --color-app-deep: #040506;            /* diepste laag: onderbalk/overlays */
+  --color-surface: oklch(1 0 0 / 5%);   /* kaart/oppervlak (glas op donker) */
+  --color-surface-strong: oklch(1 0 0 / 8%); /* opgelicht oppervlak */
+  --color-control: oklch(1 0 0 / 10%);  /* bedieningsvlak (knop/pill/input) */
+  --color-content-secondary: oklch(1 0 0 / 74%); /* secundaire tekst */
+  --color-positive: oklch(0.845 0.143 164.98);   /* positief (emerald-300) */
+  --color-warning: oklch(0.879 0.169 91.61);     /* waarschuwing (amber-300) */
+  --color-negative: oklch(0.808 0.114 19.57);    /* fout (red-300) */
+  --color-tempo: oklch(0.828 0.189 84.43);       /* trainingskleur tempo (amber-400) */
+  --color-accent-cyan: var(--accent-cyan);       /* merkaccent (cyaan) */
+  --color-on-accent: #04121a;           /* tekst óp accent-cyaan vlak */
+
+  --radius-card: 1rem;      /* kaarten (16px, gelijk aan rounded-2xl) */
+  --radius-control: 9999px; /* knoppen en pills (volledig rond) */
+
+  --spacing-card: 1.25rem;         /* standaard kaart-padding (p-card) */
+  --spacing-card-compact: 0.75rem; /* compacte kaart-padding (p-card-compact) */
 }
 
 :root {
@@ -73,6 +98,83 @@ optgroup {
   font-weight: 400;
   letter-spacing: 0.22em;
   text-transform: uppercase;
+}
+
+/* ── Typografiehiërarchie (Figma-basis, Inter) ────────────────────────────
+   Vaste stijlen uit het designsysteem — mobiel eerst, desktopmaat vanaf
+   1024px (lg). Gebruik deze klassen in plaats van losse text-[..px]-waarden.
+   Zie docs/SPARKI_DESIGN_SYSTEM.md → Typografie. */
+.type-display {            /* Display/Page — paginakop 38 → 42, Bold */
+  font-family: var(--font-sans);
+  font-size: 2.375rem;
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.type-metric {             /* Metric/Primary — kerngetal 58 → 68, ExtraBold */
+  font-family: var(--font-sans);
+  font-size: 3.625rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.type-title-card {         /* Title/Card — kaarttitel 17 → 22, SemiBold */
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.3;
+  font-weight: 600;
+}
+.type-title-insight {      /* Title/Insight/Mobile — inzichtkop 22, SemiBold */
+  font-family: var(--font-sans);
+  font-size: 1.375rem;
+  line-height: 1.25;
+  font-weight: 600;
+}
+.type-wordmark {           /* Brand/Wordmark — merknaam 20 → 22, Bold */
+  font-family: var(--font-sans);
+  font-size: 1.25rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.type-body {               /* Body/Default — lopende tekst 14 */
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  font-weight: 400;
+}
+.type-body-sm {            /* Body/Small — secundaire tekst 12 */
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  font-weight: 400;
+}
+.type-label {              /* Label/Small — microlabel 11, SemiBold */
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.type-action {             /* Action — knop-/actietekst 14 → 15, Medium */
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.2;
+  font-weight: 500;
+}
+.type-action-inline {      /* Action/Inline — kleine inline actie 12, Medium */
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  line-height: 1.2;
+  font-weight: 500;
+}
+@media (min-width: 64rem) { /* lg — desktopmaten uit de Figma-basis */
+  .type-display { font-size: 2.625rem; }
+  .type-metric { font-size: 4.25rem; }
+  .type-title-card { font-size: 1.375rem; }
+  .type-wordmark { font-size: 1.375rem; }
+  .type-action { font-size: 0.9375rem; }
 }
 
 @keyframes sparki-breathe {

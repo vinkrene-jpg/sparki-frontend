@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { ACCENT } from "@/components/sparki/ui";
 
@@ -164,8 +165,8 @@ function TicketDetail({ id, onBack }: { id: number; onBack: () => void }) {
   const { ticket, messages, humanSendRequired } = data;
   return (
     <div className="rounded-2xl border border-white/[0.1] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-      <button type="button" onClick={onBack} className="text-[12px] text-white/50 hover:text-cyan-300">
-        ← Terug naar wachtrij
+      <button type="button" onClick={onBack} className="inline-flex items-center gap-1 text-[12px] text-white/50 hover:text-cyan-300">
+        <ArrowLeft className="h-3 w-3" aria-hidden="true" /> Terug naar wachtrij
       </button>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <span className="text-[13px] font-medium text-white/90">

@@ -1,0 +1,239 @@
+AGENT
+X=9,8 | Y=9,8
+
+OPDRACHT — CENTRALE DESIGN-SYSTEMFUNDERING VOOR SPARKI
+
+DOEL
+
+Bouw de centrale technische design-systemfundering voor Sparki op basis van de afgeronde Figma-basis.
+
+Deze opdracht gaat uitsluitend over herbruikbare visuele fundamenten en componenten.
+
+Behoud alle bestaande werkende:
+
+- architectuur;
+- pagina’s en routes;
+- engines en berekeningen;
+- API’s;
+- database en schema’s;
+- authenticatie en rollen;
+- databronnen en synchronisatie;
+- gebruikersflows;
+- mobiele functionaliteit;
+- productiegedrag.
+
+Geen complete herschrijving, parallel designsysteem of brede refactor uitvoeren.
+
+WERKWIJZE
+
+1. Inventariseer eerst de huidige frontendstructuur:
+   - bestaande tokens;
+   - globale CSS;
+   - thema-instellingen;
+   - bestaande UI-componenten;
+   - duplicatie van kleuren, spacing, radius, typografie en knoppen;
+   - gebruikte iconenbibliotheek;
+   - mobiele navigatie.
+
+2. Hergebruik de bestaande technische aanpak waar die goed werkt.
+
+3. Voeg alleen ontbrekende fundamenten toe of centraliseer aantoonbare duplicatie.
+
+4. Migreer nog geen volledige applicatie en verander geen complete pagina’s.
+
+DESIGNTOKENS
+
+Leg centraal vast:
+
+- achtergrondkleuren;
+- oppervlakken en kaarten;
+- bedieningsvlakken;
+- primaire en secundaire tekst;
+- standaardranden;
+- positieve status;
+- waarschuwing;
+- foutstatus;
+- trainingskleur tempo;
+- spacing-schaal;
+- kaart- en control-radius;
+- schaduwen indien bestaand gebruikt;
+- mobiele en desktopbreakpoints.
+
+Gebruik semantische namen. Geen nieuwe losse hex-, rgb- of pixelwaarden verspreid over componenten wanneer hiervoor een token bestaat.
+
+TYPOGRAFIE
+
+Implementeer de vastgelegde teksthiërarchie:
+
+- Display/Page/Mobile — Inter Bold 38;
+- Display/Page/Desktop — Inter Bold 42;
+- Metric/Primary/Mobile — Inter Extra Bold 58;
+- Metric/Primary/Desktop — Inter Extra Bold 68;
+- Title/Card/Mobile — Inter Semi Bold 17;
+- Title/Card/Desktop — Inter Semi Bold 22;
+- Brand/Wordmark/Mobile — Inter Bold 20;
+- Brand/Wordmark/Desktop — Inter Bold 22;
+- Body/Small — Inter Regular 12;
+- Body/Default — Inter Regular 14;
+- Label/Small — Inter Semi Bold 11;
+- Action/Mobile — Inter Medium 14;
+- Action/Desktop — Inter Medium 15;
+- Title/Insight/Mobile — Inter Semi Bold 22;
+- Action/Inline — Inter Medium 12.
+
+Maak hiervoor herbruikbare stijlen of componentvarianten binnen de bestaande stylingtechniek.
+
+BASISCOMPONENTEN
+
+Bouw of consolideer minimaal:
+
+1. Kaartcontainer
+   - standaard;
+   - compact;
+   - mobiel en desktop;
+   - tokengebonden achtergrond, rand en radius.
+
+2. Knop
+   - primair;
+   - secundair;
+   - tekstactie;
+   - disabled;
+   - loading;
+   - minimale mobiele aanraakhoogte 44 px.
+
+3. Statusindicator
+   - positief;
+   - waarschuwing;
+   - fout;
+   - neutraal;
+   - status nooit uitsluitend met kleur communiceren.
+
+4. Compacte toestand
+   - informatie;
+   - nog geen gegevens;
+   - gegevens niet beschikbaar;
+   - optionele herstelactie;
+   - nooit mock-, demo- of fallbackwaarden tonen alsof deze echte gebruikersdata zijn.
+
+5. Weekcomponent
+   - zeven dagen;
+   - actieve dag;
+   - training;
+   - herstel;
+   - lege dag;
+   - geschikt voor een mobiele inhoudsbreedte van 358 px.
+
+6. Mobiele hoofdnavigatie
+   - Vandaag;
+   - Plan;
+   - Rijden;
+   - Analyse;
+   - Meer;
+   - actieve status;
+   - optionele aandachtstatus;
+   - minimaal 44 px aanraakvlak;
+   - veilige ondermarge voor mobiele systeembalk.
+
+ICONEN
+
+Gebruik echte vectoriconen uit één consistente iconenbron.
+
+Geen Unicode-, emoji- of lettertekens als productie-icoon gebruiken.
+
+Benodigde basisiconen:
+
+- Home;
+- Plan/kalender;
+- Rijden/fiets;
+- Analyse;
+- Menu;
+- Check;
+- Info;
+- Waarschuwing;
+- Fout;
+- Chevron.
+
+Kies bij voorkeur de al aanwezige iconenbibliotheek. Voeg geen tweede iconenbibliotheek toe zonder technische noodzaak.
+
+DOCUMENTATIE
+
+Maak:
+
+- `docs/SPARKI_DESIGN_SYSTEM.md`
+
+Neem hierin op:
+
+- locatie van tokens;
+- naamgevingsregels;
+- beschikbare componenten en varianten;
+- typografiehiërarchie;
+- regels voor mobiel en desktop;
+- regels voor iconen;
+- regels voor lege toestanden en data-trust;
+- voorbeelden van correct en incorrect gebruik;
+- migratiestrategie voor bestaande pagina’s.
+
+TESTPAGINA
+
+Maak een interne, niet-publieke design-systemtestpagina of Storybook-equivalent binnen de bestaande ontwikkelomgeving.
+
+Toon daarop alle tokens en componentstaten.
+
+De pagina mag geen normale gebruikersroute vervuilen en mag niet publiek toegankelijk worden in productie, tenzij al een bestaande interne componentomgeving aanwezig is.
+
+NIET DOEN
+
+- Geen functionele pagina’s volledig opnieuw ontwerpen.
+- Geen bestaande pagina’s massaal migreren.
+- Geen databasewijzigingen.
+- Geen API-wijzigingen.
+- Geen wijziging aan trainings-, coach-, route-, medische of analyse-engines.
+- Geen verandering aan echte gebruikersdata.
+- Geen nieuwe mockdata toevoegen.
+- Geen Tailwind, Storybook of andere grote dependency installeren wanneer de bestaande stack dit niet gebruikt en dezelfde uitkomst zonder die dependency mogelijk is.
+- Geen compleet nieuwe frontendarchitectuur bouwen.
+
+CONTROLE
+
+Voer uit:
+
+- typecheck;
+- lint;
+- bestaande frontendtests;
+- productiebuild;
+- gerichte componenttests;
+- controle op horizontale overflow bij 390 px;
+- controle van minimaal 44 px aanraakvlakken;
+- controle op ontbrekende iconen;
+- zoekopdracht naar resterende productie-Unicode-iconen;
+- zoekopdracht naar nieuw toegevoegde losse kleurwaarden buiten de tokenbestanden;
+- controle dat bestaande routes en functionaliteit ongewijzigd blijven werken.
+
+Voer de productiebuild na herstel twee keer achter elkaar uit.
+
+ACCEPTATIECRITERIA
+
+De opdracht is alleen gereed wanneer:
+
+1. één centrale tokenlaag bestaat;
+2. alle genoemde basiscomponenten herbruikbaar zijn;
+3. alle componenten mobiel en desktop correct werken;
+4. geen tekst wordt afgesneden of overlapt;
+5. productie-iconen vectoriconen zijn;
+6. lege toestanden geen nep-persoonlijke data tonen;
+7. de documentatie volledig is;
+8. typecheck, lint en tests slagen;
+9. de productiebuild twee keer achter elkaar slaagt;
+10. bestaande Sparki-functionaliteit aantoonbaar niet is herschreven of beschadigd.
+
+RAPPORTAGE
+
+Rapporteer uitsluitend:
+
+1. welke bestaande structuur is hergebruikt;
+2. welke bestanden zijn toegevoegd of gewijzigd;
+3. welke tokens en componenten zijn gerealiseerd;
+4. welke duplicatie gericht is verwijderd;
+5. welke controles en tests zijn uitgevoerd;
+6. de exacte uitslagen van typecheck, lint, tests en beide builds;
+7. eventuele resterende technische schuld of blokkades.

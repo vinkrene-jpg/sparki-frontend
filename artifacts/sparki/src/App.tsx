@@ -10,6 +10,7 @@ import {
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { dark } from "@clerk/themes";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
+import { Zap } from "lucide-react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { DayHome } from "@/components/sparki/day-home";
 import { CommercialToday } from "@/components/sparki/commercial-shell";
@@ -419,7 +420,7 @@ function PageErrorFallback() {
   return (
     <>
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#040506] px-6 pb-28 text-center">
-        <span className="text-2xl">⚡</span>
+        <Zap className="h-7 w-7 text-accent-cyan" aria-hidden="true" />
         <p className="font-sans text-base font-semibold text-white/80">
           Er ging iets mis op deze pagina
         </p>

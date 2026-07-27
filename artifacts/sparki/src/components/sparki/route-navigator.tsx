@@ -1979,7 +1979,7 @@ export function RouteNavigator({
     for (const b of boards) {
       const icon = L.divIcon({
         className: "",
-        html: `<span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#facc15;color:#05070e;font-weight:800;font-size:12px;border:2px solid #05070e;box-shadow:0 0 8px rgba(250,204,21,0.7);transform:rotate(var(--map-counter-rot,0deg));">⚡</span>`,
+        html: `<span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#facc15;color:#05070e;font-weight:800;font-size:12px;border:2px solid #05070e;box-shadow:0 0 8px rgba(250,204,21,0.7);transform:rotate(var(--map-counter-rot,0deg));"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>`,
         iconSize: [22, 22],
         iconAnchor: [11, 11],
       })
@@ -2846,7 +2846,7 @@ export function RouteNavigator({
               </li>
               {withOthers && boards.length > 0 && (
                 <li className="flex items-center gap-2.5">
-                  <span className="flex h-5 w-6 shrink-0 items-center justify-center text-[14px]">⚡</span>
+                  <span className="flex h-5 w-6 shrink-0 items-center justify-center"><Zap className="h-3.5 w-3.5 text-amber-400" fill="currentColor" aria-hidden="true" /></span>
                   Geel bordje = plaatsbordje om voor te sprinten
                 </li>
               )}

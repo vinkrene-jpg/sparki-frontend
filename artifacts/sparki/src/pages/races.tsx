@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useLocation } from "wouter"
 import { useFixParams } from "@/hooks/use-missing-input"
-import { ChevronLeft, CloudSun, MapPin, Clock, Users, Sparkles, Film } from "lucide-react"
+import { ChevronLeft, CloudSun, MapPin, Clock, Users, Sparkles, Film, X } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { Skeleton } from "@/components/sparki/home-sections"
@@ -1049,7 +1049,7 @@ function RaceForm({
                       className="shrink-0 rounded-lg border border-white/10 px-2.5 py-2 text-white/40 transition-colors hover:text-red-300/80"
                       aria-label="Verwijder renner"
                     >
-                      ✕
+                      <X className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-2">

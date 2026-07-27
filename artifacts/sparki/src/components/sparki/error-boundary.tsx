@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Zap } from "lucide-react";
 
 interface Props {
   children: ReactNode;
@@ -25,7 +26,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         this.props.fallback ?? (
           <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#040506] px-6 text-center">
-            <span className="text-2xl">⚡</span>
+            <Zap className="h-7 w-7 text-accent-cyan" aria-hidden="true" />
             <p className="font-sans text-base font-semibold text-white/80">
               Er ging iets mis
             </p>

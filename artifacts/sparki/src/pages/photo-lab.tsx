@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from "react"
 import { useLocation } from "wouter"
+import { ArrowLeft, ArrowUp } from "lucide-react"
 import { attachmentUrl } from "@/hooks/use-input-center"
 import {
   useStylizePhoto,
@@ -132,7 +133,7 @@ export default function PhotoLabPage() {
           onClick={() => navigate("/you")}
           className="flex items-center gap-1.5 text-sm text-white/70 transition hover:text-white"
         >
-          <span aria-hidden>←</span> Terug
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Terug
         </button>
         <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan-300/60">
           Foto-lab · test
@@ -163,9 +164,7 @@ export default function PhotoLabPage() {
             onClick={handlePick}
             className="mt-6 flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-6 py-12 text-center transition hover:border-cyan-300/40 hover:bg-white/[0.05]"
           >
-            <span className="text-3xl" aria-hidden>
-              ↑
-            </span>
+            <ArrowUp className="h-8 w-8 text-white/70" aria-hidden="true" />
             <span className="text-sm font-medium text-white/85">
               Kies een foto
             </span>
