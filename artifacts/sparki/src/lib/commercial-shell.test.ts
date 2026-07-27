@@ -8,7 +8,10 @@
 // Exits non-zero on any failure.
 import {
   COMMERCIAL_ACCOUNT_NAV,
+  COACH_MESSAGE_REWRITE,
   COMMERCIAL_COPY,
+  buildCoachMessage,
+  trainingPrimaryLabel,
   COMMERCIAL_DESKTOP_NAV,
   COMMERCIAL_MOBILE_NAV,
   PRESENTATION_STATES,
@@ -131,6 +134,84 @@ scenario("movementLabel herschrijft alleen de 'geen richting'-zin", () => {
   )
   assert(movementLabel(null) === null, "null → null")
   assert(movementLabel("") === null, "lege string → null")
+})
+
+// ── Coachboodschap (correctie 27-07-2026: het bekende dubbele paar) ──────────
+scenario("buildCoachMessage herschrijft alleen het exacte dubbele paar", () => {
+  const fixed = buildCoachMessage(
+    "Je bent goed belastbaar maar je zakt iets.",
+    "Je zakt iets",
+  )
+  assert(
+    fixed.headline === COACH_MESSAGE_REWRITE.statusRewritten &&
+      fixed.headline === "Je bent goed belastbaar, maar je vorm zakt iets.",
+    "hoofdtekst exact herschreven",
+  )
+  assert(
+    fixed.subline ===
+      "Een rustige dag helpt om vermoeidheid te laten zakken en je volgende trainingsprikkel beter te verwerken.",
+    "ondertekst is exact de nieuwe uitleg",
+  )
+  assert(
+    fixed.subline !== null && !fixed.headline.includes("Je zakt iets"),
+    "hoofd- en ondertekst herhalen elkaar niet meer",
+  )
+
+  const solide = buildCoachMessage(
+    "Je staat er solide voor maar je zakt iets.",
+    "Je zakt iets",
+  )
+  assert(
+    solide.headline === "Je staat er solide voor maar je zakt iets." &&
+      solide.subline === "Je zakt iets",
+    "elke andere status gaat 1-op-1 door (alleen het exacte paar wijzigt)",
+  )
+
+  const stijgt = buildCoachMessage(
+    "Je bent goed belastbaar en je gaat vooruit.",
+    "Je gaat vooruit",
+  )
+  assert(
+    stijgt.headline === "Je bent goed belastbaar en je gaat vooruit." &&
+      stijgt.subline === "Je gaat vooruit",
+    "stijgende vorm blijft ongewijzigd",
+  )
+
+  assert(
+    buildCoachMessage("Je bent goed belastbaar.", null).subline === null,
+    "zonder trend geen ondertekst",
+  )
+  assert(
+    buildCoachMessage(
+      "Je beeld is wisselend.",
+      "Nog te weinig om een richting te zien",
+    ).subline === COMMERCIAL_COPY.trendInsufficient,
+    "de bestaande 'geen richting'-herschrijving blijft werken",
+  )
+})
+
+// ── Rustdagknop (alleen de knoptekst; route en klikactie ongewijzigd) ────────
+scenario("trainingPrimaryLabel: rustdag → Plan bekijken, training blijft", () => {
+  const rust = trainingPrimaryLabel("rest")
+  assert(
+    rust.mobile === "Plan bekijken" && rust.desktop === "Plan bekijken",
+    "rustdag → Plan bekijken (mobiel én desktop)",
+  )
+  assert(
+    trainingPrimaryLabel("Rustdag").mobile === COMMERCIAL_COPY.restDayPrimary,
+    "Nederlands rusttype telt ook als rustdag",
+  )
+  const gewoon = trainingPrimaryLabel("endurance")
+  assert(
+    gewoon.mobile === COMMERCIAL_COPY.trainingPrimaryMobile &&
+      gewoon.desktop === COMMERCIAL_COPY.trainingPrimaryDesktop,
+    "gewone training behoudt de bestaande knopteksten",
+  )
+  assert(
+    trainingPrimaryLabel(undefined).mobile ===
+      COMMERCIAL_COPY.trainingPrimaryMobile,
+    "ontbrekend type valt terug op de bestaande knop (nooit gokken)",
+  )
 })
 
 // ── Seizoensfasen ────────────────────────────────────────────────────────────

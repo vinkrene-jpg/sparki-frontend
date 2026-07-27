@@ -8,6 +8,7 @@
 // bandStatusSoort (DsStatus) en buildWeekDays (DsWeek).
 
 import type { WorkoutBlock, WorkoutPhase } from "@/lib/athlete-types"
+import { isRestWorkout } from "@/lib/day-type"
 
 // ── Navigatie ────────────────────────────────────────────────────────────────
 // Doelen zijn bestaande routes uit App.tsx — de schil voegt géén routes toe.
@@ -88,6 +89,36 @@ export function movementLabel(
 ): string | null {
   if (!label) return null
   return TREND_LABEL_REWRITES[label] ?? label
+}
+
+// Presentatie-herschrijving van één bekende dubbele coachboodschap (correctie
+// 27-07-2026): bij "belastbaar + dalende vorm" eindigt de engine-status al op
+// "maar je zakt iets" terwijl de trendregel exact dezelfde conclusie herhaalt.
+// Alleen dit exacte paar wordt herschreven — de hoofdzin leest vollediger en de
+// onderregel voegt echte uitleg toe in plaats van de herhaling. Elke andere
+// combinatie gaat 1-op-1 door (status ongewijzigd, trend via movementLabel).
+export const COACH_MESSAGE_REWRITE = {
+  status: "Je bent goed belastbaar maar je zakt iets.",
+  trend: "Je zakt iets",
+  statusRewritten: "Je bent goed belastbaar, maar je vorm zakt iets.",
+  sublineRewritten:
+    "Een rustige dag helpt om vermoeidheid te laten zakken en je volgende trainingsprikkel beter te verwerken.",
+} as const
+
+export function buildCoachMessage(
+  status: string,
+  trendLabel: string | null | undefined,
+): { headline: string; subline: string | null } {
+  if (
+    status === COACH_MESSAGE_REWRITE.status &&
+    trendLabel === COACH_MESSAGE_REWRITE.trend
+  ) {
+    return {
+      headline: COACH_MESSAGE_REWRITE.statusRewritten,
+      subline: COACH_MESSAGE_REWRITE.sublineRewritten,
+    }
+  }
+  return { headline: status, subline: movementLabel(trendLabel) }
 }
 
 // ── Seizoensfasen ────────────────────────────────────────────────────────────
@@ -248,6 +279,7 @@ export const COMMERCIAL_COPY = {
   trainingTitle: "Training van vandaag",
   trainingPrimaryMobile: "Training bekijken",
   trainingPrimaryDesktop: "Training openen",
+  restDayPrimary: "Plan bekijken",
   trainingHref: "/train",
   trainingSecondary: "Planning aanpassen",
   trainingSecondaryHref: "/kalender",
@@ -262,6 +294,27 @@ export const COMMERCIAL_COPY = {
   trainingError: "Je training kon niet worden geladen.",
   retry: "Opnieuw proberen",
 } as const
+
+// ── Primaire knop van de trainingskaart ──────────────────────────────────────
+// Bij een geplande rustdag is er geen training om te bekijken — de knop leest
+// dan "Plan bekijken" (mobiel én desktop; "Training openen" zou dezelfde fout
+// zijn). Route en klikactie blijven ongewijzigd. Elke andere workout behoudt
+// de bestaande teksten; een ontbrekend type telt nooit als rustdag. De
+// rustdag-definitie is die van day-type (isRestWorkout) — één bron.
+export function trainingPrimaryLabel(
+  workoutType: string | null | undefined,
+): { mobile: string; desktop: string } {
+  if (workoutType && isRestWorkout(workoutType)) {
+    return {
+      mobile: COMMERCIAL_COPY.restDayPrimary,
+      desktop: COMMERCIAL_COPY.restDayPrimary,
+    }
+  }
+  return {
+    mobile: COMMERCIAL_COPY.trainingPrimaryMobile,
+    desktop: COMMERCIAL_COPY.trainingPrimaryDesktop,
+  }
+}
 
 // ── Presentatietoestand (CUX_02A — sfeerlaag, alleen presentatie) ────────────
 // Deterministische afleiding uit uitsluitend bestaande viewdata (State-Engine-

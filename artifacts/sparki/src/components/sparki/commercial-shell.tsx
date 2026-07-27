@@ -50,13 +50,14 @@ import {
   bandLabel,
   bandStatusSoort,
   buildBlockBars,
+  buildCoachMessage,
   buildSeasonView,
   buildWeekDays,
   derivePresentationState,
   formatDayHeader,
   localISODate,
-  movementLabel,
   nearestUpcomingRace,
+  trainingPrimaryLabel,
   workoutPhaseLabel,
   type PresentationState,
 } from "@/lib/commercial-shell"
@@ -233,7 +234,12 @@ function CoachBoodschap({ presentation }: { presentation: PresentationState }) {
     )
   }
 
-  const trend = movementLabel(data.movement.label)
+  // Dedupe-herschrijving (alleen het bekende dubbele paar) leeft in de pure
+  // lib — hier alleen consumeren: hoofdzin + hoogstens één aanvullende regel.
+  const { headline, subline } = buildCoachMessage(
+    data.status,
+    data.movement.label,
+  )
   return (
     <section
       aria-label="Coachboodschap"
@@ -243,9 +249,9 @@ function CoachBoodschap({ presentation }: { presentation: PresentationState }) {
         ATMOSFEER_TINT[presentation],
       )}
     >
-      <p className="type-title-insight text-white/95">{data.status}</p>
-      {trend && (
-        <p className="type-body mt-2 text-content-secondary">{trend}</p>
+      <p className="type-title-insight text-white/95">{headline}</p>
+      {subline && (
+        <p className="type-body mt-2 text-content-secondary">{subline}</p>
       )}
     </section>
   )
@@ -347,6 +353,8 @@ function TrainingSection() {
 
   const goal = w.structure?.rationale?.supportsGoal ?? w.planDetails?.goal ?? null
   const bars = buildBlockBars(w.structure?.blocks)
+  // Rustdag: zelfde knop en zelfde route, alleen een eerlijke tekst.
+  const primary = trainingPrimaryLabel(w.type)
 
   return (
     <section className="mt-8" aria-label={COMMERCIAL_COPY.trainingTitle}>
@@ -397,12 +405,8 @@ function TrainingSection() {
             variant="primair"
             onClick={() => navigate(COMMERCIAL_COPY.trainingHref)}
           >
-            <span className="lg:hidden">
-              {COMMERCIAL_COPY.trainingPrimaryMobile}
-            </span>
-            <span className="hidden lg:inline">
-              {COMMERCIAL_COPY.trainingPrimaryDesktop}
-            </span>
+            <span className="lg:hidden">{primary.mobile}</span>
+            <span className="hidden lg:inline">{primary.desktop}</span>
           </DsButton>
           <DsButton
             variant="secundair"

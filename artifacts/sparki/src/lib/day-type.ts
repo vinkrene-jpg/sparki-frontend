@@ -48,7 +48,9 @@ function isRecoveryWorkout(type: string): boolean {
   return t.includes("recovery") || t.includes("herstel");
 }
 
-function isRestWorkout(type: string): boolean {
+// Ook gebruikt door de commerciële schil (knoptekst bij een geplande rustdag) —
+// één rustdag-definitie voor heel Vandaag, geen tweede regel ernaast.
+export function isRestWorkout(type: string): boolean {
   const t = type.toLowerCase();
   return t.includes("rest") || t.includes("rust") || t.includes("off");
 }
