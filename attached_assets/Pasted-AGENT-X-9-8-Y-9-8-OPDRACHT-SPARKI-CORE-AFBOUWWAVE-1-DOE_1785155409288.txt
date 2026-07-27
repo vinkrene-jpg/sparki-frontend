@@ -1,0 +1,285 @@
+AGENT
+X=9,8 | Y=9,8
+
+OPDRACHT — SPARKI CORE-AFBOUWWAVE 1
+
+DOEL
+
+Migreer in één samenhangende bouwronde uitsluitend deze drie Core-schermen naar het centrale donkere designsysteem:
+
+1. Plan
+2. Activiteiten
+3. Meer
+
+Behoud alle bestaande functies, routes, databronnen, rechten en gebruikersflows.
+
+Deze opdracht gaat om visuele en structurele migratie van de bestaande presentatielaag. Geen functionele herbouw.
+
+AFBAKENING
+
+Wel aanpassen:
+- Plan;
+- Activiteiten;
+- Meer;
+- direct gedeelde Core-componenten die uitsluitend nodig zijn voor deze drie schermen;
+- bijbehorende loading-, fout- en lege toestanden;
+- mobiel en desktop.
+
+Niet aanpassen:
+- Vandaag;
+- Rijden en navigatie;
+- Analyse;
+- coach-, ouder-, club- of beheeromgevingen;
+- trainings-, herstel-, route- of coachingengines;
+- API-contracten;
+- database of schema’s;
+- authenticatie en rollen;
+- mobiele ritregistratie;
+- taak #293;
+- app-brede glas- of stijlopruiming.
+
+WERKWIJZE
+
+1. Inventariseer vóór wijziging per scherm:
+   - route en betrokken bestanden;
+   - databronnen en hooks;
+   - bestaande interacties;
+   - loading-, fout- en lege toestanden;
+   - mobiele en desktopopbouw;
+   - eventuele mock-, demo-, seed-, fallback- of hardcoded persoonlijke data.
+
+2. Leg vast welke bestaande functies behouden moeten blijven.
+
+3. Migreer met de centrale design-systemcomponenten en tokens.
+
+4. Voeg alleen een componentvariant toe wanneer een bestaande component aantoonbaar niet volstaat.
+
+5. Bouw geen tweede component naast een bestaande centrale component.
+
+6. Verwijder geen bestaande functie alleen omdat deze niet in het nieuwe ontwerp past. Integreer deze binnen de nieuwe hiërarchie.
+
+ALGEMENE CORE-RICHTING
+
+Gebruik voor alle drie schermen:
+
+- rustige donkere achtergrond;
+- geen sterke fotografie achter functionele inhoud;
+- duidelijke paginatitel;
+- één primaire taak of conclusie per scherm;
+- daarna pas secundaire informatie;
+- minder losse kaarten;
+- gerelateerde informatie groeperen;
+- geen overmatige informatiedichtheid;
+- gewone Nederlandse taal;
+- contextuele uitleg via bestaande informatie-iconen;
+- geen personificatie van Sparki;
+- grafieken en vergelijkingen boven lange tekst waar relevant.
+
+PLAN
+
+Doel:
+één overzichtelijke plek om trainingen en planning te bekijken en beheren.
+
+Behouden:
+- bestaande kalender- en plandata;
+- week- en dagselectie;
+- trainingen openen;
+- training toevoegen of inplannen;
+- bestaande planacties;
+- bestaande rechten en rolgedrag.
+
+Nieuwe hiërarchie:
+
+1. paginatitel en korte context;
+2. compacte weeknavigatie;
+3. geselecteerde dag;
+4. geplande training of eerlijke lege toestand;
+5. eerstvolgende relevante planactie;
+6. secundaire week- of planinformatie.
+
+Regels:
+- gebruik `DsWeek`;
+- één dominante geselecteerde dag;
+- geen voorbeeldtraining bij ontbrekende data;
+- een rustdag krijgt geen actie “Training bekijken”;
+- training en rustdag duidelijk onderscheiden;
+- maximaal één primaire actie per toestand;
+- mobiele planning moet zonder horizontale overflow werken.
+
+ACTIVITEITEN
+
+Doel:
+een rustig en scanbaar overzicht van echte uitgevoerde activiteiten.
+
+Behouden:
+- bestaande activiteitendata;
+- filters;
+- sortering;
+- activiteit openen;
+- synchronisatiestatus;
+- eventuele import- of koppelacties;
+- bestaande lege en fouttoestanden.
+
+Nieuwe hiërarchie:
+
+1. paginatitel;
+2. compacte samenvatting van relevante periode;
+3. filters en sortering;
+4. activiteitenlijst;
+5. laad-, synchronisatie-, lege of foutstatus.
+
+Regels:
+- geen zware dashboardopbouw;
+- activiteiten primair als duidelijke lijst of compacte kaarten;
+- datum, type, duur en belangrijkste trainingswaarde direct scanbaar;
+- toon alleen waarden die werkelijk beschikbaar zijn;
+- ontbrekende waarden niet vervangen door nullen of voorbeeldwaarden;
+- synchronisatiefout nooit maskeren met oude data zonder duidelijke status;
+- filters op mobiel bruikbaar zonder horizontale overflow;
+- aanraakvlakken minimaal 44 px.
+
+MEER
+
+Doel:
+één rustige toegang tot secundaire functies en instellingen.
+
+Behouden:
+- alle bestaande menu-items;
+- profiel;
+- koppelingen;
+- materiaal;
+- kennis;
+- instellingen;
+- support/helpdesk;
+- rollen en omgevingswissels indien aanwezig;
+- privacy- en accountacties.
+
+Nieuwe hiërarchie:
+
+1. profiel- en accountcontext;
+2. veelgebruikte functies;
+3. sport en materiaal;
+4. koppelingen en gegevens;
+5. ondersteuning en kennis;
+6. instellingen, privacy en account.
+
+Regels:
+- geen ongestructureerde tegelwand;
+- groepeer menu-items logisch;
+- duidelijke groepskoppen;
+- iconen uit de bestaande vectoriconenbron;
+- geen Unicode- of emoji-iconen;
+- destructieve accountacties visueel apart;
+- rol- of omgevingswissels niet verbergen;
+- niets verwijderen of hernoemen zonder aantoonbare noodzaak.
+
+DATA-TRUST
+
+Voor alle drie schermen verplicht:
+
+- geen mock-, demo-, seed-, fallback- of hardcoded persoonlijke data;
+- API-fouten nooit tonen als persoonlijke data;
+- ontbrekende data geeft een eerlijke lege toestand;
+- oude cache mag alleen zichtbaar blijven wanneer dit expliciet als verouderde data wordt gemarkeerd;
+- geen nieuwe afgeleide persoonlijke conclusies zonder bestaande geldige bron;
+- bestaande databronnen niet vervangen.
+
+RESPONSIVE EN TOEGANKELIJKHEID
+
+Controleer minimaal:
+- mobiel 390 × 874;
+- lange mobiele pagina;
+- tablet 768 × 1024;
+- desktop 1440 × 900.
+
+Verifieer:
+- geen horizontale overflow;
+- geen afgesneden of overlappende tekst;
+- alle interactieve elementen minimaal 44 px;
+- zichtbare focusstatus;
+- correcte semantische knoppen en links;
+- actieve navigatiestatus;
+- status nooit alleen met kleur;
+- screenreaderlabels voor week-, filter- en menuonderdelen;
+- maximaal één primaire actie per schermtoestand.
+
+NIET DOEN
+
+- Geen nieuwe functies bouwen.
+- Geen functionele logica herschrijven.
+- Geen engine-, API-, database- of schemawijziging.
+- Geen andere schermen migreren.
+- Geen app-brede refactor.
+- Geen tweede design system.
+- Geen nieuwe mockdata.
+- Geen brede naamgevingswijzigingen.
+- Geen publicatie.
+- De afgeronde kleine Vandaag-correctie niet opnieuw aanpassen.
+
+TESTS
+
+Voer uit:
+
+- relevante bestaande tests van Plan;
+- relevante bestaande tests van Activiteiten;
+- relevante bestaande tests van Meer;
+- designsysteemtests;
+- navigatietests;
+- data-trustscenario’s;
+- frontend-typecheck;
+- volledige relevante frontendtests;
+- productiebuild tweemaal achter elkaar.
+
+Voeg gerichte regressietests toe voor:
+
+Plan:
+- training aanwezig;
+- rustdag;
+- lege dag;
+- laadstatus;
+- foutstatus zonder fallbackdata.
+
+Activiteiten:
+- lijst met echte activiteiten;
+- lege lijst;
+- synchronisatiefout;
+- ontbrekende meetwaarden;
+- filters op mobiel.
+
+Meer:
+- alle bestaande menu-items blijven bereikbaar;
+- groepen verschijnen in vaste volgorde;
+- rol- en accountacties blijven behouden;
+- geen Unicode-iconen.
+
+ACCEPTATIECRITERIA
+
+De opdracht is alleen gereed wanneer:
+
+1. uitsluitend Plan, Activiteiten en Meer zijn gemigreerd;
+2. alle bestaande functionaliteit behouden is;
+3. alle drie schermen het centrale designsysteem gebruiken;
+4. geen mock- of fallbackdata als echte data verschijnt;
+5. mobiel, tablet en desktop correct werken;
+6. geen overflow, overlap of afgesneden tekst bestaat;
+7. alle relevante tests slagen;
+8. beide productiebuilds slagen;
+9. geen engine-, API-, database- of schemawijziging is uitgevoerd;
+10. niets is gepubliceerd.
+
+RAPPORTAGE
+
+Rapporteer uitsluitend:
+
+1. inventarisatie per oorspronkelijk scherm;
+2. behouden databronnen, functies en interacties;
+3. gewijzigde en toegevoegde bestanden;
+4. gebruikte design-systemcomponenten en tokens;
+5. eventuele nieuwe componentvarianten met motivatie;
+6. data-trustcontrole per scherm;
+7. responsive- en toegankelijkheidscontrole;
+8. exacte testuitslagen;
+9. exacte uitslagen van beide productiebuilds;
+10. resterende afwijkingen of blokkades;
+11. expliciete bevestiging dat Vandaag, Rijden, Analyse, engines, API’s en database niet zijn gewijzigd;
+12. expliciete bevestiging dat niets is gepubliceerd.

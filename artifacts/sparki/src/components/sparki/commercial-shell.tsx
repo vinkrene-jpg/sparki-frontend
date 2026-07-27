@@ -98,10 +98,20 @@ const FOCUS_RING =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60"
 
 // ── Schil ────────────────────────────────────────────────────────────────────
-function CommercialShell({ children }: { children: ReactNode }) {
-  const [location, navigate] = useLocation()
-  const isActive = (href: string) =>
-    href === "/vandaag" ? true : location.startsWith(href)
+// Gedeeld door alle Core-schermen in de commerciële schil (Vandaag, Plan,
+// Activiteiten, Meer): vaste desktopnav + mobiele onderbalk. `actief` is het
+// navigatiepad van het huidige scherm; alleen dat item krijgt de actieve
+// markering. (/meer staat bewust niet in de desktopnav — daar is dan geen
+// item actief, wat klopt: desktop bereikt die inhoud via losse navigatie.)
+export function CommercialShell({
+  actief,
+  children,
+}: {
+  actief: string
+  children: ReactNode
+}) {
+  const [, navigate] = useLocation()
+  const isActive = (href: string) => href === actief
 
   return (
     <div className="min-h-dvh bg-app font-sans text-white">
@@ -148,7 +158,7 @@ function CommercialShell({ children }: { children: ReactNode }) {
       <div className="lg:hidden">
         <DsMobileNav
           items={MOBILE_NAV_ITEMS}
-          actiefPad="/vandaag"
+          actiefPad={actief}
           onNavigeer={(href) => navigate(href)}
         />
       </div>
@@ -596,7 +606,7 @@ export function CommercialToday() {
   })
 
   return (
-    <CommercialShell>
+    <CommercialShell actief="/vandaag">
       <HeroVandaag presentation={presentation} planWeek={planWeek} />
       <div className="mx-auto w-full max-w-2xl px-5 lg:max-w-3xl lg:px-10">
         <WeekSection />

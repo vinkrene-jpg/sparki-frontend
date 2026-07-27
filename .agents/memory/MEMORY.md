@@ -84,6 +84,7 @@
 - [pino worker-transport flaky](pino-worker-transport-flaky.md) — pino-pretty worker transport races process-exit in tests/jobs ("worker is not a function"); use sync in-process stream, prod stays JSON.
 - [Deployment liveness probes bare /api](deploy-liveness-bare-api.md) — platform pings the service base path (not only startup healthz); api router needs get("/") too or republish flaps unhealthy.
 - [api-server test build race](api-server-test-build-race.md) — test:* workflows delen één dist/ ⇒ strikt sequentieel; boot storm = semaphore + retry ([detail](test-workflow-boot-storm.md)).
+- [tsx-runner ENOENT ≠ esbuild-crash](tsx-runner-enoent.md) — run-tsx-test buiten pnpm om mist tsx in PATH; "spawn/esbuild pressure"-melding is dan vals — draai via pnpm run.
 - [Sparki per-session caps](sparki-session-caps.md) — plan engine caps single-session minutes per DayKind×experience; unrealistic weekly quota underfills honestly, never a 6h ride; wedstrijd keeps 360.
 - [Sparki engagement engine](sparki-engagement-engine.md) — healthy pull-to-return: learns real open rhythm from tester_events, honest default when thin.
 - [Sparki aandachtswet (Vandaag single-leader)](sparki-aandachtswet.md) — one leading Momentblok (priority chain); ride-along weather/leskaart/nudge must be GATED at render not just imported.

@@ -208,3 +208,50 @@ test("DsCard: standaard- en compactvariant gebruiken tokenpadding", () => {
   );
   cleanup();
 });
+
+test("DsWeek: selecteerbare dagen zijn knoppen met aria-pressed en vandaag-markering", () => {
+  const dagen = [
+    { label: "Ma", status: "herstel" as const },
+    { label: "Di", status: "training" as const, vandaag: true },
+    { label: "Wo", status: "leeg" as const },
+    { label: "Do", status: "training" as const, actief: true },
+    { label: "Vr", status: "leeg" as const },
+    { label: "Za", status: "training" as const },
+    { label: "Zo", status: "herstel" as const },
+  ];
+  const gekozen: number[] = [];
+  render(
+    <DsWeek
+      dagen={dagen}
+      onSelecteer={(i) => gekozen.push(i)}
+      selectieLabel="Kies een dag"
+    />,
+  );
+  const knoppen = screen.getAllByRole("button");
+  assert.equal(knoppen.length, 7, "elke dag is een knop");
+  const geselecteerd = screen.getByLabelText("Do: training (geselecteerd)");
+  assert.equal(geselecteerd.getAttribute("aria-pressed"), "true");
+  const vandaag = screen.getByLabelText("Di: training (vandaag)");
+  assert.equal(vandaag.getAttribute("aria-current"), "date");
+  assert.equal(vandaag.getAttribute("aria-pressed"), "false");
+  fireEvent.click(screen.getByLabelText("Wo: geen training"));
+  assert.deepEqual(gekozen, [2], "klik geeft de dag-index door");
+  cleanup();
+});
+
+test("DsWeek: zonder onSelecteer blijven dagen statische lijstitems", () => {
+  const dagen = [
+    { label: "Ma", status: "herstel" as const },
+    { label: "Di", status: "training" as const },
+    { label: "Wo", status: "leeg" as const },
+    { label: "Do", status: "training" as const, actief: true },
+    { label: "Vr", status: "leeg" as const },
+    { label: "Za", status: "training" as const },
+    { label: "Zo", status: "herstel" as const },
+  ];
+  render(<DsWeek dagen={dagen} />);
+  assert.equal(screen.queryAllByRole("button").length, 0, "geen knoppen");
+  assert.equal(screen.getAllByRole("listitem").length, 7);
+  assert.ok(screen.getByLabelText("Do: training (vandaag)"));
+  cleanup();
+});

@@ -41,6 +41,9 @@ import WedstrijdRoomPage from "@/pages/wedstrijd-room";
 import JourneyPage from "@/pages/journey";
 import KnowledgePage from "@/pages/knowledge";
 import MeerPage from "@/pages/meer";
+import CorePlanPage from "@/pages/core-plan";
+import CoreActiviteitenPage from "@/pages/core-activiteiten";
+import CoreMeerPage from "@/pages/core-meer";
 import SparkiConnectPage from "@/pages/sparki-connect";
 import KlimmenPage from "@/pages/klimmen";
 import InvitationsPage from "@/pages/invitations";
@@ -400,6 +403,25 @@ function VandaagPage() {
   return <DayHome />;
 }
 
+// Plan/Activiteiten/Meer — zelfde flag-switch als Vandaag: met commercial_shell
+// aan de nieuwe designsysteem-pagina, uit exact de bestaande pagina. Coach en
+// ouder hadden op deze routes nooit een aparte variant; de nieuwe Meer-pagina
+// regelt rolgedrag zelf (net als de oude).
+function TrainSwitchPage() {
+  const commercialShell = useFeatureFlag("commercial_shell");
+  return commercialShell ? <CorePlanPage /> : <TrainPage />;
+}
+
+function ActiviteitenSwitchPage() {
+  const commercialShell = useFeatureFlag("commercial_shell");
+  return commercialShell ? <CoreActiviteitenPage /> : <ActiviteitenPage />;
+}
+
+function MeerSwitchPage() {
+  const commercialShell = useFeatureFlag("commercial_shell");
+  return commercialShell ? <CoreMeerPage /> : <MeerPage />;
+}
+
 function HomeRedirect() {
   return (
     <>
@@ -606,7 +628,7 @@ function AppRouter() {
                   <ProtectedPage component={SupportPage} />
                 </Route>
                 <Route path="/train">
-                  <ProtectedPage component={TrainPage} />
+                  <ProtectedPage component={TrainSwitchPage} />
                 </Route>
                 <Route path="/feed">
                   <ProtectedPage component={FeedPage} />
@@ -615,7 +637,7 @@ function AppRouter() {
                   <ProtectedPage component={LabPage} />
                 </Route>
                 <Route path="/activiteiten">
-                  <ProtectedPage component={ActiviteitenPage} />
+                  <ProtectedPage component={ActiviteitenSwitchPage} />
                 </Route>
                 <Route path="/photo-lab">
                   <ProtectedPage component={PhotoLabPage} />
@@ -663,7 +685,7 @@ function AppRouter() {
                   <ProtectedPage component={KnowledgePage} />
                 </Route>
                 <Route path="/meer">
-                  <ProtectedPage component={MeerPage} />
+                  <ProtectedPage component={MeerSwitchPage} />
                 </Route>
                 <Route path="/connect">
                   <ProtectedPage component={SparkiConnectPage} />
