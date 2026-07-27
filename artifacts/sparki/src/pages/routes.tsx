@@ -9,7 +9,7 @@ import {
   Globe2,
   Settings2,
 } from "lucide-react"
-import { ScreenShell } from "@/components/sparki/screen-shell"
+import { CommercialShell } from "@/components/sparki/commercial-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { RoutePanel } from "@/components/sparki/route-panel"
 import { RouteLibrary } from "@/components/sparki/route-library"
@@ -92,7 +92,7 @@ export default function RoutesPage() {
   ]
 
   return (
-    <ScreenShell section="routes">
+    <CommercialShell actief="/routes">
       {view === null ? (
         <>
           <div className="flex flex-col gap-2">
@@ -224,6 +224,6 @@ export default function RoutesPage() {
           </div>
         </>
       )}
-    </ScreenShell>
+    </CommercialShell>
   )
 }

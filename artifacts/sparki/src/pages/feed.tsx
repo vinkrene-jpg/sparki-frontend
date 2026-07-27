@@ -1,9 +1,8 @@
 import { useState } from "react"
 import { Link } from "wouter"
-import { ScreenShell } from "@/components/sparki/screen-shell"
+import { CommercialShell } from "@/components/sparki/commercial-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { ClubChip } from "@/components/sparki/club-chip"
-import { HumorLine } from "@/components/sparki/humor-line"
 import { SparkiCore } from "@/components/sparki/sparki-core"
 import { NewsReader } from "@/components/sparki/news-reader"
 import { useAiBrief, type AiSource } from "@/hooks/use-ai-brief"
@@ -152,7 +151,6 @@ function EmptyTab({ active }: { active: FilterKey }) {
       <p className="mx-auto max-w-xs text-pretty text-[12px] leading-relaxed text-white/40">
         {c.text}
       </p>
-      <HumorLine context="empty_feed" seedSalt={active} className="mx-auto mt-2 max-w-xs" />
       {c.href && c.cta && (
         <Link
           href={c.href}
@@ -392,7 +390,7 @@ export default function FeedPage() {
     (active === "all" || active === "news") && newsItems.length > 0
 
   return (
-    <ScreenShell section="Feed">
+    <CommercialShell actief="/feed">
       {/* INTRO */}
       <div className="-mt-2">
         <div className="flex items-center justify-between gap-3">
@@ -638,6 +636,6 @@ export default function FeedPage() {
       {readerItem && (
         <NewsReader item={readerItem} onClose={() => setReaderItem(null)} />
       )}
-    </ScreenShell>
+    </CommercialShell>
   )
 }
