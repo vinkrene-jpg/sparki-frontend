@@ -1,0 +1,181 @@
+OPDRACHT — W2 REVIEW EN FUNCTIONELE ACCEPTATIE VANDAAG
+
+DOEL
+
+Voer uitsluitend de volledige acceptatiecontrole uit van W2 op Vandaag.
+
+Geen nieuwe functionaliteit bouwen.
+Geen extra redesign.
+Niets publiceren.
+
+TE CONTROLEREN
+
+1. VANDAAG — MOBIEL EN DESKTOP
+
+Controleer ingelogd met René’s account op:
+
+- 390 × 874
+- 768 × 1024
+- 1440 × 900
+
+Verifieer:
+
+- mobiel behoudt de bestaande goede opbouw;
+- desktop gebruikt aantoonbaar de nieuwe tweekolomsindeling;
+- geen oude hamburger-shell op desktop;
+- geen horizontale overflow;
+- geen lege hoogte onder “Hoe voel je je?”;
+- geen overlappende kaarten of afgesneden tekst;
+- console blijft schoon.
+
+Maak per viewport een screenshot.
+
+2. TRAINING TOEVOEGEN — VOLLEDIGE FLOW
+
+Test de volledige bestaande flow vanaf Vandaag:
+
+- open “Training toevoegen”;
+- selecteer een training;
+- bevestig de selectie;
+- controleer opslag/API-resultaat;
+- keer terug naar Vandaag.
+
+Bewijs dat na succes zichtbaar is:
+
+- welke training is toegevoegd;
+- voor welke dag;
+- dat de actie is geslaagd;
+- dat Vandaag de actuele toestand toont.
+
+Test daarnaast:
+
+- annuleren;
+- API- of opslagfout;
+- opnieuw proberen.
+
+Er mag nooit een stille actie zijn.
+
+Wanneer na selectie nog steeds geen zichtbaar resultaat verschijnt:
+
+- rapporteer dit als defect;
+- geef exacte oorzaak;
+- wijzig niets zonder aparte toestemming.
+
+3. VOEDING EN HYDRATATIE
+
+Open de drawer vanaf Vandaag.
+
+Controleer:
+
+- drawer opent en sluit correct;
+- bekende dagcontext wordt gebruikt;
+- rustdag wordt niet als trainingsdag behandeld;
+- reeds bekende gegevens worden niet opnieuw gevraagd;
+- temperatuur wordt alleen getoond of gevraagd wanneer relevant;
+- generieke waarden staan als “Algemene richtlijn” of gelijkwaardig;
+- persoonlijke waarden worden alleen persoonlijk genoemd wanneer ze aantoonbaar persoonlijk berekend zijn;
+- succes-, fout- en annuleringstoestand zijn duidelijk;
+- geen mock- of fallbackdata wordt als persoonlijk resultaat getoond.
+
+4. MATERIAAL
+
+Open de materiaalactie.
+
+Controleer:
+
+- “Vraag Sparki” is nergens zichtbaar;
+- de actie heet functioneel, bijvoorbeeld “Materiaal beoordelen”;
+- de knop opent de juiste functie;
+- resultaat, fout en annuleren zijn zichtbaar;
+- geen personificerende tekst terugkomt in drawer, modal of vervolgscherm.
+
+5. ALLE ZICHTBARE ACTIES OP VANDAAG
+
+Klik en controleer alle zichtbare knoppen, links, informatie-iconen, drawers en vervolgacties.
+
+Rapporteer per actie:
+
+- label;
+- doel;
+- resultaat;
+- succes;
+- fout;
+- annuleren;
+- terugkeer naar Vandaag.
+
+Een niet-geteste actie mag niet als werkend worden gerapporteerd.
+
+6. COMMUNICATIE
+
+Controleer W2 tegen de vaste productlijn:
+
+- data of feit eerst;
+- maximaal één korte zakelijke/wetenschappelijke conclusie;
+- verdieping pas na doorklikken;
+- geen lange coachende tekstblokken;
+- geen zichtbare personificatie;
+- geen “Vraag Sparki”;
+- onderscheid tussen:
+  - Gemeten
+  - Berekend
+  - Advies
+  - Algemene richtlijn
+
+Rapporteer alle resterende afwijkingen.
+
+7. DATA-TRUST
+
+Controleer per zichtbare persoonlijke waarde:
+
+- component;
+- hook;
+- endpoint;
+- response;
+- gekoppelde gebruiker.
+
+Markeer iedere waarde waarvan de herkomst niet aantoonbaar van René is als openstaand data-trustprobleem.
+
+Een code-grep alleen is onvoldoende.
+
+8. TESTS EN BUILD
+
+Voer sequentieel uit:
+
+- relevante Vandaag-tests;
+- Training toevoegen-tests;
+- voeding-/hydratatietests;
+- materiaaltests;
+- navigatietests;
+- data-trusttests;
+- frontend-typecheck;
+- volledige webtestset;
+- productiebuild tweemaal.
+
+STOPVOORWAARDEN
+
+Stop en rapporteer wanneer:
+
+- productiecode gewijzigd moet worden;
+- een bestaande functie defect blijkt;
+- API-, database- of schemawijziging nodig is;
+- een runtimefout ontstaat.
+
+NIET DOEN
+
+- geen nieuwe subagents;
+- geen andere pagina’s aanpassen;
+- Rijden, Ontdekken en Meer-subpagina’s niet migreren;
+- geen featureflags wijzigen;
+- geen database wijzigen;
+- niets publiceren.
+
+RAPPORTAGE
+
+Rapporteer uitsluitend:
+
+1. screenshots per viewport;
+2. desktop- en mobiele layoutbevindingen;
+3. volledige Training toevoegen-flow;
+4. voeding-/hydratatiebevindingen;
+5. materiaalbevindingen;
+6. lijst van alle gecontroleerde acties
