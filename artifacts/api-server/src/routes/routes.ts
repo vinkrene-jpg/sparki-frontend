@@ -427,6 +427,54 @@ function evictEnrichment(): void {
   }
 }
 
+// ── In-process route geometry cache ──────────────────────────────────────────
+// Caches ONLY the raw provider geometry (ORS result + geocoding) keyed on the
+// parameters that determine road geometry. candidateId and user context are
+// NEVER stored: on a cache hit putCandidate is always called fresh so the new
+// candidate is owned by the current user with the current plannedWorkoutId.
+// This makes cross-user sharing safe — geometry is stateless — and avoids any
+// stale-ownership or wrong-workout-linkage bugs.
+// TTL: 5 min (same order as ENRICHMENT but shorter; geometry can change on OSM).
+
+type CachedRouteGeometry = {
+  path: [number, number][];
+  points: Array<{ lat: number; lon: number; ele: number | null }>;
+  distanceKm: number | null;
+  ascentM: number | null;
+  durationSec: number | null;
+  steps: RouteStep[];
+};
+
+type RouteGeometryCacheEntry = {
+  geometry: CachedRouteGeometry;
+  startName: string | null;
+  endName: string | null; // populated for PTP/waypoints, null for loop
+  at: number;
+};
+
+const ROUTE_GEOMETRY_CACHE = new Map<string, RouteGeometryCacheEntry>();
+const ROUTE_GEOMETRY_CACHE_TTL_MS = 5 * 60_000;
+
+function evictRouteGeometryCache(): void {
+  const now = Date.now();
+  for (const [key, e] of ROUTE_GEOMETRY_CACHE) {
+    if (now - e.at > ROUTE_GEOMETRY_CACHE_TTL_MS) ROUTE_GEOMETRY_CACHE.delete(key);
+  }
+}
+
+// Stable, deterministic geometry cache key. Sorted keys so insertion order
+// can never produce a different string. Inputs are numbers/strings/null —
+// JSON.stringify is deterministic for this value domain.
+function routeGeometryCacheKey(params: Record<string, unknown>): string {
+  const sorted = Object.keys(params)
+    .sort()
+    .reduce<Record<string, unknown>>((acc, k) => {
+      acc[k] = params[k];
+      return acc;
+    }, {});
+  return JSON.stringify(sorted);
+}
+
 // Fire background enrichment for a freshly generated candidate. Never throws.
 function scheduleEnrichment(
   candidateId: string,
@@ -2117,42 +2165,89 @@ async function buildLoopCandidate(
       }
     : wishScenery;
 
-  // Fire reverseGeocode CONCURRENTLY with ORS loop generation — geocoding (~750 ms)
-  // is now hidden behind the longer ORS call (~1800 ms). When the caller already
-  // resolved startName (options endpoint), this resolves instantly from the cache.
-  const startNamePromise: Promise<string | null> =
-    ctx.startName != null
-      ? Promise.resolve(ctx.startName)
-      : ctx.provider.reverseGeocode(ctx.start).catch(() => null);
+  // Geometry-only cache key: parameters that determine ORS road geometry.
+  // clerkId and plannedWorkoutId are intentionally excluded — they do not
+  // affect which roads ORS picks. putCandidate is always called fresh below,
+  // so the new candidate is always owned by the correct user/workout.
+  evictRouteGeometryCache();
+  const loopGeomKey = routeGeometryCacheKey({
+    mode: "loop",
+    startLat: ctx.start.lat,
+    startLon: ctx.start.lon,
+    targetDistanceKm,
+    seed: ctx.seed ?? null,
+    profile: ctx.profile,
+    elevationPreference: ctx.elevationPreference,
+    workoutTrainingType: ctx.workoutTrainingType,
+    targetElevationGainM: ctx.targetElevationGainM ?? null,
+    wish: ctx.wish,
+  });
+  const loopGeomCached = ROUTE_GEOMETRY_CACHE.get(loopGeomKey);
 
-  const _t_loop0 = performance.now();
-  const routeResult = await generateVariedLoop(
-    ctx.provider,
-    {
-      start: ctx.start,
-      distanceKm: targetDistanceKm,
-      profile: ctx.profile,
-      seed: ctx.seed,
-      points: ctx.points,
-      elevationPreference: ctx.elevationPreference,
-    },
-    {
-      // environmentOf (Overpass) is intentionally absent here — it belongs only
-      // in the async enrichment phase (scheduleEnrichment below). Running it per
-      // candidate in the loop selection would put a slow network call (~500 ms–
-      // 30 s per Overpass query) back into the critical path, undoing the
-      // async-enrichment refactor. Candidate selection uses ORS turn-by-turn
-      // steps (preferUninterrupted → turnDensityPenalty) instead, which is
-      // instant and requires no external I/O.
-      scenery,
-      preferUninterrupted: wantsUninterrupted,
-      targetAscentM: ctx.targetElevationGainM ?? null,
-    },
-  );
-  console.log(`[PERF] buildLoopCandidate.generateVariedLoop ms=${Math.round(performance.now()-_t_loop0)}`);
+  let routeResult: CachedRouteGeometry;
+  let startName: string | null;
 
-  // Geocoding runs concurrently with ORS, so it's usually already done here.
-  const startName = await startNamePromise;
+  if (loopGeomCached) {
+    // Geometry cache hit: skip ORS entirely (~1.5–2.8 s saved).
+    console.log(
+      `[PERF] buildLoopCandidate.CACHE_HIT key=${loopGeomKey.slice(0, 60)}`,
+    );
+    routeResult = loopGeomCached.geometry;
+    startName = loopGeomCached.startName;
+  } else {
+    // Cache miss: fire reverseGeocode CONCURRENTLY with ORS loop generation —
+    // geocoding (~750 ms) is hidden behind the longer ORS call (~1800 ms). When
+    // the caller already resolved startName (options endpoint), this resolves
+    // instantly from the provider's own cache.
+    const startNamePromise: Promise<string | null> =
+      ctx.startName != null
+        ? Promise.resolve(ctx.startName)
+        : ctx.provider.reverseGeocode(ctx.start).catch(() => null);
+
+    const _t_loop0 = performance.now();
+    const orsResult = await generateVariedLoop(
+      ctx.provider,
+      {
+        start: ctx.start,
+        distanceKm: targetDistanceKm,
+        profile: ctx.profile,
+        seed: ctx.seed,
+        points: ctx.points,
+        elevationPreference: ctx.elevationPreference,
+      },
+      {
+        scenery,
+        environmentOf: scenery
+          ? candidateEnvironmentOf(scenery.nature)
+          : undefined,
+        preferUninterrupted: wantsUninterrupted,
+        targetAscentM: ctx.targetElevationGainM ?? null,
+      },
+    );
+    console.log(
+      `[PERF] buildLoopCandidate.CACHE_MISS ms=${Math.round(performance.now() - _t_loop0)}`,
+    );
+
+    // Geocoding runs concurrently with ORS, so it's usually already done here.
+    startName = await startNamePromise;
+
+    // Store only the raw geometry — no user context, no candidateId.
+    routeResult = {
+      path: orsResult.path,
+      points: orsResult.points,
+      distanceKm: orsResult.distanceKm,
+      ascentM: orsResult.ascentM,
+      durationSec: orsResult.durationSec,
+      steps: orsResult.steps,
+    };
+    evictRouteGeometryCache();
+    ROUTE_GEOMETRY_CACHE.set(loopGeomKey, {
+      geometry: routeResult,
+      startName,
+      endName: null,
+      at: Date.now(),
+    });
+  }
 
   const summary = summarizeTrack(routeResult.points);
   const distanceKm = summary.distanceKm ?? routeResult.distanceKm;
@@ -2431,9 +2526,11 @@ router.post("/generate", requireAuth, async (req, res) => {
 
     // Loop mode: build the candidate via the shared helper so the single-route
     // path and the 3-distance chooser (/generate/options) never drift.
+    // The geometry cache lives inside buildLoopCandidate — identical ORS params
+    // skip the provider call and return within ~1 ms. putCandidate is always
+    // called fresh inside the helper, so ownership is always correct.
     if (mode === "loop" && !viaLoop) {
       const _t_req0 = performance.now();
-      // reverseGeocode is fired INSIDE buildLoopCandidate, concurrent with ORS.
       const candidate = await buildLoopCandidate(
         {
           clerkId,
@@ -2460,10 +2557,158 @@ router.post("/generate", requireAuth, async (req, res) => {
       return;
     }
 
-    // Lus met via-punten: een echte wegroute start → via's → start.
+    // PTP / waypoints / via-loop path.
     const _t_ptpreq0 = performance.now();
+
+    // Geometry-only cache: key on the parameters that determine ORS road
+    // geometry. candidateId and user context are NOT stored — putCandidate is
+    // always called fresh below so the candidate is owned by the current user
+    // with the correct plannedWorkoutId. Safe for cross-user sharing.
+    evictRouteGeometryCache();
+    const ptpGeomKeyParams: Record<string, unknown> =
+      mode === "ptp"
+        ? {
+            mode: "ptp",
+            startLat,
+            startLon,
+            endLat: finiteNum(body.endLat) ?? null,
+            endLon: finiteNum(body.endLon) ?? null,
+            destinationText:
+              typeof body.destinationText === "string"
+                ? body.destinationText.trim()
+                : null,
+            profile,
+          }
+        : mode === "waypoints"
+          ? { mode: "waypoints", waypoints: JSON.stringify(waypoints), profile }
+          : {
+              mode: "via-loop",
+              startLat,
+              startLon,
+              viaPoints: JSON.stringify(viaPoints),
+              profile,
+            };
+    const ptpGeomKey = routeGeometryCacheKey(ptpGeomKeyParams);
+    const ptpGeomCached = ROUTE_GEOMETRY_CACHE.get(ptpGeomKey);
+
+    // Helper: build and return the PTP/waypoints candidate from geometry +
+    // geocoded names. Always called with a fresh putCandidate so the candidateId
+    // is always owned by the current user / linked to the current plannedWorkoutId.
+    const buildPtpResponse = (
+      geom: CachedRouteGeometry,
+      resolvedStartName: string | null,
+      resolvedEndName: string | null,
+      cacheHit: boolean,
+    ) => {
+      const summary = summarizeTrack(geom.points);
+      const distanceKm = summary.distanceKm ?? geom.distanceKm;
+      const elevationGainM = summary.elevationGainM ?? geom.ascentM;
+      const durationSec = geom.durationSec;
+      const nav: RouteStep[] = geom.steps;
+
+      const distLabel = distanceKm != null ? `${Math.round(distanceKm)} km` : "";
+      const name =
+        mode === "ptp"
+          ? `${resolvedStartName ?? "Start"} → ${resolvedEndName ?? "bestemming"}${distLabel ? ` · ${distLabel}` : ""}`
+          : mode === "waypoints"
+            ? `Eigen route${resolvedStartName ? ` vanuit ${resolvedStartName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`
+            : `${workoutTrainingType}-lus${resolvedStartName ? ` vanuit ${resolvedStartName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`;
+
+      const rationaleInput: RationaleInput = {
+        trainingType: linkedWorkoutTitle
+          ? `${workoutTrainingType} (${linkedWorkoutTitle})`
+          : workoutTrainingType,
+        profile,
+        mode,
+        distanceKm,
+        durationSec,
+        elevationGainM,
+        climbCount: summary.climbs.length,
+        startName: resolvedStartName,
+        endName: resolvedEndName,
+        wish,
+      };
+      const rationale = buildRationaleFallback(rationaleInput);
+
+      const candidateId = putCandidate({
+        clerkId,
+        name,
+        surface,
+        distanceKm,
+        durationSec,
+        elevationGainM,
+        profile: summary.profile,
+        climbs: summary.climbs,
+        nav,
+        geometry: geom.path,
+        waypoints: viaLoop
+          ? viaPoints.map((p) => [p.lat, p.lon])
+          : mode === "waypoints"
+            ? waypoints.map((p) => [p.lat, p.lon])
+            : [],
+        rationale,
+        plannedWorkoutId,
+      });
+
+      scheduleEnrichment(
+        candidateId,
+        clerkId,
+        rationaleInput,
+        geom.path,
+        false, // PTP/waypoints/via-loop routes have no scenery steering
+      );
+
+      const totalMs = Math.round(performance.now() - _t_ptpreq0);
+      console.log(
+        `[PERF] generate.${mode} ${cacheHit ? "CACHE_HIT" : "CACHE_MISS"} ms=${totalMs}`,
+      );
+
+      return {
+        candidateId,
+        name,
+        surface,
+        sport,
+        bikeType,
+        routingProfile: profile,
+        trainingType: workoutTrainingType,
+        mode,
+        distanceKm,
+        durationSec,
+        elevationGainM,
+        profile: summary.profile,
+        climbs: summary.climbs,
+        nav,
+        geometry: geom.path,
+        waypoints: viaLoop
+          ? viaPoints.map((p) => [p.lat, p.lon])
+          : mode === "waypoints"
+            ? waypoints.map((p) => [p.lat, p.lon])
+            : [],
+        rationale,
+        startName: resolvedStartName,
+        endName: resolvedEndName,
+        plannedWorkoutId,
+        targetDistanceKm: null,
+        avoidReport,
+      };
+    };
+
+    if (ptpGeomCached) {
+      // Geometry cache hit: skip ORS + geocoding entirely.
+      res.json({
+        candidate: buildPtpResponse(
+          ptpGeomCached.geometry,
+          ptpGeomCached.startName,
+          ptpGeomCached.endName,
+          true,
+        ),
+      });
+      return;
+    }
+
+    // Cache miss: call ORS provider, then geocode place names concurrently.
     const _t_ors0 = performance.now();
-    const routeResult =
+    const orsResult =
       mode === "waypoints"
         ? await provider.routeWaypoints({ points: waypoints, profile })
         : viaLoop
@@ -2482,14 +2727,7 @@ router.post("/generate", requireAuth, async (req, res) => {
             });
     console.log(`[PERF] generate.ors mode=${mode} ms=${Math.round(performance.now()-_t_ors0)}`);
 
-    const summary = summarizeTrack(routeResult.points);
-    const distanceKm = summary.distanceKm ?? routeResult.distanceKm;
-    const elevationGainM = summary.elevationGainM ?? routeResult.ascentM;
-    const durationSec = routeResult.durationSec;
-    const nav: RouteStep[] = routeResult.steps;
-
-    // Best-effort place names for the route title (never blocks generation). For
-    // a waypoints route the last placed point is the "end".
+    // Best-effort place names — never blocks generation.
     const endPoint =
       end ??
       (mode === "waypoints" && !viaLoop
@@ -2501,93 +2739,25 @@ router.post("/generate", requireAuth, async (req, res) => {
     ]);
     const endName = endLabel ?? resolvedEndName;
 
-    const distLabel = distanceKm != null ? `${Math.round(distanceKm)} km` : "";
-    const name =
-      mode === "ptp"
-        ? `${startName ?? "Start"} → ${endName ?? "bestemming"}${distLabel ? ` · ${distLabel}` : ""}`
-        : mode === "waypoints"
-          ? `Eigen route${startName ? ` vanuit ${startName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`
-          : `${workoutTrainingType}-lus${startName ? ` vanuit ${startName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`;
-
-    const ptpRationaleInput: RationaleInput = {
-      trainingType: linkedWorkoutTitle
-        ? `${workoutTrainingType} (${linkedWorkoutTitle})`
-        : workoutTrainingType,
-      profile,
-      mode,
-      distanceKm,
-      durationSec,
-      elevationGainM,
-      climbCount: summary.climbs.length,
+    // Store only the raw geometry + names — no user context, no candidateId.
+    const ptpGeom: CachedRouteGeometry = {
+      path: orsResult.path,
+      points: orsResult.points,
+      distanceKm: orsResult.distanceKm,
+      ascentM: orsResult.ascentM,
+      durationSec: orsResult.durationSec,
+      steps: orsResult.steps,
+    };
+    evictRouteGeometryCache();
+    ROUTE_GEOMETRY_CACHE.set(ptpGeomKey, {
+      geometry: ptpGeom,
       startName,
       endName,
-      wish,
-    };
-    // Deterministic fallback rationale — instant. AI-enrichment runs in background.
-    const rationale = buildRationaleFallback(ptpRationaleInput);
-    console.log(`[PERF] generate.ptp TOTAL ms=${Math.round(performance.now()-_t_ptpreq0)} mode=${mode}`);
-
-    // Store the trusted candidate server-side and hand back an opaque id. Saving
-    // (POST /) persists ONLY from this store — never from client-supplied data —
-    // so generated route geometry/metrics/nav always come from the provider.
-    const candidateId = putCandidate({
-      clerkId,
-      name,
-      surface,
-      distanceKm,
-      durationSec,
-      elevationGainM,
-      profile: summary.profile,
-      climbs: summary.climbs,
-      nav,
-      geometry: routeResult.path,
-      waypoints: viaLoop
-        ? viaPoints.map((p) => [p.lat, p.lon])
-        : mode === "waypoints"
-          ? waypoints.map((p) => [p.lat, p.lon])
-          : [],
-      rationale,
-      plannedWorkoutId,
+      at: Date.now(),
     });
 
-    // Fire background enrichment (AI rationale + road objects). Never blocks.
-    scheduleEnrichment(
-      candidateId,
-      clerkId,
-      ptpRationaleInput,
-      routeResult.path,
-      false, // PTP/waypoints routes have no scenery steering
-    );
-
     res.json({
-      candidate: {
-        candidateId,
-        name,
-        surface,
-        sport,
-        bikeType,
-        routingProfile: profile,
-        trainingType: workoutTrainingType,
-        mode,
-        distanceKm,
-        durationSec,
-        elevationGainM,
-        profile: summary.profile,
-        climbs: summary.climbs,
-        nav,
-        geometry: routeResult.path,
-        waypoints: viaLoop
-          ? viaPoints.map((p) => [p.lat, p.lon])
-          : mode === "waypoints"
-            ? waypoints.map((p) => [p.lat, p.lon])
-            : [],
-        rationale,
-        startName,
-        endName,
-        plannedWorkoutId,
-        targetDistanceKm: null,
-        avoidReport,
-      },
+      candidate: buildPtpResponse(ptpGeom, startName, endName, false),
     });
   } catch (err) {
     req.log.error({ err }, "routes.generate failed");
