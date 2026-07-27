@@ -1,0 +1,202 @@
+NA AFRONDING VAN ALLE HUIDIGE OPDRACHTEN — VOLLEDIGE BRONCODE-EXPORT
+
+Start deze opdracht pas nadat alle momenteel lopende opdrachten volledig zijn afgerond en afzonderlijk zijn gerapporteerd.
+
+DOEL
+
+Maak één volledige, controleerbare zip van de actuele Sparki-broncode en projectdocumentatie, zodat deze extern kan worden vergeleken met:
+
+- SPARKI_AI_MASTER_PLAN_v2.64.yaml;
+- de actuele roadmap en actieplannen;
+- de door Replit gerapporteerde technische status.
+
+Deze opdracht wijzigt geen productfunctionaliteit.
+
+1. EERST HUIDIGE OPDRACHTEN AFRONDEN
+
+Vóór het maken van de zip:
+
+- rond iedere huidige opdracht volledig af;
+- lever per opdracht het gevraagde rapport;
+- meld resterende afwijkingen;
+- start geen nieuwe ontwikkelopdracht;
+- publiceer niets zonder expliciete toestemming van René.
+
+2. BRONCODE-ZIP
+
+Maak één zipbestand van de volledige actuele repository.
+
+Voorgestelde bestandsnaam:
+
+SPARKI_CURRENT_STATE_2026-07-27.zip
+
+De zip moet minimaal bevatten:
+
+- volledige frontendbroncode;
+- volledige backend/API-broncode;
+- mobiele app-broncode;
+- gedeelde packages en libraries;
+- database-schema’s;
+- migratiebestanden;
+- configuratievoorbeelden;
+- tests;
+- scripts;
+- documentatie;
+- package manifests;
+- lockfiles;
+- bestaande audit- en evidencerapporten;
+- actuele roadmap- en projectdocumenten die in de repository staan;
+- relevante CI/CD-configuratie;
+- actuele README-bestanden.
+
+3. UITSLUITEN
+
+Niet opnemen:
+
+- node_modules;
+- build-output;
+- dist;
+- tijdelijke caches;
+- logbestanden zonder projectwaarde;
+- grote gegenereerde binaries;
+- lokale ontwikkelcache;
+- echte secrets;
+- API-sleutels;
+- wachtwoorden;
+- tokens;
+- privésleutels;
+- .env-bestanden met werkelijke waarden;
+- persoonlijke gebruikersdata;
+- database-dumps met echte persoonsgegevens;
+- uploads met persoonlijke of medische gegevens.
+
+Wel opnemen:
+
+- .env.example of veilige configuratievoorbeelden;
+- schema’s en migraties zonder productiegegevens.
+
+4. GEHEIMENCONTROLE
+
+Voer vóór oplevering een secretscan uit.
+
+Controleer minimaal op:
+
+- Mapbox-tokens;
+- OpenRouteService-sleutels;
+- Strava-secrets;
+- Garmin-gegevens;
+- Clerk-secrets;
+- Anthropic- of Gemini-sleutels;
+- database-URL’s;
+- SMTP-gegevens;
+- webhooksecrets;
+- JWT-secrets;
+- cloudopslagcredentials;
+- privésleutels;
+- hardcoded wachtwoorden.
+
+Wanneer een geheim wordt gevonden:
+
+- verwijder het niet blind uit de werkende repository;
+- neem het bestand niet ongewijzigd op in de export;
+- maak een veilige exportkopie met placeholder;
+- rapporteer bestand, type geheim en voorgestelde vervolgstap;
+- toon de geheime waarde niet in het rapport.
+
+5. CONTROLEERBAARHEID
+
+Lever bij de zip ook:
+
+- Git-commit van de geëxporteerde toestand;
+- actieve branch;
+- datum en tijd van export;
+- SHA-256-checksum van de zip;
+- lijst van uitgesloten mappen en bestanden;
+- lijst van aangepaste of niet-gecommitte wijzigingen;
+- bevestiging of de working tree schoon is;
+- totaal aantal bestanden;
+- totale ongecomprimeerde grootte;
+- zipgrootte.
+
+6. PROJECTSTATUSRAPPORT
+
+Maak daarnaast:
+
+docs/SPARKI_CURRENT_STATE_EXPORT_2026-07-27.md
+
+Dit rapport bevat:
+
+- repositorystructuur;
+- gebruikte technische stack;
+- belangrijkste applicatiemodules;
+- actieve routes;
+- actieve featureflags;
+- database- en migratiestatus;
+- bekende mock-, demo-, seed- of fallbackdata;
+- bekende onafgeronde opdrachten;
+- open technische defecten;
+- open UX-defecten;
+- open privacy- en datatrustpunten;
+- open navigatie- en providerpunten;
+- teststatus;
+- buildstatus;
+- publicatiestatus;
+- actuele commit;
+- onderdelen die Replit als gebouwd beschouwt;
+- onderdelen die alleen gedeeltelijk of onbewezen zijn;
+- onderdelen die volgens de code nog ontbreken.
+
+Geen marketingtaal en geen aannames.
+
+7. MASTERPLAN NIET ZELF BEOORDELEN
+
+Replit hoeft niet zelf te bepalen of de code aan masterplan v2.64 voldoet.
+
+Replit levert alleen:
+
+- actuele code;
+- feitelijke technische status;
+- bewijs;
+- open afwijkingen.
+
+De vergelijking met het masterplan wordt extern uitgevoerd.
+
+8. TESTEN VÓÓR EXPORT
+
+Voer de bestaande relevante controles uit:
+
+- TypeScript;
+- frontendproductiebuild;
+- backend/API-build;
+- geregistreerde tests;
+- databaseschema- of migratiecontrole;
+- secretscan;
+- controle dat de zip kan worden geopend en uitgepakt.
+
+Rapporteer falende tests eerlijk.
+
+Een falende test mag niet worden verborgen of als groen worden gemeld.
+
+9. OPLEVERING
+
+Lever:
+
+1. het zipbestand;
+2. SHA-256-checksum;
+3. `docs/SPARKI_CURRENT_STATE_EXPORT_2026-07-27.md`;
+4. commit en branch;
+5. working-tree-status;
+6. uitgevoerde tests;
+7. secretscanresultaat;
+8. uitgesloten bestanden en mappen;
+9. resterende blokkades;
+10. gepubliceerd: nee.
+
+10. STOPREGEL
+
+Na het maken en controleren van de zip:
+
+- geen nieuwe opdracht starten;
+- geen code wijzigen;
+- geen publicatie uitvoeren;
+- wachten op nieuwe expliciete instructie van René.

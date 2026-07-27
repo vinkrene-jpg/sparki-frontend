@@ -1,0 +1,167 @@
+OPDRACHT — DESKTOP-SHELL AUDIT VOOR ALLE HOOFDPAGINA’S
+
+DOEL
+
+Controleer feitelijk welke hoofdpagina’s nog in een smalle mobiele wrapper draaien en welke al de gedeelde brede desktopshell gebruiken.
+
+Dit is eerst uitsluitend een audit- en bewijsopdracht.
+
+Geen pagina’s verbouwen.
+Geen nieuwe componenten bouwen.
+Geen redesign uitvoeren.
+Niet publiceren.
+
+1. TE CONTROLEREN ROUTES
+
+Controleer minimaal:
+
+- /vandaag
+- /plan
+- /train
+- /activiteiten
+- /analyse of /lab
+- /rijden
+- /ontdekken
+- /meer
+- /account of de feitelijke account-route
+
+Neem ook andere primaire navigatieroutes mee als die in de huidige desktopzijbalk zichtbaar zijn.
+
+2. VIEWPORTS
+
+Test exact:
+
+- 390 × 874
+- 768 × 1024
+- 1440 × 900
+
+De desktopaudit draait primair op 1440 × 900.
+
+Mobiel en tablet worden alleen gecontroleerd op regressie en bestaande navigatievorm.
+
+3. PER ROUTE VASTSTELLEN
+
+Leg per route vast:
+
+- gerenderde paginacomponent;
+- gebruikte layout- of shellcomponent;
+- gebruikte contentwrapper;
+- max-width;
+- linker marge of offset naast desktopnavigatie;
+- vaste desktopzijbalk aanwezig: ja/nee;
+- hamburger als primaire desktopnavigatie: ja/nee;
+- mobiele bottom navigation op desktop zichtbaar: ja/nee;
+- aantal effectieve contentkolommen;
+- gebruikte beschikbare schermbreedte;
+- horizontale overflow;
+- onverklaarde lege ruimte;
+- afgekapt of overlappend onderdeel;
+- oude mobiele wrapper aanwezig: ja/nee;
+- afwijking van de desktopautoriteit Figma node 43:6.
+
+Niet alleen de CSS noemen. Bewijs het ook in de actieve runtime.
+
+4. REFERENTIE
+
+Gebruik /vandaag met CommercialToday als huidige werkende referentie voor de gedeelde desktopstructuur:
+
+- vaste linker navigatie;
+- inhoud begint rechts van de navigatie;
+- brede desktopcontainer;
+- extra schermbreedte wordt functioneel gebruikt;
+- geen uitgerekte mobiele kaartstapel;
+- geen smalle gecentreerde telefoonkolom;
+- mobiel behoudt bottom navigation;
+- tablet mag enkelkoloms blijven als dat bewust en bruikbaar is.
+
+De inhoud van andere pagina’s hoeft niet identiek aan Vandaag te worden. Alleen de gedeelde shell en het gebruik van desktopruimte moeten consistent zijn.
+
+5. SCREENSHOTMATRIX
+
+Lever per route:
+
+- volledig screenshot op 1440 × 900;
+- bij een afwijking ook een gemarkeerde screenshot of korte aanwijzing waar de fout zichtbaar is.
+
+Lever daarnaast minimaal één volledig screenshot van:
+
+- mobiel 390 × 874;
+- tablet 768 × 1024;
+
+voor iedere routegroep die een andere shell gebruikt.
+
+6. TECHNISCHE INVENTARISATIE
+
+Maak een compacte tabel met:
+
+- route;
+- paginacomponent;
+- shell/layoutcomponent;
+- wrapperklasse of layoutconstructie;
+- status:
+  - BREDE_DESKTOPSHELL_CORRECT
+  - GEDEELTELIJK_BREED
+  - OUDE_MOBIELE_WRAPPER
+  - AFWIJKENDE_SHELL
+  - ROUTE_NIET_BEREIKBAAR
+- belangrijkste afwijking;
+- aanbevolen kleine vervolgstap.
+
+Controleer ook:
+
+- of meerdere bijna gelijke desktop-shells bestaan;
+- of routes buiten de gedeelde shell worden gerenderd;
+- of een featureflag of dev-preview een andere component toont dan productie;
+- of dezelfde route in dev en productie verschillend uitkomt.
+
+7. GEEN BLINDE MIGRATIE
+
+Voer geen brede aanpassing uit.
+
+Wanneer meerdere routes afwijken:
+
+- rangschik ze op impact;
+- stel daarna maximaal één eerste kleine migratietaak voor;
+- kies de route met de grootste gebruikerswaarde en laagste technische afhankelijkheid;
+- behoud alle bestaande engines, API’s, dataflows en functionaliteit.
+
+8. TESTCONTROLES
+
+Rapporteer per route:
+
+- console errors;
+- mislukte netwerkrequests;
+- onverwachte redirects;
+- horizontale overflow;
+- sticky of fixed elementen die over content vallen;
+- desktopnavigatie die content bedekt;
+- mobiele navigatie die op desktop blijft staan;
+- layoutverschil door featureflags of dev-preview.
+
+9. RAPPORTAGE
+
+Lever één rapport met:
+
+1. codeversie of commit;
+2. alle gecontroleerde routes;
+3. component- en shellmatrix;
+4. screenshotmatrix;
+5. classificatie per route;
+6. lijst van oude mobiele wrappers;
+7. lijst van dubbele of afwijkende shells;
+8. dev-productieverschillen;
+9. prioriteitsvolgorde voor migratie;
+10. voorstel voor uitsluitend de eerstvolgende kleine route-migratie;
+11. expliciete eindstatus:
+   - audit volledig uitgevoerd: ja/nee;
+   - alle primaire routes desktopbreed: ja/nee;
+   - code gewijzigd: nee;
+   - gepubliceerd: nee.
+
+STOPREGEL
+
+Wanneer tijdens de audit blijkt dat een route door een fout niet bereikbaar is:
+
+- noteer exacte route, component, foutmelding en reproduceerstappen;
+- los dit niet zelfstandig op;
+- vervolg de audit op de overige routes.

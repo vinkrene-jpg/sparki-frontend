@@ -1,0 +1,236 @@
+OPDRACHT — HERSTELKAART BEGRIJPELIJK EN DATA-TRUST-CORRECT MAKEN
+
+DOEL
+
+Herstel uitsluitend de kaart “Herstel en gereedheid” op Vandaag.
+
+De huidige kaart toont technische veldnamen en geeft tegelijk een te stellige status “Belastbaar” terwijl er weinig data beschikbaar is. Dat moet worden gecorrigeerd.
+
+Geen andere Vandaag-secties aanpassen.
+Geen nieuwe herstelengine bouwen.
+Geen nieuwe databronnen toevoegen.
+Niet publiceren zonder expliciete goedkeuring van René.
+
+1. EERST FEITELIJK CONTROLEREN
+
+Stel vóór wijziging vast:
+
+- welke component de kaart rendert;
+- welke API of hook de herstelstatus levert;
+- welke velden de status “Belastbaar” bepalen;
+- waar de technische sleutels vandaan komen:
+  - training_load
+  - readiness
+  - hrv_trend
+  - resting_hr_trend
+  - sleep
+  - subjective_feel
+  - power_dev
+  - feedback
+  - race_calendar
+  - nutrition
+  - weather;
+- of deze lijst echte ontbrekende vereisten, optionele signalen of debugdata bevat;
+- of “weinig data” al als confidence of datakwaliteit beschikbaar is;
+- of dezelfde herstelstatus elders wordt gebruikt.
+
+Rapporteer eerst de huidige logica. Niet gokken.
+
+2. TECHNISCHE SLEUTELS UIT DE UI VERWIJDEREN
+
+Interne veldnamen mogen nergens zichtbaar zijn voor gebruikers.
+
+Vervang ze door gewone Nederlandse termen, alleen wanneer een detailweergave werkelijk nodig is:
+
+- training_load → recente trainingsbelasting
+- readiness → herstelbeoordeling
+- hrv_trend → trend in hartslagvariatie
+- resting_hr_trend → trend in rusthartslag
+- sleep → slaap
+- subjective_feel → hoe je je voelt
+- power_dev → vermogensontwikkeling
+- feedback → feedback na trainingen
+- race_calendar → aankomende wedstrijden
+- nutrition → voeding
+- weather → weersomstandigheden
+
+Gebruik hiervoor één centrale vertaal- of presentatielaag.
+
+Geen technische sleuteltekst hardcoded verspreiden over meerdere componenten.
+
+3. STATUS MOET PASSEN BIJ DATAZEKERHEID
+
+De kaart mag niet tegelijk tonen:
+
+- “Belastbaar”;
+- “nog geen signalen”;
+- “weinig data”.
+
+Pas de presentatie aan volgens de feitelijke confidence en beschikbare signalen.
+
+Vereist gedrag:
+
+A. Voldoende betrouwbare data
+- toon bijvoorbeeld:
+  - Belastbaar
+  - Voorzichtig opbouwen
+  - Herstel aanbevolen
+  - Beoordeling nodig
+- toon korte reden en confidence.
+
+B. Weinig of onvoldoende data
+- toon geen stellige “Belastbaar”-status;
+- gebruik bijvoorbeeld:
+  - Beperkte beoordeling
+  - Nog te weinig gegevens
+  - Waarschijnlijk belastbaar — lage zekerheid
+- kies de variant die werkelijk past bij de bestaande hersteluitkomst;
+- geen positieve of negatieve zekerheid verzinnen.
+
+C. Tegenstrijdige signalen
+- toon:
+  - Tegenstrijdige signalen
+- leg kort uit dat gegevens en zelfrapportage niet dezelfde richting aangeven;
+- geen bron stil laten winnen.
+
+D. Geen data
+- toon een eerlijke lege toestand;
+- geen fallbackscore;
+- geen groen belastbaarlabel.
+
+4. GEBRUIKERSTEKST
+
+Standaardweergave compact houden.
+
+Voorbeeld bij weinig data:
+
+Titelstatus:
+“Beperkte beoordeling”
+
+Korte toelichting:
+“Er is nog te weinig informatie om je herstel voor vandaag betrouwbaar te beoordelen.”
+
+Compacte vervolgregel:
+“Recente training, slaap of hoe je je voelt kan de beoordeling verbeteren.”
+
+Toon niet standaard een lange lijst met alle mogelijke ontbrekende bronnen.
+
+5. “BEKIJK ONDERBOUWING”
+
+De uitklapbare onderbouwing mag alleen relevante informatie tonen.
+
+Vereist:
+
+- welke gegevens wel beschikbaar zijn;
+- welke belangrijke gegevens ontbreken;
+- datakwaliteit of zekerheid;
+- tijdstip van laatste berekening;
+- korte uitleg waarom de status beperkt is.
+
+Toon ontbrekende gegevens in gewone taal.
+
+Beperk de lijst tot signalen die voor deze concrete beoordeling relevant zijn.
+
+Niet tonen:
+
+- interne sleutels;
+- lege technische categorieën;
+- debugwaarden;
+- algoritmische details zonder uitleg;
+- algemene lijst van alle mogelijke databronnen.
+
+6. LABELS
+
+Gebruik waar relevant de afgesproken labels:
+
+- Gemeten
+- Berekend
+- Advies
+- Algemene richtlijn
+
+Voorbeeld:
+
+- Gemeten: slaapduur 6 u 20
+- Gemeten: rusthartslag niet beschikbaar
+- Berekend: beperkte herstelbeoordeling
+- Advies: gebruik vandaag je normale geplande belasting alleen als je je goed voelt
+
+Geen diagnose of medische claim.
+
+7. DATA-TRUST-REGELS
+
+- Geen mock-, demo-, fallback- of voorbeelddata.
+- Ontbrekende data blijft ontbrekend.
+- Een API-fout mag niet als “Belastbaar” worden gepresenteerd.
+- Verouderde data krijgt een zichtbaar tijdstip en stale-aanduiding.
+- Een vendor-score mag niet zonder bron als Sparki-uitkomst worden getoond.
+- Geen afgeleide status zonder zichtbare confidence.
+
+8. TOEGANKELIJKHEID
+
+- Uitklappen moet werken met toetsenbord.
+- Status mag niet uitsluitend via kleur worden aangegeven.
+- Schermlezertekst benoemt status en zekerheid.
+- Geen kleine lage-contrasttekst.
+- Geen horizontale overflow.
+
+9. TESTSCENARIO’S
+
+Test minimaal:
+
+1. voldoende data en hoge zekerheid;
+2. weinig data;
+3. helemaal geen data;
+4. tegenstrijdige signalen;
+5. verouderde data;
+6. API-fout;
+7. alleen zelfrapportage beschikbaar;
+8. alleen wearabledata beschikbaar;
+9. minderjarige met beperkte ouderrechten;
+10. trainer- of clubaccount zonder toestemming voor ruwe hersteldata.
+
+Viewports:
+
+- 390 × 874
+- 768 × 1024
+- 1440 × 900
+
+10. NIET DOEN
+
+- geen nieuwe herstelberekening ontwerpen;
+- geen thresholds wijzigen zonder aantoonbare bug;
+- geen nieuwe databron koppelen;
+- geen brede communicatiemigratie;
+- geen andere Vandaag-kaarten aanpassen;
+- geen medische adviezen toevoegen;
+- geen automatische ouder- of trainermelding toevoegen;
+- geen publicatie.
+
+11. RAPPORTAGE
+
+Lever:
+
+1. huidige component, API, hook en statuslogica;
+2. oorzaak waarom technische sleutels zichtbaar waren;
+3. oorzaak waarom “Belastbaar” bij weinig data werd getoond;
+4. gewijzigde bestanden en functies;
+5. vóór- en na-screenshots;
+6. screenshots voor 390, 768 en 1440 px;
+7. bewijs voor alle testscenario’s;
+8. console- en netwerkresultaten;
+9. resterende afwijkingen;
+10. expliciete eindstatus:
+   - technische sleutels verwijderd: ja/nee;
+   - status past bij confidence: ja/nee;
+   - geen fallbackpersoonlijke data: ja/nee;
+   - gepubliceerd: nee;
+   - gereed voor René’s acceptatie: ja/nee.
+
+STOPREGEL
+
+Wanneer blijkt dat de statusfout in de centrale herstelengine zit en niet alleen in de presentatie:
+
+- stop;
+- beschrijf exact de bestaande enginefout;
+- noem bestand, functie, input en foutieve output;
+- wijzig de engine niet zonder nieuwe expliciete opdracht.

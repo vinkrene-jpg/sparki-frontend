@@ -1,0 +1,104 @@
+AANVULLENDE BLOKKADE — VERKEERD PROFIEL EN OUDE MEER-LAYOUT OP DESKTOP
+
+Start pas nadat de huidige opdracht volledig is afgerond.
+
+DOEL
+
+Controleer en herstel uitsluitend:
+
+1. waarom op desktop het profiel van Lars zichtbaar is;
+2. waarom de knop “Meer” nog de oude schermlayout opent.
+
+DEEL 1 — PROFIELCONTEXT
+
+Stel feitelijk vast:
+
+- welke gebruiker is ingelogd;
+- welke Clerk- of account-id actief is;
+- welk sporterprofiel wordt geladen;
+- waarom de naam Lars zichtbaar is;
+- of dit komt door:
+  - verkeerd testaccount;
+  - hardcoded dev-profiel;
+  - oude mock- of fallbackdata;
+  - verkeerd geselecteerde rol;
+  - verkeerd gekoppeld profiel;
+  - cache of stale query;
+  - dev-preview routing.
+
+Vereist:
+
+- geen profiel van een andere gebruiker tonen;
+- geen mock-, demo- of fallbackprofiel;
+- actuele ingelogde gebruiker en profielrelatie moeten overeenkomen;
+- bij ontbrekend profiel een eerlijke lege toestand;
+- geen automatische overschakeling naar Lars.
+
+STOPREGEL PROFIEL
+
+Wanneer dit een data- of accountkoppelingsprobleem is:
+- niet zelfstandig records wijzigen of verwijderen;
+- rapporteer exact gebruiker, profielrelatie, bron en foutieve koppeling;
+- wacht op expliciete goedkeuring voor datacorrectie.
+
+DEEL 2 — MEER OP DESKTOP
+
+Controleer de feitelijke route achter “Meer”.
+
+Stel vast:
+
+- route;
+- paginacomponent;
+- shell/layoutcomponent;
+- of `CommercialShell` wordt gebruikt;
+- of `DevPreview` of router nog een oude pagina hardcodeert;
+- of de oude mobiele wrapper wordt gebruikt;
+- of desktopzijbalk en brede contentcontainer ontbreken.
+
+Gewenst gedrag op 1440 × 900:
+
+- vaste linker desktopnavigatie;
+- “Meer” actief;
+- brede contentcontainer;
+- geen mobiele telefoonkolom in het midden;
+- geen hamburger als primaire desktopnavigatie;
+- geen mobiele bottom navigation op desktop;
+- geen horizontale overflow;
+- bestaande functies en dataflows behouden.
+
+MOBIEL EN TABLET
+
+Test ook:
+
+- 390 × 874;
+- 768 × 1024.
+
+Behouden:
+
+- mobiele bottom navigation;
+- bestaande Meer-functionaliteit;
+- geen overlap of horizontale overflow.
+
+NIET DOEN
+
+- geen redesign van de inhoud van Meer;
+- geen andere routes aanpassen;
+- geen brede profielmigratie;
+- geen mockdata toevoegen;
+- geen publicatie.
+
+LEVER
+
+1. exacte oorzaak van het Lars-profiel;
+2. exacte oorzaak van de oude Meer-layout;
+3. gewijzigde bestanden en functies;
+4. screenshots vóór en na;
+5. screenshots op 390, 768 en 1440 px;
+6. bewijs dat de juiste gebruiker zichtbaar is;
+7. bewijs dat Meer via de juiste desktop-shell rendert;
+8. TypeScript en frontendbuild;
+9. console- en netwerkresultaten;
+10. gepubliceerd: nee;
+11. gereed voor René’s acceptatie: ja/nee.
+
+Na dit rapport niets nieuws starten zonder expliciete opdracht.

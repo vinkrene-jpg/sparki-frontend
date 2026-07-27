@@ -1,0 +1,104 @@
+CORRECTIE — PLAN IS NOG GEEN VOLWAARDIGE TRAININGSKALENDER
+
+De desktop-shell voor /train is technisch correct aangesloten, maar de inhoudelijke acceptatie van Plan is nog geblokkeerd.
+
+PROBLEEM
+
+De huidige kalender toont feitelijk slechts één week. Een trainingsplan moet meerdere weken vooruit en terug zichtbaar maken. De afgesproken functionele richting volgt het bruikbare kalenderprincipe van TrainingPeaks, zonder de interface één-op-één te kopiëren.
+
+DOEL
+
+Maak van /train een echte meerweekse trainingskalender, met behoud van de bestaande databronnen, planningslogica, API’s en CommercialShell.
+
+EERST INVENTARISEREN
+
+Rapporteer vóór codewijziging:
+
+1. welke kalendercomponent nu wordt gebruikt;
+2. waarom slechts één week zichtbaar is;
+3. of de API al trainingen buiten deze week retourneert;
+4. welke datumrange nu wordt opgevraagd;
+5. of beperking in UI, query, state of API zit;
+6. welke bestaande maand-, agenda- of kalendercomponenten al aanwezig zijn;
+7. hoe trainingsverplaatsing, toevoegen en openen nu werken.
+
+BOUWREGELS
+
+Desktop:
+- toon een volledige maand of minimaal 4–6 aaneengesloten weken;
+- huidige dag en huidige week duidelijk maar rustig markeren;
+- vorige en volgende periode;
+- knop Vandaag;
+- eerdere en toekomstige trainingen zichtbaar;
+- wedstrijden, doelen, rustdagen en lege dagen correct tonen;
+- benut de beschikbare desktopbreedte;
+- geen gecentreerde telefoonkolom.
+
+Mobiel:
+- compacte weekweergave als primaire bediening;
+- eenvoudig vorige/volgende week;
+- toegang tot maand- of agendaoverzicht;
+- gekozen dag toont de bijbehorende onderdelen;
+- geen horizontale overflow;
+- bestaande bottom-nav blijft stabiel.
+
+Tablet:
+- schaalbare kalenderweergave zonder afgeknotte dagen of kaarten.
+
+INTERACTIE
+
+Behoud of herstel:
+- training openen;
+- training toevoegen op gekozen datum;
+- training verplaatsen, alleen wanneer dit al veilig wordt ondersteund;
+- duidelijke bevestiging na wijziging;
+- geen stille planwijziging;
+- geen verloren trainingen bij wisselen van periode.
+
+DATA
+
+- Gebruik uitsluitend de bestaande echte plandata.
+- Geen mock-, seed- of fallbacktrainingen.
+- Geen parallelle kalenderdatabase.
+- Geen duplicatie van trainingen bij wisselen van week of maand.
+- Tijdzone en datumgrenzen moeten correct blijven.
+- Lege perioden tonen een eerlijke lege toestand.
+
+TESTEN
+
+Test minimaal:
+
+- plan met alleen huidige week;
+- plan met trainingen in vorige en volgende weken;
+- maandgrens;
+- jaargrens;
+- wedstrijd in toekomstige week;
+- rustdag en lege dag;
+- 390×874;
+- 768×1024;
+- 1440×900;
+- vorige/volgende periode;
+- Vandaag-knop;
+- training openen en toevoegen;
+- TypeScript;
+- relevante tests;
+- console en netwerk;
+- regressie op /vandaag en mobiele bottom-nav.
+
+RAPPORTAGE
+
+Lever:
+
+1. exacte oorzaak van de éénweekbeperking;
+2. hergebruikte componenten en databronnen;
+3. gewijzigde bestanden;
+4. datumrange vóór en na;
+5. screenshots op mobiel, tablet en desktop;
+6. interactietests;
+7. bekende afwijkingen;
+8. commit-hash;
+9. gepubliceerd: nee.
+
+ACCEPTATIEREGEL
+
+Plan wordt pas inhoudelijk geaccepteerd wanneer de gebruiker meerdere weken vooruit en terug kan overzien. Alleen een correct aangesloten CommercialShell is daarvoor niet voldoende.

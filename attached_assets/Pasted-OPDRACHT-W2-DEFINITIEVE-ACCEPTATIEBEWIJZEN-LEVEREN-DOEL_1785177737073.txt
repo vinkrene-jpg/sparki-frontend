@@ -1,0 +1,182 @@
+OPDRACHT — W2 DEFINITIEVE ACCEPTATIEBEWIJZEN LEVEREN
+
+DOEL
+
+Voer geen nieuwe ontwikkeling uit.
+
+Lever uitsluitend de ontbrekende runtimebewijzen waarmee W2 definitief kan worden geaccepteerd of afgewezen.
+
+Gebruik de huidige code na de gemelde fixes.
+
+1. TESTOMGEVING
+
+Test ingelogd als René.
+
+Gebruik exact:
+
+- mobiel: 390 × 874;
+- tablet: 768 × 1024;
+- desktop: 1440 × 900.
+
+Gebruik echte gebruikersdata of eerlijke lege toestanden.
+
+Geen mock-, demo-, seed- of fallbackdata toevoegen.
+
+2. DESKTOP VANDAAG BEWIJS
+
+Open `/vandaag` via de normale applicatieroute.
+
+Lever één volledig screenshot op 1440 × 900 waarop zichtbaar is:
+
+- vaste desktopnavigatie links;
+- geen hamburger als primaire navigatie;
+- brede desktopcontainer;
+- links:
+  - weekoverzicht;
+  - training van vandaag;
+- rechts:
+  - herstel;
+  - seizoens- of doeloverzicht;
+- geen smalle mobiele middenkolom;
+- geen horizontale overflow;
+- geen grote onverklaarde lege ruimte.
+
+Bewijs daarnaast technisch:
+
+- welke component `/vandaag` rendert;
+- dat `CommercialToday` actief is;
+- dat `DayHome` niet meer hardcoded voor `/vandaag` wordt gebruikt;
+- dat de featureflag niet stil wordt genegeerd.
+
+3. TRAINING TOEVOEGEN — SUCCES
+
+Voer de bestaande route via `/train` uit.
+
+Lever screenshots van:
+
+- formulier vóór opslaan;
+- zichtbare succesmelding na opslaan;
+- melding met juiste Nederlandse datum;
+- resultaat nadat de modal of flow is gesloten;
+- actuele training op Vandaag of Plan zonder browser-refresh.
+
+Rapporteer:
+
+- aangemaakte training;
+- gekozen datum;
+- gebruikte API;
+- geactualiseerde queries;
+- bewijs dat exact één record is toegevoegd.
+
+4. TRAINING TOEVOEGEN — FOUT
+
+Forceer gecontroleerd een API-fout zonder productiegegevens te beschadigen.
+
+Lever een screenshot waarop zichtbaar is:
+
+- rode foutmelding;
+- modal of formulier blijft open;
+- ingevoerde selectie blijft behouden;
+- knop voor opnieuw proberen beschikbaar;
+- geen succesmelding;
+- geen gedeeltelijk of dubbel record aangemaakt.
+
+Voer daarna opnieuw proberen uit en bewijs dat de tweede poging wel slaagt.
+
+5. TRAINING TOEVOEGEN — ANNULEREN
+
+Open de flow opnieuw.
+
+Vul of selecteer een training en annuleer vóór opslaan.
+
+Bewijs:
+
+- correcte terugkeer;
+- geen succesmelding;
+- geen nieuw record;
+- bestaande planning blijft ongewijzigd.
+
+6. DUBBELE KLIK EN LOADING
+
+Test snel dubbel klikken op opslaan.
+
+Bewijs:
+
+- knop wordt tijdens `isPending` geblokkeerd;
+- slechts één API-mutatie;
+- slechts één training aangemaakt;
+- duidelijke loading state.
+
+7. COMMUNICATIECONTROLE
+
+Controleer in de actieve runtime:
+
+- “Sparki adviseert” komt niet meer voor;
+- “laat het zien en Sparki beoordeelt het eerlijk” komt niet meer voor;
+- “laat Sparki je materiaal bekijken” komt niet meer voor;
+- de neutrale aanduiding “Advies” is zichtbaar;
+- “Analyse openen” wordt niet als algemene personified chat gepresenteerd.
+
+Zoek ook in de direct geraakte W2-bestanden naar deze oude teksten.
+
+Geen applicatiebrede tekstmigratie uitvoeren.
+
+8. MOBIEL EN TABLET REGRESSIE
+
+Lever volledige screenshots van Vandaag op:
+
+- 390 × 874;
+- 768 × 1024.
+
+Controleer:
+
+- mobiele bottom navigation behouden;
+- tablet blijft bruikbaar;
+- geen overlap;
+- geen afgekapt onderdeel;
+- geen horizontale overflow;
+- geen lege wrapper die onnodige hoogte veroorzaakt.
+
+9. CONSOLE EN NETWERK
+
+Rapporteer voor iedere hoofdflow:
+
+- console errors;
+- unhandled promise rejections;
+- mislukte netwerkrequests;
+- dubbele requests;
+- stale data;
+- onverwachte redirects.
+
+Een schone console alleen melden wanneer dit werkelijk tijdens de volledige test is vastgesteld.
+
+10. RAPPORTAGE
+
+Lever één nieuw acceptatierapport met:
+
+1. commit of codeversie;
+2. testaccount en route;
+3. screenshotmatrix per viewport en toestand;
+4. succesflow;
+5. foutflow;
+6. opnieuw-proberen-flow;
+7. annuleerflow;
+8. dubbele-kliktest;
+9. actuele toestand na terugkeer;
+10. console- en netwerkresultaten;
+11. resterende afwijkingen;
+12. expliciete eindstatus:
+   - W2 volledig bewezen: ja/nee;
+   - gepubliceerd: nee;
+   - gereed voor René’s definitieve acceptatie: ja/nee.
+
+STOPREGEL
+
+Geen code wijzigen, behalve wanneer tijdens deze bewijscontrole blijkt dat één van de eerder gemelde oplossingen aantoonbaar niet werkt.
+
+Bij een defect:
+
+- stop de acceptatietest;
+- beschrijf exact het defect;
+- noem bestand, functie, route en reproduceerstappen;
+- voer niet zelfstandig een nieuwe reparatieronde uit.

@@ -1,0 +1,168 @@
+AANVULLENDE KLEINE OPDRACHT — ACTIVITEITFILTERS CONTROLEREN EN BEPERKEN TOT HUIDIGE SCOPE
+
+Start deze opdracht pas nadat de huidige Replit-opdracht volledig is afgerond en gerapporteerd.
+
+DOEL
+
+Controleer en corrigeer uitsluitend de filters op het mobiele scherm “Alle ritten”.
+
+De huidige labels zijn:
+
+- Alles
+- Ride
+- Hike
+- Run
+
+Dit is deels Engels en suggereert dat wandelen en hardlopen al volledig ondersteunde Sparki-sporten zijn, terwijl multisport nog is uitgesteld.
+
+1. EERST FEITELIJK CONTROLEREN
+
+Stel vast:
+
+- welk component deze filters rendert;
+- welke route dit scherm gebruikt;
+- waar de waarden `Ride`, `Hike` en `Run` vandaan komen;
+- of dit:
+  - vaste UI-labels zijn;
+  - activity-type enums zijn;
+  - geïmporteerde Strava- of Garmin-typen zijn;
+  - oude generieke multisportfilters zijn;
+  - werkelijk actieve filterlogica is;
+- of er in echte gebruikersdata wandel- of hardloopactiviteiten voorkomen;
+- wat er nu gebeurt wanneer op Hike of Run wordt gedrukt;
+- of Sparki deze activiteiten alleen toont of ook al inhoudelijk analyseert.
+
+Niet gokken en geen activiteiten verwijderen.
+
+2. GEWENSTE RELEASE-1-WEERGAVE
+
+Zolang Sparki primair wielrennen ondersteunt, toon in de standaardinterface alleen:
+
+- Alles
+- Fietsen
+
+Gebruik Nederlandse labels.
+
+`Fietsen` bevat alle daadwerkelijk ondersteunde fietsactiviteitstypen, bijvoorbeeld waar aanwezig:
+
+- racefiets;
+- gravel;
+- mountainbike;
+- e-bike;
+- indoor cycling.
+
+Gebruik de bestaande canonieke activiteitstypen. Geen nieuwe mapping verzinnen.
+
+3. WANDEL- EN HARDLOOPACTIVITEITEN
+
+Bestaande echte wandel- of hardloopactiviteiten mogen niet worden verwijderd, gewijzigd of opnieuw geclassificeerd.
+
+Wanneer zulke activiteiten aanwezig zijn:
+
+- ze blijven zichtbaar onder `Alles`;
+- toon hun echte activiteitstype in gewone Nederlandse taal;
+- maak duidelijk dat uitgebreide analyse of coaching voor deze sport nog niet beschikbaar is;
+- voer geen wieleranalyse uit op wandel- of hardloopdata;
+- laat ze niet verdwijnen door alleen het filter te verbergen.
+
+Voorbeeld van een neutrale aanduiding:
+
+“Wandeling — geregistreerde activiteit”
+
+of:
+
+“Hardloopactiviteit — uitgebreide analyse nog niet beschikbaar”
+
+Houd deze tekst compact.
+
+4. TOEKOMSTIGE MULTISPORTFILTERS
+
+`Wandelen` en `Hardlopen` mogen pas als afzonderlijke hoofdfilters terugkomen wanneer:
+
+- multisport expliciet wordt geactiveerd;
+- import, opslag en classificatie zijn gevalideerd;
+- de relevante analyses en lege toestanden bestaan;
+- mobiele en desktopflows zijn getest;
+- René dit expliciet heeft goedgekeurd.
+
+Geen verborgen featureflag activeren.
+
+5. INTERNATIONALISATIE
+
+Gebruik centrale vertaalkeys voor:
+
+- Alles
+- Fietsen
+- Wandelen
+- Hardlopen
+
+Geen losse Engelse teksten hardcoden.
+
+Controleer binnen dezelfde component ook op vergelijkbare zichtbare Engelse activity labels.
+
+Geen applicatiebrede vertaalmigratie uitvoeren.
+
+6. BEHOUDEN
+
+- bestaande activiteiten;
+- bron en provenance;
+- datum, afstand, duur en andere echte gegevens;
+- bestaande navigatie;
+- bestaande detailpagina;
+- bestaande fietsfilters en dataflow;
+- desktopgedrag, tenzij dezelfde gedeelde component daar dezelfde fout toont.
+
+7. NIET DOEN
+
+- geen multisport bouwen;
+- geen nieuwe sportanalyse toevoegen;
+- geen wandel- of hardloopdata verwijderen;
+- geen activiteiten omzetten naar fietsen;
+- geen importlogica wijzigen zonder aantoonbare bug;
+- geen brede activiteitenpagina redesign;
+- geen publicatie.
+
+8. TESTEN
+
+Test minimaal:
+
+- account met alleen fietsritten;
+- account met fiets- en wandelactiviteit;
+- account met fiets- en hardloopactiviteit;
+- account zonder activiteiten;
+- filter `Alles`;
+- filter `Fietsen`;
+- Nederlandse interface;
+- onbekend extern activity type;
+- 320 px;
+- 360 px;
+- 390 × 874;
+- 430 px;
+- desktop wanneer dezelfde component gedeeld wordt.
+
+Controleer:
+
+- geen horizontale overflow;
+- geen afgekapt filterlabel;
+- geen Engels `Ride`, `Hike` of `Run`;
+- geen verlies van bestaande activiteiten;
+- geen wieleranalyse op niet-fietsactiviteiten.
+
+9. RAPPORTAGE
+
+Lever:
+
+1. component, route en databron;
+2. feitelijke betekenis van Ride, Hike en Run;
+3. aantal echte activiteiten per aangetroffen type in het gebruikte testaccount;
+4. oude en nieuwe filterweergave;
+5. gewijzigde bestanden en functies;
+6. screenshots vóór en na op 390 px;
+7. gedrag van bestaande wandel- en hardloopactiviteiten;
+8. bewijs dat niets is verwijderd of geherclassificeerd;
+9. testresultaten;
+10. resterende afwijkingen;
+11. gepubliceerd: nee;
+12. gereed voor René’s acceptatie: ja/nee.
+
+Na afronding niets nieuws starten zonder een nieuwe expliciete opdracht van René.

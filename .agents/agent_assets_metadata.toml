@@ -851,3 +851,15 @@ id = "R0ljXUW9uCUkRBqZVESqA"
 uri = "file://reports/W2_Acceptatierapport_Sparki.zip"
 type = "unspecified"
 title = "W2 Acceptatierapport Sparki — rapport + 5 screenshots"
+
+[[outputs]]
+id = "pozgTGzJCowwqpdu92CGD"
+uri = "file://SPARKI_CURRENT_STATE_2026-07-27_3942f0f.zip"
+type = "unspecified"
+title = "SPARKI_CURRENT_STATE_2026-07-27_3942f0f.zip"
+
+[[outputs]]
+id = "lupMsQSSti6lKIvBhnwxa"
+uri = "file://SPARKI_CURRENT_STATE_2026-07-27.zip"
+type = "unspecified"
+title = "Sparki — broncode-export 27 juli 2026 (4d2566e)"

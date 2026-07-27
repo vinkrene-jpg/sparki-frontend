@@ -1,0 +1,748 @@
+OPDRACHT — CENTRALE ANALYSE-OMGEVING INVENTARISEREN EN BOUWVOLGORDE OPLEVEREN
+
+DOEL
+
+Onderzoek hoe de bestaande Analyse- en Lab-functionaliteit kan worden samengebracht tot één centrale en begrijpelijke Analyse-omgeving waarin alle relevante sportdata terug te vinden is.
+
+Deze centrale Analyse-omgeving moet uiteindelijk plaats bieden aan:
+
+- grafieken;
+- trainingsbelasting;
+- fitheid, vermoeidheid en vorm;
+- progressie;
+- doelen;
+- wedstrijden;
+- herstel;
+- persoonlijke records;
+- vergelijkingen tussen trainingen en periodes;
+- rapporten en export.
+
+BELANGRIJK
+
+Dit is uitsluitend een inventarisatie-, analyse- en bouwplanopdracht.
+
+Nog niet:
+
+- de volledige Analyse-omgeving bouwen;
+- productcode aanpassen;
+- routes wijzigen;
+- componenten migreren;
+- bestaande engines herschrijven;
+- nieuwe rekenlogica verzinnen;
+- parallelle databronnen of databases maken;
+- bestaande pagina’s verwijderen;
+- nieuwe grafieken bouwen;
+- publiceren of deployen.
+
+BRON VAN WAARHEID
+
+Gebruik uitsluitend:
+
+- de actuele code;
+- de bestaande routes zoals /analyse en /lab;
+- bestaande activiteitendata;
+- bestaande doelen- en wedstrijddata;
+- bestaande herstel- en belastbaarheidsdata;
+- bestaande trainingsbelasting- en progressie-engines;
+- het actuele SPARKI-masterplan;
+- de bestaande masterplancontracten hieronder.
+
+De code en echte databronnen zijn leidend voor wat aantoonbaar bestaat.
+
+VERPLICHT HERGEBRUIK VAN BESTAANDE MASTERPLANCONTRACTEN
+
+De Analyse-omgeving moet bovenop bestaande motoren worden gebouwd en mag geen parallel systeem worden.
+
+Gebruik en toets expliciet aan:
+
+1. batch_002_production_contracts.CONTROLLED_ANALYTICS
+
+Onder andere:
+
+- dashboard_builder;
+- benchmark_engine;
+- replit_tasks;
+- scientific_evidence_contract;
+- data_quality_edge_case_contract;
+- validation_methodology.
+
+2. domain_registry.ANALYTICS_VISUALIZATION
+
+Onder andere:
+
+- no_false_precision;
+- no_metric_without_actionable_or_explanatory_value.
+
+3. domain_registry.LAB_AND_LOAD
+
+Onder andere:
+
+- mock_or_fallback_metrics: PROHIBITED;
+- missing_data;
+- external_reference_contract;
+- scientific_evidence_contract;
+- data_quality_edge_case_contract.
+
+4. recovery_health_first_release
+
+Onder andere:
+
+- conflicterende signalen;
+- confidence;
+- datakwaliteit;
+- ontbrekende signalen;
+- veilige herstelpresentatie.
+
+5. global_data_trust
+
+Onder andere:
+
+- mockdata verboden als persoonlijke data;
+- seeddata verboden als persoonlijke data;
+- demodata verboden als persoonlijke data;
+- hardcoded persoonlijke data verboden;
+- API-fouten mogen niet terugvallen op voorbeelddata;
+- ieder getoond cijfer moet een aantoonbare bron hebben.
+
+6. PRIVACY_DATA_TRUST
+
+Onder andere:
+
+- categorie-specifieke toestemming;
+- rolgebaseerde toegang;
+- gezondheidsgegevens;
+- gevoelige gegevens;
+- minimale gegevensdeling.
+
+7. TRAINING_PLANS_AND_CALENDAR
+
+Onder andere:
+
+- doelmodel;
+- trainingsplanning;
+- geplande tegenover uitgevoerde training;
+- kalendercontext.
+
+8. RACE_INTELLIGENCE
+
+Onder andere:
+
+- wedstrijdgegevens;
+- wedstrijddoelen;
+- wedstrijdevaluatie;
+- koerscontext.
+
+9. inclusive_reproductive_health
+
+Alleen waar van toepassing en alleen met de bestaande privacy- en toestemmingsregels.
+
+ALGEMENE PRODUCTRICHTING
+
+Voor de gebruiker moet uiteindelijk één centrale ingang bestaan:
+
+ANALYSE
+
+De andere onderdelen behouden hun eigen functie:
+
+Vandaag:
+- wat nu relevant is;
+- actuele training;
+- actuele herstel- en dagcontext.
+
+Plan:
+- planning;
+- kalender;
+- toekomst;
+- doelen en wedstrijden in de tijd.
+
+Activiteiten:
+- lijst van uitgevoerde sessies;
+- individuele trainingsdetails.
+
+Analyse:
+- centrale plek voor data;
+- grafieken;
+- progressie;
+- doelen;
+- trends;
+- verdieping;
+- vergelijkingen;
+- rapporten.
+
+Analyse mag dus niet opnieuw dezelfde activiteitenlijst, kalender of coachingengine bouwen.
+
+ONDERZOEKSVRAGEN
+
+Beantwoord alle onderstaande vragen met exacte verwijzingen naar bestanden, componenten, functies, endpoints, datamodellen en masterplancontracten.
+
+1. Routes
+
+Welke routes bestaan nu voor:
+
+- Analyse;
+- Lab;
+- Activiteiten;
+- Doelen;
+- Wedstrijden;
+- Herstel;
+- Persoonlijke records;
+- Rapportage;
+- Export;
+- trainingdetails;
+- coachanalyse;
+- ouder- of clubanalyse.
+
+Geef per route aan:
+
+- actief of niet actief;
+- featureflag;
+- gebruikte shell;
+- bereikbaar via navigatie;
+- doelgroep en rol;
+- mobiel, tablet en desktopgedrag.
+
+2. Componenten en grafieken
+
+Welke componenten bestaan al voor:
+
+- trainingsbelasting;
+- vorm;
+- fitheid;
+- vermoeidheid;
+- herstel;
+- progressie;
+- vermogen;
+- hartslag;
+- zones;
+- snelheid;
+- afstand;
+- duur;
+- hoogtemeters;
+- sprint;
+- klimmen;
+- persoonlijke records;
+- doelen;
+- wedstrijden;
+- trends;
+- vergelijkingen;
+- rapporten.
+
+Geef per component aan:
+
+- bestand;
+- gebruikte route;
+- databron;
+- actief zichtbaar of verborgen;
+- herbruikbaar of verouderd;
+- dubbel gebouwd of uniek;
+- responsive status.
+
+3. Databronnen en API-endpoints
+
+Breng per onderdeel in kaart:
+
+- endpoint;
+- queryparameters;
+- datumrange;
+- autorisatie;
+- gebruikers- of rolcontext;
+- responsevelden;
+- foutgedrag;
+- lege toestand;
+- stale-status;
+- bron van waarheid.
+
+Geef aan of data afkomstig is uit:
+
+- echte gebruikersdata;
+- trainingssessies;
+- wearable-import;
+- Strava;
+- Garmin;
+- handmatige invoer;
+- berekende engine-uitvoer;
+- cache;
+- fallback;
+- seed;
+- mock;
+- hardcoded gegevens.
+
+4. Bestaande berekeningen
+
+Welke berekeningen bestaan al voor:
+
+- trainingsbelasting;
+- fitheid;
+- vermoeidheid;
+- vorm;
+- CTL;
+- ATL;
+- TSB;
+- TSS of eigen belastingsscore;
+- duur;
+- afstand;
+- hoogtemeters;
+- hartslag;
+- vermogen;
+- zones;
+- progressie;
+- persoonlijke records;
+- doelvoortgang;
+- herstel;
+- confidence;
+- datakwaliteit;
+- planned versus actual;
+- race readiness;
+- trenddetectie.
+
+Geef per berekening aan:
+
+- engine of functie;
+- bestand;
+- invoer;
+- uitvoer;
+- versieerbaarheid;
+- wetenschappelijke onderbouwing;
+- relatie tot CONTROLLED_ANALYTICS;
+- relatie tot LAB_AND_LOAD;
+- of de berekening al gevalideerd is;
+- of de uitkomst zichtbaar is in de actieve interface.
+
+Geen nieuwe formules voorstellen in deze stap.
+
+5. Data-trustmatrix
+
+Maak voor ieder gevonden dataveld een classificatie:
+
+- echt gemeten;
+- geregistreerd;
+- berekend;
+- afgeleid;
+- advies;
+- algemene richtlijn;
+- incompleet;
+- stale;
+- conflicterend;
+- mock;
+- seed;
+- fallback;
+- hardcoded;
+- onbekende herkomst.
+
+Geef per veld aan:
+
+- waar het vandaan komt;
+- welk masterplancontract het regelt;
+- of het veilig zichtbaar mag zijn;
+- welk betrouwbaarheidslabel nodig is;
+- of er een data-trustgat bestaat.
+
+Toets dit expliciet aan global_data_trust.
+
+6. Dubbele functionaliteit
+
+Onderzoek welke onderdelen dubbel bestaan, bijvoorbeeld:
+
+- meerdere vormen van trainingsbelasting;
+- meerdere herstelkaarten;
+- meerdere grafiekcomponenten voor dezelfde metriek;
+- losse berekeningen naast CONTROLLED_ANALYTICS;
+- verschillende labels voor dezelfde waarde;
+- dubbele routes;
+- oude en nieuwe shellcomponenten;
+- parallelle API-endpoints.
+
+Geef per duplicaat aan:
+
+- welk onderdeel leidend moet blijven;
+- welk onderdeel hergebruikt kan worden;
+- welk onderdeel historisch, verouderd of verwijderbaar lijkt;
+- nog niets verwijderen.
+
+7. Verborgen functionaliteit
+
+Welke functies zijn technisch gebouwd maar niet zichtbaar in de actieve interface?
+
+Onderzoek minimaal:
+
+- featureflags;
+- oude routes;
+- dev-preview;
+- rolgebonden schermen;
+- coachomgeving;
+- ouderomgeving;
+- clubomgeving;
+- Lab;
+- analysepanelen;
+- persoonlijke records;
+- vergelijkingsfuncties;
+- rapporten en exports.
+
+8. Ontbrekende functionaliteit
+
+Welke onderdelen ontbreken volledig of zijn slechts gedeeltelijk gebouwd?
+
+Toets dit aan:
+
+- CONTROLLED_ANALYTICS;
+- LAB_AND_LOAD;
+- scientific_evidence_contract;
+- data_quality_edge_case_contract;
+- recovery_health_first_release;
+- PRIVACY_DATA_TRUST.
+
+Maak onderscheid tussen:
+
+- ontbrekend;
+- gedeeltelijk;
+- gebouwd maar niet bewezen;
+- aanwezig maar niet zichtbaar;
+- geblokkeerd door data;
+- geblokkeerd door rechten;
+- geblokkeerd door open productbesluit.
+
+9. Centrale route
+
+Beoordeel welke bestaande route het meest geschikt is als toekomstige centrale ingang:
+
+- /analyse;
+- /lab;
+- een bestaande route met hernoeming.
+
+Onderbouw op basis van:
+
+- bestaande code;
+- actieve navigatie;
+- huidige gebruikersverwachting;
+- hergebruik;
+- migratierisico;
+- deep links;
+- rollen;
+- mobiel en desktop;
+- technische schuld.
+
+Kies één aanbevolen route.
+
+Maak geen nieuwe route in deze opdracht.
+
+10. Navigatie en shell
+
+Onderzoek welke bestaande navigatie en shell moeten worden hergebruikt.
+
+De toekomstige Analyse-omgeving moet:
+
+- op desktop de vaste linker navigatie gebruiken;
+- op mobiel de bestaande bottom-nav respecteren;
+- op tablet correct schalen;
+- geen gecentreerde telefoonkolom op desktop tonen;
+- geen parallel navigatiesysteem krijgen.
+
+GEWENSTE TOEKOMSTIGE STRUCTUUR
+
+Onderzoek hoe onderstaande onderdelen kunnen worden opgebouwd met bestaande componenten, databronnen en engines.
+
+Nog niet bouwen.
+
+1. Overzicht
+
+Moet uiteindelijk bevatten:
+
+- huidige trainingsstatus;
+- voortgang naar belangrijkste doel;
+- belasting deze week;
+- vergelijking met vorige periode;
+- belangrijkste positieve trend;
+- belangrijkste afwijkende trend;
+- datakwaliteit en confidence waar relevant.
+
+2. Belasting en vorm
+
+Moet uiteindelijk bevatten:
+
+- fitheid;
+- vermoeidheid;
+- vormbalans;
+- dagbelasting;
+- weekbelasting;
+- maandbelasting;
+- gepland tegenover uitgevoerd;
+- herstelcontext;
+- ontbrekende of conflicterende signalen.
+
+Hergebruiken uit:
+
+- LAB_AND_LOAD;
+- recovery_health_first_release;
+- CONTROLLED_ANALYTICS.
+
+3. Progressie
+
+Moet uiteindelijk bevatten:
+
+- vermogen;
+- hartslag;
+- snelheid;
+- duurvermogen;
+- sprint;
+- klimmen;
+- zones;
+- afstand;
+- hoogtemeters;
+- trainingsconsistentie;
+- persoonlijke records;
+- progressie per periode.
+
+Hergebruiken uit:
+
+- CONTROLLED_ANALYTICS.dashboard_builder;
+- bestaande activiteitendata;
+- bestaande record- en progressielogica.
+
+4. Doelen en wedstrijden
+
+Moet uiteindelijk bevatten:
+
+- voortgang per doel;
+- resterende tijd;
+- trainingsfase;
+- belangrijkste wedstrijden;
+- piekmomenten;
+- wedstrijdevaluaties;
+- planned versus actual richting doel.
+
+Hergebruiken uit:
+
+- TRAINING_PLANS_AND_CALENDAR.goal_model;
+- RACE_INTELLIGENCE;
+- bestaande kalender- en plandata.
+
+5. Trainingen en periodes vergelijken
+
+Moet uiteindelijk bevatten:
+
+- twee of meer activiteiten vergelijken;
+- twee periodes vergelijken;
+- dezelfde route vergelijken;
+- hetzelfde trainingstype vergelijken;
+- geplande tegenover uitgevoerde training vergelijken.
+
+Geen nieuwe opslag ontwerpen.
+
+Gebruik bestaande activiteitendata en berekende output.
+
+6. Gezondheid en herstel
+
+Moet uiteindelijk bevatten:
+
+- alleen gegevens waarvoor toestemming bestaat;
+- confidence;
+- datakwaliteit;
+- ontbrekende signalen;
+- conflicterende signalen;
+- hersteltrends;
+- veilige niet-diagnostische uitleg.
+
+Hergebruiken uit:
+
+- recovery_health_first_release;
+- PRIVACY_DATA_TRUST;
+- inclusive_reproductive_health waar van toepassing.
+
+7. Rapporten en export
+
+Moet uiteindelijk bevatten:
+
+- weekrapport;
+- maandrapport;
+- seizoensrapport;
+- vrije periode;
+- selectie van grafieken en kernwaarden;
+- printvriendelijke export;
+- gegevensportabiliteit.
+
+Hergebruik bestaande exportarchitectuur.
+
+Geen nieuw parallel exportsysteem ontwerpen.
+
+UX-REGELS VOOR HET LATERE BOUWPLAN
+
+Neem deze regels mee in de bouwvolgorde:
+
+- Geen scherm met twintig grafieken tegelijk.
+- Eerst kerninformatie, daarna verdieping.
+- Grafieken en data staan centraal.
+- Maximaal één korte interpretatie per onderdeel.
+- Geen lange coachingteksten.
+- Gebruik gewone Nederlandse labels.
+- Geen raw API-velden of technische sleutels.
+- Geen personificerende teksten.
+- Geen voorbeeldgrafieken als persoonlijke data.
+- Geen false precision.
+- Geen metriek zonder verklarende of praktische waarde.
+- Elke grafiek toont bron, periode en eenheid.
+- Confidence en datakwaliteit zichtbaar waar relevant.
+- Gebruiker kan filteren op:
+  - periode;
+  - activiteitstype;
+  - fiets;
+  - meetwaarde;
+  - doel;
+  - wedstrijd.
+- Filters mogen de brondata niet wijzigen.
+- Desktop benut beschikbare breedte.
+- Mobiel blijft compact en taakgericht.
+- Tablet toont geen afgeknotte grafieken of navigatie.
+
+DATA- EN ARCHITECTUURREGELS
+
+- Bestaande engines hergebruiken.
+- Bestaande databronnen hergebruiken.
+- Geen parallel analysesysteem.
+- Geen parallelle database.
+- Geen nieuwe fitness-, vermoeidheids- of vormformules.
+- Geen generatieve AI als numerieke rekenmotor.
+- Geen mock-, seed-, demo- of fallbackdata als persoonlijke data.
+- Geen API-fout vervangen door voorbeelddata.
+- Geen grafiek zonder aantoonbare databron.
+- Geen gezondheidsgegevens zonder toestemming.
+- Rollen en rechten server-side afdwingen.
+- Trainer, ouder en club zien alleen toegestane gegevens.
+- Bestaande exportarchitectuur hergebruiken.
+- Bestaande shells en navigatie hergebruiken.
+
+VERPLICHTE OPLEVERING
+
+Maak exact twee documenten.
+
+1. docs/SPARKI_ANALYSE_CURRENT_STATE_AUDIT.md
+
+Dit document bevat minimaal:
+
+- samenvatting van de huidige situatie;
+- volledige routematrix;
+- componentenmatrix;
+- grafiekenmatrix;
+- API- en databronnenmatrix;
+- engines- en berekeningenmatrix;
+- data-trustmatrix per veld;
+- koppeling aan bestaande masterplancontracten;
+- dubbele functionaliteit;
+- verborgen functionaliteit;
+- ontbrekende functionaliteit;
+- rol- en privacyrisico’s;
+- technische risico’s;
+- aanbevolen centrale route;
+- aanbevolen navigatie en shell;
+- hergebruikplan;
+- screenshots van de huidige actieve schermen op:
+  - 390×874;
+  - 768×1024;
+  - 1440×900.
+
+Iedere bevinding bevat waar mogelijk:
+
+- bestand;
+- regel of functie;
+- route;
+- endpoint;
+- databron;
+- status;
+- risico;
+- bestaand contract;
+- aanbevolen vervolgstap.
+
+2. docs/SPARKI_ANALYSE_BUILD_SEQUENCE.md
+
+Werk de vervolgbouw uit als kleine opeenvolgende taken:
+
+AN_00 — Huidige staat en databronnen
+AN_01 — Centrale Analyse-route en shell
+AN_02 — Overzicht
+AN_03 — Belasting en vorm
+AN_04 — Progressie en persoonlijke records
+AN_05 — Doelen en wedstrijden
+AN_06 — Trainingen en periodes vergelijken
+AN_07 — Gezondheid, herstel en toestemming
+AN_08 — Rapporten en export
+AN_09 — Mobiel, tablet en desktop
+AN_10 — Volledige release-evidence
+
+Per taak verplicht vermelden:
+
+- Nederlandse taaknaam;
+- technische code;
+- doel;
+- exacte scope;
+- wat buiten scope blijft;
+- te hergebruiken componenten;
+- te hergebruiken engines;
+- bestanden;
+- API-gevolgen;
+- datagevolgen;
+- databasegevolgen;
+- rol- en privacygevolgen;
+- tests;
+- viewports;
+- risico’s;
+- afhankelijkheden;
+- acceptatiecriteria;
+- vereiste runtime-evidence;
+- stopvoorwaarden.
+
+De volgorde moet aantoonbaar voorkomen dat:
+
+- meerdere analysesystemen ontstaan;
+- oude en nieuwe berekeningen naast elkaar blijven bestaan;
+- UI wordt gebouwd voordat data-trust duidelijk is;
+- gevoelige gegevens te vroeg zichtbaar worden;
+- grote oncontroleerbare opdrachten ontstaan.
+
+ACCEPTATIECRITERIA
+
+De inventarisatie is pas gereed wanneer:
+
+- CODE_PATH_AND_GAP_MATRIX_COMPLEET;
+- alle relevante routes zijn onderzocht;
+- alle relevante componenten zijn onderzocht;
+- alle gevonden datavelden zijn getoetst aan global_data_trust;
+- ieder onderdeel is gekoppeld aan een bestaand contract of gemarkeerd als nog niet gedekt;
+- bestaande CONTROLLED_ANALYTICS- en LAB_AND_LOAD-contracten als uitgangspunt zijn gebruikt;
+- geen parallel systeem is voorgesteld;
+- geen nieuwe formule is verzonnen;
+- de centrale route onderbouwd is gekozen;
+- beide documenten volledig zijn opgeleverd;
+- screenshots van de huidige staat zijn toegevoegd;
+- alleen documentatie is gewijzigd.
+
+STOPREGEL
+
+Na oplevering van beide documenten onmiddellijk stoppen.
+
+Niet uitvoeren:
+
+- productcode aanpassen;
+- routes wijzigen;
+- componenten migreren;
+- grafieken bouwen;
+- databasewijzigingen;
+- API-wijzigingen;
+- featureflags wijzigen;
+- publicatie;
+- deployment;
+- GitHub-merge naar productie.
+
+EINDRAPPORTAGE AAN RENÉ
+
+Rapporteer kort en feitelijk:
+
+1. waar de analysefuncties nu verspreid staan;
+2. welke functies al echt gebouwd zijn;
+3. welke functies verborgen zijn;
+4. welke functies dubbel bestaan;
+5. welke onderdelen ontbreken;
+6. welke data-trustproblemen zijn gevonden;
+7. welke route de centrale Analyse-omgeving moet worden;
+8. welke eerste bouwtaak daarna veilig kan starten;
+9. gewijzigde bestanden;
+10. bevestigd: alleen documentatie;
+11. gepubliceerd: nee.

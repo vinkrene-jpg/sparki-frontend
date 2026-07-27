@@ -1,0 +1,223 @@
+OPDRACHT — HERSTELKAART AFRONDEN EN BREDERE REGRESSIERISICO’S CONTROLEREN
+
+DOEL
+
+Rond de huidige herstelkaartcorrectie af zonder de herstelengine te wijzigen.
+
+Controleer specifiek:
+
+1. of de confidence-drempels 0.10 en 0.35 al uit bestaande centrale configuratie of productlogica komen;
+2. waar dezelfde fout nog voorkomt in oude of andere herstelcomponenten;
+3. of technische sleutels via een fallback alsnog zichtbaar kunnen worden;
+4. of oude shells bij featureflags of dev-routes dezelfde fout opnieuw kunnen tonen.
+
+Geen brede redesign.
+Geen nieuwe herstelengine.
+Geen publicatie.
+
+1. CONFIDENCE-DREMPELS CONTROLEREN
+
+Controleer de oorsprong van:
+
+- confidence < 0.10;
+- confidence 0.10–0.35;
+- confidence ≥ 0.35.
+
+Rapporteer exact:
+
+- bestaand centraal configuratiebestand of contract;
+- bestaande enginefunctie;
+- bestaand API-contract;
+- of lokaal nieuw toegevoegd in `commercial-shell.ts`.
+
+Vereist:
+
+A. Bestaande centrale drempels bestaan
+- gebruik de centrale bron;
+- verwijder lokale duplicatie;
+- voeg geen eigen afwijkende waarden toe.
+
+B. Geen bestaande centrale drempels
+- markeer de waarden expliciet als tijdelijke versieerbare presentatieconfiguratie;
+- plaats ze in één centrale configuratie;
+- geef de configuratie een duidelijke naam en commentaar;
+- gebruik ze uitsluitend om de formulering en visuele zekerheid te bepalen;
+- wijzig hiermee niet de onderliggende herstelband of engine-uitkomst.
+
+Niet toegestaan:
+
+- de API-band overschrijven;
+- herstelbelasting aanpassen;
+- trainingsplanbeslissingen wijzigen;
+- medische of trainingsinhoud afleiden uit deze presentatiedrempels.
+
+2. INVENTARISATIE VOLLEDIG AFRONDEN
+
+Maak de eerdere inventarisatie compleet voor minimaal:
+
+- `commercial-shell.tsx`;
+- `state-card.tsx`;
+- `coach-analysis-card.tsx`;
+- trainerherstelweergaven;
+- ouderherstelweergaven;
+- clubweergaven;
+- Lab/Analyse;
+- notificaties;
+- oude shell of legacy Today;
+- dev-preview en featureflagpaden.
+
+Zoek naar:
+
+- ruwe `missing`-keys;
+- `join(", ")` op technische sleutelarrays;
+- fallback zoals `?? key`, `?? m` of `|| key`;
+- bandlabels zonder confidence;
+- groen of positief label bij ontbrekende data;
+- “Sparki adviseert”;
+- “Waar Sparki op baseert”;
+- vergelijkbare personificerende teksten;
+- lokale dubbele vertaaltabellen.
+
+Lever per vindplaats:
+
+- bestand;
+- regel of functie;
+- actieve of legacy route;
+- zichtbaar voor gebruiker: ja/nee;
+- risico bij featureflag/fallback: laag/middel/hoog;
+- benodigde vervolgstap.
+
+3. CENTRALE PRESENTATIELAAG
+
+Gebruik één centrale presentatielaag voor bekende herstelvelden.
+
+Vereist:
+
+- één centrale woordenlijst;
+- één veilige functie voor ontbrekende signalen;
+- onbekende technische sleutel nooit letterlijk tonen;
+- bij onbekende sleutel:
+  - generieke tekst zoals “Aanvullende gegevens ontbreken”;
+  - technische sleutel alleen in interne logging;
+- geen dubbele lokale woordenlijsten.
+
+De UI mag nooit terugvallen op de ruwe key.
+
+4. OUDE SHELL EN FEATUREFLAG-RISICO
+
+Controleer of de oude shell nog bereikbaar is via:
+
+- featureflag uit;
+- dev-preview;
+- directe route;
+- fallback bij API-fout;
+- testmodus;
+- oude accountvariant.
+
+Wanneer bereikbaar:
+
+- herstel alleen dezelfde technische-key- en confidence-presentatiefout;
+- geen redesign van de oude shell;
+- gebruik dezelfde centrale presentatielaag;
+- behoud bestaande functionaliteit.
+
+Wanneer aantoonbaar niet bereikbaar:
+
+- rapporteer dat met bewijs;
+- registreer verwijdering of definitieve uitschakeling als aparte toekomstige taak;
+- laat dode code niet stil als productiezekerheid gelden.
+
+5. COACH-ANALYSIS-CARD
+
+De eerdere rapportage eindigde afgebroken bij `coach-analysis-card.tsx`.
+
+Lever de volledige bevinding:
+
+- welke status of signalen worden daar getoond;
+- of technische sleutels zichtbaar kunnen worden;
+- of confidence wordt meegenomen;
+- welke rol deze kaart ziet;
+- welke toestemming voor hersteldata geldt;
+- of een wijziging nodig is.
+
+Geen ruwe hersteldata tonen aan trainer, ouder of club zonder bestaande toestemming.
+
+6. TESTSCENARIO’S
+
+Test minimaal:
+
+- confidence 0.00 met nul signalen;
+- confidence 0.07 met alle signalen ontbrekend;
+- confidence 0.15 met één of twee signalen;
+- confidence 0.34;
+- confidence 0.35;
+- confidence 0.80;
+- positieve herstelband met lage confidence;
+- negatieve herstelband met lage confidence;
+- tegenstrijdige signalen;
+- onbekende missing-key;
+- API-fout;
+- verouderde data;
+- featureflag aan;
+- featureflag uit;
+- legacy route indien bereikbaar;
+- trainerweergave;
+- ouderweergave;
+- clubweergave zonder ruwe-datarecht.
+
+Viewports:
+
+- 390 × 874;
+- 768 × 1024;
+- 1440 × 900.
+
+7. ACCEPTATIE
+
+De opdracht slaagt alleen als:
+
+- de drempels aantoonbaar centraal of expliciet tijdelijk versieerbaar zijn;
+- de herstelengine ongewijzigd blijft;
+- technische sleutels nergens in een bereikbare gebruikersweergave zichtbaar zijn;
+- onbekende sleutels veilig worden afgevangen;
+- lage confidence geen ongekwalificeerde “Belastbaar”-status toont;
+- dezelfde regels gelden in bereikbare legacy- en rolweergaven;
+- rechten op hersteldata behouden blijven;
+- TypeScript en frontendbuild groen zijn;
+- geen nieuwe console- of netwerkfouten ontstaan.
+
+8. NIET DOEN
+
+- geen engine-thresholds wijzigen;
+- geen planadaptatielogica wijzigen;
+- geen medische logica toevoegen;
+- geen nieuwe herstelstatussen verzinnen;
+- geen brede UI-migratie;
+- geen andere Vandaag-kaarten aanpassen;
+- geen publicatie.
+
+9. RAPPORTAGE
+
+Lever:
+
+1. exacte herkomst van 0.10 en 0.35;
+2. centrale configuratie of tijdelijke presentatieconfiguratie;
+3. volledige vindplaatsenmatrix;
+4. volledig resultaat voor `coach-analysis-card.tsx`;
+5. gewijzigde bestanden en functies;
+6. bewijs dat de engine-output ongewijzigd bleef;
+7. screenshots van lage, middelhoge en hoge confidence;
+8. bewijs voor featureflag aan en uit;
+9. bewijs dat onbekende keys niet zichtbaar worden;
+10. rol- en toestemmingstests;
+11. TypeScript-, build-, console- en netwerkresultaten;
+12. resterende risico’s;
+13. gepubliceerd: nee;
+14. gereed voor René’s acceptatie: ja/nee.
+
+STOPREGEL
+
+Wanneer blijkt dat de API of centrale herstelengine zelf een onjuiste stellige status produceert die niet alleen door presentatie kan worden gekwalificeerd:
+
+- stop;
+- rapporteer bestand, functie, input, output en reproduceerstappen;
+- wijzig de engine niet zonder nieuwe expliciete opdracht.

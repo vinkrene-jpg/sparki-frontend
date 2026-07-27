@@ -2,3 +2,5 @@ sparki-backup.bundle filter=lfs diff=lfs merge=lfs -text
 sparki-backup-bundle.zip filter=lfs diff=lfs merge=lfs -text
 exports/BF_00_evidence.zip filter=lfs diff=lfs merge=lfs -text
 bewijsarchief/bf00/BF_00_evidence.zip filter=lfs diff=lfs merge=lfs -text
+SPARKI_CURRENT_STATE_2026-07-27.zip filter=lfs diff=lfs merge=lfs -text
+SPARKI_CURRENT_STATE_2026-07-27_3942f0f.zip filter=lfs diff=lfs merge=lfs -text

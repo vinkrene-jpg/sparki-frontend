@@ -1,0 +1,347 @@
+OPDRACHT — ROUTEGENERATIE TERUGBRENGEN NAAR MAXIMAAL 5 SECONDEN
+
+DOEL
+
+Versnel uitsluitend de routegeneratie.
+
+Voor een normale routeaanvraag moet de eerste geldige en zichtbare route in minimaal 95% van de gevallen binnen 5 seconden beschikbaar zijn.
+
+Geen redesign van de routeplanner.
+Geen nieuwe route-engine bouwen.
+Geen functionele routecriteria verwijderen zonder bewijs.
+Niet publiceren zonder expliciete goedkeuring van René.
+
+1. EERST METEN — GEEN GOKWERK
+
+Breng de huidige routegeneratie volledig in kaart.
+
+Meet afzonderlijk:
+
+- tijd vanaf gebruikersactie tot request;
+- backend-verwerking;
+- externe routing-API;
+- routeberekening;
+- alternatieve routes;
+- hoogteprofiel;
+- wegtype- en ondergrondanalyse;
+- waarschuwingen;
+- points of interest;
+- AI- of documentverwerking;
+- response-overdracht;
+- frontend-rendering;
+- tijd tot route zichtbaar op de kaart.
+
+Leg per stap vast:
+
+- p50;
+- p95;
+- p99;
+- gemiddelde;
+- minimum;
+- maximum;
+- aantal metingen;
+- cache hit of miss;
+- fout- en time-outpercentage.
+
+Gebruik minimaal:
+
+- 20 korte routes;
+- 20 normale routes;
+- 10 lange of complexe routes;
+- dezelfde route meerdere keren voor cachemetingen.
+
+Geen optimalisatie uitvoeren voordat de meetresultaten en de grootste vertraging zijn gerapporteerd.
+
+2. PRESTATIEDOELEN
+
+A. Eenvoudige route
+- eerste geldige route zichtbaar: doel ≤ 2 seconden;
+- p95 maximaal 5 seconden.
+
+B. Normale route
+- eerste geldige route zichtbaar: p95 ≤ 5 seconden;
+- p99 streefwaarde ≤ 8 seconden.
+
+C. Complexe route
+- eerste geldige route zichtbaar: p95 ≤ 10 seconden;
+- gebruiker krijgt binnen 300 ms zichtbare voortgang;
+- geen eindeloze spinner.
+
+De “eerste geldige route” betekent:
+
+- geldige geometrie;
+- juiste start en bestemming;
+- actieve routevoorkeuren toegepast;
+- kaart kan de route tonen;
+- route is bruikbaar om te bekijken of verder te bewerken.
+
+3. KRITIEKE ROUTE SCHEIDEN VAN VERRIJKING
+
+De basisroute mag niet wachten op onderdelen die achteraf kunnen worden toegevoegd.
+
+Kritiek vóór eerste weergave:
+
+- routegeometrie;
+- start en finish;
+- verplichte tussenpunten;
+- gekozen fiets- en wegtypebeperkingen;
+- basisafstand;
+- geldigheidscontrole.
+
+Mag na eerste weergave asynchroon worden aangevuld:
+
+- volledig hoogteprofiel;
+- gedetailleerde ondergrond;
+- wegtypeverdeling;
+- waarschuwingen;
+- bezienswaardigheden;
+- horeca- of verzorgingspunten;
+- uitgebreide routekwaliteit;
+- AI-uitleg;
+- alternatieve routes, tenzij de gebruiker die expliciet eerst nodig heeft.
+
+Toon aanvullingen zodra ze gereed zijn zonder:
+
+- de route opnieuw te verbergen;
+- kaartpositie te resetten;
+- gebruikerswijzigingen te verliezen;
+- de volledige route opnieuw te laden.
+
+4. GEEN AI IN HET KRITIEKE PAD
+
+Controleer of een AI-model, documentparser of generatieve stap de basisroute blokkeert.
+
+Indien ja:
+
+- haal dit uit het kritieke pad;
+- laat de route-engine eerst de basisroute leveren;
+- voer AI-uitleg of selectie daarna uit;
+- AI mag geen routegeometrie vervangen of vertragen.
+
+5. PARALLELISATIE
+
+Controleer welke onafhankelijke bewerkingen nu achter elkaar plaatsvinden.
+
+Voer onafhankelijke taken parallel uit waar veilig, bijvoorbeeld:
+
+- hoogteprofiel;
+- wegtypen;
+- ondergrond;
+- waarschuwingen;
+- POI-verrijking;
+- alternatieve routeberekening.
+
+Behouden:
+
+- deterministische uitkomst;
+- fouten per onderdeel geïsoleerd;
+- een mislukte verrijking blokkeert de basisroute niet;
+- geen onbeperkte parallelle requests;
+- duidelijke time-outs en cancellation.
+
+6. CACHE
+
+Implementeer of verbeter caching voor identieke of equivalent genormaliseerde routeverzoeken.
+
+Cache key bevat minimaal:
+
+- start;
+- finish;
+- verplichte tussenpunten en volgorde;
+- fietsprofiel;
+- routevoorkeuren;
+- vermijdingen;
+- terugweg of rondrit;
+- relevante engineversie;
+- relevante kaart- of databronversie.
+
+Vereisten:
+
+- server-side cache;
+- geen cross-user lek van persoonlijke routegegevens;
+- expliciete TTL;
+- geldige invalidatie;
+- cache hit zichtbaar in performance-logging;
+- dezelfde aanvraag hoeft niet volledig opnieuw berekend te worden;
+- gedeeltelijke invoer of persoonlijke verborgen punten mogen niet openbaar worden gecachet.
+
+7. HERBEREKENINGEN BEPERKEN
+
+Controleer of routegeneratie wordt gestart bij:
+
+- iedere toetsaanslag;
+- iedere schuifbeweging;
+- iedere kaartbeweging;
+- iedere kleine instellingwijziging;
+- meerdere React-renders;
+- dubbele event handlers.
+
+Vereist:
+
+- debounce voor tekst- en kaartinvoer;
+- request alleen na bewuste bevestiging waar passend;
+- vorige request annuleren bij een nieuwe aanvraag;
+- geen dubbele gelijktijdige requests voor dezelfde route;
+- alleen gewijzigde delen opnieuw berekenen als de engine dat veilig ondersteunt;
+- actuele request-id voorkomt dat een oude response een nieuwe route overschrijft.
+
+8. TIME-OUT EN GEFACEERDE WEERGAVE
+
+Na 5 seconden bij een normale route:
+
+- geen lege kaart met spinner;
+- toon de beste geldige basisroute als die beschikbaar is;
+- of toon exact welk onderdeel nog bezig is;
+- bied opnieuw proberen;
+- behoud alle invoer;
+- geen automatische fallback naar andere routevoorkeuren zonder toestemming.
+
+Verrijkingen krijgen eigen time-outs.
+
+Voorbeeldstatussen:
+
+- Route berekenen
+- Route gevonden
+- Hoogteprofiel wordt toegevoegd
+- Ondergrond wordt gecontroleerd
+- Extra route-informatie niet beschikbaar
+
+Geen technische foutcodes in de gebruikersinterface.
+
+9. ROUTEKWALITEIT MAG NIET DALEN
+
+Vergelijk vóór en na optimalisatie:
+
+- afstand;
+- hoogte;
+- gekozen wegtype;
+- vermeden wegen;
+- tussenpunten;
+- start en finish;
+- routevorm;
+- veiligheids- en fietsprofielbeperkingen.
+
+Niet accepteren:
+
+- sneller door instellingen te negeren;
+- minder nauwkeurige route zonder expliciete productbeslissing;
+- stil terugvallen op auto- of wandelrouting;
+- POI’s of course points kwijtraken;
+- foutieve route door oude cache;
+- verslechterde navigatie-export.
+
+10. OBSERVABILITY
+
+Voeg gestructureerde performance-logging toe, zonder gevoelige routegegevens onnodig te bewaren.
+
+Log minimaal:
+
+- request-id;
+- routecategorie kort/normaal/complex;
+- cache hit/miss;
+- totale duur;
+- duur per verwerkingsstap;
+- gebruikte routingprovider of engine;
+- aantal tussenpunten;
+- aantal alternatieven;
+- status per verrijking;
+- time-out;
+- foutcategorie;
+- eerste route zichtbaar op frontend.
+
+Geen volledige persoonlijke locaties in algemene logs.
+
+Gebruik gehashte of geaggregeerde kenmerken waar mogelijk.
+
+11. TESTSCENARIO’S
+
+Test minimaal:
+
+- korte route zonder tussenpunten;
+- normale route met twee tussenpunten;
+- rondrit;
+- lange route;
+- gravelroute;
+- MTB-route;
+- wegfietsroute;
+- route met vermijdingen;
+- route met volgauto-instelling;
+- route met veel course points;
+- opnieuw genereren van identieke route;
+- kleine wijziging aan één tussenpunt;
+- snel twee aanvragen achter elkaar;
+- trage routingprovider;
+- mislukte hoogteverrijking;
+- mislukte POI-verrijking;
+- cache invalidatie;
+- gebruiker A en B met vergelijkbare routeaanvraag;
+- mobiel op slechte netwerkverbinding.
+
+Viewports:
+
+- 390 × 874;
+- 768 × 1024;
+- 1440 × 900.
+
+12. ACCEPTATIECRITERIA
+
+De opdracht slaagt alleen als:
+
+- normale route p95 ≤ 5 seconden tot eerste geldige zichtbare route;
+- eenvoudige route heeft duidelijke verbetering en streeft naar ≤ 2 seconden;
+- complexe route toont binnen 300 ms een duidelijke status;
+- basisroute wacht niet op niet-kritieke verrijking;
+- geen AI in het kritieke pad;
+- geen dubbele requests;
+- oude requests kunnen nieuwe routes niet overschrijven;
+- cache werkt aantoonbaar;
+- routekwaliteit blijft gelijk;
+- fouten in hoogte, POI of analyse blokkeren de basisroute niet;
+- geen persoonlijke data lekt via cache of logging;
+- bestaande route-, navigatie- en exporttests blijven groen.
+
+13. NIET DOEN
+
+- geen nieuwe routeprovider kiezen zonder apart voorstel;
+- geen bestaand routeprofiel verwijderen;
+- geen kaart-UX redesign;
+- geen route-opties verbergen;
+- geen nieuwe AI-functionaliteit;
+- geen brede architectuurherschrijving;
+- geen productiepublicatie;
+- geen onbewijsbare melding “nu snel”.
+
+14. RAPPORTAGE
+
+Lever:
+
+1. huidige architectuur en requestflow;
+2. meettabel vóór wijziging met p50/p95/p99;
+3. grootste drie oorzaken van vertraging;
+4. gekozen optimalisaties met reden;
+5. gewijzigde bestanden en functies;
+6. kritieke route versus asynchrone verrijkingen;
+7. cacheontwerp en privacybescherming;
+8. bewijs dat dubbele en oude requests correct worden afgehandeld;
+9. meettabel na wijziging;
+10. routekwaliteitsvergelijking vóór en na;
+11. uitgevoerde tests en resultaten;
+12. console-, netwerk- en backendfouten;
+13. resterende afwijkingen;
+14. expliciete eindstatus:
+   - normale route p95 binnen 5 seconden: ja/nee;
+   - routekwaliteit behouden: ja/nee;
+   - cache bewezen: ja/nee;
+   - persoonlijke datalekken uitgesloten: ja/nee;
+   - gepubliceerd: nee;
+   - gereed voor René’s acceptatie: ja/nee.
+
+STOPREGEL
+
+Wanneer blijkt dat de grootste vertraging aantoonbaar bij een externe routingprovider ligt en de grens van 5 seconden niet haalbaar is zonder providerwijziging:
+
+- stop na de meet- en optimalisatiefase;
+- rapporteer de providerduur afzonderlijk;
+- toon wat binnen Sparki wel is verbeterd;
+- geef maximaal twee technisch onderbouwde alternatieven;
+- wissel niet zelfstandig van provider.

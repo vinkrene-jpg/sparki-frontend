@@ -1,0 +1,83 @@
+AANVULLENDE ACCEPTATIE — HISTORISCHE TERUGBLIK IN PLAN-KALENDER
+
+De nieuwe KalenderSection ondersteunt technisch terugnavigeren. Bewijs nu dat de kalender ook functioneel bruikbaar is om terug te kijken wat er op eerdere dagen is gebeurd.
+
+TEST EN HERSTEL WAAR NODIG
+
+Controleer op eerdere dagen minimaal:
+
+- afgeronde training;
+- geplande maar gemiste training;
+- overgeslagen training;
+- ingekorte of aangepaste training;
+- wedstrijd;
+- rustdag;
+- dag met meerdere activiteiten;
+- dag zonder activiteit;
+- maandgrens;
+- oudere maand buiten de initiële querybuffer.
+
+Per historische dag moet zichtbaar zijn:
+
+- type item;
+- status;
+- geplande datum;
+- werkelijke uitvoering waar beschikbaar;
+- korte kernwaarde, bijvoorbeeld duur of belasting;
+- verschil gepland versus uitgevoerd waar beschikbaar.
+
+INTERACTIE
+
+Historische items moeten aanklikbaar zijn.
+
+Na openen moet de gebruiker kunnen:
+
+- volledige activiteitdetails bekijken;
+- geplande en uitgevoerde versie onderscheiden;
+- feedback of notities bekijken;
+- relevante grafieken openen;
+- terugkeren naar dezelfde kalendermaand en geselecteerde dag.
+
+Geen nieuwe historische data verzinnen.
+
+Gebruik uitsluitend bestaande trainings-, activiteiten-, wedstrijd- en feedbackdata.
+
+BELANGRIJKE REGELS
+
+- Een afgeronde activiteit mag niet alleen als groen stipje zichtbaar zijn zonder inhoud.
+- Een gemiste training mag niet verdwijnen.
+- Een gewijzigde training mag niet als volledig volgens plan worden getoond.
+- Een API-fout mag geen lege dag suggereren.
+- Historische items mogen niet per ongeluk bewerkbaar worden alsof ze toekomstige planning zijn.
+- Corrigeren of toevoegen achteraf alleen via bestaande veilige flow.
+- Geen duplicatie tussen gepland item en gekoppelde uitgevoerde activiteit.
+
+TESTEN
+
+Test minimaal:
+
+- gisteren;
+- vorige week;
+- vorige maand;
+- maandgrens;
+- jaargrens;
+- oude activiteit buiten eerste laadbuffer;
+- 390×874;
+- 768×1024;
+- 1440×900;
+- openen en terugkeren;
+- console;
+- netwerk;
+- TypeScript.
+
+RAPPORTAGE
+
+Rapporteer:
+
+1. welke historische statussen al werkten;
+2. welke ontbraken;
+3. gewijzigde bestanden;
+4. screenshots van een afgeronde, gemiste en gewijzigde training;
+5. bewijs dat geplande en uitgevoerde data niet dubbel verschijnen;
+6. bewijs dat terugkeer naar dezelfde maand en dag werkt;
+7. gepubliceerd: nee.
