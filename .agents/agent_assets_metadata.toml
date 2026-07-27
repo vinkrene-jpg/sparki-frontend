@@ -683,3 +683,105 @@ id = "R1xRJxzF3iHBInLjUFiXg"
 uri = "file://test-artifacts/PUB_02/resultaten-browsercontrole.json"
 type = "unspecified"
 title = "Letterlijke browsercontrole-resultaten (JSON)"
+
+[[outputs]]
+id = "LTS1d7x0e4woKOHfFGxB_"
+uri = "file://screenshots/vandaag-controle/mobiel-01-viewport-390x874.jpg"
+type = "image"
+title = "Mobiel — eerste schermvulling (390×874)"
+
+[[outputs]]
+id = "mmj8zeRHy4mN604jUjbHH"
+uri = "file://screenshots/vandaag-controle/mobiel-02-volledige-pagina.jpg"
+type = "image"
+title = "Mobiel — volledige pagina (390 breed)"
+
+[[outputs]]
+id = "gJAmKz2XGRZF8H2oPRgyA"
+uri = "file://screenshots/vandaag-controle/mobiel-03-detail-sfeer-header.jpg"
+type = "image"
+title = "Mobiel detail — sfeer/header"
+
+[[outputs]]
+id = "ph4AKDPcQlOYAW1kfeI1U"
+uri = "file://screenshots/vandaag-controle/mobiel-04-detail-coachboodschap.jpg"
+type = "image"
+title = "Mobiel detail — dominante coachboodschap"
+
+[[outputs]]
+id = "esfEykJo7QU4wWiEJ-G5n"
+uri = "file://screenshots/vandaag-controle/mobiel-05-detail-weekoverzicht.jpg"
+type = "image"
+title = "Mobiel detail — weekoverzicht"
+
+[[outputs]]
+id = "p5iYZf6MosFM7Mp3t8wWM"
+uri = "file://screenshots/vandaag-controle/mobiel-06-detail-training-vandaag.jpg"
+type = "image"
+title = "Mobiel detail — training van vandaag"
+
+[[outputs]]
+id = "v-j6tWmokFBQUjzUyYVX-"
+uri = "file://screenshots/vandaag-controle/mobiel-07-detail-herstel-gereedheid.jpg"
+type = "image"
+title = "Mobiel detail — herstel/gereedheid"
+
+[[outputs]]
+id = "rMl81PSQNtRMXU7f8wIW0"
+uri = "file://screenshots/vandaag-controle/mobiel-08-detail-hoofdnavigatie.jpg"
+type = "image"
+title = "Mobiel detail — hoofdnavigatie"
+
+[[outputs]]
+id = "YJd6OM1kdvETxMzOJ6Aqm"
+uri = "file://screenshots/vandaag-controle/desktop-01-viewport-1440x900.jpg"
+type = "image"
+title = "Desktop — viewport 1440×900"
+
+[[outputs]]
+id = "DOSy4B3M8P-dVlMjY0NSK"
+uri = "file://screenshots/vandaag-controle/desktop-02-volledige-pagina.jpg"
+type = "image"
+title = "Desktop — volledige pagina (1440 breed)"
+
+[[outputs]]
+id = "wc32yuPyeWnYz7NPdOYgJ"
+uri = "file://screenshots/vandaag-controle/desktop-03-detail-sfeer-header.jpg"
+type = "image"
+title = "Desktop detail — sfeer/header"
+
+[[outputs]]
+id = "qtG9IHvKGb6nGd6KszTph"
+uri = "file://screenshots/vandaag-controle/desktop-04-detail-hoofdinhoud.jpg"
+type = "image"
+title = "Desktop detail — hoofdinhoud"
+
+[[outputs]]
+id = "cRxApBwYKUK5ZVJDOZ_dl"
+uri = "file://screenshots/vandaag-controle/desktop-05-detail-weekoverzicht.jpg"
+type = "image"
+title = "Desktop detail — weekoverzicht"
+
+[[outputs]]
+id = "WTCddtSI1V3elyHl0XZwb"
+uri = "file://screenshots/vandaag-controle/desktop-06-detail-zijbalk.jpg"
+type = "image"
+title = "Desktop detail — zijbalk"
+
+[[outputs]]
+id = "69r07QBaGBGdaLaOxAO-p"
+uri = "file://screenshots/vandaag-controle/desktop-07-detail-primaire-actie-sectie.jpg"
+type = "image"
+title = "Desktop detail — sectie van de primaire actie (nu eerlijke lege toestand)"
+
+[[outputs]]
+id = "mev7ZaduDgXdP361m3NEg"
+uri = "file://screenshots/vandaag-controle/desktop-08-detail-herstel-gereedheid.jpg"
+type = "image"
+title = "Desktop detail — herstel/gereedheid"
+
+[[outputs]]
+id = "q0O-D8KAssNkVITahdtBh"
+uri = "file://screenshots/vandaag-controle-screenshots.zip"
+type = "unspecified"
+title = "Vandaag-scherm — alle 16 controlebeelden (ZIP)"
