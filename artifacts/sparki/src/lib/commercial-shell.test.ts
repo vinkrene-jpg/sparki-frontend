@@ -75,6 +75,7 @@ scenario("alle nav-doelen zijn bestaande app-routes", () => {
     "/train",
     "/routes",
     "/activiteiten",
+    "/analyse",
     "/meer",
     "/feed",
     "/you",

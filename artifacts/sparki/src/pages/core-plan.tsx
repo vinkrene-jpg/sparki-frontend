@@ -14,11 +14,11 @@ import { DsState } from "@/components/ds/state";
 import { IconChevron } from "@/components/ds/icons";
 
 // Intelligence / Logic
-import { bronZin, kiesPlanActie, afleidDagStatus, buildWeekGridLocal, derivedFacts, awaitsFeel, withinFeelWindow, sourceLabel } from "@/lib/core-plan";
+import { bronZin, kiesPlanActie, afleidDagStatus, startOfLocalWeek, derivedFacts, awaitsFeel, withinFeelWindow, sourceLabel } from "@/lib/core-plan";
 import { judgeGoalFit } from "@/lib/train-intelligence";
 
 // Hooks
-import { useTrainingPlan, usePlanWindow, useGenerateTrainingPlan, useAdaptTrainingPlan } from "@/hooks/use-training-plan";
+import { useTrainingPlan, usePlanWindow, usePlanRange, useGenerateTrainingPlan, useAdaptTrainingPlan } from "@/hooks/use-training-plan";
 import { useUpdateWorkout } from "@/hooks/use-today-workout";
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile";
 import { useFixParams } from "@/hooks/use-missing-input";
@@ -45,7 +45,7 @@ import { ownsObservation } from "@/lib/insight-ownership";
 import { groupObservations, dedupeObservationsByText, type InsightGroup } from "@/lib/insight-grouping";
 import { GraphInsightCard } from "@/components/sparki/insight/graph-insight-card";
 import { HerkomstKnop } from "@/components/sparki/herkomst-sheet";
-import type { TrainingSession } from "@/lib/athlete-types";
+import type { TrainingSession, PlannedWorkout } from "@/lib/athlete-types";
 
 // --- Sub-components --------------------------------------------------------
 
@@ -64,136 +64,652 @@ function PlanHeader() {
   );
 }
 
-function WeekEnDagSection({ highlightWeek, onOpenAdd }: { highlightWeek: boolean, onOpenAdd: (iso: string) => void }) {
-  const { data: planWindow, isError, isLoading, refetch } = usePlanWindow(3);
-  const updateWorkout = useUpdateWorkout();
+// ─── Kalender helpers ────────────────────────────────────────────────────────
+
+function addDagenLocal(date: Date, n: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
+function bouwMaandGrid(year: number, month: number): Date[][] {
+  const eerste = new Date(year, month, 1);
+  const laatste = new Date(year, month + 1, 0);
+  const start = startOfLocalWeek(eerste);
+  // Last Sunday of the last week that contains a day of this month:
+  const lastMonday = startOfLocalWeek(laatste);
+  const einde = addDagenLocal(lastMonday, 6);
+  const weken: Date[][] = [];
+  let huidig = new Date(start);
+  while (huidig <= einde) {
+    const week: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+      week.push(new Date(huidig));
+      huidig = addDagenLocal(huidig, 1);
+    }
+    weken.push(week);
+  }
+  return weken;
+}
+
+const MAANDNAMEN = [
+  "Januari","Februari","Maart","April","Mei","Juni",
+  "Juli","Augustus","September","Oktober","November","December",
+] as const;
+
+const DAGKOPPEN = ["Ma","Di","Wo","Do","Vr","Za","Zo"] as const;
+
+/** Bepaalt de visuele stijl van een kalendercel.
+ *  - isPast: de dag ligt vóór vandaag
+ *  - hasSession: er bestaat minimaal één TrainingSession op die dag
+ *    (ongeacht of er een geplande training is)
+ */
+function dagUiterlijk(
+  w: PlannedWorkout | undefined,
+  isPast: boolean,
+  hasSession: boolean,
+): { cel: string; label: string; stip: string } {
+  // Geen geplande training — maar wel een sessie (onverwachte activiteit)
+  if (!w) {
+    if (hasSession && isPast) {
+      return { cel: "border-white/[0.05] bg-transparent", label: "text-white/30", stip: "bg-positive/30" };
+    }
+    return { cel: "border-white/[0.05] bg-transparent", label: "text-white/25", stip: "" };
+  }
+  if (w.type === "rest") return { cel: "border-white/[0.05] bg-transparent", label: "text-white/25", stip: "" };
+  if (w.status === "skipped") return { cel: "border-white/[0.05] bg-transparent", label: "text-white/25 line-through", stip: "bg-white/15" };
+  if (w.status === "completed") return { cel: "border-white/10 bg-white/[0.02]", label: "text-white/40", stip: "bg-positive/50" };
+  // Gemist: gepland of aangepast, datum voorbij, geen bewijs van uitvoering
+  if (isPast && (w.status === "planned" || w.status === "modified") && w.sessionId == null) {
+    return { cel: "border-white/[0.05] bg-transparent", label: "text-white/30 line-through", stip: "bg-red-400/40" };
+  }
+  // Aangepast door Sparki — toekomstige training
+  if (w.status === "modified") {
+    return { cel: "border-amber-400/20 bg-amber-400/[0.04]", label: "text-amber-300/70", stip: "bg-amber-400/50" };
+  }
+  return { cel: "border-accent-cyan/20 bg-accent-cyan/[0.04]", label: "text-white/80", stip: "bg-accent-cyan" };
+}
+
+function kortTitel(w: PlannedWorkout): string {
+  if (w.type === "rest") return "rust";
+  const t = w.title ?? w.type;
+  return t.length > 13 ? t.slice(0, 12) + "…" : t;
+}
+
+// ─── Geselecteerde dag kaart ─────────────────────────────────────────────────
+
+/** Vergelijkingsrij gepland vs werkelijk (alleen zichtbaar bij historische items
+ *  die gekoppeld zijn aan een uitgevoerde sessie). Nooit verzonnen data. */
+function GeplandVsWerkelijkRij({
+  geplandMin,
+  werkelijkMin,
+  geplandTSS,
+  werkelijkTSS,
+}: {
+  geplandMin: number | null;
+  werkelijkMin: number | null;
+  geplandTSS: number | null;
+  werkelijkTSS: number | null;
+}) {
+  if (geplandMin == null && geplandTSS == null) return null;
+  const heeftWerkelijk = werkelijkMin != null || werkelijkTSS != null;
+  if (!heeftWerkelijk) return null;
+
+  function deltaLabel(plan: number | null, actual: number | null): string {
+    if (plan == null || actual == null) return "";
+    const d = actual - plan;
+    return d === 0 ? "=" : d > 0 ? `+${d}` : String(d);
+  }
+
+  return (
+    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-2.5 flex flex-col gap-1.5">
+      <p className="type-label text-content-secondary uppercase tracking-wider text-[9px]">Gepland vs werkelijk</p>
+      {(geplandMin != null || werkelijkMin != null) && (
+        <div className="flex items-center gap-2 type-label">
+          <span className="text-white/40 w-16 shrink-0">Duur</span>
+          <span className="num text-white/60">{geplandMin != null ? `${geplandMin} min` : "—"}</span>
+          <span className="text-white/25">→</span>
+          <span className={cn("num font-medium", werkelijkMin != null ? "text-white/80" : "text-white/30")}>
+            {werkelijkMin != null ? `${werkelijkMin} min` : "—"}
+          </span>
+          {geplandMin != null && werkelijkMin != null && (
+            <span className={cn("num text-[10px] ml-auto", werkelijkMin >= geplandMin ? "text-positive/80" : "text-amber-400/70")}>
+              {deltaLabel(geplandMin, werkelijkMin)}
+            </span>
+          )}
+        </div>
+      )}
+      {(geplandTSS != null || werkelijkTSS != null) && (
+        <div className="flex items-center gap-2 type-label">
+          <span className="text-white/40 w-16 shrink-0">TSS</span>
+          <span className="num text-white/60">{geplandTSS != null ? String(geplandTSS) : "—"}</span>
+          <span className="text-white/25">→</span>
+          <span className={cn("num font-medium", werkelijkTSS != null ? "text-white/80" : "text-white/30")}>
+            {werkelijkTSS != null ? String(werkelijkTSS) : "—"}
+          </span>
+          {geplandTSS != null && werkelijkTSS != null && (
+            <span className={cn("num text-[10px] ml-auto", werkelijkTSS >= geplandTSS ? "text-positive/80" : "text-amber-400/70")}>
+              {deltaLabel(geplandTSS, werkelijkTSS)}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GeselecteerdeDagKaart({
+  selectedDate,
+  selectedWorkout,
+  isSelectedToday,
+  isPast,
+  sessiesOpDag,
+  onOpenAdd,
+  onOpenDetail,
+  onOpenSession,
+  updateWorkout,
+}: {
+  selectedDate: string;
+  selectedWorkout: PlannedWorkout | undefined;
+  isSelectedToday: boolean;
+  /** Datum ligt vóór vandaag */
+  isPast: boolean;
+  /** Alle TrainingSessions op deze dag (inclusief ongelinkte) */
+  sessiesOpDag: TrainingSession[];
+  onOpenAdd: () => void;
+  onOpenDetail: (id: number) => void;
+  onOpenSession: (s: TrainingSession) => void;
+  updateWorkout: { mutate: (args: { id: number; status: string }) => void; isPending: boolean };
+}) {
+  const isRest = selectedWorkout?.type === "rest";
+  const datumLabel = new Date(selectedDate + "T12:00:00Z").toLocaleDateString("nl-NL", {
+    weekday: "long", day: "numeric", month: "long",
+  });
+
+  // Is deze training gemist? Gepland/aangepast, datum voorbij, geen sessionId.
+  const isGemist =
+    isPast &&
+    selectedWorkout != null &&
+    (selectedWorkout.status === "planned" || selectedWorkout.status === "modified") &&
+    selectedWorkout.sessionId == null;
+
+  // Gekoppelde sessie (bewijs van uitvoering).
+  // Zoek eerst op sessionId, daarna op datum als fallback (bijv. handmatig gelinkt maar sessionId al gezet).
+  const gekoppeldeSessie = selectedWorkout?.sessionId != null
+    ? sessiesOpDag.find((s) => s.id === selectedWorkout.sessionId) ?? null
+    : null;
+
+  // Extra sessies op dezelfde dag die NIET de gekoppelde training zijn.
+  const extraSessies = sessiesOpDag.filter(
+    (s) => s.id !== (selectedWorkout?.sessionId ?? -1),
+  );
+
+  return (
+    <div>
+      <p className="type-label text-content-secondary mb-2 capitalize">{datumLabel}</p>
+
+      {/* ── Geen geplande training ── */}
+      {!selectedWorkout ? (
+        sessiesOpDag.length > 0 ? (
+          // Sessies aanwezig zonder geplande training (bijv. onverwachte rit)
+          <div className="flex flex-col gap-3">
+            {sessiesOpDag.map((s) => (
+              <DsCard key={s.id} variant="standaard" className="flex flex-col gap-2 cursor-pointer hover:border-white/20 transition-colors" onClick={() => onOpenSession(s)}>
+                <div className="flex items-start justify-between gap-3">
+                  <DsCardTitel className="flex-1">{s.title ?? s.type}</DsCardTitel>
+                  <DsStatus status="positief">Activiteit</DsStatus>
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  {s.durationMin != null && (
+                    <span className="num type-label text-accent-cyan">{s.durationMin} min</span>
+                  )}
+                  {s.tss != null && (
+                    <span className="num type-label text-accent-cyan">{s.tss} TSS</span>
+                  )}
+                </div>
+              </DsCard>
+            ))}
+          </div>
+        ) : isPast ? (
+          // Verleden dag zonder enige activiteit — geen add-CTA (historisch)
+          <DsState
+            soort="leeg"
+            titel="Geen activiteit op deze dag"
+            beschrijving="Op deze dag is geen training gelogd of gepland."
+          />
+        ) : (
+          // Toekomstige dag — voeg toe
+          <DsState
+            soort="leeg"
+            titel="Geen training gepland"
+            beschrijving="Er staat niets gepland voor deze dag."
+            actie={{ label: "Training toevoegen", onClick: onOpenAdd }}
+          />
+        )
+      ) : isRest ? (
+        /* ── Rustdag ── */
+        <DsCard variant="standaard" className="flex flex-col gap-3">
+          <DsCardTitel>Rustdag</DsCardTitel>
+          <p className="type-body text-content-secondary">
+            {isPast
+              ? "Op deze dag was herstel gepland."
+              : "Neem de tijd om te herstellen. Er is geen training gepland."}
+          </p>
+          {/* Toon extra sessies ook op rustdagen (bijv. wandeling) */}
+          {extraSessies.length > 0 && (
+            <div className="flex flex-col gap-2 mt-1">
+              <p className="type-label text-content-secondary uppercase tracking-wider">Ook gelogd</p>
+              {extraSessies.map((s) => (
+                <button key={s.id} type="button" onClick={() => onOpenSession(s)}
+                  className="rounded-lg border border-border bg-surface px-3 py-2 text-left hover:bg-white/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60">
+                  <span className="type-action block">{s.title ?? s.type}</span>
+                  {s.durationMin != null && (
+                    <span className="num type-label text-content-secondary">{s.durationMin} min</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </DsCard>
+      ) : (
+        /* ── Training (gepland / afgerond / gemist / aangepast / overgeslagen) ── */
+        <DsCard variant="standaard" className="flex flex-col gap-4">
+          <div className="flex justify-between items-start gap-4">
+            <DsCardTitel>{selectedWorkout.title || "Training"}</DsCardTitel>
+            <div className="flex flex-wrap gap-1.5 justify-end shrink-0">
+              {selectedWorkout.status === "completed" && !isGemist && (
+                <DsStatus status="positief">Afgerond</DsStatus>
+              )}
+              {selectedWorkout.status === "skipped" && (
+                <DsStatus status="neutraal">Overgeslagen</DsStatus>
+              )}
+              {selectedWorkout.status === "modified" && !isPast && (
+                <DsStatus status="waarschuwing">Aangepast</DsStatus>
+              )}
+              {selectedWorkout.status === "modified" && isPast && !isGemist && (
+                <DsStatus status="neutraal">Aangepast</DsStatus>
+              )}
+              {isGemist && <DsStatus status="fout">Gemist</DsStatus>}
+            </div>
+          </div>
+
+          {/* Geplande waarden */}
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {selectedWorkout.targetDurationMin != null && (
+              <div className="flex flex-col">
+                <span className="type-label text-content-secondary text-[9px] uppercase tracking-wider">Gepland</span>
+                <span className="num type-action text-accent-cyan">{selectedWorkout.targetDurationMin} min</span>
+              </div>
+            )}
+            {selectedWorkout.targetTSS != null && (
+              <div className="flex flex-col">
+                <span className="type-label text-content-secondary text-[9px] uppercase tracking-wider">TSS</span>
+                <span className="num type-action text-accent-cyan">{selectedWorkout.targetTSS}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Gepland vs werkelijk (alleen bij gekoppelde sessie) */}
+          {gekoppeldeSessie != null && (
+            <GeplandVsWerkelijkRij
+              geplandMin={selectedWorkout.targetDurationMin}
+              werkelijkMin={gekoppeldeSessie.durationMin}
+              geplandTSS={selectedWorkout.targetTSS}
+              werkelijkTSS={gekoppeldeSessie.tss}
+            />
+          )}
+
+          {selectedWorkout.description && (
+            <p className="type-body text-content-secondary">{selectedWorkout.description}</p>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-2 mt-2">
+            <DsButton variant="primair" onClick={() => onOpenDetail(selectedWorkout.id)}>
+              Training bekijken
+            </DsButton>
+            {!isPast && isSelectedToday && (selectedWorkout.status === "planned" || selectedWorkout.status === "modified") && (
+              <>
+                <DsButton variant="secundair" onClick={() => updateWorkout.mutate({ id: selectedWorkout.id, status: "completed" })} loading={updateWorkout.isPending}>
+                  Afronden
+                </DsButton>
+                <DsButton variant="secundair" onClick={() => updateWorkout.mutate({ id: selectedWorkout.id, status: "skipped" })} loading={updateWorkout.isPending}>
+                  Overslaan
+                </DsButton>
+              </>
+            )}
+          </div>
+          {isSelectedToday && <CorePredictionPanel workoutId={selectedWorkout.id} />}
+
+          {/* Extra sessies op dezelfde dag (niet de gekoppelde — geen duplicaat) */}
+          {extraSessies.length > 0 && (
+            <div className="flex flex-col gap-2 pt-1 border-t border-white/[0.06]">
+              <p className="type-label text-content-secondary uppercase tracking-wider">
+                {extraSessies.length === 1 ? "Nog een activiteit" : `Nog ${extraSessies.length} activiteiten`}
+              </p>
+              {extraSessies.map((s) => (
+                <button key={s.id} type="button" onClick={() => onOpenSession(s)}
+                  className="rounded-lg border border-border bg-surface px-3 py-2 text-left hover:bg-white/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60">
+                  <span className="type-action block">{s.title ?? s.type}</span>
+                  {s.durationMin != null && (
+                    <span className="num type-label text-content-secondary">{s.durationMin} min</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </DsCard>
+      )}
+    </div>
+  );
+}
+
+// ─── Kalender sectie (vervangt WeekEnDagSection) ─────────────────────────────
+
+function KalenderSection({ highlightWeek, onOpenAdd }: { highlightWeek: boolean; onOpenAdd: (iso: string) => void }) {
   const todayISO = localISODate(new Date());
-  
-  const [weekOffset, setWeekOffset] = useState(0);
-  const [selectedDate, setSelectedDate] = useState<string>(todayISO);
+  const todayDate = new Date();
+
+  const [selectedDate, setSelectedDate] = useState(todayISO);
   const [detailId, setDetailId] = useState<number | null>(null);
+  const [openSessie, setOpenSessie] = useState<TrainingSession | null>(null);
 
-  if (isError) {
-    return (
-      <section className="mb-8">
-        <DsState 
-          soort="nietBeschikbaar" 
-          titel="Schema kon niet geladen worden." 
-          actie={{ label: "Opnieuw proberen", onClick: () => refetch() }} 
-        />
-      </section>
-    );
+  // Mobile: week offset (no limits — negative = past weeks)
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  // Desktop: month navigation
+  const [viewYear, setViewYear] = useState(todayDate.getFullYear());
+  const [viewMonth, setViewMonth] = useState(todayDate.getMonth()); // 0-indexed
+
+  // Generous fetch range covering both views with buffer
+  const weekCenter = addDagenLocal(todayDate, weekOffset * 7);
+  const weekFetchFrom = addDagenLocal(startOfLocalWeek(weekCenter), -21);
+  const weekFetchTo   = addDagenLocal(startOfLocalWeek(weekCenter),  35);
+  const monthFetchFrom = new Date(viewYear, viewMonth - 1, 1);
+  const monthFetchTo   = new Date(viewYear, viewMonth + 2, 0);
+
+  // Union of both ranges ensures no cache miss when switching views
+  const fetchFrom = localISODate(weekFetchFrom < monthFetchFrom ? weekFetchFrom : monthFetchFrom);
+  const fetchTo   = localISODate(weekFetchTo   > monthFetchTo   ? weekFetchTo   : monthFetchTo);
+
+  const { data: workouts, isLoading, isError, refetch } = usePlanRange(fetchFrom, fetchTo);
+  const trustedWorkouts = workouts ?? [];
+  const updateWorkout = useUpdateWorkout();
+
+  // Sessies — nodig voor "gepland vs werkelijk" vergelijking en voor dagen
+  // zonder geplande training maar met een gelogde activiteit.
+  // Fetch 60 sessies om ook oudere maanden te dekken.
+  const { data: sessies } = useSessions(60);
+  const trustedSessies: TrainingSession[] = sessies ?? [];
+
+  /** Geeft alle sessies op een specifieke datum — nooit gefabriceerde data. */
+  function getSessiesOpDag(iso: string): TrainingSession[] {
+    return trustedSessies.filter((s) => s.sessionDate === iso);
   }
 
-  if (isLoading) {
-    return (
-      <section className="mb-8 space-y-4">
-        <div className="h-20 animate-pulse rounded-card bg-surface border border-border" />
-        <div className="h-32 animate-pulse rounded-card bg-surface border border-border" />
-      </section>
-    );
+  // Vandaag — reset all views
+  function naarVandaag() {
+    setSelectedDate(todayISO);
+    setWeekOffset(0);
+    setViewYear(todayDate.getFullYear());
+    setViewMonth(todayDate.getMonth());
   }
 
-  const gridDates = buildWeekGridLocal(new Date(), weekOffset);
-  const gridDatesISO = gridDates.map(d => localISODate(d));
-  const trustedWorkouts = planWindow ?? [];
+  // Month navigation (desktop)
+  function prevMaand() {
+    const d = new Date(viewYear, viewMonth - 1, 1);
+    setViewYear(d.getFullYear());
+    setViewMonth(d.getMonth());
+  }
+  function nextMaand() {
+    const d = new Date(viewYear, viewMonth + 1, 1);
+    setViewYear(d.getFullYear());
+    setViewMonth(d.getMonth());
+  }
 
-  const weekDagen: DsWeekDag[] = gridDates.map((date, idx) => {
-    const iso = gridDatesISO[idx]!;
+  // Week navigation (mobile) — also syncs month view
+  function navigeerWeek(offset: number) {
+    setWeekOffset(offset);
+    const center = addDagenLocal(todayDate, offset * 7);
+    setViewYear(center.getFullYear());
+    setViewMonth(center.getMonth());
+    // Move selection: if today is in the new week keep it, else pick Monday of that week
+    const ws = startOfLocalWeek(center);
+    const wsISO = localISODate(ws);
+    const weISO = localISODate(addDagenLocal(ws, 6));
+    if (todayISO >= wsISO && todayISO <= weISO) {
+      setSelectedDate(todayISO);
+    } else {
+      setSelectedDate(wsISO);
+    }
+  }
+
+  // Build week grid (7 ISOs from Monday of the offset week)
+  const weekBase = startOfLocalWeek(addDagenLocal(todayDate, weekOffset * 7));
+  const weekISOs = Array.from({ length: 7 }, (_, i) => localISODate(addDagenLocal(weekBase, i)));
+  const weekDagen: DsWeekDag[] = weekISOs.map((iso, idx) => {
+    const date = addDagenLocal(weekBase, idx);
     const w = trustedWorkouts.find(x => x.scheduledDate === iso);
-    const status = afleidDagStatus(w?.type);
-    const label = date.toLocaleDateString("nl-NL", { weekday: "short" }).slice(0, 2);
-    
+    const raw = date.toLocaleDateString("nl-NL", { weekday: "short" }).slice(0, 2);
+    const isWeekDagPast = iso < todayISO;
+    const isMissed = isWeekDagPast && w != null && (w.status === "planned" || w.status === "modified") && w.sessionId == null;
+    const heeftSessie = getSessiesOpDag(iso).length > 0;
     return {
-      label: label.charAt(0).toUpperCase() + label.slice(1),
-      status,
+      label: raw.charAt(0).toUpperCase() + raw.slice(1),
+      status: afleidDagStatus(w?.type),
       actief: iso === selectedDate,
       vandaag: iso === todayISO,
-      waarde: w?.targetTSS ? String(w.targetTSS) : "—"
+      // "!" hint voor gemiste training of "✓" voor dag met sessie maar geen plan
+      waarde: isMissed
+        ? "!"
+        : w?.targetTSS
+          ? String(w.targetTSS)
+          : (w ? "—" : heeftSessie ? "✓" : undefined),
     };
   });
 
   const selectedWorkout = trustedWorkouts.find(w => w.scheduledDate === selectedDate);
   const isSelectedToday = selectedDate === todayISO;
-  const isRest = selectedWorkout?.type === "rest";
+  const isSelectedPast = selectedDate < todayISO;
+  const isHuidigeMaand = viewYear === todayDate.getFullYear() && viewMonth === todayDate.getMonth();
+  const maandGrid = bouwMaandGrid(viewYear, viewMonth);
+
+  if (isError) {
+    return (
+      <section className="mb-8">
+        <DsState soort="nietBeschikbaar" titel="Schema kon niet geladen worden." actie={{ label: "Opnieuw proberen", onClick: () => refetch() }} />
+      </section>
+    );
+  }
 
   return (
-    <section className="mb-8 flex flex-col gap-6">
-      <div id="week-nav" className={cn("transition-shadow duration-500 rounded-xl", highlightWeek && "shadow-[0_0_0_2px_var(--color-accent-cyan)]")}>
-        <div className="flex items-center justify-between mb-4">
-          <DsCardTitel>Week {weekOffset === 0 ? "van nu" : weekOffset === 1 ? "hierna" : "daarna"}</DsCardTitel>
-          <div className="flex gap-2">
-             <DsButton variant="secundair" onClick={() => setWeekOffset(prev => Math.max(0, prev - 1))} disabled={weekOffset <= 0} className="px-3 min-w-11" aria-label="Vorige week">
-               <IconChevron className="rotate-180" />
-             </DsButton>
-             <DsButton variant="secundair" onClick={() => setWeekOffset(prev => Math.min(2, prev + 1))} disabled={weekOffset >= 2} className="px-3 min-w-11" aria-label="Volgende week">
-               <IconChevron />
-             </DsButton>
+    <section
+      id="week-nav"
+      className={cn("mb-8 transition-shadow duration-500 rounded-xl", highlightWeek && "shadow-[0_0_0_2px_var(--color-accent-cyan)]")}
+    >
+      {/* ── Navigatieheader ── */}
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <div>
+          {/* Mobile: week label */}
+          <span className="lg:hidden type-title-card">
+            {weekOffset === 0
+              ? "Deze week"
+              : weekOffset > 0
+                ? `Over ${weekOffset} week${weekOffset > 1 ? "en" : ""}`
+                : `${Math.abs(weekOffset)} week${Math.abs(weekOffset) > 1 ? "en" : ""} geleden`}
+          </span>
+          {/* Desktop: month + year */}
+          <span className="hidden lg:inline type-title-card">
+            {MAANDNAMEN[viewMonth]} {viewYear}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {(!isHuidigeMaand || weekOffset !== 0) && (
+            <button
+              type="button"
+              onClick={naarVandaag}
+              className="type-label uppercase tracking-wider text-accent-cyan px-2 py-1 rounded hover:bg-accent-cyan/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60"
+            >
+              Vandaag
+            </button>
+          )}
+          {/* Mobile: vorige / volgende week */}
+          <div className="flex gap-1.5 lg:hidden">
+            <DsButton variant="secundair" onClick={() => navigeerWeek(weekOffset - 1)} className="px-3 min-w-11" aria-label="Vorige week">
+              <IconChevron className="rotate-180" />
+            </DsButton>
+            <DsButton variant="secundair" onClick={() => navigeerWeek(weekOffset + 1)} className="px-3 min-w-11" aria-label="Volgende week">
+              <IconChevron />
+            </DsButton>
+          </div>
+          {/* Desktop: vorige / volgende maand */}
+          <div className="hidden lg:flex gap-1.5">
+            <DsButton variant="secundair" onClick={prevMaand} className="px-3 min-w-11" aria-label="Vorige maand">
+              <IconChevron className="rotate-180" />
+            </DsButton>
+            <DsButton variant="secundair" onClick={nextMaand} className="px-3 min-w-11" aria-label="Volgende maand">
+              <IconChevron />
+            </DsButton>
           </div>
         </div>
-        <DsWeek 
-          dagen={weekDagen} 
-          onSelecteer={(idx) => setSelectedDate(gridDatesISO[idx]!)} 
-          selectieLabel="Kies een dag in de planweek"
-        />
       </div>
 
-      <div>
-        {!selectedWorkout ? (
-          <DsState 
-            soort="leeg" 
-            titel="Geen training gepland" 
-            beschrijving="Er staat niets gepland voor deze dag."
-            actie={{ label: "Training toevoegen", onClick: () => onOpenAdd(selectedDate) }} 
-          />
-        ) : isRest ? (
-          <DsCard variant="standaard" className="flex flex-col gap-3">
-            <DsCardTitel>Rustdag</DsCardTitel>
-            <p className="type-body text-content-secondary">Neem de tijd om te herstellen. Er is geen training gepland.</p>
-          </DsCard>
-        ) : (
-          <DsCard variant="standaard" className="flex flex-col gap-4">
-            <div className="flex justify-between items-start gap-4">
-              <DsCardTitel>{selectedWorkout.title || "Training"}</DsCardTitel>
-              {selectedWorkout.status === "completed" && <DsStatus status="positief">Afgerond</DsStatus>}
-              {selectedWorkout.status === "skipped" && <DsStatus status="neutraal">Overgeslagen</DsStatus>}
-            </div>
-            
-            <div className="flex flex-wrap gap-x-4 gap-y-2">
-               {selectedWorkout.targetDurationMin != null && <span className="num type-action text-accent-cyan">{selectedWorkout.targetDurationMin} min</span>}
-               {selectedWorkout.targetTSS != null && <span className="num type-action text-accent-cyan">{selectedWorkout.targetTSS} TSS</span>}
-            </div>
-            
-            {selectedWorkout.description && (
-              <p className="type-body text-content-secondary">{selectedWorkout.description}</p>
-            )}
-            
-            <div className="flex flex-col sm:flex-row gap-2 mt-2">
-              <DsButton variant="primair" onClick={() => setDetailId(selectedWorkout.id)}>
-                Training bekijken
-              </DsButton>
-              
-              {isSelectedToday && (selectedWorkout.status === "planned" || selectedWorkout.status === "modified") && (
-                 <>
-                   <DsButton variant="secundair" onClick={() => updateWorkout.mutate({ id: selectedWorkout.id, status: "completed" })} loading={updateWorkout.isPending}>
-                     Afronden
-                   </DsButton>
-                   <DsButton variant="secundair" onClick={() => updateWorkout.mutate({ id: selectedWorkout.id, status: "skipped" })} loading={updateWorkout.isPending}>
-                     Overslaan
-                   </DsButton>
-                 </>
-              )}
-            </div>
-            
-            {isSelectedToday && <CorePredictionPanel workoutId={selectedWorkout.id} />}
-          </DsCard>
-        )}
-      </div>
+      {/* ── Laadskeleton ── */}
+      {isLoading && (
+        <div className="space-y-3">
+          <div className="h-16 animate-pulse rounded-xl bg-surface border border-border" />
+          <div className="h-40 animate-pulse rounded-xl bg-surface border border-border" />
+        </div>
+      )}
 
-      <WorkoutDetailDrawer 
-        workoutId={detailId} 
-        open={detailId !== null} 
-        onOpenChange={(o) => { if (!o) setDetailId(null); }} 
+      {!isLoading && (
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-5">
+
+          {/* ── Kalender (links op desktop, boven op mobiel) ── */}
+          <div className="lg:flex-1 lg:min-w-0">
+
+            {/* Mobile: week strip */}
+            <div className="lg:hidden">
+              <DsWeek
+                dagen={weekDagen}
+                onSelecteer={(idx) => setSelectedDate(weekISOs[idx]!)}
+                selectieLabel="Kies een dag in de planweek"
+              />
+            </div>
+
+            {/* Desktop: maandgrid */}
+            <div className="hidden lg:block">
+              {/* Dag-koppen */}
+              <div className="grid grid-cols-7 gap-1 mb-1.5">
+                {DAGKOPPEN.map(d => (
+                  <div key={d} className="py-1.5 text-center text-[10px] uppercase tracking-widest text-content-secondary">
+                    {d}
+                  </div>
+                ))}
+              </div>
+              {/* Weken */}
+              <div className="space-y-1">
+                {maandGrid.map((week, wi) => (
+                  <div key={wi} className="grid grid-cols-7 gap-1">
+                    {week.map((date) => {
+                      const iso = localISODate(date);
+                      const inMaand = date.getMonth() === viewMonth;
+                      const w = trustedWorkouts.find(x => x.scheduledDate === iso);
+                      const celPast = iso < todayISO;
+                      const celSessies = getSessiesOpDag(iso);
+                      const celHeeftSessie = celSessies.length > 0;
+                      const stijl = dagUiterlijk(w, celPast, celHeeftSessie);
+                      const isToday = iso === todayISO;
+                      const isSelected = iso === selectedDate;
+                      // Extra stipje voor sessies zonder geplande training
+                      const heeftOnverwachteSessie = celHeeftSessie && !w;
+                      return (
+                        <button
+                          key={iso}
+                          type="button"
+                          onClick={() => inMaand && setSelectedDate(iso)}
+                          disabled={!inMaand}
+                          className={cn(
+                            "min-h-[3.75rem] rounded-lg border p-1.5 text-left flex flex-col gap-0.5 transition-colors",
+                            isSelected
+                              ? "border-accent-cyan/60 bg-accent-cyan/10"
+                              : isToday
+                                ? "border-accent-cyan/35 bg-surface"
+                                : w && w.type !== "rest"
+                                  ? cn(stijl.cel)
+                                  : "border-white/[0.05] bg-transparent",
+                            !inMaand && "opacity-25 cursor-default",
+                            inMaand && "hover:border-white/20",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60",
+                          )}
+                          aria-label={`${date.getDate()} ${MAANDNAMEN[date.getMonth()]}`}
+                          aria-pressed={isSelected}
+                          aria-current={isToday ? "date" : undefined}
+                        >
+                          <span className={cn(
+                            "num text-[11px] font-mono leading-none",
+                            isToday && !isSelected ? "text-accent-cyan font-semibold" :
+                            isSelected ? "text-white font-semibold" :
+                            inMaand ? "text-white/65" : "text-white/20",
+                          )}>
+                            {date.getDate()}
+                          </span>
+                          {w && w.type !== "rest" && (
+                            <span className={cn("text-[10px] leading-tight flex-1 overflow-hidden", stijl.label)}>
+                              {kortTitel(w)}
+                            </span>
+                          )}
+                          {w?.type === "rest" && (
+                            <span className="text-[10px] text-white/20 leading-tight">rust</span>
+                          )}
+                          {/* Stipje: geplande training (met kleur per status) OF onverwachte sessie */}
+                          <div className="mt-auto flex items-end justify-between gap-0.5 self-end">
+                            {w && w.type !== "rest" && stijl.stip && (
+                              <span className={cn("h-1 w-1 rounded-full shrink-0", stijl.stip)} aria-hidden="true" />
+                            )}
+                            {heeftOnverwachteSessie && (
+                              <span className="h-1 w-1 rounded-full shrink-0 bg-positive/40" aria-hidden="true" />
+                            )}
+                            {/* Meerdere sessies indicator */}
+                            {celSessies.length > 1 && (
+                              <span className="num text-[9px] font-mono text-white/30 leading-none">{celSessies.length}</span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Dagdetail (rechts op desktop, onder op mobiel) ── */}
+          <div className="lg:w-64 lg:shrink-0">
+            <GeselecteerdeDagKaart
+              selectedDate={selectedDate}
+              selectedWorkout={selectedWorkout}
+              isSelectedToday={isSelectedToday}
+              isPast={isSelectedPast}
+              sessiesOpDag={getSessiesOpDag(selectedDate)}
+              onOpenAdd={() => onOpenAdd(selectedDate)}
+              onOpenDetail={(id) => setDetailId(id)}
+              onOpenSession={(s) => setOpenSessie(s)}
+              updateWorkout={updateWorkout}
+            />
+          </div>
+        </div>
+      )}
+
+      <WorkoutDetailDrawer
+        workoutId={detailId}
+        open={detailId !== null}
+        onOpenChange={(o) => { if (!o) setDetailId(null); }}
+      />
+      <SessionDetailDrawer
+        session={openSessie}
+        open={openSessie != null}
+        onOpenChange={(o) => { if (!o) setOpenSessie(null); }}
       />
     </section>
   );
@@ -592,9 +1108,9 @@ export default function CorePlanPage() {
       <div className="mx-auto w-full max-w-2xl px-5 pb-10 pt-8 lg:max-w-3xl lg:px-10">
         <PlanHeader />
         
-        <WeekEnDagSection 
-          highlightWeek={highlightWeek} 
-          onOpenAdd={(iso) => { setAddDateContext(iso); setAddOpen(true); }} 
+        <KalenderSection
+          highlightWeek={highlightWeek}
+          onOpenAdd={(iso) => { setAddDateContext(iso); setAddOpen(true); }}
         />
         
         <PlanActieSection />

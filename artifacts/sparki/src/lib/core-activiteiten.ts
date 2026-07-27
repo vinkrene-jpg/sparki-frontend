@@ -1,6 +1,7 @@
 import type { TrainingSession } from "@/lib/athlete-types";
 
 export const TYPE_LABELS: Record<string, string> = {
+  // ── Trainingstypen (Sparki eigen) ───────────────────────────────────────────
   endurance: "Duurtraining",
   duurtraining: "Duurtraining",
   interval: "Intervaltraining",
@@ -13,7 +14,85 @@ export const TYPE_LABELS: Record<string, string> = {
   rest: "Rustdag",
   strength: "Krachttraining",
   other: "Training",
+
+  // ── Canonieke sporttypen (normalizeSport output) ────────────────────────────
+  // Fietsen — canonical + sub-variants
+  cycling: "Fietsen",
+  mountainbike: "Mountainbike",
+  gravel: "Gravel",
+  // Overige sporten
+  running: "Hardlopen",
+  hiking: "Wandeling",
+  swimming: "Zwemmen",
+  multisport: "Meerdere sporten",
+  skiing: "Skiën",
+  yoga: "Yoga",
+  crossfit: "CrossFit",
+  workout: "Training",
+
+  // ── Ruwe Strava / Garmin activity types (vóór normalisatie of passthrough) ──
+  ride: "Fietsen",
+  virtualride: "Indoor fietsen",
+  ebikeride: "E-bike",
+  handcycle: "Handbike",
+  velomobile: "Velomobiel",
+  indoorcycling: "Indoor fietsen",
+  mountainbikeride: "Mountainbike",
+  gravelride: "Gravel",
+  // Wandelen / hardlopen / zwemmen
+  run: "Hardlopen",
+  trailrun: "Trailrunning",
+  virtualrun: "Hardlopen (indoor)",
+  treadmill: "Hardlopen (indoor)",
+  hike: "Wandeling",
+  walk: "Wandeling",
+  walking: "Wandeling",
+  swim: "Zwemmen",
+  openwaterswim: "Openwaterzwemmen",
 };
+
+/**
+ * Alle bekende wielren/fiets-sporttypen (lowercased, zowel canonical als raw).
+ * Gebruikt om te bepalen of Sparki inhoudelijke analyse kan bieden.
+ */
+export const CYCLING_SPORT_TYPES = new Set<string>([
+  // canonical (normalizeSport output)
+  "cycling",
+  "mountainbike",
+  "gravel",
+  // raw strava / garmin
+  "ride",
+  "virtualride",
+  "ebikeride",
+  "handcycle",
+  "velomobile",
+  "indoorcycling",
+  "mountainbikeride",
+  "gravelride",
+  "road",
+  "track",
+]);
+
+/** Geeft true wanneer Sparki volledige fietsanalyse kan bieden voor dit type. */
+export function isCyclingType(t: string | undefined | null): boolean {
+  if (!t) return true; // lege/onbekende typen behandelen als fietsen (veilige standaard)
+  return CYCLING_SPORT_TYPES.has(t.toLowerCase());
+}
+
+/**
+ * Compacte Nederlandse toelichting voor niet-fietsactiviteiten.
+ * Compact gehouden zodat het past naast de bestaande rij-UI.
+ */
+export function unsupportedSportNote(t: string | undefined | null): string {
+  const key = (t ?? "").toLowerCase();
+  if (key === "running" || key === "run" || key === "trailrun" || key === "virtualrun" || key === "treadmill")
+    return "Hardlopen — uitgebreide analyse nog niet beschikbaar";
+  if (key === "hiking" || key === "hike" || key === "walk" || key === "walking")
+    return "Wandeling — geregistreerde activiteit";
+  if (key === "swimming" || key === "swim" || key === "openwaterswim")
+    return "Zwemmen — geregistreerde activiteit";
+  return `${typeLabel(t)} — geregistreerde activiteit`;
+}
 
 export const SOURCE_LABELS: Record<string, string> = {
   manual: "Handmatig",
@@ -90,6 +169,12 @@ export function calculateSummary(sessions: TrainingSession[]): Summary {
   return { count: sessions.length, durationMin, distanceKm };
 }
 
+/**
+ * "_cycling" is een intern pseudo-filter dat alle fietsactiviteitstypen dekt.
+ * Gebruik dit als waarde voor `typeFilter` wanneer de gebruiker op "Fietsen" drukt.
+ */
+export const FILTER_CYCLING = "_cycling" as const;
+
 export function filterSessions(
   sessions: TrainingSession[],
   q: string,
@@ -98,7 +183,11 @@ export function filterSessions(
 ): TrainingSession[] {
   const needle = q.trim().toLowerCase();
   return sessions.filter((s) => {
-    if (typeFilter && s.type.toLowerCase() !== typeFilter) return false;
+    if (typeFilter === FILTER_CYCLING) {
+      if (!isCyclingType(s.type)) return false;
+    } else if (typeFilter) {
+      if (s.type.toLowerCase() !== typeFilter) return false;
+    }
     if (monthFilter && monthKey(s.sessionDate) !== monthFilter) return false;
     if (needle) {
       const hay = [s.title ?? "", typeLabel(s.type), sourceLabel(s.source)]

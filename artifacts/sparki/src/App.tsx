@@ -654,8 +654,11 @@ function AppRouter() {
                 <Route path="/feed">
                   <ProtectedPage component={FeedPage} />
                 </Route>
-                <Route path="/lab">
+                <Route path="/analyse">
                   <ProtectedPage component={AnalyseSwitchPage} />
+                </Route>
+                <Route path="/lab">
+                  <Redirect to="/analyse" />
                 </Route>
                 <Route path="/activiteiten">
                   <ProtectedPage component={ActiviteitenSwitchPage} />

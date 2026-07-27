@@ -39,6 +39,7 @@ import {
   type Ontwikkelprioriteit,
 } from "@/lib/core-profile"
 import { missingTargets, type InputTargetKey } from "@/lib/missing-input"
+import { safeSignalLabel } from "@/lib/commercial-shell"
 import {
   Settings,
   X,
@@ -694,7 +695,7 @@ export default function YouPage() {
                       Nog niet alles is in beeld
                     </p>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">
-                      Voor je huidige beeld ontbreekt nog: {stateMissing.join(", ")}. Daardoor is
+                      Voor je huidige beeld ontbreekt nog: {stateMissing.map(safeSignalLabel).join(", ")}. Daardoor is
                       de inschatting voorzichtiger dan ze kan zijn.
                     </p>
                   </div>

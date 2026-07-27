@@ -72,7 +72,7 @@ export function DsMobileNav({
               type="button"
               onClick={() => onNavigeer?.(item.href)}
               aria-current={actief ? "page" : undefined}
-              className="flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg py-1 transition-colors"
+              className="flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-1 overflow-hidden rounded-lg py-1 transition-colors"
             >
               <span className="relative">
                 <Icon

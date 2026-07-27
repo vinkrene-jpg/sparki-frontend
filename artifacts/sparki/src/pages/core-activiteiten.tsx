@@ -20,6 +20,9 @@ import {
   filterSessions,
   groupSessionsByMonth,
   sessionMetricsText,
+  isCyclingType,
+  unsupportedSportNote,
+  FILTER_CYCLING,
 } from "@/lib/core-activiteiten";
 import { DsCard, DsCardTitel, DsState, IconChevron } from "@/components/ds";
 
@@ -47,14 +50,12 @@ export default function CoreActiviteitenPage() {
   const sessionsTrusted = sessionsIsError ? undefined : sessions;
   const loadTrusted = loadIsError ? undefined : load;
 
-  const typeOptions = useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const s of sessionsTrusted ?? []) {
-      const key = s.type.toLowerCase();
-      if (!seen.has(key)) seen.set(key, typeLabel(s.type));
-    }
-    return [...seen.entries()].map(([key, label]) => ({ key, label }));
-  }, [sessionsTrusted]);
+  // Release-1: alleen Alles + Fietsen als filteropties.
+  // Niet-fietsactiviteiten blijven zichtbaar onder Alles maar krijgen geen eigen knop.
+  const hasCyclingActivities = useMemo(
+    () => (sessionsTrusted ?? []).some((s) => isCyclingType(s.type)),
+    [sessionsTrusted],
+  );
 
   const monthOptions = useMemo(() => {
     const keys = new Set<string>();
@@ -235,7 +236,9 @@ export default function CoreActiviteitenPage() {
               ))}
             </select>
           </div>
-          {typeOptions.length > 1 && (
+          {/* Release-1 filters: Alles + Fietsen. Wandelen/Hardlopen/etc. krijgen
+              pas een eigen filter als multisport expliciet is geactiveerd. */}
+          {hasCyclingActivities && (
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
@@ -249,21 +252,20 @@ export default function CoreActiviteitenPage() {
               >
                 Alles
               </button>
-              {typeOptions.map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => setTypeFilter(typeFilter === t.key ? null : t.key)}
-                  className={cn(
-                    "type-action min-h-11 rounded-control border px-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60",
-                    typeFilter === t.key
-                      ? "border-accent-cyan/30 bg-accent-cyan/10 text-accent-cyan"
-                      : "border-border bg-surface text-content-secondary hover:text-white/90"
-                  )}
-                >
-                  {t.label}
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() =>
+                  setTypeFilter(typeFilter === FILTER_CYCLING ? null : FILTER_CYCLING)
+                }
+                className={cn(
+                  "type-action min-h-11 rounded-control border px-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60",
+                  typeFilter === FILTER_CYCLING
+                    ? "border-accent-cyan/30 bg-accent-cyan/10 text-accent-cyan"
+                    : "border-border bg-surface text-content-secondary hover:text-white/90"
+                )}
+              >
+                Fietsen
+              </button>
             </div>
           )}
         </section>
@@ -330,6 +332,12 @@ function ActivityRow({
           {session.title?.trim() && (
             <p className="type-body-sm mt-0.5 truncate text-content-secondary">
               {typeLabel(session.type)}
+            </p>
+          )}
+          {/* Niet-fietsactiviteiten: eerlijk aangeven dat analyse beperkt is. */}
+          {!isCyclingType(session.type) && (
+            <p className="type-body-sm mt-0.5 text-content-tertiary">
+              {unsupportedSportNote(session.type)}
             </p>
           )}
         </div>

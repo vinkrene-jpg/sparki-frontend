@@ -12,6 +12,7 @@ import {
   type CoachScenarioKey,
 } from "@/lib/coach-engine"
 import TrainPage from "@/pages/train"
+import CorePlanPage from "@/pages/core-plan"
 import JourneyPage from "@/pages/journey"
 import SprintenPage from "@/pages/sprinten"
 import SupportPage from "@/pages/support"
@@ -37,7 +38,7 @@ import CoachAthletePlanPage from "@/pages/coach-athlete-plan"
 import CoachCockpitPage from "@/pages/coach-cockpit"
 import LandingPage from "@/pages/landing"
 import StartPage from "@/pages/start"
-import MeerPage from "@/pages/meer"
+import MeerPage from "@/pages/core-meer"
 import SparkiConnectPage from "@/pages/sparki-connect"
 import ClubPage from "@/pages/club"
 import PaspoortPage from "@/pages/paspoort"
@@ -417,7 +418,8 @@ export function DevPreview() {
   } else if (location.startsWith("/paspoort")) {
     page = <PaspoortPage />
   } else if (location.startsWith("/train")) {
-    page = <TrainPage />
+    page = <CorePlanPage />
+    showNav = false
   } else if (location.startsWith("/feed")) {
     page = <FeedPage />
     showNav = false

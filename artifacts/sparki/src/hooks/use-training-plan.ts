@@ -17,6 +17,23 @@ function dateStr(d: Date): string {
   return d.toISOString().split("T")[0]!;
 }
 
+/** Fetch planned workouts for an arbitrary [from, to] date window. */
+export function usePlanRange(from: string, to: string) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: queryKeys.athlete.plan(from, to),
+    queryFn: () =>
+      apiFetch<PlannedWorkout[]>(
+        `/api/athlete/workouts?from=${from}&to=${to}`,
+      ),
+    enabled:
+      (isSignedIn === true || DEV_PREVIEW) &&
+      from.length === 10 &&
+      to.length === 10,
+    staleTime: STALE.session,
+  });
+}
+
 /** A multi-week window of planned workouts (default: today → +21 days). */
 export function usePlanWindow(weeks = 3) {
   const { isSignedIn } = useUser();

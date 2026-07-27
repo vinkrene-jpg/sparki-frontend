@@ -7,7 +7,7 @@
 // node 15:6) levert deze module ook de vertaling naar ds-componenten:
 // bandStatusSoort (DsStatus) en buildWeekDays (DsWeek).
 
-import type { WorkoutBlock, WorkoutPhase } from "@/lib/athlete-types"
+import type { WorkoutBlock, WorkoutBlockKind, WorkoutPhase } from "@/lib/athlete-types"
 import { isRestWorkout } from "@/lib/day-type"
 
 // ── Navigatie ────────────────────────────────────────────────────────────────
@@ -27,6 +27,7 @@ export const COMMERCIAL_DESKTOP_NAV: CommercialNavItem[] = [
   { href: "/train", label: "Plan" },
   { href: "/routes", label: "Rijden" },
   { href: "/activiteiten", label: "Activiteiten" },
+  { href: "/analyse", label: "Analyse" },
   { href: "/feed", label: "Ontdekken" },
 ]
 
@@ -43,6 +44,131 @@ const BAND_LABELS: Record<string, string> = {
   solide: "Solide",
   wisselend: "Wisselend",
   kwetsbaar: "Kwetsbaar",
+}
+
+// ── Herstel-presentatielaag ──────────────────────────────────────────────────
+// Centrale vertaling van technische API-sleutels naar gewone Nederlandse termen.
+// Technische namen mogen NOOIT direct in de UI terechtkomen — vertaal altijd
+// via safeSignalLabel(). Nieuwe signaalsoorten hier toevoegen, nergens anders.
+// Lokale duplicaten in andere components zijn verboden.
+const MISSING_SIGNAL_LABELS: Record<string, string> = {
+  training_load: "recente trainingsbelasting",
+  readiness: "herstelbeoordeling",
+  hrv_trend: "trend in hartslagvariatie",
+  resting_hr_trend: "trend in rusthartslag",
+  sleep: "slaap",
+  subjective_feel: "hoe je je voelt",
+  power_dev: "vermogensontwikkeling",
+  feedback: "feedback na trainingen",
+  health: "gezondheid",
+  race_calendar: "aankomende wedstrijden",
+  nutrition: "voeding",
+  weather: "weersomstandigheden",
+}
+
+/**
+ * Veilige vertaalfunctie voor API-signaalsleutels — de enige toegestane weg
+ * van ruwe engine-sleutel naar UI-tekst. Onbekende sleutels worden NOOIT
+ * letterlijk getoond; ze vallen terug op een generieke Nederlandse tekst.
+ * Gebruik deze functie overal; nooit een lokale ?? key / ?? m fallback.
+ */
+export function safeSignalLabel(k: string): string {
+  const known = MISSING_SIGNAL_LABELS[k]
+  if (known) return known
+  if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
+    console.warn(`[Sparki] onbekende signaalsleutel in presentatie: "${k}"`)
+  }
+  return "aanvullende gegevens ontbreken"
+}
+
+// Kernmissende signalen in volgorde van dagelijkse relevantie.
+const MISSING_CORE_PRIORITY = [
+  "training_load",
+  "sleep",
+  "hrv_trend",
+  "subjective_feel",
+  "resting_hr_trend",
+]
+
+// Geeft de ontbrekende sleutels terug als Nederlandse termen die de gebruiker
+// te zien krijgt. Als bijna alles ontbreekt (>= 8 van de 11 signalen) geeft
+// dit een lege array terug — de aanroeper toont dan één compacte zin.
+// Gebruikt safeSignalLabel: nooit een ruwe API-sleutel in de output.
+export function relevantMissingLabels(keys: string[]): string[] {
+  if (keys.length >= 8) return []
+  const core = keys.filter((k) => MISSING_CORE_PRIORITY.includes(k)).slice(0, 4)
+  if (core.length > 0) return core.map(safeSignalLabel)
+  return keys.slice(0, 4).map(safeSignalLabel)
+}
+
+// Presentatieconfiguratiedrempels — uitsluitend voor toon en formulering van de
+// herstelstatus in de UI. NIET voor engine-beslissingen, planadaptatie of
+// medische logica.
+//
+// HERSTEL_CONF_MED (0.35) sluit aan op de "weinig data"→"genoeg data" grens in
+// computeConfidence() in api-server/src/engines/state/compute.ts. Elke aanpassing
+// hier moet ook daar worden gecontroleerd en omgekeerd.
+//
+// HERSTEL_CONF_LOW (0.10) is een aanvullende presentatielaag: bij nul signalen
+// én een zeer lage confidence laat je de band geheel achterwege. Dit is een lokale
+// presentatiebeslissing die NIET in de engine staat.
+const HERSTEL_CONF_LOW = 0.1 // presentatie-only; zie commentaar hierboven
+const HERSTEL_CONF_MED = 0.35 // presentatie-only; synchroon houden met engine
+
+// Confidence-bewuste presentatie van de herstelstatus.
+// De band van de engine is leidend; de confidence bepaalt of we die band
+// stellig tonen of eerlijk moeten nuanceren.
+//
+// Drempelwaarden:
+//   < HERSTEL_CONF_LOW en geen signalen → "Beperkte beoordeling" (neutraal)
+//   HERSTEL_CONF_LOW – HERSTEL_CONF_MED → "Waarschijnlijk [band] — lage zekerheid"
+//   ≥ HERSTEL_CONF_MED                  → normaal bandlabel + DsStatus-soort
+export type HerstelPresentatie = {
+  label: string
+  soort: "positief" | "waarschuwing" | "fout" | "neutraal"
+  toelichting: string | null
+}
+
+export function buildHerstelPresentatie(
+  band: string | null | undefined,
+  confidence: number,
+  whyCount: number,
+): HerstelPresentatie {
+  if (!band) {
+    return {
+      label: "Geen beoordeling beschikbaar",
+      soort: "neutraal",
+      toelichting: null,
+    }
+  }
+
+  if (confidence < HERSTEL_CONF_LOW && whyCount === 0) {
+    return {
+      label: "Beperkte beoordeling",
+      soort: "neutraal",
+      toelichting:
+        "Er is nog te weinig informatie om je herstel voor vandaag betrouwbaar te beoordelen.",
+    }
+  }
+
+  if (confidence < HERSTEL_CONF_MED) {
+    const base = BAND_LABELS[band] ?? band
+    const soort: HerstelPresentatie["soort"] =
+      band === "belastbaar" || band === "solide"
+        ? "neutraal"
+        : (bandStatusSoort(band) ?? "neutraal")
+    return {
+      label: `Waarschijnlijk ${base.toLowerCase()} — lage zekerheid`,
+      soort,
+      toelichting: "Beoordeling is gebaseerd op beperkte gegevens.",
+    }
+  }
+
+  return {
+    label: bandLabel(band) ?? band,
+    soort: bandStatusSoort(band) ?? "neutraal",
+    toelichting: null,
+  }
 }
 
 export function bandLabel(band: string | null | undefined): string | null {
@@ -231,7 +357,19 @@ export function buildWeekDays(
 
 // ── Blokvisualisatie van de training ─────────────────────────────────────────
 // Breedte ∝ echte blokduur; het zwaarste blok (hoogste zone) krijgt het accent.
-export type BlockBar = { key: string; flex: number; accent: boolean }
+// Alle velden komen uit de echte WorkoutBlock — geen verzonnen of geschatte waarden.
+export type BlockBar = {
+  key: string
+  flex: number
+  accent: boolean
+  label: string
+  zone: number
+  durationMin: number
+  kind: WorkoutBlockKind
+  reps: number
+  totalMin: number
+  targetPctFtp: number | null
+}
 
 export function buildBlockBars(
   blocks: ReadonlyArray<WorkoutBlock> | null | undefined,
@@ -242,10 +380,19 @@ export function buildBlockBars(
   return blocks.map((b, i) => {
     const accent = !accentUsed && b.zone === maxZone
     if (accent) accentUsed = true
+    const reps = b.reps ?? 1
+    const totalMin = b.durationMin * reps
     return {
       key: `${i}-${b.kind}`,
-      flex: Math.max(b.durationMin * (b.reps ?? 1), 1),
+      flex: Math.max(totalMin, 1),
       accent,
+      label: b.label,
+      zone: b.zone,
+      durationMin: b.durationMin,
+      kind: b.kind,
+      reps,
+      totalMin,
+      targetPctFtp: b.targetPctFtp,
     }
   })
 }

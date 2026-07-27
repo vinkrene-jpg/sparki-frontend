@@ -206,6 +206,43 @@ export function useSaveRideAsRoute() {
   });
 }
 
+// ── Route enrichment polling ─────────────────────────────────────────────────
+// After receiving a generated candidate the server has started computing the
+// AI-phrased rationale and road-objects data in the background. Poll this
+// endpoint to receive the enriched copy; update the candidate once ready.
+
+export type RouteEnrichment = {
+  ready: boolean;
+  failed?: boolean;
+  rationale?: string;
+  roadObjects?: {
+    counts: Record<string, number>;
+    signalsPerKm: number | null;
+    estimatedTimeLossSec: number | null;
+  } | null;
+};
+
+export function useEnrichRoute(candidateId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["routes", "enrich", candidateId],
+    queryFn: () =>
+      apiFetch<RouteEnrichment>(
+        `/api/routes/candidate/${candidateId}/enrich`,
+      ),
+    enabled: typeof candidateId === "string" && candidateId.length > 0,
+    // Poll every 3 s until enrichment is ready or failed, then stop.
+    refetchInterval: (query) => {
+      const d = query.state.data;
+      if (!d) return 3000;
+      if (d.ready || d.failed) return false;
+      return 3000;
+    },
+    staleTime: 0,
+    gcTime: 30 * 60 * 1000,
+    retry: 1,
+  });
+}
+
 // Propose an ORS-backed route WITHOUT saving it. Returns the candidate.
 export function useGenerateRoute() {
   return useMutation({

@@ -52,6 +52,7 @@ import {
   buildTcx,
   putCandidate,
   getCandidate,
+  updateCandidateRationale,
   getRoutingProvider,
   generateVariedLoop,
   selectRoutingProfile,
@@ -261,7 +262,8 @@ function candidateEnvironmentOf(wantsNature: boolean) {
 // integration to phrase it, but NEVER to invent geometry — only the real,
 // ORS-derived numbers are passed in. Falls back to a deterministic template if
 // the AI call fails. The honesty caveat is always appended server-side.
-async function buildRationale(input: {
+// Shared input type for both buildRationaleA (AI) and buildRationaleFallback (deterministic).
+type RationaleInput = {
   trainingType: string;
   profile: RoutingProfile;
   mode: "loop" | "ptp" | "waypoints";
@@ -280,7 +282,30 @@ async function buildRationale(input: {
     railwayCrossings?: number | null;
     estimatedTimeLossSec?: number | null;
   } | null;
-}): Promise<string> {
+};
+
+// Deterministic rationale — instant, no external calls. Used as the immediate
+// response until the AI-enrichment background job finishes.
+function buildRationaleFallback(input: RationaleInput): string {
+  const label = activityLabel(input.profile);
+  const shape =
+    input.mode === "loop"
+      ? `een lus${input.startName ? ` vanuit ${input.startName}` : ""}`
+      : input.mode === "waypoints"
+        ? `een zelf uitgestippelde route${input.startName ? ` vanuit ${input.startName}` : ""}`
+        : `een route${input.startName ? ` van ${input.startName}` : ""}${input.endName ? ` naar ${input.endName}` : ""}`;
+  const parts: string[] = [];
+  if (input.distanceKm != null) parts.push(`${Math.round(input.distanceKm)} km`);
+  if (input.durationSec != null)
+    parts.push(`±${Math.round(input.durationSec / 60)} min`);
+  if (input.elevationGainM != null)
+    parts.push(`±${Math.round(input.elevationGainM)} hm`);
+  if (input.climbCount > 0) parts.push(`${input.climbCount} klim(men)`);
+  const facts = parts.join(", ");
+  return `Deze ${shape} van ${facts || "de gevraagde afstand"} past bij een ${input.trainingType} (${label}).`;
+}
+
+async function buildRationale(input: RationaleInput): Promise<string> {
   const label = activityLabel(input.profile);
   const shape =
     input.mode === "loop"
@@ -301,7 +326,7 @@ async function buildRationale(input: {
     .filter(Boolean)
     .join(", ");
 
-  const fallback = `Deze ${shape} van ${facts || "de gevraagde afstand"} past bij een ${input.trainingType} (${label}).`;
+  const fallback = buildRationaleFallback(input);
 
   // What the routegenerator can actually steer on. Free-text wishes about
   // afstand/hoogte/ondergrond can be honoured; specific roads, plaatsen or
@@ -367,6 +392,112 @@ async function buildRationale(input: {
 // ── Golf 19: bibliotheek, delen & privacy ──────────────────────────────────
 
 type RouteRow = typeof routesTable.$inferSelect;
+
+// ── Async route enrichment ───────────────────────────────────────────────────
+// Every generated route is returned IMMEDIATELY with a deterministic fallback
+// rationale so the rider sees geometry within ≤3 s. The AI-phrased rationale and
+// road-objects data are computed in the background. The client polls
+// GET /candidate/:id/enrich to receive the enriched copy.
+
+type EnrichmentEntry = {
+  clerkId: string;
+  pending: boolean;
+  result?: {
+    rationale: string;
+    roadObjects: {
+      counts: Record<string, number>;
+      signalsPerKm: number | null;
+      estimatedTimeLossSec: number | null;
+    } | null;
+  };
+  error?: boolean;
+  at: number;
+};
+
+const ENRICHMENT = new Map<string, EnrichmentEntry>();
+const ENRICHMENT_TTL_MS = 30 * 60_000;
+
+function evictEnrichment(): void {
+  const now = Date.now();
+  for (const [id, e] of ENRICHMENT) {
+    if (now - e.at > ENRICHMENT_TTL_MS) ENRICHMENT.delete(id);
+  }
+}
+
+// Fire background enrichment for a freshly generated candidate. Never throws.
+function scheduleEnrichment(
+  candidateId: string,
+  clerkId: string,
+  rationaleInput: RationaleInput,
+  routePath: [number, number][],
+  hasNature: boolean,
+): void {
+  evictEnrichment();
+  ENRICHMENT.set(candidateId, { clerkId, pending: true, at: Date.now() });
+
+  const _t0 = performance.now();
+  // Phase 1: road objects + optional environment (parallel)
+  Promise.all([
+    hasNature
+      ? getRouteEnvironment(routePath).catch(() => null)
+      : Promise.resolve(null),
+    getRoadObjectsAlongRoute(routePath).catch(() => null),
+  ])
+    .then(([envRaw, roadObjects]) => {
+      const environment =
+        envRaw || roadObjects
+          ? {
+              trafficLights:
+                roadObjects?.counts["traffic_signal"] ??
+                envRaw?.trafficLights ??
+                null,
+              forestSharePct: envRaw?.forestSharePct ?? null,
+              speedBumps: roadObjects?.counts["speed_bump"] ?? null,
+              roundabouts: roadObjects?.counts["roundabout"] ?? null,
+              railwayCrossings: roadObjects?.counts["railway_crossing"] ?? null,
+              estimatedTimeLossSec: roadObjects?.estimatedTimeLossSec ?? null,
+            }
+          : null;
+      // Phase 2: AI rationale using real environment data
+      return Promise.all([
+        buildRationale({ ...rationaleInput, environment }),
+        Promise.resolve(roadObjects),
+      ]);
+    })
+    .then(([rationale, roadObjects]) => {
+      console.log(
+        `[PERF] enrich.done cid=${candidateId.slice(0, 8)} ms=${Math.round(performance.now() - _t0)}`,
+      );
+      updateCandidateRationale(candidateId, clerkId, rationale);
+      ENRICHMENT.set(candidateId, {
+        clerkId,
+        pending: false,
+        result: {
+          rationale,
+          roadObjects: roadObjects
+            ? {
+                counts: roadObjects.counts,
+                signalsPerKm: roadObjects.signalsPerKm,
+                estimatedTimeLossSec: roadObjects.estimatedTimeLossSec,
+              }
+            : null,
+        },
+        at: Date.now(),
+      });
+    })
+    .catch((err) => {
+      console.error(
+        `[PERF] enrich.error cid=${candidateId.slice(0, 8)}`,
+        err instanceof Error ? err.message : String(err),
+      );
+      ENRICHMENT.set(candidateId, {
+        clerkId,
+        pending: false,
+        error: true,
+        at: Date.now(),
+      });
+    });
+}
 
 // Huisadres van de eigenaar (voor de privacyzone bij delen). Null = onbekend;
 // applyLocationPrivacy valt dan fail-closed terug op start/einde verbergen.
@@ -1839,6 +1970,37 @@ router.get("/candidate/:candidateId/gpx", requireAuth, async (req, res) => {
   res.send(gpx);
 });
 
+// GET /api/routes/candidate/:candidateId/enrich — poll for async AI enrichment
+// (AI-phrased rationale + road-objects data). Returns immediately:
+//   { ready: false }                    — enrichment still running
+//   { ready: false, failed: true }      — enrichment failed (use fallback)
+//   { ready: true, rationale, roadObjects } — enrichment complete
+router.get("/candidate/:candidateId/enrich", requireAuth, (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const candidateId = String(req.params.candidateId);
+
+  // Ownership check — also validates the candidate hasn't expired.
+  const stored = getCandidate(candidateId, clerkId);
+  if (!stored) {
+    res.status(410).json({
+      error: "Routevoorstel verlopen of niet gevonden — genereer de route opnieuw.",
+    });
+    return;
+  }
+
+  const entry = ENRICHMENT.get(candidateId);
+  if (!entry || entry.pending) {
+    res.json({ ready: false });
+    return;
+  }
+  if (entry.error || !entry.result) {
+    res.json({ ready: false, failed: true });
+    return;
+  }
+
+  res.json({ ready: true, ...entry.result });
+});
+
 // GET /api/routes/candidate/:candidateId/tcx — download a not-yet-saved
 // generated proposal as a TCX Course file. Serialized from the server-trusted
 // candidate store (same honesty guarantee as saving), so the export uses real
@@ -1942,6 +2104,16 @@ async function buildLoopCandidate(
         avoidTrafficLights: true,
       }
     : wishScenery;
+
+  // Fire reverseGeocode CONCURRENTLY with ORS loop generation — geocoding (~750 ms)
+  // is now hidden behind the longer ORS call (~1800 ms). When the caller already
+  // resolved startName (options endpoint), this resolves instantly from the cache.
+  const startNamePromise: Promise<string | null> =
+    ctx.startName != null
+      ? Promise.resolve(ctx.startName)
+      : ctx.provider.reverseGeocode(ctx.start).catch(() => null);
+
+  const _t_loop0 = performance.now();
   const routeResult = await generateVariedLoop(
     ctx.provider,
     {
@@ -1961,31 +2133,10 @@ async function buildLoopCandidate(
       targetAscentM: ctx.targetElevationGainM ?? null,
     },
   );
+  console.log(`[PERF] buildLoopCandidate.generateVariedLoop ms=${Math.round(performance.now()-_t_loop0)}`);
 
-  // Meet de gekozen route na: wegobjecten komen altijd uit de eigen database
-  // (30-min cache — de selector heeft ze vaak al opgehaald); het bos-aandeel
-  // alleen bij een natuurwens (aparte Overpass-call). Honest null bij een
-  // stille bron — de uitleg noemt dan simpelweg geen omgevingscijfers.
-  const [envRaw, roadObjects] = await Promise.all([
-    scenery?.nature
-      ? getRouteEnvironment(routeResult.path).catch(() => null)
-      : Promise.resolve(null),
-    getRoadObjectsAlongRoute(routeResult.path).catch(() => null),
-  ]);
-  const environment =
-    envRaw || roadObjects
-      ? {
-          trafficLights:
-            roadObjects?.counts["traffic_signal"] ??
-            envRaw?.trafficLights ??
-            null,
-          forestSharePct: envRaw?.forestSharePct ?? null,
-          speedBumps: roadObjects?.counts["speed_bump"] ?? null,
-          roundabouts: roadObjects?.counts["roundabout"] ?? null,
-          railwayCrossings: roadObjects?.counts["railway_crossing"] ?? null,
-          estimatedTimeLossSec: roadObjects?.estimatedTimeLossSec ?? null,
-        }
-      : null;
+  // Geocoding runs concurrently with ORS, so it's usually already done here.
+  const startName = await startNamePromise;
 
   const summary = summarizeTrack(routeResult.points);
   const distanceKm = summary.distanceKm ?? routeResult.distanceKm;
@@ -1994,9 +2145,9 @@ async function buildLoopCandidate(
   const nav: RouteStep[] = routeResult.steps;
 
   const distLabel = distanceKm != null ? `${Math.round(distanceKm)} km` : "";
-  const name = `${ctx.workoutTrainingType}-lus${ctx.startName ? ` vanuit ${ctx.startName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`;
+  const name = `${ctx.workoutTrainingType}-lus${startName ? ` vanuit ${startName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`;
 
-  const rationale = await buildRationale({
+  const rationaleInput: RationaleInput = {
     trainingType: ctx.linkedWorkoutTitle
       ? `${ctx.workoutTrainingType} (${ctx.linkedWorkoutTitle})`
       : ctx.workoutTrainingType,
@@ -2006,11 +2157,14 @@ async function buildLoopCandidate(
     durationSec,
     elevationGainM,
     climbCount: summary.climbs.length,
-    startName: ctx.startName,
+    startName,
     endName: null,
     wish: ctx.wish,
-    environment,
-  });
+  };
+
+  // Immediate deterministic rationale — no external call, ≤1 ms.
+  // AI-phrased rationale (with road-objects context) arrives via GET /candidate/:id/enrich.
+  const rationale = buildRationaleFallback(rationaleInput);
 
   const candidateId = putCandidate({
     clerkId: ctx.clerkId,
@@ -2027,6 +2181,15 @@ async function buildLoopCandidate(
     rationale,
     plannedWorkoutId: ctx.plannedWorkoutId,
   });
+
+  // Fire background enrichment — does NOT block the response.
+  scheduleEnrichment(
+    candidateId,
+    ctx.clerkId,
+    rationaleInput,
+    routeResult.path,
+    scenery?.nature ?? false,
+  );
 
   return {
     candidateId,
@@ -2046,19 +2209,12 @@ async function buildLoopCandidate(
     geometry: routeResult.path,
     waypoints: [] as [number, number][],
     rationale,
-    startName: ctx.startName,
+    startName,
     endName: null,
     plannedWorkoutId: ctx.plannedWorkoutId,
     targetDistanceKm,
-    // Echte wegobjecten op de gekozen route (eigen database + OSM-sync);
-    // null wanneer de bron nu niet antwoordde — nooit verzonnen.
-    roadObjects: roadObjects
-      ? {
-          counts: roadObjects.counts,
-          signalsPerKm: roadObjects.signalsPerKm,
-          estimatedTimeLossSec: roadObjects.estimatedTimeLossSec,
-        }
-      : null,
+    // Road objects are delivered asynchronously via GET /candidate/:id/enrich.
+    roadObjects: null,
   };
 }
 
@@ -2260,10 +2416,8 @@ router.post("/generate", requireAuth, async (req, res) => {
     // Loop mode: build the candidate via the shared helper so the single-route
     // path and the 3-distance chooser (/generate/options) never drift.
     if (mode === "loop" && !viaLoop) {
-      const startName = await provider.reverseGeocode({
-        lat: startLat,
-        lon: startLon,
-      });
+      const _t_req0 = performance.now();
+      // reverseGeocode is fired INSIDE buildLoopCandidate, concurrent with ORS.
       const candidate = await buildLoopCandidate(
         {
           clerkId,
@@ -2278,18 +2432,21 @@ router.post("/generate", requireAuth, async (req, res) => {
           elevationPreference: elevationPreference ?? "any",
           seed,
           points: loopPointsFor(workoutTrainingType),
-          startName,
+          startName: null,
           plannedWorkoutId,
           wish,
           targetElevationGainM,
         },
         targetDistanceKm,
       );
+      console.log(`[PERF] generate.loop TOTAL ms=${Math.round(performance.now()-_t_req0)} distKm=${candidate.distanceKm?.toFixed(1)} mode=loop`);
       res.json({ candidate: { ...candidate, avoidReport } });
       return;
     }
 
     // Lus met via-punten: een echte wegroute start → via's → start.
+    const _t_ptpreq0 = performance.now();
+    const _t_ors0 = performance.now();
     const routeResult =
       mode === "waypoints"
         ? await provider.routeWaypoints({ points: waypoints, profile })
@@ -2307,6 +2464,7 @@ router.post("/generate", requireAuth, async (req, res) => {
               end: end!,
               profile,
             });
+    console.log(`[PERF] generate.ors mode=${mode} ms=${Math.round(performance.now()-_t_ors0)}`);
 
     const summary = summarizeTrack(routeResult.points);
     const distanceKm = summary.distanceKm ?? routeResult.distanceKm;
@@ -2335,7 +2493,7 @@ router.post("/generate", requireAuth, async (req, res) => {
           ? `Eigen route${startName ? ` vanuit ${startName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`
           : `${workoutTrainingType}-lus${startName ? ` vanuit ${startName}` : ""}${distLabel ? ` · ${distLabel}` : ""}`;
 
-    const rationale = await buildRationale({
+    const ptpRationaleInput: RationaleInput = {
       trainingType: linkedWorkoutTitle
         ? `${workoutTrainingType} (${linkedWorkoutTitle})`
         : workoutTrainingType,
@@ -2348,7 +2506,10 @@ router.post("/generate", requireAuth, async (req, res) => {
       startName,
       endName,
       wish,
-    });
+    };
+    // Deterministic fallback rationale — instant. AI-enrichment runs in background.
+    const rationale = buildRationaleFallback(ptpRationaleInput);
+    console.log(`[PERF] generate.ptp TOTAL ms=${Math.round(performance.now()-_t_ptpreq0)} mode=${mode}`);
 
     // Store the trusted candidate server-side and hand back an opaque id. Saving
     // (POST /) persists ONLY from this store — never from client-supplied data —
@@ -2372,6 +2533,15 @@ router.post("/generate", requireAuth, async (req, res) => {
       rationale,
       plannedWorkoutId,
     });
+
+    // Fire background enrichment (AI rationale + road objects). Never blocks.
+    scheduleEnrichment(
+      candidateId,
+      clerkId,
+      ptpRationaleInput,
+      routeResult.path,
+      false, // PTP/waypoints routes have no scenery steering
+    );
 
     res.json({
       candidate: {

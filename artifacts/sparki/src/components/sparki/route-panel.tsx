@@ -11,6 +11,7 @@ import {
   useGenerateRoute,
   useGenerateRouteOptions,
   useSaveGeneratedRoute,
+  useEnrichRoute,
   useDownloadRoute,
   useShareRoute,
   useRoutePace,
@@ -1421,6 +1422,8 @@ function RouteGenerator({
   const generate = useGenerateRoute()
   const genOptions = useGenerateRouteOptions()
   const save = useSaveGeneratedRoute()
+  // RequestId guard: prevents a slow in-flight request from overwriting a newer one.
+  const generateReqId = useRef(0)
   const {
     data: workouts,
     isError: workoutsError,
@@ -1479,6 +1482,15 @@ function RouteGenerator({
   // street-level zoom every time "Centreer op mij" is tapped.
   const [focusMe, setFocusMe] = useState(0)
   const [candidate, setCandidate] = useState<RouteCandidate | null>(null)
+  // Enrich: poll for AI-phrased rationale + road objects after first generation.
+  const enrich = useEnrichRoute(candidate?.candidateId)
+  // Update the candidate's rationale when the background enrichment completes.
+  useEffect(() => {
+    if (!enrich.data?.ready || !enrich.data.rationale) return
+    setCandidate((c) =>
+      c ? { ...c, rationale: enrich.data!.rationale! } : c,
+    )
+  }, [enrich.data?.ready, enrich.data?.rationale])
   // Interactief hoogteprofiel voor de voorgestelde route (kaartklik blijft in
   // de bouwer voor verzamelpunten — positie kiezen gaat hier via het profiel).
   const [candPosKm, setCandPosKm] = useState<number | null>(null)
@@ -1650,6 +1662,10 @@ function RouteGenerator({
       }
     }
     const distNum = parseInt(distance)
+    // Increment the request counter so an in-flight slow request can't overwrite
+    // a newer one when the user taps again before the first result arrives.
+    generateReqId.current += 1
+    const myReqId = generateReqId.current
     generate.mutate(
       {
         mode,
@@ -1670,7 +1686,10 @@ function RouteGenerator({
         wish: wish.trim() ? wish.trim() : undefined,
       },
       {
-        onSuccess: (data) => setCandidate(data.candidate),
+        onSuccess: (data) => {
+          if (generateReqId.current !== myReqId) return // stale response
+          setCandidate(data.candidate)
+        },
         onError: (e) =>
           setError(e instanceof Error ? e.message : "Routegeneratie mislukt"),
       },

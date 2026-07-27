@@ -54,6 +54,22 @@ export function putCandidate(
   return id;
 }
 
+// Update the rationale of a stored candidate once the async AI-enrichment
+// finishes. No-op when the candidate has already expired.
+export function updateCandidateRationale(
+  id: string,
+  clerkId: string,
+  rationale: string,
+): void {
+  const c = store.get(id);
+  if (!c || c.clerkId !== clerkId) return;
+  if (Date.now() - c.createdAt > TTL_MS) {
+    store.delete(id);
+    return;
+  }
+  store.set(id, { ...c, rationale });
+}
+
 // Look up a candidate by id, scoped to its owner. Returns null when missing,
 // expired, or owned by someone else. Does NOT delete (save may be retried).
 export function getCandidate(

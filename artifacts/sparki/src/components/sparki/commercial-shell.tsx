@@ -18,7 +18,7 @@
 //   6. maximaal één primaire actie (in de trainingskaart, 44px).
 // Mentale training komt op dit scherm niet voor (geen sterren-invuller).
 
-import type { ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import { Link, useLocation } from "wouter"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useSparkiState } from "@/hooks/use-sparki-state"
@@ -33,6 +33,7 @@ import {
   DsStatus,
   DsWeek,
   IconActiviteiten,
+  IconAnalyse,
   IconChevron,
   IconHome,
   IconMenu,
@@ -51,14 +52,18 @@ import {
   bandStatusSoort,
   buildBlockBars,
   buildCoachMessage,
+  buildHerstelPresentatie,
   buildSeasonView,
   buildWeekDays,
   derivePresentationState,
   formatDayHeader,
   localISODate,
   nearestUpcomingRace,
+  relevantMissingLabels,
   trainingPrimaryLabel,
   workoutPhaseLabel,
+  type BlockBar,
+  type HerstelPresentatie,
   type PresentationState,
 } from "@/lib/commercial-shell"
 
@@ -85,6 +90,7 @@ const MOBILE_NAV_ICONS: Record<string, LucideIcon> = {
   "/train": IconPlan,
   "/routes": IconRijden,
   "/activiteiten": IconActiviteiten,
+  "/analyse": IconAnalyse,
   "/meer": IconMenu,
 }
 
@@ -114,7 +120,11 @@ export function CommercialShell({
   const isActive = (href: string) => href === actief
 
   return (
-    <div className="min-h-dvh bg-app font-sans text-white">
+    // [overflow-x:clip] prevents page content from expanding the layout viewport,
+    // which would shift the fixed bottom nav rightward on narrow screens.
+    // clip (not hidden) avoids creating a scroll container so fixed children
+    // keep their viewport-relative positioning.
+    <div className="min-h-dvh bg-app font-sans text-white [overflow-x:clip]">
       {/* Desktop — vaste linkernav met accountknop onderin */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-border bg-app-deep/80 backdrop-blur lg:flex">
         <div className="type-wordmark px-6 pt-7">SPARKI</div>
@@ -307,6 +317,131 @@ function WeekSection() {
   )
 }
 
+// ── Zonekleuren voor de balkvisualisatie ─────────────────────────────────────
+// Identiek aan workout-detail-drawer.tsx — één referentiepalette.
+const BALK_ZONE_COLORS: Record<number, string> = {
+  1: "rgba(120,210,230,0.25)",
+  2: "rgba(120,210,230,0.45)",
+  3: "rgba(255,220,100,0.50)",
+  4: "rgba(120,210,230,0.95)",
+  5: "rgba(255,140,80,0.85)",
+  6: "rgba(255,80,80,0.80)",
+}
+const BALK_ZONE_FALLBACK = "rgba(120,210,230,0.40)"
+
+// ── BlockBalk — toegankelijke trainingsopbouwbalk ────────────────────────────
+// Segmenten: breedte ∝ echte duur, kleur + "Z{n}" tekst per zone (kleur is
+// nooit de enige informatiedrager). Tik/klik toont blokdetail; aria-live
+// zorgt dat schermlezers de detailpaneel aankondigen. Geen blokdata →
+// eerlijke melding, geen decoratieve balk.
+function BlockBalk({
+  bars,
+  totalTrainingMin,
+}: {
+  bars: BlockBar[]
+  totalTrainingMin: number | null
+}) {
+  const [activeIdx, setActiveIdx] = useState<number | null>(null)
+
+  if (bars.length === 0) {
+    return (
+      <p className="mt-4 text-[11px] leading-relaxed text-white/35">
+        Geen gedetailleerde trainingsopbouw beschikbaar
+      </p>
+    )
+  }
+
+  const totalBlockMin = bars.reduce((s, b) => s + b.totalMin, 0)
+  const displayMin = totalTrainingMin ?? totalBlockMin
+  const activeBar = activeIdx !== null ? bars[activeIdx] : null
+
+  return (
+    <div className="mt-4">
+      {/* Koptekst — altijd zichtbaar, geen interactie vereist */}
+      <div className="mb-2 flex items-center gap-2.5">
+        <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/45">
+          Opbouw training
+        </span>
+        <span className="font-mono text-[9px] tabular-nums text-white/30">
+          {displayMin} min
+        </span>
+      </div>
+
+      {/* Interactieve segmentbalk */}
+      <div
+        role="group"
+        aria-label="Trainingsopbouw per blok"
+        className="flex h-9 gap-1"
+      >
+        {bars.map((b, i) => {
+          const isActive = activeIdx === i
+          const bgColor = BALK_ZONE_COLORS[b.zone] ?? BALK_ZONE_FALLBACK
+          return (
+            <button
+              key={b.key}
+              type="button"
+              aria-label={`${b.label}, ${b.totalMin} minuten, zone ${b.zone}`}
+              aria-pressed={isActive}
+              onClick={() => setActiveIdx(isActive ? null : i)}
+              className={cn(
+                "relative flex min-w-[16px] items-center justify-center overflow-hidden rounded-md",
+                "text-[9px] font-bold tabular-nums text-white/75",
+                "transition-opacity focus-visible:outline-none focus-visible:ring-2",
+                "focus-visible:ring-white/60 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent",
+                isActive && "ring-2 ring-white/70",
+              )}
+              style={{
+                flexGrow: b.flex,
+                flexBasis: 0,
+                background: bgColor,
+                opacity: activeIdx !== null && !isActive ? 0.4 : 1,
+              }}
+            >
+              {/* Zonenummer zichtbaar in het segment — kleur nooit enige informatiedrager */}
+              <span aria-hidden="true" className="select-none">
+                Z{b.zone}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Compacte blokbenamingen — altijd zichtbaar, geen interactie vereist */}
+      <p className="mt-2 truncate text-[10px] leading-relaxed text-white/35">
+        {bars.map((b) => b.label).join(" · ")}
+      </p>
+
+      {/* Blokdetail na tik/klik/focus op een segment */}
+      {activeBar && (
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="mt-2.5 flex items-start justify-between gap-3 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 py-2.5"
+        >
+          <div>
+            <p className="text-[13px] font-medium leading-snug text-white/90">
+              {activeBar.label}
+            </p>
+            <div className="mt-0.5 flex flex-wrap gap-x-2.5 gap-y-0.5 text-[11px] text-white/45">
+              <span>Zone {activeBar.zone}</span>
+              {activeBar.reps > 1 && (
+                <span>×{activeBar.reps} herhalingen</span>
+              )}
+              {activeBar.targetPctFtp != null && (
+                <span>{activeBar.targetPctFtp}% FTP</span>
+              )}
+            </div>
+          </div>
+          <span className="shrink-0 font-mono text-[12px] tabular-nums text-white/55">
+            {activeBar.totalMin} min
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── 4 — Training van vandaag (+ 6: de ene primaire actie) ───────────────────
 function TrainingSection() {
   const { data, isLoading, isError, refetch } = useAthleteDashboard()
@@ -395,20 +530,7 @@ function TrainingSection() {
             {w.description}
           </p>
         )}
-        {bars.length > 0 && (
-          <div className="mt-4 flex h-9 gap-1.5" aria-hidden="true">
-            {bars.map((b) => (
-              <div
-                key={b.key}
-                className={cn(
-                  "rounded-md",
-                  b.accent ? "bg-accent-cyan" : "bg-control",
-                )}
-                style={{ flexGrow: b.flex, flexBasis: 0 }}
-              />
-            ))}
-          </div>
-        )}
+        <BlockBalk bars={bars} totalTrainingMin={w.targetDurationMin ?? null} />
         {/* 6 — maximaal één primaire actie op het hele scherm. */}
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           <DsButton
@@ -435,6 +557,12 @@ function TrainingSection() {
 // Bij een fout in de State-hook draagt de coachboodschap bovenin de ene
 // eerlijke foutmelding mét herstelactie; deze sectie verdwijnt dan volledig —
 // er worden nooit oude of verzonnen herstelwaarden getoond.
+//
+// Presentatieregels (data-trust):
+//   - Technische sleutels (training_load, hrv_trend, …) zijn nooit zichtbaar.
+//   - De status past altijd bij de confidence: bij weinig data géén stellig
+//     groen "Belastbaar" maar een eerlijke "Beperkte beoordeling".
+//   - Een API-fout levert géén fallbackstatus — de sectie verdwijnt.
 function HerstelSection() {
   const { data, isLoading, isError } = useSparkiState()
 
@@ -450,8 +578,16 @@ function HerstelSection() {
   }
   if (isError || !data) return null
 
-  const soort = bandStatusSoort(data.band)
-  const label = bandLabel(data.band)
+  const presentatie = buildHerstelPresentatie(
+    data.band,
+    data.confidence,
+    data.why.length,
+  )
+  // Ontbrekende sleutels vertaald naar gewone taal; bij bijna alle ontbrekend
+  // (>= 8) geeft relevantMissingLabels een lege array — dan tonen we één
+  // compacte zin in plaats van een lange lijst.
+  const missingLabels = relevantMissingLabels(data.missing)
+  const allesMissing = data.missing.length >= 8
 
   return (
     <section className="mt-8" aria-label={COMMERCIAL_COPY.herstelTitle}>
@@ -459,7 +595,25 @@ function HerstelSection() {
         {COMMERCIAL_COPY.herstelTitle}
       </h2>
       <DsCard className="mt-3">
-        {label && soort && <DsStatus status={soort}>{label}</DsStatus>}
+        {/* Status — altijd zichtbaar; soort en label zijn confidence-bewust */}
+        <DsStatus status={presentatie.soort} aria-label={`Herstelstatus: ${presentatie.label}`}>
+          {presentatie.label}
+        </DsStatus>
+
+        {/* Compacte toelichting bij lage zekerheid — direct zichtbaar, geen klik */}
+        {presentatie.toelichting && (
+          <p className="type-body mt-2 text-content-secondary">
+            {presentatie.toelichting}
+          </p>
+        )}
+        {presentatie.toelichting && allesMissing && (
+          <p className="type-body-sm mt-1 text-content-secondary">
+            Recente training, slaap of hoe je je voelt kan de beoordeling
+            verbeteren.
+          </p>
+        )}
+
+        {/* Uitklapbare onderbouwing — toetsenbordtoegankelijk via <details> */}
         <details className="group mt-3">
           <summary
             className={cn(
@@ -473,6 +627,8 @@ function HerstelSection() {
             />
             {COMMERCIAL_COPY.onderbouwing}
           </summary>
+
+          {/* Beschikbare signalen */}
           <ul className="mt-1 space-y-1.5">
             {data.why.map((w) => (
               <li key={w.kind} className="type-body">
@@ -486,11 +642,22 @@ function HerstelSection() {
               </li>
             )}
           </ul>
-          {data.missing.length > 0 && (
+
+          {/* Ontbrekende gegevens — in gewone taal, nooit als technische sleutels */}
+          {allesMissing ? (
             <p className="type-body mt-2 text-content-secondary">
-              Ontbreekt nog: {data.missing.join(", ")}
+              Er zijn nog geen meetgegevens beschikbaar. Log een training, voer
+              een check-in in of koppel een wearable om de beoordeling te
+              verbeteren.
             </p>
-          )}
+          ) : missingLabels.length > 0 ? (
+            <p className="type-body mt-2 text-content-secondary">
+              Ontbreekt nog:{" "}
+              {missingLabels.join(", ")}.
+            </p>
+          ) : null}
+
+          {/* Zekerheidsaanduiding */}
           <p className="type-body-sm mt-2 text-content-secondary">
             Zekerheid: {data.confidenceLabel}
           </p>

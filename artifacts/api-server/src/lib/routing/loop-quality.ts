@@ -208,6 +208,7 @@ export async function generateVariedLoop(
   const pool: { result: RouteResult; score: number }[] = [];
   let lastErr: unknown = null;
 
+  const _loopT0 = performance.now();
   for (let i = 0; i < n; i++) {
     // Distinct, deterministic-when-seeded variants: a large prime step keeps the
     // ORS round-trip seeds well separated so candidates differ meaningfully.
@@ -216,12 +217,15 @@ export async function generateVariedLoop(
         ? (req.seed + i * 7919) % 1_000_000
         : Math.floor(Math.random() * 1e6);
     let result: RouteResult;
+    const _candT0 = performance.now();
     try {
       result = await provider.generateLoop({ ...req, seed });
     } catch (err) {
       lastErr = err;
+      console.log(`[PERF] loop.candidate[${i}] FAILED ms=${Math.round(performance.now()-_candT0)}`);
       continue;
     }
+    console.log(`[PERF] loop.candidate[${i}] ok distKm=${result.distanceKm?.toFixed(1)} ms=${Math.round(performance.now()-_candT0)}`);
     const overlap = pathOverlapFraction(result.path);
     // Distance drift matters strongly: a "clean" loop that is 50% too long is a
     // worse answer than a slightly-repetitive one at the requested length.

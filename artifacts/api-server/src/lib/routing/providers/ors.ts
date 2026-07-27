@@ -135,15 +135,31 @@ export class OrsProvider implements RoutingProvider {
     profile: RoutingProfile,
     body: Record<string, unknown>,
   ): Promise<RouteResult> {
-    const res = await fetch(`${ORS_BASE}/v2/directions/${profile}/geojson`, {
-      method: "POST",
-      headers: {
-        Authorization: this.apiKey(),
-        "Content-Type": "application/json",
-        Accept: "application/geo+json",
-      },
-      body: JSON.stringify(body),
-    });
+    const _t0 = performance.now();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15_000);
+    let res: Response;
+    try {
+      res = await fetch(`${ORS_BASE}/v2/directions/${profile}/geojson`, {
+        method: "POST",
+        headers: {
+          Authorization: this.apiKey(),
+          "Content-Type": "application/json",
+          Accept: "application/geo+json",
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      clearTimeout(timeoutId);
+      const isAbort =
+        err instanceof Error &&
+        (err.name === "AbortError" || err.message.includes("abort"));
+      console.log(`[PERF] ors.directions profile=${profile} TIMEOUT/ERR ms=${Math.round(performance.now()-_t0)}`);
+      throw isAbort ? new Error("ORS-request time-out (>15s)") : err;
+    }
+    clearTimeout(timeoutId);
+    console.log(`[PERF] ors.directions profile=${profile} status=${res.status} ms=${Math.round(performance.now()-_t0)}`);
 
     const text = await res.text();
     let json: OrsGeoJson;

@@ -1,6 +1,6 @@
 import { Shield, LifeBuoy, Link2, Settings } from "lucide-react"
 import { useLocation } from "wouter"
-import { ScreenShell } from "@/components/sparki/screen-shell"
+import { CommercialShell } from "@/components/sparki/commercial-shell"
 import { ChapterGrid } from "@/components/sparki/chapter-grid"
 import { useUserProfile, type Role } from "@/contexts/UserContext"
 import { useClubMembership } from "@/hooks/use-club"
@@ -34,55 +34,58 @@ export default function MeerPage() {
         : ATHLETE_MEER_CHAPTERS
 
   return (
-    <ScreenShell section="meer" bare>
-      <h1 className="font-sans text-xl font-extralight text-white/90">Meer</h1>
-      <p className="mt-1 text-[13px] text-white/40">
-        Alle overige onderdelen van Sparki.
-      </p>
+    <CommercialShell actief="/meer">
+      <div className="mx-auto w-full max-w-2xl px-5 pb-10 pt-8 lg:max-w-3xl lg:px-10">
 
-      <div className="mt-4">
-        <ChapterGrid chapters={chapters} />
-      </div>
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-white">Meer</h1>
+          <p className="mt-1 type-body text-content-secondary">
+            Alle overige onderdelen van Sparki.
+          </p>
+        </header>
 
-      <div className="mt-6">
-        <div className="flex items-center gap-2">
-          <Settings className="h-4 w-4 text-white/45" strokeWidth={1.75} />
-          <h2 className="font-sans text-[15px] font-light text-white/80">
-            Instellingen
-          </h2>
-        </div>
-        <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
+        <section className="mb-8">
+          <ChapterGrid chapters={chapters} />
+        </section>
+
+        <section className="mb-6">
+          <div className="mb-3 flex items-center gap-2">
+            <Settings className="h-4 w-4 text-content-secondary" strokeWidth={1.75} />
+            <h2 className="type-title-card text-white/80">Instellingen</h2>
+          </div>
+          <div className="flex flex-wrap gap-2.5">
+            <button
+              type="button"
+              onClick={() => setLocation("/connect")}
+              className="flex items-center gap-2.5 rounded-full border border-border px-4 py-2 type-body-sm text-content-secondary transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
+            >
+              <Link2 className="h-4 w-4" strokeWidth={1.75} />
+              Sparki Connect — koppelingen &amp; import
+            </button>
+          </div>
+        </section>
+
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
-            onClick={() => setLocation("/connect")}
-            className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+            onClick={() => setLocation("/support")}
+            className="flex items-center gap-2.5 rounded-full border border-border px-4 py-2 type-body-sm text-content-secondary transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
           >
-            <Link2 className="h-4 w-4" strokeWidth={1.75} />
-            Sparki Connect — koppelingen &amp; import
+            <LifeBuoy className="h-4 w-4" strokeWidth={1.75} />
+            Hulp &amp; ondersteuning
           </button>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setLocation("/admin")}
+              className="flex items-center gap-2.5 rounded-full border border-border px-4 py-2 type-body-sm text-content-secondary transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
+            >
+              <Shield className="h-4 w-4" strokeWidth={1.75} />
+              Beheer
+            </button>
+          )}
         </div>
       </div>
-
-      <div className="mt-5 flex flex-wrap items-center gap-2.5">
-        <button
-          type="button"
-          onClick={() => setLocation("/support")}
-          className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
-        >
-          <LifeBuoy className="h-4 w-4" strokeWidth={1.75} />
-          Hulp &amp; ondersteuning
-        </button>
-        {isAdmin && (
-          <button
-            type="button"
-            onClick={() => setLocation("/admin")}
-            className="flex items-center gap-2.5 rounded-full border border-white/15 px-4 py-2 text-[13px] text-white/75 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
-          >
-            <Shield className="h-4 w-4" strokeWidth={1.75} />
-            Beheer
-          </button>
-        )}
-      </div>
-    </ScreenShell>
+    </CommercialShell>
   )
 }

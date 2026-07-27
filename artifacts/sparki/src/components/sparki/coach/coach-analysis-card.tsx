@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useLocation } from "wouter"
+import { safeSignalLabel } from "@/lib/commercial-shell"
 import { AnalysisFeedback } from "@/components/sparki/analysis-feedback"
 import {
   Activity,
@@ -28,23 +29,6 @@ import {
 
 export type CoachCardVariant = "hero" | "card"
 
-// Plain-Dutch labels for the engine's internal signal kinds (used when listing
-// which signals Sparki weighed and which were missing).
-const SIGNAL_LABEL: Record<string, string> = {
-  training_load: "Trainingsbelasting",
-  readiness: "Dagcheck-in",
-  hrv_trend: "HRV-trend",
-  resting_hr_trend: "Rusthartslag-trend",
-  sleep: "Slaap",
-  subjective_feel: "Hoe je je voelt",
-  power_dev: "Vermogensontwikkeling",
-  feedback: "Jouw feedback",
-  health: "Gezondheid",
-  race_calendar: "Wedstrijdkalender",
-  nutrition: "Voeding",
-  weather: "Weer",
-}
-
 const INTENSITY_LABEL: Record<string, string> = {
   rust: "Rust",
   herstel: "Herstel",
@@ -61,10 +45,6 @@ const ACTION_ROUTE: Record<CoachActionKind, string> = {
   nutrition: "/vandaag?focus=nutrition",
   add_race: "/races",
   check_gear: "/races",
-}
-
-function signalLabel(kind: string): string {
-  return SIGNAL_LABEL[kind] ?? kind
 }
 
 function ConfidencePill({ confidence }: { confidence: Confidence }) {
@@ -99,7 +79,7 @@ function SignalsTable({ signals }: { signals: IntakeSignal[] }) {
               className="border-b border-white/[0.06] last:border-0"
             >
               <td className="px-3 py-2 align-top text-[13px] text-white/55">
-                {signalLabel(s.kind)}
+                {safeSignalLabel(s.kind)}
               </td>
               <td className="px-3 py-2 text-right align-top font-mono text-[13px] tabular-nums text-white/90">
                 {s.value ?? "—"}
@@ -125,7 +105,7 @@ function MissingList({ kinds }: { kinds: string[] }) {
             key={k}
             className="rounded-full border border-amber-300/25 px-2 py-0.5 text-[11px] text-amber-100/70"
           >
-            {signalLabel(k)}
+            {safeSignalLabel(k)}
           </li>
         ))}
       </ul>

@@ -139,7 +139,7 @@ export function CorePredictionPanel({ workoutId }: { workoutId: number }) {
       <div className={`${cardClass} flex items-center gap-3`}>
         <Loader2 className="h-4 w-4 animate-spin text-white/40" />
         <span className="text-[12px] text-white/45">
-          Sparki voorspelt het effect…
+          Voorspelling wordt berekend…
         </span>
       </div>
     )
@@ -149,7 +149,7 @@ export function CorePredictionPanel({ workoutId }: { workoutId: number }) {
     return (
       <div className={cardClass}>
         <p className="text-[12px] leading-relaxed text-white/50">
-          Sparki kon de voorspelling nu niet maken. Probeer het zo opnieuw.
+          Voorspelling kon nu niet worden gemaakt. Probeer het zo opnieuw.
         </p>
       </div>
     )
@@ -267,7 +267,7 @@ export function CorePredictionPanel({ workoutId }: { workoutId: number }) {
           onClick={() => setShowFactors((v) => !v)}
           className="flex w-full items-center gap-1.5 font-mono text-[10px] tracking-[0.15em] text-white/40 transition-colors hover:text-white/65"
         >
-          WAAR SPARKI OP BASEERT ({prediction.factors.length})
+          ONDERBOUWING ({prediction.factors.length})
           <ChevronDown
             className={`h-3 w-3 transition-transform ${showFactors ? "rotate-180" : ""}`}
             strokeWidth={2}

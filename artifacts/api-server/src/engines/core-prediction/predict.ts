@@ -463,15 +463,17 @@ export function computePrediction(input: PredictInput): CorePrediction {
       ? `Deze training houdt je ${BAND_LABEL[endState.band]}`
       : `Deze training brengt je van ${BAND_LABEL[currentState.band]} naar ${BAND_LABEL[endState.band]}`;
 
-  const reboundPhrase =
+  // Terugveerzin als zelfstandige, volledige zin — niet als fragment aan het eind
+  // van een gecombineerde zin. Dit voorkomt visueel afgeknipte halve zinnen.
+  const reboundSentence =
     recoveryLoad.tsb > endLoad.tsb
-      ? `daarna veer je in ~${RECOVERY_DAYS} dagen rust terug naar ${BAND_LABEL[recoveryState.band]}`
-      : `na ~${RECOVERY_DAYS} dagen rust blijf je rond ${BAND_LABEL[recoveryState.band]}`;
+      ? `Na ~${RECOVERY_DAYS} dagen rust veer je terug naar ${BAND_LABEL[recoveryState.band]}.`
+      : `Na ~${RECOVERY_DAYS} dagen rust blijf je rond ${BAND_LABEL[recoveryState.band]}.`;
 
   const summary =
     `${tssBasis === "estimated" ? "Geschat uit de opbouw: deze" : "Deze"} training van ${tss} belastingspunten ` +
     `laat je vormbalans zakken van ${baseLoad.tsb >= 0 ? "+" : ""}${baseLoad.tsb} naar ${endLoad.tsb >= 0 ? "+" : ""}${endLoad.tsb}` +
-    ` (${tsbDrop > 0 ? `${tsbDrop} punten dieper in vermoeidheid` : "nauwelijks extra vermoeidheid"}); ${reboundPhrase}.`;
+    ` (${tsbDrop > 0 ? `${tsbDrop} punten dieper in vermoeidheid` : "nauwelijks extra vermoeidheid"}). ${reboundSentence}`;
 
   return {
     workoutId: workout.id,

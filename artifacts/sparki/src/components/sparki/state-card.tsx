@@ -10,6 +10,7 @@ import {
 } from "@/hooks/use-sparki-state"
 import { Skeleton } from "@/components/sparki/home-sections"
 import { UitlegDot } from "@/components/viz/uitleg"
+import { safeSignalLabel, buildHerstelPresentatie } from "@/lib/commercial-shell"
 
 // Generic State Engine consumer. It renders one honest Sparki toestand (the
 // living Core + status + coach action + check-in + the 2–3 "Waarom?" signals)
@@ -40,30 +41,6 @@ export type StateCardProps = {
    * it off so the card keeps its own in-card check-in.
    */
   hideCheckIn?: boolean
-}
-
-// Plain-Dutch labels for the honest "Sparki mist nog" gaps. Internal signal keys
-// stay English; only the rendered string is Dutch.
-const SIGNAL_LABEL_NL: Record<string, string> = {
-  training_load: "trainingsbelasting",
-  readiness: "check-in van vandaag",
-  hrv_trend: "HRV-trend",
-  resting_hr_trend: "rusthartslag",
-  sleep: "slaap",
-  subjective_feel: "hoe je je voelt",
-  power_dev: "vermogensontwikkeling",
-  feedback: "hoe je trainingen aanvoelden",
-  health: "gezondheid",
-  race_calendar: "wedstrijdkalender",
-  nutrition: "voeding",
-  weather: "weer",
-}
-
-const BAND_LABEL: Record<StateBand, string> = {
-  belastbaar: "Belastbaar",
-  solide: "Solide",
-  wisselend: "Wisselend",
-  kwetsbaar: "Kwetsbaar",
 }
 
 // Each band gets a calm accent within the Sparki cyan→warm language.
@@ -220,7 +197,7 @@ export function StateCard({
             className="font-mono text-[10px] uppercase tracking-[0.24em]"
             style={{ color: accent }}
           >
-            {BAND_LABEL[state.band]}
+            {buildHerstelPresentatie(state.band, state.confidence, state.why.length).label}
           </span>
           <span className="text-white/20">·</span>
           <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
@@ -331,7 +308,7 @@ export function StateCard({
                 <>
                   {" "}
                   Nog niet meegenomen:{" "}
-                  {state.missing.map((m) => SIGNAL_LABEL_NL[m] ?? m).join(", ")}.
+                  {state.missing.map(safeSignalLabel).join(", ")}.
                 </>
               )}
             </div>

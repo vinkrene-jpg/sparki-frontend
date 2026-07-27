@@ -6,18 +6,12 @@ import { ChapterGrid } from "@/components/sparki/chapter-grid"
 import { Bike3D } from "@/components/sparki/bike-3d"
 import { useUserProfile } from "@/contexts/UserContext"
 import { useSparkiState, type StateBand } from "@/hooks/use-sparki-state"
+import { buildHerstelPresentatie } from "@/lib/commercial-shell"
 import { useSessions } from "@/hooks/use-sessions"
 import { useCircleFeed } from "@/hooks/use-social"
 import { useClubMembership, useMyClubs } from "@/hooks/use-club"
 import { useGarage } from "@/hooks/use-garage"
 import { useBikeScanView, frameImageUrl } from "@/hooks/use-bike-scan"
-
-const BAND_LABEL: Record<StateBand, string> = {
-  belastbaar: "Belastbaar",
-  solide: "Solide",
-  wisselend: "Wisselend",
-  kwetsbaar: "Kwetsbaar",
-}
 
 const BAND_COLOR: Record<StateBand, string> = {
   belastbaar: "rgba(120,230,190,0.9)",
@@ -50,7 +44,7 @@ function StatusLine() {
         />
         <span className="min-w-0">
           <span className="block text-[14px] font-medium text-white/90">
-            {BAND_LABEL[state.band]}
+            {buildHerstelPresentatie(state.band, state.confidence, state.why.length).label}
             <span className="ml-2 text-[12px] font-normal text-white/45">
               {state.movement.label}
             </span>
