@@ -408,10 +408,10 @@ export function DevPreview() {
     page = <DevDesignSystemPage />
     showNav = false
   } else if (location.startsWith("/vandaag")) {
-    page = (
-      <DayHome devDayTypeOverride={dayType} devCoachOverride={devCoachOverride} />
-    )
-    isHome = true
+    // commercial_shell is globally enabled — dev preview follows the same
+    // flag-respecting path as VandaagPage in the real router.
+    page = <CommercialToday />
+    showNav = false
   } else if (location.startsWith("/club")) {
     page = <ClubPage />
   } else if (location.startsWith("/paspoort")) {

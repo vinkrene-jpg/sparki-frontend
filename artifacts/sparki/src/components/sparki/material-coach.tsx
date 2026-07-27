@@ -472,9 +472,8 @@ export function MaterialCoach({
     <section>
       <SectionLabel n={n} title="Materiaalcoach" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
-        Soms zegt een foto meer dan woorden. Kies een onderwerp, laat het zien en
-        Sparki beoordeelt het eerlijk — met advies en, bij materiaal, een
-        kosteninschatting.
+        Kies een onderwerp en upload een foto. Je krijgt een analyse van de staat
+        en aandachtspunten — bij materiaal ook een kosteninschatting.
       </p>
 
       {!hideNudge && !selected && !active && nudge && !nudge.dismissed && (

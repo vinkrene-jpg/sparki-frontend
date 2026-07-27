@@ -1,0 +1,114 @@
+OPDRACHT — TRAININGSBALK BEGRIJPELIJK MAKEN
+
+DOEL
+
+Maak de horizontale balk onder “Training van vandaag” begrijpelijk en functioneel.
+
+De gebruiker moet direct kunnen zien wat de balk voorstelt. Geen onbenoemde of decoratieve segmenten.
+
+1. EERST CONTROLEREN
+
+Stel vóór wijziging vast:
+
+- welke component deze balk rendert;
+- welke trainingsdata de segmenten aanstuurt;
+- of de segmenten echte trainingsblokken zijn;
+- of kleur, breedte en volgorde nu betekenis hebben;
+- of dezelfde component elders wordt gebruikt.
+
+Rapporteer de huidige betekenis feitelijk. Niet gokken.
+
+2. GEWENSTE WEERGAVE
+
+Wanneer de balk trainingsblokken weergeeft, moet ieder segment gebaseerd zijn op echte trainingdata:
+
+- naam of type van het blok;
+- duur;
+- intensiteit of zone;
+- juiste verhouding binnen de totale training;
+- juiste volgorde.
+
+Voorbeeld voor een training van 90 minuten:
+
+- 10 min rustig;
+- 70 min zone 2;
+- 10 min uitrijden.
+
+De balkbreedtes moeten overeenkomen met de duur van elk blok.
+
+3. LABELS EN INTERACTIE
+
+Toon onder of boven de balk een compacte uitleg die zonder interactie al duidelijk maakt wat wordt getoond.
+
+Minimaal zichtbaar:
+
+- “Opbouw training”;
+- totale duur;
+- namen of categorieën van de belangrijkste blokken.
+
+Op desktop:
+- hover of focus toont per segment naam, duur en intensiteit.
+
+Op mobiel en tablet:
+- tik op een segment toont dezelfde informatie;
+- geen informatie uitsluitend via hover beschikbaar maken.
+
+4. KLEUR EN TOEGANKELIJKHEID
+
+- Kleur mag niet de enige informatiedrager zijn.
+- Gebruik tekst, patroon, icoon of duidelijke segmentlabels waar nodig.
+- Zorg voor voldoende contrast.
+- Segmenten en details moeten met toetsenbord en schermlezer bruikbaar zijn.
+- Voeg toegankelijke namen toe, bijvoorbeeld:
+  “Zone 2 hoofdblok, 70 minuten”.
+
+5. ONTBREKENDE OF ONVOLLEDIGE DATA
+
+Wanneer geen echte blokdata beschikbaar is:
+
+- toon geen verzonnen segmentverdeling;
+- toon geen decoratieve balk;
+- toon een eerlijke compacte toestand, bijvoorbeeld:
+  “Geen gedetailleerde trainingsopbouw beschikbaar”;
+- behoud wel de totale duur en beschikbare trainingsomschrijving.
+
+Geen mock-, demo- of fallbackblokken toevoegen.
+
+6. NIET DOEN
+
+- geen nieuw trainingsmodel bouwen;
+- geen bestaande trainingsinhoud wijzigen;
+- geen zones of duur zelf berekenen wanneer die niet in de brondata staan;
+- geen redesign van de volledige kaart;
+- geen andere Vandaag-onderdelen aanpassen;
+- geen brede refactor.
+
+7. TESTEN
+
+Test minimaal:
+
+- training met drie blokken;
+- training met één doorlopend blok;
+- training zonder blokdata;
+- zeer korte en zeer lange bloknamen;
+- mobiel 390 px;
+- tablet 768 px;
+- desktop 1440 px;
+- toetsenbordbediening;
+- schermlezernaam;
+- ontbrekende of foutieve brondata.
+
+8. RAPPORTAGE
+
+Lever:
+
+1. huidige betekenis en databron van de balk;
+2. gewijzigde bestanden en functies;
+3. screenshot vóór en na;
+4. screenshots op 390, 768 en 1440 px;
+5. bewijs van echte blokdata en juiste duurverhoudingen;
+6. gedrag zonder blokdata;
+7. uitgevoerde tests en resultaten;
+8. resterende afwijkingen.
+
+Niet publiceren zonder expliciete goedkeuring van René.

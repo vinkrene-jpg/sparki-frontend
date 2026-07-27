@@ -1,0 +1,202 @@
+OPDRACHT — W2 BLOKKADES OPLOSSEN EN VOLLEDIG HERTESTEN
+
+DOEL
+
+Los uitsluitend de twee blokkerende W2-punten op:
+
+1. De nieuwe desktopindeling van Vandaag moet daadwerkelijk zichtbaar en testbaar zijn op René’s account.
+2. Training toevoegen moet een volledige, zichtbare en betrouwbare gebruikersflow worden.
+
+Voer daarna één volledige W2-hercontrole uit.
+
+Geen andere pagina’s aanpassen.
+Geen nieuwe functionaliteit toevoegen.
+Niets publiceren zonder expliciete goedkeuring van René.
+
+1. DESKTOP VANDAAG DAADWERKELIJK ACTIVEREN
+
+Zorg dat de bestaande CommercialToday-weergave voor René’s testaccount actief is.
+
+Controleer eerst:
+
+- welke featureflag de commercial shell bestuurt;
+- waar deze flag voor René’s account wordt opgeslagen;
+- waarom de eerdere acceptatietest nog DayHome toonde;
+- of de flag correct wordt geladen vóór de schermkeuze;
+- of er een fout- of laadpad bestaat waardoor stil naar DayHome wordt teruggevallen.
+
+Herstel alleen wat nodig is om René’s account betrouwbaar de bedoelde CommercialToday te laten tonen.
+
+Vereist op 1440 × 900:
+
+- vaste desktopnavigatie;
+- geen mobiele hamburger als primaire navigatie;
+- brede container;
+- tweekolomsindeling:
+  - links WeekSection en TrainingSection;
+  - rechts HerstelSection en SeasonBand;
+- geen smalle mobiele kolom in het midden;
+- geen grote onbenutte desktopruimte;
+- geen horizontale overflow;
+- geen overlap of afgekapt onderdeel.
+
+Mobiel moet zijn bestaande mobiele indeling behouden.
+
+Geen algemene featureflagmigratie uitvoeren.
+Geen andere accounts wijzigen tenzij noodzakelijk voor een aantoonbaar generieke fout.
+
+2. TRAINING TOEVOEGEN FUNCTIONEEL AFMAKEN
+
+Controleer eerst de volledige huidige flow:
+
+- knop op Vandaag;
+- navigatie naar `/train`;
+- selectie;
+- bevestiging;
+- API-aanroep;
+- opslag;
+- query-invalidatie;
+- terugkeer naar Vandaag;
+- zichtbare weergave van de nieuwe toestand.
+
+Los daarna de flow gericht op.
+
+Na succesvolle toevoeging moet de gebruiker duidelijk zien:
+
+- dat de training is toegevoegd;
+- welke training is toegevoegd;
+- voor welke datum;
+- waar de training op Vandaag of in Plan terug te vinden is.
+
+Gebruik bestaande feedbackcomponenten en bestaande data-/queryarchitectuur.
+
+Geen nieuwe parallelle planningsflow bouwen.
+
+VEREIST GEDRAG
+
+Succes:
+- toon zichtbare succesbevestiging;
+- sluit of verlaat de selectiestap pas nadat succes is bevestigd;
+- actualiseer Vandaag;
+- voorkom dubbele toevoeging bij herhaald klikken.
+
+Fout:
+- modal of scherm mag niet stil sluiten;
+- toon een concrete foutmelding;
+- bestaande selectie blijft behouden;
+- bied opnieuw proberen;
+- schrijf geen onvolledige of dubbele data.
+
+Annuleren:
+- geen opslag;
+- geen succesmelding;
+- correcte terugkeer naar de vorige toestand.
+
+Terugkeer:
+- geen handmatige browser-refresh nodig;
+- Vandaag toont de actuele training;
+- geen oude cache of schijnsucces.
+
+3. COMMUNICATIEREGRESSIES OP VANDAAG
+
+Herstel binnen de direct geraakte W2-componenten de resterende afwijkingen:
+
+- “laat het zien en Sparki beoordeelt het eerlijk” vervangen door zakelijke functionele tekst;
+- “SPARKI ADVISEERT” vervangen door neutrale aanduiding, bijvoorbeeld “Advies”;
+- controleer dat “Analyse openen” niet wordt gepresenteerd als algemene chat met een persona;
+- gebruik waar relevant:
+  - Gemeten
+  - Berekend
+  - Advies
+  - Algemene richtlijn
+
+Geen brede applicatiebrede tekstmigratie uitvoeren in deze opdracht.
+
+4. VERPLICHTE RUNTIME-HERTEST
+
+Test ingelogd als René op:
+
+- 390 × 874
+- 768 × 1024
+- 1440 × 900
+
+Lever screenshots van:
+
+- volledig Vandaag mobiel;
+- volledig Vandaag tablet;
+- volledig Vandaag desktop met zichtbare tweekoloms CommercialToday;
+- Training toevoegen vóór selectie;
+- succesvolle toevoeging;
+- zichtbaar resultaat na terugkeer;
+- geforceerde API-fout met foutmelding;
+- opnieuw proberen na fout;
+- annuleren zonder wijziging.
+
+Test ook:
+
+- alle zichtbare knoppen op Vandaag;
+- relevante drawers;
+- terugnavigatie;
+- console;
+- netwerkfouten;
+- dubbele klik;
+- loading state;
+- lege toestand;
+- stale data na terugkeer.
+
+5. TESTS EN BUILD
+
+Voer sequentieel uit:
+
+- relevante Vandaag-tests;
+- CommercialToday-layouttests;
+- featureflag- en accountselectietests;
+- Training toevoegen succes-, fout-, annulering- en idempotentietests;
+- query-invalidatie- en terugkeertests;
+- frontend-typecheck;
+- volledige webtestset;
+- productiebuild tweemaal.
+
+6. STOPVOORWAARDEN
+
+Stop en rapporteer vóór verdere wijziging wanneer:
+
+- database- of schemawijziging nodig blijkt;
+- een tweede planningsarchitectuur nodig lijkt;
+- de commercial shell niet zonder brede refactor kan worden geactiveerd;
+- andere hoofdmodules moeten worden aangepast;
+- een bestaande productieflow buiten W2 regressie vertoont.
+
+7. NIET DOEN
+
+- geen subagents;
+- geen nieuwe feature;
+- geen redesign buiten Vandaag;
+- Rijden, Ontdekken, Meer en Lab niet aanpassen;
+- geen mock-, demo- of fallbackdata toevoegen;
+- geen brede refactor;
+- geen publicatie;
+- W0 niet opnieuw uitvoeren.
+
+8. RAPPORTAGE
+
+Rapporteer exact:
+
+1. oorzaak waarom CommercialToday tijdens de eerdere test niet zichtbaar was;
+2. gewijzigde bestanden en functies;
+3. bewijs dat René’s account nu de juiste desktopweergave krijgt;
+4. volledige Training toevoegen-flow:
+   - succes;
+   - fout;
+   - opnieuw proberen;
+   - annuleren;
+   - terugkeer;
+5. screenshots per viewport en toestand;
+6. uitgevoerde tests met resultaten;
+7. console- en netwerkbevindingen;
+8. resterende afwijkingen;
+9. expliciete verklaring:
+   - gepubliceerd: nee;
+   - gereed voor René’s acceptatie: ja/nee.
+
+W2 mag alleen als gereed worden gemeld wanneer beide blokkades aantoonbaar in de browser zijn opgelost.

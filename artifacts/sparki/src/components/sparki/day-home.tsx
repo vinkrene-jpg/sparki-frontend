@@ -267,7 +267,7 @@ function StateDayHome() {
           <SectionLabel title="Jouw update vandaag" />
           <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
             Eén plek om jezelf bij te werken. Hoe je je voelt staat hierboven —
-            open je voeding en laat Sparki je materiaal bekijken.
+            open je voeding of bekijk je materiaalstatus.
           </p>
 
           <div className="mt-5">
@@ -363,8 +363,8 @@ function StateDayHome() {
       <section className="mt-8">
         <SectionLabel title="Jouw update vandaag" />
         <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
-          Eén plek om jezelf bij te werken. Hoe je je voelt staat hierboven — open
-          je voeding en laat Sparki je materiaal bekijken.
+          Eén plek om jezelf bij te werken. Hoe je je voelt staat hierboven —
+          open je voeding of bekijk je materiaalstatus.
         </p>
 
         {/* Adding a training must never be hidden — log a done session or plan a

@@ -262,7 +262,7 @@ export function StateCard({
               <Zap className="h-3.5 w-3.5 text-cyan-300" />
             </span>
             <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
-              Sparki adviseert
+              Advies
             </p>
             <UitlegDot uitlegKey="trainingsadvies" label="Trainingsadvies" />
           </div>
