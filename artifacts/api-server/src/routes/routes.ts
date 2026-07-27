@@ -2125,10 +2125,14 @@ async function buildLoopCandidate(
       elevationPreference: ctx.elevationPreference,
     },
     {
+      // environmentOf (Overpass) is intentionally absent here — it belongs only
+      // in the async enrichment phase (scheduleEnrichment below). Running it per
+      // candidate in the loop selection would put a slow network call (~500 ms–
+      // 30 s per Overpass query) back into the critical path, undoing the
+      // async-enrichment refactor. Candidate selection uses ORS turn-by-turn
+      // steps (preferUninterrupted → turnDensityPenalty) instead, which is
+      // instant and requires no external I/O.
       scenery,
-      environmentOf: scenery
-        ? candidateEnvironmentOf(scenery.nature)
-        : undefined,
       preferUninterrupted: wantsUninterrupted,
       targetAscentM: ctx.targetElevationGainM ?? null,
     },

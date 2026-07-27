@@ -214,35 +214,43 @@ test("list with real rides, missing metrics -> no zeroes, honest message", async
   }
 });
 
+// Release-1 filters: the page shows "Alles" + "Fietsen" chips when at least
+// one cycling session exists. "Fietsen" maps to FILTER_CYCLING which matches
+// isCyclingType() — canonical types like "ride"/"cycling" are included, while
+// "running" is not. The old "Intervaltraining" chip no longer exists.
 test("filters present and working", async () => {
   sessionsResult = okResult([
-    makeSession(1, { title: "Zondagsrit", type: "endurance", sessionDate: "2023-08-15" }),
-    makeSession(2, { title: "Dinsdaginterval", type: "interval", sessionDate: "2023-08-10" })
+    makeSession(1, { title: "Zondagsrit", type: "ride", sessionDate: "2023-08-15" }),
+    makeSession(2, { title: "Hardloopsessie", type: "running", sessionDate: "2023-08-10" })
   ]);
   loadResult = okResult({ chartData: [] });
 
   const view = await renderPage();
   try {
     const text = view.container.textContent ?? "";
-    assert.ok(text.includes("Zondagsrit"));
-    assert.ok(text.includes("Dinsdaginterval"));
+    assert.ok(text.includes("Zondagsrit"), "cycling session visible under Alles");
+    assert.ok(text.includes("Hardloopsessie"), "non-cycling session visible under Alles");
 
-    const intervalChip = Array.from(view.container.querySelectorAll("button")).find(
-      (b) => b.textContent === "Intervaltraining"
+    // "Fietsen" chip is rendered because hasCyclingActivities is true (type "ride").
+    const fietsChip = Array.from(view.container.querySelectorAll("button")).find(
+      (b) => b.textContent === "Fietsen"
     );
-    assert.ok(intervalChip);
-    view.rtl.fireEvent.click(intervalChip!);
+    assert.ok(fietsChip, "Fietsen chip must be present when cycling sessions exist");
+    view.rtl.fireEvent.click(fietsChip!);
 
-    const newText = view.container.textContent ?? "";
-    assert.ok(newText.includes("Dinsdaginterval"));
-    assert.ok(!newText.includes("Zondagsrit"), "Zondagsrit is filtered out");
+    const filteredText = view.container.textContent ?? "";
+    assert.ok(filteredText.includes("Zondagsrit"), "cycling session stays visible after Fietsen filter");
+    assert.ok(!filteredText.includes("Hardloopsessie"), "non-cycling session is filtered out");
 
+    // Clicking "Alles" resets the filter — both sessions visible again.
     const allesChip = Array.from(view.container.querySelectorAll("button")).find(
       (b) => b.textContent === "Alles"
     );
+    assert.ok(allesChip, "Alles chip must be present");
     view.rtl.fireEvent.click(allesChip!);
     const clearedText = view.container.textContent ?? "";
-    assert.ok(clearedText.includes("Duur"));
+    assert.ok(clearedText.includes("Zondagsrit"), "cycling session back after Alles");
+    assert.ok(clearedText.includes("Hardloopsessie"), "non-cycling session back after Alles");
   } finally {
     view.rtl.cleanup();
   }

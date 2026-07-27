@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
-import { Link, useLocation } from "wouter"
+import { Link } from "wouter"
+import { HumorLine } from "@/components/sparki/humor-line"
 import {
   Clock,
   Route as RouteIcon,
@@ -10,10 +11,9 @@ import {
   Gauge,
   ChevronRight,
   Search,
+  Activity as ActivityIcon,
 } from "lucide-react"
-import { CommercialShell } from "@/components/sparki/commercial-shell"
-import { DsButton, DsCard, DsState } from "@/components/ds"
-import { HumorLine } from "@/components/sparki/humor-line"
+import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer"
 import { TrainingProgression } from "@/components/sparki/training-progression"
 import { useSessions } from "@/hooks/use-sessions"
@@ -27,61 +27,37 @@ import {
   FILTER_CYCLING,
 } from "@/lib/core-activiteiten"
 
-// Relatieve datum: leidt met de beleefde ervaring ("gisteren") en valt
-// terug op een korte absolute datum voor oudere ritten.
+// Relative Dutch date — leads with the lived moment ("gisteren") before falling
+// back to an absolute short date for older rides.
 function relativeDate(iso: string) {
   const then = new Date(iso + "T12:00:00Z").getTime()
   const days = Math.floor((Date.now() - then) / 86_400_000)
   if (days <= 0) return "Vandaag"
   if (days === 1) return "Gisteren"
   if (days < 7) return `${days} dagen geleden`
-  return new Date(iso + "T12:00:00Z").toLocaleDateString("nl-NL", {
-    weekday: "short",
+  const d = new Date(iso + "T12:00:00Z")
+  return d.toLocaleDateString("nl-NL", {
     day: "numeric",
     month: "short",
   })
 }
 
-type Metric = { icon: typeof Clock; value: string }
+type MetricItem = { icon: React.ElementType; value: string }
 
-// Gemiddelde snelheid: opgeslagen waarde als die er is, anders echte
-// wiskunde uit afstand en duur. Geen van beide aanwezig → geen chip.
-function avgSpeed(s: TrainingSession): number | null {
-  const stored = s.avgSpeedKph != null ? Number(s.avgSpeedKph) : NaN
-  if (Number.isFinite(stored) && stored > 0) return stored
-  const km =
-    s.distanceKm != null && s.distanceKm !== "" ? Number(s.distanceKm) : NaN
-  if (
-    Number.isFinite(km) &&
-    km > 0 &&
-    s.durationMin != null &&
-    s.durationMin > 0
-  )
-    return km / (s.durationMin / 60)
-  return null
-}
-
-function formatKmh(v: number) {
-  return `${(Math.round(v * 10) / 10).toLocaleString("nl-NL")} km/u`
-}
-
-// Eerlijke chips — alleen echte waarden, niets verzonnen.
-function sessionMetrics(s: TrainingSession): Metric[] {
-  const out: Metric[] = []
+function sessionMetrics(s: TrainingSession): MetricItem[] {
+  const out: MetricItem[] = []
   if (s.durationMin != null)
     out.push({ icon: Clock, value: `${s.durationMin} min` })
-  if (s.distanceKm != null && s.distanceKm !== "")
+  if (s.distanceKm != null)
     out.push({ icon: RouteIcon, value: `${s.distanceKm} km` })
-  const speed = avgSpeed(s)
-  if (speed != null) out.push({ icon: Gauge, value: formatKmh(speed) })
   if (s.elevationM != null)
-    out.push({ icon: Mountain, value: `${s.elevationM} hm` })
-  if (s.normalizedPower != null)
-    out.push({ icon: Zap, value: `${s.normalizedPower} W` })
-  else if (s.avgPower != null)
-    out.push({ icon: Zap, value: `${s.avgPower} W` })
-  if (s.avgHR != null)
-    out.push({ icon: HeartPulse, value: `${s.avgHR} bpm` })
+    out.push({ icon: Mountain, value: `${s.elevationM} m` })
+  if (s.avgWatt != null)
+    out.push({ icon: Zap, value: `${s.avgWatt} W` })
+  if (s.avgHr != null)
+    out.push({ icon: HeartPulse, value: `${s.avgHr} bpm` })
+  if (s.intensityFactor != null)
+    out.push({ icon: Gauge, value: `IF ${s.intensityFactor.toFixed(2)}` })
   if (s.tss != null) out.push({ icon: Flame, value: `${s.tss} TSS` })
   return out
 }
@@ -98,29 +74,29 @@ function ActivityCard({
     <button
       type="button"
       onClick={onOpen}
-      className="group flex w-full flex-col gap-3 rounded-xl border border-border bg-surface p-4 text-left transition-colors hover:border-accent-cyan/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60"
+      className="group flex w-full flex-col gap-3 rounded-2xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="type-label text-accent-cyan/80 uppercase tracking-wider">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300/80">
             {relativeDate(session.sessionDate)}
           </p>
-          <h3 className="type-action mt-1 truncate text-white">
+          <h3 className="mt-1 truncate text-[15px] font-semibold text-white">
             {session.title?.trim() || typeLabel(session.type)}
           </h3>
           {session.title?.trim() ? (
-            <p className="type-body-sm mt-0.5 truncate text-content-secondary">
+            <p className="mt-0.5 truncate text-xs text-white/45">
               {typeLabel(session.type)}
             </p>
           ) : null}
-          {/* Niet-fietsactiviteiten: eerlijk melden dat analyse beperkt is. */}
+          {/* Niet-fietsactiviteiten: eerlijk aangeven dat analyse beperkt is. */}
           {!isCyclingType(session.type) && (
-            <p className="type-body-sm mt-0.5 truncate text-white/35">
+            <p className="mt-0.5 truncate text-xs text-white/35">
               {unsupportedSportNote(session.type)}
             </p>
           )}
         </div>
-        <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-content-secondary transition-colors group-hover:text-accent-cyan/70" />
+        <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-white/25 transition-colors group-hover:text-cyan-300/70" />
       </div>
 
       {metrics.length > 0 ? (
@@ -130,29 +106,26 @@ function ActivityCard({
             return (
               <span
                 key={i}
-                className="flex items-center gap-1.5 type-body-sm text-white/75"
+                className="flex items-center gap-1.5 text-[13px] text-white/75"
               >
-                <Icon
-                  className="h-3.5 w-3.5 text-content-secondary"
-                  strokeWidth={1.75}
-                />
+                <Icon className="h-3.5 w-3.5 text-white/35" strokeWidth={1.75} />
                 {m.value}
               </span>
             )
           })}
         </div>
       ) : (
-        <p className="type-body-sm text-content-secondary">
+        <p className="text-[13px] text-white/40">
           Nog geen meetgegevens bij deze rit.
         </p>
       )}
 
       <div className="flex items-center gap-2">
-        <span className="rounded-full border border-border px-2 py-0.5 type-label uppercase tracking-wider text-content-secondary">
+        <span className="rounded-full border border-white/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-white/40">
           {sourceLabel(session.source)}
         </span>
         {session.feelScore != null ? (
-          <span className="rounded-full border border-accent-cyan/20 bg-accent-cyan/[0.06] px-2 py-0.5 type-label uppercase tracking-wider text-accent-cyan/80">
+          <span className="rounded-full border border-cyan-300/20 bg-cyan-300/[0.06] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-cyan-300/80">
             Gevoel {session.feelScore}/5
           </span>
         ) : null}
@@ -178,7 +151,6 @@ function monthLabel(key: string) {
 }
 
 export default function ActiviteitenPage() {
-  const [, navigate] = useLocation()
   // Volledig archief: tijd-geordend met zoeken en filters. 500 is de eerlijke
   // servergrens — meer dan genoeg voor jaren aan ritten.
   const { data: sessions, isLoading, isError, refetch } = useSessions(500)
@@ -237,186 +209,177 @@ export default function ActiviteitenPage() {
     return [...map.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1))
   }, [filtered])
 
-  const hasFilters =
-    q.trim() !== "" || typeFilter != null || monthFilter != null
+  const hasFilters = q.trim() !== "" || typeFilter != null || monthFilter != null
 
   return (
-    <CommercialShell actief="/activiteiten">
-      <div className="mx-auto w-full max-w-2xl px-5 pb-10 pt-8 lg:max-w-3xl lg:px-10">
-
-        {/* Paginakop */}
-        <header className="mb-8 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">
-              Activiteiten
-            </h1>
-            <p className="mt-1 type-body text-content-secondary">
-              Al je ritten — wat je deed, hoe het ging.
-            </p>
-          </div>
-          <Link
-            href="/journey"
-            className="type-label shrink-0 text-accent-cyan/80 hover:text-accent-cyan"
-          >
+    <ScreenShell section="activiteiten">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold tracking-tight text-white">
+            Je ritten
+          </h1>
+          <Link href="/journey" className="text-[11px] text-cyan-300/80 hover:text-cyan-300">
             Jouw verhaal
           </Link>
-        </header>
-
-        {/* Trainingsverloop — alleen als er ritten zijn */}
-        {sessions && sessions.length > 0 && (
-          <section className="mb-8">
-            <h2 className="type-title-card mb-3 text-white/90">
-              Je ontwikkeling
-            </h2>
-            <p className="type-body-sm mb-4 text-content-secondary">
-              Van je laatste ritten tot de afgelopen weken — zo bouw je op over
-              tijd.
-            </p>
-            <TrainingProgression
-              hideLabel
-              sessions={sessions}
-              chartData={load?.chartData}
-              loading={isLoading || loadLoading}
-            />
-          </section>
-        )}
-
-        {/* Zoeken + filters: alleen bij bestaande ritten */}
-        {sessions && sessions.length > 0 && (
-          <section className="mb-6 flex flex-col gap-3">
-            <h2 className="type-title-card text-white/90">Alle ritten</h2>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Zoekbalk */}
-              <div className="relative min-w-0 flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-secondary" />
-                <input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Zoek op titel, type of bron…"
-                  className="w-full rounded-xl border border-border bg-surface py-2 pl-9 pr-3 type-body-sm text-white/85 placeholder:text-content-secondary outline-none focus:border-accent-cyan/40"
-                />
-              </div>
-              {/* Maandfilter */}
-              <select
-                value={monthFilter ?? ""}
-                onChange={(e) => setMonthFilter(e.target.value || null)}
-                className="rounded-xl border border-border bg-surface px-3 py-2 type-body-sm text-white/75 outline-none"
-                aria-label="Filter op maand"
-              >
-                <option value="">Alle maanden</option>
-                {monthOptions.map((m) => (
-                  <option key={m} value={m}>
-                    {monthLabel(m)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Release-1 typefilters: Alles + Fietsen.
-                Wandelen/Hardlopen krijgen pas een eigen filter wanneer
-                multisport expliciet is geactiveerd. */}
-            {hasCyclingActivities && (
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setTypeFilter(null)}
-                  className={`rounded-full border px-3 py-1.5 type-label uppercase tracking-wider transition-colors ${
-                    typeFilter == null
-                      ? "border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan"
-                      : "border-border bg-surface text-content-secondary hover:text-white/80"
-                  }`}
-                >
-                  Alles
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setTypeFilter(
-                      typeFilter === FILTER_CYCLING ? null : FILTER_CYCLING,
-                    )
-                  }
-                  className={`rounded-full border px-3 py-1.5 type-label uppercase tracking-wider transition-colors ${
-                    typeFilter === FILTER_CYCLING
-                      ? "border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan"
-                      : "border-border bg-surface text-content-secondary hover:text-white/80"
-                  }`}
-                >
-                  Fietsen
-                </button>
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* Inhoud: laden / fout / leeg / resultaten */}
-        {isLoading ? (
-          <div className="flex flex-col gap-3">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="h-28 animate-pulse rounded-xl border border-border bg-surface"
-              />
-            ))}
-          </div>
-        ) : isError ? (
-          <DsCard>
-            <p className="type-body text-content-secondary">
-              Je ritten konden niet geladen worden. Controleer je verbinding en
-              probeer het opnieuw.
-            </p>
-            <DsButton
-              variant="primair"
-              className="mt-4"
-              onClick={() => void refetch()}
-            >
-              Opnieuw proberen
-            </DsButton>
-          </DsCard>
-        ) : !sessions || sessions.length === 0 ? (
-          <>
-            <DsState
-              soort="leeg"
-              titel="Nog geen ritten"
-              beschrijving="Koppel je fietscomputer of Strava, dan verschijnen je ritten hier vanzelf — met al je meetgegevens."
-              actie={{
-                label: "Koppeling instellen",
-                onClick: () => navigate("/you?focus=connections"),
-              }}
-            />
-            <HumorLine
-              context="empty_training"
-              className="mt-3 text-center"
-            />
-          </>
-        ) : filtered.length === 0 ? (
-          <p className="rounded-xl border border-border bg-surface p-4 type-body text-content-secondary">
-            {hasFilters
-              ? "Geen ritten gevonden met deze zoekterm of filters."
-              : "Geen ritten gevonden."}
-          </p>
-        ) : (
-          <div className="flex flex-col gap-5">
-            {grouped.map(([key, list]) => (
-              <section key={key} className="flex flex-col gap-3">
-                <h3 className="type-label uppercase tracking-wider text-content-secondary">
-                  {monthLabel(key)}
-                  <span className="ml-2 tabular-nums text-white/25">
-                    {list.length} {list.length === 1 ? "rit" : "ritten"}
-                  </span>
-                </h3>
-                {list.map((s) => (
-                  <ActivityCard
-                    key={s.id}
-                    session={s}
-                    onOpen={() => openSession(s)}
-                  />
-                ))}
-              </section>
-            ))}
-          </div>
-        )}
+        </div>
+        <p className="text-sm text-white/55">
+          Al je ritten — wat je deed, hoe het ging. Tik op een rit
+          voor de volledige uitlezing en analyse.
+        </p>
       </div>
+
+      {sessions && sessions.length > 0 ? (
+        <section>
+          <h2 className="text-base font-semibold tracking-tight text-white/90">
+            Je ontwikkeling
+          </h2>
+          <p className="mt-1 text-[12px] leading-relaxed text-white/45">
+            Van je laatste ritten tot de afgelopen weken — zo bouw je op over
+            tijd, niet alleen vandaag.
+          </p>
+          <TrainingProgression
+            hideLabel
+            sessions={sessions}
+            chartData={load?.chartData}
+            loading={isLoading || loadLoading}
+          />
+        </section>
+      ) : null}
+
+      {sessions && sessions.length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-base font-semibold tracking-tight text-white/90">
+            Alle ritten
+          </h2>
+          {/* Zoeken + filters: alleen op echte velden (titel, type, bron). */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Zoek op titel, type of bron…"
+                className="w-full rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] py-2 pl-9 pr-3 text-[13px] text-white/85 placeholder:text-white/30 outline-none backdrop-blur-md focus:border-cyan-300/40"
+              />
+            </div>
+            <select
+              value={monthFilter ?? ""}
+              onChange={(e) => setMonthFilter(e.target.value || null)}
+              className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] px-3 py-2 text-[13px] text-white/75 outline-none backdrop-blur-md"
+              aria-label="Filter op maand"
+            >
+              <option value="">Alle maanden</option>
+              {monthOptions.map((m) => (
+                <option key={m} value={m}>
+                  {monthLabel(m)}
+                </option>
+              ))}
+            </select>
+          </div>
+          {/* Release-1 filters: Alles + Fietsen. Wandelen/Hardlopen krijgen pas
+              een eigen filter wanneer multisport expliciet is geactiveerd. */}
+          {hasCyclingActivities ? (
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => setTypeFilter(null)}
+                className={`rounded-full border px-3 py-1.5 text-[12px] transition-colors ${
+                  typeFilter == null
+                    ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-100"
+                    : "border-white/[0.08] bg-[#070d16]/[0.55] text-white/55 hover:text-white/80"
+                }`}
+              >
+                Alles
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setTypeFilter(typeFilter === FILTER_CYCLING ? null : FILTER_CYCLING)
+                }
+                className={`rounded-full border px-3 py-1.5 text-[12px] transition-colors ${
+                  typeFilter === FILTER_CYCLING
+                    ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-100"
+                    : "border-white/[0.08] bg-[#070d16]/[0.55] text-white/55 hover:text-white/80"
+                }`}
+              >
+                Fietsen
+              </button>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {isLoading ? (
+        <div className="flex flex-col gap-3">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-28 animate-pulse rounded-2xl border border-white/[0.05] bg-white/[0.03]"
+            />
+          ))}
+        </div>
+      ) : isError ? (
+        <div className="rounded-2xl border border-white/[0.07] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+          <p className="text-sm text-white/70">
+            Je ritten konden niet geladen worden. Controleer je verbinding en
+            probeer het opnieuw.
+          </p>
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="mt-3 rounded-full bg-[oklch(0.82_0.16_200)] px-4 py-2 text-sm font-semibold text-black transition hover:brightness-110"
+          >
+            Opnieuw proberen
+          </button>
+        </div>
+      ) : !sessions || sessions.length === 0 ? (
+        <div className="rounded-2xl border border-white/[0.07] bg-[#070d16]/[0.82] p-6 text-center backdrop-blur-md">
+          <ActivityIcon
+            className="mx-auto h-8 w-8 text-white/25"
+            strokeWidth={1.5}
+          />
+          <p className="mt-3 text-sm font-medium text-white">
+            Nog geen ritten
+          </p>
+          <p className="mt-1 text-[13px] text-white/55">
+            Koppel je fietscomputer of Strava, dan verschijnen je ritten hier
+            vanzelf — met al je meetgegevens.
+          </p>
+          <HumorLine context="empty_training" className="mx-auto mt-2 max-w-xs" />
+          <Link
+            href="/you?focus=connections"
+            className="mt-4 inline-block rounded-full bg-[oklch(0.82_0.16_200)] px-5 py-2 text-sm font-semibold text-black transition hover:brightness-110"
+          >
+            Koppeling instellen
+          </Link>
+        </div>
+      ) : filtered.length === 0 ? (
+        <p className="rounded-2xl border border-white/[0.06] bg-[#070d16]/[0.55] p-4 text-[13px] text-white/45 backdrop-blur-md">
+          {hasFilters
+            ? "Geen ritten gevonden met deze zoekterm of filters."
+            : "Geen ritten gevonden."}
+        </p>
+      ) : (
+        <div className="flex flex-col gap-5">
+          {grouped.map(([key, list]) => (
+            <section key={key} className="flex flex-col gap-3">
+              <h3 className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+                {monthLabel(key)}
+                <span className="ml-2 tabular-nums text-white/25">
+                  {list.length} {list.length === 1 ? "rit" : "ritten"}
+                </span>
+              </h3>
+              {list.map((s) => (
+                <ActivityCard
+                  key={s.id}
+                  session={s}
+                  onOpen={() => openSession(s)}
+                />
+              ))}
+            </section>
+          ))}
+        </div>
+      )}
 
       <SessionDetailDrawer
         session={selected}
@@ -424,6 +387,6 @@ export default function ActiviteitenPage() {
         onOpenChange={setOpen}
         recentSessions={sessions ?? []}
       />
-    </CommercialShell>
+    </ScreenShell>
   )
 }
