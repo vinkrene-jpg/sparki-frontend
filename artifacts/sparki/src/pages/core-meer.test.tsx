@@ -52,6 +52,35 @@ mock.module("wouter", {
   },
 })
 
+// Evaluatie-vangnet (zelfde aanpak als de groene core-activiteiten.test.tsx):
+// core-meer laadt via CommercialShell de keten use-sparki-state → @/lib/dev,
+// dat op moduleniveau import.meta.env.DEV leest — dat bestaat niet in node.
+// @/lib/api leest net zo import.meta.env; echte react-query/clerk-hooks
+// eisen providers.
+mock.module("@/lib/dev", {
+  namedExports: { DEV_PREVIEW: false, useDevPreview: () => false, getDevAthleteId: () => 1 },
+})
+
+mock.module("@/lib/api", {
+  namedExports: { apiFetch: async () => ({}), API_BASE: "" },
+})
+
+mock.module("@tanstack/react-query", {
+  namedExports: {
+    useQuery: () => ({}),
+    useMutation: () => ({}),
+    useQueryClient: () => ({ invalidateQueries: () => {} }),
+    QueryClient: class {},
+    QueryClientProvider: ({ children }: { children?: unknown }) => children,
+  },
+})
+
+mock.module("@clerk/react", {
+  namedExports: {
+    useUser: () => ({ isSignedIn: true, user: { id: "user_1" } }),
+  },
+})
+
 const reactPromise = import("react")
 const rtlPromise = import("@testing-library/react")
 const libPromise = import("@/lib/core-meer")
@@ -112,8 +141,11 @@ test("atleet: groepskoppen in vaste volgorde in de DOM", async () => {
 
   const view = await renderMeer()
   try {
-    const html = view.container.innerHTML
-    const posities = VASTE_VOLGORDE_ATLEET.map((titel) => html.indexOf(titel))
+    // textContent i.p.v. innerHTML: HTML serialiseert "&" als "&amp;",
+    // waardoor indexOf op titels met "&" in innerHTML altijd -1 gaf.
+    // textContent behoudt de DOM-volgorde én de letterlijke titels.
+    const text = view.container.textContent ?? ""
+    const posities = VASTE_VOLGORDE_ATLEET.map((titel) => text.indexOf(titel))
     for (const pos of posities) {
       assert.ok(pos >= 0, "groep aanwezig")
     }
@@ -151,7 +183,6 @@ test("atleet: admin-rij alleen bij admin", async () => {
   const met = await renderMeer()
   try {
     const text = met.container.textContent ?? ""
-    const html = met.container.innerHTML
     assert.ok(text.includes("Beheer, instellingen & privacy"), "admin-groep aanwezig")
     const adminLink = Array.from(met.container.querySelectorAll("a")).find(
       (a) => a.getAttribute("href") === "/admin",
@@ -159,9 +190,10 @@ test("atleet: admin-rij alleen bij admin", async () => {
     assert.ok(adminLink, "/admin-link aanwezig")
     assert.ok(adminLink!.textContent!.includes("Beheer"), "Beheer-label zichtbaar")
 
-    // Admin-groep komt als laatste (na Ondersteuning).
-    const posOndersteuning = html.indexOf("Ondersteuning & kennis")
-    const posBeheer = html.indexOf("Beheer, instellingen & privacy")
+    // Admin-groep komt als laatste (na Ondersteuning). textContent i.p.v.
+    // innerHTML: "&" wordt in innerHTML als "&amp;" geserialiseerd.
+    const posOndersteuning = text.indexOf("Ondersteuning & kennis")
+    const posBeheer = text.indexOf("Beheer, instellingen & privacy")
     assert.ok(posBeheer > posOndersteuning, "Beheer komt na Ondersteuning")
   } finally {
     met.rtl.cleanup()
@@ -194,9 +226,20 @@ test("iconen: renderen als svg (lucide), geen emoji-tekst", async () => {
   mockIsMember = false
   mockIsAdmin = false
 
+  const { ATHLETE_MEER_CHAPTERS } = await chapterPromise
   const view = await renderMeer()
   try {
-    const links = Array.from(view.container.querySelectorAll("a"))
+    // Alleen de Meer-rijen zelf (de groepssecties): de desktopnav van de
+    // schil is bewust tekst-zonder-icoon en valt buiten deze eis; happy-dom
+    // rendert die lg:-nav gewoon mee. Vangnet op het aantal, zodat de
+    // selector nooit stilletjes leeg kan raken.
+    const links = Array.from(
+      view.container.querySelectorAll('section[aria-labelledby] a'),
+    )
+    assert.ok(
+      links.length >= ATHLETE_MEER_CHAPTERS.length + 2,
+      `alle meer-rijen gevonden (${links.length})`,
+    )
     for (const link of links) {
       const svg = link.querySelector("svg")
       assert.ok(svg, `link naar ${link.getAttribute("href")} heeft een svg-icoon`)

@@ -29,7 +29,10 @@ test("kiesPlanActie logic", () => {
   assert.equal(kiesPlanActie(undefined, false), "missing");
   assert.equal(kiesPlanActie({ hasCoach: true } as any, true), "none");
   assert.equal(kiesPlanActie({ plan: null, hasCoach: false } as any, true), "generate");
-  assert.equal(kiesPlanActie({ plan: { mode: "autonomous" }, hasCoach: false } as any, true), "adapt");
+  // Spiegelt de echte TrainingPlanResponse-vorm: `mode` staat op topniveau,
+  // `plan` is de PlanHeader. (Genest `plan.mode` bestaat niet in het contract.)
+  assert.equal(kiesPlanActie({ plan: { id: 1 }, mode: "autonomous", hasCoach: false } as any, true), "adapt");
+  assert.equal(kiesPlanActie({ plan: { id: 1 }, mode: "advisory", hasCoach: false } as any, true), "generate");
 });
 
 test("localISODate bewijst dat de lokale datum wordt gebruikt (geen UTC-verschuiving)", () => {

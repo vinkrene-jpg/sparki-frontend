@@ -50,3 +50,14 @@ punctuate at the render sink — do not assume engine strings are display-ready.
 in prod but silently fall through to `DayHome` in dev preview (bottom-nav may still
 highlight it). When adding a page, add a branch in `dev-preview.tsx` (and optionally a
 `VIEWS` switcher entry) or it cannot be previewed in dev.
+
+## Flag-gated page VARIANTS are invisible in dev preview (browser-check trap)
+The same-path flag switches in `App.tsx` (e.g. flag chooses new vs old page component)
+are ALSO bypassed: DevPreview hardwires which component renders per path, so an
+unauthenticated browser/screenshot session shows the OLD variant even when the flag is
+provably ON server-side. Never conclude "flag is uit" from a dev-preview screenshot.
+**How to verify instead:** (1) `curl /api/flags` under the dev bypass — note it resolves
+the dev user as head tester, so nearly ALL flags come back true (early access), which is
+more than a real user gets; (2) the flag row + overrides read-only in the dev DB;
+(3) visual check via a dedicated `/_dev/*` preview branch if one exists; (4) page tests.
+Signed-in users go through the real router and DO get the flag-routed variant.
