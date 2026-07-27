@@ -1,0 +1,69 @@
+OPDRACHT — PUBLICATIECONTROLE CORE-AFBOUWWAVE 2A: ANALYSE
+
+Voer uitsluitend de publicatiecontrole uit voor de afgeronde Analyse-migratie op `/lab`.
+
+Niets wijzigen en niets publiceren.
+
+CONTROLEER EN RAPPORTEER
+
+1. Welke commit nu live staat.
+2. Welke kandidaatcommit gepubliceerd zou worden.
+3. De volledige commitrange tussen live en kandidaat.
+4. Alle gewijzigde bestanden in die range.
+5. Bevestig dat de range uitsluitend bevat:
+   - Core Analyse;
+   - de bijbehorende presentatielogica en tests;
+   - de flag-switch op `/lab`;
+   - noodzakelijke testscripts.
+6. Controleer dat niet zijn gewijzigd:
+   - bestaande `lab.tsx`;
+   - Vandaag;
+   - Plan;
+   - Activiteiten;
+   - Meer;
+   - Ontdekken;
+   - Rijden;
+   - engines;
+   - API-server;
+   - database;
+   - schema;
+   - featureflags.
+7. Draai opnieuw:
+   - alle 33 web-testscripts;
+   - frontend-typecheck;
+   - twee opeenvolgende productiebuilds.
+8. Rapporteer exacte buildtijden en bundle-hashes.
+9. Controleer in de kandidaatbundle dat het nieuwe Analyse-scherm aanwezig is.
+10. Controleer dat `commercial_shell` globaal aan staat en dat `/lab` daarmee naar het nieuwe scherm schakelt.
+11. Controleer dat het flag-uit-pad nog exact het bestaande Lab-scherm rendert.
+12. Herbevestig de ingelogde visuele controle op:
+   - 390 × 874;
+   - 768 × 1024;
+   - 1440 × 900.
+13. Controleer:
+   - geen horizontale overflow;
+   - geen consolefouten;
+   - periodefilter 14/30/90 werkt;
+   - sessiedetail opent;
+   - fout-, lege- en verouderde toestanden tonen geen fallback- of voorbeelddata.
+14. Bepaal of een database- of schemasynchronisatie nodig is.
+15. Geef het exacte rollbackpunt en de minimale herstelroute.
+16. Benoem alle blokkades of afwijkingen.
+
+NIET DOEN
+
+- geen code wijzigen;
+- geen tests aanpassen;
+- geen flag wijzigen;
+- geen database wijzigen;
+- geen nieuwe login of testdata aanmaken wanneer bestaande validatiebewijzen voldoende zijn;
+- niets publiceren.
+
+EINDCONCLUSIE
+
+Sluit af met exact één van deze uitkomsten:
+
+- PUBLICATIE GEREED
+- PUBLICATIE NIET GEREED
+
+Vermeld bij “niet gereed” uitsluitend de concrete blokkades.
