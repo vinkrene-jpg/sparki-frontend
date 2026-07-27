@@ -845,3 +845,9 @@ id = "tXw54uKpxEy2mmximNKzm"
 uri = "file://SPARKI_GAP_RAPPORT_v1.0.zip"
 type = "unspecified"
 title = "SPARKI_GAP_RAPPORT_v1.0.zip"
+
+[[outputs]]
+id = "R0ljXUW9uCUkRBqZVESqA"
+uri = "file://reports/W2_Acceptatierapport_Sparki.zip"
+type = "unspecified"
+title = "W2 Acceptatierapport Sparki — rapport + 5 screenshots"
