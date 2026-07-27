@@ -8,9 +8,10 @@ import {
   type StateMetric,
   type StateBand,
 } from "@/hooks/use-sparki-state"
-import { safeSignalLabel, buildHerstelPresentatie } from "@/lib/commercial-shell"
 import { Skeleton } from "@/components/sparki/home-sections"
 import { UitlegDot } from "@/components/viz/uitleg"
+import { buildHerstelPresentatie } from "@/lib/commercial-shell"
+import { labelSignal } from "@/lib/signal-labels"
 
 // Generic State Engine consumer. It renders one honest Sparki toestand (the
 // living Core + status + coach action + check-in + the 2–3 "Waarom?" signals)
@@ -308,7 +309,7 @@ export function StateCard({
                 <>
                   {" "}
                   Nog niet meegenomen:{" "}
-                  {state.missing.map(safeSignalLabel).join(", ")}.
+                  {state.missing.map((m) => labelSignal(m)).join(", ")}.
                 </>
               )}
             </div>

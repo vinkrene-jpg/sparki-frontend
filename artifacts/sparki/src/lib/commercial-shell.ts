@@ -9,6 +9,7 @@
 
 import type { WorkoutBlock, WorkoutBlockKind, WorkoutPhase } from "@/lib/athlete-types"
 import { isRestWorkout } from "@/lib/day-type"
+import { labelSignal } from "@/lib/signal-labels"
 
 // ── Navigatie ────────────────────────────────────────────────────────────────
 // Doelen zijn bestaande routes uit App.tsx — de schil voegt géén routes toe.
@@ -47,39 +48,8 @@ const BAND_LABELS: Record<string, string> = {
 }
 
 // ── Herstel-presentatielaag ──────────────────────────────────────────────────
-// Centrale vertaling van technische API-sleutels naar gewone Nederlandse termen.
-// Technische namen mogen NOOIT direct in de UI terechtkomen — vertaal altijd
-// via safeSignalLabel(). Nieuwe signaalsoorten hier toevoegen, nergens anders.
-// Lokale duplicaten in andere components zijn verboden.
-const MISSING_SIGNAL_LABELS: Record<string, string> = {
-  training_load: "recente trainingsbelasting",
-  readiness: "herstelbeoordeling",
-  hrv_trend: "trend in hartslagvariatie",
-  resting_hr_trend: "trend in rusthartslag",
-  sleep: "slaap",
-  subjective_feel: "hoe je je voelt",
-  power_dev: "vermogensontwikkeling",
-  feedback: "feedback na trainingen",
-  health: "gezondheid",
-  race_calendar: "aankomende wedstrijden",
-  nutrition: "voeding",
-  weather: "weersomstandigheden",
-}
-
-/**
- * Veilige vertaalfunctie voor API-signaalsleutels — de enige toegestane weg
- * van ruwe engine-sleutel naar UI-tekst. Onbekende sleutels worden NOOIT
- * letterlijk getoond; ze vallen terug op een generieke Nederlandse tekst.
- * Gebruik deze functie overal; nooit een lokale ?? key / ?? m fallback.
- */
-export function safeSignalLabel(k: string): string {
-  const known = MISSING_SIGNAL_LABELS[k]
-  if (known) return known
-  if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
-    console.warn(`[Sparki] onbekende signaalsleutel in presentatie: "${k}"`)
-  }
-  return "aanvullende gegevens ontbreken"
-}
+// Signaalsleutels worden vertaald via labelSignal() uit lib/signal-labels.ts —
+// de enige plek waar nieuwe signaalsoorten worden toegevoegd.
 
 // Kernmissende signalen in volgorde van dagelijkse relevantie.
 const MISSING_CORE_PRIORITY = [
@@ -93,12 +63,11 @@ const MISSING_CORE_PRIORITY = [
 // Geeft de ontbrekende sleutels terug als Nederlandse termen die de gebruiker
 // te zien krijgt. Als bijna alles ontbreekt (>= 8 van de 11 signalen) geeft
 // dit een lege array terug — de aanroeper toont dan één compacte zin.
-// Gebruikt safeSignalLabel: nooit een ruwe API-sleutel in de output.
 export function relevantMissingLabels(keys: string[]): string[] {
   if (keys.length >= 8) return []
   const core = keys.filter((k) => MISSING_CORE_PRIORITY.includes(k)).slice(0, 4)
-  if (core.length > 0) return core.map(safeSignalLabel)
-  return keys.slice(0, 4).map(safeSignalLabel)
+  if (core.length > 0) return core.map((k) => labelSignal(k))
+  return keys.slice(0, 4).map((k) => labelSignal(k))
 }
 
 // Presentatieconfiguratiedrempels — uitsluitend voor toon en formulering van de

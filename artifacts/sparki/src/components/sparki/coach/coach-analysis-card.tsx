@@ -1,6 +1,5 @@
 import { useState } from "react"
 import { useLocation } from "wouter"
-import { safeSignalLabel } from "@/lib/commercial-shell"
 import { AnalysisFeedback } from "@/components/sparki/analysis-feedback"
 import {
   Activity,
@@ -26,6 +25,7 @@ import {
   type IntakeSignal,
   type Personality,
 } from "@/hooks/use-coach-analysis"
+import { labelSignalCapitalized } from "@/lib/signal-labels"
 
 export type CoachCardVariant = "hero" | "card"
 
@@ -46,6 +46,7 @@ const ACTION_ROUTE: Record<CoachActionKind, string> = {
   add_race: "/races",
   check_gear: "/races",
 }
+
 
 function ConfidencePill({ confidence }: { confidence: Confidence }) {
   const tone =
@@ -79,7 +80,7 @@ function SignalsTable({ signals }: { signals: IntakeSignal[] }) {
               className="border-b border-white/[0.06] last:border-0"
             >
               <td className="px-3 py-2 align-top text-[13px] text-white/55">
-                {safeSignalLabel(s.kind)}
+                {labelSignalCapitalized(s.kind)}
               </td>
               <td className="px-3 py-2 text-right align-top font-mono text-[13px] tabular-nums text-white/90">
                 {s.value ?? "—"}
@@ -105,7 +106,7 @@ function MissingList({ kinds }: { kinds: string[] }) {
             key={k}
             className="rounded-full border border-amber-300/25 px-2 py-0.5 text-[11px] text-amber-100/70"
           >
-            {safeSignalLabel(k)}
+            {labelSignalCapitalized(k)}
           </li>
         ))}
       </ul>
