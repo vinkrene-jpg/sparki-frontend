@@ -8,6 +8,7 @@ import {
   type StateMetric,
   type StateBand,
 } from "@/hooks/use-sparki-state"
+import { buildHerstelPresentatie } from "@/lib/commercial-shell"
 import { Skeleton } from "@/components/sparki/home-sections"
 import { UitlegDot } from "@/components/viz/uitleg"
 import { safeSignalLabel, buildHerstelPresentatie } from "@/lib/commercial-shell"
