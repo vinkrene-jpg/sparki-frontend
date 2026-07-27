@@ -411,6 +411,9 @@ type EnrichmentEntry = {
     } | null;
   };
   error?: boolean;
+  // Deterministic fallback rationale stored when enrichment fails so the
+  // client can show it immediately instead of staying in "laden…" forever.
+  fallbackRationale?: string;
   at: number;
 };
 
@@ -490,10 +493,13 @@ function scheduleEnrichment(
         `[PERF] enrich.error cid=${candidateId.slice(0, 8)}`,
         err instanceof Error ? err.message : String(err),
       );
+      // Store the deterministic fallback so the client can show it permanently
+      // instead of staying in an endless "laden…" state.
       ENRICHMENT.set(candidateId, {
         clerkId,
         pending: false,
         error: true,
+        fallbackRationale: buildRationaleFallback(rationaleInput),
         at: Date.now(),
       });
     });
@@ -1994,7 +2000,13 @@ router.get("/candidate/:candidateId/enrich", requireAuth, (req, res) => {
     return;
   }
   if (entry.error || !entry.result) {
-    res.json({ ready: false, failed: true });
+    res.json({
+      ready: false,
+      failed: true,
+      // Deterministic fallback so the client can display it permanently
+      // instead of staying in "laden…" forever.
+      rationale: entry.fallbackRationale ?? null,
+    });
     return;
   }
 

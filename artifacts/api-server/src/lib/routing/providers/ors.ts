@@ -131,6 +131,23 @@ export class OrsProvider implements RoutingProvider {
     return `De routeservice kon deze route niet maken (foutcode ${status}). Probeer het opnieuw of pas het startpunt of de afstand aan.`;
   }
 
+  private async directionsOnce(
+    profile: RoutingProfile,
+    body: Record<string, unknown>,
+    signal: AbortSignal,
+  ): Promise<Response> {
+    return fetch(`${ORS_BASE}/v2/directions/${profile}/geojson`, {
+      method: "POST",
+      headers: {
+        Authorization: this.apiKey(),
+        "Content-Type": "application/json",
+        Accept: "application/geo+json",
+      },
+      body: JSON.stringify(body),
+      signal,
+    });
+  }
+
   private async directions(
     profile: RoutingProfile,
     body: Record<string, unknown>,
@@ -140,16 +157,14 @@ export class OrsProvider implements RoutingProvider {
     const timeoutId = setTimeout(() => controller.abort(), 15_000);
     let res: Response;
     try {
-      res = await fetch(`${ORS_BASE}/v2/directions/${profile}/geojson`, {
-        method: "POST",
-        headers: {
-          Authorization: this.apiKey(),
-          "Content-Type": "application/json",
-          Accept: "application/geo+json",
-        },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
+      res = await this.directionsOnce(profile, body, controller.signal);
+      // Transient rate-limit: retry once after 2 s so a brief ORS quota window
+      // doesn't kill a real user's route request.
+      if (res.status === 429) {
+        console.warn(`[ORS] 429 rate-limit — retrying once after 2 s (profile=${profile})`);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        res = await this.directionsOnce(profile, body, controller.signal);
+      }
     } catch (err) {
       clearTimeout(timeoutId);
       const isAbort =

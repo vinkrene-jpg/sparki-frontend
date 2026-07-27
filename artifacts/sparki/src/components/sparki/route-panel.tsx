@@ -1485,12 +1485,19 @@ function RouteGenerator({
   // Enrich: poll for AI-phrased rationale + road objects after first generation.
   const enrich = useEnrichRoute(candidate?.candidateId)
   // Update the candidate's rationale when the background enrichment completes.
+  // Also update on failure: the server returns the deterministic fallback
+  // rationale so the UI can show it permanently instead of staying in "laden…".
   useEffect(() => {
-    if (!enrich.data?.ready || !enrich.data.rationale) return
-    setCandidate((c) =>
-      c ? { ...c, rationale: enrich.data!.rationale! } : c,
-    )
-  }, [enrich.data?.ready, enrich.data?.rationale])
+    const d = enrich.data
+    if (!d) return
+    if (d.ready && d.rationale) {
+      setCandidate((c) => c ? { ...c, rationale: d.rationale! } : c)
+    } else if (d.failed && d.rationale) {
+      // Overwrite with server-side fallback (may differ from the initial quick
+      // fallback if race conditions produced a different one).
+      setCandidate((c) => c ? { ...c, rationale: d.rationale! } : c)
+    }
+  }, [enrich.data?.ready, enrich.data?.failed, enrich.data?.rationale])
   // Interactief hoogteprofiel voor de voorgestelde route (kaartklik blijft in
   // de bouwer voor verzamelpunten — positie kiezen gaat hier via het profiel).
   const [candPosKm, setCandPosKm] = useState<number | null>(null)
@@ -2769,6 +2776,11 @@ function RouteGenerator({
           <p className="mt-4 whitespace-pre-line text-[12px] leading-relaxed text-white/55">
             {candidate.rationale}
           </p>
+          {enrich.data?.failed && (
+            <p className="mt-1.5 text-[11px] text-white/30">
+              De uitgebreide routetoelichting kon niet worden gegenereerd.
+            </p>
+          )}
 
           {candidate.nav.length > 0 && (
             <div className="mt-4">
