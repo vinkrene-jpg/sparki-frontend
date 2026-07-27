@@ -1,0 +1,204 @@
+[
+  {
+    "scherm": "vandaag",
+    "viewport": "mobiel",
+    "url": "/vandaag",
+    "koppen": [
+      "Vandaag",
+      "Deze week",
+      "Training van vandaag",
+      "Herstel en gereedheid"
+    ],
+    "navLinks": [
+      "Vandaag",
+      "Plan",
+      "Rijden",
+      "Activiteiten",
+      "Ontdekken"
+    ],
+    "mijnAccount": true,
+    "hamburger": false,
+    "overflowX": 0,
+    "akkoord": false,
+    "bijnaLeeg": false,
+    "tekstlengte": 400,
+    "consolefouten": []
+  },
+  {
+    "scherm": "plan",
+    "viewport": "mobiel",
+    "url": "/train",
+    "koppen": [
+      "Plan",
+      "Doel als meetlat",
+      "Wat over tijd opvalt",
+      "Je ontwikkeling"
+    ],
+    "navLinks": [
+      "Vandaag",
+      "Plan",
+      "Rijden",
+      "Activiteiten",
+      "Ontdekken"
+    ],
+    "mijnAccount": true,
+    "hamburger": false,
+    "overflowX": 0,
+    "akkoord": false,
+    "bijnaLeeg": false,
+    "tekstlengte": 1565,
+    "consolefouten": []
+  },
+  {
+    "scherm": "activiteiten",
+    "viewport": "mobiel",
+    "url": "/activiteiten",
+    "koppen": [
+      "Activiteiten"
+    ],
+    "navLinks": [
+      "Vandaag",
+      "Plan",
+      "Rijden",
+      "Activiteiten",
+      "Ontdekken"
+    ],
+    "mijnAccount": true,
+    "hamburger": false,
+    "overflowX": 0,
+    "akkoord": false,
+    "bijnaLeeg": false,
+    "tekstlengte": 268,
+    "consolefouten": []
+  },
+  {
+    "scherm": "meer",
+    "viewport": "mobiel",
+    "url": "/meer",
+    "koppen": [
+      "Meer",
+      "Profiel & account",
+      "Veelgebruikt",
+      "Sport & materiaal"
+    ],
+    "navLinks": [
+      "Vandaag",
+      "Plan",
+      "Rijden",
+      "Activiteiten",
+      "Ontdekken"
+    ],
+    "mijnAccount": true,
+    "hamburger": false,
+    "overflowX": 0,
+    "akkoord": false,
+    "bijnaLeeg": false,
+    "tekstlengte": 656,
+    "consolefouten": []
+  },
+  {
+    "navigatietest": [
+      "Plan→KLIKFOUT",
+      "Activiteiten→KLIKFOUT",
+      "Meer→KLIKFOUT",
+      "Vandaag→KLIKFOUT"
+    ]
+  },
+  {
+    "scherm": "vandaag",
+    "viewport": "desktop",
+    "url": "/vandaag",
+    "koppen": [
+      "Vandaag",
+      "Deze week",
+      "Training van vandaag",
+      "Herstel en gereedheid"
+    ],
+    "navLinks": [
+      "Vandaag",
+      "Plan",
+      "Rijden",
+      "Activiteiten",
+      "Ontdekken"
+    ],
+    "mijnAccount": true,
+    "hamburger": false,
+    "overflowX": 0,
+    "akkoord": false,
+    "bijnaLeeg": false,
+    "tekstlengte": 417,
+    "consolefouten": []
+  },
+  {
+    "scherm": "plan",
+    "viewport": "desktop",
+    "url": "/train",
+    "koppen": [
+      "Plan",
+      "Doel als meetlat",
+      "Wat over tijd opvalt",
+      "Je ontwikkeling"
+    ],
+    "navLinks": [
+      "Vandaag",
+      "Plan",
+      "Rijden",
+      "Activiteiten",
+      "Ontdekken"
+    ],
+    "mijnAccount": true,
+    "hamburger": false,
+    "overflowX": 0,
+    "akkoord": false,
+    "bijnaLeeg": false,
+    "tekstlengte": 1589,
+    "consolefouten": []
+  },
+  {
+    "scherm": "activiteiten",
+    "viewport": "desktop",
+    "url": "/activiteiten",
+    "koppen": [
+      "Activiteiten"
+    ],
+    "navLinks": [
+      "Vandaag",
+      "Plan",
+      "Rijden",
+      "Activiteiten",
+      "Ontdekken"
+    ],
+    "mijnAccount": true,
+    "hamburger": false,
+    "overflowX": 0,
+    "akkoord": false,
+    "bijnaLeeg": false,
+    "tekstlengte": 292,
+    "consolefouten": []
+  },
+  {
+    "scherm": "meer",
+    "viewport": "desktop",
+    "url": "/meer",
+    "koppen": [
+      "Meer",
+      "Profiel & account",
+      "Veelgebruikt",
+      "Sport & materiaal"
+    ],
+    "navLinks": [
+      "Vandaag",
+      "Plan",
+      "Rijden",
+      "Activiteiten",
+      "Ontdekken"
+    ],
+    "mijnAccount": true,
+    "hamburger": false,
+    "overflowX": 0,
+    "akkoord": false,
+    "bijnaLeeg": false,
+    "tekstlengte": 680,
+    "consolefouten": []
+  }
+]

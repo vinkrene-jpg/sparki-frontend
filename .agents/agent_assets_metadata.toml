@@ -785,3 +785,57 @@ id = "q0O-D8KAssNkVITahdtBh"
 uri = "file://screenshots/vandaag-controle-screenshots.zip"
 type = "unspecified"
 title = "Vandaag-scherm — alle 16 controlebeelden (ZIP)"
+
+[[outputs]]
+id = "NkIpNMoIp5dKjMkcngyiZ"
+uri = "file://.agents/outputs/core-validatie/vandaag-mobiel.png"
+type = "image"
+title = "Vandaag — mobiel 390px (ingelogd, productiebuild)"
+
+[[outputs]]
+id = "IOSVH1sSt8WP4ZMFNGJvV"
+uri = "file://.agents/outputs/core-validatie/vandaag-desktop.png"
+type = "image"
+title = "Vandaag — desktop 1440px (ingelogd, productiebuild)"
+
+[[outputs]]
+id = "vMnd58xTc7M26LRKVPRbb"
+uri = "file://.agents/outputs/core-validatie/plan-mobiel.png"
+type = "image"
+title = "Plan (/train) — mobiel 390px"
+
+[[outputs]]
+id = "W58MoMoaZGuQuHBH8jpvA"
+uri = "file://.agents/outputs/core-validatie/plan-desktop.png"
+type = "image"
+title = "Plan (/train) — desktop 1440px"
+
+[[outputs]]
+id = "2rDzIt19WKFpeE332Ejy4"
+uri = "file://.agents/outputs/core-validatie/activiteiten-mobiel.png"
+type = "image"
+title = "Activiteiten — mobiel 390px"
+
+[[outputs]]
+id = "crebelOwoYKncr4ZqKzkh"
+uri = "file://.agents/outputs/core-validatie/activiteiten-desktop.png"
+type = "image"
+title = "Activiteiten — desktop 1440px"
+
+[[outputs]]
+id = "7HiH6WjgaazXOnbDE5THB"
+uri = "file://.agents/outputs/core-validatie/meer-mobiel.png"
+type = "image"
+title = "Meer — mobiel 390px"
+
+[[outputs]]
+id = "cN5IlXjrG-3NGVxEeGGdN"
+uri = "file://.agents/outputs/core-validatie/meer-desktop.png"
+type = "image"
+title = "Meer — desktop 1440px"
+
+[[outputs]]
+id = "kCSc18pxAsw3gZqqjFANx"
+uri = "file://.agents/outputs/core-validatie/acceptatiescherm-mobiel.png"
+type = "image"
+title = "Juridisch acceptatiescherm (vóór de geautoriseerde acceptatie)"
