@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { IconCheck } from "@/components/ds"
 import { ACCENT } from "@/components/sparki/ui"
 import {
   NAV_DATA_FIELDS,
@@ -243,7 +244,16 @@ export function NavSettingsPanel() {
         className="w-full rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
         style={{ background: ACCENT, color: "#040506" }}
       >
-        {save.isPending ? "Opslaan…" : saved ? "Opgeslagen ✓" : "Instellingen opslaan"}
+        {save.isPending ? (
+          "Opslaan…"
+        ) : saved ? (
+          <span className="inline-flex items-center justify-center gap-1.5">
+            <IconCheck className="h-4 w-4" aria-hidden />
+            Opgeslagen
+          </span>
+        ) : (
+          "Instellingen opslaan"
+        )}
       </button>
     </div>
   )

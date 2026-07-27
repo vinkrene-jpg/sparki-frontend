@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { IconCheck } from "@/components/ds"
 import { Link, Redirect, useLocation } from "wouter"
 import {
   Shield,
@@ -380,7 +381,10 @@ function RealClubView({ clubId }: { clubId: number }) {
                           : "border-white/15 text-white/60 hover:border-white/30"
                       }`}
                     >
-                      {granted ? "✓ " : ""}{label}
+                      {granted && (
+                        <IconCheck className="mr-1 inline h-3 w-3" aria-hidden />
+                      )}
+                      {label}
                     </button>
                   )
                 })}

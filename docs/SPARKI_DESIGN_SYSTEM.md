@@ -270,11 +270,15 @@ toestand.
 
 ### Bekende resterende schuld
 
-- Hardcoded kaart-/navigatiekleuren in `route-navigator.tsx` (o.a. `#05070e`,
-  `#070d16`, sprintgeel `#facc15`) en enkele pagina-achtergronden.
-- „✓"-tekens als tekst-suffix in kopieer-/opslaglabels (o.a. `tester-qr`,
-  `invitations`, `route-panel`, `club`) — tekst, geen losse iconen; vervangen
-  bij eerstvolgende aanraking van die schermen.
+- ~~Hardcoded kaart-/navigatiekleuren in `route-navigator.tsx`~~ — opgelost:
+  className-kleuren gebruiken de tokens `map-ink`/`map-panel`/`map-scrim`/
+  `map-warn-*` uit `index.css`; JS-gegenereerde Leaflet-markup (divIcons/SVG/
+  polylines) verwijst naar één lokale constantenlaag bovenin het bestand.
+  Enkele losse pagina-achtergronden elders bestaan nog.
+- ~~„✓"-tekens als tekst-suffix in kopieer-/opslaglabels~~ — opgelost: alle 12
+  plekken (o.a. `tester-qr`, `invitations`, `route-panel`, `route-navigator`,
+  `club`, `club-beheer`, `nav-settings-panel`, `route-library`) gebruiken nu
+  `IconCheck` naast de tekst.
 - `components/ui/button.tsx` (shadcn) heeft maten < 44px; bestaand gebruik
   blijft, nieuwe sporterschermen gebruiken `DsButton`.
 - De oude `NAV_ICONS`-map in `bottom-nav.tsx` migreert pas mee met de

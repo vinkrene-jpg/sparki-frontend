@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import { IconCheck } from "@/components/ds"
 import { useLocation } from "wouter"
 import {
   Archive,
@@ -691,7 +692,9 @@ function SharePanel({
             }`}
           >
             {AUDIENCE_LABEL[aud]}
-            {has(aud) ? " ✓" : ""}
+            {has(aud) && (
+              <IconCheck className="ml-1 inline h-3 w-3" aria-hidden />
+            )}
           </button>
         ))}
       </div>

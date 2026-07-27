@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import { IconCheck } from "@/components/ds"
 import { createPortal } from "react-dom"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
@@ -88,6 +89,23 @@ type SavedRide = {
   rideSeconds: number
   savedAt: number
 }
+// ── Kaartkleuren: lokale constantenlaag ─────────────────────────────────────
+// Leaflet-divIcons/SVG-markup en polyline-opties kunnen geen Tailwind-tokens
+// gebruiken; alle losse hexwaarden in JS-gegenereerde kaartmarkup verwijzen
+// daarom hierheen. className-kleuren gebruiken de tokens map-ink/map-panel/…
+// uit `src/index.css` (zie docs/SPARKI_DESIGN_SYSTEM.md).
+const MAP_INK = "#05070e" // diepste kaartlaag + tekst/lijnwerk op accentvlak
+const MAP_MARKER_BG = "#0b1622" // donkere marker-achtergrond
+const ROUTE_LINE = "#22d3ee" // heldere routelijn (cyan-400)
+const ROUTE_CASING = "#0a1420" // donkere casing onder de routelijn
+const ARROW_CASING = "#05121f" // donkere rand onder richtingpijlen
+const ARROW_WHITE = "#ffffff" // pijl zelf
+const DETOUR_LINE = "#fbbf24" // omleidingslijn (amber-400)
+const RIDER_ACCENT = "#38bdf8" // renner-badge (sky-400)
+const SPRINT_YELLOW = "#facc15" // sprintgeel (bordjes-sprint)
+const MARKER_POSITIVE = "#4ade80" // groen markeraccent (green-400)
+const MARKER_NEUTRAL = "#e5e7eb" // lichtgrijs (finishvlag)
+
 const SAVED_RIDE_MAX_AGE_MS = 6 * 3600 * 1000
 function savedRideKey(routeId: number | null) {
   return `sparki:nav-rit:${routeId ?? "los"}`
@@ -968,7 +986,7 @@ export function RouteNavigator({
       detourLineRef.current = L.polyline(
         detour.path.map((p) => [p.lat, p.lon] as [number, number]),
         {
-          color: "#fbbf24",
+          color: DETOUR_LINE,
           weight: 5,
           opacity: 0.95,
           dashArray: "10 8",
@@ -1518,14 +1536,14 @@ export function RouteNavigator({
       // visible on any basemap (especially satellite), plus direction arrows so
       // it's obvious which way to follow.
       L.polyline(latlngs, {
-        color: "#0a1420",
+        color: ROUTE_CASING,
         weight: 9,
         opacity: 0.9,
         lineJoin: "round",
         lineCap: "round",
       }).addTo(map)
       L.polyline(latlngs, {
-        color: "#22d3ee",
+        color: ROUTE_LINE,
         weight: 5,
         opacity: 1,
         lineJoin: "round",
@@ -1547,8 +1565,8 @@ export function RouteNavigator({
           className: "",
           html: `<span style="display:block;width:20px;height:20px;transform:rotate(${rot}deg);transform-origin:center;">
               <svg viewBox="0 0 24 24" width="20" height="20">
-                <path d="M12 21 V5 M5.5 11.5 L12 4.5 L18.5 11.5" fill="none" stroke="#05121f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M12 21 V5 M5.5 11.5 L12 4.5 L18.5 11.5" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 21 V5 M5.5 11.5 L12 4.5 L18.5 11.5" fill="none" stroke="${ARROW_CASING}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 21 V5 M5.5 11.5 L12 4.5 L18.5 11.5" fill="none" stroke="${ARROW_WHITE}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </span>`,
           iconSize: [20, 20],
@@ -1565,8 +1583,8 @@ export function RouteNavigator({
       // user-controlled content ever enters this divIcon HTML sink.
       const startIcon = L.divIcon({
         className: "",
-        html: `<span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:#0b1622;border:2px solid #4ade80;box-shadow:0 0 0 2px rgba(5,7,14,0.9),0 0 10px rgba(74,222,128,0.6);transform:rotate(var(--map-counter-rot,0deg));">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#4ade80" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        html: `<span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:${MAP_MARKER_BG};border:2px solid ${MARKER_POSITIVE};box-shadow:0 0 0 2px rgba(5,7,14,0.9),0 0 10px rgba(74,222,128,0.6);transform:rotate(var(--map-counter-rot,0deg));">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${MARKER_POSITIVE}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 22V4"/><path d="M4 4c3-1.8 6 1.8 9 0s5-1 7 0v9c-2-1-4-1.8-7 0s-6-1.8-9 0"/>
             </svg>
           </span>`,
@@ -1575,17 +1593,17 @@ export function RouteNavigator({
       })
       const finishIcon = L.divIcon({
         className: "",
-        html: `<span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:#0b1622;border:2px solid rgba(255,255,255,0.85);box-shadow:0 0 0 2px rgba(5,7,14,0.9),0 0 10px rgba(255,255,255,0.45);transform:rotate(var(--map-counter-rot,0deg));">
+        html: `<span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:${MAP_MARKER_BG};border:2px solid rgba(255,255,255,0.85);box-shadow:0 0 0 2px rgba(5,7,14,0.9),0 0 10px rgba(255,255,255,0.45);transform:rotate(var(--map-counter-rot,0deg));">
             <svg viewBox="0 0 16 16" width="13" height="13">
-              <rect x="2" y="1" width="1.6" height="14" rx="0.8" fill="#e5e7eb"/>
+              <rect x="2" y="1" width="1.6" height="14" rx="0.8" fill="${MARKER_NEUTRAL}"/>
               <g>
-                <rect x="4" y="1" width="10" height="8" fill="#e5e7eb"/>
-                <rect x="4" y="1" width="2.5" height="2.66" fill="#0b1622"/>
-                <rect x="9" y="1" width="2.5" height="2.66" fill="#0b1622"/>
-                <rect x="6.5" y="3.66" width="2.5" height="2.66" fill="#0b1622"/>
-                <rect x="11.5" y="3.66" width="2.5" height="2.66" fill="#0b1622"/>
-                <rect x="4" y="6.33" width="2.5" height="2.66" fill="#0b1622"/>
-                <rect x="9" y="6.33" width="2.5" height="2.66" fill="#0b1622"/>
+                <rect x="4" y="1" width="10" height="8" fill="${MARKER_NEUTRAL}"/>
+                <rect x="4" y="1" width="2.5" height="2.66" fill="${MAP_MARKER_BG}"/>
+                <rect x="9" y="1" width="2.5" height="2.66" fill="${MAP_MARKER_BG}"/>
+                <rect x="6.5" y="3.66" width="2.5" height="2.66" fill="${MAP_MARKER_BG}"/>
+                <rect x="11.5" y="3.66" width="2.5" height="2.66" fill="${MAP_MARKER_BG}"/>
+                <rect x="4" y="6.33" width="2.5" height="2.66" fill="${MAP_MARKER_BG}"/>
+                <rect x="9" y="6.33" width="2.5" height="2.66" fill="${MAP_MARKER_BG}"/>
               </g>
             </svg>
           </span>`,
@@ -1798,7 +1816,7 @@ export function RouteNavigator({
     // The rider is a cyclist badge (not a bare dot). With a known heading a
     // direction pointer rotates around the badge; the cyclist itself stays
     // upright so it always reads as "jij op de fiets".
-    const bikeSvg = `<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#05070e" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+    const bikeSvg = `<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="${MAP_INK}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>
       </svg>`
     const html = `<span style="position:relative;display:block;width:38px;height:38px;">
@@ -1806,12 +1824,12 @@ export function RouteNavigator({
           hasHeading
             ? `<span style="position:absolute;inset:0;transform:rotate(${rot}deg);transform-origin:center;">
                  <svg viewBox="0 0 38 38" width="38" height="38">
-                   <path d="M19 0 L24 9 L14 9 Z" fill="#38bdf8" stroke="#05070e" stroke-width="1.2" stroke-linejoin="round"/>
+                   <path d="M19 0 L24 9 L14 9 Z" fill="${RIDER_ACCENT}" stroke="${MAP_INK}" stroke-width="1.2" stroke-linejoin="round"/>
                  </svg>
                </span>`
             : ""
         }
-        <span style="position:absolute;left:5px;top:5px;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9999px;background:#38bdf8;border:2px solid #05070e;box-shadow:0 0 0 3px rgba(56,189,248,0.3),0 0 14px rgba(56,189,248,0.8);transform:rotate(var(--map-counter-rot,0deg));">
+        <span style="position:absolute;left:5px;top:5px;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9999px;background:${RIDER_ACCENT};border:2px solid ${MAP_INK};box-shadow:0 0 0 3px rgba(56,189,248,0.3),0 0 14px rgba(56,189,248,0.8);transform:rotate(var(--map-counter-rot,0deg));">
           ${bikeSvg}
         </span>
       </span>`
@@ -1979,7 +1997,7 @@ export function RouteNavigator({
     for (const b of boards) {
       const icon = L.divIcon({
         className: "",
-        html: `<span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#facc15;color:#05070e;font-weight:800;font-size:12px;border:2px solid #05070e;box-shadow:0 0 8px rgba(250,204,21,0.7);transform:rotate(var(--map-counter-rot,0deg));"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>`,
+        html: `<span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:${SPRINT_YELLOW};color:${MAP_INK};font-weight:800;font-size:12px;border:2px solid ${MAP_INK};box-shadow:0 0 8px rgba(250,204,21,0.7);transform:rotate(var(--map-counter-rot,0deg));"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>`,
         iconSize: [22, 22],
         iconAnchor: [11, 11],
       })
@@ -2327,7 +2345,7 @@ export function RouteNavigator({
   }
   const metricsBar = (
     <div
-      className="pointer-events-auto rounded-2xl border border-white/10 bg-[#070d16]/92 backdrop-blur-md"
+      className="pointer-events-auto rounded-2xl border border-white/10 bg-map-panel/92 backdrop-blur-md"
       style={
         !metricsOnTop
           ? {
@@ -2536,7 +2554,7 @@ export function RouteNavigator({
   }
 
   const overlay = (
-    <div className="fixed inset-0 z-[90] isolate bg-[#05070e]">
+    <div className="fixed inset-0 z-[90] isolate bg-map-ink">
       {/* Kaart, eventueel gedraaid (rijrichting boven). De kaartlaag is dan
           groter dan het scherm zodat er bij het draaien geen hoeken openvallen;
           icoontjes draaien via --map-counter-rot terug zodat ze leesbaar
@@ -2564,7 +2582,7 @@ export function RouteNavigator({
           type="button"
           onClick={() => mapRef.current?.zoomIn()}
           aria-label="Inzoomen"
-          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#070d16]/90 text-white/80 shadow-lg backdrop-blur-md transition hover:text-white"
+          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-map-panel/90 text-white/80 shadow-lg backdrop-blur-md transition hover:text-white"
         >
           <Plus className="h-5 w-5" strokeWidth={2} />
         </button>
@@ -2572,7 +2590,7 @@ export function RouteNavigator({
           type="button"
           onClick={() => mapRef.current?.zoomOut()}
           aria-label="Uitzoomen"
-          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#070d16]/90 text-white/80 shadow-lg backdrop-blur-md transition hover:text-white"
+          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-map-panel/90 text-white/80 shadow-lg backdrop-blur-md transition hover:text-white"
         >
           <Minus className="h-5 w-5" strokeWidth={2} />
         </button>
@@ -2586,11 +2604,11 @@ export function RouteNavigator({
             type="button"
             onClick={() => { setSaveRideState("idle"); setConfirmClose(true) }}
             aria-label="Navigatie sluiten"
-            className="flex shrink-0 items-center justify-center rounded-full border border-white/10 bg-[#070d16]/90 p-2 text-white/60 backdrop-blur-md transition hover:text-white"
+            className="flex shrink-0 items-center justify-center rounded-full border border-white/10 bg-map-panel/90 p-2 text-white/60 backdrop-blur-md transition hover:text-white"
           >
             <X className="h-3.5 w-3.5" strokeWidth={1.75} />
           </button>
-          <div className="min-w-0 flex-1 truncate rounded-full border border-white/10 bg-[#070d16]/90 px-3 py-2 text-[13px] text-white/70 backdrop-blur-md">
+          <div className="min-w-0 flex-1 truncate rounded-full border border-white/10 bg-map-panel/90 px-3 py-2 text-[13px] text-white/70 backdrop-blur-md">
             {name}
           </div>
           <button
@@ -2600,7 +2618,7 @@ export function RouteNavigator({
             className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] backdrop-blur-md transition ${
               setupOpen
                 ? "border-cyan-400/40 bg-cyan-400/15 text-cyan-200"
-                : "border-white/10 bg-[#070d16]/90 text-white/70 hover:text-white"
+                : "border-white/10 bg-map-panel/90 text-white/70 hover:text-white"
             }`}
           >
             <SlidersHorizontal className="h-4 w-4" strokeWidth={1.75} />
@@ -2613,7 +2631,7 @@ export function RouteNavigator({
             className={`flex shrink-0 items-center justify-center rounded-full border p-2 backdrop-blur-md transition ${
               showLegend
                 ? "border-cyan-400/40 bg-cyan-400/15 text-cyan-200"
-                : "border-white/10 bg-[#070d16]/90 text-white/70 hover:text-white"
+                : "border-white/10 bg-map-panel/90 text-white/70 hover:text-white"
             }`}
           >
             <Info className="h-4 w-4" strokeWidth={1.75} />
@@ -2624,7 +2642,7 @@ export function RouteNavigator({
             waar de wind naartoe waait. */}
         {wind && !ecoMode && (
           <div className="pointer-events-none flex justify-end">
-            <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-[#070d16]/70 px-2.5 py-1 font-mono text-[11px] tabular-nums text-white/50 backdrop-blur-md">
+            <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-map-panel/70 px-2.5 py-1 font-mono text-[11px] tabular-nums text-white/50 backdrop-blur-md">
               <Wind className="h-3 w-3" strokeWidth={1.75} />
               <ArrowUp
                 className="h-3 w-3"
@@ -2643,7 +2661,7 @@ export function RouteNavigator({
             alles. Cijfers komen uit het echte hoogteprofiel van de route. */}
         {climbLive && climbLive.phase === "komt" && (
           <div className="pointer-events-none flex justify-end">
-            <div className="w-[220px] rounded-2xl border border-white/10 bg-[#070d16]/85 p-3 backdrop-blur-md">
+            <div className="w-[220px] rounded-2xl border border-white/10 bg-map-panel/85 p-3 backdrop-blur-md">
               <p className="font-mono text-[9px] uppercase tracking-[0.16em]" style={{ color: ACCENT }}>
                 Klim over {fmtMeters(climbLive.inM)}
               </p>
@@ -2817,7 +2835,7 @@ export function RouteNavigator({
 
         {/* Uitklapbare legenda — legt alleen uit wat ECHT op deze kaart staat. */}
         {showLegend && (
-          <div className="pointer-events-auto flex flex-col gap-2 rounded-2xl border border-white/10 bg-[#070d16]/95 p-3 backdrop-blur-md">
+          <div className="pointer-events-auto flex flex-col gap-2 rounded-2xl border border-white/10 bg-map-panel/95 p-3 backdrop-blur-md">
             <div className="flex items-center justify-between">
               <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
                 Wat betekenen de icoontjes?
@@ -2869,7 +2887,7 @@ export function RouteNavigator({
         )}
 
         {setupOpen && (
-          <div className="pointer-events-auto flex flex-col gap-3 rounded-2xl border border-white/10 bg-[#070d16]/95 p-3 backdrop-blur-md">
+          <div className="pointer-events-auto flex flex-col gap-3 rounded-2xl border border-white/10 bg-map-panel/95 p-3 backdrop-blur-md">
             {/* Map style — a one-time choice at the start of the ride. */}
             <div>
               <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
@@ -2884,7 +2902,7 @@ export function RouteNavigator({
                     onClick={() => setBasemap(id)}
                     className={`rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition disabled:opacity-40 ${
                       activeBasemap === id
-                        ? "bg-cyan-400 text-[#05070e]"
+                        ? "bg-cyan-400 text-map-ink"
                         : "border border-white/10 text-white/55 hover:text-white/85"
                     }`}
                   >
@@ -2951,7 +2969,7 @@ export function RouteNavigator({
                   onClick={() => setShowPois(true)}
                   className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] transition disabled:opacity-40 ${
                     poisVisible
-                      ? "bg-cyan-400 text-[#05070e]"
+                      ? "bg-cyan-400 text-map-ink"
                       : "border border-white/10 text-white/55 hover:text-white/85"
                   }`}
                 >
@@ -2964,7 +2982,7 @@ export function RouteNavigator({
                   onClick={() => setShowPois(false)}
                   className={`rounded-full px-3 py-1.5 text-[11px] transition disabled:opacity-40 ${
                     !poisVisible
-                      ? "bg-cyan-400 text-[#05070e]"
+                      ? "bg-cyan-400 text-map-ink"
                       : "border border-white/10 text-white/55 hover:text-white/85"
                   }`}
                 >
@@ -2989,7 +3007,7 @@ export function RouteNavigator({
                   onClick={() => setWithOthers(false)}
                   className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] transition ${
                     !withOthers
-                      ? "bg-cyan-400 text-[#05070e]"
+                      ? "bg-cyan-400 text-map-ink"
                       : "border border-white/10 text-white/55 hover:text-white/85"
                   }`}
                 >
@@ -3001,7 +3019,7 @@ export function RouteNavigator({
                   onClick={() => setWithOthers(true)}
                   className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] transition ${
                     withOthers
-                      ? "bg-cyan-400 text-[#05070e]"
+                      ? "bg-cyan-400 text-map-ink"
                       : "border border-white/10 text-white/55 hover:text-white/85"
                   }`}
                 >
@@ -3028,7 +3046,7 @@ export function RouteNavigator({
                   onClick={() => setShowSteps((v) => !v)}
                   className={`rounded-full px-3 py-1.5 text-[11px] transition ${
                     showSteps
-                      ? "bg-cyan-400 text-[#05070e]"
+                      ? "bg-cyan-400 text-map-ink"
                       : "border border-white/10 text-white/55 hover:text-white/85"
                   }`}
                 >
@@ -3163,7 +3181,7 @@ export function RouteNavigator({
         )}
 
         {routeId != null && withOthers && (
-          <div className="pointer-events-auto flex items-center gap-2.5 rounded-xl border border-yellow-400/25 bg-[#070d16]/92 px-3.5 py-2.5 backdrop-blur-md">
+          <div className="pointer-events-auto flex items-center gap-2.5 rounded-xl border border-yellow-400/25 bg-map-panel/92 px-3.5 py-2.5 backdrop-blur-md">
             <Zap
               className="h-5 w-5 shrink-0 text-yellow-300"
               strokeWidth={1.75}
@@ -3197,7 +3215,7 @@ export function RouteNavigator({
 
         {/* Batterijwaarschuwing — alleen bij een echt gemeten tekort. */}
         {batteryShortfall && !ecoMode && !ecoPromptDismissed && battery && (
-          <div className="pointer-events-auto flex flex-col gap-2.5 rounded-xl border border-red-400/40 bg-[#070d16]/92 px-3.5 py-3 backdrop-blur-md">
+          <div className="pointer-events-auto flex flex-col gap-2.5 rounded-xl border border-red-400/40 bg-map-panel/92 px-3.5 py-3 backdrop-blur-md">
             <div className="flex items-center gap-3">
               <BatteryLow
                 className="h-5 w-5 shrink-0 text-red-300"
@@ -3227,7 +3245,7 @@ export function RouteNavigator({
               <button
                 type="button"
                 onClick={enableEco}
-                className="flex-1 rounded-full bg-red-400 px-3 py-2 text-[12px] font-semibold text-[#05070e] transition"
+                className="flex-1 rounded-full bg-red-400 px-3 py-2 text-[12px] font-semibold text-map-ink transition"
               >
                 Spaarstand aan
               </button>
@@ -3236,7 +3254,7 @@ export function RouteNavigator({
         )}
 
         {ecoMode && !dimmed && (
-          <div className="pointer-events-auto flex items-center gap-2.5 rounded-xl border border-white/10 bg-[#070d16]/92 px-3.5 py-2.5 backdrop-blur-md">
+          <div className="pointer-events-auto flex items-center gap-2.5 rounded-xl border border-white/10 bg-map-panel/92 px-3.5 py-2.5 backdrop-blur-md">
             <Battery
               className="h-5 w-5 shrink-0 text-white/60"
               strokeWidth={1.75}
@@ -3264,7 +3282,7 @@ export function RouteNavigator({
         )}
 
         {coffeePrompt && !detour && (
-          <div className="pointer-events-auto flex flex-col gap-2.5 rounded-xl border border-amber-400/40 bg-[#070d16]/92 px-3.5 py-3 backdrop-blur-md">
+          <div className="pointer-events-auto flex flex-col gap-2.5 rounded-xl border border-amber-400/40 bg-map-panel/92 px-3.5 py-3 backdrop-blur-md">
             <div className="flex items-center gap-3">
               <span className="text-[22px] leading-none">☕</span>
               <div className="min-w-0">
@@ -3289,7 +3307,7 @@ export function RouteNavigator({
                 type="button"
                 onClick={acceptCoffee}
                 disabled={detourLoading != null || !location}
-                className="flex-1 rounded-full bg-amber-400 px-3 py-2 text-[12px] font-semibold text-[#05070e] transition disabled:opacity-50"
+                className="flex-1 rounded-full bg-amber-400 px-3 py-2 text-[12px] font-semibold text-map-ink transition disabled:opacity-50"
               >
                 {detourLoading === "poi" ? "Bezig…" : "Ja, breng me erheen"}
               </button>
@@ -3298,7 +3316,7 @@ export function RouteNavigator({
         )}
 
         {selectedPoi && !detour && (
-          <div className="pointer-events-auto flex flex-col gap-2.5 rounded-xl border border-white/15 bg-[#070d16]/92 px-3.5 py-3 backdrop-blur-md">
+          <div className="pointer-events-auto flex flex-col gap-2.5 rounded-xl border border-white/15 bg-map-panel/92 px-3.5 py-3 backdrop-blur-md">
             <div className="flex items-start gap-3">
               <span className="text-[22px] leading-none">
                 {POI_ICONS[selectedPoi.kind] ?? "⭐"}
@@ -3354,7 +3372,7 @@ export function RouteNavigator({
               type="button"
               onClick={() => requestPoiDetour(selectedPoi)}
               disabled={detourLoading != null || !location}
-              className="flex items-center justify-center gap-1.5 rounded-full bg-cyan-400 px-3 py-2 text-[12px] font-semibold text-[#05070e] transition disabled:opacity-50"
+              className="flex items-center justify-center gap-1.5 rounded-full bg-cyan-400 px-3 py-2 text-[12px] font-semibold text-map-ink transition disabled:opacity-50"
             >
               <Navigation className="h-3.5 w-3.5" strokeWidth={2} />
               {detourLoading === "poi" ? "Bezig…" : "Route hierlangs"}
@@ -3363,7 +3381,7 @@ export function RouteNavigator({
         )}
 
         {detour ? (
-          <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-amber-400/40 bg-[#070d16]/92 px-3.5 py-3 backdrop-blur-md">
+          <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-amber-400/40 bg-map-panel/92 px-3.5 py-3 backdrop-blur-md">
             <Navigation
               className="h-6 w-6 shrink-0 text-amber-300"
               strokeWidth={1.75}
@@ -3396,7 +3414,7 @@ export function RouteNavigator({
 
         {nav.length > 0 ? (
           progress?.offRoute && !detour ? (
-            <div className="pointer-events-auto flex flex-col gap-2.5 rounded-xl border border-[rgba(255,120,100,0.5)] bg-[#070d16]/92 px-3.5 py-3 backdrop-blur-md">
+            <div className="pointer-events-auto flex flex-col gap-2.5 rounded-xl border border-[rgba(255,120,100,0.5)] bg-map-panel/92 px-3.5 py-3 backdrop-blur-md">
               <div className="flex items-center gap-3">
                 <TriangleAlert
                   className="h-6 w-6 shrink-0 text-[rgba(255,140,120,0.9)]"
@@ -3431,7 +3449,7 @@ export function RouteNavigator({
                   type="button"
                   onClick={() => requestDetour("verder")}
                   disabled={detourLoading != null}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-cyan-400 px-3 py-2 text-[12px] font-semibold text-[#05070e] transition disabled:opacity-50"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-cyan-400 px-3 py-2 text-[12px] font-semibold text-map-ink transition disabled:opacity-50"
                 >
                   <Navigation className="h-3.5 w-3.5" strokeWidth={2} />
                   {detourLoading === "verder"
@@ -3441,7 +3459,7 @@ export function RouteNavigator({
               </div>
             </div>
           ) : nextStep ? (
-            <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-white/10 bg-[#070d16]/92 px-3.5 py-2 backdrop-blur-md">
+            <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-white/10 bg-map-panel/92 px-3.5 py-2 backdrop-blur-md">
               <div
                 className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
                 style={{ background: "rgba(56,189,248,0.18)" }}
@@ -3475,7 +3493,7 @@ export function RouteNavigator({
               </div>
             </div>
           ) : (
-            <div className="pointer-events-auto flex items-center gap-2.5 rounded-xl border border-white/10 bg-[#070d16]/92 px-3.5 py-3 backdrop-blur-md">
+            <div className="pointer-events-auto flex items-center gap-2.5 rounded-xl border border-white/10 bg-map-panel/92 px-3.5 py-3 backdrop-blur-md">
               <Navigation className="h-5 w-5 text-cyan-300" strokeWidth={1.75} />
               <p className="text-[13px] text-white/60">
                 {location ? "Volg de route." : "Wachten op je locatie…"}
@@ -3483,7 +3501,7 @@ export function RouteNavigator({
             </div>
           )
         ) : (
-          <div className="pointer-events-auto flex items-center gap-2.5 rounded-xl border border-white/10 bg-[#070d16]/92 px-3.5 py-3 backdrop-blur-md">
+          <div className="pointer-events-auto flex items-center gap-2.5 rounded-xl border border-white/10 bg-map-panel/92 px-3.5 py-3 backdrop-blur-md">
             <Navigation className="h-5 w-5 text-white/40" strokeWidth={1.75} />
             <p className="text-[13px] text-white/55">
               Deze route heeft geen afslag-aanwijzingen. De lijn wordt wel
@@ -3505,7 +3523,7 @@ export function RouteNavigator({
         )}
 
         {geoError && (
-          <div className="pointer-events-auto flex items-start gap-2.5 rounded-xl border border-white/10 bg-[#070d16]/92 px-3.5 py-3 backdrop-blur-md">
+          <div className="pointer-events-auto flex items-start gap-2.5 rounded-xl border border-white/10 bg-map-panel/92 px-3.5 py-3 backdrop-blur-md">
             <TriangleAlert
               className="mt-0.5 h-4 w-4 shrink-0 text-[rgba(255,180,120,0.9)]"
               strokeWidth={1.75}
@@ -3520,7 +3538,7 @@ export function RouteNavigator({
         )}
 
         {armedBoard && !sprintResult && (
-          <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-yellow-400/40 bg-[#1a1405]/92 px-3.5 py-3 backdrop-blur-md">
+          <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-yellow-400/40 bg-map-warn-panel/92 px-3.5 py-3 backdrop-blur-md">
             <Zap
               className="h-6 w-6 shrink-0 animate-pulse text-yellow-300"
               strokeWidth={2}
@@ -3548,7 +3566,7 @@ export function RouteNavigator({
       {/* Sprint result — a brief celebration over the map, auto-dismisses. */}
       {sprintResult && (
         <div className="pointer-events-none absolute inset-0 z-[95] flex items-center justify-center p-4">
-          <div className="pointer-events-auto w-full max-w-xs rounded-3xl border border-yellow-400/40 bg-[#0b0f08]/95 p-5 text-center shadow-2xl backdrop-blur-md">
+          <div className="pointer-events-auto w-full max-w-xs rounded-3xl border border-yellow-400/40 bg-map-warn-deep/95 p-5 text-center shadow-2xl backdrop-blur-md">
             <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-yellow-400/15">
               <Trophy className="h-7 w-7 text-yellow-300" strokeWidth={1.75} />
             </div>
@@ -3579,7 +3597,7 @@ export function RouteNavigator({
             <button
               type="button"
               onClick={() => setSprintResult(null)}
-              className="mt-4 w-full rounded-full bg-yellow-400 px-4 py-2 text-[13px] font-semibold text-[#05070e]"
+              className="mt-4 w-full rounded-full bg-yellow-400 px-4 py-2 text-[13px] font-semibold text-map-ink"
             >
               Vet, door!
             </button>
@@ -3593,7 +3611,7 @@ export function RouteNavigator({
           <button
             type="button"
             onClick={() => setFollowing(true)}
-            className="pointer-events-auto mx-auto flex items-center gap-2 rounded-full bg-cyan-400 px-4 py-2 text-[13px] font-semibold text-[#05070e] shadow-lg"
+            className="pointer-events-auto mx-auto flex items-center gap-2 rounded-full bg-cyan-400 px-4 py-2 text-[13px] font-semibold text-map-ink shadow-lg"
           >
             <LocateFixed className="h-4 w-4" strokeWidth={2} />
             Centreer
@@ -3601,7 +3619,7 @@ export function RouteNavigator({
         )}
 
         {rideState === "paused" && (
-          <div className="pointer-events-auto mx-auto rounded-full border border-amber-400/30 bg-[#160f05]/92 px-4 py-1.5 text-[12px] font-medium text-amber-200 backdrop-blur-md">
+          <div className="pointer-events-auto mx-auto rounded-full border border-amber-400/30 bg-map-warn-soft/92 px-4 py-1.5 text-[12px] font-medium text-amber-200 backdrop-blur-md">
             {autoPaused
               ? "Automatisch gepauzeerd — rijd verder om te hervatten"
               : "Gepauzeerd — hervat vanzelf zodra je weer rijdt"}
@@ -3623,7 +3641,7 @@ export function RouteNavigator({
             className={`flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border px-3.5 shadow-lg backdrop-blur-md transition disabled:opacity-40 ${
               headingUpActive
                 ? "border-cyan-400/40 bg-cyan-400/15 text-cyan-200"
-                : "border-white/10 bg-[#070d16]/92 text-white/70 hover:text-white"
+                : "border-white/10 bg-map-panel/92 text-white/70 hover:text-white"
             }`}
           >
             <Compass className="h-5 w-5" strokeWidth={1.75} />
@@ -3636,8 +3654,8 @@ export function RouteNavigator({
             onClick={rideState === "riding" ? pauseRide : startRide}
             className={`flex items-center justify-center gap-2 rounded-2xl px-7 py-2.5 text-[14px] font-semibold shadow-lg transition ${
               rideState === "riding"
-                ? "border border-white/10 bg-[#070d16]/92 text-white/85 backdrop-blur-md hover:text-white"
-                : "bg-cyan-400 text-[#05070e]"
+                ? "border border-white/10 bg-map-panel/92 text-white/85 backdrop-blur-md hover:text-white"
+                : "bg-cyan-400 text-map-ink"
             }`}
           >
             {rideState === "riding" ? (
@@ -3672,7 +3690,7 @@ export function RouteNavigator({
             type="button"
             onClick={() => photoInputRef.current?.click()}
             aria-label="Foto maken en delen"
-            className="flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-white/10 bg-[#070d16]/92 px-3.5 text-white/70 shadow-lg backdrop-blur-md transition hover:text-white"
+            className="flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-white/10 bg-map-panel/92 px-3.5 text-white/70 shadow-lg backdrop-blur-md transition hover:text-white"
           >
             <Camera className="h-5 w-5" strokeWidth={1.75} />
             <span className="font-mono text-[8px] uppercase tracking-[0.1em]">
@@ -3696,7 +3714,7 @@ export function RouteNavigator({
         {!metricsOnTop && metricsBar}
 
         {showSteps && nav.length > 0 && (
-          <div className="pointer-events-auto max-h-[38vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#070d16]/95 p-2 backdrop-blur-md">
+          <div className="pointer-events-auto max-h-[38vh] overflow-y-auto rounded-2xl border border-white/10 bg-map-panel/95 p-2 backdrop-blur-md">
             {nav.map((s, i) => {
               const d = describeDir(s.dir)
               const Icon = d.icon
@@ -3731,7 +3749,7 @@ export function RouteNavigator({
           doet de renner zelf via de grote belknop. */}
       {crashAlert && (
         <div className="absolute inset-0 z-[96] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl border border-red-400/30 bg-[#070d16]/97 p-5 backdrop-blur-md">
+          <div className="w-full max-w-sm rounded-2xl border border-red-400/30 bg-map-panel/97 p-5 backdrop-blur-md">
             {crashAlert.phase === "asking" && (
               <>
                 <p className="text-[20px] font-semibold text-white">
@@ -3749,7 +3767,7 @@ export function RouteNavigator({
                   <button
                     type="button"
                     onClick={dismissCrashAlert}
-                    className="rounded-full bg-cyan-400 px-4 py-3 text-[14px] font-semibold text-[#05070e]"
+                    className="rounded-full bg-cyan-400 px-4 py-3 text-[14px] font-semibold text-map-ink"
                   >
                     Ik ben oké
                   </button>
@@ -3852,11 +3870,12 @@ export function RouteNavigator({
         )
         return (
         <div className="absolute inset-0 z-[95] flex items-end justify-center bg-black/60 p-4 pb-10 backdrop-blur-sm sm:items-center">
-          <div className="max-h-[85vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-white/10 bg-[#070d16]/95 p-4 backdrop-blur-md">
+          <div className="max-h-[85vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-white/10 bg-map-panel/95 p-4 backdrop-blur-md">
             {uploadState === "done" ? (
               <>
-                <p className="text-[15px] font-medium text-white/90">
-                  Rit opgeslagen in Sparki ✓
+                <p className="flex items-center gap-1.5 text-[15px] font-medium text-white/90">
+                  <IconCheck className="h-4 w-4 shrink-0" aria-hidden />
+                  Rit opgeslagen in Sparki
                 </p>
                 <p className="mt-1 text-[12px] leading-relaxed text-white/50">
                   {uploadedSessionId
@@ -3876,8 +3895,9 @@ export function RouteNavigator({
                   </button>
                 )}
                 {stravaState === "done" && (
-                  <p className="mt-3 text-[12px] text-cyan-200">
-                    Doorgezet naar Strava ✓
+                  <p className="mt-3 flex items-center gap-1.5 text-[12px] text-cyan-200">
+                    <IconCheck className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    Doorgezet naar Strava
                   </p>
                 )}
                 {stravaState === "error" && stravaError && (
@@ -3888,7 +3908,7 @@ export function RouteNavigator({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="mt-3 w-full rounded-full bg-cyan-400 px-4 py-2.5 text-[13px] font-semibold text-[#05070e]"
+                  className="mt-3 w-full rounded-full bg-cyan-400 px-4 py-2.5 text-[13px] font-semibold text-map-ink"
                 >
                   Terug naar Sparki
                 </button>
@@ -3956,7 +3976,7 @@ export function RouteNavigator({
                       type="button"
                       disabled={uploadState === "uploading"}
                       onClick={() => void saveRideToSparki()}
-                      className="rounded-full bg-cyan-400 px-4 py-2.5 text-[13px] font-semibold text-[#05070e] transition disabled:opacity-50"
+                      className="rounded-full bg-cyan-400 px-4 py-2.5 text-[13px] font-semibold text-map-ink transition disabled:opacity-50"
                     >
                       {uploadState === "uploading"
                         ? "Bezig met opslaan…"
@@ -4177,7 +4197,7 @@ export function RideOptionsMenu({
   const pill = (active: boolean) =>
     `rounded-full px-3 py-1.5 font-sans text-[12px] transition ${
       active
-        ? "bg-cyan-400 text-[#05070e]"
+        ? "bg-cyan-400 text-map-ink"
         : "border border-white/10 text-white/55 hover:text-white/85"
     }`
 
@@ -4187,9 +4207,9 @@ export function RideOptionsMenu({
         type="button"
         aria-label="Sluiten"
         onClick={onClose}
-        className="absolute inset-0 bg-[#02040a]/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-map-scrim/70 backdrop-blur-sm"
       />
-      <div className="relative max-h-[88vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/[0.1] bg-[#070d16]/[0.97] p-5 backdrop-blur-md sm:rounded-2xl">
+      <div className="relative max-h-[88vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/[0.1] bg-map-panel/[0.97] p-5 backdrop-blur-md sm:rounded-2xl">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="font-sans text-lg font-light tracking-tight text-white/90">
@@ -4403,7 +4423,7 @@ export function RideOptionsMenu({
             type="button"
             onClick={start}
             className="flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-[13px] font-semibold transition"
-            style={{ background: ACCENT, color: "#040506" }}
+            style={{ background: ACCENT, color: "var(--color-app-deep)" }}
           >
             <Navigation className="h-4 w-4" strokeWidth={2} />
             Start navigatie

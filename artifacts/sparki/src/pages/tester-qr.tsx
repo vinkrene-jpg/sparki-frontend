@@ -6,6 +6,7 @@
 // Cinematic Sparki design language.
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { IconCheck } from "@/components/ds"
 import { ChevronLeft } from "lucide-react"
 import { QRCodeCanvas } from "qrcode.react"
 import { useLocation } from "wouter"
@@ -139,7 +140,14 @@ function QrCard({
           onClick={copyLink}
           className="rounded-lg border border-white/10 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:bg-white/[0.05]"
         >
-          {copied ? "Gekopieerd ✓" : "Kopieer link"}
+          {copied ? (
+            <span className="inline-flex items-center gap-1">
+              <IconCheck className="h-3.5 w-3.5" aria-hidden />
+              Gekopieerd
+            </span>
+          ) : (
+            "Kopieer link"
+          )}
         </button>
       </div>
     </div>

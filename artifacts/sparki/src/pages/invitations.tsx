@@ -4,6 +4,7 @@
 // Cinematic Sparki design language.
 
 import { useMemo, useState } from "react"
+import { IconCheck } from "@/components/ds"
 import { ChevronLeft } from "lucide-react"
 import { useLocation } from "wouter"
 import { ScreenShell } from "@/components/sparki/screen-shell"
@@ -361,7 +362,14 @@ export default function InvitationsPage() {
                     onClick={() => copyLink(inv)}
                     className="flex-1 rounded-lg border border-white/10 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition-colors hover:bg-white/[0.05]"
                   >
-                    {copiedId === inv.id ? "Gekopieerd ✓" : "Kopieer link"}
+                    {copiedId === inv.id ? (
+                      <span className="inline-flex items-center justify-center gap-1">
+                        <IconCheck className="h-3.5 w-3.5" aria-hidden />
+                        Gekopieerd
+                      </span>
+                    ) : (
+                      "Kopieer link"
+                    )}
                   </button>
                   <button
                     type="button"

@@ -53,6 +53,14 @@
   --color-accent-cyan: var(--accent-cyan);       /* merkaccent (cyaan) */
   --color-on-accent: #04121a;           /* tekst óp accent-cyaan vlak */
 
+  /* Kaart-/navigatiekleuren (route-navigator): donkere lagen boven de kaart. */
+  --color-map-ink: #05070e;        /* diepste kaartlaag + tekst op accentvlak */
+  --color-map-panel: #070d16;      /* overlay-panelen/pills op de kaart */
+  --color-map-scrim: #02040a;      /* dimlaag achter kaart-sheets */
+  --color-map-warn-panel: #1a1405; /* geelgetint waarschuwingspaneel (sprint) */
+  --color-map-warn-deep: #0b0f08;  /* diepe geelgetinte overlay (sprint) */
+  --color-map-warn-soft: #160f05;  /* zachte geelgetinte pill (sprint) */
+
   --radius-card: 1rem;      /* kaarten (16px, gelijk aan rounded-2xl) */
   --radius-control: 9999px; /* knoppen en pills (volledig rond) */
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react"
+import { IconCheck } from "@/components/ds"
 import { trackScreen } from "@/lib/telemetry"
 import { SectionLabel, Stat, Divider, ACCENT } from "@/components/sparki/ui"
 import { HumorLine } from "@/components/sparki/humor-line"
@@ -1038,7 +1039,14 @@ function RouteCard({
                       }}
                       className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-white/[0.06]"
                     >
-                      {linkCopied ? "Link gekopieerd ✓" : "Link kopiëren"}
+                      {linkCopied ? (
+                        <span className="inline-flex items-center gap-1">
+                          <IconCheck className="h-3.5 w-3.5" aria-hidden />
+                          Link gekopieerd
+                        </span>
+                      ) : (
+                        "Link kopiëren"
+                      )}
                       <span className="mt-0.5 block text-[10px] text-white/35">
                         Werkt voor iedereen met een Sparki-account
                       </span>
@@ -1064,9 +1072,14 @@ function RouteCard({
                       onClick={() => setShowFriendPick((v) => !v)}
                       className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-white/[0.06]"
                     >
-                      {proposalSent
-                        ? "Voorstel verstuurd ✓"
-                        : "Stel voor aan fietsmaatje"}
+                      {proposalSent ? (
+                        <span className="inline-flex items-center gap-1">
+                          <IconCheck className="h-3.5 w-3.5" aria-hidden />
+                          Voorstel verstuurd
+                        </span>
+                      ) : (
+                        "Stel voor aan fietsmaatje"
+                      )}
                       <span className="mt-0.5 block text-[10px] text-white/35">
                         Je maatje kan accepteren, afwijzen of aanpassen
                       </span>
@@ -1887,8 +1900,16 @@ function RouteGenerator({
           </button>
           {mode === "waypoints" ? (
             <span className="font-mono text-[10px] text-white/40">
-              {startPoint ? "start ✓ · " : ""}
-              {endPoint ? "eind ✓ · " : ""}
+              {startPoint ? (
+                <>
+                  start <IconCheck className="inline h-3 w-3" aria-hidden /> ·{" "}
+                </>
+              ) : null}
+              {endPoint ? (
+                <>
+                  eind <IconCheck className="inline h-3 w-3" aria-hidden /> ·{" "}
+                </>
+              ) : null}
               {waypoints.length} routepunt{waypoints.length === 1 ? "" : "en"} ·{" "}
               {meetpoints.length} verzamelpunt
               {meetpoints.length === 1 ? "" : "en"}

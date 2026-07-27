@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { IconCheck } from "@/components/ds"
 import { Redirect, useLocation } from "wouter"
 import { ArrowLeft, Users, CalendarDays, Trophy, Package, ClipboardList, Link2, MapPin, QrCode, Settings2 } from "lucide-react"
 import { QRCodeCanvas } from "qrcode.react"
@@ -114,7 +115,8 @@ function ClubSettingsSection({ club, isOwner }: { club: Club; isOwner: boolean }
                     on ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-200" : "border-white/15 text-white/60 hover:border-white/30"
                   }`}
                 >
-                  {on ? "✓ " : ""}{label}
+                  {on && <IconCheck className="mr-1 inline h-3 w-3" aria-hidden />}
+                  {label}
                 </button>
               )
             })}
