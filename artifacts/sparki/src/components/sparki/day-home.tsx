@@ -341,9 +341,7 @@ function StateDayHome() {
       )}
 
       {/* ── Meerijder-budget (§5.2 #2): at most ONE nudge across all sources. ── */}
-      <div className="mt-6">
-        <MeerijderNudge />
-      </div>
+      <MeerijderNudge />
 
       {/* ── Weer (§5.2 #3): only when it is a real decision factor today. ── */}
       {showWeather && hw?.today && (
@@ -360,9 +358,7 @@ function StateDayHome() {
           null bij geen signalen) — de aandachtswet blijft intact: dit blok
           leidt nooit, het waarschuwt alleen bij vermoede slijtage of een
           zelf-geregistreerd defect. */}
-      <div className="mt-6">
-        <MaintenanceSignalsPanel context="vandaag" compact />
-      </div>
+      <MaintenanceSignalsPanel context="vandaag" compact className="mt-6" />
 
       <section className="mt-8">
         <SectionLabel title="Jouw update vandaag" />

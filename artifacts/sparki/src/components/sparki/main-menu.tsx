@@ -145,8 +145,8 @@ export function MainMenu({
           >
             <MessageCircle className="h-5 w-5 text-cyan-300" strokeWidth={1.75} />
             <span>
-              <span className="block text-[15px] font-medium text-white/92">Vraag Sparki</span>
-              <span className="block text-[11px] text-white/45">Stel elke vraag over je training</span>
+              <span className="block text-[15px] font-medium text-white/92">Analyse openen</span>
+              <span className="block text-[11px] text-white/45">Bespreek je training, belasting en voortgang</span>
             </span>
           </button>
         )}

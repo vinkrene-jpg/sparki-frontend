@@ -336,7 +336,6 @@ export function TrainingDayHome({
                 Geen training gepland — voeg een wedstrijd toe en Sparki plant je
                 opbouw.
               </p>
-              <HumorLine context="recovery_day" className="mt-1.5" />
               <div className="mt-3">
                 <QuickActionButton action="race" />
               </div>

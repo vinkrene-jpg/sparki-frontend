@@ -360,7 +360,7 @@ export function UploadPanel({
         className="w-full rounded-lg py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-black transition disabled:opacity-50"
         style={{ background: ACCENT }}
       >
-        {analyze.isPending ? "Bezig…" : "Vraag Sparki"}
+        {analyze.isPending ? "Bezig…" : "Materiaal beoordelen"}
       </button>
     </div>
   )

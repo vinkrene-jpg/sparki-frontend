@@ -55,9 +55,11 @@ function attentionKeyFor(s: MaintenanceSignal): string | null {
 export function MaintenanceSignalsPanel({
   context,
   compact = false,
+  className = "",
 }: {
   context: "vandaag" | "wedstrijd" | "garage"
   compact?: boolean
+  className?: string
 }) {
   const { data, isLoading } = useMaintenanceSignals(context)
   const rotates = context === "vandaag"
@@ -98,7 +100,7 @@ export function MaintenanceSignalsPanel({
   }
 
   return (
-    <div className="space-y-2">
+    <div className={`space-y-2${className ? ` ${className}` : ""}`}>
       {signals.map((s, i) => {
         const style = LEVEL_STYLE[s.level]
         return (

@@ -608,11 +608,20 @@ export function CommercialToday() {
   return (
     <CommercialShell actief="/vandaag">
       <HeroVandaag presentation={presentation} planWeek={planWeek} />
-      <div className="mx-auto w-full max-w-2xl px-5 lg:max-w-3xl lg:px-10">
-        <WeekSection />
-        <TrainingSection />
-        <HerstelSection />
-        <SeasonBand />
+      {/* Paginaspecifieke kolomindeling: op desktop twee kolommen (2:1),
+          op mobiel ongewijzigd gestapeld. De CommercialShell-schil zelf
+          blijft generiek — de kolomindeling leeft alleen in Vandaag. */}
+      <div className="mx-auto w-full max-w-screen-xl px-5 lg:px-10">
+        <div className="lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start lg:gap-10">
+          <div>
+            <WeekSection />
+            <TrainingSection />
+          </div>
+          <div>
+            <HerstelSection />
+            <SeasonBand />
+          </div>
+        </div>
       </div>
     </CommercialShell>
   )
