@@ -1,0 +1,119 @@
+GEEN AKKOORD OM MET GOLF R1 TE STARTEN
+
+Corrigeer eerst het gap-rapport en uitvoeringsplan. Wijzig nog niets.
+
+1. VOLLEDIGHEID
+
+Het huidige rapport is geen volledige gap-analyse.
+
+Lever alsnog de volledige route-, pagina- en interactie-inventaris uit het masterplan, inclusief:
+
+- alle primaire routes;
+- alle routes en pagina’s achter Meer;
+- alle drawers, modals, pop-ups en tabbladen;
+- alle sporter-, coach-, ouder-, club- en beheeromgevingen;
+- voeding;
+- materiaal/mechanieker;
+- profiel;
+- routes en navigatie;
+- wedstrijden;
+- instellingen, privacy, support en koppelingen;
+- abonnementen, entitlements en upgradeflows.
+
+Geef per onderdeel aan:
+
+- volledig gecontroleerd;
+- gedeeltelijk gecontroleerd;
+- niet gecontroleerd, met reden;
+- conform;
+- gedeeltelijk conform;
+- niet conform.
+
+Rapporteer alle afwijkingen zonder aantalslimiet.
+
+2. CORRECTIE BILLINGBESLISSINGEN
+
+Masterplan v2.41 legt al vast:
+
+- betaalprovider: Stripe;
+- Go: €9,99 per maand / €99,90 per jaar;
+- Compleet: €24,99 per maand / €249,90 per jaar;
+- 14 dagen Compleet proberen;
+- geen betaalkaart vereist;
+- geen automatische omzetting naar betaald.
+
+OD_001 en OD_002 mogen daarom niet meer als open worden gerapporteerd.
+
+Rapporteer alleen nog werkelijk open Stripe-implementatiepunten, zoals price-ID’s, btw-inrichting, grace period en zakelijke prijzen.
+
+3. DATA-TRUST NIET SLUITEN
+
+Sluit `LIVE_CORE_PAGES_SHOW_MOCK_OR_FALLBACK_DATA` niet als opgelost.
+
+De gebruiker heeft zichtbaar activiteiten en waarden aangetroffen die niet aantoonbaar van hem zijn.
+
+Status moet blijven:
+
+HERKOMST NIET VOLLEDIG BEWEZEN
+
+Een code-grep of visuele scan is onvoldoende om runtime-, database-, cache- of gebruikerskoppelingsproblemen uit te sluiten.
+
+4. MEER NIET ALS KLAAR MARKEREN
+
+De hoofdpagina Meer gebruikt de nieuwe schil, maar de achterliggende bestemmingen hebben grotendeels nog de oude lay-out.
+
+Rapporteer daarom afzonderlijk:
+
+- Meer-hoofdpagina;
+- iedere bestemming achter Meer;
+- shell;
+- communicatievorm;
+- data-trust;
+- responsive status;
+- interacties.
+
+5. DESKTOPREFERENTIE
+
+Figma-node `43:6` is de goedgekeurde desktopautoriteit.
+
+Maar Golf R1 mag niet ongecontroleerd het gedeelde `CommercialShell` wijzigen.
+
+Rapporteer eerst:
+
+- welke pagina’s door een wijziging van CommercialShell geraakt worden;
+- welke desktopstructuur centraal hoort te zijn;
+- welke inhoudelijke indeling paginaspecifiek blijft;
+- hoe Vandaag als referentie kan worden gebouwd zonder Plan, Activiteiten, Analyse en Meer onbedoeld te wijzigen.
+
+6. COMMUNICATIE
+
+Het verwijderen van “Vraag Sparki” is niet opgelost door alleen het label te verbergen achter een chat-icoon.
+
+De vaste lijn is:
+
+- zakelijke functienaam;
+- data eerst;
+- één korte conclusie;
+- Gemeten / Berekend / Advies / Algemene richtlijn;
+- verdieping pas na doorklikken;
+- geen Sparki als gesprekspersoon.
+
+Rapporteer alle huidige afwijkingen hiervan.
+
+7. HERSTELPLAN
+
+Maak pas na de volledige inventarisatie één nieuwe sequentiële herstelbacklog.
+
+Iedere gevonden afwijking krijgt:
+
+- uniek ID;
+- betrokken route(s);
+- centraal of paginaspecifiek;
+- ernst;
+- afhankelijkheden;
+- concrete acceptatiecriteria;
+- geplande herstelwave.
+
+Bewijs dat alle afwijkings-ID’s in een wave zijn opgenomen.
+
+Nog geen code wijzigen, geen tests aanpassen en niets publiceren.

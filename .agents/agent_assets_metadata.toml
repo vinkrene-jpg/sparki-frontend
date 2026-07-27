@@ -839,3 +839,9 @@ id = "kCSc18pxAsw3gZqqjFANx"
 uri = "file://.agents/outputs/core-validatie/acceptatiescherm-mobiel.png"
 type = "image"
 title = "Juridisch acceptatiescherm (vóór de geautoriseerde acceptatie)"
+
+[[outputs]]
+id = "tXw54uKpxEy2mmximNKzm"
+uri = "file://SPARKI_GAP_RAPPORT_v1.0.zip"
+type = "unspecified"
+title = "SPARKI_GAP_RAPPORT_v1.0.zip"
