@@ -35,6 +35,18 @@ function todayStr(): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }
 
+const NL_MONTHS = [
+  "jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec",
+]
+function formatDateNL(dateStr: string): string {
+  const parts = dateStr.split("-")
+  if (parts.length !== 3) return dateStr
+  const d = parseInt(parts[2], 10)
+  const m = parseInt(parts[1], 10) - 1
+  const y = parts[0]
+  return `${d} ${NL_MONTHS[m] ?? ""} ${y}`
+}
+
 // ── Uitgevoerde training registreren ─────────────────────────────────────────
 // De sporter legt een training vast die al heeft plaatsgevonden. Datum kan
 // alleen vandaag of in het verleden liggen; hier horen de uitgevoerde velden
@@ -49,6 +61,7 @@ export function LogSessionForm({
   initialDate?: string
 }) {
   const logSession = useLogSession()
+  const [saved, setSaved] = useState(false)
   const [form, setForm] = useState<{
     title: string
     type: string
@@ -97,7 +110,12 @@ export function LogSessionForm({
         feelScore: parseInt(form.feelScore),
         notes: form.notes || null,
       } as Partial<TrainingSession>,
-      { onSuccess: onDone },
+      {
+        onSuccess: () => {
+          setSaved(true)
+          setTimeout(onDone, 1600)
+        },
+      },
     )
   }
 
@@ -236,23 +254,47 @@ export function LogSessionForm({
         een completere analyse dan handmatig invoeren.
       </p>
 
-      <div className="flex gap-3">
-        <button
-          type="submit"
-          disabled={logSession.isPending}
-          className="flex-1 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
-          style={{ background: ACCENT, color: "#040506" }}
+      {logSession.isError && (
+        <p
+          role="alert"
+          className="rounded-xl border border-red-400/30 bg-red-500/10 px-3.5 py-2.5 text-[12px] leading-snug text-red-300"
         >
-          {logSession.isPending ? "Opslaan…" : "Training opslaan"}
-        </button>
-        <button
-          type="button"
-          onClick={onDone}
-          className="rounded-2xl border border-white/[0.1] px-5 py-3.5 font-sans text-[13px] text-white/50"
-        >
-          Annuleer
-        </button>
-      </div>
+          Opslaan mislukt — controleer je verbinding en probeer het opnieuw.
+        </p>
+      )}
+
+      {saved ? (
+        <div className="flex items-center gap-2.5 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-3.5 py-3 text-[13px] font-medium text-cyan-200">
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            className="h-4 w-4 shrink-0"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path d="M3 8.5l3.5 3.5L13 5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Training opgeslagen voor {formatDateNL(form.sessionDate)}
+        </div>
+      ) : (
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={logSession.isPending}
+            className="flex-1 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
+            style={{ background: ACCENT, color: "#040506" }}
+          >
+            {logSession.isPending ? "Opslaan…" : "Training opslaan"}
+          </button>
+          <button
+            type="button"
+            onClick={onDone}
+            className="rounded-2xl border border-white/[0.1] px-5 py-3.5 font-sans text-[13px] text-white/50"
+          >
+            Annuleer
+          </button>
+        </div>
+      )}
     </form>
   )
 }
@@ -271,6 +313,7 @@ function PlanWorkoutForm({
   initialDate?: string
 }) {
   const createWorkout = useCreateWorkout()
+  const [saved, setSaved] = useState(false)
   const { data: routesData } = useRoutes()
   const { data: garage } = useGarage()
   const routes = routesData?.routes ?? []
@@ -342,7 +385,12 @@ function PlanWorkoutForm({
           : {}),
         ...(Object.keys(planDetails).length > 0 ? { planDetails } : {}),
       } as Partial<PlannedWorkout> & { planDetails?: unknown },
-      { onSuccess: onDone },
+      {
+        onSuccess: () => {
+          setSaved(true)
+          setTimeout(onDone, 1600)
+        },
+      },
     )
   }
 
@@ -498,14 +546,38 @@ function PlanWorkoutForm({
         uitrijden)? Maak dan een trainingsblok.
       </button>
 
-      <button
-        type="submit"
-        disabled={!canSave || createWorkout.isPending}
-        className="w-full rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-40"
-        style={{ background: ACCENT, color: "#040506" }}
-      >
-        {createWorkout.isPending ? "Inplannen…" : "Training inplannen"}
-      </button>
+      {createWorkout.isError && (
+        <p
+          role="alert"
+          className="rounded-xl border border-red-400/30 bg-red-500/10 px-3.5 py-2.5 text-[12px] leading-snug text-red-300"
+        >
+          Opslaan mislukt — controleer je verbinding en probeer het opnieuw.
+        </p>
+      )}
+
+      {saved ? (
+        <div className="flex items-center gap-2.5 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-3.5 py-3 text-[13px] font-medium text-cyan-200">
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            className="h-4 w-4 shrink-0"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path d="M3 8.5l3.5 3.5L13 5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Training ingepland voor {formatDateNL(form.scheduledDate)}
+        </div>
+      ) : (
+        <button
+          type="submit"
+          disabled={!canSave || createWorkout.isPending}
+          className="w-full rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-40"
+          style={{ background: ACCENT, color: "#040506" }}
+        >
+          {createWorkout.isPending ? "Inplannen…" : "Training inplannen"}
+        </button>
+      )}
     </form>
   )
 }
