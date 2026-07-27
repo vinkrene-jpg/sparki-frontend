@@ -13,6 +13,7 @@ export {
   Home as IconHome,
   CalendarDays as IconPlan,
   Bike as IconRijden,
+  Activity as IconActiviteiten,
   LineChart as IconAnalyse,
   Menu as IconMenu,
   // Feedback & status

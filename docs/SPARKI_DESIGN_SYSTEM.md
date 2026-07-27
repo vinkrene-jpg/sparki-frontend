@@ -181,6 +181,9 @@ zijn Nederlands, neutraal en zonder verzonnen persoonsgegevens.
 - Dagstatussen: `training` (gevulde accentstip) · `herstel` (ring in
   positive) · `leeg` (streepje) + `actief` (vandaag, accentrand).
 - Vorm + kleur + `aria-label` per dag (`"Di: training"`, `aria-current="date"`).
+- Optioneel `waarde` per dag: een **echte** dagwaarde (bijv. belasting `"75"`)
+  onder de markering, in `.num`; `"—"` betekent eerlijk „geen waarde" en wordt
+  niet in het `aria-label` opgenomen (wél: `"Ma: training, belasting 75"`).
 
 ### 3.6 `DsMobileNav` — mobiele hoofdnavigatie
 
@@ -196,10 +199,10 @@ zijn Nederlands, neutraal en zonder verzonnen persoonsgegevens.
 ## 4. Iconen
 
 - **Eén vectorbron: lucide-react**, via `@/components/ds` (`ds/icons.ts`).
-  Semantische namen: `IconHome`, `IconPlan`, `IconRijden`, `IconAnalyse`,
-  `IconMenu`, `IconCheck`, `IconInfo`, `IconWaarschuwing`, `IconFout`,
-  `IconChevron` (+ `IconPositief`, `IconLeeg`, `IconNietBeschikbaar`,
-  `IconLaden`).
+  Semantische namen: `IconHome`, `IconPlan`, `IconRijden`, `IconActiviteiten`,
+  `IconAnalyse`, `IconMenu`, `IconCheck`, `IconInfo`, `IconWaarschuwing`,
+  `IconFout`, `IconChevron` (+ `IconPositief`, `IconLeeg`,
+  `IconNietBeschikbaar`, `IconLaden`).
 - **Unicode-tekens en emoji zijn geen productie-iconen** (geen ⚡ ✓ ✕ 🔔 📍 als
   icoon). Pijltjes e.d. in code-commentaar of logteksten zijn geen iconen en
   vallen hierbuiten.

@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 // minus 2×16px marge). Dagstatus wordt niet alleen met kleur getoond: elke
 // status heeft een eigen vorm (gevulde stip = training, ring = herstel,
 // streepje = leeg) én een aria-label per dag.
+//
+// Optioneel toont een dag een echte waarde (bijv. belasting "75") onder de
+// markering — uitsluitend echte data; "—" betekent eerlijk "geen waarde".
 
 export type DsWeekDagStatus = "training" | "herstel" | "leeg";
 
@@ -16,6 +19,8 @@ export interface DsWeekDag {
   status: DsWeekDagStatus;
   /** Vandaag/geselecteerd. */
   actief?: boolean;
+  /** Optionele echte dagwaarde (bijv. belasting "75"); "—" = geen waarde. */
+  waarde?: string;
 }
 
 const STATUS_TEKST: Record<DsWeekDagStatus, string> = {
@@ -58,7 +63,11 @@ export function DsWeek({ dagen, className }: DsWeekProps) {
         <div
           key={`${dag.label}-${i}`}
           role="listitem"
-          aria-label={`${dag.label}: ${STATUS_TEKST[dag.status]}${dag.actief ? " (vandaag)" : ""}`}
+          aria-label={`${dag.label}: ${STATUS_TEKST[dag.status]}${dag.actief ? " (vandaag)" : ""}${
+            dag.waarde != null && dag.waarde !== "—"
+              ? `, belasting ${dag.waarde}`
+              : ""
+          }`}
           aria-current={dag.actief ? "date" : undefined}
           className={cn(
             "flex min-h-14 flex-col items-center justify-center gap-1.5 rounded-lg border px-0.5 py-2",
@@ -78,6 +87,17 @@ export function DsWeek({ dagen, className }: DsWeekProps) {
             {dag.label}
           </span>
           <DagMarkering status={dag.status} />
+          {dag.waarde != null && (
+            <span
+              className={cn(
+                "num text-[11px] leading-none",
+                dag.actief ? "text-white/85" : "text-white/55",
+              )}
+              aria-hidden="true"
+            >
+              {dag.waarde}
+            </span>
+          )}
         </div>
       ))}
     </div>

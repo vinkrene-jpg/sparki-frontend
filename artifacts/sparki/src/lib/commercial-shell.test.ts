@@ -1,7 +1,8 @@
-// Tests voor de pure presentatielogica van de commerciële lichte schil
-// (flag: commercial_shell). Pint de responsieve navigatiesets (mobiel vs
-// desktop), de eerlijke band-labels (geen verzonnen score), de fasevertaling,
-// de weekstrip uit echte weekTSS en de blokvisualisatie.
+// Tests voor de pure presentatielogica van de commerciële schil
+// (flag: commercial_shell; donker, op de centrale designsysteem-fundering).
+// Pint de responsieve navigatiesets (mobiel vs desktop), de eerlijke
+// band-labels (geen verzonnen score), de ds-statusvertaling, de fasevertaling,
+// de weekstrip/DsWeek-dagen uit echte weekTSS en de blokvisualisatie.
 //
 // Pure functies, geen DB — run: `pnpm --filter @workspace/sparki run test:commercial-shell`
 // Exits non-zero on any failure.
@@ -10,13 +11,14 @@ import {
   COMMERCIAL_COPY,
   COMMERCIAL_DESKTOP_NAV,
   COMMERCIAL_MOBILE_NAV,
-  DECOR_BACKDROP,
   PRESENTATION_STATES,
   SEASON_PHASES,
   bandLabel,
+  bandStatusSoort,
   bandTone,
   buildBlockBars,
   buildSeasonView,
+  buildWeekDays,
   buildWeekStrip,
   derivePresentationState,
   formatRaceDate,
@@ -99,6 +101,21 @@ scenario("bandTone volgt de band en faalt eerlijk op onbekend", () => {
   assert(bandTone("wisselend") === "watch", "wisselend → watch")
   assert(bandTone("kwetsbaar") === "concern", "kwetsbaar → concern")
   assert(bandTone("x") === null, "onbekend → null")
+})
+
+scenario("bandStatusSoort vertaalt banden naar ds-statussoorten", () => {
+  assert(bandStatusSoort("belastbaar") === "positief", "belastbaar → positief")
+  assert(bandStatusSoort("solide") === "positief", "solide → positief")
+  assert(
+    bandStatusSoort("wisselend") === "waarschuwing",
+    "wisselend → waarschuwing",
+  )
+  assert(
+    bandStatusSoort("kwetsbaar") === "fout",
+    "kwetsbaar → fout (eerlijk aandachtssignaal, tekst blijft de bandnaam)",
+  )
+  assert(bandStatusSoort("onzin") === null, "onbekend → null (geen status)")
+  assert(bandStatusSoort(null) === null, "null → null")
 })
 
 // ── Trendtekst (presentatie-herformulering) ──────────────────────────────────
@@ -218,6 +235,55 @@ scenario("buildWeekStrip: ontbrekende weekdata verandert de volgorde niet", () =
   assert(strip[2]!.value === "—", "ontbrekende belasting toont — (niets verzonnen)")
 })
 
+// ── DsWeek-dagen ─────────────────────────────────────────────────────────────
+scenario("buildWeekDays: echte belasting → training, anders leeg (nooit herstel)", () => {
+  const week = [
+    { date: "2026-07-20", tss: 75.4 },
+    { date: "2026-07-21", tss: 0 },
+    { date: "2026-07-22", tss: 48 },
+    { date: "2026-07-23", tss: 0 },
+    { date: "2026-07-24", tss: 0 },
+    { date: "2026-07-25", tss: 0 },
+    { date: "2026-07-26", tss: 0 },
+  ]
+  const days = buildWeekDays(week, "2026-07-25", false)
+  assert(days.length === 7, "zeven dagen")
+  assert(
+    days[0]!.status === "training" && days[0]!.waarde === "75",
+    "echte belasting → training mét waarde",
+  )
+  assert(
+    days[1]!.status === "leeg" && days[1]!.waarde === "—",
+    "geen belasting → leeg met — (niets verzonnen)",
+  )
+  assert(
+    days.every((d) => (d.status as string) !== "herstel"),
+    "herstel wordt nooit afgeleid (geen eerlijke bron in weekTSS)",
+  )
+  assert(days.filter((d) => d.actief).length === 1, "precies één actieve dag")
+  assert(days[5]!.actief === true, "vandaag is de actieve dag")
+  assert(
+    days.map((d) => d.label).join(",") === "Ma,Di,Wo,Do,Vr,Za,Zo",
+    "Ma–Zo-volgorde blijft behouden",
+  )
+})
+
+scenario("buildWeekDays: gepland werk kleurt alleen vandaag als training", () => {
+  const week = [
+    { date: "2026-07-24", tss: 0 },
+    { date: "2026-07-25", tss: 0 },
+  ]
+  const met = buildWeekDays(week, "2026-07-25", true)
+  assert(
+    met[1]!.status === "training",
+    "vandaag mét geplande training → training",
+  )
+  assert(met[1]!.waarde === "—", "waarde blijft eerlijk — (nog geen belasting)")
+  assert(met[0]!.status === "leeg", "andere lege dagen blijven leeg")
+  const zonder = buildWeekDays(week, "2026-07-25", false)
+  assert(zonder[1]!.status === "leeg", "vandaag zonder plan blijft eerlijk leeg")
+})
+
 // ── Blokbalkjes ──────────────────────────────────────────────────────────────
 scenario("buildBlockBars accentueert alleen het zwaarste blok", () => {
   const blocks: WorkoutBlock[] = [
@@ -289,6 +355,46 @@ scenario("vaste teksten luiden exact volgens de opdracht", () => {
       COMMERCIAL_COPY.trendInsufficient,
     "herschreven engine-zin gebruikt exact dezelfde copy-bron",
   )
+  assert(
+    COMMERCIAL_COPY.trainingTitle === "Training van vandaag",
+    "trainingskop exact",
+  )
+  assert(
+    COMMERCIAL_COPY.trainingPrimaryMobile === "Training bekijken" &&
+      COMMERCIAL_COPY.trainingPrimaryDesktop === "Training openen",
+    "trainingsknoppen exact (mobiel/desktop)",
+  )
+  assert(
+    COMMERCIAL_COPY.trainingSecondary === "Planning aanpassen",
+    "secundaire trainingsactie exact",
+  )
+  assert(COMMERCIAL_COPY.weekTitle === "Deze week", "weekkop exact")
+  assert(
+    COMMERCIAL_COPY.weekEmpty === "Nog geen weekbelasting bekend.",
+    "week-lege-toestand exact",
+  )
+  assert(
+    COMMERCIAL_COPY.herstelTitle === "Herstel en gereedheid",
+    "herstelkop exact",
+  )
+  assert(
+    COMMERCIAL_COPY.onderbouwing === "Bekijk onderbouwing",
+    "onderbouwing-uitklap exact",
+  )
+  assert(
+    COMMERCIAL_COPY.geenSignalen === "Nog geen signalen voor vandaag.",
+    "lege-signalen-tekst exact",
+  )
+  assert(
+    COMMERCIAL_COPY.stateError === "Je toestand kon niet worden geladen." &&
+      COMMERCIAL_COPY.trainingError === "Je training kon niet worden geladen.",
+    "eerlijke foutteksten exact",
+  )
+  assert(COMMERCIAL_COPY.retry === "Opnieuw proberen", "herstelactie exact")
+  assert(
+    COMMERCIAL_COPY.seasonPlanLink === "Volledig plan bekijken",
+    "planlink exact (chevron is een ds-icoon, geen unicode-teken)",
+  )
 })
 
 scenario("acties gebruiken bestaande flows (geen nieuwe routes)", () => {
@@ -299,6 +405,14 @@ scenario("acties gebruiken bestaande flows (geen nieuwe routes)", () => {
   assert(
     COMMERCIAL_COPY.noTrainingActionHref === "/train",
     "Bekijk je plan → bestaande plan-/kalenderflow (/train)",
+  )
+  assert(
+    COMMERCIAL_COPY.trainingHref === "/train",
+    "trainingsactie → bestaande trainflow (/train)",
+  )
+  assert(
+    COMMERCIAL_COPY.trainingSecondaryHref === "/kalender",
+    "planning aanpassen → bestaande kalenderflow (/kalender)",
   )
 })
 
@@ -444,20 +558,6 @@ scenario("sfeerlaag kent geen alarm-/roodtoestand en verzint geen conclusies", (
     }) === "recovery",
     "kwetsbaar blijft rustig (recovery)",
   )
-})
-
-// ── Decoratieve fallback (CUX_02A) ──────────────────────────────────────────
-scenario("decoratieve fallback is aria-hidden en bevat geen data-elementen", () => {
-  assert(DECOR_BACKDROP.ariaHidden === true, "aria-hidden verplicht")
-  assert(DECOR_BACKDROP.paths.length >= 2, "meerdere abstracte lijnen")
-  for (const d of DECOR_BACKDROP.paths) {
-    // Alleen padcommando's (M/C/S/L/Q/Z), coördinaten en witruimte — geen
-    // tekst, labels, cijferannotaties of als data herkenbare assen.
-    assert(/^[MCSLQZmcslqz0-9 .,-]+$/.test(d), `ongeldig pad: ${d}`)
-    assert(d.trimStart().startsWith("M"), "pad begint met M (pure lijn)")
-  }
-  const dims = DECOR_BACKDROP.viewBox.split(" ").map(Number)
-  assert(dims.length === 4 && dims.every((n) => Number.isFinite(n)), "geldige viewBox")
 })
 
 // ── Rapportage ───────────────────────────────────────────────────────────────

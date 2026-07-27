@@ -5,16 +5,9 @@
 > open punten kort in de chat. Nieuwe keuze gesteld → hier toevoegen. Beslist → hier
 > weghalen (of naar "Beslist" verplaatsen). Nooit een keuze stilletjes laten vallen.
 
-Laatst bijgewerkt: 2026-07-25.
+Laatst bijgewerkt: 2026-07-27.
 
 ## Wacht op jouw keuze
-
-### Vandaag-scherm sfeerrichting (canvas, 26 jul)
-0. **Welke sfeer voor het commerciële Vandaag-scherm** — drie frames staan naast
-   elkaar op het canvas: Huidig (klinisch afgewezen), "Buitengevoel" (warm,
-   fotografisch, buitenwereld leidt) of "Sportieve trots" (donker, energiek,
-   grote cijfers leiden). Ook mengvormen mogelijk (bijv. warme foto-kop +
-   sportieve cijfers). Pas na keuze wordt de echte app aangepast.
 
 ### Mentale Training — sterrensysteem
 4. **Wát de sterren precies regelen** — diepgang per kaart instelbaar, één globale
@@ -33,6 +26,12 @@ Laatst bijgewerkt: 2026-07-25.
 10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav.
 
 ## Beslist (archief)
+- **2026-07-27 — Vandaag-scherm sfeerrichting: uitgevoerd.** Het commerciële
+  Vandaag-scherm is gemigreerd naar de donkere designsysteem-fundering met een
+  foto-sfeerkop (mistige rijder, `public/vandaag-sfeer.jpg`) — rustig/premium,
+  passend bij de OLED-blauwzwarte identiteit; de oranje Strava-foto blijft
+  Ride-fotografie en hoort niet op Vandaag. De lichte schil (`.commercial-light`)
+  is verwijderd.
 - **2026-07-25 — Gegevens-opschoning productie (OD_005): allebei.** De 15 Engelstalige
   observaties (22–23 juni) én de dubbele Strava-FTP-rij (id 7) mogen weg. Uitvoering
   door RENE zelf in de gepubliceerde app via /admin → Gegevens-opschoning

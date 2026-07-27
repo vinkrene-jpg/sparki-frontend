@@ -1,7 +1,11 @@
-// Pure presentatielogica voor de commerciële lichte schil (flag: commercial_shell).
+// Pure presentatielogica voor de commerciële schil (flag: commercial_shell).
 // Geen React en geen data-fetching — alles hier is deterministisch en direct
 // testbaar (test:commercial-shell). De component (commercial-shell.tsx) is de
 // enige consument; de data blijft uit de bestaande Vandaag-hooks komen.
+//
+// Sinds de migratie naar de centrale designsysteem-fundering (donker, Figma-
+// node 15:6) levert deze module ook de vertaling naar ds-componenten:
+// bandStatusSoort (DsStatus) en buildWeekDays (DsWeek).
 
 import type { WorkoutBlock, WorkoutPhase } from "@/lib/athlete-types"
 
@@ -51,6 +55,23 @@ export function bandTone(band: string | null | undefined): BandTone | null {
   if (band === "belastbaar" || band === "solide") return "positive"
   if (band === "wisselend") return "watch"
   if (band === "kwetsbaar") return "concern"
+  return null
+}
+
+// Vertaling band → DsStatus-soort (centrale designsysteem-status).
+// DsStatus communiceert nooit alleen met kleur (icoon + verplichte tekst).
+// "Kwetsbaar" krijgt de fout-/aandachtsstijl als eerlijk signaal; de getoonde
+// tekst blijft de bestaande bandnaam — er wordt niets luiders beweerd.
+// Onbekende of ontbrekende band → null (dan tonen we géén status).
+export type BandStatusSoort = "positief" | "waarschuwing" | "fout"
+
+export function bandStatusSoort(
+  band: string | null | undefined,
+): BandStatusSoort | null {
+  const tone = bandTone(band)
+  if (tone === "positive") return "positief"
+  if (tone === "watch") return "waarschuwing"
+  if (tone === "concern") return "fout"
   return null
 }
 
@@ -146,6 +167,37 @@ export function buildWeekStrip(
     })
 }
 
+// ── Weekdagen voor DsWeek (centrale weekcomponent) ───────────────────────────
+// Eerlijke statusafleiding uit uitsluitend bestaande dashboarddata:
+//   • echte belasting (tss > 0)              → "training" (er is echt gereden);
+//   • vandaag mét geplande training           → "training" (echt plan);
+//   • anders                                  → "leeg".
+// "herstel" wordt bewust nooit afgeleid: weekTSS bevat geen herstelinformatie
+// en we verzinnen geen dagtypes. waarde = echte belasting of "—" (niets
+// verzonnen); DsWeek toont die waarde onder de dagmarkering.
+export type WeekDay = {
+  date: string
+  label: string
+  status: "training" | "leeg"
+  actief: boolean
+  waarde: string
+}
+
+export function buildWeekDays(
+  weekTSS: ReadonlyArray<{ date: string; tss: number }>,
+  todayISO: string,
+  hasTodayWorkout: boolean,
+): WeekDay[] {
+  return buildWeekStrip(weekTSS, todayISO).map((d) => ({
+    date: d.date,
+    label: d.label,
+    status:
+      d.value !== "—" || (d.isToday && hasTodayWorkout) ? "training" : "leeg",
+    actief: d.isToday,
+    waarde: d.value,
+  }))
+}
+
 // ── Blokvisualisatie van de training ─────────────────────────────────────────
 // Breedte ∝ echte blokduur; het zwaarste blok (hoogste zone) krijgt het accent.
 export type BlockBar = { key: string; flex: number; accent: boolean }
@@ -187,18 +239,35 @@ export const COMMERCIAL_COPY = {
   seasonEmpty: "Nog geen hoofddoel ingesteld.",
   seasonEmptyAction: "Hoofddoel instellen",
   seasonEmptyActionHref: "/races",
+  seasonPlanLink: "Volledig plan bekijken",
   trendInsufficient:
     "Nog onvoldoende recente gegevens voor een betrouwbare trend.",
   noTraining: "Geen training gepland voor vandaag.",
   noTrainingAction: "Bekijk je plan",
   noTrainingActionHref: "/train",
+  trainingTitle: "Training van vandaag",
+  trainingPrimaryMobile: "Training bekijken",
+  trainingPrimaryDesktop: "Training openen",
+  trainingHref: "/train",
+  trainingSecondary: "Planning aanpassen",
+  trainingSecondaryHref: "/kalender",
+  weekTitle: "Deze week",
+  weekEmpty: "Nog geen weekbelasting bekend.",
+  herstelTitle: "Herstel en gereedheid",
+  onderbouwing: "Bekijk onderbouwing",
+  geenSignalen: "Nog geen signalen voor vandaag.",
+  stateLoading: "Je toestand wordt geladen…",
+  stateError: "Je toestand kon niet worden geladen.",
+  trainingLoading: "Je training wordt geladen…",
+  trainingError: "Je training kon niet worden geladen.",
+  retry: "Opnieuw proberen",
 } as const
 
 // ── Presentatietoestand (CUX_02A — sfeerlaag, alleen presentatie) ────────────
 // Deterministische afleiding uit uitsluitend bestaande viewdata (State-Engine-
 // band, wel/geen geplande training, hoofddoel-op-vandaag). De toestand stuurt
-// alleen een subtiele sfeerlaag (CSS) op de hoofdkaart aan en trekt nooit een
-// sterkere conclusie dan de bestaande tekst:
+// alleen een subtiele sfeertint (tokenkleuren op lage alpha) op de dominante
+// coachboodschap aan en trekt nooit een sterkere conclusie dan de tekst:
 //  - ontbrekende of onduidelijke data → neutral (geen tint);
 //  - "wisselend" → neutral (kleur mag niets extra's suggereren);
 //  - "kwetsbaar" → recovery (rustig, gedempt — géén alarmkleur);
@@ -229,21 +298,6 @@ export function derivePresentationState(
   if (input.hasTodayWorkout) return "training"
   return "ready"
 }
-
-// ── Decoratieve fallback (CUX_02A) ──────────────────────────────────────────
-// Abstracte, routeachtige lijnen als sfeerachtergrond wanneer er geen echte
-// visuele sportcontext (foto, routepreview, hoogteprofiel) in de bestaande
-// datastroom zit. Puur decoratief: aria-hidden, geen cijfers, assen, labels
-// of datapunten — en het wordt nergens als echt hoogteprofiel gepresenteerd.
-export const DECOR_BACKDROP = {
-  ariaHidden: true,
-  viewBox: "0 0 400 160",
-  paths: [
-    "M0 118 C 70 92 130 138 205 104 C 268 76 330 96 400 74",
-    "M0 140 C 80 118 150 152 230 124 C 300 100 350 118 400 102",
-    "M0 96 C 60 76 120 108 190 86 C 262 62 328 80 400 54",
-  ],
-} as const
 
 // ── Seizoenweergave (beslislogica — testbaar zonder React) ──────────────────
 // empty  → geen hoofddoel én geen seizoensplan: één eerlijke lege toestand

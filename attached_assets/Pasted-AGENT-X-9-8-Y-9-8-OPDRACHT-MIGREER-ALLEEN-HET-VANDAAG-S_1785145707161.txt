@@ -1,0 +1,236 @@
+AGENT
+X=9,8 | Y=9,8
+
+OPDRACHT — MIGREER ALLEEN HET VANDAAG-SCHERM NAAR HET CENTRALE DESIGN SYSTEM
+
+DOEL
+
+Migreer uitsluitend het bestaande commerciële Vandaag-scherm naar de nieuwe centrale design-systemfundering.
+
+Behoud alle bestaande werkende:
+- data en databronnen;
+- coachinglogica;
+- trainingsberekeningen;
+- herstelberekeningen;
+- API’s;
+- database en schema’s;
+- authenticatie en rollen;
+- navigatie;
+- gebruikersflows;
+- lege toestanden;
+- privacy- en data-trustregels.
+
+Geen functionele herbouw en geen wijziging aan engines uitvoeren.
+
+DESIGNAUTORITEIT
+
+Gebruik:
+- goedgekeurde mobiele Figma-compositie: node `15:6`;
+- centrale design-systemcomponenten uit `src/components/ds/`;
+- tokens uit de centrale tokenlaag;
+- typografieregels uit `docs/SPARKI_DESIGN_SYSTEM.md`.
+
+Visuele richting:
+- donker, premium en rustig;
+- één krachtige wielerfoto als sfeerlaag;
+- foto ondersteunt de inhoud maar hindert tekst of data nooit;
+- geen druk dashboard en geen verzameling gelijkwaardige tegels;
+- bovenaan direct tonen wat vandaag het belangrijkst is;
+- daarna pas training, herstel en eerstvolgende actie.
+
+AFBAKENING
+
+Migreer alleen het Vandaag-scherm.
+
+Niet wijzigen:
+- Plan;
+- Rijden;
+- Analyse;
+- Meer;
+- coach-, club-, ouder- of beheeromgevingen;
+- routefunctionaliteit;
+- training- of herstelengines;
+- API-contracten;
+- database;
+- mobiele ritregistratie;
+- andere bestaande pagina’s.
+
+WERKWIJZE
+
+1. Inventariseer eerst het huidige Vandaag-scherm:
+   - route en bestanden;
+   - gebruikte databronnen;
+   - loading-, fout- en lege toestanden;
+   - bestaande componenten;
+   - alle interacties en knoppen;
+   - responsief gedrag;
+   - eventuele mock-, seed-, demo- of fallbackdata.
+
+2. Leg vóór wijziging vast welke bestaande functionaliteit behouden moet blijven.
+
+3. Hergebruik de centrale componenten:
+   - `DsCard`;
+   - `DsButton`;
+   - `DsStatus`;
+   - `DsState`;
+   - `DsWeek`;
+   - `DsMobileNav`.
+
+4. Voeg alleen een nieuwe variant toe wanneer de bestaande component aantoonbaar niet volstaat. Geen parallel component bouwen.
+
+INHOUDSHIËRARCHIE
+
+Bouw het scherm in deze volgorde:
+
+1. Bovenste sfeer- en contextgedeelte
+   - wielerfoto met voldoende donkere contrastlaag;
+   - SPARKI-woordmerk of bestaande schermidentiteit;
+   - paginatitel;
+   - korte context van de dag.
+
+2. Belangrijkste boodschap van vandaag
+   - één dominante coachboodschap;
+   - korte gewone Nederlandse taal;
+   - geen lange AI-uitleg;
+   - optionele compacte vervolgactie.
+
+3. Weeknavigatie
+   - gebruik `DsWeek`;
+   - actieve dag duidelijk;
+   - training, herstel en lege dag correct weergegeven.
+
+4. Training van vandaag
+   - toon alleen echte geplande of uitgevoerde training;
+   - gebruik bestaande data en logica;
+   - bij ontbrekende training een eerlijke lege toestand;
+   - geen voorbeeldtraining of fallbacktraining tonen.
+
+5. Herstel of actuele gereedheid
+   - toon alleen waarden die aantoonbaar uit echte gebruikersdata komen;
+   - ontbrekende data resulteert in `DsState`;
+   - geen verzonnen score, advies of persoonlijke waarde.
+
+6. Eerstvolgende relevante actie
+   - maximaal één primaire actie;
+   - aanvullende acties visueel ondergeschikt;
+   - mobiele aanraakhoogte minimaal 44 px.
+
+MENTALE TRAINING
+
+Wanneer Mentale Training op dit scherm voorkomt:
+
+- sterren betekenen uitsluitend intensiteitsniveau;
+- toon altijd het woord `Niveau` of `Intensiteit`;
+- sterren zijn geen beoordeling, beloning of gebruikersscore;
+- niveaus:
+  - 1 ster: zeer licht;
+  - 2 sterren: laagdrempelig;
+  - 3 sterren: gemiddeld;
+  - 4 sterren: intensief;
+  - 5 sterren: zwaar of emotioneel belastend;
+- Sparki mag een niveau voorstellen op basis van bestaande echte context;
+- gebruiker kan zelf een ander niveau kiezen;
+- verander in deze opdracht geen mentale-trainingsengine.
+
+CORE EN RIDE
+
+Gebruik op Vandaag de Core-richting:
+- rustige donkere gradient;
+- weinig afleiding;
+- nadruk op overzicht, herstel en begeleiding;
+- geen sterke bewegingsachtergrond achter inhoudelijke tekst.
+
+De sterkere Ride-fotografie hoort alleen bij rit- en actiecontext en wordt in deze opdracht niet applicatiebreed ingevoerd.
+
+DATA-TRUST
+
+Verplicht:
+- geen mock-, demo-, seed-, fallback- of hardcoded persoonlijke waarden;
+- API-fouten nooit maskeren met voorbeelddata;
+- ontbrekende data eerlijk tonen;
+- bestaande databronnen niet vervangen;
+- geen nieuwe persoonlijke data afleiden zonder bestaande engine of geldige bron.
+
+RESPONSIVE EN TOEGANKELIJKHEID
+
+Controleer minimaal:
+- 390 px mobiele breedte;
+- gangbare mobiele hoogte;
+- tablet;
+- desktop;
+- geen horizontale overflow;
+- geen afgesneden of overlappende tekst;
+- voldoende contrast boven fotografie;
+- alle interactieve elementen minimaal 44 px hoog of breed;
+- status nooit uitsluitend met kleur communiceren;
+- iconen uit de bestaande vectoriconenbron;
+- geen Unicode- of emoji-iconen.
+
+NIET DOEN
+
+- Geen tweede design system bouwen.
+- Geen volledige frontendrefactor.
+- Geen wijziging aan API’s, schema’s of engines.
+- Geen andere schermen migreren.
+- Geen nieuwe mockdata toevoegen.
+- Geen functionaliteit verwijderen omdat deze niet in Figma zichtbaar is.
+- Geen publicatie of productiedatabase-update uitvoeren.
+- Voorstel #293 niet starten.
+- Geen app-brede aanpassing van het glasidioom uitvoeren.
+- Geen Core/Ride-achtergronden buiten Vandaag aanpassen.
+
+TESTS
+
+Voer na implementatie uit:
+
+1. typecheck van alle bestaande projecten;
+2. beschikbare relevante tests;
+3. bestaande design-systemtests;
+4. Vandaag-schermtests;
+5. controle van loading-, fout- en lege toestanden;
+6. controle met echte en ontbrekende gebruikersdata;
+7. controle op horizontale overflow bij 390 px;
+8. controle op minimale aanraakvlakken;
+9. zoekcontrole op nieuwe Unicode-iconen;
+10. zoekcontrole op nieuwe losse kleurwaarden;
+11. productiebuild tweemaal achter elkaar.
+
+Voeg gerichte regressietests toe voor:
+- inhoudshiërarchie van Vandaag;
+- lege trainingstoestand;
+- ontbrekende hersteldata;
+- foutstatus zonder fallbackdata;
+- mobiele navigatie;
+- mentale-trainingniveau indien aanwezig.
+
+ACCEPTATIECRITERIA
+
+De opdracht is alleen gereed wanneer:
+
+1. uitsluitend Vandaag is gemigreerd;
+2. alle bestaande functionaliteit behouden is;
+3. het centrale design system aantoonbaar wordt gebruikt;
+4. de dominante coachboodschap direct zichtbaar is;
+5. echte training en hersteldata correct worden getoond;
+6. ontbrekende data eerlijke toestanden toont;
+7. geen mock- of fallbackdata als echt wordt gepresenteerd;
+8. mobiel op 390 px geen overflow of overlap heeft;
+9. alle relevante tests slagen;
+10. beide productiebuilds slagen;
+11. geen API-, database- of enginewijzigingen zijn uitgevoerd;
+12. niet is gepubliceerd.
+
+RAPPORTAGE
+
+Rapporteer uitsluitend:
+
+1. inventarisatie van het oorspronkelijke Vandaag-scherm;
+2. behouden databronnen, logica en interacties;
+3. gewijzigde en toegevoegde bestanden;
+4. gebruikte design-systemcomponenten en tokens;
+5. eventuele nieuw toegevoegde componentvariant met motivatie;
+6. controle van echte, ontbrekende en foutieve data;
+7. exacte testresultaten;
+8. exacte uitslagen van beide productiebuilds;
+9. resterende afwijkingen of blokkades;
+10. expliciete bevestiging dat niet is gepubliceerd.

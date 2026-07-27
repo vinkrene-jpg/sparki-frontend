@@ -1,16 +1,19 @@
 ---
-name: Sparki commerciële lichte schil
-description: Presentation-only commercial "Vandaag" shell behind flag commercial_shell — copy/testing conventions and traps
+name: Sparki commerciële schil
+description: Presentation-only commercial "Vandaag" shell behind flag commercial_shell — dark DS foundation, copy/testing conventions and traps
 ---
 
-# Sparki commerciële lichte schil
+# Sparki commerciële schil
 
 - The commercial shell is a **presentation layer only** on top of existing engines (dashboard, readiness, races). Rule: never touch engines/APIs for its copy — rewrite engine sentences in the presentation layer (`movementLabel`) instead.
 - **Why:** CUX orders demand exact Dutch copy while engines are shared with the main app; rewriting at presentation keeps both honest.
+- **Now on the dark DS foundation** (2026-07): built entirely from `@/components/ds` + tokens/type-* classes; the old light `.commercial-light` CSS block is gone. Fixed content hierarchy: photo hero + wordmark/day context → one dominant coach message → DsWeek → today's training (owns the ONE primary action) → herstel/gereedheid → season.
+- **Hero photo rule:** decorative only — empty alt + aria-hidden + a dark gradient contrast layer so text never sits on a busy photo area. Calm/misty rider photo = Vandaag mood; the orange action shot is Ride photography and does NOT belong on Vandaag. The photo replaced the old abstract-SVG decor fallback.
+- **Stale-cache honesty trap:** react-query can report `isError` while still holding previously cached `data`. Every consumer of a source must gate on "not error" before reading `data` — including *derived* context (plan week in the hero, atmosphere input, season phase), not just the section that owns the error card. Pinned by a page test that feeds `isError:true` + stale data.
 - **Exact-copy testing pattern:** all mandated strings live in one `COMMERCIAL_COPY` const in the pure lib, consumed by both the component and unit tests — so "exact text" acceptance criteria are pinned without DOM testing infra.
-- **Responsive visibility trap:** a section styled `hidden lg:block` silently drops content on mobile; a CUX round was failed on exactly this (season card missing on mobile). When an order says "same content on mobile and desktop", grep the shell for `hidden lg:` first.
-- **Browser validation:** the project has no repo-level browser test framework; mandatory browser checks are done with the Playwright testing subagent against the dev-preview route `/_dev/commercial` (no login needed in dev). Note: two status pills exist in the DOM (mobile/desktop variants) — assert *visible* count, not DOM count.
+- **Error dedup pattern:** each data source has ONE error owner — state error renders in the hero coach message (with retry), herstel section then renders nothing; dashboard error renders in the training section, week section then renders nothing. Never two error cards for one failure, never fallback data.
+- **DsWeek honesty mapping** (`buildWeekDays`): tss>0 → training, today-with-planned-workout → training, else leeg; "herstel" is never derived (weekTSS has no honest recovery source). Per-day load shown via the DsWeek `waarde` prop (variant extension, not a parallel component).
+- **Responsive visibility trap:** a section styled `hidden lg:` silently drops content on mobile; a CUX round was failed on exactly this. When an order says "same content on mobile and desktop", grep the shell for `hidden lg:` first. (Deliberate exception: the secondary "Planning aanpassen" button is desktop-only by design parity.)
+- **Browser validation:** mandatory browser checks run against the dev-preview route `/_dev/commercial` (no login needed in dev) via Screenshot tool or Playwright subagent.
 - Evidence convention for CUX orders: `test-artifacts/<ORDER>/` with screenshots + `testuitvoer.log` + machine-readable `resultaten.json`.
-- **Atmosphere layer honesty contract:** visual mood (`derivePresentationState`) may only follow *real* context (band, planned workout, race-today) and must map every unclear input (null/unknown/"wisselend") to neutral — color must never claim more certainty than the copy. No alarm/red state exists in the layer at all.
-- **Decorative fallback rule:** the commercial Today dataset has no route photo/polyline/elevation, so background art must be abstract aria-hidden SVG lines with a unit-test-pinned path alphabet (no axes/labels/numbers) at ≤8% opacity — anything chart-like would fabricate data.
-- Dominance check pattern: exactly ONE `[data-atmosphere]` element after load (loading/error cards intentionally have none) — assert via DOM count in the Playwright subagent.
+- **Atmosphere layer honesty contract:** visual mood (`derivePresentationState`) may only follow *real* context (band, planned workout, race-today) and must map every unclear input (null/unknown/"wisselend") to neutral — color must never claim more certainty than the copy. No alarm/red state exists in the layer at all. Dominance check: exactly ONE `[data-atmosphere]` element after load (loading/error intentionally none) — pinned in the page test `test:commercial-today`.

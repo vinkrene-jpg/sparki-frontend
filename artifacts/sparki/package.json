@@ -22,6 +22,7 @@
     "test:aandachtswet": "node ../../scripts/run-tsx-test.mjs src/lib/aandachtswet.test.ts",
     "test:day-type": "node ../../scripts/run-tsx-test.mjs src/lib/day-type.test.ts",
     "test:commercial-shell": "node ../../scripts/run-tsx-test.mjs src/lib/commercial-shell.test.ts",
+    "test:commercial-today": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/components/sparki/commercial-today.test.tsx",
     "test:stream-analysis": "node ../../scripts/run-tsx-test.mjs src/lib/stream-analysis.test.ts",
     "test:scan-quality": "node ../../scripts/run-tsx-test.mjs src/lib/scan-quality.test.ts",
     "test:nav-live": "node ../../scripts/run-tsx-test.mjs src/lib/nav-live.test.ts",

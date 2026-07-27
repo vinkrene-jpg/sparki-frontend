@@ -130,6 +130,33 @@ test("DsWeek: precies 7 dagen, aria-labels en actieve dag", () => {
   cleanup();
 });
 
+test("DsWeek: optionele waarde toont echte belasting (— = geen waarde)", () => {
+  const dagen = [
+    { label: "Ma", status: "training" as const, waarde: "75" },
+    { label: "Di", status: "leeg" as const, waarde: "—" },
+    { label: "Wo", status: "leeg" as const },
+    { label: "Do", status: "training" as const, actief: true, waarde: "60" },
+    { label: "Vr", status: "leeg" as const },
+    { label: "Za", status: "leeg" as const },
+    { label: "Zo", status: "leeg" as const },
+  ];
+  render(<DsWeek dagen={dagen} />);
+  assert.ok(screen.getByText("75"), "echte dagwaarde zichtbaar");
+  assert.ok(
+    screen.getByLabelText("Ma: training, belasting 75"),
+    "waarde hoort bij het aria-label",
+  );
+  assert.ok(
+    screen.getByLabelText("Di: geen training"),
+    "'—' is eerlijk géén waarde en vervuilt het aria-label niet",
+  );
+  assert.ok(
+    screen.getByLabelText("Do: training (vandaag), belasting 60"),
+    "vandaag en waarde combineren in het aria-label",
+  );
+  cleanup();
+});
+
 test("DsMobileNav: 5 standaarditems, actieve tab en aandachtstatus", () => {
   let genavigeerd: string | null = null;
   render(
