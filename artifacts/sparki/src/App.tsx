@@ -44,6 +44,7 @@ import MeerPage from "@/pages/meer";
 import CorePlanPage from "@/pages/core-plan";
 import CoreActiviteitenPage from "@/pages/core-activiteiten";
 import CoreMeerPage from "@/pages/core-meer";
+import CoreAnalysePage from "@/pages/core-analyse";
 import SparkiConnectPage from "@/pages/sparki-connect";
 import KlimmenPage from "@/pages/klimmen";
 import InvitationsPage from "@/pages/invitations";
@@ -422,6 +423,14 @@ function MeerSwitchPage() {
   return commercialShell ? <CoreMeerPage /> : <MeerPage />;
 }
 
+// Analyse (/lab) — Core-afbouwwave 2A: zelfde flag-switch. Uit = exact het
+// bestaande Lab-scherm; aan = dezelfde analyses, hooks en flows op het
+// centrale designsysteem. Alleen presentatie — berekeningen blijven staan.
+function AnalyseSwitchPage() {
+  const commercialShell = useFeatureFlag("commercial_shell");
+  return commercialShell ? <CoreAnalysePage /> : <LabPage />;
+}
+
 function HomeRedirect() {
   return (
     <>
@@ -634,7 +643,7 @@ function AppRouter() {
                   <ProtectedPage component={FeedPage} />
                 </Route>
                 <Route path="/lab">
-                  <ProtectedPage component={LabPage} />
+                  <ProtectedPage component={AnalyseSwitchPage} />
                 </Route>
                 <Route path="/activiteiten">
                   <ProtectedPage component={ActiviteitenSwitchPage} />

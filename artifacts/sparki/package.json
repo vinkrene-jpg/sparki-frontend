@@ -37,7 +37,9 @@
     "test:core-activiteiten": "node ../../scripts/run-tsx-test.mjs src/lib/core-activiteiten.test.ts",
     "test:core-activiteiten-page": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/core-activiteiten.test.tsx",
     "test:core-meer": "node ../../scripts/run-tsx-test.mjs src/lib/core-meer.test.ts",
-    "test:core-meer-page": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/core-meer.test.tsx"
+    "test:core-meer-page": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/core-meer.test.tsx",
+    "test:core-analyse": "node ../../scripts/run-tsx-test.mjs src/lib/core-analyse.test.ts",
+    "test:core-analyse-page": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/core-analyse.test.tsx"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.11.1",

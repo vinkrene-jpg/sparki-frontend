@@ -15,3 +15,5 @@ Waarom nodig: in dev rendert de app ALTIJD DevPreview (`DEV_PREVIEW = import.met
 **Meetvalkuilen:** de mobiele onderbalk is géén `nav a` (desktop-aside wel — unfiltered `nav a`-queries zien alleen die verborgen set); filter interactieve elementen op bounding box + positie onderin. Componentmarkers die werken: koppenset per pagina + zichtbare navigatielabels + "Mijn account" (nieuwe schil) vs hamburger/zoek (oude schil). Overflowcheck: `scrollWidth - clientWidth` op html én body.
 
 **Sporen die dit achterlaat (melden in rapport):** Clerk sign-in token + sessie, `last_seen_at`, evt. geautoriseerde `legal_acceptances`-rijen. Na afloop `/tmp`-map (met state.json-cookies!) en `.cache/ms-playwright` verwijderen.
+
+**Verfijning (27 jul):** sign-in tickets zijn éénmalig — mint er één per browsercontext (mobiel + desktop = 2 tickets) en sla `storageState` helemaal over; dan is er ook geen cookie-bestand om op te ruimen. Identiteitscheck: alleen falen op status 200 + mismatch; 401/403 = consent-gate-pad, niet meteen abort.

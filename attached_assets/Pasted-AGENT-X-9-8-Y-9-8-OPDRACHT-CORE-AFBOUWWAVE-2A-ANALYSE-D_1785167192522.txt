@@ -1,0 +1,229 @@
+AGENT
+X=9,8 | Y=9,8
+
+OPDRACHT — CORE-AFBOUWWAVE 2A: ANALYSE
+
+DOEL
+
+Migreer uitsluitend het bestaande Analyse-scherm naar het centrale donkere Sparki-designsysteem.
+
+Behoud alle bestaande analyses, grafieken, databronnen, filters, interacties, rechten en routes.
+
+Dit is alleen een migratie van de presentatielaag. Geen functionele herbouw.
+
+WAAROM DEZE OPDRACHT BEWUST KLEIN IS
+
+De vorige wave met drie parallelle schermen was onnodig zwaar en veroorzaakte tijdelijke test- en runtimeproblemen.
+
+Daarom:
+- slechts één scherm;
+- geen parallelle subagents;
+- sequentieel werken;
+- eerst inventariseren, daarna bouwen en testen.
+
+AFBAKENING
+
+Wel:
+- bestaande Analyse-route;
+- bijbehorende Analyse-pagina en uitsluitend direct benodigde presentatielaagcomponenten;
+- loading-, fout-, lege- en verouderde-datatoestanden;
+- mobiel, tablet en desktop.
+
+Niet:
+- Vandaag;
+- Plan;
+- Activiteiten;
+- Meer;
+- Ontdekken;
+- Rijden en navigatie;
+- coach-, ouder-, club- of beheeromgeving;
+- analyse-, trainings-, herstel- of coachingengines;
+- API’s;
+- database of schema;
+- authenticatie, rollen of featureflags;
+- taak #293;
+- publicatie.
+
+STAP 1 — INVENTARISATIE
+
+Rapporteer vóór wijziging kort:
+
+1. exacte route;
+2. betrokken productiecodebestanden;
+3. gebruikte hooks en API-databronnen;
+4. bestaande grafieken, filters en interacties;
+5. loading-, fout-, lege- en stale-cachetoestanden;
+6. aanwezige mock-, demo-, fallback- of hardcoded persoonlijke data;
+7. functies die absoluut behouden moeten blijven.
+
+Ga daarna zelfstandig door wanneer geen blokkade bestaat.
+
+PRESENTATIERICHTING
+
+Gebruik het bestaande centrale designsysteem en dezelfde Core-schil als Vandaag, Plan, Activiteiten en Meer.
+
+Hiërarchie:
+
+1. paginatitel en actuele analysecontext;
+2. belangrijkste conclusie of relevante periode;
+3. primaire grafiek of vergelijking;
+4. aanvullende analyses;
+5. filters en detailinformatie;
+6. eerlijke lege, laad-, fout- of verouderde toestand.
+
+REGELS
+
+- grafieken en vergelijkingen staan centraal;
+- geen lange verklarende tekst wanneer een grafiek het beter toont;
+- technische begrippen krijgen het bestaande contextuele informatie-icoon;
+- uitleg opent alleen na aanklikken;
+- geen nieuwe persoonlijke conclusies bedenken;
+- uitsluitend bestaande geldige analyse-uitkomsten tonen;
+- geen nulwaarden invullen wanneer gegevens ontbreken;
+- geen voorbeeldgrafieken of voorbeelddata;
+- stale cache alleen tonen met een duidelijke melding dat de gegevens verouderd zijn;
+- maximaal één primaire actie per toestand;
+- geen onnodige verzameling losse kaarten;
+- geen Unicode- of emoji-iconen;
+- geen fotografie achter grafieken of functionele gegevens.
+
+DESIGNSYSTEEM
+
+Hergebruik waar mogelijk:
+
+- bestaande commerciële/Core-schil;
+- bestaande DS-kaarten;
+- bestaande statussen;
+- bestaande knoppen;
+- bestaande lege en fouttoestanden;
+- bestaande iconen en tokens.
+
+Voeg alleen een beperkte componentvariant toe wanneer aantoonbaar geen bestaande variant geschikt is.
+
+Geen tweede designsysteem en geen parallelle Analyse-componenten bouwen.
+
+FUNCTIONEEL BEHOUD
+
+Behoud minimaal:
+
+- bestaande periodekeuze;
+- bestaande grafieken;
+- bestaande filters;
+- bestaande detailopeningen;
+- bestaande training- of activiteitenkoppelingen;
+- bestaande analyseberekeningen;
+- bestaande rechten;
+- bestaande navigatie;
+- alle beschikbare echte waarden en eenheden.
+
+Verwijder of verberg geen functie om het scherm visueel eenvoudiger te maken. Groepeer en prioriteer bestaande functies.
+
+DATA-TRUST
+
+Verifieer:
+
+- alle persoonlijke waarden hebben een aantoonbare bestaande bron;
+- API-fouten worden niet gemaskeerd door voorbeelddata;
+- ontbrekende data toont een eerlijke lege toestand;
+- oude cache wordt herkenbaar als verouderd getoond;
+- geen mock-, demo-, seed-, fallback- of hardcoded persoonlijke data verschijnt;
+- geen berekening wordt verplaatst of opnieuw geïmplementeerd in de presentatielaag.
+
+RESPONSIVE EN TOEGANKELIJKHEID
+
+Controleer:
+
+- 390 × 874;
+- 768 × 1024;
+- 1440 × 900.
+
+Verifieer:
+
+- geen horizontale overflow;
+- grafieken blijven leesbaar;
+- labels en legenda’s worden niet afgesneden;
+- filters zijn mobiel bruikbaar;
+- interactieve elementen minimaal 44 px;
+- toetsenbordfocus zichtbaar;
+- grafieken hebben een tekstueel toegankelijk alternatief;
+- statussen worden niet alleen door kleur aangegeven;
+- browserconsole blijft schoon.
+
+TESTS
+
+Voeg of pas uitsluitend gerichte Analyse-tests aan voor:
+
+1. analyse met volledige echte gegevens;
+2. gedeeltelijk ontbrekende meetwaarden;
+3. lege toestand;
+4. laadstatus;
+5. API-fout zonder fallbackdata;
+6. stale-cachemelding;
+7. periode- en filterbediening;
+8. grafiektoegankelijkheid;
+9. mobiel zonder overflow;
+10. bestaande navigatie en detailacties blijven werken.
+
+Voer daarna sequentieel uit:
+
+- Analyse-tests;
+- designsysteemtests;
+- navigatietests;
+- relevante data-trusttests;
+- frontend-typecheck;
+- volledige webtestset;
+- productiebuild tweemaal;
+- ingelogde browsercontrole op mobiel en desktop.
+
+STOPVOORWAARDEN
+
+Stop en rapporteer vóór verdere wijziging wanneer:
+
+- een engine, API, database of schema gewijzigd moet worden;
+- bestaande analysegegevens niet betrouwbaar herleidbaar zijn;
+- een bestaande functie niet behouden kan worden;
+- productiecode buiten Analyse of direct gedeelde presentatielaag moet worden aangepast;
+- een runtimefout ontstaat.
+
+NIET DOEN
+
+- geen parallelle agents starten;
+- geen nieuwe analysefunctie bouwen;
+- geen berekeningen herschrijven;
+- geen nieuwe filters toevoegen;
+- geen featureflag wijzigen;
+- geen app-brede refactor;
+- geen andere pagina migreren;
+- niets publiceren.
+
+ACCEPTATIE
+
+Gereed wanneer:
+
+1. alleen Analyse is gemigreerd;
+2. bestaand functioneel gedrag behouden is;
+3. het centrale designsysteem wordt gebruikt;
+4. data-trust aantoonbaar klopt;
+5. alle tests groen zijn;
+6. typecheck groen is;
+7. beide builds groen zijn;
+8. ingelogde mobiele en desktopcontrole groen is;
+9. niets is gepubliceerd.
+
+RAPPORTAGE
+
+Rapporteer:
+
+1. inventarisatie vóór wijziging;
+2. gewijzigde bestanden;
+3. behouden functies, hooks en databronnen;
+4. gebruikte DS-componenten;
+5. data-trustresultaat;
+6. responsive- en toegankelijkheidsresultaat;
+7. exacte testuitslagen;
+8. typecheck;
+9. beide buildtijden en bundle-hash;
+10. browsercontrole;
+11. resterende afwijkingen;
+12. bevestiging dat engines, API’s, database, schema en andere schermen niet zijn gewijzigd;
+13. bevestiging dat niets is gepubliceerd.
