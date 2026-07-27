@@ -47,3 +47,16 @@ Root `tsconfig.json` references it; `lib/db/tsconfig.json` and `artifacts/sparki
 **Composite PK target syntax** — use `target: [table.col1, table.col2]` (column array, not constraint name) for `onConflictDoUpdate` with composite PKs. This compiles clean.
 
 **Prod-activering van een flag (launch-switch):** géén schrijftoegang tot de prod-DB en geen flag-beheer-UI — de bestaande weg is het boot-seed-patroon in de intel-seed (insert definitierij `enabledGlobally: true` + `onConflictDoNothing` op key; 3e gebruik: commercial_shell, launch 27-07-2026). Rij ontstaat bij de eerstvolgende publish/boot; een latere admin-beslissing (uit) wordt nooit overschreven. Let op: FEATURE_DESCRIPTIONS beschreef de flag nog als de oude "lichte schil" — omschrijvingen verouderen stil.
+
+## Fix: switch-pagina's moeten fail-open zijn
+
+**Probleem:** `useFeatureFlag(key)` retourneert expliciet `false` zolang flags laden (zie jsdoc). Alle vijf switch-functies (VandaagPage, TrainSwitchPage, ActiviteitenSwitchPage, MeerSwitchPage, AnalyseSwitchPage) in App.tsx renderedden daardoor de ScreenShell-legacy-variant (géén DsMobileNav) totdat flags binnenkwamen.
+
+**Fix (27 jul):** alle switch-functies lezen nu `{ flags, isLoading }` van `useFeatureFlags()` en renderen de CommercialShell-variant zodra `isLoading=true` óf `flags.commercial_shell=true`. Alleen als flags geladen zijn én `commercial_shell` expliciet uit staat, valt het terug op de legacy-pagina.
+
+**Patroon:**
+```tsx
+const { flags, isLoading: flagsLoading } = useFeatureFlags();
+if (flagsLoading || flags.commercial_shell) return <CoreXPage />;
+return <LegacyPage />;
+```

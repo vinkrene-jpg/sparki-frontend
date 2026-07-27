@@ -1,0 +1,90 @@
+OPDRACHT — GAP-ANALYSE TEGEN MASTERPLAN v2.40
+
+Gebruik `SPARKI_AI_MASTER_PLAN_v2.40.yaml` als actueel productreferentiekader.
+
+DOEL
+
+Bepaal concreet wat in de huidige Sparki-webapp nog niet overeenkomt met het masterplan.
+
+Dit is geen brede onderzoeksfase en geen bouwopdracht.
+Vergelijk het masterplan rechtstreeks met de huidige code, routes en werkende interface.
+
+WERKWIJZE
+
+1. Lees het volledige masterplan.
+2. Inventariseer de huidige webapp op basis van:
+   - routes;
+   - shells en navigatie;
+   - pagina’s en componenten;
+   - drawers, modals en formulieren;
+   - databronnen en fallbackpaden;
+   - zichtbare teksten en communicatiepatronen.
+3. Vergelijk alleen tegen expliciete eisen en keuzes uit het masterplan.
+4. Benoem geen theoretische verbeteringen die niet uit het masterplan volgen.
+5. Wijzig niets.
+
+CONTROLEER MINIMAAL
+
+- mobiel versus desktop;
+- centrale shell en navigatie;
+- oude en nieuwe layouts door elkaar;
+- Vandaag als referentiescherm;
+- Plan, Activiteiten, Analyse en Meer;
+- Rijden en Ontdekken;
+- pagina’s achter Meer;
+- data-eerst en korte zakelijke/wetenschappelijke conclusies;
+- verdieping pas na doorklikken;
+- gebruikerszichtbare personificatie zoals “Vraag Sparki”;
+- mock-, demo-, seed-, fallback- en hardcoded persoonlijke data;
+- eerlijke lege, fout- en verouderde toestanden;
+- bekende gegevens die onnodig opnieuw worden gevraagd;
+- stille acties zonder succes- of foutfeedback;
+- inconsistenties in drawers, pop-ups en formulieren;
+- verschillen tussen telefoon, tablet en desktop.
+
+RAPPORTEER PER AFWIJKING
+
+1. masterplaneis;
+2. huidige situatie;
+3. route of scherm;
+4. betrokken bestand(en);
+5. bewijs uit code of interface;
+6. ernst:
+   - blokkerend;
+   - hoog;
+   - middel;
+   - laag;
+7. minimale herstelactie;
+8. of de oplossing centraal of paginaspecifiek moet worden uitgevoerd.
+
+OPLEVERING
+
+Maak één overzicht met:
+
+1. onderdelen die al volledig op orde zijn;
+2. onderdelen die gedeeltelijk op orde zijn;
+3. onderdelen die niet op orde zijn;
+4. centrale oorzaken die meerdere pagina’s raken;
+5. een herstelvolgorde met kleine sequentiële waves;
+6. maximaal één hoofdonderwerp per wave;
+7. welke wave eerst Vandaag als referentie afrondt;
+8. welke oplossingen daarna webapp-breed kunnen worden hergebruikt.
+
+BELANGRIJKE GRENZEN
+
+- geen code wijzigen;
+- geen tests aanpassen;
+- geen nieuwe componenten bouwen;
+- geen database of schema wijzigen;
+- geen featureflags wijzigen;
+- geen parallelle agents starten;
+- niets publiceren;
+- niet opnieuw een algemene visie bedenken;
+- het masterplan is het referentiekader.
+
+EINDIG MET
+
+- de vijf belangrijkste centrale afwijkingen;
+- de eerstvolgende aanbevolen herstelwave;
+- welke onderdelen daarin exact worden gebouwd;
+- welke onderdelen bewust nog niet worden aangeraakt.

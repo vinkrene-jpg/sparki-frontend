@@ -1,0 +1,60 @@
+VOLLEDIGHEIDSEIS
+
+De analyse moet volledig zijn.
+
+- Rapporteer alle gevonden afwijkingen.
+- Geen top 5, top 10 of selectie op belangrijkste punten.
+- Geen samenvatting die kleinere afwijkingen weglaat.
+- Geen limiet op het aantal bevindingen.
+- Splits samengestelde problemen op in afzonderlijke concrete afwijkingen.
+- Controleer ook onderliggende drawers, modals, tabbladen, menu’s, formulieren en foutpaden.
+- Markeer duidelijk wat daadwerkelijk is gecontroleerd en wat niet kon worden gecontroleerd.
+- Een niet-gecontroleerd onderdeel mag nooit als op orde worden aangemerkt.
+- Blijf routes en onderdelen nalopen totdat de volledige webapp-inventaris is afgewerkt.
+- Voeg per route een controledekking toe:
+  - volledig gecontroleerd;
+  - gedeeltelijk gecontroleerd;
+  - niet controleerbaar, met reden.
+- Benoem ook afwijkingen die meerdere pagina’s raken bij iedere betrokken route én eenmaal als centrale oorzaak.
+- Voeg geen nieuwe producteisen toe die niet uit het masterplan volgen.
+
+OPLEVERING
+
+Lever één volledig rapport op met:
+
+1. de complete route- en scherminventaris;
+2. alle onderdelen die aantoonbaar op orde zijn;
+3. alle gedeeltelijk conforme onderdelen;
+4. alle afwijkingen, zonder aantalslimiet;
+5. alle niet-gecontroleerde onderdelen en de reden;
+6. alle centrale oorzaken die meerdere routes raken;
+7. alle paginaspecifieke oorzaken;
+8. alle gevonden mock-, demo-, seed-, fallback- en hardcoded data;
+9. alle oude shells, navigaties en layouts;
+10. alle communicatie-afwijkingen;
+11. alle onnodig opnieuw gevraagde bekende gegevens;
+12. alle stille, defecte of onduidelijke acties;
+13. alle inconsistenties in drawers, modals en formulieren;
+14. alle responsive- en toegankelijkheidsafwijkingen;
+15. alle verschillen tussen mobiel, tablet en desktop;
+16. een traceerbaarheidstabel:
+    - masterplaneis;
+    - betrokken route(s);
+    - huidige status;
+    - bewijs;
+    - herstelactie;
+17. een volledige herstelbacklog waarin iedere afwijking een uniek ID krijgt;
+18. een sequentiële uitvoeringsvolgorde waarin alle backlog-ID’s zijn opgenomen;
+19. een controletabel die bewijst dat geen bevinding buiten de herstelvolgorde is gebleven.
+
+EINDIG MET
+
+- het totale aantal onderzochte routes;
+- het totale aantal volledig gecontroleerde routes;
+- het totale aantal gedeeltelijk gecontroleerde routes;
+- het totale aantal niet-gecontroleerde routes;
+- het totale aantal afwijkingen per ernstniveau;
+- het totale aantal backlog-items;
+- een bevestiging dat alle gevonden afwijkingen in de backlog en herstelvolgorde zijn opgenomen.
+
+Wijzig niets en publiceer niets.

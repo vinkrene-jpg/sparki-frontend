@@ -1,0 +1,84 @@
+OPDRACHT — LIVE STABILISATIE NA CORE-WAVES
+
+Herstel uitsluitend twee aangetroffen productieproblemen:
+
+1. De mobiele ondernavigatie verdwijnt op Plan.
+2. Op Vandaag, Plan, Activiteiten, Analyse of Meer verschijnt mock-, demo-, seed-, fallback- of hardcoded persoonlijke data.
+
+STAP 1 — DIAGNOSE
+
+Controleer ingelogd op productie en in de huidige kandidaatcode:
+
+- Vandaag;
+- Plan;
+- Activiteiten;
+- Analyse;
+- Meer.
+
+Rapporteer eerst:
+
+1. Op welke viewport en route de ondernavigatie op Plan verdwijnt.
+2. Welk component of welke CSS-regel dit veroorzaakt.
+3. Per scherm welke zichtbare waarden mock-, demo-, seed-, fallback- of hardcoded data zijn.
+4. Uit welk bestand, endpoint, cachepad of fallbackmechanisme deze data afkomstig is.
+5. Of echte gebruikersdata ontbreekt, faalt of wordt overschreven.
+
+Ga daarna zelfstandig door wanneer de oorzaak duidelijk en binnen onderstaande scope ligt.
+
+HERSTEL 1 — PLAN-NAVIGATIE
+
+- Herstel uitsluitend de bestaande mobiele ondernavigatie op Plan.
+- Gebruik exact dezelfde Core-navigatie als Vandaag, Activiteiten, Analyse en Meer.
+- Geen nieuwe navigatievariant.
+- Geen route- of menuwijzigingen.
+- Geen overlap met inhoud.
+- Houd rekening met safe-area en sticky/fixed positionering.
+- Desktopnavigatie ongewijzigd laten.
+
+HERSTEL 2 — DATA-TRUST
+
+- Verwijder of blokkeer iedere zichtbare mock-, demo-, seed-, fallback- of hardcoded persoonlijke waarde op deze vijf schermen.
+- Bij ontbrekende echte data: toon een eerlijke lege toestand.
+- Bij API-fout: toon een duidelijke fouttoestand.
+- Bij oude cache: markeer expliciet dat de informatie verouderd is.
+- Nooit voorbeelddata als persoonlijke data tonen.
+- Geen nieuwe data, berekeningen of conclusies verzinnen.
+- Bestaande geldige engines en endpoints behouden.
+- Geen database- of schemawijziging zonder eerst te stoppen en rapporteren.
+
+NIET DOEN
+
+- Rijden nog niet migreren.
+- Achterliggende pagina’s vanuit Meer nog niet migreren.
+- Communicatieteksten nog niet app-breed herschrijven.
+- Geen nieuwe features.
+- Geen brede refactor.
+- Geen parallelle agents.
+- Niets publiceren.
+
+TESTEN
+
+Voer sequentieel uit:
+
+- gerichte navigatietest voor Plan op 390 × 874;
+- data-trusttests voor alle vijf schermen;
+- lege-, fout- en stale-toestanden;
+- frontend-typecheck;
+- volledige webtestset;
+- productiebuild tweemaal;
+- ingelogde browser-smoketest van alle vijf schermen op mobiel en desktop;
+- controleer ook de belangrijkste bestaande knoppen en links.
+
+RAPPORTAGE
+
+Rapporteer:
+
+1. oorzaak van de verdwenen navigatie;
+2. gevonden mock-/fallbackdata per scherm;
+3. gewijzigde bestanden;
+4. herstel per probleem;
+5. testuitslagen;
+6. beide builds;
+7. browsercontrole en gecontroleerde knoppen;
+8. bevestiging dat Rijden, Meer-subpagina’s, engines, API’s, database en schema niet zijn gewijzigd;
+9. bevestiging dat niets is gepubliceerd.

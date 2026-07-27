@@ -14,7 +14,6 @@ import { Zap } from "lucide-react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { DayHome } from "@/components/sparki/day-home";
 import { CommercialToday } from "@/components/sparki/commercial-shell";
-import { useFeatureFlag } from "@/hooks/use-feature-flag";
 import { CoachHome } from "@/components/sparki/coach-home";
 import { ParentHome } from "@/components/sparki/parent-home";
 import { OnboardingV2 } from "@/components/sparki/onboarding-v2";
@@ -66,7 +65,7 @@ import { apiFetch } from "@/lib/api";
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
 import { UserProvider, useUserProfile } from "@/contexts/UserContext";
-import { FeatureFlagProvider } from "@/contexts/FeatureFlagContext";
+import { FeatureFlagProvider, useFeatureFlags } from "@/contexts/FeatureFlagContext";
 import { FeedbackProvider } from "@/contexts/FeedbackContext";
 import { DevPreview } from "@/components/sparki/dev-preview";
 import { DEV_PREVIEW } from "@/lib/dev";
@@ -395,40 +394,53 @@ function RoleHome() {
 // their navigation always works.
 function VandaagPage() {
   const { profile } = useUserProfile();
-  // Commerciële lichte schil (default UIT) — zelfde echte data en acties,
-  // alleen een andere presentatie. Uit = exact de huidige donkere Vandaag.
-  const commercialShell = useFeatureFlag("commercial_shell");
+  // Fail-open: while flags are loading useFeatureFlag returns false, which would
+  // briefly render the legacy ScreenShell page (no mobile nav). Instead we read
+  // isLoading from the context and default to the commercial shell — it is
+  // enabled_globally=true at 100 % rollout so this is always the safe default.
+  // Only fall back to the legacy page when flags are confirmed loaded AND the
+  // flag is explicitly off.
+  const { flags, isLoading: flagsLoading } = useFeatureFlags();
+  const commercialShell = flags.commercial_shell;
   if (profile?.activeRole === "coach") return <CoachHome />;
   if (profile?.activeRole === "parent") return <ParentHome />;
-  if (commercialShell) return <CommercialToday />;
+  if (flagsLoading || commercialShell) return <CommercialToday />;
   return <DayHome />;
 }
 
-// Plan/Activiteiten/Meer — zelfde flag-switch als Vandaag: met commercial_shell
-// aan de nieuwe designsysteem-pagina, uit exact de bestaande pagina. Coach en
-// ouder hadden op deze routes nooit een aparte variant; de nieuwe Meer-pagina
-// regelt rolgedrag zelf (net als de oude).
+// Plan/Activiteiten/Meer/Analyse — zelfde flag-switch als Vandaag: met
+// commercial_shell aan de nieuwe designsysteem-pagina, uit exact de bestaande
+// pagina. Coach en ouder hadden op deze routes nooit een aparte variant; de
+// nieuwe Meer-pagina regelt rolgedrag zelf (net als de oude).
+//
+// Fail-open patroon: zolang flags laden renderen we de CommercialShell-pagina
+// (met DsMobileNav). Zonder dit valt useFeatureFlag terug op false — de
+// ScreenShell-pagina rendert zonder mobiele ondernavigatie.
 function TrainSwitchPage() {
-  const commercialShell = useFeatureFlag("commercial_shell");
-  return commercialShell ? <CorePlanPage /> : <TrainPage />;
+  const { flags, isLoading: flagsLoading } = useFeatureFlags();
+  if (flagsLoading || flags.commercial_shell) return <CorePlanPage />;
+  return <TrainPage />;
 }
 
 function ActiviteitenSwitchPage() {
-  const commercialShell = useFeatureFlag("commercial_shell");
-  return commercialShell ? <CoreActiviteitenPage /> : <ActiviteitenPage />;
+  const { flags, isLoading: flagsLoading } = useFeatureFlags();
+  if (flagsLoading || flags.commercial_shell) return <CoreActiviteitenPage />;
+  return <ActiviteitenPage />;
 }
 
 function MeerSwitchPage() {
-  const commercialShell = useFeatureFlag("commercial_shell");
-  return commercialShell ? <CoreMeerPage /> : <MeerPage />;
+  const { flags, isLoading: flagsLoading } = useFeatureFlags();
+  if (flagsLoading || flags.commercial_shell) return <CoreMeerPage />;
+  return <MeerPage />;
 }
 
-// Analyse (/lab) — Core-afbouwwave 2A: zelfde flag-switch. Uit = exact het
-// bestaande Lab-scherm; aan = dezelfde analyses, hooks en flows op het
-// centrale designsysteem. Alleen presentatie — berekeningen blijven staan.
+// Analyse (/lab) — Core-afbouwwave 2A: zelfde flag-switch én fail-open patroon.
+// Uit = exact het bestaande Lab-scherm; aan = dezelfde analyses, hooks en flows
+// op het centrale designsysteem. Alleen presentatie — berekeningen blijven staan.
 function AnalyseSwitchPage() {
-  const commercialShell = useFeatureFlag("commercial_shell");
-  return commercialShell ? <CoreAnalysePage /> : <LabPage />;
+  const { flags, isLoading: flagsLoading } = useFeatureFlags();
+  if (flagsLoading || flags.commercial_shell) return <CoreAnalysePage />;
+  return <LabPage />;
 }
 
 function HomeRedirect() {
