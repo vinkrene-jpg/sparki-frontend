@@ -22,3 +22,5 @@ deploy, run BOTH `pnpm run typecheck` (needs `pnpm --filter @workspace/db run bu
 first for project-reference declarations) AND `pnpm --filter @workspace/api-server run build`.
 "No deployment logs found" from the logs tool means the failure is at build time,
 not runtime — look at the build step, not production logs.
+
+- Na een taak-merge draait het platform alle test-workflows automatisch opnieuw; die groene runs gelden als bewijs — alleen niet-workflow (shell)tests hoeven dan nog handmatig.
