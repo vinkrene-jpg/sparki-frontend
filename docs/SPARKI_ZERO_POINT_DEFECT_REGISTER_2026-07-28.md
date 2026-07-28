@@ -67,7 +67,7 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 - **Laatst bijgewerkt:** 2026-07-28
 
 ### A-03 — Ontdekken-voorkeuren mengen tussen accounts
-- **Categorie:** DEFECT · **Ernst:** P2 (voorkeursdata, geen gezondheids-/betaalgegevens; wel accountoverstijgende zichtbaarheid van persoonlijk gedrag — vandaar niet P1) · **Zekerheid:** Hard bevestigd (code) · **Status:** READY_FOR_FIX
+- **Categorie:** DEFECT · **Ernst:** P2 (voorkeursdata, geen gezondheids-/betaalgegevens; wel accountoverstijgende zichtbaarheid van persoonlijk gedrag — vandaar niet P1) · **Zekerheid:** Hard bevestigd (code) · **Status:** VERIFIED_FIXED
 - **Route/rol/scherm:** `/feed` (Ontdekken), alle rollen
 - **Bestand/regel:** `artifacts/sparki/src/lib/feed-prefs.ts:28`
 - **Bewijsbron:** Statische code-inspectie
@@ -79,7 +79,7 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 - **Afhankelijkheden:** Geen.
 - **Eigenaar:** Replit (implementatie)
 - **Blokkade:** Geen
-- **Verificatiebewijs:** Nog te leveren
+- **Verificatiebewijs:** Sleutel is nu gebruikersgebonden: `sparki.ontdekken.prefs.v1.<clerkId>` (`feedPrefsKey()` in `lib/feed-prefs.ts`); gekozen user-id = `clerkId` uit de bestaande `UserContext` (geen displayName/e-mail, geen tweede context, geen mutable user-state in de lib — id wordt expliciet per aanroep doorgegeven). Migratiegedrag: oude globale sleutel wordt éénmalig toegekend aan de eerste ingelogde gebruiker zónder eigen sleutel, markering `sparki.ontdekken.prefs.migrated.v1` wordt gezet en de oude sleutel wordt daarna altijd verwijderd (corrupte legacy-JSON wordt weggegooid, nooit doorgegeven); een tweede account krijgt de oude data dus nooit. Zonder user-id wordt niets in localStorage gelezen/geschreven (sessie-only). Accountwissel zonder herladen: `/feed` herlaadt de voorkeuren via een effect op `clerkId` — geen oude React-state. Bewijs A→B→A + randgevallen: 8 unit-tests in `lib/feed-prefs.test.ts` (`pnpm --filter @workspace/sparki run test:feed-prefs`, alle groen 2026-07-28): sleutels verschillend per user-id; A→B→A zonder lek; eenmalige veilige migratie; migratie overschrijft nooit een eigen sleutel; corrupte opslag ⇒ leeg; geen user-id ⇒ geen globale opslag; geblokkeerde opslag (incognito) crasht niet; limiet 200 bewaarde items gehandhaafd. Statusgang: READY_FOR_FIX → FIXED_NOT_VERIFIED → VERIFIED_FIXED. Commit-SHA: zie commit met deze registerwijziging.
 - **Laatst bijgewerkt:** 2026-07-28
 
 ### A-04 — Sfeerbeeld kan als bronfoto worden geïnterpreteerd

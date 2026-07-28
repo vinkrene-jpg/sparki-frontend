@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { dagSfeer } from "@/lib/sfeer"
+import { useUserProfile } from "@/contexts/UserContext"
 import { Link } from "wouter"
 import { CommercialShell } from "@/components/sparki/commercial-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
@@ -234,15 +235,22 @@ function FeedKaartView({
   prefs,
   onPrefs,
   onOpenNieuws,
+  userId,
 }: {
   kaart: FeedKaart
   toonBeeld: boolean
   prefs: FeedPrefs
   onPrefs: (p: FeedPrefs) => void
   onOpenNieuws: (id: number) => void
+  userId: string | null
 }) {
   const meta = TYPE_META[kaart.type]
-  const beeld = toonBeeld ? beeldVoor(kaart) : null
+  // Artikelkaarten (met nieuwsId) tonen uitsluitend de échte foto uit het
+  // artikel zelf; heeft het artikel er geen, dan géén foto — nooit een los
+  // sfeerbeeld dat een relatie met het artikel suggereert.
+  const isArtikel = kaart.ref?.nieuwsId != null
+  const artikelBeeld = isArtikel && toonBeeld ? (kaart.beeldUrl ?? null) : null
+  const beeld = toonBeeld && !isArtikel ? beeldVoor(kaart) : null
   const bewaard = prefs.bewaard.some((b) => b.key === kaart.key)
   const isInzicht = kaart.type === "inzicht"
 
@@ -254,14 +262,20 @@ function FeedKaartView({
 
   return (
     <article className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.035]">
-      {beeld && (
+      {(artikelBeeld || beeld) && (
         <div className="relative aspect-[16/9] w-full overflow-hidden">
           <img
-            src={beeld.webp}
+            src={artikelBeeld ?? beeld!.webp}
             alt=""
             loading="lazy"
             className="h-full w-full object-cover"
-            style={{ objectPosition: beeld.cropPositie }}
+            style={artikelBeeld ? undefined : { objectPosition: beeld!.cropPositie }}
+            onError={(e) => {
+              // Externe artikelfoto laadt niet (verwijderd/hotlink-blokkade):
+              // verberg het beeldvak — geen vervangend sfeerbeeld.
+              const vak = e.currentTarget.parentElement
+              if (vak) vak.style.display = "none"
+            }}
           />
           {/* Alleen een compacte chip op rustig beeldgebied — geen tekst over drukke fotodelen, geen zware overlay */}
           <span
@@ -340,7 +354,7 @@ function FeedKaartView({
             bewaard={bewaard}
             onBewaar={() =>
               onPrefs(
-                toggleBewaard({
+                toggleBewaard(userId, {
                   key: kaart.key,
                   titel: kaart.titel,
                   categorie: kaart.type,
@@ -350,7 +364,7 @@ function FeedKaartView({
                 }),
               )
             }
-            onMinder={() => onPrefs(minderVan(kaart.type, kaart.bron))}
+            onMinder={() => onPrefs(minderVan(userId, kaart.type, kaart.bron))}
           />
         </div>
       </div>
@@ -420,7 +434,15 @@ export default function FeedPage() {
 
   const [actief, setActief] = useState<FilterKey>("voorjou")
   const [readerItem, setReaderItem] = useState<FeedNewsItem | null>(null)
-  const [prefs, setPrefs] = useState<FeedPrefs>(() => leesFeedPrefs())
+  // Voorkeuren zijn per gebruiker gescheiden (A-03): sleutel op clerkId.
+  // Bij accountwissel zonder herladen laadt de effect hieronder direct de
+  // voorkeuren van de nieuwe gebruiker — nooit oude state laten staan.
+  const { profile } = useUserProfile()
+  const userId = profile?.clerkId ?? null
+  const [prefs, setPrefs] = useState<FeedPrefs>(() => leesFeedPrefs(userId))
+  useEffect(() => {
+    setPrefs(leesFeedPrefs(userId))
+  }, [userId])
 
   const todayYmd = ymdToday()
 
@@ -473,6 +495,7 @@ export default function FeedPage() {
         link: n.url,
         extern: true,
         ref: { nieuwsId: n.id },
+        beeldUrl: n.imageUrl ?? null,
       })
     }
 
@@ -612,7 +635,7 @@ export default function FeedPage() {
             Sommige onderwerpen zijn gedempt (op dit apparaat).
             <button
               type="button"
-              onClick={() => setPrefs(herstelMinder())}
+              onClick={() => setPrefs(herstelMinder(userId))}
               className="text-cyan-200/80 underline-offset-2 hover:underline"
             >
               Herstel
@@ -670,6 +693,7 @@ export default function FeedPage() {
               <FeedKaartView
                 key={kaart.key}
                 kaart={kaart}
+                userId={userId}
                 // Afwisseling: vrienden/inzicht compact; verder krijgt niet elke
                 // opeenvolgende kaart een beeld zodat de feed rustig blijft.
                 toonBeeld={kaart.type !== "vrienden" && kaart.type !== "inzicht" && i % 3 !== 2}
