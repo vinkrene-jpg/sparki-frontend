@@ -52,12 +52,12 @@ function sessionMetrics(s: TrainingSession): MetricItem[] {
     out.push({ icon: RouteIcon, value: `${s.distanceKm} km` })
   if (s.elevationM != null)
     out.push({ icon: Mountain, value: `${s.elevationM} m` })
-  if (s.avgWatt != null)
-    out.push({ icon: Zap, value: `${s.avgWatt} W` })
-  if (s.avgHr != null)
-    out.push({ icon: HeartPulse, value: `${s.avgHr} bpm` })
+  if (s.avgPower != null)
+    out.push({ icon: Zap, value: `${s.avgPower} W` })
+  if (s.avgHR != null)
+    out.push({ icon: HeartPulse, value: `${s.avgHR} bpm` })
   if (s.intensityFactor != null)
-    out.push({ icon: Gauge, value: `IF ${s.intensityFactor.toFixed(2)}` })
+    out.push({ icon: Gauge, value: `IF ${Number(s.intensityFactor).toFixed(2)}` })
   if (s.tss != null) out.push({ icon: Flame, value: `${s.tss} TSS` })
   return out
 }
