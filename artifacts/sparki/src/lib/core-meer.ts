@@ -47,6 +47,15 @@ const ADMIN_ITEM: Chapter = {
   hint: "Systeembeheer",
 }
 
+// Analyse zit op desktop in de zijbalk maar NIET in de mobiele onderbalk —
+// zonder deze rij is /analyse op smalle schermen onbereikbaar.
+const ANALYSE_ITEM: Chapter = {
+  href: "/analyse",
+  icon: null as never,
+  label: "Analyse",
+  hint: "Grafieken & trends",
+}
+
 const KENNIS_ITEM: Chapter = {
   href: "/kennis",
   icon: null as never,
@@ -81,9 +90,9 @@ function groepeerAtleet(isClubMember: boolean, isAdmin: boolean): MeerGroep[] {
     {
       titel: "Veelgebruikt",
       items: [
-        ...["/", "/kalender", "/activiteiten", "/samen", "/feed"].map((h) =>
-          byHref.get(h)!,
-        ),
+        ...["/", "/kalender", "/activiteiten"].map((h) => byHref.get(h)!),
+        ANALYSE_ITEM,
+        ...["/samen", "/feed"].map((h) => byHref.get(h)!),
         ...(isClubMember ? [CLUB_CHAPTER] : []),
       ].filter(Boolean),
     },
