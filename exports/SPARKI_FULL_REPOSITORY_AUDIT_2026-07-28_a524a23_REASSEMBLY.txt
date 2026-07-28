@@ -1,0 +1,45 @@
+SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip — HERSAMENSTELLING
+=======================================================================
+
+Oorspronkelijk bestand : SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip
+Totale grootte         : 466.625.538 bytes (445,04 MiB)
+SHA256 (origineel ZIP) : 639bace4cfbecc4e4a0822fd4c4e3c51d0a20349e29bd90168de2709d79262b4
+
+Delen, in EXACT deze volgorde samenvoegen:
+  1. SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part01  (94.371.840 bytes)
+     SHA256: b1029f289066ff553e204015caa39afb347647d40b76ab2f9277c5eafcf2ae8b
+  2. SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part02  (94.371.840 bytes)
+     SHA256: 0f857ff248895bb649a1c54b167b4229dd25a7b3e0c86e47049d867d4b501cc1
+  3. SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part03  (94.371.840 bytes)
+     SHA256: 51c2c86be1952497feeb3b522390b512fbbe187773a4dd4015ddd86901042f01
+  4. SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part04  (94.371.840 bytes)
+     SHA256: 402c0240c82c110a7a31378b20f7c45c23054351e90f263d6478056b074e3ec8
+  5. SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part05  (89.138.178 bytes)
+     SHA256: 097cb6bc9c3962725802591cbaf41c9a6cb552ec8b338a0b88b8aef907d48b8b
+
+-----------------------------------------------------------------------
+Windows (PowerShell) — voer uit in de map met de vijf part-bestanden:
+
+  $out = "SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip"
+  $parts = 1..5 | ForEach-Object { "$out.part{0:d2}" -f $_ }
+  $stream = [System.IO.File]::Create($out)
+  foreach ($p in $parts) { $bytes = [System.IO.File]::ReadAllBytes($p); $stream.Write($bytes, 0, $bytes.Length) }
+  $stream.Close()
+  # Controle (moet 639BACE4... geven):
+  Get-FileHash $out -Algorithm SHA256
+
+-----------------------------------------------------------------------
+Linux / macOS (Terminal) — voer uit in de map met de vijf part-bestanden:
+
+  cat SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part01 \
+      SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part02 \
+      SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part03 \
+      SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part04 \
+      SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part05 \
+      > SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip
+  # Controle (moet 639bace4... geven):
+  shasum -a 256 SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip   # macOS
+  sha256sum SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip       # Linux
+
+Klopt de SHA256 met het origineel hierboven, dan is het ZIP-bestand
+byte-voor-byte identiek hersteld en gewoon te openen/uitpakken.

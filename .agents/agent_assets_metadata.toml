@@ -875,3 +875,45 @@ id = "1UNUcOlReUTPJaY4CWNMv"
 uri = "file://SPARKI_TRANSFER_2026-07-28_d88b49a.zip"
 type = "unspecified"
 title = "Sparki Transfer — 2026-07-28 (d88b49a)"
+
+[[outputs]]
+id = "woRColkVhGoCxzCi112Ss"
+uri = "file://exports/SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part01"
+type = "unspecified"
+title = "Audit-ZIP deel 1 van 5 (part01)"
+
+[[outputs]]
+id = "00utoyxfSnucZoQzAH2z_"
+uri = "file://exports/SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part02"
+type = "unspecified"
+title = "Audit-ZIP deel 2 van 5 (part02)"
+
+[[outputs]]
+id = "hyezrTLjNGTVr9Pjbq5Qr"
+uri = "file://exports/SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part03"
+type = "unspecified"
+title = "Audit-ZIP deel 3 van 5 (part03)"
+
+[[outputs]]
+id = "8ejUdstR7syGqtHVfYR5D"
+uri = "file://exports/SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part04"
+type = "unspecified"
+title = "Audit-ZIP deel 4 van 5 (part04)"
+
+[[outputs]]
+id = "e25-lFttBJOSJz5D1R7Sl"
+uri = "file://exports/SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part05"
+type = "unspecified"
+title = "Audit-ZIP deel 5 van 5 (part05)"
+
+[[outputs]]
+id = "Fev1koT6Wm_6fYE2TqPvX"
+uri = "file://exports/SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23_REASSEMBLY.txt"
+type = "text"
+title = "Samenvoeg-instructies (REASSEMBLY.txt)"
+
+[[outputs]]
+id = "j-I4pmGOcASLJYR3FtjEd"
+uri = "file://exports/SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip"
+type = "unspecified"
+title = "SPARKI volledige repository-audit (445 MB, compleet ZIP)"
