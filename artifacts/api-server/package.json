@@ -136,7 +136,8 @@
     "test:live-location": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs live-location",
     "test:ai-consent": "node ./scripts/run-test.mjs ai-consent",
     "test:data-origin": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs data-origin",
-    "test:ai-foundation": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs ai-foundation"
+    "test:ai-foundation": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs ai-foundation",
+    "test:climb-search-unit": "node ./scripts/run-test.mjs climb-search-unit"
   },
   "dependencies": {
     "@clerk/express": "^2.1.30",

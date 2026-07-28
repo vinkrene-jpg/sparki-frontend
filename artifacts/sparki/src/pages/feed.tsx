@@ -57,7 +57,6 @@ import {
 } from "lucide-react"
 
 // ── Filters (compact, geen tabbladenwoud) ────────────────────────────────────
-
 type FilterKey = "voorjou" | "vrienden" | "wedstrijd" | "routes" | "materiaal"
 
 const FILTERS: { key: FilterKey; label: string }[] = [
