@@ -295,7 +295,12 @@ router.get("/wizard-proposal", requireAuth, async (req, res) => {
         rationale: "Technische leerschool boven pure plaatsing stellen is op dit niveau het snelst groeiende doel.",
       };
     }
-    // exp === null → geen voorstel; eerlijk "onvoldoende data"
+    // exp === null → geen voorstel; eerlijk "onvoldoende data". Zonder bekend
+    // ervaringsniveau is ook het prioriteitsvoorstel minder zeker: verlaag de
+    // confidence en benoem het gat expliciet in de basis-verantwoording.
+    if (!exp) {
+      priorityConfidence = Math.max(0, priorityConfidence - 0.1);
+    }
 
     // ── Voorbereiding ─────────────────────────────────────────────────────────
     let prepText: string;
@@ -327,6 +332,7 @@ router.get("/wizard-proposal", requireAuth, async (req, res) => {
     // ── Basis-verantwoording ──────────────────────────────────────────────────
     const basisParts: string[] = [];
     if (exp) basisParts.push(`ervaring: ${exp}`);
+    else basisParts.push("ervaring onbekend");
     if (discipline) basisParts.push(`discipline: ${discipline}`);
     if (distanceKm) basisParts.push(`afstand: ${distanceKm} km`);
     basisParts.push(`${aRacesThisSeason} A-doelen dit seizoen`);
