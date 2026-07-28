@@ -1,6 +1,11 @@
 import { Router } from "express";
 import { eq } from "drizzle-orm";
-import { db, athleteProfilesTable } from "@workspace/db";
+import {
+  db,
+  athleteProfilesTable,
+  feedPrefsTable,
+  type SavedFeedItemRow,
+} from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { getPersonalizedNews } from "../engines/knowledge";
 import { maybeRefreshNews } from "../lib/knowledge/refresh";
@@ -129,6 +134,124 @@ router.get("/news", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "feed.news failed");
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ─────────────────────────────────────────────
+// Account-brede feedvoorkeuren (bewaard + "minder hiervan").
+// GET  /api/feed/prefs — huidige voorkeuren; { prefs: null } zolang er nog
+//      geen rij is (eerlijk: geen voorkeuren, niets verzonnen).
+// PUT  /api/feed/prefs — volledige vervanging (de client stuurt de gemergde
+//      set; localStorage blijft de per-apparaat fallback/migratiebron).
+// ─────────────────────────────────────────────
+
+const MAX_BEWAARD = 200;
+const MAX_LIJST = 100;
+const MAX_STR = 500;
+
+function cleanStr(v: unknown, max = MAX_STR): string | null {
+  if (typeof v !== "string") return null;
+  const s = v.trim().slice(0, max);
+  return s.length > 0 ? s : null;
+}
+
+function sanitizeBewaard(v: unknown): SavedFeedItemRow[] {
+  if (!Array.isArray(v)) return [];
+  const out: SavedFeedItemRow[] = [];
+  const seen = new Set<string>();
+  for (const raw of v) {
+    if (out.length >= MAX_BEWAARD) break;
+    if (typeof raw !== "object" || raw === null) continue;
+    const r = raw as Record<string, unknown>;
+    const key = cleanStr(r.key, 200);
+    const titel = cleanStr(r.titel);
+    const categorie = cleanStr(r.categorie, 50);
+    if (!key || !titel || !categorie || seen.has(key)) continue;
+    seen.add(key);
+    const item: SavedFeedItemRow = {
+      key,
+      titel,
+      categorie,
+      bewaardOp: cleanStr(r.bewaardOp, 40) ?? new Date().toISOString(),
+    };
+    const url = cleanStr(r.url, 1000);
+    if (url) item.url = url;
+    const bron = cleanStr(r.bron, 200);
+    if (bron) item.bron = bron;
+    out.push(item);
+  }
+  return out;
+}
+
+function sanitizeLijst(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  const out: string[] = [];
+  for (const raw of v) {
+    if (out.length >= MAX_LIJST) break;
+    const s = cleanStr(raw, 200);
+    if (s && !out.includes(s)) out.push(s);
+  }
+  return out;
+}
+
+router.get("/prefs", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req);
+  if (!clerkId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  try {
+    const [row] = await db
+      .select()
+      .from(feedPrefsTable)
+      .where(eq(feedPrefsTable.clerkId, clerkId))
+      .limit(1);
+    res.json({
+      prefs: row
+        ? {
+            bewaard: row.bewaard,
+            minderCategorie: row.minderCategorie,
+            minderBron: row.minderBron,
+            updatedAt: row.updatedAt.toISOString(),
+          }
+        : null,
+    });
+  } catch (err) {
+    req.log.error({ err }, "feed.prefs.get failed");
+    res.status(500).json({ error: "Kon feedvoorkeuren niet laden" });
+  }
+});
+
+router.put("/prefs", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req);
+  if (!clerkId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const bewaard = sanitizeBewaard(body.bewaard);
+  const minderCategorie = sanitizeLijst(body.minderCategorie);
+  const minderBron = sanitizeLijst(body.minderBron);
+  try {
+    const [row] = await db
+      .insert(feedPrefsTable)
+      .values({ clerkId, bewaard, minderCategorie, minderBron })
+      .onConflictDoUpdate({
+        target: feedPrefsTable.clerkId,
+        set: { bewaard, minderCategorie, minderBron, updatedAt: new Date() },
+      })
+      .returning();
+    res.json({
+      prefs: {
+        bewaard: row.bewaard,
+        minderCategorie: row.minderCategorie,
+        minderBron: row.minderBron,
+        updatedAt: row.updatedAt.toISOString(),
+      },
+    });
+  } catch (err) {
+    req.log.error({ err }, "feed.prefs.put failed");
+    res.status(500).json({ error: "Kon feedvoorkeuren niet opslaan" });
   }
 });
 

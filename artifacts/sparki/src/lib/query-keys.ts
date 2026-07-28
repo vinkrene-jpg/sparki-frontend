@@ -213,6 +213,7 @@ export const queryKeys = {
   feed: {
     all: () => ["feed"] as const,
     news: () => ["feed", "news"] as const,
+    prefs: () => ["feed", "prefs"] as const,
   },
 
   intel: {

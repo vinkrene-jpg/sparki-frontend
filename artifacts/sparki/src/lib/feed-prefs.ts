@@ -1,13 +1,17 @@
 /**
- * Ontdekken-feedvoorkeuren — bewaard op dit apparaat (localStorage), PER GEBRUIKER.
+ * Ontdekken-feedvoorkeuren — account-breed, met localStorage (PER GEBRUIKER)
+ * als fallback/migratiebron.
  * ──────────────────────────────────────────────────────────────────────────────
  * Twee soorten voorkeuren, beide écht (persistent, geen mock):
  *  - bewaard:  items die de atleet bewaart (kaart-key + titel + url/route);
  *  - minder:   feedback "minder hiervan" per categorie of bron — dempt de
  *              betreffende kaarten in de personalisatie-sortering.
  *
- * Bewust lokaal: dit is presentatie-voorkeur van dít apparaat. De copy in de
- * UI zegt "op dit apparaat" — nooit doen alsof dit account-breed synct.
+ * De bron van waarheid is het account (api-server `/api/feed/prefs`, zie
+ * hooks/use-feed-prefs.ts). localStorage blijft de per-apparaat fallback én
+ * de migratiebron: bestaande lokale voorkeuren worden bij de eerste sync
+ * verliesloos samengevoegd met de account-voorkeuren. Zolang de sync (nog)
+ * niet gelukt is, zegt de UI eerlijk "op dit apparaat".
  *
  * Per gebruiker gescheiden (defect A-03): de sleutel bevat de stabiele
  * clerkId van de ingelogde gebruiker, zodat op een gedeeld apparaat de
@@ -139,4 +143,49 @@ export function minderVan(
 export function herstelMinder(userId: string | null | undefined): FeedPrefs {
   const p = leesFeedPrefs(userId)
   return schrijf(userId, { ...p, minderCategorie: [], minderBron: [] })
+}
+
+/** Schrijf een (bv. van het account opgehaalde) set voorkeuren naar de lokale cache. */
+export function schrijfFeedPrefs(
+  userId: string | null | undefined,
+  p: FeedPrefs,
+): FeedPrefs {
+  return schrijf(userId, {
+    bewaard: (p.bewaard ?? []).slice(0, 200),
+    minderCategorie: p.minderCategorie ?? [],
+    minderBron: p.minderBron ?? [],
+  })
+}
+
+/**
+ * Verliesloze merge van lokale + account-voorkeuren (voor de eerste sync):
+ * bewaard = unie op kaart-key (nieuwste eerst), minder-lijsten = unie.
+ * Puur — schrijft niets.
+ */
+export function mergeFeedPrefs(a: FeedPrefs, b: FeedPrefs): FeedPrefs {
+  const perKey = new Map<string, SavedFeedItem>()
+  for (const item of [...a.bewaard, ...b.bewaard]) {
+    const bestaand = perKey.get(item.key)
+    if (!bestaand || item.bewaardOp > bestaand.bewaardOp) perKey.set(item.key, item)
+  }
+  const bewaard = [...perKey.values()]
+    .sort((x, y) => y.bewaardOp.localeCompare(x.bewaardOp))
+    .slice(0, 200)
+  const unie = (x: string[], y: string[]) => [...new Set([...x, ...y])]
+  return {
+    bewaard,
+    minderCategorie: unie(a.minderCategorie, b.minderCategorie),
+    minderBron: unie(a.minderBron, b.minderBron),
+  }
+}
+
+/** Inhoudelijke gelijkheid (volgorde-onafhankelijk voor de minder-lijsten). */
+export function feedPrefsGelijk(a: FeedPrefs, b: FeedPrefs): boolean {
+  const keys = (p: FeedPrefs) => p.bewaard.map((i) => i.key).sort().join("\n")
+  const lijst = (l: string[]) => [...l].sort().join("\n")
+  return (
+    keys(a) === keys(b) &&
+    lijst(a.minderCategorie) === lijst(b.minderCategorie) &&
+    lijst(a.minderBron) === lijst(b.minderBron)
+  )
 }

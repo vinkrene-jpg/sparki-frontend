@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { dagSfeer } from "@/lib/sfeer"
 import { useUserProfile } from "@/contexts/UserContext"
 import { Link } from "wouter"
@@ -30,12 +30,12 @@ import {
   type FeedKaartType,
 } from "@/lib/ontdekken-feed"
 import {
-  leesFeedPrefs,
   toggleBewaard,
   minderVan,
   herstelMinder,
   type FeedPrefs,
 } from "@/lib/feed-prefs"
+import { useFeedPrefs } from "@/hooks/use-feed-prefs"
 import {
   Bike,
   Users,
@@ -442,15 +442,12 @@ export default function FeedPage() {
 
   const [actief, setActief] = useState<FilterKey>("voorjou")
   const [readerItem, setReaderItem] = useState<FeedNewsItem | null>(null)
-  // Voorkeuren zijn per gebruiker gescheiden (A-03): sleutel op clerkId.
-  // Bij accountwissel zonder herladen laadt de effect hieronder direct de
-  // voorkeuren van de nieuwe gebruiker — nooit oude state laten staan.
+  // Voorkeuren zijn per gebruiker gescheiden (A-03: lokale opslag op clerkId)
+  // én account-breed gesynct via /api/feed/prefs; bij accountwissel zonder
+  // herladen reset de hook de state direct — nooit oude state laten staan.
   const { profile } = useUserProfile()
   const userId = profile?.clerkId ?? null
-  const [prefs, setPrefs] = useState<FeedPrefs>(() => leesFeedPrefs(userId))
-  useEffect(() => {
-    setPrefs(leesFeedPrefs(userId))
-  }, [userId])
+  const { prefs, synct: prefsSynct, update: setPrefs } = useFeedPrefs(userId)
 
   const todayYmd = ymdToday()
 
@@ -640,7 +637,9 @@ export default function FeedPage() {
         {heeftDemping && (
           <div className="mt-3 flex items-center gap-2 font-mono text-[10px] tracking-wide text-white/40">
             <EyeOff className="h-3 w-3" />
-            Sommige onderwerpen zijn gedempt (op dit apparaat).
+            {prefsSynct
+              ? "Sommige onderwerpen zijn gedempt."
+              : "Sommige onderwerpen zijn gedempt (op dit apparaat)."}
             <button
               type="button"
               onClick={() => setPrefs(herstelMinder(userId))}
@@ -762,7 +761,7 @@ export default function FeedPage() {
               </ZijbalkBlok>
             )}
             {prefs.bewaard.length > 0 && (
-              <ZijbalkBlok titel="Bewaard (dit apparaat)">
+              <ZijbalkBlok titel={prefsSynct ? "Bewaard" : "Bewaard (dit apparaat)"}>
                 {prefs.bewaard.slice(0, 5).map((b) =>
                   b.url && b.url.startsWith("/") ? (
                     <Link key={b.key} href={b.url} className="block text-[12px] font-light leading-snug text-white/70 transition-colors hover:text-cyan-100">
