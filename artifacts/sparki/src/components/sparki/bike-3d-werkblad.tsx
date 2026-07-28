@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useLocation } from "wouter"
 import { Wrench, ScanLine } from "lucide-react"
 import {
   Bike3D,
@@ -11,6 +12,7 @@ import { useBikeScanView } from "@/hooks/use-bike-scan"
 import { BikeScanViewer } from "@/components/sparki/bike-scan-viewer"
 import { BikeScanCapture } from "@/components/sparki/bike-scan-capture"
 import { EquipmentAssetPanel } from "@/components/sparki/equipment-asset-panel"
+import { useFixParams } from "@/hooks/use-missing-input"
 
 // 3D-werkblad in de Mechanieker: het eigen-fietsmodel met aanklikbare
 // onderdelen. Een klik op een onderdeel toont UITSLUITEND wat er echt in de
@@ -78,6 +80,24 @@ export function Bike3DWerkblad() {
 
   const bike = bikes.find((b) => b.id === bikeId) ?? bikes[0]
   const { data: scanView } = useBikeScanView(bike?.id ?? null)
+  const { focus } = useFixParams()
+  const [, navigate] = useLocation()
+  const hasBike = bike != null
+
+  // Deep-link /mechanieker?focus=scan (bijv. vanuit Ontdekken → Materiaal):
+  // scroll naar dit werkblad en open direct de fietsscan. De focus-parameter
+  // wordt daarna gestript zodat refresh/terug de scan niet opnieuw opent.
+  useEffect(() => {
+    if (focus !== "scan" || !hasBike) return
+    const t = setTimeout(() => {
+      document
+        .getElementById("bike-scan-capture")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" })
+      setScanning(true)
+      navigate("/mechanieker", { replace: true })
+    }, 200)
+    return () => clearTimeout(t)
+  }, [focus, hasBike, navigate])
 
   if (bikes.length === 0 || !bike) {
     // Geen fiets in de garage — geen model tonen (niets te tonen is eerlijk).
@@ -87,7 +107,7 @@ export function Bike3DWerkblad() {
   const hasScan = scanView != null && scanView.viewMode !== "geen"
 
   return (
-    <section aria-label="Jouw fiets in 3D">
+    <section id="bike-scan-capture" aria-label="Jouw fiets in 3D">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.24em] text-white/40">
           <Wrench className="h-3 w-3" /> Jouw fiets

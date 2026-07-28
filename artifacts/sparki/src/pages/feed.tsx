@@ -841,7 +841,7 @@ function JouwMateriaalBlok() {
         </Link>
         {bikes.length > 0 && (
           <Link
-            href="/mechanieker"
+            href="/mechanieker?focus=scan"
             className="rounded-full border border-white/[0.12] px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-white/60 transition-colors hover:border-white/25 hover:text-white/85"
           >
             Fietsscan
