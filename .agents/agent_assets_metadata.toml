@@ -869,3 +869,9 @@ id = "HSbBubMSSwx8mVNL3ckg8"
 uri = "file://SPARKI_CURRENT_STATE_2026-07-27_666b702.zip"
 type = "unspecified"
 title = "Sparki broncode — 2026-07-27 (commit 666b702)"
+
+[[outputs]]
+id = "1UNUcOlReUTPJaY4CWNMv"
+uri = "file://SPARKI_TRANSFER_2026-07-28_d88b49a.zip"
+type = "unspecified"
+title = "Sparki Transfer — 2026-07-28 (d88b49a)"

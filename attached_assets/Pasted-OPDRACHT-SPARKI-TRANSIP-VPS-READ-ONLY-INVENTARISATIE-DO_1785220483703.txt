@@ -1,0 +1,124 @@
+OPDRACHT — SPARKI TRANSIP-VPS READ-ONLY INVENTARISATIE
+
+DOEL
+
+Inventariseer veilig en uitsluitend read-only wat momenteel op de TransIP-server `sparki-vps2` draait.
+
+SERVER
+
+Naam: sparki-vps2
+IP: 141.138.141.205
+OS: Ubuntu 24.04 LTS
+Capaciteit: 1 core, 2 GB RAM, 100 GB SSD
+
+BELANGRIJKE REGELS
+
+- niets installeren;
+- niets verwijderen;
+- niets stoppen of herstarten;
+- geen configuraties wijzigen;
+- geen firewallregels aanpassen;
+- geen secrets, tokens, wachtwoorden of private keys tonen;
+- geen deployment uitvoeren;
+- geen databasewijzigingen;
+- geen code pushen;
+- uitsluitend lezen en rapporteren.
+
+CONTROLEER
+
+1. Systeem
+- hostname;
+- Ubuntu-versie;
+- uptime;
+- CPU-, geheugen- en schijfgebruik;
+- actieve gebruikerssessies;
+- timezone.
+
+2. Actieve processen en services
+- systemd-services;
+- Node.js-processen;
+- PM2;
+- Docker en actieve containers;
+- Nginx;
+- Apache;
+- PostgreSQL;
+- Redis;
+- eventuele andere databases;
+- achtergrondworkers en cronjobs.
+
+3. Netwerk
+- luisterende poorten;
+- publieke services;
+- UFW-status;
+- iptables/nftables-status;
+- TransIP VPS-firewallstatus alleen benoemen zoals bekend;
+- geen poortscan vanaf buiten uitvoeren.
+
+4. Webserver en domeinen
+- aanwezige Nginx- of Apache-configuraties;
+- server_names en proxy-doelen;
+- SSL-certificaten en vervaldatums;
+- verwijzingen naar sparki-insight-domeinen;
+- document roots en applicatiepaden.
+
+5. Sparki-code en deployment
+- relevante directories onder `/opt`, `/srv`, `/var/www` en home-directories;
+- Git-repositories;
+- actuele branch en commit-hash;
+- remote repository zonder credentials te tonen;
+- bestaande deployment-scripts;
+- GitHub Actions, webhooks of pull-based deployment;
+- build-output en startcommando’s.
+
+6. Database
+- alleen vaststellen welk databasesysteem draait;
+- database- en schemanamen alleen wanneer deze niet gevoelig zijn;
+- geen tabellen dumpen;
+- geen persoonsgegevens bekijken;
+- geen credentials tonen;
+- benoem waar backups lijken te staan.
+
+7. Environment en secrets
+- uitsluitend namen van environment variables;
+- nooit waarden tonen;
+- locaties van `.env`-bestanden benoemen;
+- bestandsrechten controleren;
+- benoem of secrets onveilig leesbaar lijken.
+
+8. Logging en monitoring
+- locaties van applicatie-, webserver- en systeemlogs;
+- laatste foutstatus alleen samenvatten;
+- geen persoonsgegevens of tokens uit logs kopiëren;
+- monitoring, healthchecks en backupjobs.
+
+OPLEVERING
+
+Maak:
+
+`docs/SPARKI_TRANSIP_VPS_INVENTORY.md`
+
+Rapporteer daarin:
+
+- wat aantoonbaar aanwezig is;
+- wat actief draait;
+- huidige architectuur;
+- domein- en verkeersroute;
+- huidige deploymentroute;
+- database- en backupstatus;
+- beveiligingsrisico’s;
+- ontbrekende informatie;
+- kleinste veilige vervolgstappen.
+
+Sluit af met een tabel:
+
+| Onderdeel | Status | Bewijs | Risico | Vervolgactie |
+
+ACCEPTATIE
+
+- geen systeemwijzigingen uitgevoerd;
+- geen secrets zichtbaar gemaakt;
+- alle conclusies voorzien van concreet bewijs;
+- duidelijk onderscheid tussen bevestigd, vermoedelijk en onbekend;
+- geen advies om Vercel, Replit of TransIP definitief te kiezen vóór deze inventarisatie gereed is;
+- gepubliceerd: nee;
+- commit: alleen documentatiecommit na controle.
