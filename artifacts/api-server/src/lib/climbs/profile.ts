@@ -6,6 +6,7 @@
 // the caller honestly reports "profiel niet beschikbaar".
 
 import { getRoutingProvider } from "../routing";
+import type { RoadSegment } from "./overpass";
 import { summarizeTrack } from "../gpx-parse";
 import type { GeoPoint } from "../routing/types";
 
@@ -16,11 +17,15 @@ export type DerivedClimbProfile = {
   elevationGainM: number;
   // Downsampled elevation series (metres) for the profile chart.
   profile: number[];
-  // De ECHTE getraceerde routelijn naar de top ([lat, lon]), licht
-  // gedownsampled — zodat de kaart de klim kan tekenen. Nooit verzonnen.
+  // De ECHTE lijn ([lat, lon]), licht gedownsampled — zodat de kaart de klim
+  // kan tekenen. Nooit verzonnen. Bij `source: "trace"` is dit de getraceerde
+  // route naar de top; bij `source: "way"` de echte weggeometrie zelf.
   points: [number, number][];
   // Honest note that these numbers are derived, not surveyed.
   derived: true;
+  // Waar de lijn vandaan komt: een routetrace naar een top (pass/peak) of de
+  // OSM-weggeometrie van de klimweg zelf (road).
+  source: "trace" | "way";
 };
 
 const EARTH_KM = 6371;
@@ -96,8 +101,7 @@ function maxGradient(points: GeoPoint[]): number {
   return Math.round(max * 10) / 10;
 }
 
-// Try tracing a climb from several bearings/distances and keep the candidate
-// whose traced route ends highest near the summit with a real sustained ascent.
+const JOIN_TOLERANCE_KM = 0.03; // ~30 m: node-snap tolerance between segments.
 export async function deriveClimbProfile(summit: {
   lat: number;
   lon: number;
@@ -164,10 +168,222 @@ export async function deriveClimbProfile(summit: {
           profile: summary.profile,
           points: line,
           derived: true,
+          source: "trace",
         };
       }
     }
   }
 
+  return best;
+}
+
+const ORS_ELEVATION_URL = "https://api.openrouteservice.org/elevation/line";
+
+function samePoint(
+  a: { lat: number; lon: number },
+  b: { lat: number; lon: number },
+): boolean {
+  return haversineKm(a.lat, a.lon, b.lat, b.lon) <= JOIN_TOLERANCE_KM;
+}
+
+const MAX_ELEVATION_POINTS = 280;
+
+async function elevationForLine(
+  line: { lat: number; lon: number }[],
+): Promise<GeoPoint[] | null> {
+  const key = process.env.ORS_API_KEY;
+  if (!key) return null;
+  // Downsample to stay well within the API's point limit; endpoints kept.
+  let sampled = line;
+  if (line.length > MAX_ELEVATION_POINTS) {
+    const step = (line.length - 1) / (MAX_ELEVATION_POINTS - 1);
+    sampled = [];
+    for (let i = 0; i < MAX_ELEVATION_POINTS; i++) {
+      sampled.push(line[Math.min(Math.round(i * step), line.length - 1)]!);
+    }
+  }
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 15_000);
+  try {
+    const res = await fetch(ORS_ELEVATION_URL, {
+      method: "POST",
+      headers: {
+        Authorization: key,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        format_in: "polyline",
+        format_out: "polyline",
+        geometry: sampled.map((p) => [p.lon, p.lat]),
+      }),
+      signal: ac.signal,
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      geometry?: [number, number, number][];
+    };
+    const geom = data.geometry;
+    if (!Array.isArray(geom) || geom.length < 2) return null;
+    const points: GeoPoint[] = [];
+    for (const entry of geom) {
+      if (!Array.isArray(entry) || entry.length < 3) return null;
+      const [lon, lat, ele] = entry;
+      if (
+        typeof lat !== "number" ||
+        typeof lon !== "number" ||
+        typeof ele !== "number"
+      ) {
+        return null;
+      }
+      points.push({ lat, lon, ele });
+    }
+    return points;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function deriveRoadClimbProfile(
+  segments: RoadSegment[],
+): Promise<DerivedClimbProfile | null> {
+  const line = stitchSegments(segments);
+  if (line.length < 4) return null;
+  const lengthKm = segmentLengthKm(line);
+  // A real climb road is at least a couple hundred metres; guard degenerates.
+  if (lengthKm < 0.2 || lengthKm > 30) return null;
+
+  let points = await elevationForLine(line);
+  if (!points || points.length < 4) return null;
+
+  // Orient the line UPHILL: a climb is ridden bottom → top. The geometry order
+  // in OSM is arbitrary, so flip when the end is lower than the start.
+  const first = points[0]!.ele;
+  const last = points[points.length - 1]!.ele;
+  if (first == null || last == null) return null;
+  if (last < first) points = [...points].reverse();
+
+  // The street name often extends past the actual climb (flat run-in through
+  // the town, a stretch past the top). Trim to the sustained climbing stretch:
+  // the sub-interval with the LARGEST net rise (max-subarray over elevation
+  // deltas). Still 100% real geometry + elevation — just the climb itself.
+  points = trimToClimb(points);
+  if (points.length < 4) return null;
+
+  const summary = summarizeTrack(points);
+  const len = summary.distanceKm;
+  const gain = summary.elevationGainM;
+  if (len == null || gain == null || len <= 0) return null;
+  // Net climb over the whole way — the honest "gemiddeld %" for a klimweg.
+  const startEle = points[0]!.ele!;
+  const endEle = points[points.length - 1]!.ele!;
+  const netUpM = endEle - startEle;
+  // Honesty guard: if the road barely climbs, there is no climb profile.
+  if (netUpM < 10 && gain < 20) return null;
+
+  const step = Math.max(1, Math.ceil(points.length / 200));
+  const mapLine: [number, number][] = [];
+  for (let i = 0; i < points.length; i += step) {
+    mapLine.push([points[i]!.lat, points[i]!.lon]);
+  }
+  const tail = points[points.length - 1]!;
+  const lastKept = mapLine[mapLine.length - 1];
+  if (!lastKept || lastKept[0] !== tail.lat || lastKept[1] !== tail.lon) {
+    mapLine.push([tail.lat, tail.lon]);
+  }
+
+  return {
+    lengthKm: Math.round(len * 100) / 100,
+    avgGradePct: Math.round((netUpM / (len * 1000)) * 100 * 10) / 10,
+    maxGradePct: maxGradient(points),
+    elevationGainM: Math.round(gain),
+    profile: summary.profile,
+    points: mapLine,
+    derived: true,
+    source: "way",
+  };
+}
+
+function trimToClimb(points: GeoPoint[]): GeoPoint[] {
+  let bestStart = 0;
+  let bestEnd = points.length - 1;
+  let bestRise = -Infinity;
+  let curStart = 0;
+  let curRise = 0;
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]!.ele;
+    const b = points[i]!.ele;
+    if (a == null || b == null) continue;
+    curRise += b - a;
+    if (curRise > bestRise) {
+      bestRise = curRise;
+      bestStart = curStart;
+      bestEnd = i;
+    }
+    if (curRise < 0) {
+      curRise = 0;
+      curStart = i;
+    }
+  }
+  if (bestRise <= 0 || bestEnd - bestStart < 3) return points;
+  return points.slice(bestStart, bestEnd + 1);
+}
+
+function segmentLengthKm(seg: { lat: number; lon: number }[]): number {
+  let len = 0;
+  for (let i = 1; i < seg.length; i++) {
+    len += haversineKm(
+      seg[i - 1]!.lat,
+      seg[i - 1]!.lon,
+      seg[i]!.lat,
+      seg[i]!.lon,
+    );
+  }
+  return len;
+}
+
+export function stitchSegments(
+  segments: RoadSegment[],
+): { lat: number; lon: number }[] {
+  if (segments.length === 0) return [];
+  let best: { lat: number; lon: number }[] = [];
+  let bestLen = 0;
+  // Try each segment as a seed; cheap because climb roads have few segments.
+  for (let seed = 0; seed < segments.length; seed++) {
+    const used = new Set<number>([seed]);
+    let chain = [...segments[seed]!];
+    let extended = true;
+    while (extended) {
+      extended = false;
+      for (let i = 0; i < segments.length; i++) {
+        if (used.has(i)) continue;
+        const seg = segments[i]!;
+        const head = chain[0]!;
+        const tail = chain[chain.length - 1]!;
+        const segStart = seg[0]!;
+        const segEnd = seg[seg.length - 1]!;
+        if (samePoint(tail, segStart)) {
+          chain = chain.concat(seg.slice(1));
+        } else if (samePoint(tail, segEnd)) {
+          chain = chain.concat([...seg].reverse().slice(1));
+        } else if (samePoint(head, segEnd)) {
+          chain = seg.slice(0, -1).concat(chain);
+        } else if (samePoint(head, segStart)) {
+          chain = [...seg].reverse().slice(0, -1).concat(chain);
+        } else {
+          continue;
+        }
+        used.add(i);
+        extended = true;
+      }
+    }
+    const len = segmentLengthKm(chain);
+    if (len > bestLen) {
+      bestLen = len;
+      best = chain;
+    }
+  }
   return best;
 }

@@ -4,8 +4,17 @@
 // value comes from a real source or is explicitly reported as missing.
 
 import { geocodeArea } from "./geocode";
-import { searchClimbsInBbox, fetchClimbTags, type ClimbHit } from "./overpass";
-import { deriveClimbProfile, type DerivedClimbProfile } from "./profile";
+import {
+  searchClimbsInBbox,
+  fetchClimbTags,
+  fetchRoadGeometry,
+  type ClimbHit,
+} from "./overpass";
+import {
+  deriveClimbProfile,
+  deriveRoadClimbProfile,
+  type DerivedClimbProfile,
+} from "./profile";
 import { enrichDescription, type ClimbDescription } from "./enrich";
 
 export type ClimbSearchResult = {
@@ -101,15 +110,29 @@ export async function climbDetail(osmId: string): Promise<ClimbDetail> {
 
   // Description + derived profile are independent; run them in parallel and let
   // each degrade honestly on its own.
+  //
+  // Road climbs (klimwegen zoals de Cauberg) krijgen hun profiel uit de ECHTE
+  // weggeometrie zelf — een route-trace naar het way-center kan vele malen
+  // langer en vlakker uitvallen dan de echte klim. Passen/toppen behouden het
+  // bestaande trace-gedrag. Mislukt het weggeometrie-pad, dan tonen we de
+  // eerlijke "geen profiel"-staat; er wordt nooit iets gefabriceerd.
+  const profilePromise =
+    kind === "road"
+      ? fetchRoadGeometry({ name, lat, lon })
+          .then((segments) => deriveRoadClimbProfile(segments))
+          .catch(() => null)
+      : deriveClimbProfile({ lat, lon, elevationM }).catch(() => null);
   const [description, profile] = await Promise.all([
     enrichDescription(tags).catch(() => null),
-    deriveClimbProfile({ lat, lon, elevationM }).catch(() => null),
+    profilePromise,
   ]);
 
   let profileUnavailableReason: string | null = null;
   if (!profile) {
     profileUnavailableReason =
-      "Er kon geen betrouwbaar klimprofiel worden afgeleid — alleen hoogte en locatie zijn bekend.";
+      kind === "road"
+        ? "Het klimprofiel van deze weg kon niet uit de weggeometrie worden afgeleid — alleen de locatie is bekend."
+        : "Er kon geen betrouwbaar klimprofiel worden afgeleid — alleen hoogte en locatie zijn bekend.";
   }
 
   return {

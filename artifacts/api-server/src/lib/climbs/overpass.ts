@@ -212,7 +212,7 @@ export async function fetchClimbTags(
   return { tags: el.tags ?? {}, lat, lon };
 }
 
-// Reachability probe used by the honest empty/error states.
+export type RoadSegment = { lat: number; lon: number }[];
 export async function overpassReachable(): Promise<boolean> {
   try {
     await fetchJson(
@@ -228,3 +228,31 @@ export async function overpassReachable(): Promise<boolean> {
     return false;
   }
 }
+
+export async function fetchRoadGeometry(opts: {
+  name: string;
+  lat: number;
+  lon: number;
+  radiusM?: number;
+}): Promise<RoadSegment[]> {
+  const radiusM = Math.min(Math.max(opts.radiusM ?? 3000, 500), 10_000);
+  // Exact-name match, escaped for the Overpass QL string literal.
+  const escaped = opts.name.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  const ql =
+    `[out:json][timeout:25];` +
+    `way["highway"]["name"="${escaped}"](around:${radiusM},${opts.lat},${opts.lon});` +
+    `out geom;`;
+  const data = (await runQuery(ql)) as { elements?: OverpassGeomElement[] };
+  const segments: RoadSegment[] = [];
+  for (const el of data.elements ?? []) {
+    const geom = el.geometry?.filter(
+      (p) => typeof p?.lat === "number" && typeof p?.lon === "number",
+    );
+    if (geom && geom.length >= 2) segments.push(geom);
+  }
+  return segments;
+}
+
+type OverpassGeomElement = OverpassElement & {
+  geometry?: { lat: number; lon: number }[];
+};

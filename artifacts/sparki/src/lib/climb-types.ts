@@ -24,9 +24,11 @@ export type DerivedClimbProfile = {
   maxGradePct: number
   elevationGainM: number
   profile: number[]
-  // Echte getraceerde routelijn naar de top ([lat, lon]) voor de kaart.
+  // Echte lijn ([lat, lon]) voor de kaart: bij "trace" een getraceerde route
+  // naar de top, bij "way" de echte weggeometrie van de klimweg zelf.
   points: [number, number][]
   derived: true
+  source: "trace" | "way"
 }
 
 export type ClimbDescription = {

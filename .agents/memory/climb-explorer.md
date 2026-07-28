@@ -9,11 +9,11 @@ description: Overpass mirror caveats + honest-source design for the searchable c
 - In heuvelland (Limburg/Vlaanderen) zijn de bekende beklimmingen (Cauberg, Keutenberg…) vrijwel nooit peak/pass-getagd — wél als benoemde weg. De zoekopdracht bevat daarom ook `highway`-ways met klim-namen (regex `(berg|helling|muur)$|^(col |côte |mur |muur )`, i-flag) → kind `road`.
 - De bbox van een geocodede plaats is voor een dorpskern veel te klein; zoeken gebeurt met een gebruikersinstelbare straal (km, geklemd 2–60) rond het centrum.
 - Dedupe op naam moet SPATIEEL zijn (≤ ~3 km cluster, voorkeur voor element mét `ele`); naam-alleen dedupe laat verschillende klimmen met dezelfde naam verdwijnen.
-- Honesty: bij `road`-klimmen is het OSM-way-center niet per se de top — UI-copy mag geen "top" claimen. Afgeleid profiel (trace-naar-punt) kan voor klimwegen véél langer/vlakker uitvallen dan de echte klim (Cauberg 8,85 km @2,3% i.p.v. ~1,2 km @5,8%); echte verbetering = profiel uit de way-geometrie zelf afleiden.
+- Honesty: bij `road`-klimmen is het OSM-way-center niet per se de top — UI-copy mag geen "top" claimen.
+- `road`-klimmen krijgen hun profiel uit de WAY-GEOMETRIE zelf (`out geom` op alle gelijknamige highway-ways around het punt → endpoint-stitching → ORS `/elevation/line` → bergop oriënteren). De straatnaam loopt vaak dóór het dorp/na de top: trim op grootste netto stijging (Kadane over ele-delta's) of Cauberg leest 1,9 km @2,5% i.p.v. echte ~1,0 km @5,7%. Trace-naar-punt blijft alleen voor pass/peak; `DerivedClimbProfile.source: "trace"|"way"` stuurt de UI-copy.
 - Overpass is flaky: eerste request geeft geregeld 503 en lukt bij retry — client heeft een retry-knop, houd die.
 
 Searchable OSM climb explorer (flag `climb_explorer`): geocode (Nominatim) → Overpass climb search (mountain_pass + natural=peak+ele) → detail = derived profile (routing provider) + description enrichment (OSM tag → Wikipedia REST → Wikidata). Honest empty/error/limited states throughout; never fabricated.
-
 ## Overpass mirror selection (critical)
 - `overpass-api.de/api/interpreter` returns **406 for every request in this sandbox env** (egress mangling); works elsewhere so kept as a fallback, not primary.
 - `overpass.kumi.systems` path 404s.

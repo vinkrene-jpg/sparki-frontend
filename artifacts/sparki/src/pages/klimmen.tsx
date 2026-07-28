@@ -109,8 +109,8 @@ function DetailView({
       </div>
       {climbLine && (
         <p className="mt-2 text-[11px] text-white/35">
-          {climb.kind === "road"
-            ? "De lijn op de kaart is een afgeleide route naar het hoogste punt in de buurt van deze klimweg — het gemarkeerde punt is het middelpunt van de weg, niet per se de top."
+          {data?.profile?.source === "way"
+            ? "De lijn op de kaart is de echte weggeometrie van deze klimweg (OpenStreetMap)."
             : "De lijn op de kaart is de afgeleide klimroute naar de top."}
         </p>
       )}
@@ -164,8 +164,9 @@ function DetailView({
                 className="mt-1"
               />
               <p className="mt-3 text-[11px] leading-relaxed text-white/35">
-                Lengte, stijgingspercentages en hoogtemeters zijn afgeleid uit
-                een echte routelijn naar de top — geen exacte meting.
+                {data.profile.source === "way"
+                  ? "Lengte, stijgingspercentages en hoogtemeters zijn afgeleid uit de echte weggeometrie met hoogtedata — geen exacte meting."
+                  : "Lengte, stijgingspercentages en hoogtemeters zijn afgeleid uit een echte routelijn naar de top — geen exacte meting."}
               </p>
             </div>
           ) : (
