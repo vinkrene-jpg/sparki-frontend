@@ -131,7 +131,7 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 - **Laatst bijgewerkt:** 2026-07-28
 
 ### A-07 — Clerk-inlogscherm is Engelstalig
-- **Categorie:** DEFECT · **Ernst:** P3 · **Zekerheid:** Hard bevestigd (code) · **Status:** READY_FOR_FIX
+- **Categorie:** DEFECT · **Ernst:** P3 · **Zekerheid:** Hard bevestigd (code) · **Status:** VERIFIED_FIXED
 - **Route/rol/scherm:** `/sign-in`, `/sign-up`
 - **Bestand/regel:** `artifacts/sparki/src/App.tsx:601-612`
 - **Bewijsbron:** Statische code-inspectie
@@ -143,7 +143,7 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 - **Afhankelijkheden:** Geen.
 - **Eigenaar:** Replit (implementatie)
 - **Blokkade:** Geen
-- **Verificatiebewijs:** Nog te leveren
+- **Verificatiebewijs:** Gekozen methode: Clerk's officiële volledige Nederlandse locale `nlNL` uit `@clerk/localizations` (nieuw dependency in `artifacts/sparki`), als geheel doorgegeven aan `ClerkProvider.localization` — dus géén half-vertaalde mix van Engelse defaults met losse overrides: alle knoppen, velden, foutmeldingen, verificatie-, wachtwoord-vergeten- en social-login-teksten komen uit de officiële vertaling. Alleen de twee starttitels zijn Sparki-eigen overschreven binnen dezelfde structuur: sign-in "Welkom terug"/"Log in op je Sparki-account", sign-up "Maak je Sparki-account"/"Begin met slimmer fietsen en trainen" (vervangt "Welcome back"/"Join Sparki"/etc.). Functionaliteit onaangeraakt: redirects, `?redirect_url=` (invite-flow), OAuth en routing staan los van de `localization`-prop. Bewijs tegen een échte productie-build (dev-preview toont deze schermen niet): `vite build` + statisch geserveerde `dist/public` + eigen Playwright — gerenderde tekst op /sign-in: "Welkom terug · Log in op je Sparki-account · Ga verder met Google · E-mailadres · Wachtwoord · Doorgaan · Geen account? Registreren"; /sign-up: "Maak je Sparki-account · Begin met slimmer fietsen en trainen · Heb je al een account? Inloggen" — geen zichtbare Engelse systeemtekst, geen consolefouten, nette uitlijning op 390 en 1440px. Screenshots: `screenshots/clerk-nl-signin-390.jpg`, `clerk-nl-signin-1440.jpg`, `clerk-nl-signup-390.jpg`. Diepe toestanden (verkeerd wachtwoord, verificatiecode, code opnieuw verzenden, wachtwoord resetten) vergen een echt account + e-mailloop en zijn gedekt doordat ze integraal uit dezelfde officiële `nlNL`-vertaling komen. TypeScript-check groen. Statusgang: READY_FOR_FIX → FIXED_NOT_VERIFIED → VERIFIED_FIXED (2026-07-28). Commit-SHA: zie commit met deze registerwijziging.
 - **Laatst bijgewerkt:** 2026-07-28
 
 ## 5. A2 — Nog te bevestigen codebevinding

@@ -9,6 +9,7 @@ import {
 } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { dark } from "@clerk/themes";
+import { nlNL } from "@clerk/localizations";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
 import { Zap } from "lucide-react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
@@ -105,6 +106,31 @@ function stripBase(path: string): string {
 if (!clerkPubKey) {
   throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY");
 }
+
+// Volledige officiële Nederlandse Clerk-lokalisatie (defect A-07) — alle
+// auth-schermen (inloggen, registreren, verificatie, wachtwoord vergeten,
+// foutmeldingen, social login) in het Nederlands. Alleen de start-titels
+// krijgen Sparki-eigen copy; de rest komt uit @clerk/localizations, dus geen
+// half-vertaalde mix van Engelse defaults en losse overrides.
+const clerkLocalization = {
+  ...nlNL,
+  signIn: {
+    ...nlNL.signIn,
+    start: {
+      ...nlNL.signIn?.start,
+      title: "Welkom terug",
+      subtitle: "Log in op je Sparki-account",
+    },
+  },
+  signUp: {
+    ...nlNL.signUp,
+    start: {
+      ...nlNL.signUp?.start,
+      title: "Maak je Sparki-account",
+      subtitle: "Begin met slimmer fietsen en trainen",
+    },
+  },
+};
 
 const clerkAppearance = {
   baseTheme: dark,
@@ -599,20 +625,7 @@ function AppRouter() {
       appearance={clerkAppearance}
       signInUrl={`${basePath}/sign-in`}
       signUpUrl={`${basePath}/sign-up`}
-      localization={{
-        signIn: {
-          start: {
-            title: "Welcome back",
-            subtitle: "Sign in to your Sparki account",
-          },
-        },
-        signUp: {
-          start: {
-            title: "Join Sparki",
-            subtitle: "Sparki-powered cycling performance",
-          },
-        },
-      }}
+      localization={clerkLocalization}
       routerPush={(to) => setLocation(stripBase(to))}
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
