@@ -154,17 +154,24 @@ export function CommercialShell({
     <div className="relative min-h-dvh bg-app font-sans text-white [overflow-x:clip]">
       {achtergrond}
       {sfeer && (
-        <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
+        // Sfeerfoto duidelijk zichtbaar, zonder uitvergroot te ogen: op mobiel
+        // een vaste hoge band (16:9-foto verliest dan nauwelijks beeld i.p.v.
+        // ~2,4× ingezoomd bij full-screen cover op een staand scherm), op
+        // desktop paginavullend (verhouding komt daar vanzelf overeen).
+        <div
+          className="pointer-events-none fixed inset-x-0 top-0 z-0 h-[62dvh] lg:inset-0 lg:h-auto"
+          aria-hidden="true"
+        >
           <img
             src={sfeer}
             alt=""
-            className="h-full w-full object-cover opacity-25"
+            className="h-full w-full object-cover object-top opacity-55 lg:object-center"
             loading="eager"
             decoding="async"
           />
-          {/* Zware dim + verloop naar bg-app: foto blijft sfeer, data blijft leesbaar */}
-          <div className="absolute inset-0 bg-app/60" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-app/40 to-app" />
+          {/* Lichte dim + verloop naar bg-app: foto herkenbaar, data leesbaar */}
+          <div className="absolute inset-0 bg-app/25" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-app/20 to-app" />
         </div>
       )}
       {/* Desktop — vaste linkernav met accountknop onderin */}
