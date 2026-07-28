@@ -569,7 +569,7 @@ export default function FeedPage() {
   const routesNabij = (routesData?.routes ?? []).slice(0, 3)
 
   return (
-    <CommercialShell actief="/feed">
+    <CommercialShell actief="/feed" sfeer="/atmosphere/samen-fietsen-cafe-avond.webp">
       <div className="mx-auto w-full max-w-md px-6 pb-8 pt-12 lg:max-w-5xl lg:pt-8">
         {/* INTRO */}
         <div className="flex items-center justify-between gap-3">

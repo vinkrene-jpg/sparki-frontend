@@ -34,7 +34,7 @@ export default function MeerPage() {
         : ATHLETE_MEER_CHAPTERS
 
   return (
-    <CommercialShell actief="/meer">
+    <CommercialShell actief="/meer" sfeer="/atmosphere/samen-koffiestop-zon.webp">
       <div className="mx-auto w-full max-w-2xl px-5 pb-10 pt-8 lg:max-w-3xl lg:px-10">
 
         <header className="mb-8">

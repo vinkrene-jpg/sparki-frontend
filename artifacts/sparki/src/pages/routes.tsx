@@ -92,7 +92,7 @@ export default function RoutesPage() {
   ]
 
   return (
-    <CommercialShell actief="/routes">
+    <CommercialShell actief="/routes" sfeer="/atmosphere/routes-weg-zonsondergang.webp">
       {view === null ? (
         <>
           <div className="flex flex-col gap-2">

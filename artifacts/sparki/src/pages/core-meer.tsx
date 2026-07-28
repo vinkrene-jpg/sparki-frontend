@@ -84,7 +84,7 @@ export default function CoreMeerPage() {
   })
 
   return (
-    <CommercialShell actief="/meer">
+    <CommercialShell actief="/meer" sfeer="/atmosphere/samen-koffiestop-zon.webp">
       <div className="mx-auto w-full max-w-2xl px-5 pb-10 pt-8 lg:max-w-3xl lg:px-10">
         <h1 className="type-display">Meer</h1>
         <p className="type-body mt-1 text-content-secondary">

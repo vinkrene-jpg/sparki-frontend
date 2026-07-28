@@ -1106,7 +1106,7 @@ export default function CorePlanPage() {
   }, [focus, navigate]);
 
   return (
-    <CommercialShell actief="/train">
+    <CommercialShell actief="/train" sfeer="/atmosphere/training-renster-bos.webp">
       <div className="mx-auto w-full max-w-2xl px-5 pb-10 pt-8 lg:max-w-3xl lg:px-10">
         <PlanHeader />
         

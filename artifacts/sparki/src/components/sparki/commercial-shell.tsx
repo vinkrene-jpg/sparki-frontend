@@ -120,6 +120,7 @@ export function CommercialShell({
   actief,
   bare = false,
   achtergrond,
+  sfeer,
   children,
 }: {
   actief: string
@@ -131,6 +132,12 @@ export function CommercialShell({
    * prop — nooit via een eigen shell of eigen full-screen achtergrond.
    */
   achtergrond?: ReactNode
+  /**
+   * Optionele subtiele sfeerfoto (pad uit de atmosphere-bibliotheek).
+   * Wordt sterk gedimd gerenderd zodat data en tekst leesbaar blijven;
+   * weglaten = rustige effen bg-app (bewuste keuze, geen default-foto).
+   */
+  sfeer?: string
   children: ReactNode
 }) {
   const [, navigate] = useLocation()
@@ -146,6 +153,20 @@ export function CommercialShell({
     // keep their viewport-relative positioning.
     <div className="relative min-h-dvh bg-app font-sans text-white [overflow-x:clip]">
       {achtergrond}
+      {sfeer && (
+        <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
+          <img
+            src={sfeer}
+            alt=""
+            className="h-full w-full object-cover opacity-25"
+            loading="eager"
+            decoding="async"
+          />
+          {/* Zware dim + verloop naar bg-app: foto blijft sfeer, data blijft leesbaar */}
+          <div className="absolute inset-0 bg-app/60" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-app/40 to-app" />
+        </div>
+      )}
       {/* Desktop — vaste linkernav met accountknop onderin */}
       {!bare && (
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-border bg-app-deep/80 backdrop-blur lg:flex">
