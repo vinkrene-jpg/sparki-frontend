@@ -23,6 +23,8 @@ import { SparkiVoiceSection } from "@/components/sparki/sparki-voice"
 import { useAiPreferences, useUpdateAiPreferences } from "@/hooks/use-ai-memory"
 import { HUMOR_LEVELS, HUMOR_LEVEL_LABELS, HUMOR_LEVEL_BLURBS, type HumorLevel } from "@/lib/humor"
 import { HumorLine } from "@/components/sparki/humor-line"
+import { uploadFile } from "@/hooks/use-input-center"
+import { clubLogoSrc } from "@/lib/club-logo"
 import { FoundingSection } from "@/components/sparki/insights-section"
 import {
   useAthleteExtendedProfile,
@@ -107,7 +109,11 @@ function TeamIdentitySection() {
     shirtBadge: "",
     primaryColor: "#0ea5b7",
     secondaryColor: "#0b1220",
+    logoUrl: null as string | null,
   })
+  const [logoBusy, setLogoBusy] = useState(false)
+  const [logoError, setLogoError] = useState<string | null>(null)
+  const logoInputRef = useRef<HTMLInputElement>(null)
 
   const start = () => {
     setForm({
@@ -117,8 +123,31 @@ function TeamIdentitySection() {
       shirtBadge: team?.shirtBadge ?? "",
       primaryColor: team?.primaryColor ?? "#0ea5b7",
       secondaryColor: team?.secondaryColor ?? "#0b1220",
+      logoUrl: team?.logoUrl ?? null,
     })
+    setLogoError(null)
     setEditing(true)
+  }
+
+  // Upload the club's own logo file (presign → PUT → path saved on submit).
+  const onLogoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ""
+    if (!file) return
+    if (!file.type.startsWith("image/")) {
+      setLogoError("Kies een afbeelding (PNG, JPG of WebP).")
+      return
+    }
+    setLogoBusy(true)
+    setLogoError(null)
+    try {
+      const uploaded = await uploadFile(file, "image")
+      setForm((p) => ({ ...p, logoUrl: uploaded.objectPath }))
+    } catch {
+      setLogoError("Uploaden van het logo is mislukt. Probeer het opnieuw.")
+    } finally {
+      setLogoBusy(false)
+    }
   }
 
   const set =
@@ -135,9 +164,9 @@ function TeamIdentitySection() {
         shirtBadge: form.shirtBadge.trim() || null,
         primaryColor: form.primaryColor || null,
         secondaryColor: form.secondaryColor || null,
-        // Only keep a logo the club actually has — never a canned placeholder
-        // crest pretending to be the real club logo.
-        logoUrl: team?.logoUrl ?? null,
+        // Only a logo the club actually has: the athlete's own uploaded file
+        // (or nothing). Never a canned placeholder crest.
+        logoUrl: form.logoUrl,
         sport: "cycling",
       },
       { onSuccess: () => setEditing(false) },
@@ -227,6 +256,55 @@ function TeamIdentitySection() {
               </div>
             </div>
           </div>
+          <div>
+            <label className="font-mono text-[10px] tracking-[0.18em] text-white/40">
+              CLUBLOGO
+            </label>
+            <div className="mt-1.5 flex items-center gap-3">
+              {form.logoUrl ? (
+                <img
+                  src={clubLogoSrc(form.logoUrl)}
+                  alt="Clublogo"
+                  className="h-11 w-11 shrink-0 rounded-full border border-white/[0.1] bg-white/[0.04] object-contain p-1"
+                />
+              ) : (
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-dashed border-white/15 font-mono text-[9px] text-white/30">
+                  GEEN
+                </span>
+              )}
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={onLogoFile}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                disabled={logoBusy}
+                className="rounded-xl border border-white/[0.1] px-3.5 py-2 font-sans text-[13px] text-white/70 disabled:opacity-40"
+              >
+                {logoBusy ? "Uploaden…" : form.logoUrl ? "Ander logo" : "Upload logo"}
+              </button>
+              {form.logoUrl && (
+                <button
+                  type="button"
+                  onClick={() => setForm((p) => ({ ...p, logoUrl: null }))}
+                  className="rounded-xl border border-white/[0.1] px-3.5 py-2 font-sans text-[13px] text-white/45"
+                >
+                  Verwijder
+                </button>
+              )}
+            </div>
+            <p className="mt-1.5 font-sans text-[12px] text-white/35">
+              Alleen met een geüpload logo verschijnt het club-embleem op je Home-scherm; zonder
+              logo tonen we niets.
+            </p>
+            {logoError && (
+              <p className="mt-1 font-sans text-[12px] text-red-300/80">{logoError}</p>
+            )}
+          </div>
           <div className="flex gap-2">
             <button
               type="button"
@@ -257,11 +335,19 @@ function TeamIdentitySection() {
               background: team.primaryColor ? `${team.primaryColor}22` : undefined,
             }}
           >
-            <Shield
-              className="h-5 w-5"
-              style={{ color: team.primaryColor ?? ACCENT }}
-              strokeWidth={1.75}
-            />
+            {team.logoUrl ? (
+              <img
+                src={clubLogoSrc(team.logoUrl)}
+                alt="Clublogo"
+                className="h-8 w-8 rounded-full object-contain"
+              />
+            ) : (
+              <Shield
+                className="h-5 w-5"
+                style={{ color: team.primaryColor ?? ACCENT }}
+                strokeWidth={1.75}
+              />
+            )}
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[14px] font-medium text-white/90">

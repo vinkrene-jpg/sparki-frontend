@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { clubLogoSrc } from "@/lib/club-logo"
 import { Link } from "wouter"
 import { useQueryClient } from "@tanstack/react-query"
 import { ScreenShell } from "@/components/sparki/screen-shell"
@@ -1343,7 +1344,7 @@ function ClubBanner() {
         >
           {team.logoUrl ? (
             <img
-              src={team.logoUrl}
+              src={clubLogoSrc(team.logoUrl)}
               alt={team.clubName ?? "Clublogo"}
               className="h-full w-full object-contain p-1"
             />

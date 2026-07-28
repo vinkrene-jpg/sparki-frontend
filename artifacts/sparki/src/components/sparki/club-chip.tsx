@@ -1,4 +1,5 @@
 import { Shield } from "lucide-react"
+import { clubLogoSrc } from "@/lib/club-logo"
 import { useTeamIdentity } from "@/hooks/use-social"
 
 // Compact club marker reused across screens (Nieuws, Inzicht, ...) so the
@@ -17,7 +18,7 @@ export function ClubChip({ className = "" }: { className?: string }) {
     >
       {team.logoUrl ? (
         <img
-          src={team.logoUrl}
+          src={clubLogoSrc(team.logoUrl)}
           alt=""
           className="h-3.5 w-3.5 shrink-0 object-contain"
         />

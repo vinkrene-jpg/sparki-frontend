@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { ObjectStorageService } from "../lib/objectStorage";
+import { getObjectAclPolicy } from "../lib/objectAcl";
 import { sessionSeed, seededRotate, windowedReorder } from "../lib/variation";
 import {
   searchAthletes,
@@ -469,11 +471,43 @@ router.put("/team", requireAuth, async (req, res) => {
   const body = (req.body ?? {}) as Record<string, unknown>;
   const str = (v: unknown) =>
     v === undefined ? undefined : v === null || v === "" ? null : String(v);
+  // A club logo is either the athlete's own uploaded storage object
+  // ("/objects/…") or absent. Arbitrary external URLs are not accepted.
+  const rawLogo = str(body.logoUrl);
+  const logoUrl =
+    rawLogo === undefined
+      ? undefined
+      : rawLogo && rawLogo.startsWith("/objects/")
+        ? rawLogo
+        : null;
+  const objectStorageService = new ObjectStorageService();
   try {
+    if (logoUrl) {
+      // Claim the uploaded logo object. Takeover is refused: the claim only
+      // succeeds when the object is still unowned (fresh upload) or already
+      // owned by this athlete — never when someone else owns it. A missing
+      // object (no bytes uploaded) is rejected too.
+      let objectFile;
+      try {
+        objectFile = await objectStorageService.getObjectEntityFile(logoUrl);
+      } catch {
+        res.status(400).json({ error: "Logo-upload niet gevonden. Upload het logo opnieuw." });
+        return;
+      }
+      const existing = await getObjectAclPolicy(objectFile);
+      if (existing?.owner && existing.owner !== clerkId) {
+        res.status(403).json({ error: "Dit bestand is niet van jou." });
+        return;
+      }
+      await objectStorageService.trySetObjectEntityAclPolicy(logoUrl, {
+        owner: clerkId,
+        visibility: "private",
+      });
+    }
     const team = await setTeamIdentity(clerkId, {
       clubName: str(body.clubName),
       teamName: str(body.teamName),
-      logoUrl: str(body.logoUrl),
+      logoUrl,
       primaryColor: str(body.primaryColor),
       secondaryColor: str(body.secondaryColor),
       sport: str(body.sport),

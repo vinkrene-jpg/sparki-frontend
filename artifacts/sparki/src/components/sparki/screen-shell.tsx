@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils"
 import { CommercialShell } from "@/components/sparki/commercial-shell"
 import { useUserProfile } from "@/contexts/UserContext"
 import { useTeamIdentity } from "@/hooks/use-social"
+import { clubLogoSrc } from "@/lib/club-logo"
 import { CinematicScene, type SceneName } from "@/components/sparki/cinematic-scene"
 import { NotificationBell } from "@/components/sparki/notification-bell"
 import { ProfilePromptCard } from "@/components/sparki/profile-prompt-card"
@@ -126,35 +127,28 @@ const SECTION_ICON: Record<string, LucideIcon> = {
   "wedstrijd-room": Film,
 }
 
-// Subtle club crest shown on the home header when the athlete has set a club
-// identity. Colours come from the saved team identity; falls back to the cyan
-// accent. Renders nothing when no club is set.
+// Club crest on the home header: shows ONLY the club's own uploaded logo.
+// No uploaded logo (or no club at all) = render nothing — we never substitute
+// a text badge or placeholder icon for a real club logo.
 function ClubCrest() {
   const { data } = useTeamIdentity()
   const team = data?.team
-  if (!team || !team.clubName) return null
+  if (!team || !team.clubName || !team.logoUrl) return null
   const color = team.primaryColor ?? "rgba(120,210,230,1)"
   return (
     <span
-      className="flex items-center gap-1.5 rounded-full border px-2.5 py-1"
+      className="flex items-center rounded-full border p-1"
       style={{
         borderColor: `${color}55`,
         background: `${color}1a`,
       }}
       title={[team.clubName, team.teamName].filter(Boolean).join(" · ")}
     >
-      {team.logoUrl ? (
-        <img
-          src={team.logoUrl}
-          alt=""
-          className="h-3.5 w-3.5 shrink-0 object-contain"
-        />
-      ) : (
-        <Shield className="h-3 w-3" style={{ color }} strokeWidth={2} />
-      )}
-      <span className="max-w-[8rem] truncate font-mono text-[9px] uppercase tracking-[0.14em] text-white/70">
-        {team.shirtBadge || team.clubName}
-      </span>
+      <img
+        src={clubLogoSrc(team.logoUrl)}
+        alt={team.clubName}
+        className="h-5 w-5 shrink-0 rounded-full object-contain"
+      />
     </span>
   )
 }

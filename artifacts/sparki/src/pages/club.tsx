@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { clubLogoSrc } from "@/lib/club-logo"
 import { IconCheck } from "@/components/ds"
 import { Link, Redirect, useLocation } from "wouter"
 import {
@@ -209,7 +210,7 @@ function RealClubView({ clubId }: { clubId: number }) {
     <div className="-mt-2 flex flex-col gap-8">
       <header className="flex items-center gap-3">
         {dash.club.logoUrl ? (
-          <img src={dash.club.logoUrl} alt="" className="h-10 w-10 object-contain" />
+          <img src={clubLogoSrc(dash.club.logoUrl)} alt="" className="h-10 w-10 object-contain" />
         ) : (
           <span
             className="flex h-10 w-10 items-center justify-center rounded-xl border"
@@ -419,7 +420,7 @@ function LegacyCoachView() {
     <div className="-mt-2 flex flex-col gap-8">
       <header className="flex items-center gap-3">
         {team?.logoUrl ? (
-          <img src={team.logoUrl} alt="" className="h-10 w-10 object-contain" />
+          <img src={clubLogoSrc(team.logoUrl)} alt="" className="h-10 w-10 object-contain" />
         ) : (
           <span
             className="flex h-10 w-10 items-center justify-center rounded-xl border"
