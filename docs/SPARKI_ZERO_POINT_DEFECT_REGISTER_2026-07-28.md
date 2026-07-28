@@ -34,7 +34,7 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 ## 4. A — Bevestigde fouten vóór het 0-punt
 
 ### A-01 — Plan-acties lopen buiten de kaart
-- **Categorie:** DEFECT · **Ernst:** P2 · **Zekerheid:** Hard bevestigd (code) · **Status:** READY_FOR_FIX
+- **Categorie:** DEFECT · **Ernst:** P2 · **Zekerheid:** Hard bevestigd (code) · **Status:** VERIFIED_FIXED
 - **Route/rol/scherm:** `/train` (Plan), alle rollen, dagdetail-kaart naast de kalender
 - **Bestand/regel:** `artifacts/sparki/src/pages/core-plan.tsx:364` (actierij), `:686` (`lg:w-64 lg:shrink-0`-container); `artifacts/sparki/src/components/ds/button.tsx:15` (`whitespace-nowrap`)
 - **Bewijsbron:** Statische code-inspectie (Claude, deze sessie)
@@ -46,7 +46,7 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 - **Afhankelijkheden:** Geen.
 - **Eigenaar:** Replit (implementatie), Claude/ChatGPT (verificatie)
 - **Blokkade:** Geen
-- **Verificatiebewijs:** Nog te leveren na fix
+- **Verificatiebewijs:** Fix in commit `7625ec197d84a13bb7f764fd42c2df93c90a8a57`: actierij in `core-plan.tsx` (`GeselecteerdeDagKaart`) is nu altijd `flex flex-col gap-2` — `sm:flex-row` verwijderd, primaire actie ("Training bekijken") blijft bovenaan, knoppen vullen de kaartbreedte (≥44px hoog). Geen wijziging aan `DsButton` (niet nodig). Geverifieerd met screenshots van de actieve `/train`-route op 390, 768, 1024, 1280 en 1440px: alle drie de knoppen volledig binnen de kaart, geen afgekapte tekst, geen horizontale overflow; kalender en detailkaart verder ongewijzigd. Bewijs: `screenshots/train-1024-na-fix.jpg`, `screenshots/train-1440-na-fix.jpg` (zelfde commit). Statusgang: READY_FOR_FIX → FIXED_NOT_VERIFIED (na implementatie) → VERIFIED_FIXED (na viewport-tests met screenshots, 2026-07-28).
 - **Laatst bijgewerkt:** 2026-07-28
 
 ### A-02 — Analyse-acties verwijzen naar dezelfde route
