@@ -1,19 +1,4 @@
-/**
- * Ontdekken-feed engine (puur, testbaar)
- * ──────────────────────────────────────
- * Bouwt van échte databronnen één visuele, persoonlijke feed:
- *  - classificatie van nieuws in nieuws / materiaal / trainingstip
- *    (deterministische woordgrens-regels, geen AI);
- *  - personalisatie-score per kaart (recentheid, type-gewicht, wedstrijd-
- *    nabijheid, vrienden-recentheid, bewaard-onderwerp-boost, "minder
- *    hiervan"-demping);
- *  - afwisseling: nooit drie kaarten van hetzelfde type achter elkaar
- *    als er ander materiaal beschikbaar is;
- *  - deterministische sfeerbeeld-toewijzing per kaart (stabiel per item).
- *
- * Alleen echte data: de engine verzint niets — lege bronnen leveren gewoon
- * minder kaarttypen op.
- */
+import type { Affiniteit } from "./feed-affiniteit"
 
 export type FeedKaartType =
   | "nieuws"
@@ -70,6 +55,11 @@ export type PersonalisatieContext = {
   minderBron: string[]
   /** titels van bewaarde items — woorden hieruit boosten verwante kaarten */
   bewaardeTitels: string[]
+  /**
+   * Affiniteitsmodel uit echte open/bewaar-interacties (feed-affiniteit.ts).
+   * Alleen actief bij voldoende interacties — anders géén boost (eerlijk).
+   */
+  affiniteit?: Affiniteit
 }
 
 const TYPE_GEWICHT: Record<FeedKaartType, number> = {
@@ -136,6 +126,15 @@ export function scoreKaart(
   // Eigen-materiaal-boost: alleen bij een echte woordgrens-match (zie
   // vindGarageMatch) — zonder match verandert er niets.
   if (kaart.garageMatch) s += 25
+
+  // Affiniteitsboost uit echte open/bewaar-interacties. Bewust bescheiden en
+  // begrensd (zie feed-affiniteit.ts): stuurt de volgorde, overstemt nooit
+  // recentheid, wedstrijdnabijheid of "minder hiervan".
+  const aff = ctx.affiniteit
+  if (aff?.actief) {
+    s += aff.categorie[kaart.type] ?? 0
+    if (kaart.bron) s += aff.bron[kaart.bron] ?? 0
+  }
 
   return s
 }

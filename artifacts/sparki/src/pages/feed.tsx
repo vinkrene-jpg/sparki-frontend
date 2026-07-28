@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { dagSfeer } from "@/lib/sfeer"
 import { useUserProfile } from "@/contexts/UserContext"
 import { Link } from "wouter"
@@ -32,12 +32,19 @@ import {
   type FeedKaartType,
 } from "@/lib/ontdekken-feed"
 import {
+  leesFeedPrefs,
   toggleBewaard,
   minderVan,
   herstelMinder,
   type FeedPrefs,
 } from "@/lib/feed-prefs"
 import { useFeedPrefs } from "@/hooks/use-feed-prefs"
+import {
+  leesInteracties,
+  registreerInteractie,
+  berekenAffiniteit,
+  DWELL_MS,
+} from "@/lib/feed-affiniteit"
 import {
   Bike,
   Users,
@@ -236,6 +243,8 @@ function FeedKaartView({
   prefs,
   onPrefs,
   onOpenNieuws,
+  onOpenGeteld,
+  onBewaarGeteld,
   userId,
 }: {
   kaart: FeedKaart
@@ -243,6 +252,10 @@ function FeedKaartView({
   prefs: FeedPrefs
   onPrefs: (p: FeedPrefs) => void
   onOpenNieuws: (id: number) => void
+  /** open-event voor affiniteit (nieuws-opens lopen via de reader-dwell-gate) */
+  onOpenGeteld: (kaart: FeedKaart) => void
+  /** bewaar-event voor affiniteit (dwell-gated op pagina-niveau) */
+  onBewaarGeteld: (kaart: FeedKaart) => void
   userId: string | null
 }) {
   const meta = TYPE_META[kaart.type]
@@ -257,7 +270,10 @@ function FeedKaartView({
 
   const open = () => {
     if (kaart.ref?.nieuwsId != null) onOpenNieuws(kaart.ref.nieuwsId)
-    else if (kaart.link && kaart.extern) window.open(kaart.link, "_blank", "noopener,noreferrer")
+    else if (kaart.link && kaart.extern) {
+      onOpenGeteld(kaart)
+      window.open(kaart.link, "_blank", "noopener,noreferrer")
+    }
     // interne links worden als <Link> gerenderd op de knop zelf
   }
 
@@ -345,6 +361,7 @@ function FeedKaartView({
           {kaart.link && !kaart.extern ? (
             <Link
               href={kaart.link}
+              onClick={() => onOpenGeteld(kaart)}
               className="inline-flex items-center gap-1.5 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-200 transition-colors hover:bg-cyan-300/15"
             >
               Openen <ArrowRight className="h-3 w-3" />
@@ -369,7 +386,8 @@ function FeedKaartView({
           <KaartActies
             kaart={kaart}
             bewaard={bewaard}
-            onBewaar={() =>
+            onBewaar={() => {
+              const wasBewaard = bewaard
               onPrefs(
                 toggleBewaard(userId, {
                   key: kaart.key,
@@ -380,7 +398,10 @@ function FeedKaartView({
                   bewaardOp: new Date().toISOString(),
                 }),
               )
-            }
+              // Alleen een échte bewaring telt (niet ont-bewaren); de
+              // dwell-gate op pagina-niveau vangt "per ongeluk + direct undo".
+              if (!wasBewaard) onBewaarGeteld(kaart)
+            }}
             onMinder={() => onPrefs(minderVan(userId, kaart.type, kaart.bron))}
           />
         </div>
@@ -459,6 +480,30 @@ export default function FeedPage() {
   const userId = profile?.clerkId ?? null
   const { prefs, synct: prefsSynct, update: setPrefs } = useFeedPrefs(userId)
 
+  // Affiniteit uit echte open/bewaar-interacties (dit apparaat, per gebruiker).
+  const [interacties, setInteracties] = useState(() => leesInteracties(userId))
+  useEffect(() => {
+    setInteracties(leesInteracties(userId))
+  }, [userId])
+  const affiniteit = useMemo(() => berekenAffiniteit(interacties), [interacties])
+  const openReaderIdRef = useRef<number | null>(null)
+
+  // Open-event: klik is bewust, maar we volgen de dwell-regel (~1.4s) zodat
+  // een open die meteen weer dichtklapt (reader) niet als interesse telt.
+  const telOpen = (kaart: FeedKaart) => {
+    window.setTimeout(() => {
+      setInteracties(registreerInteractie(userId, "open", kaart.type, kaart.bron))
+    }, DWELL_MS)
+  }
+  // Bewaar-event telt pas als het item na de dwell-periode nóg bewaard is
+  // (per ongeluk tikken + direct undo vervuilt het model niet).
+  const telBewaar = (kaart: FeedKaart) => {
+    window.setTimeout(() => {
+      const nogBewaard = leesFeedPrefs(userId).bewaard.some((b) => b.key === kaart.key)
+      if (nogBewaard) setInteracties(registreerInteractie(userId, "bewaar", kaart.type, kaart.bron))
+    }, DWELL_MS)
+  }
+
   const todayYmd = ymdToday()
 
   // ── Kaarten uit échte bronnen ──────────────────────────────────────────────
@@ -468,6 +513,7 @@ export default function FeedPage() {
       minderCategorie: prefs.minderCategorie,
       minderBron: prefs.minderBron,
       bewaardeTitels: prefs.bewaard.map((b) => b.titel),
+      affiniteit,
     }
     const kernwoorden = bewaardeKernwoorden(ctx.bewaardeTitels)
     // Eigen materiaal (garage): merk/model van fietsen, componenten en
@@ -602,7 +648,7 @@ export default function FeedPage() {
 
     const met = ruw.map((k) => ({ ...k, score: scoreKaart(k, ctx, kernwoorden) }))
     return mengFeed(met)
-  }, [briefData, coachData, newsData, knowledgeData, racesData, circleData, routesData, garageData, prefs, todayYmd])
+  }, [briefData, coachData, newsData, knowledgeData, racesData, circleData, routesData, garageData, prefs, affiniteit, todayYmd])
 
   const zichtbaar = useMemo(() => {
     const types = FILTER_TYPES[actief]
@@ -614,7 +660,18 @@ export default function FeedPage() {
 
   const openNieuws = (id: number) => {
     const n = (newsData?.items ?? []).find((x) => x.id === id)
-    if (n) setReaderItem(n)
+    if (!n) return
+    setReaderItem(n)
+    // Dwell-gate: telt pas als de reader na ~1.4s nog op dít artikel staat.
+    openReaderIdRef.current = id
+    const kaart = kaarten.find((k) => k.ref?.nieuwsId === id)
+    if (kaart) {
+      window.setTimeout(() => {
+        if (openReaderIdRef.current === id) {
+          setInteracties(registreerInteractie(userId, "open", kaart.type, kaart.bron))
+        }
+      }, DWELL_MS)
+    }
   }
 
   // Zijbalkdata — alles afgeleid van dezelfde echte bronnen
@@ -680,6 +737,13 @@ export default function FeedPage() {
         <div className="mt-6 lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-8">
           {/* Feedkolom */}
           <div className="flex flex-col gap-5">
+            <div className="flex items-center gap-1.5 font-mono text-[10px] tracking-wide text-white/35">
+              <SparkiCore size={14} accent={ACCENT} readiness={0.9} variant="orb" />
+              {affiniteit.actief
+                ? "Door Sparki gesorteerd op jouw sport, doelen én wat je hier opent en bewaart"
+                : "Door Sparki gesorteerd op jouw sport en doelen — leert mee zodra je hier vaker iets opent of bewaart"}
+            </div>
+
             {actief === "materiaal" && <JouwMateriaalBlok />}
 
             {loading && zichtbaar.length === 0 && (
@@ -733,6 +797,8 @@ export default function FeedPage() {
                 prefs={prefs}
                 onPrefs={setPrefs}
                 onOpenNieuws={openNieuws}
+                onOpenGeteld={telOpen}
+                onBewaarGeteld={telBewaar}
               />
             ))}
 
@@ -751,7 +817,10 @@ export default function FeedPage() {
                     type="button"
                     onClick={() => {
                       if (t.ref?.nieuwsId != null) openNieuws(t.ref.nieuwsId)
-                      else if (t.link && t.extern) window.open(t.link, "_blank", "noopener,noreferrer")
+                      else if (t.link && t.extern) {
+                        telOpen(t)
+                        window.open(t.link, "_blank", "noopener,noreferrer")
+                      }
                     }}
                     className="block w-full text-left text-[12px] font-light leading-snug text-white/70 transition-colors hover:text-cyan-100"
                   >
@@ -806,7 +875,15 @@ export default function FeedPage() {
         </div>
       </div>
 
-      {readerItem && <NewsReader item={readerItem} onClose={() => setReaderItem(null)} />}
+      {readerItem && (
+        <NewsReader
+          item={readerItem}
+          onClose={() => {
+            openReaderIdRef.current = null
+            setReaderItem(null)
+          }}
+        />
+      )}
     </CommercialShell>
   )
 }
