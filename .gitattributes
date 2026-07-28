@@ -1,0 +1,16 @@
+sparki-backup.bundle filter=lfs diff=lfs merge=lfs -text
+sparki-backup-bundle.zip filter=lfs diff=lfs merge=lfs -text
+exports/BF_00_evidence.zip filter=lfs diff=lfs merge=lfs -text
+bewijsarchief/bf00/BF_00_evidence.zip filter=lfs diff=lfs merge=lfs -text
+SPARKI_CURRENT_STATE_2026-07-27.zip filter=lfs diff=lfs merge=lfs -text
+SPARKI_CURRENT_STATE_2026-07-27_3942f0f.zip filter=lfs diff=lfs merge=lfs -text
+SPARKI_CURRENT_STATE_2026-07-27_666b702.zip filter=lfs diff=lfs merge=lfs -text
+SPARKI_TRANSFER_2026-07-28_d88b49a.zip filter=lfs diff=lfs merge=lfs -text
+attached_assets/u3357828777_team_support_car_with_spare_bikes_mounted_on_the_r_1785232223631.zip filter=lfs diff=lfs merge=lfs -text
+SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip filter=lfs diff=lfs merge=lfs -text
+exports/SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip filter=lfs diff=lfs merge=lfs -text
+exports/SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part01 filter=lfs diff=lfs merge=lfs -text
+exports/SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part02 filter=lfs diff=lfs merge=lfs -text
+exports/SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part03 filter=lfs diff=lfs merge=lfs -text
+exports/SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part04 filter=lfs diff=lfs merge=lfs -text
+exports/SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip.part05 filter=lfs diff=lfs merge=lfs -text

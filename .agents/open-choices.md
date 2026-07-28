@@ -1,5 +1,3 @@
-<<<<<<< ours — heading `Openstaande keuzes — Sparki` (F, confidence: medium)
-// hint: Logic changed on both sides. Requires understanding intent of each change.
 # Openstaande keuzes — Sparki
 
 > Werkafspraak: dit is de vaste lijst van keuzes die op een beslissing van de gebruiker
@@ -9,17 +7,6 @@
 
 Laatst bijgewerkt: 2026-07-27.
 
-=======
-# Openstaande keuzes — Sparki
-
-> Werkafspraak: dit is de vaste lijst van keuzes die op een beslissing van de gebruiker
-> wachten. Ik (de agent) LEES dit bestand aan het begin van elke beurt en toon de
-> open punten kort in de chat. Nieuwe keuze gesteld → hier toevoegen. Beslist → hier
-> weghalen (of naar "Beslist" verplaatsen). Nooit een keuze stilletjes laten vallen.
-
-Laatst bijgewerkt: 2026-07-25.
-
->>>>>>> theirs — heading `Openstaande keuzes — Sparki` (F, confidence: medium)
 ## Wacht op jouw keuze
 
 
@@ -129,3 +116,4 @@ Laatst bijgewerkt: 2026-07-25.
   Sparki analyseert de onderwerpen + reacties voor de mentale beoordeling. Alleen met
   toestemming opslaan/analyseren (privacy-gated, geen fabricatie).
 - **2026-06-28 — V2-dekkingsaudit:** afgerond, opgeleverd als `SPARKI_V1_COVERAGE_AUDIT.md`.
+- [geparkeerd, na release] Lichte look app-breed (wens Dylan/René, 28-7-2026): pas oppakken als de release achter de rug is; aanpakroute (alles licht / instelling / alleen leesschermen) dan opnieuw voorleggen.
