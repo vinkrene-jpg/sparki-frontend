@@ -266,6 +266,23 @@ optgroup {
   }
 }
 
+/* Reduced-motion, app-breed (defect A-05).
+   Centrale vangrail: élke Tailwind-loopanimatie (skeletons, spinners, pings)
+   stopt wanneer de gebruiker "verminder beweging" heeft ingesteld — ook in
+   componenten die (nu of later) vergeten motion-reduce:animate-none te zetten.
+   Bewust alleen oneindige beweeganimaties: transities en eenmalige
+   statusovergangen blijven werken zodat er geen content verborgen raakt.
+   De statische indicator (spinner-icoon, skeletonvlak) blijft zichtbaar en de
+   begeleidende laadtekst/aria-status blijft de betekenis dragen. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse,
+  .animate-spin,
+  .animate-bounce,
+  .animate-ping {
+    animation: none !important;
+  }
+}
+
 /* Kaartvermelding (licentie-plicht OpenStreetMap/CARTO) — zo subtiel mogelijk:
    klein, halfdoorzichtig, donker, geen witte balk in het donkere ontwerp. */
 .leaflet-control-attribution {

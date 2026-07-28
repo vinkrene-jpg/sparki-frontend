@@ -564,8 +564,17 @@ function ClerkStartupGate({ children }: { children: React.ReactNode }) {
   if (isLoaded) return <>{children}</>;
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#040506] px-6 text-center">
-      <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-cyan-300/25 border-t-cyan-300/90" />
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#040506] px-6 text-center"
+    >
+      {/* Bij reduced motion draait de ring niet (centrale regel in index.css);
+          de statische ring + tekst hieronder blijven de laadstatus dragen. */}
+      <div
+        aria-hidden="true"
+        className="h-7 w-7 animate-spin motion-reduce:animate-none rounded-full border-[3px] border-cyan-300/25 border-t-cyan-300/90"
+      />
       <p className="text-sm font-semibold text-white/75">
         Sparki wordt geladen…
       </p>

@@ -99,7 +99,7 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 - **Laatst bijgewerkt:** 2026-07-28
 
 ### A-05 — Reduced-motion niet consequent toegepast
-- **Categorie:** DEFECT · **Ernst:** P3 · **Zekerheid:** Hard bevestigd (code) · **Status:** READY_FOR_FIX
+- **Categorie:** DEFECT · **Ernst:** P3 · **Zekerheid:** Hard bevestigd (code) · **Status:** VERIFIED_FIXED
 - **Route/rol/scherm:** `/analyse` (en mogelijk andere schermen met eigen skeletons)
 - **Bestand/regel:** Drie losse skeleton-implementaties bevestigd: `artifacts/sparki/src/components/ui/skeleton.tsx` (gedeeld, `animate-pulse`, geen motion-guard), `artifacts/sparki/src/pages/feed.tsx:402` (lokaal, gebruikt wél `motion-safe:animate-pulse`), `artifacts/sparki/src/pages/core-analyse.tsx:152` (lokale `Skel`, `animate-pulse`, geen motion-guard)
 - **Bewijsbron:** Statische code-inspectie
@@ -111,7 +111,7 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 - **Afhankelijkheden:** Overlapt met T-01-achtige opruiming (duplicate components) — mogelijk in één keer combineren met een generieke skeleton-consolidatie.
 - **Eigenaar:** Replit (implementatie)
 - **Blokkade:** Geen
-- **Verificatiebewijs:** Nog te leveren
+- **Verificatiebewijs:** Inventaris: ~70 actieve bestanden gebruiken `animate-pulse`/`animate-spin`/`animate-ping` (o.a. gedeelde `ui/skeleton.tsx`, `ui/spinner.tsx`, `App.tsx`-opstartscherm, `core-analyse.tsx` `Skel`, Connect/import-spinners, coach-cockpit, voeding). Per bestand patchen is foutgevoelig; gekozen kleinste veilige patroon = één centrale vangrail in `src/index.css`: onder `@media (prefers-reduced-motion: reduce)` staan `.animate-pulse/.animate-spin/.animate-bounce/.animate-ping` op `animation: none !important` — dekt álle bestaande en toekomstige gebruikers, terwijl gewone gebruikers alle animaties behouden. Bewust alleen oneindige loopanimaties: transities en eenmalige statusovergangen blijven werken, dus geen verborgen content en eindtoestanden verschijnen direct. Statische indicatoren blijven zichtbaar (spinner-ring/skeletonvlak zonder beweging) en laadstatus blijft tekstueel gedragen; `App.tsx`-opstartscherm kreeg `role="status"`/`aria-live="polite"` + `aria-hidden` op de ring + expliciet `motion-reduce:animate-none`; gedeelde `ui/spinner.tsx` had al `role="status"`. Scene-achtergrondanimaties waren al gedekt door een bestaand reduced-motion-blok. Bewakingstest: `src/lib/reduced-motion.test.ts` (script `test:reduced-motion`, 3 tests groen 2026-07-28) parseert de reduced-motion-blokken in de brón `index.css` en faalt zodra de vangrail of de scene-dekking verdwijnt — geen grep over gegenereerde bestanden. Visueel: normale instelling ongewijzigd (screenshot `screenshots/reduced-motion-analyse-390.jpg`, geen layoutverspringing, geen consolefouten); reduced-motion-gedrag is deterministisch via de CSS-mediaquery en door de statische test geborgd. Statusgang: READY_FOR_FIX → FIXED_NOT_VERIFIED → VERIFIED_FIXED (2026-07-28). Commit-SHA: zie commit met deze registerwijziging.
 - **Laatst bijgewerkt:** 2026-07-28
 
 ### A-06 — Lab/Analyse wijkt af in dev-preview
