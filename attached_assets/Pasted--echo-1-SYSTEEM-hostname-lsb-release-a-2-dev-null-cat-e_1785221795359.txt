@@ -1,0 +1,146 @@
+{
+echo "===[1. SYSTEEM]==="
+hostname
+lsb_release -a 2>/dev/null || cat /etc/os-release 2>/dev/null
+uptime
+timedatectl show --no-pager 2>/dev/null | grep -E "Timezone|NTP|NTPSynchronized" || true
+
+echo
+echo "===[2. CPU/MEM/DISK]==="
+nproc 2>/dev/null || true
+free -h 2>/dev/null || true
+df -h -x tmpfs -x devtmpfs 2>/dev/null || true
+
+echo
+echo "===[3. ACTIEVE SERVICES]==="
+systemctl list-units --type=service --state=running --no-pager 2>/dev/null | head -80 || true
+
+echo
+echo "===[4. NODE/PM2]==="
+command -v node 2>/dev/null || true
+node --version 2>/dev/null || true
+command -v pm2 2>/dev/null || true
+pm2 list 2>/dev/null || true
+pgrep -a -f 'node|bun|pm2' 2>/dev/null \
+  | sed -E 's#(postgres(ql)?|mysql|mongodb(\+srv)?|redis|https?)://[^[:space:]]+#<REDACTED_URL>#g; s#(token|secret|password|api[_-]?key|authorization)[=:][^[:space:]]+#\1=<REDACTED>#Ig' \
+  || true
+
+echo
+echo "===[5. DOCKER]==="
+command -v docker 2>/dev/null || true
+docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}' 2>/dev/null || true
+docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}' 2>/dev/null | head -30 || true
+
+echo
+echo "===[6. NGINX]==="
+command -v nginx 2>/dev/null || true
+nginx -v 2>&1 || true
+systemctl is-active nginx 2>/dev/null || true
+ls -la /etc/nginx/sites-enabled/ 2>/dev/null || true
+ls -la /etc/nginx/conf.d/ 2>/dev/null || true
+grep -R -E '^[[:space:]]*(server_name|proxy_pass|root|ssl_certificate)[[:space:]]' \
+  /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null \
+  | sed -E 's#(postgres(ql)?|mysql|mongodb(\+srv)?|redis|https?)://[^[:space:];]+#<REDACTED_URL>#g' \
+  || true
+
+echo
+echo "===[7. SSL-CERTIFICATEN]==="
+find /etc/letsencrypt/live -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null || true
+for d in /etc/letsencrypt/live/*; do
+  [ -f "$d/cert.pem" ] || continue
+  printf '%s: ' "$(basename "$d")"
+  openssl x509 -noout -enddate -in "$d/cert.pem" 2>/dev/null || true
+done
+
+echo
+echo "===[8. LUISTERENDE POORTEN]==="
+ss -tlnp 2>/dev/null \
+  | sed -E 's/users:\(\([^)]*\)\)/users:(<REDACTED>)/g' \
+  || ss -tln 2>/dev/null \
+  || true
+
+echo
+echo "===[9. FIREWALL]==="
+ufw status verbose 2>/dev/null || true
+iptables -L -n --line-numbers 2>/dev/null | head -60 || true
+
+echo
+echo "===[10. POSTGRESQL]==="
+command -v psql 2>/dev/null || true
+psql --version 2>/dev/null || true
+systemctl is-active postgresql 2>/dev/null || true
+ls -la /etc/postgresql/ 2>/dev/null || true
+sudo -n -u postgres psql -Atc \
+  "SELECT datname FROM pg_database WHERE datistemplate = false;" 2>/dev/null \
+  || echo "Databaselijst niet beschikbaar zonder aanvullende rechten."
+
+echo
+echo "===[11. REDIS]==="
+command -v redis-cli 2>/dev/null || true
+redis-cli --version 2>/dev/null || true
+systemctl is-active redis-server 2>/dev/null || systemctl is-active redis 2>/dev/null || true
+
+echo
+echo "===[12. CODEMAPPEN]==="
+for base in /opt /srv /var/www /home; do
+  echo "--- $base"
+  find "$base" -mindepth 1 -maxdepth 2 -type d -printf '%M %u:%g %p\n' 2>/dev/null | head -100
+done
+
+echo
+echo "===[13. GIT-REPOSITORIES]==="
+find /opt /srv /var/www /home -maxdepth 7 -type d -name .git 2>/dev/null |
+while IFS= read -r g; do
+  repo=${g%/.git}
+  echo "--- $repo"
+  git -C "$repo" log -1 --format='commit=%H date=%cI refs=%D' 2>/dev/null || true
+  git -C "$repo" branch --show-current 2>/dev/null | sed 's/^/branch=/' || true
+  remote=$(git -C "$repo" remote get-url origin 2>/dev/null || true)
+  [ -n "$remote" ] && printf '%s\n' "$remote" \
+    | sed -E 's#(https?://)[^/@]+(:[^/@]*)?@#\1<REDACTED>@#; s#(ssh://)[^@]+@#\1<REDACTED>@#' \
+    | sed 's/^/origin=/'
+  git -C "$repo" status --short 2>/dev/null | head -40 || true
+done
+
+echo
+echo "===[14. ENV-BESTANDEN: ALLEEN PAD EN RECHTEN]==="
+find /opt /srv /var/www /home -maxdepth 8 -type f -name '.env*' 2>/dev/null |
+while IFS= read -r f; do
+  stat -c '%A %U:%G %n' "$f" 2>/dev/null || true
+done
+
+echo
+echo "===[15. ENV-VARIABELENAMEN: GEEN WAARDEN]==="
+find /opt /srv /var/www /home -maxdepth 8 -type f -name '.env' 2>/dev/null |
+while IFS= read -r f; do
+  echo "--- $f"
+  sed -nE 's/^[[:space:]]*(export[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*=.*/\2/p' "$f" \
+    | sort -u
+done
+
+echo
+echo "===[16. CRON: ALLEEN BESTANDEN EN TIMER-NAMEN]==="
+crontab -l 2>/dev/null \
+  | sed -E 's#(postgres(ql)?|mysql|mongodb(\+srv)?|redis|https?)://[^[:space:]]+#<REDACTED_URL>#g; s#(token|secret|password|api[_-]?key)[=:][^[:space:]]+#\1=<REDACTED>#Ig' \
+  || true
+find /etc/cron.d /etc/cron.daily /etc/cron.weekly -maxdepth 1 -type f -printf '%M %u:%g %p\n' 2>/dev/null || true
+systemctl list-timers --all --no-pager 2>/dev/null | head -80 || true
+
+echo
+echo "===[17. LOGSTATUS: GEEN LOGINHOUD]==="
+journalctl --disk-usage 2>/dev/null || true
+find /var/log -maxdepth 2 -type f -printf '%TY-%Tm-%Td %TH:%TM %10s %p\n' 2>/dev/null \
+  | sort -r | head -50
+
+echo
+echo "===[18. DEPLOYMENTBESTANDEN: ALLEEN PADEN]==="
+find /opt /srv /var/www /home -maxdepth 8 -type f \
+  \( -iname 'deploy*.sh' -o -iname 'start*.sh' -o -iname 'ecosystem*.js' \
+     -o -iname 'ecosystem*.cjs' -o -iname 'ecosystem*.json' \
+     -o -iname 'docker-compose*.yml' -o -iname 'docker-compose*.yaml' \) \
+  -print 2>/dev/null | head -100
+
+echo
+echo "===[KLAAR]==="
+date --iso-8601=seconds
+} 2>&1
