@@ -1,0 +1,78 @@
+OPDRACHT — REPLIT-PREVIEW HERLAADLUS DIRECT OPLOSSEN
+
+PROBLEEM
+
+De Replit-preview laadt, maar blijft zichzelf voortdurend herhalen/herstarten.
+
+DOEL
+
+Vind de exacte oorzaak en herstel de preview met de kleinste veilige wijziging.
+
+WERKWIJZE
+
+1. Onderzoek eerst kort:
+- welke processen draaien;
+- welke poorten frontend en API gebruiken;
+- of meerdere dev-servers actief zijn;
+- of Vite HMR blijft reconnecten;
+- of frontend of API crasht;
+- of een Replit-workflow of healthcheck een restart triggert;
+- of er een redirectlus bestaat;
+- of service worker/PWA-cache reloads veroorzaakt;
+- of ontbrekende environment variables runtimefouten geven;
+- of commit 666b702 de previewstart beïnvloedt.
+
+2. Los daarna direct de aangetoonde oorzaak op.
+
+TOEGESTAAN
+
+- één dubbele dev-server stoppen;
+- foutieve startopdracht corrigeren;
+- verkeerde poortkoppeling herstellen;
+- HMR-configuratie corrigeren;
+- foutieve redirectlus herstellen;
+- service worker in development uitschakelen wanneer die de lus veroorzaakt;
+- ontbrekende niet-geheime devconfiguratie herstellen;
+- kleine runtimefout corrigeren;
+- Replit-workflow gericht aanpassen wanneer die aantoonbaar de restart veroorzaakt.
+
+NIET TOEGESTAAN
+
+- geen grote refactor;
+- geen dependency-upgrades zonder noodzaak;
+- geen nieuwe architectuur;
+- geen productiegegevens wijzigen;
+- geen deployment;
+- geen publicatie;
+- geen secrets zichtbaar maken;
+- geen willekeurige poortwijziging zonder bewijs;
+- geen workaround die de echte fout verbergt.
+
+ACCEPTATIE
+
+De opdracht is pas gereed wanneer:
+
+- preview minimaal 5 minuten stabiel blijft;
+- geen automatische reloadlus meer optreedt;
+- frontend bereikbaar is;
+- API bereikbaar is;
+- console geen herhaalde errors toont;
+- netwerk geen terugkerende 4xx/5xx-lus toont;
+- Vite HMR normaal werkt;
+- TypeScript schoon is;
+- bestaande functionaliteit niet is geraakt.
+
+RAPPORTAGE
+
+Rapporteer:
+
+1. exacte oorzaak;
+2. eerste foutregel;
+3. betrokken proces/poort;
+4. gewijzigde bestanden of workflow;
+5. waarom dit de kleinste veilige oplossing was;
+6. bewijs van 5 minuten stabiele preview;
+7. console- en netwerkresultaat;
+8. TypeScript-resultaat;
+9. commit-hash;
+10. gepubliceerd: nee.
