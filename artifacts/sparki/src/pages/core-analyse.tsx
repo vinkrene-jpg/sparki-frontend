@@ -621,10 +621,13 @@ function WeekVolumeCard({
   sessies,
   todayIso,
   onWeekKlik,
+  doelUren = null,
 }: {
   sessies: TrainingSession[]
   todayIso: string
   onWeekKlik: (weekStart: string) => void
+  /** Doelscenario-uren per week (paarse doellijn); null = scenario uit of geen urenbasis. */
+  doelUren?: number | null
 }) {
   const reeks = weekVolumeReeks(sessies, todayIso, 12)
   const heeftData = reeks.some((w) => w.sessies > 0)
@@ -654,6 +657,22 @@ function WeekVolumeCard({
               <XAxis dataKey="label" tick={{ fill: "#64748b", fontSize: 10 }} interval={1} />
               <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
               <Tooltip content={(props) => <VolumeTooltip {...(props as Parameters<typeof VolumeTooltip>[0])} />} />
+              {doelUren != null && (
+                // Doellijn uit het Doelscenario: de balken (werkelijke uren)
+                // blijven onaangetast — historie herschrijven we nooit.
+                <ReferenceLine
+                  y={doelUren}
+                  stroke={CHART.verwacht}
+                  strokeDasharray="5 4"
+                  strokeWidth={1.5}
+                  label={{
+                    value: `doel ${urenLabel(doelUren)} u`,
+                    position: "insideTopRight",
+                    fill: CHART.verwacht,
+                    fontSize: 10,
+                  }}
+                />
+              )}
               <Bar dataKey="uren" name="Uren" maxBarSize={18} cursor="pointer">
                 {reeks.map((w, i) => (
                   <Cell key={i} fill={w.sessies > 0 ? CHART.volume : "#e2e8f0"} opacity={0.85} />
@@ -1021,7 +1040,12 @@ function BelastingTab({
 
       {/* Grid: volume + intensiteit + herstel — desktop naast elkaar */}
       <div className="grid gap-6 lg:grid-cols-2">
-      <WeekVolumeCard sessies={sessies.data ?? []} todayIso={todayIso} onWeekKlik={onWeekKlik} />
+      <WeekVolumeCard
+        sessies={sessies.data ?? []}
+        todayIso={todayIso}
+        onWeekKlik={onWeekKlik}
+        doelUren={scenarioPct != null && urenBasis != null ? urenBasis.uren * (1 + scenarioPct / 100) : null}
+      />
       <IntensiteitCard sessies={sessies.data ?? []} />
 
       {/* Readiness-trend */}
