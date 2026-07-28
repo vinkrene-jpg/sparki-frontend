@@ -1,0 +1,64 @@
+Maak nog geen applicatiewijzigingen.
+
+Gebruik uitsluitend:
+- de actuele repository op de opgegeven commit-SHA;
+- de nieuwe volledige repository-ZIP;
+- het actuele Sparki-masterplan als normatief kader.
+
+De repository en werkende code zijn de bron van waarheid voor wat al gebouwd is.
+Het masterplan mag niet als bewijs worden gebruikt dat functionaliteit bestaat.
+
+Onderzoek Club en Jeugdsporter/Ouder als twee afzonderlijke maar gekoppelde systemen.
+
+Lever één document op:
+
+docs/SPARKI_CLUB_EN_JEUGD_AUDIT_EN_BUILDPLAN_2026-07-28.md
+
+Het document moet minimaal bevatten:
+
+1. Exact onderzochte commit-SHA en ZIP.
+2. Huidige code-, database-, API- en UI-status van Club.
+3. Huidige code-, database-, API- en UI-status van Jeugdsporter/Ouder.
+4. Bewijs per bestaande functie met bestands- en endpointverwijzingen.
+5. Clubrollen- en rechtenmatrix.
+6. Jeugdsporter-/ouder-/verzorgerrollenmatrix.
+7. Server-side autorisatie per rol en endpoint.
+8. Toestemmingsmatrix per datatype en functie.
+9. Leeftijdsregels voor:
+   - jonger dan 16;
+   - 16 en 17 jaar;
+   - overgang naar 18 jaar.
+10. Toegang van sporter, ouder, coach, trainer, clubbeheerder,
+    teammanager, mechanieker en vrijwilliger.
+11. Welke flows end-to-end aantoonbaar werken.
+12. Welke flows gedeeltelijk bestaan.
+13. Welke flows volledig ontbreken.
+14. Privacy-, AVG-, beveiligings- en veiligheidsrisico’s.
+15. Vastleggen, wijzigen, intrekken en bewijzen van toestemming.
+16. Auditlog en herleidbaarheid van gevoelige handelingen.
+17. Web-, PWA- en mobiele dekking.
+18. Fout-, lege-, verlopen-toestemming- en accountovergangsstaten.
+19. Onderdelen die gezamenlijk gebouwd moeten worden.
+20. Onderdelen die technisch en functioneel gescheiden moeten blijven.
+21. Wat aantoonbaar al af is en niet opnieuw gebouwd of herschreven mag worden.
+22. Kleine, opeenvolgende Replit-opdrachten met:
+    - doel;
+    - afbakening;
+    - her te gebruiken bestaande code;
+    - acceptatiecriteria;
+    - tests;
+    - afhankelijkheden;
+    - rollbackrisico.
+23. Testmatrix voor alle relevante rolcombinaties.
+24. Prioritering:
+    - releaseblokkerend;
+    - noodzakelijk voor pilot;
+    - commercieel noodzakelijk;
+    - latere uitbreiding.
+25. Open beslispunten waarvoor René expliciet een keuze moet maken.
+
+Geen aannames.
+Geen mockfunctionaliteit als gebouwd markeren.
+Geen percentages baseren op alleen aantallen bestanden.
+Geen herbouw voorstellen wanneer gerichte uitbreiding mogelijk is.
+Bij iedere onzekerheid expliciet aangeven welk bewijs ontbreekt.
