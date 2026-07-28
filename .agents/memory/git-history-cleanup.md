@@ -30,6 +30,9 @@ Use `git filter-repo --path <file> ... --invert-paths --force` to strip specific
 
 **Result achieved:** .git reduced from 4.9 GB → 733 MB by stripping ~2.3 GB of LFS objects + rewriting history to exclude large blobs.
 
+## Early-warning guard
+A health check (`project_disk_size`, lib/health/disk-usage.ts) now measures `.git` + werkmap with `du` in the nightly health run. Env-managed dirs (node_modules, .cache, .config, .upm, .local) are excluded from the alarm total or it false-alarms forever; thresholds .git>1,5 GB / totaal>6 GiB orange, >7,25 GiB red.
+
 ## Local-side cleanup (after remote rewrite)
 - Local .git stays huge until backup refs are gone: delete `backup-pre-lighthistory`, `gitsafe-backup/main`, ALL stale `subrepl-*` branches+remotes, and the `replit-agent` branch (it pinned the heavy audit-export commit). Only after verifying `origin/main == main`.
 - Then `git reflog expire --expire=now --all` + `git gc --prune=now --aggressive` → 5.1 GB → 493 MB.

@@ -7,6 +7,7 @@ import {
   getValidStravaAccessToken,
 } from "../connectors/providers/strava-oauth";
 import type { CheckDefinition, ProbeResult } from "./types";
+import { probeProjectDiskSize } from "./disk-usage";
 
 // ── Probe helpers ────────────────────────────────────────────────────────────
 
@@ -1013,6 +1014,21 @@ const unwiredChecks: CheckDefinition[] = [
         };
       }
     },
+  },
+  {
+    key: "project_disk_size",
+    category: "storage",
+    title: "Projectgrootte (publiceerlimiet)",
+    description:
+      "Controleert of de projectmap (incl. .git) niet richting de publiceerlimiet van 8 GiB groeit.",
+    responsibleModule: "Publicatie / omgeving",
+    userImpact: impact(
+      "Als de projectmap boven de publiceerlimiet komt, mislukt publiceren en krijgen sporters geen nieuwe versies meer.",
+    ),
+    urgency: "medium",
+    remediation:
+      "Ruim de grootste boosdoeners op. Voor .git: verwijder backup-refs en oude subrepl-branches, draai `git reflog expire --expire=now --all` en `git gc --prune=now --aggressive` (recept in .agents/memory/git-history-cleanup.md). Voor de werkmap: verwijder export-zips en grote testbundels.",
+    probe: probeProjectDiskSize,
   },
 ];
 
