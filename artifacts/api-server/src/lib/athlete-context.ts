@@ -306,6 +306,19 @@ export async function buildAthleteContext(
     // context stands without it
   }
 
+  // Naslagwerk — uitgevoerde geplande trainingen (verdict, plan-vs-werkelijk,
+  // route) en gereden wedstrijden (uitslag + eigen terugblik/les), samengesteld
+  // uit de bestaande executielink/journey-tabellen. Zo kijkt Sparki in ELKE
+  // analyse en ELK advies structureel terug op wat eerder wel/niet werkte.
+  // Additief: een fout hier blokkeert de context nooit.
+  try {
+    const { terugblikBlock } = await import("./terugblik");
+    const naslag = await terugblikBlock(clerkId);
+    if (naslag) parts.push(naslag);
+  } catch {
+    // context stands without it
+  }
+
   // Source-quality register — the shared "bronnenregister". Every LLM-facing
   // analysis sees the same per-source reliability/completeness and the hard
   // rule that invalid sources may not yield conclusions. Fail-closed: when the

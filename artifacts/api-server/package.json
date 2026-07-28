@@ -99,6 +99,7 @@
     "test:ride-story": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs ride-story",
     "test:sprint": "node ./scripts/run-test.mjs sprint",
     "test:mental": "node ./scripts/run-test.mjs mental",
+    "test:terugblik": "node ./scripts/run-test.mjs terugblik",
     "test:nav-sanitize": "node ./scripts/run-test.mjs nav-sanitize",
     "test:health-flow": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs health-flow",
     "test:support-helpdesk": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs support-helpdesk",
