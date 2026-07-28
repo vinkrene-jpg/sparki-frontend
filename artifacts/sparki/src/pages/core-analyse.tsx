@@ -27,6 +27,7 @@ import { CommercialShell } from "@/components/sparki/commercial-shell"
 import { ClubChip } from "@/components/sparki/club-chip"
 import { BioRadar } from "@/components/sparki/bio-radar"
 import { Sparkline } from "@/components/sparki/primitives"
+import { WattageLab } from "@/components/sparki/wattage-lab"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer"
 import { TrainingProgression } from "@/components/sparki/training-progression"
@@ -977,6 +978,9 @@ function BelastingTab({
           </p>
         )}
       </LCard>
+
+      {/* Wattage-lab — knutselen met eigen vermogensdoelen (eerlijke vuistregels) */}
+      <WattageLab ftp={profiel?.ftp ?? null} weightKg={profiel?.weightKg ?? null} />
 
       {/* Load grafiek — volle breedte */}
       <LCard className="p-5">
