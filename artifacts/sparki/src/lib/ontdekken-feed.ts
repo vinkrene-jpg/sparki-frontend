@@ -41,11 +41,15 @@ export type FeedKaart = {
   ref?: { nieuwsId?: number; routeId?: number; raceId?: number }
   /** Echte afbeelding uit het artikel zelf (feed-enclosure); null/afwezig = geen foto tonen. */
   beeldUrl?: string | null
+  /**
+   * Alleen gezet bij een LETTERLIJKE woordgrens-match van merk/model uit de
+   * eigen garage in de kaarttekst — nooit een suggestie of gok.
+   */
+  garageMatch?: string | null
   score: number
 }
 
-// ── nieuws-classificatie ─────────────────────────────────────────────────────
-// Woordgrens-regexes (substring-trap: "sport" in "transport").
+export type GarageMatchItem = { brand: string | null; model: string | null }
 const MATERIAAL_RE =
   /\b(fiets(en)?|frame(s)?|wiel(en|set)?|band(en)?|tubeless|groepset|schakel\w*|cassette|ketting|zadel(s)?|stuur|cranks?|naven|naaf|helm(en)?|schoen(en)?|pedal(en|es)?|powermeter|verzet|carbon|aero\w*|tenue|kleding|shirt|component(en)?|sram|shimano|campagnolo|specialized|colnago|canyon|trek|giant|pinarello|cervelo|bianchi|vittoria|continental|zipp|garmin|wahoo)\b/i
 const TRAININGSTIP_RE =
@@ -129,6 +133,10 @@ export function scoreKaart(
     if (hit) s += 15
   }
 
+  // Eigen-materiaal-boost: alleen bij een echte woordgrens-match (zie
+  // vindGarageMatch) — zonder match verandert er niets.
+  if (kaart.garageMatch) s += 25
+
   return s
 }
 
@@ -158,4 +166,33 @@ export function stabieleIndex(key: string, lengte: number): number {
   let h = 0
   for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0
   return Math.abs(h) % lengte
+}
+
+/**
+ * Vind de meest specifieke letterlijke match van eigen materiaal in de tekst.
+ * Merk+model in de tekst wint van alleen merk; niets matcht ⇒ null.
+ */
+export function vindGarageMatch(
+  tekst: string,
+  items: GarageMatchItem[],
+): string | null {
+  let merkAlleen: string | null = null
+  for (const it of items) {
+    const brand = it.brand?.trim() || null
+    const model = it.model?.trim() || null
+    const brandRe = brand ? woordgrensRe(brand) : null
+    if (!brandRe || !brandRe.test(tekst)) continue
+    const modelRe = model ? woordgrensRe(model) : null
+    if (modelRe && modelRe.test(tekst)) return `${brand} ${model}`
+    if (merkAlleen == null) merkAlleen = brand
+  }
+  return merkAlleen
+}
+
+function woordgrensRe(term: string): RegExp | null {
+  const t = term.trim()
+  // Te kort of puur numeriek ("105") is als los woord te generiek/vals-positief.
+  if (t.length < 3 || !/[a-zà-ÿ]/i.test(t)) return null
+  const esc = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+")
+  return new RegExp(`(?<![\\p{L}\\p{N}])${esc}(?![\\p{L}\\p{N}])`, "iu")
 }

@@ -3,6 +3,7 @@ import assert from "node:assert/strict"
 import {
   classificeerNieuws,
   bewaardeKernwoorden,
+  vindGarageMatch,
   scoreKaart,
   mengFeed,
   stabieleIndex,
@@ -69,6 +70,40 @@ test("score: bewaard-onderwerp boost via kernwoorden", () => {
   const met = scoreKaart(basis({ titel: "Nieuwe tubeless test" }), ctx, kern)
   const zonder = scoreKaart(basis({ titel: "Iets anders" }), ctx, kern)
   assert.ok(met > zonder)
+})
+
+test("garage-match: merk met woordgrens, meest specifiek wint", () => {
+  const items = [
+    { brand: "Canyon", model: "Ultimate CF SL" },
+    { brand: "Shimano", model: "105" },
+  ]
+  // merk + model in de tekst ⇒ specifiek label
+  assert.equal(
+    vindGarageMatch("Review: de Canyon Ultimate CF SL van 2026", items),
+    "Canyon Ultimate CF SL",
+  )
+  // alleen merk ⇒ merk-label
+  assert.equal(vindGarageMatch("Canyon presenteert nieuwe aero-lijn", items), "Canyon")
+  // substring is GEEN match (woordgrens)
+  assert.equal(vindGarageMatch("Fietsen door Canyonlands National Park", items), null)
+  // puur numeriek model ("105") matcht nooit als los woord
+  assert.equal(vindGarageMatch("Wielrenner rijdt 105 kilometer", items), null)
+  // geen garage-item in de tekst ⇒ null
+  assert.equal(vindGarageMatch("Trek lanceert nieuwe Madone", items), null)
+})
+
+test("garage-match: lege of te korte merken matchen niet", () => {
+  assert.equal(vindGarageMatch("BMC nieuws", [{ brand: "", model: null }]), null)
+  assert.equal(vindGarageMatch("De AG fiets", [{ brand: "AG", model: null }]), null)
+})
+
+test("score: garage-match geeft eerlijke boost, zonder match ongewijzigd", () => {
+  const kern = new Set<string>()
+  const zonder = scoreKaart(basis({ type: "materiaal" }), ctx, kern)
+  const met = scoreKaart(basis({ type: "materiaal", garageMatch: "Canyon" }), ctx, kern)
+  const nul = scoreKaart(basis({ type: "materiaal", garageMatch: null }), ctx, kern)
+  assert.ok(met > zonder)
+  assert.equal(nul, zonder)
 })
 
 test("mengFeed: nooit 3 dezelfde types op rij als er alternatief is", () => {

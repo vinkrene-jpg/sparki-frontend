@@ -23,6 +23,8 @@ import {
 import {
   classificeerNieuws,
   bewaardeKernwoorden,
+  vindGarageMatch,
+  type GarageMatchItem,
   scoreKaart,
   mengFeed,
   stabieleIndex,
@@ -321,6 +323,13 @@ function FeedKaartView({
           )}
         </div>
 
+        {kaart.garageMatch && (
+          <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-300/25 bg-amber-300/10 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-amber-200/90">
+            <Bike className="h-3 w-3" />
+            Gaat over jouw {kaart.garageMatch}
+          </span>
+        )}
+
         <h3 className="mt-2 line-clamp-2 text-pretty font-sans text-[16px] font-light leading-snug text-white/92">
           {kaart.titel}
         </h3>
@@ -437,6 +446,7 @@ export default function FeedPage() {
   const { data: coachData } = useCoachAnalysis()
   const { data: circleData, isLoading: teamLoading } = useCircleFeed()
   const { data: routesData } = useDiscoverRoutes()
+  const { data: garageData } = useGarage()
   const kennisEnabled = useFeatureFlag("knowledge_base")
   const { data: knowledgeData } = useKnowledge({ type: "research", limit: 4, enabled: kennisEnabled })
 
@@ -460,6 +470,16 @@ export default function FeedPage() {
       bewaardeTitels: prefs.bewaard.map((b) => b.titel),
     }
     const kernwoorden = bewaardeKernwoorden(ctx.bewaardeTitels)
+    // Eigen materiaal (garage): merk/model van fietsen, componenten en
+    // persoonlijke uitrusting — alleen voor letterlijke matches in nieuws.
+    const garageItems: GarageMatchItem[] = []
+    for (const b of garageData?.bikes ?? []) {
+      garageItems.push({ brand: b.brand, model: b.model })
+      for (const c of b.components) garageItems.push({ brand: c.brand, model: c.model })
+    }
+    for (const g of garageData?.personalGear ?? []) {
+      garageItems.push({ brand: g.brand, model: g.model })
+    }
     const ruw: Omit<FeedKaart, "score">[] = []
 
     // Sparki-inzicht: dagelijkse briefing (+ coach-kop als aparte compacte kaart)
@@ -490,17 +510,23 @@ export default function FeedPage() {
 
     // Nieuws — deterministisch geclassificeerd in nieuws / materiaal / trainingstip
     for (const n of newsData?.items ?? []) {
+      const titel = n.titleNl ?? n.title
+      const samenvatting = n.summary ?? n.abstract ?? null
       ruw.push({
         key: `news-${n.id}`,
-        type: classificeerNieuws(n.titleNl ?? n.title, n.summary),
-        titel: n.titleNl ?? n.title,
-        samenvatting: n.summary ?? n.abstract ?? null,
+        type: classificeerNieuws(titel, n.summary),
+        titel,
+        samenvatting,
         bron: n.source,
         tijdIso: n.publishedAt,
         link: n.url,
         extern: true,
         ref: { nieuwsId: n.id },
         beeldUrl: n.imageUrl ?? null,
+        garageMatch:
+          garageItems.length > 0
+            ? vindGarageMatch(`${titel} ${samenvatting ?? ""}`, garageItems)
+            : null,
       })
     }
 
@@ -576,7 +602,7 @@ export default function FeedPage() {
 
     const met = ruw.map((k) => ({ ...k, score: scoreKaart(k, ctx, kernwoorden) }))
     return mengFeed(met)
-  }, [briefData, coachData, newsData, knowledgeData, racesData, circleData, routesData, prefs, todayYmd])
+  }, [briefData, coachData, newsData, knowledgeData, racesData, circleData, routesData, garageData, prefs, todayYmd])
 
   const zichtbaar = useMemo(() => {
     const types = FILTER_TYPES[actief]
