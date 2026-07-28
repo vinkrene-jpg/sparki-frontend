@@ -32,7 +32,7 @@ import { ACCENT } from "@/components/sparki/ui"
 import { Skeleton } from "@/components/sparki/home-sections"
 import type { CalendarEvent } from "@/lib/calendar-types"
 import { useRaceInsight, useRaceWizardProposal } from "@/hooks/use-races"
-import type { RaceInput, RacePriority, RaceRegistrationStatus } from "@/lib/race-types"
+import type { Race, RaceInput, RacePriority, RaceRegistrationStatus } from "@/lib/race-types"
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -1202,6 +1202,7 @@ function Step5({
   onSave,
   saving,
   error,
+  saveLabel = "Wedstrijd opslaan",
 }: {
   form: WizardForm
   provenance: Provenance
@@ -1209,6 +1210,7 @@ function Step5({
   onSave: () => void
   saving: boolean
   error: string | null
+  saveLabel?: string
 }) {
   // Groepeer ingevulde velden per bron
   const groups = SOURCE_GROUPS.map((g) => ({
@@ -1296,7 +1298,7 @@ function Step5({
       <WizardNav
         onBack={onBack}
         onNext={onSave}
-        nextLabel="Wedstrijd opslaan"
+        nextLabel={saveLabel}
         saving={saving}
       />
     </div>
@@ -1347,6 +1349,8 @@ const DEMO_PROVENANCE: Provenance = {
   notes: "ai_proposal",
 }
 
+const VALID_SOURCES: FieldSource[] = ["user", "calendar", "insight", "profile", "ai_proposal"]
+
 // ── Hoofdcomponent ────────────────────────────────────────────────────────────
 
 export function RaceWizard({
@@ -1354,16 +1358,40 @@ export function RaceWizard({
   onCancel,
   initialSource = "handmatig",
   demoStep,
+  initialRace,
+  onOpenFullForm,
 }: {
   onSave: (input: RaceInput) => Promise<void>
   onCancel: () => void
   initialSource?: "handmatig" | "kalender"
   /** Dev-only: start the wizard at a specific step with demo data pre-filled. */
   demoStep?: WizardStep
+  /** Bewerken: bestaande race — form + herkomst worden hieruit opgebouwd. */
+  initialRace?: Race | null
+  /** Bewerken: escape naar het uitgebreide (platte) formulier met álle velden. */
+  onOpenFullForm?: () => void
 }) {
-  const [step, setStep] = useState<WizardStep>(demoStep ?? 1)
-  const [form, setForm] = useState<WizardForm>(demoStep != null ? { ...DEMO_FORM } : { ...EMPTY_FORM })
-  const [provenance, setProvenance] = useState<Provenance>(demoStep != null ? { ...DEMO_PROVENANCE } : {})
+  // Demo-modus is een puur dev-hulpmiddel: buiten de dev-build wordt hij hard
+  // genegeerd, zodat demo-seeddata nooit een opslagpad kan bereiken.
+  if (!import.meta.env.DEV) demoStep = undefined
+  const editing = initialRace != null
+  // Bewerken opent op de samenvatting (stap 5): daar staat de volledige
+  // herkomst-verantwoording en via Terug loop je gericht naar elke stap.
+  const [step, setStep] = useState<WizardStep>(editing ? 5 : demoStep ?? 1)
+  const [form, setForm] = useState<WizardForm>(() =>
+    initialRace != null
+      ? raceToWizardForm(initialRace)
+      : demoStep != null
+      ? { ...DEMO_FORM }
+      : { ...EMPTY_FORM },
+  )
+  const [provenance, setProvenance] = useState<Provenance>(() =>
+    initialRace != null
+      ? reconstructProvenance(initialRace, raceToWizardForm(initialRace))
+      : demoStep != null
+      ? { ...DEMO_PROVENANCE }
+      : {},
+  )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -1425,6 +1453,12 @@ export function RaceWizard({
       const t = s.trim()
       return t === "" ? null : t
     }
+    // Herkomst mee-opslaan (alleen van ingevulde velden), zodat een latere
+    // bewerking dezelfde verantwoording kan tonen — nooit gereconstrueerd gokwerk.
+    const fieldSources: Record<string, FieldSource> = {}
+    for (const [k, v] of Object.entries(provenance)) {
+      if (v && form[k as keyof WizardForm] !== "") fieldSources[k] = v
+    }
     return {
       name: form.name.trim(),
       raceDate: form.raceDate,
@@ -1438,8 +1472,12 @@ export function RaceWizard({
       goal: str(form.goal),
       registrationStatus: form.registrationStatus === "" ? null : form.registrationStatus,
       notes: str(form.notes),
-      status: "gepland",
+      // Bewerken raakt de status niet aan (geannuleerd blijft geannuleerd).
+      status: initialRace?.status ?? "gepland",
       logistics: {
+        // Bewerken: velden buiten de wizard (parkeren, navigatie) blijven staan —
+        // logistics is één jsonb-object, dus zonder merge zouden ze verdwijnen.
+        ...(initialRace?.logistics ?? {}),
         departureLocation: str(form.departureLocation),
         travelDurationMin: num(form.travelDurationMin),
         arrivalBufferMin: num(form.arrivalBufferMin),
@@ -1447,6 +1485,7 @@ export function RaceWizard({
         warmupMin: num(form.warmupMin),
         callUpMin: num(form.callUpMin),
         breakfastBeforeDepartureMin: num(form.breakfastBeforeDepartureMin),
+        fieldSources,
       },
     }
   }
@@ -1467,7 +1506,7 @@ export function RaceWizard({
   }
 
   const STEP_TITLES: Record<WizardStep, string> = {
-    1: "Race toevoegen",
+    1: editing ? "Race bewerken" : "Race toevoegen",
     2: "Automatisch ingevuld",
     3: "Aanvullen",
     4: "Sparki's voorstel",
@@ -1542,8 +1581,75 @@ export function RaceWizard({
           onSave={handleSave}
           saving={saving}
           error={error}
+          saveLabel={editing ? "Wijzigingen opslaan" : "Wedstrijd opslaan"}
         />
+      )}
+
+      {/* Bewerken: escape naar het uitgebreide formulier (parcours, team,
+          logistiek-details, verwijderen) — velden die de wizard niet kent. */}
+      {editing && onOpenFullForm && (
+        <div className="pt-1 text-center">
+          <button
+            type="button"
+            onClick={onOpenFullForm}
+            className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/30 underline-offset-4 transition-colors hover:text-white/60 hover:underline"
+          >
+            Alle velden bewerken (uitgebreid formulier)
+          </button>
+        </div>
       )}
     </div>
   )
 }
+
+function reconstructProvenance(r: Race, form: WizardForm): Provenance {
+  const prov: Provenance = {}
+  const stored = r.logistics?.fieldSources
+  if (stored && typeof stored === "object") {
+    for (const [k, v] of Object.entries(stored)) {
+      if (
+        (Object.prototype.hasOwnProperty.call(form, k)) &&
+        VALID_SOURCES.includes(v as FieldSource) &&
+        form[k as keyof WizardForm] !== ""
+      ) {
+        prov[k as keyof WizardForm] = v as FieldSource
+      }
+    }
+  }
+  const fromCalendar = /Geïmporteerd uit (Fietssport|We-Tri|KNWU)/.test(r.notes ?? "")
+  for (const k of Object.keys(form) as (keyof WizardForm)[]) {
+    if (form[k] === "" || prov[k] !== undefined) continue
+    prov[k] = fromCalendar && CALENDAR_CAPABLE.includes(k) ? "calendar" : "user"
+  }
+  return prov
+}
+
+function raceToWizardForm(r: Race): WizardForm {
+  const lg = r.logistics ?? {}
+  const numStr = (n: number | null | undefined) => (n != null ? String(n) : "")
+  return {
+    name: r.name,
+    raceDate: r.raceDate,
+    startTime: r.startTime ?? "",
+    location: r.location ?? "",
+    discipline: r.discipline ?? "",
+    distanceKm: r.distanceKm ?? "",
+    elevationM: numStr(r.elevationM),
+    category: r.category ?? "",
+    priority: r.priority,
+    goal: r.goal ?? "",
+    registrationStatus: r.registrationStatus ?? "",
+    departureLocation: lg.departureLocation ?? "",
+    travelDurationMin: numStr(lg.travelDurationMin),
+    arrivalBufferMin: numStr(lg.arrivalBufferMin),
+    registrationMin: numStr(lg.registrationMin),
+    warmupMin: numStr(lg.warmupMin),
+    callUpMin: numStr(lg.callUpMin),
+    breakfastBeforeDepartureMin: numStr(lg.breakfastBeforeDepartureMin),
+    notes: r.notes ?? "",
+  }
+}
+
+const CALENDAR_CAPABLE: (keyof WizardForm)[] = [
+  "name", "raceDate", "location", "discipline", "distanceKm", "notes",
+]

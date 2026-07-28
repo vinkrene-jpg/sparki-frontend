@@ -26,6 +26,13 @@ export type RaceLogisticsInput = {
   breakfastBeforeDepartureMin?: number | null;
   parkingNotes?: string | null;
   navigationNotes?: string | null;
+  /**
+   * Herkomstkaart van de wizard: veldnaam → bron (user / calendar / insight /
+   * profile / ai_proposal). Bewaard zodat "Race bewerken" dezelfde eerlijke
+   * verantwoording kan tonen als bij het aanmaken. Ontbreekt bij races die
+   * buiten de wizard om zijn ingevoerd.
+   */
+  fieldSources?: Record<string, string> | null;
 };
 
 /** A rider attending the same race — used by the Team Meeting Planner. */

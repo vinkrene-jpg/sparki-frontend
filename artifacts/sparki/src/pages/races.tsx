@@ -407,9 +407,14 @@ export default function RacesPage() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [showWizard, setShowWizard] = useState(false)
+  // Bewerken via de wizard: de opgeslagen race waarvan form + herkomst worden
+  // opgebouwd. null = wizard in aanmaak-modus.
+  const [wizardRace, setWizardRace] = useState<Race | null>(null)
   const [wizardSource, setWizardSource] = useState<"handmatig" | "kalender">("handmatig")
-  // Dev-only: ?step=N opens wizard directly at step N with demo data.
-  const demoStepParam = typeof window !== "undefined"
+  // Dev-only: ?step=N opens wizard directly at step N with demo data. Hard
+  // gated on the dev build — in productie wordt de parameter volledig genegeerd
+  // zodat demo-seedwaarden nooit in een echte race terecht kunnen komen.
+  const demoStepParam = import.meta.env.DEV && typeof window !== "undefined"
     ? Number(new URLSearchParams(window.location.search).get("step") ?? "0")
     : 0
   const demoStep = demoStepParam >= 1 && demoStepParam <= 5 ? (demoStepParam as 1 | 2 | 3 | 4 | 5) : undefined
@@ -440,18 +445,38 @@ export default function RacesPage() {
     setShowImport(false)
     setShowForm(false)
     setWizardSource(source)
+    setWizardRace(null)
     setShowWizard(true)
     setError(null)
   }
 
   function closeWizard() {
     setShowWizard(false)
+    setWizardRace(null)
     setError(null)
   }
 
   async function handleWizardSave(input: import("@/lib/race-types").RaceInput) {
-    await createRace.mutateAsync(input)
+    if (wizardRace != null) {
+      await updateRace.mutateAsync({ id: wizardRace.id, input })
+    } else {
+      await createRace.mutateAsync(input)
+    }
     closeWizard()
+  }
+
+  // Escape uit de wizard naar het uitgebreide (platte) formulier — voor velden
+  // die de wizard niet kent (parcours, team, verwijderen, dossierpanelen).
+  function openFullFormFromWizard() {
+    if (wizardRace == null) return
+    const r = wizardRace
+    setShowWizard(false)
+    setWizardRace(null)
+    setForm(raceToForm(r))
+    setTeamRiders(r.teamRiders ?? [])
+    setEditingId(r.id)
+    setShowForm(true)
+    setError(null)
   }
 
   function startImport() {
@@ -494,12 +519,25 @@ export default function RacesPage() {
     )
   }
 
+  // Bewerken opent dezelfde vijf-staps wizard als aanmaken, voorgevuld met de
+  // opgeslagen waarden en gereconstrueerde herkomst. Het platte formulier blijft
+  // alleen de fallback voor races met coachinstructies — daar liep geen
+  // wizard-flow en zijn de coachvelden (team, instructies) het werkblad.
   function startEdit(r: Race) {
-    setForm(raceToForm(r))
-    setTeamRiders(r.teamRiders ?? [])
-    setEditingId(r.id)
-    setShowForm(true)
     setError(null)
+    setShowImport(false)
+    const coachEntered = (r.coachInstructions ?? "").trim() !== ""
+    if (coachEntered) {
+      setForm(raceToForm(r))
+      setTeamRiders(r.teamRiders ?? [])
+      setEditingId(r.id)
+      setShowForm(true)
+      return
+    }
+    setShowForm(false)
+    setEditingId(null)
+    setWizardRace(r)
+    setShowWizard(true)
   }
 
   function closeForm() {
@@ -565,6 +603,15 @@ export default function RacesPage() {
       .filter((r) => r.name.trim() !== "")
       .map((r) => ({ ...r, name: r.name.trim() }))
     const input = formToInput(form, cleanRiders)
+    // Herkomstkaart van de wizard bewaren: het platte formulier vervangt het
+    // hele logistics-object, dus zonder deze merge zou de opgeslagen
+    // verantwoording (fieldSources) bij een bewerking verloren gaan.
+    if (editingId != null) {
+      const existing = races?.find((r) => r.id === editingId)
+      if (existing?.logistics?.fieldSources && input.logistics) {
+        input.logistics = { ...input.logistics, fieldSources: existing.logistics.fieldSources }
+      }
+    }
 
     const onDone = () => closeForm()
     if (editingId != null) {
@@ -587,10 +634,13 @@ export default function RacesPage() {
       {/* ── Wizard (nieuwe race — 5 stappen) ── */}
       {showWizard || demoStep != null ? (
         <RaceWizard
+          key={wizardRace?.id ?? "new"}
           onSave={handleWizardSave}
           onCancel={closeWizard}
           initialSource={wizardSource}
-          demoStep={demoStep}
+          demoStep={showWizard ? undefined : demoStep}
+          initialRace={wizardRace}
+          onOpenFullForm={wizardRace != null ? openFullFormFromWizard : undefined}
         />
       ) : (
       <>

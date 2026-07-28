@@ -45,3 +45,8 @@ de URL-parameter stelt screenshot-series in staat zonder buildwijzigingen.
 
 **How to apply:** Verwijder NIET de `demoStep`-prop uit de wizard — hij heeft geen productie-effect
 maar is onmisbaar voor toekomstige screenshot-validaties en UI-tests van specifieke stappen.
+
+## Bewerken & herkomst — durable regels
+- Herkomst (veld→bron) leeft in `logistics.fieldSources` (jsonb). **Why:** zonder persist is edit-verantwoording gokwerk. **How to apply:** elke schrijver van het logistics-object moet MERGEN, nooit vervangen — anders verdwijnen parkeren/navigatie/herkomst stil.
+- Herkomst-reconstructie voor races zonder fieldSources moet eerlijk blijven: alleen aantoonbare bron (kalender-importregel in notities), rest = "zelf ingevuld"; nooit insight/ai raden.
+- Demo-modus (`?step=N`) mag alleen in de dev-build bestaan (`import.meta.env.DEV`-gate op beide kanten); demo-seeddata mag nooit een opslagpad kunnen bereiken.
