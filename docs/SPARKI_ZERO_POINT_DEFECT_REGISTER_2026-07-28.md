@@ -115,7 +115,7 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 - **Laatst bijgewerkt:** 2026-07-28
 
 ### A-06 — Lab/Analyse wijkt af in dev-preview
-- **Categorie:** DEFECT · **Ernst:** P2 · **Zekerheid:** Hard bevestigd (code) · **Status:** READY_FOR_FIX
+- **Categorie:** DEFECT · **Ernst:** P2 · **Zekerheid:** Hard bevestigd (code) · **Status:** VERIFIED_FIXED
 - **Route/rol/scherm:** `/lab` (productie-redirect) vs. dev-preview "Lab"-ingang
 - **Bestand/regel:** `artifacts/sparki/src/App.tsx:668-670` (`<Route path="/lab"><Redirect to="/analyse" /></Route>`); `artifacts/sparki/src/components/sparki/dev-preview.tsx:91` (menu-item "Lab" → `/lab`), `:426-428` (eigen if/else-tak die `CoreAnalysePage` rendert, met commentaar dat dit "productie mirrort")
 - **Bewijsbron:** Statische code-inspectie
@@ -127,7 +127,7 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 - **Afhankelijkheden:** Geen.
 - **Eigenaar:** Replit (implementatie)
 - **Blokkade:** Geen
-- **Verificatiebewijs:** Nog te leveren
+- **Verificatiebewijs:** De handmatig bijgehouden kopie is vervangen door één gedeelde component: `AnalyseSwitchPage` is verplaatst uit `App.tsx` naar `src/pages/analyse-switch.tsx` (identieke logica: flag `commercial_shell` aan of ladend → `CoreAnalysePage`, uit → legacy `LabPage`; fail-open ongewijzigd). De echte router (`App.tsx` `/analyse`-route) én de dev-preview importeren nu exact deze component — verandert de switchlogica ooit, dan loopt de dev-preview automatisch mee. Dev-preview-menu: item "Lab" → "Analyse" (pad `/analyse`); geen dubbelzinnige Lab/Analyse-keuze meer; `/lab` blijft werken als alias (dev-preview-tak matcht beide, productie-`<Redirect to="/analyse">` onaangeraakt). Legacy `LabPage` staat bewust niet als apart menu-item: hij is geen dood testdoel maar de live uit-stand van de flag, bereikbaar via dezelfde switch. Routebewijs/vergelijking: `/analyse` (390px) en alias `/lab` (1440px) renderen beide dezelfde Analyse-pagina met identieke shell, tabs, kaarten en grafieken — `screenshots/devpreview-analyse-390.jpg`, `screenshots/devpreview-lab-alias-1440.jpg`; actieve navigatiemarkering "Analyse" klopt, geen consolefouten. TypeScript-check groen. Statusgang: READY_FOR_FIX → FIXED_NOT_VERIFIED → VERIFIED_FIXED (2026-07-28). Commit-SHA: zie commit met deze registerwijziging.
 - **Laatst bijgewerkt:** 2026-07-28
 
 ### A-07 — Clerk-inlogscherm is Engelstalig

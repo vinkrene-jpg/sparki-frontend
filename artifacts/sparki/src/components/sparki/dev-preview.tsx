@@ -18,7 +18,7 @@ import SprintenPage from "@/pages/sprinten"
 import SupportPage from "@/pages/support"
 import ProfielPage from "@/pages/profiel"
 import FeedPage from "@/pages/feed"
-import CoreAnalysePage from "@/pages/core-analyse"
+import { AnalyseSwitchPage } from "@/pages/analyse-switch"
 import CoreActiviteitenPage from "@/pages/core-activiteiten"
 import PhotoLabPage from "@/pages/photo-lab"
 import YouPage from "@/pages/you"
@@ -88,7 +88,7 @@ const VIEWS: DevView[] = [
   { label: "Activiteiten", path: "/activiteiten" },
   { label: "Train", path: "/train" },
   { label: "Feed", path: "/feed" },
-  { label: "Lab", path: "/lab" },
+  { label: "Analyse", path: "/analyse" },
   { label: "You", path: "/you" },
   { label: "Geluid", path: "/geluid" },
   { label: "Lichaam", path: "/lichaam" },
@@ -424,9 +424,10 @@ export function DevPreview() {
     page = <FeedPage />
     showNav = false
   } else if (location.startsWith("/lab") || location.startsWith("/analyse")) {
-    // commercial_shell is globally enabled — mirror AnalyseSwitchPage in the
-    // real router (/lab redirects to /analyse there).
-    page = <CoreAnalysePage />
+    // Exact dezelfde component + switchlogica als productie-/analyse (A-06):
+    // geen shortcut die een andere pagina toont dan gebruikers zien.
+    // /lab blijft hier als alias werken, net als de redirect in de router.
+    page = <AnalyseSwitchPage />
     showNav = false
   } else if (location.startsWith("/activiteiten")) {
     // Mirrors ActiviteitenSwitchPage with commercial_shell on.

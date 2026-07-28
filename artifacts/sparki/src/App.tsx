@@ -25,7 +25,7 @@ import LegalPage from "@/pages/legal";
 import FeedPage from "@/pages/feed";
 import TrainPage from "@/pages/train";
 import YouPage from "@/pages/you";
-import LabPage from "@/pages/lab";
+import { AnalyseSwitchPage } from "@/pages/analyse-switch";
 import ActiviteitenPage from "@/pages/activiteiten";
 import PhotoLabPage from "@/pages/photo-lab";
 import SamenPage from "@/pages/samen";
@@ -442,14 +442,6 @@ function MeerSwitchPage() {
   return <MeerPage />;
 }
 
-// Analyse (/lab) — Core-afbouwwave 2A: zelfde flag-switch én fail-open patroon.
-// Uit = exact het bestaande Lab-scherm; aan = dezelfde analyses, hooks en flows
-// op het centrale designsysteem. Alleen presentatie — berekeningen blijven staan.
-function AnalyseSwitchPage() {
-  const { flags, isLoading: flagsLoading } = useFeatureFlags();
-  if (flagsLoading || flags.commercial_shell) return <CoreAnalysePage />;
-  return <LabPage />;
-}
 
 function HomeRedirect() {
   return (
