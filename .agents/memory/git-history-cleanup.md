@@ -29,3 +29,8 @@ Use `git filter-repo --path <file> ... --invert-paths --force` to strip specific
 - A stale temp branch may remain on GitHub if branch deletion via direct `git push origin --delete` fails (credentials); delete via GitHub UI or API
 
 **Result achieved:** .git reduced from 4.9 GB → 733 MB by stripping ~2.3 GB of LFS objects + rewriting history to exclude large blobs.
+
+## Local-side cleanup (after remote rewrite)
+- Local .git stays huge until backup refs are gone: delete `backup-pre-lighthistory`, `gitsafe-backup/main`, ALL stale `subrepl-*` branches+remotes, and the `replit-agent` branch (it pinned the heavy audit-export commit). Only after verifying `origin/main == main`.
+- Then `git reflog expire --expire=now --all` + `git gc --prune=now --aggressive` → 5.1 GB → 493 MB.
+- Trap: root `postcss.config.mjs` referencing `@tailwindcss/postcss` (Next.js leftover, restored by the reconciliation commit) breaks BOTH Vite apps — they use `@tailwindcss/vite` and Vite climbs to the root config. Keep root postcss plugins `{}`.
