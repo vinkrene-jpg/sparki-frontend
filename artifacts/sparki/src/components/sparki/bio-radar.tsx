@@ -7,12 +7,17 @@ export function BioRadar({
   labelColor = "rgba(255,255,255,0.55)",
   gridColor = "rgba(255,255,255,0.07)",
   axes,
+  overlay = null,
+  overlayAccent = "rgba(147,51,234,0.9)",
 }: {
   size?: number
   accent?: string
   labelColor?: string
   gridColor?: string
   axes: Array<{ key: string; label: string; level: number }>
+  /** Optionele tweede (scenario-)polygoon: levels 0..1, één per as, zelfde volgorde. */
+  overlay?: number[] | null
+  overlayAccent?: string
 }) {
   const n = axes.length
   if (n < 3) return null
@@ -39,9 +44,15 @@ export function BioRadar({
   }
 
   const poly = axes.map((v, i) => pt(v.level, i).join(",")).join(" ")
+  const overlayPoly =
+    overlay && overlay.length === n
+      ? overlay.map((lvl, i) => pt(Math.max(0, Math.min(1, lvl)), i).join(",")).join(" ")
+      : null
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+    // overflow-visible: zijlabels (links/rechts) ankeren naar buiten en mogen
+    // buiten de viewBox uitsteken — anders wordt bv. "REGELMAAT" afgekapt.
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ overflow: "visible" }}>
       {[0.25, 0.5, 0.75, 1].map((g) => (
         <polygon
           key={g}
@@ -78,18 +89,32 @@ export function BioRadar({
         strokeWidth="1.2"
         style={{ filter: `drop-shadow(0 0 6px ${accent})` }}
       />
+      {overlayPoly && (
+        <polygon
+          points={overlayPoly}
+          fill={overlayAccent}
+          fillOpacity="0.08"
+          stroke={overlayAccent}
+          strokeWidth="1.2"
+          strokeDasharray="4 3"
+        />
+      )}
       {axes.map((v, i) => {
         const [px, py] = pt(v.level, i)
         return <circle key={v.key} cx={px} cy={py} r="2" fill={accent} />
       })}
       {axes.map((v, i) => {
         const [lx, ly] = labelPos(i)
+        // Zijlabels naar buiten ankeren zodat ze nooit half over de rand van
+        // het tekengebied vallen (het "GELMAAT"-probleem).
+        const c = Math.cos(ang(i))
+        const anchor = c > 0.35 ? "start" : c < -0.35 ? "end" : "middle"
         return (
           <text
             key={v.key}
             x={lx}
             y={ly}
-            textAnchor="middle"
+            textAnchor={anchor}
             dominantBaseline="middle"
             fontSize="8.5"
             fill={labelColor}
