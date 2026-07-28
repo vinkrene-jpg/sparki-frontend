@@ -1,0 +1,65 @@
+Voer P03 uit als gecontroleerde onderzoek-en-herstelactie voor ai_observations.
+
+Doel:
+vind aantoonbaar Engelstalige observaties en herstel deze naar correct Nederlands, zonder gegevensverlies of inhoudelijke vervorming.
+
+Verplichte volgorde:
+
+1. Maak eerst een read-only inventarisatie van ai_observations:
+   - totaal aantal rijen;
+   - aantal duidelijk Nederlandstalig;
+   - aantal duidelijk Engelstalig;
+   - aantal gemengd of onzeker;
+   - record-ID, user-ID, datum en huidige tekst van iedere kandidaat;
+   - geen persoonsgegevens buiten de noodzakelijke gebruikersreferentie tonen.
+
+2. Controleer de actuele tabelstructuur en het bestaande cleanup-/herstelmechanisme.
+   - Leg uit hoe het origineel aantoonbaar behouden blijft.
+   - Als het origineel niet veilig behouden of hersteld kan worden: stop vóór iedere wijziging.
+
+3. Maak direct vóór herstel:
+   - databaseback-up of herstelbare export van alle betrokken rijen;
+   - verse dry-run in dezelfde sessie;
+   - exact aantal te wijzigen rijen;
+   - rollbackcommando of herstelprocedure.
+
+4. Herstel uitsluitend rijen die aantoonbaar volledig of overwegend Engels zijn.
+   - vertaal naar natuurlijk Nederlands;
+   - behoud betekenis, getallen, datums, trainingswaarden en conclusies;
+   - voeg geen nieuwe interpretatie of advies toe;
+   - verwijder geen observaties;
+   - wijzig geen Nederlandstalige rijen;
+   - wijzig geen gemengde of onzekere rijen.
+
+5. Stop zonder wijzigingen wanneer:
+   - taalclassificatie onzeker is;
+   - recordselectie niet exact begrensd is;
+   - origineel niet herstelbaar wordt vastgelegd;
+   - vertaling sportinhoud, waarden of betekenis kan veranderen.
+
+6. Verifieer na uitvoering:
+   - exact hetzelfde aantal observaties bestaat als vóór uitvoering;
+   - alleen vooraf goedgekeurde record-ID’s zijn gewijzigd;
+   - alle aangepaste teksten Nederlands zijn;
+   - user-ID, datum en overige velden ongewijzigd zijn;
+   - 0 rijen verwijderd;
+   - overige observaties ongewijzigd zijn.
+
+7. Leg bewijs vast in:
+   docs/P03_LANGUAGE_REVIEW_AND_REPAIR_2026-07-28.md
+
+8. Commit en push uitsluitend het bewijsdocument en eventuele noodzakelijke, expliciet gemelde audit/exportbestanden.
+   Geen applicatiecode wijzigen.
+
+Lever:
+- inventarisatieresultaat;
+- lijst van aangepaste record-ID’s;
+- vóór/na-voorbeeld per aangepast patroon;
+- back-upbewijs;
+- aantal gewijzigde en verwijderde rijen;
+- verificatieresultaat;
+- bestandspad;
+- commit-hash;
+- branch en push-resultaat.
+
+Er is toestemming om apply=true uit te voeren, maar uitsluitend wanneer alle bovenstaande voorwaarden aantoonbaar slagen. Bij twijfel stoppen en rapporteren.
