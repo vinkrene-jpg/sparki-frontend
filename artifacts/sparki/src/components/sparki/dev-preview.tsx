@@ -123,6 +123,7 @@ const pillStyle = (active: boolean) => ({
 type PreviewAthlete = {
   clerkId: string
   name: string | null
+  group?: string
   personaLabel: string
   basis: string
 }
@@ -158,7 +159,7 @@ function AthleteSwitcher() {
   return (
     <div className="mt-3 border-t border-white/[0.07] pt-3">
       <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-white/30">
-        Atleet
+        Kijk als gebruiker
       </span>
       {error ? (
         <p className="mt-1.5 text-[10px] text-amber-200/70">
@@ -179,22 +180,32 @@ function AthleteSwitcher() {
           >
             Standaard
           </button>
-          {athletes.map((a) => (
-            <button
-              key={a.clerkId}
-              type="button"
-              onClick={() => pick(a.clerkId)}
-              className="rounded-lg px-2.5 py-1 text-left transition-colors"
-              style={pillStyle(selected === a.clerkId)}
-            >
-              <span className="block font-mono text-[10px] uppercase tracking-[0.1em]">
-                {a.name ?? a.clerkId}
-              </span>
-              <span className="block text-[9px] normal-case tracking-normal text-white/35">
-                {a.personaLabel} — {a.basis}
-              </span>
-            </button>
-          ))}
+          {athletes.map((a, i) => {
+            const prev = athletes[i - 1]
+            const showHeader = a.group && a.group !== prev?.group
+            return (
+              <div key={a.clerkId} className="flex flex-col gap-1">
+                {showHeader ? (
+                  <span className="mt-1.5 font-mono text-[8px] uppercase tracking-[0.2em] text-white/25">
+                    {a.group}
+                  </span>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => pick(a.clerkId)}
+                  className="rounded-lg px-2.5 py-1 text-left transition-colors"
+                  style={pillStyle(selected === a.clerkId)}
+                >
+                  <span className="block font-mono text-[10px] uppercase tracking-[0.1em]">
+                    {a.name ?? a.clerkId}
+                  </span>
+                  <span className="block text-[9px] normal-case tracking-normal text-white/35">
+                    {a.personaLabel} — {a.basis}
+                  </span>
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

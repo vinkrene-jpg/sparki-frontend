@@ -28,6 +28,16 @@ deployment with non-production NODE_ENV would silently grant access as a fallbac
 Frontend branch is dead-code-eliminated in prod builds via `import.meta.env.DEV`.
 Never relax either condition.
 
+## Persona switcher (kijk als gebruiker)
+The dev bar's "Kijk als gebruiker" switcher lists seeded personas grouped Atleten /
+Abonnement / Rol & leeftijd (registry `lib/preview-athletes.ts` PREVIEW_PERSONAS; seed
+`seed:preview`). Subscription personas are honestly fail-closed while
+variant_feature_grants is empty; coach/ouder personas need seeded accepted links or
+their screens are empty. Seed guard: hard-fail on email collision with a non-seed
+clerkId (ensureAccount re-links by email!); consentConfirmedAt is a FIXED date for
+deterministic re-runs. New roles (ploegleider, diëtist, …) get a registry row + spec
+only once the role truly exists — never fake roles the app doesn't know.
+
 ## Dev athlete switching (preview multiple seeded profiles)
 A dev-only `x-dev-clerk-id` request header lets the preview switch which seeded athlete
 is the active user, resolved per-request (not the process-cached default).
