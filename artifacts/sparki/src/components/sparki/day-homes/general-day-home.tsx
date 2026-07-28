@@ -69,7 +69,7 @@ export function GeneralDayHome({ briefing }: DayHomeComponentProps) {
   const isOnboarding = !isLoading && !profile
 
   return (
-    <ScreenShell section="Home" bg="/concept-lab.png">
+    <ScreenShell section="Home" bg="/atmosphere/training-renster-heide.webp">
       <HomeIntro kicker="VANDAAG" profile={profile} isLoading={isLoading} />
 
       {!isLoading && <DayTypeBriefing config={briefing} />}

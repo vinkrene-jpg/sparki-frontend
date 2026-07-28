@@ -50,7 +50,7 @@ export default function TesterWelcomePage() {
   const first = profile?.displayName?.split(" ")[0] ?? null
 
   return (
-    <ScreenShell section="welkom" bare bg="/concept-lab.png">
+    <ScreenShell section="welkom" bare bg="/atmosphere/samen-fietsen-bakstenen.webp">
       <div className="flex flex-col items-center pt-6 text-center">
         <span
           className="flex h-14 w-14 items-center justify-center rounded-2xl border"

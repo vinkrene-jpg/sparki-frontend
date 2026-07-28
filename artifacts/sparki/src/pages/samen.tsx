@@ -1370,7 +1370,7 @@ function ClubBanner() {
 
 export default function SamenPage() {
   return (
-    <ScreenShell section="samen">
+    <ScreenShell bg="/atmosphere/samen-koffiestop-stad.webp" section="samen">
       <section className="flex items-center gap-3">
         <span
           className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10"

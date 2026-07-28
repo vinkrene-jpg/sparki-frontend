@@ -1,0 +1,72 @@
+BOUW HET VOLLEDIGE ANALYSE-DASHBOARD OP DE (NU CORRECT ROUTENDE) 
+ANALYSE-PAGINA.
+
+COÖRDINATIE MET BESTAANDE QUEUE-TAAK
+Er staat al een aparte taak in de queue voor /you (profiel): 
+kerngrafieken naast elkaar in de profielweergave. Bouw de grafiek-
+componenten en databron-laag hier zo dat die taak dezelfde onder-
+liggende engine kan hergebruiken (summary-modus) in plaats van een 
+tweede, aparte implementatie te maken. Stem dit af vóór afronding — 
+niet twee keer dezelfde databron-koppeling bouwen.
+
+DATABRONNEN
+Gebruik de centrale datahub: TrainingPeaks indien gekoppeld, Garmin, 
+Strava, FIT/TCX, handmatige invoer. Geen mock/geschatte waarden.
+
+BOVENSTE SAMENVATTING
+Huidige trainingsbelasting; vorm/herstel; ontwikkeling; laatste 
+synchronisatie; databetrouwbaarheid.
+
+GRAFIEKEN (desktop: 2-3 kolommen naast elkaar, mobiel: gestapeld)
+- CTL/ATL/TSB of bestaande load-metrics;
+- trainingsvolume per week;
+- intensiteitsverdeling;
+- FTP-ontwikkeling;
+- W/kg en gewicht;
+- beste vermogens;
+- vormontwikkeling;
+- herstel/HRV/slaap indien beschikbaar.
+
+DOEL-OVERLAY (verplicht, dit ontbrak eerder)
+Als de gebruiker een doel/streefwaarde heeft ingesteld (streef-FTP, 
+streefgewicht, wedstrijddatum, doel-W/kg), toon dit als extra lijn, 
+band of marker in de bijbehorende grafiek naast de werkelijke data — 
+bijv. een horizontale streeplijn voor streef-FTP op de FTP-grafiek, 
+een verticale marker op de CTL/TSB-grafiek voor een aankomende 
+wedstrijddatum. Duidelijke, consistente kleurcodering: werkelijke 
+data vs. doel vs. historisch gemiddelde. Geen doellijn tonen als er 
+geen doel is ingesteld — dan gewoon de kale grafiek.
+
+INTERACTIE / "DOORPLUIZEN"
+- tijdvenster wisselen (week/maand/seizoen/aangepaste periode);
+- twee periodes kunnen vergelijken;
+- vanuit een punt in de grafiek doorklikken naar de onderliggende 
+  rit/sessie;
+- progressie/trend visueel duidelijk (richting, kleur, vergelijking 
+  met vorige periode), niet alleen een huidige waarde.
+
+WEINIG DATA
+Bij onvoldoende data: geen hoofdstukraster, geen lange uitlegkaarten, 
+één compacte eerlijke lege toestand per grafiek. Primaire actie: 
+Platform koppelen. Secundaire actie: Rit importeren. Nooit waarden 
+schatten of mockgrafieken tonen.
+
+VISUEEL
+Dezelfde actuele sidebar/shell. Rustige effen achtergrond (data 
+belangrijker dan sfeerbeeld). Desktopbreed, geen lange telefoonkolom.
+
+ACCEPTATIE
+- grafieken staan op desktop logisch naast elkaar, mobiel gestapeld;
+- doellijn verschijnt aantoonbaar zodra een doel is ingesteld, en 
+  verdwijnt/blijft weg zonder ingesteld doel;
+- kan inzoomen/periode vergelijken/doorklikken naar een sessie;
+- alleen echte data of eerlijke lege toestanden, geen mock.
+
+LEVER
+- lijst hergebruikte analysecomponenten/engines;
+- databron per grafiek;
+- screenshot van minstens één grafiek mét ingesteld doel (met 
+  zichtbare doellijn) en één zonder doel;
+- screenshot desktop en mobiel;
+- bevestiging dat de /you-taak in de queue dezelfde engine hergebruikt 
+  (niet een tweede aparte bouw).

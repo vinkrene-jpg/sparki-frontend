@@ -118,21 +118,36 @@ const FOCUS_RING =
 // item actief, wat klopt: desktop bereikt die inhoud via losse navigatie.)
 export function CommercialShell({
   actief,
+  bare = false,
+  achtergrond,
   children,
 }: {
   actief: string
+  /** Verberg zijbalk + onderbalk (onboarding, tester-welcome, wedstrijd-room). */
+  bare?: boolean
+  /**
+   * Optionele achtergrondlaag (bijv. de cinematische scène van legacy-
+   * hoofdstukken). Afwijken van de effen bg-app mag UITSLUITEND via deze
+   * prop — nooit via een eigen shell of eigen full-screen achtergrond.
+   */
+  achtergrond?: ReactNode
   children: ReactNode
 }) {
   const [, navigate] = useLocation()
-  const isActive = (href: string) => href === actief
+  // Prefix-match zodat ook diepere paden (/train/…, /routes/…) het juiste
+  // nav-item actief markeren — zelfde gedrag op desktop en mobiel.
+  const isActive = (href: string) =>
+    href === actief || (href.length > 1 && actief.startsWith(`${href}/`))
 
   return (
     // [overflow-x:clip] prevents page content from expanding the layout viewport,
     // which would shift the fixed bottom nav rightward on narrow screens.
     // clip (not hidden) avoids creating a scroll container so fixed children
     // keep their viewport-relative positioning.
-    <div className="min-h-dvh bg-app font-sans text-white [overflow-x:clip]">
+    <div className="relative min-h-dvh bg-app font-sans text-white [overflow-x:clip]">
+      {achtergrond}
       {/* Desktop — vaste linkernav met accountknop onderin */}
+      {!bare && (
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-border bg-app-deep/80 backdrop-blur lg:flex">
         <div className="type-wordmark px-6 pt-7">SPARKI</div>
         <nav className="mt-8 flex flex-col gap-1 px-3" aria-label="Hoofdmenu">
@@ -168,17 +183,22 @@ export function CommercialShell({
           </Link>
         </div>
       </aside>
+      )}
 
-      <main className="pb-28 lg:ml-56 lg:pb-16">{children}</main>
+      <main className={cn("relative z-10 pb-28 lg:pb-16", !bare && "lg:ml-56")}>
+        {children}
+      </main>
 
       {/* Mobiel — onderbalk via het centrale designsysteem */}
-      <div className="lg:hidden">
-        <DsMobileNav
-          items={MOBILE_NAV_ITEMS}
-          actiefPad={actief}
-          onNavigeer={(href) => navigate(href)}
-        />
-      </div>
+      {!bare && (
+        <div className="lg:hidden">
+          <DsMobileNav
+            items={MOBILE_NAV_ITEMS}
+            actiefPad={actief}
+            onNavigeer={(href) => navigate(href)}
+          />
+        </div>
+      )}
     </div>
   )
 }

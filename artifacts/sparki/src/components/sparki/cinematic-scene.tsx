@@ -195,10 +195,13 @@ function useParallax(enabled: boolean) {
 
 export function CinematicScene({
   scene = "home",
-  image = "/concept-lab.png",
+  image,
 }: {
   scene?: SceneName
-  image?: string
+  // Verplichte, bewuste keuze: een asset uit de atmosphere-bibliotheek, of
+  // expliciet null voor een rustige effen scène zonder foto. Er is bewust
+  // GEEN default meer — "altijd hetzelfde plaatje" was een bug, geen keuze.
+  image: string | null
 }) {
   const cfg = SCENES[scene]
   const motion = useCinematicMotion()
@@ -214,12 +217,14 @@ export function CinematicScene({
       {/* Parallax group — translated ≤5px on scroll. */}
       <div ref={parallaxRef} className="absolute inset-0 will-change-transform">
         {/* Foreground subject — clearly recognizable. */}
-        <img
-          src={image}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover"
-          style={{ opacity: cfg.imageOpacity }}
-        />
+        {image && (
+          <img
+            src={image}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ opacity: cfg.imageOpacity }}
+          />
+        )}
         {/* Cinematic blue/black gradient. */}
         <div className="absolute inset-0" style={{ background: cfg.gradient }} />
 

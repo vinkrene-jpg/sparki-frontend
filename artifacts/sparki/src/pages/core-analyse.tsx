@@ -39,6 +39,21 @@ import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { usePowerBests } from "@/hooks/use-power-bests"
 import { useGoalPicture, type Goal } from "@/hooks/use-goals"
 import { useRaces } from "@/hooks/use-races"
+import { useConnectors } from "@/hooks/use-connectors"
+import { useSeasonGoal } from "@/hooks/use-nutrition"
+import {
+  weekVolumeReeks,
+  intensiteitsVerdeling,
+  gewichtWkgReeks,
+  doelOverlays,
+  vergelijkReeks,
+  dataBetrouwbaarheid,
+  laatsteSync,
+  analyseSamenvatting,
+  alsGetal,
+  type DoelOverlays,
+  type WeekVolume,
+} from "@/lib/analyse-dashboard"
 import { computePerformanceRadar } from "@/lib/performance-radar"
 import { localISODate } from "@/lib/commercial-shell"
 import type { TrainingSession } from "@/lib/athlete-types"
@@ -151,6 +166,34 @@ function LFout({ titel, onOpnieuw }: { titel: string; onOpnieuw?: () => void }) 
   )
 }
 
+// ── Eerlijke lege toestand per grafiek ───────────────────────────────────────
+// Compact: één regel + twee acties. Nooit geschatte waarden of mockgrafieken.
+
+function LegeGrafiek({ titel }: { titel: string }) {
+  const [, navigate] = useLocation()
+  return (
+    <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 px-4 py-5 text-center">
+      <p className="text-sm text-slate-500">{titel}</p>
+      <div className="mt-3 flex justify-center gap-2">
+        <button
+          type="button"
+          onClick={() => navigate("/connect")}
+          className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60"
+        >
+          Platform koppelen
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate("/connect")}
+          className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60"
+        >
+          Rit importeren
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Stat-tegel ────────────────────────────────────────────────────────────────
 
 function StatTegel({
@@ -235,9 +278,15 @@ function TSBTooltip({
 function LoadGrafiek({
   chartData,
   periode,
+  raceMarkers = [],
+  vergelijk = false,
+  onDagKlik,
 }: {
   chartData: LoadData["chartData"]
   periode: number
+  raceMarkers?: DoelOverlays["raceMarkers"]
+  vergelijk?: boolean
+  onDagKlik?: (dateIso: string) => void
 }) {
   const gefilterd: LoadPunt[] = chartData.slice(-periode)
   const intervalStap = Math.max(1, Math.floor(gefilterd.length / 7))
@@ -249,6 +298,41 @@ function LoadGrafiek({
       </p>
     )
   }
+
+  // Vorige periode (grijs) over de huidige heen — uitgelijnd op index.
+  const metVorig = vergelijk ? vergelijkReeks(chartData, periode) : null
+  const basisData: Array<Record<string, unknown> & { date: string }> = metVorig ?? gefilterd
+  const heeftVorig = metVorig != null && metVorig.some((p) => p.vorigCtl != null)
+
+  // Wedstrijdmarkers: as loopt door tot de eerstvolgende wedstrijd (max 21
+  // dagen vooruit) zodat een aankomende wedstrijddatum zichtbaar is. Lege
+  // toekomstdagen krijgen géén waarden — alleen een as-positie, geen data.
+  const eerste = gefilterd[0]?.date ?? ""
+  const laatste = gefilterd[gefilterd.length - 1]?.date ?? ""
+  let ctlData = basisData
+  let asEinde = laatste
+  const volgendeRace = raceMarkers.find((r) => r.date > laatste)
+  if (volgendeRace && laatste) {
+    const cursor = new Date(`${laatste}T12:00:00`)
+    const extra: Array<{ date: string }> = []
+    for (let i = 0; i < 21; i++) {
+      cursor.setDate(cursor.getDate() + 1)
+      const iso = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`
+      extra.push({ date: iso })
+      if (iso >= volgendeRace.date) break
+    }
+    if (extra[extra.length - 1]?.date >= volgendeRace.date) {
+      ctlData = [...basisData, ...extra]
+      asEinde = extra[extra.length - 1].date
+    }
+  }
+  const zichtbareRaces = raceMarkers.filter((r) => r.date >= eerste && r.date <= asEinde)
+
+  const klik = onDagKlik
+    ? (state: { activeLabel?: string | number } | null) => {
+        if (state?.activeLabel) onDagKlik(String(state.activeLabel))
+      }
+    : undefined
 
   return (
     <div className="space-y-6">
@@ -268,18 +352,47 @@ function LoadGrafiek({
               />
               ATL (vermoeidheid)
             </span>
+            {heeftVorig && (
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block h-0.5 w-5 rounded bg-slate-300" />
+                Vorige periode (CTL)
+              </span>
+            )}
+            {zichtbareRaces.length > 0 && (
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block h-3 w-0.5 rounded" style={{ background: CHART.race }} />
+                Wedstrijd
+              </span>
+            )}
           </div>
         </div>
         <ResponsiveContainer width="100%" height={160}>
-          <LineChart data={gefilterd} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+          <ComposedChart data={ctlData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }} onClick={klik}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis dataKey="date" tickFormatter={fmtDatum} tick={{ fill: "#64748b", fontSize: 10 }} interval={intervalStap} />
             <YAxis tick={{ fill: "#64748b", fontSize: 10 }} domain={["auto", "auto"]} />
             <Tooltip content={(props) => <CTLATLTooltip {...(props as Parameters<typeof CTLATLTooltip>[0])} />} />
+            {heeftVorig && (
+              <Line type="monotone" dataKey="vorigCtl" stroke="#cbd5e1" strokeWidth={1.5} dot={false} name="Vorige periode" connectNulls={false} />
+            )}
+            {!vergelijk && (
+              <Line type="monotone" dataKey="atl" stroke={CHART.atl} strokeWidth={2} strokeDasharray="5 5" dot={false} name="ATL" />
+            )}
             <Line type="monotone" dataKey="ctl" stroke={CHART.ctl} strokeWidth={2} dot={false} name="CTL" />
-            <Line type="monotone" dataKey="atl" stroke={CHART.atl} strokeWidth={2} strokeDasharray="5 5" dot={false} name="ATL" />
-          </LineChart>
+            {zichtbareRaces.map((r) => (
+              <ReferenceLine
+                key={r.date}
+                x={r.date}
+                stroke={CHART.race}
+                strokeDasharray="4 3"
+                label={{ value: r.name.length > 14 ? `${r.name.slice(0, 13)}…` : r.name, position: "top", fill: CHART.race, fontSize: 9 }}
+              />
+            ))}
+          </ComposedChart>
         </ResponsiveContainer>
+        {onDagKlik && (
+          <p className="mt-1 text-[11px] text-slate-400">Klik op een dag om de sessie van die dag te openen.</p>
+        )}
       </div>
 
       {/* TSB */}
@@ -397,7 +510,175 @@ function OverzichtTab({
   )
 }
 
+// ── Trainingsvolume per week ─────────────────────────────────────────────────
+
+function VolumeTooltip({
+  active, payload, label,
+}: {
+  active?: boolean
+  payload?: Array<{ payload: WeekVolume }>
+  label?: string
+}) {
+  if (!active || !payload?.length) return null
+  const w = payload[0]?.payload
+  if (!w) return null
+  return (
+    <div className="bg-white border border-slate-200 rounded-lg shadow-sm px-3 py-2 text-xs">
+      <p className="font-medium text-slate-700 mb-1">Week van {label}</p>
+      <p className="tabular-nums text-slate-600">
+        {w.uren != null ? `${String(w.uren).replace(".", ",")} u` : "duur onbekend"}
+        {w.tss != null && ` · ${w.tss} TSS`} · {w.sessies} {w.sessies === 1 ? "sessie" : "sessies"}
+      </p>
+    </div>
+  )
+}
+
+function WeekVolumeCard({
+  sessies,
+  todayIso,
+  onWeekKlik,
+}: {
+  sessies: TrainingSession[]
+  todayIso: string
+  onWeekKlik: (weekStart: string) => void
+}) {
+  const reeks = weekVolumeReeks(sessies, todayIso, 12)
+  const heeftData = reeks.some((w) => w.sessies > 0)
+  return (
+    <LCard className="p-5">
+      <div className="flex items-center gap-1.5 mb-4">
+        <LCardTitle>Trainingsvolume per week</LCardTitle>
+        <span className="text-xs text-slate-400">12 weken</span>
+      </div>
+      {!heeftData ? (
+        <LegeGrafiek titel="Nog geen trainingsvolume om te tonen." />
+      ) : (
+        <>
+          <ResponsiveContainer width="100%" height={150}>
+            <ComposedChart
+              data={reeks}
+              margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
+              onClick={(state) => {
+                const s = state as { activePayload?: Array<{ payload: WeekVolume }> } | null
+                const w = s?.activePayload?.[0]?.payload
+                if (w && w.sessies > 0) onWeekKlik(w.weekStart)
+              }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="label" tick={{ fill: "#64748b", fontSize: 10 }} interval={1} />
+              <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
+              <Tooltip content={(props) => <VolumeTooltip {...(props as Parameters<typeof VolumeTooltip>[0])} />} />
+              <Bar dataKey="uren" name="Uren" maxBarSize={18} cursor="pointer">
+                {reeks.map((w, i) => (
+                  <Cell key={i} fill={w.sessies > 0 ? CHART.volume : "#e2e8f0"} opacity={0.85} />
+                ))}
+              </Bar>
+            </ComposedChart>
+          </ResponsiveContainer>
+          <p className="mt-1 text-[11px] text-slate-400">Uren per week. Klik op een week om de laatste sessie te openen.</p>
+        </>
+      )}
+    </LCard>
+  )
+}
+
+// ── Intensiteitsverdeling ────────────────────────────────────────────────────
+
+const INTENSITEIT_KLEUR: Record<string, string> = {
+  rustig: "#94a3b8",
+  stevig: CHART.ctl,
+  hard: CHART.atl,
+  onbekend: "#e2e8f0",
+}
+
+function IntensiteitCard({ sessies }: { sessies: TrainingSession[] }) {
+  const { buckets, totaalMin, bekendMin } = intensiteitsVerdeling(
+    sessies.map((s) => ({ id: s.id, sessionDate: s.sessionDate, durationMin: s.durationMin, tss: s.tss })),
+  )
+  return (
+    <LCard className="p-5">
+      <div className="flex items-center gap-1.5 mb-4">
+        <LCardTitle>Intensiteitsverdeling</LCardTitle>
+        <span className="text-xs text-slate-400">laatste sessies</span>
+      </div>
+      {totaalMin === 0 ? (
+        <LegeGrafiek titel="Nog geen sessies met duur om een verdeling te maken." />
+      ) : (
+        <>
+          <div className="flex h-4 w-full overflow-hidden rounded-full" role="img"
+            aria-label={buckets.map((b) => `${b.label}: ${Math.round(b.aandeel * 100)}%`).join(", ")}>
+            {buckets.filter((b) => b.minuten > 0).map((b) => (
+              <div key={b.key} style={{ width: `${b.aandeel * 100}%`, background: INTENSITEIT_KLEUR[b.key] }} />
+            ))}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+            {buckets.filter((b) => b.minuten > 0).map((b) => (
+              <span key={b.key} className="flex items-center gap-1.5">
+                <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: INTENSITEIT_KLEUR[b.key] }} />
+                {b.label} <strong className="tabular-nums">{Math.round(b.aandeel * 100)}%</strong>
+              </span>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-slate-400">
+            Afgeleid uit werkelijke belastingsscore en duur per sessie
+            {bekendMin < totaalMin && " — sessies zonder score tellen als onbekend"}.
+          </p>
+        </>
+      )}
+    </LCard>
+  )
+}
+
+// ── Slaap ────────────────────────────────────────────────────────────────────
+
+function SlaapCard({ metrics, periode }: { metrics: Array<{ metricDate: string; sleepHours?: number | string | null }>; periode: AnalysePeriode }) {
+  const reeks = metrics
+    .map((m) => ({ metricDate: m.metricDate, uren: alsGetal(m.sleepHours) }))
+    .filter((m): m is { metricDate: string; uren: number } => m.uren != null && m.uren > 0)
+    .sort((a, b) => a.metricDate.localeCompare(b.metricDate))
+    .slice(-periode)
+  const laatste = reeks[reeks.length - 1]
+  return (
+    <LCard className="p-5">
+      <div className="flex items-center gap-1.5 mb-4">
+        <LCardTitle>Slaap</LCardTitle>
+        <span className="text-xs text-slate-400">{periodeLabel(periode)}</span>
+      </div>
+      {reeks.length < 2 ? (
+        <MissingInputNotice compact showOrb={false}
+          title="Nog geen slaapdata"
+          description="Vul je slaap in bij de dagelijkse check-in of koppel een platform dat slaap levert."
+          targets={["checkin"]}
+          returnTo="/analyse"
+        />
+      ) : (
+        <>
+          <div className="flex items-baseline gap-1 mb-2">
+            <span className="num text-3xl font-light text-slate-900">{String(laatste.uren).replace(".", ",")}</span>
+            <span className="text-xs text-slate-400">u laatst gemeten</span>
+          </div>
+          <Sparkline
+            data={reeks.map((m) => m.uren)}
+            width={340}
+            height={44}
+            stroke={CHART.volume}
+            fill="rgba(139,92,246,0.07)"
+            className="w-full"
+          />
+        </>
+      )}
+    </LCard>
+  )
+}
+
 // ── Belasting-tabblad ─────────────────────────────────────────────────────────
+
+const GRAFIEK_PERIODES = [
+  { dagen: 7,   label: "Week"     },
+  { dagen: 28,  label: "Maand"    },
+  { dagen: 90,  label: "Kwartaal" },
+  { dagen: 182, label: "Seizoen"  },
+] as const
 
 function BelastingTab({
   load,
@@ -406,16 +687,25 @@ function BelastingTab({
   metrics,
   periode,
   onPeriode,
+  overlays,
+  todayIso,
+  onDagKlik,
+  onWeekKlik,
 }: {
   load: Bron<LoadData>
   sessies: Bron<TrainingSession[]>
   profiel: Profiel
-  metrics: Bron<Array<{ feelScore?: number | null; hrv?: number | null }>>
+  metrics: Bron<Array<{ metricDate: string; feelScore?: number | null; hrv?: number | null; sleepHours?: number | string | null }>>
   periode: AnalysePeriode
   onPeriode: (p: AnalysePeriode) => void
+  overlays: DoelOverlays
+  todayIso: string
+  onDagKlik: (dateIso: string) => void
+  onWeekKlik: (weekStart: string) => void
 }) {
   const loadToestand = toestandVan(load, load.data != null)
-  const [grafiekPeriode, setGrafiekPeriode] = useState<28 | 90>(90)
+  const [grafiekPeriode, setGrafiekPeriode] = useState<number>(90)
+  const [vergelijk, setVergelijk] = useState(false)
 
   // Radar axes — bestaande berekening
   const assen = computePerformanceRadar({
@@ -435,39 +725,68 @@ function BelastingTab({
 
   return (
     <div className="space-y-6">
-      {/* Load grafiek */}
+      {/* Load grafiek — volle breedte */}
       <LCard className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-1.5">
             <LCardTitle>Belastingsgrafiek</LCardTitle>
             <UitlegDot uitlegKey="belasting" label="Trainingsbelasting" />
           </div>
-          <div className="flex gap-1" role="group" aria-label="Grafiekperiode">
-            {([28, 90] as const).map((d) => (
+          <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Grafiekperiode">
+            {GRAFIEK_PERIODES.map((p) => (
               <button
-                key={d}
+                key={p.dagen}
                 type="button"
-                onClick={() => setGrafiekPeriode(d)}
-                aria-pressed={grafiekPeriode === d}
+                onClick={() => setGrafiekPeriode(p.dagen)}
+                aria-pressed={grafiekPeriode === p.dagen}
                 className={cn(
                   "min-h-8 rounded-lg border px-3 font-mono text-xs tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60",
-                  grafiekPeriode === d
+                  grafiekPeriode === p.dagen
                     ? "border-sky-500/60 bg-sky-50 text-sky-600 font-medium"
                     : "border-slate-200 text-slate-500 hover:text-slate-800",
                 )}
               >
-                {d}d
+                {p.label}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => setVergelijk((v) => !v)}
+              aria-pressed={vergelijk}
+              className={cn(
+                "min-h-8 rounded-lg border px-3 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60",
+                vergelijk
+                  ? "border-slate-400 bg-slate-100 text-slate-700 font-medium"
+                  : "border-slate-200 text-slate-500 hover:text-slate-800",
+              )}
+              title="Vergelijk met de vorige periode van gelijke lengte"
+            >
+              Vergelijk
+            </button>
           </div>
         </div>
 
         {loadToestand === "laden" && <Skel className="h-64 w-full" />}
         {loadToestand === "fout" && <LFout titel="Belastingsgrafiek kon niet worden geladen." onOpnieuw={() => void load.refetch()} />}
         {(loadToestand === "ok" || loadToestand === "verouderd") && load.data && (
-          <LoadGrafiek chartData={load.data.chartData} periode={grafiekPeriode} />
+          load.data.chartData.length >= 3 ? (
+            <LoadGrafiek
+              chartData={load.data.chartData}
+              periode={grafiekPeriode}
+              raceMarkers={overlays.raceMarkers}
+              vergelijk={vergelijk}
+              onDagKlik={onDagKlik}
+            />
+          ) : (
+            <LegeGrafiek titel="Nog te weinig belastingsdata voor een grafiek." />
+          )
         )}
       </LCard>
+
+      {/* Grid: volume + intensiteit + herstel — desktop naast elkaar */}
+      <div className="grid gap-6 lg:grid-cols-2">
+      <WeekVolumeCard sessies={sessies.data ?? []} todayIso={todayIso} onWeekKlik={onWeekKlik} />
+      <IntensiteitCard sessies={sessies.data ?? []} />
 
       {/* Readiness-trend */}
       <LCard className="p-5">
@@ -591,6 +910,9 @@ function BelastingTab({
           </p>
         )}
       </LCard>
+
+      <SlaapCard metrics={metrics.data ?? []} periode={periode} />
+      </div>
     </div>
   )
 }
@@ -669,27 +991,123 @@ function PowerBestsTable() {
   )
 }
 
+// ── Gewicht & W/kg ───────────────────────────────────────────────────────────
+
+function GewichtTooltip({
+  active, payload, label,
+}: {
+  active?: boolean
+  payload?: Array<{ payload: { kg: number; wkg: number | null } }>
+  label?: string
+}) {
+  if (!active || !payload?.length) return null
+  const p = payload[0]?.payload
+  if (!p) return null
+  return (
+    <div className="bg-white border border-slate-200 rounded-lg shadow-sm px-3 py-2 text-xs">
+      <p className="font-medium text-slate-700 mb-1">{label}</p>
+      <p className="tabular-nums text-slate-600">
+        {String(p.kg).replace(".", ",")} kg
+        {p.wkg != null && ` · ${String(p.wkg).replace(".", ",")} W/kg`}
+      </p>
+    </div>
+  )
+}
+
+function GewichtWkgCard({
+  metrics,
+  ftpTests,
+  profielFtp,
+  overlays,
+}: {
+  metrics: Array<{ metricDate: string; weightKg?: number | string | null }>
+  ftpTests: Array<{ ftpWatts: number; measuredAt: string }>
+  profielFtp: number | null
+  overlays: DoelOverlays
+}) {
+  const reeks = gewichtWkgReeks(metrics, ftpTests, profielFtp)
+  const heeftWkg = reeks.some((p) => p.wkg != null)
+  return (
+    <LCard className="p-5">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4">
+        <LCardTitle>Gewicht &amp; W/kg</LCardTitle>
+        <div className="flex items-center gap-4 text-xs text-slate-500">
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-0.5 w-5 rounded bg-slate-700" /> Gewicht
+          </span>
+          {heeftWkg && (
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-0.5 w-5 rounded" style={{ background: CHART.ftp }} /> W/kg
+            </span>
+          )}
+          {(overlays.streefGewichtKg != null || overlays.streefWkg != null) && (
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-0.5 w-5 rounded" style={{ background: CHART.goal, backgroundImage: `repeating-linear-gradient(90deg,${CHART.goal} 0,${CHART.goal} 4px,transparent 4px,transparent 8px)` }} /> Doel
+            </span>
+          )}
+        </div>
+      </div>
+      {reeks.length < 2 ? (
+        <LegeGrafiek titel="Nog geen gewichtsmetingen om een verloop te tonen." />
+      ) : (
+        <ResponsiveContainer width="100%" height={160}>
+          <ComposedChart data={reeks} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <XAxis dataKey="date" tickFormatter={fmtDatum} tick={{ fill: "#64748b", fontSize: 10 }} />
+            <YAxis yAxisId="kg" tick={{ fill: "#64748b", fontSize: 10 }} domain={["auto", "auto"]} />
+            <YAxis yAxisId="wkg" orientation="right" tick={{ fill: "#64748b", fontSize: 10 }} domain={["auto", "auto"]} hide={!heeftWkg} />
+            <Tooltip content={(props) => <GewichtTooltip {...(props as Parameters<typeof GewichtTooltip>[0])} />} />
+            <Line yAxisId="kg" type="monotone" dataKey="kg" stroke="#334155" strokeWidth={2} dot={false} name="Gewicht" />
+            {heeftWkg && (
+              <Line yAxisId="wkg" type="monotone" dataKey="wkg" stroke={CHART.ftp} strokeWidth={2} dot={false} name="W/kg" connectNulls={false} />
+            )}
+            {overlays.streefGewichtKg != null && (
+              <ReferenceLine yAxisId="kg" y={overlays.streefGewichtKg} stroke={CHART.goal} strokeDasharray="5 4"
+                label={{ value: `Streefgewicht ${String(overlays.streefGewichtKg).replace(".", ",")} kg`, position: "insideTopLeft", fill: CHART.goal, fontSize: 10 }} />
+            )}
+            {overlays.streefWkg != null && heeftWkg && (
+              <ReferenceLine yAxisId="wkg" y={overlays.streefWkg} stroke={CHART.goal} strokeDasharray="5 4"
+                label={{ value: `Doel ${String(overlays.streefWkg).replace(".", ",")} W/kg`, position: "insideBottomRight", fill: CHART.goal, fontSize: 10 }} />
+            )}
+          </ComposedChart>
+        </ResponsiveContainer>
+      )}
+    </LCard>
+  )
+}
+
 function ProgressieTab({
   load,
   sessies,
   ftp,
   profiel,
+  metrics,
+  overlays,
 }: {
   load: Bron<LoadData>
   sessies: Bron<TrainingSession[]>
   ftp: Bron<Array<{ ftpWatts: number; measuredAt: string }>>
   profiel: Profiel
+  metrics: Bron<Array<{ metricDate: string; weightKg?: number | string | null }>>
+  overlays: DoelOverlays
 }) {
   const weergave = ftp.data ? ftpWeergave(ftp.data, profiel?.ftp ?? null) : null
   const [, navigate] = useLocation()
 
   return (
     <div className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-2">
       {/* FTP-ontwikkeling */}
       <LCard className="p-5">
         <div className="flex items-center gap-1.5 mb-4">
           <LCardTitle>FTP-ontwikkeling</LCardTitle>
           <UitlegDot uitlegKey="ftpOntwikkeling" label="FTP-ontwikkeling" />
+          {overlays.streefFtp != null && (
+            <span className="flex items-center gap-1.5 text-xs text-slate-500 ml-2">
+              <span className="inline-block h-0.5 w-5 rounded" style={{ background: CHART.goal, backgroundImage: `repeating-linear-gradient(90deg,${CHART.goal} 0,${CHART.goal} 4px,transparent 4px,transparent 8px)` }} />
+              Streef-FTP {overlays.streefFtp} W
+            </span>
+          )}
         </div>
         {ftp.isLoading ? (
           <Skel className="h-24 w-full" />
@@ -717,40 +1135,54 @@ function ProgressieTab({
               )}
             </div>
             {weergave.gesorteerd.length > 0 && (
-              <div aria-hidden="true" className="flex items-end gap-2 h-20">
-                {weergave.gesorteerd.map((t, i) => {
-                  const hoogte = weergave.maxWatts > 0
-                    ? Math.max(8, Math.round((t.ftpWatts / weergave.maxWatts) * 100))
-                    : 0
-                  const laatste = i === weergave.gesorteerd.length - 1
-                  return (
-                    <div key={`${t.measuredAt}-${i}`} className="flex flex-1 flex-col items-center gap-1.5">
-                      <div className="flex h-16 w-full max-w-12 items-end">
-                        <div
-                          className="w-full rounded-t-sm transition-all"
-                          style={{
-                            height: `${hoogte}%`,
-                            background: laatste ? CHART.ftp : "#e2e8f0",
-                          }}
-                        />
-                      </div>
-                      <span className="font-mono text-[9px] text-slate-400">{maandLabel(t.measuredAt)}</span>
-                    </div>
-                  )
-                })}
-              </div>
+              <ResponsiveContainer width="100%" height={110}>
+                <ComposedChart
+                  data={weergave.gesorteerd.map((t) => ({ ...t, maand: maandLabel(t.measuredAt) }))}
+                  margin={{ top: 12, right: 8, left: -24, bottom: 0 }}
+                >
+                  <XAxis dataKey="maand" tick={{ fill: "#94a3b8", fontSize: 9 }} interval={0} />
+                  <YAxis
+                    tick={{ fill: "#94a3b8", fontSize: 9 }}
+                    domain={[
+                      (min: number) => Math.floor(Math.min(min, overlays.streefFtp ?? min) * 0.9),
+                      (max: number) => Math.ceil(Math.max(max, overlays.streefFtp ?? max) * 1.05),
+                    ]}
+                  />
+                  <Bar dataKey="ftpWatts" name="FTP" maxBarSize={28} radius={[3, 3, 0, 0]}>
+                    {weergave.gesorteerd.map((t, i) => (
+                      <Cell key={`${t.measuredAt}-${i}`} fill={i === weergave.gesorteerd.length - 1 ? CHART.ftp : "#e2e8f0"} />
+                    ))}
+                  </Bar>
+                  {overlays.streefFtp != null && (
+                    <ReferenceLine
+                      y={overlays.streefFtp}
+                      stroke={CHART.goal}
+                      strokeDasharray="5 4"
+                      label={{ value: `Streef-FTP ${overlays.streefFtp} W`, position: "insideTopRight", fill: CHART.goal, fontSize: 10 }}
+                    />
+                  )}
+                </ComposedChart>
+              </ResponsiveContainer>
             )}
           </>
         )}
       </LCard>
 
+      <GewichtWkgCard
+        metrics={metrics.data ?? []}
+        ftpTests={ftp.data ?? []}
+        profielFtp={profiel?.ftp ?? null}
+        overlays={overlays}
+      />
+
       {/* Persoonlijke records (vermogen) */}
-      <LCard className="p-5">
+      <LCard className="p-5 lg:col-span-2">
         <div className="flex items-center justify-between gap-3 mb-4">
           <LCardTitle>Persoonlijke vermogensrecords</LCardTitle>
         </div>
         <PowerBestsTable />
       </LCard>
+      </div>
 
       {/* Trainingsverloop (bestaande component in dark container) */}
       <div className="rounded-xl bg-slate-900 p-4 pt-5">
@@ -992,10 +1424,128 @@ function SessiesTab({
   )
 }
 
+// ── Bovenste samenvatting ─────────────────────────────────────────────────────
+// Huidige belasting · vorm/herstel · ontwikkeling · laatste sync ·
+// databetrouwbaarheid — alles uit dezelfde engine als de grafieken.
+
+function synclabel(momentIso: string): string {
+  const d = new Date(momentIso)
+  if (Number.isNaN(d.getTime())) return momentIso.slice(0, 10)
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+}
+
+const BETROUWBAARHEID_KLEUR = {
+  hoog: CHART.tsbPos,
+  beperkt: CHART.warn,
+  laag: CHART.tsbNeg,
+  geen: CHART.missing,
+} as const
+
+function SamenvattingStrip({
+  load,
+  ftpTests,
+  profiel,
+  metrics,
+  sessies,
+  todayIso,
+}: {
+  load: Bron<LoadData>
+  ftpTests: Array<{ ftpWatts: number; measuredAt: string }>
+  profiel: Profiel
+  metrics: Array<{ metricDate: string; weightKg?: number | string | null }>
+  sessies: TrainingSession[]
+  todayIso: string
+}) {
+  const connectors = useConnectors()
+  const kern = analyseSamenvatting({
+    load: load.data ? { ctl: load.data.ctl, atl: load.data.atl, tsb: load.data.tsb } : null,
+    ftpTests,
+    profielFtp: profiel?.ftp ?? null,
+    metrics,
+  })
+  const sync = laatsteSync(
+    (connectors.data ?? []).map((c) => ({ displayName: c.displayName, status: c.status, lastSyncAt: c.lastSyncAt })),
+  )
+  const kwaliteit = dataBetrouwbaarheid(
+    sessies.map((s) => ({ id: s.id, sessionDate: s.sessionDate, durationMin: s.durationMin, tss: s.tss })),
+    todayIso,
+  )
+
+  const cel = (label: string, waarde: ReactNode, sub?: string) => (
+    <div className="min-w-0">
+      <LLabel>{label}</LLabel>
+      <div className="mt-0.5 text-sm text-slate-900">{waarde}</div>
+      {sub && <p className="truncate text-[10px] text-slate-400">{sub}</p>}
+    </div>
+  )
+
+  return (
+    <LCard className="p-4">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 lg:grid-cols-5">
+        {cel(
+          "Belasting",
+          kern.ctl != null
+            ? <span className="tabular-nums" style={{ color: CHART.ctl }}>{kern.ctl} <span className="text-xs text-slate-400">CTL</span></span>
+            : <span className="text-slate-300">—</span>,
+          kern.atl != null ? `vermoeidheid ${kern.atl}` : undefined,
+        )}
+        {cel(
+          "Vorm & herstel",
+          kern.tsb != null
+            ? <span className="tabular-nums" style={{ color: kern.tsb >= 0 ? CHART.tsbPos : CHART.tsbNeg }}>{kern.tsb > 0 ? "+" : ""}{kern.tsb}</span>
+            : <span className="text-slate-300">—</span>,
+          kern.vormLabel ?? undefined,
+        )}
+        {cel(
+          "Ontwikkeling",
+          kern.ftp != null
+            ? (
+              <span className="tabular-nums" style={{ color: CHART.ftp }}>
+                {kern.ftp} W
+                {kern.ftpDelta != null && (
+                  <span className="ml-1 text-xs" style={{ color: kern.ftpDelta > 0 ? CHART.tsbPos : kern.ftpDelta < 0 ? CHART.tsbNeg : CHART.missing }}>
+                    {kern.ftpDelta > 0 ? "+" : ""}{kern.ftpDelta}
+                  </span>
+                )}
+              </span>
+            )
+            : <span className="text-slate-300">—</span>,
+          kern.wkg != null ? `${String(kern.wkg).replace(".", ",")} W/kg` : undefined,
+        )}
+        {cel(
+          "Laatste sync",
+          sync
+            ? <span className="tabular-nums">{synclabel(sync.moment)}</span>
+            : <span className="text-slate-400">geen koppeling</span>,
+          sync?.bron,
+        )}
+        {cel(
+          "Databetrouwbaarheid",
+          <span className="capitalize" style={{ color: BETROUWBAARHEID_KLEUR[kwaliteit.label] }}>{kwaliteit.label}</span>,
+          kwaliteit.reden,
+        )}
+      </div>
+    </LCard>
+  )
+}
+
 // ── Hoofdpagina ───────────────────────────────────────────────────────────────
 
 export default function CoreAnalysePage() {
-  const [activeTab, setActiveTab] = useState<Tab>("overzicht")
+  // Deep-linkbaar tabblad: /analyse?tab=belasting opent direct dat tabblad.
+  const initieleTab = (): Tab => {
+    const t = new URLSearchParams(window.location.search).get("tab")
+    return TABS.some((tab) => tab.id === t) ? (t as Tab) : "overzicht"
+  }
+  const [activeTab, setActiveTabState] = useState<Tab>(initieleTab)
+  // Tab-wissel schrijft de query terug zodat de URL altijd deelbaar blijft.
+  const setActiveTab = (tab: Tab) => {
+    setActiveTabState(tab)
+    const url = new URL(window.location.href)
+    if (tab === "overzicht") url.searchParams.delete("tab")
+    else url.searchParams.set("tab", tab)
+    window.history.replaceState(null, "", url.pathname + url.search)
+  }
   const [openSessie, setOpenSessie] = useState<TrainingSession | null>(null)
   const [periode, setPeriode] = useState<AnalysePeriode>(30)
 
@@ -1006,6 +1556,40 @@ export default function CoreAnalysePage() {
   const metrics = useDailyMetrics(90)
   const profielQuery = useAthleteExtendedProfile()
   const profiel = profielQuery.data as Profiel
+  const todayIso = localISODate(new Date())
+
+  // Doel-overlays — alleen echte, actief ingestelde doelen; anders kale grafiek.
+  const { data: goalPicture } = useGoalPicture()
+  const seasonGoal = useSeasonGoal(true)
+  const { data: races } = useRaces()
+  const overlays = doelOverlays({
+    goals: (goalPicture?.goals ?? []).map((g) => ({
+      status: g.status,
+      measure: g.measure,
+      targetValue: g.targetValue,
+      targetDate: g.targetDate,
+      title: g.title,
+    })),
+    seasonGoalTargetKg:
+      seasonGoal.data?.eligible === true ? seasonGoal.data.goal.targetWeightKg : null,
+    races: (races ?? []).map((r) => ({ name: r.name, raceDate: r.raceDate, status: r.status })),
+    todayIso,
+  })
+
+  // Doorklikken vanuit een grafiekpunt naar de onderliggende sessie.
+  const openOpDatum = (dateIso: string) => {
+    const dag = (sessies.data ?? []).filter((s) => s.sessionDate === dateIso.slice(0, 10))
+    if (dag.length > 0) setOpenSessie(dag[0])
+  }
+  const openOpWeek = (weekStart: string) => {
+    const eind = new Date(`${weekStart}T12:00:00`)
+    eind.setDate(eind.getDate() + 6)
+    const eindIso = localISODate(eind)
+    const week = (sessies.data ?? [])
+      .filter((s) => s.sessionDate >= weekStart && s.sessionDate <= eindIso)
+      .sort((a, b) => b.sessionDate.localeCompare(a.sessionDate))
+    if (week.length > 0) setOpenSessie(week[0])
+  }
 
   const wkg = profiel?.ftp && profiel?.weightKg
     ? (profiel.ftp / profiel.weightKg).toFixed(1).replace(".", ",")
@@ -1061,7 +1645,17 @@ export default function CoreAnalysePage() {
         </div>
 
         {/* Tab-inhoud */}
-        <div className="mx-auto max-w-5xl px-4 py-6 lg:px-8">
+        <div className="mx-auto max-w-5xl px-4 py-6 lg:px-8 space-y-6">
+          {/* Bovenste samenvatting — zichtbaar op elk tabblad */}
+          <SamenvattingStrip
+            load={load}
+            ftpTests={ftp.data ?? []}
+            profiel={profiel}
+            metrics={metrics.data ?? []}
+            sessies={sessies.data ?? []}
+            todayIso={todayIso}
+          />
+
           <div id="tab-overzicht"  role="tabpanel" hidden={activeTab !== "overzicht"}>
             <OverzichtTab load={load} profiel={profiel} sessies={sessies} />
           </div>
@@ -1073,10 +1667,14 @@ export default function CoreAnalysePage() {
               metrics={metrics}
               periode={periode}
               onPeriode={setPeriode}
+              overlays={overlays}
+              todayIso={todayIso}
+              onDagKlik={openOpDatum}
+              onWeekKlik={openOpWeek}
             />
           </div>
           <div id="tab-progressie" role="tabpanel" hidden={activeTab !== "progressie"}>
-            <ProgressieTab load={load} sessies={sessies} ftp={ftp} profiel={profiel} />
+            <ProgressieTab load={load} sessies={sessies} ftp={ftp} profiel={profiel} metrics={metrics} overlays={overlays} />
           </div>
           <div id="tab-doelen"     role="tabpanel" hidden={activeTab !== "doelen"}>
             {activeTab === "doelen" && <DoelenTab />}

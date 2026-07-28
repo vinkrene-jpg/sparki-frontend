@@ -339,7 +339,7 @@ export function CoachHome() {
   }
 
   return (
-    <ScreenShell section="Coach" bg="/concept-lab.png">
+    <ScreenShell section="Coach" bg="/atmosphere/samen-renners-gesprek.webp">
       <div className="space-y-5">
         <div>
           <SectionLabel n="01" title="Jouw sporters" />

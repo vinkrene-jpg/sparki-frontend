@@ -1,5 +1,30 @@
 import { useEffect, useRef, useState } from "react"
 import { Target, Check, X, ChevronDown, Plus } from "lucide-react"
+
+// "Waarom is dit nodig?"-disclosure onder de lege doelen-toestand: korte
+// actie eerst, de volledige uitleg alleen op verzoek.
+function GoalsEmptyWaarom() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="text-[11px] text-white/45 underline underline-offset-2 transition-colors hover:text-white/70"
+      >
+        Waarom is dit nodig?
+      </button>
+      {open && (
+        <p className="mt-1.5 text-[12px] leading-relaxed text-white/55">
+          Er staan nog geen doelen in je profiel en er zijn geen aankomende
+          A/B-wedstrijden om een doel uit af te leiden. Met een doel of
+          wedstrijd meet Sparki je opbouw af aan waar je naartoe wilt.
+        </p>
+      )}
+    </div>
+  )
+}
 import {
   useGoalPicture,
   useCreateGoal,
@@ -483,18 +508,18 @@ export function GoalsWorksheet({ autoAdd = false }: { autoAdd?: boolean }) {
               <Target className="h-3.5 w-3.5 text-cyan-300" strokeWidth={2} />
             </span>
             <div>
-              <p className="text-[14px] font-medium text-white/90">Nog geen doelen bekend</p>
-              <p className="mt-1 text-[12px] leading-relaxed text-white/55">
-                Er staan nog geen doelen in je profiel en er zijn geen aankomende
-                A/B-wedstrijden om een doel uit af te leiden.
-              </p>
+              <p className="text-[14px] font-medium text-white/90">Voeg je eerstvolgende doel toe</p>
               <button
                 type="button"
                 onClick={() => setAdding(true)}
-                className="mt-3 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 transition-colors hover:text-cyan-300"
+                className="mt-2.5 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 transition-colors hover:text-cyan-300"
               >
                 <Plus className="h-3 w-3" strokeWidth={2.5} /> Leg je doel vast
               </button>
+              <p className="mt-2 text-[12px] leading-relaxed text-white/55">
+                Dan meet Sparki je training daaraan af.
+              </p>
+              <GoalsEmptyWaarom />
             </div>
           </div>
         </div>

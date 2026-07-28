@@ -1,0 +1,51 @@
+HERSTEL UITSLUITEND DE ROUTE EN PAGINA ANALYSE.
+
+PROBLEEM
+Wanneer in de desktop-sidebar "Analyse" actief is, wordt de oude 
+Start/hoofdstukkenpagina getoond (breadcrumb START, hoofdstuktegel-
+raster, garage-melding, naam "Dev", oude donkere achtergrond).
+
+FASE 1 — FORENSISCHE ROUTEAUDIT
+Controleer: naar welke route de sidebarlink Analyse wijst; welke 
+React-component die route werkelijk rendert; waarom StartPage/
+hoofdstukkenraster wordt geladen; welke oude fallback of redirect 
+actief is; waar de naam "Dev" vandaan komt; of er al een bestaande 
+Analyse-, Lab-, load- of performance-component bestaat.
+Gebruik bestaande functionaliteit. Bouw geen tweede parallel product.
+
+FASE 2 — ROUTEFIX
+De sidebarlink Analyse wijst naar één officiële analyseroute; die 
+route rendert nooit StartPage; Start/hoofdstukknoppen blijven alleen 
+op het echte startoverzicht; active-state in de sidebar klopt; 
+directe URL, browser-refresh en terugnavigatie geven hetzelfde resultaat.
+
+FASE 3 — MINIMALE PAGINA-INHOUD (tijdelijk)
+Toon op de Analyse-route de bestaande analysefunctionaliteit indien 
+aanwezig, anders een eerlijke minimale placeholder ("Analyse-dashboard 
+volgt" + beschikbare basisdata). De volledige dashboardinhoud (grafieken, 
+doellijnen, interactie) komt in een aparte, latere opdracht — niet hier 
+uitbreiden.
+
+FASE 4 — DATA-TRUST "DEV"
+Onderzoek Clerk-profiel, databaseprofiel, hardcoded naam, seed/mock/
+fallback, localStorage/sessionStorage, testpersona. Toon uitsluitend 
+de echte gebruikersnaam. Bij ontbrekende naam: laat de naam weg of 
+toon "Analyse". Nooit "Dev", "Lars" of een andere fallbackpersoon.
+
+FASE 5 — VISUEEL
+Gebruik dezelfde actuele sidebar en shell als de andere hoofdgebieden. 
+Geen oude StartPage-layout. Geen zware donkere full-screen achtergrond.
+
+ACCEPTATIE
+- Analyse opent aantoonbaar geen Start-pagina;
+- geen hoofdstukknoppen op Analyse;
+- geen Start-breadcrumb;
+- geen Dev/Lars/fallbacknaam;
+- URL/refresh/sidebarlink/terugnavigatie consistent.
+
+LEVER
+- oorzaak van de verkeerde routing;
+- oude en nieuwe routecomponent;
+- waar "Dev" vandaan kwam en hoe opgelost;
+- screenshot desktop en mobiel;
+- tests voor directe URL, refresh, sidebarlink.

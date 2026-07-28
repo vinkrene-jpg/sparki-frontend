@@ -715,7 +715,7 @@ export default function CoachCockpitPage() {
   if (!athleteId) return null
 
   return (
-    <ScreenShell section="Coach" terug={false} bg="/concept-lab.png">
+    <ScreenShell section="Coach" terug={false} bg="/atmosphere/wedstrijd-renster-bergen.webp">
       <div className="space-y-6">
         <div className="flex items-center justify-between gap-3">
           <Link

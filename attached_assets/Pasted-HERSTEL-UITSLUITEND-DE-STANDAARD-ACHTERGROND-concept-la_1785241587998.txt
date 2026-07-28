@@ -1,0 +1,51 @@
+HERSTEL UITSLUITEND DE STANDAARD ACHTERGROND "/concept-lab.png".
+
+PROBLEEM
+"/concept-lab.png" is de hardcoded default-waarde van de bg-/image-prop 
+in ScreenShell (components/sparki/screen-shell.tsx, regel ~200) en 
+CinematicScene (components/sparki/cinematic-scene.tsx, regel ~196). 
+Vrijwel alle schermen die deze twee componenten gebruiken zonder 
+expliciet een ander beeld mee te geven, tonen daardoor dezelfde 
+donkere sfeerfoto — onder meer alle dag-thuispagina's (rust, herstel, 
+wedstrijddag, reisdag, noodgeval, algemeen, race-week, dag-voor-race, 
+briefing-only, na-race), coach-home, parent-home, races, 
+wedstrijd-room, invitations, journey, coach-cockpit, en de 
+tester-pagina's.
+
+FASE 1 — INVENTARISATIE
+Maak een tabel van alle plekken die ScreenShell/CinematicScene 
+aanroepen zonder expliciete bg/image-prop (dus die op de default 
+terugvallen). Voor elk: bestandsnaam, sectie/context (bijv. "rustdag", 
+"coach-home", "wedstrijd-room"), en wat voor sfeer daar inhoudelijk 
+bij zou passen.
+
+FASE 2 — ATMOSPHERE-KOPPELING PER SCHERM
+Ken elk scherm uit fase 1 een bewust gekozen asset toe uit de 
+bestaande atmosphere-library (niet één generieke default voor alles). 
+Waar geen passende foto bestaat, gebruik een rustige effen achtergrond 
+in plaats van een foto — geen foto is een geldige, bewuste keuze, 
+"altijd hetzelfde plaatje" niet. Verwijder de default-waarde 
+"/concept-lab.png" uit ScreenShell en CinematicScene zelf, zodat 
+elke aanroeper verplicht een bewuste keuze meegeeft (of expliciet 
+"geen foto" kiest) in plaats van stilzwijgend terug te vallen.
+
+FASE 3 — GEEN GLOBALE ZWARE OVERLAY
+Controleer bij het vervangen dat er geen zware donkere globale 
+overlay/kleurfilter overblijft die de oorspronkelijke warme/lichte 
+uitstraling van de nieuwe foto's tenietdoet. Lokale gradient alleen 
+achter tekst, niet over het hele scherm.
+
+ACCEPTATIE
+- ScreenShell en CinematicScene hebben geen "/concept-lab.png" meer 
+  als default-waarde;
+- elk gecontroleerd scherm toont aantoonbaar een bewust gekozen asset 
+  of bewust geen foto — niet dezelfde donkere renner/foto overal;
+- geen enkel scherm crasht door het ontbreken van een bg/image-prop 
+  (elke aanroeper is expliciet gemaakt).
+
+LEVER
+- de fase 1-tabel (scherm → oude default → nieuwe asset/keuze);
+- screenshot van minstens vijf verschillende schermen uit de lijst, 
+  vóór en ná;
+- bevestiging dat de default-waarde uit de twee kerncomponenten is 
+  verwijderd (bestand + regelnummer).

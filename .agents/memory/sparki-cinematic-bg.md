@@ -51,3 +51,8 @@ that passes `section="Home"` gets its own content buried beneath the day-coachin
 stack — looks like the route "didn't match" when it actually did.
 **Fix:** pass `bare` (suppresses all injected surfaces) + a neutral section whose
 label is meaningful (unknown keys fall back to section.toUpperCase()).
+
+## Achtergrond is een verplichte keuze (jul 2026)
+- ScreenShell `bg` en CinematicScene `image` zijn nu VERPLICHT `string | null` — geen default meer. `null` = bewuste rustige effen scène (geen `<img>`, scène-lagen blijven).
+- **Why:** de oude default "/concept-lab.png" zette stilzwijgend dezelfde foto op tientallen schermen; elke aanroeper moet nu bewust een atmosphere-asset of `null` kiezen.
+- **How to apply:** nieuw scherm met ScreenShell → kies asset uit lib/atmosphere-library (paginaVoorkeur helpt) of expliciet `bg={null}`; nooit een default terugzetten.

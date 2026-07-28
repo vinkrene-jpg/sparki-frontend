@@ -28,7 +28,7 @@ export function RestDayHome({ briefing }: DayHomeComponentProps) {
   const profile = data?.athleteProfile
 
   return (
-    <ScreenShell section="Home" bg="/concept-lab.png">
+    <ScreenShell section="Home" bg="/atmosphere/samen-koffiestop-zon.webp">
       <HomeIntro kicker="RUSTDAG" profile={profile} isLoading={isLoading} />
 
       {!isLoading && <DayTypeBriefing config={briefing} />}

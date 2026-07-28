@@ -14,7 +14,7 @@ export function BriefingOnlyHome({ briefing }: DayHomeComponentProps) {
   const profile = data?.athleteProfile
 
   return (
-    <ScreenShell section="Home" bg="/concept-lab.png">
+    <ScreenShell section="Home" bg="/atmosphere/routes-weg-ochtend-mist.webp">
       <HomeIntro kicker={briefing.eyebrow} profile={profile} isLoading={isLoading} />
 
       {!isLoading && <DayTypeBriefing config={briefing} />}

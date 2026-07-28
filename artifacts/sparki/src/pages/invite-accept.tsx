@@ -88,7 +88,7 @@ export default function InviteAcceptPage() {
   }, [invite])
 
   return (
-    <ScreenShell section="Home" bg="/concept-lab.png">
+    <ScreenShell section="Home" bg="/atmosphere/samen-groepsrit-zee.webp">
       <header>
         <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70">
           UITNODIGING

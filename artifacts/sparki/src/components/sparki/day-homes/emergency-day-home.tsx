@@ -32,7 +32,7 @@ export function EmergencyDayHome({ briefing }: DayHomeComponentProps) {
   const status = profile?.healthStatus
 
   return (
-    <ScreenShell section="Home" bg="/concept-lab.png">
+    <ScreenShell section="Home" bg={null}>
       <HomeIntro
         kicker={status === "injured" ? "BLESSURE" : "HERSTEL VEREIST"}
         profile={profile}

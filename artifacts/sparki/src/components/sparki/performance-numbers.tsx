@@ -19,10 +19,54 @@ const WINDOWS: Array<{ key: string; label: string }> = [
   { key: "1200", label: "20 min" },
 ]
 
-function Card({ children }: { children: React.ReactNode }) {
+function Card({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+    <div
+      className={`flex h-full flex-col rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md ${className ?? ""}`}
+    >
       {children}
+    </div>
+  )
+}
+
+// Compacte lege-grafiek: ghost-balken tonen wáár de data komt, met één korte
+// eerlijke regel + eventuele actie. Vervangt lange tekst-lege-states.
+const GHOST_BARS = [38, 62, 30, 78, 48, 70, 34, 58, 44, 66]
+function EmptyChart({
+  caption,
+  actionLabel,
+  onAction,
+}: {
+  caption: string
+  actionLabel?: string
+  onAction?: () => void
+}) {
+  return (
+    <div className="mt-3 flex flex-1 flex-col justify-end">
+      <div className="flex h-16 items-end gap-1.5" aria-hidden>
+        {GHOST_BARS.map((h, i) => (
+          <div
+            key={i}
+            className="flex-1 rounded-sm bg-white/[0.05]"
+            style={{ height: `${h}%` }}
+          />
+        ))}
+      </div>
+      <div className="mt-2.5 text-[11px] leading-relaxed text-white/40">
+        {caption}
+        {actionLabel && onAction && (
+          <>
+            {" "}
+            <button
+              type="button"
+              onClick={onAction}
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 transition-colors hover:text-cyan-300"
+            >
+              {actionLabel} →
+            </button>
+          </>
+        )}
+      </div>
     </div>
   )
 }
@@ -127,7 +171,7 @@ export function PerformanceNumbers({
   }
 
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-3">
       {/* KERNGETALLEN */}
       <Card>
         <MicroLabel>Kerngetallen</MicroLabel>
@@ -217,15 +261,43 @@ export function PerformanceNumbers({
             />
           </div>
         ) : (
-          <p className="mt-2.5 text-[13px] leading-relaxed text-white/55">
-            Nog geen trainingsbelasting bekend — dit vult zich zodra ritten met
-            belastingscore binnenkomen.
-          </p>
+          <EmptyChart caption="Nog geen trainingsbelasting bekend — dit vult zich zodra ritten met belastingscore binnenkomen." />
+        )}
+      </Card>
+
+      {/* VERWACHTE PROGRESSIE — bandbreedte richting je doel */}
+      <Card>
+        <MicroLabel>Verwachte progressie</MicroLabel>
+        {bandbreedte.hasData && bandbreedte.current != null ? (
+          <>
+            <div className="mt-3 flex items-stretch">
+              <Stat value={String(bandbreedte.current)} unit={bandbreedte.unit} label="Nu" />
+              <div className="border-l border-white/[0.07]" />
+              <Stat
+                value={String(bandbreedte.expected)}
+                unit={bandbreedte.unit}
+                label="Verwacht"
+                accent
+              />
+              <div className="border-l border-white/[0.07]" />
+              <Stat
+                value={`${bandbreedte.low}–${bandbreedte.high}`}
+                unit={bandbreedte.unit}
+                label="Bandbreedte"
+              />
+            </div>
+            <p className="mt-3 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-white/40">
+              Schatting voor {bandbreedte.horizonLabel}, afgewogen tegen je doel. Een
+              realistische bandbreedte, geen belofte.
+            </p>
+          </>
+        ) : (
+          <EmptyChart caption="Nog geen progressie-schatting mogelijk — die ontstaat zodra FTP en trainingsdata er zijn." />
         )}
       </Card>
 
       {/* BESTE VERMOGENS — tabel per venster */}
-      <Card>
+      <Card className="lg:col-span-2">
         <span className="inline-flex items-center gap-1">
           <MicroLabel>Beste vermogens</MicroLabel>
           <UitlegDot uitlegKey="records" label="Beste vermogens" persoonlijk={persoonlijk} />
@@ -289,33 +361,18 @@ export function PerformanceNumbers({
             </p>
           </>
         ) : (
-          <>
-            <p className="mt-2.5 text-[13px] leading-relaxed text-white/65">
-              Nog geen beste vermogens bekend.
-            </p>
-            <p className="mt-1.5 text-[12px] leading-relaxed text-white/45">
-              Deze tabel vult zich met je echte piekwaarden (5 seconden tot 20
-              minuten) zodra je een rit met vermogensmeting importeert als FIT- of
-              TCX-bestand. Eerder geïmporteerde ritten tellen niet mee — importeer
-              ze opnieuw als je die erbij wilt. Er wordt niets geschat.
-            </p>
-            <button
-              type="button"
-              onClick={() => startFix("sportData")}
-              className="mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-semibold text-[#05070e] transition hover:brightness-110"
-              style={{ background: ACCENT }}
-            >
-              Rit importeren
-              <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.25} />
-            </button>
-          </>
+          <EmptyChart
+            caption="Nog geen echte piekwaarden (5 sec–20 min). Vult zich zodra je een rit met vermogensmeting importeert als FIT of TCX — eerder geïmporteerde ritten tellen pas mee na opnieuw importeren. Er wordt niets geschat."
+            actionLabel="Rit importeren"
+            onAction={() => startFix("sportData")}
+          />
         )}
       </Card>
 
       {/* FTP-VERLOOP — metingen als tabel */}
-      {ftpRows.length > 0 && (
-        <Card>
-          <MicroLabel>FTP-verloop</MicroLabel>
+      <Card>
+        <MicroLabel>FTP-verloop</MicroLabel>
+        {ftpRows.length > 0 ? (
           <table className="mt-3 w-full border-collapse text-left">
             <tbody>
               {ftpRows.map((entry, i) => {
@@ -352,35 +409,15 @@ export function PerformanceNumbers({
               })}
             </tbody>
           </table>
-        </Card>
-      )}
+        ) : (
+          <EmptyChart
+            caption="Nog geen FTP-metingen vastgelegd."
+            actionLabel="FTP invullen"
+            onAction={() => startFix("ftp")}
+          />
+        )}
+      </Card>
 
-      {/* VERWACHTE PROGRESSIE — bandbreedte richting je doel */}
-      {bandbreedte.hasData && bandbreedte.current != null && (
-        <Card>
-          <MicroLabel>Verwachte progressie</MicroLabel>
-          <div className="mt-3 flex items-stretch">
-            <Stat value={String(bandbreedte.current)} unit={bandbreedte.unit} label="Nu" />
-            <div className="border-l border-white/[0.07]" />
-            <Stat
-              value={String(bandbreedte.expected)}
-              unit={bandbreedte.unit}
-              label="Verwacht"
-              accent
-            />
-            <div className="border-l border-white/[0.07]" />
-            <Stat
-              value={`${bandbreedte.low}–${bandbreedte.high}`}
-              unit={bandbreedte.unit}
-              label="Bandbreedte"
-            />
-          </div>
-          <p className="mt-3 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-white/40">
-            Schatting voor {bandbreedte.horizonLabel}, afgewogen tegen je doel. Een
-            realistische bandbreedte, geen belofte.
-          </p>
-        </Card>
-      )}
     </div>
   )
 }

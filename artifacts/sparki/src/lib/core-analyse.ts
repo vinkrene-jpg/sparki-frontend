@@ -78,11 +78,18 @@ export function contextRegel(
     | undefined,
 ): string | null {
   if (!profiel) return null;
-  const delen: string[] = [profiel.displayName || "Atleet"];
+  const delen: string[] = [];
+  // Alleen een échte gebruikersnaam tonen. Ontbreekt de naam, dan laten we hem
+  // weg — nooit een fallbackpersoon ("Atleet", "Dev", testpersona's e.d.).
+  const naam = (profiel.displayName ?? "").trim();
+  if (naam && !PLACEHOLDER_NAAM.test(naam)) delen.push(naam);
   if (profiel.ftp) delen.push(`FTP ${profiel.ftp}W`);
   if (profiel.wkg) delen.push(`${profiel.wkg} W/kg`);
-  return delen.join(" · ");
+  return delen.length > 0 ? delen.join(" · ") : null;
 }
+
+// Dev-/testpersona's die nooit als echte naam gepresenteerd mogen worden.
+const PLACEHOLDER_NAAM = /^(dev(\s|$)|dev preview$|test(er)?(\s|$)|lars$|atleet$)/i;
 
 /** Dekking van de radar — bestaande eerlijke copy, ongewijzigd. */
 export function dekkingRegel(meetbaar: number, totaal: number): string {

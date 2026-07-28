@@ -32,7 +32,7 @@ export function TravelDayHome({ briefing }: DayHomeComponentProps) {
   const race = context?.race ?? null
 
   return (
-    <ScreenShell section="Home" bg="/concept-lab.png">
+    <ScreenShell section="Home" bg="/atmosphere/wedstrijd-volgauto-grijs.webp">
       <HomeIntro kicker="REISDAG" profile={profile} isLoading={isLoading} />
 
       {!isLoading && <DayTypeBriefing config={briefing} />}

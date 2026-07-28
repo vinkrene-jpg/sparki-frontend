@@ -184,7 +184,7 @@ function OpsLogPanel() {
 
 export default function AdminOpsPage() {
   return (
-    <ScreenShell section="admin" terug={false}>
+    <ScreenShell bg={null} section="admin" terug={false}>
       <div className="px-4 pb-24 pt-2">
         <div className="mb-4 flex items-center justify-between">
           <h1 className="text-lg font-semibold text-white">Operationeel beheer</h1>

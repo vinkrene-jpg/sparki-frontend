@@ -52,7 +52,7 @@ export function useKnowledge(opts: {
   const type = opts.type ?? "";
 
   return useQuery({
-    queryKey: queryKeys.knowledge.list(q, discipline, type),
+    queryKey: [...queryKeys.knowledge.list(q, discipline, type), opts.limit ?? 0],
     queryFn: () => {
       const params = new URLSearchParams();
       if (q) params.set("q", q);

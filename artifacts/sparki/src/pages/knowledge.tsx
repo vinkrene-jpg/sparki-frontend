@@ -506,7 +506,7 @@ export default function KnowledgePage() {
 
   if (!flagOn) {
     return (
-      <ScreenShell section="Kennisbank">
+      <ScreenShell bg={null} section="Kennisbank">
         <div className="py-16 text-center">
           <p className="text-[12px] text-white/30">
             De kennisbank is nog niet ingeschakeld voor jouw account.
@@ -517,7 +517,7 @@ export default function KnowledgePage() {
   }
 
   return (
-    <ScreenShell section="Kennisbank">
+    <ScreenShell bg={null} section="Kennisbank">
       {/* TAB SWITCHER */}
       <div className="-mt-2 flex gap-1 rounded-full border border-white/[0.08] bg-white/[0.03] p-1">
         {([

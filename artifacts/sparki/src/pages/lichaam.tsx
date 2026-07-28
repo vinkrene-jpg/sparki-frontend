@@ -15,7 +15,7 @@ export default function LichaamPage() {
   const [checkinOpen, setCheckinOpen] = useState(false)
 
   return (
-    <ScreenShell section="lichaam">
+    <ScreenShell bg={null} section="lichaam">
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight text-white">
           Lichaam

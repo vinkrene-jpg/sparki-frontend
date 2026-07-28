@@ -87,7 +87,7 @@ const dayHomeRegistry: Record<
 
 function DayHomeLoading() {
   return (
-    <ScreenShell section="Home" bg="/concept-lab.png">
+    <ScreenShell section="Home" bg="/atmosphere/training-renster-heide.webp">
       <div className="space-y-6">
         <Skeleton className="h-6 w-48" />
         <Skeleton className="h-40 w-full rounded-2xl" />
@@ -257,7 +257,7 @@ function StateDayHome() {
   // composition, check-in inside the State Card, inline gear nudge intact). ──
   if (!fase2) {
     return (
-      <ScreenShell section="Home" bg="/concept-lab.png">
+      <ScreenShell section="Home" bg="/atmosphere/training-renster-heide.webp">
         <StateCard
           checkInFirst
           onShowDetails={() => homeView?.setView("full")}
@@ -310,7 +310,7 @@ function StateDayHome() {
   }
 
   return (
-    <ScreenShell section="Home" bg="/concept-lab.png">
+    <ScreenShell section="Home" bg="/atmosphere/training-renster-heide.webp">
       {/* ── The single leading Momentblok (§5.1) — exactly one thing leads ── */}
       {leadMoment === "health" ? (
         <HealthMomentBlock />

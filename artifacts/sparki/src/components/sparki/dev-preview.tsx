@@ -18,8 +18,8 @@ import SprintenPage from "@/pages/sprinten"
 import SupportPage from "@/pages/support"
 import ProfielPage from "@/pages/profiel"
 import FeedPage from "@/pages/feed"
-import LabPage from "@/pages/lab"
-import ActiviteitenPage from "@/pages/activiteiten"
+import CoreAnalysePage from "@/pages/core-analyse"
+import CoreActiviteitenPage from "@/pages/core-activiteiten"
 import PhotoLabPage from "@/pages/photo-lab"
 import YouPage from "@/pages/you"
 import GeluidPage from "@/pages/geluid"
@@ -423,10 +423,15 @@ export function DevPreview() {
   } else if (location.startsWith("/feed")) {
     page = <FeedPage />
     showNav = false
-  } else if (location.startsWith("/lab")) {
-    page = <LabPage />
+  } else if (location.startsWith("/lab") || location.startsWith("/analyse")) {
+    // commercial_shell is globally enabled — mirror AnalyseSwitchPage in the
+    // real router (/lab redirects to /analyse there).
+    page = <CoreAnalysePage />
+    showNav = false
   } else if (location.startsWith("/activiteiten")) {
-    page = <ActiviteitenPage />
+    // Mirrors ActiviteitenSwitchPage with commercial_shell on.
+    page = <CoreActiviteitenPage />
+    showNav = false
   } else if (location.startsWith("/you")) {
     page = <YouPage />
   } else if (location.startsWith("/geluid")) {

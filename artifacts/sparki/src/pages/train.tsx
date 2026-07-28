@@ -246,7 +246,7 @@ export default function TrainPage() {
     .toUpperCase()
 
   return (
-    <ScreenShell section="Train">
+    <ScreenShell bg="/atmosphere/routes-weg-heuvels-mist.webp" section="Train">
       <p className="-mt-2 font-mono text-[10px] tracking-[0.28em] text-white/35">
         {dayLabel} · JOUW TRAINING
       </p>

@@ -110,7 +110,16 @@ test("periodes: bestaande keuze 14/30/90 met leesbaar label", () => {
 test("contextRegel: alleen echte onderdelen, geen verzonnen cijfers", () => {
   assert.equal(contextRegel(null), null);
   assert.equal(contextRegel(undefined), null);
-  assert.equal(contextRegel({}), "Atleet");
+  // Ontbrekende naam: geen fallbackpersoon — de naam wordt weggelaten.
+  assert.equal(contextRegel({}), null);
+  assert.equal(contextRegel({ displayName: "Dev Preview", ftp: 250 }), "FTP 250W");
+  assert.equal(contextRegel({ displayName: "Dev" }), null);
+  assert.equal(contextRegel({ displayName: "Lars" }), null);
+  assert.equal(contextRegel({ displayName: "Atleet" }), null);
+  // Echte namen die op placeholders lijken blijven gewoon zichtbaar.
+  assert.equal(contextRegel({ displayName: "Devon" }), "Devon");
+  assert.equal(contextRegel({ displayName: "Testa" }), "Testa");
+  assert.equal(contextRegel({ displayName: "Lars Boom" }), "Lars Boom");
   assert.equal(
     contextRegel({ displayName: "René", ftp: 250, wkg: "3,4" }),
     "René · FTP 250W · 3,4 W/kg",

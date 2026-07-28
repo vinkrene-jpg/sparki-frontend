@@ -73,6 +73,8 @@ export type GoalFit = {
   verdict: GoalVerdict
   headline: string
   reason: string
+  /** Langere toelichting, in de UI ingeklapt achter een "Meer uitleg"-link. */
+  detail?: string
   /** What Sparki still needs to judge more sharply (honest uncertainty). */
   needs: string[]
 }
@@ -100,9 +102,10 @@ export function judgeGoalFit(args: {
   if (!race) {
     return {
       verdict: "onbekend",
-      headline: "Nog geen doel om naartoe te trainen",
-      reason:
-        "Zonder doel of wedstrijd is er geen maatstaf voor of je training de goede kant op gaat. Voeg een doel toe, dan wordt elk advies daarop afgestemd.",
+      headline: "Voeg je eerstvolgende doel toe",
+      reason: "Dan wordt elk advies daarop afgestemd.",
+      detail:
+        "Zonder doel of wedstrijd is er geen maatstaf voor of je training de goede kant op gaat. Met een doel weegt Sparki je opbouw, je vermoeidheid en je planning af tegen waar je naartoe wilt.",
       needs: ["een doel of wedstrijd"],
     }
   }
@@ -120,8 +123,9 @@ export function judgeGoalFit(args: {
     return {
       verdict: "onbekend",
       headline: `Nog ${weeksAway} ${weeksAway === 1 ? "week" : "weken"} tot ${goalLabel}`,
-      reason:
-        "Er is nog te weinig gelogde belasting om je opbouw richting dit doel te beoordelen. Log je trainingen of koppel een platform, dan wordt je koers zichtbaar.",
+      reason: "Nog te weinig gelogde belasting om je koers te beoordelen.",
+      detail:
+        "Sparki heeft minimaal twee weken aan gelogde trainingen nodig om je opbouw richting dit doel eerlijk te beoordelen. Log je trainingen of koppel een platform, dan wordt je koers zichtbaar.",
       needs: ["meer gelogde trainingen om je opbouw te beoordelen"],
     }
   }

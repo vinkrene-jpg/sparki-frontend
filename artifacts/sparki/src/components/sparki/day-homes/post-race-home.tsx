@@ -28,7 +28,7 @@ export function PostRaceHome({ briefing }: DayHomeComponentProps) {
   const race = context?.race ?? null
 
   return (
-    <ScreenShell section="Home" bg="/concept-lab.png">
+    <ScreenShell section="Home" bg="/atmosphere/samen-koffiestop-close.webp">
       <HomeIntro kicker="NA DE RACE" profile={profile} isLoading={isLoading} />
 
       {!isLoading && <DayTypeBriefing config={briefing} />}

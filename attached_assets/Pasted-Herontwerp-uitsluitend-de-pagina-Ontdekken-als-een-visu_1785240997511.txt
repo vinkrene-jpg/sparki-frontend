@@ -1,0 +1,125 @@
+Herontwerp uitsluitend de pagina Ontdekken als een visuele, persoonlijke wielerfeed.
+
+PROBLEEM
+De huidige pagina is een lange tekstlijst en voelt als een nieuwsarchief. De pagina is niet uitnodigend, bevat te veel tekst en gebruikt nauwelijks beeld.
+
+DOEL
+Maak van Ontdekken een visuele feed, geïnspireerd op Instagram en moderne sportapps, maar rustiger, inhoudelijker en passend bij Sparki.
+
+BOUW:
+
+1. FEEDSTRUCTUUR
+Maak één doorlopende visuele feed met kaarten.
+
+Per kaart:
+- grote afbeelding of korte video;
+- titel maximaal 2 regels;
+- bron;
+- tijdstip;
+- korte samenvatting maximaal 2-3 regels;
+- categorie;
+- acties:
+  - openen;
+  - bewaren;
+  - delen;
+  - minder hiervan.
+
+2. FEEDTYPEN
+Ondersteun minimaal:
+- nieuws;
+- korte video;
+- route;
+- klim;
+- materiaal;
+- trainingstip;
+- wedstrijd;
+- vrienden/team;
+- evenement;
+- Sparki-inzicht.
+
+3. BOVENNAVIGATIE
+Toon compacte filters:
+- Voor jou
+- Vrienden
+- Wedstrijd
+- Routes
+- Materiaal
+
+Geen grote hoeveelheid tabbladen.
+
+4. PERSONALISATIE
+Sorteer op:
+- discipline;
+- niveau;
+- doelen;
+- locatie;
+- vrienden/team;
+- eerdere interacties;
+- opgeslagen onderwerpen.
+
+Gebruik alleen echte data.
+Geen mockfeed als echte persoonlijke inhoud tonen.
+
+5. TEKSTREDUCTIE
+- Geen lange artikelbeschrijvingen in de feed.
+- Titel maximaal 2 regels.
+- Samenvatting maximaal 3 regels.
+- Volledige tekst pas na openen.
+- Toon maximaal één duidelijke primaire actie per kaart.
+
+6. DESKTOP
+Gebruik:
+- brede feedkolom;
+- optionele rechterzijbalk met:
+  - trending;
+  - komende wedstrijden;
+  - routes in de buurt;
+  - opgeslagen items.
+
+7. MOBIEL
+- één kolom;
+- beeld eerst;
+- swipe/scroll-vriendelijk;
+- geen horizontale overflow;
+- video muted autoplay alleen wanneer veilig en zuinig;
+- respecteer reduced motion.
+
+8. VISUELE STIJL
+- gebruik de centrale atmosphere-assetbibliotheek;
+- lichte en warme beelden;
+- geen zware donkere overlay;
+- kaarten mogen rustiger en lichter zijn;
+- voldoende contrast;
+- geen tekst over drukke delen van foto’s.
+
+9. OUDE ONDERDELEN
+Behoud:
+- trends;
+- kennisbank;
+- klimmen;
+- nieuws.
+
+Maar plaats deze achter:
+- feedfilters;
+- sectiepagina’s;
+- of een compacte “Meer ontdekken”-ingang.
+
+Niet alles tegelijk onder elkaar tonen.
+
+10. TEST
+Test:
+- desktop 1440 px;
+- mobiel 390 px;
+- geen overflow;
+- geen tekstafkapping;
+- geen lege grote vlakken;
+- feed voelt visueel en afwisselend;
+- minimaal 5 verschillende kaarttypen zichtbaar in testdata.
+
+LEVER:
+- voor/na-screenshots;
+- route en bestanden;
+- componentstructuur;
+- databronnen per kaarttype;
+- personalisatielogica;
+- bevestiging dat bestaande nieuws-, route- en vriendendata behouden blijven.

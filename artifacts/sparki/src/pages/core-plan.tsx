@@ -275,14 +275,12 @@ function GeselecteerdeDagKaart({
           <DsState
             soort="leeg"
             titel="Geen activiteit op deze dag"
-            beschrijving="Op deze dag is geen training gelogd of gepland."
           />
         ) : (
           // Toekomstige dag — voeg toe
           <DsState
             soort="leeg"
             titel="Geen training gepland"
-            beschrijving="Er staat niets gepland voor deze dag."
             actie={{ label: "Training toevoegen", onClick: onOpenAdd }}
           />
         )
@@ -893,19 +891,23 @@ function PatronenSection() {
         <DsCard>
           {hasSessions ? (
             <>
-              <p className="type-body text-content-secondary mb-3">
-                Je trainingen zijn er, maar er zijn nog geen patronen vastgelegd. Je gegevens worden doorzocht op verbanden.
-              </p>
               <DsButton variant="primair" onClick={() => runConnections.mutate()} loading={runConnections.isPending}>
                 Verbanden analyseren
               </DsButton>
+              <p className="type-body text-content-secondary mt-3">
+                Er zijn nog geen patronen vastgelegd.
+              </p>
             </>
           ) : (
             <DsState 
               soort="leeg" 
               titel="Nog te weinig trainingen voor patronen"
-              beschrijving="Patronen worden pas zichtbaar na een paar weken aan gelogde trainingen. Log je trainingen of koppel een platform."
+              beschrijving="Log je trainingen of koppel een platform."
               actie={{ label: "Log een training", onClick: () => navigate("/train?focus=logsession") }}
+              uitleg={{
+                tekst:
+                  "Patronen worden pas zichtbaar na een paar weken aan gelogde trainingen — dan kan Sparki verbanden leggen tussen je belasting, herstel en vorm.",
+              }}
             />
           )}
         </DsCard>

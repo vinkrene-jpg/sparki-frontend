@@ -159,7 +159,7 @@ export default function InvitationsPage() {
   }
 
   return (
-    <ScreenShell section="You" terug={false} bg="/concept-lab.png">
+    <ScreenShell section="You" terug={false} bg="/atmosphere/samen-groepsrit-winter.webp">
       <header>
         <button
           type="button"

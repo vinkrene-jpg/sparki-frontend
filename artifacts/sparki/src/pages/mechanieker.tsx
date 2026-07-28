@@ -11,7 +11,7 @@ import { SectionLabel } from "@/components/sparki/ui"
 // en foto-gedreven advies over je fiets en uitrusting.
 export default function MechaniekerPage() {
   return (
-    <ScreenShell section="mechanieker">
+    <ScreenShell bg="/atmosphere/samen-fietsen-bakstenen.webp" section="mechanieker">
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight text-white">
           Mechanieker

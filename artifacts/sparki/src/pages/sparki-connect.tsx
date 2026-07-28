@@ -16,7 +16,7 @@ export default function SparkiConnectPage() {
   const [, setLocation] = useLocation()
 
   return (
-    <ScreenShell section="meer" bare terug={false}>
+    <ScreenShell bg={null} section="meer" bare terug={false}>
       <button
         type="button"
         onClick={() => setLocation("/meer")}

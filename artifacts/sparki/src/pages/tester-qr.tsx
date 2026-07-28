@@ -249,7 +249,7 @@ export default function TesterQrPage() {
   }
 
   return (
-    <ScreenShell section="You" terug={false} bg="/concept-lab.png">
+    <ScreenShell section="You" terug={false} bg={null}>
       <header>
         <button
           type="button"

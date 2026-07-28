@@ -1,0 +1,45 @@
+HERSTEL UITSLUITEND DE GEDEELDE LAYOUT-SHELL VOOR ALLE HOOFDPAGINA'S.
+
+PROBLEEM
+Meerdere pagina's (Plan, Rijden, Ontdekken, Activiteiten, Analyse) 
+tonen wisselend een oude layout en/of zware zwarte achtergrond, 
+ondanks eerdere per-pagina fixes. Dit wijst op het ontbreken van 
+één dwingende gedeelde shell-component.
+
+FASE 1 — INVENTARISATIE (forensisch, geen fix nog)
+Maak een tabel: per hoofdroute (Vandaag, Plan, Rijden, Activiteiten, 
+Analyse, Ontdekken, Samen, Wedstrijd, Lichaam, Mechanieker, Routes, 
+Kalender, Jij) — welke shell-/layoutcomponent rendert die pagina 
+daadwerkelijk (exacte componentnaam en bestandspad), en is dat 
+dezelfde component als bij de andere routes of een eigen/oude variant?
+
+FASE 2 — ÉÉN GEDEELDE SHELL, GEEN UITZONDERINGEN
+Zorg dat alle hoofdpagina's verplicht dezelfde shell-component 
+gebruiken voor: sidebar (desktop), bottom-nav (mobiel), topbar, 
+contentcontainer, achtergrond, breakpoints, spacing, active-states. 
+Geen pagina mag een eigen/oude layout-wrapper of eigen achtergrond-
+logica meer hebben. Als een pagina bewust mag afwijken (bijv. 
+data-intensieve pagina met effen achtergrond), moet dat via een 
+prop/config van de GEDEELDE shell, niet via een eigen aparte 
+component.
+
+FASE 3 — VERWIJDER OUDE VARIANTEN
+Verwijder of deactiveer oude/losse shell- en layoutcomponenten die 
+nu nog los bestaan naast de gedeelde shell, zodat er geen route meer 
+kan terugvallen op een verouderde variant.
+
+ACCEPTATIE
+- alle 13 hoofdroutes gebruiken aantoonbaar dezelfde shell-component 
+  (bewijs: componentnaam identiek in de tabel van fase 1, herhaald 
+  na de fix);
+- geen enkele hoofdroute toont nog een zware zwarte/donkere 
+  full-screen achtergrond tenzij bewust via de gedeelde shell 
+  ingesteld;
+- directe URL, refresh en sidebarnavigatie geven op elke route 
+  hetzelfde, consistente resultaat.
+
+LEVER
+- de fase 1-tabel, vóór en ná de fix;
+- lijst van verwijderde/gedeactiveerde oude shell-varianten;
+- screenshot van elke hoofdroute op 1440px en 390px, ná de fix, 
+  in dezelfde volgorde als de tabel.

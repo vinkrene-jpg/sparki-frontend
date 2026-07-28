@@ -600,7 +600,7 @@ export function ParentHome() {
   }
 
   return (
-    <ScreenShell section="Ouder" bg="/concept-lab.png">
+    <ScreenShell section="Ouder" bg="/atmosphere/samen-fietsen-terras.webp">
       <div className="space-y-5">
         <div>
           <SectionLabel n="01" title="Welzijn & veiligheid" />

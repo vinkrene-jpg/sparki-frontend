@@ -188,7 +188,7 @@ export default function LabPage() {
   const strongestAxis = [...measurableAxes].sort((a, b) => b.level - a.level)[0]
 
   return (
-    <ScreenShell section="Lab">
+    <ScreenShell bg={null} section="Lab">
       {/* INTRO */}
       <div className="-mt-2">
         <div className="flex items-center justify-between gap-3">

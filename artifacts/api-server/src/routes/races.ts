@@ -172,6 +172,182 @@ router.get("/insight", requireAuth, async (req, res) => {
   }
 });
 
+// ── GET /api/races/wizard-proposal ──────────────────────────────────────────
+// Stap 4 van de wizard: deterministische prioriteit/doel/voorbereiding-voorstel.
+// Gebaseerd op echte athletedata — nooit verzonnen. Elk voorstel draagt een
+// confidence-getal en een leesbare basis, zodat de atleet kan beoordelen of het
+// voorstel past. De atleet beslist altijd: accepteren / wijzigen / overslaan.
+router.get("/wizard-proposal", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const raceDate = req.query["raceDate"] ? String(req.query["raceDate"]) : "";
+  const discipline = req.query["discipline"]
+    ? String(req.query["discipline"])
+    : null;
+  const distanceKmRaw = req.query["distanceKm"]
+    ? Number(req.query["distanceKm"])
+    : null;
+  const distanceKm =
+    distanceKmRaw != null && Number.isFinite(distanceKmRaw)
+      ? distanceKmRaw
+      : null;
+
+  if (!raceDate) {
+    res.status(400).json({ error: "raceDate is required" });
+    return;
+  }
+
+  try {
+    const [athlete] = await db
+      .select()
+      .from(athleteProfilesTable)
+      .where(eq(athleteProfilesTable.clerkId, clerkId));
+
+    // Bestaande A-wedstrijden dit seizoen tellen (echt, niet verzonnen).
+    const year = raceDate.slice(0, 4);
+    const existingRaces = await db
+      .select({ priority: racesTable.priority, raceDate: racesTable.raceDate })
+      .from(racesTable)
+      .where(eq(racesTable.clerkId, clerkId));
+    const aRacesThisSeason = existingRaces.filter(
+      (r) => r.priority === "A" && r.raceDate.startsWith(year),
+    ).length;
+
+    // Dagen tot wedstrijd.
+    const today = new Date();
+    const raceDay = new Date(raceDate);
+    const daysUntil = Math.max(
+      0,
+      Math.round(
+        (raceDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      ),
+    );
+
+    const exp = athlete?.experienceLevel ?? null;
+    const disc = (discipline ?? "").toLowerCase();
+    const isTT = /tijdrit|time.?trial|tt\b|chrono/.test(disc);
+    const isCrit = /crit|kermis|baan|track/.test(disc);
+
+    // ── Prioriteit ───────────────────────────────────────────────────────────
+    let priorityValue: "A" | "B" | "C";
+    let priorityRationale: string;
+    let priorityConfidence: number;
+
+    if (isTT) {
+      priorityValue = "B";
+      priorityRationale =
+        "Tijdritten zijn doorgaans ondersteuning voor je seizoensdoelen, geen prioriteitspiek — tenzij jij ze als hoofddoel ziet.";
+      priorityConfidence = 0.55;
+    } else if (aRacesThisSeason === 0 && distanceKm != null && distanceKm >= 100) {
+      priorityValue = "A";
+      priorityRationale = `Lange koers (${distanceKm} km) en nog geen A-doelen dit seizoen — dit kan je piekwedstrijd zijn.`;
+      priorityConfidence = 0.68;
+    } else if (aRacesThisSeason >= 2) {
+      priorityValue = "C";
+      priorityRationale = `Je hebt al ${aRacesThisSeason} A-wedstrijden dit seizoen gepland. Te veel topprioriteiten verzwakt je piek — overweeg C tenzij dit echt een kernwedstrijd is.`;
+      priorityConfidence = 0.62;
+    } else if (!isCrit && distanceKm != null && distanceKm >= 60) {
+      priorityValue = "B";
+      priorityRationale =
+        "Substantiële afstand — een goede B-wedstrijd om te testen en scherp te rijden zonder volledige taper.";
+      priorityConfidence = 0.58;
+    } else {
+      priorityValue = "C";
+      priorityRationale =
+        "Korte of lokale wedstrijd — scherp rijden en ervaring opdoen, zonder bijzondere piektaper.";
+      priorityConfidence = 0.55;
+    }
+
+    // ── Doel ─────────────────────────────────────────────────────────────────
+    type GoalProposal = { text: string; rationale: string } | null;
+    let goal: GoalProposal = null;
+
+    if (exp === "beginner") {
+      goal = {
+        text: "Finishen en de wedstrijdbeleving opdoen.",
+        rationale:
+          "Als beginner is afmaken en de belevenis kennen waardevoller dan plaatsing nastreven.",
+      };
+    } else if (isTT && athlete?.ftp != null) {
+      goal = {
+        text: `Persoonlijk record verbeteren: rijd de eerste helft iets onder ${Math.round(athlete.ftp * 0.95)} W en bouw de tweede helft op.`,
+        rationale: `FTP ${athlete.ftp} W als basis; tijdrit-tactiek is licht negatief split.`,
+      };
+    } else if (isTT) {
+      goal = {
+        text: "Persoonlijk record verbeteren — rijd even en bouw in de tweede helft op.",
+        rationale: "Tijdrit-tactiek: licht negatief split presteert het best.",
+      };
+    } else if (exp === "intermediate" && distanceKm != null && distanceKm > 80) {
+      goal = {
+        text: "De hele koers in de voorste groep meerijden en de finale actief beleven.",
+        rationale:
+          "Op dit niveau en deze afstand is positie bewaken en de finale meemaken een realistisch én uitdagend doel.",
+      };
+    } else if (exp === "advanced" || exp === "elite") {
+      goal = {
+        text: "Actief koersen, waaiers en versnellingen opvolgen en in de eindspurt meedoen.",
+        rationale:
+          "Met je niveau kun je de koers actief beïnvloeden — passief wachten leidt zelden tot het beste resultaat.",
+      };
+    } else if (exp === "intermediate") {
+      goal = {
+        text: "Zo lang mogelijk vooraan meerijden en de koersstijl van gevorderde rijders observeren.",
+        rationale: "Technische leerschool boven pure plaatsing stellen is op dit niveau het snelst groeiende doel.",
+      };
+    }
+    // exp === null → geen voorstel; eerlijk "onvoldoende data"
+
+    // ── Voorbereiding ─────────────────────────────────────────────────────────
+    let prepText: string;
+    let prepRationale: string;
+
+    if (daysUntil <= 3) {
+      prepText =
+        "Laatste 3 dagen: maximaal herstel. Geen zware sessies — hooguit één korte scherpte-prikkel (10–15 min). Slaap, eet koolhydraatrijk, bevestig logistiek.";
+      prepRationale = `Nog ${daysUntil} dag${daysUntil === 1 ? "" : "en"} — nu is rust de enige winst.`;
+    } else if (daysUntil <= 7) {
+      prepText =
+        "Race-week: verlaag het volume fors (−40 %), doe 1–2 korte scherpte-inspanningen en slaap de laatste 3 nachten goed. Logistiek vastzetten.";
+      prepRationale = `${daysUntil} dagen — de conditie staat, nu is herstel de enige variabele.`;
+    } else if (daysUntil <= 14) {
+      prepText =
+        "Twee weken voor de wedstrijd: sluit de zware blokken af, doe één scherpte-training en herstel daarna volledig. Nieuwe conditie bouw je niet meer op.";
+      prepRationale = "In deze fase maak je af wat al opgebouwd is.";
+    } else if (daysUntil <= 28) {
+      prepText =
+        "Drie tot vier weken voor de wedstrijd: werk aan discipline-specifieke intensiteit. Plan een rustige inloopweek direct voor de koers.";
+      prepRationale =
+        "Dit is het laatste echte trainingsblok — gerichte scherpte en daarna inlopen.";
+    } else {
+      prepText =
+        "Nog ruim de tijd — bouw stap voor stap op. Zorg dat basisconditie en intensiteit allebei groeien, zodat je op tijd piekt. Taper de laatste week.";
+      prepRationale = `${daysUntil} dagen — genoeg tijd voor een gestructureerde opbouw naar de koers.`;
+    }
+
+    // ── Basis-verantwoording ──────────────────────────────────────────────────
+    const basisParts: string[] = [];
+    if (exp) basisParts.push(`ervaring: ${exp}`);
+    if (discipline) basisParts.push(`discipline: ${discipline}`);
+    if (distanceKm) basisParts.push(`afstand: ${distanceKm} km`);
+    basisParts.push(`${aRacesThisSeason} A-doelen dit seizoen`);
+    basisParts.push(`${daysUntil} dag${daysUntil === 1 ? "" : "en"} tot de koers`);
+
+    res.json({
+      priority: {
+        value: priorityValue,
+        rationale: priorityRationale,
+        confidence: priorityConfidence,
+      },
+      goal,
+      preparation: { text: prepText, rationale: prepRationale },
+      basis: `Gebaseerd op: ${basisParts.join(", ")}.`,
+    });
+  } catch (err) {
+    req.log.error({ err }, "race wizard-proposal GET failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ── GET /api/races/:id/intel ─────────────────────────────────────────────────
 // Race Intelligence: phased prep timeline, auto race-day report (honest about
 // unknowns), race-fuel advice with budget alternatives, multi-day checklists.

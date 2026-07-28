@@ -265,7 +265,7 @@ export default function StartPage() {
   const firstName = profile?.displayName?.trim().split(/\s+/)[0] ?? null
 
   return (
-    <ScreenShell section="start">
+    <ScreenShell bg="/atmosphere/samen-fietsen-bakstenen.webp" section="start">
       <div className="-mt-4 flex flex-col gap-5">
         {firstName && (
           <h1 className="sr-only">Start — {firstName}</h1>

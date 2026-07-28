@@ -310,7 +310,7 @@ export default function KlimmenPage() {
   const enabled = useFeatureFlag("climb_explorer")
   if (!enabled) {
     return (
-      <ScreenShell section="Klimmen">
+      <ScreenShell bg="/atmosphere/routes-weg-droge-heuvels.webp" section="Klimmen">
         <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
           <p className="text-[13px] leading-relaxed text-white/50">
             De Klimmenverkenner is nog niet ingeschakeld voor je account.
@@ -320,7 +320,7 @@ export default function KlimmenPage() {
     )
   }
   return (
-    <ScreenShell section="Klimmen">
+    <ScreenShell bg="/atmosphere/routes-weg-droge-heuvels.webp" section="Klimmen">
       <Explorer />
     </ScreenShell>
   )

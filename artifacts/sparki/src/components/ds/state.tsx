@@ -26,9 +26,12 @@ const SOORT_ICONEN: Record<DsStateSoort, LucideIcon> = {
 export interface DsStateProps {
   soort?: DsStateSoort;
   titel: string;
+  /** Maximaal één korte zin — details horen in `uitleg`. */
   beschrijving?: string;
   /** Optionele herstelactie (bijv. "Opnieuw proberen" of "Koppel je meter"). */
   actie?: { label: string; onClick: () => void };
+  /** Langere toelichting, ingeklapt achter een "Meer uitleg"-link. */
+  uitleg?: { tekst: string; label?: string };
   className?: string;
 }
 
@@ -37,9 +40,11 @@ export function DsState({
   titel,
   beschrijving,
   actie,
+  uitleg,
   className,
 }: DsStateProps) {
   const Icon = SOORT_ICONEN[soort];
+  const [uitlegOpen, setUitlegOpen] = React.useState(false);
   return (
     <div
       role="status"
@@ -55,17 +60,35 @@ export function DsState({
         />
         <div className="min-w-0 flex-1">
           <p className="type-body font-medium text-white/85">{titel}</p>
-          {beschrijving && (
-            <p className="mt-0.5 type-body-sm text-white/50">{beschrijving}</p>
-          )}
+          {/* Actie eerst, dan maximaal één korte zin, details achter een link. */}
           {actie && (
             <DsButton
               variant="secundair"
-              className="mt-3"
+              className="mt-2.5"
               onClick={actie.onClick}
             >
               {actie.label}
             </DsButton>
+          )}
+          {beschrijving && (
+            <p className="mt-2 type-body-sm text-white/50">{beschrijving}</p>
+          )}
+          {uitleg && (
+            <>
+              <button
+                type="button"
+                onClick={() => setUitlegOpen((v) => !v)}
+                aria-expanded={uitlegOpen}
+                className="mt-2 type-body-sm text-white/45 underline underline-offset-2 transition-colors hover:text-white/70"
+              >
+                {uitleg.label ?? "Meer uitleg"}
+              </button>
+              {uitlegOpen && (
+                <p className="mt-1.5 type-body-sm text-white/50">
+                  {uitleg.tekst}
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>

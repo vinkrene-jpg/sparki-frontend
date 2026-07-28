@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:humor": "node ../../scripts/run-tsx-test.mjs src/lib/humor.test.ts",
     "test:uitleg-content": "node ../../scripts/run-tsx-test.mjs src/lib/uitleg-content.test.ts",
+    "test:analyse-dashboard": "node ../../scripts/run-tsx-test.mjs src/lib/analyse-dashboard.test.ts",
     "test:session-analysis": "node ../../scripts/run-tsx-test.mjs src/lib/session-analysis.test.ts",
     "test:insight-grouping": "node ../../scripts/run-tsx-test.mjs src/lib/insight-grouping.test.ts",
     "test:ontwikkelprioriteit": "node ../../scripts/run-tsx-test.mjs src/lib/ontwikkelprioriteit.test.ts",

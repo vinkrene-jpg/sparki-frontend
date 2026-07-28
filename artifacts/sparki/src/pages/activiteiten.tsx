@@ -212,7 +212,7 @@ export default function ActiviteitenPage() {
   const hasFilters = q.trim() !== "" || typeFilter != null || monthFilter != null
 
   return (
-    <ScreenShell section="activiteiten">
+    <ScreenShell bg="/atmosphere/training-renner-mistig-bos.webp" section="activiteiten">
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold tracking-tight text-white">

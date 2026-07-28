@@ -14,6 +14,7 @@ import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { Skeleton } from "@/components/sparki/home-sections"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import { ImportFromCalendar } from "@/components/sparki/import-from-calendar"
+import { RaceWizard } from "@/components/sparki/race-wizard"
 import { EquipmentChoicePanel } from "@/components/sparki/equipment-choice"
 import { RacePointsPanel } from "@/components/sparki/race-points-panel"
 import { RaceExportCenter } from "@/components/sparki/race-export-center"
@@ -405,6 +406,13 @@ export default function RacesPage() {
 
   const [editingId, setEditingId] = useState<number | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [showWizard, setShowWizard] = useState(false)
+  const [wizardSource, setWizardSource] = useState<"handmatig" | "kalender">("handmatig")
+  // Dev-only: ?step=N opens wizard directly at step N with demo data.
+  const demoStepParam = typeof window !== "undefined"
+    ? Number(new URLSearchParams(window.location.search).get("step") ?? "0")
+    : 0
+  const demoStep = demoStepParam >= 1 && demoStepParam <= 5 ? (demoStepParam as 1 | 2 | 3 | 4 | 5) : undefined
   const [showImport, setShowImport] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [teamRiders, setTeamRiders] = useState<TeamRider[]>([])
@@ -425,13 +433,25 @@ export default function RacesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus])
 
-  function startCreate() {
+  function startCreate(source: "handmatig" | "kalender" = "handmatig") {
     setForm(EMPTY_FORM)
     setTeamRiders([])
     setEditingId(null)
     setShowImport(false)
-    setShowForm(true)
+    setShowForm(false)
+    setWizardSource(source)
+    setShowWizard(true)
     setError(null)
+  }
+
+  function closeWizard() {
+    setShowWizard(false)
+    setError(null)
+  }
+
+  async function handleWizardSave(input: import("@/lib/race-types").RaceInput) {
+    await createRace.mutateAsync(input)
+    closeWizard()
   }
 
   function startImport() {
@@ -563,7 +583,17 @@ export default function RacesPage() {
   const saving = createRace.isPending || updateRace.isPending
 
   return (
-    <ScreenShell section="Races" bg="/concept-lab.png">
+    <ScreenShell section="Races" bg="/atmosphere/wedstrijd-renner-landschap.webp">
+      {/* ── Wizard (nieuwe race — 5 stappen) ── */}
+      {showWizard || demoStep != null ? (
+        <RaceWizard
+          onSave={handleWizardSave}
+          onCancel={closeWizard}
+          initialSource={wizardSource}
+          demoStep={demoStep}
+        />
+      ) : (
+      <>
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {(showForm || showImport) && (
@@ -610,14 +640,14 @@ export default function RacesPage() {
             </button>
             <button
               type="button"
-              onClick={startImport}
+              onClick={() => startCreate("kalender")}
               className="rounded-full border border-white/15 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300/90"
             >
               Uit kalender
             </button>
             <button
               type="button"
-              onClick={startCreate}
+              onClick={() => startCreate("handmatig")}
               className="rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06]"
               style={{ borderColor: ACCENT, color: ACCENT, background: "rgba(255,255,255,0.04)" }}
             >
@@ -713,6 +743,8 @@ export default function RacesPage() {
           SPARKI PERFORMANCE CENTER
         </span>
       </footer>
+      </>
+      )}
     </ScreenShell>
   )
 }

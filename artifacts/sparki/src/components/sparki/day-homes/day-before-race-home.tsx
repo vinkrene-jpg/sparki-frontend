@@ -35,7 +35,7 @@ export function DayBeforeRaceHome({ briefing }: DayHomeComponentProps) {
   const { data: intel } = useRaceIntel(race?.id)
 
   return (
-    <ScreenShell section="Home" bg="/concept-lab.png">
+    <ScreenShell section="Home" bg="/atmosphere/wedstrijd-renster-goud.webp">
       <HomeIntro kicker="DAG VÓÓR RACE" profile={profile} isLoading={isLoading} />
 
       {!isLoading && <DayTypeBriefing config={briefing} />}

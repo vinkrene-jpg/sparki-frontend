@@ -95,7 +95,7 @@ export function TrainingDayHome({
   const lastSession = sessions?.[0] ?? null
 
   return (
-    <ScreenShell section="Home" bg="/concept-lab.png">
+    <ScreenShell section="Home" bg="/atmosphere/training-renster-bos.webp">
       {/* INTRO */}
       <HomeIntro
         kicker={isCoachDay ? "COACH-TRAINING" : "TRAINING DAY"}

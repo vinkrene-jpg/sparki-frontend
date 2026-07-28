@@ -733,7 +733,7 @@ export default function WereldPage() {
   const backToWorld = () => setLocation("/wereld")
 
   return (
-    <ScreenShell section="wereld" terug={!openSlug}>
+    <ScreenShell bg="/atmosphere/samen-fietsen-cafe-avond.webp" section="wereld" terug={!openSlug}>
       {openSlug ? (
         <AthleteProfile
           slug={openSlug}

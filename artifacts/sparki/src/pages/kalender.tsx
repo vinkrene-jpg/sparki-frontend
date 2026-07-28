@@ -118,7 +118,7 @@ export default function KalenderPage() {
   const loading = plansLoading || racesLoading
 
   return (
-    <ScreenShell section="kalender">
+    <ScreenShell bg={null} section="kalender">
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight text-white">
           Kalender

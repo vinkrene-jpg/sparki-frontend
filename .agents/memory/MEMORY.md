@@ -63,6 +63,7 @@
 - [Drizzle/DB migratie-traps](drizzle-onconflict-partial-index.md) — onConflict partial-index predicate keys; guarded ADD CONSTRAINT ([migratie](db-nondestructive-constraint-migration.md)); drift ([push](drizzle-push-drift-loops.md)).
 - [Sparki reminders & meldingen](sparki-reminder-delivery.md) — idempotent via dedupeKey+sentAt; email honest-limited skips, never fake-sends; push = SSRF host-allowlist, only fresh rows ([push](sparki-web-push.md); [daily fold](sparki-notification-daily-fold.md): fold per Ams-dag, badge telt DAGEN, [attention](sparki-attention-notifications.md)).
 - [Open choices tracker](open-choices-convention.md) — START every turn: read `.agents/open-choices.md`, surface unresolved choices in chat; add when I ask, remove when decided.
+- [Sparki 5-staps race-wizard](sparki-race-wizard.md) — wizard=create only (edit=flat form); provenance model (user/calendar/insight/profile/ai_proposal); /wizard-proposal vóór /:id; ?step=N dev-demo.
 - [Sparki Ontwikkelmodel](sparki-ontwikkelmodel.md) — structured developmentGoal enum + deterministic honest belastbaarheid + /you Ontwikkelkompas.
 - [ImageMagick SVG glow](imagemagick-svg-glow.md) — MSVG ignores feGaussianBlur/filters; build icon glows with radialGradient layers, regenerate ALL PNG derivatives (OS-cached).
 - [Sparki Sound Studio](sparki-sound-studio.md) — original audio identity + in-app wekker; web can't ring locked phone (state it); dedupe on LOCAL date; optimistic restore even on first write.
@@ -72,6 +73,7 @@
 - [Sparki Wedstrijd-room](sparki-race-room.md) — race-day media montage; dayIndex 1-based end-to-end; ScreenShell leaks coach card on COACH_CARD_SECTIONS — use `bare`.
 - [Local-date UTC off-by-one trap](local-date-utc-trap.md) — toISOString().slice(0,10) gives UTC date; for NL local calendar days build from local getters.
 - [Long-running jobs in this sandbox](sandbox-background-jobs.md) — nohup/setsid bg jobs die at tool-call boundaries; run long one-shot jobs as a console workflow + poll.
+- [Sparki Ontdekken visual feed](sparki-ontdekken-visual-feed.md) — /feed kaartenfeed: pure engine + per-apparaat prefs; sfeerbeelden alleen uit atmosphere-lib, chip nooit dubbel; useKnowledge key bevat limit.
 - [Ontdekken Renners reel + dwell-gated learning](sparki-ontdekken-renners.md) — World swipe-reel surfaced in /feed; feed view-events must dwell-gate ~1.4s or fast scroll pollutes affinity.
 - [Sparki profile-consistency questions](sparki-profile-consistency.md) — notice→ask→confirm→correct; only user-set values questioned, write path re-verifies + compare-and-set, answers suppress ~45d.
 - [FTP floor derivation](sparki-ftp-floor.md) — no power curve stored ⇒ exact FTP underivable; only honest lower bound (45–120min NP, 0.95×20–45min NP), raises estimated FTP only, per-day idempotent history.
@@ -148,7 +150,9 @@
 - [Sparki aandacht-rotatie](sparki-attention-rotation.md) — ignored non-critical ride-alongs pause after 3 shown days (never critical, never forever); consumers must fail-open on query ERROR, not only on success.
 - [Prod browserchecks](prod-browser-checks.md) — runTest test stiekem de dev-app i.p.v. externe prod-URL; gebruik eigen Playwright in /tmp + nix-store LD_LIBRARY_PATH (64-bit check).
 - [Sparki provider compliance](sparki-provider-compliance.md) — CARTO/OSM/Esri-tegels niet commercieel zonder contract; Open-Meteo free tier non-commercial-only (+client-side call); mobiel mist Mapbox-attributie; ORS round-trip max 100 km.
+- [Sparki gedeelde layout-shell](sparki-shared-shell.md) — CommercialShell is de enige chrome-eigenaar; ScreenShell delegeert (achtergrond/bare props), nooit eigen shell of full-screen bg.
 - [Sparki commerciële schil](sparki-commercial-shell.md) — presentation-only shell (flag commercial_shell): exact copy via one COMMERCIAL_COPY const; `hidden lg:` drops mobile content; browser checks via Playwright subagent on /_dev/commercial.
 - [Sparki bewijsarchief](sparki-bewijsarchief.md) — evidence files live in bewijsarchief/ + SHA-256 inventory; never modify/delete; public export-zips only removed after byte-identical verified private copy.
+- [Sparki analyse-dashboard engine](sparki-analyse-dashboard.md) — /analyse én /you kerngrafieken moeten lib/analyse-dashboard.ts consumeren (summary mode), nooit her-implementeren; alsGetal voor API-decimals.
 - [Sparki publicatiecontrole](sparki-publish-check.md) — static serve ⇒ alleen dist/public is publiek; dev-routes bewijzen via bundle-grep na verse build, live site via curl van de prod-JS.
 - [Ingelogde prod-build validatie](sparki-logged-in-validation.md) — dev-URL rendert altijd DevPreview; echt bewijs = dist/public + api-proxy + Clerk ticket-login (auth/me-check!); nix playwright-chromium execPath; consent-gate vangt eerste echte sessie.

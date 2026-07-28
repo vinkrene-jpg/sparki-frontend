@@ -33,7 +33,7 @@ export function RaceDayHome({ briefing }: DayHomeComponentProps) {
   const [raceMode, setRaceMode] = useState(false)
 
   return (
-    <ScreenShell section="Home" bg="/concept-lab.png">
+    <ScreenShell section="Home" bg="/atmosphere/wedstrijd-renster-oranje.webp">
       <HomeIntro kicker="WEDSTRIJDDAG" profile={profile} isLoading={isLoading} />
 
       {!isLoading && <DayTypeBriefing config={briefing} />}

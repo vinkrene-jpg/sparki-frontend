@@ -28,7 +28,7 @@ export function RecoveryDayHome({ briefing }: DayHomeComponentProps) {
   const profile = data?.athleteProfile
 
   return (
-    <ScreenShell section="Home" bg="/concept-lab.png">
+    <ScreenShell section="Home" bg="/atmosphere/samen-renner-rust.webp">
       <HomeIntro kicker="HERSTELDAG" profile={profile} isLoading={isLoading} />
 
       {!isLoading && <DayTypeBriefing config={briefing} />}

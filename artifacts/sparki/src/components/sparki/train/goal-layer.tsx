@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { useLocation } from "wouter"
 import { useTrainingPlan } from "@/hooks/use-training-plan"
 import { useLoad } from "@/hooks/use-load"
@@ -22,6 +23,29 @@ const VERDICT_LABEL: Record<GoalVerdict, string> = {
 
 const cardClass =
   "rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md"
+
+// Langere toelichting ingeklapt achter een link ("Meer uitleg" /
+// "Waarom is dit nodig?") — kort-by-default, details op verzoek.
+function GoalDetail({ label, tekst }: { label: string; tekst: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="text-[12px] text-white/45 underline underline-offset-2 transition-colors hover:text-white/70"
+      >
+        {label}
+      </button>
+      {open && (
+        <p className="mt-1.5 text-pretty text-[12px] leading-relaxed text-white/55">
+          {tekst}
+        </p>
+      )}
+    </div>
+  )
+}
 
 export function GoalLayer() {
   const [, navigate] = useLocation()
@@ -53,20 +77,29 @@ export function GoalLayer() {
         <h3 className="mt-2.5 text-balance font-sans text-[17px] font-light leading-snug text-white/90">
           {fit.headline}
         </h3>
-        <p className="mt-2 text-pretty text-[13px] leading-relaxed text-white/60">
-          {fit.reason}
-        </p>
 
+        {/* Belangrijkste actie eerst; korte zin daarna, details achter een link. */}
         {noGoal && (
           <button
             type="button"
             onClick={() => navigate("/you?focus=doelen")}
-            className="mt-4 flex items-center gap-1.5 rounded-xl px-4 py-2.5 font-sans text-[13px] font-semibold transition-opacity"
+            className="mt-3.5 flex items-center gap-1.5 rounded-xl px-4 py-2.5 font-sans text-[13px] font-semibold transition-opacity"
             style={{ background: "rgba(120,210,230,0.9)", color: "#040506" }}
           >
             <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
             Voeg een doel toe
           </button>
+        )}
+
+        <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/60">
+          {fit.reason}
+        </p>
+
+        {fit.detail && (
+          <GoalDetail
+            label={noGoal ? "Waarom is dit nodig?" : "Meer uitleg"}
+            tekst={fit.detail}
+          />
         )}
 
         {needsMoreData && (

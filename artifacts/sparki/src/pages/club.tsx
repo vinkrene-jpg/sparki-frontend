@@ -647,7 +647,7 @@ export default function ClubPage() {
 
   if (clubsLoading || legacy.isLoading) {
     return (
-      <ScreenShell section="club">
+      <ScreenShell bg="/atmosphere/samen-groepsrit-winter.webp" section="club">
         <p className="text-sm text-white/50">Club wordt geladen…</p>
       </ScreenShell>
     )
@@ -655,7 +655,7 @@ export default function ClubPage() {
 
   if (activeClubId != null) {
     return (
-      <ScreenShell section="club">
+      <ScreenShell bg="/atmosphere/samen-groepsrit-winter.webp" section="club">
         {rows.length > 1 && (
           <div className="mb-4 flex flex-wrap gap-1.5" aria-label="Kies club">
             {rows.map((r) => (
@@ -682,7 +682,7 @@ export default function ClubPage() {
   // mogelijkheid om lid te worden met een code of zelf een club te starten.
   if (legacy.isMember) {
     return (
-      <ScreenShell section="club">
+      <ScreenShell bg="/atmosphere/samen-groepsrit-winter.webp" section="club">
         <div className="flex flex-col gap-6">
           <LegacyCoachView />
           <JoinClubCard />
@@ -695,7 +695,7 @@ export default function ClubPage() {
   // Kwam de renner binnen via een clubcode (QR), dan moet die hier terechtkunnen.
   if (new URLSearchParams(window.location.search).get("code")) {
     return (
-      <ScreenShell section="club">
+      <ScreenShell bg="/atmosphere/samen-groepsrit-winter.webp" section="club">
         <div className="flex flex-col gap-6">
           <JoinClubCard />
           <StartClubCard />

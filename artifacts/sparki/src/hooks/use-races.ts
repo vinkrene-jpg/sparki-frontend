@@ -191,6 +191,38 @@ export function useRaceWerkblad(raceId: number | null) {
   });
 }
 
+// ── Wizard-voorstel (stap 4) ─────────────────────────────────────────────────
+// Deterministische prioriteit/doel/voorbereiding op basis van echte athletedata.
+export type WizardProposal = {
+  priority: { value: "A" | "B" | "C"; rationale: string; confidence: number };
+  goal: { text: string; rationale: string } | null;
+  preparation: { text: string; rationale: string } | null;
+  basis: string;
+};
+
+export function useRaceWizardProposal(
+  raceDate: string,
+  discipline: string | null,
+  distanceKm: string | null,
+  enabled: boolean,
+) {
+  const { isSignedIn } = useUser();
+  const params = new URLSearchParams();
+  if (raceDate) params.set("raceDate", raceDate);
+  if (discipline) params.set("discipline", discipline);
+  if (distanceKm) params.set("distanceKm", distanceKm);
+  return useQuery({
+    queryKey: ["races", "wizard-proposal", raceDate, discipline, distanceKm],
+    queryFn: () =>
+      apiFetch<WizardProposal>(
+        `/api/races/wizard-proposal?${params.toString()}`,
+      ),
+    enabled:
+      enabled && (isSignedIn === true || DEV_PREVIEW) && raceDate !== "",
+    staleTime: STALE.session,
+  });
+}
+
 export function useUpdateRaceChecklist() {
   const qc = useQueryClient();
   return useMutation({

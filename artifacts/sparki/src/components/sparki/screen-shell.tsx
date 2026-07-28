@@ -22,24 +22,10 @@ import {
   Film,
   type LucideIcon,
 } from "lucide-react"
-import { Link, useLocation } from "wouter"
+import { useLocation } from "wouter"
 import { Show } from "@clerk/react"
 import { cn } from "@/lib/utils"
-import {
-  DsMobileNav,
-  IconActiviteiten,
-  IconAnalyse,
-  IconHome,
-  IconMenu,
-  IconPlan,
-  IconRijden,
-  type DsNavItem,
-} from "@/components/ds"
-import {
-  COMMERCIAL_DESKTOP_NAV,
-  COMMERCIAL_ACCOUNT_NAV,
-  COMMERCIAL_MOBILE_NAV,
-} from "@/lib/commercial-shell"
+import { CommercialShell } from "@/components/sparki/commercial-shell"
 import { useUserProfile } from "@/contexts/UserContext"
 import { useTeamIdentity } from "@/hooks/use-social"
 import { CinematicScene, type SceneName } from "@/components/sparki/cinematic-scene"
@@ -70,27 +56,6 @@ import { screenForSection } from "@/lib/tracked-screens"
 // with its own content. The card itself is athlete-only and is already
 // suppressed on the coach/parent homes.
 const COACH_CARD_SECTIONS = new Set(["home"])
-
-// Desktop sidebar + mobiele bottom-nav — gedeeld door alle ScreenShell-pagina's
-// op lg+ breakpoint (≥1024px). Dezelfde nav-items als CommercialShell zodat de
-// gebruiker één consistent navigatiesysteem ziet ongeacht welke pagina hij bezoekt.
-const SHELL_MOBILE_NAV_ICONS: Record<string, LucideIcon> = {
-  "/vandaag": IconHome,
-  "/train": IconPlan,
-  "/routes": IconRijden,
-  "/activiteiten": IconActiviteiten,
-  "/analyse": IconAnalyse,
-  "/meer": IconMenu,
-}
-
-const SHELL_MOBILE_NAV_ITEMS: DsNavItem[] = COMMERCIAL_MOBILE_NAV.map((item) => ({
-  href: item.href,
-  label: item.label,
-  icon: SHELL_MOBILE_NAV_ICONS[item.href] ?? IconMenu,
-}))
-
-const FOCUS_RING_SHELL =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60"
 
 const SECTION_SCENE: Record<string, SceneName> = {
   start: "home",
@@ -248,13 +213,16 @@ function navRootsForRole(role: string | null | undefined): Set<string> {
 
 export function ScreenShell({
   section,
-  bg = "/concept-lab.png",
+  bg,
   bare = false,
   terug = true,
   children,
 }: {
   section: string
-  bg?: string
+  // Verplicht: bewust gekozen sfeerbeeld uit de atmosphere-bibliotheek, of
+  // expliciet null voor een rustige effen achtergrond zonder foto. Geen
+  // stilzwijgende default meer.
+  bg: string | null
   // When true, suppress every injected coaching surface (home prompts, coach
   // cards, coach-decision card and the follow-up prompt). Used by standalone
   // moments like the head-tester welcome that own their full content and must
@@ -314,68 +282,19 @@ export function ScreenShell({
     else setLocation("/")
   }
   return (
-    <main className="relative min-h-dvh overflow-hidden bg-[#05070e] text-white">
-      {/* Per-screen cinematic background — shared structure, scene-specific
-          atmosphere. Fixed + ≤5px parallax so it sits behind the whole page. */}
-      <CinematicScene scene={scene} image={bg} />
-
-      {/* Desktop sidebar — vaste linkernav op lg+. Zelfde items als CommercialShell
-          zodat athletes één consistent navigatiesysteem zien. Verborgen op bare-pagina's
-          (onboarding, tester-welcome, wedstrijd-room). */}
-      {!bare && (
-        <aside
-          className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-white/[0.08] bg-[#05070e]/95 backdrop-blur lg:flex"
-          aria-label="Zijbalknavigatie"
-        >
-          <div className="px-6 pt-7 font-mono text-[11px] tracking-[0.35em] text-white/70">
-            SPARKI
-          </div>
-          <nav className="mt-8 flex flex-col gap-0.5 px-3" aria-label="Hoofdmenu">
-            {COMMERCIAL_DESKTOP_NAV.map((item) => {
-              const active =
-                pathname === item.href ||
-                (item.href.length > 1 && pathname.startsWith(item.href))
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex min-h-11 items-center rounded-lg px-3 text-sm font-medium transition-colors",
-                    FOCUS_RING_SHELL,
-                    active
-                      ? "bg-white/[0.08] text-cyan-300"
-                      : "text-white/60 hover:bg-white/[0.05] hover:text-white/85",
-                  )}
-                  aria-current={active ? "page" : undefined}
-                >
-                  {item.label}
-                </Link>
-              )
-            })}
-          </nav>
-          <div className="mt-auto px-3 pb-6">
-            <Link
-              href={COMMERCIAL_ACCOUNT_NAV.href}
-              className={cn(
-                "flex min-h-11 items-center rounded-lg px-3 text-sm font-medium transition-colors",
-                FOCUS_RING_SHELL,
-                pathname.startsWith(COMMERCIAL_ACCOUNT_NAV.href)
-                  ? "text-cyan-300"
-                  : "text-white/60 hover:bg-white/[0.05] hover:text-white/85",
-              )}
-            >
-              {COMMERCIAL_ACCOUNT_NAV.label}
-            </Link>
-          </div>
-        </aside>
-      )}
-
+    // Eén dwingende gedeelde shell: CommercialShell levert zijbalk, onderbalk,
+    // contentcontainer en achtergrond voor ÁLLE hoofdpagina's. De cinematische
+    // scène van de legacy-hoofdstukken gaat mee als achtergrond-prop — nooit
+    // meer een eigen shell of eigen full-screen achtergrond hiernaast.
+    <CommercialShell
+      actief={pathname}
+      bare={bare}
+      achtergrond={<CinematicScene scene={scene} image={bg} />}
+    >
       <div
         className={cn(
           "relative z-10 flex flex-col gap-10 px-6 pt-12",
-          bare
-            ? "mx-auto max-w-md pb-32"
-            : "mx-auto max-w-md pb-32 lg:ml-56 lg:max-w-3xl lg:pb-16 lg:pt-8",
+          bare ? "mx-auto max-w-md pb-8" : "mx-auto max-w-md pb-8 lg:max-w-3xl lg:pt-8",
         )}
       >
         {/* Rustige premium bovenbalk — drie zones, geen knoppengordijn.
@@ -482,18 +401,6 @@ export function ScreenShell({
           calm home for follow-ups — so we never double-ask the same question. */}
       {!bare && section.toLowerCase() !== "samen" && !stateSurface && <FollowUpPrompt />}
 
-      {/* Mobiele bottom-nav — alleen op kleine schermen, zelfde items als CommercialShell.
-          Verborgen op bare-pagina's (onboarding, tester-welcome, wedstrijd-room). */}
-      {!bare && (
-        <div className="lg:hidden">
-          <DsMobileNav
-            items={SHELL_MOBILE_NAV_ITEMS}
-            actiefPad={pathname}
-            onNavigeer={(href) => setLocation(href)}
-          />
-        </div>
-      )}
-
       {/* App-wide chat window — opened from the chat icon on the right of the
           header. Chat + menu staan bewust buiten de signed-in gate: alle
           ScreenShell-routes zijn al beschermd, en zo blijven ze ook werken in
@@ -505,6 +412,6 @@ export function ScreenShell({
         onClose={() => setMenuOpen(false)}
         onOpenChat={() => setChatOpen(true)}
       />
-    </main>
+    </CommercialShell>
   )
 }

@@ -135,10 +135,14 @@ export default function CoreActiviteitenPage() {
             className="mt-8"
             soort="leeg"
             titel="Nog geen ritten"
-            beschrijving="Koppel je fietscomputer of Strava, dan verschijnen je ritten hier vanzelf — met al je meetgegevens."
+            beschrijving="Koppel je fietscomputer of Strava."
             actie={{
               label: "Koppeling instellen",
               onClick: () => navigate("/you?focus=connections"),
+            }}
+            uitleg={{
+              tekst:
+                "Na het koppelen verschijnen je ritten hier vanzelf — met al je meetgegevens, zoals vermogen, hartslag en hoogte.",
             }}
           />
           <HumorLine context="empty_training" className="mx-auto mt-4 max-w-xs text-center" />

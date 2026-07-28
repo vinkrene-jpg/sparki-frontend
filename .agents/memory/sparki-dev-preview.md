@@ -61,3 +61,8 @@ the dev user as head tester, so nearly ALL flags come back true (early access), 
 more than a real user gets; (2) the flag row + overrides read-only in the dev DB;
 (3) visual check via a dedicated `/_dev/*` preview branch if one exists; (4) page tests.
 Signed-in users go through the real router and DO get the flag-routed variant.
+
+## Dev-preview router is een APARTE route-tabel
+DevPreview vervangt de hele App.tsx-Switch (incl. flag-switch pages). Nieuwe of hernoemde routes MOETEN ook in dev-preview.tsx worden bijgewerkt, anders valt de route in de StartPage-fallback of rendert de oude pagina — wat eruitziet als "feature flag staat uit" terwijl /api/flags gewoon true teruggeeft.
+**Why:** commercial_shell-verificatie leek te falen op /analyse en /activiteiten; de vlag was in orde, de dev-preview route-tabel was verouderd.
+**How to apply:** bij elk nieuw flag-switch-scherm: check zowel App.tsx als dev-preview.tsx.
