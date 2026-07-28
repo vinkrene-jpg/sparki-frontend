@@ -364,7 +364,10 @@ function GeselecteerdeDagKaart({
             <p className="type-body text-content-secondary">{selectedWorkout.description}</p>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-2 mt-2">
+          {/* Altijd verticaal: de detailkolom is op desktop maar 256px breed
+              (lg:w-64) — drie no-wrap knoppen naast elkaar lopen dan buiten de
+              kaart. Primaire actie bovenaan, knoppen vullen de kaartbreedte. */}
+          <div className="flex flex-col gap-2 mt-2">
             <DsButton variant="primair" onClick={() => onOpenDetail(selectedWorkout.id)}>
               Training bekijken
             </DsButton>
