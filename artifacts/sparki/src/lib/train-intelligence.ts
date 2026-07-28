@@ -146,7 +146,7 @@ export function judgeGoalFit(args: {
     return {
       verdict: "te_licht",
       headline: `Je bouwt nu te weinig op voor ${goalLabel}`,
-      reason: `Je fitheid zakt terwijl je nog ${weeksAway} weken te gaan hebt in je ${phaseLabel}. Met dit volume kom je waarschijnlijk te kort — voeg belasting toe of laat Sparki je plan aanscherpen.`,
+      reason: `Je fitheid zakt terwijl je nog ${weeksAway} weken te gaan hebt in je ${phaseLabel}. Met dit volume kom je waarschijnlijk te kort — voeg belasting toe of pas je plan aan.`,
       needs: [],
     }
   }

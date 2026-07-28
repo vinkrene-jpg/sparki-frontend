@@ -36,6 +36,12 @@ import {
   isValidEntitlementType,
 } from "../lib/entitlements";
 import { writeAudit } from "../lib/security/audit";
+import {
+  readSystemMode,
+  writeSystemMode,
+  systemBusinessModes,
+} from "../lib/system-mode";
+import { adminOpsLogTable } from "@workspace/db";
 
 const router = Router();
 
@@ -1891,6 +1897,72 @@ router.post(
     } catch (err) {
       req.log.error({ err }, "admin.entitlements.revoke failed");
       res.status(500).json({ error: "Kon recht niet intrekken" });
+    }
+  },
+);
+
+// ─── Systeemmodus ────────────────────────────────────────────────────────────
+
+/** GET /admin/system-mode — huidige modus (leesbaar voor elke ingelogde admin). */
+router.get(
+  "/system-mode",
+  requireAuth,
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    try {
+      const data = await readSystemMode();
+      res.json(data);
+    } catch (err) {
+      req.log.error({ err }, "admin.system-mode.get failed");
+      res.status(500).json({ error: "Kon systeemmodus niet lezen" });
+    }
+  },
+);
+
+/** POST /admin/system-mode — stel modus in. Body: { mode, reason? } */
+router.post(
+  "/system-mode",
+  requireAuth,
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const { mode, reason } = req.body ?? {};
+    if (!mode || !systemBusinessModes.includes(mode)) {
+      res.status(400).json({ error: "Ongeldige modus", allowed: systemBusinessModes });
+      return;
+    }
+    const actorClerkId = getClerkUserId(req)!;
+    const fwd = req.headers["x-forwarded-for"];
+    const actorIp = (Array.isArray(fwd) ? fwd[0] : fwd)?.split(",")[0]?.trim() ?? req.socket?.remoteAddress ?? undefined;
+    try {
+      await writeSystemMode(mode, {
+        reason: typeof reason === "string" ? reason : undefined,
+        actorClerkId,
+        actorIp,
+      });
+      res.json({ ok: true, mode });
+    } catch (err) {
+      req.log.error({ err }, "admin.system-mode.post failed");
+      res.status(500).json({ error: "Kon systeemmodus niet opslaan" });
+    }
+  },
+);
+
+/** GET /admin/ops-log — recente admin-acties (max 50). */
+router.get(
+  "/ops-log",
+  requireAuth,
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    try {
+      const log = await db
+        .select()
+        .from(adminOpsLogTable)
+        .orderBy(desc(adminOpsLogTable.createdAt))
+        .limit(50);
+      res.json({ log });
+    } catch (err) {
+      req.log.error({ err }, "admin.ops-log.get failed");
+      res.status(500).json({ error: "Kon log niet laden" });
     }
   },
 );

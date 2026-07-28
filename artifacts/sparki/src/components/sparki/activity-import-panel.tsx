@@ -528,7 +528,7 @@ export function ActivityImportPanel() {
       <p className="mt-2 text-[12px] leading-relaxed text-white/35">
         FIT, GPX en TCX worden direct geanalyseerd — FIT en TCX bevatten ook je
         echte vermogen, hartslag en cadans. Hetzelfde bestand twee keer uploaden
-        kan geen kwaad: Sparki herkent het en slaat niets dubbel op.
+        kan geen kwaad: duplicaten worden automatisch overgeslagen.
       </p>
 
       {error && (

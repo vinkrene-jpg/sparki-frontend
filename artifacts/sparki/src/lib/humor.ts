@@ -28,7 +28,7 @@ export const HUMOR_LEVEL_BLURBS: Record<HumorLevel, string> = {
   uit: "Alleen zakelijke teksten, nergens een knipoog.",
   subtiel: "Heel af en toe een droge opmerking, meestal gewoon zakelijk.",
   normaal: "Regelmatig een droge, wielergerichte knipoog op geschikte plekken.",
-  uitgesproken: "Sparki houdt zich minder in. Droog, scherp, nooit flauw.",
+  uitgesproken: "Minder ingehouden. Droog, scherp, nooit flauw.",
 };
 
 /** De plekken waar humor MAG. Kritieke of gevoelige communicatie staat hier

@@ -352,10 +352,10 @@ export default function CoachAthletePlanPage() {
         )}
 
         <div className="pt-1">
-          <SectionLabel n="02" title="Sparki-advies" />
+          <SectionLabel n="02" title="Adviesschema" />
           <p className="mt-2 text-[13px] text-white/45">
-            Het vrijblijvende adviesschema dat Sparki voor{" "}
-            <span className="text-white/70">{name}</span> heeft opgesteld. Dit is
+            Het vrijblijvende adviesschema voor{" "}
+            <span className="text-white/70">{name}</span>. Dit is
             alleen ter informatie — het verandert jouw eigen planning niet.
           </p>
         </div>
@@ -383,10 +383,10 @@ export default function CoachAthletePlanPage() {
               strokeWidth={1.5}
             />
             <p className="text-[14px] text-white/60">
-              Sparki heeft nog geen adviesschema voor {name}.
+              Er is nog geen adviesschema voor {name}.
             </p>
             <p className="mt-2 text-[12px] text-white/40">
-              Zodra de atleet Sparki om advies vraagt, zie je het hier.
+              Zodra de atleet een adviesschema aanvraagt, zie je het hier.
             </p>
           </div>
         ) : (
@@ -399,7 +399,7 @@ export default function CoachAthletePlanPage() {
                 strokeWidth={1.75}
               />
               <p className="text-[12px] leading-relaxed text-white/65">
-                Dit is <span className="text-white/85">Sparki-advies</span>, geen
+                Dit is een <span className="text-white/85">adviesschema</span>, geen
                 vastgelegde training. Gebruik het als gesprekstof — jouw eigen
                 planning blijft ongewijzigd.
               </p>
@@ -411,7 +411,7 @@ export default function CoachAthletePlanPage() {
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-3.5 w-3.5" style={{ color: ACCENT }} />
                   <span className="font-mono text-[10px] tracking-[0.25em] text-cyan-300/80">
-                    SPARKI-ADVIES
+                    ADVIESSCHEMA
                   </span>
                 </div>
                 <p className="mt-3 text-pretty text-[13px] leading-relaxed text-white/75">
@@ -450,7 +450,7 @@ export default function CoachAthletePlanPage() {
               </div>
               <p className="mb-3 text-[12px] leading-relaxed text-white/45">
                 Neem losse dagen over in jouw eigen plan. Ze worden vastgelegd als
-                jouw trainingen — het Sparki-advies zelf verandert niet en
+                jouw trainingen — het adviesschema zelf verandert niet en
                 bestaande trainingen worden nooit overschreven.
               </p>
               <div className="flex flex-col gap-3">

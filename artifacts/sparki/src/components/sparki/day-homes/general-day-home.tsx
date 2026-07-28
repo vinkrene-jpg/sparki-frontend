@@ -29,7 +29,7 @@ import { Thermometer, Wind, Droplets, CloudSnow, MapPin } from "lucide-react"
 const SETUP_STEPS: { label: string; hint: string; href: string }[] = [
   {
     label: "Stel je profiel & FTP in",
-    hint: "Zo kan Sparki je zones en belasting berekenen.",
+    hint: "Nodig voor het berekenen van je zones en trainingsbelasting.",
     href: "/you",
   },
   {
@@ -39,7 +39,7 @@ const SETUP_STEPS: { label: string; hint: string; href: string }[] = [
   },
   {
     label: "Plan je volgende training",
-    hint: "Sparki bouwt je dag op rond je vorm.",
+    hint: "De dag wordt opgebouwd rond je huidige vorm.",
     href: "/train",
   },
 ]
@@ -285,9 +285,9 @@ function HomeWeatherCard({
     return (
       <div className="flex flex-col items-start gap-3 rounded-xl border border-white/[0.07] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
         <p className="text-[13px] leading-relaxed text-white/70">
-          Sparki kent je thuislocatie nog niet, dus kan het weer bij jou in de
-          buurt niet ophalen. Stel je thuislocatie in en Sparki houdt het weer
-          mee in je dagelijkse advies.
+          Thuislocatie is nog niet ingesteld, dus het lokale weer kan niet worden
+          opgehaald. Stel je thuislocatie in om weersomstandigheden mee te
+          wegen in je dagelijkse advies.
         </p>
         <button
           type="button"

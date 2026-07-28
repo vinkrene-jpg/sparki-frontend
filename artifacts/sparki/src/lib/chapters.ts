@@ -50,12 +50,15 @@ export const ATHLETE_CHAPTERS: Chapter[] = [
 // hoofdkeuzes (Vandaag · Trainen · Routes · Wedstrijd · Meer) zit, blijft hier
 // bereikbaar — er verdwijnt niets. Club en Admin worden op de Meer-pagina
 // conditioneel toegevoegd (echte koppeling resp. server-bevestigde admin).
+//
+// Samen (/samen) en Ontdekken (/feed) zijn bewust weggelaten: ze staan
+// al in ATHLETE_CHAPTERS (StartPage-raster en MainMenu). Op het Meer-scherm
+// leiden ze tot dubbele vermeldingen. Bereikbaar via Startoverzicht (/) of
+// de directe navigatielinks in het MainMenu.
 export const ATHLETE_MEER_CHAPTERS: Chapter[] = [
   { href: "/you", icon: User, label: "Jij", hint: "Profiel & doelen" },
   { href: "/lichaam", icon: HeartPulse, label: "Lichaam", hint: "Voeding & herstel" },
   { href: "/mechanieker", icon: Wrench, label: "Mechanieker", hint: "Fiets & onderhoud" },
-  { href: "/samen", icon: Users, label: "Samen", hint: "Team & vrienden" },
-  { href: "/feed", icon: Compass, label: "Ontdekken", hint: "Nieuws & inspiratie" },
   { href: "/activiteiten", icon: Activity, label: "Activiteiten", hint: "Jouw ritten" },
   { href: "/kalender", icon: CalendarDays, label: "Kalender", hint: "Planning & seizoen" },
   { href: "/kennis", icon: BookOpen, label: "Kennis", hint: "Kennis & inzichten" },

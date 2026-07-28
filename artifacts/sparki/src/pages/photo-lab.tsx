@@ -144,7 +144,7 @@ export default function PhotoLabPage() {
       <div className="mx-auto w-full max-w-md px-4 pb-24 pt-6">
         <h1 className="text-xl font-semibold">Sparki-foto</h1>
         <p className="mt-1.5 text-sm leading-relaxed text-white/55">
-          Upload een foto. Sparki maakt er een rustige, donkere lab-versie van —
+          Upload een foto. Er wordt een rustige, donkere lab-versie van gemaakt —
           dezelfde echte persoon, geen cartoon, geen vervorming. Jij kiest wat je
           houdt.
         </p>
@@ -176,9 +176,8 @@ export default function PhotoLabPage() {
 
         {stage === "intro" && (
           <p className="mt-3 text-[11px] leading-relaxed text-white/35">
-            Sparki verwerkt je foto met zijn beeldtechniek. Hiervoor wordt geen
-            eigen sleutel gebruikt; de verwerking gaat via Sparki en telt mee in
-            je tegoed.
+            Je foto wordt verwerkt met AI-beeldtechniek. Hiervoor wordt geen
+            eigen API-sleutel gebruikt; de verwerking telt mee in je tegoed.
           </p>
         )}
 

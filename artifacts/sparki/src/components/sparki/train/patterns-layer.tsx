@@ -170,7 +170,7 @@ export function PatternsLayer() {
             <>
               <p className="text-pretty text-[13px] leading-relaxed text-white/60">
                 Je trainingen zijn er, maar er zijn nog geen patronen vastgelegd.
-                Laat Sparki je gegevens doorzoeken op verbanden tussen belasting,
+                Je gegevens worden doorzocht op verbanden tussen belasting,
                 herstel en vorm.
               </p>
               <button
@@ -185,7 +185,7 @@ export function PatternsLayer() {
                 ) : (
                   <Search className="h-3.5 w-3.5" strokeWidth={2} />
                 )}
-                Laat Sparki verbanden zoeken
+                Verbanden analyseren
               </button>
             </>
           ) : (

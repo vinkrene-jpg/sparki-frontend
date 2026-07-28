@@ -123,7 +123,7 @@ function dagUiterlijk(
   if (isPast && (w.status === "planned" || w.status === "modified") && w.sessionId == null) {
     return { cel: "border-white/[0.05] bg-transparent", label: "text-white/30 line-through", stip: "bg-red-400/40" };
   }
-  // Aangepast door Sparki — toekomstige training
+  // Automatisch aangepast — toekomstige training
   if (w.status === "modified") {
     return { cel: "border-amber-400/20 bg-amber-400/[0.04]", label: "text-amber-300/70", stip: "bg-amber-400/50" };
   }
@@ -742,7 +742,7 @@ function PlanActieSection() {
       )}
       {action === "generate" && (
          <DsCard>
-           <DsCardTitel className="mb-2">Laat Sparki een schema bouwen</DsCardTitel>
+           <DsCardTitel className="mb-2">Schema bouwen</DsCardTitel>
            <DsButton variant="primair" onClick={() => generate.mutate()} loading={generate.isPending}>Schema bouwen</DsButton>
            {generate.isError && <DsStatus status="fout" className="mt-3">Het opbouwen lukte niet.</DsStatus>}
          </DsCard>
@@ -894,10 +894,10 @@ function PatronenSection() {
           {hasSessions ? (
             <>
               <p className="type-body text-content-secondary mb-3">
-                Je trainingen zijn er, maar er zijn nog geen patronen vastgelegd. Laat Sparki je gegevens doorzoeken op verbanden.
+                Je trainingen zijn er, maar er zijn nog geen patronen vastgelegd. Je gegevens worden doorzocht op verbanden.
               </p>
               <DsButton variant="primair" onClick={() => runConnections.mutate()} loading={runConnections.isPending}>
-                Laat Sparki verbanden zoeken
+                Verbanden analyseren
               </DsButton>
             </>
           ) : (

@@ -445,7 +445,7 @@ export function HealthFlowSection() {
                   ? "Er loopt een klacht die je trainen niet blokkeert."
                   : "Geen actieve klachten gemeld."
                 : overview.healthStatus === "sick"
-                  ? "Je staat ziek gemeld — Sparki houdt de trainingsdruk laag."
+                  ? "Je staat ziek gemeld — trainingsdruk wordt automatisch laag gehouden."
                   : "Je staat geblesseerd gemeld — Sparki past je begeleiding aan."}
             </p>
           ) : null}

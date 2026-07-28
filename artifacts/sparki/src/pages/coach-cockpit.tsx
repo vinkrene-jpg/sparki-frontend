@@ -800,7 +800,7 @@ export default function CoachCockpitPage() {
           className="flex items-center justify-center gap-2 rounded-2xl border border-white/[0.08] py-3 text-[13px] text-white/55 hover:border-white/15 hover:text-white/75"
         >
           <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
-          Bekijk het Sparki-adviesschema
+          Bekijk het adviesschema
         </Link>
       </div>
     </ScreenShell>

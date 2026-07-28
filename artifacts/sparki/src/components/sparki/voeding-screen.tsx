@@ -441,7 +441,7 @@ function LogForm() {
         {mealAdviceFailed && (
           <p className="text-[12px] leading-relaxed text-white/60">
             Je log is opgeslagen, maar de beoordeling lukte nu niet. Probeer het
-            later opnieuw via &ldquo;Sparki beoordeelt je voeding&rdquo;
+            later opnieuw via &ldquo;Foto-analyse voeding&rdquo;
             hieronder.
           </p>
         )}
@@ -565,7 +565,7 @@ function GuidanceSection({ enabled }: { enabled: boolean }) {
   )
 }
 
-// ── (3) Sparki beoordeelt je voeding — foto-advies (ontbijt, wedstrijdvoeding) ─
+// ── (3) Foto-analyse voeding — foto-advies (ontbijt, wedstrijdvoeding) ─────────
 function PhotoAdviceSection() {
   const { data: catData } = useMaterialCategories()
   const { data: listData } = useMaterialAnalyses()
@@ -597,7 +597,7 @@ function PhotoAdviceSection() {
 
   return (
     <section>
-      <SectionLabel title="Sparki beoordeelt je voeding" />
+      <SectionLabel title="Foto-analyse voeding" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
         Laat je ontbijt of wedstrijdvoeding zien — je krijgt er een eerlijke
         beoordeling op.

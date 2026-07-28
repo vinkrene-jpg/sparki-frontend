@@ -581,7 +581,7 @@ export function WorkoutDetailDrawer({
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4" strokeWidth={1.75} />
-                      Laat Sparki de filosofie uitleggen
+                      Filosofie uitleggen
                     </>
                   )}
                 </button>

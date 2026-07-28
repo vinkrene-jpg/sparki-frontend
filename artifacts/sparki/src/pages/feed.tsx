@@ -358,7 +358,7 @@ export default function FeedPage() {
   const isSparki = active === "ai"
   const streamItems: StreamItem[] =
     active === "all"
-      ? [...briefItems, ...raceItems, ...teamItems, ...newsItems]
+      ? [...teamItems, ...briefItems, ...raceItems, ...newsItems]
       : active === "news"
         ? newsItems
         : active === "coach"

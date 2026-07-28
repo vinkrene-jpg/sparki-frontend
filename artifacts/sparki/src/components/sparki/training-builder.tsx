@@ -65,7 +65,7 @@ export function WorkoutBuilder({ onDone }: { onDone: () => void }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // "Sparki stelt voor" — alleen wanneer een echt doel is ingesteld én er
+  // Aanbeveling — alleen wanneer een echt doel is ingesteld én er
   // signalen (check-in) zijn om op te bouwen. Nooit een gok zonder basis.
   const hasGoal = !!(profile?.goals || profile?.developmentGoal)
   const advice = useMemo(
@@ -140,13 +140,13 @@ export function WorkoutBuilder({ onDone }: { onDone: () => void }) {
         />
       </div>
 
-      {/* Sparki stelt voor — echt advies op basis van vorm, doel en weer. */}
+      {/* Aanbeveling — echt advies op basis van vorm, doel en weer. */}
       {proposal && advice && (
         <div className="rounded-2xl border border-cyan-300/25 bg-cyan-300/[0.06] p-3.5">
           <div className="mb-1.5 flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5 text-cyan-300" strokeWidth={1.75} />
             <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300/80">
-              Sparki stelt voor
+              Aanbeveling
             </span>
           </div>
           <p className="text-[14px] font-medium text-white/90">

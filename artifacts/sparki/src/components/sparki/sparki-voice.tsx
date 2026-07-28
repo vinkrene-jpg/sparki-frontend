@@ -90,7 +90,7 @@ export function SparkiVoiceSection() {
             )}
             {!s.unlocked && (
               <p className="mt-2 text-[11px] leading-relaxed text-white/30">
-                Sparki gebruikt deze stijl als jullie elkaar beter kennen.
+                Deze stijl wordt actief naarmate er meer interactie is.
               </p>
             )}
           </div>

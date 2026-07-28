@@ -54,6 +54,7 @@ import CoachAthletePlanPage from "@/pages/coach-athlete-plan";
 import CoachCockpitPage from "@/pages/coach-cockpit";
 import LandingPage from "@/pages/landing";
 import AdminPage from "@/pages/admin";
+import AdminOpsPage from "@/pages/admin-ops";
 import { VersionBlockScreen } from "@/components/sparki/version-block-screen";
 import AdminHealthDetailPage from "@/pages/admin-health-detail";
 import StartPage from "@/pages/start";
@@ -726,6 +727,9 @@ function AppRouter() {
                 </Route>
                 <Route path="/admin">
                   <ProtectedPage component={AdminPage} />
+                </Route>
+                <Route path="/admin/ops">
+                  <ProtectedPage component={AdminOpsPage} />
                 </Route>
                 <Route path="/admin/health/:checkKey">
                   <ProtectedPage component={AdminHealthDetailPage} />

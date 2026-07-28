@@ -118,9 +118,9 @@ export function MaterialTest() {
           Van plan iets te kopen? Vraag eerst een modelschatting
         </h3>
         <p className="mt-1 text-xs text-white/55">
-          Vul merk en type van de geplande upgrade in. Sparki vergelijkt de
-          klasse met wat je nu hebt en stelt de best passende test voor — een
-          schatting op klasse-niveau, geen meting.
+          Vul merk en type van de geplande upgrade in. De klasse wordt
+          vergeleken met je huidige uitrusting en de best passende test
+          voorgesteld — een schatting op klasse-niveau, geen meting.
         </p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <select

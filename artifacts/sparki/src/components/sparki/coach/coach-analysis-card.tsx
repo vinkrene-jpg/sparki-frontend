@@ -376,7 +376,7 @@ export function CoachAnalysisCard({
   if (isLoading) {
     return (
       <section className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
-        <p className="text-sm text-white/40">Sparki bekijkt je dag…</p>
+        <p className="text-sm text-white/40">Dag wordt geanalyseerd…</p>
       </section>
     )
   }

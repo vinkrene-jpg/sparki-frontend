@@ -4,7 +4,7 @@ import { localISODate } from "./commercial-shell";
 
 export function bronZin(plan: TrainingPlanResponse | undefined, hasManual: boolean): string {
   if (plan?.hasCoach) return "Schema van je trainer";
-  if (plan?.plan && plan.mode === "autonomous") return "Opgebouwd door Sparki";
+  if (plan?.plan && plan.mode === "autonomous") return "Automatisch opgebouwd";
   if (hasManual) return "Zelf samengesteld";
   return "Nog geen schema";
 }

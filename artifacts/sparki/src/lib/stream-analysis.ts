@@ -2,7 +2,7 @@
 // per-sample buckets from FIT/TCX/GPX ingest). Nothing here fabricates data:
 // every function returns null (with an honest reason where relevant) when the
 // required channel is missing. Neutral voice everywhere — conclusions, never
-// "Sparki ziet…".
+// "Wat opvalt…".
 
 export type SessionStreams = {
   t: number[]

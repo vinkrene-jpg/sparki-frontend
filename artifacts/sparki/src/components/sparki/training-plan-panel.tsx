@@ -69,7 +69,7 @@ function PlanMetaCard({ plan }: { plan: PlanHeader }) {
         {[
           ["Naam", plan.name],
           ["Aangemaakt", created],
-          ["Bron", plan.source === "advies" ? "Sparki-advies (coach aanwezig)" : "Automatisch opgebouwd door Sparki"],
+          ["Bron", plan.source === "advies" ? "Coachadvies" : "Automatisch opgebouwd"],
           ["Maker", plan.maker],
           ["Doelstelling", plan.goal],
           ["Actieve periode", period],
@@ -538,8 +538,8 @@ function HomeLocationField({
         THUISLOCATIE
       </label>
       <p className="mb-3 text-[12px] leading-relaxed text-white/45">
-        Zoek je adres of zet een speld op de kaart. Sparki gebruikt dit
-        vertrekpunt om automatisch routes bij je trainingen te plannen.
+        Zoek je adres of zet een speld op de kaart. Dit vertrekpunt wordt
+        gebruikt om automatisch routes bij je trainingen te plannen.
       </p>
 
       <div className="relative">
@@ -700,8 +700,8 @@ function SetupForm({ data }: { data: TrainingPlanResponse }) {
       className="mt-4 flex flex-col gap-5 rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md"
     >
       <p className="text-[13px] leading-relaxed text-white/60">
-        Sparki bouwt een echt trainingsschema op maat. Vul je profiel in zodat we
-        je volume, intensiteit en rust correct kunnen plannen.
+        Een trainingsschema op maat wordt opgebouwd op basis van je profiel. Vul
+        je gegevens in zodat volume, intensiteit en rust correct worden gepland.
       </p>
 
       <div>
@@ -875,8 +875,8 @@ export function TrainingPlanPanel() {
           <Sparkles className="h-7 w-7" style={{ color: ACCENT }} strokeWidth={1.5} />
           <p className="max-w-sm text-[13px] leading-relaxed text-white/60">
             {data.hasCoach
-              ? "Laat Sparki een adviesschema opstellen op basis van je profiel, herstel en wedstrijden."
-              : "Laat Sparki een compleet trainingsschema bouwen op basis van je profiel, herstel en wedstrijden — een vaste week plus een vooruitblik van drie weken."}
+              ? "Schema wordt opgesteld op basis van je profiel, herstel en wedstrijden."
+              : "Compleet trainingsschema op basis van je profiel, herstel en wedstrijden — vaste weekstructuur plus drie weken vooruitblik."}
           </p>
           <button
             type="button"

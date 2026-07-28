@@ -719,12 +719,20 @@ export default function AdminPage() {
     <main className="relative min-h-dvh px-5 pb-28 pt-6">
       <div className="mx-auto w-full max-w-2xl">
         <div className="flex items-center justify-between">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-white/70"
-          >
-            <ArrowLeft className="h-3 w-3" aria-hidden="true" /> Terug
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-white/70"
+            >
+              <ArrowLeft className="h-3 w-3" aria-hidden="true" /> Terug
+            </Link>
+            <Link
+              href="/admin/ops"
+              className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-white/70"
+            >
+              Ops-dashboard →
+            </Link>
+          </div>
           <button
             type="button"
             onClick={() => runChecks.mutate()}

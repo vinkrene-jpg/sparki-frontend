@@ -117,7 +117,7 @@ function ConsequenceIcon({ status }: { status: RideStory["consequence"]["status"
 
 const CONSEQUENCE_TITLE: Record<RideStory["consequence"]["status"], string> = {
   geen: "Je schema blijft staan",
-  voorstel: "Sparki kan een aanpassing voorstellen",
+  voorstel: "Er kan een aanpassing worden voorgesteld",
   onbekend: "Gevolg nog niet te bepalen",
   wedstrijd: "Wedstrijddag",
 }

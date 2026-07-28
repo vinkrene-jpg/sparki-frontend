@@ -729,7 +729,7 @@ export function deriveBandbreedte(
   // And those measurements must span enough time for a slope to mean anything.
   if (spanDays < 21) {
     return EMPTY(
-      "Je FTP-metingen liggen nog te dicht op elkaar. Over een paar weken kan Sparki een betrouwbare groeirichting laten zien.",
+      "Je FTP-metingen liggen nog te dicht op elkaar. Over een paar weken kan een betrouwbare groeirichting worden afgeleid.",
     );
   }
 

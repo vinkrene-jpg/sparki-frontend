@@ -1,3 +1,4 @@
+- [Sparki monitoring & business-mode infra](sparki-monitoring.md) — system_business_mode singleton + admin_ops_log + /admin/ops; lib/db build vereist na schema-wijziging.
 - [Sparki Clerk auth wiring](sparki-clerk-auth.md) — Phase 1 complete: cookie auth, JIT sync, roles in own DB, lib/db must be built for tsc.
 - [Sparki feature flags](sparki-feature-flags.md) — DB tables, precedence, composite-PK onConflict; one-shot /api/flags 403 tijdens Clerk-settling schakelt ALLES uit — retry ([race](sparki-flag-fetch-race.md)).
 - [Sparki testers](sparki-head-tester.md) — early access enables has-row flags (not no-row); override is kill-switch; number idempotently backfilled ([QR/roster](sparki-tester-qr.md): deep-link needs ?redirect_url=, never clobber w/ null, [overview](sparki-tester-overview.md)).

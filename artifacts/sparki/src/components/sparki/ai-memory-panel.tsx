@@ -86,7 +86,7 @@ function GroupExtended({
       {signals.length > 0 && (
         <div>
           <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/35">
-            Signalen die Sparki gebruikte
+            Gebruikte signalen
           </p>
           <ul className="mt-1.5 space-y-1">
             {signals.map((s, i) => (

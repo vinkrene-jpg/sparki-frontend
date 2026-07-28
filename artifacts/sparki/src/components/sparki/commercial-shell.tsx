@@ -72,13 +72,13 @@ import {
 // alt="" + aria-hidden, met een donkere contrastlaag zodat tekst nooit op een
 // druk fotodeel staat.
 //
-// Visual Atmosphere Layer — Midjourney-asset geselecteerd 27 jul 2026:
-//   public/vandaag-sfeer.webp  46 kB  (primair — moderne browsers)
-//   public/vandaag-sfeer.jpg   85 kB  (fallback — legacy browsers)
-// Beide bestanden blijven bewaard voor verdere schermkoppeling (andere rollen,
-// seizoenswissel, e.d.). Vervang alleen via een bewuste atmosphere-update.
-const HERO_FOTO_WEBP = "/vandaag-sfeer.webp"
-const HERO_FOTO = "/vandaag-sfeer.jpg"
+// Visual Atmosphere Layer — uit de centrale Atmosphere Library (lib/atmosphere-library.ts).
+// Vandaag gebruikt VANDAAG_HERO_ID = "training-renster-bos": warm herfstlicht,
+// vrouwelijke renner bergop, voldoende contrast voor tekst zonder zware overlay.
+// Wijzig via VANDAAG_HERO_ID in atmosphere-library.ts — nooit rechtstreeks hier.
+import { VANDAAG_HERO } from "@/lib/atmosphere-library"
+const HERO_FOTO_WEBP = VANDAAG_HERO.webp
+const HERO_FOTO = VANDAAG_HERO.png
 
 // Sfeertint per presentatietoestand (CUX_02A) — uitsluitend tokenkleuren op
 // lage alpha; kleur beweert nooit méér dan de tekst. Kwetsbaar (recovery) en
@@ -206,23 +206,23 @@ function HeroVandaag({
 }) {
   return (
     <header className="relative overflow-hidden bg-app">
-      {/* Visual Atmosphere Layer — Midjourney-asset (27 jul 2026).
-          <picture> biedt WebP aan moderne browsers (~46 kB), JPEG als
-          fallback voor legacy (~85 kB). Puur decoratief: alt="" + aria-hidden.
-          Donkere contrastlaag eronder zorgt dat tekst altijd leesbaar blijft. */}
+      {/* Visual Atmosphere Layer — Midjourney-asset via Atmosphere Library.
+          WebP primair (~85–120 kB), PNG-fallback. Puur decoratief: alt="" + aria-hidden.
+          Lokale gradient: alleen onderaan faden naar bg-app voor pagina-overgang.
+          Bovenkant beeld blijft onbedekt — foto toont warm en helder. */}
       <picture>
         <source srcSet={HERO_FOTO_WEBP} type="image/webp" />
         <img
           src={HERO_FOTO}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 h-full w-full object-cover object-[50%_70%]"
+          className="absolute inset-0 h-full w-full object-cover object-[50%_40%]"
         />
       </picture>
-      {/* Donkere contrastlaag: foto ondersteunt, hindert tekst nooit. */}
+      {/* Lokale contrastlaag: alleen onderste helft, beeldhelderheid boven behouden. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-b from-app/60 via-app/75 to-app"
+        className="absolute inset-0 bg-gradient-to-b from-transparent via-app/20 to-app"
       />
       <div className="relative mx-auto w-full max-w-2xl px-5 pb-8 pt-6 lg:max-w-3xl lg:px-10 lg:pt-10">
         <p className="type-wordmark lg:hidden">SPARKI</p>

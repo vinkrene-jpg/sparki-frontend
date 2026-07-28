@@ -411,7 +411,7 @@ export function SparkiInputCenter({
             <Link2 className="h-3.5 w-3.5 shrink-0 text-white/40" />
             <input
               className="flex-1 bg-transparent py-2 text-[13px] text-white/90 placeholder:text-white/25 focus:outline-none"
-              placeholder="Plak een link (Sparki kan deze zelf niet openen)"
+              placeholder="Plak een link (externe links worden niet automatisch geopend)"
               value={link}
               onChange={(e) => setLink(e.target.value)}
               inputMode="url"

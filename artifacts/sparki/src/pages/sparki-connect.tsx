@@ -30,8 +30,8 @@ export default function SparkiConnectPage() {
         Sparki Connect
       </h1>
       <p className="mt-1 text-[13px] text-white/40">
-        Koppel je sportplatforms en importeer bestanden. Sparki toont hier
-        alleen wat echt werkt en wat echt gekoppeld is.
+        Koppel je sportplatforms en importeer bestanden. Hier staat alleen wat
+        echt werkt en daadwerkelijk gekoppeld is.
       </p>
 
       <div className="mt-5">

@@ -127,7 +127,7 @@ export function PrivacySettingsSection() {
             <Row
               icon={ShieldCheck}
               title="Gevoelige analyse"
-              desc="Laat Sparki gevoelige signalen (vermoeidheid, stemming, gezondheid) meewegen. Uit = alleen prestatiedata."
+              desc="Vermoeidheid, stemming en gezondheid meewegen in de analyse. Uit = alleen prestatiedata."
             >
               <Toggle
                 on={p.aiSensitiveAnalysisEnabled}

@@ -310,7 +310,7 @@ export function FtpEstimateWizard({
                 <>
                   <p className="text-[13px] leading-relaxed text-white/50">
                     {weightKg
-                      ? "Sparki schat je FTP op basis van je niveau en gewicht. Je kunt dit later verfijnen met een echte test."
+                      ? "FTP-schatting op basis van niveau en gewicht. Verfijn dit later met een echte test."
                       : "Vul je gewicht in zodat Sparki een betere inschatting kan maken op basis van je niveau."}
                   </p>
                   {!weightKg && (

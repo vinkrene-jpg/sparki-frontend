@@ -1,0 +1,72 @@
+De huidige oplevering is niet compleet.
+
+PROBLEEM 1
+Er is slechts één Midjourney-asset verwerkt:
+- vandaag-sfeer.jpg
+- vandaag-sfeer.webp
+
+De aangeleverde ZIP bevat een volledige beeldset van 28 afbeeldingen. Die beeldset moet als centrale Sparki Visual Atmosphere Library worden geïmporteerd en beheerd.
+
+PROBLEEM 2
+De huidige Vandaag-foto wordt opnieuw sterk verduisterd door:
+
+bg-gradient-to-b from-app/60 via-app/75 to-app
+
+Dat is niet conform de opdracht om de oorspronkelijke lichte, warme uitstraling te behouden.
+
+HERSTEL NU:
+
+1. Importeer alle 28 aangeleverde Midjourney-afbeeldingen.
+2. Bewaar de originele bestanden.
+3. Maak geoptimaliseerde WebP-versies.
+4. Gebruik duidelijke Nederlandse bestandsnamen op basis van toepassing, bijvoorbeeld:
+   - vandaag-renner
+   - wedstrijd-peloton
+   - routes-landschap
+   - samen-koffiestop
+   - ploegleider-volgauto
+   - mechanieker-fietsen
+5. Maak één centrale atmosphere-configuratie waarin per scherm minimaal staat:
+   - desktop_asset
+   - mobile_asset
+   - crop_position
+   - tekstpositie
+   - lokale contrastlaag
+6. Koppel nog niet willekeurig alle beelden aan schermen, maar registreer ze eerst centraal als beschikbare assetbibliotheek.
+7. Behoud de huidige route / → CommercialToday.
+
+HELDERHEIDSCORRECTIE VAN VANDAAG
+
+Vervang de huidige zware full-screen gradient:
+
+from-app/60 via-app/75 to-app
+
+door een veel lichtere behandeling.
+
+Regels:
+- geen globale donkere laag over het volledige beeld;
+- geen brightness-reductie over de hele foto;
+- gebruik alleen een lokale gradient achter tekst en kaarten;
+- behoud blauwe lucht, huidtinten, landschap en warme lichte delen;
+- de originele foto moet visueel herkenbaar en helder blijven;
+- tekst mag eventueel op een halftransparante kaart staan.
+
+ACCEPTATIE
+
+- alle 28 afbeeldingen staan aantoonbaar in de Sparki-assets;
+- alle 28 hebben een geoptimaliseerde WebP-versie;
+- één centrale atmosphere-configuratie bestaat;
+- Vandaag gebruikt nog steeds vandaag-sfeer;
+- de foto oogt duidelijk lichter en warmer dan vóór deze correctie;
+- geen zware globale donkere overlay;
+- mobiel en desktop afzonderlijk getest;
+- geen oude shell of dubbele hoofdstukknoppen teruggebracht.
+
+RAPPORTEER
+
+- lijst van alle 28 geïmporteerde bestanden;
+- nieuw gegenereerde WebP-bestanden;
+- centrale configuratiebestand;
+- exacte oude en nieuwe overlaywaarden;
+- screenshots vóór en na;
+- bevestiging dat de volledige ZIP-set is verwerkt.

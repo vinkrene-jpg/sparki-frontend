@@ -242,7 +242,7 @@ function ConsentDialog({
           <div className="flex flex-col gap-2">
             <span className="flex items-center gap-1.5 text-[12px] font-medium text-white/70">
               <ShieldCheck className="h-3.5 w-3.5" style={{ color: ACCENT }} />
-              Sparki gebruikt deze gegevens
+              Beschikbare gegevens
             </span>
             <DataTypeChips types={connector.provides} />
           </div>

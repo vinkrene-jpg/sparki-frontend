@@ -173,8 +173,8 @@ export function FreeRideSprint() {
         Vrije sprintrit
       </h2>
       <p className="mb-4 text-sm text-white/60">
-        Geen route nodig — Sparki herkent elk plaatsnaambord dat je passeert en
-        telt je sprint mee.
+        Geen route nodig — elk plaatsnaambord dat je passeert wordt herkend en
+        telt mee in je score.
       </p>
 
       {!active ? (

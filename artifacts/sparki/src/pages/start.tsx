@@ -281,7 +281,6 @@ export default function StartPage() {
         </section>
 
         <ClubToegang />
-        <FeedSociaalToegang />
         <EigenFiets />
         <RecenteActiviteit />
       </div>

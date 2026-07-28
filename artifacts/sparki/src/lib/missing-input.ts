@@ -93,7 +93,7 @@ export const INPUT_TARGETS: Record<InputTargetKey, InputTarget> = {
     focus: "weight",
     missingTitle: "Gewicht ontbreekt",
     missingWhy:
-      "Sparki gebruikt je gewicht voor je vermogen per kilo (W/kg) en voeding.",
+      "Gewicht is nodig voor vermogen per kilo (W/kg) en voedingsadvies.",
     isSet: (p) => !!(p?.weightKg && Number(p.weightKg) > 0),
   },
   height: {
@@ -103,7 +103,7 @@ export const INPUT_TARGETS: Record<InputTargetKey, InputTarget> = {
     focus: "height",
     missingTitle: "Lengte ontbreekt",
     missingWhy:
-      "Sparki gebruikt je lengte in je voedings- en houdingsadvies.",
+      "Lengte wordt gebruikt in voedings- en houdingsadvies.",
     isSet: (p) => p?.heightCm != null,
   },
   birthYear: {

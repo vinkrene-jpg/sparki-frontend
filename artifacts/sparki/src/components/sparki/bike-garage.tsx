@@ -545,7 +545,7 @@ function UpgradePanel({ bike }: { bike: GarageBike }) {
             advice.alreadyTop.length === 0 && (
               <p className="text-[12px] leading-relaxed text-white/45">
                 Er staan nog geen onderdelen op deze fiets. Voeg eerst je
-                groepset, wielen of banden toe — dan kan Sparki zien waar de
+                groepset, wielen of banden toe — dan wordt inzichtelijk waar de
                 winst zit.
               </p>
             )}
@@ -1121,7 +1121,7 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
             <div className="space-y-1.5">
               <p className="text-[13px] leading-relaxed text-white/45">
                 Nog geen fietsen in je garage. Voeg je eerste fiets toe — daarna
-                kan Sparki je uitrusting eerlijk beoordelen.
+                krijg je eerlijk onderhoudsadvies per onderdeel.
               </p>
               <HumorLine context="empty_garage" />
             </div>

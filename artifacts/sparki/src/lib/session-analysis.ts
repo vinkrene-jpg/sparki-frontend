@@ -3,7 +3,7 @@
 // athlete's FTP and their other rides — nothing is fabricated. When a value
 // can't be known the analysis stays honestly silent and `missing` explains what
 // would unlock a deeper read. Neutral voice: it states the conclusion, never
-// "Sparki ziet…".
+// "Wat opvalt…".
 import type { TrainingSession, AthleteProfile } from "@/lib/athlete-types"
 
 export type InsightTone = "neutral" | "positive" | "caution"

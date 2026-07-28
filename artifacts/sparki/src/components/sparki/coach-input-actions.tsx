@@ -33,27 +33,27 @@ const ACTION_META: Record<CoachAction, ActionMeta> = {
   ftp: {
     label: "FTP instellen",
     title: "Stel je FTP in",
-    why: "Sparki gebruikt je FTP om je zones en de belasting van elke training te berekenen.",
+    why: "FTP is nodig voor het berekenen van je trainingszones en de belasting per sessie.",
   },
   hours: {
     label: "Uren per week invullen",
     title: "Trainingsuren per week",
-    why: "Hiermee stemt Sparki je weekplan af op de tijd die je echt hebt.",
+    why: "Hiermee wordt het weekplan afgestemd op de tijd die je echt beschikbaar hebt.",
   },
   goal: {
     label: "Doel kiezen",
     title: "Wat is je doel?",
-    why: "Je doel bepaalt waar Sparki je naartoe traint.",
+    why: "Je doel bepaalt de opbouw en richting van je trainingen.",
   },
   checkin: {
     label: "Check-in invullen",
     title: "Check-in van vandaag",
-    why: "Je check-in voedt je gereedheid en het dagadvies van Sparki.",
+    why: "Je check-in voedt je gereedheid en het dagadvies.",
   },
   race: {
     label: "Wedstrijd toevoegen",
     title: "Wedstrijd toevoegen",
-    why: "Met een wedstrijd in de agenda plant Sparki je opbouw en taper.",
+    why: "Met een wedstrijd in de agenda worden opbouw en taper correct gepland.",
   },
 }
 

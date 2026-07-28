@@ -239,5 +239,5 @@ export const ANALYSE_COPY = {
   ftpFout: "Je FTP-geschiedenis kon niet geladen worden.",
   sessiesFout: "Je recente sessies konden niet geladen worden.",
   foutBeschrijving:
-    "Sparki toont geen vervangende cijfers — probeer het opnieuw.",
+    "Er worden geen vervangende cijfers getoond — probeer het opnieuw.",
 } as const;

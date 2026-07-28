@@ -7,7 +7,7 @@ import { queryKeys, STALE } from "@/lib/query-keys"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sparki's evidence-gated surfaces, split by where they belong:
-//  • SparkiObservations (Inzicht) — the curiosity headline "Sparki ziet vandaag":
+//  • SparkiObservations (Inzicht) — the curiosity headline "Wat vandaag opvalt":
 //      · Open loops — curiosity teasers Sparki has earned the right to open.
 //      · "Sparki, eerlijk?" — one honest observation, on demand.
 //  • FoundingSection (Profiel) — account identity:
@@ -187,8 +187,8 @@ function IdentityBadges() {
 // ── Inzicht: the daily curiosity surface ─────────────────────────────────────
 
 /**
- * "Sparki ziet vandaag" — the curiosity headline for Inzicht. Shows the open
- * loops Sparki has earned the right to open (auto, evidence-gated) plus one
+ * "Wat vandaag opvalt" — the curiosity headline for Inzicht. Shows the open
+ * loops that have been earned (auto, evidence-gated) plus one
  * honest observation on demand. Stays plain / silent when there is not enough
  * real data — it never invents a teaser.
  */

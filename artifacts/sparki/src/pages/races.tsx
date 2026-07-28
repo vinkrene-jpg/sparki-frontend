@@ -348,7 +348,7 @@ function RaceInsightPanel({
               <span className="text-white/85">≈ {travel.straightLineKm} km hemelsbreed</span>
               {travel.fromLabel && <span className="text-white/40"> vanaf {travel.fromLabel}</span>}
               <p className="mt-1 text-[12px] text-white/40">
-                Reistijd met de auto kan Sparki niet automatisch berekenen — vul je
+                Reistijd met de auto wordt niet automatisch berekend — vul je
                 reistijd hieronder zelf in.
               </p>
             </>

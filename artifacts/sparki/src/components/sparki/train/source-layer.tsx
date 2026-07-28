@@ -187,7 +187,7 @@ export function SourceLayer() {
                   ) : (
                     <Hammer className="h-3.5 w-3.5" strokeWidth={2} />
                   )}
-                  Laat Sparki een schema bouwen
+                  Schema bouwen
                 </button>
               )}
               {generate.isError && (
