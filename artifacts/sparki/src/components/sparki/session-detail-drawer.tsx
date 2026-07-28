@@ -14,8 +14,11 @@ import { RideStoryChapters } from "@/components/sparki/ride-story"
 import {
   useSessionSegments,
   useSessionDetail,
+  useUpdateSessionFeel,
   type RideSegment,
+  type SessionDetail,
 } from "@/hooks/use-sessions"
+import { useState } from "react"
 import { SessionGraphs } from "@/components/sparki/session-graphs"
 import { computeAge } from "@/lib/age"
 import { ShareRidePanel } from "@/components/sparki/share-ride"
@@ -112,6 +115,174 @@ function SegmentReport({ segments }: { segments: RideSegment[] }) {
           )
         })}
       </div>
+    </div>
+  )
+}
+
+// ── Gegenereerde data: eerlijk overzicht van wat deze sessie wél en niet
+//    heeft vastgelegd, en wat dat betekent voor grafieken en analyses. ──────
+function heeftKanaal(reeks: Array<number | null> | null | undefined): boolean {
+  return Array.isArray(reeks) && reeks.some((v) => v != null)
+}
+
+function DataInventaris({
+  session,
+  detail,
+  segments,
+}: {
+  session: TrainingSession
+  detail: SessionDetail | null | undefined
+  segments: RideSegment[] | null | undefined
+}) {
+  const s = detail?.streams ?? null
+  const items: Array<{ label: string; aanwezig: boolean; hint?: string }> = [
+    { label: "Vermogen (meetreeks)", aanwezig: heeftKanaal(s?.power), hint: "vermogensmeter nodig — voedt de grafiek, zones en TSS" },
+    { label: "Hartslag (meetreeks)", aanwezig: heeftKanaal(s?.heartRate), hint: "hartslagband nodig — voedt de grafiek, zones en drift-analyse" },
+    { label: "Cadans", aanwezig: heeftKanaal(s?.cadence) },
+    { label: "Snelheid", aanwezig: heeftKanaal(s?.speedKph) },
+    { label: "Hoogte", aanwezig: heeftKanaal(s?.elevationM), hint: "voedt het hoogteprofiel en het segmentverslag" },
+    { label: "Temperatuur", aanwezig: heeftKanaal(s?.temperatureC) },
+    { label: "GPS-route", aanwezig: (detail?.track?.length ?? 0) > 0 },
+    { label: "Belasting (TSS/IF)", aanwezig: session.tss != null, hint: "vraagt vermogen + een ingevulde FTP" },
+    { label: "Segmenten (klimmen/afdalingen)", aanwezig: (segments?.length ?? 0) > 0 },
+    { label: "Gevoel (jouw score)", aanwezig: session.feelScore != null },
+    { label: "Notities / verloop", aanwezig: session.notes != null && session.notes.trim() !== "" },
+    { label: "Gekoppeld trainingsschema", aanwezig: detail?.plannedWorkout != null },
+  ]
+  const ontbrekend = items.filter((i) => !i.aanwezig)
+  return (
+    <div className="mt-6">
+      <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+        GEGENEREERDE DATA
+      </span>
+      <div className="mt-2 grid grid-cols-1 gap-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3">
+        {items.map((i) => (
+          <div key={i.label} className="flex items-start gap-2 py-0.5">
+            <span
+              className={`mt-0.5 font-mono text-[11px] ${i.aanwezig ? "text-cyan-300" : "text-white/25"}`}
+              aria-hidden
+            >
+              {i.aanwezig ? "✓" : "—"}
+            </span>
+            <div className="min-w-0">
+              <span className={`text-[12.5px] ${i.aanwezig ? "text-white/80" : "text-white/40"}`}>
+                {i.label}
+              </span>
+              {!i.aanwezig && i.hint && (
+                <span className="ml-1.5 text-[11px] text-white/30">({i.hint})</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      {ontbrekend.length > 0 && (
+        <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
+          Grafieken en analyses tonen alleen wat echt gemeten is — wat hierboven
+          ontbreekt, wordt nergens geschat of verzonnen.
+        </p>
+      )}
+    </div>
+  )
+}
+
+// ── Wedstrijdverloop: een paar korte vragen na een wedstrijd, zodat de
+//    waarde van de rit goed te duiden is naast de meetdata. Antwoorden worden
+//    opgeslagen als gevoelsscore + notities bij de sessie zelf. ─────────────
+function WedstrijdVerloopVragen({ session }: { session: TrainingSession }) {
+  const update = useUpdateSessionFeel()
+  const [zwaarte, setZwaarte] = useState<number | null>(session.feelScore ?? null)
+  const [verloop, setVerloop] = useState("")
+  const [les, setLes] = useState("")
+  const [opgeslagen, setOpgeslagen] = useState(false)
+
+  const alBeantwoord =
+    session.notes != null && session.notes.includes("Wedstrijdverloop:")
+  if (alBeantwoord || opgeslagen) return null
+
+  const kanOpslaan = zwaarte != null || verloop.trim() !== "" || les.trim() !== ""
+  const opslaan = () => {
+    const delen: string[] = []
+    if (verloop.trim() !== "") delen.push(`Wedstrijdverloop: ${verloop.trim()}`)
+    if (les.trim() !== "") delen.push(`Les voor volgende keer: ${les.trim()}`)
+    const bestaand = session.notes?.trim()
+    const notes =
+      delen.length > 0
+        ? [bestaand, delen.join("\n")].filter(Boolean).join("\n\n")
+        : undefined
+    update.mutate(
+      {
+        id: session.id,
+        ...(zwaarte != null ? { feelScore: zwaarte } : {}),
+        ...(notes != null ? { notes } : {}),
+      },
+      { onSuccess: () => setOpgeslagen(true) },
+    )
+  }
+
+  return (
+    <div className="mt-6 rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5">
+      <span className="font-mono text-[10px] tracking-[0.2em] text-cyan-300/70">
+        HOE VERLIEP JE WEDSTRIJD?
+      </span>
+      <p className="mt-1.5 text-pretty text-[12.5px] leading-relaxed text-white/55">
+        De meetdata vertelt maar de helft. Met een paar antwoorden kan deze
+        wedstrijd eerlijk op waarde worden geschat.
+      </p>
+
+      <p className="mt-4 text-[12px] text-white/60">Hoe zwaar voelde het?</p>
+      <div className="mt-1.5 flex gap-1.5" role="group" aria-label="Zwaarte van de wedstrijd">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => setZwaarte(n)}
+            aria-pressed={zwaarte === n}
+            className={`min-h-9 flex-1 rounded-lg border px-1 text-[11px] transition-colors ${
+              zwaarte === n
+                ? "border-cyan-300/60 bg-cyan-300/10 text-cyan-200"
+                : "border-white/[0.1] text-white/45 hover:text-white/75"
+            }`}
+          >
+            {FEEL_LABELS[n]}
+          </button>
+        ))}
+      </div>
+
+      <label className="mt-4 block text-[12px] text-white/60">
+        Hoe verliep de wedstrijd? (start, verloop, finale)
+        <textarea
+          value={verloop}
+          onChange={(e) => setVerloop(e.target.value)}
+          rows={3}
+          placeholder="Bijv. goed weggekomen, in de finale kramp — moest lossen op de laatste klim…"
+          className="mt-1.5 w-full rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-[13px] text-white/85 placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-cyan-300/40"
+        />
+      </label>
+
+      <label className="mt-3 block text-[12px] text-white/60">
+        Wat neem je mee naar de volgende keer?
+        <textarea
+          value={les}
+          onChange={(e) => setLes(e.target.value)}
+          rows={2}
+          placeholder="Bijv. eerder en meer eten in het tweede uur."
+          className="mt-1.5 w-full rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-[13px] text-white/85 placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-cyan-300/40"
+        />
+      </label>
+
+      <button
+        type="button"
+        disabled={!kanOpslaan || update.isPending}
+        onClick={opslaan}
+        className="mt-4 min-h-10 rounded-lg border border-cyan-300/50 px-4 text-[13px] text-cyan-200 transition-colors hover:bg-cyan-300/10 disabled:opacity-35"
+      >
+        {update.isPending ? "Opslaan…" : "Antwoorden opslaan"}
+      </button>
+      {update.isError && (
+        <p className="mt-2 text-[12px] text-red-300/80">
+          Opslaan is niet gelukt. Probeer het opnieuw.
+        </p>
+      )}
     </div>
   )
 }
@@ -402,9 +573,20 @@ export function SessionDetailDrawer({
               </>
             )}
 
+            {session.type.toLowerCase() === "race" && (
+              <WedstrijdVerloopVragen key={session.id} session={session} />
+            )}
+
             {segments != null && segments.length > 0 && (
               <SegmentReport segments={segments} />
             )}
+
+            <DataInventaris
+              session={session}
+              detail={detail}
+              segments={segments}
+            />
+          
 
             {session.source !== "manual" && (
               <SessionGraphs

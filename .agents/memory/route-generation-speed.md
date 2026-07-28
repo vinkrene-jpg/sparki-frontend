@@ -30,3 +30,8 @@ Client polls `GET /api/routes/candidate/:id/enrich` every 3s until `{ ready: tru
 - 502 errors in load test = ORS rate limiting (HTTP 429) from rapid sequential calls — not a code defect.
 
 **How to apply:** If enrichment takes too long for a specific bbox, the root cause is Overpass sync for that corridor — check the 6h corridor cache. The 15s AbortController timeout in `ors.ts` prevents hung requests; equivalent guard could be added to Overpass if needed.
+
+## Options-endpoint fail-soft (jul 2026)
+- `/generate/options` bouwde 3 varianten sequentieel en 502'de integraal als één variant faalde → gebruiker wachtte lang en kreeg niets ("2e keer werkte wel", dat was de geometry-cache).
+- Nu: gevraagde afstand eerst, per-variant try/catch (eerlijk minder varianten i.p.v. niets), 25s tijdbudget waarna resterende varianten worden overgeslagen; alleen 502 als álles faalt.
+- Hilly/interval-voorkeuren verveelvoudigen ORS-probes: hilly 30km ≈ 14s totaal — dat is de "te traag"-ervaring, niet een regressie van de enrichment-fix.

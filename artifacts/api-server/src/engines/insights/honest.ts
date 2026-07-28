@@ -2,7 +2,7 @@
 //
 // Hard rules (mirrors the voice engine): Sparki is never mean, never arrogant,
 // never ungrounded. When the data does not support a claim it says so plainly
-// ("Ik heb daar nog onvoldoende bewijs voor.") rather than inventing one. The
+// ("Onvoldoende data voor een onderbouwde observatie.") rather than inventing one. The
 // composition is deterministic: same signals → same observation.
 
 import type { InsightSignals, SelfType } from "./signals";
@@ -22,7 +22,7 @@ export type HonestObservation = {
 };
 
 const INSUFFICIENT: HonestObservation = {
-  text: "Ik heb daar nog onvoldoende bewijs voor.",
+  text: "Onvoldoende data voor een onderbouwde observatie.",
   founded: false,
   kind: "insufficient",
 };

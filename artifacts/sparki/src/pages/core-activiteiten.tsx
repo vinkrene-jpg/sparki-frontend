@@ -1,4 +1,5 @@
 import * as React from "react";
+import { dagSfeer } from "@/lib/sfeer"
 import { useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { CommercialShell } from "@/components/sparki/commercial-shell";
@@ -75,7 +76,7 @@ export default function CoreActiviteitenPage() {
 
   if (sessionsLoading) {
     return (
-      <CommercialShell actief="/activiteiten" sfeer="/atmosphere/training-renner-mistig-bos.webp">
+      <CommercialShell actief="/activiteiten" sfeer={dagSfeer("activiteiten")}>
         <div className="mx-auto w-full max-w-2xl px-5 pb-28 pt-8 lg:max-w-3xl lg:px-10 lg:pb-16">
           <div className="flex items-baseline justify-between gap-4">
             <div>
@@ -97,7 +98,7 @@ export default function CoreActiviteitenPage() {
 
   if (sessionsIsError || !sessionsTrusted) {
     return (
-      <CommercialShell actief="/activiteiten" sfeer="/atmosphere/training-renner-mistig-bos.webp">
+      <CommercialShell actief="/activiteiten" sfeer={dagSfeer("activiteiten")}>
         <div className="mx-auto w-full max-w-2xl px-5 pb-28 pt-8 lg:max-w-3xl lg:px-10 lg:pb-16">
           <div className="flex items-baseline justify-between gap-4">
             <div>
@@ -121,7 +122,7 @@ export default function CoreActiviteitenPage() {
 
   if (sessionsTrusted.length === 0) {
     return (
-      <CommercialShell actief="/activiteiten" sfeer="/atmosphere/training-renner-mistig-bos.webp">
+      <CommercialShell actief="/activiteiten" sfeer={dagSfeer("activiteiten")}>
         <div className="mx-auto w-full max-w-2xl px-5 pb-28 pt-8 lg:max-w-3xl lg:px-10 lg:pb-16">
           <div className="flex items-baseline justify-between gap-4">
             <div>
@@ -152,7 +153,7 @@ export default function CoreActiviteitenPage() {
   }
 
   return (
-    <CommercialShell actief="/activiteiten" sfeer="/atmosphere/training-renner-mistig-bos.webp">
+    <CommercialShell actief="/activiteiten" sfeer={dagSfeer("activiteiten")}>
       <div className="mx-auto w-full max-w-2xl px-5 pb-28 pt-8 lg:max-w-3xl lg:px-10 lg:pb-16">
         <div className="flex items-baseline justify-between gap-4">
           <div>

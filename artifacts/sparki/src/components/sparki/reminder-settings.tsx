@@ -118,7 +118,7 @@ export function ReminderSettingsSection() {
             <Row
               icon={HeartPulse}
               title="Avond-check-in"
-              desc="Een herinnering 's avonds als je je check-in nog niet hebt gedaan, zodat Sparki je advies voor morgen scherp kan maken."
+              desc="Een herinnering 's avonds als je je check-in nog niet hebt gedaan, voor een scherper advies voor morgen."
               dimmed={!p.enabled}
             >
               <Toggle

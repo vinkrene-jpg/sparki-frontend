@@ -776,7 +776,7 @@ function Step3({
         </h2>
         <p className="mt-1 text-[12.5px] leading-relaxed text-white/45">
           {allKnown
-            ? "Alles wat Sparki nodig heeft is al ingevuld — je kunt direct door."
+            ? "Alles wat nodig is, is al ingevuld — je kunt direct door."
             : "Uitsluitend de velden die na de automatische invulling nog leeg zijn. Overslaan mag."}
         </p>
       </div>
@@ -1190,7 +1190,7 @@ const SOURCE_GROUPS: {
 }[] = [
   { key: "calendar", label: "Uit kalender", description: "Overgenomen uit externe agenda", icon: "📅" },
   { key: "user", label: "Zelf ingevuld", description: "Door jou opgegeven in stap 1 en 3", icon: "✍" },
-  { key: "insight", label: "Door Sparki afgeleid", description: "Berekend uit live databronnen", icon: "⚡" },
+  { key: "insight", label: "Afgeleid uit je data", description: "Berekend uit live databronnen", icon: "⚡" },
   { key: "profile", label: "Uit je profiel", description: "Overgenomen uit je atleetprofiel", icon: "👤" },
   { key: "ai_proposal", label: "Voorstel geaccepteerd", description: "Sparki's deterministisch voorstel, door jou bevestigd", icon: "✅" },
 ]
@@ -1232,7 +1232,7 @@ function Step5({
           Samenvatting
         </h2>
         <p className="mt-1 text-[12.5px] leading-relaxed text-white/45">
-          Wat Sparki weet over deze wedstrijd — per bron. Sla op als het klopt.
+          Wat er over deze wedstrijd bekend is — per bron. Sla op als het klopt.
         </p>
       </div>
 

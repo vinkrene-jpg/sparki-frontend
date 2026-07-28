@@ -268,7 +268,7 @@ export function computeDayAdvice(input: DayAdviceInput): DayAdvice | null {
     )
   } else if (kind !== "rest" && !profile.ftp) {
     reasons.push(
-      "Stel je FTP in zodat Sparki hier exacte vermogenswaarden bij kan zetten.",
+      "Stel je FTP in om hier exacte vermogenswaarden bij te krijgen.",
     )
   }
   reasons.push(raceNote ?? "Nog geen wedstrijd gepland — focus op een sterke basis.")

@@ -163,8 +163,8 @@ export function FtpEstimateWizard({
           {step === "experience" && (
             <>
               <p className="text-[13px] leading-relaxed text-white/50">
-                Hoe ervaren ben je op de fiets? Dit helpt Sparki een eerste
-                inschatting maken.
+                Hoe ervaren ben je op de fiets? Dit bepaalt de eerste
+                inschatting.
               </p>
               <div className="flex flex-col gap-2">
                 {EXPERIENCE_OPTIONS.map((o) => (
@@ -311,7 +311,7 @@ export function FtpEstimateWizard({
                   <p className="text-[13px] leading-relaxed text-white/50">
                     {weightKg
                       ? "FTP-schatting op basis van niveau en gewicht. Verfijn dit later met een echte test."
-                      : "Vul je gewicht in zodat Sparki een betere inschatting kan maken op basis van je niveau."}
+                      : "Vul je gewicht in voor een betere inschatting op basis van je niveau."}
                   </p>
                   {!weightKg && (
                     <div className="flex items-center gap-2">

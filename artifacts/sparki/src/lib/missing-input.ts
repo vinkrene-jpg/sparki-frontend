@@ -133,7 +133,7 @@ export const INPUT_TARGETS: Record<InputTargetKey, InputTarget> = {
     focus: "checkin",
     missingTitle: "Nog geen check-in vandaag",
     missingWhy:
-      "Log hoe je je voelt, zodat Sparki je training kan afstemmen op je herstel.",
+      "Log hoe je je voelt — dan wordt je training afgestemd op je herstel.",
   },
   sportData: {
     key: "sportData",
@@ -142,7 +142,7 @@ export const INPUT_TARGETS: Record<InputTargetKey, InputTarget> = {
     focus: "connections",
     missingTitle: "Nog geen sportdata gekoppeld",
     missingWhy:
-      "Koppel je sporthorloge of -account zodat Sparki je ritten kan zien en observeren.",
+      "Koppel je sporthorloge of -account om je ritten automatisch binnen te halen.",
   },
   race: {
     key: "race",
@@ -160,7 +160,7 @@ export const INPUT_TARGETS: Record<InputTargetKey, InputTarget> = {
     focus: "checklist",
     missingTitle: "Materiaaldata ontbreekt",
     missingWhy:
-      "Loop je materiaalchecklist na zodat Sparki je uitrusting kan meenemen in de voorbereiding.",
+      "Loop je materiaalchecklist na — dan telt je uitrusting mee in de voorbereiding.",
   },
   guide: {
     key: "guide",
@@ -178,7 +178,7 @@ export const INPUT_TARGETS: Record<InputTargetKey, InputTarget> = {
     focus: "homeLocation",
     missingTitle: "Geen thuislocatie ingesteld",
     missingWhy:
-      "Stel je thuislocatie in zodat Sparki het weer bij je in de buurt kan ophalen en je training erop kan afstemmen.",
+      "Stel je thuislocatie in voor het weer bij jou in de buurt en advies dat daarop is afgestemd.",
     isSet: (p) => !!(p?.homeLat != null && p?.homeLon != null),
   },
 };

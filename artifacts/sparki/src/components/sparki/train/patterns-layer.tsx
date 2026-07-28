@@ -1,5 +1,6 @@
 import { useLocation } from "wouter"
-import { useObservations, useRunConnections } from "@/hooks/use-ai-memory"
+import { useObservations } from "@/hooks/use-ai-memory"
+import { VerbandenStappenplan } from "@/components/sparki/verbanden-stappenplan"
 import { useSessions } from "@/hooks/use-sessions"
 import { useLoad } from "@/hooks/use-load"
 import { useFtpHistory } from "@/hooks/use-ftp-history"
@@ -17,7 +18,6 @@ import { GraphInsightCard } from "@/components/sparki/insight/graph-insight-card
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import { HerkomstKnop } from "@/components/sparki/herkomst-sheet"
 import { ACCENT } from "@/components/sparki/ui"
-import { Loader2, Search } from "lucide-react"
 import type { ReactNode } from "react"
 
 const cardClass =
@@ -122,7 +122,6 @@ export function PatternsLayer() {
   const { data: load, isLoading: loadLoading } = useLoad()
   const { data: ftpHistory } = useFtpHistory()
   const { data: metrics } = useDailyMetrics(30)
-  const runConnections = useRunConnections()
 
   // Trainen owns the training-pattern observations; /you Core owns the rest.
   // Ownership lives in lib/insight-ownership so the same insight can't appear on
@@ -167,27 +166,7 @@ export function PatternsLayer() {
       {aiEnabled && groups.length === 0 && (
         <div className={cardClass}>
           {hasSessions ? (
-            <>
-              <p className="text-pretty text-[13px] leading-relaxed text-white/60">
-                Je trainingen zijn er, maar er zijn nog geen patronen vastgelegd.
-                Je gegevens worden doorzocht op verbanden tussen belasting,
-                herstel en vorm.
-              </p>
-              <button
-                type="button"
-                onClick={() => runConnections.mutate()}
-                disabled={runConnections.isPending}
-                className="mt-3 flex items-center gap-2 rounded-xl px-4 py-2.5 font-sans text-[13px] font-semibold transition-opacity disabled:opacity-50"
-                style={{ background: ACCENT, color: "#040506" }}
-              >
-                {runConnections.isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Search className="h-3.5 w-3.5" strokeWidth={2} />
-                )}
-                Verbanden analyseren
-              </button>
-            </>
+            <VerbandenStappenplan accent={ACCENT} />
           ) : (
             <MissingInputNotice
               compact

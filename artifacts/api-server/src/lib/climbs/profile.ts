@@ -16,6 +16,9 @@ export type DerivedClimbProfile = {
   elevationGainM: number;
   // Downsampled elevation series (metres) for the profile chart.
   profile: number[];
+  // De ECHTE getraceerde routelijn naar de top ([lat, lon]), licht
+  // gedownsampled — zodat de kaart de klim kan tekenen. Nooit verzonnen.
+  points: [number, number][];
   // Honest note that these numbers are derived, not surveyed.
   derived: true;
 };
@@ -142,12 +145,24 @@ export async function deriveClimbProfile(summit: {
 
       if (gain > bestGain) {
         bestGain = gain;
+        // Downsample de echte lijn tot max ~200 punten voor de kaart.
+        const step = Math.max(1, Math.ceil(points.length / 200));
+        const line: [number, number][] = [];
+        for (let i = 0; i < points.length; i += step) {
+          line.push([points[i]!.lat, points[i]!.lon]);
+        }
+        const last = points[points.length - 1]!;
+        const tail = line[line.length - 1];
+        if (!tail || tail[0] !== last.lat || tail[1] !== last.lon) {
+          line.push([last.lat, last.lon]);
+        }
         best = {
           lengthKm: Math.round(len * 100) / 100,
           avgGradePct: Math.round((gain / (len * 1000)) * 100 * 10) / 10,
           maxGradePct: maxGradient(points),
           elevationGainM: Math.round(gain),
           profile: summary.profile,
+          points: line,
           derived: true,
         };
       }

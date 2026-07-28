@@ -34,35 +34,35 @@ export type OpenLoop = {
 export const OPEN_LOOPS: OpenLoop[] = [
   {
     id: "theory_about_you",
-    text: "Ik heb een theorie over jou.",
+    text: "Er tekent zich een patroon af in je trainingsdata.",
     // Observational: a self-claim plus real rides. Speaks from the first tier.
     tone: "observer",
     evidence: (s) => s.selfType != null && s.totalSessions >= 3,
   },
   {
     id: "missing_puzzle",
-    text: "Ik mis nog één puzzelstuk.",
+    text: "Eén gegeven ontbreekt nog voor een completer beeld.",
     // Observational: a concretely missing input (estimated FTP or no weight).
     tone: "observer",
     evidence: (s) => s.ftpEstimated || s.weightMissing,
   },
   {
     id: "something_in_data",
-    text: "Er zit iets opvallends in jouw data.",
+    text: "Er is inmiddels genoeg data voor een eerste patroonanalyse.",
     // Interpretive curiosity — earned once Sparki knows the athlete a little.
     tone: "curious",
     evidence: (s) => s.totalSessions >= 5,
   },
   {
     id: "two_explanations",
-    text: "Ik twijfel tussen twee verklaringen.",
+    text: "Voor een recent patroon zijn twee verklaringen mogelijk.",
     // Interpretive: weighing two real candidate stories — a curious hook.
     tone: "curious",
     evidence: (s) => s.distinctTypes >= 2 && s.totalSessions >= 4,
   },
   {
     id: "starting_to_understand",
-    text: "Ik denk dat ik je begin te begrijpen.",
+    text: "Je trainingsprofiel wordt steeds beter onderbouwd.",
     // Relational + interpretive — the most "earned" loop of the set.
     tone: "curious",
     evidence: (s) => s.daysKnown >= 7 && (s.memoriesCount >= 1 || s.totalSessions >= 6),

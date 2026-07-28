@@ -58,6 +58,8 @@ router.get("/search", requireAuth, requireClimbFlag, async (req, res) => {
   const name = String(req.query.name ?? "").trim() || null;
   const limitRaw = Number(req.query.limit);
   const limit = Number.isFinite(limitRaw) ? limitRaw : undefined;
+  const radiusRaw = Number(req.query.radiusKm);
+  const radiusKm = Number.isFinite(radiusRaw) ? radiusRaw : undefined;
   if (!q) {
     res
       .status(400)
@@ -65,7 +67,7 @@ router.get("/search", requireAuth, requireClimbFlag, async (req, res) => {
     return;
   }
   try {
-    const result = await searchClimbs({ q, name, limit });
+    const result = await searchClimbs({ q, name, limit, radiusKm });
     res.json(result);
   } catch (err) {
     if (err instanceof ClimbSourceError) {

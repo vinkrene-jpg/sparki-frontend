@@ -6,11 +6,12 @@
 // Visueel: witte cards op slate-50 achtergrond; recharts grafieken op witte
 // ondergrond; vaste semantische kleurset (CHART.*) voor alle data-reeksen.
 
-import { useState, type ReactNode } from "react"
+import { useState, createContext, useContext, type ReactNode } from "react"
 import { useLocation } from "wouter"
 import {
   LineChart,
   Line,
+  Area,
   ComposedChart,
   Bar,
   Cell,
@@ -26,11 +27,11 @@ import { CommercialShell } from "@/components/sparki/commercial-shell"
 import { ClubChip } from "@/components/sparki/club-chip"
 import { BioRadar } from "@/components/sparki/bio-radar"
 import { Sparkline } from "@/components/sparki/primitives"
-import { SparkiObservations } from "@/components/sparki/insights-section"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
 import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer"
 import { TrainingProgression } from "@/components/sparki/training-progression"
 import { UitlegDot } from "@/components/viz/uitleg"
+import { UITLEG } from "@/lib/uitleg-content"
 import { useLoad, type LoadData } from "@/hooks/use-load"
 import { useFtpHistory } from "@/hooks/use-ftp-history"
 import { useSessions } from "@/hooks/use-sessions"
@@ -51,6 +52,8 @@ import {
   laatsteSync,
   analyseSamenvatting,
   alsGetal,
+  belastingProjectie,
+  type BelastingProjectie,
   type DoelOverlays,
   type WeekVolume,
 } from "@/lib/analyse-dashboard"
@@ -80,6 +83,7 @@ import {
   type AnalyseToestand,
 } from "@/lib/core-analyse"
 import { cn } from "@/lib/utils"
+import { DoelenBeheerSheet, WedstrijdToevoegenSheet } from "@/components/sparki/beheer-popup"
 
 // ── Semantische kleurset (SSOT voor alle grafieken) ──────────────────────────
 // Elke kleur heeft één vaste betekenis. Nooit voor decoratie.
@@ -94,7 +98,25 @@ export const CHART = {
   race:    "#ec4899", // pink-500   — wedstrijden
   warn:    "#f59e0b", // amber-500  — waarschuwing
   missing: "#94a3b8", // slate-400  — ontbrekend / onzeker
+  verwacht: "#9333ea", // purple-600 — doelscenario / verwachting (vaste kleur)
 } as const
+
+// ── Uitleg-stand ─────────────────────────────────────────────────────────────
+// Pagina-brede schakelaar voor de onervaren sporter: elke kaart toont dan een
+// korte uitleg in gewone taal, rechtstreeks uit het centrale uitleg-registry.
+
+const UitlegModus = createContext(false)
+
+function UitlegRegel({ k }: { k: string }) {
+  const aan = useContext(UitlegModus)
+  const u = UITLEG[k]
+  if (!aan || !u) return null
+  return (
+    <p className="mb-4 rounded-lg border border-sky-100 bg-sky-50/70 px-3 py-2 text-xs leading-relaxed text-slate-600">
+      {u.wat} {u.waarom}
+    </p>
+  )
+}
 
 // ── Tabs ─────────────────────────────────────────────────────────────────────
 
@@ -118,9 +140,22 @@ type Bron<T> = {
 }
 
 type Profiel =
-  | { displayName?: string | null; ftp?: number | null; weightKg?: number | null }
+  | { displayName?: string | null; ftp?: number | null; weightKg?: number | null; weeklyHourTarget?: number | null }
   | null
   | undefined
+
+// Uren netjes tonen: "8", "8,5", "2,4" — max één decimaal, NL-komma.
+function urenLabel(uren: number): string {
+  const afgerond = Math.round(uren * 10) / 10
+  return String(afgerond).replace(".", ",")
+}
+
+// "+0,8 u/week" of "−1,6 u/week" voor een procentuele volumeverandering.
+function urenDeltaLabel(basisUren: number, pct: number): string {
+  const delta = basisUren * (pct / 100)
+  const teken = delta >= 0 ? "+" : "−"
+  return `${teken}${urenLabel(Math.abs(delta))} u/week`
+}
 
 function toestandVan(bron: Bron<unknown>, hasData: boolean): AnalyseToestand {
   return analyseToestand({ isLoading: bron.isLoading, isError: bron.isError, hasData })
@@ -213,15 +248,15 @@ function StatTegel({
         {uitlegKey && <UitlegDot uitlegKey={uitlegKey} label={label} />}
       </div>
       {value == null
-        ? <span className="text-2xl font-light text-slate-300">—</span>
+        ? <span className="text-3xl font-light text-slate-300">—</span>
         : (
           <div className="flex items-baseline gap-1">
-            <span className="num text-2xl font-light tabular-nums" style={{ color }}>{value}</span>
-            {unit && <span className="text-xs text-slate-400">{unit}</span>}
+            <span className="num text-3xl font-semibold tracking-tight tabular-nums" style={{ color }}>{value}</span>
+            {unit && <span className="text-sm text-slate-400">{unit}</span>}
           </div>
         )
       }
-      {sub && <span className="text-[11px] text-slate-400">{sub}</span>}
+      {sub && <span className="text-xs text-slate-500">{sub}</span>}
     </LCard>
   )
 }
@@ -246,12 +281,14 @@ function CTLATLTooltip({
   return (
     <div className="bg-white border border-slate-200 rounded-lg shadow-sm px-3 py-2 text-xs">
       <p className="font-medium text-slate-700 mb-1.5">{label}</p>
-      {payload.map((p) => (
-        <p key={p.name} className="tabular-nums flex justify-between gap-4" style={{ color: p.color }}>
-          <span>{p.name}</span>
-          <strong>{Math.round(p.value)}</strong>
-        </p>
-      ))}
+      {payload
+        .filter((p) => typeof p.value === "number")
+        .map((p) => (
+          <p key={p.name} className="tabular-nums flex justify-between gap-4" style={{ color: p.color }}>
+            <span>{p.name}</span>
+            <strong>{Math.round(p.value)}</strong>
+          </p>
+        ))}
     </div>
   )
 }
@@ -281,13 +318,19 @@ function LoadGrafiek({
   raceMarkers = [],
   vergelijk = false,
   onDagKlik,
+  projectie,
 }: {
   chartData: LoadData["chartData"]
   periode: number
   raceMarkers?: DoelOverlays["raceMarkers"]
   vergelijk?: boolean
   onDagKlik?: (dateIso: string) => void
+  projectie?: BelastingProjectie | null
 }) {
+  // ATL is via de legenda aan/uit te zetten; standaard aan, ook in
+  // vergelijk-modus (voorheen verdween de lijn daar stil terwijl de
+  // legenda hem wél benoemde).
+  const [atlAan, setAtlAan] = useState(true)
   const gefilterd: LoadPunt[] = chartData.slice(-periode)
   const intervalStap = Math.max(1, Math.floor(gefilterd.length / 7))
 
@@ -309,10 +352,22 @@ function LoadGrafiek({
   // toekomstdagen krijgen géén waarden — alleen een as-positie, geen data.
   const eerste = gefilterd[0]?.date ?? ""
   const laatste = gefilterd[gefilterd.length - 1]?.date ?? ""
-  let ctlData = basisData
+  let ctlData: Array<Record<string, unknown> & { date: string }> = basisData
   let asEinde = laatste
+
+  // Doelscenario: verwachtingsband + middenlijn vooruit vanaf de laatste dag.
+  if (projectie && projectie.punten.length > 0) {
+    const [startPunt, ...rest] = projectie.punten
+    ctlData = basisData.map((row) =>
+      row.date === startPunt.date
+        ? { ...row, projCtl: startPunt.projCtl, projBand: startPunt.projBand }
+        : row,
+    )
+    ctlData = [...ctlData, ...rest.map((p) => ({ date: p.date, projCtl: p.projCtl, projBand: p.projBand }))]
+    asEinde = rest[rest.length - 1]?.date ?? laatste
+  }
   const volgendeRace = raceMarkers.find((r) => r.date > laatste)
-  if (volgendeRace && laatste) {
+  if (!projectie && volgendeRace && laatste) {
     const cursor = new Date(`${laatste}T12:00:00`)
     const extra: Array<{ date: string }> = []
     for (let i = 0; i < 21; i++) {
@@ -345,13 +400,22 @@ function LoadGrafiek({
               <span className="inline-block h-0.5 w-5 rounded" style={{ background: CHART.ctl }} />
               CTL (fitheid)
             </span>
-            <span className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setAtlAan((v) => !v)}
+              aria-pressed={atlAan}
+              title={atlAan ? "Verberg de ATL-lijn" : "Toon de ATL-lijn"}
+              className={cn(
+                "flex min-h-9 items-center gap-1.5 rounded-md px-1.5 -mx-1.5 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50",
+                atlAan ? "" : "opacity-40 line-through",
+              )}
+            >
               <span
                 className="inline-block h-0.5 w-5 rounded"
                 style={{ background: CHART.atl, backgroundImage: `repeating-linear-gradient(90deg,${CHART.atl} 0,${CHART.atl} 4px,transparent 4px,transparent 8px)` }}
               />
               ATL (vermoeidheid)
-            </span>
+            </button>
             {heeftVorig && (
               <span className="flex items-center gap-1.5">
                 <span className="inline-block h-0.5 w-5 rounded bg-slate-300" />
@@ -364,21 +428,52 @@ function LoadGrafiek({
                 Wedstrijd
               </span>
             )}
+            {projectie && (
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block h-2.5 w-5 rounded-sm" style={{ background: CHART.verwacht, opacity: 0.35 }} />
+                Verwachting (boven- en onderwaarde)
+              </span>
+            )}
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={160}>
+        <ResponsiveContainer width="100%" height={200}>
           <ComposedChart data={ctlData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }} onClick={klik}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="date" tickFormatter={fmtDatum} tick={{ fill: "#64748b", fontSize: 10 }} interval={intervalStap} />
-            <YAxis tick={{ fill: "#64748b", fontSize: 10 }} domain={["auto", "auto"]} />
+            <XAxis dataKey="date" tickFormatter={fmtDatum} tick={{ fill: "#64748b", fontSize: 11 }} interval={intervalStap} />
+            <YAxis tick={{ fill: "#64748b", fontSize: 11 }} domain={["auto", "auto"]} />
             <Tooltip content={(props) => <CTLATLTooltip {...(props as Parameters<typeof CTLATLTooltip>[0])} />} />
+            {projectie && (
+              <Area
+                type="monotone"
+                dataKey="projBand"
+                stroke="none"
+                fill={CHART.verwacht}
+                fillOpacity={0.18}
+                name="Verwachtingsband"
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+            )}
             {heeftVorig && (
               <Line type="monotone" dataKey="vorigCtl" stroke="#cbd5e1" strokeWidth={1.5} dot={false} name="Vorige periode" connectNulls={false} />
             )}
-            {!vergelijk && (
-              <Line type="monotone" dataKey="atl" stroke={CHART.atl} strokeWidth={2} strokeDasharray="5 5" dot={false} name="ATL" />
+            {atlAan && (
+              <Line type="monotone" dataKey="atl" stroke={CHART.atl} strokeWidth={2.5} strokeDasharray="5 5" dot={false} name="ATL" />
             )}
-            <Line type="monotone" dataKey="ctl" stroke={CHART.ctl} strokeWidth={2} dot={false} name="CTL" />
+            <Line type="monotone" dataKey="ctl" stroke={CHART.ctl} strokeWidth={2.5} dot={false} name="CTL" />
+            {projectie && (
+              <Line
+                type="monotone"
+                dataKey="projCtl"
+                stroke={CHART.verwacht}
+                strokeWidth={3}
+                strokeDasharray="7 5"
+                dot={false}
+                name="Verwachte fitheid"
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+            )}
             {zichtbareRaces.map((r) => (
               <ReferenceLine
                 key={r.date}
@@ -410,11 +505,11 @@ function LoadGrafiek({
             </span>
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={100}>
+        <ResponsiveContainer width="100%" height={120}>
           <ComposedChart data={gefilterd} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="date" tickFormatter={fmtDatum} tick={{ fill: "#64748b", fontSize: 10 }} interval={intervalStap} />
-            <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
+            <XAxis dataKey="date" tickFormatter={fmtDatum} tick={{ fill: "#64748b", fontSize: 11 }} interval={intervalStap} />
+            <YAxis tick={{ fill: "#64748b", fontSize: 11 }} />
             <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={1.5} />
             <Tooltip content={(props) => <TSBTooltip {...(props as Parameters<typeof TSBTooltip>[0])} />} />
             <Bar dataKey="tsb" name="TSB" maxBarSize={10}>
@@ -476,32 +571,18 @@ function OverzichtTab({
         />
       </div>
 
-      {/* Sparki's analyse — dark container */}
-      <div className="rounded-xl bg-slate-900 p-4">
-        <p className="mb-3 text-[10px] font-mono uppercase tracking-widest text-white/35">
-          Sparki's analyse
-        </p>
-        <SparkiObservations />
-      </div>
-
-      {/* Overzicht load sparkline */}
+      {/* Belastingsverloop — volwaardige grafiek, geen dunne sparkline */}
       {load.data && load.data.chartData.length >= 7 && (
-        <LCard className="p-4">
+        <LCard className="p-5">
           <div className="flex items-center gap-1.5 mb-4">
-            <LCardTitle>Fitheid afgelopen 42 dagen</LCardTitle>
+            <LCardTitle>Belastingsverloop — laatste 42 dagen</LCardTitle>
             <UitlegDot uitlegKey="fitheid" label="Fitheid (CTL)" />
           </div>
-          <Sparkline
-            data={load.data.chartData.slice(-42).map((d) => d.ctl)}
-            width={340}
-            height={48}
-            stroke={CHART.ctl}
-            fill="rgba(14,165,233,0.07)"
-            className="w-full"
-          />
-          <div className="mt-2 flex justify-between text-[11px] text-slate-400 tabular-nums">
-            <span>42d geleden: {Math.round(load.data.chartData.slice(-42)[0]?.ctl ?? 0)}</span>
-            <span>Nu: {Math.round(load.data.ctl)}</span>
+          <UitlegRegel k="belasting" />
+          <LoadGrafiek chartData={load.data.chartData} periode={42} />
+          <div className="mt-2 flex justify-between text-xs text-slate-500 tabular-nums">
+            <span>42 dagen geleden: fitheid {Math.round(load.data.chartData.slice(-42)[0]?.ctl ?? 0)}</span>
+            <span className="font-medium" style={{ color: CHART.ctl }}>Nu: {Math.round(load.data.ctl)}</span>
           </div>
         </LCard>
       )}
@@ -549,7 +630,9 @@ function WeekVolumeCard({
       <div className="flex items-center gap-1.5 mb-4">
         <LCardTitle>Trainingsvolume per week</LCardTitle>
         <span className="text-xs text-slate-400">12 weken</span>
+        <UitlegDot uitlegKey="trainingsvolume" label="Trainingsvolume" />
       </div>
+      <UitlegRegel k="trainingsvolume" />
       {!heeftData ? (
         <LegeGrafiek titel="Nog geen trainingsvolume om te tonen." />
       ) : (
@@ -600,7 +683,9 @@ function IntensiteitCard({ sessies }: { sessies: TrainingSession[] }) {
       <div className="flex items-center gap-1.5 mb-4">
         <LCardTitle>Intensiteitsverdeling</LCardTitle>
         <span className="text-xs text-slate-400">laatste sessies</span>
+        <UitlegDot uitlegKey="intensiteitsverdeling" label="Intensiteitsverdeling" />
       </div>
+      <UitlegRegel k="intensiteitsverdeling" />
       {totaalMin === 0 ? (
         <LegeGrafiek titel="Nog geen sessies met duur om een verdeling te maken." />
       ) : (
@@ -632,6 +717,7 @@ function IntensiteitCard({ sessies }: { sessies: TrainingSession[] }) {
 // ── Slaap ────────────────────────────────────────────────────────────────────
 
 function SlaapCard({ metrics, periode }: { metrics: Array<{ metricDate: string; sleepHours?: number | string | null }>; periode: AnalysePeriode }) {
+  const [, navigate] = useLocation()
   const reeks = metrics
     .map((m) => ({ metricDate: m.metricDate, uren: alsGetal(m.sleepHours) }))
     .filter((m): m is { metricDate: string; uren: number } => m.uren != null && m.uren > 0)
@@ -643,12 +729,20 @@ function SlaapCard({ metrics, periode }: { metrics: Array<{ metricDate: string; 
       <div className="flex items-center gap-1.5 mb-4">
         <LCardTitle>Slaap</LCardTitle>
         <span className="text-xs text-slate-400">{periodeLabel(periode)}</span>
+        <UitlegDot uitlegKey="slaap" label="Slaap" />
       </div>
+      <UitlegRegel k="slaap" />
       {reeks.length < 2 ? (
         <MissingInputNotice compact showOrb={false}
           title="Nog geen slaapdata"
-          description="Vul je slaap in bij de dagelijkse check-in of koppel een platform dat slaap levert."
+          description="Koppel een platform dat slaap registreert — direct (zoals Garmin) of indirect (zoals Google Health) — of vul je slaap in bij de dagelijkse check-in."
           targets={["checkin"]}
+          actions={[
+            {
+              label: "Slaapbron koppelen",
+              onClick: () => navigate("/you?focus=connections"),
+            },
+          ]}
           returnTo="/analyse"
         />
       ) : (
@@ -707,6 +801,34 @@ function BelastingTab({
   const [grafiekPeriode, setGrafiekPeriode] = useState<number>(90)
   const [vergelijk, setVergelijk] = useState(false)
 
+  // Doelscenario: volumeverandering in % (null = uit). Deterministische
+  // projectie uit de gedeelde engine; zonder echte belastingsscores geen band.
+  const [scenarioPct, setScenarioPct] = useState<number | null>(null)
+
+  // Urenbasis voor het scenario: eerst de uren uit je trainingsplan, anders
+  // je werkelijke gemiddelde van de laatste 4 weken. Geen van beide = eerlijk
+  // geen urenvertaling.
+  const urenBasis: { uren: number; bron: "plan" | "werkelijk" } | null = (() => {
+    const planUren = profiel?.weeklyHourTarget
+    if (planUren != null && planUren > 0) return { uren: planUren, bron: "plan" }
+    const grens = new Date()
+    grens.setDate(grens.getDate() - 28)
+    const grensIso = localISODate(grens)
+    const minuten = (sessies.data ?? [])
+      .filter((s) => s.sessionDate >= grensIso && s.durationMin != null && s.durationMin > 0)
+      .reduce((sum, s) => sum + (s.durationMin ?? 0), 0)
+    if (minuten <= 0) return null
+    return { uren: minuten / 60 / 4, bron: "werkelijk" }
+  })()
+  const projectie =
+    scenarioPct != null && load.data
+      ? belastingProjectie({
+          chartData: load.data.chartData,
+          sessies: (sessies.data ?? []).map((s) => ({ sessionDate: s.sessionDate, tss: s.tss })),
+          pctVolume: scenarioPct,
+        })
+      : null
+
   // Radar axes — bestaande berekening
   const assen = computePerformanceRadar({
     load: load.data ? { ctl: load.data.ctl, atl: load.data.atl, tsb: load.data.tsb } : null,
@@ -725,6 +847,94 @@ function BelastingTab({
 
   return (
     <div className="space-y-6">
+      {/* Doelscenario — centraal veld boven de grafiek */}
+      <LCard className="p-5 border-2 border-purple-200">
+        <div className="flex items-center gap-1.5 mb-1">
+          <LCardTitle>Doelscenario</LCardTitle>
+          <UitlegDot uitlegKey="doelscenario" label="Doelscenario" />
+        </div>
+        <p className="text-xs text-slate-500 mb-3">
+          Kies een voorgenomen verandering van je trainingsvolume. De grafiek toont dan in het paars
+          de verwachte ontwikkeling van je fitheid, als band met een boven- en onderwaarde.
+        </p>
+        <UitlegRegel k="doelscenario" />
+        <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Doelscenario trainingsvolume">
+          {/* Draaiwieltje: in stappen van 5% van −50% tot +50% */}
+          <div className="inline-flex items-center rounded-xl border border-slate-200 overflow-hidden">
+            <button
+              type="button"
+              aria-label="5% minder volume"
+              disabled={(scenarioPct ?? 0) <= -50}
+              onClick={() => setScenarioPct(Math.max(-50, (scenarioPct ?? 0) - 5) || null)}
+              className="min-h-11 min-w-11 px-3 text-lg text-slate-500 hover:bg-slate-50 hover:text-slate-800 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
+            >
+              −
+            </button>
+            <span
+              aria-live="polite"
+              className={cn(
+                "min-w-[5.5rem] border-x border-slate-200 px-3 py-2 text-center font-mono text-sm tabular-nums",
+                scenarioPct == null ? "text-slate-400" : "font-semibold text-purple-700",
+              )}
+            >
+              {scenarioPct == null ? "0% (uit)" : `${scenarioPct > 0 ? "+" : ""}${scenarioPct}%`}
+            </span>
+            <button
+              type="button"
+              aria-label="5% meer volume"
+              disabled={(scenarioPct ?? 0) >= 50}
+              onClick={() => setScenarioPct(Math.min(50, (scenarioPct ?? 0) + 5) || null)}
+              className="min-h-11 min-w-11 px-3 text-lg text-slate-500 hover:bg-slate-50 hover:text-slate-800 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
+            >
+              +
+            </button>
+          </div>
+          {scenarioPct != null && (
+            <button
+              type="button"
+              onClick={() => setScenarioPct(null)}
+              className="min-h-9 rounded-lg border border-slate-200 px-3 text-xs text-slate-500 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
+            >
+              Uit
+            </button>
+          )}
+        </div>
+        {scenarioPct != null && urenBasis != null && (
+          <p className="mt-2 text-sm text-slate-600 tabular-nums">
+            {scenarioPct > 0 ? "+" : ""}{scenarioPct}% volume ≈{" "}
+            <strong>{urenDeltaLabel(urenBasis.uren, scenarioPct)}</strong>{" "}
+            ({urenLabel(urenBasis.uren)} → {urenLabel(urenBasis.uren * (1 + scenarioPct / 100))} u/week,{" "}
+            {urenBasis.bron === "plan" ? "op basis van je trainingsplan" : "op basis van je werkelijke laatste 4 weken"}).
+          </p>
+        )}
+        {scenarioPct != null && urenBasis == null && (
+          <p className="mt-2 text-sm text-slate-500">
+            Wat dit in uren betekent is nog niet te zeggen: er staan geen uren per week in je plan en er
+            zijn geen recente sessies met een duur.
+          </p>
+        )}
+        {scenarioPct != null && projectie && (
+          <p className="mt-3 rounded-lg bg-purple-50/70 border border-purple-100 px-3 py-2 text-sm text-slate-700">
+            Bij <strong>{scenarioPct > 0 ? "+" : ""}{scenarioPct}% trainingsvolume</strong> komt je fitheid over{" "}
+            {projectie.dagen} dagen naar verwachting uit tussen{" "}
+            <strong className="tabular-nums" style={{ color: CHART.verwacht }}>
+              {projectie.ctlEind[0]} en {projectie.ctlEind[1]}
+            </strong>{" "}
+            (nu {projectie.ctlNu}).
+            {projectie.tsbDip < -15 && (
+              <> Je vorm zakt onderweg tijdelijk naar ongeveer {projectie.tsbDip} — houd rekening met extra vermoeidheid.</>
+            )}{" "}
+            Dit is een verwachting op basis van je werkelijke belasting van de laatste vier weken, geen zekerheid.
+          </p>
+        )}
+        {scenarioPct != null && !projectie && (
+          <p className="mt-3 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-500">
+            Er zijn de afgelopen vier weken geen sessies met een belastingsscore, dus een verwachting
+            is nu niet te berekenen. Log trainingen met duur en intensiteit of koppel een platform.
+          </p>
+        )}
+      </LCard>
+
       {/* Load grafiek — volle breedte */}
       <LCard className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -766,6 +976,7 @@ function BelastingTab({
           </div>
         </div>
 
+        <UitlegRegel k="belasting" />
         {loadToestand === "laden" && <Skel className="h-64 w-full" />}
         {loadToestand === "fout" && <LFout titel="Belastingsgrafiek kon niet worden geladen." onOpnieuw={() => void load.refetch()} />}
         {(loadToestand === "ok" || loadToestand === "verouderd") && load.data && (
@@ -776,6 +987,7 @@ function BelastingTab({
               raceMarkers={overlays.raceMarkers}
               vergelijk={vergelijk}
               onDagKlik={onDagKlik}
+              projectie={projectie}
             />
           ) : (
             <LegeGrafiek titel="Nog te weinig belastingsdata voor een grafiek." />
@@ -839,7 +1051,7 @@ function BelastingTab({
         ) : (
           <MissingInputNotice compact showOrb={false}
             title="Nog geen readiness-trend"
-            description="Log je dagelijkse check-in zodat Sparki je readiness kan volgen."
+            description="Log je dagelijkse check-in om je readiness te volgen."
             targets={["checkin"]}
             returnTo="/analyse"
           />
@@ -853,6 +1065,7 @@ function BelastingTab({
           <span className="text-xs text-slate-400">{periodeLabel(periode)}</span>
           <UitlegDot uitlegKey="hrvTrend" label="HRV-trend" />
         </div>
+        <UitlegRegel k="hrvTrend" />
         {hrvWaarde != null ? (
           <>
             <div className="flex items-end justify-between mb-2">
@@ -893,11 +1106,17 @@ function BelastingTab({
           <LCardTitle>Performance-radar</LCardTitle>
           <UitlegDot uitlegKey="performanceRadar" label="Performance Radar" />
         </div>
+        <UitlegRegel k="performanceRadar" />
         {loadToestand === "laden" ? (
           <Skel className="h-[180px] w-[180px] rounded-full mx-auto" />
         ) : meetbaar.length >= 3 ? (
           <div className="flex flex-col items-center gap-3">
-            <BioRadar size={200} axes={meetbaar} />
+            <BioRadar
+              size={220}
+              axes={meetbaar}
+              labelColor="rgba(51,65,85,0.85)"
+              gridColor="rgba(15,23,42,0.10)"
+            />
             {radarSamenv && <p className="sr-only">{radarSamenv}</p>}
             <p className="text-center text-xs text-slate-500 max-w-xs text-pretty">
               {meetbaar.length} van {assen.length} assen meetbaar.
@@ -1031,6 +1250,7 @@ function GewichtWkgCard({
     <LCard className="p-5">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4">
         <LCardTitle>Gewicht &amp; W/kg</LCardTitle>
+        <UitlegDot uitlegKey="gewichtWkg" label="Gewicht & W/kg" />
         <div className="flex items-center gap-4 text-xs text-slate-500">
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-0.5 w-5 rounded bg-slate-700" /> Gewicht
@@ -1047,6 +1267,7 @@ function GewichtWkgCard({
           )}
         </div>
       </div>
+      <UitlegRegel k="gewichtWkg" />
       {reeks.length < 2 ? (
         <LegeGrafiek titel="Nog geen gewichtsmetingen om een verloop te tonen." />
       ) : (
@@ -1109,6 +1330,7 @@ function ProgressieTab({
             </span>
           )}
         </div>
+        <UitlegRegel k="ftpOntwikkeling" />
         {ftp.isLoading ? (
           <Skel className="h-24 w-full" />
         ) : weergave == null || weergave.getoond == null ? (
@@ -1177,9 +1399,11 @@ function ProgressieTab({
 
       {/* Persoonlijke records (vermogen) */}
       <LCard className="p-5 lg:col-span-2">
-        <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-1.5 mb-4">
           <LCardTitle>Persoonlijke vermogensrecords</LCardTitle>
+          <UitlegDot uitlegKey="records" label="Beste vermogens" />
         </div>
+        <UitlegRegel k="records" />
         <PowerBestsTable />
       </LCard>
       </div>
@@ -1274,6 +1498,10 @@ function DoelenTab() {
   const { data: goalPicture, isLoading: goalsLoading, isError: goalsError, refetch: goalsRefetch } = useGoalPicture()
   const { data: races } = useRaces()
   const todayISO = localISODate(new Date())
+  // Beheer als popup: je blijft op deze pagina; wijzigingen komen via de
+  // gedeelde query-cache meteen hier én in Plan/Jij terug.
+  const [doelenPopup, setDoelenPopup] = useState<null | { autoAdd: boolean }>(null)
+  const [racePopup, setRacePopup] = useState(false)
 
   const actieveDoelen = goalPicture?.goals.filter((g) => g.status === "active") ?? []
   const komende = (races ?? [])
@@ -1287,9 +1515,9 @@ function DoelenTab() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-semibold text-slate-900">Actieve doelen</h2>
-          <button type="button" onClick={() => navigate("/you?focus=doelen")}
+          <button type="button" onClick={() => setDoelenPopup({ autoAdd: false })}
             className="text-xs text-sky-600 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60">
-            Beheer →
+            Beheer
           </button>
         </div>
 
@@ -1298,9 +1526,9 @@ function DoelenTab() {
         {!goalsLoading && !goalsError && actieveDoelen.length === 0 && (
           <p className="text-sm text-slate-400 py-2">
             Nog geen actieve doelen.{" "}
-            <button type="button" onClick={() => navigate("/you?focus=doelen")}
+            <button type="button" onClick={() => setDoelenPopup({ autoAdd: true })}
               className="underline underline-offset-2 hover:no-underline">
-              Voeg een doel toe via Jij
+              Voeg een doel toe
             </button>
             .
           </p>
@@ -1316,18 +1544,24 @@ function DoelenTab() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-semibold text-slate-900">Aankomende wedstrijden</h2>
-          <button type="button" onClick={() => navigate("/races")}
-            className="text-xs text-sky-600 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60">
-            Alle races →
-          </button>
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={() => setRacePopup(true)}
+              className="text-xs text-sky-600 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60">
+              + Wedstrijd
+            </button>
+            <button type="button" onClick={() => navigate("/races")}
+              className="text-xs text-slate-400 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60">
+              Alle races →
+            </button>
+          </div>
         </div>
 
         {komende.length === 0 ? (
           <p className="text-sm text-slate-400 py-2">
             Geen aankomende wedstrijden.{" "}
-            <button type="button" onClick={() => navigate("/races")}
+            <button type="button" onClick={() => setRacePopup(true)}
               className="underline underline-offset-2 hover:no-underline">
-              Plan een wedstrijd via Races
+              Plan een wedstrijd
             </button>
             .
           </p>
@@ -1337,6 +1571,13 @@ function DoelenTab() {
           </div>
         )}
       </section>
+
+      <DoelenBeheerSheet
+        open={doelenPopup != null}
+        onOpenChange={(o) => !o && setDoelenPopup(null)}
+        autoAdd={doelenPopup?.autoAdd ?? false}
+      />
+      <WedstrijdToevoegenSheet open={racePopup} onOpenChange={setRacePopup} />
     </div>
   )
 }
@@ -1548,6 +1789,7 @@ export default function CoreAnalysePage() {
   }
   const [openSessie, setOpenSessie] = useState<TrainingSession | null>(null)
   const [periode, setPeriode] = useState<AnalysePeriode>(30)
+  const [uitlegAan, setUitlegAan] = useState(false)
 
   // Bestaande hooks — berekeningen blijven in engines en API-laag
   const load    = useLoad()
@@ -1611,7 +1853,21 @@ export default function CoreAnalysePage() {
                   <p className="text-xs text-slate-500 mt-0.5 truncate">{context}</p>
                 )}
               </div>
-              <div className="shrink-0">
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setUitlegAan((v) => !v)}
+                  aria-pressed={uitlegAan}
+                  className={cn(
+                    "min-h-8 rounded-lg border px-3 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60",
+                    uitlegAan
+                      ? "border-sky-500/60 bg-sky-50 font-medium text-sky-700"
+                      : "border-slate-200 text-slate-500 hover:text-slate-800",
+                  )}
+                  title="Toon bij elk onderdeel een korte uitleg in gewone taal"
+                >
+                  {uitlegAan ? "Uitleg aan" : "Uitleg"}
+                </button>
                 <ClubChip />
               </div>
             </div>
@@ -1645,6 +1901,7 @@ export default function CoreAnalysePage() {
         </div>
 
         {/* Tab-inhoud */}
+        <UitlegModus.Provider value={uitlegAan}>
         <div className="mx-auto max-w-5xl px-4 py-6 lg:px-8 space-y-6">
           {/* Bovenste samenvatting — zichtbaar op elk tabblad */}
           <SamenvattingStrip
@@ -1683,6 +1940,7 @@ export default function CoreAnalysePage() {
             <SessiesTab sessies={sessies} onOpen={setOpenSessie} />
           </div>
         </div>
+        </UitlegModus.Provider>
       </div>
 
       <SessionDetailDrawer

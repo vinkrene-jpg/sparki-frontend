@@ -49,8 +49,8 @@ function OpenLoops() {
   if (loops.length === 0) {
     return (
       <p className="text-pretty text-[12px] leading-relaxed text-white/35">
-        Sparki heeft nog geen observaties geopend. Rijd een paar ritten en koppel je
-        data — dan begint hij theorieën te vormen.
+        Nog geen observaties beschikbaar. Log een paar ritten of koppel je data —
+        zodra de data er aanleiding toe geeft, verschijnen ze hier.
       </p>
     )
   }
@@ -90,12 +90,12 @@ function HonestButton() {
         className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border font-sans text-[13px] font-medium transition-colors disabled:opacity-50"
         style={{ borderColor: "rgba(120,210,230,0.3)", background: "rgba(120,210,230,0.06)", color: "rgba(255,255,255,0.9)" }}
       >
-        {ask.isPending ? "Bezig…" : "Sparki, eerlijk?"}
+        {ask.isPending ? "Bezig…" : "Toon onderbouwde observatie"}
       </button>
 
       {ask.isError && (
         <p className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 font-sans text-[12px] text-red-400">
-          Kon Sparki's oordeel niet laden. Probeer het zo nog eens.
+          De observatie kon niet worden geladen. Probeer het zo nog eens.
         </p>
       )}
 
@@ -195,16 +195,15 @@ function IdentityBadges() {
 export function SparkiObservations() {
   return (
     <section>
-      <SectionLabel title="Wat vandaag opvalt" />
+      <SectionLabel title="Observaties uit je data" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
-        Wat opvalt in jouw echte data — alleen als er iets te zeggen valt
+        Automatische observaties op basis van je eigen trainingsdata — alleen zichtbaar wanneer de data er aanleiding toe geeft
       </p>
       <div className="mt-5 flex flex-col gap-6">
         <OpenLoops />
         <div>
           <p className="mb-3 text-pretty text-[12px] leading-relaxed text-white/35">
-            Of vraag Sparki om één eerlijke observatie — alleen als de data het
-            onderbouwt.
+            Vraag één onderbouwde observatie op — alleen wanneer de data die ondersteunt.
           </p>
           <HonestButton />
         </div>

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { dagSfeer } from "@/lib/sfeer"
 import { Link } from "wouter"
 import { CommercialShell } from "@/components/sparki/commercial-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
@@ -13,6 +14,7 @@ import { useRaces } from "@/hooks/use-races"
 import { useCoachAnalysis } from "@/hooks/use-coach-analysis"
 import { useCircleFeed } from "@/hooks/use-social"
 import { useDiscoverRoutes } from "@/hooks/use-routes"
+import { useGarage } from "@/hooks/use-garage"
 import {
   ATMOSPHERE,
   type AtmosphereAsset,
@@ -34,6 +36,7 @@ import {
   type FeedPrefs,
 } from "@/lib/feed-prefs"
 import {
+  Bike,
   Users,
   Flag,
   Newspaper,
@@ -569,7 +572,7 @@ export default function FeedPage() {
   const routesNabij = (routesData?.routes ?? []).slice(0, 3)
 
   return (
-    <CommercialShell actief="/feed" sfeer="/atmosphere/samen-fietsen-cafe-avond.webp">
+    <CommercialShell actief="/feed" sfeer={dagSfeer("ontdekken")}>
       <div className="mx-auto w-full max-w-md px-6 pb-8 pt-12 lg:max-w-5xl lg:pt-8">
         {/* INTRO */}
         <div className="flex items-center justify-between gap-3">
@@ -621,10 +624,7 @@ export default function FeedPage() {
         <div className="mt-6 lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-8">
           {/* Feedkolom */}
           <div className="flex flex-col gap-5">
-            <div className="flex items-center gap-1.5 font-mono text-[10px] tracking-wide text-white/35">
-              <SparkiCore size={14} accent={ACCENT} readiness={0.9} variant="orb" />
-              Door Sparki gesorteerd op jouw sport, doelen en interacties
-            </div>
+            {actief === "materiaal" && <JouwMateriaalBlok />}
 
             {loading && zichtbaar.length === 0 && (
               <>
@@ -751,5 +751,71 @@ export default function FeedPage() {
 
       {readerItem && <NewsReader item={readerItem} onClose={() => setReaderItem(null)} />}
     </CommercialShell>
+  )
+}
+
+
+// Jouw materiaal — bij het Materiaal-filter hoort niet alleen nieuws, maar ook
+// je eigen garage: je fiets(en) en de fietsscan. Alles komt uit echte
+// garagedata; zonder fiets een directe actie in plaats van een lege staat.
+function JouwMateriaalBlok() {
+  const { data: garage, isLoading } = useGarage()
+  if (isLoading) return null
+  const bikes = (garage?.bikes ?? []).filter((b) => b.status === "actief")
+
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
+      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">Jouw materiaal</p>
+      {bikes.length === 0 ? (
+        <>
+          <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/55">
+            Er staat nog geen fiets in je garage. Zet ’m erin, dan zie je hier je eigen materiaal
+            naast het materiaalnieuws.
+          </p>
+          <Link
+            href="/mechanieker"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-200 transition-colors hover:bg-cyan-300/15"
+          >
+            Fiets toevoegen
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+        </>
+      ) : (
+        <div className="mt-3 flex flex-col gap-2">
+          {bikes.slice(0, 3).map((b) => (
+            <Link
+              key={b.id}
+              href="/mechanieker"
+              className="flex items-center gap-3 rounded-xl border border-white/[0.06] px-3 py-2.5 transition-colors hover:border-white/[0.14]"
+            >
+              <Bike className="h-4 w-4 shrink-0 text-white/50" strokeWidth={1.5} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13px] font-medium text-white/85">{b.name}</span>
+                <span className="block truncate font-mono text-[9px] uppercase tracking-wide text-white/35">
+                  {[b.brand, b.model].filter(Boolean).join(" ") || b.bikeType}
+                </span>
+              </span>
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-white/30" />
+            </Link>
+          ))}
+        </div>
+      )}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Link
+          href="/mechanieker"
+          className="rounded-full border border-white/[0.12] px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-white/60 transition-colors hover:border-white/25 hover:text-white/85"
+        >
+          Mechanieker
+        </Link>
+        {bikes.length > 0 && (
+          <Link
+            href="/mechanieker"
+            className="rounded-full border border-white/[0.12] px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-white/60 transition-colors hover:border-white/25 hover:text-white/85"
+          >
+            Fietsscan
+          </Link>
+        )}
+      </div>
+    </div>
   )
 }

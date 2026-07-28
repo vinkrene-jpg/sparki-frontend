@@ -1,0 +1,91 @@
+OPDRACHT — MAAK DUIDELIJK DAT ONTDEKKEN-BEELDEN SFEERBEELDEN ZIJN
+
+Werk in:
+- artifacts/sparki/src/pages/feed.tsx
+- eventueel artifacts/sparki/src/lib/atmosphere-library.ts
+- geen wijzigingen aan nieuwsbronnen of feed-engine tenzij strikt nodig
+
+AANGETOONDE FOUT
+De Ontdekken-feed gebruikt generieke atmosphere-assets bij nieuws-, wedstrijd-, route-, materiaal- en trainingskaarten.
+
+In de code staat dat deze beelden sfeerbeelden zijn en niet de originele bronfoto, maar de gebruiker ziet dat onderscheid nu niet duidelijk genoeg.
+
+RISICO
+Een gebruiker kan denken dat:
+- het beeld bij het artikel hoort;
+- het de echte locatie of wedstrijd toont;
+- het afkomstig is van de genoemde bron.
+
+DOEL
+Maak op een rustige, duidelijke manier zichtbaar dat het om een sfeerbeeld gaat.
+
+HERSTEL
+- Voeg bij elk generiek atmosphere-beeld een compacte aanduiding toe:
+  “Sfeerbeeld”
+- Plaats dit subtiel in of direct onder het beeld.
+- Houd de bestaande categoriechip behouden.
+- Maak het label visueel ondergeschikt.
+- Geen zware donkere overlay toevoegen.
+- Geen grote tekst over het beeld.
+- Geen wijziging aan de feedvolgorde of personalisatie.
+- Geen sfeerbeeld-label tonen wanneer later aantoonbaar een echte bronfoto wordt gebruikt.
+
+TECHNISCHE REGEL
+Gebruik een expliciete eigenschap of logica waarmee het verschil bestaat tussen:
+- atmosphere/sfeerbeeld;
+- echte bronafbeelding;
+- geen afbeelding.
+
+Niet alleen op bestandsnaam gokken wanneer een duidelijk typeveld mogelijk is.
+
+TOEGANKELIJKHEID
+- Het label moet ook zonder kleur begrijpelijk zijn.
+- Het sfeerbeeld blijft decoratief met correcte lege alt-tekst wanneer het geen inhoudelijke informatie toevoegt.
+- De categorie en bron moeten leesbaar blijven.
+- Controleer contrast.
+
+ACCEPTATIE
+Controleer kaarten van minimaal:
+- nieuws;
+- wedstrijd;
+- route;
+- materiaal;
+- trainingstip.
+
+Per kaart:
+- sfeerbeeld is herkenbaar als sfeerbeeld;
+- bronnaam wordt niet verward met de afbeelding;
+- kaart blijft rustig;
+- tekst overlapt niet;
+- afbeelding en content lopen niet over elkaar.
+
+TEST VIEWPORTS
+- 390 px
+- 768 px
+- 1024 px
+- 1440 px
+
+Controleer ook:
+- lange bronnaam;
+- lange categorie;
+- kaart zonder beeld;
+- kaart met toekomstige echte bronfoto;
+- reduced motion niet geraakt;
+- geen consolefouten.
+
+WERK HET DEFECTREGISTER BIJ
+Item:
+A-04 — Sfeerbeeld kan als bronfoto worden geïnterpreteerd
+
+Na implementatie:
+- FIXED_NOT_VERIFIED;
+- na visuele controle: VERIFIED_FIXED;
+- voeg screenshotbewijs en commit-SHA toe.
+
+LEVER
+- exacte codewijziging;
+- gekozen onderscheid tussen sfeerbeeld en echte bronfoto;
+- screenshots mobiel en desktop;
+- testresultaten;
+- commit-SHA;
+- git status clean.

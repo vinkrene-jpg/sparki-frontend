@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
 import { RouteMap } from "@/components/sparki/route-map"
-import { ElevationProfile } from "@/components/sparki/elevation-profile"
+import { InteractiveElevationProfile } from "@/components/sparki/elevation-profile"
 import { useClimbSearch, useClimbDetail } from "@/hooks/use-climbs"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import {
@@ -69,6 +69,12 @@ function DetailView({
   onBack: () => void
 }) {
   const { data, isLoading, isError, error } = useClimbDetail(climb.osmId)
+  // Positie-cursor: hoogteprofiel ↔ kaart synchroon (aanwijzen/slepen/schuif).
+  const [positionKm, setPositionKm] = useState<number | null>(null)
+
+  // De echte getraceerde klimlijn (als het profiel afgeleid kon worden) —
+  // daarmee tekent de kaart de beklimming zelf, met de top als eindpunt.
+  const climbLine = data?.profile?.points ?? null
 
   return (
     <div>
@@ -88,12 +94,26 @@ function DetailView({
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-white/[0.08]">
         <RouteMap
-          geometry={[[climb.lat, climb.lon]]}
+          geometry={climbLine ?? [[climb.lat, climb.lon]]}
           center={[climb.lat, climb.lon]}
+          // De top altijd zichtbaar als verzamelpunt-achtige pin met naam —
+          // ook wanneer er (nog) geen klimlijn getraceerd kon worden.
+          meetpoints={[
+            { name: climb.name, lat: climb.lat, lon: climb.lon, note: null },
+          ]}
+          positionKm={positionKm}
+          onTrackPositionSelect={setPositionKm}
           interactive
           height={220}
         />
       </div>
+      {climbLine && (
+        <p className="mt-2 text-[11px] text-white/35">
+          {climb.kind === "road"
+            ? "De lijn op de kaart is een afgeleide route naar het hoogste punt in de buurt van deze klimweg — het gemarkeerde punt is het middelpunt van de weg, niet per se de top."
+            : "De lijn op de kaart is de afgeleide klimroute naar de top."}
+        </p>
+      )}
 
       {isLoading && (
         <div className="mt-4 space-y-3">
@@ -136,10 +156,12 @@ function DetailView({
                   <Stat label="Top" value={`${data.elevationM} m`} />
                 )}
               </div>
-              <ElevationProfile
+              <InteractiveElevationProfile
                 profile={data.profile.profile}
                 distanceKm={data.profile.lengthKm}
-                className="mt-3"
+                positionKm={positionKm}
+                onPositionChange={setPositionKm}
+                className="mt-1"
               />
               <p className="mt-3 text-[11px] leading-relaxed text-white/35">
                 Lengte, stijgingspercentages en hoogtemeters zijn afgeleid uit
@@ -209,12 +231,13 @@ function Stat({ label, value }: { label: string; value: string }) {
 function Explorer() {
   const [area, setArea] = useState("")
   const [name, setName] = useState("")
+  const [radiusKm, setRadiusKm] = useState(15)
   const [selected, setSelected] = useState<ClimbHit | null>(null)
 
   const debouncedArea = useDebounced(area, 500)
   const debouncedName = useDebounced(name, 500)
   const { data, isLoading, isError, error, isFetching, refetch } =
-    useClimbSearch(debouncedArea, debouncedName)
+    useClimbSearch(debouncedArea, debouncedName, radiusKm)
 
   const climbs = useMemo(() => data?.climbs ?? [], [data])
 
@@ -252,10 +275,32 @@ function Explorer() {
         </div>
       </div>
 
+      {/* Zoekstraal rond de gevonden plaats — instelbaar in km. */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+          Zoekcirkel
+        </span>
+        {[5, 10, 15, 25, 40, 60].map((r) => (
+          <button
+            key={r}
+            type="button"
+            onClick={() => setRadiusKm(r)}
+            aria-pressed={radiusKm === r}
+            className={`rounded-full border px-3 py-1 font-mono text-[11px] transition ${
+              radiusKm === r
+                ? "border-cyan-300/60 bg-cyan-300/10 text-cyan-200"
+                : "border-white/[0.12] text-white/50 hover:border-white/25 hover:text-white/75"
+            }`}
+          >
+            {r} km
+          </button>
+        ))}
+      </div>
+
       {data?.area && (
         <p className="mt-3 flex items-center gap-1.5 text-[12px] text-white/45">
           <MapPin className="h-3.5 w-3.5" style={{ color: ACCENT }} />
-          Resultaten rond {data.area.label}
+          Resultaten binnen {data.radiusKm} km rond {data.area.label}
         </p>
       )}
 

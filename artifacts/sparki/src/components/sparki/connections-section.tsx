@@ -778,8 +778,8 @@ export function ConnectionsSection({
     <section className="pt-2">
       <SectionLabel n="04" title="Koppelingen" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
-        Koppel je sport- en gezondheidsapps zodat Sparki je gegevens automatisch
-        ophaalt. Verbreken of opnieuw synchroniseren kan altijd.
+        Koppel je sport- en gezondheidsapps — je gegevens worden dan automatisch
+        opgehaald. Verbreken of opnieuw synchroniseren kan altijd.
       </p>
 
       {loading ? (

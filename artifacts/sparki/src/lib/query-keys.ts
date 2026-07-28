@@ -97,6 +97,7 @@ export const queryKeys = {
   aiMemory: {
     all: () => ["ai-memory"] as const,
     observations: () => ["ai-memory", "observations"] as const,
+    connectionReadiness: () => ["ai-memory", "connection-readiness"] as const,
     preferences: () => ["ai-memory", "preferences"] as const,
   },
 

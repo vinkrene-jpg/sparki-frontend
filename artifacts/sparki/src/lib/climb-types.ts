@@ -7,12 +7,14 @@ export type ClimbHit = {
   lat: number
   lon: number
   elevationM: number | null
-  kind: "pass" | "peak"
+  kind: "pass" | "peak" | "road"
   hasDescription: boolean
 }
 
 export type ClimbSearchResult = {
   area: { label: string; lat: number; lon: number } | null
+  // De werkelijk gebruikte (geklemde) zoekstraal in km.
+  radiusKm: number
   climbs: ClimbHit[]
 }
 
@@ -22,6 +24,8 @@ export type DerivedClimbProfile = {
   maxGradePct: number
   elevationGainM: number
   profile: number[]
+  // Echte getraceerde routelijn naar de top ([lat, lon]) voor de kaart.
+  points: [number, number][]
   derived: true
 }
 
@@ -37,7 +41,7 @@ export type ClimbDetail = {
   lat: number
   lon: number
   elevationM: number | null
-  kind: "pass" | "peak"
+  kind: "pass" | "peak" | "road"
   description: ClimbDescription
   profile: DerivedClimbProfile | null
   profileUnavailableReason: string | null
@@ -46,6 +50,7 @@ export type ClimbDetail = {
 export const KIND_LABEL: Record<ClimbHit["kind"], string> = {
   pass: "Col / pas",
   peak: "Top / berg",
+  road: "Klimweg / helling",
 }
 
 export const SOURCE_LABEL: Record<NonNullable<ClimbDescription>["source"], string> =

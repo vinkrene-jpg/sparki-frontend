@@ -44,9 +44,9 @@ export const SCENES: Record<SceneName, SceneConfig> = {
   // Home — rider in mist, calm, focused.
   home: {
     base: "#05070e",
-    imageOpacity: 0.56,
+    imageOpacity: 0.7,
     gradient:
-      "linear-gradient(180deg, rgba(6,12,22,0.30) 0%, rgba(5,10,18,0.40) 50%, rgba(4,8,14,0.58) 100%)",
+      "linear-gradient(180deg, rgba(6,12,22,0.30) 0%, rgba(5,10,18,0.40) 50%, rgba(4,8,14,0.44) 100%)",
     haze: "radial-gradient(58% 46% at 50% 38%, rgba(140,190,215,0.18), rgba(140,190,215,0.05) 45%, transparent 72%)",
     hazeLow:
       "radial-gradient(52% 42% at 66% 80%, rgba(90,150,185,0.10), transparent 70%)",
@@ -63,9 +63,9 @@ export const SCENES: Record<SceneName, SceneConfig> = {
   // Train — more energy, more contrast, moving light lines.
   train: {
     base: "#05080f",
-    imageOpacity: 0.52,
+    imageOpacity: 0.66,
     gradient:
-      "linear-gradient(180deg, rgba(5,11,22,0.34) 0%, rgba(4,9,18,0.44) 48%, rgba(3,6,12,0.64) 100%)",
+      "linear-gradient(180deg, rgba(5,11,22,0.34) 0%, rgba(4,9,18,0.44) 48%, rgba(3,6,12,0.50) 100%)",
     haze: "radial-gradient(56% 44% at 52% 34%, rgba(120,195,225,0.20), rgba(120,195,225,0.05) 44%, transparent 70%)",
     hazeLow:
       "radial-gradient(50% 40% at 40% 82%, rgba(70,150,195,0.12), transparent 68%)",
@@ -82,9 +82,9 @@ export const SCENES: Record<SceneName, SceneConfig> = {
   // Feed — lighter, more depth.
   feed: {
     base: "#06090f",
-    imageOpacity: 0.6,
+    imageOpacity: 0.72,
     gradient:
-      "linear-gradient(180deg, rgba(8,14,24,0.24) 0%, rgba(6,12,20,0.34) 50%, rgba(4,8,14,0.54) 100%)",
+      "linear-gradient(180deg, rgba(8,14,24,0.24) 0%, rgba(6,12,20,0.34) 50%, rgba(4,8,14,0.42) 100%)",
     haze: "radial-gradient(60% 48% at 48% 36%, rgba(150,195,220,0.20), rgba(150,195,220,0.06) 46%, transparent 74%)",
     hazeLow:
       "radial-gradient(54% 44% at 62% 78%, rgba(100,160,195,0.12), transparent 72%)",
@@ -101,9 +101,9 @@ export const SCENES: Record<SceneName, SceneConfig> = {
   // Lab — futuristic laboratory; glass, light, distant data feel.
   lab: {
     base: "#05080f",
-    imageOpacity: 0.5,
+    imageOpacity: 0.64,
     gradient:
-      "linear-gradient(180deg, rgba(6,13,24,0.30) 0%, rgba(5,11,20,0.42) 50%, rgba(3,7,13,0.60) 100%)",
+      "linear-gradient(180deg, rgba(6,13,24,0.30) 0%, rgba(5,11,20,0.42) 50%, rgba(3,7,13,0.46) 100%)",
     haze: "radial-gradient(58% 46% at 50% 34%, rgba(150,210,235,0.22), rgba(150,210,235,0.06) 44%, transparent 72%)",
     hazeLow:
       "radial-gradient(52% 42% at 50% 84%, rgba(90,165,205,0.12), transparent 70%)",

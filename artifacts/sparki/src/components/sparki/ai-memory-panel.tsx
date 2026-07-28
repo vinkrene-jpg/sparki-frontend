@@ -293,7 +293,7 @@ export function AiMemoryPanel() {
       ) : groups.length === 0 ? (
         <p className="mt-4 text-[13px] text-white/35">
           Nog geen verbanden · Houd je training, slaap en herstel bij en klik op
-          "Verbanden zoeken" zodat Sparki patronen kan leggen
+          "Verbanden zoeken" om patronen te vinden
         </p>
       ) : (
         <div className="mt-4 flex flex-col gap-3">

@@ -10,6 +10,8 @@ import { enrichDescription, type ClimbDescription } from "./enrich";
 
 export type ClimbSearchResult = {
   area: { label: string; lat: number; lon: number } | null;
+  // De werkelijk gebruikte (geklemde) zoekstraal in km.
+  radiusKm: number;
   climbs: ClimbHit[];
 };
 
@@ -19,7 +21,7 @@ export type ClimbDetail = {
   lat: number;
   lon: number;
   elevationM: number | null;
-  kind: "pass" | "peak";
+  kind: "pass" | "peak" | "road";
   description: ClimbDescription;
   profile: DerivedClimbProfile | null;
   // Honest reason the derived profile is absent, when it is.
@@ -36,10 +38,17 @@ export class ClimbSourceError extends Error {
   }
 }
 
+// Zoekstraal in km rond het gevonden gebiedscentrum. Instelbaar door de
+// gebruiker; geklemd zodat de Overpass-query nooit ontspoort.
+const MIN_RADIUS_KM = 2;
+const MAX_RADIUS_KM = 60;
+export const DEFAULT_RADIUS_KM = 15;
+
 export async function searchClimbs(opts: {
   q: string;
   name?: string | null;
   limit?: number;
+  radiusKm?: number | null;
 }): Promise<ClimbSearchResult> {
   const area = await geocodeArea(opts.q).catch(() => {
     throw new ClimbSourceError("geocode_unreachable", "unreachable");
@@ -47,11 +56,20 @@ export async function searchClimbs(opts: {
   if (!area) {
     throw new ClimbSourceError("area_not_found", "area_not_found");
   }
+  // Echte straal rond het centrum — de bbox van de plaats zelf is voor een
+  // dorpskern veel te klein (dan vind je rond Valkenburg bijna niets).
+  const radiusKm = Math.min(
+    Math.max(opts.radiusKm ?? DEFAULT_RADIUS_KM, MIN_RADIUS_KM),
+    MAX_RADIUS_KM,
+  );
+  const halfLat = radiusKm / 111;
+  const halfLon =
+    radiusKm / (111 * Math.max(Math.cos((area.lat * Math.PI) / 180), 0.2));
   const climbs = await searchClimbsInBbox({
-    south: area.south,
-    west: area.west,
-    north: area.north,
-    east: area.east,
+    south: area.lat - halfLat,
+    west: area.lon - halfLon,
+    north: area.lat + halfLat,
+    east: area.lon + halfLon,
     nameFilter: opts.name ?? null,
     limit: opts.limit,
   }).catch(() => {
@@ -59,6 +77,7 @@ export async function searchClimbs(opts: {
   });
   return {
     area: { label: area.label, lat: area.lat, lon: area.lon },
+    radiusKm,
     climbs,
   };
 }
@@ -72,10 +91,12 @@ export async function climbDetail(osmId: string): Promise<ClimbDetail> {
   }
   const { tags, lat, lon } = info;
   const name = tags.name?.trim() || "Onbekende klim";
-  const kind: "pass" | "peak" =
+  const kind: "pass" | "peak" | "road" =
     tags.mountain_pass === "yes" || tags.mountain_pass === "1"
       ? "pass"
-      : "peak";
+      : tags.highway
+        ? "road"
+        : "peak";
   const elevationM = parseEle(tags.ele);
 
   // Description + derived profile are independent; run them in parallel and let

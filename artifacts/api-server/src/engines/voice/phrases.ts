@@ -229,7 +229,7 @@ export const EVENTS: Record<VoiceEvent, EventConfig> = {
       curious: [
         "Ik heb iets gevonden.",
         "Ik zag een patroon.",
-        "Ik denk dat ik je begin te begrijpen.",
+        "Je trainingsprofiel wordt steeds beter onderbouwd.",
         "Ik twijfel tussen twee verklaringen.",
       ],
       observer: ["Iets in je cijfers viel me op.", "Daar wil ik nog eens naar kijken."],

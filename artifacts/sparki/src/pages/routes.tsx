@@ -1,4 +1,5 @@
 import { Link, useLocation, useSearch } from "wouter"
+import { dagSfeer } from "@/lib/sfeer"
 import {
   Flag,
   ChevronRight,
@@ -92,7 +93,7 @@ export default function RoutesPage() {
   ]
 
   return (
-    <CommercialShell actief="/routes" sfeer="/atmosphere/routes-weg-zonsondergang.webp">
+    <CommercialShell actief="/routes" sfeer={dagSfeer("rijden")}>
       {view === null ? (
         <>
           <div className="flex flex-col gap-2">

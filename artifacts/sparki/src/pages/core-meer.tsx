@@ -5,6 +5,7 @@
 // 6 Beheer, instellingen & privacy. Alle bestaande bestemmingen bereikbaar;
 // rolgedrag identiek aan pages/meer.tsx; club- en admin-condities identiek.
 
+import { dagSfeer } from "@/lib/sfeer"
 import { Link } from "wouter"
 import { CommercialShell } from "@/components/sparki/commercial-shell"
 import { IconChevron } from "@/components/ds"
@@ -84,7 +85,7 @@ export default function CoreMeerPage() {
   })
 
   return (
-    <CommercialShell actief="/meer" sfeer="/atmosphere/samen-koffiestop-zon.webp">
+    <CommercialShell actief="/meer" sfeer={dagSfeer("meer")}>
       <div className="mx-auto w-full max-w-2xl px-5 pb-10 pt-8 lg:max-w-3xl lg:px-10">
         <h1 className="type-display">Meer</h1>
         <p className="type-body mt-1 text-content-secondary">

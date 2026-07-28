@@ -1,0 +1,70 @@
+OPDRACHT — HERSTEL “RIT IMPORTEREN” OP ANALYSE
+
+Werk in:
+- artifacts/sparki/src/pages/core-analyse.tsx
+
+AANGETOONDE FOUT
+In de lege grafiekstatus gaan beide acties nu naar dezelfde route:
+
+- Platform koppelen → /connect
+- Rit importeren → /connect
+
+Daardoor doet “Rit importeren” functioneel niet wat de knop belooft.
+
+ONDERZOEK EERST
+Zoek in de bestaande code naar de echte importflow voor:
+- FIT
+- GPX
+- TCX
+- handmatige ritimport
+- activity import panel
+- bestaande modal, drawer, tab of route voor importeren
+
+Gebruik de bestaande werkende importflow.
+Geen nieuwe route, modal of parallel importsysteem bouwen wanneer er al iets bestaat.
+
+HERSTEL
+- Platform koppelen blijft naar /connect gaan.
+- Rit importeren opent of navigeert naar de bestaande echte ritimportflow.
+- Behoud de huidige lege grafiekstatus en visuele stijl.
+- Geen redesign van Analyse.
+- Geen mockdata of voorbeeldrit toevoegen.
+- Geen wijziging aan berekeningen of grafieken.
+
+ACCEPTATIE
+- “Platform koppelen” opent de koppelomgeving.
+- “Rit importeren” opent daadwerkelijk de bestaande importfunctie.
+- Beide knoppen hebben aantoonbaar verschillend gedrag.
+- Na succesvolle import kan Analyse de nieuwe activiteit via de bestaande datalaag verwerken.
+- Annuleren of teruggaan werkt zonder dataverlies.
+- Geen dubbele importcomponent toegevoegd.
+
+TEST
+Controleer:
+- /analyse zonder voldoende data;
+- klik op Platform koppelen;
+- terug naar /analyse;
+- klik op Rit importeren;
+- importflow opent;
+- mobiel 390 px;
+- tablet 768 px;
+- desktop 1440 px;
+- toetsenbordbediening en zichtbare focus;
+- geen consolefouten.
+
+WERK HET DEFECTREGISTER BIJ
+Item:
+A-02 — Analyse-acties verwijzen naar dezelfde route
+
+Na implementatie:
+- FIXED_NOT_VERIFIED;
+- na functionele test: VERIFIED_FIXED;
+- voeg de gebruikte bestaande importflow, commit-SHA en bewijs toe.
+
+LEVER
+- gevonden bestaande importcomponent/route;
+- exacte codewijziging;
+- testresultaten;
+- screenshot of korte schermopname van beide verschillende acties;
+- commit-SHA;
+- git status clean.

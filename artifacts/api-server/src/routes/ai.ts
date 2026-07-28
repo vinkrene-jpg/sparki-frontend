@@ -269,6 +269,23 @@ router.post("/connections", requireAuth, async (req, res) => {
   }
 });
 
+// ── GET /api/ai/connections/readiness ────────────────────────────────────────
+// Eerlijk stappenplan: welke data is er al en wat is er minimaal nodig voordat
+// de verbanden-analyse iets kán opleveren. Telt echte rijen, belooft niets.
+router.get("/connections/readiness", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  try {
+    const { connectionReadiness } = await import(
+      "../engines/memory-graph/readiness"
+    );
+    const readiness = await connectionReadiness(clerkId);
+    res.json(readiness);
+  } catch (err) {
+    req.log.error({ err }, "ai.connections.readiness failed");
+    res.status(500).json({ error: "Kon de datastatus niet bepalen." });
+  }
+});
+
 // ── PATCH /api/ai/observations/:id ───────────────────────────────────────────
 router.patch("/observations/:id", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;

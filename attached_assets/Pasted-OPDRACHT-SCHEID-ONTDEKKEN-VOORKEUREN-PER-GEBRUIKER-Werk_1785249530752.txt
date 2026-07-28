@@ -1,0 +1,98 @@
+OPDRACHT — SCHEID ONTDEKKEN-VOORKEUREN PER GEBRUIKER
+
+Werk in:
+- artifacts/sparki/src/lib/feed-prefs.ts
+- alleen waar nodig in artifacts/sparki/src/pages/feed.tsx of gebruikerscontext
+
+AANGETOONDE FOUT
+Ontdekken gebruikt nu één globale localStorage-sleutel:
+
+sparki.ontdekken.prefs.v1
+
+Daardoor kunnen op hetzelfde apparaat:
+- bewaarde items;
+- “minder hiervan”-voorkeuren;
+- bron- en categoriedemping
+
+zichtbaar blijven wanneer een andere gebruiker inlogt.
+
+DOEL
+Voorkeuren moeten per ingelogde gebruiker worden gescheiden.
+
+ONDERZOEK EERST
+Bepaal welke stabiele gebruikers-ID in de actieve app beschikbaar is:
+- bij voorkeur clerkId of de bestaande interne user-id;
+- gebruik geen displayName of e-mailadres;
+- bouw geen tweede gebruikerscontext.
+
+HERSTEL
+- Maak de storage-key gebruikersgebonden, bijvoorbeeld:
+  sparki.ontdekken.prefs.v1.<userId>
+- Pas lees-, schrijf-, bewaar-, minder- en herstelfuncties consequent aan.
+- Geef de user-id expliciet door of gebruik de bestaande gebruikerscontext op één duidelijke plek.
+- Geen globale mutable user-state in feed-prefs.ts.
+- Geen voorkeuren van gebruiker A tonen aan gebruiker B.
+
+MIGRATIE OUDE SLEUTEL
+De oude algemene sleutel mag niet blind aan iedere gebruiker worden toegekend.
+
+Veilige aanpak:
+- migreer de oude sleutel maximaal één keer naar de huidige gebruiker;
+- alleen wanneer voor deze gebruiker nog geen eigen sleutel bestaat;
+- verwijder daarna de oude globale sleutel;
+- leg de migratie vast met een aparte migratiemarkering;
+- bij twijfel: oude sleutel verwijderen in plaats van data tussen accounts te mengen.
+
+LOGOUT EN ACCOUNTWISSEL
+- Bij accountwissel direct voorkeuren van de nieuwe gebruiker laden.
+- Geen oude React-state laten staan.
+- Query/cache-reset is niet voldoende; controleer lokale feed-state expliciet.
+- Bij uitloggen hoeft persoonlijke opslag niet per se verwijderd te worden, zolang die correct per user-id is afgeschermd.
+
+ACCEPTATIE
+Test met twee accounts op hetzelfde apparaat:
+
+Account A:
+- bewaar een item;
+- kies “minder hiervan”.
+
+Daarna account B:
+- ziet geen voorkeuren van A;
+- heeft een lege of eigen voorkeurenset.
+
+Terug naar account A:
+- eigen voorkeuren zijn nog aanwezig.
+
+Controleer ook:
+- incognito/opslag geblokkeerd;
+- corrupte JSON;
+- lege user-id;
+- accountwissel zonder volledige browserherstart;
+- maximaal 200 bewaarde items blijft gehandhaafd.
+
+TESTS
+Voeg unit-tests toe voor:
+- keys zijn verschillend per user-id;
+- data lekt niet tussen gebruikers;
+- veilige migratie oude globale sleutel;
+- corrupte opslag geeft lege voorkeuren;
+- geen user-id geeft geen onveilige globale opslag.
+
+WERK HET DEFECTREGISTER BIJ
+Item:
+A-03 — Ontdekken-voorkeuren mengen tussen accounts
+
+Na implementatie:
+- FIXED_NOT_VERIFIED;
+- na tweaccounttest: VERIFIED_FIXED;
+- voeg gebruikte user-id, migratiegedrag, tests en commit-SHA toe.
+
+LEVER
+- exacte oorzaak;
+- gekozen gebruikers-ID;
+- migratiegedrag;
+- gewijzigde bestanden;
+- testresultaten;
+- bewijs met account A → B → A;
+- commit-SHA;
+- git status clean.

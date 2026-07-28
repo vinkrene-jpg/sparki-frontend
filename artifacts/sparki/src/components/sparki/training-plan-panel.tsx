@@ -323,7 +323,7 @@ function RaceWeatherCard({ rw }: { rw: RaceWeather }) {
       rw.reason === "too_far"
         ? "Weersverwachting voor de wedstrijddag komt beschikbaar zodra die binnen ~16 dagen valt."
         : rw.reason === "no_location"
-          ? "Voeg een locatie toe aan je wedstrijd zodat Sparki het weer ter plaatse kan checken."
+          ? "Voeg een locatie toe aan je wedstrijd om het weer ter plaatse te checken."
           : rw.reason === "geocode_failed"
             ? "Sparki kon de wedstrijdlocatie niet op de kaart vinden — controleer de plaatsnaam."
             : "Nog geen weersverwachting beschikbaar voor de wedstrijdlocatie."

@@ -59,6 +59,35 @@ export function useRunConnections() {
   });
 }
 
+export type ReadinessStep = {
+  id: "trainingen" | "gevoel_slaap" | "ochtendmetingen" | "feedback";
+  titel: string;
+  uitleg: string;
+  heb: number;
+  nodig: number;
+  klaar: boolean;
+  actie: "logtraining" | "checkin" | "feedback";
+};
+
+export type ConnectionReadiness = {
+  windowDays: number;
+  analyseMogelijk: boolean;
+  stappen: ReadinessStep[];
+};
+
+// Eerlijk stappenplan: wat is er al en wat is er minimaal nodig voordat de
+// verbanden-analyse iets kán opleveren.
+export function useConnectionReadiness(enabled = true) {
+  const { isSignedIn } = useUser();
+  return useQuery({
+    queryKey: queryKeys.aiMemory.connectionReadiness(),
+    queryFn: () =>
+      apiFetch<ConnectionReadiness>("/api/ai/connections/readiness"),
+    enabled: enabled && (DEV_PREVIEW || !!isSignedIn),
+    staleTime: 60_000,
+  });
+}
+
 type ObservationsResponse = {
   observations: AiObservation[];
   groups: Record<string, AiObservation[]>;

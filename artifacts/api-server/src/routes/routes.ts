@@ -2908,14 +2908,38 @@ router.post("/generate/options", requireAuth, async (req, res) => {
 
     // Build sequentially — each loop already fans out several provider probes,
     // so parallelising all three at once risks tripping ORS rate limits.
+    // Fail-soft per variant: bouw de GEVRAAGDE afstand eerst; als een variant
+    // faalt (bijv. tijdelijke ORS-limiet) leveren we eerlijk de varianten die
+    // wél lukten in plaats van na lang wachten met lege handen te eindigen.
+    // Alleen als ALLES faalt volgt een echte foutmelding. Een tijdbudget
+    // voorkomt dat trage extra varianten de rijder minutenlang laten wachten.
+    const ordered = [base, ...distances.filter((d) => d !== base)];
     const options: Array<
       Awaited<ReturnType<typeof buildLoopCandidate>> & { variant: string }
     > = [];
-    for (const d of distances) {
-      const candidate = await buildLoopCandidate(ctx, d);
-      const variant = d < base ? "Korter" : d > base ? "Langer" : "Op maat";
-      options.push({ ...candidate, variant });
+    let firstError: unknown = null;
+    const budgetStart = Date.now();
+    const BUDGET_MS = 25_000;
+    for (const d of ordered) {
+      if (Date.now() - budgetStart > BUDGET_MS) {
+        req.log.warn(
+          { built: options.length },
+          "routes.generate.options: tijdbudget op — resterende varianten overgeslagen",
+        );
+        break;
+      }
+      try {
+        const candidate = await buildLoopCandidate(ctx, d);
+        const variant = d < base ? "Korter" : d > base ? "Langer" : "Op maat";
+        options.push({ ...candidate, variant });
+      } catch (err) {
+        firstError = firstError ?? err;
+        req.log.warn({ err, distanceKm: d }, "routes.generate.options: variant mislukt");
+      }
     }
+    if (options.length === 0) throw firstError ?? new Error("Routegeneratie mislukt");
+    // Vaste volgorde voor de kiezer: kort → gevraagd → lang.
+    options.sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0));
 
     res.json({ options });
   } catch (err) {

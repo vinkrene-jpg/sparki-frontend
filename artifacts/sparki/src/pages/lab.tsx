@@ -312,7 +312,7 @@ export default function LabPage() {
               compact
               showOrb={false}
               title="Nog geen readiness-trend"
-              description="Log je dagelijkse check-in zodat Sparki je readiness-trend kan opbouwen."
+              description="Log je dagelijkse check-in om je readiness-trend op te bouwen."
               targets={["checkin"]}
               returnTo="/lab"
             />
@@ -370,7 +370,7 @@ export default function LabPage() {
               compact
               showOrb={false}
               title="Nog geen HRV"
-              description="Voer je HRV in bij de dagelijkse check-in zodat Sparki je herstel kan volgen."
+              description="Voer je HRV in bij de dagelijkse check-in om je herstel te volgen."
               targets={["checkin"]}
               returnTo="/lab"
             />

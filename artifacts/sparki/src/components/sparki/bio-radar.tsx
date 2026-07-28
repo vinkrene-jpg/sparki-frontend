@@ -1,10 +1,17 @@
 export function BioRadar({
   size = 200,
   accent = "rgba(120,210,230,1)",
+  // Kleur van as-labels en raster. Standaard licht (voor donkere kaarten);
+  // op lichte kaarten (bijv. /analyse) een donkere kleur meegeven, anders
+  // zijn de labels onzichtbaar (wit-op-wit).
+  labelColor = "rgba(255,255,255,0.55)",
+  gridColor = "rgba(255,255,255,0.07)",
   axes,
 }: {
   size?: number
   accent?: string
+  labelColor?: string
+  gridColor?: string
   axes: Array<{ key: string; label: string; level: number }>
 }) {
   const n = axes.length
@@ -12,7 +19,7 @@ export function BioRadar({
 
   const cx = size / 2
   const cy = size / 2
-  const r = size / 2 - 22
+  const r = size / 2 - 30
 
   const ang = (i: number) => (Math.PI * 2 * i) / n - Math.PI / 2
 
@@ -28,7 +35,7 @@ export function BioRadar({
 
   const labelPos = (i: number): [number, number] => {
     const a = ang(i)
-    return [cx + Math.cos(a) * (r + 14), cy + Math.sin(a) * (r + 14)]
+    return [cx + Math.cos(a) * (r + 16), cy + Math.sin(a) * (r + 16)]
   }
 
   const poly = axes.map((v, i) => pt(v.level, i).join(",")).join(" ")
@@ -45,7 +52,7 @@ export function BioRadar({
             })
             .join(" ")}
           fill="none"
-          stroke="rgba(255,255,255,0.07)"
+          stroke={gridColor}
           strokeWidth="0.5"
         />
       ))}
@@ -58,7 +65,7 @@ export function BioRadar({
             y1={cy}
             x2={ex}
             y2={ey}
-            stroke="rgba(255,255,255,0.07)"
+            stroke={gridColor}
             strokeWidth="0.5"
           />
         )
@@ -84,9 +91,9 @@ export function BioRadar({
             y={ly}
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize="6.5"
-            fill="rgba(255,255,255,0.5)"
-            style={{ letterSpacing: "0.1em", fontFamily: "monospace" }}
+            fontSize="8.5"
+            fill={labelColor}
+            style={{ letterSpacing: "0.08em", fontFamily: "monospace" }}
           >
             {v.label.toUpperCase()}
           </text>

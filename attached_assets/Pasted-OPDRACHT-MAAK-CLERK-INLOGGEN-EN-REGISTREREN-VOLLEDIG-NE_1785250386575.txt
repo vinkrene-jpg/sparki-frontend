@@ -1,0 +1,103 @@
+OPDRACHT — MAAK CLERK-INLOGGEN EN REGISTREREN VOLLEDIG NEDERLANDS
+
+Werk in:
+- artifacts/sparki/src/App.tsx
+- artifacts/sparki/src/pages/sign-in.tsx
+- artifacts/sparki/src/pages/sign-up.tsx
+- overige actieve Clerk-configuratiebestanden indien nodig
+
+AANGETOONDE FOUT
+De Clerk-authenticatieschermen zijn nog geheel of gedeeltelijk Engelstalig.
+
+In App.tsx staan onder meer:
+- “Welcome back”
+- “Sign in to your Sparki account”
+- “Join Sparki”
+- “Sparki-powered cycling performance”
+
+DOEL
+Maak de volledige actieve inlog- en registratieflow Nederlandstalig en consistent met de rest van Sparki.
+
+ONDERZOEK EERST
+Controleer alle actieve Clerk-schermen en toestanden:
+- inloggen
+- registreren
+- e-mailverificatie
+- eenmalige code
+- wachtwoord vergeten
+- wachtwoord resetten
+- account bestaat al
+- foutmeldingen
+- sociale login
+- footer- en navigatieteksten
+- terug naar inloggen
+- doorgaan
+- opnieuw verzenden
+
+Controleer ook of Clerk een officiële Nederlandse locale/configuratie ondersteunt die kan worden hergebruikt.
+Gebruik geen half-vertaalde combinatie van ingebouwde Engelse teksten en losse Nederlandse overrides.
+
+HERSTEL
+- Gebruik volledige Nederlandse lokalisatie waar beschikbaar.
+- Overschrijf ontbrekende teksten gericht.
+- Houd teksten kort, duidelijk en begrijpelijk.
+- Geen technische foutcodes tonen als primaire melding.
+- Behoud bestaande Clerk-functionaliteit, redirects en OAuth-flow.
+- Geen eigen parallel authenticatiescherm bouwen.
+- Geen wijzigingen aan account-, onboarding- of consentlogica.
+
+VOORGESTELDE HOOFDTEKSTEN
+Inloggen:
+- titel: “Welkom terug”
+- subtitel: “Log in op je Sparki-account”
+
+Registreren:
+- titel: “Maak je Sparki-account”
+- subtitel: “Begin met slimmer fietsen en trainen”
+
+Gebruik deze teksten alleen wanneer ze passen binnen de bestaande Clerk-lokalisatiestructuur.
+
+ACCEPTATIE
+- geen zichtbare Engelse systeemtekst in de normale Nederlandse auth-flow;
+- alle invoervelden, knoppen, links en foutmeldingen zijn Nederlands;
+- sign-in en sign-up blijven werken;
+- redirect_url na uitnodiging blijft behouden;
+- OAuth/social login blijft werken;
+- verificatiecode en wachtwoordherstel blijven werken;
+- mobiel en desktop blijven goed uitgelijnd;
+- geen afgebroken teksten.
+
+TEST
+Controleer minimaal:
+- nieuwe registratie;
+- bestaande gebruiker inloggen;
+- verkeerd wachtwoord;
+- onbekend e-mailadres;
+- verificatiecode;
+- code opnieuw verzenden;
+- wachtwoord vergeten;
+- terug naar inloggen;
+- invite-link via uitgelogde toestand;
+- 390 px;
+- 768 px;
+- 1440 px;
+- toetsenbord en zichtbare focus;
+- geen consolefouten.
+
+WERK HET DEFECTREGISTER BIJ
+Item:
+A-07 — Clerk-inlogscherm is Engelstalig
+
+Na implementatie:
+- FIXED_NOT_VERIFIED;
+- na volledige auth-flowtest: VERIFIED_FIXED;
+- voeg screenshots, testresultaten en commit-SHA toe.
+
+LEVER
+- gekozen Clerk-lokalisatiemethode;
+- lijst van aangepaste teksten;
+- gewijzigde bestanden;
+- testresultaten per auth-flow;
+- screenshots mobiel en desktop;
+- commit-SHA;
+- git status clean.

@@ -2488,14 +2488,14 @@ function RouteGenerator({
               </p>
             )}
             <p>
-              <span className="text-white/40">Samen: </span>
+              <span className="text-white/40">Gezelschap: </span>
               {withOthers
-                ? `met anderen (bordjes-sprint aan${
+                ? `je rijdt met anderen (bordjes-sprint aan${
                     buddyIds.length > 0
                       ? `, ${buddyIds.length} maat${buddyIds.length === 1 ? "" : "jes"}`
                       : ""
                   })`
-                : "alleen"}
+                : "je rijdt alleen"}
             </p>
           </div>
         </div>
@@ -2671,6 +2671,8 @@ function RouteGenerator({
               <p className="mt-4 text-[12px] leading-relaxed text-white/40">
                 Tik op de route om een verzamelpunt te plaatsen — bijvoorbeeld om
                 een vriend op te halen. Tik op een pin om hem te verwijderen.
+                Verzamelpunten veranderen de route niet; het zijn markeringen die
+                met de route worden bewaard.
               </p>
               <RouteMap
                 geometry={candidate.geometry}
@@ -2697,6 +2699,80 @@ function RouteGenerator({
               />
             </>
           )}
+
+          {/* Direct na de kaart: cijfers + acties — zodat meteen duidelijk is
+              wat de volgende stap is. Detailpanelen volgen daaronder. */}
+          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/[0.07] pt-4">
+            <Stat
+              label="Afstand"
+              value={
+                candidate.distanceKm != null ? `${candidate.distanceKm} km` : "—"
+              }
+            />
+            <Divider />
+            <Stat label="Duur" value={formatDuration(candidate.durationSec)} />
+            <Divider />
+            <Stat
+              label="Hoogtemeters"
+              value={
+                candidate.elevationGainM != null
+                  ? `${candidate.elevationGainM} m`
+                  : "—"
+              }
+            />
+            <Divider />
+            <Stat
+              label="Ondergrond"
+              value={SURFACE_LABEL[candidate.surface] ?? candidate.surface}
+            />
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={saveCandidate}
+              disabled={save.isPending}
+              className="min-w-0 flex-1 basis-40 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
+              style={{ background: ACCENT, color: "#040506" }}
+            >
+              {save.isPending ? "Opslaan…" : "Bewaar route"}
+            </button>
+            <button
+              type="button"
+              onClick={() => runGenerate(Math.floor(Math.random() * 1e6))}
+              disabled={generate.isPending}
+              className="min-w-0 flex-1 basis-40 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20 disabled:opacity-50"
+            >
+              {generate.isPending ? "Berekenen…" : "Opnieuw genereren"}
+            </button>
+            {candidate.geometry.length > 1 && (
+              <button
+                type="button"
+                onClick={() => {
+                  // Nieuwe start/eind/tussen-indeling: eerste punt van de
+                  // echte lijn wordt startpunt, laatste eindpunt, de rest
+                  // tussenpunten. Oude bouwstaat volledig wissen zodat er
+                  // geen verdwaald start/eindpunt achterblijft.
+                  const pts = sampleWaypointsFromGeometry(candidate.geometry)
+                  setStartPoint(pts.length >= 2 ? pts[0]! : null)
+                  setEndPoint(pts.length >= 2 ? pts[pts.length - 1]! : null)
+                  setWaypoints(pts.length >= 2 ? pts.slice(1, -1) : pts)
+                  setPlaceMode("waypoint")
+                  setMode("waypoints")
+                  setCandidate(null)
+                  setOptions(null)
+                  setMeetpoints([])
+                }}
+                className="min-w-0 flex-1 basis-40 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20"
+              >
+                Pas aan met routepunten
+              </button>
+            )}
+          </div>
+          <p className="mt-2 text-[11px] leading-relaxed text-white/35">
+            Na het bewaren vind je hieronder de route terug — met navigeren,
+            downloaden (GPX/TCX) en delen naar je fietscomputer-app.
+          </p>
 
           {candidate.profile.length > 0 && (
             <InteractiveElevationProfile
@@ -2746,31 +2822,6 @@ function RouteGenerator({
             />
           )}
 
-          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/[0.07] pt-4">
-            <Stat
-              label="Afstand"
-              value={
-                candidate.distanceKm != null ? `${candidate.distanceKm} km` : "—"
-              }
-            />
-            <Divider />
-            <Stat label="Duur" value={formatDuration(candidate.durationSec)} />
-            <Divider />
-            <Stat
-              label="Hoogtemeters"
-              value={
-                candidate.elevationGainM != null
-                  ? `${candidate.elevationGainM} m`
-                  : "—"
-              }
-            />
-            <Divider />
-            <Stat
-              label="Ondergrond"
-              value={SURFACE_LABEL[candidate.surface] ?? candidate.surface}
-            />
-          </div>
-
           <Climbs climbs={candidate.climbs} />
 
           <p className="mt-4 whitespace-pre-line text-[12px] leading-relaxed text-white/55">
@@ -2783,10 +2834,10 @@ function RouteGenerator({
           )}
 
           {candidate.nav.length > 0 && (
-            <div className="mt-4">
-              <span className="label-xs text-white/35">
-                STAP-VOOR-STAP ({candidate.nav.length})
-              </span>
+            <details className="mt-4">
+              <summary className="label-xs cursor-pointer list-none text-white/35 transition hover:text-cyan-300/80">
+                STAP-VOOR-STAP ({candidate.nav.length}) — toon
+              </summary>
               <div className="mt-2 max-h-64 overflow-y-auto pr-1">
                 {candidate.nav.map((n, i) => (
                   <div
@@ -2805,7 +2856,7 @@ function RouteGenerator({
                   </div>
                 ))}
               </div>
-            </div>
+            </details>
           )}
 
           {candidate.plannedWorkoutId != null && (
@@ -2814,54 +2865,6 @@ function RouteGenerator({
             </p>
           )}
 
-          {/* Eén situatie: hier alleen bewaren of opnieuw genereren. Navigeren,
-              GPX/TCX en delen leven op de bewaarde routekaart — niet dubbel. */}
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={saveCandidate}
-              disabled={save.isPending}
-              className="min-w-0 flex-1 basis-40 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
-              style={{ background: ACCENT, color: "#040506" }}
-            >
-              {save.isPending ? "Opslaan…" : "Bewaar route"}
-            </button>
-            <button
-              type="button"
-              onClick={() => runGenerate(Math.floor(Math.random() * 1e6))}
-              disabled={generate.isPending}
-              className="min-w-0 flex-1 basis-40 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20 disabled:opacity-50"
-            >
-              Opnieuw genereren
-            </button>
-            {candidate.geometry.length > 1 && (
-              <button
-                type="button"
-                onClick={() => {
-                  // Nieuwe start/eind/tussen-indeling: eerste punt van de
-                  // echte lijn wordt startpunt, laatste eindpunt, de rest
-                  // tussenpunten. Oude bouwstaat volledig wissen zodat er
-                  // geen verdwaald start/eindpunt achterblijft.
-                  const pts = sampleWaypointsFromGeometry(candidate.geometry)
-                  setStartPoint(pts.length >= 2 ? pts[0]! : null)
-                  setEndPoint(pts.length >= 2 ? pts[pts.length - 1]! : null)
-                  setWaypoints(pts.length >= 2 ? pts.slice(1, -1) : pts)
-                  setPlaceMode("waypoint")
-                  setMode("waypoints")
-                  setCandidate(null)
-                  setOptions(null)
-                  setMeetpoints([])
-                }}
-                className="min-w-0 flex-1 basis-40 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20"
-              >
-                Pas aan met routepunten
-              </button>
-            )}
-          </div>
-          <p className="mt-2 text-[11px] leading-relaxed text-white/35">
-            Na het bewaren vind je hieronder de route terug — met navigeren,
-            downloaden (GPX/TCX) en delen naar je fietscomputer-app.
-          </p>
         </div>
       )}
     </div>

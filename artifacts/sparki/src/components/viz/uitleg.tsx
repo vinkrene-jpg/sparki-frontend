@@ -196,6 +196,28 @@ export function UitlegDot({
                 {uitleg[level]}
               </p>
 
+              {uitleg.verbanden && (
+                <div className="mt-4 rounded-xl border border-white/[0.07] bg-white/[0.03] p-3">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/40">
+                    Hangt samen met
+                  </p>
+                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-white/70">
+                    {uitleg.verbanden}
+                  </p>
+                </div>
+              )}
+
+              {uitleg.beinvloeden && (
+                <div className="mt-3 rounded-xl border border-white/[0.07] bg-white/[0.03] p-3">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/40">
+                    Zo beïnvloed je dit
+                  </p>
+                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-white/70">
+                    {uitleg.beinvloeden}
+                  </p>
+                </div>
+              )}
+
               {contextRegels.length > 0 && (
                 <div className="mt-4 rounded-xl border border-white/[0.07] bg-white/[0.03] p-3">
                   <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/40">

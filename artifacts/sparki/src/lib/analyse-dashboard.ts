@@ -339,6 +339,114 @@ export function laatsteSync(connectors: ConnectorSyncInput[]): SyncInfo {
   return best
 }
 
+// ── Doelscenario-projectie (verwachtingsband) ────────────────────────────────
+// Deterministische vooruitberekening met hetzelfde CTL/ATL-model (42d/7d) als
+// de belastingsgrafiek. Basis = werkelijke gemiddelde dagbelasting (TSS) van de
+// afgelopen 28 dagen; zonder echte belastingsscores is er GEEN projectie
+// (eerlijk null, nooit een verzonnen basis). De band (±15% rond het scenario)
+// maakt expliciet dat dit een verwachting is, geen zekerheid.
+
+export type ProjectiePunt = {
+  date: string
+  projCtl: number
+  projBand: [number, number]
+}
+
+export type BelastingProjectie = {
+  punten: ProjectiePunt[]
+  ctlNu: number
+  /** Verwachte fitheid aan het einde: [onderwaarde, bovenwaarde]. */
+  ctlEind: [number, number]
+  /** Laagste verwachte vorm (TSB) onderweg in het middenscenario. */
+  tsbDip: number
+  /** Werkelijke basis: gemiddelde belasting per dag over de laatste 28 dagen. */
+  basisTssPerDag: number
+  dagen: number
+}
+
+export function belastingProjectie(input: {
+  chartData: Array<{ date: string; ctl: number; atl: number }>
+  sessies: Array<{ sessionDate: string; tss?: number | string | null }>
+  /** Volumeverandering in procenten, bv. 20 voor "20% meer". */
+  pctVolume: number
+  dagen?: number
+}): BelastingProjectie | null {
+  const dagen = input.dagen ?? 42
+  const laatstePunt = input.chartData[input.chartData.length - 1]
+  if (!laatstePunt) return null
+
+  // Echte basisbelasting: som van belastingsscores in de 28 dagen t/m de
+  // laatste grafiekdag, gedeeld door 28. Geen scores ⇒ geen projectie.
+  const eind = laatstePunt.date
+  const start = new Date(`${eind}T12:00:00`)
+  start.setDate(start.getDate() - 27)
+  const startIso = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`
+  let somTss = 0
+  let metScore = 0
+  for (const s of input.sessies) {
+    const datum = s.sessionDate.slice(0, 10)
+    if (datum < startIso || datum > eind) continue
+    const tss = alsGetal(s.tss)
+    if (tss == null || tss <= 0) continue
+    somTss += tss
+    metScore++
+  }
+  if (metScore === 0 || somTss <= 0) return null
+  const basisTssPerDag = somTss / 28
+
+  const factor = 1 + input.pctVolume / 100
+  if (factor < 0) return null
+
+  // Drie simulaties: onder- (–15%), midden- en bovenscenario (+15%).
+  const sim = (f: number) => {
+    let ctl = laatstePunt.ctl
+    let atl = laatstePunt.atl
+    const reeks: Array<{ ctl: number; atl: number }> = []
+    const dagTss = basisTssPerDag * f
+    for (let i = 0; i < dagen; i++) {
+      ctl = ctl + (dagTss - ctl) / 42
+      atl = atl + (dagTss - atl) / 7
+      reeks.push({ ctl, atl })
+    }
+    return reeks
+  }
+  const midden = sim(factor)
+  const onder = sim(factor * 0.85)
+  const boven = sim(factor * 1.15)
+
+  const punten: ProjectiePunt[] = [
+    // Startpunt op de laatste echte dag zodat band en lijn aansluiten.
+    { date: eind, projCtl: r1(laatstePunt.ctl), projBand: [r1(laatstePunt.ctl), r1(laatstePunt.ctl)] },
+  ]
+  const cursor = new Date(`${eind}T12:00:00`)
+  for (let i = 0; i < dagen; i++) {
+    cursor.setDate(cursor.getDate() + 1)
+    const iso = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`
+    punten.push({
+      date: iso,
+      projCtl: r1(midden[i].ctl),
+      projBand: [r1(Math.min(onder[i].ctl, boven[i].ctl)), r1(Math.max(onder[i].ctl, boven[i].ctl))],
+    })
+  }
+
+  const tsbDip = Math.min(...midden.map((p) => p.ctl - p.atl))
+  return {
+    punten,
+    ctlNu: Math.round(laatstePunt.ctl),
+    ctlEind: [
+      Math.round(Math.min(onder[dagen - 1].ctl, boven[dagen - 1].ctl)),
+      Math.round(Math.max(onder[dagen - 1].ctl, boven[dagen - 1].ctl)),
+    ],
+    tsbDip: Math.round(tsbDip),
+    basisTssPerDag: Math.round(basisTssPerDag),
+    dagen,
+  }
+}
+
+function r1(n: number): number {
+  return Math.round(n * 10) / 10
+}
+
 // ── Samenvatting (summary-modus voor /you) ───────────────────────────────────
 
 export type AnalyseSamenvatting = {

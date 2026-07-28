@@ -431,8 +431,7 @@ export function TrainingDayHome({
             ) : (
               <div className="mt-3 flex flex-col items-start gap-3">
                 <p className="text-[13px] leading-relaxed text-white/35">
-                  Vul je check-in in zodat Sparki je dagelijkse briefing kan
-                  opstellen.
+                  Vul je check-in in voor je dagelijkse briefing.
                 </p>
                 <QuickActionButton action="checkin" />
               </div>

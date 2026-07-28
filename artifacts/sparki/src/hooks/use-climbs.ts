@@ -8,15 +8,16 @@ import type { ClimbSearchResult, ClimbDetail } from "@/lib/climb-types"
 
 // Search named climbs in a geocoded area. Only fires when the user has actually
 // entered a query — an empty query is a no-op, never a fabricated result set.
-export function useClimbSearch(q: string, name: string) {
+export function useClimbSearch(q: string, name: string, radiusKm: number) {
   const { isSignedIn } = useUser()
   const enabled = useFeatureFlag("climb_explorer")
   const query = q.trim()
   const nameFilter = name.trim()
   return useQuery({
-    queryKey: ["climbs", "search", query, nameFilter],
+    queryKey: ["climbs", "search", query, nameFilter, radiusKm],
     queryFn: () => {
       const params = new URLSearchParams({ q: query })
+      params.set("radiusKm", String(radiusKm))
       if (nameFilter) params.set("name", nameFilter)
       return apiFetch<ClimbSearchResult>(
         `/api/climbs/search?${params.toString()}`,

@@ -5,6 +5,13 @@ description: Overpass mirror caveats + honest-source design for the searchable c
 
 # Klimmenverkenner
 
+## Coverage & radius (belangrijk)
+- In heuvelland (Limburg/Vlaanderen) zijn de bekende beklimmingen (Cauberg, Keutenberg…) vrijwel nooit peak/pass-getagd — wél als benoemde weg. De zoekopdracht bevat daarom ook `highway`-ways met klim-namen (regex `(berg|helling|muur)$|^(col |côte |mur |muur )`, i-flag) → kind `road`.
+- De bbox van een geocodede plaats is voor een dorpskern veel te klein; zoeken gebeurt met een gebruikersinstelbare straal (km, geklemd 2–60) rond het centrum.
+- Dedupe op naam moet SPATIEEL zijn (≤ ~3 km cluster, voorkeur voor element mét `ele`); naam-alleen dedupe laat verschillende klimmen met dezelfde naam verdwijnen.
+- Honesty: bij `road`-klimmen is het OSM-way-center niet per se de top — UI-copy mag geen "top" claimen. Afgeleid profiel (trace-naar-punt) kan voor klimwegen véél langer/vlakker uitvallen dan de echte klim (Cauberg 8,85 km @2,3% i.p.v. ~1,2 km @5,8%); echte verbetering = profiel uit de way-geometrie zelf afleiden.
+- Overpass is flaky: eerste request geeft geregeld 503 en lukt bij retry — client heeft een retry-knop, houd die.
+
 Searchable OSM climb explorer (flag `climb_explorer`): geocode (Nominatim) → Overpass climb search (mountain_pass + natural=peak+ele) → detail = derived profile (routing provider) + description enrichment (OSM tag → Wikipedia REST → Wikidata). Honest empty/error/limited states throughout; never fabricated.
 
 ## Overpass mirror selection (critical)

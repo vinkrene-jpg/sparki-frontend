@@ -1,0 +1,117 @@
+OPDRACHT — MAAK REDUCED-MOTION APP-BREED CONSISTENT
+
+Werk in:
+- artifacts/sparki/src/pages/core-analyse.tsx
+- artifacts/sparki/src/pages/feed.tsx
+- artifacts/sparki/src/components/sparki/commercial-shell.tsx
+- artifacts/sparki/src/components/sparki/error-boundary.tsx
+- artifacts/sparki/src/App.tsx
+- overige actieve skeleton-, spinner- en loadingcomponenten die daadwerkelijk in productie worden gebruikt
+
+AANGETOONDE FOUT
+In meerdere actieve componenten worden animaties gebruikt zoals:
+- animate-pulse
+- animate-spin
+- transition-animaties
+
+zonder overal rekening te houden met gebruikers die in hun besturingssysteem “verminder beweging” hebben ingesteld.
+
+DOEL
+Maak reduced-motion consequent in de hele actieve app, zonder animaties voor gewone gebruikers weg te halen.
+
+ONDERZOEK EERST
+Zoek in de actieve webapp naar:
+- animate-pulse
+- animate-spin
+- animate-bounce
+- animate-ping
+- transition-all
+- duration-
+- motion-safe:
+- motion-reduce:
+
+Sluit uit:
+- .migration-backup
+- tests
+- screenshots
+- oude niet-actieve componenten
+- node_modules
+
+Maak eerst een korte inventaris van alle actieve treffers.
+
+HERSTEL
+Pas per component het kleinste veilige patroon toe:
+
+Skeletons:
+- behoud animate-pulse voor gewone gebruikers;
+- voeg motion-reduce:animate-none toe.
+
+Spinners:
+- behoud animate-spin;
+- voeg motion-reduce:animate-none toe;
+- toon bij reduced motion nog steeds een duidelijke laadstatus via tekst, aria-busy of visuele statische indicator.
+
+Decoratieve transities:
+- gebruik motion-reduce:transition-none waar beweging geen functionele betekenis heeft.
+
+Functionele statusovergangen:
+- geen content verbergen omdat animatie uitstaat;
+- eindtoestand direct tonen.
+
+Geen externe animatiebibliotheek toevoegen.
+Geen redesign uitvoeren.
+Geen wijzigingen aan datalogica, routing of laadtijden.
+
+TOEGANKELIJKHEID
+- laadstatus blijft begrijpelijk zonder beweging;
+- gebruik bestaande aria-live, role=status of aria-busy waar passend;
+- voeg geen voortdurend bewegende alternatieve animatie toe;
+- focus- en hoverstates blijven bruikbaar.
+
+ACCEPTATIE
+Controleer minimaal:
+- Clerk/opstartscherm;
+- Analyse-skeletons;
+- Ontdekken-skeletons;
+- algemene pagina-loading;
+- foutschermen met herladen;
+- knoppen met loading-status;
+- eventuele import- en synchronisatiespinners.
+
+TEST
+Test met normale instelling:
+- bestaande animaties blijven zichtbaar.
+
+Test met prefers-reduced-motion: reduce:
+- geen pulserende skeletons;
+- geen ronddraaiende spinners;
+- geen onnodige beweging;
+- laadstatus blijft zichtbaar en begrijpelijk;
+- geen layoutverspringing;
+- geen consolefouten.
+
+Test viewports:
+- 390 px
+- 768 px
+- 1440 px
+
+VOEG TEST OF CONTROLE TOE
+Voeg waar passend een gerichte test of statische controle toe die voorkomt dat nieuwe actieve skeletons/spinners zonder motion-reduce worden toegevoegd.
+Geen onbetrouwbare grep-test over gegenereerde bestanden.
+
+WERK HET DEFECTREGISTER BIJ
+Item:
+A-05 — Reduced-motion niet consequent toegepast
+
+Na implementatie:
+- FIXED_NOT_VERIFIED;
+- na test met prefers-reduced-motion: reduce: VERIFIED_FIXED;
+- voeg inventaris, gewijzigde componenten, testbewijs en commit-SHA toe.
+
+LEVER
+- lijst met actieve animatiecomponenten;
+- gewijzigde bestanden;
+- gekozen reduced-motion-patroon per type animatie;
+- testresultaten normaal en reduced motion;
+- commit-SHA;
+- git status clean.

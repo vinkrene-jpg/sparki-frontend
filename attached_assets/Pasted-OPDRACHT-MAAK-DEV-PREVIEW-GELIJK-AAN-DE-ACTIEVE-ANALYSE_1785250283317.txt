@@ -1,0 +1,86 @@
+OPDRACHT — MAAK DEV-PREVIEW GELIJK AAN DE ACTIEVE ANALYSE-ROUTE
+
+Werk in:
+- artifacts/sparki/src/components/sparki/dev-preview.tsx
+- artifacts/sparki/src/App.tsx
+- alleen indien nodig: actieve route-/switchcomponenten voor Analyse
+
+AANGETOONDE FOUT
+Productie gebruikt:
+- /analyse als actieve Analyse-omgeving;
+- /lab redirect naar /analyse.
+
+De dev-preview bevat nog:
+- label “Lab”;
+- route /lab;
+- mogelijk een andere of legacy componentselectie.
+
+Daardoor kan in Replit een andere pagina worden bekeken dan gebruikers in productie zien. Dit maakt visuele controles en bugfixes onbetrouwbaar.
+
+DOEL
+De dev-preview moet voor Analyse exact dezelfde actieve route, switchlogica en component gebruiken als productie.
+
+ONDERZOEK EERST
+Controleer:
+- welke component productie op /analyse rendert;
+- welke feature flags of switches AnalyseSwitchPage gebruikt;
+- wat de dev-preview nu bij /lab en /analyse rendert;
+- of LabPage nog actief ergens nodig is;
+- of screenshots of tests bewust op legacy Lab zijn gebaseerd.
+
+HERSTEL
+- Voeg in de dev-preview een duidelijk item “Analyse” toe dat naar /analyse gaat.
+- Gebruik dezelfde actieve productiecomponent en dezelfde switchlogica.
+- Verwijder “Lab” uit de gewone paginawisselaar wanneer het alleen een oude alias is.
+- Wanneer legacy Lab aantoonbaar nog als technisch testdoel nodig is:
+  - zet dit apart onder “Legacy/test”;
+  - label het expliciet als niet-productie;
+  - gebruik het nooit als standaard Analyse-preview.
+- Behoud de productie-redirect /lab → /analyse.
+- Geen nieuwe Analyse-omgeving bouwen.
+- Geen bestaande Analyse-functionaliteit herschrijven.
+
+BELANGRIJK
+De dev-preview mag geen shortcut gebruiken die:
+- authenticatie-, data-, featureflag- of shellgedrag anders maakt dan nodig;
+- een andere pagina rendert dan productie;
+- oude componenten als actuele werkelijkheid toont.
+
+ACCEPTATIE
+- In dev-preview opent “Analyse” exact dezelfde component als productie /analyse.
+- Direct openen van /lab in productie blijft naar /analyse gaan.
+- Er is geen dubbelzinnige keuze “Lab” en “Analyse” voor dezelfde actieve functie.
+- Actieve navigatiestatus klopt.
+- Analyse gebruikt dezelfde shell, hooks, lege staten en grafieken.
+- Bestaande andere dev-previewpagina’s blijven werken.
+
+TEST
+Controleer:
+- dev-preview → Analyse;
+- directe dev-route /analyse;
+- productieachtige route /analyse;
+- alias /lab;
+- feature flags aan en uit indien relevant;
+- 390 px;
+- 1024 px;
+- 1440 px;
+- geen consolefouten;
+- geen dubbele navigatie of verkeerde actieve markering.
+
+WERK HET DEFECTREGISTER BIJ
+Item:
+A-06 — Lab/Analyse wijkt af in dev-preview
+
+Na implementatie:
+- FIXED_NOT_VERIFIED;
+- na route- en componentvergelijking: VERIFIED_FIXED;
+- voeg exact gebruikte component, routebewijs, screenshots en commit-SHA toe.
+
+LEVER
+- oorzaak;
+- oude en nieuwe route/componentmapping;
+- gewijzigde bestanden;
+- testresultaten;
+- screenshot dev-preview Analyse en normale /analyse;
+- commit-SHA;
+- git status clean.

@@ -1,4 +1,5 @@
 import { Shield, LifeBuoy, Link2, Settings } from "lucide-react"
+import { dagSfeer } from "@/lib/sfeer"
 import { useLocation } from "wouter"
 import { CommercialShell } from "@/components/sparki/commercial-shell"
 import { ChapterGrid } from "@/components/sparki/chapter-grid"
@@ -34,7 +35,7 @@ export default function MeerPage() {
         : ATHLETE_MEER_CHAPTERS
 
   return (
-    <CommercialShell actief="/meer" sfeer="/atmosphere/samen-koffiestop-zon.webp">
+    <CommercialShell actief="/meer" sfeer={dagSfeer("meer")}>
       <div className="mx-auto w-full max-w-2xl px-5 pb-10 pt-8 lg:max-w-3xl lg:px-10">
 
         <header className="mb-8">
