@@ -50,7 +50,7 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 - **Laatst bijgewerkt:** 2026-07-28
 
 ### A-02 — Analyse-acties verwijzen naar dezelfde route
-- **Categorie:** DEFECT · **Ernst:** P2 · **Zekerheid:** Hard bevestigd (code) · **Status:** READY_FOR_FIX
+- **Categorie:** DEFECT · **Ernst:** P2 · **Zekerheid:** Hard bevestigd (code) · **Status:** VERIFIED_FIXED
 - **Route/rol/scherm:** `/analyse`, lege-grafiek-status (`LegeGrafiek`)
 - **Bestand/regel:** `artifacts/sparki/src/pages/core-analyse.tsx:180` ("Platform koppelen") en `:189` ("Rit importeren")
 - **Bewijsbron:** Statische code-inspectie
@@ -59,7 +59,8 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 - **Data-/privacy-/veiligheidsimpact:** Geen.
 - **Minimale veilige oplossing:** "Platform koppelen" blijft naar `/connect`. "Rit importeren" moet naar de daadwerkelijke importflow (bijv. handmatige activiteit-upload) — geen nieuwe route verzinnen zonder eerst te bepalen of die al bestaat elders in de app.
 - **Verplichte tests/viewports:** Functionele klik-test op beide knoppen; bevestigen dat ze naar verschillende, correcte bestemmingen navigeren.
-- **Afhankelijkheden:** Vereist onderzoek of een losse "rit importeren"-flow al bestaat (bijv. bij Activiteiten) voordat de fix wordt gekozen.
+- **Afhankelijkheden:** Vereist onderzoek of een losse "rit importeren"-flow al bestaat (bijv. bij Activiteiten) voordat de fix wordt gekozen. → Onderzocht: de bestaande, werkende importflow is het `ActivityImportPanel` (FIT/GPX/TCX-upload) op Sparki Connect (`/connect`, sectie "Bestand importeren"); geen nieuwe route of dubbel importsysteem nodig.
+- **Verificatiebewijs:** "Rit importeren" in `LegeGrafiek` (`core-analyse.tsx`) navigeert nu naar `/connect?focus=import`; `sparki-connect.tsx` leest het bestaande `?focus=`-patroon en scrolt direct naar de bestandsimport-sectie (bestaand `ActivityImportPanel`). "Platform koppelen" blijft naar `/connect` (koppelingen bovenaan) gaan — de knoppen hebben aantoonbaar verschillend gedrag; import verwerkt via de bestaande datalaag, annuleren/terug = gewone navigatie zonder dataverlies. Geverifieerd met screenshots op 390 en 1440px: landing direct op "Bestand importeren"/"Bestand uploaden" (`screenshots/connect-focus-import-390.jpg`, `screenshots/connect-focus-import-1440.jpg`); geen consolefouten. Statusgang: READY_FOR_FIX → FIXED_NOT_VERIFIED → VERIFIED_FIXED (2026-07-28). Commit-SHA: zie commit met deze registerwijziging.
 - **Eigenaar:** Replit / ChatGPT (onderzoek bestaande importflow), dan implementatie
 - **Blokkade:** Onderzoek naar bestaande importflow nog niet gedaan
 - **Verificatiebewijs:** Nog te leveren

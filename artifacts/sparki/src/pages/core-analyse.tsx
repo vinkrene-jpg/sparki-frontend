@@ -219,7 +219,10 @@ function LegeGrafiek({ titel }: { titel: string }) {
         </button>
         <button
           type="button"
-          onClick={() => navigate("/connect")}
+          // Bewust ANDERS dan "Platform koppelen": landt direct op de bestaande
+          // FIT/GPX/TCX-bestandsimport (ActivityImportPanel) op Sparki Connect,
+          // via het bestaande ?focus=-patroon van de Smart Missing Input-flow.
+          onClick={() => navigate("/connect?focus=import")}
           className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60"
         >
           Rit importeren
@@ -840,6 +843,27 @@ function BelastingTab({
   const meetbaar = assen.filter((a): a is typeof a & { level: number } => a.level != null)
   const radarSamenv = radarSamenvatting(meetbaar)
 
+  // Scenario-overlay op de radar: dezelfde asberekeningen (SSOT), maar met de
+  // belasting die het Doelscenario na 6 weken verwacht. Fitheid = midden van de
+  // verwachte CTL-band; vermoeidheid (ATL) is dan vrijwel geconvergeerd naar de
+  // nieuwe dagbelasting. Alleen belasting-assen (fitheid/vorm/herstel) schuiven
+  // mee — vermogen, gevoel en regelmaat volgen niet automatisch uit volume.
+  const scenarioAssen = (() => {
+    if (scenarioPct == null || !projectie || !load.data) return null
+    const ctlS = (projectie.ctlEind[0] + projectie.ctlEind[1]) / 2
+    const atlS = projectie.basisTssPerDag * (1 + scenarioPct / 100)
+    return computePerformanceRadar({
+      load: { ctl: ctlS, atl: atlS, tsb: ctlS - atlS },
+      sessions: (sessies.data ?? []).map((s) => ({ sessionDate: s.sessionDate, feelScore: s.feelScore ?? null })),
+      ftpWatts: profiel?.ftp ?? null,
+      weightKg: profiel?.weightKg ?? null,
+      todayIso: localISODate(new Date()),
+    })
+  })()
+  const radarOverlay = scenarioAssen
+    ? meetbaar.map((a) => scenarioAssen.find((s) => s.key === a.key)?.level ?? a.level)
+    : null
+
   const readReeks = readinessReeks(metrics.data ?? [])
   const hrvWaarde = hrvVandaag(metrics.data ?? [])
   const hrvDeltaWaarde = hrvDelta(metrics.data ?? [])
@@ -1116,12 +1140,22 @@ function BelastingTab({
               axes={meetbaar}
               labelColor="rgba(51,65,85,0.85)"
               gridColor="rgba(15,23,42,0.10)"
+              overlay={radarOverlay}
+              overlayAccent="rgba(147,51,234,0.85)"
             />
             {radarSamenv && <p className="sr-only">{radarSamenv}</p>}
             <p className="text-center text-xs text-slate-500 max-w-xs text-pretty">
               {meetbaar.length} van {assen.length} assen meetbaar.
               Sterkste: {meetbaar.reduce((a, b) => (b.level > a.level ? b : a)).label}.
             </p>
+            {radarOverlay && scenarioPct != null && (
+              <p className="text-center text-xs text-purple-600 max-w-xs text-pretty">
+                Paars gestippeld: verwachte stand na {projectie?.dagen ?? 42} dagen met{" "}
+                {scenarioPct > 0 ? `${scenarioPct}% meer` : `${Math.abs(scenarioPct)}% minder`} volume —
+                fitheid, vorm en herstel schuiven mee; vermogen, gevoel en regelmaat volgen niet
+                vanzelf uit volume.
+              </p>
+            )}
           </div>
         ) : (
           <p className="text-sm text-slate-400 py-4 text-center">

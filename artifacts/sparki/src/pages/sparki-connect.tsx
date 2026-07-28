@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react"
 import { ArrowLeft, FileUp } from "lucide-react"
 import { useLocation } from "wouter"
 import { ScreenShell } from "@/components/sparki/screen-shell"
@@ -14,6 +15,17 @@ import { ActivityImportPanel } from "@/components/sparki/activity-import-panel"
 // codes, geen fictieve statussen.
 export default function SparkiConnectPage() {
   const [, setLocation] = useLocation()
+
+  // Bestaand Smart Missing Input-patroon: ?focus=import (bv. vanaf de
+  // Analyse-knop "Rit importeren") scrolt direct naar de bestandsimport,
+  // zodat die knop aantoonbaar iets anders doet dan "Platform koppelen".
+  const importRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const focus = new URLSearchParams(window.location.search).get("focus")
+    if (focus === "import") {
+      importRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }, [])
 
   return (
     <ScreenShell bg={null} section="meer" bare terug={false}>
@@ -38,7 +50,7 @@ export default function SparkiConnectPage() {
         <ConnectionsSection />
       </div>
 
-      <div className="mt-8">
+      <div className="mt-8 scroll-mt-6" ref={importRef}>
         <div className="flex items-center gap-2.5">
           <FileUp className="h-4 w-4 text-cyan-300/80" strokeWidth={1.75} />
           <h2 className="font-sans text-[15px] font-light text-white/85">
