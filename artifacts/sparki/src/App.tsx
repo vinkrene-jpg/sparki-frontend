@@ -385,9 +385,9 @@ function SignedInHomeReady() {
 // (dagplanning) lives in its own hoofdstuk on /vandaag.
 //
 // Fail-open patroon: zolang flags laden renderen we CommercialToday (met
-// DsMobileNav). Zonder dit valt de flag terug op false en rendert de legacy
-// StartPage zonder mobiele ondernavigatie — hetzelfde patroon als alle andere
-// flag-switch-pagina's (VandaagPage, TrainSwitchPage, ActiviteitenSwitchPage).
+// DsMobileNav). ScreenShell heeft nu ook DsMobileNav en een desktop sidebar
+// (zelfde COMMERCIAL_DESKTOP_NAV-bron), dus beide paden geven een consistente
+// navigatie-ervaring — hetzelfde patroon als alle andere flag-switch-pagina's.
 function RoleHome() {
   const { profile } = useUserProfile();
   const { flags, isLoading: flagsLoading } = useFeatureFlags();

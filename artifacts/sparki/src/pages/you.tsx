@@ -422,7 +422,7 @@ export default function YouPage() {
   const decorPath = profile?.decorPhotoPath ?? null
 
   return (
-    <ScreenShell section="You">
+    <ScreenShell section="You" bg="/atmosphere/training-renster-bos.webp">
       {/* SFEERBEELD — the athlete's own photo dressing up the profile. Only
           shown when one is actually chosen; otherwise the cinematic background
           stands on its own (no fake hero). */}

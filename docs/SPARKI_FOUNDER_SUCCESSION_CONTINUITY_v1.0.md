@@ -7,6 +7,23 @@
 
 ---
 
+> **⚠ DOCUMENTSTATUS — GOVERNANCE/ONTWERP, GEEN GEBOUWDE FUNCTIONALITEIT**
+>
+> Dit document is **uitsluitend governance- en opvolgingsdocumentatie**. Het beschrijft
+> rollen, bevoegdheden, escalatieprotocollen en de inhoud van een nog in te richten vault.
+>
+> De **daadwerkelijke Vault-functionaliteit** (veilige opslag van credentials, toegangscodes,
+> herstelsleutels en geëncrypteerde documenten) wordt **apart gebouwd en beheerd** in het
+> zelfstandige Replit-project **Secure Vault Keeper** (`replit.com/@rene135/Secure-Vault-Keeper`).
+>
+> Gevolg:
+> - Niets in dit document impliceert dat de Vault gebouwd of operationeel is.
+> - De taken SUCC-01 t/m SUCC-12 zijn **openstaande actiepunten**, geen voltooide deliverables.
+> - Dit document mag **niet** worden aangehaald als bewijs van gebouwde Vault-functionaliteit.
+> - Wijzigingen in dit document raken de Sparki-codebase niet; de Vault-bouw is strikt gescheiden.
+
+---
+
 ## 0. Doel van dit document
 
 Dit document regelt de bedrijfscontinuïteit van Sparki (de dienst) en de persoonlijke continuïteit

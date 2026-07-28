@@ -117,24 +117,26 @@ export const SCENES: Record<SceneName, SceneConfig> = {
       "radial-gradient(circle, rgba(180,235,250,0.6), transparent 64%)",
     bloomAt: "top-[16%] left-[50%] -translate-x-1/2",
   },
-  // You — personal, calmer, slightly warmer, less dramatic.
+  // You — persoonlijk, warm herfstlicht. imageOpacity hoog zodat de sfeerfoto
+  // herkenbaar blijft. Gradient is neutraal-warm (geen blauw) zodat de oranje
+  // herfstbomen niet worden doodgedrukt. Haze geeft zachte warme gloed.
   you: {
-    base: "#070810",
-    imageOpacity: 0.54,
+    base: "#080705",
+    imageOpacity: 0.72,
     gradient:
-      "linear-gradient(180deg, rgba(12,12,20,0.30) 0%, rgba(8,9,16,0.42) 50%, rgba(5,6,11,0.58) 100%)",
-    haze: "radial-gradient(58% 46% at 48% 38%, rgba(195,180,170,0.14), rgba(160,170,185,0.05) 46%, transparent 74%)",
+      "linear-gradient(180deg, rgba(8,7,5,0.14) 0%, rgba(6,5,4,0.26) 50%, rgba(4,3,3,0.46) 100%)",
+    haze: "radial-gradient(58% 46% at 48% 38%, rgba(220,180,130,0.12), rgba(190,160,110,0.04) 46%, transparent 74%)",
     hazeLow:
-      "radial-gradient(52% 42% at 58% 80%, rgba(120,140,170,0.10), transparent 72%)",
-    beamColor: "rgba(190,200,215,0.05)",
-    beamOpacity: 0.4,
+      "radial-gradient(52% 42% at 58% 80%, rgba(140,110,80,0.08), transparent 72%)",
+    beamColor: "rgba(220,190,140,0.05)",
+    beamOpacity: 0.35,
     ambient:
-      "radial-gradient(60% 50% at 32% 34%, rgba(170,150,140,0.10), transparent 72%)",
+      "radial-gradient(60% 50% at 32% 34%, rgba(200,160,100,0.08), transparent 72%)",
     topGlow:
-      "radial-gradient(50% 50% at 50% 0%, rgba(140,190,205,0.10), transparent 74%)",
+      "radial-gradient(50% 50% at 50% 0%, rgba(200,170,110,0.09), transparent 74%)",
     bloom:
-      "radial-gradient(circle, rgba(210,190,170,0.4), transparent 66%)",
-    bloomAt: "top-[22%] right-[18%]",
+      "radial-gradient(circle, rgba(230,195,140,0.35), transparent 66%)",
+    bloomAt: "top-[18%] right-[22%]",
   },
 }
 

@@ -1,0 +1,67 @@
+Corrigeer en bewijs de huidige oplevering op drie punten.
+
+1. SHELL EN NAVIGATIE
+
+Het verwijderen van Samen en Ontdekken uit ATHLETE_MEER_CHAPTERS lost duplicatie op, maar bewijst nog niet dat de oude startpagina volledig naar de actuele shell is gemigreerd.
+
+Controleer en rapporteer:
+- welke routecomponent / rendert;
+- welke shell / gebruikt;
+- of oude StartPage/ScreenShell/CinematicScene daar nog actief zijn;
+- of / dezelfde actuele navigatiebron gebruikt als de andere gemigreerde pagina’s;
+- of alle hoofdstukken bereikbaar blijven;
+- screenshots desktop en mobiel van / en Meer.
+
+Herstel dit indien / nog de oude shell gebruikt.
+Geen parallelle navigatie bouwen.
+
+2. SECURE VAULT KEEPER
+
+Maak expliciet onderscheid tussen:
+- het document docs/SPARKI_FOUNDER_SUCCESSION_CONTINUITY_v1.0.md in Sparki;
+- de echte functionaliteit in het aparte Secure Vault Keeper-project.
+
+Markeer de Sparki-documentatie niet als gebouwde Vault-functionaliteit.
+Rapporteer deze als ontwerp/governance-documentatie.
+De feitelijke Vault-bouw blijft apart in Secure Vault Keeper.
+
+3. SYSTEM BUSINESS MODE — FAIL-SAFE HERSTEL
+
+De huidige regel fail-open=NORMAL is niet toegestaan.
+
+Vervang dit gedrag door:
+
+- bij een tijdelijke database-/leesfout: behoud de laatst geldig gelezen business mode;
+- log de fout in admin_ops_log;
+- stuur een kritieke monitoringmelding;
+- zet de status niet automatisch terug naar NORMAL;
+- als er sinds processtart nog geen geldige status beschikbaar is:
+  - blokkeer nieuwe verkoop, checkout, trials en upgrades;
+  - blokkeer risicovolle adminacties;
+  - laat alleen veilige bestaande/read-only functies werken;
+  - toon een eerlijke degraded/unknown-status;
+- NORMAL mag alleen worden gebruikt wanneer een geldige databasewaarde NORMAL is of bij een expliciet gecontroleerde eerste installatie.
+
+Test minimaal:
+- database valt uit terwijl SALES_PAUSED actief is;
+- database valt uit terwijl MAINTENANCE actief is;
+- applicatie start zonder databaseverbinding;
+- cache verloopt tijdens storing;
+- database herstelt;
+- geen situatie opent onbedoeld checkout of nieuwe verkoop.
+
+4. PRODUCTIEDATABASEBEWIJS
+
+Omdat system_business_mode en admin_ops_log al naar productie zijn gepusht:
+- leg de exacte migratie vast;
+- toon de tabelstructuur;
+- toon initiële singletonwaarde;
+- lever rollback-SQL;
+- bevestig dat geen bestaande tabellen of gebruikersdata zijn gewijzigd.
+
+Lever daarna:
+- gewijzigde bestanden;
+- tests;
+- screenshots;
+- commit-hash;
+- duidelijk onderscheid tussen gebouwd, gedocumenteerd en nog lopend.
