@@ -54,10 +54,10 @@ function scenario(name: string, fn: () => void) {
 }
 
 // ── Navigatie ────────────────────────────────────────────────────────────────
-scenario("mobiele nav is Vandaag/Plan/Rijden/Activiteiten/Meer", () => {
+scenario("mobiele nav is Vandaag/Plan/Rijden/Analyse/Meer", () => {
   assert(
     COMMERCIAL_MOBILE_NAV.map((i) => i.label).join(",") ===
-      "Vandaag,Plan,Rijden,Activiteiten,Meer",
+      "Vandaag,Plan,Rijden,Analyse,Meer",
     "mobiele nav-labels wijken af",
   )
 })

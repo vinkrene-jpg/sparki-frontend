@@ -19,7 +19,9 @@ export const COMMERCIAL_MOBILE_NAV: CommercialNavItem[] = [
   { href: "/vandaag", label: "Vandaag" },
   { href: "/train", label: "Plan" },
   { href: "/routes", label: "Rijden" },
-  { href: "/activiteiten", label: "Activiteiten" },
+  // Analyse verving Activiteiten op verzoek van René (28-7-2026);
+  // Activiteiten blijft bereikbaar via Meer → Veelgebruikt.
+  { href: "/analyse", label: "Analyse" },
   { href: "/meer", label: "Meer" },
 ]
 

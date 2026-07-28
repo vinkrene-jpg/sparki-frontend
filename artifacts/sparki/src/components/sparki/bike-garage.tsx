@@ -544,7 +544,8 @@ function UpgradePanel({ bike }: { bike: GarageBike }) {
             advice.unknown.length === 0 &&
             advice.alreadyTop.length === 0 && (
               <p className="text-[12px] leading-relaxed text-white/45">
-                Voeg je groepset, wielen of banden toe — dan zie je waar de
+                Er staan nog geen onderdelen op deze fiets. Voeg eerst je
+                groepset, wielen of banden toe — dan wordt inzichtelijk waar de
                 winst zit.
               </p>
             )}

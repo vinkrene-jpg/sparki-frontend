@@ -1,3 +1,5 @@
+<<<<<<< ours — heading `Openstaande keuzes — Sparki` (F, confidence: medium)
+// hint: Logic changed on both sides. Requires understanding intent of each change.
 # Openstaande keuzes — Sparki
 
 > Werkafspraak: dit is de vaste lijst van keuzes die op een beslissing van de gebruiker
@@ -7,7 +9,26 @@
 
 Laatst bijgewerkt: 2026-07-27.
 
+=======
+# Openstaande keuzes — Sparki
+
+> Werkafspraak: dit is de vaste lijst van keuzes die op een beslissing van de gebruiker
+> wachten. Ik (de agent) LEES dit bestand aan het begin van elke beurt en toon de
+> open punten kort in de chat. Nieuwe keuze gesteld → hier toevoegen. Beslist → hier
+> weghalen (of naar "Beslist" verplaatsen). Nooit een keuze stilletjes laten vallen.
+
+Laatst bijgewerkt: 2026-07-25.
+
+>>>>>>> theirs — heading `Openstaande keuzes — Sparki` (F, confidence: medium)
 ## Wacht op jouw keuze
+
+
+### Gegevens-opschoning productie (OD_005) — per onderdeel akkoord?
+0. **Opschoning eigen account in productie** — droogdraai is alleen-lezen uitgevoerd
+   (25 jul): (a) 15 Engelstalige observaties van 22–23 juni, (b) 1 dubbele
+   Strava-FTP-importrij (id 7, 258 W, 26 juni). FTP-actualisatie en fietskoppelingen:
+   niets te doen. Wacht op per-onderdeel akkoord; uitvoeren gaat via /admin →
+   Gegevens-opschoning in de gepubliceerde app.
 
 ### Mentale Training — sterrensysteem
 4. **Wát de sterren precies regelen** — diepgang per kaart instelbaar, één globale

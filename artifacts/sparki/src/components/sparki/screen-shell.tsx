@@ -22,13 +22,26 @@ import {
   Film,
   type LucideIcon,
 } from "lucide-react"
-import { useLocation } from "wouter"
+import { Link, useLocation } from "wouter"
 import { Show } from "@clerk/react"
 import { cn } from "@/lib/utils"
-import { CommercialShell } from "@/components/sparki/commercial-shell"
+import {
+  DsMobileNav,
+  IconActiviteiten,
+  IconAnalyse,
+  IconHome,
+  IconMenu,
+  IconPlan,
+  IconRijden,
+  type DsNavItem,
+} from "@/components/ds"
+import {
+  COMMERCIAL_DESKTOP_NAV,
+  COMMERCIAL_ACCOUNT_NAV,
+  COMMERCIAL_MOBILE_NAV,
+} from "@/lib/commercial-shell"
 import { useUserProfile } from "@/contexts/UserContext"
 import { useTeamIdentity } from "@/hooks/use-social"
-import { clubLogoSrc } from "@/lib/club-logo"
 import { CinematicScene, type SceneName } from "@/components/sparki/cinematic-scene"
 import { NotificationBell } from "@/components/sparki/notification-bell"
 import { ProfilePromptCard } from "@/components/sparki/profile-prompt-card"
@@ -57,6 +70,27 @@ import { screenForSection } from "@/lib/tracked-screens"
 // with its own content. The card itself is athlete-only and is already
 // suppressed on the coach/parent homes.
 const COACH_CARD_SECTIONS = new Set(["home"])
+
+// Desktop sidebar + mobiele bottom-nav — gedeeld door alle ScreenShell-pagina's
+// op lg+ breakpoint (≥1024px). Dezelfde nav-items als CommercialShell zodat de
+// gebruiker één consistent navigatiesysteem ziet ongeacht welke pagina hij bezoekt.
+const SHELL_MOBILE_NAV_ICONS: Record<string, LucideIcon> = {
+  "/vandaag": IconHome,
+  "/train": IconPlan,
+  "/routes": IconRijden,
+  "/activiteiten": IconActiviteiten,
+  "/analyse": IconAnalyse,
+  "/meer": IconMenu,
+}
+
+const SHELL_MOBILE_NAV_ITEMS: DsNavItem[] = COMMERCIAL_MOBILE_NAV.map((item) => ({
+  href: item.href,
+  label: item.label,
+  icon: SHELL_MOBILE_NAV_ICONS[item.href] ?? IconMenu,
+}))
+
+const FOCUS_RING_SHELL =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60"
 
 const SECTION_SCENE: Record<string, SceneName> = {
   start: "home",
@@ -127,28 +161,35 @@ const SECTION_ICON: Record<string, LucideIcon> = {
   "wedstrijd-room": Film,
 }
 
-// Club crest on the home header: shows ONLY the club's own uploaded logo.
-// No uploaded logo (or no club at all) = render nothing — we never substitute
-// a text badge or placeholder icon for a real club logo.
+// Subtle club crest shown on the home header when the athlete has set a club
+// identity. Colours come from the saved team identity; falls back to the cyan
+// accent. Renders nothing when no club is set.
 function ClubCrest() {
   const { data } = useTeamIdentity()
   const team = data?.team
-  if (!team || !team.clubName || !team.logoUrl) return null
+  if (!team || !team.clubName) return null
   const color = team.primaryColor ?? "rgba(120,210,230,1)"
   return (
     <span
-      className="flex items-center rounded-full border p-1"
+      className="flex items-center gap-1.5 rounded-full border px-2.5 py-1"
       style={{
         borderColor: `${color}55`,
         background: `${color}1a`,
       }}
       title={[team.clubName, team.teamName].filter(Boolean).join(" · ")}
     >
-      <img
-        src={clubLogoSrc(team.logoUrl)}
-        alt={team.clubName}
-        className="h-5 w-5 shrink-0 rounded-full object-contain"
-      />
+      {team.logoUrl ? (
+        <img
+          src={team.logoUrl}
+          alt=""
+          className="h-3.5 w-3.5 shrink-0 object-contain"
+        />
+      ) : (
+        <Shield className="h-3 w-3" style={{ color }} strokeWidth={2} />
+      )}
+      <span className="max-w-[8rem] truncate font-mono text-[9px] uppercase tracking-[0.14em] text-white/70">
+        {team.shirtBadge || team.clubName}
+      </span>
     </span>
   )
 }
@@ -161,30 +202,16 @@ function HomeProfilePrompt() {
   return <ProfilePromptCard />
 }
 
-// Persoonlijke context in het midden van de bovenbalk: voornaam voor ingelogde
-// gebruikers met naam, "Profiel" voor ingelogde gebruikers zonder naam, en de
-// datum voor niet-ingelogde bezoekers. Bewust klein en rustig — de balk mag de
-// aandacht nooit opeisen. NOOIT een verzonnen naam tonen als fallback.
-function HeaderContext({
-  displayName,
-  profileLoaded,
-}: {
-  displayName: string | null
-  /** true zodra een profiel-rij beschikbaar is (gebruiker is ingelogd) */
-  profileLoaded: boolean
-}) {
+// Persoonlijke context in het midden van de bovenbalk: dagdeel-groet + voornaam
+// voor ingelogde gebruikers, anders de datum. Bewust klein en rustig — de balk
+// mag de aandacht nooit opeisen.
+function HeaderContext({ displayName }: { displayName: string | null }) {
   const firstName = displayName?.trim().split(/\s+/)[0] ?? null
   if (firstName) {
     // Alleen de voornaam — de pagina zelf begroet al ("Goedemorgen, …"),
     // dus de balk blijft stil en dubbelt de groet niet.
     return <span className="truncate text-[13px] text-white/80">{firstName}</span>
   }
-  if (profileLoaded) {
-    // Ingelogd maar nog geen naam ingesteld → neutraal label, nooit een
-    // verzonnen naam of seed-waarde.
-    return <span className="truncate text-[13px] text-white/60">Profiel</span>
-  }
-  // Niet ingelogd → datum als rustige context.
   const now = new Date()
   const label = now.toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long" })
   return <span className="truncate text-[13px] text-white/60">{label.charAt(0).toUpperCase() + label.slice(1)}</span>
@@ -207,16 +234,13 @@ function navRootsForRole(role: string | null | undefined): Set<string> {
 
 export function ScreenShell({
   section,
-  bg,
+  bg = "/concept-lab.png",
   bare = false,
   terug = true,
   children,
 }: {
   section: string
-  // Verplicht: bewust gekozen sfeerbeeld uit de atmosphere-bibliotheek, of
-  // expliciet null voor een rustige effen achtergrond zonder foto. Geen
-  // stilzwijgende default meer.
-  bg: string | null
+  bg?: string
   // When true, suppress every injected coaching surface (home prompts, coach
   // cards, coach-decision card and the follow-up prompt). Used by standalone
   // moments like the head-tester welcome that own their full content and must
@@ -276,19 +300,68 @@ export function ScreenShell({
     else setLocation("/")
   }
   return (
-    // Eén dwingende gedeelde shell: CommercialShell levert zijbalk, onderbalk,
-    // contentcontainer en achtergrond voor ÁLLE hoofdpagina's. De cinematische
-    // scène van de legacy-hoofdstukken gaat mee als achtergrond-prop — nooit
-    // meer een eigen shell of eigen full-screen achtergrond hiernaast.
-    <CommercialShell
-      actief={pathname}
-      bare={bare}
-      achtergrond={<CinematicScene scene={scene} image={bg} />}
-    >
+    <main className="relative min-h-dvh overflow-hidden bg-[#05070e] text-white">
+      {/* Per-screen cinematic background — shared structure, scene-specific
+          atmosphere. Fixed + ≤5px parallax so it sits behind the whole page. */}
+      <CinematicScene scene={scene} image={bg} />
+
+      {/* Desktop sidebar — vaste linkernav op lg+. Zelfde items als CommercialShell
+          zodat athletes één consistent navigatiesysteem zien. Verborgen op bare-pagina's
+          (onboarding, tester-welcome, wedstrijd-room). */}
+      {!bare && (
+        <aside
+          className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-white/[0.08] bg-[#05070e]/95 backdrop-blur lg:flex"
+          aria-label="Zijbalknavigatie"
+        >
+          <div className="px-6 pt-7 font-mono text-[11px] tracking-[0.35em] text-white/70">
+            SPARKI
+          </div>
+          <nav className="mt-8 flex flex-col gap-0.5 px-3" aria-label="Hoofdmenu">
+            {COMMERCIAL_DESKTOP_NAV.map((item) => {
+              const active =
+                pathname === item.href ||
+                (item.href.length > 1 && pathname.startsWith(item.href))
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex min-h-11 items-center rounded-lg px-3 text-sm font-medium transition-colors",
+                    FOCUS_RING_SHELL,
+                    active
+                      ? "bg-white/[0.08] text-cyan-300"
+                      : "text-white/60 hover:bg-white/[0.05] hover:text-white/85",
+                  )}
+                  aria-current={active ? "page" : undefined}
+                >
+                  {item.label}
+                </Link>
+              )
+            })}
+          </nav>
+          <div className="mt-auto px-3 pb-6">
+            <Link
+              href={COMMERCIAL_ACCOUNT_NAV.href}
+              className={cn(
+                "flex min-h-11 items-center rounded-lg px-3 text-sm font-medium transition-colors",
+                FOCUS_RING_SHELL,
+                pathname.startsWith(COMMERCIAL_ACCOUNT_NAV.href)
+                  ? "text-cyan-300"
+                  : "text-white/60 hover:bg-white/[0.05] hover:text-white/85",
+              )}
+            >
+              {COMMERCIAL_ACCOUNT_NAV.label}
+            </Link>
+          </div>
+        </aside>
+      )}
+
       <div
         className={cn(
           "relative z-10 flex flex-col gap-10 px-6 pt-12",
-          bare ? "mx-auto max-w-md pb-8" : "mx-auto max-w-md pb-8 lg:max-w-3xl lg:pt-8",
+          bare
+            ? "mx-auto max-w-md pb-32"
+            : "mx-auto max-w-md pb-32 lg:ml-56 lg:max-w-3xl lg:pb-16 lg:pt-8",
         )}
       >
         {/* Rustige premium bovenbalk — drie zones, geen knoppengordijn.
@@ -304,7 +377,7 @@ export function ScreenShell({
             <span className="font-mono text-[11px] tracking-[0.35em] text-white/70">SPARKI</span>
           </span>
           <div className="flex min-w-0 justify-center">
-            <HeaderContext displayName={profile?.displayName ?? null} profileLoaded={profile !== null} />
+            <HeaderContext displayName={profile?.displayName ?? null} />
           </div>
           <div className="flex items-center gap-3.5">
             <Show when="signed-in">
@@ -395,6 +468,18 @@ export function ScreenShell({
           calm home for follow-ups — so we never double-ask the same question. */}
       {!bare && section.toLowerCase() !== "samen" && !stateSurface && <FollowUpPrompt />}
 
+      {/* Mobiele bottom-nav — alleen op kleine schermen, zelfde items als CommercialShell.
+          Verborgen op bare-pagina's (onboarding, tester-welcome, wedstrijd-room). */}
+      {!bare && (
+        <div className="lg:hidden">
+          <DsMobileNav
+            items={SHELL_MOBILE_NAV_ITEMS}
+            actiefPad={pathname}
+            onNavigeer={(href) => setLocation(href)}
+          />
+        </div>
+      )}
+
       {/* App-wide chat window — opened from the chat icon on the right of the
           header. Chat + menu staan bewust buiten de signed-in gate: alle
           ScreenShell-routes zijn al beschermd, en zo blijven ze ook werken in
@@ -406,6 +491,6 @@ export function ScreenShell({
         onClose={() => setMenuOpen(false)}
         onOpenChat={() => setChatOpen(true)}
       />
-    </CommercialShell>
+    </main>
   )
 }

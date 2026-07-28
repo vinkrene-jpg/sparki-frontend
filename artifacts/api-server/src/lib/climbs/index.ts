@@ -5,11 +5,14 @@
 
 import { geocodeArea } from "./geocode";
 import {
-  searchClimbsInBbox,
+  fetchClimbHitsRaw,
+  presentClimbHits,
   fetchClimbTags,
   fetchRoadGeometry,
   type ClimbHit,
 } from "./overpass";
+import { cacheGetDb, cachePutDb } from "./cache";
+import type { GeoArea } from "./geocode";
 import {
   deriveClimbProfile,
   deriveRoadClimbProfile,
@@ -53,17 +56,31 @@ const MIN_RADIUS_KM = 2;
 const MAX_RADIUS_KM = 60;
 export const DEFAULT_RADIUS_KM = 15;
 
+// TTL's van de DB-cache. Klimtoppen/klimwegen veranderen zelden — een paar
+// dagen cache is eerlijk; daarna volgt automatisch een verse echte Overpass-
+// fetch. Geocoderesultaten (plaats → coördinaten) zijn nog stabieler.
+const CLIMB_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1000; // 3 dagen
+const GEOCODE_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 dagen
+
 export async function searchClimbs(opts: {
   q: string;
   name?: string | null;
   limit?: number;
   radiusKm?: number | null;
 }): Promise<ClimbSearchResult> {
-  const area = await geocodeArea(opts.q).catch(() => {
-    throw new ClimbSourceError("geocode_unreachable", "unreachable");
-  });
+  // 1. Gebied bepalen — met DB-cache op de genormaliseerde zoekterm zodat een
+  //    herhaalde zoekopdracht ook Nominatim overslaat. Alleen échte successen
+  //    worden gecachet; "niet gevonden" blijft altijd een live antwoord.
+  const geoKey = `geo:${opts.q.trim().toLowerCase()}`;
+  let area = await cacheGetDb<GeoArea>(geoKey, GEOCODE_CACHE_TTL_MS);
   if (!area) {
-    throw new ClimbSourceError("area_not_found", "area_not_found");
+    area = await geocodeArea(opts.q).catch(() => {
+      throw new ClimbSourceError("geocode_unreachable", "unreachable");
+    });
+    if (!area) {
+      throw new ClimbSourceError("area_not_found", "area_not_found");
+    }
+    await cachePutDb(geoKey, area);
   }
   // Echte straal rond het centrum — de bbox van de plaats zelf is voor een
   // dorpskern veel te klein (dan vind je rond Valkenburg bijna niets).
@@ -74,15 +91,26 @@ export async function searchClimbs(opts: {
   const halfLat = radiusKm / 111;
   const halfLon =
     radiusKm / (111 * Math.max(Math.cos((area.lat * Math.PI) / 180), 0.2));
-  const climbs = await searchClimbsInBbox({
-    south: area.lat - halfLat,
-    west: area.lon - halfLon,
-    north: area.lat + halfLat,
-    east: area.lon + halfLon,
+
+  // 2. Overpass-catalogus — DB-cache per (afgerond centrum, straal). Het
+  //    naamfilter en de limiet worden pas bij presentatie toegepast, zodat één
+  //    gecachet gebied alle varianten van de zoekopdracht direct bedient.
+  const areaKey = `climbs:${area.lat.toFixed(3)},${area.lon.toFixed(3)}:r${radiusKm}`;
+  let rawHits = await cacheGetDb<ClimbHit[]>(areaKey, CLIMB_CACHE_TTL_MS);
+  if (!rawHits) {
+    rawHits = await fetchClimbHitsRaw({
+      south: area.lat - halfLat,
+      west: area.lon - halfLon,
+      north: area.lat + halfLat,
+      east: area.lon + halfLon,
+    }).catch(() => {
+      throw new ClimbSourceError("overpass_unreachable", "unreachable");
+    });
+    await cachePutDb(areaKey, rawHits);
+  }
+  const climbs = presentClimbHits(rawHits, {
     nameFilter: opts.name ?? null,
     limit: opts.limit,
-  }).catch(() => {
-    throw new ClimbSourceError("overpass_unreachable", "unreachable");
   });
   return {
     area: { label: area.label, lat: area.lat, lon: area.lon },

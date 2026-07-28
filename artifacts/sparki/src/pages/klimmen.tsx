@@ -10,7 +10,14 @@ import {
   SOURCE_LABEL,
   type ClimbHit,
 } from "@/lib/climb-types"
-import { Search, ArrowLeft, Mountain, MapPin, ExternalLink } from "lucide-react"
+import {
+  Search,
+  ArrowLeft,
+  Mountain,
+  MapPin,
+  ExternalLink,
+  Loader2,
+} from "lucide-react"
 
 function useDebounced<T>(value: T, delayMs: number): T {
   const [v, setV] = useState(value)
@@ -235,10 +242,18 @@ function Explorer() {
   const [radiusKm, setRadiusKm] = useState(15)
   const [selected, setSelected] = useState<ClimbHit | null>(null)
 
+  // The query follows the inputs with a debounce, but the visible zoekknop
+  // (and Enter) submits IMMEDIATELY — so searching never feels invisible.
+  const [query, setQuery] = useState({ area: "", name: "" })
   const debouncedArea = useDebounced(area, 500)
   const debouncedName = useDebounced(name, 500)
+  useEffect(() => {
+    setQuery({ area: debouncedArea, name: debouncedName })
+  }, [debouncedArea, debouncedName])
+  const submitNow = () => setQuery({ area, name })
+
   const { data, isLoading, isError, error, isFetching, refetch } =
-    useClimbSearch(debouncedArea, debouncedName, radiusKm)
+    useClimbSearch(query.area, query.name, radiusKm)
 
   const climbs = useMemo(() => data?.climbs ?? [], [data])
 
@@ -255,12 +270,19 @@ function Explorer() {
         bestaat. Niets wordt verzonnen.
       </p>
 
-      <div className="mt-4 space-y-2.5">
+      <form
+        className="mt-4 space-y-2.5"
+        onSubmit={(e) => {
+          e.preventDefault()
+          submitNow()
+        }}
+      >
         <div className="flex items-center gap-2 rounded-2xl border border-white/[0.10] bg-[#070d16]/[0.82] px-3.5 py-3 backdrop-blur-md">
           <Search className="h-4 w-4 shrink-0 text-white/40" />
           <input
             value={area}
             onChange={(e) => setArea(e.target.value)}
+            enterKeyHint="search"
             placeholder="Gebied of plaats (bijv. Limburg, Alpe d'Huez)"
             className="min-w-0 flex-1 bg-transparent font-sans text-[14px] text-white/90 placeholder:text-white/30 focus:outline-none"
           />
@@ -270,11 +292,30 @@ function Explorer() {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
+            enterKeyHint="search"
             placeholder="Filter op naam (optioneel)"
             className="min-w-0 flex-1 bg-transparent font-sans text-[14px] text-white/90 placeholder:text-white/30 focus:outline-none"
           />
         </div>
-      </div>
+        <button
+          type="submit"
+          disabled={area.trim().length < 2 || isLoading || isFetching}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 font-sans text-[14px] font-semibold transition disabled:opacity-40"
+          style={{ background: ACCENT, color: "#040506" }}
+        >
+          {isLoading || isFetching ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2.25} />
+              Bezig met zoeken…
+            </>
+          ) : (
+            <>
+              <Search className="h-4 w-4" strokeWidth={2.25} />
+              Zoek beklimmingen
+            </>
+          )}
+        </button>
+      </form>
 
       {/* Zoekstraal rond de gevonden plaats — instelbaar in km. */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -315,6 +356,16 @@ function Explorer() {
           </div>
         ) : isLoading || isFetching ? (
           <>
+            {/* De zoektocht haalt live OpenStreetMap-data op en kan lang duren —
+                zeg dat eerlijk, anders lijkt de knop kapot. */}
+            <p className="flex items-center gap-2 text-[12px] text-white/50">
+              <Loader2
+                className="h-3.5 w-3.5 animate-spin"
+                style={{ color: ACCENT }}
+              />
+              Echte hoogtedata ophalen uit OpenStreetMap — dit kan tot zo'n 15
+              seconden duren.
+            </p>
             {[0, 1, 2].map((i) => (
               <div
                 key={i}

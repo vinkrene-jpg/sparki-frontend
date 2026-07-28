@@ -22,6 +22,7 @@
     "test:provider-sync": "node ./scripts/run-test.mjs provider-sync",
     "test:derived-load": "node ./scripts/run-test.mjs derived-load",
     "test:connector-cleanup": "node ./scripts/run-test.mjs connector-cleanup",
+    "test:climb-cache-cleanup": "node ./scripts/run-test.mjs climb-cache-cleanup",
     "test:connect-status": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs connect-status",
     "test:connect-import": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs connect-import",
     "test:strava-sync": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs strava-sync",
@@ -137,7 +138,8 @@
     "test:ai-consent": "node ./scripts/run-test.mjs ai-consent",
     "test:data-origin": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs data-origin",
     "test:ai-foundation": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs ai-foundation",
-    "test:climb-search-unit": "node ./scripts/run-test.mjs climb-search-unit"
+    "test:climb-search-unit": "node ./scripts/run-test.mjs climb-search-unit",
+    "test:climb-cache-unit": "node ./scripts/run-test.mjs climb-cache-unit"
   },
   "dependencies": {
     "@clerk/express": "^2.1.30",

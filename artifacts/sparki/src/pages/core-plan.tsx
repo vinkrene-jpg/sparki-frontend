@@ -1,8 +1,6 @@
 // Plan (/train) in de commerciële schil — Core-afbouwwave 1.
 // Volledig gepresenteerd op het centrale designsysteem.
-import { dagSfeer } from "@/lib/sfeer"
 import { useState, useEffect } from "react";
-import { DoelenBeheerSheet } from "@/components/sparki/beheer-popup";
 import { useLocation, Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { CommercialShell } from "@/components/sparki/commercial-shell";
@@ -23,7 +21,7 @@ import { judgeGoalFit } from "@/lib/train-intelligence";
 import { useTrainingPlan, usePlanWindow, usePlanRange, useGenerateTrainingPlan, useAdaptTrainingPlan } from "@/hooks/use-training-plan";
 import { useUpdateWorkout } from "@/hooks/use-today-workout";
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile";
-import { useFixParams, useStartFix } from "@/hooks/use-missing-input";
+import { useFixParams } from "@/hooks/use-missing-input";
 import { useSessions, useUpdateSessionFeel } from "@/hooks/use-sessions";
 import { useLoad } from "@/hooks/use-load";
 
@@ -39,8 +37,7 @@ import { ActivityImportPanel } from "@/components/sparki/activity-import-panel";
 import { DocumentAnalysisPanel } from "@/components/sparki/document-analysis-panel";
 
 // AI Insights imports
-import { useObservations } from "@/hooks/use-ai-memory";
-import { VerbandenStappenplan } from "@/components/sparki/verbanden-stappenplan";
+import { useObservations, useRunConnections } from "@/hooks/use-ai-memory";
 import { useFtpHistory } from "@/hooks/use-ftp-history";
 import { useDailyMetrics } from "@/hooks/use-daily-metrics";
 import { useFeatureFlag } from "@/hooks/use-feature-flag";
@@ -278,12 +275,14 @@ function GeselecteerdeDagKaart({
           <DsState
             soort="leeg"
             titel="Geen activiteit op deze dag"
+            beschrijving="Op deze dag is geen training gelogd of gepland."
           />
         ) : (
           // Toekomstige dag — voeg toe
           <DsState
             soort="leeg"
             titel="Geen training gepland"
+            beschrijving="Er staat niets gepland voor deze dag."
             actie={{ label: "Training toevoegen", onClick: onOpenAdd }}
           />
         )
@@ -364,10 +363,7 @@ function GeselecteerdeDagKaart({
             <p className="type-body text-content-secondary">{selectedWorkout.description}</p>
           )}
 
-          {/* Altijd verticaal: de detailkolom is op desktop maar 256px breed
-              (lg:w-64) — drie no-wrap knoppen naast elkaar lopen dan buiten de
-              kaart. Primaire actie bovenaan, knoppen vullen de kaartbreedte. */}
-          <div className="flex flex-col gap-2 mt-2">
+          <div className="flex flex-col sm:flex-row gap-2 mt-2">
             <DsButton variant="primair" onClick={() => onOpenDetail(selectedWorkout.id)}>
               Training bekijken
             </DsButton>
@@ -719,123 +715,6 @@ function KalenderSection({ highlightWeek, onOpenAdd }: { highlightWeek: boolean;
   );
 }
 
-// Stappenplan voor nieuwe gebruikers: zolang er nog geen schema is, toont het
-// Plan-hoofdstuk één duidelijke route (FTP → uren → doel → bouwen) in plaats
-// van losse lege kaarten. Voltooiing wordt uit echte gegevens afgeleid.
-function PlanStappenplan({
-  profile,
-  hasGoal,
-  onBuild,
-  building,
-  buildError,
-}: {
-  profile: ReturnType<typeof useAthleteExtendedProfile>["data"];
-  hasGoal: boolean;
-  onBuild: () => void;
-  building: boolean;
-  buildError: boolean;
-}) {
-  const startFix = useStartFix();
-  const [doelenPopup, setDoelenPopup] = useState(false);
-
-  const ftpDone = isTargetSet("ftp", profile);
-  const urenDone = isTargetSet("weeklyHours", profile);
-  const klaarVoorBouw = ftpDone && urenDone;
-
-  const stappen: Array<{
-    titel: string;
-    uitleg: string;
-    done: boolean;
-    optioneel?: boolean;
-    actie?: { label: string; onClick: () => void; disabled?: boolean; primair?: boolean; loading?: boolean };
-  }> = [
-    {
-      titel: "FTP instellen",
-      uitleg: "Je FTP bepaalt je trainingszones en hoe zwaar een training telt.",
-      done: ftpDone,
-      actie: ftpDone ? undefined : { label: "FTP instellen", onClick: () => startFix("ftp", { returnTo: "/train", retry: "generate-plan" }) },
-    },
-    {
-      titel: "Uren per week instellen",
-      uitleg: "Hoeveel uur je beschikbaar hebt, bepaalt de opbouw van je week.",
-      done: urenDone,
-      actie: urenDone ? undefined : { label: "Uren instellen", onClick: () => startFix("weeklyHours", { returnTo: "/train", retry: "generate-plan" }) },
-    },
-    {
-      titel: "Doel toevoegen",
-      uitleg: "Met een doel (bijv. een wedstrijd) wordt het schema daarnaartoe opgebouwd. Zonder doel kan het ook.",
-      done: hasGoal,
-      optioneel: true,
-      actie: hasGoal ? undefined : { label: "Doel toevoegen", onClick: () => setDoelenPopup(true) },
-    },
-    {
-      titel: "Schema bouwen",
-      uitleg: klaarVoorBouw
-        ? "Alles staat klaar — bouw je periodiseerde schema."
-        : "Beschikbaar zodra je FTP en uren zijn ingesteld.",
-      done: false,
-      actie: { label: "Schema bouwen", onClick: onBuild, disabled: !klaarVoorBouw, primair: true, loading: building },
-    },
-  ];
-
-  const eersteOpen = stappen.findIndex((s) => !s.done);
-
-  return (
-    <DsCard>
-      <DsCardTitel className="mb-1">Zo start je je schema</DsCardTitel>
-      <p className="type-body text-content-secondary mb-4">
-        Nog geen schema — doorloop deze stappen, dan bouwt het plan zichzelf op.
-      </p>
-      <ol className="flex flex-col gap-3">
-        {stappen.map((stap, i) => {
-          const actief = i === eersteOpen;
-          return (
-            <li key={stap.titel} className="flex items-start gap-3">
-              <span
-                aria-hidden
-                className={cn(
-                  "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[12px] font-medium",
-                  stap.done
-                    ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-300"
-                    : actief
-                      ? "border-white/40 text-white/90"
-                      : "border-white/15 text-white/40",
-                )}
-              >
-                {stap.done ? "✓" : i + 1}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className={cn("type-body", stap.done ? "text-white/50 line-through decoration-white/25" : "text-white/90")}>
-                  {stap.titel}
-                  {stap.optioneel && !stap.done && (
-                    <span className="ml-2 text-[11px] uppercase tracking-wide text-white/35">optioneel</span>
-                  )}
-                </p>
-                {!stap.done && (
-                  <p className="type-body mt-0.5 text-[13px] text-content-secondary">{stap.uitleg}</p>
-                )}
-                {stap.actie && !stap.done && (
-                  <DsButton
-                    variant={stap.actie.primair ? "primair" : "secundair"}
-                    className="mt-2"
-                    onClick={stap.actie.onClick}
-                    disabled={stap.actie.disabled}
-                    loading={stap.actie.loading}
-                  >
-                    {stap.actie.label}
-                  </DsButton>
-                )}
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-      {buildError && <DsStatus status="fout" className="mt-3">Het opbouwen lukte niet.</DsStatus>}
-      <DoelenBeheerSheet open={doelenPopup} onOpenChange={setDoelenPopup} autoAdd />
-    </DsCard>
-  );
-}
-
 function PlanActieSection() {
   const { data: plan } = useTrainingPlan();
   const { data: profile } = useAthleteExtendedProfile();
@@ -849,14 +728,24 @@ function PlanActieSection() {
 
   return (
     <section className="mb-8">
-      {(action === "missing" || action === "generate") && (
-         <PlanStappenplan
+      {action === "missing" && (
+         <MissingInputNotice 
+           compact
+           showOrb={false}
+           title="Laat je schema opbouwen"
+           description="Met je FTP en wekelijkse uren komt er een periodiseerd plan dat meebeweegt met je vorm."
+           targets={["ftp", "weeklyHours"]}
            profile={profile}
-           hasGoal={plan?.inputs?.nextRace != null}
-           onBuild={() => generate.mutate()}
-           building={generate.isPending}
-           buildError={generate.isError}
+           returnTo="/train"
+           retry="generate-plan"
          />
+      )}
+      {action === "generate" && (
+         <DsCard>
+           <DsCardTitel className="mb-2">Schema bouwen</DsCardTitel>
+           <DsButton variant="primair" onClick={() => generate.mutate()} loading={generate.isPending}>Schema bouwen</DsButton>
+           {generate.isError && <DsStatus status="fout" className="mt-3">Het opbouwen lukte niet.</DsStatus>}
+         </DsCard>
       )}
       {action === "adapt" && (
          <DsCard>
@@ -883,7 +772,7 @@ function PlanActieSection() {
 }
 
 function DoelMeetlatSection() {
-  const [doelenPopup, setDoelenPopup] = useState(false);
+  const [, navigate] = useLocation();
   const { data: plan } = useTrainingPlan();
   const { data: load } = useLoad();
   const fit = judgeGoalFit({ inputs: plan?.inputs, load });
@@ -901,10 +790,9 @@ function DoelMeetlatSection() {
         <p className="type-title-insight mb-2 text-white/95">{fit.headline}</p>
         <p className="type-body text-content-secondary">{fit.reason}</p>
         {noGoal && (
-           <DsButton variant="secundair" className="mt-4" onClick={() => setDoelenPopup(true)}>Voeg een doel toe</DsButton>
+           <DsButton variant="secundair" className="mt-4" onClick={() => navigate("/you?focus=doelen")}>Voeg een doel toe</DsButton>
         )}
       </DsCard>
-      <DoelenBeheerSheet open={doelenPopup} onOpenChange={setDoelenPopup} autoAdd />
     </section>
   );
 }
@@ -974,6 +862,7 @@ function PatronenSection() {
   const { data: load } = useLoad();
   const { data: ftpHistory } = useFtpHistory();
   const { data: metrics } = useDailyMetrics(30);
+  const runConnections = useRunConnections();
   const [, navigate] = useLocation();
 
   const training = (obs?.observations ?? []).filter((o) => ownsObservation("train", o));
@@ -1003,17 +892,20 @@ function PatronenSection() {
       {aiEnabled && groups.length === 0 && (
         <DsCard>
           {hasSessions ? (
-            <VerbandenStappenplan />
+            <>
+              <p className="type-body text-content-secondary mb-3">
+                Je trainingen zijn er, maar er zijn nog geen patronen vastgelegd. Je gegevens worden doorzocht op verbanden.
+              </p>
+              <DsButton variant="primair" onClick={() => runConnections.mutate()} loading={runConnections.isPending}>
+                Verbanden analyseren
+              </DsButton>
+            </>
           ) : (
             <DsState 
               soort="leeg" 
               titel="Nog te weinig trainingen voor patronen"
-              beschrijving="Log je trainingen of koppel een platform."
+              beschrijving="Patronen worden pas zichtbaar na een paar weken aan gelogde trainingen. Log je trainingen of koppel een platform."
               actie={{ label: "Log een training", onClick: () => navigate("/train?focus=logsession") }}
-              uitleg={{
-                tekst:
-                  "Patronen worden pas zichtbaar na een paar weken aan gelogde trainingen — dan zijn er verbanden te leggen tussen je belasting, herstel en vorm.",
-              }}
             />
           )}
         </DsCard>
@@ -1212,7 +1104,7 @@ export default function CorePlanPage() {
   }, [focus, navigate]);
 
   return (
-    <CommercialShell actief="/train" sfeer={dagSfeer("plan")}>
+    <CommercialShell actief="/train">
       <div className="mx-auto w-full max-w-2xl px-5 pb-10 pt-8 lg:max-w-3xl lg:px-10">
         <PlanHeader />
         

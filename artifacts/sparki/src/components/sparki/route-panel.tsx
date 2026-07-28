@@ -1415,7 +1415,7 @@ function RouteGenerator({
   onSaved?:
     | ((
         route: SparkiRoute,
-        samen: { withOthers: boolean; maten: string[] },
+        samen: { withOthers: boolean; maten: string[]; navigeer?: boolean },
       ) => void)
     | null
 }) {
@@ -1703,7 +1703,10 @@ function RouteGenerator({
     )
   }
 
-  function saveCandidate() {
+  // navigeer=true: na het bewaren direct het rit-optiesmenu van de bewaarde
+  // route openen (de "Bewaar & navigeer"-knop) — zelfde pad als de
+  // Navigeer-knop op een bewaarde routekaart.
+  function saveCandidate(navigeer = false) {
     if (!candidate) return
     save.mutate(
       { candidate, meetpoints },
@@ -1718,7 +1721,7 @@ function RouteGenerator({
           // Eén situatie: sluit de generator zodat alleen de bewaarde
           // routekaart (met navigeren/GPX/TCX/delen) overblijft.
           onClose()
-          onSaved?.(data.route, { withOthers, maten: buddyIds })
+          onSaved?.(data.route, { withOthers, maten: buddyIds, navigeer })
         },
         onError: (e) =>
           setError(e instanceof Error ? e.message : "Opslaan mislukt"),
@@ -2730,10 +2733,19 @@ function RouteGenerator({
           <div className="mt-4 flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={saveCandidate}
+              onClick={() => saveCandidate(true)}
               disabled={save.isPending}
-              className="min-w-0 flex-1 basis-40 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
+              className="flex min-w-0 flex-1 basis-40 items-center justify-center gap-2 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
               style={{ background: ACCENT, color: "#040506" }}
+            >
+              <Navigation className="h-4 w-4" strokeWidth={2.25} />
+              {save.isPending ? "Opslaan…" : "Bewaar & navigeer"}
+            </button>
+            <button
+              type="button"
+              onClick={() => saveCandidate(false)}
+              disabled={save.isPending}
+              className="min-w-0 flex-1 basis-40 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20 disabled:opacity-50"
             >
               {save.isPending ? "Opslaan…" : "Bewaar route"}
             </button>
@@ -3137,6 +3149,15 @@ export function RoutePanel({
               // ("route aanpassen") — samen-keuze uit de generator (die is
               // dan voorgevuld met de bestaande context) wordt overgenomen;
               // (2) hij koos "Met anderen" bij een verse route.
+              // (3) "Bewaar & navigeer": open eerst het rit-optiesmenu van de
+              // bewaarde route — hetzelfde pad als de Navigeer-knop op een
+              // bewaarde routekaart, dus altijd langs de rit-keuzes.
+              if (samen.navigeer && !genWaypoints?.returnToNav && !samen.withOthers) {
+                const params = new URLSearchParams(window.location.search)
+                params.set("ritopties", String(saved.id))
+                setPanelLocation(`${panelPath}?${params.toString()}`)
+                return
+              }
               if (!genWaypoints?.returnToNav && !samen.withOthers) return
               const params = new URLSearchParams(window.location.search)
               params.set("nav", String(saved.id))

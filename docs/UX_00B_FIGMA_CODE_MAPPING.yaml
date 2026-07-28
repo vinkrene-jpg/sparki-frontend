@@ -121,7 +121,7 @@ frame_mapping:
     figma_node_id: "30:96"
     figma_url: "https://www.figma.com/design/wDUBmQvIFFDpaah5JyskFp?node-id=30-96"
     screenshot: approved_figma_frames/04_COMPLETE_TODAY_MOBILE_34-5.png (390x844)
-    frame_inhoud: kop "Vandaag" + statuspil "Herstel goed", gereedheidsscore 82 met conclusiezin, één leidende trainingskaart (blokvisualisatie, "Training bekijken"), "Deze week"-strip, COMPLETE-bottomnav (Vandaag/Plan/Rijden/Activiteiten/Meer)
+    frame_inhoud: kop "Vandaag" + statuspil "Herstel goed", gereedheidsscore 82 met conclusiezin, één leidende trainingskaart (blokvisualisatie, "Training bekijken"), "Deze week"-strip, COMPLETE-bottomnav (Vandaag/Plan/Rijden/Analyse/Meer)
     current_route: /vandaag
     entry_component_path: artifacts/sparki/src/App.tsx:586 → artifacts/sparki/src/components/sparki/day-home.tsx (DayHome)
     reusable_component_symbols:
@@ -138,7 +138,7 @@ frame_mapping:
       - element: gereedheid + conclusiezin — ADAPT (StateCard toont toestand/check-in; prominente 0-100-badge is een presentatiewijziging)
       - element: trainingskaart met blokvisualisatie — ADAPT (workoutgegevens + iconen bestaan; blok-balkjes-visual is nieuw tekenwerk)
       - element: weekstrip Ma-Zo met dagminuten — ADAPT (ThreeWeekPlan bevat de data; compacte stripvorm is nieuw)
-      - element: COMPLETE-bottomnav (Vandaag/Plan/Rijden/Activiteiten/Meer) — ADAPT (tabset staat statisch in lib/chapters.ts ATHLETE_NAV_ENTRIES :93, huidige sporter-default Vandaag/Trainen/Routes/Wedstrijd/Meer; aanpassen = die SSOT wijzigen, geen runtime-configuratie aanwezig)
+      - element: COMPLETE-bottomnav (Vandaag/Plan/Rijden/Analyse/Meer) — ADAPT (tabset staat statisch in lib/chapters.ts ATHLETE_NAV_ENTRIES :93, huidige sporter-default Vandaag/Trainen/Routes/Wedstrijd/Meer; aanpassen = die SSOT wijzigen, geen runtime-configuratie aanwezig)
       - element: licht werkoppervlak — NEW (tokenlaag)
     verified_gaps: geen ontbrekende databron; alle frame-inhoud is uit bestaande engines afleidbaar
     relevant_tests: workflows test-day-type, test-core-profile, test-core-profile-evolution, test-session-analysis; lib/aandachtswet.test.ts

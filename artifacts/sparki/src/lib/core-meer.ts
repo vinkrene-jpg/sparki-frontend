@@ -47,8 +47,8 @@ const ADMIN_ITEM: Chapter = {
   hint: "Systeembeheer",
 }
 
-// Analyse zit op desktop in de zijbalk maar NIET in de mobiele onderbalk —
-// zonder deze rij is /analyse op smalle schermen onbereikbaar.
+// Analyse staat inmiddels óók in de mobiele onderbalk (28-7-2026); deze rij
+// blijft als vaste vindplaats in het Meer-overzicht.
 const ANALYSE_ITEM: Chapter = {
   href: "/analyse",
   icon: null as never,

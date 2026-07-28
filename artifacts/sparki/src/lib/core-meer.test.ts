@@ -67,9 +67,9 @@ test("atleet: alle ATHLETE_MEER_CHAPTERS exact een keer", () => {
   })
   const alleHrefs = groepen.flatMap((g) => g.items.map((i) => i.href))
   const verwachtHrefs = ATHLETE_MEER_CHAPTERS.map((ch) => ch.href)
-  // + Connect, Support (losse knoppen in de oude pagina) + Analyse (zit op
-  // desktop in de zijbalk maar niet in de mobiele onderbalk — via Meer
-  // bereikbaar op smalle schermen).
+  // + Connect, Support (losse knoppen in de oude pagina) + Analyse (staat
+  // inmiddels ook in de mobiele onderbalk; blijft daarnaast vast vindbaar
+  // via Meer).
   verwachtHrefs.push("/connect", "/support", "/analyse")
   const sorted = [...alleHrefs].sort()
   const verwacht = [...verwachtHrefs].sort()

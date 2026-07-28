@@ -24,6 +24,7 @@ import {
 } from "recharts"
 
 import { CommercialShell } from "@/components/sparki/commercial-shell"
+import { HoofdstukTabs } from "@/components/sparki/hoofdstuk-tabs"
 import { ClubChip } from "@/components/sparki/club-chip"
 import { BioRadar } from "@/components/sparki/bio-radar"
 import { Sparkline } from "@/components/sparki/primitives"
@@ -1934,31 +1935,15 @@ export default function CoreAnalysePage() {
               </div>
             </div>
 
-            {/* Tabbladen — horizontaal scrollbaar op mobiel */}
-            <div
-              className="flex -mb-px overflow-x-auto scrollbar-none"
-              role="tablist"
-              aria-label="Analyse-secties"
-            >
-              {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === tab.id}
-                  aria-controls={`tab-${tab.id}`}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    "px-4 py-2.5 text-sm whitespace-nowrap border-b-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60 focus-visible:ring-inset",
-                    activeTab === tab.id
-                      ? "border-sky-500 text-sky-600 font-medium"
-                      : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300",
-                  )}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+            {/* Tabbladen — Strava-stijl hoofdstuk-tabbalk (volle breedte,
+                accentstreep onder de actieve tab), lichte variant. */}
+            <HoofdstukTabs
+              tabs={TABS}
+              actief={activeTab}
+              onKies={setActiveTab}
+              variant="licht"
+              ariaLabel="Analyse-secties"
+            />
           </div>
         </div>
 
@@ -1975,10 +1960,10 @@ export default function CoreAnalysePage() {
             todayIso={todayIso}
           />
 
-          <div id="tab-overzicht"  role="tabpanel" hidden={activeTab !== "overzicht"}>
+          <div id="tab-overzicht"  role="tabpanel" aria-labelledby="tabknop-overzicht" hidden={activeTab !== "overzicht"}>
             <OverzichtTab load={load} profiel={profiel} sessies={sessies} />
           </div>
-          <div id="tab-belasting"  role="tabpanel" hidden={activeTab !== "belasting"}>
+          <div id="tab-belasting"  role="tabpanel" aria-labelledby="tabknop-belasting" hidden={activeTab !== "belasting"}>
             <BelastingTab
               load={load}
               sessies={sessies}
@@ -1992,13 +1977,13 @@ export default function CoreAnalysePage() {
               onWeekKlik={openOpWeek}
             />
           </div>
-          <div id="tab-progressie" role="tabpanel" hidden={activeTab !== "progressie"}>
+          <div id="tab-progressie" role="tabpanel" aria-labelledby="tabknop-progressie" hidden={activeTab !== "progressie"}>
             <ProgressieTab load={load} sessies={sessies} ftp={ftp} profiel={profiel} metrics={metrics} overlays={overlays} />
           </div>
-          <div id="tab-doelen"     role="tabpanel" hidden={activeTab !== "doelen"}>
+          <div id="tab-doelen"     role="tabpanel" aria-labelledby="tabknop-doelen" hidden={activeTab !== "doelen"}>
             {activeTab === "doelen" && <DoelenTab />}
           </div>
-          <div id="tab-sessies"    role="tabpanel" hidden={activeTab !== "sessies"}>
+          <div id="tab-sessies"    role="tabpanel" aria-labelledby="tabknop-sessies" hidden={activeTab !== "sessies"}>
             <SessiesTab sessies={sessies} onOpen={setOpenSessie} />
           </div>
         </div>

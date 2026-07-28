@@ -4,6 +4,7 @@ import { ensureWorldSeed } from "./lib/world-seed";
 import { ensureIntelSeed } from "./lib/intel-seed";
 import { backfillDerivedLoad } from "./lib/derived-load-backfill";
 import { cleanupStaleConnectorShells } from "./lib/connectors/cleanup";
+import { cleanupClimbCacheDb } from "./lib/climbs/cache";
 import { startReminderScheduler } from "./lib/reminder-scheduler";
 
 // Productie faalt hard bij ontbrekende verplichte configuratie — liever een
@@ -97,6 +98,20 @@ app.listen(port, (err) => {
     .catch((err) =>
       logger.error({ err }, "Connector shell cleanup failed"),
     );
+
+  // Fire-and-forget opruimstap: verlopen klimmen-cache-rijen (ouder dan de
+  // langste TTL) verwijderen zodat de tabel niet eindeloos groeit. Idempotent
+  // en logt alleen metadata (aantal verwijderde rijen), nooit cache-inhoud.
+  // Draait óók in de nachtelijke job:health voor langdraaiende productie.
+  cleanupClimbCacheDb()
+    .then((r) => {
+      if (r.deleted > 0)
+        logger.info(
+          { cleanup: "climb-cache", deleted: r.deleted },
+          "Verlopen klimmen-cache-rijen opgeruimd",
+        );
+    })
+    .catch((err) => logger.error({ err }, "Klimmen-cache opruimen mislukt"));
 
   // Start the in-process reminder scheduler so reminders and the smartly-timed
   // "er is iets nieuws voor je" nudge actually fire without any Scheduled

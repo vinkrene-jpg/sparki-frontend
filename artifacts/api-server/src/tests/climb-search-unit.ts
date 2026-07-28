@@ -15,8 +15,27 @@
 // Run: `pnpm --filter @workspace/api-server run test:climb-search-unit`
 // (via shell — de workflow-limiet is bereikt; bewust geen nieuwe workflow.)
 
-import { searchClimbsInBbox } from "../lib/climbs/overpass";
+// Hermetisch: de DB-cache staat uit zodat elke run de gestubde bron raakt.
+process.env.CLIMB_CACHE_DISABLED = "1";
+
+import {
+  fetchClimbHitsRaw,
+  presentClimbHits,
+  type ClimbHit,
+} from "../lib/climbs/overpass";
 import { searchClimbs, DEFAULT_RADIUS_KM } from "../lib/climbs";
+
+// Zelfde gedrag als de oude searchClimbsInBbox: rauwe fetch + presentatie.
+async function searchClimbsInBbox(opts: {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+  nameFilter?: string | null;
+  limit?: number;
+}): Promise<ClimbHit[]> {
+  return presentClimbHits(await fetchClimbHitsRaw(opts), opts);
+}
 
 type Status = "pass" | "fail";
 const results: { scenario: string; status: Status; note?: string }[] = [];

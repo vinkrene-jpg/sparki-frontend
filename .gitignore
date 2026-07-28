@@ -53,3 +53,5 @@ Thumbs.db
 /*.bundle
 /exports/*.zip
 !exports/BF_00_evidence.zip
+/exports/*.zip.part*
+/exports/*_REASSEMBLY.txt

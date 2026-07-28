@@ -113,21 +113,20 @@ async function runQuery(ql: string): Promise<OverpassResponse> {
   throw lastErr ?? new Error("overpass_unreachable");
 }
 
-// Search named climbs within a bounding box. `nameFilter` (optional) narrows to
-// climbs whose name contains the term (case-insensitive), for name-based search.
-export async function searchClimbsInBbox(opts: {
+// Rauwe Overpass-fetch + spatiale dedupe voor een bbox — zonder naamfilter of
+// limiet, zodat het resultaat herbruikbaar is als cache-payload (de filter en
+// limiet worden pas bij presentatie toegepast).
+export async function fetchClimbHitsRaw(opts: {
   south: number;
   west: number;
   north: number;
   east: number;
-  nameFilter?: string | null;
-  limit?: number;
+  maxElements?: number;
 }): Promise<ClimbHit[]> {
   const { south, west, north, east } = opts;
-  const limit = Math.min(Math.max(opts.limit ?? 60, 1), 80);
-  const nameFilter = opts.nameFilter?.trim().toLowerCase() || null;
   const bbox = `${south},${west},${north},${east}`;
   const key = `bbox:${bbox}`;
+  const maxElements = opts.maxElements ?? 480;
 
   let hits = cacheGet(key);
   if (!hits) {
@@ -148,7 +147,7 @@ export async function searchClimbsInBbox(opts: {
       `node["natural"="peak"]["name"]["ele"](${bbox});` +
       `node["natural"="saddle"]["name"](${bbox});` +
       `way["highway"~"${HIGHWAY_RE}"]["name"~"${ROAD_NAME_RE}",i](${bbox});` +
-      `);out center ${limit * 6};`;
+      `);out center ${maxElements};`;
     const data = await runQuery(ql);
     const raw = (data.elements ?? [])
       .map(toHit)
@@ -176,7 +175,17 @@ export async function searchClimbsInBbox(opts: {
     hits = [...clusters.values()].flat();
     CACHE.set(key, { at: Date.now(), value: hits });
   }
+  return hits;
+}
 
+// Presentatie op eerder opgehaalde (of gecachete) hits: naamfilter + sortering
+// + limiet. Pure functie, dus veilig op cache-hits toe te passen.
+export function presentClimbHits(
+  hits: ClimbHit[],
+  opts: { nameFilter?: string | null; limit?: number },
+): ClimbHit[] {
+  const limit = Math.min(Math.max(opts.limit ?? 60, 1), 80);
+  const nameFilter = opts.nameFilter?.trim().toLowerCase() || null;
   let result = hits;
   if (nameFilter) {
     result = result.filter((h) => h.name.toLowerCase().includes(nameFilter));

@@ -12,6 +12,7 @@ description: Overpass mirror caveats + honest-source design for the searchable c
 - Honesty: bij `road`-klimmen is het OSM-way-center niet per se de top — UI-copy mag geen "top" claimen.
 - `road`-klimmen krijgen hun profiel uit de WAY-GEOMETRIE zelf (`out geom` op alle gelijknamige highway-ways around het punt → endpoint-stitching → ORS `/elevation/line` → bergop oriënteren). De straatnaam loopt vaak dóór het dorp/na de top: trim op grootste netto stijging (Kadane over ele-delta's) of Cauberg leest 1,9 km @2,5% i.p.v. echte ~1,0 km @5,7%. Trace-naar-punt blijft alleen voor pass/peak; `DerivedClimbProfile.source: "trace"|"way"` stuurt de UI-copy.
 - Overpass is flaky: eerste request geeft geregeld 503 en lukt bij retry — client heeft een retry-knop, houd die.
+- DB-cache (`climb_cache_entries`, generieke key→jsonb): rauwe hits per `climbs:<lat3>,<lon3>:r<straal>` (TTL 3d) + geocode per `geo:<term>` (30d). Naamfilter/limiet pas bij presentatie (`presentClimbHits`) zodat één gebied alle varianten bedient; cache-fouten nooit fataal; hermetische tests zetten `CLIMB_CACHE_DISABLED=1`.
 
 Searchable OSM climb explorer (flag `climb_explorer`): geocode (Nominatim) → Overpass climb search (mountain_pass + natural=peak+ele) → detail = derived profile (routing provider) + description enrichment (OSM tag → Wikipedia REST → Wikidata). Honest empty/error/limited states throughout; never fabricated.
 ## Overpass mirror selection (critical)

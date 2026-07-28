@@ -1,4 +1,5 @@
 import { runHealthChecks, hasCriticalFailures } from "../lib/health/engine";
+import { cleanupClimbCacheDb } from "../lib/climbs/cache";
 import { logger } from "../lib/logger";
 
 // CLI entry for the automated Health Check engine. Intended to run as a Replit
@@ -28,6 +29,17 @@ async function main() {
   const start = Date.now();
   const mode = resolveMode();
   logger.info({ mode }, "health-check: starting");
+
+  // Periodieke opruimstap: verlopen klimmen-cache-rijen (ouder dan de langste
+  // TTL) worden bij lezen al genegeerd maar zouden anders eindeloos opstapelen.
+  // Idempotent; logt alleen metadata (aantal), nooit cache-inhoud. Nooit fataal
+  // voor de gezondheidscheck zelf.
+  try {
+    const { deleted } = await cleanupClimbCacheDb();
+    logger.info({ cleanup: "climb-cache", deleted }, "climb-cache cleanup done");
+  } catch (err) {
+    logger.error({ err }, "climb-cache cleanup failed");
+  }
 
   const { batchId, outcomes } = await runHealthChecks({
     mode,
