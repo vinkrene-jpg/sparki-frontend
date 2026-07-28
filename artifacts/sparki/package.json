@@ -35,6 +35,7 @@
     "test:design-system": "node ../../scripts/run-tsx-test.mjs --test src/components/ds/design-system.test.tsx",
     "test:core-plan": "node ../../scripts/run-tsx-test.mjs src/lib/core-plan.test.ts",
     "test:core-plan-page": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/core-plan.test.tsx",
+    "test:race-wizard-flow": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/race-wizard-flow.test.tsx",
     "test:core-activiteiten": "node ../../scripts/run-tsx-test.mjs src/lib/core-activiteiten.test.ts",
     "test:core-activiteiten-page": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/core-activiteiten.test.tsx",
     "test:core-meer": "node ../../scripts/run-tsx-test.mjs src/lib/core-meer.test.ts",

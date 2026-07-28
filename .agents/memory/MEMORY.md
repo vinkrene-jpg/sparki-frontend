@@ -115,6 +115,7 @@
 - [Sparki Journey & wedstrijddossier](sparki-journey.md) — composed timeline (no duplication); minor media fail-closed; share-card must enforce "gedeeld" server-side (400), never UI-only.
 - [Sparki Mechanieker & materiaalkring](sparki-mechanieker.md) — km altijd afgeleid (nooit teller), defect alleen uit eigen registratie, onConflictDoUpdate partial index needs `targetWhere` not `where`.
 - [Sparki uitleglaag](sparki-uitleglaag.md) — centraal uitleg-registry + UitlegDot; "Bij jou" alleen echte waarden; short-by-default + "Uitgebreid" alleen bij echte diepte ([tiered](sparki-tiered-explanation.md)).
+- [happy-dom URL query](happydom-url-query.md) — pushState doesn't set location.search in node-page tests; pass url to GlobalRegistrator.register.
 - [tsx module-mock tests & CJS](tsx-module-mock-cjs.md) — mock.module first, lazy `import()` promise (no top-level await, no static import) or the real native module loads/CJS transform fails.
 - [Sparki designsysteem](sparki-design-system.md) — tokens in index.css @theme + .type-* + ds/-primitives, /_dev/design; node-page-tests: classic JSX eist React-import, mocks dekken VOLLEDIG import-oppervlak.
 - [Mobile ride sync honesty](sparki-mobile-ride-sync.md) — "veilig op je telefoon" claims require fail-closed storage writes; detector/queue state must reset across ride lifecycle.
