@@ -39,6 +39,8 @@ export type FeedKaart = {
   extern: boolean
   /** payload-verwijzing zodat de UI de juiste opener kiest */
   ref?: { nieuwsId?: number; routeId?: number; raceId?: number }
+  /** Echte afbeelding uit het artikel zelf (feed-enclosure); null/afwezig = geen foto tonen. */
+  beeldUrl?: string | null
   score: number
 }
 

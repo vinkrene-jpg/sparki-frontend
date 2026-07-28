@@ -1,4 +1,4 @@
-import { inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   db,
   knowledgeItemsTable,
@@ -214,10 +214,28 @@ export async function runKnowledgeScan(
           enrichment?.disciplines ??
           (item.type === "news" ? ["sportnieuws"] : ["sportwetenschap"]),
         sourceQuery: item.sourceQuery,
+        imageUrl: item.imageUrl ?? null,
       })
       .onConflictDoNothing({ target: knowledgeItemsTable.dedupeKey })
       .returning({ id: knowledgeItemsTable.id });
     if (inserted.length) newItems++;
+  }
+
+  // Heal-on-scan: oudere rijen zijn opgeslagen vóór artikelfoto's bestonden.
+  // Loop over ÁLLE opgehaalde items (dus ook al-bestaande, die hierboven worden
+  // overgeslagen): brengt hetzelfde artikel nu wél een echte foto mee, vul die
+  // alsnog in — alleen wanneer er nog geen staat (nooit overschrijven).
+  for (const [key, item] of byKey.entries()) {
+    if (!item.imageUrl || !existingKeys.has(key)) continue;
+    await db
+      .update(knowledgeItemsTable)
+      .set({ imageUrl: item.imageUrl })
+      .where(
+        and(
+          eq(knowledgeItemsTable.dedupeKey, key),
+          isNull(knowledgeItemsTable.imageUrl),
+        ),
+      );
   }
 
   return {

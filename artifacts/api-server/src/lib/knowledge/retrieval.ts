@@ -100,6 +100,9 @@ export type FeedNewsItem = {
   abstract: string | null;
   publishedAt: string | null;
   disciplines: string[];
+  // Real image from the article's own feed entry; null when the feed carried
+  // none (the UI shows no photo then — never an invented one).
+  imageUrl: string | null;
 };
 
 // Stopwords stripped before comparing news titles for near-duplicate stories.
@@ -244,6 +247,7 @@ export async function getPersonalizedNews(opts: {
     abstract: item.abstract,
     publishedAt: item.publishedAt,
     disciplines: item.disciplines,
+    imageUrl: item.imageUrl ?? null,
   }));
 }
 

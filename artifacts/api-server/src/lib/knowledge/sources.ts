@@ -16,6 +16,8 @@ export type RawItem = {
   publishedAt: string | null; // YYYY-MM-DD
   abstract: string | null;
   sourceQuery: string;
+  /** Real image URL carried by the article's own feed entry; null if none. */
+  imageUrl?: string | null;
 };
 
 const UA =
@@ -339,17 +341,42 @@ async function fetchArxiv(topic: KnowledgeTopic, limit: number): Promise<RawItem
 }
 
 // ── RSS news feeds ───────────────────────────────────────────────────────────
+// Echte artikelafbeelding uit een feed-item: enclosure → media:content →
+// media:thumbnail → eerste <img> in de beschrijving. Alleen http(s)-URL's;
+// niets gevonden = null (de UI toont dan géén foto, nooit een verzonnen beeld).
+function extractItemImage(block: string): string | null {
+  const patterns = [
+    /<enclosure[^>]*url="([^"]+)"[^>]*type="image\/[^"]*"/i,
+    /<enclosure[^>]*type="image\/[^"]*"[^>]*url="([^"]+)"/i,
+    /<media:content[^>]*url="([^"]+)"[^>]*(?:medium="image"|type="image\/[^"]*")/i,
+    /<media:content[^>]*(?:medium="image"|type="image\/[^"]*")[^>]*url="([^"]+)"/i,
+    /<media:thumbnail[^>]*url="([^"]+)"/i,
+    /<img[^>]*src="(https?:\/\/[^"]+)"/i,
+  ];
+  for (const re of patterns) {
+    const m = block.match(re);
+    const url = m?.[1]?.trim();
+    if (url && /^https?:\/\//i.test(url)) {
+      // HTML-entities in attribuut-URL's (&amp;) terugdraaien.
+      return url.replace(/&amp;/g, "&").slice(0, 2000);
+    }
+  }
+  return null;
+}
+
 function parseRss(rawXml: string): Array<{
   title: string;
   link: string;
   date: string | null;
   desc: string | null;
+  image: string | null;
 }> {
   const out: Array<{
     title: string;
     link: string;
     date: string | null;
     desc: string | null;
+    image: string | null;
   }> = [];
   // Unwrap CDATA first: many feeds (e.g. NOS) wrap <title>/<link> in
   // <![CDATA[ ... ]]>, and the tag-stripper would otherwise swallow the link.
@@ -382,6 +409,7 @@ function parseRss(rawXml: string): Array<{
       link: link.trim(),
       date: dateM ? dateM[1]!.trim() : null,
       desc: descM ? stripTags(descM[1]!).slice(0, 1200) : null,
+      image: extractItemImage(b),
     });
   }
   return out;
@@ -418,6 +446,7 @@ async function fetchNewsFeed(
     publishedAt: toIsoDate(p.date),
     abstract: p.desc,
     sourceQuery: `${feed.source} (${feed.discipline})`,
+    imageUrl: p.image,
   }));
 }
 

@@ -18,6 +18,9 @@ export type FeedNewsItem = {
   abstract: string | null;
   publishedAt: string | null;
   disciplines: string[];
+  // Echte afbeelding uit het artikel zelf (uit de feed van de uitgever);
+  // null wanneer het artikel er geen meeleverde.
+  imageUrl: string | null;
 };
 
 export type FeedNewsResponse = {

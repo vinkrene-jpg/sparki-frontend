@@ -77,6 +77,10 @@ export const knowledgeItemsTable = pgTable(
     disciplines: text("disciplines").array().notNull().default([]),
     // Raw query/topic that surfaced this item (provenance).
     sourceQuery: text("source_query"),
+    // Real image URL from the article's own feed entry (enclosure /
+    // media:content / first inline <img>). Null when the feed carried none —
+    // the UI then shows no photo rather than an invented one.
+    imageUrl: text("image_url"),
     fetchedAt: timestamp("fetched_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
