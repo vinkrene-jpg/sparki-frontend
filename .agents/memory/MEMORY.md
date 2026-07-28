@@ -2,7 +2,7 @@
 - [Sparki Clerk auth wiring](sparki-clerk-auth.md) — Phase 1 complete: cookie auth, JIT sync, roles in own DB, lib/db must be built for tsc.
 - [Sparki feature flags](sparki-feature-flags.md) — DB tables, precedence, composite-PK onConflict; one-shot /api/flags 403 tijdens Clerk-settling schakelt ALLES uit — retry ([race](sparki-flag-fetch-race.md)).
 - [Sparki testers](sparki-head-tester.md) — early access enables has-row flags (not no-row); override is kill-switch; number idempotently backfilled ([QR/roster](sparki-tester-qr.md): deep-link needs ?redirect_url=, never clobber w/ null, [overview](sparki-tester-overview.md)).
-- [Vite font loading — Next.js var() trap](vite-font-var-trap.md) — var(--font-geist-sans) undefined in Vite causes entire font-family to fall back to browser serif; always use @fontsource packages.
+- Vite traps: [font var()](vite-font-var-trap.md) altijd @fontsource, nooit Next-var(--font-…); zie ook [PORT/BASE_PATH build trap](vite-config-build-port-trap.md).
 - [Sparki Development Preview Mode](sparki-dev-preview.md) — dev-only auth/onboarding bypass; requires NODE_ENV!=production AND DEV_AUTH_BYPASS=true (fails closed).
 - [Sparki cinematic background](sparki-cinematic-bg.md) — shared ScreenShell fixed bg layer; cyclist visible page-wide, glass cards 82%, OLED-safe blue-black, no flat-black/white surfaces.
 - [Sparki Insights origin + migration audit](sparki-insights-origin.md) — original Next.js "Sparki Insights" lives in `.migration-backup/`; it is the content source-of-truth; audit/blueprint docs at repo root.
@@ -28,7 +28,6 @@
 - [Sparki Context Engine V2](sparki-context-engine-v2.md) — coaching "reasoning" lives in SPARKI_SYSTEM prompt + buildAthleteContext richness; ai_observations already has confidence/expiresAt/pattern.
 - [Sparki auth/sync email collision](sparki-sync-email-collision.md) — seeded demo row with a real email bricks onboarding (FK 500 → "Profile not found" 404s); sync must verify parent before child insert.
 - [Leaflet traps](leaflet-divicon-xss.md) — divIcon html is an XSS sink (escape at sink + strip server-side); layers before first setView crash bringToFront ([explorer](leaflet-multi-route-explorer.md)).
-- [Vite config PORT/BASE_PATH build trap](vite-config-build-port-trap.md) — module-level throw on PORT/BASE_PATH breaks `vite build`/deploy; gate on command==='serve', keep config sync.
 - [Post-merge integration breaks](post-merge-integration-breaks.md) — concurrent task-agent merges leave stale cross-task imports/columns; run typecheck + api-server esbuild before publishing.
 - [Sparki interactive schedule](sparki-interactive-schedule.md) — feedback persisted before adjust proposal; proposal intensity maps to workout description; PUT validates LLM fields.
 - [Sparki knowledge base relevance](sparki-knowledge-base.md) — literature ingestion relevance guard must use word-boundary regex (substring "sport" matches "transport"); arXiv queries leak off-topic papers.
@@ -46,6 +45,7 @@
 - [Sparki Observation & Coach Engine](sparki-observation-engine.md) — deterministic coach brain; ≥2-signal guard (health exception), confidence capped <100, weather always missing, no-"AI" copy.
 - [Sparki page-intelligence principle](sparki-intelligence-principle.md) — no dumb static lists/cards/maps; every surface personalized to athlete type/intent + carries Sparki's proactive judgment.
 - [Sparki self-update hub](sparki-self-update-hub.md) — Vandaag = sole self-input surface (state view); deep-links must force state view; move ALL producers (incl backend nudge) with a relocated panel.
+- [Sparki naslagwerk/terugblik](sparki-naslagwerk.md) — composed NASLAGWERK-blok in buildAthleteContext (verdicts, routes, race-result+reflectie); nooit aparte opslag; soft-ref fetches her-filteren clerkId.
 - [Sparki trainingsverloop & readback](sparki-progression.md) — trend/development UI derives from existing real series (useLoad+useSessions), no new endpoint; empty-state routes to the cause's flow.
 - [Sparki presentation dedup](sparki-coach-card-dedup.md) — lenses are subsets of "Wat valt op" → dedupe at presentation, lead with one insight, depth behind disclosure ([observations](sparki-observation-dedup.md): dedupeObservationsByText word+number overlap, not in groupObservations).
 - [Sparki State Engine + State Card](sparki-state-engine.md) — engine belongs to NO screen; drill-in via onShowDetails prop; metrics from engine not dashboard ([opening](sparki-state-card-opening.md)).
@@ -84,10 +84,8 @@
 - [Sparki exact age from DOB](sparki-exact-age.md) — compute age from full birth_date via shared computeAge (never currentYear-birthYear); DOB is authoritative, always re-derives birthYear in lockstep.
 - [Cross-account isolation testing](cross-account-isolation.md) — athlete-owned :id routes deny B via clerkId filter; nutrition DELETE is a silent 200 no-op (assert row survives, not 404).
 - [Sparki bundle anatomy](sparki-bundle-anatomy.md) — the scary multi-MB bundle is the api-server SERVER esbuild (not browser-shipped); manualChunks is a caching win, real cut needs route-lazy.
-- [pino worker-transport flaky](pino-worker-transport-flaky.md) — pino-pretty worker transport races process-exit in tests/jobs ("worker is not a function"); use sync in-process stream, prod stays JSON.
 - [Deployment liveness probes bare /api](deploy-liveness-bare-api.md) — platform pings the service base path (not only startup healthz); api router needs get("/") too or republish flaps unhealthy.
-- [api-server test build race](api-server-test-build-race.md) — test:* workflows delen één dist/ ⇒ strikt sequentieel; boot storm = semaphore + retry ([detail](test-workflow-boot-storm.md)).
-- [tsx-runner ENOENT ≠ esbuild-crash](tsx-runner-enoent.md) — run-tsx-test buiten pnpm om mist tsx in PATH; "spawn/esbuild pressure"-melding is dan vals — draai via pnpm run.
+- Test-infra traps: [build race](api-server-test-build-race.md) dist/ strikt sequentieel + semaphore ([storm](test-workflow-boot-storm.md)); [tsx ENOENT](tsx-runner-enoent.md) draai via pnpm run; [pino](pino-worker-transport-flaky.md) sync stream in tests.
 - [Sparki per-session caps](sparki-session-caps.md) — plan engine caps single-session minutes per DayKind×experience; unrealistic weekly quota underfills honestly, never a 6h ride; wedstrijd keeps 360.
 - [Sparki engagement engine](sparki-engagement-engine.md) — healthy pull-to-return: learns real open rhythm from tester_events, honest default when thin.
 - [Sparki aandachtswet (Vandaag single-leader)](sparki-aandachtswet.md) — one leading Momentblok (priority chain); ride-along weather/leskaart/nudge must be GATED at render not just imported.
@@ -115,8 +113,7 @@
 - [Sparki Journey & wedstrijddossier](sparki-journey.md) — composed timeline (no duplication); minor media fail-closed; share-card must enforce "gedeeld" server-side (400), never UI-only.
 - [Sparki Mechanieker & materiaalkring](sparki-mechanieker.md) — km altijd afgeleid (nooit teller), defect alleen uit eigen registratie, onConflictDoUpdate partial index needs `targetWhere` not `where`.
 - [Sparki uitleglaag](sparki-uitleglaag.md) — centraal uitleg-registry + UitlegDot; "Bij jou" alleen echte waarden; short-by-default + "Uitgebreid" alleen bij echte diepte ([tiered](sparki-tiered-explanation.md)).
-- [happy-dom URL query](happydom-url-query.md) — pushState doesn't set location.search in node-page tests; pass url to GlobalRegistrator.register.
-- [tsx module-mock tests & CJS](tsx-module-mock-cjs.md) — mock.module first, lazy `import()` promise (no top-level await, no static import) or the real native module loads/CJS transform fails.
+- Node-page-test traps: [happy-dom URL query](happydom-url-query.md) pass url to GlobalRegistrator.register; [tsx module-mock/CJS](tsx-module-mock-cjs.md) mock.module first + lazy `import()`.
 - [Sparki designsysteem](sparki-design-system.md) — tokens in index.css @theme + .type-* + ds/-primitives, /_dev/design; node-page-tests: classic JSX eist React-import, mocks dekken VOLLEDIG import-oppervlak.
 - [Mobile ride sync honesty](sparki-mobile-ride-sync.md) — "veilig op je telefoon" claims require fail-closed storage writes; detector/queue state must reset across ride lifecycle.
 - [Sparki clubomgeving](sparki-club.md) — least-privilege clubrechten; limieten óók bij invite-accept, club-scoped ID-checks, FOR UPDATE op signup; jeugd-consent fail-closed.
