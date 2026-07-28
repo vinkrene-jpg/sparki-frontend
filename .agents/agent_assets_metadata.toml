@@ -863,3 +863,9 @@ id = "lupMsQSSti6lKIvBhnwxa"
 uri = "file://SPARKI_CURRENT_STATE_2026-07-27.zip"
 type = "unspecified"
 title = "Sparki — broncode-export 27 juli 2026 (4d2566e)"
+
+[[outputs]]
+id = "HSbBubMSSwx8mVNL3ckg8"
+uri = "file://SPARKI_CURRENT_STATE_2026-07-27_666b702.zip"
+type = "unspecified"
+title = "SPARKI_CURRENT_STATE_2026-07-27_666b702.zip"
