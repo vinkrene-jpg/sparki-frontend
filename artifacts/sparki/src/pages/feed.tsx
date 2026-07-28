@@ -284,6 +284,15 @@ function FeedKaartView({
             <meta.icon className="h-3 w-3" style={{ color: meta.kleur }} />
             {meta.label}
           </span>
+          {/* A-04: generieke atmosphere-beelden expliciet markeren als sfeerbeeld,
+              zodat niemand denkt dat dit de echte bronfoto/locatie is. Alleen
+              wanneer het beeld uit de atmosphere-bibliotheek komt (beeld), nooit
+              bij een echte artikelfoto (artikelBeeld). Subtiel, klein, onderin. */}
+          {!artikelBeeld && beeld && (
+            <span className="absolute bottom-2 right-3 rounded-full bg-black/45 px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.14em] text-white/70 backdrop-blur-sm">
+              Sfeerbeeld
+            </span>
+          )}
         </div>
       )}
 

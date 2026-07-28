@@ -83,7 +83,7 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 - **Laatst bijgewerkt:** 2026-07-28
 
 ### A-04 — Sfeerbeeld kan als bronfoto worden geïnterpreteerd
-- **Categorie:** DEFECT · **Ernst:** P3 · **Zekerheid:** Hard bevestigd (code) · **Status:** READY_FOR_FIX
+- **Categorie:** DEFECT · **Ernst:** P3 · **Zekerheid:** Hard bevestigd (code) · **Status:** VERIFIED_FIXED
 - **Route/rol/scherm:** `/feed` (Ontdekken), kaarten met afbeelding (nieuws, materiaal, trainingstip, etc.)
 - **Bestand/regel:** `artifacts/sparki/src/pages/feed.tsx` (beeld-chip-rendering, rond de `TYPE_META`-chip op de afbeelding)
 - **Bewijsbron:** Statische code-inspectie
@@ -95,7 +95,7 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 - **Afhankelijkheden:** Geen.
 - **Eigenaar:** Replit (implementatie)
 - **Blokkade:** Geen
-- **Verificatiebewijs:** Nog te leveren
+- **Verificatiebewijs:** In `feed.tsx` (FeedKaartView) is een compact label "Sfeerbeeld" toegevoegd, rechtsonder in het beeldvak (`bg-black/45`-pil, mono 8px caps, backdrop-blur — visueel ondergeschikt, geen zware overlay, geen tekst over drukke fotodelen). Onderscheid is expliciet in code, niet op bestandsnaam: `artikelBeeld` (echte artikelfoto uit `kaart.beeldUrl`, alleen bij `ref.nieuwsId`) vs `beeld` (atmosphere-bibliotheek via `beeldVoor()`) vs geen beeld. Label rendert uitsluitend bij `!artikelBeeld && beeld` — een echte bronfoto krijgt het label dus nooit; kaarten zonder beeld ongewijzigd. Categoriechip linksboven behouden (nooit dubbel); sfeerbeeld blijft decoratief met `alt=""`; label is tekstueel ("SFEERBEELD") en dus zonder kleur begrijpelijk, wit-op-donkere pil = voldoende contrast. Feedvolgorde/personalisatie onaangeraakt. Visueel geverifieerd op 390 en 1440px (wedstrijdkaart met sfeerbeeld toont label; nieuwskaart met echte artikelfoto zonder label): `screenshots/feed-sfeerbeeld-390.jpg`, `screenshots/feed-sfeerbeeld-1440.jpg`; geen nieuwe consolefouten (alleen bekende flag-403 tijdens Clerk-settling). Statusgang: READY_FOR_FIX → FIXED_NOT_VERIFIED → VERIFIED_FIXED (2026-07-28). Commit-SHA: zie commit met deze registerwijziging.
 - **Laatst bijgewerkt:** 2026-07-28
 
 ### A-05 — Reduced-motion niet consequent toegepast
