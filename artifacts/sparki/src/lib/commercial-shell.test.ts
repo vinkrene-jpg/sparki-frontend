@@ -158,14 +158,32 @@ scenario("buildCoachMessage herschrijft alleen het exacte dubbele paar", () => {
     "hoofd- en ondertekst herhalen elkaar niet meer",
   )
 
+  // Algemene dedupe (28-07-2026): herhaalt de trend de hoofdzin, dan toont de
+  // onderregel de dagactie (indien meegegeven) of vervalt hij — nooit twee
+  // keer dezelfde conclusie.
   const solide = buildCoachMessage(
     "Je staat er solide voor maar je zakt iets.",
     "Je zakt iets",
   )
   assert(
     solide.headline === "Je staat er solide voor maar je zakt iets." &&
-      solide.subline === "Je zakt iets",
-    "elke andere status gaat 1-op-1 door (alleen het exacte paar wijzigt)",
+      solide.subline === null,
+    "herhaalde trend zonder actie → geen onderregel",
+  )
+
+  const stabiel = buildCoachMessage(
+    "Je staat er solide voor en blijft stabiel.",
+    "Je blijft stabiel",
+    {
+      label: "Blijf bij je geplande belasting",
+      reason: "je signalen geven geen reden om af te wijken",
+    },
+  )
+  assert(
+    stabiel.headline === "Je staat er solide voor en blijft stabiel." &&
+      stabiel.subline ===
+        "Blijf bij je geplande belasting — je signalen geven geen reden om af te wijken.",
+    "herhaalde trend met actie → onderregel is de dagactie",
   )
 
   const stijgt = buildCoachMessage(
@@ -174,8 +192,18 @@ scenario("buildCoachMessage herschrijft alleen het exacte dubbele paar", () => {
   )
   assert(
     stijgt.headline === "Je bent goed belastbaar en je gaat vooruit." &&
-      stijgt.subline === "Je gaat vooruit",
-    "stijgende vorm blijft ongewijzigd",
+      stijgt.subline === null,
+    "ook stijgende herhaling wordt gededupliceerd",
+  )
+
+  const anders = buildCoachMessage(
+    "Je beeld is wisselend.",
+    "Je gaat vooruit",
+  )
+  assert(
+    anders.headline === "Je beeld is wisselend." &&
+      anders.subline === "Je gaat vooruit",
+    "niet-herhalende trend gaat 1-op-1 door",
   )
 
   assert(

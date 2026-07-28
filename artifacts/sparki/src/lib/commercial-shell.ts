@@ -203,6 +203,7 @@ export const COACH_MESSAGE_REWRITE = {
 export function buildCoachMessage(
   status: string,
   trendLabel: string | null | undefined,
+  action?: { label: string; reason: string } | null,
 ): { headline: string; subline: string | null } {
   if (
     status === COACH_MESSAGE_REWRITE.status &&
@@ -211,6 +212,18 @@ export function buildCoachMessage(
     return {
       headline: COACH_MESSAGE_REWRITE.statusRewritten,
       subline: COACH_MESSAGE_REWRITE.sublineRewritten,
+    }
+  }
+  // Algemene dedupe (correctie 28-07-2026): de engine-status eindigt soms al
+  // op exact de trendconclusie ("… en blijft stabiel." + "Je blijft stabiel").
+  // Herhaalt de onderregel de hoofdzin, dan tonen we in plaats daarvan de
+  // concrete dagactie van de engine — echte inhoud, nooit dezelfde zin twee
+  // keer. Zonder actie vervalt de onderregel gewoon.
+  const kern = (trendLabel ?? "").replace(/^Je\s+/i, "").trim().toLowerCase()
+  if (kern.length > 0 && status.toLowerCase().includes(kern)) {
+    return {
+      headline: status,
+      subline: action ? `${action.label} — ${action.reason}.` : null,
     }
   }
   return { headline: status, subline: movementLabel(trendLabel) }

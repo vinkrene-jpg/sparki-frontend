@@ -321,6 +321,7 @@ function CoachBoodschap({ presentation }: { presentation: PresentationState }) {
   const { headline, subline } = buildCoachMessage(
     data.status,
     data.movement.label,
+    data.action,
   )
   return (
     <section
