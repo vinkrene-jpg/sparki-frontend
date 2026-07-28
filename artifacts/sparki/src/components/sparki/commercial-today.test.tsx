@@ -187,8 +187,13 @@ test("hiërarchie: kop → boodschap → week → training → herstel → seizo
     assert.ok(text.includes("SPARKI"), "woordmerk aanwezig");
 
     // Decoratieve foto: alt="" + aria-hidden, nooit betekenisdragend.
-    const foto = view.container.querySelector("img[src='/vandaag-sfeer.jpg']");
+    // Bron komt uit de Atmosphere Library (VANDAAG_HERO) — webp + png-fallback.
+    const foto = view.container.querySelector("picture img[src^='/atmosphere/']");
     assert.ok(foto, "wielerfoto aanwezig als sfeerlaag");
+    const webpBron = view.container.querySelector(
+      "picture source[type='image/webp'][srcset^='/atmosphere/']",
+    );
+    assert.ok(webpBron, "webp-variant aanwezig als primaire bron");
     assert.equal(foto!.getAttribute("alt"), "", "foto is decoratief (alt leeg)");
     assert.equal(foto!.getAttribute("aria-hidden"), "true", "foto aria-hidden");
 
