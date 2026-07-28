@@ -1,0 +1,456 @@
+VOER NU EEN DIEPE WEBBREDE PRODUCT-, UX-, LAYOUT-, DATA- EN AI-AUDIT UIT EN HERSTEL DAARNA DE GEVONDEN PROBLEMEN GESTRUCTUREERD.
+
+Gebruik SPARKI_AI_MASTER_PLAN_v2_84.yaml als bron van waarheid.
+
+DOEL
+
+Sparki moet webbreed één consistente, rustige, verkoopbare desktop- en mobiele ervaring krijgen.
+
+Niet alleen losse screenshots repareren.
+Niet alleen classes aanpassen.
+Niet alleen één shell verbreden.
+
+Onderzoek en herstel:
+- layout;
+- shells;
+- navigatie;
+- achtergronden;
+- teksthoeveelheid;
+- overflow;
+- responsiviteit;
+- formulieren;
+- AI-prefill;
+- lege toestanden;
+- data-trust;
+- profielvisualisatie;
+- wedstrijdflows;
+- hergebruik van bekende data.
+
+BELANGRIJKE REGELS
+
+- Geen complete herschrijving.
+- Geen parallelle derde shell.
+- Bestaande werkende functies behouden.
+- Geen mock-, seed-, demo-, fallback- of hardcoded persoonsgegevens tonen.
+- Geen naam “Lars” tonen tenzij die aantoonbaar uit de ingelogde gebruiker komt.
+- Geen nieuwe productiebetaling of Stripe-livefunctionaliteit activeren.
+- Geen onomkeerbare bulkdatamigraties.
+- Eerst diep auditen, daarna gericht herstellen.
+- Sluit af met een volledige voor/na-analyse.
+
+FASE 1 — DIEPE WEBBREDE AUDIT
+
+Inventariseer ALLE gebruikersroutes en maak een route-matrix.
+
+Per route vastleggen:
+- route;
+- pagina/component;
+- gebruikte shell;
+- desktop-sidebar aanwezig;
+- mobiele navigatie aanwezig;
+- contentbreedte;
+- maximale contentbreedte;
+- achtergrondbron;
+- atmosphere-asset-ID;
+- fallback-afbeelding;
+- overlay/gradient/filter;
+- tekstoverflow;
+- horizontale overflow;
+- telefoonbreedte op desktop;
+- lege toestand;
+- hoeveelheid zichtbare tekst;
+- formulierlengte;
+- AI-prefill mogelijk;
+- bekende gebruikersdata beschikbaar;
+- mock/fallbackrisico;
+- status: goed / afwijkend / blokkade.
+
+Neem minimaal alle hoofdgebieden mee:
+- Vandaag;
+- Plan;
+- Rijden;
+- Activiteiten;
+- Analyse;
+- Ontdekken;
+- Samen;
+- Wedstrijd;
+- wedstrijd toevoegen;
+- uit kalender;
+- Lichaam;
+- Mechanieker;
+- Routes;
+- Kalender;
+- Jij/profiel;
+- sprintpagina’s;
+- hoofdmenu;
+- admin waar relevant.
+
+FASE 2 — SHELL- EN NAVIGATIECONSISTENTIE
+
+Breng alle gewone gebruikerspagina’s onder één gedeeld layoutfundament.
+
+Einddoel:
+- desktop altijd dezelfde linkersidebar;
+- mobiel altijd dezelfde bottom-nav;
+- geen sidebar én bottom-nav tegelijk op desktop;
+- geen ontbrekende navigatie;
+- geen pagina die terugvalt naar een oude telefoonbrede shell;
+- geen aparte oude hoofdstuknavigatie;
+- geen dubbele knoppen;
+- geen verschillende active-state-logica.
+
+ScreenShell en CommercialShell mogen als dunne varianten blijven bestaan, maar moeten dezelfde gedeelde basis gebruiken voor:
+- sidebar;
+- mobiele nav;
+- topbar;
+- contentcontainer;
+- breakpoints;
+- spacing;
+- active states;
+- veilige schermranden.
+
+Rapporteer welke verschillen bewust blijven.
+
+FASE 3 — DESKTOPBREEDTE EN RESPONSIVITEIT
+
+Herstel alle telefoonbrede pagina’s op desktop.
+
+Regels:
+- desktopcontent gebruikt beschikbare breedte;
+- formulieren maximaal ongeveer 900–1100 px waar passend;
+- dashboards en grafieken mogen breder;
+- geen max-w-md op desktop tenzij inhoud aantoonbaar een compacte dialoog is;
+- geen horizontale afgesneden knoppen;
+- geen tekst die buiten kaarten of viewport loopt;
+- geen offscreen actieknoppen;
+- geen harde vaste breedtes die onder normale desktopresolutie overlopen.
+
+Test minimaal:
+- 390 px;
+- 768 px;
+- 1024 px;
+- 1440 px;
+- 1920 px.
+
+FASE 4 — VISUAL ATMOSPHERE WEBBREED
+
+Controleer alle routes op:
+- /concept-lab.png fallback;
+- oude donkere mannelijke renner;
+- hardcoded achtergrond;
+- ongekoppelde paginaVoorkeur;
+- zware globale overlays;
+- blauw-zwarte kleurfilters;
+- brightness-reductie;
+- verkeerde crop.
+
+Gebruik de centrale atmosphere-library.
+
+Regels:
+- ieder scherm krijgt een bewust gekozen asset of bewust geen foto;
+- geen dezelfde donkere renner op vrijwel alle pagina’s;
+- warme en lichte originele uitstraling behouden;
+- geen globale zware donkere overlay;
+- lokale gradient alleen achter tekst;
+- kaarten hoeven niet altijd halftransparant over een foto te staan;
+- data-intensieve pagina’s mogen een rustige effen achtergrond gebruiken;
+- formulieren mogen geen drukke foto achter elk invoerveld hebben;
+- profiel, wedstrijd, routes, samen en trainen krijgen passende, verschillende sfeer.
+
+Maak een koppeltabel:
+route → asset-ID → crop desktop → crop mobiel → contrastlaag.
+
+FASE 5 — TEKSTREDUCTIE EN CONTEXTUELE INFORMATIE
+
+Veel pagina’s tonen nu te veel tekst en te veel uitleg tegelijk.
+
+Herstel webbreed volgens:
+- eerst belangrijkste conclusie of actie;
+- daarna maximaal één korte toelichting;
+- details achter “Meer uitleg” of informatie-icoon;
+- geen lange paragrafen in lege toestanden;
+- geen lange opsomming van alles wat nog ontbreekt;
+- toon alleen wat nu relevant is;
+- technische termen alleen contextueel uitleggen na klik;
+- lege toestand: één duidelijke boodschap + één primaire actie.
+
+Voorbeeld:
+Niet:
+“Je hebt nog geen doel of wedstrijd en daarom kunnen we geen maatstaf...”
+
+Wel:
+“Voeg je eerstvolgende doel toe.”
+Knop:
+“Doel toevoegen”
+Secundair:
+“Waarom is dit nodig?”
+
+FASE 6 — REACTIEVE EN AI-GESTUURDE FORMULIEREN
+
+De wedstrijdflow moet volledig opnieuw worden ingericht als stapsgewijze, reactieve flow.
+
+Niet één lang formulier.
+
+Maak minimaal deze stappen:
+
+STAP 1 — Basis
+- wedstrijdnaam;
+- datum;
+- locatie;
+- bron: kalender / upload / handmatig.
+
+STAP 2 — Automatisch gevonden
+Sparki vult waar mogelijk in:
+- wedstrijdnaam;
+- locatie;
+- starttijd;
+- discipline;
+- categorie;
+- afstand;
+- rondes;
+- hoogtemeters;
+- parcoursomschrijving;
+- technische delen;
+- reisdag;
+- inschrijvingsstatus;
+- organisator;
+- link;
+- technische gids;
+- GPX/course points.
+
+Bronnen:
+- gekozen kalenderitem;
+- geüploade technische gids;
+- GPX;
+- profiel;
+- leeftijd/categorie;
+- eerdere wedstrijden;
+- teaminformatie;
+- gekoppelde data.
+
+STAP 3 — Alleen ontbrekende vragen
+Toon uitsluitend velden die nog niet betrouwbaar bekend zijn.
+
+STAP 4 — AI-voorstel
+AI stelt voor:
+- wedstrijddoel;
+- prioriteit A/B/C;
+- aandachtspunten;
+- voorbereiding;
+- materiaal;
+- voeding;
+- tijdlijn.
+
+Gebruiker:
+- accepteert;
+- wijzigt;
+- slaat over.
+
+STAP 5 — Controle
+Toon één samenvatting:
+- wat Sparki weet;
+- wat is afgeleid;
+- wat door gebruiker is bevestigd;
+- wat nog onzeker is.
+
+Belangrijke regels:
+- nooit velden vooraf vullen met verzonnen waarden;
+- afgeleide waarden labelen als voorstel;
+- betrouwbare kalender-/documentdata automatisch invullen;
+- geen 20 velden tegelijk tonen;
+- voortgang zichtbaar;
+- later hervatten mogelijk;
+- mobiel en desktop prettig bruikbaar.
+
+Pas hetzelfde patroon waar relevant toe op:
+- profiel;
+- trainingsdoelen;
+- bikefit;
+- fiets toevoegen;
+- club/team;
+- routes;
+- kalender;
+- herstelcheck-ins.
+
+FASE 7 — DATA-TRUST EN “LARS”
+
+Onderzoek webbreed waar “Lars” vandaan komt.
+
+Controleer:
+- user profile;
+- Clerk;
+- hardcoded display name;
+- seeddata;
+- fallbacknaam;
+- demo-account;
+- test persona;
+- localStorage;
+- sessionStorage;
+- server defaults;
+- fixture;
+- screenshot/testmode.
+
+Regels:
+- toon alleen de echte naam van de ingelogde gebruiker;
+- bij ontbrekende naam: toon geen verzonnen naam;
+- gebruik neutraal “Profiel” of laat naam weg;
+- verwijder geen echte gebruikersdata;
+- maak een bewijsdocument van de bron en de fix.
+
+Zoek ook webbreed op:
+- Lars;
+- test user;
+- demo;
+- mock;
+- seed;
+- fallback;
+- voorbeeldnaam;
+- hardcoded persoonsgegevens.
+
+FASE 8 — PROFIEL / JIJ
+
+Herontwerp de informatiearchitectuur van /you zonder functionaliteit te verliezen.
+
+Desktop:
+- gebruik de breedte;
+- zet belangrijke grafieken en kerncijfers naast elkaar;
+- gebruik 2- of 3-kolomsindeling waar passend;
+- geen lange verticale telefoonkolom;
+- profielkaart bovenaan compacter;
+- kerngetallen naast elkaar;
+- grafieken voor:
+  - FTP;
+  - W/kg;
+  - gewicht;
+  - CTL/ATL/TSB of beschikbare belasting;
+  - trainingsvolume;
+  - beste vermogens;
+  - vormontwikkeling;
+- ontbrekende data als compacte lege grafiektoestand, niet als lange tekstkaart.
+
+Mobiel:
+- kaarten onder elkaar;
+- horizontaal scrollbare grafiekselectie alleen indien echt nodig;
+- geen informatieverlies.
+
+Maak onderscheid tussen:
+- profielgegevens;
+- actuele prestaties;
+- ontwikkeling;
+- sportpaspoort;
+- doelen;
+- sociale koppelingen.
+
+FASE 9 — PLAN EN DATA-ARME PAGINA’S
+
+Pagina’s mogen niet vooral “schreeuwen om data”.
+
+Wanneer weinig data beschikbaar is:
+- toon één primaire volgende stap;
+- gebruik progressieve onthulling;
+- geen vijf lege kaarten onder elkaar;
+- geen lange uitleg over alles wat Sparki later kan;
+- gebruik onboardingstatus;
+- vul automatisch in wat al bekend is;
+- laat gebruiker niet dezelfde informatie meerdere keren invoeren.
+
+Plan:
+- herstel horizontale overflow van actieknoppen;
+- kalender en detailpaneel moeten desktopbreed logisch naast elkaar;
+- onderste inhoud moet onder de kalender netjes doorlopen;
+- op mobiel stapelen;
+- geen afgesneden knoppen.
+
+FASE 10 — HOOFDMENU
+
+Beoordeel het hoofdmenu opnieuw.
+
+Problemen:
+- veel grote tegels;
+- te technisch;
+- voelt als een overzicht van alle modules;
+- te veel gelijkwaardige keuzes.
+
+Herstel:
+- primaire navigatie blijft Vandaag, Plan, Rijden, Activiteiten, Analyse, Ontdekken;
+- overige hoofdstukken onder logisch gegroepeerde secties;
+- zoekfunctie of “Waar wil je naartoe?”;
+- geen grote lege desktopruimte;
+- consistente sidebar blijft zichtbaar wanneer menu geen modal hoort te zijn;
+- maak duidelijk welke pagina’s primair en secundair zijn.
+
+FASE 11 — VISUELE EN FUNCTIONELE TESTS
+
+Maak screenshots en tests van minimaal:
+- Vandaag;
+- Plan;
+- Wedstrijden;
+- Wedstrijd toevoegen;
+- Uit kalender;
+- Jij;
+- Samen;
+- Ontdekken;
+- Sprinten;
+- Hoofdmenu.
+
+Per route:
+- desktop 1440 px;
+- mobiel 390 px.
+
+Test:
+- geen overflow;
+- geen afgekapt woord;
+- geen verborgen knop;
+- sidebar correct;
+- bottom-nav correct;
+- correcte gebruiker;
+- correcte achtergrond;
+- teksthoeveelheid;
+- AI-prefill;
+- stapflow;
+- echte lege toestand.
+
+FASE 12 — SLOTANALYSE
+
+Sluit de uitvoering af met één diepgaand rapport:
+
+1. Alle gevonden tekortkomingen.
+2. Oorzaak per tekortkoming.
+3. Welke routes geraakt waren.
+4. Welke bestanden zijn gewijzigd.
+5. Welke shells zijn aangepast.
+6. Welke oude fallbacks zijn verwijderd.
+7. Waar /concept-lab.png nog bewust blijft.
+8. Welke pagina’s nu desktopbreed zijn.
+9. Welke overflowproblemen zijn opgelost.
+10. Welke formulieren stapsgewijs zijn gemaakt.
+11. Welke AI-prefill is toegevoegd.
+12. Welke mock/fallbackdata is verwijderd.
+13. Waar “Lars” vandaan kwam en hoe dat is opgelost.
+14. Welke profielgrafieken naast elkaar zijn gezet.
+15. Screenshots vóór/na.
+16. Testresultaten mobiel/desktop.
+17. Resterende tekortkomingen.
+18. Risico’s.
+19. Rollback.
+20. Commit-hash.
+
+BOUWVOLGORDE
+
+Werk in kleine commits:
+1. auditdocument;
+2. gedeeld shellfundament;
+3. breedte/overflow;
+4. atmosphere-koppelingen;
+5. Lars/data-trust;
+6. wedstrijdwizard;
+7. profiel;
+8. tekst/lege toestanden;
+9. hoofdmenu;
+10. regressietests en eindrapport.
+
+Maak vóór de eerste codewijziging:
+docs/SPARKI_WEBWIDE_UX_LAYOUT_AI_AUDIT_2026-07-28.md
+
+Maak na uitvoering:
+docs/SPARKI_WEBWIDE_UX_LAYOUT_AI_REPAIR_2026-07-28.md

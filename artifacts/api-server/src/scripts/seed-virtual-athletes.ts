@@ -82,7 +82,7 @@ const SPECS: Spec[] = [
   { slug: "trainer-view", name: "Coach Kees", expect: "trainer-toon", profile: { experienceLevel: "advanced", competitionLevel: "regional", ftp: 300 }, role: { roles: ["athlete", "coach"], activeRole: "coach" }, load: "steady", metricDays: 10, feel: 7, fatigue: 4 },
   { slug: "masters", name: "Marc Masters", expect: "ervaren masters", profile: { experienceLevel: "advanced", birthYear: new Date().getFullYear() - 48, ftp: 280 }, load: "steady", metricDays: 10, feel: 7, fatigue: 4, ftp: [275, 278, 280] },
   { slug: "onbekend", name: "Iris Intermediate", expect: "beginner-fallback", profile: {}, load: "low", metricDays: 4, feel: 6, fatigue: 4 },
-  { slug: "slaap-ok-hr-hoog", name: "Lars Lastig", expect: "tegenstrijdig (slaap ok, HR hoog)", profile: { experienceLevel: "intermediate", ftp: 250 }, load: "steady", metricDays: 8, restingHr: [48, 56], sleep: [8, 8], feel: 6, fatigue: 4 },
+  { slug: "slaap-ok-hr-hoog", name: "Kai Lastig", expect: "tegenstrijdig (slaap ok, HR hoog)", profile: { experienceLevel: "intermediate", ftp: 250 }, load: "steady", metricDays: 8, restingHr: [48, 56], sleep: [8, 8], feel: 6, fatigue: 4 },
   { slug: "herstel-split", name: "Eva Eigenaardig", expect: "tegenstrijdig (HRV+HR beide stijgen)", profile: { experienceLevel: "advanced", ftp: 290 }, load: "steady", metricDays: 8, hrv: [55, 64], restingHr: [48, 55], sleep: [7, 7], feel: 6, fatigue: 4 },
   { slug: "licht-bij-hoog", name: "Tom Tegendraads", expect: "tegenstrijdig (hoge belasting, voelt licht)", profile: { experienceLevel: "advanced", ftp: 300 }, load: "fatigue", metricDays: 6, feel: 7, fatigue: 3, feedback: { too_light: 2 } },
 ];

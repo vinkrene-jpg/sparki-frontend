@@ -379,7 +379,7 @@ const PERSONAS: Persona[] = [
   { name: "13 Marit medior — gretig, gemiddeld", selfType: "sprinter", age: 29, experience: "intermediate", coachingMode: "sparki", guidanceNeed: "medium", style: "willing", wantsIntensive: false },
   { name: "14 Koen kind (10) — gretig, intensief", selfType: "geen_idee", age: 10, experience: "beginner", coachingMode: "coach", guidanceNeed: "high", style: "willing", wantsIntensive: true },
   { name: "15 Senna senior (66) — wisselt", selfType: "ik_zie_wel", age: 66, experience: "beginner", coachingMode: "sparki", guidanceNeed: "high", style: "mixed", wantsIntensive: true },
-  { name: "16 Lars liefhebber — gretig, plezier", selfType: "alleskunner", age: 44, experience: "beginner", coachingMode: "sparki", guidanceNeed: "medium", style: "willing", wantsIntensive: false },
+  { name: "16 Finn liefhebber — gretig, plezier", selfType: "alleskunner", age: 44, experience: "beginner", coachingMode: "sparki", guidanceNeed: "medium", style: "willing", wantsIntensive: false },
   { name: "17 Robin recreant — terughoudend", selfType: "ik_zie_wel", age: 52, experience: "beginner", coachingMode: "sparki", guidanceNeed: "low", style: "reluctant", wantsIntensive: false },
   { name: "18 Anouk ambitieus — gretig, intensief", selfType: "diesel", age: 19, experience: "advanced", coachingMode: "sparki", guidanceNeed: "high", style: "willing", wantsIntensive: true },
   { name: "19 Wessel wisselt — half onzin/half goed", selfType: "sprinter", age: 31, experience: "intermediate", coachingMode: "sparki", guidanceNeed: "medium", style: "mixed", wantsIntensive: false },

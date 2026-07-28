@@ -141,7 +141,7 @@ pdf.cell(0, 8, "W2 REVIEW — FUNCTIONELE ACCEPTATIE VANDAAG", new_x=XPos.LMARGI
 pdf.set_x(14)
 pdf.set_font("Helvetica", "", 9)
 pdf.set_text_color(180, 200, 220)
-pdf.cell(0, 5, f"Sparki HERSTELPLAN v1.0  \u00b7  {datetime.date.today().strftime('%d %B %Y')}  \u00b7  dev / DEV_AUTH_BYPASS (Lars)  \u00b7  sequentieel uitgevoerd")
+pdf.cell(0, 5, f"Sparki HERSTELPLAN v1.0  \u00b7  {datetime.date.today().strftime('%d %B %Y')}  \u00b7  dev / DEV_AUTH_BYPASS  \u00b7  sequentieel uitgevoerd")
 pdf.set_y(42)
 
 # ── Build status strip ────────────────────────────────────────────────────────

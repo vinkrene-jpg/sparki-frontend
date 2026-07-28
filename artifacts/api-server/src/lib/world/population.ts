@@ -167,7 +167,7 @@ const FIRST_V = [
   "Britt", "Yara", "Suze", "Pien", "Elsa", "Mila", "Anna", "Lara",
 ];
 const FIRST_M = [
-  "Daan", "Sem", "Bram", "Lars", "Thijs", "Ruben", "Jens", "Niels",
+  "Daan", "Sem", "Bram", "Finn", "Thijs", "Ruben", "Jens", "Niels",
   "Tijn", "Stijn", "Joost", "Wout", "Mathijs", "Koen", "Bas", "Tim",
   "Sven", "Gijs", "Rik", "Tom", "Luuk", "Jasper", "Pim", "Mees",
 ];
@@ -783,8 +783,8 @@ const COHORT_FIXTURES: FixtureSpec[] = [
 // Inspiration / specialist / expert layer — "ter inspiratie".
 const INSPIRATION_FIXTURES: FixtureSpec[] = [
   {
-    slug: "lars-continentaal-prof",
-    name: "Lars Dijkstra",
+    slug: "finn-continentaal-prof",
+    name: "Finn Vermeulen",
     gender: "m",
     age: 24,
     nationality: "BE",
@@ -798,7 +798,7 @@ const INSPIRATION_FIXTURES: FixtureSpec[] = [
     followerScore: 82_000,
     team: "Continental squad",
     sponsor: "een nationale hoofdsponsor",
-    bio: "Lars (24) rijdt zijn eerste seizoenen bij een continentale ploeg. Net die stap onder de wereldtop — herkenbaar dichtbij, en toch al prof.",
+    bio: "Finn (24) rijdt zijn eerste seizoenen bij een continentale ploeg. Net die stap onder de wereldtop — herkenbaar dichtbij, en toch al prof.",
   },
   {
     slug: "ruben-oud-prof-comeback",

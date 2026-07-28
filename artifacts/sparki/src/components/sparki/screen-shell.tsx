@@ -202,16 +202,30 @@ function HomeProfilePrompt() {
   return <ProfilePromptCard />
 }
 
-// Persoonlijke context in het midden van de bovenbalk: dagdeel-groet + voornaam
-// voor ingelogde gebruikers, anders de datum. Bewust klein en rustig — de balk
-// mag de aandacht nooit opeisen.
-function HeaderContext({ displayName }: { displayName: string | null }) {
+// Persoonlijke context in het midden van de bovenbalk: voornaam voor ingelogde
+// gebruikers met naam, "Profiel" voor ingelogde gebruikers zonder naam, en de
+// datum voor niet-ingelogde bezoekers. Bewust klein en rustig — de balk mag de
+// aandacht nooit opeisen. NOOIT een verzonnen naam tonen als fallback.
+function HeaderContext({
+  displayName,
+  profileLoaded,
+}: {
+  displayName: string | null
+  /** true zodra een profiel-rij beschikbaar is (gebruiker is ingelogd) */
+  profileLoaded: boolean
+}) {
   const firstName = displayName?.trim().split(/\s+/)[0] ?? null
   if (firstName) {
     // Alleen de voornaam — de pagina zelf begroet al ("Goedemorgen, …"),
     // dus de balk blijft stil en dubbelt de groet niet.
     return <span className="truncate text-[13px] text-white/80">{firstName}</span>
   }
+  if (profileLoaded) {
+    // Ingelogd maar nog geen naam ingesteld → neutraal label, nooit een
+    // verzonnen naam of seed-waarde.
+    return <span className="truncate text-[13px] text-white/60">Profiel</span>
+  }
+  // Niet ingelogd → datum als rustige context.
   const now = new Date()
   const label = now.toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long" })
   return <span className="truncate text-[13px] text-white/60">{label.charAt(0).toUpperCase() + label.slice(1)}</span>
@@ -377,7 +391,7 @@ export function ScreenShell({
             <span className="font-mono text-[11px] tracking-[0.35em] text-white/70">SPARKI</span>
           </span>
           <div className="flex min-w-0 justify-center">
-            <HeaderContext displayName={profile?.displayName ?? null} />
+            <HeaderContext displayName={profile?.displayName ?? null} profileLoaded={profile !== null} />
           </div>
           <div className="flex items-center gap-3.5">
             <Show when="signed-in">
