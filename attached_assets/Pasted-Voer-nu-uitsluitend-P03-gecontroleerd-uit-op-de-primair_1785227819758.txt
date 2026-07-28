@@ -1,0 +1,67 @@
+Voer nu uitsluitend P03 gecontroleerd uit op de primaire productiedatabase.
+
+Bewezen scope:
+- tabel: ai_observations
+- record-ID’s: 14, 15, 16, 19, 23, 26, 27, 28, 29, 30, 31, 32
+- totaal te wijzigen: exact 12
+- verwijderen: 0
+- bronbewijs:
+  docs/P03_LANGUAGE_REVIEW_AND_REPAIR_2026-07-28.md
+- broncommit:
+  d2569ee
+
+Voorwaarden:
+
+1. Gebruik uitsluitend een schrijfbare verbinding met de echte productieprimary.
+   - Niet uitvoeren op een replica.
+   - Geen credentials of connection strings tonen.
+
+2. Maak direct vóór uitvoering een verse export/back-up van exact deze 12 rijen.
+   - title
+   - summary
+   - observation_text
+   - clerk_id
+   - created_at
+   - record-id
+   - leg bestandspad en timestamp vast.
+
+3. Voer in dezelfde sessie een verse read-only controle uit:
+   - exact 12 records;
+   - exact bovenstaande record-ID’s;
+   - clerk_id per record komt overeen met het bewijsdocument;
+   - huidige Engelse tekst komt exact overeen met §3;
+   - stop zonder wijziging bij iedere afwijking.
+
+4. Voer daarna de voorbereide 12 gerichte UPDATE-statements uit in één database-transactie.
+   - uitsluitend title, summary en observation_text aanpassen;
+   - geen IDs, clerk_id, datums of overige velden wijzigen;
+   - geen records verwijderen;
+   - geen nieuwe interpretatie toevoegen;
+   - rollback bij één fout.
+
+5. Verifieer direct na commit:
+   - totaal aantal rijen blijft 161;
+   - exact 12 rijen gewijzigd;
+   - 0 rijen verwijderd;
+   - alle 12 records zijn Nederlandstalig;
+   - 149 overige records byte-for-byte ongewijzigd;
+   - getallen, wattwaarden, datums en conclusies behouden;
+   - geen andere tabel gewijzigd.
+
+6. Leg bewijs vast in:
+   docs/P03_LANGUAGE_REPAIR_APPLY_2026-07-28.md
+
+7. Commit en push uitsluitend het bewijsdocument.
+
+Lever:
+- bevestiging productieprimary;
+- back-upbewijs;
+- pre-check;
+- transactie-uitkomst;
+- exact aantal gewijzigde rijen;
+- verificatie;
+- bestandspad;
+- commit-hash;
+- branch;
+- push-resultaat;
+- bevestiging dat alleen IDs 14, 15, 16, 19, 23, 26, 27, 28, 29, 30, 31 en 32 zijn aangepast.

@@ -1,0 +1,112 @@
+Maak nu uitsluitend het concrete deploymentplan voor Sparki op TransIP VPS sparki-vps2.
+
+Feitelijke uitgangssituatie:
+- VPS: sparki-vps2
+- IP: 141.138.141.205
+- Ubuntu 24.04 LTS
+- 1 vCPU
+- circa 2 GB RAM
+- circa 100 GB SSD
+- VPS is vrijwel leeg
+- alleen SSH draait
+- geen Node, PM2, Docker, Nginx, PostgreSQL, Redis, Git-repository, code, SSL of deployment
+- GitHub main is de centrale broncode
+- Replit blijft ontwikkeling/test
+- TransIP wordt productie
+- Vercel wordt voorlopig niet gebruikt
+- SSH-keytoegang werkt
+- password authentication staat uit
+- root-login is uitsluitend via SSH-key mogelijk
+
+Doel:
+ontwerp een veilige, eenvoudige en betaalbare productie-inrichting waarbij frontend, API en PostgreSQL op deze VPS kunnen draaien, passend binnen 2 GB RAM.
+
+Nog niets installeren en niets wijzigen.
+
+Werk uit:
+
+1. Definitieve productiearchitectuur
+- frontend;
+- API-server;
+- PostgreSQL;
+- Nginx reverse proxy;
+- SSL;
+- procesbeheer;
+- logging;
+- back-ups;
+- monitoring;
+- deployment vanaf GitHub.
+
+2. Keuze tussen:
+- native Node + systemd/PM2;
+- Docker Compose;
+Geef één duidelijke aanbeveling voor deze kleine VPS en motiveer die.
+
+3. Exacte installatievolgorde in kleine fasen:
+- serverbeveiliging;
+- deploygebruiker;
+- firewall;
+- software;
+- code checkout;
+- database;
+- environment variables;
+- build;
+- services;
+- Nginx;
+- domein;
+- SSL;
+- health checks;
+- back-up;
+- rollback;
+- eerste afgeschermde testdeployment;
+- publieke livegang.
+
+4. Per fase:
+- doel;
+- exacte wijzigingen;
+- controles vooraf;
+- acceptatiecriteria;
+- rollback;
+- risico;
+- welke handeling René zelf moet doen.
+
+5. Resources
+- geschat RAM- en schijfgebruik;
+- swapadvies;
+- PostgreSQL-instellingen voor 2 GB RAM;
+- maatregelen om geheugentekort te voorkomen;
+- wanneer een VPS-upgrade noodzakelijk wordt.
+
+6. Beveiliging
+- root niet gebruiken voor dagelijkse deployments;
+- aparte deployuser;
+- uitsluitend SSH-key;
+- UFW-regels;
+- database niet publiek bereikbaar;
+- secrets niet in GitHub;
+- minimale bestandsrechten;
+- automatische beveiligingsupdates;
+- rate limiting;
+- back-ups buiten dezelfde VPS.
+
+7. GitHub-deployment
+- veilige deploymethode;
+- handmatige eerste deployment;
+- latere CI/CD;
+- commit-hash in release manifest;
+- geen deploy bij mislukte tests;
+- rollback naar vorige werkende commit.
+
+8. Productieconfiguratie
+Maak een lijst met uitsluitend namen van benodigde environment variables, geen waarden en geen secrets.
+
+9. Oplevering
+Lever:
+- docs/SPARKI_TRANSIP_DEPLOYMENT_PLAN.md
+- een korte beslissamenvatting;
+- een gefaseerde uitvoeringslijst;
+- lijst van open gegevens die nog van René nodig zijn;
+- geen codewijziging;
+- geen installatie;
+- geen databasewijziging;
+- geen Git-commit voordat René het plan heeft beoordeeld.
