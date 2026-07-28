@@ -70,7 +70,14 @@ import {
 // Eén krachtige wielerfoto als sfeerlaag — de rustige, mistige rijder uit de
 // conceptronde (donker, premium, past bij de Core-richting). Puur decoratief:
 // alt="" + aria-hidden, met een donkere contrastlaag zodat tekst nooit op een
-// druk fotodeel staat. Bestand: public/vandaag-sfeer.jpg (85 kB).
+// druk fotodeel staat.
+//
+// Visual Atmosphere Layer — Midjourney-asset geselecteerd 27 jul 2026:
+//   public/vandaag-sfeer.webp  46 kB  (primair — moderne browsers)
+//   public/vandaag-sfeer.jpg   85 kB  (fallback — legacy browsers)
+// Beide bestanden blijven bewaard voor verdere schermkoppeling (andere rollen,
+// seizoenswissel, e.d.). Vervang alleen via een bewuste atmosphere-update.
+const HERO_FOTO_WEBP = "/vandaag-sfeer.webp"
 const HERO_FOTO = "/vandaag-sfeer.jpg"
 
 // Sfeertint per presentatietoestand (CUX_02A) — uitsluitend tokenkleuren op
@@ -199,12 +206,19 @@ function HeroVandaag({
 }) {
   return (
     <header className="relative overflow-hidden bg-app">
-      <img
-        src={HERO_FOTO}
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 h-full w-full object-cover object-[50%_70%]"
-      />
+      {/* Visual Atmosphere Layer — Midjourney-asset (27 jul 2026).
+          <picture> biedt WebP aan moderne browsers (~46 kB), JPEG als
+          fallback voor legacy (~85 kB). Puur decoratief: alt="" + aria-hidden.
+          Donkere contrastlaag eronder zorgt dat tekst altijd leesbaar blijft. */}
+      <picture>
+        <source srcSet={HERO_FOTO_WEBP} type="image/webp" />
+        <img
+          src={HERO_FOTO}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover object-[50%_70%]"
+        />
+      </picture>
       {/* Donkere contrastlaag: foto ondersteunt, hindert tekst nooit. */}
       <div
         aria-hidden="true"

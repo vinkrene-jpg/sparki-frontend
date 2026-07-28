@@ -47,7 +47,13 @@ export function FeatureFlagProvider({ children }: { children: ReactNode }) {
   const { isSignedIn, isLoaded } = useUser();
   const { profile } = useUserProfile();
   const [flags, setFlags] = useState<FeatureFlags>(DEFAULT_FLAGS);
-  const [isLoading, setIsLoading] = useState(false);
+  // Start in the loading state so flag-gated components fail-open (show the
+  // commercial-shell variant) during the initial fetch. Without this the very
+  // first render sees isLoading=false + all flags=false and immediately renders
+  // the legacy fallback — the fetch completes too late for the screenshot /
+  // first paint. Reset to false only when we know flags won't be fetched
+  // (signed-out path below).
+  const [isLoading, setIsLoading] = useState(true);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const attemptRef = useRef(0);
 
@@ -95,6 +101,7 @@ export function FeatureFlagProvider({ children }: { children: ReactNode }) {
     } else {
       clearRetry();
       setFlags(DEFAULT_FLAGS);
+      setIsLoading(false);
     }
   }, [isLoaded, isSignedIn, fetchFlags]);
 

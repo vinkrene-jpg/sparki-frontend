@@ -382,10 +382,17 @@ function SignedInHomeReady() {
 // Home is role-aware: coaches see their roster, parents see the wellbeing view,
 // athletes land on the Startscherm (chapter overview). The day-type engine
 // (dagplanning) lives in its own hoofdstuk on /vandaag.
+//
+// Fail-open patroon: zolang flags laden renderen we CommercialToday (met
+// DsMobileNav). Zonder dit valt de flag terug op false en rendert de legacy
+// StartPage zonder mobiele ondernavigatie — hetzelfde patroon als alle andere
+// flag-switch-pagina's (VandaagPage, TrainSwitchPage, ActiviteitenSwitchPage).
 function RoleHome() {
   const { profile } = useUserProfile();
+  const { flags, isLoading: flagsLoading } = useFeatureFlags();
   if (profile?.activeRole === "coach") return <CoachHome />;
   if (profile?.activeRole === "parent") return <ParentHome />;
+  if (flagsLoading || flags.commercial_shell) return <CommercialToday />;
   return <StartPage />;
 }
 

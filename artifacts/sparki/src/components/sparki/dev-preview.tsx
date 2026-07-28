@@ -488,6 +488,12 @@ export function DevPreview() {
   } else if (location.startsWith("/invite/")) {
     page = <InviteAcceptPage />
     showNav = false
+  } else if (location === "/" || location === "") {
+    // Home route: commercial_shell is globally enabled, so home renders the
+    // same CommercialToday shell as /vandaag. StartPage is the legacy fallback
+    // (flag off) — only kept as a fallback in the real router, not here.
+    page = <CommercialToday />
+    showNav = false
   } else {
     page = <StartPage />
   }
