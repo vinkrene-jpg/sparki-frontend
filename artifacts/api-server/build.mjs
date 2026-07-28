@@ -121,12 +121,21 @@ async function buildAll() {
   const distDir = process.env.DIST_DIR
     ? path.resolve(artifactDir, process.env.DIST_DIR)
     : path.resolve(artifactDir, "dist");
+  // In een productie-/deploy-build (Replit zet REPLIT_DEPLOYMENT) bundelen we
+  // ALLEEN de server + jobs. De ~180 test- en seed-bundels (elk ~6 MB) horen
+  // niet in de productie-image; die duwden de image over de 8 GiB-limiet.
+  const deployOnlyEntries = ALL_ENTRIES.filter(
+    (p) => !p.includes(`${path.sep}src${path.sep}tests${path.sep}`) &&
+           !p.includes(`${path.sep}src${path.sep}scripts${path.sep}`),
+  );
   const entryPoints = process.env.BUILD_ENTRIES
     ? process.env.BUILD_ENTRIES.split(",")
         .map((p) => p.trim())
         .filter(Boolean)
         .map((p) => path.resolve(artifactDir, p))
-    : ALL_ENTRIES;
+    : process.env.REPLIT_DEPLOYMENT
+      ? deployOnlyEntries
+      : ALL_ENTRIES;
   await rm(distDir, { recursive: true, force: true });
 
   await esbuild({

@@ -47,3 +47,9 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Afgeleide export-/backup-archieven horen niet in git of in de productie-image
+/*.zip
+/*.bundle
+/exports/*.zip
+!exports/BF_00_evidence.zip
