@@ -13,3 +13,5 @@ Rule: in `node:test` files run via tsx with `--experimental-test-module-mocks`, 
 - `namedExports` moet het VOLLEDIGE import-oppervlak van de echte module dekken; een later toegevoegde export op de pagina breekt de test met een loader-SyntaxError die alleen de eerste ontbrekende naam noemt.
 - Harnas compileert JSX klassiek (tsconfig `jsx: preserve`): elk gerenderd `.tsx` heeft runtime `import * as React from "react"` nodig.
 - `@/lib/api` laadt niet onder node (top-level `import.meta.env`); houd hem via mocks buiten de graf.
+
+- `--experimental-test-module-mocks` mag niet via NODE_OPTIONS (node weigert); geef de vlag direct aan tsx: `pnpm exec tsx --experimental-test-module-mocks --test <file>`.
