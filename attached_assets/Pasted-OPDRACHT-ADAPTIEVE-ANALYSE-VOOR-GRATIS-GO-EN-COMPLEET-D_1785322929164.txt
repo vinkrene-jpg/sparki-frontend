@@ -1,0 +1,437 @@
+OPDRACHT — ADAPTIEVE ANALYSE VOOR GRATIS, GO EN COMPLEET
+
+DOEL
+
+Bouw de bestaande Analyse-omgeving door naar één adaptief systeem voor:
+
+- Gratis
+- Go
+- Compleet
+
+Gebruik dezelfde centrale rekenmotor, dezelfde databronnen en zoveel mogelijk dezelfde schermcomponenten.
+
+Bouw geen drie losse Analyse-pagina’s.
+Bouw geen parallelle engines.
+Herschrijf geen werkende Analyse-functionaliteit.
+
+VASTE PRODUCTREGEL
+
+- Abonnement bepaalt de diepte.
+- Doel bepaalt welke informatie voorrang krijgt.
+- Taalniveau bepaalt hoe de informatie wordt uitgelegd.
+
+VOORBEELDEN
+
+- Go + Afvallen + Begrijpelijke taal:
+  gewichtstrend, beweegregelmaat, actieve tijd, herstel en eerstvolgende stap vooraan.
+
+- Go + Fitter worden + Begrijpelijke taal:
+  beweegmomenten, conditieontwikkeling, trainingsduur, regelmaat en herstel vooraan.
+
+- Compleet + Prestatie verbeteren + Sporttermen:
+  CTL, ATL, TSB, FTP, vermogen, intensiteitsverdeling en uitgebreide analyses vooraan.
+
+- Compleet + Wedstrijdgericht + Sporttermen:
+  vorm richting wedstrijd, wedstrijdbelasting, FTP, CTL/ATL/TSB en wedstrijdmarkeringen.
+
+FASE 1 — EERST READ-ONLY INVENTARISEREN
+
+Controleer vóór wijzigingen:
+
+1. Hoe Gratis, Go en Compleet momenteel technisch worden bepaald.
+2. Waar abonnement, entitlements en featureflags worden opgeslagen.
+3. Welke doelen nu beschikbaar zijn in onboarding, profiel en Plan.
+4. Of doelen centraal worden opgeslagen of op meerdere plekken.
+5. Welke Analyse-componenten al bestaan.
+6. Welke databronnen iedere kaart en grafiek gebruikt.
+7. Waar technische termen zoals CTL, ATL, TSB, FTP en HRV worden vertaald.
+8. Of er al een instelling voor eenvoudige of technische uitleg bestaat.
+9. Of gewicht, startgewicht, doelgewicht en gewichtshistorie al worden opgeslagen.
+10. Of weekdoelen, beweegminuten, trainingsmomenten en regelmaat al berekend worden.
+11. Of de huidige Analyse-data echt, leeg of fallback/mock is.
+12. Welke bestaande Plan-, Vandaag- en doelen-engines hergebruikt moeten worden.
+
+Leg de uitkomst vast in:
+
+docs/SPARKI_ADAPTIEVE_ANALYSE_AUDIT.md
+
+Classificeer ieder onderdeel als:
+
+- BEWEZEN_BESTAAND
+- GEDEELTELIJK_BESTAAND
+- ALLEEN_UI
+- ALLEEN_ENGINE
+- ONBETROUWBARE_DATA
+- NIET_GEVONDEN
+- NIET_NODIG
+
+Ga daarna automatisch door met bouwen, tenzij een echte blokkade wordt gevonden.
+
+FASE 2 — CENTRAAL WEERGAVECONTRACT
+
+Maak één centraal Analyse-weergavecontract met minimaal:
+
+subscriptionTier:
+- free
+- go
+- complete
+
+primaryGoal:
+- gezond_actief_blijven
+- fitter_worden
+- afvallen
+- prestatie_verbeteren
+- wedstrijdgericht
+
+terminologyMode:
+- begrijpelijk
+- sporttermen
+
+advancedDetails:
+- ingeklapt
+- open
+
+Gebruik bestaande profiel- en entitlementvelden wanneer die al bestaan.
+Maak geen dubbele bron van waarheid.
+
+Gebruikers moeten hun doel en terminologie later kunnen wijzigen zonder opnieuw te onboarden.
+
+FASE 3 — TERMINOLOGIESCHAKELAAR
+
+Voeg op Analyse een compacte keuze toe:
+
+Uitleg:
+- Begrijpelijk
+- Sporttermen
+
+GEDRAG
+
+Begrijpelijke taal:
+
+- CTL → Conditieopbouw
+- ATL → Recente belasting
+- TSB → Balans tussen inspanning en herstel
+- FTP → Duurzaam fietsvermogen
+- HRV → Herstelsignaal
+- Trainingsvolume → Totale beweegtijd
+- Intensiteitsverdeling → Rustig en stevig bewegen
+- Readiness → Hoe klaar je lichaam is voor inspanning
+
+Sporttermen:
+
+- behoud de gangbare sporttermen;
+- toon bij relevante termen een klein informatie-icoon;
+- klik opent korte uitleg in gewone taal;
+- technische waarden en eenheden blijven zichtbaar.
+
+De schakelaar verandert alleen teksten, labels, toelichting en standaarddetailniveau.
+
+Hij mag niet:
+
+- berekeningen veranderen;
+- gegevens verbergen waarop een advies is gebaseerd;
+- een andere engine aanroepen;
+- historische data aanpassen.
+
+FASE 4 — DOELAFHANKELIJKE PRIORITEIT
+
+Gebruik dezelfde Analyse-pagina en dezelfde componentbibliotheek, maar verander:
+
+- volgorde van kaarten;
+- standaard geopende grafieken;
+- hoofdtekst;
+- samenvatting;
+- eerstvolgende aanbeveling;
+- standaarddetailniveau.
+
+DOEL: GEZOND ACTIEF BLIJVEN
+
+Toon vooraan:
+
+- beweegmomenten deze week;
+- totale actieve tijd;
+- regelmaat;
+- verhouding rustig en steviger bewegen;
+- herstel;
+- eerstvolgende haalbare beweegstap.
+
+DOEL: FITTER WORDEN
+
+Toon vooraan:
+
+- conditietrend;
+- actieve tijd per week;
+- trainingen of beweegmomenten;
+- rustige en intensieve minuten;
+- hersteltrend;
+- ontwikkeling in duur, tempo of vermogen afhankelijk van beschikbare data.
+
+DOEL: AFVALLEN
+
+Toon vooraan:
+
+- actuele gewichtstrend;
+- startgewicht;
+- doelgewicht;
+- verandering over 4, 12 en 26 weken;
+- beweegmomenten per week;
+- actieve tijd;
+- regelmaat;
+- herstel;
+- haalbare volgende stap.
+
+Belangrijke regels:
+
+- beoordeel gewicht op trend, niet op één meting;
+- geen exact voorspelde datum waarop doelgewicht wordt bereikt;
+- geen medische diagnose;
+- geen crashdieetadvies;
+- calorieverbruik altijd als schatting benoemen;
+- geen boodschap dat geschatte calorieën automatisch teruggegeten kunnen worden;
+- bij te weinig data een eerlijke lege toestand tonen;
+- bij onrealistisch of mogelijk onveilig doel geen automatisch trainings- of voedingsadvies geven, maar neutraal begrenzen en passende waarschuwing tonen.
+
+DOEL: PRESTATIE VERBETEREN
+
+Toon vooraan:
+
+- CTL/ATL/TSB of begrijpelijke vertaling;
+- FTP of relevante prestatiemarker;
+- trainingsvolume;
+- intensiteitsverdeling;
+- power curve waar beschikbaar;
+- ontwikkeling;
+- herstel;
+- doelgerichte scenario’s.
+
+DOEL: WEDSTRIJDGERICHT
+
+Toon vooraan:
+
+- vorm richting wedstrijd;
+- wedstrijdkalender;
+- wedstrijdmarkeringen in grafieken;
+- specifieke belasting;
+- herstel;
+- FTP/vermogensontwikkeling;
+- piek- en taperinformatie waar betrouwbaar beschikbaar.
+
+FASE 5 — AANVULLENDE KAARTEN
+
+Bouw alleen kaarten die nog werkelijk ontbreken.
+
+Minimaal nodig voor Go-doelen:
+
+1. Gewichtstrend
+2. Beweegmomenten per week
+3. Actieve tijd per week
+4. Regelmaat
+5. Rustig versus stevig bewegen
+6. Herstel in begrijpelijke taal
+7. Voortgang richting gekozen doel
+8. Concrete volgende stap voor deze week
+
+Hergebruik bestaande data en engines.
+
+Geen nieuwe kaart tonen wanneer de benodigde brondata ontbreekt.
+Toon dan een passende lege toestand, bijvoorbeeld:
+
+- “Nog onvoldoende gewichtsmetingen voor een betrouwbare trend.”
+- “Koppel een gegevensbron of registreer enkele activiteiten.”
+- “Na enkele weken kunnen we je regelmaat beoordelen.”
+
+FASE 6 — ABONNEMENTSNIVEAUS
+
+GRATIS
+
+Beschikbaar:
+
+- doel kiezen;
+- terminologie kiezen;
+- eenvoudige recente samenvatting;
+- basisweekoverzicht;
+- beperkte voortgang;
+- beperkte gewichtstrend wanneer data aanwezig is;
+- basisuitleg bij activiteit en herstel;
+- bestaande gratis route- en GPX-functies blijven ongewijzigd.
+
+Niet beschikbaar:
+
+- diepgaande adaptieve analyse;
+- uitgebreide scenario’s;
+- volledige performancehistorie;
+- uitgebreide persoonlijke begeleiding;
+- geavanceerde wedstrijdanalyse.
+
+Toon bij afgeschermde onderdelen een rustige uitleg van de meerwaarde.
+Geen opdringerige betaalpop-ups op iedere kaart.
+
+GO
+
+Beschikbaar:
+
+- volledige begrijpelijke doelweergave;
+- gezond actief blijven;
+- fitter worden;
+- afvallen;
+- gewichtstrend;
+- beweegdoelen;
+- weekbegeleiding;
+- hersteladvies;
+- eenvoudige persoonlijke aanpassingen;
+- actieve tijd en regelmaat;
+- rustige versus stevige beweging;
+- technische termen optioneel;
+- bestaande Go-route- en navigatiefuncties blijven behouden.
+
+Go mag niet aanvoelen als een uitgeklede wedstrijdomgeving.
+
+COMPLEET
+
+Beschikbaar:
+
+- alles uit Go;
+- volledige technische sportanalyse;
+- CTL/ATL/TSB;
+- FTP en vermogensanalyse;
+- uitgebreide Plan-koppeling;
+- adaptieve trainingsplanning;
+- scenarioanalyse;
+- wedstrijdgerichte analyse;
+- uitgebreide trends en verbanden;
+- geavanceerde herstel- en belastinganalyse;
+- relevante coach-, club- en teamfuncties volgens rechten en abonnement.
+
+FASE 7 — SCHERMGEDRAG
+
+Behoud de huidige Analyse-navigatie zoveel mogelijk.
+
+Gebruik bovenaan een compacte contextregel, bijvoorbeeld:
+
+Doel: Afvallen
+Uitleg: Begrijpelijk
+
+De gebruiker kan deze aanpassen.
+
+Toon geen permanente grote configuratiepanelen.
+
+Technische details mogen onder:
+
+- Meer trainingsdetails
+- Toon sporttermen
+- Geavanceerde analyse
+
+Gebruik progressive disclosure:
+
+- eerst conclusie;
+- dan betekenis;
+- daarna grafiek;
+- daarna technische details.
+
+FASE 8 — DATA- EN VEILIGHEIDSREGELS
+
+- Geen mock-, demo-, fallback- of hardcoded persoonlijke waarden.
+- Geen advies zonder aantoonbare brondata.
+- UNKNOWN mag geen positief of negatief advies veroorzaken.
+- Toon databetrouwbaarheid in begrijpelijke taal.
+- Gezondheids- en gewichtsdata mogen niet in commerciële analytics terechtkomen.
+- Geen cross-user- of cross-role-datalek.
+- Ouder, trainer en club zien alleen data waarvoor expliciete rechten bestaan.
+- Gewicht en afvaldoelen zijn standaard privé.
+- Voor minderjarigen geen afvalbegeleiding zonder passend bestaand toestemmings- en veiligheidsmodel.
+- Geen medische claims.
+- Geen exact gegarandeerd resultaat.
+
+FASE 9 — TESTS
+
+Voer minimaal uit:
+
+1. Gratis + gezond actief + begrijpelijk.
+2. Gratis + afvallen + begrijpelijk.
+3. Go + fitter worden + begrijpelijk.
+4. Go + afvallen + begrijpelijk.
+5. Go + sporttermen.
+6. Compleet + prestatie verbeteren + sporttermen.
+7. Compleet + wedstrijdgericht + sporttermen.
+8. Wisselen van doel zonder dat data verdwijnt.
+9. Wisselen van terminologie zonder dat cijfers veranderen.
+10. Upgrade Gratis → Go.
+11. Upgrade Go → Compleet.
+12. Downgrade Compleet → Go zonder dat historische data wordt verwijderd.
+13. Geen gewichtshistorie.
+14. Onvoldoende activiteiten.
+15. Geen gekoppelde databron.
+16. Onbetrouwbare of ontbrekende hersteldata.
+17. Cross-user-isolatie.
+18. Cross-role-rechten.
+19. Desktop responsive.
+20. Mobiel responsive.
+21. Toegankelijkheid en contrast.
+22. Visuele regressie van bestaande performancegrafieken.
+23. Bewijs dat CTL/ATL/TSB/FTP-berekeningen ongewijzigd blijven.
+
+FASE 10 — BEWIJS EN RAPPORTAGE
+
+Lever op:
+
+- docs/SPARKI_ADAPTIEVE_ANALYSE_AUDIT.md
+- docs/SPARKI_ADAPTIEVE_ANALYSE_IMPLEMENTATIE.md
+- docs/SPARKI_ADAPTIEVE_ANALYSE_TESTRAPPORT.md
+
+Rapporteer:
+
+- wat al bestond;
+- wat is hergebruikt;
+- wat is toegevoegd;
+- gewijzigde bestanden;
+- gewijzigde databasevelden of migraties;
+- gebruikte engines;
+- testresultaten;
+- screenshots van minimaal:
+  - Gratis + begrijpelijk;
+  - Go + afvallen;
+  - Go + fitter worden;
+  - Compleet + sporttermen;
+- bekende beperkingen;
+- commit-SHA;
+- rollbackinstructie.
+
+STOPCONDITIES
+
+Stop en rapporteer wanneer:
+
+- een tweede Analyse-engine nodig lijkt;
+- abonnementen of doelen geen betrouwbare centrale bron hebben;
+- gewichtsdata niet veilig geïsoleerd is;
+- medische of juridische productbeslissingen nodig zijn;
+- een destructieve migratie nodig lijkt;
+- bestaande berekeningen zouden moeten veranderen;
+- privacy-, jeugd-, ouder- of rechtenproblemen worden gevonden;
+- een test na één gerichte herstelpoging blijft falen;
+- de opdracht strijdig blijkt met het Master Plan.
+
+NIET DOEN
+
+- geen aparte Analyse-app per abonnement;
+- geen volledige herschrijving;
+- geen parallelle rekenmotor;
+- geen wijziging van bestaande CTL/ATL/TSB/FTP-berekeningen;
+- geen calorieënteller als centraal product;
+- geen exacte afvalvoorspellingen;
+- geen medische diagnose;
+- geen mockdata tonen;
+- geen technische termen volledig verwijderen;
+- geen betaalmuur voor basisbegrijpelijkheid;
+- geen Go-interface die alleen Compleet met minder knoppen is.
+
+EINDRESULTAAT
+
+Eén adaptieve Analyse-omgeving waarin:
+
+- Gratis bruikbare basisinzichten krijgt;
+- Go logisch past bij afvallen, fitter worden en gezond actief blijven;
+- Compleet de volledige sport- en wedstrijdanalyse behoudt;
+- dezelfde data en engines worden gebruikt;
+- de gebruiker zelf kiest tussen begrijpelijke taal en sportterminologie;
+- doel, abonnement en taalniveau gezamenlijk bepalen wat vooraan staat;
+- bestaande werkende architectuur behouden blijft.
