@@ -86,7 +86,7 @@ import {
 } from "@/lib/core-analyse"
 import { cn } from "@/lib/utils"
 import { DoelenBeheerSheet, WedstrijdToevoegenSheet } from "@/components/sparki/beheer-popup"
-import { CHART, tsbKleur } from "@/lib/chart-kleuren"
+import { CHART, tsbKleur, tsbBalkKleur } from "@/lib/chart-kleuren"
 
 // ── Uitleg-stand ─────────────────────────────────────────────────────────────
 // Pagina-brede schakelaar voor de onervaren sporter: elke kaart toont dan een
@@ -150,21 +150,25 @@ function toestandVan(bron: Bron<unknown>, hasData: boolean): AnalyseToestand {
 
 // ── Lichte primitieven (white-bg variant) ────────────────────────────────────
 
+// Design-spec 29 jul: schaduw i.p.v. randjes, radius 12px, subtiele scheiding.
 function LCard({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn("bg-white border border-slate-200 rounded-xl shadow-sm", className)}>
+    <div
+      className={cn("bg-white border border-slate-100 rounded-xl", className)}
+      style={{ boxShadow: "0 1px 3px rgba(15,23,42,0.08), 0 1px 2px rgba(15,23,42,0.04)" }}
+    >
       {children}
     </div>
   )
 }
 
 function LCardTitle({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <h3 className={cn("text-sm font-semibold text-slate-900", className)}>{children}</h3>
+  return <h3 className={cn("text-[15px] font-semibold text-slate-900", className)}>{children}</h3>
 }
 
 function LLabel({ children }: { children: ReactNode }) {
   return (
-    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">
+    <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-600">
       {children}
     </span>
   )
@@ -269,13 +273,13 @@ function CTLATLTooltip({
 }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-white border border-slate-200 rounded-lg shadow-sm px-3 py-2 text-xs">
-      <p className="font-medium text-slate-700 mb-1.5">{label}</p>
+    <div className="rounded-lg bg-[#0F172A] px-3 py-2 text-xs text-white shadow-lg">
+      <p className="mb-1.5 font-medium text-white/85">{label}</p>
       {payload
-        .filter((p) => typeof p.value === "number")
+        .filter((p) => typeof p.value === "number" && p.name !== "CTL-vlak")
         .map((p) => (
-          <p key={p.name} className="tabular-nums flex justify-between gap-4" style={{ color: p.color }}>
-            <span>{p.name}</span>
+          <p key={p.name} className="tabular-nums flex justify-between gap-4">
+            <span className="text-white/70">{p.name}</span>
             <strong>{Math.round(p.value)}</strong>
           </p>
         ))}
@@ -293,10 +297,11 @@ function TSBTooltip({
   if (!active || !payload?.length) return null
   const tsb = payload[0]?.value ?? 0
   return (
-    <div className="bg-white border border-slate-200 rounded-lg shadow-sm px-3 py-2 text-xs">
-      <p className="font-medium text-slate-700 mb-1">{label}</p>
-      <p className="tabular-nums" style={{ color: tsbKleur(tsb) }}>
-        Vorm (TSB) <strong>{tsb > 0 ? "+" : ""}{Math.round(tsb)}</strong>
+    <div className="rounded-lg bg-[#0F172A] px-3 py-2 text-xs text-white shadow-lg">
+      <p className="mb-1 font-medium text-white/85">{label}</p>
+      <p className="tabular-nums">
+        <span className="text-white/70">Vorm (TSB)</span>{" "}
+        <strong>{tsb > 0 ? "+" : ""}{Math.round(tsb)}</strong>
       </p>
     </div>
   )
@@ -428,9 +433,9 @@ function LoadGrafiek({
         </div>
         <ResponsiveContainer width="100%" height={200}>
           <ComposedChart data={ctlData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }} onClick={klik}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="date" tickFormatter={fmtDatum} tick={{ fill: "#64748b", fontSize: 11 }} interval={intervalStap} />
-            <YAxis tick={{ fill: "#64748b", fontSize: 11 }} domain={["auto", "auto"]} />
+            <CartesianGrid stroke={CHART.grid} vertical={false} />
+            <XAxis dataKey="date" tickFormatter={fmtDatum} tick={{ fill: CHART.as, fontSize: 11 }} interval={intervalStap} />
+            <YAxis tick={{ fill: CHART.as, fontSize: 11 }} domain={["auto", "auto"]} />
             <Tooltip content={(props) => <CTLATLTooltip {...(props as Parameters<typeof CTLATLTooltip>[0])} />} />
             {projectie && (
               <Area
@@ -447,10 +452,23 @@ function LoadGrafiek({
             {heeftVorig && (
               <Line type="monotone" dataKey="vorigCtl" stroke="#cbd5e1" strokeWidth={1.5} dot={false} name="Vorige periode" connectNulls={false} />
             )}
+            {/* Area-fill onder CTL (12%) — trend in één oogopslag. ATL krijgt
+                bewust GEEN fill en minder lijngewicht: CTL blijft primair. */}
+            <Area
+              type="monotone"
+              dataKey="ctl"
+              stroke="none"
+              fill={CHART.ctl}
+              fillOpacity={CHART.ctlFillOpacity}
+              name="CTL-vlak"
+              tooltipType="none"
+              legendType="none"
+              isAnimationActive={false}
+            />
             {atlAan && (
-              <Line type="monotone" dataKey="atl" stroke={CHART.atl} strokeWidth={2.5} strokeDasharray="5 5" dot={false} name="ATL" />
+              <Line type="monotone" dataKey="atl" stroke={CHART.atl} strokeWidth={2} strokeDasharray="6 4" dot={false} activeDot={{ r: 4 }} name="ATL" />
             )}
-            <Line type="monotone" dataKey="ctl" stroke={CHART.ctl} strokeWidth={2.5} dot={false} name="CTL" />
+            <Line type="monotone" dataKey="ctl" stroke={CHART.ctl} strokeWidth={3} dot={false} activeDot={{ r: 4 }} name="CTL" />
             {projectie && (
               <Line
                 type="monotone"
@@ -490,21 +508,26 @@ function LoadGrafiek({
               Positief — goed uitgerust
             </span>
             <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: CHART.tsbNegLicht }} />
+              Licht negatief
+            </span>
+            <span className="flex items-center gap-1.5">
               <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: CHART.tsbNeg }} />
-              Negatief — vermoeid
+              Sterk negatief — vermoeid
             </span>
           </div>
         </div>
         <ResponsiveContainer width="100%" height={120}>
-          <ComposedChart data={gefilterd} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="date" tickFormatter={fmtDatum} tick={{ fill: "#64748b", fontSize: 11 }} interval={intervalStap} />
-            <YAxis tick={{ fill: "#64748b", fontSize: 11 }} />
+          <ComposedChart data={gefilterd} margin={{ top: 4, right: 8, left: -16, bottom: 0 }} barCategoryGap="25%">
+            <CartesianGrid stroke={CHART.grid} vertical={false} />
+            <XAxis dataKey="date" tickFormatter={fmtDatum} tick={{ fill: CHART.as, fontSize: 11 }} interval={intervalStap} />
+            <YAxis tick={{ fill: CHART.as, fontSize: 11 }} />
             <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={1.5} />
             <Tooltip content={(props) => <TSBTooltip {...(props as Parameters<typeof TSBTooltip>[0])} />} />
-            <Bar dataKey="tsb" name="TSB" maxBarSize={10}>
+            {/* Gradatie: licht → donker naarmate de vorm verder van 0 ligt */}
+            <Bar dataKey="tsb" name="TSB" radius={[2, 2, 0, 0]}>
               {gefilterd.map((punt, idx) => (
-                <Cell key={idx} fill={tsbKleur(punt.tsb)} opacity={0.85} />
+                <Cell key={idx} fill={tsbBalkKleur(punt.tsb)} />
               ))}
             </Bar>
           </ComposedChart>
@@ -593,9 +616,9 @@ function VolumeTooltip({
   const w = payload[0]?.payload
   if (!w) return null
   return (
-    <div className="bg-white border border-slate-200 rounded-lg shadow-sm px-3 py-2 text-xs">
-      <p className="font-medium text-slate-700 mb-1">Week van {label}</p>
-      <p className="tabular-nums text-slate-600">
+    <div className="rounded-lg bg-[#0F172A] px-3 py-2 text-xs text-white shadow-lg">
+      <p className="mb-1 font-medium text-white/85">Week van {label}</p>
+      <p className="tabular-nums text-white/90">
         {w.uren != null ? `${String(w.uren).replace(".", ",")} u` : "duur onbekend"}
         {w.tss != null && ` · ${w.tss} TSS`} · {w.sessies} {w.sessies === 1 ? "sessie" : "sessies"}
       </p>
@@ -639,9 +662,9 @@ function WeekVolumeCard({
                 if (w && w.sessies > 0) onWeekKlik(w.weekStart)
               }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="label" tick={{ fill: "#64748b", fontSize: 10 }} interval={1} />
-              <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
+              <CartesianGrid stroke={CHART.grid} vertical={false} />
+              <XAxis dataKey="label" tick={{ fill: CHART.as, fontSize: 10 }} interval={1} />
+              <YAxis tick={{ fill: CHART.as, fontSize: 10 }} />
               <Tooltip content={(props) => <VolumeTooltip {...(props as Parameters<typeof VolumeTooltip>[0])} />} />
               {doelUren != null && (
                 // Doellijn uit het Doelscenario: de balken (werkelijke uren)
@@ -659,9 +682,9 @@ function WeekVolumeCard({
                   }}
                 />
               )}
-              <Bar dataKey="uren" name="Uren" maxBarSize={18} cursor="pointer">
+              <Bar dataKey="uren" name="Uren" cursor="pointer" radius={[2, 2, 0, 0]}>
                 {reeks.map((w, i) => (
-                  <Cell key={i} fill={w.sessies > 0 ? CHART.volume : "#e2e8f0"} opacity={0.85} />
+                  <Cell key={i} fill={w.sessies > 0 ? CHART.volume : "#e2e8f0"} />
                 ))}
               </Bar>
             </ComposedChart>
@@ -1215,11 +1238,11 @@ function PowerBestsTable() {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="pb-2.5 text-left text-[10px] font-mono uppercase tracking-widest text-slate-500 pr-4">Duur</th>
-              <th className="pb-2.5 text-right text-[10px] font-mono uppercase tracking-widest text-slate-500 pr-4">All-time</th>
-              <th className="pb-2.5 text-right text-[10px] font-mono uppercase tracking-widest text-slate-500 pr-4">Laatste 42d</th>
-              <th className="pb-2.5 text-right text-[10px] font-mono uppercase tracking-widest text-slate-500">Datum</th>
+            <tr className="border-b border-slate-200 bg-[#F8FAFC]">
+              <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700 pr-4">Duur</th>
+              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700 pr-4">All-time</th>
+              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700 pr-4">Laatste 42d</th>
+              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700">Datum</th>
             </tr>
           </thead>
           <tbody>
@@ -1270,9 +1293,9 @@ function GewichtTooltip({
   const p = payload[0]?.payload
   if (!p) return null
   return (
-    <div className="bg-white border border-slate-200 rounded-lg shadow-sm px-3 py-2 text-xs">
-      <p className="font-medium text-slate-700 mb-1">{label}</p>
-      <p className="tabular-nums text-slate-600">
+    <div className="rounded-lg bg-[#0F172A] px-3 py-2 text-xs text-white shadow-lg">
+      <p className="mb-1 font-medium text-white/85">{label}</p>
+      <p className="tabular-nums text-white/90">
         {String(p.kg).replace(".", ",")} kg
         {p.wkg != null && ` · ${String(p.wkg).replace(".", ",")} W/kg`}
       </p>
@@ -1320,10 +1343,10 @@ function GewichtWkgCard({
       ) : (
         <ResponsiveContainer width="100%" height={160}>
           <ComposedChart data={reeks} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="date" tickFormatter={fmtDatum} tick={{ fill: "#64748b", fontSize: 10 }} />
-            <YAxis yAxisId="kg" tick={{ fill: "#64748b", fontSize: 10 }} domain={["auto", "auto"]} />
-            <YAxis yAxisId="wkg" orientation="right" tick={{ fill: "#64748b", fontSize: 10 }} domain={["auto", "auto"]} hide={!heeftWkg} />
+            <CartesianGrid stroke={CHART.grid} vertical={false} />
+            <XAxis dataKey="date" tickFormatter={fmtDatum} tick={{ fill: CHART.as, fontSize: 10 }} />
+            <YAxis yAxisId="kg" tick={{ fill: CHART.as, fontSize: 10 }} domain={["auto", "auto"]} />
+            <YAxis yAxisId="wkg" orientation="right" tick={{ fill: CHART.as, fontSize: 10 }} domain={["auto", "auto"]} hide={!heeftWkg} />
             <Tooltip content={(props) => <GewichtTooltip {...(props as Parameters<typeof GewichtTooltip>[0])} />} />
             <Line yAxisId="kg" type="monotone" dataKey="kg" stroke="#334155" strokeWidth={2} dot={false} name="Gewicht" />
             {heeftWkg && (
@@ -1409,9 +1432,9 @@ function ProgressieTab({
                   data={weergave.gesorteerd.map((t) => ({ ...t, maand: maandLabel(t.measuredAt) }))}
                   margin={{ top: 12, right: 8, left: -24, bottom: 0 }}
                 >
-                  <XAxis dataKey="maand" tick={{ fill: "#94a3b8", fontSize: 9 }} interval={0} />
+                  <XAxis dataKey="maand" tick={{ fill: CHART.as, fontSize: 9 }} interval={0} />
                   <YAxis
-                    tick={{ fill: "#94a3b8", fontSize: 9 }}
+                    tick={{ fill: CHART.as, fontSize: 9 }}
                     domain={[
                       (min: number) => Math.floor(Math.min(min, overlays.streefFtp ?? min) * 0.9),
                       (max: number) => Math.ceil(Math.max(max, overlays.streefFtp ?? max) * 1.05),
@@ -1671,11 +1694,11 @@ function SessiesTab({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="pb-2.5 text-left text-[10px] font-mono uppercase tracking-widest text-slate-500 pr-3">Datum</th>
-              <th className="pb-2.5 text-left text-[10px] font-mono uppercase tracking-widest text-slate-500 pr-3">Training</th>
-              <th className="pb-2.5 text-right text-[10px] font-mono uppercase tracking-widest text-slate-500 pr-3 hidden sm:table-cell">Duur</th>
-              <th className="pb-2.5 text-right text-[10px] font-mono uppercase tracking-widest text-slate-500">TSS</th>
+            <tr className="border-b border-slate-200 bg-[#F8FAFC]">
+              <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700 pr-3">Datum</th>
+              <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700 pr-3">Training</th>
+              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700 pr-3 hidden sm:table-cell">Duur</th>
+              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700">TSS</th>
             </tr>
           </thead>
           <tbody>

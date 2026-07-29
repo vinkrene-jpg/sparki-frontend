@@ -4,11 +4,18 @@
 
 // ── Semantische kleurset (SSOT voor alle grafieken) ──────────────────────────
 // Elke kleur heeft één vaste betekenis. Nooit voor decoratie.
+// Design-spec 29 jul 2026 (TrainingPeaks/WHOOP-niveau): verzadigde lijnen,
+// CTL blijft ALTIJD de primaire lijn; ATL mag verzadigd maar krijgt minder
+// visueel gewicht dan CTL en nooit een zwaardere area-fill.
 export const CHART = {
-  ctl:     "#0ea5e9", // sky-500    — fitheid (CTL)
-  atl:     "#f97316", // orange-500 — vermoeidheid (ATL)
-  tsbPos:  "#22c55e", // green-500  — positieve vorm (TSB ≥ 0)
-  tsbNeg:  "#ef4444", // red-500    — negatieve vorm (TSB < 0)
+  ctl:     "#2563EB", // blue-600   — fitheid (CTL), primaire lijn
+  ctlFillOpacity: 0.12, // area-fill onder de CTL-lijn (12%)
+  atl:     "#EA580C", // orange-600 — vermoeidheid (ATL), minder gewicht dan CTL
+  tsbPos:  "#16A34A", // green-600  — positieve vorm (TSB ≥ 0)
+  tsbNeg:  "#DC2626", // red-600    — sterk negatieve vorm
+  tsbNegLicht: "#FCA5A5", // red-300 — licht negatieve vorm
+  grid:    "#E2E8F0", // slate-200  — gridlijnen, alleen horizontaal
+  as:      "#475569", // slate-600  — as-labels/datums (leesbaar, niet vaag)
   volume:  "#8b5cf6", // violet-500 — trainingsvolume
   ftp:     "#06b6d4", // cyan-500   — vermogen / FTP
   goal:    "#10b981", // emerald-500 — doelen
@@ -18,7 +25,18 @@ export const CHART = {
   verwacht: "#9333ea", // purple-600 — doelscenario / verwachting (vaste kleur)
 } as const
 
+// Tekstkleur bij een TSB-waarde (stat-tegels, tooltips): altijd de verzadigde
+// variant — de lichte balk-tint is als tekst onleesbaar.
 export function tsbKleur(tsb: number | null | undefined): string {
   if (tsb == null) return CHART.missing
   return tsb >= 0 ? CHART.tsbPos : CHART.tsbNeg
+}
+
+// Balkkleur met intensiteits-gradatie (spec §4): licht → donker naarmate de
+// waarde verder van 0 ligt. Grens −10: klassieke "vermoeid maar productief"
+// zone blijft licht, daaronder wordt het signaal zwaar.
+export function tsbBalkKleur(tsb: number | null | undefined): string {
+  if (tsb == null) return CHART.missing
+  if (tsb >= 0) return CHART.tsbPos
+  return tsb > -10 ? CHART.tsbNegLicht : CHART.tsbNeg
 }
