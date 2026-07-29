@@ -164,6 +164,28 @@ export function useClubDashboard(clubId: number | null) {
   })
 }
 
+// WP-02 — Hoofdtraineroverzicht: organisatorische feiten per trainer
+// (toewijzingen, aantal sporters, planactiviteit) — geen gezondheidsdata.
+export type HoofdtrainerOverview = {
+  sinds: string
+  trainers: Array<{
+    clerkId: string
+    displayName: string | null
+    role: string
+    assignments: Array<{ teamId: number | null; team: string | null; groupId: number | null; group: string | null }>
+    assignedAthleteCount: number
+    trainingsLast30Days: number
+  }>
+}
+
+export function useHoofdtrainerOverview(clubId: number | null, enabled: boolean) {
+  return useQuery<HoofdtrainerOverview>({
+    queryKey: ["clubs", clubId, "hoofdtrainer-overview"],
+    queryFn: () => apiFetch(`/api/clubs/${clubId}/hoofdtrainer/overview`),
+    enabled: clubId != null && enabled,
+  })
+}
+
 export function useCreateClub() {
   const qc = useQueryClient()
   return useMutation({

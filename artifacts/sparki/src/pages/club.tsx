@@ -31,6 +31,7 @@ import {
   useSetClubConsent,
   useCreateClub,
   useJoinClub,
+  useHoofdtrainerOverview,
   type ClubTraining,
 } from "@/hooks/use-club"
 import { usePlanWindow } from "@/hooks/use-training-plan"
@@ -201,6 +202,8 @@ function RealClubView({ clubId }: { clubId: number }) {
   const [, navigate] = useLocation()
 
   const canManage = dash?.membership.role === "owner" || dash?.membership.role === "admin"
+  const isHoofdtrainer = dash?.membership.role === "hoofdtrainer"
+  const { data: hoofdOverview } = useHoofdtrainerOverview(clubId, isHoofdtrainer)
   const canPost = canManage
   const color = dash?.club.primaryColor ?? "rgba(120,210,230,1)"
   const rootMessages = (messages ?? []).filter((m) => m.parentId == null).slice(0, 12)
@@ -244,6 +247,34 @@ function RealClubView({ clubId }: { clubId: number }) {
               {s}
             </p>
           ))}
+        </section>
+      )}
+
+      {isHoofdtrainer && hoofdOverview && hoofdOverview.trainers.length > 0 && (
+        <section aria-label="Hoofdtraineroverzicht">
+          <h2 className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-white/80">
+            <Users className="h-3 w-3" /> Trainers in jouw organisatie
+          </h2>
+          <div className="space-y-1.5">
+            {hoofdOverview.trainers.map((t) => (
+              <div key={t.clerkId} className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-[13px] text-white/85">{t.displayName ?? "Trainer"}</p>
+                  <p className="shrink-0 text-[11px] text-white/45">
+                    {t.assignedAthleteCount} sporters · {t.trainingsLast30Days} trainingen (30 d)
+                  </p>
+                </div>
+                {t.assignments.length > 0 && (
+                  <p className="mt-0.5 truncate text-[11px] text-white/45">
+                    {t.assignments.map((a) => a.team ?? a.group).filter(Boolean).join(" · ")}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="mt-1.5 text-[11px] text-white/35">
+            Organisatorisch overzicht — gezondheids- of privégegevens staan hier bewust niet in.
+          </p>
         </section>
       )}
 
