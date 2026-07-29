@@ -34,6 +34,7 @@
     "test:admin-page-smoke": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/admin-page-smoke.test.tsx",
     "test:routes-tabs": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/routes-tabs.test.tsx",
     "test:design-system": "node ../../scripts/run-tsx-test.mjs --test src/components/ds/design-system.test.tsx",
+    "test:plan-wizard": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/components/sparki/plan-wizard.test.tsx",
     "test:core-plan": "node ../../scripts/run-tsx-test.mjs src/lib/core-plan.test.ts",
     "test:core-plan-page": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/core-plan.test.tsx",
     "test:core-activiteiten": "node ../../scripts/run-tsx-test.mjs src/lib/core-activiteiten.test.ts",

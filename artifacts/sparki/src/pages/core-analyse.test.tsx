@@ -134,11 +134,47 @@ mock.module("@/hooks/use-load", {
 });
 
 mock.module("@/hooks/use-ftp-history", {
-  namedExports: { useFtpHistory: () => ftpResult },
+  namedExports: {
+    useFtpHistory: () => ftpResult,
+    useLogFtp: () => ({ isPending: false, mutate: () => {}, mutateAsync: async () => ({}) }),
+  },
 });
 
 mock.module("@/hooks/use-sessions", {
-  namedExports: { useSessions: () => sessionsResult },
+  namedExports: {
+    useSessions: () => sessionsResult,
+    useLogSession: () => ({ isPending: false, mutate: () => {}, mutateAsync: async () => ({}) }),
+    useUpdateSessionFeel: () => ({ isPending: false, mutate: () => {} }),
+    useSessionDetail: () => ({ data: null }),
+    useSessionSegments: () => ({ data: null }),
+  },
+});
+
+// @/lib/dev en @/lib/api lezen import.meta.env op moduleniveau (bestaat niet in node).
+mock.module("@/lib/dev", {
+  namedExports: { DEV_PREVIEW: false, useDevPreview: () => false, getDevAthleteId: () => 1 },
+});
+
+mock.module("@/lib/api", {
+  namedExports: { apiFetch: async () => ({}), API_BASE: "" },
+});
+
+// Echte react-query/clerk-hooks eisen providers — mock ze weg (zelfde aanpak
+// als core-plan.test.tsx).
+mock.module("@tanstack/react-query", {
+  namedExports: {
+    useQuery: () => ({}),
+    useMutation: () => ({ isPending: false, mutate: () => {}, mutateAsync: async () => ({}) }),
+    useQueryClient: () => ({ invalidateQueries: () => {} }),
+    QueryClient: class {},
+    QueryClientProvider: ({ children }: any) => children,
+  },
+});
+
+mock.module("@clerk/react", {
+  namedExports: {
+    useUser: () => ({ isSignedIn: true, user: { id: "user_1" } }),
+  },
 });
 
 mock.module("@/hooks/use-daily-metrics", {
@@ -147,11 +183,15 @@ mock.module("@/hooks/use-daily-metrics", {
       metricsCalls.push(days);
       return metricsResult;
     },
+    useLogDailyMetrics: () => ({ isPending: false, mutate: () => {}, mutateAsync: async () => ({}) }),
   },
 });
 
 mock.module("@/hooks/use-athlete-extended-profile", {
-  namedExports: { useAthleteExtendedProfile: () => profileResult },
+  namedExports: {
+    useAthleteExtendedProfile: () => profileResult,
+    useUpdateAthleteProfile: () => ({ isPending: false, mutate: () => {}, mutateAsync: async () => ({}) }),
+  },
 });
 
 mock.module("wouter", {
