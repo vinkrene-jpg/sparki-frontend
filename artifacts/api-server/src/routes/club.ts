@@ -1091,31 +1091,59 @@ router.get("/:clubId/hoofdtrainer/overview", requireAuth, async (req, res) => {
       })
       .from(clubTrainingsTable)
       .where(and(eq(clubTrainingsTable.clubId, clubId), gte(clubTrainingsTable.trainingDate, sinceISO)));
+    // Bulk (géén N+1): alle team-/groepsleden van deze club in twee queries,
+    // daarna per trainer in-memory de unieke sporters tellen.
+    const clubTeamIds = teams.map((t) => t.id);
+    const clubGroupIds = groups.map((g) => g.id);
+    const [teamMembers, groupMembers] = await Promise.all([
+      clubTeamIds.length > 0
+        ? db
+            .select({ teamId: clubTeamMembersTable.teamId, clerkId: clubTeamMembersTable.clerkId })
+            .from(clubTeamMembersTable)
+            .where(inArray(clubTeamMembersTable.teamId, clubTeamIds))
+        : Promise.resolve([] as { teamId: number; clerkId: string }[]),
+      clubGroupIds.length > 0
+        ? db
+            .select({ groupId: clubGroupMembersTable.groupId, clerkId: clubGroupMembersTable.clerkId })
+            .from(clubGroupMembersTable)
+            .where(inArray(clubGroupMembersTable.groupId, clubGroupIds))
+        : Promise.resolve([] as { groupId: number; clerkId: string }[]),
+    ]);
+    const membersByTeam = new Map<number, string[]>();
+    for (const r of teamMembers) {
+      membersByTeam.set(r.teamId, [...(membersByTeam.get(r.teamId) ?? []), r.clerkId]);
+    }
+    const membersByGroup = new Map<number, string[]>();
+    for (const r of groupMembers) {
+      membersByGroup.set(r.groupId, [...(membersByGroup.get(r.groupId) ?? []), r.clerkId]);
+    }
     const trainerRoles = new Set(TRAINER_COUNT_ROLES);
-    const trainers = await Promise.all(
-      members
-        .filter((m) => trainerRoles.has(m.role as (typeof TRAINER_COUNT_ROLES)[number]))
-        .map(async (m) => {
-          const mine = assignments.filter((a) => a.trainerClerkId === m.clerkId);
-          const athleteIds = await assignedAthleteIds(clubId, m.clerkId);
-          const trainingCount = recentTrainings.filter(
-            (t) => t.trainerClerkId === m.clerkId || t.createdByClerkId === m.clerkId,
-          ).length;
-          return {
-            clerkId: m.clerkId,
-            displayName: m.displayName ?? null,
-            role: m.role,
-            assignments: mine.map((a) => ({
-              teamId: a.teamId,
-              team: a.teamId != null ? (teamName.get(a.teamId) ?? null) : null,
-              groupId: a.groupId,
-              group: a.groupId != null ? (groupName.get(a.groupId) ?? null) : null,
-            })),
-            assignedAthleteCount: athleteIds.length,
-            trainingsLast30Days: trainingCount,
-          };
-        }),
-    );
+    const trainers = members
+      .filter((m) => trainerRoles.has(m.role as (typeof TRAINER_COUNT_ROLES)[number]))
+      .map((m) => {
+        const mine = assignments.filter((a) => a.trainerClerkId === m.clerkId);
+        const athleteIds = new Set<string>();
+        for (const a of mine) {
+          if (a.teamId != null) for (const id of membersByTeam.get(a.teamId) ?? []) athleteIds.add(id);
+          if (a.groupId != null) for (const id of membersByGroup.get(a.groupId) ?? []) athleteIds.add(id);
+        }
+        const trainingCount = recentTrainings.filter(
+          (t) => t.trainerClerkId === m.clerkId || t.createdByClerkId === m.clerkId,
+        ).length;
+        return {
+          clerkId: m.clerkId,
+          displayName: m.displayName ?? null,
+          role: m.role,
+          assignments: mine.map((a) => ({
+            teamId: a.teamId,
+            team: a.teamId != null ? (teamName.get(a.teamId) ?? null) : null,
+            groupId: a.groupId,
+            group: a.groupId != null ? (groupName.get(a.groupId) ?? null) : null,
+          })),
+          assignedAthleteCount: athleteIds.size,
+          trainingsLast30Days: trainingCount,
+        };
+      });
     res.json({ trainers, sinds: sinceISO });
   } catch (err) {
     req.log.error({ err }, "club hoofdtrainer overview failed");
