@@ -78,6 +78,15 @@ Productie `user_entitlements`: 0 rijen. Productie `variant_feature_grants`: 0 ri
 | `blocked` | fraude/refund-intrekking/handhaving | geen betaalde features |
 | *(onbekend)* | corrupt/niet herleidbaar | **fail-closed ⇒ als `free`** |
 
+### Entitlementprojectie (expliciet, sluit aan op de bestaande resolver)
+
+De huidige resolver kent rechten uitsluitend toe via feature-keys (`variant_feature_grants` en `user_entitlements.entitlement_key`). `commercial_tier` en de Sparki-trial krijgen daarom één expliciet projectiemodel, géén impliciete metadata-magie:
+
+- Nieuwe tabel `tier_feature_grants` (`commercial_tier`, `feature_key`, `enabled`) — analoog aan `variant_feature_grants`, ships leeg; vullen is onderdeel van de latere verkoopstart.
+- `trialing` projecteert exact dezelfde feature-set als de tier waarop de proef loopt: de trial-rij in `user_entitlements` draagt `entitlement_key = tier:<GO|COMPLETE>` en de resolver expandeert die via `tier_feature_grants` — één bron van waarheid, geen dubbele grant-rijen per feature.
+- Precedence in de resolver (fase ≥2): persoonlijke `user_entitlements` ∪ (`commercial_tier` → `tier_feature_grants`) ∪ (legacy `product_variant` → `variant_feature_grants`); `commercial_tier = null` ⇒ die middenterm valt volledig weg en bestaand gedrag is byte-identiek. Alles blijft daarna geAND'd met rol/flag/kill-switch zoals nu.
+- `clerk_id` bij checkout/webhooks komt uitsluitend server-side uit de geauthenticeerde sessie (checkout-session wordt server-side aangemaakt met de sessie-`clerk_id` in metadata); client-input wordt nooit vertrouwd.
+
 Gedragsregels (vast): upgrade direct met proratering; downgrade pas bij periode-einde (planned-change veld, geen onmiddellijke write); volledige refund ⇒ entitlement intrekken (`blocked`/`expired`); gedeeltelijke refund ⇒ entitlement behouden; frontend kent nooit zelf rechten toe — UI leest alleen de door de server geresolvede status.
 
 ---
@@ -131,8 +140,8 @@ Algemeen: signatuurverificatie verplicht (`STRIPE_WEBHOOK_SECRET`, testmodus); e
 | `customer.subscription.updated` | status/periode/planned-downgrade bijwerken; `canceled_at_period_end` ⇒ status `canceled` (toegang tot periode-einde) |
 | `customer.subscription.deleted` | status `expired`; terugval FREE |
 | `invoice.paid` | periode bevestigen, `grace_until` wissen, status `active` |
-| `invoice.payment_failed` | `grace_until = now()+7d` zetten (alleen als abonnement bestond); na verstrijken ⇒ `expired` (aparte dagelijkse job, geen webhook-afhankelijkheid) |
-| `charge.refunded` | volledig ⇒ entitlement intrekken (`blocked`); gedeeltelijk ⇒ geen wijziging; altijd auditlog |
+| `invoice.payment_failed` | `grace_until = Stripe-brontijd van de EERSTE mislukte poging + 7d` (nooit `now()` — vertraagde of opnieuw geleverde webhooks mogen grace niet opschuiven). Update is **monotoon**: een reeds gezette `grace_until` wordt nooit later gezet. Na verstrijken ⇒ `expired` (aparte dagelijkse job, geen webhook-afhankelijkheid) |
+| `charge.refunded` | besluit NOOIT op het eventdelta maar op de actuele geaggregeerde Stripe-staat: `charge.amount_refunded` (cumulatief) t.o.v. `charge.amount`. Cumulatief volledig terugbetaald (ook via meerdere gedeeltelijke refunds) ⇒ entitlement intrekken (`blocked`); cumulatief gedeeltelijk ⇒ behouden; altijd auditlog |
 
 ## 6. Featureflags & testaccount-isolatie
 
