@@ -4,6 +4,8 @@ import { apiFetch } from "@/lib/api"
 import { getDevAthleteId, setDevAthleteId } from "@/lib/dev"
 import { DayHome, type DevCoachOverride } from "@/components/sparki/day-home"
 import { CommercialToday } from "@/components/sparki/commercial-shell"
+import { CoachHome } from "@/components/sparki/coach-home"
+import { useUserProfile } from "@/contexts/UserContext"
 import type { DayType } from "@/lib/day-type"
 import {
   COACH_SCENARIOS,
@@ -385,6 +387,9 @@ function DevPanel({
 // normal auth-gated router instead — this component is never bundled there.
 export function DevPreview() {
   const [location, setLocation] = useLocation()
+  // Rol-bewuste home, zelfde regel als productie-RoleHome: een coach ziet de
+  // trainerstartpagina, een sporter het Vandaag-scherm. Dev-tooling only.
+  const { profile } = useUserProfile()
   const [dayType, setDayType] = useState<DayType | undefined>(undefined)
   // Coach-engine override (Adaptive Coach Engine selector). Default mode is
   // Scenario override; no athlete is selected until you pick one ("Uit" = the
@@ -513,11 +518,16 @@ export function DevPreview() {
     page = <InviteAcceptPage />
     showNav = false
   } else if (location === "/" || location === "") {
-    // Home route: commercial_shell is globally enabled, so home renders the
-    // same CommercialToday shell as /vandaag. StartPage is the legacy fallback
+    // Home route: rol-bewust, net als RoleHome in de echte router. Een coach
+    // krijgt de trainerstartpagina; een sporter de CommercialToday-schil
+    // (commercial_shell is globally enabled). StartPage is the legacy fallback
     // (flag off) — only kept as a fallback in the real router, not here.
-    page = <CommercialToday />
-    showNav = false
+    if (profile?.activeRole === "coach") {
+      page = <CoachHome />
+    } else {
+      page = <CommercialToday />
+      showNav = false
+    }
   } else {
     page = <StartPage />
   }
