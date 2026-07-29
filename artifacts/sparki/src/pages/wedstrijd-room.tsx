@@ -796,29 +796,31 @@ function CompilePanel({
         </p>
       )}
 
-      <button
-        type="button"
-        onClick={run}
-        disabled={busy || mediaCount === 0}
-        className="flex w-full items-center justify-center gap-2 rounded-full border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06] disabled:opacity-40"
-        style={{
-          borderColor: ACCENT,
-          color: ACCENT,
-          background: "rgba(255,255,255,0.04)",
-        }}
-      >
-        {busy ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Compilatie wordt gemaakt…
-          </>
-        ) : (
-          <>
-            <Film className="h-4 w-4" />
-            Maak dagcompilatie
-          </>
-        )}
-      </button>
+      <div className="ds-actiebalk flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={run}
+          disabled={busy || mediaCount === 0}
+          className="flex w-full items-center justify-center gap-2 rounded-full border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-white/[0.06] disabled:opacity-40"
+          style={{
+            borderColor: ACCENT,
+            color: ACCENT,
+            background: "rgba(255,255,255,0.04)",
+          }}
+        >
+          {busy ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Compilatie wordt gemaakt…
+            </>
+          ) : (
+            <>
+              <Film className="h-4 w-4" />
+              Maak dagcompilatie
+            </>
+          )}
+        </button>
+      </div>
 
       {mediaCount === 0 && (
         <p className="text-[12px] text-white/45">

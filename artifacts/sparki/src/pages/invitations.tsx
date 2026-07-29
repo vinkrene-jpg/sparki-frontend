@@ -270,15 +270,17 @@ export default function InvitationsPage() {
                 </div>
               </label>
 
-              <button
-                type="button"
-                onClick={submit}
-                disabled={createInvite.isPending}
-                className="w-full rounded-xl border py-3 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors disabled:opacity-50"
-                style={{ borderColor: "rgba(120,210,230,0.4)", background: "rgba(120,210,230,0.12)", color: ACCENT }}
-              >
-                {createInvite.isPending ? "Aanmaken…" : "Uitnodigingslink maken"}
-              </button>
+              <div className="ds-actiebalk">
+                <button
+                  type="button"
+                  onClick={submit}
+                  disabled={createInvite.isPending}
+                  className="w-full rounded-xl border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors disabled:opacity-50"
+                  style={{ borderColor: "rgba(120,210,230,0.4)", background: "rgba(120,210,230,0.12)", color: ACCENT }}
+                >
+                  {createInvite.isPending ? "Aanmaken…" : "Uitnodigingslink maken"}
+                </button>
+              </div>
             </div>
           )}
 

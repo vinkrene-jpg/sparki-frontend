@@ -367,14 +367,16 @@ function TeamIdentitySection() {
           </button>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={start}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/12 py-3.5 font-sans text-[13px] text-white/45 transition-colors hover:border-cyan-300/35 hover:text-white/65"
-        >
-          <Shield className="h-4 w-4" strokeWidth={1.75} />
-          Voeg je club & team toe
-        </button>
+        <div className="ds-actiebalk">
+          <button
+            type="button"
+            onClick={start}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/12 px-4 py-3.5 font-sans text-[13px] text-white/45 transition-colors hover:border-cyan-300/35 hover:text-white/65"
+          >
+            <Shield className="h-4 w-4" strokeWidth={1.75} />
+            Voeg je club & team toe
+          </button>
+        </div>
       )}
     </section>
   )
@@ -1458,11 +1460,11 @@ export function ProfileSettings({
       <AdminPanel />
 
       {/* UITLOGGEN */}
-      <section className="pt-2">
+      <section className="pt-2 ds-actiebalk">
         <button
           type="button"
           onClick={() => signOut({ redirectUrl: basePath || "/" })}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/[0.08] py-3.5 font-sans text-[13px] text-white/35 transition-colors hover:border-white/15 hover:text-white/50"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/[0.08] px-4 py-3.5 font-sans text-[13px] text-white/35 transition-colors hover:border-white/15 hover:text-white/50"
         >
           <LogOut className="h-4 w-4" strokeWidth={1.75} />
           Uitloggen

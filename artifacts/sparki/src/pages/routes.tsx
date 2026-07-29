@@ -8,6 +8,7 @@ import { RoutePanel } from "@/components/sparki/route-panel"
 import { RouteLibrary } from "@/components/sparki/route-library"
 import { NavSettingsPanel } from "@/components/sparki/nav-settings-panel"
 import { RouteDiscover } from "@/components/sparki/route-discover"
+import { RouteLibrarySection } from "@/components/sparki/route-library-section"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 
 type RoutesView = "maken" | "gpx" | "bewaard" | "ontdek" | "instellingen"
@@ -69,7 +70,10 @@ export default function RoutesPage() {
         <p className="text-sm text-white/55">{TAB_INTRO[view]}</p>
       </div>
 
-      <div className="mt-5">
+      {/* Vast tabmenu: blijft bovenin staan tijdens scrollen, met een
+          donkere blur-achtergrond zodat inhoud er niet doorheen schijnt.
+          -mx/px zodat de balk tot de randen van de content doorloopt. */}
+      <div className="sticky top-0 z-30 -mx-4 mt-5 bg-[#05070e]/85 px-4 pb-1 pt-2 backdrop-blur-md">
         <HoofdstukTabs
           tabs={TABS}
           actief={view}
@@ -101,7 +105,10 @@ export default function RoutesPage() {
           <NavSettingsPanel />
         ) : view === "ontdek" ? (
           <>
-            <RouteDiscover />
+            <RouteLibrarySection />
+            <div className="mt-8">
+              <RouteDiscover />
+            </div>
             {/* Bordjes-sprinten hoorde bij het oude hoofdscherm; het is een
                 ontdek-achtige nevenweg en woont nu onder dit tabblad. */}
             <section className="mt-8">

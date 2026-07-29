@@ -218,7 +218,7 @@ function WizardNav({
   saving?: boolean
 }) {
   return (
-    <div className="flex gap-3 pt-2">
+    <div className="ds-actiebalk flex gap-3 pt-2">
       {onBack && (
         <button
           type="button"
@@ -233,7 +233,7 @@ function WizardNav({
         type="button"
         onClick={onNext}
         disabled={nextDisabled || saving}
-        className="flex flex-1 items-center justify-center gap-2 rounded-xl border py-3 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors disabled:opacity-40"
+        className="flex flex-1 items-center justify-center gap-2 rounded-xl border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors disabled:opacity-40"
         style={{ borderColor: "rgba(120,210,230,0.4)", background: "rgba(120,210,230,0.12)", color: ACCENT }}
       >
         {saving ? "Opslaan…" : nextLabel}
@@ -507,7 +507,7 @@ function Step2({
         </h2>
         <p className="mt-1 text-[12.5px] leading-relaxed text-white/45">
           Dit haalde Sparki zelf op — uit de kalender, je profiel en live databronnen.
-          Bekijk het en ga door. Niets is verzonnen.
+          Bekijk het en ga door.
         </p>
       </div>
 

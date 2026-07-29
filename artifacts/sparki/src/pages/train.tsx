@@ -166,12 +166,12 @@ function ConfirmActivityCard({ session }: { session: TrainingSession }) {
         />
       )}
 
-      <div className="mt-3 flex items-center gap-3">
+      <div className="ds-actiebalk mt-3 flex items-center gap-3">
         <button
           type="button"
           onClick={save}
           disabled={feel == null || update.isPending}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl py-3 font-sans text-[13px] font-semibold disabled:opacity-40"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl px-4 py-3 font-sans text-[13px] font-semibold disabled:opacity-40"
           style={{ background: ACCENT, color: "#040506" }}
         >
           <Check className="h-4 w-4" strokeWidth={2.5} />
@@ -181,7 +181,7 @@ function ConfirmActivityCard({ session }: { session: TrainingSession }) {
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="font-mono text-[11px] uppercase tracking-[0.14em] text-white/40 transition-colors hover:text-white/70"
+            className="font-mono text-[11px] uppercase tracking-[0.14em] text-white/40 transition-colors hover:text-white/70 px-4"
           >
             Notitie
           </button>
@@ -292,14 +292,16 @@ export default function TrainPage() {
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={() => setAddOpen(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] py-4 font-sans text-[13px] font-medium text-white/50 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/60"
-        >
-          <Plus className="h-4 w-4" strokeWidth={2} />
-          Training toevoegen
-        </button>
+        <div className="ds-actiebalk">
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] px-4 py-4 font-sans text-[13px] font-medium text-white/50 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/60"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2} />
+            Training toevoegen
+          </button>
+        </div>
 
         {/* Recent sessions */}
         {!sessionsLoading && sessions && sessions.length > 0 && (

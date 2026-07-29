@@ -126,7 +126,7 @@ function CostEstimate({ cost }: { cost: NonNullable<MaterialAnalysis["costEstima
               )}
             </div>
           ) : (
-            <p className="mt-2 text-[12px] text-white/35">Niet eerlijk in te schatten</p>
+            <p className="mt-2 text-[12px] text-white/35">Niet in te schatten</p>
           )}
         </div>
 
@@ -148,7 +148,7 @@ function CostEstimate({ cost }: { cost: NonNullable<MaterialAnalysis["costEstima
               )}
             </div>
           ) : (
-            <p className="mt-2 text-[12px] text-white/35">Niet eerlijk in te schatten</p>
+            <p className="mt-2 text-[12px] text-white/35">Niet in te schatten</p>
           )}
         </div>
       </div>
@@ -353,15 +353,17 @@ export function UploadPanel({
 
       {error && <p className="text-[12px] text-red-300/80">{error}</p>}
 
-      <button
-        type="button"
-        onClick={submit}
-        disabled={!photo || analyze.isPending}
-        className="w-full rounded-lg py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-black transition disabled:opacity-50"
-        style={{ background: ACCENT }}
-      >
-        {analyze.isPending ? "Bezig…" : "Materiaal beoordelen"}
-      </button>
+      <div className="ds-actiebalk">
+        <button
+          type="button"
+          onClick={submit}
+          disabled={!photo || analyze.isPending}
+          className="w-full rounded-lg px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-black transition disabled:opacity-50"
+          style={{ background: ACCENT }}
+        >
+          {analyze.isPending ? "Bezig…" : "Materiaal beoordelen"}
+        </button>
+      </div>
     </div>
   )
 }

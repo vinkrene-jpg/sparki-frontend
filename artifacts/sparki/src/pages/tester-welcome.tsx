@@ -112,14 +112,16 @@ export default function TesterWelcomePage() {
         ))}
       </section>
 
-      <button
-        type="button"
-        onClick={() => setLocation("/")}
-        className="mt-9 w-full rounded-xl py-3.5 font-mono text-[12px] uppercase tracking-[0.2em] text-black transition active:scale-[0.99]"
-        style={{ background: ACCENT, boxShadow: "0 0 30px rgba(120,210,230,0.25)" }}
-      >
-        Begin met testen
-      </button>
+      <div className="ds-actiebalk mt-9">
+        <button
+          type="button"
+          onClick={() => setLocation("/")}
+          className="w-full rounded-xl px-4 py-3.5 font-mono text-[12px] uppercase tracking-[0.2em] text-black transition active:scale-[0.99]"
+          style={{ background: ACCENT, boxShadow: "0 0 30px rgba(120,210,230,0.25)" }}
+        >
+          Begin met testen
+        </button>
+      </div>
 
       <footer className="pt-6 text-center">
         <span className="font-mono text-[9px] tracking-[0.3em] text-white/20">

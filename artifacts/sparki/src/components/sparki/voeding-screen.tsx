@@ -446,19 +446,21 @@ function LogForm() {
           </p>
         )}
 
-        <button
-          type="button"
-          onClick={submit}
-          disabled={create.isPending}
-          className="w-full rounded-lg py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-black transition disabled:opacity-50"
-          style={{ background: ACCENT }}
-        >
-          {create.isPending
-            ? willAssess
-              ? "wordt bekeken…"
-              : "opslaan…"
-            : "Loggen"}
-        </button>
+        <div className="ds-actiebalk">
+          <button
+            type="button"
+            onClick={submit}
+            disabled={create.isPending}
+            className="w-full rounded-lg px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-black transition disabled:opacity-50"
+            style={{ background: ACCENT }}
+          >
+            {create.isPending
+              ? willAssess
+                ? "wordt bekeken…"
+                : "opslaan…"
+              : "Loggen"}
+          </button>
+        </div>
       </div>
 
       {mealAdvice && mealLogId !== null && (
@@ -599,7 +601,7 @@ function PhotoAdviceSection() {
     <section>
       <SectionLabel title="Foto-analyse voeding" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
-        Laat je ontbijt of wedstrijdvoeding zien — je krijgt er een eerlijke
+        Laat je ontbijt of wedstrijdvoeding zien — je krijgt er een
         beoordeling op.
       </p>
 

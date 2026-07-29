@@ -164,25 +164,27 @@ export default function InviteAcceptPage() {
             </div>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={onAccept}
-                disabled={accept.isPending || decline.isPending}
-                className="w-full rounded-xl border py-3.5 font-mono text-[12px] uppercase tracking-[0.18em] transition-colors disabled:opacity-50"
-                style={{ borderColor: "rgba(120,210,230,0.4)", background: "rgba(120,210,230,0.12)", color: ACCENT }}
-              >
-                {accept.isPending ? "Accepteren…" : "Uitnodiging accepteren"}
-              </button>
-              {!isHeadTester && (
+              <div className="ds-actiebalk flex flex-col gap-2">
                 <button
                   type="button"
-                  onClick={onDecline}
+                  onClick={onAccept}
                   disabled={accept.isPending || decline.isPending}
-                  className="w-full rounded-xl border border-white/[0.14] py-3.5 font-mono text-[12px] uppercase tracking-[0.18em] text-white/55 transition-colors hover:bg-white/[0.05] disabled:opacity-50"
+                  className="w-full rounded-xl border px-4 py-3.5 font-mono text-[12px] uppercase tracking-[0.18em] transition-colors disabled:opacity-50"
+                  style={{ borderColor: "rgba(120,210,230,0.4)", background: "rgba(120,210,230,0.12)", color: ACCENT }}
                 >
-                  {decline.isPending ? "Weigeren…" : "Uitnodiging weigeren"}
+                  {accept.isPending ? "Accepteren…" : "Uitnodiging accepteren"}
                 </button>
-              )}
+                {!isHeadTester && (
+                  <button
+                    type="button"
+                    onClick={onDecline}
+                    disabled={accept.isPending || decline.isPending}
+                    className="w-full rounded-xl border border-white/[0.14] px-4 py-3.5 font-mono text-[12px] uppercase tracking-[0.18em] text-white/55 transition-colors hover:bg-white/[0.05] disabled:opacity-50"
+                  >
+                    {decline.isPending ? "Weigeren…" : "Uitnodiging weigeren"}
+                  </button>
+                )}
+              </div>
               {acceptError && (
                 <p className="text-center text-[12px] text-red-300/80">{acceptError}</p>
               )}

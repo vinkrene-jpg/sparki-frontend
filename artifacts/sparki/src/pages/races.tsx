@@ -1164,18 +1164,18 @@ function RaceForm({
         <p className="text-[12px] text-red-300/80">{error}</p>
       )}
 
-      <div className="flex gap-3">
+      <div className="ds-actiebalk flex gap-3">
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 rounded-xl border border-white/10 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-white/55 transition-colors hover:bg-white/[0.04]"
+          className="flex-1 rounded-xl border border-white/10 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-white/55 transition-colors hover:bg-white/[0.04]"
         >
           Annuleren
         </button>
         <button
           type="submit"
           disabled={saving}
-          className="flex-1 rounded-xl border py-3 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors disabled:opacity-50"
+          className="flex-1 rounded-xl border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors disabled:opacity-50"
           style={{ borderColor: "rgba(120,210,230,0.4)", background: "rgba(120,210,230,0.12)", color: ACCENT }}
         >
           {saving ? "Opslaan…" : editing ? "Bijwerken" : "Opslaan"}
@@ -1183,14 +1183,16 @@ function RaceForm({
       </div>
 
       {editing && (
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={deleting}
-          className="w-full rounded-xl border border-red-400/20 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-red-300/70 transition-colors hover:bg-red-400/[0.06] disabled:opacity-50"
-        >
-          {deleting ? "Verwijderen…" : "Verwijderen"}
-        </button>
+        <div className="ds-actiebalk">
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={deleting}
+            className="w-full rounded-xl border border-red-400/20 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-red-300/70 transition-colors hover:bg-red-400/[0.06] disabled:opacity-50"
+          >
+            {deleting ? "Verwijderen…" : "Verwijderen"}
+          </button>
+        </div>
       )}
 
       {extraPanel}

@@ -290,12 +290,12 @@ export function TodayLayer() {
           )}
 
           {isPending && (
-            <div className="flex gap-3">
+            <div className="ds-actiebalk flex gap-3">
               <button
                 type="button"
                 onClick={markComplete}
                 disabled={updateWorkout.isPending}
-                className="flex flex-1 items-center justify-center gap-2 rounded-2xl py-3.5 font-sans text-[13px] font-semibold transition-opacity disabled:opacity-50"
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3.5 font-sans text-[13px] font-semibold transition-opacity disabled:opacity-50"
                 style={{ background: ACCENT, color: "#040506" }}
               >
                 <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} />

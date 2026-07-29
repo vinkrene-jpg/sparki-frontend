@@ -329,23 +329,25 @@ export default function TesterQrPage() {
                 deze tester de Hoofdtester-status in Sparki.
               </span>
             </label>
-            <button
-              type="button"
-              onClick={createTester}
-              disabled={createInvite.isPending}
-              className="w-full rounded-xl border py-3 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors disabled:opacity-50"
-              style={{
-                borderColor: "rgba(120,210,230,0.4)",
-                background: "rgba(120,210,230,0.12)",
-                color: ACCENT,
-              }}
-            >
-              {createInvite.isPending
-                ? "Aanmaken…"
-                : asHeadTester
-                  ? "Hoofdtester-code maken"
-                  : "Tester-code maken"}
-            </button>
+            <div className="ds-actiebalk">
+              <button
+                type="button"
+                onClick={createTester}
+                disabled={createInvite.isPending}
+                className="w-full rounded-xl border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors disabled:opacity-50"
+                style={{
+                  borderColor: "rgba(120,210,230,0.4)",
+                  background: "rgba(120,210,230,0.12)",
+                  color: ACCENT,
+                }}
+              >
+                {createInvite.isPending
+                  ? "Aanmaken…"
+                  : asHeadTester
+                    ? "Hoofdtester-code maken"
+                    : "Tester-code maken"}
+              </button>
+            </div>
             {error && <p className="text-[12px] text-red-300/80">{error}</p>}
           </div>
         )}
@@ -392,19 +394,21 @@ export default function TesterQrPage() {
               Loop de onboarding opnieuw door om hem te controleren. Je profiel en
               gegevens blijven bewaard; alleen de onboarding-stappen worden gereset.
             </p>
-            <button
-              type="button"
-              onClick={replayOnboarding}
-              disabled={resetting}
-              className="w-full rounded-xl border py-3 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors disabled:opacity-50"
-              style={{
-                borderColor: "rgba(120,210,230,0.4)",
-                background: "rgba(120,210,230,0.12)",
-                color: ACCENT,
-              }}
-            >
-              {resetting ? "Bezig…" : "Onboarding opnieuw doorlopen"}
-            </button>
+            <div className="ds-actiebalk">
+              <button
+                type="button"
+                onClick={replayOnboarding}
+                disabled={resetting}
+                className="w-full rounded-xl border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors disabled:opacity-50"
+                style={{
+                  borderColor: "rgba(120,210,230,0.4)",
+                  background: "rgba(120,210,230,0.12)",
+                  color: ACCENT,
+                }}
+              >
+                {resetting ? "Bezig…" : "Onboarding opnieuw doorlopen"}
+              </button>
+            </div>
             {resetError && <p className="text-[12px] text-red-300/80">{resetError}</p>}
           </div>
         </section>

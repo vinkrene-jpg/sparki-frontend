@@ -175,15 +175,17 @@ function SaveButton({
   disabled?: boolean
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={pending || disabled}
-      className="w-full rounded-2xl py-3 font-sans text-[13px] font-semibold disabled:opacity-40"
-      style={{ background: ACCENT, color: "#040506" }}
-    >
-      {pending ? "Opslaan…" : "Opslaan"}
-    </button>
+    <div className="ds-actiebalk">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={pending || disabled}
+        className="w-full rounded-2xl px-4 py-3 font-sans text-[13px] font-semibold disabled:opacity-40"
+        style={{ background: ACCENT, color: "#040506" }}
+      >
+        {pending ? "Opslaan…" : "Opslaan"}
+      </button>
+    </div>
   )
 }
 
