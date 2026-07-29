@@ -149,7 +149,6 @@
 - [Sparki EU-uitrol & meertaligheid](sparki-eu-rollout.md) — beslist: EU-breed, alle EU-talen, landensites; copy zit nu hard-coded NL in UI én LLM-prompts — nieuwe copy in presentatielaag houden.
 - [Sparki app-brede zoek + auto-Terug](sparki-app-search-terug.md) — ScreenShell auto-Terug on non-nav-root pages; pages with an OWN back MUST pass terug={false} (grep all pages, 8 were missed first pass).
 - [Sparki aandacht-rotatie](sparki-attention-rotation.md) — ignored non-critical ride-alongs pause after 3 shown days (never critical, never forever); consumers must fail-open on query ERROR, not only on success.
-- [Prod browserchecks](prod-browser-checks.md) — runTest test stiekem de dev-app i.p.v. externe prod-URL; gebruik eigen Playwright in /tmp + nix-store LD_LIBRARY_PATH (64-bit check).
 - [Sparki provider compliance](sparki-provider-compliance.md) — CARTO/OSM/Esri-tegels niet commercieel zonder contract; Open-Meteo free tier non-commercial-only (+client-side call); mobiel mist Mapbox-attributie; ORS round-trip max 100 km.
 - [Sparki gedeelde layout-shell](sparki-shared-shell.md) — CommercialShell is de enige chrome-eigenaar; ScreenShell delegeert (achtergrond/bare props), nooit eigen shell of full-screen bg.
 - [Sparki commerciële schil](sparki-commercial-shell.md) — presentation-only shell (flag commercial_shell): exact copy via one COMMERCIAL_COPY const; `hidden lg:` drops mobile content; browser checks via Playwright subagent on /_dev/commercial.
@@ -157,5 +156,6 @@
 - [Sparki analyse-dashboard engine](sparki-analyse-dashboard.md) — /analyse én /you kerngrafieken moeten lib/analyse-dashboard.ts consumeren (summary mode), nooit her-implementeren; alsGetal voor API-decimals.
 - [Deploy image 8 GiB-limiet](deploy-image-size-limit.md) — image bevat werkmap+.git; export-zips & test-bundels weren, api-server deploy-build bundelt alleen server+jobs.
 - [Git history cleanup (filter-repo + LFS)](git-history-cleanup.md) — pip install git-filter-repo; verwijdert origin-remote (re-add na afloop); LFS-objecten blijven in .git/lfs tot handmatige delete; fix tracking branch vóór force-push.
-- Prod-validatie: [publicatiecontrole](sparki-publish-check.md) bundle-grep + curl van prod-JS; [ingelogde validatie](sparki-logged-in-validation.md) Clerk ticket-login + auth/me-check.
+- Prod-validatie: [publicatiecontrole](sparki-publish-check.md) bundle-grep + curl prod-JS; [ingelogde validatie](sparki-logged-in-validation.md) Clerk ticket-login; [browserchecks](prod-browser-checks.md) eigen Playwright in /tmp (runTest raakt dev-app).
 - [Sparki Stripe-testomgeving](sparki-stripe-testmode.md) — flag+allowlist AND-grendels, webhook idempotent-in-tx (rollback = herleverbaar), fake gateway + echte HMAC-signaturen, rawBody-verify in app.ts.
+- [Sparki observatie-opschoning](sparki-observation-cleanup.md) — persist-poorten (achterhaalde FTP + strekking-dedupe) + auditbare cleanup-job (status outdated, nooit delete); job-CLI-guard matcht ook testbundel met zelfde naam.

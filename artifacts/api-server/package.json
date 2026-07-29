@@ -147,7 +147,9 @@
     "test:ai-foundation": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs ai-foundation",
     "test:climb-search-unit": "node ./scripts/run-test.mjs climb-search-unit",
     "test:climb-cache-unit": "node ./scripts/run-test.mjs climb-cache-unit",
-    "test:stripe-billing": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs stripe-billing"
+    "test:stripe-billing": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs stripe-billing",
+    "job:observation-cleanup": "pnpm run build && node --enable-source-maps ./dist/jobs/observation-cleanup.mjs",
+    "test:observation-cleanup": "node ./scripts/run-test.mjs observation-cleanup"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

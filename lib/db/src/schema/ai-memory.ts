@@ -140,6 +140,10 @@ export const aiMemoryEventTypes = [
   "user_saved",
   "model_updated",
   "recommendation_followed",
+  // Aanmaak bewust overgeslagen (achterhaalde waarde of zelfde strekking) of
+  // opgeschoond door de cleanup-taak.
+  "observation_suppressed",
+  "observation_cleanup",
 ] as const;
 export type AiMemoryEventType = (typeof aiMemoryEventTypes)[number];
 

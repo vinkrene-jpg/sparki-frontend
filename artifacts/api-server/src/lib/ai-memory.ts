@@ -17,6 +17,13 @@ import {
   type AiPreference,
   type ObservationSignal,
 } from "@workspace/db";
+import { ftpHistoryTable } from "@workspace/db";
+import {
+  citesWattValue,
+  contentSignature,
+  isNearDuplicateContent,
+  observationContentText,
+} from "../engines/observation/content-dedupe";
 import { aiMessage } from "./ai/gateway";
 import { getEffectivePrivacy } from "./privacy";
 import { SPARKI_ENGINE_VERSION } from "./engine-version";
@@ -25,6 +32,27 @@ import { createNotification } from "./notifications";
 const ACTIVE_STATUSES = ["new", "acknowledged", "saved"] as const;
 const DISMISS_COOLDOWN_DAYS = 14;
 const CONTEXT_WINDOW_DAYS = 30;
+// Venster waarbinnen een nieuwe observatie met dezelfde strekking als een
+// bestaande actieve observatie NIET nogmaals wordt opgeslagen.
+const CONTENT_DEDUPE_WINDOW_DAYS = 45;
+
+// Afgeleide FTP-waarden die als "[achterhaald]" gemarkeerd zijn in de
+// FTP-geschiedenis. Observaties die zo'n waarde als echte meting citeren
+// (bijv. "terugval van 331W") zijn data-artefacten en horen niet opgeslagen
+// te worden.
+export async function getOutdatedFtpWatts(clerkId: string): Promise<number[]> {
+  const rows = await db
+    .select({ ftpWatts: ftpHistoryTable.ftpWatts })
+    .from(ftpHistoryTable)
+    .where(
+      and(
+        eq(ftpHistoryTable.clerkId, clerkId),
+        eq(ftpHistoryTable.testType, "derived"),
+        sql`coalesce(${ftpHistoryTable.notes}, '') LIKE '[achterhaald]%'`,
+      ),
+    );
+  return [...new Set(rows.map((r) => r.ftpWatts))];
+}
 
 export type ObservationInput = {
   clerkId: string;
@@ -106,6 +134,56 @@ export async function persistObservation(
       Date.now() - new Date(existing.createdAt).getTime() <
         DISMISS_COOLDOWN_DAYS * 86_400_000;
     if (isActive || dismissedRecently) return existing;
+  }
+
+  // Inhoudelijke poorten (niet voor `system`-rijen, die zijn deterministisch
+  // en zeldzaam):
+  //  a. Achterhaald-poort — een observatie die een als [achterhaald]
+  //     gemarkeerde afgeleide FTP-waarde als echte meting citeert, is een
+  //     data-artefact (geen echte prestatie-terugval) en wordt niet opgeslagen.
+  //  b. Strekking-poort — zelfde strekking als een al-actieve observatie
+  //     (woord-/getaloverlap, zelfde heuristiek als presentatiekant) wordt
+  //     niet nogmaals opgeslagen; de bestaande rij blijft de representant.
+  if (input.sourceType !== "system") {
+    const contentText = observationContentText(input);
+
+    const outdatedWatts = await getOutdatedFtpWatts(input.clerkId);
+    if (citesWattValue(contentText, outdatedWatts)) {
+      await recordMemoryEvent(input.clerkId, "observation_suppressed", null, {
+        reason: "achterhaalde_ftp_waarde",
+        title: input.title,
+        outdatedWatts,
+      });
+      return null;
+    }
+
+    const since = new Date(Date.now() - CONTENT_DEDUPE_WINDOW_DAYS * 86_400_000);
+    const recent = await db
+      .select()
+      .from(aiObservationsTable)
+      .where(
+        and(
+          eq(aiObservationsTable.clerkId, input.clerkId),
+          inArray(aiObservationsTable.status, [...ACTIVE_STATUSES]),
+          gt(aiObservationsTable.createdAt, since),
+        ),
+      )
+      .orderBy(desc(aiObservationsTable.createdAt))
+      .limit(150);
+
+    const sig = contentSignature(contentText);
+    const duplicate = recent.find((r) =>
+      isNearDuplicateContent(contentSignature(observationContentText(r)), sig),
+    );
+    if (duplicate) {
+      await recordMemoryEvent(
+        input.clerkId,
+        "observation_suppressed",
+        duplicate.id,
+        { reason: "zelfde_strekking", title: input.title },
+      );
+      return duplicate;
+    }
   }
 
   const [row] = await db

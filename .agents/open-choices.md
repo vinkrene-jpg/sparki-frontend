@@ -14,6 +14,13 @@ Laatst bijgewerkt: 2026-07-27.
 1. **Welke indeling wordt het?** — René is er nog mee bezig, komt erop terug (29 jul).
 
 
+### Productie-opschoning observaties (taak #383)
+2. **Akkoord om de opschoning in productie toe te passen?** — Dry-run-rapport (29 jul) voor
+   user_3FXo8wJYIQ2uvZGRXyrRXzdWuUp: 120 actief → 82 gemarkeerd (21 achterhaalde-331W-rijen,
+   3 verouderd doel 250→270, 58 inhoudelijke duplicaten; nieuwste blijft representant),
+   38 blijven actief. Status wordt "outdated" (geen delete, terugdraaibaar). Toepassen kan
+   met `pnpm run job:observation-cleanup -- --clerk-id=… --apply` tegen de productie-DB.
+
 ### Mogelijk al achterhaald (laag) — schrap gerust
 9. **Samen-pagina volgorde** — welk blok bovenaan (Voorstellen vs. Samen trainen).
 10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav.
