@@ -23,4 +23,5 @@ first for project-reference declarations) AND `pnpm --filter @workspace/api-serv
 "No deployment logs found" from the logs tool means the failure is at build time,
 not runtime — look at the build step, not production logs.
 
+- Post-merge check dekt nu ook sparki-mobile: esbuild resolve over alle app/components/hooks/lib/constants-bronnen met RN-native resolveExtensions (.native.* eerst, .web.* nooit); bare packages worden niet gebundeld (RN Flow/JSX breekt esbuild) maar geverifieerd als node_modules-symlink in het mobiele artifact. Let op: een onResolve-plugin draait vóór esbuild's `alias`-optie — "@/…" moet de plugin zelf via build.resolve afhandelen.
 - Na een taak-merge draait het platform alle test-workflows automatisch opnieuw; die groene runs gelden als bewijs — alleen niet-workflow (shell)tests hoeven dan nog handmatig.
