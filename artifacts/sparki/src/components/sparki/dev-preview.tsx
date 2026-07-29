@@ -45,6 +45,7 @@ import PaspoortPage from "@/pages/paspoort"
 import KnowledgePage from "@/pages/knowledge"
 import KlimmenPage from "@/pages/klimmen"
 import { OnboardingV2 } from "@/components/sparki/onboarding-v2"
+import { OnboardingCheckFailed } from "@/components/sparki/onboarding-check-failed"
 import AdminPage from "@/pages/admin"
 import AdminHealthDetailPage from "@/pages/admin-health-detail"
 import DevDesignSystemPage from "@/pages/dev-design-system"
@@ -52,6 +53,7 @@ import DevDesignSystemPage from "@/pages/dev-design-system"
 const LANDING_PATH = "/_dev/landing"
 const ONBOARDING_PATH = "/_dev/onboarding"
 const COMMERCIAL_PATH = "/_dev/commercial"
+const ONBOARDING_FAILED_PATH = "/_dev/onboarding-failed"
 const DESIGN_PATH = "/_dev/design"
 
 // Dev-only preview of each day type (blueprint §4). "Auto" uses the real engine
@@ -401,6 +403,11 @@ export function DevPreview() {
 
   if (location.startsWith(LANDING_PATH)) {
     page = <LandingPage />
+    showNav = false
+  } else if (location.startsWith(ONBOARDING_FAILED_PATH)) {
+    // Dev-preview van de beperkte foutstatus (A2-01): serverstatus tijdelijk
+    // niet verifieerbaar — in productie alleen bereikbaar bij echte storing.
+    page = <OnboardingCheckFailed onRetry={() => setLocation("/")} />
     showNav = false
   } else if (location.startsWith(ONBOARDING_PATH)) {
     page = (

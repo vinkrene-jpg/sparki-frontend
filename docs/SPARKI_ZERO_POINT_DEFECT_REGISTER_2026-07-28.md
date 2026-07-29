@@ -149,7 +149,7 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 ## 5. A2 — Nog te bevestigen codebevinding
 
 ### A2-01 — Onboarding: localStorage als fail-open fallback bij aanhoudende serverfout
-- **Categorie:** CODE_RISK · **Ernst:** P2 · **Zekerheid:** Hard bevestigd in code (correctie t.o.v. eerdere versie van dit document, die dit niet had gereproduceerd) · **Status:** NEEDS_DECISION (productbesluit over de risicoafweging vereist vóór een fix wordt geschreven; daarna READY_FOR_FIX)
+- **Categorie:** CODE_RISK · **Ernst:** P2 · **Zekerheid:** Hard bevestigd in code (correctie t.o.v. eerdere versie van dit document, die dit niet had gereproduceerd) · **Status:** FIXED_NOT_VERIFIED (productbesluit genomen 2026-07-29: fail-closed; fix + eigen tests uitgevoerd, wacht op onafhankelijke controle voor VERIFIED_FIXED)
 - **Route/rol/scherm:** Onboarding-traject, component `SignedInHomeReady`
 - **Bestand/regel:** `artifacts/sparki/src/App.tsx`, functie `SignedInHomeReady` (rond regel 246-300): `lsKey`/`lsDone` op regel 261-262, fallback-tak in de `catch` van de retry-lus (rond regel 296-300), `handleComplete` op regel 315
 - **Bewijsbron:** Statische code-inspectie (Claude, na correctie door menselijke/ChatGPT-review)
@@ -163,6 +163,7 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 - **Eigenaar:** René (productbesluit), daarna Replit (eventuele implementatie)
 - **Blokkade:** Wacht op productbesluit over de gewenste afweging
 - **Verificatiebewijs:** Code-locatie hierboven; geen aanvullend runtimebewijs nodig — dit is met statische code-analyse volledig te herleiden
+- **Herstel (2026-07-29, FIXED_NOT_VERIFIED):** Productbesluit: fail-closed. De besluitregels zijn geëxtraheerd naar `artifacts/sparki/src/lib/onboarding-gate.ts` (`decideOnboardingOutcome`, `lsKeyFor`); `SignedInHomeReady` (App.tsx) gebruikt die nu. Nieuwe beslisboom: server-afgerond → app; server-bereikbaar-niet-afgerond + lokale hint → hint migreren naar DB + app (bestaande gebruikers nooit opnieuw door onboarding); server-bereikbaar-niet-afgerond zonder hint → onboarding; server onbereikbaar na 3 retries → ALTIJD beperkt foutscherm (`OnboardingCheckFailed`, role=status, "Opnieuw proberen"), ongeacht de lokale waarde — nooit de app, nooit automatische nieuwe onboarding. ConsentGate onaangeraakt (aparte laag). Tests: `pnpm --filter @workspace/sparki run test:onboarding-gate` (6/6 pass, dekt scenario's 1–5 + migratiehint); TypeScript groen; screenshots foutstatus 390/1440 px in `screenshots/onboarding-failed-{390,1440}.jpg` (dev-preview `/_dev/onboarding-failed`).
 - **Laatst bijgewerkt:** 2026-07-28 (gecorrigeerd na review)
 
 ## 6. R — Runtimevalidatie vereist

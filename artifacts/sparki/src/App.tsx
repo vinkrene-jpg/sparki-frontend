@@ -64,6 +64,8 @@ import ClubBeheerPage from "@/pages/club-beheer";
 import PaspoortPage from "@/pages/paspoort";
 import SupportPage from "@/pages/support";
 import { apiFetch } from "@/lib/api";
+import { decideOnboardingOutcome, lsKeyFor } from "@/lib/onboarding-gate";
+import { OnboardingCheckFailed } from "@/components/sparki/onboarding-check-failed";
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
 import { UserProvider, useUserProfile } from "@/contexts/UserContext";
@@ -284,7 +286,7 @@ function SignedInHomeReady() {
     // is purely for type-narrowing.
     if (!profile) return;
     let cancelled = false;
-    const lsKey = `sparki_onboarded_${profile.clerkId}`;
+    const lsKey = lsKeyFor(profile.clerkId);
     const lsDone = localStorage.getItem(lsKey) === "true";
     // DB is the source of truth. localStorage is only a fast-path cache and a
     // migration bridge for users who completed onboarding before DB persistence.
@@ -302,10 +304,14 @@ function SignedInHomeReady() {
             onboarding: { isComplete: boolean };
           }>("/api/onboarding/state");
           if (cancelled) return;
-          if (onboarding.isComplete) {
+          const outcome = decideOnboardingOutcome(
+            { ok: true, isComplete: onboarding.isComplete },
+            lsDone,
+          );
+          if (outcome === "app") {
             localStorage.setItem(lsKey, "true");
             setOnboarded(true);
-          } else if (lsDone) {
+          } else if (outcome === "migrate-then-app") {
             // Migrate prior localStorage-only completion into the DB.
             void apiFetch("/api/onboarding/state", {
               method: "PUT",
@@ -322,10 +328,14 @@ function SignedInHomeReady() {
             await new Promise((r) => setTimeout(r, 700 * attempt));
             continue;
           }
-          if (lsDone) {
-            // Cache says this device completed onboarding before — trust it.
-            setOnboarded(true);
-          } else {
+          // FAIL-CLOSED (A2-01): alleen de server bewijst een afgeronde
+          // onboarding. De lokale waarde is uitsluitend een migratiehint bij
+          // een BEREIKBARE server (zie hierboven) — bij een onbereikbare
+          // server geven we de app nooit vrij en starten we ook geen nieuwe
+          // onboarding; alleen het eerlijke foutscherm met opnieuw proberen.
+          // (decideOnboardingOutcome({ok:false}, …) → "check-failed", ongeacht
+          // de lokale waarde — zie lib/onboarding-gate.ts.)
+          if (decideOnboardingOutcome({ ok: false }, lsDone) === "check-failed") {
             setCheckFailed(true);
           }
         }
@@ -355,26 +365,13 @@ function SignedInHomeReady() {
   // would force an existing athlete to answer everything again.
   if (checkFailed) {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#040506] px-8 text-center">
-        <p className="text-[15px] font-medium text-white/85">
-          Je gegevens konden niet worden geladen
-        </p>
-        <p className="max-w-xs text-[13px] leading-relaxed text-white/45">
-          Waarschijnlijk hapert de verbinding even. Je voortgang is veilig
-          opgeslagen — niets gaat verloren.
-        </p>
-        <button
-          type="button"
-          onClick={() => {
-            setCheckFailed(false);
-            setOnboarded(null);
-            setCheckNonce((n) => n + 1);
-          }}
-          className="mt-2 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-6 py-2.5 text-[13px] font-medium text-cyan-200 transition-colors hover:bg-cyan-300/20"
-        >
-          Opnieuw proberen
-        </button>
-      </div>
+      <OnboardingCheckFailed
+        onRetry={() => {
+          setCheckFailed(false);
+          setOnboarded(null);
+          setCheckNonce((n) => n + 1);
+        }}
+      />
     );
   }
 

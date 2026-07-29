@@ -19,6 +19,7 @@
     "test:core-profile-bandbreedte": "node ../../scripts/run-tsx-test.mjs src/lib/core-profile-bandbreedte.test.ts",
     "test:core-profile-evolution": "node ../../scripts/run-tsx-test.mjs src/lib/core-profile-evolution.test.ts",
     "test:onboarding-resume": "node ../../scripts/run-tsx-test.mjs src/lib/onboarding-resume.test.ts",
+    "test:onboarding-gate": "node ../../scripts/run-tsx-test.mjs src/lib/onboarding-gate.test.ts",
     "test:aandachtswet": "node ../../scripts/run-tsx-test.mjs src/lib/aandachtswet.test.ts",
     "test:day-type": "node ../../scripts/run-tsx-test.mjs src/lib/day-type.test.ts",
     "test:commercial-shell": "node ../../scripts/run-tsx-test.mjs src/lib/commercial-shell.test.ts",
