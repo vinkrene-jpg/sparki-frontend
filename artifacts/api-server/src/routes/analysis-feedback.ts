@@ -11,7 +11,7 @@ import {
   type AnalysisFeedbackContext,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { hasCoachAccess, coachSharingLevel } from "../lib/sharing";
+import { hasDirectCoachAccess, coachSharingLevel } from "../lib/sharing";
 import { SPARKI_ENGINE_VERSION } from "../lib/engine-version";
 
 // Feedbacklus op analyses en adviezen (Afbouwgolf 4).
@@ -148,11 +148,11 @@ router.post("/", requireAuth, async (req, res) => {
   }
 
   try {
-    // Toestemmingsgate: over andermans conclusies alleen als gekoppelde coach
-    // met sharing ≠ none.
+    // Toestemmingsgate: over andermans conclusies alleen als DIRECT gekoppelde
+    // coach met sharing ≠ none (club-/teamtoewijzing volstaat niet — WP-01C).
     let actorRole = "athlete";
     if (athleteClerkId !== actorClerkId) {
-      const linked = await hasCoachAccess(actorClerkId, athleteClerkId);
+      const linked = await hasDirectCoachAccess(actorClerkId, athleteClerkId);
       const level = linked ? await coachSharingLevel(athleteClerkId) : "none";
       if (!linked || level === "none") {
         res.status(403).json({ error: "Geen toegang tot deze sporter." });

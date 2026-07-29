@@ -34,7 +34,8 @@ import { writeAudit } from "../lib/security/audit";
 import { computeReadiness } from "../lib/sharing";
 import {
   coachSharingLevel,
-  hasCoachAccess,
+  hasDirectCoachAccess,
+  hasClubTeamTrainerAccess,
   clubAssignedAthleteIds,
   hasRole,
 } from "../engines/coaching";
@@ -57,15 +58,22 @@ async function requireCoach(clerkId: string, res: import("express").Response) {
   return true;
 }
 
-// Toestemmingsgate voor data-inzage/-wijziging: geaccepteerde koppeling én
-// sharing != none. Fail-closed.
+// Toestemmingsgate voor individuele data-inzage/-wijziging: DIRECTE
+// geaccepteerde koppeling én sharing != none. Fail-closed. Een club-/team-
+// toewijzing geeft alleen zichtbaarheid — nooit individuele cockpit-toegang
+// (WP-01C rechtendifferentiatie).
 async function gateAthlete(
   coachId: string,
   athleteId: string,
   res: import("express").Response,
 ): Promise<"summary" | "full" | null> {
-  if (!(await hasCoachAccess(coachId, athleteId))) {
-    res.status(403).json({ error: "Geen gekoppelde atleet" });
+  if (!(await hasDirectCoachAccess(coachId, athleteId))) {
+    const teamOnly = await hasClubTeamTrainerAccess(coachId, athleteId);
+    res.status(403).json({
+      error: teamOnly
+        ? "Individuele begeleiding vereist een directe koppeling met deze sporter"
+        : "Geen gekoppelde atleet",
+    });
     return null;
   }
   const sharing = await coachSharingLevel(athleteId);
@@ -105,6 +113,7 @@ router.get("/dashboard", requireAuth, async (req, res) => {
       return;
     }
     const reviewedBy = new Map(links.map((l) => [l.athleteClerkId, l.lastReviewedAt]));
+    const directIds = new Set(links.map((l) => l.athleteClerkId));
 
     const profiles = await db
       .select({
@@ -130,15 +139,29 @@ router.get("/dashboard", requireAuth, async (req, res) => {
     const today = todayISO();
     const athletes = await Promise.all(
       profiles.map(async (p) => {
+        const relation = directIds.has(p.clerkId) ? ("direct" as const) : ("team" as const);
         const sharing = await coachSharingLevel(p.clerkId);
         const base = {
           athleteClerkId: p.clerkId,
           displayName: p.displayName,
           sharing,
+          relation,
           lastReviewedAt: reviewedBy.get(p.clerkId) ?? null,
         };
         if (sharing === "none") {
           return { ...base, priority: null, signals: [], openSignals: 0 };
+        }
+        // Alleen club-/teamtoewijzing (geen directe link): sporter is
+        // identificeerbaar, maar individuele data (readiness, signalen,
+        // trainingen, berichten) blijft dicht — WP-01C rechtendifferentiatie.
+        if (relation === "team") {
+          return {
+            ...base,
+            discipline: p.discipline,
+            priority: null,
+            signals: [],
+            openSignals: 0,
+          };
         }
 
         const [signals, [metric], [todayWorkout], [lastSession], unread] =
@@ -660,7 +683,9 @@ router.post("/workouts/bulk", requireAuth, async (req, res) => {
     const created: string[] = [];
     const skipped: Array<{ athleteClerkId: string; reason: string }> = [];
     for (const athleteId of athleteIds) {
-      if (!(await hasCoachAccess(coachId, athleteId))) {
+      if (!(await hasDirectCoachAccess(coachId, athleteId))) {
+        // Ook bij een geldige teamtoewijzing: individuele training vereist
+        // een directe koppeling (WP-01C).
         skipped.push({ athleteClerkId: athleteId, reason: "geen_koppeling" });
         continue;
       }
@@ -884,8 +909,8 @@ router.get("/athletes/:athleteId/messages", requireAuth, async (req, res) => {
   if (!(await requireCoach(coachId, res))) return;
   const athleteId = String(req.params.athleteId);
   try {
-    if (!(await hasCoachAccess(coachId, athleteId))) {
-      res.status(403).json({ error: "Geen gekoppelde atleet" });
+    if (!(await hasDirectCoachAccess(coachId, athleteId))) {
+      res.status(403).json({ error: "Individuele berichten vereisen een directe koppeling" });
       return;
     }
     const messages = await db
@@ -930,8 +955,8 @@ router.post("/athletes/:athleteId/messages", requireAuth, async (req, res) => {
     return;
   }
   try {
-    if (!(await hasCoachAccess(coachId, athleteId))) {
-      res.status(403).json({ error: "Geen gekoppelde atleet" });
+    if (!(await hasDirectCoachAccess(coachId, athleteId))) {
+      res.status(403).json({ error: "Individuele berichten vereisen een directe koppeling" });
       return;
     }
     const [message] = await db
@@ -1007,7 +1032,7 @@ router.post("/messages/reply", requireAuth, async (req, res) => {
     return;
   }
   try {
-    if (!(await hasCoachAccess(coachClerkId, clerkId))) {
+    if (!(await hasDirectCoachAccess(coachClerkId, clerkId))) {
       res.status(403).json({ error: "Geen gekoppelde coach" });
       return;
     }
