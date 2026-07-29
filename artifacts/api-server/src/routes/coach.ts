@@ -19,7 +19,8 @@ import { sessionSeed } from "../lib/variation";
 import { computeReadiness } from "../engines/recovery-load";
 import {
   coachSharingLevel,
-  hasAcceptedCoachLink,
+  hasCoachAccess,
+  clubAssignedAthleteIds,
   hasRole,
 } from "../engines/coaching";
 import { loadPlanView } from "../engines/training-plan";
@@ -80,7 +81,10 @@ router.get("/athletes", requireAuth, async (req, res) => {
           eq(coachAthleteLinksTable.status, "accepted"),
         ),
       );
-    const ids = links.map((l) => l.athleteClerkId);
+    // Unie van directe koppelingen en geldige club/teamtoewijzingen; toegang
+    // wordt server-side per read bepaald, deelniveaus blijven per sporter gelden.
+    const assigned = await clubAssignedAthleteIds(coachId);
+    const ids = [...new Set([...links.map((l) => l.athleteClerkId), ...assigned])];
     if (ids.length === 0) {
       res.json({ athletes: [] });
       return;
@@ -158,7 +162,7 @@ router.get("/athletes/:athleteId", requireAuth, async (req, res) => {
   if (!(await requireCoach(coachId, res))) return;
   const athleteId = String(req.params.athleteId);
   try {
-    if (!(await hasAcceptedCoachLink(coachId, athleteId))) {
+    if (!(await hasCoachAccess(coachId, athleteId))) {
       res.status(403).json({ error: "Geen gekoppelde atleet" });
       return;
     }
@@ -259,7 +263,7 @@ router.get("/athletes/:athleteId/plan", requireAuth, async (req, res) => {
   if (!(await requireCoach(coachId, res))) return;
   const athleteId = String(req.params.athleteId);
   try {
-    if (!(await hasAcceptedCoachLink(coachId, athleteId))) {
+    if (!(await hasCoachAccess(coachId, athleteId))) {
       res.status(403).json({ error: "Geen gekoppelde atleet" });
       return;
     }
@@ -342,7 +346,7 @@ router.get("/athletes/:athleteId/context", requireAuth, async (req, res) => {
   if (!(await requireCoach(coachId, res))) return;
   const athleteId = String(req.params.athleteId);
   try {
-    if (!(await hasAcceptedCoachLink(coachId, athleteId))) {
+    if (!(await hasCoachAccess(coachId, athleteId))) {
       res.status(403).json({ error: "Geen gekoppelde atleet" });
       return;
     }
@@ -384,7 +388,7 @@ router.post("/athletes/:athleteId/plan/adopt", requireAuth, async (req, res) => 
   }
 
   try {
-    if (!(await hasAcceptedCoachLink(coachId, athleteId))) {
+    if (!(await hasCoachAccess(coachId, athleteId))) {
       res.status(403).json({ error: "Geen gekoppelde atleet" });
       return;
     }
@@ -501,7 +505,7 @@ router.post(
 
     try {
       // Toestemmingsgate — identiek aan het adopt-pad (fail-closed).
-      if (!(await hasAcceptedCoachLink(coachId, athleteId))) {
+      if (!(await hasCoachAccess(coachId, athleteId))) {
         res.status(403).json({ error: "Geen gekoppelde atleet" });
         return;
       }

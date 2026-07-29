@@ -11,7 +11,7 @@ import {
   type AnalysisFeedbackContext,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { hasAcceptedCoachLink, coachSharingLevel } from "../lib/sharing";
+import { hasCoachAccess, coachSharingLevel } from "../lib/sharing";
 import { SPARKI_ENGINE_VERSION } from "../lib/engine-version";
 
 // Feedbacklus op analyses en adviezen (Afbouwgolf 4).
@@ -152,7 +152,7 @@ router.post("/", requireAuth, async (req, res) => {
     // met sharing ≠ none.
     let actorRole = "athlete";
     if (athleteClerkId !== actorClerkId) {
-      const linked = await hasAcceptedCoachLink(actorClerkId, athleteClerkId);
+      const linked = await hasCoachAccess(actorClerkId, athleteClerkId);
       const level = linked ? await coachSharingLevel(athleteClerkId) : "none";
       if (!linked || level === "none") {
         res.status(403).json({ error: "Geen toegang tot deze sporter." });

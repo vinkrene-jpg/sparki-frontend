@@ -1,10 +1,14 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, inArray } from "drizzle-orm";
 import {
   db,
   athleteProfilesTable,
   coachAthleteLinksTable,
   parentAthleteLinksTable,
   userProfilesTable,
+  clubMembersTable,
+  clubTeamMembersTable,
+  clubGroupMembersTable,
+  clubTrainerAssignmentsTable,
   type AthleteDailyMetric,
 } from "@workspace/db";
 import { getEffectivePrivacy } from "./privacy";
@@ -83,6 +87,106 @@ export async function hasAcceptedCoachLink(
       ),
     );
   return row?.status === "accepted";
+}
+
+/**
+ * Sporters die via een GELDIGE club/teamtoewijzing bij deze trainer horen.
+ * Geldig betekent, op leesmoment gecontroleerd (nooit gecachet):
+ *  - er bestaat een expliciete rij in club_trainer_assignments (team of groep);
+ *  - de trainer is zelf nog ACTIEF clublid (ended_at IS NULL) van die club;
+ *  - de sporter is ACTIEF lid van precies dat team of die groep;
+ *  - de sporter is ook nog ACTIEF clublid van dezelfde club.
+ * Einde lidmaatschap of toewijzing trekt toegang dus direct in.
+ * Dit geeft alleen ZICHTBAARHEID in de werkruimte; wat de trainer vervolgens
+ * mag zien blijft per sporter gegated door coachSharingLevel (fail-closed,
+ * incl. jeugdregel).
+ */
+export async function clubAssignedAthleteIds(
+  coachClerkId: string,
+): Promise<string[]> {
+  const assignments = await db
+    .select({
+      clubId: clubTrainerAssignmentsTable.clubId,
+      teamId: clubTrainerAssignmentsTable.teamId,
+      groupId: clubTrainerAssignmentsTable.groupId,
+    })
+    .from(clubTrainerAssignmentsTable)
+    .innerJoin(
+      clubMembersTable,
+      and(
+        eq(clubMembersTable.clubId, clubTrainerAssignmentsTable.clubId),
+        eq(clubMembersTable.clerkId, clubTrainerAssignmentsTable.trainerClerkId),
+        isNull(clubMembersTable.endedAt),
+      ),
+    )
+    .where(eq(clubTrainerAssignmentsTable.trainerClerkId, coachClerkId));
+  if (assignments.length === 0) return [];
+
+  const out = new Set<string>();
+  const teamIds = assignments.filter((a) => a.teamId != null).map((a) => a.teamId!);
+  const groupIds = assignments.filter((a) => a.groupId != null).map((a) => a.groupId!);
+
+  const perClub = new Map<number, Set<string>>();
+  const addCandidate = (clubId: number, clerkId: string) => {
+    if (!perClub.has(clubId)) perClub.set(clubId, new Set());
+    perClub.get(clubId)!.add(clerkId);
+  };
+
+  if (teamIds.length > 0) {
+    const rows = await db
+      .select({ clerkId: clubTeamMembersTable.clerkId, teamId: clubTeamMembersTable.teamId })
+      .from(clubTeamMembersTable)
+      .where(and(inArray(clubTeamMembersTable.teamId, teamIds), isNull(clubTeamMembersTable.endedAt)));
+    for (const r of rows) {
+      const a = assignments.find((x) => x.teamId === r.teamId);
+      if (a) addCandidate(a.clubId, r.clerkId);
+    }
+  }
+  if (groupIds.length > 0) {
+    const rows = await db
+      .select({ clerkId: clubGroupMembersTable.clerkId, groupId: clubGroupMembersTable.groupId })
+      .from(clubGroupMembersTable)
+      .where(and(inArray(clubGroupMembersTable.groupId, groupIds), isNull(clubGroupMembersTable.endedAt)));
+    for (const r of rows) {
+      const a = assignments.find((x) => x.groupId === r.groupId);
+      if (a) addCandidate(a.clubId, r.clerkId);
+    }
+  }
+
+  // Sporter moet óók nog actief clublid zijn van dezelfde club.
+  for (const [clubId, candidates] of perClub) {
+    const ids = [...candidates];
+    if (ids.length === 0) continue;
+    const active = await db
+      .select({ clerkId: clubMembersTable.clerkId })
+      .from(clubMembersTable)
+      .where(
+        and(
+          eq(clubMembersTable.clubId, clubId),
+          inArray(clubMembersTable.clerkId, ids),
+          isNull(clubMembersTable.endedAt),
+        ),
+      );
+    for (const r of active) {
+      if (r.clerkId !== coachClerkId) out.add(r.clerkId);
+    }
+  }
+  return [...out];
+}
+
+/**
+ * Werkruimte-toegang van een trainer tot een sporter: directe geaccepteerde
+ * coach-sporterkoppeling ÓF geldige club/teamtoewijzing. Elke read gaat door
+ * deze check; client-side filtering is nooit de beveiliging. Deelniveaus
+ * (coachSharingLevel) blijven daar bovenop onverkort gelden.
+ */
+export async function hasCoachAccess(
+  coachClerkId: string,
+  athleteClerkId: string,
+): Promise<boolean> {
+  if (await hasAcceptedCoachLink(coachClerkId, athleteClerkId)) return true;
+  const assigned = await clubAssignedAthleteIds(coachClerkId);
+  return assigned.includes(athleteClerkId);
 }
 
 export async function hasAcceptedParentLink(

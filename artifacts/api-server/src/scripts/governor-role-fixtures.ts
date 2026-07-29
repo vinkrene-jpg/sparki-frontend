@@ -36,6 +36,7 @@ import {
   clubMembersTable,
   clubTeamsTable,
   clubTrainerAssignmentsTable,
+  clubTeamMembersTable,
   clubSubscriptionsTable,
 } from "@workspace/db";
 import { and, eq, like, inArray, isNull, sql } from "drizzle-orm";
@@ -243,6 +244,19 @@ async function createFixturesInner() {
     .where(and(eq(clubTrainerAssignmentsTable.clubId, clubId), eq(clubTrainerAssignmentsTable.trainerClerkId, t1)));
   if (assigned.length === 0) {
     await db.insert(clubTrainerAssignmentsTable).values({ clubId, trainerClerkId: t1, teamId: teamIds[0] });
+  }
+
+  // 5b. Teamleden: beide sporters actief in Team A, zodat de club/team-
+  //     toewijzing van trainer-1 een echt leespad heeft (WP-01 stap 3).
+  for (const key of ["athlete-adult", "athlete-jeugd"]) {
+    const clerkId = clerkIdFor(key);
+    const existing = await db
+      .select({ id: clubTeamMembersTable.id })
+      .from(clubTeamMembersTable)
+      .where(and(eq(clubTeamMembersTable.teamId, teamIds[0]), eq(clubTeamMembersTable.clerkId, clerkId), isNull(clubTeamMembersTable.endedAt)));
+    if (existing.length === 0) {
+      await db.insert(clubTeamMembersTable).values({ teamId: teamIds[0], clerkId, role: "renner" });
+    }
   }
 
   // 6. Directe links: trainer-1 ↔ volwassen sporter (accepted);

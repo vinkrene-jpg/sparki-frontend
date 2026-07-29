@@ -34,7 +34,8 @@ import { writeAudit } from "../lib/security/audit";
 import { computeReadiness } from "../lib/sharing";
 import {
   coachSharingLevel,
-  hasAcceptedCoachLink,
+  hasCoachAccess,
+  clubAssignedAthleteIds,
   hasRole,
 } from "../engines/coaching";
 import { buildCoachSignals, openPriority } from "../lib/coach-signals";
@@ -63,7 +64,7 @@ async function gateAthlete(
   athleteId: string,
   res: import("express").Response,
 ): Promise<"summary" | "full" | null> {
-  if (!(await hasAcceptedCoachLink(coachId, athleteId))) {
+  if (!(await hasCoachAccess(coachId, athleteId))) {
     res.status(403).json({ error: "Geen gekoppelde atleet" });
     return null;
   }
@@ -95,11 +96,14 @@ router.get("/dashboard", requireAuth, async (req, res) => {
           eq(coachAthleteLinksTable.status, "accepted"),
         ),
       );
-    if (links.length === 0) {
+    // Unie van directe koppelingen en geldige club/teamtoewijzingen (zelfde
+    // toegangsregel als hasCoachAccess); deelniveaus blijven per sporter gelden.
+    const assigned = await clubAssignedAthleteIds(coachId);
+    const ids = [...new Set([...links.map((l) => l.athleteClerkId), ...assigned])];
+    if (ids.length === 0) {
       res.json({ athletes: [] });
       return;
     }
-    const ids = links.map((l) => l.athleteClerkId);
     const reviewedBy = new Map(links.map((l) => [l.athleteClerkId, l.lastReviewedAt]));
 
     const profiles = await db
@@ -656,7 +660,7 @@ router.post("/workouts/bulk", requireAuth, async (req, res) => {
     const created: string[] = [];
     const skipped: Array<{ athleteClerkId: string; reason: string }> = [];
     for (const athleteId of athleteIds) {
-      if (!(await hasAcceptedCoachLink(coachId, athleteId))) {
+      if (!(await hasCoachAccess(coachId, athleteId))) {
         skipped.push({ athleteClerkId: athleteId, reason: "geen_koppeling" });
         continue;
       }
@@ -880,7 +884,7 @@ router.get("/athletes/:athleteId/messages", requireAuth, async (req, res) => {
   if (!(await requireCoach(coachId, res))) return;
   const athleteId = String(req.params.athleteId);
   try {
-    if (!(await hasAcceptedCoachLink(coachId, athleteId))) {
+    if (!(await hasCoachAccess(coachId, athleteId))) {
       res.status(403).json({ error: "Geen gekoppelde atleet" });
       return;
     }
@@ -926,7 +930,7 @@ router.post("/athletes/:athleteId/messages", requireAuth, async (req, res) => {
     return;
   }
   try {
-    if (!(await hasAcceptedCoachLink(coachId, athleteId))) {
+    if (!(await hasCoachAccess(coachId, athleteId))) {
       res.status(403).json({ error: "Geen gekoppelde atleet" });
       return;
     }
@@ -1003,7 +1007,7 @@ router.post("/messages/reply", requireAuth, async (req, res) => {
     return;
   }
   try {
-    if (!(await hasAcceptedCoachLink(coachClerkId, clerkId))) {
+    if (!(await hasCoachAccess(coachClerkId, clerkId))) {
       res.status(403).json({ error: "Geen gekoppelde coach" });
       return;
     }
