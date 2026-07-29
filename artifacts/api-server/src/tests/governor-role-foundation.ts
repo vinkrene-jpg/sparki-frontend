@@ -195,7 +195,7 @@ async function main() {
     assert(!isProductionBlocked({ NODE_ENV: "development" }), "development hoort toegestaan");
   });
 
-  await scenario("9. remove wist alles, create herstelt", async () => {
+  await scenario("9. remove wist alles (ook kindrijen), create herstelt", async () => {
     await removeFixtures();
     const gone = await verifyFixtures();
     assert(gone.userCount === 0 && gone.clubCount === 0, `na remove verwacht 0/0, kreeg ${gone.userCount}/${gone.clubCount}`);
@@ -204,9 +204,58 @@ async function main() {
       .from(userProfilesTable)
       .where(like(userProfilesTable.clerkId, `${GOVERNOR_FIXTURE_PREFIX}%`));
     assert(leftovers.length === 0, "prefix-rijen bleven achter");
+    // Kindrijen expliciet gecontroleerd (niet alleen op cascade vertrouwd).
+    const members = await db.select().from(clubMembersTable).where(like(clubMembersTable.clerkId, `${GOVERNOR_FIXTURE_PREFIX}%`));
+    assert(members.length === 0, "club_members-rijen bleven achter");
+    const assigns = await db
+      .select()
+      .from(clubTrainerAssignmentsTable)
+      .where(like(clubTrainerAssignmentsTable.trainerClerkId, `${GOVERNOR_FIXTURE_PREFIX}%`));
+    assert(assigns.length === 0, "trainer-toewijzingen bleven achter");
+    const coachLinks = await db
+      .select()
+      .from(coachAthleteLinksTable)
+      .where(like(coachAthleteLinksTable.coachClerkId, `${GOVERNOR_FIXTURE_PREFIX}%`));
+    assert(coachLinks.length === 0, "coach-links bleven achter");
+    const parentLinks = await db
+      .select()
+      .from(parentAthleteLinksTable)
+      .where(like(parentAthleteLinksTable.parentClerkId, `${GOVERNOR_FIXTURE_PREFIX}%`));
+    assert(parentLinks.length === 0, "ouder-links bleven achter");
     await createFixtures();
     const back = await verifyFixtures();
     assert(back.userCount === 12 && back.clubCount === 1, "herstel na remove faalde");
+  });
+
+  await scenario("10. remove raakt niet-fixture-rijen niet (non-interference)", async () => {
+    // Controle-account dat op de fixture lijkt maar NIET aan de strikte
+    // handtekening voldoet (ander prefix + ander e-maildomein).
+    const controlId = "governor-CONTROL-not-a-fixture";
+    await db
+      .insert(userProfilesTable)
+      .values({ clerkId: controlId, email: "control@example-not-fixture.invalid", displayName: "TESTCONTROL", releaseGroup: "test" })
+      .onConflictDoNothing();
+    try {
+      await removeFixtures();
+      const [survivor] = await db
+        .select({ clerkId: userProfilesTable.clerkId })
+        .from(userProfilesTable)
+        .where(eq(userProfilesTable.clerkId, controlId));
+      assert(survivor, "remove wiste een niet-fixture-rij");
+    } finally {
+      await db.delete(userProfilesTable).where(eq(userProfilesTable.clerkId, controlId));
+      await createFixtures();
+    }
+  });
+
+  await scenario("11. gelijktijdige create-runs blijven idempotent (advisory lock)", async () => {
+    await removeFixtures();
+    const [a, b] = await Promise.all([createFixtures(), createFixtures()]);
+    assert(a.clubId === b.clubId, "parallelle runs maakten verschillende clubs");
+    const v = await verifyFixtures();
+    assert(v.userCount === 12 && v.clubCount === 1, `na parallelle runs verwacht 12/1, kreeg ${v.userCount}/${v.clubCount}`);
+    const teams = await db.select({ id: clubTeamsTable.id }).from(clubTeamsTable).where(eq(clubTeamsTable.clubId, a.clubId));
+    assert(teams.length === 2, `verwacht 2 teams na parallelle runs, kreeg ${teams.length}`);
   });
 
   // Netjes achterlaten: fixtures verwijderd (dev-database blijft schoon).

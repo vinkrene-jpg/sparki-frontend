@@ -92,7 +92,29 @@ export const PERSONAS: Persona[] = [
 
 export const clerkIdFor = (key: string) => `${GOVERNOR_FIXTURE_PREFIX}${key}`;
 
+// Serialiseer create/remove volledig: één advisory lock op één dedicated
+// client (lock en unlock moeten op DEZELFDE verbinding gebeuren). Hiermee is
+// idempotentie ook onder gelijktijdige runs gegarandeerd — de select→insert-
+// paden hieronder kunnen dan nooit dubbel invoegen.
+async function withFixtureLock<T>(fn: () => Promise<T>): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query("SELECT pg_advisory_lock(hashtext('governor-role-fixtures'))");
+    try {
+      return await fn();
+    } finally {
+      await client.query("SELECT pg_advisory_unlock(hashtext('governor-role-fixtures'))");
+    }
+  } finally {
+    client.release();
+  }
+}
+
 export async function createFixtures() {
+  return withFixtureLock(() => createFixturesInner());
+}
+
+async function createFixturesInner() {
   const now = new Date();
   // 1. Gebruikersprofielen (idempotent: vaste clerkIds, upsert werkt alles bij).
   for (const p of PERSONAS) {
@@ -248,10 +270,24 @@ export async function createFixtures() {
 }
 
 export async function removeFixtures() {
-  // Alleen prefix-rijen; FK's met onDelete:cascade ruimen kinden op.
-  const owner = clerkIdFor("clubbeheerder");
-  await db.delete(clubsTable).where(and(eq(clubsTable.name, CLUB_NAME), eq(clubsTable.ownerClerkId, owner)));
-  await db.delete(userProfilesTable).where(like(userProfilesTable.clerkId, `${GOVERNOR_FIXTURE_PREFIX}%`));
+  return withFixtureLock(async () => {
+    // Strikte fixture-handtekening: prefix ÉN synthetisch e-maildomein ÉN
+    // releasegroep "test" — nooit alleen een LIKE op prefix, zodat een
+    // (theoretische) namespace-botsing met echte data nooit iets wist.
+    // FK's met onDelete:cascade ruimen kindrijen van deze synthetische
+    // accounts op; per definitie is al hun data door dit script aangemaakt.
+    const owner = clerkIdFor("clubbeheerder");
+    await db.delete(clubsTable).where(and(eq(clubsTable.name, CLUB_NAME), eq(clubsTable.ownerClerkId, owner)));
+    await db
+      .delete(userProfilesTable)
+      .where(
+        and(
+          like(userProfilesTable.clerkId, `${GOVERNOR_FIXTURE_PREFIX}%`),
+          like(userProfilesTable.email, `%@${EMAIL_DOMAIN}`),
+          eq(userProfilesTable.releaseGroup, "test"),
+        ),
+      );
+  });
 }
 
 export async function verifyFixtures() {

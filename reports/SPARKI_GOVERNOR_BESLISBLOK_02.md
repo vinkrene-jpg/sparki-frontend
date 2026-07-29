@@ -25,7 +25,7 @@ Bewijs uitgevoerd: create → "club + 2 teams + 12 gebruikers"; tweede create id
 
 ## 4. Tests (fase 7)
 
-Nieuw: `artifacts/api-server/src/tests/governor-role-foundation.ts` (`node ./scripts/run-test.mjs governor-role-foundation`) — **9/9 geslaagd**: idempotentie, gekoppeld vs controlegeval, organisatie-isolatie (club A ≠ B, buitenstaander niets), einde lidmaatschap sluit op leesmoment, multi-role-unie, drie abonnementscontexten via één entitlements-engine (gratis fail-closed), ouder-link jeugd fail-closed (veiligheidsminimum), productie-poort, remove/restore.
+Nieuw: `artifacts/api-server/src/tests/governor-role-foundation.ts` (`node ./scripts/run-test.mjs governor-role-foundation`) — **11/11 geslaagd** (incl. non-interference-check en parallelle create-runs via advisory lock): idempotentie, gekoppeld vs controlegeval, organisatie-isolatie (club A ≠ B, buitenstaander niets), einde lidmaatschap sluit op leesmoment, multi-role-unie, drie abonnementscontexten via één entitlements-engine (gratis fail-closed), ouder-link jeugd fail-closed (veiligheidsminimum), productie-poort, remove/restore.
 Bestaand, opnieuw gedraaid en groen: typecheck libs + api-server (0 fouten), cross-account-isolation 19/19, coach-parent-link-isolation 13/13, links-end-isolation 3/3, entitlements 19/19, admin-smoke 12/12.
 Kleine bijvangst: `SAFETY_CATEGORIES` in `lib/parent-permissions.ts` geëxporteerd (was lokaal; geen gedragswijziging).
 
@@ -41,4 +41,4 @@ Kleine bijvangst: `SAFETY_CATEGORIES` in `lib/parent-permissions.ts` geëxportee
 
 ## 7. Publicatie
 
-**Niet nodig.** Dit blok wijzigt alleen governance-documenten, testfixtures en tests; er is geen productiegedrag veranderd (enige codewijziging is een export-keyword). Commit-SHA: zie de commit die dit rapport bevat (wordt in de afronding gemeld).
+**Niet nodig.** Dit blok wijzigt alleen governance-documenten, testfixtures en tests; er is geen productiegedrag veranderd (enige codewijziging is een export-keyword). Commit-SHA: `a886c8f1` (fundament) + review-hardening-commit met race-safe lock, strikte verwijder-handtekening en scenario 10–11.
