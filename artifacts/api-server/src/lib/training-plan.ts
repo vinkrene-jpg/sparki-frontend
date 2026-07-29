@@ -74,6 +74,8 @@ export type PlanInputs = {
   discipline: string | null;
   ftp: number | null;
   goals: string | null;
+  /** Vaste zin die het actieve seizoensdoel (afval-/aankomdoel) benoemt. */
+  seasonGoalLine: string | null;
   healthStatus: string;
   home: { lat: number; lon: number; label: string | null } | null;
   readiness: ReturnType<typeof computeReadiness>;
@@ -239,6 +241,23 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
     // Honest degradation: goals block missing → plan uses profile goals only.
   }
 
+  // Actief seizoensdoel (afval-/aankomdoel): weegt mee in de planopbouw en
+  // wordt in de uitleg benoemd. Kernregel blijft: trainingen volledig gevoed,
+  // sturing op gewicht via gewone maaltijden op rustdagen — dus het doel
+  // versterkt de rustdag-uitleg, het snijdt nooit in trainingsvolume.
+  let seasonGoalLine: string | null = null;
+  try {
+    const { loadSeasonGoalSteering } = await import("./season-goal");
+    seasonGoalLine = (await loadSeasonGoalSteering(clerkId))?.line ?? null;
+    if (seasonGoalLine) {
+      goalsText = goalsText
+        ? `${goalsText} · ${seasonGoalLine}`
+        : seasonGoalLine;
+    }
+  } catch {
+    // Honest degradation: no season-goal read → plan simply doesn't name it.
+  }
+
   return {
     clerkId,
     displayName: user?.displayName ?? null,
@@ -251,6 +270,7 @@ export async function gatherInputs(clerkId: string): Promise<PlanInputs> {
     discipline: athlete?.discipline ?? null,
     ftp: athlete?.ftp ?? null,
     goals: goalsText,
+    seasonGoalLine,
     healthStatus,
     home,
     readiness,
@@ -604,13 +624,21 @@ function dayRationale(
     return "Volledige rust: je hebt een blessure gemeld. Eerst herstellen voor training.";
   switch (kind) {
     case "rest":
-      return "Geplande rustdag — herstel is waar je sterker van wordt.";
+      // Een actief seizoensdoel wordt op rustdagen expliciet benoemd: dit is
+      // het moment waarop de gewichtssturing werkt (nooit rond trainingen).
+      return i.seasonGoalLine
+        ? `Geplande rustdag — herstel is waar je sterker van wordt. ${i.seasonGoalLine}`
+        : "Geplande rustdag — herstel is waar je sterker van wordt.";
     case "long":
       return `Langste rit van de week voor je duurvermogen${weekNote ? `; ${weekNote}` : ""}.`;
     case "duur":
       return `Rustige duurprikkel in zone 2, de basis van je conditie${weekNote ? `; ${weekNote}` : ""}.`;
     case "herstel":
-      return "Kort en heel rustig — actief herstel om de benen los te maken.";
+      // Ook op herstel-dagen wordt een actief seizoensdoel benoemd: rustige
+      // dagen zijn waar de gewichtssturing werkt.
+      return i.seasonGoalLine
+        ? `Kort en heel rustig — actief herstel om de benen los te maken. ${i.seasonGoalLine}`
+        : "Kort en heel rustig — actief herstel om de benen los te maken.";
     case "tempo":
       return "Tempoblok in zone 3 om je duurvermogen aan te scherpen.";
     case "interval":
@@ -650,7 +678,8 @@ function templateSummary(i: PlanInputs, skeleton: DaySkeleton[]): string {
     i.healthStatus !== "ok"
       ? " Omdat je je niet fit hebt gemeld, staat er voorlopig geen training — eerst herstellen."
       : "";
-  return `Dit schema is gebaseerd op jouw profiel: ${trainingDays} trainingsdagen deze week binnen ~${hrs} uur, polariserend opgebouwd (veel rustig, gedoseerd intensief).${raceLine}${healthLine} De eerste 7 dagen liggen vast; de twee weken daarna zijn een voorlopige vooruitblik die meebeweegt met je herstel.`;
+  const seasonGoalLine = i.seasonGoalLine ? ` ${i.seasonGoalLine}` : "";
+  return `Dit schema is gebaseerd op jouw profiel: ${trainingDays} trainingsdagen deze week binnen ~${hrs} uur, polariserend opgebouwd (veel rustig, gedoseerd intensief).${raceLine}${healthLine}${seasonGoalLine} De eerste 7 dagen liggen vast; de twee weken daarna zijn een voorlopige vooruitblik die meebeweegt met je herstel.`;
 }
 
 function templateDescription(d: DaySkeleton): string {

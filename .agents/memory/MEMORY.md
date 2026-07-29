@@ -71,6 +71,7 @@
 - [Ontdekken Renners reel + dwell-gated learning](sparki-ontdekken-renners.md) — World swipe-reel surfaced in /feed; feed view-events must dwell-gate ~1.4s or fast scroll pollutes affinity.
 - [Sparki profile-consistency questions](sparki-profile-consistency.md) — notice→ask→confirm→correct; only user-set values questioned, write path re-verifies + compare-and-set, answers suppress ~45d.
 - [FTP floor derivation](sparki-ftp-floor.md) — no power curve stored ⇒ exact FTP underivable; only honest lower bound (45–120min NP, 0.95×20–45min NP), raises estimated FTP only, per-day idempotent history.
+- [Afvaldoel-doorvoering](sparki-afvaldoel-doorvoering.md) — doel verbuigt nooit trainingsnummers; ÉÉN canonieke zin uit lib/season-goal overal (frontend via API-veld `line`); geen gewicht ⇒ eerlijk "onbekend".
 - [Sparki nutrition season goal](sparki-season-goal.md) — 17+ only (RED-S refusal), deterministic ≤0,5 kg/wk steering, one-question doorvraag ladder; round-trip-validate calendar dates.
 - [Sparki derived belastingscore](sparki-derived-tss.md) — TSS derived from power+FTP at ingest + boot self-heal; `[achterhaald]` prefix is the ONLY valid format for ftp_history derived rows (other formats bypass the filter); advisory locks need ONE client.
 - [Sparki Doelen-engine](sparki-goals-engine.md) — derived goals never duplicated as rows; dedupe = DB unique index+onConflict (not read-then-insert); per-day checks compare Amsterdam local date.

@@ -22,6 +22,7 @@ import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useRaces } from "@/hooks/use-races"
 import { useHomeWeather } from "@/hooks/use-home-weather"
+import { useSeasonGoal } from "@/hooks/use-nutrition"
 import { computeDayAdvice, type DayAdvice } from "@/lib/day-advice"
 import type { HomeWeather } from "@/lib/weather-types"
 import type { DayHomeComponentProps } from "@/lib/day-type"
@@ -50,8 +51,16 @@ export function GeneralDayHome({ briefing }: DayHomeComponentProps) {
   const { data: metricsHistory, isLoading: metricsLoading } = useDailyMetrics(14)
   const { data: races } = useRaces()
   const { data: weather, isLoading: weatherLoading } = useHomeWeather()
+  const { data: seasonGoalData } = useSeasonGoal(true)
   const profile = data?.athleteProfile
   const [, navigate] = useLocation()
+
+  // Actief seizoensdoel (afval-/aankomdoel) — weegt zichtbaar mee in het
+  // dagadvies. Alleen echt: 17+, met streefgewicht; anders gewoon afwezig.
+  const seasonGoal =
+    seasonGoalData?.eligible === true && seasonGoalData.line
+      ? { line: seasonGoalData.line }
+      : null
 
   // Concrete, explainable advice for a no-plan day — built from the athlete's
   // real signals (check-in, form, weekly hours, FTP, nearest race) and today's
@@ -63,6 +72,7 @@ export function GeneralDayHome({ briefing }: DayHomeComponentProps) {
     load: data?.load ?? null,
     races,
     weather: weather ?? null,
+    seasonGoal,
   })
 
   // Brand-new athletes (no profile yet) get the onboarding flow; established

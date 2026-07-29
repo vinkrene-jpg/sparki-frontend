@@ -1138,10 +1138,15 @@ function SeasonGoalSection({ enabled }: { enabled: boolean }) {
   return (
     <section>
       <SectionLabel title="Seizoensdoel" />
+      <div className="mt-1">
+        <UitlegDot uitlegKey="seizoensdoel" label="Seizoensdoel" />
+      </div>
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
         Je dagvoeding stuurt mee op je seizoen: op gewicht zijn als het
         wedstrijdseizoen begint, en scherp op je piek. Altijd in een gezond
-        tempo — je trainingen worden nooit tekortgedaan.
+        tempo — je trainingen worden nooit tekortgedaan. Waar dit doel
+        meeweegt — voedingsplan, dagadvies, schema en analyse — wordt het ook
+        benoemd.
       </p>
 
       <div className="mt-4 space-y-3">

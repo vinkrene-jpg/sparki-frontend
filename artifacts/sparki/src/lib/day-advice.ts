@@ -49,6 +49,16 @@ export type DayAdviceInput = {
   /** Real home-location weather. When severe it can honestly nudge an
    *  outdoor-intensive day toward endurance; otherwise it only adds a note. */
   weather?: HomeWeather | null
+  /** Actief seizoensdoel (afval-/aankomdoel, 17+): wordt in de uitleg
+   *  benoemd. Sturing op gewicht loopt via maaltijden op rustige momenten;
+   *  het verandert de trainingskeuze zelf bewust NIET (volledig gevoed). */
+  seasonGoal?: SeasonGoalSignal | null
+}
+
+export type SeasonGoalSignal = {
+  /** Canonieke benoemingszin van de server (buildSeasonGoalLine) — overal
+   *  exact dezelfde woorden, zodat de benoeming nooit kan driften. */
+  line: string
 }
 
 // Standard Coggan power zones as a fraction of FTP — used only to translate a
@@ -277,6 +287,19 @@ export function computeDayAdvice(input: DayAdviceInput): DayAdvice | null {
   }
   if (profile.goals && profile.goals.trim()) {
     reasons.push(`Dit werkt naar je doel: ${profile.goals.trim()}.`)
+  }
+
+  // Seizoensdoel (afval-/aankomdoel) — altijd benoemd wanneer actief. Het
+  // stuurt de trainingskeuze bewust niet (trainingen blijven volledig
+  // gevoed); de sturing zit in gewone maaltijden op rustige momenten, en
+  // juist dát benoemen we op de dag zelf.
+  const sg = input.seasonGoal
+  if (sg?.line) {
+    reasons.push(
+      kind === "rest" || kind === "recovery"
+        ? `${sg.line} Rustige dagen zoals vandaag zijn precies waar die sturing werkt.`
+        : sg.line,
+    )
   }
 
   const primary: DayAdvice["primary"] =

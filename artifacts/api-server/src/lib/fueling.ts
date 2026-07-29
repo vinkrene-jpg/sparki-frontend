@@ -44,6 +44,9 @@ export type SessionFuelInput = {
   gutExperiences: string | null;
   /** Letterlijke coachinstructie(s) rond voeding; null = geen. */
   coachInstructions: string[];
+  /** Vaste zin die het actieve seizoensdoel (afval-/aankomdoel) benoemt;
+   *  null = geen actief doel. Wordt bij jeugd ALTIJD genegeerd (RED-S). */
+  seasonGoalLine?: string | null;
 };
 
 export type SessionFuelTargets = {
@@ -185,6 +188,14 @@ export function computeSessionFuelTargets(input: SessionFuelInput): SessionFuelT
   }
   if (input.gutExperiences?.trim()) {
     items.push({ kind: "voorkeur", text: `Jouw maag-darmervaring: ${input.gutExperiences.trim()}. Houd daar rekening mee — test nieuwe producten in training, nooit in een wedstrijd.` });
+  }
+
+  // Seizoensdoel (afval-/aankomdoel) — het doel wordt hier BENOEMD, nooit
+  // doorgerekend in de richtwaarden: een inspanning wordt altijd volledig
+  // gevoed, sturing op gewicht gebeurt via gewone maaltijden op rustige
+  // momenten. Jeugd bereikt dit punt nooit (aparte tak hierboven).
+  if (input.seasonGoalLine?.trim()) {
+    items.push({ kind: "richtwaarde", text: input.seasonGoalLine.trim() });
   }
 
   return {

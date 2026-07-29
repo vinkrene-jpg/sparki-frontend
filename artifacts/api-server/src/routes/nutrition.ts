@@ -16,6 +16,14 @@ import {
 import { aiMessage, UPLOAD_DATA_RULE } from "../lib/ai/gateway";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { computeAge } from "../lib/age";
+import {
+  SEASON_GOAL_MIN_AGE,
+  SAFE_KG_PER_WEEK,
+  computeSeasonSteering,
+  buildSeasonGoalLine,
+  seasonGoalIneligible,
+  loadSeasonGoalSteering,
+} from "../lib/season-goal";
 import { getHomeWeather } from "../lib/weather/home";
 import { computeLoad } from "../lib/recovery-load";
 import {
@@ -153,6 +161,17 @@ async function buildDayFuelTargets(
       nutritionCoachInstructions(clerkId, date),
     ]);
 
+  // Actief seizoensdoel (afval-/aankomdoel) — wordt in het voedingsplan
+  // benoemd. Fail-safe: zonder doel of bij twijfel gewoon geen regel.
+  let seasonGoalLine: string | null = null;
+  if (!isYouth) {
+    try {
+      seasonGoalLine = (await loadSeasonGoalSteering(clerkId, date))?.line ?? null;
+    } catch {
+      seasonGoalLine = null;
+    }
+  }
+
   const home = profileRows[0];
   let tempC: number | null = null;
   try {
@@ -181,6 +200,7 @@ async function buildDayFuelTargets(
     allergies: consented ? (prefs?.allergies ?? null) : null,
     gutExperiences: consented ? (prefs?.gutExperiences ?? null) : null,
     coachInstructions,
+    seasonGoalLine,
   });
 }
 
@@ -1066,114 +1086,9 @@ Antwoord UITSLUITEND met geldige JSON (geen markdown eromheen):
 // week), fueling the training always comes first, never crash diets. Athletes
 // under 17 get NO weight steering at all (RED-S safety) — the endpoint refuses
 // honestly instead of hiding the rule.
-
-const SEASON_GOAL_MIN_AGE = 17;
-const SAFE_KG_PER_WEEK = 0.5;
-
-type SeasonSteering = {
-  deltaKg: number | null;
-  weeksToSeasonStart: number | null;
-  weeksToPeak: number | null;
-  requiredKgPerWeek: number | null;
-  feasible: boolean | null;
-  summary: string;
-  warning: string | null;
-};
-
-function weeksUntil(dateStr: string | null, todayStr: string): number | null {
-  if (!dateStr) return null;
-  const target = new Date(dateStr + "T12:00:00Z").getTime();
-  const today = new Date(todayStr + "T12:00:00Z").getTime();
-  return Math.round(((target - today) / 86_400_000 / 7) * 10) / 10;
-}
-
-function computeSeasonSteering(
-  currentKg: number | null,
-  targetKg: number | null,
-  seasonStartDate: string | null,
-  peakDate: string | null,
-  today: string,
-): SeasonSteering | null {
-  if (currentKg == null || targetKg == null) return null;
-  const deltaKg = Math.round((currentKg - targetKg) * 10) / 10;
-  const weeksToSeasonStart = weeksUntil(seasonStartDate, today);
-  const weeksToPeak = weeksUntil(peakDate, today);
-  // The season start is the moment the weight should be right; the peak is
-  // the hard deadline. Steer on the nearest future milestone.
-  const horizon =
-    weeksToSeasonStart != null && weeksToSeasonStart > 0
-      ? weeksToSeasonStart
-      : weeksToPeak != null && weeksToPeak > 0
-        ? weeksToPeak
-        : null;
-
-  if (Math.abs(deltaKg) <= 0.5) {
-    return {
-      deltaKg,
-      weeksToSeasonStart,
-      weeksToPeak,
-      requiredKgPerWeek: 0,
-      feasible: true,
-      summary:
-        "Je zit al op je streefgewicht. De voeding stuurt op behoud: genoeg eten voor je trainingen, niet minder.",
-      warning: null,
-    };
-  }
-
-  const direction = deltaKg > 0 ? "afvallen" : "aankomen";
-  if (horizon == null || horizon <= 0) {
-    return {
-      deltaKg,
-      weeksToSeasonStart,
-      weeksToPeak,
-      requiredKgPerWeek: null,
-      feasible: null,
-      summary: `Verschil met streefgewicht: ${Math.abs(deltaKg).toString().replace(".", ",")} kg (${direction}). Zonder toekomstige seizoensstart of piekdatum kan het tempo niet berekend worden.`,
-      warning: null,
-    };
-  }
-
-  const requiredKgPerWeek =
-    Math.round((Math.abs(deltaKg) / horizon) * 100) / 100;
-  const feasible = requiredKgPerWeek <= SAFE_KG_PER_WEEK;
-  const horizonNl = horizon.toString().replace(".", ",");
-  return {
-    deltaKg,
-    weeksToSeasonStart,
-    weeksToPeak,
-    requiredKgPerWeek,
-    feasible,
-    summary: feasible
-      ? `${Math.abs(deltaKg).toString().replace(".", ",")} kg ${direction} in ${horizonNl} weken kan rustig: ongeveer ${requiredKgPerWeek.toString().replace(".", ",")} kg per week. Dat past naast je trainingen.`
-      : `${Math.abs(deltaKg).toString().replace(".", ",")} kg ${direction} in ${horizonNl} weken vraagt ${requiredKgPerWeek.toString().replace(".", ",")} kg per week — dat is meer dan het veilige tempo van ${SAFE_KG_PER_WEEK.toString().replace(".", ",")} kg per week.`,
-    warning: feasible
-      ? null
-      : "Dit tempo is niet gezond en kost je trainingskwaliteit. Stel je streefgewicht of je datum bij — de voeding stuurt nooit sneller dan het veilige tempo.",
-  };
-}
-
-// Age gate: null when eligible, otherwise honest refusal payload.
-function seasonGoalIneligible(
-  age: number | null,
-): { eligible: false; reason: string; message: string } | null {
-  if (age == null) {
-    return {
-      eligible: false,
-      reason: "birth_year_missing",
-      message:
-        "Je geboortejaar is nog niet ingevuld. Sturen op gewicht is er alleen voor renners van 17 jaar en ouder — vul eerst je geboortejaar in bij je profiel.",
-    };
-  }
-  if (age < SEASON_GOAL_MIN_AGE) {
-    return {
-      eligible: false,
-      reason: "too_young",
-      message:
-        "Sturen op gewicht doet Sparki bewust niet onder de 17. Op jouw leeftijd geldt: genoeg en gevarieerd eten, op tijd rond je trainingen — je lichaam is nog volop in ontwikkeling.",
-    };
-  }
-  return null;
-}
+//
+// De rekenkern en de leeftijdspoort leven in ../lib/season-goal zodat het
+// doel ook aantoonbaar meeweegt in trainingsplan, dagadvies en analyse.
 
 // The doorvraag ladder: the ONE next question Sparki asks, in a fixed order.
 function nextSeasonGoalQuestion(input: {
@@ -1268,6 +1183,21 @@ router.get("/season-goal", requireAuth, async (req, res) => {
         goal?.peakDate ?? null,
         today,
       ),
+      // Eén canonieke benoemingszin — dezelfde die de engines gebruiken, zodat
+      // het doel overal met exact dezelfde woorden wordt benoemd.
+      line:
+        targetWeightKg != null
+          ? buildSeasonGoalLine(
+              targetWeightKg,
+              computeSeasonSteering(
+                currentWeightKg,
+                targetWeightKg,
+                goal?.seasonStartDate ?? null,
+                goal?.peakDate ?? null,
+                today,
+              ),
+            )
+          : null,
     });
   } catch (err) {
     req.log.error({ err }, "nutrition.season-goal get failed");

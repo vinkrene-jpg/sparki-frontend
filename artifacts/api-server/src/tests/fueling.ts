@@ -184,6 +184,38 @@ async function main() {
     assert(t.items[0].text === "Alleen water en bananen deze week.", "letterlijk overgenomen");
   });
 
+  await scenario("seizoensdoel-regel wordt benoemd (volwassene)", () => {
+    const t = computeSessionFuelTargets({
+      ...BASE_INPUT,
+      seasonGoalLine:
+        "Je afvaldoel (streefgewicht 72 kg) weegt hierin mee: bijsturen gebeurt via je gewone maaltijden op rustige momenten. Trainingen blijven altijd volledig gevoed.",
+    });
+    assert(
+      t.items.some((i) => i.kind === "richtwaarde" && i.text.includes("afvaldoel")),
+      "seizoensdoel-regel moet als richtwaarde benoemd worden",
+    );
+    // Het doel mag de richtwaarden zelf NIET verlagen: identiek aan zonder doel.
+    const zonder = computeSessionFuelTargets({ ...BASE_INPUT });
+    assert(
+      JSON.stringify(t.carbsPerHourG) === JSON.stringify(zonder.carbsPerHourG) &&
+        JSON.stringify(t.fluidPerHourMl) === JSON.stringify(zonder.fluidPerHourMl) &&
+        JSON.stringify(t.preCarbsG) === JSON.stringify(zonder.preCarbsG),
+      "richtwaarden mogen niet veranderen door het seizoensdoel",
+    );
+  });
+
+  await scenario("seizoensdoel-regel bereikt jeugd nooit (RED-S)", () => {
+    const t = computeSessionFuelTargets({
+      ...BASE_INPUT,
+      isYouth: true,
+      seasonGoalLine: "Je afvaldoel (streefgewicht 60 kg) weegt hierin mee.",
+    });
+    assert(
+      !t.items.some((i) => i.text.includes("afvaldoel")),
+      "jeugd mag nooit een gewichtsdoel-regel zien",
+    );
+  });
+
   await scenario("voorkeuren worden voorkeur-items", () => {
     const t = computeSessionFuelTargets({
       ...BASE_INPUT,

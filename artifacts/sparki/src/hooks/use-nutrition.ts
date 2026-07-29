@@ -291,6 +291,8 @@ export type SeasonGoalResult =
       currentWeightKg: number | null;
       nextQuestion: { field: string; question: string; why: string } | null;
       steering: SeasonGoalSteering | null;
+      /** Canonieke benoemingszin van het doel — overal dezelfde woorden. */
+      line: string | null;
     };
 
 export function useSeasonGoal(enabled: boolean) {

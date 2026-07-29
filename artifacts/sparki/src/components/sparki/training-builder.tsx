@@ -10,6 +10,7 @@ import { useCreateWorkout } from "@/hooks/use-today-workout"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useRaces } from "@/hooks/use-races"
 import { useHomeWeather } from "@/hooks/use-home-weather"
+import { useSeasonGoal } from "@/hooks/use-nutrition"
 import { computeDayAdvice } from "@/lib/day-advice"
 import {
   INTERVAL_TEMPLATES,
@@ -56,7 +57,18 @@ export function WorkoutBuilder({ onDone }: { onDone: () => void }) {
   const { data: dashboard } = useAthleteDashboard()
   const { data: races } = useRaces()
   const { data: weather } = useHomeWeather()
+  const { data: seasonGoalData } = useSeasonGoal(true)
   const profile = dashboard?.athleteProfile ?? null
+
+  // Actief seizoensdoel (afval-/aankomdoel): weegt zichtbaar mee in de
+  // aanbevelingstoelichting. Alleen echt (17+ met streefgewicht).
+  const seasonGoal = useMemo(
+    () =>
+      seasonGoalData?.eligible === true && seasonGoalData.line
+        ? { line: seasonGoalData.line }
+        : null,
+    [seasonGoalData],
+  )
 
   const [scheduledDate, setScheduledDate] = useState(todayStr())
   const [kind, setKind] = useState<"duur" | "interval">("duur")
@@ -67,7 +79,9 @@ export function WorkoutBuilder({ onDone }: { onDone: () => void }) {
 
   // Aanbeveling — alleen wanneer een echt doel is ingesteld én er
   // signalen (check-in) zijn om op te bouwen. Nooit een gok zonder basis.
-  const hasGoal = !!(profile?.goals || profile?.developmentGoal)
+  // Een actief seizoensdoel (afval-/aankomdoel) is óók een echt doel en opent
+  // deze aanbevelingsstroom — anders zou het doel hier onzichtbaar blijven.
+  const hasGoal = !!(profile?.goals || profile?.developmentGoal || seasonGoal)
   const advice = useMemo(
     () =>
       hasGoal
@@ -77,9 +91,10 @@ export function WorkoutBuilder({ onDone }: { onDone: () => void }) {
             load: dashboard?.load ?? null,
             races,
             weather: weather ?? null,
+            seasonGoal,
           })
         : null,
-    [hasGoal, profile, dashboard, races, weather],
+    [hasGoal, profile, dashboard, races, weather, seasonGoal],
   )
 
   const proposal: WorkoutTemplate | null = useMemo(() => {
