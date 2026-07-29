@@ -1,0 +1,458 @@
+WERKPAKKET WP-03 — CLUBBEHEERDER EN ORGANANISATIESTRUCTUUR
+
+DOEL
+
+Bouw de bestaande clubbeheeromgeving gericht uit tot één volwaardige
+organisatie- en ledenbeheeromgeving.
+
+Hergebruik de bestaande architectuur.
+Bouw geen tweede club-, team-, rollen- of rechtenmodel.
+
+WERKWIJZE
+
+Voer WP-03 autonoom uit als kleine deelstappen.
+
+Per stap:
+
+- één duidelijk doel;
+- beperkte scope;
+- eigen tests;
+- kort bewijsrapport;
+- eigen commit;
+- push na groen resultaat.
+
+René hoeft tussen groene stappen niets handmatig goed te keuren.
+
+Ga automatisch door naar de volgende stap wanneer:
+
+- alle verplichte tests groen zijn;
+- de diff binnen scope blijft;
+- geen echte gebruikersdata beschadigd of verwijderd zijn;
+- geen privacy- of rechtenlek bestaat;
+- migraties uitsluitend additief zijn;
+- geen tweede organisatiemodel ontstaat.
+
+BRONNEN
+
+Gebruik als bron van waarheid:
+
+- actuele main;
+- WP-01 Trainerwerkruimte;
+- WP-01C rechtendifferentiatie en echte privénotities;
+- WP-02 Hoofdtrainer;
+- governance/role-capability-matrix-v1.json;
+- governance/organisation-membership-model-v1.json;
+- reports/governor-beslisblok-02/IMPLEMENTATION_SEQUENCE.md;
+- reports/governor-beslisblok-02/work-packages/
+  WP-03-clubbeheerder-organisatie.md;
+- bestaande /club/beheer;
+- bestaande club-permissions en canManageClub;
+- bestaande invitations;
+- bestaande club_subscriptions en limieten;
+- bestaande club_audit_log;
+- bestaande club-, coach-, ouder- en isolatietests.
+
+VASTE PRODUCTREGELS
+
+1. Club en Team blijven één samenhangende organisatiearchitectuur.
+2. Clubbeheerder beheert leden, rollen, teams, selecties, seizoenen,
+   uitnodigingen en operationele instellingen.
+3. Clubbeheerder ziet niet automatisch individuele trainings-, herstel-,
+   gezondheids- of privécoachdata.
+4. Rollen zijn contextgebonden aan club, team, selectie en seizoen.
+5. Eén persoon mag meerdere rollen hebben.
+6. Einde lidmaatschap of roltoewijzing trekt toegang direct in.
+7. Jeugd, ouderkoppelingen en consent blijven fail-closed.
+8. Hoofdtrainer, trainer, ploegleider en mechanieker krijgen alleen de
+   capabilities van hun toegewezen context.
+9. Geen echte uitnodigingen versturen tijdens development/tests.
+10. Geen productie-fixtures of echte persoonsgegevens gebruiken.
+
+STAP 1 — BESTAANDE CLUBBEHEERFLOW IN KAART BRENGEN
+
+Controleer eerst:
+
+- /club;
+- /club/beheer;
+- huidige clubtabellen;
+- ledenbeheer;
+- clubrollen;
+- teams/groepen;
+- trainerstoewijzingen;
+- uitnodigingen;
+- abonnementslimieten;
+- auditlog;
+- jeugd- en ouderregels;
+- API-rechten per beheeractie;
+- bestaande tests.
+
+Maak:
+
+reports/wp-03-club/01_EXISTING_CLUB_FLOW_MAP.md
+
+Leg per onderdeel vast:
+
+- route/component;
+- API;
+- tabel;
+- huidige capabilitycontrole;
+- herbruikbaar;
+- gericht uitbreiden;
+- ontbrekend;
+- risico voor WP-01/WP-02.
+
+Wijzig in stap 1 geen productcode.
+
+Controlepoort:
+
+- geen tweede organisatiemodel nodig;
+- geen onverklaard conflict met WP-01 of WP-02;
+- concrete migratie-impact bekend.
+
+Commit en push stap 1.
+
+STAP 2 — ADDITIEF ORGANISATIEDATAMODEL
+
+Voeg alleen toe wat aantoonbaar ontbreekt.
+
+Ondersteun minimaal:
+
+- organisation_kind op club/organisatie;
+- seizoenen;
+- teams;
+- selecties als hiërarchie onder team of organisatie;
+- parent_team_id of gelijkwaardig bestaand passend model;
+- contextgebonden roltoewijzingen;
+- start- en einddatum van toewijzingen;
+- season_id op relevante toewijzingen;
+- auditmetadata.
+
+Voorkeursrichting:
+
+- bestaande clubs blijven bruikbaar zonder migratieactie door gebruiker;
+- bestaande teams blijven geldig;
+- bestaande trainerstoewijzingen blijven leesbaar;
+- nieuwe algemene toewijzingslaag mag pas het oude pad vervangen nadat
+  data-copy en gelijkwaardigheid bewezen zijn.
+
+MIGRATIEREGELS
+
+- uitsluitend guarded/additieve migraties;
+- geen DROP;
+- geen destructieve rename;
+- geen data wissen;
+- data-copy herhaalbaar en controleerbaar;
+- rollbackplan documenteren;
+- oude leespaden tijdelijk behouden tot omschakeling bewezen is;
+- dubbele actieve toewijzingen voorkomen met constraint of transactie;
+- einde seizoen sluit geen historische gegevens weg.
+
+Maak:
+
+reports/wp-03-club/02_ADDITIVE_MIGRATION_PLAN.md
+
+Test:
+
+- bestaande clubdata blijft leesbaar;
+- data-copy levert dezelfde actieve toewijzingen;
+- tweede run maakt geen duplicaten;
+- historische seizoensdata blijft intact.
+
+Commit en push stap 2.
+
+STAP 3 — LEDEN, ROLLEN EN TOEWIJZINGEN
+
+Bouw of herstel in /club/beheer:
+
+- ledenoverzicht;
+- zoeken en filteren;
+- actieve en beëindigde leden;
+- rol of rollen per lid;
+- team/selectietoewijzingen;
+- seizoencontext;
+- begin- en einddatum;
+- duidelijke status;
+- rol wijzigen;
+- toewijzing beëindigen;
+- auditregistratie.
+
+Ondersteun minimaal deze organisatiecontextrollen:
+
+- lid/sporter;
+- ouder/verzorger;
+- trainer;
+- hoofdtrainer;
+- clubbeheerder;
+- ploegleider/teammanager;
+- mechanieker.
+
+RECHTEN
+
+- owner/admin mag beheren binnen eigen club;
+- hoofdtrainer mag alleen de eerder vastgelegde trainer-/sporterverdeling
+  beheren, geen algemeen clubbeheer;
+- trainer beheert geen clubrollen;
+- ploegleider en mechanieker beheren geen lidmaatschappen;
+- club A kan club B nooit lezen of wijzigen;
+- beheeractie wordt server-side gecontroleerd;
+- UI-verbergen is geen beveiliging.
+
+ROLWIJZIGING
+
+Iedere wijziging registreert minimaal:
+
+- actor;
+- club;
+- gebruiker;
+- oude rol/context;
+- nieuwe rol/context;
+- reden indien opgegeven;
+- timestamp;
+- relevante seizoen/team/selectie.
+
+Auditlog bevat geen privénotitie-, gezondheids- of trainingsinhoud.
+
+Commit en push stap 3 na groene tests.
+
+STAP 4 — TEAMS, SELECTIES EN SEIZOENEN
+
+Bouw één beheerflow voor:
+
+- seizoen aanmaken;
+- seizoen activeren en afsluiten;
+- team aanmaken;
+- selectie/subteam aanmaken;
+- team of selectie hernoemen;
+- leden toewijzen;
+- trainers/hoofdtrainer koppelen;
+- ploegleider koppelen;
+- mechanieker koppelen;
+- context beëindigen zonder historie te wissen.
+
+REGELS
+
+- maximaal één duidelijke actieve seizoencontext per organisatie, tenzij
+  bestaande architectuur aantoonbaar meerdere parallelle seizoenen vereist;
+- afgesloten seizoen blijft read-only raadpleegbaar;
+- nieuwe seizoenstoewijzingen worden niet stil gekopieerd zonder bevestigde
+  beheeractie;
+- jeugdselecties behouden jeugd- en consentregels;
+- een roltoewijzing buiten geldige clubcontext geeft geen toegang;
+- beëindiging werkt direct op ieder API-leesmoment;
+- geen data van een ander team tonen zonder capability.
+
+Commit en push stap 4.
+
+STAP 5 — UITNODIGINGEN EN LIMIETEN
+
+Hergebruik de bestaande uitnodigingsflow.
+
+Ondersteun:
+
+- uitnodiging voor lid;
+- uitnodiging voor ouder/verzorger;
+- uitnodiging voor trainer;
+- uitnodiging voor hoofdtrainer;
+- uitnodiging voor ploegleider;
+- uitnodiging voor mechanieker;
+- contextkeuze club/team/selectie/seizoen;
+- open, geaccepteerd, verlopen en ingetrokken;
+- intrekken door bevoegde beheerder;
+- veilige acceptatie.
+
+EISEN
+
+- tijdens tests geen echte mail of Clerk-uitnodiging versturen;
+- synthetische testmodus expliciet;
+- club_subscriptions-limieten gelden zowel bij aanmaken als accepteren;
+- race condition bij laatste beschikbare plek voorkomen;
+- uitnodiging voor verkeerde club geeft geen toegang;
+- verlopen of ingetrokken uitnodiging fail-closed;
+- jeugd-/ouderuitnodiging vereist geldige consentflow;
+- dubbele uitnodigingen worden voorkomen of duidelijk samengevoegd.
+
+Geen prijs- of Stripewerk.
+
+Commit en push stap 5.
+
+STAP 6 — CLUBBEHEERDASHBOARD
+
+Maak /club/beheer overzichtelijk en bruikbaar.
+
+Toon minimaal:
+
+- totaal actieve leden;
+- leden per rol;
+- teams en selecties;
+- actief seizoen;
+- open uitnodigingen;
+- limietgebruik;
+- trainers en hoofdtrainer;
+- ploegleiders;
+- mechaniekers;
+- recente beheeracties uit auditlog;
+- duidelijke waarschuwingen bij ontbrekende inrichting.
+
+UX-REGELS
+
+- gewone Nederlandse namen eerst;
+- technische termen alleen klein of in uitleg;
+- geen trainings-, gezondheids- of herstelgrafieken;
+- geen mock persoonlijke data;
+- eerlijke lege staten;
+- mobiel bruikbaar;
+- desktop gebruikt beschikbare breedte;
+- beheeracties zijn duidelijk en terughoudend;
+- gevaarlijke acties vragen bevestiging;
+- beëindigen is iets anders dan verwijderen.
+
+Maak screenshots:
+
+- mobiel;
+- desktop;
+- lege club;
+- ingerichte testclub.
+
+Commit en push stap 6.
+
+STAP 7 — RECHTEN-, PRIVACY- EN REGRESSIETESTS
+
+Nieuwe tests, minimaal:
+
+1. clubbeheerder ziet eigen club;
+2. clubbeheerder ziet andere club niet;
+3. trainer kan geen clubrollen wijzigen;
+4. hoofdtrainer kan trainerverdeling beheren maar geen algemeen
+   clubabonnement of eigenaar wijzigen;
+5. ploegleider kan geen lidmaatschap aanpassen;
+6. mechanieker kan geen lidmaatschap aanpassen;
+7. rolwijziging wordt correct geaudit;
+8. audit bevat geen gevoelige inhoud;
+9. afgesloten lidmaatschap verliest direct toegang;
+10. afgesloten seizoen houdt historie maar geen actieve toegang;
+11. team/selectie A lekt niet naar team/selectie B;
+12. jeugd blijft fail-closed;
+13. uitnodigingslimiet geldt bij acceptatie;
+14. gelijktijdige acceptatie kan ledenlimiet niet overschrijden;
+15. ingetrokken uitnodiging geeft geen toegang;
+16. data-copy oude trainerstoewijzingen is gelijkwaardig;
+17. tweede migratie/data-copy-run is idempotent;
+18. WP-01 directe coachrechten blijven werken;
+19. WP-01C clubtrainerbeperkingen blijven werken;
+20. WP-02 hoofdtrainerrechten blijven werken.
+
+Draai ook:
+
+- web typecheck;
+- API typecheck;
+- productiebuild web;
+- productiebuild API;
+- governor-role-foundation;
+- trainer-workspace-isolation;
+- trainer-rights/private-note-tests;
+- hoofdtrainer-tests;
+- cross-account-isolation;
+- coach-parent-link-isolation;
+- links-end-isolation;
+- clubtests;
+- admin-smoke.
+
+Geen test “groen maken” door rechten te versoepelen.
+
+Commit en push stap 7.
+
+STAP 8 — ARCHITECT- EN SECURITYREVIEW
+
+Laat onafhankelijk controleren:
+
+- bestaat er maar één organisatiemodel;
+- zijn migraties volledig additief;
+- blijft oude data leesbaar;
+- zijn alle beheeracties server-side beveiligd;
+- bestaat er cross-club-, cross-team- of cross-userlekkage;
+- blijven jeugd en consent fail-closed;
+- zijn WP-01, WP-01C en WP-02 niet verzwakt;
+- kan een rolverandering privileges achterlaten;
+- kan een verlopen seizoen toegang laten bestaan;
+- bevat auditlog gevoelige inhoud;
+- raken fixtures echte data;
+- zijn queries begrensd en voldoende efficiënt.
+
+Los alleen concrete bevindingen binnen WP-03-scope op.
+Maximaal drie gerichte herstelrondes.
+
+Commit en push eventuele hardening apart.
+
+STAP 9 — EINDRAPPORT
+
+Maak:
+
+reports/wp-03-club/WP_03_FINAL_REPORT.md
+
+Rapporteer:
+
+- hergebruikte bestaande onderdelen;
+- definitieve organisatiestructuur;
+- schema- en migratiewijzigingen;
+- bewijs dat migraties additief zijn;
+- data-copy-resultaten;
+- rechten per rol;
+- screenshots;
+- alle commits;
+- gewijzigde bestanden per stap;
+- geslaagde en mislukte tests;
+- architect/securitybevindingen;
+- open productbesluiten;
+- publicatie nodig ja/nee;
+- rollback- en herstelpad.
+
+EINDSTATUS
+
+Bij volledig succes:
+
+WP_03_CLUB_ORGANISATION_READY
+
+AUTOMATISCHE DOORGANG
+
+Start na WP-03 niet blind alle volgende pakketten.
+
+Wanneer WP-03 volledig groen is:
+
+- commit en push;
+- start automatisch alleen WP-04
+  Ouder/jeugd-verificatie en herbevestiging;
+- voer WP-04 als kleine, afzonderlijk geteste commits uit;
+- stop vóór WP-05 en geef WP-03 + WP-04 samen terug aan ChatGPT.
+
+STOPCONDITIES
+
+Stop direct met:
+
+STEP_BLOCKED_REQUIRES_REVIEW
+
+bij:
+
+- destructieve migratie noodzakelijk;
+- tweede club-/team-/rollenmodel nodig;
+- echte gebruikersdata gewijzigd of verwijderd;
+- cross-club-, cross-team- of cross-userlekkage;
+- jeugd- of consentlek;
+- privilege blijft bestaan na beëindiging;
+- oude WP-01/WP-02-rechten breken;
+- data-copy niet aantoonbaar gelijkwaardig;
+- productie-uitnodigingen verstuurd;
+- drie herstelrondes zonder groen resultaat;
+- prijs-, Stripe-, juridisch of contractbesluit nodig.
+
+NIET BOUWEN
+
+- WP-05 ploegleiderwerkruimte;
+- WP-06 mechaniekerwerkruimte;
+- Club- of Team-prijzen;
+- Stripe;
+- GO/Compleet-migratie;
+- Plan-pagina-herontwerp;
+- Analyse-uitbreiding;
+- training- en wedstrijdanalyse;
+- productiepublicatie;
+- echte productie-testaccounts.
