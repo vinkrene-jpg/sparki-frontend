@@ -20,6 +20,7 @@ import {
   coachSignalActionsTable,
   coachMessagesTable,
   coachContextItemsTable,
+  coachPrivateNotesTable,
   coachChangeProposalsTable,
   COACH_SIGNAL_ACTIONS,
   COACH_MESSAGE_SUBJECTS,
@@ -1179,6 +1180,171 @@ router.delete("/context-items/:itemId", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "coach.context.delete failed");
     res.status(500).json({ error: "Kon context niet verwijderen" });
+  }
+});
+
+// ── Echte privénotities (WP-01C) ─────────────────────────────────────────────
+// Alleen zichtbaar voor de trainer die ze maakte. Niet voor de sporter, niet
+// voor andere trainers of hoofdtrainer, nooit in engines/AI-prompts. Vereist
+// een DIRECTE koppeling; einde koppeling trekt de API-toegang direct in.
+// Audit: alleen metadata (nooit inhoud).
+
+router.get("/athletes/:athleteId/private-notes", requireAuth, async (req, res) => {
+  const coachId = getClerkUserId(req)!;
+  if (!(await requireCoach(coachId, res))) return;
+  const athleteId = String(req.params.athleteId);
+  try {
+    if (!(await hasDirectCoachAccess(coachId, athleteId))) {
+      res.status(403).json({ error: "Privénotities vereisen een directe koppeling" });
+      return;
+    }
+    const notes = await db
+      .select()
+      .from(coachPrivateNotesTable)
+      .where(
+        and(
+          eq(coachPrivateNotesTable.ownerCoachClerkId, coachId),
+          eq(coachPrivateNotesTable.athleteClerkId, athleteId),
+        ),
+      )
+      .orderBy(desc(coachPrivateNotesTable.updatedAt));
+    res.json({ notes });
+  } catch (err) {
+    req.log.error({ err }, "coach.private-notes.list failed");
+    res.status(500).json({ error: "Kon privénotities niet laden" });
+  }
+});
+
+router.post("/athletes/:athleteId/private-notes", requireAuth, async (req, res) => {
+  const coachId = getClerkUserId(req)!;
+  if (!(await requireCoach(coachId, res))) return;
+  const athleteId = String(req.params.athleteId);
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const text = typeof body.body === "string" ? body.body.trim().slice(0, 2000) : "";
+  const context =
+    typeof body.context === "string" ? body.context.trim().slice(0, 200) || null : null;
+  if (!text) {
+    res.status(400).json({ error: "Notitie is leeg" });
+    return;
+  }
+  try {
+    if (!(await hasDirectCoachAccess(coachId, athleteId))) {
+      res.status(403).json({ error: "Privénotities vereisen een directe koppeling" });
+      return;
+    }
+    const [note] = await db
+      .insert(coachPrivateNotesTable)
+      .values({ ownerCoachClerkId: coachId, athleteClerkId: athleteId, body: text, context })
+      .returning();
+    // Metadata-only audit: nooit de inhoud.
+    void writeAudit({
+      event: "changed_by_coach",
+      actorClerkId: coachId,
+      subjectClerkId: athleteId,
+      meta: { rol: "coach", wat: "privenotitie_aangemaakt" },
+      req,
+    });
+    res.status(201).json({ note });
+  } catch (err) {
+    req.log.error({ err }, "coach.private-notes.create failed");
+    res.status(500).json({ error: "Kon privénotitie niet opslaan" });
+  }
+});
+
+router.put("/private-notes/:noteId", requireAuth, async (req, res) => {
+  const coachId = getClerkUserId(req)!;
+  if (!(await requireCoach(coachId, res))) return;
+  const noteId = Number(req.params.noteId);
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const text = typeof body.body === "string" ? body.body.trim().slice(0, 2000) : "";
+  if (!Number.isInteger(noteId) || !text) {
+    res.status(400).json({ error: "Ongeldige notitie" });
+    return;
+  }
+  try {
+    // Eigenaarschap eerst; daarna óók de koppelingscheck — einde koppeling
+    // trekt bewerken direct in.
+    const [existing] = await db
+      .select({ athleteClerkId: coachPrivateNotesTable.athleteClerkId })
+      .from(coachPrivateNotesTable)
+      .where(
+        and(
+          eq(coachPrivateNotesTable.id, noteId),
+          eq(coachPrivateNotesTable.ownerCoachClerkId, coachId),
+        ),
+      );
+    if (!existing) {
+      res.status(404).json({ error: "Notitie niet gevonden" });
+      return;
+    }
+    if (!(await hasDirectCoachAccess(coachId, existing.athleteClerkId))) {
+      res.status(403).json({ error: "Privénotities vereisen een directe koppeling" });
+      return;
+    }
+    const [note] = await db
+      .update(coachPrivateNotesTable)
+      .set({
+        body: text,
+        context:
+          typeof body.context === "string"
+            ? body.context.trim().slice(0, 200) || null
+            : undefined,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(coachPrivateNotesTable.id, noteId),
+          eq(coachPrivateNotesTable.ownerCoachClerkId, coachId),
+        ),
+      )
+      .returning();
+    void writeAudit({
+      event: "changed_by_coach",
+      actorClerkId: coachId,
+      subjectClerkId: existing.athleteClerkId,
+      meta: { rol: "coach", wat: "privenotitie_gewijzigd" },
+      req,
+    });
+    res.json({ note });
+  } catch (err) {
+    req.log.error({ err }, "coach.private-notes.update failed");
+    res.status(500).json({ error: "Kon privénotitie niet wijzigen" });
+  }
+});
+
+router.delete("/private-notes/:noteId", requireAuth, async (req, res) => {
+  const coachId = getClerkUserId(req)!;
+  if (!(await requireCoach(coachId, res))) return;
+  const noteId = Number(req.params.noteId);
+  if (!Number.isInteger(noteId)) {
+    res.status(400).json({ error: "Ongeldige notitie" });
+    return;
+  }
+  try {
+    const [note] = await db
+      .delete(coachPrivateNotesTable)
+      .where(
+        and(
+          eq(coachPrivateNotesTable.id, noteId),
+          eq(coachPrivateNotesTable.ownerCoachClerkId, coachId),
+        ),
+      )
+      .returning({ id: coachPrivateNotesTable.id, athleteClerkId: coachPrivateNotesTable.athleteClerkId });
+    if (!note) {
+      res.status(404).json({ error: "Notitie niet gevonden" });
+      return;
+    }
+    void writeAudit({
+      event: "changed_by_coach",
+      actorClerkId: coachId,
+      subjectClerkId: note.athleteClerkId,
+      meta: { rol: "coach", wat: "privenotitie_verwijderd" },
+      req,
+    });
+    res.json({ deleted: note.id });
+  } catch (err) {
+    req.log.error({ err }, "coach.private-notes.delete failed");
+    res.status(500).json({ error: "Kon privénotitie niet verwijderen" });
   }
 });
 

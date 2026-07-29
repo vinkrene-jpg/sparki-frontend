@@ -161,6 +161,49 @@ export const coachContextItemsTable = pgTable(
   ],
 );
 
+// WP-01C — ECHTE privénotities van een trainer over een sporter.
+// Alleen zichtbaar voor de trainer die ze maakte (owner). Nooit voor de
+// sporter, andere trainers of hoofdtrainer; nooit gebruikt door engines of
+// AI-prompts; inhoud komt nooit in auditpayloads (alleen metadata).
+export const coachPrivateNotesTable = pgTable(
+  "coach_private_notes",
+  {
+    id: serial("id").primaryKey(),
+    // Eigenaar — de enige die deze notitie ooit mag lezen of wijzigen.
+    ownerCoachClerkId: text("owner_coach_clerk_id")
+      .notNull()
+      .references(() => userProfilesTable.clerkId, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    athleteClerkId: text("athlete_clerk_id")
+      .notNull()
+      .references(() => userProfilesTable.clerkId, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    body: text("body").notNull(),
+    // Optionele vrije context (bijv. "voorjaar 2026", "gesprek 12 mei").
+    context: text("context"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("coach_private_notes_owner_pair_idx").on(
+      t.ownerCoachClerkId,
+      t.athleteClerkId,
+    ),
+  ],
+);
+
+export const insertCoachPrivateNoteSchema = createInsertSchema(coachPrivateNotesTable);
+export const selectCoachPrivateNoteSchema = createSelectSchema(coachPrivateNotesTable);
+export type CoachPrivateNote = typeof coachPrivateNotesTable.$inferSelect;
+
 export const COACH_PROPOSAL_STATUSES = [
   "open",
   "geaccepteerd",

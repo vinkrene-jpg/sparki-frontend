@@ -15,6 +15,7 @@ const ck = {
   proposals: (id: string) => ["coach", "cockpit", id, "proposals"] as const,
   messages: (id: string) => ["coach", "cockpit", id, "messages"] as const,
   context: (id: string) => ["coach", "cockpit", id, "context"] as const,
+  privateNotes: (id: string) => ["coach", "cockpit", id, "private-notes"] as const,
   myMessages: () => ["coach", "cockpit", "my-messages"] as const,
   aboutMe: () => ["coach", "cockpit", "about-me"] as const,
 };
@@ -347,6 +348,53 @@ export function useDeleteContextItem(athleteId: string | null) {
       apiFetch(`/api/coach/context-items/${itemId}`, { method: "DELETE" }),
     onSuccess: () =>
       void qc.invalidateQueries({ queryKey: ck.context(athleteId ?? "") }),
+  });
+}
+
+// ── Echte privénotities (WP-01C) — alleen zichtbaar voor de trainer zelf ────
+
+export type CoachPrivateNote = {
+  id: number;
+  ownerCoachClerkId: string;
+  athleteClerkId: string;
+  body: string;
+  context: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export function usePrivateNotes(athleteId: string | null) {
+  return useQuery({
+    queryKey: ck.privateNotes(athleteId ?? ""),
+    queryFn: () =>
+      apiFetch<{ notes: CoachPrivateNote[] }>(
+        `/api/coach/athletes/${athleteId}/private-notes`,
+      ),
+    enabled: useEnabled(Boolean(athleteId)),
+    staleTime: 30_000,
+  });
+}
+
+export function useCreatePrivateNote(athleteId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { body: string; context?: string | null }) =>
+      apiFetch(`/api/coach/athletes/${athleteId}/private-notes`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () =>
+      void qc.invalidateQueries({ queryKey: ck.privateNotes(athleteId ?? "") }),
+  });
+}
+
+export function useDeletePrivateNote(athleteId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (noteId: number) =>
+      apiFetch(`/api/coach/private-notes/${noteId}`, { method: "DELETE" }),
+    onSuccess: () =>
+      void qc.invalidateQueries({ queryKey: ck.privateNotes(athleteId ?? "") }),
   });
 }
 

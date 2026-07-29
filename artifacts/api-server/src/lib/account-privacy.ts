@@ -51,6 +51,13 @@ const EXPORT_EXCLUDED_COLUMNS = new Set(["access_token", "refresh_token"]);
 // Niet-persoonsgebonden tabellen die we overslaan.
 const EXPORT_SKIPPED_TABLES = new Set(["legal_documents", "feature_flags"]);
 
+// Tabellen waarvan rijen ALLEEN naar de eigenaar geëxporteerd mogen worden.
+// Echte privénotities van een trainer (WP-01C) mogen nooit via de export van
+// de sporter (athlete_clerk_id) lekken — alleen de makende trainer krijgt ze.
+const EXPORT_OWNER_ONLY_TABLES: Record<string, string> = {
+  coach_private_notes: "owner_coach_clerk_id",
+};
+
 async function clerkColumnsByTable(): Promise<Map<string, string[]>> {
   const result = await db.execute(sql`
     SELECT table_name, column_name
@@ -88,7 +95,9 @@ export async function exportAccountData(
   for (const [table, columns] of byTable) {
     if (EXPORT_SKIPPED_TABLES.has(table)) continue;
     const safeTable = table.replaceAll('"', "");
-    const where = columns
+    const ownerColumn = EXPORT_OWNER_ONLY_TABLES[table];
+    const whereColumns = ownerColumn ? [ownerColumn] : columns;
+    const where = whereColumns
       .map((c) => `"${c.replaceAll('"', "")}" = '${clerkId.replaceAll("'", "''")}'`)
       .join(" OR ");
     const result = await db.execute(

@@ -682,6 +682,103 @@ function ContextSection({ athleteId }: { athleteId: string }) {
   )
 }
 
+// ── Privénotities (WP-01C) ──────────────────────────────────────────────────
+// Echte privénotities: alleen zichtbaar voor jou als trainer. Duidelijk
+// gescheiden van "Afspraken & context" (dat is transparant richting sporter).
+
+function PrivateNotesSection({ athleteId }: { athleteId: string }) {
+  const { data, isLoading, isError } = usePrivateNotes(athleteId)
+  const create = useCreatePrivateNote(athleteId)
+  const del = useDeletePrivateNote(athleteId)
+  const [adding, setAdding] = useState(false)
+  const [body, setBody] = useState("")
+  const notes = data?.notes ?? []
+  if (isError) {
+    return (
+      <p className="text-[13px] text-white/45">
+        Privénotities zijn hier niet beschikbaar — daarvoor is een directe
+        koppeling met deze sporter nodig.
+      </p>
+    )
+  }
+  return (
+    <div className="space-y-3">
+      <p className="-mt-2 text-[12px] text-white/40">
+        Privénotitie — alleen zichtbaar voor jou. Niet voor de sporter, andere
+        trainers of Sparki's advies.
+      </p>
+      {isLoading ? (
+        <div className="h-14 animate-pulse rounded-2xl bg-white/[0.05]" />
+      ) : notes.length === 0 ? (
+        <p className="text-[13px] text-white/45">Nog geen privénotities.</p>
+      ) : (
+        notes.map((n) => (
+          <div key={n.id} className={`${CARD} flex items-start gap-3`}>
+            <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-white/35" strokeWidth={1.75} />
+            <div className="min-w-0 flex-1">
+              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
+                Alleen zichtbaar voor jou{n.context ? ` · ${n.context}` : ""}
+              </span>
+              <p className="mt-1 text-[13px] leading-relaxed text-white/80">{n.body}</p>
+            </div>
+            <button
+              type="button"
+              disabled={del.isPending}
+              onClick={() => del.mutate(n.id)}
+              className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-white/30 hover:bg-white/[0.06] hover:text-white/60 disabled:opacity-40"
+              aria-label="Verwijderen"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))
+      )}
+      {adding ? (
+        <div className="space-y-2 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="Eigen observatie of geheugensteuntje — blijft privé"
+            rows={2}
+            className="w-full rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/85 placeholder:text-white/30"
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={!body.trim() || create.isPending}
+              onClick={() =>
+                create.mutate(
+                  { body: body.trim() },
+                  {
+                    onSuccess: () => {
+                      setAdding(false)
+                      setBody("")
+                    },
+                  },
+                )
+              }
+              className="rounded-lg border border-cyan-300/25 bg-cyan-300/[0.06] px-3 py-1.5 text-[12px] text-cyan-100/90 disabled:opacity-40"
+            >
+              Opslaan
+            </button>
+            <button type="button" onClick={() => setAdding(false)} className="px-2 text-[12px] text-white/45">
+              Annuleren
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.1] px-3 py-1.5 text-[12px] text-white/55 hover:bg-white/[0.05]"
+        >
+          <Plus className="h-3.5 w-3.5" /> Privénotitie toevoegen
+        </button>
+      )}
+    </div>
+  )
+}
+
 // ── Pagina ──────────────────────────────────────────────────────────────────
 
 export default function CoachCockpitPage() {
@@ -794,6 +891,9 @@ export default function CoachCockpitPage() {
 
         <SectionLabel n="05" title="Afspraken & context" />
         <ContextSection athleteId={athleteId} />
+
+        <SectionLabel n="06" title="Privénotities" />
+        <PrivateNotesSection athleteId={athleteId} />
 
         <Link
           href={`/coach/athletes/${athleteId}/plan`}
