@@ -240,7 +240,7 @@ export function ScreenShell({
   children,
 }: {
   section: string
-  bg?: string
+  bg?: string | null
   // When true, suppress every injected coaching surface (home prompts, coach
   // cards, coach-decision card and the follow-up prompt). Used by standalone
   // moments like the head-tester welcome that own their full content and must

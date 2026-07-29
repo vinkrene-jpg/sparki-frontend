@@ -49,7 +49,7 @@ export const UITLEG: Record<string, Uitleg> = {
   snelheid: {
     wat: "Je snelheid in kilometer per uur door de rit heen.",
     waarom: "Snelheid vertelt hoe de rit verliep, maar zegt weinig over je inspanning: wind en hellingen vertekenen sterk.",
-    hoe: "Gemeten door je fietscomputer, of afgeleid uit de afgelegde afstand als er geen snelheidssensor was — dat staat er dan eerlijk bij.",
+    hoe: "Gemeten door je fietscomputer, of afgeleid uit de afgelegde afstand als er geen snelheidssensor was — dat staat er dan bij.",
     versie: 1,
   },
   hoogte: {
@@ -103,9 +103,9 @@ export const UITLEG: Record<string, Uitleg> = {
     versie: 1,
   },
   vergelijkbaarheid: {
-    wat: "Of twee sessies eerlijk naast elkaar gezet kunnen worden.",
+    wat: "Of twee sessies goed naast elkaar gezet kunnen worden.",
     waarom: "Een korte intervaltraining vergelijken met een lange bergrit zegt niets. Alleen een eerlijke vergelijking levert een bruikbare conclusie op.",
-    hoe: "We controleren het soort training, de duur, het terrein en of beide ritten dezelfde meting hebben (vermogen of hartslag). Verschilt dat te veel, dan zeggen we dat eerlijk.",
+    hoe: "We controleren het soort training, de duur, het terrein en of beide ritten dezelfde meting hebben (vermogen of hartslag). Verschilt dat te veel, dan staat dat erbij.",
     versie: 1,
   },
 
@@ -113,7 +113,7 @@ export const UITLEG: Record<string, Uitleg> = {
   ftp: {
     wat: "Je FTP (drempelvermogen): het vermogen in watt dat je ongeveer een uur vol kunt houden.",
     waarom: "Je FTP is het ankerpunt van je training: zones, belastingsscores en trainingsadvies worden er allemaal uit berekend. Klopt je FTP niet, dan klopt de rest ook niet.",
-    hoe: "Uit een test, een schatting of afgeleid uit je beste inspanningen. Een geschatte FTP is een ondergrens, geen exacte meting — dat staat er dan eerlijk bij.",
+    hoe: "Uit een test, een schatting of afgeleid uit je beste inspanningen. Een geschatte FTP is een ondergrens, geen exacte meting — dat staat er dan bij.",
     versie: 1,
   },
   trainingsvolume: {
@@ -126,10 +126,10 @@ export const UITLEG: Record<string, Uitleg> = {
   },
   belasting: {
     wat: "De belastingsscore (TSS) van een training: hoe zwaar die was voor jouw lichaam, in één getal.",
-    waarom: "Zo tellen een korte intensieve training en een lange rustige rit eerlijk mee in hetzelfde model. Rond de 100 staat voor een uur voluit op je drempel.",
-    hoe: "Berekend uit je vermogen ten opzichte van je FTP en de duur van de rit. Zonder vermogensmeter schatten we hem uit hartslag of duur — dat is grover en staat er eerlijk bij.",
+    waarom: "Zo tellen een korte intensieve training en een lange rustige rit allebei mee in hetzelfde model. Rond de 100 staat voor een uur voluit op je drempel.",
+    hoe: "Berekend uit je vermogen ten opzichte van je FTP en de duur van de rit. Zonder vermogensmeter schatten we hem uit hartslag of duur — dat is grover en staat er dan bij.",
     verbanden: "Hangt direct samen met je FTP (klopt die niet, dan klopt de score niet), en voedt je fitheid, vermoeidheid en vorm in het belastingsmodel.",
-    beinvloeden: "Je stuurt dit niet omhoog of omlaag als doel op zich — een goede weekverdeling wisselt hoge en lage scores af. Rijd met vermogensmeter voor een eerlijke score en houd je FTP actueel.",
+    beinvloeden: "Je stuurt dit niet omhoog of omlaag als doel op zich — een goede weekverdeling wisselt hoge en lage scores af. Rijd met vermogensmeter voor een nauwkeurige score en houd je FTP actueel.",
     versie: 2,
   },
   fitheid: {
@@ -180,7 +180,7 @@ export const UITLEG: Record<string, Uitleg> = {
   },
   performanceRadar: {
     wat: "Je capaciteitsprofiel over zes signalen: fitheid, vorm, herstel, vermogen, gevoel en regelmaat.",
-    waarom: "Eén getal zegt weinig over een renner. Zes assen naast elkaar laten zien waar je sterk bent en waar ruimte zit — zonder een verzonnen totaalscore.",
+    waarom: "Eén getal zegt weinig over een renner. Zes assen naast elkaar laten zien waar je sterk bent en waar ruimte zit.",
     hoe: "Iedere as wordt berekend uit echte data: fitheid/vorm/herstel uit je belastingsmodel (90 dagen), vermogen uit je FTP en gewicht (W/kg, schaal 2,0–5,5), gevoel en regelmaat uit je sessies van de laatste 28 dagen. Ontbreekt de data voor een as, dan wordt die as niet getekend en staat eronder wat er mist.",
     verbanden: "Elke as komt uit een andere grafiek: fitheid/vorm/herstel uit je belastingsverloop, vermogen uit FTP en gewicht, gevoel en regelmaat uit je sessies. Verandert daar iets, dan beweegt de radar mee.",
     beinvloeden: "Kies één zwakke as tegelijk: regelmaat verbeter je met een vast weekritme, vermogen met gerichte FTP-training, herstel met slaap en rustdagen. Meer assen meetbaar maken kan al door check-ins in te vullen.",
@@ -227,7 +227,7 @@ export const UITLEG: Record<string, Uitleg> = {
   wedstrijdanalyse: {
     wat: "De analyse van je wedstrijd: verloop, sterke momenten en verbeterpunten.",
     waarom: "Een wedstrijd is de eerlijkste test. De analyse maakt van een gevoel ('zwaar') een concreet verhaal waar je volgende voorbereiding beter van wordt.",
-    hoe: "Gebaseerd op de gekoppelde activiteit (vermogen, hartslag, verloop), de wedstrijdgegevens en je eigen terugblik. Ontbreekt de activiteit of een meting, dan blijft dat deel eerlijk leeg.",
+    hoe: "Gebaseerd op de gekoppelde activiteit (vermogen, hartslag, verloop), de wedstrijdgegevens en je eigen terugblik. Ontbreekt de activiteit of een meting, dan blijft dat deel leeg.",
     versie: 1,
   },
   voedingsadvies: {
@@ -268,8 +268,8 @@ export const UITLEG: Record<string, Uitleg> = {
   },
   onzekerheid: {
     wat: "Hoe zeker de conclusie op deze plek is, en welke gegevens er eventueel ontbreken.",
-    waarom: "Een conclusie op halve data verdient minder vertrouwen. Door onzekerheid eerlijk te tonen weet je wanneer je op een getal kunt bouwen.",
-    hoe: "Per analyse wordt bijgehouden welke bronnen echt beschikbaar waren. Ontbreekt er iets, dan staat dat erbij en wordt er niets bijverzonnen.",
+    waarom: "Een conclusie op halve data verdient minder vertrouwen. Door onzekerheid te tonen weet je wanneer je op een getal kunt bouwen.",
+    hoe: "Per analyse wordt bijgehouden welke bronnen echt beschikbaar waren. Ontbreekt er iets, dan staat dat erbij.",
     versie: 1,
   },
 }

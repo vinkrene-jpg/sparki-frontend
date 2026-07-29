@@ -246,7 +246,7 @@ export function computeWattageLab(input: {
     plafondWatts,
     plafondBron,
     doelWkg,
-    uitleg: `+${rond(deltaPct)}% in één keer is vanaf je huidige beste (${huidigWatts} W) niet realistisch — dat is ver boven wat training in een seizoen oplevert. Een eerlijke eerste tussenstap is ${tussenstap} W (≈ +${kort}%).`,
+    uitleg: `+${rond(deltaPct)}% in één keer is vanaf je huidige beste (${huidigWatts} W) niet realistisch — dat is ver boven wat training in een seizoen oplevert. Een realistische eerste tussenstap is ${tussenstap} W (≈ +${kort}%).`,
     aanpak: [],
   }
 }

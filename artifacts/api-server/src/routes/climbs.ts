@@ -81,7 +81,7 @@ router.get("/search", requireAuth, requireClimbFlag, async (req, res) => {
       }
       res.status(503).json({
         error:
-          "De klimmenbron is nu niet bereikbaar. Probeer het zo opnieuw \u2014 er worden nooit verzonnen resultaten getoond.",
+          "De klimmenbron is nu niet bereikbaar. Probeer het zo opnieuw.",
         reason: err.reason,
       });
       return;

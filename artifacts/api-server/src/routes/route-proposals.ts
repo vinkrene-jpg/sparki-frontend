@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { candidateEnvironmentOf } from "../lib/candidate-environment";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import {
   db,
@@ -377,13 +378,22 @@ router.post("/voorstellen/:id/aanpassen", requireAuth, async (req, res) => {
         targetDistanceKm: targetDistanceKm!,
         elevationPreference,
       });
-      const result = await generateVariedLoop(provider, {
-        start,
-        distanceKm: targetDistanceKm!,
-        profile,
-        points: 3,
-        elevationPreference,
-      });
+      const result = await generateVariedLoop(
+        provider,
+        {
+          start,
+          distanceKm: targetDistanceKm!,
+          profile,
+          points: 3,
+          elevationPreference,
+        },
+        {
+          // Vaste eis: ook aangepaste voorstellen mijden dorpskernen,
+          // woonwijken en stoplichten zoveel mogelijk (interactief pad:
+          // kort tijdbudget, nooit wachten op trage bronnen).
+          environmentOf: candidateEnvironmentOf(false, { budgetMs: 2000 }),
+        },
+      );
       const summary = summarizeTrack(result.points);
       const distanceKm = summary.distanceKm ?? result.distanceKm;
       const elevationGainM = summary.elevationGainM ?? result.ascentM;

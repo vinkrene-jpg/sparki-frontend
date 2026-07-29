@@ -4403,8 +4403,8 @@ export function RideOptionsMenu({
                 <span className="font-medium text-white/60">
                   Bergklassement
                 </span>{" "}
-                — wordt nog uitgewerkt: een klassement per klim, ook eerlijk
-                vergeleken op leeftijd en gewicht. Nog niet beschikbaar, dus
+                — wordt nog uitgewerkt: een klassement per klim, vergeleken
+                op leeftijd en gewicht. Nog niet beschikbaar, dus
                 hier valt nog niets aan te zetten.
               </p>
             </div>

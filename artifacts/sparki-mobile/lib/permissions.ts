@@ -42,7 +42,7 @@ export const PERMISSIE_UITLEG: Record<PermissionKey, PermissionUitleg> = {
     doel:
       "Met achtergrondtoegang blijft je rit doorlopen als het scherm op slot gaat. Zolang je rijdt zie je een melding dat de opname loopt; na het stoppen stopt ook de locatiebepaling.",
     gevolgWeigeren:
-      "Zonder achtergrondtoegang wordt je rit alleen opgenomen zolang het scherm aan staat. Dat melden we eerlijk tijdens de rit.",
+      "Zonder achtergrondtoegang wordt je rit alleen opgenomen zolang het scherm aan staat. Dat zie je dan tijdens de rit.",
     wijzigen: WIJZIGEN,
   },
   bluetooth: {

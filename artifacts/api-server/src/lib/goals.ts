@@ -651,7 +651,7 @@ export function buildProposalCandidates(
             goalId: goal.id,
             kind: "goal_adjust",
             title: `Streefdatum van "${goal.title}" vier weken opschuiven`,
-            reasoning: `Met de huidige gezondheidssituatie is de oorspronkelijke datum (${goal.targetDate}) krap. Opschuiven naar ${newDate} houdt het doel eerlijk haalbaar.`,
+            reasoning: `Met de huidige gezondheidssituatie is de oorspronkelijke datum (${goal.targetDate}) krap. Opschuiven naar ${newDate} houdt het doel haalbaar.`,
             proposedChange: { targetDate: newDate },
           });
         }

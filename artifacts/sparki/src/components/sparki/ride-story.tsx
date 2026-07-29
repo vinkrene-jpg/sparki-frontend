@@ -348,7 +348,7 @@ export function RideStoryChapters({ story }: { story: RideStory }) {
         <p className="mt-3 text-pretty text-[12px] leading-relaxed text-white/40">
           {story.predictionAvailable
             ? "Voor deze training lag vooraf een verwachting klaar — open de training in je schema om verwachting en werkelijkheid naast elkaar te zien."
-            : "Voor deze rit lag vooraf geen verwachting klaar, dus vergelijken met een verwachting kan eerlijk gezegd niet."}
+            : "Voor deze rit lag vooraf geen verwachting klaar, dus is er geen vergelijking met een verwachting."}
         </p>
       </div>
 

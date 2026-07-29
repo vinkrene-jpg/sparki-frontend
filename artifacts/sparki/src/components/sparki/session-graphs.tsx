@@ -51,7 +51,7 @@ function ComparisonBlock({
     return (
       <ChartFrame title="Vergelijking met vorige rit" uitlegKey="vergelijkbaarheid">
         <p className="text-[13px] leading-relaxed text-white/60">
-          De rit van {prevDate} is niet eerlijk te vergelijken met deze rit:
+          De rit van {prevDate} is niet goed te vergelijken met deze rit:
         </p>
         <ul className="mt-1.5 flex list-disc flex-col gap-1 pl-4 text-[12px] leading-relaxed text-white/45">
           {cmp.reasons.map((r, i) => (

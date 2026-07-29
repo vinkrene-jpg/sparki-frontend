@@ -18,6 +18,7 @@ import {
 import type { BusyDay } from "../lib/training/plan-generator";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { maybeScheduleStravaCatchUp } from "../engines/data-hub/strava-sync";
+import { ensureLibraryRoutes } from "../lib/route-library";
 import { generateThreeWeekPlan, autoAdaptPlan } from "../engines/training-plan";
 import {
   computeZones,
@@ -339,6 +340,15 @@ router.put("/profile", requireAuth, async (req, res) => {
       updated.ftp && updated.weightKg
         ? Math.round((updated.ftp / Number(updated.weightKg)) * 100) / 100
         : null;
+
+    // Woonlocatie bekend (nieuw of gewijzigd)? Vul dan op de achtergrond de
+    // Sparki-routebibliotheek rond dat adres — idempotent per gebied, en de
+    // gebruiker (bijv. midden in onboarding) wacht hier nooit op.
+    if (homeValid) {
+      void ensureLibraryRoutes(latNum!, lonNum!).catch((err) => {
+        req.log.warn({ err }, "routebibliotheek-startset niet gestart");
+      });
+    }
 
     res.json({ ...updated, zones, wkg });
   } catch (err) {

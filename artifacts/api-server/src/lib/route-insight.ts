@@ -78,6 +78,9 @@ export function beaufort(kmh: number | null): number | null {
 export type RouteEnvironment = {
   trafficLights: number | null;
   forestSharePct: number | null; // indicatie op basis van bemonsterde punten
+  // Aandeel van de route door bebouwd gebied (woonwijk/winkel/bedrijven) —
+  // zelfde bemonsterde-punten-indicatie als het bos-aandeel.
+  builtUpSharePct: number | null;
 };
 
 // Only this fixed host is ever contacted (no user-controlled URLs).
@@ -162,6 +165,7 @@ export async function getRouteEnvironment(
 node["highway"="traffic_signals"](${bbox});
 way["landuse"="forest"](${bbox});
 way["natural"="wood"](${bbox});
+way["landuse"~"^(residential|retail|commercial)$"](${bbox});
 );out geom 800;`;
 
   let elements: OverpassElement[];
@@ -205,23 +209,33 @@ way["natural"="wood"](${bbox});
   // Forest share: fraction of sampled route points that lie within ~120m of a
   // forest/wood way vertex. An indication, honestly labelled as such.
   const forestPoints: RoutePathPoint[] = [];
+  const builtUpPoints: RoutePathPoint[] = [];
   for (const e of elements) {
     if (e.type !== "way" || !Array.isArray(e.geometry)) continue;
-    for (const g of e.geometry) forestPoints.push([g.lat, g.lon]);
+    const landuse = e.tags?.landuse;
+    const isBuiltUp =
+      landuse === "residential" ||
+      landuse === "retail" ||
+      landuse === "commercial";
+    const target = isBuiltUp ? builtUpPoints : forestPoints;
+    for (const g of e.geometry) target.push([g.lat, g.lon]);
   }
-  let forestSharePct: number | null = null;
-  if (forestPoints.length > 0) {
+  const shareOf = (pts: RoutePathPoint[]): number => {
+    if (pts.length === 0) return 0; // query slaagde, niets gevonden → eerlijk 0%
     let near = 0;
     for (const p of sampled) {
-      if (forestPoints.some((f) => haversineM(p, f) < 120)) near++;
+      if (pts.some((f) => haversineM(p, f) < 120)) near++;
     }
-    forestSharePct = Math.round((near / sampled.length) * 100);
-  } else {
-    // Query succeeded and found no forest at all → honestly 0%.
-    forestSharePct = 0;
-  }
+    return Math.round((near / sampled.length) * 100);
+  };
+  const forestSharePct = shareOf(forestPoints);
+  const builtUpSharePct = shareOf(builtUpPoints);
 
-  const data: RouteEnvironment = { trafficLights, forestSharePct };
+  const data: RouteEnvironment = {
+    trafficLights,
+    forestSharePct,
+    builtUpSharePct,
+  };
   ENV_CACHE.set(key, { at: Date.now(), data });
   return data;
 }

@@ -1,0 +1,85 @@
+OPDRACHT #382 — HISTORISCHE BELASTINGSCORES VEILIG HERBEREKENEN
+
+DOEL
+
+Herstel de historische TSS/belastingscores die mogelijk zijn berekend in de periode waarin de inmiddels als [achterhaald] gemarkeerde FTP-waarde van 331 W invloed kan hebben gehad.
+
+BELANGRIJKE FEITEN
+
+- De actieve FTP-keten is nu correct.
+- De rij 331 W met test_type='derived' en notes beginnend met [achterhaald] wordt in derived-load-backfill.ts expliciet uitgefilterd.
+- Geldige FTP-historie:
+  - vóór 22 juni: profiel-fallback;
+  - 22 t/m 25 juni: 250 W;
+  - vanaf 26 juni: 258 W.
+- In het relevante venster staan minimaal deze sessies met opgeslagen TSS:
+  - 25 mei: TSS 219;
+  - 28 mei: TSS 158;
+  - 20 juni: TSS 301.
+- Er is geen historische FTP-snapshotkolom waarmee per bestaande TSS-rij bewezen kan worden welke FTP destijds is gebruikt.
+- Daarnaast bestaan 164 oudere sessies met opgeslagen TSS die minimaal via een representatieve steekproef moeten worden gecontroleerd.
+
+WERKWIJZE
+
+1. Voer eerst een read-only inventarisatie uit.
+2. Bepaal exact:
+   - welke sessies binnen het verdachte venster vallen;
+   - welke opgeslagen belastingsvelden aanwezig zijn;
+   - via welk huidig codepad de correcte herberekening plaatsvindt;
+   - welke fallbackwaarde vóór 22 juni wordt gebruikt;
+   - of andere afgeleide velden afhankelijk zijn van dezelfde foutieve TSS.
+3. Maak vóór wijziging een audit-export met:
+   - session/activity id;
+   - datum;
+   - bestaande TSS;
+   - gebruikte geldige FTP bij herberekening;
+   - nieuw berekende TSS;
+   - verschil;
+   - reden van wijziging.
+4. Gebruik uitsluitend de bestaande centrale en deterministische load/TSS-engine.
+5. Bouw geen tweede berekeningspad.
+6. Sluit alle FTP-historierijen met [achterhaald] uit.
+7. Herbereken minimaal de drie verdachte sessies.
+8. Controleer de 164 oudere sessies via een onderbouwde steekproef.
+9. Breid de herstelset alleen uit wanneer de steekproef of audit aantoont dat meer sessies onbetrouwbaar zijn.
+10. Zorg dat de operatie idempotent en veilig opnieuw uitvoerbaar is.
+11. Voeg logging en bewijs toe van vóór- en nawaarden.
+12. Wijzig geen FTP-profielwaarde, FTP-historie, trainingsinhoud of andere gebruikersdata die niet aantoonbaar onderdeel van dit defect is.
+
+TESTEN
+
+- De 331 W [achterhaald]-rij wordt nergens als geldige FTP gebruikt.
+- 25 mei, 28 mei en 20 juni worden met de correcte historische FTP/fallback herberekend.
+- Huidige FTP blijft 258 W.
+- Herhaald uitvoeren veroorzaakt geen verdere wijziging.
+- Geen cross-user wijziging.
+- Geen regressie in CTL/ATL/TSB, Analyse, Plan of Vandaag.
+- Bewijs dat dezelfde centrale engine wordt gebruikt.
+- Geef de uitkomst van de steekproef op de 164 oudere sessies.
+
+OPLEVERING
+
+Rapporteer:
+
+- bevindingen;
+- gewijzigde bestanden;
+- exacte gewijzigde sessies;
+- voor/na-TSS per sessie;
+- gebruikte FTP/fallback per sessie;
+- steekproefresultaat;
+- tests en resultaten;
+- eventuele resterende onzekerheden;
+- commit-SHA.
+
+STATUS
+
+Na uitvoering niet automatisch VERIFIED_FIXED zetten.
+
+Gebruik:
+- BUILT_NOT_VERIFIED als herstel technisch is uitgevoerd;
+- BLOCKED wanneer veilige herberekening niet bewijsbaar kan plaatsvinden;
+- DEFECT_GEVONDEN wanneer extra vervuiling wordt aangetroffen.
+
+STOP NA RAPPORTAGE.
+
+Start geen volgende opdracht automatisch.

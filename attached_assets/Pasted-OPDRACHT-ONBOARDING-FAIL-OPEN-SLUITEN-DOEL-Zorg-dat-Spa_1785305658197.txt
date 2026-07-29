@@ -1,0 +1,123 @@
+OPDRACHT — ONBOARDING FAIL-OPEN SLUITEN
+
+DOEL
+
+Zorg dat Sparki nooit de normale app vrijgeeft wanneer de server niet betrouwbaar kan bevestigen dat onboarding is afgerond.
+
+BESTAANDE SITUATIE
+
+In `SignedInHomeReady` wordt na mislukte servercontroles alsnog toegang gegeven wanneer een lokale onboardingwaarde aanwezig is.
+
+Dat is onveilig:
+
+- localStorage mag geen bewijs van afgeronde onboarding zijn;
+- een API-storing mag geen normale app vrijgeven;
+- bestaande gebruikers mogen niet opnieuw de volledige onboarding hoeven doorlopen;
+- de consent-gate blijft een afzonderlijke controle en mag niet worden samengevoegd met onboarding.
+
+GEWENST GEDRAG
+
+1. Serverstatus is de enige bron van waarheid voor afgeronde onboarding.
+2. Een lokale waarde mag alleen als migratiehint worden gebruikt.
+3. Wanneer de serverstatus na retries niet kan worden bevestigd:
+   - render de normale app niet;
+   - start geen automatische nieuwe onboarding;
+   - toon een duidelijke beperkte foutstatus;
+   - bied een knop `Opnieuw proberen`;
+   - leg uit dat Sparki de accountstatus tijdelijk niet kan controleren.
+4. Zodra de server weer bereikbaar is:
+   - afgerond volgens server → normale app;
+   - niet afgerond volgens server → bestaande onboardingflow;
+   - consentcontrole volgt daarna zoals nu.
+5. Geen mock-, demo- of fallbackstatus gebruiken.
+6. Geen bestaande onboardingarchitectuur herschrijven wanneer een gerichte correctie volstaat.
+
+ONDERZOEK EERST
+
+Rapporteer vóór wijziging:
+
+- exact bestand en component waar de fail-open zit;
+- huidige beslisboom;
+- retries en foutafhandeling;
+- gebruikte localStorage-sleutel;
+- bevestiging dat de sleutel per gebruiker is gescheiden;
+- relatie met ConsentGate;
+- welke bestaande gebruikersflow behouden blijft.
+
+IMPLEMENTATIE
+
+Pas alleen de minimaal noodzakelijke bestanden aan.
+
+Maak expliciete toestanden voor minimaal:
+
+- status wordt geladen;
+- server bevestigt onboarding afgerond;
+- server bevestigt onboarding niet afgerond;
+- serverstatus tijdelijk niet verifieerbaar;
+- opnieuw proberen;
+- herstel nadat de server weer beschikbaar is.
+
+De foutstatus moet:
+
+- begrijpelijk Nederlands gebruiken;
+- geen technische foutdetails tonen;
+- normale navigatie en beschermde inhoud blokkeren;
+- toegankelijk zijn met toetsenbord en schermlezer;
+- geen eindeloze automatische retry-loop veroorzaken.
+
+VERPLICHTE TESTS
+
+Test minimaal:
+
+1. API faalt bij alle retries + lokale waarde `done=true`
+   → normale app wordt NIET gerenderd.
+
+2. API faalt zonder lokale waarde
+   → dezelfde beperkte foutstatus, geen automatische onboarding.
+
+3. API herstelt na `Opnieuw proberen` en meldt afgerond
+   → normale app opent.
+
+4. API herstelt en meldt niet afgerond
+   → onboarding opent.
+
+5. Account A heeft lokale waarde, account B niet
+   → geen statuslek tussen accounts.
+
+6. ConsentGate blijft na succesvolle onboarding afzonderlijk werken.
+
+7. Geen regressie voor bestaande gebruiker met serverstatus afgerond.
+
+8. Mobiel 390 px en desktop 1440 px.
+
+CONTROLES
+
+- TypeScript groen;
+- relevante tests groen;
+- geen consolefouten;
+- geen database- of schemamigratie tenzij aantoonbaar noodzakelijk;
+- geen wijzigingen aan Club/Jeugd-documenten of Claude-spoor;
+- geen Stripe-, route- of andere featurewijzigingen.
+
+REGISTER
+
+Werk het defectregister alleen voor dit onboardingpunt bij:
+
+- start: `IN_PROGRESS`;
+- na code en eigen tests: `FIXED_NOT_VERIFIED`;
+- pas na onafhankelijke controle: `VERIFIED_FIXED`.
+
+COMMIT
+
+Maak één afzonderlijke commit en push naar `main`.
+
+RAPPORTEER
+
+- bevestigde oorzaak;
+- oude en nieuwe beslisboom;
+- gewijzigde bestanden;
+- testresultaten;
+- screenshots van foutstatus op 390 en 1440 px;
+- registerstatus;
+- commit-SHA;
+- git status.

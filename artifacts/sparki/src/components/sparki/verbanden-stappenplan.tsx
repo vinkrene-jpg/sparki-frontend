@@ -105,8 +105,8 @@ export function VerbandenStappenplan({ accent = "#22d3ee" }: { accent?: string }
       {runConnections.isSuccess && runConnections.data.derived === 0 && (
         <p className="text-xs leading-relaxed text-white/50">
           De analyse is uitgevoerd, maar er kwam nog geen betrouwbaar verband uit
-          je data. Dat is eerlijk beter dan een gok — met meer van de stappen
-          hierboven groeit de kans dat er wél iets zichtbaar wordt.
+          je data. Met meer van de stappen hierboven groeit de kans dat er wél
+          iets zichtbaar wordt.
         </p>
       )}
     </div>

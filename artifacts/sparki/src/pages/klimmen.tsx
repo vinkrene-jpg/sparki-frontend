@@ -265,9 +265,9 @@ function Explorer() {
     <div>
       <SectionLabel n="01" title="Klimmenverkenner" />
       <p className="mt-2 text-[12px] leading-relaxed text-white/40">
-        Zoek beklimmingen, cols en toppen op gebied of streek — met echte hoogte
-        uit OpenStreetMap, een afgeleid klimprofiel en een omschrijving waar die
-        bestaat. Niets wordt verzonnen.
+        Zoek beklimmingen, cols en toppen op gebied of streek — met hoogte uit
+        OpenStreetMap, een afgeleid klimprofiel en een omschrijving waar die
+        bestaat.
       </p>
 
       <form

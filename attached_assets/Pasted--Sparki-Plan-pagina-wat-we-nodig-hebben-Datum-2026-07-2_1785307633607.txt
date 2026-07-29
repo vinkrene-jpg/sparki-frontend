@@ -1,0 +1,101 @@
+# Sparki — Plan-pagina: wat we nodig hebben
+Datum: 2026-07-29
+Aanleiding: screenshot Plan-pagina 29 juli 2026, beoordeeld als "oogt niet als trainingsplan"
+
+Dit document beschrijft **wat de pagina moet doen en tonen**, niet hoe het technisch gebouwd
+wordt. Dat laatste hoort in het Replit-buildtaakblok (zie addendum v2.89 / nog toe te voegen
+PLAN-taken).
+
+---
+
+## 1. Vandaag-blok: altijd een verklaarde staat, nooit een lege staat
+
+Huidige situatie: "Geen training gepland" + knop "Training toevoegen", zonder uitleg.
+
+**Moet worden:** elke dag heeft precies één van drie herkenbare staten, elk met een reden:
+
+| Staat | Wat de gebruiker ziet |
+|---|---|
+| **Trainingsdag** | Sessienaam, doel van de sessie in één zin, zones/duur (zie sectie 4) |
+| **Bewuste rustdag** | "Rustdag — onderdeel van [fase]" + korte reden ("herstel na gisteren se lange duurrit", "taperweek voor de piek") |
+| **Ongepland gat** | Expliciet anders gelabeld dan een rustdag: "Nog niet ingepland" + waarschuwing als dit een piekfase-week is waarin dat afwijkt van het schema |
+
+Een lege dag zonder label is niet toegestaan in de piekfase — dat is precies waar vertrouwen
+in "op koers" verloren gaat.
+
+---
+
+## 2. Periodisering zichtbaar maken in de kalender zelf
+
+Huidige situatie: "Fase: Piek" staat los boven de kalender; de kalender zelf toont alleen
+sessienamen zonder enige visuele opbouw.
+
+**Moet worden:**
+- Elke week in de kalender krijgt een subtiel volume/intensiteit-indicator (bijv. een kleine
+  balk of kleurtint per week: opbouw / belasting / taper)
+- De doelkaart bovenaan ("FTP naar 285W, 11 dagen") koppelt expliciet aan de huidige week:
+  "Week 2 van 2 resterende piekweken"
+- Fase-overgangen (bouw → piek → taper) zijn zichtbaar als markering in de kalender zelf, niet
+  alleen als los tekstlabel
+
+Doel: de gebruiker moet in de kalender kunnen zíen dat hij richting een piek opbouwt, niet
+alleen lezen dat dat zo is.
+
+---
+
+## 3. "Wat over tijd opvalt" → werkend, niet een placeholder-knop
+
+Huidige situatie: "Je gegevens worden doorzocht op verbanden" + knop "Verbanden analyseren" —
+dit is een niet-functionele placeholder-staat die een belofte doet die de pagina niet nakomt.
+
+**Moet worden** (rechtstreeks gekoppeld aan VIS-07 uit addendum v2.89):
+- Als er nog onvoldoende data is voor een verband: een eerlijke, specifieke staat — bijv.
+  "Nog 4 trainingen nodig voor een betrouwbaar slaap/herstel-verband" — in plaats van een
+  generieke "wordt doorzocht"-tekst
+- Zodra er wél voldoende data is: het verband wordt automatisch getoond, geen handmatige
+  aanroep nodig. Voorbeeld concrete kaart:
+  > "Je hersteltijd na intervaltrainingen is de laatste 3 weken opgelopen. Dit valt samen met
+  > een dalende TSB. Overweeg een extra rustdag deze week."
+- De knop "Verbanden analyseren" verdwijnt als losse actie; correlaties zijn een permanent,
+  automatisch bijgewerkt onderdeel van de pagina, niet iets wat de gebruiker moet triggeren
+
+---
+
+## 4. Sessiedetail: van naam naar concreet doel
+
+Huidige situatie: kalender toont alleen sessienamen ("Duurrit Z2", "Intervalt...") zonder
+zichtbare inhoud.
+
+**Moet worden**, bij het openen van elke geplande sessie (of als preview in de dag-detailkaart
+rechts):
+- Zone(s) en duur per onderdeel (bijv. "20 min Z2 opwarming, 4×8 min Z4, 15 min Z2 afkoelen")
+- Eén zin over het doel van deze specifieke sessie in relatie tot het einddoel ("bouwt
+  FTP-tolerantie op richting de 285W-test")
+- Verwachte TSS van de sessie, zodat de gebruiker de belasting kan inschatten vóór hij begint
+
+---
+
+## 5. "Je ontwikkeling" (CTL-grafiek onderaan): koppel expliciet aan het doel
+
+Huidige situatie: CTL-grafiek (35, +10 over 43 dagen) staat los onderaan, zonder relatie tot
+de 285W-doelstelling erboven.
+
+**Moet worden:**
+- Eén regel die CTL-groei expliciet koppelt aan de doelvoortgang: bijv. "Je fitheid bouwt
+  overeenkomstig het schema op voor de FTP-test van 1 oktober"
+- Wanneer de CTL-trend níet aansluit bij het doeltempo, moet dat hier zichtbaar worden
+  gesignaleerd — niet alleen in de status-badge bovenaan ("op koers"), die nu geïsoleerd
+  van deze grafiek staat
+
+---
+
+## Samengevat: het verschil tussen "agenda met cijfers" en "trainingsplan"
+
+Een trainingsplan legt op elk moment drie dingen tegelijk uit:
+1. **Wat er vandaag moet gebeuren en waarom** (sectie 1 en 4)
+2. **Waar dat past in de grotere opbouw** (sectie 2)
+3. **Of het werkt** — automatisch, zonder dat de gebruiker daar zelf naar hoeft te zoeken
+   (sectie 3 en 5)
+
+De huidige pagina toont wel cijfers en namen, maar mist de verklarende laag die dit tot een
+plan maakt in plaats van een kalender.

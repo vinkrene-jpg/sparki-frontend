@@ -569,7 +569,7 @@ export async function backfillDerivedLoad(
     ) {
       log(
         `belastingscores afgeleid: ${summary.sessionsUpdated} ritten bijgewerkt, ` +
-          `${summary.sessionsSkipped} eerlijk overgeslagen; ` +
+          `${summary.sessionsSkipped} overgeslagen; ` +
           `${summary.targetsRecalibrated} weekdoelen geijkt op echt rijgedrag; ` +
           `${summary.ftpFloorsRaised} FTP-schattingen opgetrokken naar bewezen ondergrens`,
       );

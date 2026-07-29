@@ -43,6 +43,7 @@ const noopQuery = () => ({ data: undefined, isLoading: false, isError: false, re
 mock.module("@/hooks/use-training-plan", {
   namedExports: {
     usePlanWindow: () => planWindowResult,
+    usePlanRange: noopQuery,
     useTrainingPlan: () => planResult,
     useGenerateTrainingPlan: () => generateResult,
     useAdaptTrainingPlan: () => adaptResult,

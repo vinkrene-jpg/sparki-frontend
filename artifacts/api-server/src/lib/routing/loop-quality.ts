@@ -17,6 +17,21 @@ import type { LoopRequest, RouteResult, RoutingProvider } from "./types";
 // not to merge genuinely different parallel roads.
 const CELL_DEG = 0.0006;
 
+// Fail-closed geometrie-check: een pad met niet-finite coördinaten mag NOOIT
+// stil door de kwaliteitspoorten glippen (NaN vergiftigt elke meting).
+function hasInvalidPoint(path: [number, number][]): boolean {
+  for (const p of path) {
+    if (
+      !Array.isArray(p) ||
+      !Number.isFinite(p[0]) ||
+      !Number.isFinite(p[1])
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function cellKey(lat: number, lon: number): string {
   return `${Math.round(lat / CELL_DEG)}:${Math.round(lon / CELL_DEG)}`;
 }
@@ -42,6 +57,7 @@ function segMeters(a: [number, number], b: [number, number]): number {
 // map to the same undirected edge, so a there-and-back counts as overlap.
 export function pathOverlapFraction(path: [number, number][]): number {
   if (path.length < 3) return 0;
+  if (hasInvalidPoint(path)) return 1; // fail-closed: kapotte geometrie keurt af
   const edgeCount = new Map<string, number>();
   let total = 0;
   let repeated = 0;
@@ -60,6 +76,76 @@ export function pathOverlapFraction(path: [number, number][]): number {
     edgeCount.set(edge, seen + 1);
   }
   return total > 0 ? repeated / total : 0;
+}
+
+// Longest CONTIGUOUS stretch (metres) that the route rides over road segments
+// it also uses elsewhere — the "dead-end spur" signature. A loop can have a low
+// total overlap fraction and still contain one 500 m out-and-back stub that
+// looks like riding into a doodlopende weg; this measures exactly that stub.
+export function longestRepeatedStretchM(path: [number, number][]): number {
+  if (path.length < 3) return 0;
+  if (hasInvalidPoint(path)) return Infinity; // fail-closed
+  // Pass 1: count undirected edges (same snapping as pathOverlapFraction).
+  const edgeCount = new Map<string, number>();
+  const edgeOf = (a: [number, number], b: [number, number]): string | null => {
+    const ka = cellKey(a[0], a[1]);
+    const kb = cellKey(b[0], b[1]);
+    if (ka === kb) return null;
+    return ka < kb ? `${ka}|${kb}` : `${kb}|${ka}`;
+  };
+  for (let i = 1; i < path.length; i++) {
+    const e = edgeOf(path[i - 1]!, path[i]!);
+    if (!e) continue;
+    edgeCount.set(e, (edgeCount.get(e) ?? 0) + 1);
+  }
+  // Pass 2: longest run of consecutive segments whose edge is used 2+ times.
+  let longest = 0;
+  let run = 0;
+  for (let i = 1; i < path.length; i++) {
+    const a = path[i - 1]!;
+    const b = path[i]!;
+    const e = edgeOf(a, b);
+    const repeated = e != null && (edgeCount.get(e) ?? 0) >= 2;
+    if (repeated) {
+      run += segMeters(a, b);
+      if (run > longest) longest = run;
+    } else if (e != null) {
+      // Alleen een ECHTE unieke wegrand breekt de reeks; micro-verplaatsingen
+      // binnen één cel (e == null) laten de reeks doorlopen.
+      run = 0;
+    }
+  }
+  return Math.round(longest);
+}
+
+// Smallest sub-loop (metres) in the route: the route komt terug op een plek
+// (cel) waar hij eerder was, terwijl het tussenliggende stuk maar een paar
+// honderd meter tot een paar kilometer lang is — het "klein lusje"-patroon.
+// Een normale grote lus passeert hetzelfde kruispunt hooguit met een ENORM
+// tussenstuk (prima); alleen kleine tussenstukken zijn lelijk. Retourneert
+// Infinity wanneer er geen kleine sub-lus is.
+export function smallestSubLoopM(path: [number, number][]): number {
+  if (path.length < 4) return Infinity;
+  if (hasInvalidPoint(path)) return 0; // fail-closed: keurt af via de ondergrens
+  // Afstand langs de route tot elk punt (m).
+  const along: number[] = new Array(path.length).fill(0);
+  for (let i = 1; i < path.length; i++) {
+    along[i] = along[i - 1]! + segMeters(path[i - 1]!, path[i]!);
+  }
+  const lastAt = new Map<string, number>(); // cel → laatste bezochte index
+  let smallest = Infinity;
+  for (let i = 0; i < path.length; i++) {
+    const k = cellKey(path[i]![0], path[i]![1]);
+    const prev = lastAt.get(k);
+    if (prev != null) {
+      const sub = along[i]! - along[prev]!;
+      // Ondergrens ~120 m: heen-en-terug binnen een kruispunt/cel is geen
+      // lusje. Bovengrens: alles onder een paar km is een "klein lusje".
+      if (sub >= 120 && sub < smallest) smallest = sub;
+    }
+    lastAt.set(k, i);
+  }
+  return smallest;
 }
 
 // Generate a varied loop: ask the provider for a handful of real candidates with
@@ -118,6 +204,10 @@ export type SceneryWish = { nature: boolean; avoidTrafficLights: boolean };
 export type CandidateEnvironment = {
   trafficLights: number | null;
   forestSharePct: number | null;
+  // Aandeel bebouwd gebied (woonwijk/winkel/bedrijven) langs de route (0–100).
+  // Vaste eis: routes koersen zo min mogelijk door dorpskernen en woonwijken,
+  // dus dit weegt ALTIJD mee zodra het gemeten is.
+  builtUpSharePct?: number | null;
   // Optioneel: totaal aantal onderbrekende wegobjecten (verkeerslichten +
   // spoorwegovergangen + rotondes + drempels) uit de Sparki Traffic Database.
   // Wanneer aanwezig weegt dit zwaarder dan alleen het lichten-aantal — een
@@ -181,6 +271,10 @@ export async function generateVariedLoop(
       ? opts.scenery
       : null;
   const wantsScenery = scenery != null && opts?.environmentOf != null;
+  // Vaste eis (geen optie): zodra er een omgevingsmeting beschikbaar is,
+  // vergelijken we kandidaten ALTIJD op stoplichten/wegobstakels en bebouwing
+  // en wint de rustigste route. Een expliciete natuur-wens komt daar bovenop.
+  const wantsCalmRoads = opts?.environmentOf != null;
   const preferUninterrupted = opts?.preferUninterrupted === true;
   const targetAscentM =
     typeof opts?.targetAscentM === "number" &&
@@ -197,12 +291,14 @@ export async function generateVariedLoop(
   // A scenery wish (natuur / weinig verkeerslichten) also needs a real pool to
   // compare, so it raises the ceiling and disables the early exit.
   const defaultCandidates =
-    preference === "any" &&
-    !wantsScenery &&
-    !preferUninterrupted &&
-    targetAscentM == null
-      ? 3
-      : 8;
+    preference !== "any" ||
+    wantsScenery ||
+    preferUninterrupted ||
+    targetAscentM != null
+      ? 8
+      : wantsCalmRoads
+        ? 4 // vaste rustige-wegen-vergelijking: echte keuze nodig, maar betaalbaar
+        : 3;
   const n = Math.min(Math.max(opts?.candidates ?? defaultCandidates, 1), 10);
   const target = req.distanceKm;
   const pool: { result: RouteResult; score: number }[] = [];
@@ -264,6 +360,7 @@ export async function generateVariedLoop(
     // wish also needs a real pool to compare, so it disables the early exit.
     if (
       !wantsScenery &&
+      !wantsCalmRoads &&
       !preferUninterrupted &&
       targetAscentM == null &&
       overlap < 0.08 &&
@@ -281,7 +378,7 @@ export async function generateVariedLoop(
 
   pool.sort((a, b) => a.score - b.score);
 
-  if (wantsScenery && pool.length > 1) {
+  if (wantsCalmRoads && pool.length > 1) {
     // Compare the best few candidates on real map facts. Environment lookups
     // are the expensive part (Overpass), so cap at 4 and run them in parallel.
     // When a lookup fails the candidate simply keeps its base score — we never
@@ -299,18 +396,22 @@ export async function generateVariedLoop(
       const env = envs[i];
       let envPenalty = 0;
       if (env) {
-        if (scenery!.nature && env.forestSharePct != null) {
+        if (scenery?.nature && env.forestSharePct != null) {
           envPenalty += (1 - env.forestSharePct / 100) * 0.9;
         }
-        if (scenery!.avoidTrafficLights) {
-          // Eigen wegobjecten-database (lichten + overwegen + rotondes +
-          // drempels) heeft voorrang; anders het kale lichten-aantal.
-          const obstacles = env.stopObstacles ?? env.trafficLights;
-          if (obstacles != null) {
-            const km = c.result.distanceKm ?? target;
-            const perKm = km > 0 ? obstacles / km : obstacles;
-            envPenalty += Math.min(perKm / 1.5, 1) * 0.9;
-          }
+        // Vaste eis: stoplichten en andere wegobstakels wegen ALTIJD mee.
+        // Eigen wegobjecten-database (lichten + overwegen + rotondes +
+        // drempels) heeft voorrang; anders het kale lichten-aantal.
+        const obstacles = env.stopObstacles ?? env.trafficLights;
+        if (obstacles != null) {
+          const km = c.result.distanceKm ?? target;
+          const perKm = km > 0 ? obstacles / km : obstacles;
+          envPenalty += Math.min(perKm / 1.5, 1) * 0.9;
+        }
+        // Vaste eis: zo min mogelijk door dorpskernen/woonwijken — het
+        // gemeten bebouwingsaandeel weegt altijd mee.
+        if (env.builtUpSharePct != null) {
+          envPenalty += (env.builtUpSharePct / 100) * 0.8;
         }
       }
       const total = c.score + envPenalty;

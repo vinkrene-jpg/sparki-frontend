@@ -10,30 +10,27 @@ Laatst bijgewerkt: 2026-07-27.
 ## Wacht op jouw keuze
 
 
-### Gegevens-opschoning productie (OD_005) — per onderdeel akkoord?
-0. **Opschoning eigen account in productie** — droogdraai is alleen-lezen uitgevoerd
-   (25 jul): (a) 15 Engelstalige observaties van 22–23 juni, (b) 1 dubbele
-   Strava-FTP-importrij (id 7, 258 W, 26 juni). FTP-actualisatie en fietskoppelingen:
-   niets te doen. Wacht op per-onderdeel akkoord; uitvoeren gaat via /admin →
-   Gegevens-opschoning in de gepubliceerde app.
-
-### Mentale Training — sterrensysteem
-4. **Wát de sterren precies regelen** — diepgang per kaart instelbaar, één globale
-   diepgang-voorkeur in je profiel, of iets anders. Onderwerpen al gekozen (6).
-   NIEUW vastgelegd (28 jun): chat met Sparki mag uit beeld verdwijnen na sluiten,
-   maar blijft in Sparki's geheugen; onderwerpen + reacties worden geanalyseerd voor de
-   mentale beoordeling (privacy-gated — alleen met toestemming). Zie "Beslist".
+### Plan-pagina indeling
+1. **Welke indeling wordt het?** — René is er nog mee bezig, komt erop terug (29 jul).
 
 ### Gevonden in de geschiedenis — graag bevestigen of nog actueel
-7. **Productie-database bijwerken** — schema-wijzigingen ook op de live (gepubliceerde)
-   database toepassen, zodat het na publiceren meteen werkt. (Terugkerend bij elke deploy.)
 8. **Achtergrond achter de Core / het Ride-scherm** — welke scène je daar wilt zien.
+   (Niet beantwoord in het formulier van 29 jul — staat nog open.)
 
 ### Mogelijk al achterhaald (laag) — schrap gerust
 9. **Samen-pagina volgorde** — welk blok bovenaan (Voorstellen vs. Samen trainen).
 10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav.
 
 ## Beslist (archief)
+- **2026-07-29 — OD_005 uitgevoerd door René en alleen-lezen geverifieerd:** de dubbele
+  Strava-FTP-rij (id 7) is weg (historie: 331 W derived 25 mei, 250 W manual 22 jun,
+  258 W strava 26 jun — geen dubbelen); van de observaties 22–23 juni resteren er 5,
+  alle Nederlandstalig (de 15 Engelstalige zijn opgeruimd). Afgerond.
+- **2026-07-29 — Mentale Training sterren: diepgang per kaart instelbaar.** Bouw als
+  vervolgtaak voorgesteld.
+- **2026-07-29 — Productie-database bijwerken: ja, voorbereiden;** René geeft definitief
+  akkoord vlak vóór de volgende publicatie (dekt taak "Make development and production
+  databases match the app's data model").
 - **2026-07-27 — Vandaag-scherm sfeerrichting: uitgevoerd.** Het commerciële
   Vandaag-scherm is gemigreerd naar de donkere designsysteem-fundering met een
   foto-sfeerkop (mistige rijder, `public/vandaag-sfeer.jpg`) — rustig/premium,

@@ -558,7 +558,7 @@ function buildGuidance(
   // Race summary line.
   const known = countKnown(race);
   g.race.push(
-    `Sparki combineert wat bekend is over ${race.name}; ontbrekende gegevens staan eerlijk als gap met een vraag.`,
+    `Sparki combineert wat bekend is over ${race.name}; ontbrekende gegevens staan als openstaande vraag.`,
   );
   void known;
 

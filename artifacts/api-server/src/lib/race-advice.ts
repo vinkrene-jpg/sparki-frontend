@@ -120,7 +120,7 @@ export function composeRaceAdvice(
   } else {
     notPossible.push({
       domain: "pacing",
-      reason: "Zonder afstand (of gekoppelde route) valt er geen eerlijk pacingadvies te geven — vul de afstand in.",
+      reason: "Zonder afstand (of gekoppelde route) valt er geen pacingadvies te geven — vul de afstand in.",
     });
   }
   if (elev != null && km != null && km > 0 && elev / km >= 5) {
@@ -226,8 +226,8 @@ export function composeRaceAdvice(
     title: "Onzekerheden",
     text: risks.length > 0
       ? `Houd rekening met: ${risks.join("; ")}. Adviezen worden scherper zodra deze gaten gevuld zijn.`
-      : "De belangrijkste gegevens zijn bekend. Blijf rekening houden met dagvorm en koersverloop — die voorspelt niemand eerlijk vooraf.",
-    basis: "Sparki benoemt gaten eerlijk in plaats van ze op te vullen.",
+      : "De belangrijkste gegevens zijn bekend. Blijf rekening houden met dagvorm en koersverloop — die voorspelt niemand vooraf.",
+    basis: "Ontbrekende gegevens staan als openstaande vraag bij de wedstrijd.",
     confidence: 0.5,
   });
 

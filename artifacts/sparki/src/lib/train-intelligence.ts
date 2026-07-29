@@ -125,7 +125,7 @@ export function judgeGoalFit(args: {
       headline: `Nog ${weeksAway} ${weeksAway === 1 ? "week" : "weken"} tot ${goalLabel}`,
       reason: "Nog te weinig gelogde belasting om je koers te beoordelen.",
       detail:
-        "Sparki heeft minimaal twee weken aan gelogde trainingen nodig om je opbouw richting dit doel eerlijk te beoordelen. Log je trainingen of koppel een platform, dan wordt je koers zichtbaar.",
+        "Sparki heeft minimaal twee weken aan gelogde trainingen nodig om je opbouw richting dit doel te beoordelen. Log je trainingen of koppel een platform, dan wordt je koers zichtbaar.",
       needs: ["meer gelogde trainingen om je opbouw te beoordelen"],
     }
   }

@@ -1,0 +1,144 @@
+OPDRACHT — RUNTIME-VALIDATIE FTP EN AI-OBSERVATIES
+
+DOEL
+
+Bewijs in de werkende applicatie dat Sparki uitsluitend de juiste actuele FTP en de juiste actuele AI-observaties gebruikt.
+
+Deze opdracht is onderzoek + gerichte correctie. Bouw geen nieuwe analysefunctie en herschrijf geen bestaande trainings- of data-engine.
+
+ONDERDEEL 1 — FTP
+
+Bekende situatie:
+
+- actuele FTP: 258 W;
+- oudere FTP: 331 W;
+- een oude FTP-rij mag als historie blijven bestaan;
+- de oude waarde mag nergens als huidige FTP worden gebruikt.
+
+Onderzoek en bewijs:
+
+1. Welke databasevelden en tabellen FTP bevatten.
+2. Welke query of resolver bepaalt de huidige FTP.
+3. Welke sorteervolgorde, geldigheidsregel of status daarvoor wordt gebruikt.
+4. Welke API-endpoints FTP teruggeven.
+5. Welke schermen, grafieken, zones en berekeningen FTP gebruiken.
+6. Of 331 W ergens nog als huidige waarde verschijnt of wordt meegerekend.
+7. Of 258 W aantoonbaar de huidige waarde is in:
+   - profiel/sportpaspoort;
+   - analyse;
+   - trainingszones;
+   - coaching;
+   - wedstrijd- of vermogensfuncties.
+
+Wanneer de selectie van de huidige FTP niet deterministisch of veilig is:
+
+- herstel alleen de centrale selectie;
+- verwijder historische FTP-data niet;
+- voorkom losse schermspecifieke fixes;
+- voeg een test toe die bewijst dat de nieuwste geldige actuele waarde wint.
+
+ONDERDEEL 2 — AI-OBSERVATIES
+
+Bekende situatie:
+
+- twaalf Nederlandse observaties zouden zijn toegepast;
+- productieachtig runtimebewijs ontbreekt nog;
+- oude Engelstalige, dubbele of ongeldige observaties mogen niet als actuele persoonlijke inzichten verschijnen.
+
+Onderzoek en bewijs:
+
+1. Waar observaties zijn opgeslagen.
+2. Welke bron, status en gebruiker eraan gekoppeld zijn.
+3. Welke API-query de zichtbare observaties selecteert.
+4. Of precies de bedoelde Nederlandse observaties worden geladen.
+5. Of observaties van andere gebruikers onmogelijk kunnen lekken.
+6. Of oude, dubbele, seed-, mock- of fallbackobservaties worden uitgesloten.
+7. Wat de interface toont wanneer er geen geldige observaties zijn.
+8. Of een API-fout een eerlijke fout/lege toestand geeft en nooit voorbeeldobservaties.
+
+VERPLICHTE RUNTIME-TESTS
+
+Gebruik een echt testaccount en de actieve routes.
+
+FTP:
+
+- huidige FTP wordt als 258 W weergegeven;
+- 331 W blijft uitsluitend historie;
+- zones en afgeleide waarden gebruiken 258 W;
+- herladen en opnieuw inloggen veranderen dit niet;
+- geen accountlek bij wisselen van testgebruiker.
+
+AI-observaties:
+
+- bedoelde Nederlandse observaties verschijnen;
+- geen oude Engelstalige of dubbele observaties;
+- geen gegevens van een ander account;
+- ontbrekende data geeft een eerlijke lege toestand;
+- API-fout geeft geen mock- of fallbackinhoud.
+
+Test minimaal op:
+
+- 390 px;
+- 1440 px.
+
+BEWIJS
+
+Lever op:
+
+- databasequery’s met geanonimiseerde resultaten;
+- exacte API-responses of relevante velden;
+- bestands- en regelverwijzingen naar de selectielogica;
+- screenshots van de actieve schermen;
+- testresultaten;
+- duidelijke conclusie per onderdeel:
+  - CORRECT_EN_BEWEZEN;
+  - DEFECT_GEVONDEN_EN_HERSTELD;
+  - NOG_NIET_BEWEZEN.
+
+AFBAKENING
+
+- geen Club/Jeugd-werk;
+- geen Stripe/billing;
+- geen route- of navigatiewijzigingen;
+- geen databaseopschoning buiten aantoonbaar foutieve actuele selectie;
+- verwijder geen historische sportdata;
+- geen nieuwe mock- of fallbackdata;
+- geen grote refactor.
+
+REGISTER
+
+Werk uitsluitend de relevante runtimepunten bij:
+
+- R-01 — actuele FTP-selectie;
+- R-02 — actuele AI-observaties.
+
+Statusgang:
+
+- start: IN_PROGRESS;
+- na eigen runtimebewijs: FIXED_NOT_VERIFIED;
+- VERIFIED_FIXED alleen wanneer zowel codepad als actieve runtime aantoonbaar kloppen.
+
+COMMIT
+
+Wanneer geen codewijziging nodig is:
+
+- commit alleen het runtimebewijs/registerdocument;
+- wijzig geen applicatiecode.
+
+Wanneer wel een defect wordt hersteld:
+
+- aparte commit voor code + tests;
+- aparte commit voor register/bewijs;
+- push beide naar main.
+
+RAPPORTEER
+
+- onderzochte bron-SHA;
+- actuele FTP-selectieregel;
+- bewezen waarde en gebruiksplaatsen;
+- status van de twaalf observaties;
+- gevonden defecten;
+- gewijzigde bestanden;
+- tests en screenshots;
+- commit-SHA’s;
+- volledige git status.

@@ -133,7 +133,7 @@ export function estimateUpgrade(
     return {
       known: false,
       reason:
-        "Dit merk en type staan nog niet in de kennisbank — Sparki kan er geen eerlijke schatting van maken. De vergelijkingstest met twee echte ritten werkt wél gewoon.",
+        "Dit merk en type staan nog niet in de kennisbank — Sparki kan er geen schatting van maken. De vergelijkingstest met twee echte ritten werkt wél gewoon.",
     };
   }
 

@@ -108,7 +108,7 @@ function SegmentReport({ segments }: { segments: RideSegment[] }) {
               ) : (
                 <p className="mt-2 text-[12px] leading-snug text-white/40">
                   Het bestand van deze rit bevat geen tijden op dit stuk, dus
-                  hier valt eerlijk gezegd niets over je tempo te zeggen.
+                  over je tempo valt hier niets te zeggen.
                 </p>
               )}
             </div>
@@ -177,8 +177,7 @@ function DataInventaris({
       </div>
       {ontbrekend.length > 0 && (
         <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/40">
-          Grafieken en analyses tonen alleen wat echt gemeten is — wat hierboven
-          ontbreekt, wordt nergens geschat of verzonnen.
+          Grafieken en analyses tonen wat tijdens deze rit gemeten is.
         </p>
       )}
     </div>
@@ -226,7 +225,7 @@ function WedstrijdVerloopVragen({ session }: { session: TrainingSession }) {
       </span>
       <p className="mt-1.5 text-pretty text-[12.5px] leading-relaxed text-white/55">
         De meetdata vertelt maar de helft. Met een paar antwoorden kan deze
-        wedstrijd eerlijk op waarde worden geschat.
+        wedstrijd op waarde worden geschat.
       </p>
 
       <p className="mt-4 text-[12px] text-white/60">Hoe zwaar voelde het?</p>

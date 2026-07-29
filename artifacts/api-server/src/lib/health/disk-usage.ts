@@ -180,7 +180,7 @@ export async function probeProjectDiskSize(): Promise<ProbeResult> {
       passed: false,
       responseTimeMs: ms(start),
       message:
-        "Geen .git-map gevonden in deze omgeving; de projectgrootte kan hier niet eerlijk gemeten worden.",
+        "Geen .git-map gevonden in deze omgeving; de projectgrootte kan hier niet gemeten worden.",
       technicalDetails: `Gestart vanuit ${process.cwd()}`,
     };
   }

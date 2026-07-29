@@ -925,7 +925,7 @@ export default function RecordScreen() {
               <PermissionDeniedNotice
                 c={c}
                 permission="locatie"
-                message="Zonder locatietoegang kan er geen rit worden opgenomen — er wordt nooit een route verzonnen."
+                message="Zonder locatietoegang kan er geen rit worden opgenomen."
               />
             ) : showPermissionUitleg ? (
               <PermissionExplainer

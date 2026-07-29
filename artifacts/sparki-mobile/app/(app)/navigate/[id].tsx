@@ -1823,7 +1823,7 @@ function RideRecorderBar({
         <PermissionDeniedNotice
           c={c}
           permission="locatie"
-          message="Zonder locatietoegang kan je rit niet worden vastgelegd — er wordt nooit een route verzonnen."
+          message="Zonder locatietoegang kan je rit niet worden vastgelegd."
         />
       ) : showPermissionUitleg ? (
         <PermissionExplainer

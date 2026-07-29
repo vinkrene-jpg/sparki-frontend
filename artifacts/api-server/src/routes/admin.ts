@@ -1222,7 +1222,7 @@ const PROVENANCE_SURFACES: {
   { key: "kalender", label: "Kalender & trainingen", table: "planned_workouts", clerkCol: "clerk_id", updatedCol: "updated_at", berekening: "Plan-engine of handmatige invoer; koppellijst leest dezelfde rijen." },
   { key: "sessies", label: "Activiteiten (sessies)", table: "training_sessions", clerkCol: "clerk_id", updatedCol: "updated_at", berekening: "Import (Strava/bestand) of handmatig; belasting (TSS) afgeleid uit vermogen+FTP indien aanwezig." },
   { key: "doelen", label: "Doelen", table: "athlete_goals", clerkCol: "clerk_id", updatedCol: "updated_at", berekening: "Gebruikersinvoer; afgeleide doelen dragen hun bron in de rij." },
-  { key: "routes", label: "Routes", table: "routes", clerkCol: "clerk_id", updatedCol: "updated_at", berekening: "ORS-generatie of GPX-import; nooit verzonnen geometrie." },
+  { key: "routes", label: "Routes", table: "routes", clerkCol: "clerk_id", updatedCol: "updated_at", berekening: "ORS-generatie of GPX-import." },
   { key: "wedstrijden", label: "Wedstrijden", table: "races", clerkCol: "clerk_id", updatedCol: "updated_at", berekening: "Gebruikersinvoer of kalenderimport; verrijking alleen uit echte bronnen." },
   { key: "voeding", label: "Voeding", table: "nutrition_hydration_logs", clerkCol: "clerk_id", updatedCol: "created_at", berekening: "Eigen registraties; richtwaarden deterministisch uit duur/intensiteit." },
   { key: "meldingen", label: "Meldingen", table: "notifications", clerkCol: "clerk_id", updatedCol: "created_at", berekening: "Gebeurtenis-gedreven; nooit gegenereerd zonder aanleiding." },
@@ -1273,7 +1273,7 @@ router.get("/data-provenance", requireAuth, requireAdmin, async (req, res) => {
           herkomst:
             (row?.n ?? 0) > 0
               ? "directe of afgeleide echte gebruikersdata"
-              : "geen brondata — eerlijk leeg",
+              : "geen brondata",
         });
       } catch (err) {
         // Eerlijke fout per blok — nooit vervangen door verzonnen cijfers.

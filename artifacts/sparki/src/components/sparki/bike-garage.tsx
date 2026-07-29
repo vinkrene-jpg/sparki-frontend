@@ -1033,8 +1033,8 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
       <SectionLabel n={n} title="Fietsengarage" />
       <p className="mt-2 text-pretty text-[12px] leading-relaxed text-white/35">
         Leg je fietsen en uitrusting vast. Per herkend onderdeel zie je een
-        eerlijke beoordeling uit de kennisbank — en waar per specialisme de
-        grootste winst zit. Onbekende onderdelen blijven eerlijk onbekend.
+        beoordeling uit de kennisbank — en waar per specialisme de grootste
+        winst zit.
       </p>
 
       {isLoading && <p className="mt-4 text-[12px] text-white/40">Bezig…</p>}
@@ -1121,7 +1121,7 @@ export function BikeGarage({ n = "" }: { n?: string } = {}) {
             <div className="space-y-1.5">
               <p className="text-[13px] leading-relaxed text-white/45">
                 Nog geen fietsen in je garage. Voeg je eerste fiets toe — daarna
-                krijg je eerlijk onderhoudsadvies per onderdeel.
+                krijg je onderhoudsadvies per onderdeel.
               </p>
               <HumorLine context="empty_garage" />
             </div>

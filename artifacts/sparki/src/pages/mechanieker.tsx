@@ -17,7 +17,7 @@ export default function MechaniekerPage() {
           Mechanieker
         </h1>
         <p className="text-sm text-white/55">
-          Je fiets en materiaal in topconditie. Upload een foto voor eerlijk
+          Je fiets en materiaal in topconditie. Upload een foto voor
           onderhoudsadvies op onderdeel-niveau.
         </p>
       </div>

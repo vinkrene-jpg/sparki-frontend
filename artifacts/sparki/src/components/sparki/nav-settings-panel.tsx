@@ -101,8 +101,7 @@ export function NavSettingsPanel() {
         </label>
         <p className="mb-2 text-[12px] leading-relaxed text-white/40">
           Kies wat je onderweg wilt zien. Sensorvelden (hartslag, vermogen,
-          cadans) tonen alleen echte waarden — zonder gekoppelde sensor blijven
-          ze eerlijk leeg.
+          cadans) werken zodra de bijbehorende sensor gekoppeld is.
         </p>
         <div className="flex flex-wrap gap-2">
           {NAV_DATA_FIELDS.map((f) => (
@@ -206,19 +205,29 @@ export function NavSettingsPanel() {
             <button
               key={k}
               type="button"
+              role="switch"
+              aria-checked={draft[k]}
               onClick={() => update({ [k]: !draft[k] } as Partial<NavSettings>)}
               className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3.5 py-3 text-left"
             >
               <span className="text-[13px] text-white/80">{l}</span>
+              {/* Echte schakelaar (groter raakvlak) i.p.v. mini-pill; puur decoratief */}
               <span
-                className="rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em]"
-                style={
-                  draft[k]
-                    ? { background: "rgba(120,210,230,0.14)", color: ACCENT }
-                    : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.4)" }
-                }
+                aria-hidden
+                className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors"
+                style={{
+                  background: draft[k]
+                    ? "rgba(120,210,230,0.35)"
+                    : "rgba(255,255,255,0.08)",
+                }}
               >
-                {draft[k] ? "Aan" : "Uit"}
+                <span
+                  className="absolute h-5 w-5 rounded-full transition-all"
+                  style={{
+                    left: draft[k] ? "calc(100% - 1.5rem)" : "0.25rem",
+                    background: draft[k] ? ACCENT : "rgba(255,255,255,0.4)",
+                  }}
+                />
               </span>
             </button>
           ))}
@@ -241,7 +250,7 @@ export function NavSettingsPanel() {
           })
         }
         disabled={save.isPending}
-        className="w-full rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
+        className="mx-auto block w-full max-w-sm rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
         style={{ background: ACCENT, color: "#040506" }}
       >
         {save.isPending ? (

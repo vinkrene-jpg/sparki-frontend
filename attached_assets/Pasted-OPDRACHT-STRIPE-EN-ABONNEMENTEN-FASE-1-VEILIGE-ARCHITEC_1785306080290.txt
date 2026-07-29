@@ -1,0 +1,216 @@
+OPDRACHT — STRIPE EN ABONNEMENTEN, FASE 1: VEILIGE ARCHITECTUUR EN DRY-RUN
+
+DOEL
+
+Bereid de betaal- en abonnementsarchitectuur van Sparki veilig voor in Stripe-testmodus.
+
+Bouw in deze fase nog geen actieve betaalflow voor gebruikers en wijzig geen productiegegevens. Eerst ontwerpen, inventariseren, isoleren en bewijzen.
+
+VASTE PRODUCTBESLUITEN
+
+Commerciële varianten:
+
+- FREE
+- GO
+  - € 2,99 per maand
+  - € 29,90 per jaar
+  - 7 dagen proef
+- COMPLETE
+  - € 9,99 per maand
+  - € 99,90 per jaar
+  - 14 dagen proef
+
+Proefperiode:
+
+- geen betaalkaart verplicht;
+- Sparki beheert de proefperiode zelf;
+- geen Stripe-native trial als bron van waarheid.
+
+Bestaande gebruikers:
+
+- behouden voorlopig `legacy_unrestricted`;
+- geen automatische migratie;
+- nieuwe accounts krijgen pas na een later expliciet omschakelmoment standaard `FREE`.
+
+Betalingsgedrag:
+
+- upgrade: direct, met proratering;
+- downgrade: aan einde betaalperiode;
+- mislukte betaling: 7 dagen grace period;
+- volledige refund: entitlement intrekken;
+- gedeeltelijke refund: entitlement behouden;
+- bestaande prijzen blijven grandfathered.
+
+Stripe Customer Portal:
+
+- facturen;
+- betaalmethoden;
+- annuleren;
+- opnieuw activeren.
+
+Upgrades en downgrades gebeuren in Sparki zelf, niet via de Portal.
+
+AFBAKENING FASE 1
+
+In deze fase uitsluitend:
+
+1. bestaande entitlement- en abonnementsarchitectuur inventariseren;
+2. ontwerp voor `commercialTier` maken;
+3. migratieplan en dry-run maken;
+4. rollbackplan maken;
+5. Stripe-testarchitectuur ontwerpen;
+6. webhook- en entitlementcontract vastleggen;
+7. featureflags en testaccount-isolatie voorbereiden;
+8. testspecificatie opleveren.
+
+Nog niet:
+
+- echte Checkout activeren;
+- Stripe-producten of prijzen definitief aanmaken;
+- webhooks actief op gebruikers loslaten;
+- bestaande gebruikers migreren;
+- productie-DB wijzigen;
+- betaalde routes bouwen;
+- clubpakketten bouwen;
+- applicatiebreed functies blokkeren;
+- productiekeys gebruiken.
+
+ONDERZOEK EERST
+
+Rapporteer vóór wijzigingen:
+
+- bestaande tabellen en velden voor abonnementen, varianten en rechten;
+- huidige waarden zoals:
+  - sparki_go;
+  - sparki_basic;
+  - sparki_performance;
+  - sparki_pro;
+- alle codeplaatsen waar deze oude varianten gedrag bepalen;
+- bestaande entitlementresolvers;
+- huidige proefperiode- of betaalvelden;
+- mogelijke conflicten tussen oude `productVariant` en nieuwe `commercialTier`;
+- welke gebruikersrecords door een toekomstige migratie geraakt zouden worden.
+
+NIEUW CONTRACT
+
+Ontwerp naast het bestaande systeem:
+
+`commercialTier`
+
+Toegestane waarden:
+
+- FREE
+- GO
+- COMPLETE
+
+Regels:
+
+- `commercialTier` vervangt `productVariant` in deze fase niet;
+- bestaande rijen blijven ongemigreerd of krijgen `null`;
+- geen stilzwijgende mapping van oude varianten;
+- alle toekomstige migraties moeten expliciet, herhaalbaar en terugdraaibaar zijn;
+- testaccounts moeten via een expliciete allowlist worden geïsoleerd;
+- alle nieuwe betaalfuncties staan standaard uit via featureflags.
+
+LEVER OP
+
+Maak minimaal:
+
+1. Architectuurdocument:
+   `docs/SPARKI_STRIPE_SUBSCRIPTIONS_PHASE1_ARCHITECTURE.md`
+
+2. Migratie-dry-run:
+   - exact aantal betrokken rijen;
+   - huidige waarden;
+   - voorgestelde nieuwe waarden;
+   - redenen;
+   - geen writes.
+
+3. Rollbackplan:
+   - database;
+   - Stripe-objecten;
+   - webhooks;
+   - entitlements;
+   - featureflags.
+
+4. Stripe-objectmodel:
+   - Customer;
+   - Product;
+   - Price;
+   - Checkout Session;
+   - Subscription;
+   - Invoice;
+   - Refund;
+   - Customer Portal;
+   - relevante metadata.
+
+5. Webhookcontract voor minimaal:
+   - checkout.session.completed;
+   - customer.subscription.created;
+   - customer.subscription.updated;
+   - customer.subscription.deleted;
+   - invoice.paid;
+   - invoice.payment_failed;
+   - charge.refunded.
+
+6. Entitlementstatussen:
+   - legacy_unrestricted;
+   - free;
+   - trialing;
+   - active;
+   - grace;
+   - canceled;
+   - expired;
+   - blocked.
+
+7. Testmatrix:
+   - maand/jaar;
+   - Go/Complete;
+   - proefperiode;
+   - upgrade;
+   - downgrade;
+   - annuleren;
+   - heractiveren;
+   - mislukte betaling;
+   - grace period;
+   - volledige/partiële refund;
+   - dubbele of verkeerd geordende webhooks;
+   - accountisolatie.
+
+VEILIGHEID
+
+- uitsluitend Stripe-testmodus;
+- geen live keys;
+- geen secrets in Git;
+- webhookverwerking moet idempotent worden ontworpen;
+- Stripe-events moeten met event-ID worden vastgelegd;
+- frontend mag nooit zelfstandig entitlements toekennen;
+- server en database zijn de bron van waarheid;
+- een webhookfout mag geen betaalde toegang geven;
+- onbekende status werkt fail-closed;
+- oude werkende varianten blijven functioneren.
+
+STOPPUNT
+
+Stop na fase 1.
+
+Voer nog geen database-migratie uit.
+Maak nog geen werkende Checkout- of Portal-flow.
+Maak nog geen Stripe-producten aan tenzij dat volledig lokaal/testmatig en zonder koppeling aan gebruikers kan worden bewezen.
+
+RAPPORTEER
+
+- onderzochte commit-SHA;
+- huidige architectuur;
+- gevonden risico’s;
+- voorgesteld datamodel;
+- dry-runresultaat;
+- rollbackplan;
+- featureflags;
+- testaccountisolatie;
+- gewijzigde bestanden;
+- testresultaten;
+- commit-SHA;
+- git status.
+
+Werk in één aparte document-/architectuurcommit en push naar `main`.

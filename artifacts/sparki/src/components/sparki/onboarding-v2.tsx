@@ -301,8 +301,8 @@ export function OnboardingV2({ firstName, onComplete }: OnboardingV2Props) {
                 Koppel je sport- en gezondheidsapps
               </h2>
               <p className="text-pretty text-[13px] leading-relaxed text-white/45">
-                Wat je koppelt, lees ik automatisch uit. Nog niet beschikbare apps
-                staan er eerlijk bij. Je kunt dit later in Instellingen aanpassen.
+                Wat je koppelt, lees ik automatisch uit. Je kunt dit later in
+                Instellingen aanpassen.
               </p>
             </div>
 

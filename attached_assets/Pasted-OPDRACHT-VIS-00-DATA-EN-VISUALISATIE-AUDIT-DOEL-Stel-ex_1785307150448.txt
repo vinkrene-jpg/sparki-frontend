@@ -1,0 +1,233 @@
+OPDRACHT — VIS-00: DATA- EN VISUALISATIE-AUDIT
+
+DOEL
+
+Stel exact vast welke analyse-, trend- en doeldata Sparki al werkelijk berekent, opslaat en toont, en welke onderdelen nog ontbreken.
+
+Bouw in deze opdracht niets nieuws.
+Wijzig geen applicatiecode.
+Gebruik de actuele repository als bron van waarheid.
+
+NORMATIEF KADER
+
+Gebruik:
+
+- SPARKI_DATA_VISUALISATIE_ADDENDUM_v2_89_2026-07-29.md
+- SPARKI_AI_MASTER_PLAN_v2_88.yaml
+- het actuele defectregister
+- de actuele volledige repositorystand
+
+Het addendum beschrijft gewenste functionaliteit, maar is geen bewijs dat die functionaliteit bestaat.
+
+ONDERZOEKSVRAGEN
+
+Onderzoek per metric:
+
+1. bestaat de berekening al;
+2. waar staat de broncode;
+3. welke invoerdata wordt gebruikt;
+4. of de berekening centraal of schermspecifiek gebeurt;
+5. of het resultaat wordt opgeslagen of steeds opnieuw berekend;
+6. welk API-endpoint het resultaat levert;
+7. op welke schermen het wordt getoond;
+8. of mock-, seed-, demo-, fallback- of hardcoded waarden mogelijk zijn;
+9. of accountisolatie correct is;
+10. of historische gegevens betrouwbaar beschikbaar zijn;
+11. of de huidige implementatie kan worden hergebruikt of gericht uitgebreid.
+
+TE ONDERZOEKEN METRICS
+
+A. Per training of wedstrijd
+
+- TSS werkelijk uitgevoerd;
+- geplande TSS;
+- verschil tussen gepland en uitgevoerd;
+- VI;
+- EF;
+- power:HR-decoupling;
+- pace:HR-decoupling, alleen wanneer relevant en daadwerkelijk ondersteund;
+- korte context binnen huidig trainingsblok;
+- wedstrijdspecifieke duiding.
+
+B. Trends over weken en maanden
+
+- CTL;
+- ATL;
+- TSB;
+- FTP-trend;
+- power curve:
+  - 5 seconden;
+  - 1 minuut;
+  - 5 minuten;
+  - 20 minuten;
+- W/kg-trend;
+- gewichtshistorie;
+- herstel- en slaaptrend;
+- trainingsbelasting;
+- eventuele reeds bestaande scenarioprojecties.
+
+C. Doelgebonden analyse
+
+- bestaande doelen- of ambitiestructuur;
+- doeltype, datum en vereiste prestaties;
+- koppeling tussen doel en trainingsplan;
+- voortgangspercentage;
+- projectie in weken;
+- verschil tussen huidige capaciteit en doelvereiste;
+- betrouwbaarheid en uitlegbaarheid van die projectie.
+
+D. Verbanden
+
+Onderzoek of Sparki al relaties berekent of presenteert tussen:
+
+- slaap/herstel en TSB/prestatie;
+- EF/decoupling en CTL-opbouw;
+- FTP-trend en doelvereiste;
+- stress, ziekte, reizen of andere levensomstandigheden en trainingsrespons;
+- gewicht en W/kg;
+- trainingsconsistentie en progressie;
+- actuele vermoeidheid en geplande belasting.
+
+BEKENDE RISICO’S
+
+Controleer expliciet:
+
+- actuele FTP-selectie versus oude historische FTP-waarden;
+- CTL/ATL/TSB-data op mock-, fallback- of seedwaarden;
+- dubbele of afwijkende berekeningen tussen Analyse, Vandaag, Plan en Coach;
+- cijfers zonder bron- of berekeningsuitleg;
+- grafieken die wel een waarde tonen maar geen echte historie hebben;
+- verschillen tussen web, PWA en mobiel;
+- onbetrouwbare gewichtsdata voor W/kg;
+- ontbrekende tijdzone- of datumgrenzen;
+- ontbrekende ritdata die stilzwijgend als nul wordt behandeld;
+- berekeningen die verschillende definities of constanten gebruiken.
+
+VERPLICHTE CODE-INVENTARIS
+
+Maak een tabel met minimaal:
+
+- metric;
+- status:
+  - BESTAAT_EN_BEWEZEN;
+  - BESTAAT_GEDEELTELIJK;
+  - ALLEEN_UI;
+  - ALLEEN_BEREKENING;
+  - NIET_GEVONDEN;
+  - ONBETROUWBARE_DATA;
+- bronbestand;
+- functie of resolver;
+- databaseveld of tabel;
+- endpoint;
+- UI-scherm;
+- tests;
+- herbruikbaar;
+- ontbrekende stap;
+- risico.
+
+RUNTIMEBEWIJS
+
+Gebruik echte testdata en actieve routes.
+
+Controleer minimaal:
+
+- één training met vermogen en hartslag;
+- één langere duurtraining;
+- één wedstrijd of intensieve rit;
+- een periode met meerdere weken historie;
+- een account met ontbrekende gegevens;
+- accountwisseling voor isolatie.
+
+Test de relevante schermen op:
+
+- 390×874;
+- 768×1024;
+- 1024×768;
+- 1280×800;
+- 1440×900;
+- 1920×1080.
+
+Maak screenshots alleen waar die functioneel bewijs leveren.
+
+GEEN NIEUWE BEREKENINGEN
+
+In VIS-00:
+
+- geen nieuwe CTL/ATL/TSB-engine;
+- geen nieuwe VI/EF/decoupling-berekening;
+- geen nieuwe grafieken;
+- geen nieuwe databasevelden;
+- geen data-migratie;
+- geen AI-duiding;
+- geen nieuwe doelenfunctionaliteit.
+
+Wanneer een ernstig data-trustdefect wordt gevonden:
+
+- documenteer het;
+- markeer het als releaseblokkerend wanneer persoonlijke cijfers onjuist kunnen zijn;
+- herstel het nog niet binnen VIS-00;
+- maak een aparte kleine vervolgopdracht.
+
+OPLEVERING
+
+Maak:
+
+`docs/SPARKI_VIS_00_DATA_EN_VISUALISATIE_AUDIT_2026-07-29.md`
+
+Het document bevat minimaal:
+
+1. onderzochte branch en volledige commit-SHA;
+2. gebruikte bronbestanden;
+3. managementsamenvatting;
+4. complete metricinventaris;
+5. huidige datastromen;
+6. centrale versus dubbele berekeningen;
+7. opslag en historie;
+8. API- en UI-dekking;
+9. data-trustbevindingen;
+10. mobiele dekking;
+11. runtimebewijs;
+12. wat aantoonbaar al bestaat en niet opnieuw gebouwd mag worden;
+13. wat gericht uitgebreid moet worden;
+14. wat volledig ontbreekt;
+15. aanbevolen aangepaste fasering voor VIS-01 t/m VIS-08;
+16. releaseblokkers;
+17. open productbesluiten.
+
+DEFECTREGISTER
+
+Werk alleen de relevante visualisatie- en analysepunten bij.
+
+Gebruik nog geen `FIXED` of `VERIFIED_FIXED`.
+
+Mogelijke statussen:
+
+- AUDIT_IN_PROGRESS;
+- BEVESTIGD_BESTAAND;
+- GEDEELTELIJK_BESTAAND;
+- READY_FOR_BUILD;
+- BLOCKED_BY_DATA_TRUST;
+- PRODUCTBESLUIT_NODIG.
+
+COMMIT
+
+Maak één documentcommit en push naar `main`.
+
+Alleen toegestaan:
+
+- het nieuwe VIS-00-auditdocument;
+- noodzakelijke governanceverwijzing in het defectregister.
+
+Geen applicatiecode.
+
+RAPPORTEER
+
+- onderzochte commit-SHA;
+- belangrijkste bestaande onderdelen;
+- belangrijkste ontbrekende onderdelen;
+- gevonden data-trustrisico’s;
+- welke voorgestelde VIS-fasen moeten vervallen, wijzigen of worden gesplitst;
+- gewijzigde documenten;
+- commit-SHA;
+- remote pushstatus;
+- git status.

@@ -391,7 +391,7 @@ export function computeBikeSuitability(
         bike,
         verdict: "onvoldoende_gegevens",
         reasons: [
-          `${unknown}% van de route heeft geen betrouwbaar vastgestelde ondergrond — te weinig gegevens voor een eerlijke inschatting.`,
+          `${unknown}% van de route heeft geen betrouwbaar vastgestelde ondergrond — te weinig gegevens voor een inschatting.`,
         ],
       });
       continue;
