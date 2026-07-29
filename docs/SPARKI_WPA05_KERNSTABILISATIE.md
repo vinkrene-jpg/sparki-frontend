@@ -51,6 +51,10 @@ Geen enkele stopconditie geraakt: geen datalek, rechtenlek, dataverlies, tweede 
 
 **Publicatie nodig: ja** — de kalender-/planvenster-datumfixes en het herstelde Meer-menu zitten in de webbundel (samen met de nog openstaande WP-A03-webfix).
 
+## 8. Publicatie-uitkomst (aanvulling 29 juli 2026)
+
+Gepubliceerd via publish-commit `68df60f9` naar https://sparki-frontend.replit.app; productieverificatie in `docs/SPARKI_WPA05_PRODUCTIEVERIFICATIE.md` → **VERIFIED_IN_PRODUCTION**.
+
 ## EINDSTATUS: **VERIFIED_FOR_R1**
 
 WP-A06A/WP-A07 zijn conform de opdracht niet gestart; rapport en commit-SHA eerst terug naar René/ChatGPT.
