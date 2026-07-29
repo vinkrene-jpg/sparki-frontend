@@ -15,6 +15,7 @@ import {
 } from "@workspace/db";
 import { aiMessage, AiBlockedError } from "../lib/ai/gateway";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { requireCommercialFeature } from "../lib/entitlements";
 import { killSwitchGuard } from "../lib/kill-switches";
 import { decideAdjustment } from "../lib/adjust-rules";
 import {
@@ -42,7 +43,7 @@ import {
 const router = Router();
 
 // ── POST /api/ai/brief ───────────────────────────────────────────────────────
-router.post("/brief", requireAuth, async (req, res) => {
+router.post("/brief", requireAuth, requireCommercialFeature("ai_observations"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
     const [context, system] = await Promise.all([
@@ -216,7 +217,7 @@ router.post("/ask", requireAuth, async (req, res) => {
 
 // ── GET /api/ai/observations ─────────────────────────────────────────────────
 // Active observations grouped by category, each newest-first.
-router.get("/observations", requireAuth, async (req, res) => {
+router.get("/observations", requireAuth, requireCommercialFeature("ai_observations"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
     // Rotate real observations within their severity tier by the per-app-open
@@ -287,7 +288,7 @@ router.get("/connections/readiness", requireAuth, async (req, res) => {
 });
 
 // ── PATCH /api/ai/observations/:id ───────────────────────────────────────────
-router.patch("/observations/:id", requireAuth, async (req, res) => {
+router.patch("/observations/:id", requireAuth, requireCommercialFeature("ai_observations"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = Number(req.params.id);
   const { status } = req.body as { status?: string };
@@ -661,7 +662,7 @@ type AdjustProposal = {
   confidence?: number;
 };
 
-router.post("/workout-adjust", requireAuth, killSwitchGuard("auto_schema_adjust"), async (req, res) => {
+router.post("/workout-adjust", requireAuth, requireCommercialFeature("autonomous_training"), killSwitchGuard("auto_schema_adjust"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const { workoutId, feedbackType, note, rpe, completion } = req.body as {
     workoutId?: number;

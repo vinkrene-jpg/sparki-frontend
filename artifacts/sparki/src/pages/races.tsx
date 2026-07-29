@@ -8,6 +8,8 @@
 import { useEffect, useRef, useState } from "react"
 import { useLocation } from "wouter"
 import { useFixParams } from "@/hooks/use-missing-input"
+import { useFeatureAccess } from "@/hooks/use-feature-access"
+import { UpgradeNudge } from "@/components/ds/upgrade-nudge"
 import { ChevronLeft, CloudSun, MapPin, Clock, Users, Sparkles, Film, X } from "lucide-react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
@@ -1242,7 +1244,13 @@ function KindTag({ label, strong }: { label: string; strong?: boolean }) {
 }
 
 function RaceWerkbladPanel({ raceId }: { raceId: number }) {
-  const { data, isLoading } = useRaceWerkblad(raceId)
+  // Go-poort (taak 385): het wedstrijddossier hoort bij Sparki Go.
+  const goAccess = useFeatureAccess("race_intel")
+  const raceGoBlocked = goAccess.known && !goAccess.entitled
+  const { data, isLoading } = useRaceWerkblad(raceGoBlocked ? null : raceId)
+  if (raceGoBlocked) {
+    return <UpgradeNudge feature="race_intel" compact />
+  }
   if (isLoading) {
     return <Skeleton className="h-24 w-full rounded-2xl" />
   }

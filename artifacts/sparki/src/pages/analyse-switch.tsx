@@ -1,4 +1,5 @@
 import { useFeatureFlags } from "@/contexts/FeatureFlagContext"
+import { GoGateSwitch } from "@/components/sparki/go-gate"
 import CoreAnalysePage from "@/pages/core-analyse"
 import LabPage from "@/pages/lab"
 
@@ -12,6 +13,13 @@ import LabPage from "@/pages/lab"
 // gebruikers in productie zien (defect A-06).
 export function AnalyseSwitchPage() {
   const { flags, isLoading: flagsLoading } = useFeatureFlags()
-  if (flagsLoading || flags.commercial_shell) return <CoreAnalysePage />
-  return <LabPage />
+  const page =
+    flagsLoading || flags.commercial_shell ? <CoreAnalysePage /> : <LabPage />
+  // Go-poort (taak 385): Performance Lab is een Go-onderdeel. Abonnees zonder
+  // recht zien de upgrade-melding in plaats van de inhoud; legacy blijft vrij.
+  return (
+    <GoGateSwitch feature="performance_lab" actief="/analyse" section="Lab">
+      {page}
+    </GoGateSwitch>
+  )
 }

@@ -5,6 +5,7 @@
 
 import { Router } from "express";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { requireCommercialFeature } from "../lib/entitlements";
 import {
   computeInsightSignals,
   computeOpenLoops,
@@ -17,7 +18,7 @@ const router = Router();
 // GET /api/open-loops — the curiosity teasers Sparki has earned the right to
 // open, given the athlete's real signals. Empty array when there is nothing
 // honest to tease yet (a brand-new athlete sees none).
-router.get("/open-loops", requireAuth, async (req, res) => {
+router.get("/open-loops", requireAuth, requireCommercialFeature("ai_observations"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
     const [signals, trust] = await Promise.all([
@@ -33,7 +34,7 @@ router.get("/open-loops", requireAuth, async (req, res) => {
 
 // GET /api/honest — one honest observation founded on real signals, or an
 // explicit "onvoldoende bewijs" when the data does not support a claim yet.
-router.get("/honest", requireAuth, async (req, res) => {
+router.get("/honest", requireAuth, requireCommercialFeature("ai_observations"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
     const [signals, trust] = await Promise.all([

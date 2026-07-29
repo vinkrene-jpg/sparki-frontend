@@ -30,7 +30,13 @@ import {
 import { eq, and, inArray, desc } from "drizzle-orm";
 import app from "../app";
 import { ensureAccount, silentLogger } from "../lib/account";
-import { resolveFeatureAccess } from "../lib/entitlements";
+import {
+  resolveFeatureAccess,
+  resolveEntitlements,
+  hasCommercialFeature,
+  ensureGoVariantGrantSeed,
+  GO_FEATURE_KEYS,
+} from "../lib/entitlements";
 
 type Status = "pass" | "fail";
 const results: { scenario: string; status: Status; note?: string }[] = [];
@@ -178,9 +184,23 @@ async function main() {
     }
   });
 
-  await scenario("variant_feature_grants is leeg opgeleverd", async () => {
+  // Taak 385: de Go-verdeling is een bewust productbesluit — sparki_go krijgt
+  // de vier Go-onderdelen, sparki_basic niets. Seed is idempotent.
+  await ensureGoVariantGrantSeed();
+  await ensureGoVariantGrantSeed(); // tweede aanroep mag niets veranderen
+
+  await scenario("variant_feature_grants: sparki_go = de vier Go-onderdelen, sparki_basic = niets", async () => {
     const rows = await db.select().from(variantFeatureGrantsTable);
-    assert(rows.length === 0, `verwacht 0 rijen, kreeg ${rows.length}`);
+    const go = rows.filter((r) => r.productVariant === "sparki_go" && r.enabled);
+    const basic = rows.filter((r) => r.productVariant === "sparki_basic");
+    assert(
+      go.length === GO_FEATURE_KEYS.length,
+      `verwacht ${GO_FEATURE_KEYS.length} go-rijen, kreeg ${go.length}`,
+    );
+    for (const key of GO_FEATURE_KEYS) {
+      assert(go.some((r) => r.featureKey === key), `go mist ${key}`);
+    }
+    assert(basic.length === 0, `sparki_basic moet leeg zijn, kreeg ${basic.length}`);
   });
 
   // ── Legacy-gedrag: flags blijven exact bepalend ────────────────────────────
@@ -406,7 +426,63 @@ async function main() {
     assert(row.mode === "legacy_unrestricted", `mode was ${row.mode}`);
     assert(row.variant === null, `variant was ${row.variant}`);
     const grants = await db.select().from(variantFeatureGrantsTable);
-    assert(grants.length === 0, "variant_feature_grants moet leeg blijven");
+    const basic = grants.filter((g) => g.productVariant === "sparki_basic");
+    assert(basic.length === 0, "sparki_basic moet leeg blijven");
+  });
+
+  // ── Taak 385: Gratis vs Go zichtbaar — Go-onderdelen + routepoorten ────────
+  await scenario("sparki_go-abonnee heeft commercieel recht op de vier Go-onderdelen", async () => {
+    const resolved = await resolveEntitlements(subUser); // subscription + sparki_go
+    for (const key of GO_FEATURE_KEYS) {
+      assert(hasCommercialFeature(resolved, key), `go mist recht op ${key}`);
+      assert(
+        resolved.commercialFeatures[key]?.source === "variant:sparki_go",
+        `source van ${key} was ${resolved.commercialFeatures[key]?.source}`,
+      );
+    }
+    // Niet-Go-onderdelen blijven zonder recht (fail-closed).
+    assert(!hasCommercialFeature(resolved, "route_planner"), "route_planner mag geen variantrecht zijn");
+  });
+
+  await scenario("sparki_basic-abonnee heeft géén Go-rechten; legacy alles", async () => {
+    await db
+      .update(userProfilesTable)
+      .set({ productVariant: "sparki_basic" })
+      .where(eq(userProfilesTable.clerkId, subUser));
+    const basic = await resolveEntitlements(subUser);
+    for (const key of GO_FEATURE_KEYS) {
+      assert(!hasCommercialFeature(basic, key), `basic mag ${key} niet hebben`);
+    }
+    const legacy = await resolveEntitlements(legacyUser);
+    for (const key of GO_FEATURE_KEYS) {
+      assert(hasCommercialFeature(legacy, key), `legacy moet ${key} behouden`);
+    }
+  });
+
+  await scenario("Go-routes zijn fail-closed voor basic (403 upgrade_required), open voor go en legacy", async () => {
+    // subUser staat nu op sparki_basic.
+    const paths = [
+      ["GET", "/api/training-plan"],
+      ["GET", "/api/races/insight"],
+      ["GET", "/api/open-loops"],
+      ["GET", "/api/coach/analysis"],
+      ["GET", "/api/ai/observations"],
+    ] as const;
+    for (const [method, path] of paths) {
+      const r = await apiReq(method, path, subUser);
+      assert(r.status === 403, `${path}: verwacht 403 voor basic, kreeg ${r.status}`);
+      assert(r.json?.code === "upgrade_required", `${path}: code was ${r.json?.code}`);
+    }
+    await db
+      .update(userProfilesTable)
+      .set({ productVariant: "sparki_go" })
+      .where(eq(userProfilesTable.clerkId, subUser));
+    for (const [method, path] of paths) {
+      const r = await apiReq(method, path, subUser);
+      assert(r.status !== 403, `${path}: go-abonnee kreeg onterecht 403`);
+      const l = await apiReq(method, path, legacyUser);
+      assert(l.status !== 403, `${path}: legacy kreeg onterecht 403`);
+    }
   });
 
   await cleanup();

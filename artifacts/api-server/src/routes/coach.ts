@@ -12,6 +12,7 @@ import {
 } from "@workspace/db";
 import { analysisFeedbackTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { requireCommercialFeature } from "../lib/entitlements";
 import { SPARKI_ENGINE_VERSION } from "../lib/engine-version";
 import { writeAudit } from "../lib/security/audit";
 import { sessionSeed } from "../lib/variation";
@@ -629,7 +630,7 @@ router.post(
 
 // GET /api/coach/analysis — Sparki's deterministic six-part analysis for the
 // signed-in athlete, including today's stored follow-up answers fed back in.
-router.get("/analysis", requireAuth, async (req, res) => {
+router.get("/analysis", requireAuth, requireCommercialFeature("ai_observations"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
     const analysis = await runCoachAnalysis(clerkId, {

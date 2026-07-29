@@ -6,6 +6,8 @@ import { BioRadar } from "@/components/sparki/bio-radar"
 import { Sparkline } from "@/components/sparki/primitives"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useAiBrief } from "@/hooks/use-ai-brief"
+import { useFeatureAccess } from "@/hooks/use-feature-access"
+import { UpgradeNudge } from "@/components/ds/upgrade-nudge"
 import { useFeatureFlag } from "@/hooks/use-feature-flag"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useLoad } from "@/hooks/use-load"
@@ -46,7 +48,14 @@ export function TrainingDayHome({
   const { data, isLoading } = useAthleteDashboard()
   const [detailOpen, setDetailOpen] = useState(false)
   const aiEnabled = useFeatureFlag("ai_observations")
-  const { data: brief, isLoading: briefLoading } = useAiBrief(aiEnabled)
+  // Go-poort (taak 385): de dagelijkse briefing hoort bij Sparki Go. Zonder
+  // recht vragen we de brief niet op (server geeft toch 403) en tonen we de
+  // upgrade-melding in plaats van de briefingtekst.
+  const goAccess = useFeatureAccess("ai_observations")
+  const briefBlocked = goAccess.known && !goAccess.entitled
+  const { data: brief, isLoading: briefLoading } = useAiBrief(
+    aiEnabled && !briefBlocked,
+  )
   const { data: metricsHistory, isLoading: metricsLoading } = useDailyMetrics(14)
   const { data: loadData, isLoading: loadLoading } = useLoad()
   const { data: sessions } = useSessions(1)
@@ -419,7 +428,11 @@ export function TrainingDayHome({
                 SPARKI
               </span>
             </div>
-            {briefLoading ? (
+            {briefBlocked ? (
+              <div className="mt-3">
+                <UpgradeNudge feature="ai_observations" compact />
+              </div>
+            ) : briefLoading ? (
               <div className="mt-3 space-y-2">
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-4/5" />

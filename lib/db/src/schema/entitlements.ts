@@ -83,10 +83,11 @@ export const userEntitlementsTable = pgTable(
 export type UserEntitlement = typeof userEntitlementsTable.$inferSelect;
 export type InsertUserEntitlement = typeof userEntitlementsTable.$inferInsert;
 
-// Koppeling productvariant → feature. BEWUST LEEG OPGELEVERD: de concrete
-// featureverdeling per Go/Basic/Performance/Pro volgt later uit het Master
-// Plan. Lege tabel = subscription-gebruikers hebben fail-closed geen
-// variant-features tot dit bewust gevuld wordt.
+// Koppeling productvariant → feature. Sinds taak 385 gevuld door de
+// idempotente boot-seed (api-server ensureGoVariantGrantSeed): sparki_go
+// krijgt de vier Go-onderdelen (trainingsplan-engine, race-intelligentie,
+// coach-observaties/briefing, Performance Lab); sparki_basic blijft bewust
+// leeg. Ontbrekende rij = fail-closed geen recht.
 export const variantFeatureGrantsTable = pgTable(
   "variant_feature_grants",
   {

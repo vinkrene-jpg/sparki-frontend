@@ -12,6 +12,7 @@
 //   commerciële toegang. Een gewone operationele flag creëert nooit een
 //   commercieel recht. Een fout in deze laag zet nooit alles aan.
 
+import type { Request, Response, NextFunction, RequestHandler } from "express";
 import { eq, and } from "drizzle-orm";
 import {
   db,
@@ -31,6 +32,7 @@ import {
   type ReleaseGroup,
 } from "@workspace/db";
 import { resolveFlags, type ClientPlatform } from "./flags";
+import { getClerkUserId } from "./auth";
 import { isBillingFlagEnabledFor, tierFromTrialKey } from "./billing";
 import { isKilled, type KillSwitchKey } from "./kill-switches";
 import { logger } from "./logger";
@@ -270,6 +272,96 @@ export async function resolveEntitlements(
     expiredEntitlements: expired,
     commercialFeatures,
     degraded,
+  };
+}
+
+// ── Go-onderdelen (taak 385) ─────────────────────────────────────────────────
+// Productbesluit (René): deze vier onderdelen zijn Sparki Go-only. Alles wat
+// hier NIET staat blijft gratis (routeplanner, navigatie, materiaalcoach,
+// kennisbank, …). Veiligheids-/gezondheidskritieke informatie valt nooit onder
+// een commerciële poort. De sleutels leven als commerciële feature-keys in
+// variant_feature_grants; operationele flags blijven daarnaast met EN gelden.
+export const GO_FEATURE_KEYS = [
+  "autonomous_training", // Trainingsplan-engine — automatische plannen & aanpassingen
+  "race_intel", // Race-intelligentie — wedstrijdvoorbereiding, voeding, dossier
+  "ai_observations", // Coach-observaties & dagelijkse briefing
+  "performance_lab", // Performance Lab — diepe analyse & trends
+] as const;
+export type GoFeatureKey = (typeof GO_FEATURE_KEYS)[number];
+
+export const GO_FEATURE_LABELS: Record<GoFeatureKey, string> = {
+  autonomous_training: "Trainingsplan-engine",
+  race_intel: "Race-intelligentie",
+  ai_observations: "Coach-observaties & dagelijkse briefing",
+  performance_lab: "Performance Lab",
+};
+
+/**
+ * Idempotente seed van de Go-variantrechten: sparki_go krijgt de vier
+ * Go-onderdelen; sparki_basic bewust niets (afwezigheid = geen recht,
+ * fail-closed). onConflictDoNothing — een latere beheerbeslissing (bijv.
+ * enabled=false zetten) wordt nooit overschreven.
+ */
+export async function ensureGoVariantGrantSeed(): Promise<void> {
+  await db
+    .insert(variantFeatureGrantsTable)
+    .values(
+      GO_FEATURE_KEYS.map((featureKey) => ({
+        productVariant: "sparki_go",
+        featureKey,
+      })),
+    )
+    .onConflictDoNothing();
+}
+
+/**
+ * Heeft deze resolutie commercieel recht op dit onderdeel?
+ * legacy_unrestricted ⇒ ja (bewuste carve-out, gedrag exact als vóór
+ * entitlements); subscription ⇒ alleen bij een expliciet recht (fail-closed,
+ * óók bij degraded reads).
+ */
+export function hasCommercialFeature(
+  resolved: ResolvedEntitlements,
+  featureKey: string,
+): boolean {
+  if (resolved.entitlementMode === "legacy_unrestricted") return true;
+  return !!resolved.commercialFeatures[featureKey];
+}
+
+/**
+ * Express-poort voor Go-only endpoints. Altijd NA requireAuth monteren.
+ * Fail-closed: geen recht, onbekende gebruiker of een fout in deze laag ⇒ 403
+ * met code "upgrade_required" (legacy-gebruikers hangen niet van deze tabellen
+ * af en blijven bij een leesfout gewoon werken — zie resolveEntitlements).
+ */
+export function requireCommercialFeature(
+  featureKey: GoFeatureKey,
+): RequestHandler {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const clerkId = getClerkUserId(req);
+      if (!clerkId) {
+        res.status(401).json({ error: "Niet ingelogd" });
+        return;
+      }
+      const resolved = await resolveEntitlements(clerkId);
+      if (hasCommercialFeature(resolved, featureKey)) {
+        next();
+        return;
+      }
+      res.status(403).json({
+        error: `${GO_FEATURE_LABELS[featureKey]} hoort bij Sparki Go.`,
+        code: "upgrade_required",
+        feature: featureKey,
+      });
+    } catch (err) {
+      logger.error({ err, featureKey }, "commercial gate failed");
+      res.status(403).json({
+        error: "Commerciële toegang kon niet worden vastgesteld.",
+        code: "upgrade_required",
+        feature: featureKey,
+      });
+    }
   };
 }
 

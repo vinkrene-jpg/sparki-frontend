@@ -26,6 +26,8 @@ import {
   type Personality,
 } from "@/hooks/use-coach-analysis"
 import { labelSignalCapitalized } from "@/lib/signal-labels"
+import { useFeatureAccess } from "@/hooks/use-feature-access"
+import { UpgradeNudge } from "@/components/ds/upgrade-nudge"
 
 export type CoachCardVariant = "hero" | "card"
 
@@ -371,7 +373,14 @@ export function CoachAnalysisCard({
   const [showWhy, setShowWhy] = useState(false)
   const { data, isLoading, isError, refetch, isFetching } = useCoachAnalysis()
 
+  const goAccess = useFeatureAccess("ai_observations")
+
   if (!profile || profile.activeRole !== "athlete") return null
+
+  // Go-poort (taak 385): coach-observaties horen bij Sparki Go.
+  if (goAccess.known && !goAccess.entitled) {
+    return <UpgradeNudge feature="ai_observations" compact />
+  }
 
   if (isLoading) {
     return (

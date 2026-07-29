@@ -2,6 +2,7 @@ import { Router } from "express";
 import { eq, and, asc } from "drizzle-orm";
 import { db, racesTable, athleteProfilesTable, routesTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { requireCommercialFeature } from "../lib/entitlements";
 import { registerRouteUsage } from "../lib/route-usage";
 import { autoAdaptPlan } from "../engines/training-plan";
 import {
@@ -149,7 +150,7 @@ router.get("/", requireAuth, async (req, res) => {
 // race-day weather, home→venue distance, a discipline logistics proposal, and
 // the home departure suggestion. Honest about every gap (never fabricated).
 // Registered before "/:id/intel" so the literal path is matched first.
-router.get("/insight", requireAuth, async (req, res) => {
+router.get("/insight", requireAuth, requireCommercialFeature("race_intel"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const location = req.query["location"] ? String(req.query["location"]) : null;
   const raceDate = req.query["raceDate"] ? String(req.query["raceDate"]) : "";
@@ -358,7 +359,7 @@ router.get("/wizard-proposal", requireAuth, async (req, res) => {
 // Race Intelligence: phased prep timeline, auto race-day report (honest about
 // unknowns), race-fuel advice with budget alternatives, multi-day checklists.
 // Computed on demand from the athlete's own race + profile — no stored snapshot.
-router.get("/:id/intel", requireAuth, async (req, res) => {
+router.get("/:id/intel", requireAuth, requireCommercialFeature("race_intel"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = parseInt(String(req.params["id"]), 10);
   if (isNaN(id)) {
@@ -481,7 +482,7 @@ router.get("/:id/course", requireAuth, async (req, res) => {
 // ── GET /api/races/:id/advice ────────────────────────────────────────────────
 // Deterministische adviezen (pacing, bandendruk, warming-up, tactiek, risico's)
 // met typologie; een coachinstructie staat altijd bovenaan en is leidend.
-router.get("/:id/advice", requireAuth, async (req, res) => {
+router.get("/:id/advice", requireAuth, requireCommercialFeature("race_intel"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = parseInt(String(req.params["id"]), 10);
   if (isNaN(id)) {
@@ -523,7 +524,7 @@ router.get("/:id/advice", requireAuth, async (req, res) => {
 // Het volledige wedstrijddossier voor de hele flow (info → parcours →
 // voorbereiding → racedag → gekoppelde activiteit → evaluatie), op leesmoment
 // samengesteld uit de bestaande engines — geen tweede bron van waarheid.
-router.get("/:id/dossier", requireAuth, async (req, res) => {
+router.get("/:id/dossier", requireAuth, requireCommercialFeature("race_intel"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = parseInt(String(req.params["id"]), 10);
   if (isNaN(id)) {
@@ -768,7 +769,7 @@ router.put("/:id", requireAuth, async (req, res) => {
 // ── PUT /api/races/:id/checklist ─────────────────────────────────────────────
 // Dedicated endpoint so the Day-Before checklist can persist its checked state
 // per race without sending the whole race object on every toggle.
-router.put("/:id/checklist", requireAuth, async (req, res) => {
+router.put("/:id/checklist", requireAuth, requireCommercialFeature("race_intel"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const id = parseInt(String(req.params["id"]), 10);
   if (isNaN(id)) {

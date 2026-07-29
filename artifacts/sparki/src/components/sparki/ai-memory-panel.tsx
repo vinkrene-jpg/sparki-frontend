@@ -18,6 +18,8 @@ import {
 import { GraphInsightCard } from "@/components/sparki/insight/graph-insight-card"
 import { AnalysisFeedback } from "@/components/sparki/analysis-feedback"
 import { ACCENT } from "@/components/sparki/ui"
+import { useFeatureAccess } from "@/hooks/use-feature-access"
+import { UpgradeNudge } from "@/components/ds/upgrade-nudge"
 
 const SIGNAL_LABEL: Record<ObservationSignal["kind"], string> = {
   training: "Training",
@@ -237,6 +239,7 @@ function MemoryInsightCard({ group }: { group: InsightGroup }): ReactNode {
 }
 
 export function AiMemoryPanel() {
+  const goAccess = useFeatureAccess("ai_observations")
   const { data, isLoading } = useObservations()
   const { data: sessions } = useSessions(60)
   const { data: load } = useLoad()
@@ -252,6 +255,18 @@ export function AiMemoryPanel() {
     load,
     sessions,
   })
+
+  // Go-poort (taak 385): Sparki's observaties horen bij Sparki Go.
+  if (goAccess.known && !goAccess.entitled) {
+    return (
+      <section>
+        <SectionLabel n="08" title="Sparki Geheugen" />
+        <div className="mt-3">
+          <UpgradeNudge feature="ai_observations" compact />
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section>

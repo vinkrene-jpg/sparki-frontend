@@ -14,6 +14,7 @@ import {
   plannedWorkoutsTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { requireCommercialFeature } from "../lib/entitlements";
 import {
   gatherInputs,
   checkCompleteness,
@@ -42,7 +43,7 @@ async function hasAcceptedCoach(athleteClerkId: string): Promise<boolean> {
 }
 
 // GET /api/training-plan — setup state + current plan (concrete week + preview).
-router.get("/", requireAuth, async (req, res) => {
+router.get("/", requireAuth, requireCommercialFeature("autonomous_training"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
     // Autonomous roll-forward: once the committed week has elapsed, promote the
@@ -153,11 +154,11 @@ async function handleGenerate(
   }
 }
 
-router.post("/generate", requireAuth, handleGenerate);
-router.post("/regenerate", requireAuth, handleGenerate);
+router.post("/generate", requireAuth, requireCommercialFeature("autonomous_training"), handleGenerate);
+router.post("/regenerate", requireAuth, requireCommercialFeature("autonomous_training"), handleGenerate);
 
 // POST /api/training-plan/adapt — re-evaluate provisional days vs current recovery.
-router.post("/adapt", requireAuth, async (req, res) => {
+router.post("/adapt", requireAuth, requireCommercialFeature("autonomous_training"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
     const result = await adaptPlan(clerkId);
@@ -175,7 +176,7 @@ router.post("/adapt", requireAuth, async (req, res) => {
 
 // POST /api/training-plan/pause — pause the CURRENT plan (kept, not deleted).
 // Scoped to the single plan the view resolves to — never a bulk status flip.
-router.post("/pause", requireAuth, async (req, res) => {
+router.post("/pause", requireAuth, requireCommercialFeature("autonomous_training"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
     const current = await resolveCurrentPlan(clerkId);
@@ -202,7 +203,7 @@ router.post("/pause", requireAuth, async (req, res) => {
 
 // POST /api/training-plan/resume — resume the CURRENT paused plan. Any other
 // stale paused plans are archived so the single-active invariant holds.
-router.post("/resume", requireAuth, async (req, res) => {
+router.post("/resume", requireAuth, requireCommercialFeature("autonomous_training"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
     const current = await resolveCurrentPlan(clerkId);
@@ -243,7 +244,7 @@ router.post("/resume", requireAuth, async (req, res) => {
 // DELETE /api/training-plan — delete the current (active or paused) plan,
 // including its plan days and still-planned generated workouts. Completed
 // sessions are never touched.
-router.delete("/", requireAuth, async (req, res) => {
+router.delete("/", requireAuth, requireCommercialFeature("autonomous_training"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   try {
     const current = await resolveCurrentPlan(clerkId);

@@ -17,6 +17,7 @@ import {
 } from "@workspace/db";
 import type { BusyDay } from "../lib/training/plan-generator";
 import { requireAuth, getClerkUserId } from "../lib/auth";
+import { requireCommercialFeature } from "../lib/entitlements";
 import { maybeScheduleStravaCatchUp } from "../engines/data-hub/strava-sync";
 import { ensureLibraryRoutes } from "../lib/route-library";
 import { generateThreeWeekPlan, autoAdaptPlan } from "../engines/training-plan";
@@ -1346,7 +1347,7 @@ async function loadBusyDays(
 // Generate a real periodized 3-week plan from the athlete's own numbers. Clears
 // any future Sparki-planned, not-yet-done workouts in the window first so the
 // plan is idempotent. Coach-planned and already-completed workouts are kept.
-router.post("/plan/generate", requireAuth, async (req, res) => {
+router.post("/plan/generate", requireAuth, requireCommercialFeature("autonomous_training"), async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const { startDate, weeks } = req.body as {
     startDate?: string;

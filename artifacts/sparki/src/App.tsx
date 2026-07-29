@@ -70,6 +70,7 @@ import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
 import { UserProvider, useUserProfile } from "@/contexts/UserContext";
 import { FeatureFlagProvider, useFeatureFlags } from "@/contexts/FeatureFlagContext";
+import { GoGateSwitch } from "@/components/sparki/go-gate";
 import { FeedbackProvider } from "@/contexts/FeedbackContext";
 import { DevPreview } from "@/components/sparki/dev-preview";
 import { DEV_PREVIEW } from "@/lib/dev";
@@ -449,8 +450,14 @@ function VandaagPage() {
 // ScreenShell-pagina rendert zonder mobiele ondernavigatie.
 function TrainSwitchPage() {
   const { flags, isLoading: flagsLoading } = useFeatureFlags();
-  if (flagsLoading || flags.commercial_shell) return <CorePlanPage />;
-  return <TrainPage />;
+  const page =
+    flagsLoading || flags.commercial_shell ? <CorePlanPage /> : <TrainPage />;
+  // Go-poort (taak 385): de trainingsplan-engine is een Go-onderdeel.
+  return (
+    <GoGateSwitch feature="autonomous_training" actief="/train" section="Train">
+      {page}
+    </GoGateSwitch>
+  );
 }
 
 function ActiviteitenSwitchPage() {

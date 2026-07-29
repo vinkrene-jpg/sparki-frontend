@@ -1,0 +1,86 @@
+// Sparki-designsysteem — UpgradeNudge (taak 385).
+//
+// Eén herbruikbare Nederlandse upgrade-melding voor Go-only onderdelen.
+// Vervangt de inhoud wanneer een abonnee zonder Go-recht een Go-onderdeel
+// opent. Geen prijzen of marketing-copy (bewust buiten scope); eerlijk over
+// wat het onderdeel doet en dat het bij Sparki Go hoort.
+import { Lock } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export const GO_FEATURE_COPY: Record<string, { titel: string; uitleg: string }> = {
+  autonomous_training: {
+    titel: "Trainingsplan-engine",
+    uitleg:
+      "Automatische trainingsplannen die met je meegroeien — opbouw, aanpassing en herstel, door Sparki gepland.",
+  },
+  race_intel: {
+    titel: "Race-intelligentie",
+    uitleg:
+      "Wedstrijdvoorbereiding, voedingsplan en wedstrijddossier — Sparki denkt met je mee naar de startstreep.",
+  },
+  ai_observations: {
+    titel: "Coach-observaties & dagelijkse briefing",
+    uitleg:
+      "Sparki's dagelijkse briefing en coach-observaties over jouw training en herstel.",
+  },
+  performance_lab: {
+    titel: "Performance Lab",
+    uitleg:
+      "Diepe analyse en trends: belasting, vermogenscurves en je ontwikkeling over de tijd.",
+  },
+};
+
+export interface UpgradeNudgeProps {
+  /** Go-onderdeel (autonomous_training | race_intel | ai_observations | performance_lab). */
+  feature: string;
+  /** Compacte kaartvorm voor inline gebruik (Home-kaarten e.d.). */
+  compact?: boolean;
+  className?: string;
+}
+
+export function UpgradeNudge({ feature, compact, className }: UpgradeNudgeProps) {
+  const copy = GO_FEATURE_COPY[feature] ?? {
+    titel: "Dit onderdeel",
+    uitleg: "Dit onderdeel hoort bij Sparki Go.",
+  };
+
+  if (compact) {
+    return (
+      <div
+        className={cn(
+          "rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 backdrop-blur",
+          className,
+        )}
+        data-testid="upgrade-nudge"
+      >
+        <p className="flex items-center gap-2 text-[12px] font-medium text-white/80">
+          <Lock className="h-3.5 w-3.5 text-cyan-300/80" aria-hidden />
+          {copy.titel} hoort bij Sparki Go
+        </p>
+        <p className="mt-1 text-[12px] leading-snug text-white/45">{copy.uitleg}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "mx-auto flex max-w-md flex-col items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-6 py-10 text-center backdrop-blur",
+        className,
+      )}
+      data-testid="upgrade-nudge"
+    >
+      <span className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-300/30 bg-cyan-300/10">
+        <Lock className="h-4.5 w-4.5 text-cyan-300" aria-hidden />
+      </span>
+      <p className="text-[15px] font-semibold text-white/90">
+        {copy.titel} hoort bij Sparki Go
+      </p>
+      <p className="text-[13px] leading-relaxed text-white/50">{copy.uitleg}</p>
+      <p className="text-[12px] text-white/35">
+        Met Sparki Go krijg je dit onderdeel erbij. Al je huidige gegevens en
+        gratis onderdelen blijven gewoon werken.
+      </p>
+    </div>
+  );
+}

@@ -21,6 +21,8 @@ import { RaceDayReport, RaceFuelCard } from "@/components/sparki/race/race-intel
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useRaceContext } from "@/hooks/use-races"
 import { useRaceIntel } from "@/hooks/use-race-intel"
+import { useFeatureAccess } from "@/hooks/use-feature-access"
+import { UpgradeNudge } from "@/components/ds/upgrade-nudge"
 import { computeRaceDayTimings } from "@/lib/race-planner"
 import type { DayHomeComponentProps } from "@/lib/day-type"
 
@@ -29,7 +31,10 @@ export function RaceDayHome({ briefing }: DayHomeComponentProps) {
   const { context } = useRaceContext()
   const profile = data?.athleteProfile
   const race = context?.race ?? null
-  const { data: intel } = useRaceIntel(race?.id)
+  // Go-poort (taak 385): race-intelligentie hoort bij Sparki Go.
+  const goAccess = useFeatureAccess("race_intel")
+  const raceGoBlocked = goAccess.known && !goAccess.entitled
+  const { data: intel } = useRaceIntel(raceGoBlocked ? undefined : race?.id)
   const [raceMode, setRaceMode] = useState(false)
 
   return (
@@ -95,6 +100,15 @@ export function RaceDayHome({ briefing }: DayHomeComponentProps) {
               )}
             </div>
           </section>
+
+          {raceGoBlocked && (
+            <section>
+              <SectionLabel n="05" title="Wedstrijddagrapportage" large />
+              <div className="mt-4">
+                <UpgradeNudge feature="race_intel" compact />
+              </div>
+            </section>
+          )}
 
           {intel && (
             <section>

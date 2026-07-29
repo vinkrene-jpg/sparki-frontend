@@ -11,6 +11,8 @@ import { ensureBillingFlagSeed, expireBillingStates } from "./lib/billing";
 import { startRouteEnvWarmupScheduler } from "./lib/route-env-warmup";
 import { sweepObservationCleanup } from "./jobs/observation-cleanup";
 
+import { ensureGoVariantGrantSeed } from "./lib/entitlements";
+
 // Productie faalt hard bij ontbrekende verplichte configuratie — liever een
 // duidelijke boot-fout dan een half-werkende app met stille gaten.
 if (process.env.NODE_ENV === "production") {
@@ -150,6 +152,11 @@ app.listen(port, (err) => {
   // idempotent bij boot en daarna dagelijks — geen webhook-afhankelijkheid.
   ensureBillingFlagSeed().catch((err) =>
     logger.error({ err }, "billing flag seed failed"),
+  );
+  // Go-variantrechten (taak 385): sparki_go krijgt de vier Go-onderdelen,
+  // sparki_basic bewust niets. Idempotent; beheerbeslissingen blijven staan.
+  ensureGoVariantGrantSeed().catch((err) =>
+    logger.error({ err }, "go variant grant seed failed"),
   );
   expireBillingStates()
     .then((r) => {

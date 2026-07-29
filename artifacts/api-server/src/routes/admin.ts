@@ -1732,7 +1732,15 @@ router.get(
       const subject = String(req.params.clerkId);
       const resolved = await resolveEntitlements(subject);
       const rows = await db
-        .select()
+        .select({
+          id: userEntitlementsTable.id,
+          entitlementKey: userEntitlementsTable.entitlementKey,
+          entitlementType: userEntitlementsTable.entitlementType,
+          status: userEntitlementsTable.status,
+          source: userEntitlementsTable.source,
+          startsAt: userEntitlementsTable.startsAt,
+          endsAt: userEntitlementsTable.endsAt,
+        })
         .from(userEntitlementsTable)
         .where(eq(userEntitlementsTable.clerkId, subject))
         .orderBy(desc(userEntitlementsTable.createdAt));

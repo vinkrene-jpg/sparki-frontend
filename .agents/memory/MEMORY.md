@@ -34,9 +34,9 @@
 - [Coach plan adoption](coach-plan-adoption.md) — coach adopts advisory plan_days into athlete-owned planned_workouts (source="coach", planId null); dedupe by date+source, never overwrite.
 - [Sparki general-day concrete advice](sparki-day-advice.md) — no-plan Home day shows one deterministic explainable session (lib/day-advice); readiness SSOT in lib/readiness; TSB guard; race framing base/build only.
 - [Sparki Race Intelligence](sparki-race-intel.md) — never fabricate, cheapest fuel tier first; field model found/derived/missing ([engine](sparki-race-intel-engine.md)).
+- Race-extra's: [wizard](sparki-race-wizard.md) create-only, provenance, /wizard-proposal vóór /:id; [room](sparki-race-room.md) dayIndex 1-based, ScreenShell `bare`; [documentanalyse](sparki-document-analysis.md) honest gevonden/ontbreekt, links+enriches races.
 - [Sparki Input Center & ACL timing](sparki-input-center.md) — one central composer; object ACL can only be set AFTER bytes exist (presign→PUT→set-ACL-on-persist), never before.
 - [Sparki Materiaalcoach & fietsscan](sparki-materiaalcoach.md) — photo-driven honest advice; confidence-gated extra-photo ask; cost only for material kind; photos owner-checked served ([fietsscan](sparki-bike-scan.md): original saved before cutout, @imgly needs direct onnxruntime-web dep, asset provenance mandatory).
-- [Sparki Document Analysis](sparki-document-analysis.md) — reads race/technical guides (PDF/image) via Anthropic document block; honest gevonden/ontbreekt + deterministic follow-ups; links+enriches races.
 - [Sparki inline input actions](sparki-inline-input-actions.md) — coach-surface empty states offer direct inline actions (real mutation + invalidate), never "ga naar X" ([missing-input flow](sparki-missing-input.md): registry + focus/return/retry framework).
 - [Sparki Observation & Coach Engine](sparki-observation-engine.md) — deterministic coach brain; ≥2-signal guard (health exception), confidence capped <100, weather always missing, no-"AI" copy.
 - [Sparki page-intelligence principle](sparki-intelligence-principle.md) — no dumb static lists/cards/maps; every surface personalized to athlete type/intent + carries Sparki's proactive judgment.
@@ -58,13 +58,11 @@
 - [Sparki home weather](sparki-home-weather.md) — real Open-Meteo for home location on everyday surfaces; home-advisory representative session must be ≥120min or heat reads diverge from daily-advice engine.
 - [Drizzle/DB migratie-traps](drizzle-onconflict-partial-index.md) — onConflict partial-index predicate keys; guarded ADD CONSTRAINT ([migratie](db-nondestructive-constraint-migration.md)); drift ([push](drizzle-push-drift-loops.md)).
 - [Sparki reminders & meldingen](sparki-reminder-delivery.md) — idempotent via dedupeKey+sentAt; email honest-limited skips, never fake-sends; push = SSRF host-allowlist, only fresh rows ([push](sparki-web-push.md); [daily fold](sparki-notification-daily-fold.md): fold per Ams-dag, badge telt DAGEN, [attention](sparki-attention-notifications.md)).
+- [Sound Studio](sparki-sound-studio.md) wekker: web kan locked phone niet laten rinkelen (zeg dat eerlijk), dedupe op LOCAL date; [engagement](sparki-engagement-engine.md) leert echt open-ritme, honest default bij dun.
 - [Open choices tracker](open-choices-convention.md) — START every turn: read `.agents/open-choices.md`, surface unresolved choices in chat; add when I ask, remove when decided.
-- [Sparki 5-staps race-wizard](sparki-race-wizard.md) — wizard=create only (edit=flat form); provenance model (user/calendar/insight/profile/ai_proposal); /wizard-proposal vóór /:id; ?step=N dev-demo.
 - [Sparki Ontwikkelmodel](sparki-ontwikkelmodel.md) — structured developmentGoal enum + deterministic honest belastbaarheid + /you Ontwikkelkompas.
-- [Sparki Sound Studio](sparki-sound-studio.md) — original audio identity + in-app wekker; web can't ring locked phone (state it); dedupe on LOCAL date; optimistic restore even on first write.
 - [Sparki World architecture](sparki-world.md) — transparently-fictional Virtual Athletes island; cache-first Media Engine (promptKey UNIQUE, avatars carry slug/scenes don't); hard wall to real data; honest gaps.
 - [Sparki presentation variation](sparki-presentation-variation.md) — per-app-open seed rotates only ORDER + which real insight leads; numbers stable, urgent never demoted, seed-0 no-op.
-- [Sparki Wedstrijd-room](sparki-race-room.md) — race-day media montage; dayIndex 1-based end-to-end; ScreenShell leaks coach card on COACH_CARD_SECTIONS — use `bare`.
 - [Local-date UTC off-by-one trap](local-date-utc-trap.md) — toISOString().slice(0,10) gives UTC date; for NL local calendar days build from local getters.
 - [Long-running jobs in this sandbox](sandbox-background-jobs.md) — nohup/setsid bg jobs die at tool-call boundaries; run long one-shot jobs as a console workflow + poll.
 - [Sparki Ontdekken visual feed](sparki-ontdekken-visual-feed.md) — /feed kaartenfeed: pure engine + per-apparaat prefs; sfeerbeelden alleen uit atmosphere-lib, chip nooit dubbel; useKnowledge key bevat limit.
@@ -81,7 +79,6 @@
 - [Deployment liveness probes bare /api](deploy-liveness-bare-api.md) — platform pings the service base path (not only startup healthz); api router needs get("/") too or republish flaps unhealthy.
 - Test-infra traps: [build race](api-server-test-build-race.md) dist/ strikt sequentieel + semaphore ([storm](test-workflow-boot-storm.md)); [tsx ENOENT](tsx-runner-enoent.md) draai via pnpm run; [pino](pino-worker-transport-flaky.md) sync stream in tests.
 - [Sparki per-session caps](sparki-session-caps.md) — plan engine caps single-session minutes per DayKind×experience; unrealistic weekly quota underfills honestly, never a 6h ride; wedstrijd keeps 360.
-- [Sparki engagement engine](sparki-engagement-engine.md) — healthy pull-to-return: learns real open rhythm from tester_events, honest default when thin.
 - [Sparki aandachtswet (Vandaag single-leader)](sparki-aandachtswet.md) — one leading Momentblok (priority chain); ride-along weather/leskaart/nudge must be GATED at render not just imported.
 - [Route generation speed](route-generation-speed.md) — Overpass sync was the 40s-blocker; async enrichment → p95 ≤3s ([warm-up](sparki-route-env-warmup.md): warm-gebied-cache + corridor-omvatting, afgekapte gebiedsquery nooit opslaan, [ENV-COVERAGE]-log).
 - [Sparki route-paspoort + POIs + Overpass](sparki-route-passport.md) — Overpass: bbox+compacte nwr-unions (verbose 504t); mirror maps.mail.ru, nooit osm.ch; geometry nulls: filter before .lat ([POIs](sparki-route-pois.md), [klimmen](climb-explorer.md), [remarks/wegtypen](sparki-route-remarks.md): no-surface tag = "onbekend", [surfaces](sparki-route-surfaces.md)).
@@ -147,6 +144,7 @@
 - [Deploy image 8 GiB-limiet](deploy-image-size-limit.md) — image bevat werkmap+.git; export-zips & test-bundels weren, api-server deploy-build bundelt alleen server+jobs.
 - [Git history cleanup (filter-repo + LFS)](git-history-cleanup.md) — pip install git-filter-repo; verwijdert origin-remote (re-add na afloop); LFS-objecten blijven in .git/lfs tot handmatige delete; fix tracking branch vóór force-push.
 - Prod-validatie: [publicatiecontrole](sparki-publish-check.md) bundle-grep + curl prod-JS; [ingelogde validatie](sparki-logged-in-validation.md) Clerk ticket-login; [browserchecks](prod-browser-checks.md) eigen Playwright in /tmp (runTest raakt dev-app).
+- [Sparki Gratis vs Go paywall](sparki-go-paywall.md) — GO_FEATURE_KEYS commercieel-only gate (nooit via flags); UI faalt open; admin.ts bad-merge-corruptie herstel uit parent-commit.
 - [Sparki Stripe-testomgeving](sparki-stripe-testmode.md) — flag+allowlist AND-grendels, webhook idempotent-in-tx (rollback = herleverbaar), fake gateway + echte HMAC-signaturen, rawBody-verify in app.ts.
 - [Sparki observatie-opschoning](sparki-observation-cleanup.md) — persist-poorten + cleanup-job (outdated, nooit delete) draait nu ook automatisch (FTP-achterhaald-event ná commit + dagelijkse sweep, trigger in event); CLI-guard matcht ook testbundel.
 - [Mentale Training kaarten](sparki-mental-training-cards.md) — diepgang per kaart (1–3 sterren, server-side); lagen voegen alleen toe, kern identiek op elk niveau.

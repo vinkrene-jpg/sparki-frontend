@@ -25,6 +25,8 @@ import { TeamMeetingPlanner } from "@/components/sparki/race/team-meeting-planne
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useRaceContext } from "@/hooks/use-races"
 import { useRaceIntel } from "@/hooks/use-race-intel"
+import { useFeatureAccess } from "@/hooks/use-feature-access"
+import { UpgradeNudge } from "@/components/ds/upgrade-nudge"
 import type { DayHomeComponentProps } from "@/lib/day-type"
 
 export function DayBeforeRaceHome({ briefing }: DayHomeComponentProps) {
@@ -32,7 +34,10 @@ export function DayBeforeRaceHome({ briefing }: DayHomeComponentProps) {
   const { context } = useRaceContext()
   const profile = data?.athleteProfile
   const race = context?.race ?? null
-  const { data: intel } = useRaceIntel(race?.id)
+  // Go-poort (taak 385): race-intelligentie hoort bij Sparki Go.
+  const goAccess = useFeatureAccess("race_intel")
+  const raceGoBlocked = goAccess.known && !goAccess.entitled
+  const { data: intel } = useRaceIntel(raceGoBlocked ? undefined : race?.id)
 
   return (
     <ScreenShell section="Home" bg="/atmosphere/wedstrijd-renster-goud.webp">
@@ -70,6 +75,15 @@ export function DayBeforeRaceHome({ briefing }: DayHomeComponentProps) {
               )}
             </div>
           </section>
+
+          {raceGoBlocked && (
+            <section>
+              <SectionLabel n="03" title="Wedstrijddagrapportage" large />
+              <div className="mt-4">
+                <UpgradeNudge feature="race_intel" compact />
+              </div>
+            </section>
+          )}
 
           {intel && (
             <section>
