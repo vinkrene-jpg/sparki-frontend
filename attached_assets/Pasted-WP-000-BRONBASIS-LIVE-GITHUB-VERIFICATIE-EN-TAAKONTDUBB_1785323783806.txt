@@ -1,0 +1,260 @@
+WP-000 — BRONBASIS, LIVE GITHUB-VERIFICATIE EN TAAKONTDUBBELING
+
+DOEL
+
+Stel vóór enige verdere bouw één betrouwbare bronbasis vast voor Sparki.
+
+Dit is een read-only inventarisatie- en verificatieopdracht.
+
+Bouw niets.
+Wijzig geen applicatiecode.
+Wijzig geen database.
+Start geen functionele werkpakketten.
+Voer geen deployment uit.
+
+BRONNEN
+
+Gebruik:
+
+- SPARKI_AI_MASTER_PLAN_v3_02.yaml
+- SPARKI_R1_BUILD_PACK_V1_DRAFT_AUTONOOM_v3_GECORRIGEERD_2026-07-29.md
+- live GitHub-repository `vinkrene-jpg/sparki-frontend`
+- actuele Replit-taken, agents, commits en rapporten
+
+KERNVRAGEN
+
+1. Wat is de actuele live GitHub-bronbasis?
+2. Welke Replit-opdrachten bestaan al?
+3. Welke zijn afgerond, gestart, gestopt, dubbel of vervangen?
+4. Wat is de actuele status van opdracht #382?
+5. Wat is de actuele status van opdracht #383?
+6. Welke Build Pack-werkpakketten blijken al geheel of gedeeltelijk uitgevoerd?
+7. Welke taken mogen veilig starten zonder dubbel werk?
+
+FASE 1 — LIVE GIT-VERIFICATIE
+
+Voer in de actuele repository minimaal uit:
+
+git branch --show-current
+git rev-parse HEAD
+git log -1 --oneline
+git status --short
+git remote -v
+
+Leg vast:
+
+- repository;
+- branch;
+- volledige HEAD-SHA;
+- korte SHA;
+- laatste commitboodschap;
+- remote origin;
+- schone of gewijzigde working tree;
+- eventuele lokale commits die niet gepusht zijn;
+- eventuele afwijking tussen GitHub en Replit.
+
+De geregistreerde kandidaat-SHA `666b702` mag pas als bronbasis gelden wanneer deze live wordt bevestigd.
+
+Bij afwijking:
+
+- gebruik de actuele live SHA als bronbasis;
+- leg exact vast waarom die afwijkt;
+- wijzig nog geen Build Pack;
+- rapporteer welke werkpakketten opnieuw tegen de actuele SHA beoordeeld moeten worden.
+
+FASE 2 — INVENTARISEER ALLE REPLIT-TAKEN
+
+Maak een volledige lijst van alle zichtbare:
+
+- open taken;
+- lopende agents;
+- afgeronde taken;
+- gestopte taken;
+- mislukte taken;
+- conceptopdrachten;
+- commits;
+- auditrapporten;
+- testresultaten.
+
+Neem per taak op:
+
+- taaknummer of naam;
+- korte omschrijving;
+- status;
+- gekoppelde commit-SHA;
+- gewijzigde bestanden;
+- teststatus;
+- rapportbestand;
+- of de wijzigingen zijn gemerged;
+- relatie met Build Pack;
+- vervolgactie.
+
+Classificeer iedere taak als:
+
+- AFGEROND_EN_BEWEZEN
+- AFGEROND_MAAR_NIET_VERIFIEERD
+- LOPEND
+- GESTOPT
+- MISLUKT
+- DUBBEL
+- VERVANGEN_DOOR_NIEUWER_WERKPAKKET
+- BUITEN_HUIDIGE_SCOPE
+- STATUS_ONBEKEND
+
+FASE 3 — CONTROLEER OPDRACHT #382
+
+Controleer specifiek:
+
+- of #382 ooit gestart is;
+- of er codewijzigingen zijn;
+- of historische TSS/IF/load is herberekend;
+- of de FTP-tijdlijn correct is gebruikt;
+- of `[achterhaald]`-FTP-waarden zijn uitgesloten;
+- of voor/na-bewijs bestaat;
+- of idempotentie is getest;
+- of huidige geldige FTP-waarden ongemoeid zijn gebleven;
+- of een rollbackpad bestaat.
+
+Classificeer #382 als:
+
+- NIET_GESTART
+- GEDEELTELIJK_UITGEVOERD
+- AFGEROND_MAAR_NIET_VERIFIEERD
+- VERIFIED_FOR_R1
+- BLOCKED
+- VERVALLEN_DOOR_NIEUWER_WERK
+
+FASE 4 — CONTROLEER OPDRACHT #383
+
+Controleer specifiek:
+
+- of #383 ooit gestart is;
+- of verouderde 331 W-verwijzingen zijn opgeschoond;
+- of inhoudelijke duplicaten zijn verwijderd;
+- of dagkopieën zijn aangepakt;
+- of retentie- en herhalingsregels bestaan;
+- of herkomst en gebruikersisolatie zijn getest;
+- of nieuwe duplicaten worden voorkomen;
+- of voor/na-bewijs bestaat.
+
+Classificeer #383 met dezelfde statussen.
+
+FASE 5 — ONTDUBBEL TEGEN HET BUILD PACK
+
+Loop alle 73 werkpakketten langs en bepaal per werkpakket:
+
+- NIET_GESTART
+- DEELS_AL_BESTAAND
+- AL_GEBOUWD_MAAR_NIET_VERIFIEERD
+- VERIFIED_FOR_R1
+- DUBBEL_MET_BESTAANDE_TAAK
+- VERVANGEN_DOOR_NIEUWER_BESLUIT
+- GEBLOKKEERD
+- STATUS_ONBEKEND
+
+Maak geen nieuwe bouwopdrachten aan.
+
+Verwijder of sluit geen bestaande taken.
+
+Markeer alleen:
+
+- doublures;
+- afhankelijkheden;
+- bewijsstatus;
+- aanbevolen vervolg.
+
+FASE 6 — BEPAAL VEILIGE STARTVOLGORDE
+
+Bepaal na inventarisatie of deze pakketten mogen starten:
+
+- WP-A01
+- INFRA-01
+- MARKT-01
+- WP-B01
+
+Per pakket één van:
+
+- READY_TO_START
+- WACHT_OP_BESTAANDE_TAAK
+- AL_DEELS_UITGEVOERD
+- AL_AFGEROND
+- BLOCKED
+- EERST_HERSTEL_NODIG
+
+Start deze pakketten nog niet.
+
+FASE 7 — OPLEVERING
+
+Lever op:
+
+docs/SPARKI_WP000_BRONBASIS_EN_TAAKONTDUBBELING.md
+
+Maak daarnaast:
+
+docs/SPARKI_REPLIT_TAAKINVENTARIS.csv
+
+De markdownrapportage bevat minimaal:
+
+1. actuele GitHub-bronbasis;
+2. verschil met geregistreerde kandidaat-SHA;
+3. working-tree-status;
+4. volledige taakinventaris;
+5. status #382;
+6. status #383;
+7. Build Pack-ontdubbeling;
+8. open blokkades;
+9. aanbevolen veilige startvolgorde;
+10. pakketten die direct mogen starten;
+11. pakketten die moeten wachten;
+12. commit-SHA en datum/tijd van de controle.
+
+CSV-kolommen:
+
+task_id
+task_name
+status
+commit_sha
+merged
+tests_status
+evidence_file
+build_pack_mapping
+duplicate_of
+recommended_action
+notes
+
+BEWIJS
+
+Voeg toe:
+
+- console-uitvoer van de git-commando’s;
+- verwijzingen naar bestaande taakrapporten;
+- verwijzingen naar commits;
+- relevante testresultaten;
+- geen screenshots met secrets;
+- geen secretwaarden;
+- geen tokens;
+- geen private keys.
+
+STOPCONDITIES
+
+Stop en rapporteer wanneer:
+
+- repositorytoegang ontbreekt;
+- GitHub en Replit niet betrouwbaar te vergelijken zijn;
+- taakgeschiedenis niet beschikbaar is;
+- #382 of #383 destructieve wijzigingen bevat;
+- er onverklaarde lokale wijzigingen zijn;
+- secrets zichtbaar dreigen te worden;
+- er een situatie ontstaat waarin gegokt moet worden.
+
+EINDSTATUS
+
+Bij succesvolle afronding:
+
+WP-000 = VERIFIED_FOR_R1
+
+Daarna alleen rapporteren welke pakketten mogen starten.
+
+Nog niet automatisch starten met WP-A01, INFRA-01, MARKT-01 of WP-B01.
+
+Eerst de uitkomst aan ChatGPT teruggeven voor laatste controle.
