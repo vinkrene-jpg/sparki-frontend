@@ -1,0 +1,186 @@
+WP-A04 — ACCOUNTISOLATIE, HISTORISCHE AFGELEIDE DATA EN ONAFHANKELIJKE VERIFICATIE
+
+DOEL
+
+Voer een onafhankelijke afsluitende kwaliteitspoort uit op WP-A01, WP-A02 en WP-A03.
+
+Bouw geen nieuwe functionaliteit.
+Wijzig alleen code wanneer de verificatie een aantoonbaar defect vindt.
+Geen herschrijving, tweede engine of parallel datamodel.
+
+BRONBASIS
+
+- branch: main
+- actuele commit minimaal: 603e1865
+- WP-A01: VERIFIED_FOR_R1
+- WP-A02: VERIFIED_FOR_R1
+- WP-A03: VERIFIED_FOR_R1
+- docs/SPARKI_WPA02_PRODUCTIEVERIFICATIE.md
+- docs/SPARKI_WPA03_MOCK_FALLBACK_AUDIT.md
+- docs/SPARKI_MOCK_FALLBACK_INVENTORY.csv
+- docs/SPARKI_POST_WP000_STATUSCORRECTIE.md
+- SPARKI_AI_MASTER_PLAN_v3_02.yaml
+- actuele Build Pack
+
+FASE 1 — ONAFHANKELIJKE HERCONTROLE WP-A01
+
+Controleer steekproefsgewijs:
+
+- geldige actuele FTP-waarden;
+- uitsluiting van `[achterhaald]`;
+- historische TSS, IF en load;
+- herberekening op basis van juiste FTP-tijdlijn;
+- idempotentie;
+- geen tweede rekenpad;
+- geen wijziging van huidige geldige FTP.
+
+Neem minimaal mee:
+
+- drie eerder foutieve sessies;
+- één oudere correcte sessie;
+- één sessie zonder FTP-snapshot;
+- één sessie van een andere gebruiker.
+
+FASE 2 — ONAFHANKELIJKE HERCONTROLE WP-A02
+
+Controleer:
+
+- 38 actieve observaties;
+- 82 observaties als outdated;
+- 0 actieve 331 W-verwijzingen;
+- geen inhoudelijke duplicaten actief;
+- herkomst aanwezig;
+- gebruikersisolatie;
+- herhaalde serverstart veroorzaakt geen nieuwe duplicaten;
+- opschoning is idempotent.
+
+FASE 3 — ONAFHANKELIJKE HERCONTROLE WP-A03
+
+Controleer:
+
+- lege gebruiker;
+- ontbrekende FTP;
+- ontbrekende hersteldata;
+- mislukte API-call;
+- verbindingsverlies;
+- onbekende Bluetooth-sensor;
+- geen fallback als persoonlijke data;
+- geen cross-user- of cross-clubdata;
+- webfix onboarding;
+- mobiele volgauto-fix;
+- mobiele sensorwaarschuwing.
+
+Controleer dat de drie fixes geen regressie veroorzaken.
+
+FASE 4 — ACCOUNT- EN CLUBISOLATIE
+
+Voer gerichte tests uit voor:
+
+- gebruiker A ziet geen data van gebruiker B;
+- gebruiker B ziet geen FTP, observaties, activiteiten, herstelstatus, routes, materiaal of plannen van gebruiker A;
+- club A ziet geen data van club B;
+- ouder/trainer/clubbeheerder ziet alleen data waarvoor rechten bestaan;
+- rolwissel lekt geen cache- of vorige-gebruikerdata;
+- API-endpoints controleren tenant/user-filtering;
+- lege of ontbrekende rechten geven fail-closed gedrag.
+
+FASE 5 — HISTORISCHE AFGELEIDE DATA
+
+Controleer steekproefsgewijs:
+
+- FTP;
+- zones;
+- TSS;
+- IF;
+- CTL;
+- ATL;
+- TSB;
+- herstelstatus;
+- observaties;
+- plan- en trainingshistorie.
+
+Leg per steekproef vast:
+
+- bronwaarde;
+- afgeleide waarde;
+- gebruikte engine/functie;
+- gebruikte datum/tijdlijn;
+- verwachte uitkomst;
+- werkelijke uitkomst;
+- verschil;
+- status.
+
+FASE 6 — TESTS
+
+Voer minimaal uit:
+
+- typecheck web;
+- typecheck mobiel;
+- typecheck API;
+- serverbuild;
+- productiebuild web;
+- accountisolatietests;
+- clubisolatietests;
+- idempotentietests WP-A01 en WP-A02;
+- regressietests voor de drie WP-A03-fixes;
+- controle op desktop en mobiel.
+
+STOPCONDITIES
+
+Stop en rapporteer bij:
+
+- cross-user- of cross-clublekkage;
+- verkeerde FTP-tijdlijn;
+- foutieve historische belastingsscore;
+- actieve verouderde observatie;
+- niet-idempotente opschoning;
+- mock/fallback als persoonlijke data;
+- destructieve datacorrectie;
+- test die na één gerichte herstelpoging blijft falen;
+- situatie waarin gegokt moet worden.
+
+OPLEVERING
+
+Maak:
+
+docs/SPARKI_WPA04_ONAFHANKELIJKE_DATA_TRUST_VERIFICATIE.md
+docs/SPARKI_WPA04_HISTORISCHE_STEEKPROEF.csv
+
+CSV-kolommen:
+
+sample_id
+user_scope
+data_type
+source_value
+derived_value
+engine_or_function
+effective_date
+expected_result
+actual_result
+difference
+isolation_result
+evidence
+status
+
+Rapporteer:
+
+- totaal aantal steekproeven;
+- resultaten WP-A01-hercontrole;
+- resultaten WP-A02-hercontrole;
+- resultaten WP-A03-hercontrole;
+- accountisolatie;
+- clubisolatie;
+- gevonden defecten;
+- eventuele gerichte fixes;
+- gewijzigde bestanden;
+- testresultaten;
+- commit-SHA;
+- publicatie nodig ja/nee.
+
+EINDSTATUS
+
+- VERIFIED_FOR_R1 wanneer WP-A01, WP-A02 en WP-A03 onafhankelijk bevestigd zijn en geen data-, rechten- of isolatieprobleem openstaat.
+- BLOCKED bij iedere niet-opgeloste data-, privacy-, rechten- of isolatieafwijking.
+
+Start WP-A05 nog niet automatisch.
+Geef eerst rapport en bewijs terug aan ChatGPT.

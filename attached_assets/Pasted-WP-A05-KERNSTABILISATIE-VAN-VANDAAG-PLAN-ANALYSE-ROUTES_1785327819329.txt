@@ -1,0 +1,294 @@
+WP-A05 — KERNSTABILISATIE VAN VANDAAG, PLAN, ANALYSE, ROUTES, NAVIGATIE, KALENDER EN SHELL
+
+DOEL
+
+Voer een brede functionele stabiliteits- en regressieronde uit op de kern van Sparki.
+
+Eerst read-only inventariseren.
+Daarna alleen aantoonbare defecten gericht herstellen.
+
+Bouw geen nieuwe features.
+Maak geen tweede engine, parallel scherm of vervangende architectuur.
+Behoud bestaande werkende code, databronnen, routes en gebruikersflows.
+
+BRONBASIS
+
+- branch: main
+- minimale commit: 14ec3743
+- WP-A01: VERIFIED_FOR_R1
+- WP-A02: VERIFIED_FOR_R1
+- WP-A03: VERIFIED_FOR_R1
+- WP-A04: VERIFIED_FOR_R1
+- docs/SPARKI_WPA04_ONAFHANKELIJKE_DATA_TRUST_VERIFICATIE.md
+- docs/SPARKI_WPA04_HISTORISCHE_STEEKPROEF.csv
+- actuele Master Plan v3.02
+- actuele Build Pack
+
+SCOPE
+
+Controleer integraal:
+
+1. Vandaag
+2. Plan
+3. Analyse
+4. Routes
+5. Navigatie
+6. Kalender
+7. Algemene shell en navigatiestructuur
+8. Desktop en mobiel
+9. Lege, laad-, fout- en offline-toestanden
+10. Rechten en rolwissel voor zover deze kernschermen raken
+
+FASE 1 — READ-ONLY INVENTARISATIE
+
+Breng per onderdeel in kaart:
+
+- bestaande pagina’s en componenten;
+- API-endpoints;
+- databronnen;
+- featureflags;
+- laad- en foutafhandeling;
+- lege toestanden;
+- mobiele en desktopvarianten;
+- bekende TODO’s, workarounds en tijdelijke code;
+- bestaande tests;
+- recent gewijzigde bestanden;
+- mogelijke doublures of parallelle implementaties.
+
+Classificeer ieder gevonden punt als:
+
+- WERKT_EN_BEWEZEN
+- WERKT_MAAR_NIET_VOLDOENDE_GETEST
+- FUNCTIONEEL_DEFECT
+- VISUELE_REGRESSIE
+- RESPONSIVE_DEFECT
+- DATA_OF_RECHTENRISICO
+- VERBETERIDEE_BUITEN_SCOPE
+- VERVALLEN_OF_DUBBEL
+
+FASE 2 — VANDAAG
+
+Controleer minimaal:
+
+- juiste persoonlijke daginformatie;
+- geplande training;
+- uitgevoerde training;
+- herstel- en belastingsinformatie;
+- juiste prioriteit van wat op dat moment relevant is;
+- geen brede langetermijninformatie direct na een training wanneer die niet relevant is;
+- eerlijke lege toestand;
+- foutafhandeling;
+- navigatie naar detail;
+- geen dubbele kaarten of tegenstrijdige adviezen;
+- begrijpelijke hoofdboodschap;
+- bestaande uitlegiconen alleen contextueel en niet standaard open.
+
+FASE 3 — PLAN
+
+Controleer minimaal:
+
+- actieve doelen;
+- trainingsplan en kalenderdoorwerking;
+- geplande en gemiste trainingen;
+- extra activiteiten;
+- aanpassingen door Sparki;
+- trainersintentie blijft behouden;
+- geen stilzwijgende inhoudelijke wijziging;
+- correcte lege toestand;
+- juiste rechten voor sporter, trainer en ouder;
+- geen oude mock- of fallbackplanning;
+- consistente weergave op desktop en mobiel.
+
+FASE 4 — ANALYSE
+
+Controleer minimaal:
+
+- week- en trendoverzichten;
+- CTL, ATL, TSB, FTP, TSS, IF en powerdata;
+- bron en betrouwbaarheid;
+- grafieken en assen;
+- witte kaartstijl op Analyse;
+- donkere stijl blijft correct in Lab;
+- geen wijziging van cijfers door presentatielaag;
+- correcte lege toestand bij onvoldoende data;
+- geen advies bij UNKNOWN;
+- responsive gedrag;
+- labels en uitleg in begrijpelijke taal waar voorzien.
+
+WP-B14 blijft buiten scope behalve regressiecontrole.
+
+FASE 5 — ROUTES EN NAVIGATIE
+
+Controleer minimaal:
+
+- route openen;
+- route maken;
+- route importeren;
+- GPX export;
+- route opslaan;
+- starten van een rit;
+- kaartweergave;
+- hoogteprofiel;
+- waypoints;
+- bochtinstructies;
+- voice aan/uit;
+- van-route-af-detectie;
+- pauze en hervatten;
+- mobiele bediening;
+- onderste gezamenlijke bedieningsbalk;
+- veilige schermranden;
+- geen blokkade van kritieke instructies;
+- foutafhandeling bij ontbrekende kaart-, locatie- of routegegevens.
+
+Bouw geen nieuwe navigatiefuncties in dit pakket.
+Herstel alleen regressies of aantoonbaar kapotte bestaande functies.
+
+FASE 6 — KALENDER
+
+Controleer minimaal:
+
+- dag-, week- en maandweergave;
+- geplande trainingen;
+- uitgevoerde activiteiten;
+- wedstrijden;
+- club- en teamitems voor zover bestaand;
+- openen van kalenderitems;
+- tijdzone en datum;
+- dubbele items;
+- verwijderde of verplaatste trainingen;
+- lege toestand;
+- mobiele bediening;
+- doorwerking vanuit Plan en publicatie.
+
+FASE 7 — SHELL EN ALGEMENE NAVIGATIE
+
+Controleer minimaal:
+
+- bottom navigation;
+- desktopnavigatie;
+- rolwisselaar;
+- terugnavigatie;
+- actieve tab;
+- deep links;
+- browser refresh;
+- sessiebehoud;
+- foutpagina’s;
+- laadschermen;
+- modals en drawers;
+- scrollgedrag;
+- vaste onderbalk;
+- geen overlappende knoppen;
+- geen doodlopende links;
+- consistente headers, spacing en kaartstijlen.
+
+VERPLICHTE VIEWPORTS
+
+Test minimaal:
+
+- 320 × 568
+- 375 × 667
+- 390 × 844
+- 430 × 932
+- 768 × 1024
+- 1440 × 900
+
+FASE 8 — GERICHT HERSTEL
+
+Herstel alleen:
+
+- functionele defecten;
+- regressies;
+- responsive fouten;
+- kapotte fout- of lege toestanden;
+- onjuiste navigatie;
+- aantoonbare inconsistenties;
+- data- of rechtenrisico’s.
+
+Niet bouwen:
+
+- nieuwe modules;
+- nieuwe dashboards;
+- nieuwe route-engine;
+- nieuwe Analyse-engine;
+- nieuwe kalenderarchitectuur;
+- volledige visuele redesign;
+- ideeën die alleen “mooier” of “handiger” zouden zijn.
+
+TESTS
+
+Voer minimaal uit:
+
+- typecheck web;
+- typecheck mobiel;
+- typecheck API;
+- serverbuild;
+- productiebuild web;
+- bestaande unit- en regressietests;
+- e2e smoke op Vandaag, Plan, Analyse, Routes, Navigatie en Kalender;
+- lege-accounttest;
+- API-fouttest;
+- mobiele en desktoptest;
+- rolwisseltest;
+- accountisolatietest;
+- browser-refresh en deep-linktest;
+- visuele controle op alle zes viewports.
+
+OPLEVERING
+
+Maak:
+
+docs/SPARKI_WPA05_KERNSTABILISATIE.md
+docs/SPARKI_WPA05_DEFECTEN_EN_REGRESSIES.csv
+
+CSV-kolommen:
+
+finding_id
+module
+screen
+classification
+severity
+viewport
+trigger
+expected_behavior
+actual_behavior
+root_cause
+action_taken
+test_result
+evidence
+status
+
+Rapporteer:
+
+- totaal aantal bevindingen;
+- aantal per classificatie;
+- alle herstelde defecten;
+- alle punten die bewust buiten scope bleven;
+- gewijzigde bestanden;
+- testresultaten;
+- screenshots per kernmodule en viewport;
+- commit-SHA;
+- publicatie nodig ja/nee;
+- resterende blokkades.
+
+STOPCONDITIES
+
+Stop bij:
+
+- datalek;
+- rechtenlek;
+- verlies of beschadiging van gebruikersdata;
+- onverwachte tweede engine;
+- noodzaak tot grote herschrijving;
+- falende test na één gerichte herstelpoging;
+- destructieve migratie;
+- onduidelijke bron van persoonlijke data;
+- situatie waarin gegokt moet worden.
+
+EINDSTATUS
+
+- VERIFIED_FOR_R1 wanneer alle kernmodules stabiel zijn, regressietests groen zijn en geen data-, rechten-, responsive- of navigatieblokker openstaat.
+- BLOCKED bij iedere niet-opgeloste kritieke afwijking.
+
+Start na succes nog niet automatisch WP-A06A of WP-A07.
+
+Geef eerst rapport, bewijs en commit-SHA terug aan ChatGPT.

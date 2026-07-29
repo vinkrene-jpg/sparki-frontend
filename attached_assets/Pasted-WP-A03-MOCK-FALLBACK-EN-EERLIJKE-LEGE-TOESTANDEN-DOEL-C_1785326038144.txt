@@ -1,0 +1,197 @@
+WP-A03 — MOCK-, FALLBACK- EN EERLIJKE LEGE TOESTANDEN
+
+DOEL
+
+Controleer en herstel applicatiebreed dat Sparki nooit mock-, seed-, demo-,
+fallback- of hardcoded persoonlijke data toont alsof deze van de ingelogde
+gebruiker afkomstig is.
+
+BRONBASIS
+
+- branch: main
+- actuele GitHub-HEAD: aa19fa6a
+- actuele productiebuild: 889fcb32
+- WP-A01: VERIFIED_FOR_R1
+- WP-A02: VERIFIED_FOR_R1
+- SPARKI_AI_MASTER_PLAN_v3_02.yaml
+- SPARKI_R1_BUILD_PACK_V1_DRAFT_AUTONOOM_v3_GECORRIGEERD_2026-07-29.md
+- docs/SPARKI_WP000_BRONBASIS_EN_TAAKONTDUBBELING.md
+- docs/SPARKI_POST_WP000_STATUSCORRECTIE.md
+- docs/SPARKI_WPA02_PRODUCTIEVERIFICATIE.md
+
+WERKWIJZE
+
+Eerst read-only inventariseren.
+Daarna alleen aantoonbare fouten gericht herstellen.
+Geen herschrijving, tweede data-engine of parallel systeem bouwen.
+Bestaande werkende architectuur behouden.
+
+SCOPE
+
+Controleer minimaal:
+
+- Vandaag
+- Plan
+- Analyse
+- Lab
+- kalender
+- trainingen
+- herstelstatus
+- doelen
+- FTP, CTL, ATL, TSB, TSS en IF
+- routes en navigatie
+- wedstrijden
+- materiaal en fietsen
+- koppelingen
+- vrienden/social
+- trainer-, ouder-, club- en teamweergaven
+- adminomgeving
+- API-responses en foutafhandeling
+
+ZOEK NAAR
+
+- mockdata
+- seeddata
+- demodata
+- voorbeeldgebruikers
+- hardcoded persoonlijke waarden
+- fallback-activiteiten
+- fallback-trainingsplannen
+- fallback-FTP of zones
+- verzonnen herstelstatus
+- verzonnen doelen
+- voorbeeldroutes
+- voorbeeldwedstrijden
+- fallback bij API- of databasefouten
+- data van een andere gebruiker
+- statische grafiekwaarden die als echte data worden gepresenteerd
+
+VASTE REGELS
+
+1. Ontbrekende persoonlijke data toont een eerlijke lege toestand.
+2. Een API- of databasefout toont een foutstatus, geen voorbeelddata.
+3. UNKNOWN of onvoldoende betrouwbare data stuurt geen persoonlijk advies.
+4. Demo-inhoud mag alleen bestaan in een expliciete demo-omgeving en moet
+   duidelijk als demo zijn gemarkeerd.
+5. Geen cross-user- of cross-club-data.
+6. Geen wijziging aan geldige berekeningen zonder aantoonbare fout.
+7. Geen productiegegevens verwijderen.
+8. Geen automatische databasecorrectie zonder bewijs en rollbackpad.
+
+FASE 1 — INVENTARISATIE
+
+Maak een volledige inventaris met per bevinding:
+
+- bestand en regel/functionele locatie;
+- scherm of API;
+- soort data;
+- herkomst;
+- wanneer de fallback actief wordt;
+- risico;
+- persoonlijke data ja/nee;
+- huidige gebruikersimpact;
+- aanbevolen correctie;
+- testmethode.
+
+Classificeer als:
+
+- VEILIGE_UI_PLACEHOLDER
+- EXPLICIETE_DEMO
+- ONVEILIGE_PERSOONLIJKE_FALLBACK
+- HARDCODED_PERSOONLIJKE_DATA
+- CROSS_USER_RISICO
+- EERLIJKE_LEGE_TOESTAND_BESTAAT
+- FOUTAFHANDELING_ONVOLDOENDE
+- GEEN_PROBLEEM
+
+FASE 2 — GERICHT HERSTEL
+
+Herstel alleen bevindingen met:
+
+- ONVEILIGE_PERSOONLIJKE_FALLBACK
+- HARDCODED_PERSOONLIJKE_DATA
+- CROSS_USER_RISICO
+- FOUTAFHANDELING_ONVOLDOENDE
+
+Vervang deze door:
+
+- lege toestand;
+- expliciete foutmelding;
+- laadstatus;
+- ontbrekende-data-uitleg;
+- veilige oproep om een koppeling of invoer toe te voegen.
+
+Behoud normale visuele placeholders zoals skeletons wanneer deze geen
+persoonlijke waarden suggereren.
+
+TESTS
+
+Voer minimaal uit:
+
+- typecheck;
+- serverbuild;
+- bestaande regressietests;
+- API-fouttest;
+- lege-accounttest;
+- accountisolatietest;
+- clubisolatietest indien clubdata aanwezig is;
+- desktop en mobiel;
+- minimaal zes relevante viewports;
+- controle Vandaag, Plan, Analyse, Lab en kalender;
+- controle dat bestaande echte gebruikersdata behouden blijft.
+
+Test expliciet:
+
+1. nieuwe gebruiker zonder activiteiten;
+2. gebruiker zonder FTP;
+3. gebruiker zonder hersteldata;
+4. gebruiker zonder gekoppelde diensten;
+5. mislukte API-call;
+6. lege database-response;
+7. gebruiker A mag nooit data van gebruiker B zien;
+8. club A mag nooit data van club B zien.
+
+OPLEVERING
+
+Maak:
+
+docs/SPARKI_WPA03_MOCK_FALLBACK_AUDIT.md
+docs/SPARKI_MOCK_FALLBACK_INVENTORY.csv
+
+CSV-kolommen:
+
+finding_id
+location
+screen_or_api
+data_type
+classification
+trigger
+personal_data_risk
+user_impact
+action_taken
+test_result
+evidence
+status
+
+Rapporteer:
+
+- totaal aantal bevindingen;
+- aantal per classificatie;
+- welke fouten zijn hersteld;
+- welke veilige demo/placeholders zijn behouden;
+- gewijzigde bestanden;
+- testresultaten;
+- screenshots van relevante lege toestanden;
+- commit-SHA;
+- productiepublicatie nodig ja/nee.
+
+EINDSTATUS
+
+- VERIFIED_FOR_R1 wanneer alle onveilige persoonlijke fallbacks,
+  hardcoded gebruikersdata en isolatierisico’s zijn verwijderd en tests
+  groen zijn.
+- BLOCKED bij datalek, onverklaarde databron, destructieve wijziging,
+  falende test na één gerichte herstelpoging of wanneer gegokt moet worden.
+
+Bij succes nog niet automatisch WP-A04 starten.
+Geef eerst rapport en bewijs terug aan ChatGPT.
