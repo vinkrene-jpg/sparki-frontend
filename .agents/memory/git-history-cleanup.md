@@ -40,3 +40,7 @@ A health check (`project_disk_size`, lib/health/disk-usage.ts) now measures `.gi
 - Local .git stays huge until backup refs are gone: delete `backup-pre-lighthistory`, `gitsafe-backup/main`, ALL stale `subrepl-*` branches+remotes, and the `replit-agent` branch (it pinned the heavy audit-export commit). Only after verifying `origin/main == main`.
 - Then `git reflog expire --expire=now --all` + `git gc --prune=now --aggressive` → 5.1 GB → 493 MB.
 - Trap: root `postcss.config.mjs` referencing `@tailwindcss/postcss` (Next.js leftover, restored by the reconciliation commit) breaks BOTH Vite apps — they use `@tailwindcss/vite` and Vite climbs to the root config. Keep root postcss plugins `{}`.
+
+## Herhaling 2026-07-29
+- .git groeide opnieuw naar 7,2 GB: 2,3 GB verweesde LFS-objecten + 2,0 GB `.git/lost-found` (achtergelaten door eerdere gc) + tientallen `subrepl-*`/backup-branches die alles pinden.
+- Vaste kuur (main==origin/main eerst verifiëren!): branches -D, extra remotes weg, `rm -rf .git/lost-found`, LFS-objects delete, reflog expire, `git gc --prune=now` → 519 MB.
