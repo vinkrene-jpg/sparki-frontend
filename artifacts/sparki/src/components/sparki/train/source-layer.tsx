@@ -111,7 +111,7 @@ export function SourceLayer() {
                   {adaptationCount}× aangepast op hoe je traint
                 </p>
               )}
-              <div className="mt-4 flex flex-wrap gap-2.5">
+              <div className="ds-actiebalk mt-4 flex flex-wrap gap-2.5">
                 <button
                   type="button"
                   onClick={() => adapt.mutate()}

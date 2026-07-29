@@ -68,6 +68,19 @@
   --spacing-card-compact: 0.75rem; /* compacte kaart-padding (p-card-compact) */
 }
 
+@layer components {
+  /* ── Actiebalken ──────────────────────────────────────────────────────────
+     Bestaande mobiele opmaak (w-full, flex-col) blijft exact behouden.
+     Vanaf sm: centreren we de actiebalk en maximeren we de breedte zodat
+     knoppen niet onbedoeld over de hele (max-w-3xl) pagina uitsmeren. */
+  .ds-actiebalk {
+    @apply sm:mx-auto sm:w-full sm:max-w-[400px];
+  }
+  .ds-actiebalk > * {
+    @apply sm:flex-1;
+  }
+}
+
 :root {
   --radius: 0.625rem;
   --accent-cyan: oklch(0.82 0.16 200);

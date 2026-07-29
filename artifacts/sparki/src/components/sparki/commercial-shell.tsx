@@ -595,7 +595,7 @@ function TrainingSection() {
         )}
         <BlockBalk bars={bars} totalTrainingMin={w.targetDurationMin ?? null} />
         {/* 6 — maximaal één primaire actie op het hele scherm. */}
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row ds-actiebalk">
           <DsButton
             variant="primair"
             onClick={() => navigate(COMMERCIAL_COPY.trainingHref)}

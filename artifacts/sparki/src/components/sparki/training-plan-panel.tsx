@@ -982,18 +982,20 @@ export function TrainingPlanPanel() {
           )}
 
           {/* Regenerate */}
-          <button
-            type="button"
-            onClick={() => generate.mutate()}
-            disabled={generate.isPending}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] py-3.5 font-sans text-[13px] font-medium text-white/50 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/60 disabled:opacity-50"
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${generate.isPending ? "animate-spin" : ""}`}
-              strokeWidth={2}
-            />
-            {generate.isPending ? "Opnieuw bouwen…" : "Schema opnieuw genereren"}
-          </button>
+          <div className="ds-actiebalk mt-5">
+            <button
+              type="button"
+              onClick={() => generate.mutate()}
+              disabled={generate.isPending}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.15] py-3.5 font-sans text-[13px] font-medium text-white/50 transition-colors hover:border-cyan-300/30 hover:text-cyan-300/60 disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${generate.isPending ? "animate-spin" : ""}`}
+                strokeWidth={2}
+              />
+              {generate.isPending ? "Opnieuw bouwen…" : "Schema opnieuw genereren"}
+            </button>
+          </div>
         </>
       )}
     </section>

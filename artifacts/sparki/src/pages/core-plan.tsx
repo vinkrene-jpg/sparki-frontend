@@ -28,6 +28,9 @@ import { useLoad } from "@/hooks/use-load";
 // MissingInputNotice etc
 import { isTargetSet } from "@/lib/missing-input";
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice";
+import { PlanWizard } from "@/components/sparki/plan-wizard";
+import { berekenDoelverschuiving, berekenPlanNaleving, faseLabel } from "@/lib/plan-overview";
+import { useGoalPicture } from "@/hooks/use-goals";
 import { CorePredictionPanel } from "@/components/sparki/core-prediction-panel";
 import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer";
 import { AddTrainingModal } from "@/components/sparki/add-training";
@@ -363,7 +366,7 @@ function GeselecteerdeDagKaart({
             <p className="type-body text-content-secondary">{selectedWorkout.description}</p>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-2 mt-2">
+          <div className="ds-actiebalk flex flex-col sm:flex-row gap-2 mt-2">
             <DsButton variant="primair" onClick={() => onOpenDetail(selectedWorkout.id)}>
               Training bekijken
             </DsButton>
@@ -728,29 +731,15 @@ function PlanActieSection() {
 
   return (
     <section className="mb-8">
-      {action === "missing" && (
-         <MissingInputNotice 
-           compact
-           showOrb={false}
-           title="Laat je schema opbouwen"
-           description="Met je FTP en wekelijkse uren komt er een periodiseerd plan dat meebeweegt met je vorm."
-           targets={["ftp", "weeklyHours"]}
-           profile={profile}
-           returnTo="/train"
-           retry="generate-plan"
-         />
-      )}
-      {action === "generate" && (
-         <DsCard>
-           <DsCardTitel className="mb-2">Schema bouwen</DsCardTitel>
-           <DsButton variant="primair" onClick={() => generate.mutate()} loading={generate.isPending}>Schema bouwen</DsButton>
-           {generate.isError && <DsStatus status="fout" className="mt-3">Het opbouwen lukte niet.</DsStatus>}
-         </DsCard>
+      {/* Geen plan (of onvolledige setup) en geen coach → adaptieve wizard.
+          Niveau bepaalt hoeveel vragen de sporter krijgt. */}
+      {(action === "missing" || action === "generate") && !plan?.hasCoach && (
+        <PlanWizard missing={plan?.missing ?? []} />
       )}
       {action === "adapt" && (
          <DsCard>
            <DsCardTitel className="mb-3">Schema aanpassen</DsCardTitel>
-           <div className="flex flex-col sm:flex-row gap-2">
+           <div className="ds-actiebalk flex flex-col sm:flex-row gap-2">
              <DsButton variant="primair" onClick={() => adapt.mutate()} loading={adapt.isPending}>
                Pas mijn plan aan
              </DsButton>
@@ -771,27 +760,99 @@ function PlanActieSection() {
   );
 }
 
-function DoelMeetlatSection() {
+/** Doelkaart — altijd zichtbaar bovenaan: doel, seizoenslijn, koers en
+ *  (gedempte) verschuiving. Kleine missers verschuiven het doel nooit
+ *  zichtbaar; pas bij betekenisvolle impact verschijnt de melding. */
+function DoelkaartSection() {
   const [, navigate] = useLocation();
   const { data: plan } = useTrainingPlan();
   const { data: load } = useLoad();
+  const { data: picture } = useGoalPicture();
+
+  const todayISO = localISODate(new Date());
+  const from = localISODate(addDagenLocal(new Date(), -30));
+  const { data: verleden } = usePlanRange(from, todayISO);
+
   const fit = judgeGoalFit({ inputs: plan?.inputs, load });
   const noGoal = !plan?.inputs?.nextRace;
+  const verschuiving = berekenDoelverschuiving(verleden ?? [], todayISO);
+  const naleving = berekenPlanNaleving(verleden ?? [], todayISO);
+
+  // Hoofddoel: eigen doel met hoogste prioriteit, anders afgeleid doel.
+  const hoofddoel =
+    picture?.goals.find((g) => g.status === "active") ??
+    null;
+  const afgeleid = hoofddoel == null ? picture?.derived[0] ?? null : null;
+  const doelTitel = hoofddoel?.title ?? afgeleid?.title ?? plan?.inputs?.nextRace?.name ?? null;
+  const doelDatum = hoofddoel?.targetDate ?? afgeleid?.targetDate ?? plan?.inputs?.nextRace?.raceDate ?? null;
+
+  const fase = faseLabel(plan?.inputs?.phase);
+  const race = plan?.inputs?.nextRace ?? null;
 
   return (
     <section className="mb-8">
-      <h2 className="type-title-card text-white/90 mb-3">Doel als meetlat</h2>
-      <DsCard>
-        <div className="flex items-center gap-2 mb-2">
-           <DsStatus status={fit.verdict === "op_koers" ? "positief" : fit.verdict === "onbekend" ? "neutraal" : "waarschuwing"}>
-             {fit.verdict.replace("_", " ")}
-           </DsStatus>
+      <DsCard variant="standaard" className="flex flex-col gap-3">
+        {/* Doel + status */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="type-label text-content-secondary uppercase tracking-wider">Jouw doel</p>
+            <p className="type-title-insight text-white/95 mt-0.5">
+              {doelTitel ?? "Nog geen doel gekozen"}
+            </p>
+            {doelDatum && (
+              <p className="type-body-sm text-content-secondary">
+                {new Date(doelDatum + "T12:00:00Z").toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" })}
+                {race?.daysAway != null && race.daysAway >= 0 && ` · over ${race.daysAway} dagen`}
+              </p>
+            )}
+          </div>
+          <DsStatus status={fit.verdict === "op_koers" ? "positief" : fit.verdict === "onbekend" ? "neutraal" : "waarschuwing"}>
+            {fit.verdict.replace("_", " ")}
+          </DsStatus>
         </div>
-        <p className="type-title-insight mb-2 text-white/95">{fit.headline}</p>
+
+        {/* Seizoenslijn: fase + naleving */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {fase && (
+            <span className="type-label text-content-secondary">
+              Fase: <span className="text-white/80">{fase}</span>
+            </span>
+          )}
+          {naleving.pct != null && (
+            <span className="type-label text-content-secondary">
+              Naleving (28 d): <span className={cn("num", naleving.pct >= 70 ? "text-positive/80" : "text-amber-400/80")}>{naleving.pct}%</span>
+              <span className="text-white/40"> ({naleving.uitgevoerd}/{naleving.gepland})</span>
+            </span>
+          )}
+        </div>
+
         <p className="type-body text-content-secondary">{fit.reason}</p>
-        {noGoal && (
-           <DsButton variant="secundair" className="mt-4" onClick={() => navigate("/you?focus=doelen")}>Voeg een doel toe</DsButton>
+
+        {/* Gedempte doelverschuiving — alleen bij betekenisvolle impact */}
+        {verschuiving.tonen && verschuiving.boodschap && (
+          <div className="rounded-lg border border-amber-400/25 bg-amber-400/[0.06] px-3 py-2.5">
+            <p className="type-label text-amber-300/90 uppercase tracking-wider mb-1">Je doel verschuift</p>
+            <p className="type-body-sm text-white/75">{verschuiving.boodschap}</p>
+          </div>
         )}
+
+        {/* Doorvraag van de doelen-engine (bestaand mechanisme) */}
+        {picture?.nextQuestion && (
+          <button
+            type="button"
+            onClick={() => navigate("/you?focus=doelen")}
+            className="rounded-lg border border-accent-cyan/20 bg-accent-cyan/[0.06] px-3 py-2.5 text-left hover:bg-accent-cyan/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60"
+          >
+            <p className="type-label text-accent-cyan uppercase tracking-wider mb-1">Sparki wil iets weten</p>
+            <p className="type-body-sm text-white/75">{picture.nextQuestion.question}</p>
+          </button>
+        )}
+
+        <div className="ds-actiebalk flex gap-2">
+          <DsButton variant="secundair" onClick={() => navigate("/you?focus=doelen")}>
+            {noGoal && doelTitel == null ? "Voeg een doel toe" : "Doel aanpassen"}
+          </DsButton>
+        </div>
       </DsCard>
     </section>
   );
@@ -995,12 +1056,12 @@ function DsConfirmActivityCard({ session }: { session: TrainingSession }) {
          />
       )}
 
-      <div className="flex items-center gap-3 mt-1">
+      <div className="ds-actiebalk flex items-center gap-3 mt-1">
         <DsButton variant="primair" onClick={save} disabled={feel == null || update.isPending} className="flex-1">
           {update.isPending ? "Opslaan…" : "Bevestigen"}
         </DsButton>
         {!open && (
-           <DsButton variant="tekst" onClick={() => setOpen(true)} className="type-label uppercase tracking-widest px-0">
+           <DsButton variant="tekst" onClick={() => setOpen(true)} className="type-label uppercase tracking-widest px-0 sm:flex-none">
              Notitie
            </DsButton>
         )}
@@ -1108,14 +1169,14 @@ export default function CorePlanPage() {
       <div className="mx-auto w-full max-w-2xl px-5 pb-10 pt-8 lg:max-w-3xl lg:px-10">
         <PlanHeader />
         
+        <DoelkaartSection />
+        
         <KalenderSection
           highlightWeek={highlightWeek}
           onOpenAdd={(iso) => { setAddDateContext(iso); setAddOpen(true); }}
         />
         
         <PlanActieSection />
-        
-        <DoelMeetlatSection />
         
         <PatronenSection />
         

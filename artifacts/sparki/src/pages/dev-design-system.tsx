@@ -331,6 +331,18 @@ export default function DevDesignSystemPage() {
           </DsCard>
         </Sectie>
 
+        <Sectie titel="Actiebalk (.ds-actiebalk)">
+          <DsCard className="flex flex-col gap-4">
+            <p className="type-body text-content-secondary">
+              Actiebalken (knoppenrijen) moeten op mobiel de volle breedte gebruiken (gestapeld), maar op desktop begrensd en gecentreerd worden zodat ze niet over de hele pagina uitsmeren. Gebruik de <code>.ds-actiebalk</code> utility class op een container die <code>flex flex-col sm:flex-row gap-2</code> of vergelijkbaar heeft.
+            </p>
+            <div className="ds-actiebalk flex flex-col sm:flex-row gap-2">
+              <DsButton variant="primair">Opslaan</DsButton>
+              <DsButton variant="secundair">Annuleren</DsButton>
+            </div>
+          </DsCard>
+        </Sectie>
+
         <Sectie titel="Statusindicator — nooit alleen kleur">
           <DsCard className="flex flex-wrap items-center gap-2.5">
             <DsStatus status="positief">Synchronisatie gelukt</DsStatus>
