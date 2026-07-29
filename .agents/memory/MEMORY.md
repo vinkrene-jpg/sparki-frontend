@@ -1,4 +1,3 @@
-// hint: Logic changed on both sides. Requires understanding intent of each change.
 - [Sparki monitoring & business-mode infra](sparki-monitoring.md) — system_business_mode singleton + admin_ops_log + /admin/ops; lib/db build vereist na schema-wijziging.
 - [Sparki Clerk auth wiring](sparki-clerk-auth.md) — Phase 1 complete: cookie auth, JIT sync, roles in own DB, lib/db must be built for tsc.
 - [Sparki feature flags](sparki-feature-flags.md) — DB tables, precedence, composite-PK onConflict; one-shot /api/flags 403 tijdens Clerk-settling schakelt ALLES uit — retry ([race](sparki-flag-fetch-race.md)).

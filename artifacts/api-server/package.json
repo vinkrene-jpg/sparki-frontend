@@ -9,6 +9,7 @@
     "start": "node --enable-source-maps ./dist/index.mjs",
     "scan:knowledge": "pnpm run build && node --enable-source-maps ./dist/jobs/knowledge-scan.mjs",
     "test:smoke": "node ./scripts/run-test.mjs smoke",
+    "test:route-library-gates": "node ./scripts/run-test.mjs route-library-gates",
     "test:disk-usage": "node ./scripts/run-test.mjs disk-usage",
     "test:koppellijst-workouts": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs koppellijst-workouts",
     "test:data-trust": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs data-trust",
