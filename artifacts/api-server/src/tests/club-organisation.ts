@@ -184,6 +184,58 @@ async function main() {
       }
     });
 
+    // ── Stap 4: seizoenen & selecties ────────────────────────────────────────
+    let seasonId = 0;
+    await scenario("O7. seizoen aanmaken; tweede actief seizoen → 409", async () => {
+      const r1 = await req("POST", `/api/clubs/${clubId}/seasons`, beheer, { name: "2026", startsOn: "2026-01-01" });
+      assert(r1.status === 201, `seizoen aanmaken gaf ${r1.status}`);
+      seasonId = (r1.json as { id: number }).id;
+      const r2 = await req("POST", `/api/clubs/${clubId}/seasons`, beheer, { name: "2027" });
+      assert(r2.status === 409, `tweede actieve seizoen gaf ${r2.status} (verwacht 409)`);
+      const r3 = await req("POST", `/api/clubs/${clubId}/seasons`, beheer, { name: "2027", status: "gepland" });
+      assert(r3.status === 201, `gepland seizoen gaf ${r3.status}`);
+    });
+
+    await scenario("O8. trainer kan geen seizoenen beheren", async () => {
+      const r = await req("POST", `/api/clubs/${clubId}/seasons`, t1, { name: "X" });
+      assert(r.status === 403, `trainer seizoen aanmaken gaf ${r.status}`);
+    });
+
+    let selectionTeamId = 0;
+    await scenario("O9. selectie onder team; selectie-onder-selectie → 400", async () => {
+      const teams = await db
+        .select()
+        .from((await import("@workspace/db")).clubTeamsTable)
+        .where(eq((await import("@workspace/db")).clubTeamsTable.clubId, clubId));
+      const root = teams.find((t) => t.parentTeamId == null);
+      assert(root, "geen hoofdteam in fixtures");
+      const r1 = await req("POST", `/api/clubs/${clubId}/teams`, beheer, {
+        name: "WP03 Selectie A",
+        parentTeamId: root!.id,
+        seasonId,
+      });
+      assert(r1.status === 201, `selectie aanmaken gaf ${r1.status}`);
+      selectionTeamId = (r1.json as { id: number }).id;
+      const r2 = await req("POST", `/api/clubs/${clubId}/teams`, beheer, {
+        name: "WP03 Sub-sub",
+        parentTeamId: selectionTeamId,
+      });
+      assert(r2.status === 400, `selectie onder selectie gaf ${r2.status} (verwacht 400)`);
+      const r3 = await req("POST", `/api/clubs/${clubId}/teams`, beheer, { name: "X", parentTeamId: 999999 });
+      assert(r3.status === 400, `vreemd hoofdteam gaf ${r3.status} (verwacht 400)`);
+    });
+
+    await scenario("O10. afgesloten seizoen is read-only", async () => {
+      const close = await req("POST", `/api/clubs/${clubId}/seasons/${seasonId}/close`, beheer);
+      assert(close.status === 200, `afsluiten gaf ${close.status}`);
+      const again = await req("POST", `/api/clubs/${clubId}/seasons/${seasonId}/close`, beheer);
+      assert(again.status === 409, `tweede keer afsluiten gaf ${again.status}`);
+      const edit = await req("PUT", `/api/clubs/${clubId}/teams/${selectionTeamId}`, beheer, { name: "Nieuwe naam" });
+      assert(edit.status === 409, `team in afgesloten seizoen wijzigen gaf ${edit.status} (verwacht 409)`);
+      const reactivate = await req("POST", `/api/clubs/${clubId}/seasons/${seasonId}/activate`, beheer);
+      assert(reactivate.status === 409, `afgesloten seizoen activeren gaf ${reactivate.status} (verwacht 409)`);
+    });
+
     await scenario("O6. ploegleider kan lidmaatschap niet aanpassen", async () => {
       const m2 = await memberRow(t2);
       const role = await req("PUT", `/api/clubs/${clubId}/members/${m2.id}/role`, ploegleider, { role: "member" });

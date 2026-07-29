@@ -18,6 +18,7 @@ import {
   clubConsentsTable,
   clubSubscriptionsTable,
   clubAuditLogTable,
+  clubSeasonsTable,
   clubLocationsTable,
   clubConsentScopes,
   userProfilesTable,
@@ -864,6 +865,166 @@ router.post("/:clubId/members/:memberId/end", requireAuth, async (req, res) => {
   }
 });
 
+// ── WP-03: Seizoenen ─────────────────────────────────────────────────────────
+// Eén actieve seizoencontext per organisatie (partial unique in de DB).
+// Afsluiten = status "afgesloten" + closedAt; nooit DELETE. Een afgesloten
+// seizoen is read-only: eraan gekoppelde teams zijn niet meer te wijzigen.
+
+// Unique-violation op "één actief seizoen" herkennen, ook als drizzle de
+// pg-fout wikkelt (message zit dan in err.cause).
+function isOneActiveSeasonConflict(err: unknown): boolean {
+  let cur: unknown = err;
+  for (let i = 0; i < 4 && cur instanceof Error; i++) {
+    if (/club_seasons_one_active_unique/.test(cur.message)) return true;
+    cur = (cur as Error & { cause?: unknown }).cause;
+  }
+  return false;
+}
+
+async function seasonOfClub(clubId: number, seasonId: number) {
+  const [s] = await db
+    .select()
+    .from(clubSeasonsTable)
+    .where(and(eq(clubSeasonsTable.id, seasonId), eq(clubSeasonsTable.clubId, clubId)));
+  return s ?? null;
+}
+
+router.get("/:clubId/seasons", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    const seasons = await db
+      .select()
+      .from(clubSeasonsTable)
+      .where(eq(clubSeasonsTable.clubId, ctx.club.id))
+      .orderBy(desc(clubSeasonsTable.id));
+    res.json(seasons);
+  } catch (err) {
+    req.log.error({ err }, "club seasons list failed");
+    res.status(500).json({ error: "Seizoenen ophalen is niet gelukt." });
+  }
+});
+
+router.post("/:clubId/seasons", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de clubbeheerder beheert seizoenen." });
+      return;
+    }
+    const name = str(req.body?.name);
+    if (!name) {
+      res.status(400).json({ error: "Geef het seizoen een naam (bv. 2026)." });
+      return;
+    }
+    const status = str(req.body?.status) === "gepland" ? "gepland" : "actief";
+    const startsOn = str(req.body?.startsOn);
+    const endsOn = str(req.body?.endsOn);
+    for (const d of [startsOn, endsOn]) {
+      if (d != null && !/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+        res.status(400).json({ error: "Gebruik datums als JJJJ-MM-DD." });
+        return;
+      }
+    }
+    try {
+      const [season] = await db
+        .insert(clubSeasonsTable)
+        .values({
+          clubId: ctx.club.id,
+          name,
+          status,
+          startsOn,
+          endsOn,
+          createdByClerkId: ctx.membership.clerkId,
+        })
+        .returning();
+      await writeClubAudit({ clubId: ctx.club.id, actorClerkId: ctx.membership.clerkId, action: "seizoen_aangemaakt", targetType: "season", targetId: season!.id, detail: { name, status } });
+      res.status(201).json(season);
+    } catch (err) {
+      if (isOneActiveSeasonConflict(err)) {
+        res.status(409).json({ error: "Er is al een actief seizoen. Sluit dat eerst af, of maak dit seizoen aan als gepland." });
+        return;
+      }
+      throw err;
+    }
+  } catch (err) {
+    req.log.error({ err }, "club season create failed");
+    res.status(500).json({ error: "Seizoen aanmaken is niet gelukt." });
+  }
+});
+
+router.post("/:clubId/seasons/:seasonId/close", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de clubbeheerder beheert seizoenen." });
+      return;
+    }
+    const seasonId = intParam(req.params["seasonId"]);
+    const season = seasonId != null ? await seasonOfClub(ctx.club.id, seasonId) : null;
+    if (!season) {
+      res.status(404).json({ error: "Seizoen niet gevonden." });
+      return;
+    }
+    if (season.status === "afgesloten") {
+      res.status(409).json({ error: "Dit seizoen is al afgesloten." });
+      return;
+    }
+    const [updated] = await db
+      .update(clubSeasonsTable)
+      .set({ status: "afgesloten", closedAt: new Date(), updatedAt: new Date() })
+      .where(eq(clubSeasonsTable.id, season.id))
+      .returning();
+    await writeClubAudit({ clubId: ctx.club.id, actorClerkId: ctx.membership.clerkId, action: "seizoen_afgesloten", targetType: "season", targetId: season.id, detail: { name: season.name } });
+    res.json(updated);
+  } catch (err) {
+    req.log.error({ err }, "club season close failed");
+    res.status(500).json({ error: "Seizoen afsluiten is niet gelukt." });
+  }
+});
+
+// Gepland → actief (alleen als er nog geen actief seizoen is; afgesloten blijft afgesloten).
+router.post("/:clubId/seasons/:seasonId/activate", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de clubbeheerder beheert seizoenen." });
+      return;
+    }
+    const seasonId = intParam(req.params["seasonId"]);
+    const season = seasonId != null ? await seasonOfClub(ctx.club.id, seasonId) : null;
+    if (!season) {
+      res.status(404).json({ error: "Seizoen niet gevonden." });
+      return;
+    }
+    if (season.status !== "gepland") {
+      res.status(409).json({ error: "Alleen een gepland seizoen kan actief worden. Een afgesloten seizoen blijft afgesloten." });
+      return;
+    }
+    try {
+      const [updated] = await db
+        .update(clubSeasonsTable)
+        .set({ status: "actief", updatedAt: new Date() })
+        .where(eq(clubSeasonsTable.id, season.id))
+        .returning();
+      await writeClubAudit({ clubId: ctx.club.id, actorClerkId: ctx.membership.clerkId, action: "seizoen_geactiveerd", targetType: "season", targetId: season.id, detail: { name: season.name } });
+      res.json(updated);
+    } catch (err) {
+      if (isOneActiveSeasonConflict(err)) {
+        res.status(409).json({ error: "Er is al een actief seizoen. Sluit dat eerst af." });
+        return;
+      }
+      throw err;
+    }
+  } catch (err) {
+    req.log.error({ err }, "club season activate failed");
+    res.status(500).json({ error: "Seizoen activeren is niet gelukt." });
+  }
+});
+
 // ── Teams & groepen ───────────────────────────────────────────────────────────
 
 router.post("/:clubId/teams", requireAuth, async (req, res) => {
@@ -878,11 +1039,42 @@ router.post("/:clubId/teams", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Geef het team een naam." });
     return;
   }
+  // WP-03: selectie = team met parentTeamId (één niveau diep); seizoen optioneel.
+  let parentTeamId: number | null = null;
+  if (req.body?.parentTeamId != null) {
+    parentTeamId = intParam(req.body.parentTeamId);
+    const [parent] = parentTeamId != null
+      ? await db.select().from(clubTeamsTable).where(and(eq(clubTeamsTable.id, parentTeamId), eq(clubTeamsTable.clubId, ctx.club.id)))
+      : [];
+    if (!parent) {
+      res.status(400).json({ error: "Het hoofdteam hoort niet bij deze club." });
+      return;
+    }
+    if (parent.parentTeamId != null) {
+      res.status(400).json({ error: "Een selectie kan niet onder een andere selectie hangen." });
+      return;
+    }
+  }
+  let seasonId: number | null = null;
+  if (req.body?.seasonId != null) {
+    seasonId = intParam(req.body.seasonId);
+    const season = seasonId != null ? await seasonOfClub(ctx.club.id, seasonId) : null;
+    if (!season) {
+      res.status(400).json({ error: "Dit seizoen hoort niet bij deze club." });
+      return;
+    }
+    if (season.status === "afgesloten") {
+      res.status(409).json({ error: "Dit seizoen is afgesloten en daarmee alleen-lezen." });
+      return;
+    }
+  }
   const [team] = await db
     .insert(clubTeamsTable)
     .values({
       clubId: ctx.club.id,
       name,
+      parentTeamId,
+      seasonId,
       description: str(req.body?.description),
       managerClerkId: str(req.body?.managerClerkId),
       category: str(req.body?.category),
@@ -907,12 +1099,43 @@ router.put("/:clubId/teams/:teamId", requireAuth, async (req, res) => {
       return;
     }
     const teamId = intParam(req.params["teamId"]);
+    // WP-03: team gekoppeld aan een AFGESLOTEN seizoen is alleen-lezen.
+    const [current] = await db
+      .select()
+      .from(clubTeamsTable)
+      .where(and(eq(clubTeamsTable.id, teamId ?? -1), eq(clubTeamsTable.clubId, ctx.club.id)));
+    if (!current) {
+      res.status(404).json({ error: "Team niet gevonden." });
+      return;
+    }
+    if (current.seasonId != null) {
+      const season = await seasonOfClub(ctx.club.id, current.seasonId);
+      if (season?.status === "afgesloten") {
+        res.status(409).json({ error: "Dit team hoort bij een afgesloten seizoen en is alleen-lezen." });
+        return;
+      }
+    }
     const patch: Record<string, unknown> = { updatedAt: new Date() };
     for (const key of ["name", "description", "category", "level", "season", "trainingDays", "defaultLocation", "managerClerkId"] as const) {
       if (typeof req.body?.[key] === "string") patch[key] = req.body[key].trim() || null;
     }
     if (patch["name"] === null) delete patch["name"];
     if (req.body?.maxSize !== undefined) patch["maxSize"] = req.body.maxSize == null ? null : intParam(req.body.maxSize);
+    if (req.body?.seasonId !== undefined) {
+      const seasonId = req.body.seasonId == null ? null : intParam(req.body.seasonId);
+      if (seasonId != null) {
+        const season = await seasonOfClub(ctx.club.id, seasonId);
+        if (!season) {
+          res.status(400).json({ error: "Dit seizoen hoort niet bij deze club." });
+          return;
+        }
+        if (season.status === "afgesloten") {
+          res.status(409).json({ error: "Dit seizoen is afgesloten en daarmee alleen-lezen." });
+          return;
+        }
+      }
+      patch["seasonId"] = seasonId;
+    }
     const [team] = await db
       .update(clubTeamsTable)
       .set(patch)

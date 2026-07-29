@@ -8,6 +8,10 @@ import {
   useMyClubs,
   useClubDashboard,
   useClubMembers,
+  useClubSeasons,
+  useCreateClubSeason,
+  useSeasonAction,
+  useCreateClubTeam,
   useSetMemberRole,
   useEndMembership,
   useCreateClubTraining,
@@ -535,6 +539,130 @@ function MembersSection({ clubId, myRole }: { clubId: number; myRole: ClubRole }
   )
 }
 
+// WP-03: seizoenen & teams/selecties beheren.
+function SeasonsTeamsSection({ clubId }: { clubId: number }) {
+  const { data: seasons } = useClubSeasons(clubId)
+  const { data: dash } = useClubDashboard(clubId)
+  const createSeason = useCreateClubSeason(clubId)
+  const seasonAction = useSeasonAction(clubId)
+  const createTeam = useCreateClubTeam(clubId)
+  const [seasonName, setSeasonName] = useState("")
+  const [teamName, setTeamName] = useState("")
+  const [parentId, setParentId] = useState<string>("")
+  const [error, setError] = useState<string | null>(null)
+
+  const teams = dash?.teams ?? []
+  const rootTeams = teams.filter((t) => t.parentTeamId == null)
+  const activeSeason = (seasons ?? []).find((s) => s.status === "actief")
+  const onErr = (err: unknown) => setError(err instanceof Error ? err.message : "Niet gelukt.")
+
+  return (
+    <section aria-label="Seizoenen en teams">
+      <h2 className={H2}><CalendarDays className="h-3 w-3" /> Seizoenen & teams</h2>
+      {error && <p className="mb-1.5 text-[11px] text-rose-300/85">{error}</p>}
+      <div className="space-y-1.5">
+        {(seasons ?? []).length === 0 && (
+          <p className="text-[12px] text-white/40">Nog geen seizoenen. Maak er één aan (bv. "2026") om teams en toewijzingen een duidelijke periode te geven.</p>
+        )}
+        {(seasons ?? []).map((s) => (
+          <div key={s.id} className={`${CARD} flex items-center justify-between gap-3`}>
+            <div>
+              <p className="text-[13px] text-white/85">{s.name}</p>
+              <p className="text-[11px] text-white/40">
+                {s.status === "actief" ? "actief seizoen" : s.status === "gepland" ? "gepland" : "afgesloten (alleen-lezen)"}
+              </p>
+            </div>
+            <div className="flex shrink-0 gap-1.5">
+              {s.status === "gepland" && !activeSeason && (
+                <button
+                  onClick={() => { setError(null); seasonAction.mutate({ seasonId: s.id, action: "activate" }, { onError: onErr }) }}
+                  className="rounded-lg border border-white/15 px-2 py-1 text-[11px] text-white/60 hover:border-white/35"
+                >Activeren</button>
+              )}
+              {s.status !== "afgesloten" && (
+                <button
+                  onClick={() => {
+                    setError(null)
+                    if (!window.confirm("Seizoen afsluiten? Het blijft zichtbaar, maar wordt alleen-lezen.")) return
+                    seasonAction.mutate({ seasonId: s.id, action: "close" }, { onError: onErr })
+                  }}
+                  className="rounded-lg border border-white/15 px-2 py-1 text-[11px] text-white/60 hover:border-rose-300/40 hover:text-rose-200"
+                >Afsluiten</button>
+              )}
+            </div>
+          </div>
+        ))}
+        <div className="flex gap-1.5">
+          <input
+            value={seasonName}
+            onChange={(e) => setSeasonName(e.target.value)}
+            placeholder="Nieuw seizoen, bv. 2026"
+            className="flex-1 rounded-lg border border-white/15 bg-[#070d16] px-2 py-1 text-[11px] text-white/75 placeholder:text-white/30"
+          />
+          <button
+            disabled={!seasonName.trim() || createSeason.isPending}
+            onClick={() => {
+              setError(null)
+              createSeason.mutate(
+                { name: seasonName.trim(), status: activeSeason ? "gepland" : "actief" },
+                { onSuccess: () => setSeasonName(""), onError: onErr },
+              )
+            }}
+            className="rounded-lg border border-white/15 px-2 py-1 text-[11px] text-white/60 hover:border-white/35 disabled:opacity-40"
+          >Aanmaken</button>
+        </div>
+
+        <div className="pt-2">
+          <p className="mb-1 text-[11px] uppercase tracking-wide text-white/35">Teams & selecties</p>
+          {teams.length === 0 && <p className="text-[12px] text-white/40">Nog geen teams.</p>}
+          {rootTeams.map((t) => (
+            <div key={t.id} className="mb-1">
+              <div className={`${CARD} text-[13px] text-white/85`}>{t.name}</div>
+              {teams.filter((s) => s.parentTeamId === t.id).map((s) => (
+                <div key={s.id} className={`${CARD} ml-4 mt-1 text-[12px] text-white/65`}>↳ {s.name} <span className="text-white/35">(selectie)</span></div>
+              ))}
+            </div>
+          ))}
+          <div className="mt-1.5 flex gap-1.5">
+            <input
+              value={teamName}
+              onChange={(e) => setTeamName(e.target.value)}
+              placeholder="Nieuw team of selectie"
+              className="flex-1 rounded-lg border border-white/15 bg-[#070d16] px-2 py-1 text-[11px] text-white/75 placeholder:text-white/30"
+            />
+            <select
+              value={parentId}
+              onChange={(e) => setParentId(e.target.value)}
+              className="rounded-lg border border-white/15 bg-[#070d16] px-2 py-1 text-[11px] text-white/75"
+            >
+              <option value="">Los team</option>
+              {rootTeams.map((t) => (
+                <option key={t.id} value={String(t.id)}>Selectie van {t.name}</option>
+              ))}
+            </select>
+            <button
+              disabled={!teamName.trim() || createTeam.isPending}
+              onClick={() => {
+                setError(null)
+                createTeam.mutate(
+                  {
+                    name: teamName.trim(),
+                    parentTeamId: parentId ? Number(parentId) : null,
+                    seasonId: activeSeason?.id ?? null,
+                  },
+                  { onSuccess: () => { setTeamName(""); setParentId("") }, onError: onErr },
+                )
+              }}
+              className="rounded-lg border border-white/15 px-2 py-1 text-[11px] text-white/60 hover:border-white/35 disabled:opacity-40"
+            >Toevoegen</button>
+          </div>
+          {activeSeason && <p className="mt-1 text-[11px] text-white/35">Nieuwe teams worden gekoppeld aan seizoen {activeSeason.name}.</p>}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function PackageSection({ clubId, isOwner }: { clubId: number; isOwner: boolean }) {
   const { data } = useClubSubscription(clubId)
   const setPkg = useSetClubPackage(clubId)
@@ -636,6 +764,7 @@ export default function ClubBeheerPage() {
         <InviteSection clubId={clubId} />
         <LocationsSection clubId={clubId} />
         <MembersSection clubId={clubId} myRole={myRole} />
+        <SeasonsTeamsSection clubId={clubId} />
         <PlanTrainingSection clubId={clubId} />
         <PlanRaceSection clubId={clubId} />
         <PackageSection clubId={clubId} isOwner={myRole === "owner"} />

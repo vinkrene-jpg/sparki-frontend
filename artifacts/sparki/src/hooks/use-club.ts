@@ -132,7 +132,7 @@ export type ClubMemberRow = {
 export type ClubDashboard = {
   club: Club
   membership: { id: number; role: ClubRole; clerkId: string }
-  teams: { id: number; name: string; managerClerkId: string | null }[]
+  teams: { id: number; name: string; managerClerkId: string | null; parentTeamId?: number | null; seasonId?: number | null }[]
   groups: { id: number; name: string; level: string | null; trainerClerkId: string | null }[]
   upcomingTrainings: { id: number; title: string; trainingDate: string }[]
   upcomingRaces: { id: number; name: string; raceDate: string }[]
@@ -308,6 +308,50 @@ export function useClubMembers(clubId: number | null, enabled = true, includeHis
     queryKey: ["clubs", clubId, "members", includeHistory ? "historie" : "actief"],
     queryFn: () => apiFetch(`/api/clubs/${clubId}/members${includeHistory ? "?historie=1" : ""}`),
     enabled: clubId != null && enabled,
+  })
+}
+
+// ── WP-03: seizoenen & teams ─────────────────────────────────────────────────
+export type ClubSeasonRow = {
+  id: number
+  name: string
+  startsOn: string | null
+  endsOn: string | null
+  status: "actief" | "gepland" | "afgesloten"
+}
+
+export function useClubSeasons(clubId: number | null, enabled = true) {
+  return useQuery<ClubSeasonRow[]>({
+    queryKey: ["clubs", clubId, "seasons"],
+    queryFn: () => apiFetch(`/api/clubs/${clubId}/seasons`),
+    enabled: clubId != null && enabled,
+  })
+}
+
+export function useCreateClubSeason(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { name: string; status?: "actief" | "gepland"; startsOn?: string; endsOn?: string }) =>
+      apiFetch(`/api/clubs/${clubId}/seasons`, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["clubs", clubId, "seasons"] }),
+  })
+}
+
+export function useSeasonAction(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seasonId, action }: { seasonId: number; action: "close" | "activate" }) =>
+      apiFetch(`/api/clubs/${clubId}/seasons/${seasonId}/${action}`, { method: "POST" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["clubs", clubId, "seasons"] }),
+  })
+}
+
+export function useCreateClubTeam(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { name: string; parentTeamId?: number | null; seasonId?: number | null; category?: string }) =>
+      apiFetch(`/api/clubs/${clubId}/teams`, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["clubs", clubId] }),
   })
 }
 
