@@ -120,6 +120,10 @@ export function LiveSensorsPanel({
                         conn.batteryPercent != null
                           ? ` · batterij ${conn.batteryPercent}%`
                           : ""
+                      }${
+                        conn.usedFallback
+                          ? " · let op: andere sensor dan je gekoppelde"
+                          : ""
                       }`
                     : conn.status === "connecting"
                       ? "Zoeken…"

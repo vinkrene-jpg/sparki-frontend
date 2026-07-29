@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ChevronRight } from "lucide-react"
 import { apiFetch } from "@/lib/api"
 
@@ -45,17 +45,22 @@ export function OnboardingGapFill({ onComplete, finishing }: OnboardingGapFillPr
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Eerlijke fout i.p.v. stil "alles compleet": als deze call faalt weten we
+  // NIET wat er mist, dus tonen we dat — met opnieuw proberen en een expliciete
+  // doorgaan-keuze (complete-v2 gebruikt dan als schatting gemarkeerde waarden).
+  const [fetchFailed, setFetchFailed] = useState(false)
+  const [retryTick, setRetryTick] = useState(0)
 
   useEffect(() => {
     let alive = true
+    setLoading(true)
+    setFetchFailed(false)
     apiFetch<MissingDataResult>("/api/onboarding/missing-data")
       .then((res) => {
         if (alive) setData(res)
       })
       .catch(() => {
-        // Honest fallback: if we can't compute the gaps, don't block the athlete
-        // — complete-v2 still seeds estimated defaults so a plan can be built.
-        if (alive) setData({ missing: [], present: [], complete: true })
+        if (alive) setFetchFailed(true)
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -63,7 +68,20 @@ export function OnboardingGapFill({ onComplete, finishing }: OnboardingGapFillPr
     return () => {
       alive = false
     }
-  }, [])
+  }, [retryTick])
+
+  // Single-flight: één onComplete per finish-cyclus, ook bij snelle dubbelklik
+  // (het `finishing`-prop van de parent kan een render achterlopen). De grendel
+  // gaat pas weer open wanneer de parent klaar is of faalde (finishing → false).
+  const completeGuardRef = useRef(false)
+  useEffect(() => {
+    if (!finishing) completeGuardRef.current = false
+  }, [finishing])
+  const fireComplete = () => {
+    if (completeGuardRef.current || finishing) return
+    completeGuardRef.current = true
+    onComplete()
+  }
 
   const setText = (key: string, v: string) =>
     setValues((prev) => ({ ...prev, [key]: v }))
@@ -95,13 +113,47 @@ export function OnboardingGapFill({ onComplete, finishing }: OnboardingGapFillPr
       }
       setSaving(false)
     }
-    onComplete()
+    fireComplete()
   }
 
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <span className="font-sans text-sm text-white/40">Even kijken wat er nog mist…</span>
+      </div>
+    )
+  }
+
+  if (fetchFailed && !data) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col justify-center gap-4">
+        <h2 className="font-sans text-[1.5rem] font-bold leading-tight tracking-tight text-white">
+          Even geen verbinding
+        </h2>
+        <p className="text-pretty text-[13px] leading-relaxed text-white/45">
+          Ik kon niet controleren welke gegevens er nog missen. Probeer het
+          opnieuw, of ga toch door — dan bouw ik je eerste schema met
+          voorzichtige schattingen (die pas je later makkelijk aan).
+        </p>
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => setRetryTick((t) => t + 1)}
+            className="rounded-xl border px-3.5 py-2.5 font-sans text-sm"
+            style={{ borderColor: "rgba(120,210,230,0.4)", background: ACCENT_DIM, color: "rgba(255,255,255,0.92)" }}
+          >
+            Opnieuw proberen
+          </button>
+          <button
+            type="button"
+            onClick={fireComplete}
+            disabled={finishing}
+            className="rounded-xl border px-3.5 py-2.5 font-sans text-sm"
+            style={{ borderColor: "rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.6)" }}
+          >
+            {finishing ? "Bezig…" : "Toch doorgaan met schattingen"}
+          </button>
+        </div>
       </div>
     )
   }

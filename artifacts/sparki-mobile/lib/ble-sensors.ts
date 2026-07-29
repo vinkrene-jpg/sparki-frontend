@@ -24,6 +24,10 @@ export type SensorHandle = {
   // Echte batterijstand (0–100%) uit de standaard Battery Service (0x180F),
   // of null wanneer de sensor die dienst niet aanbiedt — nooit geschat.
   batteryPercent: number | null;
+  // Eerlijkheid: true wanneer er een gekoppelde voorkeurssensor bestond maar
+  // (na de zoek-graceperiode) een ANDERE sensor is verbonden — de UI meldt dat
+  // dan expliciet, zodat nooit stil andermans meetwaarden als eigen doorgaan.
+  usedFallback: boolean;
   stop: () => void;
 };
 
@@ -333,8 +337,12 @@ export async function connectSensor(
     },
   );
 
+  const connectedName = device.name ?? device.localName ?? null;
   return {
-    deviceName: device.name ?? device.localName ?? null,
+    deviceName: connectedName,
+    // Andere sensor dan de gekoppelde voorkeur? Dan expliciet melden.
+    usedFallback:
+      !!preferred && (connectedName ?? "").trim().toLowerCase() !== preferred,
     batteryPercent,
     stop: () => {
       stopped = true;

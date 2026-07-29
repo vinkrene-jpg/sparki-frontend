@@ -27,6 +27,9 @@ export type GarageSensor = {
 export type SensorConnState = {
   status: "idle" | "connecting" | "connected" | "reconnecting" | "error";
   deviceName: string | null;
+  // Eerlijkheid: true wanneer een ANDERE sensor is verbonden dan de gekoppelde
+  // voorkeurssensor — de UI meldt dat expliciet.
+  usedFallback: boolean;
   error: string | null;
   // Echte batterijstand (0–100%) uit de standaard Battery Service, of null
   // wanneer de sensor die niet aanbiedt — nooit geschat.
@@ -42,6 +45,7 @@ export type LiveSensorValues = {
 const IDLE: SensorConnState = {
   status: "idle",
   deviceName: null,
+  usedFallback: false,
   error: null,
   batteryPercent: null,
 };
@@ -147,6 +151,7 @@ export function useLiveSensors() {
         [kind]: {
           status: isReconnect ? "reconnecting" : "connecting",
           deviceName: c[kind].deviceName,
+          usedFallback: c[kind].usedFallback,
           error: null,
           batteryPercent: null,
         },
@@ -173,6 +178,7 @@ export function useLiveSensors() {
                 [kind]: {
                   status: "reconnecting",
                   deviceName: c[kind].deviceName,
+                  usedFallback: false,
                   error: null,
                   batteryPercent: null,
                 },
@@ -188,6 +194,7 @@ export function useLiveSensors() {
                 [kind]: {
                   status: "error",
                   deviceName: null,
+                  usedFallback: false,
                   error:
                     "Verbinding met de sensor is weggevallen en herverbinden is niet gelukt. Controleer de sensor en probeer opnieuw.",
                   batteryPercent: null,
@@ -207,6 +214,7 @@ export function useLiveSensors() {
           [kind]: {
             status: "connected",
             deviceName: handle.deviceName,
+            usedFallback: handle.usedFallback,
             error: null,
             batteryPercent: handle.batteryPercent,
           },
@@ -229,6 +237,7 @@ export function useLiveSensors() {
           [kind]: {
             status: "error",
             deviceName: null,
+            usedFallback: false,
             error:
               err instanceof Error && err.message
                 ? err.message

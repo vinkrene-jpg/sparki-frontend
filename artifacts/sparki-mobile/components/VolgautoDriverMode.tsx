@@ -108,7 +108,11 @@ export function VolgautoDriverMode({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location, match]);
 
-  // Eigen positie delen (best-effort) + rennerpositie ophalen.
+  // Eigen positie delen (best-effort) + rennerpositie ophalen. Blijft het
+  // versturen herhaald mislukken, dan tonen we dat eerlijk in de HUD i.p.v.
+  // stilletjes te doen alsof de renner ons kan volgen.
+  const shareFailRef = useRef(0);
+  const [shareFailing, setShareFailing] = useState(false);
   useEffect(() => {
     if (!location) return;
     const send = () =>
@@ -117,6 +121,9 @@ export function VolgautoDriverMode({
         lat: location.latitude,
         lon: location.longitude,
         speedMps: location.speedMps ?? null,
+      }).then((ok) => {
+        shareFailRef.current = ok ? 0 : shareFailRef.current + 1;
+        setShareFailing(shareFailRef.current >= 2);
       });
     send();
     const t = setInterval(send, 20_000);
@@ -284,6 +291,12 @@ export function VolgautoDriverMode({
         {rejoin.isError && (
           <Text style={styles.errText}>
             {(rejoin.error as Error)?.message ?? "Herberekenen mislukt."}
+          </Text>
+        )}
+        {shareFailing && (
+          <Text style={styles.errText}>
+            Positie delen hapert — geen verbinding. De renner ziet je nu
+            mogelijk niet.
           </Text>
         )}
       </View>

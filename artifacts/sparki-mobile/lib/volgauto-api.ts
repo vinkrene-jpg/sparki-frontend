@@ -103,11 +103,15 @@ export function useVolgautoRejoin(routeId: number | null) {
   });
 }
 
-/** Best-effort positie delen; mislukken blokkeert navigatie nooit. */
+/**
+ * Best-effort positie delen; mislukken blokkeert navigatie nooit. Geeft terug
+ * of het versturen lukte, zodat de afzender eerlijk kan tonen dat het delen
+ * hapert (i.p.v. stilletjes te doen alsof de ander je positie ziet).
+ */
 export async function postVolgautoPosition(
   routeId: number,
   input: { role: "renner" | "volgauto"; lat: number; lon: number; speedMps: number | null },
-): Promise<void> {
+): Promise<boolean> {
   try {
     await customFetch(`/api/routes/${routeId}/volgauto/position`, {
       method: "POST",
@@ -115,8 +119,9 @@ export async function postVolgautoPosition(
       headers: { "content-type": "application/json" },
       body: JSON.stringify(input),
     });
+    return true;
   } catch {
-    // best-effort
+    return false;
   }
 }
 

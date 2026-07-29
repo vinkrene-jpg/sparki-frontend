@@ -232,6 +232,9 @@ export default function NavigateScreen() {
   const [volgautoRole, setVolgautoRole] = useState<"renner" | "volgauto" | null>(
     null,
   );
+  // Eerlijke indicator: herhaald mislukt positie-delen naar de volgauto.
+  const volgautoFailRef = useRef(0);
+  const [volgautoShareFailing, setVolgautoShareFailing] = useState(false);
   useEffect(() => {
     // Renner deelt (met plan aan) elke ~20s zijn positie zodat de volgauto
     // een GESCHATTE wachttijd kan tonen. Mislukken blokkeert navigatie nooit.
@@ -243,6 +246,10 @@ export default function NavigateScreen() {
         lat: location.latitude,
         lon: location.longitude,
         speedMps: location.speedMps ?? null,
+      }).then((ok) => {
+        // Eerlijk: blijft delen mislukken, meld dat — de volgauto ziet je dan niet.
+        volgautoFailRef.current = ok ? 0 : volgautoFailRef.current + 1;
+        setVolgautoShareFailing(volgautoFailRef.current >= 2);
       });
     send();
     const t = setInterval(send, 20_000);
@@ -1060,6 +1067,17 @@ export default function NavigateScreen() {
           <Ionicons name="location-outline" size={18} color={c.destructive} />
           <Text style={[styles.locNoticeText, { color: c.mutedForeground }]}>
             {locError ?? "Geen toegang tot je locatie."}
+          </Text>
+        </View>
+      )}
+
+      {/* ---------- Volgauto-delen hapert: eerlijk melden, nooit stil ---------- */}
+      {volgautoShareFailing && volgautoRole === "renner" && (
+        <View style={[styles.locNotice, { top: insets.top + (hasNav ? 168 : 140), backgroundColor: c.card, borderColor: c.border }]}>
+          <Ionicons name="car-outline" size={18} color={c.mutedForeground} />
+          <Text style={[styles.locNoticeText, { color: c.mutedForeground }]}>
+            Positie delen met de volgauto hapert — geen verbinding. De volgauto
+            ziet je nu mogelijk niet.
           </Text>
         </View>
       )}
