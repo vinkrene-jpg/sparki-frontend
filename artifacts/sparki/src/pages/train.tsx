@@ -19,6 +19,7 @@ import {
 import { Plus, Sparkles, Check, ChevronRight } from "lucide-react"
 import { workoutIcon } from "@/lib/workout-visual"
 import type { TrainingSession } from "@/lib/athlete-types"
+import { UitlegDot } from "@/components/viz/uitleg"
 
 // Sources where Sparki already captured the objective data itself (a connector
 // or a file import). For these, the only thing missing is the subjective gap —
@@ -121,9 +122,19 @@ function ConfirmActivityCard({ session }: { session: TrainingSession }) {
           {facts.map((f) => (
             <span
               key={f}
-              className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 font-mono text-[11px] tabular-nums text-white/70"
+              className="inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 font-mono text-[11px] tabular-nums text-white/70"
             >
               {f}
+              {/* Vaktermen krijgen een uitleg-stipje (Beslisblok 01, fix 4). */}
+              {f.endsWith(" TSS") && (
+                <UitlegDot uitlegKey="belasting" label="Belastingsscore (TSS)" />
+              )}
+              {f.endsWith(" W NP") && (
+                <UitlegDot
+                  uitlegKey="genormaliseerd_vermogen"
+                  label="Genormaliseerd vermogen (NP)"
+                />
+              )}
             </span>
           ))}
         </div>

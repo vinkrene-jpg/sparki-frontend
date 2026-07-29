@@ -450,7 +450,7 @@ test("mobiele nav: alle items, actieve tab en werkende navigatie", async () => {
     assert.equal(actief.length, 1, "precies één actieve tab");
     assert.equal(actief[0]!.textContent, "Vandaag", "Vandaag is actief");
 
-    const plan = knoppen.find((b) => b.textContent === "Plan");
+    const plan = knoppen.find((b) => b.textContent === "Trainen");
     view.rtl.fireEvent.click(plan!);
     assert.deepEqual(navCalls, ["/train"], "navigatie loopt via onNavigeer");
   } finally {

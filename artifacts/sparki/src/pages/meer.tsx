@@ -86,6 +86,31 @@ export default function MeerPage() {
             </button>
           )}
         </div>
+
+        {/* Beslisblok 01: Privacy en Voorwaarden altijd bereikbaar via Meer. */}
+        <div className="flex flex-wrap items-center gap-4 pt-1">
+          <button
+            type="button"
+            onClick={() => setLocation("/privacy")}
+            className="type-body-sm text-content-secondary underline underline-offset-2 transition-colors hover:text-accent-cyan"
+          >
+            Privacy
+          </button>
+          <button
+            type="button"
+            onClick={() => setLocation("/voorwaarden")}
+            className="type-body-sm text-content-secondary underline underline-offset-2 transition-colors hover:text-accent-cyan"
+          >
+            Voorwaarden
+          </button>
+          <button
+            type="button"
+            onClick={() => setLocation("/photo-lab")}
+            className="type-body-sm text-content-secondary underline underline-offset-2 transition-colors hover:text-accent-cyan"
+          >
+            Photo Lab
+          </button>
+        </div>
       </div>
     </CommercialShell>
   )

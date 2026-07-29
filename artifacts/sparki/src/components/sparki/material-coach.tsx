@@ -26,6 +26,7 @@ import {
   type MaterialConfidence,
   type PhotoPayload,
 } from "@/hooks/use-material"
+import { magAdviesTonen, ADVIES_ONBEKEND_TEKST } from "@/lib/material-advice"
 
 const CONFIDENCE_META: Record<
   MaterialConfidence,
@@ -172,6 +173,9 @@ export function AnalysisResult({
   const fileRef = useRef<HTMLInputElement>(null)
   const advice = analysis.advice
   const needsMore = analysis.status === "needs_more"
+  // Beslisblok 01, fix 6: bij "Niet te beoordelen" geen stellig advies tonen —
+  // eerlijk melden en om een extra foto vragen.
+  const adviesZichtbaar = magAdviesTonen(analysis.confidence)
 
   return (
     <div className="space-y-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
@@ -203,8 +207,14 @@ export function AnalysisResult({
         </div>
       )}
 
-      {advice?.summary && (
+      {adviesZichtbaar && advice?.summary && (
         <p className="text-[14px] leading-relaxed text-white/75">{advice.summary}</p>
+      )}
+
+      {!adviesZichtbaar && (
+        <p className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3.5 text-[13px] leading-relaxed text-white/60">
+          {ADVIES_ONBEKEND_TEKST}
+        </p>
       )}
 
       {needsMore && analysis.followUpQuestion && (
@@ -241,7 +251,7 @@ export function AnalysisResult({
         </div>
       )}
 
-      {advice && (
+      {adviesZichtbaar && advice && (
         <div className="space-y-3">
           <PointList title="Voordelen" items={advice.pros} tone="pro" />
           <PointList title="Nadelen" items={advice.cons} tone="con" />
@@ -250,7 +260,9 @@ export function AnalysisResult({
         </div>
       )}
 
-      {analysis.costEstimate && <CostEstimate cost={analysis.costEstimate} />}
+      {adviesZichtbaar && analysis.costEstimate && (
+        <CostEstimate cost={analysis.costEstimate} />
+      )}
     </div>
   )
 }

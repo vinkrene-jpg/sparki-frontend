@@ -168,12 +168,25 @@ test("atleet: admin-rij alleen bij admin", async () => {
   const zonder = await renderMeer()
   try {
     const text = zonder.container.textContent ?? ""
-    assert.ok(!text.includes("Beheer"), "zonder admin geen Beheer-groep")
+    // Sinds Beslisblok 01 is de groep "Beheer, instellingen & privacy" er
+    // altijd (Privacy + Voorwaarden voor iedereen) — alleen de /admin-rij
+    // blijft admin-only.
     assert.ok(
-      !Array.from(zonder.container.querySelectorAll("a")).some(
-        (a) => a.getAttribute("href") === "/admin",
-      ),
+      text.includes("Beheer, instellingen & privacy"),
+      "privacy-groep ook zonder admin aanwezig",
+    )
+    const links = Array.from(zonder.container.querySelectorAll("a"))
+    assert.ok(
+      !links.some((a) => a.getAttribute("href") === "/admin"),
       "geen /admin-link",
+    )
+    assert.ok(
+      links.some((a) => a.getAttribute("href") === "/privacy"),
+      "/privacy-link aanwezig",
+    )
+    assert.ok(
+      links.some((a) => a.getAttribute("href") === "/voorwaarden"),
+      "/voorwaarden-link aanwezig",
     )
   } finally {
     zonder.rtl.cleanup()

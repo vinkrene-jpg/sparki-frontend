@@ -63,6 +63,30 @@ const KENNIS_ITEM: Chapter = {
   hint: "Kennis & inzichten",
 }
 
+// Beslisblok 01, veilige fixes 2 en 3: Privacy en Voorwaarden zijn bestaande
+// routes die vanuit Meer bereikbaar horen te zijn (voor iedereen, ook coach en
+// ouder), en de Photo Lab krijgt een bescheiden ingang (geen hoofdonderdeel).
+const PRIVACY_ITEM: Chapter = {
+  href: "/privacy",
+  icon: null as never,
+  label: "Privacy",
+  hint: "Privacyverklaring",
+}
+
+const VOORWAARDEN_ITEM: Chapter = {
+  href: "/voorwaarden",
+  icon: null as never,
+  label: "Voorwaarden",
+  hint: "Gebruiksvoorwaarden",
+}
+
+const PHOTO_LAB_ITEM: Chapter = {
+  href: "/photo-lab",
+  icon: null as never,
+  label: "Photo Lab",
+  hint: "Foto's bewerken",
+}
+
 // Vaste groepsvolgorde (harde eis). De functie hieronder vult de groepen met
 // chapters uit de bestaande ATHLETE_MEER_CHAPTERS / chaptersForRole-sets. Elke
 // bestemming komt precies een keer voor — geen duplicaten, niets verwijderen
@@ -98,9 +122,12 @@ function groepeerAtleet(isClubMember: boolean, isAdmin: boolean): MeerGroep[] {
     },
     {
       titel: "Sport & materiaal",
-      items: ["/lichaam", "/mechanieker", "/klimmen", "/geluid"]
-        .map((h) => byHref.get(h)!)
-        .filter(Boolean),
+      items: [
+        ...["/lichaam", "/mechanieker", "/klimmen", "/geluid"]
+          .map((h) => byHref.get(h)!)
+          .filter(Boolean),
+        PHOTO_LAB_ITEM,
+      ],
     },
     {
       titel: "Koppelingen & gegevens",
@@ -112,12 +139,12 @@ function groepeerAtleet(isClubMember: boolean, isAdmin: boolean): MeerGroep[] {
     },
   ]
 
-  if (isAdmin) {
-    groepen.push({
-      titel: "Beheer, instellingen & privacy",
-      items: [ADMIN_ITEM],
-    })
-  }
+  // Altijd tonen: Privacy en Voorwaarden horen voor iedereen bereikbaar te
+  // zijn (Beslisblok 01, veilige fix 2). Admin blijft conditioneel.
+  groepen.push({
+    titel: "Beheer, instellingen & privacy",
+    items: [...(isAdmin ? [ADMIN_ITEM] : []), PRIVACY_ITEM, VOORWAARDEN_ITEM],
+  })
 
   return groepen
 }
@@ -143,6 +170,10 @@ function groepeerCoach(): MeerGroep[] {
       titel: "Ondersteuning & kennis",
       items: [SUPPORT_ITEM],
     },
+    {
+      titel: "Beheer, instellingen & privacy",
+      items: [PRIVACY_ITEM, VOORWAARDEN_ITEM],
+    },
   ]
 }
 
@@ -166,6 +197,10 @@ function groepeerOuder(): MeerGroep[] {
     {
       titel: "Ondersteuning & kennis",
       items: [SUPPORT_ITEM],
+    },
+    {
+      titel: "Beheer, instellingen & privacy",
+      items: [PRIVACY_ITEM, VOORWAARDEN_ITEM],
     },
   ]
 }

@@ -102,6 +102,43 @@ test("coach en ouder behouden hun bestaande navigatie", () => {
   )
 })
 
+// Beslisblok 01, veilige fix 7: regressietest menuverversing na rolwissel.
+// De nav-data per rol moet verschillend zijn (anders is verversen zinloos) en
+// BottomNav/MainMenu moeten hun items afleiden uit de actieve rol in de render
+// (dus automatisch mee-verversen zodra profile.activeRole wisselt).
+test("menu ververst bij rolwissel: nav-data per rol verschilt", () => {
+  const per = (entries: { href: string }[]) => entries.map((e) => e.href).join(",")
+  assert.notEqual(per(ATHLETE_NAV_ENTRIES), per(COACH_NAV_ENTRIES))
+  assert.notEqual(per(ATHLETE_NAV_ENTRIES), per(PARENT_NAV_ENTRIES))
+  assert.notEqual(per(COACH_NAV_ENTRIES), per(PARENT_NAV_ENTRIES))
+  // chaptersForRole levert per rol een andere set — de bron van het menu.
+  const a = chaptersForRole("athlete", false).map((c) => c.href).join(",")
+  const c = chaptersForRole("coach", false).map((c) => c.href).join(",")
+  const o = chaptersForRole("parent", false).map((c) => c.href).join(",")
+  assert.notEqual(a, c)
+  assert.notEqual(a, o)
+  assert.notEqual(c, o)
+})
+
+test("menu ververst bij rolwissel: componenten lezen de actieve rol in render", () => {
+  const bottomNav = readFileSync(
+    path.join(here, "..", "components", "sparki", "bottom-nav.tsx"),
+    "utf8",
+  )
+  const mainMenu = readFileSync(
+    path.join(here, "..", "components", "sparki", "main-menu.tsx"),
+    "utf8",
+  )
+  assert.ok(
+    /activeRole/.test(bottomNav),
+    "BottomNav leidt items af uit profile.activeRole",
+  )
+  assert.ok(
+    /activeRole/.test(mainMenu),
+    "MainMenu leidt items af uit profile.activeRole",
+  )
+})
+
 test("club verschijnt alleen bij een echte koppeling", () => {
   const zonder = chaptersForRole("athlete", false).map((c) => c.href)
   const met = chaptersForRole("athlete", true).map((c) => c.href)

@@ -17,7 +17,9 @@ export type CommercialNavItem = { href: string; label: string }
 
 export const COMMERCIAL_MOBILE_NAV: CommercialNavItem[] = [
   { href: "/vandaag", label: "Vandaag" },
-  { href: "/train", label: "Plan" },
+  // Label gelijkgetrokken met het menu-label "Trainen" (Beslisblok 01,
+  // veilige fix 1) — de paginatitel en de nav zeggen nu hetzelfde.
+  { href: "/train", label: "Trainen" },
   { href: "/routes", label: "Rijden" },
   // Analyse verving Activiteiten op verzoek van René (28-7-2026);
   // Activiteiten blijft bereikbaar via Meer → Veelgebruikt.
@@ -25,13 +27,19 @@ export const COMMERCIAL_MOBILE_NAV: CommercialNavItem[] = [
   { href: "/meer", label: "Meer" },
 ]
 
+// Beslisblok 01 (RENE_APPROVED_PATTERN, apparaat-eigen navigatie met
+// gegarandeerde kernset): Wedstrijd hoort ook op desktop logisch bereikbaar
+// te zijn, en desktop krijgt een duidelijk Meer-equivalent (zelfde inhoud als
+// het mobiele Meer-overzicht, geen 1-op-1 kopie van de mobiele onderbalk).
 export const COMMERCIAL_DESKTOP_NAV: CommercialNavItem[] = [
   { href: "/vandaag", label: "Vandaag" },
-  { href: "/train", label: "Plan" },
+  { href: "/train", label: "Trainen" },
   { href: "/routes", label: "Rijden" },
+  { href: "/races", label: "Wedstrijd" },
   { href: "/activiteiten", label: "Activiteiten" },
   { href: "/analyse", label: "Analyse" },
   { href: "/feed", label: "Ontdekken" },
+  { href: "/meer", label: "Meer" },
 ]
 
 export const COMMERCIAL_ACCOUNT_NAV: CommercialNavItem = {

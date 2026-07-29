@@ -435,7 +435,11 @@ function LoadGrafiek({
           <ComposedChart data={ctlData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }} onClick={klik}>
             <CartesianGrid stroke={CHART.grid} vertical={false} />
             <XAxis dataKey="date" tickFormatter={fmtDatum} tick={{ fill: CHART.as, fontSize: 11 }} interval={intervalStap} />
-            <YAxis tick={{ fill: CHART.as, fontSize: 11 }} domain={["auto", "auto"]} />
+            <YAxis
+              tick={{ fill: CHART.as, fontSize: 11 }}
+              domain={["auto", "auto"]}
+              label={{ value: "punten", angle: -90, position: "insideLeft", offset: 18, fill: CHART.as, fontSize: 10 }}
+            />
             <Tooltip content={(props) => <CTLATLTooltip {...(props as Parameters<typeof CTLATLTooltip>[0])} />} />
             {projectie && (
               <Area
@@ -521,7 +525,10 @@ function LoadGrafiek({
           <ComposedChart data={gefilterd} margin={{ top: 4, right: 8, left: -16, bottom: 0 }} barCategoryGap="25%">
             <CartesianGrid stroke={CHART.grid} vertical={false} />
             <XAxis dataKey="date" tickFormatter={fmtDatum} tick={{ fill: CHART.as, fontSize: 11 }} interval={intervalStap} />
-            <YAxis tick={{ fill: CHART.as, fontSize: 11 }} />
+            <YAxis
+              tick={{ fill: CHART.as, fontSize: 11 }}
+              label={{ value: "punten", angle: -90, position: "insideLeft", offset: 18, fill: CHART.as, fontSize: 10 }}
+            />
             <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={1.5} />
             <Tooltip content={(props) => <TSBTooltip {...(props as Parameters<typeof TSBTooltip>[0])} />} />
             {/* Gradatie: licht → donker naarmate de vorm verder van 0 ligt */}
@@ -664,7 +671,10 @@ function WeekVolumeCard({
             >
               <CartesianGrid stroke={CHART.grid} vertical={false} />
               <XAxis dataKey="label" tick={{ fill: CHART.as, fontSize: 10 }} interval={1} />
-              <YAxis tick={{ fill: CHART.as, fontSize: 10 }} />
+              <YAxis
+                tick={{ fill: CHART.as, fontSize: 10 }}
+                label={{ value: "uren", angle: -90, position: "insideLeft", offset: 18, fill: CHART.as, fontSize: 10 }}
+              />
               <Tooltip content={(props) => <VolumeTooltip {...(props as Parameters<typeof VolumeTooltip>[0])} />} />
               {doelUren != null && (
                 // Doellijn uit het Doelscenario: de balken (werkelijke uren)
@@ -1345,8 +1355,20 @@ function GewichtWkgCard({
           <ComposedChart data={reeks} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
             <CartesianGrid stroke={CHART.grid} vertical={false} />
             <XAxis dataKey="date" tickFormatter={fmtDatum} tick={{ fill: CHART.as, fontSize: 10 }} />
-            <YAxis yAxisId="kg" tick={{ fill: CHART.as, fontSize: 10 }} domain={["auto", "auto"]} />
-            <YAxis yAxisId="wkg" orientation="right" tick={{ fill: CHART.as, fontSize: 10 }} domain={["auto", "auto"]} hide={!heeftWkg} />
+            <YAxis
+              yAxisId="kg"
+              tick={{ fill: CHART.as, fontSize: 10 }}
+              domain={["auto", "auto"]}
+              label={{ value: "kg", angle: -90, position: "insideLeft", offset: 18, fill: CHART.as, fontSize: 10 }}
+            />
+            <YAxis
+              yAxisId="wkg"
+              orientation="right"
+              tick={{ fill: CHART.as, fontSize: 10 }}
+              domain={["auto", "auto"]}
+              hide={!heeftWkg}
+              label={{ value: "W/kg", angle: 90, position: "insideRight", offset: 12, fill: CHART.as, fontSize: 10 }}
+            />
             <Tooltip content={(props) => <GewichtTooltip {...(props as Parameters<typeof GewichtTooltip>[0])} />} />
             <Line yAxisId="kg" type="monotone" dataKey="kg" stroke="#334155" strokeWidth={2} dot={false} name="Gewicht" />
             {heeftWkg && (
@@ -1435,6 +1457,7 @@ function ProgressieTab({
                   <XAxis dataKey="maand" tick={{ fill: CHART.as, fontSize: 9 }} interval={0} />
                   <YAxis
                     tick={{ fill: CHART.as, fontSize: 9 }}
+                    label={{ value: "watt", angle: -90, position: "insideLeft", offset: 22, fill: CHART.as, fontSize: 9 }}
                     domain={[
                       (min: number) => Math.floor(Math.min(min, overlays.streefFtp ?? min) * 0.9),
                       (max: number) => Math.ceil(Math.max(max, overlays.streefFtp ?? max) * 1.05),
@@ -1699,7 +1722,12 @@ function SessiesTab({
               <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700 pr-3">Datum</th>
               <th className="py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700 pr-3">Training</th>
               <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700 pr-3 hidden sm:table-cell">Duur</th>
-              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700">TSS</th>
+              <th className="py-2 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-700">
+                <span className="inline-flex items-center gap-1">
+                  TSS
+                  <UitlegDot uitlegKey="belasting" label="Belastingsscore (TSS)" />
+                </span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -1797,14 +1825,14 @@ function SamenvattingStrip({
         {cel(
           "Belasting",
           kern.ctl != null
-            ? <span className="tabular-nums" style={{ color: CHART.ctl }}>{kern.ctl} <span className="text-xs text-slate-400">CTL</span></span>
+            ? <span className="tabular-nums" style={{ color: CHART.ctl }}>{kern.ctl} <span className="text-xs text-slate-400">CTL</span> <UitlegDot uitlegKey="fitheid" label="Fitheid (CTL)" /></span>
             : <span className="text-slate-300">—</span>,
           kern.atl != null ? `vermoeidheid ${kern.atl}` : undefined,
         )}
         {cel(
           "Vorm & herstel",
           kern.tsb != null
-            ? <span className="tabular-nums" style={{ color: tsbKleur(kern.tsb) }}>{kern.tsb > 0 ? "+" : ""}{kern.tsb}</span>
+            ? <span className="tabular-nums" style={{ color: tsbKleur(kern.tsb) }}>{kern.tsb > 0 ? "+" : ""}{kern.tsb} <UitlegDot uitlegKey="vorm" label="Vorm (TSB)" /></span>
             : <span className="text-slate-300">—</span>,
           kern.vormLabel ?? undefined,
         )}

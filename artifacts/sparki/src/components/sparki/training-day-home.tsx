@@ -26,6 +26,7 @@ import { QuickActionButton } from "@/components/sparki/coach-input-actions"
 import { GoalContextLine } from "@/components/sparki/goal-context-line"
 import { useState } from "react"
 import { ChevronRight } from "lucide-react"
+import { UitlegDot } from "@/components/viz/uitleg"
 
 
 const zoneColor: Record<number, string> = {
@@ -473,25 +474,34 @@ export function TrainingDayHome({
             <div className="mt-2 flex items-center gap-5">
               {lastSession.normalizedPower != null && (
                 <>
-                  <AnalysisStat
-                    label="Normalized"
-                    value={`${lastSession.normalizedPower}W`}
-                  />
+                  <div className="flex items-start gap-1">
+                    <AnalysisStat
+                      label="Normalized"
+                      value={`${lastSession.normalizedPower}W`}
+                    />
+                    <UitlegDot uitlegKey="genormaliseerd_vermogen" label="Genormaliseerd vermogen (NP)" />
+                  </div>
                   <span className="h-7 w-px bg-white/[0.08]" />
                 </>
               )}
               {lastSession.intensityFactor && (
                 <>
-                  <AnalysisStat label="IF" value={lastSession.intensityFactor} />
+                  <div className="flex items-start gap-1">
+                    <AnalysisStat label="IF" value={lastSession.intensityFactor} />
+                    <UitlegDot uitlegKey="intensiteitsfactor" label="Intensiteitsfactor (IF)" />
+                  </div>
                   <span className="h-7 w-px bg-white/[0.08]" />
                 </>
               )}
               {lastSession.tss != null && (
-                <AnalysisStat
-                  label="Belasting (TSS)"
-                  value={String(lastSession.tss)}
-                  accent
-                />
+                <div className="flex items-start gap-1">
+                  <AnalysisStat
+                    label="Belasting (TSS)"
+                    value={String(lastSession.tss)}
+                    accent
+                  />
+                  <UitlegDot uitlegKey="belasting" label="Belastingsscore (TSS)" />
+                </div>
               )}
             </div>
           </div>
@@ -500,8 +510,9 @@ export function TrainingDayHome({
         {/* ontwikkeling sparkline */}
         <div className={lastSession ? "mt-7 border-t border-white/[0.07] pt-5" : "mt-4"}>
           <div className="flex items-baseline justify-between">
-            <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+            <span className="flex items-center gap-1 font-mono text-[10px] tracking-[0.2em] text-white/35">
               ONTWIKKELING · FITHEID (CTL)
+              <UitlegDot uitlegKey="fitheid" label="Fitheid (CTL)" />
             </span>
             {data?.load?.ctl != null && (
               <span className="font-mono text-[11px] tabular-nums text-cyan-300/80">
@@ -529,9 +540,13 @@ export function TrainingDayHome({
           )}
           {data?.load != null && (
             <p className="mt-3 text-pretty text-[12px] leading-relaxed text-white/40">
-              Fitness (CTL) {data.load.ctl} · Vermoeidheid (ATL) {data.load.atl} · Form (TSB){" "}
-              {data.load.tsb > 0 ? "+" : ""}
+              Fitness (CTL) {data.load.ctl}
+              <UitlegDot uitlegKey="fitheid" label="Fitheid (CTL)" /> · Vermoeidheid
+              (ATL) {data.load.atl}
+              <UitlegDot uitlegKey="vermoeidheid" label="Vermoeidheid (ATL)" /> · Form
+              (TSB) {data.load.tsb > 0 ? "+" : ""}
               {data.load.tsb}
+              <UitlegDot uitlegKey="vorm" label="Vorm (TSB)" />
             </p>
           )}
         </div>

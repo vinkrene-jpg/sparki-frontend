@@ -121,6 +121,7 @@ export function StreamChart({
               stroke="rgba(255,255,255,0.1)"
               width={46}
               domain={["auto", "auto"]}
+              label={{ value: ch.unit, angle: -90, position: "insideLeft", offset: 10, fill: "rgba(255,255,255,0.35)", fontSize: 10 }}
             />
             {hasElevation && (
               <YAxis yAxisId="ele" hide domain={["dataMin", "dataMax"]} />
@@ -212,6 +213,7 @@ export function ElevationArea({
             tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 10 }}
             stroke="rgba(255,255,255,0.1)"
             width={46}
+            label={{ value: "m", angle: -90, position: "insideLeft", offset: 10, fill: "rgba(255,255,255,0.35)", fontSize: 10 }}
           />
           <Tooltip
             contentStyle={{

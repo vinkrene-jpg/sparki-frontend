@@ -59,7 +59,8 @@ function PlanHeader() {
   
   return (
     <div className="mb-8">
-      <h1 className="type-display">Plan</h1>
+      {/* Beslisblok 01, fix 1: titel gelijk aan het nav-label "Trainen". */}
+      <h1 className="type-display">Trainen</h1>
       <p className="type-body text-content-secondary mt-1">
         Schema: {bronZin(plan, hasManual)}
       </p>

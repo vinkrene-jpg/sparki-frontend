@@ -114,8 +114,8 @@ const FOCUS_RING =
 // Gedeeld door alle Core-schermen in de commerciële schil (Vandaag, Plan,
 // Activiteiten, Meer): vaste desktopnav + mobiele onderbalk. `actief` is het
 // navigatiepad van het huidige scherm; alleen dat item krijgt de actieve
-// markering. (/meer staat bewust niet in de desktopnav — daar is dan geen
-// item actief, wat klopt: desktop bereikt die inhoud via losse navigatie.)
+// markering. Sinds Beslisblok 01 staan ook Wedstrijd en Meer in de desktopnav
+// (Meer-overzicht is het desktop-equivalent van de mobiele Meer-knop).
 export function CommercialShell({
   actief,
   bare = false,

@@ -22,17 +22,17 @@ const VASTE_VOLGORDE_ATLEET = [
   "Sport & materiaal",
   "Koppelingen & gegevens",
   "Ondersteuning & kennis",
-]
-
-const VASTE_VOLGORDE_ATLEET_ADMIN = [
-  ...VASTE_VOLGORDE_ATLEET,
+  // Sinds Beslisblok 01 altijd aanwezig (Privacy + Voorwaarden voor iedereen).
   "Beheer, instellingen & privacy",
 ]
+
+const VASTE_VOLGORDE_ATLEET_ADMIN = VASTE_VOLGORDE_ATLEET
 
 const VASTE_VOLGORDE_COACH_OUDER = [
   "Profiel & account",
   "Veelgebruikt",
   "Ondersteuning & kennis",
+  "Beheer, instellingen & privacy",
 ]
 
 test("atleet: vaste groepsvolgorde zonder admin", () => {
@@ -71,6 +71,8 @@ test("atleet: alle ATHLETE_MEER_CHAPTERS exact een keer", () => {
   // inmiddels ook in de mobiele onderbalk; blijft daarnaast vast vindbaar
   // via Meer).
   verwachtHrefs.push("/connect", "/support", "/analyse")
+  // Beslisblok 01: Photo Lab-ingang + Privacy en Voorwaarden in Meer.
+  verwachtHrefs.push("/photo-lab", "/privacy", "/voorwaarden")
   const sorted = [...alleHrefs].sort()
   const verwacht = [...verwachtHrefs].sort()
   assert.deepEqual(sorted, verwacht, "alle chapters precies een keer")
@@ -113,8 +115,18 @@ test("atleet: admin-conditie", () => {
 
   const adminGroep = met.find((g) => g.titel === "Beheer, instellingen & privacy")
   assert.ok(adminGroep, "admin-groep aanwezig")
-  assert.equal(adminGroep!.items.length, 1)
-  assert.equal(adminGroep!.items[0]!.href, "/admin")
+  assert.deepEqual(
+    adminGroep!.items.map((i) => i.href),
+    ["/admin", "/privacy", "/voorwaarden"],
+  )
+  const zonderGroep = zonder.find(
+    (g) => g.titel === "Beheer, instellingen & privacy",
+  )
+  assert.ok(zonderGroep, "privacy-groep ook zonder admin aanwezig")
+  assert.deepEqual(
+    zonderGroep!.items.map((i) => i.href),
+    ["/privacy", "/voorwaarden"],
+  )
 })
 
 test("coach: alle COACH_CHAPTERS + Support", () => {
@@ -124,7 +136,12 @@ test("coach: alle COACH_CHAPTERS + Support", () => {
     isAdmin: false,
   })
   const hrefs = groepen.flatMap((g) => g.items.map((i) => i.href))
-  const verwacht = [...COACH_CHAPTERS.map((ch) => ch.href), "/support"].sort()
+  const verwacht = [
+    ...COACH_CHAPTERS.map((ch) => ch.href),
+    "/support",
+    "/privacy",
+    "/voorwaarden",
+  ].sort()
   assert.deepEqual([...hrefs].sort(), verwacht)
 })
 
@@ -147,7 +164,12 @@ test("ouder: alle PARENT_CHAPTERS + Support", () => {
     isAdmin: false,
   })
   const hrefs = groepen.flatMap((g) => g.items.map((i) => i.href))
-  const verwacht = [...PARENT_CHAPTERS.map((ch) => ch.href), "/support"].sort()
+  const verwacht = [
+    ...PARENT_CHAPTERS.map((ch) => ch.href),
+    "/support",
+    "/privacy",
+    "/voorwaarden",
+  ].sort()
   assert.deepEqual([...hrefs].sort(), verwacht)
 })
 

@@ -54,18 +54,19 @@ function scenario(name: string, fn: () => void) {
 }
 
 // ── Navigatie ────────────────────────────────────────────────────────────────
-scenario("mobiele nav is Vandaag/Plan/Rijden/Analyse/Meer", () => {
+scenario("mobiele nav is Vandaag/Trainen/Rijden/Analyse/Meer", () => {
   assert(
     COMMERCIAL_MOBILE_NAV.map((i) => i.label).join(",") ===
-      "Vandaag,Plan,Rijden,Analyse,Meer",
+      "Vandaag,Trainen,Rijden,Analyse,Meer",
     "mobiele nav-labels wijken af",
   )
 })
 
-scenario("desktop nav heeft Ontdekken en geen Meer", () => {
+scenario("desktop nav heeft Ontdekken, Wedstrijd en een Meer-equivalent", () => {
   const labels = COMMERCIAL_DESKTOP_NAV.map((i) => i.label)
   assert(labels.includes("Ontdekken"), "Ontdekken ontbreekt op desktop")
-  assert(!labels.includes("Meer"), "Meer hoort niet in de desktop-nav")
+  assert(labels.includes("Wedstrijd"), "Wedstrijd ontbreekt op desktop (Beslisblok 01)")
+  assert(labels.includes("Meer"), "Meer-equivalent ontbreekt op desktop (Beslisblok 01)")
   assert(COMMERCIAL_ACCOUNT_NAV.href === "/you", "accountknop wijst niet naar /you")
 })
 
@@ -78,6 +79,7 @@ scenario("alle nav-doelen zijn bestaande app-routes", () => {
     "/analyse",
     "/meer",
     "/feed",
+    "/races",
     "/you",
   ])
   for (const item of [

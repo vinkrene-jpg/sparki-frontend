@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "note": "Door René goedgekeurde REFERENTIEPATRONEN (Governor Beslisblok 01). Dit zijn richtingbesluiten, GEEN pixelreferenties: geen enkel huidig scherm is hiermee goedgekeurd als visuele referentie. De app blijft app-breed CURRENT_AUDIT_SOURCE / CURRENT_STATE_NOT_APPROVED.",
+  "sourceAuditCommit": "7e2f1983",
+  "sourceReviewCommit": "4e37204c",
+  "decisions": [
+    {
+      "id": "REF-NAV-01",
+      "title": "Navigatiepatroon: apparaat-eigen navigatie met gegarandeerde kernset",
+      "status": "RENE_APPROVED_PATTERN",
+      "approvedBy": "René",
+      "approvedOn": "2026-07-29",
+      "sourceReviewSet": "reports/governor-fase1b/review-01.md + besluit-01",
+      "binding": [
+        "Mobiel en desktop mogen elk een apparaat-eigen navigatievorm hebben (onderbalk vs. zijbalk).",
+        "Er is één gegarandeerde kernset aan bestemmingen die op ELK apparaat logisch bereikbaar is; Wedstrijd hoort daar op desktop bij.",
+        "Desktop krijgt een volwaardig Meer-equivalent (zelfde inhoud als mobiel Meer, geen 1-op-1 kopie van de mobiele onderbalk)."
+      ],
+      "notAReference": "De huidige onderbalk/zijbalk-vormgeving is geen goedgekeurde pixelreferentie.",
+      "allowedVariation": "Volgorde, iconografie en presentatie per apparaat; configureerbare navigatie is een LATERE fase.",
+      "masterPlanLink": "Navigatieconsolidatie; ná Beslisblok 01-fixes, vóór rolwerkruimtes."
+    },
+    {
+      "id": "REF-VIS-01",
+      "title": "Visuele eindrichting: LICHT_RUSTIG_STRAK_SPORTIEF",
+      "status": "RENE_APPROVED_PATTERN",
+      "approvedBy": "René",
+      "approvedOn": "2026-07-29",
+      "sourceReviewSet": "reports/governor-fase1b/review-02.md + besluit-02",
+      "binding": [
+        "Eindrichting is licht, rustig, strak en sportief: overwegend wit/rustig/helder, sportieve sfeer via beelden, kaarten en profielen — niet via donkere cinematiek.",
+        "GEEN restyling binnen dit pakket; migratie gebeurt later via een apart, gefaseerd migratieplan."
+      ],
+      "notAReference": "Geen enkel bestaand licht óf donker scherm is de pixelreferentie voor deze richting.",
+      "allowedVariation": "Accentkleur, beeldgebruik en dichtheid per hoofdstuk, zolang licht/rustig/strak/sportief leidend blijft.",
+      "masterPlanLink": "Apart gefaseerd visueel migratieplan (nog op te stellen; eigen beslispoort)."
+    },
+    {
+      "id": "REF-ABO-01",
+      "title": "Abonnementspatroon: gedeelde functies met oplopende diepte",
+      "status": "RENE_APPROVED_PATTERN",
+      "approvedBy": "René",
+      "approvedOn": "2026-07-29",
+      "sourceReviewSet": "reports/governor-fase1b/review-03.md + besluit-03",
+      "binding": [
+        "Gratis = basisinzicht; Go = praktische begeleiding, routes en herstel; Compleet = volledige coaching-, scenario- en wedstrijd-diepte.",
+        "Veiligheid, privacy, gegevens-export en opzeggen zijn ALTIJD gratis en nooit achter een betaalmuur.",
+        "Prijzen en Stripe-activatie zijn een aparte beslispoort; in dit pakket worden GEEN entitlements omgebouwd."
+      ],
+      "notAReference": "De huidige Gratis/Go-implementatie en teksten zijn geen goedgekeurde referentie-uitwerking.",
+      "allowedVariation": "Exacte functietoewijzing per laag binnen het diepte-principe, te bekrachtigen per beslispoort.",
+      "masterPlanLink": "Entitlement-uitbouw ná rolbouwvolgorde-fase 1; prijzen via taak Stripe-testsleutels (aparte poort)."
+    },
+    {
+      "id": "REF-ROL-01",
+      "title": "Bouwvolgorde rollen",
+      "status": "RENE_APPROVED_PATTERN",
+      "approvedBy": "René",
+      "approvedOn": "2026-07-29",
+      "sourceReviewSet": "reports/governor-fase1b/review-04.md + besluit-04",
+      "binding": [
+        "Volgorde: 1) trainer/hoofdtrainer, 2) clubbeheerder + ouder/jeugd, 3) ploegleider, 4) mechanieker, 5) admin consolideren.",
+        "In dit pakket worden GEEN rolwerkruimtes gebouwd; dit besluit legt alleen de volgorde vast."
+      ],
+      "notAReference": "Bestaande coach-/ouder-/adminschermen zijn geen goedgekeurde referentie voor de rolwerkruimtes.",
+      "allowedVariation": "Scope-details per rol worden per fase apart voorgelegd.",
+      "masterPlanLink": "Rolwerkruimte-fasen volgen ná Beslisblok 01; elke fase krijgt een eigen beslispoort."
+    }
+  ]
+}

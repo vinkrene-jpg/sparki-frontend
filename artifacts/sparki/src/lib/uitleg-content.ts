@@ -132,6 +132,22 @@ export const UITLEG: Record<string, Uitleg> = {
     beinvloeden: "Je stuurt dit niet omhoog of omlaag als doel op zich — een goede weekverdeling wisselt hoge en lage scores af. Rijd met vermogensmeter voor een nauwkeurige score en houd je FTP actueel.",
     versie: 2,
   },
+  intensiteitsfactor: {
+    wat: "De intensiteitsfactor (IF): hoe zwaar deze training was ten opzichte van je drempelvermogen (FTP), als getal rond de 0,5–1,1.",
+    waarom: "Zo zie je in één oogopslag of een rit rustig (rond 0,6), stevig (rond 0,8) of voluit (rond 1,0) was — los van hoe lang hij duurde.",
+    hoe: "Berekend als je genormaliseerd vermogen gedeeld door je FTP. Klopt je FTP niet, dan klopt dit getal ook niet.",
+    verbanden: "Hangt direct samen met je FTP en je genormaliseerd vermogen, en bepaalt samen met de duur je belastingsscore (TSS).",
+    beinvloeden: "Dit is geen doel op zich: een goede trainingsweek wisselt lage en hoge intensiteit af. Houd vooral je FTP actueel zodat het getal eerlijk blijft.",
+    versie: 1,
+  },
+  genormaliseerd_vermogen: {
+    wat: "Je genormaliseerd vermogen (NP): een gecorrigeerd gemiddelde dat pieken en dalen in je vermogen zwaarder laat meetellen dan een gewoon gemiddelde.",
+    waarom: "Een rit met veel sprintjes voelt zwaarder dan een vlakke rit met hetzelfde gemiddelde vermogen. NP maakt die zwaarte zichtbaar.",
+    hoe: "Berekend uit je vermogensmeting met een vaste formule (30-seconden voortschrijdend gemiddelde, tot de vierde macht gewogen). Zonder vermogensmeter is er geen NP.",
+    verbanden: "Voedt je intensiteitsfactor (NP gedeeld door FTP) en daarmee je belastingsscore (TSS).",
+    beinvloeden: "Niet direct te sturen: het beschrijft hoe je gereden hebt. Gelijkmatiger rijden brengt NP dichter bij je gemiddelde vermogen.",
+    versie: 1,
+  },
   fitheid: {
     wat: "Je fitheid (CTL): het voortschrijdend gemiddelde van je trainingsbelasting over ongeveer zes weken.",
     waarom: "Dit is je opgebouwde basis. Een stijgende lijn betekent dat je lichaam went aan meer werk; na een rustperiode zakt hij langzaam terug.",
