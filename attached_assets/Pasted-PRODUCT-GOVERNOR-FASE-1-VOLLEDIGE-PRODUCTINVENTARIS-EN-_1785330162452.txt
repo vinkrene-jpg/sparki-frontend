@@ -1,0 +1,566 @@
+PRODUCT GOVERNOR FASE 1 — VOLLEDIGE PRODUCTINVENTARIS EN NULMETING
+
+BELANGRIJKE BASELINEREGEL
+
+De huidige live Sparki-versie is GEEN goedgekeurde productbaseline.
+
+Gebruik de actuele versie uitsluitend als:
+
+CURRENT_AUDIT_SOURCE
+
+Maak in deze fase geen:
+- APPROVED_BASELINE;
+- RENE_APPROVED_REFERENCE;
+- RENE_APPROVED_PATTERN;
+- definitieve productgoedkeuring.
+
+Doel van deze fase is juist vaststellen wat nu:
+
+- aanwezig is;
+- ontbreekt;
+- verdwenen is;
+- onbereikbaar is;
+- verkeerd geplaatst is;
+- slecht vindbaar is;
+- visueel onvoldoende is;
+- functioneel onvoldoende is;
+- onjuist is voor rollen of abonnementen;
+- afwijkt van het Master Plan en eerdere besluiten.
+
+STATUS
+
+- WP-A05: VERIFIED_IN_PRODUCTION
+- live publish-commit: 68df60f9
+- laatste verslag-commit: a2da8666
+- huidige applicatie: technisch werkbare auditbron, geen goedgekeurd eindbeeld
+- WP-A06A en WP-A07 nog niet starten
+
+BRONNEN
+
+Gebruik minimaal:
+
+- actuele branch main;
+- actuele live applicatie;
+- actuele GitHub-code;
+- SPARKI_AI_MASTER_PLAN_v3_02.yaml;
+- actuele Build Pack;
+- SPARKI_PRODUCT_GOVERNOR_GEFASEERD_MET_RENE_REFERENTIES_2026-07-29.md;
+- docs/SPARKI_WPA05_KERNSTABILISATIE.md;
+- docs/SPARKI_WPA05_PRODUCTIEVERIFICATIE.md;
+- docs/SPARKI_WP000_BRONBASIS_EN_TAAKONTDUBBELING.md;
+- docs/SPARKI_REPLIT_TAAKINVENTARIS.csv;
+- bestaande UX-, navigatie-, rollen-, abonnementen- en visuele rapporten;
+- bestaande tests en menucontracten;
+- historische taken en besluiten die betrekking hebben op verdwenen of verplaatste functies.
+
+DOEL
+
+Bouw Product Governor fase 1:
+
+een volledige, machineleesbare inventaris van de actuele Sparki-applicatie,
+met een verschilcontrole tegen het Master Plan en aantoonbare eerdere productbesluiten.
+
+Deze fase is primair read-only.
+
+Wijzig geen productcode.
+Herstel geen gevonden defecten.
+Herstructureer geen menu’s.
+Voeg geen functies toe.
+Verwijder geen functies.
+Wijzig geen rollen, rechten of abonnementen.
+Voer geen databasecorrecties uit.
+
+FASE 1 — INVENTARISEER DE VOLLEDIGE PRODUCTOPPERVLAKTE
+
+Inventariseer alle:
+
+- routes;
+- pagina’s;
+- schermen;
+- hoofdmenu’s;
+- submenu’s;
+- tabs;
+- bottom navigation-items;
+- desktopnavigatie-items;
+- rolwisselaars;
+- knoppen;
+- links;
+- kaarten;
+- informatieblokken;
+- velden;
+- formulieren;
+- modals;
+- drawers;
+- grafieken;
+- analyses;
+- nieuws- en contentonderdelen;
+- onboardingstappen;
+- lege toestanden;
+- laadstatussen;
+- fouttoestanden;
+- offline-toestanden;
+- featureflags;
+- abonnementsgates;
+- rol- en rechtenchecks;
+- API-endpoints;
+- databronnen;
+- mobiele varianten;
+- desktopvarianten.
+
+Leg per onderdeel minimaal vast:
+
+- unieke ID;
+- gewone Nederlandse naam;
+- technisch component of bestand;
+- route;
+- pagina;
+- sectie;
+- type onderdeel;
+- doel;
+- doelgroep;
+- rol;
+- abonnement;
+- zichtbaar op mobiel;
+- zichtbaar op desktop;
+- huidige positie;
+- bereikbaarheid vanaf hoofdmenu;
+- aantal stappen;
+- featureflag;
+- recht/entitlement;
+- databron;
+- lege toestand;
+- fouttoestand;
+- vervolgactie;
+- gekoppelde test;
+- gekoppelde Master Plan-regel;
+- huidige status;
+- bewijs.
+
+FASE 2 — BEREIKBAARHEID EN VERDWENEN FUNCTIES
+
+Vergelijk:
+
+1. alle routes in de code;
+2. alle functies in menuconfiguraties;
+3. alle zichtbare knoppen en doorverwijzingen;
+4. alle functies uit het Master Plan;
+5. alle functies uit eerdere goedgekeurde opdrachten en besluiten.
+
+Classificeer ieder onderdeel als:
+
+- DIRECT_BEREIKBAAR;
+- BEREIKBAAR_IN_1_STAP;
+- BEREIKBAAR_IN_2_STAPPEN;
+- TE_DIEP_VERSTOPT;
+- ALLEEN_VIA_DIRECTE_URL;
+- VERWEESD;
+- ONTERECHT_VERBORGEN;
+- ONTERECHT_ZICHTBAAR;
+- VERDWENEN_UIT_MENU;
+- BESTAAT_IN_CODE_MAAR_NIET_IN_UX;
+- IN_MASTER_PLAN_MAAR_NIET_GEBOUWD;
+- BEWUST_UITGESTELD;
+- STATUS_ONBEKEND.
+
+Controleer expliciet:
+
+- functies die onderaan lange pagina’s verstopt staan;
+- belangrijke informatie die pas na meerdere schermhoogtes zichtbaar wordt;
+- pagina’s die bestaan maar nergens vanuit de interface bereikbaar zijn;
+- menu-items die eerder bestonden maar verdwenen zijn;
+- functies die alleen via “Meer” of een onlogische route bereikbaar zijn;
+- verschillende desktop- en mobiele menustructuren;
+- rolwissel die menu’s niet correct vernieuwt;
+- directe URL’s die werken terwijl de functie nergens zichtbaar is.
+
+FASE 3 — ROLLENMATRIX
+
+Controleer minimaal:
+
+- sporter;
+- ouder/verzorger;
+- trainer;
+- hoofdtrainer/coach;
+- clubbeheerder;
+- ploegleider/teammanager;
+- mechanieker;
+- admin/testbeheerder.
+
+Leg per rol vast:
+
+- zichtbare hoofdmenu’s;
+- zichtbare submenu’s;
+- zichtbare hoofdstukken;
+- bereikbare routes;
+- zichtbare kaarten;
+- zichtbare analyses;
+- toegestane acties;
+- verboden acties;
+- data die zichtbaar mag zijn;
+- data die niet zichtbaar mag zijn;
+- ontbrekende verwachte functies;
+- onterecht zichtbare functies.
+
+Detecteer:
+
+- ontbrekende rolmenu’s;
+- verkeerde hoofdstukken;
+- onvolledige werkruimtes;
+- functies die voor meerdere rollen hetzelfde scherm tonen terwijl een eigen cockpit was afgesproken;
+- oude menu-items na rolwissel;
+- verkeerde data na rolwissel;
+- rollen die in database of code bestaan maar geen complete interface hebben.
+
+FASE 4 — ABONNEMENTSMATRIX
+
+Controleer minimaal:
+
+- Gratis;
+- Go;
+- Compleet;
+- Club;
+- Team.
+
+Leg per abonnement vast:
+
+- zichtbare menu’s;
+- zichtbare functies;
+- zichtbare analyses;
+- detailniveau;
+- beschikbare acties;
+- upgrade-uitleg;
+- beperkingen;
+- entitlements;
+- fout- en lege toestanden;
+- verschil met andere abonnementen.
+
+Controleer expliciet:
+
+- abonnement bepaalt diepte;
+- doel bepaalt prioriteit;
+- taalniveau bepaalt terminologie;
+- basisbegrijpelijkheid zit niet achter een betaalmuur;
+- Gratis, Go en Compleet gebruiken dezelfde Analyse-architectuur;
+- geen drie aparte Analyse-engines;
+- Club en Team tonen de juiste organisatorische functies;
+- geen functies onterecht gratis;
+- geen functies onterecht geblokkeerd;
+- geen lege pagina’s door verkeerde entitlement;
+- geen upgradebanner op een functie die al inbegrepen is.
+
+FASE 5 — VISUELE EN STRUCTURELE NULMETING
+
+Beoordeel per scherm minimaal:
+
+- paginatitel;
+- hoofdactie;
+- secundaire acties;
+- balken;
+- headers;
+- kleuren;
+- contrast;
+- typografie;
+- kaartstijl;
+- veldstijl;
+- knopstijl;
+- grafiekstijl;
+- witruimte;
+- uitlijning;
+- schermbreedte;
+- informatiedichtheid;
+- visuele hiërarchie;
+- volgorde;
+- plaatsing;
+- scrollafstand;
+- onderdelen boven en onder de vouw;
+- gebruik van desktopruimte;
+- mobiele veilige schermranden;
+- overlap;
+- afsnijding;
+- sticky elementen;
+- consistentie met andere Sparki-schermen.
+
+Classificeer als:
+
+- VISUEEL_GOED_GENOEG_VOOR_VERDERE_REVIEW;
+- VISUEEL_ONRUSTIG;
+- TE_VEEL_LEGE_RUIMTE;
+- TE_SMALLE_DESKTOPKOLOM;
+- BELANGRIJKE_INFO_VERSTOPT;
+- ONDUIDELIJKE_HIERARCHIE;
+- TE_VEEL_CONCURRERENDE_ACTIES;
+- INCONSISTENTE_COMPONENTEN;
+- ONLOGISCHE_KNOPPOSITIE;
+- RESPONSIVE_RISICO;
+- TOEGANKELIJKHEIDSRISICO;
+- RENE_REVIEW_NODIG;
+- HUIDIGE_STAAT_NIET_GOEDGEKEURD.
+
+Gebruik minimaal deze viewports:
+
+- 320 × 568;
+- 375 × 667;
+- 390 × 844;
+- 430 × 932;
+- 768 × 1024;
+- 1024 × 768;
+- 1440 × 900;
+- 1920 × 1080.
+
+Maak per belangrijk scherm:
+
+- screenshot bovenkant;
+- screenshot midden;
+- screenshot onderkant;
+- full-page screenshot;
+- menu geopend;
+- toepasselijke rolvariant;
+- toepasselijke abonnementsvariant.
+
+FASE 6 — TEKST, INHOUD EN GEBRUIKSGEMAK
+
+Inventariseer en controleer:
+
+- paginatitels;
+- menuteksten;
+- knopteksten;
+- labels;
+- instructies;
+- foutmeldingen;
+- lege toestanden;
+- analyses;
+- adviezen;
+- nieuws;
+- grafieklabels;
+- abonnementsteksten;
+- toestemmings- en privacyteksten.
+
+Classificeer:
+
+- BEGRIJPELIJK;
+- TE_TECHNISCH;
+- TE_LANG;
+- ONVOLLEDIG;
+- TEGENSTRIJDIG;
+- VERKEERDE_CONTEXT;
+- NIET_PASSENDE_INHOUD;
+- ONDUIDELIJKE_VERVOLGSTAP;
+- ONJUISTE_CLAIM;
+- MEDISCH_JURIDISCH_RISICO;
+- DATA_EN_TEKST_KOMEN_NIET_OVEREEN;
+- RENE_REVIEW_NODIG.
+
+Controleer expliciet:
+
+- algemeen sportnieuws of voetbalnieuws in een wielercontext;
+- technische termen zonder uitleg;
+- onduidelijke CTA’s;
+- teksten die niet passen bij rol of abonnement;
+- adviezen zonder voldoende data;
+- content die te veel ruimte inneemt zonder duidelijke waarde.
+
+FASE 7 — DATA, GRAFIEKEN EN ANALYSES
+
+Leg per grafiek en analyse vast:
+
+- databron;
+- eigenaar;
+- gebruikte engine;
+- betrouwbaarheid;
+- eenheid;
+- datum/tijdzone;
+- filters;
+- aggregatie;
+- assen;
+- legenda;
+- tekstuele conclusie;
+- rol- en abonnementszichtbaarheid.
+
+Classificeer:
+
+- CORRECT_EN_HERLEIDBAAR;
+- ONVOLDOENDE_HERLEIDBAAR;
+- ONVOLDOENDE_DATA;
+- UNKNOWN_STUURT_TOCH_ADVIES;
+- GRAFIEK_EN_TEKST_CONFLICT;
+- ONDUIDELIJKE_AS_OF_EENHEID;
+- VERKEERDE_ROLZICHTBAARHEID;
+- VERKEERDE_ABONNEMENTSZICHTBAARHEID;
+- MOGELIJKE_DUBBELE_ENGINE;
+- RENE_REVIEW_NODIG.
+
+FASE 8 — VERGELIJK MET MASTER PLAN EN EERDERE BESLUITEN
+
+Maak een verschilregister:
+
+- staat in Master Plan en bestaat;
+- staat in Master Plan maar ontbreekt;
+- bestaat maar staat niet meer in Master Plan;
+- bewust uitgesteld;
+- gedeeltelijk gebouwd;
+- gebouwd maar niet bereikbaar;
+- gebouwd maar onjuist geplaatst;
+- gebouwd maar verkeerde rol;
+- gebouwd maar verkeerd abonnement;
+- oude functie die mogelijk per ongeluk verdwenen is;
+- conflict tussen code, Build Pack en Master Plan.
+
+Gok niet bij conflicten.
+
+Gebruik:
+
+- `MASTER_PLAN_MATCH`;
+- `MASTER_PLAN_MISSING`;
+- `PARTIAL_IMPLEMENTATION`;
+- `HIDDEN_IMPLEMENTATION`;
+- `SUPERSEDED`;
+- `DEFERRED`;
+- `CONFLICT_REQUIRES_REVIEW`;
+- `SOURCE_EVIDENCE_MISSING`.
+
+FASE 9 — HUIDIGE STATUS, GEEN GOEDGEKEURDE BASELINE
+
+Maak:
+
+`governance/current-audit-source.json`
+
+Gebruik per onderdeel alleen:
+
+- `CURRENT_STATE_NOT_APPROVED`;
+- `PENDING_REVIEW`;
+- `KNOWN_DEFECT`;
+- `KNOWN_MISSING`;
+- `KNOWN_HIDDEN`;
+- `TECHNICALLY_PRESENT`;
+- `FUNCTIONALLY_PRESENT`;
+- `RENE_REVIEW_NEEDED`;
+- `MASTER_PLAN_CONFLICT`;
+- `DEFERRED_BY_DECISION`.
+
+Maak NIET:
+
+`governance/approved-baseline.json`
+
+Maak GEEN René-goedgekeurde referenties aan.
+
+De huidige versie mag niet automatisch tot referentie worden verheven.
+
+FASE 10 — OPLEVERING
+
+Maak minimaal:
+
+- `governance/current-audit-source.json`
+- `governance/product-contract.json`
+- `governance/role-subscription-matrix.json`
+- `governance/screen-component-inventory.json`
+- `governance/navigation-reachability.json`
+- `governance/content-data-rules.json`
+- `governance/design-rules.json`
+
+Rapporten:
+
+- `reports/SPARKI_GOVERNOR_FASE1_PRODUCTOPPERVLAK.md`
+- `reports/SPARKI_GOVERNOR_FASE1_ONTBREKENDE_EN_VERDWENEN_FUNCTIES.md`
+- `reports/SPARKI_GOVERNOR_FASE1_ROLLEN_EN_ABONNEMENTEN.md`
+- `reports/SPARKI_GOVERNOR_FASE1_VISUELE_EN_UX_NULMETING.md`
+- `reports/SPARKI_GOVERNOR_FASE1_CONTENT_DATA_ANALYSE.md`
+- `reports/SPARKI_GOVERNOR_FASE1_MASTERPLAN_VERSCHILLEN.md`
+- `reports/SPARKI_GOVERNOR_FASE1_CHATGPT_REVIEW_PACKAGE.md`
+
+CSV’s:
+
+- `reports/SPARKI_GOVERNOR_FASE1_FUNCTION_INVENTORY.csv`
+- `reports/SPARKI_GOVERNOR_FASE1_ROLE_SUBSCRIPTION_MATRIX.csv`
+- `reports/SPARKI_GOVERNOR_FASE1_UI_FINDINGS.csv`
+- `reports/SPARKI_GOVERNOR_FASE1_MASTERPLAN_GAPS.csv`
+
+Artifacts:
+
+- `artifacts/product-governor/fase1/<commit-sha>/screenshots/`
+- `artifacts/product-governor/fase1/<commit-sha>/route-crawl/`
+- `artifacts/product-governor/fase1/<commit-sha>/evidence/`
+
+VERPLICHTE RAPPORTAGE
+
+Rapporteer exact:
+
+- actuele commit-SHA;
+- live publish-SHA;
+- aantal routes;
+- aantal schermen;
+- aantal menu-items;
+- aantal functies;
+- aantal knoppen en links;
+- aantal rollen;
+- aantal abonnementen;
+- aantal verborgen functies;
+- aantal verweesde routes;
+- aantal verdwenen menu-items;
+- aantal Master Plan-gaten;
+- aantal rolafwijkingen;
+- aantal abonnementsafwijkingen;
+- aantal visuele/UX-bevindingen;
+- aantal tekst-/contentbevindingen;
+- aantal data-/grafiekbevindingen;
+- top 20 kritieke tekortkomingen;
+- top 20 functies die ontbreken of verdwenen zijn;
+- onderdelen die expliciet René-review vereisen;
+- onderdelen die veilig automatisch hersteld kunnen worden;
+- onderdelen die eerst een productbesluit nodig hebben.
+
+TESTS
+
+Voer minimaal uit:
+
+- inventarisatiescript-test;
+- routecrawl-test;
+- verweesde-route-test;
+- menu-routevergelijking;
+- rolmatrix-validatie;
+- abonnementenmatrix-validatie;
+- featureflagcontrole;
+- visuele capture op alle viewports;
+- link- en knopbereikbaarheid;
+- deep-linktest;
+- refresh-test;
+- contentinventarisatie;
+- grafiek- en databroninventarisatie.
+
+STOPCONDITIES
+
+Stop bij:
+
+- productiegegevens dreigen te wijzigen;
+- destructieve test;
+- echte betaling of uitnodiging;
+- secrets in rapportage;
+- cross-user- of cross-clublekkage;
+- onbetrouwbare rol- of abonnementstest;
+- ontbreken van het actuele Master Plan;
+- bronconflict dat niet objectief kan worden opgelost;
+- situatie waarin gegokt moet worden.
+
+EINDSTATUS
+
+Deze fase eindigt als:
+
+- `GOVERNOR_FASE1_INVENTORY_COMPLETE`
+of
+- `BLOCKED`
+
+Nooit als:
+
+- `APPROVED_BASELINE`
+- `PRODUCT_APPROVED`
+- `RENE_APPROVED`
+
+Start na afronding niets automatisch.
+
+Start niet:
+- Governor fase 2;
+- WP-A06A;
+- WP-A07;
+- herstelwerk;
+- releasewijzigingen.
+
+Geef eerst alle rapporten, bestanden, screenshots, bewijs en commit-SHA terug aan ChatGPT voor beoordeling en prioritering.
