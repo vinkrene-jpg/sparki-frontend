@@ -27,7 +27,7 @@
 // ALLEEN na expliciet akkoord van René; de dry-run levert de rapportage
 // vooraf (lijst ids), de her-telling de rapportage achteraf.
 
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db, aiObservationsTable, athleteProfilesTable } from "@workspace/db";
 import { getOutdatedFtpWatts, recordMemoryEvent } from "../lib/ai-memory";
 import {
@@ -223,6 +223,13 @@ export async function runObservationCleanup(
   };
 }
 
+export interface ScheduledCleanupSummary {
+  usersChecked: number;
+  usersWithFlagged: number;
+  totalFlagged: number;
+  totalActiveAfter: number;
+}
+
 // ── Automatische runs ────────────────────────────────────────────────────────
 //
 // Dezelfde regels als de handmatige job (nooit harde deletes, status
@@ -321,3 +328,36 @@ if (isDirectRun) {
     process.exit(1);
   });
 }
+
+export async function runScheduledObservationCleanup(
+  now = new Date(),
+): Promise<ScheduledCleanupSummary | null> {
+  // At most once per Amsterdam day.
+  const dayStr = now.toLocaleDateString("nl-NL", {
+    timeZone: "Europe/Amsterdam",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  if (dayStr === lastScheduledCleanupDay) return null;
+  lastScheduledCleanupDay = dayStr;
+
+  // Find all distinct users with at least one active observation.
+  const rows = await db.execute(
+    sql`SELECT DISTINCT clerk_id FROM ai_observations WHERE status IN ('new','acknowledged','saved')`,
+  ) as { rows: { clerk_id: string }[] };
+  const clerkIds = rows.rows.map((r) => r.clerk_id).filter(Boolean);
+
+  let usersWithFlagged = 0;
+  let totalFlagged = 0;
+  let totalActiveAfter = 0;
+  for (const clerkId of clerkIds) {
+    const report = await runObservationCleanup(clerkId, true);
+    if (report.flagged.length > 0) usersWithFlagged++;
+    totalFlagged += report.flagged.length;
+    totalActiveAfter += report.activeAfter ?? report.keptActive;
+  }
+  return { usersChecked: clerkIds.length, usersWithFlagged, totalFlagged, totalActiveAfter };
+}
+
+let lastScheduledCleanupDay = "";

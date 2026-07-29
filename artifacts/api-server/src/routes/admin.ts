@@ -47,6 +47,7 @@ import {
   systemBusinessModes,
 } from "../lib/system-mode";
 import { adminOpsLogTable } from "@workspace/db";
+import { runObservationCleanup } from "../jobs/observation-cleanup";
 
 const router = Router();
 
@@ -2021,6 +2022,33 @@ router.get(
     } catch (err) {
       req.log.error({ err }, "admin.ops-log.get failed");
       res.status(500).json({ error: "Kon log niet laden" });
+    }
+  },
+);
+
+/** POST /admin/observation-cleanup — markeer verouderde/dubbele observaties als
+ *  "outdated" voor één gebruiker (clerkId verplicht). Droogdraai tenzij
+ *  apply=true. Alleen toegankelijk voor admins. */
+router.post(
+  "/observation-cleanup",
+  requireAuth,
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const { clerkId, apply } = req.body as {
+      clerkId?: string;
+      apply?: boolean;
+    };
+    const target = String(clerkId ?? "").trim();
+    if (!target) {
+      res.status(400).json({ error: "clerkId is verplicht" });
+      return;
+    }
+    try {
+      const report = await runObservationCleanup(target, apply === true);
+      res.json({ ok: true, apply: apply === true, ...report });
+    } catch (err) {
+      req.log.error({ err }, "admin.observation-cleanup failed");
+      res.status(500).json({ error: "Observatie-opschoning mislukt" });
     }
   },
 );

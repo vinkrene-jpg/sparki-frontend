@@ -18,6 +18,7 @@ import { deliverReminders } from "../engines/reminders";
 import { logger } from "./logger";
 import { processDueAccountDeletions } from "./account-privacy";
 import { runLibraryBackfill } from "./library-backfill";
+import { runScheduledObservationCleanup } from "../jobs/observation-cleanup";
 
 let started = false;
 let inFlight = false;
@@ -125,6 +126,20 @@ export function startReminderScheduler(): void {
         await maybeRunLibraryBackfill();
       } catch (err) {
         logger.error({ err }, "in-process library backfill failed");
+      }
+      // Automatische observatie-opschoning: verwijdert verouderde en dubbele
+      // AI-observaties voor alle gebruikers (max éénmalig per Amsterdamse dag,
+      // idempotent — nooit hard-delete, alleen status "outdated").
+      try {
+        const obsCleaned = await runScheduledObservationCleanup();
+        if (obsCleaned && obsCleaned.totalFlagged > 0) {
+          logger.info(
+            { observationCleanup: "scheduler", ...obsCleaned },
+            "in-process observation cleanup run done",
+          );
+        }
+      } catch (err) {
+        logger.error({ err }, "in-process observation cleanup failed");
       }
     } catch (err) {
       logger.error({ err, reminders: "scheduler" }, "in-process reminder run failed");

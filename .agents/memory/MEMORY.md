@@ -146,12 +146,6 @@
 - Prod-validatie: [publicatiecontrole](sparki-publish-check.md) bundle-grep + curl prod-JS; [ingelogde validatie](sparki-logged-in-validation.md) Clerk ticket-login; [browserchecks](prod-browser-checks.md) eigen Playwright in /tmp (runTest raakt dev-app).
 - [Sparki Gratis vs Go paywall](sparki-go-paywall.md) — GO_FEATURE_KEYS commercieel-only gate (nooit via flags); UI faalt open; admin.ts bad-merge-corruptie herstel uit parent-commit.
 - [Sparki Stripe-testomgeving](sparki-stripe-testmode.md) — flag+allowlist AND-grendels, webhook idempotent-in-tx (rollback = herleverbaar), fake gateway + echte HMAC-signaturen, rawBody-verify in app.ts.
-- [Sparki observatie-opschoning](sparki-observation-cleanup.md) — persist-poorten + cleanup-job (outdated, nooit delete) draait nu ook automatisch (FTP-achterhaald-event ná commit + dagelijkse sweep, trigger in event); CLI-guard matcht ook testbundel.
+- [Sparki observatie-opschoning](sparki-observation-cleanup.md) — auditbare cleanup-job (status "outdated", nooit delete); runScheduledObservationCleanup() draait automatisch via in-process scheduler (1×/Amsterdamse dag); admin-endpoint POST /api/admin/observation-cleanup voor on-demand; CLI-guard matcht ook testbundel.
 - [Mentale Training kaarten](sparki-mental-training-cards.md) — diepgang per kaart (1–3 sterren, server-side); lagen voegen alleen toe, kern identiek op elk niveau.
-- [ORS routing honesty](sparki-route-rejoin.md) — rejoin connectors must be REAL routed paths (never straight lines); loops = best-of-N candidates by pathOverlapFraction ([loops](sparki-route-loop-quality.md)).
-- [Sparki nachtelijke kaart-backfill](sparki-library-backfill.md) — één gedeelde ORS-dagcap-reservering; celkeuze puur/ring-round-robin; homeLat zit op athlete_profiles, niet user_profiles.
-- [Routebibliotheek-verbeterlus](sparki-route-improvement.md) — gem.<3 bij ≥3 stemmen ⇒ vervang door echte variant; thema's (≥2 gebruikers) sturen alleen kandidaatKEUZE; generatie in unieke index.
-- [Sparki commerciële schil](sparki-commercial-shell.md) — presentation-only shell (flag commercial_shell): exact copy via one COMMERCIAL_COPY const; `hidden lg:` drops mobile content; browser checks via Playwright subagent on /_dev/commercial.
-- [Sparki Smart Missing Input Flow](sparki-missing-input.md) — registry + focus/return/retry empty-state framework.
-- [Sparki chat overlay & session thread](sparki-chat-overlay.md) — chat opens from header SPARKI button (portal z-[80]).
 - [Sparki sterren-beoordelingen (build_ratings)](sparki-build-ratings.md) — beoordelen≠instellen; één register + BuildRatingBlock; ster-tik moet bestaande toelichting meesturen of de upsert wist hem.
