@@ -36,6 +36,7 @@ import {
 import { usePlanWindow } from "@/hooks/use-training-plan"
 import { useRaces } from "@/hooks/use-races"
 import { useCircleFeed } from "@/hooks/use-social"
+import { localISODate } from "@/lib/commercial-shell"
 
 // Hoofdstuk Club — volwaardige clubomgeving. Heeft de renner een echt
 // clublidmaatschap, dan toont dit de clubtrainingen (aanmelden/afmelden),
@@ -406,7 +407,7 @@ function LegacyCoachView() {
   const { data: feed } = useCircleFeed()
 
   const coachWorkouts = (workouts ?? []).filter((w) => w.source === "coach")
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localISODate()
   const upcomingRaces = (races ?? [])
     .filter((r) => r.raceDate >= today)
     .sort((a, b) => a.raceDate.localeCompare(b.raceDate))

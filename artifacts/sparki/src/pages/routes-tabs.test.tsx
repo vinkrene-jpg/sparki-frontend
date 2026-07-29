@@ -63,6 +63,13 @@ mock.module("@/components/sparki/nav-settings-panel", {
         .createElement("div", null, "nav-settings-panel"),
   },
 });
+mock.module("@/components/sparki/route-library-section", {
+  namedExports: {
+    RouteLibrarySection: () =>
+      (globalThis as { React?: { createElement: CallableFunction } }).React!
+        .createElement("div", null, "route-library-section"),
+  },
+});
 mock.module("@/components/sparki/route-discover", {
   namedExports: {
     RouteDiscover: () =>

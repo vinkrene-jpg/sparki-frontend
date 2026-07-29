@@ -17,6 +17,7 @@ import { usePowerBests } from "@/hooks/use-power-bests"
 import { useRaces } from "@/hooks/use-races"
 import { useGarage } from "@/hooks/use-garage"
 import { useClubMembership } from "@/hooks/use-club"
+import { localISODate } from "@/lib/commercial-shell"
 
 // Sportpaspoort — het overkoepelende, bewust te openen overzicht van de
 // sporter: profiel, doelen, kernmetingen, ontwikkeling, wedstrijdhistorie,
@@ -71,7 +72,7 @@ export default function PaspoortPage() {
   const { data: garage } = useGarage()
   const { isMember, coaches, team } = useClubMembership()
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localISODate()
   const pastRaces = (races ?? [])
     .filter((r) => r.raceDate < today)
     .sort((a, b) => b.raceDate.localeCompare(a.raceDate))

@@ -59,6 +59,7 @@ export const ATHLETE_MEER_CHAPTERS: Chapter[] = [
   { href: "/you", icon: User, label: "Jij", hint: "Profiel & doelen" },
   { href: "/lichaam", icon: HeartPulse, label: "Lichaam", hint: "Voeding & herstel" },
   { href: "/mechanieker", icon: Wrench, label: "Mechanieker", hint: "Fiets & onderhoud" },
+  { href: "/samen", icon: Users, label: "Samen", hint: "Team & vrienden" },
   { href: "/activiteiten", icon: Activity, label: "Activiteiten", hint: "Jouw ritten" },
   { href: "/kalender", icon: CalendarDays, label: "Kalender", hint: "Planning & seizoen" },
   { href: "/kennis", icon: BookOpen, label: "Kennis", hint: "Kennis & inzichten" },

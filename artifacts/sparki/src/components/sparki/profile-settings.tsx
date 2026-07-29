@@ -1,3 +1,4 @@
+import { localISODate } from "@/lib/commercial-shell"
 // ── Sparki profile settings ───────────────────────────────────────────────────
 // Everything the athlete can *edit* about themselves lives here, relocated out of
 // the Profiel page. The Profiel page itself is now the living Sparki Core (what
@@ -1094,7 +1095,7 @@ function BirthYearInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
   const updateProfile = useUpdateAthleteProfile()
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState("")
-  const todayIso = new Date().toISOString().slice(0, 10)
+  const todayIso = localISODate()
 
   const initialValue = () => {
     if (profile?.birthDate) return profile.birthDate.slice(0, 10)

@@ -26,6 +26,7 @@ import {
   type LifeEventImpact,
 } from "@/hooks/use-life-events"
 import { workoutIcon } from "@/lib/workout-visual"
+import { localISODate } from "@/lib/commercial-shell"
 
 function formatDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`)
@@ -80,7 +81,9 @@ export default function KalenderPage() {
   const { data: races, isLoading: racesLoading } = useRaces()
   const { data: lifeEvents, isLoading: lifeLoading } = useLifeEvents()
 
-  const today = new Date().toISOString().split("T")[0]!
+  // Lokale (NL) kalenderdag — toISOString geeft de UTC-dag en verschuift
+  // 's nachts een dag terug, waardoor "vandaag" verkeerd filtert.
+  const today = localISODate()
 
   const items: AgendaItem[] = [
     ...(workouts ?? [])
@@ -240,7 +243,7 @@ function LifeAgendaSection({
 }) {
   const [adding, setAdding] = useState(false)
   const deleteEvent = useDeleteLifeEvent()
-  const today = new Date().toISOString().split("T")[0]!
+  const today = localISODate()
   const upcoming = events.filter((ev) => (ev.endDate ?? ev.startDate) >= today)
 
   return (

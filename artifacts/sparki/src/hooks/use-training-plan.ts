@@ -1,3 +1,4 @@
+import { localISODate } from "@/lib/commercial-shell";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@clerk/react";
 import { DEV_PREVIEW } from "@/lib/dev";
@@ -13,8 +14,10 @@ import type {
   WorkoutFeedbackType,
 } from "@/lib/athlete-types";
 
+// Lokale (NL) kalenderdag — toISOString geeft de UTC-dag en laat het
+// planvenster 's nachts een dag te vroeg beginnen/eindigen.
 function dateStr(d: Date): string {
-  return d.toISOString().split("T")[0]!;
+  return localISODate(d);
 }
 
 /** Fetch planned workouts for an arbitrary [from, to] date window. */
