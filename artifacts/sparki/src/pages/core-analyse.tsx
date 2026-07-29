@@ -41,6 +41,8 @@ import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { usePowerBests } from "@/hooks/use-power-bests"
 import { useGoalPicture, type Goal } from "@/hooks/use-goals"
+import { useTrainingPlan, usePlanRange } from "@/hooks/use-training-plan"
+import { berekenPlanNaleving, faseLabel } from "@/lib/plan-overview"
 import { useRaces } from "@/hooks/use-races"
 import { useConnectors } from "@/hooks/use-connectors"
 import { useSeasonGoal } from "@/hooks/use-nutrition"
@@ -86,22 +88,7 @@ import {
 } from "@/lib/core-analyse"
 import { cn } from "@/lib/utils"
 import { DoelenBeheerSheet, WedstrijdToevoegenSheet } from "@/components/sparki/beheer-popup"
-
-// ── Semantische kleurset (SSOT voor alle grafieken) ──────────────────────────
-// Elke kleur heeft één vaste betekenis. Nooit voor decoratie.
-export const CHART = {
-  ctl:     "#0ea5e9", // sky-500    — fitheid (CTL)
-  atl:     "#f97316", // orange-500 — vermoeidheid (ATL)
-  tsbPos:  "#22c55e", // green-500  — positieve vorm (TSB ≥ 0)
-  tsbNeg:  "#ef4444", // red-500    — negatieve vorm (TSB < 0)
-  volume:  "#8b5cf6", // violet-500 — trainingsvolume
-  ftp:     "#06b6d4", // cyan-500   — vermogen / FTP
-  goal:    "#10b981", // emerald-500 — doelen
-  race:    "#ec4899", // pink-500   — wedstrijden
-  warn:    "#f59e0b", // amber-500  — waarschuwing
-  missing: "#94a3b8", // slate-400  — ontbrekend / onzeker
-  verwacht: "#9333ea", // purple-600 — doelscenario / verwachting (vaste kleur)
-} as const
+import { CHART, tsbKleur } from "@/lib/chart-kleuren"
 
 // ── Uitleg-stand ─────────────────────────────────────────────────────────────
 // Pagina-brede schakelaar voor de onervaren sporter: elke kaart toont dan een
@@ -310,7 +297,7 @@ function TSBTooltip({
   return (
     <div className="bg-white border border-slate-200 rounded-lg shadow-sm px-3 py-2 text-xs">
       <p className="font-medium text-slate-700 mb-1">{label}</p>
-      <p className="tabular-nums" style={{ color: tsb >= 0 ? CHART.tsbPos : CHART.tsbNeg }}>
+      <p className="tabular-nums" style={{ color: tsbKleur(tsb) }}>
         Vorm (TSB) <strong>{tsb > 0 ? "+" : ""}{Math.round(tsb)}</strong>
       </p>
     </div>
@@ -519,7 +506,7 @@ function LoadGrafiek({
             <Tooltip content={(props) => <TSBTooltip {...(props as Parameters<typeof TSBTooltip>[0])} />} />
             <Bar dataKey="tsb" name="TSB" maxBarSize={10}>
               {gefilterd.map((punt, idx) => (
-                <Cell key={idx} fill={punt.tsb >= 0 ? CHART.tsbPos : CHART.tsbNeg} opacity={0.85} />
+                <Cell key={idx} fill={tsbKleur(punt.tsb)} opacity={0.85} />
               ))}
             </Bar>
           </ComposedChart>
@@ -541,11 +528,36 @@ function OverzichtTab({
   sessies: Bron<TrainingSession[]>
 }) {
   const tsb = load.data?.tsb
-  const tsbKleur = tsb == null ? CHART.missing : tsb >= 0 ? CHART.tsbPos : CHART.tsbNeg
   const tsbWaarde = tsb == null ? null : `${tsb > 0 ? "+" : ""}${Math.round(tsb)}`
+
+  // Plan-context: fase + naleving van het trainingsplan (zelfde logica als /train).
+  const { data: plan } = useTrainingPlan()
+  // Lokale kalenderdagen via lokale getters (nooit toISOString — UTC-trap).
+  const nu = new Date()
+  const vandaagIso = localISODate(nu)
+  const vanafDatum = new Date(nu)
+  vanafDatum.setDate(vanafDatum.getDate() - 30)
+  const vanafIso = localISODate(vanafDatum)
+  const { data: planVerleden } = usePlanRange(vanafIso, vandaagIso)
+  const naleving = berekenPlanNaleving(planVerleden ?? [], vandaagIso)
+  const fase = faseLabel(plan?.inputs?.phase)
 
   return (
     <div className="space-y-6">
+      {/* Plan-context — alleen tonen als er echt een plan is */}
+      {plan?.plan != null && (
+        <LCard className="p-4 flex flex-wrap items-center gap-x-6 gap-y-1">
+          <p className="text-sm font-medium text-slate-700">Trainingsplan</p>
+          {fase && <p className="text-sm text-slate-600">Fase: <span className="font-medium">{fase}</span></p>}
+          {naleving.pct != null ? (
+            <p className="text-sm text-slate-600 tabular-nums">
+              Naleving (28 d): <span className="font-medium">{naleving.pct}%</span> ({naleving.uitgevoerd}/{naleving.gepland})
+            </p>
+          ) : (
+            <p className="text-sm text-slate-500">Nog te weinig geplande trainingen voor een nalevingscijfer.</p>
+          )}
+        </LCard>
+      )}
       {/* Stat-tegels */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTegel
@@ -564,7 +576,7 @@ function OverzichtTab({
         <StatTegel
           label="Vorm (TSB)"
           value={load.data ? tsbWaarde : null}
-          color={tsbKleur}
+          color={tsbKleur(tsb)}
           sub={tsb != null ? (tsb >= 5 ? "Uitgerust" : tsb <= -15 ? "Vermoeid" : "Neutraal") : undefined}
           uitlegKey="vorm"
         />
@@ -1796,7 +1808,7 @@ function SamenvattingStrip({
         {cel(
           "Vorm & herstel",
           kern.tsb != null
-            ? <span className="tabular-nums" style={{ color: kern.tsb >= 0 ? CHART.tsbPos : CHART.tsbNeg }}>{kern.tsb > 0 ? "+" : ""}{kern.tsb}</span>
+            ? <span className="tabular-nums" style={{ color: tsbKleur(kern.tsb) }}>{kern.tsb > 0 ? "+" : ""}{kern.tsb}</span>
             : <span className="text-slate-300">—</span>,
           kern.vormLabel ?? undefined,
         )}
