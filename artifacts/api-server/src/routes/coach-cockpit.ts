@@ -1127,6 +1127,22 @@ router.put("/context-items/:itemId", requireAuth, async (req, res) => {
     return;
   }
   try {
+    const [existingItem] = await db
+      .select({ athleteClerkId: coachContextItemsTable.athleteClerkId })
+      .from(coachContextItemsTable)
+      .where(
+        and(
+          eq(coachContextItemsTable.id, itemId),
+          eq(coachContextItemsTable.coachClerkId, coachId),
+        ),
+      );
+    if (!existingItem) {
+      res.status(404).json({ error: "Item niet gevonden" });
+      return;
+    }
+    // Wijzigen is een individuele schrijfactie: vereist een actuele directe
+    // koppeling (einde link of team-only ⇒ 403), WP-01C.
+    if (!(await gateAthlete(coachId, existingItem.athleteClerkId, res))) return;
     const set: Record<string, unknown> = { updatedAt: new Date() };
     if (typeof body.body === "string" && body.body.trim())
       set.body = body.body.trim().slice(0, 1000);
@@ -1163,6 +1179,22 @@ router.delete("/context-items/:itemId", requireAuth, async (req, res) => {
     return;
   }
   try {
+    const [existingItem] = await db
+      .select({ athleteClerkId: coachContextItemsTable.athleteClerkId })
+      .from(coachContextItemsTable)
+      .where(
+        and(
+          eq(coachContextItemsTable.id, itemId),
+          eq(coachContextItemsTable.coachClerkId, coachId),
+        ),
+      );
+    if (!existingItem) {
+      res.status(404).json({ error: "Item niet gevonden" });
+      return;
+    }
+    // Verwijderen is een individuele schrijfactie: actuele directe koppeling
+    // vereist (WP-01C).
+    if (!(await gateAthlete(coachId, existingItem.athleteClerkId, res))) return;
     const [item] = await db
       .delete(coachContextItemsTable)
       .where(

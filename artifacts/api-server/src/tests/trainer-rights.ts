@@ -205,6 +205,28 @@ async function main() {
       assert(rows.length === 1 && rows[0].ownerCoachClerkId === t1, "eigenaarschap klopt niet");
     });
 
+    await scenario("B16. einde link blokkeert ook wijzigen/verwijderen van bestaande coachafspraken (route-gate)", async () => {
+      const [item] = await db
+        .insert(coachContextItemsTable)
+        .values({ coachClerkId: t1, athleteClerkId: adult, kind: "instructie", body: "TESTAFSPRAAK B16" })
+        .returning();
+      await db
+        .update(coachAthleteLinksTable)
+        .set({ status: "ended" })
+        .where(and(eq(coachAthleteLinksTable.coachClerkId, t1), eq(coachAthleteLinksTable.athleteClerkId, adult)));
+      try {
+        // PUT/DELETE /context-items/:id gate nu op gateAthlete(item.athleteClerkId):
+        // zonder actuele directe link moet de guard weigeren.
+        assert(!(await hasDirectCoachAccess(t1, adult)), "guard zou mutatie moeten weigeren na einde link");
+      } finally {
+        await db
+          .update(coachAthleteLinksTable)
+          .set({ status: "accepted" })
+          .where(and(eq(coachAthleteLinksTable.coachClerkId, t1), eq(coachAthleteLinksTable.athleteClerkId, adult)));
+        await db.delete(coachContextItemsTable).where(eq(coachContextItemsTable.id, item.id));
+      }
+    });
+
     await scenario("B15. jeugdsporter: team-only trainer heeft ook dáár geen individuele rechten", async () => {
       const c = trainerCapabilities(await getTrainerRelation(t1, jeugd));
       assert(!c.canMessageIndividually && !c.canWriteCoachContext, "jeugd team-only kreeg individuele kanalen");
