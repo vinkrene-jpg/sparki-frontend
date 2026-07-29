@@ -24,7 +24,7 @@
 - [Sparki Context Engine V2](sparki-context-engine-v2.md) — coaching "reasoning" lives in SPARKI_SYSTEM prompt + buildAthleteContext richness; ai_observations already has confidence/expiresAt/pattern.
 - [Sparki auth/sync email collision](sparki-sync-email-collision.md) — seeded demo row with a real email bricks onboarding (FK 500 → "Profile not found" 404s); sync must verify parent before child insert.
 - [Leaflet traps](leaflet-divicon-xss.md) — divIcon html is an XSS sink (escape at sink + strip server-side); layers before first setView crash bringToFront ([explorer](leaflet-multi-route-explorer.md)).
-- [Post-merge integration breaks](post-merge-integration-breaks.md) — concurrent task-agent merges leave stale cross-task imports/columns; run typecheck + api-server esbuild before publishing.
+- [Post-merge integration breaks](post-merge-integration-breaks.md) — concurrent task-agent merges leave stale cross-task imports/columns; run typecheck + api-server esbuild before publishing; validation gates `typecheck-api` + `admin-smoke` (src/tests/admin-smoke.ts) now guard this.
 - [Sparki interactive schedule](sparki-interactive-schedule.md) — feedback persisted before adjust proposal; proposal intensity maps to workout description; PUT validates LLM fields.
 - [Sparki knowledge base relevance](sparki-knowledge-base.md) — literature ingestion relevance guard must use word-boundary regex (substring "sport" matches "transport"); arXiv queries leak off-topic papers.
 - [Sparki autonomous training](sparki-autonomous-training.md) — coach-less plan engine: deterministic numbers, AI prose-only, real-or-absent ORS routes, coach-gated advisory; vite build needs PORT+BASE_PATH.
