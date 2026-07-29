@@ -149,3 +149,4 @@
 - [Sparki observatie-opschoning](sparki-observation-cleanup.md) — auditbare cleanup-job (status "outdated", nooit delete); runScheduledObservationCleanup() draait automatisch via in-process scheduler (1×/Amsterdamse dag); admin-endpoint POST /api/admin/observation-cleanup voor on-demand; CLI-guard matcht ook testbundel.
 - [Mentale Training kaarten](sparki-mental-training-cards.md) — diepgang per kaart (1–3 sterren, server-side); lagen voegen alleen toe, kern identiek op elk niveau.
 - [Sparki sterren-beoordelingen (build_ratings)](sparki-build-ratings.md) — beoordelen≠instellen; één register + BuildRatingBlock; ster-tik moet bestaande toelichting meesturen of de upsert wist hem.
+- [Meer-menu chapters SSOT](sparki-meer-chapters.md) — core-meer dropt ontbrekende chapters STIL via filter(Boolean); /samen-contract bewaakt door test:navigation.
