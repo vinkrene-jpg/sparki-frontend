@@ -6,6 +6,7 @@ import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { DayDetailDrawer } from "@/components/sparki/day-detail-drawer"
 import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer"
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice"
+import { BuildRatingBlock } from "@/components/sparki/build-rating"
 import { FtpEstimateWizard } from "@/components/sparki/ftp-estimate-wizard"
 import { useRetryAction } from "@/hooks/use-missing-input"
 import { isTargetSet } from "@/lib/missing-input"
@@ -228,6 +229,13 @@ export function ThreeWeekPlan({
               })}
             </div>
           ))}
+          {/* Sterren-beoordeling op de huidige planweek — vaste audit-input. */}
+          <BuildRatingBlock
+            subjectType="trainingsplan_week"
+            subjectId={weeks[0]?.[0]?.date ?? null}
+            question="Hoe goed past deze planweek?"
+            className="mt-2"
+          />
           {/* Legenda — anders zijn de gekleurde stippen betekenisloos. */}
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
             <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/35">

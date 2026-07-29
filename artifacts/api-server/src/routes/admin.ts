@@ -38,6 +38,10 @@ import {
 } from "../lib/entitlements";
 import { writeAudit } from "../lib/security/audit";
 import {
+  aggregateBuildRatings,
+  weakComponents,
+} from "../lib/build-ratings";
+import {
   readSystemMode,
   writeSystemMode,
   systemBusinessModes,
@@ -1072,6 +1076,29 @@ router.get("/security", requireAuth, requireAdmin, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "admin.security failed");
     res.status(500).json({ error: "Beveiligingsoverzicht kon niet geladen worden." });
+  }
+});
+
+// ── GET /api/admin/build-ratings ─────────────────────────────────────────────
+// Sterren-beoordelingen op door Sparki gebouwde onderdelen — vaste audit-input.
+// Uitsluitend aggregaten (gemiddelde, aantal, trend) per onderdeel; nooit wie
+// welke score gaf. Zwak scorende onderdelen staan bovenaan (audit-agenda).
+router.get("/build-ratings", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const aggregates = await aggregateBuildRatings();
+    const weak = weakComponents(aggregates).map((a) => a.subjectType);
+    // Zwakste eerst: audit-agenda-volgorde (laag gemiddelde vooraan, daarna
+    // onderdelen zonder signaal, alfabetisch stabiel).
+    const sorted = [...aggregates].sort((a, b) => {
+      const av = a.average ?? Number.POSITIVE_INFINITY;
+      const bv = b.average ?? Number.POSITIVE_INFINITY;
+      if (av !== bv) return av - bv;
+      return a.subjectType.localeCompare(b.subjectType);
+    });
+    res.json({ aggregates: sorted, weakSubjectTypes: weak });
+  } catch (err) {
+    req.log.error({ err }, "admin.build-ratings failed");
+    res.status(500).json({ error: "Beoordelingsoverzicht laden mislukt" });
   }
 });
 

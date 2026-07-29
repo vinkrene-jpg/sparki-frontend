@@ -1,12 +1,9 @@
 - [Sparki monitoring & business-mode infra](sparki-monitoring.md) — system_business_mode singleton + admin_ops_log + /admin/ops; lib/db build vereist na schema-wijziging.
-- [Sparki Clerk auth wiring](sparki-clerk-auth.md) — Phase 1 complete: cookie auth, JIT sync, roles in own DB, lib/db must be built for tsc.
+- [Sparki Clerk auth wiring](sparki-clerk-auth.md) — cookie auth, JIT sync, roles in own DB, lib/db must be built for tsc ([dev preview](sparki-dev-preview.md): bypass eist NODE_ENV!=production ÉN DEV_AUTH_BYPASS=true, fails closed).
 - [Sparki feature flags](sparki-feature-flags.md) — DB tables, precedence, composite-PK onConflict; one-shot /api/flags 403 tijdens Clerk-settling schakelt ALLES uit — retry ([race](sparki-flag-fetch-race.md)).
 - [Sparki testers](sparki-head-tester.md) — early access enables has-row flags (not no-row); override is kill-switch; number idempotently backfilled ([QR/roster](sparki-tester-qr.md): deep-link needs ?redirect_url=, never clobber w/ null, [overview](sparki-tester-overview.md)).
 - Vite traps: [font var()](vite-font-var-trap.md) altijd @fontsource, nooit Next-var(--font-…); zie ook [PORT/BASE_PATH build trap](vite-config-build-port-trap.md).
-- [Sparki Development Preview Mode](sparki-dev-preview.md) — dev-only auth/onboarding bypass; requires NODE_ENV!=production AND DEV_AUTH_BYPASS=true (fails closed).
-- [Sparki cinematic background](sparki-cinematic-bg.md) — shared ScreenShell fixed bg layer; cyclist visible page-wide, glass cards 82%, OLED-safe blue-black, no flat-black/white surfaces.
-- [Sparki Insights origin + migration audit](sparki-insights-origin.md) — original Next.js "Sparki Insights" lives in `.migration-backup/`; it is the content source-of-truth; audit/blueprint docs at repo root.
-- [Sparki Route Planner restoration](sparki-route-planner.md) — first legacy-feature restore; real GPX-only data (nav left null), pre-seeded route_planner flag, client FK ids must be ownership-checked.
+- [Sparki Route Planner restoration](sparki-route-planner.md) — legacy restore: real GPX-only data, client FK ids ownership-checked ([Insights origin](sparki-insights-origin.md): Next.js-bron in `.migration-backup/` is content-SSOT).
 - [Sparki data foundation sprint](sparki-data-foundation.md) — clerkId identity, privacy-gated AI persist, dedupe_key; api-server route gotchas (no zod, String(params), db.execute().rows, admin via SPARKI_ADMIN_IDS).
 - [Sparki day-type engine](sparki-day-type-engine.md) — Home day-type detection precedence (§4); rest=explicit rest workout, no-workout=general fallback; health status end-to-end.
 - [Sparki invitation/tester flow](sparki-invitations.md) — token invites grant role+link; one-time accept must be atomic (conditional status flip in a transaction), not read-then-update.
@@ -112,7 +109,7 @@
 - [Sparki Mechanieker & materiaalkring](sparki-mechanieker.md) — km altijd afgeleid (nooit teller), defect alleen uit eigen registratie, onConflictDoUpdate partial index needs `targetWhere` not `where`.
 - [Sparki uitleglaag](sparki-uitleglaag.md) — centraal uitleg-registry + UitlegDot; "Bij jou" alleen echte waarden; short-by-default + "Uitgebreid" alleen bij echte diepte ([tiered](sparki-tiered-explanation.md)).
 - Node-page-test traps: [happy-dom URL query](happydom-url-query.md) pass url to GlobalRegistrator.register; [tsx module-mock/CJS](tsx-module-mock-cjs.md) mock.module first + lazy `import()`.
-- [Sparki designsysteem](sparki-design-system.md) — tokens in index.css @theme + .type-* + ds/-primitives, /_dev/design; node-page-tests: classic JSX eist React-import, mocks dekken VOLLEDIG import-oppervlak.
+- [Sparki designsysteem](sparki-design-system.md) — tokens in index.css @theme + .type-* + ds/-primitives, /_dev/design; node-page-tests: classic JSX eist React-import, mocks dekken VOLLEDIG import-oppervlak ([cinematic bg](sparki-cinematic-bg.md): glass cards 82%, OLED-safe, geen flat-black/wit).
 - [Mobile ride sync honesty](sparki-mobile-ride-sync.md) — "veilig op je telefoon" claims require fail-closed storage writes; detector/queue state must reset across ride lifecycle.
 - [Sparki clubomgeving](sparki-club.md) — least-privilege clubrechten; limieten óók bij invite-accept, club-scoped ID-checks, FOR UPDATE op signup; jeugd-consent fail-closed.
 - [Sparki fueling engine](sparki-fueling-engine.md) — deterministic richtwaarden SSOT (LLM phrases, never computes); jeugd no-numbers; consent fail-closed; mobile fuel snapshot date at STOP not save.
@@ -154,3 +151,10 @@
 - [Sparki Stripe-testomgeving](sparki-stripe-testmode.md) — flag+allowlist AND-grendels, webhook idempotent-in-tx (rollback = herleverbaar), fake gateway + echte HMAC-signaturen, rawBody-verify in app.ts.
 - [Sparki observatie-opschoning](sparki-observation-cleanup.md) — persist-poorten + cleanup-job (outdated, nooit delete) draait nu ook automatisch (FTP-achterhaald-event ná commit + dagelijkse sweep, trigger in event); CLI-guard matcht ook testbundel.
 - [Mentale Training kaarten](sparki-mental-training-cards.md) — diepgang per kaart (1–3 sterren, server-side); lagen voegen alleen toe, kern identiek op elk niveau.
+- [ORS routing honesty](sparki-route-rejoin.md) — rejoin connectors must be REAL routed paths (never straight lines); loops = best-of-N candidates by pathOverlapFraction ([loops](sparki-route-loop-quality.md)).
+- [Sparki nachtelijke kaart-backfill](sparki-library-backfill.md) — één gedeelde ORS-dagcap-reservering; celkeuze puur/ring-round-robin; homeLat zit op athlete_profiles, niet user_profiles.
+- [Routebibliotheek-verbeterlus](sparki-route-improvement.md) — gem.<3 bij ≥3 stemmen ⇒ vervang door echte variant; thema's (≥2 gebruikers) sturen alleen kandidaatKEUZE; generatie in unieke index.
+- [Sparki commerciële schil](sparki-commercial-shell.md) — presentation-only shell (flag commercial_shell): exact copy via one COMMERCIAL_COPY const; `hidden lg:` drops mobile content; browser checks via Playwright subagent on /_dev/commercial.
+- [Sparki Smart Missing Input Flow](sparki-missing-input.md) — registry + focus/return/retry empty-state framework.
+- [Sparki chat overlay & session thread](sparki-chat-overlay.md) — chat opens from header SPARKI button (portal z-[80]).
+- [Sparki sterren-beoordelingen (build_ratings)](sparki-build-ratings.md) — beoordelen≠instellen; één register + BuildRatingBlock; ster-tik moet bestaande toelichting meesturen of de upsert wist hem.

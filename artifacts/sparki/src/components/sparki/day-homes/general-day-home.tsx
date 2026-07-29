@@ -17,6 +17,7 @@ import {
 } from "@/components/sparki/home-sections"
 import { HealthStatusControl } from "@/components/sparki/health-status-control"
 import { QuickActionButton } from "@/components/sparki/coach-input-actions"
+import { BuildRatingBlock } from "@/components/sparki/build-rating"
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useRaces } from "@/hooks/use-races"
@@ -261,8 +262,23 @@ function DayAdviceCard({
           →
         </span>
       </button>
+
+      {/* Sterren-beoordeling op het dagadvies — vaste audit-input. */}
+      <BuildRatingBlock
+        subjectType="dagadvies"
+        subjectId={localAdviceDate()}
+        question="Hoe goed past dit advies?"
+        className="mt-4 border-t border-white/[0.07] pt-4"
+      />
     </div>
   )
+}
+
+// Lokale kalenderdag (YYYY-MM-DD) als onderwerp-id van het dagadvies — uit
+// lokale getters, nooit toISOString (UTC-off-by-one-val rond middernacht).
+function localAdviceDate(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
 // Today's real conditions at the athlete's home location. Honest by contract:

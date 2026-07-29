@@ -8,6 +8,12 @@ import {
 } from "../connectors/providers/strava-oauth";
 import type { CheckDefinition, ProbeResult } from "./types";
 import { probeProjectDiskSize } from "./disk-usage";
+import {
+  aggregateBuildRatings,
+  weakComponents,
+  WEAK_RATING_THRESHOLD,
+  MIN_RATINGS_FOR_SIGNAL,
+} from "../build-ratings";
 
 // ── Probe helpers ────────────────────────────────────────────────────────────
 
@@ -1029,6 +1035,63 @@ const unwiredChecks: CheckDefinition[] = [
     remediation:
       "Ruim de grootste boosdoeners op. Voor .git: verwijder backup-refs en oude subrepl-branches, draai `git reflog expire --expire=now --all` en `git gc --prune=now --aggressive` (recept in .agents/memory/git-history-cleanup.md). Voor de werkmap: verwijder export-zips en grote testbundels.",
     probe: probeProjectDiskSize,
+  },
+  {
+    key: "build_ratings",
+    category: "database",
+    title: "Sterren-beoordelingen op gebouwde onderdelen",
+    description:
+      "Controleert de sterren-beoordelingen die sporters op door Sparki gebouwde onderdelen geven (routes, planweken, dagadviezen) en signaleert zwak scorende onderdelen voor de audit-agenda.",
+    responsibleModule: "Beoordelingen / audit-input",
+    userImpact: impact(
+      "Zonder deze signalen ziet de audit niet welke onderdelen sporters slecht vinden werken; verbeteringen komen dan op gevoel in plaats van op echte scores.",
+    ),
+    urgency: "low",
+    remediation:
+      "Bekijk het beoordelingsoverzicht in /admin/ops en zet zwak scorende onderdelen bovenaan de auditagenda.",
+    probe: async () => {
+      const start = performance.now();
+      try {
+        const aggregates = await aggregateBuildRatings();
+        const rated = aggregates.filter((a) => a.count > 0);
+        if (rated.length === 0) {
+          // Eerlijk: nog geen enkele beoordeling — geen groen faken.
+          return grey(
+            "Nog geen sterren-beoordelingen ontvangen; er is nog niets te meten.",
+            start,
+          );
+        }
+        const weak = weakComponents(aggregates);
+        const summary = rated
+          .map((a) => `${a.label}: ${a.average}★ (${a.count})`)
+          .join(" · ");
+        if (weak.length > 0) {
+          return {
+            status: "orange",
+            passed: false,
+            responseTimeMs: ms(start),
+            message: `Zwak scorende onderdelen (gem. < ${WEAK_RATING_THRESHOLD}★ bij ≥ ${MIN_RATINGS_FOR_SIGNAL} beoordelingen): ${weak
+              .map((a) => `${a.label} (${a.average}★, ${a.count}×)`)
+              .join(", ")} — zet deze bovenaan de auditagenda.`,
+            technicalDetails: summary,
+          };
+        }
+        return {
+          status: "green",
+          passed: true,
+          responseTimeMs: ms(start),
+          message: `Geen zwak scorende onderdelen. ${summary}`,
+        };
+      } catch (err) {
+        return {
+          status: "red",
+          passed: false,
+          responseTimeMs: ms(start),
+          message: "De beoordelingen-controle kan niet uitgevoerd worden.",
+          technicalDetails: err instanceof Error ? err.message : String(err),
+        };
+      }
+    },
   },
 ];
 

@@ -58,6 +58,7 @@ import {
   type RouteRemark,
 } from "@/hooks/use-route-remarks"
 import { RouteRemarksPanel } from "@/components/sparki/route-remarks"
+import { BuildRatingBlock } from "@/components/sparki/build-rating"
 import { VolgautoPanel } from "@/components/sparki/volgauto-panel"
 import {
   useRouteSurfaces,
@@ -1321,6 +1322,14 @@ function RouteCard({
           Stap-voor-stap navigatie nog niet beschikbaar voor deze route
         </p>
       )}
+
+      {/* Sterren-beoordeling op de bewaarde route — vaste audit-input. */}
+      <BuildRatingBlock
+        subjectType="bewaarde_route"
+        subjectId={String(route.id)}
+        question="Hoe bevalt deze route?"
+        className="mt-4"
+      />
 
       {rideOptionsOpen && (
         <RideOptionsMenu
@@ -3027,6 +3036,14 @@ function RouteGenerator({
               Wordt opgeslagen bij de gekoppelde training.
             </p>
           )}
+
+          {/* Sterren-beoordeling op het generatieresultaat (audit-input). */}
+          <BuildRatingBlock
+            subjectType="gegenereerde_route"
+            subjectId={candidate.candidateId}
+            question="Hoe goed is deze gegenereerde route?"
+            className="mt-4"
+          />
 
         </div>
       )}

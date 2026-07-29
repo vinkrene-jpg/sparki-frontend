@@ -141,6 +141,100 @@ function SystemModePanel() {
   )
 }
 
+type BuildRatingAggregateRow = {
+  subjectType: string
+  label: string
+  count: number
+  average: number | null
+  recentCount: number
+  recentAverage: number | null
+  previousAverage: number | null
+  trend: "beter" | "slechter" | "gelijk" | null
+}
+
+const TREND_LABEL: Record<string, { text: string; color: string }> = {
+  beter: { text: "↑ beter", color: "text-emerald-400" },
+  slechter: { text: "↓ slechter", color: "text-red-400" },
+  gelijk: { text: "→ gelijk", color: "text-white/40" },
+}
+
+// Sterren-beoordelingen op gebouwde onderdelen — vaste audit-input. Alleen
+// aggregaten (gemiddelde, aantal, trend); zwakste onderdelen bovenaan.
+function BuildRatingsPanel() {
+  const { data, isLoading } = useQuery<{
+    aggregates: BuildRatingAggregateRow[]
+    weakSubjectTypes: string[]
+  }>({
+    queryKey: ["/api/admin/build-ratings"],
+    queryFn: () => apiFetch("/api/admin/build-ratings"),
+  })
+
+  if (isLoading)
+    return <p className="text-sm text-white/40">Beoordelingen laden…</p>
+
+  const rows = data?.aggregates ?? []
+  const weak = new Set(data?.weakSubjectTypes ?? [])
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+      <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-white/40">
+        Beoordelingen op gebouwde onderdelen
+      </h2>
+      <p className="mb-3 text-xs text-white/40">
+        Sterren van sporters per onderdeel (alleen geaggregeerd). Zwak scorende
+        onderdelen (gem. &lt; 3★ bij ≥ 3 beoordelingen) staan bovenaan de
+        auditagenda.
+      </p>
+      {rows.length === 0 ? (
+        <p className="text-sm text-white/30">Nog geen beoordelingen.</p>
+      ) : (
+        <div className="space-y-2">
+          {rows.map((row) => {
+            const isWeak = weak.has(row.subjectType)
+            const trend = row.trend ? TREND_LABEL[row.trend] : null
+            return (
+              <div
+                key={row.subjectType}
+                className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-4 py-3 ${
+                  isWeak
+                    ? "border-red-400/30 bg-red-400/[0.06]"
+                    : "border-white/[0.07] bg-white/[0.03]"
+                }`}
+              >
+                <div className="min-w-0">
+                  <span className="text-sm text-white/80">{row.label}</span>
+                  {isWeak && (
+                    <span className="ml-2 rounded-full bg-red-400/15 px-2 py-0.5 text-[10px] font-semibold text-red-300">
+                      Audit-prioriteit
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-4 font-mono text-xs tabular-nums">
+                  <span className="text-amber-300">
+                    {row.average != null ? `${row.average.toFixed(2)}★` : "—"}
+                  </span>
+                  <span className="text-white/40">{row.count}×</span>
+                  <span className="text-white/40">
+                    30d:{" "}
+                    {row.recentAverage != null
+                      ? `${row.recentAverage.toFixed(2)}★ (${row.recentCount}×)`
+                      : "—"}
+                  </span>
+                  {trend ? (
+                    <span className={trend.color}>{trend.text}</span>
+                  ) : (
+                    <span className="text-white/25">geen trend</span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function OpsLogPanel() {
   const { data, isLoading } = useQuery<{ log: OpsLogRow[] }>({
     queryKey: ["/api/admin/ops-log"],
@@ -198,6 +292,7 @@ export default function AdminOpsPage() {
         </p>
         <div className="space-y-5">
           <SystemModePanel />
+          <BuildRatingsPanel />
           <OpsLogPanel />
         </div>
       </div>
