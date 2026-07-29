@@ -128,8 +128,12 @@ export async function effectiveParentAccess(
   // laatste bevestiging. Een koppeling zonder bevestiging heeft nooit meer dan
   // het veiligheidsminimum, maar vraagt geen herbevestiging (legacy).
   const storedTier = link.ageTierAtConsent as ParentAgeTier | null;
+  // Herbevestiging bij tierwissel; een volwassen sporter (18+) heeft daarnaast
+  // ALTIJD een bij de volwassen tier bevestigde keuze nodig — een legacy-link
+  // zonder (adult-)bevestiging blijft anders via het veiligheidsminimum open.
   const reconfirmRequired =
-    storedTier != null && tier !== "unknown" && storedTier !== tier;
+    (storedTier != null && tier !== "unknown" && storedTier !== tier) ||
+    (tier === "adult" && (!link.consentConfirmedAt || storedTier !== "adult"));
 
   let permissions: Record<ParentDataCategory, boolean>;
   if (link.permissions && link.consentConfirmedAt) {
@@ -137,13 +141,15 @@ export async function effectiveParentAccess(
     for (const c of parentDataCategories) {
       permissions[c] = link.permissions[c] === true;
     }
+  } else if (link.consentConfirmedAt) {
+    // Bevestigd maar zonder expliciete per-categorie keuze: standaard van het
+    // deelniveau (backward-compatibel).
+    permissions = defaultsForLevel(level === "summary" ? "summary" : "safety_only");
   } else {
-    // Geen expliciete, bevestigde keuze: veiligheidsminimum van het niveau,
-    // maar nooit méér dan safety_only zolang niets is bevestigd.
-    permissions =
-      link.consentConfirmedAt && level === "summary"
-        ? defaultsForLevel("summary")
-        : defaultsForLevel("safety_only");
+    // Legacy-koppeling zonder bevestiging: strikt het veiligheidsminimum
+    // (alleen SAFETY_CATEGORIES) — nooit méér, ongeacht het deelniveau.
+    permissions = allOff();
+    for (const c of SAFETY_CATEGORIES) permissions[c] = true;
   }
 
   // Onbekende leeftijd: fail-closed — nooit méér dan het veiligheidsminimum,

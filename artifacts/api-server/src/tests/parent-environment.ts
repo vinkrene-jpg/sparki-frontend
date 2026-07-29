@@ -280,7 +280,8 @@ async function main() {
     assert(perm.status === 403, `permissions status ${perm.status}`);
   });
 
-  // 2 — u16 standaard: veiligheidsminimum + ouder mag beheren.
+  // 2 — u16 standaard (legacy zonder consentConfirmedAt): STRIKT het
+  // veiligheidsminimum — alleen gezondheid + herstel, dus ook slaap dicht.
   await scenario("u16 zonder keuze: veiligheidsminimum, parentMayEdit", async () => {
     const ov = await req("GET", "/api/parent/overview", clerkParent);
     assert(ov.status === 200, `overview status ${ov.status}`);
@@ -291,10 +292,13 @@ async function main() {
     assert(acc.parentMayEdit === true, "parentMayEdit moet true zijn voor u16");
     assert(acc.permissions.gezondheid === true, "gezondheid moet aan staan");
     assert(acc.permissions.herstel === true, "herstel moet aan staan");
-    assert(acc.permissions.slaap === true, "slaap moet aan staan");
+    assert(
+      acc.permissions.slaap === false,
+      "slaap moet uit staan (legacy = alleen veiligheidsminimum)",
+    );
     assert(acc.permissions.planning === false, "planning moet uit staan");
     assert(acc.permissions.communicatie === false, "communicatie moet uit staan");
-    assert(child.wellbeing != null, "wellbeing ontbreekt bij herstel/slaap aan");
+    assert(child.wellbeing != null, "wellbeing ontbreekt bij herstel aan");
     assert(child.today === undefined, "today mag niet zonder planning-recht");
   });
 
@@ -441,6 +445,35 @@ async function main() {
     assert(child.access.parentMayEdit === false, "parentMayEdit moet false zijn");
     // herstel voor latere scenario's
     await req("POST", `/api/links/parent/${clerkParent}/reconfirm`, clerkAdult);
+  });
+
+  // 9b — Volwassen sporter met LEGACY-koppeling (geen bevestiging, geen tier):
+  // 18+ sluit alles — óók het veiligheidsminimum — tot expliciete herbevestiging.
+  await scenario("volwassene: legacy zonder bevestiging = alles dicht", async () => {
+    await db
+      .update(parentAthleteLinksTable)
+      .set({ ageTierAtConsent: null, consentConfirmedAt: null, permissions: null })
+      .where(
+        and(
+          eq(parentAthleteLinksTable.parentClerkId, clerkParent),
+          eq(parentAthleteLinksTable.athleteClerkId, clerkAdult),
+        ),
+      );
+    const ov = await req("GET", "/api/parent/overview", clerkParent);
+    const child = childEntry(ov.json, clerkAdult);
+    assert(child.access.tier === "adult", `tier ${child.access.tier}`);
+    assert(child.access.reconfirmRequired === true, "reconfirmRequired moet true zijn");
+    const perms = Object.values(child.access.permissions as Record<string, boolean>);
+    assert(perms.every((v) => v === false), "18+ legacy: alles moet dicht");
+    // Expliciete herbevestiging door de volwassen sporter heropent het
+    // veiligheidsminimum-standaardpad (eigen regie).
+    const rc = await req("POST", `/api/links/parent/${clerkParent}/reconfirm`, clerkAdult);
+    assert(rc.status === 200, `reconfirm status ${rc.status}`);
+    const ov2 = await req("GET", "/api/parent/overview", clerkParent);
+    const child2 = childEntry(ov2.json, clerkAdult);
+    assert(child2.access.reconfirmRequired === false, "na herbevestiging geen reconfirm meer");
+    assert(child2.access.permissions.gezondheid === true, "na herbevestiging veiligheidsminimum open");
+    assert(child2.access.permissions.planning === false, "niet-veiligheid blijft dicht zonder keuze");
   });
 
   // 10 — Meldingen: aanmaken, sporter ziet en markeert; ongeldige soort 400.
