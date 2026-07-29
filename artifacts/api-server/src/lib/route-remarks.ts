@@ -67,6 +67,18 @@ const CACHE_TTL_MS = 15 * 60_000;
 // zonder parallelle paden mee te nemen. Natuurgebied is een vlak: ruimer.
 const NEAR_ROUTE_M = 30;
 const NEAR_AREA_M = 60;
+// Toegangsbeperkingen ("hier mag je niet fietsen") zijn een oordeel over de
+// route zélf en eisen daarom dat de weg vrijwel samenvalt met de routelijn.
+// 30 m ving óók de parallelle N-weg naast een fietspad en de snelweg onder een
+// viaduct — precies de tientallen valse meldingen uit René's praktijktest.
+// 6 m omdat routegeometrie de OSM-weggeometrie exact volgt: een wegvak dat je
+// écht rijdt ligt op ~0 m; 7–10 m is de rijbaan NAAST het fietspad (gemeten
+// in de praktijktest van 2026-07-29, way-voor-way gecontroleerd).
+const NEAR_ACCESS_M = 6;
+// Wegdek-meldingen (onverhard/slecht wegdek) zijn óók een oordeel over de
+// route zélf: een grindpad 20 m naast het fietspad rijd je niet. Zelfde
+// strakke eis als toegang, met verfijning tegen de volledige geometrie.
+const NEAR_SURFACE_M = 10;
 
 const SOURCE = {
   name: "OpenStreetMap (via Overpass API)",
@@ -392,7 +404,7 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
       routeSampleIdx.push(geometry.length - 1);
   }
 
-  type Raw = RouteRemark & { _kmEnd: number };
+  type Raw = RouteRemark & { _kmEnd: number; _count: number };
   const raws: Raw[] = [];
   for (const el of elements) {
     const cls = classifyRemarkTags(el.tags ?? {});
@@ -402,11 +414,30 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
     const pts = extractElementPoints(el);
     if (pts.length === 0) continue;
 
-    const nearLimit = cls.kind === "natuurgebied" ? NEAR_AREA_M : NEAR_ROUTE_M;
+    const isAccess = cls.kind === "beperkte_toegang";
+    const isSurface = cls.kind === "onverhard" || cls.kind === "slecht_wegdek";
+    const needsRefine = isAccess || isSurface;
+    const nearLimit =
+      cls.kind === "natuurgebied"
+        ? NEAR_AREA_M
+        : isAccess
+          ? NEAR_ACCESS_M
+          : isSurface
+            ? NEAR_SURFACE_M
+            : NEAR_ROUTE_M;
+    // Grofmazige poort op de bemonsterde route; voor toegangsbeperkingen
+    // daarna verfijnen op de VOLLEDIGE geometrie rond het dichtstbijzijnde
+    // sample (samples liggen op lange routes honderden meters uit elkaar —
+    // zonder verfijning zou een strakke 12 m-grens echte treffers missen).
+    const coarseLimit = needsRefine ? Math.max(nearLimit, 250) : nearLimit;
+    const sampleStep = routeSampleIdx.length > 1
+      ? routeSampleIdx[1]! - routeSampleIdx[0]!
+      : 1;
     let minKmIdx = -1;
     let maxKmIdx = -1;
     let bestM = Number.POSITIVE_INFINITY;
     let bestPt: RoutePathPoint | null = null;
+    let nearPts = 0;
     for (const p of pts) {
       let nearestIdx = 0;
       let nearestM = Number.POSITIVE_INFINITY;
@@ -417,7 +448,22 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
           nearestIdx = ri;
         }
       }
-      if (nearestM > nearLimit) continue;
+      if (nearestM > coarseLimit) continue;
+      if (needsRefine) {
+        // Verfijn: echte minimale afstand tot de routelijnpunten rond het
+        // gevonden sample.
+        const lo = Math.max(0, nearestIdx - sampleStep);
+        const hi = Math.min(geometry.length - 1, nearestIdx + sampleStep);
+        for (let gi = lo; gi <= hi; gi++) {
+          const d = haversineM(p, geometry[gi]!);
+          if (d < nearestM) {
+            nearestM = d;
+            nearestIdx = gi;
+          }
+        }
+        if (nearestM > nearLimit) continue;
+      }
+      nearPts++;
       if (minKmIdx < 0 || nearestIdx < minKmIdx) minKmIdx = nearestIdx;
       if (nearestIdx > maxKmIdx) maxKmIdx = nearestIdx;
       if (nearestM < bestM) {
@@ -426,6 +472,11 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
       }
     }
     if (minKmIdx < 0 || !bestPt) continue;
+    // Een weg met toegangsbeperking die de route alleen KRUIST (viaduct,
+    // zijweg, oprit) raakt de lijn in hooguit één punt — dat is geen wegvak
+    // dat je rijdt. Eis minimaal twee nabije punten voor wegen met meerdere
+    // geometriepunten, zodat alleen echt meegereden wegvakken overblijven.
+    if (needsRefine && pts.length > 1 && nearPts < 2) continue;
 
     const fromKm = Math.round(cumKm[minKmIdx]! * 10) / 10;
     const toKm = Math.round(cumKm[maxKmIdx]! * 10) / 10;
@@ -442,7 +493,60 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
       uncertain: cls.uncertain,
       evidence: cls.evidence,
       _kmEnd: toKm,
+      _count: 1,
     });
+  }
+
+  // Parallel-fietspad-controle: in Nederland betekent bicycle=no op de
+  // rijbaan vrijwel altijd "er ligt een apart fietspad naast" — de route rijdt
+  // dan legaal op dat fietspad, niet op de gemelde weg. Controleer per
+  // toegangs-kandidaat (dat zijn er hooguit een paar) of er binnen 25 m een
+  // voor fietsers toegankelijk fietspad/pad ligt; zo ja, dan vervalt de
+  // melding. Mislukt deze extra controle, dan blijven de meldingen staan —
+  // liever een mogelijk overbodige waarschuwing dan een verzwegen verbod.
+  const accessRaws = raws.filter((r) => r.kind === "beperkte_toegang");
+  if (accessRaws.length > 0) {
+    const around = accessRaws
+      .map(
+        (r) =>
+          `way["highway"~"^(cycleway|path)$"](around:35,${r.lat.toFixed(6)},${r.lon.toFixed(6)});` +
+          `way["highway"]["cycleway"~"^(track|lane)$"](around:35,${r.lat.toFixed(6)},${r.lon.toFixed(6)});` +
+          `way["highway"]["cycleway:both"~"^(track|lane)$"](around:35,${r.lat.toFixed(6)},${r.lon.toFixed(6)});` +
+          `way["highway"="footway"]["bicycle"~"^(yes|designated)$"](around:35,${r.lat.toFixed(6)},${r.lon.toFixed(6)});`,
+      )
+      .join("\n");
+    const cycleEls = await runOverpass(
+      `[out:json][timeout:25];(\n${around}\n);out geom 200;`,
+    );
+    if (cycleEls) {
+      const cyclePts: RoutePathPoint[] = [];
+      for (const el of cycleEls) {
+        const b = el.tags?.bicycle ?? "";
+        if (b === "no" || b === "private") continue;
+        cyclePts.push(...extractElementPoints(el));
+      }
+      const hasParallelPath = (r: Raw) =>
+        cyclePts.some((p) => haversineM(p, [r.lat, r.lon]) <= 35);
+      for (let i = raws.length - 1; i >= 0; i--) {
+        const r = raws[i]!;
+        if (r.kind === "beperkte_toegang" && hasParallelPath(r)) {
+          raws.splice(i, 1);
+        }
+      }
+    } else {
+      // Controle niet uitvoerbaar (Overpass-storing): dan weten we niet of er
+      // een parallel fietspad ligt. Meld de beperking als indicatie in plaats
+      // van als feit — nooit met zekerheid "hier mag je niet fietsen" roepen
+      // terwijl de renner waarschijnlijk gewoon op het fietspad ernaast rijdt.
+      for (const r of raws) {
+        if (r.kind === "beperkte_toegang" && !r.uncertain) {
+          r.uncertain = true;
+          r.detail = r.detail
+            ? `${r.detail} Mogelijk ligt hier een apart fietspad naast de weg.`
+            : "Mogelijk ligt hier een apart fietspad naast de weg.";
+        }
+      }
+    }
   }
 
   // Merge: opeenvolgende wegvakken van dezelfde soort binnen 0,3 km worden één
@@ -466,11 +570,27 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
       prev.uncertain = prev.uncertain || r.uncertain;
       continue;
     }
+    // Poorten/paaltjes staan vaak in rijtjes (5 blokken naast elkaar) of aan
+    // weerszijden van een kruising. Dat zijn echte losse OSM-nodes, maar voor
+    // de renner is het ÉÉN doorgang: bundel dezelfde soort binnen 150 m tot
+    // één opmerking met een aantal — geen vijf identieke regels op één km.
+    if (
+      prev &&
+      r.kind === "poort" &&
+      prev.kind === "poort" &&
+      prev.label.replace(/ \(×\d+\)$/, "") === r.label &&
+      r.routeKm - prev.routeKm <= 0.15
+    ) {
+      prev._count += 1;
+      prev.label = `${r.label} (×${prev._count})`;
+      prev.offRouteM = Math.min(prev.offRouteM, r.offRouteM);
+      continue;
+    }
     merged.push({ ...r });
   }
 
   const out: RouteRemark[] = merged
-    .map(({ _kmEnd: _ignored, ...rest }) => rest)
+    .map(({ _kmEnd: _ignored, _count: _ignored2, ...rest }) => rest)
     .sort((a, b) => a.routeKm - b.routeKm)
     .slice(0, 60);
 

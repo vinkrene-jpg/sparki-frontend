@@ -16,3 +16,11 @@ description: OSM/Overpass route-warnings engine and slider↔map elevation profi
 
 **Why:** the null-geometry crash surfaced only against live Overpass data after all unit scenarios passed; clean fixtures never contained null entries.
 **How to apply:** any new Overpass consumer must treat every coordinate field as possibly null/missing and skip honestly.
+
+# Valse-melding-lessen (racefiets-praktijktest)
+
+- Toegangsdrempel is 6 m (niet 12/30): de routegeometrie volgt OSM-weggeometrie exact, dus 7–10 m afstand betekent vrijwel altijd "rijbaan naast het fietspad" — geen route-vak. Wegdekmeldingen 10 m. Beide met refine tegen de volledige geometrie + kruisings-drop (≤1 nabij punt = kruising, telt niet).
+- Parallel-fietspad-controle: per beperkte_toegang-kandidaat één Overpass-query (cycleway/path/track-lane/footway-bicycle-yes binnen around:35); treffer ⇒ melding vervalt. Kan de controle niet draaien ⇒ degradeer de melding naar `uncertain` ("mogelijk apart fietspad") — nooit als feit laten staan én nooit stil laten vallen.
+- Rijen paaltjes/poorten binnen 150 m bundelen tot één melding met (×N).
+**Why:** René's praktijktest gaf tientallen valse "hier mag je niet fietsen"-meldingen; way-voor-way bleek vrijwel elk vak een rijbaan met parallel fietspad.
+**How to apply:** elke nieuwe remark-soort krijgt strakke afstands-drempel + refine + eerlijke onzekerheids-degradatie i.p.v. hard feit bij ontbrekend bewijs.

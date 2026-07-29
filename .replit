@@ -506,6 +506,7 @@ SPARKI_ADMIN_IDS = "user_3FXo8wJYIQ2uvZGRXyrRXzdWuUp"
 [userenv.shared]
 VAPID_PUBLIC_KEY = "BE_zshRDB06c6BP5jf0KqW58sejO_57nStUboT-LDb8qMvPXgSUV7VbZQmWIE1vbKXs6LRF8pnZvXsjbgmuOhUc"
 VAPID_SUBJECT = "mailto:notificaties@sparki.app"
+ROUTING_PROVIDER = "graphhopper"
 
 [userenv.development]
 

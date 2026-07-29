@@ -256,13 +256,13 @@ export function suitabilityPenalty(
   result: RouteResult,
   profile: LoopRequest["profile"],
 ): number {
-  const stats = result.surfaceStats;
-  if (!stats || stats.totalM <= 0) return 0;
+  const paved = result.pavedFraction;
+  if (paved == null) return 0;
   let penalty = 0;
   if (profile === "cycling-road") {
-    const unpavedShare = stats.unpavedM / stats.totalM;
+    const unpavedShare = 1 - paved;
     // >5% onverhard op een racefietsroute is een echte misser; daaronder
-    // lineair. "missing" wegdek straffen we niet — onbekend is niet onverhard.
+    // lineair. Onbekend wegdek telt niet mee (pavedFraction is dan al null).
     penalty += Math.min(unpavedShare / 0.05, 1.5) * 1.2;
   }
   return penalty;
@@ -371,19 +371,18 @@ export async function generateVariedLoop(
         );
       }
     }
-    // Fietsgeschiktheid uit de provider-meting: verboden wegen en (racefiets)
-    // onverhard wegdek keuren een kandidaat vrijwel altijd af t.o.v. een
-    // schone kandidaat — de kern van de PO-01-belofte.
-    const suitability = suitabilityPenalty(result, req.profile);
-    if (suitability > 0) {
-      const s = result.surfaceStats;
-      console.log(
-        `[GESCHIKTHEID] kandidaat[${i}] penalty=${suitability.toFixed(2)} unpavedM=${s?.unpavedM} missingM=${s?.missingM} totalM=${s?.totalM}`,
-      );
-    }
+    // Racefiets (cycling-road): het verharde aandeel komt van de routebron
+    // zélf (GraphHopper surface-details) en weegt zwaar — een lus met 10%
+    // onverhard hoort het vrijwel altijd te verliezen van een gladde lus.
+    // Zonder meting (ORS, te veel onbekend wegdek) telt dit niet mee: nooit
+    // gokken, alleen echte data rangschikken.
+    const surfaceMiss =
+      req.profile === "cycling-road" && result.pavedFraction != null
+        ? 1 - result.pavedFraction
+        : 0;
     const score =
       overlap + drift * 1.2 + elevation * 0.8 + turniness * 0.9 +
-      ascentMiss * 1.0 + suitability;
+      ascentMiss * 1.0 + surfaceMiss * 6.0;
     pool.push({ result, score });
     // Good enough — a clean loop, close to the requested length, that already
     // matches the elevation wish. Only then do we stop spending ORS calls.
@@ -398,9 +397,11 @@ export async function generateVariedLoop(
       overlap < 0.08 &&
       drift < 0.15 &&
       elevation < 0.35 &&
-      // Geschiktheidspoort: nooit vroeg stoppen op een kandidaat met verboden
-      // wegen of (racefiets) onverhard — dan juist méér kandidaten vergelijken.
-      suitability === 0
+      // Racefiets: pas vroeg stoppen als de lus volgens de routebron zelf
+      // (vrijwel) volledig verhard is; zonder meting blijft de oude regel.
+      (req.profile !== "cycling-road" ||
+        result.pavedFraction == null ||
+        result.pavedFraction >= 0.98)
     )
       break;
   }

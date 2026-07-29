@@ -135,6 +135,7 @@
     "test:race-flow": "node ./scripts/run-test.mjs race-flow",
     "test:race-points": "node ./scripts/run-test.mjs race-points",
     "test:route-remarks": "node ./scripts/run-test.mjs route-remarks",
+    "test:route-suitability": "node ./scripts/run-test.mjs route-suitability",
     "test:route-surfaces": "node ./scripts/run-test.mjs route-surfaces",
     "test:race-export": "node ./scripts/run-test.mjs race-export",
     "test:fueling": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs fueling",

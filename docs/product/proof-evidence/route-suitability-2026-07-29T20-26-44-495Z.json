@@ -1,0 +1,62 @@
+{
+  "ranAt": "2026-07-29T20:26:44.502Z",
+  "verdict": "PASS",
+  "measured": 5,
+  "certainForbidden": 0,
+  "unpavedTotal": 1,
+  "failures": [],
+  "cities": [
+    {
+      "city": "Arnhem",
+      "measurable": true,
+      "distanceKm": 46.5,
+      "ascentM": 220,
+      "pavedFraction": 0.9963039633498769,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "city": "Utrecht",
+      "measurable": true,
+      "distanceKm": 52.8,
+      "ascentM": 144,
+      "pavedFraction": 0.9982974923210242,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "city": "Eindhoven",
+      "measurable": true,
+      "distanceKm": 51.86,
+      "ascentM": 75,
+      "pavedFraction": 1,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "city": "Zwolle",
+      "measurable": true,
+      "distanceKm": 48.19,
+      "ascentM": 198,
+      "pavedFraction": 0.9994548809443887,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "city": "Maastricht (heuvels)",
+      "measurable": true,
+      "distanceKm": 45.04,
+      "ascentM": 326,
+      "pavedFraction": 0.979616140849052,
+      "certainForbidden": [],
+      "unpaved": [
+        {
+          "id": "way/44523478",
+          "km": 0,
+          "evidence": "surface=sett",
+          "offRouteM": 0
+        }
+      ]
+    }
+  ]
+}

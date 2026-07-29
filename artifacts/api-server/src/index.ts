@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { getRoutingProvider } from "./lib/routing";
 import { ensureWorldSeed } from "./lib/world-seed";
 import { ensureIntelSeed } from "./lib/intel-seed";
 import { backfillDerivedLoad } from "./lib/derived-load-backfill";
@@ -53,6 +54,22 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Routekwaliteitsbelofte (taak #419): racefiets/MTB-routes moeten op wegdek
+  // en fietslegaliteit sturen. Dat kan alleen met de GraphHopper-motor. Meld
+  // het LUID wanneer die wel geconfigureerd is maar niet actief — dan draait
+  // routegeneratie stil op ORS en is de belofte niet gedekt.
+  {
+    const active = getRoutingProvider().name;
+    const gh = getRoutingProvider("graphhopper");
+    logger.info({ routingProvider: active }, "Actieve routebron");
+    if (active !== "graphhopper" && gh?.isConfigured()) {
+      logger.warn(
+        { routingProvider: active },
+        "GRAPHHOPPER_API_KEY is ingesteld maar ROUTING_PROVIDER staat niet op graphhopper — racefiets/MTB-geschiktheid wordt NIET bij de bron afgedwongen",
+      );
+    }
+  }
 
   // Fire-and-forget: a freshly published database has the schema but no Sparki
   // World content, so it would honestly show "nog geen renners". Fill it from

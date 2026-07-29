@@ -57,6 +57,7 @@ import {
   getCandidate,
   updateCandidateRationale,
   getRoutingProvider,
+  bikeSuitabilityConfigError,
   generateVariedLoop,
   selectRoutingProfile,
   profileToSurface,
@@ -2755,6 +2756,15 @@ router.post("/generate", requireAuth, async (req, res) => {
     } else if (avoidOnverhard) {
       avoidReport.toegepast.push("onverhard");
     }
+    // Harde grendel: nooit stil een racefiets/MTB-route leveren via een motor
+    // die geen wegdek/legaliteit kan sturen terwijl de goede motor bestaat.
+    {
+      const configErr = bikeSuitabilityConfigError(profile);
+      if (configErr) {
+        res.status(503).json({ error: configErr });
+        return;
+      }
+    }
     const surface = profileToSurface(profile);
 
     // Size a loop's target distance: explicit value > workout duration × speed
@@ -3134,6 +3144,13 @@ router.post("/generate/options", requireAuth, async (req, res) => {
       targetDistanceKm,
       elevationPreference,
     });
+    {
+      const configErr = bikeSuitabilityConfigError(profile);
+      if (configErr) {
+        res.status(503).json({ error: configErr });
+        return;
+      }
+    }
     const surface = profileToSurface(profile);
 
     if (targetDistanceKm == null && workoutDurationMin != null) {

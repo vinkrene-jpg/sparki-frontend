@@ -4393,22 +4393,9 @@ export function RideOptionsMenu({
             </div>
           </div>
 
-          {!focus && (
-            <div className="flex items-start gap-2.5 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3.5 py-3">
-              <Trophy
-                className="mt-0.5 h-4 w-4 shrink-0 text-white/30"
-                strokeWidth={1.75}
-              />
-              <p className="text-[11px] leading-relaxed text-white/40">
-                <span className="font-medium text-white/60">
-                  Bergklassement
-                </span>{" "}
-                — wordt nog uitgewerkt: een klassement per klim, vergeleken
-                op leeftijd en gewicht. Nog niet beschikbaar, dus
-                hier valt nog niets aan te zetten.
-              </p>
-            </div>
-          )}
+          {/* Bergklassement-placeholder verwijderd (taak #419): een
+              productscherm toont geen aankondigingen van functionaliteit die
+              nog niet bestaat — zeker niet op vlakke routes zonder klims. */}
         </div>
 
         <div className="mt-5 flex gap-2">

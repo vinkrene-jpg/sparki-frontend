@@ -3,8 +3,8 @@
 // (Google, Komoot, Strava, Mapbox, GraphHopper, …) can be registered here
 // without changing any route handler or frontend code.
 
-import { OrsProvider } from "./providers/ors";
 import { GraphHopperProvider } from "./providers/graphhopper";
+import { OrsProvider } from "./providers/ors";
 import type { RoutingProvider } from "./types";
 
 // Registered providers, keyed by name. Add future providers here.
@@ -39,6 +39,19 @@ export function getRoutingProvider(name?: string): RoutingProvider {
     if (p?.isConfigured()) return p;
   }
   return providers[FALLBACK_PROVIDER]!;
+}
+
+export function bikeSuitabilityConfigError(
+  profile: string,
+): string | null {
+  if (profile !== "cycling-road" && profile !== "cycling-mountain") return null;
+  const active = getRoutingProvider();
+  if (active.name === "graphhopper") return null;
+  const gh = providers.graphhopper;
+  if (gh?.isConfigured()) {
+    return "Routegeneratie staat verkeerd ingesteld: de fietsgeschiktheids-motor (GraphHopper) is beschikbaar maar niet actief. Dit is een instellingsfout aan onze kant — geen route gemaakt die de racefiets/MTB-belofte niet kan waarmaken.";
+  }
+  return null;
 }
 
 export * from "./types";
