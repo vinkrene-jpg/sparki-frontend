@@ -24,6 +24,46 @@ import {
   useBulkCoachWorkout,
   type DashboardAthlete,
 } from "@/hooks/use-coach-cockpit"
+import { useInvitations } from "@/hooks/use-invitations"
+
+// Open trainersuitnodigingen op de startpagina: eerlijk beeld van wat nog
+// wacht (pending coach_athlete-invites van deze trainer), met vervaldatum.
+function OpenInvitations() {
+  const { data } = useInvitations()
+  const open = (data ?? []).filter(
+    (i) => i.status === "pending" && i.relationship === "coach_athlete",
+  )
+  if (open.length === 0) return null
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
+      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
+        Open uitnodigingen
+      </span>
+      <div className="mt-2 space-y-1.5">
+        {open.slice(0, 4).map((i) => (
+          <div key={i.id} className="flex items-center gap-2 text-[13px] text-white/65">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-300/70" />
+            <span className="truncate">{i.email ?? "Uitnodigingslink"}</span>
+            <span className="ml-auto shrink-0 text-[11px] text-white/35">
+              verloopt {fmtDate(i.expiresAt)}
+            </span>
+          </div>
+        ))}
+        {open.length > 4 && (
+          <div className="text-[12px] text-white/35">+{open.length - 4} meer</div>
+        )}
+      </div>
+      <Link
+        href="/invitations"
+        className="mt-2 inline-flex items-center gap-1 text-[12px]"
+        style={{ color: ACCENT }}
+      >
+        Beheren
+        <ChevronRight className="h-3 w-3" strokeWidth={2} />
+      </Link>
+    </div>
+  )
+}
 
 const readinessLabel: Record<string, { nl: string; color: string }> = {
   fresh: { nl: "Fris", color: "oklch(0.82 0.16 150)" },
@@ -386,6 +426,8 @@ export function CoachHome() {
             ))}
           </div>
         )}
+
+        <OpenInvitations />
 
         <BulkPlanner athletes={athletes} />
 
