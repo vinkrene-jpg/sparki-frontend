@@ -1,0 +1,62 @@
+Ik wil niet dat je code schrijft.
+
+Ik wil ook niet dat je mijn Product Transformation Engine beoordeelt.
+
+Ik wil weten of jij hetzelfde fundamentele probleem ziet als ik.
+
+Jij hebt zojuist een Product Transformation Experiment gemaakt voor de routeplanner. Dat verhaal klinkt goed.
+
+Vervolgens heb ik de huidige werkelijkheid getest.
+
+Ik kom onder andere dit tegen:
+
+- hoogteprofiel en hoogtemeters spreken elkaar tegen;
+- route is "gedeeltelijk geschikt" voor een racefiets zonder directe uitleg;
+- wegtype kan niet worden bepaald;
+- routeopmerkingen kunnen niet worden opgehaald;
+- tientallen meldingen "hier mag je niet fietsen" op een door Sparki zelf gegenereerde route;
+- bergklassement op een vlakke route;
+- desktop biedt een knop "Start navigatie";
+- aangevinkte POI's verschijnen niet op de kaart;
+- foto's die tijdens de rit worden gemaakt worden niet onderdeel van de route of activiteit;
+- mijn persoonlijke doelen (bijvoorbeeld afvallen) zijn nauwelijks terug te vinden in routekeuze, analyse of uitleg.
+
+Mijn gevoel is daardoor niet dat er losse bugs zijn.
+
+Mijn gevoel is dat het systeem als geheel onbetrouwbaar aanvoelt.
+
+Ik vertrouw de uitkomsten niet meer.
+
+Daardoor maakt het eigenlijk niet meer uit hoe mooi de UX of de workflow is.
+
+Mijn vragen aan jou zijn:
+
+1. Zie jij hetzelfde fundamentele probleem?
+
+2. Zo ja, hoe zou jij dat probleem benoemen?
+
+3. Is dit volgens jou nog op te lossen binnen de huidige Sparki-architectuur, of wijst dit erop dat de architectuur zelf verkeerd is?
+
+4. Waar zit volgens jou de grootste oorzaak?
+
+- losse bugs
+- verkeerde productkeuzes
+- ontbrekende integratie
+- onvoldoende datavalidatie
+- te veel aannames
+- verkeerde architectuur
+- iets anders
+
+5. Stel dat jij verantwoordelijk was voor Sparki.
+
+Wat zou je als eerste doen?
+
+Niet over zes maanden.
+
+Niet de ideale toekomst.
+
+Maar de eerstvolgende stap waardoor gebruikers het systeem weer gaan vertrouwen.
+
+Ik wil geen nieuwe functionaliteit.
+
+Ik wil een eerlijke technische en productmatige beoordeling van de huidige situatie.
