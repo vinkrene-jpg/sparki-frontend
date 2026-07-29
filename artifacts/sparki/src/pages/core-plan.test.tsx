@@ -43,6 +43,8 @@ const noopQuery = () => ({ data: undefined, isLoading: false, isError: false, re
 mock.module("@/hooks/use-training-plan", {
   namedExports: {
     usePlanWindow: () => planWindowResult,
+    // De dagkaart/kalender op /train leest usePlanRange (niet usePlanWindow);
+    // beide krijgen dezelfde fixture zodat header + kalender consistent zijn.
     usePlanRange: () => planWindowResult,
     useTrainingPlan: () => planResult,
     useGenerateTrainingPlan: () => generateResult,
@@ -173,11 +175,12 @@ async function renderPage() {
 test("core-plan: dag met training toont titel en Training bekijken", async () => {
   const lib = await shellLibPromise;
   const today = lib.localISODate();
-  
+
   planWindowResult = {
     isLoading: false,
     isError: false,
-    data: [{ scheduledDate: today, title: "Zware Rit", type: "ride", targetDurationMin: 90 }]
+    refetch: () => {},
+    data: [{ id: 1, scheduledDate: today, title: "Zware Rit", type: "ride", targetDurationMin: 90, targetTSS: null, description: null, status: "planned", source: "sparki", sessionId: null, routeId: null, planDetails: null, structure: null }]
   };
   planResult = { data: { plan: { mode: "autonomous" }, hasCoach: false } };
   profileResult = { data: { ftp: 250, weeklyHours: 8 } };
@@ -186,7 +189,7 @@ test("core-plan: dag met training toont titel en Training bekijken", async () =>
   updateWorkoutResult = { isPending: false, mutate: () => {} };
   generateResult = { isPending: false, mutate: () => {} };
   adaptResult = { isPending: false, mutate: () => {} };
-  
+
   const view = await renderPage();
   try {
     const text = view.container.textContent ?? "";
@@ -202,13 +205,15 @@ test("core-plan: dag met training toont titel en Training bekijken", async () =>
 test("core-plan: rustdag toont tekst rustdag en GEEN Training bekijken", async () => {
   const lib = await shellLibPromise;
   const today = lib.localISODate();
-  
+
   planWindowResult = {
     isLoading: false,
     isError: false,
-    data: [{ scheduledDate: today, title: "Rustdag", type: "rest" }]
+    refetch: () => {},
+    data: [{ id: 2, scheduledDate: today, title: "Rustdag", type: "rest", targetDurationMin: null, targetTSS: null, description: null, status: "planned", source: "sparki", sessionId: null, routeId: null, planDetails: null, structure: null }]
   };
-  
+  sessionsResult = { data: [], isLoading: false };
+
   const view = await renderPage();
   try {
     const text = view.container.textContent ?? "";
@@ -221,8 +226,9 @@ test("core-plan: rustdag toont tekst rustdag en GEEN Training bekijken", async (
 
 // 3) lege dag -> eerlijke lege toestand + "Training toevoegen"
 test("core-plan: lege dag toont lege toestand en Training toevoegen", async () => {
-  planWindowResult = { isLoading: false, isError: false, data: [] }; // Niets gepland
-  
+  planWindowResult = { isLoading: false, isError: false, refetch: () => {}, data: [] }; // Niets gepland
+  sessionsResult = { data: [], isLoading: false };
+
   const view = await renderPage();
   try {
     const text = view.container.textContent ?? "";
@@ -235,8 +241,9 @@ test("core-plan: lege dag toont lege toestand en Training toevoegen", async () =
 
 // 4) laadtoestand
 test("core-plan: laadtoestand toont skelet", async () => {
-  planWindowResult = { isLoading: true, isError: false, data: undefined };
-  
+  planWindowResult = { isLoading: true, isError: false, refetch: () => {}, data: undefined };
+  sessionsResult = { data: [], isLoading: false };
+
   const view = await renderPage();
   try {
     const skeletons = view.container.querySelectorAll(".animate-pulse");
@@ -250,14 +257,15 @@ test("core-plan: laadtoestand toont skelet", async () => {
 test("core-plan: fouttoestand wint van stale cache", async () => {
   const lib = await shellLibPromise;
   const today = lib.localISODate();
-  
-  planWindowResult = { 
-    isLoading: false, 
-    isError: true, 
-    data: [{ scheduledDate: today, title: "Stale Rit", type: "ride" }],
+
+  planWindowResult = {
+    isLoading: false,
+    isError: true,
+    data: [{ id: 3, scheduledDate: today, title: "Stale Rit", type: "ride", targetDurationMin: null, targetTSS: null, description: null, status: "planned", source: "sparki", sessionId: null, routeId: null, planDetails: null, structure: null }],
     refetch: () => {}
   };
-  
+  sessionsResult = { data: [], isLoading: false };
+
   const view = await renderPage();
   try {
     const text = view.container.textContent ?? "";
