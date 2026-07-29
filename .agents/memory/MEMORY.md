@@ -151,4 +151,5 @@
 - [Mentale Training kaarten](sparki-mental-training-cards.md) — diepgang per kaart (1–3 sterren, server-side); lagen voegen alleen toe, kern identiek op elk niveau.
 - [Sparki sterren-beoordelingen (build_ratings)](sparki-build-ratings.md) — beoordelen≠instellen; één register + BuildRatingBlock; ster-tik moet bestaande toelichting meesturen of de upsert wist hem.
 - [Meer-menu chapters SSOT](sparki-meer-chapters.md) — core-meer dropt ontbrekende chapters STIL via filter(Boolean); /samen-contract bewaakt door test:navigation.
+- [Sparki trainerwerkruimte WP-01](sparki-trainer-workspace-wp01.md) — hasCoachAccess = link ∪ geldige clubtoewijzing (read-time checks); deelniveaus aparte laag; dev-preview home rol-bewust; rollen in user_profiles.
 - [Governor Beslisblok 02 rollenfundament](governor-beslisblok-02.md) — modellen in governance/, fixtures met strikte delete-handtekening + advisory lock; GO↔COMPLETE-besluit open.
