@@ -5,9 +5,10 @@
 // worden benoemd, ontbrekende data wordt eerlijk gemeld en onmogelijke doelen
 // heten gewoon onhaalbaar.
 import { useMemo, useState } from "react"
-import { FlaskConical } from "lucide-react"
+import { FlaskConical, Target } from "lucide-react"
 import { BeheerSheet } from "@/components/sparki/beheer-popup"
 import { usePowerBests } from "@/hooks/use-power-bests"
+import { useGoalPicture, useCreateGoal, useUpdateGoal } from "@/hooks/use-goals"
 import {
   computeWattageLab,
   LAB_DUREN,
@@ -32,6 +33,28 @@ function datumLabel(iso: string): string {
   return `${Number(d)}-${Number(m)}-${y}`
 }
 
+// Doeltitel per duur. Voor FTP bewust mét het woord "FTP": de Analyse-overlay
+// (streef-FTP-lijn) herkent doelen daaraan.
+function doelTitel(duurKey: LabDuurKey, duurLabel: string, watts: number): string {
+  return duurKey === "ftp"
+    ? `FTP naar ${watts} W`
+    : `Vermogen over ${duurLabel.toLowerCase()} naar ${watts} W`
+}
+
+// Prefix waarmee we een eerder vastgelegd lab-doel voor dezelfde duur herkennen
+// (dan wérken we dat doel bij in plaats van een duplicaat te maken).
+function doelPrefix(duurKey: LabDuurKey, duurLabel: string): string {
+  return duurKey === "ftp" ? "FTP naar " : `Vermogen over ${duurLabel.toLowerCase()} naar `
+}
+
+// Streefdatum uit de weken-schatting — als LOKALE datum (geen toISOString,
+// die pakt de UTC-dag en zit rond middernacht een dag ernaast).
+function streefDatum(weken: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + weken * 7)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
+
 export function WattageLab({
   ftp,
   weightKg,
@@ -46,6 +69,13 @@ export function WattageLab({
 
   const bests = usePowerBests()
   const duur = LAB_DUREN.find((d) => d.key === duurKey)!
+
+  // Vastleggen als echt doel (Doelen-werkblad + Analyse-overlay + plan-input).
+  const picture = useGoalPicture()
+  const createGoal = useCreateGoal()
+  const updateGoal = useUpdateGoal()
+  // Per duur onthouden wat er dit bezoek is vastgelegd (voor de bevestiging).
+  const [vastgelegd, setVastgelegd] = useState<Partial<Record<LabDuurKey, number>>>({})
 
   // Huidige beste waarde: FTP uit het profiel, overige duren uit de échte
   // power bests van eigen ritten (all-time). Geen data = eerlijk null.
@@ -69,6 +99,42 @@ export function WattageLab({
     huidigWatts: huidig?.watts ?? null,
     weightKg,
   })
+
+  // Vastleggen: bestaand lab-doel voor deze duur bijwerken (geen duplicaten),
+  // anders een nieuw doel aanmaken. Het doel telt daarna overal mee: in het
+  // Doelen-werkblad, als streeflijn op Analyse (FTP) en als input voor de
+  // eerstvolgende (her)berekening van het trainingsplan.
+  const bestaand = useMemo(() => {
+    const prefix = doelPrefix(duurKey, duur.label)
+    return (picture.data?.goals ?? []).find(
+      (g) => g.status === "active" && g.title.startsWith(prefix),
+    )
+  }, [picture.data, duurKey, duur.label])
+
+  const kanVastleggen =
+    resultaat.oordeel !== "onhaalbaar" &&
+    resultaat.oordeel !== "geen_basis" &&
+    resultaat.oordeel !== "al_bereikt"
+
+  const bezig = createGoal.isPending || updateGoal.isPending
+  const legVast = async () => {
+    const title = doelTitel(duurKey, duur.label, doel)
+    const input = {
+      title,
+      description: `Vastgelegd vanuit het Wattage-lab. Oordeel bij vastleggen: ${LAB_OORDEEL_LABEL[resultaat.oordeel]}${huidig ? ` (basis: ${huidig.watts} W)` : ""}.`,
+      horizon: "season" as const,
+      targetDate: resultaat.weken != null ? streefDatum(resultaat.weken) : null,
+      measure: duurKey === "ftp" ? "FTP (watt)" : `vermogen over ${duur.label.toLowerCase()} (watt)`,
+      targetValue: `${doel} W`,
+    }
+    try {
+      if (bestaand) await updateGoal.mutateAsync({ id: bestaand.id, input })
+      else await createGoal.mutateAsync(input)
+      setVastgelegd((v) => ({ ...v, [duurKey]: doel }))
+    } catch {
+      // foutmelding hieronder via mutation-state
+    }
+  }
 
   const geenEnkeleData =
     !bests.isLoading &&
@@ -205,6 +271,53 @@ export function WattageLab({
               </ul>
             </div>
           )}
+
+          {/* Vastleggen als doel */}
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => void legVast()}
+              disabled={!kanVastleggen || bezig}
+              className={cn(
+                "flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60",
+                kanVastleggen && !bezig
+                  ? "border-cyan-300/60 bg-cyan-300/10 text-cyan-200 hover:bg-cyan-300/20"
+                  : "cursor-not-allowed border-white/10 text-white/35",
+              )}
+            >
+              <Target className="h-4 w-4" aria-hidden="true" />
+              {bezig
+                ? "Vastleggen…"
+                : bestaand
+                  ? `Werk mijn doel bij naar ${doel} W`
+                  : `Leg vast als doel: ${doelTitel(duurKey, duur.label, doel)}`}
+            </button>
+            {!kanVastleggen && (
+              <p className="text-xs text-white/45">
+                {resultaat.oordeel === "al_bereikt"
+                  ? "Dit kun je al — kies een hoger doel om het vast te leggen."
+                  : resultaat.oordeel === "onhaalbaar"
+                    ? "Een onhaalbaar doel leggen we niet vast — kies iets dat binnen je fysiologie past."
+                    : "Nog geen eigen basis om een doel op te bouwen."}
+              </p>
+            )}
+            {(createGoal.isError || updateGoal.isError) && (
+              <p className="text-xs text-red-300">Vastleggen mislukte — probeer het opnieuw.</p>
+            )}
+            {vastgelegd[duurKey] != null && !bezig && (
+              <p className="text-xs text-emerald-200" aria-live="polite">
+                Vastgelegd als doel ({vastgelegd[duurKey]} W). Het staat nu in je Doelen-werkblad
+                {duurKey === "ftp" ? ", verschijnt als streeflijn op Analyse" : ""} en telt mee bij
+                de eerstvolgende (her)berekening van je trainingsplan.
+              </p>
+            )}
+            {bestaand && vastgelegd[duurKey] == null && (
+              <p className="text-xs text-white/45">
+                Je hebt al een doel voor deze duur: “{bestaand.title}”. Vastleggen werkt dat doel
+                bij in plaats van een tweede aan te maken.
+              </p>
+            )}
+          </div>
 
           {/* Eerlijke verantwoording */}
           <div className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs text-white/55">
