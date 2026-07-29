@@ -1,0 +1,624 @@
+// Stripe-testomgeving (fase 2) — geautomatiseerde testmatrix (14 scenario's
+// uit §7 van docs/SPARKI_STRIPE_SUBSCRIPTIONS_PHASE1_ARCHITECTURE.md).
+//
+// Volledig offline: een fake StripeGateway (setStripeGatewayForTests) plus
+// ECHTE signatuurverificatie — payloads worden ondertekend met de officiële
+// Stripe-SDK-helper (generateTestHeaderString) tegen een test-webhooksecret,
+// dus het verificatie- en rawBody-pad wordt integraal bewezen.
+//
+// Run: `pnpm --filter @workspace/api-server run test:stripe-billing`
+// Vereist DATABASE_URL + NODE_ENV!=production + DEV_AUTH_BYPASS=true.
+
+import type { Server } from "node:http";
+import Stripe from "stripe";
+import { eq, and, inArray, like } from "drizzle-orm";
+import {
+  db,
+  userProfilesTable,
+  userEntitlementsTable,
+  billingSubscriptionsTable,
+  billingTestAccountsTable,
+  stripeWebhookEventsTable,
+  tierFeatureGrantsTable,
+  featureFlagsTable,
+  userFlagOverridesTable,
+} from "@workspace/db";
+import app from "../app";
+import { ensureAccount, silentLogger } from "../lib/account";
+import { resolveEntitlements, resolveFeatureAccess } from "../lib/entitlements";
+import { expireBillingStates, ensureBillingFlagSeed, getBillingState } from "../lib/billing";
+import {
+  setStripeGatewayForTests,
+  type StripeGateway,
+  type SubscriptionState,
+  type InvoiceState,
+  type ChargeState,
+} from "../lib/billing/stripe-gateway";
+
+type Status = "pass" | "fail";
+const results: { scenario: string; status: Status; note?: string }[] = [];
+function assert(cond: unknown, msg: string) {
+  if (!cond) throw new Error(msg);
+}
+async function scenario(name: string, fn: () => Promise<void>) {
+  try {
+    await fn();
+    results.push({ scenario: name, status: "pass" });
+  } catch (err) {
+    results.push({
+      scenario: name,
+      status: "fail",
+      note: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+// ── Fake Stripe-gateway ──────────────────────────────────────────────────────
+class FakeGateway implements StripeGateway {
+  subs = new Map<string, SubscriptionState>();
+  invoices = new Map<string, InvoiceState>();
+  charges = new Map<string, ChargeState>();
+  lastChange: { when: string; tier: string } | null = null;
+  failNextGetSubscription = false;
+
+  isConfigured() {
+    return true;
+  }
+  async createCheckoutSession(args: {
+    clerkId: string;
+    tier: "GO" | "COMPLETE";
+    interval: "month" | "year";
+  }) {
+    return {
+      id: `cs_${args.tier}_${args.interval}`,
+      url: `https://checkout.stripe.test/${args.tier}/${args.interval}`,
+    };
+  }
+  async createPortalSession() {
+    return { url: "https://portal.stripe.test/session" };
+  }
+  async getSubscription(id: string) {
+    if (this.failNextGetSubscription) {
+      this.failNextGetSubscription = false;
+      throw new Error("gesimuleerde Stripe-API-fout");
+    }
+    return this.subs.get(id) ?? null;
+  }
+  async getInvoice(id: string) {
+    return this.invoices.get(id) ?? null;
+  }
+  async getCharge(id: string) {
+    return this.charges.get(id) ?? null;
+  }
+  async changeSubscriptionTier(args: {
+    subscriptionId: string;
+    tier: "GO" | "COMPLETE";
+    interval: "month" | "year";
+    when: "now" | "period_end";
+  }) {
+    this.lastChange = { when: args.when, tier: args.tier };
+    const sub = this.subs.get(args.subscriptionId);
+    if (sub && args.when === "now") {
+      sub.tier = args.tier;
+      sub.interval = args.interval;
+      sub.priceId = `price_${args.tier}_${args.interval}`;
+    }
+    // period_end: fake laat de tier staan tot de test zelf het periode-einde
+    // simuleert (nieuwe updated-event met gewijzigde tier).
+  }
+}
+const fake = new FakeGateway();
+setStripeGatewayForTests(fake);
+
+// ── Webhook-hulpen: echte signatuur via de officiële SDK-helper ──────────────
+const WEBHOOK_SECRET = "whsec_sparki_testmatrix_secret";
+process.env.STRIPE_WEBHOOK_SECRET = WEBHOOK_SECRET;
+const signer = new Stripe("sk_test_signing_helper_only");
+let eventSeq = 0;
+
+async function sendWebhook(
+  type: string,
+  object: Record<string, unknown>,
+  opts: { eventId?: string; created?: number; badSignature?: boolean } = {},
+): Promise<{ status: number; body: Record<string, unknown> }> {
+  const id = opts.eventId ?? `evt_test_${RUN}_${++eventSeq}`;
+  const payload = JSON.stringify({
+    id,
+    object: "event",
+    type,
+    created: opts.created ?? Math.floor(Date.now() / 1000),
+    data: { object },
+  });
+  const signature = opts.badSignature
+    ? "t=1,v1=deadbeef"
+    : signer.webhooks.generateTestHeaderString({ payload, secret: WEBHOOK_SECRET });
+  const res = await fetch(`${baseUrl}/api/webhooks/stripe`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "stripe-signature": signature },
+    body: payload,
+  });
+  return { status: res.status, body: (await res.json()) as Record<string, unknown> };
+}
+
+async function api(
+  actor: string,
+  method: string,
+  path: string,
+  body?: unknown,
+): Promise<{ status: number; body: Record<string, unknown> }> {
+  const res = await fetch(`${baseUrl}${path}`, {
+    method,
+    headers: {
+      "content-type": "application/json",
+      "x-dev-clerk-id": actor,
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  return { status: res.status, body: (await res.json()) as Record<string, unknown> };
+}
+
+// ── Fixtures ─────────────────────────────────────────────────────────────────
+const RUN = `test_billing_${Date.now()}`;
+const userA = `${RUN}_a`; // allowlist + subscription
+const userB = `${RUN}_b`; // subscription, GEEN allowlist
+const legacyUser = `${RUN}_legacy`; // legacy_unrestricted
+const trialUser = `${RUN}_trial`; // allowlist, verse gebruiker
+const ALL = [userA, userB, legacyUser, trialUser];
+const FLAG_KEYS = ["commercial_tiers", "stripe_checkout", "stripe_portal", "stripe_webhooks"];
+
+let baseUrl = "";
+let server: Server | null = null;
+let webhookFlagWasSeeded = false;
+
+function seedSub(
+  id: string,
+  clerkId: string,
+  tier: "GO" | "COMPLETE",
+  interval: "month" | "year",
+  overrides: Partial<SubscriptionState> = {},
+): SubscriptionState {
+  const state: SubscriptionState = {
+    id,
+    customerId: `cus_${id}`,
+    status: "active",
+    cancelAtPeriodEnd: false,
+    currentPeriodEnd: new Date(Date.now() + 30 * 24 * 3600 * 1000),
+    created: new Date(),
+    priceId: `price_${tier}_${interval}`,
+    tier,
+    interval,
+    clerkId,
+    ...overrides,
+  };
+  fake.subs.set(id, state);
+  return state;
+}
+
+async function setup() {
+  await new Promise<void>((resolve, reject) => {
+    server = app.listen(0, (err?: Error) => {
+      if (err) return reject(err);
+      const addr = server!.address();
+      if (addr && typeof addr === "object") {
+        baseUrl = `http://127.0.0.1:${addr.port}`;
+        resolve();
+      } else reject(new Error("no port"));
+    });
+  });
+  for (const id of ALL) {
+    await ensureAccount(id, `${id}@test.sparki.local`, id, silentLogger);
+  }
+  await db
+    .update(userProfilesTable)
+    .set({ entitlementMode: "subscription" })
+    .where(inArray(userProfilesTable.clerkId, [userA, userB, trialUser]));
+  await db
+    .update(userProfilesTable)
+    .set({ entitlementMode: "legacy_unrestricted" })
+    .where(eq(userProfilesTable.clerkId, legacyUser));
+
+  await ensureBillingFlagSeed();
+  // Allowlist: alleen A en trialUser.
+  await db
+    .insert(billingTestAccountsTable)
+    .values([
+      { clerkId: userA, addedBy: "testmatrix", reason: "scenario's 1-11" },
+      { clerkId: trialUser, addedBy: "testmatrix", reason: "scenario 2" },
+    ])
+    .onConflictDoNothing({ target: billingTestAccountsTable.clerkId });
+  // Flags per gebruiker aan (overrides) — óók voor B en legacy, om te bewijzen
+  // dat de allowlist de extra grendel is en legacy byte-identiek blijft.
+  const overrideValues = [];
+  for (const clerkId of ALL) {
+    for (const flagKey of ["commercial_tiers", "stripe_checkout", "stripe_portal"]) {
+      overrideValues.push({ clerkId, flagKey, enabled: true, setBy: "testmatrix" });
+    }
+  }
+  await db
+    .insert(userFlagOverridesTable)
+    .values(overrideValues)
+    .onConflictDoNothing();
+  // Webhookflag is endpoint-breed (geen usercontext) ⇒ tijdelijk globaal aan.
+  const flipped = await db
+    .update(featureFlagsTable)
+    .set({ enabledGlobally: true })
+    .where(
+      and(eq(featureFlagsTable.key, "stripe_webhooks"), eq(featureFlagsTable.enabledGlobally, false)),
+    )
+    .returning({ key: featureFlagsTable.key });
+  webhookFlagWasSeeded = flipped.length > 0;
+  // Tier-projectie: GO → premium; COMPLETE → premium + knowledge_base.
+  await db
+    .insert(tierFeatureGrantsTable)
+    .values([
+      { commercialTier: "GO", featureKey: "premium" },
+      { commercialTier: "COMPLETE", featureKey: "premium" },
+      { commercialTier: "COMPLETE", featureKey: "knowledge_base" },
+    ])
+    .onConflictDoNothing();
+}
+
+async function cleanup() {
+  try {
+    await db
+      .delete(stripeWebhookEventsTable)
+      .where(like(stripeWebhookEventsTable.eventId, `evt_test_${RUN}_%`));
+    await db
+      .delete(tierFeatureGrantsTable)
+      .where(inArray(tierFeatureGrantsTable.featureKey, ["premium", "knowledge_base"]));
+    if (webhookFlagWasSeeded) {
+      await db
+        .update(featureFlagsTable)
+        .set({ enabledGlobally: false })
+        .where(eq(featureFlagsTable.key, "stripe_webhooks"));
+    }
+    // user_entitlements / overrides / allowlist / billing_subscriptions
+    // verdwijnen via ON DELETE CASCADE met de profielen.
+    await db.delete(userProfilesTable).where(inArray(userProfilesTable.clerkId, ALL));
+  } catch (err) {
+    console.error("cleanup failed", err);
+  }
+  if (server) await new Promise<void>((r) => server!.close(() => r()));
+}
+
+// ── Scenario's ───────────────────────────────────────────────────────────────
+async function main() {
+  await setup();
+
+  // 1. Checkout GO/COMPLETE × maand/jaar ⇒ active, juiste tier/interval, rechten.
+  await scenario("1. checkout 4 combinaties → active + rechten via resolver", async () => {
+    const combos: ["GO" | "COMPLETE", "month" | "year"][] = [
+      ["GO", "month"],
+      ["GO", "year"],
+      ["COMPLETE", "month"],
+      ["COMPLETE", "year"],
+    ];
+    for (const [tier, interval] of combos) {
+      const checkout = await api(userA, "POST", "/api/billing/checkout", { tier, interval });
+      assert(checkout.status === 200 && checkout.body.url, `checkout ${tier}/${interval}: ${checkout.status}`);
+      const subId = `sub_${RUN}_${tier}_${interval}`;
+      seedSub(subId, userA, tier, interval);
+      const r1 = await sendWebhook("checkout.session.completed", {
+        id: `cs_${subId}`,
+        subscription: subId,
+        client_reference_id: userA,
+        metadata: { clerk_id: userA },
+      });
+      assert(r1.status === 200, `checkout.completed ${r1.status}`);
+      await sendWebhook("customer.subscription.created", { id: subId });
+      const state = await getBillingState(userA);
+      assert(state.status === "active", `status ${state.status} ≠ active`);
+      assert(state.tier === tier && state.interval === interval, `tier/interval mis: ${state.tier}/${state.interval}`);
+      const ent = await resolveEntitlements(userA);
+      assert(ent.commercialFeatures["premium"]?.source === `tier:${tier}`, `premium niet via tier:${tier}`);
+      if (tier === "COMPLETE") assert(ent.commercialFeatures["knowledge_base"], "COMPLETE mist knowledge_base");
+      // Opruimen tussen combos: subscription-rij weg, tier terug naar null.
+      await db.delete(billingSubscriptionsTable).where(eq(billingSubscriptionsTable.clerkId, userA));
+      await db.update(userProfilesTable).set({ commercialTier: null }).where(eq(userProfilesTable.clerkId, userA));
+    }
+  });
+
+  // 2. Proef zonder kaart: trialing zonder Stripe-object; na ends_at expired/FREE.
+  await scenario("2. Sparki-proef zonder kaart → trialing, daarna expired/FREE", async () => {
+    const start = await api(trialUser, "POST", "/api/billing/trial", { tier: "COMPLETE" });
+    assert(start.status === 200, `trial start ${start.status}: ${JSON.stringify(start.body)}`);
+    const state = await getBillingState(trialUser);
+    assert(state.status === "trialing" && state.tier === "COMPLETE", `status ${state.status}/${state.tier}`);
+    assert(!state.hasStripeSubscription, "trial mag géén Stripe-object hebben");
+    // 14 dagen COMPLETE-proef.
+    const ends = new Date(state.trialEndsAt!);
+    const days = (ends.getTime() - Date.now()) / (24 * 3600 * 1000);
+    assert(days > 13.9 && days < 14.1, `COMPLETE-proef ≠ 14 dagen (${days.toFixed(2)})`);
+    const ent = await resolveEntitlements(trialUser);
+    assert(ent.commercialFeatures["premium"]?.source === "trial:tier:COMPLETE", "trial projecteert geen tier-features");
+    // Tweede keer ⇒ idempotent geweigerd.
+    const again = await api(trialUser, "POST", "/api/billing/trial", { tier: "COMPLETE" });
+    assert(again.status === 409, `tweede proef moest 409 zijn, was ${again.status}`);
+    // Verlopen ⇒ expired/FREE, geen rechten meer.
+    await db
+      .update(userEntitlementsTable)
+      .set({ endsAt: new Date(Date.now() - 1000) })
+      .where(and(eq(userEntitlementsTable.clerkId, trialUser), eq(userEntitlementsTable.entitlementType, "trial")));
+    const after = await getBillingState(trialUser);
+    assert(after.status === "expired" && after.tier === "FREE", `na verloop: ${after.status}/${after.tier}`);
+    const entAfter = await resolveEntitlements(trialUser);
+    assert(!entAfter.commercialFeatures["premium"], "verlopen proef geeft nog rechten");
+  });
+
+  // Basis voor 3-8: actieve GO-maand subscription voor userA.
+  const mainSubId = `sub_${RUN}_main`;
+  seedSub(mainSubId, userA, "GO", "month");
+  await sendWebhook("customer.subscription.created", { id: mainSubId });
+
+  // 3. Upgrade GO→COMPLETE: direct, met proratering.
+  await scenario("3. upgrade GO→COMPLETE direct met proratering", async () => {
+    const res = await api(userA, "POST", "/api/billing/change", { tier: "COMPLETE" });
+    assert(res.status === 200 && res.body.applied === "direct_met_proratering", JSON.stringify(res.body));
+    assert(fake.lastChange?.when === "now", "upgrade moest 'now' zijn");
+    await sendWebhook("customer.subscription.updated", { id: mainSubId });
+    const state = await getBillingState(userA);
+    assert(state.status === "active" && state.tier === "COMPLETE", `${state.status}/${state.tier}`);
+    const ent = await resolveEntitlements(userA);
+    assert(ent.commercialFeatures["knowledge_base"], "rechten niet direct COMPLETE");
+  });
+
+  // 4. Downgrade COMPLETE→GO: pas op periode-einde, planned-downgrade zichtbaar.
+  await scenario("4. downgrade COMPLETE→GO pas op periode-einde", async () => {
+    const res = await api(userA, "POST", "/api/billing/change", { tier: "GO" });
+    assert(res.status === 200 && res.body.applied === "op_periode_einde", JSON.stringify(res.body));
+    assert(fake.lastChange?.when === "period_end", "downgrade moest 'period_end' zijn");
+    let state = await getBillingState(userA);
+    assert(state.tier === "COMPLETE", "tot periode-einde COMPLETE-rechten");
+    assert(state.plannedDowngradeTier === "GO", "planned-downgrade niet zichtbaar");
+    // Periode-einde: Stripe past de tier toe en stuurt updated.
+    fake.subs.get(mainSubId)!.tier = "GO";
+    await sendWebhook("customer.subscription.updated", { id: mainSubId });
+    state = await getBillingState(userA);
+    assert(state.tier === "GO" && state.status === "active", `${state.status}/${state.tier}`);
+  });
+
+  // 5. Annuleren + heractiveren via Portal.
+  await scenario("5. annuleren (toegang tot periode-einde) + heractiveren", async () => {
+    const portal = await api(userA, "POST", "/api/billing/portal");
+    assert(portal.status === 200 && portal.body.url, `portal ${portal.status}`);
+    fake.subs.get(mainSubId)!.cancelAtPeriodEnd = true;
+    await sendWebhook("customer.subscription.updated", { id: mainSubId });
+    let state = await getBillingState(userA);
+    assert(state.status === "canceled" && state.tier === "GO", `${state.status}/${state.tier}`);
+    const ent = await resolveEntitlements(userA);
+    assert(ent.commercialFeatures["premium"], "canceled moet toegang houden tot periode-einde");
+    fake.subs.get(mainSubId)!.cancelAtPeriodEnd = false;
+    await sendWebhook("customer.subscription.updated", { id: mainSubId });
+    state = await getBillingState(userA);
+    assert(state.status === "active", `heractiveren gaf ${state.status}`);
+  });
+
+  // 6. Mislukte betaling: grace exact 7 dagen vanaf Stripe-brontijd, monotoon.
+  await scenario("6. mislukte betaling → grace exact 7d, monotoon, daarna expired", async () => {
+    const invoiceCreated = new Date(Date.now() - 3600 * 1000); // een uur geleden
+    fake.invoices.set(`in_${RUN}_fail`, {
+      id: `in_${RUN}_fail`,
+      subscriptionId: mainSubId,
+      customerId: `cus_${mainSubId}`,
+      created: invoiceCreated,
+      status: "open",
+      attemptCount: 1,
+    });
+    await sendWebhook("invoice.payment_failed", { id: `in_${RUN}_fail` });
+    let state = await getBillingState(userA);
+    assert(state.status === "grace", `status ${state.status}`);
+    const expected = invoiceCreated.getTime() + 7 * 24 * 3600 * 1000;
+    assert(new Date(state.graceUntil!).getTime() === expected, "grace ≠ eerste-poging-tijd + 7d");
+    const ent = await resolveEntitlements(userA);
+    assert(ent.commercialFeatures["premium"], "rechten moeten in grace intact blijven");
+    // Herlevering (nieuw event-id, later `created`) mag grace NIET opschuiven.
+    await sendWebhook("invoice.payment_failed", { id: `in_${RUN}_fail` }, { created: Math.floor(Date.now() / 1000) + 999 });
+    state = await getBillingState(userA);
+    assert(new Date(state.graceUntil!).getTime() === expected, "grace is opgeschoven (niet monotoon)");
+    // Grace voorbij ⇒ dagelijkse job zet expired + FREE.
+    await db
+      .update(billingSubscriptionsTable)
+      .set({ graceUntil: new Date(Date.now() - 1000) })
+      .where(eq(billingSubscriptionsTable.stripeSubscriptionId, mainSubId));
+    await expireBillingStates();
+    state = await getBillingState(userA);
+    assert(state.status === "expired" && state.tier === "FREE", `${state.status}/${state.tier}`);
+    // Herstel voor vervolg-scenario's: betaling alsnog gelukt.
+    fake.invoices.set(`in_${RUN}_paid`, {
+      id: `in_${RUN}_paid`,
+      subscriptionId: mainSubId,
+      customerId: `cus_${mainSubId}`,
+      created: new Date(),
+      status: "paid",
+      attemptCount: 2,
+    });
+    await sendWebhook("invoice.paid", { id: `in_${RUN}_paid` });
+    state = await getBillingState(userA);
+    assert(state.status === "active" && state.graceUntil === null, "invoice.paid moest grace wissen");
+  });
+
+  // 7+8. Refunds: cumulatief besluit.
+  await scenario("7. volledige refund → entitlement ingetrokken (blocked)", async () => {
+    // Eerst gedeeltelijk (scenario 8 verweven: zelfde charge, cumulatief).
+    fake.charges.set(`ch_${RUN}`, {
+      id: `ch_${RUN}`,
+      customerId: `cus_${mainSubId}`,
+      amount: 299,
+      amountRefunded: 100,
+    });
+    await sendWebhook("charge.refunded", { id: `ch_${RUN}` });
+    let state = await getBillingState(userA);
+    assert(state.status === "active", `gedeeltelijke refund wijzigde status: ${state.status}`);
+    // Tweede gedeeltelijke refund maakt het CUMULATIEF volledig.
+    fake.charges.get(`ch_${RUN}`)!.amountRefunded = 299;
+    await sendWebhook("charge.refunded", { id: `ch_${RUN}` });
+    state = await getBillingState(userA);
+    assert(state.status === "blocked", `cumulatief volledig moest blocked geven, was ${state.status}`);
+    const ent = await resolveEntitlements(userA);
+    assert(!ent.commercialFeatures["premium"], "blocked mag geen betaalde features geven");
+  });
+
+  await scenario("8. gedeeltelijke refund → entitlement behouden", async () => {
+    // Aparte subscription voor een schone gedeeltelijke-refundcontrole.
+    const subId = `sub_${RUN}_partial`;
+    seedSub(subId, userA, "GO", "month");
+    await db.delete(billingSubscriptionsTable).where(eq(billingSubscriptionsTable.clerkId, userA));
+    await sendWebhook("customer.subscription.created", { id: subId });
+    fake.charges.set(`ch_${RUN}_p`, {
+      id: `ch_${RUN}_p`,
+      customerId: `cus_${subId}`,
+      amount: 299,
+      amountRefunded: 50,
+    });
+    await sendWebhook("charge.refunded", { id: `ch_${RUN}_p` });
+    const state = await getBillingState(userA);
+    assert(state.status === "active" && state.tier === "GO", `${state.status}/${state.tier}`);
+    const ent = await resolveEntitlements(userA);
+    assert(ent.commercialFeatures["premium"], "gedeeltelijke refund moest rechten behouden");
+  });
+
+  // 9. Dubbele webhook (zelfde event-ID) ⇒ no-op.
+  await scenario("9. dubbele webhook (zelfde event-ID) is idempotent", async () => {
+    const subId = `sub_${RUN}_dup`;
+    seedSub(subId, userA, "GO", "month");
+    const eventId = `evt_test_${RUN}_dup`;
+    const r1 = await sendWebhook("customer.subscription.created", { id: subId }, { eventId });
+    assert(r1.body.outcome === "processed", `eerste levering: ${JSON.stringify(r1.body)}`);
+    fake.subs.get(subId)!.tier = "COMPLETE"; // zou bij herverwerking zichtbaar worden
+    const r2 = await sendWebhook("customer.subscription.created", { id: subId }, { eventId });
+    assert(r2.body.outcome === "duplicate", `tweede levering: ${JSON.stringify(r2.body)}`);
+    const [row] = await db
+      .select()
+      .from(billingSubscriptionsTable)
+      .where(eq(billingSubscriptionsTable.stripeSubscriptionId, subId));
+    assert(row?.tier === "GO", "duplicate is tóch verwerkt");
+    fake.subs.get(subId)!.tier = "GO";
+  });
+
+  // 10. Verkeerd geordende webhooks: updated vóór created ⇒ eindstaat correct.
+  await scenario("10. out-of-order (updated vóór created) → correcte eindstaat", async () => {
+    await db.delete(billingSubscriptionsTable).where(eq(billingSubscriptionsTable.clerkId, userA));
+    const subId = `sub_${RUN}_ooo`;
+    seedSub(subId, userA, "COMPLETE", "year");
+    await sendWebhook("customer.subscription.updated", { id: subId }, { created: Math.floor(Date.now() / 1000) });
+    await sendWebhook("customer.subscription.created", { id: subId }, { created: Math.floor(Date.now() / 1000) - 60 });
+    const state = await getBillingState(userA);
+    assert(state.status === "active" && state.tier === "COMPLETE" && state.interval === "year", `${state.status}/${state.tier}/${state.interval}`);
+    const rows = await db
+      .select()
+      .from(billingSubscriptionsTable)
+      .where(eq(billingSubscriptionsTable.stripeSubscriptionId, subId));
+    assert(rows.length === 1, `dubbele rijen: ${rows.length}`);
+  });
+
+  // 11. Webhook-verwerkingsfout ⇒ geen rechten, event her-verwerkbaar.
+  await scenario("11. verwerkingsfout → rollback, geen rechten, her-verwerkbaar", async () => {
+    await db.delete(billingSubscriptionsTable).where(eq(billingSubscriptionsTable.clerkId, userA));
+    await db.update(userProfilesTable).set({ commercialTier: null }).where(eq(userProfilesTable.clerkId, userA));
+    const subId = `sub_${RUN}_err`;
+    seedSub(subId, userA, "GO", "month");
+    const eventId = `evt_test_${RUN}_err`;
+    fake.failNextGetSubscription = true;
+    const r1 = await sendWebhook("customer.subscription.created", { id: subId }, { eventId });
+    assert(r1.status === 500, `fout moest 500 geven, was ${r1.status}`);
+    const [evRow] = await db
+      .select()
+      .from(stripeWebhookEventsTable)
+      .where(eq(stripeWebhookEventsTable.eventId, eventId));
+    assert(!evRow, "eventregistratie moest teruggerold zijn");
+    const ent = await resolveEntitlements(userA);
+    assert(!ent.commercialFeatures["premium"], "fout gaf tóch rechten");
+    // Retry (zelfde event-ID, Stripe levert opnieuw) slaagt nu wél.
+    const r2 = await sendWebhook("customer.subscription.created", { id: subId }, { eventId });
+    assert(r2.status === 200 && r2.body.outcome === "processed", JSON.stringify(r2.body));
+    const state = await getBillingState(userA);
+    assert(state.status === "active", `retry gaf ${state.status}`);
+    // Ongeldige signatuur wordt geweigerd zonder registratie.
+    const bad = await sendWebhook("customer.subscription.created", { id: subId }, { badSignature: true });
+    assert(bad.status === 400, `ongeldige signatuur: ${bad.status}`);
+  });
+
+  // 12. Accountisolatie: buiten allowlist geen checkout; A's betaling geeft B niets.
+  await scenario("12. accountisolatie (allowlist + clerk_id-koppeling)", async () => {
+    const status = await api(userB, "GET", "/api/billing/status");
+    assert(status.status === 200, `status ${status.status}`);
+    const avail = status.body.available as Record<string, boolean>;
+    assert(!avail.checkout && !avail.trial && !avail.portal, "B (geen allowlist) zag betaalflows");
+    const checkout = await api(userB, "POST", "/api/billing/checkout", { tier: "GO", interval: "month" });
+    assert(checkout.status === 403, `checkout buiten allowlist: ${checkout.status}`);
+    const trial = await api(userB, "POST", "/api/billing/trial", { tier: "GO" });
+    assert(trial.status === 403, `trial buiten allowlist: ${trial.status}`);
+    // A heeft een actieve subscription (scenario 11) — B heeft daar niets van.
+    const entB = await resolveEntitlements(userB);
+    assert(Object.keys(entB.commercialFeatures).length === 0, "B kreeg rechten van A's betaling");
+    const [profileB] = await db
+      .select({ commercialTier: userProfilesTable.commercialTier })
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.clerkId, userB));
+    assert(profileB?.commercialTier == null, "B's profieltier is aangeraakt");
+  });
+
+  // 13. Legacy-gebruiker: byte-identiek gedrag, ongeacht alle nieuwe flags.
+  await scenario("13. legacy-gebruiker blijft byte-identiek", async () => {
+    // Flags voor legacy staan al aan via overrides (setup) — juist dan moet
+    // het gedrag gelijk blijven aan het bestaande legacy-pad.
+    const access = await resolveFeatureAccess(
+      { clerkId: legacyUser, activeRole: "athlete" },
+      "premium",
+    );
+    assert(access.commercial_entitled === true, "legacy verloor commercieel recht");
+    assert(access.source === "legacy_unrestricted", `source ${access.source}`);
+    assert(access.entitlement_mode === "legacy_unrestricted", "mode gewijzigd");
+    const ent = await resolveEntitlements(legacyUser);
+    assert(ent.activeEntitlements.length === 0, "legacy kreeg entitlement-rijen");
+    const state = await getBillingState(legacyUser);
+    assert(state.status === "legacy_unrestricted", `billing status ${state.status}`);
+    // Trial voor legacy wordt geweigerd, ook mét allowlist.
+    await db
+      .insert(billingTestAccountsTable)
+      .values({ clerkId: legacyUser, addedBy: "testmatrix", reason: "scenario 13" })
+      .onConflictDoNothing({ target: billingTestAccountsTable.clerkId });
+    const trial = await api(legacyUser, "POST", "/api/billing/trial", { tier: "GO" });
+    assert(trial.status === 409 && trial.body.reason === "legacy", JSON.stringify(trial.body));
+  });
+
+  // 14. Onbekende/corrupte status ⇒ fail-closed als FREE.
+  await scenario("14. corrupte tier/status → fail-closed FREE", async () => {
+    await db
+      .update(userProfilesTable)
+      .set({ commercialTier: "PLATINUM_ULTRA" })
+      .where(eq(userProfilesTable.clerkId, userB));
+    const state = await getBillingState(userB);
+    assert(state.status === "free" && state.tier === "FREE", `${state.status}/${state.tier}`);
+    const ent = await resolveEntitlements(userB);
+    assert(Object.keys(ent.commercialFeatures).length === 0, "corrupte tier gaf rechten");
+    // Corrupte subscription-status ⇒ nooit betaald.
+    await db.insert(billingSubscriptionsTable).values({
+      clerkId: userB,
+      stripeCustomerId: "cus_corrupt",
+      stripeSubscriptionId: `sub_${RUN}_corrupt`,
+      tier: "GO",
+      interval: "month",
+      status: "super_active_forever",
+    });
+    const state2 = await getBillingState(userB);
+    assert(state2.status === "free" && state2.tier === "FREE", `corrupte substatus: ${state2.status}/${state2.tier}`);
+  });
+
+  await cleanup();
+
+  let failed = 0;
+  for (const r of results) {
+    const mark = r.status === "pass" ? "✅" : "❌";
+    console.log(`${mark} ${r.scenario}${r.note ? ` — ${r.note}` : ""}`);
+    if (r.status === "fail") failed++;
+  }
+  console.log(`\n${results.length - failed}/${results.length} scenario's geslaagd`);
+  process.exit(failed > 0 ? 1 : 0);
+}
+
+main().catch(async (err) => {
+  console.error("testmatrix crashte:", err);
+  await cleanup();
+  process.exit(1);
+});

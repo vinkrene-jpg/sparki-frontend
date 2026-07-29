@@ -18,6 +18,9 @@ import {
   userProfilesTable,
   userEntitlementsTable,
   variantFeatureGrantsTable,
+  tierFeatureGrantsTable,
+  COMMERCIAL_TIERS,
+  type CommercialTier,
   ENTITLEMENT_MODES,
   PRODUCT_VARIANTS,
   ENTITLEMENT_TYPES,
@@ -28,6 +31,7 @@ import {
   type ReleaseGroup,
 } from "@workspace/db";
 import { resolveFlags, type ClientPlatform } from "./flags";
+import { isBillingFlagEnabledFor, tierFromTrialKey } from "./billing";
 import { isKilled, type KillSwitchKey } from "./kill-switches";
 import { logger } from "./logger";
 
@@ -105,6 +109,7 @@ export async function resolveEntitlements(
     .select({
       entitlementMode: userProfilesTable.entitlementMode,
       productVariant: userProfilesTable.productVariant,
+      commercialTier: userProfilesTable.commercialTier,
     })
     .from(userProfilesTable)
     .where(eq(userProfilesTable.clerkId, clerkId));
@@ -170,6 +175,69 @@ export async function resolveEntitlements(
     } catch (err) {
       degraded = true;
       logger.error({ err, clerkId }, "variant grants read failed");
+    }
+  }
+
+  // ── Nieuw commercieel stelsel (fase ≥2, Stripe-testmodus) ──────────────
+  // Middenterm uit het fase-1-ontwerp: commercial_tier → tier_feature_grants,
+  // plus Sparki-beheerde trials (entitlement_key `tier:GO|COMPLETE`) die
+  // exact dezelfde feature-set projecteren als de tier waarop de proef loopt.
+  // Gates: alleen bij mode=subscription, alleen wanneer de operationele flag
+  // `commercial_tiers` voor deze gebruiker aan staat (fail-closed helper),
+  // en commercial_tier=NULL laat deze term volledig wegvallen — legacy en
+  // bestaand subscription-gedrag blijven dan byte-identiek. Onbekende of
+  // corrupte tierwaarde ⇒ als FREE-zonder-rechten behandeld, nooit betaald.
+  if (mode === "subscription") {
+    const validTier: CommercialTier | null =
+      typeof profile.commercialTier === "string" &&
+      (COMMERCIAL_TIERS as readonly string[]).includes(profile.commercialTier)
+        ? (profile.commercialTier as CommercialTier)
+        : null;
+    const trialTiers = active
+      .filter((e) => e.entitlementType === "trial")
+      .map((e) => ({ tier: tierFromTrialKey(e.entitlementKey), entitlement: e }))
+      .filter((t): t is { tier: "GO" | "COMPLETE"; entitlement: ActiveEntitlement } =>
+        t.tier !== null,
+      );
+    const wantsTierExpansion =
+      (validTier === "GO" || validTier === "COMPLETE" || trialTiers.length > 0) &&
+      (profile.commercialTier != null || trialTiers.length > 0);
+    if (wantsTierExpansion && (await isBillingFlagEnabledFor(clerkId, "commercial_tiers"))) {
+      try {
+        const tiersToExpand = new Set<string>();
+        if (validTier === "GO" || validTier === "COMPLETE") tiersToExpand.add(validTier);
+        for (const t of trialTiers) tiersToExpand.add(t.tier);
+        for (const tier of tiersToExpand) {
+          const grants = await db
+            .select()
+            .from(tierFeatureGrantsTable)
+            .where(
+              and(
+                eq(tierFeatureGrantsTable.commercialTier, tier),
+                eq(tierFeatureGrantsTable.enabled, true),
+              ),
+            );
+          const trial = trialTiers.find((t) => t.tier === tier);
+          const viaTrial = tier !== validTier && trial != null;
+          for (const g of grants) {
+            const existing = commercialFeatures[g.featureKey];
+            const expiresAt =
+              viaTrial && trial?.entitlement.endsAt
+                ? trial.entitlement.endsAt.toISOString()
+                : null;
+            // Permanent (betaalde tier) recht wint van tijdelijk (trial).
+            if (!existing || (existing.expiresAt && !expiresAt)) {
+              commercialFeatures[g.featureKey] = {
+                source: viaTrial ? `trial:tier:${tier}` : `tier:${tier}`,
+                expiresAt,
+              };
+            }
+          }
+        }
+      } catch (err) {
+        degraded = true;
+        logger.error({ err, clerkId }, "tier grants read failed");
+      }
     }
   }
 

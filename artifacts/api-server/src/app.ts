@@ -96,7 +96,17 @@ if (process.env.NODE_ENV === "production") {
     next();
   });
 }
-app.use(express.json({ limit: "12mb" }));
+app.use(
+  express.json({
+    limit: "12mb",
+    // Bewaar de ruwe bytes voor endpoints die signatuurverificatie over de
+    // exacte payload nodig hebben (Stripe-webhooks). Alleen een verwijzing —
+    // geen dubbele parse, geen gedragsverandering voor bestaande routes.
+    verify: (req, _res, buf) => {
+      (req as unknown as { rawBody?: Buffer }).rawBody = buf;
+    },
+  }),
+);
 app.use(express.urlencoded({ extended: true, limit: "12mb" }));
 
 // Clerk session middleware — resolves publishable key from request host

@@ -6,6 +6,7 @@ import { backfillDerivedLoad } from "./lib/derived-load-backfill";
 import { cleanupStaleConnectorShells } from "./lib/connectors/cleanup";
 import { cleanupClimbCacheDb } from "./lib/climbs/cache";
 import { startReminderScheduler } from "./lib/reminder-scheduler";
+import { ensureBillingFlagSeed, expireBillingStates } from "./lib/billing";
 
 // Productie faalt hard bij ontbrekende verplichte configuratie — liever een
 // duidelijke boot-fout dan een half-werkende app met stille gaten.
@@ -119,4 +120,25 @@ app.listen(port, (err) => {
   // REMINDERS_IN_PROCESS=true. Every reminder is idempotent (dedupeKey), so this
   // is safe alongside a separately-scheduled job.
   startReminderScheduler();
+
+  // Fire-and-forget: (1) de vier Stripe-betaalflags bestaan als rijen, default
+  // UIT (onConflictDoNothing — een beheerbeslissing wordt nooit overschreven);
+  // (2) de vervalcontrole (grace/canceled voorbij ⇒ expired + FREE) draait
+  // idempotent bij boot en daarna dagelijks — geen webhook-afhankelijkheid.
+  ensureBillingFlagSeed().catch((err) =>
+    logger.error({ err }, "billing flag seed failed"),
+  );
+  expireBillingStates()
+    .then((r) => {
+      if (r.expiredGrace + r.expiredCanceled > 0)
+        logger.info({ billing: "expiry", ...r }, "billing expiry sweep");
+    })
+    .catch((err) => logger.error({ err }, "billing expiry sweep failed"));
+  setInterval(
+    () =>
+      void expireBillingStates().catch((err) =>
+        logger.error({ err }, "billing expiry sweep failed"),
+      ),
+    24 * 60 * 60 * 1000,
+  ).unref?.();
 });

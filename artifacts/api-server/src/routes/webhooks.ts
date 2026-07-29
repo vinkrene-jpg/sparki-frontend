@@ -1,5 +1,11 @@
 import { Router } from "express";
 import { handleWebhookEvent } from "../engines/data-hub/webhooks";
+import { isBillingFlagEnabledFor } from "../lib/billing";
+import {
+  processStripeEvent,
+  type StripeEventLike,
+} from "../lib/billing/webhook-processor";
+import { verifyStripeWebhook } from "../lib/billing/stripe-gateway";
 
 // ── Inkomende webhooks (geen auth — externe platformen roepen dit aan) ──────
 // Verificatie per platform:
@@ -121,6 +127,53 @@ router.post("/wahoo", async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "webhooks.wahoo failed");
+  }
+});
+
+// ── Stripe (fase 2, TESTMODUS) ───────────────────────────────────────────────
+// Dubbel vergrendeld: featureflag `stripe_webhooks` (default uit) én verplichte
+// signatuurverificatie (STRIPE_WEBHOOK_SECRET). Fail-closed: flag uit ⇒ 503,
+// geen secret ⇒ 503, ongeldige signatuur ⇒ 400 — er wordt dan niets vastgelegd.
+// Verwerking is idempotent (event_id UNIQUE) en een verwerkingsfout geeft
+// nooit betaalde toegang (rollback ⇒ event her-verwerkbaar, dan 500 zodat
+// Stripe opnieuw levert).
+router.post("/stripe", async (req, res) => {
+  const flagOn = await isBillingFlagEnabledFor(null, "stripe_webhooks");
+  if (!flagOn) {
+    res.status(503).json({ error: "Stripe-webhooks staan uit" });
+    return;
+  }
+  const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
+  if (!secret) {
+    req.log.error("webhooks.stripe: STRIPE_WEBHOOK_SECRET ontbreekt");
+    res.status(503).json({ error: "Stripe-webhooks zijn niet geconfigureerd" });
+    return;
+  }
+  const rawBody = (req as unknown as { rawBody?: Buffer }).rawBody;
+  const signature = req.headers["stripe-signature"];
+  if (!rawBody || typeof signature !== "string") {
+    res.status(400).json({ error: "Ongeldige webhook-aanroep" });
+    return;
+  }
+  let event: StripeEventLike;
+  try {
+    event = verifyStripeWebhook(
+      rawBody,
+      signature,
+      secret,
+    ) as unknown as StripeEventLike;
+  } catch {
+    res.status(400).json({ error: "Signatuurverificatie mislukt" });
+    return;
+  }
+  try {
+    const outcome = await processStripeEvent(event, rawBody);
+    res.status(200).json(outcome);
+  } catch (err) {
+    req.log.error({ err, eventId: event.id }, "webhooks.stripe processing failed");
+    // 500 ⇒ Stripe levert opnieuw; registratie is teruggerold dus de retry
+    // wordt gewoon opnieuw verwerkt (idempotent, geen rechten toegekend).
+    res.status(500).json({ error: "Verwerking mislukt" });
   }
 });
 

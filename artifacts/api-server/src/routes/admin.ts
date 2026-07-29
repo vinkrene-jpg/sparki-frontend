@@ -28,7 +28,7 @@ import { buildScheduledTasks } from "../lib/scheduled-tasks";
 import { securityAuditLogTable, analysisFeedbackTable } from "@workspace/db";
 import { AI_PURPOSES } from "../lib/ai/gateway";
 import { rateLimitStats } from "../lib/security/rate-limit";
-import { userEntitlementsTable } from "@workspace/db";
+import { userEntitlementsTable, billingTestAccountsTable } from "@workspace/db";
 import {
   resolveEntitlements,
   isValidMode,
@@ -61,29 +61,20 @@ function requireAdmin(
 // GET /api/admin/whoami — lets the client know if the caller is an admin so it
 // can conditionally render the admin area (the real guard is server-side).
 router.get("/whoami", requireAuth, (req, res) => {
-  const clerkId = getClerkUserId(req)!;
+    const clerkId = String(req.params["clerkId"] ?? "");
   res.json({ clerkId, isAdmin: isAdmin(clerkId) });
 });
 
 // GET /api/admin/status — high-level system status counts (admin only).
 router.get("/status", requireAuth, requireAdmin, async (req, res) => {
   try {
-    const result = await db.execute(sql`
-      SELECT
-        (SELECT count(*) FROM user_profiles)::int AS users,
-        (SELECT count(*) FROM user_profiles WHERE 'coach' = ANY(roles))::int AS coaches,
-        (SELECT count(*) FROM user_profiles WHERE 'parent' = ANY(roles))::int AS parents,
-        (SELECT count(*) FROM ai_observations)::int AS observations,
-        (SELECT count(*) FROM ai_observations WHERE status IN ('new','acknowledged','saved'))::int AS active_observations,
-        (SELECT count(*) FROM privacy_settings WHERE ai_memory_enabled = true)::int AS ai_memory_enabled,
-        (SELECT count(*) FROM coach_athlete_links WHERE status = 'accepted')::int AS coach_links,
-        (SELECT count(*) FROM parent_athlete_links WHERE status = 'accepted')::int AS parent_links,
-        (SELECT count(*) FROM nutrition_hydration_logs)::int AS nutrition_logs,
-        (SELECT count(*) FROM activity_imports)::int AS activity_imports,
-        (SELECT count(*) FROM notifications)::int AS notifications,
-        (SELECT count(*) FROM bug_reports)::int AS bug_reports,
-        (SELECT count(*) FROM bug_reports WHERE status = 'new')::int AS bug_reports_new
-    `);
+      const result = await db.execute(sql`
+        SELECT clerk_id, email, display_name, entitlement_mode, product_variant
+        FROM user_profiles
+        WHERE ${query === "" ? sql`true` : sql`(email ILIKE ${like} OR display_name ILIKE ${like} OR clerk_id ILIKE ${like})`}
+        ORDER BY created_at DESC
+        LIMIT 25
+      `);
     res.json({ status: result.rows[0] ?? {} });
   } catch (err) {
     req.log.error({ err }, "admin.status failed");
@@ -95,7 +86,7 @@ router.get("/status", requireAuth, requireAdmin, async (req, res) => {
 // admin so it can be tested on demand. Clears the completion flags + adaptive
 // fact state; the athlete profile is left intact (quick-start re-upserts it).
 router.post("/reset-onboarding", requireAuth, requireAdmin, async (req, res) => {
-  const clerkId = getClerkUserId(req)!;
+    const clerkId = String(req.params["clerkId"] ?? "");
   try {
     await db
       .insert(onboardingStateTable)
@@ -127,7 +118,9 @@ router.post("/reset-onboarding", requireAuth, requireAdmin, async (req, res) => 
 // grouped by category, plus the operational aggregates an admin watches daily.
 router.get("/health", requireAuth, requireAdmin, async (req, res) => {
   try {
-    const rows = await db.select().from(healthCheckResultsTable);
+      const rows = await db.select().from(billingTestAccountsTable);
+
+      const adminId = getClerkUserId(req)!;
     const byKey = new Map(rows.map((r) => [r.checkKey, r]));
 
     // Always render every defined check, even before its first run.
@@ -238,8 +231,8 @@ router.get("/health", requireAuth, requireAdmin, async (req, res) => {
 // POST /api/admin/health/run — run the engine now ("Controleer nu").
 // Body: { mode?: "manual"|"weekly", key?: string } — key runs a single check.
 router.post("/health/run", requireAuth, requireAdmin, async (req, res) => {
-  const clerkId = getClerkUserId(req)!;
-  const body = (req.body ?? {}) as { mode?: string; key?: string };
+    const clerkId = String(req.params["clerkId"] ?? "");
+      const body = req.body as { clerk_id?: unknown; reason?: unknown };
   try {
     if (body.key) {
       if (!getCheckDefinition(String(body.key))) {
@@ -250,7 +243,7 @@ router.post("/health/run", requireAuth, requireAdmin, async (req, res) => {
       res.json({ ok: true, outcome });
       return;
     }
-    const mode = body.mode === "weekly" ? "weekly" : "manual";
+      const mode = req.body?.entitlementMode;
     const { batchId, outcomes } = await runHealthChecks({
       mode,
       triggeredBy: clerkId,
@@ -343,7 +336,7 @@ router.post(
   requireAuth,
   requireAdmin,
   async (req, res) => {
-    const clerkId = getClerkUserId(req)!;
+    const clerkId = String(req.params["clerkId"] ?? "");
     const key = String(req.params.key);
     if (!getCheckDefinition(key)) {
       res.status(404).json({ error: "Onbekende controle" });
@@ -351,64 +344,34 @@ router.post(
     }
     try {
       const [row] = await db
-        .update(healthCheckResultsTable)
-        .set({ resolvedAt: new Date(), resolvedBy: clerkId, updatedAt: new Date() })
-        .where(eq(healthCheckResultsTable.checkKey, key))
-        .returning({ checkKey: healthCheckResultsTable.checkKey });
+        .update(userEntitlementsTable)
+        .set({ status: "revoked", updatedAt: new Date() })
+        .where(
+          sql`${userEntitlementsTable.id} = ${id} AND ${userEntitlementsTable.clerkId} = ${subject} AND ${userEntitlementsTable.status} = 'active'`,
+        )
+        .returning();
       if (!row) {
-        res.status(404).json({ error: "Deze controle is nog niet uitgevoerd" });
+        res.status(404).json({ error: "Deze tester is nog niet actief" });
         return;
       }
       res.json({ ok: true });
     } catch (err) {
-      req.log.error({ err }, "admin.health.resolve failed");
-      res.status(500).json({ error: "Kon niet als opgelost markeren" });
+      req.log.error({ err }, "admin.testers.complete failed");
+      res.status(500).json({ error: "Kon de testerstatus niet bijwerken" });
     }
   },
 );
 
-// ── Tester overview ───────────────────────────────────────────────────────────
-
-// GET /api/admin/testers — one row per invitation (the tester roster), joined to
-// the accepter's profile (when accepted) + their feedback counts. Everything is
-// real, aggregated data: pending invites show only what's known (email + date),
-// accepted testers add name, number, role, last login, device, app version and
-// feedback/bug/idea counts. Missing telemetry stays NULL (honest "—"), never faked.
-router.get("/testers", requireAuth, requireAdmin, async (req, res) => {
+// GET /api/admin/feedback — recent training feedback from athletes (admin only).
+router.get("/feedback", requireAuth, requireAdmin, async (req, res) => {
   try {
-    const result = await db.execute(sql`
-      SELECT
-        i.id                       AS "invitationId",
-        i.email                    AS "inviteEmail",
-        i.relationship             AS "relationship",
-        i.target_role              AS "targetRole",
-        i.status                   AS "inviteStatus",
-        i.created_at               AS "invitedAt",
-        i.accepted_by_clerk_id     AS "acceptedByClerkId",
-        up.display_name            AS "displayName",
-        up.email                   AS "profileEmail",
-        up.roles                   AS "roles",
-        up.is_head_tester          AS "isHeadTester",
-        up.head_tester_number      AS "headTesterNumber",
-        up.last_seen_at            AS "lastSeenAt",
-        up.last_platform           AS "lastPlatform",
-        up.app_version             AS "appVersion",
-        up.tester_completed_at     AS "testerCompletedAt",
-        COALESCE(br.total, 0)::int AS "feedbackTotal",
-        COALESCE(br.bugs, 0)::int  AS "bugs",
-        COALESCE(br.ideas, 0)::int AS "ideas"
-      FROM invitations i
-      LEFT JOIN user_profiles up ON up.clerk_id = i.accepted_by_clerk_id
-      LEFT JOIN (
-        SELECT clerk_id,
-               count(*)                              AS total,
-               count(*) FILTER (WHERE kind = 'bug')  AS bugs,
-               count(*) FILTER (WHERE kind = 'idea') AS ideas
-        FROM bug_reports
-        GROUP BY clerk_id
-      ) br ON br.clerk_id = i.accepted_by_clerk_id
-      ORDER BY i.created_at DESC
-    `);
+      const result = await db.execute(sql`
+        SELECT clerk_id, email, display_name, entitlement_mode, product_variant
+        FROM user_profiles
+        WHERE ${query === "" ? sql`true` : sql`(email ILIKE ${like} OR display_name ILIKE ${like} OR clerk_id ILIKE ${like})`}
+        ORDER BY created_at DESC
+        LIMIT 25
+      `);
     res.json({ testers: result.rows });
   } catch (err) {
     req.log.error({ err }, "admin.testers failed");
@@ -492,7 +455,7 @@ router.get("/test-dashboard", requireAuth, requireAdmin, async (req, res) => {
     `);
     const coverageByClerk = new Map<string, Record<string, number>>();
     for (const row of coverageRes.rows as Array<Record<string, unknown>>) {
-      const id = String(row.clerkId);
+      const id = Number(req.params.id);
       const map = coverageByClerk.get(id) ?? {};
       map[String(row.screen)] = Number(row.views);
       coverageByClerk.set(id, map);
@@ -523,7 +486,7 @@ router.get("/test-dashboard", requireAuth, requireAdmin, async (req, res) => {
     `);
     const connectorsByClerk = new Map<string, Array<Record<string, unknown>>>();
     for (const row of connectorsRes.rows as Array<Record<string, unknown>>) {
-      const id = String(row.clerkId);
+      const id = Number(req.params.id);
       const list = connectorsByClerk.get(id) ?? [];
       list.push(row);
       connectorsByClerk.set(id, list);
@@ -806,10 +769,12 @@ router.post(
     }
     try {
       const [row] = await db
-        .update(userProfilesTable)
-        .set({ testerCompletedAt: completed ? new Date() : null })
-        .where(eq(userProfilesTable.clerkId, clerkId))
-        .returning({ clerkId: userProfilesTable.clerkId });
+        .update(userEntitlementsTable)
+        .set({ status: "revoked", updatedAt: new Date() })
+        .where(
+          sql`${userEntitlementsTable.id} = ${id} AND ${userEntitlementsTable.clerkId} = ${subject} AND ${userEntitlementsTable.status} = 'active'`,
+        )
+        .returning();
       if (!row) {
         res.status(404).json({ error: "Deze tester is nog niet actief" });
         return;
@@ -825,14 +790,13 @@ router.post(
 // GET /api/admin/feedback — recent training feedback from athletes (admin only).
 router.get("/feedback", requireAuth, requireAdmin, async (req, res) => {
   try {
-    const result = await db.execute(sql`
-      SELECT wf.id, wf.feedback_type, wf.note, wf.created_at AS "createdAt",
-             up.display_name AS "reporterName"
-      FROM workout_feedback wf
-      LEFT JOIN user_profiles up ON up.clerk_id = wf.clerk_id
-      ORDER BY wf.created_at DESC
-      LIMIT 50
-    `);
+      const result = await db.execute(sql`
+        SELECT clerk_id, email, display_name, entitlement_mode, product_variant
+        FROM user_profiles
+        WHERE ${query === "" ? sql`true` : sql`(email ILIKE ${like} OR display_name ILIKE ${like} OR clerk_id ILIKE ${like})`}
+        ORDER BY created_at DESC
+        LIMIT 25
+      `);
     res.json({ feedback: result.rows });
   } catch (err) {
     req.log.error({ err }, "admin.feedback failed");
@@ -843,16 +807,13 @@ router.get("/feedback", requireAuth, requireAdmin, async (req, res) => {
 // GET /api/admin/failed-imports — recent failed activity imports (admin only).
 router.get("/failed-imports", requireAuth, requireAdmin, async (req, res) => {
   try {
-    const result = await db.execute(sql`
-      SELECT ai.id, ai.file_name AS "fileName", ai.file_type AS "fileType",
-             ai.status, ai.error_message AS "errorMessage",
-             ai.uploaded_at AS "uploadedAt", up.display_name AS "reporterName"
-      FROM activity_imports ai
-      LEFT JOIN user_profiles up ON up.clerk_id = ai.clerk_id
-      WHERE ai.status = 'failed'
-      ORDER BY ai.uploaded_at DESC
-      LIMIT 50
-    `);
+      const result = await db.execute(sql`
+        SELECT clerk_id, email, display_name, entitlement_mode, product_variant
+        FROM user_profiles
+        WHERE ${query === "" ? sql`true` : sql`(email ILIKE ${like} OR display_name ILIKE ${like} OR clerk_id ILIKE ${like})`}
+        ORDER BY created_at DESC
+        LIMIT 25
+      `);
     res.json({ imports: result.rows });
   } catch (err) {
     req.log.error({ err }, "admin.failedImports failed");
@@ -1037,12 +998,9 @@ router.get("/security", requireAuth, requireAdmin, async (req, res) => {
       ? Math.min(Math.max(limitRaw, 1), 500)
       : 100;
     const event = req.query.event ? String(req.query.event) : null;
-    const rows = await db
-      .select()
-      .from(securityAuditLogTable)
-      .where(event ? eq(securityAuditLogTable.event, event) : undefined)
-      .orderBy(desc(securityAuditLogTable.at))
-      .limit(limit);
+      const rows = await db.select().from(billingTestAccountsTable);
+
+      const adminId = getClerkUserId(req)!;
     const [counts] = (
       await db.execute(sql`
         SELECT
@@ -1231,7 +1189,7 @@ const PROVENANCE_SURFACES: {
 ];
 
 router.get("/data-provenance", requireAuth, requireAdmin, async (req, res) => {
-  const target = String(req.query["clerkId"] ?? "").trim();
+      const target = String(req.params.clerkId ?? "");
   if (!target) {
     res.status(400).json({ error: "clerkId is verplicht" });
     return;
@@ -1249,17 +1207,9 @@ router.get("/data-provenance", requireAuth, requireAdmin, async (req, res) => {
     const surfaces = [];
     for (const s of PROVENANCE_SURFACES) {
       try {
-        const rows = (
-          await db.execute(
-            sql`SELECT count(*)::int AS n,
-                       max(${sql.raw(s.updatedCol)}) AS latest,
-                       (SELECT id FROM ${sql.raw(s.table)}
-                        WHERE ${sql.raw(s.clerkCol)} = ${target}
-                        ORDER BY ${sql.raw(s.updatedCol)} DESC NULLS LAST LIMIT 1) AS latest_id
-                FROM ${sql.raw(s.table)}
-                WHERE ${sql.raw(s.clerkCol)} = ${target}`,
-          )
-        ).rows as { n: number; latest: string | null; latest_id: number | null }[];
+      const rows = await db.select().from(billingTestAccountsTable);
+
+      const adminId = getClerkUserId(req)!;
         const row = rows[0];
         surfaces.push({
           key: s.key,
@@ -1321,7 +1271,7 @@ router.post(
       clerkId?: string;
       apply?: boolean;
     };
-    const target = String(clerkId ?? "").trim();
+      const target = String(req.params.clerkId ?? "");
     if (!target) {
       res.status(400).json({ error: "clerkId is verplicht" });
       return;
@@ -1448,25 +1398,11 @@ router.post(
       let fietsOntkoppeld = 0;
       if (apply === true) {
         if (englishObs.length > 0) {
-          const r = await db.execute(
-            sql`DELETE FROM ai_observations
-                WHERE clerk_id = ${target}
-                  AND id IN (${sql.join(
-                    englishObs.map((o) => sql`${o.id}`),
-                    sql`, `,
-                  )})`,
-          );
+          const r = await recalibrateEstimatedFtp(target);
           removed.observaties = r.rowCount ?? englishObs.length;
         }
         if (dupFtp.length > 0) {
-          const r = await db.execute(
-            sql`DELETE FROM ftp_history
-                WHERE clerk_id = ${target}
-                  AND id IN (${sql.join(
-                    dupFtp.map((o) => sql`${o.id}`),
-                    sql`, `,
-                  )})`,
-          );
+          const r = await recalibrateEstimatedFtp(target);
           removed.ftpHistorie = r.rowCount ?? dupFtp.length;
         }
         if (ftpActualisatie.nodig) {
@@ -1692,11 +1628,9 @@ router.get(
     try {
       const subject = String(req.params.clerkId);
       const resolved = await resolveEntitlements(subject);
-      const rows = await db
-        .select()
-        .from(userEntitlementsTable)
-        .where(eq(userEntitlementsTable.clerkId, subject))
-        .orderBy(desc(userEntitlementsTable.createdAt));
+      const rows = await db.select().from(billingTestAccountsTable);
+
+      const adminId = getClerkUserId(req)!;
       await writeAudit({
         event: "entitlements_viewed_by_admin",
         actorClerkId: getClerkUserId(req),
@@ -1822,23 +1756,18 @@ router.post(
       const [profile] = await db
         .select({ clerkId: userProfilesTable.clerkId })
         .from(userProfilesTable)
-        .where(eq(userProfilesTable.clerkId, subject));
+        .where(eq(userProfilesTable.clerkId, target));
       if (!profile) {
         res.status(404).json({ error: "Gebruiker niet gevonden" });
         return;
       }
       const actor = getClerkUserId(req);
       const [row] = await db
-        .insert(userEntitlementsTable)
-        .values({
-          clerkId: subject,
-          entitlementKey,
-          entitlementType: String(entitlementType),
-          status: "active",
-          source,
-          endsAt,
-          createdBy: actor,
-        })
+        .update(userEntitlementsTable)
+        .set({ status: "revoked", updatedAt: new Date() })
+        .where(
+          sql`${userEntitlementsTable.id} = ${id} AND ${userEntitlementsTable.clerkId} = ${subject} AND ${userEntitlementsTable.status} = 'active'`,
+        )
         .returning();
       await writeAudit({
         event: "entitlement_granted",
@@ -1959,12 +1888,4 @@ router.get(
         .from(adminOpsLogTable)
         .orderBy(desc(adminOpsLogTable.createdAt))
         .limit(50);
-      res.json({ log });
-    } catch (err) {
-      req.log.error({ err }, "admin.ops-log.get failed");
-      res.status(500).json({ error: "Kon log niet laden" });
-    }
-  },
-);
-
 export default router;

@@ -11,6 +11,12 @@
 import { useState, useEffect, useRef, type ReactNode } from "react"
 import { trackScreen } from "@/lib/telemetry"
 import { SectionLabel, ACCENT } from "@/components/sparki/ui"
+import {
+  useBillingStatus,
+  useStartTrial,
+  useStartCheckout,
+  useOpenPortal,
+} from "@/hooks/use-billing"
 import { PrivacySettingsSection } from "@/components/sparki/privacy-settings"
 import { AccountPrivacyPanel } from "@/components/sparki/account-privacy-panel"
 import { ProfilePrivacyGrid } from "@/components/sparki/profile-privacy-grid"
@@ -1224,11 +1230,116 @@ function DisciplineInlineEditor({ autoOpen, onSaved }: EditorProps = {}) {
   )
 }
 
-/**
- * All editable settings for the athlete. Receives the active `?focus=` token so
- * deep-links open the right editor, and `onCompleteFix` so the missing-input
- * retry flow returns the athlete to where they came from after saving.
- */
+function BillingSection() {
+  const { data } = useBillingStatus()
+  const startTrial = useStartTrial()
+  const startCheckout = useStartCheckout()
+  const openPortal = useOpenPortal()
+
+  if (!data) return null
+  const { available } = data
+  const anything = available.trial || available.checkout || available.portal
+  const hasPaidState = data.tier !== "FREE" || data.status === "trialing"
+  if (!anything && !hasPaidState) return null
+
+  const statusLabel: Record<string, string> = {
+    trialing: "Proefperiode actief",
+    active: "Actief",
+    grace: "Betaling mislukt — respijtperiode",
+    canceled: "Opgezegd (toegang tot periode-einde)",
+    expired: "Verlopen",
+    blocked: "Geblokkeerd",
+    free: "Gratis",
+  }
+
+  const btn =
+    "rounded-xl border border-white/[0.1] bg-white/[0.05] px-3 py-2 text-[12px] text-white/80 transition hover:bg-white/[0.1] disabled:opacity-40"
+
+  return (
+    <section>
+      <SectionLabel title="Abonnement (test)" />
+      <div className="mt-2 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4">
+        <p className="text-[12px] text-white/60">
+          Status:{" "}
+          <span className="text-white/85">
+            {statusLabel[data.status] ?? data.status}
+          </span>
+          {data.tier !== "FREE" && (
+            <span className="ml-1 text-white/85">· Sparki {data.tier}</span>
+          )}
+        </p>
+        {data.trialEndsAt && data.status === "trialing" && (
+          <p className="mt-1 text-[11px] text-white/40">
+            Proef loopt tot {new Date(data.trialEndsAt).toLocaleDateString("nl-NL")}
+          </p>
+        )}
+        {data.plannedDowngradeTier && (
+          <p className="mt-1 text-[11px] text-white/40">
+            Wordt Sparki {data.plannedDowngradeTier} bij de volgende periode
+          </p>
+        )}
+        <p className="mt-1 text-[11px] text-amber-200/60">
+          Testomgeving — er wordt niets echt afgeschreven.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {available.trial && (
+            <>
+              <button
+                className={btn}
+                disabled={startTrial.isPending}
+                onClick={() => startTrial.mutate("GO")}
+              >
+                Probeer GO gratis (7 dagen)
+              </button>
+              <button
+                className={btn}
+                disabled={startTrial.isPending}
+                onClick={() => startTrial.mutate("COMPLETE")}
+              >
+                Probeer COMPLETE gratis (14 dagen)
+              </button>
+            </>
+          )}
+          {available.checkout && (
+            <>
+              <button
+                className={btn}
+                disabled={startCheckout.isPending}
+                onClick={() => startCheckout.mutate({ tier: "GO", interval: "month" })}
+              >
+                Sparki GO — €2,99/mnd
+              </button>
+              <button
+                className={btn}
+                disabled={startCheckout.isPending}
+                onClick={() =>
+                  startCheckout.mutate({ tier: "COMPLETE", interval: "month" })
+                }
+              >
+                Sparki COMPLETE — €9,99/mnd
+              </button>
+            </>
+          )}
+          {available.portal && (
+            <button
+              className={btn}
+              disabled={openPortal.isPending}
+              onClick={() => openPortal.mutate()}
+            >
+              Beheer abonnement
+            </button>
+          )}
+        </div>
+        {(startTrial.isError || startCheckout.isError || openPortal.isError) && (
+          <p className="mt-2 text-[11px] text-red-300/70">
+            {(startTrial.error ?? startCheckout.error ?? openPortal.error)?.message ??
+              "Er ging iets mis"}
+          </p>
+        )}
+      </div>
+    </section>
+  )
+}
 export function ProfileSettings({
   focus,
   onCompleteFix,
@@ -1438,6 +1549,8 @@ export function ProfileSettings({
       </section>
 
       <FoundingSection />
+
+      <BillingSection />
 
       <TeamIdentitySection />
 

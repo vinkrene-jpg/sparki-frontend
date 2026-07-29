@@ -44,6 +44,11 @@ export const userProfilesTable = pgTable("user_profiles", {
   // NULL voor legacy-gebruikers; alleen verplicht bij mode=subscription.
   // BEWUST niet automatisch gevuld voor bestaande gebruikers.
   productVariant: text("product_variant"),
+  // Nieuw commercieel stelsel (fase ≥2, Stripe-testmodus): FREE|GO|COMPLETE.
+  // NULL = "nog niet in het nieuwe stelsel" — bestaand gedrag (incl.
+  // legacy_unrestricted) blijft dan exact gelijk. Onbekende/corrupte waarde
+  // wordt fail-closed als FREE-zonder-rechten behandeld, nooit als betaald.
+  commercialTier: text("commercial_tier"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

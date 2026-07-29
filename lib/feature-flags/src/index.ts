@@ -13,6 +13,10 @@ export const FEATURE_KEYS = [
   "climb_explorer",
   "ai_foundation",
   "commercial_shell",
+  "commercial_tiers",
+  "stripe_checkout",
+  "stripe_webhooks",
+  "stripe_portal",
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -43,6 +47,14 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
     "Sparki Foundation — orchestrator + zeven analyse-engines (data, kennis, sportersmodel, strategie, patronen, beslisondersteuning, uitlegbaarheid); niets staat automatisch aan",
   commercial_shell:
     "Commerciële lichte schil — Vandaag in de lichte commerciële vormgeving (mobiel + desktop), zelfde echte data en acties; uit = huidige donkere Vandaag",
+  commercial_tiers:
+    "Commercieel tier-stelsel (FREE/GO/COMPLETE) — resolver kijkt naar user_profiles.commercial_tier en tier_feature_grants. Default uit; commercial_tier=NULL blijft byte-identiek legacy-gedrag",
+  stripe_checkout:
+    "Stripe Checkout (TESTMODUS) — abonnement afsluiten voor accounts op de billing-testallowlist. Default uit",
+  stripe_webhooks:
+    "Stripe-webhookendpoint (TESTMODUS) — idempotente eventverwerking volgens het fase-1-webhookcontract. Default uit",
+  stripe_portal:
+    "Stripe Customer Portal (TESTMODUS) — facturen/betaalmethoden/annuleren voor allowlist-accounts. Default uit",
 };
 
 export * from "./sports";

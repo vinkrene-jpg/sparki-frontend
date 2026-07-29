@@ -155,5 +155,5 @@
 - [Sparki analyse-dashboard engine](sparki-analyse-dashboard.md) — /analyse én /you kerngrafieken moeten lib/analyse-dashboard.ts consumeren (summary mode), nooit her-implementeren; alsGetal voor API-decimals.
 - [Deploy image 8 GiB-limiet](deploy-image-size-limit.md) — image bevat werkmap+.git; export-zips & test-bundels weren, api-server deploy-build bundelt alleen server+jobs.
 - [Git history cleanup (filter-repo + LFS)](git-history-cleanup.md) — pip install git-filter-repo; verwijdert origin-remote (re-add na afloop); LFS-objecten blijven in .git/lfs tot handmatige delete; fix tracking branch vóór force-push.
-- [Sparki publicatiecontrole](sparki-publish-check.md) — static serve ⇒ alleen dist/public is publiek; dev-routes bewijzen via bundle-grep na verse build, live site via curl van de prod-JS.
-- [Ingelogde prod-build validatie](sparki-logged-in-validation.md) — dev-URL rendert altijd DevPreview; echt bewijs = dist/public + api-proxy + Clerk ticket-login (auth/me-check!); nix playwright-chromium execPath; consent-gate vangt eerste echte sessie.
+- Prod-validatie: [publicatiecontrole](sparki-publish-check.md) bundle-grep + curl van prod-JS; [ingelogde validatie](sparki-logged-in-validation.md) Clerk ticket-login + auth/me-check.
+- [Sparki Stripe-testomgeving](sparki-stripe-testmode.md) — flag+allowlist AND-grendels, webhook idempotent-in-tx (rollback = herleverbaar), fake gateway + echte HMAC-signaturen, rawBody-verify in app.ts.
