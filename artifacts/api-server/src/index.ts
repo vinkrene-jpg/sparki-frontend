@@ -7,6 +7,7 @@ import { repair410wFtp } from "./lib/repair-410w-ftp";
 import { cleanupStaleConnectorShells } from "./lib/connectors/cleanup";
 import { cleanupClimbCacheDb } from "./lib/climbs/cache";
 import { startReminderScheduler } from "./lib/reminder-scheduler";
+import { startGitMaintenanceScheduler } from "./lib/git-maintenance";
 import { ensureBillingFlagSeed, expireBillingStates } from "./lib/billing";
 import { startRouteEnvWarmupScheduler } from "./lib/route-env-warmup";
 import { sweepObservationCleanup } from "./jobs/observation-cleanup";
@@ -145,6 +146,12 @@ app.listen(port, (err) => {
   // REMINDERS_IN_PROCESS=true. Every reminder is idempotent (dedupeKey), so this
   // is safe alongside a separately-scheduled job.
   startReminderScheduler();
+
+  // Automatische .git-opschoning (taak 406): eigen planner, los van de
+  // reminder-scheduler, omdat .git juist in de ONTWIKKELomgeving volloopt
+  // (waar de reminder-scheduler standaard uit staat). Max 1×/Amsterdamse dag,
+  // fail-closed poort main==origin/main, no-op onder ~1 GB .git.
+  startGitMaintenanceScheduler();
 
   // Fire-and-forget: (1) de vier Stripe-betaalflags bestaan als rijen, default
   // UIT (onConflictDoNothing — een beheerbeslissing wordt nooit overschreven);

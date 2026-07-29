@@ -44,3 +44,4 @@ A health check (`project_disk_size`, lib/health/disk-usage.ts) now measures `.gi
 ## Herhaling 2026-07-29
 - .git groeide opnieuw naar 7,2 GB: 2,3 GB verweesde LFS-objecten + 2,0 GB `.git/lost-found` (achtergelaten door eerdere gc) + tientallen `subrepl-*`/backup-branches die alles pinden.
 - Vaste kuur (main==origin/main eerst verifiëren!): branches -D, extra remotes weg, `rm -rf .git/lost-found`, LFS-objects delete, reflog expire, `git gc --prune=now` → 519 MB.
+- **Nu geautomatiseerd**: `api-server/src/lib/git-maintenance.ts` draait deze kuur dagelijks (in-process planner via index.ts, óók in dev; plus in job:health). Fail-closed poort main==origin/main; no-op onder 1 GB .git; verwijdert alleen subrepl-*/backup-*/gitsafe-backup/*-refs + subrepl-remotes, nooit replit-agent/main/origin; LFS via `lfs prune` met retentie 0. Test: `test:git-maintenance` (via shell). Drempels project_disk_size verlaagd: .git>1,0 GB / totaal>5 GiB oranje.

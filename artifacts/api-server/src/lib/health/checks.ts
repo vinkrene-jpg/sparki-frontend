@@ -1033,7 +1033,7 @@ const unwiredChecks: CheckDefinition[] = [
     ),
     urgency: "medium",
     remediation:
-      "Ruim de grootste boosdoeners op. Voor .git: verwijder backup-refs en oude subrepl-branches, draai `git reflog expire --expire=now --all` en `git gc --prune=now --aggressive` (recept in .agents/memory/git-history-cleanup.md). Voor de werkmap: verwijder export-zips en grote testbundels.",
+      "De automatische .git-opschoning (lib/git-maintenance.ts, dagelijks + nightly job:health) ruimt dit normaal zelf op zodra main == origin/main. Blijft dit oranje: controleer op ongepushte commits (dan slaat de routine eerlijk over), push eerst, of volg het handmatige recept in .agents/memory/git-history-cleanup.md. Voor de werkmap: verwijder export-zips en grote testbundels.",
     probe: probeProjectDiskSize,
   },
   {

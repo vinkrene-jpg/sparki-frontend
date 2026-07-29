@@ -1,5 +1,6 @@
 import { runHealthChecks, hasCriticalFailures } from "../lib/health/engine";
 import { cleanupClimbCacheDb } from "../lib/climbs/cache";
+import { runGitMaintenance } from "../lib/git-maintenance";
 import { logger } from "../lib/logger";
 
 // CLI entry for the automated Health Check engine. Intended to run as a Replit
@@ -39,6 +40,33 @@ async function main() {
     logger.info({ cleanup: "climb-cache", deleted }, "climb-cache cleanup done");
   } catch (err) {
     logger.error({ err }, "climb-cache cleanup failed");
+  }
+
+  // Periodieke .git-opschoning (taak 406): ruimt verweesde LFS-objecten,
+  // .git/lost-found en stale subrepl-*/backup-branches op, maar ALLEEN nadat
+  // geverifieerd is dat main == origin/main (anders eerlijk overslaan). Onder
+  // de ondergrens (~1 GB .git) is dit een goedkope no-op. Nooit fataal.
+  try {
+    const git = await runGitMaintenance();
+    if (git.ran) {
+      logger.info(
+        {
+          cleanup: "git-maintenance",
+          before: git.gitBytesBefore,
+          after: git.gitBytesAfter,
+          actions: git.actions,
+          errors: git.errors,
+        },
+        "git maintenance done",
+      );
+    } else {
+      logger.info(
+        { cleanup: "git-maintenance", skipped: git.skippedReason },
+        "git maintenance skipped",
+      );
+    }
+  } catch (err) {
+    logger.error({ err }, "git maintenance failed");
   }
 
   const { batchId, outcomes } = await runHealthChecks({

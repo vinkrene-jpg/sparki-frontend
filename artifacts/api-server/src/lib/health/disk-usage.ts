@@ -14,9 +14,11 @@ import type { ProbeResult } from "./types";
 // Honesty: when there is no .git directory (or `du` is unavailable) the result
 // is GREY — we never guess a size.
 
-// Thresholds (from the task definition). Warn early, escalate near the limit.
-export const GIT_WARN_BYTES = 1.5 * 1024 ** 3; // .git > 1,5 GB → orange
-export const TOTAL_WARN_BYTES = 6 * 1024 ** 3; // totaal > 6 GiB → orange
+// Thresholds. Warn early, escalate near the limit. Verlaagd na de herhaling
+// van 2026-07-29 (publicatie faalde op de 8 GiB-limiet): eerder oranje zodat
+// René het vóór een publicatie ziet.
+export const GIT_WARN_BYTES = 1.0 * 1024 ** 3; // .git > 1,0 GB → orange
+export const TOTAL_WARN_BYTES = 5 * 1024 ** 3; // totaal > 5 GiB → orange
 export const TOTAL_CRITICAL_BYTES = 7.25 * 1024 ** 3; // totaal > 7,25 GiB → red (publish limit is 8 GiB)
 
 function ms(start: number): number {
