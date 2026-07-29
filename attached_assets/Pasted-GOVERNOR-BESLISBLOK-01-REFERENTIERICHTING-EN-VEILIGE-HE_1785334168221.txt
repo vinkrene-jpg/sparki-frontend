@@ -1,0 +1,192 @@
+GOVERNOR BESLISBLOK 01 — REFERENTIERICHTING EN VEILIGE HERSTELLINGEN
+
+DOEL
+
+Registreer de gebundelde René-besluiten en voer uitsluitend de
+richtingsonafhankelijke, veilige herstelpunten uit.
+
+BRON
+
+- Governor fase 1 audit-commit: 7e2f1983
+- Governor fase 1B commit: 4e37204c
+- actuele main
+- Master Plan v3.02
+- SPARKI_RENE_PRODUCTCOCKPIT_V2.md
+- negen reviewsets
+- vier besliskaarten
+
+BINDENDE BESLUITEN
+
+1. NAVIGATIE
+
+Status:
+RENE_APPROVED_PATTERN
+
+Keuze:
+APPARAAT_EIGEN_NAVIGATIE_MET_GEGARANDEERDE_KERNSET
+
+Regels:
+
+- mobiel en desktop mogen een passende eigen navigatie hebben;
+- dezelfde kernfuncties moeten op beide logisch bereikbaar zijn;
+- een kernfunctie mag niet op één apparaat verdwijnen;
+- Wedstrijd moet ook op desktop logisch bereikbaar worden;
+- desktop krijgt een duidelijk equivalent voor Meer;
+- configureerbare navigatie komt later als extra laag;
+- de gebruiker kan later altijd terugkeren naar de standaard Sparki-indeling.
+
+2. VISUELE EINDRICHTING
+
+Status:
+RENE_APPROVED_PATTERN
+
+Keuze:
+LICHT_RUSTIG_STRak_SPORTIEF
+
+Regels:
+
+- lichte basis als app-brede eindrichting;
+- wit, rustig en helder;
+- voldoende sportieve sfeer door contextuele beelden, kaarten, profielen,
+  hoogteprofielen en subtiele kleurvlakken;
+- geen donkere cinematische achtergrond als algemene standaard;
+- donkere onderdelen alleen wanneer hun gebruikscontext dit aantoonbaar
+  rechtvaardigt;
+- geen volledige restyling in dit pakket;
+- huidige donkere en lichte schermen blijven voorlopig
+  CURRENT_STATE_NOT_APPROVED;
+- maak later een apart, gefaseerd visueel migratieplan.
+
+3. ABONNEMENTEN
+
+Status:
+RENE_APPROVED_PATTERN
+
+Keuze:
+GEDEELDE_FUNCTIES_MET_OPLOPENDE_DIEPTE
+
+Regels:
+
+- abonnement bepaalt diepte;
+- doel bepaalt prioriteit;
+- taalniveau bepaalt terminologie;
+- Gratis, Go en Compleet delen dezelfde centrale engines en
+  Analyse-architectuur;
+- geen drie losse apps of analyses;
+- geen willekeurige complete kernfuncties aan/uit wanneer een dieptemodel
+  mogelijk is;
+- Gratis geeft basisinzicht en begrijpelijkheid;
+- Go geeft praktische begeleiding, regelmaat, herstel, routes/navigatie en
+  haalbare vervolgstappen;
+- Compleet geeft volledige coaching-, analyse-, plan-, scenario- en
+  wedstrijdgerichte diepte;
+- veiligheid, privacy, data-export, opzeggen en basisbegrijpelijkheid blijven
+  altijd toegankelijk;
+- prijzen en live Stripe blijven een aparte René-beslispoort.
+
+4. BOUWVOLGORDE ROLWERKRUIMTES
+
+Status:
+RENE_APPROVED_PATTERN
+
+Volgorde:
+
+1. trainer en hoofdtrainer/coach;
+2. clubbeheerder plus ouder/jeugd;
+3. ploegleider/teammanager;
+4. mechanieker;
+5. admin/testbeheer consolideren.
+
+Reden:
+
+- eerst dagelijkse trainingswaarde;
+- daarna Club als acquisitie- en gebruikslaag;
+- daarna Team als betaald professioneel product;
+- bestaande motoren, data en componenten hergebruiken;
+- geen losse apps en geen dubbele engines.
+
+RENÉ-REFERENTIES REGISTREREN
+
+Maak of werk bij:
+
+governance/rene-approved-references.json
+reports/SPARKI_RENE_REFERENCE_LIBRARY.md
+
+Leg per besluit vast:
+
+- expliciete goedkeurder: René;
+- datum: 2026-07-29;
+- broncommit en reviewset;
+- wat bindend is;
+- wat nog geen goedgekeurd scherm of pixelreferentie is;
+- toegestane apparaat- en contextvariatie;
+- gekoppelde Master Plan-regels.
+
+Belangrijk:
+
+Deze besluiten zijn goedgekeurde PRODUCTPATRONEN.
+De huidige concrete schermen zijn nog GEEN goedgekeurde visuele referenties.
+
+VEILIGE HERSTELLINGEN
+
+Voer nu uitsluitend deze richtingsonafhankelijke herstelpunten uit:
+
+1. paginatitel Plan gelijktrekken naar Trainen;
+2. Privacy en Voorwaarden logisch bereikbaar maken via Meer/footer;
+3. Photo Lab een duidelijke ingang geven, zonder het tot hoofdonderdeel te
+   promoveren;
+4. uitlegiconen toevoegen bij TSS, CTL, ATL, TSB en IF waar deze zonder
+   context worden getoond;
+5. ontbrekende eenheden toevoegen aan de zeven vastgestelde grafiekassen;
+6. materiaalcoach geen stellig advies laten tonen bij confidence=unknown;
+7. regressietest toevoegen voor menuverversing na rolwissel;
+8. Wedstrijd toevoegen aan de desktop-kernnavigatie;
+9. desktop een logisch Meer-equivalent geven zonder de mobiele navigatie
+   één-op-één te kopiëren.
+
+NIET UITVOEREN
+
+- geen app-brede restyling;
+- geen definitieve Gratis/Go/Compleet-entitlements ombouwen;
+- geen nieuwe rolwerkruimtes bouwen;
+- geen prijzen of Stripe wijzigen;
+- geen approved baseline maken;
+- Governor fase 2 nog niet volledig starten;
+- geen productcode buiten de genoemde veilige herstelpunten wijzigen.
+
+TESTS
+
+- typechecks web, mobiel en API;
+- serverbuild en webproductiebuild;
+- navigatiecontract desktop en mobiel;
+- deep-link- en refreshtests;
+- rolwisseltest;
+- grafiekwaarden vóór/na identiek;
+- materiaalcoach unknown-test;
+- responsive controle op 390x844, 768x1024, 1440x900 en 1920x1080;
+- geen data-, rol- of abonnementswijzigingen buiten scope.
+
+OPLEVERING
+
+Maak:
+
+reports/SPARKI_GOVERNOR_BESLISBLOK_01.md
+reports/SPARKI_GOVERNOR_SAFE_FIXES_01.md
+
+Rapporteer:
+
+- geregistreerde besluiten;
+- gewijzigde bestanden;
+- uitgevoerde veilige fixes;
+- testresultaten;
+- screenshots voor mobiel en desktop;
+- commit-SHA;
+- publicatie nodig ja/nee;
+- open punten voor het volgende beslisblok.
+
+EINDSTATUS
+
+GOVERNOR_DECISION_BLOCK_01_APPLIED
+
+Start daarna niets automatisch.
+Geef rapport en bewijs terug aan ChatGPT.
