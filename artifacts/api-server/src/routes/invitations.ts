@@ -469,9 +469,9 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
           // accepts, zodat de laatste plek niet dubbel vergeven kan worden
           // (lock blijft staan tot commit; de volgende accept telt dan de
           // zojuist toegevoegde rij gewoon mee).
-          await tx.execute(
-            sql`SELECT pg_advisory_xact_lock(hashtext(${"club-capacity-" + inv.clubId}))`,
-          );
+          // Zelfde lock-sleutel als het join-pad in club.ts (881100, clubId),
+          // zodat join én invitation-accept onder ÉÉN lock serialiseren.
+          await tx.execute(sql`SELECT pg_advisory_xact_lock(881100, ${inv.clubId})`);
           const cap = await checkCapacityByClubId(
             inv.clubId,
             clubRole === "trainer" ? "trainer" : "member",

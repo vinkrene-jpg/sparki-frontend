@@ -2183,6 +2183,7 @@ async function canPostToScope(
         and(
           eq(clubTrainerAssignmentsTable.trainerClerkId, ctx.membership.clerkId),
           eq(clubTrainerAssignmentsTable.teamId, teamId),
+          activeAssignmentWindow(),
         ),
       );
     return assigned.length > 0;
@@ -2201,6 +2202,7 @@ async function canPostToScope(
         and(
           eq(clubTrainerAssignmentsTable.trainerClerkId, ctx.membership.clerkId),
           eq(clubTrainerAssignmentsTable.groupId, groupId),
+          activeAssignmentWindow(),
         ),
       );
     return assigned.length > 0;
@@ -2230,6 +2232,7 @@ async function readableScopeFilter(ctx: ClubContext) {
       and(
         eq(clubTrainerAssignmentsTable.clubId, ctx.club.id),
         eq(clubTrainerAssignmentsTable.trainerClerkId, ctx.membership.clerkId),
+        activeAssignmentWindow(),
       ),
     );
   for (const a of assignments) {
@@ -2650,6 +2653,39 @@ router.get("/:clubId/export", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "club export failed");
     res.status(500).json({ error: "Export maken is niet gelukt." });
+  }
+});
+
+// WP-03: uitnodigingenoverzicht van een club — server-side, alleen beheer.
+// (Het generieke /api/invitations toont alleen de eigen uitnodigingen van de
+// aanvrager; een multi-admin club heeft een club-breed overzicht nodig.)
+router.get("/:clubId/invitations", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageClub(ctx)) {
+      res.status(403).json({ error: "Alleen de clubbeheerder ziet het uitnodigingenoverzicht." });
+      return;
+    }
+    const rows = await db
+      .select({
+        id: invitationsTable.id,
+        token: invitationsTable.token,
+        relationship: invitationsTable.relationship,
+        clubId: invitationsTable.clubId,
+        email: invitationsTable.email,
+        status: invitationsTable.status,
+        expiresAt: invitationsTable.expiresAt,
+        createdAt: invitationsTable.createdAt,
+      })
+      .from(invitationsTable)
+      .where(eq(invitationsTable.clubId, ctx.club.id))
+      .orderBy(desc(invitationsTable.createdAt))
+      .limit(100);
+    res.json(rows);
+  } catch (err) {
+    req.log.error({ err }, "club invitations list failed");
+    res.status(500).json({ error: "Uitnodigingen ophalen is niet gelukt." });
   }
 });
 

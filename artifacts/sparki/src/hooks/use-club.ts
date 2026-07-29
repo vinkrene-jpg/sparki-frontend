@@ -370,10 +370,7 @@ export type InvitationRow = {
 export function useClubInvitations(clubId: number | null, enabled = true) {
   return useQuery<InvitationRow[]>({
     queryKey: ["invitations", "club", clubId],
-    queryFn: async () => {
-      const rows = await apiFetch<InvitationRow[]>(`/api/invitations`)
-      return rows.filter((r) => r.clubId === clubId)
-    },
+    queryFn: () => apiFetch<InvitationRow[]>(`/api/clubs/${clubId}/invitations`),
     enabled: clubId != null && enabled,
   })
 }
