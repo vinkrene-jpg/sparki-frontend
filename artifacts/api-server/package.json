@@ -72,6 +72,7 @@
     "test:race-wizard": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs race-wizard",
     "test:athlete-load": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs athlete-load",
     "test:garage-sensors": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs garage-sensors",
+    "test:route-library": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-library",
     "test:system-mode": "node ./scripts/run-test.mjs system-mode",
     "test:onboarding-connect-step": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs onboarding-connect-step",
     "test:onboarding-strava-gapfill": "node ./scripts/run-test.mjs onboarding-strava-gapfill",
