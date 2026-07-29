@@ -279,6 +279,71 @@ async function main() {
     },
   );
 
+  await scenario(
+    "GET /api/release/admin/users → gebruikersbeheer users array",
+    async () => {
+      const body = await getJson("/api/release/admin/users");
+      assert(
+        Array.isArray(body.users),
+        `admin users should return { users: [...] }, got keys ${Object.keys(body).join(",")}`,
+      );
+      for (const row of body.users as Record<string, unknown>[]) {
+        for (const key of ["clerkId", "displayName", "email", "releaseGroup", "roles"]) {
+          assert(
+            key in row,
+            `user rows should carry ${key}, got keys ${Object.keys(row).join(",")}`,
+          );
+        }
+      }
+    },
+  );
+
+  await scenario(
+    "GET /api/admin/sync-diagnostics → sync-diagnose shape",
+    async () => {
+      const body = await getJson("/api/admin/sync-diagnostics");
+      for (const key of ["providers", "recentRuns", "webhooks", "failedWebhooks"]) {
+        assert(
+          Array.isArray(body[key]),
+          `sync-diagnostics.${key} should be an array, got keys ${Object.keys(body).join(",")}`,
+        );
+      }
+      for (const row of body.providers as Record<string, unknown>[]) {
+        assert(
+          "provider" in row && typeof row.totalRuns === "number" && typeof row.failedRuns === "number",
+          `provider rows should carry provider/totalRuns/failedRuns, got keys ${Object.keys(row).join(",")}`,
+        );
+      }
+      for (const row of body.recentRuns as Record<string, unknown>[]) {
+        assert(
+          "id" in row && "provider" in row && "status" in row && "startedAt" in row,
+          `recent run rows should carry id/provider/status/startedAt, got keys ${Object.keys(row).join(",")}`,
+        );
+      }
+    },
+  );
+
+  await scenario(
+    "GET /api/admin/quality → analysekwaliteit shape",
+    async () => {
+      const body = await getJson("/api/admin/quality");
+      assert(
+        body.totals && typeof body.totals === "object" && !Array.isArray(body.totals),
+        `quality.totals should be an object, got keys ${Object.keys(body).join(",")}`,
+      );
+      assert(
+        Array.isArray(body.byEngine) && Array.isArray(body.byRule) && Array.isArray(body.recentIncorrect),
+        `quality should carry byEngine/byRule/recentIncorrect arrays, got keys ${Object.keys(body).join(",")}`,
+      );
+      for (const row of body.recentIncorrect as Record<string, unknown>[]) {
+        assert(
+          "id" in row && "reasonCode" in row && "updatedAt" in row,
+          `recentIncorrect rows should carry id/reasonCode/updatedAt, got keys ${Object.keys(row).join(",")}`,
+        );
+      }
+    },
+  );
+
   await scenario("GET /api/admin/health → dashboard snapshot shape", async () => {
     const body = await getJson("/api/admin/health");
     assert(

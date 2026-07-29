@@ -27,3 +27,5 @@ not runtime — look at the build step, not production logs.
 - Na een taak-merge draait het platform alle test-workflows automatisch opnieuw; die groene runs gelden als bewijs — alleen niet-workflow (shell)tests hoeven dan nog handmatig.
 
 **Update (2026-07):** een merge kan ook (a) route-handler-BODIES corrumperen (snippets van andere routes geplakt in bestaande handlers, afgekapte try/catch aan het bestandseinde) en (b) een `drizzle push` overslaan zodat nieuwe schema-kolommen/-tabellen ontbreken en ogenschijnlijk losstaande tests op `insert user_profiles` klappen. **How to apply:** bij brede testuitval na een merge: eerst `tsc --noEmit`, corrupte route-file wholesale herstellen uit laatste goede commit, dan lib/db build + `pnpm --filter @workspace/db run push`, dan pas individuele tests debuggen.
+
+**Admin-smoke coverage note:** gebruikersbeheer lives at `/api/release/admin/users` (release router), NOT `/api/admin/users`; sync-diagnostics = `/api/admin/sync-diagnostics`, analysekwaliteit = `/api/admin/quality`. All three now shape-checked in admin-smoke.
