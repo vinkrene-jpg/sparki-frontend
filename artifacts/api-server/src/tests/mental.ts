@@ -13,6 +13,11 @@ import {
   buildWorkoutFacts,
   computeMentalOverview,
   buildDebrief,
+  buildMentalTrainingCard,
+  buildMentalTrainingCards,
+  clampCardDepth,
+  DEFAULT_CARD_DEPTH,
+  MENTAL_TECHNIQUES,
 } from "../engines/mental";
 import type {
   PlannedWorkout,
@@ -326,6 +331,70 @@ async function main() {
     const w = workout({ scheduledDate: isoInDays(3) }); // future only
     const facts = buildWorkoutFacts([w], [], [], TODAY);
     assert(buildDebrief(facts) === null, "future-only must yield no debrief");
+  });
+
+  // ── Mentale Training kaarten: diepgang per kaart ───────────────────────────
+  await scenario("cards: depth 1 shows only the core, no how/deepening", () => {
+    const c = buildMentalTrainingCard("visualisatie", 1);
+    assert(c.core.length > 0, "core required at every depth");
+    assert(c.how === null, "how must be hidden at depth 1");
+    assert(c.deepening === null, "deepening must be hidden at depth 1");
+  });
+
+  await scenario("cards: depth 2 adds how, still no deepening", () => {
+    const c = buildMentalTrainingCard("chunking", 2);
+    assert(c.how != null && c.how.length > 0, "how required at depth 2");
+    assert(c.deepening === null, "deepening must be hidden at depth 2");
+  });
+
+  await scenario("cards: depth 3 adds full deepening; core/how identical to lower depths", () => {
+    const c1 = buildMentalTrainingCard("acceptatie", 1);
+    const c3 = buildMentalTrainingCard("acceptatie", 3);
+    assert(c3.deepening != null, "deepening required at depth 3");
+    assert(
+      c3.deepening!.why.length > 0 &&
+        c3.deepening!.pitfall.length > 0 &&
+        c3.deepening!.weekPractice.length > 0,
+      "deepening must have why + pitfall + weekPractice",
+    );
+    assert(c1.core === c3.core, "core must be identical across depths (layers only add)");
+    assert(c3.how === MENTAL_TECHNIQUES.acceptatie.how, "depth-3 how must equal the library instruction");
+  });
+
+  await scenario("cards: all 6 techniques covered; unset cards use the default depth", () => {
+    const cards = buildMentalTrainingCards({ zelfspraak: 3 });
+    assert(cards.length === 6, `expected 6 cards, got ${cards.length}`);
+    const keys = new Set(cards.map((c) => c.key));
+    for (const k of Object.keys(MENTAL_TECHNIQUES)) {
+      assert(keys.has(k as never), `missing card for ${k}`);
+    }
+    const zelfspraak = cards.find((c) => c.key === "zelfspraak")!;
+    assert(zelfspraak.depth === 3 && zelfspraak.deepening != null, "saved depth must apply");
+    const rest = cards.filter((c) => c.key !== "zelfspraak");
+    assert(rest.every((c) => c.depth === DEFAULT_CARD_DEPTH), "unset cards must use default depth");
+  });
+
+  await scenario("cards: no card text contains the word AI or English filler", () => {
+    const cards = buildMentalTrainingCards({
+      visualisatie: 3, zelfspraak: 3, ademhaling: 3,
+      aandacht_verleggen: 3, chunking: 3, acceptatie: 3,
+    });
+    for (const c of cards) {
+      const text = [c.core, c.how, c.deepening?.why, c.deepening?.pitfall, c.deepening?.weekPractice]
+        .filter(Boolean)
+        .join(" ");
+      assert(!/\bAI\b/i.test(text), `card ${c.key} mentions AI`);
+    }
+  });
+
+  await scenario("cards: clampCardDepth accepts only 1-3", () => {
+    assert(clampCardDepth(1) === 1 && clampCardDepth("2") === 2 && clampCardDepth(3) === 3, "valid depths");
+    for (const bad of [0, 4, -1, null, undefined, "x", 2.6]) {
+      const got = clampCardDepth(bad);
+      // 2.6 rounds to 3 — that is acceptable; the rest must be rejected.
+      if (bad === 2.6) { assert(got === 3, "2.6 rounds to 3"); continue; }
+      assert(got === null, `depth ${String(bad)} must be rejected, got ${got}`);
+    }
   });
 
   // ── Report ─────────────────────────────────────────────────────────────────

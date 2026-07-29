@@ -9,7 +9,15 @@ import {
   workoutMentalReflectionsTable,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { getMentalOverview } from "../engines/mental";
+import {
+  getMentalOverview,
+  buildMentalTrainingCards,
+  getMentalCardDepths,
+  setMentalCardDepth,
+  clampCardDepth,
+  MENTAL_TECHNIQUES,
+  type MentalTechnique,
+} from "../engines/mental";
 import { captureContext } from "../engines/context-memory";
 
 const router: Router = Router();
@@ -25,6 +33,52 @@ router.get(
     } catch (err) {
       req.log.error({ err }, "mental.overview failed");
       res.status(500).json({ error: "Overzicht ophalen mislukt" });
+    }
+  },
+);
+
+// Mentale Training kaarten — de zes technieken uit de Mentale Bibliotheek, elk
+// met per-sporter instelbare diepgang (1–3 sterren, server-side bewaard). De
+// kaartinhoud wordt hier al op het gekozen niveau samengesteld: de client
+// krijgt alleen de lagen die bij de gekozen diepgang horen.
+router.get(
+  "/mental/cards",
+  requireAuth,
+  async (req: Request, res: Response) => {
+    const clerkId = getClerkUserId(req)!;
+    try {
+      const depths = await getMentalCardDepths(clerkId);
+      res.json({ cards: buildMentalTrainingCards(depths) });
+    } catch (err) {
+      req.log.error({ err }, "mental.cards failed");
+      res.status(500).json({ error: "Kaarten ophalen mislukt" });
+    }
+  },
+);
+
+router.put(
+  "/mental/cards/:cardKey/depth",
+  requireAuth,
+  async (req: Request, res: Response) => {
+    const clerkId = getClerkUserId(req)!;
+    const cardKey = String(req.params["cardKey"]);
+    if (!(cardKey in MENTAL_TECHNIQUES)) {
+      res.status(400).json({ error: "Onbekende kaart" });
+      return;
+    }
+    const depth = clampCardDepth((req.body as { depth?: unknown })?.depth);
+    if (depth == null) {
+      res.status(400).json({ error: "Diepgang moet 1, 2 of 3 sterren zijn" });
+      return;
+    }
+    try {
+      const key = cardKey as MentalTechnique["key"];
+      await setMentalCardDepth(clerkId, key, depth);
+      const depths = await getMentalCardDepths(clerkId);
+      res.json({ cards: buildMentalTrainingCards(depths) });
+    } catch (err) {
+      req.log.error({ err }, "mental.cards.depth failed");
+      res.status(500).json({ error: "Diepgang opslaan mislukt" });
     }
   },
 );

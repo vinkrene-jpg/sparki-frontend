@@ -19,6 +19,7 @@
 import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import {
   db,
+  mentalCardDepthsTable,
   plannedWorkoutsTable,
   trainingSessionsTable,
   workoutFeedbackTable,
@@ -164,6 +165,141 @@ export const MENTAL_TECHNIQUES: Record<MentalTechnique["key"], MentalTechnique> 
       intelDedupeKey: "academy-acceptance-start-anyway",
     },
   };
+
+// ── Mentale Training kaarten met instelbare diepgang ─────────────────────────
+//
+// Elke kaart uit de Mentale Bibliotheek is ook een trainingskaart. De sporter
+// kiest per kaart met sterren hoeveel diepgang hij wil:
+//   ★     alleen de kern (één zin),
+//   ★★    kern + hoe je het doet,
+//   ★★★   volledige verdieping: waarom het werkt, de valkuil en een
+//         concrete oefening voor deze week.
+// De inhoud is vaste, eerlijke vakkennis per niveau — geen gegenereerde tekst
+// en geen verzonnen persoonlijke data. Wat je bij ★ ziet is exact de kern van
+// wat je bij ★★★ ziet; meer sterren voegen alleen lagen toe.
+
+export type MentalCardDepthLevel = 1 | 2 | 3;
+export const DEFAULT_CARD_DEPTH: MentalCardDepthLevel = 1;
+
+type MentalCardDeepening = {
+  why: string; // waarom deze techniek werkt (achtergrond, gewone taal)
+  pitfall: string; // de meest gemaakte fout
+  weekPractice: string; // concrete oefening voor deze week
+};
+
+const CARD_DEEPENING: Record<MentalTechnique["key"], MentalCardDeepening> = {
+  visualisatie: {
+    why: "Je brein maakt weinig onderscheid tussen iets levendig voorstellen en iets echt meemaken. Wie het zware blok vooraf al een keer 'gereden' heeft, ervaart het onderweg als bekend terrein in plaats van als schok.",
+    pitfall: "Alleen het perfecte scenario afspelen. Juist het moment dat het tegenzit moet in je film zitten — inclusief hoe je dan reageert.",
+    weekPractice:
+      "Kies deze week één zware training. Neem de avond ervoor 2 minuten: zie de start, het zwaarste blok, het moment dat je wilt stoppen én hoe je doorrijdt. Vergelijk na afloop: klopte je film?",
+  },
+  zelfspraak: {
+    why: "De toon waarop je tegen jezelf praat stuurt direct hoe zwaar iets voelt. Feitelijke, korte zinnen houden je bij de taak; kritiek ('wat ben ik slecht') kost energie en maakt stoppen logischer.",
+    pitfall: "Zinnen verzinnen óp het zware moment. Dan wint het gevoel altijd. De zinnen moeten er al liggen vóór je opstapt.",
+    weekPractice:
+      "Schrijf vóór je volgende training twee eigen zinnen op (bijvoorbeeld op je stuur of in je hoofd). Gebruik ze letterlijk op het zwaarste moment en noteer na afloop of ze hielpen.",
+  },
+  ademhaling: {
+    why: "Langzaam uitademen activeert het deel van je zenuwstelsel dat je hartslag en onrust dempt. Daarom werkt 3 tellen in, 4 tellen uit: de verlengde uitademing haalt de scherpte van het paniekgevoel af.",
+    pitfall: "Pas ademen als je al besloten hebt te stoppen. De volgorde is: eerst tien keer ademen, dán pas beslissen.",
+    weekPractice:
+      "Oefen het ritme (3 in, 4 uit) deze week twee keer op een rustig moment thuis, zodat het er onderweg vanzelf uitkomt. Gebruik het daarna één keer tijdens een training bij de eerste dip.",
+  },
+  aandacht_verleggen: {
+    why: "Aandacht is een spotlight: hij kan maar op één ding tegelijk fel staan. Zolang hij op cadans of de volgende bocht staat, krijgt 'ik wil stoppen' letterlijk minder ruimte in je hoofd.",
+    pitfall: "Vechten tégen de gedachte ('niet aan stoppen denken') — dan denk je er juist meer aan. Verleggen werkt, verbieden niet.",
+    weekPractice:
+      "Kies vooraf één focuspunt voor je volgende zware blok (cadans, ademhaling of een punt op de weg). Merk je dat je aandacht wegglijdt: benoem het kort en zet de spotlight terug. Twee minuten volhouden telt al.",
+  },
+  chunking: {
+    why: "Je hoofd geeft niet op door de inspanning van nu, maar door de optelsom van alles wat nog komt. Wie alleen het volgende blok hoeft te rijden, vraagt zijn hoofd nooit meer dan het aankan.",
+    pitfall: "Te grote stukken kiezen. 'Nog een uur' is geen blok — 'tot het volgende dorp' of 'nog dit interval' wel.",
+    weekPractice:
+      "Deel je eerstvolgende lange of zware training vooraf op papier op in blokken met een herkenbaar einde. Rijd blok voor blok en streep ze in je hoofd af. Tel bij intervallen af, nooit op.",
+  },
+  acceptatie: {
+    why: "Gevoelens wegduwen kost kracht die je op de fiets nodig hebt. Benoemen wat er is ('geen zin, zware benen') zonder ertegen te vechten haalt de lading eraf — en dan blijkt starten bijna altijd te kunnen.",
+    pitfall: "Acceptatie verwarren met toegeven. Je accepteert het gevoel, niet het besluit om te stoppen: de eerste 10 minuten rijd je altijd.",
+    weekPractice:
+      "Spreek voor deze week één vaste regel met jezelf af: bij geen zin start ik tóch en beslis ik pas na 10 minuten rustig rijden. Noteer na afloop hoe vaak de zin 'het viel mee' klopte.",
+  },
+};
+
+export type MentalTrainingCard = {
+  key: MentalTechnique["key"];
+  name: string;
+  depth: MentalCardDepthLevel;
+  // Altijd aanwezig (★): de kern in één zin.
+  core: string;
+  // Vanaf ★★: hoe je het doet.
+  how: string | null;
+  // Alleen bij ★★★: volledige verdieping.
+  deepening: MentalCardDeepening | null;
+  intelDedupeKey: string | null;
+};
+
+export function clampCardDepth(v: unknown): MentalCardDepthLevel | null {
+  const n = Math.round(Number(v));
+  if (n === 1 || n === 2 || n === 3) return n;
+  return null;
+}
+
+export function buildMentalTrainingCard(
+  key: MentalTechnique["key"],
+  depth: MentalCardDepthLevel,
+): MentalTrainingCard {
+  const t = MENTAL_TECHNIQUES[key];
+  return {
+    key,
+    name: t.name,
+    depth,
+    core: t.short,
+    how: depth >= 2 ? t.how : null,
+    deepening: depth >= 3 ? CARD_DEEPENING[key] : null,
+    intelDedupeKey: t.intelDedupeKey,
+  };
+}
+
+export function buildMentalTrainingCards(
+  depths: Partial<Record<MentalTechnique["key"], MentalCardDepthLevel>>,
+): MentalTrainingCard[] {
+  return (
+    Object.keys(MENTAL_TECHNIQUES) as MentalTechnique["key"][]
+  ).map((key) => buildMentalTrainingCard(key, depths[key] ?? DEFAULT_CARD_DEPTH));
+}
+
+// Bewaarde diepgang per kaart voor deze sporter (geen rij = standaard ★).
+export async function getMentalCardDepths(
+  clerkId: string,
+): Promise<Partial<Record<MentalTechnique["key"], MentalCardDepthLevel>>> {
+  const rows = await db
+    .select()
+    .from(mentalCardDepthsTable)
+    .where(eq(mentalCardDepthsTable.clerkId, clerkId));
+  const out: Partial<Record<MentalTechnique["key"], MentalCardDepthLevel>> = {};
+  for (const r of rows) {
+    const depth = clampCardDepth(r.depth);
+    if (depth && r.cardKey in MENTAL_TECHNIQUES) {
+      out[r.cardKey as MentalTechnique["key"]] = depth;
+    }
+  }
+  return out;
+}
+
+export async function setMentalCardDepth(
+  clerkId: string,
+  cardKey: MentalTechnique["key"],
+  depth: MentalCardDepthLevel,
+): Promise<void> {
+  await db
+    .insert(mentalCardDepthsTable)
+    .values({ clerkId, cardKey, depth })
+    .onConflictDoUpdate({
+      target: [mentalCardDepthsTable.clerkId, mentalCardDepthsTable.cardKey],
+      set: { depth, updatedAt: new Date() },
+    });
+}
 
 // ── Pure computation ─────────────────────────────────────────────────────────
 

@@ -1,12 +1,10 @@
 ---
-name: Route-library/plan-wizard WIP in git stash
-description: Unfinished route-library + plan-wizard work was moved out of a task commit into a git stash; recover it before working on the route-library migration task.
+name: Vreemde WIP vervuilt task-commits
+description: De completion-commit veegt de HELE werkboom mee; losse, taakvreemde wijzigingen leiden tot code-review-afwijzingen.
 ---
 
-Unrelated WIP (route_library/route_library_comments schema, /api/routes/bibliotheek* endpoints, PlanWizard, plan-overview lib + tests, assets) sat uncommitted in the working tree and kept getting auto-swept into an unrelated task's completion commit, causing code-review rejections.
+De completion-review en auto-commit nemen de VOLLEDIGE werkboom mee, niet alleen de bestanden die jij bewerkte. Taakvreemde, niet-gecommitte wijzigingen (van eerdere sessies of andere experimenten) belanden dan in jouw taak-diff en veroorzaken afwijzingen.
 
-**Where it is now:** `git stash` entry "route-library/plan-wizard WIP + assets (los van taak 362; zie taak #363)". Recover with `git stash list` / `git stash pop` before doing the route-library migration work.
+**Why:** dit gebeurde eerder toen onafgemaakt routebibliotheek/plan-wizard-werk in de werkboom bleef staan en herhaaldelijk in andermans completion-commit werd meegeveegd.
 
-**Why:** completion review + auto-commit include the ENTIRE working tree, not just files you edited. Foreign WIP in the tree pollutes your task diff.
-
-**How to apply:** before `markTaskComplete`, check `git status`; if unrelated changes exist, reset to a clean base, commit only your task's files, and stash the rest (untracked included, `-u`). Also: the stash may be stale vs later merges — rebase carefully when popping.
+**How to apply:** vóór `markTaskComplete` altijd `git status` controleren. Staan er taakvreemde wijzigingen: alleen je eigen taakbestanden committen en de rest stashen (`git stash -u`, met duidelijke omschrijving). Let op: zo'n stash kan verouderd raken t.o.v. latere merges — voorzichtig rebasen bij het poppen. (De destijds gestashte routebibliotheek-WIP is inmiddels via eigen taken gemerged.)

@@ -8,6 +8,7 @@ import {
   timestamp,
   jsonb,
   boolean,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -329,6 +330,35 @@ export const workoutMentalReflectionsTable = pgTable(
   },
 );
 
+// Per kaart in de Mentale Training kiest de sporter met sterren hoeveel
+// diepgang hij wil (1 = alleen de kern, 2 = ook de uitvoering, 3 = volledige
+// verdieping met valkuilen en een weekoefening). Eén rij per sporter per kaart
+// (upserted); geen rij = standaarddiepgang. Beslist door René op 29 juli 2026:
+// diepgang is per kaart, niet één globale profielvoorkeur.
+export const mentalCardDepthsTable = pgTable(
+  "mental_card_depths",
+  {
+    id: serial("id").primaryKey(),
+    clerkId: text("clerk_id")
+      .notNull()
+      .references(() => userProfilesTable.clerkId, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    // Sleutel van de kaart in de Mentale Bibliotheek (bijv. "visualisatie").
+    cardKey: text("card_key").notNull(),
+    // 1–3 sterren.
+    depth: integer("depth").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex("mental_card_depths_clerk_card_uq").on(t.clerkId, t.cardKey)],
+);
+
 export const insertTrainingSessionSchema = createInsertSchema(
   trainingSessionsTable,
 ).omit({ id: true });
@@ -381,6 +411,8 @@ export type WorkoutMentalReflection =
 export type InsertWorkoutMentalReflection = z.infer<
   typeof insertWorkoutMentalReflectionSchema
 >;
+
+export type MentalCardDepth = typeof mentalCardDepthsTable.$inferSelect;
 
 // ── Canonical structure stored in planned_workouts.structure (jsonb) ─────────
 // Computed by the plan generator from the athlete's real numbers. Shared between

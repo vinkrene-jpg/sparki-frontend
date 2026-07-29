@@ -79,6 +79,189 @@ type MentalOverview = {
   completedCount: number
 }
 
+type CardDeepening = {
+  why: string
+  pitfall: string
+  weekPractice: string
+}
+
+type TrainingCard = {
+  key: string
+  name: string
+  depth: 1 | 2 | 3
+  core: string
+  how: string | null
+  deepening: CardDeepening | null
+  intelDedupeKey: string | null
+}
+
+function useMentalCards() {
+  return useQuery({
+    queryKey: ["mental-cards"],
+    queryFn: () => apiFetch<{ cards: TrainingCard[] }>("/api/mental/cards"),
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+function useSetCardDepth() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ cardKey, depth }: { cardKey: string; depth: number }) =>
+      apiFetch<{ cards: TrainingCard[] }>(
+        `/api/mental/cards/${cardKey}/depth`,
+        { method: "PUT", body: JSON.stringify({ depth }) },
+      ),
+    onSuccess: (data) => {
+      qc.setQueryData(["mental-cards"], data)
+    },
+  })
+}
+
+const DEPTH_LABEL: Record<1 | 2 | 3, string> = {
+  1: "Alleen de kern",
+  2: "Kern + hoe je het doet",
+  3: "Volledige verdieping",
+}
+
+// Star picker for the depth of one card. Saved server-side per card, so the
+// choice travels with the account.
+function DepthStars({
+  card,
+  onSelect,
+  pending,
+}: {
+  card: TrainingCard
+  onSelect: (depth: number) => void
+  pending: boolean
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex" role="group" aria-label={`Diepgang voor ${card.name}`}>
+        {([1, 2, 3] as const).map((d) => {
+          const filled = card.depth >= d
+          return (
+            <button
+              key={d}
+              type="button"
+              disabled={pending}
+              onClick={() => onSelect(d)}
+              title={DEPTH_LABEL[d]}
+              aria-label={`${d} ${d === 1 ? "ster" : "sterren"}: ${DEPTH_LABEL[d]}`}
+              className="px-0.5 text-[16px] leading-none transition-colors disabled:opacity-50"
+              style={{ color: filled ? ACCENT : "rgba(255,255,255,0.2)" }}
+            >
+              {filled ? "★" : "☆"}
+            </button>
+          )
+        })}
+      </div>
+      {pending && <Loader2 className="h-3 w-3 animate-spin text-white/40" />}
+    </div>
+  )
+}
+
+function MentalTrainingCardBlock({ card }: { card: TrainingCard }) {
+  const setDepth = useSetCardDepth()
+  const [, navigate] = useLocation()
+  return (
+    <div className="rounded-xl border border-white/[0.06] bg-[#070d16]/[0.82] p-3 backdrop-blur-md">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-[13px] font-medium text-white/85">{card.name}</p>
+        <DepthStars
+          card={card}
+          pending={setDepth.isPending}
+          onSelect={(depth) => setDepth.mutate({ cardKey: card.key, depth })}
+        />
+      </div>
+      <p className="mt-1 text-[12px] leading-relaxed text-white/70">
+        {card.core}
+      </p>
+      {card.how && (
+        <div className="mt-2">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-white/35">
+            Zo doe je het
+          </p>
+          <p className="mt-1 text-[12px] leading-relaxed text-white/60">
+            {card.how}
+          </p>
+        </div>
+      )}
+      {card.deepening && (
+        <div className="mt-2 flex flex-col gap-2">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-white/35">
+              Waarom dit werkt
+            </p>
+            <p className="mt-1 text-[12px] leading-relaxed text-white/60">
+              {card.deepening.why}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-white/35">
+              De valkuil
+            </p>
+            <p className="mt-1 text-[12px] leading-relaxed text-white/60">
+              {card.deepening.pitfall}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-white/35">
+              Oefening voor deze week
+            </p>
+            <p className="mt-1 text-[12px] leading-relaxed text-white/60">
+              {card.deepening.weekPractice}
+            </p>
+          </div>
+        </div>
+      )}
+      {setDepth.isError && (
+        <p className="mt-2 text-[11px] text-red-300/70">
+          Diepgang opslaan lukte niet. Probeer het zo opnieuw.
+        </p>
+      )}
+      {card.intelDedupeKey && card.depth >= 2 && (
+        <button
+          type="button"
+          onClick={() => navigate("/feed")}
+          className="mt-2 text-[11px] underline decoration-white/25 underline-offset-2"
+          style={{ color: ACCENT }}
+        >
+          Lees meer in Ontdekken
+        </button>
+      )}
+    </div>
+  )
+}
+
+// The six mental training cards with per-card adjustable depth (stars).
+function MentalTrainingLibrary() {
+  const { data, isLoading, isError } = useMentalCards()
+  if (isLoading) return <Skeleton className="h-40 w-full rounded-xl" />
+  if (isError || !data) {
+    return (
+      <p className="text-[12px] text-white/45">
+        De trainingskaarten konden nu niet worden geladen. Probeer het later
+        opnieuw.
+      </p>
+    )
+  }
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-[11px] font-medium uppercase tracking-wider text-white/40">
+        Mentale training
+      </p>
+      <p className="text-[11px] leading-relaxed text-white/45">
+        Zes technieken om je hoofd te trainen. Stel per kaart met de sterren in
+        hoeveel diepgang je wilt: ★ alleen de kern, ★★ ook hoe je het doet, ★★★
+        de volledige verdieping. Je keuze wordt per kaart bewaard.
+      </p>
+      {data.cards.map((c) => (
+        <MentalTrainingCardBlock key={c.key} card={c} />
+      ))}
+    </div>
+  )
+}
+
 function useMentalOverview() {
   return useQuery({
     queryKey: ["mental-overview"],
@@ -589,6 +772,9 @@ export function MentalResilienceCard({ n }: { n?: string }) {
             )}
           </div>
         )}
+      </div>
+      <div className="mt-6">
+        <MentalTrainingLibrary />
       </div>
     </section>
   )
