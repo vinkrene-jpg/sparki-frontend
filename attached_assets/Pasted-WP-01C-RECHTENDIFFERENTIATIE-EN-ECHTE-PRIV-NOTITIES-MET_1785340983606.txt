@@ -1,0 +1,253 @@
+WP-01C — RECHTENDIFFERENTIATIE EN ECHTE PRIVÉNOTITIES
+MET AUTOMATISCHE DOORGANG NAAR WP-02
+
+DOEL
+
+Sluit de twee resterende productgaten uit WP-01:
+
+1. onderscheid tussen directe coachkoppeling en club-/teamtoewijzing;
+2. onderscheid tussen transparante coachcontext en echte privénotities.
+
+Werk in kleine commits en start WP-02 alleen wanneer WP-01C volledig groen is.
+
+VASTE BESLUITEN
+
+A. DIRECT GEKOPPELDE TRAINER
+
+Een trainer met een geaccepteerde directe coach-sporterkoppeling mag, binnen
+het deelniveau van de sporter:
+
+- individuele coachcockpit gebruiken;
+- gedeelde individuele trainings- en feedbackdata lezen;
+- individuele training of planaanpassing voorstellen;
+- individuele berichten sturen;
+- eigen transparante coachcontext vastleggen;
+- eigen echte privénotities vastleggen.
+
+B. ALLEEN CLUB-/TEAMTOEGEWEZEN TRAINER
+
+Een trainer met uitsluitend een geldige club-/teamtoewijzing mag:
+
+- toegewezen sporters identificeren;
+- alleen gedeelde club-/teamrelevante basisinformatie lezen;
+- team- of groepstraining voorstellen;
+- communiceren binnen de club-/teamcontext;
+- aanwezigheid en teamuitvoering gebruiken waar bestaand.
+
+Deze trainer mag zonder directe coachkoppeling NIET:
+
+- volledige individuele coachcockpit openen;
+- individuele herstel-, gezondheids- of privétrainerdata lezen;
+- individueel trainingsplan aanpassen of vervangen;
+- privécoachcontext van een andere trainer lezen;
+- individuele coachacties uitvoeren die directe begeleiding impliceren.
+
+C. TRANSPARANTE COACHCONTEXT
+
+Bestaande coach_context_items die richting sporter of coaching-engine gebruikt
+kunnen worden, blijven bestaan.
+
+Noem deze in code, documentatie en interface niet “privénotitie” wanneer ze
+voor de sporter of engine zichtbaar/bruikbaar zijn.
+
+Gebruik een duidelijke Nederlandse naam zoals:
+
+- Coachafspraak
+- Begeleidingscontext
+- Werkafspraak
+
+D. ECHTE PRIVÉNOTITIE
+
+Een echte privénotitie:
+
+- is alleen zichtbaar voor de trainer die haar heeft gemaakt;
+- is niet zichtbaar voor de sporter;
+- is niet zichtbaar voor andere trainers;
+- is niet automatisch zichtbaar voor hoofdtrainer;
+- wordt niet gebruikt door voedings-, trainings- of adviesengines;
+- wordt niet opgenomen in AI-prompts;
+- lekt niet via auditlogs, exports, notificaties of zoekresultaten;
+- wordt bij einde koppeling niet aan een opvolgende trainer overgedragen;
+- blijft alleen toegankelijk volgens bewaarbeleid en eigenaarschap.
+
+STAP 1 — RECHTENMATRIX AANSCHERPEN
+
+Pas het bestaande capabilitymodel gericht aan.
+
+Leg minimaal afzonderlijk vast:
+
+- direct_coach_link;
+- club_trainer_assignment;
+- team_trainer_assignment;
+- individual_read;
+- individual_plan_propose;
+- team_plan_propose;
+- direct_message_individual;
+- team_message;
+- private_note_create;
+- private_note_read_own.
+
+Maak:
+
+reports/wp-01c/01_RIGHTS_DIFFERENTIATION.md
+
+Geen tweede rechtenengine bouwen.
+
+Test eerst de matrix en commit stap 1.
+
+STAP 2 — API-GUARDS SPLITSEN
+
+Vervang nergens blind hasCoachAccess.
+
+Maak gerichte guards, bijvoorbeeld binnen de bestaande architectuur:
+
+- hasAnyTrainerVisibility;
+- hasDirectCoachAccess;
+- hasClubTeamTrainerAccess;
+- canReadIndividualCoachData;
+- canProposeIndividualTraining;
+- canProposeTeamTraining.
+
+Namen mogen afwijken wanneer bestaande conventies beter passen.
+
+Eisen:
+
+- iedere gevoelige API-route gebruikt de benodigde specifieke capability;
+- geen client-side filtering als beveiliging;
+- huidige directe coachflow blijft werken;
+- clubtrainer behoudt alleen de vastgelegde beperkte scope;
+- beëindiging van link, lidmaatschap of assignment sluit direct;
+- organisatie-isolatie blijft intact.
+
+Commit stap 2 na groene tests.
+
+STAP 3 — BESTAANDE ROUTES CLASSIFICEREN
+
+Classificeer alle in WP-01 aangepaste trainer-routes:
+
+- toegestaan voor directe coach;
+- toegestaan voor club-/teamtrainer;
+- toegestaan voor beide;
+- verboden zonder aanvullende toestemming.
+
+Controleer specifiek:
+
+- coachcockpit;
+- individuele berichten;
+- trainingsvoorstellen;
+- planadoptie;
+- feedback/RPE;
+- herstel- en gezondheidsvelden;
+- teamplanning;
+- uitnodigingen;
+- sporterlijst.
+
+Maak:
+
+reports/wp-01c/03_ROUTE_CAPABILITY_MAP.md
+
+Pas uitsluitend foutief beveiligde routes aan.
+Commit stap 3.
+
+STAP 4 — ECHTE PRIVÉNOTITIELAAG
+
+Inventariseer eerst of al een werkelijk trainer-private opslag bestaat.
+
+Wanneer die aantoonbaar bestaat:
+- hergebruik en herstel de guards/tests.
+
+Wanneer die niet bestaat:
+- voeg één kleine additieve opslag en API toe;
+- geen destructieve migratie;
+- geen parallel algemeen geheugensysteem;
+- koppel aan ownerTrainerId, athleteId en context;
+- inhoud nooit opnemen in algemene auditpayload;
+- audit alleen metadata zoals create/update/delete, actor en timestamp.
+
+Interface:
+
+- label “Privénotitie — alleen zichtbaar voor jou”;
+- duidelijke scheiding van Coachafspraak/Begeleidingscontext;
+- geen verborgen automatische deling.
+
+Commit stap 4 na groene privacytests.
+
+STAP 5 — VANGNETTESTS
+
+Voeg minimaal toe:
+
+1. directe coach kan individuele cockpit openen;
+2. clubtrainer zonder directe link kan volledige individuele cockpit niet openen;
+3. clubtrainer kan toegewezen teamcontext lezen;
+4. clubtrainer kan teamtraining voorstellen;
+5. clubtrainer kan geen individueel plan wijzigen;
+6. clubtrainer ziet geen niet-gedeelde herstel-/gezondheidsdata;
+7. directe coach kan individuele boodschap sturen;
+8. clubtrainer gebruikt alleen toegestane team-/clubcommunicatie;
+9. privénotitie trainer A is onzichtbaar voor sporter;
+10. privénotitie trainer A is onzichtbaar voor trainer B;
+11. privénotitie is onzichtbaar voor hoofdtrainer;
+12. privénotitie komt niet in AI-/adviescontext;
+13. transparante coachcontext blijft volgens deelniveau werken;
+14. einde koppeling trekt privénotitie-API-toegang direct in;
+15. organisatie A kan organisatie B niet lezen.
+
+Draai ook alle bestaande isolatie- en WP-01-suites.
+
+STAP 6 — WP-01C EINDRAPPORT
+
+Maak:
+
+reports/wp-01c/WP_01C_FINAL_REPORT.md
+
+Rapporteer:
+
+- gekozen capabilityverschillen;
+- gewijzigde routes;
+- datamodelwijziging ja/nee;
+- migratie additief ja/nee;
+- testresultaten;
+- privacybewijs;
+- gewijzigde bestanden;
+- commits;
+- publicatie nodig ja/nee.
+
+EINDSTATUS WP-01C
+
+Bij succes:
+
+WP_01C_RIGHTS_AND_PRIVATE_NOTES_READY
+
+AUTOMATISCHE DOORGANG
+
+Wanneer WP-01C volledig groen is:
+
+- commit en push WP-01C;
+- start automatisch WP-02 Hoofdtrainer;
+- voer WP-02 eveneens uit in kleine, afzonderlijk geteste en gecommitte stappen;
+- stop WP-02 bij een nieuw productbesluit, privacyconflict, destructieve
+  migratie of rechtenlek.
+
+Wanneer WP-01C niet groen is:
+
+STEP_BLOCKED_REQUIRES_REVIEW
+
+Start dan WP-02 niet.
+
+ALGEMENE STOPCONDITIES
+
+- echte gebruikersdata geraakt;
+- cross-user- of cross-clublekkage;
+- jeugd/consent niet fail-closed;
+- tweede rollen-, rechten- of notitiearchitectuur;
+- destructieve migratie;
+- privénotitie zichtbaar in AI-context, export of auditinhoud;
+- drie mislukte gerichte herstelpogingen.
+
+NIET DOEN
+
+- niet publiceren;
+- geen Stripe of prijswerk;
+- geen Plan-pagina herontwerpen;
+- geen WP-03 of later starten;
+- geen echte uitnodigingen of productie-testaccounts.

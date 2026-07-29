@@ -30,6 +30,10 @@ export {
 export {
   hasAcceptedCoachLink,
   hasCoachAccess,
+  hasDirectCoachAccess,
+  hasClubTeamTrainerAccess,
+  getTrainerRelation,
+  trainerCapabilities,
   clubAssignedAthleteIds,
   hasAcceptedParentLink,
   coachSharingLevel,

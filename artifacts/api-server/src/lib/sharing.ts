@@ -189,6 +189,89 @@ export async function hasCoachAccess(
   return assigned.includes(athleteClerkId);
 }
 
+/* ------------------------------------------------------------------ *
+ * WP-01C — rechtendifferentiatie
+ *
+ * Twee relatievormen, elk met een eigen capability-set:
+ *  - direct_coach_link      : geaccepteerde directe coach-sporterkoppeling
+ *  - club_team_assignment   : geldige club-/teamtoewijzing (read-time checks)
+ *
+ * Individuele begeleiding (cockpit, individuele data, individueel plan,
+ * individuele berichten, privénotities) vereist de DIRECTE koppeling.
+ * Een club-/teamtoewijzing geeft alleen zichtbaarheid + team-/clubscope.
+ * Deelniveaus (coachSharingLevel) blijven altijd als aparte laag gelden.
+ * ------------------------------------------------------------------ */
+
+export type TrainerRelation = {
+  directLink: boolean;
+  clubTeamAssignment: boolean;
+};
+
+export async function getTrainerRelation(
+  coachClerkId: string,
+  athleteClerkId: string,
+): Promise<TrainerRelation> {
+  const directLink = await hasAcceptedCoachLink(coachClerkId, athleteClerkId);
+  // Toewijzing wordt óók bepaald als er al een directe link is: rosters en
+  // rapportage willen beide relaties eerlijk kunnen tonen.
+  const assigned = await clubAssignedAthleteIds(coachClerkId);
+  return { directLink, clubTeamAssignment: assigned.includes(athleteClerkId) };
+}
+
+export type TrainerCapabilities = {
+  /** Sporter mag in de werkruimte geïdentificeerd worden (roster). */
+  hasAnyTrainerVisibility: boolean;
+  /** Individuele coachdata lezen (cockpit, herstel/gezondheid binnen deelniveau). */
+  canReadIndividualCoachData: boolean;
+  /** Individuele training of planaanpassing voorstellen/adopteren. */
+  canProposeIndividualTraining: boolean;
+  /** Individuele berichten sturen/lezen. */
+  canMessageIndividually: boolean;
+  /** Transparante coachafspraken (coach_context_items) vastleggen. */
+  canWriteCoachContext: boolean;
+  /** Echte privénotities maken/lezen (alleen eigen notities). */
+  canUsePrivateNotes: boolean;
+  /** Team-/groepstraining voorstellen (clubcontext). */
+  canProposeTeamTraining: boolean;
+  /** Team-/clubcommunicatie gebruiken (club_messages-scopes). */
+  canUseTeamCommunication: boolean;
+};
+
+/**
+ * Pure rechtenmatrix — de ENIGE plek waar relatie → capability wordt vertaald.
+ * Bewust een pure functie zodat de matrix los van de database testbaar is.
+ */
+export function trainerCapabilities(rel: TrainerRelation): TrainerCapabilities {
+  const any = rel.directLink || rel.clubTeamAssignment;
+  return {
+    hasAnyTrainerVisibility: any,
+    canReadIndividualCoachData: rel.directLink,
+    canProposeIndividualTraining: rel.directLink,
+    canMessageIndividually: rel.directLink,
+    canWriteCoachContext: rel.directLink,
+    canUsePrivateNotes: rel.directLink,
+    canProposeTeamTraining: rel.clubTeamAssignment,
+    canUseTeamCommunication: rel.clubTeamAssignment,
+  };
+}
+
+/** Directe geaccepteerde coachkoppeling — vereist voor individuele begeleiding. */
+export async function hasDirectCoachAccess(
+  coachClerkId: string,
+  athleteClerkId: string,
+): Promise<boolean> {
+  return hasAcceptedCoachLink(coachClerkId, athleteClerkId);
+}
+
+/** Geldige club-/teamtoewijzing (zonder uitspraak over directe link). */
+export async function hasClubTeamTrainerAccess(
+  coachClerkId: string,
+  athleteClerkId: string,
+): Promise<boolean> {
+  const assigned = await clubAssignedAthleteIds(coachClerkId);
+  return assigned.includes(athleteClerkId);
+}
+
 export async function hasAcceptedParentLink(
   parentClerkId: string,
   athleteClerkId: string,
