@@ -8,6 +8,7 @@ import { cleanupClimbCacheDb } from "./lib/climbs/cache";
 import { startReminderScheduler } from "./lib/reminder-scheduler";
 import { ensureBillingFlagSeed, expireBillingStates } from "./lib/billing";
 import { startRouteEnvWarmupScheduler } from "./lib/route-env-warmup";
+import { sweepObservationCleanup } from "./jobs/observation-cleanup";
 
 // Productie faalt hard bij ontbrekende verplichte configuratie — liever een
 // duidelijke boot-fout dan een half-werkende app met stille gaten.
@@ -142,6 +143,26 @@ app.listen(port, (err) => {
       ),
     24 * 60 * 60 * 1000,
   ).unref?.();
+
+  // Periodieke observatie-opschoning: dezelfde regels als de handmatige job
+  // (status "outdated", nooit harde deletes, observation_cleanup-event met
+  // ids per gebruiker). Draait bij boot en daarna dagelijks, zodat verouderde
+  // observaties ook zonder handmatige run verdwijnen. Idempotent: al
+  // gemarkeerde rijen zijn niet meer actief.
+  const runObservationSweep = () =>
+    void sweepObservationCleanup("periodiek")
+      .then((r) => {
+        if (r.flagged > 0)
+          logger.info(
+            { cleanup: "observations", ...r },
+            "Periodieke observatie-opschoning heeft rijen gemarkeerd",
+          );
+      })
+      .catch((err) =>
+        logger.error({ err }, "Periodieke observatie-opschoning faalde"),
+      );
+  runObservationSweep();
+  setInterval(runObservationSweep, 24 * 60 * 60 * 1000).unref?.();
 
   // Achtergrond-warm-up van de route-omgevingsdata (Overpass + wegobjecten-
   // corridor) rond woonlocaties en recent gegenereerde gebieden, zodat de

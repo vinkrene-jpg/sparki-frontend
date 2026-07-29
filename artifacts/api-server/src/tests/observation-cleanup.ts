@@ -18,7 +18,11 @@ import {
   aiMemoryEventsTable,
   privacySettingsTable,
 } from "@workspace/db";
-import { planCleanup, runObservationCleanup } from "../jobs/observation-cleanup";
+import {
+  planCleanup,
+  runObservationCleanup,
+  runAutomaticObservationCleanup,
+} from "../jobs/observation-cleanup";
 import {
   citesWattValue,
   contentSignature,
@@ -171,6 +175,45 @@ async function dbTests() {
     outdatedRows.length === 2 &&
       outdatedRows.some((r) => r.status === "outdated") &&
       outdatedRows.some((r) => r.status === "new"),
+  );
+
+  // Automatisch pad (event-gedreven/periodiek): zelfde regels, zelfde event,
+  // met trigger-metadata zodat te zien is wáárom de run draaide.
+  await db.insert(aiObservationsTable).values({
+    clerkId: TEST_CLERK,
+    sourceType: "training_analysis",
+    title: "FTP-terugval opnieuw",
+    observationText: "Opnieuw een terugval van 331W zichtbaar in je data.",
+    status: "new",
+  } as typeof aiObservationsTable.$inferInsert);
+  const autoReport = await runAutomaticObservationCleanup(
+    TEST_CLERK,
+    "ftp_achterhaald",
+  );
+  check(
+    "automatische run markeert de nieuwe 331W-rij",
+    autoReport != null &&
+      autoReport.applied &&
+      autoReport.flagged.length === 1 &&
+      autoReport.flagged[0]?.reason === "achterhaalde_ftp_waarde",
+    JSON.stringify(autoReport?.flagged),
+  );
+  const cleanupEvents = (
+    await db
+      .select()
+      .from(aiMemoryEventsTable)
+      .where(eq(aiMemoryEventsTable.clerkId, TEST_CLERK))
+  ).filter((e) => e.eventType === "observation_cleanup");
+  const autoEvent = cleanupEvents.find(
+    (e) => (e.metadata as { trigger?: string } | null)?.trigger === "ftp_achterhaald",
+  );
+  check(
+    "automatische run logt observation_cleanup-event met trigger en ids",
+    cleanupEvents.length === 2 &&
+      autoEvent != null &&
+      Array.isArray((autoEvent.metadata as { ids?: number[] }).ids) &&
+      (autoEvent.metadata as { ids: number[] }).ids.length === 1,
+    JSON.stringify(cleanupEvents.map((e) => e.metadata)),
   );
 
   await cleanup();

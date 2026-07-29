@@ -152,6 +152,7 @@ export function planCleanup(
 export async function runObservationCleanup(
   clerkId: string,
   apply: boolean,
+  trigger: string = "handmatig",
 ): Promise<CleanupReport> {
   const active = await db
     .select()
@@ -189,6 +190,7 @@ export async function runObservationCleanup(
         ),
       );
     await recordMemoryEvent(clerkId, "observation_cleanup", null, {
+      trigger,
       flagged: flagged.length,
       byReason: flagged.reduce<Record<string, number>>((acc, f) => {
         acc[f.reason] = (acc[f.reason] ?? 0) + 1;
@@ -219,6 +221,50 @@ export async function runObservationCleanup(
     applied: apply && flagged.length > 0,
     activeAfter,
   };
+}
+
+// ── Automatische runs ────────────────────────────────────────────────────────
+//
+// Dezelfde regels als de handmatige job (nooit harde deletes, status
+// "outdated", observation_cleanup-event met ids), maar veilig aan te roepen
+// vanuit event-paden en de periodieke sweep: een fout mag de aanroeper nooit
+// breken. `trigger` maakt in het event zichtbaar wáárom de run draaide.
+export async function runAutomaticObservationCleanup(
+  clerkId: string,
+  trigger: string,
+): Promise<CleanupReport | null> {
+  try {
+    const report = await runObservationCleanup(clerkId, true, trigger);
+    if (report.applied) {
+      console.log(
+        `[observation-cleanup] auto (${trigger}) ${clerkId}: ${report.flagged.length} gemarkeerd, ${report.activeAfter} actief over`,
+      );
+    }
+    return report;
+  } catch (err) {
+    console.error(
+      `[observation-cleanup] automatische run (${trigger}) faalde voor ${clerkId}:`,
+      err,
+    );
+    return null;
+  }
+}
+
+// Periodieke sweep over alle gebruikers met actieve observaties. Idempotent:
+// al-gemarkeerde rijen zijn niet meer actief en worden nooit opnieuw geraakt.
+export async function sweepObservationCleanup(
+  trigger = "periodiek",
+): Promise<{ users: number; flagged: number }> {
+  const users = await db
+    .selectDistinct({ clerkId: aiObservationsTable.clerkId })
+    .from(aiObservationsTable)
+    .where(inArray(aiObservationsTable.status, [...ACTIVE_STATUSES]));
+  let flagged = 0;
+  for (const u of users) {
+    const report = await runAutomaticObservationCleanup(u.clerkId, trigger);
+    if (report?.applied) flagged += report.flagged.length;
+  }
+  return { users: users.length, flagged };
 }
 
 // ── CLI ──────────────────────────────────────────────────────────────────────

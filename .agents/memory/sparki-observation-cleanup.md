@@ -22,6 +22,13 @@ achterhaalde_ftp_waarde → verouderd_doel (>14d old, "doel"+watts not matching 
 → zelfde_strekking (newest kept as representant). Reports ids before, re-counts after, logs
 `observation_cleanup` event.
 
+**Automatic runs (task "vanzelf opruimen"):** same rules, never delete. Two paths:
+event-driven — derived-load-backfill self-heal fires `runAutomaticObservationCleanup(clerkId,
+"ftp_achterhaald")` AFTER commit when it newly marks `[achterhaald]` rows (RETURNING id count);
+periodic — `sweepObservationCleanup()` at api-server boot + daily setInterval over all users with
+active observations. Event metadata carries `trigger` so auto vs manual runs are distinguishable.
+Cleanup call must run after the tx commits or it won't see the freshly marked FTP rows.
+
 **Why:** production user accumulated 120 "new" rows retelling the same FTP story; the fake
 "terugval van 331W" came from an outdated derived FTP row, not a real decline.
 

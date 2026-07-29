@@ -12,7 +12,6 @@
 - [Sparki invitation/tester flow](sparki-invitations.md) — token invites grant role+link; one-time accept must be atomic (conditional status flip in a transaction), not read-then-update.
 - [Sparki connector honesty](sparki-connectors-honesty.md) — pending shells persist consent, import niets; readiness = effectieve beschikbaarheid ([ownership](sparki-connectors-ownership.md); [Garmin/Wahoo](sparki-device-sync.md) fail-closed secrets, manualFields sacred, [webhooks](sparki-device-webhooks.md); [sync layer](sparki-connect-sync-layer.md) consentExpired, catch-up busy=skip).
 - [Sparki wedstrijdkalender-import](sparki-calendar-import.md) — Fietssport+We-Tri real/parseable; KNWU full calendar+login unreachable SPA (honest-limited, never faked); regex parsers, SSRF allowlist.
-- [Sparki Smart Missing Input Flow](sparki-missing-input.md) — registry + focus/return/retry empty-state framework.
 - [Sparki Bike Fit BF_00](sparki-bike-fit-bf00.md) — CV keuze ISOLATED_PYTHON_WORKER; tasks-vision npm is browser-only (faalt op DOM); gates eisen uitgevoerd bewijs, niet future-tense.
 - [Sparki Strava OAuth + import](sparki-strava-oauth.md) — per-user OAuth; redirect_uri from REPLIT_DOMAINS; ingest via Data Hub ([import](sparki-strava-activity-import.md), [webhooks](sparki-strava-webhook-sync.md)).
 - [Sparki Onboarding V2](sparki-onboarding-v2.md) — adaptive Q&A engine: fixed catalog, nonsense fails honestly w/ skip escape; Q&A-only leaves hours/FTP estimated ([connect step](sparki-onboarding-connect-step.md): mandatory step, connecting optional — honesty).
@@ -41,7 +40,7 @@
 - [Sparki Input Center & ACL timing](sparki-input-center.md) — one central composer; object ACL can only be set AFTER bytes exist (presign→PUT→set-ACL-on-persist), never before.
 - [Sparki Materiaalcoach & fietsscan](sparki-materiaalcoach.md) — photo-driven honest advice; confidence-gated extra-photo ask; cost only for material kind; photos owner-checked served ([fietsscan](sparki-bike-scan.md): original saved before cutout, @imgly needs direct onnxruntime-web dep, asset provenance mandatory).
 - [Sparki Document Analysis](sparki-document-analysis.md) — reads race/technical guides (PDF/image) via Anthropic document block; honest gevonden/ontbreekt + deterministic follow-ups; links+enriches races.
-- [Sparki inline input actions](sparki-inline-input-actions.md) — Home coach-surface empty states must offer direct inline actions (real mutation hook + dashboard invalidate), never "ga naar X" text.
+- [Sparki inline input actions](sparki-inline-input-actions.md) — coach-surface empty states offer direct inline actions (real mutation + invalidate), never "ga naar X" ([missing-input flow](sparki-missing-input.md): registry + focus/return/retry framework).
 - [Sparki Observation & Coach Engine](sparki-observation-engine.md) — deterministic coach brain; ≥2-signal guard (health exception), confidence capped <100, weather always missing, no-"AI" copy.
 - [Sparki page-intelligence principle](sparki-intelligence-principle.md) — no dumb static lists/cards/maps; every surface personalized to athlete type/intent + carries Sparki's proactive judgment.
 - [Sparki self-update hub](sparki-self-update-hub.md) — Vandaag = sole self-input surface (state view); deep-links must force state view; move ALL producers (incl backend nudge) with a relocated panel.
@@ -57,7 +56,7 @@
 - [Sparki Core living profile](sparki-core-profile.md) — /you shows what Sparki DERIVED (lenses, identity, evolution); settings in drill-in sheet; exclude daily_briefing from lenses ([visual language](sparki-core-playground.md): calm-not-jerky, uncertainty=hazy, stretch=2 strong pulls).
 - [Sparki Core-prediction engine](core-prediction-engine.md) — per-workout Core forecast nu→tijdens→eind→herstel; exhaustive factor coverage (gap=honest "missing").
 - [Sparki Performance Intelligence Hub](sparki-intel-hub.md) — /kennis "Voor jou" intel module; gated by knowledge_base flag; feed at root not /feed (decl before /:id); details in topic file.
-- [Sparki hand-rolled modal layering](sparki-modal-layering.md) — custom fixed modals must createPortal to body + z-[70]+; z-50 collides with bottom nav, hiding buttons (silent "nothing happens").
+- [Sparki hand-rolled modal layering](sparki-modal-layering.md) — custom fixed modals createPortal to body + z-[70]+ (z-50 collides with bottom nav, silent "nothing happens"); [chat overlay](sparki-chat-overlay.md) header SPARKI button, portal z-[80].
 - [Sparki experience-first restructure](sparki-experience-restructure.md) — approved Beleven→Ontdekken→Begrijpen→Verbeteren reorg; 5-tab nav (Vandaag·Activiteiten·Ontdekken·Trainen·Jij).
 - [Sparki home weather](sparki-home-weather.md) — real Open-Meteo for home location on everyday surfaces; home-advisory representative session must be ≥120min or heat reads diverge from daily-advice engine.
 - [Drizzle/DB migratie-traps](drizzle-onconflict-partial-index.md) — onConflict partial-index predicate keys; guarded ADD CONSTRAINT ([migratie](db-nondestructive-constraint-migration.md)); drift ([push](drizzle-push-drift-loops.md)).
@@ -69,7 +68,6 @@
 - [Sparki Sound Studio](sparki-sound-studio.md) — original audio identity + in-app wekker; web can't ring locked phone (state it); dedupe on LOCAL date; optimistic restore even on first write.
 - [Sparki World architecture](sparki-world.md) — transparently-fictional Virtual Athletes island; cache-first Media Engine (promptKey UNIQUE, avatars carry slug/scenes don't); hard wall to real data; honest gaps.
 - [Sparki presentation variation](sparki-presentation-variation.md) — per-app-open seed rotates only ORDER + which real insight leads; numbers stable, urgent never demoted, seed-0 no-op.
-- [Sparki chat overlay & session thread](sparki-chat-overlay.md) — chat opens from header SPARKI button (portal z-[80]).
 - [Sparki Wedstrijd-room](sparki-race-room.md) — race-day media montage; dayIndex 1-based end-to-end; ScreenShell leaks coach card on COACH_CARD_SECTIONS — use `bare`.
 - [Local-date UTC off-by-one trap](local-date-utc-trap.md) — toISOString().slice(0,10) gives UTC date; for NL local calendar days build from local getters.
 - [Long-running jobs in this sandbox](sandbox-background-jobs.md) — nohup/setsid bg jobs die at tool-call boundaries; run long one-shot jobs as a console workflow + poll.
@@ -158,4 +156,4 @@
 - [Git history cleanup (filter-repo + LFS)](git-history-cleanup.md) — pip install git-filter-repo; verwijdert origin-remote (re-add na afloop); LFS-objecten blijven in .git/lfs tot handmatige delete; fix tracking branch vóór force-push.
 - Prod-validatie: [publicatiecontrole](sparki-publish-check.md) bundle-grep + curl prod-JS; [ingelogde validatie](sparki-logged-in-validation.md) Clerk ticket-login; [browserchecks](prod-browser-checks.md) eigen Playwright in /tmp (runTest raakt dev-app).
 - [Sparki Stripe-testomgeving](sparki-stripe-testmode.md) — flag+allowlist AND-grendels, webhook idempotent-in-tx (rollback = herleverbaar), fake gateway + echte HMAC-signaturen, rawBody-verify in app.ts.
-- [Sparki observatie-opschoning](sparki-observation-cleanup.md) — persist-poorten (achterhaalde FTP + strekking-dedupe) + auditbare cleanup-job (status outdated, nooit delete); job-CLI-guard matcht ook testbundel met zelfde naam.
+- [Sparki observatie-opschoning](sparki-observation-cleanup.md) — persist-poorten + cleanup-job (outdated, nooit delete) draait nu ook automatisch (FTP-achterhaald-event ná commit + dagelijkse sweep, trigger in event); CLI-guard matcht ook testbundel.

@@ -302,6 +302,7 @@ export async function recalibrateEstimatedFtp(
     (!latestDerived || latestReal.measuredAt >= latestDerived.measuredAt)
   ) {
     const { recordValueEvent: recordRepair } = await import("./passport");
+    let newlyOutdatedFtpRows = 0;
     await db.transaction(async (tx) => {
       await tx
         .update(athleteProfilesTable)
@@ -320,14 +321,16 @@ export async function recalibrateEstimatedFtp(
       // ze blijven bestaan (historie is heilig) maar worden gemarkeerd zodat
       // ze niet meer als toonbare FTP-waarde verschijnen. Idempotent: een al
       // gemarkeerde rij wordt niet nogmaals geprefixt.
-      await tx.execute(
+      const marked = await tx.execute(
         sql`UPDATE ftp_history
             SET notes = '[achterhaald] ' || coalesce(notes, '')
             WHERE clerk_id = ${clerkId}
               AND test_type = 'derived'
               AND measured_at <= ${latestReal.measuredAt}
-              AND coalesce(notes, '') NOT LIKE '[achterhaald]%'`,
+              AND coalesce(notes, '') NOT LIKE '[achterhaald]%'
+            RETURNING id`,
       );
+      newlyOutdatedFtpRows = marked.rows.length;
       if (profile.ftp !== latestReal.ftpWatts) {
         await recordRepair(
           {
@@ -347,6 +350,19 @@ export async function recalibrateEstimatedFtp(
         );
       }
     });
+    // Event-gedreven opschoning: zodra afgeleide FTP-rijen zojuist als
+    // [achterhaald] zijn gemarkeerd, kunnen observaties die die wattages
+    // citeren niet langer kloppen. Draai de opschoonjob (zelfde regels als de
+    // handmatige run: status "outdated", nooit delete, observation_cleanup-
+    // event met ids) direct voor deze gebruiker. Best-effort: een fout hier
+    // mag het zelfherstel nooit breken. Ná de commit, zodat de opschoning de
+    // gemarkeerde rijen echt ziet.
+    if (newlyOutdatedFtpRows > 0) {
+      const { runAutomaticObservationCleanup } = await import(
+        "../jobs/observation-cleanup"
+      );
+      await runAutomaticObservationCleanup(clerkId, "ftp_achterhaald");
+    }
     return { changed: true, ftp: latestReal.ftpWatts };
   }
 
