@@ -169,7 +169,8 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 ## 6. R — Runtimevalidatie vereist
 
 ### R-01 — P01 achterhaalde FTP-rij
-- **Categorie:** RUNTIME_VALIDATION · **Status:** NEEDS_RUNTIME_VALIDATION
+- **Categorie:** RUNTIME_VALIDATION · **Status:** FIXED_NOT_VERIFIED (runtimebewijs geleverd 2026-07-29; VERIFIED_FIXED na onafhankelijke controle)
+- **Runtimebewijs (2026-07-29):** Productiedatabase (read-only): het testaccount heeft `athlete_profiles.ftp = 258` en `ftp_history` = [331 W `derived` 2026-05-25 met notes `[achterhaald] …`, 250 W `manual` 2026-06-22, 258 W `strava` 2026-06-26]. Profiel-FTP == nieuwste geldige historierij (258) voor álle prod-accounts (LATERAL-join-query, 2/2 consistent). Selectielogica: huidige FTP komt overal uit `athlete_profiles.ftp` (via `GET /api/athlete/profile`); historie-lezingen (`GET /api/athlete/ftp`, `artifacts/api-server/src/routes/athlete.ts:2329-2336`) sluiten `derived`-rijen met notes `[achterhaald]%` expliciet en toetsbaar uit; datum-afhankelijke berekeningen gebruiken `ftpAtDate` (`src/lib/derived-load.ts:68-88`): nieuwste meting ≤ datum wint, deterministische tie-break. 331 W verschijnt dus uitsluitend als (gemarkeerde) historie, nergens als actuele waarde. Runtime op actieve routes (dev, testaccount `dev_qa_athlete`): `GET /api/athlete/ftp` geeft historie correct gesorteerd (268 nieuwste), cross-account-check gaf gescheiden waarden per `x-dev-clerk-id`. Screenshots 390/1440 px: `screenshots/runtime-ftp-paspoort-{390,1440}.jpg`. Kanttekening (geen productcode-defect): het geseedde dev-account `dev_qa_athlete` heeft historie maar `profile.ftp = null` — seed-inconsistentie in dev, prod is consistent.
 - **Bewijsbron:** Master plan v2.84 revisie: rij 8 gemarkeerd "achterhaald" en behouden (niet verwijderd)
 - **Te controleren:**
   - wordt rij 8 server-side uitgesloten als actuele FTP-waarde?
@@ -181,7 +182,8 @@ De belangrijkste observatie: de master plan loopt op sommige domeinen (Stripe/bi
 - **Laatst bijgewerkt:** 2026-07-28
 
 ### R-02 — P03 Nederlandse ai_observations
-- **Categorie:** RUNTIME_VALIDATION · **Status:** NEEDS_RUNTIME_VALIDATION
+- **Categorie:** RUNTIME_VALIDATION · **Status:** FIXED_NOT_VERIFIED (runtimebewijs geleverd 2026-07-29; VERIFIED_FIXED na onafhankelijke controle)
+- **Runtimebewijs (2026-07-29):** Productiedatabase (read-only): 161 observaties over precies 2 gebruikers, elk strikt aan één `clerk_id` gekoppeld; het testaccount heeft 120 actieve (`new`) observaties, alle titels Nederlands (steekproef 40 nieuwste + regex-scan op Engelstalige patronen: 0 echte treffers; de eerder "vertaalde" batch is opgegaan in dit Nederlandstalige bestand). Geen actieve dubbele `dedupe_key`s (query: 0 rijen). Selectie server-side: `getActiveObservations` (`artifacts/api-server/src/lib/ai-memory.ts:165-181`) filtert op eigen `clerk_id` + status (`new`/`acknowledged`/`saved`) + niet-verlopen `expires_at`; dedupe bij persist via `dedupe_key` (`ai-memory.ts:75-162`). Route: `GET /api/ai/observations` (`src/routes/ai.ts:219`). Lege toestand runtime bevestigd op actieve route: dev-account zonder observaties krijgt eerlijk `{"observations":[],"groups":{}}` — geen mock-, seed- of fallbackinhoud; bij API-fout toont de UI via React Query een lege/foutstaat, er bestaat geen voorbeeldinhoud-pad. Screenshot 390 px: `screenshots/runtime-observaties-train-390.jpg`.
 - **Bewijsbron:** `docs/P03_LANGUAGE_REPAIR_APPLY_2026-07-28.md` — een apply-document, **geen database-uittreksel**
 - **Te controleren op productieprimary:**
   - de bedoelde 12 observaties zijn daadwerkelijk aangepast;
