@@ -35,8 +35,7 @@ import { writeAudit } from "../lib/security/audit";
 import { computeReadiness } from "../lib/sharing";
 import {
   coachSharingLevel,
-  hasDirectCoachAccess,
-  hasClubTeamTrainerAccess,
+  hasDirectCoachLink,
   clubAssignedAthleteIds,
   hasRole,
 } from "../engines/coaching";
@@ -60,21 +59,16 @@ async function requireCoach(clerkId: string, res: import("express").Response) {
 }
 
 // Toestemmingsgate voor individuele data-inzage/-wijziging: DIRECTE
-// geaccepteerde koppeling én sharing != none. Fail-closed. Een club-/team-
-// toewijzing geeft alleen zichtbaarheid — nooit individuele cockpit-toegang
-// (WP-01C rechtendifferentiatie).
+// geaccepteerde koppeling én sharing != none. Fail-closed. Club-toegewezen
+// trainers mogen alleen het sportersoverzicht (roster/dashboard) zien —
+// de individuele cockpit en alle schrijfacties vereisen een directe link.
 async function gateAthlete(
   coachId: string,
   athleteId: string,
   res: import("express").Response,
 ): Promise<"summary" | "full" | null> {
-  if (!(await hasDirectCoachAccess(coachId, athleteId))) {
-    const teamOnly = await hasClubTeamTrainerAccess(coachId, athleteId);
-    res.status(403).json({
-      error: teamOnly
-        ? "Individuele begeleiding vereist een directe koppeling met deze sporter"
-        : "Geen gekoppelde atleet",
-    });
+  if (!(await hasDirectCoachLink(coachId, athleteId))) {
+    res.status(403).json({ error: "Geen gekoppelde atleet" });
     return null;
   }
   const sharing = await coachSharingLevel(athleteId);
@@ -684,9 +678,7 @@ router.post("/workouts/bulk", requireAuth, async (req, res) => {
     const created: string[] = [];
     const skipped: Array<{ athleteClerkId: string; reason: string }> = [];
     for (const athleteId of athleteIds) {
-      if (!(await hasDirectCoachAccess(coachId, athleteId))) {
-        // Ook bij een geldige teamtoewijzing: individuele training vereist
-        // een directe koppeling (WP-01C).
+      if (!(await hasDirectCoachLink(coachId, athleteId))) {
         skipped.push({ athleteClerkId: athleteId, reason: "geen_koppeling" });
         continue;
       }
@@ -904,14 +896,15 @@ function parseMessageBody(body: Record<string, unknown>) {
   return { text, subjectType, subjectId, subjectKey };
 }
 
-// Coachkant: berichten met één sporter.
+// Coachkant: berichten met één sporter. Vereist directe koppeling —
+// club-toegewezen trainers hebben geen individuele berichtenstroom.
 router.get("/athletes/:athleteId/messages", requireAuth, async (req, res) => {
   const coachId = getClerkUserId(req)!;
   if (!(await requireCoach(coachId, res))) return;
   const athleteId = String(req.params.athleteId);
   try {
-    if (!(await hasDirectCoachAccess(coachId, athleteId))) {
-      res.status(403).json({ error: "Individuele berichten vereisen een directe koppeling" });
+    if (!(await hasDirectCoachLink(coachId, athleteId))) {
+      res.status(403).json({ error: "Geen gekoppelde atleet" });
       return;
     }
     const messages = await db
@@ -956,8 +949,8 @@ router.post("/athletes/:athleteId/messages", requireAuth, async (req, res) => {
     return;
   }
   try {
-    if (!(await hasDirectCoachAccess(coachId, athleteId))) {
-      res.status(403).json({ error: "Individuele berichten vereisen een directe koppeling" });
+    if (!(await hasDirectCoachLink(coachId, athleteId))) {
+      res.status(403).json({ error: "Geen gekoppelde atleet" });
       return;
     }
     const [message] = await db
@@ -1033,7 +1026,7 @@ router.post("/messages/reply", requireAuth, async (req, res) => {
     return;
   }
   try {
-    if (!(await hasDirectCoachAccess(coachClerkId, clerkId))) {
+    if (!(await hasDirectCoachLink(coachClerkId, clerkId))) {
       res.status(403).json({ error: "Geen gekoppelde coach" });
       return;
     }
@@ -1141,8 +1134,11 @@ router.put("/context-items/:itemId", requireAuth, async (req, res) => {
       return;
     }
     // Wijzigen is een individuele schrijfactie: vereist een actuele directe
-    // koppeling (einde link of team-only ⇒ 403), WP-01C.
-    if (!(await gateAthlete(coachId, existingItem.athleteClerkId, res))) return;
+    // koppeling (einde link of team-only ⇒ 403).
+    if (!(await hasDirectCoachLink(coachId, existingItem.athleteClerkId))) {
+      res.status(403).json({ error: "Directe coachkoppeling vereist" });
+      return;
+    }
     const set: Record<string, unknown> = { updatedAt: new Date() };
     if (typeof body.body === "string" && body.body.trim())
       set.body = body.body.trim().slice(0, 1000);
@@ -1152,12 +1148,7 @@ router.put("/context-items/:itemId", requireAuth, async (req, res) => {
     const [item] = await db
       .update(coachContextItemsTable)
       .set(set)
-      .where(
-        and(
-          eq(coachContextItemsTable.id, itemId),
-          eq(coachContextItemsTable.coachClerkId, coachId),
-        ),
-      )
+      .where(eq(coachContextItemsTable.id, itemId))
       .returning();
     if (!item) {
       res.status(404).json({ error: "Item niet gevonden" });
@@ -1192,17 +1183,14 @@ router.delete("/context-items/:itemId", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Item niet gevonden" });
       return;
     }
-    // Verwijderen is een individuele schrijfactie: actuele directe koppeling
-    // vereist (WP-01C).
-    if (!(await gateAthlete(coachId, existingItem.athleteClerkId, res))) return;
+    // Verwijderen is een individuele schrijfactie: actuele directe koppeling vereist.
+    if (!(await hasDirectCoachLink(coachId, existingItem.athleteClerkId))) {
+      res.status(403).json({ error: "Directe coachkoppeling vereist" });
+      return;
+    }
     const [item] = await db
       .delete(coachContextItemsTable)
-      .where(
-        and(
-          eq(coachContextItemsTable.id, itemId),
-          eq(coachContextItemsTable.coachClerkId, coachId),
-        ),
-      )
+      .where(eq(coachContextItemsTable.id, itemId))
       .returning({ id: coachContextItemsTable.id });
     if (!item) {
       res.status(404).json({ error: "Item niet gevonden" });
@@ -1226,7 +1214,7 @@ router.get("/athletes/:athleteId/private-notes", requireAuth, async (req, res) =
   if (!(await requireCoach(coachId, res))) return;
   const athleteId = String(req.params.athleteId);
   try {
-    if (!(await hasDirectCoachAccess(coachId, athleteId))) {
+    if (!(await hasDirectCoachLink(coachId, athleteId))) {
       res.status(403).json({ error: "Privénotities vereisen een directe koppeling" });
       return;
     }
@@ -1260,7 +1248,7 @@ router.post("/athletes/:athleteId/private-notes", requireAuth, async (req, res) 
     return;
   }
   try {
-    if (!(await hasDirectCoachAccess(coachId, athleteId))) {
+    if (!(await hasDirectCoachLink(coachId, athleteId))) {
       res.status(403).json({ error: "Privénotities vereisen een directe koppeling" });
       return;
     }
@@ -1309,7 +1297,7 @@ router.put("/private-notes/:noteId", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Notitie niet gevonden" });
       return;
     }
-    if (!(await hasDirectCoachAccess(coachId, existing.athleteClerkId))) {
+    if (!(await hasDirectCoachLink(coachId, existing.athleteClerkId))) {
       res.status(403).json({ error: "Privénotities vereisen een directe koppeling" });
       return;
     }
@@ -1353,14 +1341,28 @@ router.delete("/private-notes/:noteId", requireAuth, async (req, res) => {
     return;
   }
   try {
-    const [note] = await db
-      .delete(coachPrivateNotesTable)
+    // Eigenaarschap + Tier-1 gate: einde directe koppeling trekt verwijderen
+    // direct in — consistent met GET/POST/PUT.
+    const [existingNote] = await db
+      .select({ athleteClerkId: coachPrivateNotesTable.athleteClerkId })
+      .from(coachPrivateNotesTable)
       .where(
         and(
           eq(coachPrivateNotesTable.id, noteId),
           eq(coachPrivateNotesTable.ownerCoachClerkId, coachId),
         ),
-      )
+      );
+    if (!existingNote) {
+      res.status(404).json({ error: "Notitie niet gevonden" });
+      return;
+    }
+    if (!(await hasDirectCoachLink(coachId, existingNote.athleteClerkId))) {
+      res.status(403).json({ error: "Privénotities vereisen een directe koppeling" });
+      return;
+    }
+    const [note] = await db
+      .delete(coachPrivateNotesTable)
+      .where(eq(coachPrivateNotesTable.id, noteId))
       .returning({ id: coachPrivateNotesTable.id, athleteClerkId: coachPrivateNotesTable.athleteClerkId });
     if (!note) {
       res.status(404).json({ error: "Notitie niet gevonden" });

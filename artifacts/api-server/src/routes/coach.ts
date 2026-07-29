@@ -19,8 +19,7 @@ import { sessionSeed } from "../lib/variation";
 import { computeReadiness } from "../engines/recovery-load";
 import {
   coachSharingLevel,
-  hasDirectCoachAccess,
-  hasClubTeamTrainerAccess,
+  hasDirectCoachLink,
   clubAssignedAthleteIds,
   hasRole,
 } from "../engines/coaching";
@@ -35,7 +34,6 @@ import {
   recordCoachingFeedback,
   applyProfileCorrection,
 } from "../engines/observation";
-
 const router = Router();
 
 function todayISO() {
@@ -70,7 +68,7 @@ function planDayToWorkoutType(trainingType: string | null): string {
 // GET /api/coach/athletes — roster of accepted athletes, each gated by the
 // athlete's own dataSharingCoach preference.
 router.get("/athletes", requireAuth, async (req, res) => {
-  const coachId = getClerkUserId(req)!;
+    const coachId = getClerkUserId(req)!;
   if (!(await requireCoach(coachId, res))) return;
   try {
     const links = await db
@@ -163,38 +161,35 @@ router.get("/athletes", requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/coach/athletes/:athleteId — detail view, requires accepted link and
-// sharing != none. Shareable observations are athlete observations the athlete
-// has saved/acknowledged (not dismissed/new drafts).
+// GET /api/coach/athletes/:athleteId — detail view, requires direct accepted
+// link and sharing != none. Club-assigned trainers may only see the roster
+// overview (GET /athletes); the individual cockpit requires a direct link.
 router.get("/athletes/:athleteId", requireAuth, async (req, res) => {
-  const coachId = getClerkUserId(req)!;
-  if (!(await requireCoach(coachId, res))) return;
-  const athleteId = String(req.params.athleteId);
+    const coachId = getClerkUserId(req)!;
+    if (!(await requireCoach(coachId, res))) return;
+    const athleteId = String(req.params.athleteId);
   try {
-    if (!(await hasDirectCoachAccess(coachId, athleteId))) {
+    if (!(await hasDirectCoachLink(coachId, athleteId))) {
       res.status(403).json({ error: "Geen gekoppelde atleet" });
       return;
     }
-    const sharing = await coachSharingLevel(athleteId);
+      const sharing = await coachSharingLevel(athleteId);
     if (sharing === "none") {
-      res.json({ sharing, athlete: null, message: "Atleet deelt geen data" });
+      res.json({
+        sharing,
+        athlete: null,
+        plan: null,
+        days: [],
+        message: "Atleet deelt geen data",
+      });
       return;
     }
-    void writeAudit({
-      event: "viewed_by_coach",
-      actorClerkId: coachId,
-      subjectClerkId: athleteId,
-      meta: { rol: "coach", niveau: sharing },
-      req,
-    });
 
     const [profile] = await db
       .select({
         clerkId: userProfilesTable.clerkId,
         displayName: userProfilesTable.displayName,
         discipline: athleteProfilesTable.discipline,
-        healthStatus: athleteProfilesTable.healthStatus,
-        ftp: athleteProfilesTable.ftp,
       })
       .from(userProfilesTable)
       .leftJoin(
@@ -264,19 +259,19 @@ router.get("/athletes/:athleteId", requireAuth, async (req, res) => {
 });
 
 // GET /api/coach/athletes/:athleteId/plan — read-only view of the athlete's
-// current Sparki advisory plan (mode "advisory"). Requires an accepted link and
-// the athlete sharing != none. This NEVER modifies the coach's planned_workouts;
+// current Sparki advisory plan (mode "advisory"). Requires a direct accepted
+// link and sharing != none. This NEVER modifies the coach's planned_workouts;
 // it only surfaces Sparki's suggestion so the coach can decide what to act on.
 router.get("/athletes/:athleteId/plan", requireAuth, async (req, res) => {
-  const coachId = getClerkUserId(req)!;
-  if (!(await requireCoach(coachId, res))) return;
-  const athleteId = String(req.params.athleteId);
+    const coachId = getClerkUserId(req)!;
+    if (!(await requireCoach(coachId, res))) return;
+    const athleteId = String(req.params.athleteId);
   try {
-    if (!(await hasDirectCoachAccess(coachId, athleteId))) {
+    if (!(await hasDirectCoachLink(coachId, athleteId))) {
       res.status(403).json({ error: "Geen gekoppelde atleet" });
       return;
     }
-    const sharing = await coachSharingLevel(athleteId);
+      const sharing = await coachSharingLevel(athleteId);
     if (sharing === "none") {
       res.json({
         sharing,
@@ -301,7 +296,7 @@ router.get("/athletes/:athleteId/plan", requireAuth, async (req, res) => {
       )
       .where(eq(userProfilesTable.clerkId, athleteId));
 
-    const view = await loadPlanView(athleteId);
+      const view = await loadPlanView(athleteId);
     // Only surface advisory plans. An autonomous plan means the athlete is
     // self-coached and there is no advice to show in the coach portal.
     const isAdvisory = view?.plan?.mode === "advisory";
@@ -347,15 +342,15 @@ router.get("/athletes/:athleteId/plan", requireAuth, async (req, res) => {
 });
 
 // GET /api/coach/athletes/:athleteId/context — the athlete's personal-context
-// memories (examen, wedstrijd, blessure, slaap/spanning, kamp). Requires an
-// accepted link AND sharing != none. Only Sparki's neutral title/detail is
-// exposed — never the athlete's raw words or their personal answers.
+// memories (examen, wedstrijd, blessure, slaap/spanning, kamp). Requires a
+// direct accepted link AND sharing != none. Only Sparki's neutral title/detail
+// is exposed — never the athlete's raw words or their personal answers.
 router.get("/athletes/:athleteId/context", requireAuth, async (req, res) => {
-  const coachId = getClerkUserId(req)!;
-  if (!(await requireCoach(coachId, res))) return;
-  const athleteId = String(req.params.athleteId);
+    const coachId = getClerkUserId(req)!;
+    if (!(await requireCoach(coachId, res))) return;
+    const athleteId = String(req.params.athleteId);
   try {
-    if (!(await hasDirectCoachAccess(coachId, athleteId))) {
+    if (!(await hasDirectCoachLink(coachId, athleteId))) {
       res.status(403).json({ error: "Geen gekoppelde atleet" });
       return;
     }
@@ -379,11 +374,11 @@ router.get("/athletes/:athleteId/context", requireAuth, async (req, res) => {
 // that already has a coach session on its date is skipped — existing coach
 // workouts are never silently overwritten.
 router.post("/athletes/:athleteId/plan/adopt", requireAuth, async (req, res) => {
-  const coachId = getClerkUserId(req)!;
-  if (!(await requireCoach(coachId, res))) return;
-  const athleteId = String(req.params.athleteId);
+    const coachId = getClerkUserId(req)!;
+    if (!(await requireCoach(coachId, res))) return;
+    const athleteId = String(req.params.athleteId);
 
-  const body = req.body as { planDayIds?: unknown };
+  const body = req.body as Record<string, unknown>;
   const dayIds = Array.from(
     new Set(
       (Array.isArray(body.planDayIds) ? body.planDayIds : [])
@@ -397,17 +392,17 @@ router.post("/athletes/:athleteId/plan/adopt", requireAuth, async (req, res) => 
   }
 
   try {
-    if (!(await hasDirectCoachAccess(coachId, athleteId))) {
+    if (!(await hasDirectCoachLink(coachId, athleteId))) {
       res.status(403).json({ error: "Geen gekoppelde atleet" });
       return;
     }
-    const sharing = await coachSharingLevel(athleteId);
-    if (sharing === "none") {
-      res.status(403).json({ error: "Atleet deelt geen data" });
-      return;
-    }
+      const sharing = await coachSharingLevel(athleteId);
+      if (sharing === "none") {
+        res.status(403).json({ error: "Atleet deelt geen data" });
+        return;
+      }
 
-    const view = await loadPlanView(athleteId);
+      const view = await loadPlanView(athleteId);
     if (!view || view.plan.mode !== "advisory") {
       res.status(404).json({ error: "Geen adviesschema beschikbaar" });
       return;
@@ -428,17 +423,17 @@ router.post("/athletes/:athleteId/plan/adopt", requireAuth, async (req, res) => 
         continue;
       }
       // Never overwrite: if a coach session already exists on that date, skip.
-      const [existing] = await db
-        .select({ id: plannedWorkoutsTable.id })
-        .from(plannedWorkoutsTable)
-        .where(
-          and(
-            eq(plannedWorkoutsTable.clerkId, athleteId),
-            eq(plannedWorkoutsTable.scheduledDate, day.dayDate),
-            eq(plannedWorkoutsTable.source, "coach"),
-          ),
-        )
-        .limit(1);
+        const [existing] = await db
+          .select({ id: plannedWorkoutsTable.id })
+          .from(plannedWorkoutsTable)
+          .where(
+            and(
+              eq(plannedWorkoutsTable.clerkId, athleteId),
+              eq(plannedWorkoutsTable.scheduledDate, day.dayDate),
+              eq(plannedWorkoutsTable.source, "coach"),
+            ),
+          )
+          .limit(1);
       if (existing) {
         skipped.push({ dayId, reason: "already" });
         continue;
@@ -478,12 +473,7 @@ router.post(
     if (!(await requireCoach(coachId, res))) return;
     const athleteId = String(req.params.athleteId);
 
-    const body = (req.body ?? {}) as {
-      planDayId?: unknown;
-      decision?: unknown;
-      reasonText?: unknown;
-      adjustedNote?: unknown;
-    };
+  const body = req.body as Record<string, unknown>;
     const planDayId = Number(body.planDayId);
     const decision = String(body.decision ?? "");
     const reasonText =
@@ -514,7 +504,7 @@ router.post(
 
     try {
       // Toestemmingsgate — identiek aan het adopt-pad (fail-closed).
-      if (!(await hasDirectCoachAccess(coachId, athleteId))) {
+      if (!(await hasDirectCoachLink(coachId, athleteId))) {
         res.status(403).json({ error: "Geen gekoppelde atleet" });
         return;
       }
@@ -649,8 +639,6 @@ router.get("/analysis", requireAuth, requireCommercialFeature("ai_observations")
     const analysis = await runCoachAnalysis(clerkId, {
       variationSeed: sessionSeed(req),
     });
-    // Verantwoording: iedere uitgeleverde analyse draagt engine + versie +
-    // tijdstip, zodat elke conclusie herleidbaar is naar haar berekening.
     res.json({
       ...analysis,
       engine: "observation",
@@ -658,15 +646,13 @@ router.get("/analysis", requireAuth, requireCommercialFeature("ai_observations")
       generatedAt: new Date().toISOString(),
     });
   } catch (err) {
-    req.log.error({ err }, "coach.analysis failed");
-    res.status(500).json({ error: "Kon je analyse niet samenstellen" });
+    req.log.error({ err }, "coach.followup failed");
+    res.status(500).json({ error: "Kon je antwoord niet verwerken" });
   }
 });
 
-// POST /api/coach/followup — save the athlete's answer to one of Sparki's
-// follow-up questions, then return the freshly recomputed analysis so the advice
-// updates immediately. A "fris/oké/vermoeid" answer is a real check-in and is
-// persisted as actual daily metrics. Body: { questionId, answer }.
+// POST /api/coach/followup — de sporter beantwoordt een follow-up vraag van
+// Sparki (bijv. missing_checkin, profile_*). Body: { questionId, answer }.
 router.post("/followup", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
   const body = req.body as Record<string, unknown>;

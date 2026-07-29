@@ -147,11 +147,12 @@
 - Prod-validatie: [publicatiecontrole](sparki-publish-check.md) bundle-grep + curl prod-JS; [ingelogde validatie](sparki-logged-in-validation.md) Clerk ticket-login; [browserchecks](prod-browser-checks.md) eigen Playwright in /tmp (runTest raakt dev-app).
 - [Sparki Gratis vs Go paywall](sparki-go-paywall.md) — GO_FEATURE_KEYS commercieel-only gate (nooit via flags); UI faalt open; admin.ts bad-merge-corruptie herstel uit parent-commit.
 - [Sparki Stripe-testomgeving](sparki-stripe-testmode.md) — flag+allowlist AND-grendels, webhook idempotent-in-tx (rollback = herleverbaar), fake gateway + echte HMAC-signaturen, rawBody-verify in app.ts.
-- [Sparki observatie-opschoning](sparki-observation-cleanup.md) — auditbare cleanup-job (status "outdated", nooit delete); runScheduledObservationCleanup() draait automatisch via in-process scheduler (1×/Amsterdamse dag); admin-endpoint POST /api/admin/observation-cleanup voor on-demand; CLI-guard matcht ook testbundel.
+- [Sparki observatie-opschoning](sparki-observation-cleanup.md) — auditbare cleanup-job (status "outdated", nooit delete); draait automatisch 1×/Amsterdamse dag; admin POST /api/admin/observation-cleanup voor on-demand.
 - [Mentale Training kaarten](sparki-mental-training-cards.md) — diepgang per kaart (1–3 sterren, server-side); lagen voegen alleen toe, kern identiek op elk niveau.
 - [Sparki sterren-beoordelingen (build_ratings)](sparki-build-ratings.md) — beoordelen≠instellen; één register + BuildRatingBlock; ster-tik moet bestaande toelichting meesturen of de upsert wist hem.
 - [Meer-menu chapters SSOT](sparki-meer-chapters.md) — core-meer dropt ontbrekende chapters STIL via filter(Boolean); /samen-contract bewaakt door test:navigation.
 - [Sparki trainerwerkruimte WP-01](sparki-trainer-workspace-wp01.md) — hasCoachAccess = link ∪ geldige clubtoewijzing (read-time checks); deelniveaus aparte laag; dev-preview home rol-bewust; rollen in user_profiles.
+- [Sparki trainer toegangstiers](sparki-trainer-access-tiers.md) — Tier-1 hasDirectCoachLink voor ALLE schrijfacties/cockpit; Tier-2 hasCoachAccess alleen roster/dashboard; club-only trainer = geen individuele toegang.
 - [Sparki trainerrechten & privénotities](sparki-trainer-rights-wp01c.md) — capability-matrix: individuele begeleiding eist DIRECTE link (team-only = alleen naam); privénotities owner-only, uit sporterexport.
 - [Sparki hoofdtraineruitbreiding](sparki-hoofdtrainer.md) — verdelen team/groep, org-overzicht zonder gezondheidsdata, audit bij andermans training; partial index eist targetWhere.
 - [Sparki cluborganisatie](sparki-club-organisation.md) — wrapped unique-violation via err.cause; ÉÉN advisory-lock-key voor alle capacity-paden; activeAssignmentWindow op elk leespad.

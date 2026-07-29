@@ -188,10 +188,28 @@ export async function clubAssignedAthleteIds(
 }
 
 /**
- * Werkruimte-toegang van een trainer tot een sporter: directe geaccepteerde
- * coach-sporterkoppeling ÓF geldige club/teamtoewijzing. Elke read gaat door
- * deze check; client-side filtering is nooit de beveiliging. Deelniveaus
- * (coachSharingLevel) blijven daar bovenop onverkort gelden.
+ * TOEGANGSTIER 1 — Directe koppeling: de coach heeft een geaccepteerde
+ * coach-sporterlink met deze sporter. Vereist voor:
+ *  - individuele cockpit (signalen, trainingen, berichten, context-items)
+ *  - alle schrijfacties (plan overnemen, training aanmaken, besluit vastleggen)
+ *  - analyse-feedback op andermans observaties
+ * Dit is de strikte individuele coachrelatie.
+ */
+export async function hasDirectCoachLink(
+  coachClerkId: string,
+  athleteClerkId: string,
+): Promise<boolean> {
+  return hasAcceptedCoachLink(coachClerkId, athleteClerkId);
+}
+/**
+ * TOEGANGSTIER 2 — Werkruimte-zichtbaarheid: directe geaccepteerde koppeling
+ * ÓF geldige club/teamtoewijzing. Gebruikt voor:
+ *  - het sportersoverzicht (roster/dashboard) zodat club-toegewezen sporters
+ *    erin verschijnen;
+ *  - leesroutes die alleen naam + gedeeld samenvattingsniveau tonen.
+ * Individuele cockpit, schrijfacties en berichten vereisen hasDirectCoachLink.
+ * Elke read gaat door deze check; client-side filtering is nooit de beveiliging.
+ * Deelniveaus (coachSharingLevel) blijven daar bovenop onverkort gelden.
  */
 export async function hasCoachAccess(
   coachClerkId: string,

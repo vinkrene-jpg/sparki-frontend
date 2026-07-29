@@ -29,6 +29,7 @@ export {
 // Coach / parent sharing-access relationships and consent.
 export {
   hasAcceptedCoachLink,
+  hasDirectCoachLink,
   hasCoachAccess,
   hasDirectCoachAccess,
   hasClubTeamTrainerAccess,

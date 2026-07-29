@@ -11,7 +11,7 @@ import {
   type AnalysisFeedbackContext,
 } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { hasDirectCoachAccess, coachSharingLevel } from "../lib/sharing";
+import { hasDirectCoachLink, coachSharingLevel } from "../lib/sharing";
 import { SPARKI_ENGINE_VERSION } from "../lib/engine-version";
 
 // Feedbacklus op analyses en adviezen (Afbouwgolf 4).
@@ -26,7 +26,6 @@ import { SPARKI_ENGINE_VERSION } from "../lib/engine-version";
 // - VEILIGHEID: feedback wordt alleen geregistreerd en geaggregeerd; er is
 //   bewust géén schrijfpad dat op basis hiervan analyseregels of drempels
 //   aanpast.
-
 const router = Router();
 
 const VERDICTS = analysisFeedbackVerdicts as readonly string[];
@@ -112,14 +111,16 @@ async function observationBelongsTo(
 router.post("/", requireAuth, async (req, res) => {
   const actorClerkId = getClerkUserId(req)!;
   const body = (req.body ?? {}) as Record<string, unknown>;
-  const subjectType = String(body.subjectType ?? "");
+  const subjectType = body.subjectType
+    ? String(body.subjectType)
+    : null;
   const subjectKey = String(body.subjectKey ?? "").slice(0, 200);
   const verdict = String(body.verdict ?? "");
   const athleteClerkId = body.athleteClerkId
     ? String(body.athleteClerkId)
     : actorClerkId;
 
-  if (!SUBJECT_TYPES.includes(subjectType) || !subjectKey) {
+  if (!subjectType || !SUBJECT_TYPES.includes(subjectType) || !subjectKey) {
     res.status(400).json({ error: "Ongeldig onderwerp." });
     return;
   }
@@ -152,7 +153,7 @@ router.post("/", requireAuth, async (req, res) => {
     // coach met sharing ≠ none (club-/teamtoewijzing volstaat niet — WP-01C).
     let actorRole = "athlete";
     if (athleteClerkId !== actorClerkId) {
-      const linked = await hasDirectCoachAccess(actorClerkId, athleteClerkId);
+      const linked = await hasDirectCoachLink(actorClerkId, athleteClerkId);
       const level = linked ? await coachSharingLevel(athleteClerkId) : "none";
       if (!linked || level === "none") {
         res.status(403).json({ error: "Geen toegang tot deze sporter." });
