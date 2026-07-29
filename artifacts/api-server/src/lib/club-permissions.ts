@@ -1,4 +1,4 @@
-import { and, eq, isNull, inArray } from "drizzle-orm";
+import { and, eq, isNull, inArray, or, gte } from "drizzle-orm";
 import {
   db,
   clubsTable,
@@ -208,6 +208,16 @@ export async function checkCapacityByClubId(
   );
 }
 
+// WP-03: alleen toewijzingen zonder einddatum of met einddatum vandaag/later
+// tellen mee — beëindiging werkt daarmee direct op ieder leesmoment.
+export function activeAssignmentWindow() {
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Amsterdam" });
+  return or(
+    isNull(clubTrainerAssignmentsTable.endsOn),
+    gte(clubTrainerAssignmentsTable.endsOn, today),
+  );
+}
+
 // ── Trainer-toewijzing & consent ──────────────────────────────────────────────
 // Sporters die een trainer mag zien = leden van de teams/groepen waaraan die
 // trainer expliciet is toegewezen. Sportdata daarbovenop vereist consent.
@@ -222,6 +232,8 @@ export async function assignedAthleteIds(
       and(
         eq(clubTrainerAssignmentsTable.clubId, clubId),
         eq(clubTrainerAssignmentsTable.trainerClerkId, trainerClerkId),
+        // WP-03: beëindigde toewijzing telt direct niet meer mee.
+        activeAssignmentWindow(),
       ),
     );
   const teamIds = assignments.map((a) => a.teamId).filter((v): v is number => v != null);

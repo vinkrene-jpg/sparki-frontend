@@ -303,10 +303,10 @@ export function useSetClubConsent(clubId: number | null) {
 
 // ── Beheer ───────────────────────────────────────────────────────────────────
 
-export function useClubMembers(clubId: number | null, enabled = true) {
+export function useClubMembers(clubId: number | null, enabled = true, includeHistory = false) {
   return useQuery<ClubMemberRow[]>({
-    queryKey: ["clubs", clubId, "members"],
-    queryFn: () => apiFetch(`/api/clubs/${clubId}/members`),
+    queryKey: ["clubs", clubId, "members", includeHistory ? "historie" : "actief"],
+    queryFn: () => apiFetch(`/api/clubs/${clubId}/members${includeHistory ? "?historie=1" : ""}`),
     enabled: clubId != null && enabled,
   })
 }

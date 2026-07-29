@@ -433,18 +433,54 @@ function PlanRaceSection({ clubId }: { clubId: number }) {
 }
 
 function MembersSection({ clubId, myRole }: { clubId: number; myRole: ClubRole }) {
-  const { data: members } = useClubMembers(clubId)
+  const [showHistory, setShowHistory] = useState(false)
+  const [search, setSearch] = useState("")
+  const [roleFilter, setRoleFilter] = useState<ClubRole | "alle">("alle")
+  const { data: members } = useClubMembers(clubId, true, showHistory)
   const setRole = useSetMemberRole(clubId)
   const end = useEndMembership(clubId)
   const [error, setError] = useState<string | null>(null)
   const isOwner = myRole === "owner"
 
-  const active = (members ?? []).filter((m) => !m.endedAt)
+  const q = search.trim().toLowerCase()
+  const all = (members ?? []).filter(
+    (m) =>
+      (showHistory ? true : !m.endedAt) &&
+      (roleFilter === "alle" || m.role === roleFilter) &&
+      (q === "" || (m.displayName ?? m.email ?? m.clerkId).toLowerCase().includes(q)),
+  )
+  const active = all.filter((m) => !m.endedAt)
+  const ended = all.filter((m) => m.endedAt)
 
   return (
     <section aria-label="Leden">
       <h2 className={H2}><Users className="h-3 w-3" /> Leden ({active.length})</h2>
+      <div className="mb-2 flex flex-wrap items-center gap-1.5">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Zoek op naam…"
+          className="w-40 rounded-lg border border-white/15 bg-[#070d16] px-2 py-1 text-[11px] text-white/75 placeholder:text-white/30"
+        />
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value as ClubRole | "alle")}
+          className="rounded-lg border border-white/15 bg-[#070d16] px-2 py-1 text-[11px] text-white/75"
+        >
+          <option value="alle">Alle rollen</option>
+          {(Object.keys(ROLE_LABELS) as ClubRole[]).map((r) => (
+            <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+          ))}
+        </select>
+        <button
+          onClick={() => setShowHistory((v) => !v)}
+          className={`rounded-lg border px-2 py-1 text-[11px] ${showHistory ? "border-white/35 text-white/85" : "border-white/15 text-white/50 hover:border-white/30"}`}
+        >
+          {showHistory ? "Historie verbergen" : "Ook oud-leden tonen"}
+        </button>
+      </div>
       {error && <p className="mb-1.5 text-[11px] text-rose-300/85">{error}</p>}
+      {all.length === 0 && <p className="text-[12px] text-white/40">Geen leden gevonden met dit filter.</p>}
       <div className="space-y-1.5">
         {active.map((m) => (
           <div key={m.id} className={`${CARD} flex items-center justify-between gap-3`}>

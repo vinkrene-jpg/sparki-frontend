@@ -1,4 +1,4 @@
-import { and, eq, isNull, inArray } from "drizzle-orm";
+import { and, eq, isNull, inArray, or, gte } from "drizzle-orm";
 import {
   db,
   athleteProfilesTable,
@@ -119,7 +119,20 @@ export async function clubAssignedAthleteIds(
         isNull(clubMembersTable.endedAt),
       ),
     )
-    .where(eq(clubTrainerAssignmentsTable.trainerClerkId, coachClerkId));
+    .where(
+      and(
+        eq(clubTrainerAssignmentsTable.trainerClerkId, coachClerkId),
+        // WP-03: een beëindigde toewijzing (ends_on in het verleden) telt op
+        // ELK leesmoment direct niet meer mee. Amsterdamse kalenderdag.
+        or(
+          isNull(clubTrainerAssignmentsTable.endsOn),
+          gte(
+            clubTrainerAssignmentsTable.endsOn,
+            new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Amsterdam" }),
+          ),
+        ),
+      ),
+    );
   if (assignments.length === 0) return [];
 
   const out = new Set<string>();

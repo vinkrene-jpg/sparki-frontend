@@ -47,6 +47,7 @@ import {
   canManageTrainings,
   canRecordAttendance,
   canManageTrainerAssignments,
+  activeAssignmentWindow,
   TRAINER_LIKE_ROLES,
   TRAINER_COUNT_ROLES,
   canEditMaterial,
@@ -795,7 +796,9 @@ router.put("/:clubId/members/:memberId/role", requireAuth, async (req, res) => {
       action: "rol_gewijzigd",
       targetType: "member",
       targetId: memberId,
-      detail: { van: target.role, naar: role },
+      // WP-03: volledige rolwijzigings-audit — wie/oud/nieuw/reden. Nooit
+      // gezondheids- of privé-inhoud in het logboek.
+      detail: { lid: target.clerkId, van: target.role, naar: role, reden: str(req.body?.reason) ?? null },
     });
     res.json(updated);
   } catch (err) {
@@ -1075,7 +1078,7 @@ router.get("/:clubId/hoofdtrainer/overview", requireAuth, async (req, res) => {
       db
         .select()
         .from(clubTrainerAssignmentsTable)
-        .where(eq(clubTrainerAssignmentsTable.clubId, clubId)),
+        .where(and(eq(clubTrainerAssignmentsTable.clubId, clubId), activeAssignmentWindow())),
       db.select().from(clubTeamsTable).where(eq(clubTeamsTable.clubId, clubId)),
       db.select().from(clubGroupsTable).where(eq(clubGroupsTable.clubId, clubId)),
     ]);
@@ -1203,6 +1206,59 @@ router.post("/:clubId/trainer-assignments", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "club trainer assignment failed");
     res.status(500).json({ error: "Trainer toewijzen is niet gelukt." });
+  }
+});
+
+// WP-03: trainer-toewijzing beëindigen — zet ends_on (historie blijft staan,
+// nooit DELETE). Beëindiging telt direct op elk leesmoment (activeAssignmentWindow).
+router.post("/:clubId/trainer-assignments/:assignmentId/end", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageTrainerAssignments(ctx)) {
+      res.status(403).json({ error: "Alleen beheer of de hoofdtrainer beëindigt toewijzingen." });
+      return;
+    }
+    const assignmentId = intParam(req.params["assignmentId"]);
+    const [row] = await db
+      .select()
+      .from(clubTrainerAssignmentsTable)
+      .where(
+        and(
+          eq(clubTrainerAssignmentsTable.id, assignmentId ?? -1),
+          eq(clubTrainerAssignmentsTable.clubId, ctx.club.id),
+        ),
+      );
+    if (!row) {
+      res.status(404).json({ error: "Toewijzing niet gevonden." });
+      return;
+    }
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Amsterdam" });
+    if (row.endsOn != null && row.endsOn < today) {
+      res.status(409).json({ error: "Deze toewijzing was al beëindigd." });
+      return;
+    }
+    // Einde per gisteren: vanaf nú telt de toewijzing niet meer mee.
+    const yesterday = new Date(Date.now() - 24 * 3600 * 1000).toLocaleDateString("en-CA", {
+      timeZone: "Europe/Amsterdam",
+    });
+    const [updated] = await db
+      .update(clubTrainerAssignmentsTable)
+      .set({ endsOn: yesterday })
+      .where(eq(clubTrainerAssignmentsTable.id, row.id))
+      .returning();
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "trainer_toewijzing_beeindigd",
+      targetType: "member",
+      targetId: row.trainerClerkId,
+      detail: { teamId: row.teamId, groupId: row.groupId, reden: str(req.body?.reason) ?? null },
+    });
+    res.json(updated);
+  } catch (err) {
+    req.log.error({ err }, "club trainer assignment end failed");
+    res.status(500).json({ error: "Toewijzing beëindigen is niet gelukt." });
   }
 });
 
