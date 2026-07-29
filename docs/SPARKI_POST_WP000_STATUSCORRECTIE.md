@@ -28,7 +28,7 @@ Bewijsverwijzingen:
 
 ## 3. Opdracht #383 / WP-A02
 
-**Status: BUILT_NOT_VERIFIED → productiecontrole faalt op dit moment: BLOCKED met exact verschil (geen gok).**
+**Status: VERIFIED_FOR_R1 (bijgewerkt 29 jul na productiepublicatie — zie `docs/SPARKI_WPA02_PRODUCTIEVERIFICATIE.md`).** De hertelling ná publicatie levert exact **38 actief / 82 outdated**; de onderstaande BLOCKED-analyse is daarmee bevestigd en opgeheven. Oorspronkelijke bevinding (historisch):
 
 - #390 (productie-uitvoering) is **volledig gemerged** (commit `94ff1d78`) — de code staat in main.
 - **Productiehertelling uitgevoerd (read-only, 29 jul):** voor `user_3FXo8wJYIQ2uvZGRXyrRXzdWuUp` staan er in productie **120 observaties met status `new`** — verwacht was **38 actief**.
@@ -81,7 +81,7 @@ Geen VIS-bouw gestart; WP-B02/B03 blijven wachten op akkoord op de (her)audit.
 ## 8. Eerstvolgende uitvoerreeks
 
 **READY_TO_START:**
-- WP-A02-productiecontrole — ná herpublicatie (zie §3; her-telling = bestaande taak #399).
+- ~~WP-A02-productiecontrole~~ — UITGEVOERD 29 jul (publicatie + #399-hertelling = 38; zie §3).
 - INFRA-01 — mits VPS-toegang beschikbaar wordt gemaakt.
 - MARKT-01 — geen afhankelijkheden.
 
