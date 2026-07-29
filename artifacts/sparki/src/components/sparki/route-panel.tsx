@@ -1786,11 +1786,20 @@ function RouteGenerator({
     if (now - lastMeetpointClickRef.current < 500) return
     lastMeetpointClickRef.current = now
     setMeetpoints((m) => {
-      const near = m.findIndex((p) => {
+      // Kies expliciet het DICHTSTBIJZIJNDE punt binnen de drempel — bij twee
+      // verzamelpunten binnen 150 m zou "eerste match" anders het verkeerde
+      // punt kunnen verwijderen.
+      let near = -1
+      let best = 150
+      m.forEach((p, idx) => {
         const dLat = (p.lat - lat) * 111_000
         const dLon =
           (p.lon - lon) * 111_000 * Math.cos((lat * Math.PI) / 180)
-        return Math.hypot(dLat, dLon) < 150
+        const d = Math.hypot(dLat, dLon)
+        if (d < best) {
+          best = d
+          near = idx
+        }
       })
       if (near !== -1) return m.filter((_, idx) => idx !== near)
       return [...m, { lat, lon, name: `Verzamelpunt ${m.length + 1}`, note: null }]

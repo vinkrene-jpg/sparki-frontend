@@ -1693,9 +1693,17 @@ router.post("/:id/rejoin", requireAuth, async (req, res) => {
 // "bron gaf geen antwoord"-contract (null). De upstream-call loopt op de
 // achtergrond door en vult gewoon de cache voor een volgende poging.
 const PREVIEW_BUDGET_MS = 18_000;
-function withPreviewBudget<T>(p: Promise<T | null>): Promise<T | null> {
+function withPreviewBudget<T>(
+  p: Promise<T | null>,
+  log: { error: (obj: unknown, msg?: string) => void },
+): Promise<T | null> {
   return Promise.race([
-    p.catch(() => null),
+    // Log de echte reject-oorzaak vóór we hem als "bron gaf geen antwoord"
+    // (null → 502) maskeren — anders worden interne regressies onzichtbaar.
+    p.catch((err) => {
+      log.error({ err }, "routes.preview upstream failed");
+      return null;
+    }),
     new Promise<null>((resolve) => {
       const t = setTimeout(() => resolve(null), PREVIEW_BUDGET_MS);
       if (typeof t === "object" && "unref" in t) t.unref();
@@ -1729,7 +1737,7 @@ router.post("/remarks-preview", requireAuth, async (req, res) => {
       }
       geometry.push([la, lo]);
     }
-    const remarks = await withPreviewBudget(getRouteRemarks(geometry));
+    const remarks = await withPreviewBudget(getRouteRemarks(geometry), req.log);
     if (remarks == null) {
       res.status(502).json({
         error:
@@ -1777,7 +1785,7 @@ router.post("/surfaces-preview", requireAuth, async (req, res) => {
       }
       geometry.push([la, lo]);
     }
-    const analysis = await withPreviewBudget(getRouteSurfaces(geometry));
+    const analysis = await withPreviewBudget(getRouteSurfaces(geometry), req.log);
     if (analysis == null) {
       res.status(502).json({
         error: "Wegtypen konden nu niet opgehaald worden — de kaartbron gaf geen antwoord.",
