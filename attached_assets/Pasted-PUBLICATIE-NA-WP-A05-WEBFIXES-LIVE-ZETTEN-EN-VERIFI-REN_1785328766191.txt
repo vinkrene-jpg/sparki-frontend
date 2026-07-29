@@ -1,0 +1,93 @@
+PUBLICATIE NA WP-A05 — WEBFIXES LIVE ZETTEN EN VERIFIËREN
+
+DOEL
+
+Publiceer de actuele main-branch naar de bestaande Replit-productieomgeving.
+
+Neem mee:
+
+- WP-A03-webfix:
+  eerlijke foutafhandeling in de onboarding-aanvulstap;
+
+- WP-A05-fixes:
+  vijf correcties voor lokale datum/tijd;
+  hersteld menu-item Samen;
+  overige gemergede webfixes uit commit b4459cda.
+
+BRONBASIS
+
+- branch: main
+- WP-A05-commit: b4459cda
+- aanvullende memory-notitie: 17d57e7c
+- WP-A03: VERIFIED_FOR_R1
+- WP-A05: VERIFIED_FOR_R1
+
+VOOR PUBLICATIE
+
+Controleer:
+
+- actuele HEAD-SHA;
+- working tree schoon;
+- alle commits gepusht;
+- typecheck web groen;
+- typecheck API groen;
+- serverbuild groen;
+- productiebuild web groen;
+- navigatiecontract groen;
+- geen open kritieke regressie.
+
+PUBLICATIE
+
+Publiceer de actuele main-branch naar:
+
+https://sparki-frontend.replit.app
+
+NA PUBLICATIE CONTROLEREN
+
+1. Actieve productie-SHA/build identificeren.
+2. Homepage geeft HTTP 200.
+3. `/api/healthz` geeft HTTP 200.
+4. Login en sessiebehoud werken.
+5. Vandaag opent zonder fout.
+6. Plan gebruikt de lokale kalenderdag correct.
+7. Kalender toont vandaag correct, ook rond de lokale daggrens.
+8. Club- en Sportpaspoortdatumlogica werken correct.
+9. Geboortedatum-invoer verschuift niet door UTC.
+10. Meer-menu bevat Samen en de route opent.
+11. Onboarding-verbindingsfout toont:
+    - eerlijke foutmelding;
+    - Opnieuw proberen;
+    - expliciete keuze om met schattingen door te gaan;
+    - geen dubbele actie bij dubbelklikken.
+12. Geen regressie in Analyse, Routes en hoofdmenu.
+13. Geen secrets of gevoelige gegevens in logs.
+
+OPLEVERING
+
+Werk bij:
+
+docs/SPARKI_WPA05_KERNSTABILISATIE.md
+
+Maak:
+
+docs/SPARKI_WPA05_PRODUCTIEVERIFICATIE.md
+
+Rapporteer:
+
+- gepubliceerde SHA;
+- buildstatus;
+- publicatiedatum en tijd;
+- resultaten van alle controles;
+- status van de WP-A03-webfix;
+- status van de WP-A05-fixes;
+- open restpunten;
+- definitieve productie-status.
+
+EINDSTATUS
+
+- `VERIFIED_IN_PRODUCTION` wanneer alle controles groen zijn.
+- `BLOCKED` bij buildfout, verkeerde productie-SHA, regressie of onverklaarde afwijking.
+
+Start daarna nog niet automatisch WP-A06A, WP-A07 of de Product Governor.
+
+Geef eerst het productieverslag terug aan ChatGPT.
