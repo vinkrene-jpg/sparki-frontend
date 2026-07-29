@@ -37,6 +37,17 @@ export type RouteResult = {
   ascentM: number | null;
   // Turn-by-turn cues derived from the provider's instructions.
   steps: RouteStep[];
+  // Wegdek-/toegangsstatistiek uit de provider zelf (GraphHopper path details).
+  // Alleen aanwezig wanneer de provider die echt meelevert — nooit geschat.
+  // `missingM` is eerlijk: wegdek onbekend in OSM, geen aanname verhard/onverhard.
+  // Bewust GEEN toegangsmeting: GraphHoppers `road_access` is auto-toegang en
+  // markeert in NL vooral vrijliggende fietspaden als "no" (empirisch
+  // geverifieerd) — fietslegaliteit borgt het fietsprofiel zelf.
+  surfaceStats?: {
+    totalM: number;
+    unpavedM: number;
+    missingM: number;
+  } | null;
 };
 
 export type GeocodeResult = { lat: number; lon: number; label: string };

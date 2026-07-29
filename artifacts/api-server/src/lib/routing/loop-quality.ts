@@ -246,6 +246,28 @@ function turnDensityPenalty(result: RouteResult): number {
   return Math.min(density / 2.5, 1);
 }
 
+// Fietsgeschiktheids-poort (PO-01, taak #419) op basis van de wegdek-/
+// toegangsmeting die de provider zelf meelevert (GraphHopper path details).
+// Onverhard op de racefiets weegt zwaar (>5% is een echte misser). Bewust geen
+// toegangsstraf: road_access is auto-toegang en zou fietspaden benadelen.
+// Providers zonder meting (ORS) krijgen geen straf — daar blijft de
+// Overpass-verificatie achteraf de enige poort.
+export function suitabilityPenalty(
+  result: RouteResult,
+  profile: LoopRequest["profile"],
+): number {
+  const stats = result.surfaceStats;
+  if (!stats || stats.totalM <= 0) return 0;
+  let penalty = 0;
+  if (profile === "cycling-road") {
+    const unpavedShare = stats.unpavedM / stats.totalM;
+    // >5% onverhard op een racefietsroute is een echte misser; daaronder
+    // lineair. "missing" wegdek straffen we niet — onbekend is niet onverhard.
+    penalty += Math.min(unpavedShare / 0.05, 1.5) * 1.2;
+  }
+  return penalty;
+}
+
 export async function generateVariedLoop(
   provider: RoutingProvider,
   req: LoopRequest,
@@ -349,9 +371,19 @@ export async function generateVariedLoop(
         );
       }
     }
+    // Fietsgeschiktheid uit de provider-meting: verboden wegen en (racefiets)
+    // onverhard wegdek keuren een kandidaat vrijwel altijd af t.o.v. een
+    // schone kandidaat — de kern van de PO-01-belofte.
+    const suitability = suitabilityPenalty(result, req.profile);
+    if (suitability > 0) {
+      const s = result.surfaceStats;
+      console.log(
+        `[GESCHIKTHEID] kandidaat[${i}] penalty=${suitability.toFixed(2)} unpavedM=${s?.unpavedM} missingM=${s?.missingM} totalM=${s?.totalM}`,
+      );
+    }
     const score =
       overlap + drift * 1.2 + elevation * 0.8 + turniness * 0.9 +
-      ascentMiss * 1.0;
+      ascentMiss * 1.0 + suitability;
     pool.push({ result, score });
     // Good enough — a clean loop, close to the requested length, that already
     // matches the elevation wish. Only then do we stop spending ORS calls.
@@ -365,7 +397,10 @@ export async function generateVariedLoop(
       targetAscentM == null &&
       overlap < 0.08 &&
       drift < 0.15 &&
-      elevation < 0.35
+      elevation < 0.35 &&
+      // Geschiktheidspoort: nooit vroeg stoppen op een kandidaat met verboden
+      // wegen of (racefiets) onverhard — dan juist méér kandidaten vergelijken.
+      suitability === 0
     )
       break;
   }

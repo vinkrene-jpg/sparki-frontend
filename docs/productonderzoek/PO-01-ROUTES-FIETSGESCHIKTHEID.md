@@ -69,3 +69,27 @@ Sparki heeft al een provider-abstractie (`routing/providers/`). Drie realistisch
 Doctrine-toets art. 9 laatste zin: er wordt dus **niet** versmald naar de huidige beperkingen — fase 2 bewijst eerst of de betere oplossing haalbaar is; alleen aantoonbare onhaalbaarheid van A én B zou versmalling rechtvaardigen.
 
 **Beslispunt voor René**: akkoord met fase 1 + fase 2-richting (BRouter eerst verkennen)? Bij optie B horen doorlopende kosten — die keuze is aan jou.
+
+---
+
+## Addendum (29 juli 2026) — Empirische GraphHopper-toets en genomen besluit
+
+René koos ervoor direct de betaalde GraphHopper-API te onderzoeken (secret `GRAPHHOPPER_API_KEY` toegevoegd). Empirische bevindingen tegen de live hosted API:
+
+**Wat werkt (geverifieerd):**
+- Custom models met wegdekstraffen (`surface == GRAVEL || … multiply_by 0.05`) worden geaccepteerd en werken: racefietslussen rond Amsterdam en Baambrugge kwamen uit op **0 m onverhard**.
+- `round_trip` (lussen) én A-B-routes werken met custom model; per route komen gratis `surface`-path-details mee — grondslag voor een geschiktheidspoort zónder extra latency.
+- Rondrit-afstand: het custom model rekt lussen ~45% op; een adaptieve hercorrectie (tweede aanvraag met geschaalde vraagafstand) brengt de afwijking terug tot ±5% (38,2–38,9 km bij doel 40).
+
+**Wat NIET werkt (geverifieerd, eerlijk vastgelegd):**
+- `bike_access` is niet beschikbaar in hosted custom models.
+- `road_access` is AUTO-toegang: in Nederland markeert het vooral vrijliggende fietspaden als "no" (Overpass-verificatie: 10 van 11 no/private-spans waren cycleways). Een straf hierop zou routes van fietspaden wegduwen — daarom bewust NIET gebruikt. Fietslegaliteit (bicycle=no) borgt GraphHoppers fietsprofiel zelf.
+- Een harde multiply_by 0/0.01 laat de zoektocht exploderen ("maximum nodes exceeded") wanneer een eindpunt op een bestrafte weg snapt; de provider heeft hiervoor een eerlijke herkansing zonder model (de verificatiepoort blijft dan gelden).
+- OSM-wegdek is deels onbekend: 25–40% van de routemeters heeft `surface=missing`. Eerlijkheidskeuze: onbekend ≠ onverhard, geen straf, en de bestaande Overpass-verificatie achteraf blijft de onafhankelijke poort.
+
+**Geïmplementeerd (achter de bestaande provider-abstractie):**
+- `GraphHopperProvider` (lussen incl. afstandscorrectie, A-B, waypoints, geocoding, NL-instructies, wegdekmeting per route).
+- Standaardprovider = GraphHopper zodra de sleutel is geconfigureerd; `ROUTING_PROVIDER` blijft de expliciete override; ORS blijft als terugval.
+- Geschiktheidspoort in de best-of-N-kandidaatselectie: onverhard aandeel >5% op racefiets weegt zwaar; de early-exit accepteert alleen kandidaten zonder geschiktheidsstraf.
+
+**Openstaand voor Product Proof (≥9,0):** onafhankelijke proof op meerdere startpunten/fietstypen, kosten-/limietbewaking GH-abonnement, en de vraag hoe `missing` wegdek richting de renner wordt gecommuniceerd.

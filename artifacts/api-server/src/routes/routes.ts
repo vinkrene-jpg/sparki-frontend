@@ -1025,7 +1025,7 @@ router.get("/geocode", requireAuth, async (req, res) => {
   const provider = getRoutingProvider();
   if (!provider.isConfigured()) {
     res.status(503).json({
-      error: "Adres zoeken is nog niet beschikbaar — de ORS_API_KEY ontbreekt.",
+      error: "Adres zoeken is nog niet beschikbaar — de routeservice-sleutel ontbreekt.",
     });
     return;
   }
@@ -2605,7 +2605,7 @@ router.post("/generate", requireAuth, async (req, res) => {
   if (!provider.isConfigured()) {
     res.status(503).json({
       error:
-        "Routegeneratie is nog niet beschikbaar — de ORS_API_KEY ontbreekt.",
+        "Routegeneratie is nog niet beschikbaar — de routeservice-sleutel ontbreekt.",
     });
     return;
   }
@@ -3057,7 +3057,7 @@ router.post("/generate/options", requireAuth, async (req, res) => {
   if (!provider.isConfigured()) {
     res.status(503).json({
       error:
-        "Routegeneratie is nog niet beschikbaar — de ORS_API_KEY ontbreekt.",
+        "Routegeneratie is nog niet beschikbaar — de routeservice-sleutel ontbreekt.",
     });
     return;
   }

@@ -4,11 +4,13 @@
 // without changing any route handler or frontend code.
 
 import { OrsProvider } from "./providers/ors";
+import { GraphHopperProvider } from "./providers/graphhopper";
 import type { RoutingProvider } from "./types";
 
 // Registered providers, keyed by name. Add future providers here.
 const providers: Record<string, RoutingProvider> = {
   ors: new OrsProvider(),
+  graphhopper: new GraphHopperProvider(),
 };
 
 // Register an additional provider programmatically. Used only in tests (and by
@@ -19,13 +21,24 @@ export function registerProvider(name: string, provider: RoutingProvider): void 
   providers[name] = provider;
 }
 
-const DEFAULT_PROVIDER = "ors";
+const FALLBACK_PROVIDER = "ors";
+
+// Voorkeursvolgorde wanneer geen expliciete keuze is gemaakt: GraphHopper
+// (wegdek- en toegangsbewust routeren, PO-01/taak #419) vóór ORS. Een provider
+// wordt alleen standaard als zijn sleutel echt is geconfigureerd — nooit een
+// provider kiezen die gegarandeerd gaat falen.
+const PREFERRED_ORDER = ["graphhopper", "ors"] as const;
 
 // Resolve the active routing provider. `ROUTING_PROVIDER` env var can switch the
-// default once more providers exist; falls back to ORS.
+// default; otherwise the first *configured* provider in preference order wins.
 export function getRoutingProvider(name?: string): RoutingProvider {
-  const key = name ?? process.env.ROUTING_PROVIDER ?? DEFAULT_PROVIDER;
-  return providers[key] ?? providers[DEFAULT_PROVIDER]!;
+  const key = name ?? process.env.ROUTING_PROVIDER;
+  if (key && providers[key]) return providers[key]!;
+  for (const preferred of PREFERRED_ORDER) {
+    const p = providers[preferred];
+    if (p?.isConfigured()) return p;
+  }
+  return providers[FALLBACK_PROVIDER]!;
 }
 
 export * from "./types";
