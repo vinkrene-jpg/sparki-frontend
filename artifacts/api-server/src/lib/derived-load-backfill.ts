@@ -43,7 +43,51 @@ export type DerivedBackfillSummary = {
   sessionsSkipped: number;
   targetsRecalibrated: number;
   ftpFloorsRaised: number;
+  ftpProfileMismatches: number;
 };
+
+export type FtpProfileMismatch = {
+  clerkId: string;
+  profileFtp: number | null;
+  latestHistoryFtp: number;
+  latestHistoryDate: string;
+};
+
+/**
+ * Consistency check: profiel-FTP hoort overeen te komen met de nieuwste
+ * GELDIGE ftp_history-rij (achterhaalde afgeleide rijen tellen niet mee).
+ * Een afwijking betekent dat schermen een andere "huidige FTP" tonen dan de
+ * meetgeschiedenis rechtvaardigt — zoals het geseedde dev-account dat wél
+ * historie had maar profile.ftp = null. Waarschuwt alleen (repareert niets):
+ * de reparatiepaden hierboven hebben elk hun eigen honesty-regels.
+ */
+export async function findFtpProfileMismatches(): Promise<
+  FtpProfileMismatch[]
+> {
+  const result = await db.execute(sql`
+    SELECT p.clerk_id AS "clerkId",
+           p.ftp AS "profileFtp",
+           h.ftp_watts AS "latestHistoryFtp",
+           h.measured_at AS "latestHistoryDate"
+    FROM athlete_profiles p
+    JOIN LATERAL (
+      SELECT ftp_watts, measured_at
+      FROM ftp_history f
+      WHERE f.clerk_id = p.clerk_id
+        AND NOT (f.test_type = 'derived'
+                 AND coalesce(f.notes, '') LIKE '[achterhaald]%')
+      ORDER BY f.measured_at DESC, f.id DESC
+      LIMIT 1
+    ) h ON TRUE
+    WHERE p.ftp IS DISTINCT FROM h.ftp_watts
+  `);
+  return (result.rows as unknown as FtpProfileMismatch[]).map((r) => ({
+    clerkId: r.clerkId,
+    profileFtp: r.profileFtp == null ? null : Number(r.profileFtp),
+    latestHistoryFtp: Number(r.latestHistoryFtp),
+    latestHistoryDate: String(r.latestHistoryDate),
+  }));
+}
 
 type Log = (msg: string) => void;
 
@@ -506,6 +550,7 @@ export async function backfillDerivedLoad(
     sessionsSkipped: 0,
     targetsRecalibrated: 0,
     ftpFloorsRaised: 0,
+    ftpProfileMismatches: 0,
   };
 
   // Advisory locks are SESSION-bound: acquire and release MUST happen on the
@@ -560,6 +605,19 @@ export async function backfillDerivedLoad(
     for (const p of estimated) {
       const r = await recalibrateWeeklyTarget(p.clerkId);
       if (r.changed) summary.targetsRecalibrated++;
+    }
+
+    // Consistentiecheck (waarschuwt alleen): profiel-FTP vs nieuwste geldige
+    // historierij. Een afwijking wijst op een gebroken profiel-historie-
+    // koppeling of inconsistente (seed)data en mag nooit stil blijven.
+    const mismatches = await findFtpProfileMismatches();
+    summary.ftpProfileMismatches = mismatches.length;
+    for (const m of mismatches) {
+      log(
+        `WAARSCHUWING FTP-inconsistentie: ${m.clerkId} heeft profiel-FTP ` +
+          `${m.profileFtp ?? "leeg"} maar nieuwste geldige meting is ` +
+          `${m.latestHistoryFtp} W (${m.latestHistoryDate})`,
+      );
     }
 
     if (

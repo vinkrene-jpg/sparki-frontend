@@ -19,6 +19,7 @@ import {
   backfillTssForAthlete,
   recalibrateEstimatedFtp,
   recalibrateWeeklyTarget,
+  findFtpProfileMismatches,
 } from "../lib/derived-load-backfill";
 import { buildMergePatch } from "../engines/data-hub/dedupe";
 
@@ -340,6 +341,11 @@ async function main() {
       assert(p!.t === 6, "target must remain 6");
     });
 
+    // De zelfherstel-regel "echte invoer wint van een schatting" zou anders de
+    // oude handmatige 200-rij als leidend nemen en het ondergrens-pad nooit
+    // bereiken — die rij is hierboven al gebruikt en kan nu weg.
+    await db.delete(ftpHistoryTable).where(eq(ftpHistoryTable.clerkId, RUN));
+
     await scenario("ftp-recalibrate: estimated FTP raised to proven floor + history row", async () => {
       // Recent hard 49-min effort at NP 298 proves FTP ≥ 298.
       await db.insert(trainingSessionsTable).values({
@@ -417,6 +423,44 @@ async function main() {
         .from(athleteProfilesTable)
         .where(eq(athleteProfilesTable.clerkId, RUN));
       assert(p!.ftp === 240, `ftp must remain 240, got ${p!.ftp}`);
+    });
+
+    await scenario("consistency check: flags profile-FTP that diverges from newest valid history", async () => {
+      // Profile is at 240 while the newest valid history row (derived, 305)
+      // says otherwise — the check must flag this athlete.
+      const flagged = await findFtpProfileMismatches();
+      const mine = flagged.find((m) => m.clerkId === RUN);
+      assert(mine, "mismatch for test athlete not flagged");
+      assert(mine!.profileFtp === 240, `profileFtp ${mine!.profileFtp} !== 240`);
+      assert(mine!.latestHistoryFtp === 305, `historyFtp ${mine!.latestHistoryFtp} !== 305`);
+    });
+
+    await scenario("consistency check: silent when profile matches newest valid history", async () => {
+      await db
+        .update(athleteProfilesTable)
+        .set({ ftp: 305 })
+        .where(eq(athleteProfilesTable.clerkId, RUN));
+      const flagged = await findFtpProfileMismatches();
+      assert(!flagged.some((m) => m.clerkId === RUN), "consistent athlete wrongly flagged");
+    });
+
+    await scenario("consistency check: achterhaalde derived rows do not count as newest", async () => {
+      // Mark the derived 305-row as achterhaald: the newest VALID row becomes
+      // an older real test, so profile 305 now diverges from it again.
+      await db
+        .update(ftpHistoryTable)
+        .set({ notes: "[achterhaald] test" })
+        .where(eq(ftpHistoryTable.clerkId, RUN));
+      await db.insert(ftpHistoryTable).values({
+        clerkId: RUN,
+        measuredAt: day(20),
+        ftpWatts: 250,
+        testType: "ramp",
+      });
+      const flagged = await findFtpProfileMismatches();
+      const mine = flagged.find((m) => m.clerkId === RUN);
+      assert(mine, "should flag: valid history is 250, profile 305");
+      assert(mine!.latestHistoryFtp === 250, `historyFtp ${mine!.latestHistoryFtp} !== 250`);
     });
   } finally {
     await db.delete(userProfilesTable).where(eq(userProfilesTable.clerkId, RUN));
