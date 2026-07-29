@@ -59,6 +59,7 @@
 - [Drizzle/DB migratie-traps](drizzle-onconflict-partial-index.md) — onConflict partial-index predicate keys; guarded ADD CONSTRAINT ([migratie](db-nondestructive-constraint-migration.md)); drift ([push](drizzle-push-drift-loops.md)).
 - [Sparki reminders & meldingen](sparki-reminder-delivery.md) — idempotent via dedupeKey+sentAt; email honest-limited skips, never fake-sends; push = SSRF host-allowlist, only fresh rows ([push](sparki-web-push.md); [daily fold](sparki-notification-daily-fold.md): fold per Ams-dag, badge telt DAGEN, [attention](sparki-attention-notifications.md)).
 - [Sound Studio](sparki-sound-studio.md) wekker: web kan locked phone niet laten rinkelen (zeg dat eerlijk), dedupe op LOCAL date; [engagement](sparki-engagement-engine.md) leert echt open-ritme, honest default bij dun.
+- [Product Proof Doctrine](sparki-product-proof-doctrine.md) — GOVERNING: beloftegedreven bouwen, "gereed" = belofte objectief bewezen ≥9,0; geen uitbreiding op module <9; onafhankelijke proof.
 - [Open choices tracker](open-choices-convention.md) — START every turn: read `.agents/open-choices.md`, surface unresolved choices in chat; add when I ask, remove when decided.
 - [Sparki Ontwikkelmodel](sparki-ontwikkelmodel.md) — structured developmentGoal enum + deterministic honest belastbaarheid + /you Ontwikkelkompas.
 - [Sparki World architecture](sparki-world.md) — transparently-fictional Virtual Athletes island; cache-first Media Engine (promptKey UNIQUE, avatars carry slug/scenes don't); hard wall to real data; honest gaps.
@@ -151,9 +152,6 @@
 - [Mentale Training kaarten](sparki-mental-training-cards.md) — diepgang per kaart (1–3 sterren, server-side); lagen voegen alleen toe, kern identiek op elk niveau.
 - [Sparki sterren-beoordelingen (build_ratings)](sparki-build-ratings.md) — beoordelen≠instellen; één register + BuildRatingBlock; ster-tik moet bestaande toelichting meesturen of de upsert wist hem.
 - [Meer-menu chapters SSOT](sparki-meer-chapters.md) — core-meer dropt ontbrekende chapters STIL via filter(Boolean); /samen-contract bewaakt door test:navigation.
-- [Sparki trainerwerkruimte WP-01](sparki-trainer-workspace-wp01.md) — hasCoachAccess = link ∪ geldige clubtoewijzing (read-time checks); deelniveaus aparte laag; dev-preview home rol-bewust; rollen in user_profiles.
-- [Sparki trainer toegangstiers](sparki-trainer-access-tiers.md) — Tier-1 hasDirectCoachLink voor ALLE schrijfacties/cockpit; Tier-2 hasCoachAccess alleen roster/dashboard; club-only trainer = geen individuele toegang.
-- [Sparki trainerrechten & privénotities](sparki-trainer-rights-wp01c.md) — capability-matrix: individuele begeleiding eist DIRECTE link (team-only = alleen naam); privénotities owner-only, uit sporterexport.
-- [Sparki hoofdtraineruitbreiding](sparki-hoofdtrainer.md) — verdelen team/groep, org-overzicht zonder gezondheidsdata, audit bij andermans training; partial index eist targetWhere.
+- Trainerlaag: [werkruimte](sparki-trainer-workspace-wp01.md) hasCoachAccess = link ∪ clubtoewijzing; [tiers](sparki-trainer-access-tiers.md) schrijfacties eisen DIRECTE link; [rechten/privénotities](sparki-trainer-rights-wp01c.md) owner-only; [hoofdtrainer](sparki-hoofdtrainer.md) org-overzicht zonder gezondheidsdata.
 - [Sparki cluborganisatie](sparki-club-organisation.md) — wrapped unique-violation via err.cause; ÉÉN advisory-lock-key voor alle capacity-paden; activeAssignmentWindow op elk leespad.
 - [Governor Beslisblok 02 rollenfundament](governor-beslisblok-02.md) — modellen in governance/, fixtures met strikte delete-handtekening + advisory lock; GO↔COMPLETE-besluit open.
