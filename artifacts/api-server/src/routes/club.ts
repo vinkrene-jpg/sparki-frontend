@@ -976,9 +976,10 @@ router.post("/:clubId/teams/:teamId/members", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Team niet gevonden." });
       return;
     }
+    // WP-02: de hoofdtrainer verdeelt sporters over teams (organisatiecontext).
     const isManager = team.managerClerkId === ctx.membership.clerkId;
-    if (!canManageClub(ctx) && !isManager) {
-      res.status(403).json({ error: "Alleen beheer of de teammanager kan de teamindeling wijzigen." });
+    if (!canManageClub(ctx) && !hasClubRole(ctx, ["hoofdtrainer"]) && !isManager) {
+      res.status(403).json({ error: "Alleen beheer, de hoofdtrainer of de teammanager kan de teamindeling wijzigen." });
       return;
     }
     // Alleen actieve clubleden kunnen worden ingedeeld.
@@ -992,6 +993,9 @@ router.post("/:clubId/teams/:teamId/members", requireAuth, async (req, res) => {
       .values({ teamId, clerkId, role: str(req.body?.role) ?? "renner" })
       .onConflictDoUpdate({
         target: [clubTeamMembersTable.teamId, clubTeamMembersTable.clerkId],
+        // De unique index is partial (ended_at IS NULL); zonder targetWhere
+        // matcht ON CONFLICT hem niet en klapt de insert met een 500.
+        targetWhere: sql`ended_at IS NULL`,
         set: { role: str(req.body?.role) ?? "renner" },
       })
       .returning();
@@ -1021,9 +1025,10 @@ router.post("/:clubId/groups/:groupId/members", requireAuth, async (req, res) =>
       res.status(404).json({ error: "Groep niet gevonden." });
       return;
     }
+    // WP-02: de hoofdtrainer verdeelt sporters over groepen (organisatiecontext).
     const isGroupTrainer = group.trainerClerkId === ctx.membership.clerkId;
-    if (!canManageClub(ctx) && !isGroupTrainer) {
-      res.status(403).json({ error: "Alleen beheer of de groepstrainer kan de groepsindeling wijzigen." });
+    if (!canManageClub(ctx) && !hasClubRole(ctx, ["hoofdtrainer"]) && !isGroupTrainer) {
+      res.status(403).json({ error: "Alleen beheer, de hoofdtrainer of de groepstrainer kan de groepsindeling wijzigen." });
       return;
     }
     const memberCtx = await getClubContext(ctx.club.id, clerkId);
@@ -1041,6 +1046,80 @@ router.post("/:clubId/groups/:groupId/members", requireAuth, async (req, res) =>
   } catch (err) {
     req.log.error({ err }, "club group member failed");
     res.status(500).json({ error: "Groepsindeling wijzigen is niet gelukt." });
+  }
+});
+
+// WP-02 — Hoofdtraineroverzicht: trainers binnen de eigen organisatiecontext,
+// hun toewijzingen en planactiviteit. BEWUST zonder gezondheids-, herstel- of
+// privédata: alleen organisatorische feiten (wie, waar toegewezen, hoeveel
+// sporters, hoeveel geplande clubtrainingen recent).
+router.get("/:clubId/hoofdtrainer/overview", requireAuth, async (req, res) => {
+  try {
+    const ctx = await ctxOr403(req, res);
+    if (!ctx) return;
+    if (!canManageTrainerAssignments(ctx)) {
+      res.status(403).json({ error: "Alleen beheer of de hoofdtrainer kan dit overzicht zien." });
+      return;
+    }
+    const clubId = ctx.club.id;
+    const [members, assignments, teams, groups] = await Promise.all([
+      db
+        .select({
+          clerkId: clubMembersTable.clerkId,
+          role: clubMembersTable.role,
+          displayName: userProfilesTable.displayName,
+        })
+        .from(clubMembersTable)
+        .leftJoin(userProfilesTable, eq(userProfilesTable.clerkId, clubMembersTable.clerkId))
+        .where(and(eq(clubMembersTable.clubId, clubId), isNull(clubMembersTable.endedAt))),
+      db
+        .select()
+        .from(clubTrainerAssignmentsTable)
+        .where(eq(clubTrainerAssignmentsTable.clubId, clubId)),
+      db.select().from(clubTeamsTable).where(eq(clubTeamsTable.clubId, clubId)),
+      db.select().from(clubGroupsTable).where(eq(clubGroupsTable.clubId, clubId)),
+    ]);
+    const teamName = new Map(teams.map((t) => [t.id, t.name]));
+    const groupName = new Map(groups.map((g) => [g.id, g.name]));
+    const since = new Date(Date.now() - 30 * 24 * 3600 * 1000);
+    const sinceISO = since.toISOString().slice(0, 10);
+    const recentTrainings = await db
+      .select({
+        trainerClerkId: clubTrainingsTable.trainerClerkId,
+        createdByClerkId: clubTrainingsTable.createdByClerkId,
+        trainingDate: clubTrainingsTable.trainingDate,
+      })
+      .from(clubTrainingsTable)
+      .where(and(eq(clubTrainingsTable.clubId, clubId), gte(clubTrainingsTable.trainingDate, sinceISO)));
+    const trainerRoles = new Set(TRAINER_COUNT_ROLES);
+    const trainers = await Promise.all(
+      members
+        .filter((m) => trainerRoles.has(m.role as (typeof TRAINER_COUNT_ROLES)[number]))
+        .map(async (m) => {
+          const mine = assignments.filter((a) => a.trainerClerkId === m.clerkId);
+          const athleteIds = await assignedAthleteIds(clubId, m.clerkId);
+          const trainingCount = recentTrainings.filter(
+            (t) => t.trainerClerkId === m.clerkId || t.createdByClerkId === m.clerkId,
+          ).length;
+          return {
+            clerkId: m.clerkId,
+            displayName: m.displayName ?? null,
+            role: m.role,
+            assignments: mine.map((a) => ({
+              teamId: a.teamId,
+              team: a.teamId != null ? (teamName.get(a.teamId) ?? null) : null,
+              groupId: a.groupId,
+              group: a.groupId != null ? (groupName.get(a.groupId) ?? null) : null,
+            })),
+            assignedAthleteCount: athleteIds.length,
+            trainingsLast30Days: trainingCount,
+          };
+        }),
+    );
+    res.json({ trainers, sinds: sinceISO });
+  } catch (err) {
+    req.log.error({ err }, "club hoofdtrainer overview failed");
+    res.status(500).json({ error: "Overzicht ophalen is niet gelukt." });
   }
 });
 
@@ -1240,7 +1319,23 @@ router.put("/:clubId/trainings/:trainingId", requireAuth, async (req, res) => {
       .set(patch)
       .where(eq(clubTrainingsTable.id, training.id))
       .returning();
-    await writeClubAudit({ clubId: ctx.club.id, actorClerkId: ctx.membership.clerkId, action: "training_gewijzigd", targetType: "training", targetId: training.id });
+    // WP-02: geen stil overschrijven — als iemand andermans training wijzigt
+    // (bijv. hoofdtrainer of beheer), legt het audittrail expliciet vast wiens
+    // training het was en welke velden zijn geraakt.
+    await writeClubAudit({
+      clubId: ctx.club.id,
+      actorClerkId: ctx.membership.clerkId,
+      action: "training_gewijzigd",
+      targetType: "training",
+      targetId: training.id,
+      detail: isOwnTraining
+        ? { eigenTraining: true, velden: Object.keys(patch).filter((k) => k !== "updatedAt") }
+        : {
+            eigenTraining: false,
+            trainerVanTraining: training.trainerClerkId ?? training.createdByClerkId ?? null,
+            velden: Object.keys(patch).filter((k) => k !== "updatedAt"),
+          },
+    });
     res.json(updated);
   } catch (err) {
     req.log.error({ err }, "club training update failed");
