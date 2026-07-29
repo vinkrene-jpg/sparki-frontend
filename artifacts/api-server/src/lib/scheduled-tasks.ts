@@ -17,7 +17,13 @@ export type StatusColor = "green" | "orange" | "grey";
 export const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface ScheduledTask {
-  key: "health" | "goal_review" | "reminders" | "knowledge_scan" | "connector_sync";
+  key:
+    | "health"
+    | "goal_review"
+    | "reminders"
+    | "knowledge_scan"
+    | "connector_sync"
+    | "library_backfill";
   title: string;
   description: string;
   runCommand: string;
@@ -45,6 +51,12 @@ export interface ScheduledTaskTraces {
   connectorSyncLast: Date | null;
   /** Aantal echt gekoppelde platform-verbindingen (connected). */
   connectedConnections: number;
+  /** Nieuwste gegenereerde bibliotheekroute (route_library.created_at). */
+  libraryLast: Date | null;
+  /** Aantal bekende woonlocatie-cellen van gebruikers. */
+  libraryHomes: number;
+  /** Aantal nog ongevulde cellen rond die woonlocaties. */
+  libraryOpenCells: number;
 }
 
 // Classify a data trace into an honest status. `lastRunAt` = the newest trace
@@ -74,6 +86,9 @@ export function buildScheduledTasks(
     knowledgeLast,
     connectorSyncLast,
     connectedConnections,
+    libraryLast,
+    libraryHomes,
+    libraryOpenCells,
   } = traces;
 
   // ── job:health ─────────────────────────────────────────────────────────────
@@ -193,7 +208,51 @@ export function buildScheduledTasks(
     message: syncMessage,
   };
 
-  const tasks = [healthTask, goalTask, reminderTask, knowledgeTask, syncTask];
+  // ── job:library-backfill (EU-kaart geleidelijk vullen) ───────────────────
+  const libCls = classify(libraryLast, 3, now);
+  let libStatus: StatusColor = libCls.statusColor;
+  let libMessage: string;
+  if (libraryHomes === 0) {
+    // Eerlijk: zonder bekende woonlocaties valt er niets rond te vullen.
+    libStatus = "grey";
+    libMessage =
+      "Er zijn nog geen woonlocaties van gebruikers bekend, dus er valt niets rond te vullen. Zodra sporters een woonadres opgeven, hoort de kaart hier nachtelijk te groeien.";
+  } else if (libraryOpenCells === 0) {
+    // Eerlijk geteld: alle cellen rond bekende woonlocaties zijn gevuld —
+    // de taak heeft (nu) niets meer te doen.
+    libStatus = "green";
+    libMessage =
+      "Alle gebieden rond bekende woonlocaties zijn gevuld met bibliotheekroutes. De nachtelijke taak heeft momenteel niets bij te genereren.";
+  } else if (libraryLast) {
+    libMessage = libCls.recent
+      ? `De nachtelijke bibliotheek-backfill draait: er zijn recent bibliotheekroutes gegenereerd. Nog ${libraryOpenCells} open cel(len) rond gebruikers.`
+      : `De nieuwste bibliotheekroute is ouder dan drie dagen terwijl er nog ${libraryOpenCells} open cel(len) rond gebruikers zijn. Mogelijk draait de nachtelijke taak niet meer, is de ORS-sleutel weg of is het dagplafond steeds op.`;
+  } else {
+    libStatus = "grey";
+    libMessage = `Er zijn ${libraryHomes} woonlocatie(s) en ${libraryOpenCells} open cel(len), maar nog nooit een bibliotheekroute gegenereerd. Controleer de ORS-sleutel en of de nachtelijke taak 'job:library-backfill' draait.`;
+  }
+  const libraryTask: ScheduledTask = {
+    key: "library_backfill",
+    title: "Nachtelijke kaart-backfill",
+    description:
+      "Vult de EU-kaart geleidelijk met bibliotheekroutes: elke nacht een beperkt aantal nieuwe gebieden rond bestaande gebruikers (binnen het ORS-dagplafond).",
+    runCommand: "pnpm --filter @workspace/api-server run job:library-backfill",
+    schedule:
+      "Nachtelijk, ingebouwd in de API-server (02:00–06:00) · optioneel als Scheduled Deployment (cron 30 3 * * *) — een dag-vergrendeling voorkomt dubbel draaien",
+    traceLabel: "Nieuwste gegenereerde bibliotheekroute",
+    lastRunAt: libraryLast ? libraryLast.toISOString() : null,
+    statusColor: libStatus,
+    message: libMessage,
+  };
+
+  const tasks = [
+    healthTask,
+    goalTask,
+    reminderTask,
+    knowledgeTask,
+    syncTask,
+    libraryTask,
+  ];
   const missing = tasks.filter((t) => t.statusColor === "grey").length;
 
   return { tasks, missing };

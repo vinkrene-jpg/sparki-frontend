@@ -17,9 +17,57 @@
 import { deliverReminders } from "../engines/reminders";
 import { logger } from "./logger";
 import { processDueAccountDeletions } from "./account-privacy";
+import { runLibraryBackfill } from "./library-backfill";
 
 let started = false;
 let inFlight = false;
+
+// Nachtelijke bibliotheek-backfill: max één poging per Amsterdamse nacht
+// vanuit dit proces (goedkope pre-check); de échte éénmaligheid over ALLE
+// processen heen wordt afgedwongen door de dag-vergrendeling in de database
+// (runLibraryBackfill claimt "backfill:<dag>" atomair).
+let lastBackfillDay = "";
+
+function amsterdamParts(now = new Date()): { day: string; hour: number } {
+  const fmt = new Intl.DateTimeFormat("nl-NL", {
+    timeZone: "Europe/Amsterdam",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    hour12: false,
+  });
+  const parts = Object.fromEntries(
+    fmt.formatToParts(now).map((p) => [p.type, p.value]),
+  ) as Record<string, string>;
+  return {
+    day: `${parts.year}-${parts.month}-${parts.day}`,
+    hour: Number.parseInt(parts.hour ?? "0", 10) % 24,
+  };
+}
+
+// Draai de backfill alleen in het nachtvenster (02:00–05:59 Amsterdam), zodat
+// het ORS-budget 's nachts wordt gebruikt en overdag ruimte blijft voor
+// on-demand generatie. Los in-/uitschakelbaar met LIBRARY_BACKFILL_IN_PROCESS.
+async function maybeRunLibraryBackfill(): Promise<void> {
+  const flag = process.env.LIBRARY_BACKFILL_IN_PROCESS;
+  const enabled =
+    flag === "true"
+      ? true
+      : flag === "false"
+        ? false
+        : process.env.NODE_ENV === "production";
+  if (!enabled) return;
+  const { day, hour } = amsterdamParts();
+  if (hour < 2 || hour >= 6) return;
+  if (day === lastBackfillDay) return;
+  lastBackfillDay = day;
+  const summary = await runLibraryBackfill();
+  logger.info(
+    { libraryBackfill: "scheduler", ...summary },
+    "in-process library backfill run done",
+  );
+}
 
 function intEnv(name: string, fallback: number): number {
   const v = process.env[name];
@@ -71,6 +119,12 @@ export function startReminderScheduler(): void {
       const deleted = await processDueAccountDeletions();
       if (deleted > 0) {
         logger.info({ deleted }, "due account deletions executed");
+      }
+      // Nachtelijke kaart-backfill (eigen fouten-log, nooit de run breken).
+      try {
+        await maybeRunLibraryBackfill();
+      } catch (err) {
+        logger.error({ err }, "in-process library backfill failed");
       }
     } catch (err) {
       logger.error({ err, reminders: "scheduler" }, "in-process reminder run failed");

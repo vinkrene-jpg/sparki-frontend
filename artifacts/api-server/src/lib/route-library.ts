@@ -83,19 +83,72 @@ export function seedFor(cellKey: string, bike: string, targetKm: number): number
 // (cel, fietstype, doelafstand) vangt de rest (bijv. twee instanties).
 const inFlight = new Set<string>();
 
-// Harde rem op ORS-verbruik: maximaal dit aantal NIEUWE cellen per dag per
-// serverproces (12 lussen × ~3 kandidaten ≈ 36 ORS-calls per cel). Daarboven
-// eerlijk "limiet" — nooit stilletjes doorstoken van het quotum.
+// Harde rem op ORS-verbruik: maximaal dit aantal NIEUWE cellen per dag —
+// gedeeld over ALLE processen (API-server, ingebouwde nachtrun én losse jobs)
+// via een atomaire teller in de database. Daarboven eerlijk "limiet" — nooit
+// stilletjes doorstoken van het quotum.
 const MAX_NEW_CELLS_PER_DAY = 10;
-let dayStamp = "";
-let cellsStartedToday = 0;
-function underDailyCap(): boolean {
-  const today = new Date().toDateString();
-  if (today !== dayStamp) {
-    dayStamp = today;
-    cellsStartedToday = 0;
+
+// Kalenderdag in Europe/Amsterdam (nooit toISOString — UTC kantelt de dag).
+export function amsterdamDay(now = new Date()): string {
+  const fmt = new Intl.DateTimeFormat("nl-NL", {
+    timeZone: "Europe/Amsterdam",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const p = Object.fromEntries(
+    fmt.formatToParts(now).map((x) => [x.type, x.value]),
+  ) as Record<string, string>;
+  return `${p.year}-${p.month}-${p.day}`;
+}
+
+class CapReachedRollback extends Error {}
+
+// Reserveert atomair (cross-proces, in de database) een generatiestart voor
+// één cel: eerst een per-cel-per-dag claim (zodat twee gelijktijdige starts
+// voor dezelfde cel nooit allebei budget verbruiken), daarna één plek onder
+// het gedeelde dagplafond. Beide stappen zitten in één transactie: is het
+// plafond bereikt, dan wordt óók de celclaim teruggedraaid.
+export async function reserveCellStart(
+  cellKey: string,
+): Promise<"reserved" | "alreadyClaimed" | "capReached"> {
+  const day = amsterdamDay();
+  try {
+    return await db.transaction(async (tx) => {
+      const claim = await tx.execute(sql`
+        INSERT INTO route_library_daily_state (key, count)
+        VALUES (${`cell:${day}:${cellKey}`}, 0)
+        ON CONFLICT (key) DO NOTHING
+        RETURNING key
+      `);
+      if (claim.rows.length === 0) return "alreadyClaimed" as const;
+      const budget = await tx.execute(sql`
+        INSERT INTO route_library_daily_state (key, count)
+        VALUES (${`budget:${day}`}, 1)
+        ON CONFLICT (key) DO UPDATE SET count = route_library_daily_state.count + 1
+        WHERE route_library_daily_state.count < ${MAX_NEW_CELLS_PER_DAY}
+        RETURNING count
+      `);
+      if (budget.rows.length === 0) throw new CapReachedRollback();
+      return "reserved" as const;
+    });
+  } catch (err) {
+    if (err instanceof CapReachedRollback) return "capReached";
+    throw err;
   }
-  return cellsStartedToday < MAX_NEW_CELLS_PER_DAY;
+}
+
+// Dag-vergrendeling voor de nachtelijke backfill: precies één proces per dag
+// (API-server-nachtrun óf losse job) claimt de run; de rest slaat eerlijk over.
+export async function tryClaimDailyBackfillRun(): Promise<boolean> {
+  const key = `backfill:${amsterdamDay()}`;
+  const res = await db.execute(sql`
+    INSERT INTO route_library_daily_state (key, count) VALUES (${key}, 0)
+    ON CONFLICT (key) DO NOTHING
+    RETURNING key
+  `);
+  return res.rows.length > 0;
 }
 
 export async function countCellRoutes(cellKey: string): Promise<number> {
@@ -123,11 +176,12 @@ export async function ensureLibraryRoutes(
   // gaten die door de kwaliteitspoorten zijn ontstaan moeten hervuld blijven worden.
   const fullSet = Object.values(STARTSET).reduce((n, a) => n + a.length, 0);
   if (existing >= fullSet) return { cellKey, status: "klaar" };
-  if (!underDailyCap()) {
+  const reservation = await reserveCellStart(cellKey);
+  if (reservation === "alreadyClaimed") return { cellKey, status: "bezig" };
+  if (reservation === "capReached") {
     log.warn({ cellKey }, "dagplafond nieuwe cellen bereikt");
     return { cellKey, status: "limiet" };
   }
-  cellsStartedToday += 1;
   inFlight.add(cellKey);
   void generateStarterSet(cellKey, lat, lon)
     .catch((err) => log.error({ err, cellKey }, "startset-generatie faalde"))
@@ -135,7 +189,7 @@ export async function ensureLibraryRoutes(
   return { cellKey, status: "gestart" };
 }
 
-async function generateStarterSet(
+export async function generateStarterSet(
   cellKey: string,
   lat: number,
   lon: number,

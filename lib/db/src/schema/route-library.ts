@@ -89,6 +89,20 @@ export const routeLibraryTable = pgTable(
   ],
 );
 
+// Cross-proces dagstatus voor routegeneratie: één rij per sleutel.
+//  - "budget:<dag>"  → atomaire teller voor het ORS-dagplafond (nieuwe cellen),
+//    gedeeld door on-demand generatie, de nachtelijke backfill én losse jobs —
+//    zodat het quotum nooit dubbel wordt uitgegeven over processen heen.
+//  - "backfill:<dag>" → run-vergrendeling: wie deze rij als eerste plaatst,
+//    draait de nachtelijke backfill; een tweede proces slaat eerlijk over.
+export const routeLibraryDailyStateTable = pgTable("route_library_daily_state", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Commentaar van gebruikers die de route gebruikt/gereden hebben. Eén rij per
 // gebruiker per route (upsert): de nieuwste mening telt, de gemiddelde score
 // op de route wordt deterministisch herberekend.

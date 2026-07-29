@@ -60,6 +60,9 @@ function freshTraces(overrides: Partial<ScheduledTaskTraces> = {}): ScheduledTas
     knowledgeLast: daysAgo(1),
     connectorSyncLast: daysAgo(1),
     connectedConnections: 2,
+    libraryLast: daysAgo(1),
+    libraryHomes: 4,
+    libraryOpenCells: 12,
     ...overrides,
   };
 }
@@ -89,7 +92,7 @@ scenario("classify: past cadence → orange, not recent", () => {
 });
 
 // ── buildScheduledTasks: shape / presence contract ─────────────────────────
-scenario("all 5 jobs present with a valid statusColor", () => {
+scenario("all 6 jobs present with a valid statusColor", () => {
   const { tasks } = buildScheduledTasks(freshTraces(), NOW);
   const keys = tasks.map((t) => t.key).sort();
   assert(
@@ -99,6 +102,7 @@ scenario("all 5 jobs present with a valid statusColor", () => {
         "goal_review",
         "health",
         "knowledge_scan",
+        "library_backfill",
         "reminders",
       ]),
     `unexpected keys: ${keys.join(",")}`,
@@ -172,16 +176,19 @@ scenario("no traces at all → health/reminders/knowledge grey with honest messa
       knowledgeLast: null,
       connectorSyncLast: null,
       connectedConnections: 0,
+      libraryLast: null,
+      libraryHomes: 0,
+      libraryOpenCells: 0,
     },
     NOW,
   );
-  for (const key of ["health", "reminders", "knowledge_scan", "connector_sync"] as const) {
+  for (const key of ["health", "reminders", "knowledge_scan", "connector_sync", "library_backfill"] as const) {
     const t = tasks.find((x) => x.key === key)!;
     assert(t.statusColor === "grey", `${key} must be grey with no trace, got ${t.statusColor}`);
     assert(t.lastRunAt === null, `${key} lastRunAt must be null`);
   }
   // all 5 grey (goal_review grey via no-active-goals branch)
-  assert(missing === 5, `expected missing 5, got ${missing}`);
+  assert(missing === 6, `expected missing 6, got ${missing}`);
 });
 
 // ── connector-sync honest branches ─────────────────────────────────────────
@@ -259,6 +266,63 @@ scenario("goal-review: recent proposal → green regardless of active-goal count
   );
   const goal = tasks.find((t) => t.key === "goal_review")!;
   assert(goal.statusColor === "green", `expected green, got ${goal.statusColor}`);
+});
+
+// ── library-backfill honest branches ───────────────────────────────────────
+scenario("library-backfill: fresh route + open cells → green", () => {
+  const { tasks } = buildScheduledTasks(freshTraces(), NOW);
+  const lib = tasks.find((t) => t.key === "library_backfill")!;
+  assert(lib.statusColor === "green", `expected green, got ${lib.statusColor}`);
+  assert(lib.lastRunAt === daysAgo(1).toISOString(), "lastRunAt must echo the trace date");
+});
+
+scenario("library-backfill: stale (>3 days) with open cells → orange", () => {
+  const { tasks } = buildScheduledTasks(freshTraces({ libraryLast: daysAgo(5) }), NOW);
+  const lib = tasks.find((t) => t.key === "library_backfill")!;
+  assert(lib.statusColor === "orange", `expected orange, got ${lib.statusColor}`);
+  assert(
+    lib.message.includes("12 open cel(len)"),
+    `unexpected message: ${lib.message}`,
+  );
+});
+
+scenario("library-backfill: no homes → honest grey (nothing to fill)", () => {
+  const { tasks } = buildScheduledTasks(
+    freshTraces({ libraryLast: null, libraryHomes: 0, libraryOpenCells: 0 }),
+    NOW,
+  );
+  const lib = tasks.find((t) => t.key === "library_backfill")!;
+  assert(lib.statusColor === "grey", `expected grey, got ${lib.statusColor}`);
+  assert(
+    lib.message.includes("nog geen woonlocaties"),
+    `unexpected message: ${lib.message}`,
+  );
+});
+
+scenario("library-backfill: all cells filled → green even with an old trace", () => {
+  const { tasks } = buildScheduledTasks(
+    freshTraces({ libraryLast: daysAgo(30), libraryOpenCells: 0 }),
+    NOW,
+  );
+  const lib = tasks.find((t) => t.key === "library_backfill")!;
+  assert(lib.statusColor === "green", `expected green, got ${lib.statusColor}`);
+  assert(
+    lib.message.includes("gevuld"),
+    `unexpected message: ${lib.message}`,
+  );
+});
+
+scenario("library-backfill: homes + open cells but never a route → grey warning", () => {
+  const { tasks } = buildScheduledTasks(
+    freshTraces({ libraryLast: null, libraryHomes: 2, libraryOpenCells: 9 }),
+    NOW,
+  );
+  const lib = tasks.find((t) => t.key === "library_backfill")!;
+  assert(lib.statusColor === "grey", `expected grey, got ${lib.statusColor}`);
+  assert(
+    lib.message.includes("job:library-backfill"),
+    `unexpected message: ${lib.message}`,
+  );
 });
 
 // ── Report ───────────────────────────────────────────────────────────────────

@@ -41,8 +41,6 @@ import { useDailyMetrics } from "@/hooks/use-daily-metrics"
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile"
 import { usePowerBests } from "@/hooks/use-power-bests"
 import { useGoalPicture, type Goal } from "@/hooks/use-goals"
-import { useTrainingPlan, usePlanRange } from "@/hooks/use-training-plan"
-import { berekenPlanNaleving, faseLabel } from "@/lib/plan-overview"
 import { useRaces } from "@/hooks/use-races"
 import { useConnectors } from "@/hooks/use-connectors"
 import { useSeasonGoal } from "@/hooks/use-nutrition"
@@ -530,34 +528,8 @@ function OverzichtTab({
   const tsb = load.data?.tsb
   const tsbWaarde = tsb == null ? null : `${tsb > 0 ? "+" : ""}${Math.round(tsb)}`
 
-  // Plan-context: fase + naleving van het trainingsplan (zelfde logica als /train).
-  const { data: plan } = useTrainingPlan()
-  // Lokale kalenderdagen via lokale getters (nooit toISOString — UTC-trap).
-  const nu = new Date()
-  const vandaagIso = localISODate(nu)
-  const vanafDatum = new Date(nu)
-  vanafDatum.setDate(vanafDatum.getDate() - 30)
-  const vanafIso = localISODate(vanafDatum)
-  const { data: planVerleden } = usePlanRange(vanafIso, vandaagIso)
-  const naleving = berekenPlanNaleving(planVerleden ?? [], vandaagIso)
-  const fase = faseLabel(plan?.inputs?.phase)
-
   return (
     <div className="space-y-6">
-      {/* Plan-context — alleen tonen als er echt een plan is */}
-      {plan?.plan != null && (
-        <LCard className="p-4 flex flex-wrap items-center gap-x-6 gap-y-1">
-          <p className="text-sm font-medium text-slate-700">Trainingsplan</p>
-          {fase && <p className="text-sm text-slate-600">Fase: <span className="font-medium">{fase}</span></p>}
-          {naleving.pct != null ? (
-            <p className="text-sm text-slate-600 tabular-nums">
-              Naleving (28 d): <span className="font-medium">{naleving.pct}%</span> ({naleving.uitgevoerd}/{naleving.gepland})
-            </p>
-          ) : (
-            <p className="text-sm text-slate-500">Nog te weinig geplande trainingen voor een nalevingscijfer.</p>
-          )}
-        </LCard>
-      )}
       {/* Stat-tegels */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTegel

@@ -32,6 +32,8 @@ import {
   userProfilesTable,
   syncRunsTable,
   connectorConnectionsTable,
+  routeLibraryTable,
+  athleteProfilesTable,
 } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 import app from "../app";
@@ -68,6 +70,7 @@ const seeded = {
   knowledgeIds: [] as number[],
   syncRunIds: [] as number[],
   connectionIds: [] as number[],
+  libraryRouteIds: [] as number[],
 };
 
 let baseUrl = "";
@@ -207,6 +210,35 @@ async function seedFreshTraces(at: Date): Promise<void> {
     })
     .returning({ id: connectorConnectionsTable.id });
   seeded.connectionIds.push(conn!.id);
+
+  // job:library-backfill — a freshly generated library route (max(created_at))
+  // plus a known home location on the admin profile (drives the honest-grey
+  // "no homes" branch when absent).
+  await db
+    .insert(athleteProfilesTable)
+    .values({ clerkId: adminId, homeLat: "51.9", homeLon: "4.5" })
+    .onConflictDoUpdate({
+      target: athleteProfilesTable.clerkId,
+      set: { homeLat: "51.9", homeLon: "4.5" },
+    });
+  const [libRoute] = await db
+    .insert(routeLibraryTable)
+    .values({
+      cellKey: `test:${RUN}`,
+      name: "Testlus",
+      bikeType: "racefiets",
+      targetKm: 40,
+      startLat: 51.9,
+      startLon: 4.5,
+      geometry: [
+        [51.9, 4.5],
+        [51.91, 4.51],
+      ],
+      source: "sparki_auto",
+      createdAt: at,
+    })
+    .returning({ id: routeLibraryTable.id });
+  seeded.libraryRouteIds.push(libRoute!.id);
 }
 
 async function cleanup() {
@@ -234,6 +266,10 @@ async function cleanup() {
     await db
       .delete(connectorConnectionsTable)
       .where(inArray(connectorConnectionsTable.id, seeded.connectionIds));
+  if (seeded.libraryRouteIds.length)
+    await db
+      .delete(routeLibraryTable)
+      .where(inArray(routeLibraryTable.id, seeded.libraryRouteIds));
   await db
     .delete(userProfilesTable)
     .where(eq(userProfilesTable.clerkId, adminId));
@@ -259,7 +295,7 @@ async function main() {
   // trace, and each lastRunAt echoing the exact instant we inserted (proving
   // the underlying query found OUR row — the drift guard).
   await scenario(
-    "all 5 jobs present, valid statusColor, and each fresh trace is detected green",
+    "all 6 jobs present, valid statusColor, and each fresh trace is detected green",
     async () => {
       const at = new Date();
       await seedFreshTraces(at);
@@ -273,6 +309,7 @@ async function main() {
         "reminders",
         "knowledge_scan",
         "connector_sync",
+        "library_backfill",
       ] as const) {
         const t = byKey.get(key);
         assert(t, `job ${key} missing from response`);

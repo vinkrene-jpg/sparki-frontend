@@ -25,6 +25,7 @@ import {
 } from "../lib/test-dashboard/scoring";
 import { isConnectorAvailable } from "../lib/connectors/registry";
 import { buildScheduledTasks } from "../lib/scheduled-tasks";
+import { libraryBackfillState } from "../lib/library-backfill";
 import { securityAuditLogTable, analysisFeedbackTable } from "@workspace/db";
 import { AI_PURPOSES } from "../lib/ai/gateway";
 import { rateLimitStats } from "../lib/security/rate-limit";
@@ -944,6 +945,14 @@ router.get(
         | { last_at?: string | Date | null; connected?: number }
         | undefined;
 
+      const libraryTrace = await db.execute(sql`
+        SELECT max(created_at) AS last_at FROM route_library
+      `);
+      const libraryRow = libraryTrace.rows[0] as
+        | { last_at?: string | Date | null }
+        | undefined;
+      const libraryState = await libraryBackfillState();
+
       const toDate = (v: string | Date | null | undefined): Date | null =>
         v ? new Date(v) : null;
 
@@ -959,6 +968,9 @@ router.get(
         knowledgeLast: toDate(knowledgeRow?.last_at),
         connectorSyncLast: toDate(connectorSyncRow?.last_at),
         connectedConnections: Number(connectorSyncRow?.connected ?? 0),
+        libraryLast: toDate(libraryRow?.last_at),
+        libraryHomes: libraryState.homes,
+        libraryOpenCells: libraryState.openCells,
       });
 
       res.json({ tasks, missing });
