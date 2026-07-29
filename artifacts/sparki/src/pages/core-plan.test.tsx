@@ -35,7 +35,7 @@ let runConnectionsResult: any = {};
 // Generieke no-ops voor hooks die wel in het module-oppervlak zitten maar in
 // deze tests niet inhoudelijk worden aangestuurd. Een mock.module MOET het
 // volledige import-oppervlak dekken, anders faalt de hele module-link.
-const noopMutation = () => ({ isPending: false, mutate: () => {}, mutateAsync: async () => ({}) });
+const noopMutation = () => ({ isPending: false, mutate: () => {}, mutateAsync: async () => ({}), reset: () => {} });
 const noopQuery = () => ({ data: undefined, isLoading: false, isError: false, refetch: () => {} });
 
 // Volledig export-oppervlak: de statisch geïmporteerde WorkoutDetailDrawer
@@ -43,7 +43,7 @@ const noopQuery = () => ({ data: undefined, isLoading: false, isError: false, re
 mock.module("@/hooks/use-training-plan", {
   namedExports: {
     usePlanWindow: () => planWindowResult,
-    usePlanRange: noopQuery,
+    usePlanRange: () => planWindowResult,
     useTrainingPlan: () => planResult,
     useGenerateTrainingPlan: () => generateResult,
     useAdaptTrainingPlan: () => adaptResult,

@@ -18,7 +18,6 @@ import { bronZin, kiesPlanActie, afleidDagStatus, startOfLocalWeek, derivedFacts
 import { judgeGoalFit } from "@/lib/train-intelligence";
 
 // Hooks
-import { useTrainingPlan, usePlanWindow, usePlanRange, useGenerateTrainingPlan, useAdaptTrainingPlan } from "@/hooks/use-training-plan";
 import { useUpdateWorkout } from "@/hooks/use-today-workout";
 import { useAthleteExtendedProfile } from "@/hooks/use-athlete-extended-profile";
 import { useFixParams } from "@/hooks/use-missing-input";
@@ -29,7 +28,6 @@ import { useLoad } from "@/hooks/use-load";
 import { isTargetSet } from "@/lib/missing-input";
 import { MissingInputNotice } from "@/components/sparki/missing-input-notice";
 import { PlanWizard } from "@/components/sparki/plan-wizard";
-import { berekenDoelverschuiving, berekenPlanNaleving, faseLabel } from "@/lib/plan-overview";
 import { useGoalPicture } from "@/hooks/use-goals";
 import { CorePredictionPanel } from "@/components/sparki/core-prediction-panel";
 import { WorkoutDetailDrawer } from "@/components/sparki/workout-detail-drawer";
@@ -38,6 +36,7 @@ import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer";
 import { TrainingProgression } from "@/components/sparki/training-progression";
 import { ActivityImportPanel } from "@/components/sparki/activity-import-panel";
 import { DocumentAnalysisPanel } from "@/components/sparki/document-analysis-panel";
+import { berekenDoelverschuiving, berekenPlanNaleving, faseLabel, berekenSnelleAanpassing, type SnelleActie } from "@/lib/plan-overview";
 
 // AI Insights imports
 import { useObservations, useRunConnections } from "@/hooks/use-ai-memory";
@@ -51,6 +50,7 @@ import { HerkomstKnop } from "@/components/sparki/herkomst-sheet";
 import type { TrainingSession, PlannedWorkout } from "@/lib/athlete-types";
 
 // --- Sub-components --------------------------------------------------------
+import { useTrainingPlan, usePlanWindow, usePlanRange, useGenerateTrainingPlan, useAdaptTrainingPlan, useApplyProposal } from "@/hooks/use-training-plan";
 
 function PlanHeader() {
   const { data: plan } = useTrainingPlan();
@@ -211,6 +211,9 @@ function GeselecteerdeDagKaart({
   onOpenDetail,
   onOpenSession,
   updateWorkout,
+  alleWorkouts,
+  todayISO,
+  onVerplaatst,
 }: {
   selectedDate: string;
   selectedWorkout: PlannedWorkout | undefined;
@@ -223,8 +226,66 @@ function GeselecteerdeDagKaart({
   onOpenDetail: (id: number) => void;
   onOpenSession: (s: TrainingSession) => void;
   updateWorkout: { mutate: (args: { id: number; status: string }) => void; isPending: boolean };
+  /** Alle geplande trainingen in het geladen venster (voor weekconsequenties) */
+  alleWorkouts: PlannedWorkout[];
+  todayISO: string;
+  /** Na een geslaagde verplaatsing: selecteer de nieuwe dag */
+  onVerplaatst: (iso: string) => void;
 }) {
   const isRest = selectedWorkout?.type === "rest";
+
+  // ── Snel aanpassen (verkort/verleng/verplaats) vanaf de dagkaart ──
+  const [snelleActie, setSnelleActie] = useState<SnelleActie | null>(null);
+  const [verplaatsDatum, setVerplaatsDatum] = useState("");
+  const applyProposal = useApplyProposal();
+
+  // Reset de actiekeuze zodra een andere dag/training wordt geselecteerd.
+  useEffect(() => {
+    setSnelleActie(null);
+    setVerplaatsDatum("");
+    applyProposal.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, selectedWorkout?.id]);
+
+  const kanSnelAanpassen =
+    selectedWorkout != null &&
+    !isRest &&
+    !isPast &&
+    (selectedWorkout.status === "planned" || selectedWorkout.status === "modified") &&
+    selectedWorkout.sessionId == null;
+
+  const snelleAanpassing =
+    kanSnelAanpassen && snelleActie != null && selectedWorkout != null
+      ? berekenSnelleAanpassing({
+          workout: selectedWorkout,
+          actie: snelleActie,
+          alleWorkouts,
+          vandaagISO: todayISO,
+          nieuweDatum: snelleActie === "verplaatsen" ? (verplaatsDatum || null) : null,
+        })
+      : null;
+
+  function bevestigSnelleAanpassing() {
+    if (!selectedWorkout || !snelleAanpassing?.kan) return;
+    applyProposal.mutate(
+      {
+        id: selectedWorkout.id,
+        changes: {
+          ...(snelleAanpassing.nieuweDuurMin != null && { targetDurationMin: snelleAanpassing.nieuweDuurMin }),
+          ...(snelleAanpassing.nieuweTSS != null && { targetTSS: snelleAanpassing.nieuweTSS }),
+          ...(snelleAanpassing.nieuweDatum != null && { newDate: snelleAanpassing.nieuweDatum }),
+        },
+      },
+      {
+        onSuccess: () => {
+          const verplaatstNaar = snelleAanpassing.nieuweDatum;
+          setSnelleActie(null);
+          setVerplaatsDatum("");
+          if (verplaatstNaar) onVerplaatst(verplaatstNaar);
+        },
+      },
+    );
+  }
   const datumLabel = new Date(selectedDate + "T12:00:00Z").toLocaleDateString("nl-NL", {
     weekday: "long", day: "numeric", month: "long",
   });
@@ -381,6 +442,65 @@ function GeselecteerdeDagKaart({
               </>
             )}
           </div>
+
+          {/* ── Snel aanpassen: verkort / verleng / verplaats ── */}
+          {kanSnelAanpassen && (
+            <div className="flex flex-col gap-2 pt-2 border-t border-white/[0.06]">
+              <p className="type-label text-content-secondary uppercase tracking-wider">Snel aanpassen</p>
+              <div className="flex flex-wrap gap-1.5">
+                {([
+                  ["verkorten", "Verkort −25%"],
+                  ["verlengen", "Verleng +25%"],
+                  ["verplaatsen", "Verplaats"],
+                ] as [SnelleActie, string][]).map(([actie, label]) => (
+                  <button
+                    key={actie}
+                    type="button"
+                    onClick={() => { setSnelleActie(snelleActie === actie ? null : actie); applyProposal.reset(); }}
+                    aria-pressed={snelleActie === actie}
+                    className={cn(
+                      "rounded-lg border px-2.5 py-1.5 type-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60",
+                      snelleActie === actie
+                        ? "border-accent-cyan/60 bg-accent-cyan/10 text-white"
+                        : "border-border bg-surface text-white/70 hover:bg-white/5",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {snelleActie === "verplaatsen" && (
+                <input
+                  type="date"
+                  min={todayISO}
+                  value={verplaatsDatum}
+                  onChange={(e) => setVerplaatsDatum(e.target.value)}
+                  aria-label="Nieuwe dag voor deze training"
+                  className="rounded-lg border border-border bg-surface px-3 py-2 type-label text-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60 [color-scheme:dark]"
+                />
+              )}
+              {/* Eén eerlijke consequentiezin vóór het bevestigen (deterministisch) */}
+              {snelleAanpassing && (snelleAanpassing.consequentie ?? snelleAanpassing.reden) && (
+                <p className="type-label text-content-secondary leading-relaxed">
+                  {snelleAanpassing.consequentie ?? snelleAanpassing.reden}
+                </p>
+              )}
+              {snelleAanpassing?.kan && (
+                <div className="flex gap-2">
+                  <DsButton variant="primair" onClick={bevestigSnelleAanpassing} loading={applyProposal.isPending}>
+                    Bevestig
+                  </DsButton>
+                  <DsButton variant="secundair" onClick={() => { setSnelleActie(null); setVerplaatsDatum(""); }}>
+                    Annuleer
+                  </DsButton>
+                </div>
+              )}
+              {applyProposal.isError && (
+                <DsStatus status="fout">Aanpassen lukte niet. Probeer het opnieuw.</DsStatus>
+              )}
+            </div>
+          )}
+
           {isSelectedToday && <CorePredictionPanel workoutId={selectedWorkout.id} />}
 
           {/* Extra sessies op dezelfde dag (niet de gekoppelde — geen duplicaat) */}
@@ -699,6 +819,9 @@ function KalenderSection({ highlightWeek, onOpenAdd }: { highlightWeek: boolean;
               onOpenDetail={(id) => setDetailId(id)}
               onOpenSession={(s) => setOpenSessie(s)}
               updateWorkout={updateWorkout}
+              alleWorkouts={trustedWorkouts}
+              todayISO={todayISO}
+              onVerplaatst={(iso) => setSelectedDate(iso)}
             />
           </div>
         </div>

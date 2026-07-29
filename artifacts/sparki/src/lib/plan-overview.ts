@@ -192,6 +192,8 @@ export function berekenPlanNaleving(
   };
 }
 
+export type SnelleActie = "verkorten" | "verlengen" | "verplaatsen";
+
 // ── Seizoenslijn ────────────────────────────────────────────────────────────
 
 const FASE_LABEL: Record<string, string> = {
@@ -204,4 +206,169 @@ const FASE_LABEL: Record<string, string> = {
 export function faseLabel(fase: string | null | undefined): string | null {
   if (!fase) return null;
   return FASE_LABEL[fase] ?? null;
+}
+
+function dagLabel(iso: string): string {
+  return new Date(iso + "T12:00:00Z").toLocaleDateString("nl-NL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
+/** Som van geplande minuten in de week van `weekMaandagISO` (niet-rust, telt mee). */
+function weekMinuten(workouts: PlannedWorkout[], weekMaandagISO: string): number {
+  const eind = new Date(weekMaandagISO + "T12:00:00Z");
+  eind.setUTCDate(eind.getUTCDate() + 6);
+  const eindISO = eind.toISOString().slice(0, 10);
+  return workouts
+    .filter(
+      (w) =>
+        w.scheduledDate >= weekMaandagISO &&
+        w.scheduledDate <= eindISO &&
+        w.type !== "rest" &&
+        w.status !== "cancelled" &&
+        w.status !== "skipped",
+    )
+    .reduce((som, w) => som + (w.targetDurationMin ?? 0), 0);
+}
+
+export type SnelleAanpassing = {
+  /** Kan de actie worden uitgevoerd? Zo niet, dan staat er een eerlijke reden. */
+  kan: boolean;
+  reden: string | null;
+  nieuweDuurMin: number | null;
+  nieuweTSS: number | null;
+  nieuweDatum: string | null;
+  /** Eén eerlijke consequentiezin die vóór het bevestigen wordt getoond. */
+  consequentie: string | null;
+};
+
+/**
+ * Berekent deterministisch wat een snelle aanpassing doet met deze training,
+ * de weekminuten/TSS en — gedempt — het doel. Nooit verzonnen getallen: alles
+ * volgt uit de echte geplande duur/TSS. Ontbreekt de geplande duur, dan is
+ * schalen eerlijk niet mogelijk.
+ */
+export function berekenSnelleAanpassing(args: {
+  workout: PlannedWorkout;
+  actie: SnelleActie;
+  alleWorkouts: PlannedWorkout[];
+  vandaagISO: string;
+  nieuweDatum?: string | null;
+}): SnelleAanpassing {
+  const { workout, actie, alleWorkouts, vandaagISO } = args;
+  const geen: SnelleAanpassing = {
+    kan: false,
+    reden: null,
+    nieuweDuurMin: null,
+    nieuweTSS: null,
+    nieuweDatum: null,
+    consequentie: null,
+  };
+
+  const weekMaandag = maandagVanISO(workout.scheduledDate);
+  const weekVoor = weekMinuten(alleWorkouts, weekMaandag);
+
+  if (actie === "verkorten" || actie === "verlengen") {
+    if (workout.targetDurationMin == null) {
+      return {
+        ...geen,
+        reden:
+          "Deze training heeft geen geplande duur, dus verkorten of verlengen met 25% is niet te berekenen.",
+      };
+    }
+    const factor = actie === "verkorten" ? 0.75 : 1.25;
+    const oud = workout.targetDurationMin;
+    const nieuw = Math.round(oud * factor);
+    if (actie === "verkorten" && nieuw < 15) {
+      return {
+        ...geen,
+        reden: `Verkorten maakt deze training korter dan 15 minuten (${nieuw} min) — sla hem dan liever over.`,
+      };
+    }
+    const deltaMin = nieuw - oud;
+    const oudTSS = workout.targetTSS;
+    const nieuwTSS = oudTSS != null ? Math.round(oudTSS * factor) : null;
+    const deltaTSS = oudTSS != null && nieuwTSS != null ? nieuwTSS - oudTSS : null;
+    const weekNa = weekVoor + deltaMin;
+    const teken = (n: number) => (n > 0 ? `+${n}` : String(n));
+    const tssDeel = deltaTSS != null ? `, ${teken(deltaTSS)} TSS` : "";
+    const consequentie =
+      `Van ${oud} naar ${nieuw} min (${teken(deltaMin)} min${tssDeel}). ` +
+      `Deze week gaat van ${weekVoor} naar ${weekNa} geplande minuten. ` +
+      doelZin(deltaMin, weekVoor);
+    return {
+      kan: true,
+      reden: null,
+      nieuweDuurMin: nieuw,
+      nieuweTSS: nieuwTSS,
+      nieuweDatum: null,
+      consequentie,
+    };
+  }
+
+  // ── Verplaatsen ──
+  const nieuweDatum = args.nieuweDatum ?? null;
+  if (!nieuweDatum) return { ...geen, reden: "Kies eerst een dag om naartoe te verplaatsen." };
+  if (nieuweDatum < vandaagISO)
+    return { ...geen, reden: "Verplaatsen naar een dag in het verleden kan niet." };
+  if (nieuweDatum === workout.scheduledDate)
+    return { ...geen, reden: "Dat is dezelfde dag — kies een andere dag." };
+
+  const bezet = alleWorkouts.some(
+    (w) =>
+      w.id !== workout.id &&
+      w.scheduledDate === nieuweDatum &&
+      w.type !== "rest" &&
+      w.status !== "cancelled" &&
+      w.status !== "skipped",
+  );
+  const bezetDeel = bezet ? " Let op: op die dag staat al een training." : "";
+
+  const doelMaandag = maandagVanISO(nieuweDatum);
+  const duur = workout.targetDurationMin ?? 0;
+  let consequentie: string;
+  if (doelMaandag === weekMaandag) {
+    consequentie =
+      `Verplaatst naar ${dagLabel(nieuweDatum)}. ` +
+      `Je weekminuten en TSS blijven gelijk; alleen de timing schuift.` +
+      bezetDeel;
+  } else {
+    const weekNa = weekVoor - duur;
+    const doelWeekVoor = weekMinuten(alleWorkouts, doelMaandag);
+    consequentie =
+      `Verplaatst naar ${dagLabel(nieuweDatum)}. ` +
+      `Deze week gaat van ${weekVoor} naar ${weekNa} geplande minuten; ` +
+      `de week van ${dagLabel(doelMaandag)} gaat van ${doelWeekVoor} naar ${doelWeekVoor + duur}. ` +
+      `Je totale belasting blijft gelijk — ` +
+      doelZin(-duur, weekVoor).toLowerCase().replace(/^dit is/, "de verschuiving is") +
+      bezetDeel;
+  }
+  return {
+    kan: true,
+    reden: null,
+    nieuweDuurMin: null,
+    nieuweTSS: null,
+    nieuweDatum,
+    consequentie,
+  };
+}
+
+/** Gedempt: alleen bij betekenisvolle impact zeggen we iets over het doel. */
+function doelZin(deltaMin: number, weekMin: number): string {
+  const betekenisvol =
+    Math.abs(deltaMin) >= 60 ||
+    (weekMin > 0 && Math.abs(deltaMin) / weekMin >= 0.25);
+  return betekenisvol
+    ? "Dit is groot genoeg om je opbouw merkbaar te beïnvloeden."
+    : "Je doel verschuift hier niet merkbaar door.";
+}
+
+/** Maandag (ISO) van de lokale week waarin deze ISO-datum valt. */
+export function maandagVanISO(iso: string): string {
+  const d = new Date(iso + "T12:00:00Z");
+  const dow = (d.getUTCDay() + 6) % 7; // ma=0 … zo=6
+  d.setUTCDate(d.getUTCDate() - dow);
+  return d.toISOString().slice(0, 10);
 }
