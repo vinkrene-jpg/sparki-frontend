@@ -1,0 +1,112 @@
+STATUSCORRECTIE NA WP-000 — GEEN NIEUWE FUNCTIONELE BOUW
+
+Gebruik als bron:
+
+- live GitHub branch main
+- live SHA ddeb9408
+- docs/SPARKI_WP000_BRONBASIS_EN_TAAKONTDUBBELING.md
+- docs/SPARKI_REPLIT_TAAKINVENTARIS.csv
+- SPARKI_AI_MASTER_PLAN_v3_02.yaml
+- SPARKI_R1_BUILD_PACK_V1_DRAFT_AUTONOOM_v3_GECORRIGEERD_2026-07-29.md
+
+Plaats eerst SPARKI_AI_MASTER_PLAN_v3_02.yaml in de werkruimte wanneer dit
+bestand daar nog ontbreekt.
+
+Wijzig geen applicatiecode.
+Voer geen databasecorrectie uit.
+Start nog geen nieuwe functionele featurebouw.
+
+WERK DE STATUSADMINISTRATIE BIJ
+
+1. Bronbasis
+- branch: main
+- actuele live SHA: ddeb9408
+- kandidaat-SHA 666b702 markeren als verouderd
+- verschil: 884 commits
+- WP-000 status: VERIFIED_FOR_R1
+
+2. Opdracht #382 / WP-A01
+- status: VERIFIED_FOR_R1
+- markeer als afgerond en gemerged
+- geen nieuwe uitvoering starten
+- leg bewijsverwijzingen vast
+
+3. Opdracht #383 / WP-A02
+- status: BUILT_NOT_VERIFIED zolang productiecontrole ontbreekt
+- controleer of taak #390 volledig gemerged is
+- voer taak #399 alleen uit wanneer #390 aantoonbaar compleet is
+- controleer productiehertelling
+- verwachte uitkomst: 38 actieve observaties
+- bewijs herkomst, deduplicatie en gebruikersisolatie
+- markeer pas daarna VERIFIED_FOR_R1
+- bij afwijking: BLOCKED met exact verschil, geen gok
+
+4. WP-B14 Analyse-grafiekstyling
+- markeer als reeds gebouwd
+- status voorlopig BUILT_NOT_VERIFIED
+- controleer dat cijfers, berekeningen, assen en scenario’s identiek bleven
+- controleer desktop, mobiel, contrast en donkere Lab-weergave
+- bij groen: VERIFIED_FOR_R1
+
+5. WP-A06A
+- markeer als DEELS_AL_BESTAAND
+- leg vast welke onderdelen van Stripe-testmode, Gratis en Go al bestaan
+- leg vast wat nog ontbreekt
+- start nog geen aanvullende bouw
+
+6. Productiearchitectuur
+Leg definitief vast:
+
+- Replit = huidige ontwikkel-, test- en tijdelijke publicatieomgeving
+- GitHub = bron van waarheid
+- TransIP sparki-vps2 = beoogde zelfstandige productieomgeving
+- Track INFRA blijft bestaan
+- INFRA-01 mag starten
+- verwijder Track INFRA niet op basis van de huidige Replit-publicatie
+- geen migratie of DNS-wijziging in deze statusopdracht
+
+7. Track B
+- classificeer de bestaande VIS-audit tegen live SHA ddeb9408
+- status per onderdeel:
+  GELDIG
+  GEDEELTELIJK_VERouderd
+  OPNIEUW_CONTROLEREN
+  VERVALLEN
+- start nog geen VIS-bouw
+
+8. Track MARKT
+- MARKT-01 mag na deze statuscorrectie starten
+- nog geen websitebouw vóór MARKT-01 en MARKT-02 zijn afgerond
+
+OPLEVERING
+
+Werk bij:
+
+- het Build Pack-statusregister
+- het besluitenregister
+- de bronbasis
+- de eerstvolgende uitvoerreeks
+
+Maak daarnaast:
+
+docs/SPARKI_POST_WP000_STATUSCORRECTIE.md
+
+Rapporteer exact:
+
+- nieuwe bron-SHA
+- status #382
+- status #383
+- status WP-B14
+- status WP-A06A
+- bevestiging Replit tijdelijk / VPS doelproductie
+- welke pakketten nu READY_TO_START zijn
+- welke pakketten nog wachten
+- gewijzigde documenten
+- geen applicatiecode gewijzigd
+
+Verwachte volgende vrijgave:
+
+- WP-A02 productiecontrole
+- INFRA-01
+- MARKT-01
+- Track B alleen na geldigheidscontrole van de bestaande VIS-audit
