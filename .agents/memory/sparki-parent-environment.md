@@ -10,3 +10,7 @@ description: Per-categorie ouderrechten, leeftijdstiers, herbevestiging — fail
 - Onbevestigde rechten (geen `consentConfirmedAt`) mogen nooit boven safety-only uitkomen. Bestaande tests die "summary ⇒ schedule zichtbaar" aannamen, moeten nu expliciet consent bevestigen (link: `consentConfirmedAt` + `ageTierAtConsent`) én de sporter een echte volwassen geboortedatum geven.
 - Limieten met count-then-insert (bv. max 5 noodcontacten) racen: doe count+insert in één transactie achter `pg_advisory_xact_lock(hashtext(key))`.
 - **How to apply:** bij nieuwe ouder-datastromen altijd per categorie gaten op `access.permissions.<categorie>`, nooit alleen op sharing-level; regressietest gelijktijdigheid met `Promise.all` van 8 posts en tel 201's.
+
+## WP-04-aanscherping (jul 2026)
+- Onbevestigde (legacy) ouderkoppeling ⇒ strikt SAFETY_CATEGORIES (gezondheid+herstel), nooit slaap/summary-extra's; die bredere defaults gelden alleen ná consentConfirmedAt.
+- tier=adult zonder bij de adult-tier bevestigde keuze ⇒ reconfirmRequired en ALLES dicht; alleen expliciete herbevestiging door de sporter heropent.
