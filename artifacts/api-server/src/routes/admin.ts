@@ -1888,4 +1888,12 @@ router.get(
         .from(adminOpsLogTable)
         .orderBy(desc(adminOpsLogTable.createdAt))
         .limit(50);
+      res.json({ log });
+    } catch (err) {
+      req.log.error({ err }, "admin.ops-log.get failed");
+      res.status(500).json({ error: "Kon log niet laden" });
+    }
+  },
+);
+
 export default router;
