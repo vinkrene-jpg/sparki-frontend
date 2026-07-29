@@ -1478,9 +1478,9 @@ function ProgressieTab({
       </LCard>
       </div>
 
-      {/* Trainingsverloop (bestaande component in dark container) */}
-      <div className="rounded-xl bg-slate-900 p-4 pt-5">
-        <p className="mb-2 text-[10px] font-mono uppercase tracking-widest text-white/35">
+      {/* Trainingsverloop — lichte variant, passend bij de rest van Analyse */}
+      <div>
+        <p className="mb-1 text-[10px] font-mono uppercase tracking-widest text-slate-500">
           Trainingsverloop — 6 weken
         </p>
         <TrainingProgression
@@ -1488,6 +1488,7 @@ function ProgressieTab({
           chartData={load.data?.chartData}
           loading={(load.isLoading && !load.data) || (sessies.isLoading && !sessies.data)}
           hideLabel
+          variant="licht"
         />
       </div>
     </div>
