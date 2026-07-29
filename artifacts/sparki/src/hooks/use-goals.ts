@@ -73,6 +73,9 @@ export type GoalInput = {
   targetValue?: string | null;
   priority?: number;
   parentGoalId?: number | null;
+  // Atomaire update-of-aanmaak op titelprefix (server-side, race-vrij) —
+  // gebruikt door het Wattage-lab zodat dubbelkliks nooit duplicaten maken.
+  dedupeTitlePrefix?: string;
 };
 
 const GOALS_KEY = ["goals", "picture"] as const;

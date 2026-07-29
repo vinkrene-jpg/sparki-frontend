@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, like, sql } from "drizzle-orm";
 import { db, athleteGoalsTable, goalEventsTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
@@ -69,28 +69,70 @@ router.post("/", requireAuth, async (req, res) => {
     parentGoalId = pid;
   }
 
+  // Optioneel: atomaire update-of-aanmaak op titelprefix (Wattage-lab).
+  // Zonder unieke index dwingen we serialisatie af met een advisory xact-lock
+  // per (atleet, prefix) binnen één transactie — dubbelkliks of twee tabbladen
+  // kunnen zo nooit twee doelen voor dezelfde duur maken.
+  const dedupePrefix = strOrNull(body.dedupeTitlePrefix);
+
   try {
-    const [goal] = await db
-      .insert(athleteGoalsTable)
-      .values({
-        clerkId,
-        parentGoalId,
-        title,
-        description: strOrNull(body.description),
-        horizon,
-        targetDate: targetDate as string | null,
-        measure: strOrNull(body.measure),
-        targetValue: strOrNull(body.targetValue),
-        priority,
-      })
-      .returning();
+    const values = {
+      clerkId,
+      parentGoalId,
+      title,
+      description: strOrNull(body.description),
+      horizon,
+      targetDate: targetDate as string | null,
+      measure: strOrNull(body.measure),
+      targetValue: strOrNull(body.targetValue),
+      priority,
+    };
+
+    const { goal, updated } = await db.transaction(async (tx) => {
+      if (dedupePrefix) {
+        await tx.execute(
+          sql`SELECT pg_advisory_xact_lock(hashtext(${`goal-dedupe|${clerkId}|${dedupePrefix}`}))`,
+        );
+        const [existing] = await tx
+          .select({ id: athleteGoalsTable.id })
+          .from(athleteGoalsTable)
+          .where(
+            and(
+              eq(athleteGoalsTable.clerkId, clerkId),
+              eq(athleteGoalsTable.status, "active"),
+              like(athleteGoalsTable.title, `${dedupePrefix}%`),
+            ),
+          )
+          .limit(1);
+        if (existing) {
+          const [row] = await tx
+            .update(athleteGoalsTable)
+            .set({
+              title: values.title,
+              description: values.description,
+              horizon: values.horizon,
+              targetDate: values.targetDate,
+              measure: values.measure,
+              targetValue: values.targetValue,
+              priority: values.priority,
+              updatedAt: new Date(),
+            })
+            .where(eq(athleteGoalsTable.id, existing.id))
+            .returning();
+          return { goal: row!, updated: true };
+        }
+      }
+      const [row] = await tx.insert(athleteGoalsTable).values(values).returning();
+      return { goal: row!, updated: false };
+    });
+
     await recordGoalEvent({
       clerkId,
-      goalId: goal!.id,
-      eventType: "created",
+      goalId: goal.id,
+      eventType: updated ? "adjusted" : "created",
       note: title,
     });
-    res.status(201).json({ goal });
+    res.status(updated ? 200 : 201).json({ goal, updated });
   } catch (err) {
     req.log.error({ err }, "goals.create failed");
     res.status(500).json({ error: "Kon doel niet opslaan" });

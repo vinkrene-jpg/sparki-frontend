@@ -8,7 +8,7 @@ import { useMemo, useState } from "react"
 import { FlaskConical, Target } from "lucide-react"
 import { BeheerSheet } from "@/components/sparki/beheer-popup"
 import { usePowerBests } from "@/hooks/use-power-bests"
-import { useGoalPicture, useCreateGoal, useUpdateGoal } from "@/hooks/use-goals"
+import { useGoalPicture, useCreateGoal } from "@/hooks/use-goals"
 import {
   computeWattageLab,
   LAB_DUREN,
@@ -73,7 +73,6 @@ export function WattageLab({
   // Vastleggen als echt doel (Doelen-werkblad + Analyse-overlay + plan-input).
   const picture = useGoalPicture()
   const createGoal = useCreateGoal()
-  const updateGoal = useUpdateGoal()
   // Per duur onthouden wat er dit bezoek is vastgelegd (voor de bevestiging).
   const [vastgelegd, setVastgelegd] = useState<Partial<Record<LabDuurKey, number>>>({})
 
@@ -116,20 +115,23 @@ export function WattageLab({
     resultaat.oordeel !== "geen_basis" &&
     resultaat.oordeel !== "al_bereikt"
 
-  const bezig = createGoal.isPending || updateGoal.isPending
+  const bezig = createGoal.isPending
   const legVast = async () => {
+    if (bezig) return
     const title = doelTitel(duurKey, duur.label, doel)
-    const input = {
-      title,
-      description: `Vastgelegd vanuit het Wattage-lab. Oordeel bij vastleggen: ${LAB_OORDEEL_LABEL[resultaat.oordeel]}${huidig ? ` (basis: ${huidig.watts} W)` : ""}.`,
-      horizon: "season" as const,
-      targetDate: resultaat.weken != null ? streefDatum(resultaat.weken) : null,
-      measure: duurKey === "ftp" ? "FTP (watt)" : `vermogen over ${duur.label.toLowerCase()} (watt)`,
-      targetValue: `${doel} W`,
-    }
     try {
-      if (bestaand) await updateGoal.mutateAsync({ id: bestaand.id, input })
-      else await createGoal.mutateAsync(input)
+      // Eén pad: de server werkt atomair een bestaand lab-doel voor deze duur
+      // bij (op titelprefix) of maakt het aan — dubbelkliks of een tweede
+      // tabblad kunnen dus nooit een duplicaat opleveren.
+      await createGoal.mutateAsync({
+        title,
+        description: `Vastgelegd vanuit het Wattage-lab. Oordeel bij vastleggen: ${LAB_OORDEEL_LABEL[resultaat.oordeel]}${huidig ? ` (basis: ${huidig.watts} W)` : ""}.`,
+        horizon: "season" as const,
+        targetDate: resultaat.weken != null ? streefDatum(resultaat.weken) : null,
+        measure: duurKey === "ftp" ? "FTP (watt)" : `vermogen over ${duur.label.toLowerCase()} (watt)`,
+        targetValue: `${doel} W`,
+        dedupeTitlePrefix: doelPrefix(duurKey, duur.label),
+      })
       setVastgelegd((v) => ({ ...v, [duurKey]: doel }))
     } catch {
       // foutmelding hieronder via mutation-state
@@ -301,7 +303,7 @@ export function WattageLab({
                     : "Nog geen eigen basis om een doel op te bouwen."}
               </p>
             )}
-            {(createGoal.isError || updateGoal.isError) && (
+            {createGoal.isError && (
               <p className="text-xs text-red-300">Vastleggen mislukte — probeer het opnieuw.</p>
             )}
             {vastgelegd[duurKey] != null && !bezig && (
