@@ -19,6 +19,14 @@
 ## Regressie (alles groen)
 Web typecheck ✓ · API typecheck ✓ · prod build web ✓ · prod build API ✓ · governor-role-foundation 11/11 · trainer-workspace-isolation 6/6 · trainer-rights 20/20 · hoofdtrainer-workspace 6/6 · cross-account-isolation 19/19 · coach-parent-link-isolation 13/13 · links-end-isolation 3/3 · club-organisation 18/18 · admin-smoke 12/12.
 
+## Herstelcontrole na agentfout + merge taak #411 (29-07-2026)
+Volledige statuscontrole uitgevoerd na een agent-onderbreking én de merge van taak #411 (`8e7ad2c9`, club-trainer toegangstiers):
+- **WP-03-stappen 1–9: allemaal afgerond, gecommit en gepusht** (t/m `85aa28cb`). Geen half toegepaste WP-03-wijzigingen gevonden; enige ongecommitte file was een auto-gegenereerd sandbox-bestand.
+- **Alle drie de reviewbevindingen opgelost** in `1badb35c` (venster-filter berichten-scopes, gedeelde advisory-lock `(881100, clubId)`, server-side uitnodigingenendpoint).
+- **Geen test veroorzaakte de fout**; de onderbreking trof alleen een verkennings-subagent, geen bouwwerk.
+- **Herverificatie ná merge #411, alles groen:** libs+api+web typecheck, api esbuild, web prod build, club-organisation 18/18, governor-role-foundation 11/11, trainer-workspace-isolation 6/6, trainer-rights 20/20, hoofdtrainer 6/6, cross-account 19/19, coach-parent-link 13/13, links-end 3/3, admin-smoke 12/12.
+- **Migratiestatus schoon:** `scripts/check-schema-drift.mjs` → "Geen echte drift — alleen bekende no-op-lussen (catalogus-geverifieerd)"; migratie `0004_coach_private_notes.sql` uit #411 is toegepast.
+
 ## Bewuste keuzes
 - Geen FK-references op de nieuwe nullable kolommen (additief, legacy-veilig); integriteit afgedwongen in de routes.
 - Eén organisatiemodel; `organisation_kind` maakt latere verenigingsvormen mogelijk zonder migratie.
