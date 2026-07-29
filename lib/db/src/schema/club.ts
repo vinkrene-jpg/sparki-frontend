@@ -77,6 +77,9 @@ export const clubsTable = pgTable("clubs", {
     .references(() => userProfilesTable.clerkId, { onDelete: "restrict", onUpdate: "cascade" }),
   // Releasegroep voor gecontroleerde uitrol (pilotclubs): default productie.
   releaseGroup: text("release_group").notNull().default("productie"),
+  // WP-03: soort organisatie (club | vereniging | ploeg | school | anders).
+  // Additief; bestaande rijen blijven gewoon "club".
+  organisationKind: text("organisation_kind").notNull().default("club"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -133,6 +136,11 @@ export const clubTeamsTable = pgTable("club_teams", {
   joinCode: text("join_code").unique(),
   // Teammanager is een clublid met rol teammanager; hier de aanwijzing per team.
   managerClerkId: text("manager_clerk_id"),
+  // WP-03: selectie/subteam-hiërarchie — een selectie is een team met een
+  // parentTeamId. Nullable en additief; bestaande teams blijven gewoon geldig.
+  parentTeamId: integer("parent_team_id"),
+  // WP-03: optionele koppeling aan een seizoen (club_seasons). Nullable.
+  seasonId: integer("season_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -154,6 +162,38 @@ export const clubGroupsTable = pgTable("club_groups", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ── WP-03: Seizoenen ─────────────────────────────────────────────────────────
+// Eén duidelijke actieve seizoencontext per organisatie (partial unique).
+// Afsluiten zet status op "afgesloten" — historie blijft leesbaar, nooit DELETE.
+export const clubSeasonStatuses = ["actief", "gepland", "afgesloten"] as const;
+export type ClubSeasonStatus = (typeof clubSeasonStatuses)[number];
+
+export const clubSeasonsTable = pgTable(
+  "club_seasons",
+  {
+    id: serial("id").primaryKey(),
+    clubId: integer("club_id")
+      .notNull()
+      .references(() => clubsTable.id, { onDelete: "cascade" }),
+    name: text("name").notNull(), // bv. "2026" of "2026–2027"
+    startsOn: date("starts_on"),
+    endsOn: date("ends_on"),
+    status: text("status").notNull().default("actief"),
+    createdByClerkId: text("created_by_clerk_id"),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("club_seasons_one_active_unique")
+      .on(t.clubId)
+      .where(sql`status = 'actief'`),
+    index("club_seasons_club_idx").on(t.clubId),
+  ],
+);
+
+export type ClubSeason = typeof clubSeasonsTable.$inferSelect;
 
 // Indeling van leden in teams en trainingsgroepen.
 export const clubTeamMembersTable = pgTable(
@@ -234,6 +274,11 @@ export const clubTrainerAssignmentsTable = pgTable(
     // Precies één van beide is gezet.
     teamId: integer("team_id").references(() => clubTeamsTable.id, { onDelete: "cascade" }),
     groupId: integer("group_id").references(() => clubGroupsTable.id, { onDelete: "cascade" }),
+    // WP-03: contextgebonden toewijzing — geldigheidsvenster + seizoen.
+    // Nullable/additief: bestaande toewijzingen blijven zonder venster geldig.
+    startsOn: date("starts_on"),
+    endsOn: date("ends_on"),
+    seasonId: integer("season_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
