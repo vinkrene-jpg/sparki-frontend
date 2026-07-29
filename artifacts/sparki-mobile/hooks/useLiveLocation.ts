@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import * as Location from "expo-location";
 
 export type LiveLocation = {
@@ -24,6 +24,55 @@ export function useLiveLocation(active: boolean) {
   const [permission, setPermission] = useState<PermissionState>("unknown");
   const [error, setError] = useState<string | null>(null);
   const cleanupRef = useRef<null | (() => void)>(null);
+  // Bump om de watch opnieuw op te starten (bv. toestemming keert terug
+  // nadat die tijdens een rit was ingetrokken).
+  const [restartTick, setRestartTick] = useState(0);
+  const permissionRef = useRef<PermissionState>("unknown");
+  permissionRef.current = permission;
+
+  // Intrekking-tijdens-rit detecteren (native): het OS stopt de positie-
+  // stream stil zonder foutmelding. Daarom controleren we, zolang de stream
+  // actief hoort te zijn, periodiek én bij terugkeer naar de voorgrond of de
+  // toestemming nog bestaat. Weg → eerlijk "denied" + watch stoppen; terug →
+  // watch automatisch herstarten (geen handmatige actie nodig).
+  useEffect(() => {
+    if (!active || Platform.OS === "web") return;
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (cancelled) return;
+        const granted = status === "granted";
+        if (!granted && permissionRef.current === "granted") {
+          // Toestemming tijdens de rit ingetrokken: stream stoppen en het
+          // eerlijk melden. De laatst bekende positie blijft staan, maar er
+          // komen geen nieuwe (mogelijk verzonnen) posities meer.
+          if (cleanupRef.current) {
+            cleanupRef.current();
+            cleanupRef.current = null;
+          }
+          setPermission("denied");
+          setError(
+            "Locatietoestemming is ingetrokken. Sta locatie weer toe om verder te navigeren.",
+          );
+        } else if (granted && permissionRef.current === "denied") {
+          // Toestemming is terug: watch opnieuw opstarten (auto-hervatten).
+          setRestartTick((t) => t + 1);
+        }
+      } catch {
+        // Status onbekend: niets aannemen, volgende controle probeert opnieuw.
+      }
+    };
+    const timer = setInterval(() => void check(), 5000);
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") void check();
+    });
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+      sub.remove();
+    };
+  }, [active]);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,7 +177,7 @@ export function useLiveLocation(active: boolean) {
         cleanupRef.current = null;
       }
     };
-  }, [active]);
+  }, [active, restartTick]);
 
   return { location, permission, error };
 }

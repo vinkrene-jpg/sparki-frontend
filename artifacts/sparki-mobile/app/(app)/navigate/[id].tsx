@@ -46,6 +46,7 @@ import {
   type MatchLatLon,
 } from "@/lib/route-match";
 import { hasMapbox } from "@/lib/mapbox";
+import { openAppInstellingen } from "@/lib/permissions";
 import {
   ageFriendsLocally,
   clusterFriendMarkers,
@@ -191,6 +192,12 @@ export default function NavigateScreen() {
   const { location, permission, error: locError } = useLiveLocation(
     locConsent.ready,
   );
+  // Navigatie is expliciet GEPAUZEERD zodra de locatietoestemming wegvalt of
+  // de positie faalt: geen nieuwe cues of off-route-episodes op een bevroren
+  // laatst bekende positie. Herstelt de toestemming, dan hervat alles vanzelf
+  // (useLiveLocation herstart de stream automatisch). De rit-opname houdt
+  // alle eerder vastgelegde punten gewoon vast.
+  const navPaused = locConsent.ready && (permission === "denied" || !!locError);
   // Live Bluetooth sensors (wattage / hartslag / cadans) from the Fietsengarage.
   const sensors = useGarageSensors();
   const live = useLiveSensors();
@@ -409,6 +416,9 @@ export default function NavigateScreen() {
   // Herberekenlus-beveiliging: nieuw rejoin-verzoek pas na afkoeltijd/verplaatsing.
   const rejoinMarkRef = useRef<RejoinRequestMark | null>(null);
   useEffect(() => {
+    // Gepauzeerd (toestemming weg): geen nieuwe off-route-episodes op een
+    // bevroren laatst bekende positie.
+    if (navPaused) return;
     if (!location || !match) return;
     const upd = updateOffRoute(offRouteRef.current, {
       lat: location.latitude,
@@ -423,7 +433,7 @@ export default function NavigateScreen() {
     if (upd.state.active !== offRouteActive) setOffRouteActive(upd.state.active);
     if (upd.state.episode !== offEpisode) setOffEpisode(upd.state.episode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location, match]);
+  }, [location, match, navPaused]);
 
   // Zelfde positiebron voor de kaart als voor voortgang/afwijking: op de
   // route gematcht zolang we binnen de corridor zitten, anders eerlijk de
@@ -518,6 +528,9 @@ export default function NavigateScreen() {
   }, [audioOn]);
   useEffect(() => {
     if (Platform.OS === "web") return;
+    // Gepauzeerd (toestemming weg): geen nieuwe geluids-/spraakcues op een
+    // bevroren positie.
+    if (navPaused) return;
     if (!progress || navSteps.length === 0) return;
     if (!audioPrefs.prefs.soundCues && !audioPrefs.prefs.voiceCues) return;
     const { state, cues } = decideCues(cueStateRef.current, {
@@ -531,7 +544,7 @@ export default function NavigateScreen() {
       if (audioPrefs.prefs.soundCues) playCueSound(cue.sound);
       if (audioPrefs.prefs.voiceCues && cue.speech) speakCue(cue.speech);
     }
-  }, [progress, navSteps, location?.speedMps, audioPrefs.prefs]);
+  }, [progress, navSteps, location?.speedMps, audioPrefs.prefs, navPaused]);
 
   // ---------- Herberekenen na afwijken (echte gerouteerde verbinding) ----------
   // Bij "van de route" kan de renner kiezen: terug naar de lijn of logisch
@@ -562,6 +575,9 @@ export default function NavigateScreen() {
   }, [detour, location, detourPath]);
   const requestRejoin = useCallback(
     (mode: "terug" | "verder" | "bestemming") => {
+      // Gepauzeerd (toestemming weg): geen nieuwe herberekeningen op een
+      // bevroren laatst bekende positie.
+      if (navPaused) return;
       if (!location || rejoin.isPending) return;
       const pos = { lat: location.latitude, lon: location.longitude };
       // Nooit een herberekenlus: een nieuw verzoek pas na afkoeltijd of
@@ -573,7 +589,7 @@ export default function NavigateScreen() {
         { onSuccess: (result) => setDetour(result) },
       );
     },
-    [location, rejoin],
+    [location, rejoin, navPaused],
   );
 
   // Keuzekaart tonen? Puur en herhaalvrij: nieuwe episode → één kaart;
@@ -1061,13 +1077,31 @@ export default function NavigateScreen() {
         </View>
       )}
 
-      {/* ---------- Location permission notice ---------- */}
-      {(permission === "denied" || locError) && (
-        <View style={[styles.locNotice, { top: insets.top + (hasNav ? 118 : 90), backgroundColor: c.card, borderColor: c.destructive }]}>
-          <Ionicons name="location-outline" size={18} color={c.destructive} />
+      {/* ---------- Navigatie gepauzeerd: locatietoestemming weg ---------- */}
+      {navPaused && (
+        <View style={[styles.locNotice, { top: insets.top + (hasNav ? 118 : 90), backgroundColor: c.card, borderColor: c.destructive, flexDirection: "column", alignItems: "stretch", gap: 8 }]}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Ionicons name="pause-circle-outline" size={20} color={c.destructive} />
+            <Text style={[styles.locNoticeText, { color: c.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              Navigatie gepauzeerd
+            </Text>
+          </View>
           <Text style={[styles.locNoticeText, { color: c.mutedForeground }]}>
-            {locError ?? "Geen toegang tot je locatie."}
+            {locError ?? "Geen toegang tot je locatie."} Aanwijzingen en
+            route-bewaking staan stil; je eerder opgenomen rit blijft bewaard.
+            Zodra de locatie terug is, gaat de navigatie vanzelf verder.
           </Text>
+          {permission === "denied" && (
+            <Pressable
+              onPress={() => void openAppInstellingen()}
+              style={[styles.locNoticeBtn, { borderColor: c.border }]}
+            >
+              <Ionicons name="settings-outline" size={16} color={c.primary} />
+              <Text style={{ color: c.primary, fontFamily: "Inter_600SemiBold", fontSize: 13 }}>
+                Locatie weer toestaan
+              </Text>
+            </Pressable>
+          )}
         </View>
       )}
 
@@ -2144,6 +2178,16 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   locNoticeText: { fontFamily: "Inter_400Regular", fontSize: 12, flex: 1 },
+  locNoticeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
   audioToggles: { gap: 8 },
   sensorsWrap: { position: "absolute", left: 16, right: 16, zIndex: 10 },
   bottom: { position: "absolute", left: 16, right: 16, gap: 12, alignItems: "center" },
