@@ -136,3 +136,23 @@ Een feature die aanwezig is maar zijn belofte niet waarmaakt bestaat feitelijk n
 De enige definitie van "gereed" is:
 
 "De oorspronkelijke productbelofte is objectief bewezen met een score van minimaal 9,0."
+----------------------------------------
+9. GEEN BOUW ZONDER PRODUCTONDERZOEK
+----------------------------------------
+
+Voordat een module wordt gebouwd of aangepast moet eerst worden onderzocht hoe vergelijkbare productieproducten dezelfde productbelofte waarmaken.
+
+Het onderzoek beschrijft minimaal:
+
+- de productbelofte;
+- de huidige Sparki-aanpak;
+- de best beschikbare marktbenadering;
+- de benodigde databronnen;
+- de benodigde algoritmen;
+- de benodigde architectuur;
+- de verschillen (gaps);
+- de voorgestelde oplossing.
+
+Pas na goedkeuring van dit Productonderzoek mag de implementatie starten.
+
+Sparki wordt nooit aangepast aan de beperkingen van de huidige implementatie zonder eerst te bewijzen dat een betere oplossing redelijkerwijs niet haalbaar is.
