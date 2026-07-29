@@ -996,6 +996,16 @@ router.get(
         | undefined;
       const libraryState = await libraryBackfillState();
 
+      // ── observatie-opschoning — nieuwste observation_cleanup-event ─────────
+      const cleanupTrace = await db.execute(sql`
+        SELECT max(created_at) AS last_at
+        FROM ai_memory_events
+        WHERE event_type = 'observation_cleanup'
+      `);
+      const cleanupRow = cleanupTrace.rows[0] as
+        | { last_at?: string | Date | null }
+        | undefined;
+
       const toDate = (v: string | Date | null | undefined): Date | null =>
         v ? new Date(v) : null;
 
@@ -1014,6 +1024,7 @@ router.get(
         libraryLast: toDate(libraryRow?.last_at),
         libraryHomes: libraryState.homes,
         libraryOpenCells: libraryState.openCells,
+        observationCleanupLast: toDate(cleanupRow?.last_at),
       });
 
       res.json({ tasks, missing });

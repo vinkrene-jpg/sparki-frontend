@@ -34,6 +34,7 @@ import {
   connectorConnectionsTable,
   routeLibraryTable,
   athleteProfilesTable,
+  aiMemoryEventsTable,
 } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 import app from "../app";
@@ -71,6 +72,7 @@ const seeded = {
   syncRunIds: [] as number[],
   connectionIds: [] as number[],
   libraryRouteIds: [] as number[],
+  memoryEventIds: [] as number[],
 };
 
 let baseUrl = "";
@@ -239,6 +241,19 @@ async function seedFreshTraces(at: Date): Promise<void> {
     })
     .returning({ id: routeLibraryTable.id });
   seeded.libraryRouteIds.push(libRoute!.id);
+
+  // observatie-opschoning — an observation_cleanup event in ai_memory_events
+  // (max(created_at) where event_type='observation_cleanup') is the trace.
+  const [memEvent] = await db
+    .insert(aiMemoryEventsTable)
+    .values({
+      clerkId: adminId,
+      eventType: "observation_cleanup",
+      metadata: { trigger: "test", flagged: 1 },
+      createdAt: at,
+    })
+    .returning({ id: aiMemoryEventsTable.id });
+  seeded.memoryEventIds.push(memEvent!.id);
 }
 
 async function cleanup() {
@@ -270,6 +285,10 @@ async function cleanup() {
     await db
       .delete(routeLibraryTable)
       .where(inArray(routeLibraryTable.id, seeded.libraryRouteIds));
+  if (seeded.memoryEventIds.length)
+    await db
+      .delete(aiMemoryEventsTable)
+      .where(inArray(aiMemoryEventsTable.id, seeded.memoryEventIds));
   await db
     .delete(userProfilesTable)
     .where(eq(userProfilesTable.clerkId, adminId));
@@ -295,7 +314,7 @@ async function main() {
   // trace, and each lastRunAt echoing the exact instant we inserted (proving
   // the underlying query found OUR row — the drift guard).
   await scenario(
-    "all 6 jobs present, valid statusColor, and each fresh trace is detected green",
+    "all 7 jobs present, valid statusColor, and each fresh trace is detected green",
     async () => {
       const at = new Date();
       await seedFreshTraces(at);
@@ -310,6 +329,7 @@ async function main() {
         "knowledge_scan",
         "connector_sync",
         "library_backfill",
+        "observation_cleanup",
       ] as const) {
         const t = byKey.get(key);
         assert(t, `job ${key} missing from response`);

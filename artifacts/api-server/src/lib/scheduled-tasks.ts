@@ -23,7 +23,8 @@ export interface ScheduledTask {
     | "reminders"
     | "knowledge_scan"
     | "connector_sync"
-    | "library_backfill";
+    | "library_backfill"
+    | "observation_cleanup";
   title: string;
   description: string;
   runCommand: string;
@@ -57,6 +58,8 @@ export interface ScheduledTaskTraces {
   libraryHomes: number;
   /** Aantal nog ongevulde cellen rond die woonlocaties. */
   libraryOpenCells: number;
+  /** Nieuwste observation_cleanup-event (ai_memory_events.created_at). */
+  observationCleanupLast: Date | null;
 }
 
 // Classify a data trace into an honest status. `lastRunAt` = the newest trace
@@ -89,6 +92,7 @@ export function buildScheduledTasks(
     libraryLast,
     libraryHomes,
     libraryOpenCells,
+    observationCleanupLast,
   } = traces;
 
   // ── job:health ─────────────────────────────────────────────────────────────
@@ -245,6 +249,33 @@ export function buildScheduledTasks(
     message: libMessage,
   };
 
+  // ── observatie-opschoning (dagelijkse sweep in de api-server) ────────────
+  // Eerlijkheidsnuance: een observation_cleanup-event wordt alleen geschreven
+  // als er daadwerkelijk iets is gemarkeerd. Afwezigheid van recente events kan
+  // dus ook betekenen dat er simpelweg niets op te schonen viel — de melding
+  // benoemt dat expliciet in plaats van vals alarm te slaan.
+  const cleanupCls = classify(observationCleanupLast, 8, now);
+  const cleanupTask: ScheduledTask = {
+    key: "observation_cleanup",
+    title: "Observatie-opschoning",
+    description:
+      "Markeert verouderde AI-observaties automatisch als achterhaald (dagelijkse sweep in de API-server + direct na een [achterhaald]-FTP-markering). Nooit harde deletes.",
+    runCommand:
+      "pnpm --filter @workspace/api-server run job:observation-cleanup",
+    schedule:
+      "Ingebouwd in de API-server: bij opstart en daarna dagelijks · extra run direct na een [achterhaald]-FTP-markering",
+    traceLabel: "Laatste opschonings-run met gemarkeerde observaties",
+    lastRunAt: observationCleanupLast
+      ? observationCleanupLast.toISOString()
+      : null,
+    statusColor: cleanupCls.statusColor,
+    message: observationCleanupLast
+      ? cleanupCls.recent
+        ? "De observatie-opschoning draait: er zijn recent verouderde observaties gemarkeerd."
+        : "De laatste opschonings-run met gemarkeerde observaties is meer dan een week oud. Dat kan betekenen dat er niets op te schonen viel — maar controleer bij twijfel of de API-server (en de dagelijkse sweep) nog draait."
+      : "Er is nog nooit een opschonings-run met gemarkeerde observaties gezien. Dat is normaal zolang er geen verouderde observaties waren; de sweep draait mee met de API-server.",
+  };
+
   const tasks = [
     healthTask,
     goalTask,
@@ -252,6 +283,7 @@ export function buildScheduledTasks(
     knowledgeTask,
     syncTask,
     libraryTask,
+    cleanupTask,
   ];
   const missing = tasks.filter((t) => t.statusColor === "grey").length;
 

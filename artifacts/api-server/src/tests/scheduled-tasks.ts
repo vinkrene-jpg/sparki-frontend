@@ -63,6 +63,7 @@ function freshTraces(overrides: Partial<ScheduledTaskTraces> = {}): ScheduledTas
     libraryLast: daysAgo(1),
     libraryHomes: 4,
     libraryOpenCells: 12,
+    observationCleanupLast: daysAgo(1),
     ...overrides,
   };
 }
@@ -92,7 +93,7 @@ scenario("classify: past cadence → orange, not recent", () => {
 });
 
 // ── buildScheduledTasks: shape / presence contract ─────────────────────────
-scenario("all 6 jobs present with a valid statusColor", () => {
+scenario("all 7 jobs present with a valid statusColor", () => {
   const { tasks } = buildScheduledTasks(freshTraces(), NOW);
   const keys = tasks.map((t) => t.key).sort();
   assert(
@@ -103,6 +104,7 @@ scenario("all 6 jobs present with a valid statusColor", () => {
         "health",
         "knowledge_scan",
         "library_backfill",
+        "observation_cleanup",
         "reminders",
       ]),
     `unexpected keys: ${keys.join(",")}`,
@@ -179,16 +181,17 @@ scenario("no traces at all → health/reminders/knowledge grey with honest messa
       libraryLast: null,
       libraryHomes: 0,
       libraryOpenCells: 0,
+      observationCleanupLast: null,
     },
     NOW,
   );
-  for (const key of ["health", "reminders", "knowledge_scan", "connector_sync", "library_backfill"] as const) {
+  for (const key of ["health", "reminders", "knowledge_scan", "connector_sync", "library_backfill", "observation_cleanup"] as const) {
     const t = tasks.find((x) => x.key === key)!;
     assert(t.statusColor === "grey", `${key} must be grey with no trace, got ${t.statusColor}`);
     assert(t.lastRunAt === null, `${key} lastRunAt must be null`);
   }
-  // all 5 grey (goal_review grey via no-active-goals branch)
-  assert(missing === 6, `expected missing 6, got ${missing}`);
+  // all 6 grey (goal_review grey via no-active-goals branch)
+  assert(missing === 7, `expected missing 7, got ${missing}`);
 });
 
 // ── connector-sync honest branches ─────────────────────────────────────────
@@ -322,6 +325,43 @@ scenario("library-backfill: homes + open cells but never a route → grey warnin
   assert(
     lib.message.includes("job:library-backfill"),
     `unexpected message: ${lib.message}`,
+  );
+});
+
+// ── observatie-opschoning honest branches ──────────────────────────────────
+scenario("observation-cleanup: recent event → green", () => {
+  const { tasks } = buildScheduledTasks(freshTraces(), NOW);
+  const t = tasks.find((x) => x.key === "observation_cleanup")!;
+  assert(t.statusColor === "green", `expected green, got ${t.statusColor}`);
+  assert(t.lastRunAt === daysAgo(1).toISOString(), "lastRunAt must echo the trace date");
+});
+
+scenario("observation-cleanup: stale (>8 days) → orange with honest nuance", () => {
+  const fresh = buildScheduledTasks(freshTraces({ observationCleanupLast: daysAgo(8) }), NOW);
+  assert(
+    fresh.tasks.find((t) => t.key === "observation_cleanup")!.statusColor === "green",
+    "8 days is still within the cleanup cadence",
+  );
+  const stale = buildScheduledTasks(freshTraces({ observationCleanupLast: daysAgo(12) }), NOW);
+  const t = stale.tasks.find((x) => x.key === "observation_cleanup")!;
+  assert(t.statusColor === "orange", `expected orange, got ${t.statusColor}`);
+  assert(
+    t.message.includes("niets op te schonen"),
+    `stale message must honestly mention nothing-to-clean: ${t.message}`,
+  );
+});
+
+scenario("observation-cleanup: never ran → honest grey (normal, sweep rides the server)", () => {
+  const { tasks } = buildScheduledTasks(
+    freshTraces({ observationCleanupLast: null }),
+    NOW,
+  );
+  const t = tasks.find((x) => x.key === "observation_cleanup")!;
+  assert(t.statusColor === "grey", `expected grey, got ${t.statusColor}`);
+  assert(t.lastRunAt === null, "no event → lastRunAt null");
+  assert(
+    t.message.includes("normaal") && t.message.includes("sweep"),
+    `unexpected message: ${t.message}`,
   );
 });
 
