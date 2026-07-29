@@ -24,6 +24,7 @@
     "test:data-hub": "node ./scripts/run-test.mjs data-hub",
     "test:provider-sync": "node ./scripts/run-test.mjs provider-sync",
     "test:derived-load": "node ./scripts/run-test.mjs derived-load",
+    "test:repair-410w-ftp": "node ./scripts/run-test.mjs repair-410w-ftp",
     "test:connector-cleanup": "node ./scripts/run-test.mjs connector-cleanup",
     "test:climb-cache-cleanup": "node ./scripts/run-test.mjs climb-cache-cleanup",
     "test:connect-status": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs connect-status",

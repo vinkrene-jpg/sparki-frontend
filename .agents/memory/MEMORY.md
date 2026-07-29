@@ -61,7 +61,6 @@
 - [Open choices tracker](open-choices-convention.md) — START every turn: read `.agents/open-choices.md`, surface unresolved choices in chat; add when I ask, remove when decided.
 - [Sparki 5-staps race-wizard](sparki-race-wizard.md) — wizard=create only (edit=flat form); provenance model (user/calendar/insight/profile/ai_proposal); /wizard-proposal vóór /:id; ?step=N dev-demo.
 - [Sparki Ontwikkelmodel](sparki-ontwikkelmodel.md) — structured developmentGoal enum + deterministic honest belastbaarheid + /you Ontwikkelkompas.
-- [ImageMagick SVG glow](imagemagick-svg-glow.md) — MSVG ignores feGaussianBlur/filters; build icon glows with radialGradient layers, regenerate ALL PNG derivatives (OS-cached).
 - [Sparki Sound Studio](sparki-sound-studio.md) — original audio identity + in-app wekker; web can't ring locked phone (state it); dedupe on LOCAL date; optimistic restore even on first write.
 - [Sparki World architecture](sparki-world.md) — transparently-fictional Virtual Athletes island; cache-first Media Engine (promptKey UNIQUE, avatars carry slug/scenes don't); hard wall to real data; honest gaps.
 - [Sparki presentation variation](sparki-presentation-variation.md) — per-app-open seed rotates only ORDER + which real insight leads; numbers stable, urgent never demoted, seed-0 no-op.
@@ -73,7 +72,7 @@
 - [Sparki profile-consistency questions](sparki-profile-consistency.md) — notice→ask→confirm→correct; only user-set values questioned, write path re-verifies + compare-and-set, answers suppress ~45d.
 - [FTP floor derivation](sparki-ftp-floor.md) — no power curve stored ⇒ exact FTP underivable; only honest lower bound (45–120min NP, 0.95×20–45min NP), raises estimated FTP only, per-day idempotent history.
 - [Sparki nutrition season goal](sparki-season-goal.md) — 17+ only (RED-S refusal), deterministic ≤0,5 kg/wk steering, one-question doorvraag ladder; round-trip-validate calendar dates.
-- [Sparki derived belastingscore](sparki-derived-tss.md) — TSS derived from power+FTP at ingest + boot self-heal; advisory locks need ONE client (never pool.query); new merge fields must join MERGEABLE_FIELDS.
+- [Sparki derived belastingscore](sparki-derived-tss.md) — TSS derived from power+FTP at ingest + boot self-heal; `[achterhaald]` prefix is the ONLY valid format for ftp_history derived rows (other formats bypass the filter); advisory locks need ONE client.
 - [Sparki Doelen-engine](sparki-goals-engine.md) — derived goals never duplicated as rows; dedupe = DB unique index+onConflict (not read-then-insert); per-day checks compare Amsterdam local date.
 - [Sparki scheduled-tasks overview test](sparki-scheduled-tasks-test.md) — unit-test pure classify/build + route test seeds one fresh newest trace per job to catch column/dedupeKey drift.
 - [Sparki exact age from DOB](sparki-exact-age.md) — compute age from full birth_date via shared computeAge (never currentYear-birthYear); DOB is authoritative, always re-derives birthYear in lockstep.

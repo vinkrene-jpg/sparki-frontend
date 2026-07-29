@@ -3,6 +3,7 @@ import { logger } from "./lib/logger";
 import { ensureWorldSeed } from "./lib/world-seed";
 import { ensureIntelSeed } from "./lib/intel-seed";
 import { backfillDerivedLoad } from "./lib/derived-load-backfill";
+import { repair410wFtp } from "./lib/repair-410w-ftp";
 import { cleanupStaleConnectorShells } from "./lib/connectors/cleanup";
 import { cleanupClimbCacheDb } from "./lib/climbs/cache";
 import { startReminderScheduler } from "./lib/reminder-scheduler";
@@ -70,14 +71,34 @@ app.listen(port, (err) => {
     })
     .catch((err) => logger.error({ err }, "Kennisbank seed failed"));
 
-  // Fire-and-forget self-heal: rides imported before belastingscore-derivation
-  // existed (e.g. Strava history) get their score derived from their own power
-  // + the athlete's FTP, and stale ESTIMATED weekly targets are re-derived from
-  // real riding. Idempotent (only fills NULL scores) and advisory-locked, so
-  // it is safe on every boot, in dev and production.
-  backfillDerivedLoad({ log: (m) => logger.info({ derived: "load" }, m) })
+  // One-time idempotent repair: harmoniseer de 410W-FTP-rij naar de standaard
+  // [achterhaald]-conventie en null de getroffen belastingscores.
+  // Docs: docs/evidence/TSS_410W_AUDIT_2026-07-29.md
+  //
+  // VOLGORDE: de repair moet volledig klaar zijn voordat backfillDerivedLoad
+  // start, zodat de genulled scores in dezelfde serverstart herberekend worden.
+  // Daarom: .then-keten (sequentieel), niet twee losse fire-and-forget calls.
+  repair410wFtp()
     .then((r) => {
-      if (r.ran)
+      if (r.applied)
+        logger.info(
+          { repair: "410w-ftp", sessionsNulled: r.sessionsNulled },
+          `410W-FTP-rij geharmoniseerd; ${r.sessionsNulled} belastingscores genulled voor herberekening`,
+        );
+    })
+    .catch((err) =>
+      logger.error({ err }, "410W-FTP repair failed — backfill will still run"),
+    )
+    // Fire-and-forget self-heal: rides imported before belastingscore-derivation
+    // existed (e.g. Strava history) get their score derived from their own power
+    // + the athlete's FTP, and stale ESTIMATED weekly targets are re-derived from
+    // real riding. Idempotent (only fills NULL scores) and advisory-locked, so
+    // it is safe on every boot, in dev and production.
+    .then(() =>
+      backfillDerivedLoad({ log: (m) => logger.info({ derived: "load" }, m) }),
+    )
+    .then((r) => {
+      if (r?.ran)
         logger.info(
           { derived: "load", ...r },
           "Derived-load backfill finished",
