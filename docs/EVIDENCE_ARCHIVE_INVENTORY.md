@@ -35,8 +35,8 @@ Grootte in bytes. "Publiek" = bereikbaar via de webapp (map `artifacts/sparki/pu
 | docs/review-bundle/sparki-reviewbundel.zip | 10.105.737 | `c92c5741b938e324503662edb2b50425d5d269ca19b2c51999e602437e1c6113` | tracked | historisch bewijs (oudere reviewbundel) | nee | behouden, ongewijzigd |
 | UX_00A_COMPLETE_EVIDENCE.zip | 502.800 | `7376cde3627a846cbfe96ca455c07ea928eff66fb0361a1e71cbae87b1979c03` | historie (uit HEAD, 28 jul) | historisch bewijs (UX_00A) | nee | 29 jul 2026 (taak 408): extern veiliggesteld⁵ en lokaal verwijderd; byte-identieke kopie blijft in attached_assets/UX_00A_COMPLETE_EVIDENCE_1784984187212.zip |
 | SPARKI_CURRENT_SOURCE.zip | 21.382.095 | `8c039016f925799db5cdd216dad8a0fc5af0aa4b13bc77d77f2ac6cfc8fdafaf` | historie (uit HEAD, 28 jul) | backup (bron-export) | nee | 29 jul 2026 (taak 408): extern veiliggesteld⁵ en lokaal verwijderd; byte-identieke kopie blijft tracked in docs/evidence/archive/public_exports/ |
-| sparki-backup-bundle.zip | 54.162.515 | `bd94b031087cc990f8adac73ec7c36311ae3d82b47ae26202fd90443a4282114` | historie: alleen LFS-pointer | backup (zip van git-bundle) | nee | zie taak 408 hieronder: bytes lokaal niet meer aanwezig, NIET extern veiliggesteld — eerlijk geregistreerd |
-| sparki-backup.bundle¹ | 54.162.325 | `684f40557c849057ff9aec8edce6ef662740e2eb8b9c57247b55baaa1b85727c` | historie: alleen LFS-pointer | backup (git-bundle) | nee | zie taak 408 hieronder: bytes lokaal niet meer aanwezig, NIET extern veiliggesteld — eerlijk geregistreerd |
+| sparki-backup-bundle.zip | 54.162.515 | `bd94b031087cc990f8adac73ec7c36311ae3d82b47ae26202fd90443a4282114` | historie: alleen LFS-pointer | backup (zip van git-bundle) | nee | extern veiliggesteld⁵ (taak 409, teruggehaald van GitHub LFS, readback-SHA identiek); lokaal verwijderd (alleen LFS-pointer in historie) |
+| sparki-backup.bundle¹ | 54.162.325 | `684f40557c849057ff9aec8edce6ef662740e2eb8b9c57247b55baaa1b85727c` | historie: alleen LFS-pointer | backup (git-bundle) | nee | extern veiliggesteld⁵ (taak 409, teruggehaald van GitHub LFS, readback-SHA identiek); lokaal verwijderd (alleen LFS-pointer in historie) |
 | export/sparki-current-state-export.zip | 16.259.944 | `e2f9d1c769aebb75ed6c697d84afa26df601a47633cdcf067fac2d084ec8bcb1` | tracked | historisch bewijs (huidige-staat-export) | nee | behouden, ongewijzigd |
 | exports/BF_00_evidence.zip | 83.567.014 | `f543e32a93d1e2f6ed6891eed4a3ff55ded73587790c5f69eebb24d62ac524da` | tracked (LFS, historie intact) | historisch bewijs (BF_00 fietsscan) | nee | 28 jul 2026 (taak 338): extern veiliggesteld⁴ en lokaal verwijderd i.v.m. deploy-limiet |
 | .local/exports/BF_00_evidence.zip² | 83.571.096 | `c41b2c9688587434685b79fcd7e88304afea83766581fb60884927e9e9ab8f4f` | untracked (.local) | historisch bewijs (BF_00, agent-export) | nee | 28 jul 2026 (taak 338): extern veiliggesteld⁴ en lokaal verwijderd |
@@ -186,3 +186,22 @@ Bewaking: de dagelijkse fail-closed routine
 Verwijderen gebeurt uitsluitend bij een byte-identieke SHA-match met een
 inventarisrij "extern veiliggesteld" + "lokaal verwijderd"; onbekende of verse
 (<24u) bestanden en alles buiten die twee locaties blijven altijd staan.
+
+## Update 29 juli 2026 (taak 409) — verloren git-bundles teruggehaald van GitHub LFS
+
+De op 28/29 jul lokaal verloren gegane root-backups **sparki-backup-bundle.zip**
+(`bd94b031…114`, 54.162.515 bytes) en **sparki-backup.bundle** (`684f4055…27c`,
+54.162.325 bytes) zijn alsnog teruggehaald van GitHub LFS. De eerdere poging
+faalde op "Bad credentials"; onderzoek wees uit dat de opgeslagen
+GitHub-credential ongeldig is, maar de repository publiek is — de
+LFS-batch-API accepteert anonieme downloads. Beide objecten zijn anoniem
+gedownload (oid + exacte grootte uit de LFS-pointers in commit `bba3e28…`),
+de SHA-256 van de gedownloade bytes is byte-identiek geverifieerd aan de
+oids/inventaris-hashes hierboven, en beide bestanden zijn geüpload naar de
+privé App Storage-bucket onder
+`.private/bewijsarchief-offload/root-backups/`. Elke upload is teruggelezen
+en de readback-SHA is opnieuw byte-identiek geverifieerd. De inventarisrijen
+zijn bijgewerkt naar "extern veiliggesteld … lokaal verwijderd", waarmee de
+bestaande fail-closed opruimroutine ze mag verwijderen mochten ze ooit via
+checkpoint-herstel terugkomen. Er is lokaal niets aan de git-historie of
+LFS-pointers gewijzigd.
