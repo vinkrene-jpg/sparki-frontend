@@ -1,9 +1,12 @@
 // Derived climb profile for the Klimmenverkenner. For a chosen summit we trace a
-// real road route TO the top with the existing routing provider (ORS, elevation
-// on) and derive length / average + steepest gradient / elevation gain / height
-// profile from the returned points. Nothing is fabricated: if no sensible climb
-// road can be traced (or no routing provider is configured), we return null and
-// the caller honestly reports "profiel niet beschikbaar".
+// real road route TO the top with the existing routing provider (elevation on)
+// and derive length / average + steepest gradient / elevation gain / height
+// profile from the returned points. Elevation ALWAYS comes from that same
+// routing provider — the same source that builds the app's routes — never from
+// a separate elevation service that could contradict the route screen. Nothing
+// is fabricated: if no sensible climb road can be traced (or no routing
+// provider is configured), we return null and the caller honestly reports
+// "profiel niet beschikbaar".
 
 import { getRoutingProvider } from "../routing";
 import type { RoadSegment } from "./overpass";
@@ -177,8 +180,6 @@ export async function deriveClimbProfile(summit: {
   return best;
 }
 
-const ORS_ELEVATION_URL = "https://api.openrouteservice.org/elevation/line";
-
 function samePoint(
   a: { lat: number; lon: number },
   b: { lat: number; lon: number },
@@ -186,64 +187,87 @@ function samePoint(
   return haversineKm(a.lat, a.lon, b.lat, b.lon) <= JOIN_TOLERANCE_KM;
 }
 
-const MAX_ELEVATION_POINTS = 280;
+// Number of waypoints we thread along the OSM way. Enough to hold the routed
+// line onto the climb road itself, few enough to stay within any provider's
+// per-request point limit.
+const WAY_WAYPOINTS = 5;
 
+// Elevation for the OSM way geometry via the SAME routing source that builds
+// the app's routes (getRoutingProvider), instead of a second elevation service
+// that could contradict the route screen. We route ALONG the way (start, a few
+// intermediate waypoints, end) so the provider returns the real road geometry
+// with its own per-point elevation. Honest null when routing is unavailable,
+// when the routed line clearly deviates from the way (we would be profiling a
+// different road), or when the provider returns no elevation.
 async function elevationForLine(
   line: { lat: number; lon: number }[],
+  wayLengthKm: number,
 ): Promise<GeoPoint[] | null> {
-  const key = process.env.ORS_API_KEY;
-  if (!key) return null;
-  // Downsample to stay well within the API's point limit; endpoints kept.
-  let sampled = line;
-  if (line.length > MAX_ELEVATION_POINTS) {
-    const step = (line.length - 1) / (MAX_ELEVATION_POINTS - 1);
-    sampled = [];
-    for (let i = 0; i < MAX_ELEVATION_POINTS; i++) {
-      sampled.push(line[Math.min(Math.round(i * step), line.length - 1)]!);
-    }
+  const provider = getRoutingProvider();
+  if (!provider.isConfigured()) return null;
+
+  // Waypoints sampled at even DISTANCE intervals along the way (index-based
+  // sampling misplaces waypoints when OSM node density varies), endpoints
+  // always kept; dedupe in case a short line collapses two samples.
+  const cumKm: number[] = [0];
+  for (let i = 1; i < line.length; i++) {
+    cumKm.push(
+      cumKm[i - 1]! +
+        haversineKm(
+          line[i - 1]!.lat,
+          line[i - 1]!.lon,
+          line[i]!.lat,
+          line[i]!.lon,
+        ),
+    );
   }
-  const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), 15_000);
-  try {
-    const res = await fetch(ORS_ELEVATION_URL, {
-      method: "POST",
-      headers: {
-        Authorization: key,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        format_in: "polyline",
-        format_out: "polyline",
-        geometry: sampled.map((p) => [p.lon, p.lat]),
-      }),
-      signal: ac.signal,
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      geometry?: [number, number, number][];
-    };
-    const geom = data.geometry;
-    if (!Array.isArray(geom) || geom.length < 2) return null;
-    const points: GeoPoint[] = [];
-    for (const entry of geom) {
-      if (!Array.isArray(entry) || entry.length < 3) return null;
-      const [lon, lat, ele] = entry;
-      if (
-        typeof lat !== "number" ||
-        typeof lon !== "number" ||
-        typeof ele !== "number"
-      ) {
-        return null;
-      }
-      points.push({ lat, lon, ele });
-    }
-    return points;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
+  const waypoints: { lat: number; lon: number }[] = [];
+  let cursor = 0;
+  for (let i = 0; i < WAY_WAYPOINTS; i++) {
+    const targetKm = (i * wayLengthKm) / (WAY_WAYPOINTS - 1);
+    while (cursor < line.length - 1 && cumKm[cursor + 1]! <= targetKm) cursor++;
+    const p = line[i === WAY_WAYPOINTS - 1 ? line.length - 1 : cursor]!;
+    const prev = waypoints[waypoints.length - 1];
+    if (prev && prev.lat === p.lat && prev.lon === p.lon) continue;
+    waypoints.push(p);
   }
+  if (waypoints.length < 2) return null;
+
+  // Try the way in BOTH directions: climb roads are often one-way, and routing
+  // against the one-way forces a detour over other roads. Keep the direction
+  // whose routed length best matches the way itself; the caller re-orients the
+  // result uphill afterwards anyway.
+  let best: GeoPoint[] | null = null;
+  let bestDiff = Infinity;
+  for (const wps of [waypoints, [...waypoints].reverse()]) {
+    let points: GeoPoint[];
+    try {
+      const result = await provider.routeWaypoints({
+        points: wps,
+        profile: "cycling-road",
+      });
+      points = result.points;
+    } catch {
+      continue;
+    }
+    if (!Array.isArray(points) || points.length < 4) continue;
+    if (!points.some((p) => p.ele != null)) continue;
+    const diff = Math.abs(segmentLengthKm(points) - wayLengthKm);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = points;
+    }
+    // Good enough — skip the second call when the first direction already fits.
+    if (diff <= wayLengthKm * 0.1) break;
+  }
+  if (!best) return null;
+
+  // Sanity guard: the routed line must stay close to the way's own length.
+  // A big mismatch means the provider routed via OTHER roads, and showing that
+  // profile for this climb road would be dishonest.
+  const routedKm = segmentLengthKm(best);
+  if (routedKm < wayLengthKm * 0.7 || routedKm > wayLengthKm * 1.5) return null;
+  return best;
 }
 
 export async function deriveRoadClimbProfile(
@@ -255,7 +279,7 @@ export async function deriveRoadClimbProfile(
   // A real climb road is at least a couple hundred metres; guard degenerates.
   if (lengthKm < 0.2 || lengthKm > 30) return null;
 
-  let points = await elevationForLine(line);
+  let points = await elevationForLine(line, lengthKm);
   if (!points || points.length < 4) return null;
 
   // Orient the line UPHILL: a climb is ridden bottom → top. The geometry order

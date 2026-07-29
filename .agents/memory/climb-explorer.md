@@ -28,3 +28,7 @@ Searchable OSM climb explorer (flag `climb_explorer`): geocode (Nominatim) → O
 
 ## React Query retry gotcha
 - A "retry" button that mutates the search input to force a refetch fails when the hook **trims** the input before building the query key — the key is unchanged so no refetch fires. Expose and call `refetch()` instead of whitespace-poking the input.
+
+## Klimprofiel-hoogtebron = routeprovider (juli 2026)
+- Klimweg-hoogte komt NIET meer van ORS /elevation/line maar van getRoutingProvider().routeWaypoints langs de OSM-way (zelfde bron als routes — geen tegensprekende hoogtes).
+- **Traps:** klimwegen zijn vaak eenrichting — route beide richtingen en kies de beste lengte-match, anders forceert de eenrichting een omweg over andere wegen. Waypoints op AFSTAND samplen, niet op index (OSM-nodedichtheid varieert). Lengte-guard 0.7–1.5× waylengte = eerlijkheidspoort (mismatch ⇒ null, nooit andermans profiel tonen).
