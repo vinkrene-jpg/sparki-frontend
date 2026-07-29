@@ -91,6 +91,7 @@ const OVERPASS_TIMEOUT_MS = 12_000;
 const ENV_CACHE = new Map<string, { at: number; data: RouteEnvironment }>();
 const ENV_CACHE_TTL_MS = 6 * 60 * 60_000;
 
+type AreaBBox = { minLat: number; minLon: number; maxLat: number; maxLon: number };
 function haversineM(a: RoutePathPoint, b: RoutePathPoint): number {
   const R = 6371000;
   const dLat = ((b[0] - a[0]) * Math.PI) / 180;
@@ -159,7 +160,23 @@ export async function getRouteEnvironment(
   // Very large areas would make the bbox query heavy AND meaningless — be
   // honest and skip instead of fetching half a province.
   if (maxLat - minLat > 1 || maxLon - minLon > 1.5) return null;
-  const bbox = `${(minLat - pad).toFixed(4)},${(minLon - pad).toFixed(4)},${(maxLat + pad).toFixed(4)},${(maxLon + pad).toFixed(4)}`;
+
+  // Vers voorgewarmd gebied dat de hele route dekt? Dan lokaal uitrekenen —
+  // zelfde classificatie, geen netwerk. Resultaat gaat ook in de route-cache.
+  const padded: AreaBBox = {
+    minLat: minLat - pad,
+    minLon: minLon - pad,
+    maxLat: maxLat + pad,
+    maxLon: maxLon + pad,
+  };
+  const warm = findWarmAreaCovering(padded);
+  if (warm) {
+    const data = classifyEnvironment(sampled, elementsInBbox(warm.elements, padded));
+    ENV_CACHE.set(key, { at: Date.now(), data });
+    return data;
+  }
+
+  const bbox = `${padded.minLat.toFixed(4)},${padded.minLon.toFixed(4)},${padded.maxLat.toFixed(4)},${padded.maxLon.toFixed(4)}`;
 
   const query = `[out:json][timeout:20];(
 node["highway"="traffic_signals"](${bbox});
@@ -195,6 +212,21 @@ way["landuse"~"^(residential|retail|commercial)$"](${bbox});
     return null;
   }
 
+  const data = classifyEnvironment(sampled, elements);
+  ENV_CACHE.set(key, { at: Date.now(), data });
+  return data;
+}
+
+/**
+ * Deterministische classificatie van Overpass-elementen rond een route:
+ * verkeerslichten op de route, bos- en bebouwingsaandeel. Gedeeld tussen het
+ * directe pad (eigen bbox-query) en het warm-gebied-pad (voorgewarmde
+ * elementen), zodat beide paden exact dezelfde meting geven.
+ */
+function classifyEnvironment(
+  sampled: RoutePathPoint[],
+  elements: OverpassElement[],
+): RouteEnvironment {
   // Traffic lights actually ON the route: bbox nodes within ~35m of a sampled
   // route point (samples are dense enough for typical routes).
   const trafficLights = elements.filter(
@@ -231,11 +263,141 @@ way["landuse"~"^(residential|retail|commercial)$"](${bbox});
   const forestSharePct = shareOf(forestPoints);
   const builtUpSharePct = shareOf(builtUpPoints);
 
-  const data: RouteEnvironment = {
+  return {
     trafficLights,
     forestSharePct,
     builtUpSharePct,
   };
-  ENV_CACHE.set(key, { at: Date.now(), data });
-  return data;
+}
+
+type WarmArea = { at: number; bbox: AreaBBox; elements: OverpassElement[] };
+
+const AREA_CACHE = new Map<string, WarmArea>();
+
+const AREA_ELEMENT_CAP = 6000;
+
+const AREA_CACHE_MAX = 60;
+
+/**
+ * Achtergrond-warm-up: haal de omgevings-elementen (verkeerslichten, bos,
+ * bebouwing) voor een gebied rond `center` vooraf op en cache ze 6 uur.
+ * `halfDeg` 0.09 ≈ 10 km — ruim genoeg voor lussen tot ~50–60 km vanaf het
+ * startpunt. Retourneert true wanneer het gebied nu warm is (vers of zojuist
+ * opgehaald). Eerlijk false bij een onbereikbare bron of een (mogelijk)
+ * afgekapte elementenlijst — dan blijft het directe meetpad gewoon gelden.
+ * Nooit aanroepen op het interactieve pad: dit mag seconden duren.
+ */
+export function warmRouteEnvironmentArea(
+  center: { lat: number; lon: number },
+  halfDeg = 0.09,
+): Promise<boolean> {
+  const areaKey = `${center.lat.toFixed(2)},${center.lon.toFixed(2)}|${halfDeg}`;
+  const hit = AREA_CACHE.get(areaKey);
+  if (hit && Date.now() - hit.at < AREA_CACHE_TTL_MS) return Promise.resolve(true);
+  const inflight = AREA_INFLIGHT.get(areaKey);
+  if (inflight) return inflight;
+
+  const bbox: AreaBBox = {
+    minLat: center.lat - halfDeg,
+    minLon: center.lon - halfDeg * 1.6, // lon-graden zijn smaller op NL-breedte
+    maxLat: center.lat + halfDeg,
+    maxLon: center.lon + halfDeg * 1.6,
+  };
+  const bboxStr = `${bbox.minLat.toFixed(4)},${bbox.minLon.toFixed(4)},${bbox.maxLat.toFixed(4)},${bbox.maxLon.toFixed(4)}`;
+  const query = `[out:json][timeout:45];(
+node["highway"="traffic_signals"](${bboxStr});
+way["landuse"="forest"](${bboxStr});
+way["natural"="wood"](${bboxStr});
+way["landuse"~"^(residential|retail|commercial)$"](${bboxStr});
+);out geom ${AREA_ELEMENT_CAP};`;
+
+  const run = (async (): Promise<boolean> => {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 50_000);
+      let res: Response;
+      try {
+        res = await fetch(OVERPASS_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": "Sparki/1.0 (cycling training app)",
+            Accept: "application/json",
+          },
+          body: `data=${encodeURIComponent(query)}`,
+          signal: ctrl.signal,
+        });
+      } finally {
+        clearTimeout(timer);
+      }
+      if (!res.ok) return false;
+      const json = (await res.json()) as { elements?: OverpassElement[] };
+      const elements = Array.isArray(json.elements) ? json.elements : [];
+      // Limiet geraakt = mogelijk afgekapt = onvolledige data. Eerlijk niet
+      // opslaan; route-metingen in dit gebied meten dan gewoon zelf.
+      if (elements.length >= AREA_ELEMENT_CAP) return false;
+      if (AREA_CACHE.size >= AREA_CACHE_MAX) {
+        // Oudste gebied ruimt op (insertion order ≈ oudste eerst na TTL-sweep).
+        const oldest = AREA_CACHE.keys().next().value;
+        if (oldest !== undefined) AREA_CACHE.delete(oldest);
+      }
+      AREA_CACHE.set(areaKey, { at: Date.now(), bbox, elements });
+      return true;
+    } catch {
+      return false;
+    } finally {
+      AREA_INFLIGHT.delete(areaKey);
+    }
+  })();
+  AREA_INFLIGHT.set(areaKey, run);
+  return run;
+}
+
+const AREA_INFLIGHT = new Map<string, Promise<boolean>>();
+
+const AREA_CACHE_TTL_MS = ENV_CACHE_TTL_MS;
+
+function findWarmAreaCovering(bbox: AreaBBox): WarmArea | null {
+  const now = Date.now();
+  for (const [key, area] of AREA_CACHE) {
+    if (now - area.at >= AREA_CACHE_TTL_MS) {
+      AREA_CACHE.delete(key);
+      continue;
+    }
+    const a = area.bbox;
+    if (
+      bbox.minLat >= a.minLat &&
+      bbox.maxLat <= a.maxLat &&
+      bbox.minLon >= a.minLon &&
+      bbox.maxLon <= a.maxLon
+    )
+      return area;
+  }
+  return null;
+}
+
+/** Is er een vers warm gebied dat dit punt (met marge) dekt? Alleen meting. */
+export function isEnvironmentAreaWarm(lat: number, lon: number): boolean {
+  return (
+    findWarmAreaCovering({
+      minLat: lat - 0.001,
+      minLon: lon - 0.001,
+      maxLat: lat + 0.001,
+      maxLon: lon + 0.001,
+    }) !== null
+  );
+}
+
+function elementsInBbox(
+  elements: OverpassElement[],
+  bbox: AreaBBox,
+): OverpassElement[] {
+  const inBox = (la: number, lo: number) =>
+    la >= bbox.minLat && la <= bbox.maxLat && lo >= bbox.minLon && lo <= bbox.maxLon;
+  return elements.filter((e) => {
+    if (e.type === "node") return e.lat != null && e.lon != null && inBox(e.lat, e.lon);
+    if (Array.isArray(e.geometry))
+      return e.geometry.some((g) => inBox(g.lat, g.lon));
+    return false;
+  });
 }

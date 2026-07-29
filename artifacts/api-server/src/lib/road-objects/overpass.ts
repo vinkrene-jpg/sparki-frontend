@@ -33,11 +33,49 @@ type OverpassElement = {
 };
 
 // Bbox-sync-cache: dezelfde corridor wordt tijdens een navigatie/route-sessie
-// niet vaker dan eens per 6 uur opnieuw bij OSM opgehaald.
-const SYNCED = new Map<string, number>();
+// niet vaker dan eens per 6 uur opnieuw bij OSM opgehaald. Naast de exacte
+// sleutel telt ook OMVATTING: is een corridor volledig gedekt door een eerder
+// (vers) gesynct groter gebied — bv. de achtergrond-warm-up rond de
+// woonlocatie — dan is de database daar al actueel en slaan we de netwerkstap
+// over. Zo blijft het interactieve pad binnen zijn tijdbudget.
+const SYNCED = new Map<string, { at: number; bbox: BBox }>();
 const SYNC_TTL_MS = 6 * 60 * 60_000;
 
 export type BBox = { south: number; west: number; north: number; east: number };
+
+/**
+ * Is deze bbox al gedekt door een verse sync — exact dezelfde sleutel of
+ * volledig omvat door een eerder gesynct (groter) gebied? Ruimt verlopen
+ * entries meteen op.
+ */
+function isBboxSynced(bbox: BBox, exactKey: string): boolean {
+  const now = Date.now();
+  const exact = SYNCED.get(exactKey);
+  if (exact && now - exact.at < SYNC_TTL_MS) return true;
+  for (const [k, entry] of SYNCED) {
+    if (now - entry.at >= SYNC_TTL_MS) {
+      SYNCED.delete(k);
+      continue;
+    }
+    const b = entry.bbox;
+    if (
+      bbox.south >= b.south &&
+      bbox.north <= b.north &&
+      bbox.west >= b.west &&
+      bbox.east <= b.east
+    )
+      return true;
+  }
+  return false;
+}
+
+/** Alleen-lezen variant voor logging/metrics: dekt een verse sync deze bbox? */
+export function isRoadObjectsCorridorSynced(bbox: BBox): boolean {
+  const key = [bbox.south, bbox.west, bbox.north, bbox.east]
+    .map((v) => v.toFixed(3))
+    .join(",");
+  return isBboxSynced(bbox, key);
+}
 
 export function bboxAroundPath(
   geometry: RoutePathPoint[],
@@ -99,8 +137,7 @@ export async function syncOsmSignalsForBbox(bbox: BBox): Promise<number | null> 
   const key = [bbox.south, bbox.west, bbox.north, bbox.east]
     .map((v) => v.toFixed(3))
     .join(",");
-  const at = SYNCED.get(key);
-  if (at && Date.now() - at < SYNC_TTL_MS) return 0;
+  if (isBboxSynced(bbox, key)) return 0;
 
   const bboxStr = `${bbox.south.toFixed(4)},${bbox.west.toFixed(4)},${bbox.north.toFixed(4)},${bbox.east.toFixed(4)}`;
   // Compacte unie (uitgebreide vormen geven 504 op stadsgrote bboxes):
@@ -145,7 +182,7 @@ node["traffic_calming"~"^(bump|hump|table|cushion)$"](${bboxStr});
     });
   }
   const written = await upsertOsmObjects(objects);
-  SYNCED.set(key, Date.now());
+  SYNCED.set(key, { at: Date.now(), bbox });
   logger.info({ bbox: bboxStr, objects: objects.length }, "road-objects: OSM-sync klaar");
   return written;
 }

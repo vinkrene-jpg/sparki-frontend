@@ -89,7 +89,7 @@
 - [Sparki per-session caps](sparki-session-caps.md) — plan engine caps single-session minutes per DayKind×experience; unrealistic weekly quota underfills honestly, never a 6h ride; wedstrijd keeps 360.
 - [Sparki engagement engine](sparki-engagement-engine.md) — healthy pull-to-return: learns real open rhythm from tester_events, honest default when thin.
 - [Sparki aandachtswet (Vandaag single-leader)](sparki-aandachtswet.md) — one leading Momentblok (priority chain); ride-along weather/leskaart/nudge must be GATED at render not just imported.
-- [Route generation speed optimization](route-generation-speed.md) — Overpass OSM sync (40s!) was the real blocker; async enrichment + concurrent geocoding → p95 ≤3s.
+- [Route generation speed](route-generation-speed.md) — Overpass sync was the 40s-blocker; async enrichment → p95 ≤3s ([warm-up](sparki-route-env-warmup.md): warm-gebied-cache + corridor-omvatting, afgekapte gebiedsquery nooit opslaan, [ENV-COVERAGE]-log).
 - [Sparki route-paspoort + POIs + Overpass](sparki-route-passport.md) — Overpass: bbox+compacte nwr-unions (verbose 504t); mirror maps.mail.ru, nooit osm.ch; geometry nulls: filter before .lat ([POIs](sparki-route-pois.md), [klimmen](climb-explorer.md), [remarks/wegtypen](sparki-route-remarks.md): no-surface tag = "onbekend", [surfaces](sparki-route-surfaces.md)).
 - [Sparki Rit-verhaal](sparki-ride-story.md) — flag `rit_verhaal`; sync line must render independent of fresh story; predictionAvailable strictly pre-hoc; workflow limit hit ⇒ tests via shell.
 - [Sparki routebibliotheek poorten](sparki-route-library.md) — drie harde poorten (overlap+spur+mini-lus); geometry = [lat,lon]-arrays, niet objecten.

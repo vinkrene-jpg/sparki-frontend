@@ -236,6 +236,9 @@ import {
   candidateEnvironmentOf,
   stopObstaclesFrom,
 } from "../lib/candidate-environment";
+// Achtergrond-warm-up: registreert generate-startgebieden zodat de
+// omgevingsmeting daar bij een volgende aanvraag al gecachet is.
+import { recordGeneratedArea } from "../lib/route-env-warmup";
 
 // Build a short Dutch rationale for why the route fits the workout. Uses the AI
 // integration to phrase it, but NEVER to invent geometry — only the real,
@@ -2644,6 +2647,11 @@ router.post("/generate", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Geldig startpunt is verplicht" });
     return;
   }
+
+  // Achtergrond-warm-up: registreer dit startgebied en warm het (fire-and-
+  // forget, gated in de warm-up-module) zodat een volgende aanvraag in dit
+  // gebied op volledige omgevingsdata draait. Raakt dit pad nooit.
+  recordGeneratedArea(startLat, startLon);
 
   const seed = finiteNum(body.seed) ?? undefined;
   const wish = parseWish(body.wish);

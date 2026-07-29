@@ -7,6 +7,7 @@ import { cleanupStaleConnectorShells } from "./lib/connectors/cleanup";
 import { cleanupClimbCacheDb } from "./lib/climbs/cache";
 import { startReminderScheduler } from "./lib/reminder-scheduler";
 import { ensureBillingFlagSeed, expireBillingStates } from "./lib/billing";
+import { startRouteEnvWarmupScheduler } from "./lib/route-env-warmup";
 
 // Productie faalt hard bij ontbrekende verplichte configuratie — liever een
 // duidelijke boot-fout dan een half-werkende app met stille gaten.
@@ -141,4 +142,10 @@ app.listen(port, (err) => {
       ),
     24 * 60 * 60 * 1000,
   ).unref?.();
+
+  // Achtergrond-warm-up van de route-omgevingsdata (Overpass + wegobjecten-
+  // corridor) rond woonlocaties en recent gegenereerde gebieden, zodat de
+  // rustige-wegen-vergelijking bij /generate vrijwel altijd op volledige data
+  // draait. Productie standaard aan; dev opt-in via ROUTE_ENV_WARMUP=true.
+  startRouteEnvWarmupScheduler();
 });

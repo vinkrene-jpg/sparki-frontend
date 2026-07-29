@@ -41,6 +41,11 @@ export function candidateEnvironmentOf(
   },
 ) {
   const budgetMs = opts?.budgetMs ?? null;
+  // Meetbaarheid: welk aandeel van de kandidaat-vergelijkingen draait op
+  // VOLLEDIGE omgevingsdata (Overpass-omgeving én eigen wegobjecten-DB binnen
+  // het budget)? Per factory (= per generate-aanvraag) geteld en gelogd, zodat
+  // de cache-hit-ratio van de achtergrond-warm-up direct zichtbaar is.
+  const stats = { total: 0, full: 0 };
   return async (
     path: [number, number][],
   ): Promise<CandidateEnvironment | null> => {
@@ -51,6 +56,11 @@ export function candidateEnvironmentOf(
       withBudget(getRoadObjectsAlongRoute(path).catch(() => null), budgetMs),
     ]);
     void wantsNature; // natuurwens beïnvloedt de weging (loop-quality), niet de meting
+    stats.total += 1;
+    if (env && road) stats.full += 1;
+    console.log(
+      `[ENV-COVERAGE] budgetMs=${budgetMs ?? "none"} env=${env ? "ok" : "miss"} road=${road ? "ok" : "miss"} full=${stats.full}/${stats.total}`,
+    );
     if (!env && !road) return null;
     return {
       trafficLights:
