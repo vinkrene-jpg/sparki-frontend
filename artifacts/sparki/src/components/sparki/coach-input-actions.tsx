@@ -175,7 +175,7 @@ function SaveButton({
   disabled?: boolean
 }) {
   return (
-    {/* In een smalle modal — bewust GEEN ds-actiebalk (die is voor brede paginakolommen). */}
+    // In een smalle modal — bewust GEEN ds-actiebalk (die is voor brede paginakolommen).
     <div>
       <button
         type="button"
