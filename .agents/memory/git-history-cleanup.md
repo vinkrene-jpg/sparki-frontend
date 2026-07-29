@@ -33,6 +33,9 @@ Use `git filter-repo --path <file> ... --invert-paths --force` to strip specific
 ## Early-warning guard
 A health check (`project_disk_size`, lib/health/disk-usage.ts) now measures `.git` + werkmap with `du` in the nightly health run. Env-managed dirs (node_modules, .cache, .config, .upm, .local) are excluded from the alarm total or it false-alarms forever; thresholds .git>1,5 GB / totaal>6 GiB orange, >7,25 GiB red.
 
+## Recurrence trap: unpushed commits pin LFS objects
+`git lfs prune` retains objects referenced by UNPUSHED commits — if an intermediate unpushed commit accidentally re-added big export files (even though HEAD no longer has them), their LFS objects stay pinned. Fix: `git filter-repo --path exports --invert-paths --refs origin/main..main --force` to strip only the unpushed segment (fast, keeps origin/main ancestry so no force-push needed), then set `lfs.fetchrecentrefsdays/fetchrecentcommitsdays/pruneoffsetdays` to 0 and `git lfs prune` again. Also: background `nohup git gc` dies at tool-call boundaries — run gc foreground (plain `--prune=now` is fast enough; aggressive not needed).
+
 ## Local-side cleanup (after remote rewrite)
 - Local .git stays huge until backup refs are gone: delete `backup-pre-lighthistory`, `gitsafe-backup/main`, ALL stale `subrepl-*` branches+remotes, and the `replit-agent` branch (it pinned the heavy audit-export commit). Only after verifying `origin/main == main`.
 - Then `git reflog expire --expire=now --all` + `git gc --prune=now --aggressive` → 5.1 GB → 493 MB.
