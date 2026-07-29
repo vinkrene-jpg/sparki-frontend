@@ -96,3 +96,37 @@ Uitsluitend de drie zips uit `artifacts/sparki/public/`:
 - **Let op — gepubliceerde app**: de live productie-omgeving serveert de drie
   zips nog uit haar eigen build totdat opnieuw wordt gepubliceerd. Een
   republish is nodig om ze daar echt offline te halen.
+
+## Update 29 juli 2026 (taak 352) — exports/ verwijderd + LFS-historie geoffload
+
+De bestanden in `exports/` bleken via checkpoint-herstel teruggekomen. Alle
+inhoud is opnieuw byte-identiek geverifieerd tegen de privé-bucketkopieën
+(SHA-256 van de teruggelezen bucket-objecten identiek aan de lokale hashes)
+en daarna is de hele map `exports/` verwijderd:
+
+- `SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip` — bucket-SHA `639bace4…` geverifieerd
+- `SPARKI_FULL_REPOSITORY_AUDIT_…_REASSEMBLY.txt` — bucket-SHA `e18f736c…` geverifieerd
+- `…zip.part01–05` — samengevoegde SHA identiek aan het zip (afleidbaar uit de bucketkopie)
+- `BF_00_evidence.zip` — bucket-SHA `f543e32a…` geverifieerd
+
+Daarnaast zijn de grote LFS-historie-objecten in `.git/lfs` opgeruimd nadat
+elk object eerst naar de privé-bucket is geüpload en teruggelezen-geverifieerd
+(LFS-oid = SHA-256, dus verificatie is exact). Nieuwe bucketlocatie:
+`.private/bewijsarchief-offload/lfs-history/`:
+
+| Bestand (oorspronkelijke naam) | SHA-256 (= LFS-oid) | Grootte |
+|---|---|---|
+| SPARKI_CURRENT_STATE_2026-07-27_3942f0f.zip | `6b217f6471ee8883fd21510838fde1c7e177eb7c44664ac120d94df34c4445c7` | 493 MB |
+| SPARKI_CURRENT_STATE_2026-07-27.zip | `0895eaf516d2e52b74df288a9aed696c476f445ba1f8c82f4394fca47f4ecf10` | 383 MB |
+| SPARKI_CURRENT_STATE_2026-07-27_666b702.zip | `18eb1712616c92b46afdbcb5d2a3993778a41d0e1225bc57adba4d80843ab615` | 184 MB |
+| SPARKI_TRANSFER_2026-07-28_d88b49a.zip | `53beb2f302bdd111e0573f4a9c9330e699eb80d780681b6b952c3bb68f8fc1f8` | 139 MB |
+
+Ook de reeds extern veiliggestelde LFS-objecten (audit-zip `639bace4…`,
+split-parts, `BF_00_evidence.zip` `f543e32a…`) zijn lokaal uit `.git/lfs`
+verwijderd — de inhoud staat byte-identiek geverifieerd in de bucket.
+Git-geschiedenis is niet herschreven; alleen `git reflog expire` +
+`git lfs prune` + `git gc --prune=now` (geen inhoudelijke wijzigingen).
+
+Resultaat: `.git` 5,1 GiB → 0,67 GiB; projecttotaal (excl. omgevingsmappen)
+8,3 GiB → 3,9 GiB. Health check `project_disk_size` valt hiermee weer binnen
+de groene drempels (.git < 1,5 GB, totaal < 6 GiB).
