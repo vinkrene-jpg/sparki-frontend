@@ -10,6 +10,7 @@ import { CommercialShell } from "@/components/sparki/commercial-shell"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { UpgradeNudge } from "@/components/ds/upgrade-nudge"
 import { useFeatureAccess } from "@/hooks/use-feature-access"
+import { useBillingStatus } from "@/hooks/use-billing"
 
 export function GoGatePage({
   feature,
@@ -23,9 +24,18 @@ export function GoGatePage({
   section: string
 }) {
   const { flags, isLoading } = useFeatureFlags()
+  // Actieknop alleen tonen wanneer het abonnementspaneel echt een actie biedt
+  // (proef, checkout of beheer). Onbekend/uit ⇒ eerlijk geen knop.
+  const { data: billing } = useBillingStatus()
+  const metActie = Boolean(
+    billing &&
+      (billing.available.trial ||
+        billing.available.checkout ||
+        billing.available.portal),
+  )
   const nudge = (
     <div className="px-4 py-12">
-      <UpgradeNudge feature={feature} />
+      <UpgradeNudge feature={feature} metActie={metActie} />
     </div>
   )
   if (isLoading || flags.commercial_shell) {

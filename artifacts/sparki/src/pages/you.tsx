@@ -79,6 +79,7 @@ const SETTINGS_FOCUS_TOKENS = new Set([
   "goal",
   "checkin",
   "connections",
+  "abonnement",
 ])
 
 // ?focus= tokens that live on the Kompas tab.

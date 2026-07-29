@@ -1256,7 +1256,7 @@ function BillingSection() {
     "rounded-xl border border-white/[0.1] bg-white/[0.05] px-3 py-2 text-[12px] text-white/80 transition hover:bg-white/[0.1] disabled:opacity-40"
 
   return (
-    <section>
+    <section id="cfg-abonnement">
       <SectionLabel title="Abonnement (test)" />
       <div className="mt-2 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4">
         <p className="text-[12px] text-white/60">

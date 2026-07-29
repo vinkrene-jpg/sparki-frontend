@@ -5,7 +5,13 @@
 // opent. Geen prijzen of marketing-copy (bewust buiten scope); eerlijk over
 // wat het onderdeel doet en dat het bij Sparki Go hoort.
 import { Lock } from "lucide-react";
+import { Link } from "wouter";
 import { cn } from "@/lib/utils";
+
+/** Vast doel van de upgrade-actie: het abonnementspaneel in de instellingen. */
+export const UPGRADE_ACTION_PATH = "/you?focus=abonnement";
+/** Vaste actie-copy — één plek, geen prijzen. */
+export const UPGRADE_ACTION_LABEL = "Bekijk Sparki Go";
 
 export const GO_FEATURE_COPY: Record<string, { titel: string; uitleg: string }> = {
   autonomous_training: {
@@ -35,10 +41,31 @@ export interface UpgradeNudgeProps {
   feature: string;
   /** Compacte kaartvorm voor inline gebruik (Home-kaarten e.d.). */
   compact?: boolean;
+  /**
+   * Toon de actieknop ("Bekijk Sparki Go") die naar het abonnementspaneel
+   * leidt. Alleen aanzetten wanneer er daar echt een upgrade-actie klaarstaat
+   * (bijv. via de billing-status) — anders eerlijk weglaten.
+   */
+  metActie?: boolean;
   className?: string;
 }
 
-export function UpgradeNudge({ feature, compact, className }: UpgradeNudgeProps) {
+function ActieKnop({ compact }: { compact?: boolean }) {
+  return (
+    <Link
+      href={UPGRADE_ACTION_PATH}
+      data-testid="upgrade-nudge-actie"
+      className={cn(
+        "inline-flex items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-300/10 font-medium text-cyan-200 transition hover:bg-cyan-300/20",
+        compact ? "mt-2 px-3 py-1.5 text-[12px]" : "mt-1 px-4 py-2 text-[13px]",
+      )}
+    >
+      {UPGRADE_ACTION_LABEL}
+    </Link>
+  );
+}
+
+export function UpgradeNudge({ feature, compact, metActie, className }: UpgradeNudgeProps) {
   const copy = GO_FEATURE_COPY[feature] ?? {
     titel: "Dit onderdeel",
     uitleg: "Dit onderdeel hoort bij Sparki Go.",
@@ -58,6 +85,7 @@ export function UpgradeNudge({ feature, compact, className }: UpgradeNudgeProps)
           {copy.titel} hoort bij Sparki Go
         </p>
         <p className="mt-1 text-[12px] leading-snug text-white/45">{copy.uitleg}</p>
+        {metActie && <ActieKnop compact />}
       </div>
     );
   }
@@ -81,6 +109,7 @@ export function UpgradeNudge({ feature, compact, className }: UpgradeNudgeProps)
         Met Sparki Go krijg je dit onderdeel erbij. Al je huidige gegevens en
         gratis onderdelen blijven gewoon werken.
       </p>
+      {metActie && <ActieKnop />}
     </div>
   );
 }
