@@ -63,6 +63,9 @@ export default function RoutesPage() {
 
   return (
     <CommercialShell actief="/routes" sfeer={dagSfeer("rijden")}>
+      {/* Standaard paginakolom van de schil: zonder deze wrapper plakt alle
+          tekst tegen de schermrand (de schil zelf geeft geen zijmarge). */}
+      <div className="mx-auto w-full max-w-2xl px-5 pb-10 pt-8 lg:max-w-3xl lg:px-10">
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight text-white">
           Routes
@@ -73,7 +76,7 @@ export default function RoutesPage() {
       {/* Vast tabmenu: blijft bovenin staan tijdens scrollen, met een
           donkere blur-achtergrond zodat inhoud er niet doorheen schijnt.
           -mx/px zodat de balk tot de randen van de content doorloopt. */}
-      <div className="sticky top-0 z-30 -mx-4 mt-5 bg-[#05070e]/85 px-4 pb-1 pt-2 backdrop-blur-md">
+      <div className="sticky top-0 z-30 -mx-5 mt-5 bg-[#05070e]/85 px-5 pb-1 pt-2 backdrop-blur-md lg:-mx-10 lg:px-10">
         <HoofdstukTabs
           tabs={TABS}
           actief={view}
@@ -156,6 +159,7 @@ export default function RoutesPage() {
         ) : (
           plannerUit
         )}
+      </div>
       </div>
     </CommercialShell>
   )

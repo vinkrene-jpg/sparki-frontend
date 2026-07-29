@@ -391,6 +391,9 @@ export default function FeedPage() {
 
   return (
     <CommercialShell actief="/feed">
+      {/* Standaard paginakolom van de schil: zonder deze wrapper plakt alle
+          tekst tegen de schermrand (de schil zelf geeft geen zijmarge). */}
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-10 px-5 pb-10 pt-8 lg:max-w-3xl lg:px-10">
       {/* INTRO */}
       <div className="-mt-2">
         <div className="flex items-center justify-between gap-3">
@@ -632,6 +635,7 @@ export default function FeedPage() {
 
       <KnowledgeFeedSection />
       <ClimbsFeedSection />
+      </div>
 
       {readerItem && (
         <NewsReader item={readerItem} onClose={() => setReaderItem(null)} />
