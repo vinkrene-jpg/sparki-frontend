@@ -13,15 +13,18 @@ Laatst bijgewerkt: 2026-07-27.
 ### Plan-pagina indeling
 1. **Welke indeling wordt het?** — René is er nog mee bezig, komt erop terug (29 jul).
 
-### Gevonden in de geschiedenis — graag bevestigen of nog actueel
-8. **Achtergrond achter de Core / het Ride-scherm** — welke scène je daar wilt zien.
-   (Niet beantwoord in het formulier van 29 jul — staat nog open.)
 
 ### Mogelijk al achterhaald (laag) — schrap gerust
 9. **Samen-pagina volgorde** — welk blok bovenaan (Voorstellen vs. Samen trainen).
 10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav.
 
 ## Beslist (archief)
+- **2026-07-29 — "Kies maar iets" (mandaat René) op de resterende formulierpunten:**
+  (a) Ontdekken-artikelfoto's → compacte thumbnail rechts in de lijst (gebouwd);
+  (b) Core/Ride-achtergrond → huidige cinematische fietsscène blijft;
+  (c) opschoning observaties/TSS → loopt via de al voorgestelde taken (#382/#383);
+  (d) prod-data naar dev syncen → niet nu (dev-testaccount-FTP loopt al via taak #377).
+  Alles later bij te sturen als het niet bevalt.
 - **2026-07-29 — OD_005 uitgevoerd door René en alleen-lezen geverifieerd:** de dubbele
   Strava-FTP-rij (id 7) is weg (historie: 331 W derived 25 mei, 250 W manual 22 jun,
   258 W strava 26 jun — geen dubbelen); van de observaties 22–23 juni resteren er 5,

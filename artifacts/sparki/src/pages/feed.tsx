@@ -538,9 +538,26 @@ export default function FeedPage() {
                   </div>
 
                   {item.news ? (
-                    <h3 className="mt-1.5 text-pretty font-sans text-[15px] font-light leading-snug text-white/90 transition-colors group-hover/news:text-cyan-100">
-                      {item.title}
-                    </h3>
+                    // Compacte thumbnail rechts (keuze: lijst blijft rustig,
+                    // maar artikelfoto's zijn terug — geen grote beeldkaarten).
+                    <div className="mt-1.5 flex items-start gap-3">
+                      <h3 className="min-w-0 flex-1 text-pretty font-sans text-[15px] font-light leading-snug text-white/90 transition-colors group-hover/news:text-cyan-100">
+                        {item.title}
+                      </h3>
+                      {item.news.imageUrl && (
+                        <img
+                          src={item.news.imageUrl}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          className="h-14 w-20 shrink-0 rounded-lg border border-white/[0.08] object-cover"
+                          onError={(e) => {
+                            // Kapotte externe foto: thumbnail stil weglaten.
+                            e.currentTarget.style.display = "none"
+                          }}
+                        />
+                      )}
+                    </div>
                   ) : item.url ? (
                     <a
                       href={item.url}
