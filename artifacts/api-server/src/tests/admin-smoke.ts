@@ -82,6 +82,27 @@ async function getJson(path: string): Promise<Record<string, unknown>> {
   return body;
 }
 
+async function postJson(
+  path: string,
+  payload: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const res = await fetch(`${baseUrl}${path}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  assert(
+    res.status === 200,
+    `POST ${path} should return 200, got ${res.status} — an admin surface is broken`,
+  );
+  const body = (await res.json()) as Record<string, unknown>;
+  assert(
+    body && typeof body === "object",
+    `POST ${path} should return a JSON object`,
+  );
+  return body;
+}
+
 async function main() {
   assert(
     process.env.NODE_ENV !== "production" &&
@@ -132,6 +153,131 @@ async function main() {
       );
     }
   });
+
+  await scenario("GET /api/admin/feedback → feedback rows array", async () => {
+    const body = await getJson("/api/admin/feedback");
+    assert(
+      Array.isArray(body.feedback),
+      `feedback should return { feedback: [...] }, got keys ${Object.keys(body).join(",")}`,
+    );
+    for (const row of body.feedback as Record<string, unknown>[]) {
+      assert(
+        "id" in row && "createdAt" in row,
+        `feedback rows should carry id/createdAt, got keys ${Object.keys(row).join(",")}`,
+      );
+    }
+  });
+
+  await scenario("GET /api/admin/failed-imports → imports array", async () => {
+    const body = await getJson("/api/admin/failed-imports");
+    assert(
+      Array.isArray(body.imports),
+      `failed-imports should return { imports: [...] }, got keys ${Object.keys(body).join(",")}`,
+    );
+    for (const row of body.imports as Record<string, unknown>[]) {
+      assert(
+        "id" in row && "status" in row && "uploadedAt" in row,
+        `failed-import rows should carry id/status/uploadedAt, got keys ${Object.keys(row).join(",")}`,
+      );
+      assert(
+        row.status === "failed",
+        `failed-imports should only contain failed rows, got status ${JSON.stringify(row.status)}`,
+      );
+    }
+  });
+
+  await scenario(
+    "GET /api/admin/data-provenance → gebruiker + surfaces shape",
+    async () => {
+      // Provenance requires an existing user_profiles row. Use a real one from
+      // the DB; if the DB has no users at all, verify the honest 400 on a
+      // missing clerkId instead (still proves the handler body is intact).
+      const { rows } = await pool.query(
+        "SELECT clerk_id FROM user_profiles LIMIT 1",
+      );
+      if (rows.length === 0) {
+        const res = await fetch(`${baseUrl}/api/admin/data-provenance`);
+        assert(
+          res.status === 400,
+          `data-provenance without clerkId should return 400, got ${res.status}`,
+        );
+        return;
+      }
+      const clerkId = String(rows[0].clerk_id);
+      const body = await getJson(
+        `/api/admin/data-provenance?clerkId=${encodeURIComponent(clerkId)}`,
+      );
+      const gebruiker = body.gebruiker as Record<string, unknown> | undefined;
+      assert(
+        gebruiker && gebruiker.clerkId === clerkId,
+        `data-provenance should echo the requested user, got ${JSON.stringify(body.gebruiker)}`,
+      );
+      assert(
+        Array.isArray(body.surfaces) && (body.surfaces as unknown[]).length > 0,
+        "data-provenance.surfaces should be a non-empty array (one per data block)",
+      );
+      for (const s of body.surfaces as Record<string, unknown>[]) {
+        for (const key of ["key", "label", "bron", "aantalRecords", "herkomst"]) {
+          assert(
+            key in s,
+            `provenance surface rows should carry ${key}, got keys ${Object.keys(s).join(",")}`,
+          );
+        }
+        assert(
+          s.herkomst !== "controle mislukt — bron niet bereikbaar",
+          `provenance surface "${String(s.key)}" reported an unreachable source — table/column drift?`,
+        );
+      }
+    },
+  );
+
+  await scenario(
+    "POST /api/admin/data-trust/cleanup (droogdraai) → kandidaten shape",
+    async () => {
+      // Dry run only — must never delete anything from this test.
+      const body = await postJson("/api/admin/data-trust/cleanup", {
+        clerkId: "admin-smoke-nonexistent-user",
+      });
+      assert(
+        body.modus === "droogdraai",
+        `cleanup without apply must stay a dry run, got modus ${JSON.stringify(body.modus)}`,
+      );
+      const kandidaten = body.kandidaten as Record<string, unknown> | undefined;
+      assert(
+        kandidaten && typeof kandidaten === "object",
+        `cleanup should return { kandidaten: {...} }, got keys ${Object.keys(body).join(",")}`,
+      );
+      assert(
+        Array.isArray(kandidaten!.engelstaligeObservaties) &&
+          Array.isArray(kandidaten!.dubbeleFtpHistorie),
+        `kandidaten should carry engelstaligeObservaties/dubbeleFtpHistorie arrays, got keys ${Object.keys(kandidaten!).join(",")}`,
+      );
+    },
+  );
+
+  await scenario(
+    "GET /api/admin/data-trust/dashboard → data-trust snapshot shape",
+    async () => {
+      const body = await getJson("/api/admin/data-trust/dashboard");
+      assert(
+        Array.isArray(body.datasets),
+        "data-trust dashboard.datasets should be an array",
+      );
+      assert(
+        "ontbrekend" in body && "conflicten" in body && "duplicaten" in body,
+        `dashboard should carry ontbrekend/conflicten/duplicaten, got keys ${Object.keys(body).join(",")}`,
+      );
+      const syncfouten = body.syncfouten as Record<string, unknown> | undefined;
+      assert(
+        syncfouten && Array.isArray(syncfouten.recent),
+        "dashboard.syncfouten.recent should be an array",
+      );
+      assert(
+        typeof body.opgehaald === "string",
+        "dashboard.opgehaald should be an ISO timestamp string",
+      );
+    },
+  );
 
   await scenario("GET /api/admin/health → dashboard snapshot shape", async () => {
     const body = await getJson("/api/admin/health");
