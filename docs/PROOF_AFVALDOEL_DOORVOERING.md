@@ -74,4 +74,7 @@ overal geconsumeerd én expliciet benoemd — met overal exact dezelfde canoniek
 
 - Eén end-to-end proof-test die in één scenario alle touchpoints op dezelfde
   `line` controleert.
-- Expliciet vastleggen dat de analyse-overlay dezelfde benoemingszin toont.
+- ~~Expliciet vastleggen dat de analyse-overlay dezelfde benoemingszin toont.~~
+  Afgehandeld: de gewichtsgrafiek in Analyse (Progressie-tab) toont bij een
+  actieve streefgewicht-overlay de canonieke zin (API-veld `line` via
+  `useSeasonGoal`); zonder doel wordt niets getoond.

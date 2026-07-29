@@ -1318,11 +1318,14 @@ function GewichtWkgCard({
   ftpTests,
   profielFtp,
   overlays,
+  doelZin,
 }: {
   metrics: Array<{ metricDate: string; weightKg?: number | string | null }>
   ftpTests: Array<{ ftpWatts: number; measuredAt: string }>
   profielFtp: number | null
   overlays: DoelOverlays
+  /** Canonieke benoemingszin van het afvaldoel (API-veld `line`); null = niet tonen. */
+  doelZin: string | null
 }) {
   const reeks = gewichtWkgReeks(metrics, ftpTests, profielFtp)
   const heeftWkg = reeks.some((p) => p.wkg != null)
@@ -1348,6 +1351,9 @@ function GewichtWkgCard({
         </div>
       </div>
       <UitlegRegel k="gewichtWkg" />
+      {overlays.streefGewichtKg != null && doelZin != null && (
+        <p className="mb-3 text-xs text-slate-500">{doelZin}</p>
+      )}
       {reeks.length < 2 ? (
         <LegeGrafiek titel="Nog geen gewichtsmetingen om een verloop te tonen." />
       ) : (
@@ -1396,6 +1402,7 @@ function ProgressieTab({
   profiel,
   metrics,
   overlays,
+  doelZin,
 }: {
   load: Bron<LoadData>
   sessies: Bron<TrainingSession[]>
@@ -1403,6 +1410,8 @@ function ProgressieTab({
   profiel: Profiel
   metrics: Bron<Array<{ metricDate: string; weightKg?: number | string | null }>>
   overlays: DoelOverlays
+  /** Canonieke benoemingszin van het afvaldoel (API-veld `line`); null = niet tonen. */
+  doelZin: string | null
 }) {
   const weergave = ftp.data ? ftpWeergave(ftp.data, profiel?.ftp ?? null) : null
   const [, navigate] = useLocation()
@@ -1488,6 +1497,7 @@ function ProgressieTab({
         ftpTests={ftp.data ?? []}
         profielFtp={profiel?.ftp ?? null}
         overlays={overlays}
+        doelZin={doelZin}
       />
 
       {/* Persoonlijke records (vermogen) */}
@@ -2014,7 +2024,8 @@ export default function CoreAnalysePage() {
             />
           </div>
           <div id="tab-progressie" role="tabpanel" aria-labelledby="tabknop-progressie" hidden={activeTab !== "progressie"}>
-            <ProgressieTab load={load} sessies={sessies} ftp={ftp} profiel={profiel} metrics={metrics} overlays={overlays} />
+            <ProgressieTab load={load} sessies={sessies} ftp={ftp} profiel={profiel} metrics={metrics} overlays={overlays}
+              doelZin={seasonGoal.data?.eligible === true ? seasonGoal.data.line : null} />
           </div>
           <div id="tab-doelen"     role="tabpanel" aria-labelledby="tabknop-doelen" hidden={activeTab !== "doelen"}>
             {activeTab === "doelen" && <DoelenTab />}
