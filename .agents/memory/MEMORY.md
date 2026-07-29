@@ -154,4 +154,5 @@
 - [Sparki trainerwerkruimte WP-01](sparki-trainer-workspace-wp01.md) — hasCoachAccess = link ∪ geldige clubtoewijzing (read-time checks); deelniveaus aparte laag; dev-preview home rol-bewust; rollen in user_profiles.
 - [Sparki trainerrechten & privénotities](sparki-trainer-rights-wp01c.md) — capability-matrix: individuele begeleiding eist DIRECTE link (team-only = alleen naam); privénotities owner-only, uit sporterexport.
 - [Sparki hoofdtraineruitbreiding](sparki-hoofdtrainer.md) — verdelen team/groep, org-overzicht zonder gezondheidsdata, audit bij andermans training; partial index eist targetWhere.
+- [Sparki cluborganisatie](sparki-club-organisation.md) — wrapped unique-violation via err.cause; ÉÉN advisory-lock-key voor alle capacity-paden; activeAssignmentWindow op elk leespad.
 - [Governor Beslisblok 02 rollenfundament](governor-beslisblok-02.md) — modellen in governance/, fixtures met strikte delete-handtekening + advisory lock; GO↔COMPLETE-besluit open.
