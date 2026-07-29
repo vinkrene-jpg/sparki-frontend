@@ -977,7 +977,22 @@ router.post("/:clubId/seasons/:seasonId/close", requireAuth, async (req, res) =>
       .set({ status: "afgesloten", closedAt: new Date(), updatedAt: new Date() })
       .where(eq(clubSeasonsTable.id, season.id))
       .returning();
-    await writeClubAudit({ clubId: ctx.club.id, actorClerkId: ctx.membership.clerkId, action: "seizoen_afgesloten", targetType: "season", targetId: season.id, detail: { name: season.name } });
+    // WP-03: afsluiten van een seizoen beëindigt de trainerstoewijzingen van
+    // dat seizoen (endsOn = vandaag Amsterdam). Historie blijft staan — nooit
+    // DELETE — maar actieve toegang via deze toewijzingen stopt direct.
+    const todayAms = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Amsterdam" });
+    const endedAssignments = await db
+      .update(clubTrainerAssignmentsTable)
+      .set({ endsOn: todayAms })
+      .where(
+        and(
+          eq(clubTrainerAssignmentsTable.clubId, ctx.club.id),
+          eq(clubTrainerAssignmentsTable.seasonId, season.id),
+          isNull(clubTrainerAssignmentsTable.endsOn),
+        ),
+      )
+      .returning({ id: clubTrainerAssignmentsTable.id });
+    await writeClubAudit({ clubId: ctx.club.id, actorClerkId: ctx.membership.clerkId, action: "seizoen_afgesloten", targetType: "season", targetId: season.id, detail: { name: season.name, beeindigdeToewijzingen: endedAssignments.length } });
     res.json(updated);
   } catch (err) {
     req.log.error({ err }, "club season close failed");

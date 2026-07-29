@@ -236,6 +236,145 @@ async function main() {
       assert(reactivate.status === 409, `afgesloten seizoen activeren gaf ${reactivate.status} (verwacht 409)`);
     });
 
+    // ── Stap 7: aanvullende rechten-/privacytests ────────────────────────────
+    await scenario("O13. seizoen afsluiten beëindigt toewijzingen van dat seizoen", async () => {
+      const s = await req("POST", `/api/clubs/${clubId}/seasons`, beheer, {
+        name: "WP03 seizoen-close-test",
+        startsOn: "2031-01-01",
+        endsOn: "2031-12-31",
+        status: "gepland",
+      });
+      assert(s.status === 201, `seizoen maken gaf ${s.status}`);
+      const seasonId = (s.json as { id: number }).id;
+      const [asg] = await db
+        .insert(clubTrainerAssignmentsTable)
+        .values({ clubId, trainerClerkId: t2, seasonId })
+        .returning();
+      const c = await req("POST", `/api/clubs/${clubId}/seasons/${seasonId}/close`, beheer);
+      assert(c.status === 200, `afsluiten gaf ${c.status}`);
+      const [after] = await db
+        .select()
+        .from(clubTrainerAssignmentsTable)
+        .where(eq(clubTrainerAssignmentsTable.id, asg!.id));
+      assert(after, "toewijzing verdwenen — historie moet blijven");
+      assert(after!.endsOn != null, "toewijzing van afgesloten seizoen heeft geen endsOn gekregen");
+      await db.delete(clubTrainerAssignmentsTable).where(eq(clubTrainerAssignmentsTable.id, asg!.id));
+    });
+
+    await scenario("O14. clubbeheerder ziet andere club niet", async () => {
+      const [otherClub] = await db
+        .insert(clubsTable)
+        .values({ name: "TESTFIXTURE WP03 Andere Club", ownerClerkId: adult, joinCode: "WP03ANDR" })
+        .returning();
+      try {
+        for (const p of ["", "/members", "/seasons", "/audit"]) {
+          const r = await req("GET", `/api/clubs/${otherClub!.id}${p}`, beheer);
+          assert(r.status === 403 || r.status === 404, `club B ${p || "dashboard"} lekte: ${r.status}`);
+        }
+      } finally {
+        await db.delete(clubsTable).where(eq(clubsTable.id, otherClub!.id));
+      }
+    });
+
+    await scenario("O15. mechanieker kan lidmaatschap niet aanpassen", async () => {
+      const mech = clerkIdFor("mechanieker");
+      const [target] = await db
+        .select()
+        .from(clubMembersTable)
+        .where(and(eq(clubMembersTable.clubId, clubId), eq(clubMembersTable.clerkId, adult)));
+      const r = await req("PUT", `/api/clubs/${clubId}/members/${target!.id}/role`, mech, { role: "trainer" });
+      assert(r.status === 403, `mechanieker rolwijziging gaf ${r.status} (verwacht 403)`);
+    });
+
+    await scenario("O16. audit bevat geen gevoelige inhoud", async () => {
+      const rows = await db
+        .select()
+        .from(clubAuditLogTable)
+        .where(eq(clubAuditLogTable.clubId, clubId))
+        .orderBy(desc(clubAuditLogTable.createdAt))
+        .limit(50);
+      const banned = /gezondheid|blessure|medisch|password|token|geboortedatum/i;
+      for (const row of rows) {
+        const s = JSON.stringify(row.detail ?? {});
+        assert(!banned.test(s), `audit-detail bevat gevoelige inhoud: ${s.slice(0, 120)}`);
+      }
+    });
+
+    await scenario("O17. gelijktijdige acceptatie kan ledenlimiet niet overschrijden", async () => {
+      const { clubSubscriptionsTable, userProfilesTable } = await import("@workspace/db");
+      // Twee uitnodigingen, precies één vrije plek.
+      const inv1 = await req("POST", `/api/invitations`, beheer, { relationship: "club_member", clubId });
+      const inv2 = await req("POST", `/api/invitations`, beheer, { relationship: "club_member", clubId });
+      assert(inv1.status === 201 && inv2.status === 201, "uitnodigingen maken faalde");
+      const activeMembers = (
+        await db
+          .select()
+          .from(clubMembersTable)
+          .where(and(eq(clubMembersTable.clubId, clubId), eq(clubMembersTable.role, "member")))
+      ).filter((m) => !m.endedAt).length;
+      const [prevSub] = await db
+        .select()
+        .from(clubSubscriptionsTable)
+        .where(eq(clubSubscriptionsTable.clubId, clubId));
+      await db
+        .update(clubSubscriptionsTable)
+        .set({ maxMembers: activeMembers + 1 })
+        .where(eq(clubSubscriptionsTable.clubId, clubId));
+      const u1 = "wp03-race-a";
+      const u2 = "wp03-race-b";
+      try {
+        for (const [u, i] of [[u1, 1], [u2, 2]] as const) {
+          await db
+            .insert(userProfilesTable)
+            .values({ clerkId: u, email: `${u}@example.test`, displayName: `WP03 Race ${i}` })
+            .onConflictDoNothing();
+        }
+        const [a, b] = await Promise.all([
+          req("POST", `/api/invitations/${(inv1.json as { token: string }).token}/accept`, u1),
+          req("POST", `/api/invitations/${(inv2.json as { token: string }).token}/accept`, u2),
+        ]);
+        const okCount = [a, b].filter((r) => r.status === 200).length;
+        assert(okCount <= 1, `beide accepts slaagden ondanks één vrije plek (${a.status}/${b.status})`);
+        const rows = (
+          await db
+            .select()
+            .from(clubMembersTable)
+            .where(and(eq(clubMembersTable.clubId, clubId), eq(clubMembersTable.role, "member")))
+        ).filter((m) => !m.endedAt);
+        assert(rows.length <= activeMembers + 1, `ledenlimiet overschreden: ${rows.length} > ${activeMembers + 1}`);
+      } finally {
+        await db
+          .update(clubSubscriptionsTable)
+          .set({ maxMembers: prevSub?.maxMembers ?? null })
+          .where(eq(clubSubscriptionsTable.clubId, clubId));
+        for (const u of [u1, u2]) {
+          await db.delete(clubMembersTable).where(and(eq(clubMembersTable.clubId, clubId), eq(clubMembersTable.clerkId, u)));
+          await db.delete(userProfilesTable).where(eq(userProfilesTable.clerkId, u));
+        }
+      }
+    });
+
+    await scenario("O18. legacy toewijzing zonder venster blijft gelijkwaardig actief", async () => {
+      // Data-copy-gelijkwaardigheid: rijen van vóór WP-03 (startsOn/endsOn/seasonId
+      // allemaal NULL) moeten zich exact zo gedragen als vóór de migratie.
+      const { clubTeamsTable } = await import("@workspace/db");
+      const [team] = await db
+        .select()
+        .from(clubTeamsTable)
+        .where(eq(clubTeamsTable.clubId, clubId));
+      assert(team, "fixtureclub heeft geen team");
+      const [legacy] = await db
+        .insert(clubTrainerAssignmentsTable)
+        .values({ clubId, trainerClerkId: t2, teamId: team!.id })
+        .returning();
+      try {
+        const ids = await assignedAthleteIds(clubId, t2);
+        assert(ids.length > 0, "legacy toewijzing zonder venster gaf geen toegang");
+      } finally {
+        await db.delete(clubTrainerAssignmentsTable).where(eq(clubTrainerAssignmentsTable.id, legacy!.id));
+      }
+    });
+
     // ── Stap 5: uitnodigingen & limieten ─────────────────────────────────────
     await scenario("O11. pakketlimiet geldt óók bij accepteren", async () => {
       const { clubSubscriptionsTable, userProfilesTable } = await import("@workspace/db");
