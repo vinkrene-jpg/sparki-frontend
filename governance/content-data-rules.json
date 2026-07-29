@@ -1,0 +1,18 @@
+{
+  "schema": "sparki.governance.content_data_rules",
+  "version": 1,
+  "generated": "2026-07-29",
+  "auditCommit": "7e2f1983",
+  "regels": [
+    { "id": "CD-01", "regel": "Alle persoonlijke metrics herleidbaar (provenance); geen mock/seed/demo/hardcoded persoonsdata.", "bron": "Master Plan global_data_trust", "huidigeStaat": "Nageleefd in kern (data-origin framework, bronnenregister); geen mockdata aangetroffen in geauditeerde schermen." },
+    { "id": "CD-02", "regel": "Ontbrekende data = eerlijke lege toestand; API-fout = expliciete niet-beschikbaar-toestand.", "huidigeStaat": "DsState/LegeGrafiek/MissingInputNotice breed toegepast; classificatie BEGRIJPELIJK." },
+    { "id": "CD-03", "regel": "AI mag uitleggen/voorstellen, nooit rekenen aan belasting/zones/rechten/entitlements.", "huidigeStaat": "Nageleefd via engine-laag + centrale AI-gateway (aiMessage)." },
+    { "id": "CD-04", "regel": "Technische termen (TSS/CTL/ATL/TSB/IF/NP) altijd met uitleglaag.", "huidigeStaat": "GESCHONDEN op onderdelen: training-day-home.tsx (IF, TSS, CTL/ATL/TSB zonder UitlegDot), train.tsx (W NP, TSS), core-analyse.tsx tabelheaders. Classificatie TE_TECHNISCH.", "bewijs": "reports/SPARKI_GOVERNOR_FASE1_CONTENT_DATA_ANALYSE.md" },
+    { "id": "CD-05", "regel": "Geen medische claims; onderscheid zelfgerapporteerd vs medisch bevestigd.", "huidigeStaat": "Nageleefd (health-flow: 'Registratie is géén medisch dossier')." },
+    { "id": "CD-06", "regel": "Grafieken: eenheid en as-label aanwezig; UNKNOWN stuurt geen advies.", "huidigeStaat": "GEDEELTELIJK GESCHONDEN: vrijwel alle Recharts-Y-assen zonder eenheidslabel (eenheid alleen in tooltip/titel) = ONDUIDELIJKE_AS_OF_EENHEID; materiaalcoach toont bij confidence=unknown toch een advies-samenvatting = UNKNOWN_STUURT_TOCH_ADVIES (René-review)." },
+    { "id": "CD-07", "regel": "Nieuws/feed alleen wielrelevant; in-app reader met excerpt+attributie.", "huidigeStaat": "Nageleefd (kennisbank-relevantiefilter met woordgrenzen; in-app reader)." },
+    { "id": "CD-08", "regel": "Abonnementsteksten claimen niets dat niet geleverd wordt; dataverlies bij downgrade verboden.", "huidigeStaat": "upgrade-nudge.tsx claims kloppen met GO_FEATURE_KEYS; downgrade-dataverlies niet aan de orde (geen live billing)." },
+    { "id": "CD-09", "regel": "Nieuwe/gewijzigde copy niet hardcoded in componenten (i18n-key-catalog).", "huidigeStaat": "GESCHONDEN productbreed: alle UI-copy hard-coded NL; ook LLM-prompts hebben per-domein Nederlandse taalregels. MASTER_PLAN_CONFLICT (bewust: fundament nog niet gebouwd)." },
+    { "id": "CD-10", "regel": "Datums in Amsterdamse lokale tijd; geen UTC-off-by-one.", "huidigeStaat": "WP-A05 heeft 5 UTC-datumvallen hersteld; localISODate is de norm." }
+  ]
+}

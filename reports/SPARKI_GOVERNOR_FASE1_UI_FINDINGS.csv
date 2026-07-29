@@ -1,0 +1,16 @@
+id;scherm;viewport;classificatie;bevinding;bewijs
+V-01;/analyse;1440x900+1920x1080;INCONSISTENTE_COMPONENTEN;licht thema wijkt af van verplicht dark theme;screenshots/analyse/1440x900/boven.jpg
+V-02;navigatie;desktop vs mobiel;RENE_REVIEW_NODIG;zijbalk en onderbalk bieden verschillende kernbestemmingen (Wedstrijd/Meer/Ontdekken);screenshots + chapters.ts
+V-03;/train;320x568;VISUEEL_GOED_GENOEG_VOOR_VERDERE_REVIEW;doelkaart leesbaar op kleinste viewport;screenshots/train/320x568/boven.jpg
+V-04;/vandaag;390x844;VISUEEL_GOED_GENOEG_VOOR_VERDERE_REVIEW;één leidend momentblok, duidelijke hiërarchie;screenshots/vandaag
+V-05;/meer;390x844;VISUEEL_GOED_GENOEG_VOOR_VERDERE_REVIEW;duidelijke groepen, lange lijst acceptabel;screenshots/meer/390x844/boven.jpg
+V-06;/routes;1440x900;VISUEEL_GOED_GENOEG_VOOR_VERDERE_REVIEW;kaart en acties boven de vouw;screenshots/routes/1440x900/boven.jpg
+V-07;analyse/activiteiten/you;mobiel;BELANGRIJKE_INFO_VERSTOPT (risico);pagina's >4 schermhoogtes, detail vergt veel scrollen;evidence/_capture-log.txt (hoogtes)
+V-08;alle;alle;HUIDIGE_STAAT_NIET_GOEDGEKEURD;nulmeting is geen referentie;n.v.t.
+C-01;training-day-home;n.v.t.;TE_TECHNISCH;IF/CTL/ATL/TSB zonder UitlegDot;training-day-home.tsx r485-532
+C-02;train;n.v.t.;TE_TECHNISCH;TSS/NP zonder uitleg;train.tsx r66-68
+C-03;core-analyse;n.v.t.;TE_TECHNISCH;tabelheaders zonder directe uitleg;core-analyse.tsx r1702-1807
+C-05;/train;n.v.t.;VERKEERDE_CONTEXT (licht);paginatitel Plan vs menu-label Trainen;screenshots/train
+C-08;UI-breed;n.v.t.;MASTER_PLAN_CONFLICT;copy hard-coded NL, geen i18n-catalog;code-breed
+D-01;Recharts-grafieken (~7);n.v.t.;ONDUIDELIJKE_AS_OF_EENHEID;Y-assen zonder eenheidslabel;core-analyse.tsx e.a.
+D-07;materiaalcoach;n.v.t.;UNKNOWN_STUURT_TOCH_ADVIES;advies-samenvatting getoond bij confidence=unknown;material-coach component

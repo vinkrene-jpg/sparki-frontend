@@ -1,0 +1,19 @@
+{
+  "schema": "sparki.governance.design_rules",
+  "version": 1,
+  "generated": "2026-07-29",
+  "auditCommit": "7e2f1983",
+  "designsysteem": { "tokens": "artifacts/sparki/src/index.css @theme + .type-* klassen", "primitieven": "src/components/ds/*", "devGalerij": "/_dev/design", "achtergrond": "cinematic bg, glass cards 82%, OLED-safe, geen flat-black/wit" },
+  "regels": [
+    { "id": "DR-01", "regel": "Dark theme verplicht (Master Plan interface_contract).", "huidigeStaat": "GESCHONDEN op /analyse desktop: lichte kaarten/witte achtergrond, wijkt af van rest van de app.", "bewijs": "artifacts/product-governor/fase1/7e2f1983/screenshots/analyse/1440x900/boven.jpg", "classificatie": "INCONSISTENTE_COMPONENTEN + RENE_REVIEW_NODIG" },
+    { "id": "DR-02", "regel": "Eén primaire actie per scherm; leidend Momentblok op Vandaag (aandachtswet).", "huidigeStaat": "Nageleefd op Vandaag (single-leader chain)." },
+    { "id": "DR-03", "regel": "Max 5 directe bestemmingen mobiel.", "huidigeStaat": "Nageleefd: sporter-onderbalk = exact 5." },
+    { "id": "DR-04", "regel": "Navigatie gebruikersconfigureerbaar met versiebeheer en restore-to-V0.", "huidigeStaat": "NIET GEBOUWD. MASTER_PLAN_MISSING." },
+    { "id": "DR-05", "regel": "Geen ongebruikte capability-kaarten.", "huidigeStaat": "Niet aangetroffen in geauditeerde schermen (page-intelligence-principe actief)." },
+    { "id": "DR-06", "regel": "Centrale componenten, geen big-bang rebuilds; CommercialShell is enige chrome-eigenaar.", "huidigeStaat": "Nageleefd." },
+    { "id": "DR-07", "regel": "Desktop en mobiel dezelfde kernmogelijkheden.", "huidigeStaat": "AFWIJKING: desktop-zijbalk (Vandaag/Plan/Rijden/Activiteiten/Analyse/Ontdekken) ≠ mobiele onderbalk (Vandaag/Plan/Rijden/Analyse/Meer); Wedstrijd ontbreekt in desktop-zijbalk, Meer bestaat niet op desktop.", "classificatie": "RENE_REVIEW_NODIG" },
+    { "id": "DR-08", "regel": "Veilige schermranden mobiel; modals via portal boven onderbalk (z-70+).", "huidigeStaat": "Nageleefd (modal-layering-conventie)." },
+    { "id": "DR-09", "regel": "Belangrijke info niet pas na meerdere schermhoogtes.", "huidigeStaat": "Capture-log registreert paginahoogtes per viewport; lange pagina's (o.a. analyse, routes) hebben kerninfo boven de vouw. Geen kritieke schending vastgesteld in steekproef; volledige beoordeling per scherm = fase 3." }
+  ],
+  "status": "Nulmeting — huidige staat NIET goedgekeurd als visuele referentie."
+}

@@ -1,0 +1,15 @@
+rol_of_abonnement;type;in_code;eigen_interface;status;afwijking
+sporter;rol;athlete;volledige app (5 nav, 11 hoofdstukken);COMPLEET;nee
+ouder;rol;parent;ParentHome + 4-item nav;AANWEZIG;nee
+trainer;rol;coach;CoachHome + cockpit + bulkplanner;AANWEZIG;trainer/hoofdtrainer niet onderscheiden
+hoofdtrainer;rol;ontbreekt;geen;NIET_GEBOUWD;ja
+clubbeheerder;rol;clubrechten (geen platformrol);/club/beheer;GEDEELTELIJK;ja
+ploegleider;rol;ontbreekt;volgauto (mobiel) + wedstrijd-room;GEDEELTELIJK;ja
+mechanieker;rol;ontbreekt;/mechanieker is sporter-hoofdstuk;NIET_ALS_ROL;ja
+admin;rol;boolean SPARKI_ADMIN_IDS;/admin + ops + health + tester-QR;AANWEZIG;nee
+gratis;abonnement;FREE;basisapp + upgrade-nudges;AANWEZIG;nee
+go;abonnement;GO (4 feature-keys);autonomous_training, race_intel, ai_observations, performance_lab;AANWEZIG;conflict met Master Plan (coaching hoort in COMPLETE)
+compleet;abonnement;COMPLETE (tier bestaat);geen eigen feature-verdeling (commercial_tiers uit);GEDEELTELIJK;ja
+club;abonnement;ontbreekt;geen;NIET_GEBOUWD;ja (opdracht vs Master Plan-conflict)
+team;abonnement;ontbreekt;geen;NIET_GEBOUWD;ja (opdracht vs Master Plan-conflict)
+legacy;modus;legacy_unrestricted;volledige toegang bestaande gebruikers;BEWUST_BESLUIT;nee

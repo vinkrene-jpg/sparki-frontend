@@ -1,0 +1,17 @@
+onderdeel;classificatie;toelichting
+i18n-fundament (key-catalog);MASTER_PLAN_MISSING;copy hard-coded NL in UI en LLM-prompts
+krachttraining CYCLING_STRENGTH_TRAINING;MASTER_PLAN_MISSING;spec ready, niet gebouwd
+trainer-paspoort/campus/search;MASTER_PLAN_MISSING;geen code-spoor
+gebruikersconfigureerbare navigatie + restore-to-V0;MASTER_PLAN_MISSING;niet gebouwd
+24 EU-talen + landensites;MASTER_PLAN_MISSING;besluit EU-breed, bouw niet gestart
+8 platformrollen;PARTIAL_IMPLEMENTATION;3 rollen + admin-boolean in code
+club/team-functies TEAM_LEADER;PARTIAL_IMPLEMENTATION;volgauto/wedstrijd-room deels
+jeugd-release-scope PARENT_MINOR;PARTIAL_IMPLEMENTATION;ouderomgeving bestaat, release-eisen niet integraal geverifieerd
+commercieel model live (Stripe, trial);PARTIAL_IMPLEMENTATION+DEFERRED;flags uit, wacht op akkoord
+GO vs COMPLETE feature-verdeling;CONFLICT_REQUIRES_REVIEW;code gate't coaching onder GO_FEATURE_KEYS
+club/team-abonnementen;CONFLICT_REQUIRES_REVIEW;opdracht noemt ze, Master Plan-model en code kennen ze niet
+dark theme /analyse desktop;CONFLICT_REQUIRES_REVIEW;licht thema vs verplicht dark
+photo-lab;HIDDEN_IMPLEMENTATION;werkende route zonder enige ingang
+game-laag nieuwbouw;SUPERSEDED;removed, runtimes behouden
+multisport;DEFERRED;expliciet besluit
+geluid/photo-lab/rit-verhaal/bordjes/world als plan-eis;SOURCE_EVIDENCE_MISSING;wel eerdere René-opdrachten, geen expliciete v3.02-regel gevonden

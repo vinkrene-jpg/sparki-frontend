@@ -1,0 +1,39 @@
+id;naam;route;type;rol;abonnement;flag;bereikbaarheid;stappen;mobiel;desktop;status;bewijs
+vandaag;Vandaag;/vandaag;scherm;sporter;FREE;commercial_shell;DIRECT_BEREIKBAAR;0;ja;ja;FUNCTIONALLY_PRESENT;screenshots/vandaag
+train;Trainen/Plan;/train;scherm;sporter;FREE (plan-generatie GO);autonomous_training;DIRECT_BEREIKBAAR;0;ja;ja;FUNCTIONALLY_PRESENT;screenshots/train
+routes;Routes;/routes;scherm;sporter;FREE;route_planner;DIRECT_BEREIKBAAR;0;ja;ja;FUNCTIONALLY_PRESENT;screenshots/routes
+races;Wedstrijd;/races;scherm;sporter;FREE (intel GO);race_intel;DIRECT_BEREIKBAAR mobiel / URL desktop;0;ja;deels;FUNCTIONALLY_PRESENT;screenshots/races
+meer;Meer;/meer;menu;sporter;FREE;;DIRECT_BEREIKBAAR;0;ja;nee (zijbalk);FUNCTIONALLY_PRESENT;screenshots/meer
+analyse;Analyse;/analyse;scherm;sporter;FREE (lab-onderdelen GO);performance_lab;BEREIKBAAR_IN_1_STAP;1;ja;ja;FUNCTIONALLY_PRESENT;screenshots/analyse
+activiteiten;Activiteiten;/activiteiten;scherm;sporter;FREE;rit_verhaal (deel);BEREIKBAAR_IN_1_STAP;1;ja;ja;FUNCTIONALLY_PRESENT;screenshots/activiteiten
+kalender;Kalender;/kalender;scherm;sporter;FREE;;BEREIKBAAR_IN_1_STAP;1;ja;ja;FUNCTIONALLY_PRESENT;screenshots/kalender
+you;Jij;/you;scherm;sporter;FREE;;BEREIKBAAR_IN_1_STAP;1;ja;ja;FUNCTIONALLY_PRESENT;screenshots/you
+feed;Ontdekken;/feed;scherm;sporter;FREE;knowledge_base (deel);BEREIKBAAR_IN_1_STAP;1;ja;ja;FUNCTIONALLY_PRESENT;screenshots/feed
+samen;Samen;/samen;scherm;sporter;FREE;;BEREIKBAAR_IN_1_STAP;1;ja;ja;FUNCTIONALLY_PRESENT;screenshots/samen
+lichaam;Lichaam;/lichaam;scherm;sporter;FREE;;BEREIKBAAR_IN_1_STAP;1;ja;ja;FUNCTIONALLY_PRESENT;screenshots/lichaam
+mechanieker;Mechanieker;/mechanieker;scherm;sporter;FREE;;BEREIKBAAR_IN_1_STAP;1;ja;ja;FUNCTIONALLY_PRESENT;screenshots/mechanieker
+kennis;Kennis;/kennis;scherm;sporter;FREE;knowledge_base;BEREIKBAAR_IN_1_STAP;1;ja;ja;FUNCTIONALLY_PRESENT;screenshots/kennis
+paspoort;Sportpaspoort;/paspoort;scherm;sporter;FREE;;BEREIKBAAR_IN_1_STAP;1;ja;ja;FUNCTIONALLY_PRESENT;screenshots/paspoort
+klimmen;Klimmenverkenner;/klimmen;scherm;sporter;FREE;climb_explorer;BEREIKBAAR_IN_1_STAP;1;ja;ja;DEFERRED_BY_DECISION;screenshots/klimmen
+geluid;Geluid;/geluid;scherm;sporter;FREE;;BEREIKBAAR_IN_1_STAP;1;ja;ja;FUNCTIONALLY_PRESENT;screenshots/geluid
+connect;Sparki Connect;/connect;scherm;sporter;FREE;strava/garmin;BEREIKBAAR_IN_1_STAP;1;ja;ja;FUNCTIONALLY_PRESENT;screenshots/connect
+support;Hulp & ondersteuning;/support;scherm;alle;FREE;;BEREIKBAAR_IN_1_STAP;1;ja;ja;FUNCTIONALLY_PRESENT;screenshots/support
+club;Club;/club;scherm;sporter (lid);FREE;;BEREIKBAAR_IN_1_STAP (conditioneel);1;ja;ja;FUNCTIONALLY_PRESENT;screenshots/club
+club-beheer;Clubbeheer;/club/beheer;scherm;clubbeheerrechten;FREE;;BEREIKBAAR_IN_2_STAPPEN;2;ja;ja;FUNCTIONALLY_PRESENT;code
+sprinten;Bordjes-sprinten;/sprinten;scherm;sporter;FREE;;BEREIKBAAR_IN_2_STAPPEN;2;ja;ja;DEFERRED_BY_DECISION;screenshots/sprinten
+journey;Journey;/journey;scherm;sporter;FREE;;BEREIKBAAR_IN_2_STAPPEN;2;ja;ja;FUNCTIONALLY_PRESENT;screenshots/journey
+wedstrijd-room;Wedstrijd-room;/wedstrijd-room;scherm;sporter;FREE;;BEREIKBAAR_IN_2_STAPPEN;2;ja;ja;FUNCTIONALLY_PRESENT;screenshots/wedstrijd-room
+invitations;Uitnodigen;/invitations;scherm;coach/parent;FREE;coach_portal/parent_portal;DIRECT_BEREIKBAAR;0;ja;ja;FUNCTIONALLY_PRESENT;screenshots/invitations
+coach-cockpit;Coach-cockpit;/coach/athletes/:id/cockpit;scherm;coach;FREE;coach_portal;BEREIKBAAR_IN_1_STAP;1;ja;ja;FUNCTIONALLY_PRESENT;code
+admin;Beheer;/admin;scherm;admin;n.v.t.;;BEREIKBAAR_IN_1_STAP;1;ja;ja;FUNCTIONALLY_PRESENT;screenshots/admin
+admin-ops;Ops-log;/admin/ops;scherm;admin;n.v.t.;;BEREIKBAAR_IN_2_STAPPEN;2;ja;ja;FUNCTIONALLY_PRESENT;code
+tester-qr;Tester-QR;/tester-qr;scherm;admin;n.v.t.;testing_tools;BEREIKBAAR_IN_2_STAPPEN;2;ja;ja;FUNCTIONALLY_PRESENT;code
+photo-lab;Photo Lab;/photo-lab;scherm;sporter;FREE;;VERWEESD;-;ja;ja;KNOWN_HIDDEN;screenshots/photo-lab
+privacy;Privacy;/privacy;scherm;publiek;n.v.t.;;ALLEEN_VIA_DIRECTE_URL;-;ja;ja;KNOWN_HIDDEN;screenshots/privacy
+voorwaarden;Voorwaarden;/voorwaarden;scherm;publiek;n.v.t.;;ALLEEN_VIA_DIRECTE_URL;-;ja;ja;KNOWN_HIDDEN;screenshots/voorwaarden
+profiel;Openbaar profiel;/profiel/:clerkId;scherm;sporter;FREE;;ALLEEN_VIA_DIRECTE_URL (dynamische links);-;ja;ja;TECHNICALLY_PRESENT;code
+start;Startoverzicht;/;scherm;alle (rolhome);FREE;;DIRECT_BEREIKBAAR;0;ja;ja;FUNCTIONALLY_PRESENT;screenshots
+onboarding;Onboarding V2;flow;flow;nieuw;FREE;;automatisch;-;ja;ja;FUNCTIONALLY_PRESENT;code+tests
+mobiel-record;Rit opnemen;expo /record;scherm;sporter;GO (plan);;DIRECT_BEREIKBAAR;0;ja;nee;FUNCTIONALLY_PRESENT;code
+mobiel-navigate;Navigatie-HUD;expo /navigate/[id];scherm;sporter;GO (plan);;BEREIKBAAR_IN_1_STAP;1;ja;nee;FUNCTIONALLY_PRESENT;code
+mobiel-ride;Ritoverzicht;expo /ride/[id];scherm;sporter;FREE;;BEREIKBAAR_IN_1_STAP;1;ja;nee;FUNCTIONALLY_PRESENT;code

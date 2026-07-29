@@ -1,0 +1,33 @@
+{
+  "schema": "sparki.governance.role_subscription_matrix",
+  "version": 1,
+  "generated": "2026-07-29",
+  "auditCommit": "7e2f1983",
+  "methode": "Statische code-analyse (chapters.ts, bottom-nav.tsx, entitlements.ts, requireCommercialFeature-gates). Live per-rol/per-abonnement browsertests waren niet mogelijk: workspace-Clerk is een dev-instance (sk_test) en er bestaan geen vaste testaccounts per rol/abonnement — eerlijke beperking, zie Governor fase 3.",
+  "rollen": {
+    "sporter": { "dbWaarde": "athlete", "onderbalk": ["/vandaag", "/train", "/routes", "/races", "/meer"], "hoofdstukken": 11, "meerItems": "11 + conditioneel club/admin + connect/support/analyse/kennis", "cockpit": "Vandaag/dag-homes + volledige app", "status": "COMPLEET" },
+    "ouder": { "dbWaarde": "parent", "onderbalk": ["/", "/feed", "/invitations", "/you"], "cockpit": "ParentHome (welzijn-dashboard gekoppelde sporters)", "rechten": "één rechtenlaag, minderjarig fail-closed", "status": "AANWEZIG_BEPERKT" },
+    "trainer": { "dbWaarde": "coach (geen onderscheid trainer/hoofdtrainer)", "onderbalk": ["/", "/invitations", "/you"], "cockpit": "CoachHome + /coach/athletes/:id/cockpit + bulk-planner", "status": "AANWEZIG — Master Plan-onderdelen TRAINER_PASSPORT, TRAINER_CAMPUS, TRAINER_SEARCH niet gebouwd" },
+    "hoofdtrainer": { "dbWaarde": "ontbreekt", "status": "NIET_GEBOUWD — geen rolonderscheid met trainer" },
+    "clubbeheerder": { "dbWaarde": "ontbreekt (clubrechten via club-lidmaatschapsrollen)", "ui": "/club/beheer voor beheerfuncties", "status": "GEDEELTELIJK — geen eigen platformrol/cockpit" },
+    "ploegleider": { "dbWaarde": "ontbreekt", "ui": "Volgauto-chauffeursmodus (mobiel), wedstrijd-room", "status": "GEDEELTELIJK" },
+    "mechanieker": { "dbWaarde": "ontbreekt", "ui": "/mechanieker is een sporter-hoofdstuk, geen aparte rol met eigen werkruimte", "status": "NIET_ALS_ROL_GEBOUWD" },
+    "admin": { "dbWaarde": "boolean via SPARKI_ADMIN_IDS + isHeadTester", "ui": "/admin, /admin/ops, /admin/health/:key, /tester-qr", "status": "AANWEZIG" }
+  },
+  "rolwissel": { "mechanisme": "activeRole in user_profiles; switchRole via MainMenu/UserContext", "menuVernieuwing": "chaptersForRole + navForRole zijn afgeleid van rol-state; geen aparte regressietest voor stale menu's na wissel gevonden (STATUS_ONBEKEND)" },
+  "abonnementen": {
+    "gratis": { "tier": "FREE", "krijgt": "basisapp; Go-features tonen upgrade-nudge (UI fail-open, server fail-closed)", "upgradeUitleg": "components/ds/upgrade-nudge.tsx — 'Al je huidige gegevens en gratis onderdelen blijven gewoon werken.'" },
+    "go": { "tier": "GO", "featureKeys": ["autonomous_training", "race_intel", "ai_observations", "performance_lab"], "serverGates": ["/api/training-plan/*", "/api/athlete/plan/generate", "/api/ai/workout-adjust", "/api/races/insight|intel|advice|dossier|checklist", "/api/insights/*", "/api/coach/analysis", "/api/ai/brief", "/api/ai/observations", "/api/core-prediction/:workoutId"] },
+    "compleet": { "tier": "COMPLETE", "status": "tier bestaat in code (commercialTier); onderscheid GO vs COMPLETE in feature-toewijzing is nog niet uitgewerkt — commercial_tiers-flag staat uit (CONFLICT_REQUIRES_REVIEW: Master Plan legt GO=navigatie-plus en COMPLETE=coaching vast, code gate't coaching-features onder GO_FEATURE_KEYS)" },
+    "club": { "status": "NIET_GEBOUWD als abonnement" },
+    "team": { "status": "NIET_GEBOUWD als abonnement" },
+    "legacy": { "modus": "legacy_unrestricted geeft bestaande gebruikers volledige toegang (bewuste carve-out)" }
+  },
+  "expliciteChecks": {
+    "eenAnalyseArchitectuur": "JA — alle analyse via lib/analyse-dashboard.ts + computeLoadSeries (geen drie engines).",
+    "basisbegrijpelijkheidNietAchterBetaalmuur": "JA — uitleglaag (UitlegDot) is niet gegate.",
+    "legePaginasDoorVerkeerdeEntitlement": "NIET AANGETROFFEN — UI faalt open met nudge, server 403 fail-closed.",
+    "upgradebannerOpInbegrepenFunctie": "NIET AANGETROFFEN in statische controle; live per-tier-test ontbreekt (fase 3).",
+    "masterPlanTierConflict": "Master Plan COMPLETE bevat vandaag/planning/training/coaching; code plaatst die achter GO_FEATURE_KEYS. Welke tier welke diepte krijgt = productbesluit (OD_001-sfeer). CONFLICT_REQUIRES_REVIEW."
+  }
+}

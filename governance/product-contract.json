@@ -1,0 +1,29 @@
+{
+  "schema": "sparki.governance.product_contract",
+  "version": 1,
+  "generated": "2026-07-29",
+  "auditCommit": "7e2f1983",
+  "livePublishCommit": "68df60f9",
+  "bronnen": ["SPARKI_AI_MASTER_PLAN_v3_02.yaml (attached_assets, geüpload 2026-07-29)", "SPARKI_PRODUCT_GOVERNOR_GEFASEERD_MET_RENE_REFERENTIES_2026-07-29.md", "actuele main-branch code", "docs/SPARKI_WPA05_KERNSTABILISATIE.md", "docs/SPARKI_WPA05_PRODUCTIEVERIFICATIE.md"],
+  "product": {
+    "naam": "Sparki",
+    "sport": "wielrennen (multisport DEFERRED)",
+    "actieveTaal": "nl-NL (Master Plan: 24 EU-talen bij volledige uitrol; i18n-fundament nu vereist, nog niet aanwezig)",
+    "platformen": { "web": "React+Vite PWA (artifacts/sparki)", "api": "Express (artifacts/api-server)", "mobiel": "Expo React Native (artifacts/sparki-mobile)" }
+  },
+  "vasteProductregels": [
+    "Primaire functies direct of via maximaal één logische tussenstap bereikbaar.",
+    "Belangrijke functies niet alleen onderaan een lange pagina.",
+    "Iedere route heeft eigenaar, rol, abonnement en logische ingang.",
+    "Bestaande functies verdwijnen niet zonder expliciet productbesluit.",
+    "Desktop en mobiel bieden dezelfde kernmogelijkheden logisch aan.",
+    "Geen mock/seed/demo/hardcoded persoonlijke data; eerlijke lege toestanden.",
+    "AI legt uit en stelt voor; deterministische engines beslissen (belasting, zones, rechten, entitlements).",
+    "Server-side afdwinging van rollen en entitlements."
+  ],
+  "rollen": { "inCode": ["athlete", "coach", "parent", "admin (boolean, geen rol)"], "inMasterPlan": ["ATHLETE", "TRAINER", "COACH", "PARENT_GUARDIAN", "CLUB_ADMIN", "TEAM_LEADER", "MECHANIC", "ADMINISTRATOR"], "gat": "5 Master Plan-rollen hebben geen eigen rol/interface in code: TRAINER (valt samen met coach), CLUB_ADMIN (deels via /club/beheer), TEAM_LEADER (deels via Volgauto, mobiel), MECHANIC (hoofdstuk, geen rol), hoofdtrainer-onderscheid ontbreekt." },
+  "abonnementen": { "inCode": { "tiers": ["FREE", "GO", "COMPLETE"], "legacyVarianten": ["sparki_go", "sparki_basic", "sparki_performance", "sparki_pro"], "goFeatureKeys": ["autonomous_training", "race_intel", "ai_observations", "performance_lab"], "modi": ["legacy_unrestricted", "subscription (fail-closed)"] }, "inMasterPlan": { "tiers": ["FREE €0", "GO €2,99/mnd of €29,90/jr", "COMPLETE €9,99/mnd of €99,90/jr"], "trial": "14 dagen COMPLETE, zonder kaart", "clubTeam": "Club-omgeving commercieel prioritair; apart Club/Team-abonnement niet als tier gedefinieerd in commercial_subscription_model" }, "gat": "Governor-opdracht noemt Gratis/Go/Compleet/Club/Team; code en Master Plan kennen alleen FREE/GO/COMPLETE — Club/Team-abonnement = CONFLICT_REQUIRES_REVIEW." },
+  "apiOppervlak": { "aantalRouters": "±40 routers onder /api (zie reports/SPARKI_GOVERNOR_FASE1_PRODUCTOPPERVLAK.md)", "authLagen": ["publiek (healthz, webhooks, legal-view)", "sessie (Clerk)", "requireCommercialFeature", "admin (SPARKI_ADMIN_IDS)"], "engines": "api-server src/engines/* facades; routes horen engines te importeren" },
+  "featureFlags": ["ai_observations", "strava", "garmin", "route_planner", "autonomous_training", "coach_portal", "parent_portal", "testing_tools", "premium", "knowledge_base", "rit_verhaal", "climb_explorer", "ai_foundation", "commercial_shell", "commercial_tiers", "stripe_checkout", "stripe_webhooks", "stripe_portal"],
+  "status": "CURRENT_AUDIT_SOURCE — geen goedgekeurde baseline"
+}
