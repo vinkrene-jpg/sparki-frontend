@@ -43,6 +43,7 @@ import StartPage from "@/pages/start"
 import MeerPage from "@/pages/core-meer"
 import SparkiConnectPage from "@/pages/sparki-connect"
 import ClubPage from "@/pages/club"
+import ClubBeheerPage from "@/pages/club-beheer"
 import PaspoortPage from "@/pages/paspoort"
 import KnowledgePage from "@/pages/knowledge"
 import KlimmenPage from "@/pages/klimmen"
@@ -436,6 +437,8 @@ export function DevPreview() {
     // flag-respecting path as VandaagPage in the real router.
     page = <CommercialToday />
     showNav = false
+  } else if (location.startsWith("/club/beheer")) {
+    page = <ClubBeheerPage />
   } else if (location.startsWith("/club")) {
     page = <ClubPage />
   } else if (location.startsWith("/paspoort")) {

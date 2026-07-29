@@ -698,6 +698,42 @@ function SeasonsTeamsSection({ clubId }: { clubId: number }) {
   )
 }
 
+// WP-03: beheerdashboard-signalen — eerlijke waarschuwingen over inrichting
+// en limietgebruik, berekend uit echte data (geen verzonnen cijfers).
+function BeheerSignalen({ clubId }: { clubId: number }) {
+  const { data: dash } = useClubDashboard(clubId)
+  const { data: seasons } = useClubSeasons(clubId)
+  const { data: subData } = useClubSubscription(clubId)
+
+  if (!dash || !seasons || !subData) return null
+  const warnings: string[] = []
+  if (!seasons.some((s) => s.status === "actief")) {
+    warnings.push("Er is geen actief seizoen. Maak er één aan zodat teams en toewijzingen een duidelijke periode hebben.")
+  }
+  if ((dash.teams ?? []).length === 0) {
+    warnings.push("Er zijn nog geen teams of trainingsgroepen. Leden kunnen daardoor niet worden ingedeeld.")
+  }
+  const sub = subData.subscription
+  if (sub?.maxMembers != null) {
+    const used = subData.counts.members
+    if (used >= sub.maxMembers) {
+      warnings.push(`Ledenlimiet bereikt (${used}/${sub.maxMembers}). Nieuwe leden worden geblokkeerd tot er ruimte is.`)
+    } else if (sub.maxMembers - used <= 2) {
+      warnings.push(`Bijna vol: ${used} van ${sub.maxMembers} ledenplekken in gebruik.`)
+    }
+  }
+  if (warnings.length === 0) return null
+  return (
+    <section aria-label="Inrichting" className="space-y-1.5">
+      {warnings.map((w, i) => (
+        <p key={i} className="rounded-xl border border-amber-300/25 bg-amber-300/[0.06] px-3.5 py-2.5 text-[12px] text-amber-200/90">
+          {w}
+        </p>
+      ))}
+    </section>
+  )
+}
+
 function PackageSection({ clubId, isOwner }: { clubId: number; isOwner: boolean }) {
   const { data } = useClubSubscription(clubId)
   const setPkg = useSetClubPackage(clubId)
@@ -794,6 +830,7 @@ export default function ClubBeheerPage() {
           </section>
         )}
 
+        <BeheerSignalen clubId={clubId} />
         {mine.club && <ClubSettingsSection club={mine.club} isOwner={myRole === "owner"} />}
         {mine.club && <JoinCodeSection club={mine.club} />}
         <InviteSection clubId={clubId} />
