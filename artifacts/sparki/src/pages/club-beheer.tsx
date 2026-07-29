@@ -12,6 +12,8 @@ import {
   useCreateClubSeason,
   useSeasonAction,
   useCreateClubTeam,
+  useClubInvitations,
+  useRevokeInvitation,
   useSetMemberRole,
   useEndMembership,
   useCreateClubTraining,
@@ -268,8 +270,18 @@ function LocationsSection({ clubId }: { clubId: number }) {
   )
 }
 
+const INVITE_STATUS_LABELS: Record<string, string> = {
+  pending: "openstaand",
+  accepted: "geaccepteerd",
+  declined: "afgewezen",
+  revoked: "ingetrokken",
+  expired: "verlopen",
+}
+
 function InviteSection({ clubId }: { clubId: number }) {
   const invite = useCreateClubInvite()
+  const { data: invitations } = useClubInvitations(clubId)
+  const revoke = useRevokeInvitation(clubId)
   const [relationship, setRelationship] = useState("club_member")
   const [email, setEmail] = useState("")
   const [token, setToken] = useState<string | null>(null)
@@ -331,6 +343,29 @@ function InviteSection({ clubId }: { clubId: number }) {
             >
               Kopieer link
             </button>
+          </div>
+        )}
+        {(invitations ?? []).length > 0 && (
+          <div className="mt-3 border-t border-white/10 pt-2">
+            <p className="mb-1 text-[11px] uppercase tracking-wide text-white/35">Verstuurde uitnodigingen</p>
+            <div className="space-y-1">
+              {(invitations ?? []).slice(0, 12).map((inv) => (
+                <div key={inv.id} className="flex items-center justify-between gap-2 text-[11px]">
+                  <span className="min-w-0 truncate text-white/60">
+                    {inv.email ?? "linkuitnodiging"} · {inv.relationship === "club_trainer" ? "trainer" : inv.relationship === "club_parent" ? "ouder" : "lid"}
+                  </span>
+                  <span className={inv.status === "pending" ? "text-amber-300/80" : "text-white/40"}>
+                    {INVITE_STATUS_LABELS[inv.status] ?? inv.status}
+                  </span>
+                  {inv.status === "pending" && (
+                    <button
+                      onClick={() => revoke.mutate(inv.id)}
+                      className="shrink-0 rounded-lg border border-white/15 px-2 py-0.5 text-[10px] text-white/50 hover:border-rose-300/40 hover:text-rose-200"
+                    >Intrekken</button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

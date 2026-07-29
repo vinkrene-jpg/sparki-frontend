@@ -355,6 +355,37 @@ export function useCreateClubTeam(clubId: number | null) {
   })
 }
 
+// WP-03: uitnodigingenoverzicht (statussen + intrekken).
+export type InvitationRow = {
+  id: number
+  token: string
+  relationship: string
+  clubId: number | null
+  email: string | null
+  status: "pending" | "accepted" | "declined" | "revoked" | "expired"
+  expiresAt: string | null
+  createdAt: string
+}
+
+export function useClubInvitations(clubId: number | null, enabled = true) {
+  return useQuery<InvitationRow[]>({
+    queryKey: ["invitations", "club", clubId],
+    queryFn: async () => {
+      const rows = await apiFetch<InvitationRow[]>(`/api/invitations`)
+      return rows.filter((r) => r.clubId === clubId)
+    },
+    enabled: clubId != null && enabled,
+  })
+}
+
+export function useRevokeInvitation(clubId: number | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => apiFetch(`/api/invitations/${id}/revoke`, { method: "POST" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["invitations", "club", clubId] }),
+  })
+}
+
 export function useSetMemberRole(clubId: number | null) {
   const qc = useQueryClient()
   return useMutation({

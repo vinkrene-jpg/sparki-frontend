@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { randomBytes } from "node:crypto";
-import { eq, and, desc, lt, isNull } from "drizzle-orm";
+import { eq, and, desc, lt, isNull, sql } from "drizzle-orm";
 import {
   db,
   invitationsTable,
@@ -88,6 +88,7 @@ function publicView(inv: Invitation) {
     createdByRole: inv.createdByRole,
     targetRole: inv.targetRole,
     relationship: inv.relationship,
+    clubId: inv.clubId,
     email: inv.email,
     status: inv.status,
     acceptedByClerkId: inv.acceptedByClerkId,
@@ -464,6 +465,13 @@ router.post("/:token/accept", requireAuth, async (req, res) => {
         } else {
           // Pakketlimieten óók bij accepteren afdwingen: een eerder gemaakte
           // uitnodiging mag een volgeraakte club niet alsnog overschrijden.
+          // WP-03: advisory xact-lock per club serialiseert gelijktijdige
+          // accepts, zodat de laatste plek niet dubbel vergeven kan worden
+          // (lock blijft staan tot commit; de volgende accept telt dan de
+          // zojuist toegevoegde rij gewoon mee).
+          await tx.execute(
+            sql`SELECT pg_advisory_xact_lock(hashtext(${"club-capacity-" + inv.clubId}))`,
+          );
           const cap = await checkCapacityByClubId(
             inv.clubId,
             clubRole === "trainer" ? "trainer" : "member",

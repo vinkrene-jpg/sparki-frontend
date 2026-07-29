@@ -236,6 +236,61 @@ async function main() {
       assert(reactivate.status === 409, `afgesloten seizoen activeren gaf ${reactivate.status} (verwacht 409)`);
     });
 
+    // ── Stap 5: uitnodigingen & limieten ─────────────────────────────────────
+    await scenario("O11. pakketlimiet geldt óók bij accepteren", async () => {
+      const { clubSubscriptionsTable, userProfilesTable } = await import("@workspace/db");
+      // Uitnodiging maken terwijl er nog ruimte is.
+      const inv = await req("POST", `/api/invitations`, beheer, { relationship: "club_member", clubId });
+      assert(inv.status === 201, `uitnodiging maken gaf ${inv.status}`);
+      const token = (inv.json as { token: string }).token;
+      // Club daarna vol zetten: limiet = huidig aantal actieve leden.
+      const activeCount = (
+        await db
+          .select()
+          .from(clubMembersTable)
+          .where(and(eq(clubMembersTable.clubId, clubId), eq(clubMembersTable.role, "member")))
+      ).filter((m) => !m.endedAt).length;
+      const [prevSub] = await db
+        .select()
+        .from(clubSubscriptionsTable)
+        .where(eq(clubSubscriptionsTable.clubId, clubId));
+      await db
+        .update(clubSubscriptionsTable)
+        .set({ maxMembers: activeCount })
+        .where(eq(clubSubscriptionsTable.clubId, clubId));
+      try {
+        // Nieuwe gebruiker (geen clublid) accepteert → moet eerlijk blokkeren.
+        const newbie = "wp03-newbie-clerk";
+        await db
+          .insert(userProfilesTable)
+          .values({ clerkId: newbie, email: "wp03-newbie@example.test", displayName: "WP03 Newbie" })
+          .onConflictDoNothing();
+        const acc = await req("POST", `/api/invitations/${token}/accept`, newbie);
+        assert(acc.status === 409 || acc.status === 400, `accept in volle club gaf ${acc.status} (verwacht 409)`);
+        const [row] = await db
+          .select()
+          .from(clubMembersTable)
+          .where(and(eq(clubMembersTable.clubId, clubId), eq(clubMembersTable.clerkId, newbie)));
+        assert(!row, "lidmaatschap is toch aangemaakt ondanks volle club");
+        await db.delete(userProfilesTable).where(eq(userProfilesTable.clerkId, newbie));
+      } finally {
+        await db
+          .update(clubSubscriptionsTable)
+          .set({ maxMembers: prevSub?.maxMembers ?? null })
+          .where(eq(clubSubscriptionsTable.clubId, clubId));
+      }
+    });
+
+    await scenario("O12. uitnodiging intrekken; accept daarna faalt", async () => {
+      const inv = await req("POST", `/api/invitations`, beheer, { relationship: "club_member", clubId });
+      assert(inv.status === 201, `uitnodiging maken gaf ${inv.status}`);
+      const { id, token } = inv.json as { id: number; token: string };
+      const rv = await req("POST", `/api/invitations/${id}/revoke`, beheer);
+      assert(rv.status === 200, `intrekken gaf ${rv.status}`);
+      const acc = await req("POST", `/api/invitations/${token}/accept`, clerkIdFor("outsider"));
+      assert(acc.status >= 400, `accept na intrekken gaf ${acc.status}`);
+    });
+
     await scenario("O6. ploegleider kan lidmaatschap niet aanpassen", async () => {
       const m2 = await memberRow(t2);
       const role = await req("PUT", `/api/clubs/${clubId}/members/${m2.id}/role`, ploegleider, { role: "member" });
