@@ -87,6 +87,7 @@ import {
   cellKeyFor,
   routesInBbox,
 } from "../lib/route-library";
+import { maybeReplacePoorRoute } from "../lib/route-improvement";
 import { getRoutePois } from "../lib/route-pois";
 import {
   getRouteRemarks,
@@ -1134,6 +1135,11 @@ router.get("/bibliotheek", requireAuth, async (req, res) => {
         geometry: r.geometry,
         avgRating: r.avgRating,
         ratingCount: r.ratingCount,
+        // Eerlijke uitleg bij een verbeterde variant: welke terugkerende
+        // feedback de nieuwe kandidaatkeuze stuurde (null bij een startset-
+        // route of vervanging puur op score).
+        improveNote: r.improveNote,
+        generation: r.generation,
       })),
     });
   } catch (err) {
@@ -1286,6 +1292,13 @@ router.post("/bibliotheek/:id/commentaar", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Route niet gevonden" });
       return;
     }
+    // Verbeterlus: is de route nu aantoonbaar slecht beoordeeld (gem. < 3 bij
+    // ≥ 3 echte stemmen), dan vervangt Sparki hem op de achtergrond door een
+    // nieuwe echte variant — terugkerende opmerkingen sturen de keuze. De
+    // gebruiker wacht daar nooit op; falen laat de oude route gewoon staan.
+    void maybeReplacePoorRoute(id).catch((err) =>
+      req.log.error({ err, id }, "routes.bibliotheek.verbeteren failed"),
+    );
     res.json(result);
   } catch (err) {
     req.log.error({ err }, "routes.bibliotheek.commentaar failed");

@@ -72,7 +72,7 @@ function bikeProfile(bike: LibraryBikeType): RoutingProfile {
 
 // Deterministische seed per cel+type+afstand zodat een herstart dezelfde
 // opdracht doet (en de unieke index dubbele rijen tegenhoudt).
-function seedFor(cellKey: string, bike: string, targetKm: number): number {
+export function seedFor(cellKey: string, bike: string, targetKm: number): number {
   let h = 0;
   const s = `${cellKey}|${bike}|${targetKm}`;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 1_000_000;
@@ -273,6 +273,8 @@ export async function routesInBbox(bbox: {
         lte(routeLibraryTable.startLat, bbox.maxLat),
         gte(routeLibraryTable.startLon, bbox.minLon),
         lte(routeLibraryTable.startLon, bbox.maxLon),
+        // Vervangen routes verdwijnen uit de kaart; hun opvolger staat erin.
+        eq(routeLibraryTable.status, "actief"),
       ),
     )
     .orderBy(

@@ -28,6 +28,10 @@ export type LibraryRoute = {
   geometry: [number, number][]
   avgRating: number | null
   ratingCount: number
+  // Verbeterde variant: eerlijke uitleg welke terugkerende feedback de
+  // nieuwe route stuurde (null bij een gewone startset-route).
+  improveNote: string | null
+  generation: number
 }
 
 const BIKE_LABEL: Record<string, string> = {
@@ -458,6 +462,11 @@ export function RouteLibrarySection() {
                       <span>{Math.round(r.elevationGainM)} hm</span>
                     )}
                   </span>
+                  {r.improveNote && (
+                    <span className="mt-0.5 block text-[11px] text-cyan-200/60">
+                      {r.improveNote}
+                    </span>
+                  )}
                 </span>
                 {r.avgRating != null ? (
                   <span className="shrink-0 text-right">

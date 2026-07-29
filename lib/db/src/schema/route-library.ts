@@ -60,15 +60,29 @@ export const routeLibraryTable = pgTable(
     // score.
     avgRating: real("avg_rating"),
     ratingCount: integer("rating_count").notNull().default(0),
+    // Verbeterlus: een slecht beoordeelde route (gem. < 3 bij ≥ 3 stemmen)
+    // wordt vervangen door een nieuwe echte variant. De oude rij blijft
+    // bestaan (commentaar-historie) maar gaat op status "vervangen" en wijst
+    // naar zijn opvolger. Generatie telt op zodat de idempotentiesleutel
+    // (cel+fietstype+afstand+generatie) opvolgers toestaat.
+    status: text("status").notNull().default("actief"), // actief | vervangen
+    generation: integer("generation").notNull().default(1),
+    replacedById: integer("replaced_by_id"),
+    replacedAt: timestamp("replaced_at", { withTimezone: true }),
+    // Eerlijke uitleg bij een opvolger: welke terugkerende opmerkingen uit
+    // écht commentaar de nieuwe kandidaatkeuze stuurden. Null als de
+    // vervanging alleen op de lage score gebeurde.
+    improveNote: text("improve_note"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
   (t) => [
-    uniqueIndex("route_library_cell_bike_target_idx").on(
+    uniqueIndex("route_library_cell_bike_target_gen_idx").on(
       t.cellKey,
       t.bikeType,
       t.targetKm,
+      t.generation,
     ),
     index("route_library_cell_idx").on(t.cellKey),
     index("route_library_start_idx").on(t.startLat, t.startLon),
