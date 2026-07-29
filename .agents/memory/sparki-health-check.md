@@ -66,3 +66,12 @@ only, and no user-facing "AI" wording — Sparki-denkkracht, not "AI".
   `components/sparki/dev-preview.tsx` (not just `App.tsx`) to be reachable in dev.
 - wouter v3: `<Link>` renders the anchor itself — do NOT nest an `<a>` inside it
   (causes a hydration "anchor in anchor" warning). Put className on `<Link>`.
+
+## GraphHopper-abonnementsprobe (routing_graphhopper)
+- Probe doet één echte kleine round_trip met `racingbike` (3 km, Dam A'dam) — dat
+  dekt in ÉÉN aanvraag beide betaalde features die het gratis pakket mist
+  (premium profielen + flexible mode). Downgrade-signalen in de foutmelding:
+  "profile parameter can only be" en "flexible mode" → RED critical; 401/403 → RED
+  (sleutel verlopen); 429 → ORANGE. Geen sleutel → GREY.
+- Ad-hoc probe-run: tijdelijk testje in src/tests/ + `node ./scripts/run-test.mjs <naam>`
+  (pnpm exec tsx bestaat niet in dit werkruimte-pad).

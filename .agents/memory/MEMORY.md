@@ -65,8 +65,7 @@
 - [Sparki World architecture](sparki-world.md) — transparently-fictional Virtual Athletes island; cache-first Media Engine (promptKey UNIQUE, avatars carry slug/scenes don't); hard wall to real data; honest gaps.
 - [Sparki presentation variation](sparki-presentation-variation.md) — per-app-open seed rotates only ORDER + which real insight leads; numbers stable, urgent never demoted, seed-0 no-op.
 - [Local-date UTC off-by-one trap](local-date-utc-trap.md) — toISOString().slice(0,10) gives UTC date; for NL local calendar days build from local getters.
-- [Playwright op NixOS](nix-playwright-chromium.md) — bundled Chromium faalt (libnspr4); Nix-pakket `chromium` + executablePath werkt; .cache/ms-playwright opruimen.
-- [Long-running jobs in this sandbox](sandbox-background-jobs.md) — nohup/setsid bg jobs die at tool-call boundaries; run long one-shot jobs as a console workflow + poll.
+- Sandbox-traps: [Playwright op NixOS](nix-playwright-chromium.md) Nix `chromium` + executablePath; [bg-jobs](sandbox-background-jobs.md) nohup sterft op tool-call-grens ⇒ console workflow + poll.
 - [Sparki Ontdekken visual feed](sparki-ontdekken-visual-feed.md) — /feed kaartenfeed: pure engine + per-apparaat prefs; sfeerbeelden alleen uit atmosphere-lib, chip nooit dubbel; useKnowledge key bevat limit.
 - [Ontdekken Renners reel + dwell-gated learning](sparki-ontdekken-renners.md) — World swipe-reel surfaced in /feed; feed view-events must dwell-gate ~1.4s or fast scroll pollutes affinity.
 - [Sparki profile-consistency questions](sparki-profile-consistency.md) — notice→ask→confirm→correct; only user-set values questioned, write path re-verifies + compare-and-set, answers suppress ~45d.
@@ -146,8 +145,7 @@
 - [Sparki gedeelde layout-shell](sparki-shared-shell.md) — CommercialShell enige chrome-eigenaar; ScreenShell delegeert, nooit eigen shell/bg ([commerciële schil](sparki-commercial-shell.md): copy via één COMMERCIAL_COPY const, `hidden lg:` dropt mobiel).
 - [Sparki bewijsarchief](sparki-bewijsarchief.md) — evidence files live in bewijsarchief/ + SHA-256 inventory; never modify/delete; public export-zips only removed after byte-identical verified private copy.
 - [Sparki analyse-dashboard engine](sparki-analyse-dashboard.md) — /analyse én /you kerngrafieken moeten lib/analyse-dashboard.ts consumeren (summary mode), nooit her-implementeren; alsGetal voor API-decimals.
-- [Deploy image 8 GiB-limiet](deploy-image-size-limit.md) — image bevat werkmap+.git; export-zips & test-bundels weren, api-server deploy-build bundelt alleen server+jobs.
-- [Git history cleanup (filter-repo + LFS)](git-history-cleanup.md) — pip install git-filter-repo; verwijdert origin-remote (re-add na afloop); LFS-objecten blijven in .git/lfs tot handmatige delete; fix tracking branch vóór force-push.
+- Repo-omvang: [deploy image 8 GiB](deploy-image-size-limit.md) werkmap+.git in image, zips weren; [history cleanup](git-history-cleanup.md) filter-repo dropt origin-remote, LFS handmatig legen.
 - Prod-validatie: [publicatiecontrole](sparki-publish-check.md) bundle-grep + curl prod-JS; [ingelogde validatie](sparki-logged-in-validation.md) Clerk ticket-login; [browserchecks](prod-browser-checks.md) eigen Playwright in /tmp (runTest raakt dev-app).
 - [Sparki Gratis vs Go paywall](sparki-go-paywall.md) — GO_FEATURE_KEYS commercieel-only gate (nooit via flags); UI faalt open; admin.ts bad-merge-corruptie herstel uit parent-commit.
 - [Sparki Stripe-testomgeving](sparki-stripe-testmode.md) — flag+allowlist AND-grendels, webhook idempotent-in-tx (rollback = herleverbaar), fake gateway + echte HMAC-signaturen, rawBody-verify in app.ts.

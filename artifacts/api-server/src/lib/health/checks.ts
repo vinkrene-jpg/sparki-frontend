@@ -297,6 +297,123 @@ async function probeMapsOrs(): Promise<ProbeResult> {
   }
 }
 
+// GraphHopper (betaalde routeringsmotor). Honesty-contract: een ECHTE kleine
+// route-aanvraag met het racingbike-profiel én round_trip (flexible mode) —
+// precies de twee dingen die het gratis pakket mist. Verloopt of downgradet
+// het abonnement, dan wordt dat hier ROOD vóór een sporter het merkt.
+// Geen sleutel → GREY (eerlijk: niet gekoppeld), nooit nep-groen.
+async function probeRoutingGraphhopper(): Promise<ProbeResult> {
+  const start = performance.now();
+  const key = process.env.GRAPHHOPPER_API_KEY;
+  if (!key) {
+    return grey(
+      "De GraphHopper-routeringsmotor is nog niet gekoppeld (geen sleutel). Routegeneratie valt terug op de reserve-dienst.",
+      start,
+    );
+  }
+  try {
+    // Kleine echte rondrit (3 km, racefiets) vanaf de Dam in Amsterdam.
+    // round_trip vereist flexible mode; racingbike vereist het betaalde pakket.
+    const res = await fetchWithTimeout(
+      `https://graphhopper.com/api/1/route?key=${encodeURIComponent(key)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profile: "racingbike",
+          points: [[4.8936, 52.3731]],
+          algorithm: "round_trip",
+          "round_trip.distance": 3000,
+          "round_trip.seed": 1,
+          "ch.disable": true,
+          points_encoded: true,
+          instructions: false,
+          elevation: false,
+        }),
+      },
+    );
+    const took = ms(start);
+    const text = await res.text();
+    let rawMessage = "";
+    try {
+      const json = JSON.parse(text) as { message?: string };
+      rawMessage = json.message ?? "";
+    } catch {
+      rawMessage = text.slice(0, 300);
+    }
+    const lower = rawMessage.toLowerCase();
+    if (res.ok) {
+      return {
+        status: took > 5000 ? "orange" : "green",
+        passed: true,
+        responseTimeMs: took,
+        message:
+          took > 5000
+            ? "Routegeneratie (racefiets/rondrit) werkt, maar reageert traag."
+            : "Routegeneratie werkt: racefietsprofiel en rondritten zijn beschikbaar.",
+        technicalDetails: `GraphHopper round_trip racingbike antwoordde ${res.status} in ${took}ms`,
+      };
+    }
+    if (
+      lower.includes("profile parameter can only be") ||
+      lower.includes("flexible mode")
+    ) {
+      return {
+        status: "red",
+        passed: false,
+        responseTimeMs: took,
+        message:
+          "Het GraphHopper-abonnement is gedowngraded: racefiets/MTB-profielen of rondritten zijn niet meer beschikbaar. Elke routegeneratie faalt.",
+        technicalDetails: `GraphHopper antwoordde ${res.status}: ${rawMessage}`,
+        urgency: "critical",
+        remediation:
+          "Controleer het GraphHopper-abonnement (betaald pakket met racingbike/mtb en flexible mode vereist) op graphhopper.com.",
+      };
+    }
+    if (res.status === 401 || res.status === 403) {
+      return {
+        status: "red",
+        passed: false,
+        responseTimeMs: took,
+        message:
+          "De GraphHopper-sleutel wordt geweigerd (verlopen of ingetrokken). Sporters kunnen geen routes genereren.",
+        technicalDetails: `GraphHopper antwoordde ${res.status}: ${rawMessage}`,
+        urgency: "critical",
+        remediation:
+          "Controleer de GRAPHHOPPER_API_KEY en de abonnementsstatus op graphhopper.com.",
+      };
+    }
+    if (res.status === 429) {
+      return {
+        status: "orange",
+        passed: false,
+        responseTimeMs: took,
+        message:
+          "GraphHopper zit aan de aanvraaglimiet. Routegeneratie kan tijdelijk haperen.",
+        technicalDetails: `GraphHopper antwoordde 429: ${rawMessage}`,
+        urgency: "medium",
+        remediation:
+          "Controleer de dag-/maandlimiet van het GraphHopper-abonnement.",
+      };
+    }
+    return {
+      status: "orange",
+      passed: false,
+      responseTimeMs: took,
+      message: "De GraphHopper-routeringsmotor reageert onverwacht.",
+      technicalDetails: `GraphHopper antwoordde ${res.status}: ${rawMessage}`,
+    };
+  } catch (err) {
+    return {
+      status: "orange",
+      passed: false,
+      responseTimeMs: ms(start),
+      message: "De GraphHopper-routeringsmotor is even niet bereikbaar.",
+      technicalDetails: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
 // Strava connector. Direct per-user OAuth (not the Replit proxy). GREY when
 // OAuth is not configured; GREEN when configured (and, if an athlete is
 // connected, when their access token can be read/refreshed); ORANGE when a live
@@ -431,6 +548,21 @@ const coreChecks: CheckDefinition[] = [
     urgency: "high",
     remediation: "Controleer de ORS_API_KEY of de maandlimiet van de kaartdienst.",
     probe: probeMapsOrs,
+  },
+  {
+    key: "routing_graphhopper",
+    category: "maps",
+    title: "Routegeneratie (GraphHopper)",
+    description:
+      "Controleert met een echte kleine racefiets-rondrit of het GraphHopper-abonnement (sleutel, racefietsprofiel en rondritten) nog werkt.",
+    responsibleModule: "Routegeneratie (GraphHopper)",
+    userImpact: impact(
+      "Sporters kunnen geen trainingsroutes meer genereren; elke routeaanvraag faalt.",
+    ),
+    urgency: "critical",
+    remediation:
+      "Controleer de GRAPHHOPPER_API_KEY en het abonnement (betaald pakket met racingbike/mtb en flexible mode) op graphhopper.com.",
+    probe: probeRoutingGraphhopper,
   },
   {
     key: "notifications_inapp",
