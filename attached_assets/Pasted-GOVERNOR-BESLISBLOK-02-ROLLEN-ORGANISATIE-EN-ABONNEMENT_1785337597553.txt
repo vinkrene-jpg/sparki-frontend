@@ -1,0 +1,506 @@
+GOVERNOR BESLISBLOK 02 — ROLLEN-, ORGANISATIE- EN ABONNEMENTSFUNDAMENT
+
+DOEL
+
+Werk de goedgekeurde productrichting uit tot één samenhangend technisch en
+functioneel fundament voor:
+
+- Trainer
+- Hoofdtrainer/coach
+- Ouder/verzorger
+- Clubbeheerder
+- Ploegleider/teammanager
+- Mechanieker
+- Club
+- Team
+- Gratis / Go / Compleet met oplopende diepte
+
+Dit pakket inventariseert, modelleert, test en bouwt uitsluitend het gedeelde
+fundament. Bouw nog geen volledige eindwerkruimtes en zet geen betalingen live.
+
+BRONBASIS
+
+- actuele main
+- Governor fase 1 en 1B
+- Beslisblok 01, commit bc2ed37c
+- productie-verificatie commit c8327574
+- governance/rene-approved-references.json
+- reports/SPARKI_RENE_REFERENCE_LIBRARY.md
+- Master Plan v3.02
+- gecorrigeerde R1 Build Pack
+- reviewsets 05, 06, 07, 08 en 09
+
+VASTSTAANDE RICHTING
+
+1. Alle acht rollen blijven in scope.
+2. Trainer en hoofdtrainer worden als eerste volwaardige werkruimtes gebouwd.
+3. Daarna clubbeheerder plus ouder/jeugd.
+4. Daarna ploegleider/teammanager.
+5. Daarna mechanieker.
+6. Club is de laagdrempelige club- en acquisitielaag.
+7. Team is het betaalde professionele product.
+8. Gratis, Go en Compleet delen centrale engines en dezelfde
+   Analyse-architectuur.
+9. Abonnement bepaalt diepte, doel bepaalt prioriteit en taalniveau bepaalt
+   terminologie.
+10. Huidige schermen blijven CURRENT_STATE_NOT_APPROVED.
+11. Geen parallelle engines, dubbel datamodel of losse applicaties bouwen.
+
+FASE 1 — BRON- EN HERGEBRUIKINVENTARIS
+
+Inventariseer aantoonbaar welke bestaande onderdelen herbruikbaar zijn:
+
+TRAINER
+
+- CoachHome
+- coachcockpit per sporter
+- bulkplanner
+- uitnodigingen
+- berichten
+- planadoptie
+- deleniveaus
+- privénotities
+- bestaande isolatie- en rechtentests
+
+CLUB
+
+- clubomgeving
+- /club/beheer
+- clubrechten
+- ledenlimieten
+- uitnodigingen
+- jeugdconsent
+- teams of groepen
+- bestaande clubtests
+
+PLOEGLEIDER
+
+- wedstrijd-room
+- volgauto
+- live locatie
+- ETA
+- teamcontext
+- koersinformatie
+
+MECHANIEKER
+
+- materiaalomgeving
+- fietsen
+- onderdelen
+- kilometer-afgeleide slijtage
+- defectregistratie
+- fotoanalyse
+- materiaalcoach
+
+OUDER/JEUGD
+
+- ouderomgeving
+- koppelingen
+- consent
+- deleniveaus
+- welzijn
+- fail-closed regels
+
+Leg per onderdeel vast:
+
+- huidige route;
+- huidige rol;
+- eigenaar van de data;
+- rechten;
+- centrale engine/API;
+- herbruikbaar zonder wijziging;
+- gericht uit te breiden;
+- foutief gekoppeld;
+- ontbrekend.
+
+Maak:
+
+reports/governor-beslisblok-02/REUSE_INVENTORY.md
+reports/governor-beslisblok-02/REUSE_INVENTORY.csv
+
+FASE 2 — DEFINITIEF ROLLEN- EN BEVOEGDHEDENMODEL
+
+Werk één rechtenmodel uit zonder duplicatie.
+
+SPORTER
+
+- eigenaar van eigen sportdata;
+- beslist over koppelingen en delen;
+- ziet eigen training, analyse, herstel, materiaal en wedstrijden.
+
+TRAINER
+
+- begeleidt toegewezen sporters;
+- maakt en past plannen aan;
+- bekijkt alleen gedeelde gegevens;
+- schrijft privénotities;
+- mag geen clubbrede beheeracties uitvoeren.
+
+HOOFDTRAINER/COACH
+
+- alles van trainer;
+- beheert trainers binnen toegewezen organisatiecontext;
+- verdeelt sporters en groepen;
+- bewaakt plan- en coachkwaliteit;
+- ziet geen ongeautoriseerde medische of privédata;
+- kan trainerwerk beoordelen, maar niet stil overschrijven zonder audittrail.
+
+OUDER/VERZORGER
+
+- ziet alleen wettelijk en expliciet gedeelde jeugdgegevens;
+- geen automatisch volledig sportdossier;
+- consent en leeftijd fail-closed;
+- jonge sporter houdt passende eigen regie.
+
+CLUBBEHEERDER
+
+- beheert club, leden, groepen, rollen en uitnodigingen;
+- ziet operationele clubgegevens;
+- krijgt niet automatisch inhoudelijke trainings- of gezondheidsdata;
+- kan trainers, hoofdtrainers, ploegleiders en mechaniekers koppelen.
+
+PLOEGLEIDER/TEAMMANAGER
+
+- werkt binnen toegewezen team/selectie;
+- wedstrijdplanning, logistiek, aanwezigheid, live koerscontext en volgauto;
+- geen toegang tot volledige gezondheids- of privétrainergegevens.
+
+MECHANIEKER
+
+- beheert toegewezen fietsen, materiaalprofielen, defecten en onderhoud;
+- kan materiaalstatus per renner/team zien;
+- geen toegang tot trainings-, herstel- of medische inhoud behalve
+  functioneel noodzakelijke materiaalcontext.
+
+ADMIN/TESTBEHEER
+
+- technisch beheer, healthchecks, testrollen en audit;
+- geen stil gebruik van persoonlijke data buiten expliciete supportflow.
+
+Maak:
+
+governance/role-capability-matrix-v1.json
+reports/governor-beslisblok-02/ROLE_CAPABILITY_MODEL.md
+reports/governor-beslisblok-02/ROLE_CAPABILITY_MATRIX.csv
+
+Gebruik per capability minimaal:
+
+- role;
+- organisation_scope;
+- object_scope;
+- action;
+- allow/deny;
+- consent_required;
+- audit_required;
+- fail_closed_rule;
+- source_evidence.
+
+FASE 3 — ORGANISATIEMODEL CLUB EN TEAM
+
+Ontwerp één generiek organisatiemodel dat minimaal ondersteunt:
+
+- club;
+- team;
+- selectie;
+- groep;
+- seizoen;
+- lidmaatschap;
+- roltoewijzing;
+- trainer-toewijzing;
+- hoofdtrainer-toewijzing;
+- ouder-kindkoppeling;
+- ploegleider-toewijzing;
+- mechanieker-toewijzing.
+
+Regels:
+
+- één persoon kan meerdere rollen hebben;
+- rollen zijn contextgebonden aan organisatie, team of selectie;
+- geen globale roltoegang wanneer contexttoegang voldoende is;
+- verwijdering of einde koppeling trekt toegang onmiddellijk in;
+- jeugdrelaties blijven fail-closed;
+- iedere wijziging krijgt audittrail;
+- bestaande clubrechten hergebruiken waar technisch verantwoord;
+- geen tweede los club- of teammodel bouwen.
+
+Maak:
+
+governance/organisation-membership-model-v1.json
+reports/governor-beslisblok-02/CLUB_TEAM_ORGANISATION_MODEL.md
+
+FASE 4 — ABONNEMENTDIEPTE UITWERKEN
+
+Werk een concreet voorstel uit voor Gratis, Go en Compleet.
+
+Geen prijzen.
+Geen Stripe.
+Geen live entitlementmigratie.
+
+Gebruik per kernfunctie dezelfde engine met oplopende diepte.
+
+MINIMALE RICHTING
+
+GRATIS
+
+- veilig account en databeheer;
+- basisprofiel;
+- activiteitenoverzicht;
+- basisanalyse in begrijpelijke taal;
+- route maken/import/export waar toegestaan;
+- privacy, toestemming, export en opzeggen;
+- veiligheidsmeldingen en eerlijke lege staten.
+
+GO
+
+- alles van Gratis;
+- praktische dagelijkse begeleiding;
+- routes en navigatie-plus;
+- basis trainingsstructuur;
+- herstel- en belastingsvertaling;
+- eenvoudige trends;
+- haalbare vervolgstappen;
+- minder technische diepte.
+
+COMPLEET
+
+- alles van Go;
+- volledige autonome coaching;
+- uitgebreide periodisering;
+- scenario’s en voorspellingen;
+- diepere analyse;
+- wedstrijdvoorbereiding;
+- geavanceerde Race Intelligence;
+- volledige Performance Lab-diepte;
+- uitgebreide planadaptatie en verklaringen.
+
+Werk per functie uit:
+
+- wat altijd aanwezig is;
+- welke data zichtbaar zijn;
+- hoeveel historie wordt gebruikt;
+- hoeveel uitleg wordt gegeven;
+- welke voorspellingen of scenario’s beschikbaar zijn;
+- welke actie Sparki uitvoert;
+- welke upgrade-uitleg eerlijk is;
+- veiligheid die nooit achter betaling komt.
+
+Maak:
+
+governance/subscription-depth-model-v1.json
+reports/governor-beslisblok-02/SUBSCRIPTION_DEPTH_MODEL.md
+reports/governor-beslisblok-02/SUBSCRIPTION_DEPTH_MATRIX.csv
+
+FASE 5 — CLUB VERSUS TEAM
+
+Werk de vaste productrichting functioneel uit.
+
+CLUB
+
+Doel:
+
+- laagdrempelige instap;
+- leden verbinden;
+- basisgroepen;
+- clubkalender;
+- uitnodigingen;
+- communicatie;
+- eenvoudige aanwezigheid;
+- veilige jeugd- en ouderkoppeling;
+- trainer koppelen;
+- beperkte beheeromgeving;
+- kennismaking met Sparki.
+
+TEAM
+
+Doel:
+
+- professioneel betaald product;
+- meerdere selecties;
+- trainers en hoofdtrainer;
+- rollen en operationele verantwoordelijkheden;
+- individuele en groepstraining;
+- aanwezigheid en uitvoering;
+- wedstrijdkamer;
+- ploegleider;
+- mechanieker;
+- live koerscontext;
+- materiaal per renner;
+- rapportages;
+- audit en rechtenbeheer;
+- diepere analyse en coaching.
+
+Maak geen prijzen en geen verkooptekst alsof functies al af zijn.
+
+Maak:
+
+reports/governor-beslisblok-02/CLUB_VS_TEAM_FEATURE_MODEL.md
+governance/club-team-feature-model-v1.json
+
+FASE 6 — TESTACCOUNTS EN CONTEXTEN
+
+Bouw een veilig ontwikkel-/staging-testfundament.
+
+Maak géén productiegebruikers en verstuur géén echte uitnodigingen.
+
+Minimale testcontext:
+
+- 1 sporter volwassen;
+- 1 sporter jeugd;
+- 1 ouder;
+- 2 trainers;
+- 1 hoofdtrainer;
+- 1 clubbeheerder;
+- 1 ploegleider;
+- 1 mechanieker;
+- 1 admin/testbeheerder;
+- 1 club;
+- 2 teams/selecties;
+- expliciete gekoppelde en niet-gekoppelde controlegevallen;
+- Gratis-, Go- en Compleet-context.
+
+Eisen:
+
+- alleen beschikbaar in development/test/staging;
+- fail-closed in productie;
+- geen echte persoonsgegevens;
+- duidelijk gemarkeerde synthetische testdata;
+- volledig verwijderbaar;
+- idempotent;
+- geen invloed op huidige René- of Dylan-data.
+
+Maak:
+
+scripts/governor/create-role-test-fixtures.*
+scripts/governor/remove-role-test-fixtures.*
+reports/governor-beslisblok-02/TEST_ACCOUNT_AND_FIXTURE_PLAN.md
+
+FASE 7 — GEAUTOMATISEERDE RECHTEN- EN ISOLATIETESTS
+
+Voeg tests toe voor minimaal:
+
+- trainer ziet alleen toegewezen sporters;
+- hoofdtrainer ziet alleen toegewezen organisatiecontext;
+- trainer ziet privénotitie van andere trainer niet;
+- clubbeheerder ziet geen inhoudelijke gezondheidsdata;
+- ouder ziet alleen toegestane jeugdgegevens;
+- ploegleider ziet geen herstel- of medische details;
+- mechanieker ziet geen trainingsinhoud;
+- einde koppeling trekt toegang in;
+- rolwissel ververst menu en API-toegang;
+- multi-role gebruiker krijgt alleen gecombineerde toegestane capabilities;
+- organisatie A kan organisatie B niet lezen;
+- Gratis/Go/Compleet gebruiken dezelfde engine;
+- verschillen zitten aantoonbaar in diepte en presentatie;
+- veiligheid en privacy blijven tier-onafhankelijk.
+
+FASE 8 — WERKPAKKETTEN MAKEN
+
+Vertaal dit fundament naar kleine uitvoerbare pakketten:
+
+1. trainerwerkruimte fundament;
+2. hoofdtraineruitbreiding;
+3. clubbeheerder en organisatiestructuur;
+4. ouder/jeugd integrale verificatie;
+5. ploegleiderwerkruimte;
+6. mechaniekerwerkruimte;
+7. Club-entitlements;
+8. Team-entitlements;
+9. Gratis/Go/Compleet dieptemigratie;
+10. live rol- en abonnements-E2E.
+
+Per pakket:
+
+- scope;
+- hergebruik;
+- niet wijzigen;
+- API/datamodel;
+- UX;
+- rechten;
+- tests;
+- bewijs;
+- regressierisico;
+- stopcondities;
+- afhankelijkheden;
+- indicatieve complexiteit klein/middel/groot.
+
+Maak:
+
+reports/governor-beslisblok-02/IMPLEMENTATION_SEQUENCE.md
+reports/governor-beslisblok-02/work-packages/
+
+WEL BOUWEN IN DIT PAKKET
+
+- governance-modellen;
+- technische contracten;
+- veilige testfixtures;
+- rechten- en isolatietests;
+- ontbrekende testhulpmiddelen;
+- documentatie en uitvoerbare werkpakketten.
+
+NIET BOUWEN IN DIT PAKKET
+
+- volledige nieuwe rolwerkruimtes;
+- Club- of Team-betaalflow;
+- prijsstelling;
+- live Stripe;
+- app-brede restyling;
+- productiedata-migratie;
+- nieuwe tweede engines;
+- productie-testaccounts;
+- echte uitnodigingen;
+- TransIP-migratie;
+- Governor fase 2 buiten dit pakket.
+
+STOPCONDITIES
+
+Stop bij:
+
+- datamodelconflict dat destructieve migratie vereist;
+- tweede parallel rollen- of organisatiemodel;
+- cross-user- of cross-clublekkage;
+- jeugd- of consentregel die niet fail-closed kan;
+- onduidelijkheid over eigenaarschap van data;
+- wijziging van echte gebruikersdata;
+- live prijs-, Stripe- of contractbesluit;
+- ontbrekende bron voor een rechtenclaim.
+
+TESTS
+
+- typechecks web, mobiel en API;
+- productiebuilds;
+- alle bestaande coach/parent/club/isolation-tests;
+- nieuwe capability-tests;
+- fixture create/remove/idempotency;
+- productie-fail-closed test;
+- engine-equivalence Gratis/Go/Compleet;
+- geen regressie in bestaande sporteromgeving;
+- geen wijziging aan huidige live entitlements.
+
+OPLEVERING
+
+Maak:
+
+reports/SPARKI_GOVERNOR_BESLISBLOK_02.md
+
+Rapporteer:
+
+- hergebruikte bestaande onderdelen;
+- definitief voorgesteld rollenmodel;
+- organisatiemodel;
+- abonnementsdieptemodel;
+- Club-versus-Team-model;
+- testfixturebewijs;
+- testresultaten;
+- gemaakte werkpakketten;
+- echte resterende beslissingen voor René;
+- commit-SHA;
+- publicatie nodig ja/nee.
+
+EINDSTATUS
+
+Bij succes:
+
+GOVERNOR_DECISION_BLOCK_02_FOUNDATION_READY
+
+Start daarna geen rolwerkruimte, abonnementmigratie of publicatie automatisch.
+Geef alles terug aan ChatGPT.
