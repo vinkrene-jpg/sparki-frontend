@@ -20,3 +20,7 @@ description: hasCoachAccess = link ∪ geldige clubtoewijzing; read-time members
 ## Dev-preview
 - DevPreview-schil ("/" in Vite dev) is rol-bewust: profile.activeRole==='coach' ⇒ CoachHome, anders CommercialToday. Zonder dit toonde de preview altijd het sporterscherm, ongeacht rol.
 - Dev-QA-gebruiker (`dev_qa_athlete`): rollen staan in **user_profiles** (roles, active_role), niet athlete_profiles.
+
+## Schrijfpad-contract (assignment-only trainer)
+- Contracttest `test:trainer-assignment-write-contract` pint vast: hasCoachAccess (link ∪ toewijzing) geldt óók op schrijfpaden (coach-bericht POST) — assignment-only trainer mag schrijven, clublid zonder toewijzing 403, beëindigd clublidmaatschap sluit direct. Als het productbesluit "toewijzing = alleen meekijken" wordt, moet scenario 2 daar omklappen naar 403.
+- Let op: coach-bericht body-veld heet `body`, niet `text` (parseMessageBody). Eén write path (`POST /athletes/:id/review`) is nu al link-only — inconsistent met de rest.
