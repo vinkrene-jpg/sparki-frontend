@@ -1,0 +1,81 @@
+OPDRACHT — PRODUCTIEPUBLICATIE EN VERIFICATIE #383
+
+DOEL
+
+Publiceer de actuele main-branch naar de huidige Replit-productieomgeving, zodat de reeds gemergede #383-opschoning daadwerkelijk actief wordt.
+
+BRON
+
+- branch: main
+- bron-SHA vóór publicatie: ddeb9408 plus de daarna gemergede commits #390 en #402
+- statusrapport:
+  docs/SPARKI_POST_WP000_STATUSCORRECTIE.md
+- bestaande verificatietaak: #399
+
+STAPPEN
+
+1. Controleer vóór publicatie:
+   - actuele HEAD-SHA;
+   - working tree schoon;
+   - typecheck groen;
+   - serverbuild groen;
+   - geen ongepushte wijzigingen;
+   - #390 en #402 aanwezig in de actuele branch.
+
+2. Publiceer de actuele build naar de bestaande Replit-productieomgeving.
+
+3. Controleer na publicatie:
+   - actieve productieversie/commit-SHA;
+   - applicatie bereikbaar;
+   - login werkt;
+   - serverstart zonder fouten;
+   - geen regressie in Vandaag, Plan en Analyse;
+   - geen databasewijziging buiten de bestaande #383-opschoning.
+
+4. Voer daarna de bestaande taak #399 uit:
+   - read-only hertelling;
+   - tel actieve observaties met status `new`;
+   - verwachte uitkomst: 38;
+   - controleer gebruikersisolatie;
+   - controleer dat verouderde 331 W-observaties en duplicaten niet meer actief zijn.
+
+5. Classificeer WP-A02:
+
+   - `VERIFIED_FOR_R1` wanneer productie actief is en de hertelling 38 oplevert;
+   - `BLOCKED` wanneer de telling afwijkt, met exact werkelijk aantal en oorzaak;
+   - geen handmatige databasecorrectie zonder nieuwe opdracht.
+
+OPLEVERING
+
+Werk bij:
+
+docs/SPARKI_POST_WP000_STATUSCORRECTIE.md
+
+Maak daarnaast:
+
+docs/SPARKI_WPA02_PRODUCTIEVERIFICATIE.md
+
+Rapporteer:
+
+- gepubliceerde commit-SHA;
+- datum/tijd publicatie;
+- resultaat typecheck;
+- resultaat serverbuild;
+- resultaat productie-smoketest;
+- telling vóór publicatie;
+- telling na publicatie;
+- status #399;
+- definitieve status WP-A02;
+- geen secrets of tokens tonen.
+
+STOPCONDITIES
+
+Stop bij:
+
+- afwijkende of vuile working tree;
+- mislukte build;
+- onduidelijke productie-SHA;
+- databasefout;
+- cross-user-datalek;
+- onverwachte destructieve wijziging;
+- telling die na één gerichte controle niet verklaarbaar is.
