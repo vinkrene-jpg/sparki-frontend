@@ -572,7 +572,7 @@ function PlanWorkoutForm({
         <button
           type="submit"
           disabled={!canSave || createWorkout.isPending}
-          className="mx-auto block w-full max-w-sm rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-40"
+          className="block w-full rounded-2xl px-4 py-3.5 font-sans text-[13px] font-semibold disabled:opacity-40"
           style={{ background: ACCENT, color: "#040506" }}
         >
           {createWorkout.isPending ? "Inplannen…" : "Training inplannen"}

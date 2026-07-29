@@ -181,7 +181,7 @@ function ConfirmActivityCard({ session }: { session: TrainingSession }) {
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="font-mono text-[11px] uppercase tracking-[0.14em] text-white/40 transition-colors hover:text-white/70 px-4"
+            className="font-mono text-[11px] uppercase tracking-[0.14em] text-white/40 transition-colors hover:text-white/70 px-4 sm:flex-none"
           >
             Notitie
           </button>
