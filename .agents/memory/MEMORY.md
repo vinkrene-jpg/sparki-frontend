@@ -64,6 +64,7 @@
 - [Sparki World architecture](sparki-world.md) — transparently-fictional Virtual Athletes island; cache-first Media Engine (promptKey UNIQUE, avatars carry slug/scenes don't); hard wall to real data; honest gaps.
 - [Sparki presentation variation](sparki-presentation-variation.md) — per-app-open seed rotates only ORDER + which real insight leads; numbers stable, urgent never demoted, seed-0 no-op.
 - [Local-date UTC off-by-one trap](local-date-utc-trap.md) — toISOString().slice(0,10) gives UTC date; for NL local calendar days build from local getters.
+- [Playwright op NixOS](nix-playwright-chromium.md) — bundled Chromium faalt (libnspr4); Nix-pakket `chromium` + executablePath werkt; .cache/ms-playwright opruimen.
 - [Long-running jobs in this sandbox](sandbox-background-jobs.md) — nohup/setsid bg jobs die at tool-call boundaries; run long one-shot jobs as a console workflow + poll.
 - [Sparki Ontdekken visual feed](sparki-ontdekken-visual-feed.md) — /feed kaartenfeed: pure engine + per-apparaat prefs; sfeerbeelden alleen uit atmosphere-lib, chip nooit dubbel; useKnowledge key bevat limit.
 - [Ontdekken Renners reel + dwell-gated learning](sparki-ontdekken-renners.md) — World swipe-reel surfaced in /feed; feed view-events must dwell-gate ~1.4s or fast scroll pollutes affinity.
