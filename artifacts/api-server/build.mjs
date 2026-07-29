@@ -115,6 +115,7 @@ const ALL_ENTRIES = [
       path.resolve(artifactDir, "src/tests/mechanieker.ts"),
       path.resolve(artifactDir, "src/tests/road-objects.ts"),
       path.resolve(artifactDir, "src/tests/world-social.ts"),
+      path.resolve(artifactDir, "src/tests/afvaldoel-touchpoints.ts"),
 ];
 
 async function buildAll() {

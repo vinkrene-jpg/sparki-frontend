@@ -26,6 +26,13 @@ productantwoord is benoemen, niet nummers verbuigen (RED-S-veiligheid).
 - Dev-bypass `x-dev-clerk-id` werkt alleen voor GESEEDE atleten; onbekende id
   valt stil terug op `dev_qa_athlete` — praktijktests dus tegen die user.
 
+- Drift-bewaking: api-server `test:afvaldoel-touchpoints` asserteert byte-identieke
+  `line` op ALLE touchpoints (season-goal GET, session-targets-item, rust/herstel-
+  rationales via buildSkeleton met A-race-opener, dagadvies) + jeugd fail-closed.
+  Het dagadvies-been draait de echte sparki-engine in eigen omgeving: spawn via
+  `pnpm run test:day-advice-canonical` (cwd sparki) met de zin in
+  SPARKI_CANONICAL_GOAL_LINE — nooit sparki-src in de api-server-typecheck trekken.
+
 **Proof-aanpak die werkte:** deterministische tests per keuzeplek + live
 praktijktest + onafhankelijke architect-review in twee rondes (eerste ronde
 levert concrete gaten; repareren en her-scoren). Rapport-stijl: zie
