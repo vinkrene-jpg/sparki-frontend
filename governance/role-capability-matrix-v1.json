@@ -1,0 +1,62 @@
+{
+  "schema": "sparki.governance.role_capability_matrix",
+  "version": 1,
+  "generated": "2026-07-29",
+  "status": "VOORSTEL_BESLISBLOK_02 — fundament, nog geen bouwopdracht per rol",
+  "bron": [
+    "Beslisblok 02-opdracht (vaststaande richting 1-11)",
+    "REUSE_INVENTORY.md fase 1",
+    "lib/db/src/schema/users.ts (validRoles)",
+    "lib/db/src/schema/club.ts (clubRoles, club_trainer_assignments, club_consents, club_audit_log)",
+    "artifacts/api-server/src/lib/{sharing,parent-permissions,club-permissions,entitlements}.ts"
+  ],
+  "principes": {
+    "platformrollen": ["athlete", "coach", "parent"],
+    "contextrollen": ["hoofdtrainer", "clubbeheerder(owner/admin)", "teammanager", "mechanieker", "assistent", "vrijwilliger", "alleen_lezen"],
+    "regels": [
+      "Platformrol bepaalt identiteit en menu; contextrol bepaalt wat je binnen één organisatie/team/selectie mag.",
+      "Geen globale roltoegang wanneer contexttoegang voldoende is: hoofdtrainer/clubbeheerder/ploegleider/mechanieker bestaan ALLEEN als contextrol (club_members.role + toewijzingstabellen), nooit als extra platformrol.",
+      "Sporter blijft eigenaar van eigen sportdata; elke inzage loopt via link/lidmaatschap + consent/deleniveau.",
+      "Einde koppeling of lidmaatschap (endedAt) trekt toegang onmiddellijk in — checks gebeuren op leesmoment, nooit gecachet over de koppelingsgrens heen.",
+      "Jeugd fail-closed: onbekende leeftijd = veiligheidsminimum; <16 vereist ouderconsent; tierovergang sluit niet-veiligheidsrechten tot herbevestiging.",
+      "Multi-role: capabilities zijn de UNIE van context-capabilities, maar consent-/jeugdregels blijven per object gelden (strengste wint).",
+      "Beheerdersrollen krijgen nooit automatisch inhoudelijke trainings- of gezondheidsdata.",
+      "Geen stil overschrijven: hoofdtrainer mag trainerwerk beoordelen/aanpassen, altijd met audittrail."
+    ]
+  },
+  "capabilities": [
+    {"role":"athlete","organisation_scope":"self","object_scope":"eigen sportdata (sessies, plan, analyse, herstel, materiaal, wedstrijden)","action":"read+write","allow":true,"consent_required":false,"audit_required":false,"fail_closed_rule":"clerkId-filter op elke query","source_evidence":"cross-account-isolation tests"},
+    {"role":"athlete","organisation_scope":"self","object_scope":"koppelingen en deleniveaus","action":"beheren","allow":true,"consent_required":false,"audit_required":true,"fail_closed_rule":"alleen eigen links; kill-switch data_sharing_*","source_evidence":"lib/sharing.ts, user_privacy_settings"},
+    {"role":"coach","organisation_scope":"gekoppelde sporters (coach_athlete_links accepted)","object_scope":"gedeelde sportdata volgens deleniveau","action":"read","allow":true,"consent_required":true,"audit_required":false,"fail_closed_rule":"none⇒niets; minderjarig zonder ouderconsent⇒none","source_evidence":"coachSharingLevel, coach-parent-sharing-levels test"},
+    {"role":"coach","organisation_scope":"gekoppelde sporters","object_scope":"planned_workouts (source=coach)","action":"create+update","allow":true,"consent_required":true,"audit_required":false,"fail_closed_rule":"link-gate per sporter; dedupe datum+source; nooit sessies aanraken","source_evidence":"coach-plan-adoption"},
+    {"role":"coach","organisation_scope":"gekoppelde sporters","object_scope":"privénotities (visibility=private)","action":"read+write eigen notities","allow":true,"consent_required":false,"audit_required":false,"fail_closed_rule":"andere coach ziet ze nooit","source_evidence":"coach-parent-private-memory test"},
+    {"role":"coach","organisation_scope":"any","object_scope":"clubbrede beheeracties","action":"any","allow":false,"consent_required":false,"audit_required":false,"fail_closed_rule":"clubbeheer vereist clubrol owner/admin","source_evidence":"canManageClub"},
+    {"role":"hoofdtrainer","organisation_scope":"toegewezen club/team (club_members.role=hoofdtrainer)","object_scope":"alles van trainer binnen die context","action":"erven","allow":true,"consent_required":true,"audit_required":false,"fail_closed_rule":"zelfde deleniveaus als trainer","source_evidence":"clubRoles enum + club-permissions"},
+    {"role":"hoofdtrainer","organisation_scope":"toegewezen club/team","object_scope":"trainer-toewijzingen (club_trainer_assignments)","action":"beheren","allow":true,"consent_required":false,"audit_required":true,"fail_closed_rule":"alleen binnen eigen organisatiecontext","source_evidence":"schema/club.ts"},
+    {"role":"hoofdtrainer","organisation_scope":"toegewezen club/team","object_scope":"trainerwerk (plannen van trainers)","action":"beoordelen+aanpassen","allow":true,"consent_required":true,"audit_required":true,"fail_closed_rule":"nooit stil overschrijven: wijziging schrijft club_audit_log-regel met oud/nieuw","source_evidence":"Beslisblok 02 richting; club_audit_log"},
+    {"role":"hoofdtrainer","organisation_scope":"any","object_scope":"medische/privédata buiten deleniveau","action":"read","allow":false,"consent_required":true,"audit_required":true,"fail_closed_rule":"zelfde fail-closed als trainer","source_evidence":"sharing levels"},
+    {"role":"parent","organisation_scope":"gekoppelde jeugdsporter (parent_athlete_links)","object_scope":"wettelijk + expliciet gedeelde jeugdgegevens","action":"read","allow":true,"consent_required":true,"audit_required":true,"fail_closed_rule":"EffectiveParentAccess op leesmoment; onbekende leeftijd⇒veiligheidsminimum; 18+⇒alles dicht","source_evidence":"lib/parent-permissions.ts, parent-environment test"},
+    {"role":"parent","organisation_scope":"gekoppelde jeugdsporter","object_scope":"volledig sportdossier","action":"read","allow":false,"consent_required":true,"audit_required":true,"fail_closed_rule":"geen automatische volledige inzage; sporter houdt eigen regie","source_evidence":"parent-permissions SAFETY_CATEGORIES"},
+    {"role":"parent","organisation_scope":"gekoppelde jeugdsporter","object_scope":"meldingen (ziek/blessure/afwezig), noodcontacten, bevestigingen","action":"create","allow":true,"consent_required":true,"audit_required":true,"fail_closed_rule":"alleen via geaccepteerde link","source_evidence":"parent_reports/confirmations"},
+    {"role":"clubbeheerder","organisation_scope":"eigen club (club_members.role in owner/admin)","object_scope":"club, leden, groepen, rollen, uitnodigingen","action":"beheren","allow":true,"consent_required":false,"audit_required":true,"fail_closed_rule":"canManageClub; ledenlimieten ook bij accept; jeugdconsent fail-closed","source_evidence":"club.ts routes, club_subscriptions"},
+    {"role":"clubbeheerder","organisation_scope":"eigen club","object_scope":"operationele clubgegevens (kalender, aanwezigheid, berichten)","action":"read+write","allow":true,"consent_required":false,"audit_required":false,"fail_closed_rule":"club-scoped ID-checks","source_evidence":"club-permissions"},
+    {"role":"clubbeheerder","organisation_scope":"eigen club","object_scope":"inhoudelijke trainings-/gezondheidsdata leden","action":"read","allow":false,"consent_required":true,"audit_required":true,"fail_closed_rule":"nooit automatisch; alleen via expliciete consent-scope","source_evidence":"club_consents scopes"},
+    {"role":"clubbeheerder","organisation_scope":"eigen club","object_scope":"trainers/hoofdtrainers/ploegleiders/mechaniekers koppelen","action":"toewijzen","allow":true,"consent_required":false,"audit_required":true,"fail_closed_rule":"alleen binnen club; toewijzing geeft nooit meer dan de contextrol toestaat","source_evidence":"club_trainer_assignments"},
+    {"role":"ploegleider","organisation_scope":"toegewezen team/selectie (club_members.role=teammanager + teamkoppeling)","object_scope":"wedstrijdplanning, logistiek, aanwezigheid, live koerscontext, volgauto","action":"read+write","allow":true,"consent_required":false,"audit_required":true,"fail_closed_rule":"alleen eigen team/selectie; einde toewijzing sluit direct","source_evidence":"club_race_events/selections, volgauto (uit te breiden)"},
+    {"role":"ploegleider","organisation_scope":"toegewezen team","object_scope":"live locatie renners tijdens koers","action":"read","allow":true,"consent_required":true,"audit_required":true,"fail_closed_rule":"audience-check + hercheck per read; minderjarig fail-closed","source_evidence":"live-location.ts"},
+    {"role":"ploegleider","organisation_scope":"any","object_scope":"volledige gezondheids-/privétrainergegevens","action":"read","allow":false,"consent_required":true,"audit_required":true,"fail_closed_rule":"herstel-/medische details nooit","source_evidence":"Beslisblok 02 richting"},
+    {"role":"mechanieker","organisation_scope":"toegewezen fietsen/renners/team (club_members.role=mechanieker + toewijzing)","object_scope":"materiaalprofielen, defecten, onderhoud","action":"read+write materiaalvelden","allow":true,"consent_required":false,"audit_required":true,"fail_closed_rule":"alleen toegewezen materiaal; km blijft afgeleid, nooit teller","source_evidence":"clubRoles mechanieker; garage engine"},
+    {"role":"mechanieker","organisation_scope":"toegewezen team","object_scope":"materiaalstatus per renner/team","action":"read","allow":true,"consent_required":false,"audit_required":false,"fail_closed_rule":"alleen functioneel noodzakelijke materiaalcontext","source_evidence":"Beslisblok 02 richting"},
+    {"role":"mechanieker","organisation_scope":"any","object_scope":"trainings-, herstel- of medische inhoud","action":"read","allow":false,"consent_required":true,"audit_required":true,"fail_closed_rule":"nooit, behalve expliciet materiaal-noodzakelijke context","source_evidence":"Beslisblok 02 richting"},
+    {"role":"admin","organisation_scope":"platform","object_scope":"healthchecks, testrollen, audit, technisch beheer","action":"beheren","allow":true,"consent_required":false,"audit_required":true,"fail_closed_rule":"SPARKI_ADMIN_IDS; elke actie in admin_ops_log","source_evidence":"admin routes, admin_ops_log"},
+    {"role":"admin","organisation_scope":"platform","object_scope":"persoonlijke data buiten expliciete supportflow","action":"read","allow":false,"consent_required":true,"audit_required":true,"fail_closed_rule":"geen stil gebruik; supportflow met audit","source_evidence":"Beslisblok 02 richting; security_audit_log"}
+  ],
+  "multi_role": {
+    "regel": "Een persoon kan meerdere platform- en contextrollen tegelijk hebben. Effectieve toegang per object = unie van toegestane capabilities uit alle actieve contexten, waarna consent-, jeugd- en deleniveauregels als filter blijven gelden (strengste wint). Rolwissel ververst menu (chaptersForRole) en API-toegang direct (checks op leesmoment).",
+    "voorbeeld": "Trainer die ook ouder is: ziet als trainer de gedeelde trainingsdata van toegewezen sporters, en als ouder de toegestane jeugdgegevens van het eigen kind — nooit trainerinzage in het eigen kind zonder aparte geaccepteerde trainerlink."
+  },
+  "intrekking": {
+    "regel": "endedAt/ingetrokken consent/verwijderd lidmaatschap sluit toegang op de eerstvolgende read. Geen sessie- of cache-doorloop over de koppelingsgrens.",
+    "source_evidence": "links-end-isolation, links-unlink-isolation tests; club-permissions endedAt IS NULL"
+  }
+}

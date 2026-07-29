@@ -47,7 +47,7 @@ export const PARENT_CATEGORY_LABELS: Record<ParentDataCategory, string> = {
 };
 
 // Veiligheidsminimum: blijft zichtbaar zolang delen niet volledig uit staat.
-const SAFETY_CATEGORIES: ParentDataCategory[] = ["gezondheid", "herstel"];
+export const SAFETY_CATEGORIES: ParentDataCategory[] = ["gezondheid", "herstel"];
 
 function allOff(): Record<ParentDataCategory, boolean> {
   return Object.fromEntries(

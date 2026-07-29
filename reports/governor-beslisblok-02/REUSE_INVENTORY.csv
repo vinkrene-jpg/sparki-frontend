@@ -1,0 +1,47 @@
+domein,onderdeel,huidige_route,huidige_rol,data_eigenaar,rechten,engine_api,status
+trainer,CoachHome roster,/ (activeRole=coach),coach,sporter,link+sharing level,routes/coach.ts GET /athletes,HERBRUIKBAAR
+trainer,Coachcockpit,/coach/athletes/:athleteId/cockpit,coach,sporter,hasAcceptedCoachLink+coachSharingLevel,routes/coach-cockpit.ts,HERBRUIKBAAR
+trainer,Bulkplanner,CoachHome component,coach,sporter,link-gate per sporter,POST /api/coach/workouts/bulk,UITBREIDEN
+trainer,Uitnodigingen,/invitations;/invite/:token,alle,uitnodiger,token+atomaire accept,routes/invitations.ts,HERBRUIKBAAR
+trainer,Berichten,cockpit,coach,beide,link-gate,coach-cockpit routes,HERBRUIKBAAR
+trainer,Planadoptie,CoachHome/cockpit,coach,sporter,link-gate+dedupe datum+source,routes/coach.ts plan/adopt,HERBRUIKBAAR
+trainer,Deleniveaus,instellingen sporter,sporter,sporter,user_privacy_settings.data_sharing_coach,lib/sharing.ts,HERBRUIKBAAR
+trainer,Privénotities,cockpit,coach,coach,visibility=private filter,context-memory,HERBRUIKBAAR
+trainer,Isolatietests,-,-,-,-,tests coach-parent-* links-*,HERBRUIKBAAR
+trainer,Hoofdtrainer-rol,-,-,-,-,-,ONTBREKEND
+club,Clubomgeving,/club,clublid,club,getClubContext,routes/club.ts,HERBRUIKBAAR
+club,Clubbeheer,/club/beheer,owner/admin,club,canManageClub,routes/club.ts,HERBRUIKBAAR
+club,Clubrechten,-,12 clubrollen,club,lib/club-permissions.ts,-,UITBREIDEN
+club,Ledenlimieten,-,-,club,club_subscriptions+checkCapacityForNew,-,HERBRUIKBAAR
+club,Club-uitnodigingen,/api/invitations club_*,owner/admin,club,limietcheck ook bij accept,routes/invitations.ts,HERBRUIKBAAR
+club,Jeugdconsent,-,ouder,sporter/ouder,club_consents <16 parent fail-closed,routes/club.ts,HERBRUIKBAAR
+club,Teams/groepen,-,-,club,club_teams/club_groups/club_trainer_assignments,-,HERBRUIKBAAR
+club,Audittrail,-,-,club,club_audit_log,-,HERBRUIKBAAR
+club,Clubtests,-,-,-,-,api-server clubtests,HERBRUIKBAAR
+ploegleider,Wedstrijd-room,wedstrijd-room.tsx,sporter,sporter,loadOwnedRoom clerkId,routes/race-rooms.ts,UITBREIDEN
+ploegleider,Volgauto,volgauto-panel.tsx,sporter,sporter,ownedRoute,routes/volgauto.ts,UITBREIDEN
+ploegleider,Live locatie+ETA,mobiel live-share,sporter,sporter,audience+hercheck per read,routes/live-location.ts,HERBRUIKBAAR
+ploegleider,Teamcontext,races.team_riders jsonb,sporter,sporter,clerkId,routes/races.ts,FOUTIEF_GEKOPPELD
+ploegleider,Koersinformatie,race-intel,sporter,sporter,clerkId; assignment-kolom aanwezig,engines/race,UITBREIDEN
+ploegleider,Ploegleider-rol,-,-,-,clubrol teammanager bestaat,-,ONTBREKEND
+mechanieker,Garage,/mechanieker,sporter,sporter,clerkId-eigendom,routes/garage.ts,HERBRUIKBAAR
+mechanieker,Fietsen/onderdelen,idem,sporter,sporter,idem,garage_bikes/components/sensors,HERBRUIKBAAR
+mechanieker,Km-slijtage,-,-,sporter,afgeleid nooit teller,lib/bike-usage.ts,HERBRUIKBAAR
+mechanieker,Defectregistratie,-,sporter,sporter,eigen registratie,component_events,HERBRUIKBAAR
+mechanieker,Materiaalcoach,material-coach.tsx,sporter,sporter,owner-checked+confidence-gated,routes/material.ts,HERBRUIKBAAR
+mechanieker,Bike Scan,-,sporter,sporter,owner-checked,routes/bike-scan.ts,HERBRUIKBAAR
+mechanieker,Materiaalkeuze,-,sporter,sporter,clerkId,equipment_choices,HERBRUIKBAAR
+mechanieker,Mechanieker-rol,-,-,-,clubrol mechanieker bestaat,-,ONTBREKEND
+ouder,Ouderomgeving,ParentHome,parent,sporter,requireParentAccess+EffectiveParentAccess,routes/parent.ts,HERBRUIKBAAR
+ouder,Ouder-kindkoppeling,invites,parent,beide,parent_athlete_links,-,HERBRUIKBAAR
+ouder,Consent,-,ouder/sporter,sporter,leeftijdstier fail-closed,lib/parent-permissions.ts,HERBRUIKBAAR
+ouder,Deleniveaus,-,sporter,sporter,dataSharingParent+SAFETY_CATEGORIES,lib/sharing.ts,HERBRUIKBAAR
+ouder,Welzijn,-,parent,gedeeld,permissions,parent_reports/confirmations/emergency_contacts,HERBRUIKBAAR
+ouder,Minderjarig fail-closed,-,-,-,coachSharingLevel none <16 zonder consent,-,HERBRUIKBAAR
+ouder,Tests,-,-,-,-,parent-environment/consent-gate,HERBRUIKBAAR
+dwars,Platformrollen,-,athlete/coach/parent,-,user_profiles.roles+active_role,schema/users.ts,UITBREIDEN
+dwars,Rolwissel,PUT /api/auth/me/role,-,-,rolbezit-check+audit,routes/auth.ts,HERBRUIKBAAR
+dwars,Clubrollen,-,12 contextrollen,club,clubRoles enum,schema/club.ts,HERBRUIKBAAR
+dwars,Entitlements,-,-,-,legacy_unrestricted vs subscription fail-closed,lib/entitlements.ts,UITBREIDEN
+dwars,Feature-flags,-,-,-,override>platform>rol/groep>head-tester,lib/flags.ts,HERBRUIKBAAR
+dwars,Audit,-,-,-,security_audit_log/club_audit_log/admin_ops_log,-,HERBRUIKBAAR

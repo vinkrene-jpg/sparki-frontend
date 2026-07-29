@@ -1,0 +1,37 @@
+{
+  "schema": "sparki.governance.organisation_membership_model",
+  "version": 1,
+  "generated": "2026-07-29",
+  "status": "VOORSTEL_BESLISBLOK_02 — generiek organisatiemodel, hergebruikt bestaand club-schema als SSOT",
+  "kernbesluit": "Het bestaande club-schema (lib/db/src/schema/club.ts) IS het organisatiemodel. 'Club' en 'Team' zijn twee productprofielen op dezelfde tabellen — er komt géén tweede los club- of teammodel.",
+  "entiteiten": {
+    "organisatie": {"tabel": "clubs", "toelichting": "één organisatie-entiteit; productprofiel (club|team) bepaalt diepte, zie club-team-feature-model-v1.json", "uitbreiding_nodig": "kolom organisation_kind ('club'|'team', default 'club') — niet-destructief, guarded ADD COLUMN"},
+    "team": {"tabel": "club_teams", "toelichting": "team binnen organisatie; bij productprofiel 'team' de primaire werk-eenheid (meerdere selecties)"},
+    "selectie": {"tabel": "club_teams", "toelichting": "selectie = team met parent-verwijzing; uitbreiding: nullable parent_team_id (guarded). Alternatief zonder migratie: club_groups met kind='selectie'"},
+    "groep": {"tabel": "club_groups", "toelichting": "informele groep (trainingsgroep, jeugdgroep)"},
+    "seizoen": {"tabel": "ONTBREEKT", "voorstel": "club_seasons (id, club_id, naam, start/eind); toewijzingen krijgen nullable season_id zodat rollen per seizoen kunnen aflopen — niet-destructief"},
+    "lidmaatschap": {"tabel": "club_members", "toelichting": "persoon×organisatie×rol; endedAt beëindigt; limieten via club_subscriptions"},
+    "roltoewijzing": {"tabel": "club_members.role", "waarden": ["owner","admin","hoofdtrainer","trainer","assistent","teammanager","mechanieker","member","parent","vrijwilliger","alleen_lezen"]},
+    "trainer_toewijzing": {"tabel": "club_trainer_assignments", "toelichting": "trainer×team/groep — de rechten-gate voor sportersinzage binnen club"},
+    "hoofdtrainer_toewijzing": {"tabel": "club_members.role=hoofdtrainer", "toelichting": "hoofdtrainer geldt per organisatie; beheert club_trainer_assignments binnen die context"},
+    "ouder_kind": {"tabel": "parent_athlete_links", "toelichting": "bestaand, blijft buiten organisatie-tabellen; clubcontext verwijst ernaar (jeugdconsent club_consents)"},
+    "ploegleider_toewijzing": {"tabel": "club_members.role=teammanager + teamscope", "uitbreiding_nodig": "teamscope: hergebruik club_trainer_assignments generaliseren naar club_role_assignments (rol+team/groep) OF aparte rij per team in club_team_members met role='begeleider' — keuze in werkpakket 5, geen tweede model"},
+    "mechanieker_toewijzing": {"tabel": "club_members.role=mechanieker + toewijzing", "uitbreiding_nodig": "zelfde generalisatie als ploegleider (rol×team/renner-scope)"}
+  },
+  "regels": [
+    {"regel": "één persoon kan meerdere rollen hebben", "implementatie": "meerdere club_members-rijen (per organisatie) + meerdere platformrollen in user_profiles.roles[]"},
+    {"regel": "rollen zijn contextgebonden aan organisatie, team of selectie", "implementatie": "club_members (organisatie) + toewijzingstabellen (team/groep); nooit platformrol voor contextwerk"},
+    {"regel": "geen globale roltoegang wanneer contexttoegang voldoende is", "implementatie": "alle checks via getClubContext + toewijzing; validRoles blijft athlete/coach/parent"},
+    {"regel": "verwijdering of einde koppeling trekt toegang onmiddellijk in", "implementatie": "endedAt IS NULL-checks op leesmoment (bestaand patroon), nooit cache over koppelingsgrens"},
+    {"regel": "jeugdrelaties blijven fail-closed", "implementatie": "club_consents (<16 vereist parent), parent-permissions leeftijdstiers, onbekende leeftijd = veiligheidsminimum"},
+    {"regel": "iedere wijziging krijgt audittrail", "implementatie": "club_audit_log (bestaand) + security_audit_log voor platformacties"},
+    {"regel": "bestaande clubrechten hergebruiken", "implementatie": "lib/club-permissions.ts blijft de enige rechtenlaag; uitbreidingen dáár, niet ernaast"},
+    {"regel": "geen tweede los club- of teammodel", "implementatie": "Team = productprofiel op clubs; stopconditie bij elk ontwerp dat een tweede model vereist"}
+  ],
+  "benodigde_niet_destructieve_uitbreidingen": [
+    "clubs.organisation_kind ('club'|'team', default 'club')",
+    "club_seasons (nieuwe tabel) + nullable season_id op toewijzingen",
+    "generalisatie club_trainer_assignments → club_role_assignments (of parallel-nette uitbreiding; besluit in werkpakket 3/5; migratiepad: nieuwe tabel, data-copy, oude tabel read-compatible houden tot omschakeling)",
+    "club_teams.parent_team_id (nullable) voor selecties"
+  ]
+}

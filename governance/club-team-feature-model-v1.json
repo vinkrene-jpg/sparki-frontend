@@ -1,0 +1,47 @@
+{
+  "schema": "sparki.governance.club_team_feature_model",
+  "version": 1,
+  "generated": "2026-07-29",
+  "status": "VOORSTEL_BESLISBLOK_02 — functioneel model, geen prijzen, geen verkooptekst voor onaf werk",
+  "kernbesluit": "Club en Team zijn twee productprofielen op hetzelfde organisatiemodel (clubs.organisation_kind). Club = laagdrempelige club- en acquisitielaag; Team = betaald professioneel product.",
+  "club": {
+    "doel": "laagdrempelige instap, leden verbinden, kennismaking met Sparki",
+    "functies": [
+      {"naam": "leden verbinden", "basis": "club_members + joinCode", "status": "gebouwd"},
+      {"naam": "basisgroepen", "basis": "club_groups", "status": "gebouwd"},
+      {"naam": "clubkalender", "basis": "club_trainings + club_race_events", "status": "gebouwd"},
+      {"naam": "uitnodigingen", "basis": "invitations (club_*-types) + limieten", "status": "gebouwd"},
+      {"naam": "communicatie", "basis": "club_messages per scope", "status": "gebouwd"},
+      {"naam": "eenvoudige aanwezigheid", "basis": "club_training_signups", "status": "gebouwd"},
+      {"naam": "veilige jeugd- en ouderkoppeling", "basis": "club_consents + parent_athlete_links, fail-closed", "status": "gebouwd"},
+      {"naam": "trainer koppelen", "basis": "club_members.role=trainer + club_trainer_assignments", "status": "gebouwd"},
+      {"naam": "beperkte beheeromgeving", "basis": "/club/beheer (owner/admin)", "status": "gebouwd (CURRENT_STATE_NOT_APPROVED)"},
+      {"naam": "kennismaking met Sparki", "basis": "leden gebruiken hun eigen (Gratis) sporterapp", "status": "gebouwd"}
+    ],
+    "niet_in_club": ["meerdere selecties", "hoofdtrainer-kwaliteitsbewaking", "ploegleider-werkruimte", "mechanieker-werkruimte", "live koerscontext per team", "rapportages", "diepe analyse over leden"]
+  },
+  "team": {
+    "doel": "professioneel betaald product voor gestructureerde ploegen",
+    "functies": [
+      {"naam": "meerdere selecties", "basis": "club_teams + parent_team_id (uitbreiding)", "status": "fundament nodig"},
+      {"naam": "trainers en hoofdtrainer", "basis": "contextrollen trainer/hoofdtrainer + assignments", "status": "rollen gebouwd, werkruimte niet"},
+      {"naam": "rollen en operationele verantwoordelijkheden", "basis": "role-capability-matrix-v1", "status": "model klaar"},
+      {"naam": "individuele en groepstraining", "basis": "bulkplanner + club_trainings, team-scoped", "status": "deels gebouwd"},
+      {"naam": "aanwezigheid en uitvoering", "basis": "signups + uitvoeringskoppeling (plan-execution)", "status": "deels gebouwd"},
+      {"naam": "wedstrijdkamer", "basis": "race_rooms (multi-user fase)", "status": "single-user gebouwd, team-fase niet"},
+      {"naam": "ploegleider", "basis": "teammanager-contextrol + teamscope", "status": "fundament nodig"},
+      {"naam": "mechanieker", "basis": "mechanieker-contextrol + materiaal per renner", "status": "fundament nodig"},
+      {"naam": "live koerscontext", "basis": "live-location (audience team) + volgauto", "status": "bouwstenen gebouwd, teamrechten niet"},
+      {"naam": "materiaal per renner", "basis": "garage + mechanieker-toewijzing", "status": "sporter-eigen gebouwd"},
+      {"naam": "rapportages", "basis": "bestaande analyse-engines, team-samenvatting", "status": "niet gebouwd"},
+      {"naam": "audit en rechtenbeheer", "basis": "club_audit_log + beheer-UI", "status": "log gebouwd, UI beperkt"},
+      {"naam": "diepere analyse en coaching", "basis": "zelfde engines, teampresentatie", "status": "niet gebouwd"}
+    ]
+  },
+  "grens_regels": [
+    "Team omvat alles van Club; een club kan opwaarderen zonder datamigratie (zelfde tabellen, ander profiel).",
+    "Jeugd-/consentregels zijn identiek in beide profielen — veiligheid is nooit een productonderscheid.",
+    "Sporterdata blijft van de sporter; Team koopt werkruimte en organisatie, nooit inzage voorbij consent.",
+    "Geen verkooptekst alsof Team-functies al af zijn; status per functie is expliciet."
+  ]
+}

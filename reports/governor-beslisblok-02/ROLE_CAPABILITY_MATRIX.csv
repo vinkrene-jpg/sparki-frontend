@@ -1,0 +1,26 @@
+role,organisation_scope,object_scope,action,allow,consent_required,audit_required,fail_closed_rule,source_evidence
+athlete,self,"eigen sportdata (sessies, plan, analyse, herstel, materiaal, wedstrijden)",read+write,true,false,false,clerkId-filter op elke query,cross-account-isolation tests
+athlete,self,koppelingen en deleniveaus,beheren,true,false,true,alleen eigen links; kill-switch data_sharing_*,"lib/sharing.ts, user_privacy_settings"
+coach,gekoppelde sporters (coach_athlete_links accepted),gedeelde sportdata volgens deleniveau,read,true,true,false,none⇒niets; minderjarig zonder ouderconsent⇒none,"coachSharingLevel, coach-parent-sharing-levels test"
+coach,gekoppelde sporters,planned_workouts (source=coach),create+update,true,true,false,link-gate per sporter; dedupe datum+source; nooit sessies aanraken,coach-plan-adoption
+coach,gekoppelde sporters,privénotities (visibility=private),read+write eigen notities,true,false,false,andere coach ziet ze nooit,coach-parent-private-memory test
+coach,any,clubbrede beheeracties,any,false,false,false,clubbeheer vereist clubrol owner/admin,canManageClub
+hoofdtrainer,toegewezen club/team (club_members.role=hoofdtrainer),alles van trainer binnen die context,erven,true,true,false,zelfde deleniveaus als trainer,clubRoles enum + club-permissions
+hoofdtrainer,toegewezen club/team,trainer-toewijzingen (club_trainer_assignments),beheren,true,false,true,alleen binnen eigen organisatiecontext,schema/club.ts
+hoofdtrainer,toegewezen club/team,trainerwerk (plannen van trainers),beoordelen+aanpassen,true,true,true,nooit stil overschrijven: wijziging schrijft club_audit_log-regel met oud/nieuw,Beslisblok 02 richting; club_audit_log
+hoofdtrainer,any,medische/privédata buiten deleniveau,read,false,true,true,zelfde fail-closed als trainer,sharing levels
+parent,gekoppelde jeugdsporter (parent_athlete_links),wettelijk + expliciet gedeelde jeugdgegevens,read,true,true,true,EffectiveParentAccess op leesmoment; onbekende leeftijd⇒veiligheidsminimum; 18+⇒alles dicht,"lib/parent-permissions.ts, parent-environment test"
+parent,gekoppelde jeugdsporter,volledig sportdossier,read,false,true,true,geen automatische volledige inzage; sporter houdt eigen regie,parent-permissions SAFETY_CATEGORIES
+parent,gekoppelde jeugdsporter,"meldingen (ziek/blessure/afwezig), noodcontacten, bevestigingen",create,true,true,true,alleen via geaccepteerde link,parent_reports/confirmations
+clubbeheerder,eigen club (club_members.role in owner/admin),"club, leden, groepen, rollen, uitnodigingen",beheren,true,false,true,canManageClub; ledenlimieten ook bij accept; jeugdconsent fail-closed,"club.ts routes, club_subscriptions"
+clubbeheerder,eigen club,"operationele clubgegevens (kalender, aanwezigheid, berichten)",read+write,true,false,false,club-scoped ID-checks,club-permissions
+clubbeheerder,eigen club,inhoudelijke trainings-/gezondheidsdata leden,read,false,true,true,nooit automatisch; alleen via expliciete consent-scope,club_consents scopes
+clubbeheerder,eigen club,trainers/hoofdtrainers/ploegleiders/mechaniekers koppelen,toewijzen,true,false,true,alleen binnen club; toewijzing geeft nooit meer dan de contextrol toestaat,club_trainer_assignments
+ploegleider,toegewezen team/selectie (club_members.role=teammanager + teamkoppeling),"wedstrijdplanning, logistiek, aanwezigheid, live koerscontext, volgauto",read+write,true,false,true,alleen eigen team/selectie; einde toewijzing sluit direct,"club_race_events/selections, volgauto (uit te breiden)"
+ploegleider,toegewezen team,live locatie renners tijdens koers,read,true,true,true,audience-check + hercheck per read; minderjarig fail-closed,live-location.ts
+ploegleider,any,volledige gezondheids-/privétrainergegevens,read,false,true,true,herstel-/medische details nooit,Beslisblok 02 richting
+mechanieker,toegewezen fietsen/renners/team (club_members.role=mechanieker + toewijzing),"materiaalprofielen, defecten, onderhoud",read+write materiaalvelden,true,false,true,"alleen toegewezen materiaal; km blijft afgeleid, nooit teller",clubRoles mechanieker; garage engine
+mechanieker,toegewezen team,materiaalstatus per renner/team,read,true,false,false,alleen functioneel noodzakelijke materiaalcontext,Beslisblok 02 richting
+mechanieker,any,"trainings-, herstel- of medische inhoud",read,false,true,true,"nooit, behalve expliciet materiaal-noodzakelijke context",Beslisblok 02 richting
+admin,platform,"healthchecks, testrollen, audit, technisch beheer",beheren,true,false,true,SPARKI_ADMIN_IDS; elke actie in admin_ops_log,"admin routes, admin_ops_log"
+admin,platform,persoonlijke data buiten expliciete supportflow,read,false,true,true,geen stil gebruik; supportflow met audit,Beslisblok 02 richting; security_audit_log
