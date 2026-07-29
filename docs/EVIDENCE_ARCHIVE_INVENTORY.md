@@ -33,10 +33,10 @@ Grootte in bytes. "Publiek" = bereikbaar via de webapp (map `artifacts/sparki/pu
 | docs/UX_00B_DELIVERY.zip | 3.343 | `2b8f4ed58e8d0e879228bad8a52d83565fb23371744442b79059373ca986d3a2` | tracked | afgekeurde oplevering (UX_00B) — noodzakelijk bewijs | nee | behouden, ongewijzigd |
 | docs/SPARKI_REVIEW_BUNDLE.zip | 34.662 | `e95e77718596ccd17a86d9972692b1336a9dd8653249072c734b53f3c8d66c3c` | tracked | historisch bewijs (reviewbundel 23 jul) | nee | behouden, ongewijzigd |
 | docs/review-bundle/sparki-reviewbundel.zip | 10.105.737 | `c92c5741b938e324503662edb2b50425d5d269ca19b2c51999e602437e1c6113` | tracked | historisch bewijs (oudere reviewbundel) | nee | behouden, ongewijzigd |
-| UX_00A_COMPLETE_EVIDENCE.zip | 502.800 | `7376cde3627a846cbfe96ca455c07ea928eff66fb0361a1e71cbae87b1979c03` | tracked | historisch bewijs (UX_00A) | nee | behouden, ongewijzigd |
-| SPARKI_CURRENT_SOURCE.zip | 21.382.095 | `8c039016f925799db5cdd216dad8a0fc5af0aa4b13bc77d77f2ac6cfc8fdafaf` | tracked | backup (bron-export) | nee | behouden, ongewijzigd |
-| sparki-backup-bundle.zip | 54.162.515 | `bd94b031087cc990f8adac73ec7c36311ae3d82b47ae26202fd90443a4282114` | tracked | backup (zip van git-bundle) | nee | behouden, ongewijzigd |
-| sparki-backup.bundle¹ | 54.162.325 | `684f40557c849057ff9aec8edce6ef662740e2eb8b9c57247b55baaa1b85727c` | tracked | backup (git-bundle) | nee | behouden, ongewijzigd |
+| UX_00A_COMPLETE_EVIDENCE.zip | 502.800 | `7376cde3627a846cbfe96ca455c07ea928eff66fb0361a1e71cbae87b1979c03` | historie (uit HEAD, 28 jul) | historisch bewijs (UX_00A) | nee | 29 jul 2026 (taak 408): extern veiliggesteld⁵ en lokaal verwijderd; byte-identieke kopie blijft in attached_assets/UX_00A_COMPLETE_EVIDENCE_1784984187212.zip |
+| SPARKI_CURRENT_SOURCE.zip | 21.382.095 | `8c039016f925799db5cdd216dad8a0fc5af0aa4b13bc77d77f2ac6cfc8fdafaf` | historie (uit HEAD, 28 jul) | backup (bron-export) | nee | 29 jul 2026 (taak 408): extern veiliggesteld⁵ en lokaal verwijderd; byte-identieke kopie blijft tracked in docs/evidence/archive/public_exports/ |
+| sparki-backup-bundle.zip | 54.162.515 | `bd94b031087cc990f8adac73ec7c36311ae3d82b47ae26202fd90443a4282114` | historie: alleen LFS-pointer | backup (zip van git-bundle) | nee | zie taak 408 hieronder: bytes lokaal niet meer aanwezig, NIET extern veiliggesteld — eerlijk geregistreerd |
+| sparki-backup.bundle¹ | 54.162.325 | `684f40557c849057ff9aec8edce6ef662740e2eb8b9c57247b55baaa1b85727c` | historie: alleen LFS-pointer | backup (git-bundle) | nee | zie taak 408 hieronder: bytes lokaal niet meer aanwezig, NIET extern veiliggesteld — eerlijk geregistreerd |
 | export/sparki-current-state-export.zip | 16.259.944 | `e2f9d1c769aebb75ed6c697d84afa26df601a47633cdcf067fac2d084ec8bcb1` | tracked | historisch bewijs (huidige-staat-export) | nee | behouden, ongewijzigd |
 | exports/BF_00_evidence.zip | 83.567.014 | `f543e32a93d1e2f6ed6891eed4a3ff55ded73587790c5f69eebb24d62ac524da` | tracked (LFS, historie intact) | historisch bewijs (BF_00 fietsscan) | nee | 28 jul 2026 (taak 338): extern veiliggesteld⁴ en lokaal verwijderd i.v.m. deploy-limiet |
 | .local/exports/BF_00_evidence.zip² | 83.571.096 | `c41b2c9688587434685b79fcd7e88304afea83766581fb60884927e9e9ab8f4f` | untracked (.local) | historisch bewijs (BF_00, agent-export) | nee | 28 jul 2026 (taak 338): extern veiliggesteld⁴ en lokaal verwijderd |
@@ -144,3 +144,45 @@ een inventarisrij die "extern veiliggesteld" én "lokaal verwijderd" vermeldt;
 onbekende of verse (<24u) bestanden blijven altijd staan (fail-closed). De
 project_disk_size-healthcheck benoemt `exports/` bovendien expliciet als
 opruimkandidaat boven 200 MB.
+
+## Update 29 juli 2026 (taak 408) — losse root-backups bewijsveilig afgehandeld
+
+⁵ Extern veiliggesteld (taak 408) = privé App Storage-bucket, prefix
+`.private/bewijsarchief-offload/root-backups/`; elke upload is teruggelezen en
+de SHA-256 van de bucket-kopie is byte-identiek geverifieerd aan de hash in de
+inventaristabel.
+
+Beslissing en uitvoering per bestand (projectroot):
+
+- **SPARKI_CURRENT_SOURCE.zip** (`8c039016…faf`): geoffload naar de bucket
+  (readback-SHA identiek) en lokaal (root) verwijderd. Geen bewijsverlies: een
+  byte-identieke, tracked kopie staat in
+  `docs/evidence/archive/public_exports/SPARKI_CURRENT_SOURCE.zip` — die blijft
+  "behouden, ongewijzigd".
+- **UX_00A_COMPLETE_EVIDENCE.zip** (`7376cde3…c03`): geoffload naar de bucket
+  (readback-SHA identiek) en lokaal (root) verwijderd. Geen bewijsverlies: een
+  byte-identieke kopie blijft staan in `attached_assets/` (nooit aanraken).
+- **sparki-backup-bundle.zip** (`bd94b031…114`) en **sparki-backup.bundle**
+  (`684f4055…27c`): eerlijk bevonden dat de bytes lokaal NIET meer bestaan —
+  de bestanden waren op 28 jul (deploy-limiet-commit) al uit HEAD gehaald, in
+  de git-historie staat alleen de 133-byte LFS-pointer, de lokale LFS-objecten
+  zijn bij de LFS-opschoning van 28/29 jul verwijderd en er stond géén kopie
+  in de bucket. Ophalen via GitHub LFS is geprobeerd en faalt ("Bad
+  credentials"; geen werkende GitHub-koppeling). De objecten staan mogelijk
+  nog op GitHub LFS (oid = SHA-256 hierboven). Inhoudelijk waren dit
+  git-bundles van de repository-historie van vóór 25 jul — die historie
+  bestaat nog steeds als de repository zelf. Er is in deze taak niets aan
+  deze bestanden verwijderd of gewijzigd; alleen de werkelijke status is
+  vastgelegd.
+
+Daarnaast bleek `exports/SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip`
+opnieuw via checkpoint-herstel teruggekomen; SHA-256 opnieuw lokaal berekend
+(`639bace4…`, byte-identiek aan de bucket-rij hierboven) en het bestand is
+opnieuw lokaal verwijderd.
+
+Bewaking: de dagelijkse fail-closed routine
+(`artifacts/api-server/src/lib/exports-maintenance.ts`) beoordeelt nu naast
+`exports/` óók losse `*.zip`/`*.bundle`-bestanden DIRECT in de projectroot.
+Verwijderen gebeurt uitsluitend bij een byte-identieke SHA-match met een
+inventarisrij "extern veiliggesteld" + "lokaal verwijderd"; onbekende of verse
+(<24u) bestanden en alles buiten die twee locaties blijven altijd staan.

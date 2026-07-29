@@ -97,6 +97,34 @@ try {
   // Idempotent: tweede run verwijdert niets meer.
   const again = await runExportsMaintenance({ force: true });
   assert(again.ran && again.deleted.length === 0, "tweede run: niets meer te verwijderen");
+
+  // ── Root-backups (taak 408) ────────────────────────────────────────────────
+  // Oud root-bestand met SHA-match wordt verwijderd; onbekend root-bestand en
+  // niet-zip/bundle-bestanden blijven ALTIJD staan.
+  const rootOffloaded = path.join(root, "old-backup.zip");
+  await writeFile(rootOffloaded, "ROOT-OFFLOADED");
+  await utimes(rootOffloaded, oldTime, oldTime);
+  const rootUnknown = path.join(root, "mystery-backup.bundle");
+  await writeFile(rootUnknown, "ROOT-UNKNOWN");
+  await utimes(rootUnknown, oldTime, oldTime);
+  const rootOther = path.join(root, "notes.txt");
+  await writeFile(rootOther, "ROOT-OFFLOADED"); // zelfde inhoud, verkeerde extensie
+  await utimes(rootOther, oldTime, oldTime);
+  const rootSha = await sha256OfFile(rootOffloaded);
+  await writeFile(
+    path.join(root, INVENTORY_RELATIVE_PATH),
+    `| old-backup.zip | 14 | \`${rootSha}\` | tracked | backup | nee | extern veiliggesteld⁴ en lokaal verwijderd |\n`,
+  );
+  const rootRun = await runExportsMaintenance({ force: true });
+  assert(rootRun.ran, "root-run draait");
+  assert(
+    rootRun.deleted.length === 1 && rootRun.deleted[0].name === "old-backup.zip",
+    "alleen het byte-identiek veiliggestelde oude root-backupbestand wordt verwijderd",
+  );
+  const rootRemaining = await readdir(root);
+  assert(rootRemaining.includes("mystery-backup.bundle"), "onbekende root-bundle blijft staan (fail-closed)");
+  assert(rootRemaining.includes("notes.txt"), "niet-zip/bundle-bestand wordt nooit aangeraakt, ook met SHA-match");
+  assert(!rootRemaining.includes("old-backup.zip"), "veiliggesteld oud root-bestand is weg");
 } finally {
   process.chdir(origCwd);
   await rm(root, { recursive: true, force: true });

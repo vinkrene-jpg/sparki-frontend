@@ -22,8 +22,12 @@
 //    reden), nooit gokken.
 //  - Bestanden jonger dan 24 uur worden nooit aangeraakt (kan een export
 //    zijn die net gemaakt of nog geschreven wordt).
-//  - Alleen reguliere bestanden direct in exports/; nooit iets buiten die
-//    map, nooit docs/, nooit attached_assets/, nooit bewijsarchiefpaden.
+//  - Alleen reguliere bestanden direct in exports/ plus — sinds taak 408 —
+//    losse backup-bestanden (*.zip / *.bundle) DIRECT in de projectroot;
+//    nooit docs/, nooit attached_assets/, nooit bewijsarchiefpaden, nooit
+//    submappen. Voor rootbestanden geldt exact dezelfde fail-closed regel:
+//    verwijderen kan alleen bij een byte-identieke SHA-match met een
+//    inventarisrij "extern veiliggesteld" + "lokaal verwijderd".
 //  - Onder de ondergrens (totaal exports/ < 50 MB) is de run een goedkope
 //    no-op.
 
@@ -40,6 +44,11 @@ export const EXPORTS_MAINTENANCE_MIN_BYTES = 50 * 1024 ** 2;
 export const EXPORTS_MIN_AGE_MS = 24 * 60 * 60_000;
 
 export const INVENTORY_RELATIVE_PATH = "docs/EVIDENCE_ARCHIVE_INVENTORY.md";
+
+// Losse backup-bestanden direct in de projectroot die de routine mag
+// beoordelen (taak 408). Uitsluitend zip/bundle-extensies; alles daarbuiten
+// wordt nooit aangeraakt.
+export const ROOT_BACKUP_PATTERN = /\.(zip|bundle)$/i;
 
 export interface ExportsMaintenanceSummary {
   ran: boolean;
@@ -92,23 +101,18 @@ export async function runExportsMaintenance(opts?: {
   }
   const exportsDir = path.join(repoRoot, "exports");
 
-  // Bestanden inventariseren; geen map = niets te doen.
-  let names: string[];
-  try {
-    names = await readdir(exportsDir);
-  } catch {
-    return {
-      ran: false,
-      skippedReason: "exports/ bestaat niet — niets te doen",
-      deleted,
-      kept,
-      errors,
-    };
-  }
-
   const now = opts?.now ?? Date.now();
   const minAgeMs = opts?.minAgeMs ?? EXPORTS_MIN_AGE_MS;
   const files: Array<{ name: string; abs: string; bytes: number; mtimeMs: number }> = [];
+
+  // 1. Bestanden direct in exports/ (map kan ontbreken — dan niets daar).
+  let exportsDirExists = true;
+  let names: string[] = [];
+  try {
+    names = await readdir(exportsDir);
+  } catch {
+    exportsDirExists = false;
+  }
   for (const name of names.sort()) {
     const abs = path.join(exportsDir, name);
     try {
@@ -121,6 +125,35 @@ export async function runExportsMaintenance(opts?: {
     } catch (err) {
       errors.push(`${name}: ${err instanceof Error ? err.message : String(err)}`);
     }
+  }
+
+  // 2. Losse backup-bestanden DIRECT in de projectroot (taak 408): alleen
+  //    *.zip / *.bundle, nooit submappen. Dezelfde fail-closed SHA-poort
+  //    verderop beslist of verwijderen bewijsbaar veilig is.
+  try {
+    const rootNames = (await readdir(repoRoot)).filter((n) => ROOT_BACKUP_PATTERN.test(n));
+    for (const name of rootNames.sort()) {
+      const abs = path.join(repoRoot, name);
+      try {
+        const st = await stat(abs);
+        if (!st.isFile()) continue; // mappen met .zip-achtige naam: nooit aanraken
+        files.push({ name, abs, bytes: st.size, mtimeMs: st.mtimeMs });
+      } catch (err) {
+        errors.push(`${name}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+  } catch (err) {
+    errors.push(`projectroot niet leesbaar: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  if (!exportsDirExists && files.length === 0) {
+    return {
+      ran: false,
+      skippedReason: "exports/ bestaat niet en geen losse root-backups — niets te doen",
+      deleted,
+      kept,
+      errors,
+    };
   }
   const totalBytesBefore = files.reduce((s, f) => s + f.bytes, 0);
 
