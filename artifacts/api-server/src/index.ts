@@ -8,6 +8,7 @@ import { cleanupStaleConnectorShells } from "./lib/connectors/cleanup";
 import { cleanupClimbCacheDb } from "./lib/climbs/cache";
 import { startReminderScheduler } from "./lib/reminder-scheduler";
 import { startGitMaintenanceScheduler } from "./lib/git-maintenance";
+import { startExportsMaintenanceScheduler } from "./lib/exports-maintenance";
 import { ensureBillingFlagSeed, expireBillingStates } from "./lib/billing";
 import { startRouteEnvWarmupScheduler } from "./lib/route-env-warmup";
 import { sweepObservationCleanup } from "./jobs/observation-cleanup";
@@ -152,6 +153,12 @@ app.listen(port, (err) => {
   // (waar de reminder-scheduler standaard uit staat). Max 1×/Amsterdamse dag,
   // fail-closed poort main==origin/main, no-op onder ~1 GB .git.
   startGitMaintenanceScheduler();
+
+  // Automatische exports/-opschoning (taak 407): werkmap telt óók mee voor de
+  // 8 GiB-publiceerlimiet; export-zips komen via checkpoint-herstel terug.
+  // Verwijdert ALLEEN bestanden waarvan de SHA-256 byte-identiek matcht met
+  // een extern-veiliggestelde inventarisrij (fail-closed), max 1×/Ams-dag.
+  startExportsMaintenanceScheduler();
 
   // Fire-and-forget: (1) de vier Stripe-betaalflags bestaan als rijen, default
   // UIT (onConflictDoNothing — een beheerbeslissing wordt nooit overschreven);

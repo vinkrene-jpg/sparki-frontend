@@ -14,6 +14,7 @@
     "test:route-improvement": "node ./scripts/run-test.mjs route-improvement",
     "test:disk-usage": "node ./scripts/run-test.mjs disk-usage",
     "test:git-maintenance": "node ./scripts/run-test.mjs git-maintenance",
+    "test:exports-maintenance": "node ./scripts/run-test.mjs exports-maintenance",
     "test:koppellijst-workouts": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs koppellijst-workouts",
     "test:data-trust": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs data-trust",
     "test:store-release": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs store-release",

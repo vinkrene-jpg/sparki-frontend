@@ -20,6 +20,10 @@ import type { ProbeResult } from "./types";
 export const GIT_WARN_BYTES = 1.0 * 1024 ** 3; // .git > 1,0 GB → orange
 export const TOTAL_WARN_BYTES = 5 * 1024 ** 3; // totaal > 5 GiB → orange
 export const TOTAL_CRITICAL_BYTES = 7.25 * 1024 ** 3; // totaal > 7,25 GiB → red (publish limit is 8 GiB)
+// exports/ boven deze drempel wordt expliciet als opruimkandidaat benoemd:
+// oude export-zips komen via checkpoint-herstel terug en tellen volledig mee
+// voor de publiceerlimiet (taak 407).
+export const EXPORTS_WARN_BYTES = 200 * 1024 ** 2; // exports/ > 200 MB → benoemen
 
 function ms(start: number): number {
   return Math.max(0, Math.round(performance.now() - start));
@@ -60,6 +64,8 @@ export function formatGb(bytes: number): string {
 interface DiskUsage {
   gitBytes: number;
   totalBytes: number;
+  // Exact size of exports/ (0/undefined when absent) — named cleanup candidate.
+  exportsBytes?: number;
   // Largest top-level entries (name + bytes), sorted desc.
   offenders: Array<{ name: string; bytes: number }>;
   // Environment-managed dirs measured but excluded from the alarm total.
@@ -100,6 +106,7 @@ export async function measureDiskUsage(repoRoot: string): Promise<DiskUsage> {
   const counted = entries.filter((e) => !ENV_MANAGED_DIRS.has(e.name));
   const excluded = entries.filter((e) => ENV_MANAGED_DIRS.has(e.name));
   const totalBytes = counted.reduce((sum, e) => sum + e.bytes, 0);
+  const exportsBytes = counted.find((e) => e.name === "exports")?.bytes ?? 0;
   const offenders = [...counted].sort((a, b) => b.bytes - a.bytes).slice(0, 5);
   const excludedNote =
     excluded.length > 0
@@ -108,7 +115,7 @@ export async function measureDiskUsage(repoRoot: string): Promise<DiskUsage> {
           .map((e) => `${e.name}: ${formatGb(e.bytes)}`)
           .join(", ")
       : undefined;
-  return { gitBytes, totalBytes, offenders, excludedNote };
+  return { gitBytes, totalBytes, exportsBytes, offenders, excludedNote };
 }
 
 async function topLevelEntries(repoRoot: string): Promise<string[]> {
@@ -125,11 +132,19 @@ export function classifyDiskUsage(
   const offenderLine = offenders
     .map((o) => `${o.name}: ${formatGb(o.bytes)}`)
     .join(", ");
+  const exportsBytes = usage.exportsBytes ?? 0;
+  const exportsNote =
+    exportsBytes > EXPORTS_WARN_BYTES
+      ? ` De map exports/ is ${formatGb(exportsBytes)} en is een opruimkandidaat: oude export-zips die al extern veiliggesteld zijn (zie docs/EVIDENCE_ARCHIVE_INVENTORY.md) horen lokaal niet meer te bestaan; de automatische exports-opschoning ruimt bewijsbaar veilige bestanden dagelijks op.`
+      : "";
   const technicalDetails =
     `.git=${formatGb(gitBytes)}, totaal (excl. omgevingsmappen)=${formatGb(totalBytes)} ` +
     `(drempels: .git ${formatGb(GIT_WARN_BYTES)}, totaal ${formatGb(TOTAL_WARN_BYTES)}, ` +
     `kritiek ${formatGb(TOTAL_CRITICAL_BYTES)}; publiceerlimiet 8 GiB). ` +
     `Grootste mappen: ${offenderLine}` +
+    (exportsBytes > 0
+      ? `. exports/=${formatGb(exportsBytes)} (drempel opruimkandidaat ${formatGb(EXPORTS_WARN_BYTES)})`
+      : "") +
     (usage.excludedNote
       ? `. Niet meegeteld (omgevingsmappen): ${usage.excludedNote}`
       : "");
@@ -141,7 +156,8 @@ export function classifyDiskUsage(
       responseTimeMs: tookMs,
       message:
         `De projectmap is ${formatGb(totalBytes)} en zit vlak bij de publiceerlimiet van 8 GiB. ` +
-        `Publiceren kan hierdoor mislukken. Grootste boosdoeners: ${offenderLine}.`,
+        `Publiceren kan hierdoor mislukken. Grootste boosdoeners: ${offenderLine}.` +
+        exportsNote,
       technicalDetails,
       urgency: "critical",
     };
@@ -157,7 +173,8 @@ export function classifyDiskUsage(
       responseTimeMs: tookMs,
       message:
         `${reason} Ruim op voordat de publiceerlimiet (8 GiB) in zicht komt. ` +
-        `Grootste boosdoeners: ${offenderLine}.`,
+        `Grootste boosdoeners: ${offenderLine}.` +
+        exportsNote,
       technicalDetails,
       urgency: "medium",
     };
@@ -168,7 +185,8 @@ export function classifyDiskUsage(
     responseTimeMs: tookMs,
     message:
       `De projectmap is gezond van omvang (totaal ${formatGb(totalBytes)}, ` +
-      `.git ${formatGb(gitBytes)}) — ruim onder de publiceerlimiet.`,
+      `.git ${formatGb(gitBytes)}) — ruim onder de publiceerlimiet.` +
+      exportsNote,
     technicalDetails,
   };
 }

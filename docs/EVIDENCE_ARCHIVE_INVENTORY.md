@@ -130,3 +130,17 @@ Git-geschiedenis is niet herschreven; alleen `git reflog expire` +
 Resultaat: `.git` 5,1 GiB → 0,67 GiB; projecttotaal (excl. omgevingsmappen)
 8,3 GiB → 3,9 GiB. Health check `project_disk_size` valt hiermee weer binnen
 de groene drempels (.git < 1,5 GB, totaal < 6 GiB).
+
+## Update 29 juli 2026 (taak 407) — automatische exports/-opschoning
+
+`SPARKI_FULL_REPOSITORY_AUDIT_2026-07-28_a524a23.zip` bleek opnieuw via
+checkpoint-herstel in `exports/` teruggekomen. SHA-256 lokaal opnieuw
+gecontroleerd (`639bace4…`, byte-identiek aan de bucket-kopie, zie rij
+hierboven) en het bestand is opnieuw lokaal verwijderd. Vanaf nu ruimt de
+api-server dit dagelijks automatisch op
+(`artifacts/api-server/src/lib/exports-maintenance.ts`): een bestand in
+`exports/` wordt UITSLUITEND verwijderd wanneer zijn SHA-256 exact matcht met
+een inventarisrij die "extern veiliggesteld" én "lokaal verwijderd" vermeldt;
+onbekende of verse (<24u) bestanden blijven altijd staan (fail-closed). De
+project_disk_size-healthcheck benoemt `exports/` bovendien expliciet als
+opruimkandidaat boven 200 MB.
