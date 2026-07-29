@@ -42,3 +42,75 @@ Kleine bijvangst: `SAFETY_CATEGORIES` in `lib/parent-permissions.ts` geëxportee
 ## 7. Publicatie
 
 **Niet nodig.** Dit blok wijzigt alleen governance-documenten, testfixtures en tests; er is geen productiegedrag veranderd (enige codewijziging is een export-keyword). Commit-SHA: `a886c8f1` (fundament) + review-hardening-commit met race-safe lock, strikte verwijder-handtekening en scenario 10–11.
+
+---
+
+## 8. Aanvullende controle (op verzoek van de Governor, 29 juli 2026)
+
+### 8.1 Volledige lijst gewijzigde bestanden (commits a886c8f1, 5c11f377, 14b45c3c)
+
+**Alleen documentatie (18):**
+- reports/SPARKI_GOVERNOR_BESLISBLOK_02.md
+- reports/governor-beslisblok-02/REUSE_INVENTORY.md, REUSE_INVENTORY.csv
+- reports/governor-beslisblok-02/ROLE_CAPABILITY_MODEL.md, ROLE_CAPABILITY_MATRIX.csv
+- reports/governor-beslisblok-02/CLUB_TEAM_ORGANISATION_MODEL.md
+- reports/governor-beslisblok-02/SUBSCRIPTION_DEPTH_MODEL.md, SUBSCRIPTION_DEPTH_MATRIX.csv
+- reports/governor-beslisblok-02/CLUB_VS_TEAM_FEATURE_MODEL.md
+- reports/governor-beslisblok-02/TEST_ACCOUNT_AND_FIXTURE_PLAN.md
+- reports/governor-beslisblok-02/IMPLEMENTATION_SEQUENCE.md
+- reports/governor-beslisblok-02/work-packages/WP-01 t/m WP-10 (10 bestanden)
+- (werkgeheugen, geen product: .agents/memory/MEMORY.md, .agents/memory/governor-beslisblok-02.md)
+
+**Governance/config (4):**
+- governance/role-capability-matrix-v1.json
+- governance/organisation-membership-model-v1.json
+- governance/subscription-depth-model-v1.json
+- governance/club-team-feature-model-v1.json
+
+**Testcode & testfixtures (4):**
+- artifacts/api-server/src/tests/governor-role-foundation.ts (nieuwe testsuite)
+- artifacts/api-server/src/scripts/governor-role-fixtures.ts (fixturescript, alleen dev/test; weigert productie)
+- scripts/governor/create-role-test-fixtures.sh, remove-role-test-fixtures.sh (dunne wrappers)
+
+**Productcode (1, minimaal):**
+- artifacts/api-server/src/lib/parent-permissions.ts — uitsluitend `export` toegevoegd aan de bestaande constante `SAFETY_CATEGORIES` zodat de test die kan controleren. Geen gedragswijziging; typecheck en alle bestaande suites groen.
+
+**Database/schema/migraties (0):**
+- Geen enkele schema- of migratiewijziging. Voorgestelde uitbreidingen (organisation_kind, club_seasons, parent_team_id, rol×team-scope) staan alleen als voorstel in de modellen/werkpakketten.
+
+### 8.2–8.5 Bevestigingen
+
+- **Echte gebruikersdata geraakt: NEE.** Alle fixture-writes zijn beperkt tot synthetische rijen met prefix `governor-fixture-` in de ontwikkeldatabase; verwijdering eist bovendien het synthetische e-maildomein én releasegroep "test". Non-interference is als testscenario bewezen (scenario 10). De dev-database is schoon achtergelaten (fixtures verwijderd, verify 0/0).
+- **Productie-entitlements gewijzigd: NEE.** Er is niets gepubliceerd; er is geen enkele write richting de productiedatabase gedaan. GO_FEATURE_KEYS en alle grants staan ongewijzigd in de code; de GO↔COMPLETE-herverdeling is uitsluitend een voorstel (WP-09, wacht op René-besluit).
+- **Productie-testaccounts gemaakt: NEE.** Geen Clerk-accounts, geen uitnodigingen, geen e-mails; het fixturescript weigert hard (exit 1) bij NODE_ENV=production of REPLIT_DEPLOYMENT — uitgevoerd en getest (scenario 8 + shell-run).
+- **Tweede model naast een bestaand model ontstaan: NEE.** De modellen formaliseren het bestaande stelsel: platformrollen blijven athlete/coach/parent; hoofdtrainer/clubbeheerder/ploegleider/mechanieker zijn contextrollen op het bestaande clubmodel; Club/Team zijn productprofielen op dezelfde tabellen; alle tiers lopen door dezelfde entitlements-engine. Dit "geen tweede model"-principe staat expliciet als stopconditie in elk werkpakket.
+
+### 8.6 Alle testruns (geslaagd én mislukt)
+
+| Test | Resultaat |
+|---|---|
+| typecheck libs + api-server | geslaagd (0 fouten) |
+| governor-role-foundation (nieuw) | **11/11 geslaagd** — na 3 tussentijdse mislukkingen tijdens ontwikkeling: (1) buildfout ontbrekende export SAFETY_CATEGORIES → export toegevoegd; (2) scenario 6 las verkeerde veldnaam (`mode` i.p.v. `entitlementMode`) → testfout hersteld; (3) scenario 7 rekende `slaap` niet tot het veiligheidsminimum, terwijl de bestaande code die bewust wél meeneemt (backward-compatibele standaard) → testverwachting gecorrigeerd en gedocumenteerd |
+| cross-account-isolation | 19/19 geslaagd |
+| coach-parent-link-isolation | 13/13 geslaagd |
+| links-end-isolation | 3/3 geslaagd |
+| entitlements | 19/19 geslaagd |
+| admin-smoke | 12/12 geslaagd |
+| Eerste run bestaande suites zonder DEV_AUTH_BYPASS-env | mislukte (verwacht gedrag: suites vereisen die env, zoals hun package.json-scripts zetten); herhaald mét env → allemaal groen |
+| Fixturescript prod-guard (NODE_ENV=production) | correct GEWEIGERD (exit 1) |
+
+### 8.7 Stopcondities die bijna geraakt zijn
+
+- **Bijna geraakt — "tweede parallel model":** de eerste architect-review wees erop dat de fixture-remove op alleen een prefix-LIKE bij een theoretische namespace-botsing echte data via cascades zou kunnen wissen ("wijziging echte gebruikersdata"). Dit is vóór afronding verholpen (strikte drieledige handtekening + advisory lock + extra testscenario's 10–11); de conditie is nooit daadwerkelijk geraakt.
+- **Gemarkeerd, niet geraakt — "live prijs-/entitlementbesluit":** het GO↔COMPLETE-conflict is bewust als voorstel geparkeerd (WP-09) in plaats van uitgevoerd.
+- Geen datamodelconflicten, geen destructieve migraties, geen cross-user/club-lekkage, geen onduidelijk data-eigenaarschap aangetroffen.
+
+### 8.8 Commit-SHA's en publicatie
+
+- `a886c8f1` — fundament (modellen, fixtures, tests, werkpakketten, rapport)
+- `5c11f377` — review-hardening (advisory lock, strikte verwijder-handtekening, scenario 10–11)
+- `14b45c3c` — werkgeheugen-notitie (geen product)
+- Controle-addendum: zie de commit die deze sectie toevoegt.
+- **Publicatie nodig: NEE** — geen productiegedrag gewijzigd.
+
+**Eindstatus: GOVERNOR_DECISION_BLOCK_02_FOUNDATION_READY** — geen vervolgwerk gestart.
