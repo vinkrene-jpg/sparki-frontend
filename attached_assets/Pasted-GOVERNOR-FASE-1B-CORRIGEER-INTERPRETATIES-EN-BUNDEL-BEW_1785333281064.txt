@@ -1,0 +1,332 @@
+GOVERNOR FASE 1B — CORRIGEER INTERPRETATIES EN BUNDEL BEWIJS PER GEBRUIKERSREIS
+
+DOEL
+
+Maak van de afgeronde Governor fase 1 een bestuurbaar reviewpakket voor ChatGPT en René.
+
+Dit is geen nieuwe productaudit en geen herstelopdracht.
+
+Wijzig geen applicatiecode.
+Wijzig geen database.
+Verplaats geen menu’s.
+Bouw geen ontbrekende functies.
+Start WP-A06A, WP-A07 of Governor fase 2 niet.
+
+BRONBASIS
+
+- auditbron: commit 7e2f1983
+- Governor fase-1-commit: 2a709b5a
+- live publish-commit: 68df60f9
+- actuele branch: main
+- SPARKI_AI_MASTER_PLAN_v3_02.yaml
+- SPARKI_PRODUCT_GOVERNOR_GEFASEERD_MET_RENE_REFERENTIES_2026-07-29.md
+- governance/*.json
+- reports/SPARKI_GOVERNOR_FASE1_*.md
+- reports/SPARKI_RENE_PRODUCTCOCKPIT.md
+- reports/SPARKI_GOVERNOR_FASE1_CHATGPT_REVIEW_PACKAGE.md
+- 470 bestaande screenshots en route-crawl-bewijs
+
+BELANGRIJKE REGEL
+
+De huidige app blijft:
+
+CURRENT_AUDIT_SOURCE
+
+Niet:
+
+APPROVED_BASELINE
+PRODUCT_APPROVED
+RENE_APPROVED_REFERENCE
+RENE_APPROVED_PATTERN
+
+FASE 1 — CORRIGEER VERKEERD GEFORMULEERDE OPEN BESLUITEN
+
+Pas de cockpit en het reviewpakket aan op basis van deze vaststaande koers:
+
+1. CLUB EN TEAM
+
+Club en Team blijven in scope.
+
+Vaste productrichting:
+
+- Club is de laagdrempelige acquisitie- en clublaag;
+- Team is het betaalde professionele product;
+- dit is geen nieuwe ja/nee-vraag aan René;
+- ontbrekende Club-/Team-abonnementen of entitlements zijn een productgat;
+- exacte prijs en live Stripe blijven wel een latere beslispoort.
+
+2. ROLLEN EN WERKRUIMTES
+
+De gewenste rollen blijven:
+
+- sporter;
+- ouder/verzorger;
+- trainer;
+- hoofdtrainer/coach;
+- clubbeheerder;
+- ploegleider/teammanager;
+- mechanieker;
+- admin/testbeheerder.
+
+Ontbrekende eigen werkruimtes zijn een bouwgat, niet opnieuw de vraag welke rollen René wil.
+
+3. HUIDIGE VISUELE STAAT
+
+De huidige donkere of lichte schermen zijn geen goedgekeurde referentie.
+
+Formuleer dus niet automatisch:
+
+- Analyse moet donker;
+- alles moet donker;
+- de huidige donkere shell is de eindrichting.
+
+Classificeer alleen feitelijk:
+
+- visuele inconsistentie;
+- afwijking tussen schermen;
+- review nodig voor totale visuele richting.
+
+4. DESKTOP EN MOBIEL
+
+Desktop en mobiel hoeven niet pixelgelijk te zijn.
+
+Wel verplicht:
+
+- dezelfde kernmogelijkheden;
+- passende navigatie per apparaat;
+- geen verdwenen kernfunctie;
+- logische vindbaarheid;
+- correcte rollen en abonnementen.
+
+Classificeer verschillen daarom als:
+
+- LOGISCHE_APPARAATVARIANT;
+- KERNFUNCTIE_ONTBREEKT;
+- ONLOGISCHE_NAVIGATIE;
+- REVIEW_NODIG.
+
+5. GO EN COMPLEET
+
+Gebruik de vaste productregel:
+
+- abonnement bepaalt diepte;
+- doel bepaalt prioriteit;
+- taalniveau bepaalt terminologie;
+- Gratis, Go en Compleet delen één Analyse-architectuur en dezelfde centrale engines.
+
+Rapporteer exact waar de huidige code hiervan afwijkt.
+
+Maak er nog geen prijsbesluit of definitieve featureverdeling van zonder René.
+
+6. GEEN NIEUWE GOEDKEURINGEN
+
+Een bestaande opdracht, code-implementatie of screenshot is niet automatisch door René goedgekeurd.
+
+Gebruik bij twijfel:
+
+PENDING_RENE_REVIEW
+
+FASE 2 — BUNDEL ALLE BEWIJS PER GEBRUIKERSREIS
+
+Maak negen afzonderlijke reviewsets:
+
+1. Algemene productstructuur en navigatie
+2. Sporter — Vandaag, Trainen, Kalender en Activiteiten
+3. Analyse, herstel, doelen en databegrip
+4. Routes, ontdekken, klimmen en navigatie
+5. Trainer en hoofdtrainer
+6. Ouder en jeugd
+7. Club en Team
+8. Ploegleider en mechanieker
+9. Abonnementen, toegang en commerciële flows
+
+Per reviewset maximaal:
+
+- 8 representatieve screenshots;
+- 10 hoofdbevindingen;
+- 5 automatische herstelkandidaten;
+- 3 echte productbesluiten voor René.
+
+Gebruik bestaande screenshots. Maak alleen aanvullende screenshots wanneer noodzakelijk bewijs ontbreekt.
+
+FASE 3 — BEOORDEEL PER GEBRUIKERSREIS
+
+Leg per reis vast:
+
+- wat aantoonbaar bestaat;
+- wat ontbreekt;
+- wat verborgen of slecht bereikbaar is;
+- wat onjuist is geplaatst;
+- wat functioneel defect lijkt;
+- wat alleen visueel inconsistent is;
+- wat afwijkt van het Master Plan;
+- wat automatisch veilig herstelbaar lijkt;
+- wat ChatGPT inhoudelijk moet beoordelen;
+- wat uitsluitend René kan beslissen.
+
+Gebruik deze categorieën:
+
+- PROVEN_PRESENT
+- PROVEN_MISSING
+- PROVEN_HIDDEN
+- PROVEN_MISPLACED
+- PROVEN_ROLE_GAP
+- PROVEN_SUBSCRIPTION_GAP
+- PROVEN_CONTENT_PROBLEM
+- PROVEN_DATA_PRESENTATION_PROBLEM
+- AUTOMATIC_REPAIR_CANDIDATE
+- CHATGPT_PRODUCT_REVIEW_REQUIRED
+- RENE_DECISION_REQUIRED
+- EVIDENCE_INSUFFICIENT
+- DEFERRED_BY_DECISION
+
+FASE 4 — MAAK CONCRETE REVIEWKAARTEN
+
+Maak per echt René-besluit één compacte reviewkaart met:
+
+- gewone Nederlandse titel;
+- betrokken gebruikersreis;
+- huidige situatie;
+- waarom dit ertoe doet;
+- 1 tot 3 representatieve screenshots;
+- relevante Master Plan-regel;
+- eerdere vaststaande besluiten;
+- advies van de Governor;
+- maximaal drie concrete keuzerichtingen;
+- gevolgen per keuze;
+- wat na de keuze automatisch kan worden uitgevoerd.
+
+Stel geen vragen over reeds vaststaande koers.
+
+Een reviewkaart mag alleen `RENE_DECISION_REQUIRED` zijn wanneer:
+
+- er meerdere verdedigbare productrichtingen zijn;
+- eerdere besluiten geen uitsluitsel geven;
+- menselijk smaak-, prioriteits- of praktijkoordeel noodzakelijk is.
+
+FASE 5 — RENÉ-COCKPIT HERBOUWEN
+
+Vervang de huidige cockpit door een compact, juist geformuleerd overzicht:
+
+reports/SPARKI_RENE_PRODUCTCOCKPIT_V2.md
+
+Maximaal ongeveer 10 pagina’s.
+
+Structuur:
+
+1. Huidige staat in gewone Nederlandse taal
+2. Wat technisch bewezen goed is
+3. Wat aantoonbaar ontbreekt of verborgen is
+4. Problemen per gebruikersreis
+5. Automatisch herstelbare punten
+6. Punten die ChatGPT eerst beoordeelt
+7. Alleen de echte beslissingen voor René
+8. Aanbevolen herstelvolgorde
+9. Wat nog niet als referentie mag gelden
+10. Welke reviewset als eerste aan René wordt voorgelegd
+
+Geen honderden losse regels.
+Geen broncode-uitleg zonder noodzaak.
+Geen herhaling van reeds genomen besluiten.
+
+FASE 6 — CHATGPT-REVIEWPAKKET V2
+
+Maak:
+
+reports/SPARKI_GOVERNOR_FASE1B_CHATGPT_REVIEW_PACKAGE.md
+
+Dit bevat:
+
+- correcties op fase 1;
+- alle negen gebruikersreizen;
+- bevindingen per categorie;
+- links naar de geselecteerde screenshots;
+- automatische herstelkandidaten;
+- productvragen die ChatGPT zelf kan oplossen;
+- echte René-beslispunten;
+- tegenstrijdigheden tussen code, Master Plan en Build Pack;
+- bewijs dat geen productcode is gewijzigd.
+
+Maak daarnaast:
+
+reports/governor-fase1b/review-01-algemene-structuur.md
+reports/governor-fase1b/review-02-sporter.md
+reports/governor-fase1b/review-03-analyse.md
+reports/governor-fase1b/review-04-routes-navigatie.md
+reports/governor-fase1b/review-05-trainer.md
+reports/governor-fase1b/review-06-ouder-jeugd.md
+reports/governor-fase1b/review-07-club-team.md
+reports/governor-fase1b/review-08-ploegleider-mechanieker.md
+reports/governor-fase1b/review-09-abonnementen.md
+
+Reviewkaarten:
+
+reports/governor-fase1b/rene-decisions/
+
+Screenshotselecties:
+
+artifacts/product-governor/fase1b/<audit-sha>/<gebruikersreis>/
+
+Kopieer bestaande screenshots niet onnodig.
+Een index of manifest met verwijzingen is voldoende wanneer de oorspronkelijke bestanden behouden blijven.
+
+FASE 7 — EERSTE REVIEWSET AANWIJZEN
+
+Kies op basis van impact en afhankelijkheden welke gebruikersreis als eerste door ChatGPT en René moet worden behandeld.
+
+Waarschijnlijke kandidaat:
+
+Algemene productstructuur en navigatie
+
+Maar bepaal dit op basis van bewijs.
+
+Leg uit:
+
+- waarom deze eerst moet;
+- welke andere reizen ervan afhangen;
+- welke beslissingen nu nog niet nodig zijn;
+- welke defecten later automatisch kunnen worden hersteld.
+
+TESTS EN CONTROLES
+
+Controleer:
+
+- alle genoemde bronbestanden bestaan;
+- alle screenshotverwijzingen werken;
+- geen beslissing is verzonnen;
+- bestaande René-besluiten zijn correct verwerkt;
+- Club en Team niet opnieuw als ja/nee-vraag worden gesteld;
+- gewenste rollen niet opnieuw ter discussie worden gesteld;
+- huidige app nergens als approved baseline wordt gemarkeerd;
+- geen applicatiecode is gewijzigd;
+- geen productherstel is gestart.
+
+STOPCONDITIES
+
+Stop bij:
+
+- ontbrekend Master Plan v3.02;
+- onoplosbaar bronconflict;
+- onvoldoende bewijs voor een voorgestelde René-vraag;
+- wijziging van productcode;
+- nieuwe goedkeuring namens René;
+- situatie waarin gegokt moet worden.
+
+EINDSTATUS
+
+Bij succes:
+
+GOVERNOR_FASE1B_REVIEWSETS_READY
+
+Start daarna niets automatisch.
+
+Niet starten:
+
+- herstelwerk;
+- Governor fase 2;
+- WP-A06A;
+- WP-A07;
+- release;
+- nieuwe baseline.
+
+Geef de cockpit V2, het ChatGPT-reviewpakket V2, de negen reviewsets, de besliskaarten en commit-SHA terug aan ChatGPT.
