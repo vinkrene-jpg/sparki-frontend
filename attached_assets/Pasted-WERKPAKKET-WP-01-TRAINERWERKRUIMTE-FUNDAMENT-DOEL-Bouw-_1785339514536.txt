@@ -1,0 +1,268 @@
+WERKPAKKET WP-01 — TRAINERWERKRUIMTE FUNDAMENT
+
+DOEL
+
+Bouw uitsluitend het eerste werkende fundament voor de trainerwerkruimte
+binnen de bestaande Sparki-architectuur.
+
+Hergebruik bestaande coachfunctionaliteit.
+Bouw geen tweede coach-, rollen-, rechten- of organisatiemodel.
+
+WERK AUTONOOM IN KLEINE STAPPEN
+
+René hoeft niet na iedere stap akkoord te geven.
+
+Voer onderstaande stappen achter elkaar uit.
+Maak per stap:
+
+- één beperkte wijziging;
+- eigen tests;
+- eigen kort bewijsrapport;
+- eigen commit.
+
+Ga automatisch door wanneer de stap groen is.
+Stop alleen bij een echte stopconditie.
+
+BRONNEN
+
+Gebruik als bron van waarheid:
+
+- actuele main;
+- commits a886c8f1 en 5c11f377;
+- governance/role-capability-matrix-v1.json;
+- governance/organisation-membership-model-v1.json;
+- reports/governor-beslisblok-02/IMPLEMENTATION_SEQUENCE.md;
+- het bestaande WP-01-werkpakket in
+  reports/governor-beslisblok-02/work-packages/;
+- bestaande CoachHome, coachcockpit, bulkplanner, uitnodigingen,
+  berichten, planadoptie, deleniveaus en privénotities.
+
+VASTE PRODUCTREGELS
+
+- Eén persoonlijke Sparki-identiteit; trainer is een werkruimte/rol.
+- Sporter blijft eigenaar van zijn gegevens.
+- Trainer ziet alleen expliciet gekoppelde sporters of toegewezen clubscope.
+- Een gekoppelde menselijke trainer is leidend.
+- Sparki analyseert, verklaart en doet voorstellen, maar overschrijft de trainer
+  niet stil.
+- Privénotities blijven privé voor de betreffende trainer.
+- Geen toegang tot niet-gedeelde medische, herstel- of oudergegevens.
+- Beëindigen van een koppeling trekt toegang direct in.
+- Jeugd en consent blijven fail-closed.
+- Bestaande sporteromgeving niet herschrijven.
+
+STAP 1 — BESTAANDE COACHFLOW CONTROLEREN
+
+Controleer eerst exact:
+
+- huidige CoachHome-route;
+- coachcockpit per sporter;
+- gekoppelde-sporterlijst;
+- uitnodigingsstatussen;
+- deleniveaus;
+- planadoptie;
+- privénotities;
+- berichten;
+- bestaande API-rechten;
+- bestaande coach-isolatietests.
+
+Maak:
+
+reports/wp-01-trainer/01_EXISTING_FLOW_MAP.md
+
+Wijzig in deze stap geen productcode.
+
+Controlepoort:
+
+- rapport noemt concrete routes, componenten, API’s, tabellen en tests;
+- geen tweede model nodig;
+- geen onverklaard rechtenconflict.
+
+Commit daarna stap 1 en ga automatisch door.
+
+STAP 2 — TRAINERWERKRUIMTE-INGANG
+
+Bouw of herstel één duidelijke ingang voor de trainerwerkruimte.
+
+Eisen:
+
+- alleen zichtbaar voor gebruikers met toegestane trainercontext;
+- gebruikt de bestaande rolwisselaar;
+- geen los traineraccount;
+- geen tweede navigatiesysteem;
+- desktop en mobiel gebruiken dezelfde capabilitycontrole;
+- gebruiker zonder trainercontext krijgt geen trainerdata;
+- rolwissel ververst menu én data direct.
+
+De eerste trainerstartpagina toont alleen:
+
+- toegewezen sporters;
+- status van koppeling;
+- eerstvolgende relevante training of aandachtspunt;
+- open uitnodigingen;
+- eenvoudige ingang naar bestaande cockpit, planner en berichten.
+
+Gebruik eerlijke lege staten.
+Geen mock sporters tonen buiten de synthetische testfixtures.
+
+Commit stap 2 na groene tests.
+
+STAP 3 — VEILIGE SPORTERSELECTIE
+
+Maak de toegewezen-sporterlijst betrouwbaar.
+
+Eisen:
+
+- directe coach-sporterkoppeling en geldige club/teamtoewijzing worden gebruikt;
+- trainer 1 ziet uitsluitend zijn gekoppelde of toegewezen sporters;
+- trainer 2 uit de fixtures ziet geen sporters;
+- buitenstaander ziet niets;
+- beëindigde koppeling verdwijnt direct;
+- organisatie A kan organisatie B niet lezen;
+- geen client-side filtering als beveiliging;
+- API controleert toegang bij iedere read.
+
+Hergebruik bestaande API’s en tabellen waar mogelijk.
+Alleen additieve wijziging wanneer aantoonbaar noodzakelijk.
+
+Commit stap 3 na groene isolatietests.
+
+STAP 4 — COACHCOCKPIT KOPPELEN
+
+Koppel de bestaande coachcockpit veilig vanuit de sporterlijst.
+
+Minimaal zichtbaar:
+
+- naam en afgesproken profielinformatie;
+- gedeelde trainingsplanning;
+- recente gedeelde activiteit;
+- gedeelde feedback/RPE;
+- relevante planstatus;
+- traineracties die al bestaan.
+
+Niet tonen zonder expliciete toestemming:
+
+- niet-gedeelde gezondheidsdata;
+- oudergegevens;
+- privédata van andere trainers;
+- persoonlijke notities van andere begeleiders.
+
+Geen nieuwe analyse-engine bouwen.
+Gebruik bestaande berekeningen en API’s.
+
+Commit stap 4 na groene tests.
+
+STAP 5 — PLAN- EN ADVIESREGELS
+
+Bevestig in de bestaande flow:
+
+- trainerplan is leidend wanneer trainer gekoppeld is;
+- Sparki mag analyseren en een voorstel doen;
+- Sparki mag het trainerplan niet stil vervangen;
+- wijziging door trainer krijgt audittrail;
+- planadoptie maakt geen parallel trainingsplan;
+- sporter ziet begrijpelijk wat gewijzigd is en door wie;
+- bestaande autonome sportermodus blijft ongewijzigd zonder trainer.
+
+Bouw alleen ontbrekende koppelingen of guards.
+Geen volledige planner-herbouw.
+
+Commit stap 5 na groene tests.
+
+STAP 6 — PRIVÉNOTITIES EN ISOLATIE
+
+Controleer en herstel uitsluitend waar nodig:
+
+- privénotitie trainer A niet zichtbaar voor trainer B;
+- sporter ziet privénotitie niet;
+- hoofdtrainer krijgt in WP-01 nog geen automatische inzage;
+- notitie blijft gekoppeld aan trainer, sporter en context;
+- verwijderen koppeling geeft geen nieuwe toegang;
+- audit registreert relevante beheeractie zonder notitie-inhoud te lekken.
+
+Commit stap 6 na groene tests.
+
+STAP 7 — EINDTEST EN BEWIJS
+
+Gebruik uitsluitend development/test-fixtures.
+Maak geen echte accounts en verstuur geen echte uitnodigingen.
+
+Verplicht groen:
+
+- web typecheck;
+- API typecheck;
+- productiebuild;
+- bestaande coach-parent-link-isolation;
+- bestaande links-end-isolation;
+- bestaande cross-account-isolation;
+- governor-role-foundation 11/11;
+- trainer 1 ziet gekoppelde sporter;
+- trainer 2 ziet geen sporter;
+- beëindigde koppeling sluit toegang direct;
+- rolwissel ververst trainerwerkruimte;
+- privénotities blijven geïsoleerd;
+- sporteromgeving heeft geen regressie;
+- geen echte René- of Dylan-data geraakt.
+
+Maak:
+
+reports/wp-01-trainer/WP_01_FINAL_REPORT.md
+
+Rapporteer daarin:
+
+- hergebruikte onderdelen;
+- gewijzigde bestanden per stap;
+- alle commits;
+- tests per stap;
+- mislukte tests en herstel;
+- afwijkingen van het werkpakket;
+- open blokkades;
+- screenshots van trainerstartpagina op mobiel en desktop;
+- publicatie nodig ja/nee.
+
+AUTOMATISCH DOORGAAN
+
+Ga tussen stap 1 t/m 7 automatisch door wanneer:
+
+- tests groen zijn;
+- diff binnen scope blijft;
+- geen productiedata geraakt zijn;
+- geen rechtenlek bestaat;
+- geen tweede model ontstaat;
+- geen destructieve migratie nodig is.
+
+STOPCONDITIES
+
+Stop direct met status STEP_BLOCKED_REQUIRES_REVIEW bij:
+
+- cross-user- of cross-clublekkage;
+- jeugd- of consentlek;
+- destructieve databasewijziging;
+- tweede coach- of rollenarchitectuur;
+- wijziging van echte gebruikersdata;
+- verlies van bestaande trainerfunctionaliteit;
+- drie herstelpogingen zonder groene test;
+- productbesluit dat niet in Beslisblok 02 staat.
+
+NIET BOUWEN
+
+- hoofdtrainerwerkruimte;
+- trainerpaspoort;
+- trainercampus;
+- openbare trainerzoekfunctie;
+- Club- of Team-betaalmodel;
+- Stripe;
+- prijsstelling;
+- volledige UX-restyling;
+- nieuwe coaching-engine;
+- productie-testaccounts;
+- publicatie zonder afzonderlijke verificatieopdracht.
+
+EINDSTATUS
+
+Bij volledig succes:
+
+WP_01_TRAINER_FOUNDATION_READY
+
+Start WP-02 niet automatisch.
+Geef het volledige eindrapport en alle commit-SHA’s terug aan ChatGPT.
