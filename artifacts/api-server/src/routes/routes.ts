@@ -12,6 +12,7 @@ import {
   lt,
   ne,
   or,
+  sql,
 } from "drizzle-orm";
 import {
   db,
@@ -31,6 +32,8 @@ import {
   clubMembersTable,
   athleteProfilesTable,
   userProfilesTable,
+  routeLibraryTable,
+  routeLibraryCommentsTable,
   type RouteShareAudience,
   type RouteSurface,
   type RouteVisibility,
@@ -78,6 +81,12 @@ import {
   windDirectionLabel,
   beaufort,
 } from "../lib/route-insight";
+import {
+  ensureLibraryRoutes,
+  countCellRoutes,
+  cellKeyFor,
+  routesInBbox,
+} from "../lib/route-library";
 import { getRoutePois } from "../lib/route-pois";
 import {
   getRouteRemarks,
@@ -221,42 +230,12 @@ function loopPointsFor(trainingType: string): number {
   return 5;
 }
 
-// Totaal aantal onderbrekende wegobjecten uit de Sparki Traffic Database:
-// verkeerslichten, spoorwegovergangen, rotondes en drempels onderbreken
-// allemaal een aaneengesloten trainingsblok.
-function stopObstaclesFrom(counts: Record<string, number>): number {
-  return (
-    (counts["traffic_signal"] ?? 0) +
-    (counts["railway_crossing"] ?? 0) +
-    (counts["roundabout"] ?? 0) +
-    (counts["speed_bump"] ?? 0)
-  );
-}
-
-// Omgevings-feiten per lus-kandidaat voor de selector: onderbrekende
-// wegobjecten komen altijd uit de eigen wegobjecten-database (incl. zelflerende
-// bevestigingen + OSM-corridorsync); het bos-aandeel vergt een aparte
-// Overpass-call en wordt alleen opgehaald bij een natuurwens. Eerlijk null
-// wanneer geen van beide bronnen antwoordt — er wordt nooit iets verzonnen.
-function candidateEnvironmentOf(wantsNature: boolean) {
-  return async (
-    path: [number, number][],
-  ): Promise<CandidateEnvironment | null> => {
-    const [env, road] = await Promise.all([
-      wantsNature
-        ? getRouteEnvironment(path).catch(() => null)
-        : Promise.resolve(null),
-      getRoadObjectsAlongRoute(path).catch(() => null),
-    ]);
-    if (!env && !road) return null;
-    return {
-      trafficLights:
-        road?.counts["traffic_signal"] ?? env?.trafficLights ?? null,
-      forestSharePct: env?.forestSharePct ?? null,
-      stopObstacles: road ? stopObstaclesFrom(road.counts) : null,
-    };
-  };
-}
+// Omgevingsmeting per lus-kandidaat: gedeeld in lib/candidate-environment
+// (vaste rustige-wegen-eis geldt voor ÁLLE generatiepaden).
+import {
+  candidateEnvironmentOf,
+  stopObstaclesFrom,
+} from "../lib/candidate-environment";
 
 // Build a short Dutch rationale for why the route fits the workout. Uses the AI
 // integration to phrase it, but NEVER to invent geometry — only the real,
@@ -1115,6 +1094,250 @@ router.get("/pace", requireAuth, async (req, res) => {
   }
 });
 
+// ── Sparki-routebibliotheek ────────────────────────────────────────────────
+// Door Sparki gegenereerde, kant-en-klare routes per gebied. Gedeclareerd
+// VÓÓR "/:id" (anders slikt die deze paden op).
+
+// GET /api/routes/bibliotheek?minLat=&maxLat=&minLon=&maxLon= — routes binnen
+// de kaartuitsnede ("laat hier de routes zien"). Geometrie gaat mee: dit zijn
+// Sparki's eigen routes, zonder privégegevens van gebruikers.
+router.get("/bibliotheek", requireAuth, async (req, res) => {
+  const minLat = Number(req.query.minLat);
+  const maxLat = Number(req.query.maxLat);
+  const minLon = Number(req.query.minLon);
+  const maxLon = Number(req.query.maxLon);
+  if (
+    ![minLat, maxLat, minLon, maxLon].every(Number.isFinite) ||
+    minLat >= maxLat ||
+    minLon >= maxLon ||
+    maxLat - minLat > 6 ||
+    maxLon - minLon > 8
+  ) {
+    res.status(400).json({ error: "Ongeldige of te grote kaartuitsnede" });
+    return;
+  }
+  try {
+    const rows = await routesInBbox({ minLat, maxLat, minLon, maxLon });
+    res.json({
+      routes: rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        bikeType: r.bikeType,
+        distanceKm: r.distanceKm,
+        elevationGainM: r.elevationGainM,
+        durationSec: r.durationSec,
+        startLat: r.startLat,
+        startLon: r.startLon,
+        geometry: r.geometry,
+        avgRating: r.avgRating,
+        ratingCount: r.ratingCount,
+      })),
+    });
+  } catch (err) {
+    req.log.error({ err }, "routes.bibliotheek failed");
+    res.status(500).json({ error: "Kon bibliotheekroutes niet laden" });
+  }
+});
+
+// POST /api/routes/bibliotheek/hier { lat, lon } — vraag Sparki om dit gebied
+// te vullen. Start de generatie op de achtergrond en antwoordt direct met de
+// eerlijke stand; de gebruiker wacht nooit op ORS.
+router.post("/bibliotheek/hier", requireAuth, async (req, res) => {
+  const lat = Number(req.body?.lat);
+  const lon = Number(req.body?.lon);
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lon) ||
+    lat < -60 ||
+    lat > 75 ||
+    lon < -30 ||
+    lon > 60
+  ) {
+    res.status(400).json({ error: "Ongeldige locatie" });
+    return;
+  }
+  try {
+    // Startpunt: ligt de woonlocatie van de gebruiker in ditzelfde gebied,
+    // dan starten de routes exact bij huis — die zijn direct vanaf de voordeur
+    // te rijden. Elders start de lus op het kaartmiddelpunt (een gedeelde
+    // bibliotheek in een ander gebied kan niet bij iemands huis beginnen).
+    let startLat = lat;
+    let startLon = lon;
+    const clerkId = getClerkUserId(req);
+    if (clerkId) {
+      const home = await ownerHome(clerkId);
+      if (home && cellKeyFor(home.lat, home.lon) === cellKeyFor(lat, lon)) {
+        startLat = home.lat;
+        startLon = home.lon;
+      }
+    }
+    const { cellKey, status } = await ensureLibraryRoutes(startLat, startLon);
+    const count = await countCellRoutes(cellKey);
+    res.json({ status, count });
+  } catch (err) {
+    req.log.error({ err }, "routes.bibliotheek.hier failed");
+    res.status(500).json({ error: "Kon generatie niet starten" });
+  }
+});
+
+// GET /api/routes/bibliotheek/:id — één bibliotheekroute met commentaar.
+router.get("/bibliotheek/:id", requireAuth, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldig id" });
+    return;
+  }
+  try {
+    const [route] = await db
+      .select()
+      .from(routeLibraryTable)
+      .where(eq(routeLibraryTable.id, id))
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+    const comments = await db
+      .select({
+        rating: routeLibraryCommentsTable.rating,
+        comment: routeLibraryCommentsTable.comment,
+        updatedAt: routeLibraryCommentsTable.updatedAt,
+        displayName: userProfilesTable.displayName,
+      })
+      .from(routeLibraryCommentsTable)
+      .leftJoin(
+        userProfilesTable,
+        eq(userProfilesTable.clerkId, routeLibraryCommentsTable.clerkId),
+      )
+      .where(eq(routeLibraryCommentsTable.libraryRouteId, id))
+      .orderBy(desc(routeLibraryCommentsTable.updatedAt))
+      .limit(50);
+    res.json({ route, comments });
+  } catch (err) {
+    req.log.error({ err }, "routes.bibliotheek.detail failed");
+    res.status(500).json({ error: "Kon route niet laden" });
+  }
+});
+
+// POST /api/routes/bibliotheek/:id/commentaar { rating?, comment? } — één
+// mening per gebruiker per route (upsert); de gemiddelde score wordt in
+// dezelfde transactie deterministisch herberekend. Hierop rangschikt de
+// bibliotheek — zo verbeteren routes lokaal op basis van echte ervaringen.
+router.post("/bibliotheek/:id/commentaar", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(req.params.id);
+  const rawRating = req.body?.rating;
+  const rating =
+    rawRating == null
+      ? null
+      : Number.isInteger(Number(rawRating)) &&
+          Number(rawRating) >= 1 &&
+          Number(rawRating) <= 5
+        ? Number(rawRating)
+        : undefined;
+  const comment =
+    typeof req.body?.comment === "string"
+      ? req.body.comment.trim().slice(0, 1000) || null
+      : null;
+  if (!Number.isInteger(id) || rating === undefined) {
+    res.status(400).json({ error: "Ongeldige invoer (score 1–5 of leeg)" });
+    return;
+  }
+  if (rating == null && comment == null) {
+    res.status(400).json({ error: "Geef een score of een opmerking" });
+    return;
+  }
+  try {
+    const result = await db.transaction(async (tx) => {
+      const [route] = await tx
+        .select({ id: routeLibraryTable.id })
+        .from(routeLibraryTable)
+        .where(eq(routeLibraryTable.id, id))
+        .limit(1);
+      if (!route) return null;
+      await tx
+        .insert(routeLibraryCommentsTable)
+        .values({ libraryRouteId: id, clerkId, rating, comment })
+        .onConflictDoUpdate({
+          target: [
+            routeLibraryCommentsTable.libraryRouteId,
+            routeLibraryCommentsTable.clerkId,
+          ],
+          set: { rating, comment, updatedAt: new Date() },
+        });
+      // Herberekenen uit de echte rijen — nooit incrementeel bijhouden.
+      const [agg] = await tx
+        .select({
+          avg: sql<number | null>`avg(${routeLibraryCommentsTable.rating})::real`,
+          n: sql<number>`count(*) filter (where ${routeLibraryCommentsTable.rating} is not null)::int`,
+        })
+        .from(routeLibraryCommentsTable)
+        .where(eq(routeLibraryCommentsTable.libraryRouteId, id));
+      await tx
+        .update(routeLibraryTable)
+        .set({ avgRating: agg?.avg ?? null, ratingCount: agg?.n ?? 0 })
+        .where(eq(routeLibraryTable.id, id));
+      return { avgRating: agg?.avg ?? null, ratingCount: agg?.n ?? 0 };
+    });
+    if (!result) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "routes.bibliotheek.commentaar failed");
+    res.status(500).json({ error: "Kon commentaar niet opslaan" });
+  }
+});
+
+// POST /api/routes/bibliotheek/:id/gebruik — zet een bibliotheekroute in de
+// eigen routebibliotheek van de gebruiker (kopie, privé). Daarna werken alle
+// bestaande functies: navigeren, GPX-download, delen.
+router.post("/bibliotheek/:id/gebruik", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Ongeldig id" });
+    return;
+  }
+  try {
+    const [route] = await db
+      .select()
+      .from(routeLibraryTable)
+      .where(eq(routeLibraryTable.id, id))
+      .limit(1);
+    if (!route) {
+      res.status(404).json({ error: "Route niet gevonden" });
+      return;
+    }
+    const surface: RouteSurface =
+      route.bikeType === "mtb"
+        ? "mtb"
+        : route.bikeType === "gravel"
+          ? "gravel"
+          : "asfalt";
+    const [saved] = await db
+      .insert(routesTable)
+      .values({
+        clerkId,
+        name: route.name,
+        surface,
+        status: "ready",
+        visibility: "private",
+        source: "library",
+        distanceKm: route.distanceKm,
+        elevationGainM: route.elevationGainM,
+        durationSec: route.durationSec,
+        geometry: route.geometry,
+      })
+      .returning({ id: routesTable.id });
+    res.json({ routeId: saved!.id });
+  } catch (err) {
+    req.log.error({ err }, "routes.bibliotheek.gebruik failed");
+    res.status(500).json({ error: "Kon route niet overnemen" });
+  }
+});
+
 // GET /api/routes/:id — a single route (owner only).
 router.get("/:id", requireAuth, async (req, res) => {
   const clerkId = getClerkUserId(req)!;
@@ -1463,6 +1686,23 @@ router.post("/:id/rejoin", requireAuth, async (req, res) => {
   }
 });
 
+// Tijdsbudget voor de preview-endpoints van de routebouwer: de Overpass-laag
+// mag intern (mirrors + retries) tot ~40s doen, maar de reverse proxy kapt
+// rond de ~25s — de browser ziet dan een kale 502 zonder onze eerlijke
+// foutmelding. Antwoord daarom zelf binnen het budget met hetzelfde eerlijke
+// "bron gaf geen antwoord"-contract (null). De upstream-call loopt op de
+// achtergrond door en vult gewoon de cache voor een volgende poging.
+const PREVIEW_BUDGET_MS = 18_000;
+function withPreviewBudget<T>(p: Promise<T | null>): Promise<T | null> {
+  return Promise.race([
+    p.catch(() => null),
+    new Promise<null>((resolve) => {
+      const t = setTimeout(() => resolve(null), PREVIEW_BUDGET_MS);
+      if (typeof t === "object" && "unref" in t) t.unref();
+    }),
+  ]);
+}
+
 // POST /api/routes/remarks-preview — routeopmerkingen voor een NOG NIET
 // opgeslagen route (routebouwer): de client stuurt de echte provider-geometrie
 // mee. Zelfde eerlijke bron/contract als GET /:id/remarks. Declared before the
@@ -1489,7 +1729,7 @@ router.post("/remarks-preview", requireAuth, async (req, res) => {
       }
       geometry.push([la, lo]);
     }
-    const remarks = await getRouteRemarks(geometry);
+    const remarks = await withPreviewBudget(getRouteRemarks(geometry));
     if (remarks == null) {
       res.status(502).json({
         error:
@@ -1537,7 +1777,7 @@ router.post("/surfaces-preview", requireAuth, async (req, res) => {
       }
       geometry.push([la, lo]);
     }
-    const analysis = await getRouteSurfaces(geometry);
+    const analysis = await withPreviewBudget(getRouteSurfaces(geometry));
     if (analysis == null) {
       res.status(502).json({
         error: "Wegtypen konden nu niet opgehaald worden — de kaartbron gaf geen antwoord.",
@@ -2217,9 +2457,13 @@ async function buildLoopCandidate(
       },
       {
         scenery,
-        environmentOf: scenery
-          ? candidateEnvironmentOf(scenery.nature)
-          : undefined,
+        // Vaste eis: kandidaten worden ALTIJD vergeleken op stoplichten,
+        // wegobstakels en bebouwing — niet alleen bij een expliciete wens.
+        // Interactief pad: strak tijdbudget zodat de gebruiker nooit op een
+        // trage Overpass/OSM-sync wacht (cache-hits + eigen DB tellen mee).
+        environmentOf: candidateEnvironmentOf(scenery?.nature ?? false, {
+          budgetMs: 2000,
+        }),
         preferUninterrupted: wantsUninterrupted,
         targetAscentM: ctx.targetElevationGainM ?? null,
       },

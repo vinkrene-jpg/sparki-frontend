@@ -260,8 +260,12 @@ export function RouteMap({
     const mpIcon = (label: string) =>
       L.divIcon({
         className: "",
-        html: `<span style="display:flex;align-items:center;gap:5px;padding:3px 8px 3px 6px;border-radius:9999px;background:rgba(255,160,90,0.95);color:#1a0f05;font:600 11px/1 ui-sans-serif,system-ui;white-space:nowrap;box-shadow:0 0 0 2px rgba(5,7,14,0.85),0 0 10px rgba(255,160,90,0.6);"><span style="width:7px;height:7px;border-radius:9999px;background:#1a0f05;"></span>${escapeHtml(label)}</span>`,
-        iconSize: [0, 0],
+        // Klikbaar verwijder-affordance: een expliciete × in de pin plus een
+        // title-hint, en een echte icon-maat zodat het klikvlak niet 0×0 is
+        // (met iconSize [0,0] was "tik op de pin om te verwijderen" in de
+        // praktijk nauwelijks raakbaar).
+        html: `<span title="Tik om dit verzamelpunt te verwijderen" style="display:flex;align-items:center;gap:5px;padding:3px 8px 3px 6px;border-radius:9999px;background:rgba(255,160,90,0.95);color:#1a0f05;font:600 11px/1 ui-sans-serif,system-ui;white-space:nowrap;cursor:pointer;box-shadow:0 0 0 2px rgba(5,7,14,0.85),0 0 10px rgba(255,160,90,0.6);"><span style="width:7px;height:7px;border-radius:9999px;background:#1a0f05;"></span>${escapeHtml(label)}<span aria-hidden="true" style="margin-left:2px;font-size:12px;line-height:1;opacity:0.75;">×</span></span>`,
+        iconSize: [24, 20],
         iconAnchor: [10, 10],
       })
 

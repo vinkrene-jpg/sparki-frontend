@@ -25,6 +25,8 @@ import {
   type RouteWaypoint,
   type RouteMeetpoint,
   type RouteClimb,
+  useGeocode,
+  type GeocodeResult,
 } from "@/hooks/use-routes"
 import type { PlannedWorkout } from "@/lib/athlete-types"
 import {
@@ -1399,12 +1401,14 @@ function RouteGenerator({
   onClose,
   initialElevation = null,
   initialWaypoints = null,
+  initialGeometry = null,
   onSaved = null,
   initialSamen = null,
 }: {
   onClose: () => void
   initialElevation?: ElevationPreference | null
   initialWaypoints?: RouteWaypoint[] | null
+  initialGeometry?: [number, number][] | null
   // Bestaande samen-rijden-context (bijv. bij "route aanpassen" vanuit een
   // lopende navigatie) — vult de keuze voor, zodat die niet stilletjes
   // verloren gaat.
@@ -1544,6 +1548,15 @@ function RouteGenerator({
     hasInitial ? initialWaypoints!.slice(1, -1) : [],
   )
   const [meetpoints, setMeetpoints] = useState<RouteMeetpoint[]>([])
+  // Tijdstip van de laatste verwerkte kaart-tik voor verzamelpunten — vangnet
+  // tegen omgevingen die één tik als meerdere click-events afvuren.
+  const lastMeetpointClickRef = useRef(0)
+  // Referentielijn tijdens puntenbewerking: de bestaande (echte) routelijn
+  // blijft zichtbaar zolang er nog GEEN punt is gewijzigd. Zodra een punt
+  // verandert klopt de lijn niet meer en verdwijnt hij (eerlijk beeld).
+  const [bewerkLijn, setBewerkLijn] = useState<[number, number][] | null>(
+    hasInitial ? (initialGeometry ?? null) : null,
+  )
   const [placeMode, setPlaceMode] = useState<
     "start" | "waypoint" | "end" | "meetpoint"
   >("start")
@@ -1567,6 +1580,7 @@ function RouteGenerator({
   function invalidateStaleRoute() {
     setCandidate(null)
     setOptions(null)
+    setBewerkLijn(null)
   }
 
   // Combined index (kaartmarker) → welk punt het is.
@@ -1590,6 +1604,37 @@ function RouteGenerator({
   const linkedWorkout = workoutId
     ? workouts?.find((w) => String(w.id) === workoutId)
     : undefined
+
+  // Startpunt via adres/plaatsnaam zoeken — naast "Gebruik mijn locatie", zodat
+  // je ook een route kunt plannen die ergens anders begint (vakantie, clubrit).
+  const geocode = useGeocode()
+  const [adresQ, setAdresQ] = useState("")
+  const [adresResults, setAdresResults] = useState<GeocodeResult[] | null>(null)
+
+  function zoekStartAdres() {
+    const q = adresQ.trim()
+    if (q.length < 2 || geocode.isPending) return
+    setError(null)
+    setAdresResults(null)
+    geocode.mutate(q, {
+      onSuccess: (d) => setAdresResults(d.results),
+      onError: (e) =>
+        setError(e instanceof Error ? e.message : "Kon adres niet zoeken"),
+    })
+  }
+
+  function kiesStartAdres(r: GeocodeResult) {
+    invalidateStaleRoute()
+    // `start` centreert de kaart én is het startpunt voor lus/A→B.
+    setStart({ lat: r.lat, lon: r.lon })
+    if (mode === "waypoints") {
+      // In de eigen-route-bouwer is het groene S-punt het echte startpunt.
+      setStartPoint([r.lat, r.lon])
+      setPlaceMode("waypoint")
+    }
+    setAdresResults(null)
+    setAdresQ(r.label)
+  }
 
   function useMyLocation() {
     setGeoState("loading")
@@ -1731,11 +1776,25 @@ function RouteGenerator({
 
   // Drop a named meeting point ("verzamelpunt") — e.g. a spot to pick up a
   // friend — independent of the route-shaping waypoints.
+  // Toggle-gedrag: een tik dicht bij een bestaand verzamelpunt (±150 m)
+  // verwijdert dát punt in plaats van er nóg een naast te zetten — een net
+  // gemiste tik op de pin leverde anders een cluster van extra pins op.
   function addMeetpoint(lat: number, lon: number) {
-    setMeetpoints((m) => [
-      ...m,
-      { lat, lon, name: `Verzamelpunt ${m.length + 1}`, note: null },
-    ])
+    // Dubbel-/tripleklikbescherming: sommige omgevingen vuren één "tik" als
+    // meerdere click-events af; binnen 500 ms verwerken we er maar één.
+    const now = Date.now()
+    if (now - lastMeetpointClickRef.current < 500) return
+    lastMeetpointClickRef.current = now
+    setMeetpoints((m) => {
+      const near = m.findIndex((p) => {
+        const dLat = (p.lat - lat) * 111_000
+        const dLon =
+          (p.lon - lon) * 111_000 * Math.cos((lat * Math.PI) / 180)
+        return Math.hypot(dLat, dLon) < 150
+      })
+      if (near !== -1) return m.filter((_, idx) => idx !== near)
+      return [...m, { lat, lon, name: `Verzamelpunt ${m.length + 1}`, note: null }]
+    })
   }
 
   // Builder: a map click adds either a route-shaping waypoint or a meetpoint,
@@ -1881,7 +1940,12 @@ function RouteGenerator({
               : "Tik op de kaart waar je wilt starten, of gebruik je eigen locatie."}
         </p>
         <RouteMap
-          geometry={candidate?.geometry ?? []}
+          geometry={
+            candidate?.geometry ??
+            // Referentielijn hoort alleen bij de puntenbewerker — in lus/A→B
+            // zou hij een lijn tonen die niets met het startpunt te maken heeft.
+            (mode === "waypoints" ? (bewerkLijn ?? []) : [])
+          }
           waypoints={
             mode === "waypoints"
               ? allPoints
@@ -1917,6 +1981,55 @@ function RouteGenerator({
             setMeetpoints((m) => m.filter((_, idx) => idx !== i))
           }
         />
+        {/* Startpunt zoeken op adres/plaatsnaam — alternatief naast eigen locatie */}
+        <div className="mt-2.5">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={adresQ}
+              onChange={(e) => setAdresQ(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  zoekStartAdres()
+                }
+              }}
+              placeholder="Startpunt zoeken — adres of plaats…"
+              aria-label="Startpunt zoeken op adres of plaats"
+              className="min-w-0 flex-1 rounded-xl border border-white/[0.12] bg-transparent px-3.5 py-2 font-sans text-[13px] text-white/80 placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={zoekStartAdres}
+              disabled={adresQ.trim().length < 2 || geocode.isPending}
+              className="rounded-xl border border-white/[0.14] px-3.5 py-2 font-sans text-[12px] text-white/70 transition hover:border-cyan-300/30 disabled:opacity-40"
+            >
+              {geocode.isPending ? "Zoeken…" : "Zoek"}
+            </button>
+          </div>
+          {adresResults && adresResults.length === 0 && (
+            <p className="mt-1.5 text-[12px] text-white/40">
+              Geen plek gevonden voor &ldquo;{adresQ.trim()}&rdquo; — probeer een
+              vollediger adres of andere plaatsnaam.
+            </p>
+          )}
+          {adresResults && adresResults.length > 0 && (
+            <ul className="mt-1.5 overflow-hidden rounded-xl border border-white/[0.1]">
+              {adresResults.map((r, i) => (
+                <li key={`${r.lat},${r.lon},${i}`}>
+                  <button
+                    type="button"
+                    onClick={() => kiesStartAdres(r)}
+                    className="flex w-full items-center gap-2 px-3.5 py-2 text-left font-sans text-[12px] text-white/70 transition hover:bg-cyan-300/10 hover:text-white"
+                  >
+                    <MapPin className="h-3.5 w-3.5 shrink-0 text-white/40" strokeWidth={1.75} />
+                    {r.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
           <button
             type="button"
@@ -1955,11 +2068,11 @@ function RouteGenerator({
               <button
                 type="button"
                 onClick={() => {
+                  invalidateStaleRoute()
                   setStartPoint(null)
                   setEndPoint(null)
                   setWaypoints([])
                   setMeetpoints([])
-                  setCandidate(null)
                   setPlaceMode("start")
                 }}
                 className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-[rgba(255,140,120,0.85)]"
@@ -2352,7 +2465,7 @@ function RouteGenerator({
         />
         <p className="mt-1.5 text-[11px] leading-relaxed text-white/35">
           Hier wordt rekening mee gehouden. Kan een wens niet worden ingevuld,
-          dan hoor je dat eerlijk — met een passend alternatief.
+          dan hoor je dat — met een passend alternatief.
         </p>
       </div>
 
@@ -2505,12 +2618,12 @@ function RouteGenerator({
       )}
 
       {!showResult && (
-        <div className="mt-4 flex gap-3">
+        <div className="mx-auto mt-4 flex w-full max-w-md gap-3">
           {step > 1 && (
             <button
               type="button"
               onClick={() => setStep((s) => Math.max(1, s - 1))}
-              className="inline-flex min-w-0 flex-1 basis-32 items-center justify-center gap-1.5 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20"
+              className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20"
             >
               <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Terug
             </button>
@@ -2540,7 +2653,7 @@ function RouteGenerator({
                 }
                 setStep((s) => Math.min(4, s + 1))
               }}
-              className="min-w-0 flex-[2] basis-40 rounded-2xl py-3.5 font-sans text-[13px] font-semibold"
+              className="min-w-0 flex-1 rounded-2xl py-3.5 font-sans text-[13px] font-semibold"
               style={{ background: ACCENT, color: "#040506" }}
             >
               Verder →
@@ -2552,7 +2665,7 @@ function RouteGenerator({
                 mode === "loop" ? runGenerateOptions() : runGenerate()
               }
               disabled={generate.isPending || genOptions.isPending}
-              className="min-w-0 flex-[2] basis-40 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
+              className="min-w-0 flex-1 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
               style={{ background: ACCENT, color: "#040506" }}
             >
               {generate.isPending || genOptions.isPending
@@ -2730,6 +2843,31 @@ function RouteGenerator({
             />
           </div>
 
+          {/* Routenaam — bewerkbaar vóór het bewaren (zoals bij Komoot):
+              voorgevuld met de voorgestelde naam, de rijder kan hem hier
+              direct aanpassen. Leeg laten valt terug op de voorgestelde naam. */}
+          <label className="mt-4 block">
+            <span className="font-sans text-[11px] uppercase tracking-wider text-white/40">
+              Routenaam
+            </span>
+            <input
+              type="text"
+              value={candidate.name}
+              maxLength={120}
+              onChange={(e) =>
+                setCandidate((c) => (c ? { ...c, name: e.target.value } : c))
+              }
+              onBlur={(e) => {
+                if (e.target.value.trim() === "")
+                  setCandidate((c) =>
+                    c ? { ...c, name: `Route ${new Date().toLocaleDateString("nl-NL")}` } : c,
+                  )
+              }}
+              className="mt-1 w-full rounded-xl border border-white/[0.12] bg-transparent px-3 py-2.5 font-sans text-[14px] text-white/85 outline-none transition-colors focus:border-white/30"
+              placeholder="Geef je route een naam"
+            />
+          </label>
+
           <div className="mt-4 flex flex-wrap gap-3">
             <button
               type="button"
@@ -2771,9 +2909,13 @@ function RouteGenerator({
                   setWaypoints(pts.length >= 2 ? pts.slice(1, -1) : pts)
                   setPlaceMode("waypoint")
                   setMode("waypoints")
+                  // De berekende lijn blijft als referentie op de kaart staan
+                  // tot er echt een punt wijzigt — niet meteen opnieuw genereren.
+                  setBewerkLijn(candidate.geometry)
                   setCandidate(null)
                   setOptions(null)
                   setMeetpoints([])
+                  setStep(1)
                 }}
                 className="min-w-0 flex-1 basis-40 rounded-2xl border border-white/[0.12] py-3.5 font-sans text-[13px] text-white/60 transition-colors hover:border-white/20"
               >
@@ -2912,6 +3054,8 @@ export function RoutePanel({
   const [genWaypoints, setGenWaypoints] = useState<{
     routeId: number
     points: RouteWaypoint[]
+    // De echte routelijn als referentie op de kaart tot een punt wijzigt.
+    geometry: [number, number][] | null
     // Kwam de rijder uit het navigatievenster? Dan gaat hij na het bewaren
     // vanzelf terug de navigatie in (van de aangepaste route).
     returnToNav: boolean
@@ -2921,7 +3065,12 @@ export function RoutePanel({
   function editRouteWaypoints(route: SparkiRoute, returnToNav = false) {
     const points = sampleWaypointsFromGeometry(route.geometry ?? [])
     if (points.length < 2) return
-    setGenWaypoints({ routeId: route.id, points, returnToNav })
+    setGenWaypoints({
+      routeId: route.id,
+      points,
+      geometry: route.geometry ?? null,
+      returnToNav,
+    })
     setGenPrefill(null)
     setTimeout(() => {
       document
@@ -2981,7 +3130,17 @@ export function RoutePanel({
     const content = await file.text()
     create.mutate(
       { content, name: file.name.replace(/\.gpx$/i, "") },
-      { onError: () => setError("Route kon niet worden verwerkt") },
+      {
+        // Duidelijke bevestiging: spring direct naar de zojuist geüploade
+        // route in het Bewaard-tabblad (daar kan hij ook hernoemd worden via
+        // "Naam wijzigen") — geen stille toevoeging onderaan een lijst.
+        onSuccess: (data) => {
+          setPanelLocation(
+            `${panelPath}?view=bewaard&route=${data.route.id}`,
+          )
+        },
+        onError: () => setError("Route kon niet worden verwerkt"),
+      },
     )
   }
 
@@ -3123,6 +3282,7 @@ export function RoutePanel({
             }
             initialElevation={genPrefill}
             initialWaypoints={genWaypoints?.points ?? null}
+            initialGeometry={genWaypoints?.geometry ?? null}
             initialSamen={
               // Bij "route aanpassen" vanuit de navigatie: bestaande
               // samen-context uit de URL voorvullen, zodat die keuze niet
@@ -3158,7 +3318,15 @@ export function RoutePanel({
                 setPanelLocation(`${panelPath}?${params.toString()}`)
                 return
               }
-              if (!genWaypoints?.returnToNav && !samen.withOthers) return
+              if (!genWaypoints?.returnToNav && !samen.withOthers) {
+                // Gewoon "Bewaar route": spring direct naar de bewaarde route
+                // in het Bewaard-tabblad — duidelijke bevestiging dat het
+                // bewaren gelukt is, in plaats van een stil gereset scherm.
+                setPanelLocation(
+                  `${panelPath}?view=bewaard&route=${saved.id}`,
+                )
+                return
+              }
               const params = new URLSearchParams(window.location.search)
               params.set("nav", String(saved.id))
               if (samen.withOthers) {
