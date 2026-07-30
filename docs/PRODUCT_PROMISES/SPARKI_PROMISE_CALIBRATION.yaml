@@ -85,6 +85,7 @@ chapter_d_routes_en_navigatie:
         - "Commerciële status publieke Overpass-mirrors op schaal (eigen instance nodig?)."
         - "EU-brede wegdekbron bestaat niet; per-land-licenties niet uitgezocht."
         - "NDW-dekking voor fietsrelevante afsluitingen niet empirisch getoetst."
+        - "Wikiloc als buitenland-wegdeksignaal onderzocht (30-07-2026) en afgewezen: geen publieke API, ToS staan uitsluitend persoonlijk/niet-commercieel gebruik toe, scraping expliciet verboden, sui-generis databankrecht; bovendien zeggen community-tracks waar gefietst wordt, niet wat verhard is. Alternatieven (waymarkedtrails = OSM-data die we al via Overpass hebben; Strava-heatmap = alleen OSM-editing toegestaan) voegen evenmin een legaal wegdeksignaal toe. Buitenland-copy blijft 'minder zeker over wegdek'. Zie docs/productonderzoek/PO-03-WIKILOC-BUITENLAND-WEGDEK.md."
 
     replit_definition:
       objective_quality_standard: "Per gegenereerde racefietsroute: 0 gemeten onverharde meters (GH-details én Overpass én BGT waar beschikbaar), 0 trappen, 0 fietsverbod-meters, 0 afgesloten poorten; afstandsafwijking ≤10% van het doel; generatie ≤30 s interactief. Onbekend-wegdek-aandeel structureel dalend (BGT-resolutie gemeten per route)."
