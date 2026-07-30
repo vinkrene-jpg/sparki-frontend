@@ -41,6 +41,10 @@ export type RouteResult = {
   // (GraphHopper path details). null = de bron kan dit niet zeggen (ORS) of
   // te veel wegvakken hebben geen wegdek-tag — dan wordt er nooit gegokt.
   pavedFraction?: number | null;
+  // Aandeel van de afstand waarvoor de bron het wegdek überhaupt KENT (0–1).
+  // null = geen wegdek-details (ORS). Op de racefiets is een groot onbekend
+  // aandeel een risico ("bij twijfel vermijden") en weegt het mee bij selectie.
+  surfaceKnownFraction?: number | null;
 };
 
 export type GeocodeResult = { lat: number; lon: number; label: string };

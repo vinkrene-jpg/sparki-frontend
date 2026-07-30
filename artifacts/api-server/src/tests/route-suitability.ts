@@ -43,6 +43,9 @@ async function remarksWithRetry(
 }
 
 const STARTS = [
+  // René's eigen regio (hertest 30-07-2026) — de praktijktest hoort in het
+  // harnas, niet alleen generieke steden.
+  { name: "Hengelo (Ov)", lat: 52.266, lon: 6.793 },
   { name: "Arnhem", lat: 51.98, lon: 5.91 },
   { name: "Utrecht", lat: 52.09, lon: 5.12 },
   { name: "Eindhoven", lat: 51.44, lon: 5.47 },

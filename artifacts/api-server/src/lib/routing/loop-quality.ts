@@ -380,9 +380,21 @@ export async function generateVariedLoop(
       req.profile === "cycling-road" && result.pavedFraction != null
         ? 1 - result.pavedFraction
         : 0;
+    // "Bij twijfel vermijden" (hertest Hengelo): een racefietskandidaat met
+    // veel wegvakken zonder wegdek-tag is een gok. Weeg het ONBEKENDE aandeel
+    // mee (lichter dan aantoonbaar onverhard) zodat een gemeten-verharde lus
+    // wint van een grotendeels ongetagde lus. Nooit gokken: zonder
+    // surface-details (ORS) telt dit simpelweg niet mee.
+    const unknownMiss =
+      req.profile === "cycling-road" && result.surfaceKnownFraction != null
+        ? 1 - result.surfaceKnownFraction
+        : 0;
     const score =
       overlap + drift * 1.2 + elevation * 0.8 + turniness * 0.9 +
-      ascentMiss * 1.0 + surfaceMiss * 6.0;
+      // unknownMiss LICHTER dan surfaceMiss: aantoonbaar onverhard is altijd
+      // erger dan onbekend (anders wint een gemeten-gravel-lus van een
+      // grotendeels ongetagde maar waarschijnlijk-asfalt-lus).
+      ascentMiss * 1.0 + surfaceMiss * 6.0 + unknownMiss * 1.0;
     pool.push({ result, score });
     // Good enough — a clean loop, close to the requested length, that already
     // matches the elevation wish. Only then do we stop spending ORS calls.
@@ -401,7 +413,9 @@ export async function generateVariedLoop(
       // (vrijwel) volledig verhard is; zonder meting blijft de oude regel.
       (req.profile !== "cycling-road" ||
         result.pavedFraction == null ||
-        result.pavedFraction >= 0.98)
+        (result.pavedFraction >= 0.98 &&
+          (result.surfaceKnownFraction == null ||
+            result.surfaceKnownFraction >= 0.9)))
     )
       break;
   }

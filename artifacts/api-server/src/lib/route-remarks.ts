@@ -234,7 +234,15 @@ export function classifyRemarkTags(
     };
   }
   // Wegdek — alleen voor wegvakken mét een highway-tag (echte wegen/paden).
-  if (tags.highway) {
+  // Voetpaden zijn geen fietsroute: een routemotor stuurt een (race)fiets
+  // nooit legaal over highway=footway/pedestrian zonder bicycle=yes. Zulke
+  // paden liggen vaak vlak náást de rijbaan en gaven valse "onverhard op je
+  // route"-meldingen (way-voor-way geverifieerd, Zwolle-lus 30-07-2026:
+  // 3 van de 3 gravelmeldingen waren naastgelegen voetpaden).
+  const bikeOk = tags.bicycle === "yes" || tags.bicycle === "designated";
+  const isFootOnly =
+    (tags.highway === "footway" || tags.highway === "pedestrian") && !bikeOk;
+  if (tags.highway && !isFootOnly) {
     const smoothness = tags.smoothness ?? "";
     if (BAD_SMOOTHNESS.has(smoothness)) {
       return {

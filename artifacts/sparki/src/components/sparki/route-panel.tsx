@@ -649,8 +649,9 @@ function RoutePassport({
       )}
       {insight && insight.environment == null && !isLoading && (
         <p className="mt-2 text-[11px] text-white/30">
-          Verkeerslichten en bos-aandeel konden nu niet worden opgehaald uit
-          OpenStreetMap.
+          Verkeerslichten en bos-aandeel (een extra controlelaag uit
+          OpenStreetMap) konden nu niet worden opgehaald. De route zelf is
+          gewoon berekend door de routemotor.
         </p>
       )}
 

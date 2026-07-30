@@ -65,8 +65,21 @@ const SIGN_DIR: Record<number, string> = {
 // de onafhankelijke Overpass-verificatie achteraf blijft de eerlijke poort.
 
 const ROAD_SURFACE_RULE = {
-  if: "surface == GRAVEL || surface == DIRT || surface == GROUND || surface == SAND || surface == COBBLESTONE || surface == UNPAVED || surface == GRASS || surface == OTHER",
+  // COMPACTED (halfverhard — hertest Hengelo/Twente!) en FINE_GRAVEL horen er
+  // ook bij: op de racefiets is halfverhard gewoon een misser.
+  if: "surface == GRAVEL || surface == FINE_GRAVEL || surface == COMPACTED || surface == DIRT || surface == GROUND || surface == SAND || surface == COBBLESTONE || surface == UNPAVED || surface == GRASS || surface == OTHER",
   multiply_by: "0.05",
+} as const;
+
+// "Bij twijfel vermijden" (René's hertest Hengelo, 30-07-2026): wegen zonder
+// wegdek-tag in OSM zijn op de racefiets een gok — in de praktijk bleek een
+// route met 16% onbekende ondergrond deels gravel. Het Komoot-principe: bij
+// twijfel de weg mijden tenzij het niet anders kan. 0.4 (geen 0.05): een
+// onbekende weg is meestal gewoon asfalt (NL-woonstraten), dus hard straffen
+// zou routes onnodig lang maken; mild straffen laat getagde wegen winnen.
+const ROAD_UNKNOWN_SURFACE_RULE = {
+  if: "surface == MISSING",
+  multiply_by: "0.4",
 } as const;
 
 const GRAVEL_SURFACE_RULE = {
@@ -77,7 +90,7 @@ const GRAVEL_SURFACE_RULE = {
 function customModelFor(profile: RoutingProfile): Record<string, unknown> | null {
   switch (profile) {
     case "cycling-road":
-      return { priority: [ROAD_SURFACE_RULE] };
+      return { priority: [ROAD_SURFACE_RULE, ROAD_UNKNOWN_SURFACE_RULE] };
     case "cycling-regular":
       return { priority: [GRAVEL_SURFACE_RULE] };
     default:
@@ -296,6 +309,7 @@ export class GraphHopperProvider implements RoutingProvider {
     // wegvakken tellen in geen van beide bakken; is méér dan 40% onbekend dan
     // is de meting te dun en zeggen we eerlijk niets (null).
     let pavedFraction: number | null = null;
+    let surfaceKnownFraction: number | null = null;
     const surfaceDetails = path.details?.surface;
     if (Array.isArray(surfaceDetails) && surfaceDetails.length > 0) {
       // Cumulatieve afstand per coördinaat-index (haversine, meters).
@@ -338,6 +352,9 @@ export class GraphHopperProvider implements RoutingProvider {
         else if (UNPAVED_SURFACES_GH.has(value)) unpavedM += m;
       }
       const knownM = pavedM + unpavedM;
+      if (totalM > 0) {
+        surfaceKnownFraction = Math.min(Math.max(knownM / totalM, 0), 1);
+      }
       if (totalM > 0 && knownM / totalM >= 0.6) {
         pavedFraction = Math.min(Math.max(pavedM / knownM, 0), 1);
       }
@@ -347,6 +364,7 @@ export class GraphHopperProvider implements RoutingProvider {
       points,
       path: geometry,
       pavedFraction,
+      surfaceKnownFraction,
       distanceKm:
         typeof path.distance === "number"
           ? Math.round((path.distance / 1000) * 100) / 100

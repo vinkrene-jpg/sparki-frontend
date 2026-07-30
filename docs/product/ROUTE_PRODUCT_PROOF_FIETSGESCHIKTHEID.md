@@ -113,3 +113,15 @@ weggenomen.
 | Consistentie | 9,2 | geen stille provider-tegenspraak meer op kritische profielen |
 | Praktische bruikbaarheid | 9,1 | <1 s motorantwoord, e2e bewezen; live-proof afhankelijk van externe services |
 | **Eindscore** | **9,3** | **GEREED — PRODUCT PROVEN** |
+
+## 7. Addendum — praktijk-hertest René (30-07-2026): proof was voorbarig
+
+De praktijktest (taak #424, regio Hengelo) vond alsnog échte missers; de
+status "PRODUCT PROVEN" was daarmee voorbarig — het harnas mat een proxy, niet
+René's regio en praktijk. Bevindingen, wortelanalyse (motorregel miste
+COMPACTED/FINE_GRAVEL; onbekend wegdek telde neutraal; voetpaden gaven valse
+onverhard-meldingen), fixes en de nieuwe PASS-hermeting (6 startpunten mét
+Hengelo): `proof-evidence/hertest-hengelo-rene-2026-07-30.md`.
+
+Procesregel voortaan: automatisch bewijs = "technisch gereed"; **"bewezen" pas
+na praktijktest van de rijder.**

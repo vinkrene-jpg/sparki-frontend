@@ -1,0 +1,93 @@
+{
+  "ranAt": "2026-07-30T06:26:08.311Z",
+  "verdict": "FAIL",
+  "measured": 6,
+  "certainForbidden": 1,
+  "unpavedTotal": 3,
+  "failures": [
+    "Utrecht: slechts 91% verhard volgens de routebron (< 95%)",
+    "3 onverhard/ruw-vakken over 6 lussen (max 2)"
+  ],
+  "cities": [
+    {
+      "city": "Hengelo (Ov)",
+      "measurable": true,
+      "distanceKm": 49.33,
+      "ascentM": 530,
+      "pavedFraction": 0.983205376829885,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "city": "Arnhem",
+      "measurable": true,
+      "distanceKm": 54.78,
+      "ascentM": 668,
+      "pavedFraction": 0.9992251228409986,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "city": "Utrecht",
+      "measurable": true,
+      "distanceKm": 51.95,
+      "ascentM": 107,
+      "pavedFraction": 0.9082037143674327,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "city": "Eindhoven",
+      "measurable": true,
+      "distanceKm": 49.46,
+      "ascentM": 81,
+      "pavedFraction": 0.9996534127542929,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "city": "Zwolle",
+      "measurable": true,
+      "distanceKm": 50.3,
+      "ascentM": 197,
+      "pavedFraction": 1,
+      "certainForbidden": [
+        {
+          "id": "way/6508124",
+          "km": 28.1,
+          "evidence": "bicycle=no",
+          "offRouteM": 0
+        }
+      ],
+      "unpaved": [
+        {
+          "id": "way/680547212",
+          "km": 0.2,
+          "evidence": "surface=pebblestone",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/6508819",
+          "km": 46.6,
+          "evidence": "surface=fine_gravel",
+          "offRouteM": 3
+        },
+        {
+          "id": "way/162012373",
+          "km": 50.1,
+          "evidence": "surface=compacted",
+          "offRouteM": 8
+        }
+      ]
+    },
+    {
+      "city": "Maastricht (heuvels)",
+      "measurable": true,
+      "distanceKm": 47.11,
+      "ascentM": 229,
+      "pavedFraction": 0.9639868304000364,
+      "certainForbidden": [],
+      "unpaved": []
+    }
+  ]
+}
