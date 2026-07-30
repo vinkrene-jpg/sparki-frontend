@@ -1749,10 +1749,14 @@ router.post("/:id/rejoin", requireAuth, async (req, res) => {
 // "bron gaf geen antwoord"-contract (null). De upstream-call loopt op de
 // achtergrond door en vult gewoon de cache voor een volgende poging.
 const PREVIEW_BUDGET_MS = 18_000;
+// Sentinel: het budget verstreek terwijl de meting nog LOOPT. Dat is géén
+// bronfout — de achtergrond-meting vult de cache en een volgende poging kan
+// wél slagen (Proof #439: trage mirrors, latere poging gaf direct 200).
+const PREVIEW_PENDING = Symbol("preview-pending");
 function withPreviewBudget<T>(
   p: Promise<T | null>,
   log: { error: (obj: unknown, msg?: string) => void },
-): Promise<T | null> {
+): Promise<T | null | typeof PREVIEW_PENDING> {
   return Promise.race([
     // Log de echte reject-oorzaak vóór we hem als "bron gaf geen antwoord"
     // (null → 502) maskeren — anders worden interne regressies onzichtbaar.
@@ -1760,8 +1764,8 @@ function withPreviewBudget<T>(
       log.error({ err }, "routes.preview upstream failed");
       return null;
     }),
-    new Promise<null>((resolve) => {
-      const t = setTimeout(() => resolve(null), PREVIEW_BUDGET_MS);
+    new Promise<typeof PREVIEW_PENDING>((resolve) => {
+      const t = setTimeout(() => resolve(PREVIEW_PENDING), PREVIEW_BUDGET_MS);
       if (typeof t === "object" && "unref" in t) t.unref();
     }),
   ]);
@@ -1793,7 +1797,8 @@ router.post("/remarks-preview", requireAuth, async (req, res) => {
       }
       geometry.push([la, lo]);
     }
-    const remarks = await withPreviewBudget(getRouteRemarks(geometry), req.log);
+    const budgeted = await withPreviewBudget(getRouteRemarks(geometry), req.log);
+    const remarks = budgeted === PREVIEW_PENDING ? null : budgeted;
     if (remarks == null) {
       res.status(502).json({
         error:
@@ -1848,6 +1853,17 @@ router.post("/surfaces-preview", requireAuth, async (req, res) => {
       geometry.push([la, lo]);
     }
     const analysis = await withPreviewBudget(getRouteSurfaces(geometry), req.log);
+    if (analysis === PREVIEW_PENDING) {
+      // Het previewbudget verstreek maar de meting loopt nog (trage mirrors);
+      // de achtergrond-meting vult de cache. Geen fout en géén verzonnen
+      // tussenresultaat: de client mag zo dadelijk opnieuw vragen.
+      res.status(202).json({
+        pending: true,
+        error:
+          "De wegdekmeting loopt nog — de kaartbron antwoordt traag. Probeer zo opnieuw.",
+      });
+      return;
+    }
     if (analysis == null) {
       res.status(502).json({
         error: "Wegtypen konden nu niet opgehaald worden — de kaartbron gaf geen antwoord.",

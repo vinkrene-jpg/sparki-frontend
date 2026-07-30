@@ -85,9 +85,27 @@ export type RouteSurfacesResponse = {
   maxSlopePct: number | null
   vergelijking?: SurfaceSourceComparison | null
   source: { name: string; license: string; url: string; note: string }
+  // 202 van de server: het previewbudget verstreek maar de meting loopt nog
+  // op de achtergrond (trage kaartbron). Geen fout en geen verzonnen
+  // tussenresultaat — de hook pollt automatisch door tot er echt iets is.
+  pending?: boolean
 }
 
 const STALE_MS = 30 * 60_000
+
+// Doorpollen zolang de server "meting loopt nog" (202/pending) antwoordt:
+// elke 5 s opnieuw vragen, met een plafond zodat een écht dode bron niet
+// eeuwig blijft draaien. Na het plafond blijft de eerlijke pending-toestand
+// staan ("probeer zo opnieuw") — er wordt nooit een tussenresultaat verzonnen.
+const PENDING_POLL_MS = 5_000
+const PENDING_POLL_MAX = 12
+
+function pendingRefetchInterval(query: {
+  state: { data?: RouteSurfacesResponse; dataUpdateCount: number }
+}) {
+  if (!query.state.data?.pending) return false
+  return query.state.dataUpdateCount < PENDING_POLL_MAX ? PENDING_POLL_MS : false
+}
 
 export function useRouteSurfaces(routeId: number | null) {
   return useQuery({
@@ -126,7 +144,10 @@ export function useRouteSurfacesPreview(
   return useQuery({
     queryKey: ["route-surfaces-preview", key],
     enabled: g != null,
-    staleTime: STALE_MS,
+    // Een pending-antwoord ("meting loopt nog") is nooit vers: bij een
+    // her-mount direct opnieuw vragen in plaats van 30 min op 202 blijven.
+    staleTime: (q) => (q.state.data?.pending ? 0 : STALE_MS),
+    refetchInterval: pendingRefetchInterval,
     retry: 1,
     queryFn: () =>
       apiFetch<RouteSurfacesResponse>("/api/routes/surfaces-preview", {

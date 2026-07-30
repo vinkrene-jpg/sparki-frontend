@@ -181,6 +181,10 @@ export function RouteSurfacesPanel({
 }) {
   const [open, setOpen] = useState(true)
   const surfaces = data?.surfaces ?? null
+  // 202 van de server: het previewbudget verstreek maar de meting loopt nog
+  // op de achtergrond (trage kaartbron). De hook pollt door — hier tonen we
+  // een eerlijke doorlaad-toestand, geen foutmelding en geen verzonnen data.
+  const pending = data?.pending === true
 
   return (
     <div className={className}>
@@ -205,6 +209,13 @@ export function RouteSurfacesPanel({
           {isLoading && (
             <p className="text-[12px] text-white/40">
               Wegtypen worden bepaald uit de kaartgegevens…
+            </p>
+          )}
+          {!isLoading && !isError && pending && (
+            <p className="text-[12px] text-white/45">
+              De wegdekmeting loopt nog — de kaartbron antwoordt traag. Dit
+              scherm probeert het automatisch opnieuw; je kunt de route ook zo
+              opnieuw openen.
             </p>
           )}
           {isError && (

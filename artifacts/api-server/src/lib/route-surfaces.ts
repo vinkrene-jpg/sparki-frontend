@@ -563,6 +563,12 @@ const OVERPASS_TIMEOUT_MS = 25_000;
 export const OVERPASS_OUT_LIMIT = 10_000;
 const CACHE = new Map<string, { at: number; data: RouteSurfacesAnalysis }>();
 const CACHE_TTL_MS = 15 * 60_000;
+// In-flight-samenvoeging: bij trage mirrors (Proof #439: 4–14 s per query)
+// haalt een herhaalde preview-poging dezelfde route op terwijl de eerste
+// meting nog loopt. Eén lopende meting per cache-key voorkomt dat elke retry
+// een verse (even trage) Overpass-ronde start; de retry wacht mee op het
+// echte resultaat.
+const INFLIGHT = new Map<string, Promise<RouteSurfacesAnalysis | null>>();
 
 type OverpassRun = { elements: OverpassElement[]; truncated: boolean };
 
@@ -674,6 +680,19 @@ export async function getRouteSurfaces(
   const hit = CACHE.get(cacheKey);
   if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.data;
 
+  const running = INFLIGHT.get(cacheKey);
+  if (running) return running;
+  const measurement = measureRouteSurfaces(geometry, cacheKey).finally(() => {
+    INFLIGHT.delete(cacheKey);
+  });
+  INFLIGHT.set(cacheKey, measurement);
+  return measurement;
+}
+
+async function measureRouteSurfaces(
+  geometry: RoutePathPoint[],
+  cacheKey: string,
+): Promise<RouteSurfacesAnalysis | null> {
   let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
   for (const [la, lo] of geometry) {
     if (la < minLat) minLat = la;
