@@ -3941,6 +3941,12 @@ chapter_f_voeding_hydratatie_en_gewicht:
 # coach|sparki). Deze gaten staan hieronder per onderwerp eerlijk vermeld.
 chapter_j_club_coachorganisatie_en_ploegomgeving:
 
+  # Opgesteld volgens SPARKI_KALIBRATIE_OPDRACHT_HOOFDSTUK_J_2026-07-30_v3(3).
+  # Productmodel is door René vastgesteld (één trainer-rol, drie access_contexts,
+  # clubhiërarchie, plat team, externe coach = IMPORTED-label, AI-trainer terughoudend
+  # behalve club-context, KNWU-gefundeerd trainingsinhoud-model, 8 verplichte harde regels).
+  # Codebron-snapshot: 30-07-2026 (main b1364632). Extern onderzoek KNWU/VOG: 30-07-2026.
+
   - id: CLUB_ROLMODEL_001
     module: Club, coachorganisatie en ploegomgeving
     subject: "Eén trainer-rol met drie toegangscontexten (independent/club/team), rechten per trainer+renner+context, nooit lekkend tussen contexten"
@@ -3952,14 +3958,14 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
       evidence_status: "Relationele scoping bestaat en is getest: directe coachlink (coach_athlete_links, tier 1) vs club/team-toewijzing (club_trainer_assignments, tier 2) — src/lib/sharing.ts:190-286; rechtenmatrix per relatie, niet per trainer-account. Sharing levels none/summary/full per renner afgedwongen met nul-mutatie-bewijs (test:coach-parent-sharing-levels 13/13 groen, uitgevoerd 30-07-2026)."
       practice_status: "Clubomgeving en trainer-werkruimte draaien in dev en zijn door testers gebruikt; een trainer die tegelijk directe links én clubtoewijzingen heeft is nooit gericht in de praktijk getest."
       known_limitations:
-        - "Er is geen expliciet access_context-veld; 'independent' = directe link, 'club/team' = toewijzing. Zolang rechten strikt per relatie worden afgeleid is dat equivalent, maar het onderscheid independent-met-abonnement vs gratis directe link bestaat nog niet (geen Sparki-trainer-abonnement in entitlements)."
-        - "Bestaand afwijkend contract: een assignment-only trainer mag nu coach-berichten schrijven (201) — src/tests/trainer-assignment-write-contract.ts. Dat is ruimer dan het vastgestelde model (schrijfacties = directe link) en moet bij implementatie expliciet worden herbeslist of dichtgezet."
+        - "Er is geen expliciet access_context-veld; 'independent' = directe link, 'club/team' = toewijzing. Zolang rechten strikt per relatie worden afgeleid is dat equivalent, maar het onderscheid independent-met-abonnement vs gratis directe link bestaat nog niet: er is geen 'Sparki-trainer-abonnement' in de entitlement-laag (lib/entitlements.ts kent Go-tier/feature keys en club_subscriptions, geen trainer-product)."
+        - "Bestaand afwijkend contract: een assignment-only trainer mag nu coach-berichten schrijven (201) — src/tests/trainer-assignment-write-contract.ts. Dat is ruimer dan het vastgestelde model en moet bij implementatie expliciet worden herbeslist of dichtgezet."
         - "Multi-context-stapeling (zelfde trainer, zelfde renner via twee wegen) heeft geen eigen test; het no-leak-principe steunt nu op het feit dat elke route zelf de juiste relatie checkt."
 
     proposed_promise:
       text: "Een trainer heeft per renner uitsluitend de rechten die horen bij de specifieke toegangscontext van die relatie (zelfstandig, club of team). Combineert één persoon meerdere contexten, dan blijven de rechten per relatie strikt gescheiden: zzp-rechten gelden nooit voor clubrenners en andersom — aantoonbaar, met automatische tests."
       proposed_by: replit
-      rationale: "De bestaande tier-1/tier-2-scheiding (directe link vs toewijzing) is precies de technische drager van dit model; wat ontbreekt is de expliciete context-administratie, het abonnementsonderscheid en een gerichte no-leak-test voor gestapelde contexten."
+      rationale: "De bestaande tier-1/tier-2-scheiding (directe link vs toewijzing) is precies de technische drager van dit model; wat ontbreekt is de expliciete context-administratie, het trainer-abonnement en een gerichte no-leak-test voor gestapelde contexten. Haalbaar als administratieve laag bovenop bestaande relaties, geen herbouw."
       rene_approved: false
 
     role_model:
@@ -3979,11 +3985,17 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
         origin_label: "externe coach, niet via Sparki-trainer"
       multi_role_stacking: true
 
+    training_content_model:
+      # Volledig uitgewerkt in CLUB_TRAININGSINHOUD_001; hier alleen de koppeling met het rolmodel:
+      # welke trainer een element/sessie mag plannen wordt per trainer+renner+context bepaald,
+      # nooit per trainer-account.
+      relevantie_voor_dit_onderwerp: "Plan- en sessie-rechten volgen dezelfde per-context-scoping; een independent-trainer plant individueel, een clubtrainer plant groepssessies binnen toegewezen groepen."
+
     external_intelligence:
       research_required: true
       candidate_sources:
-        - name: "Bestaande Sparki rechteninfrastructuur (sharing.ts, club-permissions.ts, coach_athlete_links, club_trainer_assignments)"
-          coverage: "Dekt relationele scoping, sharing levels, club-rollen, consent-gating en audit; dekt niet het independent-abonnement en niet een expliciete context-administratie."
+        - name: "Bestaande Sparki rechteninfrastructuur (sharing.ts, club-permissions.ts, coach_athlete_links, club_trainer_assignments, entitlements.ts)"
+          coverage: "Dekt relationele scoping, sharing levels, club-rollen, consent-gating, capaciteit en audit; dekt niet het independent-abonnement en niet een expliciete context-administratie."
           actuality: "Code van 30-07-2026, met draaiende contracttests."
           license_status: "Eigen code."
           limitations:
@@ -4002,7 +4014,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
       assumptions:
         - "Het vastgestelde rechtenverschil per context is een deelverzameling van wat sharing levels + tiers nu al kunnen uitdrukken."
       unknowns:
-        - "Gewenste afhandeling als een renner tegelijk zzp-renner én clublid van dezelfde trainer is (hoogste of strikt gescheiden weergave per context)."
+        - "Gewenste afhandeling als een renner tegelijk zzp-renner én clublid van dezelfde trainer is (weergave per context strikt gescheiden of gecombineerd)."
       evidence_method:
         - "Nieuwe contracttest 'trainer-context-no-leak' met gestapelde trainer, per route: verwachte 200/403 per context."
         - "Bestaande tests test:coach-parent-sharing-levels, trainer-workspace-isolation, trainer-rights als regressienet."
@@ -4013,7 +4025,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
 
     acceptance_contract:
       hard_reject_rules:
-        - rule: "Rechten van een trainer die meerdere toegangscontexten combineert, mogen nooit tussen contexten lekken: de rechten die gelden voor zijn zzp-renners mogen nooit toegepast worden op zijn clubrenners, en omgekeerd — ongeacht hoe de routes worden aangeroepen."
+        - rule: "Rechten van een trainer die meerdere access_contexts combineert, mogen nooit tussen contexten lekken: de rechten die gelden voor zijn zzp-renners mogen nooit toegepast worden op zijn clubrenners, en omgekeerd — ongeacht hoe de routes worden aangeroepen. (Verplichte regel 2)"
           rule_type: hard_blockage
           measurement_level: per_trainer_athlete_context
           aggregate_justification: ""
@@ -4063,16 +4075,17 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
     current_state:
       technical_status: implemented
       source_snapshot: 2026-07-30
-      evidence_status: "Clubfundament bestaat en is getest (test:club 23/23 groen, uitgevoerd 30-07-2026): clubs/club_members/club_subscriptions/club_teams/club_groups/club_trainer_assignments/club_consents/club_audit_log; rollen owner/admin (beheer), hoofdtrainer (teams/groepen/trainer-toewijzingen — routes/club.ts:1220-1439), trainer/assistent, teammanager, mechanieker, vrijwilliger/alleen_lezen (club-permissions.ts:59-95). Sportdata is per scope consent-gated (club_consents, club-permissions.ts:263-297); niet-lid of beëindigd lid = fail-closed."
+      evidence_status: "Clubfundament bestaat en is getest (test:club 23/23 groen, uitgevoerd 30-07-2026): clubs/club_members/club_subscriptions/club_teams/club_groups/club_trainer_assignments/club_consents/club_audit_log; rollen owner/admin (beheer), hoofdtrainer (teams/groepen/trainer-toewijzingen — routes/club.ts:1220-1439), trainer/assistent, teammanager, mechanieker, vrijwilliger/alleen_lezen (club-permissions.ts:59-95). Sportdata is per scope consent-gated (club-permissions.ts:263-297); niet-lid of beëindigd lid = fail-closed. Trainingsplanning + aanmelden/afmelden/misschien/reserve met capaciteit en reservepromotie (club.ts:1668-1785) en aanwezigheidsregistratie aanwezig/afwezig/te_laat (club.ts:1885-1928) bestaan al."
       practice_status: "Clubflows door testers gebruikt; grootschalige club (meerdere trainers, meerdere groepen) niet in praktijk getest."
       known_limitations:
         - "De grens 'algemene voortgang' (groepsniveau) vs individueel niveau is technisch nog niet als één gedefinieerde weergave vastgelegd; nu bepaalt de combinatie sharing level + consent-scope per route wat zichtbaar is."
         - "Rolstapeling (hoofdtrainer die ook owner is) werkt via meerdere rollen op één lidmaatschap; er is geen aparte weergave die per persoon toont uit welke laag een recht komt."
+        - "KNWU-trainerdiploma-veld en club-configureerbare minimumeis (clubinstelling, geen Sparki-brede eis) bestaan nog niet."
 
     proposed_promise:
-      text: "Een clubtrainer werkt uitsluitend binnen zijn toegewezen groepen/teams: hij plant groepsprogramma's en ziet algemene voortgang, maar privégezondheids-, hersteldata en individuele persoonlijke doelen van een renner zijn onzichtbaar zonder diens aparte, expliciete toestemming. Beheerder en hoofdtrainer beheren abonnement resp. trainers zonder daarmee zelf extra renner-data te zien."
+      text: "Een clubtrainer werkt uitsluitend binnen zijn toegewezen groepen/teams: hij plant groepsprogramma's en ziet algemene voortgang, maar privégezondheids-, hersteldata en individuele persoonlijke doelen van een renner zijn onzichtbaar zonder diens aparte, expliciete toestemming. Beheerder en hoofdtrainer beheren abonnement resp. trainers zonder daarmee zelf extra renner-data te zien. Het KNWU-trainersdiploma is altijd informatief zichtbaar; alleen de club zelf kan er een minimumeis aan koppelen."
       proposed_by: replit
-      rationale: "Dit is grotendeels bestaand, getest gedrag; de openstaande productkeuze is uitsluitend wáár de grens 'algemene voortgang' precies ligt en welke velden onder de aparte toestemming vallen."
+      rationale: "Dit is grotendeels bestaand, getest gedrag; de openstaande productkeuze is uitsluitend wáár de grens 'algemene voortgang' precies ligt en welke velden onder de aparte toestemming vallen. Het diploma-veld is een kleine additieve uitbreiding op clubinstellingen."
       rene_approved: false
 
     role_model:
@@ -4092,28 +4105,38 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
         origin_label: "externe coach, niet via Sparki-trainer"
       multi_role_stacking: true
 
+    training_content_model:
+      relevantie_voor_dit_onderwerp: "De clubtrainer is regisseur van de training, niet van de renner: hij plant groepssessies uit de bibliotheek (CLUB_TRAININGSINHOUD_001) en ziet doelen/voortgang alleen op het door René te bepalen 'algemene voortgang'-niveau; aanwezigheid (aanwezig/afwezig/afgemeld/gedeeltelijk/aangepast) hoort bij zijn kerntaak."
+
     external_intelligence:
       research_required: true
       candidate_sources:
-        - name: "Bestaande club-permissions + club_consents + club_audit_log"
-          coverage: "Dekt rolscheiding, consent per scope, audit en fail-closed lidmaatschap; dekt niet de productdefinitie van 'algemene voortgang'."
+        - name: "Bestaande club-permissions + club_consents + club_audit_log + clubtrainingen/aanwezigheid"
+          coverage: "Dekt rolscheiding, consent per scope, audit, fail-closed lidmaatschap, planning en basale aanwezigheid; dekt niet de productdefinitie van 'algemene voortgang' en niet het diploma-veld."
           actuality: "Code 30-07-2026, contracttest groen."
           license_status: "Eigen code."
           limitations: []
           applicability: "Direct de drager van dit onderwerp."
+        - name: "Spond en Cyql (referentie-apps voor planning/aanwezigheid/communicatie)"
+          coverage: "Bewezen basispatronen: (terugkerende) trainingsplanning, zelf aan-/afmelden met RSVP, groepscommunicatie, Cyql: GPX-bibliotheek. Geen coaching-laag, geen trainingsinhoud-model."
+          actuality: "Actieve producten (2026); functioneel referentiekader, geen code-bron."
+          license_status: "Alleen patroon-referentie, geen content- of code-overname."
+          limitations:
+            - "Sparki wil géén ledenadministratie-app worden (blijft terrein van AllUnited/Sportlink/Spond/Cyql, conform 'sync waar kan, bouw waar onderscheidend')."
+          applicability: "Basis planning/aanwezigheid/communicatie eenvoudig en degelijk houden op dit niveau; het onderscheid van Sparki zit in trainingsinhoud + routing, niet hier."
       sources_in_use: []
       privacy_status: unknown
       missing_information: []
 
     replit_definition:
       objective_quality_standard: "0 gevallen waarin een clubtrainer zonder aparte renner-toestemming een privégezondheids-/herstelveld of individueel persoonlijk doel te zien krijgt, gemeten over alle club-leesroutes; elke onthulling herleidbaar naar een geregistreerde consent-rij."
-      recommended_default: "Groepsniveau = geaggregeerde aanwezigheids-/belastingsindicatoren zonder individuele gezondheid; individueel niveau alleen met consent-scope die het specifieke veld dekt."
+      recommended_default: "Groepsniveau = geaggregeerde aanwezigheids-/belastingsindicatoren zonder individuele gezondheid; individueel niveau alleen met consent-scope die het specifieke veld dekt. Diploma-veld altijd informatief tonen; minimumeis alleen als club-instelling (AV-besluit-patroon), nooit Sparki-breed afgedwongen."
       technical_limits:
         - "Aggregaties over kleine groepen (n<3) kunnen individuele waarden alsnog herleidbaar maken; daarvoor is een minimum-groepsgrootte nodig."
       assumptions:
         - "club_consents-scopes zijn fijnmazig genoeg om René's uiteindelijke veldenlijst te dragen."
       unknowns:
-        - "Of clubbeheerders inzage in factuur-/abonnementsdata gescheiden moet blijven van elke sportdata (nu de facto wel)."
+        - "Of clubbeheerders-inzage in factuur-/abonnementsdata gescheiden moet blijven van elke sportdata (nu de facto wel)."
       evidence_method:
         - "Bestaande test:club (consent-gating, fail-closed nonmember/ended, audit) als regressienet; nieuwe test op de nog te definiëren veldenlijst zodra René die vastlegt."
 
@@ -4125,7 +4148,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
 
     acceptance_contract:
       hard_reject_rules:
-        - rule: "Een clubtrainer mag nooit privégezondheids-, hersteldata of individuele persoonlijke doelen van een renner zien zonder diens aparte, expliciete toestemming — ongeacht clubrol, clubinstellingen of hoe goed de club het 'over het algemeen' geregeld heeft."
+        - rule: "Een clubtrainer mag nooit privégezondheids-, hersteldata of individuele persoonlijke doelen van een renner zien zonder diens aparte, expliciete toestemming — ongeacht clubrol, clubinstellingen of hoe goed de club het 'over het algemeen' geregeld heeft. (Verplichte regel 1)"
           rule_type: hard_blockage
           measurement_level: per_trainer_athlete_context
           aggregate_justification: ""
@@ -4164,7 +4187,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
       evidence_refs: []
     next_action:
       type: research_or_build_or_retest
-      description: "Na René's veldenlijst: consent-scopes en weergaven daarop vastklikken + veldenlijst-test toevoegen; minimum-groepsgrootte voor aggregaten bepalen."
+      description: "Na René's veldenlijst: consent-scopes en weergaven daarop vastklikken + veldenlijst-test toevoegen; minimum-groepsgrootte voor aggregaten bepalen; diploma-veld + club-instelling toevoegen."
       approved_for_execution: false
 
   - id: CLUB_TEAMOMGEVING_001
@@ -4178,14 +4201,14 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
       evidence_status: "Teams bestaan als club_teams bínnen een club, met teamtoewijzing van trainers (club_trainer_assignments naar team of groep, read-time einddatum — club-permissions.ts:211-260) en teammanager-rol voor trainings-/wedstrijdbeheer (club-permissions.ts:77-85). Mechanieker bestaat als rol (alleen materiaalvelden — club-permissions.ts:92-95, aparte mechanieker-module met tests). 'Ploegleider' bestaat feitelijk als teammanager (governor-fixtures koppelen ploegleider aan clubRole teammanager); volgauto is een feature, geen rol."
       practice_status: "Teamtoewijzing en mechanieker in dev getest; een zelfstandig team búiten een club is nog nooit gebruikt want het bestaat niet."
       known_limitations:
-        - "Een team zonder club (het vastgestelde model: los team met één lichte beheerder) bestaat niet in het schema — teams hangen nu altijd onder clubs met de drielaagse clubstructuur erboven."
+        - "Een team zonder club (het vastgestelde model: los team met één lichte beheerder die elk teamlid kan zijn) bestaat niet in het schema — teams hangen nu altijd onder clubs met de drielaagse clubstructuur erboven."
         - "Diëtist bestaat niet als rol of module."
         - "Seizoensbegrenzing van teamtoegang bestaat alleen als einddatum op de toewijzing, niet als expliciet seizoensbegrip."
 
     proposed_promise:
       text: "Een team is een platte omgeving: één lichte beheerder (elk teamlid kan dat zijn) en een staf van trainer(s), ploegleider, mechanieker en diëtist zonder onderlinge hiërarchie. Een teamtrainer begeleidt uitsluitend zijn toegewezen renners binnen het team/seizoen, met meer individuele rechten dan een clubtrainer maar zonder enige toegang buiten het teamverband."
       proposed_by: replit
-      rationale: "De teambouwstenen (toewijzing, teammanager, mechanieker, einddatum) bestaan; wat ontbreekt is het zelfstandige team buiten de club, de diëtist-rol en de expliciete seizoensafbakening. Haalbaar als variant op de bestaande club-tabellen (club met type 'team' en versimpelde rollen) in plaats van een tweede rechtenmodel."
+      rationale: "De teambouwstenen (toewijzing, teammanager, mechanieker, einddatum) bestaan; wat ontbreekt is het zelfstandige team buiten de club, de diëtist-rol en de expliciete seizoensafbakening. Haalbaar als variant op de bestaande club-tabellen (organisatievorm 'team' met versimpelde rollen) in plaats van een tweede rechtenmodel."
       rene_approved: false
 
     role_model:
@@ -4204,6 +4227,9 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
         provenance_tag: IMPORTED
         origin_label: "externe coach, niet via Sparki-trainer"
       multi_role_stacking: true
+
+    training_content_model:
+      relevantie_voor_dit_onderwerp: "Teamtrainer plant intensiever en individueler dan een clubtrainer: sessies uit de bibliotheek plus individuele aanpassing per toegewezen renner, binnen consent; diëtist raakt alleen voedingsgerelateerde velden (grenzen hoofdstuk F blijven gelden), mechanieker alleen materiaal."
 
     external_intelligence:
       research_required: true
@@ -4281,21 +4307,22 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
 
   - id: CLUB_EXTERNE_COACH_001
     module: Club, coachorganisatie en ploegomgeving
-    subject: "Externe coach als herkomstlabel (IMPORTED), nooit een rol; AI-trainer terughoudend naast elke menselijke trainer en extra behoedzaam bij een extern plan"
+    subject: "Externe coach als herkomstlabel (IMPORTED), nooit een rol; AI-trainer terughoudend naast elke menselijke trainer, individueel aanvullend in de club-context, extra behoedzaam bij een extern plan"
     status: needs_calibration
 
     current_state:
       technical_status: not_implemented
       source_snapshot: 2026-07-30
-      evidence_status: "Eerlijke bevinding: het 6-delige herkomstsysteem (MEASURED/IMPORTED/SELF_REPORTED/DERIVED/AI_INTERPRETED/UNKNOWN) bestaat NIET als enum in code. Wel bestaat een Data Origin-service (engines/data-origin) met bronlabels (manual/strava/…/coach/derived) en betrouwbaarheid gemeten|afgeleid|geschat|handmatig, plus een bronnenregister (engines/source-quality) dat per analyse used/excluded bronnen logt. Plan-upload bestaat niet: POST /api/athlete/workouts normaliseert source hard naar coach|sparki (routes/athlete.ts:635-638); activity-imports importeert alleen uitgevoerde activiteiten, geen plannen. De AI-laag (buildAthleteContext + source-quality-promptregel) verbiedt nu al conclusies uit ontbrekende/onbetrouwbare bronnen."
+      evidence_status: "Eerlijke bevinding: het 6-delige herkomstsysteem (MEASURED/IMPORTED/SELF_REPORTED/DERIVED/AI_INTERPRETED/UNKNOWN) bestaat NIET als enum in code, ook al noemt de opdracht het 'bestaand'. Wel bestaat een Data Origin-service (engines/data-origin) met bronlabels (manual/strava/…/coach/derived) en betrouwbaarheid gemeten|afgeleid|geschat|handmatig, plus een bronnenregister (engines/source-quality) dat per analyse used/excluded bronnen logt. Plan-upload bestaat niet: POST /api/athlete/workouts normaliseert source hard naar coach|sparki (routes/athlete.ts:635-638); activity-imports importeert alleen uitgevoerde activiteiten, geen plannen. De AI-laag (buildAthleteContext + source-quality-promptregel) verbiedt nu al conclusies uit ontbrekende/onbetrouwbare bronnen."
       practice_status: "Niet in praktijk getest; de flow bestaat niet."
       known_limitations:
-        - "De opdrachttekst noemt het 6-delige systeem 'bestaand'; in code is dat niet zo — dit onderwerp is een bouwopgave bovenop de bestaande Data Origin-service, geen etikettering van iets dat er al is."
+        - "Dit onderwerp is een bouwopgave bovenop de bestaande Data Origin-service, geen etikettering van iets dat er al is."
+        - "De AI-trainer-uitzondering voor de club-context (AI vult het individuele niveau aan dat de clubtrainer niet afdekt) bestaat niet als expliciete gedragsregel in de AI-laag; de huidige AI kent geen 'er is een menselijke trainer actief'-standenschakelaar."
 
     proposed_promise:
-      text: "Een renner met een externe coach uploadt diens plan zelf; het plan krijgt onuitwisbaar de herkomst IMPORTED met het label 'externe coach, niet via Sparki-trainer'. De externe coach krijgt nooit een account, rol of rechten. De AI-trainer blijft naast elke menselijke trainer terughoudend en adviserend, en is bij een extern plan extra behoedzaam — hij wijzigt het nooit zelf en spreekt alleen nadrukkelijk bij expliciete veiligheidskwesties."
+      text: "Een renner met een externe coach uploadt diens plan zelf; het plan krijgt onuitwisbaar de herkomst IMPORTED met het label 'externe coach, niet via Sparki-trainer'. De externe coach krijgt nooit een account, rol of rechten. De AI-trainer blijft naast elke menselijke trainer terughoudend en adviserend en wijzigt diens keuzes nooit zelf; alleen in de club-context neemt hij het individuele niveau dat de clubtrainer niet afdekt wél actief over (begeleiding rond en aanvullend op de clubtrainingen). Bij een IMPORTED extern plan is hij extra behoedzaam en spreekt hij alleen nadrukkelijk bij expliciete veiligheidskwesties."
       proposed_by: replit
-      rationale: "Technisch haalbaar met bestaande bouwstenen: planned_workouts heeft al een source-veld (de normalisatie moet een IMPORTED-waarde + origin-label toestaan), de Data Origin-service kan het label dragen en tonen, en het source-quality-promptblok is de bestaande plek om de AI-behoedzaamheid af te dwingen."
+      rationale: "Technisch haalbaar met bestaande bouwstenen: planned_workouts heeft al een source-veld (de normalisatie moet een IMPORTED-waarde + origin-label toestaan), de Data Origin-service kan het label dragen en tonen, en het source-quality-promptblok is de bestaande plek om AI-behoedzaamheid en de club-context-uitzondering af te dwingen."
       rene_approved: false
 
     role_model:
@@ -4314,6 +4341,9 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
         provenance_tag: IMPORTED
         origin_label: "externe coach, niet via Sparki-trainer"
       multi_role_stacking: true
+
+    training_content_model:
+      relevantie_voor_dit_onderwerp: "IMPORTED-planitems zijn voor de bibliotheek en de plan-engine read-only invoer: ze tellen mee in belasting, maar worden nooit herschreven of als Sparki-/coach-element behandeld; audit-trail (bron, versie, wijzigingen) geldt onverkort."
 
     external_intelligence:
       research_required: true
@@ -4329,18 +4359,20 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
       privacy_status: unknown
       missing_information:
         - "Welke bestandsformaten externe coaches in de praktijk aanleveren (bepaalt de import-parser, analoog aan de eerlijke bestandsimport uit hoofdstuk H)."
+        - "Of het 6-delige herkomstmodel app-breed wordt ingevoerd of eerst alleen voor plannen (app-breed raakt vrijwel elke tabel — aparte beslissing)."
 
     replit_definition:
-      objective_quality_standard: "100% van extern geüploade plan-items draagt IMPORTED + origin-label, zichtbaar in de herkomst-uitleg; 0 paden waarlangs een extern plan de source coach|sparki krijgt; AI-uitingen over een extern plan zijn aantoonbaar advies-alleen (geen automatische wijziging van IMPORTED-items door de plan-engine)."
-      recommended_default: "IMPORTED-items zijn voor Sparki's engines read-only invoer: belastingsmodel telt ze mee, adaptieve voorstellen mogen ernaast bestaan als voorstel, maar nooit het externe item zelf herschrijven."
+      objective_quality_standard: "100% van extern geüploade plan-items draagt IMPORTED + origin-label, zichtbaar in de herkomst-uitleg; 0 paden waarlangs een extern plan de source coach|sparki krijgt; AI-uitingen over een extern plan zijn aantoonbaar advies-alleen (geen automatische wijziging van IMPORTED-items door de plan-engine); AI-individuele begeleiding is alleen actief in de club-context en aantoonbaar afwezig (terughoudend) bij een actieve zzp-/teamtrainer."
+      recommended_default: "IMPORTED-items zijn voor Sparki's engines read-only invoer: belastingsmodel telt ze mee, adaptieve voorstellen mogen ernaast bestaan als voorstel, maar nooit het externe item zelf herschrijven. AI-stand per renner afleiden uit actieve trainer-relaties: club-only ⇒ individueel aanvullend; zzp/team actief ⇒ terughoudend."
       technical_limits:
         - "Sparki kan de kwaliteit van een extern plan niet garanderen; herkomst-eerlijkheid wel."
       assumptions:
         - "De bestaande veiligheids-/gezondheidsblokkades (hoofdstuk B+C) blijven op de uitvoering van externe plannen gewoon van kracht."
       unknowns:
-        - "Of het 6-delige herkomstmodel app-breed wordt ingevoerd of eerst alleen voor plannen (app-breed raakt vrijwel elke tabel — aparte beslissing)."
+        - "Grens tussen 'terughoudend advies' en 'individueel aanvullend' in concrete AI-uitingen (welke voorstellen mag de AI in club-context wél zelf doen)."
       evidence_method:
         - "Contracttest: upload extern plan ⇒ elke rij IMPORTED+label; poging tot source-spoofing via API ⇒ genormaliseerd/geweigerd; plan-engine-run wijzigt IMPORTED-items niet."
+        - "AI-standtest: zelfde renner met (a) alleen clubtoewijzing en (b) actieve zzp-link ⇒ aantoonbaar verschillend AI-gedrag (individueel voorstel wel/niet)."
 
     rene_calibration:
       questions:
@@ -4349,7 +4381,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
 
     acceptance_contract:
       hard_reject_rules:
-        - rule: "Een externe coach krijgt nooit alsnog impliciet een account of rol toegekend — data van een extern plan blijft altijd IMPORTED met het herkomstlabel 'externe coach, niet via Sparki-trainer', en wordt nooit gepromoveerd tot een trainer-relatie of tot source coach|sparki."
+        - rule: "Een externe coach krijgt nooit alsnog impliciet een account of rol toegekend — data van een extern plan blijft altijd IMPORTED met het herkomstlabel 'externe coach, niet via Sparki-trainer', en wordt nooit gepromoveerd tot een trainer-relatie of tot source coach|sparki. (Verplichte regel 4)"
           rule_type: hard_blockage
           measurement_level: per_actie
           aggregate_justification: ""
@@ -4358,14 +4390,14 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
               proof_stage: designed
               proof_method: "Contracttest op de nieuwe importflow: source-spoofing wordt genormaliseerd naar IMPORTED, label onuitwisbaar over de hele levenscyclus (aanmaak, bewerking, kopie)."
               proof_result: not_yet_tested
-        - rule: "De AI-trainer wijzigt nooit zelfstandig items van een menselijke trainer of een IMPORTED extern plan; hij levert naast zo'n plan uitsluitend advies, behalve bij expliciete veiligheidskwesties waar hij nadrukkelijk mag waarschuwen volgens het door René te kiezen gedrag."
+        - rule: "De AI-trainer wijzigt nooit zelfstandig items van een menselijke trainer of een IMPORTED extern plan; hij levert naast zo'n plan uitsluitend advies, behalve bij expliciete veiligheidskwesties waar hij nadrukkelijk mag waarschuwen volgens het door René te kiezen gedrag. De club-context-uitzondering geeft de AI alleen het individuele niveau dat de clubtrainer niet afdekt — nooit zeggenschap over de clubtraining zelf."
           rule_type: hard_blockage
           measurement_level: per_actie
           aggregate_justification: ""
           counterexamples:
-            - case: "De adaptieve plan-engine herschrijft een IMPORTED-item alsof het een eigen Sparki-voorstel is."
+            - case: "De adaptieve plan-engine herschrijft een IMPORTED-item of een clubtrainingssessie alsof het een eigen Sparki-voorstel is."
               proof_stage: designed
-              proof_method: "Plan-engine-contracttest: run over een week met IMPORTED-items ⇒ byte-gelijke IMPORTED-rijen, voorstellen alleen als aparte advisory-items."
+              proof_method: "Plan-engine-contracttest: run over een week met IMPORTED-items en een clubtraining ⇒ byte-gelijke externe/club-rijen, voorstellen alleen als aparte advisory-items."
               proof_result: not_yet_tested
       tolerances: []
       unknown_data_policy: "Plan-items zonder herleidbare herkomst krijgen UNKNOWN en worden nooit stil als Sparki- of coachplan behandeld."
@@ -4378,19 +4410,19 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
       practice_testers: []
       result: not_tested
       expectation_gap:
-        - "Volledige flow (upload, label, AI-gedrag) bestaat nog niet."
+        - "Volledige flow (upload, label, AI-standen) bestaat nog niet."
     product_proof:
       score: null
       status: not_proven
       evidence_refs: []
     next_action:
       type: research_or_build_or_retest
-      description: "Na akkoord René (incl. veiligheidsgedrag-keuze): IMPORTED-source + origin-label + importflow bouwen op de Data Origin-service, met de twee contracttests hierboven."
+      description: "Na akkoord René (incl. veiligheidsgedrag-keuze): IMPORTED-source + origin-label + importflow bouwen op de Data Origin-service, AI-standenschakelaar per trainer-relatie, met de contracttests hierboven."
       approved_for_execution: false
 
   - id: CLUB_MINDERJARIGEN_001
     module: Club, coachorganisatie en ploegomgeving
-    subject: "CYD-regels uniform over alle drie toegangscontexten: ouder-koppeling, toestemming, verval bij 18, toegangslog 16-17, fail-closed bij onbekende leeftijd"
+    subject: "CYD-regels uniform over alle drie toegangscontexten; gezondheidsdata-deling bij minderjarigen ALTIJD via ouder/verzorger (bewust strenger dan progressief model); ouder-zicht op trainer-kind-communicatie (Spond-patroon)"
     status: needs_calibration
 
     current_state:
@@ -4400,13 +4432,15 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
       practice_status: "Ouder- en clubflows door testers gebruikt; gerichte minderjarigen-praktijktest over alle drie contexten tegelijk is niet gedaan."
       known_limitations:
         - "AFWIJKING gevonden: de algemene coach-sharinglaag behandelt onbekende leeftijd expliciet NIET als minderjarig (sharing.ts:17-34) terwijl club en parent/live-location wél fail-closed zijn — de uniformiteitseis wordt dus nog niet overal gehaald."
-        - "Er bestaat geen specifieke 16-17-toegangslog (alleen generieke club-audit); 'volledige 16-17-jarige-toegangslog' is een bouwopgave."
+        - "Er bestaat geen specifieke 16-17-toegangslog (alleen generieke club-audit); 'volledige 16-17-jarige-toegangslog' uit de opdracht is een bouwopgave, geen bestaand feit."
         - "Progressieve geboortedatumverificatie bestaat niet; er is exacte-leeftijdberekening (computeAge) op de opgegeven geboortedatum."
+        - "De vastgestelde uitzondering 'gezondheidsdata-deling bij minderjarigen altijd via ouder, ongeacht leeftijd' bestaat nog niet als aparte regel: het huidige 16-17-model geeft de sporter daar meer eigen zeggenschap."
+        - "Ouder-zicht op trainer-kind-communicatie (Spond-patroon) bestaat niet als gegarandeerde weergave in de ouderomgeving."
 
     proposed_promise:
-      text: "Voor een minderjarige renner gelden dezelfde beschermingsregels bij elke trainer, ongeacht toegangscontext: verplichte ouder-koppeling voor autoriteit, toestemming stuurt zichtbaarheid (locatie altijd), toestemming vervalt bij 18 tot de sporter herbevestigt, elke trainer-toegang tot een 16-17-jarige wordt gelogd, en onbekende leeftijd wordt overal als minderjarig behandeld (fail-closed)."
+      text: "Voor een minderjarige renner gelden dezelfde beschermingsregels bij elke trainer, ongeacht toegangscontext: verplichte ouder-koppeling voor autoriteit, toestemming stuurt zichtbaarheid (locatie altijd), toestemming vervalt bij 18 tot de sporter herbevestigt, elke trainer-toegang tot een 16-17-jarige wordt gelogd, en onbekende leeftijd wordt overal als minderjarig behandeld (fail-closed). Twee bewust strengere regels: goedkeuring om gezondheids-/hersteldata met een team- of zzp-trainer te delen komt bij een minderjarige ALTIJD van de ouder/verzorger, ook bij 16-17-jarigen; en een ouder heeft volledig zicht op de communicatie tussen trainer en kind, ongeacht toegangscontext."
       proposed_by: replit
-      rationale: "Het meeste bestaat en is getest; de twee echte gaten zijn de niet-uniforme unknown-leeftijd-behandeling in de algemene coachlaag en de ontbrekende 16-17-toegangslog. Dit zijn afgebakende, haalbare fixes op bestaande code."
+      rationale: "Het meeste bestaat en is getest; de echte gaten zijn de niet-uniforme unknown-leeftijd-behandeling in de algemene coachlaag, de ontbrekende 16-17-toegangslog, de altijd-ouder-regel voor gezondheidsdata en het gegarandeerde ouder-communicatiezicht. Afgebakende, haalbare uitbreidingen op bestaande code (parent-permissions kent de tiers al; de gezondheidsdata-regel is één extra poort vóór de bestaande consent-check)."
       rene_approved: false
 
     role_model:
@@ -4426,30 +4460,40 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
         origin_label: "externe coach, niet via Sparki-trainer"
       multi_role_stacking: true
 
+    training_content_model:
+      relevantie_voor_dit_onderwerp: "Trainingselementen dragen een leeftijdscategorie-tag (actuele KNWU-indeling); plannen van een element buiten de leeftijdscategorie van de renner valt onder guidance_severity (hard_blockage of waarschuwing, per element); aanwezigheidsredenen van minderjarigen volgen dezelfde consent-scoping."
+
     external_intelligence:
       research_required: true
       candidate_sources:
         - name: "Bestaande parent-permissions/sharing/club-permissions + parent-environment- en coach-parent-tests"
-          coverage: "Dekt koppeling, tiers, verval bij 18, locatie-fail-closed en club-unknown-fail-closed; dekt niet de 16-17-toegangslog en niet de uniforme unknown-behandeling in de coachlaag."
+          coverage: "Dekt koppeling, tiers, verval bij 18, locatie-fail-closed en club-unknown-fail-closed; dekt niet de 16-17-toegangslog, niet de uniforme unknown-behandeling in de coachlaag en niet de altijd-ouder-regel voor gezondheidsdata."
           actuality: "Code 30-07-2026, tests groen."
           license_status: "Eigen code."
           limitations: []
-          applicability: "Directe basis; uniformering is een wijziging in sharing.ts, de log een nieuwe audit-tabel of uitbreiding van club_audit_log."
+          applicability: "Directe basis; uniformering is een wijziging in sharing.ts, de log een nieuwe audit-tabel of uitbreiding van club_audit_log, de altijd-ouder-regel een extra poort in de consent-flow."
+        - name: "Spond (ouder-beheert-kind-patroon)"
+          coverage: "Bewezen productpatroon: ouders beheren het account van hun minderjarige kind met volledig zicht op de communicatie tussen coach en kind."
+          actuality: "Actief product (2026)."
+          license_status: "Alleen patroon-referentie, geen content- of code-overname."
+          limitations: []
+          applicability: "Door René aangewezen als voorbeeldpatroon voor de CYD-ouderrechten; sluit aan op de bestaande Sparki-ouderomgeving."
       sources_in_use: []
       privacy_status: unknown
       missing_information: []
 
     replit_definition:
-      objective_quality_standard: "Eén gedeelde minderjarigen-poort voor alle trainer-leespaden (independent/club/team) met identiek fail-closed gedrag bij onbekende leeftijd; 100% van trainer-toegangen tot 16-17-jarigen in de toegangslog met wie/wat/wanneer/context; contracttest per context bewijst identiek gedrag."
-      recommended_default: "Unknown leeftijd = minderjarig in élke laag (de club-regel wordt de norm); 16-17-log als append-only audit met inzage voor sporter en ouder."
+      objective_quality_standard: "Eén gedeelde minderjarigen-poort voor alle trainer-leespaden (independent/club/team) met identiek fail-closed gedrag bij onbekende leeftijd; 100% van trainer-toegangen tot 16-17-jarigen in de toegangslog met wie/wat/wanneer/context; gezondheidsdata-consent voor een minderjarige is uitsluitend door een gekoppelde ouder te verlenen (0 paden waarlangs de minderjarige dit zelf kan); 100% van trainer-kind-berichten zichtbaar in de ouderomgeving."
+      recommended_default: "Unknown leeftijd = minderjarig in élke laag (de club-regel wordt de norm); 16-17-log als append-only audit met inzage voor sporter en ouder; gezondheidsdata-consent technisch als apart consenttype dat alleen het ouder-pad kan zetten."
       technical_limits:
-        - "Leeftijd blijft gebaseerd op opgegeven geboortedatum; Sparki kan identiteit niet verifiëren zonder externe verificatie (bewuste grens, eerlijk vermelden)."
+        - "Leeftijd blijft gebaseerd op opgegeven geboortedatum; Sparki kan identiteit niet verifiëren zonder externe verificatie (bewuste grens, eerlijk vermelden). Bij club-uitnodigingen ligt de geboortedatum al vast in de ledenadministratie vóór de uitnodiging (zie CLUB_UITNODIGINGEN_001)."
       assumptions:
-        - "De bestaande parent-consent-scopes dekken de drie contexten zonder nieuw consenttype."
+        - "De bestaande parent-consent-scopes dekken de drie contexten zonder nieuw consenttype, behalve het nieuwe altijd-ouder-gezondheidsdataconsent."
       unknowns:
         - "Bewaartermijn en inzagerechten van de 16-17-toegangslog (raakt privacybeleid hoofdstuk-overstijgend)."
       evidence_method:
         - "Nieuwe contracttest 'minor-uniform-gate': zelfde minderjarige, drie toegangswegen, identieke weigering zonder ouderconsent; unknown-leeftijd-variant per laag."
+        - "Nieuwe contracttest 'minor-health-consent-parent-only': 17-jarige probeert zelf gezondheidsdata-consent voor een zzp-/teamtrainer te zetten ⇒ geweigerd; ouder zet hem ⇒ werkt."
         - "Bestaande parent-environment- en coach-parent-tests als regressienet."
 
     rene_calibration:
@@ -4458,7 +4502,7 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
 
     acceptance_contract:
       hard_reject_rules:
-        - rule: "Bij een minderjarige renner gelden de CYD-regels (verplichte ouder-koppeling voor autoriteit, toestemming stuurt zichtbaarheid, locatietoestemming altijd, verval bij 18 tot herbevestiging, 16-17-toegangslog) onverkort en identiek, ongeacht of de trainer via club, team of zelfstandig toegang heeft — geen enkele context is een omweg om die bescherming heen."
+        - rule: "Bij een minderjarige renner gelden de CYD-regels (verplichte ouder-koppeling voor autoriteit, toestemming stuurt zichtbaarheid, locatietoestemming altijd, verval bij 18 tot herbevestiging, 16-17-toegangslog) onverkort en identiek, ongeacht of de trainer via club, team of zelfstandig toegang heeft — geen enkele context is een omweg om die bescherming heen. (Verplichte regel 3)"
           rule_type: hard_blockage
           measurement_level: per_trainer_athlete_context
           aggregate_justification: ""
@@ -4467,6 +4511,15 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
               proof_stage: executed
               proof_method: "Bestaand en gedraaid: minderjarige zonder ouderconsent ⇒ effectieve coach sharing none; test:coach-parent-sharing-levels 13/13 (30-07-2026) bewijst dat sharing none lege shapes en 403+nul-mutatie oplevert."
               proof_result: rejected_as_expected
+        - rule: "Bij een minderjarige renner komt goedkeuring om gezondheids-/hersteldata te delen met een team- of zzp-trainer altijd van de ouder/verzorger, ongeacht de leeftijd van het kind — bewust strenger dan de progressieve leeftijdsopbouw die voor andere CYD-permissies (zoals locatiedeling) geldt; een pad waarlangs een 16-17-jarige dit zelf kan verlenen is een fout. (Verplichte regel 8)"
+          rule_type: hard_blockage
+          measurement_level: per_actie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Een 17-jarige zet zelf (zonder ouder) gezondheidsdata-consent aan voor zijn teamtrainer; de trainer leest daarna een gezondheidsveld."
+              proof_stage: designed
+              proof_method: "Contracttest 'minor-health-consent-parent-only': zelf-zetten geweigerd (403/no-op), trainer-leespad blijft dicht; ouder-pad opent hem wél."
+              proof_result: not_yet_tested
         - rule: "Onbekende leeftijd wordt in elke trainer-context als minderjarig behandeld (fail-closed); een laag die onbekend als volwassen behandelt is een fout — het huidige gedrag van de algemene coach-sharinglaag (unknown ≠ minor) is daarmee een gedocumenteerd te dichten gat, geen acceptabel alternatief."
           rule_type: hard_blockage
           measurement_level: per_actie
@@ -4489,12 +4542,545 @@ chapter_j_club_coachorganisatie_en_ploegomgeving:
       practice_testers: []
       result: not_tested
       expectation_gap:
-        - "Unknown-leeftijd-uniformering en 16-17-toegangslog bestaan nog niet."
+        - "Unknown-leeftijd-uniformering, 16-17-toegangslog, altijd-ouder-gezondheidsdataconsent en ouder-communicatiezicht bestaan nog niet."
     product_proof:
       score: null
       status: not_proven
       evidence_refs: []
     next_action:
       type: research_or_build_or_retest
-      description: "Na akkoord René: unknown-leeftijd fail-closed doortrekken naar de algemene coach-sharinglaag, 16-17-toegangslog bouwen (append-only) en de minor-uniform-gate-contracttest toevoegen."
+      description: "Na akkoord René: unknown-leeftijd fail-closed doortrekken naar de algemene coach-sharinglaag, 16-17-toegangslog bouwen (append-only), altijd-ouder-gezondheidsdataconsent als apart consenttype, ouder-communicatiezicht in de ouderomgeving, plus de twee nieuwe contracttests."
+      approved_for_execution: false
+
+  - id: CLUB_VOG_VEILIGSPORTEN_001
+    module: Club, coachorganisatie en ploegomgeving
+    subject: "KNWU veilig sporten: VOG-poort vóór elke trainer-renner-koppeling (alle contexten), zichtbaar meldpad vertrouwenscontactpersoon, documenten & beleid (club schrijft zelf, Sparki toont alleen)"
+    status: needs_calibration
+
+    current_state:
+      technical_status: not_implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Eerlijke bevinding: 'vog' komt nergens in schema of code voor (case-insensitive doorzocht, 30-07-2026). Er is geen vertrouwenscontactpersoon-, gedragscode- of clubdocumentenmodel; wel bestaan clubberichten (club.ts:2250-2404, rol/scope-gecontroleerd) als mogelijke drager voor clubnieuws. Uitnodigings- en koppelflows bestaan (routes/invitations.ts, club join-codes) maar kennen geen VOG-voorwaarde."
+      practice_status: "Niet in praktijk getest; bestaat niet."
+      known_limitations:
+        - "Er is geen enkel VOG-datamodel; de poort 'geen koppeling zonder vog_status: registered' is volledig nieuw."
+        - "Clubabonnement-afsluiting (club.ts:137-190) kent geen expliciete VOG-verplichting-acceptatiestap voor de beheerder."
+
+    proposed_promise:
+      text: "Een trainer zonder geregistreerde VOG kan nooit aan renners gekoppeld worden — voor alle renners, in alle drie de toegangscontexten; zijn account mag wel direct actief zijn. De clubbeheerder accepteert deze eis expliciet bij het afsluiten van het clubabonnement, en Sparki wijst op het juiste moment de weg door de officiële VOG-procedure (Gratis VOG/Justis) zonder zelf ooit een VOG-document op te slaan. Elke club en elk team heeft een zichtbaar meldpad naar een vertrouwenscontactpersoon, en een sectie voor gedragscodes en clubnieuws waarvan de club zelf de inhoud schrijft — Sparki toont alleen."
+      proposed_by: replit
+      rationale: "Technisch een afgebakende poort: één vog_status-veld op de trainer-relatie/het trainerprofiel + een check in élk koppelpad (invitations-accept, club-toewijzing, directe link) + een documentensectie op het bestaande clubschema. Het AVG-kader bepaalt de vorm: alleen status-registratie, nooit het document."
+      rene_approved: false
+
+    role_model:
+      role: trainer
+      access_contexts: [independent, club, team]
+      scoping: per_trainer_athlete_context
+      club_hierarchy:
+        - beheerder
+        - hoofdtrainer
+        - trainers
+      team_structure:
+        beheerder: any_team_member
+        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+      externe_coach:
+        is_role: false
+        provenance_tag: IMPORTED
+        origin_label: "externe coach, niet via Sparki-trainer"
+      multi_role_stacking: true
+
+    training_content_model:
+      relevantie_voor_dit_onderwerp: "Veilig sporten is óók de bron van guidance_severity op trainingselementen (zie CLUB_TRAININGSINHOUD_001); dit onderwerp dekt de organisatorische kant: VOG-poort, meldpad en documenten."
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Regeling Gratis VOG (gratisvog.nl) + Justis (justis.nl/producten/vog)"
+          coverage: "Officiële procedure: club meldt zich aan bij de Regeling (vereist preventief beleid: gedragscode, aannamebeleid, vertrouwenscontactpersoon — 'twee van de drie goed geregeld en gecommuniceerd' vergroot de kans op toelating), eHerkenning voor de organisatie, Justis zet de aanvraag klaar, trainer rondt af met DigiD, overhandigt de VOG aan de club die controleert en registreert. FAQ (gecontroleerd 30-07-2026): advies élke 3 jaar een nieuwe VOG; toelating tot de Regeling 5 jaar geldig; gratis VOG's zijn NIET voor betaalde krachten/stagiairs; VOG of kopie bewaren is volgens de AVG doorgaans niet toegestaan — alleen registreren dát het origineel is gezien."
+          actuality: "gratisvog.nl regeling- en FAQ-pagina's, opgehaald 30-07-2026."
+          license_status: "Publieke overheidsinformatie; verwijzen en samenvatten toegestaan, procedure zelf blijft extern (DigiD/eHerkenning, nooit in Sparki)."
+          limitations:
+            - "De Gratis VOG-regeling geldt voor vrijwilligers; een betaalde zzp-trainer (independent) of betaald teamstaflid valt er buiten en moet een reguliere (betaalde) VOG via Justis aanvragen — de clubprocedure mag daar dus niet klakkeloos getoond worden, precies zoals de opdracht al waarschuwt."
+          applicability: "Bron voor de 5-stappen-hulptekst (alleen tonen bij club-context) en voor het registratiemodel: status + gezien-op-datum + gecontroleerd-door, nooit het document."
+        - name: "KNWU veilig sporten (#hetwielernormaal, kenniscentrum 'Veilig Sportklimaat', KNWU Meldpunt Sociaal Veilige Wielersport, knwu.nl/veiligsporten) + Centrum Veilige Sport Nederland (gedragscodes) + NOC*NSF (VOG@nocnsf.nl, VOG-FAQ-pdf)"
+          coverage: "Beleidskader: gedragscodes per doelgroep, vertrouwenscontactpersoon als clubfunctie, meldpunt-route (club-VCP → KNWU-meldpunt → Centrum Veilige Sport), bestuurdersverantwoordelijkheid."
+          actuality: "KNWU-kenniscentrum- en centrumveiligesport.nl-pagina's, opgehaald 30-07-2026."
+          license_status: "Publieke beleidsinformatie; verwijzen toegestaan. Sparki genereert of kopieert géén gedragscode-inhoud voor de clubdocumentensectie (productbesluit René: club schrijft zelf)."
+          limitations:
+            - "Sparki is geen meldpunt en geen certificerende instantie; het meldpad verwijst, Sparki behandelt geen meldingen."
+          applicability: "Onderbouwt harde regels 5 en 6 en de inhoud van de officiële-links-hulptekst."
+      sources_in_use: []
+      privacy_status: unknown
+      missing_information:
+        - "Toepasselijke officiële VOG-aanvraagroute voor de team- en independent-context (betaalde krachten buiten de Gratis VOG-regeling): reguliere Justis-aanvraag, maar wie 'registreert en controleert' daar — te ontwerpen, aan René voor te leggen."
+
+    replit_definition:
+      objective_quality_standard: "0 paden waarlangs een trainer zonder vog_status: registered aan een renner gekoppeld kan worden (invitations-accept, club-/teamtoewijzing, directe link — alle drie getest); VOG-registratie bevat nooit het document of een kopie, alleen status/gezien-op-datum/gecontroleerd-door; elke club-/teamomgeving zonder ingevuld meldpad wordt aantoonbaar als 'niet volledig ingericht' gemarkeerd."
+      recommended_default: "vog_status op het trainer-clublidmaatschap resp. de trainer-relatie (per organisatie geregistreerd, niet één globale vlag — de controlerende partij verschilt per context); statuswijziging alleen door beheerder/hoofdtrainer (club), lichte beheerder (team) of — voor independent — een nader te bepalen pad; blokkade-melding toont proactief de juiste officiële vervolgstappen (clubprocedure alleen bij club-context); hercontrole-herinnering op basis van gezien-op-datum + door René te kiezen frequentie (officieel advies: elke 3 jaar)."
+      technical_limits:
+        - "Sparki kan een VOG niet verifiëren bij Justis (geen API); de registratie is een verklaring van de controlerende beheerder — eerlijk zo benoemen."
+        - "AVG: het VOG-document of een kopie mag doorgaans niet bewaard worden; Sparki slaat het dus bewust nooit op."
+      assumptions:
+        - "De bestaande invitations-acceptflow (atomair, capaciteitsgecheckt) is de juiste plek voor de koppel-poort; account-activatie blijft er los van."
+      unknowns:
+        - "Of een verlopen hercontrole de bestaande koppeling bevriest (fail-closed) of alleen waarschuwt — productkeuze René."
+      evidence_method:
+        - "Contracttest 'vog-gate': koppelpoging (alle drie paden) met vog_status ≠ registered ⇒ geweigerd + nul koppeling; met registered ⇒ slaagt; account-activatie slaagt in beide gevallen."
+        - "Schema-audit: geen kolom/opslagpad voor VOG-documenten of kopieën."
+        - "Inrichtingscheck-test: club/team zonder VCP-meldpad ⇒ status 'niet volledig ingericht' zichtbaar."
+
+    rene_calibration:
+      questions:
+        - "Wat is de definitieve VOG-geldigheidsduur/hercontrolefrequentie in Sparki (officieel advies is elke 3 jaar) en welk screeningsprofiel is vereist — en bevriest een verlopen hercontrole bestaande koppelingen (fail-closed) of waarschuwt hij alleen?"
+        - "Wie registreert en controleert de VOG in de team- en independent-context (buiten de club-Gratis-VOG-procedure), en mag een zzp-trainer zijn eigen status zetten met een zwaardere verklaringsplicht, of moet daar altijd een tweede partij tussen zitten?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Een trainer zonder geregistreerde, geldige VOG (vog_status: registered) kan nooit aan renners gekoppeld worden — voor alle renners, in alle drie de toegangscontexten (club, team, zelfstandig), ongeacht wie de koppeling probeert te maken. De trainer-account zelf mag wel direct actief worden na acceptatie van de uitnodiging; alleen de koppeling aan renners wacht. Bij club accepteert de beheerder deze eis expliciet bij het afsluiten van het clubabonnement. (Verplichte regel 5, KNWU veilig sporten)"
+          rule_type: hard_blockage
+          measurement_level: per_actie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Hoofdtrainer wijst een net geaccepteerde trainer zonder vog_status: registered toe aan een groep met renners; en een renner accepteert een directe-link-uitnodiging van een zzp-trainer zonder registratie."
+              proof_stage: designed
+              proof_method: "Contracttest 'vog-gate' over alle drie koppelpaden: verwacht 403/geweigerd + nul koppelingsrijen; zelfde flow met registered slaagt; account-activatie slaagt onafhankelijk."
+              proof_result: not_yet_tested
+        - rule: "Elke club en elk team moet een zichtbaar meldpad naar een vertrouwenscontactpersoon hebben (naam + contact, zichtbaar voor iedereen in de omgeving); een club/team-omgeving zonder dit meldpad mag niet als volledig ingericht gelden. (Verplichte regel 6, KNWU veilig sporten)"
+          rule_type: hard_blockage
+          measurement_level: per_actie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Club zonder ingevulde vertrouwenscontactpersoon presenteert zich als volledig ingericht / de inrichtingsstatus verbergt het ontbrekende meldpad."
+              proof_stage: designed
+              proof_method: "Inrichtingscheck-contracttest: zonder VCP ⇒ status 'niet volledig ingericht' + zichtbare ontbreekt-melding; met VCP ⇒ meldpad voor elk lid opvraagbaar."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Onbekende of niet-geregistreerde VOG-status ⇒ behandelen als geen VOG (koppeling geweigerd); ontbrekend meldpad ⇒ omgeving niet volledig ingericht. Nooit stil doorlaten."
+      approved: false
+
+    validation:
+      automated_tests: []
+      independent_checks: []
+      practice_test_required: true
+      practice_testers: []
+      result: not_tested
+      expectation_gap:
+        - "VOG-model, koppel-poort, beheerder-acceptatiestap, VCP-meldpad en documentensectie bestaan nog geen van alle."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Na akkoord René (geldigheidsduur/hercontrole/screeningsprofiel + team/independent-registratiemodel): vog_status-model + poort in alle koppelpaden, beheerder-acceptatie bij clubabonnement, VCP-meldpad + documentensectie (club schrijft zelf), met de contracttests hierboven."
+      approved_for_execution: false
+
+  - id: CLUB_TRAININGSINHOUD_001
+    module: Club, coachorganisatie en ploegomgeving
+    subject: "KNWU-gefundeerd trainingsinhoud-model: trainingselementen en -sessies met bron/versie/audit-trail, categorisering op actuele KNWU-indeling, veilig-sporten-regels met guidance_severity, doelen/voortgang en aanwezigheid — bibliotheek niet blanco"
+    status: needs_calibration
+
+    current_state:
+      technical_status: not_implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Eerlijke bevinding: een herbruikbare trainingselementen-/sessiesjablonenbibliotheek bestaat niet (doorzocht 30-07-2026); clubtrainingen zijn concrete events (club.ts:1503-1550) en planned_workouts zijn individuele plan-items. Wél bestaan bruikbare bouwstenen: aanwezigheid op clubtrainingen (aanmelden/afmelden/misschien/reserve met capaciteit en reservepromotie — club.ts:1668-1785; registratie aanwezig/afwezig/te_laat met trainerrechten — club.ts:1885-1928), weer-services (routes/weather.ts, lib/weather/*), de plan-engine met deterministische belastingsregels, en het bronnenregister (engines/source-quality) als patroon voor bron/versie-administratie. guidance_severity, contra-indicaties, niet-aanpasbare veiligheidsvoorwaarden en een audit-trail op sessies bestaan niet."
+      practice_status: "Niet in praktijk getest; de bibliotheek bestaat niet."
+      known_limitations:
+        - "De aanwezigheidsstatussen dekken het vastgestelde model niet volledig: 'afgemeld', 'gedeeltelijk meegedaan' en 'aangepast programma gevolgd' ontbreken (nu: aanwezig/afwezig/te_laat + signup-statussen)."
+        - "Er is geen bron-/versie-/audit-model op trainingscontent; het source-quality-register logt bronnen per analyse, niet per content-item."
+        - "KNWU-licentie op trainingsplannen/opleidingsinhoud is NIET bevestigd: het KNWU-kenniscentrum (Opleiding Trainer, KNWU Campus, 'Informatie voor trainers') beschrijft opleidingen en verwijst voor vragen naar campus@knwu.nl, maar publiceert geen herbruikbare trainingsplannen onder een expliciete licentie. Seeden met KNWU-inhoud mag dus nog niet als toegezegd worden behandeld."
+
+    proposed_promise:
+      text: "Trainers werken vanuit een gevulde bibliotheek van trainingselementen en -sessies met eerlijke herkomst: elk element draagt doel, doelgroep op de actuele KNWU-leeftijdsindeling, ervaringsniveau, discipline, duur, intensiteit, materiaal, veiligheidsvoorwaarden, contra-indicaties en bron+versie. Een trainer kan kopiëren en aanpassen, maar Sparki bewaart altijd de oorspronkelijke bron, versie, wijzigingen en wie ze deed — en een veiligheidsvoorwaarde uit een protocol is nooit stilzwijgend te verwijderen. Veilig-sporten-regels werken in vier ernstniveaus (blokkade/waarschuwing/aanbeveling/informatie), doelen en voortgang worden per sessie eerlijk vastgelegd zonder onbeweesbare claims, en aanwezigheid kent aanwezig/afwezig/afgemeld/gedeeltelijk/aangepast met privacy-passende redenen."
+      proposed_by: replit
+      rationale: "Volledig nieuw domeinmodel, maar op bewezen Sparki-patronen: bron/versie-administratie naar het voorbeeld van het bronnenregister, deterministische regels zoals de plan-engine, consent-scoping zoals de rest van dit hoofdstuk, en de bestaande aanwezigheids-/planning-endpoints als onderlaag. De KNWU-seed is een licentievraag, geen technische."
+      rene_approved: false
+
+    role_model:
+      role: trainer
+      access_contexts: [independent, club, team]
+      scoping: per_trainer_athlete_context
+      club_hierarchy:
+        - beheerder
+        - hoofdtrainer
+        - trainers
+      team_structure:
+        beheerder: any_team_member
+        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+      externe_coach:
+        is_role: false
+        provenance_tag: IMPORTED
+        origin_label: "externe coach, niet via Sparki-trainer"
+      multi_role_stacking: true
+
+    training_content_model:
+      trainingselement:
+        origin: knwu_protocol | erkende_externe_bron | sparki_standaard | clubbibliotheek | persoonlijk
+        naam: "verplicht"
+        doel: "verplicht (gekoppeld aan trainingsdoel-as)"
+        doelgroep_leeftijdscategorie: "verplichte tag op de ACTUELE KNWU-indeling (2026): jeugd U7/U9/U11/U13/U15/U17 (uniform UCI, m/v gelijk; licenties U13 en U17), 17+ (vervangt startlicentie/nieuwelingen/sportklasse/amateurs; nieuwelingen vallen onder U17), UCI U19+ (junioren/beloften/elite), masters — niet zelfverzonnen en niet de oude indeling"
+        ervaringsniveau: "verplicht"
+        discipline: "verplicht (weg/MTB/gravel/baan/veldrijden/BMX; sluit aan op bestaand sports-register)"
+        duur: "verplicht"
+        intensiteit: "verplicht (deterministisch, sluit aan op bestaand belastingsmodel)"
+        materiaal: []
+        veiligheidsvoorwaarden: []
+        contra_indicaties: []
+        bron: "verplicht (nooit leeg; onbekend = eerlijk 'onbekend', nooit een verzonnen bron)"
+        bronversie: "verplicht bij protocol-/externe herkomst"
+        aanpasbare_onderdelen: []
+        niet_aanpasbare_onderdelen: []
+      trainingssessie:
+        opbouw: [warming_up, kern, herstel_rust, cooling_down]
+        doel: "verplicht"
+        totale_duur: "verplicht"
+        belasting: "deterministisch afgeleid, zelfde model als individuele plan-engine"
+        benodigde_begeleiding: "minimale begeleidersbezetting per groepsgrootte/leeftijd (uit protocol waar beschikbaar)"
+        materiaal: []
+        locatie_en_route: "optioneel routeId uit de club-/teamroutebibliotheek (zie CLUB_SESSIELOGISTIEK_001)"
+        veiligheidscontrole: "verplichte controle vóór plannen (leeftijd/ervaring/begeleiding/materiaal/weer-omgevingsgrenzen)"
+        alternatieven: []
+        audit_trail:
+          oorspronkelijke_bron: "altijd bewaard bij kopiëren/aanpassen"
+          versie: "altijd bewaard"
+          wijzigingen: []
+          gewijzigd_door: "altijd vastgelegd"
+          nog_geldende_veiligheidsvoorwaarden: []
+      categorisering_assen: [leeftijd, ervaring, discipline, trainingsdoel, groepsgrootte, individueel_of_groep, recreatief_of_prestatie, indoor_outdoor, veiligheid_risico, materiaal, belastbaarheid]
+      veilig_sporten_regel:
+        guidance_severity: "hard_blockage | waarschuwing | aanbeveling | informatie — apart veld op element-/protocolniveau, te onderscheiden van acceptance_contract.rule_type (dat blijft hard_blockage|soft_tolerance|unverifiable voor acceptatiebeslissingen)"
+        only_hard_blockage_becomes_hard_reject_rule: true
+      doelen_en_voortgang:
+        element_ondersteunt_doel: "per sessie vastgelegd"
+        vooraf_verwacht: "per sessie vastgelegd"
+        werkelijk_uitgevoerd: "alleen echte registraties, geen invulling"
+        aanpassing_tijdens_training: "vastgelegd indien gedaan"
+        waargenomen_voortgang: "alleen met onderliggende registraties"
+        medische_of_prestatieclaim_zonder_bewijs: never
+      aanwezigheid:
+        status: aanwezig | afwezig | afgemeld | gedeeltelijk_meegedaan | aangepast_programma
+        reden_zichtbaarheid: per_consent_scope
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "KNWU-leeftijds- en licentiestructuur 2026 (kenniscentrum.knwu.nl: 'Welke veranderingen kunnen we verwachten in 2026', 'Veelgestelde vragen nieuwe wedstrijd- en licentiestructuur', licentiepagina's U13/U17/17+)"
+          coverage: "Actuele, geverifieerde indeling (opgehaald 30-07-2026): uniforme UCI-leeftijdsindeling U7/U9/U11/U13/U15/U17 (meiden en jongens gelijk; U8 rijdt geen NK's), jeugdlicenties hervormd naar U13 (basisschoolleeftijd) en U17 (middelbareschoolleeftijd, nieuwelingen vallen hieronder vanaf 2026), KNWU Licentie 17+ (vervangt startlicentie/nieuwelingen/sportklasse/amateurs grotendeels), UCI-licentie U19 en hoger, overige discipline-licenties en kaderlicenties. NB: de opdrachttekst noemde 'U6–U13' en 'Masters H3–H6'; de actuele KNWU-pagina's tonen de U7–U17-indeling en benoemen masters niet in die vorm — de bibliotheek moet de KNWU-pagina's volgen, met de masters-detailindeling als nog te verifiëren punt."
+          actuality: "Kenniscentrum-pagina's met updates november 2025 – juni 2026, opgehaald 30-07-2026."
+          license_status: "Publieke structuurinformatie; de indeling zelf overnemen als tags is feitengebruik, geen contentovername."
+          limitations:
+            - "Exacte masters-/H-categorie-indeling nog te verifiëren op de 17+/UCI-licentiepagina's."
+          applicability: "Verplichte basis voor doelgroep_leeftijdscategorie-tags; niet-onderhandelbaar dat de actuele (niet de oude) indeling wordt gebruikt."
+        - name: "KNWU-trainingsinhoud en -opleidingen (kenniscentrum: 'Opleiding Trainer', 'Opleidingen KNWU Campus', 'Informatie voor trainers'; contact campus@knwu.nl)"
+          coverage: "Bevestigt dat de KNWU trainersopleidingen, bijscholing en kaderlicenties heeft en trainersinformatie publiceert; er is GEEN publiek gepubliceerde, herbruikbare bibliotheek van trainingsplannen/jaarplannen met expliciete licentie gevonden (onderzocht 30-07-2026)."
+          actuality: "Kenniscentrum-pagina's, opgehaald 30-07-2026."
+          license_status: "ONBEVESTIGD voor overname: er mag niets van KNWU-trainingsinhoud overgenomen of geseed worden voordat licentie/gebruiksrecht met de KNWU (campus@knwu.nl) is bevestigd — dit is een onderzoeksresultaat, geen toestemming."
+          limitations:
+            - "Zonder licentie-akkoord kan de seed alleen bestaan uit: KNWU-categorisering (feitengebruik), verwijzingen/links naar KNWU-bronnen, en eigen Sparki-standaardelementen die op erkende principes gebaseerd maar zelf geschreven zijn."
+          applicability: "Bepaalt de seed-strategie; besluit over daadwerkelijke KNWU-contentovername ligt bij René na licentie-uitkomst."
+        - name: "KNWU veilig sporten-protocollen (zie CLUB_VOG_VEILIGSPORTEN_001) als bron voor uitvoerbare element-veiligheidsregels"
+          coverage: "Gedragskader en veiligheidsbeleid; de vertaling naar machineleesbare regels per element (begeleidersbezetting, leeftijds-/materiaal-/weersgrenzen) vereist per protocol een aparte beoordeling wat machineleesbaar te maken is."
+          actuality: "Opgehaald 30-07-2026."
+          license_status: "Verwijzen toegestaan; letterlijke contentovername per protocol te beoordelen."
+          limitations: []
+          applicability: "Bron voor guidance_severity-regels; alleen guidance_severity: hard_blockage wordt ook een acceptatie-hard_reject_rule."
+      sources_in_use: []
+      privacy_status: unknown
+      missing_information:
+        - "Licentie-/gebruiksrechtantwoord van de KNWU over trainingsplannen/opleidingsinhoud (overnemen, koppelen of alleen verwijzen)."
+        - "Actuele masters-categorie-indeling."
+
+    replit_definition:
+      objective_quality_standard: "100% van bibliotheek-elementen heeft bron (of eerlijk 'onbekend'), actuele KNWU-categorietag en ingevulde veiligheidsvoorwaarden-status; 0 sessies plandbaar die een guidance_severity: hard_blockage-regel schenden; 100% van kopieën/aanpassingen behoudt de volledige audit-trail; 0 voortgangs-/prestatieclaims zonder onderliggende registratie; aanwezigheidsredenen nooit zichtbaar buiten consent-scope."
+      recommended_default: "Elementen en sessies als eigen tabellen met bron/versie/audit-trail naar het patroon van het bronnenregister; guidance_severity als kolom op element-veiligheidsregels; seed v1 = KNWU-categorisering + verwijzingen + zelfgeschreven Sparki-standaardelementen, KNWU-contentovername pas na licentiebevestiging; aanwezigheidsstatussen uitbreiden op de bestaande clubtraining-signup/attendance-endpoints in plaats van een nieuw systeem."
+      technical_limits:
+        - "Sparki kan de sportwetenschappelijke juistheid van externe protocollen niet zelf valideren; het model garandeert eerlijke herkomst en handhaving, niet de inhoudelijke waarheid van de bron."
+        - "Machineleesbaar maken van PDF-protocollen is per protocol handwerk; niet elk protocol wordt een uitvoerbare regel — wat niet uitvoerbaar is blijft informatie-niveau, eerlijk gelabeld."
+      assumptions:
+        - "Het bestaande deterministische belastingsmodel is herbruikbaar voor sessie-belasting op groepsniveau."
+        - "De bestaande clubtraining-/aanwezigheids-endpoints zijn uitbreidbaar naar de vijf vastgestelde statussen zonder herbouw."
+      unknowns:
+        - "Hoe clubbibliotheek en persoonlijke bibliotheek zich mengen bij een gestapelde trainer (zichtbaarheid per context — raakt CLUB_ROLMODEL_001)."
+      evidence_method:
+        - "Contracttest 'element-safety-immutable': poging een niet_aanpasbaar veiligheidsonderdeel te wijzigen/verwijderen ⇒ geweigerd; kopie behoudt bron+versie+veiligheidsvoorwaarden."
+        - "Contracttest 'session-plan-gate': sessie met hard_blockage-schending (bv. leeftijdscategorie-mismatch) ⇒ niet plandbaar; waarschuwing/aanbeveling/informatie ⇒ plandbaar met zichtbare melding."
+        - "Contracttest aanwezigheid: vijf statussen + reden alleen leesbaar binnen consent-scope."
+      # Verplicht onderzoek vóór productuitwerking is uitgevoerd (30-07-2026): beschikbaarheid, actualiteit,
+      # categorisering en licentiestatus van KNWU-bronnen zijn hierboven eerlijk gerapporteerd; er is geen
+      # KNWU-inhoud verzonnen en geen implementatietoestemming geclaimd.
+
+    rene_calibration:
+      questions:
+        - "Waar ligt de exacte grens tussen 'waarschuwing', 'aanbeveling' en 'informatie' binnen guidance_severity voor concrete veiligheidsgevallen die niet evident hard_blockage zijn (bv. begeleidersbezetting net onder norm, weersgrens bijna bereikt)?"
+        - "Welke concrete KNWU-protocollen/trainingsplannen mogen na het licentie-antwoord daadwerkelijk worden overgenomen — akkoord dat Sparki tot die tijd alleen categorisering, verwijzingen en zelfgeschreven standaardelementen seedt?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Een veiligheidsvoorwaarde uit een KNWU-protocol (of andere erkende bron) op een trainingselement mag nooit stilzwijgend door een trainer worden verwijderd of aangepast — dit geldt voor de niet_aanpasbare_onderdelen van elk element, ook na kopiëren of aanpassen. (Verplichte regel 7)"
+          rule_type: hard_blockage
+          measurement_level: per_actie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Trainer kopieert een protocol-element en verwijdert in de kopie de minimale-begeleidersbezetting; of bewerkt het origineel en laat een veiligheidsvoorwaarde weg."
+              proof_stage: designed
+              proof_method: "Contracttest 'element-safety-immutable': wijziging van niet_aanpasbare_onderdelen geweigerd (403/validatiefout), audit-trail toont de poging niet als geslaagde wijziging, kopie draagt alle veiligheidsvoorwaarden."
+              proof_result: not_yet_tested
+        - rule: "Sessies en voortgang bevatten nooit een medische of prestatieclaim zonder bewijs: 'werkelijk uitgevoerd' en 'waargenomen voortgang' bestaan alleen op basis van echte registraties, nooit als automatische invulling of aanname."
+          rule_type: hard_blockage
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Een sessie zonder enige registratie toont toch 'uitgevoerd' of een voortgangsoordeel; of een element claimt een medisch effect zonder bron."
+              proof_stage: designed
+              proof_method: "Contracttest doelen/voortgang: sessie zonder registraties ⇒ velden leeg/eerlijk 'niet geregistreerd'; voortgangsoordeel zonder onderliggende data ⇒ geweigerd."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Element zonder bekende bron ⇒ eerlijk 'onbekend' (nooit een verzonnen bron); protocol dat niet machineleesbaar te maken is ⇒ informatie-niveau, nooit stil weggelaten; ontbrekende registraties ⇒ lege voortgang, nooit ingevuld."
+      approved: false
+
+    validation:
+      automated_tests: []
+      independent_checks: []
+      practice_test_required: true
+      practice_testers: []
+      result: not_tested
+      expectation_gap:
+        - "Hele bibliotheek, guidance_severity, audit-trail en uitgebreide aanwezigheidsstatussen bestaan nog niet; KNWU-licentieantwoord ontbreekt."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Na akkoord René: licentievraag aan KNWU stellen (campus@knwu.nl), datamodel element/sessie/audit-trail bouwen, guidance_severity-regels + plan-poort, aanwezigheidsstatussen uitbreiden, met de drie contracttests hierboven."
+      approved_for_execution: false
+
+  - id: CLUB_UITNODIGINGEN_001
+    module: Club, coachorganisatie en ploegomgeving
+    subject: "Trainer en renner toevoegen via één uitnodigingslink-mechanisme: hoofdtrainer/beheerder nodigt trainers uit (direct actief, koppeling wacht op VOG), renner-uitnodiging breder; minderjarige via ouder; Go-abonnement bij accept; gedragscode alleen zichtbaar"
+    status: needs_calibration
+
+    current_state:
+      technical_status: partially_implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Eén generiek uitnodigingssysteem bestaat al: routes/invitations.ts:38-59,101-256 — token-links (randomBytes 24, base64url) voor coach_athlete, parent_athlete, friend_athlete, head_tester en club-rollen (member/trainer/admin/teammanager/parent); acceptatie atomair eenmalig pending→accepted met rol + relatie/lidmaatschap (286-544), decline/revoke (546-645), default 14 dagen geldig (max 365), rate-limit 10/uur, clubpakket-capaciteit gecheckt bij creëren én accepteren (160-165, 466-484). Daarnaast club/team join-codes (club.ts:217-312,464-496). De links zijn kanaal-onafhankelijk (e-mail/WhatsApp/copy-paste kan, verzending zelf zit er niet in)."
+      practice_status: "Uitnodigings- en acceptflows in dev gebruikt (o.a. testers, coach-links, clubleden); de specifieke v3-flows (trainer-uitnodiging door hoofdtrainer met VOG-wacht, minderjarige-uitnodiging naar ouder) bestaan nog niet."
+      known_limitations:
+        - "Wie mag uitnodigen is nog niet conform het model versmald/verbreed: trainer-uitnodigingen moeten hoofdtrainer/beheerder-only zijn, renner-uitnodigingen ook door trainers (eigen groep)."
+        - "Minderjarige-flow (uitnodiging direct naar ouder, ouder maakt kindprofiel + koppelt zichzelf, CYD-flow als onderdeel van de aanmaakstap) bestaat niet; de geboortedatum-kennis vooraf vereist een ledenadministratie-veld bij de uitnodiging."
+        - "Go-abonnement-afdwinging direct bij accepteren bestaat niet (entitlement-check gebeurt nu pas bij feature-gebruik)."
+        - "Gedragscode tonen bij toetreding bestaat niet (hangt op documentensectie uit CLUB_VOG_VEILIGSPORTEN_001)."
+        - "Acceptatie voor iemand zonder account vereist eerst accountaanmaak + onboarding; dat pad bestaat, maar de naadloze 'link → account → context erbij'-flow voor trainers is niet gericht getest."
+
+    proposed_promise:
+      text: "Een trainer wordt uitgenodigd met één link (te delen via e-mail, WhatsApp of copy-paste) door de hoofdtrainer of beheerder, en is na acceptatie direct actief als account — koppeling aan renners volgt pas na VOG-registratie. Renners worden met hetzelfde linkmechanisme uitgenodigd door hoofdtrainer, trainer (eigen groep) of beheerder; bij een minderjarige gaat de uitnodiging direct naar de ouder/verzorger, die het kindprofiel aanmaakt en zichzelf meteen als ouder koppelt. Het minimale Go-abonnement wordt direct bij acceptatie afgedwongen, en de gedragscode is bij toetreding zichtbaar zonder extra acceptatiestap."
+      proposed_by: replit
+      rationale: "Het bestaande invitations-systeem is precies het gevraagde ene mechanisme (token-link, atomaire accept, capaciteitschecks); de v3-flow is een uitbreiding met rol-restricties op wie uitnodigt, een VOG-wachtstand op koppeling (niet op account), een ouder-gerichte variant voor minderjarigen en een entitlement-check op het acceptmoment — geen nieuw systeem."
+      rene_approved: false
+
+    role_model:
+      role: trainer
+      access_contexts: [independent, club, team]
+      scoping: per_trainer_athlete_context
+      club_hierarchy:
+        - beheerder
+        - hoofdtrainer
+        - trainers
+      team_structure:
+        beheerder: any_team_member
+        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+      externe_coach:
+        is_role: false
+        provenance_tag: IMPORTED
+        origin_label: "externe coach, niet via Sparki-trainer"
+      multi_role_stacking: true
+
+    training_content_model:
+      relevantie_voor_dit_onderwerp: "Onboardingvragen aan de trainer (voorstel, René beslist): naam/contact, relevante KNWU-trainersopleiding/niveau, VOG-status (aanwezig of traject starten), discipline(s), of hij al elders in Sparki trainer is (multi-context-scoping). Het opleidingsveld voedt het informatieve diplomaveld uit CLUB_CLUBOMGEVING_001."
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Bestaand invitations-systeem + club join-codes + entitlement-laag"
+          coverage: "Dekt token-links, atomaire acceptatie, rollen, capaciteit, rate-limits en Go-tier-checks; dekt niet de rol-restricties per uitnodigingstype, de VOG-wachtstand, de ouder-gerichte minderjarigenflow en de accept-moment-entitlementcheck."
+          actuality: "Code 30-07-2026."
+          license_status: "Eigen code."
+          limitations: []
+          applicability: "Direct de drager; uitbreiden, niet vervangen (één systeem, hergebruik — conform opdracht)."
+        - name: "Spond (referentie voor ouder-gerichte uitnodiging van minderjarigen)"
+          coverage: "Bewezen patroon: uitnodiging/beheer loopt via de ouder, niet via het kind."
+          actuality: "Actief product (2026)."
+          license_status: "Alleen patroon-referentie."
+          limitations: []
+          applicability: "Voorbeeldpatroon voor de minderjarigen-uitnodigingsflow, gecombineerd met de bestaande CYD-ouder-koppelingsflow."
+      sources_in_use: []
+      privacy_status: unknown
+      missing_information:
+        - "Definitieve lijst onboardingvragen aan de trainer (voorstel ligt bij René)."
+
+    replit_definition:
+      objective_quality_standard: "Trainer-uitnodigingen alleen aanmaakbaar door hoofdtrainer/beheerder (403 voor anderen); acceptatie activeert het account direct maar creëert 0 renner-koppelingen zolang vog_status ≠ registered; minderjarige renner-uitnodiging bereikt uitsluitend het ouder-pad (0 directe kind-acceptaties); Go-afdwinging op het acceptmoment aantoonbaar (accept zonder minimaal Go ⇒ keuzestap, geen stil lidmaatschap zonder abonnement); gedragscode zichtbaar bij toetreding zonder acceptatie-klik."
+      recommended_default: "Uitbreiding van routes/invitations.ts: per uitnodigingstype een creator-rolcheck; VOG-wachtstand als status op de trainer-relatie (niet op het account); minderjarigen-variant die een parent_athlete-uitnodiging + kindprofiel-aanmaak combineert in één atomaire acceptstap (bestaande CYD-flow hergebruiken); entitlement-check in de acceptroute."
+      technical_limits:
+        - "Sparki verstuurt de link niet zelf via WhatsApp; delen blijft aan de uitnodiger (kanaal-onafhankelijk token, zoals nu)."
+        - "Of een uit te nodigen renner minderjarig is, weet Sparki alleen als de club de geboortedatum bij de uitnodiging meegeeft (ledenadministratie is extern) — zonder die opgave geldt fail-closed: uitnodiging via het ouder-pad."
+      assumptions:
+        - "De bestaande atomaire accept-transactie kan de extra stappen (kindprofiel + ouderkoppeling, entitlement-keuze) dragen zonder het eenmaligheids-contract te breken."
+      unknowns:
+        - "Of de Go-afdwinging bij accepteren een harde blokkade of een verplichte keuzestap met proefperiode wordt (prijsbeleid, raakt hoofdstuk-overstijgend commercieel model)."
+      evidence_method:
+        - "Contracttest uitnodigingsrechten: trainer probeert trainer-uitnodiging aan te maken ⇒ 403; hoofdtrainer/beheerder ⇒ 201; renner-uitnodiging door trainer voor eigen groep ⇒ 201, buiten eigen groep ⇒ 403."
+        - "Contracttest minderjarigen-pad: uitnodiging met minderjarige geboortedatum ⇒ alleen ouder kan accepteren; direct kind-accept ⇒ geweigerd."
+        - "VOG-wachtstand gedekt door de 'vog-gate'-test uit CLUB_VOG_VEILIGSPORTEN_001."
+
+    rene_calibration:
+      questions:
+        - "Zijn de voorgestelde onboardingvragen aan de trainer (naam/contact, KNWU-opleiding/niveau, VOG-status, disciplines, al elders trainer in Sparki) definitief, en moeten er vragen bij of af?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Een uitnodiging voor een minderjarige renner gaat nooit naar het kind zelf maar altijd naar de ouder/verzorger, die accepteert, het kindprofiel aanmaakt en zichzelf als ouder koppelt — de CYD-ouder-koppelingsflow is onderdeel van deze aanmaakstap, geen losse vervolgstap; en zonder bekende geboortedatum geldt het ouder-pad (fail-closed)."
+          rule_type: hard_blockage
+          measurement_level: per_actie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Club nodigt een 14-jarige uit en het kind accepteert de link zelf met een eigen account, zonder ouder."
+              proof_stage: designed
+              proof_method: "Contracttest minderjarigen-pad: kind-accept geweigerd, ouder-accept maakt kindprofiel + ouderkoppeling atomair aan; onbekende geboortedatum ⇒ zelfde ouder-pad."
+              proof_result: not_yet_tested
+        - rule: "Trainer-uitnodigingen zijn voorbehouden aan hoofdtrainer en beheerder; acceptatie maakt het account direct actief maar nooit een renner-koppeling (die wacht op de VOG-poort uit CLUB_VOG_VEILIGSPORTEN_001) — er bestaat geen uitnodigingspad dat koppeling en activatie in één stap zonder VOG oplevert."
+          rule_type: hard_blockage
+          measurement_level: per_actie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Een gewone trainer maakt zelf een trainer-uitnodiging aan; of een geaccepteerde trainer-uitnodiging levert direct toegewezen renners op zonder VOG-registratie."
+              proof_stage: designed
+              proof_method: "Contracttest uitnodigingsrechten (403 voor trainer-creator) + accept-inspectie: na accept 0 rijen in koppel-/toewijzingstabellen zolang vog_status ≠ registered."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Onbekende geboortedatum bij renner-uitnodiging ⇒ ouder-pad (fail-closed); onbekende uitnodiger-rol ⇒ geen aanmaak; verlopen/ingetrokken token ⇒ geen acceptatie (bestaand gedrag)."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "Bestaand regressienet: invitations-flowtests (atomaire eenmalige accept, capaciteit bij create+accept), test:club join-codes."
+      independent_checks: []
+      practice_test_required: true
+      practice_testers: []
+      result: not_tested
+      expectation_gap:
+        - "Rol-restricties per uitnodigingstype, VOG-wachtstand, ouder-gerichte minderjarigenflow en Go-afdwinging bij accept bestaan nog niet."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Na akkoord René (incl. onboardingvragen en Go-afdwingvorm): invitations-uitbreiding bouwen (creator-rolchecks, VOG-wachtstand, ouder-pad, entitlement-check bij accept) met de contracttests hierboven."
+      approved_for_execution: false
+
+  - id: CLUB_SESSIELOGISTIEK_001
+    module: Club, coachorganisatie en ploegomgeving
+    subject: "AI-assistentie bij sessie-logistiek (materiaal, weer, drinken, wedstrijdtips): AI stelt uitsluitend een concept op, de trainer beoordeelt en verstuurt altijd zelf; club-/teamroutebibliotheek op de bestaande routing-engine"
+    status: needs_calibration
+
+    current_state:
+      technical_status: partially_implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Bouwstenen bestaan: clubberichten met rol/scope-controle (club.ts:2250-2404), coach-berichten (coach-cockpit.ts:910-1047), weer-services (routes/weather.ts, lib/weather/*), routegenerator + persoonlijke routebibliotheek (routes.ts:1283-1386, lib/route-library.ts) en route-shares met club-/teamzichtbaarheid (routes.ts:668-708, 943-1017, 4094-4227; clubtraining kan al een routeId refereren — club.ts:529-537,1521-1541). Wat NIET bestaat: AI-conceptberichten voor trainers (geen enkele AI-draft-functie in club/coach-messaging), een club-/teamroutebibliotheek als gedeelde collectie, en een weer-koppeling op clubtrainingen."
+      practice_status: "Clubberichten en routegeneratie afzonderlijk door testers gebruikt; de combinatie (AI-concept bij een sessie) bestaat niet."
+      known_limitations:
+        - "AI-berichtconcepten vereisen de centrale AI-gateway (aiMessage) met alle bestaande poorten (killswitch/consent/minderjarigen/redactie) — die is er, maar er is geen trainer-concept-flow op aangesloten."
+        - "Het trainingselement-veld 'veiligheidsvoorwaarden/materiaal' waarop het concept moet steunen bestaat pas na CLUB_TRAININGSINHOUD_001."
+
+    proposed_promise:
+      text: "Bij een geplande sessie kan de trainer Sparki een conceptbericht laten opstellen over logistiek — materiaal in orde, wat te doen bij de weersverwachting, drinken meenemen, tips voor een aankomende wedstrijd — gebaseerd op de materiaal- en veiligheidsvelden van het trainingselement plus actuele weersgegevens. De trainer beoordeelt en verstuurt dit altijd zelf; Sparki verstuurt nooit automatisch, ook niet routinematig. Routes voor sessies komen uit een club-/teamroutebibliotheek die met de bestaande routegenerator wordt gevuld en hergebruikt."
+      proposed_by: replit
+      rationale: "Alle dragers bestaan (berichten, weer, routing, AI-gateway, route-shares); dit onderwerp is verbinden, niet bouwen-van-nul. Het concept-nooit-versturen-principe sluit aan op het bestaande patroon dat AI woorden levert en deterministische lagen beslissen."
+      rene_approved: false
+
+    role_model:
+      role: trainer
+      access_contexts: [independent, club, team]
+      scoping: per_trainer_athlete_context
+      club_hierarchy:
+        - beheerder
+        - hoofdtrainer
+        - trainers
+      team_structure:
+        beheerder: any_team_member
+        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+      externe_coach:
+        is_role: false
+        provenance_tag: IMPORTED
+        origin_label: "externe coach, niet via Sparki-trainer"
+      multi_role_stacking: true
+
+    training_content_model:
+      relevantie_voor_dit_onderwerp: "Het AI-concept steunt uitsluitend op de velden veiligheidsvoorwaarden/materiaal van het trainingselement + actuele weersgegevens; sessie-logistiek is trainer-kerntaak in alle drie access_contexts en dus een aparte, beperktere AI-functie dan de individuele-coaching-AI (CLUB_EXTERNE_COACH_001)."
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Bestaande Sparki-bouwstenen: clubberichten, coach-cockpit-berichten, weer-services, routegenerator/route-library, route-shares met club/teamzichtbaarheid, centrale AI-gateway"
+          coverage: "Dekt berichten, weer, routing en AI-poorten; dekt niet de concept-flow, de gedeelde bibliotheekcollectie en de sessie-weer-koppeling."
+          actuality: "Code 30-07-2026."
+          license_status: "Eigen code. NB provider-compliance blijft gelden: Open-Meteo free tier is non-commercial — voor commercieel clubgebruik moet de weerbron-licentie herbeoordeeld worden (bestaand aandachtspunt)."
+          limitations: []
+          applicability: "Direct herbruikbaar; club-/teamroutebibliotheek = collectie-laag bovenop bestaande route-shares, geen nieuw routesysteem (conform opdracht: hergebruik routegenerator en bibliotheekcomponenten)."
+      sources_in_use: []
+      privacy_status: unknown
+      missing_information: []
+
+    replit_definition:
+      objective_quality_standard: "0 automatisch verstuurde AI-berichten (elk verzonden bericht heeft een expliciete trainer-verstuurhandeling in de audit); 100% van concepten herleidbaar tot element-velden + weersgegevens (bronvermelding in het concept); club-/teamroutes alleen zichtbaar binnen de club/het team volgens de bestaande share-regels."
+      recommended_default: "Concept-flow via de centrale AI-gateway met een eigen prompt die uitsluitend element-logistiekvelden en weer als invoer krijgt (geen renner-gezondheidsdata); versturen via de bestaande berichten-endpoints met de trainer als afzender; bibliotheek als club-/teamcollectie van bestaande route-entiteiten."
+      technical_limits:
+        - "Weersgegevens zijn een verwachting; het concept moet dat eerlijk zeggen (bestaand weer-eerlijkheidspatroon)."
+      assumptions:
+        - "De bestaande AI-gateway-poorten (minderjarigen, consent, redactie) gelden onverkort voor concepten aan groepen met minderjarigen."
+      unknowns:
+        - "Of wedstrijdtips in het concept ook uit het wedstrijddossier (hoofdstuk race-intelligence) mogen putten of alleen uit de sessievelden."
+      evidence_method:
+        - "Contracttest 'ai-draft-never-sends': concept-endpoint levert draft zonder berichtenrij; alleen de verstuur-actie van de trainer maakt een berichtenrij aan, met trainer als afzender in de audit."
+        - "Bestaande route-share-tests als regressienet voor de bibliotheek-zichtbaarheid."
+
+    rene_calibration:
+      questions:
+        - "Mogen AI-logistiekconcepten voor wedstrijdsessies ook putten uit het wedstrijddossier van de renners (individueler), of blijven ze strikt op sessie-/element-/weerniveau (groepsgericht)?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "AI verstuurt nooit automatisch een bericht aan renners of groepen — ook niet routinematig: elk verzonden logistiekbericht vereist een expliciete beoordeel-en-verstuurhandeling van de trainer, en het concept steunt uitsluitend op element-logistiekvelden en weersgegevens, nooit op gezondheidsdata."
+          rule_type: hard_blockage
+          measurement_level: per_actie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Een gepland-sessie-trigger stuurt het AI-concept direct door naar de groep zonder trainer-handeling; of het concept bevat gezondheidsinformatie van een renner."
+              proof_stage: designed
+              proof_method: "Contracttest 'ai-draft-never-sends' + promptinvoer-inspectie (invoer bevat aantoonbaar geen gezondheidsvelden)."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Ontbrekende weersdata of ontbrekende element-velden ⇒ concept zegt eerlijk wat ontbreekt of wordt niet aangeboden; nooit een concept op verzonnen gegevens."
+      approved: false
+
+    validation:
+      automated_tests: []
+      independent_checks: []
+      practice_test_required: true
+      practice_testers: []
+      result: not_tested
+      expectation_gap:
+        - "Concept-flow, bibliotheekcollectie en sessie-weer-koppeling bestaan nog niet."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Na akkoord René (incl. wedstrijddossier-vraag): concept-endpoint op de AI-gateway, verstuur-flow met audit, club-/teamroutecollectie op bestaande shares, met de ai-draft-never-sends-test."
       approved_for_execution: false
