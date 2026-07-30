@@ -986,16 +986,48 @@ export function buildTcx(route: TcxBuildInput): string | null {
 }
 
 // Detect sustained climbs: contiguous stretches of net ascent. Small dips are
-// tolerated; a stretch qualifies as a climb when it gains >= MIN_GAIN_M over
-// >= MIN_LENGTH_KM at an average grade >= MIN_GRADE_PCT. Names are generic
-// ("Klim 1", ...) because a GPX track carries no climb names.
+// tolerated; a stretch qualifies as a climb via one of two profiles:
+//  1. LANG:  >= 40 m stijging over >= 0,6 km bij >= 3 % gemiddeld — het
+//     klassieke aanhoudende-klim-profiel (Zuid-Limburg, Ardennen).
+//  2. KORT-STEIL: >= 25 m stijging over >= 0,3 km bij >= 4,5 % gemiddeld —
+//     korte Nederlandse hellingen zoals de Holterberg (~30-40 m stijging) die
+//     het lange profiel net missen maar voor renners in glooiend Nederland
+//     wél echte klimmen zijn.
+// Ruisbestendigheid van het korte profiel: een kandidaat groeit alleen zolang
+// de hoogte (op 12 m dal-tolerantie na) monotoon stijgt, dus 25 m netto
+// stijging vereist een ECHTE 25 m-rug in de brondata. SRTM-ruis in vlak
+// terrein oscilleert 1-2 m per punt en kan binnen één kandidaat nooit 25 m
+// netto opbouwen; de 0,3 km-minimumlengte weert bovendien losse hoogtespikes.
+// Live herbevestigd op de vlakke Hengelo-lus (0 klimmen) — zie
+// docs/product/proof-evidence/hertest-korte-hellingen-2026-07-30.md.
+// Names are generic ("Klim 1", ...) because a GPX track carries no climb names.
+const CLIMB_MIN_GAIN_M = 40;
+const CLIMB_MIN_LENGTH_KM = 0.6;
+const CLIMB_MIN_GRADE_PCT = 3;
+export const SHORT_CLIMB_MIN_GAIN_M = 25;
+export const SHORT_CLIMB_MIN_LENGTH_KM = 0.3;
+export const SHORT_CLIMB_MIN_GRADE_PCT = 4.5;
+
+// Shared qualifier: does a candidate stretch (net gain over a length) count as
+// a climb under either profile?
+export function qualifiesAsClimb(gainM: number, lengthKm: number): boolean {
+  if (!(lengthKm > 0)) return false;
+  const gradePct = (gainM / (lengthKm * 1000)) * 100;
+  const long =
+    gainM >= CLIMB_MIN_GAIN_M &&
+    lengthKm >= CLIMB_MIN_LENGTH_KM &&
+    gradePct >= CLIMB_MIN_GRADE_PCT;
+  const shortSteep =
+    gainM >= SHORT_CLIMB_MIN_GAIN_M &&
+    lengthKm >= SHORT_CLIMB_MIN_LENGTH_KM &&
+    gradePct >= SHORT_CLIMB_MIN_GRADE_PCT;
+  return long || shortSteep;
+}
+
 function detectClimbs(
   points: { lat: number; lon: number; ele: number | null }[],
   cumKm: number[],
 ): GpxRouteClimb[] {
-  const MIN_GAIN_M = 40;
-  const MIN_LENGTH_KM = 0.6;
-  const MIN_GRADE_PCT = 3;
   const DESCENT_TOLERANCE_M = 12;
 
   const climbs: GpxRouteClimb[] = [];
@@ -1005,22 +1037,28 @@ function detectClimbs(
 
   const tryClose = (endIdx: number) => {
     if (startIdx == null) return;
-    const startEle = points[startIdx]!.ele;
     const endEle = points[topIdx]!.ele;
-    if (startEle != null && endEle != null) {
-      const gain = endEle - startEle;
-      const lengthKm = cumKm[topIdx]! - cumKm[startIdx]!;
-      if (
-        gain >= MIN_GAIN_M &&
-        lengthKm >= MIN_LENGTH_KM &&
-        (gain / (lengthKm * 1000)) * 100 >= MIN_GRADE_PCT
-      ) {
-        climbs.push({
-          name: `Klim ${climbs.length + 1}`,
-          lengthKm: Math.round(lengthKm * 10) / 10,
-          avgGradePct: Math.round((gain / (lengthKm * 1000)) * 1000) / 10,
-          summitKm: Math.round(cumKm[topIdx]! * 100) / 100,
-        });
+    if (endEle != null) {
+      // Kies de VROEGSTE start binnen de kandidaat waarvoor het stuk tot de
+      // top als klim kwalificeert. Kwalificeert de hele kandidaat (zoals bij
+      // aanhoudende klimmen), dan is dit exact het oude gedrag. Zo niet, dan
+      // knipt dit een vlakke aanloop weg die de gemiddelde stijging verdunt —
+      // precies waardoor korte steile hellingen (Holterberg) eerst onvindbaar
+      // waren: de kandidaat begon al kilometers eerder op vlak terrein.
+      for (let s = startIdx; s < topIdx; s++) {
+        const startEle = points[s]!.ele;
+        if (startEle == null) continue;
+        const gain = endEle - startEle;
+        const lengthKm = cumKm[topIdx]! - cumKm[s]!;
+        if (qualifiesAsClimb(gain, lengthKm)) {
+          climbs.push({
+            name: `Klim ${climbs.length + 1}`,
+            lengthKm: Math.round(lengthKm * 10) / 10,
+            avgGradePct: Math.round((gain / (lengthKm * 1000)) * 1000) / 10,
+            summitKm: Math.round(cumKm[topIdx]! * 100) / 100,
+          });
+          break;
+        }
       }
     }
     startIdx = null;
@@ -1036,7 +1074,9 @@ function detectClimbs(
       topIdx = i;
       continue;
     }
-    if (ele >= topEle) {
+    // Strikt hoger: een vlak plateau op de top schuift de topindex niet op,
+    // anders verdunt het plateau de gemiddelde stijging van korte hellingen.
+    if (ele > topEle) {
       topEle = ele;
       topIdx = i;
     } else if (topEle - ele >= DESCENT_TOLERANCE_M) {

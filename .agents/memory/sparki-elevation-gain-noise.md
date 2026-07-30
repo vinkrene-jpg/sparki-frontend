@@ -8,3 +8,4 @@ description: SRTM-ruis in vlak NL blaast naïeve hm-sommen op; smooth+threshold 
 - **How to apply:** nieuwe consumers van route-hm moeten `summarizeTrack`-gain prefereren boven rauwe provider-`ascend`; nooit opnieuw naïef sommeren. Profiel-y-as heeft 100 m minimumschaal (elevation-profile.tsx toPoints) zodat vlak vlak oogt — niet verwijderen.
 - Geen tweede hoogtebron (AHN) introduceren zonder route+profiel tegelijk om te zetten (één-bron-les).
 - parseGpx (gereden activiteiten, baro/device-hoogte) is bewust NIET gedrempeld.
+- **Klimdetectie (detectClimbs):** twee profielen — lang (≥40 m/≥0,6 km/≥3%) én kort-steil (≥25 m/≥0,3 km/≥4,5%) voor NL-hellingen (Holterberg). Cruciaal: vlakke aanloop en topplateau verdunnen de gemiddelde stijging — kandidaat trimt naar vroegste kwalificerende start, topindex = EERSTE punt op max. 25 m netto binnen één monotone kandidaat is SRTM-ruisbestendig (ruis is 1-2 m/punt). Unit: test:gpx-climb-detection.
