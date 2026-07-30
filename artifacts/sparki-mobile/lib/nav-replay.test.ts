@@ -307,6 +307,38 @@ test("wedstrijd (usageType 'wedstrijd'): 'terug naar het parcours' altijd eerst;
   assert.equal(JSON.stringify(route), snapshot, "parcoursgeometrie byte-gelijk vóór en ná de rit");
 });
 
+// ── Scenario 4: echte praktijkrit Dylan/René (Komoot, 22-07-2026) ───
+//
+// Bewijs met een échte opgenomen rit dat de navigatie-engine stil blijft op
+// echte GPS-coördinaten. De rit is de "Klim Eyserbosweg – Dikkebuikseweg
+// rondtocht vanuit Valkenburg" gereden door Dylan en René (22-07-2026, Komoot).
+// De route is uit de track gedestilleerd via 50 m-afstandsgebaseerde dunning
+// (zoals een geplande Garmin-route). De rit bevat geen accuracy/speed-
+// extensies; de engine valt terug op de veilige standaard (67,5 m corridor).
+test("echte praktijkrit Dylan/René (Komoot 22-07-2026, ~170 km): nul afwijk-meldingen", () => {
+  const route = parseGpx("route-dylan.gpx").map((f) => ({ lat: f.lat, lon: f.lon }));
+  const snapshot = JSON.stringify(route);
+  Object.freeze(route);
+  for (const p of route) Object.freeze(p);
+
+  const fixes = parseGpx("ride-dylan.gpx");
+
+  // Sanity-checks: de fixture is volledig en bevat echte GPS-coördinaten.
+  assert.ok(route.length >= 200, `route heeft voldoende puntdichtheid (${route.length} pts)`);
+  assert.ok(fixes.length >= 500, `rit bevat voldoende fixes (${fixes.length} fixes)`);
+  assert.ok(
+    fixes[0]!.lat > 50 && fixes[0]!.lat < 51 && fixes[0]!.lon > 5 && fixes[0]!.lon < 7,
+    "coördinaten liggen in Zuid-Limburg/België (50–51°N, 5–7°E)",
+  );
+
+  const res = replayRide({ route, fixes });
+
+  assert.equal(res.enterEvents, 0, "geen enkele afwijk-melding op de echte praktijkrit");
+  assert.equal(res.promptShownCount, 0, "de keuzekaart verschijnt nooit op de echte rit");
+  assert.equal(res.state.active, false, "rit eindigt op-route (renners bleven op het parcours)");
+  assert.equal(JSON.stringify(route), snapshot, "routegeometrie byte-gelijk vóór en ná de rit");
+});
+
 // ── Fixture-integriteit: fixtures matchen de generator (geen stille drift) ──
 test("fixtures zijn aanwezig en deterministisch opgebouwd", () => {
   const route = parseGpx("route.gpx");

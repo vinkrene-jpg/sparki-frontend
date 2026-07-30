@@ -500,8 +500,8 @@ chapter_d_routes_en_navigatie:
     current_state:
       technical_status: implemented
       source_snapshot: 2026-07-30
-      evidence_status: "Route-match-engine unit-getest en byte-identiek gespiegeld web↔mobiel; off-route state machine puur getest; ride-recovery-test bestaat. Geen geautomatiseerde end-to-end rij-simulatie."
-      practice_status: "Praktijkritten door Dylan/René hebben eerdere gebreken gevonden (valse afwijk-meldingen, camera-snap-back) die zijn verholpen; structurele praktijkregressierondes ontbreken."
+      evidence_status: "Route-match-engine unit-getest en byte-identiek gespiegeld web↔mobiel; off-route state machine puur getest; ride-recovery-test bestaat. GPX-replay-harnas (test:nav-replay) groen: 7/7 tests — inclusief een echte opgenomen praktijkrit (Dylan + René, Komoot 22-07-2026, ~170 km, 2781 GPS-fixes) met 0 valse afwijk-meldingen en byte-gelijke routegeometrie."
+      practice_status: "Echte opgenomen rit van Dylan en René (Komoot, Klim Eyserbosweg – Dikkebuikseweg rondtocht vanuit Valkenburg, 22-07-2026) toegevoegd als fixture (lib/nav-replay-fixtures/ride-dylan.gpx + route-dylan.gpx) en geautomatiseerd geassert: 0 enter-events, 0 keuzekaarten, route byte-gelijk. Eerdere praktijkgebreken (valse meldingen, camera-snap-back) zijn verholpen."
       known_limitations:
         - "GPS in bebouwing/bos blijft ruizig; corridor is dynamisch (nauwkeurigheid+snelheid) maar wonderen bestaan niet."
         - "Off-route toont keuzes per episode; de opgeslagen route wordt nooit vervangen (detour is overlay) — bewuste keuze."
@@ -563,7 +563,7 @@ chapter_d_routes_en_navigatie:
           counterexamples:
             - case: "Spaarzame routegeometrie (punten 80 m uiteen) laat punt-afstand 50 m 'off-route' lijken terwijl de renner op het wegvak rijdt."
               proof_stage: executed
-              proof_method: "GPX-replay-harnas (test:nav-replay, artifacts/sparki-mobile/lib/nav-replay.test.ts): deterministische op-route rit van ~10 min met realistische GPS-ruis (σ≈4–5 m, uitschieters tot ~25 m), spaarzame routestukken van 80 m én één geïnjecteerde GPS-sprong door matchToRoute + updateOffRoute gespeeld; assert 0 enter-events en 0 keuzekaarten."
+              proof_method: "GPX-replay-harnas (test:nav-replay, artifacts/sparki-mobile/lib/nav-replay.test.ts): (1) deterministische op-route rit van ~10 min met realistische GPS-ruis (σ≈4–5 m, uitschieters tot ~25 m), spaarzame routestukken van 80 m én één geïnjecteerde GPS-sprong; assert 0 enter-events en 0 keuzekaarten. (2) Echte praktijkrit Dylan/René (Komoot, 22-07-2026, Klim Eyserbosweg – Dikkebuikseweg rondtocht, 2781 GPS-fixes, lib/nav-replay-fixtures/ride-dylan.gpx): assert 0 enter-events, 0 keuzekaarten, route byte-gelijk."
               proof_result: passed
         - rule: "De opgeslagen route mag tijdens navigatie nooit automatisch worden vervangen of gewijzigd."
           measurement_level: per_sessie
