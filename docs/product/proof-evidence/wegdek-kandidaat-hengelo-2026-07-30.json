@@ -1,0 +1,16 @@
+{
+  "candidateId": "d99683d1-eb8e-47e5-a1c9-72ffde4f2d4a",
+  "name": "duurtraining-lus vanuit Burgemeester Jansenplein · 52 km",
+  "distanceKm": 52.44,
+  "elevationGainM": 161,
+  "bikeType": "racefiets",
+  "routingProfile": "cycling-road",
+  "engineSurface": {
+    "provider": "graphhopper",
+    "pavedPct": 100,
+    "knownPct": 95.5,
+    "measuredAt": "2026-07-30T08:30:58.007Z"
+  },
+  "startName": "Burgemeester Jansenplein",
+  "geometryPoints": 1069
+}

@@ -1,0 +1,16 @@
+{
+  "candidateId": "47346e5d-85a8-454e-89d3-d2586e481517",
+  "name": "duurtraining-lus vanuit Camerlinkstraat · 53 km",
+  "distanceKm": 53.42,
+  "elevationGainM": 164,
+  "bikeType": "racefiets",
+  "routingProfile": "cycling-road",
+  "engineSurface": {
+    "provider": "graphhopper",
+    "pavedPct": 100,
+    "knownPct": 93.5,
+    "measuredAt": "2026-07-30T08:31:16.381Z"
+  },
+  "startName": "Camerlinkstraat",
+  "geometryPoints": 947
+}
