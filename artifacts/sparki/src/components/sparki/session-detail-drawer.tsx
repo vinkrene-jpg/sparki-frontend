@@ -332,16 +332,42 @@ function sourceLabel(s: string) {
   return SOURCE_LABELS[s.toLowerCase()] ?? s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+// Nederlandse labels voor de ruwe per-veld herkomstwaarden (fieldSources) die
+// de Data Hub vastlegt. Onbekende waarden tonen we letterlijk — nooit raden.
+const VELD_BRON_LABELS: Record<string, string> = {
+  manual: "handmatig",
+  strava: "Strava",
+  garmin: "Garmin",
+  wahoo: "Wahoo",
+  file: "bestand",
+  gpx: "GPX-bestand",
+  fit: "FIT-bestand",
+  tcx: "TCX-bestand",
+  sensor: "sensor",
+  mobiel: "Sparki-app",
+  mobile: "Sparki-app",
+  sparki: "Sparki",
+  coach: "coach",
+  derived: "berekend",
+  import: "bestand",
+}
+
+function veldBronLabel(raw: string): string {
+  return VELD_BRON_LABELS[raw.toLowerCase()] ?? raw
+}
+
 function Metric({
   icon: Icon,
   label,
   value,
   uitlegKey,
+  bron,
 }: {
   icon: typeof Clock
   label: string
   value: string
   uitlegKey?: string
+  bron?: string | null
 }) {
   return (
     <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-3">
@@ -355,6 +381,11 @@ function Metric({
       <p className="mt-1.5 font-sans text-lg font-light tabular-nums text-white/90">
         {value}
       </p>
+      {bron != null && (
+        <p className="mt-1 font-mono text-[9px] tracking-[0.08em] text-white/30">
+          Bron: {bron}
+        </p>
+      )}
     </div>
   )
 }
@@ -417,12 +448,26 @@ export function SessionDetailDrawer({
       })
     : ""
 
+  // Per-veld herkomst uit de Data Origin-laag: alleen tonen wat aantoonbaar
+  // vastligt. Zolang het detail nog laadt, tonen we niets (geen gok); zodra
+  // het er is, is elk veld óf herleidbaar óf eerlijk "onbekend".
+  const veldBronnen = detail?.herkomst?.veldBronnen ?? null
+  const handmatigeVelden = new Set(detail?.herkomst?.handmatigeVelden ?? [])
+  const bronVoor = (field: string): string | null => {
+    if (detail == null || detail.herkomst == null) return null
+    if (handmatigeVelden.has(field)) return "handmatig aangepast"
+    const raw = veldBronnen?.[field]
+    if (raw) return veldBronLabel(raw)
+    return "onbekend"
+  }
+
   // Which real metrics do we actually have? Honest readback only.
   const metrics: Array<{
     icon: typeof Clock
     label: string
     value: string
     uitlegKey?: string
+    bron?: string | null
   }> =
     []
   if (session) {
@@ -431,18 +476,21 @@ export function SessionDetailDrawer({
         icon: Clock,
         label: "Duur",
         value: `${session.durationMin} min`,
+        bron: bronVoor("durationMin"),
       })
     if (session.distanceKm != null && session.distanceKm !== "")
       metrics.push({
         icon: RouteIcon,
         label: "Afstand",
         value: `${session.distanceKm} km`,
+        bron: bronVoor("distanceKm"),
       })
     if (session.elevationM != null)
       metrics.push({
         icon: Mountain,
         label: "Hoogtemeters",
         value: `${session.elevationM} m`,
+        bron: bronVoor("elevationM"),
       })
     if (session.tss != null)
       metrics.push({
@@ -450,30 +498,35 @@ export function SessionDetailDrawer({
         label: "Belasting (TSS)",
         value: `${session.tss}`,
         uitlegKey: "belasting",
+        bron: bronVoor("tss"),
       })
     if (session.intensityFactor != null && session.intensityFactor !== "")
       metrics.push({
         icon: Gauge,
         label: "Intensiteit (IF)",
         value: session.intensityFactor,
+        bron: bronVoor("intensityFactor"),
       })
     if (session.avgPower != null)
       metrics.push({
         icon: Zap,
         label: "Gem. vermogen",
         value: `${session.avgPower} W`,
+        bron: bronVoor("avgPower"),
       })
     if (session.normalizedPower != null)
       metrics.push({
         icon: Zap,
         label: "Genormaliseerd",
         value: `${session.normalizedPower} W`,
+        bron: bronVoor("normalizedPower"),
       })
     if (session.avgHR != null)
       metrics.push({
         icon: HeartPulse,
         label: "Gem. hartslag",
         value: `${session.avgHR} bpm`,
+        bron: bronVoor("avgHR"),
       })
   }
 
@@ -559,6 +612,7 @@ export function SessionDetailDrawer({
                     label={m.label}
                     value={m.value}
                     uitlegKey={m.uitlegKey}
+                    bron={m.bron}
                   />
                 ))}
               </div>

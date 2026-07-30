@@ -67,6 +67,14 @@ export type SessionDetail = {
     type: string;
     structure: import("@/lib/athlete-types").WorkoutStructure | null;
   } | null;
+  // Herkomst-metadata uit de Data Origin-laag (server bouwt dit uit de
+  // vastgelegde source/sources/fieldSources — nooit verzonnen).
+  herkomst?: {
+    bron: string;
+    bronnen: string[];
+    veldBronnen: Record<string, string> | null;
+    handmatigeVelden: string[] | null;
+  } | null;
 };
 
 export function useSessionDetail(id: number | null) {
