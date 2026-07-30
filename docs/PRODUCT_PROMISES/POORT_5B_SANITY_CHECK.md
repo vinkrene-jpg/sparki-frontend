@@ -39,8 +39,12 @@ resultaat was. Een oplevering zonder geregistreerd Poort 5b-rapport is geen ople
 Elk rapport is een YAML-bestand in `docs/PRODUCT_PROMISES/sanity-checks/` met de naam
 `SANITY_5B_<JJJJ-MM-DD>_<korte-slug>.yaml`. Het format staat in
 `sanity-checks/TEMPLATE.yaml` en wordt automatisch gevalideerd door
-`node scripts/check-sanity-reports.mjs` (draait mee met de root-typecheckloze
-controlelaag; handmatig altijd uitvoerbaar).
+`node scripts/check-sanity-reports.mjs`. Sinds 30-07-2026 draait die validator
+automatisch mee in de `typecheck-api`-validatiepoort die vóór elke merge/publicatie
+loopt: een formatfout of een "fail + deliverable"-tegenstrijdigheid blokkeert de
+oplevering zichtbaar. Nul rapporten blijft eerlijk gemeld maar niet-blokkerend
+(niet elke code-merge is een praktijktest-oplevering). Handmatig blijft de check
+altijd uitvoerbaar via `pnpm run check:sanity-5b`.
 
 Verplichte velden per rapport:
 

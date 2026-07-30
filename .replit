@@ -456,12 +456,12 @@ outputType = "console"
 name = "typecheck-api"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pnpm run typecheck:libs && pnpm --filter @workspace/api-server run typecheck"
-
 [workflows.workflow.metadata]
 isValidation = true
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm run typecheck:libs && pnpm --filter @workspace/api-server run typecheck && node scripts/check-sanity-reports.mjs"
 
 [[workflows.workflow]]
 name = "admin-smoke"
