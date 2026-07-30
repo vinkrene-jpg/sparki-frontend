@@ -790,3 +790,623 @@ chapter_d_routes_en_navigatie:
       type: research_or_build_or_retest
       description: "ETA-kalibratievraag beantwoorden; daarna één begeleide praktijkrit met volgauto als eerste echt bewijs."
       approved_for_execution: false
+
+# ---------------------------------------------------------------------------
+# Hoofdstuk H — Data, koppelingen en synchronisatie
+# Opgesteld: 2026-07-30 (opdracht v2, los aangeleverd document). Alleen dit
+# hoofdstuk; geen productcode gewijzigd. Scope: Data Hub, Strava,
+# Garmin/Wahoo (voorbereid), bestandimport, Bluetooth-sensoren.
+# ---------------------------------------------------------------------------
+
+chapter_h_data_koppelingen_en_synchronisatie:
+
+  - id: DATA_HUB_001
+    module: "Data, koppelingen en synchronisatie"
+    subject: "Data Hub — centrale ingest, deduplicatie, herkomst en consent voor alle databronnen"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Deels: geautomatiseerde ketentests bestaan en draaien groen (cross-source-dedupe-test bewijst dat dezelfde rit uit twee bronnen tot één sessie met beide bronnen samensmelt; betrouwbaarheidsketentest met 12 scenario's bewijst rollback-per-activiteit, doorlopen-bij-één-kapotte-activiteit en eerlijke 'partial'-status). Geen onafhankelijke proof-run tegen een vastgelegde belofte; geen praktijkbewijs met twee echte gelijktijdige bronnen bij één atleet."
+      practice_status: "In de praktijk draait vrijwel alles via Strava als enige actieve bron; het meerbronnen-samensmeltpad is vooral synthetisch getest, nauwelijks met echte parallelle koppelingen."
+      known_limitations:
+        - "Dedupe-sleutel is sport + starttijd afgerond op 5 minuten, met buurvak-matching en ~20% duur/afstand-tolerantie; twee ECHT verschillende activiteiten van dezelfde sport die binnen ~5 minuten starten en op elkaar lijken kunnen theoretisch onterecht samensmelten."
+        - "Consent is default-grant: een datatype is toegestaan tenzij er expliciet een geweigerde rij bestaat. Activiteiten-ingest vereist wél een dubbele EN-toestemming (activiteiten ÉN trainingshistorie), zodat intrekken van één van beide altijd blokkeert."
+        - "Per-veld-herkomst (fieldSources) is first-source-wins; handmatige correcties zijn alleen beschermd als het schrijfpad ze in manualFields markeert — een vergeten markering betekent dat de volgende sync een correctie stil terugdraait."
+        - "Sync-telling (nieuw/samengevoegd/fouten) is eerlijk per run, maar er is geen dashboard dat verloop over runs bewaakt; stille achteruitgang van een bron valt alleen op bij klachten."
+        - "Productie-schemadrift is eerder voorgekomen (nieuwe hub-tabellen niet gepusht); er is geen automatische bewaking dat dev- en prod-schema gelijk lopen."
+
+    proposed_promise:
+      text: "Alles wat over je training binnenkomt — via een koppeling, een bestand of je telefoon — komt in één administratie terecht. Dezelfde rit die uit twee bronnen binnenkomt wordt één rit, met zichtbaar welke bron wat leverde. Wat jij zelf corrigeert, blijft staan. Als een deel van een synchronisatie mislukt, gaat de rest gewoon door en is de uitkomst eerlijk 'gedeeltelijk gelukt' — nooit stilletjes half."
+      proposed_by: replit
+      rationale: "Dit is de fundering onder elk ander hoofdstuk: analyses, belastingsmodel en coaching zijn maar zo goed als de administratie eronder. De wereldmarkt-lat hier is Strava/intervals.icu-niveau samensmelting zonder dubbele ritten en zonder verlies van handmatige correcties."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Eigen canonieke datamodel (training_sessions + connector_activities + sync_runs)"
+          coverage: "Dekt alle bronnen die door de hub lopen (Strava, bestand, mobiele ritten; Garmin/Wahoo zodra sleutels bestaan). Dekt NIET: data die buiten de hub om geschreven wordt — dat is per doctrine verboden maar niet technisch afgedwongen."
+          actuality: "Live eigen database; schema wijzigt mee met het product."
+          license_status: "Eigen data van de atleet; verwerking privacy-gated via consent-rijen; geen externe licentie."
+          limitations:
+            - "Herkomst is zo betrouwbaar als het schrijfpad; paden die manualFields vergeten breken de bescherming stil."
+            - "merge_log is intern en begrensd (laatste 20), dus geen volledige historie."
+          applicability: "De administratie zelf: dedupe, herkomst per veld, samensmeltlog en sync-boekhouding worden hierop uitgevoerd en gemeten."
+        - name: "Officiële API-documentatie van bronplatforms (Strava/Garmin/Wahoo) + bestandspecificaties (FIT/GPX/TCX)"
+          coverage: "Definieert per bron welke velden bestaan en hoe betrouwbaar ze zijn (bv. vermogen uit meter vs geschat). Dekt NIET: hoe bronnen zich in de praktijk gedragen bij drift (zelfde rit, licht afwijkende duur/afstand/starttijd per platform)."
+          actuality: "Levende documentatie; Strava API v3, Garmin/Wahoo cloud-API's wijzigen op fabrikantsritme; FIT SDK meermaals per jaar, GPX 1.1 (2004, stabiel), TCX v2 (stabiel)."
+          license_status: "Documentatie vrij raadpleegbaar; API-gebruik onder platform-voorwaarden (per onderwerp hieronder uitgewerkt)."
+          limitations:
+            - "Geen enkele bron documenteert cross-platform-drift; onze 5-minuten/20%-toleranties zijn eigen empirie, geen standaard."
+          applicability: "Bepaalt de bronprioriteit per veld (zie replit_definition) en welke velden per bron eerlijk 'ontbreekt' moeten blijven."
+      sources_in_use:
+        - "Eigen canonieke datamodel — de enige plek waar dedupe/herkomst/consent afgedwongen wordt (single runSync-pad)."
+        - "Platform-API-docs + bestandspecificaties — als ontwerpbasis voor veldmapping en bronprioriteit."
+      privacy_status: unknown
+      missing_information:
+        - "Empirische meting van fout-samensmelting (twee echte verschillende activiteiten die onterecht mergen) ontbreekt volledig."
+        - "Geen inventarisatie of álle schrijfpaden naar training_sessions daadwerkelijk door de hub lopen (doctrine vs afdwinging)."
+        - "Privacy-/bewaartermijnkader per bron (wat mag hoe lang bewaard, ook na ontkoppelen) is niet formeel vastgelegd."
+
+    replit_definition:
+      objective_quality_standard: "Per activiteit: dezelfde rit uit N bronnen levert exact 1 sessie met N herkomstrijen; 0 verloren handmatige correcties na een sync; elke sync-run eindigt met een eerlijke status (success/partial/failed) waarvan de tellers optellen; 0 activiteiten geïngest zonder geldige EN-toestemming."
+      recommended_default: "Bronprioriteit per veld: (1) directe sensormeting (vermogensmeter/HR-band) boven platformschatting; (2) het platform dat het veld native meet boven een doorgever; (3) handmatig door de atleet gezet wint ALTIJD van elke sync (manualFields heilig). Dedupe: sleutel grof houden (sport + 5-min-vak), disambiguatie via tolerantie-guard, nooit duur/afstand in de sleutel."
+      technical_limits:
+        - "Herkomst per veld is first-source-wins; met terugwerkende kracht van bronvoorrang wisselen vergt her-ingest, dat pad bestaat niet."
+        - "Dedupe kan alleen zien wat binnenkomt; een bron die starttijden >7,5 min laat driften ontsnapt aan de buurvak-matching."
+      assumptions:
+        - "Platform-drift voor dezelfde rit blijft binnen ~5 min starttijd en ~20% duur/afstand (empirie Garmin↔Strava)."
+      unknowns:
+        - "Fout-samensmeltkans bij intervalachtige korte activiteiten kort na elkaar (zelfde sport, zelfde kwartier)."
+        - "Gedrag bij een atleet met 3+ gelijktijdige actieve bronnen (nooit in praktijk gezien)."
+      evidence_method:
+        - "Bestaande geautomatiseerde ketentests (cross-source dedupe, betrouwbaarheid/rollback) her-runnen als onafhankelijke proof met vastgelegde uitkomst."
+        - "Nieuw te ontwerpen tegenvoorbeeld-set: echte-verschillende-activiteiten die NIET mogen mergen (zie acceptance_contract)."
+        - "Praktijkbewijs: één atleet met twee echte bronnen tegelijk (bv. Strava + bestandsupload van dezelfde rit) gedurende een week."
+
+    rene_calibration:
+      questions:
+        - "Hoeveel synchronisatie-detail wil je dat een atleet ziet: alleen 'laatste sync + gelukt/mislukt', of ook per rit welke bron welk veld leverde (herkomst zichtbaar in de app)?"
+        - "Als twee bronnen een verschillend getal geven voor hetzelfde veld (bv. Strava zegt 250 W gemiddeld, het bestand zegt 243 W): wil je vaste bronvoorrang (stil), of wil je dat Sparki het conflict toont en jou laat kiezen?"
+        - "Wanneer moet een sync-fout ACTIEF gemeld worden (melding/badge), en wanneer is stil herstellen bij de volgende poging goed genoeg? Bijvoorbeeld: pas melden na X dagen zonder geslaagde sync?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Twee verschillende activiteiten mogen nooit tot één sessie samensmelten."
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Twee korte fietsritten van dezelfde atleet, start 4 minuten na elkaar (warming-up 20 min + wedstrijd 25 min), uit twee bronnen."
+              proof_stage: designed
+              proof_method: "Redenering: starttijden vallen in hetzelfde/aangrenzende 5-min-vak, dus de sleutel botst; de tolerantie-guard (duur/afstand ~20%) moet ze scheiden omdat 20 vs 25 min binnen 20% valt — dit is dus een GRENSGEVAL dat de huidige guard mogelijk NIET weigert. Latere geautomatiseerde test met exact dit scenario moet uitwijzen of de guard scherp genoeg staat."
+              proof_result: not_yet_tested
+        - rule: "Een handmatig door de atleet gecorrigeerd veld mag door geen enkele latere sync worden overschreven."
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Atleet zet FTP-gerelateerd sessieveld handmatig leeg; de volgende Strava-sync levert voor dat veld een waarde."
+              proof_stage: designed
+              proof_method: "Redenering: buildMergePatch slaat manualFields over, óók bewust leeggemaakte velden; updateFieldSources negeert null-writes. Latere unit-test: PUT met leegmaking → sync → veld blijft leeg."
+              proof_result: not_yet_tested
+        - rule: "Zonder geldige toestemming (activiteiten ÉN trainingshistorie) wordt geen enkele activiteit opgeslagen."
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Atleet trekt alleen 'trainingshistorie' in terwijl 'activiteiten' toegestaan blijft; daarna komt een webhook-sync binnen."
+              proof_stage: designed
+              proof_method: "Redenering: ingest-poort is een EN-voorwaarde (activitiesIngestAllowed), dus één ingetrokken type blokkeert; importedDataTypes wordt gefilterd zodat de koppeling niet vals claimt data te hebben opgeslagen. Latere test: consent-rij granted=false op één type → sync → 0 nieuwe sessies + eerlijke skipped-telling."
+              proof_result: not_yet_tested
+        - rule: "Een sync-run waarvan een deel mislukt mag nooit als volledig geslaagd worden geboekt."
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Batch van 10 activiteiten waarvan nr. 6 een kapotte payload heeft die pas ná de sessie-insert breekt."
+              proof_stage: designed
+              proof_method: "Reeds als geautomatiseerde ketentest gebouwd (betrouwbaarheidstest, 12 scenario's: rollback per activiteit, run eindigt 'partial' met errorSamples); voor dit contract geldt hij pas als executed na een her-run met vastgelegd resultaat als proof-artefact."
+              proof_result: not_yet_tested
+      tolerances:
+        - "Dedupe-matching: starttijd binnen aangrenzende 5-minuten-vakken; duur/afstand-verschil ≤ ~20% geldt als 'plausibel dezelfde rit'."
+      unknown_data_policy: "Een veld dat geen enkele bron levert blijft null en wordt overal als 'ontbreekt' getoond; nooit een schatting stilletjes als meting opslaan. Onbekende herkomst = geen herkomstclaim."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "test:data-hub (cross-source dedupe) — bestaat, groen"
+        - "test:data-reliability (12 scenario's rollback/partial) — bestaat, groen"
+      independent_checks: ["Onafhankelijke proof-run met vastgelegde uitkomst tegen dit contract — nog te doen"]
+      practice_test_required: true
+      practice_testers: ["René (twee echte bronnen tegelijk, week lang)"]
+      result: not_tested
+      expectation_gap:
+        - "Grootste gat: fout-samensmelting (regel 1) is nooit met een tegenvoorbeeld getest; het grensgeval hierboven kan de huidige guard mogelijk passeren."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Tegenvoorbeeld-set voor fout-samensmelting bouwen en draaien; daarna René's drie kalibratievragen verwerken in het meldings-/herkomstontwerp."
+      approved_for_execution: false
+
+  - id: DATA_STRAVA_001
+    module: "Data, koppelingen en synchronisatie"
+    subject: "Strava-koppeling — per-gebruiker OAuth, webhook-gedreven sync en leespad-inhaalslag"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Deels: geautomatiseerde tests dekken webhook-verwerking (gerichte fetch zonder list/profiel-call), busy-gating (twee gelijktijdige syncs → precies één draait), token-refresh en de leespad-inhaalslag met 15-minuten-afkoelperiode. Praktijkbewijs: René's eigen Strava-account synchroniseert al maanden echt. NIET bewezen: gedrag onder Strava-storing van dagen en rate-limit-plafondgedrag onder veel gebruikers."
+      practice_status: "In productie de enige echte platformkoppeling; er is één bekende maand-lange stille bevriezing geweest doordat de webhook-registratie in productie ontbrak — sindsdien vangt de leespad-inhaalslag dit op, maar de webhook-registratie zelf blijft een handmatige operationele stap."
+      known_limitations:
+        - "Webhook-registratie (push_subscriptions bij Strava) is een handmatige API-stap per omgeving; ontbreekt die, dan is er geen push en leunt alles op de leespad-inhaalslag (Vandaag/Activiteiten openen)."
+        - "Inhaalslag heeft een 15-minuten-afkoelperiode per gebruiker om het gedeelde app-rate-limit te sparen; een atleet die net na een rit de app opent kan die rit dus tot ~15 min later zien als de vorige poging faalde."
+        - "Strava-rate-limits gelden per APP (alle gebruikers samen, 15-minuten- en dagvenster); bij groei is er geen quotabewaking of prioritering ingebouwd."
+        - "Toestemming-verlopen (token verlopen zonder refresh-token) wordt gedetecteerd en als 'verbind opnieuw' getoond, maar niet actief gemeld — de atleet moet het scherm zelf openen."
+        - "Alleen door Strava daadwerkelijk verleende scopes worden opgeslagen; een atleet die vinkjes uitzet krijgt een eerlijk beperkte koppeling, maar er is geen uitleg welke functies daardoor uitvallen."
+    proposed_promise:
+      text: "Koppel je Strava één keer en je ritten staan er daarna vanzelf in — meestal binnen enkele minuten na uploaden bij Strava. Werkt dat even niet (storing, verlopen toestemming), dan haalt Sparki het gemiste alsnog op zodra je de app opent, en zie je eerlijk wat de status van je koppeling is. Sparki slaat alleen op waarvoor jij toestemming gaf."
+      proposed_by: replit
+      rationale: "Strava is de facto de bron waar fietsers hun data al hebben; naadloze, eerlijke sync is de instapvoorwaarde om Sparki naast/boven Strava te gebruiken. Marktlat: intervals.icu-achtige betrouwbaarheid (webhook + inhaal, nooit stil bevriezen)."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Strava API v3 (developers.strava.com) incl. Webhook Events API"
+          coverage: "Activiteiten, atleetprofiel, streams; push-events bij nieuwe/gewijzigde/verwijderde activiteiten en bij intrekken van toestemming. Dekt NIET: historische data ouder dan wat de atleet op Strava heeft, en geen gezondheidsdata (slaap/HRV)."
+          actuality: "Live API v3; wijzigt zelden maar Strava heeft in het verleden scopes en voorwaarden eenzijdig aangescherpt (o.a. AI-gebruiksbeperkingen in de API-voorwaarden, 2024)."
+          license_status: "Gratis developer-programma met eigen client-ID/secret; commerciële toepassing toegestaan binnen de Strava API Agreement — die verbiedt o.a. het doorleveren van Strava-data aan derden en stelt beperkingen aan AI-training op Strava-data; per-app rate-limits (15-minuten- en dagvenster, standaard laag en op aanvraag te verhogen)."
+          limitations:
+            - "Rate-limit is per app, niet per gebruiker — één drukke gebruiker eet het budget van iedereen."
+            - "Webhook levert alleen een verwijzing (object-id), geen data; elke event kost dus alsnog een API-call."
+            - "Strava kan scopes/voorwaarden wijzigen; AI-gerelateerde voorwaarden vereisen periodieke hercheck vóór commerciële uitrol."
+          applicability: "Enige bron voor de Strava-koppeling: OAuth, gerichte activity-fetch per webhook-event, inhaal-listing bij gemiste periodes."
+        - name: "Strava API Agreement / Brand Guidelines"
+          coverage: "Juridisch kader: wat mag met Strava-data (weergave, opslag, AI), verplichte attributie en 'Connect with Strava'-knopvormgeving. Dekt NIET: technisch gedrag."
+          actuality: "Door Strava eenzijdig aanpasbaar; laatst bekende materiële aanscherping 2024; hercheck nodig vóór commerciële lancering."
+          license_status: "Bindend contract bij API-gebruik; niet-naleving = intrekking API-toegang."
+          limitations:
+            - "AI-analysebepalingen zijn breed geformuleerd; onduidelijk waar Sparki's AI-coaching precies onder valt."
+          applicability: "Bepaalt of Sparki's AI-analyses op Strava-data commercieel zijn toegestaan — dit is een blokkerende onzekerheid vóór betaalde uitrol, geen detail."
+      sources_in_use:
+        - "Strava API v3 + Webhook Events — volledige koppeling draait hierop."
+      privacy_status: unknown
+      missing_information:
+        - "Actuele juridische duiding of Sparki's AI-coaching op Strava-data binnen de 2024-voorwaarden valt (blokkerend vóór commerciële uitrol)."
+        - "Het exacte huidige rate-limit-quotum van onze app en het aanvraagpad voor verhoging zijn niet vastgelegd."
+        - "Gedrag bij Strava's 'deauthorize'-webhook (atleet trekt toegang in op Strava-zijde) is niet als tegenvoorbeeld getest."
+
+    replit_definition:
+      objective_quality_standard: "Per nieuwe Strava-activiteit: zichtbaar in Sparki ≤5 min na het webhook-event (bij werkende webhook), of uiterlijk bij de eerstvolgende app-opening +15 min afkoel bij inhaal; 0 stille bevriezingen langer dan 24 uur zonder eerlijke statusmelding op de koppelingenpagina; 0 identiteitsvelden gewist door partiële syncs."
+      recommended_default: "Webhook-eerst met leespad-inhaalslag als vangnet (bestaand); toestemming-verlopen en >24u-zonder-geslaagde-sync worden zichtbaar op de koppelingenpagina; actieve melding pas na René's kalibratiekeuze."
+      technical_limits:
+        - "Zonder geregistreerde webhook is 'binnen enkele minuten' onhaalbaar; dan geldt alleen de app-open-inhaal."
+        - "Strava levert geen data in het webhook-event zelf; elke rit kost minimaal één API-call binnen het gedeelde quotum."
+      assumptions:
+        - "De webhook-registratie wordt bij elke productie-omgeving als vaste operationele stap uitgevoerd en gecontroleerd (nu handmatig)."
+      unknowns:
+        - "Rate-limit-gedrag bij >50 actieve gekoppelde atleten (nooit gemeten)."
+        - "Hoe snel Strava events levert onder eigen storing/achterstand."
+      evidence_method:
+        - "Bestaande webhook-/busy-/inhaaltests her-runnen als proof-artefact."
+        - "Nieuw: deauthorize-webhook-tegenvoorbeeld en 24u-bevriezingsdetectie-test."
+        - "Praktijkmeting: tijd-tot-zichtbaar over René's echte ritten gedurende twee weken loggen."
+
+    rene_calibration:
+      questions:
+        - "Hoe lang mag een rit maximaal op zich laten wachten voordat jij het 'kapot' noemt: minuten, een uur, of 'zolang het er bij de volgende app-opening staat is het goed'?"
+        - "Wil je een actieve melding (push/badge) als de Strava-koppeling stuk is (toestemming verlopen, >24u geen sync), of is een duidelijke status op de koppelingenpagina genoeg?"
+        - "Als Strava's voorwaarden Sparki's AI-analyse op Strava-data zouden beperken: wil je dan (a) Strava-data alleen tonen en AI-analyse op eigen ritten/bestanden doen, of (b) de Strava-koppeling heroverwegen? (Dit bepaalt hoeveel we op Strava als fundament bouwen.)"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Een partiële (gerichte) sync mag nooit eerder opgeslagen identiteits- of koppelingsvelden wissen."
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Webhook-sync zonder externalUserId in de payload landt op een bestaande koppeling met gevuld extern id."
+              proof_stage: designed
+              proof_method: "Redenering: upsert gebruikt COALESCE(EXCLUDED.kolom, bestaande kolom) voor velden die een partiële sync mag weglaten; dit was een eerder daadwerkelijk opgetreden bug (webhooks werden onherleidbaar). Latere test: webhook-sync zonder id → veld ongewijzigd."
+              proof_result: not_yet_tested
+        - rule: "Een ingetrokken Strava-autorisatie mag nooit tot verdere data-ophaling leiden."
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Atleet ontkoppelt in Sparki; een uur later komt nog een webhook-event voor die atleet binnen."
+              proof_stage: designed
+              proof_method: "Redenering: webhook-resolutie matcht alleen koppelingen met status 'connected'; ontkoppeld ⇒ eerlijke skip. Latere test: disconnect → webhook → skipped-boeking, 0 API-calls naar Strava."
+              proof_result: not_yet_tested
+        - rule: "Sync-pogingen mogen het gedeelde rate-limit nooit ongeremd opeten bij een aanhoudende storing."
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Strava geeft 30 minuten lang 5xx; een atleet opent de app 10× in dat halfuur."
+              proof_stage: designed
+              proof_method: "Redenering: leespad-inhaal weigert binnen 15 min na de vorige poging (recent_geprobeerd), dus maximaal ~2 pogingen per halfuur per atleet. Latere test: gesimuleerde 5xx + herhaalde dashboard-reads → pogingenteller ≤2."
+              proof_result: not_yet_tested
+      tolerances:
+        - "Inhaal-afkoelperiode 15 min per atleet; inhaalvenster laatste-sync −48u overlap (dedupe absorbeert), anders 30 dagen terug."
+        - "Vers-grens: precies 24u oud telt nog als vers (inclusieve grens)."
+      unknown_data_policy: "Ontbrekende velden in een Strava-activiteit blijven null (nooit schatten); events voor onbekende externe gebruikers worden eerlijk als 'skipped' geboekt, nooit als fout richting Strava (dat zou eindeloos herleveren)."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "Webhook-gerichte-fetch, busy-gating en inhaal-cooldown-tests — bestaan, groen"
+      independent_checks: ["Deauthorize-tegenvoorbeeld en 24u-bevriezingsdetectie — nog te bouwen"]
+      practice_test_required: true
+      practice_testers: ["René (tijd-tot-zichtbaar over echte ritten, twee weken)"]
+      result: not_tested
+      expectation_gap:
+        - "Juridische AI-voorwaarden-onzekerheid is het grootste niet-technische risico van dit onderwerp."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Strava API Agreement-hercheck (AI-bepalingen) vóór commerciële uitrol; webhook-registratie als gecontroleerde operationele stap vastleggen; praktijkmeting tijd-tot-zichtbaar."
+      approved_for_execution: false
+
+  - id: DATA_GARMIN_WAHOO_001
+    module: "Data, koppelingen en synchronisatie"
+    subject: "Garmin- en Wahoo-koppelingen — volledig voorbereid, eerlijk wachtend op fabrikantsgoedkeuring"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Ontwerp-bewijs: OAuth-flows, token-opslag, webhook-verificatie (fail-closed) en route-push-endpoints zijn gebouwd en met tests gedekt voor zover dat zonder echte sleutels kan. GEEN enkel uitgevoerd bewijs tegen de echte Garmin-/Wahoo-API's: alle payload-contracten zijn uit publieke documentatie geïmplementeerd en nooit live gevalideerd."
+      practice_status: "Nul praktijkgebruik mogelijk: beide platforms geven pas API-toegang na goedkeuring in hun developer-programma; er zijn geen client-sleutels. De UI zegt eerlijk 'wacht op goedkeuring fabrikant' en toont nooit een neppe verbonden-status."
+      known_limitations:
+        - "configured:false zolang GARMIN_/WAHOO_-sleutels ontbreken; alles achter die poort is onbewezen tegen de live API."
+        - "Garmin's push-model draagt geen per-event-handtekening; verificatie leunt op een geheime token in de geregistreerde URL — dat is een ontwerpcompensatie, geen platformgarantie."
+        - "Wahoo route-push (multipart GPX) en Garmin course-push (Training API JSON) zijn tegen documentatie gebouwd; ervaring leert dat live-contracten afwijken van docs."
+        - "De aanvraagprocedures zelf (doorlooptijd, afwijzingsgronden, commerciële voorwaarden) zijn niet doorlopen."
+    proposed_promise:
+      text: "Zodra Garmin en Wahoo Sparki hebben goedgekeurd, koppel je je horloge of fietscomputer net zo makkelijk als Strava: ritten komen vanzelf binnen en routes kun je vanuit Sparki naar je apparaat sturen. Tot die tijd zegt Sparki eerlijk 'nog niet beschikbaar — wacht op goedkeuring van de fabrikant' en doet het nooit alsof."
+      proposed_by: replit
+      rationale: "Directe apparaatkoppeling zonder Strava-tussenstap is de marktlat (elke serieuze trainingsapp heeft Garmin-sync); maar een belofte hier kan pas gekalibreerd worden ná sleutels. Dit onderwerp bestaat vooral om het eerlijke wacht-gedrag en de activeringsvolgorde vast te leggen."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Garmin Connect Developer Program (Health API / Activity API / Training API)"
+          coverage: "Activiteiten en gezondheidsdata via push (webhook-first, geen vrij pull-model); Training API voor courses naar het apparaat. Dekt NIET: toegang zonder goedgekeurd partnerschap; geen sandbox met echte data vóór goedkeuring."
+          actuality: "Levende partner-API; versies wijzigen op Garmin-ritme; onze implementatie is gebaseerd op publieke documentatie-stand van eerdere bouwronde (2026) en moet bij sleutels herijkt."
+          license_status: "Gratis aanvraag maar goedkeuring vereist; commerciële voorwaarden pas definitief zichtbaar in het partnercontract; datagebruik gebonden aan Garmin's eisen (o.a. verwijderplicht bij ontkoppelen)."
+          limitations:
+            - "Push-only model: gemiste webhooks zijn niet vrij na te vragen zoals bij Strava."
+            - "Geen per-event-handtekening in het push-model (eigen URL-token-compensatie nodig)."
+          applicability: "Enige route naar native Garmin-data (ritten binnenhalen) en course-push (routes naar het apparaat) — precies de twee beloofde functies."
+        - name: "Wahoo Cloud API"
+          coverage: "Workouts/ritten en route-upload (multipart GPX naar /v1/routes) voor Wahoo-fietscomputers. Dekt NIET: gezondheidsdata; toegang vereist eveneens developer-goedkeuring."
+          actuality: "Levende API v1; implementatie uit publieke docs (2026), live nooit gevalideerd."
+          license_status: "Developer-programma met goedkeuring; commerciële voorwaarden pas bij toelating definitief; webhook-verificatie via webhook_token in de body."
+          limitations:
+            - "Kleinere ecosysteem-dekking dan Garmin; documentatie dunner, groter risico op contract-afwijkingen."
+          applicability: "Zelfde twee functies als Garmin, voor Wahoo-gebruikers (o.a. ELEMNT-computers)."
+      sources_in_use: []
+      privacy_status: unknown
+      missing_information:
+        - "Doorlooptijd en slaagkans van beide developer-aanvragen; wie de aanvraag indient (bedrijfsentiteit vereist?)."
+        - "Definitieve commerciële datavoorwaarden van beide platforms (pas zichtbaar na toelating)."
+        - "Live payload-contracten (nooit tegen echte API gevalideerd)."
+
+    replit_definition:
+      objective_quality_standard: "Vóór sleutels: 100% eerlijke niet-beschikbaar-status, 0 neppe verbonden-states, 0 webhook-verwerkingen zonder geldige verificatie. Ná sleutels: zelfde lat als Strava (zichtbaar ≤5 min na push; route-push met bevestiging of eerlijke fout)."
+      recommended_default: "Aanvragen bij beide programma's starten zodra René dat wil; bij toekenning eerst een besloten validatieronde (payload-contracten live herijken) vóór de koppeling voor testers opengaat. Nooit activeren op alleen 'sleutels bestaan'."
+      technical_limits:
+        - "Zonder sleutels is elke test tegen de echte API onmogelijk; het maximaal haalbare bewijs nu is fail-closed-gedrag en contract-per-documentatie."
+        - "Garmin's push-only-model betekent dat een webhook-uitval van onze kant data definitief kan missen; een inhaalpad zoals bij Strava bestaat daar niet vanzelfsprekend."
+      assumptions:
+        - "De publieke documentatie wijkt hooguit in details af van het live contract (herijking gepland, geen herbouw)."
+      unknowns:
+        - "Alles wat pas met echte sleutels meetbaar is: latency, betrouwbaarheid, velddekking, rate-limits."
+      evidence_method:
+        - "Nu: fail-closed-tests (ontbrekende sleutels ⇒ configured:false; ongeverifieerde webhook ⇒ 403, niets geboekt)."
+        - "Na toekenning: live contractvalidatie per endpoint + één echte rit van apparaat tot Sparki-sessie als eerste proof."
+
+    rene_calibration:
+      questions:
+        - "Wil je dat de Garmin-/Wahoo-developer-aanvragen nu gestart worden (kost doorlooptijd bij de fabrikant, mogelijk bedrijfsgegevens nodig), of wacht dit tot na de commerciële lancering met Strava-only?"
+        - "Als één van de twee eerder wordt goedgekeurd: direct alleen die ene activeren, of wachten tot beide er zijn zodat de belofte symmetrisch is?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Zonder geldige fabrikantsleutels mag nooit een verbonden of verbindbare status worden getoond."
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Sleutel-secrets ontbreken; atleet opent de koppelingenpagina en probeert te verbinden."
+              proof_stage: designed
+              proof_method: "Redenering: readiness leunt op effectieve configuratie (configured:false zonder secrets), UI toont 'wacht op goedkeuring fabrikant'. Latere test: zonder secrets → authorize-endpoint weigert eerlijk, geen OAuth-redirect."
+              proof_result: not_yet_tested
+        - rule: "Een webhook zonder geldige verificatie mag nooit tot verwerking of registratie leiden."
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "POST op het Garmin-webhook-endpoint zonder of met fout URL-token; idem Wahoo zonder geldig webhook_token in de body."
+              proof_stage: designed
+              proof_method: "Redenering: verificatie is fail-closed per provider — ontbrekende env of mismatch ⇒ 403 en er wordt níets vastgelegd (idempotentie stopt geen spam met verse event-ids, dus de poort moet vóór registratie zitten). Latere test: ongeldige token → 403 + 0 rijen in webhook_events."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Alles wat zonder sleutels niet meetbaar is heet expliciet 'onbewezen tegen de live API'; documentatie-gebaseerde implementatie wordt nooit als geverifieerd gepresenteerd."
+      approved: false
+
+    validation:
+      automated_tests: ["Fail-closed webhook-verificatietests — bestaan"]
+      independent_checks: ["Live contractvalidatie — pas mogelijk na fabrikantsgoedkeuring"]
+      practice_test_required: true
+      practice_testers: ["René/Dylan met echt Garmin-/Wahoo-apparaat (na toekenning sleutels)"]
+      result: not_tested
+      expectation_gap:
+        - "Volledig onderwerp is per definitie onbewezen tot fabrikantsgoedkeuring; het enige nu toetsbare is het eerlijke wacht-gedrag."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "René's aanvraag-keuze; bij 'ja' beide developer-aanvragen starten en de live-validatieronde inplannen."
+      approved_for_execution: false
+
+  - id: DATA_BESTANDIMPORT_001
+    module: "Data, koppelingen en synchronisatie"
+    subject: "Bestandimport (GPX/FIT/TCX/CSV) als volwaardige bron in de Data Hub"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Deels: geautomatiseerde tests dekken FIT/TCX/GPX-parsing incl. hoogte- en sensordata (test:ingest-elevation-fit-tcx e.a., groen), idempotente herimport (inhouds-hash als extern id) en de statussemantiek (gekoppeld/geparsed/geüpload). CSV heeft GEEN parser: een CSV-upload wordt eerlijk als 'geüpload' bewaard zonder metrics (open taak 'Parse TCX and CSV activity files for real metrics' dekt de CSV-kant)."
+      practice_status: "GPX-import wordt in de praktijk gebruikt (o.a. routes en oude ritten van René); FIT/TCX vooral synthetisch getest, weinig praktijkvolume."
+      known_limitations:
+        - "CSV wordt niet geparsed — bewaard maar zonder rit-metrics; de UI moet dat eerlijk blijven zeggen."
+        - "Een GPX zonder echte starttijd is een ROUTE, geen activiteit: er wordt nooit een datum verzonnen; status blijft 'geparsed' zonder sessie."
+        - "Extern id is een hash van de inhoud (bestandsnaam bewust uitgesloten): hernoemd identiek bestand = dezelfde activiteit; maar een door een tool minimaal herschreven export (andere bytes, zelfde rit) telt als nieuwe upload en leunt dan op de gewone hub-dedupe."
+        - "Velden die het bestand niet bevat blijven null; FIT-bestanden van exotische apparaten kunnen velden anders coderen dan de spec-hoofdlijn."
+        - "Ontkoppelen van een import herstelt de eerlijke pre-koppelstatus; bij een nieuwe parser moet de parseerbaar-lijst mee, anders degradeert ontkoppelen stil naar 'geüpload'."
+    proposed_promise:
+      text: "Sleep een ritbestand (GPX, FIT of TCX) in Sparki en het wordt een gewone rit in je administratie — met alle meetwaarden die er echt in staan, niets erbij verzonnen. Hetzelfde bestand twee keer uploaden geeft nooit een dubbele rit. Een routebestand zonder datum wordt eerlijk als route behandeld, nooit als verzonnen training. Wat Sparki (nog) niet kan lezen, zegt het eerlijk."
+      proposed_by: replit
+      rationale: "Bestandimport is de bron-neutraliteitsgarantie: elk platform dat nooit een API geeft (TrainingPeaks) blijft bereikbaar via export→import. Marktlat: Strava's eigen bestandsupload (accepteert FIT/TCX/GPX vlekkeloos incl. sensordata)."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Garmin FIT SDK / FIT-bestandspecificatie"
+          coverage: "Binair activiteitenformaat van vrijwel alle fietscomputers/horloges; definieert records voor vermogen, HR, cadans, GPS, ronden. Dekt NIET: fabrikant-specifieke developer-fields buiten de standaardprofielen."
+          actuality: "Actief onderhouden door Garmin, meerdere releases per jaar; ons parsing-doel is het stabiele activiteitenprofiel."
+          license_status: "SDK gratis onder Garmin's FIT-licentie (vrij te gebruiken voor het lezen/schrijven van FIT); geen beperkingen op commercieel parsen bekend."
+          limitations:
+            - "Developer-fields en fabrikant-extensies vallen buiten de standaard en kunnen data bevatten die wij niet lezen."
+          applicability: "Contract voor de FIT-parser: welke velden bestaan, eenheden, en wat eerlijk 'ontbreekt' is."
+        - name: "GPX 1.1-schema + Garmin TrackPointExtension"
+          coverage: "GPS-tracks met tijd/hoogte; sensordata (HR/cadans/vermogen) alleen via extensies (gpxtpx, power-element). Dekt NIET: ronden/structuur; veel exports laten sensordata weg."
+          actuality: "GPX 1.1 uit 2004, stabiel; TrackPointExtension v2 stabiel."
+          license_status: "Open schema, vrij bruikbaar, geen beperkingen."
+          limitations:
+            - "Geen verplichte starttijd: een GPX kan een pure route zijn — vandaar de route≠activiteit-regel."
+            - "Extensie-prefixen variëren per exporteur; parser moet prefix-agnostisch lezen."
+          applicability: "Contract voor GPX-parsing én voor onze eigen mobiele rit-GPX (zelfde extensieconventie, zodat telefoonritten identiek geparsed worden)."
+        - name: "Garmin TCX-schema (Training Center XML v2)"
+          coverage: "Activiteiten met ronden, HR, cadans, vermogen (extensie); ouder maar nog gangbaar exportformaat. Dekt NIET: moderne velden als links/rechts-balans."
+          actuality: "Stabiel/bevroren schema; wijzigt niet meer."
+          license_status: "Open schema van Garmin, vrij bruikbaar."
+          limitations:
+            - "Vermogen zit in een extensie die niet elke exporteur meegeeft."
+          applicability: "Contract voor de TCX-parser."
+        - name: "CSV-exports van platforms (o.a. TrainingPeaks/Strava bulk-export)"
+          coverage: "Samenvattingsregels per activiteit (geen tracks); kolomindeling verschilt PER PLATFORM en per exportversie — er bestaat geen standaard."
+          actuality: "Geen versiebeheer; platforms wijzigen kolommen onaangekondigd."
+          license_status: "Eigen data van de atleet; geen licentieprobleem, wel geen formeel contract om tegen te bouwen."
+          limitations:
+            - "Zonder vaste kolomstandaard is elke CSV-parser per platform maatwerk met breekrisico."
+          applicability: "KANDIDAAT voor de openstaande CSV-taak: alleen bouwen per concreet platformformaat met voorbeelden, nooit een 'algemene' CSV-gok."
+      sources_in_use:
+        - "FIT SDK-spec, GPX 1.1+gpxtpx, TCX v2 — de drie gebouwde parsers volgen deze contracten."
+      privacy_status: unknown
+      missing_information:
+        - "Dekking van fabrikant-afwijkingen in FIT-bestanden (welke apparaten produceren niet-standaard velden) — geen inventarisatie."
+        - "Welke CSV-platformformaten René's doelgroep echt gebruikt (bepaalt of de CSV-taak maatwerk voor 1 of 5 formaten is)."
+
+    replit_definition:
+      objective_quality_standard: "Per geïmporteerd bestand: alle in het bestand aanwezige standaardvelden landen correct (steekproef tegen het bronbestand); 0 verzonnen waarden voor afwezige velden; byte-identieke herimport ⇒ 0 nieuwe sessies; GPX zonder starttijd ⇒ 0 sessies; parsefout ⇒ import blijft bewaard met eerlijke foutnotitie (parse gaat nooit verloren door een hub-fout)."
+      recommended_default: "Bestand als volwaardige hub-bron onder provider 'file' (bestaand); consent lokaal verleend (het bestand ÍS de data van de atleet); CSV pas beloven na platform-specifieke parsers uit de open taak."
+      technical_limits:
+        - "Samenvattings-CSV zonder track kan nooit dezelfde analysediepte geven als FIT/GPX (geen vermogenscurve, geen hoogteprofiel)."
+        - "Inhouds-hash-idempotentie beschermt alleen tegen identieke bytes; her-geëxporteerde varianten leunen op de gewone dedupe met haar toleranties."
+      assumptions:
+        - "De drie standaardformaten dekken vrijwel alle export-behoeften van wielrenners; CSV is een nakomer voor samenvattingsdata."
+      unknowns:
+        - "Praktijkfoutpercentage van FIT-parsing over een brede apparatenmix (nooit breed gemeten)."
+      evidence_method:
+        - "Bestaande parser-/ingest-tests her-runnen als proof-artefact."
+        - "Nieuw: veldgetrouwheids-steekproef (bestand → sessie, veld-voor-veld-vergelijking) over een set echte bestanden van verschillende apparaten."
+        - "Praktijktest: René importeert een oude export (bv. TrainingPeaks/Garmin bulk) en controleert een handvol ritten inhoudelijk."
+
+    rene_calibration:
+      questions:
+        - "Hoe belangrijk is CSV-import voor jou (bv. oude TrainingPeaks-exports)? Dat bepaalt of de openstaande CSV-taak prioriteit krijgt en voor wélke platformformaten we bouwen."
+        - "Als een bestand deels leesbaar is (bv. track prima, vermogensdata corrupt): wil je (a) importeren wat kan met een zichtbare kanttekening, of (b) de hele import weigeren zodat je het merkt?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Er wordt nooit een activiteit met een verzonnen datum of verzonnen meetwaarde aangemaakt."
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "GPX-routebestand zonder tijdstempels wordt geüpload."
+              proof_stage: designed
+              proof_method: "Redenering: de canonieke mapping retourneert null zonder echte starttijd ⇒ geen sessie, status 'geparsed' (route). Latere test: timeless GPX → 0 training_sessions-rijen."
+              proof_result: not_yet_tested
+            - case: "TCX zonder vermogensextensie; downstream zou TSS op geschat vermogen willen rekenen."
+              proof_stage: designed
+              proof_method: "Redenering: afwezige velden blijven null; TSS-afleiding vereist echt vermogen + FTP en slaat anders eerlijk over. Latere test: sessie uit zo'n bestand heeft avgPower=null en geen afgeleide belastingsscore uit vermogen."
+              proof_result: not_yet_tested
+        - rule: "Hetzelfde bestand twee keer uploaden mag nooit een tweede sessie opleveren."
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Byte-identiek FIT-bestand, tweede keer onder een andere bestandsnaam geüpload."
+              proof_stage: designed
+              proof_method: "Redenering: extern id = hash van uitsluitend de inhoud (naam bewust uitgesloten) ⇒ zelfde provenance-rij, geen tweede sessie. Latere test: dubbele upload → 1 sessie, idempotente boeking."
+              proof_result: not_yet_tested
+        - rule: "Onleesbare of niet-ondersteunde bestanden mogen nooit stil verdwijnen of vals als gelukt tonen."
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "CSV-upload (geen parser) en een corrupt FIT-bestand."
+              proof_stage: designed
+              proof_method: "Redenering: CSV ⇒ eerlijke status 'geüpload' zonder metrics-claim; parse-/hub-fout ⇒ import bewaard met foutnotitie (route wikkelt ingest in try/catch zodat de parse nooit verloren gaat). Latere test: beide gevallen → import zichtbaar met eerlijke status, geen sessie-claim."
+              proof_result: not_yet_tested
+      tolerances:
+        - "Herimport-idempotentie geldt op byte-niveau; her-geëxporteerde varianten vallen onder de hub-dedupe-toleranties (5-min-vak, ~20%)."
+      unknown_data_policy: "Elk veld dat het bestand niet levert blijft null en heet overal 'ontbreekt'; een niet-ondersteund formaat heet 'nog niet leesbaar', nooit stilzwijgend genegeerd."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "test:ingest-elevation-fit-tcx + ingest-/parser-tests — bestaan, groen"
+      independent_checks: ["Veldgetrouwheids-steekproef over echte apparaatbestanden — nog te doen"]
+      practice_test_required: true
+      practice_testers: ["René (oude export importeren en inhoudelijk nalopen)"]
+      result: not_tested
+      expectation_gap:
+        - "CSV-verwachting van gebruikers ('upload werkt toch?') botst met de eerlijke geüpload-zonder-metrics-status zolang de CSV-taak open staat."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "René's CSV-prioriteitsvraag beantwoorden; veldgetrouwheids-steekproef ontwerpen en draaien."
+      approved_for_execution: false
+
+  - id: DATA_BLE_SENSOREN_001
+    module: "Data, koppelingen en synchronisatie"
+    subject: "Bluetooth-sensoren in de mobiele app — live watts/hartslag/cadans en doorstroom naar de administratie"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Deels: geautomatiseerde tests dekken de garage-/sensorregistratie (test:garage-sensors, groen) en de GPX-verwerking van sensordata aan de serverkant (parser leest vermogens-/HR-/cadans-extensies prefix-agnostisch, voedt TSS-afleiding). De BLE-verbinding zelf (echte sensoren, echte ritten) is alleen handmatig beperkt beproefd; er bestaat geen systematische praktijkproef over meerdere sensormerken."
+      practice_status: "Werkt alleen in de volledige (development-)build van de mobiele app; in Expo Go zegt de app eerlijk dat Bluetooth daar niet kan. Praktijkvolume is klein."
+      known_limitations:
+        - "Sensorwaarden worden 1×/seconde bemonsterd en bij het opslaan aan GPS-punten gekoppeld (≤5 s-venster); als het scherm vergrendeld is pauzeren JS-timers en is dat stuk rit eerlijk GPS-only — er wordt nooit geïnterpoleerd, en de UI zegt dat tijdens de rit."
+        - "Snelheid komt ALTIJD uit GPS, nooit uit wielomwentelingen (bewuste keuze: geen wielomtrek-configuratiefouten)."
+        - "Horloge en elektronische derailleur zijn registratie-alleen (niet koppelbaar); waarden zijn null tot een echte notificatie en worden gewist bij verbreken — nooit een bevroren laatste waarde."
+        - "Scan pakt na ~4 s voorkeur voor de geregistreerde sensornaam en neemt daarna eerlijk het eerste apparaat met de juiste dienst; bij twee vermogensmeters in de buurt kan dat de verkeerde zijn."
+        - "Het bronnenregister eist bewijs voor 'sensor actief' (echte kanaaldata in recente ritten); een gekoppeld-maar-stil kanaal telt niet als actieve sensor."
+    proposed_promise:
+      text: "Koppel je vermogensmeter, hartslagband of cadanssensor via Bluetooth en je ziet je waarden live tijdens de rit. Wat je sensoren echt maten, komt in je opgeslagen rit en telt mee in je belastingsanalyse. Meet een sensor even niets (verbinding weg, scherm lang vergrendeld), dan is dat stuk eerlijk leeg — Sparki verzint nooit meetwaarden."
+      proposed_by: replit
+      rationale: "Live sensordata maakt de telefoonrit een volwaardig alternatief voor een fietscomputer — de brug naar atleten zonder Garmin. Marktlat: Wahoo/Strava-app-niveau sensorkoppeling (betrouwbaar verbinden, eerlijke gaten)."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Bluetooth SIG GATT-specificaties: Cycling Power Service (0x1818), Heart Rate Service (0x180D), Cycling Speed and Cadence (0x1816)"
+          coverage: "Standaard-datacontracten voor vrijwel alle fietssensoren (vermogen incl. crank-data voor cadans, hartslag, cadans). Dekt NIET: fabrikant-eigen extensies (links/rechts-balans buiten de standaard, Shimano/SRAM-derailleurprotocollen) en ANT+-only sensoren."
+          actuality: "Bevroren, stabiele SIG-specificaties (CPS 1.1, HRS 1.0, CSC 1.0); wijzigen praktisch nooit."
+          license_status: "Open specificaties, vrij te implementeren; geen licentiekosten voor het lezen van standaarddiensten."
+          limitations:
+            - "Crank-omwentelingsdata wrapt op 65536 en gebruikt 1/1024-seconde-eenheden — implementatiefouten hier geven plausibel-ogende maar foute cadans."
+            - "Uitrollen (coasting) moet zelf gedetecteerd (geen nieuwe crank-events ⇒ cadans 0 na ~2,5 s), de spec regelt dat niet."
+          applicability: "Het volledige parseercontract voor de drie ondersteunde sensortypen — de implementatie volgt deze specs letterlijk."
+        - name: "Eigen GPX-conventie (power-element + Garmin TrackPointExtension) + server-parser"
+          coverage: "De doorstroom van live sensorwaarden naar opgeslagen rit en backend-sessie. Dekt NIET: sensordata buiten opgeslagen ritten (losse live-sessies zonder opname blijven vluchtig)."
+          actuality: "Eigen conventie, in lockstep tussen mobiele builder en server-parser (gespiegelde test)."
+          license_status: "Eigen code; gpxtpx-extensie is open Garmin-schema."
+          limitations:
+            - "Mobiele GPX-builder en server-testspiegel moeten synchroon wijzigen; drift breekt de doorstroom stil."
+          applicability: "Garandeert dat telefoonritten met sensoren dezelfde analysediepte krijgen als fietscomputerbestanden (TSS uit echt vermogen)."
+      sources_in_use:
+        - "Bluetooth SIG GATT-specs — parseercontract; eigen GPX-conventie — doorstroom naar de administratie."
+      privacy_status: unknown
+      missing_information:
+        - "Compatibiliteitsmatrix over echte sensormerken (Favero/Garmin/Wahoo/4iiii/Polar…) — nooit systematisch getest."
+        - "ANT+-only sensoren: bewust buiten scope, maar niet vastgelegd hoe vaak dat in de doelgroep voorkomt."
+        - "Batterijverbruik van continue BLE + GPS op lange ritten — niet gemeten."
+
+    replit_definition:
+      objective_quality_standard: "Per rit met sensoren: elk opgeslagen sensormonster is een echte notificatiewaarde (0 geïnterpoleerde/bevroren waarden); koppelfase ≤15 s of eerlijke time-out; cadans uit crank-data klopt tegen referentie (±2 rpm); schermvergrendeld stuk = eerlijk leeg sensorspoor, GPS-track loopt door."
+      recommended_default: "Bestaande honesty-regels handhaven (null tot echte notificatie, wissen bij verbreken, GPS als enige snelheidsbron); compatibiliteitsmatrix opbouwen via testerpraktijk in plaats van aanschaf van alle merken."
+      technical_limits:
+        - "JS-timers pauzeren bij vergrendeld scherm — structurele platformgrens; volledig doorlopende sensoropname vergt native achtergrondwerk dat er nu niet is."
+        - "Expo Go kan de native BLE-module nooit laden; testers zonder development-build kunnen deze functie niet gebruiken (eerlijke melding bestaat)."
+      assumptions:
+        - "De drie SIG-standaarddiensten dekken de sensoren van de doelgroep; ANT+-only is een randgeval."
+      unknowns:
+        - "Verbindingsstabiliteit over lange ritten en bij meerdere gelijktijdige sensoren (nooit systematisch gemeten)."
+      evidence_method:
+        - "Bestaande garage-/GPX-tests her-runnen als proof-artefact."
+        - "Praktijkproef: rit van ≥2 uur met vermogensmeter + HR-band naast een fietscomputer; sporen veld-voor-veld vergelijken (dit is de enige echte lat)."
+        - "Tegenvoorbeeld-tests op de honesty-regels (zie acceptance_contract)."
+
+    rene_calibration:
+      questions:
+        - "Het schermvergrendeld-gat (sensordata pauzeert, GPS loopt door): is de huidige eerlijke melding tijdens de rit genoeg, of is doorlopende sensoropname bij vergrendeld scherm een vereiste vóór dit 'gereed' mag heten? (Dat laatste is substantieel bouwwerk.)"
+        - "Welke sensormerken hebben jij en Dylan nu echt in gebruik? Dan richten we de compatibiliteitsproef daarop in plaats van op een theoretische matrix."
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Er wordt nooit een sensorwaarde getoond of opgeslagen die niet uit een echte sensornotificatie komt."
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Sensor valt 30 s weg midden in een interval; opslaan zou het gat kunnen opvullen met de laatste waarde of interpolatie."
+              proof_stage: designed
+              proof_method: "Redenering: monsters worden alleen bij echte notificaties geschreven, matching aan GPS-punten binnen ≤5 s — daarbuiten blijft het punt leeg; waarden worden gewist bij verbreken. Latere test: opnamesimulatie met gat → GPX-punten in het gat zonder power/hr-extensie."
+              proof_result: not_yet_tested
+        - rule: "Snelheid wordt nooit afgeleid uit wielomwentelingen."
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "CSC-sensor met wieldata gekoppeld; verkeerde wielomtrek zou 8% te hoge snelheid geven."
+              proof_stage: designed
+              proof_method: "Redenering: de CSC-parser leest uitsluitend crank-data (cadans); er bestaat geen wielomtrek-configuratie in de app. Latere test: CSC-notificatie met wieldata → geen snelheidsoutput uit het sensorpad."
+              proof_result: not_yet_tested
+        - rule: "In een omgeving zonder Bluetooth-ondersteuning (Expo Go, web) mag de functie nooit als werkend worden aangeboden."
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Tester opent de opnamepagina in Expo Go en zet de Bluetooth-schakelaar aan."
+              proof_stage: designed
+              proof_method: "Redenering: de native module wordt guarded geladen; ontbreekt hij, dan meldt bleSupport available:false met de eerlijke Nederlandse reden — geen crash, geen nep-scan. Latere test: stub zonder module → eerlijke melding, geen scan-start."
+              proof_result: not_yet_tested
+      tolerances:
+        - "Sensormonster-koppeling aan GPS-punt binnen ≤5 s; coasting-detectie cadans 0 na ~2,5 s zonder crank-event; scan-time-out 15 s."
+      unknown_data_policy: "Geen notificatie = geen waarde (leeg spoor), nooit bevroren of geïnterpoleerd; 'sensor actief' wordt pas geclaimd bij echte kanaaldata in recente ritten (bronnenregister-regel)."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "test:garage-sensors + GPX-sensordata-parsertests — bestaan, groen"
+      independent_checks: ["Veld-voor-veld-vergelijking telefoonrit vs fietscomputer — nog te doen"]
+      practice_test_required: true
+      practice_testers: ["Dylan (rit met vermogensmeter + HR-band naast fietscomputer)", "René"]
+      result: not_tested
+      expectation_gap:
+        - "Grootste gat: geen enkele systematische praktijkvergelijking met een fietscomputer als referentie; compatibiliteit over merken onbekend."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "René's schermvergrendeld-keuze; daarna de referentie-praktijkproef (telefoon naast fietscomputer) als eerste echt bewijs."
+      approved_for_execution: false
