@@ -331,7 +331,12 @@ export async function generateVariedLoop(
   let lastErr: unknown = null;
 
   const _loopT0 = performance.now();
-  for (let i = 0; i < n; i++) {
+  // Haal en beoordeel één echte kandidaat (index i bepaalt de seed). Retourneert
+  // de kandidaat of null bij een providerfout. Gedeeld door de basisronde én de
+  // racefiets-verlengingsronde hieronder.
+  const addCandidate = async (
+    i: number,
+  ): Promise<{ result: RouteResult; score: number } | null> => {
     // Distinct, deterministic-when-seeded variants: a large prime step keeps the
     // ORS round-trip seeds well separated so candidates differ meaningfully.
     const seed =
@@ -345,7 +350,7 @@ export async function generateVariedLoop(
     } catch (err) {
       lastErr = err;
       console.log(`[PERF] loop.candidate[${i}] FAILED ms=${Math.round(performance.now()-_candT0)}`);
-      continue;
+      return null;
     }
     console.log(`[PERF] loop.candidate[${i}] ok distKm=${result.distanceKm?.toFixed(1)} ms=${Math.round(performance.now()-_candT0)}`);
     const overlap = pathOverlapFraction(result.path);
@@ -404,7 +409,26 @@ export async function generateVariedLoop(
       // dan andere kwaliteitswensen: onbekend wegdek is een risico, geen
       // vrijbrief (acceptatiegrens PO-01 §3).
       ascentMiss * 1.0 + surfacePenalty + unknownMiss * 2.0;
-    pool.push({ result, score });
+    const cand = { result, score };
+    pool.push(cand);
+    return cand;
+  };
+
+  // Is deze kandidaat volgens de routebron zelf volledig verhard (of zonder
+  // meting)? Grens René: 0% aantoonbaar onverhard op de racefiets.
+  const fullyPavedOrUnmeasured = (result: RouteResult): boolean =>
+    result.pavedFraction == null || result.pavedFraction >= 0.999;
+
+  for (let i = 0; i < n; i++) {
+    const cand = await addCandidate(i);
+    if (!cand) continue;
+    const { result } = cand;
+    const overlap = pathOverlapFraction(result.path);
+    const drift =
+      target > 0 && result.distanceKm != null
+        ? Math.abs(result.distanceKm - target) / target
+        : 0;
+    const elevation = elevationPenalty(result, preference);
     // Good enough — a clean loop, close to the requested length, that already
     // matches the elevation wish. Only then do we stop spending ORS calls.
     // With a scenery wish we keep collecting: the environment comparison needs
@@ -428,6 +452,23 @@ export async function generateVariedLoop(
             result.surfaceKnownFraction >= 0.9)))
     )
       break;
+  }
+
+  // Racefiets-verlenging (acceptatiegrens René, PO-01 30-07-2026, taak #436):
+  // als na de basisronde ÉLKE kandidaat volgens de routebron zelf aantoonbaar
+  // onverharde meters bevat, is de beste-van-slechte nog steeds een afkeur.
+  // Blijf dan extra ECHTE kandidaten vragen (tot het bestaande plafond van 10)
+  // tot er één volledig verhard is. Kost alleen extra provider-calls wanneer
+  // het netwerk het echt moeilijk maakt; nooit geometrie verzinnen.
+  if (req.profile === "cycling-road" && pool.length > 0) {
+    let extra = n;
+    while (
+      extra < 10 &&
+      !pool.some((c) => fullyPavedOrUnmeasured(c.result))
+    ) {
+      await addCandidate(extra);
+      extra++;
+    }
   }
 
   if (pool.length === 0) {

@@ -17,3 +17,9 @@ description: Waarom/hoe GH de route-motor is (racingbike/mtb, surface-details), 
 - Opmerkingenlaag-valstrik: `highway=footway`/`pedestrian` zonder bicycle=yes matchte als "onverhard op je route" (voetpad naast rijbaan) — way-voor-way geverifieerd vals; nu uitgesloten in classify.
 - GH-hoogte (SRTM) overschat hm in glooiend NL (~400 hm op 48 km Twente) — profiel-bron is consistent sinds #423, maar absolute waarde blijft overschat (open).
 - Procesles: "PRODUCT PROVEN" nooit vóór de praktijktest van de rijder; harnas = alleen "technisch gereed". Harnas bevat nu Hengelo als eerste stad.
+
+## Acceptatiegrenzen-proof (30-07-2026, taak #436 — score 7,5, NIET gereed)
+- Grenzen René (PO-01, bindend): racefiets 0% aantoonbaar onverhard, verbod = afkeur, onbekend actief mijden + eerlijk tonen. Harnas toetst nu exact deze grenzen, 6 startpunten × racefiets/gravel, met SUIT_PROFILE/SUIT_STARTS-deelruns (shellcalls hebben 5-min-limiet; workflowlimiet zit vol).
+- `generateVariedLoop` heeft een racefiets-verlengingsronde: zolang géén kandidaat volledig verhard is, extra echte kandidaten tot plafond 10. Hielp Utrecht/Baambrugge naar 0; Dalfsen/Maastricht blijven falen — daar bestaat binnen 10 seeds geen schone lus.
+- Kernoorzaken (art. 5): (1) geen harde afkeurpoort ná generatie (best-of-slechte wordt getoond, alleen eerlijk gelabeld) — bouwen is een open productkeuze (kost latency/"geen route"); (2) GH-graaf ↔ actuele OSM spreken elkaar aantoonbaar tegen (GH 99,9% verhard waar Overpass sand/compacted op de lijn meet; scherm mat 60,7% onbekend waar GH 14% zei).
+- Gebruikersbril-check MOET via het echte app-pad (`POST /api/routes/generate`, veld heet `targetDistanceKm`, niet `distanceKm` — fout veld = stille default 40 km) + het echte routescherm; het harnas alleen is niet representatief.

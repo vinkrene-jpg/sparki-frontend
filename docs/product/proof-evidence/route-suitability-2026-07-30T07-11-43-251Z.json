@@ -1,0 +1,139 @@
+{
+  "ranAt": "2026-07-30T07:11:43.251Z",
+  "acceptatiegrenzen": "PO-01 30-07-2026 (0% onverhard racefiets, verbod = afkeur, onbekend eerlijk)",
+  "verdict": "FAIL",
+  "measuredPerProfile": {
+    "racefiets": 6
+  },
+  "failures": [
+    "Utrecht — stad × racefiets: routebron meet 0.2% onverhard van het gemeten wegdek (grens: 0%)",
+    "Dalfsen — platteland (Salland) × racefiets: routebron meet 0.1% onverhard van het gemeten wegdek (grens: 0%)",
+    "Dalfsen — platteland (Salland) × racefiets: 5 onafhankelijk gemeten onverhard/ruw wegvak(ken) — grens is nul",
+    "Maastricht — heuvels × racefiets: routebron meet 2.2% onverhard van het gemeten wegdek (grens: 0%)",
+    "Maastricht — heuvels × racefiets: 2 onafhankelijk gemeten onverhard/ruw wegvak(ken) — grens is nul"
+  ],
+  "routes": [
+    {
+      "start": "Hengelo (Ov) — Twente",
+      "terrain": "twente",
+      "bike": "racefiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 48.12,
+      "ascentM": 400,
+      "pavedFraction": 1,
+      "surfaceUnknownShare": 0.13777205666494374,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Utrecht — stad",
+      "terrain": "stad",
+      "bike": "racefiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 49.46,
+      "ascentM": 102,
+      "pavedFraction": 0.9982599963435367,
+      "surfaceUnknownShare": 0.16605028885839823,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Eindhoven — stad",
+      "terrain": "stad",
+      "bike": "racefiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 51.86,
+      "ascentM": 75,
+      "pavedFraction": 1,
+      "surfaceUnknownShare": 0.24277163457238016,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Baambrugge — platteland (polder)",
+      "terrain": "platteland",
+      "bike": "racefiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 47.51,
+      "ascentM": 104,
+      "pavedFraction": 0.9997716540576231,
+      "surfaceUnknownShare": 0.31571662135099043,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Dalfsen — platteland (Salland)",
+      "terrain": "platteland",
+      "bike": "racefiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 51.61,
+      "ascentM": 342,
+      "pavedFraction": 0.9989486553706881,
+      "surfaceUnknownShare": 0.1697803006033899,
+      "certainForbidden": [],
+      "unpaved": [
+        {
+          "id": "way/253095362",
+          "km": 3.3,
+          "evidence": "surface=compacted",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/232417183",
+          "km": 5.7,
+          "evidence": "surface=compacted",
+          "offRouteM": 5
+        },
+        {
+          "id": "way/219832097",
+          "km": 38.1,
+          "evidence": "surface=fine_gravel",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/218258729",
+          "km": 42.8,
+          "evidence": "surface=sand",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/399229924",
+          "km": 46.3,
+          "evidence": "surface=sand",
+          "offRouteM": 0
+        }
+      ]
+    },
+    {
+      "start": "Maastricht — heuvels",
+      "terrain": "heuvels",
+      "bike": "racefiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 47.68,
+      "ascentM": 371,
+      "pavedFraction": 0.9780896454671945,
+      "surfaceUnknownShare": 0.07306751680994472,
+      "certainForbidden": [],
+      "unpaved": [
+        {
+          "id": "way/8153336",
+          "km": 24.7,
+          "evidence": "surface=compacted",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/23989246",
+          "km": 26.7,
+          "evidence": "surface=gravel",
+          "offRouteM": 0
+        }
+      ]
+    }
+  ]
+}

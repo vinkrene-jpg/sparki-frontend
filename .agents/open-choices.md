@@ -10,6 +10,16 @@ Laatst bijgewerkt: 2026-07-27.
 ## Wacht op jouw keuze
 
 
+### Routebelofte — acceptatiegrenzen (taak #436, 30 jul)
+2. **Harde afkeurpoort ná routegeneratie?** De proof scoort 7,5 (<9): op 2 van 6 startpunten
+   (Dalfsen, Maastricht) bevat de beste racefietsroute nog aantoonbaar onverharde meters, en het
+   scherm toont dat eerlijk maar houdt de route niet tegen. De oplossing uit PO-01 §5.2 (route pas
+   tonen als de onafhankelijke verificatie schoon is; anders hergenereren of eerlijk "geen geschikte
+   route gevonden") kost extra seconden per generatie en levert soms géén route op. Bouwen — ja/nee?
+3. **Gebruiksmoment klaargezet:** in dev staan onder Rijden → Bewaard `Proof #436 — racefiets
+   Hengelo 50 km` en `Proof #436 — racefiets Maastricht` klaar om samen te beoordelen
+   (zie docs/product/proof-evidence/proof-436-acceptatiegrenzen-rene-2026-07-30.md).
+
 ### Plan-pagina indeling
 1. **Welke indeling wordt het?** — René is er nog mee bezig, komt erop terug (29 jul).
 
