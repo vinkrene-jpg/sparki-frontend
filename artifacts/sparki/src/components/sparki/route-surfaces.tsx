@@ -322,7 +322,10 @@ export function RouteSurfacesPanel({
               </p>
             </>
           )}
-          {!isLoading && !isError && data && !surfaces && (
+          {/* Alleen als er écht geen geometrie is — NIET terwijl de meting nog
+              loopt (pending), anders staan er twee tegenstrijdige boodschappen
+              tegelijk op het scherm. */}
+          {!isLoading && !isError && !pending && data && !surfaces && (
             <p className="text-[12px] text-white/45">
               Voor deze route is geen bruikbare geometrie beschikbaar — de
               ondergrond kan niet bepaald worden.

@@ -121,6 +121,7 @@ const CYCLING_PROFILES: readonly RoutingProfile[] = [
 function customModelFor(
   profile: RoutingProfile,
   avoidBusyRoads: boolean,
+  unpavedTargetShare: number | null = null,
 ): Record<string, unknown> | null {
   const rules: Record<string, unknown>[] = [];
   switch (profile) {
@@ -134,6 +135,26 @@ function customModelFor(
       // Gravel (taak #445): onverhard is welkom; alleen zand/gras en trappen
       // mild bestraffen zodat de route wel fietsbaar blijft.
       rules.push(GRAVEL_SURFACE_RULE, STEPS_RULE);
+      // Onverhard-voorkeur (30-07-2026, feedback René): de gravel-schuif
+      // stuurde alleen de nakeuze tussen kandidaten — maar als de motor
+      // uitsluitend asfaltlussen bouwt, valt er niets te kiezen. Laat de
+      // motor daarom zelf onverhard opzoeken: een voorkeursstraf op verhard
+      // wegdek, naar rato van de gewenste onverhard-fractie (30% wens ⇒
+      // asfalt ×0.64; 100% ⇒ ×0.3). Gemeten 30-07-2026: bij ×0.76 bleef een
+      // Twentse lus op ~91% verhard steken — vandaar deze stevigere schaal.
+      // Nooit een harde 0: een route mag nooit onmogelijk worden; het gemeten
+      // aandeel achteraf blijft de eerlijke meetlat (voorkeur, geen garantie).
+      if (
+        typeof unpavedTargetShare === "number" &&
+        unpavedTargetShare > 0 &&
+        unpavedTargetShare <= 1
+      ) {
+        const factor = Math.max(0.3, 1 - 1.2 * unpavedTargetShare);
+        rules.push({
+          if: "surface == ASPHALT || surface == CONCRETE || surface == PAVED || surface == PAVING_STONES",
+          multiply_by: String(factor),
+        });
+      }
       break;
     default:
       break;
@@ -272,12 +293,17 @@ export class GraphHopperProvider implements RoutingProvider {
     profile: RoutingProfile,
     body: Record<string, unknown>,
     avoidBusyRoads = false,
+    unpavedTargetShare: number | null = null,
   ): Promise<RouteResult> {
     // Custom model (wegdek- en trapstraffen) vereist flexible mode
     // (ch.disable). Bij "maximum nodes exceeded" (eindpunt snapt op een zwaar
     // bestrafte weg) volgt één eerlijke herkansing zónder model — de
     // verificatiepoort achteraf (obstakels/wegdek) blijft dan gewoon gelden.
-    const customModel = customModelFor(profile, avoidBusyRoads);
+    const customModel = customModelFor(
+      profile,
+      avoidBusyRoads,
+      unpavedTargetShare,
+    );
     const payload: Record<string, unknown> = {
       profile: GH_PROFILE[profile],
       elevation: true,
@@ -513,6 +539,7 @@ export class GraphHopperProvider implements RoutingProvider {
         "ch.disable": true,
       },
       req.avoidBusyRoads === true,
+      req.unpavedTargetShare ?? null,
     );
   }
 
@@ -562,6 +589,7 @@ export class GraphHopperProvider implements RoutingProvider {
       req.profile,
       { points: ghPoints },
       req.avoidBusyRoads === true,
+      req.unpavedTargetShare ?? null,
     );
   }
 

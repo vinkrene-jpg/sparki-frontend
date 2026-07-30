@@ -287,13 +287,36 @@ export function RouteMap({
         markersRef.current.push(marker)
       })
     } else if (latlngs.length >= 2) {
-      // Read-only: start + end dots.
+      // Read-only: duidelijke S (start, groen) en F (finish, oranje) markers —
+      // kleine dots vielen weg tegen de routelijn. Bij een lus (start ≈
+      // finish) één gecombineerde S/F-marker, anders schuiven twee pins over
+      // elkaar en lijkt er niets te staan.
       const start = latlngs[0]!
       const end = latlngs[latlngs.length - 1]!
-      markersRef.current.push(
-        L.marker(start, { icon: dot(ACCENT) }).addTo(map),
-        L.marker(end, { icon: dot("rgba(255,160,90,0.95)") }).addTo(map),
-      )
+      const isLoop = map.distance(start, end) < 60
+      const sfIcon = (label: string, bg: string) =>
+        L.divIcon({
+          className: "",
+          html: `<span style="display:flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 4px;border-radius:9999px;background:${bg};color:#040506;font:600 10px/1 ui-sans-serif,system-ui;white-space:nowrap;box-shadow:0 0 0 3px rgba(5,7,14,0.9),0 0 10px ${bg};">${label}</span>`,
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+        })
+      if (isLoop) {
+        markersRef.current.push(
+          L.marker(start, {
+            icon: sfIcon("S/F", "rgba(120,230,140,0.95)"),
+          }).addTo(map),
+        )
+      } else {
+        markersRef.current.push(
+          L.marker(start, {
+            icon: sfIcon("S", "rgba(120,230,140,0.95)"),
+          }).addTo(map),
+          L.marker(end, {
+            icon: sfIcon("F", "rgba(255,160,90,0.95)"),
+          }).addTo(map),
+        )
+      }
     }
 
     // Meeting points are shown in both modes.

@@ -74,6 +74,12 @@ export type LoopRequest = {
   // bestaande geschiktheidspoorten blijven ongewijzigd; de eerlijke melding
   // achteraf gebeurt op basis van de gemeten busyRoadFraction.
   avoidBusyRoads?: boolean;
+  // Onverhard-voorkeur (0..1, alleen gravel/MTB): laat de motor zelf actief
+  // onverharde wegen opzoeken (voorkeursstraf op verhard wegdek in het custom
+  // model, naar rato van de voorkeur). VOORKEUR, geen garantie — de selectie
+  // op het gemeten onverhard-aandeel achteraf blijft de eerlijke poort.
+  // Racefiets negeert dit volledig (harde 0%-grens).
+  unpavedTargetShare?: number | null;
 };
 
 export type PointToPointRequest = {

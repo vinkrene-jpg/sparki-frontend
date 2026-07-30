@@ -75,6 +75,31 @@ export function pathOverlapFraction(path: [number, number][]): number {
   return total > 0 ? repeated / total : 0;
 }
 
+// Fractie (0..1) van de lengte van pad A die over dezelfde wegcellen loopt als
+// pad B. Gebruikt om écht verschillende routevoorstellen te kiezen — geen
+// drie keer bijna dezelfde lus. Zelfde cel-snapping als pathOverlapFraction;
+// alleen echte geometrie, fail-closed bij kapotte coördinaten.
+export function pathSharedFraction(
+  a: [number, number][],
+  b: [number, number][],
+): number {
+  if (a.length < 2 || b.length < 2) return 0;
+  if (hasInvalidPoint(a) || hasInvalidPoint(b)) return 1;
+  const cells = new Set<string>();
+  for (const p of b) cells.add(cellKey(p[0], p[1]));
+  let total = 0;
+  let shared = 0;
+  for (let i = 1; i < a.length; i++) {
+    const p = a[i - 1]!;
+    const q = a[i]!;
+    const len = segMeters(p, q);
+    if (len <= 0) continue;
+    total += len;
+    if (cells.has(cellKey(q[0], q[1]))) shared += len;
+  }
+  return total > 0 ? shared / total : 0;
+}
+
 // Longest CONTIGUOUS stretch (metres) that the route rides over road segments
 // it also uses elsewhere — the "dead-end spur" signature. A loop can have a low
 // total overlap fraction and still contain one 500 m out-and-back stub that
@@ -288,6 +313,13 @@ export async function generateVariedLoop(
     // weegt dit eerlijk niet mee: nooit gokken. Racefiets negeert dit veld
     // volledig — daar geldt de harde 0%-grens (taak #437) hierboven.
     unpavedTargetShare?: number | null;
+    // Meerdere voorstellen (kaart-planner): vul deze array met maximaal
+    // `alternatesMax` extra ECHTE kandidaten uit de interne pool die (a) niet
+    // hard afgekeurd zijn, (b) zelf een schone lus zijn en (c) écht anders
+    // lopen dan de winnaar en elkaar (onderlinge overlap-check). De winnaar
+    // blijft de best scorende; dit gooit de verliezers niet langer stil weg.
+    alternatesOut?: RouteResult[];
+    alternatesMax?: number;
   },
 ): Promise<RouteResult> {
   const preference = req.elevationPreference ?? "any";
@@ -643,6 +675,35 @@ export async function generateVariedLoop(
     }
   };
 
+  // Meerdere voorstellen: kies uit de interne pool extra kandidaten die écht
+  // anders lopen dan de winnaar (en elkaar). Alleen kandidaten zonder harde
+  // straf (trap/verbod/onverhard = +1000), zelf een schone lus, en — voor de
+  // racefiets — volledig verhard volgens de routebron. Elk voorstel gaat door
+  // dezelfde harde afkeurpoort als de winnaar; valt hij daar, dan wordt hij
+  // stil overgeslagen (nooit een foute route aanbieden).
+  const collectAlternates = async (winner: RouteResult): Promise<void> => {
+    const out = opts?.alternatesOut;
+    if (!out) return;
+    const max = Math.max(0, Math.min(opts?.alternatesMax ?? 2, 4));
+    for (const c of pool) {
+      if (out.length >= max) break;
+      if (c.result === winner) continue;
+      if (c.score >= 500) continue; // hard bestraft — nooit aanbieden
+      if (req.profile === "cycling-road" && !fullyPavedOrUnmeasured(c.result))
+        continue;
+      if (pathOverlapFraction(c.result.path) > 0.2) continue; // dubbelspoor-lus
+      if (pathSharedFraction(c.result.path, winner.path) > 0.6) continue;
+      if (out.some((r) => pathSharedFraction(c.result.path, r.path) > 0.6))
+        continue;
+      try {
+        await hardRejectIfNeeded(c.result);
+      } catch {
+        continue; // harde grens geraakt — eerlijk overslaan
+      }
+      out.push(c.result);
+    }
+  };
+
   if (wantsCalmRoads && pool.length > 1) {
     // Compare the best few candidates on real map facts. Environment lookups
     // are the expensive part (Overpass), so cap at 4 and run them in parallel.
@@ -686,10 +747,12 @@ export async function generateVariedLoop(
       }
     }
     await hardRejectIfNeeded(best.result);
+    await collectAlternates(best.result);
     return best.result;
   }
 
   await hardRejectIfNeeded(pool[0]!.result);
+  await collectAlternates(pool[0]!.result);
   return pool[0]!.result;
 }
 

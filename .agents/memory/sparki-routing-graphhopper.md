@@ -30,3 +30,9 @@ Volledige suitability-run (7 starts × racefiets/gravel/gewone fiets) na custom-
 ## Gravel-profiel (taak #445)
 - bikeType "gravel" heeft een EIGEN RoutingProfile `cycling-gravel` (GH "bike" + mild gravel-model; ORS mapt intern op cycling-regular). De harde 0%-onverhard-poort (hardRejectIfNeeded + +1000-straf in loop-quality) geldt alleen voor cycling-road en cycling-regular — nooit key'en op gedeeld provider-profiel maar op RoutingProfile per fietstype.
 - N-wegen vermijden (keuze in route-maken): VOORKEUR-regel `road_class == PRIMARY || SECONDARY` ×0.15 in het custom model (alle fietsprofielen, ook MTB) — nooit een harde poort. `details:["surface","road_class"]` levert busyRoadFraction (aandeel primary/secondary); >10% ⇒ eerlijk "niet gelukt" in het avoidReport, nooit stil. Vrijliggende fietspaden zijn eigen OSM-ways met eigen road_class en worden dus nooit meebestraft. Live geverifieerd: rule + road_class-details geaccepteerd, busy-share 0.5%→0.0%.
+
+## Gravel-onverhardvoorkeur stuurt de motor zelf
+De gravel/MTB-onverhard-schuif alleen als NAKEUZE tussen kandidaten werkt niet: als de motor louter asfaltlussen bouwt valt er niets te kiezen (Twente-meting: ~3% onverhard bij 30% wens). Fix: `unpavedTargetShare` (0..1) op LoopRequest, en voor `cycling-gravel` een custom-model-voorkeursstraf op verhard wegdek (ASPHALT/CONCRETE/PAVED/PAVING_STONES), factor `max(0.3, 1-1.2*share)` — 0.76 was te mild (91% verhard bleef), 1.2-schaal gaf ~23% onverhard bij 40% wens. Nooit harde 0; racefiets krijgt deze regel NOOIT (harde 0%-grens blijft). Let op: ALLE route()-aanroepen doorgeven, ook longLoopViaWaypoints (>150 km) — die werd eerst gemist.
+
+## Onverhard-opmerkingen zijn geen waarschuwing op gravel/MTB
+Routeopmerkingen kennen geen fietstype; presentatielaag filtert kind "onverhard" uit de kaart-waarschuwingsmarkers voor gravel/MTB (lijst + wegdekverdeling blijven volledig) — anders staat een gewenste gravelroute vol uitroeptekens.

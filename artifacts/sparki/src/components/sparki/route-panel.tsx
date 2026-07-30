@@ -891,12 +891,18 @@ function RouteCard({
   }>()
   // Routeopmerkingen uit echte OSM-gegevens (server, gecachet).
   const remarksQuery = useRouteRemarks(geometry.length > 1 ? route.id : null)
-  const remarkMarkers = (remarksQuery.data?.remarks ?? []).map((r) => ({
-    id: r.id,
-    lat: r.lat,
-    lon: r.lon,
-    label: r.label,
-  }))
+  // Gravel/MTB: onverhard is daar juist gewénst — een "onverhard"-opmerking is
+  // dan informatie (staat in de lijst en de wegdekverdeling), geen
+  // waarschuwingsmarker die de kaart vol uitroeptekens zet.
+  const unpavedIsWelcome = /gravel|mtb|mountain/i.test(route.surface ?? "")
+  const remarkMarkers = (remarksQuery.data?.remarks ?? [])
+    .filter((r) => !(unpavedIsWelcome && r.kind === "onverhard"))
+    .map((r) => ({
+      id: r.id,
+      lat: r.lat,
+      lon: r.lon,
+      label: r.label,
+    }))
   // Wegtypen & ondergrond + geschiktheid per fietstype (echte OSM-tags).
   const surfacesQuery = useRouteSurfaces(geometry.length > 1 ? route.id : null)
   const [surfaceKind, setSurfaceKind] = useState<SurfaceKind | null>(null)
@@ -2956,6 +2962,59 @@ function RouteGenerator({
             {candidate.name}
           </h4>
 
+          {/* Andere echte voorstellen uit dezelfde generatieronde — de motor
+              bouwde meerdere lussen; wissel gerust, de huidige blijft kiesbaar. */}
+          {candidate.alternates && candidate.alternates.length > 0 && (
+            <div className="mt-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3">
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+                Andere voorstellen uit deze ronde
+              </span>
+              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                {candidate.alternates.map((a) => (
+                  <button
+                    key={a.candidateId}
+                    type="button"
+                    onClick={() => {
+                      const rest = [
+                        { ...candidate, alternates: undefined },
+                        ...(candidate.alternates ?? []).filter(
+                          (x) => x.candidateId !== a.candidateId,
+                        ),
+                      ]
+                      setCandidate({ ...a, alternates: rest })
+                      setMeetpoints([])
+                    }}
+                    className="min-w-0 rounded-xl border border-white/[0.1] bg-white/[0.03] p-3 text-left transition-colors hover:border-cyan-300/40"
+                  >
+                    <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                      <span className="font-sans text-lg font-light tracking-tight text-white/90">
+                        {a.distanceKm != null
+                          ? `${Math.round(a.distanceKm)} km`
+                          : "—"}
+                      </span>
+                      <span className="font-mono text-[11px] tabular-nums text-white/45">
+                        {a.elevationGainM != null
+                          ? `${a.elevationGainM} m omhoog`
+                          : "—"}
+                      </span>
+                    </div>
+                    {a.geometry.length > 1 && (
+                      <RouteMap
+                        geometry={a.geometry}
+                        height={140}
+                        interactive={false}
+                        className="mt-2"
+                      />
+                    )}
+                    <span className="mt-2 inline-block font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-200/80">
+                      Bekijk dit voorstel
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {candidate.geometry.length > 1 && (
             <>
               <p className="mt-4 text-[12px] leading-relaxed text-white/40">
@@ -2975,12 +3034,23 @@ function RouteGenerator({
                 height={430}
                 className="mt-3"
                 positionKm={candPosKm}
-                remarkMarkers={(candRemarks.data?.remarks ?? []).map((r) => ({
-                  id: r.id,
-                  lat: r.lat,
-                  lon: r.lon,
-                  label: r.label,
-                }))}
+                remarkMarkers={(candRemarks.data?.remarks ?? [])
+                  // Gravel/MTB: onverhard is gewénst — geen waarschuwings-
+                  // marker, wel gewoon zichtbaar in lijst + wegdekverdeling.
+                  .filter(
+                    (r) =>
+                      !(
+                        (candidate.bikeType === "gravel" ||
+                          candidate.bikeType === "mtb") &&
+                        r.kind === "onverhard"
+                      ),
+                  )
+                  .map((r) => ({
+                    id: r.id,
+                    lat: r.lat,
+                    lon: r.lon,
+                    label: r.label,
+                  }))}
                 highlightPaths={candSurfaceHighlights}
               />
               <MeetpointList

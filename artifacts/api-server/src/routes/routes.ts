@@ -2541,6 +2541,11 @@ type LoopCandidateContext = {
   // Vermijd drukke N-wegen (taak #462): voorkeur-straf in de motor + selectie
   // op het gemeten N-weg-aandeel. Nooit een harde poort.
   avoidBusyRoads?: boolean;
+  // Meerdere voorstellen (kaart-planner): laat de motor naast de winnaar ook
+  // max 2 écht anders lopende, niet-afgekeurde kandidaten uit zijn interne
+  // pool teruggeven. Alleen op het interactieve /generate-pad; de
+  // 3-afstanden-kiezer (/generate/options) toont al varianten per afstand.
+  collectAlternates?: boolean;
 };
 
 // Build one real loop candidate at a specific target distance, store it server-
@@ -2589,6 +2594,10 @@ async function buildLoopCandidate(
 
   let routeResult: CachedRouteGeometry;
   let startName: string | null;
+  // Extra voorstellen uit de interne kandidaten-pool (alleen vers gegenereerd;
+  // een geometrie-cache-hit levert eerlijk geen alternatieven — nooit oude
+  // pools verzinnen).
+  const altResults: Awaited<ReturnType<typeof generateVariedLoop>>[] = [];
 
   if (loopGeomCached) {
     // Geometry cache hit: skip ORS entirely (~1.5–2.8 s saved).
@@ -2618,6 +2627,9 @@ async function buildLoopCandidate(
         points: ctx.points,
         elevationPreference: ctx.elevationPreference,
         avoidBusyRoads: ctx.avoidBusyRoads === true,
+        // Gravel/MTB-onverhard-voorkeur: laat de motor zélf onverhard opzoeken
+        // (voorheen alleen nakeuze tussen — vaak louter verharde — kandidaten).
+        unpavedTargetShare: ctx.unpavedTargetShare ?? null,
       },
       {
         scenery,
@@ -2643,6 +2655,11 @@ async function buildLoopCandidate(
         // afgesloten poort = harde afkeur; minste poorten wint (grenzen
         // René 30-07-2026).
         obstaclesOf: routeObstaclesOf({ budgetMs: 2500 }),
+        // Meerdere voorstellen: naast de winnaar ook max 2 écht anders
+        // lopende, niet-afgekeurde kandidaten uit de interne pool teruggeven
+        // — die werden voorheen stil weggegooid.
+        alternatesOut: ctx.collectAlternates ? altResults : undefined,
+        alternatesMax: 2,
       },
     );
     console.log(
@@ -2729,6 +2746,76 @@ async function buildLoopCandidate(
     scenery?.nature ?? false,
   );
 
+  // Extra voorstellen: dezelfde echte pool-kandidaten die de motor toch al
+  // bouwde, nu als volwaardige kiesbare kandidaten (eigen candidateId, eigen
+  // verrijking). Namen krijgen een letter zodat de renner ze uit elkaar houdt.
+  const alternates = altResults.map((r, i) => {
+    const altSummary = summarizeTrack(r.points);
+    const altDistanceKm = altSummary.distanceKm ?? r.distanceKm;
+    const altElevationGainM = altSummary.elevationGainM ?? r.ascentM;
+    const altDistLabel =
+      altDistanceKm != null ? `${Math.round(altDistanceKm)} km` : "";
+    const letter = String.fromCharCode(66 + i); // B, C
+    const altName = `${ctx.workoutTrainingType}-lus ${letter}${startName ? ` vanuit ${startName}` : ""}${altDistLabel ? ` · ${altDistLabel}` : ""}`;
+    const altRationaleInput: RationaleInput = {
+      ...rationaleInput,
+      distanceKm: altDistanceKm,
+      durationSec: r.durationSec,
+      elevationGainM: altElevationGainM,
+      climbCount: altSummary.climbs.length,
+    };
+    const altRationale = buildRationaleFallback(altRationaleInput);
+    const altId = putCandidate({
+      clerkId: ctx.clerkId,
+      name: altName,
+      surface: ctx.surface,
+      distanceKm: altDistanceKm,
+      durationSec: r.durationSec,
+      elevationGainM: altElevationGainM,
+      profile: altSummary.profile,
+      climbs: altSummary.climbs,
+      nav: r.steps,
+      geometry: r.path,
+      waypoints: [],
+      rationale: altRationale,
+      plannedWorkoutId: ctx.plannedWorkoutId,
+      engineSurface: engineSurfaceOf(r),
+    });
+    scheduleEnrichment(
+      altId,
+      ctx.clerkId,
+      altRationaleInput,
+      r.path,
+      scenery?.nature ?? false,
+    );
+    return {
+      candidateId: altId,
+      name: altName,
+      surface: ctx.surface,
+      sport: ctx.sport,
+      bikeType: ctx.bikeType,
+      routingProfile: ctx.profile,
+      trainingType: ctx.workoutTrainingType,
+      mode: "loop" as const,
+      distanceKm: altDistanceKm,
+      durationSec: r.durationSec,
+      elevationGainM: altElevationGainM,
+      profile: altSummary.profile,
+      climbs: altSummary.climbs,
+      nav: r.steps,
+      geometry: r.path,
+      waypoints: [] as [number, number][],
+      rationale: altRationale,
+      startName,
+      endName: null,
+      plannedWorkoutId: ctx.plannedWorkoutId,
+      engineSurface: engineSurfaceOf(r),
+      targetDistanceKm,
+      busyRoadFraction: r.busyRoadFraction ?? null,
+      roadObjects: null,
+    };
+  });
+
   return {
     candidateId,
     name,
@@ -2757,6 +2844,9 @@ async function buildLoopCandidate(
     busyRoadFraction: routeResult.busyRoadFraction ?? null,
     // Road objects are delivered asynchronously via GET /candidate/:id/enrich.
     roadObjects: null,
+    // Extra echte voorstellen uit dezelfde pool (leeg bij cache-hit of als de
+    // andere kandidaten te veel op de winnaar leken / afgekeurd werden).
+    alternates,
   };
 }
 
@@ -3000,6 +3090,9 @@ router.post("/generate", requireAuth, async (req, res) => {
               bikeType,
             ),
             avoidBusyRoads,
+            // Kaart-planner: bied naast de winnaar ook de écht anders lopende
+            // pool-kandidaten aan als kiesbare voorstellen.
+            collectAlternates: true,
           },
           targetDistanceKm,
         );
@@ -3022,8 +3115,25 @@ router.post("/generate", requireAuth, async (req, res) => {
         throw err;
       }
       console.log(`[PERF] generate.loop TOTAL ms=${Math.round(performance.now()-_t_req0)} distKm=${candidate.distanceKm?.toFixed(1)} mode=loop`);
+      // Elk voorstel krijgt zijn EIGEN eerlijke vermijd-rapport — het gemeten
+      // N-weg-aandeel verschilt per lus, dus het rapport van de winnaar mag
+      // nooit stilzwijgend voor een alternatief doorgaan.
+      const alternatesWithReport = (candidate.alternates ?? []).map((a) => {
+        const altReport = {
+          toegepast: [...avoidReport.toegepast],
+          nietMogelijk: [...avoidReport.nietMogelijk],
+        };
+        applyBusyRoadReport(altReport, avoidBusyRoads, a.busyRoadFraction);
+        return { ...a, avoidReport: altReport };
+      });
       applyBusyRoadReport(avoidReport, avoidBusyRoads, candidate.busyRoadFraction);
-      res.json({ candidate: { ...candidate, avoidReport } });
+      res.json({
+        candidate: {
+          ...candidate,
+          avoidReport,
+          alternates: alternatesWithReport,
+        },
+      });
       return;
     }
 

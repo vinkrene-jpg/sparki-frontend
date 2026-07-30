@@ -120,6 +120,10 @@ export type RouteCandidate = {
   // Eerlijk vermijd-rapport (o.a. drukke N-wegen, taak #462). Afwezig bij
   // oudere responses.
   avoidReport?: AvoidReport;
+  // Extra echte voorstellen uit dezelfde generatieronde (kaart-planner):
+  // kandidaten die de motor toch al bouwde en die écht anders lopen dan de
+  // winnaar. Leeg/afwezig bij cache-hits of te gelijkende kandidaten.
+  alternates?: RouteCandidate[];
 };
 
 export type GeocodeResult = { lat: number; lon: number; label: string };
