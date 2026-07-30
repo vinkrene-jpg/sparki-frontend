@@ -17,6 +17,7 @@ import {
   useUpdateSessionFeel,
   type RideSegment,
   type SessionDetail,
+  type SourceConflict,
 } from "@/hooks/use-sessions"
 import { useState } from "react"
 import { SessionGraphs } from "@/components/sparki/session-graphs"
@@ -32,6 +33,7 @@ import {
   HeartPulse,
   Activity,
   TrendingDown,
+  ChevronDown,
 } from "lucide-react"
 
 function fmtSegTime(sec: number): string {
@@ -184,9 +186,22 @@ function DataInventaris({
   )
 }
 
-// ── Wedstrijdverloop: een paar korte vragen na een wedstrijd, zodat de
-//    waarde van de rit goed te duiden is naast de meetdata. Antwoorden worden
-//    opgeslagen als gevoelsscore + notities bij de sessie zelf. ─────────────
+const CONFLICT_FIELD_LABELS: Record<string, { label: string; unit?: string }> = {
+  durationMin: { label: "Duur", unit: "min" },
+  distanceKm: { label: "Afstand", unit: "km" },
+  elevationM: { label: "Hoogtemeters", unit: "m" },
+  normalizedPower: { label: "Genormaliseerd vermogen", unit: "W" },
+  avgPower: { label: "Gem. vermogen", unit: "W" },
+  avgHR: { label: "Gem. hartslag", unit: "bpm" },
+  maxHR: { label: "Max. hartslag", unit: "bpm" },
+  avgCadence: { label: "Cadans", unit: "rpm" },
+  avgSpeedKph: { label: "Gem. snelheid", unit: "km/u" },
+  tss: { label: "Belasting (TSS)" },
+  intensityFactor: { label: "Intensiteit (IF)" },
+  title: { label: "Titel" },
+  notes: { label: "Notities" },
+  powerBests: { label: "Vermogensrecords" },
+}
 function WedstrijdVerloopVragen({ session }: { session: TrainingSession }) {
   const update = useUpdateSessionFeel()
   const [zwaarte, setZwaarte] = useState<number | null>(session.feelScore ?? null)
@@ -639,6 +654,11 @@ export function SessionDetailDrawer({
               detail={detail}
               segments={segments}
             />
+
+            {detail?.sourceConflicts != null &&
+              detail.sourceConflicts.length > 0 && (
+                <BronConflicten conflicts={detail.sourceConflicts} />
+              )}
           
 
             {session.source !== "manual" && (
@@ -680,4 +700,63 @@ export function SessionDetailDrawer({
       </SheetContent>
     </Sheet>
   )
+}
+
+function conflictSourceLabel(s: string): string {
+  if (s === "handmatig") return "jouw invoer"
+  if (s === "onbekend") return "onbekende bron"
+  return sourceLabel(s)
+}
+
+function BronConflicten({ conflicts }: { conflicts: SourceConflict[] }) {
+  return (
+    <details className="group mt-4">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 [&::-webkit-details-marker]:hidden">
+        <ChevronDown
+          className="h-3 w-3 text-white/30 transition-transform group-open:rotate-180"
+          strokeWidth={1.75}
+        />
+        <span className="font-mono text-[10px] tracking-[0.2em] text-white/35">
+          BRONNEN VERSCHILDEN HIER
+        </span>
+      </summary>
+      <div className="mt-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3">
+        <div className="flex flex-col gap-2">
+          {conflicts.map((c) => {
+            const meta = CONFLICT_FIELD_LABELS[c.field] ?? { label: c.field }
+            return (
+              <div key={c.field} className="text-[12px] leading-relaxed">
+                <span className="text-white/70">{meta.label}: </span>
+                <span className="tabular-nums text-white/80">
+                  {conflictValue(c.chosen, meta.unit)}
+                </span>
+                <span className="text-white/40">
+                  {" "}
+                  ({conflictSourceLabel(c.chosenSource)}, gekozen)
+                </span>
+                <span className="text-white/40"> · </span>
+                <span className="tabular-nums text-white/55">
+                  {conflictValue(c.offered, meta.unit)}
+                </span>
+                <span className="text-white/40">
+                  {" "}
+                  ({conflictSourceLabel(c.offeredSource)})
+                </span>
+              </div>
+            )
+          })}
+        </div>
+        <p className="mt-2 text-pretty text-[11px] leading-relaxed text-white/35">
+          Meerdere bronnen leverden deze rit aan met net andere getallen. Sparki
+          koos per veld één waarde; de andere blijft hier terug te vinden.
+        </p>
+      </div>
+    </details>
+  )
+}
+
+function conflictValue(v: string | number | null, unit?: string): string {
+  if (v === null) return "leeg"
+  const s = String(v)
+  return unit ? `${s} ${unit}` : s
 }

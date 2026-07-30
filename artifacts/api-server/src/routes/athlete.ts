@@ -19,6 +19,10 @@ import type { BusyDay } from "../lib/training/plan-generator";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 import { requireCommercialFeature } from "../lib/entitlements";
 import { maybeScheduleStravaCatchUp } from "../engines/data-hub/strava-sync";
+import {
+  deriveSourceConflicts,
+  type MergeLogEntry,
+} from "../engines/data-hub/dedupe";
 import { ensureLibraryRoutes } from "../lib/route-library";
 import { generateThreeWeekPlan, autoAdaptPlan } from "../engines/training-plan";
 import {
@@ -1672,6 +1676,12 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
       trimEdit: trimValid ? trim : null,
       trackPointCount: track?.length ?? 0,
       herkomst,
+      // Bronconflicten ("stil met inzicht"): waar twee bronnen voor hetzelfde
+      // veld andere getallen gaven, afgeleid uit het interne samenvoeglogboek.
+      // Leeg wanneer er eerlijk niets verschilde.
+      sourceConflicts: deriveSourceConflicts(
+        (session.mergeLog as MergeLogEntry[] | null) ?? null,
+      ),
     });
   } catch (err) {
     req.log.error({ err }, "athlete.sessions detail GET failed");

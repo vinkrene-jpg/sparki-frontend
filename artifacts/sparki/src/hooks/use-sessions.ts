@@ -4,6 +4,7 @@ import { DEV_PREVIEW } from "@/lib/dev";
 import { apiFetch } from "@/lib/api";
 import { queryKeys, STALE } from "@/lib/query-keys";
 import type { TrainingSession } from "@/lib/athlete-types";
+import type { SessionStreams } from "@/lib/stream-analysis";
 
 export function useSessions(limit = 20) {
   const { isSignedIn } = useUser();
@@ -50,11 +51,14 @@ export function useSessionSegments(id: number | null) {
   });
 }
 
-// Volledig sessie-detail inclusief echte streams (vermogen/hartslag/cadans/
-// snelheid/hoogte/temperatuur, gebuiteld bij ingest). streams is eerlijk null
-// wanneer het gekoppelde bestand geen bruikbare samples droeg.
-import type { SessionStreams } from "@/lib/stream-analysis";
-
+export type SourceConflict = {
+  field: string;
+  chosen: string | number | null;
+  chosenSource: string;
+  offered: string | number | null;
+  offeredSource: string;
+  at: string;
+};
 export type SessionDetail = {
   session: TrainingSession;
   track: Array<[number, number]> | null;
@@ -75,6 +79,9 @@ export type SessionDetail = {
     veldBronnen: Record<string, string> | null;
     handmatigeVelden: string[] | null;
   } | null;
+  // Bronconflicten: twee bronnen gaven voor hetzelfde veld andere getallen;
+  // Sparki koos stil, het verschil blijft bij de rit terugvindbaar.
+  sourceConflicts?: SourceConflict[] | null;
 };
 
 export function useSessionDetail(id: number | null) {

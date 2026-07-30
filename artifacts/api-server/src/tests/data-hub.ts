@@ -23,6 +23,9 @@ import {
   candidateDedupeKeys,
   buildMergePatch,
   mergeSources,
+  buildMergeLogEntry,
+  deriveSourceConflicts,
+  type MergeLogEntry,
   normalizeSport,
   matchSport,
   cleanActivity,
@@ -139,6 +142,47 @@ async function main() {
     assert(merged.length === 2 && merged.includes("strava"), "two sources");
     const again = mergeSources(merged, "strava");
     assert(again.length === 2, "no duplicate source");
+  });
+
+  await run("Dedupe", "bronconflict vastgelegd en terugvindbaar per veld", () => {
+    // Strava 250 W staat al; het bestand biedt 243 W aan. Sparki houdt stil
+    // de bestaande waarde, maar het verschil moet als conflict terug te
+    // vinden zijn: welke bronnen, welke waarden, welke gekozen.
+    const existing = {
+      avgPower: 250,
+      avgHR: null,
+      fieldSources: { avgPower: "strava" },
+      manualFields: null,
+    };
+    const incoming = { avgPower: 243, avgHR: 149 };
+    const patch = buildMergePatch(existing, incoming);
+    const entry = buildMergeLogEntry(existing, incoming, patch, "file", [
+      "strava",
+      "file",
+    ]);
+    const conflicts = deriveSourceConflicts([entry]);
+    assert(conflicts.length === 1, "exactly one field conflict");
+    const c = conflicts[0]!;
+    assert(c.field === "avgPower", "conflict on avgPower");
+    assert(c.chosen === 250 && c.chosenSource === "strava", "chosen = strava 250");
+    assert(c.offered === 243 && c.offeredSource === "file", "offered = file 243");
+
+    // Latere merge van hetzelfde veld overschrijft de oudere constatering.
+    const entry2: MergeLogEntry = {
+      ...entry,
+      at: "2026-07-30T10:00:00.000Z",
+      source: "garmin",
+      differences: [
+        { field: "avgPower", kept: 250, offered: 247, keptSource: "strava" },
+      ],
+    };
+    const latest = deriveSourceConflicts([entry, entry2]);
+    assert(latest.length === 1, "still one row per field");
+    assert(
+      latest[0]!.offered === 247 && latest[0]!.offeredSource === "garmin",
+      "recentste conflict wint",
+    );
+    assert(deriveSourceConflicts(null).length === 0, "geen log → geen conflicten");
   });
 
   await run("Validation", "cleanActivity rejects junk", () => {

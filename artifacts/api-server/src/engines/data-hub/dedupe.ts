@@ -248,6 +248,47 @@ export function buildMergeLogEntry(
   };
 }
 
+// ── Bronconflicten voor de rit-detailweergave ────────────────────────────────
+//
+// Kalibratie (30-07-2026): wanneer twee bronnen voor hetzelfde veld andere
+// getallen geven (bv. Strava 250 W vs bestand 243 W) kiest Sparki stil de
+// behouden waarde, maar het verschil moet bij de rit terug te vinden zijn.
+// Deze afleiding vat het interne mergeLog samen tot één regel per veld:
+// welke waarde behouden is (en van welke bron), en welke waarde een andere
+// bron aanbood. Bij meerdere merges per veld wint de recentste constatering.
+
+export interface SourceConflict {
+  field: string;
+  chosen: string | number | null;
+  chosenSource: string;
+  offered: string | number | null;
+  offeredSource: string;
+  at: string;
+}
+
+export function deriveSourceConflicts(
+  log: MergeLogEntry[] | null | undefined,
+): SourceConflict[] {
+  const byField = new Map<string, SourceConflict>();
+  for (const entry of log ?? []) {
+    if (!entry || !Array.isArray(entry.differences)) continue;
+    for (const d of entry.differences) {
+      if (!d || typeof d.field !== "string") continue;
+      // Een bron die haar éígen eerdere waarde aanbood is geen conflict
+      // tussen bronnen; die zit al niet in differences (zie buildMergeLogEntry).
+      byField.set(d.field, {
+        field: d.field,
+        chosen: d.kept ?? null,
+        chosenSource: d.keptSource,
+        offered: d.offered ?? null,
+        offeredSource: entry.source,
+        at: entry.at,
+      });
+    }
+  }
+  return [...byField.values()];
+}
+
 /** Voeg een regel toe aan het logboek, begrensd tot MERGE_LOG_MAX regels. */
 export function appendMergeLog(
   existing: MergeLogEntry[] | null | undefined,
