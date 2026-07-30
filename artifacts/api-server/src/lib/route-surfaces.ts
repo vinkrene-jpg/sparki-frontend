@@ -908,8 +908,14 @@ export function compareSurfaceSources(
 
   const providerLabel =
     engine.provider === "graphhopper" ? "GraphHopper" : engine.provider;
+  // Nameting van de backfill (taak #496): die meet op OSM/Overpass + de
+  // officiële kaartlaag — dus NIET op een eigen motorkaart. Dat eerlijk
+  // benoemen, anders zou de uitleg een motorkaart-meting suggereren.
+  const isOsmNameting = engine.provider === "osm_overpass";
   const uitleg: string[] = [
-    `Routemotor (${providerLabel}): rekent op een eigen, vooraf gebouwde wegenkaart die kan achterlopen op OpenStreetMap. Meting bij het genereren: ` +
+    (isOsmNameting
+      ? `Nameting (OpenStreetMap): achteraf gemeten op de opgeslagen routelijn via actuele kaarttags — geen motorkaart. Meting: `
+      : `Routemotor (${providerLabel}): rekent op een eigen, vooraf gebouwde wegenkaart die kan achterlopen op OpenStreetMap. Meting bij het genereren: `) +
       (engine.pavedPct != null
         ? `${fmtNl(engine.pavedPct)}% verhard van het gemeten deel`
         : "geen verhard-percentage") +

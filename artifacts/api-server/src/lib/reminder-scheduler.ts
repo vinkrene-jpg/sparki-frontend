@@ -18,6 +18,7 @@ import { deliverReminders } from "../engines/reminders";
 import { logger } from "./logger";
 import { processDueAccountDeletions } from "./account-privacy";
 import { runLibraryBackfill } from "./library-backfill";
+import { runSurfaceBackfill } from "./surface-backfill";
 import { runScheduledObservationCleanup } from "../jobs/observation-cleanup";
 
 let started = false;
@@ -67,6 +68,33 @@ async function maybeRunLibraryBackfill(): Promise<void> {
   logger.info(
     { libraryBackfill: "scheduler", ...summary },
     "in-process library backfill run done",
+  );
+}
+
+// Wegdek-verificatie-backfill (taak #496): meet bestaande racefiets-rijen
+// zonder engineSurface na op hun opgeslagen geometrie. Zelfde nachtvenster en
+// dezelfde pre-check als de bibliotheek-backfill; de échte éénmaligheid per
+// dag zit in de DB-vergrendeling (runSurfaceBackfill claimt
+// "surface-backfill:<dag>" atomair).
+let lastSurfaceBackfillDay = "";
+
+async function maybeRunSurfaceBackfill(): Promise<void> {
+  const flag = process.env.SURFACE_BACKFILL_IN_PROCESS;
+  const enabled =
+    flag === "true"
+      ? true
+      : flag === "false"
+        ? false
+        : process.env.NODE_ENV === "production";
+  if (!enabled) return;
+  const { day, hour } = amsterdamParts();
+  if (hour < 2 || hour >= 6) return;
+  if (day === lastSurfaceBackfillDay) return;
+  lastSurfaceBackfillDay = day;
+  const summary = await runSurfaceBackfill();
+  logger.info(
+    { surfaceBackfill: "scheduler", ...summary },
+    "in-process surface backfill run done",
   );
 }
 
@@ -126,6 +154,12 @@ export function startReminderScheduler(): void {
         await maybeRunLibraryBackfill();
       } catch (err) {
         logger.error({ err }, "in-process library backfill failed");
+      }
+      // Nachtelijke wegdek-verificatie-backfill (eigen fouten-log).
+      try {
+        await maybeRunSurfaceBackfill();
+      } catch (err) {
+        logger.error({ err }, "in-process surface backfill failed");
       }
       // Automatische observatie-opschoning: verwijdert verouderde en dubbele
       // AI-observaties voor alle gebruikers (max éénmalig per Amsterdamse dag,

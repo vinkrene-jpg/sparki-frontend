@@ -79,6 +79,7 @@ const ALL_ENTRIES = [
       path.resolve(artifactDir, "src/jobs/goal-review.ts"),
       path.resolve(artifactDir, "src/jobs/connector-sync.ts"),
       path.resolve(artifactDir, "src/jobs/library-backfill.ts"),
+      path.resolve(artifactDir, "src/jobs/surface-backfill.ts"),
       path.resolve(artifactDir, "src/tests/library-backfill.ts"),
       path.resolve(artifactDir, "src/tests/route-library-budget.ts"),
       path.resolve(artifactDir, "src/jobs/observation-cleanup.ts"),
