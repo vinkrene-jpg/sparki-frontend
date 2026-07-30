@@ -1,0 +1,191 @@
+BESLUITEN HOOFDSTUK F — VOEDING, HYDRATATIE EN GEWICHT
+
+F1 — RICHTWAARDEN PER TRAINING
+
+1. Cafeïne
+Alleen aanbieden aan volwassen sporters die dit zelf activeren of er expliciet om vragen.
+
+Voorwaarden:
+- nooit standaard onderdeel van ieder voedingsadvies;
+- niet bij jeugd of onbekende leeftijd;
+- eerst waarschuwing voor slaap, onrust, angstgevoeligheid en individuele verdraagzaamheid;
+- eerst tijdens training uitproberen, nooit voor het eerst op racedag;
+- geen automatische dosering op basis van alleen lichaamsgewicht;
+- geen aanbeveling van pillen, poeders of onbekende supplementen.
+
+Reden: cafeïne kan prestaties ondersteunen, maar hogere doses geven vaker bijwerkingen en supplementgebruik kent ook gezondheids- en antidopingrisico’s.
+
+2. Ontbrekende toestemming voor voorkeuren/allergieën
+Altijd zichtbaar melden:
+
+“Dit algemene advies houdt nog geen rekening met jouw persoonlijke voedingsvoorkeuren, allergieën of intoleranties.”
+
+Sparki mag nooit suggereren dat hiermee rekening is gehouden wanneer toestemming of gegevens ontbreken.
+
+Bij bekende ernstige allergieën zonder toestemming voor verwerking:
+- geen concreet product- of maaltijdadvies;
+- wel een neutrale melding dat persoonlijk advies niet veilig kan worden samengesteld.
+
+3. Ziekte of blessure
+Gezondheid staat ook binnen voeding boven prestatie.
+
+Bij een harde of acute gezondheidsblokkade:
+- geen prestatiegerichte fuelingdoelen;
+- wel neutrale ondersteuning rond voldoende eten, drinken en herstel;
+- geen caloriebeperking of gewichtsdoelsturing.
+
+Bij een niet-acute blessure:
+- voeding blijft herstel en passende energie-inname ondersteunen;
+- alleen de voeding voor niet-uitgevoerde trainingsbelasting vervalt.
+
+F2 — HYDRATATIE
+
+4. Weercontext
+Gebruik waar mogelijk het verwachte weer tijdens het rit-tijdstip en langs de routelocatie.
+
+Fallback:
+- bij onbekende route: thuis-/startlocatie;
+- bij onbekend tijdstip: dagverwachting;
+- wanneer actuele omstandigheden ontbreken: duidelijk zeggen dat het advies generiek is.
+
+Thuislocatie-dagmaximum mag alleen fallback zijn, niet de uiteindelijke gewenste standaard.
+
+5. Bidonmaat
+Bidonmaat instelbaar maken.
+
+Standaard:
+- gebruiker kiest eenmaal zijn gangbare bidonmaten;
+- per rit kan het aantal en type bidonnen worden vastgelegd;
+- 500 ml mag alleen tijdelijke default zijn en moet als schatting zichtbaar blijven;
+- correctie achteraf blijft altijd mogelijk.
+
+F3 — LOGBOEK EN DAGANALYSE
+
+6. AI-schattingen
+Toon:
+- “geschat”;
+- betrouwbaarheidsniveau;
+- waar zinvol een bandbreedte, bijvoorbeeld 40–60 gram.
+
+Gebruik nooit schijnprecisie.
+De correctie van de sporter wint altijd van de AI-schatting.
+
+7. Gewicht vóór en na de rit
+Maak dit optioneel invulbaar voor zweetverlies- en hydratatie-inzicht.
+
+Voorwaarden:
+- nooit standaard verplicht;
+- vooral aanbieden bij lange ritten, hitte of een expliciete hydratatietest;
+- uitleggen dat verschillen ook door drinken, eten, toiletbezoek en meetfouten worden beïnvloed;
+- geen medische conclusie trekken uit één meting;
+- bij jeugd niet inzetten als gewichtssturing of lichaamscontrole.
+
+F4 — GEWICHT EN SEIZOENSDOEL
+
+8. Gewichtstrend
+Bouw een gedempte gewichtstrend op basis van gedateerde metingen.
+
+Toon:
+- trend, niet alleen losse dagwaarde;
+- voortgang ten opzichte van het bevestigde doel;
+- normale dagelijkse schommelingen niet als echte winst of terugval;
+- bij te weinig gegevens: “nog onvoldoende meetgegevens”.
+
+Geen dagelijkse lineaire prognose alsof gewichtsverlies voorspelbaar is.
+
+9. Uitnodiging tot wegen
+Bij een actief, bevestigd gewichtsdoel maximaal eenmaal per week een rustige, overslaanbare vraag.
+
+Voorwaarden:
+- gebruiker kiest zelf meetfrequentie of schakelt herinneringen uit;
+- geen schuld- of prestatietaal;
+- niet automatisch vaker vragen bij normale schommelingen;
+- bij jeugd geen gewichtsherinneringen.
+
+10. Aankomdoelen
+Sparki mag dit terrein ondersteunen voor volwassenen, maar niet als zelfstandige calorie- of massabulkcoach.
+
+Regels:
+- alleen na expliciete bevestiging;
+- eerst onderscheid maken tussen herstel van ondergewicht, gezondheid, spiermassa en algemeen gewicht;
+- bij signalen van ondergewicht, RED-S, ziekte of eetproblematiek verwijzen naar arts of sportdiëtist;
+- geen automatisch tempo opleggen zonder professionele onderbouwing;
+- jeugd: geen autonome gewichtstoenameplanning.
+
+F5 — JEUGD EN RED-S
+
+11. Leeftijdsgrens
+Trek de veiligheidsgrens gelijk op 17 jaar:
+
+- onder 17: geen calorie-, gewichts- of lichaamsgerichte getallen;
+- wel praktische sportvoeding in producten en gewoonten, bijvoorbeeld drinken, ontbijt, herstelmaaltijd en voeding meenemen;
+- exacte gram-per-uur-richtlijnen alleen binnen een passende ouder-/trainer-/professionele context.
+
+Fueling ondersteunen blijft mogelijk, maar zonder jeugd in een calorie- of lichaamssturend systeem te trekken.
+
+12. Onbekende leeftijd
+Fail-closed:
+
+- onbekende leeftijd wordt behandeld volgens de jeugdveilige route;
+- geen gewichts-, calorie-, cafeïne- of agressieve gram-per-uur-sturing;
+- vraag vriendelijk om geboortedatum of leeftijd wanneer preciezer advies nodig is;
+- nooit stil als volwassene behandelen.
+
+13. Ouders
+Ouders/verzorgers mogen bij minderjarigen praktische voedingsondersteuning zien, mits rollen en toestemming correct zijn geregeld.
+
+Wel zichtbaar:
+- algemene trainings- en racedagvoeding;
+- hydratatie;
+- herstelgewoonten;
+- veiligheidsmeldingen die ouderbetrokkenheid vereisen.
+
+Niet standaard zichtbaar:
+- foto’s en volledige voedingslogboeken;
+- gewicht en lichaamsgerichte analyses;
+- gevoelige persoonlijke notities.
+
+Voor die gevoelige onderdelen is aparte, transparante toestemming en leeftijdsafhankelijke privacy nodig.
+
+F6 — WEDSTRIJDVOEDING
+
+14. Eén racedagplan
+Bouw één samengevoegd racedag-voedingsplan als enige bron van waarheid.
+
+Het plan combineert:
+- starttijd;
+- duur en intensiteit;
+- route en hoogteprofiel;
+- weer en temperatuur;
+- trainingsbelasting en herstel;
+- geoefende inname;
+- persoonlijke voorkeuren en toestemming;
+- coachinstructies.
+
+Andere modules mogen dezelfde canonieke waarden tonen, maar niet zelfstandig afwijkende hoeveelheden berekenen.
+
+15. Hoge koolhydraatinname
+Houd bij of de beoogde hoge inname tijdens training is geoefend.
+
+Regels:
+- niet geoefend: niet automatisch de hoogste racedagwaarde adviseren;
+- eerst een progressieve trainingsopbouw voorstellen;
+- maag-/darmfeedback registreren;
+- persoonlijke correctie en coachinstructie meenemen;
+- geen harde claim dat iedere renner 60–90 g/u probleemloos verdraagt.
+
+Hoge wedstrijdinname moet vooraf in training zijn getest en afgestemd.
+
+16. Racedagochtend
+Bouw een uitgewerkt ochtendprotocol op basis van de werkelijke starttijd.
+
+Minimaal:
+- tijd tot start;
+- ontbijtvenster;
+- eventuele kleine aanvulling dichter bij de start;
+- drinken;
+- voeding die de sporter al kent en verdraagt;
+- geen nieuwe producten op racedag;
+- noodscenario bij vroege start, gebrek aan eetlust of gemiste maaltijd.
+
+De generieke pre-training-richtwaarde blijft fallback, maar is niet voldoende als volledige wedstrijddagbelofte.
