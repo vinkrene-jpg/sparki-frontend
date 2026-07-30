@@ -239,6 +239,11 @@ export function classifyRemarkTags(
     // kaartgegevens als fietser gewoon door kunt, is geen probleem en wordt
     // niet gemeld — benoemen zorgt alleen voor twijfel.
     if (passage === "doorfietsbaar") return null;
+    // Acceptatiegrens René (30-07-2026, aanscherping): staat de poort op een
+    // gewoon berijdbare weg (geen privéterrein, geen inrijverbod), dan melden
+    // we hem niet — een open/onbekende poort op een openbaar pad is geen
+    // obstakel. Alleen aantoonbaar afgesloten/privé/verboden blijft staan.
+    if (passage === "onbekend") return null;
     const locked = tags.locked === "yes";
     const accessBits = [
       tags.locked === "yes" ? "locked=yes" : null,

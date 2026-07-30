@@ -82,11 +82,13 @@ scenario("poort naar privéterrein = afgesloten, fiets-uitzondering wint", () =>
   assert(exc === null, `fiets-uitzondering hoort niet gemeld, kreeg: ${exc?.label}`);
 });
 
-scenario("poort zonder doorgang-tags blijft een milde, onzekere melding", () => {
+scenario("poort zonder doorgang-tags wordt NIET gemeld (besluit René 30-07)", () => {
+  // Een poort op een gewoon berijdbare weg (geen privé, geen inrijverbod)
+  // is geen obstakel; alleen aantoonbaar afgesloten/privé/verboden blijft.
   const c = classifyRemarkTags({ barrier: "gate" });
-  assert(c && c.kind === "poort", "verwacht poort");
-  assert(c!.uncertain, "onbekende doorgang hoort onzeker te zijn");
-  assert(c!.label.startsWith("Poort of hek"), `label: ${c!.label}`);
+  assert(c === null, `onbekende poort hoort niet gemeld, kreeg: ${c?.label}`);
+  const lift = classifyRemarkTags({ barrier: "lift_gate" });
+  assert(lift === null, `open slagboom hoort niet gemeld, kreeg: ${lift?.label}`);
 });
 
 scenario("bicycle=no is harde beperking (niet onzeker)", () => {

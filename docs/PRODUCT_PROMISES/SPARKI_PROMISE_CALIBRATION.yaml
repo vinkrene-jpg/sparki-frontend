@@ -435,7 +435,7 @@ chapter_d_routes_en_navigatie:
               proof_stage: designed
               proof_method: "classifyGatePassage ⇒ 'doorfietsbaar' ⇒ classifyRemarkTags retourneert null; dit scenario zit al in de bestaande unit-suite maar telt pas als 'executed' bij de eerstvolgende uitgevoerde run in de bouwfase."
               proof_result: not_yet_tested
-        - rule: "Een poort wordt alleen gemeld als de route er daadwerkelijk doorheen rijdt (besluit René 30-07-2026: 0 meter — geen nabijheidsmarge als beleidskeuze); een poort op een oprit, zijpad, parallelweg of hekwerk náást de route mag nooit als routeopmerking verschijnen."
+        - rule: "Een poort wordt alleen gemeld als de route er daadwerkelijk doorheen rijdt (besluit René 30-07-2026: 0 meter — geen nabijheidsmarge als beleidskeuze) ÉN de poort aantoonbaar afgesloten/privé/verboden is (aanscherping René 30-07-2026: een open of ongetagde poort op een gewoon berijdbare openbare weg is geen obstakel en wordt nooit gemeld); een poort op een oprit, zijpad, parallelweg of hekwerk náást de route mag nooit als routeopmerking verschijnen."
           rule_type: hard_blockage
           measurement_level: per_meting
           aggregate_justification: ""
