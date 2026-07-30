@@ -9,9 +9,11 @@
 import {
   classifyRemarkTags,
   computeDataRemarks,
+  countRouteObstacles,
   extractElementPoints,
   remarksSource,
   type OverpassElement,
+  type RouteRemark,
 } from "../lib/route-remarks";
 
 type Status = "pass" | "fail";
@@ -204,6 +206,37 @@ scenario("null-gaten in Overpass-geometrie crashen niet (regressie)", () => {
 
   const node: OverpassElement = { type: "node", id: 4, lat: 52.1, lon: 5.1 };
   assert(extractElementPoints(node).length === 1, "node ⇒ 1 punt");
+});
+
+scenario("countRouteObstacles telt harde blokkades exact (gedeelde regel)", () => {
+  const mk = (over: Partial<RouteRemark>): RouteRemark => ({
+    id: "t",
+    kind: "poort",
+    label: "Poort of hek",
+    detail: "",
+    lat: 52,
+    lon: 6,
+    routeKm: 1,
+    endKm: null,
+    offRouteM: 0,
+    uncertain: false,
+    evidence: "",
+    ...over,
+  });
+  const obs = countRouteObstacles([
+    mk({ kind: "trap", label: "Trap" }),
+    mk({ kind: "beperkte_toegang", label: "Fietsen hier niet toegestaan" }),
+    // Parallelle-fietspad-correctie ⇒ uncertain telt NIET als verbod
+    mk({ kind: "beperkte_toegang", label: "Privéterrein", uncertain: true }),
+    mk({ kind: "poort", label: "Afgesloten poort / privéterrein" }),
+    mk({ kind: "poort", label: "Poort of hek" }),
+    mk({ kind: "onverhard", label: "Onverhard" }),
+  ]);
+  assert(obs.steps === 1, `steps: ${obs.steps}`);
+  assert(obs.forbidden === 1, `forbidden: ${obs.forbidden}`);
+  assert(obs.blockedGates === 1, `blockedGates: ${obs.blockedGates}`);
+  assert(obs.gates === 1, `gates: ${obs.gates}`);
+  assert(obs.unpavedSegments === 1, `unpaved: ${obs.unpavedSegments}`);
 });
 
 scenario("bronvermelding is OpenStreetMap/ODbL met kanttekening", () => {

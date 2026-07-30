@@ -30,9 +30,22 @@ export type RouteRemark = {
   evidence: string;
 };
 
+// Blokkade-samenvatting van de server (zelfde meting als de opmerkingen):
+// fietsverbod, trap en afgesloten poort/privéterrein zijn hard — een route
+// met `hard: true` mag nooit als "Klaar" of navigeerbaar getoond worden.
+export type RouteBlockage = {
+  steps: number;
+  forbidden: number;
+  blockedGates: number;
+  gates: number;
+  unpavedSegments: number;
+  hard: boolean;
+};
+
 export type RouteRemarksResponse = {
   remarks: RouteRemark[] | null;
   dataRemarks: { label: string; detail: string }[];
+  blockage?: RouteBlockage;
   source: { name: string; license: string; url: string; note: string };
 };
 

@@ -879,6 +879,15 @@ export async function getRouteObstacles(
 ): Promise<RouteObstacles | null> {
   const remarks = await getRouteRemarks(geometry);
   if (remarks === null) return null;
+  return countRouteObstacles(remarks);
+}
+
+/**
+ * Pure telling van obstakels uit een al berekende opmerkingenlijst — gedeeld
+ * door de generatiepoort én de leesroutes (remarks-endpoint, navigatiestart),
+ * zodat "harde blokkade" overal exact dezelfde regel is.
+ */
+export function countRouteObstacles(remarks: RouteRemark[]): RouteObstacles {
   const out: RouteObstacles = {
     steps: 0,
     forbidden: 0,

@@ -96,6 +96,7 @@ import { getRoutePois } from "../lib/route-pois";
 import {
   getRouteRemarks,
   computeDataRemarks,
+  countRouteObstacles,
   remarksSource,
   routeObstaclesOf,
 } from "../lib/route-remarks";
@@ -2047,7 +2048,19 @@ router.get("/:id/remarks", requireAuth, async (req, res) => {
       });
       return;
     }
-    res.json({ remarks, dataRemarks, source: remarksSource() });
+    // Blokkade-samenvatting uit exact dezelfde meting (geen extra bron-call):
+    // fietsverbod, trap en afgesloten poort/privéterrein zijn hard. De klant
+    // gebruikt dit om KLAAR en NAVIGEER eerlijk te blokkeren op routes die
+    // vóór de generatiepoort zijn opgeslagen.
+    const obstacles = countRouteObstacles(remarks);
+    const blockage = {
+      ...obstacles,
+      hard:
+        obstacles.forbidden > 0 ||
+        obstacles.steps > 0 ||
+        obstacles.blockedGates > 0,
+    };
+    res.json({ remarks, dataRemarks, blockage, source: remarksSource() });
   } catch (err) {
     req.log.error({ err }, "routes.remarks failed");
     res.status(500).json({ error: "Kon routeopmerkingen niet laden" });
@@ -3293,8 +3306,36 @@ router.post("/generate", requireAuth, async (req, res) => {
       };
     };
 
+    // Harde blokkadepoort óók voor handmatige punten/PTP (opdracht
+    // 30-07-2026): een route over fietsverbod, trap of afgesloten poort/
+    // privéterrein wordt nooit als voorstel aangeboden — ook niet wanneer de
+    // renner de punten zelf plaatste. Zelfde meting als de lusgenerator;
+    // meting mislukt/te traag = eerlijk fail-open (nooit gokken).
+    const rejectIfBlocked = async (
+      path: RoutePathPoint[],
+    ): Promise<boolean> => {
+      const obs = await routeObstaclesOf({ budgetMs: 2500 })(path);
+      if (
+        obs != null &&
+        (obs.forbidden > 0 || obs.steps > 0 || obs.blockedGates > 0)
+      ) {
+        console.log(
+          `[generate.${mode}] harde afkeur handmatige route: forbidden=${obs.forbidden} steps=${obs.steps} blockedGates=${obs.blockedGates}`,
+        );
+        res.status(422).json({
+          error:
+            "Deze route loopt over een harde blokkade (fietsverbod, trap of afgesloten poort/privéterrein) en wordt daarom niet aangeboden. Verplaats een punt om de blokkade heen.",
+          code: "NO_SUITABLE_ROUTE",
+          blockage: obs,
+        });
+        return true;
+      }
+      return false;
+    };
+
     if (ptpGeomCached) {
       // Geometry cache hit: skip ORS + geocoding entirely.
+      if (await rejectIfBlocked(ptpGeomCached.geometry.path)) return;
       res.json({
         candidate: buildPtpResponse(
           ptpGeomCached.geometry,
@@ -3365,6 +3406,7 @@ router.post("/generate", requireAuth, async (req, res) => {
       at: Date.now(),
     });
 
+    if (await rejectIfBlocked(ptpGeom.path)) return;
     res.json({
       candidate: buildPtpResponse(ptpGeom, startName, endName, false),
     });
@@ -4215,6 +4257,31 @@ router.post("/:id/navigatie-start", requireAuth, async (req, res) => {
         res.status(404).json({ error: "Route niet gevonden" });
         return;
       }
+    }
+    // Harde blokkadecontrole vóór navigatie (opdracht 30-07-2026): routes die
+    // vóór de generatiepoort zijn opgeslagen kunnen fietsverbod, trap of
+    // afgesloten poort/privéterrein bevatten — die sturen we nooit de
+    // navigatie in. Zelfde meting als de opmerkingen (gedeelde cache);
+    // meting mislukt/te traag = eerlijk fail-open (nooit gokken), gelogd.
+    const geometry = (route.geometry as RoutePathPoint[] | null) ?? [];
+    const obs = await routeObstaclesOf({ budgetMs: 2500 })(geometry);
+    if (
+      obs != null &&
+      (obs.forbidden > 0 || obs.steps > 0 || obs.blockedGates > 0)
+    ) {
+      res.status(409).json({
+        error:
+          "Deze route bevat harde blokkades (fietsverbod, trap of afgesloten poort/privéterrein) en kan niet genavigeerd worden. Genereer een nieuwe route — de routemaker keurt zulke routes tegenwoordig af.",
+        code: "ROUTE_BLOCKED",
+        blockage: obs,
+      });
+      return;
+    }
+    if (obs == null) {
+      req.log.warn(
+        { routeId: route.id },
+        "navStart: blokkademeting niet beschikbaar — eerlijk fail-open",
+      );
     }
     await registerRouteUsage(route, "navigatie", route.version, clerkId);
     res.json({ ok: true, version: route.version });

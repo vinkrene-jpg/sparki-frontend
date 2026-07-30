@@ -954,7 +954,6 @@ function RouteCard({
   const nav = route.nav ?? []
   const geometry = route.geometry ?? []
   const canExport = geometry.length > 1
-  const canNavigate = geometry.length > 1
 
   // Interactief hoogteprofiel ↔ kaart: gedeelde km-positie (twee-weg sync).
   const [posKm, setPosKm] = useState<number | null>(null)
@@ -965,6 +964,12 @@ function RouteCard({
   }>()
   // Routeopmerkingen uit echte OSM-gegevens (server, gecachet).
   const remarksQuery = useRouteRemarks(geometry.length > 1 ? route.id : null)
+  // Harde blokkade (fietsverbod, trap, afgesloten poort/privéterrein) uit de
+  // server-meting: zo'n route is nooit "Klaar" en nooit navigeerbaar — dit
+  // vangt routes die vóór de generatiepoort zijn opgeslagen. Meting (nog)
+  // niet beschikbaar = eerlijk niet blokkeren (fail-open, zelfde als server).
+  const hardBlocked = remarksQuery.data?.blockage?.hard === true
+  const canNavigate = geometry.length > 1 && !hardBlocked
   // Gravel/MTB: onverhard is daar juist gewénst — een "onverhard"-opmerking is
   // dan informatie (staat in de lijst en de wegdekverdeling), geen
   // waarschuwingsmarker die de kaart vol uitroeptekens zet.
@@ -1048,9 +1053,13 @@ function RouteCard({
           <div className="flex min-w-0 items-center gap-2">
             <span
               className="font-mono text-[9px] uppercase tracking-[0.18em]"
-              style={{ color: ACCENT }}
+              style={{ color: hardBlocked ? "#f87171" : ACCENT }}
             >
-              {route.status === "ready" ? "Klaar" : route.status}
+              {hardBlocked
+                ? "Geblokkeerd"
+                : route.status === "ready"
+                  ? "Klaar"
+                  : route.status}
             </span>
             <span className="font-mono text-[9px] uppercase text-white/25">
               · {route.source}
@@ -1059,6 +1068,13 @@ function RouteCard({
           <h3 className="mt-1 line-clamp-2 font-sans text-lg font-light leading-snug tracking-tight text-white/90">
             {route.name}
           </h3>
+          {hardBlocked && (
+            <p className="mt-1.5 rounded-md border border-red-400/25 bg-red-500/10 px-2.5 py-1.5 text-[11px] leading-snug text-red-200/90">
+              Deze route bevat harde blokkades (fietsverbod, trap of afgesloten
+              poort/privéterrein) en kan niet genavigeerd worden. Genereer een
+              nieuwe route — de routemaker keurt zulke routes tegenwoordig af.
+            </p>
+          )}
         </div>
         <div className="flex max-w-full flex-wrap items-center justify-end gap-3">
           {canNavigate && (

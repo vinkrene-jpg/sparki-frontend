@@ -23,6 +23,10 @@ checks:
     cases:
       - case: "Gegroepeerde markers tonen echte labels met echte telling ('… (3×)'), nooit een placeholder; foutmelding bij afkeur is de bestaande eerlijke NL-tekst met reden (fietsverbod/afgesloten poort) en handelingsperspectief"
         result: "pass"
+      - case: "Ketensluiting bestaande routes (aanvulling 30-07-2026): een vóór de poort opgeslagen route met harde blokkades toont 'Geblokkeerd' i.p.v. 'KLAAR' met een eerlijke rode uitleg, NAVIGEER verdwijnt, en navigatiestart weigert server-side met 409 — live bewezen op de echte foutroute (id 265, 10 afgesloten poorten). Meting niet beschikbaar (Overpass-502) = eerlijk fail-open zonder valse blokkade-claim"
+        result: "pass"
+      - case: "Handmatige punten-route (waypoints/A-B) over een harde blokkade wordt vóór het voorstel geweigerd met een eerlijke 422 en handelingsperspectief ('verplaats een punt'); zelfde meting en dezelfde fail-open-regel als de lusgenerator"
+        result: "pass"
 
 # verdict: deliverable alleen als alle results pass zijn; anders blocked.
 verdict: "deliverable"
