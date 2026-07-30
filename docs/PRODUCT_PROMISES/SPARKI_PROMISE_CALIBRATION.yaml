@@ -2099,3 +2099,996 @@ chapter_a_start_profiel_en_doelen:
       description: "René's conflictbeleid kalibreren; presentatie/sturing gelijktrekken voor de jeugdpoort (bouwvoorstel, na akkoord); conflictscenario-test ontwerpen."
       approved_for_execution: false
 
+# ---------------------------------------------------------------------------
+# Hoofdstuk B+C — Training, coaching en analyse
+# Opgesteld: 2026-07-30 (opdracht v2, los aangeleverd document). Alleen dit
+# hoofdstuk; geen productcode gewijzigd. Scope: Trainingen, Trainingsplan,
+# Sparki-coaching, Coach-cockpit, Lab, gezondheid/herstel, grafieken,
+# mentale signalen.
+# Conform opdracht v2: measurement_level + counterexamples genest PER regel;
+# uitsluitend proof_stage "designed" + proof_result "not_yet_tested" (geen
+# code gewijzigd of test gedraaid voor deze regels); bronnen volledig
+# uitgewerkt of expliciet als missing_information gemarkeerd.
+# ---------------------------------------------------------------------------
+
+chapter_bc_training_coaching_en_analyse:
+
+  - id: TRAIN_PLAN_001
+    module: "Training, coaching en analyse"
+    subject: "Trainingsplan — veilig, uitvoerbaar en doelgericht plannen zonder coach"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Deels: de plan-engine is deterministisch (alle cijfers uit guardrails/skeleton; AI schrijft alleen titels/uitleg met template-fallback), sessieplafonds per ervaring/type en risk-/loadcapaciteitsfactoren bestaan, ziek/geblesseerd blokkeert alle trainingsdruk, en de plan-lifecycle (pauze/hervat/verwijder met single-current-invariant) is getest. Ontbreekt: een directe geautomatiseerde test op de plan-engine zelf (caps/weekquota als asserts) en praktijkbewijs dat een gegenereerd plan door een echte renner als uitvoerbaar wordt ervaren."
+      practice_status: "In dagelijks gebruik bij René/Dylan; nooit systematisch getoetst tegen vooraf vastgelegde verwachtingen (uitvoerbaarheid, logica na verstoring)."
+      known_limitations:
+        - "Er bestaan twee planbouwpaden: het actieve API-pad (skeleton met availableDays/races/gezondheid/weer/risk) en een oudere gestructureerde generator die busyDays/leefagenda ondersteunt. De leefagenda-sturing zit NIET aantoonbaar in het actieve pad — de belofte 'levensgebeurtenissen sturen het plan' geldt dus niet uniform."
+        - "Handmatige edits en toegepaste voorstellen accepteren duur tot 1440 min en TSS tot 1000 — ver boven de plan-caps; de guardrails gelden bij genereren, niet bij wijzigen."
+        - "Er is geen letterlijke TSB-drempelguard in de plan-engine; risico loopt via een samengesteld risicosignaal (CTL/ATL/TSB + readiness) met committed/provisional-factoren."
+        - "Extra (ongeplande) trainingen worden niet door de engine herverdeeld; alleen de weekimpact wordt getoond."
+        - "Eerste 7 dagen zijn vast (committed), twee weken daarna voorlopig; herstelwijzigingen passen alleen voorlopige dagen aan — dit onderscheid is in de UI-belofte nog niet expliciet."
+
+    proposed_promise:
+      text: "Sparki plant drie weken vooruit: de komende week staat vast, de twee weken daarna zijn een voorlopige vooruitblik die meegroeit met jouw herstel, gezondheid en agenda. Elke training past binnen wat voor jouw ervaring en beschikbare tijd realistisch is — Sparki propt nooit meer in je week dan er past, en bij ziekte of blessure verdwijnt elke trainingsdruk. De getallen (duur, zwaarte, rust) komen altijd uit vaste, controleerbare regels; taal en uitleg mogen van de AI komen, de cijfers nooit."
+      proposed_by: replit
+      rationale: "Een coach-loos plan is Sparki's kernbelofte richting zelfstandige renners. De wereldmarkt-lat (TrainerRoad/JOIN-achtige adaptieve plannen) is: adaptief én voorspelbaar veilig. Determinisme van de cijfers is de bestaansreden van het vertrouwen — dat moet aantoonbaar blijven."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Eigen plan-engine + guardrails (skeleton, caps, risk-factoren)"
+          coverage: "Dekt de volledige plangeneratie en veiligheidsgrenzen in het actieve pad. Dekt NIET: leefagenda-sturing (alleen in het oude pad) en grenzen bij handmatig wijzigen."
+          actuality: "Live eigen code; wijzigt mee met het product."
+          license_status: "Eigen werk."
+          limitations:
+            - "Caps en factoren zijn eigen keuzes; geen externe validatie per waarde."
+          applicability: "De meetbasis voor alle afkeurregels hieronder (caps, ziek=rust, determinisme)."
+        - name: "Trainingsleer-standaarden voor periodisering en belastingsopbouw (Coggan/Allen; Seiler polarisatie; ACWR-literatuur o.a. Gabbett)"
+          coverage: "Dekt veilige weekopbouw, verhouding intensief/rustig en het spike-risico (acute:chronische belasting). Dekt NIET: individuele medische situaties of jeugdspecifieke periodisering in detail."
+          actuality: "Boek 3e druk 2019; Seiler-publicaties 2006–2019; ACWR-debat loopt (methodiekkritiek sinds 2020) — geen vaste versie."
+          license_status: "Wetenschappelijke kennis vrij toepasbaar als onderbouwing; geen tekstovername."
+          limitations:
+            - "ACWR is omstreden als voorspeller; bruikbaar als waarschuwingssignaal, niet als bewezen blessurevoorspelling."
+          applicability: "Onderbouwt de risk-factoren en de keuze dat een spike (ATL/CTL > ~1,5) het plan dempt in plaats van doorduwt."
+      sources_in_use:
+        - "Eigen plan-engine — leidend."
+        - "Trainingsleer-standaarden — als onderbouwing van caps/risk-factoren, niet als letterlijke formule."
+      privacy_status: unknown
+      missing_information:
+        - "Geen directe engine-test die de sessieplafonds en week-onderfilling als asserts vastzet."
+        - "Geen vastgelegde onderbouwing per capwaarde (waarom 300 min long-ride max bij gevorderd, etc.)."
+        - "Onbekend of het actieve pad leefagenda-events ooit gaat consumeren of dat het oude pad wordt uitgefaseerd (architectuurkeuze open)."
+
+    replit_definition:
+      objective_quality_standard: "Elk gegenereerd plan: 0 sessies boven het cap voor die DayKind×ervaring; weekminuten ≤ target×fase/risk-factor (onderfillen mag, overfillen nooit); bij ziek/geblesseerd 0 trainingsprikkels; alle cijfers herleidbaar tot deterministische regels (AI-uitval verandert geen enkel getal)."
+      recommended_default: "Committed week vast houden, voorlopige weken automatisch mee laten bewegen met herstel/gezondheid (huidig gedrag); onrealistische weekdoelen eerlijk onderfillen met uitleg, nooit oplossen met onhaalbare sessies. Besluitniveau (advies/voorstel/automatisch): automatische aanpassing bestaat uitsluitend op voorlopige plandagen; elke wijziging aan de vaste (committed) week is een voorstel dat de sporter toepast; al het overige is advies."
+      technical_limits:
+        - "Leefagenda stuurt alleen het oude generatorpad; het actieve pad kent availableDays maar geen event-mapping."
+        - "Wijzig-pad (PUT) valideert niet tegen de plan-caps."
+      assumptions:
+        - "De committed/provisional-splitsing (7+14 dagen) past bij hoe renners plannen ervaren; nooit gekalibreerd."
+      unknowns:
+        - "Hoe vaak het automatische doorrollen (maybeRollForward) in de praktijk een verrassend ander plan oplevert."
+      evidence_method:
+        - "Nieuwe engine-test: genereer plannen voor randprofielen (beginner met 20 uur wens; high risk; ziek) en assert caps/onderfilling/0-druk."
+        - "Praktijktest: René/Dylan beoordelen één gegenereerd 3-wekenplan vooraf op uitvoerbaarheid tegen vastgelegde verwachting, en na een gemiste week opnieuw."
+
+    rene_calibration:
+      questions:
+        - question: "Hoeveel mag Sparki zonder jouw bevestiging aan het plan veranderen: alleen de voorlopige weken automatisch bijstellen (huidig), óók de vaste week bij duidelijke signalen, of nooit iets zonder akkoord?"
+          answer_rene: ""
+        - question: "Als jouw weekdoel niet realistisch past (te veel uren voor je ervaring/beschikbare dagen): wil je dat Sparki stil minder inplant met uitleg (huidig), of het gesprek aangaat vóór het plan er staat?"
+          answer_rene: ""
+        - question: "Moet een handmatige wijziging door jou aan een training aan dezelfde veiligheidsgrenzen gebonden zijn als het plan zelf (bijv. max-duur per sessie), of mag jij als gebruiker alles overrulen?"
+          answer_rene: ""
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Bij gemeld ziek of geblesseerd bevat het plan geen enkele trainingsprikkel — geen enkele sessie, hoe licht ook."
+          rule_type: hard_blockage
+          measurement_level: per_dag
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Atleet meldt ziek op maandag; het gegenereerde/doorgerolde plan bevat woensdag een 'lichte hersteltraining' van 30 min — overtreding, ook al is de rest van de week rust."
+              proof_stage: designed
+              proof_method: "Redenering: de engine blokkeert bij sick/injured alle trainingsdruk in het skeleton; per_dag omdat élke dag afzonderlijk vrij van prikkels moet zijn — één sessie in een verder lege week mag nooit wegvallen tegen het geheel. Latere executed-stap: engine-test met ziek-status asserteert 0 workouts."
+              proof_result: not_yet_tested
+        - rule: "Geen enkele geplande sessie mag boven het sessieplafond voor die trainingssoort en dat ervaringsniveau uitkomen."
+          rule_type: hard_blockage
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Beginner met een (onrealistisch) weekdoel van 15 uur krijgt een duurrit van 6 uur ingepland om het quotum te halen — overtreding; het juiste gedrag is eerlijk onderfillen."
+              proof_stage: designed
+              proof_method: "Redenering: caps per DayKind×ervaring zijn hard in het skeleton (long max 120 min voor beginner) en week-overschot wordt niet ingepland; per_sessie zodat één te lange rit nooit wegvalt tegen een verder correct weekgemiddelde. Latere executed-stap: randprofiel-test."
+              proof_result: not_yet_tested
+        - rule: "AI mag nooit een getal in het plan bepalen of wijzigen: bij AI-uitval of afwijkende AI-output zijn duur, TSS, intensiteit en rustdagen identiek."
+          rule_type: hard_blockage
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "LLM-uitval tijdens plangeneratie; als het plan dan andere duur/TSS-waarden bevat (of niet gegenereerd kan worden), is dat een overtreding — alleen titels/uitleg mogen terugvallen op templates."
+              proof_stage: designed
+              proof_method: "Redenering: de engine berekent alle cijfers vóór de AI-stap en heeft een expliciete template-fallback voor tekst; latere executed-stap: test met geforceerde LLM-fout vergelijkt de numerieke planinhoud byte-voor-byte."
+              proof_result: not_yet_tested
+        - rule: "Plan verwijderen of opnieuw genereren mag nooit sessiehistorie of voltooide trainingen aantasten."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Atleet verwijdert het plan; een vorige week voltooide gekoppelde training verdwijnt of verliest zijn koppeling met terugwerkende kracht — overtreding."
+              proof_stage: designed
+              proof_method: "Redenering: DELETE verwijdert alleen plandagen en nog-geplande workouts, ontkoppelt voltooide workouts zonder ze te wissen, en regeneratie verwijdert uitsluitend toekomstige planned rijen. Latere executed-stap: lifecycle-test met voltooide sessie vóór delete/regenerate."
+              proof_result: not_yet_tested
+      tolerances:
+        - "Onderfillen van een onrealistisch weekdoel is toegestaan en gewenst (met uitleg); de mate van demping bij verhoogd risico (factoren 0,6–1,05) is kalibreerbaar."
+      unknown_data_policy: "Zonder FTP werkt het plan op duur/RPE-niveau in plaats van wattages; zonder readiness-data geldt het voorzichtige pad. Ontbrekende data verhoogt nooit de belasting en wordt nooit stilzwijgend aangevuld met aannames richting zwaarder."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "Plan-lifecycle (pauze/hervat/verwijder, single-current) — gedekt via bestaande route-tests, groen"
+        - "Plan-overview weblogica (doelverschuiving pas bij ≥3 gemist of ≥50% gemiste minuten) — test bestaat, groen"
+      independent_checks: ["Directe engine-test op caps/onderfilling/ziek=0 — nog te bouwen"]
+      practice_test_required: true
+      practice_testers: ["René + Dylan (uitvoerbaarheidsoordeel vooraf vastgelegd, plus her-oordeel na verstoorde week)"]
+      result: not_tested
+      expectation_gap:
+        - "Leefagenda-belofte en werkelijkheid lopen uiteen (alleen het oude pad consumeert busyDays); dit moet óf gebouwd óf uit de belofte."
+        - "Wijzig-pad zonder caps is een gat in de veiligheidsbelofte zodra een voorstel of gebruiker extreme waarden zet."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "René's autonomie-/override-kalibratie; daarna engine-test bouwen en de leefagenda-architectuurkeuze (activeren in actief pad of belofte bijstellen) voorleggen."
+      approved_for_execution: false
+
+  - id: TRAIN_UITVOERING_001
+    module: "Training, coaching en analyse"
+    subject: "Trainingen — uitvoering, koppeling aan echte ritten en feedback-aanpassingen"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Deels: koppeling van geplande training aan echte sessie valideert eigendom én exacte datum (anders 400), het uitvoeringsoordeel wordt deterministisch berekend, koppelen/ontkoppelen wordt append-only gelogd, en de feedback-naar-voorstel-regels (pijn/moe nooit zwaarder, RPE≥9 → herstel) zijn puur en deterministisch met de LLM alleen voor de verwoording. Ontbreekt: een transactie/versie-guard rond koppelen+oordeel (race-safety niet claimbaar) en praktijkbewijs van de hele lus feedback→voorstel→toepassen."
+      practice_status: "Dagelijks in gebruik; de aanpassingslus is functioneel getest maar nooit tegen vooraf vastgelegde verwachtingen beoordeeld."
+      known_limitations:
+        - "Geen databasetransactie of optimistic-locking rond koppelen + oordeel; gelijktijdige verzoeken kunnen theoretisch een inconsistente tussenstand geven."
+        - "Annuleren is een status-wissel (soft-cancel); alle lijsten/pickers moeten daarop filteren — dat is een afspraak, geen afgedwongen contract."
+        - "PUT accepteert bij het toepassen van wijzigingen zeer ruime waarden (zie TRAIN_PLAN_001)."
+
+    proposed_promise:
+      text: "Elke geplande training kun je koppelen aan de rit die je echt reed — alleen jouw eigen rit van dezelfde dag. Sparki beoordeelt eerlijk en volgens vaste regels hoe de uitvoering zich tot het plan verhield. Zeg je na afloop 'te zwaar', 'pijn' of 'te licht', dan krijg je een aanpassingsvoorstel volgens vaste veiligheidsregels — pijn of vermoeidheid maakt een training nooit zwaarder — en jij (of je coach, bij coach-trainingen) beslist of het wordt toegepast."
+      proposed_by: replit
+      rationale: "De uitvoeringslus is waar coaching echt wordt: zonder betrouwbare koppeling en eerlijke oordelen is elke analyse daarboven zand. De vaste veiligheidsregels (nooit zwaarder bij pijn/moe) zijn een hardere belofte dan de meeste marktspelers doen."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Eigen uitvoerings- en aanpassingsregels (classifyExecution + decideAdjustment)"
+          coverage: "Dekt oordeel, statusovergangen en alle aanpassingsfactoren (pijn ×0,5 duur/×0,4 TSS; moe ×0,7/×0,6; te zwaar ~×0,8; te licht +15% TSS/+10% duur). Dekt NIET: fysiologische validatie van die factoren."
+          actuality: "Live eigen code; deterministisch en puur."
+          license_status: "Eigen werk."
+          limitations:
+            - "Factoren zijn redelijke eigen keuzes zonder externe validatie per getal."
+          applicability: "Meetbasis voor de afkeurregels (nooit zwaarder bij pijn/moe; deterministisch besluit)."
+        - name: "RPE-/sessie-RPE-literatuur (Foster session-RPE; Borg CR10)"
+          coverage: "Dekt de bruikbaarheid van subjectieve inspanning als sturingssignaal. Dekt NIET: exacte vertaalfactoren naar duur/TSS-aanpassingen."
+          actuality: "Foster 2001 e.v.; stabiele, breed geaccepteerde kennis."
+          license_status: "Vrij toepasbaar als onderbouwing."
+          limitations:
+            - "RPE is persoonsafhankelijk; kalibratie per atleet ontbreekt."
+          applicability: "Onderbouwt dat RPE≥9 een herstel-trigger mag zijn en dat subjectieve feedback een volwaardig signaal is."
+      sources_in_use:
+        - "Eigen regels — leidend; RPE-literatuur als onderbouwing van de drempels."
+      privacy_status: unknown
+      missing_information:
+        - "Geen concurrency-bewijs rond koppelen+oordeel."
+        - "Geen meting hoe vaak voorstellen worden toegepast vs. genegeerd (leert of de factoren goed voelen)."
+
+    replit_definition:
+      objective_quality_standard: "Koppelen kan alleen aan een eigen sessie van exact dezelfde datum; elk oordeel is reproduceerbaar uit dezelfde inputs; een pijn-/moe-feedback levert nooit een voorstel met hogere duur of TSS; coach-trainingen worden nooit automatisch inhoudelijk gewijzigd."
+      recommended_default: "Voorstel-flow (mens beslist) voor alles wat de committed week raakt; automatische bijstelling alleen op voorlopige plandagen (huidig gedrag). Besluitniveau (advies/voorstel/automatisch): feedback leidt altijd tot een voorstel, nooit tot automatische aanpassing van een training; het uitvoeringsoordeel bij koppelen is een automatische registratie die niets aan het plan wijzigt."
+      technical_limits:
+        - "Race-safety van koppelen+oordeel is niet gegarandeerd zonder transactie."
+      assumptions:
+        - "De aanpassingsfactoren zijn veilig-conservatief; nooit fysiologisch gevalideerd."
+      unknowns:
+        - "Gedrag bij dubbele snelle feedback op dezelfde workout (laatste wint? stapelt?) — niet expliciet vastgelegd."
+      evidence_method:
+        - "Bestaande test:feedback-adjust her-runnen als proof-artefact tegen dit contract."
+        - "Nieuw tegenvoorbeeld: pijn-feedback op een intervaltraining mag nooit een voorstel met méér TSS opleveren (property-achtige test over alle feedbacktypes)."
+
+    rene_calibration:
+      questions:
+        - question: "Als je 'te licht' meldt: mag Sparki dan direct de eerstvolgende soortgelijke training verzwaren als voorstel, of wil je dat het eerst een patroon ziet (bijv. 2× te licht) voordat het iets voorstelt?"
+          answer_rene: ""
+        - question: "Wil je dat een toegepast aanpassingsvoorstel zichtbaar blijft als 'aangepast t.o.v. origineel' (met het origineel ernaast), of mag het origineel stil vervangen worden?"
+          answer_rene: ""
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Feedback 'pijn' of 'vermoeid' mag nooit resulteren in een voorstel dat zwaarder is (duur of TSS) dan de oorspronkelijke training."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Pijn-feedback op een training van 60 min / 70 TSS levert een voorstel van 65 min of 75 TSS — overtreding, ongeacht de verdere inhoud van het voorstel."
+              proof_stage: designed
+              proof_method: "Redenering: decideAdjustment is puur en past bij pain/tired uitsluitend verlagende factoren toe (×0,5/×0,4 resp. ×0,7/×0,6); de LLM krijgt het besluit alleen ter verwoording en kan het niet wijzigen. Latere executed-stap: property-test over alle feedbacktypes."
+              proof_result: not_yet_tested
+        - rule: "Een training kan alleen gekoppeld worden aan een eigen sessie van exact dezelfde kalenderdag; elke andere koppeling wordt geweigerd."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Koppelverzoek van een geplande training van dinsdag aan een (eigen) rit van woensdag — moet met 400 geweigerd worden; idem elke sessie van een ander account."
+              proof_stage: designed
+              proof_method: "Redenering: het koppelpad valideert eigendom (clerkId) én datumgelijkheid vóór de update; cross-account-isolatietests dekken het eigendomsdeel al elders. Latere executed-stap: her-run met beide weigeringen als asserts."
+              proof_result: not_yet_tested
+        - rule: "Een training van de coach wordt nooit automatisch inhoudelijk gewijzigd; een aanpassingsvoorstel daarop gaat altijd naar de coach."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Atleet meldt 'te zwaar' op een coach-training; het systeem past duur/TSS direct aan zonder coachbesluit — overtreding, óók als de aanpassing veilig is."
+              proof_stage: designed
+              proof_method: "Redenering: PUT blokkeert inhoudelijke edits op source=coach (403-pad) en de feedbackroute routeert het voorstel naar de coach; de cockpit-contracttest bevestigt dat alleen een coachbesluit toepast. Latere executed-stap: her-run met dit scenario."
+              proof_result: not_yet_tested
+      tolerances:
+        - "De exacte verlaag-/verhoogfactoren zijn kalibreerbaar; de richting (nooit omhoog bij pijn/moe) niet."
+      unknown_data_policy: "Zonder RPE/feedback wordt niets aangenomen: geen voorstel zonder signaal. Een sessie zonder koppelbare data houdt het oordeel 'niet te beoordelen' in plaats van een verzonnen verdict."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "test:feedback-adjust — bestaat, groen"
+        - "test:koppellijst-workouts (soft-cancel filtering) — bestaat, groen"
+        - "Cross-account-isolatietests (eigendom bij koppelen) — bestaan, groen"
+      independent_checks: ["Concurrency-check koppelen+oordeel — nog te ontwerpen"]
+      practice_test_required: true
+      practice_testers: ["Dylan (volledige lus: rijden → koppelen → feedback → voorstel → toepassen)"]
+      result: not_tested
+      expectation_gap:
+        - "Race-safety van de koppellus is onbewezen; en er is geen vastgelegd gedrag voor herhaalde feedback op dezelfde training."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "René's patroon-/zichtbaarheidskalibratie; property-test 'nooit zwaarder bij pijn/moe' bouwen; concurrency-gedrag vastleggen."
+      approved_for_execution: false
+
+  - id: TRAIN_COACHING_001
+    module: "Training, coaching en analyse"
+    subject: "Sparki-coaching — observaties, advies en toon zonder fabricatie"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Deels: de observation engine blokkeert single-datapoint-conclusies (≥2 overeenstemmende signalen óf ≥3-daagse trend, gezondheid als declared-fact-uitzondering), confidence verdisconteert tegenspraak en ontbrekende data, de advieslaag is puur/deterministisch met vaste prioriteit (urgent→belangrijk→info; rotatie alleen binnen severity), en de voice-laag forceert empathie bij tegenslag en weigert loops zonder bewijs. De centrale AI-gateway blokkeert op consent/minderjarig/killswitch en redigeert geheimen. Ontbreekt: een end-to-end-test van de gateway-blokkades en praktijkbewijs dat adviezen als juist/gepast worden ervaren."
+      practice_status: "Dagelijks in gebruik; toon en relevantie zijn nooit systematisch tegen verwachtingen getoetst."
+      known_limitations:
+        - "De beslislogica is verdeeld over compose/advies/actions-functies; er is geen één-plek 'decideCoach' meer — gedragsgaranties moeten per functie bewezen worden."
+        - "Weerdata ontbreekt structureel in de observatie-intake en wordt eerlijk als ontbrekend gemarkeerd."
+        - "Er is geen aangetroffen end-to-end-test voor consent/minor/redaction op de AI-gateway (wel unit-niveau code)."
+
+    proposed_promise:
+      text: "Sparki's coaching zegt alleen iets als er echt bewijs is: minstens twee signalen die hetzelfde zeggen of een meerdaagse trend — nooit een conclusie uit één meetpunt. Wat Sparki niet weet, zegt het eerlijk. De toon past zich aan jou aan, maar bij tegenslag is Sparki altijd eerst serieus en meelevend — humor komt nooit op medische of gevoelige momenten. En Sparki verzint nooit iets: geen data, geen herinneringen, geen verbanden."
+      proposed_by: replit
+      rationale: "Het verschil tussen een gimmick en een coach is bewijsdiscipline. De ≥2-signaal-guard en de fabricatie-weigering zijn Sparki's identiteit (eerlijkheidsdoctrine) en tegelijk het moeilijkst te bewaken — dus juist dit hoort in het contract."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Eigen observation/voice/gateway-lagen"
+          coverage: "Dekt signaalbundeling, confidence, toon-/trustregels en AI-toegangspoort. Dekt NIET: de kwaliteit van de onderliggende data (dekt hoofdstuk H) of de juistheid van coachinhoud als coaching-leer."
+          actuality: "Live eigen code met contracttests op observatie- en humorniveau."
+          license_status: "Eigen werk."
+          limitations:
+            - "Confidence is een eigen heuristiek (geen gekalibreerde kansmaat)."
+          applicability: "Meetbasis voor de bewijs-, toon- en fabricatieregels hieronder."
+        - name: "Coaching-/gedragsliteratuur op richtlijnniveau (motiverende gespreksvoering, feedback-timing)"
+          coverage: "Dekt hoe feedback en toon gedragsverandering ondersteunen. Dekt NIET: productspecifieke drempels (wanneer welke kaart)."
+          actuality: "Stabiele literatuur (Miller & Rollnick e.a.); wijzigt traag."
+          license_status: "Vrij toepasbaar als onderbouwing."
+          limitations:
+            - "Vertaling naar UI-momenten blijft productkeuze."
+          applicability: "Onderbouwt empathie-vóór-humor en terughoudendheid bij dunne data."
+      sources_in_use:
+        - "Eigen lagen — leidend."
+      privacy_status: unknown
+      missing_information:
+        - "Geen end-to-end-bewijs van de AI-gateway-blokkades (consent ingetrokken / minderjarige / killswitch) door de echte routes heen."
+        - "Geen meting van ervaren advieskwaliteit (praktijktoets ontbreekt)."
+
+    replit_definition:
+      objective_quality_standard: "0 observaties op basis van één datapunt (behalve declared health-facts); confidence nooit 100%; 0 humor op medische/veiligheids-/privacymomenten; 0 gefabriceerde data in enige coachtekst; alle AI-verkeer door de ene gateway (consent → minor → redactie)."
+      recommended_default: "Huidige bewijsdrempels handhaven (≥2 signalen of ≥3-daagse trend); rotatie alleen binnen gelijke ernst; urgent nooit weggedraaid. Besluitniveau (advies/voorstel/automatisch): coaching geeft advies en concrete voorstellen; de enige automatische handeling is de bijstelling van voorlopige plandagen (contract in TRAIN_PLAN_001) — alle andere autonomie is een openstaande kalibratievraag aan René."
+      technical_limits:
+        - "De LLM kan verwoorden maar heeft geen kanaal om besluiten of getallen te wijzigen — die scheiding is architectureel en moet zo blijven."
+      assumptions:
+        - "Trust-tiers uit echte interacties zijn een goede maat voor welke toon past; nooit extern gevalideerd."
+      unknowns:
+        - "Hoe vaak de ≥2-signaal-guard een écht relevant vroeg signaal te lang tegenhoudt (vals-negatieven)."
+      evidence_method:
+        - "Her-run van observation/humor/mental-contracttests als proof-artefact."
+        - "Nieuwe gateway-e2e-test: drie blokkadepaden door een echte route."
+        - "Praktijktest: week-logboek 'was dit advies terecht en gepast van toon?' (René + Dylan)."
+
+    rene_calibration:
+      questions:
+        - question: "Vind je de bewijsdrempel goed staan (pas iets zeggen bij 2+ signalen of een 3-daagse trend), of mag Sparki eerder iets voorzichtigs zeggen zolang het de onzekerheid erbij noemt?"
+          answer_rene: ""
+        - question: "Hoe moet een waarschuwing voelen: neutraal-zakelijk ('je belasting stijgt snel'), of persoonlijk-dringend ('ik zou morgen echt rust nemen') — en verschilt dat tussen gezondheid en prestatie?"
+          answer_rene: ""
+        - question: "Wanneer mag Sparki zelfstandig handelen zonder eerst te vragen: nooit, alleen voorlopige plandagen bijstellen (huidig), of ook bijv. een herstelweek activeren bij duidelijke overbelastingssignalen?"
+          answer_rene: ""
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Geen enkele observatie of coachconclusie mag op één enkel datapunt rusten (uitzondering: door de atleet zelf gemelde gezondheidsfeiten)."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Eén nacht slecht slapen (één meting) levert de observatie 'je herstel staat onder druk' — overtreding; pas bij een tweede signaal of trend mag dit bestaan."
+              proof_stage: designed
+              proof_method: "Redenering: de engine eist ≥2 overeenstemmende signalen of ≥3-daagse trend vóór een observatie ontstaat; health-declared is de enige uitzondering. Latere executed-stap: her-run van de observatie-contracttest met dit geval als expliciete assert."
+              proof_result: not_yet_tested
+        - rule: "Humor is verboden op medische, mentale, veiligheids-, privacy- en foutmomenten — functionele tekst blijft daar altijd puur serieus."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Bij een ziekmelding bevat de reactie een grapje of luchtige kwinkslag — overtreding, ongeacht het ingestelde humorniveau."
+              proof_stage: designed
+              proof_method: "Redenering: de centrale humorlaag sluit gevoelige contexten allowlist-matig uit en de voice-laag forceert empathie bij tegenslag; humor-tests dekken uit/null-gedrag al. Latere executed-stap: her-run + gevoelige-context-asserts."
+              proof_result: not_yet_tested
+        - rule: "Geen enkel AI-verzoek mag buiten de centrale gateway om lopen; consent-intrekking, minderjarigen-blokkade en killswitch gelden dus altijd en overal."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Consent ingetrokken, maar een coachkaart bevat nog verse LLM-tekst uit een route die rechtstreeks een SDK aanroept — overtreding van de poortarchitectuur."
+              proof_stage: designed
+              proof_method: "Redenering: aiMessage() is de ene poort (killswitch→consent→minor→redactie→dedupe); de latere executed-stap is een e2e-test die met ingetrokken consent alle coachroutes aanroept en 0 LLM-calls asserteert, plus een grep-gate op directe SDK-imports buiten de gateway."
+              proof_result: not_yet_tested
+      tolerances:
+        - "Toon, humorniveau en trust-opbouwsnelheid zijn kalibreerbaar; de gevoelige-context-uitsluiting en de bewijsdrempels niet."
+      unknown_data_policy: "Ontbrekende data wordt benoemd ('hier weet ik te weinig van') en verlaagt de confidence; er wordt nooit een ontbrekend signaal aangevuld of een verband verzonnen. Weer geldt tot de bron bestaat altijd als ontbrekend."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "Observatie-contracttests (≥2-signaal-guard, confidence) — bestaan, groen"
+        - "Humor-tests (uit/null, determinisme, anti-herhaling) — bestaan, groen"
+      independent_checks: ["Gateway-e2e (3 blokkadepaden) + grep-gate op SDK-bypass — nog te bouwen"]
+      practice_test_required: true
+      practice_testers: ["René + Dylan (week-logboek advieskwaliteit/toon)"]
+      result: not_tested
+      expectation_gap:
+        - "Grootste gat: gateway-discipline is architectuur-op-papier zonder e2e-bewijs; en ervaren advieskwaliteit is nooit gemeten."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "René's toon-/autonomiekalibratie; gateway-e2e-test en SDK-bypass-gate bouwen; daarna week-logboek-praktijktest."
+      approved_for_execution: false
+
+  - id: TRAIN_COCKPIT_001
+    module: "Training, coaching en analyse"
+    subject: "Coach-cockpit — menselijke coach werkt veilig met sporterdata en plannen"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Redelijk op contractniveau: de cockpit-contracttest dekt fail-closed toegang (geen rol/koppeling/sharing=none ⇒ geen gezondheids- of readinessdata), coach-workouts als enige coach-schrijfbare rijen (Sparki-/atleet-workouts 403), idempotente signaalbesluiten en 409 op besluiten over al-afgehandelde voorstellen. Ontbreekt: een uitgewerkt hoofdtrainer-/organisatie-overzicht (nauwelijks aangetroffen) en praktijkbewijs met een echte externe coach."
+      practice_status: "Nog geen echte externe coach in gebruik; alleen eigen test-accounts."
+      known_limitations:
+        - "'Privénotities zijn owner-only' verdient nuance: de coachcontext is bewust sporter-transparant; alleen verwijderen is owner-only. De belofte moet die transparantiekeuze expliciet maken."
+        - "Open-voorstel-uniciteit (nooit twee open voorstellen voor hetzelfde) is niet overal als DB-contract aangetroffen; besluit-idempotentie wél."
+        - "Org-/hoofdtrainer-overzicht bestaat slechts basaal; geen aparte tests."
+
+    proposed_promise:
+      text: "Een coach ziet alleen wat de sporter deelt — deelt de sporter niets, dan ziet de coach ook niets over gezondheid of gesteldheid. Wat de coach inplant is van de coach: Sparki past het nooit stilletjes aan, en de sporter kan het niet stuk-bewerken. Elk voorstel wordt precies één keer besloten. Wat de coach over de sporter noteert in de gedeelde context, kan de sporter gewoon zien — stiekem meelezen zonder dat de sporter het weet bestaat bij Sparki niet."
+      proposed_by: replit
+      rationale: "Vertrouwen tussen sporter, coach en Sparki is de verkoopbelofte van de coachlaag (en straks de club). Fail-closed sharing en de onmogelijkheid van verborgen dossiers zijn bewuste, onderscheidende keuzes die in het contract thuishoren."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Eigen coaching-toegangslaag + cockpit-contracttest"
+          coverage: "Dekt toegangsniveaus (direct/club/team), capabilities, sharing-sanering en de schrijfgrenzen. Dekt NIET: organisatieschaal (veel sporters/meerdere trainers) — nauwelijks gebouwd."
+          actuality: "Live eigen code met contracttest."
+          license_status: "Eigen werk."
+          limitations:
+            - "Toegangsmodel getest op klein aantal scenario's; geen last-/schaaltest."
+          applicability: "Meetbasis voor alle toegangs- en schrijfregels hieronder."
+        - name: "AVG-kader voor gezondheidsgegevens in sportcontext (EDPB-richtsnoeren; Autoriteit Persoonsgegevens-lijn)"
+          coverage: "Dekt dat gezondheidsdata bijzondere persoonsgegevens zijn en delen expliciete toestemming vergt. Dekt NIET: productspecifieke sharing-niveaus."
+          actuality: "AVG 2018; richtsnoeren periodiek geactualiseerd."
+          license_status: "Wettelijk kader; vrij toepasbaar."
+          limitations:
+            - "Juridisch minimum, geen UX-antwoord."
+          applicability: "Onderbouwt fail-closed als enig acceptabel default voor gezondheidsdeling."
+      sources_in_use:
+        - "Eigen toegangslaag — leidend; AVG-kader als ondergrens."
+      privacy_status: unknown
+      missing_information:
+        - "Hoofdtrainer-/organisatie-overzicht: werkelijke behoefte en vorm onbekend (hoort deels bij hoofdstuk J)."
+        - "Geen praktijkbewijs met een echte externe coach."
+
+    replit_definition:
+      objective_quality_standard: "0 gezondheids-/readinessvelden zichtbaar bij sharing=none; schrijfacties uitsluitend met directe koppeling; 0 automatische wijzigingen aan coach-workouts; elk voorstel exact één besluit (tweede besluit ⇒ 409); geen coach-notitie over de sporter die de sporter niet kan zien (verwijderrecht owner-only)."
+      recommended_default: "Fail-closed op elk leespad (ook toekomstige); adoptie van advies-plannen maakt de rijen atleet-eigendom met source=coach en dedupe op datum+bron. Besluitniveau (advies/voorstel/automatisch): Sparki adviseert de coach en routeert atleet-feedback als voorstel; toepassen kan uitsluitend door een expliciet coachbesluit — automatische aanpassing van coach-trainingen bestaat niet."
+      technical_limits:
+        - "Open-voorstel-uniciteit is nog geen DB-contract op elk voorstel-type."
+      assumptions:
+        - "Sporter-transparantie van coachcontext is de gewenste productkeuze (nooit expliciet door René bevestigd)."
+      unknowns:
+        - "Hoe een externe coach de cockpit ervaart (workflow, informatiedichtheid)."
+      evidence_method:
+        - "Her-run cockpit-contracttest + coach-parent-sharing-tests als proof-artefact."
+        - "Praktijktest met één echte externe coach en één sporter met sharing=none en één met volledige deling."
+
+    rene_calibration:
+      questions:
+        - question: "Coachnotities: moet álles wat een coach over een sporter vastlegt voor de sporter zichtbaar zijn (huidige lijn), of wil je een écht privé kladblok voor de coach toestaan?"
+          answer_rene: ""
+        - question: "Wie is leidend als coach en Sparki botsen (coach plant zwaar, Sparki ziet overbelastingssignalen): coach beslist en Sparki mag alleen adviseren (huidig), of mag Sparki bij duidelijke gezondheidssignalen de coach-training blokkeren?"
+          answer_rene: ""
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Bij sharing=none ziet een coach nooit enige gezondheids-, gesteldheids- of readinessinformatie van de sporter — op geen enkel leespad."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Sporter deelt niets; het cockpit-dashboard toont wél een readiness-score of topsignaal — overtreding, ook als alle andere velden correct verborgen zijn."
+              proof_stage: designed
+              proof_method: "Redenering: het dashboard saneert bij sharing=none tot basisvermelding zonder topSignal/readiness (contracttest dekt dit); per_meting omdat élk veld op élk leespad afzonderlijk telt. Latere executed-stap: her-run + uitbreiding naar alle leespaden."
+              proof_result: not_yet_tested
+        - rule: "Alleen een coach met een directe actieve koppeling kan schrijven; en alleen aan coach-eigen rijen — Sparki- en atleet-workouts zijn voor de coach onaantastbaar."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Coach met alleen clubtoewijzing (geen directe link) plant een training; of een coach bewerkt een Sparki-workout — beide moeten 403 geven."
+              proof_stage: designed
+              proof_method: "Redenering: schrijfacties eisen directe link (tiers-regel) en niet-coach-workouts geven 403 immutable in de contracttest. Latere executed-stap: her-run als proof-artefact."
+              proof_result: not_yet_tested
+        - rule: "Een voorstel kan precies één keer besloten worden; een tweede besluit (of gelijktijdig dubbel besluit) verandert niets en meldt dat eerlijk."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Twee tabs beslissen tegelijk over hetzelfde open voorstel; twee toepassingen of een stil genegeerd tweede besluit zonder foutmelding — overtreding."
+              proof_stage: designed
+              proof_method: "Redenering: besluit op afgehandeld voorstel geeft 409 en signaalbesluiten zijn idempotent per coach+sporter+sleutel; het parallelle geval vergt nog een expliciete concurrency-test (zoals bij het Sportpaspoort-contract)."
+              proof_result: not_yet_tested
+      tolerances:
+        - "Welke velden bij gedeeltelijke sharing zichtbaar zijn is kalibreerbaar; sharing=none ⇒ niets is dat niet."
+      unknown_data_policy: "Onbekende of niet-gedeelde data verschijnt als afwezig, nooit als geschatte of afgeleide waarde richting de coach. Twijfel over een koppeling of rechten betekent weigeren (fail-closed)."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "test:coach-cockpit (fail-closed, 403 immutable, 409 dubbel besluit, idempotente signalen) — bestaat, groen"
+        - "test:coach-parent-sharing-levels / -share-nothing / -private-memory — bestaan, groen"
+      independent_checks: ["Concurrency-test dubbel besluit — nog te ontwerpen"]
+      practice_test_required: true
+      practice_testers: ["Eén echte externe coach + René als sporter"]
+      result: not_tested
+      expectation_gap:
+        - "Geen echte coach heeft de cockpit ooit gebruikt; informatiedichtheid en workflow zijn ongetoetst; org-overzicht is embryonaal."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "René's privékladblok- en doorzettingsmacht-kalibratie; concurrency-test; daarna praktijkproef met een echte coach."
+      approved_for_execution: false
+
+  - id: TRAIN_LAB_001
+    module: "Training, coaching en analyse"
+    subject: "Lab/analyse — belastingsmodel, afgeleide waarden en eerlijke onzekerheid"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Redelijk: één belastingsmodel (EWMA, CTL 42d / ATL 7d / TSB) is de geteste single source voor alle consumenten; afgeleide TSS ontstaat alleen bij ontbrekende TSS met vastgelegde herleidingstrace; FTP-floor-regels zijn getest incl. afwijzing van implausibel vermogen (900 W/uur); de prestatie-radar geeft ontbrekende assen null+reden (nooit nep-0,5) en het analyse-dashboard weigert projecties zonder echte basis. Ontbreekt: praktijkbewijs dat de getoonde conclusies stroken met wat een renner ervaart."
+      practice_status: "Dagelijks in gebruik; nooit tegen vastgelegde verwachtingen getoetst."
+      known_limitations:
+        - "Dagen zonder TSS tellen als nul in het EWMA-model; ontbrekende data drukt de fitheid dus omlaag in plaats van als onbekend te gelden — een bewuste maar niet-gekalibreerde keuze."
+        - "Afgeleide TSS en FTP-floor hangen aan de kwaliteit van vermogen+FTP-op-datum; een verkeerde FTP werkt stil door in alle belastingcijfers."
+        - "Radar-normalisaties (CTL/80, W/kg 2,0–5,5, 12 sessies/28d) zijn productschalen, geen individuele normen."
+        - "ACWR-achtige risicosignalen (spike >1,5) zijn heuristiek; de wetenschappelijke basis is omstreden als voorspeller."
+
+    proposed_promise:
+      text: "Het Lab rekent overal met hetzelfde belastingsmodel — je fitheid, vermoeidheid en vorm zijn op elke pagina dezelfde getallen. Alles wat berekend is, is herleidbaar: je ziet waar een getal vandaan komt. En wat niet berekend kán worden, blijft eerlijk leeg met de reden erbij — Sparki vult nooit een gok in waar een meting hoort."
+      proposed_by: replit
+      rationale: "Analyse is alleen geloofwaardig als dezelfde vraag overal hetzelfde antwoord geeft en gaten zichtbaar blijven. De null+reden-discipline van de radar en het dashboard is een echt onderscheid t.o.v. tools die alles altijd 'weten'."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Eigen belastings-/afleidingslaag (computeLoadSeries, derived TSS, FTP-floor, analyse-dashboard)"
+          coverage: "Dekt alle belastings- en afgeleide cijfers in het product. Dekt NIET: de fysiologische juistheid van het model voor een individu."
+          actuality: "Live eigen code met tests."
+          license_status: "Eigen werk."
+          limitations:
+            - "Nul-TSS-aanname voor lege dagen; afhankelijkheid van FTP-kwaliteit."
+          applicability: "Meetbasis voor de SSOT- en null-eerlijkheidsregels hieronder."
+        - name: "Banister/Coggan fitness-fatigue-model (Performance Manager: CTL/ATL/TSB, 42/7 dagen)"
+          coverage: "Dekt de modelkeuze en tijdconstanten zoals breed gebruikt (TrainingPeaks/intervals.icu). Dekt NIET: individuele tijdconstanten (die verschillen per atleet)."
+          actuality: "Banister 1976; Coggan PMC ~2003; stabiel en de-facto-standaard."
+          license_status: "Modelkennis vrij toepasbaar; geen merkclaims overnemen."
+          limitations:
+            - "Vaste 42/7-constanten zijn populatiegemiddelden; geen individuele kalibratie."
+          applicability: "Onderbouwt dat Sparki's cijfers vergelijkbaar zijn met wat renners van TrainingPeaks/intervals.icu kennen."
+      sources_in_use:
+        - "Eigen laag — leidend; Banister/Coggan als modelbasis en vergelijkingsanker."
+      privacy_status: unknown
+      missing_information:
+        - "Geen kalibratievraag ooit gesteld over de nul-TSS-aanname bij ontbrekende dagen (stilzwijgende keuze)."
+        - "Geen vergelijkende controle van Sparki's CTL/TSB tegen intervals.icu op dezelfde dataset (extern anker ontbreekt)."
+
+    replit_definition:
+      objective_quality_standard: "Alle belastingscijfers in de app komen uit één berekening (geen tweede implementatie); elke afgeleide waarde draagt een herleidingstrace; elke niet-berekenbare as/waarde is null met reden; implausibele inputs (bv. onmogelijk vermogen) worden afgewezen, nooit verwerkt."
+      recommended_default: "Huidig model handhaven (EWMA 42/7, IF uit TSS, Coggan-zones) omdat het aansluit op wat renners elders kennen; het extern anker (vergelijking met intervals.icu op eigen data) toevoegen als bewijs. Besluitniveau (advies/voorstel/automatisch): het Lab is uitsluitend interpretatie en advies; het doet geen voorstellen en past nooit iets automatisch aan — zijn cijfers voeden wél de plan-/coachlagen, die hun eigen besluitregels hebben."
+      technical_limits:
+        - "Individuele tijdconstanten worden niet ondersteund."
+        - "Model is machteloos tegen verkeerde input-TSS (garbage in)."
+      assumptions:
+        - "Nul-TSS voor dagen zonder sessie is acceptabel omdat 'niet getraind' meestal ook echt rust was — dit klopt NIET voor renners die elders ongeregistreerd trainen."
+      unknowns:
+        - "Hoe groot de afwijking t.o.v. intervals.icu op dezelfde data werkelijk is."
+      evidence_method:
+        - "Her-run van athlete-load/derived-load/radar/dashboard-tests als proof-artefact."
+        - "Extern anker: zelfde ritten in intervals.icu laden en CTL/ATL/TSB-verloop vergelijken (verwachte afwijking < enkele punten)."
+
+    rene_calibration:
+      questions:
+        - question: "Hoeveel onzekerheid wil je zien: alleen het getal (rustig), getal + betrouwbaarheidslabel (huidige databetrouwbaarheid hoog/beperkt/laag), of ook bandbreedtes op projecties?"
+          answer_rene: ""
+        - question: "Als je een week niets registreert terwijl je wél getraind hebt (vakantie, andere fiets): wil je dat Sparki je fitheid gewoon laat dalen (huidig), of dat het je actief vraagt of er ongeregistreerde training was?"
+          answer_rene: ""
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Er bestaat maar één belastingsberekening; twee schermen die voor dezelfde dag verschillende CTL/ATL/TSB tonen is een defect, nooit een afrondingskwestie."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "/analyse toont CTL 62 waar /you voor dezelfde dag CTL 58 toont omdat ergens een tweede EWMA-implementatie leeft — overtreding."
+              proof_stage: designed
+              proof_method: "Redenering: computeLoadSeries is de geteste single source en de dashboard-leeslaag consumeert dezelfde functie (memory-regel: nooit her-implementeren); latere executed-stap: consistentietest die beide endpoints voor dezelfde datum vergelijkt."
+              proof_result: not_yet_tested
+        - rule: "Een niet-berekenbare waarde wordt nooit met een verstek- of gokwaarde gevuld: ontbrekend = null + reden, overal."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Radar-as 'Vermogen' zonder FTP of gewicht toont 0,5 of een gemiddelde in plaats van leeg met reden — overtreding."
+              proof_stage: designed
+              proof_method: "Redenering: de radar levert per as level:null + missingReason en de radar-tests dekken lege-data-gevallen al; her-run als proof-artefact is de executed-stap."
+              proof_result: not_yet_tested
+        - rule: "Implausibele invoer wordt afgewezen, nooit meegerekend: een fysiek onmogelijke waarde mag geen enkele afgeleide (TSS, FTP-floor, belasting) beïnvloeden."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Corrupte rit met 900 W gemiddeld over een uur levert een FTP-floor of TSS-bijdrage — overtreding; de rit hoort voor afleidingen genegeerd met zichtbare reden."
+              proof_stage: designed
+              proof_method: "Redenering: de plausibiliteitsregels wijzen dit geval nu al af in de derived-load-tests; her-run met vastgelegd resultaat is de executed-stap voor dit contract."
+              proof_result: not_yet_tested
+      tolerances:
+        - "Radar-normalisatieschalen en de betrouwbaarheidsdrempels (hoog/beperkt/laag) zijn kalibreerbaar."
+      unknown_data_policy: "Ontbrekende metingen blijven null met reden; dagen zonder registratie tellen in het model als rust (bekende aanname, expliciet aan René voorgelegd via de kalibratievraag hierboven) — nooit stilzwijgend iets bijschatten."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "test:athlete-load (SSOT-consolidatie) — bestaat, groen"
+        - "test:derived-load (TSS-afleiding, FTP-floor, implausibel afgewezen) — bestaat, groen"
+        - "performance-radar/analyse-dashboard/progression-webtests — bestaan, groen"
+      independent_checks: ["Extern anker intervals.icu-vergelijking — nog te doen"]
+      practice_test_required: true
+      practice_testers: ["René (herkenbaarheid van vorm/vermoeidheid over 4 weken, logboek)"]
+      result: not_tested
+      expectation_gap:
+        - "De nul-TSS-aanname en het ontbreken van een extern anker zijn de twee onbesproken fundamentkeuzes."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "René's onzekerheids-/gatenkalibratie; intervals.icu-ankerproef; cross-endpoint-consistentietest."
+      approved_for_execution: false
+
+  - id: TRAIN_GEZONDHEID_001
+    module: "Training, coaching en analyse"
+    subject: "Gezondheid & herstel — status, readiness en veilige terugkeer"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Redelijk: de health-flow is contractueel getest (status alleen omhoog via melding, herstel uitsluitend via de resume-gate met 409 bij 'niet trainen', dagelijkse check-in vraagt alleen ontbrekende metingen, cross-account 404, historie). Ziek/geblesseerd blokkeert plandruk en neemt Vandaag over. Ontbreekt: bewijs dat backend- en web-readiness dezelfde werkelijkheid tonen (labels en inputs verschillen) en praktijkbewijs van een echte ziekte-/herstelcyclus."
+      practice_status: "In gebruik; een echte volledige ziekte→herstel→opbouw-cyclus is nooit tegen vastgelegde verwachtingen gevolgd."
+      known_limitations:
+        - "Backend- en web-readiness verschillen: backend kent fresh/ok/tired, de web-state toont PRIMED/GOED/MATIG/LAAG en telt HRV niet mee in de score ondanks het type — twee bijna-gelijke waarheden."
+        - "Er is geen echte gezondheidsdata-ingest via connectors (HEALTH_INGEST_PROVIDERS leeg); de dagelijkse beoordeling leunt op zelfrapportage."
+        - "Sensorafwijking-signaal (RHR +10% bij ≥5 metingen) is expliciet géén diagnose — de grens tussen signaal en medische suggestie moet in copy bewaakt blijven."
+
+    proposed_promise:
+      text: "Meld je ziek of geblesseerd, dan gaat bij Sparki alles opzij: geen trainingsdruk, geen plan dat doordramt. Beter melden gaat bewust via een korte herstelcheck — zolang je lichaam 'nee' zegt, houdt Sparki de rem erop. Sparki stelt nooit een diagnose en doet nooit alsof: het signaleert alleen wat jouw eigen metingen en meldingen laten zien, en vraagt per dag alleen wat het nog niet weet."
+      proposed_by: replit
+      rationale: "Gezondheid is de enige plek waar een fout advies echt schade doet; raises-only + resume-gate is daarom bewust asymmetrisch (makkelijk ziek melden, bewust beter melden). Dit is ook juridisch de veilige lijn: signaleren, nooit diagnosticeren."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Eigen health-flow + readiness-berekening"
+          coverage: "Dekt statusflow, dagelijkse check-in, readiness en de plan-/Vandaag-doorwerking. Dekt NIET: objectieve gezondheidsdata (geen connector-ingest)."
+          actuality: "Live eigen code met contracttests."
+          license_status: "Eigen werk."
+          limitations:
+            - "Volledig afhankelijk van zelfrapportage zolang er geen wearable-ingest is."
+          applicability: "Meetbasis voor de raises-only-, resume-gate- en geen-diagnose-regels."
+        - name: "Return-to-play/terugkeer-richtlijnen op richtlijnniveau (o.a. graded return to sport-consensus; NHG-lijn bij koorts/luchtweginfectie)"
+          coverage: "Dekt het principe van gefaseerde terugkeer en 'geen intensieve training bij koorts'. Dekt NIET: individuele medische beoordeling."
+          actuality: "Consensus-statements, periodiek herzien; stabiele kernprincipes."
+          license_status: "Vrij toepasbaar als onderbouwing op richtlijnniveau."
+          limitations:
+            - "Vertaling naar een leken-app moet grof en veilig blijven (geen pseudo-medisch protocol)."
+          applicability: "Onderbouwt de opbouwfase na herstel (eerst licht, dan opbouwen) en de rem bij actieve klachten."
+      sources_in_use:
+        - "Eigen health-flow — leidend; terugkeer-richtlijnen als onderbouwing van de opbouwlogica."
+      privacy_status: unknown
+      missing_information:
+        - "Geen besluit welke readiness-presentatie (backend-labels vs web-PRIMED-schaal) de ene waarheid is; HRV-rol onbeslist."
+        - "Geen praktijkcyclus (echte ziekte → herstel → opbouw) als bewijs vastgelegd."
+
+    replit_definition:
+      objective_quality_standard: "Statusverzwaring kan altijd en direct; statusverlichting uitsluitend via de herstelcheck (409 bij 'niet trainen'); bij actieve status ziek/geblesseerd 0 trainingsprikkels waar dan ook; dagelijkse check-in vraagt alleen ontbrekende velden; 0 medische diagnose- of behandeltaal in enige copy."
+      recommended_default: "Zelfrapportage-eerst houden en wearable-data (zodra beschikbaar) alleen als extra signaal, nooit als automatische statuswijziging. Besluitniveau (advies/voorstel/automatisch): een ziek-/blessuremelding werkt automatisch door als rem op plan en Vandaag (veiligheidshandeling); statusverlichting is altijd een expliciete keuze van de sporter via de herstelcheck; al het overige (opbouwadvies, signalen) is advies."
+      technical_limits:
+        - "Zonder wearable-ingest geen objectieve vroegsignalering; RHR/HRV alleen als de atleet ze aanlevert."
+      assumptions:
+        - "De asymmetrie (makkelijk omhoog, bewust omlaag) past bij hoe atleten met klachten omgaan — nooit gekalibreerd."
+      unknowns:
+        - "Of de web-readiness-afwijking (HRV genegeerd, andere labels) ooit tot een ander advies leidt dan de backend zou geven."
+      evidence_method:
+        - "Her-run test:health-flow als proof-artefact."
+        - "Consistentieproef backend- vs web-readiness op dezelfde metricreeks (verwacht: identieke band)."
+        - "Praktijkcyclus met logboek bij de eerstvolgende echte verkoudheid/blessure van René of Dylan."
+
+    rene_calibration:
+      questions:
+        - question: "Hoe streng mag de rem zijn na 'beter melden': direct weer normaal trainen als jij dat zegt, of altijd eerst een lichte opbouwperiode die Sparki bewaakt (en zo ja, hoeveel dagen voelt redelijk)?"
+          answer_rene: ""
+        - question: "Als jouw metingen (rusthartslag) afwijken maar jij je goed voelt: wil je dat Sparki alleen informeert, ook het dagadvies verlaagt, of het je op de man af vraagt?"
+          answer_rene: ""
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Bij actieve status ziek of geblesseerd bestaat er nergens in het product een trainingsprikkel of prestatie-aansporing voor die dag."
+          rule_type: hard_blockage
+          measurement_level: per_dag
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Ziek gemeld; het plan is leeg maar Vandaag toont nog 'tijd voor een korte duurrit?' uit een andere bron — overtreding: de regel geldt productbreed, niet alleen in het plan."
+              proof_stage: designed
+              proof_method: "Redenering: day-type zet health altijd bovenaan en de plan-engine blokkeert prikkels; de productbrede claim (élke bron) vergt een geïntegreerde test over plan + Vandaag + nudges tegelijk — dat is de latere executed-stap."
+              proof_result: not_yet_tested
+        - rule: "Gezondheidsstatus kan alleen verlicht worden via de herstelcheck; elk ander pad dat de status verlaagt is een defect."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Een gewone status-update-route zet 'ziek' terug naar 'fit' zonder herstelcheck; of de herstelcheck accepteert 'beter' terwijl het antwoord 'niet trainen' was (moet 409 geven)."
+              proof_stage: designed
+              proof_method: "Redenering: de flow is raises-only met een aparte resume-gate; beide weigeringen zijn al als contracttest aanwezig — her-run met vastgelegd resultaat is de executed-stap."
+              proof_result: not_yet_tested
+        - rule: "Sparki gebruikt nooit diagnose- of behandeltaal: signaleren en doorverwijzen mag, benoemen wat iemand 'heeft' nooit."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Bij verhoogde rusthartslag toont Sparki 'je bent waarschijnlijk ziek aan het worden' of 'dit wijst op overtraining' — overtreding; toegestaan is 'je rusthartslag ligt hoger dan normaal — voel je je wel fit?'."
+              proof_stage: designed
+              proof_method: "Redenering: de copy-discipline bestaat (signaal expliciet 'geen diagnose'), maar is nergens als geautomatiseerde bewaking vastgelegd; de executed-stap is een copy-audit + verbodslijst-check over alle gezondheidsteksten (incl. LLM-prompts, die diagnose-taal expliciet moeten verbieden)."
+              proof_result: not_yet_tested
+      tolerances:
+        - "De opbouwduur na herstel en de RHR-afwijkingsdrempel (nu +10% bij ≥5 metingen) zijn kalibreerbaar."
+      unknown_data_policy: "Zonder metingen geldt zelfrapportage; zonder beide wordt readiness niet getoond in plaats van geschat. Onbekende gezondheid = voorzichtigste pad (fail-closed richting rust, nooit richting belasting)."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "test:health-flow (raises-only, 409-resume-gate, check-in alleen ontbrekend, cross-account, historie) — bestaat, groen"
+      independent_checks: ["Backend↔web-readiness-consistentieproef — nog te doen"]
+      practice_test_required: true
+      practice_testers: ["René/Dylan (eerstvolgende echte ziekte-/herstelcyclus met logboek)"]
+      result: not_tested
+      expectation_gap:
+        - "Twee bijna-gelijke readiness-waarheden (backend vs web, HRV-rol) zijn een sluimerend geloofwaardigheidsrisico."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Readiness-eenwording (welke presentatie is de waarheid, HRV-rol) als bouwvoorstel voorleggen; copy-audit diagnose-taal; praktijkcyclus afwachten."
+      approved_for_execution: false
+
+  - id: TRAIN_GRAFIEKEN_001
+    module: "Training, coaching en analyse"
+    subject: "Grafieken — echte meetreeksen, eerlijke gaten en gelabelde schattingen"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Deels: sessiegrafieken tonen uitsluitend echte gedownsamplede FIT/TCX/GPX-kanalen; oude sessies zonder streams melden expliciet dat alleen de samenvatting bestaat (geen backfill); ontbrekende kanalen worden benoemd; zones op een geschatte maximale hartslag dragen een schattingslabel; stream-analyses (drift, fade, pacing, intervallen) zijn deterministisch en getest. NIET bevestigd in deze inventarisatie: het visuele gedrag bij gaten (connectNulls), de vindplaats van de Tanaka-formule en een server-side power-bests-contract — eerder wél als werkafspraak vastgelegd, nu niet in code teruggevonden op de gezochte plekken."
+      practice_status: "In gebruik; grafiekbegrip en bruikbaarheid nooit systematisch getoetst."
+      known_limitations:
+        - "Vergelijken van sessies weigert terecht bij ongelijke context (ander type, >35% duurverschil, geen gedeelde basis) — streng maar nooit gekalibreerd."
+        - "Intervaldetectie (ritgemiddelde ×1,15, ≥60 s) mist korte/ruisige intervallen."
+        - "Power-bests-keten (ingest-only, geen backfill) is als afspraak gedocumenteerd maar in deze inventarisatie niet volledig in code herbevestigd."
+
+    proposed_promise:
+      text: "Elke grafiek in Sparki is een echte meting: opgenomen kanalen uit jouw ritbestanden, nooit bijgetekende lijnen. Waar data ontbreekt zie je een gat of een eerlijke melding — een oude rit zonder detaildata krijgt nooit met terugwerkende kracht een grafiek. En als iets een schatting is (zoals hartslagzones op een geschatte maximale hartslag), staat dat er gewoon bij."
+      proposed_by: replit
+      rationale: "Grafieken zijn het meest letterlijke eerlijkheidsbewijs: iedereen kan een gat zien. Eén bijgetekende lijn ondermijnt alle andere beloften; daarom horen gaten-gedrag en schattingslabels in het contract."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Eigen stream-/analyse-laag (downsampled kanalen + deterministische analyses)"
+          coverage: "Dekt alle sessiegrafieken en -analyses. Dekt NIET: ritten geïmporteerd vóór de streamlaag bestond (bewust honest-null)."
+          actuality: "Live eigen code met tests."
+          license_status: "Eigen werk."
+          limitations:
+            - "Downsampling en ≥15/20-punten-eisen kunnen randgevallen (heel korte ritten) leeg laten."
+          applicability: "Meetbasis voor de geen-fabricatie- en geen-backfill-regels."
+        - name: "Tanaka e.a. 2001 (maxHR = 208 − 0,7×leeftijd)"
+          coverage: "Dekt de leeftijdsschatting van maximale hartslag als populatieformule. Dekt NIET: individuele maxHR (fout tot ±10–15 slagen)."
+          actuality: "Peer-reviewed 2001; stabiel."
+          license_status: "Formule vrij toepasbaar met bronvermelding."
+          limitations:
+            - "Populatieschatting; daarom is het schattingslabel verplicht, geen detail."
+          applicability: "De enige toegestane bron voor een geschatte maxHR, altijd gelabeld — de formule-implementatie moet in de Poort 5c-controle worden teruggevonden."
+      sources_in_use:
+        - "Eigen stream-laag — leidend; Tanaka alleen gelabeld als schatting."
+      privacy_status: unknown
+      missing_information:
+        - "connectNulls-gedrag van de StreamChart-component niet geverifieerd (gaten kunnen visueel overbrugd worden zonder dat de data liegt — moet gecontroleerd)."
+        - "Server-side power-bests-engine en het geen-backfill-contract niet teruggevonden op de verwachte plekken; vereist gerichte code-audit vóór de belofte 'bests alleen uit ingest' bewezen mag heten."
+        - "Vindplaats Tanaka-formule (backend) onbevestigd; alleen het UI-label is aangetoond."
+
+    replit_definition:
+      objective_quality_standard: "Grafieken tonen uitsluitend opgenomen kanalen; datagaten worden nooit visueel doorverbonden alsof er gemeten is; 0 met terugwerkende kracht gegenereerde grafieken of records; elke schatting draagt een zichtbaar label."
+      recommended_default: "Gaten tonen als onderbreking (connectNulls uit); oude sessies houden de eerlijke melding 'alleen samenvatting beschikbaar'. Besluitniveau (advies/voorstel/automatisch): grafieken zijn pure weergave en interpretatie; geen voorstellen, geen automatische aanpassingen."
+      technical_limits:
+        - "Korte ritten (<15–20 bruikbare punten) krijgen geen analyses — bewust."
+      assumptions:
+        - "De eerder vastgelegde werkafspraken (connectNulls=false, bests ingest-only) staan nog overeind in de code — juist dit is nu onbevestigd en dus te controleren."
+      unknowns:
+        - "Feitelijk render-gedrag van StreamChart bij null-samples."
+      evidence_method:
+        - "Gerichte code-audit (Poort 5c-stijl): StreamChart-gaten, power-bests-keten, Tanaka-vindplaats."
+        - "Her-run stream-analysis/session-analysis-tests als proof-artefact."
+        - "Praktijktest: rit met bewust datagat (sensor uit halverwege) moet een zichtbaar gat opleveren."
+
+    rene_calibration:
+      questions:
+        - question: "Hoeveel grafieken wil je standaard zien bij een rit: alles wat er is (huidig), of een compacte kern (vermogen/hartslag) met de rest achter 'meer'?"
+          answer_rene: ""
+        - question: "Sessies vergelijken weigert nu streng bij ongelijke context (ander type training, groot duurverschil). Goed zo, of wil je tóch kunnen vergelijken met een duidelijke disclaimer?"
+          answer_rene: ""
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Een datagat in een meetreeks mag nooit visueel worden overbrugd alsof er gemeten is; een gat is zichtbaar een gat."
+          rule_type: hard_blockage
+          measurement_level: per_segment
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Vermogensmeter valt 4 minuten uit; de grafiek trekt een rechte lijn tussen de laatste en eerste echte meting zonder onderbreking — overtreding, ook als 96% van de rit correct getoond wordt."
+              proof_stage: designed
+              proof_method: "Redenering: dit was de vastgelegde werkafspraak (connectNulls=false), maar de huidige implementatie is niet herbevestigd — dit tegenvoorbeeld is dus juist het geval dat de code-audit en een render-test moeten uitwijzen; per_segment omdat élk gat afzonderlijk telt."
+              proof_result: not_yet_tested
+        - rule: "Voor sessies zonder opgeslagen meetreeksen worden nooit met terugwerkende kracht grafieken, records of afgeleide reeksen aangemaakt."
+          rule_type: hard_blockage
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Een rit uit maart (vóór de streamlaag) toont ineens een vermogensgrafiek of duikt op in de power-records — overtreding; de eerlijke melding 'alleen samenvatting' hoort te blijven."
+              proof_stage: designed
+              proof_method: "Redenering: de UI toont voor streamloze sessies expliciet de alleen-samenvatting-melding; het records-deel vergt de nog openstaande power-bests-audit. Executed pas na audit + her-run."
+              proof_result: not_yet_tested
+        - rule: "Zones of afgeleiden op basis van een geschatte grootheid dragen altijd een zichtbaar schattingslabel."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Hartslagzones op een leeftijdsgeschatte maxHR zonder het label 'op basis van schatting' — overtreding, ook als de zones rekenkundig kloppen."
+              proof_stage: designed
+              proof_method: "Redenering: de UI kent het maxHrEstimated-label al; executed na een render-assert die het label afdwingt zodra de bronwaarde geschat is."
+              proof_result: not_yet_tested
+      tolerances:
+        - "Downsampling-resolutie en minimale-punten-drempels zijn kalibreerbaar; de gaten- en labelregels niet."
+      unknown_data_policy: "Ontbrekend kanaal = benoemd afwezig; te weinig punten = geen analyse; nooit interpoleren over echte gaten heen voor weergave of records."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "stream-analysis/session-analysis/progression-webtests — bestaan, groen"
+        - "Ingest-elevation/stream-extraction API-tests — bestaan, groen"
+      independent_checks: ["Code-audit StreamChart-gaten + power-bests-keten + Tanaka-vindplaats — nog te doen (expliciet openstaand)"]
+      practice_test_required: true
+      practice_testers: ["Dylan (rit met bewust sensor-uitval halverwege)"]
+      result: not_tested
+      expectation_gap:
+        - "Drie eerder afgesproken contracten (connectNulls, bests ingest-only, Tanaka) zijn in deze inventarisatie niet in code herbevestigd — eerst auditen, niet aannemen."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Eerst de drie-punts code-audit (gaten/bests/Tanaka); daarna René's dichtheids-/vergelijkingskalibratie en de sensor-uitval-praktijkproef."
+      approved_for_execution: false
+
+  - id: TRAIN_MENTAAL_001
+    module: "Training, coaching en analyse"
+    subject: "Mentale signalen — gedragspatronen zonder psycho-diagnose"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Redelijk: de mentale beoordeling is deterministisch en gebouwd op echte uitvoeringsdata (gemiste/verschoven trainingen, inkorten, too-hard/tired-feedback, weekdagpatronen) plus uitsluitend zelf-ingevulde reflecties; onder 4 geplande trainingen in 28 dagen is de staat eerlijk 'onvoldoende gegevens' (null-score); confidence is gemaximeerd op 0,9; patronen vereisen ≥2 echte voorvallen; de debrief gebruikt echte plan-vs-uitvoering zonder verzonnen details; de trainingskaarten hebben server-side 1–3-sterren-diepgang. Getest in test:mental. Ontbreekt: een expliciete jeugdgrens in de mentale routes en praktijkbewijs dat signalen als herkenbaar en niet-opdringerig worden ervaren."
+      practice_status: "In gebruik; mentale signalen zijn nooit met de sporter zelf gevalideerd ('klopt dit voor jou?')."
+      known_limitations:
+        - "Er is geen chat-analyse in de mentale beoordeling (de eerdere richtingskeuze 'chatonderwerpen meewegen' is niet gebouwd); de beoordeling is puur gedragsdata + opt-in reflecties."
+        - "Geen zichtbare leeftijdsbranch in de mentale routes; jeugdbescherming leunt op de algemene consent-/gateway-lagen — een expliciete lacune."
+        - "Subjectieve signalen (motivatie, mentale zwaarte) bestaan alleen als de sporter ze zelf invult."
+
+    proposed_promise:
+      text: "Sparki let op wat je gedrag vertelt — trainingen die je steeds verschuift, inkort of ontwijkt — en benoemt dat pas als het patroon écht is (minstens twee keer, met genoeg trainingen om over te oordelen). Wat jij er zelf over kwijt wilt, vul je zelf in; Sparki leest niet stiekem mee en verzint niets. En Sparki is geen psycholoog: het herkent gedragspatronen en helpt met concrete mentale technieken, maar plakt nooit een etiket op hoe het met je gaat."
+      proposed_by: replit
+      rationale: "Mentale signalen zijn waardevol én gevoelig; de geloofwaardige positie is gedragsspiegel + technieken, uitdrukkelijk geen diagnose-instrument. De eerlijk-onvoldoende-staat bij dunne data is hier belangrijker dan overal elders."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Eigen mentale engine + reflectie-API"
+          coverage: "Dekt gedragssignalen uit uitvoeringsdata en opt-in-reflecties. Dekt NIET: stemming/stress buiten trainingsgedrag om."
+          actuality: "Live eigen code met test:mental."
+          license_status: "Eigen werk."
+          limitations:
+            - "Gedragsdata is een indirecte maat; motivatieverlies zonder gedragsverandering blijft onzichtbaar."
+          applicability: "Meetbasis voor de bewijs- en geen-diagnose-regels."
+        - name: "Sportpsychologische technieken op handboekniveau (visualisatie, zelfspraak, ademhaling — o.a. Weinberg & Gould, Foundations of Sport and Exercise Psychology)"
+          coverage: "Dekt de zes aangeboden technieken als gangbare, veilige basistechnieken. Dekt NIET: klinische interventies — bewust buiten scope."
+          actuality: "Handboek, 8e editie 2023; stabiele kern."
+          license_status: "Technieken vrij toepasbaar; geen tekstovername."
+          limitations:
+            - "Effectiviteit per individu wisselt; kaarten zijn hulpmiddel, geen behandeling."
+          applicability: "Onderbouwt de vaste inhoud van de zes mentale-trainingskaarten."
+      sources_in_use:
+        - "Eigen engine — leidend; handboekbasis voor de kaartinhoud."
+      privacy_status: unknown
+      missing_information:
+        - "Expliciet jeugdbeleid voor mentale signalen (welke signalen/copy wel/niet onder 16/18) is niet vastgelegd."
+        - "De eerdere richtingskeuze over chat-geheugen→mentale beoordeling is niet gebouwd; besluit nodig: bouwen mét consent-poort of uit de visie schrappen."
+
+    replit_definition:
+      objective_quality_standard: "Score/patroon alleen bij ≥4 geplande trainingen in 28 dagen (anders null zonder verzinsel); patronen ≥2 echte voorvallen; confidence ≤0,9; debrief bevat uitsluitend feiten uit plan-vs-uitvoering; 0 diagnose-/etikettaal; reflecties zijn opt-in, owner-only en per training."
+      recommended_default: "Gedragsspiegel-positie handhaven; mentale signalen laag-frequent en nooit als urgentie-kaart tenzij gecombineerd met gezondheidssignalen. Besluitniveau (advies/voorstel/automatisch): mentale signalen zijn uitsluitend advies (spiegel + technieken); nooit voorstellen tot planwijziging en nooit automatische aanpassing."
+      technical_limits:
+        - "Geen signaal zonder gedragsverandering; dat is de bewuste prijs van de niet-invasieve aanpak."
+      assumptions:
+        - "De ≥4-trainingen-drempel filtert dunne data voldoende; nooit gekalibreerd."
+      unknowns:
+        - "Of sporters de signalen herkennen ('klopt dit?') — het belangrijkste ontbrekende bewijs."
+      evidence_method:
+        - "Her-run test:mental als proof-artefact."
+        - "Herkenbaarheids-praktijktest: sporter beoordeelt elk getoond signaal met klopt/klopt-niet; verwachting ≥70% klopt."
+
+    rene_calibration:
+      questions:
+        - question: "Hoe direct mag Sparki mentale patronen benoemen: alleen neutraal beschrijven ('je verschuift intervaltrainingen vaak'), of ook duiden ('het lijkt erop dat je tegen intervallen opziet')?"
+          answer_rene: ""
+        - question: "Voor jonge renners (Dylan's leeftijdsgroep): wil je mentale signalen daar volledig aan, gedempt (alleen beschrijvend, nooit duidend), of uit totdat een ouder/trainer meekijkt?"
+          answer_rene: ""
+        - question: "Moet de eerdere visie 'chatgesprekken wegen mee in de mentale beoordeling' er ooit komen (met expliciete toestemming), of schrappen we die definitief?"
+          answer_rene: ""
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Bij minder dan 4 geplande trainingen in 28 dagen bestaat er geen mentale score, patroon of duiding — alleen de eerlijke staat 'onvoldoende gegevens'."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Nieuwe gebruiker met 2 geplande trainingen krijgt tóch een mentale score of een patroon-kaart — overtreding, hoe plausibel de duiding ook lijkt."
+              proof_stage: designed
+              proof_method: "Redenering: de engine geeft onder de drempel state insufficient met null score/confidence/patterns; test:mental dekt dit al — her-run met vastgelegd resultaat is de executed-stap."
+              proof_result: not_yet_tested
+        - rule: "Een patroon wordt nooit gemeld op basis van één voorval."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Eén keer een intervaltraining verschoven ⇒ kaart 'je ontwijkt intensieve trainingen' — overtreding; pas bij ≥2 echte voorvallen mag het patroon bestaan."
+              proof_stage: designed
+              proof_method: "Redenering: patroon-gating vereist ≥2 occurrences in de engine en is getest; her-run als proof-artefact."
+              proof_result: not_yet_tested
+        - rule: "Sparki gebruikt nooit psychologische etiketten of diagnoses (burn-out, depressie, faalangst, mentale problemen) over de sporter."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Copy of LLM-tekst zegt 'dit kan op een burn-out wijzen' — overtreding; toegestaan is het gedragsfeit plus een open vraag."
+              proof_stage: designed
+              proof_method: "Redenering: de engine is expliciet geen diagnose-instrument en de kaartinhoud is vast; maar LLM-verwoordingspaden vergen een verbodslijst-check in de prompts + copy-audit — dat is de executed-stap."
+              proof_result: not_yet_tested
+      tolerances:
+        - "De ≥4-trainingen-drempel en de meldfrequentie zijn kalibreerbaar; de geen-diagnose-regel niet."
+      unknown_data_policy: "Geen gedragsdata = geen oordeel (null, eerlijk benoemd). Subjectieve binnenwereld bestaat alleen als de sporter die zelf deelt; er wordt nooit stemming afgeleid of ingevuld."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "test:mental (insufficiency/null, confidence-cap, patroon-gating, eerlijke debrief, kaart-diepgang 1-3) — bestaat, groen"
+        - "Humor-uitsluiting op gevoelige contexten (web) — bestaat, groen"
+      independent_checks: ["Copy-/prompt-audit diagnose-taal — nog te doen"]
+      practice_test_required: true
+      practice_testers: ["Dylan (herkenbaarheidstoets: klopt/klopt-niet per signaal)"]
+      result: not_tested
+      expectation_gap:
+        - "Jeugdbeleid voor mentale signalen is niet vastgelegd; en de chat-meeweeg-visie staat open zonder besluit."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "René's duidings-/jeugd-/chatkalibratie; prompt-verbodslijst-audit; herkenbaarheids-praktijktest met Dylan."
+      approved_for_execution: false
