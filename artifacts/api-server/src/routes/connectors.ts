@@ -13,6 +13,7 @@ import {
   ingestBatch,
   effectiveImportedDataTypes,
   deriveConnectState,
+  isSyncStale,
   deriveCapabilities,
   FILE_IMPORT_CAPABILITIES,
 } from "../engines/integration";
@@ -113,6 +114,13 @@ function toConnectorItem(
     readiness: resolveReadiness(def, row?.status, eff.available),
     // Centraal statusmodel — zelfde bron voor onboarding, instellingen en mobiel.
     connect: deriveConnectState(row ?? null, { syncRunning }),
+    // Kapot-signaal (kalibratie 30-07-2026): >24u geen geslaagde sync op een
+    // platform dat automatisch synchroniseert. Zelfde afleiding als de actieve
+    // melding (connection-health), zodat de Koppelingenpagina hetzelfde zegt.
+    syncStale:
+      eff.available &&
+      Boolean(getHubProvider(def.id)?.fetchAndNormalize) &&
+      isSyncStale(row ?? null),
     capabilities: deriveCapabilities(def, eff.available),
   };
 }

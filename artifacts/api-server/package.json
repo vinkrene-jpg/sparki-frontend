@@ -33,6 +33,7 @@
     "test:repair-410w-ftp": "node ./scripts/run-test.mjs repair-410w-ftp",
     "test:connector-cleanup": "node ./scripts/run-test.mjs connector-cleanup",
     "test:climb-cache-cleanup": "node ./scripts/run-test.mjs climb-cache-cleanup",
+    "test:connection-health": "node ./scripts/run-test.mjs connection-health",
     "test:connect-status": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs connect-status",
     "test:connect-import": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs connect-import",
     "test:strava-sync": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs strava-sync",

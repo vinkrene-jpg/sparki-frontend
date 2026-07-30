@@ -85,9 +85,14 @@ export type CreateNotificationInput = {
   dedupeWithin?: { type: NotificationType; matchBody: string };
 };
 
+/**
+ * Maak één in-app melding. Geeft `true` terug wanneer er ÉCHT een nieuwe rij is
+ * aangemaakt (dus niet gededupliceerd/overgeslagen) — zodat een aanroeper
+ * hoogstens één keer per storing een push kan sturen, nooit per poging.
+ */
 export async function createNotification(
   input: CreateNotificationInput,
-): Promise<void> {
+): Promise<boolean> {
   try {
     if (input.dedupeWithin) {
       const [existing] = await db
@@ -102,7 +107,7 @@ export async function createNotification(
           ),
         )
         .limit(1);
-      if (existing) return;
+      if (existing) return false;
     }
 
     // An unresolved open row for the same situation (resolutionKey) must not be
@@ -119,10 +124,10 @@ export async function createNotification(
           ),
         )
         .limit(1);
-      if (open) return;
+      if (open) return false;
     }
 
-    await db
+    const inserted = await db
       .insert(notificationsTable)
       .values({
         clerkId: input.clerkId,
@@ -139,9 +144,12 @@ export async function createNotification(
         resolutionKey: input.resolutionKey ?? null,
         dedupeKey: input.dedupeKey ?? null,
       })
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .returning({ id: notificationsTable.id });
+    return inserted.length > 0;
   } catch {
     // Notifications are best-effort: never let a failure here break the caller.
+    return false;
   }
 }
 

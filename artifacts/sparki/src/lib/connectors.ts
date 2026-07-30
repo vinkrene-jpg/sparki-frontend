@@ -104,6 +104,9 @@ export interface ConnectorItem {
   connectedAt: string | null
   readiness: ConnectorReadiness
   connect: ConnectState
+  /** Kapot-signaal: >24u geen geslaagde sync op een automatisch
+   *  synchroniserend platform (zelfde afleiding als de actieve melding). */
+  syncStale: boolean
   capabilities: CapabilityMap
 }
 

@@ -33,6 +33,7 @@ import {
   resolveNotifications,
 } from "../../lib/notifications";
 import { refreshDerivedLoadForAthlete } from "../../lib/derived-load-backfill";
+import { notifyWithPush } from "./connection-health";
 import {
   categorizeConnectError,
   type ErrorCategory,
@@ -386,7 +387,10 @@ export async function runSync(
 
     // Golf 24: een eerder gemelde synchronisatiefout voor deze koppeling is nu
     // hersteld — de melding verdwijnt (opgelost), zonder rijen te verwijderen.
+    // Ook een eventuele kapotte-koppeling-melding (link:<provider>) is nu
+    // aantoonbaar achterhaald: de sync slaagde net.
     await resolveNotifications(clerkId, `sync:${providerId}`);
+    await resolveNotifications(clerkId, `link:${providerId}`);
 
     // Fresh activity may push a wear part over its threshold — let Sparki notice
     // and (idempotently) raise a gentle Materiaalcoach nudge. Best-effort: never
@@ -420,8 +424,11 @@ export async function runSync(
     );
     // Golf 24: één actieve synchronisatiefout-melding per koppeling (nooit een
     // stapel bij herhaalde mislukkingen); verdwijnt vanzelf zodra een volgende
-    // sync slaagt (resolutionKey) of na 7 dagen (geldigheid).
-    await createNotification({
+    // sync slaagt (resolutionKey) of na 7 dagen (geldigheid). Direct actief
+    // gemeld (push/badge) — maar uitsluitend bij de ÉÉRSTE melding van deze
+    // storing, nooit opnieuw per mislukte poging (notifyWithPush pusht alleen
+    // wanneer de rij vers is aangemaakt).
+    await notifyWithPush({
       clerkId,
       type: "sync_error",
       title: `Synchronisatie met ${def.displayName} lukt niet`,

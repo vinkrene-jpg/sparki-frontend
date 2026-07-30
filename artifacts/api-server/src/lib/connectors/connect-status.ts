@@ -159,6 +159,32 @@ export function deriveConnectState(
   return { status, permissionState, tokenAvailable, consentExpired, ...base };
 }
 
+// ── Verouderde sync (kapotte koppeling) ─────────────────────────────────────
+
+/** Hoe lang zonder geslaagde sync we een gekoppeld platform "stuk" noemen.
+ *  Kalibratie René (30-07-2026): een nieuwe rit hoort binnen enkele minuten in
+ *  Sparki te staan; >24 uur zonder geslaagde sync telt als kapot. */
+export const SYNC_STALE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Is deze koppeling verouderd — al meer dan 24 uur geen geslaagde sync?
+ * Alleen zinvol voor platforms die automatisch synchroniseren; de aanroeper
+ * bepaalt of dat voor dit platform geldt. Puur en testbaar via `now`.
+ * - status "connected"/"error" telt mee (een fout-rij is óók een kapotte sync);
+ * - nooit gesynct: verouderd zodra de koppeling zelf ouder dan 24 uur is.
+ */
+export function isSyncStale(
+  row: ConnectorConnection | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (!row) return false;
+  if (row.status !== "connected" && row.status !== "error") return false;
+  const cutoff = now.getTime() - SYNC_STALE_MS;
+  if (row.lastSyncAt) return new Date(row.lastSyncAt).getTime() < cutoff;
+  const since = row.connectedAt ?? row.createdAt;
+  return since ? new Date(since).getTime() < cutoff : false;
+}
+
 // ── Eerlijke capabilitystatus per platform ──────────────────────────────────
 
 export type ConnectCapability =

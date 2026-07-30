@@ -432,6 +432,12 @@ function ConnectionRow({
                 : "Er is een actie nodig — verbind opnieuw"}
             </span>
           )}
+          {connector.syncStale && cs !== "action_required" && cs !== "permission_revoked" && (
+            <span className="font-mono text-[10px] tracking-wide text-amber-400/80">
+              Al meer dan 24 uur geen geslaagde synchronisatie — mogelijk is de
+              koppeling stuk. Synchroniseer handmatig of verbind opnieuw.
+            </span>
+          )}
           {cs === "temporarily_unavailable" && (
             <span className="font-mono text-[10px] tracking-wide text-amber-400/70">
               Tijdelijk niet beschikbaar — Sparki probeert het vanzelf opnieuw

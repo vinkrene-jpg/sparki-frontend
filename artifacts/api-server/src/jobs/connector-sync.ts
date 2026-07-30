@@ -1,5 +1,6 @@
 import { logger } from "../lib/logger";
 import { runScheduledConnectorSync } from "../engines/data-hub/scheduled-sync";
+import { runConnectionHealthCheck } from "../engines/data-hub/connection-health";
 
 // CLI entry voor de geplande koppelingen-inhaalsync (Sparki Connect). Bedoeld
 // als Replit Scheduled Deployment (zoals job:reminders / job:health). Webhooks
@@ -29,7 +30,11 @@ async function main() {
     maxConnections: intEnv("SYNC_JOB_MAX_CONNECTIONS"),
     log: logger,
   });
-  const out = { ...summary, durationMs: Date.now() - start };
+  // Ná de inhaalsync: kapotte koppelingen actief melden (verlopen toestemming
+  // of >24u geen geslaagde sync). Een net geslaagde inhaalsync heeft de status
+  // dan al hersteld, dus we melden nooit iets wat zojuist is opgelost.
+  const health = await runConnectionHealthCheck({ log: logger });
+  const out = { ...summary, health, durationMs: Date.now() - start };
   logger.info(out, "connector-sync: done");
   // Synchronous stdout summary — the pretty pino transport runs in a worker
   // thread whose buffer is lost on process.exit.
