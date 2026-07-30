@@ -70,6 +70,42 @@ type PrivacySettings = {
 
 type LegalDoc = { title: string; version: string; bodyMd: string };
 
+// Zelfde bron als de web-Koppelingenpagina: het centrale Sparki
+// Connect-statusmodel + het `syncStale`-veld uit GET /api/connectors.
+// Mobiel leidt hier NIETS zelf af.
+type ConnectorItem = {
+  id: string;
+  displayName: string;
+  connect: { status: string; consentExpired: boolean };
+  syncStale: boolean;
+};
+
+const CONNECT_STATUS_LABELS: Record<string, string> = {
+  not_connected: "Niet gekoppeld",
+  connecting: "Koppelen gestart",
+  connected: "Gekoppeld",
+  sync_in_progress: "Bezig met ophalen",
+  action_required: "Actie nodig",
+  temporarily_unavailable: "Tijdelijk niet beschikbaar",
+  permission_revoked: "Toestemming ingetrokken",
+  disconnected: "Verbroken",
+};
+
+// Waarschuwingstekst per koppeling — exact dezelfde eerlijke boodschap als de
+// web-Koppelingenpagina, op basis van hetzelfde statusmodel.
+function connectorWarning(conn: ConnectorItem): string | null {
+  const cs = conn.connect.status;
+  if (cs === "permission_revoked")
+    return "Toegang ingetrokken — verbind opnieuw om verder te gaan";
+  if (cs === "action_required")
+    return conn.connect.consentExpired
+      ? "Toestemming verlopen — verbind opnieuw om te blijven synchroniseren"
+      : "Er is een actie nodig — verbind opnieuw";
+  if (conn.syncStale)
+    return "Al meer dan 24 uur geen geslaagde synchronisatie — mogelijk is de koppeling stuk. Synchroniseer handmatig of verbind opnieuw.";
+  return null;
+}
+
 const DELETE_PHRASE = "VERWIJDER MIJN ACCOUNT";
 
 export default function InstellingenScreen() {
@@ -206,6 +242,52 @@ export default function InstellingenScreen() {
       setDeleteBusy(false);
     }
   };
+
+  // ---------- Databronnen (koppelingen) ----------
+  const [connectors, setConnectors] = useState<ConnectorItem[] | null>(null);
+  const [connError, setConnError] = useState<string | null>(null);
+  const [syncBusyId, setSyncBusyId] = useState<string | null>(null);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
+
+  const loadConnectors = useCallback(async () => {
+    try {
+      const r = await customFetch<{ connectors: ConnectorItem[] }>(
+        "/api/connectors",
+        { method: "GET" },
+      );
+      setConnectors(r.connectors);
+      setConnError(null);
+    } catch {
+      setConnError(
+        "De status van je koppelingen kon niet geladen worden. Probeer het straks opnieuw.",
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadConnectors();
+  }, [loadConnectors]);
+
+  const syncNow = async (id: string) => {
+    if (syncBusyId) return;
+    setSyncBusyId(id);
+    setSyncMsg(null);
+    try {
+      await customFetch(`/api/connectors/${id}/sync`, { method: "POST" });
+      setSyncMsg("Synchronisatie gestart. De status wordt zo bijgewerkt.");
+      await loadConnectors();
+    } catch {
+      setSyncMsg("Synchroniseren is niet gelukt. Probeer het opnieuw.");
+    } finally {
+      setSyncBusyId(null);
+    }
+  };
+
+  // Alleen koppelingen waar de gebruiker iets mee heeft (ooit gekoppeld of
+  // bezig) — een lange lijst niet-gekoppelde platforms hoort in de webapp.
+  const activeConnectors = (connectors ?? []).filter(
+    (x) => x.connect.status !== "not_connected",
+  );
 
   // ---------- Juridische documenten ----------
   const [openDoc, setOpenDoc] = useState<"privacy" | "terms" | null>(null);
@@ -375,11 +457,91 @@ export default function InstellingenScreen() {
         Databronnen
       </Text>
       <View style={[styles.card, { borderColor: c.border, backgroundColor: c.card }]}>
-        <Text style={[styles.cardBody, { color: c.foreground }]}>
-          Koppelingen met Strava en andere platforms beheer je in de
-          Sparki-webapp (Data Hub). Ritten die je hier opneemt, verschijnen
-          automatisch bij je activiteiten.
-        </Text>
+        {connectors === null ? (
+          connError ? (
+            <Text style={[styles.cardMeta, { color: "#fb923c" }]}>{connError}</Text>
+          ) : (
+            <ActivityIndicator size="small" color={c.primary} />
+          )
+        ) : (
+          <>
+            {activeConnectors.map((conn) => {
+              const warning = connectorWarning(conn);
+              const needsReconnect =
+                conn.connect.status === "action_required" ||
+                conn.connect.status === "permission_revoked";
+              return (
+                <View key={conn.id} style={{ paddingVertical: 4 }}>
+                  <View style={styles.permRow}>
+                    <Text style={[styles.rowLabel, { color: c.foreground }]}>
+                      {conn.displayName}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.rowValue,
+                        {
+                          color:
+                            warning != null
+                              ? "#fb923c"
+                              : conn.connect.status === "connected" ||
+                                  conn.connect.status === "sync_in_progress"
+                                ? "#4ade80"
+                                : c.mutedForeground,
+                        },
+                      ]}
+                    >
+                      {CONNECT_STATUS_LABELS[conn.connect.status] ??
+                        conn.connect.status}
+                    </Text>
+                  </View>
+                  {warning && (
+                    <>
+                      <Text style={[styles.cardMeta, { color: "#fb923c" }]}>
+                        {warning}
+                      </Text>
+                      {!needsReconnect && (
+                        <Pressable
+                          style={[styles.btn, { borderColor: c.border }]}
+                          disabled={syncBusyId !== null}
+                          onPress={() => void syncNow(conn.id)}
+                        >
+                          {syncBusyId === conn.id ? (
+                            <ActivityIndicator size="small" color={c.primary} />
+                          ) : (
+                            <Ionicons
+                              name="refresh-outline"
+                              size={16}
+                              color={c.foreground}
+                            />
+                          )}
+                          <Text style={[styles.btnText, { color: c.foreground }]}>
+                            Nu synchroniseren
+                          </Text>
+                        </Pressable>
+                      )}
+                      <Text style={[styles.cardMeta, { color: c.mutedForeground }]}>
+                        Opnieuw verbinden doe je in de Sparki-webapp (Data Hub).
+                      </Text>
+                    </>
+                  )}
+                </View>
+              );
+            })}
+            {syncMsg && (
+              <Text style={[styles.cardMeta, { color: c.mutedForeground }]}>
+                {syncMsg}
+              </Text>
+            )}
+            {connError && (
+              <Text style={[styles.cardMeta, { color: "#fb923c" }]}>{connError}</Text>
+            )}
+            <Text style={[styles.cardBody, { color: c.foreground }]}>
+              Koppelingen met Strava en andere platforms beheer je in de
+              Sparki-webapp (Data Hub). Ritten die je hier opneemt, verschijnen
+              automatisch bij je activiteiten.
+            </Text>
+          </>
+        )}
       </View>
 
       {/* ---------- Account ---------- */}
