@@ -28,10 +28,10 @@ checks:
     cases:
       - case: "Eerlijk falen in de keten: handmatige waypoints óver een echte op-slot-poort (node/45404841 op verder onbeperkte weg 6957281) worden geweigerd met een echte 422 NO_SUITABLE_ROUTE inclusief blockage-telling; geen gefingeerde route, geen placeholder"
         result: "pass"
-      - case: "Live bewezen gat: bij KOUDE cache (eerste aanvraag in vers gebied) gaven alle drie profielen 200 terwijl de lijn dwars door de op-slot-poort liep (minAfstand 0 m) — Overpass had 9,6-21,6 s nodig, het blokkadebudget is 2500 ms en valt dan fail-open. Herhaalde aanvraag weigert correct (3× 422). Zolang dit reproduceerbaar is, is de blokkadepoort in de praktijk niet waterdicht; genoteerd als koudeRunWaarneming in het bewijs, fix te besluiten in stap 2/3"
-        result: "fail"
+      - case: "Koude-cache-gat GEDICHT (taak #502, besluit René stap 2/3: blocking wachten): rejectIfBlocked voor handmatige waypoint/PTP-routes wacht nu blokkerend op de volledige Overpass-meting (begrensd per mirror-timeout) i.p.v. het 2500 ms-fail-open-budget. Koude-cache-herhaling na serverherstart (VERSE cache, zelfde op-slot-poort node/45404841): eerste aanvraag wachtte 29,4 s op de meting en weigerde met 422 NO_SUITABLE_ROUTE (blockedGates=1); gravel en mtb daarna eveneens 422 (warme cache, meting 0 ms). Serverlog: 'blokkadepoort meting ms=29406 beschikbaar=true' gevolgd door 422 (run 2026-07-30T16:30 in het bewijs). Alleen een écht mislukte meting (alle mirrors kapot) blijft eerlijk fail-open en wordt expliciet gelogd"
+        result: "pass"
       - case: "Geen vondst of Overpass-uitval zou als GEEN_BEWIJS gerapporteerd zijn (nooit een stille pass); eindstand van de meetfase is 5× PASS, 0× FAIL, 0× GEEN_BEWIJS"
         result: "pass"
 
 # verdict: deliverable alleen als alle results pass zijn; anders blocked.
-verdict: "blocked"
+verdict: "deliverable"

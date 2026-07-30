@@ -3309,12 +3309,29 @@ router.post("/generate", requireAuth, async (req, res) => {
     // Harde blokkadepoort óók voor handmatige punten/PTP (opdracht
     // 30-07-2026): een route over fietsverbod, trap of afgesloten poort/
     // privéterrein wordt nooit als voorstel aangeboden — ook niet wanneer de
-    // renner de punten zelf plaatste. Zelfde meting als de lusgenerator;
-    // meting mislukt/te traag = eerlijk fail-open (nooit gokken).
+    // renner de punten zelf plaatste. Zelfde meting als de lusgenerator,
+    // maar BLOKKEREND (besluit René, stap 2/3 Routes-bewijsronde, taak #502):
+    // een koude Overpass-cache duurt in deze omgeving 10–20 s en het oude
+    // 2500 ms-budget liet daardoor de allereerste aanvraag in een vers gebied
+    // dwars door een op-slot-poort met 200 door (live bewezen 30-07-2026).
+    // We wachten dus tot de meting klaar is — de meting zelf is begrensd
+    // (per-mirror timeout in route-remarks), dus dit hangt nooit oneindig.
+    // Alleen een ÉCHT mislukte meting (alle mirrors kapot) blijft eerlijk
+    // fail-open, en dat wordt expliciet gelogd.
     const rejectIfBlocked = async (
       path: RoutePathPoint[],
     ): Promise<boolean> => {
-      const obs = await routeObstaclesOf({ budgetMs: 2500 })(path);
+      const _t_gate0 = performance.now();
+      const obs = await routeObstaclesOf()(path);
+      console.log(
+        `[generate.${mode}] blokkadepoort meting ms=${Math.round(performance.now() - _t_gate0)} beschikbaar=${obs != null}`,
+      );
+      if (obs == null) {
+        req.log.warn(
+          { mode },
+          "generate: blokkademeting niet beschikbaar (alle mirrors faalden) — eerlijk fail-open",
+        );
+      }
       if (
         obs != null &&
         (obs.forbidden > 0 || obs.steps > 0 || obs.blockedGates > 0)

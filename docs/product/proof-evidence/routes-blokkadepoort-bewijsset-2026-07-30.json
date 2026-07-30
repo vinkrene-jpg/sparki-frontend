@@ -1,6 +1,6 @@
 {
   "titel": "Bewijsset blokkadepoort — echte OSM-locaties per categorie",
-  "datum": "2026-07-30T15:59:32.392Z",
+  "datum": "2026-07-30T16:30:25.852Z",
   "zoekgebied": "51.95,5.10,52.25,5.95",
   "cases": [
     {
@@ -225,6 +225,64 @@
     },
     {
       "run": "2026-07-30T15:59:32.392Z",
+      "gate": {
+        "id": 45404841,
+        "tags": {
+          "access": "private",
+          "barrier": "gate",
+          "locked": "yes"
+        },
+        "lat": 52.1360323,
+        "lon": 5.593213
+      },
+      "way": 6957281,
+      "probes": [
+        {
+          "bikeType": "racefiets",
+          "status": 422,
+          "code": "NO_SUITABLE_ROUTE",
+          "blockage": {
+            "steps": 0,
+            "forbidden": 0,
+            "blockedGates": 1,
+            "gates": 0,
+            "unpavedSegments": 0
+          },
+          "minAfstandTotPoortM": null,
+          "oordeel": "PASS (geweigerd: 422 NO_SUITABLE_ROUTE)"
+        },
+        {
+          "bikeType": "gravel",
+          "status": 422,
+          "code": "NO_SUITABLE_ROUTE",
+          "blockage": {
+            "steps": 0,
+            "forbidden": 0,
+            "blockedGates": 1,
+            "gates": 0,
+            "unpavedSegments": 0
+          },
+          "minAfstandTotPoortM": null,
+          "oordeel": "PASS (geweigerd: 422 NO_SUITABLE_ROUTE)"
+        },
+        {
+          "bikeType": "mtb",
+          "status": 422,
+          "code": "NO_SUITABLE_ROUTE",
+          "blockage": {
+            "steps": 0,
+            "forbidden": 0,
+            "blockedGates": 1,
+            "gates": 0,
+            "unpavedSegments": 0
+          },
+          "minAfstandTotPoortM": null,
+          "oordeel": "PASS (geweigerd: 422 NO_SUITABLE_ROUTE)"
+        }
+      ]
+    },
+    {
+      "run": "2026-07-30T16:30:25.851Z",
       "gate": {
         "id": 45404841,
         "tags": {
