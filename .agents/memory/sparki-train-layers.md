@@ -18,3 +18,8 @@ Composition helpers live in `lib/train-intelligence.ts` (pure, deterministic, fa
 **Rule:** `ScreenShell` already renders `CoachAnalysisCard` + `FollowUpPrompt` on every section in `COACH_CARD_SECTIONS` (`home/train/lab/races`). So TodayLayer must NOT render its own generic advice card or follow-up card — only the session-specific readiness conflict (which consumes `advice.intensity` but is genuinely additive).
 **Why:** the daily coach read + its follow-up question are owned by the shell; re-rendering them in a layer double-asks the same question and repeats the same advice (violates the no-redundancy rule).
 **How to apply:** before adding any "Sparki's daily read" or follow-up UI inside a `/train|/lab|/races` page child, check `screen-shell.tsx` `COACH_CARD_SECTIONS`/`showCoachCard` first — the shell already provides it. Reuse-only props `hideLabel`/`hideEmptyCta`/`hideRegenerate` exist on ThreeWeekPlan + `hideLabel` on TrainingProgression so they nest cleanly under layer headings.
+
+## "Vandaag eerst" herinrichting (besluit René 30-07-2026)
+- /train (core-plan.tsx) volgorde is bindend: Vandaag-blok → doelkaart → kalender → verbanden → ontwikkeling; mobiel = desktop.
+- Vandaag-blok heeft altijd precies één verklaarde staat (trainingsdag/bewuste rustdag/ongepland gat + piekfase-waarschuwing) — nooit leeg-onverklaard. Pure helpers (bepaalVandaagStaat, faseWeekPositie, weekTypering, ontwikkelingTrend) leven in lib/plan-overview.ts en spiegelen de server-fasedrempels (taper ≤10, piek ≤28, opbouw ≤70 dagen tot race).
+- "Verbanden analyseren"-knop is bewust verwijderd op /train: analyse start automatisch (één keer per bezoek, alleen bij analyseMogelijk) en lege staten zijn specifiek uit /api/ai/connections/readiness.

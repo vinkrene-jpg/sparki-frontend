@@ -31,6 +31,7 @@ let sessionsResult: any = {};
 let ftpHistoryResult: any = {};
 let dailyMetricsResult: any = {};
 let runConnectionsResult: any = {};
+let readinessResult: any = {};
 
 // Generieke no-ops voor hooks die wel in het module-oppervlak zitten maar in
 // deze tests niet inhoudelijk worden aangestuurd. Een mock.module MOET het
@@ -89,6 +90,7 @@ mock.module("@/hooks/use-ai-memory", {
   namedExports: {
     useObservations: () => observationsResult,
     useRunConnections: () => runConnectionsResult,
+    useConnectionReadiness: () => readinessResult,
     useUpdateObservation: noopMutation,
     useAiPreferences: noopQuery,
     useUpdateAiPreferences: noopMutation,
@@ -272,6 +274,165 @@ test("core-plan: fouttoestand wint van stale cache", async () => {
     assert.ok(text.includes("Schema kon niet geladen worden"), "Foutmelding zichtbaar");
     assert.ok(!text.includes("Stale Rit"), "Geen stale cache data zichtbaar");
     assert.ok(!text.includes("Kies een dag"), "Geen weeknavigatie (DsWeek) bij fout");
+  } finally {
+    view.rtl.cleanup();
+  }
+});
+
+// ── Taak 450: "Vandaag eerst" — verklaarde dagstaten + automatische verbanden ──
+
+// 6) Vandaag-blok trainingsdag: eyebrow, doel-zin, opbouw en verwachte TSS
+test("core-plan: Vandaag-blok toont verklaarde trainingsdag met doel en TSS", async () => {
+  const lib = await shellLibPromise;
+  const today = lib.localISODate();
+
+  planWindowResult = {
+    isLoading: false,
+    isError: false,
+    refetch: () => {},
+    data: [{
+      id: 10, scheduledDate: today, title: "Intervallen Z4", type: "interval",
+      targetDurationMin: 75, targetTSS: 88, description: null,
+      status: "planned", source: "sparki", sessionId: null, routeId: null, planDetails: null,
+      structure: {
+        phase: "peak", week: 2, intensity: "hard", primaryZone: 4, routeNeed: "indoor_ok",
+        equipment: [], recoveryAdvice: "",
+        blocks: [
+          { kind: "warmup", label: "opwarming", durationMin: 20, zone: 2, targetPctFtp: 60 },
+          { kind: "interval", label: "interval", durationMin: 8, zone: 4, targetPctFtp: 105, reps: 4 },
+          { kind: "cooldown", label: "afkoelen", durationMin: 15, zone: 2, targetPctFtp: 55 },
+        ],
+        rationale: {
+          whyToday: "x", supportsGoal: "Bouwt FTP-tolerantie op richting je 285W-test.",
+          whatToFeel: "", tooHardSigns: "", tooLightSigns: "", safeAdjust: "",
+        },
+      },
+    }],
+  };
+  planResult = { data: { plan: { mode: "autonomous" }, hasCoach: false, inputs: { phase: "peak", nextRace: null } } };
+  sessionsResult = { data: [], isLoading: false };
+  readinessResult = {};
+
+  const view = await renderPage();
+  try {
+    const text = view.container.textContent ?? "";
+    assert.ok(text.includes("Trainingsdag"), "Staat 'Trainingsdag' zichtbaar");
+    assert.ok(text.includes("Bouwt FTP-tolerantie op richting je 285W-test."), "Doel-zin zichtbaar");
+    assert.ok(text.includes("4×8 min interval (Z4)"), "Opbouw met zones/duur per onderdeel zichtbaar");
+    assert.ok(text.includes("88 TSS verwacht"), "Verwachte TSS zichtbaar");
+  } finally {
+    view.rtl.cleanup();
+  }
+});
+
+// 7) Ongepland gat in piekfase: expliciet gelabeld + waarschuwing
+test("core-plan: ongepland gat in piekfase toont 'Nog niet ingepland' + waarschuwing", async () => {
+  planWindowResult = { isLoading: false, isError: false, refetch: () => {}, data: [] };
+  planResult = { data: { plan: { mode: "autonomous" }, hasCoach: false, inputs: { phase: "peak", nextRace: { name: "NK", raceDate: "2099-01-01", priority: "A", daysAway: 20 } } } };
+  sessionsResult = { data: [], isLoading: false };
+
+  const view = await renderPage();
+  try {
+    const text = view.container.textContent ?? "";
+    assert.ok(text.includes("Nog niet ingepland"), "Gat expliciet gelabeld");
+    assert.ok(text.includes("piekfase-week"), "Piekfase-waarschuwing zichtbaar");
+    assert.ok(text.includes("Week "), "Doelkaart koppelt aan de huidige week");
+  } finally {
+    view.rtl.cleanup();
+  }
+});
+
+// 8) Rustdag vandaag: 'onderdeel van [fase]' + reden, geen leeg blok
+test("core-plan: rustdag vandaag toont fase en reden", async () => {
+  const lib = await shellLibPromise;
+  const today = lib.localISODate();
+  planWindowResult = {
+    isLoading: false, isError: false, refetch: () => {},
+    data: [{ id: 11, scheduledDate: today, title: "Rust", type: "rest", targetDurationMin: null, targetTSS: null, description: "Herstel na de lange duurrit van gisteren.", status: "planned", source: "sparki", sessionId: null, routeId: null, planDetails: null, structure: null }],
+  };
+  planResult = { data: { plan: { mode: "autonomous" }, hasCoach: false, inputs: { phase: "taper", nextRace: { name: "NK", raceDate: "2099-01-01", priority: "A", daysAway: 5 } } } };
+  sessionsResult = { data: [], isLoading: false };
+
+  const view = await renderPage();
+  try {
+    const text = view.container.textContent ?? "";
+    assert.ok(text.includes("Bewuste rustdag"), "Staat 'Bewuste rustdag' zichtbaar");
+    assert.ok(text.includes("onderdeel van de taperweek"), "Fase-koppeling zichtbaar");
+    assert.ok(text.includes("Herstel na de lange duurrit van gisteren."), "Reden zichtbaar");
+  } finally {
+    view.rtl.cleanup();
+  }
+});
+
+// 9) Verbanden: knop weg, eerlijke specifieke lege staat uit de datastatus
+test("core-plan: verbanden tonen specifieke eerlijke lege staat zonder losse knop", async () => {
+  planWindowResult = { isLoading: false, isError: false, refetch: () => {}, data: [] };
+  planResult = { data: { plan: null, hasCoach: false } };
+  sessionsResult = { data: [{ id: 1, sessionDate: "2026-07-01", type: "ride", title: "Rit", durationMin: 60, tss: 50, source: "manual", feelScore: null }], isLoading: false };
+  observationsResult = { data: { observations: [], groups: {} } };
+  readinessResult = {
+    isLoading: false,
+    data: {
+      windowDays: 45,
+      analyseMogelijk: false,
+      stappen: [
+        { id: "trainingen", titel: "Log of importeer trainingen", uitleg: "", heb: 0, nodig: 4, klaar: false, actie: "logtraining" },
+        { id: "gevoel_slaap", titel: "Gevoel en slaap", uitleg: "", heb: 1, nodig: 4, klaar: false, actie: "checkin" },
+      ],
+    },
+  };
+  runConnectionsResult = { isPending: false, mutate: () => { throw new Error("mag niet automatisch zoeken zonder genoeg data"); }, isSuccess: false };
+
+  const view = await renderPage();
+  try {
+    const text = view.container.textContent ?? "";
+    assert.ok(!text.includes("Verbanden analyseren"), "Losse analyse-knop is weg");
+    assert.ok(text.includes("Nog 4 trainingen nodig voor een betrouwbaar verband."), "Specifieke eerlijke lege staat");
+    assert.ok(text.includes("Nog 3 trainingsdagen met gevoel én slaapuren"), "Slaap/herstel-behoefte specifiek benoemd");
+  } finally {
+    view.rtl.cleanup();
+  }
+});
+
+// 10) Verbanden: auto-analyse start zodra er genoeg data is en niets vastligt
+test("core-plan: verbanden-analyse start automatisch bij genoeg data", async () => {
+  planWindowResult = { isLoading: false, isError: false, refetch: () => {}, data: [] };
+  planResult = { data: { plan: null, hasCoach: false } };
+  sessionsResult = { data: [], isLoading: false };
+  observationsResult = { data: { observations: [], groups: {} } };
+  readinessResult = { isLoading: false, data: { windowDays: 45, analyseMogelijk: true, stappen: [] } };
+  let calls = 0;
+  runConnectionsResult = { isPending: false, mutate: () => { calls += 1; }, isSuccess: false };
+
+  const view = await renderPage();
+  try {
+    assert.equal(calls, 1, "Analyse automatisch gestart (precies één keer)");
+    const text = view.container.textContent ?? "";
+    assert.ok(!text.includes("Verbanden analyseren"), "Geen handmatige knop");
+  } finally {
+    view.rtl.cleanup();
+  }
+});
+
+// 11) Ontwikkeling: CTL-trendregel koppelt expliciet aan het doel en signaleert afwijking
+test("core-plan: ontwikkelingsregel koppelt CTL-trend aan het doel", async () => {
+  planWindowResult = { isLoading: false, isError: false, refetch: () => {}, data: [] };
+  planResult = { data: { plan: { mode: "autonomous" }, hasCoach: false, inputs: { phase: "build", nextRace: { name: "FTP-test", raceDate: "2099-10-01", priority: "A", daysAway: 40 } } } };
+  sessionsResult = { data: [], isLoading: false };
+  observationsResult = { data: { observations: [], groups: {} } };
+  readinessResult = { isLoading: false, data: { windowDays: 45, analyseMogelijk: false, stappen: [] } };
+  runConnectionsResult = { isPending: false, mutate: () => {}, isSuccess: false };
+  // 20 dagen vlakke CTL → stagnatie in de opbouwfase = zichtbaar signaal
+  loadResult = {
+    isLoading: false,
+    data: { ctl: 35, atl: 30, tsb: 5, chartData: Array.from({ length: 20 }, (_, i) => ({ date: `2026-07-${String(i + 1).padStart(2, "0")}`, ctl: 35, atl: 30, tsb: 5, tss: 0 })) },
+  };
+
+  const view = await renderPage();
+  try {
+    const text = view.container.textContent ?? "";
+    assert.ok(text.includes("richting FTP-test"), "Trend expliciet aan het doel gekoppeld");
+    assert.ok(text.includes("stagneert"), "Afwijking van het opbouwtempo gesignaleerd");
   } finally {
     view.rtl.cleanup();
   }

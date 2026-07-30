@@ -1,6 +1,6 @@
 // Plan (/train) in de commerciële schil — Core-afbouwwave 1.
 // Volledig gepresenteerd op het centrale designsysteem.
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { CommercialShell } from "@/components/sparki/commercial-shell";
@@ -36,10 +36,14 @@ import { SessionDetailDrawer } from "@/components/sparki/session-detail-drawer";
 import { TrainingProgression } from "@/components/sparki/training-progression";
 import { ActivityImportPanel } from "@/components/sparki/activity-import-panel";
 import { DocumentAnalysisPanel } from "@/components/sparki/document-analysis-panel";
-import { berekenDoelverschuiving, berekenPlanNaleving, faseLabel, berekenSnelleAanpassing, type SnelleActie } from "@/lib/plan-overview";
+import {
+  berekenDoelverschuiving, berekenPlanNaleving, faseLabel, berekenSnelleAanpassing, type SnelleActie,
+  faseVoorDatum, faseWeekPositie, weekTypering, bepaalVandaagStaat, blokkenZin, sessieDoelZin,
+  ontwikkelingTrend, type Fase,
+} from "@/lib/plan-overview";
 
 // AI Insights imports
-import { useObservations, useRunConnections } from "@/hooks/use-ai-memory";
+import { useObservations, useRunConnections, useConnectionReadiness } from "@/hooks/use-ai-memory";
 import { useFtpHistory } from "@/hooks/use-ftp-history";
 import { useDailyMetrics } from "@/hooks/use-daily-metrics";
 import { useFeatureFlag } from "@/hooks/use-feature-flag";
@@ -65,6 +69,140 @@ function PlanHeader() {
         Schema: {bronZin(plan, hasManual)}
       </p>
     </div>
+  );
+}
+
+// ─── Vandaag-blok: altijd precies één verklaarde staat ──────────────────────
+//
+// Trainingsdag (sessienaam + doel-zin + zones/duur/TSS), Bewuste rustdag
+// ("onderdeel van [fase]" + reden) of Ongepland gat ("Nog niet ingepland",
+// met waarschuwing in de piekfase). Nooit een leeg, onverklaard blok.
+
+const FASE_ZIN: Record<Fase, string> = {
+  base: "de basisfase",
+  build: "de opbouwfase",
+  peak: "de piekfase",
+  taper: "de taperweek",
+};
+
+function VandaagSection({ onOpenAdd }: { onOpenAdd: (iso: string) => void }) {
+  const todayISO = localISODate(new Date());
+  const { data: workouts, isLoading, isError } = usePlanRange(todayISO, todayISO);
+  const { data: plan } = useTrainingPlan();
+  const [detailId, setDetailId] = useState<number | null>(null);
+
+  // Kalenderfout wordt in de kalendersectie gemeld — geen dubbele foutmelding.
+  if (isError) return null;
+
+  const fase: Fase | null = plan?.inputs?.phase ?? null;
+  const heeftPlan = plan?.plan != null;
+
+  if (isLoading) {
+    return (
+      <section className="mb-8">
+        <div className="h-28 animate-pulse rounded-xl bg-surface border border-border" />
+      </section>
+    );
+  }
+
+  const vandaag = (workouts ?? []).find((w) => w.scheduledDate === todayISO && w.status !== "cancelled");
+  const staat = bepaalVandaagStaat(vandaag);
+  const datumLabel = new Date(todayISO + "T12:00:00Z").toLocaleDateString("nl-NL", {
+    weekday: "long", day: "numeric", month: "long",
+  });
+
+  return (
+    <section className="mb-8" data-testid="vandaag-blok">
+      <div className="flex items-baseline justify-between mb-2">
+        <h2 className="type-title-card text-white/90">Vandaag</h2>
+        <span className="type-label text-content-secondary capitalize">{datumLabel}</span>
+      </div>
+
+      {staat.soort === "training" && (() => {
+        const w = staat.workout;
+        const doel = sessieDoelZin(w);
+        const blokken = blokkenZin(w.structure);
+        return (
+          <DsCard variant="standaard" className="flex flex-col gap-3 border-accent-cyan/25">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="type-label text-accent-cyan uppercase tracking-wider">Trainingsdag</p>
+                <DsCardTitel className="mt-0.5">{w.title || "Training"}</DsCardTitel>
+              </div>
+              {w.status === "completed" && <DsStatus status="positief">Afgerond</DsStatus>}
+            </div>
+            {doel && <p className="type-body text-content-secondary">{doel}</p>}
+            {blokken && (
+              <p className="type-body-sm text-white/70">
+                <span className="type-label text-content-secondary uppercase tracking-wider block mb-0.5">Opbouw</span>
+                {blokken}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              {w.targetDurationMin != null && (
+                <span className="num type-label text-accent-cyan">{w.targetDurationMin} min</span>
+              )}
+              {w.targetTSS != null && (
+                <span className="num type-label text-accent-cyan">{w.targetTSS} TSS verwacht</span>
+              )}
+              {w.structure?.primaryZone != null && (
+                <span className="num type-label text-accent-cyan">Z{w.structure.primaryZone}</span>
+              )}
+            </div>
+            <div className="ds-actiebalk flex gap-2">
+              <DsButton variant="primair" onClick={() => setDetailId(w.id)}>Training bekijken</DsButton>
+            </div>
+          </DsCard>
+        );
+      })()}
+
+      {staat.soort === "rust" && (() => {
+        const w = staat.workout;
+        const reden = w.structure?.rationale?.whyToday ?? w.description ?? null;
+        return (
+          <DsCard variant="standaard" className="flex flex-col gap-2">
+            <p className="type-label text-content-secondary uppercase tracking-wider">Bewuste rustdag</p>
+            <DsCardTitel>
+              {fase ? `Rustdag — onderdeel van ${FASE_ZIN[fase]}` : "Rustdag — onderdeel van je schema"}
+            </DsCardTitel>
+            <p className="type-body text-content-secondary">
+              {reden ??
+                (fase === "taper"
+                  ? "Afbouwen zodat je fris aan de start staat — rust is nu onderdeel van het werk."
+                  : "Ingepland herstel: je lichaam past zich aan tijdens rust, niet tijdens de training.")}
+            </p>
+          </DsCard>
+        );
+      })()}
+
+      {staat.soort === "gat" && (
+        <DsCard variant="standaard" className="flex flex-col gap-2">
+          <p className="type-label text-content-secondary uppercase tracking-wider">Ongepland</p>
+          <DsCardTitel>Nog niet ingepland</DsCardTitel>
+          <p className="type-body text-content-secondary">
+            {heeftPlan
+              ? "Voor vandaag staat niets in je schema — geen training en geen bewuste rustdag."
+              : "Er is nog geen schema dat vandaag invult."}
+          </p>
+          {fase === "peak" && (
+            <div className="rounded-lg border border-amber-400/25 bg-amber-400/[0.06] px-3 py-2.5">
+              <p className="type-body-sm text-amber-300/90">
+                Let op: dit is een piekfase-week. Een ongepland gat wijkt af van het schema richting je doel.
+              </p>
+            </div>
+          )}
+          <div className="ds-actiebalk flex gap-2">
+            <DsButton variant="primair" onClick={() => onOpenAdd(todayISO)}>Training toevoegen</DsButton>
+          </div>
+        </DsCard>
+      )}
+
+      <WorkoutDetailDrawer
+        workoutId={detailId}
+        open={detailId !== null}
+        onOpenChange={(o) => { if (!o) setDetailId(null); }}
+      />
+    </section>
   );
 }
 
@@ -102,6 +240,11 @@ const MAANDNAMEN = [
 ] as const;
 
 const DAGKOPPEN = ["Ma","Di","Wo","Do","Vr","Za","Zo"] as const;
+
+/** Maandag-ISO's van alle weken in het maandgrid van deze maand. */
+function maandGridMaandagen(year: number, month: number): string[] {
+  return bouwMaandGrid(year, month).map((week) => localISODate(week[0]!));
+}
 
 /** Bepaalt de visuele stijl van een kalendercel.
  *  - isPast: de dag ligt vóór vandaag
@@ -215,6 +358,7 @@ function GeselecteerdeDagKaart({
   alleWorkouts,
   todayISO,
   onVerplaatst,
+  dagFase,
 }: {
   selectedDate: string;
   selectedWorkout: PlannedWorkout | undefined;
@@ -232,6 +376,8 @@ function GeselecteerdeDagKaart({
   todayISO: string;
   /** Na een geslaagde verplaatsing: selecteer de nieuwe dag */
   onVerplaatst: (iso: string) => void;
+  /** Fase waarin de geselecteerde dag valt (null zonder wedstrijddoel). */
+  dagFase: Fase | null;
 }) {
   const isRest = selectedWorkout?.type === "rest";
 
@@ -354,11 +500,15 @@ function GeselecteerdeDagKaart({
       ) : isRest ? (
         /* ── Rustdag ── */
         <DsCard variant="standaard" className="flex flex-col gap-3">
-          <DsCardTitel>Rustdag</DsCardTitel>
+          <DsCardTitel>
+            {dagFase ? `Rustdag — onderdeel van ${FASE_ZIN[dagFase]}` : "Rustdag"}
+          </DsCardTitel>
           <p className="type-body text-content-secondary">
-            {isPast
-              ? "Op deze dag was herstel gepland."
-              : "Neem de tijd om te herstellen. Er is geen training gepland."}
+            {selectedWorkout?.structure?.rationale?.whyToday ??
+              selectedWorkout?.description ??
+              (isPast
+                ? "Op deze dag was herstel gepland."
+                : "Neem de tijd om te herstellen. Er is geen training gepland.")}
           </p>
           {/* Toon extra sessies ook op rustdagen (bijv. wandeling) */}
           {extraSessies.length > 0 && (
@@ -424,8 +574,15 @@ function GeselecteerdeDagKaart({
             />
           )}
 
-          {selectedWorkout.description && (
-            <p className="type-body text-content-secondary">{selectedWorkout.description}</p>
+          {/* Doel-zin richting het einddoel + opbouw (zones/duur per onderdeel) */}
+          {sessieDoelZin(selectedWorkout) && (
+            <p className="type-body text-content-secondary">{sessieDoelZin(selectedWorkout)}</p>
+          )}
+          {blokkenZin(selectedWorkout.structure) && (
+            <p className="type-body-sm text-white/70">
+              <span className="type-label text-content-secondary uppercase tracking-wider block mb-0.5">Opbouw</span>
+              {blokkenZin(selectedWorkout.structure)}
+            </p>
           )}
 
           <div className="ds-actiebalk flex flex-col sm:flex-row gap-2 mt-2">
@@ -529,9 +686,69 @@ function GeselecteerdeDagKaart({
 
 // ─── Kalender sectie (vervangt WeekEnDagSection) ─────────────────────────────
 
+/** Volume/intensiteit-indicator per kalenderweek + fase-overgangsmarkering.
+ *  Balklengte = geplande minuten t.o.v. de zwaarste zichtbare week; tint wordt
+ *  warmer naarmate het aandeel intensieve sessies groeit. Fase alleen bij een
+ *  echt wedstrijddoel — nooit verzonnen. */
+function WeekIndicator({
+  workouts,
+  weekMaandagISO,
+  maxMinuten,
+  raceDateISO,
+  compact,
+}: {
+  workouts: PlannedWorkout[];
+  weekMaandagISO: string;
+  maxMinuten: number;
+  raceDateISO: string | null;
+  compact?: boolean;
+}) {
+  const typering = weekTypering(workouts, weekMaandagISO);
+  const faseStart = faseVoorDatum(weekMaandagISO, raceDateISO);
+  // Fase-overgang binnen deze week? Vergelijk maandag met zondag.
+  const zondag = new Date(weekMaandagISO + "T12:00:00Z");
+  zondag.setUTCDate(zondag.getUTCDate() + 6);
+  const faseEind = faseVoorDatum(zondag.toISOString().slice(0, 10), raceDateISO);
+  const overgang = faseStart != null && faseEind != null && faseStart !== faseEind;
+
+  const breedte = maxMinuten > 0 ? Math.round((typering.minuten / maxMinuten) * 100) : 0;
+  const intensief = typering.aandeelIntensief ?? 0;
+  const balkKleur =
+    typering.minuten === 0
+      ? "bg-white/10"
+      : intensief >= 0.5
+        ? "bg-amber-400/70"
+        : intensief > 0
+          ? "bg-accent-cyan/70"
+          : "bg-accent-cyan/40";
+
+  return (
+    <div className={cn("flex items-center gap-2", compact ? "mt-1.5" : "mb-0.5")}
+      aria-label={`Weekbelasting: ${typering.minuten} geplande minuten${faseStart ? `, ${faseLabel(faseStart) ?? faseStart}` : ""}`}
+    >
+      <div className="h-1 flex-1 rounded-full bg-white/[0.06] overflow-hidden">
+        <div className={cn("h-full rounded-full transition-all", balkKleur)} style={{ width: `${breedte}%` }} />
+      </div>
+      {typering.minuten > 0 && (
+        <span className="num text-[9px] font-mono text-white/35 leading-none shrink-0">{typering.minuten}m</span>
+      )}
+      {faseStart && (
+        <span className={cn(
+          "text-[9px] uppercase tracking-wider leading-none shrink-0",
+          overgang ? "text-amber-300/90 font-semibold" : "text-white/30",
+        )}>
+          {overgang ? `${faseLabel(faseStart)} → ${faseLabel(faseEind)}` : faseLabel(faseStart)}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function KalenderSection({ highlightWeek, onOpenAdd }: { highlightWeek: boolean; onOpenAdd: (iso: string) => void }) {
   const todayISO = localISODate(new Date());
   const todayDate = new Date();
+  const { data: plan } = useTrainingPlan();
+  const raceDateISO = plan?.inputs?.nextRace?.raceDate ?? null;
 
   const [selectedDate, setSelectedDate] = useState(todayISO);
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -631,6 +848,16 @@ function KalenderSection({ highlightWeek, onOpenAdd }: { highlightWeek: boolean;
     };
   });
 
+  // Max weekminuten over de zichtbare weken — schaal voor de indicatorbalkjes.
+  const zichtbareMaandagen = Array.from(new Set([
+    localISODate(weekBase),
+    ...maandGridMaandagen(viewYear, viewMonth),
+  ]));
+  const maxWeekMinuten = Math.max(
+    0,
+    ...zichtbareMaandagen.map((ma) => weekTypering(trustedWorkouts, ma).minuten),
+  );
+
   const selectedWorkout = trustedWorkouts.find(w => w.scheduledDate === selectedDate);
   const isSelectedToday = selectedDate === todayISO;
   const isSelectedPast = selectedDate < todayISO;
@@ -712,12 +939,19 @@ function KalenderSection({ highlightWeek, onOpenAdd }: { highlightWeek: boolean;
           {/* ── Kalender (links op desktop, boven op mobiel) ── */}
           <div className="lg:flex-1 lg:min-w-0">
 
-            {/* Mobile: week strip */}
+            {/* Mobile: week strip + periodiserings-indicator */}
             <div className="lg:hidden">
               <DsWeek
                 dagen={weekDagen}
                 onSelecteer={(idx) => setSelectedDate(weekISOs[idx]!)}
                 selectieLabel="Kies een dag in de planweek"
+              />
+              <WeekIndicator
+                compact
+                workouts={trustedWorkouts}
+                weekMaandagISO={weekISOs[0]!}
+                maxMinuten={maxWeekMinuten}
+                raceDateISO={raceDateISO}
               />
             </div>
 
@@ -734,7 +968,14 @@ function KalenderSection({ highlightWeek, onOpenAdd }: { highlightWeek: boolean;
               {/* Weken */}
               <div className="space-y-1">
                 {maandGrid.map((week, wi) => (
-                  <div key={wi} className="grid grid-cols-7 gap-1">
+                  <div key={wi}>
+                  <WeekIndicator
+                    workouts={trustedWorkouts}
+                    weekMaandagISO={localISODate(week[0]!)}
+                    maxMinuten={maxWeekMinuten}
+                    raceDateISO={raceDateISO}
+                  />
+                  <div className="grid grid-cols-7 gap-1">
                     {week.map((date) => {
                       const iso = localISODate(date);
                       const inMaand = date.getMonth() === viewMonth;
@@ -803,6 +1044,7 @@ function KalenderSection({ highlightWeek, onOpenAdd }: { highlightWeek: boolean;
                       );
                     })}
                   </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -823,6 +1065,7 @@ function KalenderSection({ highlightWeek, onOpenAdd }: { highlightWeek: boolean;
               alleWorkouts={trustedWorkouts}
               todayISO={todayISO}
               onVerplaatst={(iso) => setSelectedDate(iso)}
+              dagFase={faseVoorDatum(selectedDate, raceDateISO)}
             />
           </div>
         </div>
@@ -935,6 +1178,23 @@ function DoelkaartSection() {
           </DsStatus>
         </div>
 
+        {/* Koppeling met de huidige week — "Week 2 van 3 in de piekfase" */}
+        {(() => {
+          const positie = faseWeekPositie(race?.daysAway);
+          if (!positie) return null;
+          return (
+            <p className="type-body-sm text-white/80">
+              Week {positie.weekNr} van {positie.totaalWeken} in de {positie.faseLabel.toLowerCase()}fase
+              {positie.resterendeWeken > 0 && (
+                <span className="text-content-secondary">
+                  {" "}— nog {positie.resterendeWeken} {positie.resterendeWeken === 1 ? "week" : "weken"}{" "}
+                  {positie.fase === "taper" ? "tot je doel" : "tot de volgende fase"}
+                </span>
+              )}
+            </p>
+          );
+        })()}
+
         {/* Seizoenslijn: fase + naleving */}
         <div className="flex flex-wrap gap-x-4 gap-y-1">
           {fase && (
@@ -1040,6 +1300,28 @@ function renderGroupExtended(group: InsightGroup): React.ReactNode | undefined {
   )
 }
 
+/** Eerlijke, specifieke lege staat: benoem precies wat er nog mist voordat
+ *  een verband gevonden kán worden — geen generieke "wordt doorzocht"-tekst. */
+function ontbrekendeDataZinnen(stappen: Array<{ titel: string; heb: number; nodig: number; klaar: boolean; id: string }>): string[] {
+  return stappen
+    .filter((s) => !s.klaar)
+    .map((s) => {
+      const nog = Math.max(0, s.nodig - s.heb);
+      switch (s.id) {
+        case "trainingen":
+          return `Nog ${nog} ${nog === 1 ? "training" : "trainingen"} nodig voor een betrouwbaar verband.`;
+        case "gevoel_slaap":
+          return `Nog ${nog} ${nog === 1 ? "trainingsdag" : "trainingsdagen"} met gevoel én slaapuren nodig voor een slaap/herstel-verband.`;
+        case "ochtendmetingen":
+          return `Nog ${nog} ${nog === 1 ? "ochtendmeting" : "ochtendmetingen"} (rusthartslag of HRV) nodig voor een belasting/herstel-verband.`;
+        case "feedback":
+          return `Nog ${nog} keer terugkoppeling op een training nodig om terugkerende signalen te zien.`;
+        default:
+          return `${s.titel}: nog ${nog} nodig.`;
+      }
+    });
+}
+
 function PatronenSection() {
   const aiEnabled = useFeatureFlag("ai_observations");
   const { data: obs } = useObservations(aiEnabled);
@@ -1047,18 +1329,38 @@ function PatronenSection() {
   const { data: load } = useLoad();
   const { data: ftpHistory } = useFtpHistory();
   const { data: metrics } = useDailyMetrics(30);
+  const readiness = useConnectionReadiness(aiEnabled);
   const runConnections = useRunConnections();
-  const [, navigate] = useLocation();
+  const autoRan = useRef(false);
 
   const training = (obs?.observations ?? []).filter((o) => ownsObservation("train", o));
   const groups = groupObservations(training, { metrics, ftpHistory, load, sessions });
-  const hasSessions = (sessions?.length ?? 0) > 0;
+
+  // Verbanden zijn een automatisch bijgewerkt onderdeel van de pagina: zodra
+  // er genoeg data is en er nog niets vastligt, wordt er één keer per bezoek
+  // zelf gezocht — geen handmatige knop meer.
+  const magAutoZoeken =
+    aiEnabled &&
+    obs != null &&
+    groups.length === 0 &&
+    readiness.data?.analyseMogelijk === true;
+  useEffect(() => {
+    if (magAutoZoeken && !autoRan.current && !runConnections.isPending) {
+      autoRan.current = true;
+      runConnections.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [magAutoZoeken]);
+
+  if (!aiEnabled) return null;
+
+  const zinnen = ontbrekendeDataZinnen(readiness.data?.stappen ?? []);
 
   return (
     <section className="mb-8">
       <h2 className="type-title-card text-white/90 mb-3">Wat over tijd opvalt</h2>
-      
-      {aiEnabled && groups.length > 0 && (
+
+      {groups.length > 0 && (
         <div className="flex flex-col gap-3">
           {groups.slice(0, 6).map((g) => (
             <GraphInsightCard
@@ -1074,23 +1376,35 @@ function PatronenSection() {
         </div>
       )}
 
-      {aiEnabled && groups.length === 0 && (
+      {groups.length === 0 && (
         <DsCard>
-          {hasSessions ? (
-            <>
-              <p className="type-body text-content-secondary mb-3">
-                Je trainingen zijn er, maar er zijn nog geen patronen vastgelegd. Je gegevens worden doorzocht op verbanden.
+          {runConnections.isPending ? (
+            <p className="type-body text-content-secondary">
+              Sparki vergelijkt je belasting, herstel en gevoel op verbanden…
+            </p>
+          ) : readiness.data?.analyseMogelijk ? (
+            <p className="type-body text-content-secondary">
+              Er is genoeg data om te vergelijken, maar er kwam nog geen betrouwbaar
+              verband uit. Dit wordt automatisch opnieuw bekeken zodra er nieuwe
+              trainingen of check-ins bijkomen.
+            </p>
+          ) : zinnen.length > 0 ? (
+            <div className="flex flex-col gap-1.5">
+              <p className="type-body text-content-secondary mb-1">
+                Er zijn nog geen verbanden — dit is er concreet nodig
+                (laatste {readiness.data?.windowDays ?? 45} dagen):
               </p>
-              <DsButton variant="primair" onClick={() => runConnections.mutate()} loading={runConnections.isPending}>
-                Verbanden analyseren
-              </DsButton>
-            </>
+              {zinnen.map((z) => (
+                <p key={z} className="type-body-sm text-white/70">• {z}</p>
+              ))}
+            </div>
+          ) : readiness.isLoading ? (
+            <div className="h-16 animate-pulse rounded-lg bg-white/5" />
           ) : (
-            <DsState 
-              soort="leeg" 
-              titel="Nog te weinig trainingen voor patronen"
-              beschrijving="Patronen worden pas zichtbaar na een paar weken aan gelogde trainingen. Log je trainingen of koppel een platform."
-              actie={{ label: "Log een training", onClick: () => navigate("/train?focus=logsession") }}
+            <DsState
+              soort="leeg"
+              titel="Nog geen verbanden"
+              beschrijving="De datastatus kon niet worden bepaald. Verbanden verschijnen hier automatisch zodra er genoeg te vergelijken valt."
             />
           )}
         </DsCard>
@@ -1102,10 +1416,33 @@ function PatronenSection() {
 function OntwikkelingSection() {
   const { data: sessions, isLoading: sessionsLoading } = useSessions(60);
   const { data: load, isLoading: loadLoading } = useLoad();
+  const { data: plan } = useTrainingPlan();
+
+  // Eén regel die de CTL-trend expliciet aan het doel koppelt — en afwijkingen
+  // van het faseschema zichtbaar signaleert. Deterministisch, nooit verzonnen.
+  const trend = ontwikkelingTrend({
+    chartData: load?.chartData,
+    fase: plan?.inputs?.phase ?? null,
+    doelNaam: plan?.inputs?.nextRace?.name ?? null,
+    doelDatum: plan?.inputs?.nextRace?.raceDate ?? null,
+  });
+
   return (
     <section className="mb-8">
        <h2 className="type-title-card text-white/90">Je ontwikkeling</h2>
        <p className="type-body text-content-secondary mb-3">Niet alleen vandaag — zo ontwikkel je je over meerdere trainingen heen.</p>
+       {trend ? (
+         <div className={cn(
+           "mb-3 rounded-lg border px-3 py-2.5",
+           trend.afwijking ? "border-amber-400/25 bg-amber-400/[0.06]" : "border-white/[0.08] bg-white/[0.02]",
+         )}>
+           <p className={cn("type-body-sm", trend.afwijking ? "text-amber-300/90" : "text-white/75")}>{trend.zin}</p>
+         </div>
+       ) : !loadLoading && (
+         <p className="mb-3 type-body-sm text-content-secondary">
+           Nog te weinig belastinggegevens (minimaal 14 dagen) voor een eerlijk trendoordeel richting je doel.
+         </p>
+       )}
        <TrainingProgression sessions={sessions} chartData={load?.chartData} loading={sessionsLoading || loadLoading} hideLabel={true} />
     </section>
   );
@@ -1292,7 +1629,12 @@ export default function CorePlanPage() {
     <CommercialShell actief="/train">
       <div className="mx-auto w-full max-w-2xl px-5 pb-10 pt-8 lg:max-w-3xl lg:px-10">
         <PlanHeader />
-        
+
+        {/* Indeling "Vandaag eerst" (besluit René 30-07-2026): bovenaan de
+            dagstaat van vandaag, daaronder de kalender met fase-opbouw,
+            onderaan verbanden en ontwikkeling — mobiel en desktop identiek. */}
+        <VandaagSection onOpenAdd={(iso) => { setAddDateContext(iso); setAddOpen(true); }} />
+
         <DoelkaartSection />
         
         <KalenderSection

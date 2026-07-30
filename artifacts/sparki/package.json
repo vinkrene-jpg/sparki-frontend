@@ -45,7 +45,8 @@
     "test:core-meer-page": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/core-meer.test.tsx",
     "test:core-analyse": "node ../../scripts/run-tsx-test.mjs src/lib/core-analyse.test.ts",
     "test:core-analyse-page": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/core-analyse.test.tsx",
-    "lint:copy": "bash ../../scripts/lint-copy.sh"
+    "lint:copy": "bash ../../scripts/lint-copy.sh",
+    "test:plan-overview": "node ../../scripts/run-tsx-test.mjs src/lib/plan-overview.test.ts"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.11.1",
