@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && pnpm run build && pnpm run start",
     "build": "node ./build.mjs",
+    "build:deploy": "DEPLOY_BUILD=true node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "scan:knowledge": "pnpm run build && node --enable-source-maps ./dist/jobs/knowledge-scan.mjs",
     "test:smoke": "node ./scripts/run-test.mjs smoke",

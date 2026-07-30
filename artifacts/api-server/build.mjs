@@ -138,7 +138,7 @@ async function buildAll() {
         .map((p) => p.trim())
         .filter(Boolean)
         .map((p) => path.resolve(artifactDir, p))
-    : process.env.REPLIT_DEPLOYMENT
+    : process.env.REPLIT_DEPLOYMENT || process.env.DEPLOY_BUILD === "true"
       ? deployOnlyEntries
       : ALL_ENTRIES;
   await rm(distDir, { recursive: true, force: true });
