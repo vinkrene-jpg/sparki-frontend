@@ -1,0 +1,285 @@
+{
+  "titel": "Bewijsset blokkadepoort — echte OSM-locaties per categorie",
+  "datum": "2026-07-30T15:59:32.392Z",
+  "zoekgebied": "51.95,5.10,52.25,5.95",
+  "cases": [
+    {
+      "categorie": "A. Fietsverbod (bicycle=no)",
+      "verwacht": "hard blok: forbidden ≥ 1",
+      "gevonden": true,
+      "osm": {
+        "type": "way",
+        "id": 4577228,
+        "tags": {
+          "access:conditional": "no @ (sunset-sunrise)",
+          "bicycle": "no",
+          "dog": "unleashed",
+          "foot:conditional": "permissive @ (sunrise-sunset)",
+          "highway": "track",
+          "mofa": "no",
+          "moped": "no",
+          "motor_vehicle": "forestry",
+          "surface": "compacted",
+          "tracktype": "grade4"
+        }
+      },
+      "locatie": {
+        "lat": 52.1629769,
+        "lon": 5.9198107
+      },
+      "meting": {
+        "steps": 0,
+        "forbidden": 1,
+        "blockedGates": 0,
+        "gates": 0,
+        "unpavedSegments": 0
+      },
+      "remarksLabels": [
+        "Fietsen hier niet toegestaan"
+      ],
+      "hard": true,
+      "oordeel": "PASS",
+      "toelichting": "forbidden=1 → hard=true"
+    },
+    {
+      "categorie": "B. Privéterrein (access=private)",
+      "verwacht": "hard blok: forbidden ≥ 1",
+      "gevonden": true,
+      "osm": {
+        "type": "way",
+        "id": 4342814,
+        "tags": {
+          "access": "private",
+          "highway": "service",
+          "service": "parking_aisle"
+        }
+      },
+      "locatie": {
+        "lat": 52.1904036,
+        "lon": 5.9330503
+      },
+      "meting": {
+        "steps": 0,
+        "forbidden": 1,
+        "blockedGates": 0,
+        "gates": 0,
+        "unpavedSegments": 0
+      },
+      "remarksLabels": [
+        "Privéterrein"
+      ],
+      "hard": true,
+      "oordeel": "PASS",
+      "toelichting": "forbidden=1 → hard=true"
+    },
+    {
+      "categorie": "C. Afgesloten poort (locked/privé)",
+      "verwacht": "hard blok: blockedGates ≥ 1",
+      "gevonden": true,
+      "osm": {
+        "type": "node",
+        "id": 45319783,
+        "tags": {
+          "access": "private",
+          "barrier": "gate",
+          "locked": "yes"
+        }
+      },
+      "locatie": {
+        "lat": 52.11724,
+        "lon": 5.31322
+      },
+      "meting": {
+        "steps": 0,
+        "forbidden": 1,
+        "blockedGates": 1,
+        "gates": 1,
+        "unpavedSegments": 0
+      },
+      "remarksLabels": [
+        "Privéterrein",
+        "Poort of hek",
+        "Afgesloten poort / privéterrein"
+      ],
+      "hard": true,
+      "oordeel": "PASS",
+      "toelichting": "blockedGates=1 → hard=true"
+    },
+    {
+      "categorie": "D. Onbekende poort (geen tags)",
+      "verwacht": "zacht: gates ≥ 1, geen hard blok door deze poort",
+      "gevonden": true,
+      "osm": {
+        "type": "node",
+        "id": 30360003,
+        "tags": {
+          "barrier": "gate",
+          "foot": "yes"
+        }
+      },
+      "locatie": {
+        "lat": 52.1559657,
+        "lon": 5.9012836
+      },
+      "meting": {
+        "steps": 0,
+        "forbidden": 0,
+        "blockedGates": 0,
+        "gates": 1,
+        "unpavedSegments": 1
+      },
+      "remarksLabels": [
+        "Halfverhard wegdek (BGT)",
+        "Poort of hek"
+      ],
+      "hard": false,
+      "oordeel": "PASS",
+      "toelichting": "gates=1 blockedGates=0 labels=Halfverhard wegdek (BGT)|Poort of hek"
+    },
+    {
+      "categorie": "E. Fietssluis (cycle_barrier)",
+      "verwacht": "doorlaten: geen poortmelding, geen hard blok",
+      "gevonden": true,
+      "osm": {
+        "type": "node",
+        "id": 44572430,
+        "tags": {
+          "barrier": "cycle_barrier"
+        }
+      },
+      "locatie": {
+        "lat": 51.9540416,
+        "lon": 5.4065273
+      },
+      "meting": {
+        "steps": 0,
+        "forbidden": 0,
+        "blockedGates": 0,
+        "gates": 0,
+        "unpavedSegments": 0
+      },
+      "remarksLabels": [],
+      "hard": false,
+      "oordeel": "PASS",
+      "toelichting": "blockedGates=0 gates=0 labels=(geen)"
+    }
+  ],
+  "httpKeten": [
+    {
+      "run": "2026-07-30T15:56:20.657Z",
+      "gate": {
+        "id": 45404841,
+        "tags": {
+          "access": "private",
+          "barrier": "gate",
+          "locked": "yes"
+        },
+        "lat": 52.1360323,
+        "lon": 5.593213
+      },
+      "way": 6957281,
+      "probes": [
+        {
+          "bikeType": "racefiets",
+          "status": 422,
+          "code": "NO_SUITABLE_ROUTE",
+          "blockage": {
+            "steps": 0,
+            "forbidden": 0,
+            "blockedGates": 1,
+            "gates": 0,
+            "unpavedSegments": 0
+          },
+          "minAfstandTotPoortM": null,
+          "oordeel": "PASS (geweigerd: 422 NO_SUITABLE_ROUTE)"
+        },
+        {
+          "bikeType": "gravel",
+          "status": 422,
+          "code": "NO_SUITABLE_ROUTE",
+          "blockage": {
+            "steps": 0,
+            "forbidden": 0,
+            "blockedGates": 1,
+            "gates": 0,
+            "unpavedSegments": 0
+          },
+          "minAfstandTotPoortM": null,
+          "oordeel": "PASS (geweigerd: 422 NO_SUITABLE_ROUTE)"
+        },
+        {
+          "bikeType": "mtb",
+          "status": 422,
+          "code": "NO_SUITABLE_ROUTE",
+          "blockage": {
+            "steps": 0,
+            "forbidden": 0,
+            "blockedGates": 1,
+            "gates": 0,
+            "unpavedSegments": 0
+          },
+          "minAfstandTotPoortM": null,
+          "oordeel": "PASS (geweigerd: 422 NO_SUITABLE_ROUTE)"
+        }
+      ]
+    },
+    {
+      "run": "2026-07-30T15:59:32.392Z",
+      "gate": {
+        "id": 45404841,
+        "tags": {
+          "access": "private",
+          "barrier": "gate",
+          "locked": "yes"
+        },
+        "lat": 52.1360323,
+        "lon": 5.593213
+      },
+      "way": 6957281,
+      "probes": [
+        {
+          "bikeType": "racefiets",
+          "status": 422,
+          "code": "NO_SUITABLE_ROUTE",
+          "blockage": {
+            "steps": 0,
+            "forbidden": 0,
+            "blockedGates": 1,
+            "gates": 0,
+            "unpavedSegments": 0
+          },
+          "minAfstandTotPoortM": null,
+          "oordeel": "PASS (geweigerd: 422 NO_SUITABLE_ROUTE)"
+        },
+        {
+          "bikeType": "gravel",
+          "status": 422,
+          "code": "NO_SUITABLE_ROUTE",
+          "blockage": {
+            "steps": 0,
+            "forbidden": 0,
+            "blockedGates": 1,
+            "gates": 0,
+            "unpavedSegments": 0
+          },
+          "minAfstandTotPoortM": null,
+          "oordeel": "PASS (geweigerd: 422 NO_SUITABLE_ROUTE)"
+        },
+        {
+          "bikeType": "mtb",
+          "status": 422,
+          "code": "NO_SUITABLE_ROUTE",
+          "blockage": {
+            "steps": 0,
+            "forbidden": 0,
+            "blockedGates": 1,
+            "gates": 0,
+            "unpavedSegments": 0
+          },
+          "minAfstandTotPoortM": null,
+          "oordeel": "PASS (geweigerd: 422 NO_SUITABLE_ROUTE)"
+        }
+      ]
+    }
+  ]
+}

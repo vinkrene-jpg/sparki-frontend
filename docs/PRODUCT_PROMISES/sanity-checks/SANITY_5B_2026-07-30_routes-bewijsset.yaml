@@ -1,0 +1,37 @@
+# Poort 5b sanity-check rapport — Routes-bewijsronde stap 1: bewijsset blokkadepoort op échte OSM-locaties
+delivery: "Bewijsset blokkadepoort: per blokkade-categorie een echte Nederlandse OSM-locatie gemeten met de echte app-meting (getRouteRemarks → countRouteObstacles) plus een echte HTTP-ketenproef tegen de draaiende dev-API voor racefiets, gravel én MTB"
+date: "2026-07-30"
+checked_by: "replit"
+surfaces:
+  - "Meetlaag: src/lib/route-remarks.ts via src/tests/bewijsset-blokkadepoort.ts (geen mocks; echte Overpass-data uit midden-Nederland)"
+  - "HTTP-keten: POST /api/routes/generate (mode=waypoints) op de draaiende dev-API, alle drie fietsprofielen"
+  - "Bewijs: docs/product/proof-evidence/routes-blokkadepoort-bewijsset-2026-07-30.json (OSM-ids, letterlijke tags, coördinaten, metingen, HTTP-statussen)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Fietsverbod (way/4577228, bicycle=no bostrack Veluwe-rand): meting geeft forbidden=1 → hard blok. Eerste stedelijke kandidaat (way/4396051, Utrecht) werd terecht NIET hard: parallelle-fietspad-correctie is bewust gedrag en staat gedocumenteerd in het bewijs"
+        result: "pass"
+      - case: "Privéterrein (way/4342814, access=private service-weg): meting geeft forbidden=1 → hard blok"
+        result: "pass"
+      - case: "Afgesloten poort (node/45319783, barrier=gate + locked=yes + access=private): meting geeft blockedGates=1 → hard blok"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Onbekende poort (node/30360003, barrier=gate zonder doorgangstags): zachte waarschuwing 'Poort of hek' (gates=1), géén hard blok — precies de bedoelde voorzichtige melding"
+        result: "pass"
+      - case: "Geldige fietssluis (node/44572430, barrier=cycle_barrier): geen poortmelding, geen blok — doorlaten zoals bedoeld"
+        result: "pass"
+      - case: "Per fietsprofiel: dezelfde op-slot-poort weigert bij warme meting voor racefiets, gravel én MTB elk met 422 NO_SUITABLE_ROUTE (blockage.blockedGates=1) — de poort geldt profielonafhankelijk"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Eerlijk falen in de keten: handmatige waypoints óver een echte op-slot-poort (node/45404841 op verder onbeperkte weg 6957281) worden geweigerd met een echte 422 NO_SUITABLE_ROUTE inclusief blockage-telling; geen gefingeerde route, geen placeholder"
+        result: "pass"
+      - case: "Live bewezen gat: bij KOUDE cache (eerste aanvraag in vers gebied) gaven alle drie profielen 200 terwijl de lijn dwars door de op-slot-poort liep (minAfstand 0 m) — Overpass had 9,6-21,6 s nodig, het blokkadebudget is 2500 ms en valt dan fail-open. Herhaalde aanvraag weigert correct (3× 422). Zolang dit reproduceerbaar is, is de blokkadepoort in de praktijk niet waterdicht; genoteerd als koudeRunWaarneming in het bewijs, fix te besluiten in stap 2/3"
+        result: "fail"
+      - case: "Geen vondst of Overpass-uitval zou als GEEN_BEWIJS gerapporteerd zijn (nooit een stille pass); eindstand van de meetfase is 5× PASS, 0× FAIL, 0× GEEN_BEWIJS"
+        result: "pass"
+
+# verdict: deliverable alleen als alle results pass zijn; anders blocked.
+verdict: "blocked"
