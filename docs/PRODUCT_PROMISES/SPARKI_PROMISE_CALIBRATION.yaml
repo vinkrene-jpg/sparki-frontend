@@ -1807,7 +1807,7 @@ chapter_a_start_profiel_en_doelen:
               proof_method: "Redenering: composePassport valt bij een waarde zonder passend event expliciet terug op herkomst onbekend; latere executed-stap: test met geseede waarde zonder event asserteert de 'Herkomst onbekend'-chip."
               proof_result: not_yet_tested
       tolerances:
-        - "De versheidsgrens (nu 180 dagen voor alle velden) is een kalibreerbare tolerantie, geen harde grens."
+        - "De uniforme grens van 180 dagen voor alle velden is uitsluitend het huidige bestaande gedrag, geen gewenste norm. Het vastgestelde gewenste gedrag (besluit René 30-07-2026) is veldspecifieke versheidsgrenzen per soort waarde; het bouwen en testen van die differentiatie is een BOUWOPGAVE. 180 dagen mag nergens als gewenste algemene norm worden geïnterpreteerd."
       unknown_data_policy: "Ontbrekende waarde = eerlijk 'ontbreekt'; onbekende herkomst = 'herkomst onbekend'; nooit een chip of datum verzinnen. Geaccepteerde afgeleide waarden blijven gemarkeerd als geschat tot echte bevestiging."
       approved: false
 
@@ -1884,7 +1884,7 @@ chapter_a_start_profiel_en_doelen:
         - "Slapende daytypes (emergency/race-varianten) activeren pas bij echte bronnen."
         - "Geen upstream-foutdetail bij weer (bewuste eenvoud)."
       assumptions:
-        - "De vaste prioriteitsvolgorde weerspiegelt René's productvisie; dit is nog nooit expliciet als kalibratievraag bevestigd."
+        - "De Vandaag-volgorde is door René vastgesteld op 30-07-2026 (gezondheid → racedag → na-rit → geplande rit/training → voorbereiding → herstel → balans) en hoeft niet opnieuw gekalibreerd te worden. Nog open zijn uitsluitend: (1) de conditionele voorstelprioriteit (voorstel alleen boven een geplande training bij aantoonbare aanpassingsreden — BOUWOPGAVE) en (2) het geïntegreerde gebruikerspadbewijs dat de gekozen volgorde ook zo rendert."
       unknowns:
         - "Of één nudge per bezoek in de praktijk als te stil of precies goed voelt."
       evidence_method:
@@ -1946,7 +1946,7 @@ chapter_a_start_profiel_en_doelen:
       practice_testers: ["René + Dylan (week-logboek: verwacht leidend moment vs. getoond)"]
       result: not_tested
       expectation_gap:
-        - "De prioriteitsvolgorde zelf is nooit expliciet door René gekalibreerd; alles is tegen de eigen aannames getest, niet tegen zijn verwachting."
+        - "De prioriteitsvolgorde zelf is op 30-07-2026 door René vastgesteld en behoeft geen herkalibratie (rene_calibration.completed blijft true). Resterend gat: de conditionele voorstelprioriteit is nog niet gebouwd (BOUWOPGAVE) en er is nog geen geïntegreerd gebruikerspadbewijs dat de echte surface de vastgestelde volgorde met alle bronnen tegelijk toont."
     product_proof:
       score: null
       status: not_proven
@@ -2113,6 +2113,18 @@ chapter_a_start_profiel_en_doelen:
 
 chapter_bc_training_coaching_en_analyse:
 
+  # Overkoepelend besluit 20 — centrale, traceerbare vastlegging.
+  # TRAIN_PLAN_001 en TRAIN_COACHING_001 verwijzen hiernaar; de formulering
+  # hieronder is de enige bron van waarheid, zodat teksten nooit uiteenlopen.
+  - id: BC_BESLUIT_020
+    module: "Training, coaching en analyse"
+    subject: "Overkoepelend besluit 20 — wat Sparki zonder reactie van de sporter automatisch mag aanpassen"
+    record_type: overkoepelend_besluit
+    decision: "Besluit René 30-07-2026 (besluit 20): zonder reactie van de sporter mag Sparki alleen voorlopige planning en niet-kritieke keuzes automatisch veilig aanpassen. Definitieve doelen, de vaste (committed) week, grote belastingwijzigingen en coachbesluiten worden nooit zonder reactie aangepast. Bij een harde veiligheidsreden mag Sparki wél blokkeren, met uitleg."
+    references:
+      - "TRAIN_PLAN_001 — rene_calibration (vraag over automatisch aanpassen van het plan)"
+      - "TRAIN_COACHING_001 — rene_calibration (vraag over zelfstandig handelen zonder vragen)"
+
   - id: TRAIN_PLAN_001
     module: "Training, coaching en analyse"
     subject: "Trainingsplan — veilig, uitvoerbaar en doelgericht plannen zonder coach"
@@ -2135,6 +2147,7 @@ chapter_bc_training_coaching_en_analyse:
       proposed_by: replit
       rationale: "Een coach-loos plan is Sparki's kernbelofte richting zelfstandige renners. De wereldmarkt-lat (TrainerRoad/JOIN-achtige adaptieve plannen) is: adaptief én voorspelbaar veilig. Determinisme van de cijfers is de bestaansreden van het vertrouwen — dat moet aantoonbaar blijven."
       rene_approved: false
+      approval_note: "Governance-status: rene_calibration.completed: true betekent dat de inhoudelijke kalibratievragen zijn beantwoord; rene_approved: false betekent dat deze definitieve beloftetekst nog apart formeel door René moet worden goedgekeurd. Die formele beloftegoedkeuring is de eerstvolgende governance-actie — geen nieuwe inhoudelijke kalibratieronde."
 
     external_intelligence:
       research_required: true
@@ -2179,7 +2192,7 @@ chapter_bc_training_coaching_en_analyse:
     rene_calibration:
       questions:
         - question: "Hoeveel mag Sparki zonder jouw bevestiging aan het plan veranderen: alleen de voorlopige weken automatisch bijstellen (huidig), óók de vaste week bij duidelijke signalen, of nooit iets zonder akkoord?"
-          answer_rene: "(Besluit René 30-07-2026) Voorlopige weken mogen automatisch worden aangepast. De vaste week alleen automatisch bij een duidelijke veiligheidsreden; anders als voorstel. Overkoepelend (besluit 20): zonder reactie van de sporter mag Sparki alleen voorlopige planning en niet-kritieke keuzes automatisch veilig aanpassen — definitieve doelen, vaste week, grote belastingwijzigingen en coachbesluiten niet; bij harde veiligheid mag Sparki wél blokkeren, met uitleg. BOUWOPGAVE: automatische vaste-week-aanpassing bij een duidelijke veiligheidsreden bestaat nog niet in code."
+          answer_rene: "(Besluit René 30-07-2026) Voorlopige weken mogen automatisch worden aangepast. De vaste week alleen automatisch bij een duidelijke veiligheidsreden; anders als voorstel. Overkoepelend geldt besluit 20 — zie BC_BESLUIT_020 bovenaan dit hoofdstuk (centrale, enige formulering). BOUWOPGAVE: automatische vaste-week-aanpassing bij een duidelijke veiligheidsreden bestaat nog niet in code."
         - question: "Als jouw weekdoel niet realistisch past (te veel uren voor je ervaring/beschikbare dagen): wil je dat Sparki stil minder inplant met uitleg (huidig), of het gesprek aangaat vóór het plan er staat?"
           answer_rene: "(Besluit René 30-07-2026) Sparki benoemt kort het conflict en plant daarna veilig minder in. Geen langdurige dialoog nodig."
         - question: "Moet een handmatige wijziging door jou aan een training aan dezelfde veiligheidsgrenzen gebonden zijn als het plan zelf (bijv. max-duur per sessie), of mag jij als gebruiker alles overrulen?"
@@ -2273,6 +2286,7 @@ chapter_bc_training_coaching_en_analyse:
       proposed_by: replit
       rationale: "De uitvoeringslus is waar coaching echt wordt: zonder betrouwbare koppeling en eerlijke oordelen is elke analyse daarboven zand. De vaste veiligheidsregels (nooit zwaarder bij pijn/moe) zijn een hardere belofte dan de meeste marktspelers doen."
       rene_approved: false
+      approval_note: "Governance-status: rene_calibration.completed: true betekent dat de inhoudelijke kalibratievragen zijn beantwoord; rene_approved: false betekent dat deze definitieve beloftetekst nog apart formeel door René moet worden goedgekeurd. Die formele beloftegoedkeuring is de eerstvolgende governance-actie — geen nieuwe inhoudelijke kalibratieronde."
 
     external_intelligence:
       research_required: true
@@ -2393,6 +2407,7 @@ chapter_bc_training_coaching_en_analyse:
       proposed_by: replit
       rationale: "Het verschil tussen een gimmick en een coach is bewijsdiscipline. De ≥2-signaal-guard en de fabricatie-weigering zijn Sparki's identiteit (eerlijkheidsdoctrine) en tegelijk het moeilijkst te bewaken — dus juist dit hoort in het contract."
       rene_approved: false
+      approval_note: "Governance-status: rene_calibration.completed: true betekent dat de inhoudelijke kalibratievragen zijn beantwoord; rene_approved: false betekent dat deze definitieve beloftetekst nog apart formeel door René moet worden goedgekeurd. Die formele beloftegoedkeuring is de eerstvolgende governance-actie — geen nieuwe inhoudelijke kalibratieronde."
 
     external_intelligence:
       research_required: true
@@ -2439,7 +2454,7 @@ chapter_bc_training_coaching_en_analyse:
         - question: "Hoe moet een waarschuwing voelen: neutraal-zakelijk ('je belasting stijgt snel'), of persoonlijk-dringend ('ik zou morgen echt rust nemen') — en verschilt dat tussen gezondheid en prestatie?"
           answer_rene: "(Besluit René 30-07-2026) Prestatieboodschappen zijn persoonlijk en rustig. Gezondheids- en veiligheidswaarschuwingen zijn helder en direct, zonder paniektaal."
         - question: "Wanneer mag Sparki zelfstandig handelen zonder eerst te vragen: nooit, alleen voorlopige plandagen bijstellen (huidig), of ook bijv. een herstelweek activeren bij duidelijke overbelastingssignalen?"
-          answer_rene: "(Besluit René 30-07-2026) Voorlopige dagen mogen automatisch worden aangepast. Een herstelweek alleen automatisch bij een harde veiligheidsstatus; anders als duidelijk voorstel. Overkoepelend (besluit 20): zonder reactie past Sparki alleen voorlopige planning en niet-kritieke keuzes automatisch veilig aan; definitieve doelen, vaste week, grote belastingwijzigingen en coachbesluiten nooit; bij harde veiligheid mag Sparki blokkeren, met uitleg. BOUWOPGAVE: automatische herstelweek bij harde veiligheidsstatus bestaat nog niet."
+          answer_rene: "(Besluit René 30-07-2026) Voorlopige dagen mogen automatisch worden aangepast. Een herstelweek alleen automatisch bij een harde veiligheidsstatus; anders als duidelijk voorstel. Overkoepelend geldt besluit 20 — zie BC_BESLUIT_020 bovenaan dit hoofdstuk (centrale, enige formulering). BOUWOPGAVE: automatische herstelweek bij harde veiligheidsstatus bestaat nog niet."
       completed: true
 
     acceptance_contract:
@@ -2515,6 +2530,7 @@ chapter_bc_training_coaching_en_analyse:
       proposed_by: replit
       rationale: "Vertrouwen tussen sporter, coach en Sparki is de verkoopbelofte van de coachlaag (en straks de club). Fail-closed sharing en de onmogelijkheid van verborgen dossiers zijn bewuste, onderscheidende keuzes die in het contract thuishoren."
       rene_approved: false
+      approval_note: "Governance-status: rene_calibration.completed: true betekent dat de inhoudelijke kalibratievragen zijn beantwoord; rene_approved: false betekent dat deze definitieve beloftetekst nog apart formeel door René moet worden goedgekeurd. Die formele beloftegoedkeuring is de eerstvolgende governance-actie — geen nieuwe inhoudelijke kalibratieronde."
 
     external_intelligence:
       research_required: true
@@ -2635,6 +2651,7 @@ chapter_bc_training_coaching_en_analyse:
       proposed_by: replit
       rationale: "Analyse is alleen geloofwaardig als dezelfde vraag overal hetzelfde antwoord geeft en gaten zichtbaar blijven. De null+reden-discipline van de radar en het dashboard is een echt onderscheid t.o.v. tools die alles altijd 'weten'."
       rene_approved: false
+      approval_note: "Governance-status: rene_calibration.completed: true betekent dat de inhoudelijke kalibratievragen zijn beantwoord; rene_approved: false betekent dat deze definitieve beloftetekst nog apart formeel door René moet worden goedgekeurd. Die formele beloftegoedkeuring is de eerstvolgende governance-actie — geen nieuwe inhoudelijke kalibratieronde."
 
     external_intelligence:
       research_required: true
@@ -2750,12 +2767,14 @@ chapter_bc_training_coaching_en_analyse:
         - "Backend- en web-readiness verschillen: backend kent fresh/ok/tired, de web-state toont PRIMED/GOED/MATIG/LAAG en telt HRV niet mee in de score ondanks het type — twee bijna-gelijke waarheden."
         - "Er is geen echte gezondheidsdata-ingest via connectors (HEALTH_INGEST_PROVIDERS leeg); de dagelijkse beoordeling leunt op zelfrapportage."
         - "Sensorafwijking-signaal (RHR +10% bij ≥5 metingen) is expliciet géén diagnose — de grens tussen signaal en medische suggestie moet in copy bewaakt blijven."
+        - "De opbouw na de herstelcheck is nu uitsluitend tijdgestuurd: een vast zevendaags venster met belastingfactoren 0,4 / 0,6 / 0,8. Criteriagestuurde opbouw (op klachten, belasting en reactie) en een niet-acute-klacht-tak bestaan nog niet — beide zijn BOUWOPGAVEN."
 
     proposed_promise:
       text: "Bij een harde medische of acute blokkade gaat bij Sparki alles opzij: geen trainingsdruk, geen plan dat doordramt. Bij een niet-acute klacht of in een herstelfase blijft alleen aangepaste belasting over, binnen vooraf vastgelegde veiligheidscriteria. Beter melden gaat bewust via een korte herstelcheck, en daarna bouwt Sparki trapsgewijs en criteriagestuurd op — nooit in één keer automatisch terug naar volledig normaal. Bij duidelijke gezondheidsrisico's weegt veiligheid zwaarder dan wat sporter of coach op dat moment wil. Sparki stelt nooit een diagnose en doet nooit alsof: het signaleert alleen wat jouw eigen metingen en meldingen laten zien, en vraagt per dag alleen wat het nog niet weet."
       proposed_by: replit
       rationale: "Gezondheid is de enige plek waar een fout advies echt schade doet; raises-only + resume-gate is daarom bewust asymmetrisch (makkelijk ziek melden, bewust beter melden). Dit is ook juridisch de veilige lijn: signaleren, nooit diagnosticeren."
       rene_approved: false
+      approval_note: "Governance-status: rene_calibration.completed: true betekent dat de inhoudelijke kalibratievragen zijn beantwoord; rene_approved: false betekent dat deze definitieve beloftetekst nog apart formeel door René moet worden goedgekeurd. Die formele beloftegoedkeuring is de eerstvolgende governance-actie — geen nieuwe inhoudelijke kalibratieronde."
 
     external_intelligence:
       research_required: true
@@ -2805,7 +2824,7 @@ chapter_bc_training_coaching_en_analyse:
 
     acceptance_contract:
       hard_reject_rules:
-        - rule: "Bij een harde medische of acute blokkade (actieve status ziek/geblesseerd met klachten of 'niet trainen') bestaat er nergens in het product een trainingsprikkel of prestatie-aansporing voor die dag; bij een niet-acute klacht of herstel-/re-integratiefase bestaat uitsluitend aangepaste belasting volgens vooraf vastgelegde veiligheidscriteria, en bij duidelijke gezondheidsrisico's weegt veiligheid zwaarder dan de wens van sporter of coach."
+        - rule: "Bij een harde medische of acute blokkade (actieve status ziek/geblesseerd met klachten of 'niet trainen') bestaat er nergens in het product een trainingsprikkel of prestatie-aansporing voor die dag; bij een niet-acute klacht of herstel-/re-integratiefase bestaat uitsluitend aangepaste belasting volgens vooraf vastgelegde veiligheidscriteria, en bij duidelijke gezondheidsrisico's weegt veiligheid zwaarder dan de wens van sporter of coach. LET OP — implementatiestand: de huidige code kent alleen de binaire statussen ok/ziek(sick)/geblesseerd(injured); de niet-acute-klacht-/herstelfase-tak met aangepaste belasting bestaat nog niet en is een BOUWOPGAVE. Deze regel is designed/not_yet_tested en wordt nog niet technisch afgedwongen; de contracttekst mag niet gelezen worden alsof dit al geïmplementeerd is."
           rule_type: hard_blockage
           measurement_level: per_dag
           aggregate_justification: ""
@@ -2814,14 +2833,14 @@ chapter_bc_training_coaching_en_analyse:
               proof_stage: designed
               proof_method: "Redenering: day-type zet health altijd bovenaan en de plan-engine blokkeert prikkels; de productbrede claim (élke bron) vergt een geïntegreerde test over plan + Vandaag + nudges tegelijk — dat is de latere executed-stap. BOUWOPGAVE: het onderscheid harde blokkade vs. niet-acute klacht/herstelfase met aangepaste belasting volgens veiligheidscriteria bestaat nog niet in code (nu binair)."
               proof_result: not_yet_tested
-        - rule: "Gezondheidsstatus kan alleen verlicht worden via de herstelcheck, en terugkeer na ziekte of blessure is daarna trapsgewijs en criteriagestuurd — nooit automatisch volledig normaal; elk ander pad dat de status verlaagt of de belasting in één keer normaliseert is een defect."
+        - rule: "Gezondheidsstatus kan alleen verlicht worden via de herstelcheck, en terugkeer na ziekte of blessure is daarna trapsgewijs — nooit in één keer terug naar volledig normaal; elk ander pad dat de status verlaagt of de belasting in één keer normaliseert is een defect. BESTAAND GEDRAG: een tijdgestuurde zevendaagse opbouw met vaste belastingfactoren 0,4 / 0,6 / 0,8. GEWENST GEDRAG (BOUWOPGAVE): een criteriagestuurde opbouw op basis van klachten, belasting en reactie, die niet automatisch volledig normaliseert wanneer klachten of de reactie op belasting daartegen spreken — die criteriagestuurde variant bestaat nog niet in code."
           rule_type: hard_blockage
           measurement_level: per_meting
           aggregate_justification: ""
           counterexamples:
             - case: "Een gewone status-update-route zet 'ziek' terug naar 'fit' zonder herstelcheck; of de herstelcheck accepteert 'beter' terwijl het antwoord 'niet trainen' was (moet 409 geven)."
               proof_stage: designed
-              proof_method: "Redenering: de flow is raises-only met een aparte resume-gate; beide weigeringen zijn al als contracttest aanwezig — her-run met vastgelegd resultaat is de executed-stap."
+              proof_method: "Redenering: de flow is raises-only met een aparte resume-gate; beide weigeringen zijn al als contracttest aanwezig — her-run met vastgelegd resultaat is de executed-stap. De her-run bewijst alleen het BESTAANDE gedrag (resume-gate + tijdgestuurde zevendaagse opbouw met factoren 0,4/0,6/0,8); de criteriagestuurde opbouw is een BOUWOPGAVE en kan pas bewezen worden nadat hij gebouwd is."
               proof_result: not_yet_tested
         - rule: "Sparki gebruikt nooit diagnose- of behandeltaal: signaleren en doorverwijzen mag, benoemen wat iemand 'heeft' nooit."
           rule_type: hard_blockage
@@ -2852,7 +2871,7 @@ chapter_bc_training_coaching_en_analyse:
       evidence_refs: []
     next_action:
       type: research_or_build_or_retest
-      description: "Readiness-eenwording (welke presentatie is de waarheid, HRV-rol) als bouwvoorstel voorleggen; copy-audit diagnose-taal; praktijkcyclus afwachten."
+      description: "Bouwen (BOUWOPGAVEN): de niet-acute-klacht-/herstelfase-tak met aangepaste belasting volgens veiligheidscriteria, en de criteriagestuurde opbouw (klachten/belasting/reactie) ter vervanging van de puur tijdgestuurde zevendaagse opbouw met factoren 0,4/0,6/0,8. Daarnaast: readiness-eenwording (welke presentatie is de waarheid, HRV-rol) als bouwvoorstel voorleggen; copy-audit diagnose-taal; praktijkcyclus afwachten."
       approved_for_execution: false
 
   - id: TRAIN_GRAFIEKEN_001
@@ -2875,6 +2894,7 @@ chapter_bc_training_coaching_en_analyse:
       proposed_by: replit
       rationale: "Grafieken zijn het meest letterlijke eerlijkheidsbewijs: iedereen kan een gat zien. Eén bijgetekende lijn ondermijnt alle andere beloften; daarom horen gaten-gedrag en schattingslabels in het contract."
       rene_approved: false
+      approval_note: "Governance-status: rene_calibration.completed: true betekent dat de inhoudelijke kalibratievragen zijn beantwoord; rene_approved: false betekent dat deze definitieve beloftetekst nog apart formeel door René moet worden goedgekeurd. Die formele beloftegoedkeuring is de eerstvolgende governance-actie — geen nieuwe inhoudelijke kalibratieronde."
 
     external_intelligence:
       research_required: true
@@ -2996,6 +3016,7 @@ chapter_bc_training_coaching_en_analyse:
       proposed_by: replit
       rationale: "Mentale signalen zijn waardevol én gevoelig; de geloofwaardige positie is gedragsspiegel + technieken, uitdrukkelijk geen diagnose-instrument. De eerlijk-onvoldoende-staat bij dunne data is hier belangrijker dan overal elders."
       rene_approved: false
+      approval_note: "Governance-status: rene_calibration.completed: true betekent dat de inhoudelijke kalibratievragen zijn beantwoord; rene_approved: false betekent dat deze definitieve beloftetekst nog apart formeel door René moet worden goedgekeurd. Die formele beloftegoedkeuring is de eerstvolgende governance-actie — geen nieuwe inhoudelijke kalibratieronde."
 
     external_intelligence:
       research_required: true

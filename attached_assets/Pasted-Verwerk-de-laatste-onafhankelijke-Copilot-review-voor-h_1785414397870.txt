@@ -1,0 +1,128 @@
+Verwerk de laatste onafhankelijke Copilot-review voor hoofdstuk A en B+C.
+
+SCOPE
+
+Wijzig in deze ronde:
+
+1. docs/PRODUCT_PROMISES/SPARKI_PROMISE_CALIBRATION.yaml
+2. uitsluitend het commentaar in recovery-load.ts dat ATL/CTL >1,5 te stellig als “injury-risk spike” omschrijft.
+
+Wijzig verder geen productcode.
+Bouw de ontbrekende gezondheids- en herstelwerking nu nog niet.
+Start geen nieuw hoofdstuk binnen deze opdracht.
+
+HOOFDSTUK A
+
+1. START_VANDAAG_001
+
+Werk assumptions en validation.expectation_gap bij.
+
+Leg vast:
+- René heeft de Vandaag-volgorde op 30-07-2026 vastgesteld;
+- de volgorde zelf hoeft niet opnieuw gekalibreerd te worden;
+- alleen de conditionele voorstelprioriteit en het geïntegreerde gebruikerspadbewijs staan nog open;
+- rene_calibration.completed blijft true.
+
+2. START_SPORTPASPOORT_001
+
+Pas acceptance_contract.tolerances aan.
+
+Leg ondubbelzinnig vast:
+- de uniforme grens van 180 dagen is uitsluitend huidig bestaand gedrag;
+- veldspecifieke versheidsgrenzen zijn het vastgestelde gewenste gedrag;
+- het bouwen en testen van die differentiatie is nog een bouwopgave;
+- 180 dagen mag nergens als gewenste algemene norm worden geïnterpreteerd.
+
+HOOFDSTUK B+C
+
+3. TRAIN_GEZONDHEID_001 — niet-acute klacht
+
+Maak bij de betreffende hard_reject_rule zelf expliciet zichtbaar:
+
+- de huidige code kent alleen de binaire statussen ok/sick/injured;
+- de niet-acute klacht-/herstelfase-tak met aangepaste belasting bestaat nog niet;
+- dit is een bouwopgave;
+- de regel is designed/not_yet_tested en nog niet technisch afgedwongen.
+
+Voorkom dat de contracttekst gelezen kan worden alsof dit al geïmplementeerd is.
+
+4. TRAIN_GEZONDHEID_001 — herstelopbouw
+
+Maak expliciet onderscheid tussen:
+
+BESTAAND GEDRAG:
+- een tijdgestuurde zevendaagse opbouw;
+- vaste factoren 0,4 / 0,6 / 0,8.
+
+GEWENST GEDRAG / BOUWOPGAVE:
+- criteriagestuurde opbouw op basis van klachten, belasting en reactie;
+- niet automatisch volledig normaliseren wanneer klachten of reactie daartegen spreken.
+
+Pas hard_reject_rule, proof_method, known_limitations en next_action waar nodig aan.
+Claim niet dat criteriagestuurde opbouw al bestaat.
+
+5. recovery-load.ts
+
+Wijzig uitsluitend het misleidende commentaar rond ATL/CTL >1,5.
+
+Het commentaar moet duidelijk maken:
+- dit is een onzeker belastingwaarschuwingssignaal;
+- het wordt alleen in combinatie met andere signalen gebruikt;
+- het voorspelt niet zelfstandig blessure of ziekte;
+- het is geen diagnose en geen zelfstandige reden voor automatische escalatie.
+
+Wijzig de rekenlogica of het gedrag niet, tenzij blijkt dat het commentaar feitelijk niet overeenkomt met de bestaande implementatie. Rapporteer dat dan eerst en wijzig niets aan de logica.
+
+6. Overkoepelend besluit 20
+
+Leg het besluit éénmaal zelfstandig en traceerbaar vast binnen chapter_bc_training_coaching_en_analyse.
+
+Besluit:
+- zonder reactie mag Sparki alleen voorlopige planning en niet-kritieke keuzes automatisch veilig aanpassen;
+- definitieve doelen, vaste week, grote belastingwijzigingen en coachbesluiten niet;
+- bij een harde veiligheidsreden mag Sparki blokkeren, met uitleg.
+
+Laat de bestaande verwijzingen bij TRAIN_PLAN_001 en COACHING_001 naar dit centrale besluit wijzen, zodat de formuleringen later niet uiteenlopen.
+
+7. Formele beloftegoedkeuring
+
+Maak bij alle acht B+C-onderwerpen duidelijk:
+
+- rene_calibration.completed: true betekent dat de inhoudelijke vragen zijn beantwoord;
+- proposed_promise.rene_approved: false betekent dat de definitieve beloftetekst nog apart formeel moet worden goedgekeurd;
+- dit is de eerstvolgende governance-actie, geen nieuwe inhoudelijke kalibratieronde.
+
+Wijzig de waarden niet namens René.
+
+STATUS EN BEWIJS
+
+- Zet niets op proof_stage: executed zonder werkelijk uitgevoerde test.
+- Laat product_proof.status op not_proven.
+- Laat acceptance_contract.approved op false.
+- Laat completed op true waar René de vragen al heeft beantwoord.
+- Markeer ontbrekend productgedrag expliciet als BOUWOPGAVE.
+- Wijzig geen bestaande besluiten inhoudelijk.
+
+CONTROLE
+
+Voer uit:
+- YAML-lint;
+- kalibratievalidator;
+- typecheck voor het bestand waarin alleen het commentaar is gewijzigd;
+- git diff-controle dat alleen hoofdstuk A, hoofdstuk B+C en het genoemde commentaar zijn geraakt.
+
+COMMIT
+
+Maak één afzonderlijke reviewcorrectiecommit en push naar main.
+
+Rapporteer:
+1. commit-SHA;
+2. gewijzigde bestanden;
+3. lint-, validator- en typecheckresultaten;
+4. bevestiging dat de twee A-bevindingen zijn verwerkt;
+5. bevestiging dat de drie belangrijke B+C-bevindingen zijn verwerkt;
+6. bevestiging dat besluit 20 centraal traceerbaar is;
+7. bevestiging dat geen productgedrag of rekenlogica is gewijzigd;
+8. lijst van resterende echte bouwopgaven.
+
+Stop daarna voor onafhankelijke herreview.

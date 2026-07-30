@@ -122,7 +122,9 @@ export type RiskSignal = {
  * Drivers (additive, capped at 100):
  *  - Health status (sick/injured) — hard override toward high.
  *  - TSB (form): deeply negative = accumulated fatigue.
- *  - ACWR (ATL/CTL): a sharp spike in acute vs chronic load = injury risk.
+ *  - ACWR (ATL/CTL): an elevated acute:chronic ratio is an UNCERTAIN load-warning
+ *    signal, only used here in combination with the other drivers. It does not
+ *    by itself predict injury or illness.
  *  - Readiness: a "tired" self-report adds risk; "fresh" relieves a little.
  */
 export function computeRiskSignal(input: {
@@ -151,8 +153,12 @@ export function computeRiskSignal(input: {
     score += 18;
   }
 
-  // Acute:chronic workload ratio. >1.5 is the classic injury-risk "spike";
-  // 1.3–1.5 is elevated. Only meaningful once a chronic base exists.
+  // Acute:chronic workload ratio. >1.5 is treated as a strong load-warning
+  // signal and 1.3–1.5 as elevated, but this is an UNCERTAIN heuristic: it does
+  // not by itself predict injury or illness, is no diagnosis, and is never a
+  // standalone reason for automatic escalation — it only adds points to the
+  // composite score alongside the other signals (health status, TSB,
+  // readiness). Only meaningful once a chronic base exists.
   const acwr = load.ctl > 0 ? Math.round((load.atl / load.ctl) * 100) / 100 : null;
   if (acwr != null) {
     if (acwr >= 1.5) {
