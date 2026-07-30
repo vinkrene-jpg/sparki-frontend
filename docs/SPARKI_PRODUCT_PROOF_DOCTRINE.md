@@ -1,200 +1,101 @@
-# SPARKI PRODUCT PROOF DOCTRINE v1.1
+# SPARKI PRODUCT PROOF DOCTRINE v1.4
 
-Deze doctrine vervangt featuregedreven ontwikkeling.
+> Canonieke plaats: `docs/SPARKI_PRODUCT_PROOF_DOCTRINE.md` (v1.4, 2026-07-30). Vorige versie gearchiveerd als `docs/archive/SPARKI_PRODUCT_PROOF_DOCTRINE_v1.1.md`.
 
-Vanaf nu wordt Sparki gebouwd op basis van bewezen productbeloften.
+**Datum:** 30 juli 2026, bijgewerkt 21:38 CEST  
+**Status:** ACTIEF
 
-----------------------------------------
-1. GEEN FUNCTIONALITEIT ZONDER BELOFTE
-----------------------------------------
+## 1. Geen functionaliteit zonder belofte
 
-Iedere module begint met één heldere productbelofte.
+Iedere module begint met één heldere gebruikersbelofte. De belofte beschrijft waarde, voorwaarden en uitsluitingen, niet de techniek.
 
-Niet:
+## 2. Geen bouw zonder productonderzoek
 
-"Routeplanner"
+Voor bouw of wijziging worden bestaande Sparki-code, officiële bronnen, marktbenaderingen, databronnen, algoritmen, architectuur, licenties en gaps onderzocht.
 
-Maar bijvoorbeeld:
+## 3. Acceptatiegrenzen zijn productkeuzes
 
-"Een wielrenner kan binnen 30 seconden een betrouwbare route genereren die geschikt is voor zijn gekozen fiets, doel en omstandigheden."
+Iedere belofte heeft expliciete grenzen. Bij een ontbrekend besluit geldt tijdelijk de strengste eerlijke variant en wordt het open punt geregistreerd.
 
-De belofte beschrijft altijd de waarde voor de gebruiker, nooit de techniek.
+## 4. Hard falen wordt nooit gemiddeld
 
-----------------------------------------
-2. GEEN BOUW ZONDER BEWIJS
-----------------------------------------
+Eén hard falen keurt de individuele uitkomst af. Voorbeelden:
 
-Na implementatie moet bewezen worden dat de oorspronkelijke belofte daadwerkelijk is waargemaakt.
+- één verboden routesegment keurt de route af;
+- één ongeautoriseerde datalezing keurt de actie af;
+- één contextlek tussen trainerrollen keurt de autorisatie af;
+- één niet-verifieerbare veiligheidscontrole mag niet als veilig worden gepresenteerd.
 
-Niet voldoende:
+## 5. Onbekend is geen akkoord
 
-- Build succesvol
-- Tests groen
-- Pull Request gemerged
-- Feature aanwezig
+Voor veiligheids- en autorisatiekritische controles worden minimaal drie uitkomsten onderscheiden:
 
-Wel voldoende:
+- aantoonbaar geldig;
+- aantoonbaar ongeldig;
+- niet betrouwbaar verifieerbaar.
 
-Objectief bewijs dat de gebruiker de oorspronkelijke belofte daadwerkelijk ervaart.
+Alleen aantoonbaar geldig mag worden vrijgegeven. `unverifiable` is geen zachte waarschuwing wanneer veiligheid of privacy op het spel staat.
 
-----------------------------------------
-3. PRODUCT PROOF SCORE
-----------------------------------------
+## 6. Geen bouw zonder bewijsontwerp
 
-Iedere module wordt beoordeeld op minimaal:
+Tegenvoorbeelden, meetniveau en bewijsstappen bestaan vóór implementatie. `designed/not_yet_tested` is eerlijk; het is geen uitgevoerd bewijs.
 
-- Betrouwbaarheid
-- Volledigheid
-- Begrijpelijkheid
-- Relevantie
-- Consistentie
-- Praktische bruikbaarheid
+## 7. Technische afronding is geen productbewijs
 
-De beoordeling gaat over de WAARDE van de module, niet over de kwaliteit van de code.
+Build, typecheck, unit-tests, merge, publicatie en zichtbare functionaliteit zijn noodzakelijk maar onvoldoende.
 
-----------------------------------------
-4. DE 9-REGEL
-----------------------------------------
+## 8. Het bewijsobject is de verticale gebruikersketen
 
-Een module is pas gereed bij een eindscore van minimaal 9,0.
+Product Proof toetst het volledige pad waarin de gebruiker de waarde ontvangt. Een correcte detector met een latere fail-open stap faalt de belofte.
 
-Voorbeelden:
+## 9. Product Proof-score en veto
 
-9,6 = Gereed
+Minimale dimensies:
 
-9,2 = Gereed
+- betrouwbaarheid;
+- volledigheid;
+- begrijpelijkheid;
+- relevantie;
+- consistentie;
+- praktische bruikbaarheid.
 
-8,9 = Niet gereed
+Een module is pas gereed bij minimaal 9,0, vooraf vastgelegde meetcriteria per dimensie en zonder open hard-fail veto.
 
-8,0 = Opnieuw verbeteren
+## 10. Onafhankelijke beoordeling
 
-7,0 = Herontwerpen
+Product Proof vereist:
 
-5,0 = Fundament opnieuw beoordelen
+1. objectief technisch en gebruikerspadbewijs;
+2. onafhankelijke code- en claimvalidatie;
+3. echte praktijk- of producttest;
+4. eindbeoordeling door René.
 
-Onder een 9 wordt nooit als productiegeschikt beschouwd.
+## 11. Poort 5b — sanity-check
 
-----------------------------------------
-5. BIJ AFKEUR WORDT DE OORZAAK BEPAALD
-----------------------------------------
+Vóór praktijktestoplevering controleert de bouwer op echte schermen:
 
-Wanneer de belofte geen 9 behaalt moet automatisch worden vastgesteld waardoor dit komt.
+- iedere zichtbare bediening werkt;
+- functies passen bij context, fiets, rol en scherm;
+- navigatie leidt naar een gerenderde toestand;
+- placeholders blijven niet als einduitkomst staan;
+- ongeldigheid wordt niet als klaar gepresenteerd.
 
-Mogelijke oorzaken:
+## 12. Poort 5c — onafhankelijke code- en ketenreview
 
-- verkeerde productbelofte
-- verkeerde architectuur
-- verkeerde databron
-- verkeerde implementatie
-- ontbrekende functionaliteit
-- onvoldoende validatie
-- onvoldoende integratie
-- onvoldoende betrouwbaarheid
-- onvoldoende gebruikerswaarde
+De reviewer vergelijkt exacte SHA's, leest de diff, volgt de geraakte keten, controleert kalibratie en tests, en benoemt wat niet is uitgevoerd.
 
-Niet alleen melden DAT iets onvoldoende is.
+## 13. Poort 6a — testerfouten zijn contractkennis
 
-Maar ook WAAROM.
+Iedere testerfout wordt permanent verwerkt als regel, tegenvoorbeeld, meetniveau, regressietest, bewijs en commitreferentie.
 
-----------------------------------------
-6. GEEN UITBREIDING OP EEN ONVOLDOENDE BASIS
-----------------------------------------
+## 14. Geen uitbreiding op een onvoldoende basis
 
-Nieuwe functionaliteit wordt niet gebouwd zolang de kernbelofte van de betreffende module geen 9 of hoger behaalt.
+Nieuwe functionaliteit binnen een domein wordt gepauzeerd wanneer de kernbelofte fundamenteel faalt. Onderzoeks- of kalibratiewerk mag alleen afgebakend doorgaan zonder productbouw te starten.
 
-Eerst kwaliteit.
+## 15. Eerlijke statussen
 
-Daarna uitbreiding.
+Technisch aanwezig, gekalibreerd, contract goedgekeurd, getest, praktisch bewezen en Product Proven blijven afzonderlijke statussen.
 
-----------------------------------------
-7. ONAFHANKELIJKE PRODUCT PROOF
-----------------------------------------
+## 16. Definitie van gereed
 
-De ontwikkelaar beoordeelt zijn eigen werk nooit als eindbeoordelaar.
-
-De Product Proof bestaat uit:
-
-1. Objectief bewijs
-2. Onafhankelijke AI-validatie
-3. Praktijktest
-4. Eindbeoordeling
-
-Pas daarna krijgt een module de status:
-
-PRODUCT PROVEN
-
-----------------------------------------
-8. HET BELANGRIJKSTE PRINCIPE
-----------------------------------------
-
-Sparki wordt niet ontwikkeld om functies toe te voegen.
-
-Sparki wordt ontwikkeld om productbeloften aantoonbaar waar te maken.
-
-Een feature die aanwezig is maar zijn belofte niet waarmaakt bestaat feitelijk niet.
-
-De enige definitie van "gereed" is:
-
-"De oorspronkelijke productbelofte is objectief bewezen met een score van minimaal 9,0."
-----------------------------------------
-9. GEEN BOUW ZONDER PRODUCTONDERZOEK
-----------------------------------------
-
-Voordat een module wordt gebouwd of aangepast moet eerst worden onderzocht hoe vergelijkbare productieproducten dezelfde productbelofte waarmaken.
-
-Het onderzoek beschrijft minimaal:
-
-- de productbelofte;
-- de huidige Sparki-aanpak;
-- de best beschikbare marktbenadering;
-- de benodigde databronnen;
-- de benodigde algoritmen;
-- de benodigde architectuur;
-- de verschillen (gaps);
-- de voorgestelde oplossing.
-
-Pas na goedkeuring van dit Productonderzoek mag de implementatie starten.
-
-Sparki wordt nooit aangepast aan de beperkingen van de huidige implementatie zonder eerst te bewijzen dat een betere oplossing redelijkerwijs niet haalbaar is.
-
-----------------------------------------
-10. ACCEPTATIEGRENZEN ZIJN PRODUCTKEUZES (v1.1)
-----------------------------------------
-
-Een belofte is pas compleet met een expliciete ACCEPTATIEGRENS: hoeveel afwijking nog acceptabel is, in gewone taal.
-
-Voorbeeld: niet "geschikt voor de racefiets", maar "0% onverhard; een route met fietsverbod wordt nooit aangeboden".
-
-Regels:
-
-1. Acceptatiegrenzen worden door de producteigenaar goedgekeurd VOORDAT er gebouwd wordt. Ze staan in het productonderzoek. Bouwen tegen een norm die de producteigenaar niet heeft gezien is verboden.
-
-2. Bij twijfel tijdens de bouw (een drempel, tolerantie of afweging die niet in de goedgekeurde norm staat): kies voorlopig de STRENGSTE eerlijke variant én registreer de keuze als open keuze, zodat de producteigenaar hem ziet. Nooit stilzwijgend "goed genoeg".
-
-3. De onafhankelijke Product Proof toetst tegen de goedgekeurde acceptatiegrenzen, niet tegen "werkt het technisch" of "beter dan eerst". Een resultaat binnen de techniek maar buiten de grens scoort onvoldoende.
-
-4. Gebruikersbril als vast toetsmoment: elke proof beantwoordt expliciet de vraag "wat zou de producteigenaar als gebruiker hiervan zeggen?" — op basis van echte schermen en echte routes/data, niet op basis van logregels.
-
-5. Het gat wordt al testend vooraf gedicht: bij elke belofte wordt vóór "gereed" minimaal één echt gebruiksmoment samen met de producteigenaar getest (of klaargezet om te testen), zodat verwachtingsverschillen zichtbaar worden vóórdat de module gereed heet.
-
-----------------------------------------
-11. POORT 5B: VERPLICHTE SANITY-CHECK VÓÓR ELKE PRAKTIJKTEST-OPLEVERING (v1.2)
-----------------------------------------
-
-Vóór elke oplevering aan praktijktesters doorloopt de bouwer zelf een lichte, verplichte
-zelfcontrole — los van en aanvullend op het technische bewijs:
-
-1. Geen dode bediening: elke zichtbare knop, schakelaar of link doet daadwerkelijk iets.
-2. Geen contextueel onzinnige functies: elke getoonde optie past bij de gekozen context.
-3. Geen placeholder- of laadtekst als eindresultaat.
-
-De controle wordt uitgevoerd op echte schermen en gerapporteerd in een registreerbaar
-rapport (welke gevallen gecontroleerd, met welk resultaat) in
-docs/PRODUCT_PROMISES/sanity-checks/. Een fail blokkeert de oplevering.
-Formaat, rapportregels en de bindende werkafspraak bij testerfouten in gekalibreerde
-modules staan in docs/PRODUCT_PROMISES/POORT_5B_SANITY_CHECK.md.
-
-Vaste werkafspraak: elke door een tester gevonden fout in een module uit
-SPARKI_PROMISE_CALIBRATION.yaml krijgt als vast onderdeel van de fix een afkeurregel
-mét tegenvoorbeeld in dat document én een uitgevoerde test die aantoont dat het
-tegenvoorbeeld voortaan wordt geweigerd.
+> De oorspronkelijke, goedgekeurde productbelofte is via de volledige gebruikersketen objectief en onafhankelijk bewezen, praktisch bevestigd, scoort minimaal 9,0 en bevat geen open harde afkeur of onverifieerbare veiligheids-/privacytoestand.
