@@ -1,0 +1,32 @@
+# Poort 5b sanity-check — bugfix Volgauto-context + dode "wijzig met routepunten"-knop
+# Twee door René gemelde en herhaald gemelde gebruikersfouten (30-07-2026).
+
+delivery: "Routes/Bewaard: (1) VolgautoPanel alleen nog op expliciete wedstrijdroutes (usageType 'wedstrijd'), volledig afwezig op gewone MTB/gravel/trainingsroutes; (2) '+ wijzig met routepunten' wisselt vanuit Bewaard nu echt naar de Maken-weergave met de gesamplede routepunten. Regressieregels toegevoegd aan hoofdstuk D (routegenerator + volgauto)."
+date: "2026-07-30"
+checked_by: "replit"
+surfaces:
+  - "/routes?view=bewaard (echt scherm, dev — bewaarde route 36 km Hengelo zichtbaar; screenshot docs/product/proof-evidence/poort5b-routes-bewaard-2026-07-30.jpg)"
+  - "/routes?view=maken (echt scherm, dev — bouwer rendert, wizard stap 1 zichtbaar; screenshot docs/product/proof-evidence/poort5b-routes-maken-2026-07-30.jpg)"
+  - "Gebruikerspad Bewaard → '+ wijzig met routepunten' → Maken → routepunten → 'Bereken route' (geautomatiseerd doorlopen, zie dead_controls)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "'+ wijzig met routepunten' op een bewaarde route: was dood vanuit het Bewaard-tabblad (state gevuld, maar #route-generator bestond niet). Nu: klik navigeert naar /routes?view=maken, de bouwer rendert met de overgenomen routepunten en 'Bereken route' levert een nieuwe kandidaat. Getest via geautomatiseerde gebruikerspadtest test:route-volgauto-wijzig (4/4 groen, echte DOM-render + kliks) — de volledige klikketen zoals de gebruiker hem doorloopt."
+        result: "pass"
+      - case: "Bewaard- en Maken-tabblad op het echte scherm doorlopen (screenshots): tabbalk, NAVIGEER/DELEN/GPX/TCX-knoppen en de bouwer-wizard renderen; geen kapotte weergave na de fix."
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Volgauto-blok op een gewone (niet-wedstrijd)route is contextuele onzin — stond op ALLE routes met een lijn (geometry.length > 1). Nu render-grendel usageType === 'wedstrijd' (zelfde grendel als het race-blok): MTB-training en gravel-toertocht tonen het blok niet meer, een wedstrijdroute wél. Bewezen met tegenvoorbeeld-tests in test:route-volgauto-wijzig; op het echte Bewaard-scherm (trainingsroute) is geen Volgauto-blok aanwezig."
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Bewaard- en Maken-scherm gecontroleerd op blijvende laad-/placeholdertekst: routekaart, wegdek- en opmerkingenpanelen en de wizard tonen echte inhoud of eerlijke leegstaten; geen blijvende 'laden…'-tekst."
+        result: "pass"
+
+# Kanttekening (eerlijkheid): de tabwissel-met-routepunten is bewezen via de
+# geautomatiseerde gebruikerspadtest met echte DOM-render en kliks; de statische
+# schermafdrukken bewijzen dat beide weergaven gezond renderen. Er is geen
+# handmatige muisklik-doorloop in een echte browser gedaan.
+verdict: "deliverable"

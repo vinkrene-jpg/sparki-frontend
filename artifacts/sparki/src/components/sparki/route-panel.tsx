@@ -942,7 +942,9 @@ function RouteCard({
   const { data: friendsData } = useFriends()
   const cardFriends = friendsData?.friends ?? []
   const propose = useProposeRoute()
-  const shareLink = `${window.location.origin}${import.meta.env.BASE_URL}routes?view=bewaard&route=${route.id}`
+  // `?? "/"`: onder Vite bestaat import.meta.env altijd; in de node-page-tests
+  // (tsx, geen Vite) niet — daar volstaat de root-basis.
+  const shareLink = `${window.location.origin}${import.meta.env?.BASE_URL ?? "/"}routes?view=bewaard&route=${route.id}`
   const profile = route.profile ?? []
   const climbs = route.climbs ?? []
   const nav = route.nav ?? []
@@ -1321,7 +1323,12 @@ function RouteCard({
         />
       )}
 
-      {geometry.length > 1 && (
+      {/* Volgauto is uitsluitend een wedstrijdvoorziening: alleen tonen bij
+          expliciet als wedstrijd gemarkeerde routes (usageType "wedstrijd" —
+          dezelfde grendel als het race-blok hierboven). Op gewone trainings-,
+          MTB- of gravelroutes ontbreekt de optie volledig — geen verborgen of
+          uitgeschakelde onzin-optie. Bugmelding René 30-07-2026. */}
+      {geometry.length > 1 && route.usageType === "wedstrijd" && (
         <VolgautoPanel
           routeId={route.id}
           bikeDistanceKm={route.distanceKm}
@@ -3432,6 +3439,24 @@ export function RouteGenerator({
   )
 }
 
+// "Wijzig met routepunten": gesamplede punten van een bestaande route voor de
+// eigen-route-bouwer.
+type WaypointEdit = {
+  routeId: number
+  points: RouteWaypoint[]
+  // De echte routelijn als referentie op de kaart tot een punt wijzigt.
+  geometry: [number, number][] | null
+  // Kwam de rijder uit het navigatievenster? Dan gaat hij na het bewaren
+  // vanzelf terug de navigatie in (van de aangepaste route).
+  returnToNav: boolean
+}
+
+// Overdracht over een tabwissel heen (Bewaard → Maken): de tabwissel remount
+// RoutePanel, dus component-state overleeft hem niet. De vertrekkende
+// instantie zet de punten hier klaar; de nieuwe instantie consumeert ze
+// eenmalig in zijn useState-initializer.
+let pendingWaypointEdit: WaypointEdit | null = null
+
 export function RoutePanel({
   view = null,
 }: {
@@ -3458,26 +3483,54 @@ export function RoutePanel({
   const [genPrefill, setGenPrefill] = useState<ElevationPreference | null>(null)
   // Bestaande route wijzigen: de eigen-route-bouwer start met routepunten uit
   // de echte routelijn. De key remount de generator zodat de punten landen.
-  const [genWaypoints, setGenWaypoints] = useState<{
-    routeId: number
-    points: RouteWaypoint[]
-    // De echte routelijn als referentie op de kaart tot een punt wijzigt.
-    geometry: [number, number][] | null
-    // Kwam de rijder uit het navigatievenster? Dan gaat hij na het bewaren
-    // vanzelf terug de navigatie in (van de aangepaste route).
-    returnToNav: boolean
-  } | null>(null)
+  const [genWaypoints, setGenWaypoints] = useState<WaypointEdit | null>(() => {
+    // Overdracht van "wijzig met routepunten" over een tabwissel heen: de
+    // Bewaard-weergave zet pendingWaypointEdit klaar en wisselt naar Maken;
+    // die wissel remount dit paneel, dus de punten komen hier binnen.
+    const pending = pendingWaypointEdit
+    pendingWaypointEdit = null
+    return pending
+  })
   const [panelPath, setPanelLocation] = useLocation()
+
+  // Na een overdracht: de bouwer staat nu echt op het scherm — er naartoe
+  // scrollen zodat de rijder ziet dat zijn routepunten geladen zijn.
+  useEffect(() => {
+    if (!genWaypoints) return
+    const t = setTimeout(() => {
+      document
+        .getElementById("route-generator")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }, 50)
+    return () => clearTimeout(t)
+    // Alleen bij de eerste render met overgedragen punten.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function editRouteWaypoints(route: SparkiRoute, returnToNav = false) {
     const points = sampleWaypointsFromGeometry(route.geometry ?? [])
     if (points.length < 2) return
-    setGenWaypoints({
+    const edit = {
       routeId: route.id,
       points,
       geometry: route.geometry ?? null,
       returnToNav,
-    })
+    }
+    if (!showMaken) {
+      // Vanuit Bewaard/GPX bestaat de bouwer (#route-generator) niet — eerst
+      // écht naar het Maken-tabblad wisselen. De tabwissel remount dit paneel,
+      // dus de routepunten reizen mee via de module-overdracht hieronder;
+      // de nieuwe instantie scrolt daarna zelf naar de bouwer.
+      // Bugmelding René 30-07-2026: de knop deed hier voorheen niets.
+      pendingWaypointEdit = edit
+      // Bestaande querycontext (bv. ?samen=/&maten= vanuit de navigatie)
+      // behouden — alleen de weergave wisselt.
+      const params = new URLSearchParams(window.location.search)
+      params.set("view", "maken")
+      setPanelLocation(`${panelPath}?${params.toString()}`)
+      return
+    }
+    setGenWaypoints(edit)
     setGenPrefill(null)
     setTimeout(() => {
       document

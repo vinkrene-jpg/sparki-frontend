@@ -207,6 +207,16 @@ chapter_d_routes_en_navigatie:
               proof_stage: executed
               proof_method: "Geautomatiseerde test `pnpm --filter @workspace/sparki run test:route-map-startfinish` (route-map-startfinish.test.tsx, 3 tests, leaflet volledig gemockt): lus ⇒ precies één S/F-marker en geen losse S of F; A→B ⇒ losse S én F; het oude falen (kaal 12px-bolletje zonder letterlabel) wordt expliciet afgekeurd."
               proof_result: rejected_as_expected
+      sanity_reject_rules:
+        - rule: "Regressieregel (vondst René 30-07-2026, herhaald gemeld): '+ wijzig met routepunten' op een bewaarde route mag nooit een dode knop zijn — vanuit de Bewaard-weergave wisselt de klik éérst echt naar de Maken-weergave, de bouwer rendert werkelijk met de gesamplede routepunten van de bestaande route, en pas daarna volgt focus/scroll; de route is vervolgens opnieuw berekenbaar."
+          rule_type: sanity
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Klik op '+ wijzig met routepunten' vanuit het Bewaard-tabblad: de routepuntenstate werd gevuld en er werd gescrold naar #route-generator, maar dat element bestond niet (de bouwer rendert alleen in de Maken-weergave) — voor de gebruiker gebeurde er niets."
+              proof_stage: executed
+              proof_method: "Fix 30-07-2026 (route-panel.tsx: tabwissel naar ?view=maken met module-overdracht van de routepunten over de remount heen) + geautomatiseerde gebruikerspadtest `pnpm --filter @workspace/sparki run test:route-volgauto-wijzig` (route-panel-volgauto-wijzig.test.tsx, groen): Bewaard → klik → navigatie naar /routes?view=maken → Maken-instantie toont de overgenomen routepunten → wizard doorlopen → 'Bereken route' levert een echte nieuwe kandidaat."
+              proof_result: rejected_as_expected
       tolerances:
         - "Afstandsafwijking lus: doel ±10% (huidige hercorrectie haalt ±5% in de geteste gevallen)."
         - "Onbekend wegdek racefiets: GEEN zachte tolerantie maar rule_type unverifiable (zie afkeurregel hierboven) — 0% onbekend is de norm; conform sinds taak #487 (30-07-2026): selectie zoekt eerst een volledig-geverifieerd alternatief, >0% onbekend ⇒ 'niet volledig geverifieerd' i.p.v. 'geschikt', gebruiken alleen na expliciete keuze, onbekend-% + kaartlocaties getoond."
@@ -909,6 +919,16 @@ chapter_d_routes_en_navigatie:
               proof_stage: designed
               proof_method: "Redenering: carKm nullable ⇒ ETA-berekening retourneert null (vastgelegde contract-les). Latere unit-test op de ETA-functie met carKm=null en met positie ouder dan 3 min."
               proof_result: not_yet_tested
+      sanity_reject_rules:
+        - rule: "Regressieregel (vondst René 30-07-2026, herhaald gemeld): Volgauto is uitsluitend een wedstrijdvoorziening — het Volgauto-blok verschijnt alleen op routes die expliciet als wedstrijd gemarkeerd zijn (usageType 'wedstrijd'); op gewone trainings-, toertocht-, MTB- of gravelroutes ontbreekt de functie volledig (geen verborgen of uitgeschakelde onzin-optie)."
+          rule_type: sanity
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Gewone MTB-trainingsroute en gravel-toertochtroute in het Bewaard-tabblad toonden het volledige Volgauto-blok, omdat de enige rendervoorwaarde 'geometry.length > 1' was — contextueel onzinnig voor niet-wedstrijdritten."
+              proof_stage: executed
+              proof_method: "Fix 30-07-2026 (route-panel.tsx: render-grendel usageType === 'wedstrijd', dezelfde grendel als het race-blok) + geautomatiseerde tegenvoorbeeld-tests `pnpm --filter @workspace/sparki run test:route-volgauto-wijzig` (route-panel-volgauto-wijzig.test.tsx, groen): MTB-trainingsroute ⇒ geen VolgautoPanel; gravel-toertocht ⇒ geen VolgautoPanel; expliciete wedstrijdroute ⇒ wél VolgautoPanel."
+              proof_result: rejected_as_expected
       tolerances:
         - "Aansluitpunt geldig ≤150 m; positie vers ≤3 min; wissel pas na 120 s aanhoudende voorkeur."
       unknown_data_policy: "Geen recente positie of geen bereikbaar aansluitpunt = eerlijk 'geen positie'/'geen ETA'; nooit doorrekenen op oude of ontbrekende data."

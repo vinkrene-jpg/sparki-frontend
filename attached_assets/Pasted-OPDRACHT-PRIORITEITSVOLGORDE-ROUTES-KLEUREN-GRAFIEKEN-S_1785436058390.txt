@@ -1,0 +1,217 @@
+OPDRACHT — PRIORITEITSVOLGORDE ROUTES, KLEUREN/GRAFIEKEN, SAMEN EN GEWONE FIETSER/E-BIKE
+
+Werk strikt in deze volgorde. Start geen volgende fase voordat de vorige aantoonbaar is afgerond.
+
+==================================================
+FASE 1 — TAAK #505: LUSROUTES FAIL-CLOSED MAKEN
+==================================================
+
+De routebewijsbatch heeft aangetoond dat 11 van 12 gewone lusroutes blokkerende obstakels bevatten, terwijl de route toch werd aangeboden.
+
+Oorzaak:
+- gewone lusgeneratie geeft de obstakelcontrole circa 2000–2500 ms;
+- Overpass kan 14–98 seconden nodig hebben;
+- bij timeout gaat het systeem fail-open;
+- de eerdere fix geldt alleen voor waypoint/PTP-routes.
+
+Vereist gedrag:
+
+Iedere routekandidaat krijgt exact één verificatiestatus:
+
+- pending_verification
+- verified_clear
+- hard_blocked
+- unverifiable
+
+Alleen verified_clear mag:
+
+- als KLAAR worden getoond;
+- worden opgeslagen;
+- NAVIGEER activeren;
+- als bruikbare route worden aangeboden.
+
+hard_blocked:
+- kandidaat afwijzen;
+- alternatief proberen;
+- nooit tonen als bruikbare route.
+
+unverifiable:
+- nooit stil als veilig behandelen;
+- geen KLAAR;
+- geen NAVIGEER;
+- geen opslag;
+- eerlijke melding aan gebruiker.
+
+De oplossing mag niet alleen bestaan uit een langere timeout.
+
+De regel moet gelden voor:
+
+- gewone lusroutes;
+- routepunten;
+- PTP;
+- handmatige routes;
+- opgeslagen routes;
+- opnieuw laden;
+- navigatiestart.
+
+Na implementatie:
+
+1. Draai exact dezelfde bewijsbatch opnieuw:
+   - race, gravel en MTB;
+   - 25, 60, 120 en 200 km;
+   - dezelfde startlocatie, seeds en wensen.
+
+2. Acceptatie:
+   - 0 van 12 aangeboden routes met afgesloten/privépoort;
+   - 0 van 12 met fietsverbod;
+   - 0 van 12 met ongeschikte trap;
+   - geen pending/unverifiable route als KLAAR;
+   - afstand per route apart gerapporteerd;
+   - koude en warme cache apart getest.
+
+3. Werk hoofdstuk D bij:
+   - regressieregel voor het lus-timeout/fail-open-gat;
+   - historisch geblokkeerd tegenvoorbeeld behouden;
+   - proof pas passed na werkelijk uitgevoerde groene batch.
+
+4. Voer Poort 5b en onafhankelijke Poort 5c uit.
+
+Maak hiervan één kleine, herkenbare fixcommit. Neem geen styling, navigatie, hoofdstukken of andere functionaliteit mee.
+
+==================================================
+FASE 2 — VISUELE CONTROLE KLEUREN EN GRAFIEKEN
+==================================================
+
+De kleurdoctrine is technisch ingevoerd, maar moet nog visueel worden bewezen.
+
+Vaste betekenis:
+
+- groen = goed/positief;
+- amber = aandacht;
+- rood = fout/risico;
+- cyaan = merkaccent, actieve bediening en selectie;
+- cyaan mag niet automatisch “goed” betekenen;
+- grafiek- en wegdekkleuren komen uit één centrale bron.
+
+Controleer echte schermen in licht en donker waar van toepassing:
+
+- Analyse;
+- routeplanner;
+- wegdekanalyse;
+- Performance Lab;
+- prestatiecijfers.
+
+Controleer per scherm:
+
+- dezelfde betekenis gebruikt overal dezelfde kleur;
+- grafieken zijn leesbaar en rustig;
+- lijnen en vlakken zijn van elkaar te onderscheiden;
+- tekst en legenda hebben voldoende contrast;
+- geen willekeurige losse hex-, Tailwind- of SVG-kleuren buiten de centrale tokens;
+- geen dubbele className of visuele bouwfouten;
+- positieve waarden zijn niet cyaan wanneer groen bedoeld is.
+
+Lever screenshots en een Poort 5b-rapport op.
+
+Wijzig alleen concrete visuele afwijkingen. Geen brede redesign.
+
+==================================================
+FASE 3 — SAMEN-PAGINA EN NAVIGATIE
+==================================================
+
+Leg deze keuzes vast en voer ze alleen uit wanneer de actuele code hiervan afwijkt.
+
+Hoofdnavigatie:
+
+- Rijden blijft op het eerste niveau.
+- Samen blijft voorlopig onder Meer.
+- Verwijder geen andere kerntab om Samen omhoog te plaatsen.
+
+Gewenste volgorde Samen-pagina:
+
+1. open uitnodigingen en verzoeken;
+2. Samen trainen;
+3. Voorstellen;
+4. vrienden en netwerk;
+5. mensen vinden;
+6. club- of teamcontext;
+7. feed/overzicht.
+
+Reden:
+- eerst zaken waarop de gebruiker moet reageren;
+- daarna de primaire gezamenlijke actie;
+- daarna ontdekking en sociaal overzicht;
+- feed niet bovenaan.
+
+Voer een kleine gebruikerspadtest uit:
+
+- uitnodiging ontvangen en openen;
+- Samen trainen starten;
+- voorstel bekijken;
+- vriend zoeken;
+- feed bereiken.
+
+==================================================
+FASE 4 — KALIBRATIE GEWONE FIETSER / E-BIKE
+==================================================
+
+Nog niet breed bouwen. Eerst een kalibratievoorstel maken.
+
+Productbesluit:
+
+De recreatieve fietser is een volwaardige Sparki-gebruiker.
+Elektrische ondersteuning is een eigenschap van de fiets en de activiteit, niet een apart type persoon.
+
+Eerste bruikbare productstap:
+
+- recreatieve fietser als onboardingkeuze;
+- stads-/toerfiets als zichtbaar routeprofiel;
+- elektrische ondersteuning als fietseigenschap;
+- EBikeRide apart bewaren;
+- e-bike-ritten niet stil als gewone vermogensrit gebruiken;
+- geen verplichte FTP- of wedstrijdtaal;
+- veilige en comfortabele routes;
+- voorkeuren zoals natuur, water, autoluw en stad vermijden.
+
+Nog niet in deze eerste stap:
+
+- uitgebreide accuberekening;
+- batterijverbruik per helling;
+- volledige recreatieve coachengine;
+- speed-pedelecregels;
+- grote herbouw van alle trainingsschermen.
+
+Maak voor deze fase alleen:
+
+1. huidige-code-inventarisatie;
+2. productbelofte;
+3. acceptatiecontract;
+4. open vragen aan René;
+5. betrokken bestanden en engines;
+6. voorstel voor een kleine eerste bouwfase.
+
+Start geen implementatie zonder expliciete goedkeuring van René.
+
+==================================================
+RAPPORTAGE
+==================================================
+
+Rapporteer na iedere fase:
+
+- actuele base- en head-SHA;
+- gewijzigde bestanden;
+- exacte root cause;
+- uitgevoerde tests en exitcodes;
+- Poort 5b-resultaat;
+- Poort 5c-resultaat;
+- screenshots/bewijsbestanden;
+- openstaande risico’s;
+- bevestiging dat geen werk uit latere fasen is meegenomen.
+
+Prioriteit is absoluut:
+
+1. routeveiligheid;
+2. routebewijs;
+3. visuele kwaliteit;
+4. Samen-volgorde;
+5. kalibratie gewone fietser/e-bike.

@@ -233,8 +233,15 @@ export default function NavigateScreen() {
   // "Ik fiets" verandert NIETS aan de fietsnavigatie (alleen best-effort
   // positie delen); "Ik bestuur de volgauto" opent een eigen automodus met de
   // aparte autoroute. Best-effort: zonder netwerk geen rolkeuze, gewoon fietsen.
+  // Volgauto is uitsluitend een wedstrijdvoorziening: het plan wordt alleen
+  // opgehaald (en de rolkeuze dus alleen getoond) op routes die expliciet als
+  // wedstrijd gemarkeerd zijn — óók als een oud plan op een gewone route nog
+  // enabled in de database staat (historische data van vóór de grendel).
+  // Bugmelding René 30-07-2026.
   const { data: volgautoPlan } = useVolgautoPlan(
-    Number.isInteger(routeId) ? routeId : null,
+    Number.isInteger(routeId) && route?.usageType === "wedstrijd"
+      ? routeId
+      : null,
   );
   const [volgautoRole, setVolgautoRole] = useState<"renner" | "volgauto" | null>(
     null,
