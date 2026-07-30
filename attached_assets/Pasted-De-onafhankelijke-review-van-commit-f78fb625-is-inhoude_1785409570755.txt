@@ -1,0 +1,27 @@
+De onafhankelijke review van commit f78fb625… is inhoudelijk voldoende om hoofdstuk A te kalibreren. De structuur klopt en alleen het YAML-bestand is gewijzigd.
+
+Wel twee correcties:
+
+De belofte noemt een eerste volledig plan zonder echte gegevens, terwijl een beperkte proefweek eerlijker en veiliger is.
+“Past zich aan” mag niet suggereren dat Sparki volledig intelligent doorvraagt; momenteel selecteert en ordent het uit een vaste catalogus. Dat moet eerlijker worden geformuleerd. De huidige beperkingen bevestigen dat.
+Mijn aanbevolen antwoorden
+Maximaal vier beslismomenten voordat iemand binnen is. Daarna progressief, maximaal één aanvullende onboardingvraag per dag/login.
+Zonder koppeling en met vrijwel alles overgeslagen: eerst een proefweek met beperkt advies, geen volledig persoonlijk trainingsplan op schattingen.
+“Geschat” zichtbaar op Vandaag en in het plan wanneer de waarde het advies beïnvloedt. In het Sportpaspoort altijd bij de bron.
+Toon naast de herkomst ook zekerheid, eenvoudig als hoog, redelijk of laag.
+Versheid per soort waarde, geen algemene grens van 180 dagen.
+Bij sterk tegenbewijs blijft Sparki beperkt herinneren totdat de gebruiker beslist. Niet bij ieder bezoek. Veiligheidsrelevante afwijkingen mogen niet definitief verdwijnen.
+
+De voorgestelde hoofdvolgorde is bruikbaar:
+
+gezondheid → racedag → na-rit → geplande rit/training → voorbereiding → herstel → balans.
+
+Een voorstel komt alleen boven een geplande training wanneer er een aantoonbare reden is om die training aan te passen.
+
+Drie getoonde dagen en daarna tijdelijk pauzeren is goed. Een niet-kritiek punt mag na expliciet wegdrukken verdwijnen. Nooit stilletjes.
+Naast het leidende moment alleen direct relevante context, zoals weer, materiaal- of routewaarschuwing. Geen standaard leskaart of sociaal signaal dat de focus vertroebelt.
+Doelconflicten altijd benoemen. Sparki geeft de veilige aanbeveling en laat de gebruiker kiezen welk doel tijdelijk leidend is. Veiligheidsgrenzen blijven hard.
+Afgeleide doelen mogen pas na bevestiging het plan gaan sturen.
+Afvaldoel alleen bespreken bij afwijking van de veilige lijn of een betekenisvolle langdurige stagnatie. Niet bij iedere normale gewichtsschommeling.
+
+Laat het lokale B+C-concept voorlopig liggen. Eerst moet Replit deze antwoorden in hoofdstuk A verwerken, de twee belofteteksten aanscherpen en A als aparte correctiecommit aanbieden.
