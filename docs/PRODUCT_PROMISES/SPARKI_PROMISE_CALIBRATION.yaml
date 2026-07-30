@@ -1170,9 +1170,11 @@ chapter_h_data_koppelingen_en_synchronisatie:
 
     rene_calibration:
       questions:
-        - "Wil je dat de Garmin-/Wahoo-developer-aanvragen nu gestart worden (kost doorlooptijd bij de fabrikant, mogelijk bedrijfsgegevens nodig), of wacht dit tot na de commerciële lancering met Strava-only?"
-        - "Als één van de twee eerder wordt goedgekeurd: direct alleen die ene activeren, of wachten tot beide er zijn zodat de belofte symmetrisch is?"
-      completed: false
+        - question: "Wil je dat de Garmin-/Wahoo-developer-aanvragen nu gestart worden (kost doorlooptijd bij de fabrikant, mogelijk bedrijfsgegevens nodig), of wacht dit tot na de commerciële lancering met Strava-only?"
+          answer_rene: "Nu starten — doorlooptijd alvast laten lopen." # beantwoord 2026-07-30
+        - question: "Als één van de twee eerder wordt goedgekeurd: direct alleen die ene activeren, of wachten tot beide er zijn zodat de belofte symmetrisch is?"
+          answer_rene: "Direct die ene activeren. Harde voorwaarde René: Garmin/Wahoo nergens als beschikbaar of verbonden tonen totdat toegang, technische werking én praktijktest aantoonbaar zijn geslaagd." # beantwoord 2026-07-30
+      completed: true # beide vragen beantwoord 2026-07-30
 
     acceptance_contract:
       hard_reject_rules:
@@ -1291,9 +1293,11 @@ chapter_h_data_koppelingen_en_synchronisatie:
 
     rene_calibration:
       questions:
-        - "Hoe belangrijk is CSV-import voor jou (bv. oude TrainingPeaks-exports)? Dat bepaalt of de openstaande CSV-taak prioriteit krijgt en voor wélke platformformaten we bouwen."
-        - "Als een bestand deels leesbaar is (bv. track prima, vermogensdata corrupt): wil je (a) importeren wat kan met een zichtbare kanttekening, of (b) de hele import weigeren zodat je het merkt?"
-      completed: false
+        - question: "Hoe belangrijk is CSV-import voor jou (bv. oude TrainingPeaks-exports)? Dat bepaalt of de openstaande CSV-taak prioriteit krijgt en voor wélke platformformaten we bouwen."
+          answer_rene: "Belangrijk — er is oude data die meegenomen moet worden; de openstaande CSV-taak krijgt prioriteit." # beantwoord 2026-07-30
+        - question: "Als een bestand deels leesbaar is (bv. track prima, vermogensdata corrupt): wil je (a) importeren wat kan met een zichtbare kanttekening, of (b) de hele import weigeren zodat je het merkt?"
+          answer_rene: "Importeren wat kan, met een duidelijke kanttekening bij de rit." # beantwoord 2026-07-30
+      completed: true # beide vragen beantwoord 2026-07-30
 
     acceptance_contract:
       hard_reject_rules:
@@ -1413,9 +1417,11 @@ chapter_h_data_koppelingen_en_synchronisatie:
 
     rene_calibration:
       questions:
-        - "Het schermvergrendeld-gat (sensordata pauzeert, GPS loopt door): is de huidige eerlijke melding tijdens de rit genoeg, of is doorlopende sensoropname bij vergrendeld scherm een vereiste vóór dit 'gereed' mag heten? (Dat laatste is substantieel bouwwerk.)"
-        - "Welke sensormerken hebben jij en Dylan nu echt in gebruik? Dan richten we de compatibiliteitsproef daarop in plaats van op een theoretische matrix."
-      completed: false
+        - question: "Het schermvergrendeld-gat (sensordata pauzeert, GPS loopt door): is de huidige eerlijke melding tijdens de rit genoeg, of is doorlopende sensoropname bij vergrendeld scherm een vereiste vóór dit 'gereed' mag heten? (Dat laatste is substantieel bouwwerk.)"
+          answer_rene: "Eerlijke melding is voorlopig genoeg; doorlopende opname is geen gereedheidsvereiste." # beantwoord 2026-07-30
+        - question: "Welke sensormerken hebben jij en Dylan nu echt in gebruik? Dan richten we de compatibiliteitsproef daarop in plaats van op een theoretische matrix."
+          answer_rene: "In gebruik: Garmin pedalen (vermogensmeter), Shimano Di2, Garmin hartslagband, Garmin weegschaal — compatibiliteitsproef daarop richten." # beantwoord 2026-07-30
+      completed: true # beide vragen beantwoord 2026-07-30
 
     acceptance_contract:
       hard_reject_rules:
