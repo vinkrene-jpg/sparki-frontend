@@ -164,6 +164,24 @@ chapter_d_routes_en_navigatie:
               proof_stage: designed
               proof_method: "Ontwerp-doorloop: winnaar met knownPct<100 na motor-meting + BGT/GRB-aanvulling krijgt status 'niet volledig geverifieerd' i.p.v. 'geschikt'; aanbeveling als geschikt vereist een expliciete gebruikerskeuze, en de UI toont onbekend-% + kaartlocaties. NB: dit is een AANSCHERPING — de huidige motor mijdt onbekend (×0.4) maar sluit het niet uit; de bouwfase moet dit gedrag nog leveren, daarna volgt de geautomatiseerde tegenvoorbeeld-test."
               proof_result: not_yet_tested
+        - rule: "Retroactief geregistreerd (vondst René 30-07-2026): de onverhard-voorkeur (gravel/MTB) mag nooit een dode knop zijn — bij een ingestelde voorkeur stuurt de routemotor zélf op onverhard wegdek (voorkeursstraf op verhard, schalend met de voorkeur, met vloer — nooit een harde 0), en de racefiets krijgt deze sturing nooit."
+          rule_type: hard_blockage
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Gravelfiets geselecteerd met onverhard-voorkeur, maar de geleverde lus is ~97% verhard (0,5% bospad, 0,1% los gravel) omdat de motor nooit op onverhard stuurde — de voorkeur werkte alleen als nakeuze tussen louter verharde kandidaten."
+              proof_stage: executed
+              proof_method: "Geautomatiseerde test `pnpm --filter @workspace/api-server run test:gravel-steering` (src/tests/gravel-unpaved-steering.ts, 4 tests): gravel+voorkeur ⇒ verhard-wegdek-straf aanwezig en schalend (0,4⇒×0.52; 1,0⇒vloer ×0.3, nooit 0); zonder voorkeur geen straf; racefiets krijgt de sturing nooit én houdt de ×0.05-onverhard-straf. Plus live-meting 30-07-2026 (Hengelo, 47 km, voorkeur 40%): vóór fix ~91–97% verhard, ná fix 76,8% verhard (23,2% onverhard) — voorkeur, geen garantie."
+              proof_result: rejected_as_expected
+        - rule: "Retroactief geregistreerd (vondst René 30-07-2026): een alleen-lezen routekaart zonder herkenbare start/finish-aanduiding mag niet als routedetail doorgaan — een lus krijgt één gecombineerde S/F-marker, een A→B-route een losse S en F; nooit onzichtbare stipjes die tegen de routelijn wegvallen of bij een lus exact over elkaar schuiven."
+          rule_type: hard_blockage
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Lus van 47 km vanuit Hengelo: start- en finishmarker onzichtbaar (12px-stipje in de routelijnkleur, finish-stip er exact overheen) — renner vraagt 'start en finish niet aanwezig?'."
+              proof_stage: executed
+              proof_method: "Geautomatiseerde test `pnpm --filter @workspace/sparki run test:route-map-startfinish` (route-map-startfinish.test.tsx, 3 tests, leaflet volledig gemockt): lus ⇒ precies één S/F-marker en geen losse S of F; A→B ⇒ losse S én F; het oude falen (kaal 12px-bolletje zonder letterlabel) wordt expliciet afgekeurd."
+              proof_result: rejected_as_expected
       tolerances:
         - "Afstandsafwijking lus: doel ±10% (huidige hercorrectie haalt ±5% in de geteste gevallen)."
         - "Onbekend wegdek racefiets: GEEN zachte tolerantie maar rule_type unverifiable (zie afkeurregel hierboven) — 0% onbekend is de norm; huidig gedrag (actief mijden ×0.4 + eerlijk tonen) is nog niet conform en vergt bouwwerk."
@@ -175,6 +193,8 @@ chapter_d_routes_en_navigatie:
         - "test:route-suitability (live GH+Overpass, bewijs naar docs/product/proof-evidence/) — her-runnen na motor-fix"
         - "test:route-remarks, test:route-surfaces, test:bgt-verharding (puur, groen 30-07)"
         - "afkeurpoort-bewijstest (taak #442, net gemerged)"
+        - "test:gravel-steering (api-server; gedraaid + groen 30-07-2026 — 4/4)"
+        - "test:route-map-startfinish (sparki; gedraaid + groen 30-07-2026 — 3/3)"
       independent_checks:
         - "Overpass-nameting is een andere bron dan de motor (GH) — ingebouwde onafhankelijkheid"
         - "BGT is een derde, niet-OSM-bron voor NL"
@@ -515,6 +535,15 @@ chapter_d_routes_en_navigatie:
               proof_stage: designed
               proof_method: "Redenering: analysis=null bij upstream-fout (honesty contract in code); latere contract-test op de route-API."
               proof_result: not_yet_tested
+        - rule: "Retroactief geregistreerd (vondst René 30-07-2026): de meting-loopt-nog-toestand (pending, trage kaartbron) en de melding 'geen bruikbare geometrie' sluiten elkaar uit — het wegdekscherm mag nooit twee tegenstrijdige toestandsboodschappen tegelijk tonen."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Overpass antwoordt traag (202/pending): scherm toonde tegelijk 'De wegdekmeting loopt nog…' én 'geen bruikbare geometrie beschikbaar' — tegenstrijdig en verwarrend, terwijl de route gewoon geometrie heeft."
+              proof_stage: executed
+              proof_method: "Geautomatiseerde test `pnpm --filter @workspace/sparki run test:route-surface-states` (route-surfaces-states.test.tsx, 3 tests): pending ⇒ alleen de meting-loopt-melding en NOOIT de geometrie-melding; echt geometrie-loos (zonder pending) ⇒ wél de geometrie-melding; fouttoestand ⇒ alleen de eerlijke foutmelding."
+              proof_result: rejected_as_expected
       tolerances:
         - "Matching ≤25 m; km-afronding 0,1; pct-afronding 0,1."
       unknown_data_policy: "Onbekend is een eigen, zichtbare categorie; >40% onbekend ⇒ 'onvoldoende gegevens' i.p.v. schijnzekerheid; BGT mag alleen onbekend invullen."

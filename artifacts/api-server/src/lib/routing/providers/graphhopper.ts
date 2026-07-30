@@ -118,7 +118,9 @@ const CYCLING_PROFILES: readonly RoutingProfile[] = [
   "cycling-mountain",
 ];
 
-function customModelFor(
+// Exported for the calibration regression test (gravel steering / racefiets
+// hard border) — production code calls this only via route().
+export function customModelFor(
   profile: RoutingProfile,
   avoidBusyRoads: boolean,
   unpavedTargetShare: number | null = null,

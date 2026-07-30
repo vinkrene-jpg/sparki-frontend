@@ -46,7 +46,9 @@
     "test:core-analyse": "node ../../scripts/run-tsx-test.mjs src/lib/core-analyse.test.ts",
     "test:core-analyse-page": "node ../../scripts/run-tsx-test.mjs --test --experimental-test-module-mocks src/pages/core-analyse.test.tsx",
     "lint:copy": "bash ../../scripts/lint-copy.sh",
-    "test:plan-overview": "node ../../scripts/run-tsx-test.mjs src/lib/plan-overview.test.ts"
+    "test:plan-overview": "node ../../scripts/run-tsx-test.mjs src/lib/plan-overview.test.ts",
+    "test:route-surface-states": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-surfaces-states.test.tsx",
+    "test:route-map-startfinish": "node ../../scripts/run-tsx-test.mjs --import ../../scripts/register-css-stub.mjs --test --experimental-test-module-mocks src/components/sparki/route-map-startfinish.test.tsx"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.11.1",

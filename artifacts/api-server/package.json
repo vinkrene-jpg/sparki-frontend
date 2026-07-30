@@ -167,7 +167,8 @@
     "test:build-ratings": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs build-ratings",
     "job:observation-cleanup": "pnpm run build && node --enable-source-maps ./dist/jobs/observation-cleanup.mjs",
     "test:observation-cleanup": "node ./scripts/run-test.mjs observation-cleanup",
-    "test:gpx-climb-detection": "node ./scripts/run-test.mjs gpx-climb-detection"
+    "test:gpx-climb-detection": "node ./scripts/run-test.mjs gpx-climb-detection",
+    "test:gravel-steering": "node ./scripts/run-test.mjs gravel-unpaved-steering"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
