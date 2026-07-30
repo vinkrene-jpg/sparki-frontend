@@ -31,6 +31,7 @@ import {
   type SceneryWish,
 } from "./routing";
 import { getRouteEnvironment } from "./route-insight";
+import { bgtUnpavedShare } from "./bgt-verharding";
 import { summarizeTrack } from "./gpx-parse";
 import { seedFor } from "./route-library";
 import { logger } from "./logger";
@@ -228,6 +229,9 @@ async function replacePoorRoute(routeId: number): Promise<
         scenery: opts.scenery,
         environmentOf: opts.scenery ? getRouteEnvironment : undefined,
         preferUninterrupted: opts.preferUninterrupted,
+        // BGT-controlelaag (alleen Nederland): racefietsvarianten die volgens
+        // de overheidswegenkaart onverhard blijken, verliezen.
+        unpavedShareOf: bgtUnpavedShare,
       },
     );
   } catch (err) {

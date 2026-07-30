@@ -25,6 +25,7 @@ import {
   type RoutingProfile,
 } from "./routing";
 import { candidateEnvironmentOf } from "./candidate-environment";
+import { bgtUnpavedShare } from "./bgt-verharding";
 import { summarizeTrack } from "./gpx-parse";
 import { logger } from "./logger";
 
@@ -247,6 +248,9 @@ export async function generateStarterSet(
               // Vaste eis: ook bibliotheekroutes mijden dorpskernen,
               // woonwijken en stoplichten zoveel mogelijk.
               environmentOf: candidateEnvironmentOf(false),
+              // BGT-controlelaag (alleen Nederland): racefietskandidaten die
+              // volgens de overheidswegenkaart onverhard blijken, verliezen.
+              unpavedShareOf: bgtUnpavedShare,
             },
           );
           if (!result.path || result.path.length < 2) continue;

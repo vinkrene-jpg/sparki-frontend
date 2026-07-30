@@ -12,6 +12,7 @@
 
 import type { RoutePathPoint } from "@workspace/db";
 import { samplePath } from "./route-insight";
+import { bgtVerdictsForPoints, type BgtPointVerdict } from "./bgt-verharding";
 
 export type RouteRemarkKind =
   | "veerpont"
@@ -597,12 +598,125 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
     merged.push({ ...r });
   }
 
-  const out: RouteRemark[] = merged
+  let out: RouteRemark[] = merged
     .map(({ _kmEnd: _ignored, _count: _ignored2, ...rest }) => rest)
     .sort((a, b) => a.routeKm - b.routeKm)
     .slice(0, 60);
 
+  // BGT-controlelaag (alleen Nederland, taak #428): wegvakken die volgens de
+  // officiële overheidswegenkaart half verhard/onverhard zijn maar waar OSM
+  // zwijgt, krijgen alsnog een eerlijke melding. Een BGT-fout laat de
+  // OSM-meldingen ongemoeid (extra laag, nooit een blokkade).
+  try {
+    const samples = routeSampleIdx.map((gi) => ({
+      point: geometry[gi]!,
+      km: cumKm[gi]!,
+      idx: gi,
+    }));
+    const verdicts = await bgtVerdictsForPoints(
+      samples.map((s) => s.point),
+      { maxTiles: 30 },
+    );
+    if (verdicts) {
+      const bgtRemarks = buildBgtRemarks(samples, verdicts, out);
+      if (bgtRemarks.length > 0) {
+        out = [...out, ...bgtRemarks]
+          .sort((a, b) => a.routeKm - b.routeKm)
+          .slice(0, 60);
+      }
+    }
+  } catch {
+    // eerlijk: BGT-laag valt weg, OSM-meldingen blijven staan
+  }
+
   CACHE.set(cacheKey, { at: Date.now(), data: out });
+  return out;
+}
+
+// ── BGT-meldingen (puur, testbaar) ──────────────────────────────────────────
+
+/**
+ * Bouw uit BGT-oordelen per bemonsterd routepunt eerlijke "onverhard"-
+ * meldingen. Alleen aaneengesloten stukken van minstens twee meetpunten;
+ * stukken die al door een OSM-melding (onverhard/slecht wegdek) worden gedekt,
+ * worden overgeslagen (geen dubbele regels).
+ */
+export function buildBgtRemarks(
+  samples: { point: RoutePathPoint; km: number; idx: number }[],
+  verdicts: (BgtPointVerdict | null)[],
+  existing: RouteRemark[],
+): RouteRemark[] {
+  type Seg = {
+    fromKm: number;
+    toKm: number;
+    idx: number;
+    lat: number;
+    lon: number;
+    fysiek: string;
+    count: number;
+  };
+  const segs: Seg[] = [];
+  let cur: Seg | null = null;
+  for (let i = 0; i < samples.length; i++) {
+    const v = verdicts[i];
+    const unpaved = v != null && v.verdict !== "verhard";
+    if (unpaved) {
+      const s = samples[i]!;
+      if (cur && s.km - cur.toKm <= 0.3) {
+        cur.toKm = s.km;
+        cur.count += 1;
+      } else {
+        if (cur) segs.push(cur);
+        cur = {
+          fromKm: s.km,
+          toKm: s.km,
+          idx: s.idx,
+          lat: s.point[0],
+          lon: s.point[1],
+          fysiek: v.fysiekVoorkomen,
+          count: 1,
+        };
+      }
+    } else if (v != null && cur) {
+      // Een aantoonbaar VERHARD meetpunt sluit het stuk af; een punt zonder
+      // oordeel (null) laat het stuk doorlopen (gat in de dekking).
+      segs.push(cur);
+      cur = null;
+    }
+  }
+  if (cur) segs.push(cur);
+
+  const covered = existing.filter(
+    (r) => r.kind === "onverhard" || r.kind === "slecht_wegdek",
+  );
+  const out: RouteRemark[] = [];
+  for (const seg of segs) {
+    // Minstens twee meetpunten: één losse treffer kan een kruisend vlak zijn.
+    if (seg.count < 2) continue;
+    const overlapped = covered.some((r) => {
+      const rFrom = r.routeKm - 0.2;
+      const rTo = (r.endKm ?? r.routeKm) + 0.2;
+      return seg.fromKm <= rTo && seg.toKm >= rFrom;
+    });
+    if (overlapped) continue;
+    const half = seg.fysiek.trim().toLowerCase().startsWith("half");
+    out.push({
+      id: `bgt/${seg.idx}`,
+      kind: "onverhard",
+      label: half ? "Halfverhard wegdek (BGT)" : "Onverhard wegdek (BGT)",
+      detail:
+        `Volgens de officiële overheidswegenkaart (BGT, alleen Nederland) is dit wegvak ${seg.fysiek}. ` +
+        "OpenStreetMap kent hier geen wegdek; de BGT vult dat gat.",
+      lat: seg.lat,
+      lon: seg.lon,
+      routeKm: Math.round(seg.fromKm * 10) / 10,
+      endKm:
+        seg.toKm - seg.fromKm >= 0.2 ? Math.round(seg.toKm * 10) / 10 : null,
+      offRouteM: 0,
+      uncertain: false,
+      evidence: `BGT: fysiek_voorkomen=${seg.fysiek} (PDOK)`,
+    });
+  }
   return out;
 }
 

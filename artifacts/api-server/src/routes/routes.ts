@@ -43,6 +43,7 @@ import {
 } from "@workspace/db";
 import { applyLocationPrivacy } from "../lib/world-social/location";
 import { sanitizeNavSteps } from "../lib/routing/nav-sanitize";
+import { bgtUnpavedShare } from "../lib/bgt-verharding";
 import { activeRacePoints } from "../lib/race-points";
 import { registerRouteUsage } from "../lib/route-usage";
 import { aiMessage } from "../lib/ai/gateway";
@@ -2491,6 +2492,11 @@ async function buildLoopCandidate(
         }),
         preferUninterrupted: wantsUninterrupted,
         targetAscentM: ctx.targetElevationGainM ?? null,
+        // BGT-controlelaag (alleen Nederland): racefietskandidaten worden
+        // way-voor-way naast de officiële overheidswegenkaart gelegd; een
+        // kandidaat die daar onverhard blijkt, verliest. Buiten NL of bij een
+        // bronfout weegt dit eerlijk niet mee.
+        unpavedShareOf: bgtUnpavedShare,
       },
     );
     console.log(

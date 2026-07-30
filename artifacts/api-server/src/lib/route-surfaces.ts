@@ -13,6 +13,11 @@
 import type { RoutePathPoint } from "@workspace/db";
 import { samplePath } from "./route-insight";
 import type { OverpassElement } from "./route-remarks";
+import {
+  bgtSource,
+  bgtVerdictsForPoints,
+  type BgtPointVerdict,
+} from "./bgt-verharding";
 
 export type SurfaceKind =
   | "asfalt"
@@ -62,6 +67,14 @@ export type RouteSurfacesAnalysis = {
   segments: SurfaceSegment[];
   // Kilometers met een bekende toegangsbeperking (bicycle=no/private).
   restrictedKm: number;
+  // BGT-controlelaag (alleen Nederland): hoeveel OSM-onbekende meetpunten de
+  // officiële overheidswegenkaart alsnog een verharding kon geven. null =
+  // niet geraadpleegd (buiten NL, geen onbekend, of bron faalde).
+  bgt?: {
+    checkedSamples: number; // OSM-onbekende meetpunten die aan de BGT zijn voorgelegd
+    resolvedSamples: number; // waarvan de BGT een aantoonbaar oordeel gaf
+    source: ReturnType<typeof bgtSource>;
+  } | null;
 };
 
 // ── Tag → categorie (deterministisch, alleen aantoonbare tags) ──────────────
@@ -193,6 +206,17 @@ function haversineM(a: RoutePathPoint, b: RoutePathPoint): number {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+// Per-sample toewijzing: tussenstap zodat een tweede bron (BGT) de
+// OSM-onbekende meetpunten alsnog een aantoonbaar oordeel kan geven vóór de
+// verdeling wordt opgebouwd.
+export type SurfaceSampleAssignment = {
+  sampleIdx: number[]; // index in de route-geometrie per meetpunt
+  cumKm: number[]; // cumulatieve km per geometriepunt
+  kinds: SurfaceKind[];
+  evidences: (string | null)[];
+  restrictedFlags: boolean[];
+};
+
 /**
  * Wijs elk (bemonsterd) routepunt toe aan de dichtstbijzijnde geclassificeerde
  * OSM-weg (≤ 25 m) en bouw daaruit de verdeling + aaneengesloten segmenten.
@@ -202,12 +226,18 @@ export function aggregateSurfaces(
   geometry: RoutePathPoint[],
   elements: OverpassElement[],
 ): RouteSurfacesAnalysis {
+  return buildSurfacesAnalysis(assignSurfaceSamples(geometry, elements));
+}
+
+export function assignSurfaceSamples(
+  geometry: RoutePathPoint[],
+  elements: OverpassElement[],
+): SurfaceSampleAssignment {
   // Cumulatieve km per routepunt.
   const cumKm: number[] = [0];
   for (let i = 1; i < geometry.length; i++) {
     cumKm.push(cumKm[i - 1]! + haversineM(geometry[i - 1]!, geometry[i]!) / 1000);
   }
-  const totalKm = cumKm[cumKm.length - 1]!;
 
   // Geclassificeerde wegen met hun volledige (geknipte) geometrie + bbox
   // (snelle voorselectie per routepunt).
@@ -278,6 +308,15 @@ export function aggregateSurfaces(
     restrictedFlags.push(best ? best.restricted : false);
   }
 
+  return { sampleIdx, cumKm, kinds, evidences, restrictedFlags };
+}
+
+export function buildSurfacesAnalysis(
+  a: SurfaceSampleAssignment,
+): RouteSurfacesAnalysis {
+  const { sampleIdx, cumKm, kinds, evidences, restrictedFlags } = a;
+  const totalKm = cumKm[cumKm.length - 1]!;
+
   // Aaneengesloten segmenten + km-sommen. Elk sample "bezit" de halve afstand
   // naar zijn buren, zodat de km-sommen precies optellen tot totalKm.
   const kmAt = (s: number) => cumKm[sampleIdx[s]!]!;
@@ -326,6 +365,48 @@ export function aggregateSurfaces(
     segments,
     restrictedKm: Math.round(restrictedKm * 10) / 10,
   };
+}
+
+// ── BGT-controlelaag (alleen Nederland) ─────────────────────────────────────
+
+/**
+ * BGT-oordeel → ondergrond-categorie. Deterministisch en aantoonbaar:
+ * gesloten verharding = asfalt/beton; open verharding = klinkers/tegels;
+ * half verhard ≈ compact gravel; onverhard = onverhard.
+ */
+export function bgtVerdictToSurface(
+  v: BgtPointVerdict,
+): { kind: SurfaceKind; evidence: string } {
+  const evidence = `BGT: ${v.fysiekVoorkomen} (PDOK, alleen Nederland)`;
+  const raw = v.fysiekVoorkomen.trim().toLowerCase();
+  if (v.verdict === "onverhard") return { kind: "onverhard", evidence };
+  if (v.verdict === "half_verhard") return { kind: "compact_gravel", evidence };
+  // verhard: open verharding (klinkers/tegels) apart van gesloten (asfalt).
+  if (raw.startsWith("open verharding")) return { kind: "klinkers", evidence };
+  return { kind: "asfalt", evidence };
+}
+
+/**
+ * Puur + testbaar: leg de OSM-onbekende meetpunten naast BGT-oordelen en
+ * overschrijf alleen die punten. Retourneert hoeveel punten een oordeel kregen.
+ */
+export function applyBgtToAssignment(
+  a: SurfaceSampleAssignment,
+  unknownOrdinals: number[],
+  verdicts: (BgtPointVerdict | null)[],
+): number {
+  let resolved = 0;
+  for (let i = 0; i < unknownOrdinals.length; i++) {
+    const v = verdicts[i];
+    if (!v) continue;
+    const ord = unknownOrdinals[i]!;
+    if (a.kinds[ord] !== "onbekend") continue; // alleen het eerlijke gat vullen
+    const mapped = bgtVerdictToSurface(v);
+    a.kinds[ord] = mapped.kind;
+    a.evidences[ord] = mapped.evidence;
+    resolved += 1;
+  }
+  return resolved;
 }
 
 // ── Geschiktheid per fietstype (deterministisch en uitlegbaar) ──────────────
@@ -509,7 +590,37 @@ way["highway"](${bbox});
   const elements = await runOverpass(query);
   if (elements === null) return null;
 
-  const analysis = aggregateSurfaces(geometry, elements);
+  const assignment = assignSurfaceSamples(geometry, elements);
+
+  // BGT-controlelaag (alleen Nederland): leg de OSM-onbekende meetpunten naast
+  // de officiële overheidswegenkaart. Alleen het eerlijke gat wordt gevuld —
+  // OSM-oordelen blijven staan. Faalt de bron, dan blijft het gat eerlijk.
+  let bgtMeta: RouteSurfacesAnalysis["bgt"] = null;
+  const unknownOrdinals: number[] = [];
+  for (let i = 0; i < assignment.kinds.length; i++) {
+    if (assignment.kinds[i] === "onbekend") unknownOrdinals.push(i);
+  }
+  if (unknownOrdinals.length > 0) {
+    const unknownPoints = unknownOrdinals.map(
+      (ord) => geometry[assignment.sampleIdx[ord]!]!,
+    );
+    const verdicts = await bgtVerdictsForPoints(unknownPoints, {
+      maxTiles: 40,
+    }).catch(() => null);
+    if (verdicts) {
+      const resolved = applyBgtToAssignment(assignment, unknownOrdinals, verdicts);
+      bgtMeta = {
+        checkedSamples: unknownOrdinals.length,
+        resolvedSamples: resolved,
+        source: bgtSource(),
+      };
+    }
+  }
+
+  const analysis: RouteSurfacesAnalysis = {
+    ...buildSurfacesAnalysis(assignment),
+    bgt: bgtMeta,
+  };
   CACHE.set(cacheKey, { at: Date.now(), data: analysis });
   if (CACHE.size > 200) {
     const oldest = [...CACHE.entries()].sort((a, b) => a[1].at - b[1].at)[0];
