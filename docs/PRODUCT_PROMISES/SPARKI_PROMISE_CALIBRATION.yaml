@@ -984,6 +984,7 @@ chapter_h_data_koppelingen_en_synchronisatie:
     acceptance_contract:
       hard_reject_rules:
         - rule: "Twee verschillende activiteiten mogen nooit tot één sessie samensmelten."
+          rule_type: hard_blockage
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
@@ -992,6 +993,7 @@ chapter_h_data_koppelingen_en_synchronisatie:
               proof_method: "Redenering: starttijden vallen in hetzelfde/aangrenzende 5-min-vak, dus de sleutel botst; de tolerantie-guard (duur/afstand ~20%) moet ze scheiden omdat 20 vs 25 min binnen 20% valt — dit is dus een GRENSGEVAL dat de huidige guard mogelijk NIET weigert. Latere geautomatiseerde test met exact dit scenario moet uitwijzen of de guard scherp genoeg staat."
               proof_result: not_yet_tested
         - rule: "Een handmatig door de atleet gecorrigeerd veld mag door geen enkele latere sync worden overschreven."
+          rule_type: hard_blockage
           measurement_level: per_meting
           aggregate_justification: ""
           counterexamples:
@@ -1000,6 +1002,7 @@ chapter_h_data_koppelingen_en_synchronisatie:
               proof_method: "Redenering: buildMergePatch slaat manualFields over, óók bewust leeggemaakte velden; updateFieldSources negeert null-writes. Latere unit-test: PUT met leegmaking → sync → veld blijft leeg."
               proof_result: not_yet_tested
         - rule: "Zonder geldige toestemming (activiteiten ÉN trainingshistorie) wordt geen enkele activiteit opgeslagen."
+          rule_type: hard_blockage
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
@@ -1008,6 +1011,7 @@ chapter_h_data_koppelingen_en_synchronisatie:
               proof_method: "Redenering: ingest-poort is een EN-voorwaarde (activitiesIngestAllowed), dus één ingetrokken type blokkeert; importedDataTypes wordt gefilterd zodat de koppeling niet vals claimt data te hebben opgeslagen. Latere test: consent-rij granted=false op één type → sync → 0 nieuwe sessies + eerlijke skipped-telling."
               proof_result: not_yet_tested
         - rule: "Een sync-run waarvan een deel mislukt mag nooit als volledig geslaagd worden geboekt."
+          rule_type: hard_blockage
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
@@ -1117,6 +1121,7 @@ chapter_h_data_koppelingen_en_synchronisatie:
     acceptance_contract:
       hard_reject_rules:
         - rule: "Een partiële (gerichte) sync mag nooit eerder opgeslagen identiteits- of koppelingsvelden wissen."
+          rule_type: hard_blockage
           measurement_level: per_meting
           aggregate_justification: ""
           counterexamples:
@@ -1125,6 +1130,7 @@ chapter_h_data_koppelingen_en_synchronisatie:
               proof_method: "Redenering: upsert gebruikt COALESCE(EXCLUDED.kolom, bestaande kolom) voor velden die een partiële sync mag weglaten; dit was een eerder daadwerkelijk opgetreden bug (webhooks werden onherleidbaar). Latere test: webhook-sync zonder id → veld ongewijzigd."
               proof_result: not_yet_tested
         - rule: "Een ingetrokken Strava-autorisatie mag nooit tot verdere data-ophaling leiden."
+          rule_type: hard_blockage
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
@@ -1133,6 +1139,7 @@ chapter_h_data_koppelingen_en_synchronisatie:
               proof_method: "Redenering: webhook-resolutie matcht alleen koppelingen met status 'connected'; ontkoppeld ⇒ eerlijke skip. Latere test: disconnect → webhook → skipped-boeking, 0 API-calls naar Strava."
               proof_result: not_yet_tested
         - rule: "Sync-pogingen mogen het gedeelde rate-limit nooit ongeremd opeten bij een aanhoudende storing."
+          rule_type: hard_blockage
           measurement_level: per_meting
           aggregate_justification: ""
           counterexamples:
@@ -1235,6 +1242,7 @@ chapter_h_data_koppelingen_en_synchronisatie:
     acceptance_contract:
       hard_reject_rules:
         - rule: "Zonder geldige fabrikantsleutels mag nooit een verbonden of verbindbare status worden getoond."
+          rule_type: hard_blockage
           measurement_level: per_meting
           aggregate_justification: ""
           counterexamples:
@@ -1243,6 +1251,7 @@ chapter_h_data_koppelingen_en_synchronisatie:
               proof_method: "Redenering: readiness leunt op effectieve configuratie (configured:false zonder secrets), UI toont 'wacht op goedkeuring fabrikant'. Latere test: zonder secrets → authorize-endpoint weigert eerlijk, geen OAuth-redirect."
               proof_result: not_yet_tested
         - rule: "Een webhook zonder geldige verificatie mag nooit tot verwerking of registratie leiden."
+          rule_type: hard_blockage
           measurement_level: per_meting
           aggregate_justification: ""
           counterexamples:
@@ -1358,6 +1367,7 @@ chapter_h_data_koppelingen_en_synchronisatie:
     acceptance_contract:
       hard_reject_rules:
         - rule: "Er wordt nooit een activiteit met een verzonnen datum of verzonnen meetwaarde aangemaakt."
+          rule_type: hard_blockage
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
@@ -1370,6 +1380,7 @@ chapter_h_data_koppelingen_en_synchronisatie:
               proof_method: "Redenering: afwezige velden blijven null; TSS-afleiding vereist echt vermogen + FTP en slaat anders eerlijk over. Latere test: sessie uit zo'n bestand heeft avgPower=null en geen afgeleide belastingsscore uit vermogen."
               proof_result: not_yet_tested
         - rule: "Hetzelfde bestand twee keer uploaden mag nooit een tweede sessie opleveren."
+          rule_type: hard_blockage
           measurement_level: per_sessie
           aggregate_justification: ""
           counterexamples:
@@ -1378,6 +1389,7 @@ chapter_h_data_koppelingen_en_synchronisatie:
               proof_method: "Redenering: extern id = hash van uitsluitend de inhoud (naam bewust uitgesloten) ⇒ zelfde provenance-rij, geen tweede sessie. Latere test: dubbele upload → 1 sessie, idempotente boeking."
               proof_result: not_yet_tested
         - rule: "Onleesbare of niet-ondersteunde bestanden mogen nooit stil verdwijnen of vals als gelukt tonen."
+          rule_type: hard_blockage
           measurement_level: per_meting
           aggregate_justification: ""
           counterexamples:
@@ -1482,6 +1494,7 @@ chapter_h_data_koppelingen_en_synchronisatie:
     acceptance_contract:
       hard_reject_rules:
         - rule: "Er wordt nooit een sensorwaarde getoond of opgeslagen die niet uit een echte sensornotificatie komt."
+          rule_type: hard_blockage
           measurement_level: per_meting
           aggregate_justification: ""
           counterexamples:
@@ -1490,6 +1503,7 @@ chapter_h_data_koppelingen_en_synchronisatie:
               proof_method: "Redenering: monsters worden alleen bij echte notificaties geschreven, matching aan GPS-punten binnen ≤5 s — daarbuiten blijft het punt leeg; waarden worden gewist bij verbreken. Latere test: opnamesimulatie met gat → GPX-punten in het gat zonder power/hr-extensie."
               proof_result: not_yet_tested
         - rule: "Snelheid wordt nooit afgeleid uit wielomwentelingen."
+          rule_type: hard_blockage
           measurement_level: per_meting
           aggregate_justification: ""
           counterexamples:
@@ -1498,6 +1512,7 @@ chapter_h_data_koppelingen_en_synchronisatie:
               proof_method: "Redenering: de CSC-parser leest uitsluitend crank-data (cadans); er bestaat geen wielomtrek-configuratie in de app. Latere test: CSC-notificatie met wieldata → geen snelheidsoutput uit het sensorpad."
               proof_result: not_yet_tested
         - rule: "In een omgeving zonder Bluetooth-ondersteuning (Expo Go, web) mag de functie nooit als werkend worden aangeboden."
+          rule_type: hard_blockage
           measurement_level: per_meting
           aggregate_justification: ""
           counterexamples:
