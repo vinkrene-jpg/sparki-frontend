@@ -47,6 +47,15 @@ export type SparkiRoute = {
   waypoints: RouteWaypoint[] | null;
   meetpoints: RouteMeetpoint[] | null;
   rationale: string | null;
+  // Wegdekmeting van de routemotor bij het genereren (taak #492): stuurt de
+  // racefiets-verificatie op automatisch gegenereerde/overgenomen routes.
+  // null bij GPX-uploads of motoren zonder wegdek-details.
+  engineSurface?: {
+    provider: string;
+    pavedPct: number | null;
+    knownPct: number | null;
+    measuredAt: string;
+  } | null;
   source: string;
   usageType: string | null;
   linkedActivityImportId: number | null;

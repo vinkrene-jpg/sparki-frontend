@@ -1234,6 +1234,10 @@ router.get("/bibliotheek", requireAuth, async (req, res) => {
         // route of vervanging puur op score).
         improveNote: r.improveNote,
         generation: r.generation,
+        // Motor-wegdekmeting (taak #492): een racefietsroute met knownPct<100
+        // wordt in de bibliotheek eerlijk als "Niet volledig geverifieerd"
+        // gelabeld — nooit stil als geschikt gepresenteerd.
+        engineSurface: r.engineSurface ?? null,
       })),
     });
   } catch (err) {
@@ -1439,6 +1443,10 @@ router.post("/bibliotheek/:id/gebruik", requireAuth, async (req, res) => {
         elevationGainM: route.elevationGainM,
         durationSec: route.durationSec,
         geometry: route.geometry,
+        // Verificatiestatus reist mee met de kopie (taak #492): de motor-
+        // wegdekmeting blijft de racefiets-verificatie sturen in de eigen
+        // bibliotheek en bij Navigeer.
+        engineSurface: route.engineSurface ?? null,
       })
       .returning({ id: routesTable.id });
     res.json({ routeId: saved!.id });

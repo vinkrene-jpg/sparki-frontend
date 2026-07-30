@@ -117,3 +117,44 @@ test("selectie zoekt eerst een alternatief zonder onbekend wegdek (vaste straf)"
   // Andere profielen krijgen de racefiets-gate nooit.
   assert.equal(roadUnknownGatePenalty("cycling-gravel", 0.5), 0);
 });
+
+// ── Taak #492: ook automatisch geplande routes dragen de motor-meting ───────
+// planRouteEngineSurface bouwt de bewaarbare meting die de plan-generator en
+// de Sparki-routebibliotheek nu bij elke gegenereerde route opslaan; de
+// presentatielaag labelt knownPct<100 als "Niet volledig geverifieerd".
+import { planRouteEngineSurface } from "../lib/plan-routes";
+
+test("taak #492: motor-meting wordt bewaarbaar gemaakt (knownPct in %)", () => {
+  const es = planRouteEngineSurface(
+    { pavedFraction: 0.97, surfaceKnownFraction: 0.88 },
+    "graphhopper",
+  )!;
+  assert.equal(es.provider, "graphhopper");
+  assert.equal(es.pavedPct, 97);
+  assert.equal(es.knownPct, 88);
+  // De verificatie op die meting is dan eerlijk "niet volledig geverifieerd".
+  assert.equal(
+    racefietsEngineVerification(es.knownPct).status,
+    "niet_volledig_geverifieerd",
+  );
+});
+
+test("taak #492: geen wegdek-details van de motor ⇒ geen verzonnen meting", () => {
+  assert.equal(planRouteEngineSurface({}, "ors"), null);
+  assert.equal(
+    planRouteEngineSurface(
+      { pavedFraction: null, surfaceKnownFraction: null },
+      "ors",
+    ),
+    null,
+  );
+});
+
+test("taak #492: volledig bekende meting ⇒ geverifieerd", () => {
+  const es = planRouteEngineSurface(
+    { pavedFraction: 1, surfaceKnownFraction: 1 },
+    "graphhopper",
+  )!;
+  assert.equal(es.knownPct, 100);
+  assert.equal(racefietsEngineVerification(es.knownPct).status, "geverifieerd");
+});

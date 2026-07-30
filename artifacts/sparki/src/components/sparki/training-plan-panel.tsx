@@ -20,6 +20,7 @@ import {
   type TrainingPlanResponse,
 } from "@/hooks/use-training-plan"
 import { useRoutes, useGeocode, type GeocodeResult } from "@/hooks/use-routes"
+import { racefietsVerification } from "@/lib/racefiets-verification"
 import {
   Sparkles,
   RefreshCw,
@@ -191,6 +192,27 @@ function DayRouteMap({ routeId }: { routeId: number }) {
   return (
     <div className="mt-3">
       <RouteMap geometry={geometry} climbs={route?.climbs ?? []} className="h-40" />
+      {(() => {
+        // Racefiets-verificatie (taak #492): een automatisch gekoppelde route
+        // met motor-meting knownPct<100 wordt eerlijk "Niet volledig
+        // geverifieerd" gelabeld — nooit stil als geschikt gepresenteerd.
+        const v =
+          route?.surface === "asfalt"
+            ? racefietsVerification(
+                "racefiets",
+                route.engineSurface?.knownPct ?? null,
+                null,
+              )
+            : null
+        return v?.status === "niet_volledig_geverifieerd" ? (
+          <p className="mt-2 inline-block rounded-full border border-amber-300/35 px-2 py-px font-mono text-[10px] uppercase tracking-[0.08em] text-amber-200/85">
+            Niet volledig geverifieerd ·{" "}
+            {v.onbekendPct != null
+              ? `${String(v.onbekendPct).replace(".", ",")}% wegdek onbekend`
+              : "wegdek deels onbekend"}
+          </p>
+        ) : null
+      })()}
       {route?.rationale && (
         <p className="mt-2 text-[12px] leading-relaxed text-white/55">
           {route.rationale}

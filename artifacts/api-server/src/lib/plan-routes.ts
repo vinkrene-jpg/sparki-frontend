@@ -11,6 +11,7 @@ import {
   routesTable,
   plannedWorkoutsTable,
   type RoutePathPoint,
+  type RouteEngineSurface,
 } from "@workspace/db";
 import { aiMessage } from "./ai/gateway";
 import { summarizeTrack } from "./gpx-parse";
@@ -27,6 +28,28 @@ import {
 } from "./routing";
 import { getRouteEnvironment } from "./route-insight";
 import { routeObstaclesOf } from "./route-remarks";
+
+// Bewaarbare motor-wegdekmeting uit een providerresultaat (zelfde vorm als de
+// routeplanner, taak #492): stuurt de racefiets-verificatie op automatisch
+// gegenereerde routes. null als de motor geen wegdek-details levert — er
+// wordt nooit een meting verzonnen.
+export function planRouteEngineSurface(
+  result: {
+    pavedFraction?: number | null;
+    surfaceKnownFraction?: number | null;
+  },
+  providerName: string,
+): RouteEngineSurface | null {
+  const paved = result.pavedFraction ?? null;
+  const known = result.surfaceKnownFraction ?? null;
+  if (paved == null && known == null) return null;
+  return {
+    provider: providerName,
+    pavedPct: paved != null ? Math.round(paved * 1000) / 10 : null,
+    knownPct: known != null ? Math.round(known * 1000) / 10 : null,
+    measuredAt: new Date().toISOString(),
+  };
+}
 
 // Training types the plan engine can request a route for. Steady outdoor rides
 // (duur/tempo) get a route; intervals/recovery/race are handled by the caller's
@@ -213,6 +236,10 @@ export async function generateAndSavePlanRoute(opts: {
         nav: routeResult.steps,
         geometry,
         rationale,
+        // Motor-wegdekmeting mee opslaan (taak #492): een racefietsroute met
+        // knownPct<100 wordt bij presentatie eerlijk als "Niet volledig
+        // geverifieerd" gelabeld — nooit stil als geschikt gepresenteerd.
+        engineSurface: planRouteEngineSurface(routeResult, provider.name),
         source: "generated",
       })
       .returning({ id: routesTable.id });

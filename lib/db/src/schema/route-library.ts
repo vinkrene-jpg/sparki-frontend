@@ -13,7 +13,7 @@ import {
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { userProfilesTable } from "./users";
-import type { RoutePathPoint } from "./routes";
+import type { RoutePathPoint, RouteEngineSurface } from "./routes";
 
 // Sparki-routebibliotheek: door Sparki zelf gegenereerde, kant-en-klare routes
 // per gebied ("cel" van ~0,25° ≈ 25 km). Zodra iemand Sparki gaat gebruiken en
@@ -52,6 +52,11 @@ export const routeLibraryTable = pgTable(
     elevationGainM: real("elevation_gain_m"),
     durationSec: integer("duration_sec"),
     geometry: jsonb("geometry").$type<RoutePathPoint[]>().notNull(),
+    // Wegdekmeting van de routemotor bij het genereren (taak #492): stuurt de
+    // racefiets-verificatie ("Niet volledig geverifieerd" bij knownPct<100).
+    // Null voor oudere rijen of motoren zonder wegdek-details — er wordt
+    // nooit een meting verzonnen.
+    engineSurface: jsonb("engine_surface").$type<RouteEngineSurface | null>(),
     seed: integer("seed"),
     // Herkomst: sparki_auto (startset/achtergrond) — ruimte voor latere bronnen.
     source: text("source").notNull().default("sparki_auto"),

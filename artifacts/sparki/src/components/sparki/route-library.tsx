@@ -37,6 +37,21 @@ import {
 import { useActivityImports } from "@/hooks/use-activity-imports"
 import { ACCENT } from "@/components/sparki/ui"
 import { displayRouteName } from "@/lib/route-name"
+import { racefietsVerification } from "@/lib/racefiets-verification"
+
+// Racefiets-verificatie (taak #492): opgeslagen routes met surface "asfalt"
+// zijn racefietsroutes (planner, plan-generator én Sparki-bibliotheek). Een
+// route met motor-meting knownPct<100 is niet volledig geverifieerd en wordt
+// nooit stil als geschikt gepresenteerd — navigeren kan alleen na een
+// expliciete keuze (zelfde afkeurregel als de routeplanner, taak #487).
+function routeVerification(r: SparkiRoute) {
+  if (r.surface !== "asfalt") return null
+  return racefietsVerification(
+    "racefiets",
+    r.engineSurface?.knownPct ?? null,
+    null,
+  )
+}
 
 // Routebibliotheek (Golf 19, opgeknapt) — zoeken, filteren, favorieten,
 // delen, archiveren, dupliceren en plan↔gereden vergelijken. Iedere kaart is
@@ -176,6 +191,10 @@ export function RouteLibrary() {
   const [openShareId, setOpenShareId] = useState<number | null>(null)
   const [openCompareId, setOpenCompareId] = useState<number | null>(null)
   const [openMenuId, setOpenMenuId] = useState<number | null>(null)
+  // Expliciete-keuzegate (taak #492): Navigeer op een niet volledig
+  // geverifieerde racefietsroute vraagt eerst een bewuste keuze.
+  const [navConfirmId, setNavConfirmId] = useState<number | null>(null)
+  const [navConfirmAccepted, setNavConfirmAccepted] = useState(false)
 
   const libScope: RouteScope = scope === "gedeeld" ? "mijn" : scope
   const lib = useRouteLibrary(q, libScope, sort)
@@ -204,6 +223,17 @@ export function RouteLibrary() {
     setLocation(`/routes?view=bewaard&route=${id}`)
   const startNavigate = (id: number) =>
     setLocation(`/routes?view=bewaard&ritopties=${id}`)
+  // Navigeer met verificatie-gate: een niet volledig geverifieerde
+  // racefietsroute vraagt eerst een expliciete keuze (taak #492).
+  const requestNavigate = (r: SparkiRoute) => {
+    const v = routeVerification(r)
+    if (v?.status === "niet_volledig_geverifieerd") {
+      setNavConfirmAccepted(false)
+      setNavConfirmId(navConfirmId === r.id ? null : r.id)
+      return
+    }
+    startNavigate(r.id)
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -282,6 +312,9 @@ export function RouteLibrary() {
             const named = displayRouteName(r.name, r.distanceKm)
             const wegtype = surfaceLabel(r.surface)
             const canNavigate = (r.geometry?.length ?? 0) >= 2
+            const verification = routeVerification(r)
+            const nietGeverifieerd =
+              verification?.status === "niet_volledig_geverifieerd"
             return (
               <li key={r.id} className="relative">
                 {/* Volledige kaart aanklikbaar → bestaande routedetailkaart */}
@@ -324,6 +357,14 @@ export function RouteLibrary() {
                           .filter(Boolean)
                           .join(" · ")}
                       </p>
+                      {nietGeverifieerd && (
+                        <p className="mt-1.5 inline-block rounded-full border border-amber-300/35 px-2 py-px font-mono text-[10px] uppercase tracking-[0.08em] text-amber-200/85">
+                          Niet volledig geverifieerd ·{" "}
+                          {verification!.onbekendPct != null
+                            ? `${String(verification!.onbekendPct).replace(".", ",")}% wegdek onbekend`
+                            : "wegdek deels onbekend"}
+                        </p>
+                      )}
                     </div>
                     <div className="flex shrink-0 items-center gap-0.5">
                       <button
@@ -375,7 +416,7 @@ export function RouteLibrary() {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation()
-                          startNavigate(r.id)
+                          requestNavigate(r)
                         }}
                         className="flex items-center gap-1.5 rounded-full border border-white/[0.14] px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/70 transition hover:border-cyan-300/40 hover:text-cyan-200"
                       >
@@ -384,6 +425,57 @@ export function RouteLibrary() {
                       </button>
                     )}
                   </div>
+
+                  {navConfirmId === r.id && nietGeverifieerd && (
+                    <div
+                      className="mt-3 rounded-2xl border border-amber-300/35 bg-amber-300/[0.05] px-4 py-3.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-amber-200/90">
+                        Niet volledig geverifieerd voor de racefiets
+                      </span>
+                      <p className="mt-1.5 text-[12px] leading-relaxed text-white/60">
+                        {verification!.onbekendPct != null
+                          ? `${String(verification!.onbekendPct).replace(".", ",")}% van het wegdek is onbekend`
+                          : "Een deel van het wegdek is onbekend"}{" "}
+                        volgens de routemotor. Sparki beveelt deze route
+                        daarom niet aan als racefietsroute — gebruiken kan
+                        alleen als jij daar expliciet voor kiest.
+                      </p>
+                      <label className="mt-2.5 flex cursor-pointer items-center gap-2 text-[12px] text-white/75">
+                        <input
+                          type="checkbox"
+                          checked={navConfirmAccepted}
+                          onChange={(e) =>
+                            setNavConfirmAccepted(e.target.checked)
+                          }
+                          className="h-4 w-4 accent-amber-300"
+                        />
+                        Ik kies er bewust voor deze route met onbekend wegdek
+                        te gebruiken
+                      </label>
+                      <div className="mt-2.5 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          disabled={!navConfirmAccepted}
+                          onClick={() => {
+                            setNavConfirmId(null)
+                            startNavigate(r.id)
+                          }}
+                          className="rounded-full bg-amber-300/90 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#05070e] transition hover:bg-amber-200 disabled:opacity-40"
+                        >
+                          Toch navigeren
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNavConfirmId(null)}
+                          className="rounded-full border border-white/[0.14] px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/60 transition hover:text-white/85"
+                        >
+                          Annuleren
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {openMenuId === r.id && (

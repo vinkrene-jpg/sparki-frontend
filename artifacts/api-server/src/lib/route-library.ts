@@ -28,6 +28,7 @@ import { candidateEnvironmentOf } from "./candidate-environment";
 import { controlUnpavedShare } from "./surface-control";
 import { routeObstaclesOf } from "./route-remarks";
 import { summarizeTrack } from "./gpx-parse";
+import { planRouteEngineSurface } from "./plan-routes";
 import { logger } from "./logger";
 
 const log = logger.child({ module: "route-library" });
@@ -306,6 +307,9 @@ export async function generateStarterSet(
             elevationGainM: ascent,
             durationSec: result.durationSec,
             geometry: result.path as RoutePathPoint[],
+            // Motor-wegdekmeting (taak #492): stuurt de racefiets-verificatie
+            // bij presentatie ("Niet volledig geverifieerd" bij knownPct<100).
+            engineSurface: planRouteEngineSurface(result, provider.name),
             seed,
             source: "sparki_auto",
           })

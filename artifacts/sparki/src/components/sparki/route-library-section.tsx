@@ -6,6 +6,7 @@ import { Bike, Loader2, MapPinned, Search, Star } from "lucide-react"
 import { ACCENT } from "@/components/sparki/ui"
 import { apiFetch } from "@/lib/api"
 import { useGeocode } from "@/hooks/use-routes"
+import { racefietsVerification } from "@/lib/racefiets-verification"
 
 // Sparki-routebibliotheek op de Ontdek-tab: door Sparki zelf gegenereerde,
 // kant-en-klare routes per gebied. De gebruiker zoomt/schuift de kaart en
@@ -32,6 +33,13 @@ export type LibraryRoute = {
   // nieuwe route stuurde (null bij een gewone startset-route).
   improveNote: string | null
   generation: number
+  // Motor-wegdekmeting (taak #492): stuurt de racefiets-verificatie.
+  engineSurface?: {
+    provider: string
+    pavedPct: number | null
+    knownPct: number | null
+    measuredAt: string
+  } | null
 }
 
 const BIKE_LABEL: Record<string, string> = {
@@ -308,6 +316,10 @@ export function RouteLibrarySection() {
       setVulMelding("Genereren kon niet gestart worden — probeer het later."),
   })
 
+  // Expliciete-keuzegate (taak #492): route-id waarvoor de renner bewust koos
+  // het onbekende wegdek te accepteren; reset per route.
+  const [onbekendGekozen, setOnbekendGekozen] = useState<number | null>(null)
+
   const routes = (data?.routes ?? []).filter(
     (r) => bikeFilter == null || r.bikeType === bikeFilter,
   )
@@ -432,7 +444,22 @@ export function RouteLibrarySection() {
 
       {routes.length > 0 && (
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-          {routes.map((r) => (
+          {routes.map((r) => {
+            // Racefiets-verificatie (taak #492): een bibliotheekroute met
+            // motor-meting knownPct<100 is niet volledig geverifieerd en
+            // wordt nooit stil als geschikt gepresenteerd; overnemen kan
+            // alleen na een expliciete keuze (zelfde regel als de planner).
+            const verification =
+              r.bikeType === "racefiets"
+                ? racefietsVerification(
+                    "racefiets",
+                    r.engineSurface?.knownPct ?? null,
+                    null,
+                  )
+                : null
+            const nietGeverifieerd =
+              verification?.status === "niet_volledig_geverifieerd"
+            return (
             <li
               key={r.id}
               className={`rounded-2xl border p-3.5 transition-colors ${
@@ -467,6 +494,14 @@ export function RouteLibrarySection() {
                       {r.improveNote}
                     </span>
                   )}
+                  {nietGeverifieerd && (
+                    <span className="mt-1 inline-block rounded-full border border-amber-300/35 px-2 py-px font-mono text-[10px] uppercase tracking-[0.08em] text-amber-200/85">
+                      Niet volledig geverifieerd ·{" "}
+                      {verification!.onbekendPct != null
+                        ? `${String(verification!.onbekendPct).replace(".", ",")}% wegdek onbekend`
+                        : "wegdek deels onbekend"}
+                    </span>
+                  )}
                 </span>
                 {r.avgRating != null ? (
                   <span className="shrink-0 text-right">
@@ -483,10 +518,37 @@ export function RouteLibrarySection() {
               </button>
               {r.id === selectedId && (
                 <div className="mt-2">
+                  {nietGeverifieerd && (
+                    <div className="mb-2 rounded-xl border border-amber-300/35 bg-amber-300/[0.05] px-3 py-2.5">
+                      <p className="text-[12px] leading-relaxed text-white/60">
+                        {verification!.onbekendPct != null
+                          ? `${String(verification!.onbekendPct).replace(".", ",")}% van het wegdek is onbekend`
+                          : "Een deel van het wegdek is onbekend"}{" "}
+                        volgens de routemotor. Sparki beveelt deze route
+                        daarom niet aan als racefietsroute — overnemen kan
+                        alleen als jij daar expliciet voor kiest.
+                      </p>
+                      <label className="mt-2 flex cursor-pointer items-center gap-2 text-[12px] text-white/75">
+                        <input
+                          type="checkbox"
+                          checked={onbekendGekozen === r.id}
+                          onChange={(e) =>
+                            setOnbekendGekozen(e.target.checked ? r.id : null)
+                          }
+                          className="h-4 w-4 accent-amber-300"
+                        />
+                        Ik kies er bewust voor deze route met onbekend wegdek
+                        te gebruiken
+                      </label>
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={() => gebruik.mutate(r.id)}
-                    disabled={gebruik.isPending}
+                    disabled={
+                      gebruik.isPending ||
+                      (nietGeverifieerd && onbekendGekozen !== r.id)
+                    }
                     className="rounded-lg border border-cyan-300/40 px-3 py-1.5 text-[12px] font-semibold text-cyan-200 disabled:opacity-50"
                   >
                     {gebruik.isPending
@@ -504,7 +566,8 @@ export function RouteLibrarySection() {
                 </div>
               )}
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
       {vulMelding && (
