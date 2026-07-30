@@ -1,6 +1,6 @@
 // Shared Performance-Lab atoms — identical to the frozen Home language.
 
-export const ACCENT = "rgba(120,210,230,1)"
+export const ACCENT = "var(--accent-cyan)"
 
 export function SectionLabel({
   n,

@@ -1,6 +1,5 @@
 import { usePowerBests } from "@/hooks/use-power-bests"
 import { useStartFix } from "@/hooks/use-missing-input"
-import { ACCENT } from "@/components/sparki/ui"
 import { UitlegDot } from "@/components/viz/uitleg"
 import type { UitlegPersoonlijk } from "@/lib/uitleg-content"
 import { ArrowRight, TrendingUp, TrendingDown, Minus } from "lucide-react"
@@ -22,7 +21,7 @@ const WINDOWS: Array<{ key: string; label: string }> = [
 function Card({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div
-      className={`flex h-full flex-col rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-5 backdrop-blur-md ${className ?? ""}`}
+      className={`flex h-full flex-col rounded-2xl border border-white/[0.08] bg-map-panel/[0.82] p-5 backdrop-blur-md ${className ?? ""}`}
     >
       {children}
     </div>
@@ -60,7 +59,7 @@ function EmptyChart({
             <button
               type="button"
               onClick={onAction}
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 transition-colors hover:text-cyan-300"
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan/80 transition-colors hover:text-accent-cyan"
             >
               {actionLabel} →
             </button>
@@ -111,8 +110,7 @@ function Stat({
   return (
     <div className="flex-1 text-center">
       <p
-        className="font-sans text-lg font-light tabular-nums"
-        style={{ color: accent ? ACCENT : "rgba(255,255,255,0.9)" }}
+        className={`font-sans text-lg font-light tabular-nums ${accent ? "text-accent-cyan" : "text-white/90"}`}
       >
         {value}
         {unit && value !== "—" && (
@@ -203,7 +201,7 @@ export function PerformanceNumbers({
             <button
               type="button"
               onClick={() => startFix(ftp == null ? "ftp" : "weight")}
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 transition-colors hover:text-cyan-300"
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-accent-cyan/80 transition-colors hover:text-accent-cyan"
             >
               Invullen →
             </button>
@@ -219,9 +217,9 @@ export function PerformanceNumbers({
             <span
               className={`flex items-center gap-1 font-mono text-[10px] tabular-nums ${
                 ctlDelta > 0
-                  ? "text-cyan-300"
+                  ? "text-positive"
                   : ctlDelta < 0
-                    ? "text-amber-300"
+                    ? "text-warning"
                     : "text-white/45"
               }`}
             >
@@ -335,7 +333,7 @@ export function PerformanceNumbers({
                           <span className="text-white/30">—</span>
                         )}
                       </td>
-                      <td className="py-2 text-right text-[14px] tabular-nums" style={{ color: all ? ACCENT : undefined }}>
+                      <td className={`py-2 text-right text-[14px] tabular-nums ${all ? "text-accent-cyan" : ""}`}>
                         {all ? (
                           <>
                             {all.watts}
@@ -392,9 +390,9 @@ export function PerformanceNumbers({
                         <span
                           className={
                             delta > 0
-                              ? "text-cyan-300"
+                              ? "text-positive"
                               : delta < 0
-                                ? "text-amber-300"
+                                ? "text-warning"
                                 : "text-white/40"
                           }
                         >

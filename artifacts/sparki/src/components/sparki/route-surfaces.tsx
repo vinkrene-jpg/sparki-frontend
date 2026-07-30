@@ -14,19 +14,10 @@ import type {
   SuitabilityVerdict,
   SurfaceSourceComparison,
 } from "@/hooks/use-route-surfaces"
+import { SURFACE_KLEUREN } from "@/lib/chart-kleuren"
 
-export const SURFACE_COLORS: Record<SurfaceKind, string> = {
-  asfalt: "#5aa7e8",
-  verhard_fietspad: "#4ecbc4",
-  klinkers: "#c9a35a",
-  kasseien: "#b0742f",
-  compact_gravel: "#9aa86b",
-  los_gravel: "#c2b280",
-  onverhard: "#a5713f",
-  bospad: "#4f9e5a",
-  singletrack: "#8a5fc9",
-  onbekend: "#8b93a5",
-}
+// Re-export voor bestaande imports buiten dit bestand.
+export const SURFACE_COLORS = SURFACE_KLEUREN
 
 export const SURFACE_LABELS: Record<SurfaceKind, string> = {
   asfalt: "Asfalt",
@@ -51,12 +42,12 @@ const VERDICT_LABELS: Record<SuitabilityVerdict, string> = {
 }
 
 const VERDICT_STYLE: Record<SuitabilityVerdict, string> = {
-  goed: "border-emerald-300/30 text-emerald-200/90",
-  gedeeltelijk: "border-amber-300/30 text-amber-200/85",
-  technisch: "border-orange-400/35 text-orange-300/90",
-  afgeraden: "border-red-400/35 text-red-300/90",
+  goed: "border-positive/30 text-positive/90",
+  gedeeltelijk: "border-warning/30 text-warning/85",
+  technisch: "border-warning/40 text-warning/95",
+  afgeraden: "border-negative/35 text-negative/90",
   onvoldoende_gegevens: "border-white/20 text-white/55",
-  niet_geverifieerd: "border-amber-300/35 text-amber-200/90",
+  niet_geverifieerd: "border-warning/35 text-warning/90",
 }
 
 const BIKE_LABELS: Record<BikeSuitability["bike"], string> = {
@@ -75,10 +66,10 @@ function fmtPct(v: number): string {
 function SuitabilityCard({ s }: { s: BikeSuitability }) {
   const [open, setOpen] = useState(false)
   return (
-    <li className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+    <li className="rounded-xl border border-border bg-surface px-3 py-2.5">
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-2 text-[13px] text-white/85">
-          <Bike className="h-4 w-4 text-white/50" strokeWidth={1.75} />
+          <Bike className="h-4 w-4 text-content-secondary" strokeWidth={1.75} />
           {BIKE_LABELS[s.bike]}
         </span>
         <span
@@ -90,7 +81,7 @@ function SuitabilityCard({ s }: { s: BikeSuitability }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="mt-1 flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.12em] text-cyan-300/75 transition hover:text-cyan-200"
+        className="mt-1 flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.12em] text-accent-cyan/75 transition hover:text-accent-cyan/90"
       >
         <ChevronDown
           className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`}
@@ -119,8 +110,8 @@ function SourceComparisonCard({ c }: { c: SurfaceSourceComparison }) {
     <div
       className={`mt-3 rounded-xl border px-3 py-2.5 ${
         clash
-          ? "border-amber-300/30 bg-amber-300/[0.04]"
-          : "border-white/[0.07] bg-white/[0.02]"
+          ? "border-warning/30 bg-warning/[0.04]"
+          : "border-border bg-surface"
       }`}
     >
       <div className="flex items-center justify-between gap-2">
@@ -130,8 +121,8 @@ function SourceComparisonCard({ c }: { c: SurfaceSourceComparison }) {
         <span
           className={`rounded-full border px-2 py-px font-mono text-[10px] uppercase tracking-[0.08em] ${
             clash
-              ? "border-amber-300/30 text-amber-200/85"
-              : "border-emerald-300/30 text-emerald-200/90"
+              ? "border-warning/30 text-warning/85"
+              : "border-positive/30 text-positive/90"
           }`}
         >
           {clash ? "Metingen verschillen" : "Metingen in lijn"}
@@ -140,7 +131,7 @@ function SourceComparisonCard({ c }: { c: SurfaceSourceComparison }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="mt-1 flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.12em] text-cyan-300/75 transition hover:text-cyan-200"
+        className="mt-1 flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.12em] text-accent-cyan/75 transition hover:text-accent-cyan/90"
       >
         <ChevronDown
           className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`}
@@ -201,7 +192,7 @@ export function RouteSurfacesPanel({
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-300/80 transition hover:text-cyan-200"
+          className="font-mono text-[10px] uppercase tracking-[0.16em] text-accent-cyan/80 transition hover:text-accent-cyan/95"
         >
           {open ? "− wegtypen & ondergrond" : "+ wegtypen & ondergrond"}
         </button>
@@ -227,7 +218,7 @@ export function RouteSurfacesPanel({
             </p>
           )}
           {isError && (
-            <p className="text-[12px] text-[rgba(255,140,120,0.85)]">
+            <p className="text-[12px] text-negative/85">
               Wegtypen konden nu niet opgehaald worden — de kaartbron gaf geen
               antwoord.
             </p>
@@ -261,8 +252,8 @@ export function RouteSurfacesPanel({
                         }
                         className={`flex w-full items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-left transition ${
                           active
-                            ? "border-cyan-300/40 bg-cyan-300/[0.06]"
-                            : "border-transparent hover:border-white/10 hover:bg-white/[0.02]"
+                            ? "border-accent-cyan/40 bg-accent-cyan/[0.06]"
+                            : "border-transparent hover:border-white/10 hover:bg-surface"
                         }`}
                       >
                         <span className="flex items-center gap-2 text-[12.5px] text-white/80">

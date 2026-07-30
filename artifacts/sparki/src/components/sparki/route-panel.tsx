@@ -103,7 +103,7 @@ function PointRow({
   onRemove: () => void
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2">
+    <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2">
       {icon}
       <span className="min-w-0 flex-1 truncate font-sans text-[13px] text-white/90">
         {label}
@@ -115,7 +115,7 @@ function PointRow({
         type="button"
         onClick={onRemove}
         aria-label={`${label} verwijderen`}
-        className="shrink-0 text-white/30 transition hover:text-[rgba(255,140,120,0.85)]"
+        className="shrink-0 text-white/30 transition hover:text-negative/85"
       >
         <X className="h-3.5 w-3.5" strokeWidth={2} />
       </button>
@@ -144,7 +144,7 @@ function PlaceholderRow({
       onClick={onClick}
       className={`flex items-center gap-2 rounded-xl border border-dashed px-3 py-2 text-left transition ${
         active
-          ? "border-cyan-300/40 bg-cyan-300/[0.06]"
+          ? "border-accent-cyan/40 bg-accent-cyan/[0.06]"
           : "border-white/[0.12] bg-transparent hover:border-white/25"
       }`}
     >
@@ -170,11 +170,10 @@ function MeetpointList({
       {meetpoints.map((mp, i) => (
         <div
           key={i}
-          className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2"
+          className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2"
         >
           <Users
-            className="h-3.5 w-3.5 shrink-0"
-            style={{ color: "rgba(255,160,90,0.9)" }}
+            className="h-3.5 w-3.5 shrink-0 text-warning/90"
             strokeWidth={1.75}
           />
           <input
@@ -194,7 +193,7 @@ function MeetpointList({
             onClick={() =>
               setMeetpoints((m) => m.filter((_, idx) => idx !== i))
             }
-            className="shrink-0 text-white/30 transition hover:text-[rgba(255,140,120,0.85)]"
+            className="shrink-0 text-white/30 transition hover:text-negative/85"
           >
             <X className="h-3.5 w-3.5" strokeWidth={2} />
           </button>
@@ -411,7 +410,7 @@ function TempoBlock({
       : "Er zijn nog te weinig eigen ritten om je tempo te kennen — dit start op het standaardtempo van de routeplanner."
 
   return (
-    <div className="mt-3 rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-2.5">
+    <div className="mt-3 rounded-lg border border-border bg-surface px-3 py-2.5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
@@ -422,7 +421,7 @@ function TempoBlock({
               type="button"
               onClick={() => step(-0.5)}
               aria-label="Langzamer"
-              className="h-6 w-6 rounded-full border border-white/10 font-mono text-[12px] text-white/60 transition hover:text-white/90"
+              className="h-6 w-6 rounded-full border border-border font-mono text-[12px] text-white/60 transition hover:text-white/90"
             >
               −
             </button>
@@ -433,7 +432,7 @@ function TempoBlock({
               type="button"
               onClick={() => step(0.5)}
               aria-label="Sneller"
-              className="h-6 w-6 rounded-full border border-white/10 font-mono text-[12px] text-white/60 transition hover:text-white/90"
+              className="h-6 w-6 rounded-full border border-border font-mono text-[12px] text-white/60 transition hover:text-white/90"
             >
               +
             </button>
@@ -493,12 +492,11 @@ function NavigateInfoCard() {
   const hasGeo =
     typeof navigator !== "undefined" && "geolocation" in navigator
   return (
-    <div className="mt-4 rounded-xl border border-cyan-300/[0.18] bg-[rgba(120,210,230,0.06)] px-3.5 py-3">
+    <div className="mt-4 rounded-xl border border-accent-cyan/[0.18] bg-accent-cyan/[0.06] px-3.5 py-3">
       <div className="flex items-start gap-2.5">
         <Navigation
-          className="mt-0.5 h-4 w-4 shrink-0"
+          className="mt-0.5 h-4 w-4 shrink-0 text-accent-cyan"
           strokeWidth={1.75}
-          style={{ color: ACCENT }}
         />
         <div className="min-w-0 text-[12.5px] leading-relaxed text-white/60">
           <p className="font-medium text-white/85">Navigeren met Sparki</p>
@@ -552,8 +550,7 @@ function NavigateInfoCard() {
           <button
             type="button"
             onClick={() => setMore((m) => !m)}
-            className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.16em] transition"
-            style={{ color: ACCENT }}
+            className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-accent-cyan transition hover:text-accent-cyan/90"
           >
             {more ? "− minder" : "+ Meer over navigeren"}
           </button>
@@ -587,10 +584,7 @@ function Climbs({ climbs }: { climbs: RouteClimb[] }) {
             <span className="font-mono text-[11px] tabular-nums text-white/45">
               {c.lengthKm} km
             </span>
-            <span
-              className="font-mono text-[11px] tabular-nums"
-              style={{ color: ACCENT }}
-            >
+            <span className="font-mono text-[11px] tabular-nums text-accent-cyan">
               {c.avgGradePct}%
             </span>
           </div>
@@ -689,7 +683,7 @@ function RoutePassport({
     })
 
   return (
-    <div className="mt-4 rounded-lg border border-white/[0.07] bg-white/[0.03] p-3.5">
+    <div className="mt-4 rounded-lg border border-border bg-surface p-3.5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="label-xs text-white/35">ROUTE-PASPOORT</span>
         <label className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-white/40">
@@ -698,7 +692,7 @@ function RoutePassport({
             type="datetime-local"
             value={departAt}
             onChange={(e) => setDepartAt(e.target.value)}
-            className="rounded-md border border-white/[0.1] bg-white/[0.04] px-2 py-1 font-sans text-[12px] text-white/80 focus:border-cyan-300/40 focus:outline-none [color-scheme:dark]"
+            className="rounded-md border border-border bg-control px-2 py-1 font-sans text-[12px] text-white/80 focus:border-accent-cyan/40 focus:outline-none [color-scheme:dark]"
           />
         </label>
       </div>
@@ -753,14 +747,14 @@ function RoutePassport({
             <button
               type="button"
               onClick={() => onAdjust("flat")}
-              className="rounded-full border border-white/[0.12] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-white/60 transition hover:border-cyan-300/40 hover:text-cyan-300"
+              className="rounded-full border border-white/[0.12] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-white/60 transition hover:border-accent-cyan/40 hover:text-accent-cyan"
             >
               Vlakker
             </button>
             <button
               type="button"
               onClick={() => onAdjust("hilly")}
-              className="rounded-full border border-white/[0.12] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-white/60 transition hover:border-cyan-300/40 hover:text-cyan-300"
+              className="rounded-full border border-white/[0.12] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-white/60 transition hover:border-accent-cyan/40 hover:text-accent-cyan"
             >
               Meer klimmen
             </button>
@@ -830,7 +824,7 @@ function DeviceSyncBlock({ routeId }: { routeId: number }) {
                     },
                   )
                 }}
-                className="rounded-full bg-cyan-400/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#05070e] transition hover:bg-cyan-300 disabled:opacity-40"
+                className="rounded-full bg-accent-cyan/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-on-accent transition hover:bg-accent-cyan disabled:opacity-40"
               >
                 {send.isPending
                   ? "Bezig…"
@@ -852,7 +846,7 @@ function DeviceSyncBlock({ routeId }: { routeId: number }) {
                       ),
                   })
                 }}
-                className="rounded-full border border-white/[0.14] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/60 transition hover:border-cyan-300/40 hover:text-cyan-300 disabled:opacity-40"
+                className="rounded-full border border-white/[0.14] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/60 transition hover:border-accent-cyan/40 hover:text-accent-cyan disabled:opacity-40"
               >
                 Koppel {p.label}
               </button>
@@ -861,10 +855,10 @@ function DeviceSyncBlock({ routeId }: { routeId: number }) {
         </div>
       )}
       {message && (
-        <p className="mt-2 text-[11px] text-cyan-300/85">{message}</p>
+        <p className="mt-2 text-[11px] text-accent-cyan/85">{message}</p>
       )}
       {error && (
-        <p className="mt-2 text-[11px] text-[rgba(255,140,120,0.85)]">
+        <p className="mt-2 text-[11px] text-negative/85">
           {error}
         </p>
       )}
@@ -1046,14 +1040,13 @@ function RouteCard({
   return (
     <div
       id={`route-card-${route.id}`}
-      className="rounded-xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 backdrop-blur-md"
+      className="rounded-xl border border-border bg-map-panel/[0.82] p-4 backdrop-blur-md"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1 basis-44">
           <div className="flex min-w-0 items-center gap-2">
             <span
-              className="font-mono text-[9px] uppercase tracking-[0.18em]"
-              style={{ color: hardBlocked ? "#f87171" : ACCENT }}
+              className={`font-mono text-[9px] uppercase tracking-[0.18em] ${hardBlocked ? "text-negative" : "text-accent-cyan"}`}
             >
               {hardBlocked
                 ? "Geblokkeerd"
@@ -1069,7 +1062,7 @@ function RouteCard({
             {route.name}
           </h3>
           {hardBlocked && (
-            <p className="mt-1.5 rounded-md border border-red-400/25 bg-red-500/10 px-2.5 py-1.5 text-[11px] leading-snug text-red-200/90">
+            <p className="mt-1.5 rounded-md border border-negative/25 bg-negative/10 px-2.5 py-1.5 text-[11px] leading-snug text-negative/90">
               Deze route bevat harde blokkades (fietsverbod, trap of afgesloten
               poort/privéterrein) en kan niet genavigeerd worden. Genereer een
               nieuwe route — de routemaker keurt zulke routes tegenwoordig af.
@@ -1082,7 +1075,7 @@ function RouteCard({
               type="button"
               onClick={() => setManualOptionsOpen(true)}
               title="Open het navigatievenster — volgt je live positie op de kaart"
-              className="flex items-center gap-1.5 rounded-full bg-cyan-400/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#05070e] transition hover:bg-cyan-300"
+              className="flex items-center gap-1.5 rounded-full bg-accent-cyan/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-on-accent transition hover:bg-accent-cyan"
             >
               <Navigation className="h-3.5 w-3.5" strokeWidth={2} />
               Navigeer
@@ -1095,13 +1088,13 @@ function RouteCard({
                   type="button"
                   onClick={() => setShareOpen((v) => !v)}
                   title="Deel deze route — als bestand, link of via WhatsApp"
-                  className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-cyan-300/80"
+                  className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-accent-cyan/80"
                 >
                   <Share2 className="h-3.5 w-3.5" strokeWidth={1.75} />
                   Delen
                 </button>
                 {shareOpen && (
-                  <div className="absolute right-0 top-7 z-30 w-56 rounded-xl border border-white/[0.12] bg-[#0a1220] p-1.5 shadow-xl shadow-black/50">
+                  <div className="absolute right-0 top-7 z-30 w-56 rounded-xl border border-white/[0.12] bg-map-scrim p-1.5 shadow-xl shadow-black/50">
                     {canShareRouteFiles() && (
                       <button
                         type="button"
@@ -1121,7 +1114,7 @@ function RouteCard({
                           )
                         }}
                         disabled={share.isPending}
-                        className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-white/[0.06] disabled:opacity-40"
+                        className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-surface-strong disabled:opacity-40"
                       >
                         Bestand naar app (GPX)
                         <span className="mt-0.5 block text-[10px] text-white/35">
@@ -1145,7 +1138,7 @@ function RouteCard({
                           )
                         }
                       }}
-                      className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-white/[0.06]"
+                      className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-surface-strong"
                     >
                       {linkCopied ? (
                         <span className="inline-flex items-center gap-1">
@@ -1168,7 +1161,7 @@ function RouteCard({
                       target="_blank"
                       rel="noreferrer"
                       onClick={() => setShareOpen(false)}
-                      className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-white/[0.06]"
+                      className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-surface-strong"
                     >
                       Via WhatsApp
                       <span className="mt-0.5 block text-[10px] text-white/35">
@@ -1178,7 +1171,7 @@ function RouteCard({
                     <button
                       type="button"
                       onClick={() => setShowFriendPick((v) => !v)}
-                      className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-white/[0.06]"
+                      className="block w-full rounded-lg px-3 py-2 text-left text-[12px] text-white/75 transition hover:bg-surface-strong"
                     >
                       {proposalSent ? (
                         <span className="inline-flex items-center gap-1">
@@ -1228,7 +1221,7 @@ function RouteCard({
                                   },
                                 )
                               }}
-                              className="block w-full rounded-lg px-3 py-1.5 text-left text-[12px] text-cyan-200/85 transition hover:bg-white/[0.06] disabled:opacity-40"
+                              className="block w-full rounded-lg px-3 py-1.5 text-left text-[12px] text-accent-cyan/85 transition hover:bg-surface-strong disabled:opacity-40"
                             >
                               → {f.displayName}
                             </button>
@@ -1244,7 +1237,7 @@ function RouteCard({
                 onClick={() => exportRoute("gpx")}
                 disabled={download.isPending}
                 title="Download als GPX voor je fietscomputer"
-                className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-cyan-300/80 disabled:opacity-40"
+                className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-accent-cyan/80 disabled:opacity-40"
               >
                 <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
                 GPX
@@ -1254,7 +1247,7 @@ function RouteCard({
                 onClick={() => exportRoute("tcx")}
                 disabled={download.isPending}
                 title="Download als TCX-course — meest betrouwbare navigatie op Garmin/Wahoo"
-                className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-cyan-300/80 disabled:opacity-40"
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 transition hover:text-accent-cyan/80 disabled:opacity-40"
               >
                 TCX
               </button>
@@ -1272,7 +1265,7 @@ function RouteCard({
       </div>
 
       {gpxError && (
-        <p className="mt-2 text-[11px] text-[rgba(255,140,120,0.85)]">
+        <p className="mt-2 text-[11px] text-negative/85">
           {gpxError}
         </p>
       )}
@@ -1341,8 +1334,7 @@ function RouteCard({
         <button
           type="button"
           onClick={() => setShowPassport((s) => !s)}
-          className="font-mono text-[10px] uppercase tracking-[0.16em] transition"
-          style={{ color: ACCENT }}
+          className="font-mono text-[10px] uppercase tracking-[0.16em] text-accent-cyan transition hover:text-accent-cyan/90"
         >
           {showPassport ? "− route-paspoort" : "+ route-paspoort"}
         </button>
@@ -1350,7 +1342,7 @@ function RouteCard({
           <button
             type="button"
             onClick={() => onEditWaypoints(route)}
-            className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-cyan-300/80"
+            className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-accent-cyan/80"
           >
             + wijzig met routepunten
           </button>
@@ -1358,7 +1350,7 @@ function RouteCard({
       </div>
       {showPassport && <RoutePassport route={route} onAdjust={onAdjust} />}
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-white/[0.07] pt-4">
+      <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-border pt-4">
         <Stat
           label="Afstand"
           value={route.distanceKm != null ? `${route.distanceKm} km` : "—"}
@@ -1394,8 +1386,7 @@ function RouteCard({
           <button
             type="button"
             onClick={() => setShowSteps((s) => !s)}
-            className="font-mono text-[10px] uppercase tracking-[0.16em] transition"
-            style={{ color: ACCENT }}
+            className="font-mono text-[10px] uppercase tracking-[0.16em] text-accent-cyan transition hover:text-accent-cyan/90"
           >
             {showSteps
               ? "− stappenplan verbergen"
@@ -1408,7 +1399,7 @@ function RouteCard({
                   key={i}
                   className="flex items-baseline gap-3 border-b border-white/[0.05] py-2.5 last:border-0"
                 >
-                  <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-cyan-300/70">
+                  <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-accent-cyan/70">
                     {n.km}
                   </span>
                   <span className="w-20 shrink-0 break-words text-[13px] tracking-tight text-white/85">
@@ -1483,7 +1474,7 @@ function RouteCard({
 }
 
 const inputClass =
-  "w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-cyan-300/40 focus:outline-none"
+  "w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 font-sans text-[14px] text-white/90 placeholder:text-white/25 focus:border-accent-cyan/40 focus:outline-none"
 
 // Vertaal echte routegeometrie naar een handvol sleepbare routepunten voor de
 // eigen-route-bouwer. We kiezen gelijkmatig verdeelde punten uit de ECHTE lijn
@@ -2060,11 +2051,11 @@ export function RouteGenerator({
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md">
+    <div className="rounded-2xl border border-white/[0.09] bg-map-panel/[0.82] p-5 backdrop-blur-md">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4" style={{ color: ACCENT }} strokeWidth={1.75} />
-          <span className="font-mono text-[10px] tracking-[0.22em] text-cyan-300/80">
+          <Sparkles className="h-4 w-4 text-accent-cyan" strokeWidth={1.75} />
+          <span className="font-mono text-[10px] tracking-[0.22em] text-accent-cyan/80">
             ROUTE PLANNEN
           </span>
         </div>
@@ -2091,18 +2082,13 @@ export function RouteGenerator({
               disabled={n >= step}
             >
               <span
-                className="flex h-6 w-6 items-center justify-center rounded-full border font-mono text-[11px]"
-                style={{
-                  borderColor:
-                    n === step ? "rgba(120,210,230,0.6)" : "rgba(255,255,255,0.12)",
-                  background: n === step ? "rgba(120,210,230,0.12)" : "transparent",
-                  color:
-                    n === step
-                      ? ACCENT
-                      : n < step
-                        ? "rgba(120,210,230,0.55)"
-                        : "rgba(255,255,255,0.35)",
-                }}
+                className={`flex h-6 w-6 items-center justify-center rounded-full border font-mono text-[11px] ${
+                  n === step
+                    ? "border-accent-cyan/60 bg-accent-cyan/[0.12] text-accent-cyan"
+                    : n < step
+                      ? "border-white/[0.12] bg-transparent text-accent-cyan/55"
+                      : "border-white/[0.12] bg-transparent text-white/35"
+                }`}
               >
                 {n}
               </span>
@@ -2139,13 +2125,7 @@ export function RouteGenerator({
               key={m.v}
               type="button"
               onClick={() => setMode(m.v)}
-              className="flex-1 rounded-xl border py-2.5 text-[13px] transition-colors"
-              style={{
-                borderColor:
-                  mode === m.v ? "rgba(120,210,230,0.5)" : "rgba(255,255,255,0.1)",
-                background: mode === m.v ? "rgba(120,210,230,0.12)" : "transparent",
-                color: mode === m.v ? ACCENT : "rgba(255,255,255,0.6)",
-              }}
+              className={`flex-1 rounded-xl border py-2.5 text-[13px] transition-colors ${mode === m.v ? "border-accent-cyan/50 bg-accent-cyan/[0.12] text-accent-cyan" : "border-white/10 bg-transparent text-white/60"}`}
             >
               {m.l}
             </button>
@@ -2229,13 +2209,13 @@ export function RouteGenerator({
               }}
               placeholder="Startpunt zoeken — adres of plaats…"
               aria-label="Startpunt zoeken op adres of plaats"
-              className="min-w-0 flex-1 rounded-xl border border-white/[0.12] bg-transparent px-3.5 py-2 font-sans text-[13px] text-white/80 placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none"
+              className="min-w-0 flex-1 rounded-xl border border-white/[0.12] bg-transparent px-3.5 py-2 font-sans text-[13px] text-white/80 placeholder:text-white/30 focus:border-accent-cyan/40 focus:outline-none"
             />
             <button
               type="button"
               onClick={zoekStartAdres}
               disabled={adresQ.trim().length < 2 || geocode.isPending}
-              className="rounded-xl border border-white/[0.14] px-3.5 py-2 font-sans text-[12px] text-white/70 transition hover:border-cyan-300/30 disabled:opacity-40"
+              className="rounded-xl border border-white/[0.14] px-3.5 py-2 font-sans text-[12px] text-white/70 transition hover:border-accent-cyan/30 disabled:opacity-40"
             >
               {geocode.isPending ? "Zoeken…" : "Zoek"}
             </button>
@@ -2253,7 +2233,7 @@ export function RouteGenerator({
                   <button
                     type="button"
                     onClick={() => kiesStartAdres(r)}
-                    className="flex w-full items-center gap-2 px-3.5 py-2 text-left font-sans text-[12px] text-white/70 transition hover:bg-cyan-300/10 hover:text-white"
+                    className="flex w-full items-center gap-2 px-3.5 py-2 text-left font-sans text-[12px] text-white/70 transition hover:bg-accent-cyan/10 hover:text-white"
                   >
                     <MapPin className="h-3.5 w-3.5 shrink-0 text-white/40" strokeWidth={1.75} />
                     {r.label}
@@ -2268,7 +2248,7 @@ export function RouteGenerator({
             type="button"
             onClick={useMyLocation}
             disabled={geoState === "loading"}
-            className="flex items-center gap-2 rounded-full border border-white/[0.14] px-3.5 py-2 font-sans text-[12px] text-white/70 transition hover:border-cyan-300/30 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-full border border-white/[0.14] px-3.5 py-2 font-sans text-[12px] text-white/70 transition hover:border-accent-cyan/30 disabled:opacity-50"
           >
             <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
             {geoState === "loading" ? "Locatie ophalen…" : "Gebruik mijn locatie"}
@@ -2308,7 +2288,7 @@ export function RouteGenerator({
                   setMeetpoints([])
                   setPlaceMode("start")
                 }}
-                className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-[rgba(255,140,120,0.85)]"
+                className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-negative/85"
               >
                 wis alles
               </button>
@@ -2329,21 +2309,14 @@ export function RouteGenerator({
               key={s.value}
               type="button"
               onClick={() => setSport(s.value)}
-              className="flex flex-col items-center rounded-xl border py-2.5 transition-colors"
-              style={{
-                borderColor:
-                  sport === s.value
-                    ? "rgba(120,210,230,0.5)"
-                    : "rgba(255,255,255,0.1)",
-                background:
-                  sport === s.value ? "rgba(120,210,230,0.12)" : "transparent",
-              }}
+              className={`flex flex-col items-center rounded-xl border py-2.5 transition-colors ${
+                sport === s.value
+                  ? "border-accent-cyan/50 bg-accent-cyan/[0.12]"
+                  : "border-white/10 bg-transparent"
+              }`}
             >
               <span
-                className="text-[12px] font-medium"
-                style={{
-                  color: sport === s.value ? ACCENT : "rgba(255,255,255,0.6)",
-                }}
+                className={`text-[12px] font-medium ${sport === s.value ? "text-accent-cyan" : "text-white/60"}`}
               >
                 {s.label}
               </span>
@@ -2361,7 +2334,7 @@ export function RouteGenerator({
             FIETSTYPE
           </label>
           {derivedBike && !bikeTouched && (
-            <p className="mb-2 text-[11px] leading-relaxed text-cyan-300/55">
+            <p className="mb-2 text-[11px] leading-relaxed text-accent-cyan/55">
               Voorgekozen op basis van je discipline. Pas aan als je vandaag een
               andere fiets pakt.
             </p>
@@ -2373,23 +2346,10 @@ export function RouteGenerator({
                 type="button"
                 onClick={() => chooseBike(b.value)}
                 className="flex flex-1 flex-col items-center rounded-xl border py-2.5 transition-colors"
-                style={{
-                  borderColor:
-                    bikeType === b.value
-                      ? "rgba(120,210,230,0.5)"
-                      : "rgba(255,255,255,0.1)",
-                  background:
-                    bikeType === b.value
-                      ? "rgba(120,210,230,0.12)"
-                      : "transparent",
-                }}
+                className={bikeType === b.value ? "border-accent-cyan/50 bg-accent-cyan/[0.12]" : "border-white/10 bg-transparent"}
               >
                 <span
-                  className="text-[13px] font-medium"
-                  style={{
-                    color:
-                      bikeType === b.value ? ACCENT : "rgba(255,255,255,0.6)",
-                  }}
+                  className={`text-[13px] font-medium ${bikeType === b.value ? "text-accent-cyan" : "text-white/60"}`}
                 >
                   {b.label}
                 </span>
@@ -2417,12 +2377,9 @@ export function RouteGenerator({
                     value={unpavedPct}
                     onChange={(e) => chooseUnpavedPct(Number(e.target.value))}
                     aria-label="Onverhard-voorkeur (percentage)"
-                    className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-white/15 accent-cyan-300"
+                    className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-white/15 accent-accent-cyan"
                   />
-                  <span
-                    className="w-11 text-right font-mono text-[12px]"
-                    style={{ color: ACCENT }}
-                  >
+                  <span className="w-11 text-right font-mono text-[12px] text-accent-cyan">
                     {unpavedPct}%
                   </span>
                 </div>
@@ -2469,7 +2426,7 @@ export function RouteGenerator({
                 checked={avoidBusyRoads}
                 onChange={(e) => chooseAvoidBusyRoads(e.target.checked)}
                 aria-label="Vermijd drukke N-wegen"
-                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-white/25 bg-white/10 accent-cyan-300"
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-white/25 bg-white/10 accent-accent-cyan"
               />
               <span className="text-[12px] leading-relaxed text-white/70">
                 Vermijd drukke N-wegen
@@ -2498,20 +2455,7 @@ export function RouteGenerator({
               type="button"
               onClick={() => setElevationPreference(e.value)}
               className="flex-1 rounded-xl border py-2.5 text-[13px] transition-colors"
-              style={{
-                borderColor:
-                  elevationPreference === e.value
-                    ? "rgba(120,210,230,0.5)"
-                    : "rgba(255,255,255,0.1)",
-                background:
-                  elevationPreference === e.value
-                    ? "rgba(120,210,230,0.12)"
-                    : "transparent",
-                color:
-                  elevationPreference === e.value
-                    ? ACCENT
-                    : "rgba(255,255,255,0.6)",
-              }}
+              className={elevationPreference === e.value ? "border-accent-cyan/50 bg-accent-cyan/[0.12] text-accent-cyan" : "border-white/10 bg-transparent text-white/60"}
             >
               {e.label}
             </button>
@@ -2598,7 +2542,7 @@ export function RouteGenerator({
                   onChange={(e) => setWorkoutSearch(e.target.value)}
                 />
                 {workoutsError ? (
-                  <p className="mt-1.5 text-[11px] leading-relaxed text-red-300/70">
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-negative/70">
                     Je trainingen konden niet worden geladen. Probeer het
                     later opnieuw — er worden nooit voorbeeldtrainingen
                     getoond.
@@ -2687,15 +2631,7 @@ export function RouteGenerator({
                   type="button"
                   onClick={() => setPlaceMode(p.v)}
                   className="flex min-w-[calc(50%-4px)] flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-[13px] transition-colors sm:min-w-0"
-                  style={{
-                    borderColor: active
-                      ? "rgba(120,210,230,0.5)"
-                      : "rgba(255,255,255,0.1)",
-                    background: active
-                      ? "rgba(120,210,230,0.12)"
-                      : "transparent",
-                    color: active ? ACCENT : "rgba(255,255,255,0.6)",
-                  }}
+                  className={active ? "border-accent-cyan/50 bg-accent-cyan/[0.12] text-accent-cyan" : "border-white/10 bg-transparent text-white/60"}
                 >
                   <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
                   {p.l}
@@ -2710,7 +2646,7 @@ export function RouteGenerator({
           <div className="mt-3 flex flex-col gap-2">
             {startPoint ? (
               <PointRow
-                icon={<MapPin className="h-3.5 w-3.5 shrink-0" style={{ color: "rgba(120,230,160,0.9)" }} strokeWidth={1.75} />}
+                icon={<MapPin className="h-3.5 w-3.5 shrink-0 text-positive/90" strokeWidth={1.75} />}
                 label="Startpunt"
                 point={startPoint}
                 onRemove={() => {
@@ -2731,7 +2667,7 @@ export function RouteGenerator({
             {waypoints.map((p, i) => (
               <PointRow
                 key={`${p[0]}-${p[1]}-${i}`}
-                icon={<Flag className="h-3.5 w-3.5 shrink-0" style={{ color: ACCENT }} strokeWidth={1.75} />}
+                icon={<Flag className="h-3.5 w-3.5 shrink-0 text-accent-cyan" strokeWidth={1.75} />}
                 label={`Routepunt ${i + 1}`}
                 point={p}
                 onRemove={() => {
@@ -2742,7 +2678,7 @@ export function RouteGenerator({
             ))}
             {endPoint ? (
               <PointRow
-                icon={<Flag className="h-3.5 w-3.5 shrink-0" style={{ color: "rgba(255,160,90,0.9)" }} strokeWidth={1.75} />}
+                icon={<Flag className="h-3.5 w-3.5 shrink-0 text-warning/90" strokeWidth={1.75} />}
                 label="Finish"
                 point={endPoint}
                 onRemove={() => {
@@ -2786,7 +2722,7 @@ export function RouteGenerator({
       </div>
 
       {error && (
-        <p className="mt-3 text-[12px] text-[rgba(255,140,120,0.85)]">{error}</p>
+        <p className="mt-3 text-[12px] text-negative/85">{error}</p>
       )}
 
       {/* Samen rijden? — de plek waar je bordjes-sprint en je maten kiest. */}
@@ -2801,7 +2737,7 @@ export function RouteGenerator({
             }}
             className={`rounded-full px-3.5 py-1.5 font-sans text-[12px] transition ${
               !withOthers
-                ? "bg-cyan-400 text-[#05070e]"
+                ? "bg-accent-cyan text-on-accent"
                 : "border border-white/10 text-white/55 hover:text-white/85"
             }`}
           >
@@ -2812,7 +2748,7 @@ export function RouteGenerator({
             onClick={() => setWithOthers(true)}
             className={`rounded-full px-3.5 py-1.5 font-sans text-[12px] transition ${
               withOthers
-                ? "bg-cyan-400 text-[#05070e]"
+                ? "bg-accent-cyan text-on-accent"
                 : "border border-white/10 text-white/55 hover:text-white/85"
             }`}
           >
@@ -2846,7 +2782,7 @@ export function RouteGenerator({
                         }
                         className={`rounded-full px-3 py-1.5 font-sans text-[12px] transition ${
                           active
-                            ? "border border-cyan-300/50 bg-cyan-300/15 text-cyan-200"
+                            ? "border border-accent-cyan/50 bg-accent-cyan/15 text-accent-cyan"
                             : "border border-white/10 text-white/55 hover:text-white/85"
                         }`}
                       >
@@ -2969,8 +2905,7 @@ export function RouteGenerator({
                 }
                 setStep((s) => Math.min(4, s + 1))
               }}
-              className="min-w-0 flex-1 rounded-2xl py-3.5 font-sans text-[13px] font-semibold"
-              style={{ background: ACCENT, color: "#040506" }}
+              className="min-w-0 flex-1 rounded-2xl bg-accent-cyan py-3.5 font-sans text-[13px] font-semibold text-on-accent"
             >
               Verder →
             </button>
@@ -2981,8 +2916,7 @@ export function RouteGenerator({
                 mode === "loop" ? runGenerateOptions() : runGenerate()
               }
               disabled={generate.isPending || genOptions.isPending}
-              className="min-w-0 flex-1 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
-              style={{ background: ACCENT, color: "#040506" }}
+              className="min-w-0 flex-1 rounded-2xl bg-accent-cyan py-3.5 font-sans text-[13px] font-semibold text-on-accent disabled:opacity-50"
             >
               {generate.isPending || genOptions.isPending
                 ? "Berekenen…"
@@ -2999,7 +2933,7 @@ export function RouteGenerator({
           Overpass-meting — eenmalig ~10–30 s. Geen voortgangsbalk, alleen
           eerlijke tekst na een drempel van 3 s. */}
       {slowNotice && generate.isPending && !showResult && (
-        <p className="mt-3 text-[12px] leading-relaxed text-cyan-200/75">
+        <p className="mt-3 text-[12px] leading-relaxed text-accent-cyan/75">
           Sparki controleert de route op blokkades (fietsverbod, trappen,
           afgesloten poorten) — bij een nieuw gebied kan dit eenmalig tientallen
           seconden duren.
@@ -3009,7 +2943,7 @@ export function RouteGenerator({
       {/* Resultaatscherm — eigen weergave, los van de stappen */}
       {showResult && (
         <div className="mt-4 flex items-center justify-between">
-          <span className="font-mono text-[10px] tracking-[0.22em] text-cyan-300/80">
+          <span className="font-mono text-[10px] tracking-[0.22em] text-accent-cyan/80">
             RESULTAAT
           </span>
           <button
@@ -3020,7 +2954,7 @@ export function RouteGenerator({
               setMeetpoints([])
               setStep(4)
             }}
-            className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-cyan-300/80"
+            className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-accent-cyan/80"
           >
             <ArrowLeft className="h-3 w-3" aria-hidden="true" /> terug naar de stappen
           </button>
@@ -3040,7 +2974,7 @@ export function RouteGenerator({
             {options.map((o) => (
               <div
                 key={o.candidateId}
-                className="min-w-0 rounded-2xl border border-white/[0.1] bg-white/[0.03] p-4 transition-colors hover:border-cyan-300/40"
+                className="min-w-0 rounded-2xl border border-white/[0.1] bg-white/[0.03] p-4 transition-colors hover:border-accent-cyan/40"
               >
                 <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5">
                   <span
@@ -3076,7 +3010,7 @@ export function RouteGenerator({
                     null,
                   )
                   return v?.status === "niet_volledig_geverifieerd" ? (
-                    <p className="mt-1.5 inline-block rounded-full border border-amber-300/35 px-2 py-px font-mono text-[10px] uppercase tracking-[0.08em] text-amber-200/85">
+                    <p className="mt-1.5 inline-block rounded-full border border-warning/35 px-2 py-px font-mono text-[10px] uppercase tracking-[0.08em] text-warning/85">
                       Niet volledig geverifieerd ·{" "}
                       {String(v.onbekendPct).replace(".", ",")}% onbekend wegdek
                     </p>
@@ -3096,7 +3030,7 @@ export function RouteGenerator({
                 <button
                   type="button"
                   onClick={() => setCandidate(o)}
-                  className="mt-3.5 w-full rounded-xl border border-cyan-300/30 py-2.5 font-sans text-[13px] font-medium text-cyan-200/90 transition-colors hover:bg-cyan-300/[0.08]"
+                  className="mt-3.5 w-full rounded-xl border border-accent-cyan/30 py-2.5 font-sans text-[13px] font-medium text-accent-cyan/90 transition-colors hover:bg-accent-cyan/[0.08]"
                 >
                   Kies deze route
                 </button>
@@ -3116,7 +3050,7 @@ export function RouteGenerator({
                 setCandidate(null)
                 setMeetpoints([])
               }}
-              className="mb-2 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-cyan-300/80"
+              className="mb-2 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45 transition hover:text-accent-cyan/80"
             >
               <ArrowLeft className="h-3 w-3" aria-hidden="true" /> Andere afstand kiezen
             </button>
@@ -3147,7 +3081,7 @@ export function RouteGenerator({
                       setCandidate({ ...a, alternates: rest })
                       setMeetpoints([])
                     }}
-                    className="min-w-0 rounded-xl border border-white/[0.1] bg-white/[0.03] p-3 text-left transition-colors hover:border-cyan-300/40"
+                    className="min-w-0 rounded-xl border border-white/[0.1] bg-white/[0.03] p-3 text-left transition-colors hover:border-accent-cyan/40"
                   >
                     <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
                       <span className="font-sans text-lg font-light tracking-tight text-white/90">
@@ -3169,7 +3103,7 @@ export function RouteGenerator({
                         className="mt-2"
                       />
                     )}
-                    <span className="mt-2 inline-block font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-200/80">
+                    <span className="mt-2 inline-block font-mono text-[10px] uppercase tracking-[0.16em] text-accent-cyan/80">
                       Bekijk dit voorstel
                     </span>
                   </button>
@@ -3272,8 +3206,8 @@ export function RouteGenerator({
           </label>
 
           {candVerification?.status === "niet_volledig_geverifieerd" && (
-            <div className="mt-4 rounded-2xl border border-amber-300/35 bg-amber-300/[0.05] px-4 py-3.5">
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-amber-200/90">
+            <div className="mt-4 rounded-2xl border border-warning/35 bg-warning/[0.05] px-4 py-3.5">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-warning/90">
                 Niet volledig geverifieerd voor de racefiets
               </span>
               <p className="mt-1.5 text-[12px] leading-relaxed text-white/60">
@@ -3295,7 +3229,7 @@ export function RouteGenerator({
                     type="checkbox"
                     checked={unknownAccepted}
                     onChange={(e) => setUnknownAccepted(e.target.checked)}
-                    className="h-4 w-4 accent-amber-300"
+                    className="h-4 w-4 accent-warning"
                   />
                   Ik kies er bewust voor deze route met onbekend wegdek te
                   gebruiken
@@ -3303,7 +3237,7 @@ export function RouteGenerator({
                 <button
                   type="button"
                   onClick={() => setCandSurfaceKind("onbekend")}
-                  className="font-mono text-[10px] uppercase tracking-[0.12em] text-amber-200/80 underline underline-offset-2 transition hover:text-amber-100"
+                  className="font-mono text-[10px] uppercase tracking-[0.12em] text-warning/80 underline underline-offset-2 transition hover:text-warning/95"
                 >
                   Toon onbekende stukken
                 </button>
@@ -3316,8 +3250,7 @@ export function RouteGenerator({
               type="button"
               onClick={() => saveCandidate(true)}
               disabled={save.isPending || needsUnknownChoice}
-              className="flex min-w-0 flex-1 basis-40 items-center justify-center gap-2 rounded-2xl py-3.5 font-sans text-[13px] font-semibold disabled:opacity-50"
-              style={{ background: ACCENT, color: "#040506" }}
+              className="flex min-w-0 flex-1 basis-40 items-center justify-center gap-2 rounded-2xl bg-accent-cyan py-3.5 font-sans text-[13px] font-semibold text-on-accent disabled:opacity-50"
             >
               <Navigation className="h-4 w-4" strokeWidth={2.25} />
               {save.isPending ? "Opslaan…" : "Bewaar & navigeer"}
@@ -3340,7 +3273,7 @@ export function RouteGenerator({
             </button>
             {/* Eerlijke tussenmelding bij lang opnieuw genereren (taak #503) */}
             {slowNotice && generate.isPending && (
-              <p className="w-full basis-full text-[12px] leading-relaxed text-cyan-200/75">
+              <p className="w-full basis-full text-[12px] leading-relaxed text-accent-cyan/75">
                 Sparki controleert de route op blokkades (fietsverbod, trappen,
                 afgesloten poorten) — bij een nieuw gebied kan dit eenmalig
                 tientallen seconden duren.
@@ -3436,13 +3369,13 @@ export function RouteGenerator({
           {candidate.avoidReport?.nietMogelijk?.map((item, i) => (
             <p
               key={`avoid-nm-${i}`}
-              className="mt-4 rounded-lg border border-amber-300/25 bg-amber-300/[0.07] px-3 py-2 text-[12px] leading-relaxed text-amber-200/90"
+              className="mt-4 rounded-lg border border-warning/25 bg-warning/[0.07] px-3 py-2 text-[12px] leading-relaxed text-warning/90"
             >
               Niet gelukt: {item.wens} — {item.reden}
             </p>
           ))}
           {(candidate.avoidReport?.toegepast?.length ?? 0) > 0 && (
-            <p className="mt-4 text-[11px] leading-relaxed text-emerald-300/70">
+            <p className="mt-4 text-[11px] leading-relaxed text-positive/70">
               Toegepast: {candidate.avoidReport!.toegepast.join(" · ")}
             </p>
           )}
@@ -3458,7 +3391,7 @@ export function RouteGenerator({
 
           {candidate.nav.length > 0 && (
             <details className="mt-4">
-              <summary className="label-xs cursor-pointer list-none text-white/35 transition hover:text-cyan-300/80">
+              <summary className="label-xs cursor-pointer list-none text-white/35 transition hover:text-accent-cyan/80">
                 STAP-VOOR-STAP ({candidate.nav.length}) — toon
               </summary>
               <div className="mt-2 max-h-64 overflow-y-auto pr-1">
@@ -3467,7 +3400,7 @@ export function RouteGenerator({
                     key={i}
                     className="flex items-baseline gap-3 border-b border-white/[0.05] py-2 last:border-0"
                   >
-                    <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-cyan-300/70">
+                    <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-accent-cyan/70">
                       {n.km}
                     </span>
                     <span className="w-24 shrink-0 break-words text-[12px] tracking-tight text-white/85">
@@ -3654,11 +3587,7 @@ export function RoutePanel({
             type="button"
             onClick={() => setShowSavedPicker((s) => !s)}
             className="flex items-center gap-2 rounded-full border border-white/[0.14] px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 hover:text-white/90"
-            style={
-              showSavedPicker
-                ? { borderColor: "rgba(120,210,230,0.5)", color: ACCENT }
-                : undefined
-            }
+            className={showSavedPicker ? "border-accent-cyan/50 text-accent-cyan" : ""}
           >
             <Flag className="h-4 w-4" strokeWidth={1.75} />
             Bewaarde routes ({routes.length})
@@ -3667,7 +3596,7 @@ export function RoutePanel({
       </div>
 
       {showSavedPicker && routes.length > 0 && (
-        <div className="mt-3 flex flex-col gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] p-2">
+        <div className="mt-3 flex flex-col gap-1.5 rounded-xl border border-border bg-surface p-2">
           {routes.map((r) => (
             <button
               key={r.id}
@@ -3746,7 +3675,7 @@ export function RoutePanel({
       ) : null}
 
       {error && (
-        <p className="mt-2 text-[12px] text-[rgba(255,140,120,0.85)]">{error}</p>
+        <p className="mt-2 text-[12px] text-negative/85">{error}</p>
       )}
 
       {showMaken && (
@@ -3837,11 +3766,7 @@ export function RoutePanel({
               key={r.id}
               id={`route-${r.id}`}
               className="rounded-2xl transition-shadow duration-500"
-              style={
-                highlightId === r.id
-                  ? { boxShadow: "0 0 0 1.5px rgba(120,210,230,0.55)" }
-                  : undefined
-              }
+              className={highlightId === r.id ? "shadow-[0_0_0_1.5px_var(--accent-cyan)]" : ""}
             >
               <RouteCard
                 route={r}
@@ -3851,7 +3776,7 @@ export function RoutePanel({
             </div>
           ))
         ) : (
-          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
+          <div className="rounded-xl border border-border bg-surface p-4">
             <p className="text-[12px] leading-relaxed text-white/40">
               Nog geen routes opgeslagen — plan er hierboven één op de kaart, of
               upload een GPX-bestand.
@@ -3884,14 +3809,14 @@ function RouteProposalsInbox() {
   }
 
   return (
-    <div className="mt-4 rounded-xl border border-cyan-300/[0.18] bg-[#070d16]/[0.82] p-4 backdrop-blur-md">
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-cyan-200/70">
+    <div className="mt-4 rounded-xl border border-accent-cyan/[0.18] bg-map-panel/[0.82] p-4 backdrop-blur-md">
+      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-accent-cyan/70">
         Routevoorstellen
       </p>
       {ontvangen.map((p) => (
         <div
           key={p.id}
-          className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5"
+          className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5"
         >
           <div className="min-w-0">
             <p className="text-[13px] text-white/85">
@@ -3918,7 +3843,7 @@ function RouteProposalsInbox() {
                   },
                 )
               }}
-              className="rounded-full bg-cyan-400/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[#05070e] transition hover:bg-cyan-300 disabled:opacity-40"
+              className="rounded-full bg-accent-cyan/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-on-accent transition hover:bg-accent-cyan disabled:opacity-40"
             >
               Accepteer
             </button>
@@ -3955,7 +3880,7 @@ function RouteProposalsInbox() {
         </div>
       )}
       {error && (
-        <p className="mt-2 text-[12px] text-[rgba(255,140,120,0.85)]">{error}</p>
+        <p className="mt-2 text-[12px] text-negative/85">{error}</p>
       )}
     </div>
   )

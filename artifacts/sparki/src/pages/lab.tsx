@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { ScreenShell } from "@/components/sparki/screen-shell"
 import { ClubChip } from "@/components/sparki/club-chip"
-import { SectionLabel, ACCENT } from "@/components/sparki/ui"
+import { SectionLabel } from "@/components/sparki/ui"
 import { BioRadar } from "@/components/sparki/bio-radar"
 import { Sparkline } from "@/components/sparki/primitives"
 import { useLoad } from "@/hooks/use-load"
@@ -30,8 +30,7 @@ function Delta({ value }: { value: number }) {
   const sign = value > 0 ? "+" : ""
   return (
     <span
-      className="font-mono text-[11px] tabular-nums"
-      style={{ color: positive ? ACCENT : "rgba(255,140,120,0.85)" }}
+      className={`font-mono text-[11px] tabular-nums ${positive ? "text-positive" : "text-negative"}`}
     >
       {sign}{value}
     </span>
@@ -84,8 +83,7 @@ function FtpBars({
         </div>
         {delta !== 0 && (
           <span
-            className="font-mono text-[11px] tabular-nums"
-            style={{ color: delta > 0 ? ACCENT : "rgba(255,140,120,0.85)" }}
+            className={`font-mono text-[11px] tabular-nums ${delta > 0 ? "text-positive" : "text-negative"}`}
           >
             {delta > 0 ? "+" : ""}
             {delta}W all-time
@@ -110,9 +108,9 @@ function FtpBars({
                   style={{
                     height: `${h}px`,
                     background: isLast
-                      ? `linear-gradient(180deg, ${ACCENT}, rgba(120,210,230,0.2))`
-                      : "rgba(120,210,230,0.25)",
-                    boxShadow: isLast ? `0 0 10px rgba(120,210,230,0.4)` : "none",
+                      ? `linear-gradient(180deg, var(--accent-cyan), hsl(var(--accent-cyan) / 0.2))`
+                      : "hsl(var(--accent-cyan) / 0.25)",
+                    boxShadow: isLast ? `0 0 10px hsl(var(--accent-cyan) / 0.4)` : "none",
                   }}
                 />
               </div>
@@ -224,7 +222,7 @@ export default function LabPage() {
           <Skeleton className="mt-4 h-[260px] w-[260px] rounded-full" />
         ) : measurableAxes.length >= 3 ? (
           <>
-            <BioRadar size={260} accent={ACCENT} axes={measurableAxes} />
+            <BioRadar size={260} accent="oklch(0.82 0.16 200)" axes={measurableAxes} />
             <p className="mt-1 max-w-[18rem] text-pretty text-center text-[12px] leading-relaxed text-white/40">
               {measurableAxes.length === radarAxes.length
                 ? "Alle zes signalen berekend uit je eigen data."
@@ -269,7 +267,7 @@ export default function LabPage() {
                 onClick={() => setPeriodDays(p)}
                 className={`rounded-full border px-2.5 py-1 font-mono text-[10px] tabular-nums transition-colors ${
                   periodDays === p
-                    ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-200"
+                    ? "border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan"
                     : "border-white/[0.08] text-white/40 hover:text-white/60"
                 }`}
               >
@@ -283,7 +281,7 @@ export default function LabPage() {
             {periodDays} DAGEN
           </span>
           {readinessHistory.length > 1 && (
-            <span className="font-mono text-[11px] tabular-nums text-cyan-300/80">
+            <span className="font-mono text-[11px] tabular-nums text-accent-cyan/80">
               {readinessHistory[readinessHistory.length - 1]} gereedheid
             </span>
           )}
@@ -297,9 +295,9 @@ export default function LabPage() {
                 data={readinessHistory}
                 width={340}
                 height={56}
-                stroke={ACCENT}
-                fill="rgba(120,210,230,0.07)"
-                className="w-full text-cyan-300"
+                stroke="var(--accent-cyan)"
+                fill="hsl(var(--accent-cyan) / 0.07)"
+                className="w-full text-accent-cyan"
               />
             </div>
             <p className="mt-3 text-pretty text-[12px] leading-relaxed text-white/40">
@@ -357,9 +355,9 @@ export default function LabPage() {
                   data={hrvTrend}
                   width={340}
                   height={48}
-                  stroke={ACCENT}
-                  fill="rgba(120,210,230,0.07)"
-                  className="w-full text-cyan-300"
+                  stroke="var(--accent-cyan)"
+                  fill="hsl(var(--accent-cyan) / 0.07)"
+                  className="w-full text-accent-cyan"
                 />
               </div>
             )}
@@ -441,10 +439,7 @@ export default function LabPage() {
                       </span>
                     )}
                     {s.tss != null && (
-                      <span
-                        className="font-mono text-[12px] tabular-nums"
-                        style={{ color: ACCENT }}
-                      >
+                      <span className="font-mono text-[12px] tabular-nums text-accent-cyan">
                         {s.tss}
                       </span>
                     )}

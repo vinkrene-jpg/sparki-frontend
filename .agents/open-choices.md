@@ -5,7 +5,7 @@
 > open punten kort in de chat. Nieuwe keuze gesteld → hier toevoegen. Beslist → hier
 > weghalen (of naar "Beslist" verplaatsen). Nooit een keuze stilletjes laten vallen.
 
-Laatst bijgewerkt: 2026-07-27.
+Laatst bijgewerkt: 2026-07-30.
 
 ## Wacht op jouw keuze
 
@@ -13,9 +13,9 @@ Laatst bijgewerkt: 2026-07-27.
 
 
 
-### Needs revalidation (besluit René 30-07-2026: NIET schrappen; eerst toetsen tegen actuele UI-besluiten en de nieuwe navigatie-/kalibratiestructuur)
-9. **Samen-pagina volgorde** — welk blok bovenaan (Voorstellen vs. Samen trainen). [needs_revalidation]
-10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav. [needs_revalidation]
+### Herbeoordeeld 30-07-2026 — wachten nu op een concrete keuze
+9. **Samen-pagina volgorde** — huidige volgorde: mensen vinden → vrienden/netwerk → verzoeken → Voorstellen → Samen trainen → clubbanner → feed (onderaan). Keuze: (a) zo laten, (b) Voorstellen bovenaan, (c) Samen trainen bovenaan, (d) feed bovenaan.
+10. **Prominentie navigatie** — routeplanning is inmiddels prominent (mobiele tab "Rijden", 3e positie) — dat deel is opgelost. Restvraag: moet **Samen** een eigen plek op het eerste niveau krijgen (nu alleen via Meer), en zo ja ten koste van welke tab?
 
 ## Beslist (archief)
 - **2026-07-30 — Plan-pagina indeling: "Vandaag eerst".** Bovenaan de dagstaat van vandaag

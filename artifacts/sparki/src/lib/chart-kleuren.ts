@@ -44,3 +44,20 @@ export function tsbBalkKleur(tsb: number | null | undefined): string {
   if (tsb >= 0) return CHART.tsbPos
   return tsb > -10 ? CHART.tsbNegLicht : CHART.tsbNeg
 }
+
+// ── Wegdek-/oppervlaktekleuren (routeplanner ondergrond) ─────────────────────
+// Categoriale reeks voor wegtype-analyse (route-surfaces.tsx). Elke kleur heeft
+// een vaste betekenis — nooit hergebruiken voor andere series. Bron:
+// OpenStreetMap surface/highway tags, BGT-verificatie.
+export const SURFACE_KLEUREN: Record<string, string> = {
+  asfalt: "#5aa7e8",            // Asfalt — glad wegdek
+  verhard_fietspad: "#4ecbc4",  // Verhard fietspad — gescheiden infra
+  klinkers: "#c9a35a",          // Klinkers — hobbelig verhard
+  kasseien: "#b0742f",          // Kasseien — ruw historisch wegdek
+  compact_gravel: "#9aa86b",    // Compact gravel — aangestampt grind
+  los_gravel: "#c2b280",        // Los gravel — losse steenslag
+  onverhard: "#a5713f",         // Onverhard — zand/aarde
+  bospad: "#4f9e5a",            // Bospad — natuurlijk pad
+  singletrack: "#8a5fc9",       // Singletrack — smal MTB-spoor
+  onbekend: "#8b93a5",          // Onbekend — geen OSM surface-tag
+} as const
