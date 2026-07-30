@@ -917,10 +917,13 @@ chapter_h_data_koppelingen_en_synchronisatie:
 
     rene_calibration:
       questions:
-        - "Hoeveel synchronisatie-detail wil je dat een atleet ziet: alleen 'laatste sync + gelukt/mislukt', of ook per rit welke bron welk veld leverde (herkomst zichtbaar in de app)?"
-        - "Als twee bronnen een verschillend getal geven voor hetzelfde veld (bv. Strava zegt 250 W gemiddeld, het bestand zegt 243 W): wil je vaste bronvoorrang (stil), of wil je dat Sparki het conflict toont en jou laat kiezen?"
-        - "Wanneer moet een sync-fout ACTIEF gemeld worden (melding/badge), en wanneer is stil herstellen bij de volgende poging goed genoeg? Bijvoorbeeld: pas melden na X dagen zonder geslaagde sync?"
-      completed: false
+        - question: "Hoeveel synchronisatie-detail wil je dat een atleet ziet: alleen 'laatste sync + gelukt/mislukt', of ook per rit welke bron welk veld leverde (herkomst zichtbaar in de app)?"
+          answer_rene: "Per rit zichtbaar welke bron welk gegeven leverde (herkomst in de app)." # beantwoord 2026-07-30
+        - question: "Als twee bronnen een verschillend getal geven voor hetzelfde veld (bv. Strava zegt 250 W gemiddeld, het bestand zegt 243 W): wil je vaste bronvoorrang (stil), of wil je dat Sparki het conflict toont en jou laat kiezen?"
+          answer_rene: "Sparki kiest zelf de beste bron, maar het conflict moet bij de rit terug te vinden zijn (stil met inzicht)." # beantwoord 2026-07-30
+        - question: "Wanneer moet een sync-fout ACTIEF gemeld worden (melding/badge), en wanneer is stil herstellen bij de volgende poging goed genoeg? Bijvoorbeeld: pas melden na X dagen zonder geslaagde sync?"
+          answer_rene: "Meteen bij elke mislukte sync — René wil alles weten." # beantwoord 2026-07-30
+      completed: true # alle 3 vragen beantwoord 2026-07-30
 
     acceptance_contract:
       hard_reject_rules:
@@ -1047,10 +1050,13 @@ chapter_h_data_koppelingen_en_synchronisatie:
 
     rene_calibration:
       questions:
-        - "Hoe lang mag een rit maximaal op zich laten wachten voordat jij het 'kapot' noemt: minuten, een uur, of 'zolang het er bij de volgende app-opening staat is het goed'?"
-        - "Wil je een actieve melding (push/badge) als de Strava-koppeling stuk is (toestemming verlopen, >24u geen sync), of is een duidelijke status op de koppelingenpagina genoeg?"
-        - "Als Strava's voorwaarden Sparki's AI-analyse op Strava-data zouden beperken: wil je dan (a) Strava-data alleen tonen en AI-analyse op eigen ritten/bestanden doen, of (b) de Strava-koppeling heroverwegen? (Dit bepaalt hoeveel we op Strava als fundament bouwen.)"
-      completed: false
+        - question: "Hoe lang mag een rit maximaal op zich laten wachten voordat jij het 'kapot' noemt: minuten, een uur, of 'zolang het er bij de volgende app-opening staat is het goed'?"
+          answer_rene: "Binnen een paar minuten — daarna geldt het als kapot." # beantwoord 2026-07-30
+        - question: "Wil je een actieve melding (push/badge) als de Strava-koppeling stuk is (toestemming verlopen, >24u geen sync), of is een duidelijke status op de koppelingenpagina genoeg?"
+          answer_rene: "Ja, actief melden (push/badge) — anders merk je het pas dagen later." # beantwoord 2026-07-30
+        - question: "Als Strava's voorwaarden Sparki's AI-analyse op Strava-data zouden beperken: wil je dan (a) Strava-data alleen tonen en AI-analyse op eigen ritten/bestanden doen, of (b) de Strava-koppeling heroverwegen? (Dit bepaalt hoeveel we op Strava als fundament bouwen.)"
+          answer_rene: "Bewust geen voorkeuze: dit is een hypothese, hier nu niet op voorsorteren. Besluit valt pas als de juridische onzekerheid concreet wordt (vóór commerciële uitrol opnieuw toetsen)." # beantwoord 2026-07-30
+      completed: true # alle 3 vragen beantwoord 2026-07-30
 
     acceptance_contract:
       hard_reject_rules:
