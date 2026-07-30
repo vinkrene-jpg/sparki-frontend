@@ -230,8 +230,12 @@ export class GraphHopperProvider implements RoutingProvider {
     profile: RoutingProfile,
     body: Record<string, unknown>,
   ): Promise<RouteResult> {
-    const _t0 = performance.now();
-    const payload = {
+    // Custom model (wegdek- en trapstraffen) vereist flexible mode
+    // (ch.disable). Bij "maximum nodes exceeded" (eindpunt snapt op een zwaar
+    // bestrafte weg) volgt één eerlijke herkansing zónder model — de
+    // verificatiepoort achteraf (obstakels/wegdek) blijft dan gewoon gelden.
+    const customModel = customModelFor(profile);
+    const payload: Record<string, unknown> = {
       profile: GH_PROFILE[profile],
       elevation: true,
       instructions: true,
@@ -240,8 +244,18 @@ export class GraphHopperProvider implements RoutingProvider {
       // Wegdek per wegvak uit de routebron ZELF — dezelfde motor die de route
       // kiest, vertelt ook wat het wegdek is. Geen tweede, tegensprekende bron.
       details: ["surface"],
+      ...(customModel ? { custom_model: customModel, "ch.disable": true } : {}),
       ...body,
     };
+    return this.routeWithPayload(profile, payload, customModel != null);
+  }
+
+  private async routeWithPayload(
+    profile: RoutingProfile,
+    payload: Record<string, unknown>,
+    hasCustomModel: boolean,
+  ): Promise<RouteResult> {
+    const _t0 = performance.now();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 20_000);
     let res: Response;
@@ -280,6 +294,17 @@ export class GraphHopperProvider implements RoutingProvider {
     }
     if (!res.ok) {
       const raw = json.message ?? text.slice(0, 300);
+      if (
+        hasCustomModel &&
+        typeof raw === "string" &&
+        raw.toLowerCase().includes("maximum nodes")
+      ) {
+        console.warn(
+          `[GH] maximum nodes met custom model — eerlijke herkansing zonder model (profile=${profile})`,
+        );
+        const { custom_model: _cm, ...rest } = payload;
+        return this.routeWithPayload(profile, rest, false);
+      }
       console.warn(`[GH] route error status=${res.status}: ${raw}`);
       throw new Error(this.dutchGhError(res.status, raw));
     }

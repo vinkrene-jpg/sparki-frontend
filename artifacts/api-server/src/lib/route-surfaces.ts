@@ -270,7 +270,8 @@ export function assignSurfaceSamples(
     // zonder fiets-uitzondering is een mildere waarschuwing.
     const forbidden = tags.bicycle === "no" || tags.bicycle === "private";
     const restricted = !forbidden &&
-      (tags.access === "no" || tags.access === "private") && tags.bicycle !== "yes" && tags.bicycle !== "designated";
+      (tags.access === "no" || tags.access === "private") &&
+      tags.bicycle !== "yes" && tags.bicycle !== "designated" && tags.bicycle !== "permissive";
     let mnLa = Infinity, mxLa = -Infinity, mnLo = Infinity, mxLo = -Infinity;
     for (const [la, lo] of pts) {
       if (la < mnLa) mnLa = la;

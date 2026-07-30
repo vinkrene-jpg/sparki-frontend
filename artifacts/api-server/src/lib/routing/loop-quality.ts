@@ -472,25 +472,41 @@ export async function generateVariedLoop(
     opts?.obstaclesOf != null &&
     pool.length > 1
   ) {
-    const top = pool.slice(0, 3);
-    const obstacles = await Promise.all(
-      top.map((c) => opts.obstaclesOf!(c.result.path).catch(() => null)),
-    );
-    let adjusted = false;
-    for (let i = 0; i < top.length; i++) {
-      const o = obstacles[i];
-      if (o == null) continue;
-      let penalty = 0;
-      if (o.steps > 0) penalty += 1000;
-      if (o.forbidden > 0) penalty += 1000;
-      if (o.blockedGates > 0) penalty += 1000;
-      penalty += Math.min(o.gates, 10) * 0.15;
-      if (penalty > 0) {
-        top[i]!.score += penalty;
-        adjusted = true;
+    const measured = new Set<(typeof pool)[number]>();
+    const applyPenalties = async (cands: typeof pool) => {
+      const fresh = cands.filter((c) => !measured.has(c));
+      if (fresh.length === 0) return false;
+      const obstacles = await Promise.all(
+        fresh.map((c) => opts.obstaclesOf!(c.result.path).catch(() => null)),
+      );
+      let adjusted = false;
+      for (let i = 0; i < fresh.length; i++) {
+        measured.add(fresh[i]!);
+        const o = obstacles[i];
+        if (o == null) continue;
+        let penalty = 0;
+        if (o.steps > 0) penalty += 1000;
+        if (o.forbidden > 0) penalty += 1000;
+        if (o.blockedGates > 0) penalty += 1000;
+        penalty += Math.min(o.gates, 10) * 0.15;
+        if (penalty > 0) {
+          fresh[i]!.score += penalty;
+          adjusted = true;
+        }
+      }
+      return adjusted;
+    };
+    if (await applyPenalties(pool.slice(0, 3))) {
+      pool.sort((a, b) => a.score - b.score);
+      // Schuift een ongemeten kandidaat door de straffen naar de kop, meet
+      // die dan alsnog (max 2 extra rondes) — anders zou een niet-gemeten
+      // trap-kandidaat alsnog stil kunnen winnen.
+      for (let round = 0; round < 2 && !measured.has(pool[0]!); round++) {
+        if (await applyPenalties([pool[0]!])) {
+          pool.sort((a, b) => a.score - b.score);
+        }
       }
     }
-    if (adjusted) pool.sort((a, b) => a.score - b.score);
   }
 
   if (wantsCalmRoads && pool.length > 1) {
