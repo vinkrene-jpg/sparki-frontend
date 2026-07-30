@@ -1555,3 +1555,547 @@ chapter_h_data_koppelingen_en_synchronisatie:
       type: research_or_build_or_retest
       description: "René's schermvergrendeld-keuze; daarna de referentie-praktijkproef (telefoon naast fietscomputer) als eerste echt bewijs."
       approved_for_execution: false
+
+# ---------------------------------------------------------------------------
+# Hoofdstuk A — Start, profiel en doelen
+# Opgesteld: 2026-07-30 (opdracht v2, los aangeleverd document). Alleen dit
+# hoofdstuk; geen productcode gewijzigd. Scope: Onboarding, Sportpaspoort,
+# Vandaag, Doelen.
+# Conform opdracht v2: measurement_level + counterexamples genest PER regel;
+# proof_stage uitsluitend "designed" met proof_result "not_yet_tested" (er is
+# in deze opdracht geen code gewijzigd of test gedraaid voor deze regels);
+# elke candidate_source volledig uitgewerkt (coverage/actuality/license/
+# limitations/applicability) of expliciet als missing_information gemarkeerd.
+# ---------------------------------------------------------------------------
+
+chapter_a_start_profiel_en_doelen:
+
+  - id: START_ONBOARDING_001
+    module: "Start, profiel en doelen"
+    subject: "Onboarding — adaptieve start-Q&A, connect-stap en eerlijke schattingen"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Redelijk voor de vraag-engine: persona-tests (20 virtuele atleten, incl. onzin/weigering/gemengd), connect-stap-HTTP-tests, gap-fill-tests die echte database-rijen eisen (geen fake-groen op een import-vlag) en resume-tests draaien groen. Ontbreekt: bewijs voor de QR-instap (geen enkele geautomatiseerde test; taken #39/#41 bevestigen die lacune) en geen praktijkbewijs met een echte nieuwe tester van scan tot plan."
+      practice_status: "Eén echte doorloop (René/Dylan-omgeving); geen gestructureerde praktijktest tegen vooraf vastgelegde verwachtingen."
+      known_limitations:
+        - "'Adaptief' betekent volgorde/selectie uit een VASTE catalogus (13 profielfeiten + 8 coachingdimensies); hoge begeleidingsbehoefte levert niet méér vragen op — de personatest documenteert expliciet gelijke omvang."
+        - "De connect-stap heet in docs 'mandatory', maar is feitelijk een verplichte STAP in de UI, geen voorwaarde: zonder koppeling én zonder gap-fill kan de gebruiker afronden met geschatte waarden en een plan."
+        - "Import-eerlijkheid verschilt per laag: de client kijkt naar importedDataTypes-vlaggen, de server-gap-fill naar echte canonieke rijen; de client kan 'geland' doorgaan waar de server alsnog velden vraagt."
+        - "OAuth-resume steunt praktisch op sessionStorage; bij tabwissel of ander apparaat is de client-stap niet vanzelf terug, terwijl /state de database source-of-truth noemt."
+        - "Planbouw binnen complete/quick-start kan mislukken zonder de onboarding ongeldig te maken (planReady=false, home degradeert eerlijk) — 'klaar = direct plan' is dus niet gegarandeerd."
+        - "Gap-fill biedt bij een fetch-fout expliciet 'toch doorgaan met schattingen'; de gebruiker kan afronden zonder te weten welke data ontbreekt."
+
+    proposed_promise:
+      text: "Binnen een paar minuten kun je echt beginnen: Sparki vraagt alleen wat nodig is, in een volgorde die zich aanpast aan jouw antwoorden. Wat je niet weet of niet wilt invullen mag je overslaan — Sparki vult dat eerlijk in als schatting en zegt er ook bij dát het een schatting is. Een koppeling (zoals Strava) is een aanbod, geen verplichting: ook zonder koppeling land je met een werkend startprofiel en een eerste plan."
+      proposed_by: replit
+      rationale: "De eerste vijf minuten bepalen of iemand blijft. De wereldmarkt-lat (Strava/Whoop/TrainerRoad-onboardings) is: kort, overslaanbaar, en nooit een dood einde. Sparki's bestaande engine kan dit dragen; het bewijs moet de belofte 'schatting is zichtbaar een schatting' en 'geen dood einde' hard maken."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Eigen vragencatalogus + persona-testset (onboarding-engine)"
+          coverage: "Dekt de volledige start-Q&A (profielfeiten + coachingdimensies) en de gedragsranden (onzin, weigering, gemengd). Dekt NIET: de instap vóór de eerste vraag (QR/invite/accept) en het gedrag op een tweede apparaat."
+          actuality: "Live eigen code en tests; wijzigt mee met het product."
+          license_status: "Eigen werk; geen externe licentie."
+          limitations:
+            - "Catalogus is vast; er is geen onderbouwing uit externe bron waarom precies déze 21 dimensies het minimum vormen."
+          applicability: "Basis voor de vraag 'welke gegevens zijn minimaal nodig' en voor het bewijs dat onzin nooit stilletjes een profielwaarde wordt."
+        - name: "Onboarding-benchmarks van markleiders (Strava, Whoop, TrainerRoad, Komoot) — publiek doorloopbaar"
+          coverage: "Dekt vraagaantal, overslaanbaarheid en koppel-aanbod bij de beste marktspelers. Dekt NIET: hun interne conversiecijfers of A/B-onderbouwing (niet publiek)."
+          actuality: "Live producten; flows wijzigen zonder aankondiging — benchmark is een momentopname en moet gedateerd worden vastgelegd."
+          license_status: "Publiek raadpleegbaar door zelf een account te doorlopen; geen herbruikbare dataset, alleen eigen observatienotities."
+          limitations:
+            - "Alleen observeerbaar gedrag; waarom-keuzes van die partijen blijven onbekend."
+          applicability: "IJkt René's kalibratievraag 'hoeveel vragen is acceptabel' aan wat de doelgroep elders gewend is."
+        - name: "Richtlijnniveau-sportbronnen voor minimale intake (o.a. PAR-Q+ als denkkader, geen medische intake)"
+          coverage: "Dekt welke basisgegevens (leeftijd, ervaring, gezondheidsstatus-signaal) verantwoord minimaal zijn vóór trainingsadvies. Dekt NIET: individuele medische beoordeling — Sparki doet bewust geen medische claims."
+          actuality: "PAR-Q+ jaarlijks herzien (parq.ca); stabiel denkkader."
+          license_status: "PAR-Q+ vrij te gebruiken voor screening-doeleinden met bronvermelding; niet als eigen product herverpakken."
+          limitations:
+            - "Gericht op bewegingsveiligheid, niet op coaching-personalisatie; dekt de coachingdimensies niet."
+          applicability: "Onderbouwt de ondergrens 'wat moet Sparki minimaal weten vóór het een plan bouwt' (leeftijd/gezondheidssignaal) zonder René daarmee te belasten."
+      sources_in_use:
+        - "Eigen vragencatalogus + persona-testset — de enige plek waar het gedrag nu afgedwongen en getest wordt."
+      privacy_status: unknown
+      missing_information:
+        - "Geen gedateerde benchmark-doorloop van de markleiders vastgelegd (alleen algemene kennis)."
+        - "Geen expliciete onderbouwing welke profielvelden ECHT minimaal nodig zijn voor een verantwoord eerste plan (nu impliciet: gap-fill-lijst)."
+        - "QR/invite-instap: geen bewijs en geen meting hoeveel taps een tester werkelijk nodig heeft van scan tot eerste vraag."
+
+    replit_definition:
+      objective_quality_standard: "Elke doorloop eindigt in een geldig profiel + expliciete estimated-markering per geschat veld; 0 onzin-antwoorden die als profielwaarde landen; 0 dode eindes (elke stap heeft overslaan of doorgaan); een afgebroken doorloop is op hetzelfde apparaat altijd hervatbaar."
+      recommended_default: "Kernpad ≤ 5 verplichte beslismomenten (quick-start-niveau); alles daarna optioneel/gefaseerd na de landing. Koppeling aanbieden vóór handmatige invoer, maar nooit blokkeren. Geschatte waarden overal zichtbaar labelen totdat de gebruiker of een meting ze bevestigt."
+      technical_limits:
+        - "Resume over apparaten heen bestaat niet (sessionStorage-afhankelijkheid rond OAuth)."
+        - "Planbouw is synchroon en kan falen; de landing is dan eerlijk gedegradeerd maar zonder automatische herstel-trigger."
+      assumptions:
+        - "Strava blijft de enige echte koppelbron tijdens deze kalibratie (Garmin/Wahoo voorbereid maar zonder sleutels)."
+      unknowns:
+        - "Werkelijke afhaakpunten van nieuwe gebruikers (geen funnel-meting in het product)."
+        - "Gedrag bij een tester die de QR scant op een telefoon zonder eerder account (taken #39/#41)."
+      evidence_method:
+        - "Bestaande persona/connect-step/gap-fill/resume-tests her-runnen als proof-artefact tegen dit contract."
+        - "Nieuw: geautomatiseerde QR→onboarding-test (dekt de nu ongeteste instap)."
+        - "Praktijktest: één echte nieuwe tester, van scan tot eerste plan, met vooraf vastgelegde verwachting (aantal vragen, tijd, geen dood einde)."
+
+    rene_calibration:
+      questions:
+        - question: "Hoeveel verplichte vragen/beslismomenten bij de start vind je acceptabel voordat iemand 'binnen' is: maximaal 4 (quick-start), ongeveer 8, of mag het er meer zijn zolang elke vraag overslaanbaar is?"
+          answer_rene: ""
+        - question: "Als iemand niets koppelt en bijna alles overslaat: wil je dat Sparki dan tóch een volledig plan neerzet op basis van schattingen (huidige gedrag), of eerst een 'proefweek' met beperkter advies totdat er echte data is?"
+          answer_rene: ""
+        - question: "Moet de schatting-markering ('geschat') prominent zichtbaar blijven op Vandaag en in het plan totdat de waarde bevestigd is, of is een stille markering in het Sportpaspoort genoeg?"
+          answer_rene: ""
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Een onzin- of niet-parseerbaar antwoord mag nooit als profielwaarde worden opgeslagen; het enige geldige vervolg is opnieuw vragen of eerlijk overslaan (waarde blijft leeg of expliciet geschat)."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Gebruiker antwoordt 'banaan' op de FTP-vraag; daarna 'weet ik niet' — het profiel mag geen FTP-waarde uit deze antwoorden bevatten, hooguit een als geschat gemarkeerde baseline."
+              proof_stage: designed
+              proof_method: "Redenering: de fact-parser valideert tegen de vaste catalogus (FTP 50–600) en de personatest 'pure nonsense' toont dat zo'n doorloop niet voltooit met valse waarden. Voor dít contract geldt de regel pas als bewezen na een her-run met vastgelegde uitkomst als proof-artefact."
+              proof_result: not_yet_tested
+        - rule: "Een geschatte waarde (uren/FTP) mag nergens zonder estimated-markering worden opgeslagen of getoond alsof de gebruiker of een meting hem leverde."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Gebruiker slaat FTP over; quick-start seedt een baseline-FTP. Die rij zonder estimated=true in de database is een overtreding — óók als de rest van het profiel klopt."
+              proof_stage: designed
+              proof_method: "Redenering: het schrijfpad markeert handmatige invoer expliciet Estimated=false en geseede waarden estimated; de connect-step-test controleert estimated-vlaggen op canonieke persistentie. Geautomatiseerde her-run met dit exacte geval als assert is de latere executed-stap."
+              proof_result: not_yet_tested
+        - rule: "Geen enkele onboarding-stap mag een dood einde zijn: elke stap biedt doorgaan of overslaan, ook bij een mislukte koppeling of mislukte planbouw."
+          rule_type: hard_blockage
+          measurement_level: per_segment
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Strava-OAuth mislukt halverwege (gebruiker weigert autorisatie); terugkomend in de app is er geen knop om zonder koppeling verder te gaan — dat is een blokkerende overtreding, ook als 95% van de doorlopen wél soepel verloopt."
+              proof_stage: designed
+              proof_method: "Redenering: de connect-stap heeft een expliciet doorgaan-zonder-koppeling-pad en gap-fill een 'toch doorgaan'-optie bij fouten; per_segment betekent dat élke stap afzonderlijk wordt getoetst, nooit de flow als geheel gemiddeld. Latere test doorloopt elke stap met geforceerde fout."
+              proof_result: not_yet_tested
+      tolerances:
+        - "Aantal en volgorde van optionele vervolgvragen mag variëren per persoon (adaptieve selectie), zolang de catalogus vast en overslaanbaar blijft."
+      unknown_data_policy: "Niet-ingevulde velden blijven leeg of worden als expliciet gemarkeerde schatting geseed; een schatting wordt nooit stilzwijgend een 'gemeten' waarde. Wat de gebruiker weigert te delen wordt niet opnieuw bij elke sessie afgedwongen."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "test:onboarding-personas (20 persona's incl. onzin/weigering) — bestaat, groen"
+        - "test:onboarding-connect-step (HTTP-flow, estimated-vlaggen, planbouw zonder connect) — bestaat, groen"
+        - "test:onboarding-strava-gapfill (echte rijen vs lege import — anti-fake-groen) — bestaat, groen"
+        - "test:onboarding-resume (OAuth-resume, clamping, cleanup) — bestaat, groen"
+      independent_checks: ["Poort 5c-codecontrole van de QR/invite-instap — nog te doen (geen test aanwezig)"]
+      practice_test_required: true
+      practice_testers: ["Eén echte nieuwe tester (scan → eerste plan), René observeert"]
+      result: not_tested
+      expectation_gap:
+        - "Grootste gat: de instap vóór de eerste vraag (QR/invite/accept) is volledig onbewezen; taken #39/#41 bestaan juist omdat dit niet klopt met de belofte 'één scan en je bent binnen'."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "René's drie kalibratievragen beantwoorden; QR→onboarding-test bouwen; daarna praktijktest met een echte nieuwe tester tegen vastgelegde verwachting."
+      approved_for_execution: false
+
+  - id: START_SPORTPASPOORT_001
+    module: "Start, profiel en doelen"
+    subject: "Sportpaspoort — herkomst, actualiteit en voorstellen per profielwaarde"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Deels: de herkomstlaag (value-events met old/new, origin, bron, confidence), de 180-dagen-versheidsgrens en het race-safe voorstelbesluit (alleen open → besloten, waarde+event in één transactie) zijn geïmplementeerd en er bestaan tests rond FTP-floor en profielconsistentie. Geen onafhankelijke proof-run tegen een vastgelegde belofte; geen praktijkbewijs dat een gebruiker de herkomst ook begrijpt."
+      practice_status: "In gebruik bij René/Dylan; herkomst-chips en voorstellen zichtbaar, maar nooit systematisch tegen verwachtingen getoetst."
+      known_limitations:
+        - "Confidence zit in de API maar wordt in de UI niet getoond; de gebruiker ziet wel Gemeten/Handmatig/Berekend/Geschat, niet hoe zeker."
+        - "Niet elk correctiepad is gelijk: profielconsistentie-correcties schrijven FTP-historie via compare-and-set maar géén paspoort-value-event; de paspoort-historie kan die correctie dus missen."
+        - "Een bestaande waarde zonder passend event valt eerlijk terug op 'herkomst onbekend' — correct, maar legacy-waarden blijven zo permanent herkomstloos."
+        - "Versheid is een vaste 180-dagen-grens voor alle velden; gewicht veroudert in werkelijkheid sneller dan lengte."
+
+    proposed_promise:
+      text: "Bij elke waarde in je Sportpaspoort zie je waar hij vandaan komt (gemeten, door jou gezet, berekend of geschat), van wanneer hij is, en of hij verouderd raakt. Sparki past nooit stilletjes een waarde aan: het doet hooguit een voorstel met de reden erbij, en jij beslist. Wat jij zelf zet, wint altijd."
+      proposed_by: replit
+      rationale: "Vertrouwen in álle andere modules (zones, plan, analyse) hangt aan de vraag of de profielwaarden kloppen en of de gebruiker kan zien waaróm ze zijn wat ze zijn. Herkomst-per-waarde is bovendien een aantoonbaar onderscheid t.o.v. de meeste marktspelers."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Eigen value-event-administratie (passport events + athlete_profiles)"
+          coverage: "Dekt alle gevolgde paspoortvelden met herkomst, actor en tijdstip. Dekt NIET: waarden die vóór de invoering van de eventlaag zijn gezet (herkomst onbekend) en correctiepaden die de eventlaag omzeilen."
+          actuality: "Live eigen database; events sinds invoering van de herkomstlaag."
+          license_status: "Eigen data van de atleet; export privacy-gated (gezondheid/locatie/notities standaard uit)."
+          limitations:
+            - "Herkomst is zo compleet als de schrijfpaden; het profielconsistentie-pad schrijft nu geen paspoort-event."
+          applicability: "De herkomst-, actualiteits- en historieweergave zelf; ook de bron voor de kwaliteitssamenvatting (missing/estimated/stale/unknownOrigin)."
+        - name: "Trainingsleer-vuistregels voor veldversheid (FTP-hertest-interval, gewichtsdynamiek) uit gangbare literatuur (o.a. Coggan/Allen 'Training and Racing with a Power Meter')"
+          coverage: "Dekt hoe vaak FTP/gewicht realistisch opnieuw bevestigd horen te worden. Dekt NIET: individuele variatie; het blijven vuistregels op richtlijnniveau."
+          actuality: "Boekpublicaties (3e druk 2019); stabiele kennis, wijzigt traag."
+          license_status: "Kennis vrij toepasbaar; geen tekstovername nodig."
+          limitations:
+            - "Geen harde consensus over één juist interval; 180 dagen is een eigen keuze binnen een redelijk bereik."
+          applicability: "Onderbouwt (of corrigeert) de per-veld-versheidsgrens in plaats van één vaste 180-dagen-grens voor alles."
+      sources_in_use:
+        - "Eigen value-event-administratie — de enige plek waar herkomst nu wordt vastgelegd en getoond."
+      privacy_status: unknown
+      missing_information:
+        - "Geen per-veld-onderbouwde versheidsgrenzen (nu één vaste 180-dagengrens)."
+        - "Geen meting of gebruikers de herkomst-chips begrijpen (begrips-praktijktest ontbreekt)."
+
+    replit_definition:
+      objective_quality_standard: "Elke gevolgde waarde toont herkomst óf eerlijk 'herkomst onbekend'; elke wijziging produceert precies één event met old/new+actor; 0 automatische waarde-wijzigingen zonder geaccepteerd voorstel; voorstel-besluiten zijn race-safe (dubbel klikken kan nooit twee keer toepassen)."
+      recommended_default: "Voorstellen alleen bij aantoonbaar bewijs (zoals FTP-floor uit echte sessies >5% boven de gezette waarde); geaccepteerde afgeleide waarden blijven als 'geschat/berekend' gemarkeerd tot een echte meting of handmatige bevestiging volgt."
+      technical_limits:
+        - "Herkomst met terugwerkende kracht voor legacy-waarden is niet reconstrueerbaar."
+        - "De eventlaag beschermt alleen paden die haar gebruiken; afwijkende schrijfpaden (profielconsistentie) vallen erbuiten tot ze worden aangesloten."
+      assumptions:
+        - "180 dagen is een acceptabele eerste versheidsgrens voor alle velden totdat per-veld-grenzen zijn gekalibreerd."
+      unknowns:
+        - "Hoeveel paspoortwaarden in de praktijk 'herkomst onbekend' zijn (geen telling vastgelegd)."
+      evidence_method:
+        - "Onafhankelijke proof-run: waarde wijzigen via elk bestaand schrijfpad en verifiëren dat er precies één passend event ontstaat (dekt ook het profielconsistentie-gat)."
+        - "Praktijktest: René benoemt van drie waarden blind waar ze vandaan komen; verwachting vooraf vastgelegd."
+
+    rene_calibration:
+      questions:
+        - question: "Wil je per waarde ook zien hoe ZEKER Sparki is (bijv. 'vrij zeker' / 'onzeker'), of is alleen de herkomst (gemeten/handmatig/berekend/geschat) genoeg?"
+          answer_rene: ""
+        - question: "Moet 'verouderd' per veld verschillen (gewicht bijv. na 60 dagen, lengte vrijwel nooit, FTP na ~120 dagen), of is één vaste grens van 180 dagen voor alles duidelijker?"
+          answer_rene: ""
+        - question: "Als Sparki sterk bewijs heeft dat een waarde niet klopt (bijv. gereden vermogen bewijst een hogere FTP): mag het dan blijven herinneren tot je beslist, of één keer voorstellen en daarna zwijgen?"
+          answer_rene: ""
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Sparki mag nooit automatisch een profielwaarde wijzigen zonder geaccepteerd voorstel; een gevonden afwijking wordt altijd eerst een voorstel met reden en bewijs."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "FTP-floor uit echte sessies ligt 8% boven de handmatig gezette FTP; een nachtelijke job die de FTP direct ophoogt zonder open voorstel is een overtreding — ook al is de nieuwe waarde 'beter'."
+              proof_stage: designed
+              proof_method: "Redenering: recalibrateEstimatedFtp wijzigt handmatig/gemeten FTP nooit automatisch en maakt bij floor > FTP×1,05 een berekend voorstel met bewijsbron; de latere executed-stap is een test die de nachtelijke herberekening draait en asserteert dat de profielwaarde ongewijzigd blijft terwijl er een open voorstel ontstaat."
+              proof_result: not_yet_tested
+        - rule: "Een voorstel mag maar één keer effect hebben: dubbel accepteren, gelijktijdig accepteren+afwijzen of accepteren van een al besloten voorstel mag nooit een tweede wijziging of event opleveren."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Twee gelijktijdige accepteer-verzoeken op hetzelfde open voorstel; twee value-events of een dubbele waarde-toepassing is een overtreding."
+              proof_stage: designed
+              proof_method: "Redenering: het besluitpad muteert alleen rijen met status open en past waarde+event in één transactie toe; de latere executed-stap is een concurrency-test met twee parallelle accepts (verwacht: één event, tweede verzoek eerlijk 'al besloten')."
+              proof_result: not_yet_tested
+        - rule: "Een getoonde waarde zonder herleidbare herkomst moet 'herkomst onbekend' tonen; er mag nooit een herkomst worden verzonnen of stilzwijgend 'handmatig' worden aangenomen."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Legacy-gewichtswaarde zonder event toont de chip 'Handmatig' — dat is een verzonnen herkomst en dus een overtreding, ook als de waarde zelf klopt."
+              proof_stage: designed
+              proof_method: "Redenering: composePassport valt bij een waarde zonder passend event expliciet terug op herkomst onbekend; latere executed-stap: test met geseede waarde zonder event asserteert de 'Herkomst onbekend'-chip."
+              proof_result: not_yet_tested
+      tolerances:
+        - "De versheidsgrens (nu 180 dagen voor alle velden) is een kalibreerbare tolerantie, geen harde grens."
+      unknown_data_policy: "Ontbrekende waarde = eerlijk 'ontbreekt'; onbekende herkomst = 'herkomst onbekend'; nooit een chip of datum verzinnen. Geaccepteerde afgeleide waarden blijven gemarkeerd als geschat tot echte bevestiging."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "FTP-floor-afleiding en herkalibratie-voorstel — tests bestaan (derived-load/backfill), groen"
+        - "Profielconsistentie-checks (notice→ask→confirm→correct, re-verify vóór correctie) — tests bestaan, groen"
+      independent_checks: ["Proof-run 'elk schrijfpad → precies één event' — nog te doen; dekt het bekende profielconsistentie-event-gat"]
+      practice_test_required: true
+      practice_testers: ["René (herkomst-begripstest met drie blinde waarden)"]
+      result: not_tested
+      expectation_gap:
+        - "Bekend gat: profielconsistentie-correcties schrijven geen paspoort-event; de paspoort-historie is dus niet gegarandeerd volledig — dat botst met de belofte zolang het niet is aangesloten."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Kalibratievragen beantwoorden; profielconsistentie-pad op de eventlaag aansluiten (bouwvoorstel, na akkoord); daarna proof-run per schrijfpad."
+      approved_for_execution: false
+
+  - id: START_VANDAAG_001
+    module: "Start, profiel en doelen"
+    subject: "Vandaag — één leidend moment, eerlijk gevoed, proactief zonder te schreeuwen"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Sterk op contractniveau: day-type-precedentie (gezondheid → race → rust → coach → herstel → training → algemeen), de aandachtswet (één leidend Momentblok, één nudge per bezoek, weer/leskaart-gates, wederzijdse uitsluiting) en dagadvies-contracten zijn elk afzonderlijk getest en groen. Ontbreekt: één geïntegreerde test die alle bronnen en de echte rendering tegelijk vastzet, en praktijkbewijs dat het gekozen moment ook het JUISTE moment was."
+      practice_status: "Dagelijks in gebruik; geen gestructureerde toets 'toonde Vandaag vandaag het juiste?' tegen vooraf vastgelegde verwachtingen."
+      known_limitations:
+        - "Bij actieve commercial_shell-flag is de commerciële schil de feitelijke surface; de contract-tests dekken vooral de pure logica, niet de volledige geïntegreerde rendering."
+        - "Emergency- en race-daytypes zijn deels slapend tot echte gezondheids-/racebronnen bestaan."
+        - "Weer komt indirect via de eigen API; de frontend toont geen upstream-foutdetail (eerlijk 'niet beschikbaar', maar zonder waarom)."
+        - "Open-Meteo free tier is non-commercial-only — bij commerciële start is dit een licentierisico (reeds geregistreerd als provider-compliance-punt)."
+
+    proposed_promise:
+      text: "Vandaag opent met één ding: wat er nú voor jou toe doet — je gezondheid gaat altijd voor, dan je wedstrijd, dan je training of rust. Alles wat Sparki toont komt uit jouw echte gegevens; wat het niet weet, zegt het eerlijk. Sparki dringt niet: hooguit één duwtje per bezoek, en wat je negeert komt een paar dagen niet terug."
+      proposed_by: replit
+      rationale: "Vandaag is het gezicht van Sparki en de plek waar de aandachtswet en de eerlijkheidsdoctrine samenkomen. De wereldmarkt-lat (Whoop's dagopening, Garmin's morning report) is één helder leidend moment in plaats van een dashboard vol kaarten."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Eigen state-/beslislagen (day-type-engine, aandachtswet, state engine, coach decision)"
+          coverage: "Dekt de volledige keuze wat Vandaag leidt en wat mag meerijden. Dekt NIET: of die keuze subjectief de juiste was (dat is praktijktest-terrein)."
+          actuality: "Live eigen code met contract-tests; wijzigt mee met het product."
+          license_status: "Eigen werk."
+          limitations:
+            - "Precedentie is deterministisch maar hard-coded; er is geen leerlus die aan René's werkelijke voorkeur kalibreert."
+          applicability: "De leidende-moment-keuze zelf en het bewijs dat gezondheid nooit wordt weggedrukt."
+        - name: "Open-Meteo (weer voor de thuislocatie)"
+          coverage: "Dekt uur/dag-weer wereldwijd voor de opgeslagen thuislocatie. Dekt NIET: locaties buiten de forecast-horizon en hypergelokaliseerde omstandigheden."
+          actuality: "Live API, modellen meermaals per dag ververst."
+          license_status: "Free tier uitsluitend niet-commercieel; commercieel gebruik vereist betaald abonnement — reeds geregistreerd risico vóór commerciële start."
+          limitations:
+            - "Forecast-onzekerheid; Sparki toont daarom alleen echt beschikbare forecasts en verzint niets."
+          applicability: "Het weer-meerijden bij voor-training/racedag; nergens anders."
+      sources_in_use:
+        - "Eigen state-/beslislagen — leidend."
+        - "Open-Meteo — alleen het weer-meerijden, met de bekende licentiekanttekening."
+      privacy_status: unknown
+      missing_information:
+        - "Geen geïntegreerde end-to-end-test die de echte DayHome/commerciële shell met alle bronnen tegelijk vastzet."
+        - "Geen meting of het leidende moment overeenkomt met wat de gebruiker zelf als belangrijkste ervaart (verwachting-gap-instrument ontbreekt)."
+
+    replit_definition:
+      objective_quality_standard: "Bij elke render precies één leidend Momentblok volgens de vaste prioriteit; gezondheid wint altijd; maximaal één nudge per bezoek; 0 verzonnen of placeholder-gegevens als eindstaat; genegeerde niet-kritieke meerijders pauzeren na 3 getoonde dagen."
+      recommended_default: "Huidige precedentie handhaven (gezondheid → racedag → na-rit → rit → voorstel → voor-training → herstel → balans); weer alleen bij voor-training/racedag; kritieke zaken (defect vastgesteld, gezondheid) roteren nooit weg."
+      technical_limits:
+        - "Slapende daytypes (emergency/race-varianten) activeren pas bij echte bronnen."
+        - "Geen upstream-foutdetail bij weer (bewuste eenvoud)."
+      assumptions:
+        - "De vaste prioriteitsvolgorde weerspiegelt René's productvisie; dit is nog nooit expliciet als kalibratievraag bevestigd."
+      unknowns:
+        - "Of één nudge per bezoek in de praktijk als te stil of precies goed voelt."
+      evidence_method:
+        - "Bestaande day-type/aandachtswet/dagadvies-tests her-runnen als proof-artefact."
+        - "Nieuw: één geïntegreerde renderingstest (echte surface, alle bronnen gemockt op contractniveau)."
+        - "Praktijktest: een week lang dagelijks vastleggen wat Vandaag als leidend koos vs. wat René/Dylan verwachtte (verwachting-gap-logboek)."
+
+    rene_calibration:
+      questions:
+        - question: "De vaste volgorde is nu: gezondheid → racedag → na-rit → rit → voorstel → voor-training → herstel → balans. Klopt die volgorde met jouw gevoel, of moet iets hoger/lager?"
+          answer_rene: ""
+        - question: "Wat je negeert pauzeert nu na 3 getoonde dagen een paar dagen. Te snel, te traag, of precies goed — en mag een genegeerd niet-kritiek punt ooit definitief verdwijnen?"
+          answer_rene: ""
+        - question: "Hoeveel mag er naast het leidende moment meerijden: alleen weer bij training/race (huidig), of ook bijvoorbeeld een leskaart of sociaal signaal op rustige dagen?"
+          answer_rene: ""
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Een actief gezondheidsissue (ziek/geblesseerd) mag nooit door iets anders van de leidende plek worden gedrukt."
+          rule_type: hard_blockage
+          measurement_level: per_dag
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Atleet is ziek gemeld én heeft morgen een wedstrijd; als de racedag-kaart leidt in plaats van het gezondheidsblok is dat een overtreding — óók op de dag vóór de belangrijkste wedstrijd van het seizoen."
+              proof_stage: designed
+              proof_method: "Redenering: zowel de day-type-detectie (health eerst) als de aandachtswet (health als hoogste runge) zetten gezondheid boven race; beide zijn afzonderlijk getest. Voor dit contract telt pas een her-run met dit exacte dubbelscenario in de geïntegreerde surface."
+              proof_result: not_yet_tested
+        - rule: "Vandaag mag nooit meer dan één nudge per bezoek tonen, en nooit een placeholder-/laadtekst als eindstaat presenteren."
+          rule_type: hard_blockage
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Connector-nudge én materiaal-nudge tegelijk zichtbaar in één bezoek; of een weerblok dat permanent 'wordt geladen…' toont omdat de thuislocatie ontbreekt in plaats van eerlijk te verdwijnen."
+              proof_stage: designed
+              proof_method: "Redenering: de nudge-selectie kiest exact één volgens vaste rangorde (getest incl. volgorde-onafhankelijkheid), en het weerblok rendert alleen bij een echt beschikbare forecast. Latere executed-stap: geïntegreerde renderingstest + Poort 5b-doorloop van Vandaag."
+              proof_result: not_yet_tested
+        - rule: "Vandaag mag nooit gegevens tonen die niet uit echte bronnen komen; ontbrekende data is zichtbaar afwezig of eerlijk 'niet beschikbaar', nooit verzonnen."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Geen thuislocatie ingesteld, maar er verschijnt toch een weersverwachting; of een rit-verhaal verschijnt zonder dat er een echte verse import/analyse is."
+              proof_stage: designed
+              proof_method: "Redenering: weer levert available:false zonder thuislocatie/horizon en het rit-moment rendert alleen bij echte verse status; beide contracten bestaan als test. Executed pas na her-run als proof-artefact tegen dit contract."
+              proof_result: not_yet_tested
+      tolerances:
+        - "De pauzeduur na negeren (nu: pauze na 3 getoonde dagen) en de meerijd-set per daytype zijn kalibreerbare toleranties."
+      unknown_data_policy: "Wat Sparki niet weet wordt niet getoond of expliciet 'niet beschikbaar' genoemd; er is altijd een eerlijke fallback (algemene dag / balans) die geen data claimt die er niet is."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "test:day-type (precedentie incl. health-eerst, rest-boven-coach, general-fallback) — bestaat, groen"
+        - "test:aandachtswet (Moment-rungs, weer/leskaart-gates, één-nudge-budget) — bestaat, groen"
+        - "test:day-advice-canonical + test:day-advice-seizoensdoel — bestaan, groen"
+      independent_checks: ["Geïntegreerde renderingstest van de echte surface — nog te doen"]
+      practice_test_required: true
+      practice_testers: ["René + Dylan (week-logboek: verwacht leidend moment vs. getoond)"]
+      result: not_tested
+      expectation_gap:
+        - "De prioriteitsvolgorde zelf is nooit expliciet door René gekalibreerd; alles is tegen de eigen aannames getest, niet tegen zijn verwachting."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Volgorde-kalibratie door René; geïntegreerde renderingstest bouwen; week-logboek-praktijktest draaien."
+      approved_for_execution: false
+
+  - id: START_DOELEN_001
+    module: "Start, profiel en doelen"
+    subject: "Doelen — afgeleide en eigen doelen, veilige sturing en conflictgedrag"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Sterk op de veiligheidsranden: afvaldoel-tests bewijzen de 0,5 kg/week-grens, de RED-S-weigering onder 17 of bij onbekend geboortejaar (fail-closed), volledige voeding rond trainingen en de vaste rationale-zin; doelen-tests dekken voortgang, voorstel-dedupe (DB-unique + onConflict) en de directive-filtering. Ontbreekt: bewijs voor conflictgedrag tussen meerdere doelen (er ís geen expliciete conflictengine) en praktijkbewijs dat doelsturing als juist wordt ervaren."
+      practice_status: "In gebruik; seizoens-/ontwikkeldoel sturen plan en dagadvies via één leeslaag. Geen praktijktoets van conflictsituaties."
+      known_limitations:
+        - "Er is geen expliciete conflict-/afwegingsengine tussen concurrerende doelen; prioriteit bepaalt volgorde van presentatie en voorstellen, niet een aantoonbare winnaar. Gezondheid/herstel fungeert wel als veiligheids-overrider."
+        - "Voortgang van het seizoensgewichtsdoel meet geen echte gewichtstrend (de engine beoordeelt op algemene load/plan/health-signalen)."
+        - "Afgeleide doelen tonen maximaal de zes eerstvolgende races."
+        - "Presentatie en sturing lopen niet volledig gelijk: een voedings-seizoensdoel kan als afgeleid doel getoond worden terwijl de leeftijdspoort de doorvoering blokkeert."
+
+    proposed_promise:
+      text: "Je doelen sturen echt: je wedstrijd, je ontwikkelrichting en je seizoensdoel werken door in je plan, je dagadvies en je voeding — met één en dezelfde uitleg overal. Sparki bewaakt daarbij altijd de veilige grens: afvallen gaat nooit sneller dan een halve kilo per week, trainingen worden nooit uitgehongerd, en voor jonge renners doet Sparki niet aan gewichtssturing."
+      proposed_by: replit
+      rationale: "Doelen zijn het contract tussen atleet en coach; als de sturing niet aantoonbaar of niet veilig is, is alle coaching willekeur. De veiligheidsranden zijn hier belangrijker dan de featurebreedte (RED-S bij jeugd is een absolute ondergrens, geen productkeuze)."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Eigen doelen-/seizoensdoel-lagen (goals engine + season-goal leeslaag)"
+          coverage: "Dekt afgeleide doelen (race/ontwikkeling/seizoensgewicht), gebruikersdoelen, voorstellen en de doorvoering in plan/dagadvies/voeding. Dekt NIET: expliciete conflictresolutie tussen doelen (bestaat niet)."
+          actuality: "Live eigen code met tests."
+          license_status: "Eigen werk."
+          limitations:
+            - "Voortgangsmeting van het gewichtsdoel gebruikt geen echte gewichtstrend."
+          applicability: "De sturing zelf en de veiligheidsranden; meetbasis voor alle regels hieronder."
+        - name: "RED-S/jeugd-richtlijnen (IOC-consensus REDs 2023; NOC*NSF-lijn jeugd en gewicht)"
+          coverage: "Dekt waarom gewichtssturing bij minderjarigen en agressieve energietekorten schadelijk zijn. Dekt NIET: individuele diagnose — Sparki blijft op richtlijnniveau en weigert, het behandelt niet."
+          actuality: "IOC-consensus 2023; stabiel, herziening op meerjarencadans."
+          license_status: "Wetenschappelijke consensus vrij toepasbaar als onderbouwing; geen tekstovername."
+          limitations:
+            - "Leeftijdsgrens 17 is een eigen veilige keuze binnen de richtlijngeest; de richtlijnen noemen geen exacte productgrens."
+          applicability: "Onderbouwt de fail-closed jeugdweigering en de 0,5 kg/week-grens."
+        - name: "Gangbare sportvoedingsrichtlijnen voor gewichtsverlies bij duursporters (o.a. ACSM/IOC-position stands)"
+          coverage: "Dekt veilige afvalsnelheid (~0,5–1 kg/week max, behoud rond training) voor volwassen duursporters. Dekt NIET: individuele medische situaties."
+          actuality: "Position stands; herzien op meerjarencadans."
+          license_status: "Vrij toepasbaar als onderbouwing."
+          limitations:
+            - "Sparki kiest bewust de conservatieve onderkant (0,5) — strenger dan sommige richtlijnen toestaan."
+          applicability: "Onderbouwt de gekozen 0,5 kg/week als harde bovengrens."
+      sources_in_use:
+        - "Eigen doelen-/seizoensdoel-lagen — leidend."
+        - "RED-S/jeugdrichtlijnen + sportvoedingsrichtlijnen — als onderbouwing van de veiligheidsranden."
+      privacy_status: unknown
+      missing_information:
+        - "Geen vastgelegd conflictbeleid: wat wint als een wedstrijddoel en een afvaldoel elkaar bijten (nu impliciet: veiligheid overruled, verder presentatievolgorde)."
+        - "Geen echte gewichtstrend in de voortgangsmeting van het seizoensdoel."
+
+    replit_definition:
+      objective_quality_standard: "Elk actief doel is aantoonbaar terug te vinden in plan/dagadvies/voeding met één canonieke uitlegzin; 0 gewichtssturing onder 17 of bij onbekend geboortejaar; 0 adviezen die sneller dan 0,5 kg/week sturen; afgeleide doelen bestaan nooit dubbel (stabiele id's, DB-unique voorstellen)."
+      recommended_default: "Veiligheid > gezondheid/herstel > wedstrijddoel > seizoensdoel > overige doelen als vaste afwegingsvolgorde bij conflicten; conflicten zichtbaar benoemen ('je afvaldoel staat deze week in de wacht voor je wedstrijd') in plaats van stil kiezen."
+      technical_limits:
+        - "Zonder gewichtsdata is voortgang op het gewichtsdoel niet echt meetbaar; dan eerlijk 'niet meetbaar' tonen."
+        - "Race-afgeleide doelen beperkt tot de zes eerstvolgende races."
+      assumptions:
+        - "De impliciete huidige volgorde (veiligheid overruled alles) komt overeen met René's visie; de rest van de conflictvolgorde is nooit vastgelegd."
+      unknowns:
+        - "Hoe vaak doelconflicten in de praktijk voorkomen (geen meting)."
+      evidence_method:
+        - "Bestaande goals/afvaldoel/development-goal-tests her-runnen als proof-artefact."
+        - "Nieuw tegenvoorbeeld: gecombineerd wedstrijd- + afvaldoel in wedstrijdweek — verwachting: voeding volledig, afvaldoel zichtbaar 'in de wacht'."
+        - "Praktijktest: René zet een echt seizoensdoel en controleert de doorwerking op drie plekken (plan, dagadvies, voeding) tegen de canonieke zin."
+
+    rene_calibration:
+      questions:
+        - question: "Als twee doelen botsen (bijv. afvallen vs. topvorm voor een wedstrijd): wil je dat Sparki stil de veilige keuze maakt, of het conflict expliciet benoemt en jou laat kiezen welk doel deze periode wint?"
+          answer_rene: ""
+        - question: "Mogen doelen die Sparki zelf afleidt (uit je wedstrijdkalender of ontwikkelrichting) direct meesturen in het plan, of pas nadat jij ze bevestigd hebt?"
+          answer_rene: ""
+        - question: "Hoe streng wil je het afvaldoel bewaakt hebben: bij elke stagnatie een gesprek, alleen bij afwijking van de veilige lijn, of pas als jij er zelf om vraagt?"
+          answer_rene: ""
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Onder 17 jaar of bij onbekend geboortejaar is er nooit enige vorm van gewichtssturing — ook niet als er een doelrij in de database staat."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "16-jarige met een (bijv. door een eerdere fout aangemaakte) seizoensgewichtsdoelrij opent het dagadvies; elke calorie-/gewichtssturing in dat advies is een overtreding."
+              proof_stage: designed
+              proof_method: "Redenering: de leeftijdspoort is fail-closed in de leeslaag (weigert ook bij bestaande doelrij en bij onbekend geboortejaar) en is als test aanwezig; voor dit contract geldt executed pas na her-run als proof-artefact. Bekende zwakte om óók te toetsen: de presentatielaag kan zo'n doel nog wél tonen — de regel moet op sturing én presentatie worden getoetst."
+              proof_result: not_yet_tested
+        - rule: "Geen enkel advies mag sneller sturen dan 0,5 kg gewichtsverlies per week; een doel dat sneller vereist wordt eerlijk 'niet haalbaar binnen veilige grens' genoemd en NIET versneld."
+          rule_type: hard_blockage
+          measurement_level: per_dag
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Doel: 4 kg eraf in 4 weken (1 kg/week vereist). Elk dagadvies dat het tekort vergroot om dat tempo te halen is een overtreding; het juiste gedrag is feasible:false + sturing op maximaal 0,5."
+              proof_stage: designed
+              proof_method: "Redenering: SAFE_KG_PER_WEEK=0,5 is de enige sturingsconstante en het onhaalbare-tempo-pad geeft feasible:false zonder versnelling; per_dag omdat élk individueel dagadvies veilig moet zijn — een week die gemiddeld veilig uitkomt met één agressieve dag is tóch een overtreding. Executed na her-run van de afvaldoel-testset tegen dit contract."
+              proof_result: not_yet_tested
+        - rule: "Een training wordt nooit uitgehongerd: rond en tijdens trainingen is de voedingssturing altijd volledig, ongeacht het afvaldoel."
+          rule_type: hard_blockage
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Trainingsdag binnen een actief afvaldoel waarop het fuel-advies voor de training zelf verlaagd wordt om het weektekort te halen — overtreding, ook als het weektotaal 'klopt'."
+              proof_stage: designed
+              proof_method: "Redenering: de seizoensdoel-leeslaag beperkt het tekort tot rustige momenten en houdt trainingen volledig gevoed; per_sessie zodat één uitgehongerde training nooit wegvalt tegen een verder correcte week. Executed na her-run met dit scenario als expliciete assert."
+              proof_result: not_yet_tested
+        - rule: "Afgeleide doelen en maandvoorstellen mogen nooit dubbel ontstaan, ook niet bij gelijktijdige verzoeken."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Twee gelijktijdige triggers voor hetzelfde maandvoorstel (zelfde doel, zelfde maand); twee voorstelrijen is een overtreding."
+              proof_stage: designed
+              proof_method: "Redenering: dedupe loopt via DB-unique (clerk_id, dedupe_key) + onConflictDoNothing — concurrency-safe by construction, niet read-then-insert; afgeleide doelen hebben stabiele id's en bestaan alleen read-time. Executed na een parallelle-trigger-test."
+              proof_result: not_yet_tested
+      tolerances:
+        - "De conflictvolgorde onder het veiligheidsniveau (wedstrijd vs. seizoensdoel vs. overige) is een kalibreerbare productkeuze, geen harde grens."
+      unknown_data_policy: "Zonder benodigde data (geboortejaar, huidig gewicht, voldoende trainingsdata) wordt sturing geweigerd of 'niet meetbaar' getoond — nooit met aannames doorgestuurd. Onbekende leeftijd telt als minderjarig (fail-closed)."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "test:afvaldoel-doorvoering (0,5-grens, RED-S-poort, behoud, vaste rationale, DB-doorvoering) — bestaat, groen"
+        - "test:goals (voortgang, voorstel-dedupe, directive-filtering, patch-whitelist) — bestaat, groen"
+        - "test:development-goal (HTTP + persistentie, enum-whitelist) — bestaat, groen"
+        - "day-advice-seizoensdoel + ontwikkelprioriteit (web) — bestaan, groen"
+      independent_checks: ["Conflictscenario wedstrijd+afvaldoel — nog te ontwerpen en te draaien"]
+      practice_test_required: true
+      practice_testers: ["René (echt seizoensdoel, doorwerking op drie plekken controleren)"]
+      result: not_tested
+      expectation_gap:
+        - "Grootste gat: conflictgedrag tussen doelen is niet gedefinieerd en niet getest; presentatie en sturing kunnen bovendien uit elkaar lopen (jeugd-doelrij zichtbaar terwijl sturing terecht geweigerd wordt)."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "René's conflictbeleid kalibreren; presentatie/sturing gelijktrekken voor de jeugdpoort (bouwvoorstel, na akkoord); conflictscenario-test ontwerpen."
+      approved_for_execution: false
+
