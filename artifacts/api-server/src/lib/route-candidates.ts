@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { RouteEngineSurface } from "@workspace/db";
 import type { RouteStep } from "./routing";
 
 // Server-trusted generated route candidate. Saving a generated route must NEVER
@@ -23,6 +24,11 @@ export type StoredCandidate = {
   waypoints: [number, number][];
   rationale: string;
   plannedWorkoutId: number | null;
+  // Wegdekmeting van de routemotor zélf (GraphHopper surface-details) op het
+  // moment van genereren; null als de motor geen wegdek-details levert (ORS).
+  // Bewaard zodat het routescherm motor- en kaartmeting eerlijk naast elkaar
+  // kan leggen — bij tegenspraak wordt uitgelegd, nooit stil één bron gekozen.
+  engineSurface: RouteEngineSurface | null;
   createdAt: number;
 };
 

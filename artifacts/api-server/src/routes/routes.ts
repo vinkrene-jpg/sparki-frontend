@@ -40,6 +40,7 @@ import {
   type RoutePathPoint,
   type RouteWaypoint,
   type RouteMeetpoint,
+  type RouteEngineSurface,
 } from "@workspace/db";
 import { applyLocationPrivacy } from "../lib/world-social/location";
 import { sanitizeNavSteps } from "../lib/routing/nav-sanitize";
@@ -100,6 +101,7 @@ import {
 import {
   getRouteSurfaces,
   computeBikeSuitability,
+  compareSurfaceSources,
   maxSlopePct,
   surfacesSource,
 } from "../lib/route-surfaces";
@@ -429,7 +431,27 @@ type CachedRouteGeometry = {
   ascentM: number | null;
   durationSec: number | null;
   steps: RouteStep[];
+  // Wegdekmeting van de routemotor zélf (0–1); null als de motor dat niet
+  // levert. Meegecachet zodat een cache-hit dezelfde eerlijke meting draagt.
+  pavedFraction?: number | null;
+  surfaceKnownFraction?: number | null;
 };
+
+// Bouw de bewaarbare motor-wegdekmeting uit een providerresultaat. null als de
+// motor geen wegdek-details levert — er wordt nooit een meting verzonnen.
+function engineSurfaceOf(
+  geom: Pick<CachedRouteGeometry, "pavedFraction" | "surfaceKnownFraction">,
+): RouteEngineSurface | null {
+  const paved = geom.pavedFraction ?? null;
+  const known = geom.surfaceKnownFraction ?? null;
+  if (paved == null && known == null) return null;
+  return {
+    provider: getRoutingProvider().name,
+    pavedPct: paved != null ? Math.round(paved * 1000) / 10 : null,
+    knownPct: known != null ? Math.round(known * 1000) / 10 : null,
+    measuredAt: new Date().toISOString(),
+  };
+}
 
 type RouteGeometryCacheEntry = {
   geometry: CachedRouteGeometry;
@@ -1783,8 +1805,14 @@ router.post("/remarks-preview", requireAuth, async (req, res) => {
 // NIET opgeslagen route (routebouwer). Zelfde eerlijke bron/contract als
 // GET /:id/surfaces. Declared before the /:id routes.
 router.post("/surfaces-preview", requireAuth, async (req, res) => {
+  const clerkId = getClerkUserId(req)!;
   try {
-    const raw = (req.body ?? {}) as { geometry?: unknown; profile?: unknown; distanceKm?: unknown };
+    const raw = (req.body ?? {}) as {
+      geometry?: unknown;
+      profile?: unknown;
+      distanceKm?: unknown;
+      candidateId?: unknown;
+    };
     const geomIn = Array.isArray(raw.geometry) ? raw.geometry : null;
     if (!geomIn || geomIn.length < 2 || geomIn.length > 20000) {
       res.status(400).json({ error: "Ongeldige routegeometrie" });
@@ -1816,10 +1844,17 @@ router.post("/surfaces-preview", requireAuth, async (req, res) => {
       : [];
     const distanceKm = Number(raw.distanceKm);
     const slope = maxSlopePct(profile, Number.isFinite(distanceKm) ? distanceKm : null);
+    // Bronvergelijking: de motor-wegdekmeting hoort bij een server-vertrouwde
+    // kandidaat (eigenaar-gescoped) — nooit uit de request-body zelf.
+    const candidate =
+      typeof raw.candidateId === "string" && raw.candidateId
+        ? getCandidate(raw.candidateId, clerkId)
+        : null;
     res.json({
       surfaces: analysis,
       suitability: computeBikeSuitability(analysis, { maxSlopePct: slope }),
       maxSlopePct: slope,
+      vergelijking: compareSurfaceSources(candidate?.engineSurface ?? null, analysis),
       source: surfacesSource(),
     });
   } catch (err) {
@@ -1866,6 +1901,10 @@ router.get("/:id/surfaces", requireAuth, async (req, res) => {
       surfaces: analysis,
       suitability: computeBikeSuitability(analysis, { maxSlopePct: slope }),
       maxSlopePct: slope,
+      vergelijking: compareSurfaceSources(
+        (route.engineSurface as RouteEngineSurface | null) ?? null,
+        analysis,
+      ),
       source: surfacesSource(),
     });
   } catch (err) {
@@ -2519,6 +2558,8 @@ async function buildLoopCandidate(
       ascentM: orsResult.ascentM,
       durationSec: orsResult.durationSec,
       steps: orsResult.steps,
+      pavedFraction: orsResult.pavedFraction ?? null,
+      surfaceKnownFraction: orsResult.surfaceKnownFraction ?? null,
     };
     evictRouteGeometryCache();
     ROUTE_GEOMETRY_CACHE.set(loopGeomKey, {
@@ -2557,6 +2598,8 @@ async function buildLoopCandidate(
   // AI-phrased rationale (with road-objects context) arrives via GET /candidate/:id/enrich.
   const rationale = buildRationaleFallback(rationaleInput);
 
+  const engineSurface = engineSurfaceOf(routeResult);
+
   const candidateId = putCandidate({
     clerkId: ctx.clerkId,
     name,
@@ -2571,6 +2614,7 @@ async function buildLoopCandidate(
     waypoints: [],
     rationale,
     plannedWorkoutId: ctx.plannedWorkoutId,
+    engineSurface,
   });
 
   // Fire background enrichment — does NOT block the response.
@@ -2603,6 +2647,7 @@ async function buildLoopCandidate(
     startName,
     endName: null,
     plannedWorkoutId: ctx.plannedWorkoutId,
+    engineSurface,
     targetDistanceKm,
     // Road objects are delivered asynchronously via GET /candidate/:id/enrich.
     roadObjects: null,
@@ -2942,6 +2987,7 @@ router.post("/generate", requireAuth, async (req, res) => {
             : [],
         rationale,
         plannedWorkoutId,
+        engineSurface: engineSurfaceOf(geom),
       });
 
       scheduleEnrichment(
@@ -3041,6 +3087,8 @@ router.post("/generate", requireAuth, async (req, res) => {
       ascentM: orsResult.ascentM,
       durationSec: orsResult.durationSec,
       steps: orsResult.steps,
+      pavedFraction: orsResult.pavedFraction ?? null,
+      surfaceKnownFraction: orsResult.surfaceKnownFraction ?? null,
     };
     evictRouteGeometryCache();
     ROUTE_GEOMETRY_CACHE.set(ptpGeomKey, {
@@ -3328,6 +3376,7 @@ router.post("/", requireAuth, async (req, res) => {
               : null,
           meetpoints: meetpoints.length > 0 ? meetpoints : null,
           rationale: stored.rationale,
+          engineSurface: stored.engineSurface,
           source: "generated",
           linkedActivityImportId: null,
           linkedPlannedWorkoutId,

@@ -12,6 +12,7 @@ import type {
   SurfaceKind,
   BikeSuitability,
   SuitabilityVerdict,
+  SurfaceSourceComparison,
 } from "@/hooks/use-route-surfaces"
 
 export const SURFACE_COLORS: Record<SurfaceKind, string> = {
@@ -106,6 +107,59 @@ function SuitabilityCard({ s }: { s: BikeSuitability }) {
         </ul>
       )}
     </li>
+  )
+}
+
+function SourceComparisonCard({ c }: { c: SurfaceSourceComparison }) {
+  const [open, setOpen] = useState(c.oordeel === "tegenspraak")
+  const clash = c.oordeel === "tegenspraak"
+  return (
+    <div
+      className={`mt-3 rounded-xl border px-3 py-2.5 ${
+        clash
+          ? "border-amber-300/30 bg-amber-300/[0.04]"
+          : "border-white/[0.07] bg-white/[0.02]"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/55">
+          twee metingen, één beeld
+        </span>
+        <span
+          className={`rounded-full border px-2 py-px font-mono text-[10px] uppercase tracking-[0.08em] ${
+            clash
+              ? "border-amber-300/30 text-amber-200/85"
+              : "border-emerald-300/30 text-emerald-200/90"
+          }`}
+        >
+          {clash ? "Metingen verschillen" : "Metingen in lijn"}
+        </span>
+      </div>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="mt-1 flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.12em] text-cyan-300/75 transition hover:text-cyan-200"
+      >
+        <ChevronDown
+          className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`}
+          strokeWidth={2}
+        />
+        uitleg per bron
+      </button>
+      {open && (
+        <ul className="mt-1.5 space-y-1">
+          {c.uitleg.map((r) => (
+            <li
+              key={r}
+              className="flex items-start gap-1.5 text-[12px] leading-relaxed text-white/55"
+            >
+              <Info className="mt-0.5 h-3 w-3 shrink-0 text-white/35" strokeWidth={2} />
+              {r}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 
@@ -212,6 +266,13 @@ export function RouteSurfacesPanel({
                   Tik op een wegtype om de betreffende routegedeelten op de
                   kaart op te lichten.
                 </p>
+              )}
+
+              {/* Bronvergelijking: routemotor vs. dit scherm. Bij tegenspraak
+                  wordt uitgelegd wat het verschil verklaart — er wordt nooit
+                  stil één bron gekozen. */}
+              {data.vergelijking && (
+                <SourceComparisonCard c={data.vergelijking} />
               )}
 
               {/* Geschiktheid per fietstype */}

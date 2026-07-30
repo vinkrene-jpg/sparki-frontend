@@ -1522,6 +1522,7 @@ function RouteGenerator({
     candidate?.geometry ?? null,
     candidate?.profile ?? null,
     candidate?.distanceKm ?? null,
+    candidate?.candidateId ?? null,
   )
   const [candSurfaceKind, setCandSurfaceKind] = useState<SurfaceKind | null>(null)
   const candSurfaceHighlights =

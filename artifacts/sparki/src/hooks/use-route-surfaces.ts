@@ -55,10 +55,27 @@ export type BikeSuitability = {
   reasons: string[]
 }
 
+// Bronvergelijking: de routemotor (GraphHopper-graaf) en dit scherm (actuele
+// OSM-tags + BGT) zijn twee eerlijke metingen die kunnen verschillen. De
+// server legt ze naast elkaar en legt tegenspraak expliciet uit — er wordt
+// nooit stil één bron gekozen.
+export type SurfaceSourceComparison = {
+  engine: {
+    provider: string
+    pavedPct: number | null
+    knownPct: number | null
+    measuredAt: string
+  }
+  scherm: { verhardPct: number; onverhardPct: number; onbekendPct: number }
+  oordeel: "consistent" | "tegenspraak"
+  uitleg: string[]
+}
+
 export type RouteSurfacesResponse = {
   surfaces: RouteSurfacesAnalysis | null
   suitability: BikeSuitability[] | null
   maxSlopePct: number | null
+  vergelijking?: SurfaceSourceComparison | null
   source: { name: string; license: string; url: string; note: string }
 }
 
@@ -80,6 +97,9 @@ export function useRouteSurfacesPreview(
   geometry: [number, number][] | null | undefined,
   profile?: number[] | null,
   distanceKm?: number | null,
+  // Kandidaat-id van een zojuist gegenereerde route: de server haalt daar de
+  // motor-wegdekmeting bij op voor de eerlijke bronvergelijking.
+  candidateId?: string | null,
 ) {
   const g = geometry && geometry.length >= 2 ? geometry : null
   // Robuuste vingerafdruk: lat+lon van ~16 gelijkmatig verdeelde punten plus
@@ -87,7 +107,7 @@ export function useRouteSurfacesPreview(
   // andere key (geen verouderde analyse bij een nieuwe kandidaat).
   let key = "none"
   if (g) {
-    const parts: string[] = [String(g.length), String(distanceKm ?? ""), String(profile?.length ?? "")]
+    const parts: string[] = [String(g.length), String(distanceKm ?? ""), String(profile?.length ?? ""), String(candidateId ?? "")]
     const n = Math.min(16, g.length)
     for (let i = 0; i < n; i++) {
       const p = g[Math.floor((i * (g.length - 1)) / Math.max(1, n - 1))]!
@@ -107,6 +127,7 @@ export function useRouteSurfacesPreview(
           geometry: g,
           profile: profile ?? undefined,
           distanceKm: distanceKm ?? undefined,
+          candidateId: candidateId ?? undefined,
         }),
       }),
   })

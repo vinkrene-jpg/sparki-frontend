@@ -555,10 +555,32 @@ const ENDPOINTS = [
   "https://overpass.kumi.systems/api/interpreter",
 ];
 const OVERPASS_TIMEOUT_MS = 25_000;
+// Maximaal aantal ways per Overpass-antwoord. Wordt dit plafond geraakt, dan
+// is het antwoord AFGEKAPT: ontbrekende wegen zouden onterecht als "onbekend"
+// renderen (oorzaak van de 60,7%-onbekend-meting in Hengelo, Proof #436).
+// Afgekapte antwoorden worden daarom nooit als compleet behandeld: eerst een
+// kwadrant-splitsing, en lukt dat ook niet, dan een eerlijk gat (null).
+export const OVERPASS_OUT_LIMIT = 10_000;
 const CACHE = new Map<string, { at: number; data: RouteSurfacesAnalysis }>();
 const CACHE_TTL_MS = 15 * 60_000;
 
-async function runOverpass(query: string): Promise<OverpassElement[] | null> {
+type OverpassRun = { elements: OverpassElement[]; truncated: boolean };
+
+/** Detecteer een gedeeltelijk/afgekapt Overpass-antwoord (puur + testbaar). */
+export function overpassLooksTruncated(
+  elementCount: number,
+  remark: string | null | undefined,
+): boolean {
+  if (elementCount >= OVERPASS_OUT_LIMIT) return true;
+  if (typeof remark === "string" && remark.trim()) {
+    // Overpass zet bij afbreken (tijd/geheugen) een "remark" in het antwoord
+    // en geeft alsnog HTTP 200 met een gedeeltelijke elements-array.
+    return /runtime error|timed out|out of memory|load too high/i.test(remark);
+  }
+  return false;
+}
+
+async function runOverpass(query: string): Promise<OverpassRun | null> {
   for (const endpoint of ENDPOINTS) {
     try {
       const ctrl = new AbortController();
@@ -571,13 +593,70 @@ async function runOverpass(query: string): Promise<OverpassElement[] | null> {
       });
       clearTimeout(t);
       if (!resp.ok) continue;
-      const json = (await resp.json()) as { elements?: OverpassElement[] };
-      if (Array.isArray(json.elements)) return json.elements;
+      const json = (await resp.json()) as {
+        elements?: OverpassElement[];
+        remark?: string;
+      };
+      if (Array.isArray(json.elements)) {
+        return {
+          elements: json.elements,
+          truncated: overpassLooksTruncated(json.elements.length, json.remark),
+        };
+      }
     } catch {
       // volgende mirror
     }
   }
   return null;
+}
+
+function surfacesQuery(bbox: string): string {
+  return `[out:json][timeout:25];(
+way["highway"](${bbox});
+);out geom(${bbox}) ${OVERPASS_OUT_LIMIT};`;
+}
+
+/**
+ * Haal alle highway-ways in de bbox op, bestand tegen afgekapte antwoorden:
+ * bij truncatie wordt de bbox in vier kwadranten opnieuw bevraagd en
+ * samengevoegd (dedupliceren op way-id). Blijft óók een kwadrant afgekapt of
+ * faalt er één, dan is het antwoord een eerlijk gat (null) — nooit een
+ * gedeeltelijke kaart die als "onbekend wegdek" rendert.
+ */
+async function fetchSurfaceElements(
+  minLat: number,
+  minLon: number,
+  maxLat: number,
+  maxLon: number,
+): Promise<OverpassElement[] | null> {
+  const fmt = (a: number, b: number, c: number, d: number) =>
+    `${a.toFixed(4)},${b.toFixed(4)},${c.toFixed(4)},${d.toFixed(4)}`;
+  const full = await runOverpass(surfacesQuery(fmt(minLat, minLon, maxLat, maxLon)));
+  if (full === null) return null;
+  if (!full.truncated) return full.elements;
+
+  const midLat = (minLat + maxLat) / 2;
+  const midLon = (minLon + maxLon) / 2;
+  const quads: [number, number, number, number][] = [
+    [minLat, minLon, midLat, midLon],
+    [minLat, midLon, midLat, maxLon],
+    [midLat, minLon, maxLat, midLon],
+    [midLat, midLon, maxLat, maxLon],
+  ];
+  const merged: OverpassElement[] = [];
+  const seen = new Set<number>();
+  for (const [a, b, c, d] of quads) {
+    const sub = await runOverpass(surfacesQuery(fmt(a, b, c, d)));
+    if (sub === null || sub.truncated) return null; // eerlijk gat
+    for (const el of sub.elements) {
+      if (typeof el.id === "number") {
+        if (seen.has(el.id)) continue;
+        seen.add(el.id);
+      }
+      merged.push(el);
+    }
+  }
+  return merged;
 }
 
 /**
@@ -604,13 +683,13 @@ export async function getRouteSurfaces(
   }
   if (maxLat - minLat > 1 || maxLon - minLon > 1.5) return null;
   const pad = 0.001;
-  const bbox = `${(minLat - pad).toFixed(4)},${(minLon - pad).toFixed(4)},${(maxLat + pad).toFixed(4)},${(maxLon + pad).toFixed(4)}`;
 
-  const query = `[out:json][timeout:25];(
-way["highway"](${bbox});
-);out geom(${bbox}) 4000;`;
-
-  const elements = await runOverpass(query);
+  const elements = await fetchSurfaceElements(
+    minLat - pad,
+    minLon - pad,
+    maxLat + pad,
+    maxLon + pad,
+  );
   if (elements === null) return null;
 
   const assignment = assignSurfaceSamples(geometry, elements);
@@ -650,6 +729,96 @@ way["highway"](${bbox});
     if (oldest) CACHE.delete(oldest[0]);
   }
   return analysis;
+}
+
+// ── Bronvergelijking: routemotor vs. dit scherm (puur + testbaar) ───────────
+//
+// De routemotor (GraphHopper) meet het wegdek op zijn eigen, vooraf gebouwde
+// wegenkaart; dit scherm meet live op actuele OSM-tags + de BGT-controlelaag.
+// Twee eerlijke metingen kunnen elkaar dan zichtbaar tegenspreken (Proof #436:
+// Hengelo motor 100% verhard vs. scherm 60,7% onbekend; Dalfsen motor 99,9%
+// verhard vs. scherm sand/compacted op de lijn). Contract: bij tegenspraak
+// wordt dat expliciet uitgelegd — er wordt NOOIT stil één bron gekozen.
+
+export type EngineSurfaceMeasurement = {
+  provider: string;
+  pavedPct: number | null; // % verhard van het door de motor GEMETEN deel
+  knownPct: number | null; // % van de afstand waarvoor de motor wegdek kent
+  measuredAt: string;
+};
+
+export type SurfaceSourceComparison = {
+  engine: EngineSurfaceMeasurement;
+  // Samenvatting van wat DIT scherm meet (uit de breakdown).
+  scherm: { verhardPct: number; onverhardPct: number; onbekendPct: number };
+  oordeel: "consistent" | "tegenspraak";
+  // Uitleg per bron + (bij tegenspraak) wat het verschil verklaart en welk
+  // beeld de renner moet aanhouden. Altijd gevuld.
+  uitleg: string[];
+};
+
+const fmtNl = (v: number) => String(Math.round(v * 10) / 10).replace(".", ",");
+
+export function compareSurfaceSources(
+  engine: EngineSurfaceMeasurement | null | undefined,
+  analysis: RouteSurfacesAnalysis,
+): SurfaceSourceComparison | null {
+  if (!engine || (engine.pavedPct == null && engine.knownPct == null)) return null;
+  const pct = (k: SurfaceKind) =>
+    analysis.breakdown.find((b) => b.kind === k)?.pct ?? 0;
+  const verhardPct =
+    pct("asfalt") + pct("verhard_fietspad") + pct("klinkers") + pct("kasseien");
+  const onverhardPct =
+    pct("compact_gravel") + pct("los_gravel") + pct("onverhard") + pct("bospad") + pct("singletrack");
+  const onbekendPct = pct("onbekend");
+
+  const providerLabel =
+    engine.provider === "graphhopper" ? "GraphHopper" : engine.provider;
+  const uitleg: string[] = [
+    `Routemotor (${providerLabel}): rekent op een eigen, vooraf gebouwde wegenkaart die kan achterlopen op OpenStreetMap. Meting bij het genereren: ` +
+      (engine.pavedPct != null
+        ? `${fmtNl(engine.pavedPct)}% verhard van het gemeten deel`
+        : "geen verhard-percentage") +
+      (engine.knownPct != null
+        ? `; wegdek bekend voor ${fmtNl(engine.knownPct)}% van de afstand.`
+        : "."),
+    `Dit scherm: meet live op actuele OpenStreetMap-tags` +
+      (analysis.bgt ? ` plus de officiële BGT-wegenkaart (alleen Nederland)` : "") +
+      `. Nu gemeten: ${fmtNl(verhardPct)}% verhard, ${fmtNl(onverhardPct)}% (half)onverhard, ${fmtNl(onbekendPct)}% onbekend.`,
+  ];
+
+  // Tegenspraak-detectie:
+  // 1) motor "vrijwel volledig verhard" terwijl dit scherm aantoonbaar
+  //    (half)onverhard meet (Dalfsen-patroon);
+  // 2) motor kent (vrijwel) alles terwijl dit scherm grotendeels onbekend is
+  //    (Hengelo-patroon).
+  const engineSaysPaved = engine.pavedPct != null && engine.pavedPct >= 95;
+  const clash1 = engineSaysPaved && onverhardPct > 5;
+  const clash2 =
+    engine.knownPct != null && engine.knownPct >= 75 && onbekendPct > 40;
+
+  if (clash1) {
+    uitleg.push(
+      "De metingen spreken elkaar tegen: de actuele kaart vindt (half)onverharde stukken die de motorkaart niet kent. Sparki kiest niet stil één bron — houd voor het wegdek dít scherm aan: de motorkaart kan verouderd zijn.",
+    );
+  } else if (clash2) {
+    uitleg.push(
+      "De metingen spreken elkaar tegen: de motor kent hier meer wegdek dan de actuele kaarttags tonen. Het verschil zit vooral in ontbrekende tags — niet in aantoonbaar onverhard. Sparki kiest niet stil één bron: onbekend blijft eerlijk onbekend, de motor-meting staat er ter context naast.",
+    );
+  } else {
+    uitleg.push("De twee metingen zijn met elkaar in lijn.");
+  }
+
+  return {
+    engine,
+    scherm: {
+      verhardPct: Math.round(verhardPct * 10) / 10,
+      onverhardPct: Math.round(onverhardPct * 10) / 10,
+      onbekendPct: Math.round(onbekendPct * 10) / 10,
+    },
+    oordeel: clash1 || clash2 ? "tegenspraak" : "consistent",
+    uitleg,
+  };
 }
 
 export function surfacesSource() {

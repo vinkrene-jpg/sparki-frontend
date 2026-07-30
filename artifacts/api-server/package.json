@@ -11,6 +11,7 @@
     "test:smoke": "node ./scripts/run-test.mjs smoke",
     "test:admin-smoke": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs admin-smoke",
     "test:route-library-gates": "node ./scripts/run-test.mjs route-library-gates",
+    "test:route-surface-sources": "node ./scripts/run-test.mjs route-surface-sources",
     "test:route-improvement": "node ./scripts/run-test.mjs route-improvement",
     "test:disk-usage": "node ./scripts/run-test.mjs disk-usage",
     "test:git-maintenance": "node ./scripts/run-test.mjs git-maintenance",

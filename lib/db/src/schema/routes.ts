@@ -64,6 +64,17 @@ export type RouteMeetpoint = {
   note: string | null;
 };
 
+// Wegdekmeting van de routemotor zélf (bijv. GraphHopper surface-details) op
+// het moment van genereren. Bewaard zodat het routescherm de motor-meting en
+// de kaartanalyse (OSM/Overpass + BGT) eerlijk naast elkaar kan leggen — bij
+// tegenspraak wordt uitgelegd, nooit stil één bron gekozen.
+export type RouteEngineSurface = {
+  provider: string; // bijv. "graphhopper"
+  pavedPct: number | null; // % verhard van het GEMETEN deel (0–100)
+  knownPct: number | null; // % van de afstand waarvoor de motor het wegdek kent
+  measuredAt: string; // ISO-tijdstip van de meting (graaf kan verouderen)
+};
+
 export const routesTable = pgTable("routes", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id")
@@ -95,6 +106,9 @@ export const routesTable = pgTable("routes", {
   // Short Dutch explanation of why this route fits the workout. Only present on
   // generated routes; honesty caveats are baked into this text.
   rationale: text("rationale"),
+  // Wegdekmeting van de routemotor bij het genereren (RouteEngineSurface).
+  // Null voor GPX-uploads en motoren zonder wegdek-details (ORS).
+  engineSurface: jsonb("engine_surface"),
   source: text("source").notNull().default("manual"),
   // Gebruikstype van de route: "training" | "toertocht" | "wedstrijd".
   // Wedstrijd activeert Wedstrijdmodus in de live navigatie (rondetelling,
