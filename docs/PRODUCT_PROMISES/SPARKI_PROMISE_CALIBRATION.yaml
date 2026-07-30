@@ -104,13 +104,19 @@ chapter_d_routes_en_navigatie:
 
     rene_calibration:
       questions:
-        - "Als er binnen de gevraagde afstand géén 100%-schone route bestaat: wil je (a) alleen de eerlijke foutmelding, of (b) ook een aangepast voorstel (andere afstand/startpunt) dat wél schoon is?"
-        - "Hoeveel afstandsafwijking is acceptabel als de schone route daardoor mogelijk wordt (bv. 40 km gevraagd, schoonste optie is 46 km)? [maximale omweg]"
-        - "Prioriteitsvolgorde bij conflict tussen mooi/rustig/snel/veilig/exact-op-afstand — wat mag wijken zodra 'geschikt' geborgd is?"
-        - "Klinkers en slecht wegdek (smoothness=bad) op de racefiets: accepteren, mild melden, of meewegen als afkeur boven een drempel?"
-        - "Drukke wegen (N-wegen zonder vrijliggend fietspad): hoe zwaar moet 'rustig' wegen t.o.v. afstandsnauwkeurigheid?"
-        - "Buiten Nederland (vakantie/EU): is dezelfde 0%-belofte daar houdbaar zonder BGT, of geldt daar een eerlijk zwakkere belofte ('minder zeker over wegdek')?"
-      completed: false
+        - question: "Als er binnen de gevraagde afstand géén 100%-schone route bestaat: wil je (a) alleen de eerlijke foutmelding, of (b) ook een aangepast voorstel (andere afstand/startpunt) dat wél schoon is?"
+          answer_rene: "Ook een aangepast voorstel (andere afstand/startpunt) dat wél schoon is." # beantwoord 2026-07-30
+        - question: "Hoeveel afstandsafwijking is acceptabel als de schone route daardoor mogelijk wordt (bv. 40 km gevraagd, schoonste optie is 46 km)? [maximale omweg]"
+          answer_rene: "Maakt niet uit: geschikt gaat vóór afstand (geen harde omweggrens)." # beantwoord 2026-07-30
+        - question: "Prioriteitsvolgorde bij conflict tussen mooi/rustig/snel/veilig/exact-op-afstand — wat mag wijken zodra 'geschikt' geborgd is?"
+          answer_rene: null # 2026-07-30: René begrijpt de vraag/implicaties nog onvoldoende — vraag opnieuw stellen in gewone taal met een concreet voorbeeld.
+        - question: "Klinkers en slecht wegdek (smoothness=bad) op de racefiets: accepteren, mild melden, of meewegen als afkeur boven een drempel?"
+          answer_rene: "Accepteren maar mild melden in de route-info." # beantwoord 2026-07-30
+        - question: "Drukke wegen (N-wegen zonder vrijliggend fietspad): hoe zwaar moet 'rustig' wegen t.o.v. afstandsnauwkeurigheid?"
+          answer_rene: "Balans: korte stukken N-weg zijn oké. Aanvulling René: bij route-selectie een keuze-optie toevoegen zodat de gebruiker N-wegen kan laten vermijden." # beantwoord 2026-07-30
+        - question: "Buiten Nederland (vakantie/EU): is dezelfde 0%-belofte daar houdbaar zonder BGT, of geldt daar een eerlijk zwakkere belofte ('minder zeker over wegdek')?"
+          answer_rene: "Eerlijk zwakkere belofte; vermeld dan duidelijk dat in die regio niet altijd bekend is hoe de wegen zijn. Vraag René: kan Wikiloc-kennis daar gebruikt worden? (uit te zoeken: licentie/API van Wikiloc-communityroutes)" # beantwoord 2026-07-30
+      completed: false # open: prioriteitsvolgorde-vraag (hierboven null)
 
     acceptance_contract:
       hard_reject_rules:
