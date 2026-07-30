@@ -280,6 +280,13 @@ export async function generateVariedLoop(
     // gekozen zolang er een alternatief is; racefiets tevens 0 onverhard
     // (taak #437). null = geen meting (bron faalde) — eerlijk niet mee.
     obstaclesOf?: (path: [number, number][]) => Promise<RouteObstacles | null>;
+    // Onverhard-voorkeur (taak #440, gravel/MTB): gewenst aandeel onverhard
+    // (0..1) uit de schuifbalk in de routegeneratie-UI. Rangschikt ECHTE
+    // kandidaten op hoe dicht hun GEMETEN onverhard-aandeel bij deze voorkeur
+    // ligt — een voorkeur, nooit een garantie. Zonder wegdekmeting (ORS)
+    // weegt dit eerlijk niet mee: nooit gokken. Racefiets negeert dit veld
+    // volledig — daar geldt de harde 0%-grens (taak #437) hierboven.
+    unpavedTargetShare?: number | null;
   },
 ): Promise<RouteResult> {
   const preference = req.elevationPreference ?? "any";
@@ -299,6 +306,16 @@ export async function generateVariedLoop(
     opts.targetAscentM >= 0
       ? opts.targetAscentM
       : null;
+  // Onverhard-voorkeur: alleen geldig op niet-racefietsprofielen (racefiets
+  // houdt de harde 0%-grens) en alleen bij een zinnige waarde (0..1).
+  const unpavedTargetShare =
+    req.profile !== "cycling-road" &&
+    typeof opts?.unpavedTargetShare === "number" &&
+    Number.isFinite(opts.unpavedTargetShare) &&
+    opts.unpavedTargetShare >= 0 &&
+    opts.unpavedTargetShare <= 1
+      ? opts.unpavedTargetShare
+      : null;
   // A stated flat/hilly wish needs a wider pool of real candidates to choose the
   // best-matching one — in hilly terrain the genuinely flat loops only appear in
   // later seeds, so too small a sample silently returns a hillier route. A
@@ -311,7 +328,8 @@ export async function generateVariedLoop(
     preference !== "any" ||
     wantsScenery ||
     preferUninterrupted ||
-    targetAscentM != null
+    targetAscentM != null ||
+    unpavedTargetShare != null
       ? 8
       : wantsCalmRoads
         ? 4 // vaste rustige-wegen-vergelijking: echte keuze nodig, maar betaalbaar
@@ -392,6 +410,17 @@ export async function generateVariedLoop(
       req.profile === "cycling-road" && result.surfaceKnownFraction != null
         ? 1 - result.surfaceKnownFraction
         : 0;
+    // Onverhard-voorkeur (gravel/MTB, taak #440): afstand tussen het GEMETEN
+    // onverhard-aandeel van deze kandidaat en de gewenste voorkeur. Alleen
+    // rangschikken van echte metingen — zonder wegdekdata telt dit niet mee
+    // (nooit gokken) en een exact aandeel wordt nooit gegarandeerd.
+    let unpavedMiss = 0;
+    if (unpavedTargetShare != null && result.pavedFraction != null) {
+      unpavedMiss = Math.min(
+        Math.abs(1 - result.pavedFraction - unpavedTargetShare) / 0.5,
+        1.5,
+      );
+    }
     const score =
       overlap + drift * 1.2 + elevation * 0.8 + turniness * 0.9 +
       // unknownMiss LICHTER dan surfacePenalty: aantoonbaar onverhard is
@@ -399,7 +428,8 @@ export async function generateVariedLoop(
       // grotendeels ongetagde maar waarschijnlijk-asfalt-lus). Wel zwaarder
       // dan andere kwaliteitswensen: onbekend wegdek is een risico, geen
       // vrijbrief (acceptatiegrens PO-01 §3).
-      ascentMiss * 1.0 + surfacePenalty + unknownMiss * 2.0;
+      ascentMiss * 1.0 + surfacePenalty + unknownMiss * 2.0 +
+      unpavedMiss * 1.0;
     const cand = { result, score };
     pool.push(cand);
     return cand;
@@ -430,6 +460,9 @@ export async function generateVariedLoop(
       !wantsCalmRoads &&
       !preferUninterrupted &&
       targetAscentM == null &&
+      // Onverhard-voorkeur: er valt pas iets te kiezen met meerdere echte
+      // kandidaten, dus geen vroege stop zolang de voorkeur actief is.
+      unpavedTargetShare == null &&
       overlap < 0.08 &&
       drift < 0.15 &&
       elevation < 0.35 &&

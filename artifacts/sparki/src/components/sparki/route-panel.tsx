@@ -36,7 +36,7 @@ import {
 import { useAthleteDashboard } from "@/hooks/use-athlete-dashboard"
 import { useFriends } from "@/hooks/use-social"
 import { isSportActive } from "@workspace/feature-flags"
-import { ArrowLeft, MapPin, Sparkles, Flag, Users, X, Download, Navigation, Share2, Map as MapIcon } from "lucide-react"
+import { ArrowLeft, MapPin, Sparkles, Flag, Users, X, Download, Navigation, Share2, Map as MapIcon, Lock } from "lucide-react"
 import { RouteExplorer } from "@/components/sparki/route-explorer"
 import { useLocation, useSearch } from "wouter"
 import {
@@ -1482,6 +1482,11 @@ function RouteGenerator({
   }, [derivedBike, bikeTouched])
   const [elevationPreference, setElevationPreference] =
     useState<ElevationPreference>(initialElevation ?? "any")
+  // Onverhard-voorkeur (taak #440): gewenst percentage onverhard, alleen
+  // instelbaar voor gravel/MTB. Racefiets/gewone fiets: vast 0 (harde grens,
+  // taak #437). Een voorkeur voor de kandidaatselectie — nooit een garantie.
+  const [unpavedPct, setUnpavedPct] = useState(30)
+  const unpavedAdjustable = bikeType === "gravel" || bikeType === "mtb"
   const [trainingType, setTrainingType] = useState("duurtraining")
   const [workoutId, setWorkoutId] = useState<string>("")
   const [distance, setDistance] = useState("40")
@@ -1696,6 +1701,8 @@ function RouteGenerator({
         targetDistanceKm:
           !linkedWorkout && Number.isFinite(distNum) ? distNum : undefined,
         wish: wish.trim() ? wish.trim() : undefined,
+        unpavedPreferencePct:
+          sport === "cycling" && unpavedAdjustable ? unpavedPct : undefined,
       },
       {
         onSuccess: (data) => setOptions(data.options),
@@ -1747,6 +1754,8 @@ function RouteGenerator({
         waypoints: mode === "waypoints" ? allPoints : undefined,
         seed: nextSeed,
         wish: wish.trim() ? wish.trim() : undefined,
+        unpavedPreferencePct:
+          sport === "cycling" && unpavedAdjustable ? unpavedPct : undefined,
       },
       {
         onSuccess: (data) => {
@@ -2185,6 +2194,62 @@ function RouteGenerator({
                 </span>
               </button>
             ))}
+          </div>
+
+          {/* Onverhard-voorkeur (taak #440): schuifbalk voor gravel/MTB;
+              racefiets/gewone fiets vast op 0 (harde grens, taak #437). */}
+          <div className="mt-4">
+            <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+              ONVERHARD-VOORKEUR
+            </label>
+            {unpavedAdjustable ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min={0}
+                    max={60}
+                    step={5}
+                    value={unpavedPct}
+                    onChange={(e) => setUnpavedPct(Number(e.target.value))}
+                    aria-label="Onverhard-voorkeur (percentage)"
+                    className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-white/15 accent-cyan-300"
+                  />
+                  <span
+                    className="w-11 text-right font-mono text-[12px]"
+                    style={{ color: ACCENT }}
+                  >
+                    {unpavedPct}%
+                  </span>
+                </div>
+                <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
+                  Sparki kiest de kandidaat die hier het dichtst bij komt — een
+                  voorkeur, geen garantie op een exact aandeel onverhard.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 opacity-60">
+                  <input
+                    type="range"
+                    min={0}
+                    max={60}
+                    step={5}
+                    value={0}
+                    disabled
+                    aria-label="Onverhard-voorkeur (vast op 0 voor racefiets)"
+                    className="h-1.5 flex-1 appearance-none rounded-full bg-white/15"
+                  />
+                  <span className="w-11 text-right font-mono text-[12px] text-white/50">
+                    0%
+                  </span>
+                </div>
+                <p className="mt-1.5 flex items-center gap-1.5 text-[11px] leading-relaxed text-white/40">
+                  <Lock className="h-3 w-3 shrink-0 text-white/40" aria-hidden />
+                  Racefiets: altijd volledig verhard
+                </p>
+              </>
+            )}
           </div>
         </div>
       )}

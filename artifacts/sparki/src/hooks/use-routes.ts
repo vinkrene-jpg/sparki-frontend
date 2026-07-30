@@ -77,6 +77,10 @@ export type GenerateRouteInput = {
   seed?: number;
   // Free-text wish for the route ("langs de rivier", "vermijd drukke wegen").
   wish?: string;
+  // Onverhard-voorkeur (0..100, alleen gravel/MTB): gewenst percentage
+  // onverhard — een voorkeur voor de kandidaatselectie, nooit een garantie.
+  // Racefiets: niet meesturen (server negeert het; harde 0%-grens).
+  unpavedPreferencePct?: number;
 };
 
 export type RouteCandidate = {

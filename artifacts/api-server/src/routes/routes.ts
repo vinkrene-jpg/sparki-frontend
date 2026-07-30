@@ -158,6 +158,19 @@ function finiteNum(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+// Onverhard-voorkeur (taak #440): percentage (0..100) uit de schuifbalk,
+// geldig alleen voor gravel/MTB. Racefiets/gewone fiets: altijd null — daar
+// geldt de harde 0%-grens (taak #437). Retourneert een aandeel 0..1.
+function coerceUnpavedTargetShare(
+  v: unknown,
+  bikeType: BikeType | null,
+): number | null {
+  if (bikeType !== "gravel" && bikeType !== "mtb") return null;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return null;
+  return Math.min(Math.max(n, 0), 100) / 100;
+}
+
 // Parse the athlete's free-text wish for the route ("langs de rivier",
 // "vermijd drukke wegen", "veel klimwerk"). Trimmed, collapsed and capped so a
 // runaway paste can't bloat the prompt. Empty/blank → null.
@@ -2417,7 +2430,9 @@ router.get("/candidate/:candidateId/tcx", requireAuth, async (req, res) => {
 //   body: { mode: "loop"|"ptp", startLat, startLon,
 //           sport?, bikeType?, elevationPreference?,
 //           trainingType?, plannedWorkoutId?, targetDistanceKm?,
-//           endLat?, endLon?, destinationText?, seed? }
+//           endLat?, endLon?, destinationText?, seed?,
+//           unpavedPreferencePct? (0..100, alleen gravel/MTB — voorkeur,
+//           geen garantie; racefiets negeert dit: harde 0%-grens) }
 // Returns a candidate route (geometry, distance, duration, elevation profile,
 // climbs, surface, turn-by-turn nav, rationale). Geometry/distance/duration/
 // elevation/nav come straight from the routing provider — the AI only phrases
@@ -2447,6 +2462,10 @@ type LoopCandidateContext = {
   wish: string | null;
   // Hoogtemeter-doel: rangschikt echte kandidaten, garandeert niets.
   targetElevationGainM?: number | null;
+  // Onverhard-voorkeur (taak #440, gravel/MTB): gewenst aandeel onverhard
+  // (0..1) uit de schuifbalk. Voorkeur, geen garantie. Racefiets: altijd null
+  // (harde 0%-grens, taak #437).
+  unpavedTargetShare?: number | null;
 };
 
 // Build one real loop candidate at a specific target distance, store it server-
@@ -2487,6 +2506,7 @@ async function buildLoopCandidate(
     elevationPreference: ctx.elevationPreference,
     workoutTrainingType: ctx.workoutTrainingType,
     targetElevationGainM: ctx.targetElevationGainM ?? null,
+    unpavedTargetShare: ctx.unpavedTargetShare ?? null,
     wish: ctx.wish,
   });
   const loopGeomCached = ROUTE_GEOMETRY_CACHE.get(loopGeomKey);
@@ -2538,6 +2558,10 @@ async function buildLoopCandidate(
         // kandidaat die daar onverhard blijkt, verliest. Buiten NL of bij een
         // bronfout weegt dit eerlijk niet mee.
         unpavedShareOf: bgtUnpavedShare,
+        // Onverhard-voorkeur (gravel/MTB, taak #440): rangschikt echte
+        // kandidaten op hun gemeten onverhard-aandeel — voorkeur, geen
+        // garantie. Racefiets: altijd null (harde 0%-grens).
+        unpavedTargetShare: ctx.unpavedTargetShare ?? null,
         // Obstakel-poort (kort tijdbudget, interactief): trap/fietsverbod/
         // afgesloten poort = harde afkeur; minste poorten wint (grenzen
         // René 30-07-2026).
@@ -2891,6 +2915,10 @@ router.post("/generate", requireAuth, async (req, res) => {
             plannedWorkoutId,
             wish,
             targetElevationGainM,
+            unpavedTargetShare: coerceUnpavedTargetShare(
+              body.unpavedPreferencePct,
+              bikeType,
+            ),
           },
           targetDistanceKm,
         );
@@ -3274,6 +3302,10 @@ router.post("/generate/options", requireAuth, async (req, res) => {
       startName,
       plannedWorkoutId,
       wish,
+      unpavedTargetShare: coerceUnpavedTargetShare(
+        body.unpavedPreferencePct,
+        bikeType,
+      ),
     };
 
     // Build sequentially — each loop already fans out several provider probes,
