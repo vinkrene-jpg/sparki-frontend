@@ -13,6 +13,7 @@
     "test:admin-smoke": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs admin-smoke",
     "test:route-library-gates": "node ./scripts/run-test.mjs route-library-gates",
     "test:loop-quality-gate": "node ./scripts/run-test.mjs loop-quality-gate",
+    "test:route-alternates": "export NODE_ENV=development && export DEV_AUTH_BYPASS=true && node ./scripts/run-test.mjs route-alternates",
     "test:route-surface-sources": "node ./scripts/run-test.mjs route-surface-sources",
     "test:route-improvement": "node ./scripts/run-test.mjs route-improvement",
     "test:disk-usage": "node ./scripts/run-test.mjs disk-usage",
