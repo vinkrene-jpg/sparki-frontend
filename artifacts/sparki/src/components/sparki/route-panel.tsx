@@ -232,6 +232,21 @@ const BIKE_OPTIONS: { value: BikeType; label: string; hint: string }[] = [
 // Honest derivation: map the athlete's real profile discipline to the bike type
 // the routing profile should use — the same mapping the plan engine uses. Returns
 // null when the discipline gives no clear signal, so Sparki never guesses.
+// Taak #446: onthouden onverhard-voorkeur per fietstype (alleen gravel/MTB;
+// racefiets kent geen instelbare waarde en dus geen geheugen). Waarden buiten
+// het schuifbereik (0–60, stap 5) worden genegeerd — dan geldt de standaard.
+function readStoredUnpavedPct(bike: BikeType): number | null {
+  try {
+    const raw = localStorage.getItem(`sparki:unpaved-pct:${bike}`)
+    if (raw === null) return null
+    const n = Number(raw)
+    if (!Number.isFinite(n) || n < 0 || n > 60 || n % 5 !== 0) return null
+    return n
+  } catch {
+    return null
+  }
+}
+
 function disciplineToBikeType(discipline: string | null): BikeType | null {
   if (!discipline) return null
   const d = discipline.toLowerCase()
@@ -1485,8 +1500,31 @@ function RouteGenerator({
   // Onverhard-voorkeur (taak #440): gewenst percentage onverhard, alleen
   // instelbaar voor gravel/MTB. Racefiets/gewone fiets: vast 0 (harde grens,
   // taak #437). Een voorkeur voor de kandidaatselectie — nooit een garantie.
-  const [unpavedPct, setUnpavedPct] = useState(30)
+  // Taak #446: de laatst gekozen waarde wordt per fietstype onthouden in
+  // localStorage (per apparaat — dit is een presentatievoorkeur voor de
+  // schuifbalk, geen profieldata; een servervoorkeur zou hier zwaarder zijn
+  // dan nodig en het gedrag blijft eerlijk hetzelfde per apparaat).
+  const [unpavedPct, setUnpavedPct] = useState(() =>
+    readStoredUnpavedPct("gravel") ?? 30,
+  )
   const unpavedAdjustable = bikeType === "gravel" || bikeType === "mtb"
+  // Bij wisselen van fietstype: laad de onthouden waarde voor dát type
+  // (gravel en MTB hebben elk een eigen geheugen). Racefiets blijft vast 0
+  // via `unpavedAdjustable` — de opgeslagen gravel/MTB-waarde blijft bewaard.
+  useEffect(() => {
+    if (!unpavedAdjustable) return
+    setUnpavedPct(readStoredUnpavedPct(bikeType) ?? 30)
+  }, [bikeType, unpavedAdjustable])
+  function chooseUnpavedPct(value: number) {
+    setUnpavedPct(value)
+    if (!unpavedAdjustable) return
+    try {
+      localStorage.setItem(`sparki:unpaved-pct:${bikeType}`, String(value))
+    } catch {
+      // localStorage kan geweigerd worden (privacy-modus) — schuifbalk werkt
+      // dan gewoon zonder geheugen.
+    }
+  }
   const [trainingType, setTrainingType] = useState("duurtraining")
   const [workoutId, setWorkoutId] = useState<string>("")
   const [distance, setDistance] = useState("40")
@@ -2211,7 +2249,7 @@ function RouteGenerator({
                     max={60}
                     step={5}
                     value={unpavedPct}
-                    onChange={(e) => setUnpavedPct(Number(e.target.value))}
+                    onChange={(e) => chooseUnpavedPct(Number(e.target.value))}
                     aria-label="Onverhard-voorkeur (percentage)"
                     className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-white/15 accent-cyan-300"
                   />
