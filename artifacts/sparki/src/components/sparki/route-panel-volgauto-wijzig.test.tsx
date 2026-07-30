@@ -156,7 +156,9 @@ mock.module("@tanstack/react-query", {
 })
 mock.module("@/lib/api", { namedExports: { apiFetch: async () => ({}) } })
 mock.module("@/lib/telemetry", { namedExports: { trackScreen: () => {} } })
-mock.module("@/components/ds", { namedExports: { IconCheck: Null } })
+mock.module("@/components/ds", {
+  namedExports: { IconCheck: Null, DsStatus: Null },
+})
 mock.module("@/components/sparki/ui", {
   namedExports: {
     SectionLabel: Null,
@@ -344,4 +346,44 @@ test("wijzig met routepunten: Bewaard wisselt naar Maken, bouwer heeft routepunt
     "na Bereken route hoort er een echte nieuwe kandidaat te staan",
   )
   await maken.cleanup()
+})
+
+// ---------------------------------------------------------------------------
+// Regressie — querycontext (bv. Samen) blijft behouden bij de tabwissel
+// ---------------------------------------------------------------------------
+
+test("wijzig met routepunten vanuit Samen-context: view=maken én bestaande queryparameter blijven, routepunten geladen", async () => {
+  routesData = [makeRoute({})]
+  navigaties.length = 0
+
+  // Start vanuit Bewaard MET bestaande querycontext (Samen-navigatie).
+  window.location.href = "http://localhost/routes?samen=1&view=bewaard"
+  const bewaard = await renderPanel("bewaard")
+  await click(findButton(bewaard.el, "+ wijzig met routepunten"))
+
+  assert.equal(navigaties.length, 1, "precies één navigatie verwacht")
+  const doel = new URL(navigaties[0], "http://localhost")
+  assert.equal(doel.pathname, "/routes", "bestemming blijft /routes")
+  assert.equal(
+    doel.searchParams.get("view"),
+    "maken",
+    "de bestemming hoort view=maken te zijn",
+  )
+  assert.equal(
+    doel.searchParams.get("samen"),
+    "1",
+    "de bestaande Samen-queryparameter hoort behouden te blijven",
+  )
+  await bewaard.cleanup()
+
+  // Na de tabwissel: de routepunten worden nog steeds geconsumeerd en getoond.
+  const maken = await renderPanel("maken")
+  assert.ok(
+    (maken.el.textContent ?? "").includes("routepunt"),
+    "de bouwer hoort óók met querycontext de overgenomen routepunten te tonen",
+  )
+  await maken.cleanup()
+
+  // Netjes terug voor eventuele latere tests.
+  window.location.href = "http://localhost/routes"
 })

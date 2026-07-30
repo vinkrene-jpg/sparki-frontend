@@ -117,7 +117,12 @@ import {
   type RouteStep,
 } from "@/lib/routes-api";
 import { VolgautoDriverMode } from "@/components/VolgautoDriverMode";
-import { postVolgautoPosition, useVolgautoPlan } from "@/lib/volgauto-api";
+import {
+  postVolgautoPosition,
+  useVolgautoPlan,
+  volgautoPlanRouteId,
+  volgautoRolkeuzeZichtbaar,
+} from "@/lib/volgauto-api";
 
 // Hoog-contrast HUD-kleuren voor bovenop de kaart: vrijwel dekkend donker met
 // felle tekst, zodat cijfers en de richtingpijl in vol daglicht leesbaar zijn.
@@ -258,9 +263,7 @@ export default function NavigateScreen() {
   // enabled in de database staat (historische data van vóór de grendel).
   // Bugmelding René 30-07-2026.
   const { data: volgautoPlan } = useVolgautoPlan(
-    Number.isInteger(routeId) && route?.usageType === "wedstrijd"
-      ? routeId
-      : null,
+    volgautoPlanRouteId(routeId, route?.usageType),
   );
   const [volgautoRole, setVolgautoRole] = useState<"renner" | "volgauto" | null>(
     null,
@@ -744,7 +747,7 @@ export default function NavigateScreen() {
   // Alleen wanneer de instelling aan staat. "Ik fiets" laat de fietsnavigatie
   // volledig ongewijzigd; de automodus is een eigen scherm met de aparte
   // autoroute. Grote knoppen (veiligheid) + verplichte disclaimer.
-  if (volgautoPlan?.enabled && volgautoRole === null) {
+  if (volgautoRolkeuzeZichtbaar(volgautoPlan, volgautoRole)) {
     return (
       <View style={[styles.fill, styles.center, { backgroundColor: c.background, padding: 24 }]}>
         <Ionicons name="car-sport-outline" size={44} color={c.primary} />
@@ -769,7 +772,7 @@ export default function NavigateScreen() {
           <Text style={styles.rolePickText}>Ik bestuur de volgauto</Text>
         </Pressable>
         <Text style={[styles.stateBody, { color: c.mutedForeground, fontSize: 12 }]}>
-          {volgautoPlan.disclaimer}
+          {volgautoPlan?.disclaimer}
         </Text>
       </View>
     );

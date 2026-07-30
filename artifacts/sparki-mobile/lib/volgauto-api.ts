@@ -38,6 +38,31 @@ export type VolgautoPlan = {
   disclaimer: string;
 };
 
+/**
+ * Wedstrijdgrendel voor het volgautoplan (bugmelding René 30-07-2026):
+ * het plan wordt UITSLUITEND opgehaald op routes die expliciet als wedstrijd
+ * gemarkeerd zijn. Op gewone trainings-/toertochtroutes geeft dit null —
+ * óók als er in de database nog een oud enabled plan van vóór de grendel
+ * staat: zonder route-id wordt er niets opgehaald en verschijnt er dus
+ * nooit een rolkeuze.
+ */
+export function volgautoPlanRouteId(
+  routeId: number,
+  usageType: string | null | undefined,
+): number | null {
+  return Number.isInteger(routeId) && usageType === "wedstrijd"
+    ? routeId
+    : null;
+}
+
+/** Rolkeuze alleen bij een daadwerkelijk opgehaald, enabled plan zonder gekozen rol. */
+export function volgautoRolkeuzeZichtbaar(
+  plan: { enabled: boolean } | null | undefined,
+  role: "renner" | "volgauto" | null,
+): boolean {
+  return !!plan?.enabled && role === null;
+}
+
 /** Volgautoplan van een route (null wanneer de instelling uit staat). */
 export function useVolgautoPlan(routeId: number | null) {
   return useQuery({
