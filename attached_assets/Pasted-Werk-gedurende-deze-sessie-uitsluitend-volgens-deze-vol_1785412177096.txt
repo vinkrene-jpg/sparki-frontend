@@ -1,0 +1,67 @@
+Werk gedurende deze sessie uitsluitend volgens deze volgorde.
+
+DEEL 1 — HOOFDSTUK A CORRECTIERONDE
+
+Verwerk de vier bevindingen uit de onafhankelijke Copilot-retroreview:
+
+1. START_VANDAAG_001
+- Neem de gekalibreerde volgorde volledig over:
+  gezondheid → racedag → na-rit → geplande rit/training → voorbereiding → herstel → balans.
+- Een voorstel komt alleen boven een geplande training wanneer er een aantoonbare reden is om die training aan te passen.
+- Markeer ontbrekend gedrag als bouwopgave.
+
+2. START_SPORTPASPOORT_001
+- Verwijder 180 dagen als open algemene aanname.
+- Leg vast dat versheid per waardesoort verschilt.
+- Benoem de huidige uniforme grens als bestaand gedrag.
+- Markeer veldspecifieke grenzen als bouwopgave.
+
+3. START_SPORTPASPOORT_001 en START_DOELEN_001
+Markeer als bouwopgave:
+- confidence hoog/redelijk/laag zichtbaar maken in de UI;
+- afgeleide doelen pas na expliciete gebruikersbevestiging het plan laten sturen.
+
+4. Werk de verouderde next_action-teksten bij Sportpaspoort, Vandaag en Doelen bij naar werkelijke bouw- en bewijsacties.
+
+Wijzig uitsluitend:
+docs/PRODUCT_PROMISES/SPARKI_PROMISE_CALIBRATION.yaml
+
+Voer YAML-lint en kalibratievalidator uit.
+Commit en push dit als één afzonderlijke correctiecommit.
+Wijzig geen productcode.
+Raak B+C, D en H niet inhoudelijk aan.
+
+DEEL 2 — HOOFDSTUK F VOORBEREIDEN
+
+Start pas nadat deel 1 volledig is gepusht.
+
+Voer voor hoofdstuk F — Voeding, hydratatie en gewicht uitsluitend een grondige, alleen-lezen inventarisatie uit.
+
+Onderzoek:
+- bestaande productcode;
+- API’s, engines, databronnen en modellen;
+- bestaande veiligheidsregels;
+- jeugdlogica;
+- RED-S-risico’s;
+- gewichtsdoelen;
+- voeding vóór, tijdens en na training;
+- hydratatie;
+- wedstrijdvoeding;
+- koppeling met training, herstel en gezondheid;
+- mock-, fallback- en hardcoded data;
+- bestaande tests en ontbrekend bewijs.
+
+Lever alleen een conceptsectie voor het kalibratiebestand op.
+Nog niet committen.
+Geen productcode wijzigen.
+Geen vragen namens René beantwoorden.
+Geen hoofdstuk E of G starten.
+
+Stop met:
+- inventarisatie;
+- voorgestelde beloften;
+- bekende gaten;
+- externe bronnenbehoefte;
+- afkeurregels met meetniveau en tegenvoorbeelden;
+- kalibratievragen voor René;
+- lijst van vermoedelijke bouwopgaven.
