@@ -61,6 +61,26 @@ alleen het eerlijke gat is gevuld — precies het contract van de controlelaag.
    bbox met de dichte kern van Hengelo/Borne) gaf een eerlijke 502 op `/surfaces`: de volledige
    bbox raakte het 10.000-ways-plafond én één kwadrant (52.2644–52.3199 N / 6.7577–6.8584 O)
    raakte het plafond opnieuw — de splitsing is één niveau diep, daarna volgt een eerlijk gat.
+   **Aanvulling hertest (taak #476, 2026-07-30, hoofdomgeving):** de oorspronkelijke route #262
+   bestond alleen in de geïsoleerde taak-database van #433 en is nooit meegemerged. Voor de
+   live hertest is dezelfde generatie-opdracht opnieuw uitgevoerd (lus, cycling, racefiets,
+   start Hengelo 52.2659 N / 6.7930 O) en opgeslagen als route **#262** in de hoofdomgeving
+   ("Proof #476 Hengelo hertest route-262-vervanger 44 km", 43,58 km, 1010 geometriepunten,
+   bbox 52.1271–52.2662 N / 6.7914–6.9186 O). Deze bbox raakt aantoonbaar hetzelfde plafond:
+   een directe Overpass-query op de volledige bbox gaf exact **10.000 elements** terug
+   (afgekapt antwoord) — dezelfde conditie die vóór de fix een eerlijke 502 opleverde.
+
+   **Meting:** `GET /api/routes/262/surfaces` → **HTTP 200** met volledige breakdown:
+   asfalt 56,4 % · verhard_fietspad 31,6 % · klinkers 7,5 % · compact_gravel 1,8 % ·
+   onverhard 1,4 % · los_gravel 0,8 % · bospad 0,2 % · **onbekend 0,3 %**; totalKm 43,6;
+   118 segmenten; `bgt: { checkedSamples: 51, resolvedSamples: 44 }` (live PDOK).
+   De recursieve kwadrant-splitsing (`MAX_SPLIT_DEPTH = 3` in `lib/route-surfaces.ts`)
+   levert dus een compleet antwoord op een bbox die het 10.000-ways-plafond raakt —
+   **geen 502 meer**. Kanttekening: tijdens de meting waren 2 van de 3 Overpass-mirrors
+   tijdelijk onbereikbaar (000/504 zelfs op een mini-query); enkele eerdere pogingen gaven
+   toen wél een eerlijke 502 (waarneming 2 blijft dus van kracht) — na een rustmoment
+   slaagde de meting in één keer.
+
 2. **Overpass-verzadiging door eigen achtergrondverkeer.** Tijdens routegeneratie draaien
    road-objects-syncs tegen dezelfde Overpass-mirrors; de surfaces-query kan dan in de wachtrij
    voorbij zijn 25 s-timeout lopen (reeks 502's die na een rustmoment/herstart verdwenen).
