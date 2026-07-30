@@ -1,0 +1,70 @@
+Verwerk uitsluitend de vier bevindingen uit de onafhankelijke Copilot-retroreview van hoofdstuk A.
+
+SCOPE
+Wijzig alleen:
+docs/PRODUCT_PROMISES/SPARKI_PROMISE_CALIBRATION.yaml
+
+Wijzig geen productcode.
+Raak hoofdstukken B+C, D en H niet inhoudelijk aan.
+
+CORRECTIES
+
+1. START_VANDAAG_001
+Pas replit_definition.recommended_default aan zodat René’s besluit volledig is verwerkt:
+
+- volgorde: gezondheid → racedag → na-rit → geplande rit/training → voorbereiding → herstel → balans;
+- een voorstel komt alleen boven een geplande training wanneer er een aantoonbare reden is om die training aan te passen;
+- markeer dit als nieuw gewenst gedrag/bouwopgave wanneer de huidige code dit nog niet afdwingt.
+
+2. START_SPORTPASPOORT_001
+Verwijder de verouderde open aanname dat 180 dagen een tijdelijke algemene grens is.
+
+Leg vast:
+- versheid verschilt per waardesoort;
+- de huidige uniforme grens van 180 dagen is bestaand gedrag;
+- vervanging door veldspecifieke versheidsgrenzen is een bouwopgave.
+
+3. START_SPORTPASPOORT_001 en START_DOELEN_001
+Markeer expliciet als bouwopgave:
+
+- zekerheid hoog/redelijk/laag zichtbaar maken in de gebruikersinterface;
+- afgeleide doelen pas na bevestiging door de gebruiker het plan laten sturen.
+
+Pas zo nodig de doelenbelofte, recommended_default en next_action aan zodat nergens directe doorwerking zonder bevestiging wordt gesuggereerd.
+
+4. NEXT ACTIONS
+Werk de next_action.description bij Sportpaspoort, Vandaag en Doelen bij.
+
+Deze mogen niet meer vragen om René’s kalibratie, omdat rene_calibration.completed al true is.
+
+Vervang ze door de daadwerkelijke eerstvolgende bouw- of bewijsacties:
+- Sportpaspoort: veldspecifieke versheid + confidence-weergave bouwen en testen;
+- Vandaag: conditionele voorstelprioriteit bouwen en via gebruikerspad testen;
+- Doelen: bevestigingsstap voor afgeleide doelen bouwen en doelconflictflow testen.
+
+STATUSREGELS
+
+- Laat rene_calibration.completed op true.
+- Zet niets op proof_stage: executed zonder echte uitgevoerde test.
+- Laat product_proof.status op not_proven.
+- Markeer nieuw gewenst gedrag eerlijk als bouwopgave.
+- Behoud correcte rule_type, measurement_level en counterexamples.
+
+CONTROLE
+
+Voer YAML-lint en kalibratievalidator uit.
+Controleer dat alleen hoofdstuk A inhoudelijk is gewijzigd.
+
+COMMIT
+
+Maak één aparte correctiecommit en push naar main.
+
+Rapporteer:
+1. commit-SHA;
+2. exact gewijzigd bestand;
+3. validator- en lintresultaat;
+4. bevestiging dat alle vier Copilot-bevindingen zijn verwerkt;
+5. bevestiging dat geen productcode is gewijzigd;
+6. bevestiging dat B+C, D en H onaangeraakt zijn.
+
+Stop daarna voor onafhankelijke herreview.
