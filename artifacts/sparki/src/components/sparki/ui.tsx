@@ -34,7 +34,7 @@ export function Delta({ value, invert = false }: { value: number; invert?: boole
     <span
       className="font-mono text-[10px] tabular-nums"
       style={{
-        color: positive ? ACCENT : "rgba(255,140,120,0.85)",
+        color: positive ? ACCENT : "var(--color-negative)",
         fontVariantNumeric: "tabular-nums lining-nums",
       }}
     >

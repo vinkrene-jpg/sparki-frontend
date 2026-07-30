@@ -2345,8 +2345,7 @@ export function RouteGenerator({
                 key={b.value}
                 type="button"
                 onClick={() => chooseBike(b.value)}
-                className="flex flex-1 flex-col items-center rounded-xl border py-2.5 transition-colors"
-                className={bikeType === b.value ? "border-accent-cyan/50 bg-accent-cyan/[0.12]" : "border-white/10 bg-transparent"}
+                className={`flex flex-1 flex-col items-center rounded-xl border py-2.5 transition-colors ${bikeType === b.value ? "border-accent-cyan/50 bg-accent-cyan/[0.12]" : "border-white/10 bg-transparent"}`}
               >
                 <span
                   className={`text-[13px] font-medium ${bikeType === b.value ? "text-accent-cyan" : "text-white/60"}`}
@@ -2454,8 +2453,7 @@ export function RouteGenerator({
               key={e.value}
               type="button"
               onClick={() => setElevationPreference(e.value)}
-              className="flex-1 rounded-xl border py-2.5 text-[13px] transition-colors"
-              className={elevationPreference === e.value ? "border-accent-cyan/50 bg-accent-cyan/[0.12] text-accent-cyan" : "border-white/10 bg-transparent text-white/60"}
+              className={`flex-1 rounded-xl border py-2.5 text-[13px] transition-colors ${elevationPreference === e.value ? "border-accent-cyan/50 bg-accent-cyan/[0.12] text-accent-cyan" : "border-white/10 bg-transparent text-white/60"}`}
             >
               {e.label}
             </button>
@@ -2630,8 +2628,7 @@ export function RouteGenerator({
                   key={p.v}
                   type="button"
                   onClick={() => setPlaceMode(p.v)}
-                  className="flex min-w-[calc(50%-4px)] flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-[13px] transition-colors sm:min-w-0"
-                  className={active ? "border-accent-cyan/50 bg-accent-cyan/[0.12] text-accent-cyan" : "border-white/10 bg-transparent text-white/60"}
+                  className={`flex min-w-[calc(50%-4px)] flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-[13px] transition-colors sm:min-w-0 ${active ? "border-accent-cyan/50 bg-accent-cyan/[0.12] text-accent-cyan" : "border-white/10 bg-transparent text-white/60"}`}
                 >
                   <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
                   {p.l}
@@ -3586,8 +3583,7 @@ export function RoutePanel({
           <button
             type="button"
             onClick={() => setShowSavedPicker((s) => !s)}
-            className="flex items-center gap-2 rounded-full border border-white/[0.14] px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 hover:text-white/90"
-            className={showSavedPicker ? "border-accent-cyan/50 text-accent-cyan" : ""}
+            className={`flex items-center gap-2 rounded-full border border-white/[0.14] px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 hover:text-white/90 ${showSavedPicker ? "border-accent-cyan/50 text-accent-cyan" : ""}`}
           >
             <Flag className="h-4 w-4" strokeWidth={1.75} />
             Bewaarde routes ({routes.length})
@@ -3765,8 +3761,7 @@ export function RoutePanel({
             <div
               key={r.id}
               id={`route-${r.id}`}
-              className="rounded-2xl transition-shadow duration-500"
-              className={highlightId === r.id ? "shadow-[0_0_0_1.5px_var(--accent-cyan)]" : ""}
+              className={`rounded-2xl transition-shadow duration-500 ${highlightId === r.id ? "shadow-[0_0_0_1.5px_var(--accent-cyan)]" : ""}`}
             >
               <RouteCard
                 route={r}

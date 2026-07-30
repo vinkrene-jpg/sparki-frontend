@@ -222,7 +222,7 @@ export default function LabPage() {
           <Skeleton className="mt-4 h-[260px] w-[260px] rounded-full" />
         ) : measurableAxes.length >= 3 ? (
           <>
-            <BioRadar size={260} accent="oklch(0.82 0.16 200)" axes={measurableAxes} />
+            <BioRadar size={260} accent="var(--accent-cyan)" axes={measurableAxes} />
             <p className="mt-1 max-w-[18rem] text-pretty text-center text-[12px] leading-relaxed text-white/40">
               {measurableAxes.length === radarAxes.length
                 ? "Alle zes signalen berekend uit je eigen data."
