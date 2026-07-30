@@ -7,6 +7,18 @@
 # onbekend wegdek: rule_type unverifiable op racefiets (0% norm; niet geverifieerd = niet als
 # geschikt aanbevelen, tonen alleen na expliciete keuze, %+locaties zichtbaar); wereldmarkt-lat: elk onderdeel ≥9/10 t.o.v. de beste
 # marktspeler (Komoot voor routes).
+#
+# WERKAFSPRAAK POORT 5B (bindend, 2026-07-30, taak #488 — zie
+# docs/PRODUCT_PROMISES/POORT_5B_SANITY_CHECK.md en Product Proof Doctrine §11):
+# 1) Vóór elke praktijktest-oplevering wordt de Poort 5b-sanity-check uitgevoerd en
+#    geregistreerd in docs/PRODUCT_PROMISES/sanity-checks/ (geen dode bediening, geen
+#    contextueel onzinnige functies, geen laad-/placeholdertekst als eindresultaat).
+# 2) Elke door een tester gevonden fout in een module uit dít document krijgt als vast
+#    onderdeel van de fix: een afkeurregel mét tegenvoorbeeld bij die module
+#    (hard_reject_rules, of sanity_reject_rules voor bedieningsfouten) én een
+#    UITGEVOERDE test die aantoont dat het tegenvoorbeeld wordt geweigerd
+#    (proof_method + verwijzing naar bewijsbestand/testnaam). Een fix zonder beide is
+#    niet af.
 chapter_d_routes_en_navigatie:
 
   - id: ROUTES_GENERATOR_001

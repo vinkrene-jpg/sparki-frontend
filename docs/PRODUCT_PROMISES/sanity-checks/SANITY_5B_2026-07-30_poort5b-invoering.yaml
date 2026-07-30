@@ -1,0 +1,19 @@
+# Eerste geregistreerde Poort 5b-rapport: de invoering van de poort zelf (taak #488).
+delivery: "Invoering Poort 5b: werkwijze-documentatie, rapportformat, validator (geen UI-wijziging)"
+date: "2026-07-30"
+checked_by: "replit"
+surfaces:
+  - "docs/PRODUCT_PROMISES/POORT_5B_SANITY_CHECK.md (documentatie-oplevering, geen app-schermen gewijzigd)"
+  - "scripts/check-sanity-reports.mjs (validator, uitgevoerd op geldig én ongeldig testrapport)"
+
+checks:
+  dead_controls:
+    not_applicable: "deze oplevering wijzigt geen enkele app-UI; er zijn geen nieuwe of gewijzigde knoppen/schakelaars/links"
+  context_nonsense:
+    not_applicable: "geen getoonde opties gewijzigd; oplevering is documentatie + controle-script"
+  placeholder_as_result:
+    cases:
+      - case: "documentatie en template bevatten geen oningevulde placeholders behalve de bedoelde <>-invulvelden in TEMPLATE.yaml; validator weigert niet-ingevulde <>-tekst in echte rapporten (zelftest: badtest-rapport correct afgekeurd, selftest-rapport correct goedgekeurd, 30-07-2026)"
+        result: "pass"
+
+verdict: "deliverable"

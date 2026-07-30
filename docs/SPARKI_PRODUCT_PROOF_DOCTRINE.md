@@ -176,3 +176,25 @@ Regels:
 4. Gebruikersbril als vast toetsmoment: elke proof beantwoordt expliciet de vraag "wat zou de producteigenaar als gebruiker hiervan zeggen?" — op basis van echte schermen en echte routes/data, niet op basis van logregels.
 
 5. Het gat wordt al testend vooraf gedicht: bij elke belofte wordt vóór "gereed" minimaal één echt gebruiksmoment samen met de producteigenaar getest (of klaargezet om te testen), zodat verwachtingsverschillen zichtbaar worden vóórdat de module gereed heet.
+
+----------------------------------------
+11. POORT 5B: VERPLICHTE SANITY-CHECK VÓÓR ELKE PRAKTIJKTEST-OPLEVERING (v1.2)
+----------------------------------------
+
+Vóór elke oplevering aan praktijktesters doorloopt de bouwer zelf een lichte, verplichte
+zelfcontrole — los van en aanvullend op het technische bewijs:
+
+1. Geen dode bediening: elke zichtbare knop, schakelaar of link doet daadwerkelijk iets.
+2. Geen contextueel onzinnige functies: elke getoonde optie past bij de gekozen context.
+3. Geen placeholder- of laadtekst als eindresultaat.
+
+De controle wordt uitgevoerd op echte schermen en gerapporteerd in een registreerbaar
+rapport (welke gevallen gecontroleerd, met welk resultaat) in
+docs/PRODUCT_PROMISES/sanity-checks/. Een fail blokkeert de oplevering.
+Formaat, rapportregels en de bindende werkafspraak bij testerfouten in gekalibreerde
+modules staan in docs/PRODUCT_PROMISES/POORT_5B_SANITY_CHECK.md.
+
+Vaste werkafspraak: elke door een tester gevonden fout in een module uit
+SPARKI_PROMISE_CALIBRATION.yaml krijgt als vast onderdeel van de fix een afkeurregel
+mét tegenvoorbeeld in dat document én een uitgevoerde test die aantoont dat het
+tegenvoorbeeld voortaan wordt geweigerd.

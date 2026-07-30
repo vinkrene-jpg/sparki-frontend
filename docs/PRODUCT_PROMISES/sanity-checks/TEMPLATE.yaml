@@ -1,0 +1,28 @@
+# Poort 5b sanity-check rapport — TEMPLATE
+# Kopieer naar SANITY_5B_<JJJJ-MM-DD>_<korte-slug>.yaml en vul in.
+# Format bewaakt door scripts/check-sanity-reports.mjs (zie ../POORT_5B_SANITY_CHECK.md).
+
+delivery: "<module/onderdeel + korte omschrijving van wat wordt opgeleverd>"
+date: "2026-01-01"
+checked_by: "replit"
+surfaces:
+  - "<scherm of flow die daadwerkelijk is doorlopen>"
+
+checks:
+  dead_controls:
+    # Iedere zichtbare knop/schakelaar/link doet iets. Minimaal één concreet geval,
+    # of not_applicable met expliciete reden.
+    cases:
+      - case: "<welke control, in welke context, hoe getest>"
+        result: "pass"  # pass | fail — bij fail: toelichting verplicht
+  context_nonsense:
+    cases:
+      - case: "<welke optie, waarom die in deze context wel/niet zinnig is>"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "<welke tekst/plek gecontroleerd op blijvende laad-/placeholdertekst>"
+        result: "pass"
+
+# verdict: deliverable alleen als alle results pass zijn; anders blocked.
+verdict: "deliverable"
