@@ -112,7 +112,7 @@ Naar aanleiding van routeopmerkingen met poorten/fietssluizen/trappen die je fie
 1. **Trap = harde afkeur.** Een kandidaat-lus met een trap wordt nooit gekozen (racefiets én gravel). Uitvoering: GraphHopper custom model straft `road_class == STEPS` (×0.05) én de kandidaatselectie geeft +1000 straf op trappen (Overpass-nameting).
 2. **Poorten: de kandidaat met de minste poorten wint.** Nul poorten eisen is in NL onhaalbaar; daarom lichte oplopende straf per poort in de selectie.
 3. **Doorfietsbare poort wordt niet gemeld.** Een poort waar fietsers volgens de kaart gewoon door kunnen (fietssluis, bicycle=yes/designated/permissive, access=yes) verschijnt niet in de routeopmerkingen — benoemen zaait alleen twijfel.
-4. **Poort naar privéterrein / op slot = harde weigering.** Zo'n kandidaat krijgt +1000 in de selectie en een harde melding als hij toch (alternatiefloos) doorkomt.
+4. **Poort naar privéterrein / op slot = absolute weigering.** Aanscherping René (30-07): zo'n route mag NOOIT worden aangeboden — ook niet alternatiefloos. Blijkt de beste kandidaat aantoonbaar geblokkeerd (trap, fietsverbod of afgesloten/privé-poort), dan faalt de generatie eerlijk met een duidelijke fout in plaats van een 'minst slechte' route te leveren.
 5. **"Toegangsbeperking" gesplitst.** Aantoonbaar fietsverbod (bicycle=no/private) ⇒ oordeel "afgeraden" + eerlijke reden (forbiddenKm); algemene access-beperking zonder fiets-uitzondering ⇒ mildere melding (restrictedKm, "mogelijk niet openbaar; mogelijk uitzondering").
 
 Meting is eerlijk: mislukt de Overpass-nameting, dan weegt hij niet mee (nooit gokken); interactieve paden meten met kort tijdbudget (2,5 s), achtergrondpaden volledig.

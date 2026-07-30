@@ -513,7 +513,15 @@ export async function generateVariedLoop(
     opts?.obstaclesOf != null &&
     pool.length > 1
   ) {
-    const measured = new Set<(typeof pool)[number]>();
+    const measured = new Map<
+      (typeof pool)[number],
+      { steps: number; forbidden: number; blockedGates: number; gates: number } | null
+    >();
+    const hardBlocked = (o: {
+      steps: number;
+      forbidden: number;
+      blockedGates: number;
+    }) => o.steps > 0 || o.forbidden > 0 || o.blockedGates > 0;
     const applyPenalties = async (cands: typeof pool) => {
       const fresh = cands.filter((c) => !measured.has(c));
       if (fresh.length === 0) return false;
@@ -522,13 +530,11 @@ export async function generateVariedLoop(
       );
       let adjusted = false;
       for (let i = 0; i < fresh.length; i++) {
-        measured.add(fresh[i]!);
+        measured.set(fresh[i]!, obstacles[i] ?? null);
         const o = obstacles[i];
         if (o == null) continue;
         let penalty = 0;
-        if (o.steps > 0) penalty += 1000;
-        if (o.forbidden > 0) penalty += 1000;
-        if (o.blockedGates > 0) penalty += 1000;
+        if (hardBlocked(o)) penalty += 1000;
         penalty += Math.min(o.gates, 10) * 0.15;
         if (penalty > 0) {
           fresh[i]!.score += penalty;
@@ -547,6 +553,16 @@ export async function generateVariedLoop(
           pool.sort((a, b) => a.score - b.score);
         }
       }
+    }
+    // Harde weigering (grens René 30-07-2026): een aantoonbaar geblokkeerde
+    // route (trap, fietsverbod, afgesloten/privé-poort) mag NOOIT worden
+    // aangeboden — ook niet als "minst slechte". Blijkt de winnaar na alle
+    // rondes toch geblokkeerd, dan faalt de generatie eerlijk.
+    const winnerObstacles = measured.get(pool[0]!);
+    if (winnerObstacles != null && hardBlocked(winnerObstacles)) {
+      throw new Error(
+        "Geen route gevonden zonder trap, fietsverbod of afgesloten poort in dit gebied. Probeer een ander startpunt of een andere afstand.",
+      );
     }
   }
 

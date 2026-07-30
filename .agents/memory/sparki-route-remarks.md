@@ -27,7 +27,7 @@ description: OSM/Overpass route-warnings engine and slider↔map elevation profi
 
 # Obstakelgrenzen René (30-07-2026, bindend)
 
-- Trap = harde afkeur (custom model STEPS ×0.05 + selectiestraf +1000); poorten: minste wint (lichte straf); doorfietsbare poort (cycle_barrier, bicycle=yes/designated/permissive, access=yes) wordt NIET gemeld; poort op slot/privé zonder fiets-uitzondering = "Afgesloten poort" + +1000.
+- Trap = harde afkeur (custom model STEPS ×0.05 + selectiestraf +1000); poorten: minste wint (lichte straf); doorfietsbare poort (cycle_barrier, bicycle=yes/designated/permissive, access=yes) wordt NIET gemeld; poort op slot/privé zonder fiets-uitzondering = "Afgesloten poort"; aantoonbaar geblokkeerde winnaar (trap/verbod/privé-poort) ⇒ generatie FAALT eerlijk (nooit "minst slechte" aanbieden — absolute grens René).
 - `getRouteObstacles`/`routeObstaclesOf` (route-remarks) voedt `obstaclesOf` in generateVariedLoop; interactieve paden budgetMs 2500 → null (nooit wachten/gokken).
 - Toegangssplitsing in route-surfaces: bicycle=no/private ⇒ `forbiddenKm` ⇒ verdict "afgeraden"; access=no/private zonder fiets-uitzondering ⇒ `restrictedKm` ⇒ milde reden + cap "gedeeltelijk".
 **Why:** routeopmerkingen meldden obstakels die je fietsend niet kunt oplossen; melden zonder mijden is oneerlijk, en doorfietsbare poorten benoemen zaait twijfel.
