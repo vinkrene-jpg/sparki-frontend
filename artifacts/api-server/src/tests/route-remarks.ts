@@ -92,11 +92,21 @@ scenario("bicycle=no is harde beperking (niet onzeker)", () => {
   assert(!c!.uncertain, "bicycle=no is expliciet, geen indicatie");
 });
 
-scenario("access=private zónder bicycle=yes is een indicatie", () => {
+scenario("access=private zónder fietsuitzondering is HARD (geen indicatie)", () => {
+  // Afkeurregel 30-07-2026: privéterrein zonder aantoonbare fietsuitzondering
+  // telde als "indicatie" en woog daardoor nooit mee in de blokkadepoort —
+  // een MTB-route over privéterrein werd toch "KLAAR". Nu hard.
   const c = classifyRemarkTags({ highway: "service", access: "private" });
   assert(c && c.kind === "beperkte_toegang", "verwacht beperkte toegang");
-  assert(c!.uncertain, "access=private moet als indicatie gelden");
+  assert(!c!.uncertain, "access=private zonder fietsuitzondering moet hard zijn");
   assert(c!.label === "Privéterrein", `label: ${c!.label}`);
+});
+
+scenario("access=private mét bicycle=designated/permissive geeft GEEN opmerking", () => {
+  for (const bicycle of ["designated", "permissive"] as const) {
+    const c = classifyRemarkTags({ highway: "service", access: "private", bicycle });
+    assert(c === null, `bicycle=${bicycle} is een expliciete fietsuitzondering`);
+  }
 });
 
 scenario("access=private mét bicycle=yes geeft GEEN opmerking", () => {

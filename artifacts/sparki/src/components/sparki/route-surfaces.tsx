@@ -171,6 +171,7 @@ export function RouteSurfacesPanel({
   isError,
   selectedKind,
   onSelectKind,
+  preferredBike,
   className = "",
 }: {
   data: RouteSurfacesResponse | undefined
@@ -179,6 +180,11 @@ export function RouteSurfacesPanel({
   // Geselecteerd wegtype → de kaart licht de betreffende segmenten op.
   selectedKind?: SurfaceKind | null
   onSelectKind?: (kind: SurfaceKind | null) => void
+  // Expliciet gekozen fietstype van deze route (bv. MTB): dat oordeel is de
+  // hoofdbeoordeling; de andere fietstypen worden compact en secundair
+  // getoond (René, 30-07-2026 — vergelijking mag de hoofdbeoordeling niet
+  // vertroebelen).
+  preferredBike?: BikeSuitability["bike"] | null
   className?: string
 }) {
   const [open, setOpen] = useState(true)
@@ -288,19 +294,46 @@ export function RouteSurfacesPanel({
                 <SourceComparisonCard c={data.vergelijking} />
               )}
 
-              {/* Geschiktheid per fietstype */}
-              {(data.suitability?.length ?? 0) > 0 && (
-                <>
-                  <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45">
-                    geschikt voor
-                  </p>
-                  <ul className="mt-1.5 space-y-2">
-                    {data.suitability!.map((s) => (
-                      <SuitabilityCard key={s.bike} s={s} />
-                    ))}
-                  </ul>
-                </>
-              )}
+              {/* Geschiktheid per fietstype. Bij een expliciet gekozen
+                  fietstype is dát oordeel de hoofdbeoordeling; de andere
+                  fietstypen staan er compact en secundair onder. */}
+              {(data.suitability?.length ?? 0) > 0 && (() => {
+                const all = data.suitability!
+                const primary = preferredBike
+                  ? all.find((s) => s.bike === preferredBike) ?? null
+                  : null
+                const rest = primary
+                  ? all.filter((s) => s.bike !== primary.bike)
+                  : all
+                return (
+                  <>
+                    <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45">
+                      {primary ? "geschiktheid voor jouw fietstype" : "geschikt voor"}
+                    </p>
+                    {primary && (
+                      <ul className="mt-1.5">
+                        <SuitabilityCard s={primary} />
+                      </ul>
+                    )}
+                    {primary ? (
+                      rest.length > 0 && (
+                        <p className="mt-2 text-[11px] leading-relaxed text-white/40">
+                          Ter vergelijking:{" "}
+                          {rest
+                            .map((s) => `${BIKE_LABELS[s.bike].toLowerCase()} ${VERDICT_LABELS[s.verdict].toLowerCase()}`)
+                            .join(" · ")}
+                        </p>
+                      )
+                    ) : (
+                      <ul className="mt-1.5 space-y-2">
+                        {rest.map((s) => (
+                          <SuitabilityCard key={s.bike} s={s} />
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                )
+              })()}
 
               {/* Eerlijke BGT-bronregel: alleen tonen als de officiële
                   overheidswegenkaart daadwerkelijk is geraadpleegd. */}

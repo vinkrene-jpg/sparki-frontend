@@ -286,6 +286,79 @@ const TRAINING_OPTIONS = [
 ]
 
 // Estimated moving time → compact "1u 23m" / "45m" label.
+// ── Opmerkingen groeperen (René, 30-07-2026): tientallen losse uitroeptekens
+// op kaart en hoogteprofiel zijn visuele vervuiling. Zachte opmerkingen met
+// hetzelfde label die dicht op elkaar liggen worden één marker met een
+// telling; er verdwijnt niets — de volledige lijst blijft in het
+// opmerkingenpaneel staan.
+const REMARK_GROUP_KM = 1.0
+
+function groupRemarkMarkers(
+  remarks: {
+    id: string
+    lat: number
+    lon: number
+    label: string
+    routeKm: number
+  }[],
+): { id: string; lat: number; lon: number; label: string }[] {
+  const sorted = [...remarks].sort((a, b) => a.routeKm - b.routeKm)
+  const out: { id: string; lat: number; lon: number; label: string; _n: number; _lastKm: number }[] = []
+  for (const r of sorted) {
+    const prev = out[out.length - 1]
+    if (
+      prev &&
+      prev.label.replace(/ \(\d+×\)$/, "") === r.label &&
+      Number.isFinite(r.routeKm) &&
+      Number.isFinite(prev._lastKm) &&
+      r.routeKm - prev._lastKm <= REMARK_GROUP_KM
+    ) {
+      prev._n += 1
+      prev._lastKm = r.routeKm
+      prev.label = `${r.label} (${prev._n}×)`
+      continue
+    }
+    out.push({ id: r.id, lat: r.lat, lon: r.lon, label: r.label, _n: 1, _lastKm: r.routeKm })
+  }
+  return out.map(({ id, lat, lon, label }) => ({ id, lat, lon, label }))
+}
+
+function groupProfileRemarkMarkers(
+  remarks: { label: string; routeKm: number }[],
+): { km: number; label: string; kind: "opmerking" }[] {
+  const sorted = remarks
+    .filter((r) => Number.isFinite(r.routeKm))
+    .sort((a, b) => a.routeKm - b.routeKm)
+  const out: { km: number; label: string; kind: "opmerking"; _n: number; _lastKm: number }[] = []
+  for (const r of sorted) {
+    const prev = out[out.length - 1]
+    if (
+      prev &&
+      prev.label.replace(/ \(\d+×\)$/, "") === r.label &&
+      r.routeKm - prev._lastKm <= REMARK_GROUP_KM
+    ) {
+      prev._n += 1
+      prev._lastKm = r.routeKm
+      prev.label = `${r.label} (${prev._n}×)`
+      continue
+    }
+    out.push({ km: r.routeKm, label: r.label, kind: "opmerking", _n: 1, _lastKm: r.routeKm })
+  }
+  return out.map(({ km, label, kind }) => ({ km, label, kind }))
+}
+
+// Expliciet gekozen fietstype van een route (uit route.surface / bikeType)
+// → het fietstype waarvan de geschiktheid de hoofdbeoordeling is.
+function preferredBikeFromSurface(
+  surface: string | null | undefined,
+): "racefiets" | "gravelbike" | "mountainbike" | null {
+  const s = (surface ?? "").toLowerCase()
+  if (/mtb|mountain/.test(s)) return "mountainbike"
+  if (/gravel/.test(s)) return "gravelbike"
+  if (/race|weg|road|asfalt/.test(s)) return "racefiets"
+  return null
+}
+
 function formatDuration(sec: number | null): string {
   if (sec == null) return "—"
   const total = Math.round(sec / 60)
@@ -896,14 +969,11 @@ function RouteCard({
   // dan informatie (staat in de lijst en de wegdekverdeling), geen
   // waarschuwingsmarker die de kaart vol uitroeptekens zet.
   const unpavedIsWelcome = /gravel|mtb|mountain/i.test(route.surface ?? "")
-  const remarkMarkers = (remarksQuery.data?.remarks ?? [])
-    .filter((r) => !(unpavedIsWelcome && r.kind === "onverhard"))
-    .map((r) => ({
-      id: r.id,
-      lat: r.lat,
-      lon: r.lon,
-      label: r.label,
-    }))
+  const remarkMarkers = groupRemarkMarkers(
+    (remarksQuery.data?.remarks ?? []).filter(
+      (r) => !(unpavedIsWelcome && r.kind === "onverhard"),
+    ),
+  )
   // Wegtypen & ondergrond + geschiktheid per fietstype (echte OSM-tags).
   const surfacesQuery = useRouteSurfaces(geometry.length > 1 ? route.id : null)
   const [surfaceKind, setSurfaceKind] = useState<SurfaceKind | null>(null)
@@ -952,14 +1022,9 @@ function RouteCard({
           ? "wedstrijd"
           : "info") as ProfileMarker["kind"],
       })),
-    // Routeopmerkingen (echte OSM-gegevens) ook op het hoogteprofiel.
-    ...(remarksQuery.data?.remarks ?? [])
-      .filter((r) => Number.isFinite(r.routeKm))
-      .map((r) => ({
-        km: r.routeKm,
-        label: r.label,
-        kind: "opmerking" as ProfileMarker["kind"],
-      })),
+    // Routeopmerkingen (echte OSM-gegevens) ook op het hoogteprofiel —
+    // gegroepeerd, zodat het profiel niet vol losse uitroeptekens staat.
+    ...groupProfileRemarkMarkers(remarksQuery.data?.remarks ?? []),
   ]
 
   function exportRoute(format: RouteExportFormat) {
@@ -1229,6 +1294,7 @@ function RouteCard({
           isError={surfacesQuery.isError}
           selectedKind={surfaceKind}
           onSelectKind={setSurfaceKind}
+          preferredBike={preferredBikeFromSurface(route.surface)}
           className="mt-4"
         />
       )}
@@ -3089,23 +3155,19 @@ export function RouteGenerator({
                 height={430}
                 className="mt-3"
                 positionKm={candPosKm}
-                remarkMarkers={(candRemarks.data?.remarks ?? [])
-                  // Gravel/MTB: onverhard is gewénst — geen waarschuwings-
-                  // marker, wel gewoon zichtbaar in lijst + wegdekverdeling.
-                  .filter(
-                    (r) =>
-                      !(
-                        (candidate.bikeType === "gravel" ||
-                          candidate.bikeType === "mtb") &&
-                        r.kind === "onverhard"
-                      ),
-                  )
-                  .map((r) => ({
-                    id: r.id,
-                    lat: r.lat,
-                    lon: r.lon,
-                    label: r.label,
-                  }))}
+                remarkMarkers={groupRemarkMarkers(
+                  (candRemarks.data?.remarks ?? [])
+                    // Gravel/MTB: onverhard is gewénst — geen waarschuwings-
+                    // marker, wel gewoon zichtbaar in lijst + wegdekverdeling.
+                    .filter(
+                      (r) =>
+                        !(
+                          (candidate.bikeType === "gravel" ||
+                            candidate.bikeType === "mtb") &&
+                          r.kind === "onverhard"
+                        ),
+                    ),
+                )}
                 highlightPaths={candSurfaceHighlights}
               />
               <MeetpointList
@@ -3302,6 +3364,7 @@ export function RouteGenerator({
               isError={candSurfaces.isError}
               selectedKind={candSurfaceKind}
               onSelectKind={setCandSurfaceKind}
+              preferredBike={preferredBikeFromSurface(candidate.bikeType)}
               className="mt-4"
             />
           )}

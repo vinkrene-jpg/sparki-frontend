@@ -255,13 +255,23 @@ export function classifyRemarkTags(
       evidence: `bicycle=${bicycle}`,
     };
   }
-  if ((access === "no" || access === "private") && bicycle !== "yes") {
+  const bikeAllowed =
+    bicycle === "yes" || bicycle === "designated" || bicycle === "permissive";
+  if ((access === "no" || access === "private") && !bikeAllowed) {
+    // Harde afkeurregel (René, 30-07-2026, MTB-route met privéterrein toch
+    // "KLAAR"): access=no en access=private zonder aantoonbare
+    // fietsuitzondering zijn een HARD blok, geen zachte indicatie. De
+    // parallelle-fietspad-correctie in getRouteRemarks kan dit later alsnog
+    // op uncertain zetten wanneer er aantoonbaar een fietspad naast ligt —
+    // dat blijft de enige uitzondering.
     return {
       kind: "beperkte_toegang",
       label: access === "private" ? "Privéterrein" : "Beperkte toegang",
       detail:
-        "Dit wegvak is volgens de kaartgegevens niet openbaar toegankelijk. Mogelijk geldt een uitzondering; controleer ter plekke.",
-      uncertain: true,
+        access === "private"
+          ? "Dit wegvak is volgens de kaartgegevens privéterrein zonder fietsuitzondering. Hier mag je waarschijnlijk niet rijden — deze route hoort niet aangeboden te worden."
+          : "Dit wegvak is volgens de kaartgegevens afgesloten (access=no) zonder fietsuitzondering. Hier mag je waarschijnlijk niet rijden — deze route hoort niet aangeboden te worden.",
+      uncertain: false,
       evidence: `access=${access}`,
     };
   }
@@ -879,9 +889,11 @@ export async function getRouteObstacles(
   for (const r of remarks) {
     if (r.kind === "trap") out.steps += 1;
     else if (r.kind === "beperkte_toegang") {
-      // Alleen het aantoonbare fietsverbod is een harde afkeur; een
-      // access-beperking met mogelijke uitzondering (uncertain) niet.
-      if (!r.uncertain && r.evidence.startsWith("bicycle=")) out.forbidden += 1;
+      // Hard: fietsverbod (bicycle=no/private) ÉN access=no/private zonder
+      // fietsuitzondering (René, 30-07-2026). Alleen wanneer de
+      // parallelle-fietspad-correctie de melding op uncertain heeft gezet
+      // (aantoonbaar fietspad ernaast) telt hij niet als verbod.
+      if (!r.uncertain) out.forbidden += 1;
     } else if (r.kind === "poort") {
       if (r.label.startsWith("Afgesloten poort")) out.blockedGates += 1;
       else out.gates += 1;

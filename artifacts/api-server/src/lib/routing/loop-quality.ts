@@ -627,11 +627,18 @@ export async function generateVariedLoop(
     RouteResult,
     { steps: number; forbidden: number; blockedGates: number; gates: number; unpavedSegments: number } | null
   >();
-  if (
-    (req.profile === "cycling-road" || req.profile === "cycling-regular") &&
-    opts?.obstaclesOf != null &&
-    pool.length > 1
-  ) {
+  // MTB-regressie (René, 30-07-2026): de obstakelpoort gold alleen voor
+  // cycling-road/cycling-regular; een MTB-route met fietsverbod, privéterrein
+  // en afgesloten poorten werd daardoor nooit gemeten en toch als "KLAAR"
+  // aangeboden. Verbod/trap/afgesloten poort geldt nu voor ÁLLE fietsprofielen;
+  // alleen de onverhard-grens blijft racefiets/gewone fiets.
+  const unpavedIsHard =
+    req.profile === "cycling-road" || req.profile === "cycling-regular";
+  // De obstakelmeting is fiets-specifiek (fietsverbod, trap, afgesloten
+  // poort); voor een eventueel niet-fietsprofiel zou dezelfde poort ten
+  // onrechte afkeuren (een trap is geen blokkade voor een wandelaar).
+  const isCyclingProfile = req.profile.startsWith("cycling-");
+  if (isCyclingProfile && opts?.obstaclesOf != null && pool.length > 1) {
     const measured = new Set<(typeof pool)[number]>();
     const applyPenalties = async (cands: typeof pool) => {
       const fresh = cands.filter((c) => !measured.has(c));
@@ -653,7 +660,7 @@ export async function generateVariedLoop(
         // Racefiets én gewone fiets (cycling-regular, taak #441): onverhard/
         // ruw in de remarkslaag is gelijkwaardig aan een verbod —
         // acceptatiegrens is NUL aantoonbaar onverhard (PO-01 §5.2).
-        if (o.unpavedSegments > 0) penalty += 1000;
+        if (unpavedIsHard && o.unpavedSegments > 0) penalty += 1000;
         penalty += Math.min(o.gates, 10) * 0.15;
         if (penalty > 0) {
           fresh[i]!.score += penalty;
@@ -683,31 +690,33 @@ export async function generateVariedLoop(
   // Alleen actief als obstaclesOf beschikbaar is; null-meting weegt niet mee.
   const hardRejectIfNeeded = async (winner: RouteResult): Promise<void> => {
     if (opts?.obstaclesOf == null) return;
-    if (
-      req.profile !== "cycling-road" &&
-      req.profile !== "cycling-regular"
-    ) return;
     let obs = obstaclesMeasured.has(winner)
       ? obstaclesMeasured.get(winner)!
       : await opts.obstaclesOf(winner.path).catch(() => null);
     if (obs == null) return; // meting mislukt — eerlijk niet gaten, nooit gokken
     const _t_gate = performance.now();
-    const hasForbidden = obs.forbidden > 0 || obs.steps > 0;
+    // Harde blokkades gelden voor ÁLLE fietsprofielen (René, 30-07-2026):
+    // fietsverbod, trap én afgesloten poort/privéterrein. blockedGates zat
+    // eerder alleen in de +1000-scorestraf en ontbrak hier — precies het gat
+    // waardoor een MTB-route met afgesloten poorten toch "KLAAR" werd.
+    const hasForbidden =
+      obs.forbidden > 0 || obs.steps > 0 || obs.blockedGates > 0;
     // Onverhard=0-grens geldt voor racefiets (taak #437) ÉN gewone fiets
     // (cycling-regular, taak #441) — René: 0% onverhard is voor beide van
-    // belang. De vroege return hierboven laat alleen deze profielen door.
-    const hasUnpaved = obs.unpavedSegments > 0;
+    // belang. Gravel/MTB mogen wél onverhard rijden.
+    const hasUnpaved = unpavedIsHard && obs.unpavedSegments > 0;
     console.log(
       `[PERF] hardRejectGate ms=${Math.round(performance.now() - _t_gate)} ` +
         `profile=${req.profile} forbidden=${obs.forbidden} steps=${obs.steps} ` +
-        `unpaved=${obs.unpavedSegments} hasForbidden=${hasForbidden} hasUnpaved=${hasUnpaved}`,
+        `blockedGates=${obs.blockedGates} unpaved=${obs.unpavedSegments} ` +
+        `hasForbidden=${hasForbidden} hasUnpaved=${hasUnpaved}`,
     );
     if (hasForbidden || hasUnpaved) {
       throw new NoSuitableRouteError(
         req.profile,
-        hasUnpaved
-          ? `aantoonbaar onverhard wegdek (${obs.unpavedSegments} vak${obs.unpavedSegments > 1 ? "ken" : ""})`
-          : `fietsverbod of trap (forbidden=${obs.forbidden} steps=${obs.steps})`,
+        hasForbidden
+          ? `fietsverbod, trap of afgesloten poort (forbidden=${obs.forbidden} steps=${obs.steps} blockedGates=${obs.blockedGates})`
+          : `aantoonbaar onverhard wegdek (${obs.unpavedSegments} vak${obs.unpavedSegments > 1 ? "ken" : ""})`,
       );
     }
   };

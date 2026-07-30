@@ -1,0 +1,28 @@
+# Poort 5b sanity-check rapport — MTB-blokkadepoort (afkeurfout René 30-07-2026)
+delivery: "Routegenerator-blokkadepoort voor alle fietstypen (MTB/gravel incl.), hardere classificatie access=no/private, blockedGates in eindcontrole, markergroepering op kaart+hoogteprofiel, gekozen-fietstype-eerst in geschiktheidsweergave"
+date: "2026-07-30"
+checked_by: "replit"
+surfaces:
+  - "Routegenerator (POST /api/routes/generate, MTB-profiel) — via geautomatiseerde poorttest met echte kandidaatselectie doorlopen"
+  - "Routepaneel web: kaartmarkers + hoogteprofiel-opmerkingen (gegroepeerd) en wegtypen-paneel met geschiktheid per fietstype"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "NAVIGEER-knop bij een route met harde blokkade: de generatiepoort laat zulke routes niet meer ontstaan (test:loop-quality-gate scenario's 6-10), dus de knop kan niet meer actief zijn op een geblokkeerde nieuwe route; bestaande knoppen op schone routes onveranderd (tsc web + typecheck-api groen, geen gedragswijziging aan de knop zelf)"
+        result: "pass"
+      - case: "Tik op wegtype in wegtypen-paneel (onSelectKind) blijft werken: alleen de geschiktheidsweergave is herschikt, de wegtypelijst en klik-highlights zijn ongewijzigd"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Geschiktheidsvergelijking bij expliciet gekozen MTB: het MTB-oordeel is nu de hoofdbeoordeling; racefiets/gravel staan als compacte vergelijkingsregel eronder — geen drie gelijkwaardige kaarten meer die het gekozen fietstype wegdrukken"
+        result: "pass"
+      - case: "Onverhard blijft voor MTB/gravel gewénst: de nieuwe poort keurt MTB-routes met alleen onverhard NIET af (scenario 9 van test:loop-quality-gate bewijst dat zo'n route gewoon geleverd wordt)"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Gegroepeerde markers tonen echte labels met echte telling ('… (3×)'), nooit een placeholder; foutmelding bij afkeur is de bestaande eerlijke NL-tekst met reden (fietsverbod/afgesloten poort) en handelingsperspectief"
+        result: "pass"
+
+# verdict: deliverable alleen als alle results pass zijn; anders blocked.
+verdict: "deliverable"

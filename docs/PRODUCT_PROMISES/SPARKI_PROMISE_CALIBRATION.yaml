@@ -158,6 +158,15 @@ chapter_d_routes_en_navigatie:
               proof_stage: designed
               proof_method: "classifyGatePassage(tags)='afgesloten' → blockedGates>0 → zelfde weigering; unit-test op classifyGatePassage bestaat al (20/20), de poort-tot-weigering-keten volgt in de bouwfase-test."
               proof_result: not_yet_tested
+        - rule: "Regressieregel (vondst René 30-07-2026, MTB-route 36,4 km): de blokkadepoort geldt voor ÁLLE fietstypen — ook MTB en gravel. Een kandidaat met een fietsverbod (bicycle=no/private), access=no/private zonder aantoonbare fietsuitzondering, of een afgesloten poort/privéterrein wordt nooit als route geleverd, nooit 'KLAAR', nooit met actieve 'NAVIGEER'-knop — ook niet wanneer de rest van de route goed is. Harde blokkades vallen nooit weg in een totaalscore of geschiktheidspercentage; na afkeur wordt een echt alternatief per kandidaat gevalideerd, en zonder geldig alternatief faalt de generatie eerlijk."
+          rule_type: hard_blockage
+          measurement_level: per_segment
+          aggregate_justification: ""
+          counterexamples:
+            - case: "MTB-routekandidaat met één bicycle=no-wegvak, één access=private-wegvak zonder fietsuitzondering en één afgesloten poort; systeem bood zo'n route eerder aan als 'KLAAR' met actieve 'NAVIGEER' (de obstakelpoort gold alleen voor racefiets/gewone fiets, blockedGates ontbrak in de eindcontrole en access=no/private telde als zachte melding)."
+              proof_stage: executed
+              proof_method: "Fix 30-07-2026 + geautomatiseerde tegenvoorbeeld-test `pnpm --filter @workspace/api-server run test:loop-quality-gate` (src/lib/routing/loop-quality-gate.test.ts, scenario's 6-10, groen): (1) obstakelmeting + harde afkeurpoort gelden nu voor alle fietsprofielen incl. cycling-mountain/cycling-gravel; (2) blockedGates zit in de eindcontrole (NoSuitableRouteError); (3) access=no/private zonder fietsuitzondering classificeert hard (niet-uncertain) en telt als verbod, met de parallelle-fietspad-correctie als enige uitzondering; (4) selectietest bewijst dat een schone kandidaat wint van een geblokkeerde en dat de blokkade nooit in een totaalscore wegvalt; (5) MTB mét alleen onverhard blijft gewoon leverbaar (onverhard is daar gewenst)."
+              proof_result: rejected_as_expected
         - rule: "Zonder geslaagde onafhankelijke nameting (Overpass) mag een route nooit als 'gecontroleerd/geschikt' worden gepresenteerd — meting mislukt = eerlijk 'niet gecontroleerd', nooit stilzwijgend groen."
           rule_type: unverifiable
           measurement_level: per_sessie

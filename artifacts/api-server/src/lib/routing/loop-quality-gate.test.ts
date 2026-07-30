@@ -9,7 +9,11 @@
 import assert from "node:assert/strict";
 
 import { generateVariedLoop, NoSuitableRouteError } from "./loop-quality";
-import type { RouteObstacles } from "../route-remarks";
+import {
+  classifyGatePassage,
+  classifyRemarkTags,
+  type RouteObstacles,
+} from "../route-remarks";
 import type { LoopRequest, RouteResult, RoutingProvider } from "./types";
 
 // Rechte, niet-overlappende lijn zodat overlap ~0 is en de poort het enige is
@@ -78,9 +82,10 @@ function obstacles(partial: Partial<RouteObstacles>): RouteObstacles {
 async function expectHardReject(
   o: RouteObstacles,
   label: string,
+  profile: LoopRequest["profile"] = "cycling-road",
 ): Promise<void> {
   await assert.rejects(
-    generateVariedLoop(fakeProvider(makeResult(50)), baseReq, {
+    generateVariedLoop(fakeProvider(makeResult(50)), { ...baseReq, profile }, {
       candidates: 1,
       obstaclesOf: async () => o,
     }),
@@ -89,7 +94,7 @@ async function expectHardReject(
         err instanceof NoSuitableRouteError,
         `${label}: verwacht NoSuitableRouteError, kreeg ${String(err)}`,
       );
-      assert.equal(err.profile, "cycling-road");
+      assert.equal(err.profile, profile);
       return true;
     },
     `${label}: harde afkeurpoort moet vuren`,
@@ -134,7 +139,106 @@ async function run() {
     assert.equal(route.distanceKm, 50, "null-meting mag niet afkeuren");
   }
 
-  console.log("loop-quality hard-reject gate tests passed");
+  // ── Regressie MTB-route "KLAAR" met blokkades (René, 30-07-2026) ─────────
+  // 6) Afgesloten poort alléén ⇒ harde afkeur (zat eerder NIET in de poort).
+  await expectHardReject(obstacles({ blockedGates: 1 }), "afgesloten poort");
+
+  // 7) MTB-profiel met de exacte tester-combinatie (fietsverbod + privéterrein
+  //    als forbidden + afgesloten poort) ⇒ harde afkeur. De poort gold eerder
+  //    helemaal niet voor cycling-mountain.
+  await expectHardReject(
+    obstacles({ forbidden: 2, blockedGates: 1 }),
+    "MTB blokkade-combinatie",
+    "cycling-mountain",
+  );
+  await expectHardReject(
+    obstacles({ blockedGates: 1 }),
+    "MTB afgesloten poort",
+    "cycling-mountain",
+  );
+  await expectHardReject(
+    obstacles({ forbidden: 1 }),
+    "gravel fietsverbod",
+    "cycling-gravel",
+  );
+
+  // 8) MTB mét onverhard maar zonder blokkades ⇒ route wordt geleverd
+  //    (onverhard is op MTB juist gewenst; alleen road/regular kennen de
+  //    onverhard=0-grens).
+  {
+    const route = await generateVariedLoop(
+      fakeProvider(makeResult(50)),
+      { ...baseReq, profile: "cycling-mountain" },
+      { candidates: 1, obstaclesOf: async () => obstacles({ unpavedSegments: 5, gates: 2 }) },
+    );
+    assert.equal(route.distanceKm, 50, "MTB onverhard mag niet afkeuren");
+  }
+
+  // 9) OSM-tag → harde classificatie: de drie brontags uit de testeropdracht
+  //    moeten elk als hard blok classificeren (nooit weer een zachte melding).
+  {
+    assert.equal(
+      classifyGatePassage({ barrier: "gate", locked: "yes" }),
+      "afgesloten",
+      "afgesloten gate (locked=yes) moet als afgesloten classificeren",
+    );
+    const forbidden = classifyRemarkTags({ highway: "path", bicycle: "no" });
+    assert.ok(forbidden && forbidden.kind === "beperkte_toegang" && !forbidden.uncertain,
+      "bicycle=no moet een zeker (niet-uncertain) verbod zijn");
+    const priv = classifyRemarkTags({ highway: "track", access: "private" });
+    assert.ok(priv && priv.kind === "beperkte_toegang" && !priv.uncertain,
+      "access=private zonder fietsuitzondering moet een zeker (niet-uncertain) blok zijn");
+    const privBikeOk = classifyRemarkTags({ highway: "track", access: "private", bicycle: "yes" });
+    assert.ok(privBikeOk == null || privBikeOk.kind !== "beperkte_toegang",
+      "access=private mét bicycle=yes mag geen blok zijn");
+  }
+
+  // 10) Kandidaatselectie: één geblokkeerde en één schone kandidaat ⇒ de
+  //     schone wint (blokkade valt nooit weg in een totaalscore).
+  {
+    // Geblokkeerde kandidaat met een klein stukje heen-en-terug (lichte
+    // overlap): dat blokkeert de vroege stop na kandidaat 1, zodat de pool
+    // écht twee kandidaten meet. Zonder de obstakelstraf zou deze kandidaat
+    // op basisscore winnen van de schone kandidaat met meer afstandsafwijking.
+    const bad: RouteResult = (() => {
+      const r = makeResult(50);
+      const tail = r.path.slice(-8, -1).reverse();
+      r.path = [...r.path, ...tail];
+      r.points = r.path.map(([lat, lon]) => ({ lat, lon, ele: null }));
+      return r;
+    })();
+    // Schone kandidaat: écht ander pad (andere lengtegraad-band) met grotere
+    // afstandsafwijking — die mag alleen dankzij de harde blokkadestraf winnen.
+    const good: RouteResult = (() => {
+      const r = makeResult(56);
+      r.path = r.path.map(([lat, lon]) => [lat, lon + 1] as [number, number]);
+      r.points = r.path.map(([lat, lon]) => ({ lat, lon, ele: null }));
+      return r;
+    })();
+    let i = 0;
+    const provider: RoutingProvider = {
+      ...fakeProvider(bad),
+      async generateLoop() {
+        return i++ % 2 === 0 ? bad : good;
+      },
+    };
+    const route = await generateVariedLoop(
+      provider,
+      { ...baseReq, profile: "cycling-mountain" },
+      {
+        candidates: 2,
+        // Herken de kandidaat op zijn lengtegraad-band (referentievergelijking
+        // is onbetrouwbaar: de motor kan het pad kopiëren).
+        obstaclesOf: async (path) =>
+          (path[0]?.[1] ?? 0) > 5.5
+            ? obstacles({})
+            : obstacles({ forbidden: 1, blockedGates: 1 }),
+      },
+    );
+    assert.equal(route.distanceKm, 56, "schone kandidaat moet winnen van geblokkeerde");
+  }
+
+  console.log("loop-quality hard-reject gate tests passed (incl. MTB-blokkadepoort)");
 }
 
 run().catch((err) => {
