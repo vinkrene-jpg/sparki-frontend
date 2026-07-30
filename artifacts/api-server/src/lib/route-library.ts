@@ -26,6 +26,7 @@ import {
 } from "./routing";
 import { candidateEnvironmentOf } from "./candidate-environment";
 import { bgtUnpavedShare } from "./bgt-verharding";
+import { routeObstaclesOf } from "./route-remarks";
 import { summarizeTrack } from "./gpx-parse";
 import { logger } from "./logger";
 
@@ -251,6 +252,9 @@ export async function generateStarterSet(
               // BGT-controlelaag (alleen Nederland): racefietskandidaten die
               // volgens de overheidswegenkaart onverhard blijken, verliezen.
               unpavedShareOf: bgtUnpavedShare,
+              // Obstakel-poort: trap/fietsverbod/afgesloten poort = harde
+              // afkeur; minste poorten wint (grenzen René 30-07-2026).
+              obstaclesOf: routeObstaclesOf(),
             },
           );
           if (!result.path || result.path.length < 2) continue;

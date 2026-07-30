@@ -26,6 +26,7 @@ import {
   type RoutingProfile,
 } from "./routing";
 import { getRouteEnvironment } from "./route-insight";
+import { routeObstaclesOf } from "./route-remarks";
 
 // Training types the plan engine can request a route for. Steady outdoor rides
 // (duur/tempo) get a route; intervals/recovery/race are handled by the caller's
@@ -170,8 +171,11 @@ export async function generateAndSavePlanRoute(opts: {
             preferUninterrupted: true,
             scenery: { nature: false, avoidTrafficLights: true },
             environmentOf: getRouteEnvironment,
+            // Obstakel-poort: trap/fietsverbod/afgesloten poort = harde
+            // afkeur; minste poorten wint (grenzen René 30-07-2026).
+            obstaclesOf: routeObstaclesOf(),
           }
-        : undefined,
+        : { obstaclesOf: routeObstaclesOf() },
     );
     if (routeResult.path.length < 2) return null;
 

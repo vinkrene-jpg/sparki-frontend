@@ -24,3 +24,11 @@ description: OSM/Overpass route-warnings engine and slider↔map elevation profi
 - Rijen paaltjes/poorten binnen 150 m bundelen tot één melding met (×N).
 **Why:** René's praktijktest gaf tientallen valse "hier mag je niet fietsen"-meldingen; way-voor-way bleek vrijwel elk vak een rijbaan met parallel fietspad.
 **How to apply:** elke nieuwe remark-soort krijgt strakke afstands-drempel + refine + eerlijke onzekerheids-degradatie i.p.v. hard feit bij ontbrekend bewijs.
+
+# Obstakelgrenzen René (30-07-2026, bindend)
+
+- Trap = harde afkeur (custom model STEPS ×0.05 + selectiestraf +1000); poorten: minste wint (lichte straf); doorfietsbare poort (cycle_barrier, bicycle=yes/designated/permissive, access=yes) wordt NIET gemeld; poort op slot/privé zonder fiets-uitzondering = "Afgesloten poort" + +1000.
+- `getRouteObstacles`/`routeObstaclesOf` (route-remarks) voedt `obstaclesOf` in generateVariedLoop; interactieve paden budgetMs 2500 → null (nooit wachten/gokken).
+- Toegangssplitsing in route-surfaces: bicycle=no/private ⇒ `forbiddenKm` ⇒ verdict "afgeraden"; access=no/private zonder fiets-uitzondering ⇒ `restrictedKm` ⇒ milde reden + cap "gedeeltelijk".
+**Why:** routeopmerkingen meldden obstakels die je fietsend niet kunt oplossen; melden zonder mijden is oneerlijk, en doorfietsbare poorten benoemen zaait twijfel.
+**How to apply:** nieuwe generatiepaden geven obstaclesOf mee; nieuwe remark-consumenten onderscheiden verbod vs. access; obstakeltellingen alleen uit echte metingen (null = niet meewegen).

@@ -95,6 +95,7 @@ import {
   getRouteRemarks,
   computeDataRemarks,
   remarksSource,
+  routeObstaclesOf,
 } from "../lib/route-remarks";
 import {
   getRouteSurfaces,
@@ -2497,6 +2498,10 @@ async function buildLoopCandidate(
         // kandidaat die daar onverhard blijkt, verliest. Buiten NL of bij een
         // bronfout weegt dit eerlijk niet mee.
         unpavedShareOf: bgtUnpavedShare,
+        // Obstakel-poort (kort tijdbudget, interactief): trap/fietsverbod/
+        // afgesloten poort = harde afkeur; minste poorten wint (grenzen
+        // René 30-07-2026).
+        obstaclesOf: routeObstaclesOf({ budgetMs: 2500 }),
       },
     );
     console.log(

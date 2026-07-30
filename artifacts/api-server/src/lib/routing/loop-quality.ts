@@ -277,6 +277,18 @@ export async function generateVariedLoop(
     // (cycling-road); de motor wordt hiermee NIET vervangen, alleen de
     // selectie tussen echte kandidaten gecontroleerd.
     unpavedShareOf?: (path: [number, number][]) => Promise<number | null>;
+    // Obstakel-telling (Overpass, gedeelde cache met de routeopmerkingen).
+    // Acceptatiegrenzen René (30-07-2026): een kandidaat met een trap, een
+    // aantoonbaar fietsverbod of een afgesloten/privé-poort wordt nooit
+    // gekozen zolang er een alternatief is; bij de rest wint de kandidaat met
+    // de minste poorten/hekken. null = geen meting (bron faalde) — weegt dan
+    // eerlijk niet mee, nooit gokken.
+    obstaclesOf?: (path: [number, number][]) => Promise<{
+      steps: number;
+      forbidden: number;
+      blockedGates: number;
+      gates: number;
+    } | null>;
   },
 ): Promise<RouteResult> {
   const preference = req.elevationPreference ?? "any";
@@ -446,6 +458,37 @@ export async function generateVariedLoop(
       if (share == null || share <= 0) continue;
       top[i]!.score += Math.min(share / 0.05, 1.5) * 1.2;
       adjusted = true;
+    }
+    if (adjusted) pool.sort((a, b) => a.score - b.score);
+  }
+
+  // Obstakel-poort (fietsprofielen): trap / fietsverbod / afgesloten poort is
+  // een harde afkeur (+1000 — zo'n kandidaat wint alleen als ÁLLE kandidaten
+  // dit gebrek hebben; de routeopmerkingen blijven het dan eerlijk melden).
+  // Overige poorten/hekken tellen licht mee zodat de kandidaat met de minste
+  // obstakels wint. Alleen echte metingen; een mislukte meting weegt niet mee.
+  if (
+    (req.profile === "cycling-road" || req.profile === "cycling-regular") &&
+    opts?.obstaclesOf != null &&
+    pool.length > 1
+  ) {
+    const top = pool.slice(0, 3);
+    const obstacles = await Promise.all(
+      top.map((c) => opts.obstaclesOf!(c.result.path).catch(() => null)),
+    );
+    let adjusted = false;
+    for (let i = 0; i < top.length; i++) {
+      const o = obstacles[i];
+      if (o == null) continue;
+      let penalty = 0;
+      if (o.steps > 0) penalty += 1000;
+      if (o.forbidden > 0) penalty += 1000;
+      if (o.blockedGates > 0) penalty += 1000;
+      penalty += Math.min(o.gates, 10) * 0.15;
+      if (penalty > 0) {
+        top[i]!.score += penalty;
+        adjusted = true;
+      }
     }
     if (adjusted) pool.sort((a, b) => a.score - b.score);
   }

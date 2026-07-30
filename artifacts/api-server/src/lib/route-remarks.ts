@@ -135,6 +135,30 @@ const GATE_BARRIERS = new Set([
   "block",
 ]);
 
+// Poort-doorgang op basis van expliciete tags (nooit een aanname):
+// - "doorfietsbaar": de kaart zegt expliciet dat fietsers erdoor kunnen
+//   (bicycle=yes/designated/permissive, access=yes, of een fietssluis — die
+//   staat er juist om fietsers dóór te laten en auto's te weren).
+// - "afgesloten": op slot of privéterrein zonder fiets-uitzondering — hier
+//   kun je waarschijnlijk niet door (harde weigering in de generatie).
+// - "onbekend": geen expliciete doorgang-tag; mild melden.
+export function classifyGatePassage(
+  tags: Record<string, string>,
+): "doorfietsbaar" | "afgesloten" | "onbekend" {
+  const bike = tags.bicycle ?? "";
+  const access = tags.access ?? "";
+  const bikeOk =
+    bike === "yes" || bike === "designated" || bike === "permissive";
+  if (tags.locked === "yes" && !bikeOk) return "afgesloten";
+  if (bike === "no" || bike === "private") return "afgesloten";
+  if ((access === "no" || access === "private") && !bikeOk) return "afgesloten";
+  if (bikeOk || access === "yes" || access === "permissive") {
+    return "doorfietsbaar";
+  }
+  if (tags.barrier === "cycle_barrier") return "doorfietsbaar";
+  return "onbekend";
+}
+
 type Classified = {
   kind: RouteRemarkKind;
   label: string;
@@ -180,18 +204,41 @@ export function classifyRemarkTags(
     };
   }
   if (tags.barrier && GATE_BARRIERS.has(tags.barrier)) {
+    const passage = classifyGatePassage(tags);
+    // Acceptatiegrens René (30-07-2026): een poort waar je volgens de
+    // kaartgegevens als fietser gewoon door kunt, is geen probleem en wordt
+    // niet gemeld — benoemen zorgt alleen voor twijfel.
+    if (passage === "doorfietsbaar") return null;
     const locked = tags.locked === "yes";
+    const accessBits = [
+      tags.locked === "yes" ? "locked=yes" : null,
+      tags.access ? `access=${tags.access}` : null,
+      tags.bicycle ? `bicycle=${tags.bicycle}` : null,
+    ].filter((b): b is string => b != null);
+    const evidence =
+      `barrier=${tags.barrier}` +
+      (accessBits.length > 0 ? `, ${accessBits.join(", ")}` : "");
+    if (passage === "afgesloten") {
+      return {
+        kind: "poort",
+        label: `Afgesloten poort / privéterrein${named}`,
+        detail:
+          "Volgens de kaartgegevens is deze poort afgesloten of geeft hij toegang tot privéterrein. Hier kun je waarschijnlijk niet door — deze route hoort niet aangeboden te worden.",
+        uncertain: false,
+        evidence,
+      };
+    }
     return {
       kind: "poort",
       label:
         tags.barrier === "cycle_barrier"
           ? "Fietssluis / hekje"
-          : `Poort of afsluiting${named}`,
+          : `Poort of hek${named}`,
       detail: locked
         ? "Volgens de kaartgegevens staat hier een afgesloten poort (op slot). Mogelijk kun je hier niet door."
-        : "Hier staat een poort, hek of fietssluis op de route — even afstappen of slalommen.",
-      uncertain: false,
-      evidence: `barrier=${tags.barrier}${locked ? ", locked=yes" : ""}`,
+        : "Hier staat een poort of hek op de route. Of je er als fietser door kunt, is niet getagd — houd rekening met even afstappen.",
+      uncertain: true,
+      evidence,
     };
   }
   // Toegangsbeperkingen — alleen expliciete tags, nooit een aanname.
@@ -718,6 +765,65 @@ export function buildBgtRemarks(
     });
   }
   return out;
+}
+
+// ── Obstakel-telling voor de routegeneratie ────────────────────────────────
+
+export type RouteObstacles = {
+  steps: number; // trappen op de route (harde afkeur racefiets/gravel)
+  forbidden: number; // aantoonbaar fietsverbod (bicycle=no/private) op de route
+  blockedGates: number; // afgesloten poorten / privéterrein (harde afkeur)
+  gates: number; // overige poorten/hekken (minste wint)
+};
+
+/**
+ * Telling van rijdbaarheids-obstakels langs een kandidaat-geometrie, afgeleid
+ * uit dezelfde eerlijke Overpass-meting als de routeopmerkingen (gedeelde
+ * cache). `null` bij een upstream-fout — de selectie weegt dit dan eerlijk
+ * niet mee (nooit gokken).
+ */
+export async function getRouteObstacles(
+  geometry: RoutePathPoint[] | null | undefined,
+): Promise<RouteObstacles | null> {
+  const remarks = await getRouteRemarks(geometry);
+  if (remarks === null) return null;
+  const out: RouteObstacles = {
+    steps: 0,
+    forbidden: 0,
+    blockedGates: 0,
+    gates: 0,
+  };
+  for (const r of remarks) {
+    if (r.kind === "trap") out.steps += 1;
+    else if (r.kind === "beperkte_toegang") {
+      // Alleen het aantoonbare fietsverbod is een harde afkeur; een
+      // access-beperking met mogelijke uitzondering (uncertain) niet.
+      if (!r.uncertain && r.evidence.startsWith("bicycle=")) out.forbidden += 1;
+    } else if (r.kind === "poort") {
+      if (r.label.startsWith("Afgesloten poort")) out.blockedGates += 1;
+      else out.gates += 1;
+    }
+  }
+  return out;
+}
+
+/**
+ * Obstakel-meting als selectie-callback voor generateVariedLoop. Met een
+ * `budgetMs` (interactieve paden) geeft een trage bron eerlijk `null` terug
+ * — de renner wacht nooit op Overpass; achtergrondpaden meten volledig.
+ */
+export function routeObstaclesOf(opts?: { budgetMs?: number }) {
+  return (path: RoutePathPoint[]): Promise<RouteObstacles | null> => {
+    const p = getRouteObstacles(path);
+    if (opts?.budgetMs == null) return p;
+    return Promise.race([
+      p,
+      new Promise<null>((resolve) => {
+        const t = setTimeout(() => resolve(null), opts.budgetMs);
+        if (typeof t === "object" && "unref" in t) t.unref();
+      }),
+    ]);
+  };
 }
 
 /**

@@ -36,6 +36,8 @@ export type RouteSurfacesAnalysis = {
   totalKm: number
   breakdown: SurfaceBreakdownEntry[]
   segments: SurfaceSegment[]
+  // Aantoonbaar fietsverbod (harde afkeur) vs. mildere access-beperking.
+  forbiddenKm: number
   restrictedKm: number
 }
 

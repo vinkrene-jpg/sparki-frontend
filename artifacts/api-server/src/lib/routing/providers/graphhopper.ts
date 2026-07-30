@@ -87,12 +87,24 @@ const GRAVEL_SURFACE_RULE = {
   multiply_by: "0.3",
 } as const;
 
+// Trap op de route = afstappen en dragen; acceptatiegrens René (30-07-2026):
+// een kandidaat met een trap wordt nooit gekozen. Bestraf trappen daarom al
+// in de motor zelf (0.05, geen harde 0 — die laat de zoektocht exploderen
+// wanneer een eindpunt zo'n weg raakt). Geldt voor racefiets én gravel/bike;
+// mtb heeft geen model en houdt zijn eigen afweging.
+const STEPS_RULE = {
+  if: "road_class == STEPS",
+  multiply_by: "0.05",
+} as const;
+
 function customModelFor(profile: RoutingProfile): Record<string, unknown> | null {
   switch (profile) {
     case "cycling-road":
-      return { priority: [ROAD_SURFACE_RULE, ROAD_UNKNOWN_SURFACE_RULE] };
+      return {
+        priority: [ROAD_SURFACE_RULE, ROAD_UNKNOWN_SURFACE_RULE, STEPS_RULE],
+      };
     case "cycling-regular":
-      return { priority: [GRAVEL_SURFACE_RULE] };
+      return { priority: [GRAVEL_SURFACE_RULE, STEPS_RULE] };
     default:
       return null;
   }

@@ -54,17 +54,36 @@ scenario("voorde uit ford=yes", () => {
   assert(c!.evidence === "ford=yes", `evidence: ${c!.evidence}`);
 });
 
-scenario("afgesloten poort meldt 'op slot' + locked in evidence", () => {
+scenario("poort op slot = afgesloten (harde melding) + locked in evidence", () => {
   const c = classifyRemarkTags({ barrier: "gate", locked: "yes" });
   assert(c && c.kind === "poort", "verwacht poort");
-  assert(c!.detail.includes("op slot"), "detail noemt slot niet");
+  assert(c!.label.startsWith("Afgesloten poort"), `label: ${c!.label}`);
   assert(c!.evidence.includes("locked=yes"), "evidence mist locked=yes");
 });
 
-scenario("fietssluis krijgt eigen label", () => {
+scenario("fietssluis is doorfietsbaar en wordt niet gemeld (grens René)", () => {
   const c = classifyRemarkTags({ barrier: "cycle_barrier" });
+  assert(c === null, `verwacht geen melding, kreeg: ${c?.label}`);
+});
+
+scenario("poort met expliciete fiets-doorgang wordt niet gemeld", () => {
+  const c = classifyRemarkTags({ barrier: "gate", bicycle: "yes" });
+  assert(c === null, `verwacht geen melding, kreeg: ${c?.label}`);
+});
+
+scenario("poort naar privéterrein = afgesloten, fiets-uitzondering wint", () => {
+  const priv = classifyRemarkTags({ barrier: "gate", access: "private" });
+  assert(priv && priv.label.startsWith("Afgesloten poort"), `label: ${priv?.label}`);
+  assert(priv!.evidence.includes("access=private"), "evidence mist access=private");
+  const exc = classifyRemarkTags({ barrier: "gate", access: "private", bicycle: "yes" });
+  assert(exc === null, `fiets-uitzondering hoort niet gemeld, kreeg: ${exc?.label}`);
+});
+
+scenario("poort zonder doorgang-tags blijft een milde, onzekere melding", () => {
+  const c = classifyRemarkTags({ barrier: "gate" });
   assert(c && c.kind === "poort", "verwacht poort");
-  assert(c!.label.includes("Fietssluis"), `label: ${c!.label}`);
+  assert(c!.uncertain, "onbekende doorgang hoort onzeker te zijn");
+  assert(c!.label.startsWith("Poort of hek"), `label: ${c!.label}`);
 });
 
 scenario("bicycle=no is harde beperking (niet onzeker)", () => {

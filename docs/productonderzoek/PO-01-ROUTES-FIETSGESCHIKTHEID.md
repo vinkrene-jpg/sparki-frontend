@@ -104,3 +104,15 @@ Voor de belofte "routes die écht geschikt zijn voor je gekozen fiets":
 2. **Fietsverbod = route afkeuren.** Een route met echt fietsverbod (bicycle=no) wordt nooit aangeboden — "je kunt niet verder, dan heb je niks aan deze route". Doorrijdbare barrières (poortje, fietssluis) zijn géén verbod en worden apart en eerlijk benoemd (taak #430).
 3. **Onbekend wegdek is een risico, geen vrijbrief.** ~28% onbekend betekent dat bijna 1/3 van de route zandpad kán zijn. Generatie moet onbekend wegdek actief mijden; het resterende onbekende aandeel wordt eerlijk getoond en structureel verkleind met de BGT-overheidswegenkaart (taak #428).
 4. **Toetsing:** de Product Proof beoordeelt tegen déze grenzen, op echte schermen en echte routes, met de gebruikersbril ("wat zou René hiervan zeggen?"). Verwachtingsverschillen worden al testend vóór "gereed" gedicht (René test mee).
+
+## Addendum (30 juli 2026, middag) — Obstakelbesluiten René (bindend per doctrine art. 10)
+
+Naar aanleiding van routeopmerkingen met poorten/fietssluizen/trappen die je fietsend niet kunt oplossen:
+
+1. **Trap = harde afkeur.** Een kandidaat-lus met een trap wordt nooit gekozen (racefiets én gravel). Uitvoering: GraphHopper custom model straft `road_class == STEPS` (×0.05) én de kandidaatselectie geeft +1000 straf op trappen (Overpass-nameting).
+2. **Poorten: de kandidaat met de minste poorten wint.** Nul poorten eisen is in NL onhaalbaar; daarom lichte oplopende straf per poort in de selectie.
+3. **Doorfietsbare poort wordt niet gemeld.** Een poort waar fietsers volgens de kaart gewoon door kunnen (fietssluis, bicycle=yes/designated/permissive, access=yes) verschijnt niet in de routeopmerkingen — benoemen zaait alleen twijfel.
+4. **Poort naar privéterrein / op slot = harde weigering.** Zo'n kandidaat krijgt +1000 in de selectie en een harde melding als hij toch (alternatiefloos) doorkomt.
+5. **"Toegangsbeperking" gesplitst.** Aantoonbaar fietsverbod (bicycle=no/private) ⇒ oordeel "afgeraden" + eerlijke reden (forbiddenKm); algemene access-beperking zonder fiets-uitzondering ⇒ mildere melding (restrictedKm, "mogelijk niet openbaar; mogelijk uitzondering").
+
+Meting is eerlijk: mislukt de Overpass-nameting, dan weegt hij niet mee (nooit gokken); interactieve paden meten met kort tijdbudget (2,5 s), achtergrondpaden volledig.

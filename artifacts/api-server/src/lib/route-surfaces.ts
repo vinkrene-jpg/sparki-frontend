@@ -65,7 +65,11 @@ export type RouteSurfacesAnalysis = {
   totalKm: number;
   breakdown: SurfaceBreakdownEntry[]; // alleen categorieën die voorkomen, aflopend op km
   segments: SurfaceSegment[];
-  // Kilometers met een bekende toegangsbeperking (bicycle=no/private).
+  // Kilometers met een aantoonbaar fietsverbod (bicycle=no/private) — harde
+  // afkeur: zo'n route hoort niet aangeboden te worden (grens René 30-07-2026).
+  forbiddenKm: number;
+  // Kilometers met een mildere toegangsbeperking (access=no/private zonder
+  // fiets-uitzondering) — mogelijk niet openbaar, mogelijk een uitzondering.
   restrictedKm: number;
   // BGT-controlelaag (alleen Nederland): hoeveel OSM-onbekende meetpunten de
   // officiële overheidswegenkaart alsnog een verharding kon geven. null =
@@ -215,6 +219,7 @@ export type SurfaceSampleAssignment = {
   kinds: SurfaceKind[];
   evidences: (string | null)[];
   restrictedFlags: boolean[];
+  forbiddenFlags: boolean[];
 };
 
 /**
@@ -246,6 +251,7 @@ export function assignSurfaceSamples(
     evidence: string;
     pts: RoutePathPoint[];
     restricted: boolean;
+    forbidden: boolean;
     minLat: number;
     maxLat: number;
     minLon: number;
@@ -259,8 +265,12 @@ export function assignSurfaceSamples(
     if (!cls) continue;
     const pts = wayPoints(el);
     if (pts.length === 0) continue;
-    const restricted = tags.bicycle === "no" || tags.bicycle === "private" ||
-      ((tags.access === "no" || tags.access === "private") && tags.bicycle !== "yes" && tags.bicycle !== "designated");
+    // Splitsing (grens René 30-07-2026): een aantoonbaar fietsverbod
+    // (bicycle=no/private) is een harde afkeur; een algemene access-beperking
+    // zonder fiets-uitzondering is een mildere waarschuwing.
+    const forbidden = tags.bicycle === "no" || tags.bicycle === "private";
+    const restricted = !forbidden &&
+      (tags.access === "no" || tags.access === "private") && tags.bicycle !== "yes" && tags.bicycle !== "designated";
     let mnLa = Infinity, mxLa = -Infinity, mnLo = Infinity, mxLo = -Infinity;
     for (const [la, lo] of pts) {
       if (la < mnLa) mnLa = la;
@@ -273,6 +283,7 @@ export function assignSurfaceSamples(
       evidence: cls.evidence,
       pts,
       restricted,
+      forbidden,
       minLat: mnLa - PAD_DEG,
       maxLat: mxLa + PAD_DEG,
       minLon: mnLo - PAD_DEG,
@@ -291,6 +302,7 @@ export function assignSurfaceSamples(
   const kinds: SurfaceKind[] = [];
   const evidences: (string | null)[] = [];
   const restrictedFlags: boolean[] = [];
+  const forbiddenFlags: boolean[] = [];
   for (const gi of sampleIdx) {
     const p = geometry[gi]!;
     let best: Way | null = null;
@@ -306,15 +318,16 @@ export function assignSurfaceSamples(
     kinds.push(best ? best.kind : "onbekend");
     evidences.push(best ? best.evidence : null);
     restrictedFlags.push(best ? best.restricted : false);
+    forbiddenFlags.push(best ? best.forbidden : false);
   }
 
-  return { sampleIdx, cumKm, kinds, evidences, restrictedFlags };
+  return { sampleIdx, cumKm, kinds, evidences, restrictedFlags, forbiddenFlags };
 }
 
 export function buildSurfacesAnalysis(
   a: SurfaceSampleAssignment,
 ): RouteSurfacesAnalysis {
-  const { sampleIdx, cumKm, kinds, evidences, restrictedFlags } = a;
+  const { sampleIdx, cumKm, kinds, evidences, restrictedFlags, forbiddenFlags } = a;
   const totalKm = cumKm[cumKm.length - 1]!;
 
   // Aaneengesloten segmenten + km-sommen. Elk sample "bezit" de halve afstand
@@ -329,12 +342,14 @@ export function buildSurfacesAnalysis(
   const kmByKind = new Map<SurfaceKind, number>();
   const evidenceByKind = new Map<SurfaceKind, string>();
   let restrictedKm = 0;
+  let forbiddenKm = 0;
   const segments: SurfaceSegment[] = [];
   let segStart = 0;
   for (let s = 0; s < kinds.length; s++) {
     const k = kinds[s]!;
     kmByKind.set(k, (kmByKind.get(k) ?? 0) + ownedKm(s));
     if (restrictedFlags[s]) restrictedKm += ownedKm(s);
+    if (forbiddenFlags[s]) forbiddenKm += ownedKm(s);
     const ev = evidences[s];
     if (ev && !evidenceByKind.has(k)) evidenceByKind.set(k, ev);
     const isLast = s === kinds.length - 1;
@@ -363,6 +378,7 @@ export function buildSurfacesAnalysis(
     totalKm: Math.round(totalKm * 10) / 10,
     breakdown,
     segments,
+    forbiddenKm: Math.round(forbiddenKm * 10) / 10,
     restrictedKm: Math.round(restrictedKm * 10) / 10,
   };
 }
@@ -480,8 +496,13 @@ export function computeBikeSuitability(
     if (unknown > 10)
       reasons.push(`Let op: ${unknown}% van de ondergrond is onbekend; de inschatting geldt voor het bekende deel.`);
 
+    // Splitsing (grens René 30-07-2026): een aantoonbaar fietsverbod is een
+    // harde afkeur — zo'n route hoort niet aangeboden te worden. Een algemene
+    // access-beperking (privéterrein e.d.) is een mildere waarschuwing.
+    if (analysis.forbiddenKm > 0)
+      reasons.push(`Op ~${analysis.forbiddenKm} km is fietsen volgens de kaartgegevens niet toegestaan (fietsverbod).`);
     if (analysis.restrictedKm > 0)
-      reasons.push(`Op ~${analysis.restrictedKm} km geldt volgens de kaartgegevens een toegangsbeperking voor fietsers.`);
+      reasons.push(`Op ~${analysis.restrictedKm} km is de weg volgens de kaartgegevens mogelijk niet openbaar toegankelijk (bijv. privéterrein); mogelijk geldt een uitzondering — controleer ter plekke.`);
 
     if (bike === "racefiets") {
       if (offroad > 15) {
@@ -519,6 +540,7 @@ export function computeBikeSuitability(
     }
 
     if (analysis.restrictedKm > 0 && verdict === "goed") verdict = "gedeeltelijk";
+    if (analysis.forbiddenKm > 0) verdict = "afgeraden";
     out.push({ bike, verdict, reasons });
   }
   return out;

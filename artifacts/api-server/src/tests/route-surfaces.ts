@@ -185,12 +185,22 @@ scenario("segmenten zijn aaneengesloten en dragen route-indexen", () => {
   assert(first.toIdx > first.fromIdx, "segment zonder lengte");
 });
 
-scenario("bicycle=no telt als toegangsbeperking (restrictedKm > 0)", () => {
+scenario("bicycle=no telt als fietsverbod (forbiddenKm > 0, niet restricted)", () => {
   const geometry = straightRoute(20);
   const a = aggregateSurfaces(geometry, [
     wayAlong(5.0, 5.02, { highway: "path", surface: "dirt", bicycle: "no" }),
   ]);
+  assert(a.forbiddenKm > 0.5, `forbiddenKm: ${a.forbiddenKm}`);
+  assert(a.restrictedKm === 0, `restrictedKm: ${a.restrictedKm}`);
+});
+
+scenario("access=private zonder fiets-uitzondering telt als restrictedKm", () => {
+  const geometry = straightRoute(20);
+  const a = aggregateSurfaces(geometry, [
+    wayAlong(5.0, 5.02, { highway: "service", surface: "asphalt", access: "private" }),
+  ]);
   assert(a.restrictedKm > 0.5, `restrictedKm: ${a.restrictedKm}`);
+  assert(a.forbiddenKm === 0, `forbiddenKm: ${a.forbiddenKm}`);
 });
 
 // ── Geschiktheid ────────────────────────────────────────────────────────────
@@ -205,6 +215,7 @@ function analysisOf(parts: [string, number][]): RouteSurfacesAnalysis {
       evidence: null,
     })),
     segments: [],
+    forbiddenKm: 0,
     restrictedKm: 0,
   };
 }
@@ -245,13 +256,23 @@ scenario("50% onbekend: alle fietsen eerlijk 'onvoldoende gegevens'", () => {
   }
 });
 
-scenario("toegangsbeperking degradeert 'goed' naar 'gedeeltelijk' met reden", () => {
+scenario("access-beperking degradeert 'goed' naar 'gedeeltelijk' met reden", () => {
   const a = analysisOf([["asfalt", 100]]);
   a.restrictedKm = 2.5;
   const s = computeBikeSuitability(a, { maxSlopePct: null });
   const race = s.find((x) => x.bike === "racefiets")!;
   assert(race.verdict === "gedeeltelijk", `race: ${race.verdict}`);
-  assert(race.reasons.some((r) => r.includes("toegangsbeperking")), "reden mist beperking");
+  assert(race.reasons.some((r) => r.includes("niet openbaar toegankelijk")), "reden mist beperking");
+});
+
+scenario("echt fietsverbod = afgeraden, ongeacht wegdek (grens René)", () => {
+  const a = analysisOf([["asfalt", 100]]);
+  a.forbiddenKm = 0.4;
+  const s = computeBikeSuitability(a, { maxSlopePct: null });
+  for (const x of s) {
+    assert(x.verdict === "afgeraden", `${x.bike}: ${x.verdict}`);
+    assert(x.reasons.some((r) => r.includes("fietsverbod")), "reden mist fietsverbod");
+  }
 });
 
 scenario("maxSlopePct: eerlijk null zonder gegevens, correct met profiel", () => {
