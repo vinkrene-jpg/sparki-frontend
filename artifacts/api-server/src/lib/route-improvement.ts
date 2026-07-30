@@ -239,7 +239,9 @@ async function replacePoorRoute(routeId: number): Promise<
   }
 
   const stats = summarizeTrack(result.points);
-  const ascent = result.ascentM ?? stats?.elevationGainM ?? null;
+  // Gedrempelde hoogtemeters uit het spoor gaan vóór rauwe provider-ascend
+  // (die telt SRTM-ruis mee als valse hoogtemeters, taak #429).
+  const ascent = stats?.elevationGainM ?? result.ascentM ?? null;
   const km =
     result.distanceKm != null ? Math.round(result.distanceKm) : route.targetKm;
   const improveNote = buildImproveNote(themes);

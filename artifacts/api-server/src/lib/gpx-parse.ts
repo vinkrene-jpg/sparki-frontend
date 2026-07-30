@@ -247,6 +247,72 @@ export type TrackSummary = {
 
 const PROFILE_SAMPLES = 48;
 
+// Ruisdrempel (m) voor hoogtemeters van ROUTES. SRTM-hoogtedata (GraphHopper/
+// ORS) ruist in vlak Nederland per punt 1-2 m op en neer; een naïeve som van
+// alle positieve deltas telt die ruis op tot honderden niet-bestaande
+// hoogtemeters (hertest Hengelo 30-07-2026: 400 hm op een vlakke 48 km-lus).
+// Sectorstandaard (Strava/Garmin/Komoot) is dremp­eling: een stijging telt pas
+// mee zodra ze cumulatief boven de ruisdrempel uitkomt. De waarde blijft een
+// SCHATTING uit echte bronhoogtes — er wordt niets verzonnen, alleen ruis
+// genegeerd.
+export const GAIN_NOISE_THRESHOLD_M = 3;
+
+// Afvlak-venster (m) vóór de hoogtemeterberekening. SRTM-ruis zit per punt;
+// een voortschrijdend gemiddelde over ±150 m wegafstand haalt die eruit terwijl
+// echte klimmen (honderden meters lang) volledig intact blijven. Alleen voor
+// de hm-SOM — het getoonde profiel blijft de echte bronreeks.
+export const GAIN_SMOOTH_WINDOW_M = 150;
+
+// Voortschrijdend gemiddelde van de hoogte over een afstandsvenster (±windowM
+// wegafstand rond elk punt). Puur ruisonderdrukking op echte bronhoogtes.
+export function smoothElevations(
+  samples: { distM: number; ele: number }[],
+  windowM: number = GAIN_SMOOTH_WINDOW_M,
+): number[] {
+  const out: number[] = [];
+  let lo = 0;
+  let hi = 0;
+  let sum = 0;
+  for (let i = 0; i < samples.length; i++) {
+    const d = samples[i]!.distM;
+    while (hi < samples.length && samples[hi]!.distM <= d + windowM) {
+      sum += samples[hi]!.ele;
+      hi++;
+    }
+    while (lo < hi && samples[lo]!.distM < d - windowM) {
+      sum -= samples[lo]!.ele;
+      lo++;
+    }
+    out.push(hi > lo ? sum / (hi - lo) : samples[i]!.ele);
+  }
+  return out;
+}
+
+// Hoogtemeters met hysterese: vanaf een lokaal minimum telt een klim pas mee
+// wanneer die ≥ threshold boven dat minimum uitkomt; daarna schuift de basis
+// mee omhoog. Dalen verlegt het minimum. Oscillaties kleiner dan de drempel
+// (SRTM-ruis) tellen zo niet mee; echte klimmen tellen volledig.
+export function thresholdedGainM(
+  elevations: number[],
+  thresholdM: number = GAIN_NOISE_THRESHOLD_M,
+): number {
+  let gain = 0;
+  let base: number | null = null;
+  for (const e of elevations) {
+    if (base == null) {
+      base = e;
+      continue;
+    }
+    if (e >= base + thresholdM) {
+      gain += e - base;
+      base = e;
+    } else if (e < base) {
+      base = e;
+    }
+  }
+  return gain;
+}
+
 // Compute distance, elevation gain, a downsampled elevation profile, and
 // detected climbs from raw points. Every value comes from the supplied
 // coordinates/elevations — nothing is fabricated. Points with a null `ele`
@@ -271,14 +337,16 @@ export function summarizeTrack(
   const eleSeries = points.map((p) => p.ele);
   const hasElevation = eleSeries.some((e) => e != null);
 
-  // Elevation gain (sum of positive deltas).
-  let elevationGainM = 0;
-  let prevEle: number | null = null;
-  for (const e of eleSeries) {
-    if (e == null) continue;
-    if (prevEle != null && e > prevEle) elevationGainM += e - prevEle;
-    prevEle = e;
+  // Elevation gain: eerst afvlakken over wegafstand, dan met ruisdrempel
+  // sommeren (zie smoothElevations/thresholdedGainM). Een naïeve som van
+  // positieve deltas blaast SRTM-ruis in vlak terrein op tot valse bergen
+  // (hertest Hengelo 30-07-2026: 400 hm op een vlakke 48 km-lus).
+  const eleSamples: { distM: number; ele: number }[] = [];
+  for (let i = 0; i < points.length; i++) {
+    const e = eleSeries[i];
+    if (e != null) eleSamples.push({ distM: cumKm[i]! * 1000, ele: e });
   }
+  const elevationGainM = thresholdedGainM(smoothElevations(eleSamples));
 
   // Downsample elevation to a fixed number of points for the profile chart.
   // Uses real metres; the UI normalizes against the max.

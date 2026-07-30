@@ -279,7 +279,9 @@ export async function generateStarterSet(
         // Hoogtemeters uit het echte spoor (zelfde aanpak als de planroutes):
         // ORS geeft ascent niet altijd terug, de puntenreeks wel.
         const stats = summarizeTrack(result.points);
-        const ascent = result.ascentM ?? stats?.elevationGainM ?? null;
+        // Voorkeur voor de gedrempelde hoogtemeters uit het echte spoor boven
+        // de rauwe provider-ascend (die telt SRTM-ruis mee, taak #429).
+        const ascent = stats?.elevationGainM ?? result.ascentM ?? null;
         const km =
           result.distanceKm != null ? Math.round(result.distanceKm) : targetKm;
         await db

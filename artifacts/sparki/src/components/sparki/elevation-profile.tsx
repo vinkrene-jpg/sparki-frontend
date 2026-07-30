@@ -30,13 +30,20 @@ function slopeColor(slopePct: number): string {
 const VB_W = 1000
 const VB_H = 100
 
+// Minimale verticale schaal (m) van het profiel. Zonder ondergrens rekt de
+// y-as automatisch op tot het hoogteverschil van de route, waardoor 15 m
+// verschil in vlak Nederland eruitziet als een col (hertest Hengelo,
+// 30-07-2026). Met een vaste minimumschaal van 100 m oogt vlak ook echt vlak;
+// routes met écht reliëf (>100 m verschil) schalen gewoon mee zoals eerst.
+const MIN_SPAN_M = 100
+
 // Compute the on-canvas points (0..VB_W, 0..VB_H) for the profile samples.
 // A small top/bottom padding keeps a flat profile from collapsing onto one row
 // and prevents the line from touching the very edges.
 function toPoints(profile: number[]): { x: number; y: number }[] {
   const max = Math.max(...profile)
   const min = Math.min(...profile)
-  const span = Math.max(1, max - min)
+  const span = Math.max(MIN_SPAN_M, max - min)
   const pad = 8
   const inner = VB_H - pad * 2
   const n = profile.length
@@ -135,13 +142,28 @@ export function slopeAtKm(
   return ((profile[i + 1]! - profile[i]!) / (segKm * 1000)) * 100
 }
 
-// Totale stijging (m) uit de echte samples — zelfde eenvoudige sommatie als de
-// server gebruikt bij het opslaan van elevationGainM.
+// Totale stijging (m) uit de echte samples, met dezelfde ruisdrempel als de
+// server (thresholdedGainM in gpx-parse.ts): een stijging telt pas mee zodra
+// ze cumulatief ≥ 3 m boven het laatste lokale minimum uitkomt. Zo tellen
+// SRTM-ruisgolfjes van 1-2 m niet op tot valse hoogtemeters in vlak terrein.
+// De waarde blijft een schatting uit echte bronhoogtes — vandaar het
+// "geschat"-label in de kop.
+const GAIN_NOISE_THRESHOLD_M = 3
+
 export function totalGainM(profile: number[]): number {
   let gain = 0
-  for (let i = 1; i < profile.length; i++) {
-    const d = profile[i]! - profile[i - 1]!
-    if (d > 0) gain += d
+  let base: number | null = null
+  for (const e of profile) {
+    if (base == null) {
+      base = e
+      continue
+    }
+    if (e >= base + GAIN_NOISE_THRESHOLD_M) {
+      gain += e - base
+      base = e
+    } else if (e < base) {
+      base = e
+    }
   }
   return Math.round(gain)
 }
@@ -229,7 +251,7 @@ export function InteractiveElevationProfile({
           {open ? "− hoogteprofiel" : "+ hoogteprofiel"}
         </button>
         <span className="font-mono text-[10px] tracking-[0.1em] text-white/40">
-          {fmt(distanceKm)} km · {totalGainM(profile)} hoogtemeters
+          {fmt(distanceKm)} km · ±{totalGainM(profile)} hoogtemeters (geschat)
         </span>
       </div>
 

@@ -68,3 +68,28 @@ Vóór de fixes op dezelfde dag: 3 onverhard/ruw-vakken + 91% verhard (Utrecht) 
   kan voor NL met de BGT (verhardingssoort, open data via PDOK) → vervolgtaak.
 - **Proces**: "PRODUCT PROVEN" mag pas ná de praktijktest van René worden
   uitgeroepen; het automatische harnas geeft hoogstens "technisch gereed".
+
+## Vervolg (taak #429, 30-07-2026): hoogteprofiel toonde niet-bestaande bergen
+
+Bevinding 3 (hoogteprofiel oogt als dikke beklimmingen) had twee wortels:
+
+1. **hm-som telde SRTM-ruis mee.** De routebron levert per punt hoogte met
+   1-2 m ruis; de naïeve som van positieve deltas telde dat in vlak NL op tot
+   honderden valse hoogtemeters (Hengelo-lus: 400 hm op 48 km). Fix in
+   `summarizeTrack` (gpx-parse.ts): eerst afvlakken over ±150 m wegafstand,
+   dan sommeren met 3 m-ruisdrempel (hysterese) — sectorstandaard
+   (Strava/Garmin/Komoot). Synthetische verificatie: vlakke 48 km-lus met
+   realistische gecorreleerde SRTM-ruis → 18 hm (was ~honderden); echte 100 m
+   klim + zelfde ruis → 108 hm (intact); harde alternerende ±3 m-ruis → 0 hm.
+   Route, klimmen en profiel blijven uit één bron (les van #423);
+   route-library en route-improvement geven de gedrempelde spoorwaarde nu ook
+   voorrang op de rauwe provider-`ascend`.
+2. **Y-as rekte automatisch op.** 15 m hoogteverschil vulde de volledige
+   grafiekhoogte en oogde als een col. Fix in `elevation-profile.tsx`: vaste
+   minimumschaal van 100 m — vlak oogt vlak, echt reliëf (>100 m verschil)
+   schaalt zoals eerst. De kop labelt de hm-waarde nu expliciet als
+   "± … hoogtemeters (geschat)"; de profiellijn zelf blijft de echte bronreeks.
+
+AHN als bron is overwogen maar niet ingevoerd: dat zou een tweede hoogtebron
+naast de routemotor zetten (strijdig met de één-bron-les van #423); de
+drempeling lost de overschatting binnen de bestaande bron op.
