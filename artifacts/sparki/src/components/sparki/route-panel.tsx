@@ -1429,7 +1429,9 @@ function sampleWaypointsFromGeometry(
   return points
 }
 
-function RouteGenerator({
+// Export voor de node-page-test van de racefiets-verificatiegate
+// (route-panel-verification-gate.test.tsx) — geen app-gebruik buiten RoutePanel.
+export function RouteGenerator({
   onClose,
   initialElevation = null,
   initialWaypoints = null,
