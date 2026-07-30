@@ -1,0 +1,31 @@
+# Poort 5b sanity-check rapport — Analyse-pagina visuele aanscherping (addendum 30-07-2026)
+delivery: "Stylingslag Analyse-pagina volgens addendum: hero-cijfers consistent font-bold, aflopende gradient-vulling onder de CTL-lijn, kaartstijl zacht (schaduw i.p.v. dunne rand, ruime padding). Geen structuur-, data- of berekeningswijzigingen."
+date: "2026-07-30"
+checked_by: "replit"
+surfaces:
+  - "Web /analyse (core-analyse.tsx): stat-tegels, Belastingsverloop-grafiek, weekuren-, HRV- en FTP-kaarten"
+  - "Trainingsverloop-blok (training-progression.tsx, lichte variant)"
+  - "Bewijs: screenshots/analyse-voor-2026-07-30.jpg vs screenshots/analyse-na-2026-07-30.jpg"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Alle tabs/knoppen op /analyse ongewijzigd qua gedrag: alleen classNames en SVG-gradient aangepast (core-analyse.tsx regels ~154-162 LCard, ~248, ~792, ~1143, ~1448; training-progression.tsx ~75-80, ~144; chart-kleuren.ts token ctlFillTopOpacity/ctlFillBottomOpacity). Typecheck sparki groen"
+        result: "pass"
+      - case: "Donkere variant van het Trainingsverloop-blok (Ride/Vandaag) is bewust NIET geraakt: alleen het 'licht'-pad kreeg de nieuwe schaduw/rand; de donkere tokens staan onveranderd in hetzelfde bestand"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Kleur blijft semantisch: geen enkele nieuwe kleur of extra lijn toegevoegd; de gradient gebruikt uitsluitend de bestaande CTL-kleur (#2563EB) met dekking 28%→0% van boven naar beneden — conform de gewenste richting (kleur steviger waar hij al zat)"
+        result: "pass"
+      - case: "Multi-lijn-grafieken onaangetast: Belastingsgrafiek toont nog steeds CTL+ATL samen; ATL houdt bewust géén fill en minder lijngewicht (na-screenshot bevestigt)"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Voor/na-vergelijking geleverd met echte data (CTL 34, ATL 27, TSB +7): na-beeld toont diepere gradient onder de CTL-lijn, vettere hero-cijfers en zachtere kaarten zonder dunne rand; cijfers identiek aan voor-beeld — pure stylinglaag"
+        result: "pass"
+      - case: "Ontbrekende FTP blijft eerlijk leeg (streepje), geen opgevuld sierprofiel; font-light op het '—'-teken van lege waarden bewust behouden (geen hero-cijfer)"
+        result: "pass"
+
+# verdict: deliverable alleen als alle results pass zijn; anders blocked.
+verdict: "deliverable"

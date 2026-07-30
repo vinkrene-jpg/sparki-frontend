@@ -150,12 +150,13 @@ function toestandVan(bron: Bron<unknown>, hasData: boolean): AnalyseToestand {
 
 // ── Lichte primitieven (white-bg variant) ────────────────────────────────────
 
-// Design-spec 29 jul: schaduw i.p.v. randjes, radius 12px, subtiele scheiding.
+// Design-spec 29 jul + addendum 30 jul: zachte schaduw i.p.v. dunne rand,
+// radius 12px, ruime padding (default p-5/20px, door callers overschrijfbaar).
 function LCard({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={cn("bg-white border border-slate-100 rounded-xl", className)}
-      style={{ boxShadow: "0 1px 3px rgba(15,23,42,0.08), 0 1px 2px rgba(15,23,42,0.04)" }}
+      className={cn("bg-white rounded-xl p-5", className)}
+      style={{ boxShadow: "0 1px 3px rgba(15,23,42,0.06), 0 4px 12px rgba(15,23,42,0.05)" }}
     >
       {children}
     </div>
@@ -245,7 +246,7 @@ function StatTegel({
         ? <span className="text-3xl font-light text-slate-300">—</span>
         : (
           <div className="flex items-baseline gap-1">
-            <span className="num text-3xl font-semibold tracking-tight tabular-nums" style={{ color }}>{value}</span>
+            <span className="num text-3xl font-bold tracking-tight tabular-nums" style={{ color }}>{value}</span>
             {unit && <span className="text-sm text-slate-400">{unit}</span>}
           </div>
         )
@@ -456,14 +457,21 @@ function LoadGrafiek({
             {heeftVorig && (
               <Line type="monotone" dataKey="vorigCtl" stroke="#cbd5e1" strokeWidth={1.5} dot={false} name="Vorige periode" connectNulls={false} />
             )}
-            {/* Area-fill onder CTL (12%) — trend in één oogopslag. ATL krijgt
-                bewust GEEN fill en minder lijngewicht: CTL blijft primair. */}
+            {/* Area-fill onder CTL: aflopende gradient (addendum 30 jul) —
+                trend in één oogopslag. ATL krijgt bewust GEEN fill en minder
+                lijngewicht: CTL blijft primair. */}
+            <defs>
+              <linearGradient id="ctl-fill-gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={CHART.ctl} stopOpacity={CHART.ctlFillTopOpacity} />
+                <stop offset="100%" stopColor={CHART.ctl} stopOpacity={CHART.ctlFillBottomOpacity} />
+              </linearGradient>
+            </defs>
             <Area
               type="monotone"
               dataKey="ctl"
               stroke="none"
-              fill={CHART.ctl}
-              fillOpacity={CHART.ctlFillOpacity}
+              fill="url(#ctl-fill-gradient)"
+              fillOpacity={1}
               name="CTL-vlak"
               tooltipType="none"
               legendType="none"
@@ -789,7 +797,7 @@ function SlaapCard({ metrics, periode }: { metrics: Array<{ metricDate: string; 
       ) : (
         <>
           <div className="flex items-baseline gap-1 mb-2">
-            <span className="num text-3xl font-light text-slate-900">{String(laatste.uren).replace(".", ",")}</span>
+            <span className="num text-3xl font-bold tracking-tight text-slate-900">{String(laatste.uren).replace(".", ",")}</span>
             <span className="text-xs text-slate-400">u laatst gemeten</span>
           </div>
           <Sparkline
@@ -1140,7 +1148,7 @@ function BelastingTab({
           <>
             <div className="flex items-end justify-between mb-2">
               <div className="flex items-baseline gap-1">
-                <span className="num text-3xl font-light text-slate-900">{Math.round(hrvWaarde)}</span>
+                <span className="num text-3xl font-bold tracking-tight text-slate-900">{Math.round(hrvWaarde)}</span>
                 <span className="text-xs text-slate-400">ms</span>
               </div>
               {hrvDeltaWaarde != null && (
@@ -1445,7 +1453,7 @@ function ProgressieTab({
           <>
             <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
               <div className="flex items-baseline gap-1.5">
-                <span className="num text-3xl font-light tabular-nums" style={{ color: CHART.ftp }}>
+                <span className="num text-3xl font-bold tracking-tight tabular-nums" style={{ color: CHART.ftp }}>
                   {weergave.getoond}
                 </span>
                 <span className="text-xs text-slate-400">W{weergave.bronIsProfiel ? " · Sportpaspoort" : ""}</span>

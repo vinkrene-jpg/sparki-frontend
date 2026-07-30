@@ -9,7 +9,11 @@
 // visueel gewicht dan CTL en nooit een zwaardere area-fill.
 export const CHART = {
   ctl:     "#2563EB", // blue-600   — fitheid (CTL), primaire lijn
-  ctlFillOpacity: 0.12, // area-fill onder de CTL-lijn (12%)
+  // Area-fill onder de CTL-lijn: aflopende gradient (Robinhood/Stripe-stijl,
+  // addendum 30 jul 2026) — vol bovenaan, uitlopend naar 0 onderaan. Een
+  // vlakke lage dekking oogt vlak; deze twee stops voeden de SVG-gradient.
+  ctlFillTopOpacity: 0.28,
+  ctlFillBottomOpacity: 0,
   atl:     "#EA580C", // orange-600 — vermoeidheid (ATL), minder gewicht dan CTL
   tsbPos:  "#16A34A", // green-600  — positieve vorm (TSB ≥ 0)
   tsbNeg:  "#DC2626", // red-600    — sterk negatieve vorm

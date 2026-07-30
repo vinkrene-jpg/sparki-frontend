@@ -73,15 +73,19 @@ export function TrainingProgression({
   const licht = variant === "licht"
   // Stijl-tokens per variant, zodat de JSX hieronder één pad blijft.
   const kaart = licht
-    ? "mt-4 rounded-xl border border-slate-100 bg-white p-5"
+    ? "mt-4 rounded-xl bg-white p-5"
     : "mt-4 rounded-2xl border border-white/[0.09] bg-[#070d16]/[0.82] p-5 backdrop-blur-md"
   const kaartStyle = licht
-    ? { boxShadow: "0 1px 3px rgba(15,23,42,0.06), 0 4px 12px rgba(15,23,42,0.04)" }
+    ? { boxShadow: "0 1px 3px rgba(15,23,42,0.06), 0 4px 12px rgba(15,23,42,0.05)" }
     : undefined
   const labelKlein = licht ? "text-slate-500" : "text-white/35"
   const tekstZacht = licht ? "text-slate-600" : "text-white/45"
   const tekstLeeg = licht ? "text-slate-500" : "text-white/40"
-  const getalGroot = licht ? "text-slate-900" : ""
+  // Addendum 30 jul: alleen de LICHTE variant (Analyse) krijgt vette
+  // hero-cijfers; de donkere variant (Ride/Vandaag) blijft extralight.
+  const getalGroot = licht
+    ? "font-bold tracking-tight text-slate-900"
+    : "font-extralight"
   const lijnKleur = licht ? "#2563EB" : ACCENT
   const lijnFill = licht ? "rgba(37,99,235,0.08)" : "rgba(120,210,230,0.07)"
   const balkLaatst = licht
@@ -141,7 +145,7 @@ export function TrainingProgression({
               <>
                 <div className="mt-3 flex items-end justify-between">
                   <div className="flex items-baseline gap-1.5">
-                    <span className={`font-sans text-4xl font-extralight tabular-nums ${getalGroot}`}>
+                    <span className={`font-sans text-4xl tabular-nums ${getalGroot}`}>
                       {Math.round(ctlLast)}
                     </span>
                     <span className={`font-mono text-[11px] ${labelKlein}`}>
