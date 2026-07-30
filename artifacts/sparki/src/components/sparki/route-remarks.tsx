@@ -53,7 +53,7 @@ function RemarkRow({
     <li className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
       <div className="flex items-start gap-2.5">
         <Icon
-          className="mt-0.5 h-4 w-4 shrink-0 text-amber-300/85"
+          className="mt-0.5 h-4 w-4 shrink-0 text-warning/85"
           strokeWidth={1.75}
         />
         <div className="min-w-0 flex-1">
@@ -64,7 +64,7 @@ function RemarkRow({
               {remark.endKm != null && `–${fmtKm(remark.endKm)}`}
             </span>
             {remark.uncertain && (
-              <span className="rounded-full border border-amber-300/30 px-1.5 py-px font-mono text-[9px] uppercase tracking-[0.1em] text-amber-200/75">
+              <span className="rounded-full border border-warning/30 px-1.5 py-px font-mono text-[9px] uppercase tracking-[0.1em] text-warning/75">
                 indicatie
               </span>
             )}

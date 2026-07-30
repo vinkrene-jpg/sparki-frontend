@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react"
-import { IconCheck } from "@/components/ds"
+import { DsStatus, IconCheck } from "@/components/ds"
 import { trackScreen } from "@/lib/telemetry"
 import { SectionLabel, Stat, Divider, ACCENT } from "@/components/sparki/ui"
 import { HumorLine } from "@/components/sparki/humor-line"
@@ -1062,14 +1062,17 @@ function RouteCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1 basis-44">
           <div className="flex min-w-0 items-center gap-2">
-            <span
-              className={`font-mono text-[9px] uppercase tracking-[0.18em] ${
+            <DsStatus
+              status={
                 verification === "hard_blocked"
-                  ? "text-negative"
+                  ? "fout"
                   : verification === "verified_clear"
-                    ? "text-accent-cyan"
-                    : "text-warning"
-              }`}
+                    ? "positief"
+                    : verification === "geen_route"
+                      ? "neutraal"
+                      : "waarschuwing"
+              }
+              className="shrink-0"
             >
               {verification === "hard_blocked"
                 ? "Geblokkeerd"
@@ -1077,10 +1080,12 @@ function RouteCard({
                   ? "Controle loopt"
                   : verification === "unverifiable"
                     ? "Niet gecontroleerd"
-                    : route.status === "ready"
-                      ? "Klaar"
-                      : route.status}
-            </span>
+                    : verification === "geen_route"
+                      ? "Geen routelijn"
+                      : route.status === "ready"
+                        ? "Klaar"
+                        : route.status}
+            </DsStatus>
             <span className="font-mono text-[9px] uppercase text-white/25">
               · {route.source}
             </span>

@@ -50,7 +50,7 @@ export default function RoutesPage() {
   const kiesTab = (v: RoutesView) => setLocation(`/routes?view=${v}`)
 
   const plannerUit = (
-    <div className="rounded-2xl border border-white/[0.06] bg-[#070d16]/[0.55] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-white/[0.06] bg-map-panel/[0.55] p-4 backdrop-blur-md">
       <p className="text-[14px] font-medium text-white/70">
         Routeplanner nog niet beschikbaar
       </p>
@@ -76,7 +76,7 @@ export default function RoutesPage() {
       {/* Vast tabmenu: blijft bovenin staan tijdens scrollen, met een
           donkere blur-achtergrond zodat inhoud er niet doorheen schijnt.
           -mx/px zodat de balk tot de randen van de content doorloopt. */}
-      <div className="sticky top-0 z-30 -mx-5 mt-5 bg-[#05070e]/85 px-5 pb-1 pt-2 backdrop-blur-md lg:-mx-10 lg:px-10">
+      <div className="sticky top-0 z-30 -mx-5 mt-5 bg-map-ink/85 px-5 pb-1 pt-2 backdrop-blur-md lg:-mx-10 lg:px-10">
         <HoofdstukTabs
           tabs={TABS}
           actief={view}
@@ -117,7 +117,7 @@ export default function RoutesPage() {
             <section className="mt-8">
               <Link
                 href="/sprinten"
-                className="flex w-full items-center gap-4 rounded-2xl border border-white/[0.08] bg-[#070d16]/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
+                className="flex w-full items-center gap-4 rounded-2xl border border-white/[0.08] bg-map-panel/[0.82] p-4 text-left backdrop-blur-md transition-colors hover:border-cyan-300/30"
               >
                 <span
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.08]"

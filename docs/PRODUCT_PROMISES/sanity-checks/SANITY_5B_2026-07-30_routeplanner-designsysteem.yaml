@@ -1,0 +1,23 @@
+# Poort 5b sanity-check — Fase 2 (deel): routeplanner in het designsysteem
+
+delivery: "Routeplanner (web /routes) aangesloten op de centrale kleurtokens en ds-iconen: verificatiestatus als DsStatus-chip met icoon (Geblokkeerd=fout, Controle loopt/Niet gecontroleerd=waarschuwing, Klaar=positief, Geen routelijn=neutraal); route-opmerkingen van hardcoded amber naar warning-tokens; hardcoded hexvlakken (#070d16/#05070e) vervangen door map-panel/map-ink-tokens. Geen structuur- of datawijzigingen."
+date: "2026-07-30"
+checked_by: "replit"
+surfaces:
+  - "Web /routes (Bewaard-tab, routekaart met echte geblokkeerde route uit Hengelo) — screenshots/routeplanner-voor-2026-07-30.jpg vs screenshots/routeplanner-na-2026-07-30.jpg"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "NAVIGEER-knop blijft uitsluitend renderen bij verified_clear (nu ook zichtbaar bevestigd: geblokkeerde route toont chip 'Geblokkeerd' zonder navigeerknop); DELEN/GPX/TCX/wis onveranderd aanwezig en klikbaar."
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Statuschip communiceert nooit alleen met kleur: elke status draagt een eigen icoon én tekstlabel (designsysteem-regel); betekenis vast — rood=fout, amber=aandacht/onzeker, groen=goed, neutraal=geen routelijn."
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "'Controle loopt' is een tijdelijke waarschuwingschip die door de meting wordt vervangen door Klaar/Geblokkeerd/Niet gecontroleerd — screenshot-na toont een definitieve status ('Geblokkeerd') met eerlijke uitleg, geen blijvende laadtekst."
+        result: "pass"
+
+verdict: "deliverable"
