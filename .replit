@@ -461,7 +461,7 @@ isValidation = true
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm run typecheck:libs && pnpm --filter @workspace/api-server run typecheck && node scripts/check-sanity-reports.mjs"
+args = "pnpm run typecheck:libs && pnpm --filter @workspace/api-server run typecheck && node scripts/test-check-sanity-reports.mjs && node scripts/check-sanity-reports.mjs"
 
 [[workflows.workflow]]
 name = "admin-smoke"
