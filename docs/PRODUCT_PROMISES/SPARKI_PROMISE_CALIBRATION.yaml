@@ -1760,7 +1760,7 @@ chapter_a_start_profiel_en_doelen:
         - "Herkomst met terugwerkende kracht voor legacy-waarden is niet reconstrueerbaar."
         - "De eventlaag beschermt alleen paden die haar gebruiken; afwijkende schrijfpaden (profielconsistentie) vallen erbuiten tot ze worden aangesloten."
       assumptions:
-        - "180 dagen is een acceptabele eerste versheidsgrens voor alle velden totdat per-veld-grenzen zijn gekalibreerd."
+        - "Versheid verschilt per waardesoort (besluit René 30-07-2026: geen algemene grens). De huidige uniforme 180-dagen-grens is bestaand gedrag; vervanging door veldspecifieke versheidsgrenzen is een BOUWOPGAVE, net als het zichtbaar maken van zekerheid (hoog/redelijk/laag) in de gebruikersinterface (confidence zit al in de API, niet in de UI)."
       unknowns:
         - "Hoeveel paspoortwaarden in de praktijk 'herkomst onbekend' zijn (geen telling vastgelegd)."
       evidence_method:
@@ -1827,7 +1827,7 @@ chapter_a_start_profiel_en_doelen:
       evidence_refs: []
     next_action:
       type: research_or_build_or_retest
-      description: "Kalibratievragen beantwoorden; profielconsistentie-pad op de eventlaag aansluiten (bouwvoorstel, na akkoord); daarna proof-run per schrijfpad."
+      description: "Bouwen en testen: veldspecifieke versheidsgrenzen (i.p.v. de uniforme 180 dagen) en de zekerheidsweergave hoog/redelijk/laag in de UI; daarnaast profielconsistentie-pad op de eventlaag aansluiten en de proof-run per schrijfpad draaien."
       approved_for_execution: false
 
   - id: START_VANDAAG_001
@@ -1879,7 +1879,7 @@ chapter_a_start_profiel_en_doelen:
 
     replit_definition:
       objective_quality_standard: "Bij elke render precies één leidend Momentblok volgens de vaste prioriteit; gezondheid wint altijd; maximaal één nudge per bezoek; 0 verzonnen of placeholder-gegevens als eindstaat; genegeerde niet-kritieke meerijders pauzeren na 3 getoonde dagen."
-      recommended_default: "Huidige precedentie handhaven (gezondheid → racedag → na-rit → rit → voorstel → voor-training → herstel → balans); weer alleen bij voor-training/racedag; kritieke zaken (defect vastgesteld, gezondheid) roteren nooit weg."
+      recommended_default: "Volgorde conform besluit René 30-07-2026: gezondheid → racedag → na-rit → geplande rit/training → voorbereiding → herstel → balans; een voorstel komt alléén boven een geplande training wanneer er een aantoonbare reden is om die training aan te passen (BOUWOPGAVE: de huidige code zet een voorstel nog onvoorwaardelijk boven de geplande training — deze conditionele voorstelprioriteit is nieuw gewenst gedrag). Weer alleen bij voorbereiding/racedag; kritieke zaken (defect vastgesteld, gezondheid) roteren nooit weg."
       technical_limits:
         - "Slapende daytypes (emergency/race-varianten) activeren pas bij echte bronnen."
         - "Geen upstream-foutdetail bij weer (bewuste eenvoud)."
@@ -1953,7 +1953,7 @@ chapter_a_start_profiel_en_doelen:
       evidence_refs: []
     next_action:
       type: research_or_build_or_retest
-      description: "Volgorde-kalibratie door René; geïntegreerde renderingstest bouwen; week-logboek-praktijktest draaien."
+      description: "Bouwen en testen: conditionele voorstelprioriteit (voorstel alleen boven een geplande training bij aantoonbare aanpassingsreden) inclusief toets via het echte gebruikerspad; daarnaast de geïntegreerde renderingstest en het week-logboek als praktijktest."
       approved_for_execution: false
 
   - id: START_DOELEN_001
@@ -1973,7 +1973,7 @@ chapter_a_start_profiel_en_doelen:
         - "Presentatie en sturing lopen niet volledig gelijk: een voedings-seizoensdoel kan als afgeleid doel getoond worden terwijl de leeftijdspoort de doorvoering blokkeert."
 
     proposed_promise:
-      text: "Je doelen sturen echt: je wedstrijd, je ontwikkelrichting en je seizoensdoel werken door in je plan, je dagadvies en je voeding — met één en dezelfde uitleg overal. Sparki bewaakt daarbij altijd de veilige grens: afvallen gaat nooit sneller dan een halve kilo per week, trainingen worden nooit uitgehongerd, en voor jonge renners doet Sparki niet aan gewichtssturing."
+      text: "Je doelen sturen echt: je wedstrijd, je ontwikkelrichting en je seizoensdoel werken door in je plan, je dagadvies en je voeding — met één en dezelfde uitleg overal. Doelen die Sparki zelf afleidt gaan pas meesturen nadat jij ze bevestigd hebt. Sparki bewaakt daarbij altijd de veilige grens: afvallen gaat nooit sneller dan een halve kilo per week, trainingen worden nooit uitgehongerd, en voor jonge renners doet Sparki niet aan gewichtssturing."
       proposed_by: replit
       rationale: "Doelen zijn het contract tussen atleet en coach; als de sturing niet aantoonbaar of niet veilig is, is alle coaching willekeur. De veiligheidsranden zijn hier belangrijker dan de featurebreedte (RED-S bij jeugd is een absolute ondergrens, geen productkeuze)."
       rene_approved: false
@@ -2012,7 +2012,7 @@ chapter_a_start_profiel_en_doelen:
 
     replit_definition:
       objective_quality_standard: "Elk actief doel is aantoonbaar terug te vinden in plan/dagadvies/voeding met één canonieke uitlegzin; 0 gewichtssturing onder 17 of bij onbekend geboortejaar; 0 adviezen die sneller dan 0,5 kg/week sturen; afgeleide doelen bestaan nooit dubbel (stabiele id's, DB-unique voorstellen)."
-      recommended_default: "Veiligheid > gezondheid/herstel > wedstrijddoel > seizoensdoel > overige doelen als vaste afwegingsvolgorde bij conflicten; conflicten zichtbaar benoemen ('je afvaldoel staat deze week in de wacht voor je wedstrijd') in plaats van stil kiezen."
+      recommended_default: "Veiligheid > gezondheid/herstel > wedstrijddoel > seizoensdoel > overige doelen als vaste afwegingsvolgorde bij conflicten; conflicten zichtbaar benoemen ('je afvaldoel staat deze week in de wacht voor je wedstrijd') in plaats van stil kiezen, waarbij de gebruiker kiest welk doel tijdelijk leidend is en veiligheidsgrenzen hard blijven. Afgeleide doelen sturen het plan pas ná bevestiging door de gebruiker (besluit René 30-07-2026; BOUWOPGAVE: de bevestigingsstap bestaat nog niet — afgeleide doelen werken nu direct door)."
       technical_limits:
         - "Zonder gewichtsdata is voortgang op het gewichtsdoel niet echt meetbaar; dan eerlijk 'niet meetbaar' tonen."
         - "Race-afgeleide doelen beperkt tot de zes eerstvolgende races."
@@ -2096,7 +2096,7 @@ chapter_a_start_profiel_en_doelen:
       evidence_refs: []
     next_action:
       type: research_or_build_or_retest
-      description: "René's conflictbeleid kalibreren; presentatie/sturing gelijktrekken voor de jeugdpoort (bouwvoorstel, na akkoord); conflictscenario-test ontwerpen."
+      description: "Bouwen en testen: bevestigingsstap voor afgeleide doelen (pas na bevestiging plansturing) en de doelconflictflow (conflict benoemen, gebruiker kiest, veiligheid hard) inclusief conflictscenario-test; daarnaast presentatie/sturing gelijktrekken voor de jeugdpoort."
       approved_for_execution: false
 
 # ---------------------------------------------------------------------------
