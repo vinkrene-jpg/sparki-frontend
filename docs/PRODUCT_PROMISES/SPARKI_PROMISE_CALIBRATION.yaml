@@ -1,0 +1,792 @@
+# SPARKI PROMISE CALIBRATION
+# Hoofdstuk D — Routes en navigatie
+# Opgesteld: 2026-07-30 (opdracht v2, taak #444). Alleen dit hoofdstuk; geen productcode gewijzigd.
+# Bindende context: Product Proof Doctrine; acceptatiegrenzen René 30-07-2026
+# (PO-01 §Acceptatiegrenzen + Addendum obstakelbesluiten): 0% aantoonbaar onverhard
+# racefiets; trap/fietsverbod/afgesloten poort = absolute weigering (nooit aanbieden);
+# onbekend wegdek actief mijden; wereldmarkt-lat: elk onderdeel ≥9/10 t.o.v. de beste
+# marktspeler (Komoot voor routes).
+
+chapter_d_routes_en_navigatie:
+
+  - id: ROUTES_GENERATOR_001
+    module: Routes en navigatie
+    subject: "Routegenerator (lussen en A-B) met fietstype-geschiktheid"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Deels: geautomatiseerde route-suitability-proof bestaat (docs/product/proof-evidence/route-suitability-*.json); laatste volledige run vóór de motor-fix van 30-07 faalde op onverhard-grenzen; taken #437/#441/#442 (harde afkeurpoort + bewijs) net gemerged, nieuwe volledige run tegen René's grenzen staat nog uit."
+      practice_status: "René test mee in de praktijk (Hengelo/Zwolle-lussen); eerdere praktijktests vonden gravel op 'verharde' routes — aanleiding voor de 30-07-besluiten."
+      known_limitations:
+        - "GraphHopper custom model kent geen bike_access; fietslegaliteit leunt op het racingbike/bike-profiel zelf plus de Overpass-nameting achteraf."
+        - "25–40% van de NL-routemeters heeft geen OSM-surface-tag; onbekend wordt gemeden (straf ×0.4) maar niet uitgesloten; BGT vult alleen het NL-gat."
+        - "Harde straf (multiply_by 0/0.01) laat de zoektocht exploderen; 0.05 + eerlijke herkansing zonder model is het compromis — de nameting blijft dan de poort."
+        - "Overpass-nameting kan falen (mirror-storing); dan is er geen obstakel-/verbodsmeting en geldt fail-open (route wordt niet blind geweigerd)."
+        - "ORS blijft terugvalmotor zonder wegdekbesef; alleen relevant als de GH-sleutel wegvalt."
+
+    proposed_promise:
+      text: "Je krijgt binnen 30 seconden een route die aantoonbaar geschikt is voor je gekozen fiets: op de racefiets 0% aantoonbaar onverhard, nooit een trap, fietsverbod of afgesloten poort, en zo min mogelijk onbekend wegdek. Kan dat in dit gebied niet, dan zegt Sparki dat eerlijk in plaats van een 'minst slechte' route te geven."
+      proposed_by: replit
+      rationale: "Dit is de Komoot-vervangingsbelofte: wielrenners gebruiken Komoot voor route→GPX→Garmin; elke geaccepteerde onverharde meter betekent dat niemand overstapt. Grenzen zijn al bindend vastgesteld door René (PO-01, 30-07-2026)."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "GraphHopper Directions API (betaald, hosted)"
+          coverage: "Wereldwijde routering op OSM-data; custom models met surface/road_class-straffen; round_trip-lussen. Dekt NIET: bike_access in hosted custom models, garanties over OSM-datakwaliteit."
+          actuality: "Live API, OSM-basis wordt door GraphHopper doorlopend ververst (dagen-orde); API-versie 1."
+          license_status: "Commercieel abonnement met eigen sleutel (GRAPHHOPPER_API_KEY); commercieel gebruik toegestaan binnen abonnement; kosten-/limietbewaking nog niet ingericht (open punt PO-01)."
+          limitations:
+            - "surface-details alleen zo goed als OSM-tagging (25–40% onbekend in NL)"
+            - "harde uitsluitingen (multiply_by 0) onbruikbaar (maximum nodes)"
+            - "round_trip met custom model rekt afstand ~45% op; adaptieve hercorrectie nodig"
+          applicability: "De routemotor zelf: kiest de wegen, levert per route gratis surface-path-details die als eerste geschiktheidsmeting dienen."
+        - name: "OpenStreetMap via Overpass API (mirror-keten)"
+          coverage: "NL/EU-dekkend voor tags surface/highway/bicycle/access/barrier/tracktype/smoothness. Dekt NIET: ongetagde wegen (geen tag ≠ verhard), actualiteit ter plekke."
+          actuality: "Minutelijks bijgewerkte OSM-spiegel; tagdekking wisselt per regio en verandert doorlopend."
+          license_status: "ODbL 1.0, commercieel gebruik toegestaan met bronvermelding; publieke Overpass-mirrors zijn fair-use zonder SLA (provider-compliance-risico voor commerciële schaal)."
+          limitations:
+            - "504's op verbose queries; mirror osm.ch onbruikbaar; maps.mail.ru primair"
+            - "geen garantie dat ontbrekende tags 'geen probleem' betekenen"
+          applicability: "Onafhankelijke nameting (verificatiepoort) per kandidaat: obstakels (trap/poort), fietsverbod, wegdekverdeling — de tweede sleutel naast de motor."
+        - name: "BGT via PDOK OGC API (Basisregistratie Grootschalige Topografie)"
+          coverage: "Alleen Nederland; verhardingssoort (fysiek_voorkomen) per wegdeel, landsdekkend door gemeentes onderhouden. Dekt NIET: buitenland, en 'transitie'-vakken."
+          actuality: "Doorlopend gemuteerd door bronhouders; API live; wijzigingstempo traag (24h-cache verantwoord)."
+          license_status: "CC0 1.0 — vrij, ook commercieel."
+          limitations:
+            - "rate-limited; tegelplafond per aanvraag → niet elke meter wordt beoordeeld"
+            - "vlak-geometrie: punt-in-polygoon kan bij randen naastgelegen vlak raken"
+          applicability: "Controlelaag die het OSM-onbekend-gat in NL dicht (selectie-straf + wegtypescherm), niet de motor."
+        - name: "NDW (Nationaal Dataportaal Wegverkeer)"
+          coverage: "NL wegwerkzaamheden/afsluitingen/verkeersdata, vooral hoofdwegennet; fietspaden en landelijke weggetjes mager gedekt."
+          actuality: "Near-realtime feeds; open data."
+          license_status: "Open data (CC0/CC-BY per dataset), commercieel bruikbaar."
+          limitations:
+            - "fietsinfrastructuur is geen kernscope; dekking voor racefietsroutes onbewezen"
+            - "integratie-inspanning (DATEX II) aanzienlijk"
+          applicability: "KANDIDAAT (nog niet in gebruik): actuele afsluitingen/werkzaamheden op de route melden — zou het 'OSM kan verouderd zijn'-gat deels dichten."
+        - name: "EU-equivalenten van BGT (o.a. Duitsland ALKIS/ATKIS, België GRB, Frankrijk BD TOPO)"
+          coverage: "Per land verschillend; geen uniforme EU-brede verhardingsbron; INSPIRE-transport-thema is te grof voor wegdek per vak."
+          actuality: "Per land wisselend; geen uniforme API."
+          license_status: "Per land verschillend (GRB en BD TOPO open; Duitse Länder wisselend) — per land te toetsen vóór EU-uitrol."
+          limitations:
+            - "geen enkele bron geeft EU-breed wegdek per wegvak zoals de BGT"
+          applicability: "KANDIDAAT voor de EU-uitrol: per land een BGT-achtige controlelaag; tot die tijd is de belofte buiten NL zwakker (alleen OSM+GH)."
+      sources_in_use:
+        - "GraphHopper Directions API — motor + eerste wegdekmeting (enige motor met custom models binnen bereik)"
+        - "OpenStreetMap/Overpass — onafhankelijke verificatiepoort (obstakels, verbod, wegdek)"
+        - "BGT/PDOK — NL-controlelaag voor onbekend wegdek"
+      privacy_status: unknown
+      missing_information:
+        - "Kosten-/limietbewaking GraphHopper-abonnement (verbruik per dag, plafondgedrag) is niet ingericht."
+        - "Commerciële status publieke Overpass-mirrors op schaal (eigen instance nodig?)."
+        - "EU-brede wegdekbron bestaat niet; per-land-licenties niet uitgezocht."
+        - "NDW-dekking voor fietsrelevante afsluitingen niet empirisch getoetst."
+
+    replit_definition:
+      objective_quality_standard: "Per gegenereerde racefietsroute: 0 gemeten onverharde meters (GH-details én Overpass én BGT waar beschikbaar), 0 trappen, 0 fietsverbod-meters, 0 afgesloten poorten; afstandsafwijking ≤10% van het doel; generatie ≤30 s interactief. Onbekend-wegdek-aandeel structureel dalend (BGT-resolutie gemeten per route)."
+      recommended_default: "Motor-straffen (onverhard 0.05, onbekend 0.4, trap 0.05) + best-of-N-selectie + absolute weigeringspoort; bij aantoonbare blokkade eerlijk falen met handelingsperspectief (ander startpunt/afstand)."
+      technical_limits:
+        - "Per-segment-toetsing is haalbaar (GH-details + Overpass-sampling ≤600 punten), maar de interactieve nameting draait onder een 2,5s-budget — bij trage Overpass valt de meting eerlijk weg (fail-open)."
+        - "0% geldt voor AANTOONBAAR onverhard; fysieke werkelijkheid kan afwijken waar alle bronnen zwijgen."
+      assumptions:
+        - "OSM-wegen zonder surface-tag zijn in NL meestal asfalt (woonstraten) — daarom straf 0.4 en geen uitsluiting."
+      unknowns:
+        - "Slaagkans van de generator in gravel-rijke regio's (Veluwe/heuvelland) onder de absolute poort: hoe vaak 'geen route gevonden'?"
+        - "Gedrag/kwaliteit buiten NL zonder BGT-laag."
+      evidence_method:
+        - "Geautomatiseerde suitability-proof over meerdere startpunten/fietstypen tegen René's grenzen (bestaat; her-runnen na motor-fix — taken #437/#442 leveren de afkeurpoort-bewijzen)."
+        - "Tegenvoorbeeld-tests per afkeurregel (zie acceptance_contract)."
+        - "Praktijktest door René/Dylan: route rijden of way-voor-way nalopen."
+
+    rene_calibration:
+      questions:
+        - "Als er binnen de gevraagde afstand géén 100%-schone route bestaat: wil je (a) alleen de eerlijke foutmelding, of (b) ook een aangepast voorstel (andere afstand/startpunt) dat wél schoon is?"
+        - "Hoeveel afstandsafwijking is acceptabel als de schone route daardoor mogelijk wordt (bv. 40 km gevraagd, schoonste optie is 46 km)? [maximale omweg]"
+        - "Prioriteitsvolgorde bij conflict tussen mooi/rustig/snel/veilig/exact-op-afstand — wat mag wijken zodra 'geschikt' geborgd is?"
+        - "Klinkers en slecht wegdek (smoothness=bad) op de racefiets: accepteren, mild melden, of meewegen als afkeur boven een drempel?"
+        - "Drukke wegen (N-wegen zonder vrijliggend fietspad): hoe zwaar moet 'rustig' wegen t.o.v. afstandsnauwkeurigheid?"
+        - "Buiten Nederland (vakantie/EU): is dezelfde 0%-belofte daar houdbaar zonder BGT, of geldt daar een eerlijk zwakkere belofte ('minder zeker over wegdek')?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Een racefietsroute met ook maar één aantoonbaar onverharde/halfverharde meter (gravel, compacted, fine_gravel, dirt, zand, gras, kasseien) wordt nooit aangeboden."
+          measurement_level: per_segment
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Kandidaat-lus van 40 km met één gemeten grindvak van 80 m (surface=gravel), verder 100% asfalt."
+              proof_stage: designed
+              proof_method: "Logica-doorloop: GH-details geven pavedFraction<0.999 → surfacePenalty ≥3 in de selectie; blijft hij als enige over, dan telt de Overpass-nameting het vak per segment en vuurt de afkeurpoort (#437/#441) — route wordt niet geleverd. Latere geautomatiseerde test: fixture-route met één gravel-way door de poort halen."
+              proof_result: not_yet_tested
+        - rule: "Een route met een trap, een aantoonbaar fietsverbod (bicycle=no/private) of een afgesloten/privé-poort zonder fiets-uitzondering wordt nooit aangeboden — ook niet als alle alternatieven hetzelfde gebrek hebben (dan faalt de generatie eerlijk)."
+          measurement_level: per_segment
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Alle N kandidaten bevatten dezelfde trap (enige verbinding); systeem zou vroeger de 'minst slechte' leveren."
+              proof_stage: designed
+              proof_method: "Logica-doorloop op de winnaar-check in de kandidaatselectie: gemeten winnaar met steps>0 ⇒ throw met eerlijke NL-fout, geen route. Latere test: obstaclesOf-stub die voor élke kandidaat een trap meldt en asserten dat de aanroep faalt i.p.v. levert."
+              proof_result: not_yet_tested
+            - case: "Poort met locked=yes zonder bicycle=yes op de enige kandidaat."
+              proof_stage: designed
+              proof_method: "classifyGatePassage(tags)='afgesloten' → blockedGates>0 → zelfde weigering; unit-test op classifyGatePassage bestaat al (20/20), de poort-tot-weigering-keten volgt in de bouwfase-test."
+              proof_result: not_yet_tested
+        - rule: "Zonder geslaagde onafhankelijke nameting (Overpass) mag een route nooit als 'gecontroleerd/geschikt' worden gepresenteerd — meting mislukt = eerlijk 'niet gecontroleerd', nooit stilzwijgend groen."
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Overpass-mirrors geven 504 tijdens generatie; route wordt geleverd."
+              proof_stage: designed
+              proof_method: "Redenering: obstaclesOf retourneert null → weigering vuurt niet (fail-open, bewuste keuze) maar het wegdekscherm toont 'onvoldoende gegevens' i.p.v. een verdict. Latere test: null-meting ⇒ response bevat geen geschiktheids-claim."
+              proof_result: not_yet_tested
+      tolerances:
+        - "Afstandsafwijking lus: doel ±10% (huidige hercorrectie haalt ±5% in de geteste gevallen)."
+        - "Onbekend wegdek: geen harde grens vastgesteld — kalibratievraag; huidig gedrag is actief mijden + eerlijk tonen."
+      unknown_data_policy: "Onbekend is een risico, geen vrijbrief (PO-01 §3): motor mijdt onbekend (×0.4), BGT vult NL-gaten, resterend onbekend aandeel wordt eerlijk getoond; onbekend wordt nooit als verhard geteld of verzwegen."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "test:route-suitability (live GH+Overpass, bewijs naar docs/product/proof-evidence/) — her-runnen na motor-fix"
+        - "test:route-remarks, test:route-surfaces, test:bgt-verharding (puur, groen 30-07)"
+        - "afkeurpoort-bewijstest (taak #442, net gemerged)"
+      independent_checks:
+        - "Overpass-nameting is een andere bron dan de motor (GH) — ingebouwde onafhankelijkheid"
+        - "BGT is een derde, niet-OSM-bron voor NL"
+      practice_test_required: true
+      practice_testers: ["René", "Dylan"]
+      result: not_tested
+      expectation_gap:
+        - "Eerder gat: 'Volledig' op modulestatus terwijl praktijkroutes gravel bevatten — precies wat deze kalibratie moet voorkomen."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs:
+        - "docs/product/proof-evidence/route-suitability-*.json (pre-fix run: FAIL op onverhard-grenzen — eerlijk vastgelegd)"
+    next_action:
+      type: research_or_build_or_retest
+      description: "Volledige suitability-proof her-runnen nu custom model + absolute poort actief zijn (meerdere startpunten, racefiets/gravel), en de kalibratievragen door René laten beantwoorden."
+      approved_for_execution: false
+
+  - id: ROUTES_HOOGTEPROFIEL_001
+    module: Routes en navigatie
+    subject: "Hoogteprofiel en hoogtemeters per route"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Unit-tests op smoothing/drempel aanwezig; één hoogtepijplijn (summarizeTrack: smooth ±150 m + 3 m-drempel) is SSOT voor de hm-som; profiel-y-as heeft 100 m minimumschaal."
+      practice_status: "Eerdere praktijkklacht (400 valse hm op vlakke 48 km-lus; profiel sprak som tegen) is verholpen; nieuwe praktijkrondes na routewijzigingen beperkt."
+      known_limitations:
+        - "Bronhoogte is provider-SRTM (~30 m-raster, 1–2 m puntruis); absolute nauwkeurigheid per punt blijft een schatting, UI labelt '(geschat)'."
+        - "Geen tweede hoogtebron (AHN) — bewust: één bron voor profiel én som, anders keert de tegenspraak terug."
+        - "Klimprofielen kunnen bij routewijziging verdwijnen (open taak #427)."
+
+    proposed_promise:
+      text: "Het hoogteprofiel en het totaal aantal hoogtemeters komen uit dezelfde meting en spreken elkaar nooit tegen; vlak Nederland toont eerlijk (bijna) nul hoogtemeters, echte klimmen blijven volledig zichtbaar. Hoogtemeters zijn altijd gelabeld als schatting."
+      proposed_by: replit
+      rationale: "De historische vertrouwensbreuk was tegenspraak tussen profiel en som (twee bronnen). Eén pijplijn + sectorstandaard-ruisonderdrukking (Strava/Garmin/Komoot-aanpak) is de enige houdbare belofte."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "GraphHopper elevation (SRTM/vergelijkbaar, per routepunt)"
+          coverage: "Wereldwijd; hoogte per routecoördinaat. Dekt NIET: sub-meter-nauwkeurigheid, bruggen/tunnels correct (raster volgt maaiveld)."
+          actuality: "Statisch raster (SRTM-generatie ±2000); verandert praktisch niet."
+          license_status: "Onderdeel van het GH-abonnement; commercieel bruikbaar."
+          limitations: ["1–2 m puntruis", "~30 m raster", "maaiveld ≠ wegdek bij kunstwerken"]
+          applicability: "Enige bron voor routeprofiel + hm-som (via summarizeTrack)."
+        - name: "AHN (Actueel Hoogtebestand Nederland, via PDOK)"
+          coverage: "Alleen NL; hoogte tot ~0,5 m-raster, veel nauwkeuriger dan SRTM. Dekt NIET: buitenland."
+          actuality: "AHN4/AHN5-cycli (meerjarig); open data."
+          license_status: "CC0/open, commercieel bruikbaar."
+          limitations: ["groot datavolume; eigen sampling-infra nodig", "alleen-NL maakt EU-belofte tweedelig"]
+          applicability: "KANDIDAAT (niet in gebruik): nauwkeuriger NL-profiel — alleen invoeren als route-hm én profiel tegelijk overgaan (één-bron-les)."
+      sources_in_use:
+        - "GraphHopper elevation — enige bron, bewust (tegenspraak-preventie)"
+      privacy_status: unknown
+      missing_information:
+        - "Kwantitatieve vergelijking SRTM vs AHN op NL-testroutes (hoe groot is de winst echt?) niet uitgevoerd."
+
+    replit_definition:
+      objective_quality_standard: "Profiel-som en getoonde hm identiek (zelfde reeks); vlakke referentieroutes (polder) ≤30 hm/50 km; bekende klimmen (Zuid-Limburg) binnen ±10% van gepubliceerde klimdata."
+      recommended_default: "Huidige pijplijn behouden; AHN alleen als bewezen verbetering én volledige omschakeling."
+      technical_limits:
+        - "SRTM-nauwkeurigheid is het plafond; 'exacte' hoogtemeters zijn onwaarachtig om te beloven."
+      assumptions:
+        - "Renners vergelijken hm vooral met Strava/Garmin — consistentie met dat ecosysteem telt zwaarder dan absolute waarheid."
+      unknowns:
+        - "Gedrag op bruggen/viaducten (maaiveld-artefacten) niet systematisch gemeten."
+      evidence_method:
+        - "Referentieroutes-set (vlak, glooiend, klim) met verwachte hm-banden als geautomatiseerde toets."
+
+    rene_calibration:
+      questions:
+        - "Is consistentie met Strava/Garmin-cijfers de norm (±10%), of wil je absolute nauwkeurigheid nastreven (AHN-traject, alleen NL)?"
+        - "Moet een route-hm-verschil met een later gereden rit (baro-meting) actief uitgelegd worden in de app?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Profiel en hoogtemeters-som mogen nooit uit verschillende reeksen komen of elkaar tegenspreken."
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Nieuwe consumer sommeert rauwe provider-ascend naast het gedrempelde profiel (48 km vlak: 400 vs 20 hm)."
+              proof_stage: designed
+              proof_method: "Redenering: summarizeTrack is de enige export voor route-hm; rauwe ascend prefereren is per memory-regel verboden. Latere test: assert dat route-API-response-hm gelijk is aan thresholdedGainM van dezelfde reeks."
+              proof_result: not_yet_tested
+        - rule: "Een vlakke route mag nooit honderden valse hoogtemeters tonen (ruissom)."
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Vlakke 48 km polderlus toont >100 hm."
+              proof_stage: designed
+              proof_method: "Rekenvoorbeeld: 1–2 m puntruis over ~2000 punten geeft naïef honderden hm; smooth ±150 m + 3 m-drempel drukt dit naar ~0. Bestaat als unit-test op de smoothing-functies; end-to-end-referentieroute-toets volgt."
+              proof_result: not_yet_tested
+      tolerances:
+        - "±10% t.o.v. gepubliceerde klimdata op referentieklimmen (voorstel, te kalibreren)."
+      unknown_data_policy: "Ontbreekt hoogtedata voor (een deel van) de route, dan geen som en geen profiel voor dat deel — nooit interpoleren en als meting tonen."
+      approved: false
+
+    validation:
+      automated_tests: ["unit-tests smoothing/drempel (bestaand)", "referentieroutes-toets (te bouwen)"]
+      independent_checks: ["vergelijking met gepubliceerde klimdata (climb-explorer-bron)"]
+      practice_test_required: true
+      practice_testers: ["René"]
+      result: not_tested
+      expectation_gap:
+        - "Open taak #427: klimprofiel kan stil verdwijnen na routewijziging — belofte-relevant."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Referentieroutes-toets bouwen (vlak/klim-banden) en kalibratievraag Strava-consistentie vs AHN beantwoorden."
+      approved_for_execution: false
+
+  - id: ROUTES_OPMERKINGEN_001
+    module: Routes en navigatie
+    subject: "Routeopmerkingen (waarschuwingen langs de route)"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "20/20 unit-scenario's groen (poortclassificatie, verbod vs beperking, voetpad-filter); way-voor-way praktijkverificaties Zwolle/Hengelo vastgelegd."
+      practice_status: "René's praktijktest ving tientallen valse meldingen (parallelle N-weg, voetpaden) — afstandsgrenzen daarna verstrakt (6 m toegang, 10 m wegdek); doorfietsbare poorten worden sinds 30-07 niet meer gemeld."
+      known_limitations:
+        - "OSM kan verouderd zijn; elke response draagt bronvermelding + 'controleer ter plekke'."
+        - "Upstream-fout ⇒ null (eerlijk gat), route toont dan geen 'geen bijzonderheden'."
+        - "Poort zonder doorgang-tags blijft 'onbekend' → milde melding; werkelijke doorgang onbekend."
+
+    proposed_promise:
+      text: "Elke waarschuwing op je route (veerpont, trap, poort, onverhard vak, slecht wegdek, beperkte toegang, natuurgebied) is gebaseerd op een aantoonbaar kaartgegeven dat je kunt inzien; er wordt nooit een waarschuwing verzonnen, en dingen die geen probleem zijn (doorfietsbare poortjes) worden niet gemeld."
+      proposed_by: replit
+      rationale: "Waarde zit in signaal zonder ruis: valse meldingen ondermijnden het vertrouwen meetbaar (praktijktest). Evidence-per-melding maakt elke claim controleerbaar."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "OpenStreetMap via Overpass API"
+          coverage: "Tags voor barrières, verboden, wegdek, natuurgebieden in NL/EU; NIET: actuele/tijdelijke afsluitingen, werkelijke staat ter plekke."
+          actuality: "Minutelijkse spiegel; taggingactualiteit wisselend per gebied."
+          license_status: "ODbL 1.0 met bronvermelding (staat op elke response); publieke mirrors zonder SLA."
+          limitations: ["verouderde tags mogelijk", "ontbrekende tags = geen melding (stilte is geen garantie)"]
+          applicability: "Enige bron voor alle opmerkingen; elke melding draagt de letterlijke tag als bewijs."
+        - name: "NDW / provinciale afsluitingsdata"
+          coverage: "Actuele werkzaamheden/afsluitingen NL, hoofdwegennet-zwaartepunt."
+          actuality: "Near-realtime."
+          license_status: "Open data, commercieel bruikbaar."
+          limitations: ["fietspad-dekking onbewezen"]
+          applicability: "KANDIDAAT: tijdelijke afsluitingen als aparte, eerlijk gelabelde meldingscategorie."
+      sources_in_use:
+        - "OpenStreetMap/Overpass — enige bron; bewijs-tag per melding"
+      privacy_status: unknown
+      missing_information:
+        - "Dekkingsgraad van OSM-barrièretags in NL (hoeveel echte poorten staan er niet in?) is onbekend en principieel moeilijk meetbaar."
+
+    replit_definition:
+      objective_quality_standard: "Precisie boven volledigheid: in praktijkverificatie (way-voor-way) ≥95% van de getoonde meldingen terecht; geen enkele melding zonder inzichtelijke bron-tag; stilte wordt nooit als 'gegarandeerd vrij' gepresenteerd."
+      recommended_default: "Huidige strakke afstandsgrenzen + evidence-verplichting behouden."
+      technical_limits:
+        - "Recall is niet te garanderen (ontaggde obstakels bestaan) — de belofte mag alleen over precisie en eerlijkheid gaan."
+      assumptions:
+        - "Een melding mét kaartbewijs die ter plekke meevalt is acceptabel; een gemiste harde blokkade is dat niet (die vangt de generatiepoort al af)."
+      unknowns:
+        - "Vals-negatief-ratio (gemiste obstakels) in de praktijk."
+      evidence_method:
+        - "Way-voor-way praktijkverificatie per testroute (methode bestaat, herhalen per release)."
+
+    rene_calibration:
+      questions:
+        - "Natuurgebied-meldingen (indicatie, gebiedsgrens): waardevol of ruis — houden, alleen bij doorkruising, of weg?"
+        - "Wil je tijdelijke afsluitingen (NDW) als extra meldingscategorie, wetende dat de fietspad-dekking onbewezen is?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Een melding zonder letterlijke bron-tag (evidence) mag nooit getoond worden."
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Code-pad dat een 'algemene waarschuwing' zonder tags produceert."
+              proof_stage: designed
+              proof_method: "Redenering: classifyRemarkTags is de enige producent en zet evidence verplicht per tak; unit-test dekt alle takken. Latere contract-test: assert evidence non-empty op elk API-resultaat."
+              proof_result: not_yet_tested
+        - rule: "Bij een mislukte bronmeting mag nooit 'geen bijzonderheden' worden getoond."
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Overpass-504 op alle mirrors; UI zou een lege lijst als 'alles vrij' tonen."
+              proof_stage: designed
+              proof_method: "Redenering: getRouteRemarks retourneert null (≠ lege lijst); client onderscheidt null als 'niet gecontroleerd'. Latere test: gestubde mirror-fout ⇒ null-doorloop tot in de response."
+              proof_result: not_yet_tested
+        - rule: "Een volgens de kaart doorfietsbare poort wordt nooit gemeld (ruisverbod, besluit René 30-07)."
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Fietssluis (barrier=cycle_barrier) op de route."
+              proof_stage: designed
+              proof_method: "classifyGatePassage ⇒ 'doorfietsbaar' ⇒ classifyRemarkTags retourneert null; dit scenario zit al in de bestaande unit-suite maar telt pas als 'executed' bij de eerstvolgende uitgevoerde run in de bouwfase."
+              proof_result: not_yet_tested
+      tolerances:
+        - "Meldingen ≤30 m van de lijn (toegang 6 m, wegdek 10 m, gebied 60 m) — gekalibreerd op praktijktest 29-07."
+      unknown_data_policy: "Geen tag = geen melding, én geen garantie; onzekere afleidingen dragen uncertain=true en worden als indicatie gelabeld."
+      approved: false
+
+    validation:
+      automated_tests: ["test:route-remarks (20 scenario's, bestaand)"]
+      independent_checks: ["way-voor-way verificatie tegen de OSM-kaart per testroute"]
+      practice_test_required: true
+      practice_testers: ["René"]
+      result: not_tested
+      expectation_gap: []
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Kalibratievragen (natuurgebied, NDW) beantwoorden; daarna praktijkverificatieronde op 3 nieuwe routes vastleggen als bewijs."
+      approved_for_execution: false
+
+  - id: ROUTES_WEGTYPEN_001
+    module: Routes en navigatie
+    subject: "Wegtypen- en ondergrondscherm (verdeling + fietsgeschiktheid)"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "26/26 unit-scenario's groen (classificatie, verbod/beperking-splitsing, BGT-toepassing); taak #438 (motor en scherm spreken elkaar niet tegen) net gemerged; praktijkbewijs Hengelo/Dalfsen staat als voorgestelde taak #439."
+      practice_status: "Eerder praktijkgat: scherm zei 'verhard' waar gravel lag (aanleiding besluiten 30-07); na BGT-laag en splitsing nog niet opnieuw integraal praktijkgetoetst."
+      known_limitations:
+        - "Verdeling is een 25 m-matching van meetpunten op OSM-wegen; ≤600 samples per route (zeer lange routes grover)."
+        - "Onbekend blijft een echte categorie; >40% onbekend ⇒ 'onvoldoende gegevens' i.p.v. verdict."
+        - "BGT alleen NL; tegelplafond laat op lange routes punten onbeoordeeld."
+
+    proposed_promise:
+      text: "Het wegdekscherm toont per kilometer waar je op rijdt (asfalt, klinkers, gravel, onverhard, onbekend) met het kaartbewijs erbij, en geeft per fietstype een uitlegbaar geschiktheidsoordeel; bij een fietsverbod is het oordeel altijd 'niet aanbevolen'. Onbekend wordt eerlijk 'onbekend' genoemd — nooit weggemoffeld."
+      proposed_by: replit
+      rationale: "RideWithGPS-niveau eerlijkheid (paved/unpaved/unknown apart) is de marktnorm; het scherm is bovendien de zichtbare tegenhanger van de generatiepoort — ze mogen elkaar nooit tegenspreken (taak #438)."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "OpenStreetMap via Overpass API"
+          coverage: "surface/highway/tracktype per weg, NL/EU; NIET: ongetagde wegen."
+          actuality: "Minutelijkse spiegel."
+          license_status: "ODbL 1.0 met bronvermelding."
+          limitations: ["25–40% surface-onbekend in NL", "tagfouten mogelijk"]
+          applicability: "Primaire classificatiebron per wegvak (evidence per categorie)."
+        - name: "BGT via PDOK"
+          coverage: "NL-verhardingssoort per wegdeel."
+          actuality: "Doorlopend bijgewerkt; 24h-cache."
+          license_status: "CC0."
+          limitations: ["alleen NL", "tegelplafond", "vlak-randgevallen"]
+          applicability: "Vult uitsluitend OSM-onbekende meetpunten met een aantoonbaar overheidsoordeel (nooit OSM overschrijven)."
+        - name: "GraphHopper surface-details"
+          coverage: "Zelfde OSM-basis als de motor, per routesegment."
+          actuality: "Live met de route mee."
+          license_status: "GH-abonnement."
+          limitations: ["grovere categorieën dan het scherm nodig heeft"]
+          applicability: "Consistentie-anker: het scherm mag de motor-meting niet tegenspreken (taak #438)."
+      sources_in_use:
+        - "OSM/Overpass (primair) + BGT (NL-gatvuller) + GH-details (consistentie)"
+      privacy_status: unknown
+      missing_information:
+        - "Systematische foutmeting van de 25 m-matching (verkeerde weg naast parallelweg) ontbreekt."
+
+    replit_definition:
+      objective_quality_standard: "Way-voor-way steekproef per testroute: ≥95% van de getoonde categorieën komt overeen met de kaartbron; km-sommen tellen exact op tot de routelengte; verdicts zijn deterministisch en dragen alle meegewogen getallen als reden."
+      recommended_default: "Huidige drie-bronnen-opzet; verdicts alleen bij ≤40% onbekend."
+      technical_limits:
+        - "Per-segment is hier native (elke meter valt in een categorie); de grens zit in matching-nauwkeurigheid (25 m) en sampledichtheid."
+      assumptions:
+        - "BGT-oordeel is betrouwbaarder dan OSM-stilte, maar minder specifiek dan een expliciete OSM-surface-tag."
+      unknowns:
+        - "Hoe vaak wijst de 25 m-matching een naastgelegen parallelweg aan?"
+      evidence_method:
+        - "Praktijkbewijs Hengelo/Dalfsen (voorgestelde taak #439) + bestaande unit-suite."
+
+    rene_calibration:
+      questions:
+        - "Klinkers apart blijven tonen (zoals nu) of samenvoegen met 'verhard' zodra jouw klinker-acceptatie is vastgesteld?"
+        - "Vanaf welk percentage onbekend wil je dat het scherm actief afraadt i.p.v. alleen waarschuwt (nu: >40% = geen oordeel)?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Bij aantoonbaar fietsverbod op de route (forbiddenKm > 0) is het geschiktheidsoordeel altijd 'niet aanbevolen' — voor elk fietstype."
+          measurement_level: per_segment
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Route met 200 m bicycle=no en verder perfect asfalt (99,5% 'goed')."
+              proof_stage: designed
+              proof_method: "Logica-doorloop: forbiddenFlags per meetpunt ⇒ forbiddenKm=0.2 ⇒ verdict 'afgeraden' met reden 'fietsen niet toegestaan'; scenario zit in de unit-suite, telt als executed na de eerstvolgende run in de bouwfase."
+              proof_result: not_yet_tested
+        - rule: "Het scherm mag nooit 'volledig verhard' tonen terwijl de motor-meting van dezelfde route onverhard registreerde (tegenspraakverbod)."
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "GH-details melden 3% gravel; Overpass-matching mist het vak (parallelweg) en het scherm toont 100% verhard."
+              proof_stage: designed
+              proof_method: "Ontwerp-redenering uit taak #438 (net gemerged): één uitgelegd beeld met beide metingen. Uitgevoerde toetsing = voorgestelde praktijkbewijs-taak #439."
+              proof_result: not_yet_tested
+        - rule: "Verdeling met mislukte bronmeting mag nooit als volledige verdeling ogen ('alles bekend')."
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Overpass faalt; scherm zou 100% 'onbekend=0' tonen."
+              proof_stage: designed
+              proof_method: "Redenering: analysis=null bij upstream-fout (honesty contract in code); latere contract-test op de route-API."
+              proof_result: not_yet_tested
+      tolerances:
+        - "Matching ≤25 m; km-afronding 0,1; pct-afronding 0,1."
+      unknown_data_policy: "Onbekend is een eigen, zichtbare categorie; >40% onbekend ⇒ 'onvoldoende gegevens' i.p.v. schijnzekerheid; BGT mag alleen onbekend invullen."
+      approved: false
+
+    validation:
+      automated_tests: ["test:route-surfaces (26 scenario's)", "test:bgt-verharding (11)"]
+      independent_checks: ["BGT als niet-OSM-tegenbron", "praktijkbewijs-taak #439 (voorgesteld)"]
+      practice_test_required: true
+      practice_testers: ["René"]
+      result: not_tested
+      expectation_gap:
+        - "Eerder: scherm zei verhard waar gravel lag — de kern-aanleiding van dit hele hoofdstuk."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Praktijkbewijs op echte Hengelo/Dalfsen-lussen (taak #439) uitvoeren en de twee kalibratievragen beantwoorden."
+      approved_for_execution: false
+
+  - id: ROUTES_MOBIELE_NAVIGATIE_001
+    module: Routes en navigatie
+    subject: "Mobiele turn-by-turn navigatie (HUD, audio, off-route)"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Route-match-engine unit-getest en byte-identiek gespiegeld web↔mobiel; off-route state machine puur getest; ride-recovery-test bestaat. Geen geautomatiseerde end-to-end rij-simulatie."
+      practice_status: "Praktijkritten door Dylan/René hebben eerdere gebreken gevonden (valse afwijk-meldingen, camera-snap-back) die zijn verholpen; structurele praktijkregressierondes ontbreken."
+      known_limitations:
+        - "GPS in bebouwing/bos blijft ruizig; corridor is dynamisch (nauwkeurigheid+snelheid) maar wonderen bestaan niet."
+        - "Off-route toont keuzes per episode; de opgeslagen route wordt nooit vervangen (detour is overlay) — bewuste keuze."
+        - "Audio-cues dedupen per stap:fase; geluid wordt nooit geforceerd bij stille modus."
+        - "Achtergrond-tracking bij gelockt scherm: aparte open taken (#215/#214) — nog niet bewezen."
+
+    proposed_promise:
+      text: "Tijdens het fietsen zie en hoor je op tijd waar je heen moet; wijk je echt af, dan krijgt je één rustige melding met eerlijke keuzes (terug naar de route, doorfietsen, of naar het einde) — nooit een spervuur van valse waarschuwingen, en je geplande route wordt nooit stiekem vervangen."
+      proposed_by: replit
+      rationale: "Vergelijkingsmaatstaf is Garmin-navigatie: betrouwbaar op-route-houden zonder ruis. De segment-projectie-engine en episode-gating zijn hiervoor gebouwd na aantoonbare valse-melding-klachten."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Apparaat-GPS (Expo Location) + eigen route-match-engine"
+          coverage: "Positie/snelheid op het toestel; NIET: nauwkeurigheid <5 m in bebouwing, tunnels."
+          actuality: "Realtime."
+          license_status: "Platform-API's, vrij te gebruiken; locatiedata is persoonsgegeven (privacy-status app-breed geregeld, hier unknown gelaten conform format)."
+          limitations: ["GPS-ruis", "OS-beperkingen bij achtergrond/lockscreen (open taken)"]
+          applicability: "Enige positiebron; alle HUD/off-route-beslissingen derives van één matchToRoute-resultaat."
+        - name: "GraphHopper (rejoin-routes)"
+          coverage: "Herberekening naar route of bestemming."
+          actuality: "Live."
+          license_status: "GH-abonnement."
+          limitations: ["zelfde wegdek-kanttekeningen als de generator; rejoin gebruikt fietsprofiel"]
+          applicability: "Alleen op verzoek van de renner (off-route-kaart), nooit automatisch."
+      sources_in_use:
+        - "GPS + route-match-engine (kern)"
+        - "GraphHopper voor expliciet gevraagde rejoins"
+      privacy_status: unknown
+      missing_information:
+        - "Onafhankelijke veldmeting van vals-positief-ratio afwijk-meldingen (per rit-uur) ontbreekt."
+        - "Bewijs achtergrond-opname bij gelockt scherm (open taken #215/#214)."
+
+    replit_definition:
+      objective_quality_standard: "Op een op-route gereden praktijkrit: 0 valse 'je wijkt af'-meldingen; bij echte afwijking melding binnen 10 s; cue-timing vóór de manoeuvre; route-vervanging: nooit."
+      recommended_default: "Huidige engine + episode/cooldown-gating; geen automatische reroutes."
+      technical_limits:
+        - "Per-meting-toetsing (elke GPS-fix) is de basis van de state machine; ≥3 metingen + ≥6 s bevestiging is bewust — één fix is nooit bewijs."
+      assumptions:
+        - "Renner accepteert 6 s detectievertraging in ruil voor nul ruis."
+      unknowns:
+        - "Gedrag bij langdurig GPS-verlies (bos/tunnel) in de praktijk."
+      evidence_method:
+        - "GPX-replay-simulatie (opgenomen ritten door de engine spelen) als geautomatiseerde regressietoets; praktijkritten als eindbewijs."
+
+    rene_calibration:
+      questions:
+        - "Off-route: wil je dat 'terug naar de route' ooit automatisch mag starten (na X sec), of blijft elke herberekening een expliciete keuze van de renner?"
+        - "Hoeveel detectievertraging is acceptabel voor jou: sneller melden (meer kans op ruis) of huidige rustige 6 s?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Een renner die aantoonbaar op de route rijdt mag nooit een afwijk-melding krijgen."
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Spaarzame routegeometrie (punten 80 m uiteen) laat punt-afstand 50 m 'off-route' lijken terwijl de renner op het wegvak rijdt."
+              proof_stage: designed
+              proof_method: "Redenering: segment-projectie (niet punt-afstand) geeft ~0 m afstand op het segment; dit was de kernfix van de match-engine en zit in de unit-suite — executed-status volgt bij de eerstvolgende run/GPX-replay in de bouwfase."
+              proof_result: not_yet_tested
+        - rule: "De opgeslagen route mag tijdens navigatie nooit automatisch worden vervangen of gewijzigd."
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Off-route-episode triggert een reroute die de routegeometrie overschrijft."
+              proof_stage: designed
+              proof_method: "Redenering: detour is client-only overlay; er bestaat geen schrijfpad naar de route vanuit nav. Latere test: state-machine-doorloop asserten dat route-object onaangeroerd blijft."
+              proof_result: not_yet_tested
+        - rule: "Eén afwijk-episode = maximaal één kaart; genegeerd blijft stil tot de afwijking wezenlijk groeit (geen meldingen-spervuur)."
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Renner kiest bewust een parallelweg van 2 km; systeem zou elke 10 s opnieuw piepen."
+              proof_stage: designed
+              proof_method: "Redenering: dismiss-register + groei-drempel in off-route-choice state machine (puur getest); GPX-replay-scenario volgt."
+              proof_result: not_yet_tested
+      tolerances:
+        - "Detectie: ≥3 metingen + ≥6 s; corridor dynamisch met hysterese-exit 0,8×."
+      unknown_data_policy: "Bij GPS-verlies of te lage nauwkeurigheid: eerlijk 'geen positie'/rauwe marker, nooit een gesnapte positie faken."
+      approved: false
+
+    validation:
+      automated_tests: ["route-match unit-suite (byte-identiek web/mobiel)", "off-route-choice state-machine-tests", "test-ride-recovery"]
+      independent_checks: ["GPX-replay van echte ritten (te bouwen)"]
+      practice_test_required: true
+      practice_testers: ["Dylan", "René"]
+      result: not_tested
+      expectation_gap:
+        - "Lockscreen-achtergrondopname nog onbewezen (open taken) — raakt de navigatiebelofte direct."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "GPX-replay-regressieharnas bouwen en een gestructureerde praktijkrit-ronde (op-route + bewuste afwijking) vastleggen als bewijs."
+      approved_for_execution: false
+
+  - id: ROUTES_WEDSTRIJDMODUS_001
+    module: Routes en navigatie
+    subject: "Wedstrijdmodus (navigatie en gedrag op wedstrijdroutes)"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Wedstrijd-gedrag is een variant binnen de nav-stack (usageType 'wedstrijd': terugkeer-geprioriteerde off-route-keuzes) plus web-race-overlay; geen eigen geautomatiseerd bewijs voor het wedstrijd-specifieke gedrag."
+      practice_status: "Niet in een echte wedstrijd praktijkgetoetst."
+      known_limitations:
+        - "Wedstrijdroutes komen uit het wedstrijddossier (parcours geüpload/gekoppeld); kwaliteit staat of valt met dat parcoursbestand."
+        - "Geen koers-specifieke features (bochtwaarschuwing op ravitaillering e.d.) — bewust niet beloofd."
+
+    proposed_promise:
+      text: "Rijd je een wedstrijdparcours met Sparki, dan is terugkeren naar het parcours altijd de eerste keuze bij een afwijking, en het parcours zelf wordt nooit aangepast — wat je vooraf verkende is wat je rijdt."
+      proposed_by: replit
+      rationale: "In een wedstrijd is het parcours heilig; elke 'slimme' herrouteringssuggestie weg van het parcours is daar een fout, geen hulp."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Eigen wedstrijddossier (parcours-GPX + wedstrijdgegevens)"
+          coverage: "Door de renner/organisatie aangeleverd parcours; NIET: garantie dat het bestand het actuele parcours is."
+          actuality: "Per wedstrijd; afhankelijk van upload."
+          license_status: "Gebruikersdata binnen de app."
+          limitations: ["verouderd/verkeerd parcoursbestand is niet detecteerbaar"]
+          applicability: "Bron van de te navigeren wedstrijdroute."
+        - name: "Zelfde nav-stack als mobiele navigatie (GPS + match-engine + GH-rejoin)"
+          coverage: "Zie ROUTES_MOBIELE_NAVIGATIE_001."
+          actuality: "Realtime."
+          license_status: "Zie mobiele navigatie."
+          limitations: ["zelfde GPS-grenzen"]
+          applicability: "Uitvoering; wedstrijd verandert alleen de keuzevolgorde bij off-route."
+      sources_in_use:
+        - "Wedstrijddossier-parcours + gedeelde nav-stack"
+      privacy_status: unknown
+      missing_information:
+        - "Of organisatoren-parcoursen (Fietssport e.d.) automatisch en rechtenvrij te betrekken zijn, is niet uitgezocht."
+
+    replit_definition:
+      objective_quality_standard: "Op een wedstrijdroute: off-route-kaart toont 'terug naar parcours' altijd als eerste optie; parcoursgeometrie byte-gelijk vóór en ná de rit; overige normen erven van mobiele navigatie."
+      recommended_default: "Wedstrijd = zelfde engine, striktere keuzevolgorde; geen extra magie beloven."
+      technical_limits:
+        - "Sparki kan een fout parcoursbestand niet detecteren — belofte moet dat eerlijk uitsluiten."
+      assumptions:
+        - "Renners verkennen het parcours vooraf in Sparki (verkenning = zelfde bestand als wedstrijdrit)."
+      unknowns:
+        - "Praktijkgedrag in peloton-omstandigheden (GPS-schaduw van groep)."
+      evidence_method:
+        - "GPX-replay met usageType 'wedstrijd' + praktijkverkenning van één echt parcours."
+
+    rene_calibration:
+      questions:
+        - "Moet wedstrijdmodus extra's krijgen (bv. km-tot-finish prominenter, geen niet-kritieke meldingen), of is 'zelfde navigatie, parcours heilig' de juiste scope?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Op een wedstrijdroute mag het parcours nooit worden gewijzigd of vervangen, en is terugkeer altijd de eerst aangeboden keuze."
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Off-route in wedstrijd; systeem zou 'doorfietsen via nieuwe route' bovenaan zetten."
+              proof_stage: designed
+              proof_method: "Redenering: usageType 'wedstrijd' activeert terugkeer-geprioriteerde optie-volgorde in de off-route state machine (puur getest ontwerp); executed volgt via GPX-replay-scenario in de bouwfase."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Sparki claimt nooit dat het parcoursbestand het officiële/actuele parcours is; die verantwoordelijkheid ligt bij de bron en wordt zo benoemd."
+      approved: false
+
+    validation:
+      automated_tests: []
+      independent_checks: ["GPX-replay wedstrijdscenario (te bouwen)"]
+      practice_test_required: true
+      practice_testers: ["Dylan (eerstvolgende wedstrijd/verkenning)"]
+      result: not_tested
+      expectation_gap:
+        - "Wedstrijd-specifiek gedrag heeft nog geen eigen geautomatiseerd bewijs."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Scope-kalibratie door René; daarna wedstrijd-replay-test toevoegen aan het nav-regressieharnas."
+      approved_for_execution: false
+
+  - id: ROUTES_VOLGAUTO_001
+    module: Routes en navigatie
+    subject: "Volgauto (autoroute + aansluitpunten naast de fietsroute)"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Contract-lessen vastgelegd (server-DB-vorm is SSOT); wisselstabiliteit (120 s) en ETA-eerlijkheid ('geschat', >3 min oud = geen positie) in ontwerp geborgd; geen geautomatiseerde end-to-end-proof van een volgauto-rit."
+      practice_status: "Niet met een echte volgauto in de praktijk getoetst."
+      known_limitations:
+        - "Meetpunt-carKm is nullable: de auto komt niet overal ≤150 m langs de fietsroute — daar is er eerlijk geen ETA."
+        - "ETA's op defaults (27/40 km/u) zijn schattingen, geen verkeersbewuste voorspellingen."
+        - "Volgautoplan gebruikt het autoprofiel van dezelfde motor; file/afsluitingsdata (NDW) ontbreekt."
+
+    proposed_promise:
+      text: "Wie met de auto meerijdt krijgt een eigen autoroute met aansluitpunten op de fietsroute en een eerlijk gelabelde geschatte aankomsttijd per punt; de fietsroute zelf blijft altijd onaangetast, en zonder recente positie zegt Sparki eerlijk 'geen positie' in plaats van te gokken."
+      proposed_by: replit
+      rationale: "Uniek t.o.v. Komoot/Garmin (die dit niet bieden); de waarde is coördinatie zonder schijnzekerheid — vandaar 'geschat' en nullable aansluitpunten als kern van de belofte."
+      rene_approved: false
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "GraphHopper driving-car profiel"
+          coverage: "Autoroutering NL/EU; NIET: actuele verkeersdrukte/files."
+          actuality: "Live API; geen realtime traffic in het huidige gebruik."
+          license_status: "GH-abonnement."
+          limitations: ["ETA zonder verkeer", "autoroute-kwaliteit erft OSM"]
+          applicability: "De volgauto-route zelf en rejoins van de auto (nooit fiets-rejoin hergebruiken)."
+        - name: "NDW verkeersdata"
+          coverage: "NL files/werkzaamheden hoofdwegennet."
+          actuality: "Near-realtime."
+          license_status: "Open data."
+          limitations: ["integratie-inspanning", "geen EU-dekking"]
+          applicability: "KANDIDAAT: verkeersbewuste ETA's voor de volgauto."
+      sources_in_use:
+        - "GraphHopper driving-car — enige bron nu"
+      privacy_status: unknown
+      missing_information:
+        - "Behoefte-validatie: gebruiken ouders/begeleiders dit echt zoals ontworpen? (praktijkdata ontbreekt)"
+
+    replit_definition:
+      objective_quality_standard: "Fietsroutegeometrie byte-gelijk vóór/na volgautoplanning; elk aansluitpunt ≤150 m van de fietsroute of eerlijk zonder carKm/ETA; ETA altijd gelabeld 'geschat'; positie >3 min oud toont 'geen positie'."
+      recommended_default: "Huidige aparte-laag-architectuur behouden; NDW-verrijking pas na behoefte-validatie."
+      technical_limits:
+        - "Zonder verkeersdata zijn ETA's per definitie ruwe schattingen — dat blijft zo tot NDW-integratie."
+      assumptions:
+        - "Wisselhysterese van 120 s voorkomt zenuwachtig springen tussen aansluitpunten (ontwerpkeuze, praktisch onbewezen)."
+      unknowns:
+        - "Praktijkgedrag bij slechte mobiele dekking van de volgauto."
+      evidence_method:
+        - "Gesimuleerde rit (fiets- + autopositie-replay) + één echte praktijkrit met volgauto."
+
+    rene_calibration:
+      questions:
+        - "Is een ruwe geschatte ETA (zonder file-informatie) goed genoeg voor de volgauto-belofte, of wil je verkeersbewuste ETA's (NDW-traject) vóór dit 'gereed' mag heten?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "De fietsroute mag door volgauto-functionaliteit nooit worden gewijzigd."
+          measurement_level: per_sessie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Auto-rejoin zou de fietsroute-endpoints hergebruiken en de fietslijn aanpassen."
+              proof_stage: designed
+              proof_method: "Redenering: volgautoplan is een aparte datalaag; auto-rejoin gebruikt uitsluitend driving-car. Latere test: byte-vergelijking fietsgeometrie vóór/na planning."
+              proof_result: not_yet_tested
+        - rule: "Een ETA zonder bruikbaar aansluitpunt (carKm null) of zonder recente positie mag nooit als getal worden getoond."
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Aansluitpunt waar de auto niet ≤150 m komt; systeem zou toch een ETA rekenen."
+              proof_stage: designed
+              proof_method: "Redenering: carKm nullable ⇒ ETA-berekening retourneert null (vastgelegde contract-les). Latere unit-test op de ETA-functie met carKm=null en met positie ouder dan 3 min."
+              proof_result: not_yet_tested
+      tolerances:
+        - "Aansluitpunt geldig ≤150 m; positie vers ≤3 min; wissel pas na 120 s aanhoudende voorkeur."
+      unknown_data_policy: "Geen recente positie of geen bereikbaar aansluitpunt = eerlijk 'geen positie'/'geen ETA'; nooit doorrekenen op oude of ontbrekende data."
+      approved: false
+
+    validation:
+      automated_tests: []
+      independent_checks: ["positie-replay-simulatie (te bouwen)"]
+      practice_test_required: true
+      practice_testers: ["René (als volgauto-bestuurder)", "Dylan (als renner)"]
+      result: not_tested
+      expectation_gap:
+        - "Hele module is praktisch onbeproefd met een echte auto — grootste gat van dit onderwerp."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "ETA-kalibratievraag beantwoorden; daarna één begeleide praktijkrit met volgauto als eerste echt bewijs."
+      approved_for_execution: false
