@@ -155,4 +155,5 @@
 - [Sparki cluborganisatie](sparki-club-organisation.md) — wrapped unique-violation via err.cause; ÉÉN advisory-lock-key voor alle capacity-paden; activeAssignmentWindow op elk leespad.
 - [Governor Beslisblok 02 rollenfundament](governor-beslisblok-02.md) — modellen in governance/, fixtures met strikte delete-handtekening + advisory lock; GO↔COMPLETE-besluit open.
 - [Overpass burst rate-limits](overpass-burst-rate-limits.md) — recursieve kwadrant-splitsing vuurt query-bursts; mirrors 429'en dan — pauze tussen queries + één beleefde retry, eerlijk gat blijft.
+- [Blokkadepoort koude-cache fail-open](sparki-blokkadepoort-fail-open.md) — 1e aanvraag in vers gebied lekt route door locked gate (2500ms budget vs Overpass 10-20s); warm = 422; bewijs eist warme cache.
 - [Route-hm ruisdrempel](sparki-elevation-gain-noise.md) — SRTM-ruis: summarizeTrack smooth±150m + 3m-drempel is hm-SSOT; profiel-y-as min 100 m; nooit rauwe provider-ascend prefereren.
