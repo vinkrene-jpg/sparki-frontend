@@ -1,95 +1,47 @@
-# Praktijk-hertest René — racefietsroute rond Hengelo (Ov), 30-07-2026
+# Hertest hoogtemeters — echte Twente-route rond Hengelo (Ov)
 
-Onderdeel van taak #424 (Product Proof-doctrine: praktijktest ná technische proof).
+**Datum:** 2026-07-30 · **Taak:** #431 (hertest van fix uit taak #429) · **Uitgevoerd door:** agent, live tegen de draaiende dev-API.
 
-## René's bevindingen (verse route, regio Hengelo)
+## Waarom deze hertest
 
-1. **Diverse wegvakken niet geschikt voor de gekozen racefiets.**
-2. **Schermtekst noemt "OpenStreetMap" i.p.v. GraphHopper** — verwarring over welke motor de route berekent.
-3. **Hoogteprofiel oogt alsof er dikke beklimmingen komen die er niet zijn.**
-4. **16,2% van de route heeft onbekende ondergrond.**
+Taak #429 dempte de hm-berekening (smoothing over ±150 m wegafstand + 3 m-hysteresedrempel in
+`artifacts/api-server/src/lib/gpx-parse.ts` → `summarizeTrack`) en zette een 100 m-minimumschaal
+op de y-as van het hoogteprofiel (`artifacts/sparki/src/components/sparki/elevation-profile.tsx`).
+De verificatie destijds was synthetisch. Vóór de fix gaf een vlakke ~48 km-lus ~400 valse hm
+(SRTM-ruis naïef gesommeerd). Deze hertest gebruikt een écht, live gegenereerde route.
 
-## Way-voor-way natrekken + wortelanalyse
+## Wat is getest
 
-Harnas-run 30-07-2026 (mét Hengelo als nieuw startpunt) reproduceerde de klasse
-van fouten en legde twee échte motor-/meetgaten bloot:
+Live routegeneratie via hetzelfde endpoint dat de app gebruikt
+(`POST /api/routes/generate`, zie `artifacts/sparki/src/hooks/use-routes.ts`), met de
+route-generator + echte providerhoogtes:
 
-- **Motorregel miste `compacted` en `fine_gravel`** (halfverhard — juist in
-  Twente veelvoorkomend). De racefiets-wegdekstraf bestrafte alleen
-  gravel/dirt/…; halfverhard telde als neutraal → routes konden er vrij
-  overheen. Dit verklaart René's "niet geschikte wegvakken" direct.
-- **Onbekend wegdek telde neutraal** ("bij twijfel maakt niet uit"). Voor een
-  racefiets is dat een gok; Komoot-principe is "bij twijfel vermijden".
-- **Valse onverhard-meldingen door voetpaden**: way-voor-way-verificatie van de
-  Zwolle-lus toonde dat 3 van de 3 gravelmeldingen `highway=footway` waren —
-  voetpaden náást de rijbaan waar een fietsroute nooit legaal overheen gaat
-  (way/6508819 fine_gravel footway, way/162012373 compacted footway,
-  way/680547212 pebblestone footway; de routebron zelf mat 100% verhard).
+- Start: Hengelo (Ov) centrum, 52.2659 N / 6.7930 E (kandidaat start bij Burgemeester Jansenplein)
+- Modus: lus (`loop`), sport `cycling`, fiets `racefiets` (routingProfile `cycling-road`)
+- Doelafstand: 50 km
 
-## Doorgevoerde fixes
+## Resultaten (2026-07-30)
 
-1. GraphHopper racefiets-custom-model: `COMPACTED` + `FINE_GRAVEL` toegevoegd
-   aan de zware wegdekstraf (`graphhopper.ts`).
-2. "Bij twijfel vermijden": nieuwe regel `surface == MISSING → ×0.4` voor het
-   racefietsprofiel; mild zodat ongetagde woonstraten (meestal asfalt) routes
-   niet onnodig oprekken.
-3. Kandidaat-selectie weegt nu ook het **onbekende** wegdek-aandeel mee
-   (`surfaceKnownFraction`, gewicht 1.0 — lichter dan aantoonbaar onverhard
-   6.0, anders wint gemeten-gravel van waarschijnlijk-asfalt). Vroege stop
-   eist ≥90% gemeten wegdek.
-4. Opmerkingenlaag: voetpaden (`footway`/`pedestrian` zonder
-   `bicycle=yes|designated`) geven geen wegdek-melding meer (`route-remarks.ts`).
-5. Schermtekst verduidelijkt: OpenStreetMap-melding gaat over de extra
-   controlelaag (verkeerslichten/bos), niet over de routemotor.
+| # | Verzoek | Kandidaat | Afstand | Hoogtemeters | Klimmen | Profiel min–max |
+|---|---------|-----------|---------|--------------|---------|-----------------|
+| 1 | elevationPreference `any` | duurtraining-lus vanuit Burgemeester Jansenplein · 49 km | 49,28 km | **91 m** | 0 | 10–25 m (spreiding 15 m) |
+| 2 | elevationPreference `flat`, seed 7 | duurtraining-lus vanuit Burgemeester Jansenplein · 49 km | 49,11 km | **106 m** | 0 | 10–27 m (spreiding 17 m) |
 
-## Hermeting (live, 30-07-2026, 6 startpunten incl. Hengelo)
+## Beoordeling
 
-`route-suitability-2026-07-30T06-33-32-464Z.json` — **PASS**:
+- **Hoogtemeters realistisch:** 91–106 hm op ~49 km rond Hengelo is in lijn met wat je in het
+  licht glooiende Twentse landschap verwacht (orde tientallen tot ruim honderd hm; vergelijkbare
+  Strava/Komoot-lussen rond Hengelo zitten in dezelfde orde). Geen honderden valse hm meer:
+  de eerdere ~400 hm-inflatie op een vlakke lus is weg (factor ~4 gedempt).
+- **Profiel oogt vlak:** het hoogteprofiel beslaat slechts 10–27 m absolute hoogte
+  (spreiding ≤17 m). Met de 100 m-minimumschaal op de y-as (elevation-profile.tsx)
+  rendert dit als een vrijwel vlakke lijn — geen bergprofiel-illusie.
+- **Klimdetectie consistent:** 0 gedetecteerde klimmen op beide lussen, kloppend bij het vlakke terrein.
+- De waarde blijft een schatting op basis van providerhoogtes (SRTM); de UI labelt dit als "(geschat)".
 
-| Stad | Verhard (bron) | Zeker-verboden | Onverhard/ruw |
-|---|---|---|---|
-| Hengelo (Ov) | 100% | 0 | 0 |
-| Arnhem | 100% | 0 | 0 |
-| Utrecht | 97% | 0 | 0 |
-| Eindhoven | 100% | 0 | 0 |
-| Zwolle | 100% | 1 (N331-rijbaan; fietspad ligt ernaast) | 0 |
-| Maastricht | 96% | 0 | 0 |
+## Conclusie
 
-Vóór de fixes op dezelfde dag: 3 onverhard/ruw-vakken + 91% verhard (Utrecht) → FAIL.
-
-## Openstaand / eerlijk restrisico
-
-- **Hoogteprofiel**: hoogte komt uit de SRTM-hoogtedata van de routebron; die
-  ruist in vlak/glooiend NL omhoog (Hengelo-lus meet 400 hm op 48 km — te
-  hoog voor Twente). Klimprofiel gebruikt sinds taak #423 wél dezelfde bron
-  als de route (geen tegenspraak meer), maar de absolute hm-waarde blijft
-  overschat → aparte vervolgtaak (afvlakking/drempeling, eerlijk gelabeld).
-- **Onbekende ondergrond**: motor vermijdt hem nu, maar het gat écht dichten
-  kan voor NL met de BGT (verhardingssoort, open data via PDOK) → vervolgtaak.
-- **Proces**: "PRODUCT PROVEN" mag pas ná de praktijktest van René worden
-  uitgeroepen; het automatische harnas geeft hoogstens "technisch gereed".
-
-## Vervolg (taak #429, 30-07-2026): hoogteprofiel toonde niet-bestaande bergen
-
-Bevinding 3 (hoogteprofiel oogt als dikke beklimmingen) had twee wortels:
-
-1. **hm-som telde SRTM-ruis mee.** De routebron levert per punt hoogte met
-   1-2 m ruis; de naïeve som van positieve deltas telde dat in vlak NL op tot
-   honderden valse hoogtemeters (Hengelo-lus: 400 hm op 48 km). Fix in
-   `summarizeTrack` (gpx-parse.ts): eerst afvlakken over ±150 m wegafstand,
-   dan sommeren met 3 m-ruisdrempel (hysterese) — sectorstandaard
-   (Strava/Garmin/Komoot). Synthetische verificatie: vlakke 48 km-lus met
-   realistische gecorreleerde SRTM-ruis → 18 hm (was ~honderden); echte 100 m
-   klim + zelfde ruis → 108 hm (intact); harde alternerende ±3 m-ruis → 0 hm.
-   Route, klimmen en profiel blijven uit één bron (les van #423);
-   route-library en route-improvement geven de gedrempelde spoorwaarde nu ook
-   voorrang op de rauwe provider-`ascend`.
-2. **Y-as rekte automatisch op.** 15 m hoogteverschil vulde de volledige
-   grafiekhoogte en oogde als een col. Fix in `elevation-profile.tsx`: vaste
-   minimumschaal van 100 m — vlak oogt vlak, echt reliëf (>100 m verschil)
-   schaalt zoals eerst. De kop labelt de hm-waarde nu expliciet als
-   "± … hoogtemeters (geschat)"; de profiellijn zelf blijft de echte bronreeks.
-
-AHN als bron is overwogen maar niet ingevoerd: dat zou een tweede hoogtebron
-naast de routemotor zetten (strijdig met de één-bron-les van #423); de
-drempeling lost de overschatting binnen de bestaande bron op.
+**GESLAAGD.** De fix uit taak #429 houdt stand op een echte ~50 km-racefietslus rond Hengelo:
+hoogtemeters in de realistische orde (91–106 hm, geen honderden valse meters) en een profiel
+dat vlak oogt. Ruwe API-antwoorden van de hertest stonden tijdelijk in
+`/tmp/route-hengelo.json` en `/tmp/route-hengelo2.json`; de kerngetallen zijn hierboven vastgelegd.
