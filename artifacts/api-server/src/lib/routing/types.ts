@@ -50,6 +50,12 @@ export type RouteResult = {
   // null = geen wegdek-details (ORS). Op de racefiets is een groot onbekend
   // aandeel een risico ("bij twijfel vermijden") en weegt het mee bij selectie.
   surfaceKnownFraction?: number | null;
+  // Aandeel van de afstand op drukke doorgaande wegen (road_class primary/
+  // secondary — in NL: N-wegen) volgens de routebron zélf. Rijdt de route op
+  // zo'n wegvak, dan rijdt hij op de rijbaan (een vrijliggend fietspad is in
+  // OSM een eigen weg met een eigen road_class). null = de bron levert geen
+  // wegtype-details (ORS) — dan wordt er nooit gegokt.
+  busyRoadFraction?: number | null;
 };
 
 export type GeocodeResult = { lat: number; lon: number; label: string };
@@ -63,12 +69,19 @@ export type LoopRequest = {
   // How much climbing the rider wants. Used only to SELECT among real ORS
   // candidates (flattest / hilliest) — never to fabricate elevation.
   elevationPreference?: "flat" | "hilly" | "any";
+  // Vermijd drukke N-wegen (taak #462): VOORKEUR-straf op road_class primary/
+  // secondary in het custom model van de motor. Geen harde poort — de
+  // bestaande geschiktheidspoorten blijven ongewijzigd; de eerlijke melding
+  // achteraf gebeurt op basis van de gemeten busyRoadFraction.
+  avoidBusyRoads?: boolean;
 };
 
 export type PointToPointRequest = {
   start: LatLon;
   end: LatLon;
   profile: RoutingProfile;
+  // Zie LoopRequest.avoidBusyRoads.
+  avoidBusyRoads?: boolean;
 };
 
 // An interactive, user-shaped route through an ordered list of points (≥2).
@@ -77,6 +90,8 @@ export type PointToPointRequest = {
 export type WaypointRequest = {
   points: LatLon[];
   profile: RoutingProfile;
+  // Zie LoopRequest.avoidBusyRoads.
+  avoidBusyRoads?: boolean;
 };
 
 // The contract every routing provider implements. ORS is the first provider.

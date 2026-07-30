@@ -171,6 +171,58 @@ function coerceUnpavedTargetShare(
   return Math.min(Math.max(n, 0), 100) / 100;
 }
 
+// Vermijd drukke N-wegen (taak #462, kalibratie René 30-07-2026): expliciete
+// keuze in de route-maken-flow. VOORKEUR via de motor (road_class primary/
+// secondary-straf in het GraphHopper custom model) — de harde geschiktheids-
+// poorten (0% onverhard racefiets, fietsverbod, trap, poort) blijven
+// onaangetast. Alleen fietsen; accepteert zowel body.avoidBusyRoads als
+// avoid.drukkeWegen.
+function coerceAvoidBusyRoads(
+  body: Record<string, unknown>,
+  sport: string,
+): boolean {
+  if (sport !== "cycling") return false;
+  if (body.avoidBusyRoads === true) return true;
+  const avoid =
+    body.avoid && typeof body.avoid === "object"
+      ? (body.avoid as Record<string, unknown>)
+      : {};
+  return avoid.drukkeWegen === true;
+}
+
+// Eerlijk rapport voor de N-wegen-keuze op basis van de GEMETEN road_class-
+// details van de motor zélf. Boven ~10% N-weg is vermijden in dit gebied
+// aantoonbaar niet gelukt — dat zeggen we dan, in plaats van stiekem toch
+// N-weg te rijden. Zonder meting (ORS): eerlijk "geen meting".
+const BUSY_ROAD_HONESTY_THRESHOLD = 0.10;
+function applyBusyRoadReport(
+  report: { toegepast: string[]; nietMogelijk: { wens: string; reden: string }[] },
+  avoidBusyRoads: boolean,
+  busyRoadFraction: number | null | undefined,
+): void {
+  if (!avoidBusyRoads) return;
+  if (busyRoadFraction == null) {
+    report.nietMogelijk.push({
+      wens: "drukke N-wegen vermijden",
+      reden:
+        "De routebron gaf voor deze route geen wegtype-meting terug, dus Sparki kan niet controleren of het vermijden gelukt is.",
+    });
+    return;
+  }
+  if (busyRoadFraction > BUSY_ROAD_HONESTY_THRESHOLD) {
+    report.nietMogelijk.push({
+      wens: "drukke N-wegen vermijden",
+      reden: `In dit gebied lukte het niet zonder: ongeveer ${Math.round(busyRoadFraction * 100)}% van de route loopt toch over doorgaande wegen (N-wegen). Probeer een ander startpunt of een kortere afstand.`,
+    });
+    return;
+  }
+  report.toegepast.push(
+    busyRoadFraction > 0
+      ? `drukke N-wegen vermeden (nog ~${Math.max(1, Math.round(busyRoadFraction * 100))}% doorgaande weg)`
+      : "drukke N-wegen vermeden",
+  );
+}
+
 // Parse the athlete's free-text wish for the route ("langs de rivier",
 // "vermijd drukke wegen", "veel klimwerk"). Trimmed, collapsed and capped so a
 // runaway paste can't bloat the prompt. Empty/blank → null.
@@ -449,6 +501,9 @@ type CachedRouteGeometry = {
   // levert. Meegecachet zodat een cache-hit dezelfde eerlijke meting draagt.
   pavedFraction?: number | null;
   surfaceKnownFraction?: number | null;
+  // Gemeten aandeel drukke doorgaande wegen (N-wegen, taak #462); null als de
+  // motor geen road_class-details levert. Voedt het eerlijke avoid-rapport.
+  busyRoadFraction?: number | null;
 };
 
 // Bouw de bewaarbare motor-wegdekmeting uit een providerresultaat. null als de
@@ -2483,6 +2538,9 @@ type LoopCandidateContext = {
   // (0..1) uit de schuifbalk. Voorkeur, geen garantie. Racefiets: altijd null
   // (harde 0%-grens, taak #437).
   unpavedTargetShare?: number | null;
+  // Vermijd drukke N-wegen (taak #462): voorkeur-straf in de motor + selectie
+  // op het gemeten N-weg-aandeel. Nooit een harde poort.
+  avoidBusyRoads?: boolean;
 };
 
 // Build one real loop candidate at a specific target distance, store it server-
@@ -2524,6 +2582,7 @@ async function buildLoopCandidate(
     workoutTrainingType: ctx.workoutTrainingType,
     targetElevationGainM: ctx.targetElevationGainM ?? null,
     unpavedTargetShare: ctx.unpavedTargetShare ?? null,
+    avoidBusyRoads: ctx.avoidBusyRoads === true,
     wish: ctx.wish,
   });
   const loopGeomCached = ROUTE_GEOMETRY_CACHE.get(loopGeomKey);
@@ -2558,6 +2617,7 @@ async function buildLoopCandidate(
         seed: ctx.seed,
         points: ctx.points,
         elevationPreference: ctx.elevationPreference,
+        avoidBusyRoads: ctx.avoidBusyRoads === true,
       },
       {
         scenery,
@@ -2602,6 +2662,7 @@ async function buildLoopCandidate(
       steps: orsResult.steps,
       pavedFraction: orsResult.pavedFraction ?? null,
       surfaceKnownFraction: orsResult.surfaceKnownFraction ?? null,
+      busyRoadFraction: orsResult.busyRoadFraction ?? null,
     };
     evictRouteGeometryCache();
     ROUTE_GEOMETRY_CACHE.set(loopGeomKey, {
@@ -2691,6 +2752,9 @@ async function buildLoopCandidate(
     plannedWorkoutId: ctx.plannedWorkoutId,
     engineSurface,
     targetDistanceKm,
+    // Gemeten N-weg-aandeel (0..1) voor het eerlijke avoid-rapport; null als
+    // de motor geen road_class-details leverde.
+    busyRoadFraction: routeResult.busyRoadFraction ?? null,
     // Road objects are delivered asynchronously via GET /candidate/:id/enrich.
     roadObjects: null,
   };
@@ -2796,13 +2860,12 @@ router.post("/generate", requireAuth, async (req, res) => {
     avoidReport.toegepast.push("veerponten");
   }
   const avoidOnverhard = avoidBody.onverhard === true;
-  if (avoidBody.drukkeWegen === true) {
-    avoidReport.nietMogelijk.push({
-      wens: "drukke wegen",
-      reden:
-        "De routebron kan verkeersdrukte niet meten. Het fietsprofiel kiest wel zoveel mogelijk fietsvriendelijke wegen, maar drukte vermijden kan Sparki niet garanderen.",
-    });
-  }
+  // Drukke N-wegen vermijden (taak #462): ECHT toegepast als voorkeur-straf
+  // in het motor-custom-model (road_class primary/secondary). Het eerlijke
+  // rapport (gelukt / niet gelukt in dit gebied / geen meting) volgt ná
+  // generatie op basis van het gemeten N-weg-aandeel — nooit stiekem toch
+  // N-weg rijden zonder het te zeggen.
+  const avoidBusyRoads = coerceAvoidBusyRoads(body, sport);
 
   try {
     // Resolve target distance + workout context FIRST, so duration-based sizing
@@ -2936,6 +2999,7 @@ router.post("/generate", requireAuth, async (req, res) => {
               body.unpavedPreferencePct,
               bikeType,
             ),
+            avoidBusyRoads,
           },
           targetDistanceKm,
         );
@@ -2958,6 +3022,7 @@ router.post("/generate", requireAuth, async (req, res) => {
         throw err;
       }
       console.log(`[PERF] generate.loop TOTAL ms=${Math.round(performance.now()-_t_req0)} distKm=${candidate.distanceKm?.toFixed(1)} mode=loop`);
+      applyBusyRoadReport(avoidReport, avoidBusyRoads, candidate.busyRoadFraction);
       res.json({ candidate: { ...candidate, avoidReport } });
       return;
     }
@@ -2983,15 +3048,22 @@ router.post("/generate", requireAuth, async (req, res) => {
                 ? body.destinationText.trim()
                 : null,
             profile,
+            avoidBusyRoads,
           }
         : mode === "waypoints"
-          ? { mode: "waypoints", waypoints: JSON.stringify(waypoints), profile }
+          ? {
+              mode: "waypoints",
+              waypoints: JSON.stringify(waypoints),
+              profile,
+              avoidBusyRoads,
+            }
           : {
               mode: "via-loop",
               startLat,
               startLon,
               viaPoints: JSON.stringify(viaPoints),
               profile,
+              avoidBusyRoads,
             };
     const ptpGeomKey = routeGeometryCacheKey(ptpGeomKeyParams);
     const ptpGeomCached = ROUTE_GEOMETRY_CACHE.get(ptpGeomKey);
@@ -3069,6 +3141,10 @@ router.post("/generate", requireAuth, async (req, res) => {
         `[PERF] generate.${mode} ${cacheHit ? "CACHE_HIT" : "CACHE_MISS"} ms=${totalMs}`,
       );
 
+      // Eerlijk N-wegen-rapport op basis van de gecachete meting — geldt ook
+      // bij een geometrie-cache-hit (de meting reist met de geometrie mee).
+      applyBusyRoadReport(avoidReport, avoidBusyRoads, geom.busyRoadFraction);
+
       return {
         candidateId,
         name,
@@ -3116,7 +3192,11 @@ router.post("/generate", requireAuth, async (req, res) => {
     const _t_ors0 = performance.now();
     const orsResult =
       mode === "waypoints"
-        ? await provider.routeWaypoints({ points: waypoints, profile })
+        ? await provider.routeWaypoints({
+            points: waypoints,
+            profile,
+            avoidBusyRoads,
+          })
         : viaLoop
           ? await provider.routeWaypoints({
               points: [
@@ -3125,11 +3205,13 @@ router.post("/generate", requireAuth, async (req, res) => {
                 { lat: startLat, lon: startLon },
               ],
               profile,
+              avoidBusyRoads,
             })
           : await provider.routePointToPoint({
               start: { lat: startLat, lon: startLon },
               end: end!,
               profile,
+              avoidBusyRoads,
             });
     console.log(`[PERF] generate.ors mode=${mode} ms=${Math.round(performance.now()-_t_ors0)}`);
 
@@ -3155,6 +3237,7 @@ router.post("/generate", requireAuth, async (req, res) => {
       steps: orsResult.steps,
       pavedFraction: orsResult.pavedFraction ?? null,
       surfaceKnownFraction: orsResult.surfaceKnownFraction ?? null,
+      busyRoadFraction: orsResult.busyRoadFraction ?? null,
     };
     evictRouteGeometryCache();
     ROUTE_GEOMETRY_CACHE.set(ptpGeomKey, {
@@ -3323,6 +3406,7 @@ router.post("/generate/options", requireAuth, async (req, res) => {
         body.unpavedPreferencePct,
         bikeType,
       ),
+      avoidBusyRoads: coerceAvoidBusyRoads(body, sport),
     };
 
     // Build sequentially — each loop already fans out several provider probes,
@@ -3334,7 +3418,13 @@ router.post("/generate/options", requireAuth, async (req, res) => {
     // voorkomt dat trage extra varianten de rijder minutenlang laten wachten.
     const ordered = [base, ...distances.filter((d) => d !== base)];
     const options: Array<
-      Awaited<ReturnType<typeof buildLoopCandidate>> & { variant: string }
+      Awaited<ReturnType<typeof buildLoopCandidate>> & {
+        variant: string;
+        avoidReport: {
+          toegepast: string[];
+          nietMogelijk: { wens: string; reden: string }[];
+        };
+      }
     > = [];
     let firstError: unknown = null;
     const budgetStart = Date.now();
@@ -3350,7 +3440,18 @@ router.post("/generate/options", requireAuth, async (req, res) => {
       try {
         const candidate = await buildLoopCandidate(ctx, d);
         const variant = d < base ? "Korter" : d > base ? "Langer" : "Op maat";
-        options.push({ ...candidate, variant });
+        // Eerlijk N-wegen-rapport per variant (taak #462): gelukt, niet
+        // gelukt in dit gebied, of geen meting — nooit stil.
+        const avoidReport: {
+          toegepast: string[];
+          nietMogelijk: { wens: string; reden: string }[];
+        } = { toegepast: [], nietMogelijk: [] };
+        applyBusyRoadReport(
+          avoidReport,
+          ctx.avoidBusyRoads === true,
+          candidate.busyRoadFraction,
+        );
+        options.push({ ...candidate, variant, avoidReport });
       } catch (err) {
         firstError = firstError ?? err;
         req.log.warn({ err, distanceKm: d }, "routes.generate.options: variant mislukt");

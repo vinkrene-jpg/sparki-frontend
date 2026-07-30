@@ -1525,6 +1525,26 @@ function RouteGenerator({
       // dan gewoon zonder geheugen.
     }
   }
+  // Vermijd drukke N-wegen (taak #462, kalibratie René 30-07-2026): standaard
+  // uit ("balans — korte stukken N-weg zijn oké"), maar expliciet aan te
+  // zetten. Voorkeur-straf in de routemotor; lukt het in een gebied niet, dan
+  // zegt Sparki dat eerlijk via het avoid-rapport. Onthouden per apparaat.
+  const [avoidBusyRoads, setAvoidBusyRoads] = useState(() => {
+    try {
+      return localStorage.getItem("sparki:avoid-n-roads") === "1"
+    } catch {
+      return false
+    }
+  })
+  function chooseAvoidBusyRoads(value: boolean) {
+    setAvoidBusyRoads(value)
+    try {
+      localStorage.setItem("sparki:avoid-n-roads", value ? "1" : "0")
+    } catch {
+      // localStorage kan geweigerd worden (privacy-modus) — toggle werkt dan
+      // gewoon zonder geheugen.
+    }
+  }
   const [trainingType, setTrainingType] = useState("duurtraining")
   const [workoutId, setWorkoutId] = useState<string>("")
   const [distance, setDistance] = useState("40")
@@ -1741,6 +1761,8 @@ function RouteGenerator({
         wish: wish.trim() ? wish.trim() : undefined,
         unpavedPreferencePct:
           sport === "cycling" && unpavedAdjustable ? unpavedPct : undefined,
+        avoidBusyRoads:
+          sport === "cycling" && avoidBusyRoads ? true : undefined,
       },
       {
         onSuccess: (data) => setOptions(data.options),
@@ -1794,6 +1816,8 @@ function RouteGenerator({
         wish: wish.trim() ? wish.trim() : undefined,
         unpavedPreferencePct:
           sport === "cycling" && unpavedAdjustable ? unpavedPct : undefined,
+        avoidBusyRoads:
+          sport === "cycling" && avoidBusyRoads ? true : undefined,
       },
       {
         onSuccess: (data) => {
@@ -2288,6 +2312,33 @@ function RouteGenerator({
                 </p>
               </>
             )}
+          </div>
+
+          {/* Vermijd drukke N-wegen (taak #462): expliciete keuze naast de
+              onverhard-voorkeur. Voorkeur in de routemotor — geen garantie;
+              lukt het niet, dan meldt Sparki dat eerlijk bij het resultaat. */}
+          <div className="mt-4">
+            <label className="mb-2 block font-mono text-[10px] tracking-[0.18em] text-white/35">
+              DRUKKE WEGEN
+            </label>
+            <label className="flex cursor-pointer items-start gap-2.5">
+              <input
+                type="checkbox"
+                checked={avoidBusyRoads}
+                onChange={(e) => chooseAvoidBusyRoads(e.target.checked)}
+                aria-label="Vermijd drukke N-wegen"
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-white/25 bg-white/10 accent-cyan-300"
+              />
+              <span className="text-[12px] leading-relaxed text-white/70">
+                Vermijd drukke N-wegen
+                <span className="mt-0.5 block text-[11px] text-white/40">
+                  Sparki stuurt de route waar mogelijk om doorgaande wegen
+                  zonder vrijliggend fietspad heen — een voorkeur, geen
+                  garantie. Lukt het in dit gebied niet, dan zegt Sparki dat
+                  erbij. Standaard staat dit uit: korte stukken N-weg zijn oké.
+                </span>
+              </span>
+            </label>
           </div>
         </div>
       )}
@@ -3100,6 +3151,23 @@ function RouteGenerator({
           )}
 
           <Climbs climbs={candidate.climbs} />
+
+          {/* Eerlijk vermijd-rapport (taak #462): lukte het vermijden van
+              N-wegen niet in dit gebied, dan zegt Sparki dat expliciet —
+              nooit stiekem toch N-weg rijden. */}
+          {candidate.avoidReport?.nietMogelijk?.map((item, i) => (
+            <p
+              key={`avoid-nm-${i}`}
+              className="mt-4 rounded-lg border border-amber-300/25 bg-amber-300/[0.07] px-3 py-2 text-[12px] leading-relaxed text-amber-200/90"
+            >
+              Niet gelukt: {item.wens} — {item.reden}
+            </p>
+          ))}
+          {(candidate.avoidReport?.toegepast?.length ?? 0) > 0 && (
+            <p className="mt-4 text-[11px] leading-relaxed text-emerald-300/70">
+              Toegepast: {candidate.avoidReport!.toegepast.join(" · ")}
+            </p>
+          )}
 
           <p className="mt-4 whitespace-pre-line text-[12px] leading-relaxed text-white/55">
             {candidate.rationale}

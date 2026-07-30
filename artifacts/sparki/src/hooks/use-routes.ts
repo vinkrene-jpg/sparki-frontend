@@ -81,6 +81,18 @@ export type GenerateRouteInput = {
   // onverhard — een voorkeur voor de kandidaatselectie, nooit een garantie.
   // Racefiets: niet meesturen (server negeert het; harde 0%-grens).
   unpavedPreferencePct?: number;
+  // Vermijd drukke N-wegen (taak #462): voorkeur-straf in de routemotor op
+  // doorgaande wegen (road_class primary/secondary) zonder vrijliggend
+  // fietspad. Een voorkeur, geen garantie — het eerlijke resultaat komt terug
+  // in `avoidReport` op de kandidaat.
+  avoidBusyRoads?: boolean;
+};
+
+// Eerlijk rapport over vermijd-voorkeuren: wat is echt toegepast en wat kon de
+// routebron in dit gebied niet waarmaken (inclusief reden). Nooit stil.
+export type AvoidReport = {
+  toegepast: string[];
+  nietMogelijk: { wens: string; reden: string }[];
 };
 
 export type RouteCandidate = {
@@ -105,6 +117,9 @@ export type RouteCandidate = {
   endName: string | null;
   plannedWorkoutId: number | null;
   targetDistanceKm: number | null;
+  // Eerlijk vermijd-rapport (o.a. drukke N-wegen, taak #462). Afwezig bij
+  // oudere responses.
+  avoidReport?: AvoidReport;
 };
 
 export type GeocodeResult = { lat: number; lon: number; label: string };

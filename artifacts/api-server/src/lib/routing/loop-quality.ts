@@ -316,6 +316,11 @@ export async function generateVariedLoop(
     opts.unpavedTargetShare <= 1
       ? opts.unpavedTargetShare
       : null;
+  // Vermijd drukke N-wegen (taak #462): een VOORKEUR, geen harde poort. De
+  // motor krijgt de straf al mee (req.avoidBusyRoads → custom model); hier
+  // rangschikken we bovendien echte kandidaten op hun GEMETEN N-weg-aandeel.
+  // Zonder meting (ORS) telt dit eerlijk niet mee — nooit gokken.
+  const avoidBusyRoads = req.avoidBusyRoads === true;
   // A stated flat/hilly wish needs a wider pool of real candidates to choose the
   // best-matching one — in hilly terrain the genuinely flat loops only appear in
   // later seeds, so too small a sample silently returns a hillier route. A
@@ -329,7 +334,8 @@ export async function generateVariedLoop(
     wantsScenery ||
     preferUninterrupted ||
     targetAscentM != null ||
-    unpavedTargetShare != null
+    unpavedTargetShare != null ||
+    avoidBusyRoads
       ? 8
       : wantsCalmRoads
         ? 4 // vaste rustige-wegen-vergelijking: echte keuze nodig, maar betaalbaar
@@ -421,6 +427,13 @@ export async function generateVariedLoop(
         1.5,
       );
     }
+    // N-wegen-voorkeur: straf naar rato van het GEMETEN aandeel primary/
+    // secondary. Genormaliseerd op 15% — daarboven telt de volle straf. Een
+    // voorkeur die zwaar meeweegt, maar nooit een kandidaat hard afkeurt.
+    const busyPenalty =
+      avoidBusyRoads && result.busyRoadFraction != null
+        ? Math.min(result.busyRoadFraction / 0.15, 1.5) * 2.0
+        : 0;
     const score =
       overlap + drift * 1.2 + elevation * 0.8 + turniness * 0.9 +
       // unknownMiss LICHTER dan surfacePenalty: aantoonbaar onverhard is
@@ -429,7 +442,7 @@ export async function generateVariedLoop(
       // dan andere kwaliteitswensen: onbekend wegdek is een risico, geen
       // vrijbrief (acceptatiegrens PO-01 §3).
       ascentMiss * 1.0 + surfacePenalty + unknownMiss * 2.0 +
-      unpavedMiss * 1.0;
+      unpavedMiss * 1.0 + busyPenalty;
     const cand = { result, score };
     pool.push(cand);
     return cand;
@@ -463,6 +476,8 @@ export async function generateVariedLoop(
       // Onverhard-voorkeur: er valt pas iets te kiezen met meerdere echte
       // kandidaten, dus geen vroege stop zolang de voorkeur actief is.
       unpavedTargetShare == null &&
+      // N-wegen vermijden: pas kiezen met meerdere echte kandidaten.
+      !avoidBusyRoads &&
       overlap < 0.08 &&
       drift < 0.15 &&
       elevation < 0.35 &&

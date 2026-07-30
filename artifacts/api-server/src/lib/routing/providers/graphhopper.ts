@@ -100,21 +100,50 @@ const STEPS_RULE = {
   multiply_by: "0.05",
 } as const;
 
-function customModelFor(profile: RoutingProfile): Record<string, unknown> | null {
+// Vermijd drukke N-wegen (taak #462, kalibratie René 30-07-2026): VOORKEUR-
+// straf op road_class primary/secondary. In NL zijn dat de N-wegen; rijdt de
+// route op zo'n wegvak, dan rijdt hij op de rijbaan zelf — een vrijliggend
+// fietspad is in OSM een eigen weg met een eigen road_class en wordt dus
+// nooit meebestraft. 0.15 (geen 0.05): dit is een voorkeur, geen harde poort —
+// een kort onvermijdbaar stuk N-weg mag de route niet onmogelijk maken.
+const BUSY_ROAD_RULE = {
+  if: "road_class == PRIMARY || road_class == SECONDARY",
+  multiply_by: "0.15",
+} as const;
+
+const CYCLING_PROFILES: readonly RoutingProfile[] = [
+  "cycling-road",
+  "cycling-regular",
+  "cycling-gravel",
+  "cycling-mountain",
+];
+
+function customModelFor(
+  profile: RoutingProfile,
+  avoidBusyRoads: boolean,
+): Record<string, unknown> | null {
+  const rules: Record<string, unknown>[] = [];
   switch (profile) {
     case "cycling-road":
-      return {
-        priority: [ROAD_SURFACE_RULE, ROAD_UNKNOWN_SURFACE_RULE, STEPS_RULE],
-      };
+      rules.push(ROAD_SURFACE_RULE, ROAD_UNKNOWN_SURFACE_RULE, STEPS_RULE);
+      break;
     case "cycling-regular":
-      return { priority: [GRAVEL_SURFACE_RULE, STEPS_RULE] };
+      rules.push(GRAVEL_SURFACE_RULE, STEPS_RULE);
+      break;
     case "cycling-gravel":
       // Gravel (taak #445): onverhard is welkom; alleen zand/gras en trappen
       // mild bestraffen zodat de route wel fietsbaar blijft.
-      return { priority: [GRAVEL_SURFACE_RULE, STEPS_RULE] };
+      rules.push(GRAVEL_SURFACE_RULE, STEPS_RULE);
+      break;
     default:
-      return null;
+      break;
   }
+  // N-wegen-voorkeur geldt voor alle fietsprofielen (ook MTB, die verder geen
+  // model heeft) — nooit voor voet- of autoprofielen.
+  if (avoidBusyRoads && CYCLING_PROFILES.includes(profile)) {
+    rules.push(BUSY_ROAD_RULE);
+  }
+  return rules.length > 0 ? { priority: rules } : null;
 }
 
 // RoutingProfile → GraphHopper-profielnaam.
@@ -142,7 +171,10 @@ type GhPath = {
   time?: number;
   ascend?: number;
   points?: { coordinates?: number[][] };
-  details?: { surface?: [number, number, string | null][] };
+  details?: {
+    surface?: [number, number, string | null][];
+    road_class?: [number, number, string | null][];
+  };
   instructions?: {
     distance?: number;
     sign?: number;
@@ -239,21 +271,23 @@ export class GraphHopperProvider implements RoutingProvider {
   private async route(
     profile: RoutingProfile,
     body: Record<string, unknown>,
+    avoidBusyRoads = false,
   ): Promise<RouteResult> {
     // Custom model (wegdek- en trapstraffen) vereist flexible mode
     // (ch.disable). Bij "maximum nodes exceeded" (eindpunt snapt op een zwaar
     // bestrafte weg) volgt één eerlijke herkansing zónder model — de
     // verificatiepoort achteraf (obstakels/wegdek) blijft dan gewoon gelden.
-    const customModel = customModelFor(profile);
+    const customModel = customModelFor(profile, avoidBusyRoads);
     const payload: Record<string, unknown> = {
       profile: GH_PROFILE[profile],
       elevation: true,
       instructions: true,
       locale: "nl",
       points_encoded: false,
-      // Wegdek per wegvak uit de routebron ZELF — dezelfde motor die de route
-      // kiest, vertelt ook wat het wegdek is. Geen tweede, tegensprekende bron.
-      details: ["surface"],
+      // Wegdek + wegtype per wegvak uit de routebron ZELF — dezelfde motor
+      // die de route kiest, vertelt ook wat het wegdek/wegtype is. road_class
+      // voedt de eerlijke N-wegen-meting (busyRoadFraction, taak #462).
+      details: ["surface", "road_class"],
       ...(customModel ? { custom_model: customModel, "ch.disable": true } : {}),
       ...body,
     };
@@ -357,10 +391,15 @@ export class GraphHopperProvider implements RoutingProvider {
     // is de meting te dun en zeggen we eerlijk niets (null).
     let pavedFraction: number | null = null;
     let surfaceKnownFraction: number | null = null;
+    let busyRoadFraction: number | null = null;
     const surfaceDetails = path.details?.surface;
-    if (Array.isArray(surfaceDetails) && surfaceDetails.length > 0) {
-      // Cumulatieve afstand per coördinaat-index (haversine, meters).
-      const cum: number[] = new Array(coords.length).fill(0);
+    const roadClassDetails = path.details?.road_class;
+    // Cumulatieve afstand per coördinaat-index (haversine, meters) — gedeeld
+    // door de wegdek- en de wegtype-meting.
+    let cum: number[] | null = null;
+    const buildCum = (): number[] => {
+      if (cum) return cum;
+      cum = new Array(coords.length).fill(0);
       const R = 6371000;
       for (let i = 1; i < coords.length; i++) {
         const [lon1, lat1] = coords[i - 1]!;
@@ -381,7 +420,11 @@ export class GraphHopperProvider implements RoutingProvider {
             Math.sin(dLon / 2) ** 2;
         cum[i] = cum[i - 1]! + 2 * R * Math.asin(Math.sqrt(a));
       }
-      const totalM = cum[cum.length - 1]!;
+      return cum;
+    };
+    if (Array.isArray(surfaceDetails) && surfaceDetails.length > 0) {
+      const c = buildCum();
+      const totalM = c[c.length - 1]!;
       let pavedM = 0;
       let unpavedM = 0;
       for (const seg of surfaceDetails) {
@@ -390,11 +433,11 @@ export class GraphHopperProvider implements RoutingProvider {
         const value = typeof seg[2] === "string" ? seg[2] : "";
         if (
           !Number.isInteger(from) || !Number.isInteger(to) ||
-          from < 0 || to >= cum.length || to <= from
+          from < 0 || to >= c.length || to <= from
         ) {
           continue;
         }
-        const m = cum[to]! - cum[from]!;
+        const m = c[to]! - c[from]!;
         if (PAVED_SURFACES.has(value)) pavedM += m;
         else if (UNPAVED_SURFACES_GH.has(value)) unpavedM += m;
       }
@@ -406,12 +449,39 @@ export class GraphHopperProvider implements RoutingProvider {
         pavedFraction = Math.min(Math.max(pavedM / knownM, 0), 1);
       }
     }
+    // Aandeel drukke doorgaande wegen (primary/secondary — N-wegen) uit de
+    // road_class-details van de motor zélf (taak #462). Vrijliggende
+    // fietspaden zijn eigen wegen met een eigen road_class en tellen dus
+    // nooit mee. Zonder details: eerlijk null, nooit gokken.
+    if (Array.isArray(roadClassDetails) && roadClassDetails.length > 0) {
+      const c = buildCum();
+      const totalM = c[c.length - 1]!;
+      let busyM = 0;
+      for (const seg of roadClassDetails) {
+        const from = seg[0];
+        const to = seg[1];
+        const value = typeof seg[2] === "string" ? seg[2].toLowerCase() : "";
+        if (
+          !Number.isInteger(from) || !Number.isInteger(to) ||
+          from < 0 || to >= c.length || to <= from
+        ) {
+          continue;
+        }
+        if (value === "primary" || value === "secondary") {
+          busyM += c[to]! - c[from]!;
+        }
+      }
+      if (totalM > 0) {
+        busyRoadFraction = Math.min(Math.max(busyM / totalM, 0), 1);
+      }
+    }
 
     return {
       points,
       path: geometry,
       pavedFraction,
       surfaceKnownFraction,
+      busyRoadFraction,
       distanceKm:
         typeof path.distance === "number"
           ? Math.round((path.distance / 1000) * 100) / 100
@@ -433,13 +503,17 @@ export class GraphHopperProvider implements RoutingProvider {
     if (lengthM > 150_000) {
       return this.longLoopViaWaypoints(req, lengthM);
     }
-    return this.route(req.profile, {
-      points: [[req.start.lon, req.start.lat]],
-      algorithm: "round_trip",
-      "round_trip.distance": lengthM,
-      "round_trip.seed": req.seed ?? Math.floor(Math.random() * 1e6),
-      "ch.disable": true,
-    });
+    return this.route(
+      req.profile,
+      {
+        points: [[req.start.lon, req.start.lat]],
+        algorithm: "round_trip",
+        "round_trip.distance": lengthM,
+        "round_trip.seed": req.seed ?? Math.floor(Math.random() * 1e6),
+        "ch.disable": true,
+      },
+      req.avoidBusyRoads === true,
+    );
   }
 
   // Lange lus: waypoints op een cirkel rond de start; seed draait de
@@ -484,25 +558,35 @@ export class GraphHopperProvider implements RoutingProvider {
       ghPoints.push([(wLon * 180) / Math.PI, (wLat * 180) / Math.PI]);
     }
     ghPoints.push([req.start.lon, req.start.lat]);
-    return this.route(req.profile, { points: ghPoints });
+    return this.route(
+      req.profile,
+      { points: ghPoints },
+      req.avoidBusyRoads === true,
+    );
   }
 
   async routePointToPoint(req: PointToPointRequest): Promise<RouteResult> {
-    return this.route(req.profile, {
-      points: [
-        [req.start.lon, req.start.lat],
-        [req.end.lon, req.end.lat],
-      ],
-    });
+    return this.route(
+      req.profile,
+      {
+        points: [
+          [req.start.lon, req.start.lat],
+          [req.end.lon, req.end.lat],
+        ],
+      },
+      req.avoidBusyRoads === true,
+    );
   }
 
   async routeWaypoints(req: WaypointRequest): Promise<RouteResult> {
     if (req.points.length < 2) {
       throw new Error("Een route heeft minimaal twee punten nodig");
     }
-    return this.route(req.profile, {
-      points: req.points.map((p) => [p.lon, p.lat]),
-    });
+    return this.route(
+      req.profile,
+      { points: req.points.map((p) => [p.lon, p.lat]) },
+      req.avoidBusyRoads === true,
+    );
   }
 
   private hitLabel(h: NonNullable<GhGeocodeResponse["hits"]>[number]): string {
