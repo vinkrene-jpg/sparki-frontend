@@ -1,0 +1,37 @@
+{
+  "ranAt": "2026-07-30T08:33:15.025Z",
+  "acceptatiegrenzen": "PO-01 30-07-2026 (0% onverhard racefiets, verbod = afkeur, onbekend eerlijk)",
+  "verdict": "PASS",
+  "measuredPerProfile": {
+    "gravelfiets": 2
+  },
+  "failures": [],
+  "routes": [
+    {
+      "start": "Hengelo (Ov) — Twente",
+      "terrain": "twente",
+      "bike": "gravelfiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 47.59,
+      "ascentM": 506,
+      "pavedFraction": 0.8647971136521044,
+      "surfaceUnknownShare": 0.10379540778450325,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Baambrugge — platteland (polder)",
+      "terrain": "platteland",
+      "bike": "gravelfiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 44.65,
+      "ascentM": 114,
+      "pavedFraction": 1,
+      "surfaceUnknownShare": 0.2670202470028682,
+      "certainForbidden": [],
+      "unpaved": []
+    }
+  ]
+}

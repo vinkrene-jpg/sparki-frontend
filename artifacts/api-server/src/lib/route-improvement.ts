@@ -153,6 +153,7 @@ export function themeGenerationOptions(themes: FeedbackTheme[]): {
 function bikeProfile(bike: LibraryBikeType): RoutingProfile {
   if (bike === "racefiets") return "cycling-road";
   if (bike === "mtb") return "cycling-mountain";
+  if (bike === "gravel") return "cycling-gravel";
   return "cycling-regular";
 }
 

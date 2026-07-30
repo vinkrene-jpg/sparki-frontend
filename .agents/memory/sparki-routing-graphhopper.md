@@ -23,3 +23,6 @@ description: Waarom/hoe GH de route-motor is (racingbike/mtb, surface-details), 
 - `generateVariedLoop` heeft een racefiets-verlengingsronde: zolang géén kandidaat volledig verhard is, extra echte kandidaten tot plafond 10. Hielp Utrecht/Baambrugge naar 0; Dalfsen/Maastricht blijven falen — daar bestaat binnen 10 seeds geen schone lus.
 - Kernoorzaken (art. 5): (1) geen harde afkeurpoort ná generatie (best-of-slechte wordt getoond, alleen eerlijk gelabeld) — bouwen is een open productkeuze (kost latency/"geen route"); (2) GH-graaf ↔ actuele OSM spreken elkaar aantoonbaar tegen (GH 99,9% verhard waar Overpass sand/compacted op de lijn meet; scherm mat 60,7% onbekend waar GH 14% zei).
 - Gebruikersbril-check MOET via het echte app-pad (`POST /api/routes/generate`, veld heet `targetDistanceKm`, niet `distanceKm` — fout veld = stille default 40 km) + het echte routescherm; het harnas alleen is niet representatief.
+
+## Gravel-profiel (taak #445)
+- bikeType "gravel" heeft een EIGEN RoutingProfile `cycling-gravel` (GH "bike" + mild gravel-model; ORS mapt intern op cycling-regular). De harde 0%-onverhard-poort (hardRejectIfNeeded + +1000-straf in loop-quality) geldt alleen voor cycling-road en cycling-regular — nooit key'en op gedeeld provider-profiel maar op RoutingProfile per fietstype.

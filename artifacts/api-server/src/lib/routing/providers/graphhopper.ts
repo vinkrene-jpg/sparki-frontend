@@ -29,6 +29,9 @@ const GH_PROFILE: Record<RoutingProfile, string> = {
   "cycling-road": "racingbike",
   "cycling-mountain": "mtb",
   "cycling-regular": "bike",
+  // Gravel (taak #445): GraphHopper heeft geen apart gravelprofiel; het vrije
+  // "bike"-profiel + het milde gravel-custom-model laat onverhard gewoon toe.
+  "cycling-gravel": "bike",
   "foot-walking": "foot",
   "foot-hiking": "hike",
   "driving-car": "car",
@@ -105,6 +108,10 @@ function customModelFor(profile: RoutingProfile): Record<string, unknown> | null
       };
     case "cycling-regular":
       return { priority: [GRAVEL_SURFACE_RULE, STEPS_RULE] };
+    case "cycling-gravel":
+      // Gravel (taak #445): onverhard is welkom; alleen zand/gras en trappen
+      // mild bestraffen zodat de route wel fietsbaar blijft.
+      return { priority: [GRAVEL_SURFACE_RULE, STEPS_RULE] };
     default:
       return null;
   }
@@ -118,6 +125,8 @@ function ghProfile(profile: RoutingProfile): string {
     case "cycling-mountain":
       return "mtb";
     case "cycling-regular":
+      return "bike";
+    case "cycling-gravel":
       return "bike";
     case "foot-walking":
       return "foot";
@@ -170,6 +179,7 @@ export class GraphHopperProvider implements RoutingProvider {
     "cycling-road",
     "cycling-mountain",
     "cycling-regular",
+    "cycling-gravel",
     "foot-walking",
     "foot-hiking",
     "driving-car",

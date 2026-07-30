@@ -1618,6 +1618,7 @@ function haversineMeters(
 // sensible one from the stored surface so a rejoin path fits the terrain.
 function profileForSurface(surface: string): RoutingProfile {
   if (surface === "mtb") return "cycling-mountain";
+  if (surface === "gravel") return "cycling-gravel";
   if (surface === "gravel" || surface === "pad" || surface === "mixed")
     return "cycling-regular";
   return "cycling-road";

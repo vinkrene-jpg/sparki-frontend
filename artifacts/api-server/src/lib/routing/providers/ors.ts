@@ -80,6 +80,7 @@ export class OrsProvider implements RoutingProvider {
     "cycling-road",
     "cycling-mountain",
     "cycling-regular",
+    "cycling-gravel",
     "foot-walking",
     "foot-hiking",
     "driving-car",
@@ -136,7 +137,10 @@ export class OrsProvider implements RoutingProvider {
     body: Record<string, unknown>,
     signal: AbortSignal,
   ): Promise<Response> {
-    return fetch(`${ORS_BASE}/v2/directions/${profile}/geojson`, {
+    // ORS kent geen apart gravelprofiel (taak #445): gravel rijdt op het
+    // reguliere fietsprofiel; de kwaliteitspoorten blijven profiel-eigen.
+    const orsProfile = profile === "cycling-gravel" ? "cycling-regular" : profile;
+    return fetch(`${ORS_BASE}/v2/directions/${orsProfile}/geojson`, {
       method: "POST",
       headers: {
         Authorization: this.apiKey(),

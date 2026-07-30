@@ -63,10 +63,17 @@ const STARTS = [
 // Profielen onder de belofte: racefiets én gewone fiets (cycling-regular)
 // delen de 0%-onverhard-grens (taak #441) plus de verbods- en
 // eerlijkheidsgrens. Het label blijft "gravel" (historische deelruns/bewijs),
-// maar het profiel dekt René's "gewone fiets".
+// maar het profiel dekt René's "gewone fiets". De gravelfiets zelf rijdt
+// sinds taak #445 op een eigen profiel (cycling-gravel) zonder die grens.
 const ALL_PROFILES = [
   { label: "racefiets", profile: "cycling-road" as const },
   { label: "gravel", profile: "cycling-regular" as const },
+  // Gravelfiets (taak #445): eigen profiel zónder de 0%-onverhard-grens.
+  // Grenzen hier: route moet gewoon GEGENEREERD worden (geen harde
+  // onverhard-afkeur — die poort geldt niet voor gravel) en het verbods-
+  // criterium (grens 2) blijft onverkort gelden. Onverhard wordt eerlijk
+  // gemeten en vastgelegd, maar is geen afkeur.
+  { label: "gravelfiets", profile: "cycling-gravel" as const },
 ];
 // Deelruns (sandbox-shellcalls hebben een tijdslimiet): SUIT_PROFILE=racefiets|gravel
 // en SUIT_STARTS=0,1,2 beperken de run; het bewijsbestand vermeldt de selectie.
@@ -114,6 +121,23 @@ async function main() {
         );
       } catch (err) {
         if (err instanceof NoSuitableRouteError) {
+          if (p.profile === "cycling-gravel") {
+            // Gravel (taak #445) valt NIET onder de harde onverhard/verbods-
+            // afkeurpoort — een harde afkeur hier betekent dat de gravelrijder
+            // weer ten onrechte de gewone-fietsgrens krijgt.
+            failures.push(
+              `${label}: harde afkeur op gravelprofiel (${err.reason}) — gravel mag onverhard en hoort deze poort niet te raken`,
+            );
+            evidence.push({
+              start: s.name,
+              terrain: s.terrain,
+              bike: p.label,
+              generated: false,
+              hardRejected: true,
+              rejectionReason: err.reason,
+            });
+            continue;
+          }
           // Harde afkeurpoort heeft gefired: de motor weigert een ongeschikte
           // route eerlijk. Dit is het GEWENSTE gedrag (PO-01 §5.2) — geen
           // foute route getoond, eerlijke "geen geschikte route" melding.
@@ -142,7 +166,11 @@ async function main() {
       // onverhard volgens de routebron (taak #441). pavedFraction is
       // aandeel-van-gemeten; < 1.0 betekent dat de bron zelf onverharde
       // meters rapporteert.
-      if (loop.pavedFraction != null && loop.pavedFraction < 0.9995) {
+      if (
+        p.profile !== "cycling-gravel" &&
+        loop.pavedFraction != null &&
+        loop.pavedFraction < 0.9995
+      ) {
         failures.push(
           `${label}: routebron meet ${(100 * (1 - loop.pavedFraction)).toFixed(1)}% onverhard van het gemeten wegdek (grens: 0%)`,
         );
@@ -178,7 +206,8 @@ async function main() {
       }
       // Grens 1 (onafhankelijk): racefiets én gewone fiets 0 aantoonbaar
       // onverharde vakken (taak #441).
-      if (unpaved.length > 0) {
+      // Gravel (taak #445): onverhard is toegestaan — alleen meten/vastleggen.
+      if (p.profile !== "cycling-gravel" && unpaved.length > 0) {
         failures.push(
           `${label}: ${unpaved.length} onafhankelijk gemeten onverhard/ruw wegvak(ken) — grens is nul`,
         );

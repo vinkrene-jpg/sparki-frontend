@@ -64,11 +64,12 @@ const BIKE_LABEL: Record<LibraryBikeType, string> = {
   fiets: "Fiets",
 };
 
-// ORS kent geen apart gravelprofiel; gravel rijdt op het reguliere
-// fietsprofiel (eerlijk: het label belooft geen onverharde ondergrond).
+// Gravel heeft een eigen routingprofiel (taak #445) zodat de harde
+// 0%-onverhard-poort van de gewone fiets (cycling-regular) er niet voor geldt.
 function bikeProfile(bike: LibraryBikeType): RoutingProfile {
   if (bike === "racefiets") return "cycling-road";
   if (bike === "mtb") return "cycling-mountain";
+  if (bike === "gravel") return "cycling-gravel";
   return "cycling-regular";
 }
 

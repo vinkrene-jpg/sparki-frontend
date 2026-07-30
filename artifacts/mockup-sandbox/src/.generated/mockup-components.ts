@@ -7,8 +7,8 @@ export const modules: ModuleMap = {
   "./components/mockups/plan-pagina/CoachVerhaal.tsx": () => import("../components/mockups/plan-pagina/CoachVerhaal.tsx"),
   "./components/mockups/plan-pagina/Cockpit.tsx": () => import("../components/mockups/plan-pagina/Cockpit.tsx"),
   "./components/mockups/plan-pagina/PeriodiseringEerst.tsx": () => import("../components/mockups/plan-pagina/PeriodiseringEerst.tsx"),
-  "./components/mockups/sparki-reboot/Prototype.tsx": () => import("../components/mockups/sparki-reboot/Prototype.tsx"),
   "./components/mockups/vandaag-sfeer/Current.tsx": () => import("../components/mockups/vandaag-sfeer/Current.tsx"),
   "./components/mockups/vandaag-sfeer/Komoot.tsx": () => import("../components/mockups/vandaag-sfeer/Komoot.tsx"),
-  "./components/mockups/vandaag-sfeer/Strava.tsx": () => import("../components/mockups/vandaag-sfeer/Strava.tsx")
+  "./components/mockups/vandaag-sfeer/Strava.tsx": () => import("../components/mockups/vandaag-sfeer/Strava.tsx"),
+  "./components/mockups/sparki-reboot/Prototype.tsx": () => import("../components/mockups/sparki-reboot/Prototype.tsx")
 };

@@ -7,6 +7,11 @@ export const routingProfiles = [
   "cycling-road",
   "cycling-mountain",
   "cycling-regular",
+  // Gravelfiets (taak #445): eigen profiel zodat de harde 0%-onverhard-poort
+  // van racefiets/gewone fiets (cycling-road/cycling-regular) NIET voor
+  // gravel geldt — onverhard is daar juist gewenst. Providers zonder apart
+  // gravelprofiel mappen dit intern op hun reguliere fietsprofiel.
+  "cycling-gravel",
   "foot-walking",
   "foot-hiking",
   // Voertuigprofiel voor de volgauto (Opdracht 3). Wordt NOOIT gebruikt voor

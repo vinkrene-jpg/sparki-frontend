@@ -50,7 +50,10 @@ export function selectRoutingProfile(
     default:
       if (input.bikeType === "racefiets") return "cycling-road";
       if (input.bikeType === "mtb") return "cycling-mountain";
-      if (input.bikeType === "gravel") return "cycling-regular";
+      // Gravel (taak #445): eigen profiel — deelt NIET de harde
+      // 0%-onverhard-afkeur van cycling-regular (gewone fiets, taak #441);
+      // onverhard wegdek is op gravel juist het doel.
+      if (input.bikeType === "gravel") return "cycling-gravel";
       // No bike type given: prefer a mountain profile only when the rider
       // explicitly wants climbing/trails, otherwise a versatile mixed profile.
       return wantsTrail ? "cycling-mountain" : "cycling-regular";
@@ -66,6 +69,8 @@ export function profileToSurface(profile: RoutingProfile): RouteSurface {
       return "mtb";
     case "cycling-regular":
       return "mixed";
+    case "cycling-gravel":
+      return "gravel";
     case "foot-walking":
       return "asfalt";
     case "foot-hiking":
@@ -85,6 +90,9 @@ export function profileCruisingSpeedKmh(profile: RoutingProfile): number {
       return 30;
     case "cycling-regular":
       return 24;
+    case "cycling-gravel":
+      // Iets langzamer dan de toerfiets: gemengd/onverhard terrein.
+      return 22;
     case "cycling-mountain":
       return 18;
     case "foot-walking":
@@ -110,7 +118,9 @@ export function activityLabel(profile: RoutingProfile): string {
     case "cycling-mountain":
       return "mountainbike (onverhard)";
     case "cycling-regular":
-      return "gravel-/toerfiets (gemengd)";
+      return "toer-/stadsfiets (verhard)";
+    case "cycling-gravel":
+      return "gravelfiets (gemengd/onverhard)";
     case "foot-walking":
       return "wandel-/looproute (verhard)";
     case "foot-hiking":

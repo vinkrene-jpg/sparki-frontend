@@ -52,7 +52,7 @@ export function disciplineToBike(discipline: string | null): BikeType {
 // a workout's duration. The actual distance always comes back from the provider.
 function bikeProfile(bike: BikeType): RoutingProfile {
   if (bike === "mtb") return "cycling-mountain";
-  if (bike === "gravel") return "cycling-regular";
+  if (bike === "gravel") return "cycling-gravel";
   return "cycling-road";
 }
 
