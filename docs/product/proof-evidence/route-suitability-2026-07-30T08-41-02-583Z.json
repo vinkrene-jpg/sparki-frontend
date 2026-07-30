@@ -1,0 +1,103 @@
+{
+  "ranAt": "2026-07-30T08:41:02.584Z",
+  "acceptatiegrenzen": "PO-01 30-07-2026 (0% onverhard racefiets, verbod = afkeur, onbekend eerlijk)",
+  "verdict": "PASS",
+  "selection": {
+    "profiles": [
+      "gewone fiets"
+    ],
+    "starts": [
+      "Hengelo (Ov) — Twente",
+      "Utrecht — stad",
+      "Eindhoven — stad",
+      "Baambrugge — platteland (polder)"
+    ]
+  },
+  "measuredPerProfile": {
+    "gewone fiets": 4
+  },
+  "honestNoRoute": {},
+  "honestNoRoutePerTerrain": {},
+  "providerFailed": {},
+  "failures": [],
+  "routes": [
+    {
+      "start": "Hengelo (Ov) — Twente",
+      "terrain": "twente",
+      "bike": "gewone fiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 44.42,
+      "ascentM": 361,
+      "pavedFraction": 0.991467418532228,
+      "surfaceUnknownShare": 0.15848014349277972,
+      "certainForbidden": [],
+      "unpaved": [
+        {
+          "id": "way/6669236",
+          "km": 7.6,
+          "evidence": "surface=sand",
+          "offRouteM": 1
+        },
+        {
+          "id": "way/6669235",
+          "km": 7.8,
+          "evidence": "smoothness=bad",
+          "offRouteM": 2
+        },
+        {
+          "id": "way/24209538",
+          "km": 31.5,
+          "evidence": "smoothness=bad",
+          "offRouteM": 0
+        }
+      ]
+    },
+    {
+      "start": "Utrecht — stad",
+      "terrain": "stad",
+      "bike": "gewone fiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 50.76,
+      "ascentM": 101,
+      "pavedFraction": 0.9981870026402091,
+      "surfaceUnknownShare": 0.14075292457544653,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Eindhoven — stad",
+      "terrain": "stad",
+      "bike": "gewone fiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 47.67,
+      "ascentM": 81,
+      "pavedFraction": 0.9543131476175103,
+      "surfaceUnknownShare": 0.36483416847251793,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Baambrugge — platteland (polder)",
+      "terrain": "platteland",
+      "bike": "gewone fiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 55.71,
+      "ascentM": 132,
+      "pavedFraction": 0.9409005067075497,
+      "surfaceUnknownShare": 0.1977553999697872,
+      "certainForbidden": [],
+      "unpaved": [
+        {
+          "id": "way/7067763",
+          "km": 37.9,
+          "evidence": "surface=unpaved",
+          "offRouteM": 4
+        }
+      ]
+    }
+  ]
+}

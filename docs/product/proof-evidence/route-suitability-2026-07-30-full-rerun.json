@@ -1,0 +1,460 @@
+{
+  "ranAt": "2026-07-30T08:45:00Z",
+  "kind": "gecombineerde volledige run (taak #448) — deelruns wegens shell-tijdslimiet, bronbestanden hieronder",
+  "sourceFiles": [
+    "route-suitability-2026-07-30T08-23-02-252Z.json",
+    "route-suitability-2026-07-30T08-26-42-497Z.json",
+    "route-suitability-2026-07-30T08-30-14-073Z.json",
+    "route-suitability-2026-07-30T08-34-54-815Z.json",
+    "route-suitability-2026-07-30T08-37-10-992Z.json",
+    "route-suitability-2026-07-30T08-41-02-583Z.json",
+    "route-suitability-2026-07-30T08-42-21-972Z.json"
+  ],
+  "acceptatiegrenzen": "PO-01 30-07-2026 (0% onverhard racefiets, verbod = afkeur, onbekend eerlijk)",
+  "engineState": "GraphHopper custom model wordt écht meegestuurd + absolute weigeringspoort (trap/fietsverbod/afgesloten poort; racefiets ook onverhard) actief",
+  "coverage": "7 startpunten (stad ×2, platteland ×2, Twente, heuvels, Veluwe gravel-rijk) × racefiets/gravel/gewone fiets (gewone fiets deelt in de huidige motor het cycling-regular-profiel; aparte seeds → andere routes)",
+  "verdict": "FAIL",
+  "measuredPerProfile": {
+    "racefiets": 7,
+    "gravel": 7,
+    "gewone fiets": 7
+  },
+  "honestNoRoute": {
+    "racefiets": 2,
+    "gravel": 1,
+    "gewone fiets": 1
+  },
+  "honestNoRoutePerTerrain": {
+    "racefiets × platteland": 1,
+    "racefiets × gravelrijk": 1,
+    "gravel × heuvels": 1,
+    "gewone fiets × platteland": 1
+  },
+  "providerFailed": {},
+  "failures": [
+    "Maastricht — heuvels × racefiets: routebron meet 0.8% onverhard van het gemeten wegdek (grens: 0%)"
+  ],
+  "routes": [
+    {
+      "start": "Hengelo (Ov) — Twente",
+      "terrain": "twente",
+      "bike": "racefiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 49.76,
+      "ascentM": 408,
+      "pavedFraction": 1,
+      "surfaceUnknownShare": 0.04210500244179061,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Utrecht — stad",
+      "terrain": "stad",
+      "bike": "racefiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 53.14,
+      "ascentM": 158,
+      "pavedFraction": 0.9996251049965914,
+      "surfaceUnknownShare": 0.10764437721105469,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Eindhoven — stad",
+      "terrain": "stad",
+      "bike": "racefiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 52.71,
+      "ascentM": 89,
+      "pavedFraction": 0.9997898148474562,
+      "surfaceUnknownShare": 0.0587208452828758,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Baambrugge — platteland (polder)",
+      "terrain": "platteland",
+      "bike": "racefiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 49.99,
+      "ascentM": 110,
+      "pavedFraction": 1,
+      "surfaceUnknownShare": 0.20376721709344714,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Dalfsen — platteland (Salland)",
+      "terrain": "platteland",
+      "bike": "racefiets",
+      "generated": false,
+      "hardRejected": true,
+      "rejectionReason": "aantoonbaar onverhard wegdek (4 vakken)"
+    },
+    {
+      "start": "Maastricht — heuvels",
+      "terrain": "heuvels",
+      "bike": "racefiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 54.58,
+      "ascentM": 319,
+      "pavedFraction": 0.9916764671271878,
+      "surfaceUnknownShare": 0.09330312505172522,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Otterlo — Veluwe (gravel-rijk)",
+      "terrain": "gravelrijk",
+      "bike": "racefiets",
+      "generated": false,
+      "hardRejected": true,
+      "rejectionReason": "aantoonbaar onverhard wegdek (1 vak)"
+    },
+    {
+      "start": "Hengelo (Ov) — Twente",
+      "terrain": "twente",
+      "bike": "gravel",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 47.59,
+      "ascentM": 506,
+      "pavedFraction": 0.8647971136521044,
+      "surfaceUnknownShare": 0.10379540778450325,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Utrecht — stad",
+      "terrain": "stad",
+      "bike": "gravel",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 51.51,
+      "ascentM": 72,
+      "pavedFraction": 0.9293807083962411,
+      "surfaceUnknownShare": 0.1970608432050729,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Eindhoven — stad",
+      "terrain": "stad",
+      "bike": "gravel",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 50.01,
+      "ascentM": 76,
+      "pavedFraction": 0.985535420770104,
+      "surfaceUnknownShare": 0.2639620461613419,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Baambrugge — platteland (polder)",
+      "terrain": "platteland",
+      "bike": "gravel",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 44.65,
+      "ascentM": 114,
+      "pavedFraction": 1,
+      "surfaceUnknownShare": 0.2670202470028682,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Dalfsen — platteland (Salland)",
+      "terrain": "platteland",
+      "bike": "gravel",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 49.32,
+      "ascentM": 261,
+      "pavedFraction": 0.9694719191314204,
+      "surfaceUnknownShare": 0.11772692915718375,
+      "certainForbidden": [],
+      "unpaved": [
+        {
+          "id": "way/116500551",
+          "km": 19.2,
+          "evidence": "surface=sand",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/1451205175",
+          "km": 22.6,
+          "evidence": "surface=grass",
+          "offRouteM": 2
+        },
+        {
+          "id": "way/39428510",
+          "km": 29.3,
+          "evidence": "smoothness=bad",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/387443281",
+          "km": 29.7,
+          "evidence": "surface=fine_gravel",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/777467220",
+          "km": 30.2,
+          "evidence": "surface=dirt",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/887036187",
+          "km": 31.2,
+          "evidence": "surface=dirt",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/508728791",
+          "km": 31.5,
+          "evidence": "surface=dirt",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/508728781",
+          "km": 32.1,
+          "evidence": "surface=fine_gravel",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/1124872146",
+          "km": 33,
+          "evidence": "surface=ground",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/389382347",
+          "km": 33.9,
+          "evidence": "surface=dirt",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/508731140",
+          "km": 35.6,
+          "evidence": "surface=dirt",
+          "offRouteM": 0
+        }
+      ]
+    },
+    {
+      "start": "Maastricht — heuvels",
+      "terrain": "heuvels",
+      "bike": "gravel",
+      "generated": false,
+      "hardRejected": true,
+      "rejectionReason": "fietsverbod of trap (forbidden=0 steps=5)"
+    },
+    {
+      "start": "Otterlo — Veluwe (gravel-rijk)",
+      "terrain": "gravelrijk",
+      "bike": "gravel",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 50.14,
+      "ascentM": 448,
+      "pavedFraction": 0.9994227975068455,
+      "surfaceUnknownShare": 0.14254992579658365,
+      "certainForbidden": [],
+      "unpaved": [
+        {
+          "id": "way/42859969",
+          "km": 24.4,
+          "evidence": "surface=dirt",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/6959700",
+          "km": 26.2,
+          "evidence": "surface=gravel",
+          "offRouteM": 4
+        },
+        {
+          "id": "way/27784366",
+          "km": 27.8,
+          "evidence": "surface=sand",
+          "offRouteM": 2
+        },
+        {
+          "id": "way/26694427",
+          "km": 43.6,
+          "evidence": "surface=sand",
+          "offRouteM": 0
+        }
+      ]
+    },
+    {
+      "start": "Hengelo (Ov) — Twente",
+      "terrain": "twente",
+      "bike": "gewone fiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 44.42,
+      "ascentM": 361,
+      "pavedFraction": 0.991467418532228,
+      "surfaceUnknownShare": 0.15848014349277972,
+      "certainForbidden": [],
+      "unpaved": [
+        {
+          "id": "way/6669236",
+          "km": 7.6,
+          "evidence": "surface=sand",
+          "offRouteM": 1
+        },
+        {
+          "id": "way/6669235",
+          "km": 7.8,
+          "evidence": "smoothness=bad",
+          "offRouteM": 2
+        },
+        {
+          "id": "way/24209538",
+          "km": 31.5,
+          "evidence": "smoothness=bad",
+          "offRouteM": 0
+        }
+      ]
+    },
+    {
+      "start": "Utrecht — stad",
+      "terrain": "stad",
+      "bike": "gewone fiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 50.76,
+      "ascentM": 101,
+      "pavedFraction": 0.9981870026402091,
+      "surfaceUnknownShare": 0.14075292457544653,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Eindhoven — stad",
+      "terrain": "stad",
+      "bike": "gewone fiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 47.67,
+      "ascentM": 81,
+      "pavedFraction": 0.9543131476175103,
+      "surfaceUnknownShare": 0.36483416847251793,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Baambrugge — platteland (polder)",
+      "terrain": "platteland",
+      "bike": "gewone fiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 55.71,
+      "ascentM": 132,
+      "pavedFraction": 0.9409005067075497,
+      "surfaceUnknownShare": 0.1977553999697872,
+      "certainForbidden": [],
+      "unpaved": [
+        {
+          "id": "way/7067763",
+          "km": 37.9,
+          "evidence": "surface=unpaved",
+          "offRouteM": 4
+        }
+      ]
+    },
+    {
+      "start": "Dalfsen — platteland (Salland)",
+      "terrain": "platteland",
+      "bike": "gewone fiets",
+      "generated": false,
+      "hardRejected": true,
+      "rejectionReason": "fietsverbod of trap (forbidden=0 steps=1)"
+    },
+    {
+      "start": "Maastricht — heuvels",
+      "terrain": "heuvels",
+      "bike": "gewone fiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 46.98,
+      "ascentM": 363,
+      "pavedFraction": 0.9298774662945763,
+      "surfaceUnknownShare": 0.2241198006191688,
+      "certainForbidden": [],
+      "unpaved": [
+        {
+          "id": "way/6766550",
+          "km": 32,
+          "evidence": "surface=compacted",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/7125964",
+          "km": 45.4,
+          "evidence": "surface=sett",
+          "offRouteM": 0
+        }
+      ]
+    },
+    {
+      "start": "Otterlo — Veluwe (gravel-rijk)",
+      "terrain": "gravelrijk",
+      "bike": "gewone fiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 49.2,
+      "ascentM": 396,
+      "pavedFraction": 0.9927333789004221,
+      "surfaceUnknownShare": 0.04785808892796839,
+      "certainForbidden": [],
+      "unpaved": [
+        {
+          "id": "way/155295954",
+          "km": 1.4,
+          "evidence": "surface=fine_gravel",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/60076269",
+          "km": 11.8,
+          "evidence": "surface=ground",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/32887502",
+          "km": 13.5,
+          "evidence": "surface=compacted",
+          "offRouteM": 3
+        },
+        {
+          "id": "way/187823621",
+          "km": 30.4,
+          "evidence": "surface=ground",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/148893215",
+          "km": 35,
+          "evidence": "surface=ground",
+          "offRouteM": 5
+        },
+        {
+          "id": "way/97061568",
+          "km": 47.8,
+          "evidence": "surface=dirt",
+          "offRouteM": 0
+        }
+      ]
+    }
+  ]
+}

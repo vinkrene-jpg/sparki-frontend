@@ -24,5 +24,8 @@ description: Waarom/hoe GH de route-motor is (racingbike/mtb, surface-details), 
 - Kernoorzaken (art. 5): (1) geen harde afkeurpoort ná generatie (best-of-slechte wordt getoond, alleen eerlijk gelabeld) — bouwen is een open productkeuze (kost latency/"geen route"); (2) GH-graaf ↔ actuele OSM spreken elkaar aantoonbaar tegen (GH 99,9% verhard waar Overpass sand/compacted op de lijn meet; scherm mat 60,7% onbekend waar GH 14% zei).
 - Gebruikersbril-check MOET via het echte app-pad (`POST /api/routes/generate`, veld heet `targetDistanceKm`, niet `distanceKm` — fout veld = stille default 40 km) + het echte routescherm; het harnas alleen is niet representatief.
 
+
+## Bron-pavedFraction vs onafhankelijke nameting (30-07-2026, volledige proof-rerun)
+Volledige suitability-run (7 starts × racefiets/gravel/gewone fiets) na custom-model-fix + harde poort: alles PASS behalve Maastricht × racefiets, waar de **routebron zelf** 0,8% onverhard rapporteert terwijl de Overpass-nameting 0 vakken vindt. Les: de harde afkeurpoort kijkt alleen naar de nameting (obstaclesOf); de bron-grens (pavedFraction<0.9995) in het harnas kan dus falen zonder dat de motor weigert. Wie de 0%-belofte sluitend wil maken moet óf de bron-pavedFraction in de poort meenemen, óf verklaren waarom bron en nameting verschillen (bijv. GH-surface vs OSM-remarks-classificatie).
 ## Gravel-profiel (taak #445)
 - bikeType "gravel" heeft een EIGEN RoutingProfile `cycling-gravel` (GH "bike" + mild gravel-model; ORS mapt intern op cycling-regular). De harde 0%-onverhard-poort (hardRejectIfNeeded + +1000-straf in loop-quality) geldt alleen voor cycling-road en cycling-regular — nooit key'en op gedeeld provider-profiel maar op RoutingProfile per fietstype.

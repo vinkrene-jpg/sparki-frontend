@@ -1,0 +1,154 @@
+{
+  "ranAt": "2026-07-30T08:37:11.066Z",
+  "acceptatiegrenzen": "PO-01 30-07-2026 (0% onverhard racefiets, verbod = afkeur, onbekend eerlijk)",
+  "verdict": "PASS",
+  "selection": {
+    "profiles": [
+      "gravel"
+    ],
+    "starts": [
+      "Dalfsen — platteland (Salland)",
+      "Maastricht — heuvels",
+      "Otterlo — Veluwe (gravel-rijk)"
+    ]
+  },
+  "measuredPerProfile": {
+    "gravel": 3
+  },
+  "honestNoRoute": {
+    "gravel": 1
+  },
+  "honestNoRoutePerTerrain": {
+    "gravel × heuvels": 1
+  },
+  "providerFailed": {},
+  "failures": [],
+  "routes": [
+    {
+      "start": "Dalfsen — platteland (Salland)",
+      "terrain": "platteland",
+      "bike": "gravel",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 49.32,
+      "ascentM": 261,
+      "pavedFraction": 0.9694719191314204,
+      "surfaceUnknownShare": 0.11772692915718375,
+      "certainForbidden": [],
+      "unpaved": [
+        {
+          "id": "way/116500551",
+          "km": 19.2,
+          "evidence": "surface=sand",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/1451205175",
+          "km": 22.6,
+          "evidence": "surface=grass",
+          "offRouteM": 2
+        },
+        {
+          "id": "way/39428510",
+          "km": 29.3,
+          "evidence": "smoothness=bad",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/387443281",
+          "km": 29.7,
+          "evidence": "surface=fine_gravel",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/777467220",
+          "km": 30.2,
+          "evidence": "surface=dirt",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/887036187",
+          "km": 31.2,
+          "evidence": "surface=dirt",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/508728791",
+          "km": 31.5,
+          "evidence": "surface=dirt",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/508728781",
+          "km": 32.1,
+          "evidence": "surface=fine_gravel",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/1124872146",
+          "km": 33,
+          "evidence": "surface=ground",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/389382347",
+          "km": 33.9,
+          "evidence": "surface=dirt",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/508731140",
+          "km": 35.6,
+          "evidence": "surface=dirt",
+          "offRouteM": 0
+        }
+      ]
+    },
+    {
+      "start": "Maastricht — heuvels",
+      "terrain": "heuvels",
+      "bike": "gravel",
+      "generated": false,
+      "hardRejected": true,
+      "rejectionReason": "fietsverbod of trap (forbidden=0 steps=5)"
+    },
+    {
+      "start": "Otterlo — Veluwe (gravel-rijk)",
+      "terrain": "gravelrijk",
+      "bike": "gravel",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 50.14,
+      "ascentM": 448,
+      "pavedFraction": 0.9994227975068455,
+      "surfaceUnknownShare": 0.14254992579658365,
+      "certainForbidden": [],
+      "unpaved": [
+        {
+          "id": "way/42859969",
+          "km": 24.4,
+          "evidence": "surface=dirt",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/6959700",
+          "km": 26.2,
+          "evidence": "surface=gravel",
+          "offRouteM": 4
+        },
+        {
+          "id": "way/27784366",
+          "km": 27.8,
+          "evidence": "surface=sand",
+          "offRouteM": 2
+        },
+        {
+          "id": "way/26694427",
+          "km": 43.6,
+          "evidence": "surface=sand",
+          "offRouteM": 0
+        }
+      ]
+    }
+  ]
+}

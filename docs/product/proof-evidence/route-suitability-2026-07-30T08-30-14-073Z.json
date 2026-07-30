@@ -1,0 +1,50 @@
+{
+  "ranAt": "2026-07-30T08:30:14.073Z",
+  "acceptatiegrenzen": "PO-01 30-07-2026 (0% onverhard racefiets, verbod = afkeur, onbekend eerlijk)",
+  "verdict": "FAIL",
+  "selection": {
+    "profiles": [
+      "racefiets"
+    ],
+    "starts": [
+      "Maastricht — heuvels",
+      "Otterlo — Veluwe (gravel-rijk)"
+    ]
+  },
+  "measuredPerProfile": {
+    "racefiets": 2
+  },
+  "honestNoRoute": {
+    "racefiets": 1
+  },
+  "honestNoRoutePerTerrain": {
+    "racefiets × gravelrijk": 1
+  },
+  "providerFailed": {},
+  "failures": [
+    "Maastricht — heuvels × racefiets: routebron meet 0.8% onverhard van het gemeten wegdek (grens: 0%)"
+  ],
+  "routes": [
+    {
+      "start": "Maastricht — heuvels",
+      "terrain": "heuvels",
+      "bike": "racefiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 54.58,
+      "ascentM": 319,
+      "pavedFraction": 0.9916764671271878,
+      "surfaceUnknownShare": 0.09330312505172522,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Otterlo — Veluwe (gravel-rijk)",
+      "terrain": "gravelrijk",
+      "bike": "racefiets",
+      "generated": false,
+      "hardRejected": true,
+      "rejectionReason": "aantoonbaar onverhard wegdek (1 vak)"
+    }
+  ]
+}

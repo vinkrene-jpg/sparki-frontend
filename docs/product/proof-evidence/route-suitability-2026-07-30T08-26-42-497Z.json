@@ -1,0 +1,62 @@
+{
+  "ranAt": "2026-07-30T08:26:42.571Z",
+  "acceptatiegrenzen": "PO-01 30-07-2026 (0% onverhard racefiets, verbod = afkeur, onbekend eerlijk)",
+  "verdict": "PASS",
+  "selection": {
+    "profiles": [
+      "racefiets"
+    ],
+    "starts": [
+      "Eindhoven — stad",
+      "Baambrugge — platteland (polder)",
+      "Dalfsen — platteland (Salland)"
+    ]
+  },
+  "measuredPerProfile": {
+    "racefiets": 3
+  },
+  "honestNoRoute": {
+    "racefiets": 1
+  },
+  "honestNoRoutePerTerrain": {
+    "racefiets × platteland": 1
+  },
+  "providerFailed": {},
+  "failures": [],
+  "routes": [
+    {
+      "start": "Eindhoven — stad",
+      "terrain": "stad",
+      "bike": "racefiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 52.71,
+      "ascentM": 89,
+      "pavedFraction": 0.9997898148474562,
+      "surfaceUnknownShare": 0.0587208452828758,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Baambrugge — platteland (polder)",
+      "terrain": "platteland",
+      "bike": "racefiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 49.99,
+      "ascentM": 110,
+      "pavedFraction": 1,
+      "surfaceUnknownShare": 0.20376721709344714,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Dalfsen — platteland (Salland)",
+      "terrain": "platteland",
+      "bike": "racefiets",
+      "generated": false,
+      "hardRejected": true,
+      "rejectionReason": "aantoonbaar onverhard wegdek (4 vakken)"
+    }
+  ]
+}

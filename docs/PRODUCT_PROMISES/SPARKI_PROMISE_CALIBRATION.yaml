@@ -17,7 +17,7 @@ chapter_d_routes_en_navigatie:
     current_state:
       technical_status: implemented
       source_snapshot: 2026-07-30
-      evidence_status: "Deels: geautomatiseerde route-suitability-proof bestaat (docs/product/proof-evidence/route-suitability-*.json); laatste volledige run vóór de motor-fix van 30-07 faalde op onverhard-grenzen; taken #437/#441/#442 (harde afkeurpoort + bewijs) net gemerged, nieuwe volledige run tegen René's grenzen staat nog uit."
+      evidence_status: "Vers: volledige post-fix run 30-07 (route-suitability-2026-07-30-full-rerun.json): 7 startpunten × racefiets/gravel/gewone fiets, 21/21 onafhankelijk gedekt; racefiets 0 aantoonbaar onverhard op alle geleverde routes; 4 eerlijke harde afkeuringen (racefiets Veluwe/Salland, gravel heuvels, gewone fiets polder); 1 restafwijking: Maastricht racefiets 0,8% onverhard volgens de routebron zelf (nameting: 0 vakken)."
       practice_status: "René test mee in de praktijk (Hengelo/Zwolle-lussen); eerdere praktijktests vonden gravel op 'verharde' routes — aanleiding voor de 30-07-besluiten."
       known_limitations:
         - "GraphHopper custom model kent geen bike_access; fietslegaliteit leunt op het racingbike/bike-profiel zelf plus de Overpass-nameting achteraf."
@@ -171,10 +171,11 @@ chapter_d_routes_en_navigatie:
       score: null
       status: not_proven
       evidence_refs:
-        - "docs/product/proof-evidence/route-suitability-*.json (pre-fix run: FAIL op onverhard-grenzen — eerlijk vastgelegd)"
+        - "docs/product/proof-evidence/route-suitability-2026-07-30-full-rerun.json (post-fix run 30-07, taak #448: 7 startpunten × racefiets/gravel/gewone fiets, 21/21 gedekt; 4× eerlijke harde afkeur (o.a. racefiets in gravel-rijk Veluwe en Salland); 1 restafwijking: Maastricht racefiets 0,8% onverhard volgens de routebron zelf — onafhankelijke nameting vond 0 vakken)"
+        - "docs/product/proof-evidence/route-suitability-*.json (oudere pre-fix runs: FAIL op onverhard-grenzen — eerlijk bewaard)"
     next_action:
       type: research_or_build_or_retest
-      description: "Volledige suitability-proof her-runnen nu custom model + absolute poort actief zijn (meerdere startpunten, racefiets/gravel), en de kalibratievragen door René laten beantwoorden."
+      description: "Restafwijking oplossen: bron-pavedFraction <100% (Maastricht racefiets 0,8%) terwijl de onafhankelijke nameting 0 onverharde vakken vindt — bepalen of de bronmeting of de poort moet aanscherpen; daarna kalibratievragen door René laten beantwoorden."
       approved_for_execution: false
 
   - id: ROUTES_HOOGTEPROFIEL_001

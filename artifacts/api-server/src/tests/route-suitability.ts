@@ -58,6 +58,9 @@ const STARTS = [
   { name: "Baambrugge — platteland (polder)", terrain: "platteland", lat: 52.246, lon: 4.989 },
   { name: "Dalfsen — platteland (Salland)", terrain: "platteland", lat: 52.512, lon: 6.259 },
   { name: "Maastricht — heuvels", terrain: "heuvels", lat: 50.85, lon: 5.69 },
+  // Gravel-rijk gebied (taak #448): de Veluwe heeft veel onverharde bospaden —
+  // hier moet de racefiets-belofte eerlijk falen als er geen verharde lus is.
+  { name: "Otterlo — Veluwe (gravel-rijk)", terrain: "gravelrijk", lat: 52.098, lon: 5.772 },
 ];
 
 // Profielen onder de belofte: racefiets én gewone fiets (cycling-regular)
@@ -66,14 +69,18 @@ const STARTS = [
 // maar het profiel dekt René's "gewone fiets". De gravelfiets zelf rijdt
 // sinds taak #445 op een eigen profiel (cycling-gravel) zonder die grens.
 const ALL_PROFILES = [
-  { label: "racefiets", profile: "cycling-road" as const },
-  { label: "gravel", profile: "cycling-regular" as const },
+  { label: "racefiets", profile: "cycling-road" as const, seedOffset: 0 },
+  { label: "gravel", profile: "cycling-regular" as const, seedOffset: 0 },
   // Gravelfiets (taak #445): eigen profiel zónder de 0%-onverhard-grens.
   // Grenzen hier: route moet gewoon GEGENEREERD worden (geen harde
   // onverhard-afkeur — die poort geldt niet voor gravel) en het verbods-
   // criterium (grens 2) blijft onverkort gelden. Onverhard wordt eerlijk
   // gemeten en vastgelegd, maar is geen afkeur.
-  { label: "gravelfiets", profile: "cycling-gravel" as const },
+  { label: "gravelfiets", profile: "cycling-gravel" as const, seedOffset: 0 },
+  // Gewone fiets (taak #448): deelt het cycling-regular-profiel (en sinds
+  // taak #441 de 0%-onverhard-grens) met het "gravel"-label hierboven.
+  // Aparte seeds zodat dit ANDERE routes toetst — geen kopie van die meting.
+  { label: "gewone fiets", profile: "cycling-regular" as const, seedOffset: 40 },
 ];
 // Deelruns (sandbox-shellcalls hebben een tijdslimiet): SUIT_PROFILE=racefiets|gravel
 // en SUIT_STARTS=0,1,2 beperken de run; het bewijsbestand vermeldt de selectie.
@@ -97,6 +104,12 @@ async function main() {
   const failures: string[] = [];
   const evidence: Record<string, unknown>[] = [];
   const measuredPerProfile: Record<string, number> = {};
+  // Eerlijke faal-telling (taak #448): "geen geschikte route" (harde afkeur)
+  // apart geteld per profiel én per terrein, zodat de slaagkans in
+  // gravel-rijke regio's zichtbaar is — dit is GEWENST gedrag, geen fout.
+  const honestNoRoute: Record<string, number> = {};
+  const honestNoRoutePerTerrain: Record<string, number> = {};
+  const providerFailed: Record<string, number> = {};
 
   for (const p of PROFILES) {
     for (const [i, s] of STARTS.entries()) {
@@ -110,7 +123,7 @@ async function main() {
             start: { lat: s.lat, lon: s.lon },
             distanceKm: 50,
             profile: p.profile,
-            seed: 100 + i,
+            seed: 100 + i + p.seedOffset,
           },
           {
             // Harde afkeurpoort (taak #437): obstakels meten zodat de motor
@@ -152,12 +165,16 @@ async function main() {
           });
           // Harde afkeur telt WEL als gedekte route voor de minimale dekkingseis.
           measuredPerProfile[p.label] = (measuredPerProfile[p.label] ?? 0) + 1;
+          honestNoRoute[p.label] = (honestNoRoute[p.label] ?? 0) + 1;
+          honestNoRoutePerTerrain[`${p.label} × ${s.terrain}`] =
+            (honestNoRoutePerTerrain[`${p.label} × ${s.terrain}`] ?? 0) + 1;
           continue;
         }
         // Echte providerfout (bijv. GraphHopper neer, netwerk) — belofte
         // niet toetsbaar voor dit startpunt.
         console.log(`${label}: geen route (${err instanceof Error ? err.message : err})`);
         evidence.push({ start: s.name, terrain: s.terrain, bike: p.label, generated: false });
+        providerFailed[p.label] = (providerFailed[p.label] ?? 0) + 1;
         failures.push(`${label}: generatie faalde — belofte hier niet leverbaar`);
         continue;
       }
@@ -269,7 +286,18 @@ async function main() {
           ranAt: new Date().toISOString(),
           acceptatiegrenzen: "PO-01 30-07-2026 (0% onverhard racefiets, verbod = afkeur, onbekend eerlijk)",
           verdict: failures.length > 0 ? "FAIL" : "PASS",
+          // Deelrun-selectie (leeg = volledige run) zodat gecombineerde
+          // bewijsbestanden eerlijk te beoordelen zijn.
+          selection: {
+            profiles: PROFILES.map((p) => p.label),
+            starts: STARTS.filter((_, i) => !START_FILTER || START_FILTER.has(i)).map((s) => s.name),
+          },
           measuredPerProfile,
+          // Eerlijke "geen geschikte route"-tellingen (harde afkeur = gewenst
+          // gedrag) en echte providerfouten, apart van elkaar.
+          honestNoRoute,
+          honestNoRoutePerTerrain,
+          providerFailed,
           failures,
           routes: evidence,
         },

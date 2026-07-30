@@ -1,0 +1,77 @@
+{
+  "ranAt": "2026-07-30T08:34:54.816Z",
+  "acceptatiegrenzen": "PO-01 30-07-2026 (0% onverhard racefiets, verbod = afkeur, onbekend eerlijk)",
+  "verdict": "PASS",
+  "selection": {
+    "profiles": [
+      "gravel"
+    ],
+    "starts": [
+      "Hengelo (Ov) — Twente",
+      "Utrecht — stad",
+      "Eindhoven — stad",
+      "Baambrugge — platteland (polder)"
+    ]
+  },
+  "measuredPerProfile": {
+    "gravel": 4
+  },
+  "honestNoRoute": {},
+  "honestNoRoutePerTerrain": {},
+  "providerFailed": {},
+  "failures": [],
+  "routes": [
+    {
+      "start": "Hengelo (Ov) — Twente",
+      "terrain": "twente",
+      "bike": "gravel",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 47.59,
+      "ascentM": 506,
+      "pavedFraction": 0.8647971136521044,
+      "surfaceUnknownShare": 0.10379540778450325,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Utrecht — stad",
+      "terrain": "stad",
+      "bike": "gravel",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 51.51,
+      "ascentM": 72,
+      "pavedFraction": 0.9293807083962411,
+      "surfaceUnknownShare": 0.1970608432050729,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Eindhoven — stad",
+      "terrain": "stad",
+      "bike": "gravel",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 50.01,
+      "ascentM": 76,
+      "pavedFraction": 0.985535420770104,
+      "surfaceUnknownShare": 0.2639620461613419,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Baambrugge — platteland (polder)",
+      "terrain": "platteland",
+      "bike": "gravel",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 44.65,
+      "ascentM": 114,
+      "pavedFraction": 1,
+      "surfaceUnknownShare": 0.2670202470028682,
+      "certainForbidden": [],
+      "unpaved": []
+    }
+  ]
+}

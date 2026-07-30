@@ -1,0 +1,112 @@
+{
+  "ranAt": "2026-07-30T08:42:21.972Z",
+  "acceptatiegrenzen": "PO-01 30-07-2026 (0% onverhard racefiets, verbod = afkeur, onbekend eerlijk)",
+  "verdict": "PASS",
+  "selection": {
+    "profiles": [
+      "gewone fiets"
+    ],
+    "starts": [
+      "Dalfsen — platteland (Salland)",
+      "Maastricht — heuvels",
+      "Otterlo — Veluwe (gravel-rijk)"
+    ]
+  },
+  "measuredPerProfile": {
+    "gewone fiets": 3
+  },
+  "honestNoRoute": {
+    "gewone fiets": 1
+  },
+  "honestNoRoutePerTerrain": {
+    "gewone fiets × platteland": 1
+  },
+  "providerFailed": {},
+  "failures": [],
+  "routes": [
+    {
+      "start": "Dalfsen — platteland (Salland)",
+      "terrain": "platteland",
+      "bike": "gewone fiets",
+      "generated": false,
+      "hardRejected": true,
+      "rejectionReason": "fietsverbod of trap (forbidden=0 steps=1)"
+    },
+    {
+      "start": "Maastricht — heuvels",
+      "terrain": "heuvels",
+      "bike": "gewone fiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 46.98,
+      "ascentM": 363,
+      "pavedFraction": 0.9298774662945763,
+      "surfaceUnknownShare": 0.2241198006191688,
+      "certainForbidden": [],
+      "unpaved": [
+        {
+          "id": "way/6766550",
+          "km": 32,
+          "evidence": "surface=compacted",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/7125964",
+          "km": 45.4,
+          "evidence": "surface=sett",
+          "offRouteM": 0
+        }
+      ]
+    },
+    {
+      "start": "Otterlo — Veluwe (gravel-rijk)",
+      "terrain": "gravelrijk",
+      "bike": "gewone fiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 49.2,
+      "ascentM": 396,
+      "pavedFraction": 0.9927333789004221,
+      "surfaceUnknownShare": 0.04785808892796839,
+      "certainForbidden": [],
+      "unpaved": [
+        {
+          "id": "way/155295954",
+          "km": 1.4,
+          "evidence": "surface=fine_gravel",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/60076269",
+          "km": 11.8,
+          "evidence": "surface=ground",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/32887502",
+          "km": 13.5,
+          "evidence": "surface=compacted",
+          "offRouteM": 3
+        },
+        {
+          "id": "way/187823621",
+          "km": 30.4,
+          "evidence": "surface=ground",
+          "offRouteM": 0
+        },
+        {
+          "id": "way/148893215",
+          "km": 35,
+          "evidence": "surface=ground",
+          "offRouteM": 5
+        },
+        {
+          "id": "way/97061568",
+          "km": 47.8,
+          "evidence": "surface=dirt",
+          "offRouteM": 0
+        }
+      ]
+    }
+  ]
+}

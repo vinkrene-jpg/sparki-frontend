@@ -1,0 +1,49 @@
+{
+  "ranAt": "2026-07-30T08:23:02.252Z",
+  "acceptatiegrenzen": "PO-01 30-07-2026 (0% onverhard racefiets, verbod = afkeur, onbekend eerlijk)",
+  "verdict": "PASS",
+  "selection": {
+    "profiles": [
+      "racefiets"
+    ],
+    "starts": [
+      "Hengelo (Ov) — Twente",
+      "Utrecht — stad"
+    ]
+  },
+  "measuredPerProfile": {
+    "racefiets": 2
+  },
+  "honestNoRoute": {},
+  "honestNoRoutePerTerrain": {},
+  "providerFailed": {},
+  "failures": [],
+  "routes": [
+    {
+      "start": "Hengelo (Ov) — Twente",
+      "terrain": "twente",
+      "bike": "racefiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 49.76,
+      "ascentM": 408,
+      "pavedFraction": 1,
+      "surfaceUnknownShare": 0.04210500244179061,
+      "certainForbidden": [],
+      "unpaved": []
+    },
+    {
+      "start": "Utrecht — stad",
+      "terrain": "stad",
+      "bike": "racefiets",
+      "generated": true,
+      "measurable": true,
+      "distanceKm": 53.14,
+      "ascentM": 158,
+      "pavedFraction": 0.9996251049965914,
+      "surfaceUnknownShare": 0.10764437721105469,
+      "certainForbidden": [],
+      "unpaved": []
+    }
+  ]
+}
