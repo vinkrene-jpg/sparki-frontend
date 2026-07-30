@@ -683,8 +683,20 @@ chapter_d_routes_en_navigatie:
     rene_calibration:
       questions:
         - question: "Moet wedstrijdmodus extra's krijgen (bv. km-tot-finish prominenter, geen niet-kritieke meldingen), of is 'zelfde navigatie, parcours heilig' de juiste scope?"
-          answer_rene: "Voorlopige keuze: extra's toevoegen (finish-focus, stiltemodus), maar René begrijpt de implicaties nog onvoldoende — uitdiepingsvragen gesteld 2026-07-30, definitief antwoord volgt." # deels beantwoord 2026-07-30
-      completed: false # open: uitdieping wedstrijdmodus loopt
+          answer_rene: >-
+            Extra's toevoegen (uitgediept 2026-07-30). Gekozen extra's: stiltemodus (alleen
+            kritieke meldingen, geen coach-praatjes), parcours vooraf verkennen (klimmen,
+            gevaarlijke bochten, bevoorrading), waarschuwing vóór zware stukken tijdens de
+            koers, en parcours-afgestemde eet/drink-herinneringen. Harde randvoorwaarden van
+            René: (1) parcoursen kunnen rondjes bevatten — km-tot-finish moet ronde-bewust
+            zijn; (2) uit-de-koers-gehaald-scenario moet bestaan: renner vervolgt dan de
+            route terug naar de finish. Gewenste wedstrijd-HUD: grote ingezoomde kaart om
+            bochten in één oogopslag in te schatten; grote relevante data (snelheid, wattage
+            per ~3 s, evt. Di2-versnelling); popup voor eten/drinken met benodigde
+            koolhydraten op basis van het lichaam van de renner; gereden km en resterende
+            afstand groot; windrichting nu én prognose voor de laatste 500 m met een klein
+            kaartje van die laatste 500 m.
+      completed: true # uitgediept en beantwoord 2026-07-30 — scope is fors groter dan huidige module; vergt eigen beloftedefinitie vóór bouw
 
     acceptance_contract:
       hard_reject_rules:
@@ -774,8 +786,17 @@ chapter_d_routes_en_navigatie:
     rene_calibration:
       questions:
         - question: "Is een ruwe geschatte ETA (zonder file-informatie) goed genoeg voor de volgauto-belofte, of wil je verkeersbewuste ETA's (NDW-traject) vóór dit 'gereed' mag heten?"
-          answer_rene: "Ruwe schatting is goed genoeg mits eerlijk 'geschat' erbij. Maar: René vindt de volgauto-modus nu absoluut onvoldoende uitgebouwd — uitdiepingsvragen gesteld 2026-07-30 om de gewenste scope te bepalen." # deels beantwoord 2026-07-30
-      completed: false # open: uitdieping volgauto-scope loopt
+          answer_rene: >-
+            Ruwe schatting is goed genoeg mits eerlijk 'geschat' erbij. Uitgediepte gewenste
+            scope (2026-07-30) — René vindt de huidige module absoluut onvoldoende uitgebouwd.
+            Doelgroep: training én wedstrijd; chauffeurs: ploegleider, mechanieker, ouder,
+            vrijwilliger. Alles gewenst: echte autoroute-navigatie voor de chauffeur naar het
+            volgende ontmoetingspunt; slimme ontmoetingspunten vooraf plannen langs de
+            fietsroute; actieve meldingen aan de chauffeur (renner nadert, renner gestopt,
+            val-alarm); meerdere volgauto's/begeleiders tegelijk; kort signaal renner↔auto
+            (bv. 'bidon nodig'); achteraf terugkijken hoe de volgrit verliep. Bestaande harde
+            grens blijft: de fietsroute wordt door volgauto-functionaliteit nooit gewijzigd.
+      completed: true # uitgediept en beantwoord 2026-07-30 — gewenste scope is een forse uitbouw; huidige module telt niet als 'gereed' voor deze belofte
 
     acceptance_contract:
       hard_reject_rules:
