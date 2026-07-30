@@ -1,0 +1,232 @@
+OPDRACHT — FILTER EN ACTIVEER ALLEEN DE NOODZAKELIJKE ROUTE-DRAFTS
+
+DOEL
+Breng de routeplanner terug naar één betrouwbare keten waarin harde routeblokkades vóór acceptatie worden afgekeurd.
+
+Voer NIET alle drafts uit.
+Selecteer uitsluitend drafts die aantoonbaar nodig zijn om dit probleem end-to-end op te lossen.
+
+ACTUELE FOUT
+
+Een gepubliceerde MTB-route van 36,4 km bevatte 27 routeopmerkingen, waaronder:
+
+- afgesloten poort / privéterrein;
+- fietsen hier niet toegestaan;
+- meerdere poorten/hekken.
+
+Toch kreeg de route:
+
+- status KLAAR;
+- een actieve knop NAVIGEER;
+- een definitief routevoorstel.
+
+De code in route-remarks.ts herkent deze problemen al, maar de bevindingen worden kennelijk pas als opmerkingen getoond nadat de route al is geaccepteerd.
+
+HOOFDDOEL
+
+Koppel route-analyse, kandidaatselectie, opslag en navigatie tot één fail-closed kwaliteitsketen:
+
+route genereren
+→ route analyseren
+→ harde blokkades classificeren
+→ kandidaat afkeuren
+→ alternatief zoeken
+→ alleen geldige route tonen, opslaan en navigeren
+
+DRAFTSELECTIE
+
+Doorloop alle huidige route-gerelateerde Drafts en classificeer ze als:
+
+1. NODIG VOOR DEZE HERSTELKETEN
+2. DUBBEL OF OVERLAPPEND
+3. LATER NUTTIG
+4. NIET RELEVANT
+
+Selecteer alleen drafts die bijdragen aan:
+
+- analyse vóór routeacceptatie;
+- hard_blockage-classificatie;
+- kandidaat afkeuren;
+- alternatief zoeken;
+- blokkeren van KLAAR, opslaan en NAVIGEER;
+- echte gebruikerspadtests;
+- regressiecontrole op alle route-ingangen.
+
+Voer geen drafts uit die alleen:
+
+- extra badges toevoegen;
+- meer waarschuwingen tonen;
+- extra uitlegteksten toevoegen;
+- nieuwe losse analyses naast de bestaande keten bouwen;
+- een tweede parallel routesysteem introduceren;
+- bestaande werkende routearchitectuur vervangen.
+
+VERPLICHTE TECHNISCHE CONTROLE
+
+Inventariseer eerst de volledige keten:
+
+1. waar routekandidaten worden gegenereerd;
+2. waar alternatieven worden geselecteerd;
+3. waar route-remarks worden berekend;
+4. waar bicycle=no, bicycle=private, access=no en access=private worden herkend;
+5. waar poorten en barriers worden geclassificeerd;
+6. waar routegeschiktheid wordt berekend;
+7. waar status KLAAR wordt gezet;
+8. waar opslaan wordt toegestaan;
+9. waar NAVIGEER actief wordt;
+10. welke routepaden buiten de gewone generator bestaan:
+   - opgeslagen routes;
+   - bibliotheekroutes;
+   - automatisch geplande routes;
+   - wedstrijd-/race-routes;
+   - handmatige routepunten;
+   - GPX-import;
+   - mobiele routeweergave.
+
+HARD_BLOCKAGE-REGELS
+
+Minimaal als harde afkeur behandelen:
+
+- bicycle=no;
+- bicycle=private;
+- access=no;
+- access=private zonder expliciete fietsuitzondering;
+- locked=yes zonder fietsuitzondering;
+- afgesloten poort;
+- privéterrein;
+- niet-passeerbare barrier;
+- trap zonder toegestane en bruikbare fietsdoorgang;
+- aantoonbaar niet-fietsbaar segment.
+
+Let op:
+
+- cycle_barrier is niet automatisch een blokkade;
+- expliciet bicycle=yes/designated/permissive mag een poort doorlaatbaar maken;
+- een onbekende poort zonder verbod is een zachte waarschuwing, geen harde afkeur;
+- harde blokkades mogen nooit worden gemaskeerd door een gemiddelde score, geschiktheidspercentage of overige goede segmenten.
+
+VERPLICHT GEDRAG
+
+Bij minimaal één hard_blockage:
+
+- kandidaat volledig afkeuren;
+- kandidaat niet tonen als definitief voorstel;
+- kandidaat niet opslaan als bruikbare route;
+- status KLAAR niet tonen;
+- NAVIGEER uitschakelen;
+- kandidaat niet naar mobiele navigatie sturen;
+- automatisch een nieuw alternatief zoeken.
+
+Als geen geldige kandidaat beschikbaar is:
+
+- eerlijk melden dat geen betrouwbare route kon worden gemaakt;
+- blokkades kort benoemen;
+- geen inferieure of verboden route alsnog aanbieden.
+
+MTB-SPECIFIEK
+
+Een MTB-route mag:
+
+- onverhard zijn;
+- technisch zijn;
+- poorten of fietshekken bevatten die aantoonbaar doorfietsbaar zijn;
+- korte draag-/afstapstukken bevatten wanneer dit expliciet toegestaan en productmatig geaccepteerd is.
+
+Een MTB-route mag niet:
+
+- over fietsverboden lopen;
+- door afgesloten privéterrein lopen;
+- over niet-passeerbare poorten lopen;
+- als KLAAR worden aangeboden wanneer hij slechts gedeeltelijk geschikt is door harde blokkades.
+
+DRAFT-UITVOERING
+
+Maak vóór uitvoering één overzicht met:
+
+- geselecteerde draft;
+- reden waarom nodig;
+- geraakte bestanden/modules;
+- overlap met andere drafts;
+- gekozen volgorde;
+- verwacht bewijs.
+
+Voer daarna alleen de minimale samenhangende set uit.
+
+Maak geen tientallen losse commits.
+Werk in maximaal drie gecontroleerde commits:
+
+1. classificatie en centrale hard-blockage-poort;
+2. koppeling met selectie/opslag/navigatie;
+3. regressietests en kalibratiebewijs.
+
+TESTBEWIJS
+
+Voeg minimaal deze tests toe:
+
+1. kandidaat met bicycle=no wordt afgekeurd;
+2. kandidaat met access=private zonder bicycle=yes wordt afgekeurd;
+3. kandidaat met locked gate zonder fietsuitzondering wordt afgekeurd;
+4. cycle_barrier met bicycle=designated wordt niet afgekeurd;
+5. onbekende poort zonder verbod blijft zachte waarschuwing;
+6. alternatief zonder harde blokkade wordt gekozen;
+7. bij alleen ongeldige kandidaten:
+   - geen KLAAR;
+   - geen NAVIGEER;
+   - geen opslag;
+   - eerlijke foutmelding;
+8. test via het echte webgebruikerspad;
+9. test opgeslagen route;
+10. test bibliotheekroute;
+11. test automatisch geplande route;
+12. test MTB, gravel en racefiets afzonderlijk.
+
+POORT 5B EN 5C
+
+Voer vóór oplevering uit:
+
+- Poort 5b basale sanity-check;
+- Poort 5c onafhankelijke codecontrole tegen actuele GitHub-code.
+
+Controleer ook:
+
+- geen dode knoppen;
+- geen contextueel onlogische functies;
+- geen status KLAAR bij ongeldige route;
+- geen permanente placeholder;
+- geen stille fallback die blokkades maskeert.
+
+KALIBRATIE
+
+Werk hoofdstuk D bij met:
+
+- deze door René gevonden fout;
+- een hard_reject_rule;
+- meetniveau per routekandidaat;
+- reëel tegenvoorbeeld;
+- regressietest;
+- testcommando;
+- commit-SHA;
+- proof_stage alleen executed wanneer de test werkelijk is gedraaid;
+- product_proof niet automatisch verhogen zonder volledig bewijs.
+
+RAPPORTAGE
+
+Rapporteer na afronding:
+
+1. welke drafts zijn geselecteerd;
+2. welke drafts zijn afgewezen en waarom;
+3. root cause;
+4. volledige gegevensstroom vóór en na de fix;
+5. gewijzigde bestanden;
+6. tests en resultaten;
+7. Poort 5b-resultaat;
+8. Poort 5c-resultaat;
+9. commit-SHA’s;
+10. resterende risico’s;
+11. bevestiging dat geen tweede routesysteem is gebouwd;
+12. bevestiging dat niet alle drafts blind zijn uitgevoerd.
+
+STOPVOORWAARDE
+
+Stop na deze herstelketen.
+Start geen andere routeverbeteringen, hoofdstukken of algemene refactors zonder nieuwe opdracht.

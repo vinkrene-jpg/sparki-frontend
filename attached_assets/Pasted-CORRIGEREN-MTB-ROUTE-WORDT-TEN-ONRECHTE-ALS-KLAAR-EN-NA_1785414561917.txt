@@ -1,0 +1,68 @@
+CORRIGEREN — MTB-ROUTE WORDT TEN ONRECHTE ALS KLAAR EN NAVIGEERBAAR AANGEBODEN
+
+Bij een nieuw gepubliceerde MTB-route van 36,4 km toont Sparki 27 routeopmerkingen, waaronder:
+
+- poort of hek;
+- afgesloten poort / privéterrein;
+- fietsen hier niet toegestaan.
+
+Toch toont de pagina status “KLAAR” en blijft “NAVIGEER” actief.
+
+DIT IS EEN HARDE AFKEURFOUT.
+
+VERPLICHT GEDRAG
+
+1. Behandel minimaal deze categorieën als hard_blockage:
+   - bicycle=no;
+   - access=no;
+   - access=private zonder aantoonbare fietsvergunning;
+   - afgesloten poort;
+   - niet-passeerbare gate/barrier;
+   - privéterrein;
+   - trap of ander niet-fietsbaar segment waar geen toegestane MTB-doorgang bestaat.
+
+2. Een routekandidaat met één hard_blockage:
+   - mag niet als routevoorstel worden getoond;
+   - mag niet worden opgeslagen als bruikbare route;
+   - mag nooit status “KLAAR” krijgen;
+   - mag geen actieve knop “NAVIGEER” hebben;
+   - moet volledig worden afgekeurd, ook wanneer de rest van de route goed is.
+
+3. Zoek daarna automatisch een echt alternatief.
+   - Valideer iedere kandidaat afzonderlijk.
+   - Laat harde blokkades nooit wegvallen in een totaalscore of geschiktheidspercentage.
+   - Als geen geldige MTB-route bestaat, toon eerlijk dat geen betrouwbare route kon worden gemaakt.
+
+4. Controleer waarom deze 27 opmerkingen pas na generatie zichtbaar worden en niet vóór selectie als afkeurpoort zijn toegepast.
+
+5. Verminder visuele vervuiling:
+   - toon geen tientallen overlappende waarschuwingstekens op kaart en hoogteprofiel;
+   - groepeer zachte opmerkingen;
+   - harde blokkades mogen überhaupt niet in een geaccepteerde route voorkomen.
+
+6. Voor een expliciet gekozen MTB-route geldt:
+   - eindstatus moet “goed geschikt” zijn;
+   - “gedeeltelijk geschikt” mag alleen als waarschuwing vóór keuze worden getoond en niet stil als definitief resultaat;
+   - vergelijking met racefiets/gravel mag compact en secundair zijn, niet de hoofdbeoordeling vertroebelen.
+
+TESTBEWIJS
+
+Voeg een regressietest toe met een routekandidaat die bevat:
+- één bicycle=no;
+- één access=private;
+- één afgesloten gate.
+
+Bewijs dat:
+- kandidaat wordt afgekeurd;
+- alternatief wordt gezocht;
+- “KLAAR” en “NAVIGEER” niet verschijnen;
+- geen hard_blockage in de uiteindelijke route aanwezig is.
+
+Voer Poort 5b en Poort 5c uit en rapporteer:
+- root cause;
+- gewijzigde bestanden;
+- testcommando’s en resultaten;
+- commit-SHA;
+- bewijs via het echte gebruikerspad.
+
+Markeer deze door René gevonden fout ook als regressieregel in hoofdstuk D van het kalibratiebestand.

@@ -1,0 +1,43 @@
+ik vind het verontrustend, dat we geen vooruitgang met alle ai's, replit, copiloten en mijzelf weten te bereiken
+
+Dat is terecht verontrustend. We hebben veel activiteit, maar te weinig aantoonbare productvooruitgang.
+
+De routeplanner laat dat pijnlijk zien: er zijn tientallen commits, tests, kalibratieregels, reviewers en bewijsdocumenten gemaakt, maar jij publiceert één MTB-route en vindt direct een fundamentele fout: een route met fietsverboden en privéterrein wordt als KLAAR en navigeerbaar aangeboden.
+
+Dat betekent dat het proces nu verkeerd is ingericht:
+
+AI’s controleren vooral losse wijzigingen en documenten.
+Replit voert veel kleine taken uit zonder de volledige gebruikersketen te bewijzen.
+Tests bewijzen onderdelen, maar niet voldoende het echte eindresultaat.
+De routeanalyse herkent fouten, maar de routegenerator handelt er niet naar.
+Jij blijft uiteindelijk de integratietester die ontdekt dat alles samen niet klopt.
+
+We moeten daarom nu stoppen met uitbreiden. Geen nieuwe hoofdstukken, geen 152 drafts en geen nieuwe functies totdat één volledige module aantoonbaar goed werkt.
+
+Voor Routes wordt de enige opdracht:
+
+Maak vanuit een echt startpunt een route, controleer die vóór acceptatie, toon alleen geldige alternatieven, sla hem op, wijzig hem, navigeer ermee en bewijs dat dezelfde regels in iedere stap gelden.
+
+Niet meer testen op alleen functies of mocks. De bewijsset moet echte routes bevatten met:
+
+fietsverbod;
+privéterrein;
+afgesloten poort;
+onbekende poort;
+geldige fietssluis;
+racefiets, gravel en MTB;
+geen geldig alternatief.
+
+Pas wanneer Replit, Copilot en onze review deze end-to-end-keten zelfstandig goedkeuren en jij daarna hooguit kleine praktijkdetails vindt, is er echte vooruitgang.
+
+Mijn eerdere lijn om ondertussen hoofdstuk F en andere kalibratiehoofdstukken door te laten lopen was daarom te breed. Dat vergroot de administratie terwijl de kernapp nog niet betrouwbaar is. Ik zou die werkzaamheden nu pauzeren en alle capaciteit op Routes zetten.
+
+Het eerlijke doel voor de eerstvolgende fase:
+
+geen nieuwe functionaliteit;
+geen nieuwe hoofdstukken;
+routeplanner als eerste volledig herstelde verticale module;
+maximaal enkele kleine praktijkbevindingen bij jouw volgende test;
+lukt dat niet, dan moeten we serieus beoordelen of Replit en de huidige architectuur geschikt zijn voor deze route-engine.
+
+Er is dus wel iets bereikt — we weten nu veel preciezer waar de fouten ontstaan — maar dat is nog geen verkoopbare productvooruitgang. Vanaf nu moet alleen werk tellen dat jij zichtbaar en betrouwbaar kunt gebruiken.
