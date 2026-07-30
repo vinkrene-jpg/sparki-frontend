@@ -25,3 +25,4 @@ welke echte feedback meewoog.
   terugdraaien. Generatienummer zit in de idempotentiesleutel.
 - Vervanging is fire-and-forget na het commentaar; falen laat de oude route
   staan — nooit een gat op de kaart.
+- Bewijsbatch 30-07-2026 (12 lussen MTB/gravel/race 25–200 km, Hengelo): afstandsspec altijd binnen ±13%, maar 11/12 lussen bevatten blokkerende obstakels (afgesloten poorten, trappen, fietsverbod). Oorzaak: LUS-generatie meet obstakels binnen het 2000–2500 ms omgevingsbudget en faalt open (ENV-COVERAGE env=miss); de blokkerend-wachten-fix van het koude-cache-gat dekt alleen waypoint/PTP. Herbruikbare tooling: src/tests/route-bewijsbatch.ts + route-bewijsbatch-remarks.ts (incrementeel op RESULT_FILE, in-process getRouteRemarks zonder 18s-previewbudget; Overpass 14–98 s per lus).
