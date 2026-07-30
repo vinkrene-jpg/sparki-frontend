@@ -1,18 +1,18 @@
-# PO-04 — Licentietoets BGT-achtige wegdekbronnen per EU-prioriteitsland (BE/DE/FR)
+# PO-04 — Licentietoets BGT-achtige wegdekbronnen per EU-prioriteitsland (BE per gewest/DE/FR)
 
-**Datum:** 30-07-2026 · **Aanleiding:** PO-03 sloot Wikiloc/heatmaps uit als buitenland-wegdeksignaal; de enige eerlijke route naar een sterkere wegdek-belofte buiten NL is per land een BGT-achtige controlelaag. De kalibratie-YAML (ROUTES_GENERATOR_001) noteerde: "per-land-licenties niet uitgezocht". Onderzoeksopdracht, geen bouw. Alle bronnen geraadpleegd 30-07-2026.
+**Datum:** 30-07-2026 · **Aanleiding:** PO-03 sloot Wikiloc/heatmaps uit als buitenland-wegdeksignaal; de enige eerlijke route naar een sterkere wegdek-belofte buiten NL is per land een BGT-achtige controlelaag. De kalibratie-YAML (ROUTES_GENERATOR_001) noteerde: "per-land-licenties niet uitgezocht". Onderzoeksopdracht, geen bouw. Alle bronnen geraadpleegd 30-07-2026. Aanvulling 30-07-2026: België per gewest afgemaakt — Wallonië (PICC) en Brussel (UrbIS) alsnog getoetst op licentie én verhardingsattribuut.
 
 ## Samenvatting
 
 | Land | Bron | API | Licentie (commercieel?) | Verhardingsattribuut per wegvak |
 |---|---|---|---|---|
 | BE-Vlaanderen | GRB (Basiskaart Vlaanderen) | JA (OGC API Features, live) | JA — Gratis open data licentie Vlaanderen v1.02, naamvermelding verplicht | JA (VERH/LBLVERH) |
-| BE-Wallonië | PICC | Deels (WalOnMap/geoportail-diensten) | NOG TE TOETSEN per dataset | ONZEKER |
-| BE-Brussel | UrbIS | JA (datastore.brussels) | Open data, per dataset te toetsen | Waarschijnlijk NEE (straatassen zonder wegdek) |
+| BE-Wallonië | PICC | JA (ArcGIS REST/WMS/WFS geoservices.wallonie.be + downloads) | JA — sinds 21-05-2019 gratis voor elk gebruik incl. commercieel (CGA/CGU + Conditions particulières type C), naamvermelding "Service public de Wallonie" verplicht | NEE (alleen wegklasse NATUR: Communale/Nationale/Chemin ou sentier/…; geen revêtement) |
+| BE-Brussel | UrbIS | JA (datastore.brussels: download + WFS/Atom/WMS) | JA — CC0 1.0 (Transport networks, Topo, Vector; per dataset op datastore.brussels vermeld) | NEE (straatassen-referentieel zonder wegdekattribuut) |
 | DE | ATKIS Basis-DLM (per Land) | JA (per Land + basemap.de-opendata-dienst, GeoPackage) | JA — alle 16 Länder inmiddels open (DL-DE/BY-2.0, DL-DE/Zero, Bremen CC-BY 4.0); naamvermelding meestal verplicht | GROF (Befestigung befestigt/onbefestigd op weg-/padassen; geen materiaalsoort zoals BGT) |
 | FR | IGN BD TOPO | JA (Géoplateforme data.geopf.fr, downloads + diensten) | JA — Licence Ouverte Etalab 2.0 sinds 1-1-2021, naamvermelding verplicht | NEE (alleen indirect via `Nature`: route empierrée/chemin/sentier) |
 
-**Conclusie:** licenties zijn géén blokkade meer voor BE-Vlaanderen, DE en FR — alle drie zijn open en commercieel bruikbaar met bronvermelding. De echte beperking is inhoudelijk: alleen het Vlaamse GRB biedt een BGT-waardig verhardingsattribuut per wegvak. Duitsland biedt een grover binair signaal (befestigt/onbefestigd), Frankrijk alleen een wegtype-proxy. Een "0% aantoonbaar onverhard"-belofte op BGT-niveau is dus per direct alleen in Vlaanderen haalbaar; in DE is een zwakkere-maar-eerlijke verbetering mogelijk, in FR nauwelijks meer dan wat OSM al geeft.
+**Conclusie:** licenties zijn géén blokkade voor de getoetste bronnen — BE-Vlaanderen, BE-Wallonië, BE-Brussel, DE en FR zijn alle open en commercieel bruikbaar (met bronvermelding; Brussel zelfs CC0, Wallonië met prijs-in-verhouding-clausule). De echte beperking is inhoudelijk: alleen het Vlaamse GRB biedt een BGT-waardig verhardingsattribuut per wegvak. Duitsland biedt een grover binair signaal (befestigt/onbefestigd), Frankrijk alleen een wegtype-proxy. Een "0% aantoonbaar onverhard"-belofte op BGT-niveau is dus per direct alleen in Vlaanderen haalbaar; in DE is een zwakkere-maar-eerlijke verbetering mogelijk, in FR, Wallonië en Brussel nauwelijks meer dan wat OSM al geeft. **De Vlaamse GRB-laag mag dus nooit stilzwijgend "heel België" claimen: Wallonië en Brussel hebben geen verhardingsattribuut en houden de eerlijk-zwakkere buitenland-belofte (aanvulling 30-07-2026, taak per-gewest-toetsing).**
 
 ## 1. België
 
@@ -24,11 +24,17 @@ België heeft géén nationale BGT-equivalent; geodata is per gewest.
 - **Verhardingsattribuut:** JA. Entiteit `Wegsegment` draagt `VERH`/`LBLVERH` (o.a. "weg met vaste verharding") plus `MORF` (morfologische wegklasse, o.a. "wandel- of fietsweg, niet toegankelijk voor andere voertuigen"). Dit is functioneel vergelijkbaar met BGT `fysiek_voorkomen`. NB: geometrie is lijn (wegsegment), niet vlak zoals BGT-wegdelen — punt-op-lijn-matching i.p.v. punt-in-polygoon.
 - **Oordeel:** volwaardige BGT-achtige controlelaag, juridisch en technisch klaar. Eerste kandidaat voor EU-uitrol.
 
-### Wallonië — PICC (Projet Informatique de Cartographie Continue)
-- Beschikbaar via geoportail.wallonie.be (PICC-vDIFF); Wallonië heeft een open-dataportaal (ODWB). De precieze licentie per PICC-dataset (en of een wegdek-/revêtement-attribuut per wegvak bestaat) is op 30-07-2026 **niet bevestigd** — geoportail-catalogus vergt verdere toetsing per dataset. Eerlijk genoteerd als: nog te toetsen vóór activering in Wallonië.
+### Wallonië — PICC (Projet Informatique de Cartographie Continue) — getoetst 30-07-2026
+- **Licentie:** JA, commercieel bruikbaar. Sinds 21-05-2019 valt het PICC (samen met orthofoto's en relief) onder de "Conditions générales d'accès" + "Conditions générales d'utilisation" (v1.1, 03-08-2016) aangevuld met de **Conditions particulières d'utilisation type C**: iedere natuurlijke of rechtspersoon krijgt gratis toegang voor onbepaalde duur, ongeacht het gebruik (dus óók commercieel); redistributie aan derden en publicatie via een webservice zijn expliciet toegestaan. Verplichting: bronvermelding "Sources des données : Service public de Wallonie" (of "SPW"), zo mogelijk met hyperlink naar geoportail.wallonie.be. Kanttekening bij commercieel gebruik: de verkoopprijs moet in verhouding staan tot de eigen bewerking van de data (geen kale doorverkoop). Bronnen: geoportail.wallonie.be nieuwsbericht "Assouplissement des conditions d'accès et d'utilisation" (23-05-2019) + DataSPW-CGU.pdf + DataSPW-CPU-TypeC.pdf, geraadpleegd 30-07-2026.
+- **API:** JA. ArcGIS REST feature-service `geoservices.wallonie.be/arcgis/rest/services/TOPOGRAPHIE/PICC_VDIFF/MapServer` (zelf bevraagd 30-07-2026, query zonder sleutel werkt), plus WMS/WFS en downloads via de geoportail-downloadtoepassing. Sinds okt-2023 ook vlakken: `VOIRIE_SURFACE`-tabel (Voirie - Surface, laag 24).
+- **Verhardingsattribuut:** **NEE.** Zelf de veldenlijst en distinct-waarden bevraagd (30-07-2026): `Voirie - Axe` (laag 21) draagt alleen `NATUR_CODE/NATUR_DESC` = wegklasse (Communale, Nationale, Autoroute, Ring, Piste cyclable, Chemin ou sentier) en `TYPE_DESC` (Sentier / Non Détaillé); `Voirie - Surface` (laag 24) alleen Tronçon/Carrefour/Ouvrage d'art/Aire de repos + breedtes. Geen revêtement-/materiaalattribuut. Hooguit een grove proxy zoals FR-`Nature`: "Chemin ou sentier"/"Sentier" ⇒ mogelijk onverhard — nauwelijks meer dan OSM-highway al geeft.
+- **Oordeel:** juridisch begaanbaar (met SPW-bronvermelding en prijs-in-verhouding-clausule bij commercieel gebruik), inhoudelijk **geen** BGT-waardige controlelaag. Zelfde categorie als Frankrijk: wegtype-proxy, geen wegdek. De buitenland-copy "minder zeker over wegdek" blijft in Wallonië nodig.
 
-### Brussel — UrbIS
-- Open data via datastore.brussels / data.mobility.brussels (straatassen, transportnetwerk). De straatassen-dataset is een wegenreferentieel zonder aanwijzing van een verhardingsattribuut. Klein gebied, vrijwel volledig verhard stedelijk netwerk; praktisch belang laag. Licentie per dataset te bevestigen bij activering.
+### Brussel — UrbIS — getoetst 30-07-2026
+- **Licentie:** JA, commercieel bruikbaar. De relevante datasets op datastore.brussels ("UrbIS - Transport networks", "UrbIS - Topo", "UrbIS - Vector", beheerder Paradigm) staan onder **CC0 1.0** ("no conditions for reuse, the data is in the public domain"), toegangsrestrictie "No limitations to public access". Bron: datasetpagina's datastore.brussels, geraadpleegd 30-07-2026. Licentie is per dataset vermeld; bij activering de CC0-vermelding van de concrete gebruikte dataset vastleggen.
+- **API:** JA. datastore.brussels biedt per dataset download (Shapefile/GeoPackage/DWG) én WFS/Atom/WMS-diensten; straatassen ook via data.mobility.brussels.
+- **Verhardingsattribuut:** **NEE.** De straatassen (UrbIS-Adm/Vector "Street axes") zijn een wegenreferentieel (geometrie + straatnaam/ICAR-koppeling), zonder revêtement-/wegdekattribuut; ook Topo/Vector-lagen (wegen als lijnen/vlakken, trottoirs) dragen geen materiaalsoort. Praktisch belang klein: het gewest is een vrijwel volledig verhard stedelijk netwerk van ~161 km².
+- **Oordeel:** juridisch de makkelijkste bron van alle getoetste (CC0), inhoudelijk geen wegdeksignaal en praktisch nauwelijks nodig. Geen activeringskandidaat voor de wegdeklaag; de zwakkere OSM-belofte volstaat.
 
 ## 2. Duitsland — ATKIS Basis-DLM (per Bundesland); ALKIS niet geschikt
 
@@ -47,6 +53,6 @@ België heeft géén nationale BGT-equivalent; geodata is per gewest.
 
 ## 4. Doorwerking
 
-- Kalibratie-YAML ROUTES_GENERATOR_001: candidate_source "EU-equivalenten van BGT" per land uitgesplitst met licentie/API/attribuut; `missing_information`-regel over per-land-licenties bijgewerkt (BE-Vlaanderen/DE/FR getoetst; Wallonië/Brussel + overige EU-landen nog open).
+- Kalibratie-YAML ROUTES_GENERATOR_001: candidate_source "EU-equivalenten van BGT" per land uitgesplitst met licentie/API/attribuut; `missing_information`-regel over per-land-licenties bijgewerkt (heel België — Vlaanderen/Wallonië/Brussel — plus DE/FR getoetst per 30-07-2026; alleen overige EU-landen nog open).
 - Volgorde-advies voor de EU-uitrol van de wegdeklaag: **1) Vlaanderen (GRB)** — bijna 1-op-1 BGT-patroon; **2) Duitsland (Basis-DLM, binair)** — eerlijk-zwakkere claim; **3) Frankrijk** — geen sterkere claim mogelijk, copy blijft "minder zeker".
 - Provider-compliance-les bevestigd: "open" geodata is per land/gewest anders gelicenseerd; bij activering per land de exacte bronvermeldingstekst vastleggen.
