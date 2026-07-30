@@ -11,7 +11,7 @@ import {
   computeDataRemarks,
   countRouteObstacles,
   extractElementPoints,
-  gateParentWayFollowsRoute,
+  gatePassageSides,
   remarksSource,
   type OverpassElement,
   type RouteRemark,
@@ -256,7 +256,7 @@ const ROUTE_NS: [number, number][] = Array.from({ length: 23 }, (_, i) => [
 ]);
 // ~0.00001° lat ≈ 1,11 m; 0.00001° lon ≈ 0,68 m op lat 52.
 
-scenario("echte poort op schaars-genode 2-punts way blijft staan", () => {
+scenario("poort waar je doorheen rijdt (way aan beide kanten gevolgd) = both", () => {
   // 60 m-wegvak dat exact op de routelijn ligt, poort halverwege.
   const way = {
     geometry: [
@@ -266,12 +266,12 @@ scenario("echte poort op schaars-genode 2-punts way blijft staan", () => {
   };
   const gate: [number, number] = [52.00427, 6.0]; // midden op de way
   assert(
-    gateParentWayFollowsRoute(ROUTE_NS, gate, way),
-    "echte on-route poort op 2-punts way werd ten onrechte weggefilterd",
+    gatePassageSides(ROUTE_NS, gate, way) === "both",
+    "doorreden poort op 2-punts way werd niet als 'both' herkend",
   );
 });
 
-scenario("poort op oprit-stub (alleen aansluitpunt bij de weg) vervalt", () => {
+scenario("poort op oprit-stub (alleen aansluitpunt bij de weg) = none", () => {
   // Oprit haaks op de route: 40 m naar het oosten, poort op ~12 m van de weg.
   const way = {
     geometry: [
@@ -281,8 +281,27 @@ scenario("poort op oprit-stub (alleen aansluitpunt bij de weg) vervalt", () => {
   };
   const gate: [number, number] = [52.0040, 6.00018]; // ~12 m van de routelijn
   assert(
-    !gateParentWayFollowsRoute(ROUTE_NS, gate, way),
-    "oprit-poort naast de route werd ten onrechte behouden",
+    gatePassageSides(ROUTE_NS, gate, way) === "none",
+    "oprit-poort naast de route werd ten onrechte gevolgd geacht",
+  );
+});
+
+scenario("poort aan het EIND van een gevolgde weg (afslag ervoor) = one, nooit both", () => {
+  // De route volgt de weg tot vlak vóór de poort en slaat af: de poort staat
+  // op het uiteinde. Zonder tweede gevolgde parent-way rijd je er NIET doorheen
+  // (besluit René 30-07-2026: 0 meter — alleen echte doorgang telt).
+  const way = {
+    geometry: [
+      { lat: 52.0030, lon: 6.0 }, // 60 m op de routelijn…
+      { lat: 52.00354, lon: 6.0 },
+      { lat: 52.00354, lon: 6.00030 }, // …dan buigt de WAY af, route gaat rechtdoor
+      { lat: 52.00354, lon: 6.00060 },
+    ],
+  };
+  const gate: [number, number] = [52.00354, 6.00060]; // poort op het afgebogen uiteinde
+  assert(
+    gatePassageSides(ROUTE_NS, gate, way) === "one",
+    "eindpoort op afgebogen way moet 'one' zijn (alleen samen met 2e way een doorgang)",
   );
 });
 

@@ -1,5 +1,5 @@
 # Poort 5b sanity-check rapport — poortmeldingen alleen voor poorten die je écht passeert
-delivery: "Routeopmerkingen: poorten/hekken worden alleen nog gemeld als de node vrijwel op de routelijn ligt (segmentafstand ≤15 m i.p.v. puntafstand ≤30 m) én de weg waarop de poort staat aantoonbaar door de route wordt gevolgd (zijpad-controle via parent-ways: ≥15 m weglengte binnen 8 m van de routelijn, buiten de poort zelf). Aanleiding: praktijkmelding René 30-07 — 17 poortmeldingen op een 36 km-route, dat kan niet kloppen."
+delivery: "Routeopmerkingen: poorten/hekken worden alleen nog gemeld als de route er daadwerkelijk doorheen rijdt (besluit René 30-07-2026: 0 meter, geen nabijheidskeuze). Toets: segmentafstand ≤15 m als voorfilter, daarna doorrij-eis per parent-way — de weg van de poort moet aan beide kanten van de poort door de route gevolgd worden (binnen 8 m meetruis van de bemonsterde kaartlijn), of de doorgang loopt aantoonbaar over een way-grens via twee gevolgde wegen. Aanleiding: praktijkmelding René 30-07 — 17 poortmeldingen op een 36 km-route, dat kan niet kloppen. Resultaat: 17 → 2 poorten, beide met doorrij-bewijs."
 date: "2026-07-30"
 checked_by: "replit"
 surfaces:

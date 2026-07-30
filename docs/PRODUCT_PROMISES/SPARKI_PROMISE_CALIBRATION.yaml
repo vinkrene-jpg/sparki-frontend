@@ -435,8 +435,17 @@ chapter_d_routes_en_navigatie:
               proof_stage: designed
               proof_method: "classifyGatePassage ⇒ 'doorfietsbaar' ⇒ classifyRemarkTags retourneert null; dit scenario zit al in de bestaande unit-suite maar telt pas als 'executed' bij de eerstvolgende uitgevoerde run in de bouwfase."
               proof_result: not_yet_tested
+        - rule: "Een poort wordt alleen gemeld als de route er daadwerkelijk doorheen rijdt (besluit René 30-07-2026: 0 meter — geen nabijheidsmarge als beleidskeuze); een poort op een oprit, zijpad, parallelweg of hekwerk náást de route mag nooit als routeopmerking verschijnen."
+          rule_type: hard_blockage
+          measurement_level: per_meting
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Praktijkmelding René 30-07 (route 265, 36 km Hengelo): 17 poortmeldingen waarvan hekjes op opritten/zijpaden op 10–25 m van de lijn; ook een hek in een parkeervak-hekwerk en een poort op een parallelle privé-calamiteitenstraat telden mee."
+              proof_stage: executed
+              proof_method: "Doorrij-toets per parent-way (gatePassageSides): de route moet de weg van de poort aan BEIDE kanten van de poort volgen (of over een way-grens via twee gevolgde ways); alleen erlangs = weggefilterd. Unit-tests: doorreden poort='both' blijft, oprit-stub='none' vervalt, eindpoort op afgebogen way='one' (alleen met 2e gevolgde way een doorgang) — test:route-remarks 25/25 groen 30-07. Herrun route 265: 17 → 2 poorten, beide met doorrij-bewijs (0,0 m en 3,3 m van de lijn)."
+              proof_result: rejected_correctly
       tolerances:
-        - "Meldingen ≤30 m van de lijn (toegang 6 m, wegdek 10 m, gebied 60 m) — gekalibreerd op praktijktest 29-07."
+        - "Meldingen ≤30 m van de lijn (toegang 6 m, wegdek 10 m, gebied 60 m) — gekalibreerd op praktijktest 29-07. Uitzondering poorten (besluit René 30-07): doorrij-eis, geen nabijheidsmarge; de resterende meters (≤15 m segmentafstand + 8 m volgtoets) zijn uitsluitend meetruis van de bemonsterde kaartlijn, geen beleidsruimte."
       unknown_data_policy: "Geen tag = geen melding, én geen garantie; onzekere afleidingen dragen uncertain=true en worden als indicatie gelabeld."
       approved: false
 
@@ -1000,12 +1009,12 @@ chapter_h_data_koppelingen_en_synchronisatie:
     rene_calibration:
       questions:
         - question: "Hoeveel synchronisatie-detail wil je dat een atleet ziet: alleen 'laatste sync + gelukt/mislukt', of ook per rit welke bron welk veld leverde (herkomst zichtbaar in de app)?"
-          answer_rene: "Per rit zichtbaar welke bron welk gegeven leverde (herkomst in de app)." # beantwoord 2026-07-30
+          answer_rene: "Alleen 'laatste sync + gelukt/mislukt' — geen herkomst-detail per rit als standaardweergave." # gewijzigd door René via vragenformulier 30-07-2026 (eerdere document-notitie zei herkomst-per-rit)
         - question: "Als twee bronnen een verschillend getal geven voor hetzelfde veld (bv. Strava zegt 250 W gemiddeld, het bestand zegt 243 W): wil je vaste bronvoorrang (stil), of wil je dat Sparki het conflict toont en jou laat kiezen?"
-          answer_rene: "Sparki kiest zelf de beste bron, maar het conflict moet bij de rit terug te vinden zijn (stil met inzicht)." # beantwoord 2026-07-30
+          answer_rene: "Conflict tonen en René zelf laten kiezen (geen stille bronvoorrang)." # gewijzigd door René via vragenformulier 30-07-2026 (eerdere document-notitie zei stil-met-inzicht)
         - question: "Wanneer moet een sync-fout ACTIEF gemeld worden (melding/badge), en wanneer is stil herstellen bij de volgende poging goed genoeg? Bijvoorbeeld: pas melden na X dagen zonder geslaagde sync?"
-          answer_rene: "Meteen bij elke mislukte sync — René wil alles weten." # beantwoord 2026-07-30
-      completed: true # alle 3 vragen beantwoord 2026-07-30
+          answer_rene: "Meteen bij elke mislukte sync — René wil alles weten." # herbevestigd via vragenformulier 30-07-2026
+      completed: true # alle 3 vragen beantwoord + herbevestigd via vragenformulier 2026-07-30
 
     acceptance_contract:
       hard_reject_rules:
@@ -1137,9 +1146,9 @@ chapter_h_data_koppelingen_en_synchronisatie:
     rene_calibration:
       questions:
         - question: "Hoe lang mag een rit maximaal op zich laten wachten voordat jij het 'kapot' noemt: minuten, een uur, of 'zolang het er bij de volgende app-opening staat is het goed'?"
-          answer_rene: "Binnen een paar minuten — daarna geldt het als kapot." # beantwoord 2026-07-30
+          answer_rene: "Binnen een paar minuten — daarna geldt het als kapot." # herbevestigd via vragenformulier 30-07-2026
         - question: "Wil je een actieve melding (push/badge) als de Strava-koppeling stuk is (toestemming verlopen, >24u geen sync), of is een duidelijke status op de koppelingenpagina genoeg?"
-          answer_rene: "Ja, actief melden (push/badge) — anders merk je het pas dagen later." # beantwoord 2026-07-30
+          answer_rene: "Ja, actief melden (push/badge) — anders merk je het pas dagen later." # herbevestigd via vragenformulier 30-07-2026
         - question: "Als Strava's voorwaarden Sparki's AI-analyse op Strava-data zouden beperken: wil je dan (a) Strava-data alleen tonen en AI-analyse op eigen ritten/bestanden doen, of (b) de Strava-koppeling heroverwegen? (Dit bepaalt hoeveel we op Strava als fundament bouwen.)"
           answer_rene: "Bewust geen voorkeuze: dit is een hypothese, hier nu niet op voorsorteren. Besluit valt pas als de juridische onzekerheid concreet wordt (vóór commerciële uitrol opnieuw toetsen)." # beantwoord 2026-07-30
       completed: true # alle 3 vragen beantwoord 2026-07-30

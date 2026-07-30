@@ -431,32 +431,33 @@ export function extractElementPoints(el: OverpassElement): RoutePathPoint[] {
 }
 
 /**
- * Volgt de route de weg waarop een poortnode staat? Segment-gebaseerd (niet
- * vertex-geteld): de weggeometrie wordt om de ~5 m verdicht en we eisen
- * minimaal ~15 m weglengte die (a) binnen 8 m van de routelijn ligt en
- * (b) verder dan 7,5 m van de poort zelf. Een weg die je écht rijdt valt
- * vrijwel samen met de routelijn (~0 m op rechte stukken); 20 m was te ruim
- * en liet parallelle parkeerstroken en naastgelegen privéstraten meetellen
- * (steekproef route 265: hek in parkeervak-hekwerk, poort op parallelle
- * calamiteitenstraat). Zo blijft een echte poort op een schaars-genode
- * 2-punts way staan (de route rijdt de weg vóór en/of ná de poort), terwijl
- * een oprit/zijpad-stub alleen zijn aansluitpunt bij de weg heeft — te
- * weinig gevolgde lengte — en dus vervalt.
+ * Doorrij-toets per parent-way van een poortnode (besluit René 30-07-2026:
+ * een poort telt alleen als je er daadwerkelijk DOORHEEN rijdt — 0 meter,
+ * geen nabijheidskeuze). We meten aan welke kant(en) van de poort de route
+ * de weg volgt: de weggeometrie wordt om de ~5 m verdicht en per zijde telt
+ * de weglengte die binnen 8 m van de routelijn ligt (meetruis van de
+ * bemonsterde kaartlijn, geen beleidsruimte) en verder dan 7,5 m van de
+ * poort zelf. Resultaat:
+ * - "both"  — de route volgt de weg vóór én ná de poort ⇒ je rijdt erdoor.
+ * - "one"   — de route volgt de weg aan één kant (poort op een way-grens:
+ *              de doorgang kan via een tweede way lopen — beslis op het
+ *              niveau van álle parent-ways samen).
+ * - "none"  — de route raakt deze weg hooguit (oprit/zijpad/parallelweg).
  */
-export function gateParentWayFollowsRoute(
+export function gatePassageSides(
   routeGeometry: RoutePathPoint[],
   gate: RoutePathPoint,
   way: Pick<OverpassElement, "geometry">,
-): boolean {
+): "both" | "one" | "none" {
   const pts = (way.geometry ?? []).filter(
     (p): p is { lat: number; lon: number } =>
       p != null && typeof p.lat === "number" && typeof p.lon === "number",
   );
-  if (pts.length < 2) return false;
+  if (pts.length < 2) return "none";
   const NEAR_M = 8;
   const GATE_EXCLUDE_M = 7.5;
   const STEP_M = 5;
-  const NEED_M = 15;
+  const NEED_SIDE_M = 10;
   const minLineDist = (p: RoutePathPoint): number => {
     let best = Number.POSITIVE_INFINITY;
     for (let i = 1; i < routeGeometry.length; i++) {
@@ -465,23 +466,48 @@ export function gateParentWayFollowsRoute(
     }
     return best;
   };
-  let nearLen = 0;
+  // Splitspunt: het verdichte wegpunt dat het dichtst bij de poort ligt.
+  // Alles daarvóór langs de weg is zijde A, alles daarna zijde B.
+  type Sample = { q: RoutePathPoint; len: number; along: number };
+  const samples: Sample[] = [];
+  let along = 0;
   for (let i = 1; i < pts.length; i++) {
     const a: RoutePathPoint = [pts[i - 1]!.lat, pts[i - 1]!.lon];
     const b: RoutePathPoint = [pts[i]!.lat, pts[i]!.lon];
     const segLen = haversineM(a, b);
     const steps = Math.max(1, Math.ceil(segLen / STEP_M));
-    for (let s = 0; s <= steps; s++) {
+    for (let s = 0; s < steps; s++) {
       const t = s / steps;
-      const q: RoutePathPoint = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
-      if (haversineM(q, gate) <= GATE_EXCLUDE_M) continue;
-      if (minLineDist(q) <= NEAR_M) {
-        nearLen += segLen / steps;
-        if (nearLen >= NEED_M) return true;
-      }
+      samples.push({
+        q: [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t],
+        len: segLen / steps,
+        along: along + t * segLen,
+      });
+    }
+    along += segLen;
+  }
+  let gateAlong = 0;
+  let gateDist = Number.POSITIVE_INFINITY;
+  for (const s of samples) {
+    const d = haversineM(s.q, gate);
+    if (d < gateDist) {
+      gateDist = d;
+      gateAlong = s.along;
     }
   }
-  return false;
+  let beforeM = 0;
+  let afterM = 0;
+  for (const s of samples) {
+    if (haversineM(s.q, gate) <= GATE_EXCLUDE_M) continue;
+    if (minLineDist(s.q) > NEAR_M) continue;
+    if (s.along < gateAlong) beforeM += s.len;
+    else afterM += s.len;
+  }
+  const before = beforeM >= NEED_SIDE_M;
+  const after = afterM >= NEED_SIDE_M;
+  if (before && after) return "both";
+  if (before || after) return "one";
+  return "none";
 }
 
 // ── Kern: opmerkingen langs een geometrie ───────────────────────────────────
@@ -743,9 +769,14 @@ way["boundary"~"^(protected_area|national_park)$"](${bbox});
         );
         // Geen parent-wegen gevonden (datagat): eerlijk laten staan.
         if (parents.length === 0) continue;
-        if (!parents.some((el) => gateParentWayFollowsRoute(geometry, [r.lat, r.lon], el))) {
-          raws.splice(i, 1);
-        }
+        // Doorrij-eis (besluit René 30-07-2026, 0 meter): de route moet de
+        // poort passeren — óf één weg wordt aan beide kanten van de poort
+        // gevolgd, óf de doorgang loopt over een way-grens (≥2 parent-ways
+        // elk aan één kant gevolgd). Alleen erlángs rijden telt nooit.
+        const sides = parents.map((el) => gatePassageSides(geometry, [r.lat, r.lon], el));
+        const passed =
+          sides.includes("both") || sides.filter((s) => s === "one").length >= 2;
+        if (!passed) raws.splice(i, 1);
       }
     }
   }
