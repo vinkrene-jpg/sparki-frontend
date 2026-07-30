@@ -1,0 +1,112 @@
+BLOKKEREND — KOUDE-CACHE FAIL-OPEN IN ROUTEBLOKKADEPOORT
+
+De onafhankelijke repo-verificatie heeft bevestigd dat de harde blokkadepoort bij een eerste aanvraag in een nieuw gebied nog fail-open kan gaan.
+
+BEWEZEN PROBLEEM
+
+- Overpass-meting duurt bij koude cache circa 9,6–21,6 seconden.
+- Het huidige blokkadebudget is circa 2500 ms.
+- Bij timeout gaat de routegeneratie door.
+- In de bestaande bewijsrun kregen drie fietsprofielen HTTP 200 terwijl de route op 0 meter van een afgesloten poort liep.
+- Het bijbehorende sanity-rapport staat terecht op blocked.
+- In de commits tot HEAD 19dbb0f is nog geen aantoonbare oplossing gevonden.
+
+STOPVOORWAARDE
+
+Stop alle overige routeverbeteringen en bewijsclaims.
+Een route met onbekende blokkadestatus mag niet als KLAAR of navigeerbaar worden aangeboden.
+
+VEREIST GEDRAG
+
+1. FAIL-CLOSED VOOR HARDE BLOKKADEVERIFICATIE
+
+Wanneer de blokkadebron niet binnen het toegestane procesvenster reageert:
+
+- accepteer de kandidaat niet;
+- toon geen KLAAR;
+- activeer NAVIGEER niet;
+- sla hem niet op als bruikbare route;
+- probeer een andere kandidaat alleen wanneer ook die volledig geverifieerd kan worden;
+- als verificatie niet mogelijk is, meld eerlijk:
+  “Deze route kon niet betrouwbaar op afsluitingen en fietsverboden worden gecontroleerd.”
+
+2. GEEN BLINDE TIMEOUTVERHOGING
+
+Onderzoek eerst de beste architectuur:
+
+- blokkadecontrole parallel uitvoeren tijdens kandidaatgeneratie;
+- resultaten per gebied/OSM-element duurzaam cachen;
+- meerdere kandidaten vroegtijdig laten controleren;
+- blocking wachten tot een redelijke bovengrens;
+- asynchronous status alleen wanneer de route intussen NIET als gereed/navigeerbaar wordt aangeboden.
+
+Een langere timeout mag onderdeel zijn van de oplossing, maar niet de enige maatregel zonder onderbouwing.
+
+3. ONDERSCHEID DRIE UITKOMSTEN
+
+Iedere kandidaat krijgt expliciet één status:
+
+- verified_clear;
+- hard_blocked;
+- unverifiable.
+
+Alleen verified_clear mag worden aangeboden en genavigeerd.
+
+hard_blocked wordt afgekeurd.
+unverifiable wordt niet stil als veilig behandeld.
+
+4. TEST VERPLICHT MET ECHTE KOUDE CACHE
+
+De huidige routebewijsbatch moet minimaal bevatten:
+
+- volledig nieuw geografisch gebied zonder bestaande cache;
+- cache expliciet gewist of unieke querysleutel;
+- afgesloten poort;
+- bicycle=no;
+- access=private;
+- racefiets, gravel en MTB;
+- eerste aanvraag en herhaalde warme aanvraag afzonderlijk.
+
+Bewijs voor de eerste aanvraag:
+
+- geen HTTP 200 met bruikbare route bij onbekende verificatie;
+- geen KLAAR;
+- geen NAVIGEER;
+- geen opslag;
+- eerlijke unverifiable-melding.
+
+5. REGRESSIE EN KALIBRATIE
+
+Werk de bestaande executed-claim bij wanneer die suggereert dat de keten volledig bewezen is.
+
+Leg de koude-cachefout vast als afzonderlijke hard_reject_rule:
+
+- measurement_level: per_routekandidaat;
+- tegenvoorbeeld: eerste aanvraag in nieuw gebied, Overpass-timeout, afgesloten poort wordt toch aangeboden;
+- proof_stage pas executed/passed nadat de koude-cachetest werkelijk groen is;
+- eerdere blocked-resultaten blijven als historisch bewijs behouden.
+
+6. TWEE EERDERE UI-BUGS BLIJVEN OPEN
+
+Vergeet niet dat na deze blokkadefix nog afzonderlijk moeten worden opgelost:
+
+- volgauto mag niet verschijnen bij gewone MTB- of gravelroutes;
+- “+ wijzig met routepunten” moet vanuit Bewaard werkelijk naar Maken schakelen.
+
+RAPPORTAGE
+
+Rapporteer:
+
+1. exacte root cause;
+2. gekozen fail-closed architectuur;
+3. timeout- en cachegedrag vóór en na;
+4. gewijzigde bestanden;
+5. koude-cachetestcommando en volledig resultaat;
+6. warme-cachetestresultaat;
+7. echte gebruikerspadcontrole;
+8. Poort 5b;
+9. onafhankelijke Poort 5c;
+10. commit-SHA;
+11. bevestiging dat een onverifieerbare route nooit KLAAR of navigeerbaar is.
+
+Claim de routeketen niet als gereed zolang de koude-cachetest niet groen is.

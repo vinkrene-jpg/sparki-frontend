@@ -1,0 +1,53 @@
+STOP AL HET OVERIGE WERK.
+
+De nieuwste commit 19dbb0f bevat 101 gewijzigde bestanden en bijna 11.000 regels, maar twee eerder exact gerapporteerde gebruikersfouten zijn nog steeds ongewijzigd aanwezig.
+
+BUG 1 — VOLGAUTO IN VERKEERDE CONTEXT
+
+In route-panel.tsx wordt VolgautoPanel nog steeds uitsluitend getoond op basis van:
+
+geometry.length > 1
+
+Er ontbreekt nog steeds een controle op fietstype en routecontext.
+
+Vereist gedrag:
+
+- volgauto alleen tonen voor expliciet ondersteunde race-/wedstrijdcontext;
+- nooit tonen voor gewone MTB- of gravelroutes;
+- geen verborgen of uitgeschakelde onzinnige optie: de functie moet in een ongeldige context volledig ontbreken;
+- voeg een regressietest toe die bewijst dat VolgautoPanel bij MTB en gravel niet wordt gerenderd.
+
+BUG 2 — DODE “WIJZIG MET ROUTEPUNTEN”-KNOP
+
+editRouteWaypoints vult de routepuntenstate, maar schakelt vanuit de Bewaard-weergave nog steeds niet naar de Maken-weergave.
+
+Daardoor bestaat het doel waarop wordt gescrold niet en gebeurt voor de gebruiker niets.
+
+Vereist gedrag:
+
+- klik vanuit een bewaarde route schakelt eerst naar de Maken-weergave;
+- RouteGenerator wordt werkelijk gerenderd met de gesamplede routepunten;
+- pas daarna focus/scroll naar de bouwer;
+- voeg een gebruikerspadtest toe:
+  Bewaard → “+ wijzig met routepunten” → Maken zichtbaar → routepunten aanwezig → route opnieuw berekenbaar.
+
+WERKWIJZE
+
+1. Bevestig eerst de root cause in de actuele origin/main-code.
+2. Wijzig alleen de minimaal benodigde bestanden.
+3. Voer de relevante typecheck en regressietests uit.
+4. Voer Poort 5b uit op echte schermen.
+5. Laat een onafhankelijke Poort 5c-review uitvoeren.
+6. Voeg beide door René gevonden fouten als uitgevoerde regressieregels toe aan hoofdstuk D.
+7. Commit en push als één kleine, herkenbare bugfixcommit.
+
+Rapporteer:
+
+- gewijzigde bestanden;
+- exacte root cause per bug;
+- testcommando’s en resultaten;
+- Poort 5b-bewijs;
+- commit-SHA;
+- bevestiging dat geen ander werk is meegenomen.
+
+Start geen nieuwe drafts, hoofdstukken, styling, governance of refactors.

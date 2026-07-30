@@ -1,0 +1,29 @@
+# Poort 5b sanity-check rapport — Routes-bewijsronde stap 2: obstakelbatch MTB/gravel/race 25–200 km
+delivery: "Bewijsbatch gegenereerde lussen (opdracht René 30-07): 12 combinaties (racefiets/gravel/MTB × 25/60/120/200 km × wensen vlak/heuvels/water/natuur/stadskern) via het echte POST /api/routes/generate-pad vanuit Hengelo; per route in-process getRouteRemarks-obstakelmeting (zonder 18s-previewbudget) + wegdek- en afstandscontrole"
+date: "2026-07-30"
+checked_by: "replit"
+surfaces:
+  - "HTTP-keten: POST /api/routes/generate (mode=loop) op de draaiende dev-API, seeds 11 (server vóór merge #502) en 12 (server mét #502, warmere Overpass-cache)"
+  - "Meetlaag: src/lib/route-remarks.ts getRouteRemarks via src/tests/route-bewijsbatch.ts en src/tests/route-bewijsbatch-remarks.ts (echte Overpass-data Twente/Achterhoek/Münsterland)"
+  - "Bewijs: docs/product/proof-evidence/route-bewijsbatch-seed11-2026-07-30.json en route-bewijsbatch-seed12-2026-07-30.json (per route afstand, hoogtemeters, wegdekanalyse, alle remarks met OSM-soort en km-positie)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "Alle 12 generate-aanvragen leverden een echte route met echte geometrie (12/12 status 200, geen enkele lege of gefingeerde kandidaat); afstandsspecificatie gehaald: alle 12 binnen ±13% van het doel (grootste afwijking 12,7%), ook op 200 km (190–196 km geleverd)"
+        result: "pass"
+      - case: "Racefiets-wegdekspecificatie: surfaces-analyse van de race-lussen toont vrijwel volledig verhard wegdek (voorbeeld race-25: 99,5% verhard, 0,4% zand + 0,1% gravel als restfractie)"
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Wensen sturen aantoonbaar mee: hilly-varianten leveren meer hoogtemeters dan flat op vergelijkbare afstand (bv. gravel-60-heuvels 170 hm vs gravel-200-vlak 320 hm over 3,4× de afstand); wens-tekst komt terug in de rationale. Eerlijk genoteerd: wensen zijn rangschikking, geen harde garantie"
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "OBSTAKELBELOFTE GESCHONDEN op schaal: seed 11 → 7 van 11 bewezen routes bevatten blokkerende obstakels; seed 12 (server mét #502, warmere cache) → 11 van 12, waaronder afgesloten/privé-poorten (tot 7 op één gravel-60-lus), trappen op gravel/MTB-lussen en 'Fietsen hier niet toegestaan' op gravel-25. Oorzaak: de obstakelwering bij LUS-generatie draait binnen het 2000–2500 ms omgevingsbudget ([ENV-COVERAGE] env=miss in serverlog) en faalt open; de #502-fix (blokkerend wachten) dekt het waypoint/PTP-pad, niet het lus-pad"
+        result: "fail — gegenereerde lussen kunnen afgesloten poorten, trappen en fietsverboden bevatten; module niet opleverbaar tot de lus-generatie dezelfde blokkerende obstakelmeting krijgt"
+      - case: "Meting zelf eerlijk: remarks-preview-502's (18s UI-budget te kort voor 100+ km in vers gebied) zijn als 'onbewezen' geteld, nooit als pass; uiteindelijk 12/12 in-process bewezen met echte Overpass-antwoorden (14–98 s per route), mislukte metingen expliciet gelogd en herhaald"
+        result: "pass"
+
+# verdict: deliverable alleen als alle results pass zijn; anders blocked.
+verdict: "blocked"
