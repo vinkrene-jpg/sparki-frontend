@@ -68,13 +68,15 @@ chapter_d_routes_en_navigatie:
             - "fietsinfrastructuur is geen kernscope; dekking voor racefietsroutes onbewezen"
             - "integratie-inspanning (DATEX II) aanzienlijk"
           applicability: "KANDIDAAT (nog niet in gebruik): actuele afsluitingen/werkzaamheden op de route melden — zou het 'OSM kan verouderd zijn'-gat deels dichten."
-        - name: "EU-equivalenten van BGT (o.a. Duitsland ALKIS/ATKIS, België GRB, Frankrijk BD TOPO)"
-          coverage: "Per land verschillend; geen uniforme EU-brede verhardingsbron; INSPIRE-transport-thema is te grof voor wegdek per vak."
-          actuality: "Per land wisselend; geen uniforme API."
-          license_status: "Per land verschillend (GRB en BD TOPO open; Duitse Länder wisselend) — per land te toetsen vóór EU-uitrol."
+        - name: "EU-equivalenten van BGT — per land getoetst 30-07-2026 (PO-04): België GRB, Duitsland ATKIS Basis-DLM, Frankrijk BD TOPO"
+          coverage: "BE-Vlaanderen: GRB Wegsegment landsdekkend mét verhardingsattribuut (VERH/LBLVERH, lijngeometrie). DE: Basis-DLM per Bundesland, alleen GROF binair signaal (Befestigung befestigt/onbefestigd op weg-/padassen, geen materiaalsoort). FR: BD TOPO troncon_de_route heeft GEEN surface-attribuut, alleen Nature-proxy (route empierrée/chemin/sentier). Wallonië (PICC) en Brussel (UrbIS): nog niet getoetst. Geen uniforme EU-brede verhardingsbron; INSPIRE-transport is te grof."
+          actuality: "BE-Vlaanderen: live OGC API Features (geo.api.vlaanderen.be/GRB, zelf bevraagd 30-07). DE: bulk GeoPackage via basemap.de-opendata-dienst + per-Land-portalen, geen uniforme feature-API. FR: Géoplateforme (data.geopf.fr) downloads + diensten."
+          license_status: "Alle drie open en commercieel bruikbaar met bronvermelding: GRB onder 'Gratis open data licentie Vlaanderen v1.02' (naamvermelding Digitaal Vlaanderen); Basis-DLM inmiddels in alle 16 Länder open (meestal DL-DE/BY-2.0 of DL-DE/Zero, Bremen CC-BY 4.0 — exacte bronvermeldingstekst per Land vastleggen bij activering); BD TOPO onder Licence Ouverte Etalab 2.0 sinds 1-1-2021 (naamvermelding IGN). Bronnen en details: docs/productonderzoek/PO-04-EU-BGT-EQUIVALENTEN-LICENTIES.md."
           limitations:
-            - "geen enkele bron geeft EU-breed wegdek per wegvak zoals de BGT"
-          applicability: "KANDIDAAT voor de EU-uitrol: per land een BGT-achtige controlelaag; tot die tijd is de belofte buiten NL zwakker (alleen OSM+GH)."
+            - "alleen Vlaanderen biedt een BGT-waardig verhardingsattribuut per wegvak; DE alleen binair, FR alleen wegtype-proxy — een 0%-belofte op BGT-niveau kan buiten NL alleen in Vlaanderen"
+            - "DE = 16 leveringen (of basemap.de-bundel) met per-Land bronvermelding; integratie bewerkelijk"
+            - "Wallonië/Brussel en overige EU-landen nog niet licentie-getoetst"
+          applicability: "KANDIDAAT voor de EU-uitrol, volgorde-advies PO-04: 1) Vlaanderen (GRB, bijna 1-op-1 BGT-patroon), 2) Duitsland (binair, eerlijk-zwakkere claim), 3) Frankrijk (geen sterkere claim mogelijk, copy blijft 'minder zeker over wegdek'). Tot activering is de belofte buiten NL zwakker (alleen OSM+GH)."
       sources_in_use:
         - "GraphHopper Directions API — motor + eerste wegdekmeting (enige motor met custom models binnen bereik)"
         - "OpenStreetMap/Overpass — onafhankelijke verificatiepoort (obstakels, verbod, wegdek)"
@@ -83,7 +85,7 @@ chapter_d_routes_en_navigatie:
       missing_information:
         - "Kosten-/limietbewaking GraphHopper-abonnement (verbruik per dag, plafondgedrag) is niet ingericht."
         - "Commerciële status publieke Overpass-mirrors op schaal (eigen instance nodig?)."
-        - "EU-brede wegdekbron bestaat niet; per-land-licenties niet uitgezocht."
+        - "EU-brede wegdekbron bestaat niet; per-land-licenties voor de prioriteitslanden BE/DE/FR getoetst 30-07-2026 (PO-04): alle drie open en commercieel bruikbaar met bronvermelding, maar alleen Vlaams GRB heeft een BGT-waardig verhardingsattribuut (DE binair, FR alleen Nature-proxy). Nog open: Wallonië (PICC), Brussel (UrbIS) en overige EU-landen. Zie docs/productonderzoek/PO-04-EU-BGT-EQUIVALENTEN-LICENTIES.md."
         - "NDW-dekking voor fietsrelevante afsluitingen niet empirisch getoetst."
         - "Wikiloc als buitenland-wegdeksignaal onderzocht (30-07-2026) en afgewezen: geen publieke API, ToS staan uitsluitend persoonlijk/niet-commercieel gebruik toe, scraping expliciet verboden, sui-generis databankrecht; bovendien zeggen community-tracks waar gefietst wordt, niet wat verhard is. Alternatieven (waymarkedtrails = OSM-data die we al via Overpass hebben; Strava-heatmap = alleen OSM-editing toegestaan) voegen evenmin een legaal wegdeksignaal toe. Buitenland-copy blijft 'minder zeker over wegdek'. Zie docs/productonderzoek/PO-03-WIKILOC-BUITENLAND-WEGDEK.md."
 
