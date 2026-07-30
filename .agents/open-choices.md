@@ -13,9 +13,9 @@ Laatst bijgewerkt: 2026-07-27.
 
 
 
-### Mogelijk al achterhaald (laag) — schrap gerust
-9. **Samen-pagina volgorde** — welk blok bovenaan (Voorstellen vs. Samen trainen).
-10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav.
+### Needs revalidation (besluit René 30-07-2026: NIET schrappen; eerst toetsen tegen actuele UI-besluiten en de nieuwe navigatie-/kalibratiestructuur)
+9. **Samen-pagina volgorde** — welk blok bovenaan (Voorstellen vs. Samen trainen). [needs_revalidation]
+10. **Prominentie navigatie** — "Samen trainen" en routeplanning prominenter/terug in de nav. [needs_revalidation]
 
 ## Beslist (archief)
 - **2026-07-30 — Plan-pagina indeling: "Vandaag eerst".** Bovenaan de dagstaat van vandaag
