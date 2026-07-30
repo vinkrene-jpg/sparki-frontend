@@ -31,4 +31,5 @@ Searchable OSM climb explorer (flag `climb_explorer`): geocode (Nominatim) → O
 
 ## Klimprofiel-hoogtebron = routeprovider (juli 2026)
 - Klimweg-hoogte komt NIET meer van ORS /elevation/line maar van getRoutingProvider().routeWaypoints langs de OSM-way (zelfde bron als routes — geen tegensprekende hoogtes).
+- Geborgd door hermetische unit-test `test:climb-profile-unit` (mock provider via registerProvider + ROUTING_PROVIDER env; workflow-limiet vol ⇒ shell-run, zoals climb-search-unit).
 - **Traps:** klimwegen zijn vaak eenrichting — route beide richtingen en kies de beste lengte-match, anders forceert de eenrichting een omweg over andere wegen. Waypoints op AFSTAND samplen, niet op index (OSM-nodedichtheid varieert). Lengte-guard 0.7–1.5× waylengte = eerlijkheidspoort (mismatch ⇒ null, nooit andermans profiel tonen).
