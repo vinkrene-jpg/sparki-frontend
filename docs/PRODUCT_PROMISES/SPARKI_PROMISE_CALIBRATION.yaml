@@ -3923,3 +3923,578 @@ chapter_f_voeding_hydratatie_en_gewicht:
 #     expliciete 'generiek advies'-melding.
 # 16. Schattingsweergave met betrouwbaarheidsniveau + bandbreedte (geen
 #     schijnprecisie).
+
+# ============================================================================
+# Hoofdstuk J — Club, coachorganisatie en ploegomgeving
+# Opgesteld: 2026-07-30 (opdracht v3). Alleen dit hoofdstuk; geen productcode
+# gewijzigd. Productmodel door René vastgesteld (één trainer-rol met drie
+# toegangscontexten; clubhiërarchie beheerder/hoofdtrainer/trainers; plat team;
+# externe coach = herkomstlabel, geen rol; AI-trainer terughoudend; CYD-regels
+# uniform). Replit heeft dit model getoetst tegen de code van origin/main
+# 2026-07-30 (HEAD 815e9d5b). Eerlijke bevinding vooraf: de bestaande
+# rolinfrastructuur dekt de club-context grotendeels; de contexten
+# "independent" en "team" bestaan relationeel (directe coachlink resp.
+# club_teams-toewijzing) maar er is GEEN expliciete access_context-laag; het
+# 6-delige herkomstsysteem (MEASURED/IMPORTED/…) bestaat NIET als enum in code
+# — er is wel een Data Origin-service met bronlabels; extern-plan-import
+# bestaat niet (planned_workouts.source wordt hard genormaliseerd naar
+# coach|sparki). Deze gaten staan hieronder per onderwerp eerlijk vermeld.
+chapter_j_club_coachorganisatie_en_ploegomgeving:
+
+  - id: CLUB_ROLMODEL_001
+    module: Club, coachorganisatie en ploegomgeving
+    subject: "Eén trainer-rol met drie toegangscontexten (independent/club/team), rechten per trainer+renner+context, nooit lekkend tussen contexten"
+    status: needs_calibration
+
+    current_state:
+      technical_status: partially_implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Relationele scoping bestaat en is getest: directe coachlink (coach_athlete_links, tier 1) vs club/team-toewijzing (club_trainer_assignments, tier 2) — src/lib/sharing.ts:190-286; rechtenmatrix per relatie, niet per trainer-account. Sharing levels none/summary/full per renner afgedwongen met nul-mutatie-bewijs (test:coach-parent-sharing-levels 13/13 groen, uitgevoerd 30-07-2026)."
+      practice_status: "Clubomgeving en trainer-werkruimte draaien in dev en zijn door testers gebruikt; een trainer die tegelijk directe links én clubtoewijzingen heeft is nooit gericht in de praktijk getest."
+      known_limitations:
+        - "Er is geen expliciet access_context-veld; 'independent' = directe link, 'club/team' = toewijzing. Zolang rechten strikt per relatie worden afgeleid is dat equivalent, maar het onderscheid independent-met-abonnement vs gratis directe link bestaat nog niet (geen Sparki-trainer-abonnement in entitlements)."
+        - "Bestaand afwijkend contract: een assignment-only trainer mag nu coach-berichten schrijven (201) — src/tests/trainer-assignment-write-contract.ts. Dat is ruimer dan het vastgestelde model (schrijfacties = directe link) en moet bij implementatie expliciet worden herbeslist of dichtgezet."
+        - "Multi-context-stapeling (zelfde trainer, zelfde renner via twee wegen) heeft geen eigen test; het no-leak-principe steunt nu op het feit dat elke route zelf de juiste relatie checkt."
+
+    proposed_promise:
+      text: "Een trainer heeft per renner uitsluitend de rechten die horen bij de specifieke toegangscontext van die relatie (zelfstandig, club of team). Combineert één persoon meerdere contexten, dan blijven de rechten per relatie strikt gescheiden: zzp-rechten gelden nooit voor clubrenners en andersom — aantoonbaar, met automatische tests."
+      proposed_by: replit
+      rationale: "De bestaande tier-1/tier-2-scheiding (directe link vs toewijzing) is precies de technische drager van dit model; wat ontbreekt is de expliciete context-administratie, het abonnementsonderscheid en een gerichte no-leak-test voor gestapelde contexten."
+      rene_approved: false
+
+    role_model:
+      role: trainer
+      access_contexts: [independent, club, team]
+      scoping: per_trainer_athlete_context
+      club_hierarchy:
+        - beheerder
+        - hoofdtrainer
+        - trainers
+      team_structure:
+        beheerder: any_team_member
+        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+      externe_coach:
+        is_role: false
+        provenance_tag: IMPORTED
+        origin_label: "externe coach, niet via Sparki-trainer"
+      multi_role_stacking: true
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Bestaande Sparki rechteninfrastructuur (sharing.ts, club-permissions.ts, coach_athlete_links, club_trainer_assignments)"
+          coverage: "Dekt relationele scoping, sharing levels, club-rollen, consent-gating en audit; dekt niet het independent-abonnement en niet een expliciete context-administratie."
+          actuality: "Code van 30-07-2026, met draaiende contracttests."
+          license_status: "Eigen code."
+          limitations:
+            - "Assignment-only schrijfpad voor berichten wijkt af van het vastgestelde model."
+          applicability: "Direct herbruikbaar als fundament; access_context is een administratieve laag bovenop bestaande relaties, geen herbouw."
+      sources_in_use: []
+      privacy_status: unknown
+      missing_information:
+        - "Of het Sparki-trainer-abonnement (independent) via de bestaande entitlement-laag loopt of een eigen product wordt."
+
+    replit_definition:
+      objective_quality_standard: "Elke trainer-leesroute en -schrijfroute herleidt zijn rechten aantoonbaar uit exact één relatie (trainer+renner+context); een geautomatiseerde no-leak-test met een gestapelde trainer (zelfde persoon: zzp-renner A, clubrenner B) bewijst dat rechten van A nooit op B toepasbaar zijn en omgekeerd — 0 toegestane lekken."
+      recommended_default: "Hergebruik: directe link = independent, club_trainer_assignments = club/team; voeg een expliciet context-label per relatie toe in plaats van een nieuw rechtenmodel; sluit het afwijkende assignment-only-schrijfpad aan op het vastgestelde model (of leg de uitzondering vast)."
+      technical_limits:
+        - "Zolang er geen expliciet context-veld is, is 'welke context leverde dit recht' niet logbaar per actie."
+      assumptions:
+        - "Het vastgestelde rechtenverschil per context is een deelverzameling van wat sharing levels + tiers nu al kunnen uitdrukken."
+      unknowns:
+        - "Gewenste afhandeling als een renner tegelijk zzp-renner én clublid van dezelfde trainer is (hoogste of strikt gescheiden weergave per context)."
+      evidence_method:
+        - "Nieuwe contracttest 'trainer-context-no-leak' met gestapelde trainer, per route: verwachte 200/403 per context."
+        - "Bestaande tests test:coach-parent-sharing-levels, trainer-workspace-isolation, trainer-rights als regressienet."
+
+    rene_calibration:
+      questions: []
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Rechten van een trainer die meerdere toegangscontexten combineert, mogen nooit tussen contexten lekken: de rechten die gelden voor zijn zzp-renners mogen nooit toegepast worden op zijn clubrenners, en omgekeerd — ongeacht hoe de routes worden aangeroepen."
+          rule_type: hard_blockage
+          measurement_level: per_trainer_athlete_context
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Trainer T heeft zzp-renner A (directe link, full sharing) en clubrenner B (alleen groepstoewijzing). T vraagt de individuele cockpit/gezondheidsdata van B op via een route die voor A wél toegestaan is."
+              proof_stage: designed
+              proof_method: "Contracttest 'trainer-context-no-leak': verwacht 403 + nul datavelden voor B; zelfde call voor A verwacht 200."
+              proof_result: not_yet_tested
+        - rule: "Rechten worden nooit per trainer-account als geheel toegekend; elke lees- of schrijfactie herleidt zijn recht uit exact één relatie trainer+renner+context. Een route die rechten uit 'de trainer is ergens trainer' afleidt is een fout."
+          rule_type: hard_blockage
+          measurement_level: per_actie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Trainer zonder link of toewijzing tot renner X roept een coach-route voor X aan en krijgt data omdat hij elders trainer is."
+              proof_stage: executed
+              proof_method: "Bestaande contracttests: test:coach-parent-sharing-levels (13/13, uitgevoerd 30-07-2026: coach 'none' krijgt lege shapes en adopt=403 met nul mutatie) en trainer-assignment-write-contract (zonder link/toewijzing 403)."
+              proof_result: rejected_as_expected
+      tolerances: []
+      unknown_data_policy: "Onbekende of niet-herleidbare context ⇒ behandelen als geen recht (fail-closed), nooit als ruimste context."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "test:coach-parent-sharing-levels (13/13 groen, 30-07-2026)"
+        - "test:club (23/23 groen, 30-07-2026)"
+        - "trainer-workspace-isolation, trainer-rights, trainer-assignment-write-contract (bestaand)"
+      independent_checks: []
+      practice_test_required: true
+      practice_testers: []
+      result: not_tested
+      expectation_gap:
+        - "Gestapelde-context-lek is nog niet als eigen test bewezen."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Na akkoord René: context-label per relatie toevoegen, assignment-only-schrijfpad in lijn brengen met het model, en de no-leak-contracttest bouwen en draaien."
+      approved_for_execution: false
+
+  - id: CLUB_CLUBOMGEVING_001
+    module: Club, coachorganisatie en ploegomgeving
+    subject: "Clubhiërarchie (beheerder/hoofdtrainer/trainers) en de begrensde clubtrainer: groepsprogramma's en algemene voortgang, nooit privédata zonder aparte toestemming"
+    status: needs_calibration
+
+    current_state:
+      technical_status: implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Clubfundament bestaat en is getest (test:club 23/23 groen, uitgevoerd 30-07-2026): clubs/club_members/club_subscriptions/club_teams/club_groups/club_trainer_assignments/club_consents/club_audit_log; rollen owner/admin (beheer), hoofdtrainer (teams/groepen/trainer-toewijzingen — routes/club.ts:1220-1439), trainer/assistent, teammanager, mechanieker, vrijwilliger/alleen_lezen (club-permissions.ts:59-95). Sportdata is per scope consent-gated (club_consents, club-permissions.ts:263-297); niet-lid of beëindigd lid = fail-closed."
+      practice_status: "Clubflows door testers gebruikt; grootschalige club (meerdere trainers, meerdere groepen) niet in praktijk getest."
+      known_limitations:
+        - "De grens 'algemene voortgang' (groepsniveau) vs individueel niveau is technisch nog niet als één gedefinieerde weergave vastgelegd; nu bepaalt de combinatie sharing level + consent-scope per route wat zichtbaar is."
+        - "Rolstapeling (hoofdtrainer die ook owner is) werkt via meerdere rollen op één lidmaatschap; er is geen aparte weergave die per persoon toont uit welke laag een recht komt."
+
+    proposed_promise:
+      text: "Een clubtrainer werkt uitsluitend binnen zijn toegewezen groepen/teams: hij plant groepsprogramma's en ziet algemene voortgang, maar privégezondheids-, hersteldata en individuele persoonlijke doelen van een renner zijn onzichtbaar zonder diens aparte, expliciete toestemming. Beheerder en hoofdtrainer beheren abonnement resp. trainers zonder daarmee zelf extra renner-data te zien."
+      proposed_by: replit
+      rationale: "Dit is grotendeels bestaand, getest gedrag; de openstaande productkeuze is uitsluitend wáár de grens 'algemene voortgang' precies ligt en welke velden onder de aparte toestemming vallen."
+      rene_approved: false
+
+    role_model:
+      role: trainer
+      access_contexts: [independent, club, team]
+      scoping: per_trainer_athlete_context
+      club_hierarchy:
+        - beheerder
+        - hoofdtrainer
+        - trainers
+      team_structure:
+        beheerder: any_team_member
+        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+      externe_coach:
+        is_role: false
+        provenance_tag: IMPORTED
+        origin_label: "externe coach, niet via Sparki-trainer"
+      multi_role_stacking: true
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Bestaande club-permissions + club_consents + club_audit_log"
+          coverage: "Dekt rolscheiding, consent per scope, audit en fail-closed lidmaatschap; dekt niet de productdefinitie van 'algemene voortgang'."
+          actuality: "Code 30-07-2026, contracttest groen."
+          license_status: "Eigen code."
+          limitations: []
+          applicability: "Direct de drager van dit onderwerp."
+      sources_in_use: []
+      privacy_status: unknown
+      missing_information: []
+
+    replit_definition:
+      objective_quality_standard: "0 gevallen waarin een clubtrainer zonder aparte renner-toestemming een privégezondheids-/herstelveld of individueel persoonlijk doel te zien krijgt, gemeten over alle club-leesroutes; elke onthulling herleidbaar naar een geregistreerde consent-rij."
+      recommended_default: "Groepsniveau = geaggregeerde aanwezigheids-/belastingsindicatoren zonder individuele gezondheid; individueel niveau alleen met consent-scope die het specifieke veld dekt."
+      technical_limits:
+        - "Aggregaties over kleine groepen (n<3) kunnen individuele waarden alsnog herleidbaar maken; daarvoor is een minimum-groepsgrootte nodig."
+      assumptions:
+        - "club_consents-scopes zijn fijnmazig genoeg om René's uiteindelijke veldenlijst te dragen."
+      unknowns:
+        - "Of clubbeheerders inzage in factuur-/abonnementsdata gescheiden moet blijven van elke sportdata (nu de facto wel)."
+      evidence_method:
+        - "Bestaande test:club (consent-gating, fail-closed nonmember/ended, audit) als regressienet; nieuwe test op de nog te definiëren veldenlijst zodra René die vastlegt."
+
+    rene_calibration:
+      questions:
+        - "Waar ligt precies de grens van 'algemene voortgang' die een clubtrainer zonder aparte toestemming mag zien: alleen groepsaggregaten, of ook individuele aanwezigheid/uitvoering per training?"
+        - "Welke concrete velden vallen onder 'gezondheids- en hersteldata' die alléén met aparte toestemming zichtbaar zijn (bv. slaap, HRV, ziekte/blessurestatus, gewicht, mentale signalen)?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Een clubtrainer mag nooit privégezondheids-, hersteldata of individuele persoonlijke doelen van een renner zien zonder diens aparte, expliciete toestemming — ongeacht clubrol, clubinstellingen of hoe goed de club het 'over het algemeen' geregeld heeft."
+          rule_type: hard_blockage
+          measurement_level: per_trainer_athlete_context
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Clubtrainer met geldige groepstoewijzing vraagt individuele data van een groepslid zonder consent-rij; en een coach met sharing 'none' probeert plan-adoptie."
+              proof_stage: executed
+              proof_method: "test:club 23/23 (consent-gated sportdata, fail-closed niet-lid/beëindigd lid) en test:coach-parent-sharing-levels 13/13 (coach none: lege shapes, adopt 403 + nul mutatie), beide uitgevoerd 30-07-2026."
+              proof_result: rejected_as_expected
+        - rule: "Clubrechten eindigen hard bij de clubgrens: geen enkele club-route levert data van renners buiten de eigen club of buiten de toegewezen groepen/teams van de trainer."
+          rule_type: hard_blockage
+          measurement_level: per_actie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Trainer met beëindigd lidmaatschap of toewijzing buiten einddatum benadert een clubroute."
+              proof_stage: executed
+              proof_method: "test:club (ended membership fail-closed) en trainer-assignment-write-contract (beëindigd clublid sluit assignment-writepad), uitgevoerd 30-07-2026."
+              proof_result: rejected_as_expected
+      tolerances: []
+      unknown_data_policy: "Onbekende consent-status of onbekend lidmaatschap ⇒ geen toegang (fail-closed), consistent met bestaand clubgedrag."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "test:club (23/23 groen, 30-07-2026)"
+        - "test:coach-parent-sharing-levels (13/13 groen, 30-07-2026)"
+        - "club-organisation, trainer-workspace-isolation (bestaand)"
+      independent_checks: []
+      practice_test_required: true
+      practice_testers: []
+      result: not_tested
+      expectation_gap:
+        - "Veldenlijst 'aparte toestemming' en grens 'algemene voortgang' wachten op René."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Na René's veldenlijst: consent-scopes en weergaven daarop vastklikken + veldenlijst-test toevoegen; minimum-groepsgrootte voor aggregaten bepalen."
+      approved_for_execution: false
+
+  - id: CLUB_TEAMOMGEVING_001
+    module: Club, coachorganisatie en ploegomgeving
+    subject: "Platte teamstructuur: één lichte beheerder + staf (trainer(s), ploegleider, mechanieker, diëtist) zonder onderlinge hiërarchie; teamtrainer tussen club en zelfstandig in"
+    status: needs_calibration
+
+    current_state:
+      technical_status: partially_implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Teams bestaan als club_teams bínnen een club, met teamtoewijzing van trainers (club_trainer_assignments naar team of groep, read-time einddatum — club-permissions.ts:211-260) en teammanager-rol voor trainings-/wedstrijdbeheer (club-permissions.ts:77-85). Mechanieker bestaat als rol (alleen materiaalvelden — club-permissions.ts:92-95, aparte mechanieker-module met tests). 'Ploegleider' bestaat feitelijk als teammanager (governor-fixtures koppelen ploegleider aan clubRole teammanager); volgauto is een feature, geen rol."
+      practice_status: "Teamtoewijzing en mechanieker in dev getest; een zelfstandig team búiten een club is nog nooit gebruikt want het bestaat niet."
+      known_limitations:
+        - "Een team zonder club (het vastgestelde model: los team met één lichte beheerder) bestaat niet in het schema — teams hangen nu altijd onder clubs met de drielaagse clubstructuur erboven."
+        - "Diëtist bestaat niet als rol of module."
+        - "Seizoensbegrenzing van teamtoegang bestaat alleen als einddatum op de toewijzing, niet als expliciet seizoensbegrip."
+
+    proposed_promise:
+      text: "Een team is een platte omgeving: één lichte beheerder (elk teamlid kan dat zijn) en een staf van trainer(s), ploegleider, mechanieker en diëtist zonder onderlinge hiërarchie. Een teamtrainer begeleidt uitsluitend zijn toegewezen renners binnen het team/seizoen, met meer individuele rechten dan een clubtrainer maar zonder enige toegang buiten het teamverband."
+      proposed_by: replit
+      rationale: "De teambouwstenen (toewijzing, teammanager, mechanieker, einddatum) bestaan; wat ontbreekt is het zelfstandige team buiten de club, de diëtist-rol en de expliciete seizoensafbakening. Haalbaar als variant op de bestaande club-tabellen (club met type 'team' en versimpelde rollen) in plaats van een tweede rechtenmodel."
+      rene_approved: false
+
+    role_model:
+      role: trainer
+      access_contexts: [independent, club, team]
+      scoping: per_trainer_athlete_context
+      club_hierarchy:
+        - beheerder
+        - hoofdtrainer
+        - trainers
+      team_structure:
+        beheerder: any_team_member
+        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+      externe_coach:
+        is_role: false
+        provenance_tag: IMPORTED
+        origin_label: "externe coach, niet via Sparki-trainer"
+      multi_role_stacking: true
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Bestaande club_teams/toewijzing/teammanager/mechanieker-infrastructuur"
+          coverage: "Dekt teamleden, toewijzingen, materiaalrol en trainingsbeheer; dekt niet het zelfstandige team, de diëtist en seizoenen."
+          actuality: "Code 30-07-2026."
+          license_status: "Eigen code."
+          limitations: []
+          applicability: "Aanbevolen drager: team = versimpelde organisatievorm op hetzelfde schema, geen nieuw rechtenmodel."
+      sources_in_use: []
+      privacy_status: unknown
+      missing_information:
+        - "Of het teamabonnement bij de lichte beheerder hoort of bij het team als geheel."
+
+    replit_definition:
+      objective_quality_standard: "Elke teamstaf-rol heeft een eigen, getest rechtenprofiel; teamtoegang eindigt aantoonbaar hard op team- en seizoensgrens (0 lekken in contracttests); het rechtenverschil club- vs teamtrainer is als vaste matrix vastgelegd en getest, niet per route geïmproviseerd."
+      recommended_default: "Teamtrainer = clubtrainer-basis + individuele leesrechten en voorstelrechten voor toegewezen renners (binnen consent), zonder de club-drielaagsstructuur; ploegleider = teammanager-profiel; mechanieker = bestaand materiaalprofiel; diëtist = nieuw leesprofiel beperkt tot voedingsdata binnen consent."
+      technical_limits:
+        - "Zolang teams onder clubs hangen, erft een team de clubstructuur; het platte model vereist een organisatievorm zonder verplichte hoofdtrainer/beheerder-lagen."
+      assumptions:
+        - "De mechanieker-materiaalgrens van de club geldt ongewijzigd in teamverband."
+      unknowns:
+        - "Diëtist-rechten: alleen voedingslogboek of ook gewicht/energiebeschikbaarheid (raakt CYD/RED-S-regels uit hoofdstuk F)."
+      evidence_method:
+        - "Contracttest per stafrol (matrix verwacht 200/403 per route) + seizoenseinde-test (toewijzing verlopen ⇒ fail-closed), naar voorbeeld van trainer-assignment-write-contract."
+
+    rene_calibration:
+      questions:
+        - "Mag een teamtrainer specifieke individuele trainingsdata aanpassen zonder tussenkomst van de ploegleider, of is de ploegleider een verplichte tussenlaag voor wijzigingen?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Teamtoegang eindigt hard op de teamgrens en de seizoens-/toewijzingsgrens: geen enkele stafrol (trainer, ploegleider, mechanieker, diëtist, lichte beheerder) ziet of bewerkt renner-data buiten het eigen team of buiten de actieve toewijzingsperiode."
+          rule_type: hard_blockage
+          measurement_level: per_trainer_athlete_context
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Teamtrainer met verlopen toewijzing (einddatum gisteren) vraagt de renner-lijst of individuele data van zijn oude team op."
+              proof_stage: designed
+              proof_method: "Seizoenseinde-contracttest: verwacht 403/lege lijst; bestaande read-time einddatum-evaluatie (club-permissions.ts:211-260) als implementatiebasis."
+              proof_result: not_yet_tested
+        - rule: "Stafrollen zijn geen gezinsrechten: mechanieker bewerkt uitsluitend materiaalvelden, diëtist ziet uitsluitend voedingsgerelateerde data binnen consent, ploegleider beheert organisatie — geen van hen krijgt via de teamvorm gezondheids- of individuele trainingsdata die zijn profiel niet expliciet toestaat."
+          rule_type: hard_blockage
+          measurement_level: per_actie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Mechanieker probeert via een teamroute een trainingsschema of gezondheidsveld te wijzigen."
+              proof_stage: executed
+              proof_method: "test:club 23/23 (uitgevoerd 30-07-2026): mechanieker toewijsbaar maar alleen materiaalvelden; alleen_lezen plant niet."
+              proof_result: rejected_as_expected
+      tolerances: []
+      unknown_data_policy: "Onbekende toewijzingsstatus of onbekend seizoen ⇒ geen toegang (fail-closed)."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "test:club (23/23 groen, 30-07-2026; mechanieker-grens)"
+        - "mechanieker-module-tests, club-organisation (bestaand)"
+      independent_checks: []
+      practice_test_required: true
+      practice_testers: []
+      result: not_tested
+      expectation_gap:
+        - "Zelfstandig team, diëtist-rol en seizoensbegrip bestaan nog niet."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Na akkoord René: zelfstandige teamvorm als versimpelde organisatie op het bestaande schema ontwerpen, diëtist-profiel definiëren (met hoofdstuk F-grenzen) en de stafrol-matrixtest bouwen."
+      approved_for_execution: false
+
+  - id: CLUB_EXTERNE_COACH_001
+    module: Club, coachorganisatie en ploegomgeving
+    subject: "Externe coach als herkomstlabel (IMPORTED), nooit een rol; AI-trainer terughoudend naast elke menselijke trainer en extra behoedzaam bij een extern plan"
+    status: needs_calibration
+
+    current_state:
+      technical_status: not_implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Eerlijke bevinding: het 6-delige herkomstsysteem (MEASURED/IMPORTED/SELF_REPORTED/DERIVED/AI_INTERPRETED/UNKNOWN) bestaat NIET als enum in code. Wel bestaat een Data Origin-service (engines/data-origin) met bronlabels (manual/strava/…/coach/derived) en betrouwbaarheid gemeten|afgeleid|geschat|handmatig, plus een bronnenregister (engines/source-quality) dat per analyse used/excluded bronnen logt. Plan-upload bestaat niet: POST /api/athlete/workouts normaliseert source hard naar coach|sparki (routes/athlete.ts:635-638); activity-imports importeert alleen uitgevoerde activiteiten, geen plannen. De AI-laag (buildAthleteContext + source-quality-promptregel) verbiedt nu al conclusies uit ontbrekende/onbetrouwbare bronnen."
+      practice_status: "Niet in praktijk getest; de flow bestaat niet."
+      known_limitations:
+        - "De opdrachttekst noemt het 6-delige systeem 'bestaand'; in code is dat niet zo — dit onderwerp is een bouwopgave bovenop de bestaande Data Origin-service, geen etikettering van iets dat er al is."
+
+    proposed_promise:
+      text: "Een renner met een externe coach uploadt diens plan zelf; het plan krijgt onuitwisbaar de herkomst IMPORTED met het label 'externe coach, niet via Sparki-trainer'. De externe coach krijgt nooit een account, rol of rechten. De AI-trainer blijft naast elke menselijke trainer terughoudend en adviserend, en is bij een extern plan extra behoedzaam — hij wijzigt het nooit zelf en spreekt alleen nadrukkelijk bij expliciete veiligheidskwesties."
+      proposed_by: replit
+      rationale: "Technisch haalbaar met bestaande bouwstenen: planned_workouts heeft al een source-veld (de normalisatie moet een IMPORTED-waarde + origin-label toestaan), de Data Origin-service kan het label dragen en tonen, en het source-quality-promptblok is de bestaande plek om de AI-behoedzaamheid af te dwingen."
+      rene_approved: false
+
+    role_model:
+      role: trainer
+      access_contexts: [independent, club, team]
+      scoping: per_trainer_athlete_context
+      club_hierarchy:
+        - beheerder
+        - hoofdtrainer
+        - trainers
+      team_structure:
+        beheerder: any_team_member
+        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+      externe_coach:
+        is_role: false
+        provenance_tag: IMPORTED
+        origin_label: "externe coach, niet via Sparki-trainer"
+      multi_role_stacking: true
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Bestaande Data Origin-service + source-quality-bronnenregister + planned_workouts.source"
+          coverage: "Dekt herkomstadministratie, explain-laag en AI-promptgrenzen; dekt niet plan-bestandsformaten van externe coaches (TrainingPeaks-export, spreadsheets, PDF)."
+          actuality: "Code 30-07-2026."
+          license_status: "Eigen code."
+          limitations:
+            - "source-normalisatie staat nu alleen coach|sparki toe — moet gecontroleerd verruimd, niet vrijgegeven (geen vrije strings)."
+          applicability: "Direct de drager; IMPORTED wordt een derde gecontroleerde source-waarde met verplicht origin-label."
+      sources_in_use: []
+      privacy_status: unknown
+      missing_information:
+        - "Welke bestandsformaten externe coaches in de praktijk aanleveren (bepaalt de import-parser, analoog aan de eerlijke bestandsimport uit hoofdstuk H)."
+
+    replit_definition:
+      objective_quality_standard: "100% van extern geüploade plan-items draagt IMPORTED + origin-label, zichtbaar in de herkomst-uitleg; 0 paden waarlangs een extern plan de source coach|sparki krijgt; AI-uitingen over een extern plan zijn aantoonbaar advies-alleen (geen automatische wijziging van IMPORTED-items door de plan-engine)."
+      recommended_default: "IMPORTED-items zijn voor Sparki's engines read-only invoer: belastingsmodel telt ze mee, adaptieve voorstellen mogen ernaast bestaan als voorstel, maar nooit het externe item zelf herschrijven."
+      technical_limits:
+        - "Sparki kan de kwaliteit van een extern plan niet garanderen; herkomst-eerlijkheid wel."
+      assumptions:
+        - "De bestaande veiligheids-/gezondheidsblokkades (hoofdstuk B+C) blijven op de uitvoering van externe plannen gewoon van kracht."
+      unknowns:
+        - "Of het 6-delige herkomstmodel app-breed wordt ingevoerd of eerst alleen voor plannen (app-breed raakt vrijwel elke tabel — aparte beslissing)."
+      evidence_method:
+        - "Contracttest: upload extern plan ⇒ elke rij IMPORTED+label; poging tot source-spoofing via API ⇒ genormaliseerd/geweigerd; plan-engine-run wijzigt IMPORTED-items niet."
+
+    rene_calibration:
+      questions:
+        - "Wat is het gewenste gedrag van de AI-trainer bij een IMPORTED extern plan dat een veiligheidsrisico lijkt te bevatten: alleen nadrukkelijk waarschuwen bij de renner, of ook de uitvoering blokkeren zoals bij een harde gezondheidsstatus?"
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Een externe coach krijgt nooit alsnog impliciet een account of rol toegekend — data van een extern plan blijft altijd IMPORTED met het herkomstlabel 'externe coach, niet via Sparki-trainer', en wordt nooit gepromoveerd tot een trainer-relatie of tot source coach|sparki."
+          rule_type: hard_blockage
+          measurement_level: per_actie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Renner uploadt een extern plan en de API-aanroep probeert source 'coach' mee te sturen; of een latere bewerking van het item laat het label vallen."
+              proof_stage: designed
+              proof_method: "Contracttest op de nieuwe importflow: source-spoofing wordt genormaliseerd naar IMPORTED, label onuitwisbaar over de hele levenscyclus (aanmaak, bewerking, kopie)."
+              proof_result: not_yet_tested
+        - rule: "De AI-trainer wijzigt nooit zelfstandig items van een menselijke trainer of een IMPORTED extern plan; hij levert naast zo'n plan uitsluitend advies, behalve bij expliciete veiligheidskwesties waar hij nadrukkelijk mag waarschuwen volgens het door René te kiezen gedrag."
+          rule_type: hard_blockage
+          measurement_level: per_actie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "De adaptieve plan-engine herschrijft een IMPORTED-item alsof het een eigen Sparki-voorstel is."
+              proof_stage: designed
+              proof_method: "Plan-engine-contracttest: run over een week met IMPORTED-items ⇒ byte-gelijke IMPORTED-rijen, voorstellen alleen als aparte advisory-items."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Plan-items zonder herleidbare herkomst krijgen UNKNOWN en worden nooit stil als Sparki- of coachplan behandeld."
+      approved: false
+
+    validation:
+      automated_tests: []
+      independent_checks: []
+      practice_test_required: true
+      practice_testers: []
+      result: not_tested
+      expectation_gap:
+        - "Volledige flow (upload, label, AI-gedrag) bestaat nog niet."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Na akkoord René (incl. veiligheidsgedrag-keuze): IMPORTED-source + origin-label + importflow bouwen op de Data Origin-service, met de twee contracttests hierboven."
+      approved_for_execution: false
+
+  - id: CLUB_MINDERJARIGEN_001
+    module: Club, coachorganisatie en ploegomgeving
+    subject: "CYD-regels uniform over alle drie toegangscontexten: ouder-koppeling, toestemming, verval bij 18, toegangslog 16-17, fail-closed bij onbekende leeftijd"
+    status: needs_calibration
+
+    current_state:
+      technical_status: partially_implemented
+      source_snapshot: 2026-07-30
+      evidence_status: "Bestaand en getest: ouder-kind-koppeling alleen via accepted parent_athlete_links (sharing.ts:306-320); leeftijdstiers u16/16_17/adult/unknown (parent-permissions.ts:74-89); <16 ouder beheert, 16-17 en 18+ sporter beheert; bij 18 gaat toegang effectief dicht tot herbevestiging door de sporter (parent-permissions.ts:131-169, routes/links.ts:300-325, parent-environment-tests); locatie fail-closed voor minor/unknown (live-location.ts:216-223); minderjarige zonder ouderconsent ⇒ coach sharing effectief none (sharing.ts:322-339); club behandelt onbekende leeftijd als minderjarig (club-permissions.ts:300-314)."
+      practice_status: "Ouder- en clubflows door testers gebruikt; gerichte minderjarigen-praktijktest over alle drie contexten tegelijk is niet gedaan."
+      known_limitations:
+        - "AFWIJKING gevonden: de algemene coach-sharinglaag behandelt onbekende leeftijd expliciet NIET als minderjarig (sharing.ts:17-34) terwijl club en parent/live-location wél fail-closed zijn — de uniformiteitseis wordt dus nog niet overal gehaald."
+        - "Er bestaat geen specifieke 16-17-toegangslog (alleen generieke club-audit); 'volledige 16-17-jarige-toegangslog' is een bouwopgave."
+        - "Progressieve geboortedatumverificatie bestaat niet; er is exacte-leeftijdberekening (computeAge) op de opgegeven geboortedatum."
+
+    proposed_promise:
+      text: "Voor een minderjarige renner gelden dezelfde beschermingsregels bij elke trainer, ongeacht toegangscontext: verplichte ouder-koppeling voor autoriteit, toestemming stuurt zichtbaarheid (locatie altijd), toestemming vervalt bij 18 tot de sporter herbevestigt, elke trainer-toegang tot een 16-17-jarige wordt gelogd, en onbekende leeftijd wordt overal als minderjarig behandeld (fail-closed)."
+      proposed_by: replit
+      rationale: "Het meeste bestaat en is getest; de twee echte gaten zijn de niet-uniforme unknown-leeftijd-behandeling in de algemene coachlaag en de ontbrekende 16-17-toegangslog. Dit zijn afgebakende, haalbare fixes op bestaande code."
+      rene_approved: false
+
+    role_model:
+      role: trainer
+      access_contexts: [independent, club, team]
+      scoping: per_trainer_athlete_context
+      club_hierarchy:
+        - beheerder
+        - hoofdtrainer
+        - trainers
+      team_structure:
+        beheerder: any_team_member
+        staff_peers: [trainer, ploegleider, mechanieker, dietist]
+      externe_coach:
+        is_role: false
+        provenance_tag: IMPORTED
+        origin_label: "externe coach, niet via Sparki-trainer"
+      multi_role_stacking: true
+
+    external_intelligence:
+      research_required: true
+      candidate_sources:
+        - name: "Bestaande parent-permissions/sharing/club-permissions + parent-environment- en coach-parent-tests"
+          coverage: "Dekt koppeling, tiers, verval bij 18, locatie-fail-closed en club-unknown-fail-closed; dekt niet de 16-17-toegangslog en niet de uniforme unknown-behandeling in de coachlaag."
+          actuality: "Code 30-07-2026, tests groen."
+          license_status: "Eigen code."
+          limitations: []
+          applicability: "Directe basis; uniformering is een wijziging in sharing.ts, de log een nieuwe audit-tabel of uitbreiding van club_audit_log."
+      sources_in_use: []
+      privacy_status: unknown
+      missing_information: []
+
+    replit_definition:
+      objective_quality_standard: "Eén gedeelde minderjarigen-poort voor alle trainer-leespaden (independent/club/team) met identiek fail-closed gedrag bij onbekende leeftijd; 100% van trainer-toegangen tot 16-17-jarigen in de toegangslog met wie/wat/wanneer/context; contracttest per context bewijst identiek gedrag."
+      recommended_default: "Unknown leeftijd = minderjarig in élke laag (de club-regel wordt de norm); 16-17-log als append-only audit met inzage voor sporter en ouder."
+      technical_limits:
+        - "Leeftijd blijft gebaseerd op opgegeven geboortedatum; Sparki kan identiteit niet verifiëren zonder externe verificatie (bewuste grens, eerlijk vermelden)."
+      assumptions:
+        - "De bestaande parent-consent-scopes dekken de drie contexten zonder nieuw consenttype."
+      unknowns:
+        - "Bewaartermijn en inzagerechten van de 16-17-toegangslog (raakt privacybeleid hoofdstuk-overstijgend)."
+      evidence_method:
+        - "Nieuwe contracttest 'minor-uniform-gate': zelfde minderjarige, drie toegangswegen, identieke weigering zonder ouderconsent; unknown-leeftijd-variant per laag."
+        - "Bestaande parent-environment- en coach-parent-tests als regressienet."
+
+    rene_calibration:
+      questions: []
+      completed: false
+
+    acceptance_contract:
+      hard_reject_rules:
+        - rule: "Bij een minderjarige renner gelden de CYD-regels (verplichte ouder-koppeling voor autoriteit, toestemming stuurt zichtbaarheid, locatietoestemming altijd, verval bij 18 tot herbevestiging, 16-17-toegangslog) onverkort en identiek, ongeacht of de trainer via club, team of zelfstandig toegang heeft — geen enkele context is een omweg om die bescherming heen."
+          rule_type: hard_blockage
+          measurement_level: per_trainer_athlete_context
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Trainer met directe (independent) link tot een 15-jarige zonder ouderconsent vraagt individuele data op — de route die voor een volwassene 200 geeft."
+              proof_stage: executed
+              proof_method: "Bestaand en gedraaid: minderjarige zonder ouderconsent ⇒ effectieve coach sharing none; test:coach-parent-sharing-levels 13/13 (30-07-2026) bewijst dat sharing none lege shapes en 403+nul-mutatie oplevert."
+              proof_result: rejected_as_expected
+        - rule: "Onbekende leeftijd wordt in elke trainer-context als minderjarig behandeld (fail-closed); een laag die onbekend als volwassen behandelt is een fout — het huidige gedrag van de algemene coach-sharinglaag (unknown ≠ minor) is daarmee een gedocumenteerd te dichten gat, geen acceptabel alternatief."
+          rule_type: hard_blockage
+          measurement_level: per_actie
+          aggregate_justification: ""
+          counterexamples:
+            - case: "Renner zonder geboortedatum; trainer met directe link vraagt data op en krijgt volwassen-niveau zichtbaarheid."
+              proof_stage: designed
+              proof_method: "Contracttest 'minor-uniform-gate', unknown-variant: verwacht identieke weigering als bij een bevestigde minderjarige, in alle drie contexten."
+              proof_result: not_yet_tested
+      tolerances: []
+      unknown_data_policy: "Onbekende leeftijd, onbekende consent-status of onbekende koppeling ⇒ strengste behandeling (minderjarig zonder consent), nooit stil volwassen."
+      approved: false
+
+    validation:
+      automated_tests:
+        - "test:coach-parent-sharing-levels (13/13 groen, 30-07-2026)"
+        - "parent-environment, coach-parent-link-isolation, coach-parent-share-nothing (bestaand)"
+      independent_checks: []
+      practice_test_required: true
+      practice_testers: []
+      result: not_tested
+      expectation_gap:
+        - "Unknown-leeftijd-uniformering en 16-17-toegangslog bestaan nog niet."
+    product_proof:
+      score: null
+      status: not_proven
+      evidence_refs: []
+    next_action:
+      type: research_or_build_or_retest
+      description: "Na akkoord René: unknown-leeftijd fail-closed doortrekken naar de algemene coach-sharinglaag, 16-17-toegangslog bouwen (append-only) en de minor-uniform-gate-contracttest toevoegen."
+      approved_for_execution: false
