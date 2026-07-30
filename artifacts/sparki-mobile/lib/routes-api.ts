@@ -32,22 +32,52 @@ export type RouteSummary = {
   version?: number;
 };
 
+/** Uitkomst van de verplichte navigatiestart-preflight (taak #505). */
+export type NavStartResult =
+  | { ok: true; version: number | null }
+  /**
+   * Server weigert bewust (409): route hard geblokkeerd of niet
+   * controleerbaar — navigatie mag NIET starten (fail-closed).
+   */
+  | { ok: false; code: "ROUTE_BLOCKED" | "ROUTE_UNVERIFIABLE"; message: string }
+  /**
+   * Netwerk/serverfout zonder bewuste weigering: offline navigeren op de
+   * bewaarde kopie blijft toegestaan (best-effort, geen weigering).
+   */
+  | { ok: true; version: null };
+
 /**
- * Meld aan de backend dat de navigatie met deze route start. De backend legt
- * vast WELKE routeversie gebruikt wordt (idempotent per versie) en geeft het
- * actuele versienummer terug. Best-effort: mislukken blokkeert navigatie nooit.
+ * Verplichte preflight vóór navigatie (taak #505, fail-closed): de backend
+ * controleert de route blokkerend op blokkades en legt de gebruikte
+ * routeversie vast. Een bewuste 409-weigering (ROUTE_BLOCKED /
+ * ROUTE_UNVERIFIABLE) stopt de navigatie; een kale netwerkfout niet
+ * (offline doorgaan op de bewaarde kopie blijft mogelijk).
  */
 export async function meldNavigatieStart(
   routeId: number,
-): Promise<number | null> {
+): Promise<NavStartResult> {
   try {
     const r = await customFetch<{ ok: boolean; version: number }>(
       `/api/routes/${routeId}/navigatie-start`,
       { method: "POST", responseType: "json" },
     );
-    return typeof r.version === "number" ? r.version : null;
-  } catch {
-    return null;
+    return { ok: true, version: typeof r.version === "number" ? r.version : null };
+  } catch (err) {
+    const anyErr = err as { status?: number; body?: { code?: string; error?: string } };
+    const code = anyErr?.body?.code;
+    if (
+      anyErr?.status === 409 &&
+      (code === "ROUTE_BLOCKED" || code === "ROUTE_UNVERIFIABLE")
+    ) {
+      return {
+        ok: false,
+        code,
+        message:
+          anyErr.body?.error ??
+          "Deze route kan nu niet genavigeerd worden.",
+      };
+    }
+    return { ok: true, version: null };
   }
 }
 

@@ -62,6 +62,7 @@ import {
   bikeSuitabilityConfigError,
   generateVariedLoop,
   NoSuitableRouteError,
+  UnverifiableRouteError,
   selectRoutingProfile,
   profileToSurface,
   profileCruisingSpeedKmh,
@@ -2053,14 +2054,22 @@ router.get("/:id/remarks", requireAuth, async (req, res) => {
     // gebruikt dit om KLAAR en NAVIGEER eerlijk te blokkeren op routes die
     // vóór de generatiepoort zijn opgeslagen.
     const obstacles = countRouteObstacles(remarks);
-    const blockage = {
-      ...obstacles,
-      hard:
-        obstacles.forbidden > 0 ||
-        obstacles.steps > 0 ||
-        obstacles.blockedGates > 0,
-    };
-    res.json({ remarks, dataRemarks, blockage, source: remarksSource() });
+    const hard =
+      obstacles.forbidden > 0 ||
+      obstacles.steps > 0 ||
+      obstacles.blockedGates > 0;
+    const blockage = { ...obstacles, hard };
+    // Verificatiestatus (taak #505): geslaagde meting is hier gegarandeerd
+    // (remarks==null gaf hierboven al een eerlijke 502 = unverifiable voor de
+    // klant). De klant toont KLAAR/NAVIGEER uitsluitend bij verified_clear.
+    const verification = hard ? "hard_blocked" : "verified_clear";
+    res.json({
+      remarks,
+      dataRemarks,
+      blockage,
+      verification,
+      source: remarksSource(),
+    });
   } catch (err) {
     req.log.error({ err }, "routes.remarks failed");
     res.status(500).json({ error: "Kon routeopmerkingen niet laden" });
@@ -2676,6 +2685,13 @@ async function buildLoopCandidate(
         // afgesloten poort = harde afkeur; minste poorten wint (grenzen
         // René 30-07-2026).
         obstaclesOf: routeObstaclesOf({ budgetMs: 2500 }),
+        // Fail-closed eindverificatie (taak #505): de WINNAAR wordt vóór
+        // levering BLOKKEREND gemeten — het 2500 ms-budget hierboven is
+        // alleen een selectie-heuristiek en liet 11/12 lussen met blokkades
+        // door (Overpass 14–98 s, timeout was fail-open). Hard geblokkeerd ⇒
+        // volgende kandidaat; meting definitief mislukt ⇒ eerlijke fout,
+        // nooit een ongecontroleerde route leveren.
+        verifyObstaclesOf: routeObstaclesOf(),
         // Meerdere voorstellen: naast de winnaar ook max 2 écht anders
         // lopende, niet-afgekeurde kandidaten uit de interne pool teruggeven
         // — die werden voorheen stil weggegooid.
@@ -3133,6 +3149,19 @@ router.post("/generate", requireAuth, async (req, res) => {
           });
           return;
         }
+        if (err instanceof UnverifiableRouteError) {
+          // Fail-closed (taak #505): geen geslaagde blokkademeting = niet
+          // verifieerbaar = eerlijk weigeren, nooit ongecontroleerd leveren.
+          console.log(
+            `[generate.loop] unverifiable: ${err.message} ms=${Math.round(performance.now() - _t_req0)}`,
+          );
+          res.status(503).json({
+            error: err.message,
+            code: "ROUTE_UNVERIFIABLE",
+            profile: err.profile,
+          });
+          return;
+        }
         throw err;
       }
       console.log(`[PERF] generate.loop TOTAL ms=${Math.round(performance.now()-_t_req0)} distKm=${candidate.distanceKm?.toFixed(1)} mode=loop`);
@@ -3327,10 +3356,19 @@ router.post("/generate", requireAuth, async (req, res) => {
         `[generate.${mode}] blokkadepoort meting ms=${Math.round(performance.now() - _t_gate0)} beschikbaar=${obs != null}`,
       );
       if (obs == null) {
+        // Fail-closed (taak #505): geen geslaagde meting = niet verifieerbaar
+        // = nooit als voorstel aanbieden. Voorheen fail-open; dat is precies
+        // het gat waardoor ongecontroleerde routes doorlekten.
         req.log.warn(
           { mode },
-          "generate: blokkademeting niet beschikbaar (alle mirrors faalden) — eerlijk fail-open",
+          "generate: blokkademeting definitief niet beschikbaar — fail-closed geweigerd",
         );
+        res.status(422).json({
+          error:
+            "De route kon niet gecontroleerd worden op blokkades (de kaartbron gaf geen antwoord). We bieden een ongecontroleerde route niet aan — probeer het over een paar minuten opnieuw.",
+          code: "ROUTE_UNVERIFIABLE",
+        });
+        return true;
       }
       if (
         obs != null &&
@@ -3645,6 +3683,16 @@ router.post("/generate/options", requireAuth, async (req, res) => {
       err instanceof Error && err.message
         ? err.message
         : "Routegeneratie mislukt";
+    // Fail-closed (taak #505): niet-verifieerbaar krijgt een eigen code zodat
+    // de klant de eerlijke uitleg kan tonen (geen KLAAR, geen opslag).
+    if (err instanceof UnverifiableRouteError) {
+      res.status(503).json({ error: message, code: "ROUTE_UNVERIFIABLE" });
+      return;
+    }
+    if (err instanceof NoSuitableRouteError) {
+      res.status(422).json({ error: message, code: "NO_SUITABLE_ROUTE" });
+      return;
+    }
     res.status(502).json({ error: message });
   }
 });
@@ -4281,7 +4329,11 @@ router.post("/:id/navigatie-start", requireAuth, async (req, res) => {
     // navigatie in. Zelfde meting als de opmerkingen (gedeelde cache);
     // meting mislukt/te traag = eerlijk fail-open (nooit gokken), gelogd.
     const geometry = (route.geometry as RoutePathPoint[] | null) ?? [];
-    const obs = await routeObstaclesOf({ budgetMs: 2500 })(geometry);
+    // Fail-closed (taak #505): BLOKKEREND meten (geen 2500 ms-budget meer —
+    // dat liet een koude Overpass-cache stil fail-open door). Meting mislukt
+    // definitief (alle mirrors kapot) ⇒ eerlijke weigering, nooit
+    // ongecontroleerd de navigatie in.
+    const obs = await routeObstaclesOf()(geometry);
     if (
       obs != null &&
       (obs.forbidden > 0 || obs.steps > 0 || obs.blockedGates > 0)
@@ -4297,8 +4349,14 @@ router.post("/:id/navigatie-start", requireAuth, async (req, res) => {
     if (obs == null) {
       req.log.warn(
         { routeId: route.id },
-        "navStart: blokkademeting niet beschikbaar — eerlijk fail-open",
+        "navStart: blokkademeting definitief niet beschikbaar — fail-closed geweigerd",
       );
+      res.status(409).json({
+        error:
+          "Deze route kon nu niet gecontroleerd worden op blokkades (de kaartbron gaf geen antwoord). We starten navigatie niet op een ongecontroleerde route — probeer het over een paar minuten opnieuw.",
+        code: "ROUTE_UNVERIFIABLE",
+      });
+      return;
     }
     await registerRouteUsage(route, "navigatie", route.version, clerkId);
     res.json({ ok: true, version: route.version });

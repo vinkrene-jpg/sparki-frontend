@@ -960,12 +960,27 @@ function RouteCard({
   }>()
   // Routeopmerkingen uit echte OSM-gegevens (server, gecachet).
   const remarksQuery = useRouteRemarks(geometry.length > 1 ? route.id : null)
-  // Harde blokkade (fietsverbod, trap, afgesloten poort/privéterrein) uit de
-  // server-meting: zo'n route is nooit "Klaar" en nooit navigeerbaar — dit
-  // vangt routes die vóór de generatiepoort zijn opgeslagen. Meting (nog)
-  // niet beschikbaar = eerlijk niet blokkeren (fail-open, zelfde als server).
+  // Verificatiestatus (taak #505, fail-closed): iedere route heeft exact één
+  // status — pending (meting loopt), verified_clear, hard_blocked of
+  // unverifiable (kaartbron gaf geen antwoord). Alleen verified_clear toont
+  // "Klaar" en activeert NAVIGEER; pending/unverifiable worden nooit stil als
+  // veilig behandeld. De server weigert navigatiestart bovendien zelf (409).
+  // "geen_route" = geen bruikbare geometrie (geen verificatie-oordeel maar
+  // simpelweg niets om te navigeren); NAVIGEER blijft dan ook uit. Waar de
+  // server het expliciete verification-veld meestuurt, is dát leidend.
   const hardBlocked = remarksQuery.data?.blockage?.hard === true
-  const canNavigate = geometry.length > 1 && !hardBlocked
+  const serverVerification = remarksQuery.data?.verification
+  const verification: "pending" | "verified_clear" | "hard_blocked" | "unverifiable" | "geen_route" =
+    geometry.length <= 1
+      ? "geen_route"
+      : remarksQuery.isError
+        ? "unverifiable"
+        : remarksQuery.data == null
+          ? "pending"
+          : serverVerification === "hard_blocked" || hardBlocked
+            ? "hard_blocked"
+            : "verified_clear"
+  const canNavigate = verification === "verified_clear"
   // Gravel/MTB: onverhard is daar juist gewénst — een "onverhard"-opmerking is
   // dan informatie (staat in de lijst en de wegdekverdeling), geen
   // waarschuwingsmarker die de kaart vol uitroeptekens zet.
@@ -1048,13 +1063,23 @@ function RouteCard({
         <div className="min-w-0 flex-1 basis-44">
           <div className="flex min-w-0 items-center gap-2">
             <span
-              className={`font-mono text-[9px] uppercase tracking-[0.18em] ${hardBlocked ? "text-negative" : "text-accent-cyan"}`}
+              className={`font-mono text-[9px] uppercase tracking-[0.18em] ${
+                verification === "hard_blocked"
+                  ? "text-negative"
+                  : verification === "verified_clear"
+                    ? "text-accent-cyan"
+                    : "text-warning"
+              }`}
             >
-              {hardBlocked
+              {verification === "hard_blocked"
                 ? "Geblokkeerd"
-                : route.status === "ready"
-                  ? "Klaar"
-                  : route.status}
+                : verification === "pending"
+                  ? "Controle loopt"
+                  : verification === "unverifiable"
+                    ? "Niet gecontroleerd"
+                    : route.status === "ready"
+                      ? "Klaar"
+                      : route.status}
             </span>
             <span className="font-mono text-[9px] uppercase text-white/25">
               · {route.source}

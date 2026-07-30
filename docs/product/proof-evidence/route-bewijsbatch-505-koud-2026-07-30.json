@@ -1,0 +1,2431 @@
+{
+  "race-25-vlak": {
+    "status": "generate_failed",
+    "detail": {
+      "__error": true,
+      "status": 503,
+      "body": {
+        "error": "De route kon niet gecontroleerd worden op blokkades (de kaartbron gaf geen antwoord). We bieden een ongecontroleerde route niet aan — probeer het over een paar minuten opnieuw.",
+        "code": "ROUTE_UNVERIFIABLE",
+        "profile": "cycling-road"
+      }
+    }
+  },
+  "race-60-heuvels": {
+    "status": "ok",
+    "request": {
+      "id": "race-60-heuvels",
+      "bikeType": "racefiets",
+      "targetKm": 60,
+      "elevationPreference": "hilly"
+    },
+    "distanceKm": 52.22,
+    "distDevPct": 13,
+    "ascentM": 138,
+    "mPerKm": 2.6,
+    "remarksSource": {
+      "name": "OpenStreetMap (via Overpass API)",
+      "license": "ODbL 1.0 — © OpenStreetMap-bijdragers",
+      "url": "https://www.openstreetmap.org/copyright",
+      "note": "Kaartgegevens kunnen verouderd of onvolledig zijn; controleer ter plekke."
+    },
+    "remarksTotal": 0,
+    "blockingRemarks": [],
+    "infoRemarks": [],
+    "surfaces": null,
+    "rationale": "Deze een lus vanuit Purdey Hengelo van 52 km, ±134 min, ±138 hm past bij een duurtraining (racefiets (asfalt)).",
+    "alternates": 0,
+    "checks": {
+      "geenBlokkerendeObstakels": true,
+      "afstandBinnen20pct": true
+    }
+  },
+  "race-120-water": {
+    "status": "ok",
+    "request": {
+      "id": "race-120-water",
+      "bikeType": "racefiets",
+      "targetKm": 120,
+      "wish": "graag langs water"
+    },
+    "distanceKm": 123.08,
+    "distDevPct": 2.6,
+    "ascentM": 213,
+    "mPerKm": 1.7,
+    "remarksSource": {
+      "name": "OpenStreetMap (via Overpass API)",
+      "license": "ODbL 1.0 — © OpenStreetMap-bijdragers",
+      "url": "https://www.openstreetmap.org/copyright",
+      "note": "Kaartgegevens kunnen verouderd of onvolledig zijn; controleer ter plekke."
+    },
+    "remarksTotal": 0,
+    "blockingRemarks": [],
+    "infoRemarks": [],
+    "surfaces": null,
+    "rationale": "Deze een lus vanuit Purdey Hengelo van 123 km, ±347 min, ±213 hm past bij een duurtraining (racefiets (asfalt)).",
+    "alternates": 0,
+    "checks": {
+      "geenBlokkerendeObstakels": true,
+      "afstandBinnen20pct": true
+    }
+  },
+  "race-200-rustig": {
+    "status": "ok",
+    "request": {
+      "id": "race-200-rustig",
+      "bikeType": "racefiets",
+      "targetKm": 200,
+      "wish": "niet door stadskernen",
+      "avoidBusyRoads": true
+    },
+    "distanceKm": 191.66,
+    "distDevPct": 4.2,
+    "ascentM": 226,
+    "mPerKm": 1.2,
+    "remarksSource": {
+      "name": "OpenStreetMap (via Overpass API)",
+      "license": "ODbL 1.0 — © OpenStreetMap-bijdragers",
+      "url": "https://www.openstreetmap.org/copyright",
+      "note": "Kaartgegevens kunnen verouderd of onvolledig zijn; controleer ter plekke."
+    },
+    "remarksTotal": 0,
+    "blockingRemarks": [],
+    "infoRemarks": [],
+    "surfaces": null,
+    "rationale": "Deze een lus vanuit Purdey Hengelo van 192 km, ±500 min, ±226 hm past bij een duurtraining (racefiets (asfalt)).",
+    "alternates": 1,
+    "checks": {
+      "geenBlokkerendeObstakels": true,
+      "afstandBinnen20pct": true
+    }
+  },
+  "gravel-25-natuur": {
+    "status": "ok",
+    "request": {
+      "id": "gravel-25-natuur",
+      "bikeType": "gravel",
+      "targetKm": 25,
+      "wish": "door natuur"
+    },
+    "distanceKm": 23.94,
+    "distDevPct": 4.2,
+    "ascentM": 79,
+    "mPerKm": 3.3,
+    "remarksSource": {
+      "name": "OpenStreetMap (via Overpass API)",
+      "license": "ODbL 1.0 — © OpenStreetMap-bijdragers",
+      "url": "https://www.openstreetmap.org/copyright",
+      "note": "Kaartgegevens kunnen verouderd of onvolledig zijn; controleer ter plekke."
+    },
+    "remarksTotal": 8,
+    "blockingRemarks": [],
+    "infoRemarks": [
+      "onverhard@2.6km",
+      "onverhard@3.8km",
+      "onverhard@7.5km",
+      "onverhard@11.7km",
+      "onverhard@15.3km",
+      "slecht_wegdek@15.5km",
+      "onverhard@16.4km",
+      "onverhard@17.3km"
+    ],
+    "surfaces": {
+      "totalKm": 23.9,
+      "breakdown": [
+        {
+          "kind": "verhard_fietspad",
+          "km": 10.3,
+          "pct": 42.9,
+          "evidence": "highway=cycleway + surface=asphalt"
+        },
+        {
+          "kind": "asfalt",
+          "km": 8.9,
+          "pct": 37.2,
+          "evidence": "surface=asphalt"
+        },
+        {
+          "kind": "compact_gravel",
+          "km": 2.2,
+          "pct": 9.1,
+          "evidence": "surface=fine_gravel"
+        },
+        {
+          "kind": "klinkers",
+          "km": 2,
+          "pct": 8.6,
+          "evidence": "surface=paving_stones"
+        },
+        {
+          "kind": "onverhard",
+          "km": 0.5,
+          "pct": 2,
+          "evidence": "tracktype=grade4"
+        },
+        {
+          "kind": "onbekend",
+          "km": 0.1,
+          "pct": 0.3,
+          "evidence": "highway=cycleway zonder surface-tag"
+        }
+      ],
+      "segments": [
+        {
+          "kind": "klinkers",
+          "fromKm": 0,
+          "toKm": 0.1,
+          "fromIdx": 0,
+          "toIdx": 2
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 0.1,
+          "toKm": 0.1,
+          "fromIdx": 3,
+          "toIdx": 3
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 0.1,
+          "toKm": 0.1,
+          "fromIdx": 4,
+          "toIdx": 4
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 0.2,
+          "toKm": 0.3,
+          "fromIdx": 5,
+          "toIdx": 8
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 0.3,
+          "toKm": 0.3,
+          "fromIdx": 9,
+          "toIdx": 10
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 0.3,
+          "toKm": 0.3,
+          "fromIdx": 11,
+          "toIdx": 11
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 0.3,
+          "toKm": 0.4,
+          "fromIdx": 12,
+          "toIdx": 14
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 0.4,
+          "toKm": 0.6,
+          "fromIdx": 15,
+          "toIdx": 25
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 0.7,
+          "toKm": 0.7,
+          "fromIdx": 26,
+          "toIdx": 26
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 0.7,
+          "toKm": 0.8,
+          "fromIdx": 27,
+          "toIdx": 35
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 0.8,
+          "toKm": 1,
+          "fromIdx": 36,
+          "toIdx": 50
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 1.1,
+          "toKm": 1.1,
+          "fromIdx": 51,
+          "toIdx": 51
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 1.1,
+          "toKm": 1.1,
+          "fromIdx": 52,
+          "toIdx": 54
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 1.1,
+          "toKm": 1.1,
+          "fromIdx": 55,
+          "toIdx": 55
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 1.1,
+          "toKm": 1.2,
+          "fromIdx": 56,
+          "toIdx": 57
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 1.2,
+          "toKm": 1.2,
+          "fromIdx": 58,
+          "toIdx": 58
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 1.2,
+          "toKm": 1.2,
+          "fromIdx": 59,
+          "toIdx": 59
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 1.2,
+          "toKm": 1.2,
+          "fromIdx": 60,
+          "toIdx": 60
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 1.2,
+          "toKm": 1.2,
+          "fromIdx": 61,
+          "toIdx": 61
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 1.2,
+          "toKm": 1.2,
+          "fromIdx": 62,
+          "toIdx": 62
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 1.3,
+          "toKm": 2.2,
+          "fromIdx": 63,
+          "toIdx": 98
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 2.2,
+          "toKm": 2.2,
+          "fromIdx": 99,
+          "toIdx": 101
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 2.3,
+          "toKm": 2.4,
+          "fromIdx": 102,
+          "toIdx": 105
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 2.4,
+          "toKm": 2.4,
+          "fromIdx": 106,
+          "toIdx": 106
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 2.4,
+          "toKm": 2.7,
+          "fromIdx": 107,
+          "toIdx": 115
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 2.8,
+          "toKm": 3.1,
+          "fromIdx": 116,
+          "toIdx": 122
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 3.1,
+          "toKm": 4,
+          "fromIdx": 123,
+          "toIdx": 154
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 4,
+          "toKm": 4.2,
+          "fromIdx": 155,
+          "toIdx": 158
+        },
+        {
+          "kind": "onbekend",
+          "fromKm": 4.2,
+          "toKm": 4.2,
+          "fromIdx": 159,
+          "toIdx": 159
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 4.3,
+          "toKm": 4.5,
+          "fromIdx": 160,
+          "toIdx": 171
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 4.6,
+          "toKm": 4.6,
+          "fromIdx": 172,
+          "toIdx": 172
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 4.6,
+          "toKm": 5.1,
+          "fromIdx": 173,
+          "toIdx": 190
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 5.2,
+          "toKm": 5.8,
+          "fromIdx": 191,
+          "toIdx": 211
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 5.8,
+          "toKm": 5.9,
+          "fromIdx": 212,
+          "toIdx": 221
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 5.9,
+          "toKm": 7.5,
+          "fromIdx": 222,
+          "toIdx": 260
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 7.5,
+          "toKm": 7.9,
+          "fromIdx": 261,
+          "toIdx": 275
+        },
+        {
+          "kind": "onverhard",
+          "fromKm": 7.9,
+          "toKm": 7.9,
+          "fromIdx": 276,
+          "toIdx": 276
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 7.9,
+          "toKm": 8.3,
+          "fromIdx": 277,
+          "toIdx": 283
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 8.3,
+          "toKm": 8.3,
+          "fromIdx": 284,
+          "toIdx": 284
+        },
+        {
+          "kind": "onverhard",
+          "fromKm": 8.3,
+          "toKm": 8.3,
+          "fromIdx": 285,
+          "toIdx": 285
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 8.3,
+          "toKm": 9.1,
+          "fromIdx": 286,
+          "toIdx": 287
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 9.2,
+          "toKm": 10.7,
+          "fromIdx": 288,
+          "toIdx": 298
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 11.1,
+          "toKm": 11.1,
+          "fromIdx": 299,
+          "toIdx": 300
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 11.2,
+          "toKm": 11.7,
+          "fromIdx": 301,
+          "toIdx": 303
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 11.7,
+          "toKm": 12.2,
+          "fromIdx": 304,
+          "toIdx": 311
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 12.2,
+          "toKm": 12.9,
+          "fromIdx": 312,
+          "toIdx": 319
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 12.9,
+          "toKm": 13.5,
+          "fromIdx": 320,
+          "toIdx": 341
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 13.5,
+          "toKm": 13.5,
+          "fromIdx": 342,
+          "toIdx": 342
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 13.6,
+          "toKm": 13.9,
+          "fromIdx": 343,
+          "toIdx": 345
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 14,
+          "toKm": 14,
+          "fromIdx": 346,
+          "toIdx": 346
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 14,
+          "toKm": 14.5,
+          "fromIdx": 347,
+          "toIdx": 354
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 14.6,
+          "toKm": 14.6,
+          "fromIdx": 355,
+          "toIdx": 355
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 14.6,
+          "toKm": 14.6,
+          "fromIdx": 356,
+          "toIdx": 356
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 14.6,
+          "toKm": 14.8,
+          "fromIdx": 357,
+          "toIdx": 371
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 14.8,
+          "toKm": 14.8,
+          "fromIdx": 372,
+          "toIdx": 372
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 14.8,
+          "toKm": 14.9,
+          "fromIdx": 373,
+          "toIdx": 380
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 14.9,
+          "toKm": 14.9,
+          "fromIdx": 381,
+          "toIdx": 381
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 14.9,
+          "toKm": 15.4,
+          "fromIdx": 382,
+          "toIdx": 393
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 15.4,
+          "toKm": 15.4,
+          "fromIdx": 394,
+          "toIdx": 394
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 15.4,
+          "toKm": 15.5,
+          "fromIdx": 395,
+          "toIdx": 397
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 15.5,
+          "toKm": 15.5,
+          "fromIdx": 398,
+          "toIdx": 398
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 15.5,
+          "toKm": 16,
+          "fromIdx": 399,
+          "toIdx": 425
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 16,
+          "toKm": 16.3,
+          "fromIdx": 426,
+          "toIdx": 434
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 16.4,
+          "toKm": 16.7,
+          "fromIdx": 435,
+          "toIdx": 438
+        },
+        {
+          "kind": "onverhard",
+          "fromKm": 16.7,
+          "toKm": 17.1,
+          "fromIdx": 439,
+          "toIdx": 449
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 17.2,
+          "toKm": 18.2,
+          "fromIdx": 450,
+          "toIdx": 473
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 18.2,
+          "toKm": 18.9,
+          "fromIdx": 474,
+          "toIdx": 484
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 18.9,
+          "toKm": 18.9,
+          "fromIdx": 485,
+          "toIdx": 485
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 18.9,
+          "toKm": 19.4,
+          "fromIdx": 486,
+          "toIdx": 504
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 19.8,
+          "toKm": 19.8,
+          "fromIdx": 505,
+          "toIdx": 505
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 19.8,
+          "toKm": 20.9,
+          "fromIdx": 506,
+          "toIdx": 535
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 21.1,
+          "toKm": 21.2,
+          "fromIdx": 536,
+          "toIdx": 540
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 21.2,
+          "toKm": 21.4,
+          "fromIdx": 541,
+          "toIdx": 553
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 21.6,
+          "toKm": 21.6,
+          "fromIdx": 554,
+          "toIdx": 554
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 21.7,
+          "toKm": 21.7,
+          "fromIdx": 555,
+          "toIdx": 555
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 21.7,
+          "toKm": 21.8,
+          "fromIdx": 556,
+          "toIdx": 557
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 21.8,
+          "toKm": 22,
+          "fromIdx": 558,
+          "toIdx": 562
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 22,
+          "toKm": 22.3,
+          "fromIdx": 563,
+          "toIdx": 565
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 22.3,
+          "toKm": 22.5,
+          "fromIdx": 566,
+          "toIdx": 572
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 22.6,
+          "toKm": 22.6,
+          "fromIdx": 573,
+          "toIdx": 573
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 22.6,
+          "toKm": 23.7,
+          "fromIdx": 574,
+          "toIdx": 598
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 23.7,
+          "toKm": 23.9,
+          "fromIdx": 599,
+          "toIdx": 606
+        }
+      ],
+      "forbiddenKm": 0,
+      "restrictedKm": 0,
+      "bgt": {
+        "checkedSamples": 111,
+        "resolvedSamples": 110,
+        "source": {
+          "name": "BGT — Basisregistratie Grootschalige Topografie (via PDOK)",
+          "license": "CC0 1.0 — open data van de Nederlandse overheid",
+          "url": "https://www.pdok.nl/introductie/-/article/basisregistratie-grootschalige-topografie-bgt-",
+          "note": "Alleen Nederland; verhardingssoort per wegvak, door gemeentes onderhouden."
+        }
+      }
+    },
+    "rationale": "Deze een lus vanuit Purdey Hengelo van 24 km, ±85 min, ±79 hm past bij een duurtraining (gravelfiets (gemengd/onverhard)).",
+    "alternates": 0,
+    "checks": {
+      "geenBlokkerendeObstakels": true,
+      "afstandBinnen20pct": true
+    }
+  },
+  "gravel-60-heuvels": {
+    "status": "ok",
+    "request": {
+      "id": "gravel-60-heuvels",
+      "bikeType": "gravel",
+      "targetKm": 60,
+      "elevationPreference": "hilly"
+    },
+    "distanceKm": 52.84,
+    "distDevPct": 11.9,
+    "ascentM": 211,
+    "mPerKm": 4,
+    "remarksSource": {
+      "name": "OpenStreetMap (via Overpass API)",
+      "license": "ODbL 1.0 — © OpenStreetMap-bijdragers",
+      "url": "https://www.openstreetmap.org/copyright",
+      "note": "Kaartgegevens kunnen verouderd of onvolledig zijn; controleer ter plekke."
+    },
+    "remarksTotal": 2,
+    "blockingRemarks": [],
+    "infoRemarks": [
+      "onverhard@7.6km",
+      "onverhard@28.1km"
+    ],
+    "surfaces": null,
+    "rationale": "Deze een lus vanuit Purdey Hengelo van 53 km, ±186 min, ±211 hm past bij een duurtraining (gravelfiets (gemengd/onverhard)).",
+    "alternates": 0,
+    "checks": {
+      "geenBlokkerendeObstakels": true,
+      "afstandBinnen20pct": true
+    }
+  },
+  "gravel-120-water": {
+    "status": "generate_failed",
+    "detail": {
+      "__error": true,
+      "status": 422,
+      "body": {
+        "error": "Geen geschikte route gevonden voor cycling-gravel: fietsverbod, trap of afgesloten poort (forbidden=0 steps=0 blockedGates=2). Probeer een ander startpunt of een kortere afstand.",
+        "code": "NO_SUITABLE_ROUTE",
+        "profile": "cycling-gravel"
+      }
+    }
+  },
+  "gravel-200-vlak": {
+    "status": "ok",
+    "request": {
+      "id": "gravel-200-vlak",
+      "bikeType": "gravel",
+      "targetKm": 200,
+      "elevationPreference": "flat"
+    },
+    "distanceKm": 184.33,
+    "distDevPct": 7.8,
+    "ascentM": 296,
+    "mPerKm": 1.6,
+    "remarksSource": {
+      "name": "OpenStreetMap (via Overpass API)",
+      "license": "ODbL 1.0 — © OpenStreetMap-bijdragers",
+      "url": "https://www.openstreetmap.org/copyright",
+      "note": "Kaartgegevens kunnen verouderd of onvolledig zijn; controleer ter plekke."
+    },
+    "remarksTotal": 0,
+    "blockingRemarks": [],
+    "infoRemarks": [],
+    "surfaces": null,
+    "rationale": "Deze een lus vanuit Purdey Hengelo van 184 km, ±629 min, ±296 hm past bij een duurtraining (gravelfiets (gemengd/onverhard)).",
+    "alternates": 1,
+    "checks": {
+      "geenBlokkerendeObstakels": true,
+      "afstandBinnen20pct": true
+    }
+  },
+  "mtb-25-natuur": {
+    "status": "ok",
+    "request": {
+      "id": "mtb-25-natuur",
+      "bikeType": "mtb",
+      "targetKm": 25,
+      "wish": "door natuur"
+    },
+    "distanceKm": 24.06,
+    "distDevPct": 3.8,
+    "ascentM": 79,
+    "mPerKm": 3.3,
+    "remarksSource": {
+      "name": "OpenStreetMap (via Overpass API)",
+      "license": "ODbL 1.0 — © OpenStreetMap-bijdragers",
+      "url": "https://www.openstreetmap.org/copyright",
+      "note": "Kaartgegevens kunnen verouderd of onvolledig zijn; controleer ter plekke."
+    },
+    "remarksTotal": 5,
+    "blockingRemarks": [],
+    "infoRemarks": [
+      "onverhard@7.5km",
+      "onverhard@11.7km",
+      "onverhard@15.5km",
+      "slecht_wegdek@15.5km",
+      "onverhard@16.4km"
+    ],
+    "surfaces": {
+      "totalKm": 24.1,
+      "breakdown": [
+        {
+          "kind": "verhard_fietspad",
+          "km": 10.4,
+          "pct": 43.2,
+          "evidence": "highway=cycleway + surface=asphalt"
+        },
+        {
+          "kind": "asfalt",
+          "km": 9,
+          "pct": 37.3,
+          "evidence": "surface=asphalt"
+        },
+        {
+          "kind": "compact_gravel",
+          "km": 2.2,
+          "pct": 9,
+          "evidence": "surface=fine_gravel"
+        },
+        {
+          "kind": "klinkers",
+          "km": 2,
+          "pct": 8.2,
+          "evidence": "surface=paving_stones"
+        },
+        {
+          "kind": "onverhard",
+          "km": 0.5,
+          "pct": 2,
+          "evidence": "tracktype=grade4"
+        },
+        {
+          "kind": "onbekend",
+          "km": 0.1,
+          "pct": 0.3,
+          "evidence": "highway=cycleway zonder surface-tag"
+        }
+      ],
+      "segments": [
+        {
+          "kind": "klinkers",
+          "fromKm": 0,
+          "toKm": 0.1,
+          "fromIdx": 0,
+          "toIdx": 2
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 0.1,
+          "toKm": 0.1,
+          "fromIdx": 3,
+          "toIdx": 3
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 0.1,
+          "toKm": 0.1,
+          "fromIdx": 4,
+          "toIdx": 4
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 0.2,
+          "toKm": 0.3,
+          "fromIdx": 5,
+          "toIdx": 8
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 0.3,
+          "toKm": 0.3,
+          "fromIdx": 9,
+          "toIdx": 10
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 0.3,
+          "toKm": 0.3,
+          "fromIdx": 11,
+          "toIdx": 11
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 0.3,
+          "toKm": 0.4,
+          "fromIdx": 12,
+          "toIdx": 14
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 0.4,
+          "toKm": 0.6,
+          "fromIdx": 15,
+          "toIdx": 25
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 0.7,
+          "toKm": 0.7,
+          "fromIdx": 26,
+          "toIdx": 26
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 0.7,
+          "toKm": 0.8,
+          "fromIdx": 27,
+          "toIdx": 35
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 0.8,
+          "toKm": 1,
+          "fromIdx": 36,
+          "toIdx": 50
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 1.1,
+          "toKm": 1.1,
+          "fromIdx": 51,
+          "toIdx": 51
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 1.1,
+          "toKm": 1.1,
+          "fromIdx": 52,
+          "toIdx": 54
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 1.1,
+          "toKm": 1.1,
+          "fromIdx": 55,
+          "toIdx": 55
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 1.1,
+          "toKm": 1.2,
+          "fromIdx": 56,
+          "toIdx": 57
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 1.2,
+          "toKm": 1.2,
+          "fromIdx": 58,
+          "toIdx": 58
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 1.2,
+          "toKm": 1.2,
+          "fromIdx": 59,
+          "toIdx": 59
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 1.2,
+          "toKm": 1.2,
+          "fromIdx": 60,
+          "toIdx": 60
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 1.2,
+          "toKm": 1.2,
+          "fromIdx": 61,
+          "toIdx": 61
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 1.2,
+          "toKm": 1.2,
+          "fromIdx": 62,
+          "toIdx": 62
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 1.3,
+          "toKm": 2.2,
+          "fromIdx": 63,
+          "toIdx": 98
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 2.2,
+          "toKm": 2.2,
+          "fromIdx": 99,
+          "toIdx": 101
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 2.3,
+          "toKm": 2.4,
+          "fromIdx": 102,
+          "toIdx": 105
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 2.4,
+          "toKm": 2.4,
+          "fromIdx": 106,
+          "toIdx": 106
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 2.4,
+          "toKm": 2.7,
+          "fromIdx": 107,
+          "toIdx": 115
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 2.8,
+          "toKm": 3.1,
+          "fromIdx": 116,
+          "toIdx": 122
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 3.1,
+          "toKm": 4,
+          "fromIdx": 123,
+          "toIdx": 154
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 4,
+          "toKm": 4.2,
+          "fromIdx": 155,
+          "toIdx": 158
+        },
+        {
+          "kind": "onbekend",
+          "fromKm": 4.2,
+          "toKm": 4.2,
+          "fromIdx": 159,
+          "toIdx": 159
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 4.3,
+          "toKm": 4.5,
+          "fromIdx": 160,
+          "toIdx": 171
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 4.6,
+          "toKm": 4.6,
+          "fromIdx": 172,
+          "toIdx": 172
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 4.6,
+          "toKm": 5.1,
+          "fromIdx": 173,
+          "toIdx": 190
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 5.2,
+          "toKm": 5.8,
+          "fromIdx": 191,
+          "toIdx": 211
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 5.8,
+          "toKm": 5.9,
+          "fromIdx": 212,
+          "toIdx": 221
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 5.9,
+          "toKm": 7.5,
+          "fromIdx": 222,
+          "toIdx": 260
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 7.5,
+          "toKm": 7.9,
+          "fromIdx": 261,
+          "toIdx": 275
+        },
+        {
+          "kind": "onverhard",
+          "fromKm": 7.9,
+          "toKm": 7.9,
+          "fromIdx": 276,
+          "toIdx": 276
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 7.9,
+          "toKm": 8.3,
+          "fromIdx": 277,
+          "toIdx": 283
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 8.3,
+          "toKm": 8.3,
+          "fromIdx": 284,
+          "toIdx": 284
+        },
+        {
+          "kind": "onverhard",
+          "fromKm": 8.3,
+          "toKm": 8.3,
+          "fromIdx": 285,
+          "toIdx": 285
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 8.3,
+          "toKm": 9.1,
+          "fromIdx": 286,
+          "toIdx": 287
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 9.2,
+          "toKm": 10.7,
+          "fromIdx": 288,
+          "toIdx": 298
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 11.1,
+          "toKm": 11.1,
+          "fromIdx": 299,
+          "toIdx": 300
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 11.2,
+          "toKm": 11.7,
+          "fromIdx": 301,
+          "toIdx": 303
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 11.7,
+          "toKm": 12.2,
+          "fromIdx": 304,
+          "toIdx": 311
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 12.2,
+          "toKm": 12.9,
+          "fromIdx": 312,
+          "toIdx": 319
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 12.9,
+          "toKm": 13.5,
+          "fromIdx": 320,
+          "toIdx": 341
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 13.5,
+          "toKm": 13.5,
+          "fromIdx": 342,
+          "toIdx": 342
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 13.6,
+          "toKm": 13.9,
+          "fromIdx": 343,
+          "toIdx": 345
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 14,
+          "toKm": 14,
+          "fromIdx": 346,
+          "toIdx": 346
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 14,
+          "toKm": 14.5,
+          "fromIdx": 347,
+          "toIdx": 354
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 14.6,
+          "toKm": 14.6,
+          "fromIdx": 355,
+          "toIdx": 355
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 14.6,
+          "toKm": 14.6,
+          "fromIdx": 356,
+          "toIdx": 356
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 14.6,
+          "toKm": 14.8,
+          "fromIdx": 357,
+          "toIdx": 371
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 14.8,
+          "toKm": 14.8,
+          "fromIdx": 372,
+          "toIdx": 372
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 14.8,
+          "toKm": 14.9,
+          "fromIdx": 373,
+          "toIdx": 380
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 14.9,
+          "toKm": 14.9,
+          "fromIdx": 381,
+          "toIdx": 381
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 14.9,
+          "toKm": 15.4,
+          "fromIdx": 382,
+          "toIdx": 393
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 15.4,
+          "toKm": 15.4,
+          "fromIdx": 394,
+          "toIdx": 394
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 15.4,
+          "toKm": 15.5,
+          "fromIdx": 395,
+          "toIdx": 397
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 15.5,
+          "toKm": 15.5,
+          "fromIdx": 398,
+          "toIdx": 398
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 15.5,
+          "toKm": 16,
+          "fromIdx": 399,
+          "toIdx": 425
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 16,
+          "toKm": 16.3,
+          "fromIdx": 426,
+          "toIdx": 434
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 16.4,
+          "toKm": 16.7,
+          "fromIdx": 435,
+          "toIdx": 438
+        },
+        {
+          "kind": "onverhard",
+          "fromKm": 16.7,
+          "toKm": 17.1,
+          "fromIdx": 439,
+          "toIdx": 449
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 17.2,
+          "toKm": 18.2,
+          "fromIdx": 450,
+          "toIdx": 473
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 18.2,
+          "toKm": 18.9,
+          "fromIdx": 474,
+          "toIdx": 484
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 18.9,
+          "toKm": 18.9,
+          "fromIdx": 485,
+          "toIdx": 485
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 18.9,
+          "toKm": 19.4,
+          "fromIdx": 486,
+          "toIdx": 504
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 19.8,
+          "toKm": 19.8,
+          "fromIdx": 505,
+          "toIdx": 505
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 19.8,
+          "toKm": 20.9,
+          "fromIdx": 506,
+          "toIdx": 535
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 21.1,
+          "toKm": 21.2,
+          "fromIdx": 536,
+          "toIdx": 540
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 21.2,
+          "toKm": 21.4,
+          "fromIdx": 541,
+          "toIdx": 553
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 21.6,
+          "toKm": 21.6,
+          "fromIdx": 554,
+          "toIdx": 554
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 21.7,
+          "toKm": 21.7,
+          "fromIdx": 555,
+          "toIdx": 555
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 21.7,
+          "toKm": 21.8,
+          "fromIdx": 556,
+          "toIdx": 557
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 21.8,
+          "toKm": 22,
+          "fromIdx": 558,
+          "toIdx": 562
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 22,
+          "toKm": 22.3,
+          "fromIdx": 563,
+          "toIdx": 565
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 22.3,
+          "toKm": 22.5,
+          "fromIdx": 566,
+          "toIdx": 572
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 22.6,
+          "toKm": 22.6,
+          "fromIdx": 573,
+          "toIdx": 573
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 22.6,
+          "toKm": 23.7,
+          "fromIdx": 574,
+          "toIdx": 598
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 23.7,
+          "toKm": 23.7,
+          "fromIdx": 599,
+          "toIdx": 599
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 23.7,
+          "toKm": 23.8,
+          "fromIdx": 600,
+          "toIdx": 605
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 23.8,
+          "toKm": 23.9,
+          "fromIdx": 606,
+          "toIdx": 608
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 23.9,
+          "toKm": 24.1,
+          "fromIdx": 609,
+          "toIdx": 613
+        }
+      ],
+      "forbiddenKm": 0,
+      "restrictedKm": 0,
+      "bgt": {
+        "checkedSamples": 111,
+        "resolvedSamples": 110,
+        "source": {
+          "name": "BGT — Basisregistratie Grootschalige Topografie (via PDOK)",
+          "license": "CC0 1.0 — open data van de Nederlandse overheid",
+          "url": "https://www.pdok.nl/introductie/-/article/basisregistratie-grootschalige-topografie-bgt-",
+          "note": "Alleen Nederland; verhardingssoort per wegvak, door gemeentes onderhouden."
+        }
+      }
+    },
+    "rationale": "Deze een lus vanuit Purdey Hengelo van 24 km, ±84 min, ±79 hm past bij een duurtraining (mountainbike (onverhard)).",
+    "alternates": 0,
+    "checks": {
+      "geenBlokkerendeObstakels": true,
+      "afstandBinnen20pct": true
+    }
+  },
+  "mtb-60-heuvels": {
+    "status": "ok",
+    "request": {
+      "id": "mtb-60-heuvels",
+      "bikeType": "mtb",
+      "targetKm": 60,
+      "elevationPreference": "hilly"
+    },
+    "distanceKm": 59.27,
+    "distDevPct": 1.2,
+    "ascentM": 274,
+    "mPerKm": 4.6,
+    "remarksSource": {
+      "name": "OpenStreetMap (via Overpass API)",
+      "license": "ODbL 1.0 — © OpenStreetMap-bijdragers",
+      "url": "https://www.openstreetmap.org/copyright",
+      "note": "Kaartgegevens kunnen verouderd of onvolledig zijn; controleer ter plekke."
+    },
+    "remarksTotal": 1,
+    "blockingRemarks": [],
+    "infoRemarks": [
+      "onverhard@19.8km"
+    ],
+    "surfaces": {
+      "totalKm": 59.3,
+      "breakdown": [
+        {
+          "kind": "asfalt",
+          "km": 29.3,
+          "pct": 49.4,
+          "evidence": "surface=asphalt"
+        },
+        {
+          "kind": "verhard_fietspad",
+          "km": 21.7,
+          "pct": 36.7,
+          "evidence": "highway=cycleway + surface=asphalt"
+        },
+        {
+          "kind": "klinkers",
+          "km": 3.3,
+          "pct": 5.5,
+          "evidence": "surface=paving_stones"
+        },
+        {
+          "kind": "compact_gravel",
+          "km": 3.2,
+          "pct": 5.3,
+          "evidence": "surface=fine_gravel"
+        },
+        {
+          "kind": "onverhard",
+          "km": 1.1,
+          "pct": 1.9,
+          "evidence": "surface=sand"
+        },
+        {
+          "kind": "onbekend",
+          "km": 0.5,
+          "pct": 0.8,
+          "evidence": "highway=unclassified zonder surface-tag"
+        },
+        {
+          "kind": "los_gravel",
+          "km": 0.2,
+          "pct": 0.3,
+          "evidence": "surface=gravel"
+        }
+      ],
+      "segments": [
+        {
+          "kind": "klinkers",
+          "fromKm": 0,
+          "toKm": 0.1,
+          "fromIdx": 0,
+          "toIdx": 4
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 0.2,
+          "toKm": 0.3,
+          "fromIdx": 6,
+          "toIdx": 8
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 0.3,
+          "toKm": 0.4,
+          "fromIdx": 10,
+          "toIdx": 14
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 0.4,
+          "toKm": 0.5,
+          "fromIdx": 16,
+          "toIdx": 24
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 0.7,
+          "toKm": 0.7,
+          "fromIdx": 26,
+          "toIdx": 26
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 0.7,
+          "toKm": 0.8,
+          "fromIdx": 28,
+          "toIdx": 34
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 0.8,
+          "toKm": 1.6,
+          "fromIdx": 36,
+          "toIdx": 70
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 1.7,
+          "toKm": 2.1,
+          "fromIdx": 72,
+          "toIdx": 80
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 2.3,
+          "toKm": 2.3,
+          "fromIdx": 82,
+          "toIdx": 82
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 2.4,
+          "toKm": 2.4,
+          "fromIdx": 84,
+          "toIdx": 86
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 2.5,
+          "toKm": 3.4,
+          "fromIdx": 88,
+          "toIdx": 112
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 3.5,
+          "toKm": 3.5,
+          "fromIdx": 114,
+          "toIdx": 114
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 3.5,
+          "toKm": 4.3,
+          "fromIdx": 116,
+          "toIdx": 134
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 4.4,
+          "toKm": 4.7,
+          "fromIdx": 136,
+          "toIdx": 142
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 4.8,
+          "toKm": 5,
+          "fromIdx": 144,
+          "toIdx": 150
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 5,
+          "toKm": 5,
+          "fromIdx": 152,
+          "toIdx": 152
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 5.1,
+          "toKm": 5.1,
+          "fromIdx": 154,
+          "toIdx": 158
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 5.2,
+          "toKm": 6.5,
+          "fromIdx": 160,
+          "toIdx": 176
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 6.6,
+          "toKm": 6.6,
+          "fromIdx": 178,
+          "toIdx": 178
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 6.6,
+          "toKm": 6.7,
+          "fromIdx": 180,
+          "toIdx": 186
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 6.8,
+          "toKm": 9.8,
+          "fromIdx": 188,
+          "toIdx": 240
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 9.8,
+          "toKm": 10.2,
+          "fromIdx": 242,
+          "toIdx": 244
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 10.3,
+          "toKm": 11,
+          "fromIdx": 246,
+          "toIdx": 250
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 11,
+          "toKm": 12.1,
+          "fromIdx": 252,
+          "toIdx": 304
+        },
+        {
+          "kind": "onverhard",
+          "fromKm": 12.1,
+          "toKm": 12.1,
+          "fromIdx": 306,
+          "toIdx": 306
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 12.2,
+          "toKm": 14.1,
+          "fromIdx": 308,
+          "toIdx": 342
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 14.2,
+          "toKm": 14.4,
+          "fromIdx": 344,
+          "toIdx": 360
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 14.4,
+          "toKm": 15.3,
+          "fromIdx": 362,
+          "toIdx": 380
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 15.9,
+          "toKm": 16.3,
+          "fromIdx": 382,
+          "toIdx": 392
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 16.3,
+          "toKm": 16.3,
+          "fromIdx": 394,
+          "toIdx": 394
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 16.4,
+          "toKm": 17.3,
+          "fromIdx": 396,
+          "toIdx": 402
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 17.4,
+          "toKm": 17.4,
+          "fromIdx": 404,
+          "toIdx": 404
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 17.9,
+          "toKm": 18.2,
+          "fromIdx": 406,
+          "toIdx": 408
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 18.2,
+          "toKm": 19,
+          "fromIdx": 410,
+          "toIdx": 418
+        },
+        {
+          "kind": "onbekend",
+          "fromKm": 19.2,
+          "toKm": 19.2,
+          "fromIdx": 420,
+          "toIdx": 420
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 19.5,
+          "toKm": 19.5,
+          "fromIdx": 422,
+          "toIdx": 422
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 19.6,
+          "toKm": 19.8,
+          "fromIdx": 424,
+          "toIdx": 426
+        },
+        {
+          "kind": "onverhard",
+          "fromKm": 19.8,
+          "toKm": 19.9,
+          "fromIdx": 428,
+          "toIdx": 430
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 20.1,
+          "toKm": 20.1,
+          "fromIdx": 432,
+          "toIdx": 432
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 20.2,
+          "toKm": 20.8,
+          "fromIdx": 434,
+          "toIdx": 444
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 20.8,
+          "toKm": 22.6,
+          "fromIdx": 446,
+          "toIdx": 494
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 22.8,
+          "toKm": 22.8,
+          "fromIdx": 496,
+          "toIdx": 496
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 22.9,
+          "toKm": 24,
+          "fromIdx": 498,
+          "toIdx": 510
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 24,
+          "toKm": 25.1,
+          "fromIdx": 512,
+          "toIdx": 542
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 25.1,
+          "toKm": 25.5,
+          "fromIdx": 544,
+          "toIdx": 548
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 25.7,
+          "toKm": 25.8,
+          "fromIdx": 550,
+          "toIdx": 552
+        },
+        {
+          "kind": "onverhard",
+          "fromKm": 26.1,
+          "toKm": 26.1,
+          "fromIdx": 554,
+          "toIdx": 554
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 26.2,
+          "toKm": 26.3,
+          "fromIdx": 556,
+          "toIdx": 560
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 26.3,
+          "toKm": 28.4,
+          "fromIdx": 562,
+          "toIdx": 588
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 28.5,
+          "toKm": 28.8,
+          "fromIdx": 590,
+          "toIdx": 594
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 28.9,
+          "toKm": 28.9,
+          "fromIdx": 596,
+          "toIdx": 596
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 28.9,
+          "toKm": 29.7,
+          "fromIdx": 598,
+          "toIdx": 612
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 29.8,
+          "toKm": 30.8,
+          "fromIdx": 614,
+          "toIdx": 624
+        },
+        {
+          "kind": "onverhard",
+          "fromKm": 31,
+          "toKm": 31.2,
+          "fromIdx": 626,
+          "toIdx": 628
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 31.5,
+          "toKm": 31.5,
+          "fromIdx": 630,
+          "toIdx": 630
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 31.7,
+          "toKm": 34.2,
+          "fromIdx": 632,
+          "toIdx": 702
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 34.3,
+          "toKm": 34.3,
+          "fromIdx": 704,
+          "toIdx": 704
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 34.6,
+          "toKm": 34.6,
+          "fromIdx": 706,
+          "toIdx": 708
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 34.6,
+          "toKm": 35,
+          "fromIdx": 710,
+          "toIdx": 722
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 35.1,
+          "toKm": 35.1,
+          "fromIdx": 724,
+          "toIdx": 724
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 35.2,
+          "toKm": 35.2,
+          "fromIdx": 726,
+          "toIdx": 726
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 35.3,
+          "toKm": 35.9,
+          "fromIdx": 728,
+          "toIdx": 746
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 36.3,
+          "toKm": 36.3,
+          "fromIdx": 748,
+          "toIdx": 748
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 36.5,
+          "toKm": 36.5,
+          "fromIdx": 750,
+          "toIdx": 750
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 36.6,
+          "toKm": 37.3,
+          "fromIdx": 752,
+          "toIdx": 762
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 37.4,
+          "toKm": 37.4,
+          "fromIdx": 764,
+          "toIdx": 764
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 37.6,
+          "toKm": 37.6,
+          "fromIdx": 766,
+          "toIdx": 766
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 38,
+          "toKm": 38.7,
+          "fromIdx": 768,
+          "toIdx": 774
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 38.8,
+          "toKm": 38.8,
+          "fromIdx": 776,
+          "toIdx": 776
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 38.8,
+          "toKm": 38.8,
+          "fromIdx": 778,
+          "toIdx": 778
+        },
+        {
+          "kind": "onverhard",
+          "fromKm": 39,
+          "toKm": 39.1,
+          "fromIdx": 780,
+          "toIdx": 782
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 39.1,
+          "toKm": 40.6,
+          "fromIdx": 784,
+          "toIdx": 802
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 40.8,
+          "toKm": 42.5,
+          "fromIdx": 804,
+          "toIdx": 830
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 42.6,
+          "toKm": 42.6,
+          "fromIdx": 832,
+          "toIdx": 832
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 42.6,
+          "toKm": 42.7,
+          "fromIdx": 834,
+          "toIdx": 840
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 42.7,
+          "toKm": 42.8,
+          "fromIdx": 842,
+          "toIdx": 846
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 42.8,
+          "toKm": 42.8,
+          "fromIdx": 848,
+          "toIdx": 848
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 42.8,
+          "toKm": 42.9,
+          "fromIdx": 850,
+          "toIdx": 856
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 42.9,
+          "toKm": 43.1,
+          "fromIdx": 858,
+          "toIdx": 870
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 43.2,
+          "toKm": 43.5,
+          "fromIdx": 872,
+          "toIdx": 880
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 43.6,
+          "toKm": 43.6,
+          "fromIdx": 882,
+          "toIdx": 882
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 43.7,
+          "toKm": 44,
+          "fromIdx": 884,
+          "toIdx": 900
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 44,
+          "toKm": 44,
+          "fromIdx": 902,
+          "toIdx": 902
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 44,
+          "toKm": 45.3,
+          "fromIdx": 904,
+          "toIdx": 936
+        },
+        {
+          "kind": "onbekend",
+          "fromKm": 45.4,
+          "toKm": 45.4,
+          "fromIdx": 938,
+          "toIdx": 938
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 45.4,
+          "toKm": 45.4,
+          "fromIdx": 940,
+          "toIdx": 942
+        },
+        {
+          "kind": "onbekend",
+          "fromKm": 45.5,
+          "toKm": 45.5,
+          "fromIdx": 944,
+          "toIdx": 944
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 45.6,
+          "toKm": 45.6,
+          "fromIdx": 946,
+          "toIdx": 946
+        },
+        {
+          "kind": "onbekend",
+          "fromKm": 45.7,
+          "toKm": 45.7,
+          "fromIdx": 948,
+          "toIdx": 950
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 45.8,
+          "toKm": 46,
+          "fromIdx": 952,
+          "toIdx": 958
+        },
+        {
+          "kind": "los_gravel",
+          "fromKm": 46.3,
+          "toKm": 46.3,
+          "fromIdx": 960,
+          "toIdx": 960
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 46.4,
+          "toKm": 46.6,
+          "fromIdx": 962,
+          "toIdx": 972
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 46.6,
+          "toKm": 46.7,
+          "fromIdx": 974,
+          "toIdx": 976
+        },
+        {
+          "kind": "compact_gravel",
+          "fromKm": 46.8,
+          "toKm": 46.8,
+          "fromIdx": 978,
+          "toIdx": 978
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 46.9,
+          "toKm": 47.3,
+          "fromIdx": 980,
+          "toIdx": 992
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 47.4,
+          "toKm": 47.4,
+          "fromIdx": 994,
+          "toIdx": 994
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 47.6,
+          "toKm": 47.6,
+          "fromIdx": 996,
+          "toIdx": 996
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 47.7,
+          "toKm": 47.8,
+          "fromIdx": 998,
+          "toIdx": 1004
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 47.8,
+          "toKm": 47.9,
+          "fromIdx": 1006,
+          "toIdx": 1010
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 47.9,
+          "toKm": 47.9,
+          "fromIdx": 1012,
+          "toIdx": 1012
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 48.1,
+          "toKm": 48.4,
+          "fromIdx": 1014,
+          "toIdx": 1020
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 48.7,
+          "toKm": 48.8,
+          "fromIdx": 1022,
+          "toIdx": 1024
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 48.8,
+          "toKm": 49.1,
+          "fromIdx": 1026,
+          "toIdx": 1038
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 49.2,
+          "toKm": 50.3,
+          "fromIdx": 1040,
+          "toIdx": 1064
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 50.4,
+          "toKm": 56,
+          "fromIdx": 1066,
+          "toIdx": 1168
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 56.3,
+          "toKm": 56.4,
+          "fromIdx": 1170,
+          "toIdx": 1174
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 56.4,
+          "toKm": 56.6,
+          "fromIdx": 1176,
+          "toIdx": 1186
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 56.8,
+          "toKm": 56.9,
+          "fromIdx": 1188,
+          "toIdx": 1190
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 57,
+          "toKm": 57.2,
+          "fromIdx": 1192,
+          "toIdx": 1196
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 57.5,
+          "toKm": 57.5,
+          "fromIdx": 1198,
+          "toIdx": 1198
+        },
+        {
+          "kind": "verhard_fietspad",
+          "fromKm": 57.5,
+          "toKm": 59,
+          "fromIdx": 1200,
+          "toIdx": 1238
+        },
+        {
+          "kind": "asfalt",
+          "fromKm": 59,
+          "toKm": 59.1,
+          "fromIdx": 1240,
+          "toIdx": 1242
+        },
+        {
+          "kind": "klinkers",
+          "fromKm": 59.1,
+          "toKm": 59.3,
+          "fromIdx": 1244,
+          "toIdx": 1247
+        }
+      ],
+      "forbiddenKm": 0.1,
+      "restrictedKm": 0.6,
+      "bgt": {
+        "checkedSamples": 69,
+        "resolvedSamples": 64,
+        "source": {
+          "name": "BGT — Basisregistratie Grootschalige Topografie (via PDOK)",
+          "license": "CC0 1.0 — open data van de Nederlandse overheid",
+          "url": "https://www.pdok.nl/introductie/-/article/basisregistratie-grootschalige-topografie-bgt-",
+          "note": "Alleen Nederland; verhardingssoort per wegvak, door gemeentes onderhouden."
+        }
+      }
+    },
+    "rationale": "Deze een lus vanuit Purdey Hengelo van 59 km, ±205 min, ±274 hm, 1 klim(men) past bij een duurtraining (mountainbike (onverhard)).",
+    "alternates": 1,
+    "checks": {
+      "geenBlokkerendeObstakels": true,
+      "afstandBinnen20pct": true
+    }
+  },
+  "mtb-120-stadskern": {
+    "status": "generate_failed",
+    "detail": {
+      "__error": true,
+      "status": 422,
+      "body": {
+        "error": "Geen geschikte route gevonden voor cycling-mountain: fietsverbod, trap of afgesloten poort (forbidden=0 steps=0 blockedGates=6). Probeer een ander startpunt of een kortere afstand.",
+        "code": "NO_SUITABLE_ROUTE",
+        "profile": "cycling-mountain"
+      }
+    }
+  },
+  "mtb-200-vlak": {
+    "status": "generate_failed",
+    "detail": {
+      "__error": true,
+      "status": 503,
+      "body": {
+        "error": "De route kon niet gecontroleerd worden op blokkades (de kaartbron gaf geen antwoord). We bieden een ongecontroleerde route niet aan — probeer het over een paar minuten opnieuw.",
+        "code": "ROUTE_UNVERIFIABLE",
+        "profile": "cycling-mountain"
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+# Poort 5b sanity-check — Fase 1: lusroutes fail-closed blokkadeverificatie (taak #505)
+
+delivery: "Routegenerator fail-closed: blokkerende obstakelverificatie van de winnaar (verifyObstaclesOf zonder tijdbudget), UnverifiableRouteError/503 bij definitief mislukte meting, 422 ROUTE_UNVERIFIABLE bij waypoints/A-B, 409 ROUTE_UNVERIFIABLE bij navigatiestart, remarks-verificatieveld, web-routekaart toont KLAAR/NAVIGEER alleen bij verified_clear."
+date: "2026-07-30"
+checked_by: "replit"
+surfaces:
+  - "POST /api/routes/generate (lus, alle fietstypen — herdraaide 12-combinatie-bewijsbatch koud+warm via echt HTTP-pad)"
+  - "POST /api/routes/:id/navigatie-start (fail-closed 409 bij onmeetbare route)"
+  - "Web routeplanner routekaart (statuslabel Controle loopt / Niet gecontroleerd / Geblokkeerd / Klaar + NAVIGEER-knop)"
+
+checks:
+  dead_controls:
+    cases:
+      - case: "NAVIGEER-knop op de routekaart: rendert alleen bij verified_clear (geometry>1 én geslaagde meting zonder blokkade); tijdens de meting toont het label 'Controle loopt' zonder knop — geen knop die niets doet of te vroeg beschikbaar is. Gecontroleerd in code (route-panel.tsx verification-afleiding) en via de server-poort (navigatie-start weigert 409 zolang niet gemeten)."
+        result: "pass"
+  context_nonsense:
+    cases:
+      - case: "Een route waarvan de meting definitief mislukt (Overpass geeft geen antwoord) toont 'Niet gecontroleerd' met eerlijke uitleg, nooit 'Klaar' — pending/unverifiable worden nooit stil als veilig behandeld; server geeft 503/422/409 met code ROUTE_UNVERIFIABLE en NL-uitleg."
+        result: "pass"
+      - case: "Alle poolkandidaten hard geblokkeerd (race-25 vanuit Hengelo, seed 11): generatie faalt eerlijk met 422 NO_SUITABLE_ROUTE en concreet advies (ander startpunt/kortere afstand) in plaats van de 'minst slechte' geblokkeerde route te leveren."
+        result: "pass"
+  placeholder_as_result:
+    cases:
+      - case: "Statuslabel op de routekaart: 'Controle loopt' is een tijdelijke laadstatus die door de remarks-query wordt vervangen door Klaar/Geblokkeerd/Niet gecontroleerd — nooit een blijvende placeholder als eindantwoord; bewijsbatch-runs eindigden per combinatie altijd in een definitieve status (geleverd, gemeten weigering of eerlijke unverifiable-fout)."
+        result: "pass"
+
+# Bewijs: docs/product/proof-evidence/route-bewijsbatch-505-koud-2026-07-30.{json,log}
+# en route-bewijsbatch-505-warm-2026-07-30.{json,log} — 0 geleverde routes met
+# blokkerende obstakels (koud 8 geleverd, warm 9 geleverd incl. mtb-200; 3 eerlijke
+# gemeten weigeringen; mtb-200 koud eerlijk unverifiable door Overpass-overbelasting).
+verdict: "deliverable"

@@ -64,7 +64,13 @@ function blockingRemarks(remarks: Array<{ kind: string; label: string; uncertain
   );
 }
 
-async function post(path: string, body: unknown, timeoutMs = 120_000): Promise<any> {
+// Fail-closed generatie (taak #505) wacht blokkerend op de Overpass-meting;
+// koude cache kan per lus ruim boven 120 s uitkomen — timeout instelbaar.
+async function post(
+  path: string,
+  body: unknown,
+  timeoutMs = Number(process.env.GEN_TIMEOUT_MS ?? 240_000),
+): Promise<any> {
   const res = await fetch(`${BASE}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

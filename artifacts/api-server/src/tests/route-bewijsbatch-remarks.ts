@@ -17,7 +17,9 @@ const started = Date.now();
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function blocking(remarks: Array<{ kind: string; label: string; uncertain?: boolean }>) {
+function blocking(
+  remarks: Array<{ kind: string; label: string; uncertain?: boolean; routeKm?: number }>,
+) {
   return remarks.filter(
     (r) => r.kind === "poort" || r.kind === "trap" || (r.kind === "beperkte_toegang" && !r.uncertain),
   );
@@ -58,7 +60,9 @@ async function main() {
       console.log(`✗ ${id}: her-generate faalde (${res.status})`);
       continue;
     }
-    const gen = await res.json();
+    const gen = (await res.json()) as {
+      candidate?: { geometry?: [number, number][]; distanceKm?: number };
+    };
     const geometry = gen?.candidate?.geometry as [number, number][] | undefined;
     const distKm = Number(gen?.candidate?.distanceKm);
     if (!geometry?.length) {

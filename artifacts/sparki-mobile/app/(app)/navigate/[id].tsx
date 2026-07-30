@@ -166,12 +166,31 @@ export default function NavigateScreen() {
   // valt het netwerk daarna weg (of herstart de app), dan navigeren we door
   // op de bewaarde kopie van dezelfde echte routedata.
   const [offlineRoute, setOfflineRoute] = useState<RouteDetail | null>(null);
+  // Fail-closed preflight (taak #505): een bewuste 409-weigering van de
+  // backend (route hard geblokkeerd of niet controleerbaar) stopt de
+  // navigatie — nooit navigeren op een geblokkeerde/ongecontroleerde route.
+  // Een kale netwerkfout weigert NIET (offline doorgaan blijft mogelijk).
+  const [navRefusal, setNavRefusal] = useState<null | {
+    code: "ROUTE_BLOCKED" | "ROUTE_UNVERIFIABLE";
+    message: string;
+  }>(null);
   useEffect(() => {
     if (fetchedRoute && Number.isInteger(routeId)) {
-      void saveActiveNav(routeId, fetchedRoute);
-      // Golf 19 — meld de backend dat de navigatie met deze routeversie start
-      // (versiegebruik, idempotent). Best-effort: blokkeert navigatie nooit.
-      void meldNavigatieStart(routeId);
+      let alive = true;
+      void meldNavigatieStart(routeId).then((r) => {
+        if (!alive) return;
+        if (r.ok === false) {
+          setNavRefusal({ code: r.code, message: r.message });
+          return;
+        }
+        setNavRefusal(null);
+        // Alleen een niet-geweigerde route wordt lokaal bewaard voor
+        // offline navigatie (Golf 19: versiegebruik idempotent gemeld).
+        void saveActiveNav(routeId, fetchedRoute);
+      });
+      return () => {
+        alive = false;
+      };
     }
   }, [fetchedRoute, routeId]);
   useEffect(() => {
@@ -691,6 +710,28 @@ export default function NavigateScreen() {
         <Text style={[styles.stateTitle, { color: c.foreground }]}>Route niet geladen</Text>
         <Text style={[styles.stateBody, { color: c.mutedForeground }]}>
           {(error as Error)?.message ?? "Deze route kon niet worden geopend."}
+        </Text>
+        <Pressable onPress={goBack} style={[styles.backPill, { borderColor: c.border, backgroundColor: c.card }]}>
+          <Text style={{ color: c.primary, fontFamily: "Inter_600SemiBold" }}>Terug</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  // ---------- Fail-closed weigering (taak #505) ----------
+  // De backend weigerde de navigatiestart bewust (409): route hard
+  // geblokkeerd of niet controleerbaar. Eerlijke melding, geen navigatie.
+  if (navRefusal) {
+    return (
+      <View style={[styles.fill, styles.center, { backgroundColor: c.background, padding: 32 }]}>
+        <Ionicons name="alert-circle-outline" size={40} color={c.mutedForeground} />
+        <Text style={[styles.stateTitle, { color: c.foreground }]}>
+          {navRefusal.code === "ROUTE_BLOCKED"
+            ? "Route geblokkeerd"
+            : "Route niet gecontroleerd"}
+        </Text>
+        <Text style={[styles.stateBody, { color: c.mutedForeground }]}>
+          {navRefusal.message}
         </Text>
         <Pressable onPress={goBack} style={[styles.backPill, { borderColor: c.border, backgroundColor: c.card }]}>
           <Text style={{ color: c.primary, fontFamily: "Inter_600SemiBold" }}>Terug</Text>

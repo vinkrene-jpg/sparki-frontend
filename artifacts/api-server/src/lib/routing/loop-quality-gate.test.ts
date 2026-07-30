@@ -8,7 +8,11 @@
 
 import assert from "node:assert/strict";
 
-import { generateVariedLoop, NoSuitableRouteError } from "./loop-quality";
+import {
+  generateVariedLoop,
+  NoSuitableRouteError,
+  UnverifiableRouteError,
+} from "./loop-quality";
 import {
   classifyGatePassage,
   classifyRemarkTags,
@@ -238,7 +242,94 @@ async function run() {
     assert.equal(route.distanceKm, 56, "schone kandidaat moet winnen van geblokkeerde");
   }
 
-  console.log("loop-quality hard-reject gate tests passed (incl. MTB-blokkadepoort)");
+  // ── Regressie lus-timeout/fail-open (taak #505, René 30-07-2026) ─────────
+  // 11) Budget-meting faalt (null, zoals bij het oude 2500 ms-budget), maar de
+  //     BLOKKERENDE verifyObstaclesOf meet een blokkade ⇒ harde afkeur. Vóór
+  //     de fix leverde dit pad de route stil (fail-open).
+  await assert.rejects(
+    generateVariedLoop(fakeProvider(makeResult(50)), { ...baseReq, profile: "cycling-mountain" }, {
+      candidates: 1,
+      obstaclesOf: async () => null, // budget-timeout gesimuleerd
+      verifyObstaclesOf: async () => obstacles({ blockedGates: 1 }),
+    }),
+    (err: unknown) => err instanceof NoSuitableRouteError,
+    "budget-null + blokkerende meting mét blokkade moet hard afkeuren",
+  );
+
+  // 12) Ook de blokkerende meting faalt definitief (alle mirrors kapot) ⇒
+  //     UnverifiableRouteError — nooit stil als veilig leveren.
+  await assert.rejects(
+    generateVariedLoop(fakeProvider(makeResult(50)), { ...baseReq, profile: "cycling-mountain" }, {
+      candidates: 1,
+      obstaclesOf: async () => null,
+      verifyObstaclesOf: async () => null,
+    }),
+    (err: unknown) => {
+      assert.ok(
+        err instanceof UnverifiableRouteError,
+        `verwacht UnverifiableRouteError, kreeg ${String(err)}`,
+      );
+      return true;
+    },
+    "definitief mislukte meting moet UnverifiableRouteError gooien",
+  );
+
+  // 13) Winnaar hard geblokkeerd ⇒ de volgende ECHTE kandidaat wordt
+  //     geverifieerd en geleverd (alternatief proberen, niet meteen falen).
+  {
+    // Lichte overlap in de geblokkeerde kandidaat voorkomt de vroege stop,
+    // zodat de pool écht twee kandidaten bevat (zelfde truc als scenario 10).
+    const blocked: RouteResult = (() => {
+      const r = makeResult(50);
+      const tail = r.path.slice(-8, -1).reverse();
+      r.path = [...r.path, ...tail];
+      r.points = r.path.map(([lat, lon]) => ({ lat, lon, ele: null }));
+      return r;
+    })();
+    const clean: RouteResult = (() => {
+      const r = makeResult(56);
+      r.path = r.path.map(([lat, lon]) => [lat, lon + 1] as [number, number]);
+      r.points = r.path.map(([lat, lon]) => ({ lat, lon, ele: null }));
+      return r;
+    })();
+    let i = 0;
+    const provider: RoutingProvider = {
+      ...fakeProvider(blocked),
+      async generateLoop() {
+        return i++ % 2 === 0 ? blocked : clean;
+      },
+    };
+    const measure = async (path: [number, number][]) =>
+      (path[0]?.[1] ?? 0) > 5.5
+        ? obstacles({})
+        : obstacles({ forbidden: 1 });
+    const route = await generateVariedLoop(
+      provider,
+      { ...baseReq, profile: "cycling-mountain" },
+      { candidates: 2, obstaclesOf: measure, verifyObstaclesOf: measure },
+    );
+    assert.equal(
+      route.distanceKm,
+      56,
+      "bij een geblokkeerde winnaar moet het geverifieerde alternatief geleverd worden",
+    );
+  }
+
+  // 14) Schone blokkerende verificatie ⇒ route wordt gewoon geleverd.
+  {
+    const route = await generateVariedLoop(
+      fakeProvider(makeResult(50)),
+      baseReq,
+      {
+        candidates: 1,
+        obstaclesOf: async () => null,
+        verifyObstaclesOf: async () => obstacles({}),
+      },
+    );
+    assert.equal(route.distanceKm, 50, "schone blokkerende meting moet leveren");
+  }
+
+  console.log("loop-quality hard-reject gate tests passed (incl. MTB-blokkadepoort + fail-closed #505)");
 }
 
 run().catch((err) => {

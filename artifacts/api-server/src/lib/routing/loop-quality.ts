@@ -322,6 +322,16 @@ export async function generateVariedLoop(
     // gekozen zolang er een alternatief is; racefiets tevens 0 onverhard
     // (taak #437). null = geen meting (bron faalde) — eerlijk niet mee.
     obstaclesOf?: (path: [number, number][]) => Promise<RouteObstacles | null>;
+    // Fail-closed eindverificatie van de WINNAAR (taak #505, besluit René
+    // 30-07-2026): een blokkerende obstakelmeting zonder tijdbudget. De
+    // scorende `obstaclesOf` hierboven mag een kort budget hebben (selectie-
+    // heuristiek), maar de geleverde route zelf wordt hiermee volledig
+    // geverifieerd: hard geblokkeerd ⇒ volgende kandidaat proberen; meting
+    // definitief mislukt ⇒ UnverifiableRouteError — nooit stil als veilig
+    // behandelen, nooit leveren.
+    verifyObstaclesOf?: (
+      path: [number, number][],
+    ) => Promise<RouteObstacles | null>;
     // Onverhard-voorkeur (taak #440, gravel/MTB): gewenst aandeel onverhard
     // (0..1) uit de schuifbalk in de routegeneratie-UI. Rangschikt ECHTE
     // kandidaten op hoe dicht hun GEMETEN onverhard-aandeel bij deze voorkeur
@@ -682,18 +692,34 @@ export async function generateVariedLoop(
     }
   }
 
-  // ── Harde afkeurpoort na selectie (PO-01 §5.2, taak #437) ────────────────
-  // Hulpfunctie: controleer de winnaar op harde grenzen. Gebruikt de gecachede
-  // meting als die beschikbaar is; anders één extra Overpass-call (happens only
-  // when the winner was not in the first 3 measured — rare, ~extra 1-1.5 s).
-  // Gooit NoSuitableRouteError als aan een harde grens wordt voldaan.
-  // Alleen actief als obstaclesOf beschikbaar is; null-meting weegt niet mee.
+  // ── Harde afkeurpoort na selectie (PO-01 §5.2, taak #437; fail-closed
+  // sinds taak #505) ────────────────────────────────────────────────────────
+  // Hulpfunctie: controleer een kandidaat op harde grenzen. Gebruikt de
+  // gecachede meting als die beschikbaar én geslaagd is; anders een verse
+  // meting — bij voorkeur de BLOKKERENDE `verifyObstaclesOf` (geen tijdbudget,
+  // taak #505: het oude 2500 ms-budget liet 11/12 lussen met blokkades door
+  // omdat Overpass 14–98 s kan duren en de timeout fail-open was).
+  // Gooit NoSuitableRouteError bij een harde grens; gooit
+  // UnverifiableRouteError wanneer óók de blokkerende meting geen antwoord
+  // gaf (alle mirrors kapot) — zo'n kandidaat wordt nooit stil als veilig
+  // behandeld of geleverd.
   const hardRejectIfNeeded = async (winner: RouteResult): Promise<void> => {
-    if (opts?.obstaclesOf == null) return;
-    let obs = obstaclesMeasured.has(winner)
-      ? obstaclesMeasured.get(winner)!
-      : await opts.obstaclesOf(winner.path).catch(() => null);
-    if (obs == null) return; // meting mislukt — eerlijk niet gaten, nooit gokken
+    if (opts?.obstaclesOf == null && opts?.verifyObstaclesOf == null) return;
+    const verifier = opts?.verifyObstaclesOf ?? opts?.obstaclesOf;
+    const cached = obstaclesMeasured.get(winner);
+    // Gecachede null = eerder mislukt/te traag binnen budget ⇒ opnieuw meten,
+    // nu blokkerend. Alleen een echte, geslaagde meting telt.
+    let obs =
+      cached != null ? cached : await verifier!(winner.path).catch(() => null);
+    if (obs != null) obstaclesMeasured.set(winner, obs);
+    if (obs == null) {
+      if (opts?.verifyObstaclesOf != null) {
+        // Fail-closed: zonder geslaagde meting is de kandidaat niet
+        // verifieerbaar en wordt hij nooit geleverd.
+        throw new UnverifiableRouteError(req.profile);
+      }
+      return; // legacy-pad zonder blokkerende verifier (bv. tests): oude gedrag
+    }
     const _t_gate = performance.now();
     // Harde blokkades gelden voor ÁLLE fietsprofielen (René, 30-07-2026):
     // fietsverbod, trap én afgesloten poort/privéterrein. blockedGates zat
@@ -750,6 +776,39 @@ export async function generateVariedLoop(
     }
   };
 
+  // ── Fail-closed winnaarkeuze (taak #505) ─────────────────────────────────
+  // Probeer kandidaten in voorkeursvolgorde; iedere kandidaat wordt vóór
+  // levering volledig geverifieerd. Hard geblokkeerd ⇒ eerlijk loggen en de
+  // volgende ECHTE kandidaat proberen; pas als álle kandidaten hard
+  // geblokkeerd zijn faalt de generatie eerlijk (NoSuitableRouteError).
+  // Niet-verifieerbaar (meting definitief mislukt) ⇒ direct
+  // UnverifiableRouteError — dan is geen enkele kandidaat controleerbaar en
+  // mag er niets geleverd worden.
+  const pickVerifiedWinner = async (
+    ordered: RouteResult[],
+  ): Promise<RouteResult> => {
+    let lastHard: NoSuitableRouteError | null = null;
+    for (const cand of ordered) {
+      try {
+        await hardRejectIfNeeded(cand);
+        return cand;
+      } catch (err) {
+        if (err instanceof NoSuitableRouteError) {
+          lastHard = err;
+          console.log(
+            `[loop-quality] kandidaat hard geblokkeerd — volgende proberen: ${err.reason}`,
+          );
+          continue;
+        }
+        throw err; // UnverifiableRouteError of onverwachte fout
+      }
+    }
+    throw (
+      lastHard ??
+      new NoSuitableRouteError(req.profile, "geen verifieerbare kandidaat")
+    );
+  };
+
   if (wantsCalmRoads && pool.length > 1) {
     // Compare the best few candidates on real map facts. Environment lookups
     // are the expensive part (Overpass), so cap at 4 and run them in parallel.
@@ -792,14 +851,39 @@ export async function generateVariedLoop(
         best = c;
       }
     }
-    await hardRejectIfNeeded(best.result);
-    await collectAlternates(best.result);
-    return best.result;
+    // Fail-closed (taak #505): de omgevings-beste eerst, daarna de rest van de
+    // pool op score — hard geblokkeerd schuift eerlijk door naar de volgende.
+    const orderedCalm = [
+      best.result,
+      ...pool.filter((c) => c !== best).map((c) => c.result),
+    ];
+    const calmWinner = await pickVerifiedWinner(orderedCalm);
+    await collectAlternates(calmWinner);
+    return calmWinner;
   }
 
-  await hardRejectIfNeeded(pool[0]!.result);
-  await collectAlternates(pool[0]!.result);
-  return pool[0]!.result;
+  const winner = await pickVerifiedWinner(pool.map((c) => c.result));
+  await collectAlternates(winner);
+  return winner;
+}
+
+/**
+ * Fail-closed verificatiefout (taak #505): de obstakelmeting van de winnaar
+ * gaf óók blokkerend geen antwoord (alle Overpass-mirrors kapot). Zo'n route
+ * is niet controleerbaar op fietsverbod/trap/afgesloten poort en wordt daarom
+ * NOOIT geleverd, opgeslagen of als "KLAAR" getoond — de gebruiker krijgt een
+ * eerlijke melding in plaats van een stil-onveilige route.
+ */
+export class UnverifiableRouteError extends Error {
+  readonly profile: string;
+  constructor(profile: string) {
+    super(
+      "De route kon niet gecontroleerd worden op blokkades (de kaartbron gaf geen antwoord). " +
+        "We bieden een ongecontroleerde route niet aan — probeer het over een paar minuten opnieuw.",
+    );
+    this.name = "UnverifiableRouteError";
+    this.profile = profile;
+  }
 }
 
 /**

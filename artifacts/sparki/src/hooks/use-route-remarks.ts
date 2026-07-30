@@ -43,6 +43,12 @@ export type RouteBlockage = {
 };
 
 export type RouteRemarksResponse = {
+  /**
+   * Verificatiestatus van de server (taak #505, fail-closed): geslaagde
+   * meting zonder blokkade = "verified_clear", met blokkade = "hard_blocked".
+   * Mislukte meting geeft nooit een 200 (dus geen veld) maar een 502.
+   */
+  verification?: "verified_clear" | "hard_blocked"
   remarks: RouteRemark[] | null;
   dataRemarks: { label: string; detail: string }[];
   blockage?: RouteBlockage;
