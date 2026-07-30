@@ -108,6 +108,14 @@ export type SessionDetailResponse = {
   trimEdit?: SessionTrimEdit | null;
   // Aantal punten in de VOLLEDIGE bewaarde track (basis voor trim-indexen).
   trackPointCount?: number;
+  // Herkomst-metadata uit de Data Origin-laag (server bouwt dit uit de
+  // vastgelegde source/sources/fieldSources — nooit verzonnen).
+  herkomst?: {
+    bron: string;
+    bronnen: string[];
+    veldBronnen: Record<string, string> | null;
+    handmatigeVelden: string[] | null;
+  } | null;
 };
 
 /** Voorvertoning van "Rit inkorten" — slaat niets op. */

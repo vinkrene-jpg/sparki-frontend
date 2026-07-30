@@ -19,7 +19,8 @@
     "test:off-route-choice": "node ../../scripts/run-tsx-test.mjs --test lib/off-route-choice.test.ts",
     "test:volgauto-meet": "node ../../scripts/run-tsx-test.mjs --test lib/volgauto-meet.test.ts",
     "check:prod-config": "node scripts/check-prod-config.mjs",
-    "test:live-share": "node ../../scripts/run-tsx-test.mjs --test lib/live-share.test.ts"
+    "test:live-share": "node ../../scripts/run-tsx-test.mjs --test lib/live-share.test.ts",
+    "test:veld-bron": "node ../../scripts/run-tsx-test.mjs --test lib/veld-bron.test.ts"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

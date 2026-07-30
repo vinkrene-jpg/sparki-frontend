@@ -28,6 +28,7 @@ import {
   useTrimPreview,
 } from "@/lib/sessions-api";
 import { shareErrorMessage, useShareInfo, useShareToStrava } from "@/lib/share-api";
+import { bronVoorVeld } from "@/lib/veld-bron";
 
 const SOURCE_LABEL: Record<string, string> = {
   file: "Opgenomen rit",
@@ -222,36 +223,48 @@ export default function RideDetailScreen() {
     );
   };
 
+  // Per-veld herkomst uit de Data Origin-laag: alleen tonen wat aantoonbaar
+  // vastligt. Zolang het detail nog laadt tonen we niets (geen gok); zodra
+  // het er is, is elk veld óf herleidbaar óf eerlijk "onbekend".
+  const bronVoor = (field: string): string | null =>
+    bronVoorVeld(data?.herkomst, field);
+
   // Every measured value the session really carries — absent values are simply
   // not listed (never zeros or dashes).
-  const metrics: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }[] =
-    [];
+  const metrics: {
+    icon: keyof typeof Ionicons.glyphMap;
+    label: string;
+    value: string;
+    bron?: string | null;
+  }[] = [];
   if (session) {
     const distance = fmtNum(session.distanceKm);
     if (distance != null)
-      metrics.push({ icon: "navigate-outline", label: "Afstand", value: `${distance.toFixed(1)} km` });
+      metrics.push({ icon: "navigate-outline", label: "Afstand", value: `${distance.toFixed(1)} km`, bron: bronVoor("distanceKm") });
     const duration = fmtDuration(session.durationMin);
     if (duration)
-      metrics.push({ icon: "time-outline", label: "Duur", value: duration });
+      metrics.push({ icon: "time-outline", label: "Duur", value: duration, bron: bronVoor("durationMin") });
     const speed = fmtNum(session.avgSpeedKph);
     if (speed != null)
-      metrics.push({ icon: "speedometer-outline", label: "Gem. snelheid", value: `${speed.toFixed(1)} km/u` });
+      metrics.push({ icon: "speedometer-outline", label: "Gem. snelheid", value: `${speed.toFixed(1)} km/u`, bron: bronVoor("avgSpeedKph") });
     if (session.elevationM != null)
-      metrics.push({ icon: "trending-up-outline", label: "Hoogtemeters", value: `${session.elevationM} m` });
+      metrics.push({ icon: "trending-up-outline", label: "Hoogtemeters", value: `${session.elevationM} m`, bron: bronVoor("elevationM") });
     if (session.avgPower != null)
-      metrics.push({ icon: "flash-outline", label: "Gem. vermogen", value: `${session.avgPower} W` });
+      metrics.push({ icon: "flash-outline", label: "Gem. vermogen", value: `${session.avgPower} W`, bron: bronVoor("avgPower") });
     if (session.normalizedPower != null)
-      metrics.push({ icon: "flash-outline", label: "Genormaliseerd vermogen", value: `${session.normalizedPower} W` });
+      metrics.push({ icon: "flash-outline", label: "Genormaliseerd vermogen", value: `${session.normalizedPower} W`, bron: bronVoor("normalizedPower") });
     if (session.avgHR != null)
-      metrics.push({ icon: "heart-outline", label: "Gem. hartslag", value: `${session.avgHR}` });
+      metrics.push({ icon: "heart-outline", label: "Gem. hartslag", value: `${session.avgHR}`, bron: bronVoor("avgHR") });
     if (session.maxHR != null)
-      metrics.push({ icon: "heart-outline", label: "Max. hartslag", value: `${session.maxHR}` });
+      metrics.push({ icon: "heart-outline", label: "Max. hartslag", value: `${session.maxHR}`, bron: bronVoor("maxHR") });
     if (session.avgCadence != null)
-      metrics.push({ icon: "sync-outline", label: "Gem. cadans", value: `${session.avgCadence} rpm` });
+      metrics.push({ icon: "sync-outline", label: "Gem. cadans", value: `${session.avgCadence} rpm`, bron: bronVoor("avgCadence") });
     if (session.tss != null)
-      metrics.push({ icon: "barbell-outline", label: "Belastingscore", value: `${session.tss}` });
+      metrics.push({ icon: "barbell-outline", label: "Belastingscore", value: `${session.tss}`, bron: bronVoor("tss") });
+    if (session.intensityFactor != null && session.intensityFactor !== "")
+      metrics.push({ icon: "speedometer-outline", label: "Intensiteit (IF)", value: session.intensityFactor, bron: bronVoor("intensityFactor") });
     if (session.feelScore != null)
-      metrics.push({ icon: "happy-outline", label: "Gevoel", value: `${session.feelScore}/10` });
+      metrics.push({ icon: "happy-outline", label: "Gevoel", value: `${session.feelScore}/10`, bron: bronVoor("feelScore") });
   }
 
   return (
@@ -847,9 +860,16 @@ export default function RideDetailScreen() {
               {metrics.map((m) => (
                 <View key={m.label} style={styles.metricRow}>
                   <Ionicons name={m.icon} size={16} color={c.primary} />
-                  <Text style={[styles.metricLabel, { color: c.mutedForeground }]}>
-                    {m.label}
-                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.metricLabel, { color: c.mutedForeground }]}>
+                      {m.label}
+                    </Text>
+                    {m.bron != null ? (
+                      <Text style={[styles.metricBron, { color: c.mutedForeground }]}>
+                        Bron: {m.bron}
+                      </Text>
+                    ) : null}
+                  </View>
                   <Text style={[styles.metricValue, { color: c.foreground }]}>
                     {m.value}
                   </Text>
@@ -973,7 +993,8 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   metricRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  metricLabel: { flex: 1, fontFamily: "Inter_500Medium", fontSize: 13 },
+  metricLabel: { fontFamily: "Inter_500Medium", fontSize: 13 },
+  metricBron: { fontFamily: "Inter_500Medium", fontSize: 10, opacity: 0.7, marginTop: 1 },
   metricValue: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
   noteText: { fontFamily: "Inter_400Regular", fontSize: 14, lineHeight: 21 },
   saveBtn: {
