@@ -235,24 +235,64 @@ async function probeMapsOrs(): Promise<ProbeResult> {
     );
   }
   try {
-    const url = new URL("https://api.openrouteservice.org/geocode/search");
-    url.searchParams.set("api_key", key);
-    url.searchParams.set("text", "Amsterdam");
-    url.searchParams.set("size", "1");
-    const res = await fetchWithTimeout(url.toString(), {
-      headers: { Accept: "application/json" },
-    });
+    // Honesty-contract: een ECHTE kleine directions-aanvraag (fietsroute van
+    // ~1 km door Amsterdam), niet alleen geocode. De directions-API kan kapot
+    // zijn (quota, pakket) terwijl geocode nog groen blijft — precies het
+    // stille-breuk-scenario dat we bij GraphHopper al hebben gedicht.
+    const res = await fetchWithTimeout(
+      "https://api.openrouteservice.org/v2/directions/cycling-regular/geojson",
+      {
+        method: "POST",
+        headers: {
+          Authorization: key,
+          "Content-Type": "application/json",
+          Accept: "application/geo+json",
+        },
+        body: JSON.stringify({
+          // Kort stukje langs de Amsterdamse grachten (~1 km), [lon, lat].
+          // Beide punten liggen op echte straten (de Dam zelf snapt niet).
+          coordinates: [
+            [4.8852, 52.3702],
+            [4.8945, 52.3667],
+          ],
+          instructions: false,
+          elevation: false,
+        }),
+      },
+    );
     const took = ms(start);
     if (res.ok) {
+      // Alleen groen als er echt een route met geometrie terugkomt.
+      let hasGeometry = false;
+      try {
+        const json = (await res.json()) as {
+          features?: { geometry?: { coordinates?: unknown[] } }[];
+        };
+        hasGeometry = Boolean(
+          json.features?.[0]?.geometry?.coordinates?.length,
+        );
+      } catch {
+        hasGeometry = false;
+      }
+      if (!hasGeometry) {
+        return {
+          status: "orange",
+          passed: false,
+          responseTimeMs: took,
+          message:
+            "De reserve-routedienst antwoordt, maar gaf geen bruikbare route terug.",
+          technicalDetails: `ORS antwoordde ${res.status} maar zonder routegeometrie`,
+        };
+      }
       return {
         status: took > 3000 ? "orange" : "green",
         passed: true,
         responseTimeMs: took,
         message:
           took > 3000
-            ? "Routes plannen werkt, maar reageert traag."
-            : "Routes plannen en kaarten werken.",
-        technicalDetails: `ORS antwoordde ${res.status} in ${took}ms`,
+            ? "Routes plannen (reserve-routedienst) werkt, maar reageert traag."
+            : "Routes plannen werkt: de reserve-routedienst plande echt een fietsroute.",
+        technicalDetails: `ORS directions (cycling-regular, ~1 km) antwoordde ${res.status} in ${took}ms`,
       };
     }
     if (res.status === 401 || res.status === 403) {
@@ -279,12 +319,24 @@ async function probeMapsOrs(): Promise<ProbeResult> {
         urgency: "medium",
       };
     }
+    // ORS geeft 404 met foutcode 2009 als er geen route tussen de testpunten
+    // gevonden wordt (bijv. na een kaart-update). Dat is een echte
+    // directions-storing voor onze proefroute — meld het eerlijk apart.
+    let rawMessage = "";
+    try {
+      const json = (await res.json()) as { error?: { message?: string } };
+      rawMessage = json.error?.message ?? "";
+    } catch {
+      // geen JSON-body — laat rawMessage leeg
+    }
     return {
       status: "orange",
       passed: false,
       responseTimeMs: took,
-      message: "De routekaart-dienst reageert onverwacht.",
-      technicalDetails: `ORS antwoordde ${res.status}`,
+      message: rawMessage.toLowerCase().includes("route could not be found")
+        ? "De reserve-routedienst kon de proefroute niet plannen. Routes plannen kan haperen."
+        : "De routekaart-dienst reageert onverwacht.",
+      technicalDetails: `ORS antwoordde ${res.status}${rawMessage ? ` — ${rawMessage.slice(0, 200)}` : ""}`,
     };
   } catch (err) {
     return {
@@ -542,7 +594,7 @@ const coreChecks: CheckDefinition[] = [
     category: "maps",
     title: "Routes & kaarten",
     description:
-      "Controleert of routes gepland en kaarten geladen kunnen worden.",
+      "Controleert met een echte kleine fietsroute-aanvraag of de reserve-routedienst (OpenRouteService) nog routes kan plannen.",
     responsibleModule: "Routeplanner (OpenRouteService)",
     userImpact: impact("Sporters kunnen geen nieuwe routes plannen of bekijken."),
     urgency: "high",

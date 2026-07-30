@@ -75,3 +75,8 @@ only, and no user-facing "AI" wording — Sparki-denkkracht, not "AI".
   (sleutel verlopen); 429 → ORANGE. Geen sleutel → GREY.
 - Ad-hoc probe-run: tijdelijk testje in src/tests/ + `node ./scripts/run-test.mjs <naam>`
   (pnpm exec tsx bestaat niet in dit werkruimte-pad).
+
+## ORS-probe (maps_ors) = echte directions
+- De reserve-routedienst-check doet een ECHTE directions-aanvraag (cycling-regular, ~1 km grachten-Amsterdam), niet alleen geocode — geocode kan groen blijven terwijl directions-quota op is.
+- De Dam (4.8936,52.3731) snapt NIET naar een berijdbare weg bij ORS ("route could not be found", HTTP 404 code 2009); testpunten moeten op echte straten liggen.
+- ORS meldt "geen route gevonden" als HTTP 404 — apart afgevangen met eerlijke oranje melding i.p.v. "reageert onverwacht".
