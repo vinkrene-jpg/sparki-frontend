@@ -624,22 +624,62 @@ way["highway"](${bbox});
 
 /**
  * Haal alle highway-ways in de bbox op, bestand tegen afgekapte antwoorden:
- * bij truncatie wordt de bbox in vier kwadranten opnieuw bevraagd en
- * samengevoegd (dedupliceren op way-id). Blijft óók een kwadrant afgekapt of
- * faalt er één, dan is het antwoord een eerlijk gat (null) — nooit een
- * gedeeltelijke kaart die als "onbekend wegdek" rendert.
+ * bij truncatie wordt de bbox recursief in vier kwadranten opnieuw bevraagd
+ * en samengevoegd (dedupliceren op way-id). Een nog-afgekapt kwadrant wordt
+ * verder gesplitst tot MAX_SPLIT_DEPTH niveaus (Proof #433: de dichte kern
+ * van Hengelo/Borne raakt het plafond ook op kwadrant-niveau). Blijft een
+ * deelvraag daarna nóg afgekapt, of faalt er één, dan is het antwoord een
+ * eerlijk gat (null) — nooit een gedeeltelijke kaart die als "onbekend
+ * wegdek" rendert.
  */
-async function fetchSurfaceElements(
+export const MAX_SPLIT_DEPTH = 3;
+
+export async function fetchSurfaceElements(
   minLat: number,
   minLon: number,
   maxLat: number,
   maxLon: number,
 ): Promise<OverpassElement[] | null> {
+  const merged: OverpassElement[] = [];
+  const seen = new Set<number>();
+  const ok = await collectSurfaceElements(
+    minLat, minLon, maxLat, maxLon, 0, merged, seen,
+  );
+  return ok ? merged : null;
+}
+
+async function collectSurfaceElements(
+  minLat: number,
+  minLon: number,
+  maxLat: number,
+  maxLon: number,
+  depth: number,
+  merged: OverpassElement[],
+  seen: Set<number>,
+): Promise<boolean> {
   const fmt = (a: number, b: number, c: number, d: number) =>
     `${a.toFixed(4)},${b.toFixed(4)},${c.toFixed(4)},${d.toFixed(4)}`;
-  const full = await runOverpass(surfacesQuery(fmt(minLat, minLon, maxLat, maxLon)));
-  if (full === null) return null;
-  if (!full.truncated) return full.elements;
+  const query = surfacesQuery(fmt(minLat, minLon, maxLat, maxLon));
+  let run = await runOverpass(query);
+  if (run === null) {
+    // Recursieve splitsing vuurt meerdere queries kort na elkaar af; mirrors
+    // rate-limiten dat soms (429/timeout). Eén beleefde retry na een korte
+    // pauze — faalt die óók, dan blijft het een eerlijk gat.
+    await new Promise((r) => setTimeout(r, 2_000));
+    run = await runOverpass(query);
+  }
+  if (run === null) return false; // eerlijk gat
+  if (!run.truncated) {
+    for (const el of run.elements) {
+      if (typeof el.id === "number") {
+        if (seen.has(el.id)) continue;
+        seen.add(el.id);
+      }
+      merged.push(el);
+    }
+    return true;
+  }
+  if (depth >= MAX_SPLIT_DEPTH) return false; // eerlijk gat: nog steeds afgekapt
 
   const midLat = (minLat + maxLat) / 2;
   const midLon = (minLon + maxLon) / 2;
@@ -649,20 +689,17 @@ async function fetchSurfaceElements(
     [midLat, minLon, maxLat, midLon],
     [midLat, midLon, maxLat, maxLon],
   ];
-  const merged: OverpassElement[] = [];
-  const seen = new Set<number>();
-  for (const [a, b, c, d] of quads) {
-    const sub = await runOverpass(surfacesQuery(fmt(a, b, c, d)));
-    if (sub === null || sub.truncated) return null; // eerlijk gat
-    for (const el of sub.elements) {
-      if (typeof el.id === "number") {
-        if (seen.has(el.id)) continue;
-        seen.add(el.id);
-      }
-      merged.push(el);
+  for (let i = 0; i < quads.length; i++) {
+    if (i > 0) {
+      // Korte pauze tussen kwadrant-queries: niet alle mirrors verdragen een
+      // burst van opeenvolgende zware queries (429-rate-limits, Proof #433).
+      await new Promise((r) => setTimeout(r, 750));
     }
+    const [a, b, c, d] = quads[i];
+    const ok = await collectSurfaceElements(a, b, c, d, depth + 1, merged, seen);
+    if (!ok) return false; // eerlijk gat
   }
-  return merged;
+  return true;
 }
 
 /**

@@ -155,4 +155,5 @@
 - Trainerlaag: [werkruimte](sparki-trainer-workspace-wp01.md) hasCoachAccess = link ∪ clubtoewijzing; [tiers](sparki-trainer-access-tiers.md) schrijfacties eisen DIRECTE link; [rechten/privénotities](sparki-trainer-rights-wp01c.md) owner-only; [hoofdtrainer](sparki-hoofdtrainer.md) org-overzicht zonder gezondheidsdata.
 - [Sparki cluborganisatie](sparki-club-organisation.md) — wrapped unique-violation via err.cause; ÉÉN advisory-lock-key voor alle capacity-paden; activeAssignmentWindow op elk leespad.
 - [Governor Beslisblok 02 rollenfundament](governor-beslisblok-02.md) — modellen in governance/, fixtures met strikte delete-handtekening + advisory lock; GO↔COMPLETE-besluit open.
+- [Overpass burst rate-limits](overpass-burst-rate-limits.md) — recursieve kwadrant-splitsing vuurt query-bursts; mirrors 429'en dan — pauze tussen queries + één beleefde retry, eerlijk gat blijft.
 - [Route-hm ruisdrempel](sparki-elevation-gain-noise.md) — SRTM-ruis: summarizeTrack smooth±150m + 3m-drempel is hm-SSOT; profiel-y-as min 100 m; nooit rauwe provider-ascend prefereren.
